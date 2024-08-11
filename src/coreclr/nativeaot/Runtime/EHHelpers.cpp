@@ -204,24 +204,29 @@ FCIMPL3(void, RhpCopyContextFromExInfo, void * pOSContext, int32_t cbOSContext, 
     pContext->Ra = pPalContext->RA;
     pContext->Pc = pPalContext->IP;
 #elif defined(HOST_RISCV64)
-    pContext->x1  = pPalContext->RA;   // Return address
-    pContext->x2  = pPalContext->SP;   // Stack pointer
-    pContext->x8  = pPalContext->S0;   // Saved register/frame pointer
-    pContext->x9  = pPalContext->S1;   // Saved register
-    pContext->x18 = pPalContext->S2;   // Saved register
-    pContext->x19 = pPalContext->S3;   // Saved register
-    pContext->x20 = pPalContext->S4;   // Saved register
-    pContext->x21 = pPalContext->S5;   // Saved register
-    pContext->x22 = pPalContext->S6;   // Saved register
-    pContext->x23 = pPalContext->S7;   // Saved register
-    pContext->x24 = pPalContext->S8;   // Saved register
-    pContext->x25 = pPalContext->S9;   // Saved register
-    pContext->x26 = pPalContext->S10;  // Saved register
-    pContext->x27 = pPalContext->S11;  // Saved register
-    pContext->Fp  = pPalContext->S0;   // Frame pointer (alias for x8)
-    pContext->Sp  = pPalContext->SP;   // Stack pointer (alias for x2)
-    pContext->Ra  = pPalContext->RA;   // Return address (alias for x1)
-    pContext->Pc  = pPalContext->IP;   // Program counter
+    pContext->A0 = pPalContext->A0;
+    pContext->A1 = pPalContext->A1;
+    pContext->A2 = pPalContext->A2;
+    pContext->A3 = pPalContext->A3;
+    pContext->A4 = pPalContext->A4;
+    pContext->A5 = pPalContext->A5;
+    pContext->A6 = pPalContext->A6;
+    pContext->A7 = pPalContext->A7;
+    pContext->S1 = pPalContext->S1;
+    pContext->S2 = pPalContext->S2;
+    pContext->S3 = pPalContext->S3;
+    pContext->S4 = pPalContext->S4;
+    pContext->S5 = pPalContext->S5;
+    pContext->S6 = pPalContext->S6;
+    pContext->S7 = pPalContext->S7;
+    pContext->S8 = pPalContext->S8;
+    pContext->S9 = pPalContext->S9;
+    pContext->S10 = pPalContext->S10;
+    pContext->S11 = pPalContext->S11;
+    pContext->Fp = pPalContext->FP;
+    pContext->Sp = pPalContext->SP;
+    pContext->Ra = pPalContext->RA;
+    pContext->Pc = pPalContext->IP;
 #elif defined(HOST_WASM)
     // No registers, no work to do yet
 #else

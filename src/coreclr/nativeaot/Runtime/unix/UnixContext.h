@@ -215,41 +215,37 @@ struct UNIX_CONTEXT
 
 #elif defined(TARGET_RISCV64)
 
-    uint64_t& X0();
-    uint64_t& X1();
-    uint64_t& X2();
-    uint64_t& X3();
-    uint64_t& X4();
-    uint64_t& X5();
-    uint64_t& X6();
-    uint64_t& X7();
-    uint64_t& X8();
-    uint64_t& X9();
-    uint64_t& X10();
-    uint64_t& X11();
-    uint64_t& X12();
-    uint64_t& X13();
-    uint64_t& X14();
-    uint64_t& X15();
-    uint64_t& X16();
-    uint64_t& X17();
-    uint64_t& X18();
-    uint64_t& X19();
-    uint64_t& X20();
-    uint64_t& X21();
-    uint64_t& X22();
-    uint64_t& X23();
-    uint64_t& X24();
-    uint64_t& X25();
-    uint64_t& X26();
-    uint64_t& X27();
-    uint64_t& X28();
-    uint64_t& X29();
-    uint64_t& X30();
-    uint64_t& X31();
-    uint64_t& Fp(); // X29
-    uint64_t& Ra(); // X1
-    uint64_t& Sp(); // X2
+    uint64_t& Ra();
+    uint64_t& Sp();
+    uint64_t& Gp();
+    uint64_t& Tp();
+    uint64_t& T0();
+    uint64_t& T1();
+    uint64_t& T2();
+    uint64_t& Fp();
+    uint64_t& S1();
+    uint64_t& A0();
+    uint64_t& A1();
+    uint64_t& A2();
+    uint64_t& A3();
+    uint64_t& A4();
+    uint64_t& A5();
+    uint64_t& A6();
+    uint64_t& A7();
+    uint64_t& S2();
+    uint64_t& S3();
+    uint64_t& S4();
+    uint64_t& S5();
+    uint64_t& S6();
+    uint64_t& S7();
+    uint64_t& S8();
+    uint64_t& S9();
+    uint64_t& S10();
+    uint64_t& S11();
+    uint64_t& T3();
+    uint64_t& T4();
+    uint64_t& T5();
+    uint64_t& T6();
     uint64_t& Pc();
 
     uintptr_t GetIp() { return (uintptr_t)Pc(); }
@@ -258,17 +254,17 @@ struct UNIX_CONTEXT
     template <typename F>
     void ForEachPossibleObjectRef(F lambda)
     {
-        // It is doubtful anyone would implement X0-X31 not as a contiguous array
-        // Just in case - here are some asserts.
-        ASSERT(&X0() + 1 == &X1());
-        ASSERT(&X0() + 10 == &X10());
-        ASSERT(&X0() + 20 == &X20());
+        // It is expected that registers are stored in a contiguous manner
+        // Here are some asserts to check
+        ASSERT(&A0() + 1 == &A1());
+        ASSERT(&A0() + 8 == &A7());
 
-        for (uint64_t* pReg = &X0(); pReg <= &X31(); pReg++)
+        for (uint64_t* pReg = &Ra(); pReg <= &T6(); pReg++)
             lambda((size_t*)pReg);
 
-        // Ra can be used as a scratch register
+        // Ra and Fp can be used as scratch registers
         lambda((size_t*)&Ra());
+        lambda((size_t*)&Fp());
     }
 
 #else

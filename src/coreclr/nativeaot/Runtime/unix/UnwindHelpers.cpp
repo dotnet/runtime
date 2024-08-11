@@ -1095,8 +1095,8 @@ void Registers_REGDISPLAY::setVectorRegister(int num, libunwind::v128 value)
 // Shim that implements methods required by libunwind over REGDISPLAY
 struct Registers_REGDISPLAY : REGDISPLAY
 {
-    inline static int  getArch() { return libunwind::REGISTERS_RISCV64; }
-    inline static int  lastDwarfRegNum() { return _LIBUNWIND_HIGHEST_DWARF_REGISTER_RISCV64; }
+    inline static int  getArch() { return libunwind::REGISTERS_RISCV; }
+    inline static int  lastDwarfRegNum() { return _LIBUNWIND_HIGHEST_DWARF_REGISTER_RISCV; }
 
     bool        validRegister(int num) const;
     bool        validFloatRegister(int num) { return false; };
@@ -1134,230 +1134,355 @@ inline bool Registers_REGDISPLAY::validRegister(int num) const {
 
 bool Registers_REGDISPLAY::validVectorRegister(int num) const
 {
-    if (num >= UNW_RISCV_V0 && num <= UNW_RISCV_V31)
+    // Vector registers are mapped to floating-point registers F24 to F31
+    if (num >= UNW_RISCV_F24 && num <= UNW_RISCV_F31)
         return true;
 
     return false;
 }
 
 inline uint64_t Registers_REGDISPLAY::getRegister(int regNum) const {
-    if (regNum == UNW_REG_SP || regNum == UNW_RISCV_X2)
-        return SP;
+    switch (regNum) {
+    case UNW_RISCV_X0:
+        return *pT0;
+    case UNW_RISCV_X1:
+        return *pT1;
+    case UNW_RISCV_X2:
+        return *pT2;
+    case UNW_RISCV_X3:
+        return *pT3;
+    case UNW_RISCV_X4:
+        return *pT4;
+    case UNW_RISCV_X5:
+        return *pT5;
+    case UNW_RISCV_X6:
+        return *pT6;
+    case UNW_RISCV_X7:
+        return *pT7;
+    case UNW_RISCV_X8:
+        return *pT8;
+    case UNW_RISCV_X9:
+        return *pT9;
+    case UNW_RISCV_X10:
+        return *pT10;
+    case UNW_RISCV_X11:
+        return *pT11;
+    case UNW_RISCV_X12:
+        return *pT12;
+    case UNW_RISCV_X13:
+        return *pT13;
+    case UNW_RISCV_X14:
+        return *pT14;
+    case UNW_RISCV_X15:
+        return *pT15;
+    case UNW_RISCV_X16:
+        return *pT16;
+    case UNW_RISCV_X17:
+        return *pT17;
+    case UNW_RISCV_X18:
+        return *pT18;
+    case UNW_RISCV_X19:
+        return *pT19;
+    case UNW_RISCV_X20:
+        return *pT20;
+    case UNW_RISCV_X21:
+        return *pT21;
+    case UNW_RISCV_X22:
+        return *pT22;
+    case UNW_RISCV_X23:
+        return *pT23;
+    // Add other general-purpose registers if needed
 
-    if (regNum == UNW_RISCV_X8)
-        return *pFP;
+    case UNW_RISCV_F0:
+        return F[0];
+    case UNW_RISCV_F1:
+        return F[1];
+    case UNW_RISCV_F2:
+        return F[2];
+    case UNW_RISCV_F3:
+        return F[3];
+    case UNW_RISCV_F4:
+        return F[4];
+    case UNW_RISCV_F5:
+        return F[5];
+    case UNW_RISCV_F6:
+        return F[6];
+    case UNW_RISCV_F7:
+        return F[7];
+    case UNW_RISCV_F8:
+        return F[8];
+    case UNW_RISCV_F9:
+        return F[9];
+    case UNW_RISCV_F10:
+        return F[10];
+    case UNW_RISCV_F11:
+        return F[11];
+    case UNW_RISCV_F12:
+        return F[12];
+    case UNW_RISCV_F13:
+        return F[13];
+    case UNW_RISCV_F14:
+        return F[14];
+    case UNW_RISCV_F15:
+        return F[15];
+    case UNW_RISCV_F16:
+        return F[16];
+    case UNW_RISCV_F17:
+        return F[17];
+    case UNW_RISCV_F18:
+        return F[18];
+    case UNW_RISCV_F19:
+        return F[19];
+    case UNW_RISCV_F20:
+        return F[20];
+    case UNW_RISCV_F21:
+        return F[21];
+    case UNW_RISCV_F22:
+        return F[22];
+    case UNW_RISCV_F23:
+        return F[23];
+    case UNW_RISCV_F24:
+        return F[24];
+    case UNW_RISCV_F25:
+        return F[25];
+    case UNW_RISCV_F26:
+        return F[26];
+    case UNW_RISCV_F27:
+        return F[27];
+    case UNW_RISCV_F28:
+        return F[28];
+    case UNW_RISCV_F29:
+        return F[29];
+    case UNW_RISCV_F30:
+        return F[30];
+    case UNW_RISCV_F31:
+        return F[31];
+    // Add other floating-point registers if needed
 
-    if (regNum == UNW_RISCV_X1)
-        return *pRA;
+    case UNW_RISCV_VLENB:
+        return 0; // VLENB not used in REGDISPLAY, adjust if needed
 
-    if (regNum == UNW_REG_IP)
-        return IP;
-
-    switch (regNum)
-    {
-    case (UNW_RISCV_X0):
-        return *pX0;
-    case (UNW_RISCV_X3):
-        return *pX3;
-    case (UNW_RISCV_X4):
-        return *pX4;
-    case (UNW_RISCV_X5):
-        return *pX5;
-    case (UNW_RISCV_X6):
-        return *pX6;
-    case (UNW_RISCV_X7):
-        return *pX7;
-    case (UNW_RISCV_X9):
-        return *pX9;
-    case (UNW_RISCV_X10):
-        return *pX10;
-    case (UNW_RISCV_X11):
-        return *pX11;
-    case (UNW_RISCV_X12):
-        return *pX12;
-    case (UNW_RISCV_X13):
-        return *pX13;
-    case (UNW_RISCV_X14):
-        return *pX14;
-    case (UNW_RISCV_X15):
-        return *pX15;
-    case (UNW_RISCV_X16):
-        return *pX16;
-    case (UNW_RISCV_X17):
-        return *pX17;
-    case (UNW_RISCV_X18):
-        return *pX18;
-    case (UNW_RISCV_X19):
-        return *pX19;
-    case (UNW_RISCV_X20):
-        return *pX20;
-    case (UNW_RISCV_X21):
-        return *pX21;
-    case (UNW_RISCV_X22):
-        return *pX22;
-    case (UNW_RISCV_X23):
-        return *pX23;
-    case (UNW_RISCV_X24):
-        return *pX24;
-    case (UNW_RISCV_X25):
-        return *pX25;
-    case (UNW_RISCV_X26):
-        return *pX26;
-    case (UNW_RISCV_X27):
-        return *pX27;
-    case (UNW_RISCV_X28):
-        return *pX28;
-    case (UNW_RISCV_X29):
-        return *pX29;
-    case (UNW_RISCV_X30):
-        return *pX30;
-    case (UNW_RISCV_X31):
-        return *pX31;
+    default:
+        PORTABILITY_ASSERT("unsupported RISC-V register");
     }
-
-    PORTABILITY_ASSERT("unsupported riscv64 register");
 }
 
-void Registers_REGDISPLAY::setRegister(int num, uint64_t value, uint64_t location)
+void Registers_REGDISPLAY::setRegister(int regNum, uint64_t value, uint64_t location)
 {
-    if (num == UNW_REG_SP || num == UNW_RISCV_X2) {
-        SP = (uintptr_t)value;
-        return;
-    }
+    switch (regNum) {
+    case UNW_RISCV_X0:
+        *pT0 = value;
+        break;
+    case UNW_RISCV_X1:
+        *pT1 = value;
+        break;
+    case UNW_RISCV_X2:
+        *pT2 = value;
+        break;
+    case UNW_RISCV_X3:
+        *pT3 = value;
+        break;
+    case UNW_RISCV_X4:
+        *pT4 = value;
+        break;
+    case UNW_RISCV_X5:
+        *pT5 = value;
+        break;
+    case UNW_RISCV_X6:
+        *pT6 = value;
+        break;
+    case UNW_RISCV_X7:
+        *pT7 = value;
+        break;
+    case UNW_RISCV_X8:
+        *pT8 = value;
+        break;
+    case UNW_RISCV_X9:
+        *pT9 = value;
+        break;
+    case UNW_RISCV_X10:
+        *pT10 = value;
+        break;
+    case UNW_RISCV_X11:
+        *pT11 = value;
+        break;
+    case UNW_RISCV_X12:
+        *pT12 = value;
+        break;
+    case UNW_RISCV_X13:
+        *pT13 = value;
+        break;
+    case UNW_RISCV_X14:
+        *pT14 = value;
+        break;
+    case UNW_RISCV_X15:
+        *pT15 = value;
+        break;
+    case UNW_RISCV_X16:
+        *pT16 = value;
+        break;
+    case UNW_RISCV_X17:
+        *pT17 = value;
+        break;
+    case UNW_RISCV_X18:
+        *pT18 = value;
+        break;
+    case UNW_RISCV_X19:
+        *pT19 = value;
+        break;
+    case UNW_RISCV_X20:
+        *pT20 = value;
+        break;
+    case UNW_RISCV_X21:
+        *pT21 = value;
+        break;
+    case UNW_RISCV_X22:
+        *pT22 = value;
+        break;
+    case UNW_RISCV_X23:
+        *pT23 = value;
+        break;
 
-    if (num == UNW_RISCV_X8) {
-        pFP = (PTR_uintptr_t)location;
-        return;
-    }
+    // Add other general-purpose registers if needed
 
-    if (num == UNW_RISCV_X1) {
-        pRA = (PTR_uintptr_t)location;
-        return;
-    }
+    case UNW_RISCV_F0:
+        F[0] = value;
+        break;
+    case UNW_RISCV_F1:
+        F[1] = value;
+        break;
+    case UNW_RISCV_F2:
+        F[2] = value;
+        break;
+    case UNW_RISCV_F3:
+        F[3] = value;
+        break;
+    case UNW_RISCV_F4:
+        F[4] = value;
+        break;
+    case UNW_RISCV_F5:
+        F[5] = value;
+        break;
+    case UNW_RISCV_F6:
+        F[6] = value;
+        break;
+    case UNW_RISCV_F7:
+        F[7] = value;
+        break;
+    case UNW_RISCV_F8:
+        F[8] = value;
+        break;
+    case UNW_RISCV_F9:
+        F[9] = value;
+        break;
+    case UNW_RISCV_F10:
+        F[10] = value;
+        break;
+    case UNW_RISCV_F11:
+        F[11] = value;
+        break;
+    case UNW_RISCV_F12:
+        F[12] = value;
+        break;
+    case UNW_RISCV_F13:
+        F[13] = value;
+        break;
+    case UNW_RISCV_F14:
+        F[14] = value;
+        break;
+    case UNW_RISCV_F15:
+        F[15] = value;
+        break;
+    case UNW_RISCV_F16:
+        F[16] = value;
+        break;
+    case UNW_RISCV_F17:
+        F[17] = value;
+        break;
+    case UNW_RISCV_F18:
+        F[18] = value;
+        break;
+    case UNW_RISCV_F19:
+        F[19] = value;
+        break;
+    case UNW_RISCV_F20:
+        F[20] = value;
+        break;
+    case UNW_RISCV_F21:
+        F[21] = value;
+        break;
+    case UNW_RISCV_F22:
+        F[22] = value;
+        break;
+    case UNW_RISCV_F23:
+        F[23] = value;
+        break;
+    case UNW_RISCV_F24:
+        F[24] = value;
+        break;
+    case UNW_RISCV_F25:
+        F[25] = value;
+        break;
+    case UNW_RISCV_F26:
+        F[26] = value;
+        break;
+    case UNW_RISCV_F27:
+        F[27] = value;
+        break;
+    case UNW_RISCV_F28:
+        F[28] = value;
+        break;
+    case UNW_RISCV_F29:
+        F[29] = value;
+        break;
+    case UNW_RISCV_F30:
+        F[30] = value;
+        break;
+    case UNW_RISCV_F31:
+        F[31] = value;
+        break;
 
-    if (num == UNW_REG_IP) {
-        IP = value;
-        return;
-    }
+    // Add other floating-point registers if needed
 
-    switch (num)
-    {
-    case (UNW_RISCV_X0):
-        pX0 = (PTR_uintptr_t)location;
+    case UNW_RISCV_VLENB:
+        PORTABILITY_ASSERT("unsupported RISC-V VLENB register");
         break;
-    case (UNW_RISCV_X3):
-        pX3 = (PTR_uintptr_t)location;
-        break;
-    case (UNW_RISCV_X4):
-        pX4 = (PTR_uintptr_t)location;
-        break;
-    case (UNW_RISCV_X5):
-        pX5 = (PTR_uintptr_t)location;
-        break;
-    case (UNW_RISCV_X6):
-        pX6 = (PTR_uintptr_t)location;
-        break;
-    case (UNW_RISCV_X7):
-        pX7 = (PTR_uintptr_t)location;
-        break;
-    case (UNW_RISCV_X9):
-        pX9 = (PTR_uintptr_t)location;
-        break;
-    case (UNW_RISCV_X10):
-        pX10 = (PTR_uintptr_t)location;
-        break;
-    case (UNW_RISCV_X11):
-        pX11 = (PTR_uintptr_t)location;
-        break;
-    case (UNW_RISCV_X12):
-        pX12 = (PTR_uintptr_t)location;
-        break;
-    case (UNW_RISCV_X13):
-        pX13 = (PTR_uintptr_t)location;
-        break;
-    case (UNW_RISCV_X14):
-        pX14 = (PTR_uintptr_t)location;
-        break;
-    case (UNW_RISCV_X15):
-        pX15 = (PTR_uintptr_t)location;
-        break;
-    case (UNW_RISCV_X16):
-        pX16 = (PTR_uintptr_t)location;
-        break;
-    case (UNW_RISCV_X17):
-        pX17 = (PTR_uintptr_t)location;
-        break;
-    case (UNW_RISCV_X18):
-        pX18 = (PTR_uintptr_t)location;
-        break;
-    case (UNW_RISCV_X19):
-        pX19 = (PTR_uintptr_t)location;
-        break;
-    case (UNW_RISCV_X20):
-        pX20 = (PTR_uintptr_t)location;
-        break;
-    case (UNW_RISCV_X21):
-        pX21 = (PTR_uintptr_t)location;
-        break;
-    case (UNW_RISCV_X22):
-        pX22 = (PTR_uintptr_t)location;
-        break;
-    case (UNW_RISCV_X23):
-        pX23 = (PTR_uintptr_t)location;
-        break;
-    case (UNW_RISCV_X24):
-        pX24 = (PTR_uintptr_t)location;
-        break;
-    case (UNW_RISCV_X25):
-        pX25 = (PTR_uintptr_t)location;
-        break;
-    case (UNW_RISCV_X26):
-        pX26 = (PTR_uintptr_t)location;
-        break;
-    case (UNW_RISCV_X27):
-        pX27 = (PTR_uintptr_t)location;
-        break;
-    case (UNW_RISCV_X28):
-        pX28 = (PTR_uintptr_t)location;
-        break;
-    case (UNW_RISCV_X29):
-        pX29 = (PTR_uintptr_t)location;
-        break;
-    case (UNW_RISCV_X30):
-        pX30 = (PTR_uintptr_t)location;
-        break;
-    case (UNW_RISCV_X31):
-        pX31 = (PTR_uintptr_t)location;
-        break;
+
     default:
-        PORTABILITY_ASSERT("unsupported riscv64 register");
+        PORTABILITY_ASSERT("unsupported RISC-V register");
     }
 }
 
 libunwind::v128 Registers_REGDISPLAY::getVectorRegister(int num) const
 {
-    if (num >= UNW_RISCV_V0 && num <= UNW_RISCV_V31) {
-        libunwind::v128 result;
-        // Assuming a 128-bit vector register split into four 32-bit elements
-        result.vec[0] = V[num].v0;
-        result.vec[1] = V[num].v1;
-        result.vec[2] = V[num].v2;
-        result.vec[3] = V[num].v3;
-        return result;
+    num -= UNW_RISCV_F24; // Adjust the base to 0
+
+    if (num < 0 || num >= sizeof(F) / sizeof(uint64_t))
+    {
+        PORTABILITY_ASSERT("unsupported riscv64 vector register");
     }
-    PORTABILITY_ASSERT("unsupported riscv64 vector register");
+
+    libunwind::v128 result;
+
+    // Assuming F array stores 64-bit parts of the vector data
+    result.vec[0] = 0;
+    result.vec[1] = 0;
+    result.vec[2] = F[num] >> 32;
+    result.vec[3] = F[num] & 0xFFFFFFFF;
+
+    return result;
 }
 
 void Registers_REGDISPLAY::setVectorRegister(int num, libunwind::v128 value)
 {
-    if (num >= UNW_RISCV_V0 && num <= UNW_RISCV_V31) {
-        V[num].v0 = value.vec[0];
-        V[num].v1 = value.vec[1];
-        V[num].v2 = value.vec[2];
-        V[num].v3 = value.vec[3];
-    } else {
+    num -= UNW_RISCV_F24; // Adjust the base to 0
+
+    if (num < 0 || num >= sizeof(F) / sizeof(uint64_t))
+    {
         PORTABILITY_ASSERT("unsupported riscv64 vector register");
     }
+
+    F[num] = (uint64_t)value.vec[2] << 32 | (uint64_t)value.vec[3];
 }
 
 #endif // TARGET_RISCV64

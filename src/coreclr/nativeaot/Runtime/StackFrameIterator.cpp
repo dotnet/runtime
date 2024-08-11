@@ -293,45 +293,36 @@ void StackFrameIterator::InternalInit(Thread * pThreadToWalk, PInvokeTransitionF
 
     ASSERT(!(pFrame->m_Flags & PTFF_SAVE_FP)); // FP should never contain a GC ref
 
-    if (pFrame->m_Flags & PTFF_SAVE_X19) { m_RegDisplay.pX19 = pPreservedRegsCursor++; }
-    if (pFrame->m_Flags & PTFF_SAVE_X20) { m_RegDisplay.pX20 = pPreservedRegsCursor++; }
-    if (pFrame->m_Flags & PTFF_SAVE_X21) { m_RegDisplay.pX21 = pPreservedRegsCursor++; }
-    if (pFrame->m_Flags & PTFF_SAVE_X22) { m_RegDisplay.pX22 = pPreservedRegsCursor++; }
-    if (pFrame->m_Flags & PTFF_SAVE_X23) { m_RegDisplay.pX23 = pPreservedRegsCursor++; }
-    if (pFrame->m_Flags & PTFF_SAVE_X24) { m_RegDisplay.pX24 = pPreservedRegsCursor++; }
-    if (pFrame->m_Flags & PTFF_SAVE_X25) { m_RegDisplay.pX25 = pPreservedRegsCursor++; }
-    if (pFrame->m_Flags & PTFF_SAVE_X26) { m_RegDisplay.pX26 = pPreservedRegsCursor++; }
-    if (pFrame->m_Flags & PTFF_SAVE_X27) { m_RegDisplay.pX27 = pPreservedRegsCursor++; }
-    if (pFrame->m_Flags & PTFF_SAVE_X28) { m_RegDisplay.pX28 = pPreservedRegsCursor++; }
+    if (pFrame->m_Flags & PTFF_SAVE_S1) { m_RegDisplay.pS1 = pPreservedRegsCursor++; }
+    if (pFrame->m_Flags & PTFF_SAVE_S2) { m_RegDisplay.pS2 = pPreservedRegsCursor++; }
+    if (pFrame->m_Flags & PTFF_SAVE_S3) { m_RegDisplay.pS3 = pPreservedRegsCursor++; }
+    if (pFrame->m_Flags & PTFF_SAVE_S4) { m_RegDisplay.pS4 = pPreservedRegsCursor++; }
+    if (pFrame->m_Flags & PTFF_SAVE_S5) { m_RegDisplay.pS5 = pPreservedRegsCursor++; }
+    if (pFrame->m_Flags & PTFF_SAVE_S6) { m_RegDisplay.pS6 = pPreservedRegsCursor++; }
+    if (pFrame->m_Flags & PTFF_SAVE_S7) { m_RegDisplay.pS7 = pPreservedRegsCursor++; }
+    if (pFrame->m_Flags & PTFF_SAVE_S8) { m_RegDisplay.pS8 = pPreservedRegsCursor++; }
 
     if (pFrame->m_Flags & PTFF_SAVE_SP) { m_RegDisplay.SP = *pPreservedRegsCursor++; }
 
-    if (pFrame->m_Flags & PTFF_SAVE_X0) { m_RegDisplay.pX0 = pPreservedRegsCursor++; }
-    if (pFrame->m_Flags & PTFF_SAVE_X1) { m_RegDisplay.pX1 = pPreservedRegsCursor++; }
-    if (pFrame->m_Flags & PTFF_SAVE_X2) { m_RegDisplay.pX2 = pPreservedRegsCursor++; }
-    if (pFrame->m_Flags & PTFF_SAVE_X3) { m_RegDisplay.pX3 = pPreservedRegsCursor++; }
-    if (pFrame->m_Flags & PTFF_SAVE_X4) { m_RegDisplay.pX4 = pPreservedRegsCursor++; }
-    if (pFrame->m_Flags & PTFF_SAVE_X5) { m_RegDisplay.pX5 = pPreservedRegsCursor++; }
-    if (pFrame->m_Flags & PTFF_SAVE_X6) { m_RegDisplay.pX6 = pPreservedRegsCursor++; }
-    if (pFrame->m_Flags & PTFF_SAVE_X7) { m_RegDisplay.pX7 = pPreservedRegsCursor++; }
-    if (pFrame->m_Flags & PTFF_SAVE_X8) { m_RegDisplay.pX8 = pPreservedRegsCursor++; }
-    if (pFrame->m_Flags & PTFF_SAVE_X9) { m_RegDisplay.pX9 = pPreservedRegsCursor++; }
-    if (pFrame->m_Flags & PTFF_SAVE_X10) { m_RegDisplay.pX10 = pPreservedRegsCursor++; }
-    if (pFrame->m_Flags & PTFF_SAVE_X11) { m_RegDisplay.pX11 = pPreservedRegsCursor++; }
-    if (pFrame->m_Flags & PTFF_SAVE_X12) { m_RegDisplay.pX12 = pPreservedRegsCursor++; }
-    if (pFrame->m_Flags & PTFF_SAVE_X13) { m_RegDisplay.pX13 = pPreservedRegsCursor++; }
-    if (pFrame->m_Flags & PTFF_SAVE_X14) { m_RegDisplay.pX14 = pPreservedRegsCursor++; }
-    if (pFrame->m_Flags & PTFF_SAVE_X15) { m_RegDisplay.pX15 = pPreservedRegsCursor++; }
-    if (pFrame->m_Flags & PTFF_SAVE_X16) { m_RegDisplay.pX16 = pPreservedRegsCursor++; }
-    if (pFrame->m_Flags & PTFF_SAVE_X17) { m_RegDisplay.pX17 = pPreservedRegsCursor++; }
-    if (pFrame->m_Flags & PTFF_SAVE_X18) { m_RegDisplay.pX18 = pPreservedRegsCursor++; }
+    if (pFrame->m_Flags & PTFF_SAVE_T0) { m_RegDisplay.pT0 = pPreservedRegsCursor++; }
+    if (pFrame->m_Flags & PTFF_SAVE_T1) { m_RegDisplay.pT1 = pPreservedRegsCursor++; }
+    if (pFrame->m_Flags & PTFF_SAVE_T2) { m_RegDisplay.pT2 = pPreservedRegsCursor++; }
+    if (pFrame->m_Flags & PTFF_SAVE_T3) { m_RegDisplay.pT3 = pPreservedRegsCursor++; }
+    if (pFrame->m_Flags & PTFF_SAVE_T4) { m_RegDisplay.pT4 = pPreservedRegsCursor++; }
+    if (pFrame->m_Flags & PTFF_SAVE_T5) { m_RegDisplay.pT5 = pPreservedRegsCursor++; }
+    if (pFrame->m_Flags & PTFF_SAVE_T6) { m_RegDisplay.pT6 = pPreservedRegsCursor++; }
+    if (pFrame->m_Flags & PTFF_SAVE_T7) { m_RegDisplay.pT7 = pPreservedRegsCursor++; }
+    if (pFrame->m_Flags & PTFF_SAVE_T8) { m_RegDisplay.pT8 = pPreservedRegsCursor++; }
+    if (pFrame->m_Flags & PTFF_SAVE_T9) { m_RegDisplay.pT9 = pPreservedRegsCursor++; }
+    if (pFrame->m_Flags & PTFF_SAVE_T10) { m_RegDisplay.pT10 = pPreservedRegsCursor++; }
+    if (pFrame->m_Flags & PTFF_SAVE_T11) { m_RegDisplay.pT11 = pPreservedRegsCursor++; }
 
     if (pFrame->m_Flags & PTFF_SAVE_RA) { m_RegDisplay.pRA = pPreservedRegsCursor++; }
 
     GCRefKind retValueKind = TransitionFrameFlagsToReturnKind(pFrame->m_Flags);
     if (retValueKind != GCRK_Scalar)
     {
-        m_pHijackedReturnValue = (PTR_OBJECTREF)m_RegDisplay.pX0;
+        m_pHijackedReturnValue = (PTR_OBJECTREF)m_RegDisplay.pT0;
         m_HijackedReturnValueKind = retValueKind;
     }
 
@@ -990,15 +981,15 @@ void StackFrameIterator::UpdateFromExceptionDispatch(PTR_StackFrameIterator pSou
     m_RegDisplay.pFP = thisFuncletPtrs.pFP;
 
 #elif defined(TARGET_RISCV64)
+    m_RegDisplay.pS1 = thisFuncletPtrs.pS1;
+    m_RegDisplay.pS2 = thisFuncletPtrs.pS2;
+    m_RegDisplay.pS3 = thisFuncletPtrs.pS3;
+    m_RegDisplay.pS4 = thisFuncletPtrs.pS4;
+    m_RegDisplay.pS5 = thisFuncletPtrs.pS5;
+    m_RegDisplay.pS6 = thisFuncletPtrs.pS6;
+    m_RegDisplay.pS7 = thisFuncletPtrs.pS7;
+    m_RegDisplay.pS8 = thisFuncletPtrs.pS8;
     m_RegDisplay.pFP = thisFuncletPtrs.pFP;
-    m_RegDisplay.pRA = thisFuncletPtrs.pRA;
-    m_RegDisplay.pX8 = thisFuncletPtrs.pX8;
-    m_RegDisplay.pX9 = thisFuncletPtrs.pX9;
-    m_RegDisplay.pX10 = thisFuncletPtrs.pX10;
-    m_RegDisplay.pX11 = thisFuncletPtrs.pX11;
-    m_RegDisplay.pX12 = thisFuncletPtrs.pX12;
-    m_RegDisplay.pSP = thisFuncletPtrs.pSP;
-    m_RegDisplay.pIP = thisFuncletPtrs.pIP;
 
 #elif defined(UNIX_AMD64_ABI)
     // Save the preserved regs portion of the REGDISPLAY across the unwind through the C# EH dispatch code.
@@ -1298,29 +1289,29 @@ void StackFrameIterator::UnwindFuncletInvokeThunk()
         // thunks, but we don't need to know what they are here, so we just skip them.
         SP += EQUALS_RETURN_ADDRESS(m_ControlPC, RhpCallCatchFunclet2) ? 6 : 4;
         // Save the preserved regs portion of the REGDISPLAY across the unwind through the C# EH dispatch code.
-        m_funcletPtrs.pX8   = m_RegDisplay.pX8;
-        m_funcletPtrs.pX9   = m_RegDisplay.pX9;
-        m_funcletPtrs.pX10  = m_RegDisplay.pX10;
-        m_funcletPtrs.pX11  = m_RegDisplay.pX11;
-        m_funcletPtrs.pX12  = m_RegDisplay.pX12;
-        m_funcletPtrs.pX13  = m_RegDisplay.pX13;
-        m_funcletPtrs.pX14  = m_RegDisplay.pX14;
-        m_funcletPtrs.pX15  = m_RegDisplay.pX15;
-        m_funcletPtrs.pFP   = m_RegDisplay.pFP;
+        m_funcletPtrs.pS1  = m_RegDisplay.pS1;
+        m_funcletPtrs.pS2  = m_RegDisplay.pS2;
+        m_funcletPtrs.pS3  = m_RegDisplay.pS3;
+        m_funcletPtrs.pS4  = m_RegDisplay.pS4;
+        m_funcletPtrs.pS5  = m_RegDisplay.pS5;
+        m_funcletPtrs.pS6  = m_RegDisplay.pS6;
+        m_funcletPtrs.pS7  = m_RegDisplay.pS7;
+        m_funcletPtrs.pS8  = m_RegDisplay.pS8;
+        m_funcletPtrs.pFP  = m_RegDisplay.pFP;
     }
 
     m_RegDisplay.pFP  = SP++;
 
     m_RegDisplay.SetIP(*SP++);
 
-    m_RegDisplay.pX8  = SP++;
-    m_RegDisplay.pX9  = SP++;
-    m_RegDisplay.pX10 = SP++;
-    m_RegDisplay.pX11 = SP++;
-    m_RegDisplay.pX12 = SP++;
-    m_RegDisplay.pX13 = SP++;
-    m_RegDisplay.pX14 = SP++;
-    m_RegDisplay.pX15 = SP++;
+    m_RegDisplay.pS1  = SP++;
+    m_RegDisplay.pS2  = SP++;
+    m_RegDisplay.pS3  = SP++;
+    m_RegDisplay.pS4  = SP++;
+    m_RegDisplay.pS5  = SP++;
+    m_RegDisplay.pS6  = SP++;
+    m_RegDisplay.pS7  = SP++;
+    m_RegDisplay.pS8  = SP++;
 
 #else
     SP = (PTR_uintptr_t)(m_RegDisplay.SP);
@@ -1673,17 +1664,15 @@ void StackFrameIterator::UnwindThrowSiteThunk()
     m_RegDisplay.pR31 = (PTR_uintptr_t)PTR_TO_MEMBER_TADDR(PAL_LIMITED_CONTEXT, pContext, R31);
     m_RegDisplay.pFP = (PTR_uintptr_t)PTR_TO_MEMBER_TADDR(PAL_LIMITED_CONTEXT, pContext, FP);
 #elif defined(TARGET_RISCV64)
-    m_RegDisplay.pX19 = (PTR_uintptr_t)PTR_TO_MEMBER_TADDR(PAL_LIMITED_CONTEXT, pContext, X19);
-    m_RegDisplay.pX20 = (PTR_uintptr_t)PTR_TO_MEMBER_TADDR(PAL_LIMITED_CONTEXT, pContext, X20);
-    m_RegDisplay.pX21 = (PTR_uintptr_t)PTR_TO_MEMBER_TADDR(PAL_LIMITED_CONTEXT, pContext, X21);
-    m_RegDisplay.pX22 = (PTR_uintptr_t)PTR_TO_MEMBER_TADDR(PAL_LIMITED_CONTEXT, pContext, X22);
-    m_RegDisplay.pX23 = (PTR_uintptr_t)PTR_TO_MEMBER_TADDR(PAL_LIMITED_CONTEXT, pContext, X23);
-    m_RegDisplay.pX24 = (PTR_uintptr_t)PTR_TO_MEMBER_TADDR(PAL_LIMITED_CONTEXT, pContext, X24);
-    m_RegDisplay.pX25 = (PTR_uintptr_t)PTR_TO_MEMBER_TADDR(PAL_LIMITED_CONTEXT, pContext, X25);
-    m_RegDisplay.pX26 = (PTR_uintptr_t)PTR_TO_MEMBER_TADDR(PAL_LIMITED_CONTEXT, pContext, X26);
-    m_RegDisplay.pX27 = (PTR_uintptr_t)PTR_TO_MEMBER_TADDR(PAL_LIMITED_CONTEXT, pContext, X27);
-    m_RegDisplay.pX28 = (PTR_uintptr_t)PTR_TO_MEMBER_TADDR(PAL_LIMITED_CONTEXT, pContext, X28);
-    m_RegDisplay.pFP  = (PTR_uintptr_t)PTR_TO_MEMBER_TADDR(PAL_LIMITED_CONTEXT, pContext, FP);
+    m_RegDisplay.pS1 = (PTR_uintptr_t)PTR_TO_MEMBER_TADDR(PAL_LIMITED_CONTEXT, pContext, S1);
+    m_RegDisplay.pS2 = (PTR_uintptr_t)PTR_TO_MEMBER_TADDR(PAL_LIMITED_CONTEXT, pContext, S2);
+    m_RegDisplay.pS3 = (PTR_uintptr_t)PTR_TO_MEMBER_TADDR(PAL_LIMITED_CONTEXT, pContext, S3);
+    m_RegDisplay.pS4 = (PTR_uintptr_t)PTR_TO_MEMBER_TADDR(PAL_LIMITED_CONTEXT, pContext, S4);
+    m_RegDisplay.pS5 = (PTR_uintptr_t)PTR_TO_MEMBER_TADDR(PAL_LIMITED_CONTEXT, pContext, S5);
+    m_RegDisplay.pS6 = (PTR_uintptr_t)PTR_TO_MEMBER_TADDR(PAL_LIMITED_CONTEXT, pContext, S6);
+    m_RegDisplay.pS7 = (PTR_uintptr_t)PTR_TO_MEMBER_TADDR(PAL_LIMITED_CONTEXT, pContext, S7);
+    m_RegDisplay.pS8 = (PTR_uintptr_t)PTR_TO_MEMBER_TADDR(PAL_LIMITED_CONTEXT, pContext, S8);
+    m_RegDisplay.pFP = (PTR_uintptr_t)PTR_TO_MEMBER_TADDR(PAL_LIMITED_CONTEXT, pContext, FP);
 #else
     ASSERT_UNCONDITIONALLY("NYI for this arch");
 #endif

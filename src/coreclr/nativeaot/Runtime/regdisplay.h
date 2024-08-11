@@ -235,49 +235,50 @@ struct REGDISPLAY
 
 struct REGDISPLAY
 {
-    PTR_uintptr_t pX0;
-    PTR_uintptr_t pX1;
-    PTR_uintptr_t pX2;
-    PTR_uintptr_t pX3;
-    PTR_uintptr_t pX4;
-    PTR_uintptr_t pX5;
-    PTR_uintptr_t pX6;
-    PTR_uintptr_t pX7;
-    PTR_uintptr_t pX8;
-    PTR_uintptr_t pX9;
-    PTR_uintptr_t pX10;
-    PTR_uintptr_t pX11;
-    PTR_uintptr_t pX12;
-    PTR_uintptr_t pX13;
-    PTR_uintptr_t pX14;
-    PTR_uintptr_t pX15;
-    PTR_uintptr_t pX16;
-    PTR_uintptr_t pX17;
-    PTR_uintptr_t pX18;
-    PTR_uintptr_t pX19;
-    PTR_uintptr_t pX20;
-    PTR_uintptr_t pX21;
-    PTR_uintptr_t pX22;
-    PTR_uintptr_t pX23;
-    PTR_uintptr_t pX24;
-    PTR_uintptr_t pX25;
-    PTR_uintptr_t pX26;
-    PTR_uintptr_t pX27;
-    PTR_uintptr_t pX28;
-    PTR_uintptr_t pX29;
-    PTR_uintptr_t pX30;
-    PTR_uintptr_t pX31;
-    PTR_uintptr_t pFP; // Frame pointer
+    PTR_uintptr_t pRA;
 
-    uintptr_t   SP; // Stack pointer
+    PTR_uintptr_t pS1;
+    PTR_uintptr_t pS2;
+    PTR_uintptr_t pS3;
+    PTR_uintptr_t pS4;
+    PTR_uintptr_t pS5;
+    PTR_uintptr_t pS6;
+    PTR_uintptr_t pS7;
+    PTR_uintptr_t pS8;
 
-    PCODE        IP; // Instruction pointer
+    PTR_uintptr_t pFP;
+    uintptr_t SP;
 
-    uint64_t       F[32-24]; // Only the F registers F24..F31 need to be preserved
-                             // (F0-F23 are not preserved according to the ABI spec).
-                             // These need to be unwound during a stack walk
-                             // for EH, but not adjusted, so we only need
-                             // their values, not their addresses
+    PTR_uintptr_t pT0;
+    PTR_uintptr_t pT1;
+    PTR_uintptr_t pT2;
+    PTR_uintptr_t pT3;
+    PTR_uintptr_t pT4;
+    PTR_uintptr_t pT5;
+    PTR_uintptr_t pT6;
+    PTR_uintptr_t pT7;
+    PTR_uintptr_t pT8;
+    PTR_uintptr_t pT9;
+    PTR_uintptr_t pT10;
+    PTR_uintptr_t pT11;
+
+    // Adding missing registers
+    PTR_uintptr_t pT12;
+    PTR_uintptr_t pT13;
+    PTR_uintptr_t pT14;
+    PTR_uintptr_t pT15;
+    PTR_uintptr_t pT16;
+    PTR_uintptr_t pT17;
+    PTR_uintptr_t pT18;
+    PTR_uintptr_t pT19;
+    PTR_uintptr_t pT20;
+    PTR_uintptr_t pT21;
+    PTR_uintptr_t pT22;
+    PTR_uintptr_t pT23;
+
+    PCODE IP;
+
+    uint64_t F[32];  // Expanded to cover all F registers
 
     inline PCODE GetIP() { return IP; }
     inline uintptr_t GetSP() { return SP; }

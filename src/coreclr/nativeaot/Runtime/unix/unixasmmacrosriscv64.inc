@@ -32,18 +32,15 @@ C_FUNC(\Name):
 .endm
 
 .macro LEAF_ENTRY Name, Section
-        .global C_FUNC(\Name)
-        .hidden C_FUNC(\Name)
-        .type \Name, @function
-        .section \Section
-        .align 2
+    .global C_FUNC(\Name)
+    .type \Name, %function
 C_FUNC(\Name):
-        .cfi_startproc
+    .cfi_startproc
 .endm
 
 .macro LEAF_END Name, Section
-        .size \Name, .-\Name
-        .cfi_endproc
+    .size \Name, .-\Name
+    .cfi_endproc
 .endm
 
 .macro PREPARE_EXTERNAL_VAR Name, HelperReg
@@ -62,55 +59,71 @@ C_FUNC(\Name):
 .endm
 
 .macro PROLOG_STACK_ALLOC Size
+    // If Size is larger than 2047, split it into multiple instructions
+    .if (\Size > 2047) || (\Size < -2048)
+        // Load the upper 20 bits into a temporary register (e.g., t0)
+        lui t0, %hi(\Size)
+        // Add the lower 12 bits to the temporary register
+        addi t0, t0, %lo(\Size)
+        // Subtract the value from the stack pointer
+        sub sp, sp, t0
+    .else
         addi sp, sp, -\Size
+    .endif
 .endm
 
 .macro EPILOG_STACK_FREE Size
-        addi sp, sp, \Size
-        .cfi_adjust_cfa_offset -\Size
+    addi  sp, sp, \Size
+    .cfi_adjust_cfa_offset -\Size
 .endm
 
 .macro EPILOG_STACK_RESTORE
-        mv sp, s0
-        .cfi_restore sp
+    mv  sp, fp
+    .cfi_restore  fp
 .endm
 
 .macro PROLOG_SAVE_REG reg, ofs
-        sd \reg, \ofs(sp)
-        .cfi_rel_offset \reg, \ofs
+    sd  \reg, \ofs(sp)
+    .cfi_rel_offset \reg, \ofs
 .endm
 
 .macro PROLOG_SAVE_REG_PAIR reg1, reg2, ofs
-        sd \reg1, \ofs(sp)
-        sd \reg2, \ofs+8(sp)
-        .cfi_rel_offset \reg1, \ofs
-        .cfi_rel_offset \reg2, \ofs+8
-        .ifc \reg1, s0
-        mv s0, sp
-        .cfi_def_cfa_register s0
-        .endif
+    sd  \reg1, \ofs(sp)
+    sd  \reg2, \ofs + 8(sp)
+    .cfi_rel_offset  \reg1, \ofs
+    .cfi_rel_offset  \reg2, \ofs + 8
+    .ifc  \reg1, fp
+    mv  fp, sp
+    .cfi_def_cfa_register  fp
+    .endif
 .endm
 
-.macro PROLOG_SAVE_REG_PAIR_INDEXED reg1, reg2, ofs
-        sd \reg1, -\ofs(sp)
-        sd \reg2, -\ofs+8(sp)
-        addi sp, sp, -\ofs
-        .cfi_adjust_cfa_offset \ofs
-        .cfi_rel_offset \reg1, 0
-        .cfi_rel_offset \reg2, 8
-        .ifc \reg1, s0
-        mv s0, sp
-        .cfi_def_cfa_register s0
-        .endif
+.macro PROLOG_SAVE_REG_PAIR_INDEXED reg1, reg2, ssize, __def_cfa_save=1
+    addi  sp, sp, -\ssize
+    //.cfi_adjust_cfa_offset  \ssize
+    .cfi_def_cfa  sp, \ssize
+
+    sd  \reg1, 0(sp)
+    sd  \reg2, 8(sp)
+
+    .cfi_rel_offset  \reg1, 0
+    .cfi_rel_offset  \reg2, 8
+    .if (\__def_cfa_save ==  1)
+      mv  fp, sp
+      .cfi_def_cfa_register  fp
+    .endif
 .endm
 
-.macro PROLOG_SAVE_REG_PAIR_NO_FP_INDEXED reg1, reg2, ofs
-        sd \reg1, \ofs(sp)
-        sd \reg2, \ofs+8(sp)
-        addi sp, sp, -\ofs
-        .cfi_adjust_cfa_offset \ofs
-        .cfi_rel_offset \reg1, 0
-        .cfi_rel_offset \reg2, 8
+.macro PROLOG_SAVE_REG_PAIR_NO_FP_INDEXED reg1, reg2, ssize
+    addi  sp, sp, -\ssize
+    //.cfi_adjust_cfa_offset  \ssize
+    .cfi_def_cfa  sp, \ssize
+
+    sd  \reg1, 0(sp)
+    sd  \reg2, 8(sp)
+
+    .cfi_rel_offset  \reg1, 0
+    .cfi_rel_offset  \reg2, 8
 .endm
 
 .macro EPILOG_RESTORE_REG reg, ofs
@@ -265,8 +278,8 @@ C_FUNC(\Name):
 
 // Note: these must match the defs in PInvokeTransitionFrameFlags
 PTFF_SAVE_SP            = 0x00000400
-PTFF_SAVE_X0            = 0x00000800
-PTFF_SAVE_X1            = 0x00001000
+PTFF_SAVE_A4            = 0x00000800
+PTFF_SAVE_A5            = 0x00001000
 PTFF_SAVE_ALL_PRESERVED = 0x000003FF  // NOTE: x19-x28
 
 DEFAULT_FRAME_SAVE_FLAGS = PTFF_SAVE_ALL_PRESERVED + PTFF_SAVE_SP

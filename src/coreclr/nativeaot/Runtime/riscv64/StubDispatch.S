@@ -11,16 +11,19 @@
 
     // Macro that generates code to check a single cache entry.
     .macro CHECK_CACHE_ENTRY entry
-        // Check a single entry in the cache.
-        //  t0  : Cache data structure. Also used for target address jump.
-        //  t1  : Instance MethodTable*
-        //  t2  : Indirection cell address, preserved
-        //  t3  : Trashed
-        ld    t3, OFFSETOF__InterfaceDispatchCache__m_rgEntries(t0) + (\entry * 16)
-        bne   t1, t3, 0f
-        ld    t0, OFFSETOF__InterfaceDispatchCache__m_rgEntries(t0) + (\entry * 16) + 8
-        jalr  t0, 0
-0:
+        // Load cache entry data into a temporary register
+        ld    t6, (OFFSETOF__InterfaceDispatchCache__m_rgEntries + (\entry * 16))(t0)
+        
+        // Compare with MethodTable* in t1
+        bne   t1, t6, 0f
+        
+        // Load the target address from the cache entry
+        ld    t6, (OFFSETOF__InterfaceDispatchCache__m_rgEntries + (\entry * 16) + 8)(t0)
+        
+        // Jump to the address in t6
+        jalr  t0, t6, 0
+        
+    0:
     .endm
 
     //
@@ -28,27 +31,27 @@
     //
     .macro DEFINE_INTERFACE_DISPATCH_STUB entries
 
-    NESTED_ENTRY "RhpInterfaceDispatch\entries", _TEXT, NoHandler
+        NESTED_ENTRY RhpInterfaceDispatch\entries, _TEXT, NoHandler
 
-        // t2 holds the indirection cell address. Load the cache pointer.
-        ld    t0, OFFSETOF__InterfaceDispatchCell__m_pCache(t8)
+            // t0 holds the indirection cell address. Load the cache pointer.
+            ld t0, OFFSETOF__InterfaceDispatchCell__m_pCache(a1)  // Using a1 as an alternative base register
 
-        // Load the MethodTable from the object instance in a0.
-        ALTERNATE_ENTRY RhpInterfaceDispatchAVLocation\entries
-        ld    t1, 0(a0)
+            // Load the MethodTable from the object instance in a0.
+            ALTERNATE_ENTRY RhpInterfaceDispatchAVLocation\entries
+            ld t1, 0(a0)
 
-    .global CurrentEntry
-    .set CurrentEntry, 0
+        .global CurrentEntry
+        .set CurrentEntry, 0
 
-    .rept \entries
-        CHECK_CACHE_ENTRY CurrentEntry
-        .set CurrentEntry, CurrentEntry + 1
-    .endr
+        .rept \entries
+            CHECK_CACHE_ENTRY CurrentEntry
+            .set CurrentEntry, CurrentEntry + 1
+        .endr
 
-        // t2 still contains the indirection cell address.
-        jal   C_FUNC(RhpInterfaceDispatchSlow)
+            // t0 still contains the indirection cell address.
+            jal C_FUNC(RhpInterfaceDispatchSlow)
 
-    NESTED_END "RhpInterfaceDispatch\entries", _TEXT
+        NESTED_END RhpInterfaceDispatch\entries, _TEXT
 
     .endm
 
@@ -104,9 +107,9 @@
     LEAF_ENTRY RhpInterfaceDispatchSlow, _TEXT
         // t2 contains the interface dispatch cell address.
         // Calling convention of the universal thunk is:
-        //  t7: target address for the thunk to call
-        //  t8: parameter of the thunk's target
-        PREPARE_EXTERNAL_VAR RhpCidResolve, t7
+        //  t3: target address for the thunk to call
+        //  t4: parameter of the thunk's target
+        PREPARE_EXTERNAL_VAR RhpCidResolve, t3
         jal   C_FUNC(RhpUniversalTransition_DebugStepTailCall)
     LEAF_END RhpInterfaceDispatchSlow, _TEXT
 

@@ -125,47 +125,40 @@ struct PAL_LIMITED_CONTEXT
     void SetSp(uintptr_t sp) { SP = sp; }
 
 #elif defined(TARGET_RISCV64)
+
     uintptr_t  FP;
     uintptr_t  RA;
 
-    uintptr_t  X0;
-    uintptr_t  X1;
-    uintptr_t  X2;
-    uintptr_t  X3;
-    uintptr_t  X4;
-    uintptr_t  X5;
-    uintptr_t  X6;
-    uintptr_t  X7;
-    uintptr_t  X8;
-    uintptr_t  X9;
-    uintptr_t  X10;
-    uintptr_t  X11;
-    uintptr_t  X12;
-    uintptr_t  X13;
-    uintptr_t  X14;
-    uintptr_t  X15;
-    uintptr_t  X16;
-    uintptr_t  X17;
-    uintptr_t  X18;
-    uintptr_t  X19;
-    uintptr_t  X20;
-    uintptr_t  X21;
-    uintptr_t  X22;
-    uintptr_t  X23;
-    uintptr_t  X24;
-    uintptr_t  X25;
-    uintptr_t  X26;
-    uintptr_t  X27;
-    uintptr_t  X28;
-    uintptr_t  X29;
-    uintptr_t  X30;
-    uintptr_t  X31;
-
+    uintptr_t  A0;
+    uintptr_t  A1;
+    uintptr_t  A2;
+    uintptr_t  A3;
+    uintptr_t  A4;
+    uintptr_t  A5;
+    uintptr_t  A6;
+    uintptr_t  A7;
+    uintptr_t  S1;
+    uintptr_t  S2;
+    uintptr_t  S3;
+    uintptr_t  S4;
+    uintptr_t  S5;
+    uintptr_t  S6;
+    uintptr_t  S7;
+    uintptr_t  S8;
+    uintptr_t  S9;
+    uintptr_t  S10;
+    uintptr_t  S11;
+    uintptr_t  T0;
+    uintptr_t  T1;
+    uintptr_t  T2;
+    uintptr_t  T3;
+    uintptr_t  T4;
+    uintptr_t  T5;
+    uintptr_t  T6;
     uintptr_t  SP;
     uintptr_t  IP;
 
-    uint64_t      F[32 - 16]; // Only the bottom 64-bit values of the F registers F16..F31 need to be preserved
-                              // (F0-F15 are not preserved according to the ABI spec).
+    uint64_t  F[12];
 
     uintptr_t GetIp() const { return IP; }
     uintptr_t GetSp() const { return SP; }

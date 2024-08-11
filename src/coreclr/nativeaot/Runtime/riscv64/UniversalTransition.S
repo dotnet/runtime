@@ -89,98 +89,95 @@
 
     NESTED_ENTRY Rhp\FunctionName, _TEXT, NoHandler
 
-        // FP and RA registers
-        PROLOG_SAVE_REG_PAIR_INDEXED  22, 1, STACK_SIZE // ;; Push down stack pointer and store FP and RA
+        // Save FP and RA registers
+        PROLOG_SAVE_REG_PAIR_INDEXED s10, ra, STACK_SIZE
 
-        // Floating point registers
-        fsd    fa0, FLOAT_ARG_OFFSET($sp)
-        fsd    fa1, FLOAT_ARG_OFFSET+8($sp)
-        fsd    fa2, FLOAT_ARG_OFFSET+16($sp)
-        fsd    fa3, FLOAT_ARG_OFFSET+24($sp)
-        fsd    fa4, FLOAT_ARG_OFFSET+32($sp)
-        fsd    fa5, FLOAT_ARG_OFFSET+40($sp)
-        fsd    fa6, FLOAT_ARG_OFFSET+48($sp)
-        fsd    fa7, FLOAT_ARG_OFFSET+56($sp)
+        // Save Floating Point registers
+        fsd f0, 0x100(sp)         // Save f0
+        fsd f1, 0x108(sp)         // Save f1
+        fsd f2, 0x110(sp)         // Save f2
+        fsd f3, 0x118(sp)         // Save f3
+        fsd f4, 0x120(sp)         // Save f4
+        fsd f5, 0x128(sp)         // Save f5
+        fsd f6, 0x130(sp)         // Save f6
+        fsd f7, 0x138(sp)         // Save f7
 
         // Space for return buffer data (0x40 bytes)
 
         // Save argument registers
-        sd     a0, ARGUMENT_REGISTERS_OFFSET($sp)
-        sd     a1, ARGUMENT_REGISTERS_OFFSET+8($sp)
-        sd     a2, ARGUMENT_REGISTERS_OFFSET+16($sp)
-        sd     a3, ARGUMENT_REGISTERS_OFFSET+24($sp)
-        sd     a4, ARGUMENT_REGISTERS_OFFSET+32($sp)
-        sd     a5, ARGUMENT_REGISTERS_OFFSET+40($sp)
-        sd     a6, ARGUMENT_REGISTERS_OFFSET+48($sp)
-        sd     a7, ARGUMENT_REGISTERS_OFFSET+56($sp)
-        sd     t0, ARGUMENT_REGISTERS_OFFSET+64($sp)
-        sd     t1, ARGUMENT_REGISTERS_OFFSET+72($sp)
+        sd a0, 0x140(sp)         // Save a0
+        sd a1, 0x148(sp)         // Save a1
+        sd a2, 0x150(sp)         // Save a2
+        sd a3, 0x158(sp)         // Save a3
+        sd a4, 0x160(sp)         // Save a4
+        sd a5, 0x168(sp)         // Save a5
+        sd a6, 0x170(sp)         // Save a6
+        sd a7, 0x178(sp)         // Save a7
+        sd tp, 0x180(sp)         // Save tp
 
-#ifdef TRASH_SAVED_ARGUMENT_REGISTERS
-        PREPARE_EXTERNAL_VAR RhpFpTrashValues, a1
+        // Optionally prepare the values to trash saved argument registers
+    #ifdef TRASH_SAVED_ARGUMENT_REGISTERS
+        PREPARE_EXTERNAL_VAR RhpFpTrashValues, t0
 
-        fld    fa0, 0(a1)
-        fld    fa1, 8(a1)
-        fld    fa2, 16(a1)
-        fld    fa3, 24(a1)
-        fld    fa4, 32(a1)
-        fld    fa5, 40(a1)
-        fld    fa6, 48(a1)
-        fld    fa7, 56(a1)
+        fld f0, 0(t0)              // Load f0 from t0
+        fld f1, 0x08(t0)           // Load f1 from t0
+        fld f2, 0x10(t0)           // Load f2 from t0
+        fld f3, 0x18(t0)           // Load f3 from t0
+        fld f4, 0x20(t0)           // Load f4 from t0
+        fld f5, 0x28(t0)           // Load f5 from t0
+        fld f6, 0x30(t0)           // Load f6 from t0
+        fld f7, 0x38(t0)           // Load f7 from t0
 
-        PREPARE_EXTERNAL_VAR RhpIntegerTrashValues, a1
+        PREPARE_EXTERNAL_VAR RhpIntegerTrashValues, t0
 
-        ld     a2, 16(a1)
-        ld     a3, 24(a1)
-        ld     a4, 32(a1)
-        ld     a5, 40(a1)
-        ld     a6, 48(a1)
-        ld     a7, 56(a1)
-#endif // TRASH_SAVED_ARGUMENT_REGISTERS
+        ld a0, 0x10(t0)           // Load a0 from t0
+        ld a1, 0x18(t0)           // Load a1 from t0
+        ld a2, 0x20(t0)           // Load a2 from t0
+        ld a3, 0x28(t0)           // Load a3 from t0
+        ld a4, 0x30(t0)           // Load a4 from t0
+        ld a5, 0x38(t0)           // Load a5 from t0
+        ld a6, 0x40(t0)           // Load a6 from t0
+        ld a7, 0x48(t0)           // Load a7 from t0
+    #endif // TRASH_SAVED_ARGUMENT_REGISTERS
 
-        addi   a0, sp, DISTANCE_FROM_CHILDSP_TO_RETURN_BLOCK // First parameter to target function is a pointer to the return block
-        mv     a1, t1                                         // Second parameter to target function
-        jalr   t0, t1, 0
+        addi a0, sp, DISTANCE_FROM_CHILDSP_TO_RETURN_BLOCK  // First parameter to target function
+        mv a1, t1                                         // Second parameter to target function
+        jalr t0, t1, 0                                    // Jump to the function in t1
 
-        // We cannot make the label public as that tricks DIA stackwalker into thinking
-        // it's the beginning of a method. For this reason we export an auxiliary variable
-        // holding the address instead.
-    ALTERNATE_ENTRY ReturnFrom\FunctionName
+        // Restore the result address from t2
+        mv t2, a0                                       // Move result to t2
 
-        // Move the result (the target address) to t2 so it doesn't get overridden when we restore the
-        // argument registers.
-        mv     t2, a0
+        // Restore Floating Point registers
+        fld f0, 0x100(sp)         // Restore f0
+        fld f1, 0x108(sp)         // Restore f1
+        fld f2, 0x110(sp)         // Restore f2
+        fld f3, 0x118(sp)         // Restore f3
+        fld f4, 0x120(sp)         // Restore f4
+        fld f5, 0x128(sp)         // Restore f5
+        fld f6, 0x130(sp)         // Restore f6
+        fld f7, 0x138(sp)         // Restore f7
 
-        // Restore floating point registers
-        fld    fa0, FLOAT_ARG_OFFSET($sp)
-        fld    fa1, FLOAT_ARG_OFFSET+8($sp)
-        fld    fa2, FLOAT_ARG_OFFSET+16($sp)
-        fld    fa3, FLOAT_ARG_OFFSET+24($sp)
-        fld    fa4, FLOAT_ARG_OFFSET+32($sp)
-        fld    fa5, FLOAT_ARG_OFFSET+40($sp)
-        fld    fa6, FLOAT_ARG_OFFSET+48($sp)
-        fld    fa7, FLOAT_ARG_OFFSET+56($sp)
-
-        // Restore the argument registers
-        ld     a0, ARGUMENT_REGISTERS_OFFSET($sp)
-        ld     a1, ARGUMENT_REGISTERS_OFFSET+8($sp)
-        ld     a2, ARGUMENT_REGISTERS_OFFSET+16($sp)
-        ld     a3, ARGUMENT_REGISTERS_OFFSET+24($sp)
-        ld     a4, ARGUMENT_REGISTERS_OFFSET+32($sp)
-        ld     a5, ARGUMENT_REGISTERS_OFFSET+40($sp)
-        ld     a6, ARGUMENT_REGISTERS_OFFSET+48($sp)
-        ld     a7, ARGUMENT_REGISTERS_OFFSET+56($sp)
-        ld     t0, ARGUMENT_REGISTERS_OFFSET+64($sp)
+        // Restore argument registers
+        ld a0, 0x140(sp)         // Restore a0
+        ld a1, 0x148(sp)         // Restore a1
+        ld a2, 0x150(sp)         // Restore a2
+        ld a3, 0x158(sp)         // Restore a3
+        ld a4, 0x160(sp)         // Restore a4
+        ld a5, 0x168(sp)         // Restore a5
+        ld a6, 0x170(sp)         // Restore a6
+        ld a7, 0x178(sp)         // Restore a7
+        ld tp, 0x180(sp)         // Restore tp
 
         // Restore FP and RA registers, and free the allocated stack block
-        EPILOG_RESTORE_REG_PAIR_INDEXED  22, 1, STACK_SIZE
+        EPILOG_RESTORE_REG_PAIR_INDEXED s10, ra, STACK_SIZE
 
-        // Tailcall to the target address.
-        jalr   t2, t2, 0
+        // Tailcall to the target address in t2
+        jalr t2, 0
 
     NESTED_END Rhp\FunctionName, _TEXT
 
     .endm
+
 
     // To enable proper step-in behavior in the debugger, we need to have two instances
     // of the thunk. For the first one, the debugger steps into the call in the function,

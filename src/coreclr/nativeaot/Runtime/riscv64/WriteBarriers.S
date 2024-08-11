@@ -191,14 +191,14 @@
 
 // void JIT_ByRefWriteBarrier
 // On entry:
-//   t8  : the source address (points to object reference to write)
-//   t6  : the destination address (object reference written here)
+//   t6  : the source address (points to object reference to write)
+//   t5  : the destination address (object reference written here)
 //
 // On exit:
-//   t8  : incremented by 8
 //   t6  : incremented by 8
-//   t7  : trashed
-//   t3, t4  : trashed
+//   t5  : incremented by 8
+//   t4  : trashed
+//   t2, t3  : trashed
 //
 //   NOTE: Keep in sync with RBM_CALLEE_TRASH_WRITEBARRIER_BYREF and RBM_CALLEE_GCTRASH_WRITEBARRIER_BYREF
 //         if you add more trashed registers.
@@ -209,9 +209,9 @@
 LEAF_ENTRY RhpByRefAssignRef, _TEXT
 
     ALTERNATE_ENTRY RhpByRefAssignRefAVLocation1
-        ld    t7, 0(t8)
-        addi  t8, t8, 8
-        b     C_FUNC(RhpCheckedAssignRef)
+        ld    t5, 0(t6)
+        addi  t6, t6, 8
+        j C_FUNC(RhpCheckedAssignRef)
 
 LEAF_END RhpByRefAssignRef, _TEXT
 
@@ -221,13 +221,13 @@ LEAF_END RhpByRefAssignRef, _TEXT
 // on the managed heap.
 //
 // On entry:
-//   t6 : the destination address (LHS of the assignment).
+//   t5 : the destination address (LHS of the assignment).
 //         May not be a heap location (hence the checked).
-//   t7 : the object reference (RHS of the assignment).
+//   t6 : the object reference (RHS of the assignment).
 //
 // On exit:
 //   t3, t4 : trashed
-//   t6      : incremented by 8
+//   t5      : incremented by 8
 LEAF_ENTRY RhpCheckedAssignRef, _TEXT
 
         // is destReg within the heap?
@@ -239,12 +239,12 @@ LEAF_ENTRY RhpCheckedAssignRef, _TEXT
         ld    t3, 0(t3)
         sltu  t0, t3, t6
         or    t4, t0, t4
-        beq   t4, zero, C_FUNC(RhpAssignRefLoongArch64)
+        beq   t4, zero, C_FUNC(RhpAssignRefRiscV64)
 
 NotInHeap:
     ALTERNATE_ENTRY RhpCheckedAssignRefAVLocation
-        sd    t7, 0(t6)
-        addi  t6, t6, 8
+        sd    t6, 0(t5)
+        addi  t5, t5, 8
         jalr  ra, 0
 
 LEAF_END RhpCheckedAssignRef, _TEXT
@@ -255,29 +255,29 @@ LEAF_END RhpCheckedAssignRef, _TEXT
 // reside on the managed heap.
 //
 // On entry:
-//  t6 : the destination address (LHS of the assignment).
-//  t7 : the object reference (RHS of the assignment).
+//  t5 : the destination address (LHS of the assignment).
+//  t6 : the object reference (RHS of the assignment).
 //
 // On exit:
 //  t3, t4 : trashed
 //  t6 : incremented by 8
-LEAF_ENTRY RhpAssignRefLoongArch64, _TEXT
+LEAF_ENTRY RhpAssignRefRiscVh64, _TEXT
 
     ALTERNATE_ENTRY RhpAssignRefAVLocation
-        sd    t7, 0(t6)
+        sd    t6, 0(t5)
 
-        INSERT_UNCHECKED_WRITE_BARRIER_CORE t6, t7
+        INSERT_UNCHECKED_WRITE_BARRIER_CORE t5, t6
 
-        addi  t6, t6, 8
+        addi  t5, t5, 8
         jalr  ra, 0
 
-LEAF_END RhpAssignRefLoongArch64, _TEXT
+LEAF_END RhpAssignRefRiscV64, _TEXT
 
-// Same as RhpAssignRefLoongArch64, but with standard ABI.
+// Same as RhpAssignRefRiscV64, but with standard ABI.
 LEAF_ENTRY RhpAssignRef, _TEXT
-        mv   t6, a0                    ; t6 = dst
-        mv   t7, a1                    ; t7 = val
-        b    C_FUNC(RhpAssignRefLoongArch64)
+        mv   t5, a0                    ; t5 = dst
+        mv   t6, a1                    ; t6 = val
+        j    C_FUNC(RhpAssignRefRiscV64)
 LEAF_END RhpAssignRef, _TEXT
 
 
@@ -307,7 +307,7 @@ LEAF_ENTRY RhpCheckedLockCmpXchg
         ld   t0, 0(a0)
         beq  t0, t1, EndOfExchange
         mv   t1, t0
-        b    EndOfExchange
+        j    EndOfExchange
         sd   a1, 0(a0)
 
 EndOfExchange:

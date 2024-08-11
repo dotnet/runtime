@@ -14,66 +14,71 @@ PROBE_FRAME_SIZE = 0xD0  // 4 * 8 for fixed part of PInvokeTransitionFrame (fp, 
 // Define the prolog for setting up the PInvokeTransitionFrame
 .macro PUSH_PROBE_FRAME threadReg, trashReg, BITMASK
 
-    // Save the current stack frame and registers
-    PROLOG_SAVE_REG_PAIR_INDEXED 22, 1, PROBE_FRAME_SIZE
+    # Define the method prologue, allocating enough stack space for the PInvokeTransitionFrame and saving
+    # incoming register values into it.
 
-    // Save callee-saved registers
-    PROLOG_SAVE_REG_PAIR 23, 24, 0x20
-    PROLOG_SAVE_REG_PAIR 25, 26, 0x30
-    PROLOG_SAVE_REG_PAIR 27, 28, 0x40
-    PROLOG_SAVE_REG_PAIR 29, 30, 0x50
-    PROLOG_SAVE_REG_PAIR 31,  2, 0x60
+    # First create PInvokeTransitionFrame
+    PROLOG_SAVE_REG_PAIR_INDEXED  s10, ra, PROBE_FRAME_SIZE  # Push down stack pointer and store FP (s10) and RA (ra)
 
-    // Save caller's SP
-    sd    sp, 0x70(sp)
+    # Slot at sp+0x10 is reserved for Thread *
+    # Slot at sp+0x18 is reserved for bitmask of saved registers
 
-    // Save integer return registers
-    sd    a0, 0x78(sp)
-    sd    a1, 0x80(sp)
+    # Save callee-saved registers
+    PROLOG_SAVE_REG_PAIR  s11, s0, 0x20
+    PROLOG_SAVE_REG_PAIR  s1, s2, 0x30
+    PROLOG_SAVE_REG_PAIR  s3, s4, 0x40
+    PROLOG_SAVE_REG_PAIR  s5, s6, 0x50
+    PROLOG_SAVE_REG_PAIR  s7, s8, 0x60
 
-    // Alignment padding
-    // (No need to explicitly handle alignment in RISC-V assembly if stack size is a multiple of 16 bytes)
+    # Slot at sp+0x70 is reserved for caller sp
 
-    // Save FP return registers
-    fsd   f0, 0x90(sp)
-    fsd   f1, 0x98(sp)
-    fsd   f2, 0xA0(sp)
-    fsd   f3, 0xA8(sp)
+    # Save the integer return registers
+    sd a0, 0x78(sp)
+    sd a1, 0x80(sp)
 
-    // Initialize the PInvokeTransitionFrame
-    sd    \threadReg, OFFSETOF__PInvokeTransitionFrame__m_pThread(sp)
-    sd    \BITMASK, OFFSETOF__PInvokeTransitionFrame__m_Flags(sp)
+    # Slot at sp+0x88 is alignment padding
 
-    // Save caller's SP in the PInvokeTransitionFrame
-    addi  \trashReg, sp, PROBE_FRAME_SIZE
-    sd    \trashReg, 0x70(sp)
+    # Save the FP return registers
+    fsd  f0, 0x90(sp)
+    fsd  f1, 0x98(sp)
+    fsd  f2, 0xa0(sp)
+    fsd  f3, 0xa8(sp)
 
-    // Link the frame into the Thread
-    sd    zero, OFFSETOF__Thread__m_pDeferredTransitionFrame(\threadReg)
+    # Perform the rest of the PInvokeTransitionFrame initialization.
+    sd \threadReg, OFFSETOF__PInvokeTransitionFrame__m_pThread(sp)        # Thread * (unused by stackwalker)
+    sd \BITMASK, OFFSETOF__PInvokeTransitionFrame__m_pThread + 8(sp)      # Save the register bitmask passed in by caller
+
+    addi \trashReg, sp, PROBE_FRAME_SIZE                                  # Recover value of caller's SP
+    sd \trashReg, 0x70(sp)                                                # Save caller's SP
+
+    # Link the frame into the Thread
+    mv \trashReg, sp
+    sd \trashReg, OFFSETOF__Thread__m_pDeferredTransitionFrame(\threadReg)
+
 .endm
 
 // Define the prolog for removing the PInvokeTransitionFrame
 .macro POP_PROBE_FRAME
 
-    // Restore integer return registers
-    ld    a0, 0x78(sp)
-    ld    a1, 0x80(sp)
+    // Restore the integer return registers
+    ld a0, 0x78(sp)
+    ld a1, 0x80(sp)
 
-    // Restore FP return registers
-    fld   f0, 0x90(sp)
-    fld   f1, 0x98(sp)
-    fld   f2, 0xA0(sp)
-    fld   f3, 0xA8(sp)
+    // Restore the FP return registers
+    fld f0, 0x90(sp)
+    fld f1, 0x98(sp)
+    fld f2, 0xA0(sp)
+    fld f3, 0xA8(sp)
 
-    // Restore callee-saved registers
-    EPILOG_RESTORE_REG_PAIR 23, 24, 0x20
-    EPILOG_RESTORE_REG_PAIR 25, 26, 0x30
-    EPILOG_RESTORE_REG_PAIR 27, 28, 0x40
-    EPILOG_RESTORE_REG_PAIR 29, 30, 0x50
-    EPILOG_RESTORE_REG_PAIR 31,  2, 0x60
+    // Restore callee saved registers
+    EPILOG_RESTORE_REG_PAIR t0, t1, 0x20
+    EPILOG_RESTORE_REG_PAIR t2, t3, 0x30
+    EPILOG_RESTORE_REG_PAIR t4, t5, 0x40
+    EPILOG_RESTORE_REG_PAIR t6, s0, 0x50
+    EPILOG_RESTORE_REG_PAIR s1, s2, 0x60
 
-    // Restore stack frame
-    EPILOG_RESTORE_REG_PAIR_INDEXED 22, 1, PROBE_FRAME_SIZE
+    // Restore the frame pointer and return address
+    EPILOG_RESTORE_REG_PAIR_INDEXED s3, ra, PROBE_FRAME_SIZE
 .endm
 
 // Fix up the hijacked callstack
@@ -96,20 +101,22 @@ PROBE_FRAME_SIZE = 0xD0  // 4 * 8 for fixed part of PInvokeTransitionFrame (fp, 
     sd    zero, OFFSETOF__Thread__m_uHijackedReturnValueFlags(a2)
 .endm
 
+//
 // GC Probe Hijack target
+//
 NESTED_ENTRY RhpGcProbeHijack, _TEXT, NoHandler
     FixupHijackedCallstack
 
     PREPARE_EXTERNAL_VAR_INDIRECT_W RhpTrapThreads, a3
-    andi  t8, a3, TrapThreadsFlags_TrapThreads_Bit
-    bne   t8, zero, WaitForGC
-    jalr  ra
+    andi  t3, a3, TrapThreadsFlags_TrapThreads_Bit
+    bnez  t3, WaitForGC
+    jr  ra
 
 WaitForGC:
-    lui   t7, ((DEFAULT_FRAME_SAVE_FLAGS + PTFF_SAVE_R4 + PTFF_SAVE_R5) >> 12) & 0xfffff
-    ori   t7, t7, (DEFAULT_FRAME_SAVE_FLAGS + PTFF_SAVE_R4 + PTFF_SAVE_R5) & 0xfff
-    or    t3, t3, t7
-    jal   C_FUNC(RhpWaitForGC)
+    lui  t6, %hi((DEFAULT_FRAME_SAVE_FLAGS + PTFF_SAVE_A4 + PTFF_SAVE_A5))
+    addi  t6, t6, %lo((DEFAULT_FRAME_SAVE_FLAGS + PTFF_SAVE_A4 + PTFF_SAVE_A5))
+    or  t3, t3, t6
+    j  C_FUNC(RhpWaitForGC)
 NESTED_END RhpGcProbeHijack
 
 .global C_FUNC(RhpThrowHwEx)
@@ -118,12 +125,15 @@ NESTED_END RhpGcProbeHijack
 NESTED_ENTRY RhpWaitForGC, _TEXT, NoHandler
     PUSH_PROBE_FRAME a2, a3, t3
 
-    ld    a0, OFFSETOF__Thread__m_pDeferredTransitionFrame(a2)
-    jal   C_FUNC(RhpWaitForGC2)
+    ld t0, OFFSETOF__Thread__m_pDeferredTransitionFrame(a2)
+    call C_FUNC(RhpWaitForGC2)
 
-    ld    a2, OFFSETOF__PInvokeTransitionFrame__m_Flags(sp)
-    andi  t8, a2, PTFF_THREAD_ABORT_BIT
-    bne   t8, zero, ThrowThreadAbort
+    ld t1, OFFSETOF__PInvokeTransitionFrame__m_Flags(sp)
+
+    # Load PTFF_THREAD_ABORT_BIT into a register, using t2 if needed
+    li t2, PTFF_THREAD_ABORT_BIT
+    and t3, t1, t2
+    bnez t3, ThrowThreadAbort
 
     .cfi_remember_state
     POP_PROBE_FRAME
@@ -132,9 +142,9 @@ NESTED_ENTRY RhpWaitForGC, _TEXT, NoHandler
     .cfi_restore_state
 ThrowThreadAbort:
     POP_PROBE_FRAME
-    li    a0, STATUS_REDHAWK_THREAD_ABORT
-    addi  a1, ra, 0 // return address as exception PC
-    jal   RhpThrowHwEx
+    li a0, STATUS_REDHAWK_THREAD_ABORT
+    mv a1, ra      # Set return address as exception PC
+    j RhpThrowHwEx
 NESTED_END RhpWaitForGC
 
 .global C_FUNC(RhpGcPoll2)
