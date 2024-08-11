@@ -148,7 +148,29 @@ namespace System.Text.Json
 
             CheckExpectedType(JsonTokenType.StartObject, row.TokenType);
 
-            return row.SizeOrLength;
+            int propertyCount = 0;
+            int objectOffset = index + DbRow.Size;
+            int innerDepth = 0;
+            for (; objectOffset < _parsedData.Length; objectOffset += DbRow.Size)
+            {
+                row = _parsedData.Get(objectOffset);
+                if (row.TokenType is JsonTokenType.StartObject or JsonTokenType.StartArray)
+                {
+                    innerDepth++;
+                    continue;
+                }
+
+                if (row.TokenType is JsonTokenType.EndObject or JsonTokenType.EndArray)
+                {
+                    innerDepth++;
+                    continue;
+                }
+
+                if (innerDepth is 0 && row.TokenType is JsonTokenType.PropertyName)
+                    propertyCount++;
+            }
+
+            return propertyCount;
         }
 
         internal JsonElement GetArrayIndexElement(int currentIndex, int arrayIndex)

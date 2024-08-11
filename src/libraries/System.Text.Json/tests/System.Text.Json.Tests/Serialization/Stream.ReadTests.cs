@@ -225,7 +225,7 @@ namespace System.Text.Json.Serialization.Tests
                 Assert.Equal(0, value[index].GetProperty("Test2").GetArrayLength());
                 Assert.Equal(JsonValueKind.Object, value[index].GetProperty("Test3").ValueKind);
                 Assert.Equal(JsonValueKind.Object, value[index].GetProperty("Test3").GetProperty("Value").ValueKind);
-                Assert.True(value[index].GetProperty("Test3").GetPropertyCount() > 0);
+                Assert.Equal(1, value[index].GetProperty("Test3").GetPropertyCount());
                 Assert.False(value[index].GetProperty("Test3").GetProperty("Value").EnumerateObject().MoveNext());
                 Assert.Equal(0, value[index].GetProperty("PersonType").GetInt32());
                 Assert.Equal(2, value[index].GetProperty("Id").GetInt32());
@@ -380,7 +380,7 @@ namespace System.Text.Json.Serialization.Tests
         public interface ITypeDeserializedFromLargeJson
         {
             int FirstValue { get; }
-            int LastValue { get; } 
+            int LastValue { get; }
         }
 
         public class ClassDeserializedFromLargeJson : ITypeDeserializedFromLargeJson

@@ -2,19 +2,18 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Buffers;
-using System.Collections;
-using System.Globalization;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
-using System.Collections.Generic;
-using System.IO;
-using Xunit;
 using System.Buffers.Text;
+using System.Collections;
+using System.Collections.Generic;
+using System.Globalization;
+using System.IO;
 using System.IO.Tests;
 using System.Linq;
-using System.Runtime.InteropServices;
-using System.Threading.Tasks;
 using System.Threading;
+using System.Threading.Tasks;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
+using Xunit;
 
 namespace System.Text.Json.Tests
 {
@@ -665,13 +664,23 @@ namespace System.Text.Json.Tests
             }
         }
 
+        [Theory]
+        [InlineData("""{"foo":1,"bar":2}""")]
+        [InlineData("""{"foo":1,"bar":{"a":2}}""")]
+        [InlineData("""{"foo":1,"bar":{"a":{"b":2}}}""")]
+        [InlineData("""{"foo":1,"bar":[{"a":2}]}""")]
+        public static void DeserializeGetPropertyCount(string json)
+        {
+            var jsonElement = JsonSerializer.Deserialize<JsonElement>(json);
+            Assert.Equal(2, jsonElement.GetPropertyCount());
+        }
+
         [Fact]
         public static void ParseSimpleObject()
         {
             using (JsonDocument doc = JsonDocument.Parse(SR.SimpleObjectJson))
             {
                 JsonElement parsedObject = doc.RootElement;
-
                 int age = parsedObject.GetProperty("age").GetInt32();
                 string ageString = parsedObject.GetProperty("age").ToString();
                 string first = parsedObject.GetProperty("first").GetString();
@@ -692,7 +701,9 @@ namespace System.Text.Json.Tests
                 Assert.Equal("1 Microsoft Way", street);
                 Assert.Equal("Redmond", city);
                 Assert.Equal(98052, zip);
-                Assert.True(parsedObject.GetPropertyCount() > 0);
+
+                var propertyCount = parsedObject.GetPropertyCount();
+                Assert.Equal(7, propertyCount);
             }
         }
 
