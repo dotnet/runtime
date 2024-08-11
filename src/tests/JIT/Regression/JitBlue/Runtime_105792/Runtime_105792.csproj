@@ -5,7 +5,4 @@
   <ItemGroup>
     <Compile Include="$(MSBuildProjectName).cs" />
   </ItemGroup>
-  <ItemGroup>
-    <CLRTestEnvironmentVariable Include="DOTNET_TieredCompilation" Value="0" />
-  </ItemGroup>
 </Project>

@@ -11141,6 +11141,7 @@ void Compiler::fgValueNumberPhiDef(GenTreeLclVar* newSsaDef, BasicBlock* blk, bo
 
     GenTreePhi*  phiNode = newSsaDef->AsLclVar()->Data()->AsPhi();
     ValueNumPair sameVNP;
+    VNSet        loopInvariantCache(getAllocator(CMK_ValueNumber));
 
     for (GenTreePhi::Use& use : phiNode->Uses())
     {
@@ -11163,35 +11164,11 @@ void Compiler::fgValueNumberPhiDef(GenTreeLclVar* newSsaDef, BasicBlock* blk, bo
 
         if (isUpdate && (phiArgVNP != phiArg->gtVNPair))
         {
-            bool canUseNewVN = false;
-
-            // We can potentially refine this phi arg.
-            // Make sure the new phi arg VN is loop invariant.
-            //
-            FlowGraphNaturalLoop* const vnLoop = vnStore->LoopOfVN(phiArgVNP.GetConservative());
-
-            if (vnLoop != nullptr)
-            {
-                FlowGraphNaturalLoop* const blockLoop = m_loops->GetLoopByHeader(blk);
-                assert(blockLoop != nullptr);
-                canUseNewVN = !blockLoop->ContainsLoop(vnLoop);
-
-                if (!canUseNewVN)
-                {
-                    JITDUMP("Can't refine [%06u] with " FMT_VN " -- varies in " FMT_LP ", contained in " FMT_LP "\n",
-                            dspTreeID(phiArg), phiArgVNP.GetConservative(), vnLoop->GetIndex(), blockLoop->GetIndex());
-                }
-            }
-            else
-            {
-                // phiArgVNP is invariant in all loops
-                //
-                canUseNewVN = true;
-            }
+            FlowGraphNaturalLoop* const blockLoop = m_loops->GetLoopByHeader(blk);
+            bool const canUseNewVN = optVNIsLoopInvariant(phiArgVNP.GetConservative(), blockLoop, &loopInvariantCache);
 
             if (canUseNewVN)
             {
-
 #ifdef DEBUG
                 if (verbose)
                 {
@@ -11205,6 +11182,9 @@ void Compiler::fgValueNumberPhiDef(GenTreeLclVar* newSsaDef, BasicBlock* blk, bo
             }
             else
             {
+                JITDUMP("Can't update phi arg [%06u] with " FMT_VN " -- varies in " FMT_LP "\n", dspTreeID(phiArg),
+                        phiArgVNP.GetConservative(), blockLoop->GetIndex());
+
                 // Code below uses phiArgVNP, reset to the old value
                 //
                 phiArgVNP = phiArg->gtVNPair;
