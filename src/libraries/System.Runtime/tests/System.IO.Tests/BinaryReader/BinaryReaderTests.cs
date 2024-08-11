@@ -103,6 +103,11 @@ namespace System.IO.Tests
             RunTest(writer => writer.Write("hello world"), reader => reader.ReadString());
             RunTest(writer => writer.Write(new string('x', 1024 * 1024)), reader => reader.ReadString());
 
+            // test reading into a buffer
+            byte[] byteBuffer = new byte[10];
+
+            RunTest(writer => writer.Write(byteBuffer), reader => reader.ReadExactly(byteBuffer));
+
             void RunTest(Action<BinaryWriter> writeAction, Action<BinaryReader> readAction)
             {
                 UTF8Encoding encoding = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false, throwOnInvalidBytes: true);
@@ -195,6 +200,7 @@ namespace System.IO.Tests
             Assert.Throws<ObjectDisposedException>(() => binaryReader.Read());
             Assert.Throws<ObjectDisposedException>(() => binaryReader.Read(byteBuffer, 0, 1));
             Assert.Throws<ObjectDisposedException>(() => binaryReader.Read(charBuffer, 0, 1));
+            Assert.Throws<ObjectDisposedException>(() => binaryReader.ReadExactly(byteBuffer));
             Assert.Throws<ObjectDisposedException>(() => binaryReader.ReadBoolean());
             Assert.Throws<ObjectDisposedException>(() => binaryReader.ReadByte());
             Assert.Throws<ObjectDisposedException>(() => binaryReader.ReadBytes(1));
@@ -435,6 +441,31 @@ namespace System.IO.Tests
                 var binaryReader = new BinaryReader(memStream);
                 binaryReader.Dispose();
                 Assert.Throws<ObjectDisposedException>(() => binaryReader.Read(new Span<char>()));
+            }
+        }
+
+        [Theory]
+        [InlineData(100, 10)]
+        [InlineData(10, 10)]
+        [InlineData(10, 0)]
+        [InlineData(0, 0)]
+        public void ReadExactly_ByteSpan(int sourceSize, int destinationSize)
+        {
+            using (var stream = CreateStream())
+            {
+                var source = new byte[sourceSize].AsSpan();
+                new Random(345).NextBytes(source);
+                stream.Write(source);
+                stream.Position = 0;
+
+                using (var reader = new BinaryReader(stream))
+                {
+                    var destination = new byte[destinationSize].AsSpan();
+
+                    reader.ReadExactly(destination);
+
+                    Assert.Equal(source[..destinationSize], destination);
+                }
             }
         }
 
