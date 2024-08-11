@@ -20,8 +20,6 @@
     <ILLinkTrimOutputPath>$(IntermediateOutputPath)</ILLinkTrimOutputPath>
 
     <ILLinkDescriptorsXml Condition="'$(ILLinkDescriptorsXml)' == '' and Exists('$(ILLinkDirectory)ILLink.Descriptors.xml')">$(ILLinkDirectory)ILLink.Descriptors.xml</ILLinkDescriptorsXml>
-    <!-- ILLink.Descriptors.LibraryBuild.xml files are only used during building the library, not an app. They shouldn't be embedded into the assembly. -->
-    <ILLinkDescriptorsLibraryBuildXml Condition="'$(ILLinkDescriptorsLibraryBuildXml)' == '' and Exists('$(ILLinkDirectory)ILLink.Descriptors.LibraryBuild.xml')">$(ILLinkDirectory)ILLink.Descriptors.LibraryBuild.xml</ILLinkDescriptorsLibraryBuildXml>
     <ILLinkDescriptorsXmlIntermediatePath>$(IntermediateOutputPath)ILLink.Descriptors.xml</ILLinkDescriptorsXmlIntermediatePath>
 
     <ILLinkSubstitutionsXmlIntermediatePath>$(IntermediateOutputPath)ILLink.Substitutions.xml</ILLinkSubstitutionsXmlIntermediatePath>
@@ -41,6 +39,9 @@
   </PropertyGroup>
 
    <ItemGroup>
+    <!-- ILLink.Descriptors.LibraryBuild.xml files are only used during building the library, not an app. They shouldn't be embedded into the assembly. -->
+    <ILLinkDescriptorsLibraryBuildXml Include="$(ILLinkDirectory)ILLink.Descriptors.LibraryBuild.xml"
+                                      Condition="Exists('$(ILLinkDirectory)ILLink.Descriptors.LibraryBuild.xml')" />
     <ILLinkSuppressionsLibraryBuildXml Include="$(ILLinkSuppressionsXmlPrefix).LibraryBuild.xml"
                                        Condition="Exists('$(ILLinkSuppressionsXmlPrefix).LibraryBuild.xml')" />
 
@@ -210,7 +211,7 @@
       <ILLinkArgs Condition="'$(ILLinkRewritePDBs)' == 'true' and Exists('$(ILLinkTrimAssemblySymbols)')">$(ILLinkArgs) -b true</ILLinkArgs>
       <ILLinkArgs Condition="'$(ILLinkRewritePDBs)' == 'true' and Exists('$(ILLinkTrimAssemblySymbols)') and '$(DeterministicSourcePaths)' == 'true'">$(ILLinkArgs) --preserve-symbol-paths</ILLinkArgs>
       <!-- pass the non-embedded descriptors xml file on the command line -->
-      <ILLinkArgs Condition="'$(ILLinkDescriptorsLibraryBuildXml)' != ''">$(ILLinkArgs) -x "$(ILLinkDescriptorsLibraryBuildXml)"</ILLinkArgs>
+      <ILLinkArgs Condition="'@(ILLinkDescriptorsLibraryBuildXml)' != ''">$(ILLinkArgs) -x "@(ILLinkDescriptorsLibraryBuildXml->'%(FullPath)', '" -x "')"</ILLinkArgs>
       <ILLinkArgs Condition="'$(ILLinkSubstitutionsLibraryBuildXml)' != ''">$(ILLinkArgs) --substitutions "$(ILLinkSubstitutionsLibraryBuildXml)"</ILLinkArgs>
       <ILLinkArgs Condition="'@(ILLinkSuppressionsLibraryBuildXml)' != ''">$(ILLinkArgs) --link-attributes "@(ILLinkSuppressionsLibraryBuildXml->'%(FullPath)', '" --link-attributes "')"</ILLinkArgs>
       <!-- suppress warnings with the following codes:
