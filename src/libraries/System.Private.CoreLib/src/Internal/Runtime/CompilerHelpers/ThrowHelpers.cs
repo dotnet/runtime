@@ -9,85 +9,76 @@ using System.Runtime.InteropServices;
 
 namespace Internal.Runtime.CompilerHelpers
 {
-    /// <summary>
-    /// These methods are used to throw exceptions from generated code.
-    /// For NativeAOT, the type and methods used need to be public
-    ///     as they constitute a public contract.
-    /// For CoreCLR, the type and methods are used as JIT helpers.
-    /// </summary>
-#if NATIVEAOT
-    public
-#else
-    internal
-#endif
-    static unsafe partial class ThrowHelpers
+    [StackTraceHidden]
+    [DebuggerStepThrough]
+    internal static unsafe partial class ThrowHelpers
     {
         [DoesNotReturn]
         [DebuggerHidden]
-        public static void ThrowNullReferenceException()
+        internal static void ThrowNullReferenceException()
         {
             throw new NullReferenceException();
         }
 
         [DoesNotReturn]
         [DebuggerHidden]
-        public static void ThrowArgumentException()
+        internal static void ThrowArgumentException()
         {
             throw new ArgumentException();
         }
 
         [DoesNotReturn]
         [DebuggerHidden]
-        public static void ThrowArgumentOutOfRangeException()
+        internal static void ThrowArgumentOutOfRangeException()
         {
             throw new ArgumentOutOfRangeException();
         }
 
         [DoesNotReturn]
         [DebuggerHidden]
-        public static void ThrowDivideByZeroException()
+        internal static void ThrowDivideByZeroException()
         {
             throw new DivideByZeroException();
         }
 
         [DoesNotReturn]
         [DebuggerHidden]
-        public static void ThrowIndexOutOfRangeException()
+        internal static void ThrowIndexOutOfRangeException()
         {
             throw new IndexOutOfRangeException();
         }
 
         [DoesNotReturn]
         [DebuggerHidden]
-        public static void ThrowOverflowException()
+        internal static void ThrowOverflowException()
         {
             throw new OverflowException();
         }
 
         [DoesNotReturn]
         [DebuggerHidden]
-        public static void ThrowPlatformNotSupportedException()
+        internal static void ThrowPlatformNotSupportedException()
         {
             throw new PlatformNotSupportedException();
         }
 
         [DoesNotReturn]
         [DebuggerHidden]
-        public static void ThrowNotImplementedException()
+        internal static void ThrowNotImplementedException()
         {
             throw new NotImplementedException();
         }
 
         [DoesNotReturn]
         [DebuggerHidden]
-        public static void ThrowArrayTypeMismatchException()
+        internal static void ThrowArrayTypeMismatchException()
         {
             throw new ArrayTypeMismatchException();
         }
 
         [DoesNotReturn]
         [DebuggerHidden]
-        public static void ThrowNotSupportedException()
+        internal static void ThrowNotSupportedException()
         {
             throw new NotSupportedException();
         }

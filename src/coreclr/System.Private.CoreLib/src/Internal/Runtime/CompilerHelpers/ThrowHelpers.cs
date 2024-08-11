@@ -8,8 +8,6 @@ using System.Runtime.InteropServices;
 
 namespace Internal.Runtime.CompilerHelpers
 {
-    [StackTraceHidden]
-    [DebuggerStepThrough]
     internal static unsafe partial class ThrowHelpers
     {
         [DoesNotReturn]
