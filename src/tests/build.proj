@@ -608,6 +608,7 @@
       <GroupBuildCmd Condition="'$(TargetOS)' != 'browser' or '$(ContinuousIntegrationBuild)' != 'true'">$(GroupBuildCmd) /maxcpucount</GroupBuildCmd>
       <!-- https://github.com/dotnet/runtime/issues/93134 -->
       <GroupBuildCmd Condition="'$(TargetOS)' == 'browser' and '$(ContinuousIntegrationBuild)' == 'true'">$(GroupBuildCmd) /m:1</GroupBuildCmd>
+      <GroupBuildCmd Condition="'$(TargetOS)' == 'wasi'">$(GroupBuildCmd) /m:1</GroupBuildCmd>
       <GroupBuildCmd Condition="'$(TargetOS)' == 'ios' or '$(TargetOS)' == 'tvos'">$(GroupBuildCmd) "/p:DevTeamProvisioning=-"</GroupBuildCmd>
       <GroupBuildCmd>$(GroupBuildCmd) /bl:$(ArtifactsDir)/log/$(Configuration)/InnerManagedTestBuild.$(__TestGroupToBuild).binlog</GroupBuildCmd>
       <GroupBuildCmd Condition="'$(CrossBuild)' == 'true'">$(GroupBuildCmd) "/p:CrossBuild=true"</GroupBuildCmd>

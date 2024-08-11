@@ -2427,7 +2427,7 @@ namespace System.Reflection.Metadata
         internal TypeName() { }
         public string AssemblyQualifiedName { get { throw null; } }
         public AssemblyNameInfo? AssemblyName { get { throw null; } }
-        public System.Reflection.Metadata.TypeName? DeclaringType { get { throw null; } }
+        public System.Reflection.Metadata.TypeName DeclaringType { get { throw null; } }
         public string FullName { get { throw null; } }
         public bool IsArray { get { throw null; } }
         public bool IsByRef { get { throw null; } }
