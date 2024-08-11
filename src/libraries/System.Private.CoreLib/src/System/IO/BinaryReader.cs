@@ -453,6 +453,12 @@ namespace System.IO
             return result;
         }
 
+        public virtual void ReadExactly(Span<byte> buffer)
+        {
+            ThrowIfDisposed();
+            _stream.ReadExactly(buffer);
+        }
+
         private ReadOnlySpan<byte> InternalRead(Span<byte> buffer)
         {
             Debug.Assert(buffer.Length != 1, "length of 1 should use ReadByte.");
