@@ -95,7 +95,7 @@ key_from_id (const char *id, char *buffer, guint buffer_len)
 	}
 	buffer[0] = 0;
 
-	if (extension_offset != -1 && bundled_resources_is_known_assembly_extension (extension)) {
+	if (extension_offset >= 0 && bundled_resources_is_known_assembly_extension (extension)) {
 		// Subtract from buffer_len to make sure we have space for .dll
 		g_strlcpy (buffer, id, MIN(buffer_len - 4, extension_offset + 2));
 		strcat (buffer, "dll");
