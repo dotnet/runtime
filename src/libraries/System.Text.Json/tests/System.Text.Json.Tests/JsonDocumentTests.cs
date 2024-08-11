@@ -669,6 +669,7 @@ namespace System.Text.Json.Tests
         [InlineData("""{"foo":1,"bar":{"a":2}}""")]
         [InlineData("""{"foo":1,"bar":{"a":{"b":2}}}""")]
         [InlineData("""{"foo":1,"bar":[{"a":2}]}""")]
+        [InlineData("""{"bar":{"a":2},"foo":1}""")]
         public static void DeserializeGetPropertyCount(string json)
         {
             var jsonElement = JsonSerializer.Deserialize<JsonElement>(json);

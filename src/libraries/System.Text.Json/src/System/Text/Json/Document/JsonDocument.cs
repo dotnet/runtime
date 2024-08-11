@@ -162,7 +162,7 @@ namespace System.Text.Json
 
                 if (row.TokenType is JsonTokenType.EndObject or JsonTokenType.EndArray)
                 {
-                    innerDepth++;
+                    innerDepth--;
                     continue;
                 }
 
