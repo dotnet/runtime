@@ -1202,10 +1202,11 @@ const char* WrapICorJitInfo::getMethodNameFromMetadata(
           CORINFO_METHOD_HANDLE ftn,
           const char** className,
           const char** namespaceName,
-          const char** enclosingClassName)
+          const char** enclosingClassNames,
+          size_t maxEnclosingClassNames)
 {
     API_ENTER(getMethodNameFromMetadata);
-    const char* temp = wrapHnd->getMethodNameFromMetadata(ftn, className, namespaceName, enclosingClassName);
+    const char* temp = wrapHnd->getMethodNameFromMetadata(ftn, className, namespaceName, enclosingClassNames, maxEnclosingClassNames);
     API_LEAVE(getMethodNameFromMetadata);
     return temp;
 }
