@@ -652,9 +652,7 @@ namespace Microsoft.Extensions.DependencyInjection
 
             string? name = builder.Name;
             IServiceCollection services = builder.Services;
-            HttpClientMappingRegistry registry = GetMappingRegistry(services);
-
-            UpdateEmptyNameHttpClient(services, registry);
+            HttpClientMappingRegistry registry = services.GetMappingRegistry();
 
             if (name == null)
             {
@@ -684,9 +682,7 @@ namespace Microsoft.Extensions.DependencyInjection
 
             string? name = builder.Name;
             IServiceCollection services = builder.Services;
-            HttpClientMappingRegistry registry = GetMappingRegistry(services);
-
-            UpdateEmptyNameHttpClient(services, registry);
+            HttpClientMappingRegistry registry = services.GetMappingRegistry();
 
             if (name == null)
             {
@@ -705,31 +701,6 @@ namespace Microsoft.Extensions.DependencyInjection
             return builder;
         }
 #pragma warning restore 1591
-
-        // workaround for https://github.com/dotnet/runtime/issues/102654
-        private static void UpdateEmptyNameHttpClient(IServiceCollection services, HttpClientMappingRegistry registry)
-        {
-            if (registry.EmptyNameHttpClientDescriptor is not null)
-            {
-                bool removed = services.Remove(registry.EmptyNameHttpClientDescriptor);
-
-                if (removed)
-                {
-                    // trying to add it as keyed instead
-                    if (!registry.KeyedLifetimeMap.ContainsKey(string.Empty))
-                    {
-                        var clientLifetime = new HttpClientKeyedLifetime(string.Empty, ServiceLifetime.Transient);
-                        registry.KeyedLifetimeMap[string.Empty] = clientLifetime;
-                        clientLifetime.AddRegistration(services);
-                    }
-                }
-            }
-
-            if (services.Any(sd => sd.ServiceType == typeof(HttpClient) && sd.ServiceKey is null))
-            {
-                throw new InvalidOperationException($"{nameof(AddAsKeyed)} isn't supported when {nameof(HttpClient)} is registered as a service.");
-            }
-        }
 
         // See comments on HttpClientMappingRegistry.
         private static void ReserveClient(IHttpClientBuilder builder, Type type, string name, bool validateSingleType)
@@ -763,7 +734,11 @@ namespace Microsoft.Extensions.DependencyInjection
             }
         }
 
-        private static HttpClientMappingRegistry GetMappingRegistry(IServiceCollection services)
-            => HttpClientFactoryServiceCollectionExtensions.GetMappingRegistry(services);
+        internal static HttpClientMappingRegistry GetMappingRegistry(this IServiceCollection services)
+        {
+            var registry = (HttpClientMappingRegistry?)services.Single(sd => sd.ServiceType == typeof(HttpClientMappingRegistry)).ImplementationInstance;
+            Debug.Assert(registry != null);
+            return registry;
+        }
     }
 }
