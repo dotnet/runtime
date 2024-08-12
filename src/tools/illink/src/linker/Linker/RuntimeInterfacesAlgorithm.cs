@@ -38,22 +38,31 @@ namespace Mono.Linker.Linker
 					continue;
 				}
 
+				// Add the recursive interfaces for each explicit interface, prepending the explicit interface on `originalType` to the chain
 				var recursiveIFaces = GetRuntimeInterfaceImplementations (resolvedInterfaceType);
+				foreach (var runtimeImpl in recursiveIFaces) {
+					// Inflate the interface type with the explicit interfaceImpl reference
+					var inflatedInterfaceType = runtimeImpl.InflatedInterfaceType.TryInflateFrom (explicitIface.InterfaceType, _context);
+					Debug.Assert (inflatedInterfaceType is not null);
 
-				foreach (var recursiveIface in recursiveIFaces) {
-					var impls = PrependInterfaceImplToChains (recursiveIface, originalType, explicitIface);
-					foreach (var impl in impls) {
-						interfaceTypeToImplChainMap.AddToList (impl.InterfaceType, impl.Chain);
+					foreach (var existingImpl in runtimeImpl.InterfaceImplementationChains) {
+						interfaceTypeToImplChainMap.AddToList (inflatedInterfaceType, new InterfaceImplementationChain (originalType, existingImpl.InterfaceImplementations.Insert (0, explicitIface)));
 					}
 				}
 			}
 
 			if (originalType.BaseType is not null && _context.TryResolve (originalType.BaseType) is { } baseTypeDef) {
 				var baseTypeIfaces = GetRuntimeInterfaceImplementations (baseTypeDef);
-				foreach (var recursiveIface in baseTypeIfaces) {
-					var impls = CreateImplementationChainsForDerivedType (recursiveIface, originalType.BaseType);
-					foreach (var impl in impls) {
-						interfaceTypeToImplChainMap.AddToList (impl.InterfaceType, impl.Chain);
+				foreach (var runtimeImpl in baseTypeIfaces) {
+					// Inflate the interface type with the base type reference
+					var inflatedInterfaceType = runtimeImpl.InflatedInterfaceType.TryInflateFrom (originalType.BaseType, _context);
+					Debug.Assert (inflatedInterfaceType is not null);
+
+					foreach (var impl in runtimeImpl.InterfaceImplementationChains) {
+						// Inflate the provider for the first .impl - this could be a different recursive base type for each chain
+						var inflatedImplProvider = impl.TypeWithInterfaceImplementation.TryInflateFrom (originalType.BaseType, _context);
+						Debug.Assert (inflatedImplProvider is not null);
+						interfaceTypeToImplChainMap.AddToList (inflatedInterfaceType, new InterfaceImplementationChain (inflatedImplProvider, impl.InterfaceImplementations));
 					}
 				}
 			}
@@ -61,50 +70,15 @@ namespace Mono.Linker.Linker
 			if (interfaceTypeToImplChainMap.Count == 0)
 				return ImmutableArray<RuntimeInterfaceImplementation>.Empty;
 
+			// Build the ImmutableArray and cache it
 			ImmutableArray<RuntimeInterfaceImplementation>.Builder builder = ImmutableArray.CreateBuilder<RuntimeInterfaceImplementation> (interfaceTypeToImplChainMap.Count);
 			foreach (var kvp in interfaceTypeToImplChainMap) {
 				builder.Add (new (originalType, kvp.Key, _context.TryResolve (kvp.Key), kvp.Value));
 			}
 			var runtimeInterfaces = builder.MoveToImmutable ();
 			_runtimeInterfaceImpls[originalType] = runtimeInterfaces;
+
 			return runtimeInterfaces;
-
-		}
-
-		/// <summary>
-		/// Returns a list of InterfaceImplementationChains for a derived type of <see cref="Implementor"/>.
-		/// </summary>
-		IEnumerable<(TypeReference InterfaceType, InterfaceImplementationChain Chain)> CreateImplementationChainsForDerivedType (RuntimeInterfaceImplementation runtimeImpl, TypeReference baseTypeRef)
-		{
-			// This is only valid for classes
-			Debug.Assert (runtimeImpl.Implementor.IsClass);
-			Debug.Assert (runtimeImpl.Implementor == _context.TryResolve (baseTypeRef));
-
-			var inflatedInterfaceType = runtimeImpl.InflatedInterfaceType.TryInflateFrom (baseTypeRef, _context);
-			Debug.Assert (inflatedInterfaceType is not null);
-
-			foreach (var impl in runtimeImpl.InterfaceImplementationChains) {
-				var inflatedImplProvider = impl.TypeWithInterfaceImplementation.TryInflateFrom (baseTypeRef, _context);
-				Debug.Assert (inflatedImplProvider is not null);
-				yield return (inflatedInterfaceType, new InterfaceImplementationChain (inflatedImplProvider, impl.InterfaceImplementations));
-			}
-		}
-
-		/// <summary>
-		/// Returns a list of InterfaceImplementationChains for a type that has an explicit implementation of <see cref="Implementor"/>.
-		/// </summary>
-		IEnumerable<(TypeReference InterfaceType, InterfaceImplementationChain Chain)> PrependInterfaceImplToChains (RuntimeInterfaceImplementation runtimeImpl, TypeDefinition typeWithPrependedImpl, InterfaceImplementation implToPrepend)
-		{
-			Debug.Assert (runtimeImpl.Implementor.IsInterface);
-			Debug.Assert (_context.TryResolve (implToPrepend.InterfaceType) == runtimeImpl.Implementor);
-			Debug.Assert (typeWithPrependedImpl.Interfaces.Contains (implToPrepend));
-
-			var inflatedInterfaceType = runtimeImpl.InflatedInterfaceType.TryInflateFrom (implToPrepend.InterfaceType, _context);
-			Debug.Assert (inflatedInterfaceType is not null);
-
-			foreach (var existingImpl in runtimeImpl.InterfaceImplementationChains) {
-				yield return (inflatedInterfaceType, new InterfaceImplementationChain (typeWithPrependedImpl, existingImpl.InterfaceImplementations.Insert (0, implToPrepend)));
-			}
 		}
 	}
 }
