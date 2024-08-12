@@ -151,7 +151,8 @@ internal readonly struct MemberTypeInfo
             BinaryType.Object => TypeNameHelpers.GetPrimitiveTypeName(TypeNameHelpers.ObjectPrimitiveType),
             BinaryType.ObjectArray => TypeNameHelpers.GetPrimitiveSZArrayTypeName(TypeNameHelpers.ObjectPrimitiveType),
             BinaryType.SystemClass => (TypeName)additionalInfo!,
-            _ => ((ClassTypeInfo)additionalInfo!).TypeName,
+            BinaryType.Class => ((ClassTypeInfo)additionalInfo!).TypeName,
+            _ => throw new ArgumentOutOfRangeException(paramName: nameof(binaryType), actualValue: binaryType, message: null)
         };
 
         // In general, arrayRank == 1 may have two different meanings:

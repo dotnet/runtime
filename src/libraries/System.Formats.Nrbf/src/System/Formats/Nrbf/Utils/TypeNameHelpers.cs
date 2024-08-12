@@ -38,6 +38,7 @@ internal static class TypeNameHelpers
                 PrimitiveType.Int32 => "System.Int32",
                 PrimitiveType.UInt32 => "System.UInt32",
                 PrimitiveType.Int64 => "System.Int64",
+                PrimitiveType.UInt64 => "System.UInt64",
                 PrimitiveType.Single => "System.Single",
                 PrimitiveType.Double => "System.Double",
                 PrimitiveType.Decimal => "System.Decimal",
@@ -47,7 +48,7 @@ internal static class TypeNameHelpers
                 ObjectPrimitiveType => "System.Object",
                 IntPtrPrimitiveType => "System.IntPtr",
                 UIntPtrPrimitiveType => "System.UIntPtr",
-                _ => "System.UInt64",
+                _ => throw new ArgumentOutOfRangeException(paramName: nameof(primitiveType), actualValue: primitiveType, message: null)
             };
 
             s_PrimitiveTypeNames[(int)primitiveType] = typeName = TypeName.Parse(fullName.AsSpan()).WithCoreLibAssemblyName();
@@ -82,12 +83,13 @@ internal static class TypeNameHelpers
         else if (typeof(T) == typeof(decimal)) return PrimitiveType.Decimal;
         else if (typeof(T) == typeof(DateTime)) return PrimitiveType.DateTime;
         else if (typeof(T) == typeof(TimeSpan)) return PrimitiveType.TimeSpan;
+        else if (typeof(T) == typeof(string)) return PrimitiveType.String;
         else if (typeof(T) == typeof(IntPtr)) return IntPtrPrimitiveType;
         else if (typeof(T) == typeof(UIntPtr)) return UIntPtrPrimitiveType;
         else
         {
-            Debug.Assert(typeof(T) == typeof(string));
-            return PrimitiveType.String;
+            Debug.Fail($"{typeof(T).Name} was not expected.");
+            throw new InvalidOperationException();
         }
     }
 
