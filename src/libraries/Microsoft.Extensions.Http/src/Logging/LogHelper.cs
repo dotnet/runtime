@@ -16,6 +16,7 @@ namespace Microsoft.Extensions.Http.Logging
     {
         private static readonly LogDefineOptions s_skipEnabledCheckLogDefineOptions = new LogDefineOptions() { SkipEnabledCheck = true };
         private static readonly bool s_disableUriRedaction = GetDisableUriRedactionSettingValue();
+
         private static class EventIds
         {
             public static readonly EventId RequestStart = new EventId(100, "RequestStart");

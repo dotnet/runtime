@@ -28,7 +28,7 @@ namespace Microsoft.Extensions.Http.Logging
             public static readonly EventId RequestPipelineResponseHeader = new EventId(103, "RequestPipelineResponseHeader");
         }
 
-                [Fact]
+        [Fact]
         public async Task RedactLoggedHeadersNotCalled_AllValuesAreRedactedBeforeLogging()
         {
             // Arrange
@@ -63,10 +63,12 @@ namespace Microsoft.Extensions.Http.Logging
                     m.LoggerName == OuterLoggerName;
             }));
             Assert.StartsWith(LineEndingsHelper.Normalize(
-@"Request Headers:
-Authorization: *
-Cache-Control: *
-"), message.Message);
+                """
+                Request Headers:
+                Authorization: *
+                Cache-Control: *
+                """),
+                message.Message);
 
             message = Assert.Single(messages.Where(m =>
             {
@@ -75,10 +77,12 @@ Cache-Control: *
                     m.LoggerName == InnerLoggerName;
             }));
             Assert.StartsWith(LineEndingsHelper.Normalize(
-@"Request Headers:
-Authorization: *
-Cache-Control: *
-"), message.Message);
+	                """
+	                Request Headers:
+	                Authorization: *
+	                Cache-Control: *
+	                """),
+	                message.Message);
 
             message = Assert.Single(messages.Where(m =>
             {
@@ -87,10 +91,12 @@ Cache-Control: *
                     m.LoggerName == InnerLoggerName;
             }));
             Assert.StartsWith(LineEndingsHelper.Normalize(
-@"Response Headers:
-X-Sensitive: *
-Y-Non-Sensitive: *
-"), message.Message);
+	                """
+	                Response Headers:
+	                X-Sensitive: *
+	                Y-Non-Sensitive: *
+	                """),
+	                message.Message);
 
             message = Assert.Single(messages.Where(m =>
             {
@@ -99,10 +105,12 @@ Y-Non-Sensitive: *
                     m.LoggerName == OuterLoggerName;
             }));
             Assert.StartsWith(LineEndingsHelper.Normalize(
-@"Response Headers:
-X-Sensitive: *
-Y-Non-Sensitive: *
-"), message.Message);
+	                """
+	                Response Headers:
+	                X-Sensitive: *
+	                Y-Non-Sensitive: *
+	                """),
+	                message.Message);
         }
 
         [Fact]
