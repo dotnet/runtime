@@ -15,15 +15,15 @@ host_startup_info_t::host_startup_info_t(
     , dotnet_root(dotnet_root_value)
     , app_path(app_path_value) {}
 
-// Determine if string is a valid path, and if so then fix up by using realpath()
+// Determine if string is a valid path, and if so then fix up by using fullpath()
 bool get_path_from_argv(pal::string_t *path)
 {
-    // Assume all paths will have at least one separator. We want to detect path vs. file before calling realpath
-    // because realpath will expand a filename into a full path containing the current directory which may be
+    // Assume all paths will have at least one separator. We want to detect path vs. file before calling fullpath
+    // because fullpath will expand a filename into a full path containing the current directory which may be
     // the wrong location when filename ends up being found in %PATH% and not the current directory.
     if (path->find(DIR_SEPARATOR) != pal::string_t::npos)
     {
-        return pal::realpath(path);
+        return pal::fullpath(path);
     }
 
     return false;
@@ -86,7 +86,7 @@ const pal::string_t host_startup_info_t::get_app_name() const
     }
 
     // If argv[0] did not work, get the executable name
-    if (host_path->empty() && (!pal::get_own_executable_path(host_path) || !pal::realpath(host_path)))
+    if (host_path->empty() && (!pal::get_own_executable_path(host_path) || !pal::fullpath(host_path)))
     {
         trace::error(_X("Failed to resolve full path of the current executable [%s]"), host_path->c_str());
         return StatusCode::LibHostCurExeFindFailure;

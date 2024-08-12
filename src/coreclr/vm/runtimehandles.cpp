@@ -167,11 +167,8 @@ NOINLINE ReflectModuleBaseObject* GetRuntimeModuleHelper(LPVOID __me, Module *pM
     if (pModule == NULL)
         return NULL;
 
-    DomainAssembly * pDomainAssembly = pModule->GetDomainAssembly();
-
-    OBJECTREF refModule = (pDomainAssembly != NULL) ? pDomainAssembly->GetExposedModuleObjectIfExists() : NULL;
-
-    if(refModule != NULL)
+    OBJECTREF refModule = pModule->GetExposedObjectIfExists();
+    if (refModule != NULL)
         return (ReflectModuleBaseObject*)OBJECTREFToObject(refModule);
 
     HELPER_METHOD_FRAME_BEGIN_RET_ATTRIB_1(Frame::FRAME_ATTR_EXACT_DEPTH|Frame::FRAME_ATTR_CAPTURE_DEPTH_2, keepAlive);
