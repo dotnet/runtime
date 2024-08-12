@@ -416,7 +416,7 @@ class FnPtrTypeDesc : public TypeDesc
 public:
 #ifndef DACCESS_COMPILE
     FnPtrTypeDesc(BYTE callConv, DWORD numArgs, TypeHandle * retAndArgTypes, PTR_Module pLoaderModule)
-        : TypeDesc(ELEMENT_TYPE_FNPTR), m_NumArgs(numArgs), m_CallConv(callConv), m_pLoaderModule(pLoaderModule)
+        : TypeDesc(ELEMENT_TYPE_FNPTR), m_pLoaderModule(pLoaderModule), m_NumArgs(numArgs), m_CallConv(callConv)
     {
         LIMITED_METHOD_CONTRACT;
         for (DWORD i = 0; i <= numArgs; i++)
@@ -483,14 +483,14 @@ public:
 #endif //DACCESS_COMPILE
 
 protected:
+    // LoaderModule of the TypeDesc
+    PTR_Module m_pLoaderModule;
+
     // Number of arguments
     DWORD m_NumArgs;
 
     // Calling convention (actually just a single byte)
     DWORD m_CallConv;
-
-    // LoaderModule of the TypeDesc
-    PTR_Module m_pLoaderModule;
 
     // Return type first, then argument types
     TypeHandle m_RetAndArgTypes[1];
