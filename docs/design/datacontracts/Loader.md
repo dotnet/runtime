@@ -25,7 +25,8 @@ record struct ModuleLookupTables(
     TargetPointer MemberRefToDesc,
     TargetPointer MethodDefToDesc,
     TargetPointer TypeDefToMethodTable,
-    TargetPointer TypeRefToMethodTable);
+    TargetPointer TypeRefToMethodTable,
+    TargetPointer MethodDefToILCodeVersioningState);
 
 internal struct EcmaMetadataSchema
 {
@@ -130,6 +131,7 @@ Data descriptors used:
 | `Module` | `TypeRefToMethodTableMap` | Mapping table |
 | `DynamicMetadata` | `Size` | Size of the dynamic metadata blob (as a 32bit uint) |
 | `DynamicMetadata` | `Data` | Start of dynamic metadata data array |
+| `ModuleLookupMap` | `TableData` | Start of the mapping table's data |
 
 ``` csharp
 ModuleHandle GetModuleHandle(TargetPointer modulePointer)
@@ -215,6 +217,8 @@ ModuleLookupTables GetLookupTables(ModuleHandle handle)
         MemberRefToDescMap: target.ReadPointer(handle.Address + /* Module::MemberRefToDescMap */),
         MethodDefToDescMap: target.ReadPointer(handle.Address + /* Module::MethodDefToDescMap */),
         TypeDefToMethodTableMap: target.ReadPointer(handle.Address + /* Module::TypeDefToMethodTableMap */),
-        TypeRefToMethodTableMap: target.ReadPointer(handle.Address + /* Module::TypeRefToMethodTableMap */));
+        TypeRefToMethodTableMap: target.ReadPointer(handle.Address + /* Module::TypeRefToMethodTableMap */),
+        MethodDefToILCodeVersioningState: target.ReadPointer(handle.Address + /*
+        Module::MethodDefToILCodeVersioningState */));
 }
 ```
