@@ -1975,9 +1975,11 @@ VirtualCallStubManager::Resolver(
         }
     }
 #ifdef FEATURE_COMINTEROP
-    else if (pMT->IsComObjectType() && IsInterfaceToken(token))
+    else if (pMT->IsComObjectType()
+        && IsInterfaceToken(token)
+        && GetTypeFromToken(token) != CoreLibBinder::GetClass(CLASS__IENUMERABLE))
     {
-        MethodTable * pItfMT = GetTypeFromToken(token);
+        MethodTable* pItfMT = GetTypeFromToken(token);
         implSlot = pItfMT->FindDispatchSlot(TYPE_ID_THIS_CLASS, token.GetSlotNumber(), throwOnConflict);
 
         _ASSERTE(!pItfMT->HasInstantiation());

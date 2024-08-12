@@ -1264,6 +1264,8 @@ void SystemDomain::LoadBaseSystemClasses()
 
         g_pCastHelpers = CoreLibBinder::GetClass(CLASS__CASTHELPERS);
 
+        g_pIDynamicInterfaceCastableInterface = CoreLibBinder::GetClass(CLASS__IDYNAMICINTERFACECASTABLE);
+
     #ifdef FEATURE_COMINTEROP
         if (g_pConfig->IsBuiltInCOMSupported())
         {
@@ -1274,8 +1276,6 @@ void SystemDomain::LoadBaseSystemClasses()
             g_pBaseCOMObject = NULL;
         }
     #endif
-
-        g_pIDynamicInterfaceCastableInterface = CoreLibBinder::GetClass(CLASS__IDYNAMICINTERFACECASTABLE);
 
     #ifdef FEATURE_ICASTABLE
         g_pICastableInterface = CoreLibBinder::GetClass(CLASS__ICASTABLE);

@@ -4,10 +4,16 @@
 #pragma warning disable CA1852 // __ComObject should not be sealed
 
 using System.Collections;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.CustomMarshalers;
+using System.Runtime.InteropServices.Marshalling;
 using System.Runtime.Versioning;
+
+using IEnumVARIANT = System.Runtime.InteropServices.ComTypes.IEnumVARIANT;
+using DISPPARAMS = System.Runtime.InteropServices.ComTypes.DISPPARAMS;
 
 namespace System
 {
@@ -16,7 +22,7 @@ namespace System
     /// the basics. This class is used for wrapping COM objects accessed from managed.
     /// </summary>
     [SupportedOSPlatform("windows")]
-    internal class __ComObject : MarshalByRefObject
+    internal class __ComObject : MarshalByRefObject, IDynamicInterfaceCastable
     {
         private Hashtable? m_ObjectToDataMap; // Do not rename (runtime relies on this name).
 
@@ -135,11 +141,130 @@ namespace System
                     DisposableEvProv.Dispose();
                 }
 
-                // Another thead already cached the wrapper so use that one instead.
+                // Another thread already cached the wrapper so use that one instead.
                 EvProvider = GetData(t)!;
             }
 
             return EvProvider;
+        }
+
+        bool IDynamicInterfaceCastable.IsInterfaceImplemented(RuntimeTypeHandle interfaceType, bool throwIfNotImplemented)
+        {
+            Internal.Console.WriteLine($"__ComObject::IsInterfaceImplemented - {interfaceType}");
+
+            if (interfaceType.Equals(typeof(IEnumerable).TypeHandle)
+                || interfaceType.Equals(typeof(ICustomAdapter).TypeHandle))
+            {
+                object? enumVariant = GetData(typeof(IEnumerableOverDispatchImpl));
+                if (enumVariant is null)
+                {
+                    try
+                    {
+                        enumVariant = IEnumerableOverDispatchImpl.QueryForNewEnum(this);
+                    }
+                    catch
+                    {
+                        // Not available
+                        enumVariant = new object();
+                    }
+                    if (!SetData(typeof(IEnumerableOverDispatchImpl), enumVariant))
+                    {
+                        enumVariant = GetData(typeof(IEnumerableOverDispatchImpl));
+                    }
+                    Debug.Assert(enumVariant is not null);
+                }
+                return enumVariant is IEnumVARIANT;
+            }
+            return false;
+        }
+
+        RuntimeTypeHandle IDynamicInterfaceCastable.GetInterfaceImplementation(RuntimeTypeHandle interfaceType)
+        {
+            Internal.Console.WriteLine($"__ComObject::GetInterfaceImplementation - {interfaceType}");
+            if (interfaceType.Equals(typeof(IEnumerable).TypeHandle))
+            {
+                return typeof(IEnumerableOverDispatchImpl).TypeHandle;
+            }
+            else if (interfaceType.Equals(typeof(ICustomAdapter).TypeHandle))
+            {
+                return typeof(ICustomAdapterOverDispatchImpl).TypeHandle;
+            }
+
+            return default(RuntimeTypeHandle);
+        }
+
+        [DynamicInterfaceCastableImplementation]
+        private interface IEnumerableOverDispatchImpl : IEnumerable
+        {
+            public static IEnumVARIANT QueryForNewEnum(__ComObject obj)
+            {
+                // Reserved DISPID slot for getting an enumerator from an IDispatch-implementing COM interface.
+                const int DISPID_NEWENUM = -4;
+                const int LCID_DEFAULT = 1;
+
+                IDispatch dispatch = (IDispatch)obj;
+                ComVariant result = default;
+                object? resultAsObject = null;
+                try
+                {
+                    unsafe
+                    {
+                        void* resultLocal = &result;
+                        DISPPARAMS dispParams = default;
+                        Guid guid = Guid.Empty;
+                        dispatch.Invoke(
+                            DISPID_NEWENUM,
+                            ref guid,
+                            LCID_DEFAULT,
+                            InvokeFlags.DISPATCH_METHOD | InvokeFlags.DISPATCH_PROPERTYGET,
+                            ref dispParams,
+                            new IntPtr(resultLocal),
+                            IntPtr.Zero,
+                            IntPtr.Zero);
+                    }
+                    resultAsObject = result.ToObject();
+                }
+                finally
+                {
+                    result.Dispose();
+                }
+
+                if (resultAsObject is not IEnumVARIANT enumVariant)
+                {
+                    throw new InvalidOperationException(SR.InvalidOp_InvalidNewEnumVariant);
+                }
+
+                return enumVariant;
+            }
+
+            IEnumerator IEnumerable.GetEnumerator()
+            {
+                Debug.Assert(OperatingSystem.IsWindows());
+
+                __ComObject co = (__ComObject)this;
+                object? enumVariant = co.GetData(typeof(IEnumerableOverDispatchImpl));
+                enumVariant ??= QueryForNewEnum((__ComObject)this);
+
+                IntPtr enumVariantPtr = IntPtr.Zero;
+                try
+                {
+                    enumVariantPtr = Marshal.GetIUnknownForObject(enumVariant);
+                    return (IEnumerator)EnumeratorToEnumVariantMarshaler.GetInstance(null).MarshalNativeToManaged(enumVariantPtr);
+                }
+                finally
+                {
+                    if (enumVariantPtr != IntPtr.Zero)
+                    {
+                        Marshal.Release(enumVariantPtr);
+                    }
+                }
+            }
+        }
+
+        [DynamicInterfaceCastableImplementation]
+        private interface ICustomAdapterOverDispatchImpl : ICustomAdapter
+        {
+            object ICustomAdapter.GetUnderlyingObject() => this;
         }
     }
 }

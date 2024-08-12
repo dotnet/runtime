@@ -39,6 +39,7 @@ class Object;
 #include "classnames.h"
 #include "objectnative.h"
 #include "finalizerthread.h"
+#include "dynamicinterfacecastable.h"
 
 // static
 SLIST_HEADER RCW::s_RCWStandbyList;
@@ -2491,7 +2492,7 @@ BOOL ComObject::SupportsInterface(OBJECTREF oref, MethodTable* pIntfTable)
                 }
             }
         }
-        else if (pRCW->SupportsMngStdInterface(pIntfTable))
+        else if (DynamicInterfaceCastable::IsInstanceOf(&oref, { pIntfTable }, FALSE))
         {
             bSupportsItf = true;
         }
