@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Data;
 
 namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 
@@ -11,21 +12,27 @@ internal readonly partial struct NativeCodePointers_1 : INativeCodePointers
 
     internal struct ILCodeVersionHandle
     {
-        internal readonly TargetPointer MethodDesc;
+        internal readonly TargetPointer Module;
+        internal uint MethodDefinition;
         internal readonly TargetPointer ILCodeVersionNode;
 
-        internal ILCodeVersionHandle(TargetPointer methodDescAddress, TargetPointer ilCodeVersionNodeAddress)
+        internal ILCodeVersionHandle(TargetPointer module, uint methodDef, TargetPointer ilCodeVersionNodeAddress)
         {
-            MethodDesc = methodDescAddress;
+            Module = module;
+            MethodDefinition = methodDef;
             ILCodeVersionNode = ilCodeVersionNodeAddress;
-            if (MethodDesc != TargetPointer.Null && ILCodeVersionNode != TargetPointer.Null)
+            if (Module != TargetPointer.Null && ILCodeVersionNode != TargetPointer.Null)
             {
                 throw new ArgumentException("Both MethodDesc and ILCodeVersionNode cannot be non-null");
 
             }
+            if (Module != TargetPointer.Null && MethodDefinition == 0)
+            {
+                throw new ArgumentException("MethodDefinition must be non-zero if Module is non-null");
+            }
         }
-        public static ILCodeVersionHandle Invalid => new ILCodeVersionHandle(TargetPointer.Null, TargetPointer.Null);
-        public bool IsValid => MethodDesc != TargetPointer.Null || ILCodeVersionNode != TargetPointer.Null;
+        public static ILCodeVersionHandle Invalid => new ILCodeVersionHandle(TargetPointer.Null, 0, TargetPointer.Null);
+        public bool IsValid => Module != TargetPointer.Null || ILCodeVersionNode != TargetPointer.Null;
     }
 
     internal struct NativeCodeVersionContract
@@ -70,18 +77,16 @@ internal readonly partial struct NativeCodePointers_1 : INativeCodePointers
 
         public ILCodeVersionHandle FindActiveILCodeVersion(TargetPointer module, uint methodDefinition)
         {
-            //TODO[cdac]: implement FindActiveILCodeVersion
-#if false
             ModuleHandle moduleHandle = _target.Contracts.Loader.GetModuleHandle(module);
             TargetPointer ilCodeVersionTable = _target.Contracts.Loader.GetLookupTables(moduleHandle).MethodDefToILCodeVersioningState;
-            TargetPointer ilNode = _target.Contracts.GetModuleLookupTableElement(module, methodDefinition, out var _);
-            if (ilNode == TargetPointer.Null)
+            TargetPointer ilVersionStateAddress = _target.Contracts.Loader.GetModuleLookupTableElement(ilCodeVersionTable, methodDefinition, out var _);
+            if (ilVersionStateAddress == TargetPointer.Null)
             {
-                return ILCodeVersionHandle.Invalid;
+                return new ILCodeVersionHandle(module, methodDefinition, TargetPointer.Null);
             }
-#endif
-
-            throw new NotImplementedException();
+            Data.ILCodeVersioningState ilState = _target.ProcessedData.GetOrAdd<Data.ILCodeVersioningState>(ilVersionStateAddress);
+            TargetPointer ilVersionNode = ilState.Node;
+            return new ILCodeVersionHandle(TargetPointer.Null, 0, ilVersionNode);
         }
 
         public NativeCodeVersionHandle FindActiveNativeCodeVersion(ILCodeVersionHandle methodDefActiveVersion)

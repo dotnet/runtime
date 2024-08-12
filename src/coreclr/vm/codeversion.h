@@ -523,6 +523,14 @@ private:
     PTR_ILCodeVersionNode m_pFirstVersionNode;
     PTR_Module m_pModule;
     mdMethodDef m_methodDef;
+
+    template<typename T> friend struct ::cdac_data;
+};
+
+template<>
+struct cdac_data<ILCodeVersioningState>
+{
+    static constexpr size_t Node = offsetof(ILCodeVersioningState, m_pFirstVersionNode);
 };
 
 class CodeVersionManager

@@ -423,6 +423,11 @@ CDAC_TYPE_FIELD(HeapList, /*pointer*/, MapBase, offsetof(HeapList, mapBase))
 CDAC_TYPE_FIELD(HeapList, /*pointer*/, HeaderMap, offsetof(HeapList, pHdrMap))
 CDAC_TYPE_END(HeapList)
 
+CDAC_TYPE_BEGIN(ILCodeVersioningState)
+CDAC_TYPE_INDETERMINATE(ILCodeVersioningState)
+CDAC_TYPE_FIELD(ILCodeVersioningState, /*pointer*/, Node, cdac_data<ILCodeVersioningState>::Node)
+CDAC_TYPE_END(ILCodeVersioningState)
+
 CDAC_TYPE_BEGIN(NativeCodeVersionNode)
 CDAC_TYPE_INDETERMINATE(NativeCodeVersionNode)
 CDAC_TYPE_FIELD(NativeCodeVersionNode, /*pointer*/, Next, cdac_data<NativeCodeVersionNode>::Next)

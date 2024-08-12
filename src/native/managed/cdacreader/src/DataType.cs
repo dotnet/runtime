@@ -62,6 +62,7 @@ public enum DataType
     RealCodeHeader,
     HeapList,
     MethodDescVersioningState,
+    ILCodeVersioningState,
     NativeCodeVersionNode,
     ProfControlBlock,
 

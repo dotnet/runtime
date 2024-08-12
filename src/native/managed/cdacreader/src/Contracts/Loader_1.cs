@@ -92,6 +92,11 @@ internal readonly struct Loader_1 : ILoader
             module.MethodDefToILCodeVersioningStateMap);
     }
 
+    TargetPointer ILoader.GetModuleLookupTableElement(TargetPointer table, uint rid, out TargetNUInt flags)
+    {
+        throw new NotImplementedException(); // TODO[cdac]: GetModuleLookupTableElement
+    }
+
     bool ILoader.IsCollectibleLoaderAllocator(ModuleHandle handle)
     {
         Data.Module module = _target.ProcessedData.GetOrAdd<Data.Module>(handle.Address);
