@@ -62,6 +62,18 @@ enum class ExceptionMessageKind {
 };
 extern "C" void QCALLTYPE ExceptionNative_GetMessageFromNativeResources(ExceptionMessageKind kind, QCall::StringHandleOnStack retMesg);
 
+extern "C" void QCALLTYPE ExceptionNative_GetMethodFromStackTrace(QCall::ObjectHandleOnStack array, QCall::ObjectHandleOnStack retMethodInfo);
+
+extern "C" void QCALLTYPE ExceptionNative_ThrowAmbiguousResolutionException(
+    MethodTable* pTargetClass,
+    MethodTable* pInterfaceMT,
+    MethodDesc* pInterfaceMD);
+
+extern "C" void QCALLTYPE ExceptionNative_ThrowEntryPointNotFoundException(
+    MethodTable* pTargetClass,
+    MethodTable* pInterfaceMT,
+    MethodDesc* pInterfaceMD);
+
 //
 // Buffer
 //

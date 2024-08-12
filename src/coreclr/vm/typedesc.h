@@ -204,8 +204,14 @@ public:
 
     // internal RuntimeType object handle
     RUNTIMETYPEHANDLE m_hExposedClassObject;
+    template<typename T> friend struct ::cdac_data;
 };
 
+template<>
+struct cdac_data<TypeDesc>
+{
+    static constexpr size_t TypeAndFlags = offsetof(TypeDesc, m_typeAndFlags);
+};
 
 /*************************************************************************/
 // This variant is used for parameterized types that have exactly one argument
@@ -263,6 +269,13 @@ protected:
 
     // The type that is being modified
     TypeHandle        m_Arg;
+    template<typename T> friend struct ::cdac_data;
+};
+
+template<>
+struct cdac_data<ParamTypeDesc>
+{
+    static constexpr size_t TypeArg = offsetof(ParamTypeDesc, m_Arg);
 };
 
 /*************************************************************************/
@@ -381,6 +394,15 @@ protected:
 
     // index within declaring type or method, numbered from zero
     unsigned int m_index;
+
+    template<typename T> friend struct ::cdac_data;
+};
+
+template<>
+struct cdac_data<TypeVarTypeDesc>
+{
+    static constexpr size_t Module = offsetof(TypeVarTypeDesc, m_pModule);
+    static constexpr size_t Token = offsetof(TypeVarTypeDesc, m_token);
 };
 
 /*************************************************************************/
@@ -467,6 +489,16 @@ protected:
 
     // Return type first, then argument types
     TypeHandle m_RetAndArgTypes[1];
+
+    template<typename T> friend struct ::cdac_data;
 }; // class FnPtrTypeDesc
+
+template<>
+struct cdac_data<FnPtrTypeDesc>
+{
+    static constexpr size_t NumArgs = offsetof(FnPtrTypeDesc, m_NumArgs);
+    static constexpr size_t RetAndArgTypes = offsetof(FnPtrTypeDesc, m_RetAndArgTypes);
+    static constexpr size_t CallConv = offsetof(FnPtrTypeDesc, m_CallConv);
+};
 
 #endif // TYPEDESC_H

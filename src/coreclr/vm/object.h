@@ -462,6 +462,14 @@ class Object
 
  private:
     VOID ValidateInner(BOOL bDeep, BOOL bVerifyNextHeader, BOOL bVerifySyncBlock);
+
+    template<typename T> friend struct ::cdac_data;
+};
+
+template<>
+struct cdac_data<Object>
+{
+    static constexpr size_t m_pMethTab = offsetof(Object, m_pMethTab);
 };
 
 /*
@@ -630,7 +638,19 @@ public:
 
     inline static unsigned GetBoundsOffset(MethodTable* pMT);
     inline static unsigned GetLowerBoundsOffset(MethodTable* pMT);
+
+    template<typename T> friend struct ::cdac_data;
 };
+
+#ifndef DACCESS_COMPILE
+template<>
+struct cdac_data<ArrayBase>
+{
+    static constexpr size_t m_NumComponents = offsetof(ArrayBase, m_NumComponents);
+
+    static constexpr INT32* ArrayBoundsZero = &ArrayBase::s_arrayBoundsZero;
+};
+#endif
 
 //
 // Template used to build all the non-object
@@ -930,6 +950,15 @@ class StringObject : public Object
 private:
     static STRINGREF* EmptyStringRefPtr;
     static bool EmptyStringIsFrozen;
+
+    template<typename T> friend struct ::cdac_data;
+};
+
+template<>
+struct cdac_data<StringObject>
+{
+    static constexpr size_t m_FirstChar = offsetof(StringObject, m_FirstChar);
+    static constexpr size_t m_StringLength = offsetof(StringObject, m_StringLength);
 };
 
 /*================================GetEmptyString================================
@@ -2115,7 +2144,7 @@ public:
     INT32 GetSlotsUsed();
     void SetSlotsUsed(INT32 newSlotsUsed);
 #endif // DACCESS_COMPILE
-    
+
     void SetNativeLoaderAllocator(LoaderAllocator * pLoaderAllocator)
     {
         LIMITED_METHOD_CONTRACT;
@@ -2355,6 +2384,21 @@ private:
     void*       _xptrs;
     INT32       _xcode;
     INT32       _HResult;
+
+    template<typename T> friend struct ::cdac_data;
+};
+
+template<>
+struct cdac_data<ExceptionObject>
+{
+    static constexpr size_t _message = offsetof(ExceptionObject, _message);
+    static constexpr size_t _innerException = offsetof(ExceptionObject, _innerException);
+    static constexpr size_t _stackTrace = offsetof(ExceptionObject, _stackTrace);
+    static constexpr size_t _watsonBuckets = offsetof(ExceptionObject, _watsonBuckets);
+    static constexpr size_t _stackTraceString = offsetof(ExceptionObject, _stackTraceString);
+    static constexpr size_t _remoteStackTraceString = offsetof(ExceptionObject, _remoteStackTraceString);
+    static constexpr size_t _HResult = offsetof(ExceptionObject, _HResult);
+    static constexpr size_t _xcode = offsetof(ExceptionObject, _xcode);
 };
 
 // Defined in Contracts.cs

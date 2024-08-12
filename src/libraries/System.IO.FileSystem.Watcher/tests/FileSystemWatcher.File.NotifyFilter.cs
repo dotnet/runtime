@@ -11,6 +11,7 @@ using Xunit.Sdk;
 
 namespace System.IO.Tests
 {
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/103584", TestPlatforms.Windows)]
     public partial class File_NotifyFilter_Tests : FileSystemWatcherTest
     {
         [LibraryImport("advapi32.dll", EntryPoint = "SetNamedSecurityInfoW", SetLastError = true, StringMarshalling = StringMarshalling.Utf16)]

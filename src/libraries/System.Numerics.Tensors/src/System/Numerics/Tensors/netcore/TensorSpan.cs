@@ -12,7 +12,6 @@ using EditorBrowsableAttribute = System.ComponentModel.EditorBrowsableAttribute;
 using EditorBrowsableState = System.ComponentModel.EditorBrowsableState;
 
 #pragma warning disable 0809  //warning CS0809: Obsolete member 'TensorSpan<T>.Equals(object)' overrides non-obsolete member 'object.Equals(object)'
-#pragma warning disable 8500 // address / sizeof of managed types
 
 namespace System.Numerics.Tensors
 {
@@ -22,6 +21,7 @@ namespace System.Numerics.Tensors
     /// </summary>
     [DebuggerTypeProxy(typeof(TensorSpanDebugView<>))]
     [DebuggerDisplay("{ToString(),raw}")]
+    [Experimental(Experimentals.TensorTDiagId, UrlFormat = Experimentals.SharedUrlFormat)]
     public readonly ref struct TensorSpan<T>
     {
         /// <summary>A byref or a native ptr.</summary>
@@ -629,7 +629,9 @@ namespace System.Numerics.Tensors
         }
 
         //public static explicit operator TensorSpan<T>(Array? array);
+#pragma warning disable 1591 // TODO: Document this API. https://github.com/dotnet/runtime/issues/105981
         public static implicit operator TensorSpan<T>(T[]? array) => new TensorSpan<T>(array);
+#pragma warning restore 1591
 
         /// <summary>
         /// Defines an implicit conversion of a <see cref="TensorSpan{T}"/> to a <see cref="ReadOnlyTensorSpan{T}"/>

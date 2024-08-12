@@ -44,48 +44,6 @@ extends:
     - stage: Build
       jobs:
       #
-      # Build Mono and Installer on LLVMJIT mode
-      #
-      - template: /eng/pipelines/common/platform-matrix.yml
-        parameters:
-          jobTemplate: /eng/pipelines/common/global-build-job.yml
-          buildConfig: Release
-          runtimeFlavor: mono
-          platforms:
-          - osx_x64
-          jobParameters:
-            testGroup: innerloop
-            nameSuffix: AllSubsets_Mono_LLVMJIT
-            buildArgs: -s mono+libs+host+packs -c $(_BuildConfig)
-                      /p:MonoEnableLLVM=true /p:MonoBundleLLVMOptimizer=false
-            condition: >-
-              or(
-                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
-                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_mono_excluding_wasm.containsChange'], true),
-                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_installer.containsChange'], true),
-                eq(variables['isRollingBuild'], true))
-
-      - template: /eng/pipelines/common/platform-matrix.yml
-        parameters:
-          jobTemplate: /eng/pipelines/common/global-build-job.yml
-          buildConfig: ${{ variables.debugOnPrReleaseOnRolling }}
-          runtimeFlavor: mono
-          platforms:
-          - linux_x64
-          - linux_arm64
-          jobParameters:
-            testGroup: innerloop
-            nameSuffix: AllSubsets_Mono_LLVMJIT
-            buildArgs: -s mono+libs+host+packs -c $(_BuildConfig)
-                      /p:MonoEnableLLVM=true /p:MonoBundleLLVMOptimizer=false
-            condition: >-
-              or(
-                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
-                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_mono_excluding_wasm.containsChange'], true),
-                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_installer.containsChange'], true),
-                eq(variables['isRollingBuild'], true))
-
-      #
       # Build Mono and Installer on LLVMAOT mode
       #
       - template: /eng/pipelines/common/platform-matrix.yml
@@ -133,7 +91,7 @@ extends:
           runtimeFlavor: mono
           platforms:
             - linux_x64
-            # Disabled pending outcome of https://github.com/dotnet/runtime/issues/60234 investigation
+            # Tracking issue: https://github.com/dotnet/runtime/issues/90427
             #- linux_arm64
           variables:
             - name: timeoutPerTestInMinutes
@@ -144,7 +102,7 @@ extends:
             testGroup: innerloop
             nameSuffix: AllSubsets_Mono_LLVMAOT_RuntimeTests
             runtimeVariant: llvmaot
-            buildArgs: -s mono+libs+clr.hosts+clr.iltools -c $(_BuildConfig) -lc ${{ variables.debugOnPrReleaseOnRolling }} /p:MonoEnableLLVM=true
+            buildArgs: -s mono+libs+clr.hosts+clr.iltools -c $(_BuildConfig) /p:MonoEnableLLVM=true
             timeoutInMinutes: 360
             condition: >-
               or(
@@ -185,7 +143,7 @@ extends:
             testGroup: innerloop
             nameSuffix: AllSubsets_Mono_LLVMFULLAOT_RuntimeTests
             runtimeVariant: llvmfullaot
-            buildArgs: -s mono+libs+clr.hosts+clr.iltools -c $(_BuildConfig) -lc ${{ variables.debugOnPrReleaseOnRolling }} /p:MonoEnableLLVM=true
+            buildArgs: -s mono+libs+clr.hosts+clr.iltools -c $(_BuildConfig) /p:MonoEnableLLVM=true
             timeoutInMinutes: 360
             condition: >-
               or(
@@ -232,7 +190,7 @@ extends:
             testGroup: innerloop
             nameSuffix: AllSubsets_Mono_LLVMFULLAOT_RuntimeIntrinsicsTests
             runtimeVariant: llvmfullaot
-            buildArgs: -s mono+libs+clr.hosts+clr.iltools -c $(_BuildConfig) -lc ${{ variables.debugOnPrReleaseOnRolling }} /p:MonoEnableLLVM=true
+            buildArgs: -s mono+libs+clr.hosts+clr.iltools -c $(_BuildConfig) /p:MonoEnableLLVM=true
             timeoutInMinutes: 360
             condition: >-
               or(

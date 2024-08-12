@@ -13,6 +13,8 @@ enum NamedIntrinsic : unsigned short
 {
     NI_Illegal = 0,
 
+    NI_System_ArgumentNullException_ThrowIfNull,
+
     NI_System_Enum_HasFlag,
 
     NI_System_BitConverter_DoubleToInt64Bits,
@@ -87,6 +89,7 @@ enum NamedIntrinsic : unsigned short
     NI_System_Type_op_Equality,
     NI_System_Type_op_Inequality,
     NI_System_Type_GetTypeFromHandle,
+    NI_System_Type_GetGenericTypeDefinition,
     NI_System_Array_Clone,
     NI_System_Array_GetLength,
     NI_System_Array_GetLowerBound,
@@ -149,11 +152,11 @@ enum NamedIntrinsic : unsigned short
 #ifdef FEATURE_HW_INTRINSICS
     NI_HW_INTRINSIC_START,
 #if defined(TARGET_XARCH)
-#define HARDWARE_INTRINSIC(isa, name, size, numarg, extra, t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, category, flag)    \
+#define HARDWARE_INTRINSIC(isa, name, size, numarg, t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, category, flag)           \
     NI_##isa##_##name,
 #include "hwintrinsiclistxarch.h"
 #elif defined(TARGET_ARM64)
-#define HARDWARE_INTRINSIC(isa, name, size, numarg, extra, t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, category, flag)    \
+#define HARDWARE_INTRINSIC(isa, name, size, numarg, t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, category, flag)           \
     NI_##isa##_##name,
 #include "hwintrinsiclistarm64.h"
 #endif // !defined(TARGET_XARCH) && !defined(TARGET_ARM64)

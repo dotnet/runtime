@@ -312,6 +312,13 @@ public:
     }
 
     ValueNumPair m_vnPair;
+
+#ifdef DEBUG
+    // True if this ssa def VN was updated
+    bool m_updated = false;
+    // Originally assigned VN
+    ValueNumPair m_origVNPair;
+#endif
 };
 
 // This class stores information associated with a memory SSA definition.
@@ -554,17 +561,9 @@ public:
     unsigned char lvIsLastUseCopyOmissionCandidate : 1;
 #endif // FEATURE_IMPLICIT_BYREFS
 
-#if defined(TARGET_LOONGARCH64)
-    unsigned char lvIs4Field1 : 1; // Set if the 1st field is int or float within struct for LA-ABI64.
-    unsigned char lvIs4Field2 : 1; // Set if the 2nd field is int or float within struct for LA-ABI64.
-    unsigned char lvIsSplit   : 1; // Set if the argument is splited.
-#endif                             // defined(TARGET_LOONGARCH64)
-
-#if defined(TARGET_RISCV64)
-    unsigned char lvIs4Field1 : 1; // Set if the 1st field is int or float within struct for RISCV64.
-    unsigned char lvIs4Field2 : 1; // Set if the 2nd field is int or float within struct for RISCV64.
-    unsigned char lvIsSplit   : 1; // Set if the argument is splited.
-#endif                             // defined(TARGET_RISCV64)
+#if defined(TARGET_RISCV64) || defined(TARGET_LOONGARCH64)
+    unsigned char lvIsSplit : 1; // Set if the argument is split across last integer register and stack.
+#endif                           // defined(TARGET_RISCV64) || defined(TARGET_LOONGARCH64)
 
     unsigned char lvSingleDef : 1; // variable has a single def. Used to identify ref type locals that can get type
                                    // updates
@@ -2232,6 +2231,8 @@ public:
 
     bool MayExecuteBlockMultipleTimesPerIteration(BasicBlock* block);
 
+    bool IsPostDominatedOnLoopIteration(BasicBlock* block, BasicBlock* postDominator);
+
 #ifdef DEBUG
     static void Dump(FlowGraphNaturalLoop* loop);
 #endif // DEBUG
@@ -3053,6 +3054,8 @@ public:
 
     GenTreeVecCon* gtNewVconNode(var_types type, void* data);
 
+    GenTreeMskCon* gtNewMskConNode(var_types type);
+
     GenTree* gtNewAllBitsSetConNode(var_types type);
 
     GenTree* gtNewZeroConNode(var_types type);
@@ -3230,7 +3233,9 @@ public:
                                  CorInfoType simdBaseJitType,
                                  unsigned    simdSize);
 
+#if defined(FEATURE_MASKED_HW_INTRINSICS)
     GenTree* gtNewSimdCvtMaskToVectorNode(var_types type, GenTree* op1, CorInfoType simdBaseJitType, unsigned simdSize);
+#endif // FEATURE_MASKED_HW_INTRINSICS
 
     GenTree* gtNewSimdCvtNode(var_types   type,
                               GenTree*    op1,
@@ -3244,7 +3249,9 @@ public:
                                     CorInfoType simdSourceBaseJitType,
                                     unsigned    simdSize);
 
+#if defined(FEATURE_MASKED_HW_INTRINSICS)
     GenTree* gtNewSimdCvtVectorToMaskNode(var_types type, GenTree* op1, CorInfoType simdBaseJitType, unsigned simdSize);
+#endif // FEATURE_MASKED_HW_INTRINSICS
 
     GenTree* gtNewSimdCreateBroadcastNode(
         var_types type, GenTree* op1, CorInfoType simdBaseJitType, unsigned simdSize);
@@ -3292,6 +3299,31 @@ public:
                                    CorInfoType simdBaseJitType,
                                    unsigned    simdSize);
 
+    GenTree* gtNewSimdIsNaNNode(var_types   type,
+                                GenTree*    op1,
+                                CorInfoType simdBaseJitType,
+                                unsigned    simdSize);
+
+    GenTree* gtNewSimdIsNegativeNode(var_types   type,
+                                     GenTree*    op1,
+                                     CorInfoType simdBaseJitType,
+                                     unsigned    simdSize);
+
+    GenTree* gtNewSimdIsPositiveNode(var_types   type,
+                                     GenTree*    op1,
+                                     CorInfoType simdBaseJitType,
+                                     unsigned    simdSize);
+
+    GenTree* gtNewSimdIsPositiveInfinityNode(var_types   type,
+                                             GenTree*    op1,
+                                             CorInfoType simdBaseJitType,
+                                             unsigned    simdSize);
+
+    GenTree* gtNewSimdIsZeroNode(var_types   type,
+                                 GenTree*    op1,
+                                 CorInfoType simdBaseJitType,
+                                 unsigned    simdSize);
+
     GenTree* gtNewSimdLoadNode(
         var_types type, GenTree* op1, CorInfoType simdBaseJitType, unsigned simdSize);
 
@@ -3307,17 +3339,32 @@ public:
                               CorInfoType simdBaseJitType,
                               unsigned    simdSize);
 
+    GenTree* gtNewSimdMaxNativeNode(var_types   type,
+                                    GenTree*    op1,
+                                    GenTree*    op2,
+                                    CorInfoType simdBaseJitType,
+                                    unsigned    simdSize);
+
     GenTree* gtNewSimdMinNode(var_types   type,
                               GenTree*    op1,
                               GenTree*    op2,
                               CorInfoType simdBaseJitType,
                               unsigned    simdSize);
 
+    GenTree* gtNewSimdMinNativeNode(var_types   type,
+                                    GenTree*    op1,
+                                    GenTree*    op2,
+                                    CorInfoType simdBaseJitType,
+                                    unsigned    simdSize);
+
     GenTree* gtNewSimdNarrowNode(var_types   type,
                                  GenTree*    op1,
                                  GenTree*    op2,
                                  CorInfoType simdBaseJitType,
                                  unsigned    simdSize);
+
+    GenTree* gtNewSimdRoundNode(
+        var_types type, GenTree* op1, CorInfoType simdBaseJitType, unsigned simdSize);
 
     GenTree* gtNewSimdShuffleNode(var_types   type,
                                   GenTree*    op1,
@@ -3355,6 +3402,9 @@ public:
                                    GenTree*    op1,
                                    CorInfoType simdBaseJitType,
                                    unsigned    simdSize);
+
+    GenTree* gtNewSimdTruncNode(
+        var_types type, GenTree* op1, CorInfoType simdBaseJitType, unsigned simdSize);
 
     GenTree* gtNewSimdUnOpNode(genTreeOps  op,
                                var_types   type,
@@ -3410,7 +3460,7 @@ public:
 
     GenTree* gtNewMustThrowException(unsigned helper, var_types type, CORINFO_CLASS_HANDLE clsHnd);
 
-    GenTreeLclFld* gtNewLclFldNode(unsigned lnum, var_types type, unsigned offset);
+    GenTreeLclFld* gtNewLclFldNode(unsigned lnum, var_types type, unsigned offset, ClassLayout* layout = nullptr);
     GenTreeRetExpr* gtNewInlineCandidateReturnExpr(GenTreeCall* inlineCandidate, var_types type);
 
     GenTreeFieldAddr* gtNewFieldAddrNode(var_types            type,
@@ -3597,16 +3647,17 @@ public:
     bool gtMarkAddrMode(GenTree* addr, int* costEx, int* costSz, var_types type);
 
     unsigned gtSetEvalOrder(GenTree* tree);
+    unsigned gtSetEvalOrderMinOpts(GenTree* tree);
     bool gtMayHaveStoreInterference(GenTree* treeWithStores, GenTree* tree);
     bool gtTreeHasLocalRead(GenTree* tree, unsigned lclNum);
 
     void gtSetStmtInfo(Statement* stmt);
 
     // Returns "true" iff "node" has any of the side effects in "flags".
-    bool gtNodeHasSideEffects(GenTree* node, GenTreeFlags flags);
+    bool gtNodeHasSideEffects(GenTree* node, GenTreeFlags flags, bool ignoreCctors = false);
 
     // Returns "true" iff "tree" or its (transitive) children have any of the side effects in "flags".
-    bool gtTreeHasSideEffects(GenTree* tree, GenTreeFlags flags);
+    bool gtTreeHasSideEffects(GenTree* tree, GenTreeFlags flags, bool ignoreCctors = false);
 
     void gtExtractSideEffList(GenTree*     expr,
                               GenTree**    pList,
@@ -4286,6 +4337,10 @@ public:
 #endif // defined(FEATURE_SIMD)
 
     unsigned lvaGSSecurityCookie; // LclVar number
+#ifdef TARGET_ARM64
+    unsigned lvaFfrRegister; // LclVar number
+    unsigned getFFRegisterVarNum();
+#endif
     bool     lvaTempsHaveLargerOffsetThanVars();
 
     // Returns "true" iff local variable "lclNum" is in SSA form.
@@ -4454,6 +4509,11 @@ protected:
         MakeInlineObservation = 2,
     };
 
+    GenTree* impStoreNullableFields(CORINFO_CLASS_HANDLE nullableCls,
+        GenTree* value);
+    GenTree* impInlineUnboxNullable(CORINFO_CLASS_HANDLE nullableCls, GenTree* nullableClsNode, GenTree* obj);
+    void impLoadNullableFields(GenTree* nullableObj, CORINFO_CLASS_HANDLE nullableCls, GenTree** hasValueFld, GenTree** valueFld);
+
     int impBoxPatternMatch(CORINFO_RESOLVED_TOKEN* pResolvedToken,
                            const BYTE*             codeAddr,
                            const BYTE*             codeEndp,
@@ -4496,6 +4556,8 @@ protected:
 
     GenTree* impDuplicateWithProfiledArg(GenTreeCall* call, IL_OFFSET ilOffset);
 
+    GenTree* impThrowIfNull(GenTreeCall* call);
+
 #ifdef DEBUG
     var_types impImportJitTestLabelMark(int numArgs);
 #endif // DEBUG
@@ -4524,6 +4586,7 @@ protected:
 #endif
     void impResetLeaveBlock(BasicBlock* block, unsigned jmpAddr);
     GenTree* impTypeIsAssignable(GenTree* typeTo, GenTree* typeFrom);
+    GenTree* impGetGenericTypeDefinition(GenTree* type);
 
     // Mirrors StringComparison.cs
     enum StringComparison
@@ -5267,6 +5330,7 @@ public:
     bool fgHasSwitch; // any BBJ_SWITCH jumps?
 
     bool fgRemoveRestOfBlock; // true if we know that we will throw
+    bool fgHasNoReturnCall;   // true if statement we morphed had a no-return call
     bool fgStmtRemoved;       // true if we remove statements -> need new DFA
 
     enum FlowGraphOrder
@@ -5400,6 +5464,8 @@ public:
     bool fgMorphBlockStmt(BasicBlock* block, Statement* stmt DEBUGARG(const char* msg));
     void fgMorphStmtBlockOps(BasicBlock* block, Statement* stmt);
 
+    bool gtRemoveTreesAfterNoReturnCall(BasicBlock* block, Statement* stmt);
+
     //------------------------------------------------------------------------------------------------------------
     // MorphMDArrayTempCache: a simple cache of compiler temporaries in the local variable table, used to minimize
     // the number of locals allocated when doing early multi-dimensional array operation expansion. Two types of
@@ -5528,7 +5594,7 @@ public:
 
     void fgLiveVarAnalysis();
 
-    void fgComputeLifeCall(VARSET_TP& life, VARSET_VALARG_TP keepAliveVars, GenTreeCall* call);
+    GenTreeLclVarCommon* fgComputeLifeCall(VARSET_TP& life, VARSET_VALARG_TP keepAliveVars, GenTreeCall* call);
 
     void fgComputeLifeTrackedLocalUse(VARSET_TP& life, LclVarDsc& varDsc, GenTreeLclVarCommon* node);
     bool fgComputeLifeTrackedLocalDef(VARSET_TP&           life,
@@ -5702,8 +5768,14 @@ public:
 
     // Utility functions for fgValueNumber.
 
+    // Value number a block or blocks in a loop
+    void fgValueNumberBlocks(BasicBlock* block, BlockSet& visitedBlocks);
+
     // Perform value-numbering for the trees in "blk".
     void fgValueNumberBlock(BasicBlock* blk);
+
+    // Value number a phi definition
+    void fgValueNumberPhiDef(GenTreeLclVar* newSsaDef, BasicBlock* block, bool isUpdate = false);
 
     // Requires that "entryBlock" is the header block of "loop" and that "loop" is the
     // innermost loop of which "entryBlock" is the entry.  Returns the value number that should be
@@ -6130,6 +6202,7 @@ public:
 #endif // FEATURE_EH_WINDOWS_X86
 
     bool fgOptimizeUncondBranchToSimpleCond(BasicBlock* block, BasicBlock* target);
+    bool fgFoldSimpleCondByForwardSub(BasicBlock* block);
 
     bool fgBlockEndFavorsTailDuplication(BasicBlock* block, unsigned lclNum);
 
@@ -6168,6 +6241,7 @@ public:
     PhaseStatus fgUpdateFlowGraphPhase();
 
     PhaseStatus fgDfsBlocksAndRemove();
+    bool fgRemoveBlocksOutsideDfsTree();
 
     PhaseStatus fgFindOperOrder();
 
@@ -6740,6 +6814,7 @@ private:
     void fgAddCodeRef(BasicBlock* srcBlk, SpecialCodeKind kind);
     PhaseStatus fgCreateThrowHelperBlocks();
 
+
 public:
     AddCodeDsc* fgFindExcptnTarget(SpecialCodeKind kind, unsigned refData);
 
@@ -6749,6 +6824,8 @@ public:
     {
         return fgAddCodeList;
     }
+
+    void fgCreateThrowHelperBlockCode(AddCodeDsc* add);
 
 private:
     bool fgIsThrowHlpBlk(BasicBlock* block);
@@ -7200,6 +7277,7 @@ protected:
     void optValnumCSE_DataFlow();
     void optValnumCSE_Availability();
     void optValnumCSE_Heuristic(CSE_HeuristicCommon* heuristic);
+    GenTree* optExtractSideEffectsForCSE(GenTree* tree);
 
     bool     optDoCSE;             // True when we have found a duplicate CSE tree
     bool     optValnumCSE_phase;   // True when we are executing the optOptimizeValnumCSEs() phase
@@ -7571,6 +7649,10 @@ public:
                                          FlowGraphNaturalLoop*   loop,
                                          BasicBlock*             exiting,
                                          LoopLocalOccurrences*   loopLocals);
+    bool optCanAndShouldChangeExitTest(GenTree* cond, bool dump);
+    bool optPrimaryIVHasNonLoopUses(unsigned lclNum, FlowGraphNaturalLoop* loop, LoopLocalOccurrences* loopLocals);
+
+    bool optWidenIVs(ScalarEvolutionContext& scevContext, FlowGraphNaturalLoop* loop, LoopLocalOccurrences* loopLocals);
     bool optWidenPrimaryIV(FlowGraphNaturalLoop* loop,
                            unsigned              lclNum,
                            ScevAddRec*           addRec,
@@ -7586,6 +7668,9 @@ public:
         unsigned lclNum, unsigned ssaNum, unsigned newLclNum, BasicBlock* block, Statement* firstStmt);
     void optReplaceWidenedIV(unsigned lclNum, unsigned ssaNum, unsigned newLclNum, Statement* stmt);
     void optSinkWidenedIV(unsigned lclNum, unsigned newLclNum, FlowGraphNaturalLoop* loop);
+
+    bool optRemoveUnusedIVs(FlowGraphNaturalLoop* loop, LoopLocalOccurrences* loopLocals);
+    bool optIsUpdateOfIVWithoutSideEffects(GenTree* tree, unsigned lclNum);
 
     // Redundant branch opts
     //
@@ -7982,6 +8067,7 @@ public:
     AssertionIndex optAssertionIsSubrange(GenTree* tree, IntegralRange range, ASSERT_VALARG_TP assertions);
     AssertionIndex optAssertionIsSubtype(GenTree* tree, GenTree* methodTableArg, ASSERT_VALARG_TP assertions);
     AssertionIndex optAssertionIsNonNullInternal(GenTree* op, ASSERT_VALARG_TP assertions DEBUGARG(bool* pVnBased));
+    bool           optAssertionVNIsNonNull(ValueNum vn, ASSERT_VALARG_TP assertions);
     bool           optAssertionIsNonNull(GenTree*                    op,
                                          ASSERT_VALARG_TP assertions DEBUGARG(bool* pVnBased) DEBUGARG(AssertionIndex* pIndex));
 
@@ -8176,6 +8262,7 @@ public:
 
     bool eeIsValueClass(CORINFO_CLASS_HANDLE clsHnd);
     bool eeIsByrefLike(CORINFO_CLASS_HANDLE clsHnd);
+    bool eeIsSharedInst(CORINFO_CLASS_HANDLE clsHnd);
     bool eeIsIntrinsic(CORINFO_METHOD_HANDLE ftn);
     bool eeIsFieldStatic(CORINFO_FIELD_HANDLE fldHnd);
 
@@ -9447,10 +9534,6 @@ public:
 #endif // FEATURE_SIMD
     }
 
-#ifdef FEATURE_HW_INTRINSICS
-    static bool vnEncodesResultTypeForHWIntrinsic(NamedIntrinsic hwIntrinsicID);
-#endif // FEATURE_HW_INTRINSICS
-
 private:
     // Returns true if the TYP_SIMD locals on stack are aligned at their
     // preferred byte boundary specified by getSIMDTypeAlignment().
@@ -9899,6 +9982,8 @@ public:
 // Maximum number of locals before turning off the inlining
 #define MAX_LV_NUM_COUNT_FOR_INLINING 512
 
+        bool canUseTier0Opts;
+        bool canUseAllOpts;
         bool compMinOpts;
         bool compMinOptsIsSet;
 #ifdef DEBUG
@@ -9925,13 +10010,22 @@ public:
         }
 #endif // !DEBUG
 
+        // TODO: we should convert these into a single OptimizationLevel
+
         bool OptimizationDisabled() const
         {
-            return MinOpts() || compDbgCode;
+            assert(compMinOptsIsSet);
+            return !canUseAllOpts;
         }
         bool OptimizationEnabled() const
         {
-            return !OptimizationDisabled();
+            assert(compMinOptsIsSet);
+            return canUseAllOpts;
+        }
+        bool Tier0OptimizationEnabled() const
+        {
+            assert(compMinOptsIsSet);
+            return canUseTier0Opts;
         }
 
         void SetMinOpts(bool val)
@@ -9940,6 +10034,9 @@ public:
             assert(!compMinOptsIsSet || (compMinOpts == val));
             compMinOpts      = val;
             compMinOptsIsSet = true;
+
+            canUseTier0Opts = !compDbgCode && !jitFlags->IsSet(JitFlags::JIT_FLAG_MIN_OPT);
+            canUseAllOpts   = canUseTier0Opts && !val;
         }
 
         // true if the CLFLG_* for an optimization is set.
@@ -11391,6 +11488,11 @@ public:
     void GetStructTypeOffset(
         CORINFO_CLASS_HANDLE typeHnd, var_types* type0, var_types* type1, uint8_t* offset0, uint8_t* offset1);
 
+#elif defined(TARGET_RISCV64) || defined(TARGET_LOONGARCH64)
+    typedef JitHashTable<CORINFO_CLASS_HANDLE, JitPtrKeyFuncs<struct CORINFO_CLASS_STRUCT_>, CORINFO_FPSTRUCT_LOWERING*>
+                                     FpStructLoweringMap;
+    FpStructLoweringMap*             m_fpStructLoweringCache;
+    const CORINFO_FPSTRUCT_LOWERING* GetFpStructLowering(CORINFO_CLASS_HANDLE structHandle);
 #endif // defined(UNIX_AMD64_ABI)
 
     void     fgMorphMultiregStructArgs(GenTreeCall* call);
@@ -11622,6 +11724,7 @@ public:
             case GT_CNS_DBL:
             case GT_CNS_STR:
             case GT_CNS_VEC:
+            case GT_CNS_MSK:
             case GT_MEMORYBARRIER:
             case GT_JMP:
             case GT_JCC:

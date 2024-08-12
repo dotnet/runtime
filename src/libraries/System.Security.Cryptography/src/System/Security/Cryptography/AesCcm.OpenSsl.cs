@@ -43,7 +43,7 @@ namespace System.Security.Cryptography
 
                     // We need to set mode to encryption before setting the tag and nonce length
                     // otherwise older versions of OpenSSL (i.e. 1.0.1f which can be found on Ubuntu 14.04) will fail
-                    Interop.Crypto.EvpCipherSetKeyAndIV(ctx, Span<byte>.Empty, Span<byte>.Empty, Interop.Crypto.EvpCipherDirection.Encrypt);
+                    Interop.Crypto.EvpCipherSetKeyAndIV(ctx, ReadOnlySpan<byte>.Empty, ReadOnlySpan<byte>.Empty, Interop.Crypto.EvpCipherDirection.Encrypt);
                     Interop.Crypto.EvpCipherSetCcmTagLength(ctx, tag.Length);
                     Interop.Crypto.EvpCipherSetCcmNonceLength(ctx, nonce.Length);
                     Interop.Crypto.EvpCipherSetKeyAndIV(ctx, key, nonce, Interop.Crypto.EvpCipherDirection.NoChange);

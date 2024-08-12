@@ -125,8 +125,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 				typeof (GenericWithPublicFieldsArgument<>).MakeGenericType (type);
 			}
 
-			[ExpectedWarning ("IL2071", "'T'", Tool.None, "https://github.com/dotnet/linker/issues/2428")]
-			[ExpectedWarning ("IL2070", "'this'")]
+			[ExpectedWarning ("IL2071", "'T'")]
 			static void TestWithRequirementsFromParamWithMismatch (
 				[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)] Type type)
 			{
@@ -139,8 +138,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 				typeof (GenericWithPublicFieldsArgument<>).MakeGenericType (typeof (T));
 			}
 
-			[ExpectedWarning ("IL2091", "'T'", Tool.None,"https://github.com/dotnet/linker/issues/2428")]
-			[ExpectedWarning ("IL2090", "'this'")] // Note that this actually produces a warning which should not be possible to produce right now
+			[ExpectedWarning ("IL2091", "'T'")]
 			static void TestWithRequirementsFromGenericParamWithMismatch<
 				[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)] TInput> ()
 			{
@@ -191,7 +189,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 					typeof (GenericWithNewConstraint<>).MakeGenericType (typeof (TestType));
 				}
 
-				[ExpectedWarning ("IL2070")]
+				[ExpectedWarning ("IL2071")]
 				static void UnknownType (Type unknownType = null)
 				{
 					typeof (GenericWithNewConstraint<>).MakeGenericType (unknownType);
@@ -202,7 +200,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 					typeof (GenericWithNewConstraint<>).MakeGenericType (withCtor);
 				}
 
-				[ExpectedWarning ("IL2070")]
+				[ExpectedWarning ("IL2071")]
 				static void AnnotationMismatch ([DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)] Type withPublicMethods = null)
 				{
 					typeof (GenericWithNewConstraint<>).MakeGenericType (withPublicMethods);
@@ -213,7 +211,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 					typeof (GenericWithNewConstraintAndAnnotations<>).MakeGenericType (withMethodsAndCtors);
 				}
 
-				[ExpectedWarning ("IL2070")]
+				[ExpectedWarning ("IL2071")]
 				static void AnnotationAndConstraintMismatch ([DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)] Type withMethods = null)
 				{
 					typeof (GenericWithNewConstraintAndAnnotations<>).MakeGenericType (withMethods);
@@ -246,7 +244,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 					typeof (GenericWithStructConstraint<>).MakeGenericType (withCtor);
 				}
 
-				[ExpectedWarning ("IL2070")]
+				[ExpectedWarning ("IL2071")]
 				static void AnnotationMismatch ([DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)] Type withPublicMethods = null)
 				{
 					typeof (GenericWithStructConstraint<>).MakeGenericType (withPublicMethods);
@@ -276,7 +274,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 					typeof (GenericWithUnmanagedConstraint<>).MakeGenericType (withCtor);
 				}
 
-				[ExpectedWarning ("IL2070")]
+				[ExpectedWarning ("IL2071")]
 				static void AnnotationMismatch ([DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)] Type withPublicMethods = null)
 				{
 					typeof (GenericWithUnmanagedConstraint<>).MakeGenericType (withPublicMethods);
@@ -753,7 +751,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 					=> typeof (IFoo).GetMethod ("Method")
 					.MakeGenericMethod (new Type[] { typeof (int) });
 
-				[ExpectedWarning ("IL2090", "T", "PublicMethods")]
+				[ExpectedWarning ("IL2091", "T", "PublicMethods")]
 				static MethodInfo UnannotatedGenericParam<T> ()
 					=> typeof (IFoo).GetMethod ("Method")
 					.MakeGenericMethod (new Type[] { typeof (T) });
@@ -787,7 +785,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 						.MakeGenericMethod (typeof (TestType));
 				}
 
-				[ExpectedWarning ("IL2070")]
+				[ExpectedWarning ("IL2071")]
 				static void UnknownType (Type unknownType = null)
 				{
 					typeof (NewConstraint).GetMethod (nameof (GenericWithNewConstraint), BindingFlags.Static | BindingFlags.NonPublic)
@@ -800,7 +798,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 						.MakeGenericMethod (withCtor);
 				}
 
-				[ExpectedWarning ("IL2070")]
+				[ExpectedWarning ("IL2071")]
 				static void AnnotationMismatch ([DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)] Type withPublicMethods = null)
 				{
 					typeof (NewConstraint).GetMethod (nameof (GenericWithNewConstraint), BindingFlags.Static | BindingFlags.NonPublic)
@@ -813,7 +811,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 						.MakeGenericMethod (withMethodsAndCtors);
 				}
 
-				[ExpectedWarning ("IL2070")]
+				[ExpectedWarning ("IL2071")]
 				static void AnnotationAndConstraintMismatch ([DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)] Type withMethods = null)
 				{
 					typeof (NewConstraint).GetMethod (nameof (GenericWithNewConstraintAndAnnotations), BindingFlags.Static | BindingFlags.NonPublic)
@@ -850,7 +848,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 						.MakeGenericMethod (withCtor);
 				}
 
-				[ExpectedWarning ("IL2070")]
+				[ExpectedWarning ("IL2071")]
 				static void AnnotationMismatch ([DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)] Type withPublicMethods = null)
 				{
 					typeof (StructConstraint).GetMethod (nameof (GenericWithStructConstraint), BindingFlags.Static | BindingFlags.NonPublic)
@@ -884,7 +882,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 						.MakeGenericMethod (withCtor);
 				}
 
-				[ExpectedWarning ("IL2070")]
+				[ExpectedWarning ("IL2071")]
 				static void AnnotationMismatch ([DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)] Type withPublicMethods = null)
 				{
 					typeof (UnmanagedConstraint).GetMethod (nameof (GenericWithUnmanagedConstraint), BindingFlags.Static | BindingFlags.NonPublic)
@@ -906,7 +904,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 				m.MakeGenericMethod (unknownType);
 			}
 
-			[ExpectedWarning ("IL2070", nameof (MethodInfo.MakeGenericMethod))]
+			[ExpectedWarning ("IL2071", nameof (MethodInfo.MakeGenericMethod))]
 			static void TestGetMethodFromHandleWithWarning ([DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)] Type publicMethodsType = null)
 			{
 				MethodInfo m = (MethodInfo) MethodInfo.GetMethodFromHandle (typeof (MakeGenericMethod).GetMethod (nameof (GenericWithRequirements)).MethodHandle);

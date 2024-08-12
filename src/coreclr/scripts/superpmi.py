@@ -278,6 +278,7 @@ superpmi_common_parser.add_argument("--break_on_assert", action="store_true", he
 superpmi_common_parser.add_argument("--break_on_error", action="store_true", help=break_on_error_help)
 superpmi_common_parser.add_argument("--skip_cleanup", action="store_true", help=skip_cleanup_help)
 superpmi_common_parser.add_argument("--sequential", action="store_true", help="Run SuperPMI in sequential mode. Default is to run in parallel for faster runs.")
+superpmi_common_parser.add_argument("--parallelism", help="Specify amount of parallelism")
 superpmi_common_parser.add_argument("-spmi_log_file", help=spmi_log_file_help)
 superpmi_common_parser.add_argument("-jit_name", help="Specify the filename of the jit to use, e.g., 'clrjit_universal_arm64_x64.dll'. Default is clrjit.dll/libclrjit.so")
 superpmi_common_parser.add_argument("--altjit", action="store_true", help="Set the altjit variables on replay.")
@@ -1452,22 +1453,36 @@ class SuperPMICollect:
 # SuperPMI Replay helpers
 ################################################################################
 
-
-def print_superpmi_result(return_code, coreclr_args, base_metrics, diff_metrics):
-    """ Print a description of a superpmi return (error) code. If the return code is
-        zero, meaning success, don't print anything.
+def print_superpmi_error_result(return_code, coreclr_args):
+    """ Print a description of a superpmi return error code.
         Note that Python treats process return codes (at least on Windows) as
         unsigned integers, so compare against both signed and unsigned numbers for
         those return codes.
     """
+
     if return_code == 0:
-        logging.info("Clean SuperPMI {} ({} contexts processed)".format("replay" if diff_metrics is None else "diff", base_metrics["Overall"]["Successful compiles"]))
+        pass # Success
     elif return_code == -1 or return_code == 4294967295:
-        logging.error("General fatal error")
+        logging.error("General fatal error, please check the log for more details.")
     elif return_code == -2 or return_code == 4294967294:
-        logging.error("JIT failed to initialize")
+        logging.error("JIT failed to initialize, please check the log for more details.")
     elif return_code == 1:
         logging.warning("Compilation failures")
+    elif return_code == 2:
+        pass # Diffs
+    elif return_code == 3:
+        pass # Misses
+    elif return_code == 139 and coreclr_args.host_os != "windows":
+        logging.error("Fatal error, SuperPMI has returned SIGSEGV (segmentation fault), please check the log for more details.")
+    else:
+        logging.error("Unknown error code %s, please check the log for more details.", return_code)
+
+def print_superpmi_success_result(return_code, base_metrics, diff_metrics):
+    """ Print a description of a superpmi return success code.
+    """
+
+    if return_code == 0:
+        logging.info("Clean SuperPMI {} ({} contexts processed)".format("replay" if diff_metrics is None else "diff", base_metrics["Overall"]["Successful compiles"]))
     elif return_code == 2:
         logging.warning("Asm diffs found")
     elif return_code == 3:
@@ -1482,12 +1497,6 @@ def print_superpmi_result(return_code, coreclr_args, base_metrics, diff_metrics)
                 logging.warning("SuperPMI encountered missing data for {} out of {} contexts".format(missing_base, total_contexts))
             else:
                 logging.warning("SuperPMI encountered missing data. Missing with base JIT: {}. Missing with diff JIT: {}. Total contexts: {}.".format(missing_base, missing_diff, total_contexts))
-
-    elif return_code == 139 and coreclr_args.host_os != "windows":
-        logging.error("Fatal error, SuperPMI has returned SIGSEGV (segmentation fault)")
-    else:
-        logging.error("Unknown error code %s", return_code)
-
 
 def print_fail_mcl_file_method_numbers(fail_mcl_file):
     """ Given a SuperPMI ".mcl" file (containing a list of failure indices), print out the method numbers.
@@ -1666,7 +1675,10 @@ class SuperPMIReplay:
                 repro_flags += [ "-target", self.coreclr_args.target_arch ]
 
             if not self.coreclr_args.sequential and not self.coreclr_args.compile:
-                common_flags += [ "-p" ]
+                if not self.coreclr_args.parallelism:
+                    common_flags += [ "-p" ]
+                else:
+                    common_flags += [ "-p", self.coreclr_args.parallelism ]
 
             if self.coreclr_args.break_on_assert:
                 common_flags += [ "-boa" ]
@@ -1718,9 +1730,10 @@ class SuperPMIReplay:
 
                 command = [self.superpmi_path] + flags + [self.jit_path, mch_file]
                 (return_code, replay_output) = run_and_log_return_output(command)
+                print_superpmi_error_result(return_code, self.coreclr_args)
 
                 replay_metrics = self.aggregate_replay_metrics(details_info_file)
-                print_superpmi_result(return_code, self.coreclr_args, replay_metrics, None)
+                print_superpmi_success_result(return_code, replay_metrics, None)
 
                 if return_code != 0:
                     # Don't report as replay failure missing data (return code 3).
@@ -2171,7 +2184,10 @@ class SuperPMIReplayAsmDiffs:
                 flags += diff_option_flags
 
                 if not self.coreclr_args.sequential and not self.coreclr_args.compile:
-                    flags += [ "-p" ]
+                    if not self.coreclr_args.parallelism:
+                        flags += [ "-p" ]
+                    else:
+                        flags += [ "-p", self.coreclr_args.parallelism ]
 
                 if self.coreclr_args.break_on_assert:
                     flags += [ "-boa" ]
@@ -2202,9 +2218,11 @@ class SuperPMIReplayAsmDiffs:
                     command = [self.superpmi_path] + flags + [self.base_jit_path, self.diff_jit_path, mch_file]
                     return_code = run_and_log(command)
 
-                (base_metrics, diff_metrics, diffs) = aggregate_diff_metrics(detailed_info_file)
+                print_superpmi_error_result(return_code, self.coreclr_args)
 
-                print_superpmi_result(return_code, self.coreclr_args, base_metrics, diff_metrics)
+                (base_metrics, diff_metrics, diffs) = aggregate_diff_metrics(detailed_info_file)
+                print_superpmi_success_result(return_code, base_metrics, diff_metrics)
+
                 artifacts_base_name = create_artifacts_base_name(self.coreclr_args, mch_file)
 
                 if return_code != 0:
@@ -2974,6 +2992,7 @@ class SuperPMIReplayThroughputDiff:
                 ]
                 flags = [
                     "-applyDiff",
+                    "-v", "ewi",
                     "-details", detailed_info_file,
                 ]
                 flags += target_flags
@@ -2981,7 +3000,10 @@ class SuperPMIReplayThroughputDiff:
                 flags += diff_option_flags
 
                 if not self.coreclr_args.sequential and not self.coreclr_args.compile:
-                    flags += [ "-p" ]
+                    if not self.coreclr_args.parallelism:
+                        flags += [ "-p" ]
+                    else:
+                        flags += [ "-p", self.coreclr_args.parallelism ]
 
                 if self.coreclr_args.break_on_assert:
                     flags += [ "-boa" ]
@@ -3005,11 +3027,10 @@ class SuperPMIReplayThroughputDiff:
                     command = [self.pin_path] + pin_options + ["--"] + [self.superpmi_path] + flags + [self.base_jit_path, self.diff_jit_path, mch_file]
                     return_code = run_and_log(command)
 
-                if return_code != 0:
-                    command_string = " ".join(command)
-                    logging.debug("'%s': Error return code: %s", command_string, return_code)
+                print_superpmi_error_result(return_code, self.coreclr_args)
 
                 (base_metrics, diff_metrics, _) = aggregate_diff_metrics(detailed_info_file)
+                print_superpmi_success_result(return_code, base_metrics, diff_metrics)
 
                 if base_metrics is not None and diff_metrics is not None:
                     base_instructions = base_metrics["Overall"]["Diff executed instructions"]
@@ -4448,6 +4469,11 @@ def setup_args(args):
                             "sequential",
                             lambda unused: True,
                             "Unable to set sequential.")
+
+        coreclr_args.verify(args,
+                            "parallelism",
+                            lambda unused: True,
+                            "Unable to set parallelism.")
 
         coreclr_args.verify(args,
                             "error_limit",

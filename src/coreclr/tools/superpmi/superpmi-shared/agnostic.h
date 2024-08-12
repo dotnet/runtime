@@ -103,7 +103,7 @@ struct Agnostic_CORINFO_METHODNAME_TOKENin
     DWORDLONG ftn;
     DWORD     className;
     DWORD     namespaceName;
-    DWORD     enclosingClassName;
+    DWORD     maxEnclosingClassNames;
 };
 
 struct Agnostic_CORINFO_METHODNAME_TOKENout
@@ -111,7 +111,7 @@ struct Agnostic_CORINFO_METHODNAME_TOKENout
     DWORD methodName;
     DWORD className;
     DWORD namespaceName;
-    DWORD enclosingClassName;
+    DWORD enclosingClassNames;
 };
 
 struct Agnostic_CORINFO_RESOLVED_TOKENin
@@ -630,6 +630,14 @@ struct Agnostic_GetSwiftLowering
     DWORD byReference;
     DWORD loweredElements[MAX_SWIFT_LOWERED_ELEMENTS];
     DWORD offsets[MAX_SWIFT_LOWERED_ELEMENTS];
+    DWORD numLoweredElements;
+};
+
+struct Agnostic_GetFpStructLowering
+{
+    DWORD byIntegerCallConv;
+    DWORD loweredElements[MAX_FPSTRUCT_LOWERED_ELEMENTS];
+    DWORD offsets[MAX_FPSTRUCT_LOWERED_ELEMENTS];
     DWORD numLoweredElements;
 };
 

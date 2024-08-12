@@ -18,11 +18,13 @@
 #define g_ThreadingNS       g_SystemNS ".Threading"
 #define g_CollectionsNS     g_SystemNS ".Collections"
 #define g_ResourcesNS       g_SystemNS ".Resources"
-#define g_DiagnosticsNS     g_SystemNS ".Diagnostics"
-#define g_CodeContractsNS   g_DiagnosticsNS ".Contracts"
 #define g_GlobalizationNS   g_SystemNS ".Globalization"
 #define g_TextNS            g_SystemNS ".Text"
 #define g_CollectionsGenericNS g_SystemNS ".Collections.Generic"
+
+#define g_DiagnosticsNS     g_SystemNS ".Diagnostics"
+#define g_CodeContractsNS   g_DiagnosticsNS ".Contracts"
+#define g_TracingNS         g_DiagnosticsNS ".Tracing"
 
 #define g_InteropServicesNS g_SystemNS ".Runtime.InteropServices"
 #define g_InternalInteropServicesNS  "Internal.Runtime.InteropServices"

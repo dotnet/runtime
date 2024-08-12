@@ -772,9 +772,13 @@ void Compiler::fgLiveVarAnalysis()
 //    keepAliveVars - Tracked locals that must be kept alive everywhere in the block
 //    call          - The call node in question.
 //
-void Compiler::fgComputeLifeCall(VARSET_TP& life, VARSET_VALARG_TP keepAliveVars, GenTreeCall* call)
+// Returns:
+//    local defined by the call, if any (eg retbuf)
+//
+GenTreeLclVarCommon* Compiler::fgComputeLifeCall(VARSET_TP& life, VARSET_VALARG_TP keepAliveVars, GenTreeCall* call)
 {
     assert(call != nullptr);
+    GenTreeLclVarCommon* definedLcl = nullptr;
 
     // If this is a tail-call via helper, and we have any unmanaged p/invoke calls in
     // the method, then we're going to run the p/invoke epilog
@@ -834,11 +838,13 @@ void Compiler::fgComputeLifeCall(VARSET_TP& life, VARSET_VALARG_TP keepAliveVars
         }
     }
 
-    GenTreeLclVarCommon* definedLcl = gtCallGetDefinedRetBufLclAddr(call);
+    definedLcl = gtCallGetDefinedRetBufLclAddr(call);
     if (definedLcl != nullptr)
     {
         fgComputeLifeLocal(life, keepAliveVars, definedLcl);
     }
+
+    return definedLcl;
 }
 
 //------------------------------------------------------------------------
@@ -1171,53 +1177,62 @@ void Compiler::fgComputeLife(VARSET_TP&           life,
     AGAIN:
         assert(tree->OperGet() != GT_QMARK);
 
+        bool       isUse        = false;
+        bool       doAgain      = false;
+        bool       storeRemoved = false;
+        LclVarDsc* varDsc       = nullptr;
+
         if (tree->IsCall())
         {
-            fgComputeLifeCall(life, keepAliveVars, tree->AsCall());
+            GenTreeLclVarCommon* const definedLcl = fgComputeLifeCall(life, keepAliveVars, tree->AsCall());
+            if (definedLcl != nullptr)
+            {
+                isUse  = (definedLcl->gtFlags & GTF_VAR_USEASG) != 0;
+                varDsc = lvaGetDesc(definedLcl);
+            }
         }
         else if (tree->OperIsNonPhiLocal())
         {
+            isUse            = (tree->gtFlags & GTF_VAR_USEASG) != 0;
             bool isDeadStore = fgComputeLifeLocal(life, keepAliveVars, tree);
             if (isDeadStore)
             {
-                LclVarDsc* varDsc       = lvaGetDesc(tree->AsLclVarCommon());
-                bool       isUse        = (tree->gtFlags & GTF_VAR_USEASG) != 0;
-                bool       doAgain      = false;
-                bool       storeRemoved = false;
+                varDsc = lvaGetDesc(tree->AsLclVarCommon());
 
                 if (fgRemoveDeadStore(&tree, varDsc, life, &doAgain, pStmtInfoDirty, &storeRemoved DEBUGARG(treeModf)))
                 {
                     assert(!doAgain);
                     break;
                 }
+            }
+        }
 
-                if (isUse && !storeRemoved)
+        // SSA and VN treat "partial definitions" as true uses, so for this
+        // front-end liveness pass we must add them to the live set in case
+        // we failed to remove the dead store.
+        //
+        if ((varDsc != nullptr) && isUse && !storeRemoved)
+        {
+            if (varDsc->lvTracked)
+            {
+                VarSetOps::AddElemD(this, life, varDsc->lvVarIndex);
+            }
+            if (varDsc->lvPromoted)
+            {
+                for (unsigned fieldIndex = 0; fieldIndex < varDsc->lvFieldCnt; fieldIndex++)
                 {
-                    // SSA and VN treat "partial definitions" as true uses, so for this
-                    // front-end liveness pass we must add them to the live set in case
-                    // we failed to remove the dead store.
-                    if (varDsc->lvTracked)
+                    LclVarDsc* fieldVarDsc = lvaGetDesc(varDsc->lvFieldLclStart + fieldIndex);
+                    if (fieldVarDsc->lvTracked)
                     {
-                        VarSetOps::AddElemD(this, life, varDsc->lvVarIndex);
+                        VarSetOps::AddElemD(this, life, fieldVarDsc->lvVarIndex);
                     }
-                    if (varDsc->lvPromoted)
-                    {
-                        for (unsigned fieldIndex = 0; fieldIndex < varDsc->lvFieldCnt; fieldIndex++)
-                        {
-                            LclVarDsc* fieldVarDsc = lvaGetDesc(varDsc->lvFieldLclStart + fieldIndex);
-                            if (fieldVarDsc->lvTracked)
-                            {
-                                VarSetOps::AddElemD(this, life, fieldVarDsc->lvVarIndex);
-                            }
-                        }
-                    }
-                }
-
-                if (doAgain)
-                {
-                    goto AGAIN;
                 }
             }
+        }
+
+        if (doAgain)
+        {
+            goto AGAIN;
         }
     }
 }
@@ -1407,6 +1422,7 @@ void Compiler::fgComputeLifeLIR(VARSET_TP& life, BasicBlock* block, VARSET_VALAR
             case GT_CNS_DBL:
             case GT_CNS_STR:
             case GT_CNS_VEC:
+            case GT_CNS_MSK:
             case GT_PHYSREG:
                 // These are all side-effect-free leaf nodes.
                 if (node->IsUnusedValue())

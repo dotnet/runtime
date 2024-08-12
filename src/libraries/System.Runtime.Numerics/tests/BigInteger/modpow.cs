@@ -156,6 +156,7 @@ namespace System.Numerics.Tests
             }
         }
 
+<<<<<<< HEAD
         // InlineData randomly generated using a new Random(0) and the same logic as is used in MyBigIntImp
         // When using the VerifyModPowString approach, these tests were taking over 100s to execute.
         [Theory]
@@ -181,6 +182,8 @@ namespace System.Numerics.Tests
             Assert.Equal(resultInt, BigInteger.ModPow(valueInt, exponentInt, modulusInt));
         }
 
+=======
+>>>>>>> upstream/main
         [Fact]
         public static void ModPow0Power()
         {
@@ -447,14 +450,14 @@ namespace System.Numerics.Tests
     public class modpowTestThreshold
     {
         [Fact]
-        public static void ModPow1Large2SmallInt()
+        public static void ModPow1Large2SmallInt_Threshold()
         {
             // Again, with lower threshold
             BigIntTools.Utils.RunWithFakeThreshold(BigIntegerCalculator.ReducerThreshold, 8, modpowTest.ModPow1Large2SmallInt);
         }
 
         [Fact]
-        public static void ModPow2Large1SmallInt()
+        public static void ModPow2Large1SmallInt_Threshold()
         {
             // Again, with lower threshold
             BigIntTools.Utils.RunWithFakeThreshold(BigIntegerCalculator.ReducerThreshold, 8, modpowTest.ModPow2Large1SmallInt);
@@ -480,6 +483,9 @@ namespace System.Numerics.Tests
             BigInteger exponentInt = BigInteger.Parse(exponent);
             BigInteger modulusInt = BigInteger.Parse(modulus);
             BigInteger resultInt = BigInteger.Parse(expected);
+
+            // Once with default threshold
+            Assert.Equal(resultInt, BigInteger.ModPow(valueInt, exponentInt, modulusInt));
 
             // Once with reduced threshold
             BigIntTools.Utils.RunWithFakeThreshold(BigIntegerCalculator.ReducerThreshold, 8, () =>

@@ -12,7 +12,7 @@ using Xunit;
 
 public class SyncTextWriter
 {
-    // Browser bypasses SyncTextWriter for faster startup
+    // single-threaded WASM bypasses SyncTextWriter for faster startup
     [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
     public void SyncTextWriterLockedOnThis()
     {

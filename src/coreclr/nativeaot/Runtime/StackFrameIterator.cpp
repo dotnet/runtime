@@ -323,10 +323,9 @@ void StackFrameIterator::InternalInit(Thread * pThreadToWalk, PInvokeTransitionF
 
 #endif // TARGET_ARM
 
-#endif // defined(USE_PORTABLE_HELPERS)
-
     // adjust for thunks, if needed
     EnsureInitializedToManagedFrame();
+#endif // !defined(USE_PORTABLE_HELPERS)
 
     STRESS_LOG1(LF_STACKWALK, LL_INFO10000, "   %p\n", m_ControlPC);
 }
@@ -517,6 +516,14 @@ void StackFrameIterator::InternalInit(Thread * pThreadToWalk, PTR_PAL_LIMITED_CO
     m_RegDisplay.pR13 = (PTR_uintptr_t)PTR_TO_MEMBER_TADDR(PAL_LIMITED_CONTEXT, pCtx, R13);
     m_RegDisplay.pR14 = (PTR_uintptr_t)PTR_TO_MEMBER_TADDR(PAL_LIMITED_CONTEXT, pCtx, R14);
     m_RegDisplay.pR15 = (PTR_uintptr_t)PTR_TO_MEMBER_TADDR(PAL_LIMITED_CONTEXT, pCtx, R15);
+
+#if defined(TARGET_WINDOWS)
+    //
+    // SSP, we only need the value
+    //
+    m_RegDisplay.SSP  = pCtx->SSP;
+#endif
+
     //
     // preserved xmm regs
     //
@@ -632,6 +639,13 @@ void StackFrameIterator::InternalInit(Thread * pThreadToWalk, NATIVE_CONTEXT* pC
     m_RegDisplay.pR13 = (PTR_uintptr_t)PTR_TO_REG(pCtx, R13);
     m_RegDisplay.pR14 = (PTR_uintptr_t)PTR_TO_REG(pCtx, R14);
     m_RegDisplay.pR15 = (PTR_uintptr_t)PTR_TO_REG(pCtx, R15);
+
+#if defined(TARGET_WINDOWS)
+    //
+    // SSP, not needed. Unwind from native context is never for EH.
+    //
+    m_RegDisplay.SSP  = 0;
+#endif
 
     //
     // scratch regs
@@ -1005,6 +1019,13 @@ void StackFrameIterator::UnwindFuncletInvokeThunk()
     m_RegDisplay.pR14 = SP++;
     m_RegDisplay.pR15 = SP++;
 
+#if defined(TARGET_WINDOWS)
+    if (m_RegDisplay.SSP)
+    {
+        m_RegDisplay.SSP += 8;
+    }
+#endif
+
 #elif defined(TARGET_X86)
     SP = (PTR_uintptr_t)(m_RegDisplay.SP + 0x4);   // skip the saved assembly-routine-EBP
 
@@ -1369,6 +1390,12 @@ void StackFrameIterator::UnwindUniversalTransitionThunk()
     m_RegDisplay.SetIP(PCODEToPINSTR(*addressOfPushedCallerIP));
     m_RegDisplay.SetSP((uintptr_t)dac_cast<TADDR>(stackFrame->get_CallerSP()));
     SetControlPC(dac_cast<PTR_VOID>(m_RegDisplay.GetIP()));
+#if defined(TARGET_AMD64) && defined(TARGET_WINDOWS)
+    if (m_RegDisplay.SSP)
+    {
+        m_RegDisplay.SSP += 8;
+    }
+#endif
 
     // All universal transition cases rely on conservative GC reporting being applied to the
     // full argument set that flowed into the call.  Report the lower bound of this range (the
@@ -1429,6 +1456,14 @@ void StackFrameIterator::UnwindThrowSiteThunk()
     m_RegDisplay.pR13 = (PTR_uintptr_t)PTR_TO_MEMBER_TADDR(PAL_LIMITED_CONTEXT, pContext, R13);
     m_RegDisplay.pR14 = (PTR_uintptr_t)PTR_TO_MEMBER_TADDR(PAL_LIMITED_CONTEXT, pContext, R14);
     m_RegDisplay.pR15 = (PTR_uintptr_t)PTR_TO_MEMBER_TADDR(PAL_LIMITED_CONTEXT, pContext, R15);
+
+#if defined(TARGET_WINDOWS)
+    if (m_RegDisplay.SSP)
+    {
+        m_RegDisplay.SSP += 8;
+    }
+#endif
+
 #elif defined(TARGET_ARM)
     m_RegDisplay.pR4  = (PTR_uintptr_t)PTR_TO_MEMBER_TADDR(PAL_LIMITED_CONTEXT, pContext, R4);
     m_RegDisplay.pR5  = (PTR_uintptr_t)PTR_TO_MEMBER_TADDR(PAL_LIMITED_CONTEXT, pContext, R5);

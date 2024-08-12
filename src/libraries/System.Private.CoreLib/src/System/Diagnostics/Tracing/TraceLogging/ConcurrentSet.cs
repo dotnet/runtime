@@ -70,7 +70,7 @@ namespace System.Diagnostics.Tracing
 
             if (oldItems == null)
             {
-                newItems = new ItemType[] { newItem };
+                newItems = [newItem];
             }
             else
             {

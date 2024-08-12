@@ -12,8 +12,33 @@ export async function loadLazyAssembly (assemblyNameToLoad: string): Promise<boo
         throw new Error("No assemblies have been marked as lazy-loadable. Use the 'BlazorWebAssemblyLazyLoad' item group in your project file to enable lazy loading an assembly.");
     }
 
+    let assemblyNameWithoutExtension = assemblyNameToLoad;
+    if (assemblyNameToLoad.endsWith(".dll"))
+        assemblyNameWithoutExtension = assemblyNameToLoad.substring(0, assemblyNameToLoad.length - 4);
+    else if (assemblyNameToLoad.endsWith(".wasm"))
+        assemblyNameWithoutExtension = assemblyNameToLoad.substring(0, assemblyNameToLoad.length - 5);
+
+    const assemblyNameToLoadDll = assemblyNameWithoutExtension + ".dll";
+    const assemblyNameToLoadWasm = assemblyNameWithoutExtension + ".wasm";
+    if (loaderHelpers.config.resources!.fingerprinting) {
+        const map = loaderHelpers.config.resources!.fingerprinting;
+        for (const fingerprintedName in map) {
+            const nonFingerprintedName = map[fingerprintedName];
+            if (nonFingerprintedName == assemblyNameToLoadDll || nonFingerprintedName == assemblyNameToLoadWasm) {
+                assemblyNameToLoad = fingerprintedName;
+                break;
+            }
+        }
+    }
+
     if (!lazyAssemblies[assemblyNameToLoad]) {
-        throw new Error(`${assemblyNameToLoad} must be marked with 'BlazorWebAssemblyLazyLoad' item group in your project file to allow lazy-loading.`);
+        if (lazyAssemblies[assemblyNameToLoadDll]) {
+            assemblyNameToLoad = assemblyNameToLoadDll;
+        } else if (lazyAssemblies[assemblyNameToLoadWasm]) {
+            assemblyNameToLoad = assemblyNameToLoadWasm;
+        } else {
+            throw new Error(`${assemblyNameToLoad} must be marked with 'BlazorWebAssemblyLazyLoad' item group in your project file to allow lazy-loading.`);
+        }
     }
 
     const dllAsset: AssetEntry = {
@@ -26,8 +51,22 @@ export async function loadLazyAssembly (assemblyNameToLoad: string): Promise<boo
         return false;
     }
 
-    const pdbNameToLoad = changeExtension(dllAsset.name, ".pdb");
-    const shouldLoadPdb = loaderHelpers.config.debugLevel != 0 && loaderHelpers.isDebuggingSupported() && Object.prototype.hasOwnProperty.call(lazyAssemblies, pdbNameToLoad);
+    let pdbNameToLoad = assemblyNameWithoutExtension + ".pdb";
+    let shouldLoadPdb = false;
+    if (loaderHelpers.config.debugLevel != 0) {
+        shouldLoadPdb = Object.prototype.hasOwnProperty.call(lazyAssemblies, pdbNameToLoad);
+        if (loaderHelpers.config.resources!.fingerprinting) {
+            const map = loaderHelpers.config.resources!.fingerprinting;
+            for (const fingerprintedName in map) {
+                const nonFingerprintedName = map[fingerprintedName];
+                if (nonFingerprintedName == pdbNameToLoad) {
+                    pdbNameToLoad = fingerprintedName;
+                    shouldLoadPdb = true;
+                    break;
+                }
+            }
+        }
+    }
 
     const dllBytesPromise = loaderHelpers.retrieve_asset_download(dllAsset);
 
@@ -54,13 +93,4 @@ export async function loadLazyAssembly (assemblyNameToLoad: string): Promise<boo
 
     load_lazy_assembly(dll, pdb);
     return true;
-}
-
-function changeExtension (filename: string, newExtensionWithLeadingDot: string) {
-    const lastDotIndex = filename.lastIndexOf(".");
-    if (lastDotIndex < 0) {
-        throw new Error(`No extension to replace in '${filename}'`);
-    }
-
-    return filename.substring(0, lastDotIndex) + newExtensionWithLeadingDot;
 }

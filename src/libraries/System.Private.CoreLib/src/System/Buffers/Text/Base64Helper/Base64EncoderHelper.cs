@@ -58,6 +58,7 @@ namespace System.Buffers.Text
                             goto DoneExit;
                     }
 
+#if NET9_0_OR_GREATER
                     end = srcMax - 48;
                     if (AdvSimd.Arm64.IsSupported && (end >= src))
                     {
@@ -66,6 +67,7 @@ namespace System.Buffers.Text
                         if (src == srcEnd)
                             goto DoneExit;
                     }
+#endif
 
                     end = srcMax - 16;
                     if ((Ssse3.IsSupported || AdvSimd.Arm64.IsSupported) && BitConverter.IsLittleEndian && (end >= src))
@@ -130,8 +132,10 @@ namespace System.Buffers.Text
 
 #if NET
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+#if NET9_0_OR_GREATER
         [CompExactlyDependsOn(typeof(Avx512BW))]
         [CompExactlyDependsOn(typeof(Avx512Vbmi))]
+#endif
         private static unsafe void Avx512Encode<TBase64Encoder, T>(TBase64Encoder encoder, ref byte* srcBytes, ref T* destBytes, byte* srcEnd, int sourceLength, int destLength, byte* srcStart, T* destStart)
             where TBase64Encoder : IBase64Encoder<T>
             where T : unmanaged
@@ -205,7 +209,9 @@ namespace System.Buffers.Text
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+#if NET9_0_OR_GREATER
         [CompExactlyDependsOn(typeof(Avx2))]
+#endif
         private static unsafe void Avx2Encode<TBase64Encoder, T>(TBase64Encoder encoder, ref byte* srcBytes, ref T* destBytes, byte* srcEnd, int sourceLength, int destLength, byte* srcStart, T* destStart)
             where TBase64Encoder : IBase64Encoder<T>
             where T : unmanaged
@@ -376,6 +382,7 @@ namespace System.Buffers.Text
             destBytes = dest;
         }
 
+#if NET9_0_OR_GREATER // Part of the Arm APIs used here added in .NET 9
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [CompExactlyDependsOn(typeof(AdvSimd.Arm64))]
         private static unsafe void AdvSimdEncode<TBase64Encoder, T>(TBase64Encoder encoder, ref byte* srcBytes, ref T* destBytes, byte* srcEnd, int sourceLength, int destLength, byte* srcStart, T* destStart)
@@ -434,10 +441,13 @@ namespace System.Buffers.Text
             srcBytes = src;
             destBytes = dest;
         }
+#endif
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+#if NET9_0_OR_GREATER
         [CompExactlyDependsOn(typeof(Ssse3))]
         [CompExactlyDependsOn(typeof(AdvSimd.Arm64))]
+#endif
         private static unsafe void Vector128Encode<TBase64Encoder, T>(TBase64Encoder encoder, ref byte* srcBytes, ref T* destBytes, byte* srcEnd, int sourceLength, int destLength, byte* srcStart, T* destStart)
             where TBase64Encoder : IBase64Encoder<T>
             where T : unmanaged
@@ -712,7 +722,9 @@ namespace System.Buffers.Text
             }
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
+#if NET9_0_OR_GREATER
             [CompExactlyDependsOn(typeof(Avx2))]
+#endif
             public unsafe void StoreVector256ToDestination(byte* dest, byte* destStart, int destLength, Vector256<byte> str)
             {
                 AssertWrite<Vector256<sbyte>>(dest, destStart, destLength);
@@ -726,6 +738,7 @@ namespace System.Buffers.Text
                 str.Store(dest);
             }
 
+#if NET9_0_OR_GREATER
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             [CompExactlyDependsOn(typeof(AdvSimd.Arm64))]
             public unsafe void StoreArmVector128x4ToDestination(byte* dest, byte* destStart, int destLength,
@@ -734,7 +747,8 @@ namespace System.Buffers.Text
                 AssertWrite<Vector128<byte>>(dest, destStart, destLength);
                 AdvSimd.Arm64.StoreVectorAndZip(dest, (res1, res2, res3, res4));
             }
-#endif
+#endif // NET9_0_OR_GREATER
+#endif // NET
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public unsafe void EncodeThreeAndWrite(byte* threeBytes, byte* destination, ref byte encodingMap)

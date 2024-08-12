@@ -9,6 +9,8 @@ using ILCompiler.DependencyAnalysis;
 
 using Debug = System.Diagnostics.Debug;
 using DependencyList = ILCompiler.DependencyAnalysisFramework.DependencyNodeCore<ILCompiler.DependencyAnalysis.NodeFactory>.DependencyList;
+using CombinedDependencyList = System.Collections.Generic.List<ILCompiler.DependencyAnalysisFramework.DependencyNodeCore<ILCompiler.DependencyAnalysis.NodeFactory>.CombinedDependencyListEntry>;
+using DependencyListEntry = ILCompiler.DependencyAnalysisFramework.DependencyNodeCore<ILCompiler.DependencyAnalysis.NodeFactory>.DependencyListEntry;
 
 #pragma warning disable IDE0060
 
@@ -28,11 +30,12 @@ namespace Internal.IL
 
         private readonly MethodDesc _canonMethod;
 
-        private DependencyList _dependencies = new DependencyList();
+        private DependencyList _unconditionalDependencies = new DependencyList();
 
         private readonly byte[] _ilBytes;
 
         private TypeEqualityPatternAnalyzer _typeEqualityPatternAnalyzer;
+        private IsInstCheckPatternAnalyzer _isInstCheckPatternAnalyzer;
 
         private sealed class BasicBlock
         {
@@ -51,10 +54,16 @@ namespace Internal.IL
             public bool TryStart;
             public bool FilterStart;
             public bool HandlerStart;
+
+            public object Condition;
+            public DependencyList Dependencies;
         }
 
         private bool _isReadOnly;
         private TypeDesc _constrained;
+
+        private DependencyList _dependencies;
+        private BasicBlock _lateBasicBlocks;
 
         private sealed class ExceptionRegion
         {
@@ -107,9 +116,11 @@ namespace Internal.IL
             {
                 _exceptionRegions[i] = new ExceptionRegion() { ILRegion = ilExceptionRegions[i] };
             }
+
+            _dependencies = _unconditionalDependencies;
         }
 
-        public DependencyList Import()
+        public (DependencyList, CombinedDependencyList) Import()
         {
             TypeDesc owningType = _canonMethod.OwningType;
             if (_compilation.HasLazyStaticConstructor(owningType))
@@ -172,9 +183,21 @@ namespace Internal.IL
             FindBasicBlocks();
             ImportBasicBlocks();
 
-            CodeBasedDependencyAlgorithm.AddDependenciesDueToMethodCodePresence(ref _dependencies, _factory, _canonMethod, _canonMethodIL);
+            CombinedDependencyList conditionalDependencies = null;
+            foreach (BasicBlock bb in _basicBlocks)
+            {
+                if (bb?.Condition == null)
+                    continue;
 
-            return _dependencies;
+                conditionalDependencies ??= new CombinedDependencyList();
+                foreach (DependencyListEntry dep in bb.Dependencies)
+                    conditionalDependencies.Add(new(dep.Node, bb.Condition, dep.Reason));
+            }
+
+            CodeBasedDependencyAlgorithm.AddDependenciesDueToMethodCodePresence(ref _unconditionalDependencies, _factory, _canonMethod, _canonMethodIL);
+            CodeBasedDependencyAlgorithm.AddConditionalDependenciesDueToMethodCodePresence(ref conditionalDependencies, _factory, _canonMethod);
+
+            return (_unconditionalDependencies, conditionalDependencies);
         }
 
         private ISymbolNode GetGenericLookupHelper(ReadyToRunHelperId helperId, object helperArgument)
@@ -199,19 +222,29 @@ namespace Internal.IL
         }
 
         private static void MarkInstructionBoundary() { }
-        private static void EndImportingBasicBlock(BasicBlock basicBlock) { }
+
+        private void EndImportingBasicBlock(BasicBlock basicBlock)
+        {
+            if (_pendingBasicBlocks == null)
+            {
+                _pendingBasicBlocks = _lateBasicBlocks;
+                _lateBasicBlocks = null;
+            }
+        }
 
         private void StartImportingBasicBlock(BasicBlock basicBlock)
         {
+            _dependencies = basicBlock.Condition != null ? basicBlock.Dependencies : _unconditionalDependencies;
+
             // Import all associated EH regions
             foreach (ExceptionRegion ehRegion in _exceptionRegions)
             {
                 ILExceptionRegion region = ehRegion.ILRegion;
                 if (region.TryOffset == basicBlock.StartOffset)
                 {
-                    MarkBasicBlock(_basicBlocks[region.HandlerOffset]);
+                    ImportBasicBlockEdge(basicBlock, _basicBlocks[region.HandlerOffset]);
                     if (region.Kind == ILExceptionRegionKind.Filter)
-                        MarkBasicBlock(_basicBlocks[region.FilterOffset]);
+                        ImportBasicBlockEdge(basicBlock, _basicBlocks[region.FilterOffset]);
 
                     if (region.Kind == ILExceptionRegionKind.Catch)
                     {
@@ -231,11 +264,13 @@ namespace Internal.IL
             }
 
             _typeEqualityPatternAnalyzer = default;
+            _isInstCheckPatternAnalyzer = default;
         }
 
         partial void StartImportingInstruction(ILOpcode opcode)
         {
             _typeEqualityPatternAnalyzer.Advance(opcode, new ILReader(_ilBytes, _currentOffset), _methodIL);
+            _isInstCheckPatternAnalyzer.Advance(opcode, new ILReader(_ilBytes, _currentOffset), _methodIL);
         }
 
         private void EndImportingInstruction()
@@ -789,10 +824,36 @@ namespace Internal.IL
 
         private void ImportBranch(ILOpcode opcode, BasicBlock target, BasicBlock fallthrough)
         {
+            object condition = null;
+
+            if (opcode == ILOpcode.brfalse
+                && _typeEqualityPatternAnalyzer.IsTypeEqualityBranch
+                && !_typeEqualityPatternAnalyzer.IsTwoTokens
+                && !_typeEqualityPatternAnalyzer.IsInequality)
+            {
+                TypeDesc typeEqualityCheckType = (TypeDesc)_canonMethodIL.GetObject(_typeEqualityPatternAnalyzer.Token1);
+                if (!typeEqualityCheckType.IsGenericDefinition
+                    && ConstructedEETypeNode.CreationAllowed(typeEqualityCheckType)
+                    && !typeEqualityCheckType.ConvertToCanonForm(CanonicalFormKind.Specific).IsCanonicalSubtype(CanonicalFormKind.Any))
+                {
+                    condition = _factory.MaximallyConstructableType(typeEqualityCheckType);
+                }
+            }
+
+            if (opcode == ILOpcode.brfalse && _isInstCheckPatternAnalyzer.IsIsInstBranch)
+            {
+                TypeDesc isinstCheckType = (TypeDesc)_canonMethodIL.GetObject(_isInstCheckPatternAnalyzer.Token);
+                if (ConstructedEETypeNode.CreationAllowed(isinstCheckType)
+                    && !isinstCheckType.ConvertToCanonForm(CanonicalFormKind.Specific).IsCanonicalSubtype(CanonicalFormKind.Any))
+                {
+                    condition = _factory.MaximallyConstructableType(isinstCheckType);
+                }
+            }
+
             ImportFallthrough(target);
 
             if (fallthrough != null)
-                ImportFallthrough(fallthrough);
+                ImportFallthrough(fallthrough, condition);
         }
 
         private void ImportSwitchJump(int jmpBase, int[] jmpDelta, BasicBlock fallthrough)
@@ -1278,9 +1339,56 @@ namespace Internal.IL
             }
         }
 
-        private void ImportFallthrough(BasicBlock next)
+        private void ImportBasicBlockEdge(BasicBlock source, BasicBlock next, object condition = null)
         {
-            MarkBasicBlock(next);
+            // We don't track multiple conditions; if the source basic block is only reachable under a condition,
+            // this condition will be used for the next basic block, irrespective if we could make it more narrow.
+            object effectiveCondition = source.Condition ?? condition;
+
+            // Did we already look at this basic block?
+            if (next.State != BasicBlock.ImportState.Unmarked)
+            {
+                // If next is not conditioned, it stays not conditioned.
+                // If it was conditioned on something else, it needs to become unconditional.
+                // If the conditions match, it stays conditioned on the same thing.
+                if (next.Condition != null && next.Condition != effectiveCondition)
+                {
+                    // Now we need to make `next` not conditioned. We move all of its dependencies to
+                    // unconditional dependencies, and do this for all basic blocks that are reachable
+                    // from it.
+                    // TODO-SIZE: below doesn't do it for all basic blocks reachable from `next`, but
+                    // for all basic blocks with the same conditon. This is a shortcut. It likely
+                    // doesn't matter in practice.
+                    object conditionToRemove = next.Condition;
+                    foreach (BasicBlock bb in _basicBlocks)
+                    {
+                        if (bb?.Condition == conditionToRemove)
+                        {
+                            _unconditionalDependencies.AddRange(bb.Dependencies);
+                            bb.Dependencies = null;
+                            bb.Condition = null;
+                        }
+                    }
+                }
+            }
+            else
+            {
+                if (effectiveCondition != null)
+                {
+                    next.Condition = effectiveCondition;
+                    next.Dependencies = new DependencyList();
+                    MarkBasicBlock(next, ref _lateBasicBlocks);
+                }
+                else
+                {
+                    MarkBasicBlock(next);
+                }
+            }
+        }
+
+        private void ImportFallthrough(BasicBlock next, object condition = null)
+        {
+            ImportBasicBlockEdge(_currentBasicBlock, next, condition);
         }
 
         private int ReadILTokenAt(int ilOffset)
