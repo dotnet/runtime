@@ -439,7 +439,7 @@ namespace ILCompiler.ObjectWriter
 
                 // Match the logic for KeepDataLayout in MachSection.CreateSection. If we are in a data section
                 // we don't need to have a symbol for beginning of the node data. For other nodes, particularly
-                // executable code we enforce it though.
+                // executable code, we enforce it though.
                 Debug.Assert(hasInitialEntrypoint || section.Type is SectionType.ReadOnly or SectionType.Writeable or SectionType.Uninitialized);
 
                 if (nodeContents.Relocs is not null)
