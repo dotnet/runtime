@@ -95,6 +95,7 @@ internal readonly struct Loader_1 : ILoader
             module.MemberRefToDescMap,
             module.MethodDefToDescMap,
             module.TypeDefToMethodTableMap,
-            module.TypeRefToMethodTableMap);
+            module.TypeRefToMethodTableMap,
+            module.MethodDefToILCodeVersioningState);
     }
 }

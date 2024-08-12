@@ -1641,12 +1641,13 @@ struct cdac_data<Module>
     static constexpr size_t DynamicMetadata = offsetof(Module, m_pDynamicMetadata);
 
     // Lookup map pointers
-    static constexpr size_t FieldDefToDescMap = offsetof(Module, m_FieldDefToDescMap) + offsetof(LookupMap<PTR_FieldDesc>, pTable);
-    static constexpr size_t ManifestModuleReferencesMap = offsetof(Module, m_ManifestModuleReferencesMap) + offsetof(LookupMap<PTR_Module>, pTable);
-    static constexpr size_t MemberRefToDescMap = offsetof(Module, m_MemberRefMap) + offsetof(LookupMap<TADDR>, pTable);
-    static constexpr size_t MethodDefToDescMap = offsetof(Module, m_MethodDefToDescMap) + offsetof(LookupMap<PTR_MethodDesc>, pTable);
-    static constexpr size_t TypeDefToMethodTableMap = offsetof(Module, m_TypeDefToMethodTableMap) + offsetof(LookupMap<PTR_MethodTable>, pTable);
-    static constexpr size_t TypeRefToMethodTableMap = offsetof(Module, m_TypeRefToMethodTableMap) + offsetof(LookupMap<PTR_TypeRef>, pTable);
+    static constexpr size_t FieldDefToDescMap = offsetof(Module, m_FieldDefToDescMap);
+    static constexpr size_t ManifestModuleReferencesMap = offsetof(Module, m_ManifestModuleReferencesMap);
+    static constexpr size_t MemberRefToDescMap = offsetof(Module, m_MemberRefMap);
+    static constexpr size_t MethodDefToDescMap = offsetof(Module, m_MethodDefToDescMap);
+    static constexpr size_t TypeDefToMethodTableMap = offsetof(Module, m_TypeDefToMethodTableMap);
+    static constexpr size_t TypeRefToMethodTableMap = offsetof(Module, m_TypeRefToMethodTableMap);
+    static constexpr size_t MethodDefToILCodeVersioningState = offsetof(Module, m_ILCodeVersioningStateMap);
 };
 
 //
