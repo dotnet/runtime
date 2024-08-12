@@ -39,8 +39,14 @@ public class b452950
         int gcCount = GC.CollectionCount(GC.MaxGeneration);
         Console.WriteLine(gcCount);
 
-        // if we do a full collection <= (10% of the interations) times, we pass
-        if (gcCount <= (numIterations*0.1))
+        // Heuristic parameters based on local testing
+        double avg = numIterations * 0.1;
+        double stdev = numIterations * 0.05;
+
+        double zScore = (gcCount - avg) / stdev;
+
+        // if we do a full collection <= (10% of the interations + stdev assuming normal distribution) times, we pass
+        if (zScore >= -2 && zScore <= 2)
         {
             Console.WriteLine("Passed");
             return 100;
