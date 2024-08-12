@@ -646,7 +646,7 @@ namespace Microsoft.Extensions.DependencyInjection
         }
 
         /// <summary>
-        /// Registers named <see cref="HttpClient"/> and the related handler pipeline <see cref="HttpMessageHandler"/> as keyed
+        /// Registers a named <see cref="HttpClient"/> and the related handler pipeline <see cref="HttpMessageHandler"/> as keyed
         /// services with the client's name as the key, and a lifetime provided in the <paramref name="lifetime" /> parameter.
         /// By default, the lifetime is <see cref="ServiceLifetime.Scoped"/>.
         /// </summary>
