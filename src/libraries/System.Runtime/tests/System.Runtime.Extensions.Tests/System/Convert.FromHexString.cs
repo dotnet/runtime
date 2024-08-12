@@ -143,8 +143,32 @@ namespace System.Tests
             byte[] buffer = new byte[100];
             var status = Convert.FromHexString(hex, buffer, out int charsConsumed, out int bytesWritten);
 
-            Assert.Equal(OperationStatus.NeedMoreData, status);
+            Assert.Equal(OperationStatus.Done, status);
             Assert.Equal(hex.Length, charsConsumed);
+            Assert.Equal(hex.Length / 2, bytesWritten);
+        }
+
+        [Fact]
+        public static void ExactDestination()
+        {
+            string hex = "ffffff";
+            byte[] buffer = new byte[3];
+            var status = Convert.FromHexString(hex, buffer, out int charsConsumed, out int bytesWritten);
+
+            Assert.Equal(OperationStatus.Done, status);
+            Assert.Equal(hex.Length, charsConsumed);
+            Assert.Equal(hex.Length / 2, bytesWritten);
+        }
+
+        [Fact]
+        public static void ExactDestination_TrailingCharacter()
+        {
+            string hex = "fffff"; 
+            byte[] buffer = new byte[2];
+            var status = Convert.FromHexString(hex, buffer, out int charsConsumed, out int bytesWritten);
+
+            Assert.Equal(OperationStatus.NeedMoreData, status);
+            Assert.Equal(hex.Length - 1, charsConsumed);
             Assert.Equal(hex.Length / 2, bytesWritten);
         }
 
@@ -179,7 +203,7 @@ namespace System.Tests
 
             var twoOffResult = Convert.FromHexString(spanHex, destination, out consumed, out written);
 
-            Assert.Equal(OperationStatus.NeedMoreData, twoOffResult);
+            Assert.Equal(OperationStatus.Done, twoOffResult);
             Assert.Equal(spanHex.Length, consumed);
             Assert.Equal(spanHex.Length / 2, written);
         }

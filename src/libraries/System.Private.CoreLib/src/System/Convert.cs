@@ -2999,7 +2999,7 @@ namespace System
                 return remainder == 1 ? OperationStatus.NeedMoreData : OperationStatus.Done;
             }
 
-            var result = OperationStatus.Done;
+            OperationStatus result;
 
             if (destination.Length < quotient)
             {
@@ -3007,14 +3007,18 @@ namespace System
                 quotient = destination.Length;
                 result = OperationStatus.DestinationTooSmall;
             }
-            else if (destination.Length > quotient)
+            else
             {
                 if (remainder == 1)
                 {
                     source = source.Slice(0, source.Length - 1);
+                    result = OperationStatus.NeedMoreData;
+                }
+                else
+                {
+                    result = OperationStatus.Done;
                 }
 
-                result = OperationStatus.NeedMoreData;
                 destination = destination.Slice(0, quotient);
             }
 
