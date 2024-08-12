@@ -159,7 +159,6 @@ namespace System.Numerics.Tensors
                             misalignment = ((uint)sizeof(Vector128<T>) - ((nuint)xPtr % (uint)sizeof(Vector128<T>))) / (uint)sizeof(T);
 
                             xPtr += misalignment;
-
                             Debug.Assert(((nuint)xPtr % (uint)sizeof(Vector128<T>)) == 0);
 
                             remainder -= misalignment;
@@ -170,9 +169,9 @@ namespace System.Numerics.Tensors
                             // so account for that to ensure we don't double process and include them in the
                             // aggregate twice.
 
-                            xPtr += (uint)Vector128<T>.Count;
-
-                            remainder -= (uint)Vector128<T>.Count;
+                            misalignment = (uint)Vector128<T>.Count;
+                            xPtr += misalignment;
+                            remainder -= misalignment;
                         }
 
                         Vector128<T> vector1;
@@ -352,9 +351,9 @@ namespace System.Numerics.Tensors
                             // so account for that to ensure we don't double process and include them in the
                             // aggregate twice.
 
-                            xPtr += (uint)Vector256<T>.Count;
-
-                            remainder -= (uint)Vector256<T>.Count;
+                            misalignment = (uint)Vector256<T>.Count
+                            xPtr += misalignment;
+                            remainder -= misalignment;
                         }
 
                         Vector256<T> vector1;
@@ -534,9 +533,9 @@ namespace System.Numerics.Tensors
                             // so account for that to ensure we don't double process and include them in the
                             // aggregate twice.
 
-                            xPtr += (uint)Vector512<T>.Count;
-
-                            remainder -= (uint)Vector512<T>.Count;
+                            misalignment = (uint)Vector512<T>.Count
+                            xPtr += misalignment;
+                            remainder -= misalignment;
                         }
 
                         Vector512<T> vector1;
@@ -1296,10 +1295,12 @@ namespace System.Numerics.Tensors
                             // so account for that to ensure we don't double process and include them in the
                             // aggregate twice.
 
-                            xPtr += (uint)Vector128<T>.Count;
-                            yPtr += (uint)Vector128<T>.Count;
+                            misalignment = (uint)Vector128<T>.Count
 
-                            remainder -= (uint)Vector128<T>.Count;
+                            xPtr += misalignment;
+                            yPtr += misalignment;
+
+                            remainder -= misalignment;
                         }
 
                         Vector128<T> vector1;
@@ -1501,10 +1502,12 @@ namespace System.Numerics.Tensors
                             // so account for that to ensure we don't double process and include them in the
                             // aggregate twice.
 
-                            xPtr += (uint)Vector256<T>.Count;
-                            yPtr += (uint)Vector256<T>.Count;
+                            misalignment = (uint)Vector256<T>.Count
 
-                            remainder -= (uint)Vector256<T>.Count;
+                            xPtr += misalignment;
+                            yPtr += misalignment;
+
+                            remainder -= misalignment;
                         }
 
                         Vector256<T> vector1;
@@ -1706,10 +1709,12 @@ namespace System.Numerics.Tensors
                             // so account for that to ensure we don't double process and include them in the
                             // aggregate twice.
 
-                            xPtr += (uint)Vector512<T>.Count;
-                            yPtr += (uint)Vector512<T>.Count;
+                            misalignment = (uint)Vector512<T>.Count
 
-                            remainder -= (uint)Vector512<T>.Count;
+                            xPtr += misalignment;
+                            yPtr += misalignment;
+
+                            remainder -= misalignment;
                         }
 
                         Vector512<T> vector1;

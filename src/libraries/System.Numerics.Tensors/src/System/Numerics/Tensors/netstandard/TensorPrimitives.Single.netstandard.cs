@@ -243,7 +243,6 @@ namespace System.Numerics.Tensors
 
                 nuint blocks = remainder / (nuint)(Vector<float>.Count);
                 nuint trailing = remainder - (blocks * (nuint)(Vector<float>.Count));
-                blocks -= 1u;
                 remainder -= trailing;
 
                 switch (blocks)
@@ -542,7 +541,6 @@ namespace System.Numerics.Tensors
 
                 nuint blocks = remainder / (nuint)(Vector<float>.Count);
                 nuint trailing = remainder - (blocks * (nuint)(Vector<float>.Count));
-                blocks -= 1u;
                 remainder -= trailing;
 
                 switch (blocks)
