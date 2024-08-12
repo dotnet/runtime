@@ -458,7 +458,7 @@ namespace System.Reflection.Metadata
         /// </returns>
         /// <exception cref="ArgumentOutOfRangeException">rank is invalid. For example, 0 or negative.</exception>
         public TypeName MakeArrayTypeName(int rank)
-            => rank <= 0 || rank > 32
+            => rank <= 0
                 ? throw new ArgumentOutOfRangeException(nameof(rank))
                 : MakeElementTypeName((sbyte)rank);
 

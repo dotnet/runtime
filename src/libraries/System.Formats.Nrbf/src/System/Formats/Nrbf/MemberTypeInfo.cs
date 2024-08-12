@@ -155,9 +155,9 @@ internal readonly struct MemberTypeInfo
         };
 
         // In general, arrayRank == 1 may have two different meanings:
-        // - [] is a single dimension and zero-indexed array (SZArray)
-        // - [*] is single dimension, custom offset array.
-        // Custom offset arrays are not supported by design, so in our case it's always SZArray.
+        // - [] is a single-dimensional array with a zero lower bound (SZArray),
+        // - [*] is a single-dimensional array with an arbitrary lower bound (variable bound array).
+        // Variable bound arrays are not supported by design, so in our case it's always SZArray.
         // That is why we don't call TypeName.MakeArrayTypeName(1) because it would create [*] instead of [] name.
         return arrayInfo.Rank == 1
             ? elementTypeName.MakeSZArrayTypeName()
