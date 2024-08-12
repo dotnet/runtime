@@ -28,6 +28,7 @@ namespace ILLink.Shared.TrimAnalysis
 		ValueSetLattice<SingleValue> _multiValueLattice;
 
 		public HandleCallAction (
+			TypeNameResolver typeNameResolver,
 			Location location,
 			ISymbol owningSymbol,
 			IOperation operation,
@@ -39,8 +40,8 @@ namespace ILLink.Shared.TrimAnalysis
 			_isNewObj = operation.Kind == OperationKind.ObjectCreation;
 			_diagnosticContext = new DiagnosticContext (location, reportDiagnostic);
 			_annotations = FlowAnnotations.Instance;
-			_reflectionAccessAnalyzer = new (reportDiagnostic);
-			_requireDynamicallyAccessedMembersAction = new (_diagnosticContext, _reflectionAccessAnalyzer);
+			_reflectionAccessAnalyzer = new (reportDiagnostic, typeNameResolver);
+			_requireDynamicallyAccessedMembersAction = new (typeNameResolver, location, reportDiagnostic, _reflectionAccessAnalyzer);
 			_multiValueLattice = multiValueLattice;
 		}
 

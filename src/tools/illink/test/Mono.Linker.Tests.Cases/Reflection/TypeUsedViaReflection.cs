@@ -67,6 +67,7 @@ namespace Mono.Linker.Tests.Cases.Reflection
 		{
 			const string reflectionTypeKeptString = null;
 			var typeKept = Type.GetType (reflectionTypeKeptString, false);
+			RequireConstructor (typeKept);
 		}
 
 		[Kept]
@@ -74,119 +75,180 @@ namespace Mono.Linker.Tests.Cases.Reflection
 		{
 			const string reflectionTypeKeptString = "";
 			var typeKept = Type.GetType (reflectionTypeKeptString, false);
+			RequireConstructor (typeKept);
 		}
 
 		[Kept]
+		[KeptMember (".ctor()")]
+		[KeptAttributeAttribute (typeof (RequiresUnreferencedCodeAttribute))]
+		[RequiresUnreferencedCode (nameof (Full))]
 		public class Full { }
 
 		[Kept]
+		[ExpectedWarning ("IL2026", nameof (Full))]
 		public static void TestFullString ()
 		{
 			const string reflectionTypeKeptString = "Mono.Linker.Tests.Cases.Reflection.TypeUsedViaReflection+Full, test, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null";
 			var typeKept = Type.GetType (reflectionTypeKeptString, false);
+			RequireConstructor (typeKept);
 		}
 
 		[Kept]
+		[KeptMember (".ctor()")]
+		[KeptAttributeAttribute (typeof (RequiresUnreferencedCodeAttribute))]
+		[RequiresUnreferencedCode (nameof (Generic<T>))]
 		public class Generic<T> { }
 
 		[Kept]
+		[ExpectedWarning ("IL2026", "Generic")]
 		public static void TestGenericString ()
 		{
 			const string reflectionTypeKeptString = "Mono.Linker.Tests.Cases.Reflection.TypeUsedViaReflection+Generic`1, test, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null";
 			var typeKept = Type.GetType (reflectionTypeKeptString, false);
+			RequireConstructor (typeKept);
 		}
 
 		[Kept]
+		[KeptMember (".ctor()")]
+		[KeptAttributeAttribute (typeof (RequiresUnreferencedCodeAttribute))]
+		[RequiresUnreferencedCode (nameof (GenericInstantiation<T>))]
 		public class GenericInstantiation<T> { }
 
 		[Kept]
+		[KeptAttributeAttribute (typeof (RequiresUnreferencedCodeAttribute))]
+		[RequiresUnreferencedCode (nameof (GenericArgument))]
 		public class GenericArgument { }
 
 		[Kept]
+		[ExpectedWarning ("IL2026", "GenericInstantiation")]
 		public static void TestGenericInstantiation ()
 		{
 			const string reflectionTypeKeptString = "Mono.Linker.Tests.Cases.Reflection.TypeUsedViaReflection+GenericInstantiation`1[[Mono.Linker.Tests.Cases.Reflection.TypeUsedViaReflection+GenericArgument]]";
 			var typeKept = Type.GetType (reflectionTypeKeptString, false);
+			RequireConstructor (typeKept);
 		}
 
 		[Kept]
+		[KeptMember (".ctor()")]
+		[KeptAttributeAttribute (typeof (RequiresUnreferencedCodeAttribute))]
+		[RequiresUnreferencedCode (nameof (GenericInstantiationFullString<T>))]
 		public class GenericInstantiationFullString<T> { }
 
 		[Kept]
+		[KeptAttributeAttribute (typeof (RequiresUnreferencedCodeAttribute))]
+		[RequiresUnreferencedCode (nameof (GenericArgumentFullString))]
 		public class GenericArgumentFullString { }
 
 		[Kept]
+		[ExpectedWarning ("IL2026", "GenericInstantiationFullString")]
 		public static void TestGenericInstantiationFullString ()
 		{
 			const string reflectionTypeKeptString = "Mono.Linker.Tests.Cases.Reflection.TypeUsedViaReflection+GenericInstantiationFullString`1["
 					+ "[Mono.Linker.Tests.Cases.Reflection.TypeUsedViaReflection+GenericArgumentFullString, test, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]"
 				+ "], test, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null";
 			var typeKept = Type.GetType (reflectionTypeKeptString, false);
+			RequireConstructor (typeKept);
 		}
 
 		[Kept]
+		[KeptMember (".ctor()")]
+		[KeptAttributeAttribute (typeof (RequiresUnreferencedCodeAttribute))]
+		[RequiresUnreferencedCode (nameof (GenericInstantiationOverCoreLib<T>))]
 		public class GenericInstantiationOverCoreLib<T> { }
 
 		[Kept]
+		[ExpectedWarning ("IL2026", "GenericInstantiationOverCoreLib", Tool.Trimmer | Tool.NativeAot, "Analyzer can't resolve type names from corelib")]
 		public static void TestGenericInstantiationOverCoreLib ()
 		{
 			// Note: the argument type should not be assembly-qualified for this test, which is checking that
 			// we can resolve non-assembly-qualified generic argument types from corelib.
 			const string reflectionTypeKeptString = "Mono.Linker.Tests.Cases.Reflection.TypeUsedViaReflection+GenericInstantiationOverCoreLib`1[[System.String]], test";
 			var typeKept = Type.GetType (reflectionTypeKeptString, false);
+			RequireConstructor (typeKept);
 		}
 
 		[Kept]
+		[KeptMember (".ctor()")]
+		[KeptAttributeAttribute (typeof (RequiresUnreferencedCodeAttribute))]
+		[RequiresUnreferencedCode (nameof (FullConst))]
 		public class FullConst { }
 
 		[Kept]
+		[ExpectedWarning ("IL2026", nameof (FullConst))]
 		public static void TestFullStringConst ()
 		{
 			const string reflectionTypeKeptString = "Mono.Linker.Tests.Cases.Reflection.TypeUsedViaReflection+FullConst, test, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null";
 			var typeKept = Type.GetType (reflectionTypeKeptString, false);
+			RequireConstructor (typeKept);
 		}
 
 		[Kept]
+		[KeptMember (".ctor()")]
+		[KeptAttributeAttribute (typeof (RequiresUnreferencedCodeAttribute))]
+		[RequiresUnreferencedCode (nameof (TypeAsmName))]
 		public class TypeAsmName { }
 
 		[Kept]
+		[ExpectedWarning ("IL2026", nameof (TypeAsmName))]
 		public static void TestTypeAsmName ()
 		{
 			const string reflectionTypeKeptString = "Mono.Linker.Tests.Cases.Reflection.TypeUsedViaReflection+TypeAsmName, test";
 			var typeKept = Type.GetType (reflectionTypeKeptString, false);
+			RequireConstructor (typeKept);
 		}
 
 		[Kept]
+		[KeptMember (".ctor()")]
+		[KeptAttributeAttribute (typeof (RequiresUnreferencedCodeAttribute))]
+		[RequiresUnreferencedCode (nameof (AType))]
 		public class AType { }
 
 		[Kept]
+		[ExpectedWarning ("IL2026", nameof (AType))]
 		public static void TestType ()
 		{
 			const string reflectionTypeKeptString = "Mono.Linker.Tests.Cases.Reflection.TypeUsedViaReflection+AType";
 			var typeKept = Type.GetType (reflectionTypeKeptString, false);
+			RequireConstructor (typeKept);
 		}
 
 		[Kept]
+#if !NATIVEAOT
+		[KeptMember (".ctor()")]
+#endif
+		[KeptAttributeAttribute (typeof (RequiresUnreferencedCodeAttribute))]
+		[RequiresUnreferencedCode (nameof (Pointer))]
 		public class Pointer { }
 
 		[Kept]
+		[ExpectedWarning ("IL2026", nameof (Pointer), Tool.Trimmer, "https://github.com/dotnet/runtime/issues/106214")]
 		public static void TestPointer ()
 		{
 			const string reflectionTypeKeptString = "Mono.Linker.Tests.Cases.Reflection.TypeUsedViaReflection+Pointer*";
 			var typeKept = Type.GetType (reflectionTypeKeptString, false);
+			RequireConstructor (typeKept);
 		}
 
 		[Kept]
+#if !NATIVEAOT
+		[KeptMember (".ctor()")]
+#endif
+		[KeptAttributeAttribute (typeof (RequiresUnreferencedCodeAttribute))]
+		[RequiresUnreferencedCode (nameof (Reference))]
 		public class Reference { }
 
 		[Kept]
+		[ExpectedWarning ("IL2026", nameof (Reference), Tool.Trimmer, "https://github.com/dotnet/runtime/issues/106214")]
 		public static void TestReference ()
 		{
 			const string reflectionTypeKeptString = "Mono.Linker.Tests.Cases.Reflection.TypeUsedViaReflection+Reference&";
 			var typeKept = Type.GetType (reflectionTypeKeptString, false);
+			RequireConstructor (typeKept);
 		}
 
 		[Kept]
+		[KeptAttributeAttribute (typeof (RequiresUnreferencedCodeAttribute))]
+		[RequiresUnreferencedCode (nameof (Array))]
 		public class Array { }
 
 		[Kept]
@@ -194,9 +256,12 @@ namespace Mono.Linker.Tests.Cases.Reflection
 		{
 			const string reflectionTypeKeptString = "Mono.Linker.Tests.Cases.Reflection.TypeUsedViaReflection+Array[]";
 			var typeKept = Type.GetType (reflectionTypeKeptString, false);
+			RequireConstructor (typeKept);
 		}
 
 		[Kept]
+		[KeptAttributeAttribute (typeof (RequiresUnreferencedCodeAttribute))]
+		[RequiresUnreferencedCode (nameof (ArrayOfArray))]
 		public class ArrayOfArray { }
 
 		[Kept]
@@ -204,10 +269,13 @@ namespace Mono.Linker.Tests.Cases.Reflection
 		{
 			const string reflectionTypeKeptString = "Mono.Linker.Tests.Cases.Reflection.TypeUsedViaReflection+ArrayOfArray[][]";
 			var typeKept = Type.GetType (reflectionTypeKeptString, false);
+			RequireConstructor (typeKept);
 		}
 
 
 		[Kept]
+		[KeptAttributeAttribute (typeof (RequiresUnreferencedCodeAttribute))]
+		[RequiresUnreferencedCode (nameof (MultiDimensionalArray))]
 		public class MultiDimensionalArray { }
 
 		[Kept]
@@ -215,9 +283,12 @@ namespace Mono.Linker.Tests.Cases.Reflection
 		{
 			const string reflectionTypeKeptString = "Mono.Linker.Tests.Cases.Reflection.TypeUsedViaReflection+MultiDimensionalArray[,]";
 			var typeKept = Type.GetType (reflectionTypeKeptString, false);
+			RequireConstructor (typeKept);
 		}
 
 		[Kept]
+		[KeptAttributeAttribute (typeof (RequiresUnreferencedCodeAttribute))]
+		[RequiresUnreferencedCode (nameof (MultiDimensionalArrayFullString))]
 		public class MultiDimensionalArrayFullString { }
 
 		[Kept]
@@ -225,9 +296,12 @@ namespace Mono.Linker.Tests.Cases.Reflection
 		{
 			const string reflectionTypeKeptString = "Mono.Linker.Tests.Cases.Reflection.TypeUsedViaReflection+MultiDimensionalArrayFullString[,], test, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null";
 			var typeKept = Type.GetType (reflectionTypeKeptString, false);
+			RequireConstructor (typeKept);
 		}
 
 		[Kept]
+		[KeptAttributeAttribute (typeof (RequiresUnreferencedCodeAttribute))]
+		[RequiresUnreferencedCode (nameof (MultiDimensionalArrayAsmName))]
 		public class MultiDimensionalArrayAsmName { }
 
 		[Kept]
@@ -235,6 +309,7 @@ namespace Mono.Linker.Tests.Cases.Reflection
 		{
 			const string reflectionTypeKeptString = "Mono.Linker.Tests.Cases.Reflection.TypeUsedViaReflection+MultiDimensionalArrayAsmName[,], test";
 			var typeKept = Type.GetType (reflectionTypeKeptString, false);
+			RequireConstructor (typeKept);
 		}
 
 		[Kept]
@@ -244,6 +319,9 @@ namespace Mono.Linker.Tests.Cases.Reflection
 			class N2
 			{
 				[Kept]
+				[KeptMember (".ctor()")]
+				[KeptAttributeAttribute (typeof (RequiresUnreferencedCodeAttribute))]
+				[RequiresUnreferencedCode (nameof (N3))]
 				class N3
 				{
 				}
@@ -251,26 +329,39 @@ namespace Mono.Linker.Tests.Cases.Reflection
 		}
 
 		[Kept]
+		[ExpectedWarning ("IL2026", "N3")]
 		static void TestDeeplyNested ()
 		{
 			var typeKept = Type.GetType ("Mono.Linker.Tests.Cases.Reflection.TypeUsedViaReflection+Nested1+N2+N3");
+			RequireConstructor (typeKept);
 		}
 
 		[Kept]
+		[KeptMember (".ctor()")]
 		class TypeOfToKeep { }
 
 		[Kept]
 		static void TestTypeOf ()
 		{
 			var typeKept = typeof (TypeOfToKeep);
+			RequireConstructor (typeKept);
 		}
 
 		[Kept]
+		[KeptMember (".ctor()")]
+		[KeptAttributeAttribute (typeof (RequiresUnreferencedCodeAttribute))]
+		[RequiresUnreferencedCode (nameof (TypeFromBranchA))]
 		class TypeFromBranchA { }
+
 		[Kept]
+		[KeptMember (".ctor()")]
+		[KeptAttributeAttribute (typeof (RequiresUnreferencedCodeAttribute))]
+		[RequiresUnreferencedCode (nameof (TypeFromBranchB))]
 		class TypeFromBranchB { }
 
 		[Kept]
+		[ExpectedWarning ("IL2026", nameof (TypeFromBranchA))]
+		[ExpectedWarning ("IL2026", nameof (TypeFromBranchB))]
 		static void TestTypeFromBranch (int b)
 		{
 			string name = null;
@@ -286,6 +377,7 @@ namespace Mono.Linker.Tests.Cases.Reflection
 			}
 
 			var typeKept = Type.GetType (name);
+			RequireConstructor (typeKept);
 		}
 
 		public class CaseInsensitive { }
@@ -308,6 +400,7 @@ namespace Mono.Linker.Tests.Cases.Reflection
 			bool hideCase = GetCase ();
 			const string reflectionTypeKeptString = "mono.linker.tests.cases.reflection.TypeUsedViaReflection+CaseUnknown, test, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null";
 			var typeKept = Type.GetType (reflectionTypeKeptString, false, hideCase);
+			RequireConstructor (typeKept);
 		}
 
 		[Kept]
@@ -327,27 +420,38 @@ namespace Mono.Linker.Tests.Cases.Reflection
 		{
 			const string reflectionTypeKeptString = "mono.linker.tests.cases.reflection.TypeUsedViaReflection+CaseUnknown2, test, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null";
 			var typeKept = Type.GetType (reflectionTypeKeptString, false, fieldHideCase);
+			RequireConstructor (typeKept);
 		}
 
 		[Kept]
+		[KeptMember (".ctor()")]
+		[KeptAttributeAttribute (typeof (RequiresUnreferencedCodeAttribute))]
+		[RequiresUnreferencedCode (nameof (OverloadWith3Parameters))]
 		public class OverloadWith3Parameters { }
 
 		[Kept]
+		[ExpectedWarning ("IL2026", nameof (OverloadWith3Parameters))]
 		static void TestTypeOverloadWith3Parameters ()
 		{
 			const string reflectionTypeKeptString = "Mono.Linker.Tests.Cases.Reflection.TypeUsedViaReflection+OverloadWith3Parameters";
 			var typeKept = Type.GetType (reflectionTypeKeptString, AssemblyResolver, GetTypeFromAssembly);
+			RequireConstructor (typeKept);
 		}
 
 
 		[Kept]
+		[KeptMember (".ctor()")]
+		[KeptAttributeAttribute (typeof (RequiresUnreferencedCodeAttribute))]
+		[RequiresUnreferencedCode (nameof (OverloadWith4Parameters))]
 		public class OverloadWith4Parameters { }
 
 		[Kept]
+		[ExpectedWarning ("IL2026", nameof (OverloadWith4Parameters))]
 		static void TestTypeOverloadWith4Parameters ()
 		{
 			const string reflectionTypeKeptString = "Mono.Linker.Tests.Cases.Reflection.TypeUsedViaReflection+OverloadWith4Parameters";
 			var typeKept = Type.GetType (reflectionTypeKeptString, AssemblyResolver, GetTypeFromAssembly, false);
+			RequireConstructor (typeKept);
 		}
 
 		public class OverloadWith5ParametersWithIgnoreCase { }
@@ -361,16 +465,22 @@ namespace Mono.Linker.Tests.Cases.Reflection
 		{
 			const string reflectionTypeKeptString = "Mono.Linker.Tests.Cases.Reflection.TypeUsedViaReflection+OverloadWith5ParametersWithIgnoreCase";
 			var typeKept = Type.GetType (reflectionTypeKeptString, AssemblyResolver, GetTypeFromAssembly, false, true);
+			RequireConstructor (typeKept);
 		}
 
 		[Kept]
+		[KeptMember (".ctor()")]
+		[KeptAttributeAttribute (typeof (RequiresUnreferencedCodeAttribute))]
+		[RequiresUnreferencedCode (nameof (OverloadWith5ParametersWithIgnoreCase))]
 		public class OverloadWith5ParametersWithoutIgnoreCase { }
 
 		[Kept]
+		[ExpectedWarning ("IL2026", nameof (OverloadWith5ParametersWithIgnoreCase))]
 		static void TestTypeOverloadWith5ParametersWithoutIgnoreCase ()
 		{
 			const string reflectionTypeKeptString = "Mono.Linker.Tests.Cases.Reflection.TypeUsedViaReflection+OverloadWith5ParametersWithoutIgnoreCase";
 			var typeKept = Type.GetType (reflectionTypeKeptString, AssemblyResolver, GetTypeFromAssembly, false, false);
+			RequireConstructor (typeKept);
 		}
 
 		/// <summary>
@@ -415,16 +525,22 @@ namespace Mono.Linker.Tests.Cases.Reflection
 			const string reflectionTypeKeptString = "mono.linker.tests.cases.reflection.TypeUsedViaReflection+CaseUnknown2, test, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null";
 			bool unknownValue = num + 1 == 1;
 			var typeKept = Type.GetType (reflectionTypeKeptString, AssemblyResolver, GetTypeFromAssembly, false, unknownValue);
+			RequireConstructor (typeKept);
 		}
 
 		[Kept]
+		[KeptMember (".ctor()")]
+		[KeptAttributeAttribute (typeof (RequiresUnreferencedCodeAttribute))]
+		[RequiresUnreferencedCode ("GenericTypeWithAnnotations_OuterType")]
 		public class GenericTypeWithAnnotations_OuterType<
 			[KeptAttributeAttribute (typeof (DynamicallyAccessedMembersAttribute))]
-		[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.NonPublicProperties)] T>
+			[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.NonPublicProperties)] T>
 		{
 		}
 
 		[Kept]
+		[KeptAttributeAttribute (typeof (RequiresUnreferencedCodeAttribute))]
+		[RequiresUnreferencedCode (nameof (GenericTypeWithAnnotations_InnerType))]
 		public class GenericTypeWithAnnotations_InnerType
 		{
 			[Kept]
@@ -435,12 +551,16 @@ namespace Mono.Linker.Tests.Cases.Reflection
 		}
 
 		[Kept]
+		[ExpectedWarning ("IL2026", "GenericTypeWithAnnotations_OuterType")]
+		[ExpectedWarning ("IL2026", nameof (GenericTypeWithAnnotations_InnerType), "PrivateProperty.get")]
+		[ExpectedWarning ("IL2026", nameof (GenericTypeWithAnnotations_InnerType), "PrivateProperty.set")]
 		static void TestGenericTypeWithAnnotations ()
 		{
 			const string reflectionTypeKeptString = "Mono.Linker.Tests.Cases.Reflection.TypeUsedViaReflection+GenericTypeWithAnnotations_OuterType`1["
 					+ "[Mono.Linker.Tests.Cases.Reflection.TypeUsedViaReflection+GenericTypeWithAnnotations_InnerType, test, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]"
 				+ "], test, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null";
-			Type.GetType (reflectionTypeKeptString);
+			var typeKept = Type.GetType (reflectionTypeKeptString);
+			RequireConstructor (typeKept);
 		}
 
 		[Kept]
@@ -493,33 +613,36 @@ namespace Mono.Linker.Tests.Cases.Reflection
 		static void TestEscapedTypeName ()
 		{
 			var typeKept = Type.GetType ("Library.Not\\+Nested, EscapedTypeNames");
+			RequireConstructor (typeKept);
 			typeKept = Type.GetType ("Library.Not\\+Nested+Nes\\\\ted, EscapedTypeNames");
+			RequireConstructor (typeKept);
 			typeKept = Type.GetType ("Library.Not\\+Nested+Nes/ted, EscapedTypeNames");
+			RequireConstructor (typeKept);
 		}
 
 		[Kept]
 		class AssemblyTypeResolutionBehavior
 		{
 			[Kept]
-			[ExpectedWarning ("IL2122", Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/runtime/issues/95118")]
+			[ExpectedWarning ("IL2122")]
 			static void TestRequireTypeInSameAssemblyAsGetType () {
 				RequireHelper.RequireType ("Mono.Linker.Tests.Cases.Reflection.Dependencies.TypeDefinedInSameAssemblyAsGetType");
 			}
 
 			[Kept]
-			[ExpectedWarning ("IL2122", Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/runtime/issues/95118")]
+			[ExpectedWarning ("IL2122")]
 			static void TestRequireTypeInSameAssemblyAsCallToRequireType () {
 				RequireHelper.RequireType ("Mono.Linker.Tests.Cases.Reflection.TypeUsedViaReflection+AssemblyTypeResolutionBehavior+TypeDefinedInSameAssemblyAsCallToRequireType");
 			}
 
 			[Kept]
-			[ExpectedWarning ("IL2122", Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/runtime/issues/95118")]
+			[ExpectedWarning ("IL2122")]
 			static void TestRequireTypeWithNonAssemblyQualifiedGenericArguments () {
 				RequireHelper.RequireType ("Mono.Linker.Tests.Cases.Reflection.TypeUsedViaReflection+AssemblyTypeResolutionBehavior+Generic`1[[System.Int32]], test");
 			}
 
 			[Kept]
-			[ExpectedWarning ("IL2122", Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/runtime/issues/95118")]
+			[ExpectedWarning ("IL2122")]
 			static void TestRequireTypeWithNonAssemblyQualifiedArrayType () {
 				RequireHelper.RequireType ("Mono.Linker.Tests.Cases.Reflection.TypeUsedViaReflection+AssemblyTypeResolutionBehavior+Generic`1["
 						+ "[Mono.Linker.Tests.Cases.Reflection.TypeUsedViaReflection+AssemblyTypeResolutionBehavior+ArrayElementGenericArgumentType]"
@@ -527,7 +650,7 @@ namespace Mono.Linker.Tests.Cases.Reflection
 			}
 
 			[Kept]
-			[ExpectedWarning ("IL2122", Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/runtime/issues/95118")]
+			[ExpectedWarning ("IL2122")]
 			static void TestRequireTypeWithNonAssemblyQualifiedPointerType () {
 				RequireHelper.RequireType ("Mono.Linker.Tests.Cases.Reflection.TypeUsedViaReflection+AssemblyTypeResolutionBehavior+Generic`1["
 						+ "[Mono.Linker.Tests.Cases.Reflection.TypeUsedViaReflection+AssemblyTypeResolutionBehavior+PointerElementGenericArgumentType]"
@@ -535,7 +658,7 @@ namespace Mono.Linker.Tests.Cases.Reflection
 			}
 
 			[Kept]
-			[ExpectedWarning ("IL2122", Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/runtime/issues/95118")]
+			[ExpectedWarning ("IL2122")]
 			static void TestRequireTypeWithNonAssemblyQualifiedByRefType () {
 				RequireHelper.RequireType ("Mono.Linker.Tests.Cases.Reflection.TypeUsedViaReflection+AssemblyTypeResolutionBehavior+Generic`1["
 						+ "[Mono.Linker.Tests.Cases.Reflection.TypeUsedViaReflection+AssemblyTypeResolutionBehavior+ByRefElementGenericArgumentType]"
@@ -562,5 +685,11 @@ namespace Mono.Linker.Tests.Cases.Reflection
 
 			class ByRefElementGenericArgumentType {}
 		}
+
+		[Kept]
+		static void RequireConstructor (
+			[KeptAttributeAttribute (typeof (DynamicallyAccessedMembersAttribute))]
+			[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]
+			Type type) { }
 	}
 }

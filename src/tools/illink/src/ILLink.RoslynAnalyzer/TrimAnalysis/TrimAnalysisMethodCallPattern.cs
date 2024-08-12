@@ -73,10 +73,11 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 		{
 			var location = Operation.Syntax.GetLocation ();
 			if (context.EnableTrimAnalyzer &&
-				!OwningSymbol.IsInRequiresUnreferencedCodeAttributeScope(out _) &&
+				!OwningSymbol.IsInRequiresUnreferencedCodeAttributeScope (out _) &&
 				!FeatureContext.IsEnabled (RequiresUnreferencedCodeAnalyzer.FullyQualifiedRequiresUnreferencedCodeAttribute))
 			{
-				TrimAnalysisVisitor.HandleCall(Operation, OwningSymbol, CalledMethod, Instance, Arguments, location, reportDiagnostic, default, out var _);
+				var typeNameResolver = new TypeNameResolver (context.Compilation);
+				TrimAnalysisVisitor.HandleCall (typeNameResolver, Operation, OwningSymbol, CalledMethod, Instance, Arguments, location, reportDiagnostic, default, out var _);
 			}
 
 			var diagnosticContext = new DiagnosticContext (location, reportDiagnostic);
