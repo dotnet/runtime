@@ -164,6 +164,8 @@ namespace System.Numerics.Tensors
                 Vector<float> beg = transformOp.Invoke(AsVector(ref xRef));
                 Vector<float> end = transformOp.Invoke(AsVector(ref xRef, remainder - (uint)(Vector<float>.Count)));
 
+                nuint misalignment = 0;
+
                 if (remainder > (uint)(Vector<float>.Count * 8))
                 {
                     // Pinning is cheap and will be short lived for small inputs and unlikely to be impactful
@@ -179,9 +181,9 @@ namespace System.Numerics.Tensors
                         // so account for that to ensure we don't double process and include them in the
                         // aggregate twice.
 
-                        xPtr += (uint)Vector<float>.Count;
-
-                        remainder -= (uint)Vector<float>.Count;
+                        misalignment = (uint)Vector<float>.Count;
+                        xPtr += misalignment;
+                        remainder -= misalignment;
 
                         Vector<float> vector1;
                         Vector<float> vector2;
@@ -233,6 +235,7 @@ namespace System.Numerics.Tensors
                 // Store the first block. Handling this separately simplifies the latter code as we know
                 // they come after and so we can relegate it to full blocks or the trailing elements
 
+                beg = Vector.ConditionalSelect(CreateAlignmentMaskSingleVector((int)(misalignment)), beg, new Vector<float>(aggregationOp.IdentityValue));
                 vresult = aggregationOp.Invoke(vresult, beg);
 
                 // Process the remaining [0, Count * 7] elements via a jump table
@@ -243,6 +246,7 @@ namespace System.Numerics.Tensors
 
                 nuint blocks = remainder / (nuint)(Vector<float>.Count);
                 nuint trailing = remainder - (blocks * (nuint)(Vector<float>.Count));
+                blocks -= (misalignment == 0) ? 1u : 0u;
                 remainder -= trailing;
 
                 switch (blocks)
@@ -450,6 +454,8 @@ namespace System.Numerics.Tensors
                 Vector<float> end = binaryOp.Invoke(AsVector(ref xRef, remainder - (uint)(Vector<float>.Count)),
                                                     AsVector(ref yRef, remainder - (uint)(Vector<float>.Count)));
 
+                nuint misalignment = 0;
+
                 if (remainder > (uint)(Vector<float>.Count * 8))
                 {
                     // Pinning is cheap and will be short lived for small inputs and unlikely to be impactful
@@ -467,9 +473,9 @@ namespace System.Numerics.Tensors
                         // so account for that to ensure we don't double process and include them in the
                         // aggregate twice.
 
-                        xPtr += (uint)Vector<float>.Count;
-
-                        remainder -= (uint)Vector<float>.Count;
+                        misalignment = (uint)Vector<float>.Count;
+                        xPtr += misalignment;
+                        remainder -= misalignment;
 
                         Vector<float> vector1;
                         Vector<float> vector2;
@@ -531,6 +537,7 @@ namespace System.Numerics.Tensors
                 // Store the first block. Handling this separately simplifies the latter code as we know
                 // they come after and so we can relegate it to full blocks or the trailing elements
 
+                beg = Vector.ConditionalSelect(CreateAlignmentMaskSingleVector((int)(misalignment)), beg, new Vector<float>(aggregationOp.IdentityValue));
                 vresult = aggregationOp.Invoke(vresult, beg);
 
                 // Process the remaining [0, Count * 7] elements via a jump table
@@ -541,6 +548,7 @@ namespace System.Numerics.Tensors
 
                 nuint blocks = remainder / (nuint)(Vector<float>.Count);
                 nuint trailing = remainder - (blocks * (nuint)(Vector<float>.Count));
+                blocks -= (misalignment == 0) ? 1u : 0u;
                 remainder -= trailing;
 
                 switch (blocks)
