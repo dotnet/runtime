@@ -221,6 +221,34 @@ struct Nested9
 	struct InlineArray4 Field2;
 };
 
+#pragma pack(push, 1)
+struct Issue80393_F2
+{
+    double value;
+};
+
+struct Issue80393_S_Doubles
+{
+    double f1;
+    double f3;
+};
+
+struct Issue80393_F2_Offset {
+    char padding[3];
+    struct Issue80393_F2 F2;
+};
+
+union Issue80393_S {
+    struct Issue80393_S_Doubles f1_f3;
+    struct Issue80393_F2_Offset f2;
+};
+#pragma pack(pop)
+
+DLLEXPORT union Issue80393_S Issue80393_HFA(union Issue80393_S value)
+{
+    return value;
+}
+
 DLLEXPORT struct SingleByte EchoSingleByte(struct SingleByte value)
 {
 	return value;
