@@ -18,11 +18,9 @@
   <PropertyGroup>
     <CLRTestBashPreCommands><![CDATA[
 $(CLRTestBashPreCommands)
-    if [[ "$OSTYPE" == "linux"* ]]; then
-        if ! grep -q '^flags.*avx512' /proc/cpuinfo 2>/dev/null; then
-          echo No support for AVX512, test not applicable.
-          exit 0
-        fi
+    if ! cc -dM -E -march=native - < /dev/null 2>/dev/null | grep -q __AVX512; then
+      echo No support for AVX512, test not applicable.
+      exit 0
     fi
 ]]></CLRTestBashPreCommands>
   </PropertyGroup>

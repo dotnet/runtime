@@ -9305,6 +9305,9 @@ bool Lowering::TryMakeIndirsAdjacent(GenTreeIndir* prevIndir, GenTreeIndir* indi
     GenTree* cur = prevIndir;
     for (int i = 0; i < LDP_STP_REORDERING_MAX_DISTANCE; i++)
     {
+        // No nodes should be marked yet
+        assert((cur->gtLIRFlags & LIR::Flags::Mark) == 0);
+
         cur = cur->gtNext;
         if (cur == indir)
             break;
@@ -9355,6 +9358,12 @@ bool Lowering::TryMakeIndirsAdjacent(GenTreeIndir* prevIndir, GenTreeIndir* indi
 
 #endif
 
+    // Unmark tree when we exit the current scope
+    auto code = [this, indir] {
+        UnmarkTree(indir);
+    };
+    jitstd::utility::scoped_code<decltype(code)> finally(code);
+
     MarkTree(indir);
 
     INDEBUG(dumpWithMarks());
@@ -9363,7 +9372,6 @@ bool Lowering::TryMakeIndirsAdjacent(GenTreeIndir* prevIndir, GenTreeIndir* indi
     if ((prevIndir->gtLIRFlags & LIR::Flags::Mark) != 0)
     {
         JITDUMP("Previous indir is part of the data flow of current indir\n");
-        UnmarkTree(indir);
         return false;
     }
 
@@ -9379,7 +9387,6 @@ bool Lowering::TryMakeIndirsAdjacent(GenTreeIndir* prevIndir, GenTreeIndir* indi
             if (m_scratchSideEffects.InterferesWith(comp, cur, true))
             {
                 JITDUMP("Giving up due to interference with [%06u]\n", Compiler::dspTreeID(cur));
-                UnmarkTree(indir);
                 return false;
             }
 
@@ -9401,7 +9408,6 @@ bool Lowering::TryMakeIndirsAdjacent(GenTreeIndir* prevIndir, GenTreeIndir* indi
         if (!indir->OperIsLoad())
         {
             JITDUMP("Have conservative interference with last store. Giving up.\n");
-            UnmarkTree(indir);
             return false;
         }
 
@@ -9495,7 +9501,6 @@ bool Lowering::TryMakeIndirsAdjacent(GenTreeIndir* prevIndir, GenTreeIndir* indi
             if (interferes(cur))
             {
                 JITDUMP("Indir [%06u] interferes with [%06u]\n", Compiler::dspTreeID(indir), Compiler::dspTreeID(cur));
-                UnmarkTree(indir);
                 return false;
             }
         }
@@ -9521,7 +9526,6 @@ bool Lowering::TryMakeIndirsAdjacent(GenTreeIndir* prevIndir, GenTreeIndir* indi
                 {
                     JITDUMP("Cannot move prev indir [%06u] up past [%06u] to get it past the data computation\n",
                             Compiler::dspTreeID(prevIndir), Compiler::dspTreeID(cur));
-                    UnmarkTree(indir);
                     return false;
                 }
             }
@@ -9586,7 +9590,6 @@ bool Lowering::TryMakeIndirsAdjacent(GenTreeIndir* prevIndir, GenTreeIndir* indi
     JITDUMP("Result:\n\n");
     INDEBUG(dumpWithMarks());
     JITDUMP("\n");
-    UnmarkTree(indir);
     return true;
 }
 
