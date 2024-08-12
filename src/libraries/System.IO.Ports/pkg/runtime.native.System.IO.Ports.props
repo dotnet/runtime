@@ -18,22 +18,9 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageSupportedRID Include="android-arm" />
-    <PackageSupportedRID Include="android-arm64" />
-    <PackageSupportedRID Include="android-x64" />
-    <PackageSupportedRID Include="android-x86" />
-    <PackageSupportedRID Include="linux-arm" />
-    <PackageSupportedRID Include="linux-arm64" />
-    <PackageSupportedRID Include="linux-bionic-arm64" />
-    <PackageSupportedRID Include="linux-bionic-x64" />
-    <PackageSupportedRID Include="linux-musl-arm" />
-    <PackageSupportedRID Include="linux-musl-arm64" />
-    <PackageSupportedRID Include="linux-musl-x64" />
-    <PackageSupportedRID Include="linux-x64" />
-    <PackageSupportedRID Include="maccatalyst-arm64" />
-    <PackageSupportedRID Include="maccatalyst-x64" />
-    <PackageSupportedRID Include="osx-arm64" />
-    <PackageSupportedRID Include="osx-x64" />
+    <!-- Extract supported RIDs from the .proj file names -->
+    <RIDSpecificProject Include="$(MSBuildThisFileDirectory)runtime.*.runtime.native.System.IO.Ports.proj" />
+    <PackageSupportedRID Include="@(RIDSpecificProject->'%(Filename)'->Replace('.runtime.native.System.IO.Ports', '')->Replace('runtime.', ''))" />
 
     <!-- We need to add a placeholder file for all RIDs except the one that is actually included in the RID-specific package.
          This prevents an issue where during publish the SDK would select e.g. both linux-x64 and linux-musl-x64 assets because of the fallback path in the RID graph. -->
