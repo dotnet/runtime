@@ -2995,15 +2995,19 @@ public:
             size_t*               pRequiredBufferSize = nullptr
             ) = 0;
 
-    // Return method name as in metadata, or nullptr if there is none,
-    // and optionally return the class, enclosing class, and namespace names
-    // as in metadata.
+    // Return method name as in metadata, or nullptr if there is none, and
+    // optionally return the class, enclosing classes, and namespace name as
+    // in metadata. Enclosing classes are returned from inner-most enclosed class
+    // to outer-most, with nullptr in the array indicating that no more
+    // enclosing classes were left. The namespace returned corresponds to the
+    // outer most (potentially enclosing) class that was returned.
     // Suitable for non-debugging use.
     virtual const char* getMethodNameFromMetadata(
-            CORINFO_METHOD_HANDLE       ftn,                  /* IN */
-            const char                **className,            /* OUT */
-            const char                **namespaceName,        /* OUT */
-            const char                **enclosingClassName    /* OUT */
+            CORINFO_METHOD_HANDLE       ftn,                   /* IN */
+            const char**                className,             /* OUT */
+            const char**                namespaceName,         /* OUT */
+            const char**                enclosingClassNames,   /* OUT */
+            size_t                      maxEnclosingClassNames /* IN */
             ) = 0;
 
     // this function is for debugging only.  It returns a value that

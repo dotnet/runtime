@@ -449,7 +449,7 @@ namespace Internal.JitInterface
             var relocs = _codeRelocs.ToArray();
             Array.Sort(relocs, (x, y) => (x.Offset - y.Offset));
 
-            int alignment = JitConfigProvider.Instance.HasFlag(CorJitFlag.CORJIT_FLAG_SIZE_OPT) ?
+            int alignment = JitConfigProvider.Instance.HasFlag(CorJitFlag.CORJIT_FLAG_SIZE_OPT) && !JitConfigProvider.Instance.HasFlag(CorJitFlag.CORJIT_FLAG_ENABLE_CFG) ?
                 _compilation.NodeFactory.Target.MinimumFunctionAlignment :
                 _compilation.NodeFactory.Target.OptimumFunctionAlignment;
 
@@ -3373,11 +3373,10 @@ namespace Internal.JitInterface
             return PrintFromUtf16(method.Name, buffer, bufferSize, requiredBufferSize);
         }
 
-        private static string getMethodNameFromMetadataImpl(MethodDesc method, out string className, out string namespaceName, out string enclosingClassName)
+        private static string getMethodNameFromMetadataImpl(MethodDesc method, out string className, out string namespaceName, string[] enclosingClassName)
         {
             className = null;
             namespaceName = null;
-            enclosingClassName = null;
 
             string result = method.Name;
 
@@ -3389,10 +3388,14 @@ namespace Internal.JitInterface
 
                 // Query enclosingClassName when the method is in a nested class
                 // and get the namespace of enclosing classes (nested class's namespace is empty)
-                var containingType = owningType.ContainingType;
-                if (containingType != null)
+                DefType containingType = owningType;
+                for (int i = 0; i < enclosingClassName.Length; i++)
                 {
-                    enclosingClassName = containingType.Name;
+                    containingType = containingType.ContainingType;
+                    if (containingType == null)
+                        break;
+
+                    enclosingClassName[i] = containingType.Name;
                     namespaceName = containingType.Namespace;
                 }
             }
@@ -3400,9 +3403,12 @@ namespace Internal.JitInterface
             return result;
         }
 
-        private byte* getMethodNameFromMetadata(CORINFO_METHOD_STRUCT_* ftn, byte** className, byte** namespaceName, byte** enclosingClassName)
+        private byte* getMethodNameFromMetadata(CORINFO_METHOD_STRUCT_* ftn, byte** className, byte** namespaceName, byte** enclosingClassNames, nuint maxEnclosingClassNames)
         {
             MethodDesc method = HandleToObject(ftn);
+
+            for (nuint i = 0; i < maxEnclosingClassNames; i++)
+                enclosingClassNames[i] = null;
 
             if (method.GetTypicalMethodDefinition() is EcmaMethod ecmaMethod)
             {
@@ -3412,15 +3418,18 @@ namespace Internal.JitInterface
                 if (className != null)
                     *className = reader.GetTypeNamePointer(owningType.Handle);
                 if (namespaceName != null)
-                *namespaceName = reader.GetTypeNamespacePointer(owningType.Handle);
+                    *namespaceName = reader.GetTypeNamespacePointer(owningType.Handle);
 
                 // Query enclosingClassName when the method is in a nested class
                 // and get the namespace of enclosing classes (nested class's namespace is empty)
-                var containingType = owningType.ContainingType as EcmaType;
-                if (containingType != null)
+                EcmaType containingType = owningType;
+                for (nuint i = 0; i < maxEnclosingClassNames; i++)
                 {
-                    if (enclosingClassName != null)
-                        *enclosingClassName = reader.GetTypeNamePointer(containingType.Handle);
+                    containingType = containingType.ContainingType as EcmaType;
+                    if (containingType == null)
+                        break;
+
+                    enclosingClassNames[i] = reader.GetTypeNamePointer(containingType.Handle);
                     if (namespaceName != null)
                         *namespaceName = reader.GetTypeNamespacePointer(containingType.Handle);
                 }
@@ -3432,16 +3441,16 @@ namespace Internal.JitInterface
                 string result;
                 string classResult;
                 string namespaceResult;
-                string enclosingResult;
+                string[] enclosingResults = new string[maxEnclosingClassNames];
 
-                result = getMethodNameFromMetadataImpl(method, out classResult, out namespaceResult, out enclosingResult);
+                result = getMethodNameFromMetadataImpl(method, out classResult, out namespaceResult, enclosingResults);
 
                 if (className != null)
                     *className = classResult != null ? (byte*)GetPin(StringToUTF8(classResult)) : null;
                 if (namespaceName != null)
                     *namespaceName = namespaceResult != null ? (byte*)GetPin(StringToUTF8(namespaceResult)) : null;
-                if (enclosingClassName != null)
-                    *enclosingClassName = enclosingResult != null ? (byte*)GetPin(StringToUTF8(enclosingResult)) : null;
+                for (nuint i = 0; i < maxEnclosingClassNames; i++)
+                    enclosingClassNames[i] = enclosingResults[i] != null ? (byte*)GetPin(StringToUTF8(enclosingResults[i])) : null;
 
                 return result != null ? (byte*)GetPin(StringToUTF8(result)) : null;
             }
