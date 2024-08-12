@@ -18441,7 +18441,7 @@ void emitter::emitInsPairSanityCheck(instrDesc* firstId, instrDesc* secondId)
     }
 
     // The movprfx can't be the last instruction
-    if (secondId  == nullptr)
+    if (secondId == nullptr)
     {
         assert(!"Last instruction generated is a MOVPRFX");
     }
@@ -18485,8 +18485,8 @@ void emitter::emitInsPairSanityCheck(instrDesc* firstId, instrDesc* secondId)
         case IF_SVE_BV_2B:   // <Zd>.<T>, <Pg>/M, #0.0
         case IF_SVE_CQ_3A:   // <Zd>.<T>, <Pg>/M, <R><n|SP>
         // Tied registers
-        case IF_SVE_AM_2A:   // <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, #<const>
-        case IF_SVE_HM_2A:   // <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <const>
+        case IF_SVE_AM_2A: // <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, #<const>
+        case IF_SVE_HM_2A: // <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <const>
             assert(movprefxIsPredicated);
             break;
 
@@ -18515,10 +18515,10 @@ void emitter::emitInsPairSanityCheck(instrDesc* firstId, instrDesc* secondId)
             break;
 
         // Tied registers
-        case IF_SVE_AW_2A:   // <Zdn>.<T>, <Zdn>.<T>, <Zm>.<T>, #<const>
-        case IF_SVE_BY_2A:   // <Zdn>.B, <Zdn>.B, <Zm>.B, #<imm>
-        case IF_SVE_FV_2A:   // <Zdn>.<T>, <Zdn>.<T>, <Zm>.<T>, <const>
-        case IF_SVE_HN_2A:   // <Zdn>.<T>, <Zdn>.<T>, <Zm>.<T>, #<imm>
+        case IF_SVE_AW_2A: // <Zdn>.<T>, <Zdn>.<T>, <Zm>.<T>, #<const>
+        case IF_SVE_BY_2A: // <Zdn>.B, <Zdn>.B, <Zm>.B, #<imm>
+        case IF_SVE_FV_2A: // <Zdn>.<T>, <Zdn>.<T>, <Zm>.<T>, <const>
+        case IF_SVE_HN_2A: // <Zdn>.<T>, <Zdn>.<T>, <Zm>.<T>, #<imm>
             assert(!movprefxIsPredicated);
             assert(secondId->idReg1() != secondId->idReg3());
             break;
