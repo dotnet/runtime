@@ -22,12 +22,12 @@ namespace System.Numerics.Tensors
         static abstract TSelf? Empty { get; }
 
         /// <summary>
-        /// Gets whether the collection is currently empty.
+        /// Gets a value that indicates whether the collection is currently empty.
         /// </summary>
         bool IsEmpty { get; }
 
         /// <summary>
-        /// Gets whether the underlying buffer pinned.
+        /// Gets a value that indicates whether the underlying buffer is pinned.
         /// </summary>
         bool IsPinned { get; }
 
@@ -111,9 +111,11 @@ namespace System.Numerics.Tensors
         ReadOnlySpan<nint> Strides { get; }
 
         /// <summary>
-        /// Returns a reference to the 0th element of the tensor. If the tensor is empty, returns null reference.
-        /// It can be used for pinning and is required to support the use of the tensor within a fixed statement.
+        /// Returns a reference to the 0th element of the tensor. If the tensor is empty, returns <see langword="null"/>.
         /// </summary>
+        /// <remarks>
+        /// This method can be used for pinning and is required to support the use of the tensor within a fixed statement.
+        /// </remarks>
         ref readonly T GetPinnableReference();
 
         /// <summary>
@@ -141,14 +143,14 @@ namespace System.Numerics.Tensors
         /// Tries to copy the tensor to the specified destination. The destination tensor must be equal to or larger than the source tensor.
         /// </summary>
         /// <param name="destination">The destination span where the data should be copied to.</param>
-        /// <returns>True if the copy succeeded, false otherwise.</returns>
+        /// <returns><see langword="true" /> if the copy succeeded, <see langword="false" /> otherwise.</returns>
         bool TryCopyTo(scoped TensorSpan<T> destination);
 
         /// <summary>
         /// Tries to flatten the tensor to the specified destination. The destination span must be equal to or larger than the number of elements in the source tensor.
         /// </summary>
         /// <param name="destination">The destination span where the data should be flattened to.</param>
-        /// <returns>True if the copy succeeded, false otherwise.</returns>
+        /// <returns><see langword="true" /> if the flatten succeeded, <see langword="false" /> otherwise.</returns>
         bool TryFlattenTo(scoped Span<T> destination);
     }
 }

@@ -21,28 +21,37 @@ namespace System.Numerics.Tensors
         // Ideally we could annotate it such that they cannot be the same type and no conflicts would exist
 
         /// <summary>
-        /// Creates a new tensor with the specified lengths. If <paramref name="pinned"/> is true the underlying buffer is
-        /// created permanently pinned, otherwise the underlying buffer is not pinned. The underlying buffer is initialized to default values.
+        /// Creates a new tensor with the specified lengths.
         /// </summary>
         /// <param name="lengths">The lengths of each dimension.</param>
-        /// <param name="pinned">Whether the underlying buffer should be pinned or not. Defaults to False.</param>
+        /// <param name="pinned"><see langword="true" /> to pin the underlying buffer. The default is <see langword="false" />.</param>
+        /// <remarks>
+        /// If <paramref name="pinned"/> is true the underlying buffer is created permanently pinned, otherwise the underlying buffer is not pinned.
+        /// The underlying buffer is initialized to default values.
+        /// </remarks>
         static abstract TSelf Create(scoped ReadOnlySpan<nint> lengths, bool pinned = false);
 
         /// <summary>
-        /// Creates a new tensor with the specified lengths and strides. If <paramref name="pinned"/> is true the underlying buffer is
-        /// created permanently pinned, otherwise the underlying buffer is not pinned. The underlying buffer is initialized to default values.
+        /// Creates a new tensor with the specified lengths and strides.
         /// </summary>
         /// <param name="lengths">The lengths of each dimension.</param>
         /// <param name="strides">The strides of each dimension.</param>
-        /// <param name="pinned">Whether the underlying buffer should be pinned or not. Defaults to False.</param>
+        /// <param name="pinned"><see langword="true" /> to pin the underlying buffer. The default is <see langword="false" />.</param>
+        /// <remarks>
+        /// If <paramref name="pinned"/> is true the underlying buffer is created permanently pinned, otherwise the underlying buffer is not pinned.
+        /// The underlying buffer is initialized to default values.
+        /// </remarks>
         static abstract TSelf Create(scoped ReadOnlySpan<nint> lengths, scoped ReadOnlySpan<nint> strides, bool pinned = false);
 
         /// <summary>
-        /// Creates a new tensor with the specified lengths and strides. If <paramref name="pinned"/> is true the underlying buffer is
-        /// created permanently pinned, otherwise the underlying buffer is not pinned. The underlying buffer is not initialized.
+        /// Creates a new tensor with the specified lengths and strides.
         /// </summary>
         /// <param name="lengths">The lengths of each dimension.</param>
-        /// <param name="pinned">Whether the underlying buffer should be pinned or not. Defaults to False.</param>
+        /// <param name="pinned"><see langword="true" /> to pin the underlying buffer. The default is <see langword="false" />.</param>
+        /// <remarks>
+        /// If <paramref name="pinned"/> is true the underlying buffer is created permanently pinned, otherwise the underlying buffer is not pinned.
+        /// The underlying buffer is not initialized.
+        /// </remarks>
         static abstract TSelf CreateUninitialized(scoped ReadOnlySpan<nint> lengths, bool pinned = false);
 
         /// <summary>
@@ -51,11 +60,15 @@ namespace System.Numerics.Tensors
         /// </summary>
         /// <param name="lengths">The lengths of each dimension.</param>
         /// <param name="strides">The strides of each dimension.</param>
-        /// <param name="pinned">Whether the underlying buffer should be pinned or not. Defaults to False.</param>
+        /// <param name="pinned"><see langword="true" /> to pin the underlying buffer. The default is <see langword="false" />.</param>
+        /// <remarks>
+        /// If <paramref name="pinned"/> is true the underlying buffer is created permanently pinned, otherwise the underlying buffer is not pinned.
+        /// The underlying buffer is not initialized.
+        /// </remarks>
         static abstract TSelf CreateUninitialized(scoped ReadOnlySpan<nint> lengths, scoped ReadOnlySpan<nint> strides, bool pinned = false);
 
         /// <summary>
-        /// Gets whether the collection is read-only.
+        /// Gets a value that idicates whether the collection is read-only.
         /// </summary>
         bool IsReadOnly { get; }
 
@@ -115,9 +128,11 @@ namespace System.Numerics.Tensors
         void Fill(T value);
 
         /// <summary>
-        /// Returns a reference to the 0th element of the tensor. If the tensor is empty, returns null reference.
-        /// It can be used for pinning and is required to support the use of the tensor within a fixed statement.
+        /// Returns a reference to the 0th element of the tensor. If the tensor is empty, returns <see langword="null"/>.
         /// </summary>
+        /// <remarks>
+        /// This method can be used for pinning and is required to support the use of the tensor within a fixed statement.
+        /// </remarks>
         new ref T GetPinnableReference();
     }
 }

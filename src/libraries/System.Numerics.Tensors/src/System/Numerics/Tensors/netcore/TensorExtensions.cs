@@ -19,7 +19,7 @@ using System.Diagnostics.CodeAnalysis;
 namespace System.Numerics.Tensors
 {
     /// <summary>
-    /// Static class that contains methods for tensor operations.
+    /// Provides methods for tensor operations.
     /// </summary>
     [Experimental(Experimentals.TensorTDiagId, UrlFormat = Experimentals.SharedUrlFormat)]
     public static partial class Tensor
@@ -6596,7 +6596,7 @@ namespace System.Numerics.Tensors
         /// <param name="shape1">The first shape to broadcast.</param>
         /// <param name="shape2">The second shape to broadcast.</param>
         /// <returns>The smallest lengths these shapes can be broadcast to.</returns>
-        /// <exception cref="ArgumentException"></exception>
+        /// <exception cref="ArgumentException">The lengths of <paramref name="shape1" /> and  <paramref name="shape2" /> are not broadcast compatible.</exception>
         public static nint[] GetSmallestBroadcastableLengths(ReadOnlySpan<nint> shape1, ReadOnlySpan<nint> shape2)
         {
             if (!TensorHelpers.IsBroadcastableTo(shape1, shape2))

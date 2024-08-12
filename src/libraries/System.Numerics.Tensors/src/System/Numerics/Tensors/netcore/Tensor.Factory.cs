@@ -13,7 +13,7 @@ using Microsoft.VisualBasic;
 namespace System.Numerics.Tensors
 {
     /// <summary>
-    /// Static class that contains methods for creating tensors.
+    /// Provides methods for creating tensors.
     /// </summary>
     public static partial class Tensor
     {
@@ -179,7 +179,7 @@ namespace System.Numerics.Tensors
         }
 
         /// <summary>
-        /// Fills the given <see cref="TensorSpan{T}"/> with random data in a gaussian normal distribution. <see cref="System.Random"/>
+        /// Fills the given <see cref="TensorSpan{T}"/> with random data in a Gaussian normal distribution. <see cref="System.Random"/>
         /// can optionally be provided for seeding.
         /// </summary>
         /// <typeparam name="T">The element type.</typeparam>

@@ -629,8 +629,8 @@ namespace System.Numerics.Tensors
         /// <summary>
         /// Gets the hash code for the <see cref="Tensor{T}"/>.
         /// </summary>
-        /// <returns>The int hash code of the tensor</returns>
-        /// <exception cref="NotImplementedException"></exception>
+        /// <returns>The hash code of the tensor.</returns>
+        /// <exception cref="NotImplementedException">In all cases.</exception>
         public override int GetHashCode()
         {
             throw new NotImplementedException();
