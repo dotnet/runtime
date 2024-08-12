@@ -520,8 +520,11 @@ struct HWIntrinsicInfo
                                            CORINFO_SIG_INFO* sig,
                                            const char*       className,
                                            const char*       methodName,
-                                           const char*       enclosingClassName);
-    static CORINFO_InstructionSet lookupIsa(const char* className, const char* enclosingClassName);
+                                           const char*       innerEnclosingClassName,
+                                           const char*       outerEnclosingClassName);
+    static CORINFO_InstructionSet lookupIsa(const char* className,
+                                            const char* innerEnclosingClassName,
+                                            const char* outerEnclosingClassName);
 
     static unsigned lookupSimdSize(Compiler* comp, NamedIntrinsic id, CORINFO_SIG_INFO* sig);
 

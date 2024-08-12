@@ -16828,31 +16828,7 @@ bool Compiler::gtNodeHasSideEffects(GenTree* tree, GenTreeFlags flags, bool igno
         {
             GenTreeCall* const call             = potentialCall->AsCall();
             const bool         ignoreExceptions = (flags & GTF_EXCEPT) == 0;
-            if (!call->HasSideEffects(this, ignoreExceptions, ignoreCctors))
-            {
-                // If this call is otherwise side effect free, check its arguments.
-                for (CallArg& arg : call->gtArgs.Args())
-                {
-                    // I'm a little worried that args that assign to temps that are late args will look like
-                    // side effects...but better to be conservative for now.
-                    if ((arg.GetEarlyNode() != nullptr) &&
-                        gtTreeHasSideEffects(arg.GetEarlyNode(), flags, ignoreCctors))
-                    {
-                        return true;
-                    }
-
-                    if ((arg.GetLateNode() != nullptr) && gtTreeHasSideEffects(arg.GetLateNode(), flags, ignoreCctors))
-                    {
-                        return true;
-                    }
-                }
-
-                // Otherwise:
-                return false;
-            }
-
-            // Otherwise the GT_CALL is considered to have side-effects.
-            return true;
+            return call->HasSideEffects(this, ignoreExceptions, ignoreCctors);
         }
     }
 
@@ -16892,19 +16868,30 @@ bool Compiler::gtTreeHasSideEffects(GenTree* tree, GenTreeFlags flags /* = GTF_S
 
     if (sideEffectFlags == GTF_CALL)
     {
-        if (tree->OperGet() == GT_CALL)
+        if (tree->IsHelperCall())
         {
             // Generally all trees that contain GT_CALL nodes are considered to have side-effects.
-            //
-            if (tree->AsCall()->IsHelperCall())
+            // However, for some pure helper calls we lie about this.
+            if (gtNodeHasSideEffects(tree, flags, ignoreCctors))
             {
-                // If this node is a helper call we may not care about the side-effects.
-                // Note that gtNodeHasSideEffects checks the side effects of the helper itself
-                // as well as the side effects of its arguments.
-                return gtNodeHasSideEffects(tree, flags, ignoreCctors);
+                return true;
             }
+
+            // The GTF_CALL may be contributed by an operand, so check for
+            // that.
+            bool hasCallInOperand = false;
+            tree->VisitOperands([=, &hasCallInOperand](GenTree* op) {
+                if (gtTreeHasSideEffects(op, GTF_CALL, ignoreCctors))
+                {
+                    hasCallInOperand = true;
+                    return GenTree::VisitResult::Abort;
+                }
+                return GenTree::VisitResult::Continue;
+            });
+
+            return hasCallInOperand;
         }
-        else if (tree->OperGet() == GT_INTRINSIC)
+        else if (tree->OperIs(GT_INTRINSIC))
         {
             if (gtNodeHasSideEffects(tree, flags, ignoreCctors))
             {
@@ -26729,6 +26716,7 @@ bool GenTreeHWIntrinsic::OperIsMemoryLoad(GenTree** pAddr) const
             case NI_Sve_LoadVector:
             case NI_Sve_LoadVectorNonTemporal:
             case NI_Sve_LoadVector128AndReplicateToVector:
+            case NI_Sve_LoadVectorByteZeroExtendFirstFaulting:
             case NI_Sve_LoadVectorByteZeroExtendToInt16:
             case NI_Sve_LoadVectorByteZeroExtendToInt32:
             case NI_Sve_LoadVectorByteZeroExtendToInt64:
@@ -26736,22 +26724,27 @@ bool GenTreeHWIntrinsic::OperIsMemoryLoad(GenTree** pAddr) const
             case NI_Sve_LoadVectorByteZeroExtendToUInt32:
             case NI_Sve_LoadVectorByteZeroExtendToUInt64:
             case NI_Sve_LoadVectorFirstFaulting:
+            case NI_Sve_LoadVectorInt16SignExtendFirstFaulting:
             case NI_Sve_LoadVectorInt16SignExtendToInt32:
             case NI_Sve_LoadVectorInt16SignExtendToInt64:
             case NI_Sve_LoadVectorInt16SignExtendToUInt32:
             case NI_Sve_LoadVectorInt16SignExtendToUInt64:
+            case NI_Sve_LoadVectorInt32SignExtendFirstFaulting:
             case NI_Sve_LoadVectorInt32SignExtendToInt64:
             case NI_Sve_LoadVectorInt32SignExtendToUInt64:
+            case NI_Sve_LoadVectorSByteSignExtendFirstFaulting:
             case NI_Sve_LoadVectorSByteSignExtendToInt16:
             case NI_Sve_LoadVectorSByteSignExtendToInt32:
             case NI_Sve_LoadVectorSByteSignExtendToInt64:
             case NI_Sve_LoadVectorSByteSignExtendToUInt16:
             case NI_Sve_LoadVectorSByteSignExtendToUInt32:
             case NI_Sve_LoadVectorSByteSignExtendToUInt64:
+            case NI_Sve_LoadVectorUInt16ZeroExtendFirstFaulting:
             case NI_Sve_LoadVectorUInt16ZeroExtendToInt32:
             case NI_Sve_LoadVectorUInt16ZeroExtendToInt64:
             case NI_Sve_LoadVectorUInt16ZeroExtendToUInt32:
             case NI_Sve_LoadVectorUInt16ZeroExtendToUInt64:
+            case NI_Sve_LoadVectorUInt32ZeroExtendFirstFaulting:
             case NI_Sve_LoadVectorUInt32ZeroExtendToInt64:
             case NI_Sve_LoadVectorUInt32ZeroExtendToUInt64:
             case NI_Sve_Load2xVectorAndUnzip:
@@ -27262,6 +27255,14 @@ bool GenTreeHWIntrinsic::OperRequiresCallFlag() const
             case NI_Sve_GatherPrefetch32Bit:
             case NI_Sve_GatherPrefetch64Bit:
             case NI_Sve_GatherPrefetch8Bit:
+            case NI_Sve_GetFfrByte:
+            case NI_Sve_GetFfrInt16:
+            case NI_Sve_GetFfrInt32:
+            case NI_Sve_GetFfrInt64:
+            case NI_Sve_GetFfrSByte:
+            case NI_Sve_GetFfrUInt16:
+            case NI_Sve_GetFfrUInt32:
+            case NI_Sve_GetFfrUInt64:
             case NI_Sve_SetFfr:
             {
                 return true;
@@ -27453,6 +27454,14 @@ void GenTreeHWIntrinsic::Initialize(NamedIntrinsic intrinsicId)
             case NI_Sve_PrefetchInt16:
             case NI_Sve_PrefetchInt32:
             case NI_Sve_PrefetchInt64:
+            case NI_Sve_GetFfrByte:
+            case NI_Sve_GetFfrInt16:
+            case NI_Sve_GetFfrInt32:
+            case NI_Sve_GetFfrInt64:
+            case NI_Sve_GetFfrSByte:
+            case NI_Sve_GetFfrUInt16:
+            case NI_Sve_GetFfrUInt32:
+            case NI_Sve_GetFfrUInt64:
             case NI_Sve_SetFfr:
             {
                 // Mark as a call and global reference, much as is done for GT_KEEPALIVE
