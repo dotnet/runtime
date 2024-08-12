@@ -93,7 +93,7 @@ jobs:
       testGroup: innerloop
       isSingleFile: true
       nameSuffix: NativeAOT_Libs
-      buildArgs: -s clr.aot+host.native+libs+libs.tests -c $(_BuildConfig) /p:TestNativeAot=true /p:ArchiveTests=true
+      buildArgs: -s clr.aot+host.native+libs+libs.tests -c $(_BuildConfig) /p:TestNativeAot=true /p:ArchiveTests=true /p:IlcUseServerGc=false
       timeoutInMinutes: 300 # doesn't normally take this long, but I've seen Helix queues backed up for 160 minutes
       # extra steps, run tests
       extraStepsTemplate: /eng/pipelines/libraries/helix.yml
@@ -122,7 +122,7 @@ jobs:
       testGroup: innerloop
       isSingleFile: true
       nameSuffix: NativeAOT_Checked_Libs
-      buildArgs: -s clr.aot+host.native+libs+libs.tests -c $(_BuildConfig) -rc Checked /p:TestNativeAot=true /p:ArchiveTests=true
+      buildArgs: -s clr.aot+host.native+libs+libs.tests -c $(_BuildConfig) -rc Checked /p:TestNativeAot=true /p:ArchiveTests=true /p:IlcUseServerGc=false
       timeoutInMinutes: 360
       # extra steps, run tests
       extraStepsTemplate: /eng/pipelines/libraries/helix.yml
@@ -151,7 +151,7 @@ jobs:
       testGroup: innerloop
       isSingleFile: true
       nameSuffix: NativeAOT_Checked_Libs_SizeOpt
-      buildArgs: -s clr.aot+host.native+libs+libs.tests -c $(_BuildConfig) -rc Checked /p:TestNativeAot=true /p:ArchiveTests=true /p:OptimizationPreference=Size
+      buildArgs: -s clr.aot+host.native+libs+libs.tests -c $(_BuildConfig) -rc Checked /p:TestNativeAot=true /p:ArchiveTests=true /p:OptimizationPreference=Size /p:IlcUseServerGc=false
       timeoutInMinutes: 240
       # extra steps, run tests
       extraStepsTemplate: /eng/pipelines/libraries/helix.yml
@@ -180,7 +180,7 @@ jobs:
       testGroup: innerloop
       isSingleFile: true
       nameSuffix: NativeAOT_Checked_Libs_SpeedOpt
-      buildArgs: -s clr.aot+host.native+libs+libs.tests -c $(_BuildConfig) -rc Checked /p:TestNativeAot=true /p:ArchiveTests=true /p:OptimizationPreference=Speed
+      buildArgs: -s clr.aot+host.native+libs+libs.tests -c $(_BuildConfig) -rc Checked /p:TestNativeAot=true /p:ArchiveTests=true /p:OptimizationPreference=Speed /p:IlcUseServerGc=false
       timeoutInMinutes: 240
       # extra steps, run tests
       extraStepsTemplate: /eng/pipelines/libraries/helix.yml

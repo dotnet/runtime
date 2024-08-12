@@ -17,7 +17,6 @@
 #include <openssl/dsa.h>
 #include <openssl/ec.h>
 #include <openssl/ecdsa.h>
-#include <openssl/engine.h>
 #include <openssl/err.h>
 #include <openssl/evp.h>
 #include <openssl/hmac.h>
@@ -44,6 +43,11 @@
 
 #if OPENSSL_VERSION_NUMBER >= OPENSSL_VERSION_3_0_RTM
 #include <openssl/provider.h>
+#endif
+
+#if HAVE_OPENSSL_ENGINE
+// Some Linux distributions build without engine support.
+#include <openssl/engine.h>
 #endif
 
 #if OPENSSL_VERSION_NUMBER >= OPENSSL_VERSION_1_1_1_RTM
@@ -166,6 +170,24 @@ const EVP_MD *EVP_sha3_512(void);
 const EVP_MD *EVP_shake128(void);
 const EVP_MD *EVP_shake256(void);
 int EVP_DigestFinalXOF(EVP_MD_CTX *ctx, unsigned char *md, size_t len);
+#endif
+
+#if !HAVE_OPENSSL_ENGINE
+#undef HAVE_OPENSSL_ENGINE
+#define HAVE_OPENSSL_ENGINE 1
+
+ENGINE *ENGINE_by_id(const char *id);
+int ENGINE_init(ENGINE *e);
+int ENGINE_finish(ENGINE *e);
+ENGINE *ENGINE_new(void);
+int ENGINE_free(ENGINE *e);
+typedef EVP_PKEY *(*ENGINE_LOAD_KEY_PTR)(ENGINE *, const char *,
+                                         UI_METHOD *ui_method,
+                                         void *callback_data);
+EVP_PKEY *ENGINE_load_private_key(ENGINE *e, const char *key_id,
+                                  UI_METHOD *ui_method, void *callback_data);
+EVP_PKEY *ENGINE_load_public_key(ENGINE *e, const char *key_id,
+                                 UI_METHOD *ui_method, void *callback_data);
 #endif
 
 #define API_EXISTS(fn) (fn != NULL)
@@ -298,12 +320,12 @@ int EVP_DigestFinalXOF(EVP_MD_CTX *ctx, unsigned char *md, size_t len);
     REQUIRED_FUNCTION(EC_POINT_mul) \
     REQUIRED_FUNCTION(EC_POINT_new) \
     REQUIRED_FUNCTION(EC_POINT_set_affine_coordinates_GFp) \
-    REQUIRED_FUNCTION(ENGINE_by_id) \
-    REQUIRED_FUNCTION(ENGINE_finish) \
-    REQUIRED_FUNCTION(ENGINE_free) \
-    REQUIRED_FUNCTION(ENGINE_init) \
-    REQUIRED_FUNCTION(ENGINE_load_public_key) \
-    REQUIRED_FUNCTION(ENGINE_load_private_key) \
+    LIGHTUP_FUNCTION(ENGINE_by_id) \
+    LIGHTUP_FUNCTION(ENGINE_finish) \
+    LIGHTUP_FUNCTION(ENGINE_free) \
+    LIGHTUP_FUNCTION(ENGINE_init) \
+    LIGHTUP_FUNCTION(ENGINE_load_public_key) \
+    LIGHTUP_FUNCTION(ENGINE_load_private_key) \
     REQUIRED_FUNCTION(ERR_clear_error) \
     REQUIRED_FUNCTION(ERR_error_string_n) \
     REQUIRED_FUNCTION(ERR_get_error) \

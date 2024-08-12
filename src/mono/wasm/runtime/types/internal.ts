@@ -145,7 +145,6 @@ export type LoaderHelpers = {
     out(message: string): void;
     err(message: string): void;
 
-    hasDebuggingEnabled(config: MonoConfig): boolean,
     retrieve_asset_download(asset: AssetEntry): Promise<ArrayBuffer>;
     onDownloadResourceProgress?: (resourcesLoaded: number, totalResources: number) => void;
     logDownloadStatsToConsole: () => void;
@@ -155,6 +154,7 @@ export type LoaderHelpers = {
     invokeLibraryInitializers: (functionName: string, args: any[]) => Promise<void>,
     libraryInitializers?: { scriptName: string, exports: any }[];
 
+    isDebuggingSupported(): boolean,
     isChromium: boolean,
     isFirefox: boolean
 

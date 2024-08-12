@@ -418,6 +418,10 @@
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.IO.Ports\tests\System.IO.Ports.Tests.csproj"
                       Condition="'$(TargetOS)' != 'windows'" />
 
+    <!-- Getting OOM killed, needs investigation why it uses 10 GB of memory -->
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Text.Json\tests\System.Text.Json.SourceGeneration.Tests\System.Text.Json.SourceGeneration.Roslyn4.4.Tests.csproj"
+                      Condition="'$(TargetOS)' == 'linux'" />
+
     <!-- Not applicable to NativeAOT -->
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Reflection\tests\InvokeEmit\System.Reflection.InvokeEmit.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Reflection\tests\InvokeInterpreted\System.Reflection.InvokeInterpreted.Tests.csproj" />
