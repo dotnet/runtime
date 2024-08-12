@@ -381,6 +381,7 @@ namespace ILCompiler.ObjectWriter
                 progressReporter = new ProgressReporter(logger, count);
             }
 
+            int syntheticLabelCounter = 0;
             List<BlockToRelocate> blocksToRelocate = new();
             foreach (DependencyNode depNode in nodes)
             {
@@ -415,15 +416,17 @@ namespace ILCompiler.ObjectWriter
 
                 sectionWriter.EmitAlignment(nodeContents.Alignment);
 
+                bool haveStartSymbol = false;
                 bool isMethod = node is IMethodBodyNode or AssemblyStubNode;
                 long thumbBit = _nodeFactory.Target.Architecture == TargetArchitecture.ARM && isMethod ? 1 : 0;
                 foreach (ISymbolDefinitionNode n in nodeContents.DefinedSymbols)
                 {
+                    haveStartSymbol |= n.Offset == 0;
                     sectionWriter.EmitSymbolDefinition(
                         n == node ? currentSymbolName : GetMangledName(n),
                         n.Offset + thumbBit,
                         n.Offset == 0 && isMethod ? nodeContents.Data.Length : 0,
-                        altEntry: n.Offset != 0);
+                        altEntry: _usesSubsectionsViaSymbols && n.Offset != 0);
                     if (_nodeFactory.GetSymbolAlternateName(n) is string alternateName)
                     {
                         sectionWriter.EmitSymbolDefinition(
@@ -431,8 +434,24 @@ namespace ILCompiler.ObjectWriter
                             n.Offset + thumbBit,
                             n.Offset == 0 && isMethod ? nodeContents.Data.Length : 0,
                             global: true,
-                            altEntry: true);
+                            altEntry: _usesSubsectionsViaSymbols);
                     }
+                }
+
+                // In the subsections-via-symbols model (Mach-O file format used by Apple) we need a symbol pointing
+                // to the beginning on the node without the `altEntry` flag. All symbols with non-zero offset are then
+                // produced with the `altEntry: true` flag. This makes the node appear as unbreakable atom for the
+                // native linker with individual symbol labels pointing into it.
+                //
+                // If the defined symbols of the node don't cover the zero offset we have to synthesize the initial
+                // label.
+                if (!haveStartSymbol && _usesSubsectionsViaSymbols)
+                {
+                    string startSymbol = currentSymbolName != null ? $"__start_{currentSymbolName}" :$"__start_{syntheticLabelCounter++}";
+                    sectionWriter.EmitSymbolDefinition(
+                        startSymbol, 0, isMethod ? nodeContents.Data.Length : 0,
+                        global: false,
+                        altEntry: false);
                 }
 
                 if (nodeContents.Relocs is not null)
