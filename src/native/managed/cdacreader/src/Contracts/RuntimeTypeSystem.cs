@@ -170,6 +170,7 @@ internal interface IRuntimeTypeSystem : IContract
     public virtual bool IsVersionable(MethodDescHandle methodDesc) => throw new NotImplementedException();
 
     public virtual TargetPointer GetMethodDescVersioningState(MethodDescHandle methodDesc) => throw new NotImplementedException();
+    public virtual uint GetMethodToken(MethodDescHandle methodDesc) => throw new NotImplementedException();
     #endregion MethodDesc inspection APIs
 }
 

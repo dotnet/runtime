@@ -8,6 +8,26 @@ namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 
 internal readonly partial struct NativeCodePointers_1 : INativeCodePointers
 {
+
+    internal struct ILCodeVersionHandle
+    {
+        internal readonly TargetPointer MethodDesc;
+        internal readonly TargetPointer ILCodeVersionNode;
+
+        internal ILCodeVersionHandle(TargetPointer methodDescAddress, TargetPointer ilCodeVersionNodeAddress)
+        {
+            MethodDesc = methodDescAddress;
+            ILCodeVersionNode = ilCodeVersionNodeAddress;
+            if (MethodDesc != TargetPointer.Null && ILCodeVersionNode != TargetPointer.Null)
+            {
+                throw new ArgumentException("Both MethodDesc and ILCodeVersionNode cannot be non-null");
+
+            }
+
+            public static ILCodeVersionHandle Invalid => new ILCodeVersionHandle(TargetPointer.Null, TargetPointer.Null);
+        public bool IsValid => MethodDesc != TargetPointer.Null || ILCodeVersionNode != TargetPointer.Null;
+    }
+
     internal struct NativeCodeVersionContract
     {
         private readonly Target _target;
@@ -46,6 +66,25 @@ internal readonly partial struct NativeCodePointers_1 : INativeCodePointers
                 currentAddress = current.Next;
             }
             return NativeCodeVersionHandle.Invalid;
+        }
+
+        public ILCodeVersionHandle FindActiveILCodeVersion(TargetPointer module, uint methodDefinition)
+        {
+            ModuleHandle moduleHandle = _target.Contracts.Loader.GetModuleHandle(module);
+            TargetPointer ilCodeVersionTable = _target.Contracts.Loader.GetLookupTables(moduleHandle).ILCodeVersionTable;
+            TargetPointer ilNode = _target.Contracts.GetModuleLookupTableElement(module, methodDefinition, out var _);
+            if (ilNode == TargetPointer.Null)
+            {
+                return ILCodeVersionHandle.Invalid;
+            }
+
+
+            throw new NotImplementedException();
+        }
+
+        public NativeCodeVersionHandle FindActiveNativeCodeVersion(ILCodeVersionHandle methodDefActiveVersion)
+        {
+            throw new NotImplementedException();
         }
 
     }

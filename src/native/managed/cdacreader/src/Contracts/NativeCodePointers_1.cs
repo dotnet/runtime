@@ -65,6 +65,24 @@ internal readonly partial struct NativeCodePointers_1 : INativeCodePointers
         }
     }
 
+    NativeCodeVersionHandle INativeCodePointers.GetActiveNativeCodeVersion(TargetPointer methodDesc)
+    {
+        // CodeVersionManager::GetActiveILCodeVersion
+        // then ILCodeVersion::GetActiveNativeCodeVersion
+        IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
+        MethodDescHandle md = rts.GetMethodDescHandle(methodDesc);
+        TargetPointer mtAddr = rts.GetMethodTable(md);
+        TypeHandle typeHandle = rts.GetTypeHandle(mtAddr);
+        TargetPointer module = rts.GetModule(typeHandle);
+        uint methodDefToken = rts.GetMethodToken(md);
+        ILCodeVersionHandle methodDefActiveVersion = _nativeCodeVersionContract.FindActiveILCodeVersion(module, methodDefToken);
+        if (!methodDefActiveVersion.IsValid)
+        {
+            return NativeCodeVersionHandle.Invalid;
+        }
+        return _nativeCodeVersionContract.FindActiveNativeCodeVersion(methodDefActiveVersion);
+    }
+
     bool INativeCodePointers.IsReJITEnabled()
     {
         return _executionManagerContract.IsReJITEnabled();

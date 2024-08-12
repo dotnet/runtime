@@ -34,6 +34,8 @@ internal static class Constants
 
         internal const string SyncTableEntries = nameof(SyncTableEntries);
 
+        internal const string MethodDescTokenRemainderBitCount = nameof(MethodDescTokenRemainderBitCount);
+
         internal const string ArrayBoundsZero = nameof(ArrayBoundsZero);
 
         internal const string MethodDescTokenRemainderBitCount = nameof(MethodDescTokenRemainderBitCount);

@@ -191,6 +191,22 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
         public bool IsUnboxingStub => HasFlags(MethodDescFlags3.IsUnboxingStub);
 
         public TargetPointer CodeData => _desc.CodeData;
+
+        public uint Token { get; }
+
+        private static uint ComputeToken(Target target, Data.MethodDesc desc, Data.MethodDescChunk chunk)
+        {
+            int tokenRemainderBitCount = target.ReadGlobal<byte>(Constants.Globals.MethodDescTokenRemainderBitCount);
+            int tokenRangeBitCount = 24 - tokenRemainderBitCount;
+            uint allRidBitsSet = 0xFFFFFF;
+            uint tokenRemainderMask = allRidBitsSet >> tokenRangeBitCount;
+            uint tokenRangeMask = allRidBitsSet >> tokenRemainderBitCount;
+
+            uint tokenRemainder = (uint)(desc.Flags3AndTokenRemainder & tokenRemainderMask);
+            uint tokenRange = ((uint)(chunk.FlagsAndTokenRange & tokenRangeMask)) << tokenRemainderBitCount;
+
+            return 0x06000000 | tokenRange | tokenRemainder;
+        }
     }
 
     private class InstantiatedMethodDesc : IData<InstantiatedMethodDesc>
@@ -919,6 +935,12 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
         TargetPointer codeDataAddress = md.CodeData;
         Data.MethodDescCodeData codeData = _target.ProcessedData.GetOrAdd<Data.MethodDescCodeData>(codeDataAddress);
         return codeData.VersioningState;
+    }
+
+    uint IRuntimeTypeSystem.GetMethodToken(MethodDescHandle methodDescHandle)
+    {
+        MethodDesc methodDesc = _methodDescs[methodDescHandle.Address];
+        return methodDesc.Token;
     }
 
 }
