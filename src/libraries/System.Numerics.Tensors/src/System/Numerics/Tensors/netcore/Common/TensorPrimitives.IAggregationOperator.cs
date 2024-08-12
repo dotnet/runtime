@@ -351,7 +351,7 @@ namespace System.Numerics.Tensors
                             // so account for that to ensure we don't double process and include them in the
                             // aggregate twice.
 
-                            misalignment = (uint)Vector256<T>.Count
+                            misalignment = (uint)Vector256<T>.Count;
                             xPtr += misalignment;
                             remainder -= misalignment;
                         }
@@ -533,7 +533,7 @@ namespace System.Numerics.Tensors
                             // so account for that to ensure we don't double process and include them in the
                             // aggregate twice.
 
-                            misalignment = (uint)Vector512<T>.Count
+                            misalignment = (uint)Vector512<T>.Count;
                             xPtr += misalignment;
                             remainder -= misalignment;
                         }
@@ -1295,7 +1295,7 @@ namespace System.Numerics.Tensors
                             // so account for that to ensure we don't double process and include them in the
                             // aggregate twice.
 
-                            misalignment = (uint)Vector128<T>.Count
+                            misalignment = (uint)Vector128<T>.Count;
 
                             xPtr += misalignment;
                             yPtr += misalignment;
@@ -1502,7 +1502,7 @@ namespace System.Numerics.Tensors
                             // so account for that to ensure we don't double process and include them in the
                             // aggregate twice.
 
-                            misalignment = (uint)Vector256<T>.Count
+                            misalignment = (uint)Vector256<T>.Count;
 
                             xPtr += misalignment;
                             yPtr += misalignment;
@@ -1709,7 +1709,7 @@ namespace System.Numerics.Tensors
                             // so account for that to ensure we don't double process and include them in the
                             // aggregate twice.
 
-                            misalignment = (uint)Vector512<T>.Count
+                            misalignment = (uint)Vector512<T>.Count;
 
                             xPtr += misalignment;
                             yPtr += misalignment;
