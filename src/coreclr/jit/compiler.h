@@ -5330,6 +5330,7 @@ public:
     bool fgHasSwitch; // any BBJ_SWITCH jumps?
 
     bool fgRemoveRestOfBlock; // true if we know that we will throw
+    bool fgHasNoReturnCall;   // true if statement we morphed had a no-return call
     bool fgStmtRemoved;       // true if we remove statements -> need new DFA
 
     enum FlowGraphOrder
@@ -5462,6 +5463,8 @@ public:
 
     bool fgMorphBlockStmt(BasicBlock* block, Statement* stmt DEBUGARG(const char* msg));
     void fgMorphStmtBlockOps(BasicBlock* block, Statement* stmt);
+
+    bool gtRemoveTreesAfterNoReturnCall(BasicBlock* block, Statement* stmt);
 
     //------------------------------------------------------------------------------------------------------------
     // MorphMDArrayTempCache: a simple cache of compiler temporaries in the local variable table, used to minimize

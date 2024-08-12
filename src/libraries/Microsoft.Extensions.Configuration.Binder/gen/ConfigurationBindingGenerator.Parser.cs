@@ -391,6 +391,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 CollectionInstantiationStrategy instantiationStrategy;
                 CollectionInstantiationConcreteType instantiationConcreteType;
                 CollectionPopulationCastType populationCastType;
+                bool shouldTryCast = false;
 
                 if (HasPublicParameterLessCtor(type))
                 {
@@ -403,6 +404,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                     }
                     else if (_typeSymbols.GenericIDictionary is not null && GetInterface(type, _typeSymbols.GenericIDictionary_Unbound) is not null)
                     {
+                        // implements IDictionary<,> -- cast to it.
                         populationCastType = CollectionPopulationCastType.IDictionary;
                     }
                     else
@@ -421,7 +423,9 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 {
                     instantiationStrategy = CollectionInstantiationStrategy.LinqToDictionary;
                     instantiationConcreteType = CollectionInstantiationConcreteType.Dictionary;
+                    // is IReadonlyDictionary<,>  -- test cast to IDictionary<,>
                     populationCastType = CollectionPopulationCastType.IDictionary;
+                    shouldTryCast = true;
                 }
                 else
                 {
@@ -431,6 +435,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 TypeRef keyTypeRef = EnqueueTransitiveType(typeParseInfo, keyTypeSymbol, DiagnosticDescriptors.DictionaryKeyNotSupported);
                 TypeRef elementTypeRef = EnqueueTransitiveType(typeParseInfo, elementTypeSymbol, DiagnosticDescriptors.ElementTypeNotSupported);
 
+                Debug.Assert(!shouldTryCast || !type.IsValueType, "Should not test cast for value types.");
                 return new DictionarySpec(type)
                 {
                     KeyTypeRef = keyTypeRef,
@@ -438,6 +443,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                     InstantiationStrategy = instantiationStrategy,
                     InstantiationConcreteType = instantiationConcreteType,
                     PopulationCastType = populationCastType,
+                    ShouldTryCast = shouldTryCast
                 };
             }
 
@@ -458,6 +464,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 CollectionInstantiationStrategy instantiationStrategy;
                 CollectionInstantiationConcreteType instantiationConcreteType;
                 CollectionPopulationCastType populationCastType;
+                bool shouldTryCast = false;
 
                 if (HasPublicParameterLessCtor(type))
                 {
@@ -470,6 +477,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                     }
                     else if (_typeSymbols.GenericICollection is not null && GetInterface(type, _typeSymbols.GenericICollection_Unbound) is not null)
                     {
+                        // implements ICollection<> -- cast to it
                         populationCastType = CollectionPopulationCastType.ICollection;
                     }
                     else
@@ -487,7 +495,9 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 {
                     instantiationStrategy = CollectionInstantiationStrategy.CopyConstructor;
                     instantiationConcreteType = CollectionInstantiationConcreteType.List;
+                    // is IEnumerable<> -- test cast to ICollection<>
                     populationCastType = CollectionPopulationCastType.ICollection;
+                    shouldTryCast = true;
                 }
                 else if (IsInterfaceMatch(type, _typeSymbols.ISet_Unbound))
                 {
@@ -499,13 +509,17 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 {
                     instantiationStrategy = CollectionInstantiationStrategy.CopyConstructor;
                     instantiationConcreteType = CollectionInstantiationConcreteType.HashSet;
+                    // is IReadOnlySet<> -- test cast to ISet<>
                     populationCastType = CollectionPopulationCastType.ISet;
+                    shouldTryCast = true;
                 }
                 else if (IsInterfaceMatch(type, _typeSymbols.IReadOnlyList_Unbound) || IsInterfaceMatch(type, _typeSymbols.IReadOnlyCollection_Unbound))
                 {
                     instantiationStrategy = CollectionInstantiationStrategy.CopyConstructor;
                     instantiationConcreteType = CollectionInstantiationConcreteType.List;
+                    // is IReadOnlyList<> or IReadOnlyCollection<> -- test cast to ICollection<>
                     populationCastType = CollectionPopulationCastType.ICollection;
+                    shouldTryCast = true;
                 }
                 else
                 {
@@ -514,12 +528,14 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
                 TypeRef elementTypeRef = EnqueueTransitiveType(typeParseInfo, elementType, DiagnosticDescriptors.ElementTypeNotSupported);
 
+                Debug.Assert(!shouldTryCast || !type.IsValueType, "Should not test cast for value types.");
                 return new EnumerableSpec(type)
                 {
                     ElementTypeRef = elementTypeRef,
                     InstantiationStrategy = instantiationStrategy,
                     InstantiationConcreteType = instantiationConcreteType,
                     PopulationCastType = populationCastType,
+                    ShouldTryCast = shouldTryCast
                 };
             }
 

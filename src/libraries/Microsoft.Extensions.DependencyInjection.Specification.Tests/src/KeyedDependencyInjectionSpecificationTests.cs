@@ -11,7 +11,7 @@ namespace Microsoft.Extensions.DependencyInjection.Specification
 {
     public abstract partial class KeyedDependencyInjectionSpecificationTests
     {
-        protected abstract  IServiceProvider CreateServiceProvider(IServiceCollection collection);
+        protected abstract IServiceProvider CreateServiceProvider(IServiceCollection collection);
 
         [Fact]
         public void ResolveKeyedService()
@@ -264,6 +264,70 @@ namespace Microsoft.Extensions.DependencyInjection.Specification
         }
 
         [Fact]
+        public void ResolveKeyedServiceWithKeyedParameter_MissingRegistration_SecondParameter()
+        {
+            var serviceCollection = new ServiceCollection();
+
+            serviceCollection.AddKeyedSingleton<IService, Service>("service1");
+            // We are missing the registration for "service2" here and OtherService requires it.
+
+            serviceCollection.AddSingleton<OtherService>();
+
+            var provider = CreateServiceProvider(serviceCollection);
+
+            Assert.Null(provider.GetService<IService>());
+            Assert.Throws<InvalidOperationException>(() => provider.GetService<OtherService>());
+        }
+
+        [Fact]
+        public void ResolveKeyedServiceWithKeyedParameter_MissingRegistration_FirstParameter()
+        {
+            var serviceCollection = new ServiceCollection();
+
+            // We are not registering "service1" and "service1" keyed IService services and OtherService requires them.
+
+            serviceCollection.AddSingleton<OtherService>();
+
+            var provider = CreateServiceProvider(serviceCollection);
+
+            Assert.Null(provider.GetService<IService>());
+            Assert.Throws<InvalidOperationException>(() => provider.GetService<OtherService>());
+        }
+
+        [Fact]
+        public void ResolveKeyedServiceWithKeyedParameter_MissingRegistrationButWithDefaults()
+        {
+            var serviceCollection = new ServiceCollection();
+
+            // We are not registering "service1" and "service1" keyed IService services and OtherServiceWithDefaultCtorArgs
+            // specifies them but has argument defaults if missing.
+
+            serviceCollection.AddSingleton<OtherServiceWithDefaultCtorArgs>();
+
+            var provider = CreateServiceProvider(serviceCollection);
+
+            Assert.Null(provider.GetService<IService>());
+            Assert.NotNull(provider.GetService<OtherServiceWithDefaultCtorArgs>());
+        }
+
+        [Fact]
+        public void ResolveKeyedServiceWithKeyedParameter_MissingRegistrationButWithUnkeyedService()
+        {
+            var serviceCollection = new ServiceCollection();
+
+            // We are not registering "service1" and "service1" keyed IService services and OtherService requires them,
+            // but we are registering an unkeyed IService service which should not be injected into OtherService.
+            serviceCollection.AddSingleton<IService, Service>();
+
+            serviceCollection.AddSingleton<OtherService>();
+
+            var provider = CreateServiceProvider(serviceCollection);
+
+            Assert.NotNull(provider.GetService<IService>());
+            Assert.Throws<InvalidOperationException>(() => provider.GetService<OtherService>());
+        }
+
+        [Fact]
         public void CreateServiceWithKeyedParameter()
         {
             var serviceCollection = new ServiceCollection();
@@ -490,9 +554,9 @@ namespace Microsoft.Extensions.DependencyInjection.Specification
             Assert.NotSame(serviceA1, serviceB1);
         }
 
-        internal interface IService { }
+        public interface IService { }
 
-        internal class Service : IService
+        public class Service : IService
         {
             private readonly string _id;
 
@@ -503,9 +567,39 @@ namespace Microsoft.Extensions.DependencyInjection.Specification
             public override string? ToString() => _id;
         }
 
-        internal class OtherService
+        public class OtherService
         {
             public OtherService(
+                [FromKeyedServices("service1")] IService service1,
+                [FromKeyedServices("service2")] IService service2)
+            {
+                Service1 = service1;
+                Service2 = service2;
+            }
+
+            public IService Service1 { get; }
+
+            public IService Service2 { get; }
+        }
+
+        internal class OtherServiceWithDefaultCtorArgs
+        {
+            public OtherServiceWithDefaultCtorArgs(
+                [FromKeyedServices("service1")] IService service1 = null,
+                [FromKeyedServices("service2")] IService service2 = null)
+            {
+                Service1 = service1;
+                Service2 = service2;
+            }
+
+            public IService Service1 { get; }
+
+            public IService Service2 { get; }
+        }
+
+        internal class ServiceWithOtherService
+        {
+            public ServiceWithOtherService(
                 [FromKeyedServices("service1")] IService service1,
                 [FromKeyedServices("service2")] IService service2)
             {
