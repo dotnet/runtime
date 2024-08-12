@@ -1260,7 +1260,7 @@ MethodTableBuilder::BuildMethodTableThrowing(
     }
     CONTRACTL_END;
 
-    pModule->EnsureLibraryLoaded();
+    pModule->EnsureAllocated();
 
     // The following structs, defined as private members of MethodTableBuilder, contain the necessary local
     // parameters needed for BuildMethodTable Look at the struct definitions for a detailed list of all
@@ -1490,13 +1490,26 @@ MethodTableBuilder::BuildMethodTableThrowing(
 #if defined(TARGET_X86) || defined(TARGET_AMD64) || defined(TARGET_ARM64)
     if (bmtProp->fIsIntrinsicType && !bmtGenerics->HasInstantiation())
     {
-        LPCUTF8 className;
         LPCUTF8 nameSpace;
-        HRESULT hr = GetMDImport()->GetNameOfTypeDef(bmtInternal->pType->GetTypeDefToken(), &className, &nameSpace);
+        HRESULT hr = S_OK;
 
-        if (bmtInternal->pType->IsNested())
+        if (!bmtInternal->pType->IsNested())
         {
-            IfFailThrow(GetMDImport()->GetNameOfTypeDef(bmtInternal->pType->GetEnclosingTypeToken(), NULL, &nameSpace));
+            hr = GetMDImport()->GetNameOfTypeDef(bmtInternal->pType->GetTypeDefToken(), NULL, &nameSpace);
+        }
+        else
+        {
+            mdTypeDef rootEnclosingTD = bmtInternal->pType->GetEnclosingTypeToken();
+
+            mdTypeDef td = rootEnclosingTD;
+            // Some are hardware intrinsics are nested twice, so try to go
+            // another level up to get the namespace.
+            if (SUCCEEDED(GetMDImport()->GetNestedClassProps(rootEnclosingTD, &td)))
+            {
+                rootEnclosingTD = td;
+            }
+
+            IfFailThrow(GetMDImport()->GetNameOfTypeDef(td, NULL, &nameSpace));
         }
 
 #if defined(TARGET_ARM64)

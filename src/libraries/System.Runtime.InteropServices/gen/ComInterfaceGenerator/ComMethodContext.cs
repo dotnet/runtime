@@ -194,6 +194,7 @@ namespace Microsoft.Interop
                     {
                         baseMethods = pair;
                     }
+
                     methods.AddRange(baseMethods);
                     startingIndex += baseMethods.Length;
                 }

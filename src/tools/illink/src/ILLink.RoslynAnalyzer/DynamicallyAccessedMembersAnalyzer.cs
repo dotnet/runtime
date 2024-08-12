@@ -15,7 +15,7 @@ using Microsoft.CodeAnalysis.Diagnostics;
 namespace ILLink.RoslynAnalyzer
 {
 	[DiagnosticAnalyzer (LanguageNames.CSharp)]
-	public class DynamicallyAccessedMembersAnalyzer : DiagnosticAnalyzer
+	public sealed class DynamicallyAccessedMembersAnalyzer : DiagnosticAnalyzer
 	{
 		internal const string DynamicallyAccessedMembers = nameof (DynamicallyAccessedMembers);
 		internal const string DynamicallyAccessedMembersAttribute = nameof (DynamicallyAccessedMembersAttribute);
@@ -98,8 +98,7 @@ namespace ILLink.RoslynAnalyzer
 					foreach (var operationBlock in context.OperationBlocks) {
 						TrimDataFlowAnalysis trimDataFlowAnalysis = new (context, dataFlowAnalyzerContext, operationBlock);
 						trimDataFlowAnalysis.InterproceduralAnalyze ();
-						foreach (var diagnostic in trimDataFlowAnalysis.CollectDiagnostics ())
-							context.ReportDiagnostic (diagnostic);
+						trimDataFlowAnalysis.ReportDiagnostics (context.ReportDiagnostic);
 					}
 				});
 
@@ -117,16 +116,12 @@ namespace ILLink.RoslynAnalyzer
 						return;
 
 					var location = GetPrimaryLocation (type.Locations);
-					DiagnosticContext diagnosticContext = new (location);
 
 					if (type.BaseType is INamedTypeSymbol baseType)
-						GenericArgumentDataFlow.ProcessGenericArgumentDataFlow (diagnosticContext, baseType);
+						GenericArgumentDataFlow.ProcessGenericArgumentDataFlow (location, baseType, context.ReportDiagnostic);
 
 					foreach (var interfaceType in type.Interfaces)
-						GenericArgumentDataFlow.ProcessGenericArgumentDataFlow (diagnosticContext, interfaceType);
-
-					foreach (var diagnostic in diagnosticContext.Diagnostics)
-						context.ReportDiagnostic (diagnostic);
+						GenericArgumentDataFlow.ProcessGenericArgumentDataFlow (location, interfaceType, context.ReportDiagnostic);
 				}, SymbolKind.NamedType);
 				context.RegisterSymbolAction (context => {
 					VerifyMemberOnlyApplyToTypesOrStrings (context, context.Symbol);
@@ -148,18 +143,18 @@ namespace ILLink.RoslynAnalyzer
 		static void VerifyMemberOnlyApplyToTypesOrStrings (SymbolAnalysisContext context, ISymbol member)
 		{
 			var location = GetPrimaryLocation (member.Locations);
-			if (member is IFieldSymbol field && field.GetDynamicallyAccessedMemberTypes () != DynamicallyAccessedMemberTypes.None && !field.Type.IsTypeInterestingForDataflow ())
+			if (member is IFieldSymbol field && field.GetDynamicallyAccessedMemberTypes () != DynamicallyAccessedMemberTypes.None && !field.Type.IsTypeInterestingForDataflow (isByRef: field.RefKind is not RefKind.None))
 				context.ReportDiagnostic (Diagnostic.Create (DiagnosticDescriptors.GetDiagnosticDescriptor (DiagnosticId.DynamicallyAccessedMembersOnFieldCanOnlyApplyToTypesOrStrings), location, member.GetDisplayName ()));
 			else if (member is IMethodSymbol method) {
-				if (method.GetDynamicallyAccessedMemberTypesOnReturnType () != DynamicallyAccessedMemberTypes.None && !method.ReturnType.IsTypeInterestingForDataflow ())
+				if (method.GetDynamicallyAccessedMemberTypesOnReturnType () != DynamicallyAccessedMemberTypes.None && !method.ReturnType.IsTypeInterestingForDataflow (isByRef: method.ReturnsByRef))
 					context.ReportDiagnostic (Diagnostic.Create (DiagnosticDescriptors.GetDiagnosticDescriptor (DiagnosticId.DynamicallyAccessedMembersOnMethodReturnValueCanOnlyApplyToTypesOrStrings), location, member.GetDisplayName ()));
-				if (method.GetDynamicallyAccessedMemberTypes () != DynamicallyAccessedMemberTypes.None && !method.ContainingType.IsTypeInterestingForDataflow ())
+				if (method.GetDynamicallyAccessedMemberTypes () != DynamicallyAccessedMemberTypes.None && !method.ContainingType.IsTypeInterestingForDataflow (isByRef: false))
 					context.ReportDiagnostic (Diagnostic.Create (DiagnosticDescriptors.GetDiagnosticDescriptor (DiagnosticId.DynamicallyAccessedMembersIsNotAllowedOnMethods), location));
 				foreach (var parameter in method.Parameters) {
-					if (parameter.GetDynamicallyAccessedMemberTypes () != DynamicallyAccessedMemberTypes.None && !parameter.Type.IsTypeInterestingForDataflow ())
+					if (parameter.GetDynamicallyAccessedMemberTypes () != DynamicallyAccessedMemberTypes.None && !parameter.Type.IsTypeInterestingForDataflow (isByRef: parameter.RefKind is not RefKind.None))
 						context.ReportDiagnostic (Diagnostic.Create (DiagnosticDescriptors.GetDiagnosticDescriptor (DiagnosticId.DynamicallyAccessedMembersOnMethodParameterCanOnlyApplyToTypesOrStrings), location, parameter.GetDisplayName (), member.GetDisplayName ()));
 				}
-			} else if (member is IPropertySymbol property && property.GetDynamicallyAccessedMemberTypes () != DynamicallyAccessedMemberTypes.None && !property.Type.IsTypeInterestingForDataflow ()) {
+			} else if (member is IPropertySymbol property && property.GetDynamicallyAccessedMemberTypes () != DynamicallyAccessedMemberTypes.None && !property.Type.IsTypeInterestingForDataflow (isByRef: property.ReturnsByRef)) {
 				context.ReportDiagnostic (Diagnostic.Create (DiagnosticDescriptors.GetDiagnosticDescriptor (DiagnosticId.DynamicallyAccessedMembersOnPropertyCanOnlyApplyToTypesOrStrings), location, member.GetDisplayName ()));
 			}
 		}

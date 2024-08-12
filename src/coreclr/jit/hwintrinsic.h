@@ -518,8 +518,11 @@ struct HWIntrinsicInfo
                                            CORINFO_SIG_INFO* sig,
                                            const char*       className,
                                            const char*       methodName,
-                                           const char*       enclosingClassName);
-    static CORINFO_InstructionSet lookupIsa(const char* className, const char* enclosingClassName);
+                                           const char*       innerEnclosingClassName,
+                                           const char*       outerEnclosingClassName);
+    static CORINFO_InstructionSet lookupIsa(const char* className,
+                                            const char* innerEnclosingClassName,
+                                            const char* outerEnclosingClassName);
 
     static unsigned lookupSimdSize(Compiler* comp, NamedIntrinsic id, CORINFO_SIG_INFO* sig);
 
@@ -880,6 +883,32 @@ struct HWIntrinsicInfo
             default:
                 unreached();
         }
+    }
+
+    static bool IsVariableShift(NamedIntrinsic id)
+    {
+#ifdef TARGET_XARCH
+        switch (id)
+        {
+            case NI_AVX2_ShiftRightArithmeticVariable:
+            case NI_AVX512F_ShiftRightArithmeticVariable:
+            case NI_AVX512F_VL_ShiftRightArithmeticVariable:
+            case NI_AVX512BW_ShiftRightArithmeticVariable:
+            case NI_AVX512BW_VL_ShiftRightArithmeticVariable:
+            case NI_AVX10v1_ShiftRightArithmeticVariable:
+            case NI_AVX2_ShiftRightLogicalVariable:
+            case NI_AVX512F_ShiftRightLogicalVariable:
+            case NI_AVX512BW_ShiftRightLogicalVariable:
+            case NI_AVX512BW_VL_ShiftRightLogicalVariable:
+            case NI_AVX10v1_ShiftRightLogicalVariable:
+            case NI_AVX2_ShiftLeftLogicalVariable:
+            case NI_AVX512BW_VL_ShiftLeftLogicalVariable:
+                return true;
+            default:
+                return false;
+        }
+#endif // TARGET_XARCH
+        return false;
     }
 
     static bool HasImmediateOperand(NamedIntrinsic id)

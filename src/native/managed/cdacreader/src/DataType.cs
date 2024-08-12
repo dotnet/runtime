@@ -41,4 +41,8 @@ public enum DataType
     String,
     MethodDesc,
     MethodDescChunk,
+    Array,
+    SyncBlock,
+    SyncTableEntry,
+    InteropSyncBlockInfo,
 }

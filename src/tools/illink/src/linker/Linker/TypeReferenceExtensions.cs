@@ -151,10 +151,10 @@ namespace Mono.Linker
 			return null;
 		}
 
-		public static TypeReference? TryInflateFrom (this TypeReference typeToInflate, TypeReference maybeGenericInstanceProvider, ITryResolveMetadata resolver)
+		public static TypeReference InflateFrom (this TypeReference typeToInflate, TypeReference maybeGenericInstanceProvider)
 		{
 			if (maybeGenericInstanceProvider is GenericInstanceType genericInstanceProvider)
-				return InflateGenericType (genericInstanceProvider, typeToInflate, resolver);
+				return InflateGenericType (genericInstanceProvider, typeToInflate);
 			return typeToInflate;
 		}
 
@@ -166,21 +166,18 @@ namespace Mono.Linker
 				yield break;
 
 			if (typeRef is GenericInstanceType genericInstance) {
-				foreach (var interfaceImpl in typeDef.Interfaces) {
-					// InflateGenericType only returns null when inflating generic parameters (and the generic instance type doesn't resolve).
-					// Here we are not inflating a generic parameter but an interface type reference.
-					yield return (InflateGenericType (genericInstance, interfaceImpl.InterfaceType, resolver), interfaceImpl)!;
-				}
+				foreach (var interfaceImpl in typeDef.Interfaces)
+					yield return (InflateGenericType (genericInstance, interfaceImpl.InterfaceType), interfaceImpl);
 			} else {
 				foreach (var interfaceImpl in typeDef.Interfaces)
 					yield return (interfaceImpl.InterfaceType, interfaceImpl);
 			}
 		}
 
-		public static TypeReference? InflateGenericType (GenericInstanceType genericInstanceProvider, TypeReference typeToInflate, ITryResolveMetadata resolver)
+		public static TypeReference InflateGenericType (GenericInstanceType genericInstanceProvider, TypeReference typeToInflate)
 		{
 			if (typeToInflate is ArrayType arrayType) {
-				var inflatedElementType = InflateGenericType (genericInstanceProvider, arrayType.ElementType, resolver);
+				var inflatedElementType = InflateGenericType (genericInstanceProvider, arrayType.ElementType);
 
 				if (inflatedElementType != arrayType.ElementType)
 					return new ArrayType (inflatedElementType, arrayType.Rank);
@@ -189,26 +186,22 @@ namespace Mono.Linker
 			}
 
 			if (typeToInflate is GenericInstanceType genericInst)
-				return MakeGenericType (genericInstanceProvider, genericInst, resolver);
+				return MakeGenericType (genericInstanceProvider, genericInst);
 
 			if (typeToInflate is GenericParameter genericParameter) {
 				if (genericParameter.Owner is MethodReference)
 					return genericParameter;
 
-				var elementType = resolver.TryResolve (genericInstanceProvider.ElementType);
-				if (elementType == null)
-					return null;
-				var parameter = elementType.GenericParameters.Single (p => p == genericParameter);
-				return genericInstanceProvider.GenericArguments[parameter.Position];
+				return genericInstanceProvider.GenericArguments[genericParameter.Position];
 			}
 
 			if (typeToInflate is FunctionPointerType functionPointerType) {
 				var result = new FunctionPointerType {
-					ReturnType = InflateGenericType (genericInstanceProvider, functionPointerType.ReturnType, resolver)
+					ReturnType = InflateGenericType (genericInstanceProvider, functionPointerType.ReturnType)
 				};
 
 				for (int i = 0; i < functionPointerType.Parameters.Count; i++) {
-					var inflatedParameterType = InflateGenericType (genericInstanceProvider, functionPointerType.Parameters[i].ParameterType, resolver);
+					var inflatedParameterType = InflateGenericType (genericInstanceProvider, functionPointerType.Parameters[i].ParameterType);
 					result.Parameters.Add (new ParameterDefinition (inflatedParameterType));
 				}
 
@@ -216,8 +209,8 @@ namespace Mono.Linker
 			}
 
 			if (typeToInflate is IModifierType modifierType) {
-				var modifier = InflateGenericType (genericInstanceProvider, modifierType.ModifierType, resolver);
-				var elementType = InflateGenericType (genericInstanceProvider, modifierType.ElementType, resolver);
+				var modifier = InflateGenericType (genericInstanceProvider, modifierType.ModifierType);
+				var elementType = InflateGenericType (genericInstanceProvider, modifierType.ElementType);
 
 				if (modifierType is OptionalModifierType) {
 					return new OptionalModifierType (modifier, elementType);
@@ -227,7 +220,7 @@ namespace Mono.Linker
 			}
 
 			if (typeToInflate is PinnedType pinnedType) {
-				var elementType = InflateGenericType (genericInstanceProvider, pinnedType.ElementType, resolver);
+				var elementType = InflateGenericType (genericInstanceProvider, pinnedType.ElementType);
 
 				if (elementType != pinnedType.ElementType)
 					return new PinnedType (elementType);
@@ -236,7 +229,7 @@ namespace Mono.Linker
 			}
 
 			if (typeToInflate is PointerType pointerType) {
-				var elementType = InflateGenericType (genericInstanceProvider, pointerType.ElementType, resolver);
+				var elementType = InflateGenericType (genericInstanceProvider, pointerType.ElementType);
 
 				if (elementType != pointerType.ElementType)
 					return new PointerType (elementType);
@@ -245,7 +238,7 @@ namespace Mono.Linker
 			}
 
 			if (typeToInflate is ByReferenceType byReferenceType) {
-				var elementType = InflateGenericType (genericInstanceProvider, byReferenceType.ElementType, resolver);
+				var elementType = InflateGenericType (genericInstanceProvider, byReferenceType.ElementType);
 
 				if (elementType != byReferenceType.ElementType)
 					return new ByReferenceType (elementType);
@@ -254,7 +247,7 @@ namespace Mono.Linker
 			}
 
 			if (typeToInflate is SentinelType sentinelType) {
-				var elementType = InflateGenericType (genericInstanceProvider, sentinelType.ElementType, resolver);
+				var elementType = InflateGenericType (genericInstanceProvider, sentinelType.ElementType);
 
 				if (elementType != sentinelType.ElementType)
 					return new SentinelType (elementType);
@@ -265,12 +258,12 @@ namespace Mono.Linker
 			return typeToInflate;
 		}
 
-		private static GenericInstanceType MakeGenericType (GenericInstanceType genericInstanceProvider, GenericInstanceType type, ITryResolveMetadata resolver)
+		private static GenericInstanceType MakeGenericType (GenericInstanceType genericInstanceProvider, GenericInstanceType type)
 		{
 			var result = new GenericInstanceType (type.ElementType);
 
 			for (var i = 0; i < type.GenericArguments.Count; ++i) {
-				result.GenericArguments.Add (InflateGenericType (genericInstanceProvider, type.GenericArguments[i], resolver));
+				result.GenericArguments.Add (InflateGenericType (genericInstanceProvider, type.GenericArguments[i]));
 			}
 
 			return result;
@@ -406,6 +399,27 @@ namespace Mono.Linker
 				type = ((IModifierType) type).ElementType;
 			}
 			return type;
+		}
+
+		// Check whether this type represents a "named type" (i.e. a type that has a name and can be resolved to a TypeDefinition),
+		// not an array, pointer, byref, or generic parameter. Conceptually this is supposed to represent the same idea as Roslyn's
+		// INamedTypeSymbol, or ILC's DefType/MetadataType.
+		public static bool IsNamedType (this TypeReference typeReference) {
+			if (typeReference.IsDefinition || typeReference.IsGenericInstance)
+				return true;
+
+			if (typeReference.IsArray || typeReference.IsByReference || typeReference.IsPointer || typeReference.IsGenericParameter)
+				return false;
+
+			// Shouldn't get called for these cases
+			Debug.Assert (!typeReference.IsFunctionPointer);
+			Debug.Assert (!typeReference.IsRequiredModifier);
+			Debug.Assert (!typeReference.IsOptionalModifier);
+			Debug.Assert (!typeReference.IsPinned);
+			Debug.Assert (!typeReference.IsSentinel);
+
+			Debug.Assert (typeReference.GetType () == typeof (TypeReference));
+			return true;
 		}
 
 		// Array types that are dynamically accessed should resolve to System.Array instead of its element type - which is what Cecil resolves to.
