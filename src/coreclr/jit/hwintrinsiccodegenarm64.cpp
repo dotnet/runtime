@@ -585,9 +585,9 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                 {
                     assert(!instrIsRMW);
 
+                    insOpts embOpt = emitter::optGetSveInsOpt(emitTypeSize(intrinEmbMask.baseType));
                     // Special handling for ConvertTo* APIs
                     // Just need to change the opt here.
-                    insOpts embOpt = opt;
                     switch (intrinEmbMask.id)
                     {
                         case NI_Sve_ConvertToInt32:
@@ -607,6 +607,7 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                                                                                       : INS_OPTS_SCALABLE_D;
                             break;
                         }
+
                         default:
                             break;
                     }
@@ -728,9 +729,11 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                         switch (intrinEmbMask.id)
                         {
                             case NI_Sve_CreateBreakPropagateMask:
-                                assert(targetReg != embMaskOp1Reg);
-                                GetEmitter()->emitIns_Mov(INS_sve_mov, emitSize, targetReg, embMaskOp2Reg,
-                                                          /* canSkip */ true);
+                                if (targetReg != embMaskOp1Reg)
+                                {
+                                    GetEmitter()->emitIns_Mov(INS_sve_mov, emitSize, targetReg, embMaskOp2Reg,
+                                                              /* canSkip */ true);
+                                }
                                 emitInsHelper(targetReg, maskReg, embMaskOp1Reg);
                                 break;
 
@@ -2087,14 +2090,16 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
             case NI_Sve_GatherVectorUInt16ZeroExtend:
             case NI_Sve_GatherVectorUInt32WithByteOffsetsZeroExtend:
             case NI_Sve_GatherVectorUInt32ZeroExtend:
+            case NI_Sve_GatherVectorWithByteOffsetFirstFaulting:
             {
                 if (!varTypeIsSIMD(intrin.op2->gtType))
                 {
                     // GatherVector...(Vector<T> mask, T* address, Vector<T2> indices)
 
-                    emitAttr baseSize   = emitActualTypeSize(intrin.baseType);
-                    bool isLoadingBytes = ((ins == INS_sve_ld1b) || (ins == INS_sve_ld1sb) || (ins == INS_sve_ldff1b) ||
-                                           (ins == INS_sve_ldff1sb));
+                    emitAttr baseSize = emitActualTypeSize(intrin.baseType);
+                    bool     isLoadingBytes =
+                        ((ins == INS_sve_ld1b) || (ins == INS_sve_ld1sb) || (ins == INS_sve_ldff1b) ||
+                         (ins == INS_sve_ldff1sb) || (intrin.id == NI_Sve_GatherVectorWithByteOffsetFirstFaulting));
                     insScalableOpts sopt = INS_SCALABLE_OPTS_NONE;
 
                     if (baseSize == EA_4BYTE)
@@ -2392,6 +2397,10 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
             }
 
             case NI_Sve_LoadVectorFirstFaulting:
+            case NI_Sve_LoadVectorInt16SignExtendFirstFaulting:
+            case NI_Sve_LoadVectorInt32SignExtendFirstFaulting:
+            case NI_Sve_LoadVectorUInt16ZeroExtendFirstFaulting:
+            case NI_Sve_LoadVectorUInt32ZeroExtendFirstFaulting:
             {
                 if (intrin.numOperands == 3)
                 {
@@ -2402,6 +2411,20 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
 
                 insScalableOpts sopt = (opt == INS_OPTS_SCALABLE_B) ? INS_SCALABLE_OPTS_NONE : INS_SCALABLE_OPTS_LSL_N;
                 GetEmitter()->emitIns_R_R_R_R(ins, emitSize, targetReg, op1Reg, op2Reg, REG_ZR, opt, sopt);
+                break;
+            }
+
+            case NI_Sve_LoadVectorByteZeroExtendFirstFaulting:
+            case NI_Sve_LoadVectorSByteSignExtendFirstFaulting:
+            {
+                if (intrin.numOperands == 3)
+                {
+                    // We have extra argument which means there is a "use" of FFR here. Restore it back in FFR register.
+                    assert(op3Reg != REG_NA);
+                    GetEmitter()->emitIns_R(INS_sve_wrffr, emitSize, op3Reg, opt);
+                }
+
+                GetEmitter()->emitIns_R_R_R_R(ins, emitSize, targetReg, op1Reg, op2Reg, REG_ZR, opt);
                 break;
             }
 

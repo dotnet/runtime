@@ -347,13 +347,16 @@ internal sealed partial class SOSDacImpl : ISOSDacInterface, ISOSDacInterface2, 
             data->LoaderAllocator = contract.GetLoaderAllocator(handle);
             data->ThunkHeap = contract.GetThunkHeap(handle);
 
+            Target.TypeInfo lookupMapTypeInfo = _target.GetTypeInfo(DataType.ModuleLookupMap);
+            ulong tableDataOffset = (ulong)lookupMapTypeInfo.Fields[nameof(Data.ModuleLookupMap.TableData)].Offset;
+
             Contracts.ModuleLookupTables tables = contract.GetLookupTables(handle);
-            data->FieldDefToDescMap = tables.FieldDefToDesc;
-            data->ManifestModuleReferencesMap = tables.ManifestModuleReferences;
-            data->MemberRefToDescMap = tables.MemberRefToDesc;
-            data->MethodDefToDescMap = tables.MethodDefToDesc;
-            data->TypeDefToMethodTableMap = tables.TypeDefToMethodTable;
-            data->TypeRefToMethodTableMap = tables.TypeRefToMethodTable;
+            data->FieldDefToDescMap = tables.FieldDefToDesc + tableDataOffset;
+            data->ManifestModuleReferencesMap = tables.ManifestModuleReferences + tableDataOffset;
+            data->MemberRefToDescMap = tables.MemberRefToDesc + tableDataOffset;
+            data->MethodDefToDescMap = tables.MethodDefToDesc + tableDataOffset;
+            data->TypeDefToMethodTableMap = tables.TypeDefToMethodTable + tableDataOffset;
+            data->TypeRefToMethodTableMap = tables.TypeRefToMethodTable + tableDataOffset;
 
             // Always 0 - .NET no longer has these concepts
             data->dwModuleID = 0;

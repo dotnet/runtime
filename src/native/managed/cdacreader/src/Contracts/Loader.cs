@@ -29,7 +29,8 @@ internal record struct ModuleLookupTables(
     TargetPointer MemberRefToDesc,
     TargetPointer MethodDefToDesc,
     TargetPointer TypeDefToMethodTable,
-    TargetPointer TypeRefToMethodTable);
+    TargetPointer TypeRefToMethodTable,
+    TargetPointer MethodDefToILCodeVersioningState);
 
 internal struct EcmaMetadataSchema
 {
