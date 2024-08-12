@@ -120,6 +120,12 @@ namespace System.Text.Json.Serialization.Metadata
             AssociatedParameter = new JsonParameterInfo<T>(parameterInfoValues, this);
             // Overwrite the nullability annotation of property setter with the parameter.
             _isSetNullable = parameterInfoValues.IsNullable;
+
+            if (Options.RespectRequiredConstructorParameters)
+            {
+                // If the property has been associated with a non-optional parameter, mark it as required.
+                _isRequired |= AssociatedParameter.IsRequiredParameter;
+            }
         }
 
         internal new JsonConverter<T> EffectiveConverter

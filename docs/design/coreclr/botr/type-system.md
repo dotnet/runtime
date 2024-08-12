@@ -193,19 +193,143 @@ This is enforced via an extensive and complicated set of enforcements within the
 - **ISSUE:** The signature walks performed are done with the normal signature walking code. This code is designed to load types as it walks the signature, but in this case the type load functionality is used with the assumption that no type load will actually be triggered.
 - **ISSUE:** Stackwalker requirements require support from not just the type system, but also the assembly loader. The Loader has had a number of issues meeting the needs of the type system here.
 
-Type System and NGEN
---------------------
+## Static variables
 
-The type system data structures are a core part of what is saved into NGEN images. Unfortunately, these data structures logically have pointers within them that point to other NGEN images. In order to handle this situation, the type system data structures implement a concept known as restoration.
+Static variables in CoreCLR are handled by a combination of getting the "static base", and then adjusting it by an offset to get a pointer to the actual value.
+We define the statics base as either non-gc or gc for each field.
+Currently non-gc statics are any statics which are represented by primitive types (byte, sbyte, char, int, uint, long, ulong, float, double, pointers of various forms), and enums.
+GC statics are any statics which are represented by classes or by non-primitive valuetypes.
+For valuetype statics which are GC statics, the static variable is actually a pointer to a boxed instance of the valuetype.
 
-In restoration, when a type system data structure is first needed, the data structure is fixed up with correct pointers. This is tied into the type loading levels described in the [Type Loader](type-loader.md) Book of the Runtime chapter.
+### Per type static variable information
+As of .NET 9, the static variable bases are now all associated with their particular type.
+As you can see from this diagram, the data for statics can be acquired by starting at a `MethodTable` and then getting either the `DynamicStaticsInfo` to get a statics pointer, or by getting a `ThreadStaticsInfo` to get a TLSIndex, which then can be used with the thread static variable system to get the actual thread static base.
 
-There also exists the concept of pre-restored data structures. This means that the data structure is sufficiently correct at NGEN image load time (after intra-module pointer fixups and eager load type fixups), that the data structure may be used as is. This optimization requires that the NGEN image be "hard bound" to its dependent assemblies. See NGEN documentation for further details.
+```mermaid
+classDiagram
+MethodTable : MethodTableAuxiliaryData* m_pAuxData
+MethodTable --> MethodTableAuxiliaryData
+MethodTableAuxiliaryData --> DynamicStaticsInfo : If has static variables
+MethodTableAuxiliaryData --> GenericStaticsInfo : If is generic and has static variables
+MethodTableAuxiliaryData --> ThreadStaticsInfo : If has thread local static variables
 
-Type System and Domain Neutral Loading
---------------------------------------
+DynamicStaticsInfo : StaticsPointer m_pGCStatics
+DynamicStaticsInfo : StaticsPointer m_pNonGCStatics
 
-The type system is a core part of the implementation of domain neutral loading. This is exposed to customers through the LoaderOptimization options available at AppDomain creation. Mscorlib is always loaded as domain neutral. The core requirement of this feature is that the type system data structures must not require pointers to domain specific state. Primarily this manifests itself in requirements around static fields and class constructors. In particular, whether or not a class constructor has been run is not a part of the core MethodTable data structure for this reason, and there is a mechanism for storing static data attached to the DomainFile data structure instead of the MethodTable data structure.
+GenericStaticsInfo : FieldDesc* m_pFieldDescs
+
+ThreadStaticsInfo : TLSIndex NonGCTlsIndex
+ThreadStaticsInfo : TLSIndex GCTlsIndex
+```
+
+```mermaid
+classDiagram
+
+note for StaticsPointer "StaticsPointer is a pointer sized integer"
+StaticsPointer : void* PointerToStaticBase
+StaticsPointer : bool HasClassConstructorBeenRun
+
+note for TLSIndex "TLSIndex is a 32bit integer"
+TLSIndex : TLSIndexType indexType
+TLSIndex : 24bit int indexOffset
+```
+
+In the above diagram, you can see that we have separate fields for non-gc and gc statics, as well as thread and normal statics.
+For normal statics, we use a single pointer sized field, which also happens to encode whether or not the class constructor has been run.
+This is done to allow lock free atomic access to both get the static field address as well as determine if the class constructor needs to be triggered.
+For TLS statics, handling of detecting whether or not the class constructor has been run is a more complex process described as part of the thread statics infrastructure.
+The `DynamicStaticsInfo` and `ThreadStaticsInfo` structures are accessed without any locks, so it is important to ensure that access to fields on these structures can be done with a single memory access, to avoid memory order tearing issues.
+
+Also, notably, for generic types, each field has a `FieldDesc` which is allocated per type instance, and is not shared by multiple canonical instances.
+
+#### Lifetime management for collectible statics
+
+Finally we have a concept of collectible assemblies in the CoreCLR runtime, so we need to handle lifetime management for static variables.
+The approach chosen was to build a special GC handle type which will allow the runtime to have a pointer in the runtime data structures to the interior of a managed object on the GC heap.
+
+The requirement of behavior here is that a static variable cannot keep its own collectible assembly alive, and so collectible statics have the peculiar property that they can exist and be finalized before the collectible assembly is finally collected.
+If there is some resurrection scenario, this can lead to very surprising behavior.
+
+### Thread Statics
+
+Thread statics are static variables which have a lifetime which is defined to be the shorter of the lifetime of the type containing the static, and the lifetime of the thread on which the static variable is accessed.
+They are created by having a static variable on a type which is attributed with `[System.Runtime.CompilerServices.ThreadStaticAttribute]`.
+The general scheme of how this works is to assign an "index" to the type which is the same on all threads, and then on each thread hold a data structure which is efficiently accessed by means of this index.
+However, we have a few peculiarities in our approach.
+
+1. We segregate collectible and non-collectible thread statics (`TLSIndexType::NonCollectible` and `TLSIndexType::Collectible`)
+2. We provide an ability to share a non-gc thread static between native CoreCLR code and managed code (Subset of `TLSIndexType::DirectOnThreadLocalData`)
+3. We provide an extremely efficient means to access a small number of non-gc thread statics. (The rest of the usage of `TLSIndexType::DirectOnThreadLocalData`)
+
+#### Per-Thread Statics Data structures
+```mermaid
+classDiagram
+
+note for ThreadLocalInfo "There is 1 of these per thread, and it is managed by the C++ compiler/OS using standard mechanisms.
+It can be found as the t_ThreadStatics variable in a C++ compiler, and is also pointed at by the native Thread class."
+ThreadLocalInfo : int cNonCollectibleTlsData
+ThreadLocalInfo : void** pNonCollectibleTlsArrayData
+ThreadLocalInfo : int cCollectibleTlsData
+ThreadLocalInfo : void** pCollectibleTlsArrayData
+ThreadLocalInfo : InFlightTLSData *pInFightData
+ThreadLocalInfo : Thread* pThread
+ThreadLocalInfo : Special Thread Statics Shared Between Native and Managed code
+ThreadLocalInfo : byte[N] ExtendedDirectThreadLocalTLSData
+
+InFlightTLSData : InFlightTLSData* pNext
+InFlightTLSData : TLSIndex tlsIndex
+InFlightTLSData : OBJECTHANDLE hTLSData
+
+ThreadLocalInfo --> InFlightTLSData : For TLS statics which have their memory allocated, but have not been accessed since the class finished running its class constructor
+InFlightTLSData --> InFlightTLSData : linked list
+```
+
+#### Access patterns for getting the thread statics address
+
+This is the pattern that the JIT will use to access a thread static which is not `DirectOnThreadLocalData`.
+
+0. Get the TLS index somehow
+1. Get TLS pointer to OS managed TLS block for the current thread ie. `pThreadLocalData = &t_ThreadStatics`
+2. Read 1 integer value `pThreadLocalData->cCollectibleTlsData OR pThreadLocalData->cNonCollectibleTlsData`
+3. Compare cTlsData against the index we're looking up `if (cTlsData < index.GetIndexOffset())`
+4. If the index is not within range, jump to step 11.
+5. Read 1 pointer value from TLS block `pThreadLocalData->pCollectibleTlsArrayData` OR `pThreadLocalData->pNonCollectibleTlsArrayData`
+6. Read 1 pointer from within the TLS Array. `pTLSBaseAddress = *(intptr_t*)(((uint8_t*)pTlsArrayData) + index.GetIndexOffset()`
+7. If pointer is NULL jump to step 11 `if pTLSBaseAddress == NULL`
+8. If TLS index not a Collectible index, return pTLSBaseAddress
+9. if `ObjectFromHandle((OBJECTHANDLE)pTLSBaseAddress)` is NULL, jump to step 11
+10. Return `ObjectFromHandle((OBJECTHANDLE)pTLSBaseAddress)`
+11. Tail-call a helper `return GetThreadLocalStaticBase(index)`
+
+This is the pattern that the JIT will use to access a thread static which is on `DirectOnThreadLocalData`
+0. Get the TLS index somehow
+1. Get TLS pointer to OS managed TLS block for the current thread ie. `pThreadLocalData = &t_ThreadStatics`
+2. Add the index offset to the start of the ThreadLocalData structure `pTLSBaseAddress = ((uint8_t*)pThreadLocalData) + index.GetIndexOffset()`
+
+#### Lifetime management for thread static variables
+We distinguish between collectible and non-collectible thread static variables for efficiency purposes.
+
+A non-collectible thread static is a thread static defined on a type which cannot be collected by the runtime.
+This describes most thread statics in actual observed practice.
+The `DirectOnThreadLocalData` statics are a subset of this category which has a speical optimized form and does not need any GC reporting.
+For non-collectible thread statics, the pointer (`pNonCollectibleTlsArrayData`) in the `ThreadLocalData` is a pointer to a managed `object[]` which points at either `object[]`, `byte[]`, or `double[]` arrays.
+At GC scan time, the pointer to the initial object[] is the only detail which needs to be reported to the GC.
+
+A collectible thread static is a thread static which can be collected by the runtime.
+This describes the static variables defined on types which can be collected by the runtime.
+The pointer (`pCollectibleTlsArrayData`) in the `ThreadLocalData` is a pointer to a chunk of memory allocated via `malloc`, and holds pointers to `object[]`, `byte[]`, or `double[]` arrays.
+At GC scan time, each managed object must individually be kept alive only if the type and thread is still alive. This requires properly handling several situations.
+1. If a collectible assembly becomes unreferenced, but a thread static variable associated with it has a finalizer, the object must move to the finalization queue.
+2. If a thread static variable associated with a collectible assembly refers to the collectible assembly `LoaderAllocator` via a series of object references, it must not provide a reason for the collectible assembly to be considered referenced.
+3. If a collectible assembly is collected, then the associated static variables no longer exist, and the TLSIndex values associated with that collectible assembly becomes re-useable.
+4. If a thread is no longer executing, then all thread statics associated with that thread are no longer kept alive.
+
+The approach chosen is to use a pair of different handle types.
+For efficient access, the handle type stored in the dynamically adjusted array is a WeakTrackResurrection GCHandle.
+This handle instance is associated with the slot in the TLS data, not with the exact instantiation, so it can be re-used when the if the associated collectible assembly is collected, and then the slot is re-used.
+In addition, each slot that is in use will have a `LOADERHANDLE` which will keep the object alive until the `LoaderAllocator` is freed.
+This `LOADERHANDLE` will be abandoned if the `LoaderAllocator` is collected, but that's ok, as `LOADERHANDLE` only needs to be cleaned up if the `LoaderAllocator` isn't collected.
+On thread destroy, for each collectible slot in the tls array, we will explicitly free the `LOADERHANDLE` on the correct `LoaderAllocator`.
 
 Physical Architecture
 =====================
@@ -221,6 +345,7 @@ Major parts of the type system are found in:
 - Array – Code for handling the special cases required for array processing
 - VirtualStubDispatch.cpp/h/inl – Code for virtual stub dispatch
 - VirtualCallStubCpu.hpp – Processor specific code for virtual stub dispatch.
+- threadstatics.cpp/h - Handling for thread static variables.
 
 Major entry points are BuildMethodTable, LoadTypeHandleThrowing, CanCastTo\*, GetMethodDescFromMemberDefOrRefOrSpecThrowing, GetFieldDescFromMemberRefThrowing, CompareSigs, and VirtualCallStubManager::ResolveWorkerStatic.
 

@@ -25,7 +25,6 @@ System.Threading.Channel&lt;T&gt;</PackageDescription>
     <Compile Include="System\Threading\Channels\Channel_1.cs" />
     <Compile Include="System\Threading\Channels\Channel_2.cs" />
     <Compile Include="System\Threading\Channels\IDebugEnumerator.cs" />
-    <Compile Include="System\Threading\Channels\IUnboundedChannelQueue.cs" />
     <Compile Include="System\Threading\Channels\SingleConsumerUnboundedChannel.cs" />
     <Compile Include="System\Threading\Channels\UnboundedChannel.cs" />
     <Compile Include="$(CommonPath)Internal\Padding.cs" Link="Common\Internal\Padding.cs" />
@@ -45,6 +44,7 @@ System.Threading.Channel&lt;T&gt;</PackageDescription>
     <Compile Include="System\Threading\Channels\AsyncOperation.netcoreapp.cs" />
     <Compile Include="System\Threading\Channels\Channel.netcoreapp.cs" />
     <Compile Include="System\Threading\Channels\ChannelOptions.netcoreapp.cs" />
+    <Compile Include="System\Threading\Channels\UnboundedPriorityChannel.cs" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)'">

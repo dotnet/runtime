@@ -509,7 +509,7 @@ namespace System
                 return 1;
             }
 
-            if (!(value is string other))
+            if (value is not string other)
             {
                 throw new ArgumentException(SR.Arg_MustBeString);
             }
@@ -615,7 +615,7 @@ namespace System
             if (ReferenceEquals(this, obj))
                 return true;
 
-            if (!(obj is string str))
+            if (obj is not string str)
                 return false;
 
             if (this.Length != str.Length)
@@ -884,9 +884,11 @@ namespace System
                     case 3:
                         hash1 = BitOperations.RotateLeft(hash1, 5) + hash1 ^ Unsafe.ReadUnaligned<uint>(ptr);
                         uint p1 = *(char*)(ptr + 1);
-#if BIGENDIAN
-                        p1 <<= 16;
-#endif
+                        if (!BitConverter.IsLittleEndian)
+                        {
+                            p1 <<= 16;
+                        }
+
                         hash2 = BitOperations.RotateLeft(hash2, 5) + hash2 ^ p1;
                         break;
 
@@ -896,9 +898,11 @@ namespace System
 
                     case 1:
                         uint p0 = *(char*)ptr;
-#if BIGENDIAN
-                        p0 <<= 16;
-#endif
+                        if (!BitConverter.IsLittleEndian)
+                        {
+                            p0 <<= 16;
+                        }
+
                         hash2 = BitOperations.RotateLeft(hash2, 5) + hash2 ^ p0;
                         break;
 
@@ -998,9 +1002,11 @@ namespace System
                     case 3:
                         p0 = Unsafe.ReadUnaligned<uint>(ptr);
                         p1 = *(char*)(ptr + 1);
-#if BIGENDIAN
-                        p1 <<= 16;
-#endif
+                        if (!BitConverter.IsLittleEndian)
+                        {
+                            p1 <<= 16;
+                        }
+
                         if (!Utf16Utility.AllCharsInUInt32AreAscii(p0 | p1))
                         {
                             goto NotAscii;
@@ -1022,9 +1028,11 @@ namespace System
 
                     case 1:
                         p0 = *(char*)ptr;
-#if BIGENDIAN
-                        p0 <<= 16;
-#endif
+                        if (!BitConverter.IsLittleEndian)
+                        {
+                            p0 <<= 16;
+                        }
+
                         if (p0 > 0x7f)
                         {
                             goto NotAscii;
@@ -1048,7 +1056,7 @@ namespace System
         {
             int length = str.Length;
 
-            // We allocate one char more than the length to accomodate a null terminator.
+            // We allocate one char more than the length to accommodate a null terminator.
             // That lets the reading always be performed two characters at a time, as odd-length
             // inputs will have a final terminator to backstop the last read.
             char[]? borrowedArr = null;

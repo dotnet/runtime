@@ -233,12 +233,19 @@ export function normalizeConfig () {
 
 let configLoaded = false;
 export async function mono_wasm_load_config (module: DotnetModuleInternal): Promise<void> {
-    const configFilePath = module.configSrc;
     if (configLoaded) {
         await loaderHelpers.afterConfigLoaded.promise;
         return;
     }
+    let configFilePath;
     try {
+        if (!module.configSrc && (!loaderHelpers.config || Object.keys(loaderHelpers.config).length === 0 || (!loaderHelpers.config.assets && !loaderHelpers.config.resources))) {
+            // if config file location nor assets are provided
+            module.configSrc = "./blazor.boot.json";
+        }
+
+        configFilePath = module.configSrc;
+
         configLoaded = true;
         if (configFilePath) {
             mono_log_debug("mono_wasm_load_config");
@@ -262,6 +269,7 @@ export async function mono_wasm_load_config (module: DotnetModuleInternal): Prom
         }
 
         normalizeConfig();
+        loaderHelpers.afterConfigLoaded.promise_control.resolve(loaderHelpers.config);
     } catch (err) {
         const errMessage = `Failed to load config file ${configFilePath} ${err} ${(err as Error)?.stack}`;
         loaderHelpers.config = module.config = Object.assign(loaderHelpers.config, { message: errMessage, error: err, isError: true });

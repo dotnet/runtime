@@ -47,6 +47,12 @@ namespace System
         /// <summary>Represents the number negative one (-1).</summary>
         private const int NegativeOne = -1;
 
+        /// <summary>Produces the full product of two 32-bit numbers.</summary>
+        /// <param name="left">The first number to multiply.</param>
+        /// <param name="right">The second number to multiply.</param>
+        /// <returns>The number containing the product of the specified numbers.</returns>
+        public static long BigMul(int left, int right) => Math.BigMul(left, right);
+
         // Compares this object to another object, returning an integer that
         // indicates the relationship.
         // Returns :

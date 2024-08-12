@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
 using Mono.Linker.Tests.Cases.Expectations.Metadata;
@@ -16,6 +17,8 @@ namespace Mono.Linker.Tests.Cases.Reflection
 			TestNull ();
 			TestNoValue ();
 			TestDataFlowType ();
+			TestNonPublicConstructorDataFlowType ();
+			TestPublicConstructorDataFlowType ();
 			TestIfElseUsingRuntimeTypeHandle (1);
 			TestIfElseUsingType (1);
 		}
@@ -59,6 +62,37 @@ namespace Mono.Linker.Tests.Cases.Reflection
 		static void TestDataFlowType ()
 		{
 			Type type = FindType ();
+			RuntimeHelpers.RunClassConstructor (type.TypeHandle);
+		}
+
+		[Kept]
+		[return: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.NonPublicConstructors)]
+		[return: KeptAttributeAttribute (typeof (DynamicallyAccessedMembersAttribute))]
+		static Type FindTypeWithNonPublicConstructors ()
+		{
+			return null;
+		}
+
+		[Kept]
+		static void TestNonPublicConstructorDataFlowType ()
+		{
+			Type type = FindTypeWithNonPublicConstructors ();
+			RuntimeHelpers.RunClassConstructor (type.TypeHandle);
+		}
+
+		[Kept]
+		[return: KeptAttributeAttribute(typeof (DynamicallyAccessedMembersAttribute))]
+		[return: DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicConstructors)]
+		static Type FindTypeWithPublicConstructors ()
+		{
+			return null;
+		}
+
+		[Kept]
+		[ExpectedWarning ("IL2059", nameof (RuntimeHelpers) + "." + nameof (RuntimeHelpers.RunClassConstructor))]
+		static void TestPublicConstructorDataFlowType ()
+		{
+			Type type = FindTypeWithPublicConstructors ();
 			RuntimeHelpers.RunClassConstructor (type.TypeHandle);
 		}
 

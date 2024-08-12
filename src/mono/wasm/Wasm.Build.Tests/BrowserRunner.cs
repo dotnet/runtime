@@ -102,24 +102,43 @@ internal class BrowserRunner : IAsyncDisposable
 
     public async Task<IBrowser> SpawnBrowserAsync(
         string browserUrl,
-        bool headless = true
+        bool headless = true,
+        int timeout = 10000,
+        int maxRetries = 3
     ) {
         var url = new Uri(browserUrl);
         Playwright = await Microsoft.Playwright.Playwright.CreateAsync();
         // codespaces: ignore certificate error -> Microsoft.Playwright.PlaywrightException : net::ERR_CERT_AUTHORITY_INVALID
         string[] chromeArgs = new[] { $"--explicitly-allowed-ports={url.Port}", "--ignore-certificate-errors" };
         _testOutput.WriteLine($"Launching chrome ('{s_chromePath.Value}') via playwright with args = {string.Join(',', chromeArgs)}");
-        Browser = await Playwright.Chromium.LaunchAsync(new BrowserTypeLaunchOptions{
-            ExecutablePath = s_chromePath.Value,
-            Headless = headless,
-            Args = chromeArgs
-        });
-        Browser.Disconnected += (sender, e) =>
+
+        int attempt = 0;
+        while (attempt < maxRetries)
         {
-            Browser = null;
-            _testOutput.WriteLine("Browser has been disconnected");
-        };
-        return Browser;
+            try
+            {
+                Browser = await Playwright.Chromium.LaunchAsync(new BrowserTypeLaunchOptions {
+                    ExecutablePath = s_chromePath.Value,
+                    Headless = headless,
+                    Args = chromeArgs,
+                    Timeout = timeout
+                });
+                Browser.Disconnected += (sender, e) =>
+                {
+                    Browser = null;
+                    _testOutput.WriteLine("Browser has been disconnected");
+                };
+                break;
+            }
+            catch (System.TimeoutException ex)
+            {
+                attempt++;
+                _testOutput.WriteLine($"Attempt {attempt} failed with TimeoutException: {ex.Message}");
+            }
+        }
+        if (attempt == maxRetries)
+            throw new Exception($"Failed to launch browser after {maxRetries} attempts");
+        return Browser!;
     }
 
     // FIXME: options

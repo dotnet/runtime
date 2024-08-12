@@ -49,6 +49,12 @@ Abstract:
 #include <sys/types.h>
 #include <unistd.h>
 #include <wctype.h>
+#if defined(__has_include)
+
+#if __has_include(<alloca.h>)
+#include <alloca.h>
+#endif // __has_include(alloca.h)
+#endif // defined(__has_include)
 
 #ifdef __cplusplus
 extern "C++"
@@ -118,20 +124,6 @@ extern bool g_arm64_atomics_present;
 #define LANG_ENGLISH                     0x09
 
 /******************* Compiler-specific glue *******************************/
-#ifndef THROW_DECL
-#if defined(_MSC_VER) || !defined(__cplusplus)
-#define THROW_DECL
-#else
-#define THROW_DECL throw()
-#endif // !_MSC_VER
-#endif // !THROW_DECL
-
-#ifdef __sun
-#define MATH_THROW_DECL
-#else
-#define MATH_THROW_DECL THROW_DECL
-#endif
-
 #if defined(_MSC_VER)
 #define DECLSPEC_ALIGN(x)   __declspec(align(x))
 #else
@@ -167,16 +159,8 @@ extern bool g_arm64_atomics_present;
 #ifndef NOOPT_ATTRIBUTE
 #if defined(__llvm__)
 #define NOOPT_ATTRIBUTE optnone
-#elif defined(__GNUC__)
+#else
 #define NOOPT_ATTRIBUTE optimize("O0")
-#endif
-#endif
-
-#ifndef NODEBUG_ATTRIBUTE
-#if defined(__llvm__)
-#define NODEBUG_ATTRIBUTE __nodebug__
-#elif defined(__GNUC__)
-#define NODEBUG_ATTRIBUTE __artificial__
 #endif
 #endif
 
@@ -1860,6 +1844,12 @@ typedef struct _IMAGE_ARM_RUNTIME_FUNCTION_ENTRY {
 #define CONTEXT_EXCEPTION_REQUEST 0x40000000L
 #define CONTEXT_EXCEPTION_REPORTING 0x80000000L
 
+#define CONTEXT_ARM64_XSTATE (CONTEXT_ARM64 | 0x20L)
+#define CONTEXT_XSTATE CONTEXT_ARM64_XSTATE
+
+#define XSTATE_ARM64_SVE (2)
+#define XSTATE_MASK_ARM64_SVE (UI64(1) << (XSTATE_ARM64_SVE))
+
 //
 // This flag is set by the unwinder if it has unwound to a call
 // site, and cleared whenever it unwinds through a trap frame.
@@ -1960,7 +1950,18 @@ typedef struct DECLSPEC_ALIGN(16) _CONTEXT {
     /* +0x338 */ DWORD64 Bvr[ARM64_MAX_BREAKPOINTS];
     /* +0x378 */ DWORD Wcr[ARM64_MAX_WATCHPOINTS];
     /* +0x380 */ DWORD64 Wvr[ARM64_MAX_WATCHPOINTS];
-    /* +0x390 */
+
+    /* +0x390 */ DWORD64 XStateFeaturesMask;
+
+    //
+    // Sve Registers
+    //
+    // TODO-SVE: Support Vector register sizes >128bit
+    // For 128bit, Z and V registers fully overlap, so there is no need to load/store both.
+    /* +0x398 */ DWORD Vl;
+    /* +0x39c */ DWORD Ffr;
+    /* +0x3a0 */ DWORD P[16];
+    /* +0x3e0 */
 
 } CONTEXT, *PCONTEXT, *LPCONTEXT;
 
@@ -3854,7 +3855,7 @@ PAL_GetCurrentThreadAffinitySet(SIZE_T size, UINT_PTR* data);
 // errno_t is only defined when the Secure CRT Extensions library is available (which no standard library that we build with implements anyway)
 typedef int errno_t;
 
-PALIMPORT DLLEXPORT errno_t __cdecl memcpy_s(void *, size_t, const void *, size_t) THROW_DECL;
+PALIMPORT DLLEXPORT errno_t __cdecl memcpy_s(void *, size_t, const void *, size_t);
 PALIMPORT errno_t __cdecl memmove_s(void *, size_t, const void *, size_t);
 PALIMPORT DLLEXPORT int __cdecl _wcsicmp(const WCHAR *, const WCHAR*);
 PALIMPORT int __cdecl _wcsnicmp(const WCHAR *, const WCHAR *, size_t);
@@ -3914,7 +3915,7 @@ inline WCHAR *PAL_wcsstr(WCHAR* S, const WCHAR* P)
 }
 #endif
 
-#if !__has_builtin(_rotl)
+#if !__has_builtin(_rotl) && !defined(_rotl)
 /*++
 Function:
 _rotl
@@ -3934,7 +3935,7 @@ unsigned int __cdecl _rotl(unsigned int value, int shift)
 }
 #endif // !__has_builtin(_rotl)
 
-#if !__has_builtin(_rotr)
+#if !__has_builtin(_rotr) && !defined(_rotr)
 
 /*++
 Function:
@@ -4524,29 +4525,10 @@ public:
 
 /******************* HRESULT types ****************************************/
 
-#define FACILITY_WINDOWS                 8
-#define FACILITY_URT                     19
-#define FACILITY_UMI                     22
-#define FACILITY_SXS                     23
-#define FACILITY_STORAGE                 3
-#define FACILITY_SSPI                    9
-#define FACILITY_SCARD                   16
-#define FACILITY_SETUPAPI                15
-#define FACILITY_SECURITY                9
-#define FACILITY_RPC                     1
+#define FACILITY_ITF                     4
 #define FACILITY_WIN32                   7
 #define FACILITY_CONTROL                 10
-#define FACILITY_NULL                    0
-#define FACILITY_MSMQ                    14
-#define FACILITY_MEDIASERVER             13
-#define FACILITY_INTERNET                12
-#define FACILITY_ITF                     4
-#define FACILITY_DPLAY                   21
-#define FACILITY_DISPATCH                2
-#define FACILITY_COMPLUS                 17
-#define FACILITY_CERT                    11
-#define FACILITY_ACS                     20
-#define FACILITY_AAF                     18
+#define FACILITY_URT                     19
 
 #define NO_ERROR 0L
 
@@ -4555,13 +4537,8 @@ public:
 
 #define SUCCEEDED(Status) ((HRESULT)(Status) >= 0)
 #define FAILED(Status) ((HRESULT)(Status)<0)
-#define IS_ERROR(Status) ((ULONG)(Status) >> 31 == SEVERITY_ERROR) // diff from win32
 #define HRESULT_CODE(hr)    ((hr) & 0xFFFF)
-#define SCODE_CODE(sc)      ((sc) & 0xFFFF)
 #define HRESULT_FACILITY(hr)  (((hr) >> 16) & 0x1fff)
-#define SCODE_FACILITY(sc)    (((sc) >> 16) & 0x1fff)
-#define HRESULT_SEVERITY(hr)  (((hr) >> 31) & 0x1)
-#define SCODE_SEVERITY(sc)    (((sc) >> 31) & 0x1)
 
 // both macros diff from Win32
 #define MAKE_HRESULT(sev,fac,code) \

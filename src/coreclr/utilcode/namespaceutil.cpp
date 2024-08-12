@@ -403,11 +403,11 @@ int ns::MakePath(                       // true ok, false truncation.
         int count;
 
         // We use cBuffer - 2 to account for the '.' and at least a 1 character name below.
-        count = WszMultiByteToWideChar(CP_UTF8, 0, szNamespace, -1, szOut, cchChars-2);
+        count = MultiByteToWideChar(CP_UTF8, 0, szNamespace, -1, szOut, cchChars-2);
         if (count == 0)
             return false; // Supply a bigger buffer!
 
-        // buffer access is bounded: WszMultiByteToWideChar returns 0 if access doesn't fit in range
+        // buffer access is bounded: MultiByteToWideChar returns 0 if access doesn't fit in range
 #ifdef _PREFAST_
         #pragma warning( suppress: 26015 )
 #endif
@@ -417,7 +417,7 @@ int ns::MakePath(                       // true ok, false truncation.
     }
 
     if (((cchChars == 0) && (szName != NULL) && (*szName != '\0')) ||
-        (WszMultiByteToWideChar(CP_UTF8, 0, szName, -1, szOut, cchChars) == 0))
+        (MultiByteToWideChar(CP_UTF8, 0, szName, -1, szOut, cchChars) == 0))
         return false; // supply a bigger buffer!
     return true;
 }   // int ns::MakePath()

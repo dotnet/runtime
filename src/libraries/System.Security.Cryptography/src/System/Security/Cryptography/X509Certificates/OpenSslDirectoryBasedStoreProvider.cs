@@ -85,7 +85,7 @@ namespace System.Security.Cryptography.X509Certificates
             {
                 try
                 {
-                    var cert = new X509Certificate2(filePath);
+                    X509Certificate2 cert = X509CertificateLoader.LoadPkcs12FromFile(filePath, null);
 
                     // If we haven't already loaded a cert .Equal to this one, copy it to the collection.
                     if (loadedCerts.Add(cert))
@@ -154,7 +154,7 @@ namespace System.Security.Cryptography.X509Certificates
 
                     try
                     {
-                        using (X509Certificate2 fromFile = new X509Certificate2(existingFilename))
+                        using (X509Certificate2 fromFile = X509CertificateLoader.LoadPkcs12FromFile(existingFilename, null))
                         {
                             if (fromFile.HasPrivateKey)
                             {
@@ -264,7 +264,7 @@ namespace System.Security.Cryptography.X509Certificates
 
                 try
                 {
-                    using (X509Certificate2 candidate = new X509Certificate2(maybeMatch))
+                    using (X509Certificate2 candidate = X509CertificateLoader.LoadPkcs12FromFile(maybeMatch, null))
                     {
                         if (candidate.Equals(cert))
                         {

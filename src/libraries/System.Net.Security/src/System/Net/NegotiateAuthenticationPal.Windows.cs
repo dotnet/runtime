@@ -737,7 +737,7 @@ namespace System.Net
                     spn,
                     requestedContextFlags,
                     Interop.SspiCli.Endianness.SECURITY_NETWORK_DREP,
-                    inputBuffers,
+                    ref inputBuffers,
                     ref token,
                     ref contextFlags);
                 securityContext = sslContext;
@@ -799,7 +799,7 @@ namespace System.Net
                     ref sslContext,
                     requestedContextFlags,
                     Interop.SspiCli.Endianness.SECURITY_NETWORK_DREP,
-                    inputBuffers,
+                    ref inputBuffers,
                     ref token,
                     ref contextFlags);
 

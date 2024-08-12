@@ -468,7 +468,7 @@ enum BasicBlockFlags : uint64_t
     // Flags to update when two blocks are compacted
 
     BBF_COMPACT_UPD = BBF_GC_SAFE_POINT | BBF_NEEDS_GCPOLL | BBF_HAS_JMP | BBF_HAS_IDX_LEN | BBF_HAS_MD_IDX_LEN | BBF_BACKWARD_JUMP | \
-                      BBF_HAS_NEWOBJ | BBF_HAS_NULLCHECK | BBF_HAS_MDARRAYREF,
+                      BBF_HAS_NEWOBJ | BBF_HAS_NULLCHECK | BBF_HAS_MDARRAYREF | BBF_LOOP_HEAD,
 
     // Flags a block should not have had before it is split.
 
@@ -1163,6 +1163,7 @@ public:
 #define BB_UNITY_WEIGHT_UNSIGNED 100   // how much a normal execute once block weighs
 #define BB_LOOP_WEIGHT_SCALE     8.0   // synthetic profile scale factor for loops
 #define BB_ZERO_WEIGHT           0.0
+#define BB_COLD_WEIGHT           0.01    // Upper bound for cold weights; used during block layout
 #define BB_MAX_WEIGHT            FLT_MAX // maximum finite weight  -- needs rethinking.
 
     weight_t bbWeight; // The dynamic execution weight of this block
@@ -1259,6 +1260,11 @@ public:
     bool isMaxBBWeight() const
     {
         return (bbWeight >= BB_MAX_WEIGHT);
+    }
+
+    bool isBBWeightCold(Compiler* comp) const
+    {
+        return getBBWeight(comp) < BB_COLD_WEIGHT;
     }
 
     // Returns "true" if the block is empty. Empty here means there are no statement
@@ -1604,8 +1610,6 @@ public:
     // of the phi arguments.
     unsigned bbMemorySsaNumIn[MemoryKindCount];  // The SSA # of memory on entry to the block.
     unsigned bbMemorySsaNumOut[MemoryKindCount]; // The SSA # of memory on exit from the block.
-
-    VARSET_TP bbScope; // variables in scope over the block
 
     void InitVarSets(class Compiler* comp);
 

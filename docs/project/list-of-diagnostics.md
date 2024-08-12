@@ -80,7 +80,7 @@ The PR that reveals the implementation of the `<IncludeInternalObsoleteAttribute
 |  __`SYSLIB0023`__ | RNGCryptoServiceProvider is obsolete. To generate a random number, use one of the RandomNumberGenerator static methods instead. |
 |  __`SYSLIB0024`__ | Creating and unloading AppDomains is not supported and throws an exception. |
 |  __`SYSLIB0025`__ | SuppressIldasmAttribute has no effect in .NET 6.0+. |
-|  __`SYSLIB0026`__ | X509Certificate and X509Certificate2 are immutable. Use the appropriate constructor to create a new certificate. |
+|  __`SYSLIB0026`__ | X509Certificate and X509Certificate2 are immutable. Use X509CertificateLoader to create a new certificate. |
 |  __`SYSLIB0027`__ | PublicKey.Key is obsolete. Use the appropriate method to get the public key, such as GetRSAPublicKey. |
 |  __`SYSLIB0028`__ | X509Certificate2.PrivateKey is obsolete. Use the appropriate method to get the private key, such as GetRSAPrivateKey, or use the CopyWithPrivateKey method to create a new instance with a private key. |
 |  __`SYSLIB0029`__ | ProduceLegacyHmacValues is obsolete. Producing legacy HMAC values is not supported. |
@@ -110,6 +110,8 @@ The PR that reveals the implementation of the `<IncludeInternalObsoleteAttribute
 |  __`SYSLIB0053`__ | AesGcm should indicate the required tag size for encryption and decryption. Use a constructor that accepts the tag size. |
 |  __`SYSLIB0054`__ | Thread.VolatileRead and Thread.VolatileWrite are obsolete. Use Volatile.Read or Volatile.Write respectively instead. |
 |  __`SYSLIB0055`__ | The underlying hardware instruction does not perform a signed saturate narrowing operation, and it always returns an unsigned result. Use the unsigned overload instead. |
+|  __`SYSLIB0056`__ |  LoadFrom with a custom AssemblyHashAlgorithm is obsolete. Use overloads without an AssemblyHashAlgorithm. |
+|  __`SYSLIB0057`__ | Loading certificate data through the constructor or Import is obsolete. Use X509CertificateLoader instead to load certificates. |
 
 ## Analyzer Warnings
 
@@ -261,11 +263,21 @@ The diagnostic id values reserved for .NET Libraries analyzer warnings are `SYSL
 |  __`SYSLIB1222`__ | Constructor annotated with JsonConstructorAttribute is inaccessible. |
 |  __`SYSLIB1223`__ | Attributes deriving from JsonConverterAttribute are not supported by the source generator. |
 |  __`SYSLIB1224`__ | Types annotated with JsonSerializableAttribute must be classes deriving from JsonSerializerContext. |
-|  __`SYSLIB1225`__ | *`SYSLIB1220`-`SYSLIB229` reserved for System.Text.Json.SourceGeneration.* |
-|  __`SYSLIB1226`__ | *`SYSLIB1220`-`SYSLIB229` reserved for System.Text.Json.SourceGeneration.* |
-|  __`SYSLIB1227`__ | *`SYSLIB1220`-`SYSLIB229` reserved for System.Text.Json.SourceGeneration.* |
-|  __`SYSLIB1228`__ | *`SYSLIB1220`-`SYSLIB229` reserved for System.Text.Json.SourceGeneration.* |
-|  __`SYSLIB1229`__ | *`SYSLIB1220`-`SYSLIB229` reserved for System.Text.Json.SourceGeneration.* |
+|  __`SYSLIB1225`__ | *`SYSLIB1220`-`SYSLIB1229` reserved for System.Text.Json.SourceGeneration.* |
+|  __`SYSLIB1226`__ | *`SYSLIB1220`-`SYSLIB1229` reserved for System.Text.Json.SourceGeneration.* |
+|  __`SYSLIB1227`__ | *`SYSLIB1220`-`SYSLIB1229` reserved for System.Text.Json.SourceGeneration.* |
+|  __`SYSLIB1228`__ | *`SYSLIB1220`-`SYSLIB1229` reserved for System.Text.Json.SourceGeneration.* |
+|  __`SYSLIB1229`__ | *`SYSLIB1220`-`SYSLIB1229` reserved for System.Text.Json.SourceGeneration.* |
+|  __`SYSLIB1230`__ | Deriving from a `GeneratedComInterface`-attributed interface defined in another assembly is not supported. |
+|  __`SYSLIB1231`__ | *`SYSLIB1230`-`SYSLIB1239` reserved for Microsoft.Interop.ComInterfaceGenerator.* |
+|  __`SYSLIB1232`__ | *`SYSLIB1230`-`SYSLIB1239` reserved for Microsoft.Interop.ComInterfaceGenerator.* |
+|  __`SYSLIB1233`__ | *`SYSLIB1230`-`SYSLIB1239` reserved for Microsoft.Interop.ComInterfaceGenerator.* |
+|  __`SYSLIB1234`__ | *`SYSLIB1230`-`SYSLIB1239` reserved for Microsoft.Interop.ComInterfaceGenerator.* |
+|  __`SYSLIB1235`__ | *`SYSLIB1230`-`SYSLIB1239` reserved for Microsoft.Interop.ComInterfaceGenerator.* |
+|  __`SYSLIB1236`__ | *`SYSLIB1230`-`SYSLIB1239` reserved for Microsoft.Interop.ComInterfaceGenerator.* |
+|  __`SYSLIB1237`__ | *`SYSLIB1230`-`SYSLIB1239` reserved for Microsoft.Interop.ComInterfaceGenerator.* |
+|  __`SYSLIB1238`__ | *`SYSLIB1230`-`SYSLIB1239` reserved for Microsoft.Interop.ComInterfaceGenerator.* |
+|  __`SYSLIB1239`__ | *`SYSLIB1230`-`SYSLIB1239` reserved for Microsoft.Interop.ComInterfaceGenerator.* |
 
 ### Diagnostic Suppressions (`SYSLIBSUPPRESS****`)
 
@@ -274,3 +286,27 @@ The diagnostic id values reserved for .NET Libraries analyzer warnings are `SYSL
 | __`SYSLIBSUPPRESS0001`__ | CA1822                   | Do not offer to make methods static when the methods need to be instance methods for a custom marshaller shape. |
 | __`SYSLIBSUPPRESS0002`__ | IL2026                   | ConfigurationBindingGenerator: suppress RequiresUnreferencedCode diagnostic for binding call that has been intercepted by a generated static variant. |
 | __`SYSLIBSUPPRESS0003`__ | IL3050                   | ConfigurationBindingGenerator: suppress RequiresDynamicCode diagnostic for binding call that has been intercepted by a generated static variant. |
+
+## Experimental APIs
+
+APIs can be marked as `[Experimental]` if their shape or functionality is included in a release but not yet officially supported. Experimental APIs offer the opportunity to collect customer feedback on these APIs in a major release, usually refining the APIs and removing the `[Experimental]` attribute in the next release. The `[Experimental]` attribute differs from `[RequiresPreviewFeatures]`, wherein:
+
+* `[RequiresPreviewFeatures]` APIs require a corresponding preview feature in another product area such as the compiler or SDK
+    - Using these APIs requires enabling preview features for the the project and all its consumers
+* `[Experimental]` APIs are self-contained within the libraries and do not require preview features in other parts of the product
+    - These APIs can be used by suppressing specific diagnostics without enabling preview features for the project
+
+See [Preview APIs - .NET | Microsoft Learn](https://learn.microsoft.com/dotnet/fundamentals/apicompat/preview-apis) for more information.
+
+### Experimental Diagnostics (`SYSLIB5001` - `SYSLIB5999`)
+
+The diagnostic id values reserved for experimental APIs are `SYSLIB5001` through `SYSLIB5999`. When marking an API as `[Experimental]`, claim the next three-digit identifier in the `SYSLIB5###` sequence and add it to the list below. The URL template for all experimental APIs is `https://aka.ms/dotnet-warnings/{0}`. The `{0}` placeholder is replaced by the compiler with the `SYSLIB5###` identifier.
+
+Diagnostic id values for experimental APIs must not be recycled, as that could silently opt customers into new experimental APIs where they had previously suppressed the ID for a previous usage of the value.
+
+| Diagnostic ID     | Introduced | Removed | Description |
+| :---------------- | ---------: | ------: | :---------- |
+|  __`SYSLIB5001`__ |     .NET 9 |     TBD | `Tensor<T>` and related APIs in System.Numerics.Tensors are experimental in .NET 9 |
+|  __`SYSLIB5002`__ |     .NET 9 |     TBD | `SystemColors` alternate colors are experimental in .NET 9 |
+|  __`SYSLIB5003`__ |     .NET 9 |     TBD | `System.Runtime.Intrinsics.Arm.Sve` is experimental in .NET 9 |
+|  __`SYSLIB5004`__ |     .NET 9 |     TBD | `X86Base.DivRem` is experimental in .NET 9 since performance is not as optimized as `T.DivRem` |

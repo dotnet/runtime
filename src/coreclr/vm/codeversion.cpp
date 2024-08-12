@@ -1673,7 +1673,7 @@ HRESULT CodeVersionManager::AddNativeCodeVersion(
         // publish that code as part of adding the node which would require callers
         // to pay attention to GC suspension and we'd need to report publishing errors
         // back to them.
-        _ASSERTE(pNativeCodeVersionNode->GetNativeCode() == NULL);
+        _ASSERTE(pNativeCodeVersionNode->GetNativeCode() == (PCODE)NULL);
     }
     *pNativeCodeVersion = NativeCodeVersion(pNativeCodeVersionNode);
     return S_OK;

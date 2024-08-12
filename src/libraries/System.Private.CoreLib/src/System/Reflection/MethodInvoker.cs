@@ -343,15 +343,11 @@ namespace System.Reflection
             }
 
             StackAllocatedByRefs byrefs = default;
-#pragma warning disable CS8500
             IntPtr* pByRefFixedStorage = (IntPtr*)&byrefs;
-#pragma warning restore CS8500
 
             for (int i = 0; i < _argCount; i++)
             {
-#pragma warning disable CS8500
                 *(ByReference*)(pByRefFixedStorage + i) = (_invokerArgFlags[i] & InvokerArgFlags.IsValueType) != 0 ?
-#pragma warning restore CS8500
                     ByReference.Create(ref copyOfArgs[i]!.GetRawData()) :
                     ByReference.Create(ref copyOfArgs[i]);
             }
@@ -423,9 +419,7 @@ namespace System.Reflection
                         object? arg = arguments[i];
                         shouldCopyBack[i] = CheckArgument(ref arg, i);
                         copyOfArgs[i] = arg;
-    #pragma warning disable CS8500
                         *(ByReference*)(pByRefStorage + i) = (_invokerArgFlags[i] & InvokerArgFlags.IsValueType) != 0 ?
-    #pragma warning restore CS8500
                             ByReference.Create(ref Unsafe.AsRef<object>(pStorage + i).GetRawData()) :
                             ByReference.Create(ref Unsafe.AsRef<object>(pStorage + i));
                     }

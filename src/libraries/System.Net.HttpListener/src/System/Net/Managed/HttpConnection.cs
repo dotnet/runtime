@@ -30,6 +30,7 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Net.Security;
@@ -90,7 +91,7 @@ namespace System.Net
                         return true;
                     }
 
-                    _clientCert = c as X509Certificate2 ?? new X509Certificate2(c.GetRawCertData());
+                    _clientCert = c as X509Certificate2 ?? X509CertificateLoader.LoadCertificate(c.GetRawCertData());
                     _clientCertErrors = new int[] { (int)e };
                     return true;
                 });
@@ -100,7 +101,11 @@ namespace System.Net
             }
 
             _timer = new Timer(OnTimeout, null, Timeout.Infinite, Timeout.Infinite);
+
+#pragma warning disable SYSLIB0014 // ServicePointManager is obsolete
             _sslStream?.AuthenticateAsServer(_cert, true, (SslProtocols)ServicePointManager.SecurityProtocol, false);
+#pragma warning restore SYSLIB0014
+
             Init();
         }
 

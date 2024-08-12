@@ -54,20 +54,19 @@
 #endif
 #endif
 
+#ifdef TARGET_SUNOS
+#include <sys/param.h>
+#endif
+
 #ifdef _AIX
 #include <alloca.h>
 // Somehow, AIX mangles the definition for this behind a C++ def
 // Redeclare it here
 extern int     getpeereid(int, uid_t *__restrict__, gid_t *__restrict__);
-#elif defined(TARGET_SUNOS)
-#ifndef _KERNEL
-#define _KERNEL
-#define UNDEF_KERNEL
 #endif
-#include <sys/procfs.h>
-#ifdef UNDEF_KERNEL
-#undef _KERNEL
-#endif
+
+#if defined(TARGET_SUNOS)
+#include <procfs.h>
 #endif
 
 #ifdef __linux__
@@ -441,10 +440,17 @@ static const size_t dirent_alignment = 8;
 int32_t SystemNative_GetReadDirRBufferSize(void)
 {
 #if HAVE_READDIR_R
+    size_t result = sizeof(struct dirent);
+#ifdef TARGET_SUNOS
+    // The d_name array is declared with only a single byte in it.
+    // We have to add pathconf("dir", _PC_NAME_MAX) more bytes.
+    // MAXNAMELEN is the largest possible value returned from pathconf.
+    result += MAXNAMELEN;
+#endif
     // dirent should be under 2k in size
-    assert(sizeof(struct dirent) < 2048);
+    assert(result < 2048);
     // add some extra space so we can align the buffer to dirent.
-    return sizeof(struct dirent) + dirent_alignment - 1;
+    return (int32_t)(result + dirent_alignment - 1);
 #else
     return 0;
 #endif
@@ -1569,7 +1575,7 @@ static int16_t ConvertLockType(int16_t managedLockType)
     }
 }
 
-#if !HAVE_NON_LEGACY_STATFS || defined(__APPLE__)
+#if !HAVE_NON_LEGACY_STATFS || defined(TARGET_APPLE) || defined(TARGET_FREEBSD)
 static uint32_t MapFileSystemNameToEnum(const char* fileSystemName)
 {
     uint32_t result = 0;
@@ -1716,8 +1722,11 @@ uint32_t SystemNative_GetFileSystemType(intptr_t fd)
     while ((statfsRes = fstatfs(ToFileDescriptor(fd), &statfsArgs)) == -1 && errno == EINTR) ;
     if (statfsRes == -1) return 0;
 
-#if defined(__APPLE__)
-    // On OSX-like systems, f_type is version-specific. Don't use it, just map the name.
+#if defined(TARGET_APPLE) || defined(TARGET_FREEBSD)
+    // * On OSX-like systems, f_type is version-specific. Don't use it, just map the name.
+    // * Specifically, on FreeBSD with ZFS, f_type may return a value like 0xDE when emulating
+    //   FreeBSD on macOS (e.g., FreeBSD-x64 on macOS ARM64). Therefore, we use f_fstypename to
+    //   get the correct filesystem type.
     return MapFileSystemNameToEnum(statfsArgs.f_fstypename);
 #else
     // On Linux, f_type is signed. This causes some filesystem types to be represented as

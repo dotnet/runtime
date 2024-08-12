@@ -1174,7 +1174,7 @@ namespace
                 TypeHandle sigTH = sig.GetTypeHandleThrowing(pModule, pTypeContext);
                 MethodTable* pMT = sigTH.GetMethodTable();
 
-                if (!pMT->IsValueType() || pMT->ContainsPointers())
+                if (!pMT->IsValueType() || pMT->ContainsGCPointers())
                 {
                     *errorResIDOut = IDS_EE_BADMARSHAL_MARSHAL_DISABLED;
                     return MarshalInfo::MARSHAL_TYPE_UNKNOWN;

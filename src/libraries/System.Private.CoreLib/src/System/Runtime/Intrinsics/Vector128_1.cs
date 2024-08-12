@@ -1,4 +1,4 @@
-// Licensed to the .NET Foundation under one or more agreements.
+﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
@@ -17,7 +17,7 @@ namespace System.Runtime.Intrinsics
     // that most of the code-paths will be optimized away as "dead code".
     //
     // We then manually inline cases (such as certain intrinsic code-paths) that
-    // will generate code small enough to make the AgressiveInlining profitable. The
+    // will generate code small enough to make the AggressiveInlining profitable. The
     // other cases (such as the software fallback) are placed in their own method.
     // This ensures we get good codegen for the "fast-path" and allows the JIT to
     // determine inline profitability of the other paths as it would normally.
@@ -39,11 +39,7 @@ namespace System.Runtime.Intrinsics
         public static Vector128<T> AllBitsSet
         {
             [Intrinsic]
-            get
-            {
-                Vector64<T> vector = Vector64<T>.AllBitsSet;
-                return Vector128.Create(vector, vector);
-            }
+            get => Vector128.Create(Scalar<T>.AllBitsSet);
         }
 
         /// <summary>Gets the number of <typeparamref name="T" /> that are in a <see cref="Vector128{T}" />.</summary>
@@ -51,7 +47,11 @@ namespace System.Runtime.Intrinsics
         public static int Count
         {
             [Intrinsic]
-            get => Vector64<T>.Count * 2;
+            get
+            {
+                ThrowHelper.ThrowForUnsupportedIntrinsicsVector128BaseType<T>();
+                return Vector128.Size / sizeof(T);
+            }
         }
 
         /// <summary>Gets a new <see cref="Vector128{T}" /> with the elements set to their index.</summary>
@@ -102,11 +102,7 @@ namespace System.Runtime.Intrinsics
         public static Vector128<T> One
         {
             [Intrinsic]
-            get
-            {
-                Vector64<T> vector = Vector64<T>.One;
-                return Vector128.Create(vector, vector);
-            }
+            get => Vector128.Create(Scalar<T>.One);
         }
 
         /// <summary>Gets a new <see cref="Vector128{T}" /> with all elements initialized to zero.</summary>
@@ -344,10 +340,18 @@ namespace System.Runtime.Intrinsics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector128<T> operator -(Vector128<T> vector)
         {
-            return Vector128.Create(
-                -vector._lower,
-                -vector._upper
-            );
+            if (typeof(T) == typeof(float))
+            {
+                return vector ^ Vector128.Create(-0.0f).As<float, T>();
+            }
+            else if (typeof(T) == typeof(double))
+            {
+                return vector ^ Vector128.Create(-0.0).As<double, T>();
+            }
+            else
+            {
+                return Zero - vector;
+            }
         }
 
         /// <summary>Returns a given vector unchanged.</summary>
@@ -468,28 +472,51 @@ namespace System.Runtime.Intrinsics
         static int ISimdVector<Vector128<T>, T>.Alignment => Vector128.Alignment;
 
         /// <inheritdoc cref="ISimdVector{TSelf, T}.IsHardwareAccelerated" />
-        static bool ISimdVector<Vector128<T>, T>.IsHardwareAccelerated => Vector128.IsHardwareAccelerated;
+        static bool ISimdVector<Vector128<T>, T>.IsHardwareAccelerated
+        {
+            [Intrinsic]
+            get => Vector128.IsHardwareAccelerated;
+        }
 
         /// <inheritdoc cref="ISimdVector{TSelf, T}.Abs(TSelf)" />
+        [Intrinsic]
         static Vector128<T> ISimdVector<Vector128<T>, T>.Abs(Vector128<T> vector) => Vector128.Abs(vector);
 
         /// <inheritdoc cref="ISimdVector{TSelf, T}.Add(TSelf, TSelf)" />
-        static Vector128<T> ISimdVector<Vector128<T>, T>.Add(Vector128<T> left, Vector128<T> right) => Vector128.Add(left, right);
+        [Intrinsic]
+        static Vector128<T> ISimdVector<Vector128<T>, T>.Add(Vector128<T> left, Vector128<T> right) => left + right;
 
         /// <inheritdoc cref="ISimdVector{TSelf, T}.AndNot(TSelf, TSelf)" />
+        [Intrinsic]
         static Vector128<T> ISimdVector<Vector128<T>, T>.AndNot(Vector128<T> left, Vector128<T> right) => Vector128.AndNot(left, right);
 
         /// <inheritdoc cref="ISimdVector{TSelf, T}.BitwiseAnd(TSelf, TSelf)" />
-        static Vector128<T> ISimdVector<Vector128<T>, T>.BitwiseAnd(Vector128<T> left, Vector128<T> right) => Vector128.BitwiseAnd(left, right);
+        [Intrinsic]
+        static Vector128<T> ISimdVector<Vector128<T>, T>.BitwiseAnd(Vector128<T> left, Vector128<T> right) => left & right;
 
         /// <inheritdoc cref="ISimdVector{TSelf, T}.BitwiseOr(TSelf, TSelf)" />
-        static Vector128<T> ISimdVector<Vector128<T>, T>.BitwiseOr(Vector128<T> left, Vector128<T> right) => Vector128.BitwiseOr(left, right);
+        [Intrinsic]
+        static Vector128<T> ISimdVector<Vector128<T>, T>.BitwiseOr(Vector128<T> left, Vector128<T> right) => left | right;
 
         /// <inheritdoc cref="ISimdVector{TSelf, T}.Ceiling(TSelf)" />
+        [Intrinsic]
         static Vector128<T> ISimdVector<Vector128<T>, T>.Ceiling(Vector128<T> vector) => Vector128.Ceiling(vector);
 
+        /// <inheritdoc cref="ISimdVector{TSelf, T}.Clamp(TSelf, TSelf, TSelf)" />
+        [Intrinsic]
+        static Vector128<T> ISimdVector<Vector128<T>, T>.Clamp(Vector128<T> value, Vector128<T> min, Vector128<T> max) => Vector128.Clamp(value, min, max);
+
+        /// <inheritdoc cref="ISimdVector{TSelf, T}.ClampNative(TSelf, TSelf, TSelf)" />
+        [Intrinsic]
+        static Vector128<T> ISimdVector<Vector128<T>, T>.ClampNative(Vector128<T> value, Vector128<T> min, Vector128<T> max) => Vector128.ClampNative(value, min, max);
+
         /// <inheritdoc cref="ISimdVector{TSelf, T}.ConditionalSelect(TSelf, TSelf, TSelf)" />
+        [Intrinsic]
         static Vector128<T> ISimdVector<Vector128<T>, T>.ConditionalSelect(Vector128<T> condition, Vector128<T> left, Vector128<T> right) => Vector128.ConditionalSelect(condition, left, right);
+
+        /// <inheritdoc cref="ISimdVector{TSelf, T}.CopySign(TSelf, TSelf)" />
+        [Intrinsic]
+        static Vector128<T> ISimdVector<Vector128<T>, T>.CopySign(Vector128<T> value, Vector128<T> sign) => Vector128.CopySign(value, sign);
 
         /// <inheritdoc cref="ISimdVector{TSelf, T}.CopyTo(TSelf, T[])" />
         static void ISimdVector<Vector128<T>, T>.CopyTo(Vector128<T> vector, T[] destination) => vector.CopyTo(destination);
@@ -501,6 +528,7 @@ namespace System.Runtime.Intrinsics
         static void ISimdVector<Vector128<T>, T>.CopyTo(Vector128<T> vector, Span<T> destination) => vector.CopyTo(destination);
 
         /// <inheritdoc cref="ISimdVector{TSelf, T}.Create(T)" />
+        [Intrinsic]
         static Vector128<T> ISimdVector<Vector128<T>, T>.Create(T value) => Vector128.Create(value);
 
         /// <inheritdoc cref="ISimdVector{TSelf, T}.Create(T[])" />
@@ -513,152 +541,239 @@ namespace System.Runtime.Intrinsics
         static Vector128<T> ISimdVector<Vector128<T>, T>.Create(ReadOnlySpan<T> values) => Vector128.Create(values);
 
         /// <inheritdoc cref="ISimdVector{TSelf, T}.CreateScalar(T)" />
+        [Intrinsic]
         static Vector128<T> ISimdVector<Vector128<T>, T>.CreateScalar(T value) => Vector128.CreateScalar(value);
 
         /// <inheritdoc cref="ISimdVector{TSelf, T}.CreateScalarUnsafe(T)" />
+        [Intrinsic]
         static Vector128<T> ISimdVector<Vector128<T>, T>.CreateScalarUnsafe(T value) => Vector128.CreateScalarUnsafe(value);
 
         /// <inheritdoc cref="ISimdVector{TSelf, T}.Divide(TSelf, T)" />
-        static Vector128<T> ISimdVector<Vector128<T>, T>.Divide(Vector128<T> left, Vector128<T> right) => Vector128.Divide(left, right);
+        [Intrinsic]
+        static Vector128<T> ISimdVector<Vector128<T>, T>.Divide(Vector128<T> left, Vector128<T> right) => left / right;
 
         /// <inheritdoc cref="ISimdVector{TSelf, T}.Divide(TSelf, T)" />
-        static Vector128<T> ISimdVector<Vector128<T>, T>.Divide(Vector128<T> left, T right) => Vector128.Divide(left, right);
+        [Intrinsic]
+        static Vector128<T> ISimdVector<Vector128<T>, T>.Divide(Vector128<T> left, T right) => left / right;
 
         /// <inheritdoc cref="ISimdVector{TSelf, T}.Dot(TSelf, TSelf)" />
+        [Intrinsic]
         static T ISimdVector<Vector128<T>, T>.Dot(Vector128<T> left, Vector128<T> right) => Vector128.Dot(left, right);
 
         /// <inheritdoc cref="ISimdVector{TSelf, T}.Equals(TSelf, TSelf)" />
+        [Intrinsic]
         static Vector128<T> ISimdVector<Vector128<T>, T>.Equals(Vector128<T> left, Vector128<T> right) => Vector128.Equals(left, right);
 
         /// <inheritdoc cref="ISimdVector{TSelf, T}.EqualsAll(TSelf, TSelf)" />
-        static bool ISimdVector<Vector128<T>, T>.EqualsAll(Vector128<T> left, Vector128<T> right) => Vector128.EqualsAll(left, right);
+        [Intrinsic]
+        static bool ISimdVector<Vector128<T>, T>.EqualsAll(Vector128<T> left, Vector128<T> right) => left == right;
 
         /// <inheritdoc cref="ISimdVector{TSelf, T}.EqualsAny(TSelf, TSelf)" />
+        [Intrinsic]
         static bool ISimdVector<Vector128<T>, T>.EqualsAny(Vector128<T> left, Vector128<T> right) => Vector128.EqualsAny(left, right);
 
         /// <inheritdoc cref="ISimdVector{TSelf, T}.Floor(TSelf)" />
+        [Intrinsic]
         static Vector128<T> ISimdVector<Vector128<T>, T>.Floor(Vector128<T> vector) => Vector128.Floor(vector);
 
         /// <inheritdoc cref="ISimdVector{TSelf, T}.GetElement(TSelf, int)" />
-        static T ISimdVector<Vector128<T>, T>.GetElement(Vector128<T> vector, int index) => Vector128.GetElement(vector, index);
+        [Intrinsic]
+        static T ISimdVector<Vector128<T>, T>.GetElement(Vector128<T> vector, int index) => vector.GetElement(index);
 
         /// <inheritdoc cref="ISimdVector{TSelf, T}.GreaterThan(TSelf, TSelf)" />
+        [Intrinsic]
         static Vector128<T> ISimdVector<Vector128<T>, T>.GreaterThan(Vector128<T> left, Vector128<T> right) => Vector128.GreaterThan(left, right);
 
         /// <inheritdoc cref="ISimdVector{TSelf, T}.GreaterThanAll(TSelf, TSelf)" />
+        [Intrinsic]
         static bool ISimdVector<Vector128<T>, T>.GreaterThanAll(Vector128<T> left, Vector128<T> right) => Vector128.GreaterThanAll(left, right);
 
         /// <inheritdoc cref="ISimdVector{TSelf, T}.GreaterThanAny(TSelf, TSelf)" />
+        [Intrinsic]
         static bool ISimdVector<Vector128<T>, T>.GreaterThanAny(Vector128<T> left, Vector128<T> right) => Vector128.GreaterThanAny(left, right);
 
         /// <inheritdoc cref="ISimdVector{TSelf, T}.GreaterThanOrEqual(TSelf, TSelf)" />
+        [Intrinsic]
         static Vector128<T> ISimdVector<Vector128<T>, T>.GreaterThanOrEqual(Vector128<T> left, Vector128<T> right) => Vector128.GreaterThanOrEqual(left, right);
 
         /// <inheritdoc cref="ISimdVector{TSelf, T}.GreaterThanOrEqualAll(TSelf, TSelf)" />
+        [Intrinsic]
         static bool ISimdVector<Vector128<T>, T>.GreaterThanOrEqualAll(Vector128<T> left, Vector128<T> right) => Vector128.GreaterThanOrEqualAll(left, right);
 
         /// <inheritdoc cref="ISimdVector{TSelf, T}.GreaterThanOrEqualAny(TSelf, TSelf)" />
+        [Intrinsic]
         static bool ISimdVector<Vector128<T>, T>.GreaterThanOrEqualAny(Vector128<T> left, Vector128<T> right) => Vector128.GreaterThanOrEqualAny(left, right);
 
         /// <inheritdoc cref="ISimdVector{TSelf, T}.LessThan(TSelf, TSelf)" />
+        [Intrinsic]
         static Vector128<T> ISimdVector<Vector128<T>, T>.LessThan(Vector128<T> left, Vector128<T> right) => Vector128.LessThan(left, right);
 
         /// <inheritdoc cref="ISimdVector{TSelf, T}.LessThanAll(TSelf, TSelf)" />
+        [Intrinsic]
         static bool ISimdVector<Vector128<T>, T>.LessThanAll(Vector128<T> left, Vector128<T> right) => Vector128.LessThanAll(left, right);
 
         /// <inheritdoc cref="ISimdVector{TSelf, T}.LessThanAny(TSelf, TSelf)" />
+        [Intrinsic]
         static bool ISimdVector<Vector128<T>, T>.LessThanAny(Vector128<T> left, Vector128<T> right) => Vector128.LessThanAny(left, right);
 
         /// <inheritdoc cref="ISimdVector{TSelf, T}.LessThanOrEqual(TSelf, TSelf)" />
+        [Intrinsic]
         static Vector128<T> ISimdVector<Vector128<T>, T>.LessThanOrEqual(Vector128<T> left, Vector128<T> right) => Vector128.LessThanOrEqual(left, right);
 
         /// <inheritdoc cref="ISimdVector{TSelf, T}.LessThanOrEqualAll(TSelf, TSelf)" />
+        [Intrinsic]
         static bool ISimdVector<Vector128<T>, T>.LessThanOrEqualAll(Vector128<T> left, Vector128<T> right) => Vector128.LessThanOrEqualAll(left, right);
 
         /// <inheritdoc cref="ISimdVector{TSelf, T}.LessThanOrEqualAny(TSelf, TSelf)" />
+        [Intrinsic]
         static bool ISimdVector<Vector128<T>, T>.LessThanOrEqualAny(Vector128<T> left, Vector128<T> right) => Vector128.LessThanOrEqualAny(left, right);
 
-#pragma warning disable CS8500 // This takes the address of, gets the size of, or declares a pointer to a managed type ('T')
         /// <inheritdoc cref="ISimdVector{TSelf, T}.Load(T*)" />
+        [Intrinsic]
         static Vector128<T> ISimdVector<Vector128<T>, T>.Load(T* source) => Vector128.Load(source);
 
         /// <inheritdoc cref="ISimdVector{TSelf, T}.LoadAligned(T*)" />
+        [Intrinsic]
         static Vector128<T> ISimdVector<Vector128<T>, T>.LoadAligned(T* source) => Vector128.LoadAligned(source);
 
         /// <inheritdoc cref="ISimdVector{TSelf, T}.LoadAlignedNonTemporal(T*)" />
+        [Intrinsic]
         static Vector128<T> ISimdVector<Vector128<T>, T>.LoadAlignedNonTemporal(T* source) => Vector128.LoadAlignedNonTemporal(source);
-#pragma warning restore CS8500 // This takes the address of, gets the size of, or declares a pointer to a managed type ('T')
 
         /// <inheritdoc cref="ISimdVector{TSelf, T}.LoadUnsafe(ref readonly T)" />
+        [Intrinsic]
         static Vector128<T> ISimdVector<Vector128<T>, T>.LoadUnsafe(ref readonly T source) => Vector128.LoadUnsafe(in source);
 
         /// <inheritdoc cref="ISimdVector{TSelf, T}.LoadUnsafe(ref readonly T, nuint)" />
+        [Intrinsic]
         static Vector128<T> ISimdVector<Vector128<T>, T>.LoadUnsafe(ref readonly T source, nuint elementOffset) => Vector128.LoadUnsafe(in source, elementOffset);
 
         /// <inheritdoc cref="ISimdVector{TSelf, T}.Max(TSelf, TSelf)" />
+        [Intrinsic]
         static Vector128<T> ISimdVector<Vector128<T>, T>.Max(Vector128<T> left, Vector128<T> right) => Vector128.Max(left, right);
 
+        /// <inheritdoc cref="ISimdVector{TSelf, T}.MaxMagnitude(TSelf, TSelf)" />
+        [Intrinsic]
+        static Vector128<T> ISimdVector<Vector128<T>, T>.MaxMagnitude(Vector128<T> left, Vector128<T> right) => Vector128.MaxMagnitude(left, right);
+
+        /// <inheritdoc cref="ISimdVector{TSelf, T}.MaxMagnitudeNumber(TSelf, TSelf)" />
+        [Intrinsic]
+        static Vector128<T> ISimdVector<Vector128<T>, T>.MaxMagnitudeNumber(Vector128<T> left, Vector128<T> right) => Vector128.MaxMagnitudeNumber(left, right);
+
+        /// <inheritdoc cref="ISimdVector{TSelf, T}.MaxNative(TSelf, TSelf)" />
+        [Intrinsic]
+        static Vector128<T> ISimdVector<Vector128<T>, T>.MaxNative(Vector128<T> left, Vector128<T> right) => Vector128.MaxNative(left, right);
+
+        /// <inheritdoc cref="ISimdVector{TSelf, T}.MaxNumber(TSelf, TSelf)" />
+        [Intrinsic]
+        static Vector128<T> ISimdVector<Vector128<T>, T>.MaxNumber(Vector128<T> left, Vector128<T> right) => Vector128.MaxNumber(left, right);
+
         /// <inheritdoc cref="ISimdVector{TSelf, T}.Min(TSelf, TSelf)" />
+        [Intrinsic]
         static Vector128<T> ISimdVector<Vector128<T>, T>.Min(Vector128<T> left, Vector128<T> right) => Vector128.Min(left, right);
 
+        /// <inheritdoc cref="ISimdVector{TSelf, T}.MinMagnitude(TSelf, TSelf)" />
+        [Intrinsic]
+        static Vector128<T> ISimdVector<Vector128<T>, T>.MinMagnitude(Vector128<T> left, Vector128<T> right) => Vector128.MinMagnitude(left, right);
+
+        /// <inheritdoc cref="ISimdVector{TSelf, T}.MinMagnitudeNumber(TSelf, TSelf)" />
+        [Intrinsic]
+        static Vector128<T> ISimdVector<Vector128<T>, T>.MinMagnitudeNumber(Vector128<T> left, Vector128<T> right) => Vector128.MinMagnitudeNumber(left, right);
+
+        /// <inheritdoc cref="ISimdVector{TSelf, T}.MinNative(TSelf, TSelf)" />
+        [Intrinsic]
+        static Vector128<T> ISimdVector<Vector128<T>, T>.MinNative(Vector128<T> left, Vector128<T> right) => Vector128.MinNative(left, right);
+
+        /// <inheritdoc cref="ISimdVector{TSelf, T}.MinNumber(TSelf, TSelf)" />
+        [Intrinsic]
+        static Vector128<T> ISimdVector<Vector128<T>, T>.MinNumber(Vector128<T> left, Vector128<T> right) => Vector128.MinNumber(left, right);
+
         /// <inheritdoc cref="ISimdVector{TSelf, T}.Multiply(TSelf, T)" />
-        static Vector128<T> ISimdVector<Vector128<T>, T>.Multiply(Vector128<T> left, Vector128<T> right) => Vector128.Multiply(left, right);
+        [Intrinsic]
+        static Vector128<T> ISimdVector<Vector128<T>, T>.Multiply(Vector128<T> left, Vector128<T> right) => left * right;
 
         /// <inheritdoc cref="ISimdVector{TSelf, T}.Multiply(TSelf, TSelf)" />
-        static Vector128<T> ISimdVector<Vector128<T>, T>.Multiply(Vector128<T> left, T right) => Vector128.Multiply(left, right);
+        [Intrinsic]
+        static Vector128<T> ISimdVector<Vector128<T>, T>.Multiply(Vector128<T> left, T right) => left * right;
+
+        /// <inheritdoc cref="ISimdVector{TSelf, T}.MultiplyAddEstimate(TSelf, TSelf, TSelf)" />
+        [Intrinsic]
+        static Vector128<T> ISimdVector<Vector128<T>, T>.MultiplyAddEstimate(Vector128<T> left, Vector128<T> right, Vector128<T> addend) => Vector128.MultiplyAddEstimate(left, right, addend);
 
         /// <inheritdoc cref="ISimdVector{TSelf, T}.Negate(TSelf)" />
-        static Vector128<T> ISimdVector<Vector128<T>, T>.Negate(Vector128<T> vector) => Vector128.Negate(vector);
+        [Intrinsic]
+        static Vector128<T> ISimdVector<Vector128<T>, T>.Negate(Vector128<T> vector) => -vector;
 
         /// <inheritdoc cref="ISimdVector{TSelf, T}.OnesComplement(TSelf)" />
-        static Vector128<T> ISimdVector<Vector128<T>, T>.OnesComplement(Vector128<T> vector) => Vector128.OnesComplement(vector);
+        [Intrinsic]
+        static Vector128<T> ISimdVector<Vector128<T>, T>.OnesComplement(Vector128<T> vector) => ~vector;
+
+        /// <inheritdoc cref="ISimdVector{TSelf, T}.Round(TSelf)" />
+        [Intrinsic]
+        static Vector128<T> ISimdVector<Vector128<T>, T>.Round(Vector128<T> vector) => Vector128.Round(vector);
 
         /// <inheritdoc cref="ISimdVector{TSelf, T}.ShiftLeft(TSelf, int)" />
-        static Vector128<T> ISimdVector<Vector128<T>, T>.ShiftLeft(Vector128<T> vector, int shiftCount) => Vector128.ShiftLeft(vector, shiftCount);
+        [Intrinsic]
+        static Vector128<T> ISimdVector<Vector128<T>, T>.ShiftLeft(Vector128<T> vector, int shiftCount) => vector << shiftCount;
 
         /// <inheritdoc cref="ISimdVector{TSelf, T}.ShiftRightArithmetic(TSelf, int)" />
-        static Vector128<T> ISimdVector<Vector128<T>, T>.ShiftRightArithmetic(Vector128<T> vector, int shiftCount) => Vector128.ShiftRightArithmetic(vector, shiftCount);
+        [Intrinsic]
+        static Vector128<T> ISimdVector<Vector128<T>, T>.ShiftRightArithmetic(Vector128<T> vector, int shiftCount) => vector >> shiftCount;
 
         /// <inheritdoc cref="ISimdVector{TSelf, T}.ShiftRightLogical(TSelf, int)" />
-        static Vector128<T> ISimdVector<Vector128<T>, T>.ShiftRightLogical(Vector128<T> vector, int shiftCount) => Vector128.ShiftRightLogical(vector, shiftCount);
+        [Intrinsic]
+        static Vector128<T> ISimdVector<Vector128<T>, T>.ShiftRightLogical(Vector128<T> vector, int shiftCount) => vector >>> shiftCount;
 
         /// <inheritdoc cref="ISimdVector{TSelf, T}.Sqrt(TSelf)" />
+        [Intrinsic]
         static Vector128<T> ISimdVector<Vector128<T>, T>.Sqrt(Vector128<T> vector) => Vector128.Sqrt(vector);
 
-#pragma warning disable CS8500 // This takes the address of, gets the size of, or declares a pointer to a managed type ('T')
         /// <inheritdoc cref="ISimdVector{TSelf, T}.Store(TSelf, T*)" />
-        static void ISimdVector<Vector128<T>, T>.Store(Vector128<T> source, T* destination) => Vector128.Store(source, destination);
+        [Intrinsic]
+        static void ISimdVector<Vector128<T>, T>.Store(Vector128<T> source, T* destination) => source.Store(destination);
 
         /// <inheritdoc cref="ISimdVector{TSelf, T}.StoreAligned(TSelf, T*)" />
-        static void ISimdVector<Vector128<T>, T>.StoreAligned(Vector128<T> source, T* destination) => Vector128.StoreAligned(source, destination);
+        [Intrinsic]
+        static void ISimdVector<Vector128<T>, T>.StoreAligned(Vector128<T> source, T* destination) => source.StoreAligned(destination);
 
         /// <inheritdoc cref="ISimdVector{TSelf, T}.StoreAlignedNonTemporal(TSelf, T*)" />
-        static void ISimdVector<Vector128<T>, T>.StoreAlignedNonTemporal(Vector128<T> source, T* destination) => Vector128.StoreAlignedNonTemporal(source, destination);
-#pragma warning restore CS8500 // This takes the address of, gets the size of, or declares a pointer to a managed type ('T')
+        [Intrinsic]
+        static void ISimdVector<Vector128<T>, T>.StoreAlignedNonTemporal(Vector128<T> source, T* destination) => source.StoreAlignedNonTemporal(destination);
 
         /// <inheritdoc cref="ISimdVector{TSelf, T}.StoreUnsafe(TSelf, ref T)" />
-        static void ISimdVector<Vector128<T>, T>.StoreUnsafe(Vector128<T> vector, ref T destination) => Vector128.StoreUnsafe(vector, ref destination);
+        [Intrinsic]
+        static void ISimdVector<Vector128<T>, T>.StoreUnsafe(Vector128<T> vector, ref T destination) => vector.StoreUnsafe(ref destination);
 
         /// <inheritdoc cref="ISimdVector{TSelf, T}.StoreUnsafe(TSelf, ref T, nuint)" />
-        static void ISimdVector<Vector128<T>, T>.StoreUnsafe(Vector128<T> vector, ref T destination, nuint elementOffset) => Vector128.StoreUnsafe(vector, ref destination, elementOffset);
+        [Intrinsic]
+        static void ISimdVector<Vector128<T>, T>.StoreUnsafe(Vector128<T> vector, ref T destination, nuint elementOffset) => vector.StoreUnsafe(ref destination, elementOffset);
 
         /// <inheritdoc cref="ISimdVector{TSelf, T}.Subtract(TSelf, TSelf)" />
-        static Vector128<T> ISimdVector<Vector128<T>, T>.Subtract(Vector128<T> left, Vector128<T> right) => Vector128.Subtract(left, right);
+        [Intrinsic]
+        static Vector128<T> ISimdVector<Vector128<T>, T>.Subtract(Vector128<T> left, Vector128<T> right) => left - right;
 
         /// <inheritdoc cref="ISimdVector{TSelf, T}.Sum(TSelf)" />
+        [Intrinsic]
         static T ISimdVector<Vector128<T>, T>.Sum(Vector128<T> vector) => Vector128.Sum(vector);
 
         /// <inheritdoc cref="ISimdVector{TSelf, T}.ToScalar(TSelf)" />
-        static T ISimdVector<Vector128<T>, T>.ToScalar(Vector128<T> vector) => Vector128.ToScalar(vector);
+        [Intrinsic]
+        static T ISimdVector<Vector128<T>, T>.ToScalar(Vector128<T> vector) => vector.ToScalar();
+
+        /// <inheritdoc cref="ISimdVector{TSelf, T}.Truncate(TSelf)" />
+        [Intrinsic]
+        static Vector128<T> ISimdVector<Vector128<T>, T>.Truncate(Vector128<T> vector) => Vector128.Truncate(vector);
 
         /// <inheritdoc cref="ISimdVector{TSelf, T}.TryCopyTo(TSelf, Span{T})" />
-        static bool ISimdVector<Vector128<T>, T>.TryCopyTo(Vector128<T> vector, Span<T> destination) => Vector128.TryCopyTo(vector, destination);
+        static bool ISimdVector<Vector128<T>, T>.TryCopyTo(Vector128<T> vector, Span<T> destination) => vector.TryCopyTo(destination);
 
         /// <inheritdoc cref="ISimdVector{TSelf, T}.WithElement(TSelf, int, T)" />
-        static Vector128<T> ISimdVector<Vector128<T>, T>.WithElement(Vector128<T> vector, int index, T value) => Vector128.WithElement(vector, index, value);
+        [Intrinsic]
+        static Vector128<T> ISimdVector<Vector128<T>, T>.WithElement(Vector128<T> vector, int index, T value) => vector.WithElement(index, value);
 
         /// <inheritdoc cref="ISimdVector{TSelf, T}.Xor" />
-        static Vector128<T> ISimdVector<Vector128<T>, T>.Xor(Vector128<T> left, Vector128<T> right) => Vector128.Xor(left, right);
+        [Intrinsic]
+        static Vector128<T> ISimdVector<Vector128<T>, T>.Xor(Vector128<T> left, Vector128<T> right) => left ^ right;
 
         //
         // New Surface Area
@@ -673,5 +788,20 @@ namespace System.Runtime.Intrinsics
             uint mask = vector.ExtractMostSignificantBits();
             return 31 - BitOperations.LeadingZeroCount(mask); // 31 = 32 (bits in Int32) - 1 (indexing from zero)
         }
+
+        [Intrinsic]
+        static Vector128<T> ISimdVector<Vector128<T>, T>.IsNaN(Vector128<T> vector) => Vector128.IsNaN(vector);
+
+        [Intrinsic]
+        static Vector128<T> ISimdVector<Vector128<T>, T>.IsNegative(Vector128<T> vector) => Vector128.IsNegative(vector);
+
+        [Intrinsic]
+        static Vector128<T> ISimdVector<Vector128<T>, T>.IsPositive(Vector128<T> vector) => Vector128.IsPositive(vector);
+
+        [Intrinsic]
+        static Vector128<T> ISimdVector<Vector128<T>, T>.IsPositiveInfinity(Vector128<T> vector) => Vector128.IsPositiveInfinity(vector);
+
+        [Intrinsic]
+        static Vector128<T> ISimdVector<Vector128<T>, T>.IsZero(Vector128<T> vector) => Vector128.IsZero(vector);
     }
 }

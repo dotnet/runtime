@@ -66,6 +66,10 @@ export interface DotnetHostBuilder {
      */
     withResourceLoader(loadBootResource?: LoadBootResourceCallback): DotnetHostBuilder;
     /**
+     * Downloads all the assets but doesn't create the runtime instance.
+     */
+    download(): Promise<void>;
+    /**
      * Starts the runtime and returns promise of the API object.
      */
     create(): Promise<RuntimeAPI>;
@@ -199,6 +203,7 @@ export type ResourceExtensions = { [extensionName: string]: ResourceList };
 
 export interface ResourceGroups {
     hash?: string;
+    fingerprinting?: { [name: string]: string },
     coreAssembly?: ResourceList; // nullable only temporarily
     assembly?: ResourceList; // nullable only temporarily
     lazyAssembly?: ResourceList; // nullable only temporarily

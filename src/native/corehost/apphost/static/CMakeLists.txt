@@ -27,6 +27,10 @@ add_subdirectory(../../hostmisc hostmisc)
 configure_file(${CLR_SRC_NATIVE_DIR}/corehost/configure.h.in ${GENERATED_INCLUDE_DIR}/corehost/configure.h)
 target_include_directories(hostmisc PUBLIC ${GENERATED_INCLUDE_DIR}/corehost)
 
+if ((NOT DEFINED CLR_CMAKE_USE_SYSTEM_RAPIDJSON) OR (NOT CLR_CMAKE_USE_SYSTEM_RAPIDJSON))
+    include_directories(${CLR_SRC_NATIVE_DIR}/external/)
+endif()
+
 set(SOURCES
     ../bundle_marker.cpp
     ./hostfxr_resolver.cpp
@@ -111,6 +115,11 @@ add_definitions(-DFEATURE_STATIC_HOST=1)
 if(CLR_CMAKE_TARGET_WIN32)
     # Disable manifest generation into the file .exe on Windows
     add_linker_flag("/MANIFEST:NO")
+
+    # Enable CET-compatibility
+    if (CLR_CMAKE_HOST_ARCH_AMD64)
+        add_linker_flag("/CETCOMPAT")
+    endif()
 
     # Incremental linking results in the linker inserting extra padding and routing function calls via thunks that can break the
     # invariants (e.g. size of region between Jit_PatchedCodeLast-Jit_PatchCodeStart needs to fit in a page).

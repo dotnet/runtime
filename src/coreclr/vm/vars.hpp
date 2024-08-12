@@ -51,6 +51,7 @@ class RCWCleanupList;
 
 typedef TADDR LOADERHANDLE;
 typedef Object* RUNTIMETYPEHANDLE;
+typedef DPTR(LOADERHANDLE) PTR_LOADERHANDLE;
 
 #ifdef DACCESS_COMPILE
 void OBJECTHANDLE_EnumMemoryRegions(OBJECTHANDLE handle);
@@ -163,7 +164,7 @@ class OBJECTREF {
         //-------------------------------------------------------------
         OBJECTREF& operator=(const OBJECTREF &objref);
         OBJECTREF& operator=(TADDR nul);
-        
+
         // We use this delayed check to avoid ambiguous overload issues with TADDR
         // on platforms where NULL is defined as anything other than a uintptr_t constant
         // or nullptr_t exactly.
@@ -298,7 +299,7 @@ GARY_DECL(TypeHandle, g_pPredefinedArrayTypes, ELEMENT_TYPE_MAX);
 // g_TrapReturningThreads == 0 disables thread polling/traping.
 // This allows to short-circuit further examining of thread states in the most
 // common scenario - when we are not interested in trapping anything.
-// 
+//
 // The bit #1 is reserved for controlling thread suspension.
 // Setting bit #1 allows to atomically indicate/check that EE suspension is in progress.
 // There could be only one EE suspension in progress at a time. (it requires holding ThreadStore lock)
@@ -458,20 +459,25 @@ GVAL_DECL(bool, g_metadataUpdatesApplied);
 #endif
 EXTERN bool g_fManagedAttach;
 
+#ifdef HOST_WINDOWS
+typedef BOOLEAN (WINAPI* PRTLDLLSHUTDOWNINPROGRESS)();
+EXTERN PRTLDLLSHUTDOWNINPROGRESS g_pfnRtlDllShutdownInProgress;
+#endif
+
 // Indicates whether we're executing shut down as a result of DllMain
 // (DLL_PROCESS_DETACH). See comments at code:EEShutDown for details.
-inline BOOL    IsAtProcessExit()
+inline bool IsAtProcessExit()
 {
     SUPPORTS_DAC;
+#if defined(DACCESS_COMPILE) || !defined(HOST_WINDOWS)
     return g_fProcessDetach;
+#else
+    // RtlDllShutdownInProgress provides more accurate information about whether the process is shutting down.
+    // Use it if it is available to avoid shutdown deadlocks.
+    // https://learn.microsoft.com/windows/win32/devnotes/rtldllshutdowninprogress
+    return g_pfnRtlDllShutdownInProgress();
+#endif
 }
-
-enum FWStatus
-{
-    FWS_WaitInterrupt = 0x00000001,
-};
-
-EXTERN DWORD g_FinalizerWaiterStatus;
 
 #if defined(TARGET_UNIX) && defined(FEATURE_EVENT_TRACE)
 extern Volatile<BOOL> g_TriggerHeapDump;
@@ -591,34 +597,6 @@ GVAL_DECL(SIZE_T, g_runtimeVirtualSize);
 #define MAXULONGLONG                     UI64(0xffffffffffffffff)
 #endif
 
-// Every Module is assigned a ModuleIndex, regardless of whether the Module is domain
-// neutral or domain specific. When a domain specific Module is unloaded, its ModuleIndex
-// can be reused.
-
-// ModuleIndexes are not the same as ModuleIDs. The main purpose of a ModuleIndex is
-// to have a compact way to refer to any Module (domain neutral or domain specific).
-// The main purpose of a ModuleID is to facilitate looking up the DomainLocalModule
-// that corresponds to a given Module in a given AppDomain.
-
-struct ModuleIndex
-{
-    SIZE_T m_dwIndex;
-    ModuleIndex ()
-    : m_dwIndex(0)
-    {}
-    explicit ModuleIndex (SIZE_T id)
-    : m_dwIndex(id)
-    { LIMITED_METHOD_DAC_CONTRACT; }
-    BOOL operator==(const ModuleIndex& ad) const
-    {
-        return m_dwIndex == ad.m_dwIndex;
-    }
-    BOOL operator!=(const ModuleIndex& ad) const
-    {
-        return m_dwIndex != ad.m_dwIndex;
-    }
-};
-
 //-----------------------------------------------------------------------------
 // GSCookies (guard-stack cookies) for detecting buffer overruns
 //-----------------------------------------------------------------------------
@@ -661,6 +639,17 @@ GSCookie GetProcessGSCookie() { return *(RAW_KEYWORD(volatile) GSCookie *)(&s_gs
 #ifdef TARGET_WINDOWS
 typedef BOOL(WINAPI* PINITIALIZECONTEXT2)(PVOID Buffer, DWORD ContextFlags, PCONTEXT* Context, PDWORD ContextLength, ULONG64 XStateCompactionMask);
 extern PINITIALIZECONTEXT2 g_pfnInitializeContext2;
+
+#ifdef TARGET_ARM64
+typedef DWORD64(WINAPI* PGETENABLEDXSTATEFEATURES)();
+extern PGETENABLEDXSTATEFEATURES g_pfnGetEnabledXStateFeatures;
+
+typedef BOOL(WINAPI* PGETXSTATEFEATURESMASK)(PCONTEXT Context, PDWORD64 FeatureMask);
+extern PGETXSTATEFEATURESMASK g_pfnGetXStateFeaturesMask;
+
+typedef BOOL(WINAPI* PSETXSTATEFEATURESMASK)(PCONTEXT Context, DWORD64 FeatureMask);
+extern PSETXSTATEFEATURESMASK g_pfnSetXStateFeaturesMask;
+#endif // TARGET_ARM64
 
 #ifdef TARGET_X86
 typedef VOID(__cdecl* PRTLRESTORECONTEXT)(PCONTEXT ContextRecord, struct _EXCEPTION_RECORD* ExceptionRecord);

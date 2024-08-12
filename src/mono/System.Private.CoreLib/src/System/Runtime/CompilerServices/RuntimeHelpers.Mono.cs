@@ -19,14 +19,14 @@ namespace System.Runtime.CompilerServices
             InitializeArray(array, fldHandle.Value);
         }
 
-        private static unsafe void* GetSpanDataFrom(
+        private static unsafe ref byte GetSpanDataFrom(
             RuntimeFieldHandle fldHandle,
             RuntimeTypeHandle targetTypeHandle,
             out int count)
         {
             fixed (int *pCount = &count)
             {
-                return (void*)GetSpanDataFrom(fldHandle.Value, targetTypeHandle.Value, new IntPtr(pCount));
+                return ref GetSpanDataFrom(fldHandle.Value, targetTypeHandle.Value, new IntPtr(pCount));
             }
         }
 
@@ -196,7 +196,7 @@ namespace System.Runtime.CompilerServices
         private static extern void InitializeArray(Array array, IntPtr fldHandle);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        private static extern unsafe IntPtr GetSpanDataFrom(
+        private static extern unsafe ref byte GetSpanDataFrom(
             IntPtr fldHandle,
             IntPtr targetTypeHandle,
             IntPtr count);

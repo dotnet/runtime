@@ -3,6 +3,7 @@
 
 using System.Collections;
 using System.Collections.Generic;
+using System.Collections.Concurrent;
 using System.ComponentModel.Design;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
@@ -23,7 +24,7 @@ namespace System.ComponentModel
     internal sealed partial class ReflectTypeDescriptionProvider : TypeDescriptionProvider
     {
         // ReflectedTypeData contains all of the type information we have gathered for a given type.
-        private Dictionary<Type, ReflectedTypeData>? _typeData;
+        private readonly ConcurrentDictionary<Type, ReflectedTypeData> _typeData = new ConcurrentDictionary<Type, ReflectedTypeData>();
 
         // This is the signature we look for when creating types that are generic, but
         // want to know what type they are dealing with. Enums are a good example of this;
@@ -82,7 +83,6 @@ namespace System.ComponentModel
 
         internal static Guid ExtenderProviderKey { get; } = Guid.NewGuid();
 
-        private static readonly object s_internalSyncObject = new object();
         /// <summary>
         /// Creates a new ReflectTypeDescriptionProvider. The type is the
         /// type we will obtain type information for.
@@ -224,7 +224,7 @@ namespace System.ComponentModel
 
             Debug.Assert(table != null, "COMPAT: Editor table should not be null"); // don't throw; RTM didn't so we can't do it either.
 
-            lock (s_internalSyncObject)
+            lock (TypeDescriptor.s_commonSyncObject)
             {
                 Hashtable editorTables = EditorTables;
                 if (!editorTables.ContainsKey(editorBaseType))
@@ -282,8 +282,7 @@ namespace System.ComponentModel
         public override bool? RequireRegisteredTypes => true;
         public override bool IsRegisteredType(Type type)
         {
-            if (_typeData != null &&
-                _typeData.TryGetValue(type, out ReflectedTypeData? data) &&
+            if (_typeData.TryGetValue(type, out ReflectedTypeData? data) &&
                 data.IsRegistered)
             {
                 return true;
@@ -436,7 +435,7 @@ namespace System.ComponentModel
                 //
                 if (table == null)
                 {
-                    lock (s_internalSyncObject)
+                    lock (TypeDescriptor.s_commonSyncObject)
                     {
                         table = editorTables[editorBaseType];
                         if (table == null)
@@ -863,18 +862,11 @@ namespace System.ComponentModel
         {
             List<Type> typeList = new List<Type>();
 
-            lock (s_internalSyncObject)
+            foreach (KeyValuePair<Type, ReflectedTypeData> kvp in _typeData)
             {
-                Dictionary<Type, ReflectedTypeData>? typeData = _typeData;
-                if (typeData != null)
+                if (kvp.Key.Module == module && kvp.Value!.IsPopulated)
                 {
-                    foreach (KeyValuePair<Type, ReflectedTypeData> kvp in typeData)
-                    {
-                        if (kvp.Key.Module == module && kvp.Value!.IsPopulated)
-                        {
-                            typeList.Add(kvp.Key);
-                        }
-                    }
+                    typeList.Add(kvp.Key);
                 }
             }
 
@@ -928,17 +920,15 @@ namespace System.ComponentModel
         /// </summary>
         private ReflectedTypeData? GetTypeData([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type type, bool createIfNeeded)
         {
-            ReflectedTypeData? td = null;
-
-            if (_typeData != null && _typeData.TryGetValue(type, out td))
+            if (_typeData.TryGetValue(type, out ReflectedTypeData? td))
             {
                 Debug.Assert(td != null);
                 return td;
             }
 
-            lock (s_internalSyncObject)
+            lock (TypeDescriptor.s_commonSyncObject)
             {
-                if (_typeData != null && _typeData.TryGetValue(type, out td))
+                if (_typeData.TryGetValue(type, out td))
                 {
                     Debug.Assert(td != null);
 
@@ -959,7 +949,6 @@ namespace System.ComponentModel
                 if (createIfNeeded)
                 {
                     td = new ReflectedTypeData(type, isRegisteredType: false);
-                    _typeData ??= new Dictionary<Type, ReflectedTypeData>();
                     _typeData[type] = td;
                 }
             }
@@ -969,7 +958,7 @@ namespace System.ComponentModel
 
         private ReflectedTypeData GetTypeDataFromRegisteredType(Type type)
         {
-            if (_typeData == null || !_typeData.TryGetValue(type, out ReflectedTypeData? td))
+            if (!_typeData.TryGetValue(type, out ReflectedTypeData? td))
             {
                 if (IsIntrinsicType(type))
                 {
@@ -992,41 +981,34 @@ namespace System.ComponentModel
         public override void RegisterType<[DynamicallyAccessedMembers(TypeDescriptor.RegisteredTypesDynamicallyAccessedMembers)] T>()
         {
             Type componentType = typeof(T);
-            ReflectedTypeData? td = null;
 
-            if (_typeData != null && _typeData.ContainsKey(componentType))
+            if (_typeData.ContainsKey(componentType))
             {
                 return;
             }
 
-            lock (s_internalSyncObject)
+            lock (TypeDescriptor.s_commonSyncObject)
             {
-                if (_typeData != null && _typeData.ContainsKey(componentType))
+                if (_typeData.ContainsKey(componentType))
                 {
                     return;
                 }
 
-                if (td == null)
-                {
-                    td = new ReflectedTypeData(componentType, isRegisteredType: true);
-                    _typeData ??= new Dictionary<Type, ReflectedTypeData>();
-                    _typeData[componentType] = td;
-                }
+                ReflectedTypeData td = new ReflectedTypeData(componentType, isRegisteredType: true);
+                _typeData[componentType] = td;
             }
         }
 
         private ReflectedTypeData GetOrRegisterType(Type type)
         {
-            ReflectedTypeData? td = null;
-
-            if (_typeData != null && _typeData.TryGetValue(type, out td))
+            if (_typeData.TryGetValue(type, out ReflectedTypeData? td))
             {
                 return td;
             }
 
-            lock (s_internalSyncObject)
+            lock (TypeDescriptor.s_commonSyncObject)
             {
-                if (_typeData != null && _typeData.TryGetValue(type, out td))
+                if (_typeData.TryGetValue(type, out td))
                 {
                     return td;
                 }
@@ -1034,7 +1016,6 @@ namespace System.ComponentModel
                 if (td == null)
                 {
                     td = new ReflectedTypeData(type, isRegisteredType: true);
-                    _typeData ??= new Dictionary<Type, ReflectedTypeData>();
                     _typeData[type] = td;
                 }
             }
@@ -1122,7 +1103,7 @@ namespace System.ComponentModel
                 return attrs;
             }
 
-            lock (s_internalSyncObject)
+            lock (TypeDescriptor.s_commonSyncObject)
             {
                 attrs = (Attribute[]?)attributeCache[type];
                 if (attrs == null)
@@ -1150,7 +1131,7 @@ namespace System.ComponentModel
                 return attrs;
             }
 
-            lock (s_internalSyncObject)
+            lock (TypeDescriptor.s_commonSyncObject)
             {
                 attrs = (Attribute[]?)attributeCache[member];
                 if (attrs == null)
@@ -1178,7 +1159,7 @@ namespace System.ComponentModel
                 return events;
             }
 
-            lock (s_internalSyncObject)
+            lock (TypeDescriptor.s_commonSyncObject)
             {
                 events = (EventDescriptor[]?)eventCache[type];
                 if (events == null)
@@ -1275,7 +1256,7 @@ namespace System.ComponentModel
             ReflectPropertyDescriptor[]? extendedProperties = (ReflectPropertyDescriptor[]?)extendedPropertyCache[providerType];
             if (extendedProperties == null)
             {
-                lock (s_internalSyncObject)
+                lock (TypeDescriptor.s_commonSyncObject)
                 {
                     extendedProperties = (ReflectPropertyDescriptor[]?)extendedPropertyCache[providerType];
 
@@ -1363,7 +1344,7 @@ namespace System.ComponentModel
                 return properties;
             }
 
-            lock (s_internalSyncObject)
+            lock (TypeDescriptor.s_commonSyncObject)
             {
                 properties = (PropertyDescriptor[]?)propertyCache[type];
 

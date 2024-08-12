@@ -51,9 +51,14 @@ endif()
 
 install_with_stripped_symbols(apphost TARGETS corehost)
 
-# Disable manifest generation into the file .exe on Windows
 if(CLR_CMAKE_TARGET_WIN32)
+    # Disable manifest generation into the file .exe on Windows
     target_link_options(apphost PRIVATE "/MANIFEST:NO")
+
+    # Enable CET-compatibility
+    if (CLR_CMAKE_HOST_ARCH_AMD64)
+        target_link_options(apphost PRIVATE "/CETCOMPAT")
+    endif()
 endif()
 
 if (CLR_CMAKE_TARGET_WIN32)

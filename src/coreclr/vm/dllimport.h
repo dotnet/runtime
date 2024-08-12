@@ -191,14 +191,10 @@ enum NDirectStubFlags
 enum ILStubTypes
 {
     ILSTUB_INVALID                       = 0x80000000,
-#ifdef FEATURE_ARRAYSTUB_AS_IL
     ILSTUB_ARRAYOP_GET                   = 0x80000001,
     ILSTUB_ARRAYOP_SET                   = 0x80000002,
     ILSTUB_ARRAYOP_ADDRESS               = 0x80000003,
-#endif
-#ifdef FEATURE_MULTICASTSTUB_AS_IL
     ILSTUB_MULTICASTDELEGATE_INVOKE      = 0x80000004,
-#endif
 #ifdef FEATURE_INSTANTIATINGSTUB_AS_IL
     ILSTUB_UNBOXINGILSTUB                = 0x80000005,
     ILSTUB_INSTANTIATINGSTUB             = 0x80000006,
@@ -229,15 +225,11 @@ inline bool SF_IsCheckPendingException (DWORD dwStubFlags) { LIMITED_METHOD_CONT
 
 inline bool SF_IsVirtualStaticMethodDispatchStub(DWORD dwStubFlags) { LIMITED_METHOD_CONTRACT; return dwStubFlags == ILSTUB_STATIC_VIRTUAL_DISPATCH_STUB; }
 
-#ifdef FEATURE_ARRAYSTUB_AS_IL
 inline bool SF_IsArrayOpStub           (DWORD dwStubFlags) { LIMITED_METHOD_CONTRACT; return ((dwStubFlags == ILSTUB_ARRAYOP_GET) ||
                                                                                               (dwStubFlags == ILSTUB_ARRAYOP_SET) ||
                                                                                               (dwStubFlags == ILSTUB_ARRAYOP_ADDRESS)); }
-#endif
 
-#ifdef FEATURE_MULTICASTSTUB_AS_IL
 inline bool SF_IsMulticastDelegateStub  (DWORD dwStubFlags) { LIMITED_METHOD_CONTRACT; return (dwStubFlags == ILSTUB_MULTICASTDELEGATE_INVOKE); }
-#endif
 
 inline bool SF_IsWrapperDelegateStub    (DWORD dwStubFlags) { LIMITED_METHOD_CONTRACT; return (dwStubFlags == ILSTUB_WRAPPERDELEGATE_INVOKE); }
 #ifdef FEATURE_INSTANTIATINGSTUB_AS_IL

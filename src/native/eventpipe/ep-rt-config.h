@@ -16,7 +16,7 @@
 #define DS_RT_H <mono/eventpipe/ds-rt-mono.h>
 #define DS_RT_TYPES_H <mono/eventpipe/ds-rt-types-mono.h>
 
-#elif defined(FEATURE_CORECLR) 
+#elif defined(FEATURE_CORECLR)
 
 #ifndef EP_NO_RT_DEPENDENCY
 #include "common.h"
@@ -75,9 +75,5 @@
 #endif
 
 #define EP_INLINE_GETTER_SETTER
-
-#ifdef EP_INLINE_GETTER_SETTER
-#define EP_INCLUDE_SOURCE_FILES
-#endif
 
 #endif /* __EVENTPIPE_RT_CONFIG_H__ */

@@ -819,13 +819,13 @@ void SString::ConvertToUnicode(SString &s) const
         UNREACHABLE();
     }
 
-    COUNT_T length = WszMultiByteToWideChar(page, 0, GetRawANSI(), GetRawCount()+1, 0, 0);
+    COUNT_T length = MultiByteToWideChar(page, 0, GetRawANSI(), GetRawCount()+1, 0, 0);
     if (length == 0)
         ThrowLastError();
 
     s.Resize(length-1, REPRESENTATION_UNICODE);
 
-    length = WszMultiByteToWideChar(page, 0, GetRawANSI(), GetRawCount()+1, s.GetRawUnicode(), length);
+    length = MultiByteToWideChar(page, 0, GetRawANSI(), GetRawCount()+1, s.GetRawUnicode(), length);
     if (length == 0)
         ThrowLastError();
 
@@ -1856,7 +1856,7 @@ BOOL SString::FormatMessage(DWORD dwFlags, LPCVOID lpSource, DWORD dwMessageId, 
         // First, try to use our existing buffer to hold the result.
         Resize(GetRawCount(), REPRESENTATION_UNICODE);
 
-        DWORD result = ::WszFormatMessage(dwFlags | FORMAT_MESSAGE_ARGUMENT_ARRAY,
+        DWORD result = ::FormatMessage(dwFlags | FORMAT_MESSAGE_ARGUMENT_ARRAY,
                                           lpSource, dwMessageId, dwLanguageId,
                                           GetRawUnicode(), GetRawCount()+1, (va_list*)args);
 
@@ -1878,7 +1878,7 @@ BOOL SString::FormatMessage(DWORD dwFlags, LPCVOID lpSource, DWORD dwMessageId, 
     // We don't have enough space in our buffer, do dynamic allocation.
     LocalAllocHolder<WCHAR> string;
 
-    DWORD result = ::WszFormatMessage(dwFlags | FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_ARGUMENT_ARRAY,
+    DWORD result = ::FormatMessage(dwFlags | FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_ARGUMENT_ARRAY,
                                       lpSource, dwMessageId, dwLanguageId,
                                       (LPWSTR)(LPWSTR*)&string, 0, (va_list*)args);
 
@@ -2344,11 +2344,11 @@ bool SString::DacGetUnicode(COUNT_T                                   cBufChars,
             // iPage defaults to CP_ACP.
             if (pcNeedChars)
             {
-                *pcNeedChars = WszMultiByteToWideChar(iPage, 0, reinterpret_cast<PSTR>(pContent), -1, NULL, 0);
+                *pcNeedChars = MultiByteToWideChar(iPage, 0, reinterpret_cast<PSTR>(pContent), -1, NULL, 0);
             }
             if (pBuffer && cBufChars)
             {
-                if (!WszMultiByteToWideChar(iPage, 0, reinterpret_cast<PSTR>(pContent), -1, pBuffer, cBufChars))
+                if (!MultiByteToWideChar(iPage, 0, reinterpret_cast<PSTR>(pContent), -1, pBuffer, cBufChars))
                 {
                     return false;
                 }

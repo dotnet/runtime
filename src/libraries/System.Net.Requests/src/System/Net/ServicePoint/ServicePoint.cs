@@ -7,6 +7,9 @@ using System.Threading;
 
 namespace System.Net
 {
+    // NOTE: While this class is not explicitly marked as obsolete,
+    // it effectively is by virtue of ServicePointManager being obsolete,
+    // where ServicePointManager is the only way to obtain ServicePoint instances.
     public class ServicePoint
     {
         private int _connectionLeaseTimeout = -1;

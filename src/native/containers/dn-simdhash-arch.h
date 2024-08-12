@@ -105,7 +105,7 @@ find_first_matching_suffix_simd (
 	dn_simdhash_suffixes match_vector;
 	// Completely untested.
 	static const dn_simdhash_suffixes byte_mask = {
-		1, 2, 4, 8, 16, 32, 64, 128, 1, 2, 4, 8, 16, 32, 64, 128
+		{ 1, 2, 4, 8, 16, 32, 64, 128, 1, 2, 4, 8, 16, 32, 64, 128 }
 	};
 	union {
 		uint8_t b[4];
