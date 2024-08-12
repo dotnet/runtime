@@ -6,22 +6,26 @@ using System.Runtime.CompilerServices;
 namespace System.Runtime.Intrinsics.Arm
 {
     /// <summary>
-    /// This class provides access to the ARM SHA1 hardware instructions via intrinsics
+    /// Provides access to the ARM SHA1 hardware instructions via intrinsics
     /// </summary>
     [CLSCompliant(false)]
     public abstract class Sha1 : ArmBase
     {
         internal Sha1() { }
 
-        /// <summary>Gets <c>true</c> if the APIs in this class are supported; otherwise, <c>false</c> which indicates they will throw <see cref="PlatformNotSupportedException" />.</summary>
+        /// <summary>Gets a value that indicates whether the APIs in this class are supported.</summary>
+        /// <value><see langword="true" /> if the APIs are supported; otherwise, <see langword="false" />.</value>
+        /// <remarks>A value of <see langword="false" /> indicates that the APIs will throw <see cref="PlatformNotSupportedException" />.</remarks>
         public static new bool IsSupported { [Intrinsic] get => false; }
 
-        /// <summary>This class provides access to the ARM SHA1 hardware instructions, that are only available to 64-bit processes, via intrinsics.</summary>
+        /// <summary>Provides access to the ARM SHA1 hardware instructions, that are only available to 64-bit processes, via intrinsics.</summary>
         public new abstract class Arm64 : ArmBase.Arm64
         {
             internal Arm64() { }
 
-            /// <summary>Gets <c>true</c> if the APIs in this class are supported; otherwise, <c>false</c> which indicates they will throw <see cref="PlatformNotSupportedException" />.</summary>
+            /// <summary>Gets a value that indicates whether the APIs in this class are supported.</summary>
+            /// <value><see langword="true" /> if the APIs are supported; otherwise, <see langword="false" />.</value>
+            /// <remarks>A value of <see langword="false" /> indicates that the APIs will throw <see cref="PlatformNotSupportedException" />.</remarks>
             public static new bool IsSupported { [Intrinsic] get { return false; } }
         }
 

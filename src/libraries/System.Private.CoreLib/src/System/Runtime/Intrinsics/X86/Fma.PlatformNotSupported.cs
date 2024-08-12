@@ -7,7 +7,7 @@ using System.Runtime.Intrinsics;
 
 namespace System.Runtime.Intrinsics.X86
 {
-    /// <summary>This class provides access to X86 FMA hardware instructions via intrinsics.</summary>
+    /// <summary>Provides access to X86 FMA hardware instructions via intrinsics.</summary>
     [CLSCompliant(false)]
     public abstract class Fma : Avx
     {
@@ -15,7 +15,7 @@ namespace System.Runtime.Intrinsics.X86
 
         public static new bool IsSupported { [Intrinsic] get { return false; } }
 
-        /// <summary>This class provides access to the x86 FMA hardware instructions, that are only available to 64-bit processes, via intrinsics.</summary>
+        /// <summary>Provides access to the x86 FMA hardware instructions, that are only available to 64-bit processes, via intrinsics.</summary>
         public new abstract class X64 : Avx.X64
         {
             internal X64() { }

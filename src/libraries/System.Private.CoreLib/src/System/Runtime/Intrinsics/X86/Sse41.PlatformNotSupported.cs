@@ -8,21 +8,25 @@ using System.Runtime.Intrinsics;
 
 namespace System.Runtime.Intrinsics.X86
 {
-    /// <summary>This class provides access to X86 SSE4.1 hardware instructions via intrinsics.</summary>
+    /// <summary>Provides access to X86 SSE4.1 hardware instructions via intrinsics.</summary>
     [CLSCompliant(false)]
     public abstract class Sse41 : Ssse3
     {
         internal Sse41() { }
 
-        /// <summary>Gets <c>true</c> if the APIs in this class are supported; otherwise, <c>false</c> which indicates they will throw <see cref="PlatformNotSupportedException" />.</summary>
+        /// <summary>Gets a value that indicates whether the APIs in this class are supported.</summary>
+        /// <value><see langword="true" /> if the APIs are supported; otherwise, <see langword="false" />.</value>
+        /// <remarks>A value of <see langword="false" /> indicates that the APIs will throw <see cref="PlatformNotSupportedException" />.</remarks>
         public static new bool IsSupported { [Intrinsic] get { return false; } }
 
-        /// <summary>This class provides access to the x86 SSE4.1 hardware instructions, that are only available to 64-bit processes, via intrinsics.</summary>
+        /// <summary>Provides access to the x86 SSE4.1 hardware instructions, that are only available to 64-bit processes, via intrinsics.</summary>
         public new abstract class X64 : Ssse3.X64
         {
             internal X64() { }
 
-            /// <summary>Gets <c>true</c> if the APIs in this class are supported; otherwise, <c>false</c> which indicates they will throw <see cref="PlatformNotSupportedException" />.</summary>
+            /// <summary>Gets a value that indicates whether the APIs in this class are supported.</summary>
+            /// <value><see langword="true" /> if the APIs are supported; otherwise, <see langword="false" />.</value>
+            /// <remarks>A value of <see langword="false" /> indicates that the APIs will throw <see cref="PlatformNotSupportedException" />.</remarks>
             public static new bool IsSupported { [Intrinsic] get { return false; } }
 
             /// <summary>

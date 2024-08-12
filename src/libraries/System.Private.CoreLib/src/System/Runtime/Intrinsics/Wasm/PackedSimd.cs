@@ -8,13 +8,15 @@ using System.Runtime.Intrinsics;
 namespace System.Runtime.Intrinsics.Wasm
 {
     /// <summary>
-    /// This class provides access to the WebAssembly packed SIMD instructions via intrinsics
+    /// Provides access to the WebAssembly packed SIMD instructions via intrinsics
     /// </summary>
     [Intrinsic]
     [CLSCompliant(false)]
     public abstract class PackedSimd
     {
-        /// <summary>Gets <c>true</c> if the APIs in this class are supported; otherwise, <c>false</c> which indicates they will throw <see cref="PlatformNotSupportedException" />.</summary>
+        /// <summary>Gets a value that indicates whether the APIs in this class are supported.</summary>
+        /// <value><see langword="true" /> if the APIs are supported; otherwise, <see langword="false" />.</value>
+        /// <remarks>A value of <see langword="false" /> indicates that the APIs will throw <see cref="PlatformNotSupportedException" />.</remarks>
         public static bool IsSupported { [Intrinsic] get { return IsSupported; } }
 
         // Constructing SIMD Values
