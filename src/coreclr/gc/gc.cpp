@@ -33520,7 +33520,7 @@ void gc_heap::plan_phase (int condemned_gen_number)
     plan_generation_starts (consing_gen);
 #endif //!USE_REGIONS
 
-    //descr_generations ("AP");
+    descr_generations ("AP");
 
     print_free_and_plug ("AP");
 
