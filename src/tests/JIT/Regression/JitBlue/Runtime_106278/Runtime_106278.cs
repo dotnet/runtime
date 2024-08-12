@@ -14,7 +14,7 @@
 using System;
 using Xunit;
 
-public class Runtime_106124
+public class Runtime_106278
 {
     [Fact]
     public static void TestEntryPoint()
@@ -28,5 +28,4 @@ public class Runtime_106124
         {
         }
     }
-
 }
