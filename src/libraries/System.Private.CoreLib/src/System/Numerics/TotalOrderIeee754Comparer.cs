@@ -226,8 +226,13 @@ namespace System.Numerics
 
         public bool Equals(TotalOrderIeee754Comparer<T> other) => true;
 
+        /// <summary>Returns a value that indicates whether this instance and a specified object are equal.</summary>
+        /// <param name="obj">The object to compare with the current instance.</param>
+        /// <returns><c>true</c> if the current instance and <paramref name="obj" /> are equal; otherwise, <c>false</c>. If <paramref name="obj" /> is <c>null</c>, the method returns <c>false</c>.</returns>
         public override bool Equals([NotNullWhen(true)] object? obj) => obj is TotalOrderIeee754Comparer<T>;
 
+        /// <summary>Returns the hash code for this instance.</summary>
+        /// <returns>The hash code.</returns>
         public override int GetHashCode() => EqualityComparer<T>.Default.GetHashCode();
     }
 }
