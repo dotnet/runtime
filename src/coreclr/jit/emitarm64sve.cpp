@@ -18587,14 +18587,14 @@ void emitter::emitInsPairSanityCheck(instrDesc* firstId, instrDesc* secondId)
                 case INS_sve_fclamp:
                     break;
                 default:
-                    assert(false);
+                    assert(!"Got unexpected instruction format within group after MOVPRFX");
             }
             assert(secondId->idReg1() != secondId->idReg2());
             assert(secondId->idReg1() != secondId->idReg3());
             break;
 
         default:
-            assert(false);
+            assert(!"Got unexpected instruction format after MOVPRFX");
             break;
     }
 
