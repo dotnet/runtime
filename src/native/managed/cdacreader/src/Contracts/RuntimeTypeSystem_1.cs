@@ -225,7 +225,7 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
         public byte[] MethodName { get; }
         public DynamicMethodDescExtendedFlags ExtendedFlags => (DynamicMethodDescExtendedFlags)_storedSigDesc.ExtendedFlags;
 
-        public bool IsLCGMethod => ExtendedFlags.HasFlag(DynamicMethodDescExtendedFlags.IsLCGMethod);
+        public bool IsDynamicMethod => ExtendedFlags.HasFlag(DynamicMethodDescExtendedFlags.IsLCGMethod);
         public bool IsILStub => ExtendedFlags.HasFlag(DynamicMethodDescExtendedFlags.IsILStub);
     }
 
@@ -712,7 +712,7 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
         return true;
     }
 
-    public bool IsDynamicMethod(MethodDescHandle methodDescHandle, out ReadOnlySpan<byte> methodName)
+    public bool IsNoMetadataMethod(MethodDescHandle methodDescHandle, out ReadOnlySpan<byte> methodName)
     {
         MethodDesc methodDesc = _methodDescs[methodDescHandle.Address];
 
@@ -746,7 +746,7 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
         return true;
     }
 
-    public bool IsLCGMethod(MethodDescHandle methodDescHandle)
+    public bool IsDynamicMethod(MethodDescHandle methodDescHandle)
     {
         MethodDesc methodDesc = _methodDescs[methodDescHandle.Address];
 
@@ -755,7 +755,7 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
             return false;
         }
 
-        return AsDynamicMethodDesc(methodDesc).IsLCGMethod;
+        return AsDynamicMethodDesc(methodDesc).IsDynamicMethod;
     }
 
     public bool IsILStub(MethodDescHandle methodDescHandle)

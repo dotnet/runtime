@@ -68,10 +68,10 @@ internal struct TypeNameBuilder
         TypeHandle th = default;
         Contracts.ModuleHandle module = default;
 
-        bool isDynamicMethod = runtimeTypeSystem.IsDynamicMethod(method, out methodNameSpan);
-        if (isDynamicMethod)
+        bool isNoMetadataMethod = runtimeTypeSystem.IsNoMetadataMethod(method, out methodNameSpan);
+        if (isNoMetadataMethod)
         {
-            if (runtimeTypeSystem.IsLCGMethod(method))
+            if (runtimeTypeSystem.IsDynamicMethod(method))
             {
                 stringBuilder.Append("DynamicClass");
             }
@@ -88,7 +88,7 @@ internal struct TypeNameBuilder
 
         stringBuilder.Append('.');
 
-        if (isDynamicMethod)
+        if (isNoMetadataMethod)
         {
             stringBuilder.Append(Encoding.UTF8.GetString(methodNameSpan));
         }

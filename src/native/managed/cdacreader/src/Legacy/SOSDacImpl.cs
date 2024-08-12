@@ -136,7 +136,7 @@ internal sealed partial class SOSDacImpl : ISOSDacInterface, ISOSDacInterface2, 
             catch
             {
                 hr = HResults.E_FAIL;
-                if (rtsContract.IsDynamicMethod(methodDescHandle, out _))
+                if (rtsContract.IsNoMetadataMethod(methodDescHandle, out _))
                 {
                     // In heap dumps, trying to format the signature can fail
                     // in certain cases.
