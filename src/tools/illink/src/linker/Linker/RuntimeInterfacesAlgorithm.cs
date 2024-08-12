@@ -42,9 +42,7 @@ namespace Mono.Linker.Linker
 				var recursiveIFaces = GetRuntimeInterfaceImplementations (resolvedInterfaceType);
 				foreach (var runtimeImpl in recursiveIFaces) {
 					// Inflate the interface type with the explicit interfaceImpl reference
-					var inflatedInterfaceType = runtimeImpl.InflatedInterfaceType.TryInflateFrom (explicitIface.InterfaceType, _context);
-					Debug.Assert (inflatedInterfaceType is not null);
-
+					var inflatedInterfaceType = runtimeImpl.InflatedInterfaceType.InflateFrom (explicitIface.InterfaceType);
 					foreach (var existingImpl in runtimeImpl.InterfaceImplementationChains) {
 						interfaceTypeToImplChainMap.AddToList (inflatedInterfaceType, new InterfaceImplementationChain (originalType, existingImpl.InterfaceImplementations.Insert (0, explicitIface)));
 					}
@@ -55,13 +53,10 @@ namespace Mono.Linker.Linker
 				var baseTypeIfaces = GetRuntimeInterfaceImplementations (baseTypeDef);
 				foreach (var runtimeImpl in baseTypeIfaces) {
 					// Inflate the interface type with the base type reference
-					var inflatedInterfaceType = runtimeImpl.InflatedInterfaceType.TryInflateFrom (originalType.BaseType, _context);
-					Debug.Assert (inflatedInterfaceType is not null);
-
+					var inflatedInterfaceType = runtimeImpl.InflatedInterfaceType.InflateFrom (originalType.BaseType);
 					foreach (var impl in runtimeImpl.InterfaceImplementationChains) {
 						// Inflate the provider for the first .impl - this could be a different recursive base type for each chain
-						var inflatedImplProvider = impl.TypeWithInterfaceImplementation.TryInflateFrom (originalType.BaseType, _context);
-						Debug.Assert (inflatedImplProvider is not null);
+						var inflatedImplProvider = impl.TypeWithInterfaceImplementation.InflateFrom (originalType.BaseType);
 						interfaceTypeToImplChainMap.AddToList (inflatedInterfaceType, new InterfaceImplementationChain (inflatedImplProvider, impl.InterfaceImplementations));
 					}
 				}
