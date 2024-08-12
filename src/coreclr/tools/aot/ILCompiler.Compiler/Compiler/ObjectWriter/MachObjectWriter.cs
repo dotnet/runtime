@@ -488,7 +488,7 @@ namespace ILCompiler.ObjectWriter
                     Name = name,
                     Section = section,
                     Value = section.VirtualAddress + (ulong)definition.Value,
-                    Descriptor = section.KeepDataLayout ? N_ALT_ENTRY : N_NO_DEAD_STRIP,
+                    Descriptor = (ushort)(section.KeepDataLayout || definition.AltEntry ? N_ALT_ENTRY | N_NO_DEAD_STRIP : N_NO_DEAD_STRIP),
                     Type = (byte)(N_SECT | N_EXT | (definition.Global ? 0 : N_PEXT)),
                 });
             }

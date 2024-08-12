@@ -18,7 +18,7 @@ namespace ILCompiler.ObjectWriter
 {
     public abstract class ObjectWriter
     {
-        private protected sealed record SymbolDefinition(int SectionIndex, long Value, int Size = 0, bool Global = false);
+        private protected sealed record SymbolDefinition(int SectionIndex, long Value, int Size = 0, bool Global = false, bool AltEntry = false);
         private protected sealed record SymbolicRelocation(long Offset, RelocType Type, string SymbolName, long Addend = 0);
         private protected sealed record BlockToRelocate(int SectionIndex, long Offset, byte[] Data, Relocation[] Relocations);
 
@@ -246,11 +246,12 @@ namespace ILCompiler.ObjectWriter
             string symbolName,
             long offset = 0,
             int size = 0,
-            bool global = false)
+            bool global = false,
+            bool altEntry = false)
         {
             _definedSymbols.Add(
                 symbolName,
-                new SymbolDefinition(sectionIndex, offset, size, global));
+                new SymbolDefinition(sectionIndex, offset, size, global, altEntry));
         }
 
         /// <summary>
@@ -414,24 +415,32 @@ namespace ILCompiler.ObjectWriter
 
                 sectionWriter.EmitAlignment(nodeContents.Alignment);
 
+                bool hasInitialEntrypoint = false;
                 bool isMethod = node is IMethodBodyNode or AssemblyStubNode;
                 long thumbBit = _nodeFactory.Target.Architecture == TargetArchitecture.ARM && isMethod ? 1 : 0;
                 foreach (ISymbolDefinitionNode n in nodeContents.DefinedSymbols)
                 {
+                    hasInitialEntrypoint |= n.Offset == 0;
                     sectionWriter.EmitSymbolDefinition(
                         n == node ? currentSymbolName : GetMangledName(n),
                         n.Offset + thumbBit,
-                        n.Offset == 0 && isMethod ? nodeContents.Data.Length : 0);
+                        n.Offset == 0 && isMethod ? nodeContents.Data.Length : 0,
+                        altEntry: n.Offset != 0);
                     if (_nodeFactory.GetSymbolAlternateName(n) is string alternateName)
                     {
                         sectionWriter.EmitSymbolDefinition(
                             ExternCName(alternateName),
                             n.Offset + thumbBit,
                             n.Offset == 0 && isMethod ? nodeContents.Data.Length : 0,
-                            global: true);
+                            global: true,
+                            altEntry: n.Offset != 0);
                     }
-                    Debug.Assert(!isMethod || n.Offset == 0);
                 }
+
+                // Match the logic for KeepDataLayout in MachSection.CreateSection. If we are in a data section
+                // we don't need to have a symbol for beginning of the node data. For other nodes, particularly
+                // executable code we enforce it though.
+                Debug.Assert(hasInitialEntrypoint || section.Type is SectionType.ReadOnly or SectionType.Writeable or SectionType.Uninitialized);
 
                 if (nodeContents.Relocs is not null)
                 {

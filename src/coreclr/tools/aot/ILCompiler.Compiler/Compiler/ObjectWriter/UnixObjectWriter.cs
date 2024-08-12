@@ -221,7 +221,7 @@ namespace ILCompiler.ObjectWriter
                     string framSymbolName = $"_fram{i}{currentSymbolName}";
                     if (useFrameNames && start != 0)
                     {
-                        sectionWriter.EmitSymbolDefinition(framSymbolName, start);
+                        sectionWriter.EmitSymbolDefinition(framSymbolName, start, altEntry: true);
                     }
 
                     string startSymbolName = useFrameNames && start != 0 ? framSymbolName : currentSymbolName;
