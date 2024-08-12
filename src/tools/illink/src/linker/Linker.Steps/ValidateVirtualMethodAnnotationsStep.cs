@@ -51,8 +51,8 @@ namespace Mono.Linker.Steps
 					nameof (RequiresUnreferencedCodeAttribute),
 					method.GetDisplayName (),
 					baseMethod.GetDisplayName ());
-				IMemberDefinition origin = (ov.IsOverrideOfInterfaceMember && ov.InterfaceImplementor.Implementor != method.DeclaringType)
-					? ov.InterfaceImplementor.Implementor
+				IMemberDefinition origin = (ov.IsOverrideOfInterfaceMember && ov.RuntimeInterfaceImplementation.Implementor != method.DeclaringType)
+					? ov.RuntimeInterfaceImplementation.Implementor
 					: method;
 				Context.LogWarning (origin, DiagnosticId.RequiresUnreferencedCodeAttributeMismatch, message);
 			}

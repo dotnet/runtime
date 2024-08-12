@@ -1483,17 +1483,17 @@ namespace Mono.Linker.Steps
 				string attributeFullName = customAttribute.Constructor.DeclaringType.FullName;
 				switch (attributeFullName) {
 				case "System.Diagnostics.DebuggerDisplayAttribute": {
-						TypeDefinition? targetType = GetDebuggerAttributeTargetType (assemblyLevelAttribute.Attribute, (AssemblyDefinition) assemblyLevelAttribute.Provider);
-						if (targetType != null)
-							MarkTypeWithDebuggerDisplayAttribute (targetType, customAttribute, assemblyOrigin);
-						break;
-					}
+					TypeDefinition? targetType = GetDebuggerAttributeTargetType (assemblyLevelAttribute.Attribute, (AssemblyDefinition) assemblyLevelAttribute.Provider);
+					if (targetType != null)
+						MarkTypeWithDebuggerDisplayAttribute (targetType, customAttribute, assemblyOrigin);
+					break;
+				}
 				case "System.Diagnostics.DebuggerTypeProxyAttribute": {
-						TypeDefinition? targetType = GetDebuggerAttributeTargetType (assemblyLevelAttribute.Attribute, (AssemblyDefinition) assemblyLevelAttribute.Provider);
-						if (targetType != null)
-							MarkTypeWithDebuggerTypeProxyAttribute (targetType, customAttribute, assemblyOrigin);
-						break;
-					}
+					TypeDefinition? targetType = GetDebuggerAttributeTargetType (assemblyLevelAttribute.Attribute, (AssemblyDefinition) assemblyLevelAttribute.Provider);
+					if (targetType != null)
+						MarkTypeWithDebuggerTypeProxyAttribute (targetType, customAttribute, assemblyOrigin);
+					break;
+				}
 				}
 			}
 
@@ -2336,12 +2336,12 @@ namespace Mono.Linker.Steps
 
 		internal bool ShouldMarkRuntimeInterfaceImplementation (RuntimeInterfaceImplementation runtimeInterfaceImplementation)
 		{
-			var implementinType = runtimeInterfaceImplementation.Implementor;
+			var implementingType = runtimeInterfaceImplementation.Implementor;
 			var ifaceType = runtimeInterfaceImplementation.InterfaceTypeDefinition;
 			if (Annotations.IsMarked (runtimeInterfaceImplementation))
 				return false;
 
-			if (!Context.IsOptimizationEnabled (CodeOptimizations.UnusedInterfaces, implementinType))
+			if (!Context.IsOptimizationEnabled (CodeOptimizations.UnusedInterfaces, implementingType))
 				return true;
 
 			if (ifaceType is null)
@@ -2355,7 +2355,7 @@ namespace Mono.Linker.Steps
 			if (Context.KeepComInterfaces && (ifaceType.IsImport || ifaceType.IsWindowsRuntime))
 				return true;
 
-			return IsFullyPreserved (implementinType);
+			return IsFullyPreserved (implementingType);
 		}
 
 		void MarkGenericParameterProvider (IGenericParameterProvider provider, MessageOrigin origin)
@@ -3595,47 +3595,47 @@ namespace Mono.Linker.Steps
 				break;
 
 			case OperandType.InlineMethod: {
-					(DependencyKind dependencyKind, bool markForReflectionAccess) = instruction.OpCode.Code switch {
-						Code.Jmp => (DependencyKind.DirectCall, false),
-						Code.Call => (DependencyKind.DirectCall, false),
-						Code.Callvirt => (DependencyKind.VirtualCall, false),
-						Code.Newobj => (DependencyKind.Newobj, false),
-						Code.Ldvirtftn => (DependencyKind.Ldvirtftn, true),
-						Code.Ldftn => (DependencyKind.Ldftn, true),
-						_ => throw new InvalidOperationException ($"unexpected opcode {instruction.OpCode}")
-					};
+				(DependencyKind dependencyKind, bool markForReflectionAccess) = instruction.OpCode.Code switch {
+					Code.Jmp => (DependencyKind.DirectCall, false),
+					Code.Call => (DependencyKind.DirectCall, false),
+					Code.Callvirt => (DependencyKind.VirtualCall, false),
+					Code.Newobj => (DependencyKind.Newobj, false),
+					Code.Ldvirtftn => (DependencyKind.Ldvirtftn, true),
+					Code.Ldftn => (DependencyKind.Ldftn, true),
+					_ => throw new InvalidOperationException ($"unexpected opcode {instruction.OpCode}")
+				};
 
-					MethodReference methodReference = (MethodReference) instruction.Operand;
+				MethodReference methodReference = (MethodReference) instruction.Operand;
 
-					requiresReflectionMethodBodyScanner |=
-						ReflectionMethodBodyScanner.RequiresReflectionMethodBodyScannerForCallSite (Context, methodReference);
+				requiresReflectionMethodBodyScanner |=
+					ReflectionMethodBodyScanner.RequiresReflectionMethodBodyScannerForCallSite (Context, methodReference);
 
-					origin = new MessageOrigin (origin, instruction.Offset);
-					if (markForReflectionAccess) {
-						MarkMethodVisibleToReflection (methodReference, new DependencyInfo (dependencyKind, method), origin);
-					} else {
-						MarkMethod (methodReference, new DependencyInfo (dependencyKind, method), origin);
-					}
-					break;
+				origin = new MessageOrigin (origin, instruction.Offset);
+				if (markForReflectionAccess) {
+					MarkMethodVisibleToReflection (methodReference, new DependencyInfo (dependencyKind, method), origin);
+				} else {
+					MarkMethod (methodReference, new DependencyInfo (dependencyKind, method), origin);
 				}
+				break;
+			}
 
 			case OperandType.InlineTok: {
-					object token = instruction.Operand;
-					Debug.Assert (instruction.OpCode.Code == Code.Ldtoken);
-					var reason = new DependencyInfo (DependencyKind.Ldtoken, method);
-					origin = new MessageOrigin (origin, instruction.Offset);
+				object token = instruction.Operand;
+				Debug.Assert (instruction.OpCode.Code == Code.Ldtoken);
+				var reason = new DependencyInfo (DependencyKind.Ldtoken, method);
+				origin = new MessageOrigin (origin, instruction.Offset);
 
-					if (token is TypeReference typeReference) {
-						// Error will be reported as part of MarkType
-						if (Context.TryResolve (typeReference) is TypeDefinition type)
-							MarkTypeVisibleToReflection (typeReference, type, reason, origin);
-					} else if (token is MethodReference methodReference) {
-						MarkMethodVisibleToReflection (methodReference, reason, origin);
-					} else {
-						MarkFieldVisibleToReflection ((FieldReference) token, reason, origin);
-					}
-					break;
+				if (token is TypeReference typeReference) {
+					// Error will be reported as part of MarkType
+					if (Context.TryResolve (typeReference) is TypeDefinition type)
+						MarkTypeVisibleToReflection (typeReference, type, reason, origin);
+				} else if (token is MethodReference methodReference) {
+					MarkMethodVisibleToReflection (methodReference, reason, origin);
+				} else {
+					MarkFieldVisibleToReflection ((FieldReference) token, reason, origin);
 				}
+				break;
+			}
 
 			case OperandType.InlineType:
 				var operand = (TypeReference) instruction.Operand;

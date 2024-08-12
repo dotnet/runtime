@@ -544,8 +544,8 @@ namespace ILLink.Shared.TrimAnalysis
 
 		void LogValidationWarning (IMetadataTokenProvider provider, IMetadataTokenProvider baseProvider, OverrideInformation ov)
 		{
-			IMemberDefinition origin = (ov.IsOverrideOfInterfaceMember && ov.InterfaceImplementor.Implementor != ov.Override.DeclaringType)
-				? ov.InterfaceImplementor.Implementor
+			IMemberDefinition origin = (ov.IsOverrideOfInterfaceMember && ov.RuntimeInterfaceImplementation.Implementor != ov.Override.DeclaringType)
+				? ov.RuntimeInterfaceImplementation.Implementor
 				: ov.Override;
 			Debug.Assert (provider.GetType () == baseProvider.GetType ());
 			Debug.Assert (!(provider is GenericParameter genericParameter) || genericParameter.DeclaringMethod != null);

@@ -60,42 +60,5 @@ namespace Mono.Linker
 			}
 			return false;
 		}
-
-		/// <summary>
-		/// Returns a list of InterfaceImplementationChains for a derived type of <see cref="Implementor"/>.
-		/// </summary>
-		public IEnumerable<(TypeReference InterfaceType, InterfaceImplementationChain Chain)> CreateImplementationChainsForDerivedType (TypeReference baseTypeRef, ITryResolveMetadata context)
-		{
-			// This is only valid for classes
-			Debug.Assert (Implementor.IsClass);
-			Debug.Assert (Implementor == context.TryResolve (baseTypeRef));
-
-			var inflatedInterfaceType = InflatedInterfaceType.TryInflateFrom (baseTypeRef, context);
-			Debug.Assert (inflatedInterfaceType is not null);
-
-			foreach (var impl in InterfaceImplementationChains) {
-				var inflatedImplProvider = impl.TypeWithInterfaceImplementation.TryInflateFrom (baseTypeRef, context);
-				Debug.Assert (inflatedImplProvider is not null);
-
-				yield return (inflatedInterfaceType, new InterfaceImplementationChain (inflatedImplProvider, impl.InterfaceImplementations));
-			}
-		}
-
-		/// <summary>
-		/// Returns a list of InterfaceImplementationChains for a type that has an explicit implementation of <see cref="Implementor"/>.
-		/// </summary>
-		public IEnumerable<(TypeReference InterfaceType, InterfaceImplementationChain Chain)> CreateImplementationChainForImplementingType (TypeDefinition typeThatImplementsImplementor, InterfaceImplementation impl, ITryResolveMetadata context)
-		{
-			Debug.Assert (Implementor.IsInterface);
-			Debug.Assert (typeThatImplementsImplementor.Interfaces.Contains (impl));
-			Debug.Assert (context.TryResolve (impl.InterfaceType) == Implementor);
-
-			var inflatedInterfaceType = InflatedInterfaceType.TryInflateFrom (impl.InterfaceType, context);
-			Debug.Assert (inflatedInterfaceType is not null);
-
-			foreach (var existingImpl in InterfaceImplementationChains) {
-				yield return (inflatedInterfaceType, new InterfaceImplementationChain (typeThatImplementsImplementor, existingImpl.InterfaceImplementations.Insert (0, impl)));
-			}
-		}
 	}
 }
