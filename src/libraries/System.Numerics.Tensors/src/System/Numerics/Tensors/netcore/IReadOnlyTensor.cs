@@ -5,6 +5,8 @@ using System.Buffers;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 
+#pragma warning disable 1591 // TODO: Document this API. https://github.com/dotnet/runtime/issues/105981
+
 namespace System.Numerics.Tensors
 {
     [Experimental(Experimentals.TensorTDiagId, UrlFormat = Experimentals.SharedUrlFormat)]
@@ -44,3 +46,5 @@ namespace System.Numerics.Tensors
         bool TryFlattenTo(scoped Span<T> destination);
     }
 }
+
+#pragma warning restore 1591

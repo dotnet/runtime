@@ -152,7 +152,6 @@ DEFINE_METHOD(CLASS,                GET_METHODS,            GetMethods,         
 DEFINE_METHOD(CLASS,                INVOKE_MEMBER,          InvokeMember,               IM_Str_BindingFlags_Binder_Obj_ArrObj_ArrParameterModifier_CultureInfo_ArrStr_RetObj)
 DEFINE_METHOD(CLASS,                GET_METHOD_BASE,        GetMethodBase,              SM_RuntimeType_RuntimeMethodHandleInternal_RetMethodBase)
 DEFINE_METHOD(CLASS,                GET_FIELD_INFO,         GetFieldInfo,               SM_RuntimeType_IRuntimeFieldInfo_RetFieldInfo)
-DEFINE_METHOD(CLASS,                GET_PROPERTY_INFO,      GetPropertyInfo,            SM_RuntimeType_Int_RetPropertyInfo)
 
 #ifdef FEATURE_COMINTEROP
 DEFINE_METHOD(CLASS,                FORWARD_CALL_TO_INVOKE, ForwardCallToInvokeMember,  IM_Str_BindingFlags_Obj_ArrObj_ArrBool_ArrInt_ArrType_Type_RetObj)
@@ -775,8 +774,8 @@ DEFINE_FIELD_U(rgiColumnNumber,            StackFrameHelper,   rgiColumnNumber)
 DEFINE_FIELD_U(rgiLastFrameFromForeignExceptionStackTrace,            StackFrameHelper,   rgiLastFrameFromForeignExceptionStackTrace)
 DEFINE_FIELD_U(iFrameCount,                StackFrameHelper,   iFrameCount)
 
-DEFINE_CLASS(RUNTIME_EVENT_SOURCE,  Tracing,                RuntimeEventSource)
-DEFINE_METHOD(RUNTIME_EVENT_SOURCE, INITIALIZE, Initialize, SM_RetVoid)
+DEFINE_CLASS(EVENT_SOURCE,           Tracing,            EventSource)
+DEFINE_METHOD(EVENT_SOURCE,          INITIALIZE_DEFAULT_EVENT_SOURCES, InitializeDefaultEventSources, SM_RetVoid)
 
 DEFINE_CLASS(STARTUP_HOOK_PROVIDER,  System,                StartupHookProvider)
 DEFINE_METHOD(STARTUP_HOOK_PROVIDER, MANAGED_STARTUP, ManagedStartup, SM_PtrChar_RetVoid)
