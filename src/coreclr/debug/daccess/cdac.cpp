@@ -13,11 +13,17 @@ namespace
 {
     bool TryLoadCDACLibrary(HMODULE *phCDAC)
     {
-        // Load cdacreader from next to DAC binary
+        // Load cdacreader from next to current module (DAC binary)
         PathString path;
-        if (FAILED(GetClrModuleDirectory(path)))
+        if (WszGetModuleFileName((HMODULE)GetCurrentModuleBase(), path) == 0)
             return false;
 
+        SString::Iterator iter = path.End();
+        if (!path.FindBack(iter, DIRECTORY_SEPARATOR_CHAR_W))
+            return false;
+
+        iter++;
+        path.Truncate(iter);
         path.Append(CDAC_LIB_NAME);
         *phCDAC = CLRLoadLibrary(path.GetUnicode());
         if (*phCDAC == NULL)
