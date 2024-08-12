@@ -207,7 +207,7 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
         const char* namespaceName;
         const char* className;
         const char* methodName =
-            info.compCompHnd->getMethodNameFromMetadata(methHnd, &className, &namespaceName, nullptr);
+            info.compCompHnd->getMethodNameFromMetadata(methHnd, &className, &namespaceName, nullptr, 0);
         if ((namespaceName != nullptr) && (className != nullptr) && (methodName != nullptr) &&
             (strcmp(namespaceName, "System.Runtime.CompilerServices") == 0) &&
             (strcmp(className, "JitTestLabel") == 0) && (strcmp(methodName, "Mark") == 0))
@@ -1553,7 +1553,7 @@ GenTree* Compiler::impThrowIfNull(GenTreeCall* call)
     assert(call->gtArgs.CountUserArgs() == 2);
     assert(call->TypeIs(TYP_VOID));
 
-    if (opts.compDbgCode || opts.jitFlags->IsSet(JitFlags::JIT_FLAG_MIN_OPT))
+    if (!opts.Tier0OptimizationEnabled())
     {
         // Don't fold it for debug code or forced MinOpts
         return call;
@@ -3302,11 +3302,7 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
 
     // Allow some lighweight intrinsics in Tier0 which can improve throughput
     // we're fine if intrinsic decides to not expand itself in this case unlike mustExpand.
-    // NOTE: MinOpts() is always true for Tier0 so we have to check explicit flags instead.
-    // To be fixed in https://github.com/dotnet/runtime/pull/77465
-    const bool tier0opts = !opts.compDbgCode && !opts.jitFlags->IsSet(JitFlags::JIT_FLAG_MIN_OPT);
-
-    if (!mustExpand && tier0opts)
+    if (!mustExpand && opts.Tier0OptimizationEnabled())
     {
         switch (ni)
         {
@@ -9872,11 +9868,12 @@ GenTree* Compiler::impMinMaxIntrinsic(CORINFO_METHOD_HANDLE method,
 //
 NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
 {
-    const char* className          = nullptr;
-    const char* namespaceName      = nullptr;
-    const char* enclosingClassName = nullptr;
+    const char* className              = nullptr;
+    const char* namespaceName          = nullptr;
+    const char* enclosingClassNames[2] = {nullptr};
     const char* methodName =
-        info.compCompHnd->getMethodNameFromMetadata(method, &className, &namespaceName, &enclosingClassName);
+        info.compCompHnd->getMethodNameFromMetadata(method, &className, &namespaceName, enclosingClassNames,
+                                                    ArrLen(enclosingClassNames));
 
     JITDUMP("Named Intrinsic ");
 
@@ -9884,9 +9881,13 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
     {
         JITDUMP("%s.", namespaceName);
     }
-    if (enclosingClassName != nullptr)
+    if (enclosingClassNames[1] != nullptr)
     {
-        JITDUMP("%s.", enclosingClassName);
+        JITDUMP("%s.", enclosingClassNames[1]);
+    }
+    if (enclosingClassNames[0] != nullptr)
+    {
+        JITDUMP("%s.", enclosingClassNames[0]);
     }
     if (className != nullptr)
     {
@@ -10322,10 +10323,24 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
                     else
                     {
 #ifdef FEATURE_HW_INTRINSICS
+                        if (strncmp(methodName,
+                                    "System.Runtime.Intrinsics.ISimdVector<System.Runtime.Intrinsics.Vector", 70) == 0)
+                        {
+                            // We want explicitly implemented ISimdVector<TSelf, T> APIs to still be expanded where
+                            // possible but, they all prefix the qualified name of the interface first, so we'll check
+                            // for that and skip the prefix before trying to resolve the method.
+
+                            if (strncmp(methodName + 70, "<T>,T>.", 7) == 0)
+                            {
+                                methodName += 77;
+                            }
+                        }
+
                         CORINFO_SIG_INFO sig;
                         info.compCompHnd->getMethodSig(method, &sig);
 
-                        result = SimdAsHWIntrinsicInfo::lookupId(this, &sig, className, methodName, enclosingClassName);
+                        result =
+                            SimdAsHWIntrinsicInfo::lookupId(this, &sig, className, methodName, enclosingClassNames[0]);
 #endif // FEATURE_HW_INTRINSICS
 
                         if (result == NI_Illegal)
@@ -10544,12 +10559,32 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
 #error Unsupported platform
 #endif
 
+                        if (strncmp(methodName,
+                                    "System.Runtime.Intrinsics.ISimdVector<System.Runtime.Intrinsics.Vector", 70) == 0)
+                        {
+                            // We want explicitly implemented ISimdVector<TSelf, T> APIs to still be expanded where
+                            // possible but, they all prefix the qualified name of the interface first, so we'll check
+                            // for that and skip the prefix before trying to resolve the method.
+
+                            if (strncmp(methodName + 70, "64<T>,T>.", 9) == 0)
+                            {
+                                methodName += 79;
+                            }
+                            else if ((strncmp(methodName + 70, "128<T>,T>.", 10) == 0) ||
+                                     (strncmp(methodName + 70, "256<T>,T>.", 10) == 0) ||
+                                     (strncmp(methodName + 70, "512<T>,T>.", 10) == 0))
+                            {
+                                methodName += 80;
+                            }
+                        }
+
                         if ((namespaceName[0] == '\0') || (strcmp(namespaceName, platformNamespaceName) == 0))
                         {
                             CORINFO_SIG_INFO sig;
                             info.compCompHnd->getMethodSig(method, &sig);
 
-                            result = HWIntrinsicInfo::lookupId(this, &sig, className, methodName, enclosingClassName);
+                            result = HWIntrinsicInfo::lookupId(this, &sig, className, methodName,
+                                                               enclosingClassNames[0], enclosingClassNames[1]);
                         }
 #endif // FEATURE_HW_INTRINSICS
 
@@ -10623,7 +10658,7 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
                     {
                         if (strcmp(methodName, "ReadUtf8") == 0)
                         {
-                            assert(strcmp(enclosingClassName, "UTF8Encoding") == 0);
+                            assert(strcmp(enclosingClassNames[0], "UTF8Encoding") == 0);
                             result = NI_System_Text_UTF8Encoding_UTF8EncodingSealed_ReadUtf8;
                         }
                     }

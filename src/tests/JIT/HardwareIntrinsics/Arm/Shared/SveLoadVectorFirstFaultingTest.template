@@ -1,0 +1,383 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
+/******************************************************************************
+ * This file is auto-generated from a template file by the GenerateTests.csx  *
+ * script in tests\src\JIT\HardwareIntrinsics\Arm\Shared. In order to make    *
+ * changes, please update the corresponding template and run according to the *
+ * directions listed in the file.                                             *
+ ******************************************************************************/
+
+using System;
+using System.Buffers;
+using System.Numerics;
+using System.Reflection;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using System.Runtime.Intrinsics;
+using System.Runtime.Intrinsics.Arm;
+using Xunit;
+
+namespace JIT.HardwareIntrinsics.Arm
+{
+    public static partial class Program
+    {
+        [Fact]
+        public static void {TestName}()
+        {
+            var test = new Sve__{TestName}();
+
+            if (test.IsSupported)
+            {
+                // Validates basic functionality works
+                test.RunBasicScenario_Load();
+
+                // Validates basic functionality of first-faulting behavior
+                test.RunBasicScenario_LoadFirstFaulting();
+
+                // Validates calling via reflection works
+                test.RunReflectionScenario_Load();
+
+                // Validates passing an instance member of a class works
+                test.RunClassFldScenario();
+
+                // Validates passing the field of a local struct works
+                test.RunStructLclFldScenario();
+
+                // Validates passing an instance member of a struct works
+                test.RunStructFldScenario();
+
+                // Validates using inside ConditionalSelect with zero falseValue
+                test.ConditionalSelect_ZeroOp();
+            }
+            else
+            {
+                // Validates we throw on unsupported hardware
+                test.RunUnsupportedScenario();
+            }
+
+            if (!test.Succeeded)
+            {
+                throw new Exception("One or more scenarios did not complete as expected.");
+            }
+        }
+    }
+
+    public sealed unsafe class Sve__{TestName}
+    {
+        private struct DataTable
+        {
+            private byte[] inArray1;
+            private byte[] outArray;
+
+            private GCHandle inHandle1;
+            private GCHandle outHandle;
+
+            private ulong alignment;
+
+            public DataTable({Op2BaseType}[] inArray1, {RetBaseType}[] outArray, int alignment)
+            {
+                int sizeOfinArray1 = inArray1.Length * Unsafe.SizeOf<{Op2BaseType}>();
+                int sizeOfinBounded = new Random().Next(Unsafe.SizeOf<{Op2BaseType}>(), Vector<{RetBaseType}>.Count * Unsafe.SizeOf<{Op2BaseType}>() - 1);
+                int sizeOfoutArray = outArray.Length * Unsafe.SizeOf<{RetBaseType}>();
+                if ((alignment != 64 && alignment != 16 && alignment != 8) || (alignment * 2) < sizeOfinArray1 || (alignment * 2) < sizeOfoutArray)
+                {
+                    throw new ArgumentException($"Invalid value of alignment: {alignment}, sizeOfinArray1: {sizeOfinArray1}, sizeOfoutArray: {sizeOfoutArray}");
+                }
+
+                this.inArray1 = new byte[alignment * 2];
+                this.outArray = new byte[alignment * 2];
+
+                this.inHandle1 = GCHandle.Alloc(this.inArray1, GCHandleType.Pinned);
+                this.outHandle = GCHandle.Alloc(this.outArray, GCHandleType.Pinned);
+
+                this.alignment = (ulong)alignment;
+
+                this.inBounded = BoundedMemory.Allocate<byte>(sizeOfinBounded, PoisonPagePlacement.After);
+
+                Unsafe.CopyBlockUnaligned(ref Unsafe.AsRef<byte>(inArray1Ptr), ref Unsafe.As<{Op2BaseType}, byte>(ref inArray1[0]), (uint)sizeOfinArray1);
+                Unsafe.CopyBlockUnaligned(ref inBounded.Span.GetPinnableReference(), ref Unsafe.As<{Op2BaseType}, byte>(ref inArray1[0]), (uint)sizeOfinBounded);
+            }
+
+            public BoundedMemory<byte> inBounded;
+
+            public void* inArray1Ptr => Align((byte*)(inHandle1.AddrOfPinnedObject().ToPointer()), alignment);
+            public void* outArrayPtr => Align((byte*)(outHandle.AddrOfPinnedObject().ToPointer()), alignment);
+
+            public void Dispose()
+            {
+                inHandle1.Free();
+                outHandle.Free();
+            }
+
+            private static unsafe void* Align(byte* buffer, ulong expectedAlignment)
+            {
+                return (void*)(((ulong)buffer + expectedAlignment - 1) & ~(expectedAlignment - 1));
+            }
+        }
+
+        private struct TestStruct
+        {
+            public {Op1VectorType}<{RetBaseType}> _fld1;
+
+            public static TestStruct Create()
+            {
+                var testStruct = new TestStruct();
+
+                for (var i = 0; i < RetElementCount; i++) { _data[i] = {NextValueOp2}; }
+                Unsafe.CopyBlockUnaligned(ref Unsafe.As<{Op1VectorType}<{RetBaseType}>, byte>(ref testStruct._fld1), ref Unsafe.As<{Op2BaseType}, byte>(ref _data[0]), (uint)Unsafe.SizeOf<{Op1VectorType}<{RetBaseType}>>());
+
+                return testStruct;
+            }
+
+            public void RunStructFldScenario(Sve__{TestName} testClass)
+            {
+                {Op1VectorType}<{Op1BaseType}> loadMask = Sve.CreateTrueMask{RetBaseType}(SveMaskPattern.All);
+
+                var result = {Isa}.{Method}(loadMask, ({Op2BaseType}*)testClass._dataTable.inArray1Ptr);
+
+                Unsafe.Write(testClass._dataTable.outArrayPtr, result);
+                testClass.ValidateResult(testClass._dataTable.inArray1Ptr, testClass._dataTable.outArrayPtr);
+            }
+        }
+
+        private static readonly int LargestVectorSize = {LargestVectorSize};
+
+        private static readonly int RetElementCount = Unsafe.SizeOf<{RetVectorType}<{RetBaseType}>>() / sizeof({RetBaseType});
+
+        private static {Op2BaseType}[] _data = new {Op2BaseType}[RetElementCount];
+
+        private static {RetBaseType}[] _maskData = new {RetBaseType}[RetElementCount];
+        private static {RetBaseType}[] _falseData = new {RetBaseType}[RetElementCount];
+
+        private {Op1VectorType}<{RetBaseType}> _fld1;
+
+        private {Op1VectorType}<{Op1BaseType}> _mask;
+        private {Op1VectorType}<{Op1BaseType}> _falseFld;
+
+        private DataTable _dataTable;
+
+        public Sve__{TestName}()
+        {
+            Succeeded = true;
+
+            for (var i = 0; i < RetElementCount; i++) { _data[i] = {NextValueOp2}; }
+            _dataTable = new DataTable(_data, new {RetBaseType}[RetElementCount], LargestVectorSize);
+
+            for (var i = 0; i < RetElementCount; i++) { _maskData[i] = ({RetBaseType})({NextValueOp1}); }
+            Unsafe.CopyBlockUnaligned(ref Unsafe.As<{RetVectorType}<{RetBaseType}>, byte>(ref _mask), ref Unsafe.As<{RetBaseType}, byte>(ref _maskData[0]), (uint)Unsafe.SizeOf<{RetVectorType}<{RetBaseType}>>());
+
+            for (var i = 0; i < RetElementCount; i++) { _falseData[i] = ({RetBaseType})({NextValueOp2}); }
+            Unsafe.CopyBlockUnaligned(ref Unsafe.As<{RetVectorType}<{RetBaseType}>, byte>(ref _falseFld), ref Unsafe.As<{RetBaseType}, byte>(ref _falseData[0]), (uint)Unsafe.SizeOf<{RetVectorType}<{RetBaseType}>>());
+        }
+
+        public bool IsSupported => {Isa}.IsSupported;
+
+        public bool Succeeded { get; set; }
+
+        public void RunBasicScenario_Load()
+        {
+            TestLibrary.TestFramework.BeginScenario(nameof(RunBasicScenario_Load));
+
+            {Op1VectorType}<{Op1BaseType}> loadMask = Sve.CreateTrueMask{RetBaseType}(SveMaskPattern.All);
+
+            var result = {Isa}.{Method}(
+                loadMask,
+                ({Op2BaseType}*)(_dataTable.inArray1Ptr)
+            );
+
+            Unsafe.Write(_dataTable.outArrayPtr, result);
+            ValidateResult(_dataTable.inArray1Ptr, _dataTable.outArrayPtr);
+        }
+
+        public void RunBasicScenario_LoadFirstFaulting()
+        {
+            TestLibrary.TestFramework.BeginScenario(nameof(RunBasicScenario_LoadFirstFaulting));
+
+            {Op1VectorType}<{Op1BaseType}> loadMask = Sve.CreateTrueMask{RetBaseType}(SveMaskPattern.All);
+
+            ref var op2Ref = ref (_dataTable.inBounded.Span.GetPinnableReference());
+
+            Sve.SetFfr(Sve.CreateTrueMaskByte(SveMaskPattern.All));
+            var result = {Isa}.{Method}(
+                loadMask,
+                ({Op2BaseType}*)(Unsafe.AsPointer(ref op2Ref))
+            );
+            var faultResult = Sve.GetFfr{GetFfrType}();
+
+            Unsafe.Write(_dataTable.outArrayPtr, result);
+            ValidateFirstFaultingResult(ref op2Ref, _dataTable.inBounded.Span.Length, _dataTable.outArrayPtr, faultResult);
+        }
+
+        public void RunReflectionScenario_Load()
+        {
+            TestLibrary.TestFramework.BeginScenario(nameof(RunReflectionScenario_Load));
+
+            {Op1VectorType}<{Op1BaseType}> loadMask = Sve.CreateTrueMask{RetBaseType}(SveMaskPattern.All);
+
+            var result = typeof({Isa}).GetMethod(nameof({Isa}.{Method}), new Type[] { typeof(Vector<{Op1BaseType}>), typeof({Op2BaseType}*) })
+                                     .Invoke(null, new object[] {
+                                        loadMask,
+                                        Pointer.Box(_dataTable.inArray1Ptr, typeof({Op2BaseType}*))
+                                     });
+
+            Unsafe.Write(_dataTable.outArrayPtr, ({RetVectorType}<{RetBaseType}>)(result));
+            ValidateResult(_dataTable.inArray1Ptr, _dataTable.outArrayPtr);
+        }
+
+        public void RunClassFldScenario()
+        {
+            TestLibrary.TestFramework.BeginScenario(nameof(RunClassFldScenario));
+
+            {Op1VectorType}<{Op1BaseType}> loadMask = Sve.CreateTrueMask{RetBaseType}(SveMaskPattern.All);
+
+            _fld1 = {Isa}.{Method}(loadMask, ({Op2BaseType}*)_dataTable.inArray1Ptr);
+
+            Unsafe.Write(_dataTable.outArrayPtr, _fld1);
+            ValidateResult(_dataTable.inArray1Ptr, _dataTable.outArrayPtr);
+        }
+
+        public void RunStructLclFldScenario()
+        {
+            TestLibrary.TestFramework.BeginScenario(nameof(RunStructLclFldScenario));
+
+            {Op1VectorType}<{Op1BaseType}> loadMask = Sve.CreateTrueMask{RetBaseType}(SveMaskPattern.All);
+
+            var test = TestStruct.Create();
+            test._fld1 = {Isa}.{Method}(loadMask, ({Op2BaseType}*)_dataTable.inArray1Ptr);
+
+            Unsafe.Write(_dataTable.outArrayPtr, test._fld1);
+            ValidateResult(_dataTable.inArray1Ptr, _dataTable.outArrayPtr);
+        }
+
+        public void RunStructFldScenario()
+        {
+            TestLibrary.TestFramework.BeginScenario(nameof(RunStructFldScenario));
+
+            var test = TestStruct.Create();
+            test.RunStructFldScenario(this);
+        }
+
+        public void ConditionalSelect_ZeroOp()
+        {
+            TestLibrary.TestFramework.BeginScenario(nameof(ConditionalSelect_ZeroOp));
+            ConditionalSelectScenario(_mask, _dataTable.inArray1Ptr, {Op1VectorType}<{RetBaseType}>.Zero);
+
+            TestLibrary.TestFramework.BeginScenario("ConditionalSelect_ZeroOp_zero");
+            ConditionalSelectScenario({Op1VectorType}<{Op1BaseType}>.Zero, _dataTable.inArray1Ptr, {Op1VectorType}<{Op1BaseType}>.Zero);
+
+            TestLibrary.TestFramework.BeginScenario("ConditionalSelect_ZeroOp_all");
+            ConditionalSelectScenario({Op1VectorType}<{Op1BaseType}>.AllBitsSet, _dataTable.inArray1Ptr, {Op1VectorType}<{Op1BaseType}>.Zero);
+        }
+
+        [method: MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private void ConditionalSelectScenario({RetVectorType}<{RetBaseType}> mask, void* op1, {Op1VectorType}<{Op1BaseType}> falseOp)
+        {
+            var result = Sve.ConditionalSelect(mask, {Isa}.{Method}(Sve.CreateTrueMask{RetBaseType}(SveMaskPattern.All), ({Op2BaseType}*)op1), falseOp);
+
+            Unsafe.Write(_dataTable.outArrayPtr, result);
+            ValidateConditionalSelectResult(mask, ({Op2BaseType}*)op1, falseOp, _dataTable.outArrayPtr);
+        }
+
+        public void RunUnsupportedScenario()
+        {
+            TestLibrary.TestFramework.BeginScenario(nameof(RunUnsupportedScenario));
+
+            Succeeded = false;
+
+            try
+            {
+                RunBasicScenario_Load();
+            }
+            catch (PlatformNotSupportedException)
+            {
+                Succeeded = true;
+            }
+        }
+
+        private void ValidateResult(void* firstOp, void* result, [CallerMemberName] string method = "")
+        {
+            {Op2BaseType}[] inArray = new {Op2BaseType}[RetElementCount];
+            {RetBaseType}[] outArray = new {RetBaseType}[RetElementCount];
+
+            Unsafe.CopyBlockUnaligned(ref Unsafe.As<{Op2BaseType}, byte>(ref inArray[0]), ref Unsafe.AsRef<byte>(firstOp), (uint)Unsafe.SizeOf<{RetVectorType}<{Op2BaseType}>>());
+            Unsafe.CopyBlockUnaligned(ref Unsafe.As<{RetBaseType}, byte>(ref outArray[0]), ref Unsafe.AsRef<byte>(result), (uint)Unsafe.SizeOf<{RetVectorType}<{RetBaseType}>>());
+
+            ValidateResult(inArray, outArray, method);
+        }
+
+        private void ValidateResult({Op2BaseType}[] firstOp, {RetBaseType}[] result, [CallerMemberName] string method = "")
+        {
+            var succeeded = Helpers.CheckLoadVectorBehavior(firstOp, result);
+
+            if (!succeeded)
+            {
+                TestLibrary.TestFramework.LogInformation($"{nameof({Isa})}.{nameof({Isa}.{Method})}<{RetBaseType}>({Op1VectorType}<{Op1BaseType}>, {Op2BaseType}): {method} failed:");
+                TestLibrary.TestFramework.LogInformation($"  firstOp: ({string.Join(", ", firstOp)})");
+                TestLibrary.TestFramework.LogInformation($"   result: ({string.Join(", ", result)})");
+                TestLibrary.TestFramework.LogInformation(string.Empty);
+
+                Succeeded = false;
+            }
+        }
+
+        private void ValidateConditionalSelectResult({RetVectorType}<{RetBaseType}> maskOp, {Op2BaseType}* op1, {RetVectorType}<{RetBaseType}> falseOp, void* result, [CallerMemberName] string method = "")
+        {
+            {RetBaseType}[] maskArray = new {RetBaseType}[RetElementCount];
+            {Op2BaseType}[] op1Array = new {Op2BaseType}[RetElementCount];
+            {RetBaseType}[] falseValArray = new {RetBaseType}[RetElementCount];
+            {RetBaseType}[] resultArray = new {RetBaseType}[RetElementCount];
+
+            Unsafe.WriteUnaligned(ref Unsafe.As<{RetBaseType}, byte>(ref maskArray[0]), maskOp);
+            Unsafe.CopyBlockUnaligned(ref Unsafe.As<{Op2BaseType}, byte>(ref op1Array[0]), ref Unsafe.AsRef<byte>(op1), (uint)(op1Array.Length * Unsafe.SizeOf<{Op2BaseType}>()));
+            Unsafe.WriteUnaligned(ref Unsafe.As<{RetBaseType}, byte>(ref falseValArray[0]), falseOp);
+            Unsafe.CopyBlockUnaligned(ref Unsafe.As<{RetBaseType}, byte>(ref resultArray[0]), ref Unsafe.AsRef<byte>(result), (uint)Unsafe.SizeOf<{RetVectorType}<{RetBaseType}>>());
+
+            ValidateConditionalSelectResult(maskArray, op1Array, falseValArray, resultArray, method);
+        }
+
+        private void ValidateConditionalSelectResult({RetBaseType}[] maskOp, {Op2BaseType}[] firstOp, {RetBaseType}[] falseOp, {RetBaseType}[] result, [CallerMemberName] string method = "")
+        {
+            var succeeded = Helpers.CheckLoadVectorBehavior(maskOp, firstOp, result, falseOp);
+
+            if (!succeeded)
+            {
+                TestLibrary.TestFramework.LogInformation($"{nameof({Isa})}.{nameof({Isa}.{Method})}({Op1VectorType}<{Op1BaseType}>, {Op1VectorType}<{Op2BaseType}>): {method} failed:");
+                TestLibrary.TestFramework.LogInformation($"   maskOp: ({string.Join(", ", maskOp)})");
+                TestLibrary.TestFramework.LogInformation($"  firstOp: ({string.Join(", ", firstOp)})");
+                TestLibrary.TestFramework.LogInformation($"  falseOp: ({string.Join(", ", falseOp)})");
+                TestLibrary.TestFramework.LogInformation($"   result: ({string.Join(", ", result)})");
+                TestLibrary.TestFramework.LogInformation(string.Empty);
+
+                Succeeded = false;
+            }
+        }
+
+        private void ValidateFirstFaultingResult(ref byte firstOp, int size, void* result, Vector<{GetFfrType}> faultResult, [CallerMemberName] string method = "")
+        {
+            {Op2BaseType}[] inArray = new {Op2BaseType}[size / Unsafe.SizeOf<{Op2BaseType}>()];
+            {RetBaseType}[] outArray = new {RetBaseType}[RetElementCount];
+
+            Unsafe.CopyBlockUnaligned(ref Unsafe.As<{Op2BaseType}, byte>(ref inArray[0]), ref firstOp, (uint)(inArray.Length * Unsafe.SizeOf<{Op2BaseType}>()));
+            Unsafe.CopyBlockUnaligned(ref Unsafe.As<{RetBaseType}, byte>(ref outArray[0]), ref Unsafe.AsRef<byte>(result), (uint)Unsafe.SizeOf<{RetVectorType}<{RetBaseType}>>());
+
+            ValidateFirstFaultingResult(inArray, outArray, faultResult, method);
+        }
+
+        private void ValidateFirstFaultingResult({Op2BaseType}[] firstOp, {RetBaseType}[] result, Vector<{GetFfrType}> faultResult, [CallerMemberName] string method = "")
+        {
+            var succeeded = Helpers.CheckLoadVectorFirstFaultingBehavior(firstOp, result, faultResult);
+
+            if (!succeeded)
+            {
+                TestLibrary.TestFramework.LogInformation($"{nameof({Isa})}.{nameof({Isa}.{Method})}({Op1VectorType}<{Op1BaseType}>, {Op1VectorType}<{Op2BaseType}>): {method} failed:");
+                TestLibrary.TestFramework.LogInformation($"       firstOp: ({string.Join(", ", firstOp)})");
+                TestLibrary.TestFramework.LogInformation($"        result: ({string.Join(", ", result)})");
+                TestLibrary.TestFramework.LogInformation($"   faultResult: ({faultResult})");
+                TestLibrary.TestFramework.LogInformation(string.Empty);
+
+                Succeeded = false;
+            }
+        }
+    }
+}

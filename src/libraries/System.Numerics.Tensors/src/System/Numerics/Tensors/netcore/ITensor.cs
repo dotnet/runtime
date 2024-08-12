@@ -2,9 +2,13 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Buffers;
+using System.Diagnostics.CodeAnalysis;
+
+#pragma warning disable 1591 // TODO: Document this API. https://github.com/dotnet/runtime/issues/105981
 
 namespace System.Numerics.Tensors
 {
+    [Experimental(Experimentals.TensorTDiagId, UrlFormat = Experimentals.SharedUrlFormat)]
     public interface ITensor<TSelf, T>
         : IReadOnlyTensor<TSelf, T>
         where TSelf : ITensor<TSelf, T>
@@ -35,3 +39,5 @@ namespace System.Numerics.Tensors
         new ref T GetPinnableReference();
     }
 }
+
+#pragma warning restore 1591

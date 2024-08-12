@@ -43,7 +43,10 @@ void Lowering::LowerRotate(GenTree* tree)
 //    - Handling of contained immediates.
 //    - Widening some small stores.
 //
-void Lowering::LowerStoreLoc(GenTreeLclVarCommon* storeLoc)
+// Returns:
+//   Next tree to lower.
+//
+GenTree* Lowering::LowerStoreLoc(GenTreeLclVarCommon* storeLoc)
 {
     // Most small locals (the exception is dependently promoted fields) have 4 byte wide stack slots, so
     // we can widen the store, if profitable. The widening is only (largely) profitable for 2 byte stores.
@@ -64,6 +67,7 @@ void Lowering::LowerStoreLoc(GenTreeLclVarCommon* storeLoc)
     }
 
     ContainCheckStoreLoc(storeLoc);
+    return storeLoc->gtNext;
 }
 
 //------------------------------------------------------------------------
@@ -1566,6 +1570,21 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
                                     op2->SetUnusedValue();
                                 }
 
+                                // Since we have a double negation, it's possible that gtNext
+                                // is op1 or user. If it is op1, then it's also possible the
+                                // subsequent gtNext is user. We need to make sure to skip both
+                                // in such a scenario since we're removing them.
+
+                                if (nextNode == op1)
+                                {
+                                    nextNode = nextNode->gtNext;
+                                }
+
+                                if (nextNode == user)
+                                {
+                                    nextNode = nextNode->gtNext;
+                                }
+
                                 BlockRange().Remove(op3);
                                 BlockRange().Remove(op1);
                                 BlockRange().Remove(user);
@@ -1878,6 +1897,33 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
         case NI_Vector512_op_Inequality:
         {
             return LowerHWIntrinsicCmpOp(node, GT_NE);
+        }
+
+        case NI_AVX512F_Fixup:
+        case NI_AVX512F_FixupScalar:
+        case NI_AVX512F_VL_Fixup:
+        case NI_AVX10v1_Fixup:
+        case NI_AVX10v1_FixupScalar:
+        {
+            if (!node->isRMWHWIntrinsic(comp))
+            {
+                GenTree* op1 = node->Op(1);
+
+                if (!op1->IsCnsVec())
+                {
+                    // op1 is never selected by the table so
+                    // we replaced it with a containable constant
+
+                    var_types simdType = node->TypeGet();
+
+                    op1->SetUnusedValue();
+                    op1 = comp->gtNewZeroConNode(simdType);
+
+                    BlockRange().InsertBefore(node, op1);
+                    node->Op(1) = op1;
+                }
+            }
+            break;
         }
 
         case NI_EVEX_CompareEqualMask:
@@ -6301,8 +6347,9 @@ GenTree* Lowering::LowerHWIntrinsicDot(GenTreeHWIntrinsic* node)
 
                 horizontalAdd = NI_SSE3_HorizontalAdd;
 
-                if (!comp->compOpportunisticallyDependsOn(InstructionSet_SSE3))
+                if ((simdSize == 8) || !comp->compOpportunisticallyDependsOn(InstructionSet_SSE3))
                 {
+                    // We also do this for simdSize == 8 to ensure we broadcast the result as expected
                     shuffle = NI_SSE_Shuffle;
                 }
                 break;
@@ -6353,10 +6400,8 @@ GenTree* Lowering::LowerHWIntrinsicDot(GenTreeHWIntrinsic* node)
 
                 horizontalAdd = NI_SSE3_HorizontalAdd;
 
-                if (!comp->compOpportunisticallyDependsOn(InstructionSet_SSE3))
-                {
-                    shuffle = NI_SSE2_Shuffle;
-                }
+                // We need to ensure we broadcast the result as expected
+                shuffle = NI_SSE2_Shuffle;
                 break;
             }
 
@@ -7810,7 +7855,7 @@ void Lowering::ContainCheckCallOperands(GenTreeCall* call)
         //
         // Where EAX is also used as an argument to the stub dispatch helper. Make
         // sure that the call target address is computed into EAX in this case.
-        if (call->IsVirtualStub() && (call->gtCallType == CT_INDIRECT))
+        if (call->IsVirtualStub() && (call->gtCallType == CT_INDIRECT) && !comp->IsTargetAbi(CORINFO_NATIVEAOT_ABI))
         {
             assert(ctrlExpr->isIndir());
             MakeSrcContained(call, ctrlExpr);
@@ -11416,10 +11461,11 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                             if (!node->isRMWHWIntrinsic(comp))
                             {
                                 // op1 is never selected by the table so
-                                // we can contain and ignore any register
-                                // allocated to it resulting in better
-                                // non-RMW based codegen.
+                                // we should've replaced it with a containable
+                                // constant, allowing us to get better non-RMW
+                                // codegen
 
+                                assert(op1->IsCnsVec());
                                 MakeSrcContained(node, op1);
                             }
                             break;

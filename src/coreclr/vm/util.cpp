@@ -369,6 +369,46 @@ SIZE_T GetRegOffsInCONTEXT(ICorDebugInfo::RegNum regNum)
     case ICorDebugInfo::REGNUM_AMBIENT_SP: return offsetof(T_CONTEXT, Sp);
     default: _ASSERTE(!"Bad regNum"); return (SIZE_T)(-1);
     }
+#elif defined(TARGET_LOONGARCH64)
+
+    switch(regNum)
+    {
+    case ICorDebugInfo::REGNUM_R0: return offsetof(T_CONTEXT, R0);
+    case ICorDebugInfo::REGNUM_RA: return offsetof(T_CONTEXT, Ra);
+    case ICorDebugInfo::REGNUM_TP: return offsetof(T_CONTEXT, Tp);
+    case ICorDebugInfo::REGNUM_SP: return offsetof(T_CONTEXT, Sp);
+    case ICorDebugInfo::REGNUM_A0: return offsetof(T_CONTEXT, A0);
+    case ICorDebugInfo::REGNUM_A1: return offsetof(T_CONTEXT, A1);
+    case ICorDebugInfo::REGNUM_A2: return offsetof(T_CONTEXT, A2);
+    case ICorDebugInfo::REGNUM_A3: return offsetof(T_CONTEXT, A3);
+    case ICorDebugInfo::REGNUM_A4: return offsetof(T_CONTEXT, A4);
+    case ICorDebugInfo::REGNUM_A5: return offsetof(T_CONTEXT, A5);
+    case ICorDebugInfo::REGNUM_A6: return offsetof(T_CONTEXT, A6);
+    case ICorDebugInfo::REGNUM_A7: return offsetof(T_CONTEXT, A7);
+    case ICorDebugInfo::REGNUM_T0: return offsetof(T_CONTEXT, T0);
+    case ICorDebugInfo::REGNUM_T1: return offsetof(T_CONTEXT, T1);
+    case ICorDebugInfo::REGNUM_T2: return offsetof(T_CONTEXT, T2);
+    case ICorDebugInfo::REGNUM_T3: return offsetof(T_CONTEXT, T3);
+    case ICorDebugInfo::REGNUM_T4: return offsetof(T_CONTEXT, T4);
+    case ICorDebugInfo::REGNUM_T5: return offsetof(T_CONTEXT, T5);
+    case ICorDebugInfo::REGNUM_T6: return offsetof(T_CONTEXT, T6);
+    case ICorDebugInfo::REGNUM_T7: return offsetof(T_CONTEXT, T7);
+    case ICorDebugInfo::REGNUM_T8: return offsetof(T_CONTEXT, T8);
+    case ICorDebugInfo::REGNUM_X0: return offsetof(T_CONTEXT, X0);
+    case ICorDebugInfo::REGNUM_FP: return offsetof(T_CONTEXT, Fp);
+    case ICorDebugInfo::REGNUM_S0: return offsetof(T_CONTEXT, S0);
+    case ICorDebugInfo::REGNUM_S1: return offsetof(T_CONTEXT, S1);
+    case ICorDebugInfo::REGNUM_S2: return offsetof(T_CONTEXT, S2);
+    case ICorDebugInfo::REGNUM_S3: return offsetof(T_CONTEXT, S3);
+    case ICorDebugInfo::REGNUM_S4: return offsetof(T_CONTEXT, S4);
+    case ICorDebugInfo::REGNUM_S5: return offsetof(T_CONTEXT, S5);
+    case ICorDebugInfo::REGNUM_S6: return offsetof(T_CONTEXT, S6);
+    case ICorDebugInfo::REGNUM_S7: return offsetof(T_CONTEXT, S7);
+    case ICorDebugInfo::REGNUM_S8: return offsetof(T_CONTEXT, S8);
+    case ICorDebugInfo::REGNUM_PC: return offsetof(T_CONTEXT, Pc);
+    case ICorDebugInfo::REGNUM_AMBIENT_SP: return offsetof(T_CONTEXT, Sp);
+    default: _ASSERTE(!"Bad regNum"); return (SIZE_T)(-1);
+    }
 #else
     PORTABILITY_ASSERT("GetRegOffsInCONTEXT is not implemented on this platform.");
     return (SIZE_T) -1;

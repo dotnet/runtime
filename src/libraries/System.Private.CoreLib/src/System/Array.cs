@@ -729,7 +729,7 @@ namespace System
                 return true;
             }
 
-            if (!(other is Array o) || o.Length != this.Length)
+            if (other is not Array o || o.Length != this.Length)
             {
                 return false;
             }

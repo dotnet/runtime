@@ -51,7 +51,7 @@ using System.Threading;
 namespace System
 {
     [StackTraceHidden]
-    internal static class ThrowHelper
+    internal static partial class ThrowHelper
     {
         [DoesNotReturn]
         internal static void ThrowArithmeticException(string message)
@@ -72,6 +72,12 @@ namespace System
         }
 
         [DoesNotReturn]
+        internal static void ThrowArgumentException()
+        {
+            throw new ArgumentException();
+        }
+
+        [DoesNotReturn]
         internal static void ThrowInvalidTypeWithPointersNotSupported(Type targetType)
         {
             throw new ArgumentException(SR.Format(SR.Argument_InvalidTypeWithPointersNotSupported, targetType));
@@ -87,6 +93,30 @@ namespace System
         internal static void ThrowArgumentOutOfRangeException()
         {
             throw new ArgumentOutOfRangeException();
+        }
+
+        [DoesNotReturn]
+        internal static void ThrowNotImplementedException()
+        {
+            throw new NotImplementedException();
+        }
+
+        [DoesNotReturn]
+        internal static void ThrowPlatformNotSupportedException()
+        {
+            throw new PlatformNotSupportedException();
+        }
+
+        [DoesNotReturn]
+        internal static void ThrowTypeNotSupportedException()
+        {
+            throw new NotSupportedException(SR.Arg_TypeNotSupported);
+        }
+
+        [DoesNotReturn]
+        internal static void ThrowVerificationException(int ilOffset)
+        {
+            throw new System.Security.VerificationException();
         }
 
         [DoesNotReturn]
@@ -767,8 +797,6 @@ namespace System
             if (!(default(T) == null) && value == null)
                 ThrowArgumentNullException(argName);
         }
-
-
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static void ThrowForUnsupportedSimdVectorBaseType<TVector, T>()

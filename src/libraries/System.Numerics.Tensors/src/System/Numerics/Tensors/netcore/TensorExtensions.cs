@@ -11,13 +11,17 @@ using System.Buffers;
 using static System.Runtime.InteropServices.JavaScript.JSType;
 using System.Security.Cryptography;
 using System.Runtime.Serialization;
+using System.Diagnostics.CodeAnalysis;
 
 #pragma warning disable CS8601 // Possible null reference assignment.
 #pragma warning disable CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider declaring as nullable.
 
 namespace System.Numerics.Tensors
 {
+    [Experimental(Experimentals.TensorTDiagId, UrlFormat = Experimentals.SharedUrlFormat)]
+#pragma warning disable 1591 // TODO: Document this API. https://github.com/dotnet/runtime/issues/105981
     public static partial class Tensor
+#pragma warning restore 1591
     {
         #region AsReadOnlySpan
         /// <summary>
@@ -6585,6 +6589,7 @@ namespace System.Numerics.Tensors
         }
         #endregion
 
+#pragma warning disable 1591 // TODO: Document this API. https://github.com/dotnet/runtime/issues/105981
         public static nint[] GetSmallestBroadcastableLengths(ReadOnlySpan<nint> shape1, ReadOnlySpan<nint> shape2)
         {
             if (!TensorHelpers.IsBroadcastableTo(shape1, shape2))
@@ -6602,6 +6607,7 @@ namespace System.Numerics.Tensors
 
             return intermediateShape;
         }
+#pragma warning restore 1591
 
         #region TensorPrimitivesHelpers
         private delegate void PerformCalculationSpanInSpanOut<T>(ReadOnlySpan<T> input, Span<T> output);

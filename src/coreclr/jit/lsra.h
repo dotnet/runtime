@@ -486,6 +486,7 @@ public:
         previousInterval = nullptr;
         regNum           = REG_NA;
         isCalleeSave     = false;
+        regOrder         = UCHAR_MAX;
     }
 
     void init(regNumber reg)
@@ -511,7 +512,11 @@ public:
 #if defined(FEATURE_MASKED_HW_INTRINSICS)
         else
         {
+#ifdef TARGET_ARM64
+            assert(emitter::isMaskReg(reg) || (reg == REG_FFR));
+#else
             assert(emitter::isMaskReg(reg));
+#endif
             registerType = MaskRegisterType;
         }
 #endif // FEATURE_MASKED_HW_INTRINSICS

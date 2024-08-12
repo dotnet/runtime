@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Runtime.InteropServices;
 using Microsoft.VisualBasic;
@@ -174,6 +175,7 @@ namespace System.Numerics.Tensors
             return new Tensor<T>(values, lengths, strides, pinned);
         }
 
+#pragma warning disable 1591 // TODO: Document this API. https://github.com/dotnet/runtime/issues/105981
         public static ref readonly TensorSpan<T> FillGaussianNormalDistribution<T>(in TensorSpan<T> destination, Random? random = null) where T : IFloatingPoint<T>
         {
             Span<T> span = MemoryMarshal.CreateSpan<T>(ref destination._reference, (int)destination._shape._memoryLength);
@@ -192,5 +194,6 @@ namespace System.Numerics.Tensors
 
             return ref destination;
         }
+#pragma warning restore 1591
     }
 }
