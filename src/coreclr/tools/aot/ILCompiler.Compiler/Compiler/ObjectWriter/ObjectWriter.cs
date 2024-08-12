@@ -18,7 +18,7 @@ namespace ILCompiler.ObjectWriter
 {
     public abstract class ObjectWriter
     {
-        private protected sealed record SymbolDefinition(int SectionIndex, long Value, int Size = 0, bool Global = false, bool AltEntry = false);
+        private protected sealed record SymbolDefinition(int SectionIndex, long Value, int Size = 0, bool Global = false);
         private protected sealed record SymbolicRelocation(long Offset, RelocType Type, string SymbolName, long Addend = 0);
         private protected sealed record BlockToRelocate(int SectionIndex, long Offset, byte[] Data, Relocation[] Relocations);
 
@@ -246,12 +246,11 @@ namespace ILCompiler.ObjectWriter
             string symbolName,
             long offset = 0,
             int size = 0,
-            bool global = false,
-            bool altEntry = false)
+            bool global = false)
         {
             _definedSymbols.Add(
                 symbolName,
-                new SymbolDefinition(sectionIndex, offset, size, global, altEntry));
+                new SymbolDefinition(sectionIndex, offset, size, global));
         }
 
         /// <summary>
@@ -381,7 +380,6 @@ namespace ILCompiler.ObjectWriter
                 progressReporter = new ProgressReporter(logger, count);
             }
 
-            int syntheticLabelCounter = 0;
             List<BlockToRelocate> blocksToRelocate = new();
             foreach (DependencyNode depNode in nodes)
             {
@@ -416,42 +414,23 @@ namespace ILCompiler.ObjectWriter
 
                 sectionWriter.EmitAlignment(nodeContents.Alignment);
 
-                bool haveStartSymbol = false;
                 bool isMethod = node is IMethodBodyNode or AssemblyStubNode;
                 long thumbBit = _nodeFactory.Target.Architecture == TargetArchitecture.ARM && isMethod ? 1 : 0;
                 foreach (ISymbolDefinitionNode n in nodeContents.DefinedSymbols)
                 {
-                    haveStartSymbol |= n.Offset == 0;
                     sectionWriter.EmitSymbolDefinition(
                         n == node ? currentSymbolName : GetMangledName(n),
                         n.Offset + thumbBit,
-                        n.Offset == 0 && isMethod ? nodeContents.Data.Length : 0,
-                        altEntry: _usesSubsectionsViaSymbols && n.Offset != 0);
+                        n.Offset == 0 && isMethod ? nodeContents.Data.Length : 0);
                     if (_nodeFactory.GetSymbolAlternateName(n) is string alternateName)
                     {
                         sectionWriter.EmitSymbolDefinition(
                             ExternCName(alternateName),
                             n.Offset + thumbBit,
                             n.Offset == 0 && isMethod ? nodeContents.Data.Length : 0,
-                            global: true,
-                            altEntry: _usesSubsectionsViaSymbols);
+                            global: true);
                     }
-                }
-
-                // In the subsections-via-symbols model (Mach-O file format used by Apple) we need a symbol pointing
-                // to the beginning on the node without the `altEntry` flag. All symbols with non-zero offset are then
-                // produced with the `altEntry: true` flag. This makes the node appear as unbreakable atom for the
-                // native linker with individual symbol labels pointing into it.
-                //
-                // If the defined symbols of the node don't cover the zero offset we have to synthesize the initial
-                // label.
-                if (!haveStartSymbol && _usesSubsectionsViaSymbols)
-                {
-                    string startSymbol = currentSymbolName != null ? $"__start_{currentSymbolName}" :$"__start_{syntheticLabelCounter++}";
-                    sectionWriter.EmitSymbolDefinition(
-                        startSymbol, 0, isMethod ? nodeContents.Data.Length : 0,
-                        global: false,
-                        altEntry: false);
+                    Debug.Assert(!isMethod || n.Offset == 0);
                 }
 
                 if (nodeContents.Relocs is not null)

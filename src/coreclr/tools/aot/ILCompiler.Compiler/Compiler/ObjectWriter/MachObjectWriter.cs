@@ -62,7 +62,6 @@ namespace ILCompiler.ObjectWriter
         private readonly uint _cpuType;
         private readonly uint _cpuSubType;
         private readonly List<MachSection> _sections = new();
-        private int? _hydrationTargetSectionIndex;
 
         // Exception handling sections
         private MachSection _compactUnwindSection;
@@ -114,7 +113,7 @@ namespace ILCompiler.ObjectWriter
                     Name = $"lsection{sectionIndex}",
                     Section = section,
                     Value = section.VirtualAddress,
-                    Descriptor = 0,
+                    Descriptor = (ushort)(section.KeepDataLayout ? N_NO_DEAD_STRIP : 0),
                     Type = N_SECT,
                 };
                 _symbolTable.Add(machSymbol);
@@ -356,15 +355,11 @@ namespace ILCompiler.ObjectWriter
             {
                 Log2Alignment = 1,
                 Flags = flags,
+                KeepDataLayout = section.Type is SectionType.ReadOnly or SectionType.Writeable or SectionType.Uninitialized
             };
 
             int sectionIndex = _sections.Count;
             _sections.Add(machSection);
-
-            if (section == ObjectNodeSection.HydrationTargetSection)
-            {
-                _hydrationTargetSectionIndex = sectionIndex;
-            }
 
             base.CreateSection(section, comdatName, symbolName ?? $"lsection{sectionIndex}", sectionStream);
         }
@@ -478,21 +473,10 @@ namespace ILCompiler.ObjectWriter
 
             // Sort and insert all defined symbols
             var sortedDefinedSymbols = new List<MachSymbol>(definedSymbols.Count);
-            // Emit a private external symbol for the beginning of the hydration target section
-            // to ensure the layout is kept intact by the linker. This works in tandem with setting
-            // the N_ALT_ENTRY flag for all other symbols in the same section.
-            if (_hydrationTargetSectionIndex.HasValue)
-            {
-                MachSection hydrationTargetSection = _sections[_hydrationTargetSectionIndex.Value];
-                sortedDefinedSymbols.Add(new MachSymbol
-                {
-                    Name = ".hydrated",
-                    Section = hydrationTargetSection,
-                    Value = hydrationTargetSection.VirtualAddress,
-                    Descriptor = N_NO_DEAD_STRIP,
-                    Type = N_SECT | N_EXT | N_PEXT,
-                });
-            }
+            // We emit a local N_NO_DEAD_STRIP symbol for the beginning of all sections marked with
+            // KeepDataLayout to ensure the final layout is kept intact by the linker. This works in
+            // tandem with setting the N_ALT_ENTRY flag for all other symbols in the same section in
+            // the loop below.
             foreach ((string name, SymbolDefinition definition) in definedSymbols)
             {
                 MachSection section = _sections[definition.SectionIndex];
@@ -504,9 +488,7 @@ namespace ILCompiler.ObjectWriter
                     Name = name,
                     Section = section,
                     Value = section.VirtualAddress + (ulong)definition.Value,
-                    Descriptor =
-                        definition.AltEntry || definition.SectionIndex == _hydrationTargetSectionIndex ?
-                        (ushort)(N_ALT_ENTRY | N_NO_DEAD_STRIP) : N_NO_DEAD_STRIP,
+                    Descriptor = section.KeepDataLayout ? N_ALT_ENTRY : N_NO_DEAD_STRIP,
                     Type = (byte)(N_SECT | N_EXT | (definition.Global ? 0 : N_PEXT)),
                 });
             }
@@ -906,6 +888,7 @@ namespace ILCompiler.ObjectWriter
             public bool IsInFile => Size > 0 && Type != S_ZEROFILL && Type != S_GB_ZEROFILL && Type != S_THREAD_LOCAL_ZEROFILL;
 
             public bool IsDwarfSection { get; }
+            public bool KeepDataLayout { get; set; }
 
             public IList<MachRelocation> Relocations => relocationCollection ??= new List<MachRelocation>();
             public Stream Stream => dataStream;
