@@ -23,8 +23,8 @@ internal readonly partial struct NativeCodePointers_1 : INativeCodePointers
                 throw new ArgumentException("Both MethodDesc and ILCodeVersionNode cannot be non-null");
 
             }
-
-            public static ILCodeVersionHandle Invalid => new ILCodeVersionHandle(TargetPointer.Null, TargetPointer.Null);
+        }
+        public static ILCodeVersionHandle Invalid => new ILCodeVersionHandle(TargetPointer.Null, TargetPointer.Null);
         public bool IsValid => MethodDesc != TargetPointer.Null || ILCodeVersionNode != TargetPointer.Null;
     }
 
@@ -70,14 +70,16 @@ internal readonly partial struct NativeCodePointers_1 : INativeCodePointers
 
         public ILCodeVersionHandle FindActiveILCodeVersion(TargetPointer module, uint methodDefinition)
         {
+            //TODO[cdac]: implement FindActiveILCodeVersion
+#if false
             ModuleHandle moduleHandle = _target.Contracts.Loader.GetModuleHandle(module);
-            TargetPointer ilCodeVersionTable = _target.Contracts.Loader.GetLookupTables(moduleHandle).ILCodeVersionTable;
+            TargetPointer ilCodeVersionTable = _target.Contracts.Loader.GetLookupTables(moduleHandle).MethodDefToILCodeVersioningState;
             TargetPointer ilNode = _target.Contracts.GetModuleLookupTableElement(module, methodDefinition, out var _);
             if (ilNode == TargetPointer.Null)
             {
                 return ILCodeVersionHandle.Invalid;
             }
-
+#endif
 
             throw new NotImplementedException();
         }
