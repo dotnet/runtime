@@ -29,6 +29,7 @@ using System.Threading;
 using Internal.Runtime.CompilerHelpers;
 using Internal.Runtime.CompilerServices;
 
+using ExceptionStringID = Internal.TypeSystem.ExceptionStringID;
 using ReflectionPointer = System.Reflection.Pointer;
 
 namespace Internal.Runtime.Augments
@@ -701,6 +702,46 @@ namespace Internal.Runtime.Augments
         public static void RhHandleFree(IntPtr handle)
         {
             RuntimeImports.RhHandleFree(handle);
+        }
+
+        public static void ThrowTypeLoadExceptionWithArgument(ExceptionStringID id, string className, string typeName, string messageArg)
+        {
+            throw TypeLoaderExceptionHelper.CreateTypeLoadException(id, className, typeName, messageArg);
+        }
+
+        public static void ThrowTypeLoadException(ExceptionStringID id, string className, string typeName)
+        {
+            throw TypeLoaderExceptionHelper.CreateTypeLoadException(id, className, typeName);
+        }
+
+        public static void ThrowMissingMethodException(ExceptionStringID id, string methodName)
+        {
+            throw TypeLoaderExceptionHelper.CreateMissingMethodException(id, methodName);
+        }
+
+        public static void ThrowMissingFieldException(ExceptionStringID id, string fieldName)
+        {
+            throw TypeLoaderExceptionHelper.CreateMissingFieldException(id, fieldName);
+        }
+
+        public static void ThrowFileNotFoundException(ExceptionStringID id, string fileName)
+        {
+            throw TypeLoaderExceptionHelper.CreateFileNotFoundException(id, fileName);
+        }
+
+        public static void ThrowInvalidProgramException(ExceptionStringID id)
+        {
+            throw TypeLoaderExceptionHelper.CreateInvalidProgramException(id);
+        }
+
+        public static void ThrowInvalidProgramExceptionWithArgument(ExceptionStringID id, string methodName)
+        {
+            throw TypeLoaderExceptionHelper.CreateInvalidProgramException(id, methodName);
+        }
+
+        public static void ThrowBadImageFormatException(ExceptionStringID id)
+        {
+            throw TypeLoaderExceptionHelper.CreateBadImageFormatException(id);
         }
     }
 }
