@@ -3382,28 +3382,8 @@ gc_heap::dt_estimate_reclaim_space_p (gc_tuning_point tp, int gen_number)
 #endif //MULTIPLE_HEAPS
 
                 size_t min_frag_th = min_reclaim_fragmentation_threshold (num_heaps);
+                dprintf (GTC_LOG, ("h%d, min frag is %zd", heap_number, min_frag_th));
                 ret = (est_maxgen_free >= min_frag_th);
-
-                if (ret)
-                {
-                    {
-                        dynamic_data* dd = dynamic_data_of (gen_number);
-                        size_t gen_allocated = (dd_desired_allocation (dd) - dd_new_allocation (dd));
-                        size_t gen_total_size = gen_allocated + dd_current_size (dd);
-                        size_t est_gen_surv = (size_t)((float)(gen_total_size)*dd_surv (dd));
-                        size_t est_gen_free = gen_total_size - est_gen_surv + dd_fragmentation (dd);
-
-                        dprintf (6666, ("h%d gen%d total size: %zd, est dead space: %zd (s: %d, allocated: %zd), frag: %zd",
-                            heap_number, gen_number,
-                            gen_total_size,
-                            est_gen_free,
-                            (int)(dd_surv (dd) * 100),
-                            gen_allocated,
-                            dd_fragmentation (dd)));
-                    }
-
-                    dprintf (6666, ("h%d, est max frag: %zd >= min frag is %zd", heap_number, est_maxgen_free, min_frag_th));
-                }
             }
             else
             {
@@ -3449,6 +3429,13 @@ gc_heap::dt_estimate_high_frag_p (gc_tuning_point tp, int gen_number, uint64_t a
                 }
 
                 size_t est_frag = (dd_fragmentation (dd) + (size_t)((dd_desired_allocation (dd) - dd_new_allocation (dd)) * est_frag_ratio));
+                dprintf (GTC_LOG, ("h%d: gen%d: current_size is %zd, frag is %zd, est_frag_ratio is %d%%, estimated frag is %zd",
+                    heap_number,
+                    gen_number,
+                    dd_current_size (dd),
+                    dd_fragmentation (dd),
+                    (int)(est_frag_ratio * 100),
+                    est_frag));
 
                 uint32_t num_heaps = 1;
 
@@ -3458,17 +3445,6 @@ gc_heap::dt_estimate_high_frag_p (gc_tuning_point tp, int gen_number, uint64_t a
                 uint64_t min_frag_th = min_high_fragmentation_threshold(available_mem, num_heaps);
                 //dprintf (GTC_LOG, ("h%d, min frag is %zd", heap_number, min_frag_th));
                 ret = (est_frag >= min_frag_th);
-
-                if (ret)
-                {
-                    dprintf (GTC_LOG, ("h%d: gen%d: current_size is %zd, frag is %zd, est_frag_ratio is %d%%, estimated frag is %zd >= min frag %zd",
-                        heap_number,
-                        gen_number,
-                        dd_current_size (dd),
-                        dd_fragmentation (dd),
-                        (int)(est_frag_ratio * 100),
-                        est_frag, min_frag_th));
-                }
             }
             else
             {
@@ -30054,6 +30030,7 @@ void gc_heap::mark_phase (int condemned_gen_number)
                                          (int)(((float)n_gen_loh / (float)n_eph_loh) * 100) : 100);
 
         generation_skip_ratio = min (generation_skip_ratio_soh, generation_skip_ratio_loh);
+#ifdef SIMPLE_DPRINTF
         dprintf (6666, ("h%d skip ratio soh: %d (n_gen_soh: %Id, n_eph_soh: %Id), loh: %d (n_gen_loh: %Id, n_eph_loh: %Id), size 0: %Id-%Id, 1: %Id-%Id, 2: %Id-%Id, 3: %Id-%Id",
             heap_number,
             generation_skip_ratio_soh, VolatileLoadWithoutBarrier (&n_gen_soh), VolatileLoadWithoutBarrier (&n_eph_soh),
@@ -30062,6 +30039,7 @@ void gc_heap::mark_phase (int condemned_gen_number)
             generation_size (1), dd_fragmentation (dynamic_data_of (1)),
             generation_size (2), dd_fragmentation (dynamic_data_of (2)),
             generation_size (3), dd_fragmentation (dynamic_data_of (3))));
+#endif //SIMPLE_DPRINTF
     }
 #endif // FEATURE_CARD_MARKING_STEALING
 
@@ -38322,6 +38300,7 @@ void gc_heap::background_mark_phase ()
     if (bgc_t_join.joined())
 #endif //MULTIPLE_HEAPS
     {
+#ifdef USE_REGIONS
         // There's no need to distribute a second time if we just did an ephemeral GC, and we don't want to
         // age the free regions twice.
         if (!do_ephemeral_gc_p)
@@ -38329,6 +38308,7 @@ void gc_heap::background_mark_phase ()
             distribute_free_regions ();
             age_free_regions ("BGC");
         }
+#endif //USE_REGIONS
 
 #ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
         // Resetting write watch for software write watch is pretty fast, much faster than for hardware write watch. Reset
