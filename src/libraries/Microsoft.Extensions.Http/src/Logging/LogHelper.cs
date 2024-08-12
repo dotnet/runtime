@@ -16,7 +16,6 @@ namespace Microsoft.Extensions.Http.Logging
     {
         private static readonly LogDefineOptions s_skipEnabledCheckLogDefineOptions = new LogDefineOptions() { SkipEnabledCheck = true };
         private static readonly bool s_disableUriRedaction = GetDisableUriRedactionSettingValue();
-
         private static class EventIds
         {
             public static readonly EventId RequestStart = new EventId(100, "RequestStart");
@@ -31,6 +30,8 @@ namespace Microsoft.Extensions.Http.Logging
             public static readonly EventId RequestPipelineRequestHeader = new EventId(102, "RequestPipelineRequestHeader");
             public static readonly EventId RequestPipelineResponseHeader = new EventId(103, "RequestPipelineResponseHeader");
         }
+
+        public static readonly Func<string, bool> ShouldRedactHeaderValue = (header) => true;
 
         private static readonly Action<ILogger, HttpMethod, string?, Exception?> _requestStart = LoggerMessage.Define<HttpMethod, string?>(
             LogLevel.Information,
