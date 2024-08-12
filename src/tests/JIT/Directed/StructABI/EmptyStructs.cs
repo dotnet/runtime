@@ -1123,6 +1123,66 @@ public static class Program
 	}
 #endregion
 
+#region ArrayOfEmptiesFloatDouble_RiscVTests
+	[InlineArray(1)]
+	public struct ArrayOfEmpties
+	{
+		public Empty e;
+	}
+
+	public struct ArrayOfEmptiesFloatDouble
+	{
+		public ArrayOfEmpties ArrayOfEmpties0;
+		public float Float0;
+		public double Double0;
+
+		public static ArrayOfEmptiesFloatDouble Get()
+			=> new ArrayOfEmptiesFloatDouble { Float0 = 3.14159f, Double0 = 2.71828 };
+
+		public bool Equals(ArrayOfEmptiesFloatDouble other)
+			=> Float0 == other.Float0 && Double0 == other.Double0;
+
+		public override string ToString()
+			=> $"{{Float0:{Float0}, Double0:{Double0}}}";
+	}
+
+	[DllImport("EmptyStructsLib")]
+	public static extern ArrayOfEmptiesFloatDouble Echo_ArrayOfEmptiesFloatDouble_RiscV(int a0, float fa0,
+		ArrayOfEmptiesFloatDouble a1_a2, int a3, float fa1);
+
+	[MethodImpl(MethodImplOptions.NoInlining)]
+	public static ArrayOfEmptiesFloatDouble Echo_ArrayOfEmptiesFloatDouble_RiscV_Managed(int a0, float fa0,
+		ArrayOfEmptiesFloatDouble a1_a2, int a3, float fa1)
+	{
+		a1_a2.Double0 += (double)a3 + fa1;
+		return a1_a2;
+	}
+
+	[Fact]
+	public static void Test_ArrayOfEmptiesFloatDouble_RiscV()
+	{
+		ArrayOfEmptiesFloatDouble expected = ArrayOfEmptiesFloatDouble.Get();
+		ArrayOfEmptiesFloatDouble native = Echo_ArrayOfEmptiesFloatDouble_RiscV(0, 0f, expected, 1, -1f);
+		ArrayOfEmptiesFloatDouble managed = Echo_ArrayOfEmptiesFloatDouble_RiscV_Managed(0, 0f, expected, 1, -1f);
+
+		Assert.Equal(expected, native);
+		Assert.Equal(expected, managed);
+	}
+
+	[Fact]
+	public static void Test_ArrayOfEmptiesFloatDouble_ByReflection_RiscV()
+	{
+		var expected = ArrayOfEmptiesFloatDouble.Get();
+		var native = (ArrayOfEmptiesFloatDouble)typeof(Program).GetMethod("Echo_ArrayOfEmptiesFloatDouble_RiscV").Invoke(
+			null, new object[] {0, 0f, expected, 1, -1f});
+		var managed = (ArrayOfEmptiesFloatDouble)typeof(Program).GetMethod("Echo_ArrayOfEmptiesFloatDouble_RiscV_Managed").Invoke(
+			null, new object[] {0, 0f, expected, 1, -1f});
+
+		Assert.Equal(expected, native);
+		Assert.Equal(expected, managed);
+	}
+#endregion
+
 #region EmptyUshortAndDouble_RiscVTests
 	public struct EmptyUshortAndDouble
 	{
