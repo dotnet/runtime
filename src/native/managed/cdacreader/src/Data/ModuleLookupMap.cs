@@ -12,7 +12,6 @@ internal sealed class ModuleLookupMap : IData<ModuleLookupMap>
         Target.TypeInfo type = target.GetTypeInfo(DataType.ModuleLookupMap);
 
         TableData = target.ReadPointer(address + (ulong)type.Fields[nameof(TableData)].Offset);
-
     }
 
     public TargetPointer TableData { get; init; }
