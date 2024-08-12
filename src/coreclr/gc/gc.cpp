@@ -6066,6 +6066,7 @@ void gc_heap::release_segment (heap_segment* sg)
     FIRE_EVENT(GCFreeSegment_V1, heap_segment_mem(sg));
     size_t reserved_size = (uint8_t*)heap_segment_reserved (sg) - (uint8_t*)sg;
     reduce_committed_bytes (
+        28973,
         sg,
         ((uint8_t*)heap_segment_committed (sg) - (uint8_t*)sg),
         (int) heap_segment_oh (sg)
@@ -7289,7 +7290,7 @@ bool gc_heap::virtual_alloc_commit_for_heap (void* addr, size_t size, int h_numb
     return GCToOSInterface::VirtualCommit(addr, size);
 }
 
-bool gc_heap::virtual_commit (void* address, size_t size, int bucket, int h_number, bool* hard_limit_exceeded_p)
+bool gc_heap::virtual_commit (int reason, void* address, size_t size, int bucket, int h_number, bool* hard_limit_exceeded_p)
 {
     /**
      * Here are all the possible cases for the commits:
@@ -7309,7 +7310,7 @@ bool gc_heap::virtual_commit (void* address, size_t size, int bucket, int h_numb
     assert(bucket != recorded_committed_free_bucket);
 #endif //USE_REGIONS
 
-    STRESS_LOG_VA (1, ("commit-accounting:  commit in %d [%p, %p) for heap %d", bucket, address, ((uint8_t*)address + size), h_number));
+    STRESS_LOG_VA (1, ("commit-accounting:  commit in %d [%p, %p) for heap %d with reason %d", bucket, address, ((uint8_t*)address + size), h_number, reason));
     bool should_count =
 #ifdef USE_REGIONS
         true;
@@ -7402,12 +7403,12 @@ bool gc_heap::virtual_commit (void* address, size_t size, int bucket, int h_numb
     return commit_succeeded_p;
 }
 
-void gc_heap::reduce_committed_bytes (void* address, size_t size, int bucket, int h_number, bool decommit_succeeded_p)
+void gc_heap::reduce_committed_bytes (int reason, void* address, size_t size, int bucket, int h_number, bool decommit_succeeded_p)
 {
     assert(0 <= bucket && bucket < recorded_committed_bucket_counts);
     assert(bucket < total_oh_count || h_number == -1);
 
-    STRESS_LOG_VA (1, ("commit-accounting:  decommit in %d [%p, %p) for heap %d", bucket, address, ((uint8_t*)address + size), h_number));
+    STRESS_LOG_VA (1, ("commit-accounting:  decommit in %d [%p, %p) for heap %d with reason", bucket, address, ((uint8_t*)address + size), h_number, reason));
 
 #ifndef USE_REGIONS
     if (bucket != recorded_committed_ignored_bucket)
@@ -7435,7 +7436,7 @@ void gc_heap::reduce_committed_bytes (void* address, size_t size, int bucket, in
     }
 }
 
-bool gc_heap::virtual_decommit (void* address, size_t size, int bucket, int h_number)
+bool gc_heap::virtual_decommit (int reason, void* address, size_t size, int bucket, int h_number)
 {
     /**
      * Here are all possible cases for the decommits:
@@ -7450,7 +7451,7 @@ bool gc_heap::virtual_decommit (void* address, size_t size, int bucket, int h_nu
 
     bool decommit_succeeded_p = ((bucket != recorded_committed_bookkeeping_bucket) && use_large_pages_p) ? true : GCToOSInterface::VirtualDecommit (address, size);
 
-    reduce_committed_bytes (address, size, bucket, h_number, decommit_succeeded_p);
+    reduce_committed_bytes (reason, address, size, bucket, h_number, decommit_succeeded_p);
 
     return decommit_succeeded_p;
 }
@@ -9086,7 +9087,7 @@ void gc_heap::destroy_card_table_helper (uint32_t* c_table)
     uint8_t* highest = card_table_highest_address (c_table);
     get_card_table_element_layout(lowest, highest, card_table_element_layout);
     size_t result = card_table_element_layout[seg_mapping_table_element + 1];
-    gc_heap::reduce_committed_bytes (&card_table_refcount(c_table), result, recorded_committed_bookkeeping_bucket, -1, true);
+    gc_heap::reduce_committed_bytes (28972, &card_table_refcount(c_table), result, recorded_committed_bookkeeping_bucket, -1, true);
 
     // If we don't put the mark array committed in the ignored bucket, then this is where to account for the decommit of it
 }
@@ -9346,7 +9347,7 @@ bool gc_heap::inplace_commit_card_table (uint8_t* from, uint8_t* to)
         bool succeed;
         if (commit_sizes[i] > 0)
         {
-            succeed = virtual_commit (commit_begins[i], commit_sizes[i], recorded_committed_bookkeeping_bucket);
+            succeed = virtual_commit (28967, commit_begins[i], commit_sizes[i], recorded_committed_bookkeeping_bucket);
             if (!succeed)
             {
                 failed_commit = i;
@@ -9368,7 +9369,7 @@ bool gc_heap::inplace_commit_card_table (uint8_t* from, uint8_t* to)
             bool succeed;
             if (commit_sizes[i] > 0)
             {
-                succeed = virtual_decommit (commit_begins[i], commit_sizes[i], recorded_committed_bookkeeping_bucket);
+                succeed = virtual_decommit (28968, commit_begins[i], commit_sizes[i], recorded_committed_bookkeeping_bucket);
                 assert (succeed);
             }
         }
@@ -9419,7 +9420,7 @@ uint32_t* gc_heap::make_card_table (uint8_t* start, uint8_t* end)
     // in case of background gc, the mark array will be committed separately (per segment).
     size_t commit_size = card_table_element_layout[seg_mapping_table_element + 1];
 
-    if (!virtual_commit (mem, commit_size, recorded_committed_bookkeeping_bucket))
+    if (!virtual_commit (28960, mem, commit_size, recorded_committed_bookkeeping_bucket))
     {
         dprintf (1, ("Card table commit failed"));
         GCToOSInterface::VirtualRelease (mem, alloc_size);
@@ -9594,7 +9595,7 @@ int gc_heap::grow_brick_card_tables (uint8_t* start,
             // in case of background gc, the mark array will be committed separately (per segment).
             size_t commit_size = card_table_element_layout[seg_mapping_table_element + 1];
 
-            if (!virtual_commit (mem, commit_size, recorded_committed_bookkeeping_bucket))
+            if (!virtual_commit (28961, mem, commit_size, recorded_committed_bookkeeping_bucket))
             {
                 dprintf (GC_TABLE_LOG, ("Table commit failed"));
                 set_fgm_result (fgm_commit_table, commit_size, uoh_p);
@@ -12274,7 +12275,7 @@ heap_segment* gc_heap::make_heap_segment (uint8_t* new_pages, size_t size, gc_he
         0;
 #endif //MULTIPLE_HEAPS
 
-    if (!virtual_commit (new_pages, initial_commit, oh, h_number))
+    if (!virtual_commit (28962, new_pages, initial_commit, oh, h_number))
     {
         return 0;
     }
@@ -12460,7 +12461,7 @@ size_t gc_heap::decommit_heap_segment_pages_worker (heap_segment* seg,
     ptrdiff_t size = heap_segment_committed (seg) - page_start;
     if (size > 0)
     {
-        bool decommit_succeeded_p = virtual_decommit (page_start, (size_t)size, heap_segment_oh (seg), heap_number);
+        bool decommit_succeeded_p = virtual_decommit (28963, page_start, (size_t)size, heap_segment_oh (seg), heap_number);
         if (decommit_succeeded_p)
         {
             dprintf (3, ("Decommitting heap segment [%zx, %zx[(%zd)",
@@ -12501,7 +12502,7 @@ void gc_heap::decommit_heap_segment (heap_segment* seg)
 
     assert (heap_segment_committed (seg) >= page_start);
     size_t size = heap_segment_committed (seg) - page_start;
-    bool decommit_succeeded_p = virtual_decommit (page_start, size, heap_segment_oh (seg), heap_number);
+    bool decommit_succeeded_p = virtual_decommit (28964, page_start, size, heap_segment_oh (seg), heap_number);
 
     if (decommit_succeeded_p)
     {
@@ -13269,7 +13270,7 @@ void gc_heap::distribute_free_regions()
                     size_t end_space = heap_segment_committed (region) - aligned_allocated;
                     if (end_space > 0)
                     {
-                        virtual_decommit (aligned_allocated, end_space, gen_to_oh (i), hn);
+                        virtual_decommit (28969, aligned_allocated, end_space, gen_to_oh (i), hn);
                         heap_segment_committed (region) = aligned_allocated;
                         heap_segment_used (region) = min (heap_segment_used (region), heap_segment_committed (region));
                         assert (heap_segment_committed (region) > heap_segment_mem (region));
@@ -15463,7 +15464,7 @@ BOOL gc_heap::grow_heap_segment (heap_segment* seg, uint8_t* high_address, bool*
                 "Growing heap_segment: %zx high address: %zx\n",
                 (size_t)seg, (size_t)high_address);
 
-    bool ret = virtual_commit (heap_segment_committed (seg), c_size, heap_segment_oh (seg), heap_number, hard_limit_exceeded_p);
+    bool ret = virtual_commit (28965, heap_segment_committed (seg), c_size, heap_segment_oh (seg), heap_number, hard_limit_exceeded_p);
     if (ret)
     {
         heap_segment_committed (seg) += c_size;
@@ -37731,7 +37732,7 @@ BOOL gc_heap::commit_mark_array_by_range (uint8_t* begin, uint8_t* end, uint32_t
                             size));
 #endif //SIMPLE_DPRINTF
 
-    if (virtual_commit (commit_start, size, recorded_committed_mark_array_bucket))
+    if (virtual_commit (28966, commit_start, size, recorded_committed_mark_array_bucket))
     {
         // We can only verify the mark array is cleared from begin to end, the first and the last
         // page aren't necessarily all cleared 'cause they could be used by other segments or
@@ -37956,7 +37957,7 @@ void gc_heap::decommit_mark_array_by_seg (heap_segment* seg)
 
         if (decommit_start < decommit_end)
         {
-            if (!virtual_decommit (decommit_start, size, recorded_committed_mark_array_bucket))
+            if (!virtual_decommit (28970, decommit_start, size, recorded_committed_mark_array_bucket))
             {
                 dprintf (GC_TABLE_LOG, ("decommit on %p for %zd bytes failed",
                                         decommit_start, size));
@@ -44167,7 +44168,7 @@ size_t gc_heap::decommit_region (heap_segment* region, int bucket, int h_number)
     uint8_t* page_start = align_lower_page (get_region_start (region));
     uint8_t* decommit_end = heap_segment_committed (region);
     size_t decommit_size = decommit_end - page_start;
-    bool decommit_succeeded_p = virtual_decommit (page_start, decommit_size, bucket, h_number);
+    bool decommit_succeeded_p = virtual_decommit (28971, page_start, decommit_size, bucket, h_number);
     bool require_clearing_memory_p = !decommit_succeeded_p || use_large_pages_p;
     dprintf (REGIONS_LOG, ("decommitted region %p(%p-%p) (%zu bytes) - success: %d",
         region,
