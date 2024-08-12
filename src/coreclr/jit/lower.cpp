@@ -2023,7 +2023,7 @@ void Lowering::LowerSpecialCopyArgs(GenTreeCall* call)
             // that it is being passed 1:1 to the pinvoke
             unsigned paramIndex = comp->compMap2ILvarNum(argIndex);
             if ((paramIndex != (unsigned)ICorDebugInfo::UNKNOWN_ILNUM) && comp->argRequiresSpecialCopy(paramIndex) &&
-                genActualType(arg.GetNode()) == TYP_STRUCT)
+                arg.GetSignatureType() == TYP_STRUCT)
             {
                 assert(arg.GetNode()->OperIs(GT_PUTARG_STK));
                 InsertSpecialCopyArg(arg.GetNode()->AsPutArgStk(), arg.GetSignatureClassHandle(), paramIndex);
