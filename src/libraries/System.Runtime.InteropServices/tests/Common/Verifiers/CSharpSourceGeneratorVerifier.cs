@@ -149,7 +149,14 @@ namespace Microsoft.Interop.UnitTests.Verifiers
             protected async override Task<(Compilation compilation, ImmutableArray<Diagnostic> generatorDiagnostics)> GetProjectCompilationAsync(Project project, IVerifier verifier, CancellationToken cancellationToken)
             {
                 var (compilation, diagnostics) = await base.GetProjectCompilationAsync(project, verifier, cancellationToken);
-                VerifyFinalCompilation(compilation);
+
+                if (project.Name == TestState.Name)
+                {
+                    // Only try to verify the final compilation for the project we're testing, not any additional projects
+                    // in the test harness.
+                    VerifyFinalCompilation(compilation);
+                }
+
                 return (compilation, diagnostics);
             }
 

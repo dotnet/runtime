@@ -5433,6 +5433,8 @@ BOOL IsSafeToHandleHardwareException(PCONTEXT contextRecord, PEXCEPTION_RECORD e
         exceptionRecord->ExceptionCode != STATUS_SINGLE_STEP &&
         exceptionRecord->ExceptionCode != STATUS_STACK_OVERFLOW)
     {
+        // tried to consolidate the code and only call HandleSingleStep here but 
+        // for some reason not investigated the debugger tests failed with this change
         pThread->HandleSingleStep(contextRecord, exceptionRecord->ExceptionCode);
     }
 #endif
