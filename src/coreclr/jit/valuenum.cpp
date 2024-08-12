@@ -11165,7 +11165,8 @@ void Compiler::fgValueNumberPhiDef(GenTreeLclVar* newSsaDef, BasicBlock* blk, bo
         if (isUpdate && (phiArgVNP != phiArg->gtVNPair))
         {
             FlowGraphNaturalLoop* const blockLoop = m_loops->GetLoopByHeader(blk);
-            bool const canUseNewVN = optVNIsLoopInvariant(phiArgVNP.GetConservative(), blockLoop, &loopInvariantCache);
+            bool const canUseNewVN = optVNIsLoopInvariant(phiArgVNP.GetConservative(), blockLoop, &loopInvariantCache,
+                                                          /* ignorePhiDefs */ true);
 
             if (canUseNewVN)
             {

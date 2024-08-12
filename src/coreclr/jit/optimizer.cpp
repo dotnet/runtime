@@ -5147,7 +5147,23 @@ void Compiler::optHoistCandidate(GenTree*              tree,
     Metrics.HoistedExpressions++;
 }
 
-bool Compiler::optVNIsLoopInvariant(ValueNum vn, FlowGraphNaturalLoop* loop, VNSet* loopVnInvariantCache)
+//------------------------------------------------------------------------------
+// optVNIsLoopInvariant: Check if the value(s) this VN refers to may vary
+//  across iterations of a loop
+//
+// Arguments:
+//   vn -- the vn of interest
+//   loop -- the loop
+//   loopVnInvariantCache -- cache of prior results for this loop
+//   ignorePhiDefs -- if true, only consider memory dependence
+//
+// Returns:
+//   true if this VN represents a loop invariant
+//
+bool Compiler::optVNIsLoopInvariant(ValueNum              vn,
+                                    FlowGraphNaturalLoop* loop,
+                                    VNSet*                loopVnInvariantCache,
+                                    bool                  ignorePhiDefs)
 {
     // If it is not a VN, is not loop-invariant.
     if (vn == ValueNumStore::NoVN)
@@ -5226,7 +5242,7 @@ bool Compiler::optVNIsLoopInvariant(ValueNum vn, FlowGraphNaturalLoop* loop, VNS
                 // TODO-CQ: We need to either make sure that *all* VN functions
                 // always take VN args, or else have a list of arg positions to exempt, as implicitly
                 // constant.
-                if (!optVNIsLoopInvariant(funcApp.m_args[i], loop, loopVnInvariantCache))
+                if (!optVNIsLoopInvariant(funcApp.m_args[i], loop, loopVnInvariantCache, ignorePhiDefs))
                 {
                     res = false;
                     break;
@@ -5238,7 +5254,7 @@ bool Compiler::optVNIsLoopInvariant(ValueNum vn, FlowGraphNaturalLoop* loop, VNS
     {
         // Is the definition within the loop?  If so, is not loop-invariant.
         LclSsaVarDsc* ssaDef = lvaTable[phiDef.LclNum].GetPerSsaData(phiDef.SsaDef);
-        res                  = !loop->ContainsBlock(ssaDef->GetBlock());
+        res                  = ignorePhiDefs || !loop->ContainsBlock(ssaDef->GetBlock());
     }
     else if (vnStore->GetMemoryPhiDef(vn, &memoryPhiDef))
     {
