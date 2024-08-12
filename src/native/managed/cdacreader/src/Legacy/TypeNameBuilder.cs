@@ -7,7 +7,6 @@ using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
 using System.Text;
 using Microsoft.Diagnostics.DataContractReader.Contracts;
-using Microsoft.Diagnostics.DataContractReader.Helpers;
 
 namespace Microsoft.Diagnostics.DataContractReader.Legacy;
 
@@ -91,7 +90,7 @@ internal struct TypeNameBuilder
             else if (typeSystemContract.IsGenericVariable(typeHandle, out TargetPointer modulePointer, out uint genericParamToken))
             {
                 Contracts.ModuleHandle module = tnb.Target.Contracts.Loader.GetModuleHandle(modulePointer);
-                MetadataReader reader = tnb.Target.Metadata.GetMetadata(module);
+                MetadataReader reader = tnb.Target.Contracts.EcmaMetadata.GetMetadata(module)!;
                 var handle = (GenericParameterHandle)MetadataTokens.Handle((int)genericParamToken);
                 GenericParameter genericParam = reader.GetGenericParameter(handle);
                 if (format.HasFlag(TypeNameFormat.FormatGenericParam))
@@ -151,7 +150,7 @@ internal struct TypeNameBuilder
                 }
                 else
                 {
-                    MetadataReader reader = tnb.Target.Metadata.GetMetadata(moduleHandle);
+                    MetadataReader reader = tnb.Target.Contracts.EcmaMetadata.GetMetadata(moduleHandle)!;
                     AppendNestedTypeDef(ref tnb, reader, (TypeDefinitionHandle)MetadataTokens.EntityHandle((int)typeDefToken), format);
                 }
 
@@ -178,7 +177,7 @@ internal struct TypeNameBuilder
                 Contracts.ModuleHandle module = tnb.Target.Contracts.Loader.GetModuleHandle(modulePtr);
                 // NOTE: The DAC variant of assembly name generation is different than the runtime version. The DAC variant is simpler, and only uses SimpleName
 
-                MetadataReader mr = tnb.Target.Metadata.GetMetadata(module);
+                MetadataReader mr = tnb.Target.Contracts.EcmaMetadata.GetMetadata(module)!;
                 string assemblySimpleName = mr.GetString(mr.GetAssemblyDefinition().Name);
 
                 tnb.AddAssemblySpec(assemblySimpleName);
