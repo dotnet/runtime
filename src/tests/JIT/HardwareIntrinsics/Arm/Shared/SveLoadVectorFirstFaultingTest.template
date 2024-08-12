@@ -195,23 +195,20 @@ namespace JIT.HardwareIntrinsics.Arm
         {
             TestLibrary.TestFramework.BeginScenario(nameof(RunBasicScenario_LoadFirstFaulting));
 
-            {Op1VectorType}<{Op1BaseType}> loadMask = Sve.CreateTrueMask{Op1BaseType}(SveMaskPattern.All);
-            var op1 = {LoadIsa}.Load{Op1VectorType}(loadMask, ({Op1BaseType}*)(_dataTable.inArray1Ptr));
-
-            // Force op1 (mask) to have the first and last element to be active.
-            op1 = op1.WithElement<{Op1BaseType}>(0, 1).WithElement<{Op1BaseType}>(Vector<{Op1BaseType}>.Count - 1, 1);
+            // Force loadMask to have the first and last element to be active.
+            var loadMask = _mask.WithElement<{Op1BaseType}>(0, 1).WithElement<{Op1BaseType}>(Vector<{Op1BaseType}>.Count - 1, 1);
 
             ref var op2Ref = ref (_dataTable.inBounded.Span.GetPinnableReference());
 
             Sve.SetFfr(Sve.CreateTrueMaskByte(SveMaskPattern.All));
             var result = {Isa}.{Method}(
-                op1,
+                loadMask,
                 ({Op2BaseType}*)(Unsafe.AsPointer(ref op2Ref))
             );
             var faultResult = Sve.GetFfr{GetFfrType}();
 
             Unsafe.Write(_dataTable.outArrayPtr, result);
-            ValidateFirstFaultingResult(op1, ref op2Ref, _dataTable.inBounded.Span.Length, _dataTable.outArrayPtr, faultResult);
+            ValidateFirstFaultingResult(loadMask, ref op2Ref, _dataTable.inBounded.Span.Length, _dataTable.outArrayPtr, faultResult);
         }
 
         public void RunReflectionScenario_Load()
