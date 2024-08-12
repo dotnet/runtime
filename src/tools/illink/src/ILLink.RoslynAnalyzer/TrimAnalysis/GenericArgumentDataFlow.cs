@@ -43,7 +43,7 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 				var genericParameterValue = new GenericParameterValue (typeParameters[i]);
 				if (genericParameterValue.DynamicallyAccessedMemberTypes != DynamicallyAccessedMemberTypes.None) {
 					SingleValue genericArgumentValue = SingleValueExtensions.FromTypeSymbol (typeArgument)!;
-					var reflectionAccessAnalyzer = new ReflectionAccessAnalyzer (reportDiagnostic);
+					var reflectionAccessAnalyzer = new ReflectionAccessAnalyzer (reportDiagnostic, typeNameResolver);
 					var requireDynamicallyAccessedMembersAction = new RequireDynamicallyAccessedMembersAction (typeNameResolver, location, reportDiagnostic, reflectionAccessAnalyzer);
 					requireDynamicallyAccessedMembersAction.Invoke (genericArgumentValue, genericParameterValue);
 				}

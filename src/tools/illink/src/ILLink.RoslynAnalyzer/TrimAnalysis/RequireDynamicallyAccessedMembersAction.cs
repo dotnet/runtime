@@ -37,7 +37,7 @@ namespace ILLink.Shared.TrimAnalysis
 		public partial bool TryResolveTypeNameAndMark (string typeName, bool needsAssemblyName, out TypeProxy type)
 		{
 			var diagnosticContext = new DiagnosticContext (_location, _reportDiagnostic);
-			if (_reflectionAccessAnalyzer.TryResolveTypeNameAndMark (_typeNameResolver, typeName, diagnosticContext, needsAssemblyName, out ITypeSymbol? foundType)) {
+			if (_reflectionAccessAnalyzer.TryResolveTypeNameAndMark (typeName, diagnosticContext, needsAssemblyName, out ITypeSymbol? foundType)) {
 				if (foundType is INamedTypeSymbol namedType && namedType.IsGenericType)
 					GenericArgumentDataFlow.ProcessGenericArgumentDataFlow (_typeNameResolver, _location, namedType, _reportDiagnostic);
 
