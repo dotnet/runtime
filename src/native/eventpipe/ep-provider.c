@@ -78,6 +78,11 @@ provider_prepare_callback_data (
 	EP_ASSERT (provider != NULL);
 	EP_ASSERT (provider_callback_data != NULL);
 
+	ep_requires_lock_held ();
+
+	if (provider->callback_func != NULL)
+		provider->callbacks_pending++;
+
 	return ep_provider_callback_data_init (
 		provider_callback_data,
 		filter_data,
@@ -86,7 +91,8 @@ provider_prepare_callback_data (
 		keywords,
 		provider_level,
 		provider->sessions != 0,
-		session_id);
+		session_id,
+		provider);
 }
 
 static
@@ -193,6 +199,9 @@ ep_provider_alloc (
 	instance->event_list = dn_list_alloc ();
 	ep_raise_error_if_nok (instance->event_list != NULL);
 
+	ep_rt_wait_event_alloc (&instance->callbacks_complete_event, true /* bManual */, false /* bInitial */);
+	ep_raise_error_if_nok (ep_rt_wait_event_is_valid (&instance->callbacks_complete_event));
+
 	instance->keywords = 0;
 	instance->provider_level = EP_EVENT_LEVEL_CRITICAL;
 	instance->callback_func = callback_func;
@@ -200,6 +209,7 @@ ep_provider_alloc (
 	instance->config = config;
 	instance->delete_deferred = false;
 	instance->sessions = 0;
+	instance->callbacks_pending = 0;
 
 ep_on_exit:
 	return instance;
@@ -225,6 +235,7 @@ ep_provider_free (EventPipeProvider * provider)
 	}
 
 ep_on_exit:
+	ep_rt_wait_event_free (&provider->callbacks_complete_event);
 	ep_rt_utf16_string_free (provider->provider_name_utf16);
 	ep_rt_utf8_string_free (provider->provider_name);
 	ep_rt_object_free (provider);
@@ -363,7 +374,9 @@ provider_invoke_callback (EventPipeProviderCallbackData *provider_callback_data)
 {
 	EP_ASSERT (provider_callback_data != NULL);
 
-	// Lock should not be held when invoking callback.
+	// A lock should not be held when invoking the callback, as concurrent callbacks
+	// may trigger a deadlock with the EventListenersLock as detailed in
+	// https://github.com/dotnet/runtime/pull/105734
 	ep_requires_lock_not_held ();
 
 	const ep_char8_t *filter_data = ep_provider_callback_data_get_filter_data (provider_callback_data);
@@ -426,6 +439,19 @@ provider_invoke_callback (EventPipeProviderCallbackData *provider_callback_data)
 			is_event_filter_desc_init ? &event_filter_desc : NULL,
 			callback_data /* CallbackContext */);
 	}
+
+	// The callback completed, can take the lock again.
+	EP_LOCK_ENTER (section1)
+		if (callback_function != NULL) {
+			EventPipeProvider *provider = provider_callback_data->provider;
+			provider->callbacks_pending--;
+			if (provider->callbacks_pending == 0 && provider->callback_func == NULL) {
+				// ep_delete_provider deferred provider deletion and is waiting for all in-flight callbacks
+				// to complete. This is the last callback, so signal completion.
+				ep_rt_wait_event_set (&provider->callbacks_complete_event);
+			}
+		}
+	EP_LOCK_EXIT (section1)
 
 ep_on_exit:
 	if (is_event_filter_desc_init)
