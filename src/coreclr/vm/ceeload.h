@@ -1647,7 +1647,7 @@ struct cdac_data<Module>
     static constexpr size_t MethodDefToDescMap = offsetof(Module, m_MethodDefToDescMap);
     static constexpr size_t TypeDefToMethodTableMap = offsetof(Module, m_TypeDefToMethodTableMap);
     static constexpr size_t TypeRefToMethodTableMap = offsetof(Module, m_TypeRefToMethodTableMap);
-    static constexpr size_t MethodDefToILCodeVersioningState = offsetof(Module, m_ILCodeVersioningStateMap);
+    static constexpr size_t MethodDefToILCodeVersioningStateMap = offsetof(Module, m_ILCodeVersioningStateMap);
 };
 
 //
