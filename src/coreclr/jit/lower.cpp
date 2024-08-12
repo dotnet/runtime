@@ -2022,7 +2022,7 @@ void Lowering::LowerSpecialCopyArgs(GenTreeCall* call)
             // check if parameter at the same index as the IL argument is marked as requiring special copy, assuming
             // that it is being passed 1:1 to the pinvoke
             unsigned paramIndex = comp->compMap2ILvarNum(argIndex);
-            if ((paramIndex != ICorDebugInfo::UNKNOWN_ILNUM) && comp->argRequiresSpecialCopy(paramIndex) &&
+            if ((paramIndex != (unsigned)ICorDebugInfo::UNKNOWN_ILNUM) && comp->argRequiresSpecialCopy(paramIndex) &&
                 genActualType(arg.GetNode()) == TYP_STRUCT)
             {
                 assert(arg.GetNode()->OperIs(GT_PUTARG_STK));
