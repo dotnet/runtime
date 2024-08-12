@@ -593,6 +593,18 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
             break;
         }
 
+#if defined(TARGET_X86)
+        case NI_VectorT_ToScalar:
+        {
+            if (varTypeIsLong(simdBaseType) && !compOpportunisticallyDependsOn(InstructionSet_SSE41))
+            {
+                return nullptr;
+            }
+
+            break;
+        }
+#endif // TARGET_X86
+
 #if defined(TARGET_XARCH)
         case NI_VectorT_GetElement:
         {
@@ -889,14 +901,6 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
 
                 return op1;
             }
-
-#if defined(TARGET_X86)
-            if ((intrinsic == NI_VectorT_ToScalar) && varTypeIsLong(simdBaseType) &&
-                !compOpportunisticallyDependsOn(InstructionSet_SSE41))
-            {
-                return nullptr;
-            }
-#endif // TARGET_X86
 
             argType = JITtype2varType(strip(info.compCompHnd->getArgType(sig, argList, &argClass)));
             op1     = getArgForHWIntrinsic(argType, argClass);
