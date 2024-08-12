@@ -18429,7 +18429,7 @@ void emitter::getInsSveExecutionCharacteristics(instrDesc* id, insExecutionChara
 
 void emitter::emitInsPairSanityCheck(instrDesc* firstId, instrDesc* secondId)
 {
-    if (firstId == nullptr || secondId == nullptr)
+    if (firstId == nullptr)
     {
         return;
     }
@@ -18438,6 +18438,12 @@ void emitter::emitInsPairSanityCheck(instrDesc* firstId, instrDesc* secondId)
     if (firstId->idIns() != INS_sve_movprfx)
     {
         return;
+    }
+
+    // The movprfx can't be the last instruction
+    if (secondId  == nullptr)
+    {
+        assert(!"Last instruction generated is a MOVPRFX");
     }
 
     // Quoted sections are taken fron the Arm manual.

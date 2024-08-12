@@ -7110,6 +7110,11 @@ unsigned emitter::emitEndCodeGen(Compiler*         comp,
             prevId = currId;
             emitAdvanceInstrDesc(&currId, emitSizeOfInsDsc(currId));
         }
+        // Additional check for the final instruction
+        if (ig->igNext == nullptr)
+        {
+            emitInsPairSanityCheck(prevId, nullptr);
+        }
 #endif // DEBUG && TARGET_ARM64
 
         assert(!(ig->igFlags & IGF_PLACEHOLDER)); // There better not be any placeholder groups left
