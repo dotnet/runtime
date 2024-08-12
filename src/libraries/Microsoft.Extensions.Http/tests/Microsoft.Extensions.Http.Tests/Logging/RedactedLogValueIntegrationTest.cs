@@ -77,12 +77,12 @@ namespace Microsoft.Extensions.Http.Logging
                     m.LoggerName == InnerLoggerName;
             }));
             Assert.StartsWith(LineEndingsHelper.Normalize(
-	                """
-	                Request Headers:
-	                Authorization: *
-	                Cache-Control: *
-	                """),
-	                message.Message);
+	            """
+	            Request Headers:
+	            Authorization: *
+	            Cache-Control: *
+	            """),
+	            message.Message);
 
             message = Assert.Single(messages.Where(m =>
             {
@@ -91,12 +91,12 @@ namespace Microsoft.Extensions.Http.Logging
                     m.LoggerName == InnerLoggerName;
             }));
             Assert.StartsWith(LineEndingsHelper.Normalize(
-	                """
-	                Response Headers:
-	                X-Sensitive: *
-	                Y-Non-Sensitive: *
-	                """),
-	                message.Message);
+	            """
+	            Response Headers:
+	            X-Sensitive: *
+	            Y-Non-Sensitive: *
+	            """),
+	            message.Message);
 
             message = Assert.Single(messages.Where(m =>
             {
@@ -105,12 +105,12 @@ namespace Microsoft.Extensions.Http.Logging
                     m.LoggerName == OuterLoggerName;
             }));
             Assert.StartsWith(LineEndingsHelper.Normalize(
-	                """
-	                Response Headers:
-	                X-Sensitive: *
-	                Y-Non-Sensitive: *
-	                """),
-	                message.Message);
+	            """
+	            Response Headers:
+	            X-Sensitive: *
+	            Y-Non-Sensitive: *
+	            """),
+	            message.Message);
         }
 
         [Fact]
