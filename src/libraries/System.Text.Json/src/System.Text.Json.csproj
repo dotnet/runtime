@@ -381,7 +381,7 @@ The System.Text.Json library is built-in as part of the shared framework in .NET
   </ItemGroup>
 
   <!-- Application tfms (.NETCoreApp, .NETFramework) need to use the same or higher version of .NETStandard's dependencies. -->
-  <ItemGroup>
+  <ItemGroup Condition="'$(TargetFramework)' != '$(NetCoreAppCurrent)'">
     <ProjectReference Include="$(LibrariesProjectRoot)System.Text.Encodings.Web\src\System.Text.Encodings.Web.csproj" />
   </ItemGroup>
 
@@ -398,6 +398,7 @@ The System.Text.Json library is built-in as part of the shared framework in .NET
     <Reference Include="System.Runtime.Intrinsics" />
     <Reference Include="System.Runtime.Loader" />
     <Reference Include="System.Text.Encoding.Extensions" />
+    <Reference Include="System.Text.Encodings.Web" />
     <Reference Include="System.Threading" />
   </ItemGroup>
 

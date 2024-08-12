@@ -196,6 +196,21 @@
     </ItemGroup>
   </Target>
 
+  <Target Name="WarnOnProjectReferenceToFrameworkAssemblies"
+          BeforeTargets="IncludeTransitiveProjectReferences"
+          Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)' and
+                     '@(ProjectReference)' != ''">
+    <!-- Find project references that overlap with NetCoreApp, are direct (NuGetPackageId is not set), actually referenced (ReferenceOutputAssembly), and not hidden with PrivateAssets
+         ProjectReferences can opt out of this checking by setting AllowFrameworkPackageReference, though they should not. -->
+    <Warning Text="Project reference '%(ProjectReference.Identity)' is a reference to a framework assembly and is not required in $(NetCoreAppCurrent) (NetCoreAppCurrent)."
+             Code="NETPKG0001"
+             Condition="$(NetCoreAppLibrary.Contains('%(ProjectReference.Filename);')) and
+                        '%(ProjectReference.ReferenceOutputAssembly)' != 'false' and
+                        '%(ProjectReference.NuGetPackageId)' == '' and
+                        '%(ProjectReference.PrivateAssets)' != 'all' and
+                        '%(ProjectReference.AllowFrameworkPackageReference)' != 'true'" />
+  </Target>
+
   <Target Name="GenerateMultiTargetRoslynComponentTargetsFile"
           Inputs="$(MSBuildProjectFullPath);$(_MultiTargetRoslynComponentTargetsTemplate)"
           Outputs="$(MultiTargetRoslynComponentTargetsFileIntermediatePath)">

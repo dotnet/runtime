@@ -161,7 +161,4 @@ System.Data.Odbc.OdbcTransaction</PackageDescription>
     <None Include="DatabaseSetupInstructions.md" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">
-    <ProjectReference Include="$(LibrariesProjectRoot)System.Text.Encoding.CodePages\src\System.Text.Encoding.CodePages.csproj" />
-  </ItemGroup>
 </Project>

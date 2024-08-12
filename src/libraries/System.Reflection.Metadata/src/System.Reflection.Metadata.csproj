@@ -251,7 +251,7 @@ The System.Reflection.Metadata library is built-in as part of the shared framewo
     <Compile Include="$(CommonPath)System\Obsoletions.cs" Link="Common\System\Obsoletions.cs" />
   </ItemGroup>
 
-  <ItemGroup>
+  <ItemGroup Condition="'$(TargetFramework)' != '$(NetCoreAppCurrent)'">
     <ProjectReference Include="$(LibrariesProjectRoot)System.Collections.Immutable\src\System.Collections.Immutable.csproj" />
   </ItemGroup>
 
@@ -261,6 +261,7 @@ The System.Reflection.Metadata library is built-in as part of the shared framewo
 
   <ItemGroup Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)'">
     <Reference Include="System.Collections" />
+    <Reference Include="System.Collections.Immutable" />
     <Reference Include="System.IO.Compression" />
     <Reference Include="System.IO.MemoryMappedFiles" />
     <Reference Include="System.Memory" />
