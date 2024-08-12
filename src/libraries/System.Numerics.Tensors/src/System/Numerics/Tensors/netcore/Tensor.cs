@@ -5,6 +5,7 @@ using System.Buffers;
 using System.Collections;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Reflection.Metadata.Ecma335;
 using System.Runtime.CompilerServices;
@@ -14,12 +15,14 @@ using static System.Runtime.InteropServices.JavaScript.JSType;
 
 #pragma warning disable CS8601 // Possible null reference assignment.
 #pragma warning disable CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider declaring as nullable.
-#pragma warning disable 8500 // address / sizeof of managed types
 
 namespace System.Numerics.Tensors
 {
+    [Experimental(Experimentals.TensorTDiagId, UrlFormat = Experimentals.SharedUrlFormat)]
+#pragma warning disable 1591 // TODO: Document this API. https://github.com/dotnet/runtime/issues/105981
     public sealed class Tensor<T>
         : ITensor<Tensor<T>, T>
+#pragma warning restore 1591
     {
         /// <summary>A byref or a native ptr.</summary>
         internal readonly T[] _values;
@@ -173,7 +176,7 @@ namespace System.Numerics.Tensors
         /// Gets the length of each dimension in this <see cref="Tensor{T}"/>.
         /// </summary>
         /// <value><see cref="ReadOnlySpan{T}"/> with the lengths of each dimension.</value>
-        void IReadOnlyTensor<Tensor<T>, T>.GetLengths(Span<nint> destination) => _lengths.CopyTo(destination);
+        ReadOnlySpan<nint> IReadOnlyTensor<Tensor<T>, T>.Lengths => _lengths;
 
 
         /// <summary>
@@ -186,7 +189,7 @@ namespace System.Numerics.Tensors
         /// Gets the strides of each dimension in this <see cref="Tensor{T}"/>.
         /// </summary>
         /// <value><see cref="ReadOnlySpan{T}"/> with the strides of each dimension.</value>
-        void IReadOnlyTensor<Tensor<T>, T>.GetStrides(scoped Span<nint> destination) => _strides.CopyTo(destination);
+        ReadOnlySpan<nint> IReadOnlyTensor<Tensor<T>, T>.Strides => _strides;
 
         bool ITensor<Tensor<T>, T>.IsReadOnly => false;
 
@@ -364,11 +367,13 @@ namespace System.Numerics.Tensors
             }
         }
 
+#pragma warning disable 1591 // TODO: Document this API. https://github.com/dotnet/runtime/issues/105981
         public static implicit operator Tensor<T>(T[] array) => new Tensor<T>(array, [array.Length]);
 
         public static implicit operator TensorSpan<T>(Tensor<T> value) => new TensorSpan<T>(ref MemoryMarshal.GetArrayDataReference(value._values), value._lengths, value._strides, value._flattenedLength);
 
         public static implicit operator ReadOnlyTensorSpan<T>(Tensor<T> value) => new ReadOnlyTensorSpan<T>(ref MemoryMarshal.GetArrayDataReference(value._values), value._lengths, value._strides, value.FlattenedLength);
+#pragma warning restore 1591
 
         /// <summary>
         /// Converts this <see cref="Tensor{T}"/> to a <see cref="TensorSpan{T}"/> pointing to the same backing memory."/>
@@ -613,10 +618,12 @@ namespace System.Numerics.Tensors
         }
 
         // REVIEW: PENDING API REVIEW TO DETERMINE IMPLEMENTATION
+#pragma warning disable 1591 // TODO: Document this API. https://github.com/dotnet/runtime/issues/105981
         public override int GetHashCode()
         {
             throw new NotImplementedException();
         }
+#pragma warning restore 1591
 
         /// <summary>
         /// Get a string representation of the tensor.
@@ -653,10 +660,12 @@ namespace System.Numerics.Tensors
         /// <returns>A <see cref="string"/> representation of the <see cref="Tensor{T}"/></returns>
         public string ToString(params ReadOnlySpan<nint> maximumLengths)
         {
+            if (maximumLengths.Length == 0)
+                maximumLengths = (from number in Enumerable.Range(0, Rank) select (nint)5).ToArray();
             var sb = new StringBuilder();
             sb.AppendLine(ToMetadataString());
             sb.AppendLine("{");
-            sb.Append(AsTensorSpan().ToString(10, 10));
+            sb.Append(AsTensorSpan().ToString(maximumLengths));
             sb.AppendLine("}");
             return sb.ToString();
         }

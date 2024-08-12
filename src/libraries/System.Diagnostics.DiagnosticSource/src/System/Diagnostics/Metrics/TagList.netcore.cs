@@ -19,7 +19,6 @@ namespace System.Diagnostics
     /// Using more than eight tags will cause allocating memory to store the tags.
     /// Public static (Shared in Visual Basic) members of this type are thread safe. Any instance members are not guaranteed to be thread safe.
     /// </remarks>
-    [StructLayout(LayoutKind.Sequential)]
     public struct TagList : IList<KeyValuePair<string, object?>>, IReadOnlyList<KeyValuePair<string, object?>>
     {
         private const int OverflowAdditionalCapacity = 8;

@@ -432,15 +432,15 @@ PhaseStatus Compiler::fgPostImportationCleanup()
                 //
                 BasicBlock* const oldTryEntry  = HBtab->ebdTryBeg;
                 BasicBlock*       tryEntryPrev = oldTryEntry->Prev();
-                while ((tryEntryPrev != nullptr) && tryEntryPrev->HasFlag(BBF_REMOVED))
+                assert(tryEntryPrev != nullptr);
+                while (tryEntryPrev->HasFlag(BBF_REMOVED))
                 {
                     tryEntryPrev = tryEntryPrev->Prev();
+                    // Because we've added an unremovable scratch block as
+                    // fgFirstBB, this backwards walk should always find
+                    // some block.
+                    assert(tryEntryPrev != nullptr);
                 }
-
-                // Because we've added an unremovable scratch block as
-                // fgFirstBB, this backwards walk should always find
-                // some block.
-                assert(tryEntryPrev != nullptr);
 
                 // If there is a next block of this prev block, and that block is
                 // contained in the current try, we'd like to make that block
@@ -1775,12 +1775,10 @@ bool Compiler::fgOptimizeSwitchBranches(BasicBlock* block)
 
         return true;
     }
-    else if ((block->GetSwitchTargets()->bbsCount == 2) &&
-             block->NextIs(block->GetSwitchTargets()->bbsDstTab[1]->getDestinationBlock()))
+    else if (block->GetSwitchTargets()->bbsCount == 2)
     {
         /* Use a BBJ_COND(switchVal==0) for a switch with only one
-           significant clause besides the default clause, if the
-           default clause is bbNext */
+           significant clause besides the default clause */
         GenTree* switchVal = switchTree->AsOp()->gtOp1;
         noway_assert(genActualTypeIsIntOrI(switchVal->TypeGet()));
 
@@ -1962,6 +1960,12 @@ bool Compiler::fgBlockIsGoodTailDuplicationCandidate(BasicBlock* target, unsigne
 
     // No point duplicating this block if it's not a control flow join.
     if (target->bbRefs < 2)
+    {
+        return false;
+    }
+
+    // No point duplicating this block if it would not remove (part of) the join.
+    if (target->TrueTargetIs(target) || target->FalseTargetIs(target))
     {
         return false;
     }
@@ -2263,6 +2267,108 @@ bool Compiler::fgOptimizeUncondBranchToSimpleCond(BasicBlock* block, BasicBlock*
     }
 
     return true;
+}
+
+//-------------------------------------------------------------
+// fgFoldSimpleCondByForwardSub:
+//   Try to refine the flow of a block that may have just been tail duplicated
+//   or compacted.
+//
+// Arguments:
+//   block - block that was tail duplicated or compacted
+//
+// Returns Value:
+//   true if control flow was changed
+//
+bool Compiler::fgFoldSimpleCondByForwardSub(BasicBlock* block)
+{
+    assert(block->KindIs(BBJ_COND));
+    GenTree* jtrue = block->lastStmt()->GetRootNode();
+    assert(jtrue->OperIs(GT_JTRUE));
+
+    GenTree* relop = jtrue->gtGetOp1();
+    if (!relop->OperIsCompare())
+    {
+        return false;
+    }
+
+    GenTree* op1 = relop->gtGetOp1();
+    GenTree* op2 = relop->gtGetOp2();
+
+    GenTree**            lclUse;
+    GenTreeLclVarCommon* lcl;
+
+    if (op1->OperIs(GT_LCL_VAR) && op2->IsIntegralConst())
+    {
+        lclUse = &relop->AsOp()->gtOp1;
+        lcl    = op1->AsLclVarCommon();
+    }
+    else if (op2->OperIs(GT_LCL_VAR) && op1->IsIntegralConst())
+    {
+        lclUse = &relop->AsOp()->gtOp2;
+        lcl    = op2->AsLclVarCommon();
+    }
+    else
+    {
+        return false;
+    }
+
+    Statement* secondLastStmt = block->lastStmt()->GetPrevStmt();
+    if ((secondLastStmt == nullptr) || (secondLastStmt == block->lastStmt()))
+    {
+        return false;
+    }
+
+    GenTree* prevTree = secondLastStmt->GetRootNode();
+    if (!prevTree->OperIs(GT_STORE_LCL_VAR))
+    {
+        return false;
+    }
+
+    GenTreeLclVarCommon* store = prevTree->AsLclVarCommon();
+    if (store->GetLclNum() != lcl->GetLclNum())
+    {
+        return false;
+    }
+
+    if (!store->Data()->IsIntegralConst())
+    {
+        return false;
+    }
+
+    if (genActualType(store) != genActualType(store->Data()) || (genActualType(store) != genActualType(lcl)))
+    {
+        return false;
+    }
+
+    JITDUMP("Forward substituting local after jump threading. Before:\n");
+    DISPSTMT(block->lastStmt());
+
+    JITDUMP("\nAfter:\n");
+
+    LclVarDsc* varDsc  = lvaGetDesc(lcl);
+    GenTree*   newData = gtCloneExpr(store->Data());
+    if (varTypeIsSmall(varDsc) && fgCastNeeded(store->Data(), varDsc->TypeGet()))
+    {
+        newData = gtNewCastNode(TYP_INT, newData, false, varDsc->TypeGet());
+        newData = gtFoldExpr(newData);
+    }
+
+    *lclUse = newData;
+    DISPSTMT(block->lastStmt());
+
+    JITDUMP("\nNow trying to fold...\n");
+    jtrue->AsUnOp()->gtOp1 = gtFoldExpr(relop);
+    DISPSTMT(block->lastStmt());
+
+    Compiler::FoldResult result = fgFoldConditional(block);
+    if (result != Compiler::FoldResult::FOLD_DID_NOTHING)
+    {
+        assert(block->KindIs(BBJ_ALWAYS));
+        return true;
+    }
+
+    return false;
 }
 
 //-------------------------------------------------------------
@@ -4428,6 +4534,13 @@ void Compiler::fgMoveHotJumps()
                 targetEdge   = block->GetFalseEdge();
                 unlikelyEdge = block->GetTrueEdge();
             }
+
+            // If we aren't sure which successor is hotter, and we already fall into one of them,
+            // do nothing
+            if ((unlikelyEdge->getLikelihood() == 0.5) && block->NextIs(unlikelyEdge->getDestinationBlock()))
+            {
+                continue;
+            }
         }
         else
         {
@@ -5176,10 +5289,35 @@ bool Compiler::fgUpdateFlowGraph(bool doTailDuplication /* = false */,
                 {
                     assert(block->KindIs(BBJ_COND));
                     assert(bNext == block->Next());
-                    change     = true;
-                    modified   = true;
-                    bDest      = block->GetTrueTarget();
-                    bFalseDest = block->GetFalseTarget();
+                    change   = true;
+                    modified = true;
+
+                    if (fgFoldSimpleCondByForwardSub(block))
+                    {
+                        // It is likely another pred of the target now can
+                        // similarly have its control flow straightened out.
+                        // Try to compact it and repeat the optimization for
+                        // it.
+                        if (bDest->bbRefs == 1)
+                        {
+                            BasicBlock* otherPred = bDest->bbPreds->getSourceBlock();
+                            JITDUMP("Trying to compact last pred " FMT_BB " of " FMT_BB " that we now bypass\n",
+                                    otherPred->bbNum, bDest->bbNum);
+                            if (fgCanCompactBlock(otherPred))
+                            {
+                                fgCompactBlock(otherPred);
+                                fgFoldSimpleCondByForwardSub(otherPred);
+                            }
+                        }
+
+                        assert(block->KindIs(BBJ_ALWAYS));
+                        bDest = block->GetTarget();
+                    }
+                    else
+                    {
+                        bDest      = block->GetTrueTarget();
+                        bFalseDest = block->GetFalseTarget();
+                    }
                 }
             }
 
@@ -5604,14 +5742,70 @@ PhaseStatus Compiler::fgDfsBlocksAndRemove()
     fgInvalidateDfsTree();
     m_dfsTree = fgComputeDfs();
 
-    PhaseStatus status = PhaseStatus::MODIFIED_NOTHING;
-    if (m_dfsTree->GetPostOrderCount() != fgBBcount)
+    return fgRemoveBlocksOutsideDfsTree() ? PhaseStatus::MODIFIED_EVERYTHING : PhaseStatus::MODIFIED_NOTHING;
+}
+
+//-------------------------------------------------------------
+// fgRemoveBlocksOutsideDfsTree: Remove the blocks that are not in the current DFS tree.
+//
+// Returns:
+//    True if any block was removed.
+//
+bool Compiler::fgRemoveBlocksOutsideDfsTree()
+{
+    if (m_dfsTree->GetPostOrderCount() == fgBBcount)
     {
+        return false;
+    }
+
 #ifdef DEBUG
-        if (verbose)
+    if (verbose)
+    {
+        printf("%u/%u blocks are unreachable and will be removed:\n", fgBBcount - m_dfsTree->GetPostOrderCount(),
+               fgBBcount);
+        for (BasicBlock* block : Blocks())
         {
-            printf("%u/%u blocks are unreachable and will be removed:\n", fgBBcount - m_dfsTree->GetPostOrderCount(),
-                   fgBBcount);
+            if (!m_dfsTree->Contains(block))
+            {
+                printf("  " FMT_BB "\n", block->bbNum);
+            }
+        }
+    }
+#endif // DEBUG
+
+    // The DFS we run is not precise around call-finally, so
+    // `fgRemoveUnreachableBlocks` can expose newly unreachable blocks
+    // that we did not uncover during the DFS. If we did remove any
+    // call-finally blocks then iterate to closure. This is a very rare
+    // case.
+    while (true)
+    {
+        bool anyCallFinallyPairs = false;
+        fgRemoveUnreachableBlocks([=, &anyCallFinallyPairs](BasicBlock* block) {
+            if (!m_dfsTree->Contains(block))
+            {
+                anyCallFinallyPairs |= block->isBBCallFinallyPair();
+                return true;
+            }
+
+            return false;
+        });
+
+        if (!anyCallFinallyPairs)
+        {
+            break;
+        }
+
+        m_dfsTree = fgComputeDfs();
+    }
+
+#ifdef DEBUG
+    // Did we actually remove all the blocks we said we were going to?
+    if (verbose)
+    {
+        if (m_dfsTree->GetPostOrderCount() != fgBBcount)
+        {
+            printf("%u unreachable blocks were not removed:\n", fgBBcount - m_dfsTree->GetPostOrderCount());
             for (BasicBlock* block : Blocks())
             {
                 if (!m_dfsTree->Contains(block))
@@ -5620,56 +5814,10 @@ PhaseStatus Compiler::fgDfsBlocksAndRemove()
                 }
             }
         }
-#endif // DEBUG
-
-        // The DFS we run is not precise around call-finally, so
-        // `fgRemoveUnreachableBlocks` can expose newly unreachable blocks
-        // that we did not uncover during the DFS. If we did remove any
-        // call-finally blocks then iterate to closure. This is a very rare
-        // case.
-        while (true)
-        {
-            bool anyCallFinallyPairs = false;
-            fgRemoveUnreachableBlocks([=, &anyCallFinallyPairs](BasicBlock* block) {
-                if (!m_dfsTree->Contains(block))
-                {
-                    anyCallFinallyPairs |= block->isBBCallFinallyPair();
-                    return true;
-                }
-
-                return false;
-            });
-
-            if (!anyCallFinallyPairs)
-            {
-                break;
-            }
-
-            m_dfsTree = fgComputeDfs();
-        }
-
-#ifdef DEBUG
-        // Did we actually remove all the blocks we said we were going to?
-        if (verbose)
-        {
-            if (m_dfsTree->GetPostOrderCount() != fgBBcount)
-            {
-                printf("%u unreachable blocks were not removed:\n", fgBBcount - m_dfsTree->GetPostOrderCount());
-                for (BasicBlock* block : Blocks())
-                {
-                    if (!m_dfsTree->Contains(block))
-                    {
-                        printf("  " FMT_BB "\n", block->bbNum);
-                    }
-                }
-            }
-        }
-#endif // DEBUG
-
-        status = PhaseStatus::MODIFIED_EVERYTHING;
     }
+#endif // DEBUG
 
-    return status;
+    return true;
 }
 
 //-------------------------------------------------------------

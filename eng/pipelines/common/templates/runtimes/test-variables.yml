@@ -50,7 +50,7 @@ variables:
     # gc reliability may take up to 2 hours to shutdown. Some scenarios have very long iteration times.
     - name: timeoutPerTestInMinutes
       value: 240
-  - ${{ if in(parameters.testGroup, 'jitstress', 'jitstress-random', 'jitstress-isas-arm', 'jitstress-isas-x86', 'jitstress-isas-avx512', 'jitstressregs-x86', 'jitstressregs', 'jitstress2-jitstressregs', 'jitelthookenabled' ) }}:
+  - ${{ if in(parameters.testGroup, 'jitstress', 'jitstress-random', 'jitstress-isas-arm', 'jitstress-isas-x86', 'jitstress-isas-avx512', 'jitstress-isas-sve', 'jitstressregs-x86', 'jitstressregs', 'jitstress2-jitstressregs', 'jitelthookenabled' ) }}:
     - name: timeoutPerTestCollectionInMinutes
       value: 120
     - name: timeoutPerTestInMinutes

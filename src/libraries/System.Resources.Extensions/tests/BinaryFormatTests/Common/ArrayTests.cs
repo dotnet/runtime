@@ -17,7 +17,7 @@ public abstract class ArrayTests<T> : SerializationTest<T> where T : ISerializer
     {
         nint[] nints = [42, 43, 44];
         object deserialized = Deserialize(Serialize(nints));
-        deserialized.Should().BeEquivalentTo(nints);
+        Assert.Equal(nints, deserialized);
     }
 
     [Fact]

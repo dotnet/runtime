@@ -22,7 +22,29 @@ namespace System.Security.Cryptography.X509Certificates
                 throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
             }
 
-            return LoadX509(data);
+            ICertificatePal? result = null;
+
+            // If the data starts with 0x30, only try the DER loader.
+            // Otherwise, try PEM.
+            // If it's not PEM and not 0x30, still call the DER loader to get the system error.
+            if (data[0] != 0x30)
+            {
+                AppleCertificatePal.TryDecodePem(
+                    data,
+                    (derData, contentType) =>
+                    {
+                        if (contentType != X509ContentType.Cert)
+                        {
+                            // true: keep looking
+                            return true;
+                        }
+
+                        result = LoadX509(derData);
+                        return false;
+                    });
+            }
+
+            return result ?? LoadX509(data);
         }
 
         private static partial ICertificatePal LoadCertificatePalFromFile(string path)

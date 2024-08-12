@@ -1044,9 +1044,9 @@ void DebugStackTrace::GetStackFramesFromException(OBJECTREF * e,
 
     // Now get the _stackTrace reference
     StackTraceArray traceData;
-    EXCEPTIONREF(*e)->GetStackTrace(traceData, pDynamicMethodArray);
 
     GCPROTECT_BEGIN(traceData);
+        EXCEPTIONREF(*e)->GetStackTrace(traceData, pDynamicMethodArray);
         // The number of frame info elements in the stack trace info
         pData->cElements = static_cast<int>(traceData.Size());
 

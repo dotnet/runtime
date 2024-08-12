@@ -2,4 +2,4 @@
 .stamp-wasm-install-and-select*
 emsdk
 
-runtime/dotnet.d.ts.sha256
+runtime/*.d.ts.sha256

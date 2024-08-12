@@ -27,7 +27,7 @@ using namespace clr;
 // is relied on by the EH code and the JIT code (for handling patched
 // managed code, and GC stress exception) after GC stress is dynamically
 // turned off.
-Volatile<DWORD> GCStressPolicy::InhibitHolder::s_nGcStressDisabled = 0;
+int GCStressPolicy::InhibitHolder::s_nGcStressDisabled = 0;
 #endif // STRESS_HEAP
 
 /**************************************************************/
@@ -111,6 +111,7 @@ HRESULT EEConfig::Init()
     fJitFramed = false;
     fJitMinOpts = false;
     fJitEnableOptionalRelocs = false;
+    fDisableOptimizedThreadStaticAccess = false;
     fPInvokeRestoreEsp = (DWORD)-1;
 
     fStressLog = false;
@@ -502,6 +503,8 @@ HRESULT EEConfig::sync()
     fJitEnableOptionalRelocs = (CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_JitEnableOptionalRelocs) == 1);
     iJitOptimizeType      =  CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_JitOptimizeType);
     if (iJitOptimizeType > OPT_RANDOM)     iJitOptimizeType = OPT_DEFAULT;
+
+    fDisableOptimizedThreadStaticAccess = CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_DisableOptimizedThreadStaticAccess) != 0;
 
 #ifdef TARGET_X86
     fPInvokeRestoreEsp = CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_Jit_NetFx40PInvokeStackResilience);

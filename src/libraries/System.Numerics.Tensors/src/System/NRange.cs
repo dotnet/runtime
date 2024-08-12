@@ -15,6 +15,7 @@ namespace System.Buffers
     /// int[] subArray2 = someArray[1..^0]; // { 2, 3, 4, 5 }
     /// </code>
     /// </remarks>
+    [Experimental(Experimentals.TensorTDiagId, UrlFormat = Experimentals.SharedUrlFormat)]
     public readonly struct NRange : IEquatable<NRange>
     {
         /// <summary>Represent the inclusive start NIndex of the NRange.</summary>
@@ -120,6 +121,7 @@ namespace System.Buffers
 
         private static void ThrowArgumentOutOfRangeException() => throw new ArgumentOutOfRangeException("length");
 
+#pragma warning disable 1591 // TODO: Document this API. https://github.com/dotnet/runtime/issues/105981
         public static implicit operator NRange(Range range) => new NRange(range.Start, range.End);
 
         public static explicit operator Range(NRange value) => new Range((Index)value.Start, (Index)value.End);
@@ -127,5 +129,6 @@ namespace System.Buffers
 
         public Range ToRange() => new Range(checked((Index)Start), checked((Index)End));
         public Range ToRangeUnchecked() => new Range((Index)Start, (Index)End);
+#pragma warning restore 1591
     }
 }

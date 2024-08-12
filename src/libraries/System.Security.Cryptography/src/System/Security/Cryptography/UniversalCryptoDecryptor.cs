@@ -51,7 +51,7 @@ namespace System.Security.Cryptography
                 }
 
                 // Postpone the last block to the next round.
-                Debug.Assert(inputBuffer.Length >= _heldoverCipher.Length, "inputBuffer.Length >= _heldoverCipher.Length");
+                Debug.Assert(inputBuffer.Length >= _heldoverCipher.Length);
                 inputBuffer.Slice(inputBuffer.Length - _heldoverCipher.Length).CopyTo(_heldoverCipher);
                 inputBuffer = inputBuffer.Slice(0, inputBuffer.Length - _heldoverCipher.Length);
                 Debug.Assert(inputBuffer.Length % InputBlockSize == 0, "Did not remove whole blocks for depadding");
