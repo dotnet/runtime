@@ -3867,6 +3867,7 @@ inline T* InterlockedCompareExchangeT(
 // Returns the directory for clr module. So, if path was for "C:\Dir1\Dir2\Filename.DLL",
 // then this would return "C:\Dir1\Dir2\" (note the trailing backslash).
 HRESULT GetClrModuleDirectory(SString& wszPath);
+void* GetCurrentModuleBase();
 
 namespace Clr { namespace Util
 {
