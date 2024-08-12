@@ -12,7 +12,7 @@ using System.Collections.Immutable;
 
 namespace ILLink.Shared.TrimAnalysis
 {
-	internal partial struct TypeNameResolver
+	internal struct TypeNameResolver
 	{
 		readonly Compilation _compilation;
 
@@ -26,7 +26,6 @@ namespace ILLink.Shared.TrimAnalysis
 		public bool TryResolveTypeName (
 			string typeNameString,
 			in DiagnosticContext diagnosticContext,
-			IAssemblySymbol assembly,
 			out ITypeSymbol? type,
 			bool needsAssemblyName)
 		{
@@ -39,7 +38,7 @@ namespace ILLink.Shared.TrimAnalysis
 				return false;
 			}
 
-			type = ResolveTypeName (assembly, typeName);
+			type = ResolveTypeName (_compilation.Assembly, typeName);
 			return type != null;
 
 			static bool IsFullyQualified (TypeName typeName)

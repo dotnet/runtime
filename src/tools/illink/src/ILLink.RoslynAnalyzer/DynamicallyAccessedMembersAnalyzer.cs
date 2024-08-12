@@ -118,11 +118,12 @@ namespace ILLink.RoslynAnalyzer
 
 					var location = GetPrimaryLocation (type.Locations);
 
+					var typeNameResolver = new TypeNameResolver (context.Compilation);
 					if (type.BaseType is INamedTypeSymbol baseType)
-						GenericArgumentDataFlow.ProcessGenericArgumentDataFlow (context.Compilation, location, baseType, context.ReportDiagnostic);
+						GenericArgumentDataFlow.ProcessGenericArgumentDataFlow (typeNameResolver, location, baseType, context.ReportDiagnostic);
 
 					foreach (var interfaceType in type.Interfaces)
-						GenericArgumentDataFlow.ProcessGenericArgumentDataFlow (context.Compilation, location, interfaceType, context.ReportDiagnostic);
+						GenericArgumentDataFlow.ProcessGenericArgumentDataFlow (typeNameResolver, location, interfaceType, context.ReportDiagnostic);
 				}, SymbolKind.NamedType);
 				context.RegisterSymbolAction (context => {
 					VerifyMemberOnlyApplyToTypesOrStrings (context, context.Symbol);

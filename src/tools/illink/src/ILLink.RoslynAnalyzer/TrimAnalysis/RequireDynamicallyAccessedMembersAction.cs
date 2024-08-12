@@ -14,20 +14,20 @@ namespace ILLink.Shared.TrimAnalysis
 {
 	internal partial struct RequireDynamicallyAccessedMembersAction
 	{
-		readonly Compilation _compilation;
 		readonly Location _location;
 		readonly Action<Diagnostic>? _reportDiagnostic;
 		readonly ReflectionAccessAnalyzer _reflectionAccessAnalyzer;
+		readonly TypeNameResolver _typeNameResolver;
 #pragma warning disable CA1822 // Mark members as static - the other partial implementations might need to be instance methods
 #pragma warning disable IDE0060 // Unused parameters - should be removed once methods are actually implemented
 
 		public RequireDynamicallyAccessedMembersAction (
-			Compilation compilation,
+			TypeNameResolver typeNameResolver,
 			Location location,
 			Action<Diagnostic>? reportDiagnostic,
 			ReflectionAccessAnalyzer reflectionAccessAnalyzer)
 		{
-			_compilation = compilation;
+			_typeNameResolver = typeNameResolver;
 			_location = location;
 			_reportDiagnostic = reportDiagnostic;
 			_reflectionAccessAnalyzer = reflectionAccessAnalyzer;
@@ -37,9 +37,9 @@ namespace ILLink.Shared.TrimAnalysis
 		public partial bool TryResolveTypeNameAndMark (string typeName, bool needsAssemblyName, out TypeProxy type)
 		{
 			var diagnosticContext = new DiagnosticContext (_location, _reportDiagnostic);
-			if (_reflectionAccessAnalyzer.TryResolveTypeNameAndMark (_compilation, typeName, diagnosticContext, needsAssemblyName, out ITypeSymbol? foundType)) {
+			if (_reflectionAccessAnalyzer.TryResolveTypeNameAndMark (_typeNameResolver, typeName, diagnosticContext, needsAssemblyName, out ITypeSymbol? foundType)) {
 				if (foundType is INamedTypeSymbol namedType && namedType.IsGenericType)
-					GenericArgumentDataFlow.ProcessGenericArgumentDataFlow (_compilation, _location, namedType, _reportDiagnostic);
+					GenericArgumentDataFlow.ProcessGenericArgumentDataFlow (_typeNameResolver, _location, namedType, _reportDiagnostic);
 
 				type = new TypeProxy (foundType);
 				return true;

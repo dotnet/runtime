@@ -12,25 +12,25 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 {
 	internal static class GenericArgumentDataFlow
 	{
-		public static void ProcessGenericArgumentDataFlow (Compilation compilation, Location location, INamedTypeSymbol type, Action<Diagnostic>? reportDiagnostic)
+		public static void ProcessGenericArgumentDataFlow (TypeNameResolver typeNameResolver, Location location, INamedTypeSymbol type, Action<Diagnostic>? reportDiagnostic)
 		{
-			ProcessGenericArgumentDataFlow (compilation, location, type.TypeArguments, type.TypeParameters, reportDiagnostic);
+			ProcessGenericArgumentDataFlow (typeNameResolver, location, type.TypeArguments, type.TypeParameters, reportDiagnostic);
 		}
 
-		public static void ProcessGenericArgumentDataFlow (Compilation compilation, Location location, IMethodSymbol method, Action<Diagnostic>? reportDiagnostic)
+		public static void ProcessGenericArgumentDataFlow (TypeNameResolver typeNameResolver, Location location, IMethodSymbol method, Action<Diagnostic>? reportDiagnostic)
 		{
-			ProcessGenericArgumentDataFlow (compilation, location, method.TypeArguments, method.TypeParameters, reportDiagnostic);
+			ProcessGenericArgumentDataFlow (typeNameResolver, location, method.TypeArguments, method.TypeParameters, reportDiagnostic);
 
-			ProcessGenericArgumentDataFlow (compilation, location, method.ContainingType, reportDiagnostic);
+			ProcessGenericArgumentDataFlow (typeNameResolver, location, method.ContainingType, reportDiagnostic);
 		}
 
-		public static void ProcessGenericArgumentDataFlow (Compilation compilation, Location location, IFieldSymbol field, Action<Diagnostic>? reportDiagnostic)
+		public static void ProcessGenericArgumentDataFlow (TypeNameResolver typeNameResolver, Location location, IFieldSymbol field, Action<Diagnostic>? reportDiagnostic)
 		{
-			ProcessGenericArgumentDataFlow (compilation, location, field.ContainingType, reportDiagnostic);
+			ProcessGenericArgumentDataFlow (typeNameResolver, location, field.ContainingType, reportDiagnostic);
 		}
 
 		static void ProcessGenericArgumentDataFlow (
-			Compilation compilation,
+			TypeNameResolver typeNameResolver,
 			Location location,
 			ImmutableArray<ITypeSymbol> typeArguments,
 			ImmutableArray<ITypeParameterSymbol> typeParameters,
@@ -44,13 +44,13 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 				if (genericParameterValue.DynamicallyAccessedMemberTypes != DynamicallyAccessedMemberTypes.None) {
 					SingleValue genericArgumentValue = SingleValueExtensions.FromTypeSymbol (typeArgument)!;
 					var reflectionAccessAnalyzer = new ReflectionAccessAnalyzer (reportDiagnostic);
-					var requireDynamicallyAccessedMembersAction = new RequireDynamicallyAccessedMembersAction (compilation, location, reportDiagnostic, reflectionAccessAnalyzer);
+					var requireDynamicallyAccessedMembersAction = new RequireDynamicallyAccessedMembersAction (typeNameResolver, location, reportDiagnostic, reflectionAccessAnalyzer);
 					requireDynamicallyAccessedMembersAction.Invoke (genericArgumentValue, genericParameterValue);
 				}
 
 				// Recursively process generic argument data flow on the generic argument if it itself is generic
 				if (typeArgument is INamedTypeSymbol namedTypeArgument && namedTypeArgument.IsGenericType)
-					ProcessGenericArgumentDataFlow (compilation, location, namedTypeArgument, reportDiagnostic);
+					ProcessGenericArgumentDataFlow (typeNameResolver, location, namedTypeArgument, reportDiagnostic);
 			}
 		}
 

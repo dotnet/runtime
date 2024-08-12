@@ -139,10 +139,9 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 			}
 		}
 
-		internal bool TryResolveTypeNameAndMark (Compilation compilation, string typeName, in DiagnosticContext diagnosticContext, bool needsAssemblyName, [NotNullWhen (true)] out ITypeSymbol? type)
+		internal bool TryResolveTypeNameAndMark (TypeNameResolver typeNameResolver, string typeName, in DiagnosticContext diagnosticContext, bool needsAssemblyName, [NotNullWhen (true)] out ITypeSymbol? type)
 		{
-			var typeNameResolver = new TypeNameResolver (compilation);
-			return typeNameResolver.TryResolveTypeName (typeName, diagnosticContext, compilation.Assembly, out type, needsAssemblyName);
+			return typeNameResolver.TryResolveTypeName (typeName, diagnosticContext, out type, needsAssemblyName);
 		}
 	}
 }

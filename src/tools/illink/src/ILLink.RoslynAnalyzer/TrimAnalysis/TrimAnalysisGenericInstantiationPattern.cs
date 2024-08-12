@@ -49,17 +49,18 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 				!OwningSymbol.IsInRequiresUnreferencedCodeAttributeScope (out _) &&
 				!FeatureContext.IsEnabled (RequiresUnreferencedCodeAnalyzer.FullyQualifiedRequiresUnreferencedCodeAttribute)) {
 				var location = Operation.Syntax.GetLocation ();
+				var typeNameResolver = new TypeNameResolver (context.Compilation);
 				switch (GenericInstantiation) {
 				case INamedTypeSymbol type:
-					GenericArgumentDataFlow.ProcessGenericArgumentDataFlow (context.Compilation, location, type, reportDiagnostic);
+					GenericArgumentDataFlow.ProcessGenericArgumentDataFlow (typeNameResolver, location, type, reportDiagnostic);
 					break;
 
 				case IMethodSymbol method:
-					GenericArgumentDataFlow.ProcessGenericArgumentDataFlow (context.Compilation, location, method, reportDiagnostic);
+					GenericArgumentDataFlow.ProcessGenericArgumentDataFlow (typeNameResolver, location, method, reportDiagnostic);
 					break;
 
 				case IFieldSymbol field:
-					GenericArgumentDataFlow.ProcessGenericArgumentDataFlow (context.Compilation, location, field, reportDiagnostic);
+					GenericArgumentDataFlow.ProcessGenericArgumentDataFlow (typeNameResolver, location, field, reportDiagnostic);
 					break;
 				}
 			}
