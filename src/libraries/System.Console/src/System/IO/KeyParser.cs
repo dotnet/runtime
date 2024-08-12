@@ -63,7 +63,7 @@ internal static class KeyParser
         }
 
         Dictionary<string, ConsoleKeyInfo>.AlternateLookup<ReadOnlySpan<char>> terminfoDb = // the most important source of truth
-            terminalFormatStrings.KeyFormatToConsoleKey.GetAlternateLookup<string, ConsoleKeyInfo, ReadOnlySpan<char>>();
+            terminalFormatStrings.KeyFormatToConsoleKey.GetAlternateLookup<ReadOnlySpan<char>>();
         ConsoleModifiers modifiers = ConsoleModifiers.None;
         ConsoleKey key;
 

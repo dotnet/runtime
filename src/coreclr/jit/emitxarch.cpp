@@ -3133,7 +3133,6 @@ inline bool hasTupleTypeInfo(instruction ins)
 insTupleType emitter::insTupleTypeInfo(instruction ins) const
 {
     assert((unsigned)ins < ArrLen(insTupleTypeInfos));
-    assert(insTupleTypeInfos[ins] != INS_TT_NONE);
     return insTupleTypeInfos[ins];
 }
 
@@ -6602,6 +6601,7 @@ void emitter::emitIns_R_R(instruction ins, emitAttr attr, regNumber reg1, regNum
         assert(UseEvexEncoding());
         id->idSetEvexbContext(instOptions);
     }
+    SetEvexEmbMaskIfNeeded(id, instOptions);
 
     UNATIVE_OFFSET sz = emitInsSizeRR(id);
     id->idCodeSize(sz);

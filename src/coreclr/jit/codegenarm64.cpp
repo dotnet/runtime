@@ -3878,19 +3878,21 @@ void CodeGen::genLockedInstructions(GenTreeOp* treeNode)
     {
         assert(!data->isContainedIntOrIImmed());
 
+        // These instructions change semantics when targetReg is ZR (the memory ordering becomes weaker).
+        // See atomicBarrierDroppedOnZero in LLVM
+        assert((targetReg != REG_NA) && (targetReg != REG_ZR));
+
         switch (treeNode->gtOper)
         {
             case GT_XORR:
-                GetEmitter()->emitIns_R_R_R(INS_ldsetal, dataSize, dataReg, (targetReg == REG_NA) ? REG_ZR : targetReg,
-                                            addrReg);
+                GetEmitter()->emitIns_R_R_R(INS_ldsetal, dataSize, dataReg, targetReg, addrReg);
                 break;
             case GT_XAND:
             {
                 // Grab a temp reg to perform `MVN` for dataReg first.
                 regNumber tempReg = internalRegisters.GetSingle(treeNode);
                 GetEmitter()->emitIns_R_R(INS_mvn, dataSize, tempReg, dataReg);
-                GetEmitter()->emitIns_R_R_R(INS_ldclral, dataSize, tempReg, (targetReg == REG_NA) ? REG_ZR : targetReg,
-                                            addrReg);
+                GetEmitter()->emitIns_R_R_R(INS_ldclral, dataSize, tempReg, targetReg, addrReg);
                 break;
             }
             case GT_XCHG:
@@ -3908,8 +3910,7 @@ void CodeGen::genLockedInstructions(GenTreeOp* treeNode)
                 break;
             }
             case GT_XADD:
-                GetEmitter()->emitIns_R_R_R(INS_ldaddal, dataSize, dataReg, (targetReg == REG_NA) ? REG_ZR : targetReg,
-                                            addrReg);
+                GetEmitter()->emitIns_R_R_R(INS_ldaddal, dataSize, dataReg, targetReg, addrReg);
                 break;
             default:
                 assert(!"Unexpected treeNode->gtOper");
