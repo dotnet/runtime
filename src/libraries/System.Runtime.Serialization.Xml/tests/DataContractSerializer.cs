@@ -4478,6 +4478,7 @@ public static partial class DataContractSerializerTests
     }
 
     [SkipOnPlatform(TestPlatforms.Browser, "Causes a stack overflow")]
+    [SkipOnCoreClr("Random OSR can cause stack overflow", RuntimeTestModes.JitRandomOnStackReplacement)]
     [Fact]
     public static void DCS_DeeplyLinkedData()
     {
