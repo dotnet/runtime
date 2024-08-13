@@ -43,7 +43,7 @@ namespace ILLink.Shared.TypeSystemProxy
 		public ICustomAttributeProvider GetCustomAttributeProvider ()
 		{
 			if (IsImplicitThis)
-				return Method.Method;
+				return Method.Definition;
 #pragma warning disable RS0030 // MethodReference.Parameters is banned -- this class provides wrappers to use
 			return Method.Method.Parameters[MetadataIndex];
 #pragma warning restore RS0030 // Do not used banned APIs

@@ -27,9 +27,14 @@ namespace ILLink.Shared.TrimAnalysis
 			_hierarchyInfo = new TypeHierarchyCache (context);
 		}
 
-		public bool RequiresDataFlowAnalysis (MethodDefinition method) =>
-			GetAnnotations (method.DeclaringType).TryGetAnnotation (method, out var methodAnnotations)
+		public bool RequiresDataFlowAnalysis (MethodReference methodRef)
+		{
+			if (_context.TryResolve (methodRef) is not MethodDefinition method)
+				return false;
+
+			return GetAnnotations (method.DeclaringType).TryGetAnnotation (method, out var methodAnnotations)
 				&& (methodAnnotations.ReturnParameterAnnotation != DynamicallyAccessedMemberTypes.None || methodAnnotations.ParameterAnnotations != null);
+		}
 
 		public bool RequiresVirtualMethodDataFlowAnalysis (MethodDefinition method) =>
 			GetAnnotations (method.DeclaringType).TryGetAnnotation (method, out _);
@@ -42,15 +47,21 @@ namespace ILLink.Shared.TrimAnalysis
 
 		internal DynamicallyAccessedMemberTypes GetParameterAnnotation (ParameterProxy param)
 		{
-			if (GetAnnotations (param.Method.Method.DeclaringType).TryGetAnnotation (param.Method.Method, out var annotation) &&
+			if (_context.TryResolve (param.Method.Method) is not MethodDefinition methodDef)
+				return DynamicallyAccessedMemberTypes.None;
+
+			if (GetAnnotations (methodDef.DeclaringType).TryGetAnnotation (methodDef, out var annotation) &&
 				annotation.ParameterAnnotations != null)
 				return annotation.ParameterAnnotations[(int) param.Index];
 
 			return DynamicallyAccessedMemberTypes.None;
 		}
 
-		public DynamicallyAccessedMemberTypes GetReturnParameterAnnotation (MethodDefinition method)
+		public DynamicallyAccessedMemberTypes GetReturnParameterAnnotation (MethodReference methodRef)
 		{
+			if (_context.TryResolve (methodRef) is not MethodDefinition method)
+				return DynamicallyAccessedMemberTypes.None;
+
 			if (GetAnnotations (method.DeclaringType).TryGetAnnotation (method, out var annotation))
 				return annotation.ReturnParameterAnnotation;
 
@@ -696,7 +707,7 @@ namespace ILLink.Shared.TrimAnalysis
 
 #pragma warning disable CA1822 // Mark members as static - Should be an instance method for consistency
 		internal partial MethodReturnValue GetMethodReturnValue (MethodProxy method, bool isNewObj, DynamicallyAccessedMemberTypes dynamicallyAccessedMemberTypes)
-			=> MethodReturnValue.Create (method.Method, isNewObj, dynamicallyAccessedMemberTypes);
+			=> MethodReturnValue.Create (method.Definition, isNewObj, dynamicallyAccessedMemberTypes);
 #pragma warning restore CA1822 // Mark members as static
 
 		internal partial MethodReturnValue GetMethodReturnValue (MethodProxy method, bool isNewObj)
