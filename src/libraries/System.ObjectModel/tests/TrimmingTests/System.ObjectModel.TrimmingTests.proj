@@ -1,9 +1,15 @@
 <Project DefaultTargets="Build">
   <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.props))" />
 
-  <PropertyGroup>
-    <_DefaultValueAttributeSupport>true</_DefaultValueAttributeSupport>
-  </PropertyGroup>
+  <ItemGroup>
+    <TestConsoleAppSourceFiles Include="TypeConverterAttributeStringArgCtorTest.cs">
+      <EnabledProperties>_DefaultValueAttributeSupport</EnabledProperties>
+    </TestConsoleAppSourceFiles>
+    <TestConsoleAppSourceFiles Include="TypeConverterAttributeTypeArgCtorTest.cs">
+      <EnabledProperties>_DefaultValueAttributeSupport</EnabledProperties>
+    </TestConsoleAppSourceFiles>
+    <TestConsoleAppSourceFiles Include="TypeDescriptionProviderAttributeCtorTest.cs" />
+  </ItemGroup>
 
   <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.targets))" />
 </Project>
