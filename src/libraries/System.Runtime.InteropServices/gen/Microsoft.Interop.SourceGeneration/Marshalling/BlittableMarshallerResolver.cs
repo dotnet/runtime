@@ -30,6 +30,7 @@ namespace Microsoft.Interop
                 }
 
                 return ResolvedGenerator.NotSupported(
+                    info,
                     new GeneratorDiagnostic.NotSupported(info, context)
                     {
                         NotSupportedDetails = SR.RuntimeMarshallingMustBeDisabled,

@@ -13,7 +13,7 @@ using static Microsoft.Interop.SyntaxFactoryExtensions;
 namespace Microsoft.Interop
 {
     /// <summary>
-    /// Base code generator for generating the body of a source-generated P/Invoke and providing customization for how to invoke/define the native method.
+    /// Base code generator for generating the body of a source-generated managed-to-unmanaged stub and providing customization for how to invoke/define the native method.
     /// </summary>
     /// <remarks>
     /// This type enables multiple code generators for P/Invoke-style marshalling
@@ -26,9 +26,9 @@ namespace Microsoft.Interop
     /// This refactoring allows the code generator to have control over where the target method is declared
     /// and how it is declared.
     /// </remarks>
-    internal sealed class PInvokeStubCodeGenerator
+    public sealed class ManagedToNativeStubGenerator
     {
-        public bool StubIsBasicForwarder { get; }
+        public bool NoMarshallingRequired { get; }
 
         public bool HasForwardedTypes { get; }
 
@@ -47,7 +47,7 @@ namespace Microsoft.Interop
 
         private readonly ManagedToNativeStubCodeContext _context;
 
-        public PInvokeStubCodeGenerator(
+        public ManagedToNativeStubGenerator(
             ImmutableArray<TypePositionInfo> argTypes,
             bool setLastError,
             GeneratorDiagnosticsBag diagnosticsBag,
@@ -77,32 +77,30 @@ namespace Microsoft.Interop
                 noMarshallingNeeded &= (generator.IsBlittable() && !generator.TypeInfo.IsByRef) || generator.IsForwarder();
 
                 // Track if any generators are just forwarders - for types other than void, this indicates
-                // types that can't be marshalled by the source generated.
-                // In .NET 7+ support, we would have emitted a diagnostic error about lack of support
-                // In down-level support, we do not error - tracking this allows us to switch to generating a basic forwarder (DllImport declaration)
+                // types that can't be marshalled by source-generated code.
                 HasForwardedTypes |= generator.IsForwarder() && generator is { TypeInfo.ManagedType: not SpecialTypeInfo { SpecialType: Microsoft.CodeAnalysis.SpecialType.System_Void } };
             }
 
-            StubIsBasicForwarder = !setLastError
+            NoMarshallingRequired = !setLastError
                 && _marshallers.ManagedNativeSameReturn
                 && noMarshallingNeeded;
         }
 
         /// <summary>
-        /// Generate the method body of the p/invoke stub.
+        /// Generate the method body of the managed-to-unmanaged stub.
         /// </summary>
-        /// <param name="dllImportName">Name of the target DllImport function to invoke</param>
-        /// <returns>Method body of the p/invoke stub</returns>
+        /// <param name="targetIdentifier">Name of the target function, function pointer, or delegate to invoke</param>
+        /// <returns>Method body of the managed-to-unmanaged stub</returns>
         /// <remarks>
         /// The generated code assumes it will be in an unsafe context.
         /// </remarks>
-        public BlockSyntax GeneratePInvokeBody(string dllImportName)
+        public BlockSyntax GenerateStubBody(string targetIdentifier)
         {
-            GeneratedStatements statements = GeneratedStatements.Create(_marshallers, _context, IdentifierName(dllImportName));
+            GeneratedStatements statements = GeneratedStatements.Create(_marshallers, _context, IdentifierName(targetIdentifier));
             bool shouldInitializeVariables = !statements.GuaranteedUnmarshal.IsEmpty || !statements.CleanupCallerAllocated.IsEmpty || !statements.CleanupCalleeAllocated.IsEmpty;
             VariableDeclarations declarations = VariableDeclarations.GenerateDeclarationsForManagedToUnmanaged(_marshallers, _context, shouldInitializeVariables);
 
-            var setupStatements = new List<StatementSyntax>();
+            List<StatementSyntax> setupStatements = [];
 
             if (_setLastError)
             {
@@ -122,8 +120,7 @@ namespace Microsoft.Interop
             setupStatements.AddRange(declarations.Variables);
             setupStatements.AddRange(statements.Setup);
 
-            var tryStatements = new List<StatementSyntax>();
-            tryStatements.AddRange(statements.Marshal);
+            List<StatementSyntax> tryStatements = [.. statements.Marshal];
 
             BlockSyntax fixedBlock = Block(statements.PinnedMarshal);
             if (_setLastError)
@@ -151,7 +148,7 @@ namespace Microsoft.Interop
             tryStatements.AddRange(statements.Unmarshal);
 
             List<StatementSyntax> allStatements = setupStatements;
-            List<StatementSyntax> finallyStatements = new List<StatementSyntax>();
+            List<StatementSyntax> finallyStatements = [];
             if (!(statements.GuaranteedUnmarshal.IsEmpty && statements.CleanupCalleeAllocated.IsEmpty))
             {
                 finallyStatements.Add(IfStatement(IdentifierName(InvokeSucceededIdentifier), Block(statements.GuaranteedUnmarshal.Concat(statements.CleanupCalleeAllocated))));
