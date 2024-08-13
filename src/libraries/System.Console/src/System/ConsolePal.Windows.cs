@@ -940,13 +940,6 @@ namespace System
             }
             set
             {
-                if (Console.IsOutputRedirected)
-                {
-                    throw new IOException(SR.InvalidOperation_SetWindowSize);
-                }
-
-                ArgumentOutOfRangeException.ThrowIfNegativeOrZero(value, nameof(WindowWidth));
-
                 SetWindowSize(value, WindowHeight);
             }
         }
@@ -960,13 +953,6 @@ namespace System
             }
             set
             {
-                if (Console.IsOutputRedirected)
-                {
-                    throw new IOException(SR.InvalidOperation_SetWindowSize);
-                }
-
-                ArgumentOutOfRangeException.ThrowIfNegativeOrZero(value, nameof(WindowHeight));
-
                 SetWindowSize(WindowWidth, value);
             }
         }
