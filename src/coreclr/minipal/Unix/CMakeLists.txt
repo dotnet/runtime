@@ -2,6 +2,7 @@ set(SOURCES
     doublemapping.cpp
     dn-u16.cpp
     ${CLR_SRC_NATIVE_DIR}/minipal/time.c
+    ${CLR_SRC_NATIVE_DIR}/minipal/xoshiro128pp.c
 )
 
 if(NOT CLR_CROSS_COMPONENTS_BUILD)
