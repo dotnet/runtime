@@ -5,7 +5,7 @@
     "rollForward": "major"
   },
   "tools": {
-    "dotnet": "9.0.100-preview.6.24328.19"
+    "dotnet": "9.0.100-rc.1.24412.14"
   },
   "msbuild-sdks": {
     "Microsoft.DotNet.Arcade.Sdk": "9.0.0-beta.24379.1",
