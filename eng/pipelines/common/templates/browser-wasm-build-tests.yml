@@ -110,7 +110,7 @@ jobs:
           /p:InstallWorkloadForTesting=true
           /p:WasmSkipMissingRuntimePackBuild=true
           /p:PreparePackagesForWorkloadInstall=false
-          /p:WorkloadsTestPreviousVersions=$(workloadsTestPreviousVersionsVar)
+          /p:WorkloadsTestPreviousVersions=true
         timeoutInMinutes: 180
         condition: >-
           or(
