@@ -7110,10 +7110,10 @@ unsigned emitter::emitEndCodeGen(Compiler*         comp,
             prevId = currId;
             emitAdvanceInstrDesc(&currId, emitSizeOfInsDsc(currId));
         }
-        // Additional check for the final instruction
+        // Final instruction can't be a movprfx
         if (ig->igNext == nullptr)
         {
-            emitInsPairSanityCheck(prevId, nullptr);
+            assert(prevId->idIns() != INS_sve_movprfx);
         }
 #endif // DEBUG && TARGET_ARM64
 

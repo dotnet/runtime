@@ -18429,7 +18429,7 @@ void emitter::getInsSveExecutionCharacteristics(instrDesc* id, insExecutionChara
 
 void emitter::emitInsPairSanityCheck(instrDesc* firstId, instrDesc* secondId)
 {
-    if (firstId == nullptr)
+    if (firstId == nullptr || secondId == nullptr)
     {
         return;
     }
@@ -18440,12 +18440,6 @@ void emitter::emitInsPairSanityCheck(instrDesc* firstId, instrDesc* secondId)
         return;
     }
 
-    // The movprfx can't be the last instruction
-    if (secondId == nullptr)
-    {
-        assert(!"Last instruction generated is a MOVPRFX");
-    }
-
     bool movprefxIsPredicated = false;
     if (firstId->idInsFmt() == IF_SVE_AH_3A)
     {
@@ -18453,7 +18447,7 @@ void emitter::emitInsPairSanityCheck(instrDesc* firstId, instrDesc* secondId)
     }
     else
     {
-        // 2 operand version
+        // Unpredicated version
         assert(firstId->idInsFmt() == IF_SVE_BI_2A);
     }
 
@@ -18634,10 +18628,8 @@ void emitter::emitInsPairSanityCheck(instrDesc* firstId, instrDesc* secondId)
             break;
     }
 
-    if (firstId->idInsFmt() == IF_SVE_AH_3A)
+    if (movprefxIsPredicated)
     {
-        // 3 operand version
-
         // "The prefixed instruction must specify the same predicate register"
         assert(isPredicateRegister(firstId->idReg2()));
         assert(isPredicateRegister(secondId->idReg2()));
@@ -18651,9 +18643,6 @@ void emitter::emitInsPairSanityCheck(instrDesc* firstId, instrDesc* secondId)
     }
     else
     {
-        // 2 operand version
-        assert(firstId->idInsFmt() == IF_SVE_BI_2A);
-
         // "The prefixed instruction must specify the same destination vector as the MOVPRFX instruction."
         assert(firstId->idReg1() == secondId->idReg1());
     }
