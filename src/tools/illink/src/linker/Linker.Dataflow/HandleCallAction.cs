@@ -55,7 +55,7 @@ namespace ILLink.Shared.TrimAnalysis
 			out MultiValue? methodReturnValue)
 		{
 			MultiValue? maybeMethodReturnValue = methodReturnValue = null;
-			Debug.Assert (calledMethod.Method == _context.Resolve (_calledMethodReference));
+			Debug.Assert (calledMethod.Method == _calledMethodReference);
 
 			switch (intrinsicId) {
 			case IntrinsicId.None: {

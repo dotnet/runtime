@@ -56,7 +56,10 @@ namespace ILLink.Shared.TypeSystemProxy
 		/// <summary>
 		/// Use only when iterating over all parameters. When wanting to index, use GetParameters(ParameterIndex)
 		/// </summary>
-		internal partial ParameterProxyEnumerable GetParameters () => Definition.GetParameters ();
+		internal partial ParameterProxyEnumerable GetParameters ()
+		{
+			return new ParameterProxyEnumerable (0, GetParametersCount (), this);
+		}
 
 		internal partial ParameterProxy GetParameter (ParameterIndex index) => Definition.GetParameter (index);
 

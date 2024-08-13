@@ -1057,9 +1057,9 @@ namespace Mono.Linker.Dataflow
 			int curBasicBlock,
 			ref InterproceduralState ipState)
 		{
-			if (_context.TryResolve (calledMethod) is MethodDefinition calledMethodDefinition) {
+			if (MethodProxy.TryCreate (calledMethod, _context, out MethodProxy? calledMethodProxy)) {
 				// We resolved the method and can put the ref/out values into the arguments
-				foreach (var parameter in calledMethodDefinition.GetParameters ()) {
+				foreach (var parameter in calledMethodProxy.Value.GetParameters ()) {
 					if (parameter.GetReferenceKind () is not (ReferenceKind.Ref or ReferenceKind.Out))
 						continue;
 					var newByRefValue = _context.Annotations.FlowAnnotations.GetMethodParameterValue (parameter);

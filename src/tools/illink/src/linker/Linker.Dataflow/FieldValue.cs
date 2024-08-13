@@ -4,10 +4,9 @@
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using ILLink.Shared.DataFlow;
+using Mono.Cecil;
 using Mono.Linker;
 using FieldReference = Mono.Cecil.FieldReference;
-using TypeReference = Mono.Cecil.TypeReference;
-
 
 namespace ILLink.Shared.TrimAnalysis
 {
@@ -19,8 +18,7 @@ namespace ILLink.Shared.TrimAnalysis
 	{
 		public FieldValue (FieldReference fieldToLoad, DynamicallyAccessedMemberTypes dynamicallyAccessedMemberTypes)
 		{
-			var staticType = fieldToLoad.FieldType;
-			StaticType = staticType == null ? null : new (staticType);
+			StaticType = fieldToLoad.FieldType.InflateFrom (fieldToLoad.DeclaringType as IGenericInstance);
 			Field = fieldToLoad;
 			DynamicallyAccessedMemberTypes = dynamicallyAccessedMemberTypes;
 		}

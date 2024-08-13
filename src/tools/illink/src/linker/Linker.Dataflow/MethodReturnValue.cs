@@ -7,6 +7,7 @@ using System.Diagnostics.CodeAnalysis;
 using ILLink.Shared.DataFlow;
 using ILLink.Shared.TypeSystemProxy;
 using Mono.Cecil;
+using Mono.Linker;
 using Mono.Linker.Dataflow;
 using TypeReference = Mono.Cecil.TypeReference;
 
@@ -21,7 +22,8 @@ namespace ILLink.Shared.TrimAnalysis
 		public static MethodReturnValue Create (MethodProxy method, bool isNewObj, DynamicallyAccessedMemberTypes dynamicallyAccessedMemberTypes)
 		{
 			Debug.Assert (!isNewObj || method.Definition.IsConstructor, "isNewObj can only be true for constructors");
-			var staticType = isNewObj ? method.Method.DeclaringType : method.Method.ReturnType;
+			var methodRef = method.Method;
+			var staticType = isNewObj ? methodRef.DeclaringType : methodRef.ReturnType.InflateFrom (methodRef as IGenericInstance ?? methodRef.DeclaringType as IGenericInstance);
 			return new MethodReturnValue (staticType, method.Definition, dynamicallyAccessedMemberTypes);
 		}
 

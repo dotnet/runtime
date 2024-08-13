@@ -168,19 +168,22 @@ namespace Mono.Linker.Dataflow
 			MarkStep markStep)
 		{
 			var origin = diagnosticContext.Origin;
-			var calledMethodDefinition = context.TryResolve (calledMethod);
-			Debug.Assert (calledMethodDefinition != null);
+			if (!MethodProxy.TryCreate (calledMethod, context, out MethodProxy? calledMethodProxy)) {
+				Debug.Fail ("Should only be called for resolvable methods");
+				return UnknownValue.Instance;
+			}
+			var calledMethodDefinition = calledMethodProxy.Value.Definition;
 			var callingMethodDefinition = origin.Provider as MethodDefinition;
 			Debug.Assert (callingMethodDefinition != null);
 
 			bool requiresDataFlowAnalysis = context.Annotations.FlowAnnotations.RequiresDataFlowAnalysis (calledMethodDefinition);
 			bool isNewObj = operation.OpCode.Code == Code.Newobj;
-			var annotatedMethodReturnValue = context.Annotations.FlowAnnotations.GetMethodReturnValue (calledMethodDefinition, isNewObj);
+			var annotatedMethodReturnValue = context.Annotations.FlowAnnotations.GetMethodReturnValue (calledMethodProxy.Value, isNewObj);
 			Debug.Assert (requiresDataFlowAnalysis || annotatedMethodReturnValue.DynamicallyAccessedMemberTypes == DynamicallyAccessedMemberTypes.None);
 
 			var handleCallAction = new HandleCallAction (context, operation, markStep, reflectionMarker, diagnosticContext, callingMethodDefinition, calledMethod);
-			var intrinsicId = Intrinsics.GetIntrinsicIdForMethod (calledMethodDefinition);
-			if (!handleCallAction.Invoke (calledMethodDefinition, instanceValue, argumentValues, intrinsicId, out MultiValue methodReturnValue))
+			var intrinsicId = Intrinsics.GetIntrinsicIdForMethod (calledMethodProxy.Value);
+			if (!handleCallAction.Invoke (calledMethodProxy.Value, instanceValue, argumentValues, intrinsicId, out MultiValue methodReturnValue))
 				throw new NotImplementedException ($"Unhandled intrinsic: {intrinsicId}");
 			return methodReturnValue;
 		}

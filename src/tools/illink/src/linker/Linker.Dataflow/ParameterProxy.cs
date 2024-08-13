@@ -29,8 +29,10 @@ namespace ILLink.Shared.TypeSystemProxy
 				if (IsImplicitThis)
 					return Method.Method.DeclaringType;
 #pragma warning disable RS0030 // MethodReference.Parameters is banned -- this class provides wrappers to use
-				return Method.Method.Parameters[MetadataIndex].ParameterType;
-#pragma warning restore RS0030 // Do not used banned APIs
+				var method = Method.Method;
+				var genericInstance = method as IGenericInstance ?? method.DeclaringType as IGenericInstance;
+				return method.Parameters[MetadataIndex].ParameterType.InflateFrom (genericInstance);
+#pragma warning restore RS0030 // Do not use banned APIs
 			}
 		}
 
