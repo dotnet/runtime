@@ -284,22 +284,25 @@ namespace System.Reflection.Metadata
         {
             int result = 1;
 
-            if (IsNested)
-            {
-                result += DeclaringType.GetNodeCount();
-            }
-            else if (IsConstructedGenericType)
+            TypeName? declaring = _declaringType;
+            while (declaring is not null)
             {
                 result++;
+                declaring = declaring._declaringType;
             }
-            else if (IsArray || IsPointer || IsByRef)
+
+            if (IsArray || IsPointer || IsByRef)
             {
                 result += GetElementType().GetNodeCount();
             }
-
-            foreach (TypeName genericArgument in GetGenericArguments())
+            else if (IsConstructedGenericType)
             {
-                result += genericArgument.GetNodeCount();
+                result += GetGenericTypeDefinition().GetNodeCount();
+
+                foreach (TypeName genericArgument in GetGenericArguments())
+                {
+                    result += genericArgument.GetNodeCount();
+                }
             }
 
             return result;

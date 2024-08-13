@@ -147,6 +147,23 @@ namespace System.Reflection.Metadata
             {
                 _inputString = capturedBeforeProcessing;
             }
+            else
+            {
+                // Every generic type needs the generic type definition.
+                if (!TryDive(_parseOptions, ref recursiveDepth))
+                {
+                    return null;
+                }
+                // If that definition represents a nested type, this needs to be taken into account.
+                if (nestedNameLengths is not null)
+                {
+                    recursiveDepth += nestedNameLengths.Count;
+                    if (IsMaxDepthExceeded(_parseOptions, recursiveDepth))
+                    {
+                        return null;
+                    }
+                }
+            }
 
             int previousDecorator = default;
             // capture the current state so we can reprocess it again once we know the AssemblyName

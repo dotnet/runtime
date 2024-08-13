@@ -10,6 +10,7 @@ namespace System.Reflection.Metadata
     internal struct TypeNameParseOptions
     {
         public TypeNameParseOptions() { }
+#pragma warning disable CA1822 // Mark members as static
         public int MaxNodes
         {
             get
@@ -19,6 +20,7 @@ namespace System.Reflection.Metadata
             }
         }
     }
+#pragma warning restore CA1822
 }
 
 namespace System.Reflection

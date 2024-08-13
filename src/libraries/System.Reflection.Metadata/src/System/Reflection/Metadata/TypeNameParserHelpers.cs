@@ -400,17 +400,13 @@ namespace System.Reflection.Metadata
             // CoreLib does not enforce any limits
             => false;
 #else
-            => depth >= options.MaxNodes;
+            => depth > options.MaxNodes;
 #endif
 
         internal static bool TryDive(TypeNameParseOptions options, ref int depth)
         {
-            if (IsMaxDepthExceeded(options, depth))
-            {
-                return false;
-            }
             depth++;
-            return true;
+            return !IsMaxDepthExceeded(options, depth);
         }
     }
 }
