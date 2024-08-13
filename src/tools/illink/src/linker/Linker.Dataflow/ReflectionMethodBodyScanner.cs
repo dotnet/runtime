@@ -91,7 +91,7 @@ namespace Mono.Linker.Dataflow
 		MethodParameterValue GetMethodParameterValue (ParameterProxy parameter, DynamicallyAccessedMemberTypes dynamicallyAccessedMemberTypes)
 			=> _annotations.GetMethodParameterValue (parameter, dynamicallyAccessedMemberTypes);
 
-		protected override MultiValue GetFieldValue (FieldDefinition field) => _annotations.GetFieldValue (field);
+		protected override MultiValue GetFieldValue (FieldReference field) => _annotations.GetFieldValue (field);
 
 		protected override MethodReturnValue GetReturnValue (MethodDefinition method) => _annotations.GetMethodReturnValue (method, isNewObj: false);
 

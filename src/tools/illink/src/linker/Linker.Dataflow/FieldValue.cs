@@ -5,7 +5,7 @@ using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using ILLink.Shared.DataFlow;
 using Mono.Linker;
-using FieldDefinition = Mono.Cecil.FieldDefinition;
+using FieldReference = Mono.Cecil.FieldReference;
 using TypeReference = Mono.Cecil.TypeReference;
 
 
@@ -17,14 +17,15 @@ namespace ILLink.Shared.TrimAnalysis
 	/// </summary>
 	internal sealed partial record FieldValue
 	{
-		public FieldValue (TypeReference? staticType, FieldDefinition fieldToLoad, DynamicallyAccessedMemberTypes dynamicallyAccessedMemberTypes)
+		public FieldValue (FieldReference fieldToLoad, DynamicallyAccessedMemberTypes dynamicallyAccessedMemberTypes)
 		{
+			var staticType = fieldToLoad.FieldType;
 			StaticType = staticType == null ? null : new (staticType);
 			Field = fieldToLoad;
 			DynamicallyAccessedMemberTypes = dynamicallyAccessedMemberTypes;
 		}
 
-		public readonly FieldDefinition Field;
+		public readonly FieldReference Field;
 
 		public override DynamicallyAccessedMemberTypes DynamicallyAccessedMemberTypes { get; }
 

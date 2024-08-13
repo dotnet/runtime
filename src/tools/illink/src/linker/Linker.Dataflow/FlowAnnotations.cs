@@ -68,8 +68,11 @@ namespace ILLink.Shared.TrimAnalysis
 			return DynamicallyAccessedMemberTypes.None;
 		}
 
-		public DynamicallyAccessedMemberTypes GetFieldAnnotation (FieldDefinition field)
+		public DynamicallyAccessedMemberTypes GetFieldAnnotation (FieldReference fieldRef)
 		{
+			if (_context.TryResolve (fieldRef) is not FieldDefinition field)
+				return DynamicallyAccessedMemberTypes.None;
+
 			if (GetAnnotations (field.DeclaringType).TryGetAnnotation (field, out var annotation))
 				return annotation.Annotation;
 
@@ -748,11 +751,11 @@ namespace ILLink.Shared.TrimAnalysis
 		}
 
 		// Trimming dataflow value creation. Eventually more of these should be shared.
-		internal SingleValue GetFieldValue (FieldDefinition field)
+		internal SingleValue GetFieldValue (FieldReference field)
 			=> field.Name switch {
 				"EmptyTypes" when field.DeclaringType.IsTypeOf (WellKnownType.System_Type) => ArrayValue.Create (0, field.DeclaringType),
 				"Empty" when field.DeclaringType.IsTypeOf (WellKnownType.System_String) => new KnownStringValue (string.Empty),
-				_ => new FieldValue (field.FieldType, field, GetFieldAnnotation (field))
+				_ => new FieldValue (field, GetFieldAnnotation (field))
 			};
 
 		internal SingleValue GetTypeValueFromGenericArgument (TypeReference genericArgument)

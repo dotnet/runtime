@@ -866,7 +866,7 @@ namespace Mono.Linker.Dataflow
 					StoreMethodLocalValue (locals, source, localReference.LocalDefinition, curBasicBlock);
 					break;
 				case FieldReferenceValue fieldReference
-				when GetFieldValue (fieldReference.FieldDefinition).AsSingleValue () is FieldValue fieldValue:
+				when GetFieldValue (fieldReference.Field).AsSingleValue () is FieldValue fieldValue:
 					HandleStoreField (method, fieldValue, operation, source, parameterIndex);
 					break;
 				case ParameterReferenceValue parameterReference
@@ -897,7 +897,7 @@ namespace Mono.Linker.Dataflow
 
 		}
 
-		protected abstract MultiValue GetFieldValue (FieldDefinition field);
+		protected abstract MultiValue GetFieldValue (FieldReference field);
 
 		private void ScanLdfld (
 			Instruction operation,
@@ -911,7 +911,7 @@ namespace Mono.Linker.Dataflow
 
 			bool isByRef = code == Code.Ldflda || code == Code.Ldsflda;
 
-			FieldDefinition? field = _context.TryResolve ((FieldReference) operation.Operand);
+			FieldReference field = (FieldReference) operation.Operand;
 			if (field == null) {
 				PushUnknown (currentStack);
 				return;
@@ -1016,9 +1016,9 @@ namespace Mono.Linker.Dataflow
 				case FieldReferenceValue fieldReferenceValue:
 					dereferencedValue = MultiValue.Union (
 						dereferencedValue,
-						CompilerGeneratedState.IsHoistedLocal (fieldReferenceValue.FieldDefinition)
-							? interproceduralState.GetHoistedLocal (new HoistedLocalKey (fieldReferenceValue.FieldDefinition))
-							: GetFieldValue (fieldReferenceValue.FieldDefinition));
+						CompilerGeneratedState.IsHoistedLocal (fieldReferenceValue.Field)
+							? interproceduralState.GetHoistedLocal (new HoistedLocalKey (fieldReferenceValue.Field))
+							: GetFieldValue (fieldReferenceValue.Field));
 					break;
 				case ParameterReferenceValue parameterReferenceValue:
 					dereferencedValue = MultiValue.Union (
