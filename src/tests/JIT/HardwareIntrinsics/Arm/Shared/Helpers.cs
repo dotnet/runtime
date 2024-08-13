@@ -8529,11 +8529,11 @@ namespace JIT.HardwareIntrinsics.Arm
             where TMem  : INumberBase<TMem>
             where TElem : INumberBase<TElem>
         {
-		TElem[] mask = new TElem[result.Length];
-		Array.Fill(mask, TElem.One);
+            TElem[] mask = new TElem[result.Length];
+            Array.Fill(mask, TElem.One);
 
-		return GetLoadVectorExpectedResultByIndex(index, mask, data, result);
-	}
+            return GetLoadVectorExpectedResultByIndex(index, mask, data, result);
+        }
 
         private static bool CheckLoadVectorBehaviorCore<TMem, TElem>(TMem[] data, TElem[] result, Func<int, TElem, TElem> map)
             where TMem  : INumberBase<TMem>
@@ -8747,7 +8747,7 @@ namespace JIT.HardwareIntrinsics.Arm
                         return TFault.One;
                     }
 
-		    hasFaulted = true;
+                    hasFaulted = true;
                     return TFault.Zero;
                 });
             if (expectedFaultResult != faultResult)
