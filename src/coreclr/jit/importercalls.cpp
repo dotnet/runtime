@@ -6195,8 +6195,6 @@ void Compiler::impPopCallArgs(CORINFO_SIG_INFO* sig, GenTreeCall* call)
                 {
                     argNode = gtNewCastNode(TYP_INT, argNode, false, jitSigType);
                 }
-
-                jitSigType = TYP_INT;
             }
         }
 
