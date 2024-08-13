@@ -181,7 +181,7 @@ namespace Mono.Linker.Dataflow
 			var annotatedMethodReturnValue = context.Annotations.FlowAnnotations.GetMethodReturnValue (calledMethodProxy.Value, isNewObj);
 			Debug.Assert (requiresDataFlowAnalysis || annotatedMethodReturnValue.DynamicallyAccessedMemberTypes == DynamicallyAccessedMemberTypes.None);
 
-			var handleCallAction = new HandleCallAction (context, operation, markStep, reflectionMarker, diagnosticContext, callingMethodDefinition, calledMethod);
+			var handleCallAction = new HandleCallAction (context, operation, markStep, reflectionMarker, diagnosticContext, callingMethodDefinition);
 			var intrinsicId = Intrinsics.GetIntrinsicIdForMethod (calledMethodProxy.Value);
 			if (!handleCallAction.Invoke (calledMethodProxy.Value, instanceValue, argumentValues, intrinsicId, out MultiValue methodReturnValue))
 				throw new NotImplementedException ($"Unhandled intrinsic: {intrinsicId}");

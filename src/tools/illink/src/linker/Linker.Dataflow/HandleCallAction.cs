@@ -24,7 +24,6 @@ namespace ILLink.Shared.TrimAnalysis
 		readonly MarkStep _markStep;
 		readonly ReflectionMarker _reflectionMarker;
 		readonly MethodDefinition _callingMethodDefinition;
-		readonly MethodReference _calledMethodReference;
 
 		public HandleCallAction (
 			LinkContext context,
@@ -32,8 +31,7 @@ namespace ILLink.Shared.TrimAnalysis
 			MarkStep markStep,
 			ReflectionMarker reflectionMarker,
 			in DiagnosticContext diagnosticContext,
-			MethodDefinition callingMethodDefinition,
-			MethodReference calledMethodReference)
+			MethodDefinition callingMethodDefinition)
 		{
 			_context = context;
 			_operation = operation;
@@ -44,7 +42,6 @@ namespace ILLink.Shared.TrimAnalysis
 			_callingMethodDefinition = callingMethodDefinition;
 			_annotations = context.Annotations.FlowAnnotations;
 			_requireDynamicallyAccessedMembersAction = new (reflectionMarker, diagnosticContext);
-			_calledMethodReference = calledMethodReference;
 		}
 
 		private partial bool TryHandleIntrinsic (
@@ -55,7 +52,6 @@ namespace ILLink.Shared.TrimAnalysis
 			out MultiValue? methodReturnValue)
 		{
 			MultiValue? maybeMethodReturnValue = methodReturnValue = null;
-			Debug.Assert (calledMethod.Method == _calledMethodReference);
 
 			switch (intrinsicId) {
 			case IntrinsicId.None: {
@@ -77,7 +73,7 @@ namespace ILLink.Shared.TrimAnalysis
 				break;
 
 			case IntrinsicId.Array_Empty: {
-					AddReturnValue (ArrayValue.Create (0, ((GenericInstanceMethod) _calledMethodReference).GenericArguments[0]));
+					AddReturnValue (ArrayValue.Create (0, ((GenericInstanceMethod) calledMethod.Method).GenericArguments[0]));
 				}
 				break;
 
