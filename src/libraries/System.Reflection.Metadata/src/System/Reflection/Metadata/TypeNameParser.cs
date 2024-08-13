@@ -49,7 +49,7 @@ namespace System.Reflection.Metadata
             {
                 if (throwOnError)
                 {
-                    if (parser._parseOptions.IsMaxDepthExceeded(recursiveDepth))
+                    if (IsMaxDepthExceeded(parser._parseOptions, recursiveDepth))
                     {
                         ThrowInvalidOperation_MaxNodesExceeded(parser._parseOptions.MaxNodes);
                     }
@@ -67,13 +67,13 @@ namespace System.Reflection.Metadata
         // this method should return null instead of throwing, so the caller can get errorIndex and include it in error msg
         private TypeName? ParseNextTypeName(bool allowFullyQualifiedName, ref int recursiveDepth)
         {
-            if (!TryDive(ref recursiveDepth))
+            if (!TryDive(_parseOptions, ref recursiveDepth))
             {
                 return null;
             }
 
             List<int>? nestedNameLengths = null;
-            if (!TryGetTypeNameInfo(ref _inputString, ref nestedNameLengths, out int fullTypeNameLength))
+            if (!TryGetTypeNameInfo(_parseOptions, ref _inputString, ref nestedNameLengths, ref recursiveDepth, out int fullTypeNameLength))
             {
                 return null;
             }
@@ -154,7 +154,7 @@ namespace System.Reflection.Metadata
             // iterate over the decorators to ensure there are no illegal combinations
             while (TryParseNextDecorator(ref _inputString, out int parsedDecorator))
             {
-                if (!TryDive(ref recursiveDepth))
+                if (!TryDive(_parseOptions, ref recursiveDepth))
                 {
                     return null;
                 }
@@ -244,16 +244,6 @@ namespace System.Reflection.Metadata
             }
 
             return declaringType;
-        }
-
-        private bool TryDive(ref int depth)
-        {
-            if (_parseOptions.IsMaxDepthExceeded(depth))
-            {
-                return false;
-            }
-            depth++;
-            return true;
         }
     }
 }

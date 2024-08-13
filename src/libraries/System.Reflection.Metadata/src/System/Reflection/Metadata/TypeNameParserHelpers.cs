@@ -220,7 +220,8 @@ namespace System.Reflection.Metadata
             return false;
         }
 
-        internal static bool TryGetTypeNameInfo(ref ReadOnlySpan<char> input, ref List<int>? nestedNameLengths, out int totalLength)
+        internal static bool TryGetTypeNameInfo(TypeNameParseOptions options, ref ReadOnlySpan<char> input,
+            ref List<int>? nestedNameLengths, ref int recursiveDepth, out int totalLength)
         {
             bool isNestedType;
             totalLength = 0;
@@ -248,6 +249,11 @@ namespace System.Reflection.Metadata
 #endif
                 if (isNestedType)
                 {
+                    if (!TryDive(options, ref recursiveDepth))
+                    {
+                        return false;
+                    }
+
                     (nestedNameLengths ??= new()).Add(length);
                     totalLength += 1; // skip the '+' sign in next search
                 }
@@ -387,6 +393,24 @@ namespace System.Reflection.Metadata
             Debug.Fail("Expected to be unreachable");
             throw new InvalidOperationException();
 #endif
+        }
+
+        internal static bool IsMaxDepthExceeded(TypeNameParseOptions options, int depth)
+#if SYSTEM_PRIVATE_CORELIB
+            // CoreLib does not enforce any limits
+            => false;
+#else
+            => depth >= options.MaxNodes;
+#endif
+
+        internal static bool TryDive(TypeNameParseOptions options, ref int depth)
+        {
+            if (IsMaxDepthExceeded(options, depth))
+            {
+                return false;
+            }
+            depth++;
+            return true;
         }
     }
 }

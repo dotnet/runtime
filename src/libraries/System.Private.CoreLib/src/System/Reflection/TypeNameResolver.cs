@@ -4,16 +4,12 @@
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection.Metadata;
-using System.Text;
 
 namespace System.Reflection.Metadata
 {
     internal struct TypeNameParseOptions
     {
         public TypeNameParseOptions() { }
-#pragma warning disable CA1822 // Mark members as static
-        // CoreLib does not enforce any limits
-        public bool IsMaxDepthExceeded(int _) => false;
         public int MaxNodes
         {
             get
@@ -22,7 +18,6 @@ namespace System.Reflection.Metadata
                  return 0;
             }
         }
-#pragma warning restore CA1822
     }
 }
 
