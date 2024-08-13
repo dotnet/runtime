@@ -430,15 +430,16 @@ namespace System.Reflection.Metadata
                 ? DeclaringType.MakeSimpleTypeName(assemblyName)
                 : null;
 
-            return new TypeName(fullName: FullName,
+            return new TypeName(fullName: _fullName,
                 assemblyName: assemblyName,
                 elementOrGenericType: null,
                 declaringType: declaringType,
-                genericTypeArguments: ImmutableArray<TypeName>.Empty);
+                genericTypeArguments: ImmutableArray<TypeName>.Empty,
+                nestedNameLength: _nestedNameLength);
         }
 
         /// <summary>
-        /// Returns a <see cref="TypeName" /> object representing a one-dimensional array
+        /// Creates a <see cref="TypeName" /> object representing a one-dimensional array
         /// of the current type, with a lower bound of zero.
         /// </summary>
         /// <returns>
@@ -448,7 +449,7 @@ namespace System.Reflection.Metadata
         public TypeName MakeSZArrayTypeName() => MakeElementTypeName(TypeNameParserHelpers.SZArray);
 
         /// <summary>
-        /// Returns a <see cref="TypeName" /> object representing an array of the current type,
+        /// Creates a <see cref="TypeName" /> object representing an array of the current type,
         /// with the specified number of dimensions.
         /// </summary>
         /// <param name="rank">The number of dimensions for the array. This number must be more than zero and less than or equal to 32.</param>
@@ -463,7 +464,7 @@ namespace System.Reflection.Metadata
                 : MakeElementTypeName((sbyte)rank);
 
         /// <summary>
-        /// Returns a <see cref="TypeName" /> object that represents a pointer to the current type.
+        /// Creates a <see cref="TypeName" /> object that represents a pointer to the current type.
         /// </summary>
         /// <returns>
         /// A <see cref="TypeName" /> object that represents a pointer to the current type.
@@ -471,7 +472,7 @@ namespace System.Reflection.Metadata
         public TypeName MakePointerTypeName() => MakeElementTypeName(TypeNameParserHelpers.Pointer);
 
         /// <summary>
-        /// Returns a <see cref="TypeName" /> object that represents a managed reference to the current type.
+        /// Creates a <see cref="TypeName" /> object that represents a managed reference to the current type.
         /// </summary>
         /// <returns>
         /// A <see cref="TypeName" /> object that represents a managed reference to the current type.

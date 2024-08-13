@@ -16,15 +16,15 @@ internal static class TypeNameHelpers
     internal const PrimitiveType ObjectPrimitiveType = (PrimitiveType)19;
     internal const PrimitiveType IntPtrPrimitiveType = (PrimitiveType)20;
     internal const PrimitiveType UIntPtrPrimitiveType = (PrimitiveType)21;
-    private static readonly TypeName?[] s_PrimitiveTypeNames = new TypeName?[(int)UIntPtrPrimitiveType + 1];
-    private static readonly TypeName?[] s_PrimitiveSZArrayTypeNames = new TypeName?[(int)UIntPtrPrimitiveType + 1];
-    private static AssemblyNameInfo? s_CoreLibAssemblyName;
+    private static readonly TypeName?[] s_primitiveTypeNames = new TypeName?[(int)UIntPtrPrimitiveType + 1];
+    private static readonly TypeName?[] s_primitiveSZArrayTypeNames = new TypeName?[(int)UIntPtrPrimitiveType + 1];
+    private static AssemblyNameInfo? s_coreLibAssemblyName;
 
     internal static TypeName GetPrimitiveTypeName(PrimitiveType primitiveType)
     {
         Debug.Assert(primitiveType is not (PrimitiveType.None or PrimitiveType.Null));
 
-        TypeName? typeName = s_PrimitiveTypeNames[(int)primitiveType];
+        TypeName? typeName = s_primitiveTypeNames[(int)primitiveType];
         if (typeName is null)
         {
             string fullName = primitiveType switch
@@ -51,17 +51,17 @@ internal static class TypeNameHelpers
                 _ => throw new ArgumentOutOfRangeException(paramName: nameof(primitiveType), actualValue: primitiveType, message: null)
             };
 
-            s_PrimitiveTypeNames[(int)primitiveType] = typeName = TypeName.Parse(fullName.AsSpan()).WithCoreLibAssemblyName();
+            s_primitiveTypeNames[(int)primitiveType] = typeName = TypeName.Parse(fullName.AsSpan()).WithCoreLibAssemblyName();
         }
         return typeName;
     }
 
     internal static TypeName GetPrimitiveSZArrayTypeName(PrimitiveType primitiveType)
     {
-        TypeName? typeName = s_PrimitiveSZArrayTypeNames[(int)primitiveType];
+        TypeName? typeName = s_primitiveSZArrayTypeNames[(int)primitiveType];
         if (typeName is null)
         {
-            s_PrimitiveSZArrayTypeNames[(int)primitiveType] = typeName = GetPrimitiveTypeName(primitiveType).MakeSZArrayTypeName();
+            s_primitiveSZArrayTypeNames[(int)primitiveType] = typeName = GetPrimitiveTypeName(primitiveType).MakeSZArrayTypeName();
         }
         return typeName;
     }
@@ -86,11 +86,7 @@ internal static class TypeNameHelpers
         else if (typeof(T) == typeof(string)) return PrimitiveType.String;
         else if (typeof(T) == typeof(IntPtr)) return IntPtrPrimitiveType;
         else if (typeof(T) == typeof(UIntPtr)) return UIntPtrPrimitiveType;
-        else
-        {
-            Debug.Fail($"{typeof(T).Name} was not expected.");
-            throw new InvalidOperationException();
-        }
+        else throw new InvalidOperationException();
     }
 
     internal static TypeName ParseNonSystemClassRecordTypeName(this string rawName, BinaryLibraryRecord libraryRecord, PayloadOptions payloadOptions)
@@ -104,7 +100,7 @@ internal static class TypeNameHelpers
         Debug.Assert(libraryRecord.RawLibraryName is not null);
 
         // Combining type and library allows us for handling truncated generic type names that may be present in resources.
-        ArraySegment<char> assemblyQualifiedName = GetAssemblyQualifiedName(rawName, libraryRecord.RawLibraryName);
+        ArraySegment<char> assemblyQualifiedName = RentAssemblyQualifiedName(rawName, libraryRecord.RawLibraryName);
         TypeName.TryParse(assemblyQualifiedName.AsSpan(), out TypeName? typeName, payloadOptions.TypeNameParseOptions);
         ArrayPool<char>.Shared.Return(assemblyQualifiedName.Array!);
 
@@ -130,7 +126,7 @@ internal static class TypeNameHelpers
                 .WithCoreLibAssemblyName(); // We know it's a System Record, so we set the LibraryName to CoreLib
 
     internal static TypeName WithCoreLibAssemblyName(this TypeName systemType)
-        => systemType.WithAssemblyName(s_CoreLibAssemblyName ??= AssemblyNameInfo.Parse("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089".AsSpan()));
+        => systemType.WithAssemblyName(s_coreLibAssemblyName ??= AssemblyNameInfo.Parse("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089".AsSpan()));
 
     private static TypeName WithAssemblyName(this TypeName typeName, AssemblyNameInfo assemblyName)
     {
@@ -172,7 +168,7 @@ internal static class TypeNameHelpers
         return typeName;
     }
 
-    private static ArraySegment<char> GetAssemblyQualifiedName(string typeName, string libraryName)
+    private static ArraySegment<char> RentAssemblyQualifiedName(string typeName, string libraryName)
     {
         int length = typeName.Length + 1 + libraryName.Length;
 
