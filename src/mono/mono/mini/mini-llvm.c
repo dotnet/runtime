@@ -1593,7 +1593,7 @@ sig_to_llvm_sig_full (EmitContext *ctx, MonoMethodSignature *sig, LLVMCallInfo *
 			ret_type = LLVMStructType (members, 1, FALSE);
 		} else if (cinfo->ret.pair_storage [0] == LLVMArgNone && cinfo->ret.pair_storage [1] == LLVMArgNone) {
 			/* Empty struct */
-			ret_type = LLVMVoidType ();
+			ret_type = LLVMStructType (NULL, 0, FALSE);
 		} else if (cinfo->ret.pair_storage [0] == LLVMArgInIReg && cinfo->ret.pair_storage [1] == LLVMArgInIReg) {
 			LLVMTypeRef members [2];
 
@@ -4948,6 +4948,9 @@ process_call (EmitContext *ctx, MonoBasicBlock *bb, LLVMBuilderRef *builder_ref,
 	case LLVMArgVtypeInReg: {
 		if (LLVMTypeOf (lcall) == LLVMVoidType ())
 			/* Empty struct */
+			break;
+
+		if (LLVMTypeOf (lcall) == LLVMStructType (NULL, 0, FALSE))
 			break;
 
 		if (!addresses [ins->dreg])
