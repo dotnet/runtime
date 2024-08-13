@@ -159,11 +159,9 @@ All ref outputs should be under
 `bin\$(MSBuildProjectName)\ref\$(TargetFramework)`
 
 ## src
-In the src directory for a library there should be only **one** `.csproj` file that contains any information necessary to build the library in various target frameworks. All supported target frameworks should be listed in the `TargetFrameworks` property.
+In the src directory for a library there should be only **one** `.csproj` file that contains any information necessary to build the library in various target frameworks. All supported target frameworks should be listed in the `TargetFramework` or `TargetFrameworks` property.
 
-All libraries should use `<Reference Include="..." />` for all their references to libraries that compose the shared framework of the current .NETCoreApp. That will cause them to be resolved against the locally built targeting pack which is located at `artifacts\bin\microsoft.netcore.app.ref`. The only exception to that rule right now is for partial facades which directly reference System.Private.CoreLib and thus need to directly reference other partial facades to avoid type conflicts.
-
-Other target frameworks than .NETCoreApp latest (i.e. `netstandard2.0`, `net462`, `net6.0`) should use ProjectReference items to reference dependencies.
+Libraries should use `ProjectReference` items to reference live dependencies.
 
 ### src\ILLink
 Contains the files used to direct the trimming tool. See [ILLink files](../workflow/trimming/ILLink-files.md).

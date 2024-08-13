@@ -38,24 +38,24 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Reference Include="Microsoft.Win32.Primitives" />
-    <Reference Include="System.Collections.NonGeneric" />
-    <Reference Include="System.Collections.Specialized" />
-    <Reference Include="System.Diagnostics.Tracing" />
-    <Reference Include="System.Net.Primitives" />
-    <Reference Include="System.Net.Security" />
-    <Reference Include="System.Net.WebHeaderCollection" />
-    <Reference Include="System.Net.WebSockets" />
-    <Reference Include="System.Net.Http" />
-    <Reference Include="System.Security.Cryptography" />
-    <Reference Include="System.Threading.Channels" />
+    <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Win32.Primitives\src\Microsoft.Win32.Primitives.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Collections.NonGeneric\src\System.Collections.NonGeneric.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Collections.Specialized\src\System.Collections.Specialized.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Diagnostics.Tracing\src\System.Diagnostics.Tracing.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Net.Primitives\src\System.Net.Primitives.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Net.Security\src\System.Net.Security.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Net.WebHeaderCollection\src\System.Net.WebHeaderCollection.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Net.WebSockets\src\System.Net.WebSockets.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Net.Http\src\System.Net.Http.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Security.Cryptography\src\System.Security.Cryptography.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Threading.Channels\src\System.Threading.Channels.csproj" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' != 'browser'">
-    <Reference Include="System.Collections" />
-    <Reference Include="System.Runtime" />
-    <Reference Include="System.Threading" />
-    <Reference Include="System.Memory" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Collections\src\System.Collections.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime\src\System.Runtime.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Threading\src\System.Threading.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Memory\src\System.Memory.csproj" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'browser'">

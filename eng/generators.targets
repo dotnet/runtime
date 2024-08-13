@@ -25,7 +25,7 @@
                                   (
                                       '$(DisableImplicitFrameworkReferences)' == 'true' and
                                       (
-                                        '@(Reference->AnyHaveMetadataValue('Identity', 'System.Runtime.InteropServices'))' == 'true' or
+                                        '@(ProjectReference->AnyHaveMetadataValue('Filename', 'System.Runtime.InteropServices'))' == 'true' or
                                         '@(ProjectReference->AnyHaveMetadataValue('Identity', '$(CoreLibProject)'))' == 'true'
                                       )
                                   )" />

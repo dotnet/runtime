@@ -89,26 +89,6 @@
                       Condition="'$(UseLocalAppHostPack)' == 'true' and '@(KnownAppHostPack->AnyHaveMetadataValue('TargetFramework', '$(NetCoreAppCurrent)'))' != 'true'" />
   </ItemGroup>
 
-  <!-- Simple name references will be resolved from the targeting pack folders and should never be copied to the output. -->
-  <ItemGroup>
-    <Reference Update="@(Reference)">
-      <Private Condition="'%(Reference.Extension)' != '.dll'">false</Private>
-    </Reference>
-  </ItemGroup>
-
-  <!-- Add the resolved targeting pack to the assembly search path. -->
-  <Target Name="UseTargetingPackForAssemblySearchPaths"
-          BeforeTargets="ResolveAssemblyReferences;
-                         DesignTimeResolveAssemblyReferences"
-          Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp' and
-                     '$(TargetFrameworkVersion)' == 'v$(NetCoreAppCurrentVersion)' and
-                     '$(DisableImplicitFrameworkReferences)' == 'true'">
-    <PropertyGroup>
-      <AssemblySearchPaths>$(AssemblySearchPaths);$(MicrosoftNetCoreAppRefPackRefDir.TrimEnd('/\'))</AssemblySearchPaths>
-      <DesignTimeAssemblySearchPaths>$(DesignTimeAssemblySearchPaths);$(MicrosoftNetCoreAppRefPackRefDir.TrimEnd('/\'))</DesignTimeAssemblySearchPaths>
-    </PropertyGroup>
-  </Target>
-
   <!-- Use local targeting/runtime pack for NetCoreAppCurrent. -->
   <Target Name="UpdateLocalTargetingAndRuntimePack"
           Condition="'$(UseLocalTargetingRuntimePack)' == 'true'"

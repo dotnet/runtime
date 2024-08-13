@@ -732,19 +732,19 @@ EmptyFindString:
             While Start < ExpressionLength
                 If Replacements = Count Then
                     'We've made all the replacements the caller wanted so append the remaining string
-                    Builder.Append(Expression.Substring(Start))
+                    Builder.Append(Expression.AsSpan(Start))
                     Exit While
                 End If
 
                 FindLocation = Comparer.IndexOf(Expression, Find, Start, CompareFlags)
                 If FindLocation < 0 Then
                     'We didn't find the Find string append the rest of the string
-                    Builder.Append(Expression.Substring(Start))
+                    Builder.Append(Expression.AsSpan(Start))
                     Exit While
                 Else
                     'Append to our string builder everything up to the found string, then
                     'append the replacement
-                    Builder.Append(Expression.Substring(Start, FindLocation - Start))
+                    Builder.Append(Expression.AsSpan(Start, FindLocation - Start))
                     Builder.Append(Replacement)
                     Replacements += 1
 

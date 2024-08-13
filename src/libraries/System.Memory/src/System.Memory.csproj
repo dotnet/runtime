@@ -8,6 +8,8 @@
     <!-- ArrayBufferWriter is publicly exposed from the System.Memory ref and only it should define this constant as true.  -->
     <DefineConstants>$(DefineConstants);MAKE_ABW_PUBLIC</DefineConstants>
     <UseCompilerGeneratedDocXmlFile>false</UseCompilerGeneratedDocXmlFile>
+    <!-- Required to workaround https://github.com/NuGet/Home/issues/10368. -->
+    <PackageId>temp_$(MSBuildProjectName)</PackageId>
   </PropertyGroup>
 
   <ItemGroup>

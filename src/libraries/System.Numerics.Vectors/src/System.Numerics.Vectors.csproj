@@ -4,6 +4,8 @@
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
     <IsPartialFacadeAssembly>true</IsPartialFacadeAssembly>
     <UseCompilerGeneratedDocXmlFile>false</UseCompilerGeneratedDocXmlFile>
+    <!-- Required to workaround https://github.com/NuGet/Home/issues/10368. -->
+    <PackageId>temp_$(MSBuildProjectName)</PackageId>
   </PropertyGroup>
 
   <ItemGroup>

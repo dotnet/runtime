@@ -11,6 +11,11 @@
     <GeneratePlatformNotSupportedAssemblyMessage Condition="'$(TargetPlatformIdentifier)' == 'browser'">SR.SystemNetWebClient_PlatformNotSupported</GeneratePlatformNotSupportedAssemblyMessage>
   </PropertyGroup>
 
+  <ItemGroup>
+    <Compile Include="$(CommonPath)System\Obsoletions.cs"
+             Link="Common\System\Obsoletions.cs" />
+  </ItemGroup>
+
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' != 'browser'">
     <Compile Include="System\Net\WebClient.cs" />
     <Compile Include="$(CommonPath)System\IO\DelegatingStream.cs"
@@ -28,19 +33,16 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Compile Include="$(CommonPath)System\Obsoletions.cs"
-             Link="Common\System\Obsoletions.cs" />
-    <Reference Include="System.Collections.Specialized" />
-    <Reference Include="System.ComponentModel.EventBasedAsync" />
-    <Reference Include="System.ComponentModel.Primitives" />
-    <Reference Include="System.Memory" />
-    <Reference Include="System.Net.Primitives" />
-    <Reference Include="System.Net.Requests" />
-    <Reference Include="System.Net.WebHeaderCollection" />
-    <Reference Include="System.Runtime" />
-    <Reference Include="System.Memory" />
-    <Reference Include="System.Threading" />
-    <Reference Include="System.Web.HttpUtility" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Collections.Specialized\src\System.Collections.Specialized.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.ComponentModel.EventBasedAsync\src\System.ComponentModel.EventBasedAsync.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.ComponentModel.Primitives\src\System.ComponentModel.Primitives.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Memory\src\System.Memory.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Net.Primitives\src\System.Net.Primitives.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Net.Requests\src\System.Net.Requests.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Net.WebHeaderCollection\src\System.Net.WebHeaderCollection.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime\src\System.Runtime.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Threading\src\System.Threading.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Web.HttpUtility\src\System.Web.HttpUtility.csproj" />
   </ItemGroup>
 
 </Project>

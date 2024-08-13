@@ -9,19 +9,20 @@
   <ItemGroup>
     <Compile Include="System\Net\IWebProxyScript.cs" />
     <Compile Include="System\Net\WebProxy.cs" />
+    <Compile Include="System\Net\WebProxy.Browser.cs" Condition="'$(TargetPlatformIdentifier)' == 'browser'" />
+    <Compile Include="System\Net\WebProxy.NonBrowser.cs" Condition="'$(TargetPlatformIdentifier)' != 'browser'" />
+
     <Compile Include="$(CommonPath)System\Obsoletions.cs" Link="Common\System\Obsoletions.cs" />
-    <Compile Condition="'$(TargetPlatformIdentifier)' == 'browser'" Include="System\Net\WebProxy.Browser.cs" />
-    <Compile Condition="'$(TargetPlatformIdentifier)' != 'browser'" Include="System\Net\WebProxy.NonBrowser.cs" />
   </ItemGroup>
 
   <ItemGroup>
-    <Reference Include="System.Memory" />
-    <Reference Include="System.Net.NameResolution" />
-    <Reference Include="System.Net.NetworkInformation" />
-    <Reference Include="System.Net.Primitives" />
-    <Reference Include="System.Runtime" />
-    <Reference Include="System.Text.RegularExpressions" />
-    <Reference Include="System.Threading" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Memory\src\System.Memory.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Net.NameResolution\src\System.Net.NameResolution.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Net.NetworkInformation\src\System.Net.NetworkInformation.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Net.Primitives\src\System.Net.Primitives.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime\src\System.Runtime.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Text.RegularExpressions\src\System.Text.RegularExpressions.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Threading\src\System.Threading.csproj" />
   </ItemGroup>
 
 </Project>
