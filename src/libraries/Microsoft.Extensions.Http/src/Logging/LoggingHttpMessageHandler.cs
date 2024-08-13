@@ -19,8 +19,6 @@ namespace Microsoft.Extensions.Http.Logging
         private readonly ILogger _logger;
         private readonly HttpClientFactoryOptions? _options;
 
-        private static readonly Func<string, bool> _shouldNotRedactHeaderValue = (header) => false;
-
         /// <summary>
         /// Initializes a new instance of the <see cref="LoggingHttpMessageHandler"/> class with a specified logger.
         /// </summary>
@@ -55,7 +53,7 @@ namespace Microsoft.Extensions.Http.Logging
 
             async Task<HttpResponseMessage> Core(HttpRequestMessage request, bool useAsync, CancellationToken cancellationToken)
             {
-                Func<string, bool> shouldRedactHeaderValue = _options?.ShouldRedactHeaderValue ?? _shouldNotRedactHeaderValue;
+                Func<string, bool> shouldRedactHeaderValue = _options?.ShouldRedactHeaderValue ?? LogHelper.ShouldRedactHeaderValue;
 
                 // Not using a scope here because we always expect this to be at the end of the pipeline, thus there's
                 // not really anything to surround.
