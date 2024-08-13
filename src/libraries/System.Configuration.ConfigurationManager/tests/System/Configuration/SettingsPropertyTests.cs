@@ -32,13 +32,13 @@ namespace System.ConfigurationTests
             var settingsProperty = new SettingsProperty(
                 "TestName",
                 typeof(string),
-                null,
-                true,
+                provider: null,
+                isReadOnly: true,
                 "TestDefaultValue",
                 serializeAs,
                 new SettingsAttributeDictionary(),
-                true,
-                false);
+                throwOnErrorDeserializing: true,
+                throwOnErrorSerializing: false);
             Assert.Equal("TestName", settingsProperty.Name);
             Assert.True(settingsProperty.IsReadOnly);
             Assert.Equal("TestDefaultValue", settingsProperty.DefaultValue);
