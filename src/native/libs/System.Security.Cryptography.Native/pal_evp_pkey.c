@@ -511,41 +511,72 @@ int32_t CryptoNative_EncodeSubjectPublicKeyInfo(EVP_PKEY* pkey, uint8_t* buf)
     return i2d_PUBKEY(pkey, &buf);
 }
 
+#if HAVE_OPENSSL_ENGINE
 static EVP_PKEY* LoadKeyFromEngine(
     const char* engineName,
     const char* keyName,
-    ENGINE_LOAD_KEY_PTR load_func)
+    ENGINE_LOAD_KEY_PTR load_func,
+    int32_t* haveEngine)
 {
+    assert(haveEngine);
     ERR_clear_error();
 
-    EVP_PKEY* ret = NULL;
-    ENGINE* engine = NULL;
-
-    // Per https://github.com/openssl/openssl/discussions/21427
-    // using EVP_PKEY after freeing ENGINE is correct.
-    engine = ENGINE_by_id(engineName);
-
-    if (engine != NULL)
+    if (API_EXISTS(ENGINE_by_id) && API_EXISTS(ENGINE_init) && API_EXISTS(ENGINE_finish) && API_EXISTS(ENGINE_free))
     {
-        if (ENGINE_init(engine))
-        {
-            ret = load_func(engine, keyName, NULL, NULL);
+        *haveEngine = 1;
+        EVP_PKEY* ret = NULL;
+        ENGINE* engine = NULL;
 
-            ENGINE_finish(engine);
+        // Per https://github.com/openssl/openssl/discussions/21427
+        // using EVP_PKEY after freeing ENGINE is correct.
+        engine = ENGINE_by_id(engineName);
+
+        if (engine != NULL)
+        {
+            if (ENGINE_init(engine))
+            {
+                ret = load_func(engine, keyName, NULL, NULL);
+
+                ENGINE_finish(engine);
+            }
+
+            ENGINE_free(engine);
         }
 
-        ENGINE_free(engine);
+        return ret;
     }
 
-    return ret;
+    *haveEngine = 0;
+    return NULL;
+}
+#endif
+
+EVP_PKEY* CryptoNative_LoadPrivateKeyFromEngine(const char* engineName, const char* keyName, int32_t* haveEngine)
+{
+#if HAVE_OPENSSL_ENGINE
+    if (API_EXISTS(ENGINE_load_private_key))
+    {
+        return LoadKeyFromEngine(engineName, keyName, ENGINE_load_private_key, haveEngine);
+    }
+#endif
+    (void)engineName;
+    (void)keyName;
+    (void)haveEngine;
+    *haveEngine = 0;
+    return NULL;
 }
 
-EVP_PKEY* CryptoNative_LoadPrivateKeyFromEngine(const char* engineName, const char* keyName)
+EVP_PKEY* CryptoNative_LoadPublicKeyFromEngine(const char* engineName, const char* keyName, int32_t* haveEngine)
 {
-    return LoadKeyFromEngine(engineName, keyName, ENGINE_load_private_key);
-}
-
-EVP_PKEY* CryptoNative_LoadPublicKeyFromEngine(const char* engineName, const char* keyName)
-{
-    return LoadKeyFromEngine(engineName, keyName, ENGINE_load_public_key);
+#if HAVE_OPENSSL_ENGINE
+    if (API_EXISTS(ENGINE_load_private_key))
+    {
+        return LoadKeyFromEngine(engineName, keyName, ENGINE_load_public_key, haveEngine);
+    }
+#endif
+    (void)engineName;
+    (void)keyName;
+    (void)haveEngine;
+    *haveEngine = 0;
+    return NULL;
 }

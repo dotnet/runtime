@@ -27,6 +27,8 @@ public class WasmAppBuilder : WasmAppBuilderBaseTask
     public bool WasmIncludeFullIcuData { get; set; }
     public string? WasmIcuDataFileName { get; set; }
     public string? RuntimeAssetsLocation { get; set; }
+    public string? DebugLevel { get; set; }
+    public bool IsPublish { get; set; }
 
     // <summary>
     // Extra json elements to add to _framework/blazor.boot.json
@@ -83,7 +85,7 @@ public class WasmAppBuilder : WasmAppBuilderBaseTask
 
     protected override bool ExecuteInternal()
     {
-        var helper = new BootJsonBuilderHelper(Log);
+        var helper = new BootJsonBuilderHelper(Log, DebugLevel!, IsPublish);
 
         if (!ValidateArguments())
             return false;
@@ -115,6 +117,8 @@ public class WasmAppBuilder : WasmAppBuilderBaseTask
         if (UseWebcil)
             Log.LogMessage(MessageImportance.Normal, "Converting assemblies to Webcil");
 
+        int baseDebugLevel = helper.GetDebugLevel(false);
+
         foreach (var assembly in _assemblies)
         {
             if (UseWebcil)
@@ -133,7 +137,7 @@ public class WasmAppBuilder : WasmAppBuilderBaseTask
             {
                 FileCopyChecked(assembly, Path.Combine(runtimeAssetsPath, Path.GetFileName(assembly)), "Assemblies");
             }
-            if (DebugLevel != 0)
+            if (baseDebugLevel != 0)
             {
                 var pdb = assembly;
                 pdb = Path.ChangeExtension(pdb, ".pdb");
@@ -191,7 +195,7 @@ public class WasmAppBuilder : WasmAppBuilderBaseTask
                 }
 
                 bootConfig.resources.assembly[Path.GetFileName(assemblyPath)] = Utils.ComputeIntegrity(bytes);
-                if (DebugLevel != 0)
+                if (baseDebugLevel != 0)
                 {
                     var pdb = Path.ChangeExtension(assembly, ".pdb");
                     if (File.Exists(pdb))
@@ -205,7 +209,7 @@ public class WasmAppBuilder : WasmAppBuilderBaseTask
             }
         }
 
-        bootConfig.debugLevel = DebugLevel;
+        bootConfig.debugLevel = helper.GetDebugLevel(bootConfig.resources.pdb?.Count > 0);
 
         ProcessSatelliteAssemblies(args =>
         {
