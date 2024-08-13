@@ -1,5 +1,9 @@
 <Project DefaultTargets="Build">
   <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.props))" />
 
+  <PropertyGroup>
+    <_DefaultValueAttributeSupport>true</_DefaultValueAttributeSupport>
+  </PropertyGroup>
+
   <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.targets))" />
 </Project>
