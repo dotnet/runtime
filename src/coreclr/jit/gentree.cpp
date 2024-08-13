@@ -4904,11 +4904,6 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
         return gtSetEvalOrderMinOpts(tree);
     }
 
-#ifdef DEBUG
-    /* Clear the GTF_DEBUG_NODE_MORPHED flag as well */
-    tree->gtDebugFlags &= ~GTF_DEBUG_NODE_MORPHED;
-#endif
-
     /* Is this a FP value? */
 
     bool isflt = varTypeIsFloating(tree->TypeGet());
