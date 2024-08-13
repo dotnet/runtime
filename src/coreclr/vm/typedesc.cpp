@@ -74,16 +74,7 @@ PTR_Module TypeDesc::GetLoaderModule()
     }
     else
     {
-        PTR_Module retVal = NULL;
-        BOOL fFail = FALSE;
-
-        _ASSERTE(GetInternalCorElementType() == ELEMENT_TYPE_FNPTR);
-        PTR_FnPtrTypeDesc asFnPtr = dac_cast<PTR_FnPtrTypeDesc>(this);
-        if (!fFail)
-        {
-            retVal = ClassLoader::ComputeLoaderModuleForFunctionPointer(asFnPtr->GetRetAndArgTypesPointer(), asFnPtr->GetNumArgs()+1);
-        }
-        return retVal;
+        return dac_cast<PTR_FnPtrTypeDesc>(this)->GetLoaderModule();
     }
 }
 

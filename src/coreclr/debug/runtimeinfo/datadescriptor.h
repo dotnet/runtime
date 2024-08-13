@@ -289,6 +289,7 @@ CDAC_TYPE_INDETERMINATE(FnPtrTypeDesc)
 CDAC_TYPE_FIELD(FnPtrTypeDesc, /*uint32*/, NumArgs, cdac_data<FnPtrTypeDesc>::NumArgs)
 CDAC_TYPE_FIELD(FnPtrTypeDesc, /*uint32*/, CallConv, cdac_data<FnPtrTypeDesc>::CallConv)
 CDAC_TYPE_FIELD(FnPtrTypeDesc, /*uint32*/, RetAndArgTypes, cdac_data<FnPtrTypeDesc>::RetAndArgTypes)
+CDAC_TYPE_FIELD(FnPtrTypeDesc, /*pointer*/, LoaderModule, cdac_data<FnPtrTypeDesc>::LoaderModule)
 CDAC_TYPE_END(FnPtrTypeDesc)
 
 CDAC_TYPE_BEGIN(DynamicMetadata)
