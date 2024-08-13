@@ -6299,6 +6299,9 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			gboolean likely = (ins->flags & MONO_INST_LIKELY) != 0;
 			gboolean unlikely = FALSE;
 
+			if (!ins->next)
+				break;
+
 			if (MONO_IS_COND_BRANCH_OP (ins->next)) {
 				if (ins->next->inst_false_bb->out_of_line)
 					likely = TRUE;
