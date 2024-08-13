@@ -3,6 +3,7 @@
 
 using System;
 using System.Buffers;
+using System.Diagnostics;
 using Internal.TypeSystem;
 using static ILCompiler.ObjectWriter.DwarfNative;
 
