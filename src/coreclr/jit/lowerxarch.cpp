@@ -10420,9 +10420,7 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                     {
                         containedOperand = op2;
                     }
-                    else if ((isCommutative || (intrinsicId == NI_BMI2_MultiplyNoFlags) ||
-                              (intrinsicId == NI_BMI2_X64_MultiplyNoFlags)) &&
-                             IsContainableHWIntrinsicOp(node, op1, &supportsOp1RegOptional))
+                    else if (isCommutative && IsContainableHWIntrinsicOp(node, op1, &supportsOp1RegOptional))
                     {
                         containedOperand = op1;
                         swapOperands     = true;
