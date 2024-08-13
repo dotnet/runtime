@@ -32,7 +32,7 @@ namespace Microsoft.Extensions.Logging.Console.Test
             var defaultMonitor = new TestFormatterOptionsMonitor<SimpleConsoleFormatterOptions>(simpleOptions ?? new SimpleConsoleFormatterOptions());
             var systemdMonitor = new TestFormatterOptionsMonitor<ConsoleFormatterOptions>(systemdOptions ?? new ConsoleFormatterOptions());
             var jsonMonitor = new TestFormatterOptionsMonitor<JsonConsoleFormatterOptions>(jsonOptions ?? new JsonConsoleFormatterOptions());
-            var formatters = new List<ConsoleFormatter>() { 
+            var formatters = new List<ConsoleFormatter>() {
                 new SimpleConsoleFormatter(defaultMonitor),
                 new SystemdConsoleFormatter(systemdMonitor),
                 new JsonConsoleFormatter(jsonMonitor)
@@ -86,13 +86,13 @@ namespace Microsoft.Extensions.Logging.Console.Test
                 Assert.Equal(formatter.FormatterOptions.IncludeScopes, logger.Options.IncludeScopes);
                 Assert.Equal(formatter.FormatterOptions.UseUtcTimestamp, logger.Options.UseUtcTimestamp);
                 Assert.Equal(formatter.FormatterOptions.TimestampFormat, logger.Options.TimestampFormat);
-                Assert.Equal(formatter.FormatterOptions.ColorBehavior, 
-                    logger.Options.DisableColors ? LoggerColorBehavior.Disabled : LoggerColorBehavior.Enabled);   
+                Assert.Equal(formatter.FormatterOptions.ColorBehavior,
+                    logger.Options.DisableColors ? LoggerColorBehavior.Disabled : LoggerColorBehavior.Enabled);
             }
             else
             {
                 var formatter = Assert.IsType<SystemdConsoleFormatter>(logger.Formatter);
-                Assert.Equal(formatter.FormatterOptions.IncludeScopes, logger.Options.IncludeScopes);   
+                Assert.Equal(formatter.FormatterOptions.IncludeScopes, logger.Options.IncludeScopes);
                 Assert.Equal(formatter.FormatterOptions.UseUtcTimestamp, logger.Options.UseUtcTimestamp);
                 Assert.Equal(formatter.FormatterOptions.TimestampFormat, logger.Options.TimestampFormat);
             }
@@ -103,7 +103,7 @@ namespace Microsoft.Extensions.Logging.Console.Test
             // kept for deprecated apis:
             if (formatter is SimpleConsoleFormatter defaultFormatter)
             {
-                defaultFormatter.FormatterOptions.ColorBehavior = deprecatedFromOptions.DisableColors ? 
+                defaultFormatter.FormatterOptions.ColorBehavior = deprecatedFromOptions.DisableColors ?
                     LoggerColorBehavior.Disabled : LoggerColorBehavior.Enabled;
                 defaultFormatter.FormatterOptions.IncludeScopes = deprecatedFromOptions.IncludeScopes;
                 defaultFormatter.FormatterOptions.TimestampFormat = deprecatedFromOptions.TimestampFormat;
@@ -1344,6 +1344,31 @@ namespace Microsoft.Extensions.Logging.Console.Test
             Assert.NotNull(logger.ScopeProvider);
             var formatter = Assert.IsType<SimpleConsoleFormatter>(logger.Formatter);
             Assert.True(formatter.FormatterOptions.IncludeScopes);
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        public void LogMultipleArrays()
+        {
+            // Arrange
+            var t = SetUp();
+            var logger = t.Logger;
+            var sink = t.Sink;
+
+            var define1 = LoggerMessage.Define<string[], string[]>(LogLevel.Information, new EventId(), "Log: {Array1} and {Array2}");
+            var define2 = LoggerMessage.Define<int, string[], string[]>(LogLevel.Information, new EventId(), "Log {Number}: {Array1} and {Array2}");
+
+            // Act
+            define1(logger, ["a", "b", "c"], ["d", "e", "f"], null);
+            define2(logger, 30, ["a", "b", "c"], ["d", "e", "f"], null);
+
+            var expectedMessage1 = $"{CreateHeader(ConsoleLoggerFormat.Default)}{Environment.NewLine}{_paddingString}Log: a, b, c and d, e, f{Environment.NewLine}";
+            var expectedMessage2 = $"{CreateHeader(ConsoleLoggerFormat.Default)}{Environment.NewLine}{_paddingString}Log 30: a, b, c and d, e, f{Environment.NewLine}";
+
+            Assert.Equal(4, sink.Writes.Count);
+            Assert.Equal("info", sink.Writes[0].Message);
+            Assert.Equal(expectedMessage1, sink.Writes[1].Message);
+            Assert.Equal("info", sink.Writes[2].Message);
+            Assert.Equal(expectedMessage2, sink.Writes[3].Message);
         }
 
         public static TheoryData<ConsoleLoggerFormat, LogLevel> FormatsAndLevels
