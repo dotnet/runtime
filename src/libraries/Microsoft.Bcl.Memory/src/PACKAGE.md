@@ -43,7 +43,7 @@ byte[] data = Encoding.UTF8.GetBytes("Hello World!");
 Span<byte> encoded = new byte[Base64Url.GetEncodedLength(data.Length)];
 Base64Url.EncodeToUtf8(data, encoded, out int _, out int bytesWritten);
 
-string encodedString = Encoding.UTF8.GetString(encoded[..bytesWritten]);
+string encodedString = Base64Url.EncodeToString(data);  
 Console.WriteLine($"Encoded: {encodedString}");
 // Encoded: SGVsbG8gV29ybGQh
 
@@ -72,8 +72,8 @@ The main types provided by this library are:
 API documentation
 
 * [System.Index](https://learn.microsoft.com/dotnet/api/system.index)
-* [System.Range](https://learn.microsoft.com/en-us/dotnet/api/system.range)
-* [System.Buffers.Text](https://learn.microsoft.com/dotnet/api/system.buffers.text)
+* [System.Range](https://learn.microsoft.com/dotnet/api/system.range)
+* [System.Buffers.Text.Base64Url](https://learn.microsoft.com/dotnet/api/system.buffers.text.base64url)
 
 ## Feedback & Contributing
 
