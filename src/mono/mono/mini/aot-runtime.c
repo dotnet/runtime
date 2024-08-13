@@ -1795,7 +1795,7 @@ init_amodule_got (MonoAotModule *amodule, gboolean preinit)
 			if (mono_defaults.corlib) {
 				MonoAotModule *mscorlib_amodule = mono_defaults.corlib->aot_module;
 
-				if (mscorlib_amodule)
+				if (mscorlib_amodule && (mscorlib_amodule != AOT_MODULE_NOT_FOUND))
 					amodule->shared_got [i] = mscorlib_amodule->got;
 			} else {
 				amodule->shared_got [i] = amodule->got;
@@ -2053,6 +2053,7 @@ load_aot_module (MonoAssemblyLoadContext *alc, MonoAssembly *assembly, gpointer 
 				g_free (aot_name);
 			}
 #endif
+			assembly->image->aot_module = AOT_MODULE_NOT_FOUND;
 			return;
 		}
 	}
@@ -2104,7 +2105,7 @@ load_aot_module (MonoAssemblyLoadContext *alc, MonoAssembly *assembly, gpointer 
 			mono_dl_close (sofile, close_error);
 			mono_error_cleanup (close_error);
 		}
-		assembly->image->aot_module = NULL;
+		assembly->image->aot_module = AOT_MODULE_NOT_FOUND;
 		return;
 	}
 
@@ -2487,7 +2488,7 @@ load_container_amodule (MonoAssemblyLoadContext *alc)
 
 		load_aot_module(alc, assm, NULL, error);
 		mono_memory_barrier ();
-		g_assert (assm->image->aot_module);
+		g_assert (assm->image->aot_module && (assm->image->aot_module != AOT_MODULE_NOT_FOUND));
 		container_amodule = assm->image->aot_module;
 	}
 
@@ -2561,7 +2562,7 @@ mono_aot_get_method_from_vt_slot (MonoVTable *vtable, int slot, MonoError *error
 
 	error_init (error);
 
-	if (MONO_CLASS_IS_INTERFACE_INTERNAL (klass) || m_class_get_rank (klass) || !amodule)
+	if (MONO_CLASS_IS_INTERFACE_INTERNAL (klass) || m_class_get_rank (klass) || !amodule || (amodule == AOT_MODULE_NOT_FOUND))
 		return NULL;
 
 	info = &amodule->blob [mono_aot_get_offset (amodule->class_info_offsets, mono_metadata_token_index (m_class_get_type_token (klass)) - 1)];
@@ -2597,7 +2598,7 @@ mono_aot_get_cached_class_info (MonoClass *klass, MonoCachedClassInfo *res)
 	guint8 *p;
 	gboolean err;
 
-	if (m_class_get_rank (klass) || !m_class_get_type_token (klass) || !amodule)
+	if (m_class_get_rank (klass) || !m_class_get_type_token (klass) || !amodule || (amodule == AOT_MODULE_NOT_FOUND))
 		return FALSE;
 
 	p = (guint8*)&amodule->blob [mono_aot_get_offset (amodule->class_info_offsets, mono_metadata_token_index (m_class_get_type_token (klass)) - 1)];
@@ -2637,7 +2638,7 @@ mono_aot_get_class_from_name (MonoImage *image, const char *name_space, const ch
 	uint32_t debug_hash;
 #endif
 
-	if (!amodule || !amodule->class_name_table)
+	if (!amodule || (amodule == AOT_MODULE_NOT_FOUND) || !amodule->class_name_table)
 		return FALSE;
 
 	amodule_lock (amodule);
@@ -2746,7 +2747,7 @@ mono_aot_get_weak_field_indexes (MonoImage *image)
 {
 	MonoAotModule *amodule = image->aot_module;
 
-	if (!amodule)
+	if (!amodule || (amodule == AOT_MODULE_NOT_FOUND))
 		return NULL;
 
 #if ENABLE_WEAK_ATTR
@@ -3437,7 +3438,7 @@ mono_aot_get_unwind_info (MonoJitInfo *ji, guint32 *unwind_info_len)
 		amodule = ji->d.aot_info;
 	else
 		amodule = m_class_get_image (jinfo_get_method (ji)->klass)->aot_module;
-	g_assert (amodule);
+	g_assert (amodule && (amodule != AOT_MODULE_NOT_FOUND));
 	g_assert (ji->from_aot);
 
 	if (!amodule_contains_code_addr (amodule, code)) {
@@ -3574,7 +3575,7 @@ mono_aot_find_jit_info (MonoImage *image, gpointer addr)
 	int methods_len;
 	gboolean async;
 
-	if (!amodule)
+	if (!amodule || (amodule == AOT_MODULE_NOT_FOUND))
 		return NULL;
 
 	addr = MINI_FTNPTR_TO_ADDR (addr);
@@ -4468,7 +4469,7 @@ find_aot_method_in_amodule (MonoAotModule *code_amodule, MonoMethod *method, gui
 	// the caching breaking. The solution seems to be to cache using the "metadata" amodule.
 	MonoAotModule *metadata_amodule = m_class_get_image (method->klass)->aot_module;
 
-	if (!metadata_amodule || metadata_amodule->out_of_date || !code_amodule || code_amodule->out_of_date)
+	if (!metadata_amodule || (metadata_amodule == AOT_MODULE_NOT_FOUND) || metadata_amodule->out_of_date || !code_amodule || code_amodule->out_of_date)
 		return 0xffffff;
 
 	table = code_amodule->extra_method_table;
@@ -4638,7 +4639,7 @@ find_aot_method (MonoMethod *method, MonoAotModule **out_amodule)
 
 	/* Try the method's module first */
 	*out_amodule = m_class_get_image (method->klass)->aot_module;
-	index = find_aot_method_in_amodule (m_class_get_image (method->klass)->aot_module, method, hash);
+	index = find_aot_method_in_amodule (*out_amodule, method, hash);
 	if (index != 0xffffff)
 		return index;
 
@@ -4873,14 +4874,37 @@ mono_aot_get_method (MonoMethod *method, MonoError *error)
 	MonoClass *klass = method->klass;
 	MonoMethod *orig_method = method;
 	guint32 method_index;
-	MonoAotModule *amodule = m_class_get_image (klass)->aot_module;
+	MonoImage *image = m_class_get_image (klass);
+	
 	guint8 *code;
 	gboolean cache_result = FALSE;
 	ERROR_DECL (inner_error);
 
 	error_init (error);
 
-	if (!amodule)
+	if (!(image->aot_module)) {
+		// aot_module was uninitialized
+		MonoMethodHeader *header = mono_method_get_header_checked (method, inner_error);
+		mono_error_cleanup (inner_error);
+		if (!header) {
+			return NULL;
+		} else if (header->code_size != 0) {
+			return NULL;
+		} else {
+			// IL code for the method body doesn't exist. Try waiting for aot_module to be loaded probably by another thread
+			int count = 0;
+			while (!(image->aot_module) && (count < 10)) { // The threshold of count should never be removed to prevent deadlock.
+				g_usleep (100);
+				count++;
+			}
+			if (!(image->aot_module))
+				return NULL;
+		}
+	}
+
+	MonoAotModule *amodule = image->aot_module;
+
+	if (amodule == AOT_MODULE_NOT_FOUND)
 		return NULL;
 
 	if (amodule->out_of_date)
@@ -5094,7 +5118,7 @@ mono_aot_get_method_from_token (MonoImage *image, guint32 token, MonoError *erro
 
 	error_init (error);
 
-	if (!aot_module)
+	if (!aot_module || aot_module == AOT_MODULE_NOT_FOUND)
 		return NULL;
 
 	method_index = mono_metadata_token_index (token) - 1;
@@ -5596,7 +5620,7 @@ get_mscorlib_aot_module (void)
 	MonoAotModule *amodule;
 
 	image = mono_defaults.corlib;
-	if (image && image->aot_module)
+	if (image && image->aot_module && (image->aot_module != AOT_MODULE_NOT_FOUND))
 		amodule = image->aot_module;
 	else
 		amodule = mscorlib_aot_module;
@@ -6048,7 +6072,7 @@ ui16_idx_comparer (const void *key, const void *member)
 static gboolean
 aot_is_slim_amodule (MonoAotModule *amodule)
 {
-	if (!amodule)
+	if (!amodule || amodule == AOT_MODULE_NOT_FOUND)
 		return FALSE;
 
 	/* "slim" only applies to mscorlib.dll */
@@ -6086,7 +6110,7 @@ mono_aot_get_unbox_trampoline (MonoMethod *method, gpointer addr)
 	} else
 		amodule = m_class_get_image (method->klass)->aot_module;
 
-	if (amodule == NULL || method_index == 0xffffff || aot_is_slim_amodule (amodule)) {
+	if (!amodule || amodule == AOT_MODULE_NOT_FOUND || method_index == 0xffffff || aot_is_slim_amodule (amodule)) {
 		/* couldn't find unbox trampoline specifically generated for that
 		 * method. this should only happen when an unbox trampoline is needed
 		 * for `fullAOT code -> native-to-interp -> interp` transition if

@@ -1463,6 +1463,10 @@ void CEEInfo::getThreadLocalStaticBlocksInfo (CORINFO_THREAD_STATIC_BLOCKS_INFO*
     EE_TO_JIT_TRANSITION_LEAF();
 }
 
+#if !defined(TARGET_OSX) && defined(TARGET_UNIX) && defined(TARGET_ARM64)
+extern "C" size_t GetTLSResolverAddress();
+#endif // !TARGET_OSX && TARGET_UNIX && TARGET_ARM64
+
 /*********************************************************************/
 void CEEInfo::getFieldInfo (CORINFO_RESOLVED_TOKEN * pResolvedToken,
                             CORINFO_METHOD_HANDLE  callerHandle,
@@ -1567,20 +1571,57 @@ void CEEInfo::getFieldInfo (CORINFO_RESOLVED_TOKEN * pResolvedToken,
                 fieldAccessor = CORINFO_FIELD_STATIC_SHARED_STATIC_HELPER;
 
                 pResult->helper = getSharedStaticsHelper(pField, pFieldMT);
+
+                bool optimizeThreadStaticAccess = false;
 #if defined(TARGET_ARM)
                 // Optimization is disabled for linux/windows arm
 #elif !defined(TARGET_WINDOWS) && defined(TARGET_X86)
                 // Optimization is disabled for linux/x86
 #elif defined(TARGET_LINUX_MUSL) && defined(TARGET_ARM64)
                 // Optimization is disabled for linux musl arm64
+#elif !defined(TARGET_OSX) && defined(TARGET_UNIX) && defined(TARGET_ARM64)
+                // Optimization is enabled for linux/arm64 only for static resolver.
+                // For static resolver, the TP offset is same for all threads.
+                // For dynamic resolver, TP offset returned is for the current thread and
+                // will be different for the other threads.
+                uint32_t* resolverAddress = reinterpret_cast<uint32_t*>(GetTLSResolverAddress());
+                int ip = 0;
+                if ((resolverAddress[ip] == 0xd503201f) || (resolverAddress[ip] == 0xd503241f))
+                {
+                    // nop might not be present in older resolver, so skip it.
+
+                    // nop or hint 32
+                    ip++;
+                }
+
+                if (
+                    // ldr x0, [x0, #8]
+                    (resolverAddress[ip] == 0xf9400400) &&
+                    // ret
+                    (resolverAddress[ip + 1] == 0xd65f03c0)
+                )
+                {
+                    optimizeThreadStaticAccess = true;
+#ifdef _DEBUG
+                    if (CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_AssertNotStaticTlsResolver) != 0)
+                    {
+                        _ASSERTE(!"Detected static resolver in use when not expected");
+                    }
+#endif
+                }
 #else
-                bool optimizeThreadStaticAccess = true;
+                optimizeThreadStaticAccess = true;
 #if !defined(TARGET_OSX) && defined(TARGET_UNIX) && defined(TARGET_AMD64)
                 // For linux/x64, check if compiled coreclr as .so file and not single file.
                 // For single file, the `tls_index` might not be accurate.
                 // Do not perform this optimization in such case.
                 optimizeThreadStaticAccess = GetTlsIndexObjectAddress() != nullptr;
 #endif // !TARGET_OSX && TARGET_UNIX && TARGET_AMD64
+
+                if (g_pConfig->DisableOptimizedThreadStaticAccess())
+                {
+                    optimizeThreadStaticAccess = false;
+                }
 
                 if (optimizeThreadStaticAccess)
                 {
@@ -3898,8 +3939,18 @@ uint32_t CEEInfo::getClassAttribsInternal (CORINFO_CLASS_HANDLE clsHnd)
             if (pMT->IsByRefLike())
                 ret |= CORINFO_FLG_BYREF_LIKE;
 
-            if (pClass->IsUnsafeValueClass())
+            // In Reverse P/Invoke stubs, we are generating the code
+            // and we are not generating the code patterns that the GS checks
+            // are meant to catch.
+            // As a result, we can skip setting this flag.
+            // We do this as the GS checks (emitted when this flag is set)
+            // can break C++/CLI's copy-constructor semantics by missing copies.
+            if (pClass->IsUnsafeValueClass()
+                && !(m_pMethodBeingCompiled->IsILStub()
+                    && dac_cast<PTR_DynamicMethodDesc>(m_pMethodBeingCompiled)->GetILStubType() == DynamicMethodDesc::StubNativeToCLRInterop))
+            {
                 ret |= CORINFO_FLG_UNSAFE_VALUECLASS;
+            }
         }
         if (pClass->HasExplicitFieldOffsetLayout() && pClass->HasOverlaidField())
             ret |= CORINFO_FLG_OVERLAPPING_FIELDS;

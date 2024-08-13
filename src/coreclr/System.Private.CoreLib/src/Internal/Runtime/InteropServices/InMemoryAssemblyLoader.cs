@@ -49,7 +49,7 @@ namespace Internal.Runtime.InteropServices
         /// </summary>
         /// <param name="moduleHandle">The native module handle for the assembly.</param>
         /// <param name="assemblyPath">The path to the assembly (as a pointer to a UTF-16 C string).</param>
-        /// <param name="loadContext">Load context (currently must be IntPtr.Zero)</param>
+        /// <param name="loadContext">Load context (currently must be either IntPtr.Zero for default ALC or -1 for isolated ALC)</param>
         [UnmanagedCallersOnly]
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
             Justification = "The same C++/CLI feature switch applies to LoadInMemoryAssembly and this function. We rely on the warning from LoadInMemoryAssembly.")]
@@ -58,9 +58,12 @@ namespace Internal.Runtime.InteropServices
             if (!IsSupported)
                 throw new NotSupportedException(SR.NotSupported_CppCli);
 
-            ArgumentOutOfRangeException.ThrowIfNotEqual(loadContext, IntPtr.Zero);
+            if ((loadContext != IntPtr.Zero) && (loadContext != -1))
+            {
+                throw new ArgumentOutOfRangeException(nameof(loadContext));
+            }
 
-            LoadInMemoryAssemblyInContextImpl(moduleHandle, assemblyPath, AssemblyLoadContext.Default);
+            LoadInMemoryAssemblyInContextImpl(moduleHandle, assemblyPath, (loadContext == IntPtr.Zero) ? AssemblyLoadContext.Default : null);
         }
 
         [RequiresUnreferencedCode("C++/CLI is not trim-compatible", Url = "https://aka.ms/dotnet-illink/nativehost")]
