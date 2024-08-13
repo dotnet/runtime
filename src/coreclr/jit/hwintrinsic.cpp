@@ -1818,6 +1818,13 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
     if (simdBaseJitType != CORINFO_TYPE_UNDEF)
     {
         simdBaseType = JitType2PreciseVarType(simdBaseJitType);
+#ifdef TARGET_XARCH
+        if(HWIntrinsicInfo::NeedsNormalizeSmallTypeToInt(intrinsic) && varTypeIsSmall(simdBaseType))
+        {
+            simdBaseJitType = varTypeIsUnsigned(simdBaseType) ? CORINFO_TYPE_UINT : CORINFO_TYPE_INT;
+            simdBaseType = JitType2PreciseVarType(simdBaseJitType);
+        }
+#endif // TARGET_XARCH
     }
 
     const unsigned simdSize = HWIntrinsicInfo::lookupSimdSize(this, intrinsic, sig);
