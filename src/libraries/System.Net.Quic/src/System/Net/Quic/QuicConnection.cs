@@ -287,6 +287,24 @@ public sealed partial class QuicConnection : IAsyncDisposable
     /// </summary>
     public SslApplicationProtocol NegotiatedApplicationProtocol => _negotiatedApplicationProtocol;
 
+    /// <summary>
+    /// Negotiated TLS cipher suite
+    /// </summary>
+    [CLSCompliant(false)]
+    public TlsCipherSuite NegotiatedCipherSuite
+    {
+        get
+        {
+            QUIC_HANDSHAKE_INFO info;
+            unsafe
+            {
+                MsQuicHelpers.GetMsQuicParameter(_handle, QUIC_PARAM_TLS_HANDSHAKE_INFO, (uint)sizeof(QUIC_HANDSHAKE_INFO), (byte*)&info);
+            }
+
+            return (TlsCipherSuite)info.CipherSuite;
+        }
+    }
+
     /// <inheritdoc />
     public override string ToString() => _handle.ToString();
 
