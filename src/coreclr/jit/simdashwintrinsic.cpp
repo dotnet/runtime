@@ -593,6 +593,18 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
             break;
         }
 
+#if defined(TARGET_X86)
+        case NI_VectorT_ToScalar:
+        {
+            if (varTypeIsLong(simdBaseType) && !compOpportunisticallyDependsOn(InstructionSet_SSE41))
+            {
+                return nullptr;
+            }
+
+            break;
+        }
+#endif // TARGET_X86
+
 #if defined(TARGET_XARCH)
         case NI_VectorT_GetElement:
         {
@@ -993,6 +1005,8 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
 #if defined(TARGET_X86)
                     if (varTypeIsLong(simdBaseType))
                     {
+                        // We should have verified SSE41 was available above.
+                        assert(compIsaSupportedDebugOnly(InstructionSet_SSE41));
                         op2 = gtNewIconNode(0);
                         return gtNewSimdGetElementNode(retType, op1, op2, simdBaseJitType, simdSize);
                     }
