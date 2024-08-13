@@ -138,7 +138,8 @@ namespace Mono.Linker
 		void MapInterfaceMethodsInTypeHierarchy (TypeDefinition type)
 		{
 			var runtimeInterfaceImpls = _recursiveInterfaces.GetRuntimeInterfaceImplementations (type);
-			if (runtimeInterfaceImpls.Length == 0) return;
+			if (runtimeInterfaceImpls.Length == 0)
+				return;
 
 			// Foreach interface and for each newslot virtual method on the interface, try
 			// to find the method implementation and record it.

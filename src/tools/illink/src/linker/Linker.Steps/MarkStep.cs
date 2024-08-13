@@ -1483,17 +1483,17 @@ namespace Mono.Linker.Steps
 				string attributeFullName = customAttribute.Constructor.DeclaringType.FullName;
 				switch (attributeFullName) {
 				case "System.Diagnostics.DebuggerDisplayAttribute": {
-					TypeDefinition? targetType = GetDebuggerAttributeTargetType (assemblyLevelAttribute.Attribute, (AssemblyDefinition) assemblyLevelAttribute.Provider);
-					if (targetType != null)
-						MarkTypeWithDebuggerDisplayAttribute (targetType, customAttribute, assemblyOrigin);
-					break;
-				}
+						TypeDefinition? targetType = GetDebuggerAttributeTargetType (assemblyLevelAttribute.Attribute, (AssemblyDefinition) assemblyLevelAttribute.Provider);
+						if (targetType != null)
+							MarkTypeWithDebuggerDisplayAttribute (targetType, customAttribute, assemblyOrigin);
+						break;
+					}
 				case "System.Diagnostics.DebuggerTypeProxyAttribute": {
-					TypeDefinition? targetType = GetDebuggerAttributeTargetType (assemblyLevelAttribute.Attribute, (AssemblyDefinition) assemblyLevelAttribute.Provider);
-					if (targetType != null)
-						MarkTypeWithDebuggerTypeProxyAttribute (targetType, customAttribute, assemblyOrigin);
-					break;
-				}
+						TypeDefinition? targetType = GetDebuggerAttributeTargetType (assemblyLevelAttribute.Attribute, (AssemblyDefinition) assemblyLevelAttribute.Provider);
+						if (targetType != null)
+							MarkTypeWithDebuggerTypeProxyAttribute (targetType, customAttribute, assemblyOrigin);
+						break;
+					}
 				}
 			}
 
@@ -3595,47 +3595,47 @@ namespace Mono.Linker.Steps
 				break;
 
 			case OperandType.InlineMethod: {
-				(DependencyKind dependencyKind, bool markForReflectionAccess) = instruction.OpCode.Code switch {
-					Code.Jmp => (DependencyKind.DirectCall, false),
-					Code.Call => (DependencyKind.DirectCall, false),
-					Code.Callvirt => (DependencyKind.VirtualCall, false),
-					Code.Newobj => (DependencyKind.Newobj, false),
-					Code.Ldvirtftn => (DependencyKind.Ldvirtftn, true),
-					Code.Ldftn => (DependencyKind.Ldftn, true),
-					_ => throw new InvalidOperationException ($"unexpected opcode {instruction.OpCode}")
-				};
+					(DependencyKind dependencyKind, bool markForReflectionAccess) = instruction.OpCode.Code switch {
+						Code.Jmp => (DependencyKind.DirectCall, false),
+						Code.Call => (DependencyKind.DirectCall, false),
+						Code.Callvirt => (DependencyKind.VirtualCall, false),
+						Code.Newobj => (DependencyKind.Newobj, false),
+						Code.Ldvirtftn => (DependencyKind.Ldvirtftn, true),
+						Code.Ldftn => (DependencyKind.Ldftn, true),
+						_ => throw new InvalidOperationException ($"unexpected opcode {instruction.OpCode}")
+					};
 
-				MethodReference methodReference = (MethodReference) instruction.Operand;
+					MethodReference methodReference = (MethodReference) instruction.Operand;
 
-				requiresReflectionMethodBodyScanner |=
-					ReflectionMethodBodyScanner.RequiresReflectionMethodBodyScannerForCallSite (Context, methodReference);
+					requiresReflectionMethodBodyScanner |=
+						ReflectionMethodBodyScanner.RequiresReflectionMethodBodyScannerForCallSite (Context, methodReference);
 
-				origin = new MessageOrigin (origin, instruction.Offset);
-				if (markForReflectionAccess) {
-					MarkMethodVisibleToReflection (methodReference, new DependencyInfo (dependencyKind, method), origin);
-				} else {
-					MarkMethod (methodReference, new DependencyInfo (dependencyKind, method), origin);
+					origin = new MessageOrigin (origin, instruction.Offset);
+					if (markForReflectionAccess) {
+						MarkMethodVisibleToReflection (methodReference, new DependencyInfo (dependencyKind, method), origin);
+					} else {
+						MarkMethod (methodReference, new DependencyInfo (dependencyKind, method), origin);
+					}
+					break;
 				}
-				break;
-			}
 
 			case OperandType.InlineTok: {
-				object token = instruction.Operand;
-				Debug.Assert (instruction.OpCode.Code == Code.Ldtoken);
-				var reason = new DependencyInfo (DependencyKind.Ldtoken, method);
-				origin = new MessageOrigin (origin, instruction.Offset);
+					object token = instruction.Operand;
+					Debug.Assert (instruction.OpCode.Code == Code.Ldtoken);
+					var reason = new DependencyInfo (DependencyKind.Ldtoken, method);
+					origin = new MessageOrigin (origin, instruction.Offset);
 
-				if (token is TypeReference typeReference) {
-					// Error will be reported as part of MarkType
-					if (Context.TryResolve (typeReference) is TypeDefinition type)
-						MarkTypeVisibleToReflection (typeReference, type, reason, origin);
-				} else if (token is MethodReference methodReference) {
-					MarkMethodVisibleToReflection (methodReference, reason, origin);
-				} else {
-					MarkFieldVisibleToReflection ((FieldReference) token, reason, origin);
+					if (token is TypeReference typeReference) {
+						// Error will be reported as part of MarkType
+						if (Context.TryResolve (typeReference) is TypeDefinition type)
+							MarkTypeVisibleToReflection (typeReference, type, reason, origin);
+					} else if (token is MethodReference methodReference) {
+						MarkMethodVisibleToReflection (methodReference, reason, origin);
+					} else {
+						MarkFieldVisibleToReflection ((FieldReference) token, reason, origin);
+					}
+					break;
 				}
-				break;
-			}
 
 			case OperandType.InlineType:
 				var operand = (TypeReference) instruction.Operand;
