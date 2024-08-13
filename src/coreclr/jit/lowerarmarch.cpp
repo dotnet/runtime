@@ -4144,8 +4144,8 @@ void Lowering::StoreFFRValue(GenTreeHWIntrinsic* node)
         case NI_Sve_LoadVectorUInt16ZeroExtendFirstFaulting:
         case NI_Sve_LoadVectorUInt32ZeroExtendFirstFaulting:
         case NI_Sve_SetFfr:
-
             break;
+
         default:
             assert(!"Unexpected HWIntrinsicId");
     }
