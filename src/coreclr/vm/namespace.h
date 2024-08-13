@@ -30,6 +30,7 @@
 #define g_ReflectionEmitNS  g_ReflectionNS ".Emit"
 
 #define g_InteropNS         g_RuntimeNS ".InteropServices"
+#define g_CustomMarshalersNS    g_InteropNS ".CustomMarshalers"
 #define g_ObjectiveCNS      g_InteropNS ".ObjectiveC"
 #define g_MarshallingNS     g_InteropNS ".Marshalling"
 

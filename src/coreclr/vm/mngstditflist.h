@@ -60,26 +60,3 @@
 // MethSig                  This is the method signature.
 //
 
-//
-// IEnumerator
-//
-
-#define MNGSTDITF_IENUMERATOR_DECL__MOVE_NEXT      FCDECL1(FC_BOOL_RET, MoveNext, Object* refThisUNSAFE)
-#define MNGSTDITF_IENUMERATOR_DECL__GET_CURRENT    FCDECL1(Object*, get_Current, Object* refThisUNSAFE)
-#define MNGSTDITF_IENUMERATOR_DECL__RESET          FCDECL1(void, Reset, Object* refThisUNSAFE)
-
-MNGSTDITF_BEGIN_INTERFACE(StdMngIEnumerator, g_CollectionsEnumeratorClassName, "System.Runtime.InteropServices.ComTypes.IEnumerator", g_EnumeratorToEnumClassName, "", "System.Runtime.InteropServices.CustomMarshalers.EnumeratorViewOfEnumVariant", IID_IEnumVARIANT, TRUE)
-    MNGSTDITF_DEFINE_METH(StdMngIEnumerator, MoveNext,      &gsig_IM_RetBool,   MNGSTDITF_IENUMERATOR_DECL__MOVE_NEXT)
-    MNGSTDITF_DEFINE_METH(StdMngIEnumerator, get_Current,   &gsig_IM_RetObj,    MNGSTDITF_IENUMERATOR_DECL__GET_CURRENT)
-    MNGSTDITF_DEFINE_METH(StdMngIEnumerator, Reset,         &gsig_IM_RetVoid,   MNGSTDITF_IENUMERATOR_DECL__RESET)
-MNGSTDITF_END_INTERFACE(StdMngIEnumerator)
-
-//
-// IEnumerable
-//
-
-#define MNGSTDITF_IENUMERABLE_DECL__GETENUMERATOR   FCDECL1(Object*, GetEnumerator, Object* refThisUNSAFE)
-
-MNGSTDITF_BEGIN_INTERFACE(StdMngIEnumerable, g_CollectionsEnumerableItfName, "System.Runtime.InteropServices.ComTypes.IEnumerable", "System.Runtime.InteropServices.CustomMarshalers.EnumerableToDispatchMarshaler", "", "System.Runtime.InteropServices.CustomMarshalers.EnumerableViewOfDispatch", IID_IDispatch, FALSE)
-    MNGSTDITF_DEFINE_METH(StdMngIEnumerable, GetEnumerator, &gsig_IM_RetIEnumerator, MNGSTDITF_IENUMERABLE_DECL__GETENUMERATOR)
-MNGSTDITF_END_INTERFACE(StdMngIEnumerable)
