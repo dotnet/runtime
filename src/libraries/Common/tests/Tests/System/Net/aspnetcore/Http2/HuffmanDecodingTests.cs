@@ -60,6 +60,7 @@ namespace System.Net.Http.Unit.Tests.HPack
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/106323", TestPlatforms.Browser)]
         public void HuffmanDecoding_ValidEncoding_Succeeds()
         {
             foreach (byte[] input in TestData())
