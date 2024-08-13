@@ -150,37 +150,36 @@ namespace System
 
         bool IDynamicInterfaceCastable.IsInterfaceImplemented(RuntimeTypeHandle interfaceType, bool throwIfNotImplemented)
         {
-            Internal.Console.WriteLine($"__ComObject::IsInterfaceImplemented - {interfaceType}");
-
             if (interfaceType.Equals(typeof(IEnumerable).TypeHandle)
                 || interfaceType.Equals(typeof(ICustomAdapter).TypeHandle))
             {
-                object? enumVariant = GetData(typeof(IEnumerableOverDispatchImpl));
-                if (enumVariant is null)
+                try
                 {
-                    try
-                    {
-                        enumVariant = IEnumerableOverDispatchImpl.QueryForNewEnum(this);
-                    }
-                    catch
-                    {
-                        // Not available
-                        enumVariant = new object();
-                    }
-                    if (!SetData(typeof(IEnumerableOverDispatchImpl), enumVariant))
-                    {
-                        enumVariant = GetData(typeof(IEnumerableOverDispatchImpl));
-                    }
-                    Debug.Assert(enumVariant is not null);
+                    // We just need to know the query was successful.
+                    _ = IEnumerableOverDispatchImpl.QueryForNewEnum(this);
+                    return true;
                 }
-                return enumVariant is IEnumVARIANT;
+                catch
+                {
+                    // Exception was thrown. There are few options, but all imply "not supported".
+                    //  - Not IDispatch.
+                    //  - IDispatch doesn't support DISPID_NEWENUM operation.
+                    //  - The returned instance isn't IEnumVARIANT.
+                    return false;
+                }
             }
-            return false;
+            else if (interfaceType.Equals(typeof(IEnumerator).TypeHandle))
+            {
+                return this is IEnumVARIANT;
+            }
+            else
+            {
+                return false;
+            }
         }
 
         RuntimeTypeHandle IDynamicInterfaceCastable.GetInterfaceImplementation(RuntimeTypeHandle interfaceType)
         {
-            Internal.Console.WriteLine($"__ComObject::GetInterfaceImplementation - {interfaceType}");
             if (interfaceType.Equals(typeof(IEnumerable).TypeHandle))
             {
                 return typeof(IEnumerableOverDispatchImpl).TypeHandle;
@@ -188,6 +187,28 @@ namespace System
             else if (interfaceType.Equals(typeof(ICustomAdapter).TypeHandle))
             {
                 return typeof(ICustomAdapterOverDispatchImpl).TypeHandle;
+            }
+            else if (interfaceType.Equals(typeof(IEnumerator).TypeHandle))
+            {
+                object? enumVariantImpl = GetData(typeof(IEnumeratorOverEnumVARIANTImpl));
+                if (enumVariantImpl is null)
+                {
+                    IntPtr enumVariantPtr = IntPtr.Zero;
+                    try
+                    {   IEnumVARIANT enumVariant = (IEnumVARIANT)this;
+                        enumVariantPtr = Marshal.GetIUnknownForObject(enumVariant);
+                        enumVariantImpl = (IEnumerator)EnumeratorToEnumVariantMarshaler.GetInstance(null).MarshalNativeToManaged(enumVariantPtr);
+                    }
+                    finally
+                    {
+                        if (enumVariantPtr != IntPtr.Zero)
+                        {
+                            Marshal.Release(enumVariantPtr);
+                        }
+                    }
+                    SetData(typeof(IEnumeratorOverEnumVARIANTImpl), enumVariantImpl);
+                }
+                return typeof(IEnumeratorOverEnumVARIANTImpl).TypeHandle;
             }
 
             return default(RuntimeTypeHandle);
@@ -241,10 +262,7 @@ namespace System
             {
                 Debug.Assert(OperatingSystem.IsWindows());
 
-                __ComObject co = (__ComObject)this;
-                object? enumVariant = co.GetData(typeof(IEnumerableOverDispatchImpl));
-                enumVariant ??= QueryForNewEnum((__ComObject)this);
-
+                IEnumVARIANT enumVariant = QueryForNewEnum((__ComObject)this);
                 IntPtr enumVariantPtr = IntPtr.Zero;
                 try
                 {
@@ -265,6 +283,31 @@ namespace System
         private interface ICustomAdapterOverDispatchImpl : ICustomAdapter
         {
             object ICustomAdapter.GetUnderlyingObject() => this;
+        }
+
+        [DynamicInterfaceCastableImplementation]
+        private interface IEnumeratorOverEnumVARIANTImpl : IEnumerator
+        {
+            bool IEnumerator.MoveNext()
+            {
+                __ComObject co = (__ComObject)this;
+                return ((IEnumerator)co.GetData(typeof(IEnumeratorOverEnumVARIANTImpl))!).MoveNext();
+            }
+
+            void IEnumerator.Reset()
+            {
+                __ComObject co = (__ComObject)this;
+                ((IEnumerator)co.GetData(typeof(IEnumeratorOverEnumVARIANTImpl))!).Reset();
+            }
+
+            object IEnumerator.Current
+            {
+                get
+                {
+                    __ComObject co = (__ComObject)this;
+                    return ((IEnumerator)co.GetData(typeof(IEnumeratorOverEnumVARIANTImpl))!).Current;
+                }
+            }
         }
     }
 }

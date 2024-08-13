@@ -537,10 +537,6 @@ FCClassElement("GC", "System", gGCInterfaceFuncs)
 FCClassElement("GCFrameRegistration", "System.Runtime", gGCFrameRegistration)
 FCClassElement("GCHandle", "System.Runtime.InteropServices", gGCHandleFuncs)
 FCClassElement("GCSettings", "System.Runtime", gGCSettingsFuncs)
-#ifdef FEATURE_COMINTEROP
-FCClassElement("IEnumerable", "System.Collections", gStdMngIEnumerableFuncs)
-FCClassElement("IEnumerator", "System.Collections", gStdMngIEnumeratorFuncs)
-#endif
 FCClassElement("Interlocked", "System.Threading", gInterlockedFuncs)
 FCClassElement("JitInfo", "System.Runtime", gJitInfoFuncs)
 FCClassElement("Marshal", "System.Runtime.InteropServices", gInteropMarshalFuncs)
