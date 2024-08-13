@@ -18451,7 +18451,7 @@ void emitter::emitInsPairSanityCheck(instrDesc* firstId, instrDesc* secondId)
         assert(firstId->idInsFmt() == IF_SVE_BI_2A);
     }
 
-    // Quoted sections are taken fron the Arm manual.
+    // Quoted sections are taken from the Arm manual.
 
     // "It is required that the prefixed instruction at PC+4 must be an SVE destructive binary or ternary
     // instruction encoding, or a unary operation with merging predication, but excluding other MOVPRFX instructions."
@@ -18628,6 +18628,9 @@ void emitter::emitInsPairSanityCheck(instrDesc* firstId, instrDesc* secondId)
             break;
     }
 
+    // "The prefixed instruction must specify the same destination vector as the MOVPRFX instruction."
+    assert(firstId->idReg1() == secondId->idReg1());
+
     if (movprefxIsPredicated)
     {
         // "The prefixed instruction must specify the same predicate register"
@@ -18635,16 +18638,8 @@ void emitter::emitInsPairSanityCheck(instrDesc* firstId, instrDesc* secondId)
         assert(isPredicateRegister(secondId->idReg2()));
         assert(firstId->idReg2() == secondId->idReg2());
 
-        // "and have the same maximum element size (ignoring a fixed 64-bit "wide vector" operand),"
+        // "predicated using the same governing predicate register and source element size as this instruction."
         assert(firstId->idInsOpt() == secondId->idInsOpt());
-
-        // "and the same destination vector as the MOVPRFX instruction."
-        assert(firstId->idReg1() == secondId->idReg1());
-    }
-    else
-    {
-        // "The prefixed instruction must specify the same destination vector as the MOVPRFX instruction."
-        assert(firstId->idReg1() == secondId->idReg1());
     }
 }
 #endif // DEBUG
