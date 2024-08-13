@@ -9,11 +9,11 @@ namespace Sample
 {
     public partial class Test
     {
-        public static int Main(string[] args)
-        {
-            DisplayMeaning(42);
-            return 0;
-        }
+        // public static int Main(string[] args)
+        // {
+        //     DisplayMeaning(42);
+        //     return 0;
+        // }
 
         [JSImport("Sample.Test.displayMeaning", "main.js")]
         internal static partial void DisplayMeaning(int meaning);
