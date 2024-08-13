@@ -29,7 +29,7 @@ namespace Microsoft.Interop
                 .. additionalResolvers,
                 new BlittableMarshallerResolver(env.HasFlag(EnvironmentFlags.DisableRuntimeMarshalling)),
                 new MarshalAsMarshallingGeneratorResolver(new InteropGenerationOptions(UseMarshalType: true)),
-                new NoMarshallingInfoErrorResolver(TypeNames.GeneratedComInterfaceAttribute_ShortName),
+                new NoMarshallingInfoErrorResolver(stringMarshallingAttribute),
                 ];
 
             // Since the char type in an array will not be part of the P/Invoke signature, we can

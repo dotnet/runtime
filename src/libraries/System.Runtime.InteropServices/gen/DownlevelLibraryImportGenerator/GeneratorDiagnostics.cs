@@ -10,9 +10,9 @@ namespace Microsoft.Interop
     /// <summary>
     /// Class for reporting diagnostics in the library import generator
     /// </summary>
-    public static class GeneratorDiagnostics
+    internal static class GeneratorDiagnostics
     {
-        public class Ids
+        public static class Ids
         {
             // SYSLIB1050-SYSLIB1069 are reserved for LibraryImportGenerator
             public const string Prefix = "SYSLIB";

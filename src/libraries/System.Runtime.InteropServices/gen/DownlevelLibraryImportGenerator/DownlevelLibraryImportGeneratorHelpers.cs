@@ -39,6 +39,7 @@ namespace Microsoft.Interop
                 useSiteAttributeParsers,
                 ImmutableArray.Create<IMarshallingInfoAttributeParser>(new MarshalAsAttributeParser(diagnostics, defaultInfo)),
                 ImmutableArray.Create<ITypeBasedMarshallingInfoProvider>(
+                    new DownlevelStringMarshallingInfoProvider(defaultInfo),
                     new CharMarshallingInfoProvider(defaultInfo),
                     new BooleanMarshallingInfoProvider(),
                     new BlittableTypeMarshallingInfoProvider(env.Compilation)));
