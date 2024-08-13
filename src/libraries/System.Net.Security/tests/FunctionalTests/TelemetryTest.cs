@@ -126,6 +126,8 @@ namespace System.Net.Security.Tests
                     using var listener = new TestEventListener("System.Net.Security", EventLevel.Verbose, eventCounterInterval: 0.1d);
                     listener.AddActivityTracking();
 
+                    await PrepareEventCountersAsync(listener);
+
                     var events = new ConcurrentQueue<(EventWrittenEventArgs Event, Guid ActivityId)>();
                     await listener.RunWithCallbackAsync(e =>
                     {
@@ -184,12 +186,15 @@ namespace System.Net.Security.Tests
 
         [OuterLoop]
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS, "X509 certificate store is not supported on iOS or tvOS.")] // Match SslStream_StreamToStream_Authentication_Success
         public static async Task EventSource_UnsuccessfulHandshake_LogsStartFailureStop()
         {
             await RemoteExecutor.Invoke(async () =>
             {
                 using var listener = new TestEventListener("System.Net.Security", EventLevel.Verbose, eventCounterInterval: 0.1d);
                 listener.AddActivityTracking();
+
+                await PrepareEventCountersAsync(listener);
 
                 var events = new ConcurrentQueue<(EventWrittenEventArgs Event, Guid ActivityId)>();
                 await listener.RunWithCallbackAsync(e =>
@@ -279,7 +284,8 @@ namespace System.Net.Security.Tests
                 .ToDictionary(p => p.Key, p => p.ToArray());
 
             Assert.True(eventCounters.TryGetValue("total-tls-handshakes", out double[] totalHandshakes));
-            Assert.Equal(2, totalHandshakes[^1]);
+            // 4 instead of 2 to account for the handshake we made in PrepareEventCountersAsync.
+            Assert.Equal(4, totalHandshakes[^1]);
 
             Assert.True(eventCounters.TryGetValue("tls-handshake-rate", out double[] handshakeRate));
             Assert.Contains(handshakeRate, r => r > 0);
@@ -351,6 +357,25 @@ namespace System.Net.Security.Tests
 
                 return (string)dictionary["Name"] == "tls-handshake-rate";
             }
+        }
+
+        private static async Task PrepareEventCountersAsync(TestEventListener listener)
+        {
+            // There is a race condition in EventSource where counters using IncrementingPollingCounter
+            // will drop increments that happened before the background timer thread first runs.
+            // See https://github.com/dotnet/runtime/issues/106268#issuecomment-2284626183.
+            // To workaround this issue, we ensure that the EventCounters timer is running before
+            // executing any of the interesting logic under test.
+
+            var events = new ConcurrentQueue<(EventWrittenEventArgs Event, Guid ActivityId)>();
+
+            await listener.RunWithCallbackAsync(e => events.Enqueue((e, e.ActivityId)), async () =>
+            {
+                var test = new SslStreamStreamToStreamTest_Async();
+                await test.SslStream_StreamToStream_Authentication_Success();
+
+                await WaitForEventCountersAsync(events);
+            });
         }
     }
 }
