@@ -149,7 +149,7 @@ namespace System.Reflection.Metadata
             }
             else
             {
-                // Every generic type needs the generic type definition.
+                // Every constructed generic type needs the generic type definition.
                 if (!TryDive(_parseOptions, ref recursiveDepth))
                 {
                     return null;

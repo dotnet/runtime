@@ -397,8 +397,7 @@ namespace System.Reflection.Metadata
 
         internal static bool IsMaxDepthExceeded(TypeNameParseOptions options, int depth)
 #if SYSTEM_PRIVATE_CORELIB
-            // CoreLib does not enforce any limits
-            => false;
+            => false; // CoreLib does not enforce any limits
 #else
             => depth > options.MaxNodes;
 #endif

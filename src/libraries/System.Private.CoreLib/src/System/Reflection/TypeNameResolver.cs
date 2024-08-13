@@ -19,8 +19,8 @@ namespace System.Reflection.Metadata
                  return 0;
             }
         }
-    }
 #pragma warning restore CA1822
+    }
 }
 
 namespace System.Reflection
