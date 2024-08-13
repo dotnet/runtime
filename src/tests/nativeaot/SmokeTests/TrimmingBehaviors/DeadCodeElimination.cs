@@ -18,6 +18,7 @@ class DeadCodeElimination
         TestAbstractNeverDerivedWithDevirtualizedCall.Run();
         TestAbstractDerivedByUnrelatedTypeWithDevirtualizedCall.Run();
         TestUnusedDefaultInterfaceMethod.Run();
+        TestInlinedDeadBranchElimination.Run();
         TestArrayElementTypeOperations.Run();
         TestStaticVirtualMethodOptimizations.Run();
         TestTypeIs.Run();
@@ -249,6 +250,37 @@ class DeadCodeElimination
             s_instance.DoSomething();
 
             ThrowIfPresent(typeof(TestUnusedDefaultInterfaceMethod), nameof(NeverReferenced));
+        }
+    }
+
+    class TestInlinedDeadBranchElimination
+    {
+        static int GetIntConstant() => 42;
+        static int GetIntConstantWrapper() => GetIntConstant();
+
+        class NeverReferenced1 { }
+
+        enum MyEnum { One, Two }
+
+        static MyEnum GetEnumConstant() => MyEnum.Two;
+
+        class NeverReferenced2 { }
+
+        public static void Run()
+        {
+            if (GetIntConstantWrapper() == 1)
+            {
+                Activator.CreateInstance(typeof(NeverReferenced1));
+            }
+
+            ThrowIfPresent(typeof(TestInlinedDeadBranchElimination), nameof(NeverReferenced1));
+
+            if (GetEnumConstant() == MyEnum.One)
+            {
+                Activator.CreateInstance(typeof(NeverReferenced2));
+            }
+
+            ThrowIfPresent(typeof(TestInlinedDeadBranchElimination), nameof(NeverReferenced2));
         }
     }
 
