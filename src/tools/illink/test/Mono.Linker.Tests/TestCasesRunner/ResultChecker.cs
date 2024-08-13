@@ -1045,7 +1045,6 @@ namespace Mono.Linker.Tests.TestCasesRunner
 
 				int? unexpectedWarningCodeNumber = unexpectedWarningCode == null ? null : int.Parse (unexpectedWarningCode.Substring (2));
 
-				MessageContainer? unexpectedWarningMessage = null;
 				foreach (var mc in unmatchedMessages) {
 					if (mc.Category != MessageCategory.Warning)
 						continue;
@@ -1057,12 +1056,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 					if (attrProvider is IMemberDefinition attrMember && (mc.Origin?.Provider is IMemberDefinition member) && member.FullName.Contains (attrMember.FullName) != true)
 						continue;
 
-					unexpectedWarningMessage = mc;
-					break;
-				}
-
-				if (unexpectedWarningMessage is not null) {
-					unexpectedMessageWarnings.Add ($"Unexpected warning found: {unexpectedWarningMessage}");
+					unexpectedMessageWarnings.Add ($"Unexpected warning found: {mc}");
 				}
 			}
 

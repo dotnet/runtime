@@ -29,7 +29,8 @@ internal record struct ModuleLookupTables(
     TargetPointer MemberRefToDesc,
     TargetPointer MethodDefToDesc,
     TargetPointer TypeDefToMethodTable,
-    TargetPointer TypeRefToMethodTable);
+    TargetPointer TypeRefToMethodTable,
+    TargetPointer MethodDefToILCodeVersioningState);
 
 internal struct EcmaMetadataSchema
 {
@@ -130,6 +131,8 @@ internal interface ILoader : IContract
     public virtual TargetEcmaMetadata GetReadWriteMetadata(ModuleHandle handle) => throw new NotImplementedException();
 
     public virtual ModuleLookupTables GetLookupTables(ModuleHandle handle) => throw new NotImplementedException();
+
+    public virtual string GetPath(ModuleHandle handle) => throw new NotImplementedException();
 }
 
 internal readonly struct Loader : ILoader
