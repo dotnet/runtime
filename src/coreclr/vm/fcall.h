@@ -1336,7 +1336,7 @@ typedef INT32 FC_INT16_RET;
 typedef UINT32 FC_UINT16_RET;
 
 // Small primitive args are not widened.
-typedef UINT32 FC_BOOL_ARG;
+typedef INT32 FC_BOOL_ARG;
 
 #define FC_ACCESS_BOOL(x) ((BYTE)x != 0)
 
