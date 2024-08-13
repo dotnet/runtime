@@ -79,7 +79,7 @@ internal readonly partial struct NativeCodePointers_1 : INativeCodePointers
         {
             ModuleHandle moduleHandle = _target.Contracts.Loader.GetModuleHandle(module);
             TargetPointer ilCodeVersionTable = _target.Contracts.Loader.GetLookupTables(moduleHandle).MethodDefToILCodeVersioningState;
-            TargetPointer ilVersionStateAddress = _target.Contracts.Loader.GetModuleLookupTableElement(ilCodeVersionTable, methodDefinition, out var _);
+            TargetPointer ilVersionStateAddress = _target.Contracts.Loader.GetModuleLookupMapElement(ilCodeVersionTable, methodDefinition, out var _);
             if (ilVersionStateAddress == TargetPointer.Null)
             {
                 return new ILCodeVersionHandle(module, methodDefinition, TargetPointer.Null);

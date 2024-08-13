@@ -92,9 +92,35 @@ internal readonly struct Loader_1 : ILoader
             module.MethodDefToILCodeVersioningStateMap);
     }
 
-    TargetPointer ILoader.GetModuleLookupTableElement(TargetPointer table, uint rid, out TargetNUInt flags)
+    TargetPointer ILoader.GetModuleLookupMapElement(TargetPointer table, uint rid, out TargetNUInt flags)
     {
-        throw new NotImplementedException(); // TODO[cdac]: GetModuleLookupTableElement
+        rid &= 0x00FFFFFF; // FIXME: do we have a util that does this?
+        ArgumentOutOfRangeException.ThrowIfZero(rid);
+        flags = new TargetNUInt(0);
+        if (table == TargetPointer.Null)
+            return TargetPointer.Null;
+        uint index = rid;
+        Data.ModuleLookupMap lookupMap = _target.ProcessedData.GetOrAdd<Data.ModuleLookupMap>(table);
+        // have to read lookupMap an extra time upfront because only the first map
+        // has valid supportedFlagsMask
+        TargetNUInt supportedFlagsMask = lookupMap.SupportedFlagsMask;
+        do
+        {
+            lookupMap = _target.ProcessedData.GetOrAdd<Data.ModuleLookupMap>(table);
+            if (index < lookupMap.Count)
+            {
+                TargetPointer entryAddress = lookupMap.TableData + (ulong)(index * _target.PointerSize);
+                TargetPointer rawValue = _target.ReadPointer(entryAddress);
+                flags = new TargetNUInt(rawValue & supportedFlagsMask.Value);
+                return rawValue & ~(supportedFlagsMask.Value);
+            }
+            else
+            {
+                table = lookupMap.Next;
+                index -= lookupMap.Count;
+            }
+        } while (table != TargetPointer.Null);
+        return TargetPointer.Null;
     }
 
     bool ILoader.IsCollectibleLoaderAllocator(ModuleHandle handle)

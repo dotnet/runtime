@@ -233,6 +233,9 @@ CDAC_TYPE_END(Module)
 
 CDAC_TYPE_BEGIN(ModuleLookupMap)
 CDAC_TYPE_FIELD(ModuleLookupMap, /*pointer*/, TableData, offsetof(LookupMapBase, pTable))
+CDAC_TYPE_FIELD(ModuleLookupMap, /*pointer*/, Next, offsetof(LookupMapBase, pNext))
+CDAC_TYPE_FIELD(ModuleLookupMap, /*uint32*/, Count, offsetof(LookupMapBase, dwCount))
+CDAC_TYPE_FIELD(ModuleLookupMap, /*nuint*/, SupportedFlagsMask, offsetof(LookupMapBase, supportedFlags))
 CDAC_TYPE_END(ModuleLookupMap)
 
 CDAC_TYPE_BEGIN(LoaderAllocator)
