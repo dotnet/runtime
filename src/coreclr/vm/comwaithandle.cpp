@@ -16,7 +16,7 @@
 #include "excep.h"
 #include "comwaithandle.h"
 
-FCIMPL3(INT32, WaitHandleNative::CorWaitOneNative, HANDLE handle, INT32 timeout, CLR_BOOL useTrivialWaits)
+FCIMPL3(INT32, WaitHandleNative::CorWaitOneNative, HANDLE handle, INT32 timeout, FC_BOOL_ARG useTrivialWaits)
 {
     FCALL_CONTRACT;
 
@@ -28,7 +28,7 @@ FCIMPL3(INT32, WaitHandleNative::CorWaitOneNative, HANDLE handle, INT32 timeout,
 
     Thread* pThread = GET_THREAD();
 
-    WaitMode waitMode = (WaitMode)((!useTrivialWaits ? WaitMode_Alertable : WaitMode_None) | WaitMode_IgnoreSyncCtx);
+    WaitMode waitMode = (WaitMode)((!FC_ACCESS_BOOL(useTrivialWaits) ? WaitMode_Alertable : WaitMode_None) | WaitMode_IgnoreSyncCtx);
     retVal = pThread->DoAppropriateWait(1, &handle, TRUE, timeout, waitMode);
 
     HELPER_METHOD_FRAME_END();
@@ -55,7 +55,7 @@ extern "C" INT32 QCALLTYPE WaitHandle_CorWaitOnePrioritizedNative(HANDLE handle,
 }
 #endif
 
-FCIMPL4(INT32, WaitHandleNative::CorWaitMultipleNative, HANDLE *handleArray, INT32 numHandles, CLR_BOOL waitForAll, INT32 timeout)
+FCIMPL4(INT32, WaitHandleNative::CorWaitMultipleNative, HANDLE *handleArray, INT32 numHandles, FC_BOOL_ARG waitForAll, INT32 timeout)
 {
     FCALL_CONTRACT;
 
@@ -64,16 +64,17 @@ FCIMPL4(INT32, WaitHandleNative::CorWaitMultipleNative, HANDLE *handleArray, INT
 
     Thread * pThread = GET_THREAD();
 
+    BOOL waitAll = FC_ACCESS_BOOL(waitForAll);
 #ifdef FEATURE_COMINTEROP_APARTMENT_SUPPORT
     // There are some issues with wait-all from an STA thread
     // - https://github.com/dotnet/runtime/issues/10243#issuecomment-385117537
-    if (waitForAll && numHandles > 1 && pThread->GetApartment() == Thread::AS_InSTA)
+    if (waitAll && numHandles > 1 && pThread->GetApartment() == Thread::AS_InSTA)
     {
         COMPlusThrow(kNotSupportedException, W("NotSupported_WaitAllSTAThread"));
     }
 #endif // FEATURE_COMINTEROP_APARTMENT_SUPPORT
 
-    ret = pThread->DoAppropriateWait(numHandles, handleArray, waitForAll, timeout, (WaitMode)(WaitMode_Alertable | WaitMode_IgnoreSyncCtx));
+    ret = pThread->DoAppropriateWait(numHandles, handleArray, waitAll, timeout, (WaitMode)(WaitMode_Alertable | WaitMode_IgnoreSyncCtx));
 
     HELPER_METHOD_FRAME_END();
     return ret;
