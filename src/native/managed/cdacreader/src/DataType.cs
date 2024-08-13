@@ -46,4 +46,7 @@ public enum DataType
     SyncBlock,
     SyncTableEntry,
     InteropSyncBlockInfo,
+    InstantiatedMethodDesc,
+    DynamicMethodDesc,
+    StoredSigMethodDesc,
 }

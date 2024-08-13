@@ -93,7 +93,7 @@ enum MethodClassification
 {
     mcIL        = 0, // IL
     mcFCall     = 1, // FCall (also includes tlbimped ctor, Delegate ctor)
-    mcNDirect   = 2, // N/Direct
+    mcPInvoke   = 2, // PInvoke method also known as N/Direct in this codebase
     mcEEImpl    = 3, // special method; implementation provided by EE (like Delegate Invoke)
     mcArray     = 4, // Array ECall
     mcInstantiated = 5, // Instantiated generic methods, including descriptors
@@ -637,7 +637,7 @@ public:
     inline DWORD IsNDirect()
     {
         LIMITED_METHOD_DAC_CONTRACT;
-        return mcNDirect == GetClassification();
+        return mcPInvoke == GetClassification();
     }
 
     inline DWORD IsInterface()
@@ -1915,6 +1915,7 @@ template<> struct cdac_data<MethodDesc>
     static constexpr size_t ChunkIndex = offsetof(MethodDesc, m_chunkIndex);
     static constexpr size_t Slot = offsetof(MethodDesc, m_wSlotNumber);
     static constexpr size_t Flags = offsetof(MethodDesc, m_wFlags);
+    static constexpr size_t Flags3AndTokenRemainder = offsetof(MethodDesc, m_wFlags3AndTokenRemainder);
 };
 
 #ifndef DACCESS_COMPILE
@@ -2358,6 +2359,7 @@ struct cdac_data<MethodDescChunk>
     static constexpr size_t Next = offsetof(MethodDescChunk, m_next);
     static constexpr size_t Size = offsetof(MethodDescChunk, m_size);
     static constexpr size_t Count = offsetof(MethodDescChunk, m_count);
+    static constexpr size_t FlagsAndTokenRange = offsetof(MethodDescChunk, m_flagsAndTokenRange);
 };
 
 inline int MethodDesc::GetMethodDescChunkIndex() const
@@ -2434,6 +2436,15 @@ public:
 #ifdef DACCESS_COMPILE
     void EnumMemoryRegions(CLRDataEnumMemoryFlags flags);
 #endif
+    template<typename T> friend struct ::cdac_data;
+};
+
+template<>
+struct cdac_data<StoredSigMethodDesc>
+{
+    static constexpr size_t Sig = offsetof(StoredSigMethodDesc, m_pSig);
+    static constexpr size_t cSig = offsetof(StoredSigMethodDesc, m_cSig);
+    static constexpr size_t ExtendedFlags = offsetof(StoredSigMethodDesc, m_dwExtendedFlags);
 };
 
 //-----------------------------------------------------------------------
@@ -2675,8 +2686,14 @@ public:
     // following implementations defined in DynamicMethod.cpp
     //
     void Destroy();
+    template<typename T> friend struct ::cdac_data;
 };
 
+template<>
+struct cdac_data<DynamicMethodDesc>
+{
+    static constexpr size_t MethodName = offsetof(DynamicMethodDesc, m_pszMethodName);
+};
 
 class ArrayMethodDesc : public StoredSigMethodDesc
 {
@@ -3428,7 +3445,14 @@ private:
                                                              MethodDesc* pSharedMDescForStub,
                                                              Instantiation methodInst,
                                                              BOOL getSharedNotStub);
+    template<typename T> friend struct ::cdac_data;
+};
 
+template<> struct cdac_data<InstantiatedMethodDesc>
+{
+    static constexpr size_t PerInstInfo = offsetof(InstantiatedMethodDesc, m_pPerInstInfo);
+    static constexpr size_t Flags2 = offsetof(InstantiatedMethodDesc, m_wFlags2);
+    static constexpr size_t NumGenericArgs = offsetof(InstantiatedMethodDesc, m_wNumGenericArgs);
 };
 
 inline PTR_MethodTable MethodDesc::GetMethodTable() const

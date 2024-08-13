@@ -16,10 +16,12 @@ internal sealed class MethodDescChunk : IData<MethodDescChunk>
         Next = target.ReadPointer(address + (ulong)type.Fields[nameof(Next)].Offset);
         Size = target.Read<byte>(address + (ulong)type.Fields[nameof(Size)].Offset);
         Count = target.Read<byte>(address + (ulong)type.Fields[nameof(Count)].Offset);
+        FlagsAndTokenRange = target.Read<ushort>(address + (ulong)type.Fields[nameof(FlagsAndTokenRange)].Offset);
     }
 
     public TargetPointer MethodTable { get; init; }
     public TargetPointer Next { get; init; }
     public byte Size { get; init; }
     public byte Count { get; init; }
+    public ushort FlagsAndTokenRange { get; init; }
 }

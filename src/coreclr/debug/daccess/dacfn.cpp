@@ -1386,6 +1386,15 @@ DacAllocHostOnlyInstance(ULONG32 size, bool throwEx)
     return inst + 1;
 }
 
+thread_local bool t_DacAssertsUnconditionally = false;
+
+bool DacSetEnableDacAssertsUnconditionally(bool enable)
+{
+    bool oldValue = t_DacAssertsUnconditionally;
+    t_DacAssertsUnconditionally = enable;
+    return oldValue;
+}
+
 //
 // Queries whether ASSERTs should be raised when inconsistencies in the target are detected
 //
@@ -1403,6 +1412,10 @@ bool DacTargetConsistencyAssertsEnabled()
         // the case should only be host-asserts (i.e. always bugs), and so we should just return true.
         return true;
     }
+
+    // If asserts are unconditionally enabled via the thread local, simply return true.
+    if (t_DacAssertsUnconditionally)
+        return true;
 
     return g_dacImpl->TargetConsistencyAssertsEnabled();
 }
