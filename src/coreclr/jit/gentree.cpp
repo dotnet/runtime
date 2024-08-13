@@ -16828,31 +16828,7 @@ bool Compiler::gtNodeHasSideEffects(GenTree* tree, GenTreeFlags flags, bool igno
         {
             GenTreeCall* const call             = potentialCall->AsCall();
             const bool         ignoreExceptions = (flags & GTF_EXCEPT) == 0;
-            if (!call->HasSideEffects(this, ignoreExceptions, ignoreCctors))
-            {
-                // If this call is otherwise side effect free, check its arguments.
-                for (CallArg& arg : call->gtArgs.Args())
-                {
-                    // I'm a little worried that args that assign to temps that are late args will look like
-                    // side effects...but better to be conservative for now.
-                    if ((arg.GetEarlyNode() != nullptr) &&
-                        gtTreeHasSideEffects(arg.GetEarlyNode(), flags, ignoreCctors))
-                    {
-                        return true;
-                    }
-
-                    if ((arg.GetLateNode() != nullptr) && gtTreeHasSideEffects(arg.GetLateNode(), flags, ignoreCctors))
-                    {
-                        return true;
-                    }
-                }
-
-                // Otherwise:
-                return false;
-            }
-
-            // Otherwise the GT_CALL is considered to have side-effects.
-            return true;
+            return call->HasSideEffects(this, ignoreExceptions, ignoreCctors);
         }
     }
 
@@ -16890,39 +16866,28 @@ bool Compiler::gtTreeHasSideEffects(GenTree* tree, GenTreeFlags flags /* = GTF_S
         return false;
     }
 
-    if (sideEffectFlags == GTF_CALL)
+    if ((sideEffectFlags == GTF_CALL) && tree->IsHelperCall())
     {
-        if (tree->OperGet() == GT_CALL)
+        // Generally all trees that contain GT_CALL nodes are considered to have side-effects.
+        // However, for some pure helper calls we lie about this.
+        if (gtNodeHasSideEffects(tree, flags, ignoreCctors))
         {
-            // Generally all trees that contain GT_CALL nodes are considered to have side-effects.
-            //
-            if (tree->AsCall()->IsHelperCall())
-            {
-                // If this node is a helper call we may not care about the side-effects.
-                // Note that gtNodeHasSideEffects checks the side effects of the helper itself
-                // as well as the side effects of its arguments.
-                return gtNodeHasSideEffects(tree, flags, ignoreCctors);
-            }
+            return true;
         }
-        else if (tree->OperGet() == GT_INTRINSIC)
-        {
-            if (gtNodeHasSideEffects(tree, flags, ignoreCctors))
-            {
-                return true;
-            }
 
-            if (gtNodeHasSideEffects(tree->AsOp()->gtOp1, flags, ignoreCctors))
+        // The GTF_CALL may be contributed by an operand, so check for
+        // that.
+        bool hasCallInOperand = false;
+        tree->VisitOperands([=, &hasCallInOperand](GenTree* op) {
+            if (gtTreeHasSideEffects(op, GTF_CALL, ignoreCctors))
             {
-                return true;
+                hasCallInOperand = true;
+                return GenTree::VisitResult::Abort;
             }
+            return GenTree::VisitResult::Continue;
+        });
 
-            if ((tree->AsOp()->gtOp2 != nullptr) && gtNodeHasSideEffects(tree->AsOp()->gtOp2, flags, ignoreCctors))
-            {
-                return true;
-            }
-
-            return false;
-        }
+        return hasCallInOperand;
     }
 
     return true;
@@ -26725,6 +26690,7 @@ bool GenTreeHWIntrinsic::OperIsMemoryLoad(GenTree** pAddr) const
             case NI_Sve_GatherVectorUInt16ZeroExtend:
             case NI_Sve_GatherVectorUInt32WithByteOffsetsZeroExtend:
             case NI_Sve_GatherVectorUInt32ZeroExtend:
+            case NI_Sve_GatherVectorWithByteOffsetFirstFaulting:
             case NI_Sve_GatherVectorWithByteOffsets:
             case NI_Sve_LoadVector:
             case NI_Sve_LoadVectorNonTemporal:
