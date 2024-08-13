@@ -488,7 +488,7 @@ namespace Microsoft.Extensions.Primitives
             Assert.Equal(expectedPrepended, values);
 
             values = stringValues;
-            foreach (string s in filled.Reverse())
+            foreach (string s in Enumerable.Reverse(filled))
             {
                 values = StringValues.Concat(s, in values);
             }

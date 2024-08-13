@@ -137,7 +137,7 @@ namespace System.Collections.Specialized.Tests
 
             int visited = s_dictionaryData.Length;
 
-            Assert.All(s_dictionaryData.Reverse(), element =>
+            Assert.All(Enumerable.Reverse(s_dictionaryData), element =>
             {
                 string newValue = "new" + element.Value;
                 Assert.True(ld.Contains(element.Key));
@@ -154,7 +154,7 @@ namespace System.Collections.Specialized.Tests
             ObservableStringComparer comparer = new ObservableStringComparer();
             ListDictionary ld = Fill(new ListDictionary(comparer), s_dictionaryData);
 
-            Assert.All(s_dictionaryData.Reverse(), element =>
+            Assert.All(Enumerable.Reverse(s_dictionaryData), element =>
             {
                 int originalSize = ld.Count;
                 Assert.True(ld.Contains(element.Key));

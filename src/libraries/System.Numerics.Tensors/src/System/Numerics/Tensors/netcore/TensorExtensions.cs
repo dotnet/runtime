@@ -958,7 +958,7 @@ namespace System.Numerics.Tensors
 
                 if (axis.IsEmpty)
                 {
-                    lengths = input._lengths.Reverse().ToArray();
+                    lengths = Enumerable.Reverse(input._lengths).ToArray();
                     permutation = Enumerable.Range(0, input.Rank).Reverse().ToArray();
                 }
                 else
