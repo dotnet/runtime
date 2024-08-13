@@ -474,7 +474,10 @@ namespace System.Numerics.Tensors
                         // aggregate twice.
 
                         misalignment = (uint)Vector<float>.Count;
+
                         xPtr += misalignment;
+                        yPtr += misalignment;
+
                         remainder -= misalignment;
 
                         Vector<float> vector1;
