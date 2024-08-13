@@ -5332,6 +5332,8 @@ inline bool Registers_loongarch::validRegister(int regNum) const {
     return true;
   if (regNum < 0 || regNum > UNW_LOONGARCH_F31)
     return false;
+  if (regNum > UNW_LOONGARCH_R31 && regNum < UNW_LOONGARCH_F0)
+    return false;
   return true;
 }
 

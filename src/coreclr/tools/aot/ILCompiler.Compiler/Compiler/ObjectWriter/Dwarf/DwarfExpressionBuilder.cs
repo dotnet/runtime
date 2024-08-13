@@ -162,7 +162,10 @@ namespace ILCompiler.ObjectWriter
                     };
 
                 case TargetArchitecture.LoongArch64:
+                    Debug.Assert(regNum <= 64);
                     // Normal registers are directly mapped
+                    if (regNum >= 33)
+                        regNum = regNum - 33 + 64; // FP
                     return regNum;
 
                 default:
