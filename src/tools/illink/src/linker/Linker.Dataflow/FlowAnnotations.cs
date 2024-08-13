@@ -707,7 +707,7 @@ namespace ILLink.Shared.TrimAnalysis
 
 #pragma warning disable CA1822 // Mark members as static - Should be an instance method for consistency
 		internal partial MethodReturnValue GetMethodReturnValue (MethodProxy method, bool isNewObj, DynamicallyAccessedMemberTypes dynamicallyAccessedMemberTypes)
-			=> MethodReturnValue.Create (method.Definition, isNewObj, dynamicallyAccessedMemberTypes);
+			=> MethodReturnValue.Create (method, isNewObj, dynamicallyAccessedMemberTypes);
 #pragma warning restore CA1822 // Mark members as static
 
 		internal partial MethodReturnValue GetMethodReturnValue (MethodProxy method, bool isNewObj)

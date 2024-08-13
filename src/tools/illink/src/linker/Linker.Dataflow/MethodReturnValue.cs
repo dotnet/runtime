@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using ILLink.Shared.DataFlow;
+using ILLink.Shared.TypeSystemProxy;
 using Mono.Cecil;
 using Mono.Linker.Dataflow;
 using TypeReference = Mono.Cecil.TypeReference;
@@ -17,11 +18,11 @@ namespace ILLink.Shared.TrimAnalysis
 	/// </summary>
 	internal partial record MethodReturnValue
 	{
-		public static MethodReturnValue Create (MethodDefinition method, bool isNewObj, DynamicallyAccessedMemberTypes dynamicallyAccessedMemberTypes)
+		public static MethodReturnValue Create (MethodProxy method, bool isNewObj, DynamicallyAccessedMemberTypes dynamicallyAccessedMemberTypes)
 		{
-			Debug.Assert (!isNewObj || method.IsConstructor, "isNewObj can only be true for constructors");
-			var staticType = isNewObj ? method.DeclaringType : method.ReturnType;
-			return new MethodReturnValue (staticType, method, dynamicallyAccessedMemberTypes);
+			Debug.Assert (!isNewObj || method.Definition.IsConstructor, "isNewObj can only be true for constructors");
+			var staticType = isNewObj ? method.Method.DeclaringType : method.Method.ReturnType;
+			return new MethodReturnValue (staticType, method.Definition, dynamicallyAccessedMemberTypes);
 		}
 
 		private MethodReturnValue (TypeReference? staticType, MethodDefinition method, DynamicallyAccessedMemberTypes dynamicallyAccessedMemberTypes)
