@@ -17,7 +17,7 @@
     <ProjectReference Include="Microsoft.NET.Runtime.MonoAOTCompiler.Task\Microsoft.NET.Runtime.MonoAOTCompiler.Task.pkgproj" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(DotNetBuildFromSource)' != 'true'">
+  <ItemGroup Condition="'$(DotNetBuildFromSource)' != 'true' and '$(TargetsMobile)' == 'true'">
     <ProjectReference Include="Microsoft.NET.Runtime.MonoTargets.Sdk\Microsoft.NET.Runtime.MonoTargets.Sdk.pkgproj" />
   </ItemGroup>
 

@@ -24,6 +24,7 @@ namespace System
         public static bool IsWindows8x => IsWindows && GetWindowsVersion() == 6 && (GetWindowsMinorVersion() == 2 || GetWindowsMinorVersion() == 3);
         public static bool IsWindows8xOrLater => IsWindowsVersionOrLater(6, 2);
         public static bool IsWindows10OrLater => IsWindowsVersionOrLater(10, 0);
+        public static bool IsWindowsServer2022 => IsWindows && IsNotWindowsNanoServer && GetWindowsVersion() == 10 && GetWindowsMinorVersion() == 0 && GetWindowsBuildVersion() == 20348;
         public static bool IsWindowsNanoServer => IsWindows && (IsNotWindowsIoTCore && GetWindowsInstallationType().Equals("Nano Server", StringComparison.OrdinalIgnoreCase));
         public static bool IsWindowsServerCore => IsWindows && GetWindowsInstallationType().Equals("Server Core", StringComparison.OrdinalIgnoreCase);
         public static int WindowsVersion => IsWindows ? (int)GetWindowsVersion() : -1;
@@ -170,6 +171,7 @@ namespace System
 
         internal static uint GetWindowsVersion() => (uint)GetWindowsVersionObject().Major;
         internal static uint GetWindowsMinorVersion() => (uint)GetWindowsVersionObject().Minor;
+        internal static uint GetWindowsBuildVersion() => (uint)GetWindowsVersionObject().Build;
 
         internal static bool IsWindowsVersionOrLater(int major, int minor, int build = -1)
         {
