@@ -18,10 +18,11 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace System.Numerics.Tensors
 {
+    /// <summary>
+    /// Provides methods for tensor operations.
+    /// </summary>
     [Experimental(Experimentals.TensorTDiagId, UrlFormat = Experimentals.SharedUrlFormat)]
-#pragma warning disable 1591 // TODO: Document this API. https://github.com/dotnet/runtime/issues/105981
     public static partial class Tensor
-#pragma warning restore 1591
     {
         #region AsReadOnlySpan
         /// <summary>
@@ -98,7 +99,7 @@ namespace System.Numerics.Tensors
         {
             nint[] newSize = Tensor.GetSmallestBroadcastableLengths(source.Lengths, destination.Lengths);
             if (!destination.Lengths.SequenceEqual(newSize))
-                ThrowHelper.ThrowArgument_ShapesNotBroadcastCompatible();
+                ThrowHelper.ThrowArgument_LengthsNotBroadcastCompatible();
 
             ReadOnlyTensorSpan<T> intermediate = LazyBroadcast(source, newSize);
             intermediate.FlattenTo(MemoryMarshal.CreateSpan(ref destination._reference, (int)destination.FlattenedLength));
@@ -113,7 +114,7 @@ namespace System.Numerics.Tensors
         {
             nint[] newSize = Tensor.GetSmallestBroadcastableLengths(source.Lengths, destination.Lengths);
             if (!destination.Lengths.SequenceEqual(newSize))
-                ThrowHelper.ThrowArgument_ShapesNotBroadcastCompatible();
+                ThrowHelper.ThrowArgument_LengthsNotBroadcastCompatible();
 
             ReadOnlyTensorSpan<T> intermediate = LazyBroadcast(source, newSize);
             intermediate.FlattenTo(MemoryMarshal.CreateSpan(ref destination._reference, (int)destination.FlattenedLength));
@@ -128,7 +129,7 @@ namespace System.Numerics.Tensors
         {
             nint[] newSize = Tensor.GetSmallestBroadcastableLengths(source.Lengths, destination.Lengths);
             if (!destination.Lengths.SequenceEqual(newSize))
-                ThrowHelper.ThrowArgument_ShapesNotBroadcastCompatible();
+                ThrowHelper.ThrowArgument_LengthsNotBroadcastCompatible();
 
             ReadOnlyTensorSpan<T> intermediate = LazyBroadcast(source, newSize);
             intermediate.FlattenTo(MemoryMarshal.CreateSpan(ref destination._reference, (int)destination.FlattenedLength));
@@ -149,7 +150,7 @@ namespace System.Numerics.Tensors
                 return new TensorSpan<T>(ref input._reference, shape, input.Strides, input._shape._memoryLength);
 
             if (!TensorHelpers.IsBroadcastableTo(input.Lengths, shape))
-                ThrowHelper.ThrowArgument_ShapesNotBroadcastCompatible();
+                ThrowHelper.ThrowArgument_LengthsNotBroadcastCompatible();
 
             nint newSize = TensorSpanHelpers.CalculateTotalLength(shape);
 
@@ -192,7 +193,7 @@ namespace System.Numerics.Tensors
                 return new TensorSpan<T>(ref input._reference, shape, input.Strides, input._shape._memoryLength);
 
             if (!TensorHelpers.IsBroadcastableTo(input.Lengths, shape))
-                ThrowHelper.ThrowArgument_ShapesNotBroadcastCompatible();
+                ThrowHelper.ThrowArgument_LengthsNotBroadcastCompatible();
 
             nint newSize = TensorSpanHelpers.CalculateTotalLength(shape);
 
@@ -235,7 +236,7 @@ namespace System.Numerics.Tensors
                 return new Tensor<T>(input._values, lengths, false);
 
             if (!TensorHelpers.IsBroadcastableTo(input.Lengths, lengths))
-                ThrowHelper.ThrowArgument_ShapesNotBroadcastCompatible();
+                ThrowHelper.ThrowArgument_LengthsNotBroadcastCompatible();
 
             nint newSize = TensorSpanHelpers.CalculateTotalLength(lengths);
 
@@ -6589,11 +6590,17 @@ namespace System.Numerics.Tensors
         }
         #endregion
 
-#pragma warning disable 1591 // TODO: Document this API. https://github.com/dotnet/runtime/issues/105981
+        /// <summary>
+        /// Gets the smallest broadcastable lengths for two shapes.
+        /// </summary>
+        /// <param name="shape1">The first shape to broadcast.</param>
+        /// <param name="shape2">The second shape to broadcast.</param>
+        /// <returns>The smallest lengths these shapes can be broadcast to.</returns>
+        /// <exception cref="ArgumentException">The lengths of <paramref name="shape1" /> and  <paramref name="shape2" /> are not broadcast compatible.</exception>
         public static nint[] GetSmallestBroadcastableLengths(ReadOnlySpan<nint> shape1, ReadOnlySpan<nint> shape2)
         {
             if (!TensorHelpers.IsBroadcastableTo(shape1, shape2))
-                throw new Exception("Lengths are not broadcast compatible");
+                ThrowHelper.ThrowArgument_LengthsNotBroadcastCompatible();
 
             nint[] intermediateShape = TensorHelpers.GetIntermediateShape(shape1, shape2.Length);
             for (int i = 1; i <= shape1.Length; i++)
@@ -6607,7 +6614,6 @@ namespace System.Numerics.Tensors
 
             return intermediateShape;
         }
-#pragma warning restore 1591
 
         #region TensorPrimitivesHelpers
         private delegate void PerformCalculationSpanInSpanOut<T>(ReadOnlySpan<T> input, Span<T> output);
@@ -6740,7 +6746,7 @@ namespace System.Numerics.Tensors
                 ReadOnlyTensorSpan<T> broadcastedLeft = Tensor.LazyBroadcast(left, newSize);
                 ReadOnlyTensorSpan<T> broadcastedRight = Tensor.LazyBroadcast(right, newSize);
                 if (!destination.Lengths.SequenceEqual(newSize) || destination._shape._memoryLength < broadcastedLeft.FlattenedLength)
-                    ThrowHelper.ThrowArgument_ShapesNotBroadcastCompatible();
+                    ThrowHelper.ThrowArgument_LengthsNotBroadcastCompatible();
 
                 nint rowLength = newSize[^1];
                 Span<T> ospan;
