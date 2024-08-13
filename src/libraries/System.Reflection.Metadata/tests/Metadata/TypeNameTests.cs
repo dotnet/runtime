@@ -238,6 +238,45 @@ namespace System.Reflection.Metadata.Tests
             }
         }
 
+        [Theory]
+        [InlineData(10)]
+        [InlineData(100)]
+        public void MaxNodesIsRespected_TooManyNestedNames(int maxDepth)
+        {
+            TypeNameParseOptions options = new()
+            {
+                MaxNodes = maxDepth
+            };
+
+            string tooMany = GetName(maxDepth);
+            string notTooMany = GetName(maxDepth - 1);
+
+            Assert.Throws<InvalidOperationException>(() => TypeName.Parse(tooMany.AsSpan(), options));
+            Assert.False(TypeName.TryParse(tooMany.AsSpan(), out _, options));
+
+            TypeName parsed = TypeName.Parse(notTooMany.AsSpan(), options);
+            Validate(parsed, maxDepth - 1);
+
+            Assert.True(TypeName.TryParse(notTooMany.AsSpan(), out parsed, options));
+            Validate(parsed, maxDepth - 1);
+
+            static string GetName(int depth)
+                => $"Namespace.NotNestedType+{string.Join("+", Enumerable.Repeat("NestedType", depth))}";
+
+            static void Validate(TypeName parsed, int maxDepth)
+            {
+                Assert.True(parsed.IsNested);
+
+                while (parsed.IsNested)
+                {
+                    maxDepth--;
+                    parsed = parsed.DeclaringType;
+                }
+
+                Assert.Equal(0, maxDepth);
+            }
+        }
+
         public static IEnumerable<object[]> GenericArgumentsAreSupported_Arguments()
         {
             yield return new object[]
