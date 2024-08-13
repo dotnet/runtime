@@ -11,17 +11,16 @@ using Xunit;
 public unsafe class Runtime_101046
 {
     [Fact]
-    public static void TestEntryPoint()
+    public static int TestEntryPoint()
     {
         ushort value = unchecked((ushort)-123);
-        Test(ref value);
+        return Test(ref value) == -123 ? 100 : 101;
     }
     
     [MethodImpl(MethodImplOptions.NoInlining)]
-    private static void Test(ref ushort p)
+    private static int Test(ref ushort p)
     {
-        int result = Runtime101046Native.ReturnExtendedShort((short)p); // this (short) cast is removed in the .il version
-        Assert.Equal(-123, result);
+        return Runtime101046Native.ReturnExtendedShort((short)p); // this (short) cast is removed in the .il version
     }
 }
 

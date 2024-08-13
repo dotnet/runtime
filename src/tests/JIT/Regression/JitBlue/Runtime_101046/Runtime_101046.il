@@ -3,41 +3,42 @@
 
 .assembly extern System.Runtime { }
 .assembly extern xunit.core { }
-.assembly extern xunit.assert { }
 .assembly Runtime_101046 { }
 
 .class public auto ansi beforefieldinit Runtime_101046
        extends [System.Runtime]System.Object
 {
-  .method public static void Main() cil managed
+  .method public hidebysig static int32  TestEntryPoint() cil managed
   {
     .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = ( 01 00 00 00 ) 
-    // Code size       14 (0xe)
+    // Code size       23 (0x17)
     .entrypoint
-    .maxstack  1
+    .maxstack  2
     .locals init (uint16 V_0)
     IL_0000:  ldc.i4     0xff85
     IL_0005:  stloc.0
     IL_0006:  ldloca.s   V_0
-    IL_0008:  call       void Runtime_101046::Test(uint16&)
-    IL_000d:  ret
+    IL_0008:  call       int32 Runtime_101046::Test(uint16&)
+    IL_000d:  ldc.i4.s   -123
+    IL_000f:  beq.s      IL_0014
+
+    IL_0011:  ldc.i4.s   101
+    IL_0013:  ret
+
+    IL_0014:  ldc.i4.s   100
+    IL_0016:  ret
   } // end of method Runtime_101046::TestEntryPoint
 
-  .method private hidebysig static void  Test(uint16& p) cil managed noinlining
+  .method private hidebysig static int32 
+          Test(uint16& p) cil managed noinlining
   {
-    // Code size       18 (0x12)
-    .maxstack  2
-    .locals init (int32 V_0)
+    // Code size       9 (0x9)
+    .maxstack  8
     IL_0000:  ldarg.0
     IL_0001:  ldind.u2
-    // IL_0002:  conv.i2
+    //IL_0002:  conv.i2
     IL_0003:  call       int32 Runtime101046Native::ReturnExtendedShort(int16)
-    IL_0008:  stloc.0
-    IL_0009:  ldc.i4.s   -123
-    IL_000b:  ldloc.0
-    IL_000c:  call       void [xunit.assert]Xunit.Assert::Equal<int32>(!!0,
-                                                                       !!0)
-    IL_0011:  ret
+    IL_0008:  ret
   } // end of method Runtime_101046::Test
 } // end of class Runtime_101046
 
