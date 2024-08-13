@@ -39,8 +39,9 @@ internal readonly struct Loader_1 : ILoader
     string ILoader.GetPath(ModuleHandle handle)
     {
         Data.Module module = _target.ProcessedData.GetOrAdd<Data.Module>(handle.Address);
+
+        // TODO: [cdac] Add/use APIs on Target for reading strings in target endianness
         TargetPointer addr = module.Path;
-        List<char> name = [];
         while (true)
         {
             // Read characters until we find the null terminator
@@ -48,11 +49,16 @@ internal readonly struct Loader_1 : ILoader
             if (nameChar == 0)
                 break;
 
-            name.Add(nameChar);
             addr += sizeof(char);
         }
 
-        return new string(CollectionsMarshal.AsSpan(name));
+        int length = (int)(addr.Value - module.Path.Value);
+        if (length == 0)
+            return string.Empty;
+
+        Span<byte> span = stackalloc byte[length];
+        _target.ReadBuffer(module.Path, span);
+        return new string(MemoryMarshal.Cast<byte, char>(span));
     }
 
     TargetPointer ILoader.GetLoaderAllocator(ModuleHandle handle)
