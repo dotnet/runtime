@@ -1372,7 +1372,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			{
 				static void MethodWithAnnotatedParameter ([DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)] string typeName) { }
 
-				[ExpectedWarning ("IL2026", "TypeWithRUCMethod.PrivateRUCMethod")]
+				[ExpectedWarning ("IL2026", "TypeWithRUCMethod.PrivateRUCMethod", Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/runtime/issues/95118")]
 				static void AnnotatedParameter ()
 				{
 					MethodWithAnnotatedParameter ("Mono.Linker.Tests.Cases.DataFlow.GenericParameterWarningLocation+MethodBody+TypeWithPrivateMethods`1[["
@@ -1380,7 +1380,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 						+ "]], test");
 				}
 
-				[ExpectedWarning ("IL2026", "TypeWithRUCMethod.PrivateRUCMethod")]
+				[ExpectedWarning ("IL2026", "TypeWithRUCMethod.PrivateRUCMethod", Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/runtime/issues/95118")]
 				[return: DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)]
 				static string AnnotatedReturnValue ()
 				{
@@ -1392,7 +1392,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 				[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)]
 				static string _annotatedField;
 
-				[ExpectedWarning ("IL2026", "TypeWithRUCMethod.PrivateRUCMethod")]
+				[ExpectedWarning ("IL2026", "TypeWithRUCMethod.PrivateRUCMethod", Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/runtime/issues/95118")]
 				static void AnnotatedField ()
 				{
 					_annotatedField = "Mono.Linker.Tests.Cases.DataFlow.GenericParameterWarningLocation+MethodBody+TypeWithPrivateMethods`1[["
@@ -1410,7 +1410,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
 			class TypeGetType
 			{
-				[ExpectedWarning ("IL2026", "TypeWithRUCMethod.PrivateRUCMethod")]
+				[ExpectedWarning ("IL2026", "TypeWithRUCMethod.PrivateRUCMethod", Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/runtime/issues/95118")]
 				static void SpecificType ()
 				{
 					Type.GetType ("Mono.Linker.Tests.Cases.DataFlow.GenericParameterWarningLocation+MethodBody+TypeWithPrivateMethods`1[["

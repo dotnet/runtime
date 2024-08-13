@@ -168,8 +168,8 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			[RequiresUnreferencedCode ("--Method2--")]
 			public void Method2 () { }
 
-			[ExpectedWarning ("IL2026", "--Method1--")]
-			[ExpectedWarning ("IL2026", "--Method2--")]
+			[ExpectedWarning ("IL2026", "--Method1--", Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/runtime/issues/95118")]
+			[ExpectedWarning ("IL2026", "--Method2--", Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/runtime/issues/95118")]
 			public static void Test ()
 			{
 				Type.GetType ("Mono.Linker.Tests.Cases.DataFlow." + nameof (GetTypeDataFlow) + "+" + nameof (TypeWithWarnings)).RequiresPublicMethods ();
@@ -183,7 +183,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			[RequiresUnreferencedCode ("--Method1--")]
 			public void Method1 () { }
 
-			[ExpectedWarning ("IL2026", "--Method1--")]
+			[ExpectedWarning ("IL2026", "--Method1--", Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/runtime/issues/95118")]
 			public static void Test ()
 			{
 				Type.GetType (s_ConstTypeName).RequiresPublicMethods ();

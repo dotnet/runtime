@@ -58,7 +58,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			RequireNothing (type);
 		}
 
-		[ExpectedWarning ("IL2122", "Type 'System.Invalid.TypeName' is not assembly qualified. Type name strings used for dynamically accessing a type should be assembly qualified.")]
+		[ExpectedWarning ("IL2122", "Type 'System.Invalid.TypeName' is not assembly qualified. " + "Type name strings used for dynamically accessing a type should be assembly qualified.", Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/runtime/issues/95118")]
 		static void TestUnqualifiedTypeNameWarns ()
 		{
 			RequirePublicConstructors ("System.Invalid.TypeName");

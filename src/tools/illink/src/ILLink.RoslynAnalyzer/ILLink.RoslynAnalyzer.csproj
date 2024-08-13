@@ -15,13 +15,10 @@
          optimize the analyzer even in Debug builds. Note: we still use the
          Debug configuration to get Debug asserts. -->
     <Optimize>true</Optimize>
-    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
 
   <ItemGroup>
     <Compile Include="$(CoreLibSharedDir)System/Index.cs" />
-    <Compile Include="$(LibrariesProjectRoot)\Common\src\System\Reflection\Metadata\TypeNameHelpers.cs" />
-    <Compile Include="$(LibrariesProjectRoot)\Common\src\System\Text\ValueStringBuilder.cs" />
   </ItemGroup>
 
   <ItemGroup>
@@ -31,7 +28,6 @@
       <PrivateAssets>all</PrivateAssets>
       <ExcludeAssets>contentfiles</ExcludeAssets> <!-- We include our own copy of the ClosedAttribute to work in source build -->
     </PackageReference>
-    <PackageReference Include="System.Reflection.Metadata" Version="$(SystemReflectionMetadataVersion)" />
   </ItemGroup>
 
   <Import Project="..\ILLink.Shared\ILLink.Shared.projitems" Label="Shared" />
