@@ -1087,6 +1087,84 @@ namespace System.Net.Sockets.Tests
             result = await receiver2.ReceiveFromAsync(receiveBuffer, remoteEp).WaitAsync(TestSettings.PassingTestTimeout);
             Assert.Equal(sendBuffer.Length, result.ReceivedBytes);
         }
+
+        [ConditionalFact(typeof(DualModeBase), nameof(DualModeBase.LocalhostIsBothIPv4AndIPv6))]
+        public void Connect_Parallel_Succss()
+        {
+            using PortBlocker portBlocker = new PortBlocker(() =>
+            {
+                Socket socket = new Socket(AddressFamily.InterNetworkV6, SocketType.Stream, ProtocolType.Tcp);
+                socket.DualMode = false;
+                socket.BindToAnonymousPort(IPAddress.IPv6Loopback);
+                return socket;
+            });
+            Socket a = portBlocker.MainSocket;
+            Socket b = portBlocker.SecondarySocket;
+
+            a.Listen(1);
+            b.Listen(1);
+            Task<Socket> t1 = a.AcceptAsync();
+            Task<Socket> t2 = b.AcceptAsync();
+
+            var mres = new ManualResetEventSlim();
+            SocketAsyncEventArgs saea = new SocketAsyncEventArgs();
+            saea.RemoteEndPoint = new DnsEndPoint("localhost", portBlocker.Port);
+            saea.Completed += (_, _) => mres.Set();
+            if (Socket.ConnectAsync(a.SocketType, a.ProtocolType, saea, ConnectAlgorithm.Parallel))
+            {
+                mres.Wait(TestSettings.PassingTestTimeout);
+            }
+            // we should see attemopt to both sockets
+            Task.WaitAll(new Task[] { t1, t2 }, TestSettings.PassingTestTimeout);
+            Assert.True(saea.ConnectSocket.Connected);
+        }
+
+        [ConditionalTheory(typeof(DualModeBase), nameof(DualModeBase.LocalhostIsBothIPv4AndIPv6))]
+        [InlineData(true)]
+        [InlineData(false)]
+        public void Connect_Parallel_FailsOver(bool preferIPv6)
+        {
+            using PortBlocker portBlocker = new PortBlocker(() =>
+            {
+                Socket socket = new Socket(AddressFamily.InterNetworkV6, SocketType.Stream, ProtocolType.Tcp);
+                socket.DualMode = false;
+                socket.BindToAnonymousPort(IPAddress.IPv6Loopback);
+                return socket;
+            });
+            Socket a = portBlocker.MainSocket;
+            Socket b = portBlocker.SecondarySocket;
+
+            if (preferIPv6)
+            {
+                a.Listen(1);
+            }
+            else
+            {
+                b.Listen(1);
+            }
+
+            var mres = new ManualResetEventSlim();
+            SocketAsyncEventArgs saea = new SocketAsyncEventArgs();
+            saea.RemoteEndPoint = new DnsEndPoint("localhost", portBlocker.Port);
+            saea.Completed += (_, _) => mres.Set();
+            if (Socket.ConnectAsync(a.SocketType, a.ProtocolType, saea, ConnectAlgorithm.Parallel))
+            {
+                mres.Wait(TestSettings.PassingTestTimeout);
+            }
+            // we should see attemopt to both sockets
+            //Task.WaitAll(new Task[] { t1, t2 }, TestSettings.PassingTestTimeout);
+            Assert.True(saea.ConnectSocket.Connected);
+            if (preferIPv6)
+            {
+                Assert.Equal(AddressFamily.InterNetworkV6, saea.ConnectSocket.AddressFamily);
+                Assert.Equal(a.LocalEndPoint, saea.ConnectSocket.RemoteEndPoint);
+            }
+            else
+            {
+                Assert.Equal(AddressFamily.InterNetwork, saea.ConnectSocket.AddressFamily);
+                Assert.Equal(b.LocalEndPoint, saea.ConnectSocket.RemoteEndPoint);
+            }
+        }
     }
 
     internal static class ConnectExtensions
