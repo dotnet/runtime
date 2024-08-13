@@ -77,6 +77,7 @@ namespace Microsoft.Interop
                 IMarshallingGeneratorResolver fallbackResolver = isDownstreamScenario ? new ForwarderResolver() : new NotSupportedResolver();
                 List<IMarshallingGeneratorResolver> coreResolvers =
                 [
+                    new BlittableMarshallerResolver(env.HasFlag(EnvironmentFlags.DisableRuntimeMarshalling)),
                     new MarshalAsMarshallingGeneratorResolver(new InteropGenerationOptions(options.UseMarshalType)),
                     new NoMarshallingInfoErrorResolver(TypeNames.LibraryImportAttribute_ShortName),
                 ];
