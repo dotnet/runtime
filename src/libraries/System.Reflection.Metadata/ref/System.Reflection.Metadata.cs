@@ -2450,7 +2450,7 @@ namespace System.Reflection.Metadata
         public System.Reflection.Metadata.TypeName MakeByRefTypeName() { throw null; }
         public System.Reflection.Metadata.TypeName MakeGenericTypeName(System.Collections.Immutable.ImmutableArray<System.Reflection.Metadata.TypeName> typeArguments) { throw null; }
         public System.Reflection.Metadata.TypeName MakePointerTypeName() { throw null; }
-        public System.Reflection.Metadata.TypeName MakeSimpleTypeName(AssemblyNameInfo? assemblyName) { throw null; }
+        public System.Reflection.Metadata.TypeName WithAssemblyName(AssemblyNameInfo? assemblyName) { throw null; }
     }
     public sealed partial class TypeNameParseOptions
     {

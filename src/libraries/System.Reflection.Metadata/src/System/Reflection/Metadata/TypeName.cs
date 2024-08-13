@@ -419,7 +419,7 @@ namespace System.Reflection.Metadata
         /// <param name="assemblyName">Assembly name.</param>
         /// <returns>Created simple name.</returns>
         /// <exception cref="InvalidOperationException">The current type name is not simple.</exception>
-        public TypeName MakeSimpleTypeName(AssemblyNameInfo? assemblyName)
+        public TypeName WithAssemblyName(AssemblyNameInfo? assemblyName)
         {
             if (!IsSimple)
             {
@@ -427,7 +427,7 @@ namespace System.Reflection.Metadata
             }
 
             TypeName? declaringType = IsNested
-                ? DeclaringType.MakeSimpleTypeName(assemblyName)
+                ? DeclaringType.WithAssemblyName(assemblyName)
                 : null;
 
             return new TypeName(fullName: _fullName,

@@ -528,14 +528,14 @@ namespace System.Reflection.Metadata.Tests
         [InlineData("Declaring+Nested")]
         [InlineData("Declaring+Deep+Deeper+Nested")]
         [InlineData("Generic[[GenericArg]]")]
-        public void MakeSimpleTypeNameThrowsForNonSimpleNames(string input)
+        public void WithAssemblyNameThrowsForNonSimpleNames(string input)
         {
             TypeName typeName = TypeName.Parse(input.AsSpan());
 
             if (typeName.IsSimple)
             {
                 AssemblyNameInfo assemblyName = new("MyName");
-                TypeName simple = typeName.MakeSimpleTypeName(assemblyName: assemblyName);
+                TypeName simple = typeName.WithAssemblyName(assemblyName: assemblyName);
 
                 Assert.Equal(typeName.FullName, simple.FullName); // full name has not changed
                 Assert.NotEqual(typeName.AssemblyQualifiedName, simple.AssemblyQualifiedName);
@@ -550,7 +550,7 @@ namespace System.Reflection.Metadata.Tests
             }
             else
             {
-                Assert.Throws<InvalidOperationException>(() => typeName.MakeSimpleTypeName(assemblyName: null));
+                Assert.Throws<InvalidOperationException>(() => typeName.WithAssemblyName(assemblyName: null));
             }
         }
 
@@ -559,11 +559,11 @@ namespace System.Reflection.Metadata.Tests
         [InlineData("Declaring+Nested, Lib")]
         [InlineData("Declaring+Deep+Deeper+Nested")]
         [InlineData("Declaring+Deep+Deeper+Nested, Lib")]
-        public void MakeSimpleTypeName_NestedNames(string name)
+        public void WithAssemblyName_NestedNames(string name)
         {
             AssemblyNameInfo assemblyName = new("New");
             TypeName parsed = TypeName.Parse(name.AsSpan());
-            TypeName made = parsed.MakeSimpleTypeName(assemblyName);
+            TypeName made = parsed.WithAssemblyName(assemblyName);
 
             VerifyNestedNames(parsed, made, assemblyName);
         }
@@ -580,7 +580,7 @@ namespace System.Reflection.Metadata.Tests
         {
             AssemblyNameInfo assemblyName = new("New");
             TypeName parsed = TypeName.Parse(type.AssemblyQualifiedName.AsSpan());
-            TypeName made = parsed.GetGenericTypeDefinition().MakeSimpleTypeName(assemblyName).MakeGenericTypeName(parsed.GetGenericArguments());
+            TypeName made = parsed.GetGenericTypeDefinition().WithAssemblyName(assemblyName).MakeGenericTypeName(parsed.GetGenericArguments());
 
             VerifyNestedNames(parsed, made, assemblyName);
         }

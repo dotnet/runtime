@@ -93,7 +93,7 @@ internal static class TypeNameHelpers
     {
         if (libraryRecord.LibraryName is not null)
         {
-            return ParseWithoutAssemblyName(rawName, payloadOptions).WithAssemblyName(libraryRecord.LibraryName);
+            return ParseWithoutAssemblyName(rawName, payloadOptions).With(libraryRecord.LibraryName);
         }
 
         Debug.Assert(payloadOptions.UndoTruncatedTypeNames);
@@ -126,15 +126,15 @@ internal static class TypeNameHelpers
                 .WithCoreLibAssemblyName(); // We know it's a System Record, so we set the LibraryName to CoreLib
 
     internal static TypeName WithCoreLibAssemblyName(this TypeName systemType)
-        => systemType.WithAssemblyName(s_coreLibAssemblyName ??= AssemblyNameInfo.Parse("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089".AsSpan()));
+        => systemType.With(s_coreLibAssemblyName ??= AssemblyNameInfo.Parse("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089".AsSpan()));
 
-    private static TypeName WithAssemblyName(this TypeName typeName, AssemblyNameInfo assemblyName)
+    private static TypeName With(this TypeName typeName, AssemblyNameInfo assemblyName)
     {
         if (!typeName.IsSimple)
         {
             if (typeName.IsArray)
             {
-                TypeName newElementType = typeName.GetElementType().WithAssemblyName(assemblyName);
+                TypeName newElementType = typeName.GetElementType().With(assemblyName);
 
                 return typeName.IsSZArray
                     ? newElementType.MakeSZArrayTypeName()
@@ -142,7 +142,7 @@ internal static class TypeNameHelpers
             }
             else if (typeName.IsConstructedGenericType)
             {
-                TypeName newGenericTypeDefinition = typeName.GetGenericTypeDefinition().WithAssemblyName(assemblyName);
+                TypeName newGenericTypeDefinition = typeName.GetGenericTypeDefinition().With(assemblyName);
 
                 // We don't change the assembly name of generic arguments on purpose.
                 return newGenericTypeDefinition.MakeGenericTypeName(typeName.GetGenericArguments());
@@ -154,7 +154,7 @@ internal static class TypeNameHelpers
             }
         }
 
-        return typeName.MakeSimpleTypeName(assemblyName);
+        return typeName.WithAssemblyName(assemblyName);
     }
 
     private static TypeName ParseWithoutAssemblyName(string rawName, PayloadOptions payloadOptions)
