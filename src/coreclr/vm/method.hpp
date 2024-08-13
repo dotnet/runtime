@@ -1001,8 +1001,6 @@ public:
 
     inline PTR_MethodTable GetMethodTable() const;
 
-    inline DPTR(PTR_MethodTable) GetMethodTablePtr() const;
-
   public:
     inline MethodDescChunk* GetMethodDescChunk() const;
     inline int GetMethodDescChunkIndex() const;
@@ -2214,7 +2212,8 @@ class MethodDescChunk
                                                                      // and for the logic that splits the token to be algorithmically generated based on the
                                                                      // #define
         enum_flag_DeterminedIsEligibleForTieredCompilation = 0x4000, // Has this chunk had its methods been determined eligible for tiered compilation or not
-        // unused                                          = 0x8000,
+        enum_flag_LoaderModuleAttachedToChunk              = 0x8000, // Is this chunk associated with a LoaderModule directly? If this flag is set, then the
+                                                                     // LoaderModule pointer is placed at the end of the chunk.
     };
 
 #ifndef DACCESS_COMPILE
@@ -2231,7 +2230,8 @@ public:
                                         BOOL fNonVtableSlot,
                                         BOOL fNativeCodeSlot,
                                         MethodTable *initialMT,
-                                        class AllocMemTracker *pamTracker);
+                                        class AllocMemTracker *pamTracker,
+                                        Module* pLoaderModule = NULL);
 
     bool DeterminedIfMethodsAreEligibleForTieredCompilation()
     {
@@ -2247,10 +2247,13 @@ public:
         return m_methodTable;
     }
 
-    inline DPTR(PTR_MethodTable) GetMethodTablePtr() const
+public:
+    PTR_Module GetLoaderModule();
+
+    inline bool IsLoaderModuleAttachedToChunk() const
     {
         LIMITED_METHOD_DAC_CONTRACT;
-        return dac_cast<DPTR(PTR_MethodTable)>(PTR_HOST_MEMBER_TADDR(MethodDescChunk, this, m_methodTable));
+        return (m_flagsAndTokenRange & enum_flag_LoaderModuleAttachedToChunk) != 0;
     }
 
 #ifndef DACCESS_COMPILE
@@ -2280,6 +2283,13 @@ public:
         LIMITED_METHOD_CONTRACT;
         m_next = chunk;
     }
+
+    void SetLoaderModuleAttachedToChunk(Module* pModule)
+    {
+        m_flagsAndTokenRange |= enum_flag_LoaderModuleAttachedToChunk;
+        TADDR ppLoaderModule = dac_cast<TADDR>(this) + SizeOf() - sizeof(PTR_Module);
+        *(Module**)ppLoaderModule = pModule;
+    }
 #endif // !DACCESS_COMPILE
 
     PTR_MethodDescChunk GetNextChunk()
@@ -2300,10 +2310,10 @@ public:
         return m_flagsAndTokenRange & enum_flag_TokenRangeMask;
     }
 
-    inline SIZE_T SizeOf()
+    inline SIZE_T SizeOf() const
     {
         LIMITED_METHOD_DAC_CONTRACT;
-        return sizeof(MethodDescChunk) + (m_size + 1) * MethodDesc::ALIGNMENT;
+        return sizeof(MethodDescChunk) + (m_size + 1) * MethodDesc::ALIGNMENT + (IsLoaderModuleAttachedToChunk() ? sizeof(PTR_Module) : 0);
     }
 
     inline MethodDesc *GetFirstMethodDesc()
@@ -3428,15 +3438,6 @@ inline PTR_MethodTable MethodDesc::GetMethodTable() const
     MethodDescChunk *pChunk = GetMethodDescChunk();
     PREFIX_ASSUME(pChunk != NULL);
     return pChunk->GetMethodTable();
-}
-
-inline DPTR(PTR_MethodTable) MethodDesc::GetMethodTablePtr() const
-{
-    LIMITED_METHOD_DAC_CONTRACT;
-
-    MethodDescChunk *pChunk = GetMethodDescChunk();
-    PREFIX_ASSUME(pChunk != NULL);
-    return pChunk->GetMethodTablePtr();
 }
 
 inline MethodTable* MethodDesc::GetCanonicalMethodTable()
