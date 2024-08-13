@@ -302,6 +302,7 @@ CDAC_TYPE_INDETERMINATE(MethodDesc)
 CDAC_TYPE_FIELD(MethodDesc, /*uint8*/, ChunkIndex, cdac_data<MethodDesc>::ChunkIndex)
 CDAC_TYPE_FIELD(MethodDesc, /*uint16*/, Slot, cdac_data<MethodDesc>::Slot)
 CDAC_TYPE_FIELD(MethodDesc, /*uint16*/, Flags, cdac_data<MethodDesc>::Flags)
+CDAC_TYPE_FIELD(MethodDesc, /*uint16*/, Flags3AndTokenRemainder, cdac_data<MethodDesc>::Flags3AndTokenRemainder)
 CDAC_TYPE_END(MethodDesc)
 
 CDAC_TYPE_BEGIN(MethodDescChunk)
@@ -310,7 +311,27 @@ CDAC_TYPE_FIELD(MethodDescChunk, /*pointer*/, MethodTable, cdac_data<MethodDescC
 CDAC_TYPE_FIELD(MethodDescChunk, /*pointer*/, Next, cdac_data<MethodDescChunk>::Next)
 CDAC_TYPE_FIELD(MethodDescChunk, /*uint8*/, Size, cdac_data<MethodDescChunk>::Size)
 CDAC_TYPE_FIELD(MethodDescChunk, /*uint8*/, Count, cdac_data<MethodDescChunk>::Count)
+CDAC_TYPE_FIELD(MethodDescChunk, /*uint16*/, FlagsAndTokenRange, cdac_data<MethodDescChunk>::FlagsAndTokenRange)
 CDAC_TYPE_END(MethodDescChunk)
+
+CDAC_TYPE_BEGIN(InstantiatedMethodDesc)
+CDAC_TYPE_INDETERMINATE(InstantiatedMethodDesc)
+CDAC_TYPE_FIELD(InstantiatedMethodDesc, /*pointer*/, PerInstInfo, cdac_data<InstantiatedMethodDesc>::PerInstInfo)
+CDAC_TYPE_FIELD(InstantiatedMethodDesc, /*uint16*/, Flags2, cdac_data<InstantiatedMethodDesc>::Flags2)
+CDAC_TYPE_FIELD(InstantiatedMethodDesc, /*uint16*/, NumGenericArgs, cdac_data<InstantiatedMethodDesc>::NumGenericArgs)
+CDAC_TYPE_END(InstantiatedMethodDesc)
+
+CDAC_TYPE_BEGIN(StoredSigMethodDesc)
+CDAC_TYPE_INDETERMINATE(StoredSigMethodDesc)
+CDAC_TYPE_FIELD(StoredSigMethodDesc, /*pointer*/, Sig, cdac_data<StoredSigMethodDesc>::Sig)
+CDAC_TYPE_FIELD(StoredSigMethodDesc, /*uint32*/, cSig, cdac_data<StoredSigMethodDesc>::cSig)
+CDAC_TYPE_FIELD(StoredSigMethodDesc, /*uint32*/, ExtendedFlags, cdac_data<StoredSigMethodDesc>::ExtendedFlags)
+CDAC_TYPE_END(StoredSigMethodDesc)
+
+CDAC_TYPE_BEGIN(DynamicMethodDesc)
+CDAC_TYPE_INDETERMINATE(DynamicMethodDesc)
+CDAC_TYPE_FIELD(DynamicMethodDesc, /*pointer*/, MethodName, cdac_data<DynamicMethodDesc>::MethodName)
+CDAC_TYPE_END(DynamicMethodDesc)
 
 CDAC_TYPES_END()
 
@@ -319,6 +340,7 @@ CDAC_GLOBAL_POINTER(AppDomain, &AppDomain::m_pTheAppDomain)
 CDAC_GLOBAL_POINTER(ThreadStore, &ThreadStore::s_pThreadStore)
 CDAC_GLOBAL_POINTER(FinalizerThread, &::g_pFinalizerThread)
 CDAC_GLOBAL_POINTER(GCThread, &::g_pSuspensionThread)
+CDAC_GLOBAL(MethodDescTokenRemainderBitCount, uint8, METHOD_TOKEN_REMAINDER_BIT_COUNT)
 #if FEATURE_EH_FUNCLETS
 CDAC_GLOBAL(FeatureEHFunclets, uint8, 1)
 #else
@@ -336,6 +358,7 @@ CDAC_GLOBAL(ObjectToMethodTableUnmask, uint8, 1 | 1 << 1 | 1 << 2)
 CDAC_GLOBAL(ObjectToMethodTableUnmask, uint8, 1 | 1 << 1)
 #endif //TARGET_64BIT
 CDAC_GLOBAL(SOSBreakingChangeVersion, uint8, SOS_BREAKING_CHANGE_VERSION)
+CDAC_GLOBAL(DirectorySeparator, uint8, (uint8_t)DIRECTORY_SEPARATOR_CHAR_A)
 CDAC_GLOBAL(MethodDescAlignment, uint64, MethodDesc::ALIGNMENT)
 CDAC_GLOBAL(ObjectHeaderSize, uint64, OBJHEADER_SIZE)
 CDAC_GLOBAL(SyncBlockValueToObjectOffset, uint16, OBJHEADER_SIZE - cdac_data<ObjHeader>::SyncBlockValue)
