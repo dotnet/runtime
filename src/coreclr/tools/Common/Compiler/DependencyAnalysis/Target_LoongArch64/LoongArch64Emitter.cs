@@ -146,7 +146,7 @@ namespace ILCompiler.DependencyAnalysis.LoongArch64
         }
 
         // dbar
-        public void EmitDMB()
+        public void EmitDBAR()
         {
             Builder.EmitUInt(0x38720000);
         }
