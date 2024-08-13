@@ -409,6 +409,8 @@ public:
 
     void EmitLoad(IntReg dest, IntReg srcAddr, int offset = 0);
     void EmitLoad(FloatReg dest, IntReg srcAddr, int offset = 0);
+    void EmitAnyLoad(bool isFloat, unsigned int sizeShift, int destReg, IntReg srcAddr, int offset = 0);
+
     void EmitStore(IntReg src, IntReg destAddr, int offset = 0);
     void EmitStore(FloatReg src, IntReg destAddr, int offset = 0);
 
