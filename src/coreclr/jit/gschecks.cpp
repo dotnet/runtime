@@ -516,6 +516,7 @@ void Compiler::gsParamsToShadows()
             continue;
         }
 
+#if defined(TARGET_X86) && defined(FEATURE_IJW)
         if (lclNum < info.compArgsCount && argRequiresSpecialCopy(lclNum) && (varDsc->TypeGet() == TYP_STRUCT))
         {
             JITDUMP("arg%02u requires special copy, using special copy helper to copy to shadow var V%02u\n", lclNum,
@@ -557,6 +558,7 @@ void Compiler::gsParamsToShadows()
             }
         }
         else
+#endif // TARGET_X86 && FEATURE_IJW
         {
             GenTree* src = gtNewLclvNode(lclNum, varDsc->TypeGet());
             src->gtFlags |= GTF_DONT_CSE;

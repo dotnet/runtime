@@ -2033,6 +2033,6 @@ CORINFO_METHOD_HANDLE interceptor_ICJI::getSpecialCopyHelper(CORINFO_CLASS_HANDL
 {
     mc->cr->AddCall("getSpecialCopyHelper");
     CORINFO_METHOD_HANDLE temp = original_ICorJitInfo->getSpecialCopyHelper(type);
-    mc->recgetSpecialCopyHelper(type, temp);
+    mc->recGetSpecialCopyHelper(type, temp);
     return temp;
 }

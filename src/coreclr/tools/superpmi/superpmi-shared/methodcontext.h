@@ -898,9 +898,9 @@ public:
     void dmpGetStringConfigValue(DWORD nameIndex, DWORD result);
     const WCHAR* repGetStringConfigValue(const WCHAR* name);
 
-    void recgetSpecialCopyHelper(CORINFO_CLASS_HANDLE type, CORINFO_METHOD_HANDLE helper);
-    void dmpgetSpecialCopyHelper(DWORDLONG key, DWORDLONG value);
-    CORINFO_METHOD_HANDLE repgetSpecialCopyHelper(CORINFO_CLASS_HANDLE type);
+    void recGetSpecialCopyHelper(CORINFO_CLASS_HANDLE type, CORINFO_METHOD_HANDLE helper);
+    void dmpGetSpecialCopyHelper(DWORDLONG key, DWORDLONG value);
+    CORINFO_METHOD_HANDLE repGetSpecialCopyHelper(CORINFO_CLASS_HANDLE type);
 
     void dmpSigInstHandleMap(DWORD key, DWORDLONG value);
 
@@ -1193,7 +1193,7 @@ enum mcPackets
     Packet_GetTypeForBoxOnStack = 221,
     Packet_GetTypeDefinition = 222,
     Packet_GetFpStructLowering = 223,
-    Packet_getSpecialCopyHelper = 224,
+    Packet_GetSpecialCopyHelper = 224,
 };
 
 void SetDebugDumpVariables();

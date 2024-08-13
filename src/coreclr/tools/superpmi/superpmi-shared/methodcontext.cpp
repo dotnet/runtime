@@ -7212,7 +7212,7 @@ const WCHAR* MethodContext::repGetStringConfigValue(const WCHAR* name)
     return value;
 }
 
-void MethodContext::recgetSpecialCopyHelper(CORINFO_CLASS_HANDLE type, CORINFO_METHOD_HANDLE helper)
+void MethodContext::recGetSpecialCopyHelper(CORINFO_CLASS_HANDLE type, CORINFO_METHOD_HANDLE helper)
 {
     if (getSpecialCopyHelper == nullptr)
         getSpecialCopyHelper = new LightWeightMap<DWORDLONG, DWORDLONG>();
@@ -7223,19 +7223,19 @@ void MethodContext::recgetSpecialCopyHelper(CORINFO_CLASS_HANDLE type, CORINFO_M
 
     DWORDLONG value = CastHandle(helper);
     getSpecialCopyHelper->Add(key, value);
-    DEBUG_REC(dmpgetSpecialCopyHelper(key, value));
+    DEBUG_REC(dmpGetSpecialCopyHelper(key, value));
 }
 
-void MethodContext::dmpgetSpecialCopyHelper(DWORDLONG key, DWORDLONG value)
+void MethodContext::dmpGetSpecialCopyHelper(DWORDLONG key, DWORDLONG value)
 {
     printf("getSpecialCopyHelper key %016" PRIX64 ", value %016" PRIX64 "", key, value);
 }
 
-CORINFO_METHOD_HANDLE MethodContext::repgetSpecialCopyHelper(CORINFO_CLASS_HANDLE type)
+CORINFO_METHOD_HANDLE MethodContext::repGetSpecialCopyHelper(CORINFO_CLASS_HANDLE type)
 {
     DWORDLONG key = CastHandle(type);
     DWORDLONG value = LookupByKeyOrMiss(getSpecialCopyHelper, key, ": key %016" PRIX64 "", key);
-    DEBUG_REP(dmpgetSpecialCopyHelper(key, value));
+    DEBUG_REP(dmpGetSpecialCopyHelper(key, value));
     return (CORINFO_METHOD_HANDLE)value;
 }
 

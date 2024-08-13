@@ -1994,11 +1994,14 @@ void Lowering::LowerArgsForCall(GenTreeCall* call)
         LowerArg(call, &arg, true);
     }
 
+#if defined(TARGET_X86) && defined(FEATURE_IJW)
     LowerSpecialCopyArgs(call);
+#endif // defined(TARGET_X86) && defined(FEATURE_IJW)
 
     LegalizeArgPlacement(call);
 }
 
+#if defined(TARGET_X86) && defined(FEATURE_IJW)
 void Lowering::LowerSpecialCopyArgs(GenTreeCall* call)
 {
     // We only need to use the special copy helper on P/Invoke IL stubs
@@ -2014,19 +2017,15 @@ void Lowering::LowerSpecialCopyArgs(GenTreeCall* call)
                 continue;
             }
 
-            if (argIndex >= comp->info.compArgsCount)
-            {
-                break;
-            }
+            unsigned paramLclNum = comp->compMapILargNum(argIndex);
+            assert(paramLclNum < comp->info.compArgsCount);
 
             // check if parameter at the same index as the IL argument is marked as requiring special copy, assuming
             // that it is being passed 1:1 to the pinvoke
-            unsigned paramIndex = comp->compMap2ILvarNum(argIndex);
-            if ((paramIndex != (unsigned)ICorDebugInfo::UNKNOWN_ILNUM) && comp->argRequiresSpecialCopy(paramIndex) &&
-                arg.GetSignatureType() == TYP_STRUCT)
+            if (comp->argRequiresSpecialCopy(paramLclNum) && (arg.GetSignatureType() == TYP_STRUCT))
             {
                 assert(arg.GetNode()->OperIs(GT_PUTARG_STK));
-                InsertSpecialCopyArg(arg.GetNode()->AsPutArgStk(), arg.GetSignatureClassHandle(), paramIndex);
+                InsertSpecialCopyArg(arg.GetNode()->AsPutArgStk(), arg.GetSignatureClassHandle(), paramLclNum);
             }
             argIndex++;
         }
@@ -2036,14 +2035,7 @@ void Lowering::LowerSpecialCopyArgs(GenTreeCall* call)
 void Lowering::InsertSpecialCopyArg(GenTreePutArgStk* putArgStk, CORINFO_CLASS_HANDLE argType, unsigned lclNum)
 {
     assert(putArgStk != nullptr);
-    GenTree* dest;
-
-#if FEATURE_FIXED_OUT_ARGS
-    dest = comp->gtNewOperNode(GT_ADD, TYP_I_IMPL, comp->gtNewPhysRegNode(REG_SPBASE, TYP_I_IMPL),
-                               comp->gtNewIconNode(putArgStk->getArgOffset()));
-#else
-    dest = comp->gtNewPhysRegNode(REG_SPBASE, TYP_I_IMPL);
-#endif
+    GenTree* dest = comp->gtNewPhysRegNode(REG_SPBASE, TYP_I_IMPL);
 
     GenTree*  src;
     var_types lclType = genActualType(comp->lvaGetDesc(lclNum));
@@ -2094,6 +2086,7 @@ void Lowering::InsertSpecialCopyArg(GenTreePutArgStk* putArgStk, CORINFO_CLASS_H
     BlockRange().Remove(destPlaceholder);
     BlockRange().Remove(srcPlaceholder);
 }
+#endif // defined(TARGET_X86) && defined(FEATURE_IJW)
 
 //------------------------------------------------------------------------
 // LegalizeArgPlacement: Move arg placement nodes (PUTARG_*) into a legal

@@ -1868,6 +1868,6 @@ uint32_t MyICJI::getExpectedTargetArchitecture()
 CORINFO_METHOD_HANDLE MyICJI::getSpecialCopyHelper(CORINFO_CLASS_HANDLE type)
 {
     jitInstance->mc->cr->AddCall("getSpecialCopyHelper");
-    CORINFO_METHOD_HANDLE result = jitInstance->mc->repgetSpecialCopyHelper(type);
+    CORINFO_METHOD_HANDLE result = jitInstance->mc->repGetSpecialCopyHelper(type);
     return result;
 }
