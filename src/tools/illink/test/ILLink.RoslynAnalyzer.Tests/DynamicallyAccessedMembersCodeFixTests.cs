@@ -101,7 +101,7 @@ build_property.{MSBuildPropertyOptionNames.EnableTrimAnalyzer} = true")));
 				[return: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicFields)]
 				static string M(Type t) {
 					M2(t);
-					return "Foo";
+					return "Foo, test";
 				}
 
 				static void M2([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)] Type t) {}
@@ -117,7 +117,7 @@ build_property.{MSBuildPropertyOptionNames.EnableTrimAnalyzer} = true")));
 				[return: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicFields)]
 				static string M([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)] Type t) {
 					M2(t);
-					return "Foo";
+					return "Foo, test";
 				}
 
 				static void M2([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)] Type t) {}
@@ -187,7 +187,7 @@ build_property.{MSBuildPropertyOptionNames.EnableTrimAnalyzer} = true")));
 				[return: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicFields)]
 				static string M([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.NonPublicMethods)] Type t) {
 					M2(t);
-					return "Foo";
+					return "Foo, test";
 				}
 
 				static void M2([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)] Type t) {}
@@ -1067,7 +1067,7 @@ build_property.{MSBuildPropertyOptionNames.EnableTrimAnalyzer} = true")));
 		}
 
 		[Fact]
-		public async Task CodeFix_IL2075_ReutrnAttributeLeavesOnCodeFix ()
+		public async Task CodeFix_IL2075_ReturnAttributeLeavesOnCodeFix ()
 		{
 			var test = $$$"""
 			namespace System
@@ -1078,7 +1078,7 @@ build_property.{MSBuildPropertyOptionNames.EnableTrimAnalyzer} = true")));
 					public static string Main()
 					{
 						GetC().GetMethod("Foo");
-						return "Foo";
+						return "Foo, test";
 					}
 
 					private static Type GetC ()
@@ -1097,7 +1097,7 @@ build_property.{MSBuildPropertyOptionNames.EnableTrimAnalyzer} = true")));
 					public static string Main()
 					{
 						GetC().GetMethod("Foo");
-						return "Foo";
+						return "Foo, test";
 					}
 
 			        [return: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)]
@@ -1608,7 +1608,7 @@ build_property.{MSBuildPropertyOptionNames.EnableTrimAnalyzer} = true")));
 					private string M1()
 					{
 						M2(this);
-						return "Foo";
+						return "Foo, test";
 					}
 
 					private static void M2([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)] Type t)
@@ -1633,7 +1633,7 @@ build_property.{MSBuildPropertyOptionNames.EnableTrimAnalyzer} = true")));
 			        private string M1()
 					{
 						M2(this);
-						return "Foo";
+						return "Foo, test";
 					}
 
 					private static void M2([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)] Type t)
@@ -1676,7 +1676,7 @@ build_property.{MSBuildPropertyOptionNames.EnableTrimAnalyzer} = true")));
 				{
 					public static void Main()
 					{
-						new C().M1("Foo");
+						new C().M1("Foo, test");
 					}
 
 					[return: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.NonPublicMethods)]
@@ -1700,7 +1700,7 @@ build_property.{MSBuildPropertyOptionNames.EnableTrimAnalyzer} = true")));
 				{
 					public static void Main()
 					{
-						new C().M1("Foo");
+						new C().M1("Foo, test");
 					}
 
 					[return: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.NonPublicMethods)]
@@ -1736,7 +1736,7 @@ build_property.{MSBuildPropertyOptionNames.EnableTrimAnalyzer} = true")));
 					// /0/Test0.cs(193,4): warning IL2065: Value passed to implicit 'this' parameter of method 'System.C.M1()' can not be statically determined
 					// and may not meet 'DynamicallyAccessedMembersAttribute' requirements.
 					VerifyCS.Diagnostic(DiagnosticId.ImplicitThisCannotBeStaticallyDetermined)
-						.WithSpan(193, 4, 193, 21)
+						.WithSpan(193, 4, 193, 27)
 						.WithArguments("System.C.M1(String)")
 				});
 		}
@@ -1858,7 +1858,7 @@ build_property.{MSBuildPropertyOptionNames.EnableTrimAnalyzer} = true")));
 				{
 					public static void Main()
 					{
-						new C().M1("Foo");
+						new C().M1("Foo, test");
 					}
 
 					[return: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)]
@@ -1878,7 +1878,7 @@ build_property.{MSBuildPropertyOptionNames.EnableTrimAnalyzer} = true")));
 				{
 					public static void Main()
 					{
-						new C().M1("Foo");
+						new C().M1("Foo, test");
 					}
 
 					[return: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)]
@@ -1907,7 +1907,7 @@ build_property.{MSBuildPropertyOptionNames.EnableTrimAnalyzer} = true")));
 					// /0/Test0.cs(193,4): warning IL2065: Value passed to implicit 'this' parameter of method 'System.C.M1()' can not be statically determined
 					// and may not meet 'DynamicallyAccessedMembersAttribute' requirements.
 					VerifyCS.Diagnostic(DiagnosticId.ImplicitThisCannotBeStaticallyDetermined)
-						.WithSpan(193, 4, 193, 21)
+						.WithSpan(193, 4, 193, 27)
 						.WithArguments("System.C.M1(String)")
 				});
 		}

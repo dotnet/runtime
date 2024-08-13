@@ -2122,6 +2122,7 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                 case NI_Sve_GatherVectorUInt32WithByteOffsetsZeroExtendFirstFaulting:
                 case NI_Sve_GatherVectorUInt32ZeroExtend:
                 case NI_Sve_GatherVectorUInt32ZeroExtendFirstFaulting:
+                case NI_Sve_GatherVectorWithByteOffsetFirstFaulting:
                     assert(intrinsicTree->OperIsMemoryLoadOrStore());
                     FALLTHROUGH;
 

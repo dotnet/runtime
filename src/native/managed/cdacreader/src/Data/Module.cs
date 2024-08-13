@@ -30,6 +30,7 @@ internal sealed class Module : IData<Module>
         MethodDefToDescMap = target.ReadPointer(address + (ulong)type.Fields[nameof(MethodDefToDescMap)].Offset);
         TypeDefToMethodTableMap = target.ReadPointer(address + (ulong)type.Fields[nameof(TypeDefToMethodTableMap)].Offset);
         TypeRefToMethodTableMap = target.ReadPointer(address + (ulong)type.Fields[nameof(TypeRefToMethodTableMap)].Offset);
+        MethodDefToILCodeVersioningStateMap = target.ReadPointer(address + (ulong)type.Fields[nameof(MethodDefToILCodeVersioningStateMap)].Offset);
     }
 
     public TargetPointer Assembly { get; init; }
@@ -45,6 +46,7 @@ internal sealed class Module : IData<Module>
     public TargetPointer MethodDefToDescMap { get; init; }
     public TargetPointer TypeDefToMethodTableMap { get; init; }
     public TargetPointer TypeRefToMethodTableMap { get; init; }
+    public TargetPointer MethodDefToILCodeVersioningStateMap { get; init; }
 
     private TargetPointer _metadataStart = TargetPointer.Null;
     private ulong _metadataSize;

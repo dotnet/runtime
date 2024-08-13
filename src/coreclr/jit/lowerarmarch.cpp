@@ -1793,6 +1793,7 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
         case NI_Sve_GatherVectorUInt16ZeroExtendFirstFaulting:
         case NI_Sve_GatherVectorUInt32WithByteOffsetsZeroExtendFirstFaulting:
         case NI_Sve_GatherVectorUInt32ZeroExtendFirstFaulting:
+        case NI_Sve_GatherVectorWithByteOffsetFirstFaulting:
         case NI_Sve_LoadVectorByteZeroExtendFirstFaulting:
         case NI_Sve_LoadVectorFirstFaulting:
         case NI_Sve_LoadVectorInt16SignExtendFirstFaulting:
@@ -4134,6 +4135,7 @@ void Lowering::StoreFFRValue(GenTreeHWIntrinsic* node)
         case NI_Sve_GatherVectorUInt16ZeroExtendFirstFaulting:
         case NI_Sve_GatherVectorUInt32WithByteOffsetsZeroExtendFirstFaulting:
         case NI_Sve_GatherVectorUInt32ZeroExtendFirstFaulting:
+        case NI_Sve_GatherVectorWithByteOffsetFirstFaulting:
         case NI_Sve_LoadVectorByteZeroExtendFirstFaulting:
         case NI_Sve_LoadVectorFirstFaulting:
         case NI_Sve_LoadVectorInt16SignExtendFirstFaulting:

@@ -585,9 +585,9 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                 {
                     assert(!instrIsRMW);
 
+                    insOpts embOpt = emitter::optGetSveInsOpt(emitTypeSize(intrinEmbMask.baseType));
                     // Special handling for ConvertTo* APIs
                     // Just need to change the opt here.
-                    insOpts embOpt = opt;
                     switch (intrinEmbMask.id)
                     {
                         case NI_Sve_ConvertToInt32:
@@ -607,6 +607,7 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                                                                                       : INS_OPTS_SCALABLE_D;
                             break;
                         }
+
                         default:
                             break;
                     }
@@ -728,9 +729,11 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                         switch (intrinEmbMask.id)
                         {
                             case NI_Sve_CreateBreakPropagateMask:
-                                assert(targetReg != embMaskOp1Reg);
-                                GetEmitter()->emitIns_Mov(INS_sve_mov, emitSize, targetReg, embMaskOp2Reg,
-                                                          /* canSkip */ true);
+                                if (targetReg != embMaskOp1Reg)
+                                {
+                                    GetEmitter()->emitIns_Mov(INS_sve_mov, emitSize, targetReg, embMaskOp2Reg,
+                                                              /* canSkip */ true);
+                                }
                                 emitInsHelper(targetReg, maskReg, embMaskOp1Reg);
                                 break;
 
@@ -2098,14 +2101,16 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
             case NI_Sve_GatherVectorUInt16ZeroExtend:
             case NI_Sve_GatherVectorUInt32WithByteOffsetsZeroExtend:
             case NI_Sve_GatherVectorUInt32ZeroExtend:
+            case NI_Sve_GatherVectorWithByteOffsetFirstFaulting:
             {
                 if (!varTypeIsSIMD(intrin.op2->gtType))
                 {
                     // GatherVector...(Vector<T> mask, T* address, Vector<T2> indices)
 
-                    emitAttr baseSize   = emitActualTypeSize(intrin.baseType);
-                    bool isLoadingBytes = ((ins == INS_sve_ld1b) || (ins == INS_sve_ld1sb) || (ins == INS_sve_ldff1b) ||
-                                           (ins == INS_sve_ldff1sb));
+                    emitAttr baseSize = emitActualTypeSize(intrin.baseType);
+                    bool     isLoadingBytes =
+                        ((ins == INS_sve_ld1b) || (ins == INS_sve_ld1sb) || (ins == INS_sve_ldff1b) ||
+                         (ins == INS_sve_ldff1sb) || (intrin.id == NI_Sve_GatherVectorWithByteOffsetFirstFaulting));
                     insScalableOpts sopt = INS_SCALABLE_OPTS_NONE;
 
                     if (baseSize == EA_4BYTE)
