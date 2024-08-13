@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -17,6 +18,9 @@ class BasicThreading
         SimpleReadWriteThreadStaticTest.Run(42, "SimpleReadWriteThreadStatic");
 
         ThreadStaticsTestWithTasks.Run();
+
+        if (ThreadStaticAlignmentTest.Run() != Pass)
+            return Fail;
 
         if (ThreadTest.Run() != Pass)
             return Fail;
@@ -185,6 +189,96 @@ class ThreadStaticsTestWithTasks
             tasks[i].Wait();
         }
     }
+}
+
+class ThreadStaticAlignmentTest
+{
+    public static int Run()
+    {
+        // Check for 8-byte alignment requirement
+        if (RuntimeInformation.ProcessArchitecture is Architecture.Arm or Architecture.Wasm)
+        {
+            // Assume that these are allocated sequentially, use a padding object of size 12 (mod 8 is not 0)
+            // to move the alignment of the second AddressOfReturnArea in case the first is coincidentally aligned 8.
+            var ts1Addr = ThreadStaticAlignCheck1.returnArea.AddressOfReturnArea();
+            var p = new Padder();
+            var ts2Addr = ThreadStaticAlignCheck2.returnArea.AddressOfReturnArea();
+
+            if (((nint)ts1Addr) % 8 != 0)
+                return BasicThreading.Fail;
+            if (((nint)ts2Addr) % 8 != 0)
+                return BasicThreading.Fail;
+
+            return (int)typeof(ThreadStaticAlignmentTest).GetMethod("RunGeneric").MakeGenericMethod(GetAtom()).Invoke(null, []);
+        }
+
+        return BasicThreading.Pass;
+    }
+
+    public static int RunGeneric<T>()
+    {
+        // Assume that these are allocated sequentially, use a padding object of size 12 (mod 8 is not 0)
+        // to move the alignment of the second AddressOfReturnArea in case the first is coincidentally aligned 8.
+        var ts1Addr = ThreadStaticAlignCheck1<T>.returnArea.AddressOfReturnArea();
+        var p = new Padder();
+        var ts2Addr = ThreadStaticAlignCheck2<T>.returnArea.AddressOfReturnArea();
+
+        if (((nint)ts1Addr) % 8 != 0)
+            return BasicThreading.Fail;
+        if (((nint)ts2Addr) % 8 != 0)
+            return BasicThreading.Fail;
+
+        return BasicThreading.Pass;
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static Type GetAtom() => typeof(Atom);
+
+    [InlineArray(3)]
+    private struct ReturnArea
+    {
+        private ulong buffer;
+
+        internal unsafe nint AddressOfReturnArea()
+        {
+            return (nint)Unsafe.AsPointer(ref buffer);
+        }
+    }
+
+    private class ThreadStaticAlignCheck1
+    {
+        [ThreadStatic]
+        [FixedAddressValueType]
+        internal static ReturnArea returnArea = default;
+    }
+
+    private class Padder
+    {
+        private object o1;
+    }
+
+    private class ThreadStaticAlignCheck2
+    {
+        [ThreadStatic]
+        [FixedAddressValueType]
+        internal static ReturnArea returnArea = default;
+    }
+
+    private class ThreadStaticAlignCheck1<T>
+    {
+        [ThreadStatic]
+        [FixedAddressValueType]
+        internal static ReturnArea returnArea = default;
+    }
+
+    private class ThreadStaticAlignCheck2<T>
+    {
+        [ThreadStatic]
+        [FixedAddressValueType]
+        internal static ReturnArea returnArea = default;
+    }
+
+    private class Atom { }
 }
 
 class ThreadTest

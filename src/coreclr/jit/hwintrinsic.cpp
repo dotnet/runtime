@@ -980,7 +980,8 @@ NamedIntrinsic HWIntrinsicInfo::lookupId(Compiler*         comp,
                                          CORINFO_SIG_INFO* sig,
                                          const char*       className,
                                          const char*       methodName,
-                                         const char*       enclosingClassName)
+                                         const char*       innerEnclosingClassName,
+                                         const char*       outerEnclosingClassName)
 {
 #if defined(DEBUG)
     static bool validationCompleted = false;
@@ -992,7 +993,13 @@ NamedIntrinsic HWIntrinsicInfo::lookupId(Compiler*         comp,
     }
 #endif // DEBUG
 
-    CORINFO_InstructionSet isa = lookupIsa(className, enclosingClassName);
+    // Signatures that have a 'this' parameter are illegal intrinsics.
+    if (sig->hasThis())
+    {
+        return NI_Illegal;
+    }
+
+    CORINFO_InstructionSet isa = lookupIsa(className, innerEnclosingClassName, outerEnclosingClassName);
 
     if (isa == InstructionSet_ILLEGAL)
     {
@@ -2178,6 +2185,7 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
                     case NI_Sve_GatherVectorUInt16ZeroExtend:
                     case NI_Sve_GatherVectorUInt32WithByteOffsetsZeroExtend:
                     case NI_Sve_GatherVectorUInt32ZeroExtend:
+                    case NI_Sve_GatherVectorWithByteOffsetFirstFaulting:
                     case NI_Sve_GatherVectorWithByteOffsets:
                         assert(varTypeIsSIMD(op3->TypeGet()));
                         if (numArgs == 3)
