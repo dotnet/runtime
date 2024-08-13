@@ -2,7 +2,7 @@
 
 <!-- A description of the package and where one can find more documentation -->
 
-`System.Formats.Nrbf` exposes only one component: [NrbfDecoder](https://learn.microsoft.com/dotnet/api/system.formats.nrbf.nrbfdecoder): a stateless, forward-only decoder class that can decode .NET Remoting Binary Format (NRBF) binary data from a **stream**. 
+`System.Formats.Nrbf` exposes only one component: [NrbfDecoder](https://learn.microsoft.com/dotnet/api/system.formats.nrbf.nrbfdecoder): a stateless, forward-only decoder class that can decode .NET Remoting Binary Format (NRBF) binary data from a **stream**.
 
 ## How to Use
 
