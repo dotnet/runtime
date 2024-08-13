@@ -151,9 +151,9 @@ namespace Mono.Linker
 			return null;
 		}
 
-		public static TypeReference InflateFrom (this TypeReference typeToInflate, TypeReference maybeGenericInstanceProvider)
+		public static TypeReference InflateFrom (this TypeReference typeToInflate, IGenericInstance? maybeGenericInstanceProvider)
 		{
-			if (maybeGenericInstanceProvider is GenericInstanceType genericInstanceProvider)
+			if (maybeGenericInstanceProvider is IGenericInstance genericInstanceProvider)
 				return InflateGenericType (genericInstanceProvider, typeToInflate);
 			return typeToInflate;
 		}
@@ -174,7 +174,7 @@ namespace Mono.Linker
 			}
 		}
 
-		public static TypeReference InflateGenericType (GenericInstanceType genericInstanceProvider, TypeReference typeToInflate)
+		public static TypeReference InflateGenericType (IGenericInstance genericInstanceProvider, TypeReference typeToInflate)
 		{
 			if (typeToInflate is ArrayType arrayType) {
 				var inflatedElementType = InflateGenericType (genericInstanceProvider, arrayType.ElementType);
@@ -189,9 +189,18 @@ namespace Mono.Linker
 				return MakeGenericType (genericInstanceProvider, genericInst);
 
 			if (typeToInflate is GenericParameter genericParameter) {
-				if (genericParameter.Owner is MethodReference)
-					return genericParameter;
+				if (genericParameter.Owner is MethodReference) {
+					if (genericInstanceProvider is not GenericInstanceMethod)
+						return typeToInflate;
+					return genericInstanceProvider.GenericArguments[genericParameter.Position];
+				}
 
+				Debug.Assert (genericParameter.Owner is TypeReference);
+				if (genericInstanceProvider is not GenericInstanceType) {
+					if (((GenericInstanceMethod) genericInstanceProvider).DeclaringType is not GenericInstanceType genericInstanceType)
+						return typeToInflate;
+					genericInstanceProvider = genericInstanceType;
+				}
 				return genericInstanceProvider.GenericArguments[genericParameter.Position];
 			}
 
@@ -258,7 +267,7 @@ namespace Mono.Linker
 			return typeToInflate;
 		}
 
-		private static GenericInstanceType MakeGenericType (GenericInstanceType genericInstanceProvider, GenericInstanceType type)
+		private static GenericInstanceType MakeGenericType (IGenericInstance genericInstanceProvider, GenericInstanceType type)
 		{
 			var result = new GenericInstanceType (type.ElementType);
 
