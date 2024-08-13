@@ -453,14 +453,14 @@ namespace System.IO.Tests
         {
             using (var stream = CreateStream())
             {
-                var source = new byte[sourceSize].AsSpan();
+                byte[] source = new byte[sourceSize];
                 new Random(345).NextBytes(source);
                 stream.Write(source);
                 stream.Position = 0;
 
                 using (var reader = new BinaryReader(stream))
                 {
-                    var destination = new byte[destinationSize].AsSpan();
+                    byte[] destination = new byte[destinationSize];
 
                     reader.ReadExactly(destination);
 
