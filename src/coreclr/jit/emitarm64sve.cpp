@@ -14823,27 +14823,38 @@ void emitter::emitDispInsSveHelp(instrDesc* id)
             emitDispSveReg(id->idReg3(), id->idInsOpt(), false);                                   // mmmmm
             break;
 
-        // <V><dn>, <Pg>, <V><dn>, <Zm>.<T>
         // <R><dn>, <Pg>, <R><dn>, <Zm>.<T>
         case IF_SVE_CN_3A: // ........xx...... ...gggmmmmmddddd -- SVE conditionally extract element to SIMD&FP scalar
         case IF_SVE_CO_3A: // ........xx...... ...gggmmmmmddddd -- SVE conditionally extract element to general register
-        case IF_SVE_HJ_3A: // ........xx...... ...gggmmmmmddddd -- SVE floating-point serial reduction (predicated)
             emitDispReg(id->idReg1(), size, true);                                                 // ddddd
             emitDispLowPredicateReg(id->idReg2(), insGetPredicateType(fmt), id->idInsOpt(), true); // ggg
             emitDispReg(id->idReg1(), size, true);                                                 // ddddd
             emitDispSveReg(id->idReg3(), id->idInsOpt(), false);                                   // mmmmm
             break;
 
+        // <V><dn>, <Pg>, <V><dn>, <Zm>.<T>
+        case IF_SVE_HJ_3A: // ........xx...... ...gggmmmmmddddd -- SVE floating-point serial reduction (predicated)
+            emitDispVectorReg(id->idReg1(), id->idInsOpt(), true);                                 // ddddd
+            emitDispLowPredicateReg(id->idReg2(), insGetPredicateType(fmt), id->idInsOpt(), true); // ggg
+            emitDispVectorReg(id->idReg1(), id->idInsOpt(), true);                                 // ddddd
+            emitDispSveReg(id->idReg3(), id->idInsOpt(), false);                                   // mmmmm
+            break;
+
         // <V><d>, <Pg>, <Zn>.<T>
-        // <R><d>, <Pg>, <Zn>.<T>
         case IF_SVE_AF_3A: // ........xx...... ...gggnnnnnddddd -- SVE bitwise logical reduction (predicated)
         case IF_SVE_AK_3A: // ........xx...... ...gggnnnnnddddd -- SVE integer min/max reduction (predicated)
         case IF_SVE_CR_3A: // ........xx...... ...gggnnnnnddddd -- SVE extract element to SIMD&FP scalar register
-        case IF_SVE_CS_3A: // ........xx...... ...gggnnnnnddddd -- SVE extract element to general register
         case IF_SVE_HE_3A: // ........xx...... ...gggnnnnnddddd -- SVE floating-point recursive reduction
-            emitDispReg(id->idReg1(), size, true);                                              // ddddd
-            emitDispPredicateReg(id->idReg2(), insGetPredicateType(fmt), id->idInsOpt(), true); // ggg
-            emitDispSveReg(id->idReg3(), id->idInsOpt(), false);                                // mmmmm
+            emitDispVectorReg(id->idReg1(), id->idInsOpt(), true);                                 // ddddd
+            emitDispLowPredicateReg(id->idReg2(), insGetPredicateType(fmt), id->idInsOpt(), true); // ggg
+            emitDispSveReg(id->idReg3(), id->idInsOpt(), false);                                   // mmmmm
+            break;
+
+        // <R><d>, <Pg>, <Zn>.<T>
+        case IF_SVE_CS_3A: // ........xx...... ...gggnnnnnddddd -- SVE extract element to general register
+            emitDispReg(id->idReg1(), size, true);                                                 // ddddd
+            emitDispLowPredicateReg(id->idReg2(), insGetPredicateType(fmt), id->idInsOpt(), true); // ggg
+            emitDispSveReg(id->idReg3(), id->idInsOpt(), false);                                   // mmmmm
             break;
 
         // <Vd>.<T>, <Pg>, <Zn>.<Tb>

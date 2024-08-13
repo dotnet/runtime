@@ -730,6 +730,13 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                             embOpt = INS_OPTS_SCALABLE_B;
                             break;
 
+                        case NI_Sve_AddSequentialAcross:
+                            // Predicate functionality is currently not exposed for this API,
+                            // but the FADDA instruction only has a predicated variant.
+                            // Thus, we expect the JIT to wrap this with CndSel.
+                            assert(intrin.op3->IsVectorZero());
+                            break;
+
                         default:
                             break;
                     }
@@ -782,6 +789,16 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                                                               /* canSkip */ true);
                                 }
                                 emitInsHelper(targetReg, maskReg, embMaskOp1Reg);
+                                break;
+
+                            case NI_Sve_AddSequentialAcross:
+                                assert(targetReg != embMaskOp2Reg);
+                                if (targetReg != embMaskOp1Reg)
+                                {
+                                    GetEmitter()->emitIns_Mov(INS_fmov, GetEmitter()->optGetSveElemsize(embOpt),
+                                                              targetReg, embMaskOp1Reg, /* canSkip */ true);
+                                }
+                                emitInsHelper(targetReg, maskReg, embMaskOp2Reg);
                                 break;
 
                             default:
