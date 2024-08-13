@@ -1,6 +1,10 @@
 project (SharedLibrary)
 include_directories(${INC_PLATFORM_DIR})
 
+# Regression test for https://github.com/dotnet/runtime/issues/105330, enable CFG on the EXE
+SET(CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} /guard:cf")
+SET(CMAKE_EXE_LINKER_FLAGS  "${CMAKE_EXE_LINKER_FLAGS} /guard:cf")
+
 add_executable (SharedLibraryDriver SharedLibrary.cpp)
 
 if (CLR_CMAKE_TARGET_UNIX)
