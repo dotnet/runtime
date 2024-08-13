@@ -15,6 +15,7 @@ internal readonly partial struct NativeCodePointers_1 : INativeCodePointers
         internal readonly TargetPointer Module;
         internal uint MethodDefinition;
         internal readonly TargetPointer ILCodeVersionNode;
+        internal readonly uint RejitId;
 
         internal ILCodeVersionHandle(TargetPointer module, uint methodDef, TargetPointer ilCodeVersionNodeAddress)
         {
@@ -75,6 +76,27 @@ internal readonly partial struct NativeCodePointers_1 : INativeCodePointers
             return NativeCodeVersionHandle.Invalid;
         }
 
+
+        private enum ILCodeVersionKind
+        {
+            Unknown = 0,
+            Explicit = 1,
+            Synthetic = 2,
+        }
+        private static ILCodeVersionHandle ILCodeVersionHandleFromState(Data.ILCodeVersioningState ilState)
+        {
+            switch ((ILCodeVersionKind)ilState.ActiveVersionKind)
+            {
+                case ILCodeVersionKind.Explicit:
+                    return new ILCodeVersionHandle(module: TargetPointer.Null, methodDef: 0, ilState.ActiveVersionNode);
+                case ILCodeVersionKind.Synthetic:
+                case ILCodeVersionKind.Unknown:
+                    return new ILCodeVersionHandle(ilState.ActiveVersionModule, ilState.ActiveVersionMethodDef, TargetPointer.Null);
+                default:
+                    throw new InvalidOperationException($"Unknown ILCodeVersionKind {ilState.ActiveVersionKind}");
+            }
+        }
+
         public ILCodeVersionHandle FindActiveILCodeVersion(TargetPointer module, uint methodDefinition)
         {
             ModuleHandle moduleHandle = _target.Contracts.Loader.GetModuleHandle(module);
@@ -85,8 +107,7 @@ internal readonly partial struct NativeCodePointers_1 : INativeCodePointers
                 return new ILCodeVersionHandle(module, methodDefinition, TargetPointer.Null);
             }
             Data.ILCodeVersioningState ilState = _target.ProcessedData.GetOrAdd<Data.ILCodeVersioningState>(ilVersionStateAddress);
-            TargetPointer ilVersionNode = ilState.Node;
-            return new ILCodeVersionHandle(TargetPointer.Null, 0, ilVersionNode);
+            return ILCodeVersionHandleFromState(ilState);
         }
 
         public NativeCodeVersionHandle FindActiveNativeCodeVersion(ILCodeVersionHandle methodDefActiveVersion)
