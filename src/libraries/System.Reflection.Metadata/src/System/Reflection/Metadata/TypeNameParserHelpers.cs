@@ -407,5 +407,13 @@ namespace System.Reflection.Metadata
             depth++;
             return !IsMaxDepthExceeded(options, depth);
         }
+
+#if SYSTEM_REFLECTION_METADATA
+        [DoesNotReturn]
+        internal static void ThrowInvalidOperation_NotSimpleName(string fullName)
+        {
+            throw new InvalidOperationException(SR.Format(SR.Arg_NotSimpleTypeName, fullName));
+        }
+#endif
     }
 }

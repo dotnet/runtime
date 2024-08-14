@@ -750,7 +750,7 @@ namespace Mono.Linker.Dataflow
 			ParameterProxy param = new (thisMethod, paramNum);
 			var targetValue = GetMethodParameterValue (param);
 			if (targetValue is MethodParameterValue targetParameterValue)
-				HandleStoreParameter (thisMethod, targetParameterValue, operation, valueToStore.Value);
+				HandleStoreParameter (thisMethod, targetParameterValue, operation, valueToStore.Value, null);
 
 			// If the targetValue is MethodThisValue do nothing - it should never happen really, and if it does, there's nothing we can track there
 		}
@@ -846,7 +846,7 @@ namespace Mono.Linker.Dataflow
 			StackSlot valueToStore = PopUnknown (currentStack, 1, methodBody, operation.Offset);
 			StackSlot destination = PopUnknown (currentStack, 1, methodBody, operation.Offset);
 
-			StoreInReference (destination.Value, valueToStore.Value, methodBody.Method, operation, locals, curBasicBlock, ref ipState);
+			StoreInReference (destination.Value, valueToStore.Value, methodBody.Method, operation, locals, curBasicBlock, ref ipState, null);
 		}
 
 		/// <summary>
@@ -856,8 +856,9 @@ namespace Mono.Linker.Dataflow
 		/// <param name="source">The value to store</param>
 		/// <param name="method">The method body that contains the operation causing the store</param>
 		/// <param name="operation">The instruction causing the store</param>
+		/// <param name="parameterIndex">For assignment due to a call to a method with out params, the index of the out parameter.</param>
 		/// <exception cref="LinkerFatalErrorException">Throws if <paramref name="target"/> is not a valid target for an indirect store.</exception>
-		protected void StoreInReference (MultiValue target, MultiValue source, MethodDefinition method, Instruction operation, LocalVariableStore locals, int curBasicBlock, ref InterproceduralState ipState)
+		protected void StoreInReference (MultiValue target, MultiValue source, MethodDefinition method, Instruction operation, LocalVariableStore locals, int curBasicBlock, ref InterproceduralState ipState, int? parameterIndex)
 		{
 			foreach (var value in target.AsEnumerable ()) {
 				switch (value) {
@@ -866,18 +867,18 @@ namespace Mono.Linker.Dataflow
 					break;
 				case FieldReferenceValue fieldReference
 				when GetFieldValue (fieldReference.FieldDefinition).AsSingleValue () is FieldValue fieldValue:
-					HandleStoreField (method, fieldValue, operation, source);
+					HandleStoreField (method, fieldValue, operation, source, parameterIndex);
 					break;
 				case ParameterReferenceValue parameterReference
 				when GetMethodParameterValue (parameterReference.Parameter) is MethodParameterValue parameterValue:
-					HandleStoreParameter (method, parameterValue, operation, source);
+					HandleStoreParameter (method, parameterValue, operation, source, parameterIndex);
 					break;
 				case MethodReturnValue methodReturnValue:
 					// Ref returns don't have special ReferenceValue values, so assume if the target here is a MethodReturnValue then it must be a ref return value
 					HandleReturnValue (method, methodReturnValue, operation, source);
 					break;
 				case FieldValue fieldValue:
-					HandleStoreField (method, fieldValue, operation, DereferenceValue (source, locals, ref ipState));
+					HandleStoreField (method, fieldValue, operation, DereferenceValue (source, locals, ref ipState), parameterIndex);
 					break;
 				case IValueWithStaticType valueWithStaticType:
 					if (valueWithStaticType.StaticType is not null && _context.Annotations.FlowAnnotations.IsTypeInterestingForDataflow (valueWithStaticType.StaticType.Value.Type))
@@ -927,11 +928,11 @@ namespace Mono.Linker.Dataflow
 			currentStack.Push (new StackSlot (value));
 		}
 
-		protected virtual void HandleStoreField (MethodDefinition method, FieldValue field, Instruction operation, MultiValue valueToStore)
+		protected virtual void HandleStoreField (MethodDefinition method, FieldValue field, Instruction operation, MultiValue valueToStore, int? parameterIndex)
 		{
 		}
 
-		protected virtual void HandleStoreParameter (MethodDefinition method, MethodParameterValue parameter, Instruction operation, MultiValue valueToStore)
+		protected virtual void HandleStoreParameter (MethodDefinition method, MethodParameterValue parameter, Instruction operation, MultiValue valueToStore, int? parameterIndex)
 		{
 		}
 
@@ -967,7 +968,7 @@ namespace Mono.Linker.Dataflow
 					// Incomplete handling of ref fields -- if we're storing a reference to a value, pretend it's just the value
 					MultiValue valueToStore = DereferenceValue (valueToStoreSlot.Value, locals, ref interproceduralState);
 
-					HandleStoreField (thisMethod, fieldValue, operation, valueToStore);
+					HandleStoreField (thisMethod, fieldValue, operation, valueToStore, null);
 				}
 			}
 		}
@@ -1062,15 +1063,17 @@ namespace Mono.Linker.Dataflow
 					if (parameter.GetReferenceKind () is not (ReferenceKind.Ref or ReferenceKind.Out))
 						continue;
 					var newByRefValue = _context.Annotations.FlowAnnotations.GetMethodParameterValue (parameter);
-					StoreInReference (methodArguments[(int) parameter.Index], newByRefValue, callingMethodBody.Method, operation, locals, curBasicBlock, ref ipState);
+					StoreInReference (methodArguments[(int) parameter.Index], newByRefValue, callingMethodBody.Method, operation, locals, curBasicBlock, ref ipState, parameter.Index.Index);
 				}
 			} else {
 				// We couldn't resolve the method, so we put unknown values into the ref and out arguments
 				// Should be a very cold path, so using Linq.Zip should be okay
-				foreach (var (argument, refKind) in methodArguments.Zip (calledMethod.GetParameterReferenceKinds ())) {
+				var argumentRefKinds = methodArguments.Zip (calledMethod.GetParameterReferenceKinds ()).ToList ();
+				for (int index = 0; index < argumentRefKinds.Count; index++) {
+					var (argument, refKind) = argumentRefKinds[index];
 					if (refKind is not (ReferenceKind.Ref or ReferenceKind.Out))
 						continue;
-					StoreInReference (argument, UnknownValue.Instance, callingMethodBody.Method, operation, locals, curBasicBlock, ref ipState);
+					StoreInReference (argument, UnknownValue.Instance, callingMethodBody.Method, operation, locals, curBasicBlock, ref ipState, index);
 				}
 			}
 		}
