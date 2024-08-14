@@ -677,6 +677,7 @@ struct Issue80393_F2
 struct Issue80393_S
 {
 	[FieldOffset(0)] public double f1;
+	// This FieldOffset of 3 causes this struct to no longer be a HVA or HFA according to ARM32 or ARM64 ABI
 	[FieldOffset(3)] public Issue80393_F2 f2;
 	[FieldOffset(8)] public double f3;
 }
