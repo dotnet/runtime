@@ -3,6 +3,7 @@
 
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Diagnostics.Tracing;
 using System.IO;
 using System.Linq;
@@ -48,6 +49,19 @@ namespace System.Net.Http.Functional.Tests
             yield return new object[] { "InvokerSend" };
         }
 
+        public static IEnumerable<object[]> Redaction_MemberData()
+        {
+            string[] uriTails = new string[] { "/test/path?q1=a&q2=b", "/test/path", "?q1=a&q2=b", "" };
+            foreach (string uriTail in new[] { "/test/path?q1=a&q2=b", "/test/path", "?q1=a&q2=b", "" })
+            {
+                foreach (string fragment in new[] { "", "#frag" })
+                {
+                    yield return new object[] { uriTail + fragment, true };
+                    yield return new object[] { uriTail + fragment, false };
+                }
+            }
+        }
+
         [OuterLoop]
         [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [MemberData(nameof(TestMethods_MemberData))]
@@ -66,6 +80,8 @@ namespace System.Net.Http.Functional.Tests
                 Version version = Version.Parse(useVersionString);
                 using var listener = new TestEventListener("System.Net.Http", EventLevel.Verbose, eventCounterInterval: 0.1d);
                 listener.AddActivityTracking();
+
+                await PrepareEventCountersAsync(listener);
 
                 bool buffersResponse = false;
                 var events = new ConcurrentQueue<(EventWrittenEventArgs Event, Guid ActivityId)>();
@@ -208,6 +224,8 @@ namespace System.Net.Http.Functional.Tests
                 using var listener = new TestEventListener("System.Net.Http", EventLevel.Verbose, eventCounterInterval: 0.1d);
                 listener.AddActivityTracking();
 
+                await PrepareEventCountersAsync(listener);
+
                 var events = new ConcurrentQueue<(EventWrittenEventArgs Event, Guid ActivityId)>();
                 Uri expectedUri = null;
                 await listener.RunWithCallbackAsync(e => events.Enqueue((e, e.ActivityId)), async () =>
@@ -321,6 +339,8 @@ namespace System.Net.Http.Functional.Tests
                 using var listener = new TestEventListener("System.Net.Http", EventLevel.Verbose, eventCounterInterval: 0.1d);
                 listener.AddActivityTracking();
 
+                await PrepareEventCountersAsync(listener);
+
                 var events = new ConcurrentQueue<(EventWrittenEventArgs Event, Guid ActivityId)>();
                 Uri expectedUri = null;
                 await listener.RunWithCallbackAsync(e => events.Enqueue((e, e.ActivityId)), async () =>
@@ -399,7 +419,76 @@ namespace System.Net.Http.Functional.Tests
             }, UseVersion.ToString(), testMethod).DisposeAsync();
         }
 
-        private static void ValidateStartFailedStopEvents(ConcurrentQueue<(EventWrittenEventArgs Event, Guid ActivityId)> events, Version version, bool shouldHaveFailures = false, int count = 1)
+        [OuterLoop]
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [MemberData(nameof(Redaction_MemberData))]
+        public async Task EventSource_SendingRequest_PathAndQueryRedaction_LogsStartStop(string uriTail, bool disableRedaction)
+        {
+            var psi = new ProcessStartInfo();
+            psi.Environment.Add("DOTNET_SYSTEM_NET_HTTP_DISABLEURIREDACTION", disableRedaction.ToString());
+            var fragIndex = uriTail.IndexOf('#');
+            var expectedPathAndQuery = uriTail.Substring(0, fragIndex >= 0 ? fragIndex : uriTail.Length);
+            if (!disableRedaction)
+            {
+                var queryIndex = expectedPathAndQuery.IndexOf('?');
+                expectedPathAndQuery = expectedPathAndQuery.Substring(0, queryIndex >= 0 ? queryIndex + 1 : expectedPathAndQuery.Length);
+                expectedPathAndQuery = queryIndex >= 0 ? expectedPathAndQuery + '*' : expectedPathAndQuery;
+            }
+            expectedPathAndQuery = expectedPathAndQuery.StartsWith('/') ? expectedPathAndQuery : '/' + expectedPathAndQuery;
+
+            await RemoteExecutor.Invoke(static async (useVersionString, uriTail, expectedPathAndQuery) =>
+            {
+                Version version = Version.Parse(useVersionString);
+                using var listener = new TestEventListener("System.Net.Http", EventLevel.Verbose, eventCounterInterval: 0.1d);
+                listener.AddActivityTracking();
+
+                await PrepareEventCountersAsync(listener);
+
+                var events = new ConcurrentQueue<(EventWrittenEventArgs Event, Guid ActivityId)>();
+                Uri expectedUri = null;
+                await listener.RunWithCallbackAsync(e => events.Enqueue((e, e.ActivityId)), async () =>
+                {
+                    await GetFactoryForVersion(version).CreateClientAndServerAsync(
+                        async uri =>
+                        {
+                            expectedUri = uri;
+                            using HttpClientHandler handler = CreateHttpClientHandler(version);
+                            using HttpClient client = CreateHttpClient(handler, useVersionString);
+                            client.BaseAddress = uri;
+                            using var invoker = new HttpMessageInvoker(handler);
+
+                            var request = new HttpRequestMessage(HttpMethod.Get, uri)
+                            {
+                                Version = version
+                            };
+
+                            await client.GetAsync(uriTail);
+                        },
+                        async server =>
+                        {
+                            await server.AcceptConnectionAsync(async connection =>
+                            {
+                                await connection.ReadRequestDataAsync();
+                                await WaitForEventCountersAsync(events);
+                                await connection.SendResponseAsync();
+                            });
+                        });
+
+                    await WaitForEventCountersAsync(events);
+                });
+                Assert.DoesNotContain(events, e => e.Event.EventId == 0); // errors from the EventSource itself
+
+                ValidateStartFailedStopEvents(events, version, pathAndQuery: expectedPathAndQuery);
+
+                ValidateConnectionEstablishedClosed(events, version, expectedUri);
+
+                ValidateRequestResponseStartStopEvents(events, null, 0, count: 1);
+
+                ValidateEventCounters(events, requestCount: 1, shouldHaveFailures: false, versionMajor: version.Major);
+            }, UseVersion.ToString(), uriTail, expectedPathAndQuery, new RemoteInvokeOptions { StartInfo = psi }).DisposeAsync();
+        }
+
+        private static void ValidateStartFailedStopEvents(ConcurrentQueue<(EventWrittenEventArgs Event, Guid ActivityId)> events, Version version, bool shouldHaveFailures = false, int count = 1, string? pathAndQuery = null)
         {
             (EventWrittenEventArgs Event, Guid ActivityId)[] starts = events.Where(e => e.Event.EventName == "RequestStart").ToArray();
             foreach (EventWrittenEventArgs startEvent in starts.Select(e => e.Event))
@@ -409,6 +498,10 @@ namespace System.Net.Http.Functional.Tests
                 Assert.NotEmpty((string)startEvent.Payload[1]); // host
                 Assert.True(startEvent.Payload[2] is int port && port >= 0 && port <= 65535);
                 Assert.NotEmpty((string)startEvent.Payload[3]); // pathAndQuery
+                if (pathAndQuery is not null)
+                {
+                    Assert.Equal(pathAndQuery, (string)startEvent.Payload[3]); // pathAndQuery
+                }
                 byte versionMajor = Assert.IsType<byte>(startEvent.Payload[4]);
                 Assert.Equal(version.Major, versionMajor);
                 byte versionMinor = Assert.IsType<byte>(startEvent.Payload[5]);
@@ -455,7 +548,7 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        // The validation asssumes that the connection id's are in range 0..(connectionCount-1)
+        // The validation assumes that the connection id's are in range 1..connectionCount
         protected static void ValidateConnectionEstablishedClosed(ConcurrentQueue<(EventWrittenEventArgs Event, Guid ActivityId)> events, Version version, Uri uri, int connectionCount = 1)
         {
             EventWrittenEventArgs[] connectionsEstablished = events.Select(e => e.Event).Where(e => e.EventName == "ConnectionEstablished").ToArray();
@@ -479,7 +572,7 @@ namespace System.Net.Http.Functional.Tests
                     ip.Equals(IPAddress.Loopback) ||
                     ip.Equals(IPAddress.IPv6Loopback));
             }
-            Assert.True(connectionIds.SetEquals(Enumerable.Range(0, connectionCount).Select(i => (long)i)), "ConnectionEstablished has logged an unexpected connectionId.");
+            Assert.True(connectionIds.SetEquals(Enumerable.Range(1, connectionCount).Select(i => (long)i)), "ConnectionEstablished has logged an unexpected connectionId.");
 
             EventWrittenEventArgs[] connectionsClosed = events.Select(e => e.Event).Where(e => e.EventName == "ConnectionClosed").ToArray();
             Assert.Equal(connectionCount, connectionsClosed.Length);
@@ -495,7 +588,7 @@ namespace System.Net.Http.Functional.Tests
             Assert.Empty(connectionIds);
         }
 
-        private static void ValidateRequestResponseStartStopEvents(ConcurrentQueue<(EventWrittenEventArgs Event, Guid ActivityId)> events, int? requestContentLength, int? responseContentLength, int count, long connectionId = 0)
+        private static void ValidateRequestResponseStartStopEvents(ConcurrentQueue<(EventWrittenEventArgs Event, Guid ActivityId)> events, int? requestContentLength, int? responseContentLength, int count)
         {
             (EventWrittenEventArgs Event, Guid ActivityId)[] requestHeadersStarts = events.Where(e => e.Event.EventName == "RequestHeadersStart").ToArray();
             Assert.Equal(count, requestHeadersStarts.Length);
@@ -504,7 +597,8 @@ namespace System.Net.Http.Functional.Tests
                 EventWrittenEventArgs e = r.Event;
                 Assert.Equal(1, e.Payload.Count);
                 Assert.Equal("connectionId", e.PayloadNames.Single());
-                Assert.Equal(connectionId, (long)e.Payload[0]);
+                // 1 instead of 0 to account for the request we made in PrepareEventCountersAsync.
+                Assert.Equal(1, (long)e.Payload[0]);
             });
 
             (EventWrittenEventArgs Event, Guid ActivityId)[] requestHeadersStops = events.Where(e => e.Event.EventName == "RequestHeadersStop").ToArray();
@@ -567,6 +661,9 @@ namespace System.Net.Http.Functional.Tests
 
         private static void ValidateEventCounters(ConcurrentQueue<(EventWrittenEventArgs Event, Guid ActivityId)> events, int requestCount, bool shouldHaveFailures, int versionMajor, bool requestLeftQueue = false)
         {
+            // Account for the request we made in PrepareEventCountersAsync.
+            requestCount++;
+
             Dictionary<string, double[]> eventCounters = events
                 .Select(e => e.Event)
                 .Where(e => e.EventName == "EventCounters")
@@ -672,6 +769,8 @@ namespace System.Net.Http.Functional.Tests
                 Version version = Version.Parse(useVersionString);
                 using var listener = new TestEventListener("System.Net.Http", EventLevel.Verbose, eventCounterInterval: 0.1d);
                 listener.AddActivityTracking();
+
+                await PrepareEventCountersAsync(listener);
 
                 var events = new ConcurrentQueue<(EventWrittenEventArgs Event, Guid ActivityId)>();
                 Uri expectedUri = null;
@@ -786,6 +885,9 @@ namespace System.Net.Http.Functional.Tests
                 Version version = Version.Parse(useVersionString);
 
                 using var listener = new TestEventListener("System.Net.Http", EventLevel.Verbose, eventCounterInterval: 0.1d);
+
+                await PrepareEventCountersAsync(listener);
+
                 listener.AddActivityTracking();
                 var events = new ConcurrentQueue<(EventWrittenEventArgs Event, Guid ActivityId)>();
                 Uri expectedUri = null;
@@ -824,6 +926,69 @@ namespace System.Net.Http.Functional.Tests
             }, UseVersion.ToString()).DisposeAsync();
         }
 
+        [OuterLoop]
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [MemberData(nameof(Redaction_MemberData))]
+        public async Task EventSource_Redirect_PathAndQueryRedaction_LogsRedirect(string uriTail, bool disableRedaction)
+        {
+            var psi = new ProcessStartInfo();
+            psi.Environment.Add("DOTNET_SYSTEM_NET_HTTP_DISABLEURIREDACTION", disableRedaction.ToString());
+            var fragIndex = uriTail.IndexOf('#');
+            var expectedUriTail = uriTail.Substring(0, fragIndex >= 0 ? fragIndex : uriTail.Length);
+            if (!disableRedaction)
+            {
+                var queryIndex = expectedUriTail.IndexOf('?');
+                expectedUriTail = expectedUriTail.Substring(0, queryIndex >= 0 ? queryIndex + 1 : expectedUriTail.Length);
+                expectedUriTail = queryIndex >= 0 ? expectedUriTail + '*' : expectedUriTail;
+            }
+            expectedUriTail = fragIndex >= 0 ? expectedUriTail + uriTail.Substring(fragIndex) : expectedUriTail;
+
+            await RemoteExecutor.Invoke(static async (useVersionString, uriTail, expectedUriTail) =>
+            {
+                Version version = Version.Parse(useVersionString);
+
+                using var listener = new TestEventListener("System.Net.Http", EventLevel.Verbose, eventCounterInterval: 0.1d);
+                listener.AddActivityTracking();
+
+                await PrepareEventCountersAsync(listener);
+
+                var events = new ConcurrentQueue<(EventWrittenEventArgs Event, Guid ActivityId)>();
+                Uri expectedUri = null;
+
+                await listener.RunWithCallbackAsync(e => events.Enqueue((e, e.ActivityId)), async () =>
+                {
+                    await GetFactoryForVersion(version).CreateServerAsync((originalServer, originalUri) =>
+                    {
+                        return GetFactoryForVersion(version).CreateServerAsync(async (redirectServer, redirectUri) =>
+                        {
+                            expectedUri = redirectUri;
+                            using HttpClient client = CreateHttpClient(useVersionString);
+
+                            using HttpRequestMessage request = new(HttpMethod.Get, originalUri) { Version = version };
+
+                            Task clientTask = client.SendAsync(request);
+                            Task serverTask = originalServer.HandleRequestAsync(HttpStatusCode.Redirect, new[] { new HttpHeaderData("Location", redirectUri.AbsoluteUri + uriTail) });
+
+                            await Task.WhenAny(clientTask, serverTask);
+                            Assert.False(clientTask.IsCompleted, $"{clientTask.Status}: {clientTask.Exception}");
+                            await serverTask;
+
+                            serverTask = redirectServer.HandleRequestAsync();
+                            await TestHelper.WhenAllCompletedOrAnyFailed(clientTask, serverTask);
+                            await clientTask;
+                        });
+                    });
+
+                    await WaitForEventCountersAsync(events);
+                });
+
+                EventWrittenEventArgs redirectEvent = events.Where(e => e.Event.EventName == "Redirect").Single().Event;
+                Assert.Equal(1, redirectEvent.Payload.Count);
+                Assert.Equal(expectedUri.ToString() + expectedUriTail, (string)redirectEvent.Payload[0]);
+                Assert.Equal("redirectUri", redirectEvent.PayloadNames[0]);
+            }, UseVersion.ToString(), uriTail, expectedUriTail, new RemoteInvokeOptions { StartInfo = psi }).DisposeAsync();
+        }
+
         public static bool SupportsRemoteExecutorAndAlpn = RemoteExecutor.IsSupported && PlatformDetection.SupportsAlpn;
 
         [OuterLoop]
@@ -841,6 +1006,9 @@ namespace System.Net.Http.Functional.Tests
             {
                 using var listener = new TestEventListener("System.Net.Http", EventLevel.Verbose, eventCounterInterval: 0.1d);
                 listener.AddActivityTracking();
+
+                await PrepareEventCountersAsync(listener);
+
                 var events = new ConcurrentQueue<(EventWrittenEventArgs Event, Guid ActivityId)>();
 
                 await listener.RunWithCallbackAsync(e => events.Enqueue((e, e.ActivityId)), async () =>
@@ -895,6 +1063,30 @@ namespace System.Net.Http.Functional.Tests
                 return (string)dictionary["Name"] == "requests-started";
             }
         }
+
+        internal static async Task PrepareEventCountersAsync(TestEventListener listener)
+        {
+            // There is a race condition in EventSource where counters using IncrementingPollingCounter
+            // will drop increments that happened before the background timer thread first runs.
+            // See https://github.com/dotnet/runtime/issues/106268#issuecomment-2284626183.
+            // To workaround this issue, we ensure that the EventCounters timer is running before
+            // executing any of the interesting logic under test.
+
+            var events = new ConcurrentQueue<(EventWrittenEventArgs Event, Guid ActivityId)>();
+
+            await listener.RunWithCallbackAsync(e => events.Enqueue((e, e.ActivityId)), async () =>
+            {
+                await LoopbackServer.CreateClientAndServerAsync(
+                    async uri =>
+                    {
+                        using var client = new HttpClient();
+                        await client.GetStringAsync(uri);
+                    },
+                    server => server.HandleRequestAsync());
+
+                await WaitForEventCountersAsync(events);
+            });
+        }
     }
 
     public sealed class TelemetryTest_Http11 : TelemetryTest
@@ -911,6 +1103,8 @@ namespace System.Net.Http.Functional.Tests
 
                 using var listener = new TestEventListener("System.Net.Http", EventLevel.Verbose, eventCounterInterval: 0.1d);
                 listener.AddActivityTracking();
+
+                await PrepareEventCountersAsync(listener);
 
                 var events = new ConcurrentQueue<(EventWrittenEventArgs Event, Guid ActivityId)>();
                 Uri expectedUri = null;
@@ -962,7 +1156,7 @@ namespace System.Net.Http.Functional.Tests
 
                 EventWrittenEventArgs[] requestHeadersStart = events.Select(e => e.Event).Where(e => e.EventName == "RequestHeadersStart").ToArray();
                 Assert.Equal(NumParallelRequests, requestHeadersStart.Length);
-                HashSet<long> connectionIds = new(Enumerable.Range(0, NumParallelRequests).Select(i => (long)i));
+                HashSet<long> connectionIds = new(Enumerable.Range(1, NumParallelRequests).Select(i => (long)i));
                 foreach (EventWrittenEventArgs e in requestHeadersStart)
                 {
                     long connectionId = (long)e.Payload.Single();

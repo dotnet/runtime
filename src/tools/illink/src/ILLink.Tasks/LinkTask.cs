@@ -195,6 +195,13 @@ namespace ILLink.Tasks
 		bool? _removeSymbols;
 
 		/// <summary>
+		///   Preserve original path to debug symbols from each assembly's debug header.
+		///   Maps to '--preserve-symbol-paths' if true.
+		///   Default if not specified is to write out the full path to the pdb in the debug header.
+		/// </summary>
+		public bool PreserveSymbolPaths { get; set; }
+
+		/// <summary>
 		///   Sets the default action for trimmable assemblies.
 		///   Maps to '--trim-mode'
 		/// </summary>
@@ -473,6 +480,9 @@ namespace ILLink.Tasks
 
 			if (_removeSymbols == false)
 				args.AppendLine ("-b");
+
+			if (PreserveSymbolPaths)
+				args.AppendLine ("--preserve-symbol-paths");
 
 			if (CustomSteps != null) {
 				foreach (var customStep in CustomSteps) {

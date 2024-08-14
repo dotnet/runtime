@@ -8,6 +8,7 @@ using System.IO;
 using System.Formats.Nrbf.Utils;
 using System.Text;
 using System.Runtime.Serialization;
+using System.Runtime.InteropServices;
 
 namespace System.Formats.Nrbf;
 
@@ -18,33 +19,24 @@ public static class NrbfDecoder
 {
     private static UTF8Encoding ThrowOnInvalidUtf8Encoding { get; } = new(false, throwOnInvalidBytes: true);
 
+    // The header consists of:
+    // - a byte that describes the record type (SerializationRecordType.SerializedStreamHeader)
+    // - four 32 bit integers:
+    //   - root Id (every value is valid)
+    //   - header Id (value is ignored)
+    //   - major version, it has to be equal 1.
+    //   - minor version, it has to be equal 0.
+    private static ReadOnlySpan<byte> HeaderSuffix => [1, 0, 0, 0, 0, 0, 0, 0];
+
     /// <summary>
     /// Checks if given buffer starts with <see href="https://learn.microsoft.com/openspecs/windows_protocols/ms-nrbf/a7e578d3-400a-4249-9424-7529d10d1b3c">NRBF payload header</see>.
     /// </summary>
     /// <param name="bytes">The buffer to inspect.</param>
     /// <returns><see langword="true" /> if it starts with NRBF payload header; otherwise, <see langword="false" />.</returns>
-    public static bool StartsWithPayloadHeader(byte[] bytes)
-    {
-#if NET
-        ArgumentNullException.ThrowIfNull(bytes);
-#else
-        if (bytes is null)
-        {
-            throw new ArgumentNullException(nameof(bytes));
-        }
-#endif
-
-        return bytes.Length >= SerializedStreamHeaderRecord.Size
-            && bytes[0] == (byte)SerializationRecordType.SerializedStreamHeader
-#if NET
-            && BinaryPrimitives.ReadInt32LittleEndian(bytes.AsSpan(9)) == SerializedStreamHeaderRecord.MajorVersion
-            && BinaryPrimitives.ReadInt32LittleEndian(bytes.AsSpan(13)) == SerializedStreamHeaderRecord.MinorVersion;
-#else
-            && BitConverter.ToInt32(bytes, 9) == SerializedStreamHeaderRecord.MajorVersion
-            && BitConverter.ToInt32(bytes, 13) == SerializedStreamHeaderRecord.MinorVersion;
-#endif
-    }
-
+    public static bool StartsWithPayloadHeader(ReadOnlySpan<byte> bytes)
+        => bytes.Length >= SerializedStreamHeaderRecord.Size
+        && bytes[0] == (byte)SerializationRecordType.SerializedStreamHeader
+        && bytes.Slice(SerializedStreamHeaderRecord.Size - HeaderSuffix.Length, HeaderSuffix.Length).SequenceEqual(HeaderSuffix);
 
     /// <summary>
     /// Checks if given stream starts with <see href="https://learn.microsoft.com/openspecs/windows_protocols/ms-nrbf/a7e578d3-400a-4249-9424-7529d10d1b3c">NRBF payload header</see>.
@@ -76,13 +68,13 @@ public static class NrbfDecoder
             return false;
         }
 
-        byte[] buffer = new byte[SerializedStreamHeaderRecord.Size];
-
         try
         {
 #if NET
-            stream.ReadExactly(buffer, 0, buffer.Length);
+            Span<byte> buffer = stackalloc byte[SerializedStreamHeaderRecord.Size];
+            stream.ReadExactly(buffer);
 #else
+            byte[] buffer = new byte[SerializedStreamHeaderRecord.Size];
             int offset = 0;
             while (offset < buffer.Length)
             {
@@ -115,8 +107,15 @@ public static class NrbfDecoder
     /// <exception cref="ArgumentNullException"><paramref name="payload"/> is <see langword="null" />.</exception>
     /// <exception cref="ArgumentException"><paramref name="payload"/> does not support reading or is already closed.</exception>
     /// <exception cref="SerializationException">Reading from <paramref name="payload"/> encounters invalid NRBF data.</exception>
+    /// <exception cref="NotSupportedException">
+    /// Reading from <paramref name="payload"/> encounters not supported records.
+    /// For example, arrays with non-zero offset or not supported record types
+    /// (<see cref="SerializationRecordType.ClassWithMembers"/>, <see cref="SerializationRecordType.SystemClassWithMembers"/>,
+    /// <see cref="SerializationRecordType.MethodCall"/> or <see cref="SerializationRecordType.MethodReturn"/>).
+    /// </exception>
     /// <exception cref="DecoderFallbackException">Reading from <paramref name="payload"/>
     /// encounters an invalid UTF8 sequence.</exception>
+    /// <exception cref="EndOfStreamException">The end of the stream is reached before reading <see cref="SerializationRecordType.MessageEnd"/> record.</exception>
     public static SerializationRecord Decode(Stream payload, PayloadOptions? options = default, bool leaveOpen = false)
         => Decode(payload, out _, options, leaveOpen);
 
@@ -227,7 +226,7 @@ public static class NrbfDecoder
             SerializationRecordType.ArraySinglePrimitive => DecodeArraySinglePrimitiveRecord(reader),
             SerializationRecordType.ArraySingleString => ArraySingleStringRecord.Decode(reader),
             SerializationRecordType.BinaryArray => BinaryArrayRecord.Decode(reader, recordMap, options),
-            SerializationRecordType.BinaryLibrary => BinaryLibraryRecord.Decode(reader),
+            SerializationRecordType.BinaryLibrary => BinaryLibraryRecord.Decode(reader, options),
             SerializationRecordType.BinaryObjectString => BinaryObjectStringRecord.Decode(reader),
             SerializationRecordType.ClassWithId => ClassWithIdRecord.Decode(reader, recordMap),
             SerializationRecordType.ClassWithMembersAndTypes => ClassWithMembersAndTypesRecord.Decode(reader, recordMap, options),

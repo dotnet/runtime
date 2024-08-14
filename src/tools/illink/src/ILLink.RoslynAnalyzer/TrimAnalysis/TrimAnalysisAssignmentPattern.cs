@@ -15,7 +15,7 @@ using MultiValue = ILLink.Shared.DataFlow.ValueSet<ILLink.Shared.DataFlow.Single
 
 namespace ILLink.RoslynAnalyzer.TrimAnalysis
 {
-	public readonly record struct TrimAnalysisAssignmentPattern
+	internal readonly record struct TrimAnalysisAssignmentPattern
 	{
 		public MultiValue Source { get; init; }
 		public MultiValue Target { get; init; }
@@ -53,9 +53,9 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 				featureContextLattice.Meet (FeatureContext, other.FeatureContext));
 		}
 
-		public IEnumerable<Diagnostic> CollectDiagnostics (DataFlowAnalyzerContext context)
+		public void ReportDiagnostics (DataFlowAnalyzerContext context, Action<Diagnostic> reportDiagnostic)
 		{
-			var diagnosticContext = new DiagnosticContext (Operation.Syntax.GetLocation ());
+			var diagnosticContext = new DiagnosticContext (Operation.Syntax.GetLocation (), reportDiagnostic);
 			if (context.EnableTrimAnalyzer &&
 				!OwningSymbol.IsInRequiresUnreferencedCodeAttributeScope (out _) &&
 				!FeatureContext.IsEnabled (RequiresUnreferencedCodeAnalyzer.FullyQualifiedRequiresUnreferencedCodeAttribute)) {
@@ -66,13 +66,12 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 						if (targetValue is not ValueWithDynamicallyAccessedMembers targetWithDynamicallyAccessedMembers)
 							throw new NotImplementedException ();
 
-						var requireDynamicallyAccessedMembersAction = new RequireDynamicallyAccessedMembersAction (diagnosticContext, default (ReflectionAccessAnalyzer));
+						var reflectionAccessAnalyzer = new ReflectionAccessAnalyzer (reportDiagnostic);
+						var requireDynamicallyAccessedMembersAction = new RequireDynamicallyAccessedMembersAction (diagnosticContext, reflectionAccessAnalyzer);
 						requireDynamicallyAccessedMembersAction.Invoke (sourceValue, targetWithDynamicallyAccessedMembers);
 					}
 				}
 			}
-
-			return diagnosticContext.Diagnostics;
 		}
 	}
 }

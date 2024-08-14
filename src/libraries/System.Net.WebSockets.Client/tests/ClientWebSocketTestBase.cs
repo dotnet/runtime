@@ -2,14 +2,16 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
+using System.Net.Http;
+using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
+using TestUtilities;
 
 using Xunit;
 using Xunit.Abstractions;
-using System.Net.Http;
-using System.Diagnostics;
 
 namespace System.Net.WebSockets.Client.Tests
 {
@@ -22,6 +24,19 @@ namespace System.Net.WebSockets.Client.Tests
             new object[] { o[0], false },
             new object[] { o[0], true }
         }).ToArray();
+
+        public static readonly bool[] Bool_Values = new[] { false, true };
+        public static readonly bool[] UseSsl_Values = PlatformDetection.SupportsAlpn ? Bool_Values : new[] { false };
+        public static readonly object[][] UseSsl_MemberData = ToMemberData(UseSsl_Values);
+
+        public static object[][] ToMemberData<T>(IEnumerable<T> data)
+            => data.Select(a => new object[] { a }).ToArray();
+
+        public static object[][] ToMemberData<TA, TB>(IEnumerable<TA> dataA, IEnumerable<TB> dataB)
+            => dataA.SelectMany(a => dataB.Select(b => new object[] { a, b })).ToArray();
+
+        public static object[][] ToMemberData<TA, TB, TC>(IEnumerable<TA> dataA, IEnumerable<TB> dataB, IEnumerable<TC> dataC)
+            => dataA.SelectMany(a => dataB.SelectMany(b => dataC.Select(c => new object[] { a, b, c }))).ToArray();
 
         public const int TimeOutMilliseconds = 30000;
         public const int CloseDescriptionMaxLength = 123;

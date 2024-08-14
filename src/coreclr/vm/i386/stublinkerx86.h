@@ -217,6 +217,8 @@ class StubLinkerCPU : public StubLinker
 
         VOID X86EmitCurrentThreadFetch(X86Reg dstreg, unsigned preservedRegSet);
 
+        VOID X86EmitCurrentThreadAllocContextFetch(X86Reg dstreg, unsigned preservedRegSet);
+
         VOID X86EmitIndexRegLoad(X86Reg dstreg, X86Reg srcreg, int32_t ofs = 0);
         VOID X86EmitIndexRegStore(X86Reg dstreg, int32_t ofs, X86Reg srcreg);
 #if defined(TARGET_AMD64)
@@ -331,9 +333,6 @@ class StubLinkerCPU : public StubLinker
 #endif // FEATURE_COMINTEROP && TARGET_X86
 
 #ifndef FEATURE_STUBS_AS_IL
-        VOID EmitMethodStubProlog(TADDR pFrameVptr, int transitionBlockOffset);
-        VOID EmitMethodStubEpilog(WORD numArgBytes, int transitionBlockOffset);
-
         VOID EmitCheckGSCookie(X86Reg frameReg, int gsCookieOffset);
 #endif // !FEATURE_STUBS_AS_IL
 
@@ -376,9 +375,6 @@ class StubLinkerCPU : public StubLinker
 #endif // FEATURE_COMINTEROP && TARGET_X86
 
 #ifndef FEATURE_STUBS_AS_IL
-        //===========================================================================
-        // Computes hash code for MulticastDelegate.Invoke()
-        static UINT_PTR HashMulticastInvoke(MetaSig* pSig);
 
 #ifdef TARGET_X86
         //===========================================================================
@@ -386,11 +382,6 @@ class StubLinkerCPU : public StubLinker
         VOID EmitDelegateInvoke();
 #endif // TARGET_X86
 
-#if defined(TARGET_X86) && !defined(FEATURE_MULTICASTSTUB_AS_IL)
-        //===========================================================================
-        // Emits code for MulticastDelegate.Invoke() - sig specific
-        VOID EmitMulticastInvoke(UINT_PTR hash);
-#endif // defined(TARGET_X86) && !defined(FEATURE_MULTICASTSTUB_AS_IL)
 #endif // !FEATURE_STUBS_AS_IL
 
         //===========================================================================

@@ -230,15 +230,15 @@ void JIT_TrialAlloc::EmitCore(CPUSTUBLINKER *psl, CodeLabel *noLock, CodeLabel *
                  && "EAX should contain size for allocation and it doesnt!!!");
 
         // Fetch current thread into EDX, preserving EAX and ECX
-        psl->X86EmitCurrentThreadFetch(kEDX, (1 << kEAX) | (1 << kECX));
+        psl->X86EmitCurrentThreadAllocContextFetch(kEDX, (1 << kEAX) | (1 << kECX));
 
         // Try the allocation.
 
 
         if (flags & (ALIGN8 | SIZE_IN_EAX | ALIGN8OBJ))
         {
-            // MOV EBX, [edx]Thread.m_alloc_context.alloc_ptr
-            psl->X86EmitOffsetModRM(0x8B, kEBX, kEDX, offsetof(Thread, m_alloc_context) + offsetof(gc_alloc_context, alloc_ptr));
+            // MOV EBX, [edx]gc_alloc_context.alloc_ptr
+            psl->X86EmitOffsetModRM(0x8B, kEBX, kEDX, offsetof(gc_alloc_context, alloc_ptr));
             // add EAX, EBX
             psl->Emit16(0xC303);
             if (flags & ALIGN8)
@@ -246,20 +246,20 @@ void JIT_TrialAlloc::EmitCore(CPUSTUBLINKER *psl, CodeLabel *noLock, CodeLabel *
         }
         else
         {
-            // add             eax, [edx]Thread.m_alloc_context.alloc_ptr
-            psl->X86EmitOffsetModRM(0x03, kEAX, kEDX, offsetof(Thread, m_alloc_context) + offsetof(gc_alloc_context, alloc_ptr));
+            // add             eax, [edx]gc_alloc_context.alloc_ptr
+            psl->X86EmitOffsetModRM(0x03, kEAX, kEDX, offsetof(gc_alloc_context, alloc_ptr));
         }
 
-        // cmp             eax, [edx]Thread.m_alloc_context.alloc_limit
-        psl->X86EmitOffsetModRM(0x3b, kEAX, kEDX, offsetof(Thread, m_alloc_context) + offsetof(gc_alloc_context, alloc_limit));
+        // cmp             eax, [edx]gc_alloc_context.alloc_limit
+        psl->X86EmitOffsetModRM(0x3b, kEAX, kEDX, offsetof(gc_alloc_context, alloc_limit));
 
         // ja              noAlloc
         psl->X86EmitCondJump(noAlloc, X86CondCode::kJA);
 
         // Fill in the allocation and get out.
 
-        // mov             [edx]Thread.m_alloc_context.alloc_ptr, eax
-        psl->X86EmitIndexRegStore(kEDX, offsetof(Thread, m_alloc_context) + offsetof(gc_alloc_context, alloc_ptr), kEAX);
+        // mov             [edx]gc_alloc_context.alloc_ptr, eax
+        psl->X86EmitIndexRegStore(kEDX, offsetof(gc_alloc_context, alloc_ptr), kEAX);
 
         if (flags & (ALIGN8 | SIZE_IN_EAX | ALIGN8OBJ))
         {
@@ -421,9 +421,9 @@ void *JIT_TrialAlloc::GenBox(Flags flags)
     // Here we are at the end of the success case
 
     // Check whether the object contains pointers
-    // test [ecx]MethodTable.m_dwFlags,MethodTable::enum_flag_ContainsPointers
+    // test [ecx]MethodTable.m_dwFlags,MethodTable::enum_flag_ContainsGCPointers
     sl.X86EmitOffsetModRM(0xf7, (X86Reg)0x0, kECX, offsetof(MethodTable, m_dwFlags));
-    sl.Emit32(MethodTable::enum_flag_ContainsPointers);
+    sl.Emit32(MethodTable::enum_flag_ContainsGCPointers);
 
     CodeLabel *pointerLabel = sl.NewCodeLabel();
 
@@ -802,8 +802,6 @@ static const void * const c_rgDebugWriteBarriers[NUM_WRITE_BARRIERS] = {
 };
 #endif // WRITE_BARRIER_CHECK
 
-#define DEBUG_RANDOM_BARRIER_CHECK DbgGetEXETimeStamp() % 7 == 4
-
 /*********************************************************************/
 // Initialize the part of the JIT helpers that require very little of
 // EE infrastructure to be in place.
@@ -913,9 +911,8 @@ void InitJITHelpers1()
 
 #ifdef WRITE_BARRIER_CHECK
         // Don't do the fancy optimization just jump to the old one
-        // Use the slow one from time to time in a debug build because
-        // there are some good asserts in the unoptimized one
-        if ((g_pConfig->GetHeapVerifyLevel() & EEConfig::HEAPVERIFY_BARRIERCHECK) || DEBUG_RANDOM_BARRIER_CHECK) {
+        // Use the slow one for write barrier checks build because it has some good asserts
+        if (g_pConfig->GetHeapVerifyLevel() & EEConfig::HEAPVERIFY_BARRIERCHECK) {
             pfunc = &pBufRW[0];
             *pfunc++ = 0xE9;                // JMP c_rgDebugWriteBarriers[iBarrier]
             *((DWORD*) pfunc) = (BYTE*) c_rgDebugWriteBarriers[iBarrier] - (&pBuf[1] + sizeof(DWORD));
@@ -959,7 +956,7 @@ void ValidateWriteBarrierHelpers()
 
 #ifdef WRITE_BARRIER_CHECK
     // write barrier checking uses the slower helpers that we don't bash so there is no need for validation
-    if ((g_pConfig->GetHeapVerifyLevel() & EEConfig::HEAPVERIFY_BARRIERCHECK) || DEBUG_RANDOM_BARRIER_CHECK)
+    if (g_pConfig->GetHeapVerifyLevel() & EEConfig::HEAPVERIFY_BARRIERCHECK)
         return;
 #endif // WRITE_BARRIER_CHECK
 

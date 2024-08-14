@@ -51,6 +51,7 @@ set(COMMON_RUNTIME_SOURCES
     ${GC_DIR}/softwarewritewatch.cpp
 
     ${CLR_SRC_NATIVE_DIR}/minipal/cpufeatures.c
+    ${CLR_SRC_NATIVE_DIR}/minipal/time.c
 )
 
 set(SERVER_GC_SOURCES

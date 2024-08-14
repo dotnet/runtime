@@ -378,7 +378,7 @@ namespace System.Security
                     {
                         Span<char> resultSpan = new Span<char>((void*)ptr, byteLength / sizeof(char));
                         span.CopyTo(resultSpan);
-                        resultSpan[resultSpan.Length - 1] = '\0';
+                        resultSpan[^1] = '\0';
                     }
                     else
                     {

@@ -43,11 +43,9 @@
 #include "ilinstrumentation.h"
 #include "codeversion.h"
 
-class Stub;
 class MethodDesc;
 class FieldDesc;
 class Crst;
-class ClassConverter;
 class RefClassWriter;
 class ReflectionModule;
 class EEStringData;
@@ -56,11 +54,9 @@ class SigTypeContext;
 class Assembly;
 class BaseDomain;
 class AppDomain;
-class DomainModule;
 class SystemDomain;
 class Module;
 class SString;
-class Pending;
 class MethodTable;
 class DynamicMethodTable;
 class TieredCompilationManager;
@@ -90,6 +86,20 @@ typedef DPTR(JITInlineTrackingMap) PTR_JITInlineTrackingMap;
 //
 
 typedef DPTR(struct LookupMapBase) PTR_LookupMapBase;
+
+struct DynamicMetadata
+{
+    uint32_t Size;
+    BYTE Data[0];
+    template<typename T> friend struct ::cdac_data;
+};
+
+template<>
+struct cdac_data<DynamicMetadata>
+{
+    static constexpr size_t Size = offsetof(DynamicMetadata, Size);
+    static constexpr size_t Data = offsetof(DynamicMetadata, Data);
+};
 
 struct LookupMapBase
 {
@@ -533,7 +543,7 @@ public:
     virtual PTR_Module LookupModule(mdToken kFile) { return NULL; }; //wrapper over GetModuleIfLoaded, takes modulerefs as well
     virtual Module *GetModuleIfLoaded(mdFile kFile) { return NULL; };
 #ifndef DACCESS_COMPILE
-    virtual DomainAssembly *LoadModule(mdFile kFile);
+    virtual Module *LoadModule(mdFile kFile);
 #endif
     DWORD GetAssemblyRefFlags(mdAssemblyRef tkAssemblyRef);
 
@@ -601,8 +611,10 @@ class Module : public ModuleBase
 
 private:
     PTR_CUTF8               m_pSimpleName; // Cached simple name for better performance and easier diagnostics
+    const WCHAR*            m_path;        // Cached path for easier diagnostics
 
     PTR_PEAssembly          m_pPEAssembly;
+    PTR_VOID                m_baseAddress; // Cached base address for easier diagnostics
 
     enum {
         // These are the values set in m_dwTransientFlags.
@@ -615,12 +627,12 @@ private:
         IS_PROFILER_NOTIFIED        = 0x00000010,
         IS_ETW_NOTIFIED             = 0x00000020,
 
+        IS_REFLECTION_EMIT          = 0x00000040,
+
         //
-        // Note: the order of these must match the order defined in
-        // cordbpriv.h for DebuggerAssemblyControlFlags. The three
-        // values below should match the values defined in
-        // DebuggerAssemblyControlFlags when shifted right
-        // DEBUGGER_INFO_SHIFT bits.
+        // Note: The values below must match the ones defined in
+        // cordbpriv.h for DebuggerAssemblyControlFlags when shifted
+        // right DEBUGGER_INFO_SHIFT bits.
         //
         DEBUGGER_USER_OVERRIDE_PRIV = 0x00000400,
         DEBUGGER_ALLOW_JIT_OPTS_PRIV= 0x00000800,
@@ -634,11 +646,14 @@ private:
         // Used to indicate that this module has had it's IJW fixups properly installed.
         IS_IJW_FIXED_UP             = 0x00080000,
         IS_BEING_UNLOADED           = 0x00100000,
-
-        // Used to indicate that the module is loaded sufficiently for generic candidate instantiations to work
-        MODULE_READY_FOR_TYPELOAD  = 0x00200000,
-
     };
+
+    static_assert_no_msg(DEBUGGER_USER_OVERRIDE_PRIV >> DEBUGGER_INFO_SHIFT_PRIV == DebuggerAssemblyControlFlags::DACF_USER_OVERRIDE);
+    static_assert_no_msg(DEBUGGER_ALLOW_JIT_OPTS_PRIV >> DEBUGGER_INFO_SHIFT_PRIV == DebuggerAssemblyControlFlags::DACF_ALLOW_JIT_OPTS);
+    static_assert_no_msg(DEBUGGER_TRACK_JIT_INFO_PRIV >> DEBUGGER_INFO_SHIFT_PRIV == DebuggerAssemblyControlFlags::DACF_OBSOLETE_TRACK_JIT_INFO);
+    static_assert_no_msg(DEBUGGER_ENC_ENABLED_PRIV >> DEBUGGER_INFO_SHIFT_PRIV == DebuggerAssemblyControlFlags::DACF_ENC_ENABLED);
+    static_assert_no_msg(DEBUGGER_PDBS_COPIED >> DEBUGGER_INFO_SHIFT_PRIV == DebuggerAssemblyControlFlags::DACF_PDBS_COPIED);
+    static_assert_no_msg(DEBUGGER_IGNORE_PDBS >> DEBUGGER_INFO_SHIFT_PRIV == DebuggerAssemblyControlFlags::DACF_IGNORE_PDBS);
 
     enum {
         // These are the values set in m_dwPersistedFlags.
@@ -653,9 +668,7 @@ private:
         WRAP_EXCEPTIONS             = 0x00000020,
 
         // unused                   = 0x00000040,
-
-        // This flag applies to assembly, but is also stored here so that it can be cached in ngen image
-        COLLECTIBLE_MODULE          = 0x00000080,
+        // unused                   = 0x00000080,
 
         //If attribute value has been cached before
         DEFAULT_DLL_IMPORT_SEARCH_PATHS_IS_CACHED   = 0x00000400,
@@ -679,7 +692,6 @@ private:
     PTR_Assembly            m_pAssembly;
 
     CrstExplicitInit        m_Crst;
-    CrstExplicitInit        m_FixupCrst;
 
     // Debugging symbols reader interface. This will only be
     // initialized if needed, either by the debugging subsystem or for
@@ -808,16 +820,8 @@ private:
     // m_pAvailableClasses.
     PTR_EEClassHashTable    m_pAvailableClassesCaseIns;
 
-    // Pointer to binder, if we have one
-    friend class CoreLibBinder;
-    PTR_CoreLibBinder      m_pBinder;
-
 public:
-    BOOL IsCollectible()
-    {
-        LIMITED_METHOD_DAC_CONTRACT;
-        return (m_dwPersistedFlags & COLLECTIBLE_MODULE) != 0;
-    }
+    BOOL IsCollectible();
 
 #ifdef FEATURE_READYTORUN
 private:
@@ -860,8 +864,6 @@ protected:
 
     PTR_PEAssembly GetPEAssembly() const { LIMITED_METHOD_DAC_CONTRACT; return m_pPEAssembly; }
 
-    BOOL IsManifest();
-
     void ApplyMetaData();
 
     void FixupVTables();
@@ -878,7 +880,7 @@ protected:
         LIMITED_METHOD_CONTRACT;
         SUPPORTS_DAC;
 
-        _ASSERTE(IsReflection());
+        _ASSERTE(IsReflectionEmit());
         return dac_cast<PTR_ReflectionModule>(this);
     }
 
@@ -892,14 +894,14 @@ protected:
     void SetDomainAssembly(DomainAssembly *pDomainAssembly);
 
     OBJECTREF GetExposedObject();
+    OBJECTREF GetExposedObjectIfExists();
 
     ClassLoader *GetClassLoader();
 #ifdef FEATURE_CODE_VERSIONING
     CodeVersionManager * GetCodeVersionManager();
 #endif
 
-    BOOL IsPEFile() const { WRAPPER_NO_CONTRACT; return !GetPEAssembly()->IsDynamic(); }
-    BOOL IsReflection() const { WRAPPER_NO_CONTRACT; SUPPORTS_DAC; return GetPEAssembly()->IsDynamic(); }
+    BOOL IsReflectionEmit() const { WRAPPER_NO_CONTRACT; SUPPORTS_DAC; return (m_dwTransientFlags & IS_REFLECTION_EMIT) != 0; }
     BOOL IsSystem() { WRAPPER_NO_CONTRACT; SUPPORTS_DAC; return m_pPEAssembly->IsSystem(); }
     // Returns true iff the debugger can see this module.
     BOOL IsVisibleToDebugger();
@@ -944,28 +946,9 @@ public:
     }
 #endif // !DACCESS_COMPILE
 
-
-    // This means the module has been sufficiently fixed up/security checked
-    // that type loads can occur in domains. This is not sufficient to indicate
-    // that domain-specific types can be loaded when applied to domain-neutral modules
-    BOOL IsReadyForTypeLoad()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return m_dwTransientFlags & MODULE_READY_FOR_TYPELOAD;
-    }
-
-#ifndef DACCESS_COMPILE
-    VOID SetIsReadyForTypeLoad()
-    {
-        LIMITED_METHOD_CONTRACT;
-        InterlockedOr((LONG*)&m_dwTransientFlags, MODULE_READY_FOR_TYPELOAD);
-    }
-#endif
-
 #ifndef DACCESS_COMPILE
     VOID EnsureActive();
     VOID EnsureAllocated();
-    VOID EnsureLibraryLoaded();
 #endif
 
     CHECK CheckActivated();
@@ -990,7 +973,7 @@ public:
         SUPPORTS_DAC;
 
 #ifdef DACCESS_COMPILE
-        if (IsReflection())
+        if (IsReflectionEmit())
         {
             return DacGetMDImport(GetReflectionModule(), true);
         }
@@ -1333,9 +1316,6 @@ public:
 
     mdAssemblyRef FindAssemblyRef(Assembly *targetAssembly);
 
-    void          CreateAssemblyRefByNameTable(AllocMemTracker *pamTracker);
-    bool          HasReferenceByName(LPCUTF8 pModuleName);
-
 #endif // !DACCESS_COMPILE
 
     DWORD GetAssemblyRefMax() {LIMITED_METHOD_CONTRACT;  return m_ManifestModuleReferencesMap.GetSize() - 1; }
@@ -1398,7 +1378,13 @@ public:
     }
 
     HRESULT GetScopeName(LPCUTF8 * pszName) { WRAPPER_NO_CONTRACT; return m_pPEAssembly->GetScopeName(pszName); }
-    const SString &GetPath() { WRAPPER_NO_CONTRACT; return m_pPEAssembly->GetPath(); }
+    const SString &GetPath()
+    {
+        WRAPPER_NO_CONTRACT;
+        // Validate the pointers are the same to ensure the lifetime of m_path is handled.
+        _ASSERTE(m_path == m_pPEAssembly->GetPath().GetUnicode());
+        return m_pPEAssembly->GetPath();
+    }
 
 #ifdef LOGGING
     LPCUTF8 GetDebugName() { WRAPPER_NO_CONTRACT; return m_pPEAssembly->GetDebugName(); }
@@ -1505,11 +1491,6 @@ public:
     InstrumentedILOffsetMapping GetInstrumentedILOffsetMapping(mdMethodDef token);
 
 public:
-    CrstBase*           GetFixupCrst()
-    {
-        return &m_FixupCrst;
-    }
-
     // LoaderHeap for storing IJW thunks
     PTR_LoaderHeap           m_pThunkHeap;
 
@@ -1607,10 +1588,6 @@ private:
     PTR_JITInlineTrackingMap m_pJitInlinerTrackingMap;
 #endif // defined(PROFILING_SUPPORTED) || defined(PROFILING_SUPPORTED_DATA)
 
-
-    LPCSTR               *m_AssemblyRefByNameTable;  // array that maps mdAssemblyRef tokens into their simple name
-    DWORD                 m_AssemblyRefByNameCount;  // array size
-
     // a.dll calls a method in b.dll and that method call a method in c.dll. When ngening
     // a.dll it is possible then method in b.dll can be inlined. When that happens a.ni.dll stores
     // an added native metadata which has information about assemblyRef to c.dll
@@ -1620,6 +1597,17 @@ private:
     // is not called for each fixup
 
     PTR_Assembly           *m_NativeMetadataAssemblyRefMap;
+
+    LOADERHANDLE m_hExposedObject;
+
+    // Buffer of Metadata storage for dynamic modules. May be NULL. This provides a reasonable way for
+    // the debugger to get metadata of dynamic modules from out of process.
+    // A dynamic module will eagerly serialize its metadata to this buffer.
+    // This points at a uint32_t array.
+    // The first uint32_t is the number of bytes in the saved metadata
+    // Starting at the address of the second uint32_t value is the saved metadata itself
+protected:
+    TADDR m_pDynamicMetadata;
 
 public:
 #if !defined(DACCESS_COMPILE)
@@ -1638,6 +1626,29 @@ public:
 
     uint32_t GetNativeMetadataAssemblyCount();
 #endif // !defined(DACCESS_COMPILE)
+
+    template<typename T> friend struct ::cdac_data;
+};
+
+template<>
+struct cdac_data<Module>
+{
+    static constexpr size_t Assembly = offsetof(Module, m_pAssembly);
+    static constexpr size_t Base = offsetof(Module, m_baseAddress);
+    static constexpr size_t Flags = offsetof(Module, m_dwTransientFlags);
+    static constexpr size_t LoaderAllocator = offsetof(Module, m_loaderAllocator);
+    static constexpr size_t ThunkHeap = offsetof(Module, m_pThunkHeap);
+    static constexpr size_t DynamicMetadata = offsetof(Module, m_pDynamicMetadata);
+    static constexpr size_t Path = offsetof(Module, m_path);
+
+    // Lookup map pointers
+    static constexpr size_t FieldDefToDescMap = offsetof(Module, m_FieldDefToDescMap);
+    static constexpr size_t ManifestModuleReferencesMap = offsetof(Module, m_ManifestModuleReferencesMap);
+    static constexpr size_t MemberRefToDescMap = offsetof(Module, m_MemberRefMap);
+    static constexpr size_t MethodDefToDescMap = offsetof(Module, m_MethodDefToDescMap);
+    static constexpr size_t TypeDefToMethodTableMap = offsetof(Module, m_TypeDefToMethodTableMap);
+    static constexpr size_t TypeRefToMethodTableMap = offsetof(Module, m_TypeRefToMethodTableMap);
+    static constexpr size_t MethodDefToILCodeVersioningStateMap = offsetof(Module, m_ILCodeVersioningStateMap);
 };
 
 //
@@ -1660,11 +1671,6 @@ private:
     // Simple Critical Section used for basic leaf-lock operatons.
     CrstExplicitInit        m_CrstLeafLock;
 
-    // Buffer of Metadata storage for dynamic modules. May be NULL. This provides a reasonable way for
-    // the debugger to get metadata of dynamic modules from out of process.
-    // A dynamic module will eagerly serialize its metadata to this buffer.
-    PTR_SBuffer m_pDynamicMetadata;
-
 #if !defined DACCESS_COMPILE
     ReflectionModule(Assembly *pAssembly, PEAssembly *pPEAssembly);
 #endif // !DACCESS_COMPILE
@@ -1673,7 +1679,7 @@ public:
 
 #ifdef DACCESS_COMPILE
     // Accessor to expose m_pDynamicMetadata to debugger.
-    PTR_SBuffer GetDynamicMetadataBuffer() const;
+    TADDR GetDynamicMetadataBuffer() const;
 #endif
 
 #if !defined DACCESS_COMPILE

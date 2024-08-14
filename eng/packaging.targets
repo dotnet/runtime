@@ -20,7 +20,12 @@
     <!-- Don't treat the TPM as an input to APICompat PackageValidation's reference assembly calculation. -->
     <ApiCompatIgnoreTargetPlatformMoniker Condition="'$(SuppressDependenciesWhenPacking)' == 'true'">true</ApiCompatIgnoreTargetPlatformMoniker>
     <PackageDesignerMarkerFile>$(MSBuildThisFileDirectory)useSharedDesignerContext.txt</PackageDesignerMarkerFile>
-    <PackageReadmeFile Condition="'$(PackageReadmeFile)' == '' and Exists('PACKAGE.md')">PACKAGE.md</PackageReadmeFile>
+
+    <!-- PackageReadmeFile specifies the package readme file name in the package. PackageReadmeFilePath points to the package readme file on disk. -->
+    <PackageReadmeFile Condition="'$(PackageReadmeFile)' == '' and '$(EnableDefaultPackageReadmeFile)' == 'true'">PACKAGE.md</PackageReadmeFile>
+    <PackageReadmeFilePath Condition="'$(PackageReadmeFilePath)' == '' and '$(EnableDefaultPackageReadmeFile)' == 'true'">PACKAGE.md</PackageReadmeFilePath>
+    <BeforePack>$(BeforePack);ValidatePackageReadmeExists</BeforePack>
+
     <!-- Non-shipping packages shouldn't incrementally serviced. -->
     <PackageUseIncrementalServicingVersion Condition="'$(IsShipping)' != 'true'">false</PackageUseIncrementalServicingVersion>
     <!-- Generate packages for rid specific projects or for allconfigurations during build. -->
@@ -83,9 +88,9 @@
                                   TargetFramework="$(NetFrameworkMinimum)" />
   </ItemGroup>
 
-  <!-- Add a package README file from. -->
-  <ItemGroup Condition="'$(PackageReadmeFile)' != ''">
-    <None Include="$(PackageReadmeFile)" Pack="true" PackagePath="\" />
+  <!-- Add a package README file -->
+  <ItemGroup Condition="'$(PackageReadmeFilePath)' != ''">
+    <None Include="$(PackageReadmeFilePath)" Pack="true" PackagePath="\" />
   </ItemGroup>
 
   <Choose>
@@ -195,6 +200,21 @@
       <Content Include="$(MultiTargetRoslynComponentTargetsFileIntermediatePath)" PackagePath="buildTransitive\netstandard2.0\$(PackageId).targets" />
       <Content Include="$(MultiTargetRoslynComponentTargetsFileIntermediatePath)" PackagePath="buildTransitive\%(NETStandardCompatError.Supported)\$(PackageId).targets" Condition="'@(NETStandardCompatError)' != ''" />
     </ItemGroup>
+  </Target>
+
+  <Target Name="WarnOnProjectReferenceToFrameworkAssemblies"
+          BeforeTargets="IncludeTransitiveProjectReferences"
+          Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)' and
+                     '@(ProjectReference)' != ''">
+    <!-- Find project references that overlap with NetCoreApp, are direct (NuGetPackageId is not set), actually referenced (ReferenceOutputAssembly), and not hidden with PrivateAssets
+         ProjectReferences can opt out of this checking by setting AllowFrameworkPackageReference, though they should not. -->
+    <Warning Text="Project reference '%(_overlappingProjectFrameworkReference.Identity)' is a reference to a framework assembly and is not required in $(NetCoreAppCurrent) (NetCoreAppCurrent)."
+             Code="NETPKG0001"
+             Condition="$(NetCoreAppLibrary.Contains('%(ProjectReference.Filename);')) and
+                        '%(ProjectReference.ReferenceOutputAssembly)' != 'false' and
+                        '%(ProjectReference.NuGetPackageId)' == '' and
+                        '%(ProjectReference.PrivateAssets)' != 'all' and
+                        '%(ProjectReference.AllowFrameworkPackageReference)' != 'true'" />
   </Target>
 
   <Target Name="GenerateMultiTargetRoslynComponentTargetsFile"
@@ -310,6 +330,12 @@
                      '$(DotNetBuildSourceOnly)' != 'true'"
           AfterTargets="GenerateNuspec">
     <Error Condition="'$(ServicingVersion)' == '0'" Text="ServicingVersion is set to 0 and it should be an increment of the patch version from the last released package." />
+  </Target>
+
+  <Target Name="ValidatePackageReadmeExists"
+          Condition="'$(PackageReadmeFilePath)' != '' and
+                     !Exists('$(PackageReadmeFilePath)')">
+    <Error Text="$(PackageId) is a shipping package and is missing a required package README file. Add a 'PACKAGE.md' file into to the source project folder." />
   </Target>
 
 </Project>

@@ -709,7 +709,7 @@ namespace System.IO
             }
             catch (Exception ex)
             {
-                Debug.Assert(!(ex is OperationCanceledException));
+                Debug.Assert(ex is not OperationCanceledException);
                 return Task.FromException(ex);
             }
         }

@@ -21,7 +21,7 @@ namespace System.Buffers.Text.Tests
         [InlineData("6066=")]
         public void BasicValidationEdgeCaseScenario(string base64UrlText)
         {
-            Assert.False(Base64Url.IsValid(base64UrlText, out int decodedLength));
+            Assert.False(Base64Url.IsValid(base64UrlText.AsSpan(), out int decodedLength));
             Assert.Equal(0, decodedLength);
         }
 
@@ -39,6 +39,7 @@ namespace System.Buffers.Text.Tests
 
                 Span<byte> source = new byte[numBytes];
                 Base64TestHelper.InitializeUrlDecodableBytes(source, numBytes);
+                source[numBytes - 1] = 65; // make sure unused bits set 0
 
                 Assert.True(Base64Url.IsValid(source));
                 Assert.True(Base64Url.IsValid(source, out int decodedLength));
@@ -60,6 +61,7 @@ namespace System.Buffers.Text.Tests
 
                 Span<byte> source = new byte[numBytes];
                 Base64TestHelper.InitializeUrlDecodableBytes(source, numBytes);
+                source[numBytes - 1] = 65; // make sure unused bits set 0
                 Span<char> chars = source
                     .ToArray()
                     .Select(Convert.ToChar)
@@ -222,7 +224,7 @@ namespace System.Buffers.Text.Tests
         [InlineData("YQ== ", 1)]
         [InlineData("YQ%%", 1)]
         [InlineData("YWI%", 2)]
-        [InlineData("YW% ", 1)]
+        [InlineData("YQ% ", 1)]
         public void ValidateWithPaddingReturnsCorrectCountBytes(string utf8WithByteToBeIgnored, int expectedLength)
         {
             byte[] utf8BytesWithByteToBeIgnored = UTF8Encoding.UTF8.GetBytes(utf8WithByteToBeIgnored);
@@ -248,7 +250,7 @@ namespace System.Buffers.Text.Tests
         [InlineData("YQ== ", 1)]
         [InlineData("YQ%%", 1)]
         [InlineData("YWI%", 2)]
-        [InlineData("YW% ", 1)]
+        [InlineData("YQ% ", 1)]
         public void ValidateWithPaddingReturnsCorrectCountChars(string utf8WithByteToBeIgnored, int expectedLength)
         {
             ReadOnlySpan<char> utf8BytesWithByteToBeIgnored = utf8WithByteToBeIgnored.ToArray();
@@ -259,8 +261,8 @@ namespace System.Buffers.Text.Tests
         }
 
         [Theory]
-        [InlineData("YWJ", true, 2)]
-        [InlineData("YW", true, 1)]
+        [InlineData("YWI", true, 2)]
+        [InlineData("YQ", true, 1)]
         [InlineData("Y", false, 0)]
         public void SmallSizeBytes(string utf8Text, bool isValid, int expectedDecodedLength)
         {
@@ -272,12 +274,12 @@ namespace System.Buffers.Text.Tests
         }
 
         [Theory]
-        [InlineData("YWJ", true, 2)]
-        [InlineData("YW", true, 1)]
+        [InlineData("YWI", true, 2)]
+        [InlineData("YQ", true, 1)]
         [InlineData("Y", false, 0)]
         public void SmallSizeChars(string utf8Text, bool isValid, int expectedDecodedLength)
         {
-            ReadOnlySpan<char> utf8BytesWithByteToBeIgnored = utf8Text;
+            ReadOnlySpan<char> utf8BytesWithByteToBeIgnored = utf8Text.AsSpan();
 
             Assert.Equal(isValid, Base64Url.IsValid(utf8BytesWithByteToBeIgnored));
             Assert.Equal(isValid, Base64Url.IsValid(utf8BytesWithByteToBeIgnored, out int decodedLength));
@@ -341,7 +343,7 @@ namespace System.Buffers.Text.Tests
         [InlineData("    a    ")]
         public void InvalidBase64UrlChars(string utf8WithByteToBeIgnored)
         {
-            ReadOnlySpan<char> utf8CharsWithCharToBeIgnored = utf8WithByteToBeIgnored;
+            ReadOnlySpan<char> utf8CharsWithCharToBeIgnored = utf8WithByteToBeIgnored.AsSpan();
 
             Assert.False(Base64Url.IsValid(utf8CharsWithCharToBeIgnored));
             Assert.False(Base64Url.IsValid(utf8CharsWithCharToBeIgnored, out int decodedLength));

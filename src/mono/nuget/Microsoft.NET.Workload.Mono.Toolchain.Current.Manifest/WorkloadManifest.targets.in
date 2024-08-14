@@ -58,14 +58,16 @@
         '$(RunAOTCompilation)' == 'true' or
         '$(WasmBuildNative)' == 'true' or
         '$(WasmGenerateAppBundle)' == 'true' or
-        '$(_UsingBlazorOrWasmSdk)' != 'true'" >true</_WasmNativeWorkloadNeeded>
+        '$(_UsingBlazorOrWasmSdk)' != 'true' or
+        '$(EmccMaximumHeapSize)' != '' " >true</_WasmNativeWorkloadNeeded>
 
     <UsingBrowserRuntimeWorkload Condition="'$(_BrowserWorkloadNotSupportedForTFM)' == 'true'">false</UsingBrowserRuntimeWorkload>
     <UsingBrowserRuntimeWorkload Condition="'$(UsingBrowserRuntimeWorkload)' == '' and '$(_WasmNativeWorkloadNeeded)' == 'true'">true</UsingBrowserRuntimeWorkload>
     <UsingBrowserRuntimeWorkload Condition="'$(UsingBrowserRuntimeWorkload)' == ''">$(WasmNativeWorkloadAvailable)</UsingBrowserRuntimeWorkload>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(NativeLib)' != ''">
+  <!-- Mono AOT library mode support -->
+  <PropertyGroup Condition="'$(PublishAot)' != 'true' and '$(NativeLib)' != ''">
     <_IsAndroidLibraryMode Condition="'$(RuntimeIdentifier)' == 'android-arm64' or '$(RuntimeIdentifier)' == 'android-arm' or '$(RuntimeIdentifier)' == 'android-x64' or '$(RuntimeIdentifier)' == 'android-x86'">true</_IsAndroidLibraryMode>
     <_IsAppleMobileLibraryMode Condition="'$(RuntimeIdentifier)' == 'ios-arm64' or '$(RuntimeIdentifier)' == 'iossimulator-arm64' or '$(RuntimeIdentifier)' == 'iossimulator-x64' or '$(RuntimeIdentifier)' == 'maccatalyst-arm64' or '$(RuntimeIdentifier)' == 'maccatalyst-x64' or '$(RuntimeIdentifier)' == 'tvos-arm64'">true</_IsAppleMobileLibraryMode>
     <_IsiOSLibraryMode Condition="'$(RuntimeIdentifier)' == 'ios-arm64' or '$(RuntimeIdentifier)' == 'iossimulator-arm64' or '$(RuntimeIdentifier)' == 'iossimulator-x64'">true</_IsiOSLibraryMode>

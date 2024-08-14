@@ -329,8 +329,8 @@ PTR_MethodTable LookupMethodTableForThreadStaticKnownToBeAllocated(TLSIndex inde
 void InitializeThreadStaticData();
 void InitializeCurrentThreadsStaticData(Thread* pThread);
 void FreeLoaderAllocatorHandlesForTLSData(Thread* pThread);
-void FreeThreadStaticData(ThreadLocalData *pThreadLocalData, Thread* pThread);
-void AssertThreadStaticDataFreed(ThreadLocalData *pThreadLocalData);
+void FreeThreadStaticData(Thread* pThread);
+void AssertThreadStaticDataFreed();
 void GetTLSIndexForThreadStatic(MethodTable* pMT, bool gcStatic, TLSIndex* pIndex, uint32_t bytesNeeded);
 void FreeTLSIndicesForLoaderAllocator(LoaderAllocator *pLoaderAllocator);
 void* GetThreadLocalStaticBase(TLSIndex index);

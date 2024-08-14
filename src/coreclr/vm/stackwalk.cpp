@@ -524,6 +524,12 @@ UINT_PTR Thread::VirtualUnwindCallFrame(PREGDISPLAY pRD, EECodeInfo* pCodeInfo /
         VirtualUnwindCallFrame(pRD->pCurrentContext, pRD->pCurrentContextPointers, pCodeInfo);
     }
 
+#if defined(TARGET_AMD64) && defined(TARGET_WINDOWS)
+    if (pRD->SSP != 0)
+    {
+        pRD->SSP += 8;
+    }
+#endif // TARGET_AMD64 && TARGET_WINDOWS
     SyncRegDisplayToCurrentContext(pRD);
     pRD->IsCallerContextValid = FALSE;
     pRD->IsCallerSPValid      = FALSE;        // Don't add usage of this field.  This is only temporary.
@@ -799,7 +805,7 @@ void Thread::DebugLogStackWalkInfo(CrawlFrame* pCF, _In_z_ LPCSTR pszTag, UINT32
             DBG_ADDR(GetControlPC(pCF->pRD)),
             DBG_ADDR(GetRegdisplaySP(pCF->pRD)),
             DBG_ADDR(pCF->pFrame),
-            DBG_ADDR((pCF->pFrame != FRAME_TOP) ? pCF->pFrame->GetVTablePtr() : NULL)));
+            DBG_ADDR((pCF->pFrame != FRAME_TOP) ? pCF->pFrame->GetVTablePtr() : (TADDR)NULL)));
     }
 }
 #endif // _DEBUG
@@ -1555,6 +1561,9 @@ void StackFrameIterator::SkipTo(StackFrameIterator *pOtherStackFrameIterator)
     *pRD->pCurrentContextPointers = *pOtherRD->pCurrentContextPointers;
     SetIP(pRD->pCurrentContext, GetIP(pOtherRD->pCurrentContext));
     SetSP(pRD->pCurrentContext, GetSP(pOtherRD->pCurrentContext));
+#if defined(TARGET_AMD64) && defined(TARGET_WINDOWS)
+    pRD->SSP = pOtherRD->SSP;
+#endif
 
 #define CALLEE_SAVED_REGISTER(regname) pRD->pCurrentContext->regname = (pRD->pCurrentContextPointers->regname == NULL) ? pOtherRD->pCurrentContext->regname : *pRD->pCurrentContextPointers->regname;
     ENUM_CALLEE_SAVED_REGISTERS();

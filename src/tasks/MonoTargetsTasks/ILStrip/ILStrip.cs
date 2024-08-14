@@ -75,9 +75,12 @@ public class ILStrip : Microsoft.Build.Utilities.Task
         Log.LogMessage(MessageImportance.High, "IL stripping assemblies");
 
         int allowedParallelism = DisableParallelStripping ? 1 : Math.Min(Assemblies.Length, Environment.ProcessorCount);
-        if (BuildEngine is IBuildEngine9 be9)
+        IBuildEngine9? be9 = BuildEngine as IBuildEngine9;
+        if (be9 is not null)
             allowedParallelism = be9.RequestCores(allowedParallelism);
-        ParallelLoopResult result = Parallel.ForEach(Assemblies,
+        try
+        {
+            ParallelLoopResult result = Parallel.ForEach(Assemblies,
                                                     new ParallelOptions { MaxDegreeOfParallelism = allowedParallelism },
                                                     (assemblyItem, state) =>
                                                     {
@@ -93,14 +96,16 @@ public class ILStrip : Microsoft.Build.Utilities.Task
                                                         }
                                                     });
 
-        if (TrimIndividualMethods)
-        {
             UpdatedAssemblies = ConvertAssembliesDictToOrderedList(_processedAssemblies, Assemblies).ToArray();
-        }
 
-        if (!result.IsCompleted && !Log.HasLoggedErrors)
+            if (!result.IsCompleted && !Log.HasLoggedErrors)
+            {
+                Log.LogError("Unknown failure occurred while IL stripping assemblies. Check logs to get more details.");
+            }
+        }
+        finally
         {
-            Log.LogError("Unknown failure occurred while IL stripping assemblies. Check logs to get more details.");
+            be9?.ReleaseCores(allowedParallelism);
         }
 
         return !Log.HasLoggedErrors;
@@ -122,7 +127,14 @@ public class ILStrip : Microsoft.Build.Utilities.Task
 
         try
         {
-            AssemblyStripper.AssemblyStripper.StripAssembly (assemblyFile, outputPath);
+            if(!AssemblyStripper.AssemblyStripper.TryStripAssembly(assemblyFile, outputPath))
+            {
+                Log.LogMessage(MessageImportance.Low, $"[ILStrip] Skipping {assemblyFile} because it is not a managed assembly.");
+            }
+            else
+            {
+                _processedAssemblies.GetOrAdd(assemblyItem.ItemSpec, GetTrimmedAssemblyItem(assemblyItem, outputPath, assemblyFile));
+            }
         }
         catch (Exception ex)
         {

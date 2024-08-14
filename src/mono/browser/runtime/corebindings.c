@@ -59,7 +59,6 @@ extern void mono_wasm_invoke_jsimport_ST (int function_handle, void *args);
 #endif /* DISABLE_THREADS */
 
 // HybridGlobalization
-extern char16_t* mono_wasm_change_case_invariant (const uint16_t* src, int32_t srcLength, uint16_t* dst, int32_t dstLength, mono_bool bToUpper);
 extern char16_t* mono_wasm_change_case (const uint16_t* culture, int32_t cultureLength, const uint16_t* src, int32_t srcLength, uint16_t* dst, int32_t dstLength, mono_bool bToUpper);
 extern char16_t* mono_wasm_compare_string (const uint16_t* culture, int32_t cultureLength, const uint16_t* str1, int32_t str1Length, const uint16_t* str2, int32_t str2Length, int32_t options, int *resultPtr);
 extern char16_t* mono_wasm_starts_with (const uint16_t* culture, int32_t cultureLength, const uint16_t* str1, int32_t str1Length, const uint16_t* str2, int32_t str2Length, int32_t options, mono_bool *resultPtr);
@@ -104,7 +103,6 @@ void bindings_initialize_internals (void)
 	mono_add_internal_call ("System.ConsolePal::Clear", mono_wasm_console_clear);
 
 	// HybridGlobalization
-	mono_add_internal_call ("Interop/JsGlobalization::ChangeCaseInvariant", mono_wasm_change_case_invariant);
 	mono_add_internal_call ("Interop/JsGlobalization::ChangeCase", mono_wasm_change_case);
 	mono_add_internal_call ("Interop/JsGlobalization::CompareString", mono_wasm_compare_string);
 	mono_add_internal_call ("Interop/JsGlobalization::StartsWith", mono_wasm_starts_with);

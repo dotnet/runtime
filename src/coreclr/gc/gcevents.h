@@ -49,8 +49,9 @@ KNOWN_EVENT(PrvDestroyGCHandle, GCEventProvider_Private, GCEventLevel_Informatio
 KNOWN_EVENT(PinPlugAtGCTime, GCEventProvider_Private, GCEventLevel_Verbose, GCEventKeyword_GCPrivate)
 
 DYNAMIC_EVENT(CommittedUsage, GCEventLevel_Information, GCEventKeyword_GC, 1)
-DYNAMIC_EVENT(HeapCountTuning, GCEventLevel_Information, GCEventKeyword_GC, 1)
-DYNAMIC_EVENT(HeapCountSample, GCEventLevel_Information, GCEventKeyword_GC, 1)
+DYNAMIC_EVENT(SizeAdaptationTuning, GCEventLevel_Information, GCEventKeyword_GC, 1)
+DYNAMIC_EVENT(SizeAdaptationFullGCTuning, GCEventLevel_Information, GCEventKeyword_GC, 1)
+DYNAMIC_EVENT(SizeAdaptationSample, GCEventLevel_Information, GCEventKeyword_GC, 1)
 
 #undef KNOWN_EVENT
 #undef DYNAMIC_EVENT

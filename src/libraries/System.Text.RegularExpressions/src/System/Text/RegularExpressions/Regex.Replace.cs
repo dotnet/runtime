@@ -3,8 +3,6 @@
 
 using System.Diagnostics.CodeAnalysis;
 
-#pragma warning disable CS8500 // takes address of managed type
-
 namespace System.Text.RegularExpressions
 {
     // Callback class

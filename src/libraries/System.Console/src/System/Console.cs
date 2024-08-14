@@ -392,42 +392,27 @@ namespace System
             set { ConsolePal.WindowTop = value; }
         }
 
-        [UnsupportedOSPlatform("android")]
-        [UnsupportedOSPlatform("browser")]
-        [UnsupportedOSPlatform("ios")]
-        [UnsupportedOSPlatform("tvos")]
         public static int WindowWidth
         {
+            [UnsupportedOSPlatform("android")]
+            [UnsupportedOSPlatform("browser")]
+            [UnsupportedOSPlatform("ios")]
+            [UnsupportedOSPlatform("tvos")]
             get { return ConsolePal.WindowWidth; }
-            set
-            {
-                if (Console.IsOutputRedirected)
-                {
-                    throw new IOException(SR.InvalidOperation_SetWindowSize);
-                }
-
-                ArgumentOutOfRangeException.ThrowIfNegativeOrZero(value, nameof(WindowWidth));
-
-                ConsolePal.WindowWidth = value;
-            }
+            [SupportedOSPlatform("windows")]
+            set { ConsolePal.WindowWidth = value; }
         }
 
-        [UnsupportedOSPlatform("android")]
-        [UnsupportedOSPlatform("browser")]
-        [UnsupportedOSPlatform("ios")]
-        [UnsupportedOSPlatform("tvos")]
         public static int WindowHeight
         {
+            [UnsupportedOSPlatform("android")]
+            [UnsupportedOSPlatform("browser")]
+            [UnsupportedOSPlatform("ios")]
+            [UnsupportedOSPlatform("tvos")]
             get { return ConsolePal.WindowHeight; }
+            [SupportedOSPlatform("windows")]
             set
             {
-                if (Console.IsOutputRedirected)
-                {
-                    throw new IOException(SR.InvalidOperation_SetWindowSize);
-                }
-
-                ArgumentOutOfRangeException.ThrowIfNegativeOrZero(value, nameof(WindowHeight));
-
                 ConsolePal.WindowHeight = value;
             }
         }
@@ -438,20 +423,9 @@ namespace System
             ConsolePal.SetWindowPosition(left, top);
         }
 
-        [UnsupportedOSPlatform("android")]
-        [UnsupportedOSPlatform("browser")]
-        [UnsupportedOSPlatform("ios")]
-        [UnsupportedOSPlatform("tvos")]
+        [SupportedOSPlatform("windows")]
         public static void SetWindowSize(int width, int height)
         {
-            if (Console.IsOutputRedirected)
-            {
-                throw new IOException(SR.InvalidOperation_SetWindowSize);
-            }
-
-            ArgumentOutOfRangeException.ThrowIfNegativeOrZero(width, nameof(width));
-            ArgumentOutOfRangeException.ThrowIfNegativeOrZero(height, nameof(height));
-
             ConsolePal.SetWindowSize(width, height);
         }
 
@@ -528,7 +502,8 @@ namespace System
             [UnsupportedOSPlatform("tvos")]
             set
             {
-                ConsolePal.Title = value ?? throw new ArgumentNullException(nameof(value));
+                ArgumentNullException.ThrowIfNull(value);
+                ConsolePal.Title = value;
             }
         }
 

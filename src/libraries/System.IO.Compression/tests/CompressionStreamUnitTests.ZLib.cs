@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Buffers;
-using System.Diagnostics;
 using System.IO.Compression.Tests;
 using System.Linq;
 using System.Threading.Tasks;
@@ -18,6 +17,7 @@ namespace System.IO.Compression
         public override Stream CreateStream(Stream stream, CompressionMode mode, bool leaveOpen) => new ZLibStream(stream, mode, leaveOpen);
         public override Stream CreateStream(Stream stream, CompressionLevel level) => new ZLibStream(stream, level);
         public override Stream CreateStream(Stream stream, CompressionLevel level, bool leaveOpen) => new ZLibStream(stream, level, leaveOpen);
+        public override Stream CreateStream(Stream stream, ZLibCompressionOptions options, bool leaveOpen) => new ZLibStream(stream, options, leaveOpen);
         public override Stream BaseStream(Stream stream) => ((ZLibStream)stream).BaseStream;
         protected override string CompressedTestFile(string uncompressedPath) => Path.Combine("ZLibTestData", Path.GetFileName(uncompressedPath) + ".z");
 
@@ -149,6 +149,13 @@ namespace System.IO.Compression
                     }
                 }
             }, testScenario.ToString()).Dispose();
+        }
+
+        [Theory]
+        [MemberData(nameof(UncompressedTestFilesZLib))]
+        public async Task ZLibCompressionLevel_SizeInOrder(string testFile)
+        {
+            await CompressionLevel_SizeInOrderBase(testFile);
         }
     }
 }

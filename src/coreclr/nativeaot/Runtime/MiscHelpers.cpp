@@ -334,6 +334,41 @@ FCIMPL1(uint8_t *, RhGetCodeTarget, uint8_t * pCodeOrg)
         int64_t distToTarget = ((int64_t)pCode[0] << 38) >> 36;
         return (uint8_t *)pCode + distToTarget;
     }
+#elif TARGET_LOONGARCH64
+    uint32_t * pCode = (uint32_t *)pCodeOrg;
+    // is this "addi.d $a0, $a0, 8"?
+    if (pCode[0] == 0x02c02084)
+    {
+        // unboxing sequence
+        unboxingStub = true;
+        pCode++;
+    }
+    // is this an indirect jump?
+    // pcalau12i $t7, imm20; ld.d $t7, $t7, imm12; jirl $r0, $t7, 0
+    if ((pCode[0] & 0xfe000000) == 0x1a000000 &&
+        (pCode[1] & 0xffc00000) == 0x28c00000 &&
+        (pCode[2] & 0xfc000000) == 0x4c000000)
+    {
+        // normal import stub - dist to IAT cell is relative to (PC & ~0xfff)
+        // pcalau12i: imm = SignExtend(imm20:Zeros(12), 64);
+        int64_t distToIatCell = ((((int64_t)pCode[0] & ~0x1f) << 39) >> 32);
+        // ld.d: offset = SignExtend(imm12, 64);
+        distToIatCell += (((int64_t)pCode[1] << 42) >> 52);
+        uint8_t ** pIatCell = (uint8_t **)(((int64_t)pCode & ~0xfff) + distToIatCell);
+        return *pIatCell;
+    }
+    // is this an unboxing stub followed by a relative jump?
+    // pcaddu18i $r21, imm20; jirl $r0, $r21, imm16
+    else if (unboxingStub &&
+             (pCode[0] & 0xfe00001f) == 0x1e000015 &&
+             (pCode[1] & 0xfc0003ff) == 0x4c0002a0)
+    {
+        // relative jump - dist is relative to the instruction
+        // offset = SignExtend(immhi20:immlo16:'00', 64);
+        int64_t distToTarget = ((((int64_t)pCode[0] & ~0x1f) << 39) >> 26);
+        distToTarget += ((((int64_t)pCode[1] & ~0x3ff) << 38) >> 46);
+        return (uint8_t *)((int64_t)pCode + distToTarget);
+    }
 #else
     UNREFERENCED_PARAMETER(unboxingStub);
     PORTABILITY_ASSERT("RhGetCodeTarget");

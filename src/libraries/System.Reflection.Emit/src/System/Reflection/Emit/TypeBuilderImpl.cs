@@ -408,7 +408,7 @@ namespace System.Reflection.Emit
         }
 
         protected override PropertyBuilder DefinePropertyCore(string name, PropertyAttributes attributes, CallingConventions callingConvention,
-            Type returnType, Type[]? returnTypeRequiredCustomModifiers, Type[]? returnTypeOptionalCustomModifiers, Type[]? parameterTypes,
+            Type? returnType, Type[]? returnTypeRequiredCustomModifiers, Type[]? returnTypeOptionalCustomModifiers, Type[]? parameterTypes,
             Type[][]? parameterTypeRequiredCustomModifiers, Type[][]? parameterTypeOptionalCustomModifiers)
         {
             PropertyBuilderImpl property = new PropertyBuilderImpl(name, attributes, callingConvention, returnType, returnTypeRequiredCustomModifiers,
@@ -439,6 +439,7 @@ namespace System.Reflection.Emit
             return DefineDataHelper(name, new byte[size], size, attributes);
         }
 
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2072:DynamicallyAccessedMembers", Justification = "The members of 'ValueType' are not referenced in this context")]
         private FieldBuilder DefineDataHelper(string name, byte[] data, int size, FieldAttributes attributes)
         {
             ArgumentException.ThrowIfNullOrEmpty(name);
@@ -456,7 +457,7 @@ namespace System.Reflection.Emit
                 TypeAttributes typeAttributes = TypeAttributes.Public | TypeAttributes.ExplicitLayout | TypeAttributes.Class | TypeAttributes.Sealed | TypeAttributes.AnsiClass;
 
                 // Define the backing value class
-                valueClassType = (TypeBuilderImpl)_module.DefineType(strValueClassName, typeAttributes, typeof(ValueType), PackingSize.Size1, size);
+                valueClassType = (TypeBuilderImpl)_module.DefineType(strValueClassName, typeAttributes, _module.GetTypeFromCoreAssembly(CoreTypeId.ValueType), PackingSize.Size1, size);
                 valueClassType.CreateType();
             }
 
@@ -645,6 +646,7 @@ namespace System.Reflection.Emit
         protected override bool IsByRefImpl() => false;
         protected override bool IsPointerImpl() => false;
         protected override bool IsPrimitiveImpl() => false;
+        protected override bool IsValueTypeImpl() => IsSubclassOf(_module.GetTypeFromCoreAssembly(CoreTypeId.ValueType));
         protected override bool HasElementTypeImpl() => false;
         protected override TypeAttributes GetAttributeFlagsImpl() => _attributes;
         protected override bool IsCOMObjectImpl()

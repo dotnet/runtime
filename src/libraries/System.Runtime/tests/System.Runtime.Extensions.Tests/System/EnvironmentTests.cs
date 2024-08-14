@@ -574,6 +574,52 @@ namespace System.Tests
             }
         }
 
+        [Fact]
+        public void TestCpuUsage()
+        {
+            if ((OperatingSystem.IsIOS() && !OperatingSystem.IsMacCatalyst()) || PlatformDetection.IstvOS || PlatformDetection.IsBrowser)
+            {
+                Environment.ProcessCpuUsage usage = Environment.CpuUsage;
+
+                if (usage.UserTime == TimeSpan.Zero)
+                {
+                    // Environment should return 0 for all values
+                    Assert.True(usage.PrivilegedTime == TimeSpan.Zero, $"Unexpected privileged time: {usage.PrivilegedTime} while having user time: {usage.UserTime}");
+                    Assert.True(usage.TotalTime == TimeSpan.Zero, $"Unexpected Zero Total while having privileged time: {usage.PrivilegedTime} and user time: {usage.UserTime}");
+                }
+                else
+                {
+                    // Mobile platforms emulators may return non-zero values. tvOS is possible returning Zero privileged time though.
+                    Assert.True(PlatformDetection.IstvOS || TimeSpan.Zero != usage.PrivilegedTime, $"Unexpected Zero privileged time while having user time: {usage.UserTime}");
+                    Assert.True(usage.TotalTime == usage.UserTime + usage.PrivilegedTime, $"Unexpected Total time: {usage.TotalTime} while having privileged time: {usage.PrivilegedTime} and user time: {usage.UserTime}");
+                }
+            }
+            else
+            {
+                Process currentProcess = Process.GetCurrentProcess();
+
+                TimeSpan userTime = currentProcess.UserProcessorTime;
+                TimeSpan privilegedTime = currentProcess.PrivilegedProcessorTime;
+                TimeSpan totalTime = currentProcess.TotalProcessorTime;
+
+                Environment.ProcessCpuUsage usage = Environment.CpuUsage;
+                Assert.True(usage.UserTime.TotalMilliseconds >= 0);
+                Assert.True(usage.PrivilegedTime.TotalMilliseconds >= 0);
+                Assert.True(usage.TotalTime.TotalMilliseconds >= 0);
+                Assert.Equal(usage.TotalTime, usage.UserTime + usage.PrivilegedTime);
+
+                Assert.True(usage.UserTime >= userTime);
+                Assert.True(usage.PrivilegedTime >= privilegedTime);
+                Assert.True(usage.TotalTime >= totalTime);
+
+                TimeSpan delta = TimeSpan.FromMinutes(1);
+
+                Assert.True(usage.UserTime - userTime < delta);
+                Assert.True(usage.PrivilegedTime - privilegedTime < delta);
+                Assert.True(usage.TotalTime - totalTime < delta);
+            }
+        }
+
         [DllImport("kernel32.dll", SetLastError = true)]
         internal static extern int GetLogicalDrives();
 

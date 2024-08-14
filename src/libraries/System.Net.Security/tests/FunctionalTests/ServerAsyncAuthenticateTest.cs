@@ -45,7 +45,6 @@ namespace System.Net.Security.Tests
 
         [Theory]
         [MemberData(nameof(ProtocolMismatchData))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/68206", TestPlatforms.Android)]
         public async Task ServerAsyncAuthenticate_MismatchProtocols_Fails(
             SslProtocols clientProtocol,
             SslProtocols serverProtocol)
@@ -60,7 +59,16 @@ namespace System.Net.Security.Tests
                 });
 
             Assert.NotNull(e);
-            Assert.IsType<AuthenticationException>(e);
+
+            if (OperatingSystem.IsAndroid())
+            {
+                // On Android running on x64 or x86 the server side sometimes throws IOException instead of AuthenticationException
+                Assert.True(e is IOException || e is AuthenticationException, $"Unexpected exception type: {e.GetType()}");
+            }
+            else
+            {
+                Assert.IsType<AuthenticationException>(e);
+            }
         }
 
         [Theory]

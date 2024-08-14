@@ -93,6 +93,10 @@ namespace System.Text.Json.Schema.Tests
             yield return new TestData<IntEnum>(IntEnum.A, ExpectedJsonSchema: """{"type":"integer"}""");
             yield return new TestData<StringEnum>(StringEnum.A, ExpectedJsonSchema: """{"enum":["A","B","C"]}""");
             yield return new TestData<FlagsStringEnum>(FlagsStringEnum.A, ExpectedJsonSchema: """{"type":"string"}""");
+            yield return new TestData<EnumWithNameAttributes>(
+                EnumWithNameAttributes.Value1,
+                AdditionalValues: [EnumWithNameAttributes.Value2],
+                ExpectedJsonSchema: """{"enum":["A","B"]}""");
 
             // Nullable<T> types
             yield return new TestData<bool?>(true, AdditionalValues: [null], ExpectedJsonSchema: """{"type":["boolean","null"]}""");
@@ -349,7 +353,7 @@ namespace System.Text.Json.Schema.Tests
                         }
                         else
                         {
-                            schemaObj["$anchor"] = anchorName;
+                            schemaObj.Insert(0, "$anchor", anchorName);
                         }
 
                         return schemaObj;
@@ -398,7 +402,7 @@ namespace System.Text.Json.Schema.Tests
                         }
                         else
                         {
-                            schemaObj["$id"] = idUrl;
+                            schemaObj.Insert(0, "$id", idUrl);
                         }
 
                         return schemaObj;
@@ -495,7 +499,7 @@ namespace System.Text.Json.Schema.Tests
 
                         if (descriptionAttribute != null)
                         {
-                            schemaObj["description"] = (JsonNode)descriptionAttribute.Description;
+                            schemaObj.Insert(0, "description", (JsonNode)descriptionAttribute.Description);
                         }
 
                         return schemaObj;
@@ -1076,6 +1080,15 @@ namespace System.Text.Json.Schema.Tests
 
         [Flags, JsonConverter(typeof(JsonStringEnumConverter<FlagsStringEnum>))]
         public enum FlagsStringEnum { A = 1, B = 2, C = 4 };
+
+        [JsonConverter(typeof(JsonStringEnumConverter<EnumWithNameAttributes>))]
+        public enum EnumWithNameAttributes
+        {
+            [JsonStringEnumMemberName("A")]
+            Value1 = 1,
+            [JsonStringEnumMemberName("B")]
+            Value2 = 2,
+        }
 
         public class SimplePoco
         {

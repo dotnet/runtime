@@ -20,37 +20,37 @@ namespace System
         private const string PosNumberFormat = "#";
 
         private static readonly string[] s_posCurrencyFormats =
-        {
+        [
             "$#", "#$", "$ #", "# $"
-        };
+        ];
 
         private static readonly string[] s_negCurrencyFormats =
-        {
+        [
             "($#)", "-$#", "$-#", "$#-",
             "(#$)", "-#$", "#-$", "#$-",
             "-# $", "-$ #", "# $-", "$ #-",
             "$ -#", "#- $", "($ #)", "(# $)",
             "$- #"
-        };
+        ];
 
         private static readonly string[] s_posPercentFormats =
-        {
+        [
             "# %", "#%", "%#", "% #"
-        };
+        ];
 
         private static readonly string[] s_negPercentFormats =
-        {
+        [
             "-# %", "-#%", "-%#",
             "%-#", "%#-",
             "#-%", "#%-",
             "-% #", "# %-", "% #-",
             "% -#", "#- %"
-        };
+        ];
 
         private static readonly string[] s_negNumberFormats =
-        {
+        [
             "(#)", "-#", "- #", "#-", "# -",
-        };
+        ];
 
         internal static unsafe char ParseFormatSpecifier(ReadOnlySpan<char> format, out int digits)
         {

@@ -1145,7 +1145,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
         ArgumentOutOfRangeException ex = Assert.Throws<ArgumentOutOfRangeException>(
             () => new JsonObjectCreationHandlingAttribute(handling));
 
-        Assert.Contains("handling", ex.ToString());
+        Assert.Contains("handling", ex.Message);
     }
 
     [Fact]

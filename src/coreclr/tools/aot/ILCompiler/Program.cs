@@ -65,7 +65,7 @@ namespace ILCompiler
         {
             string outputFilePath = Get(_command.OutputFilePath);
             if (outputFilePath == null)
-                throw new CommandLineException("Output filename must be specified (/out <file>)");
+                throw new CommandLineException("Output filename must be specified (--out <file>)");
 
             var suppressedWarningCategories = new List<string>();
             if (Get(_command.NoTrimWarn))
@@ -378,9 +378,10 @@ namespace ILCompiler
             }
 
             SubstitutionProvider substitutionProvider = new SubstitutionProvider(logger, featureSwitches, substitutions);
-            ilProvider = new SubstitutedILProvider(ilProvider, substitutionProvider);
+            ILProvider unsubstitutedILProvider = ilProvider;
+            ilProvider = new SubstitutedILProvider(ilProvider, substitutionProvider, new DevirtualizationManager());
 
-            CompilerGeneratedState compilerGeneratedState = new CompilerGeneratedState(ilProvider, logger);
+            CompilerGeneratedState compilerGeneratedState = new CompilerGeneratedState(unsubstitutedILProvider, logger);
 
             var stackTracePolicy = Get(_command.EmitStackTraceData) ?
                 (StackTraceEmissionPolicy)new EcmaMethodStackTraceEmissionPolicy() : new NoStackTraceEmissionPolicy();
@@ -492,9 +493,16 @@ namespace ILCompiler
                 if (scanDgmlLogFileName != null)
                     scanResults.WriteDependencyLog(scanDgmlLogFileName);
 
+                DevirtualizationManager devirtualizationManager = scanResults.GetDevirtualizationManager();
+
                 metadataManager = ((UsageBasedMetadataManager)metadataManager).ToAnalysisBasedMetadataManager();
 
                 interopStubManager = scanResults.GetInteropStubManager(interopStateManager, pinvokePolicy);
+
+                ilProvider = new SubstitutedILProvider(unsubstitutedILProvider, substitutionProvider, devirtualizationManager);
+
+                // Use a more precise IL provider that uses whole program analysis for dead branch elimination
+                builder.UseILProvider(ilProvider);
 
                 // If we have a scanner, feed the vtable analysis results to the compilation.
                 // This could be a command line switch if we really wanted to.
@@ -507,7 +515,7 @@ namespace ILCompiler
                 // If we have a scanner, we can drive devirtualization using the information
                 // we collected at scanning time (effectively sealing unsealed types if possible).
                 // This could be a command line switch if we really wanted to.
-                builder.UseDevirtualizationManager(scanResults.GetDevirtualizationManager());
+                builder.UseDevirtualizationManager(devirtualizationManager);
 
                 // If we use the scanner's result, we need to consult it to drive inlining.
                 // This prevents e.g. devirtualizing and inlining methods on types that were
@@ -534,7 +542,7 @@ namespace ILCompiler
                 // If we have a scanner, we can inline threadstatics storage using the information we collected at scanning time.
                 if (!Get(_command.NoInlineTls) &&
                     ((targetOS == TargetOS.Linux && targetArchitecture is TargetArchitecture.X64 or TargetArchitecture.ARM64) ||
-                     (targetOS == TargetOS.Windows && targetArchitecture is TargetArchitecture.X64)))
+                     (targetOS == TargetOS.Windows && targetArchitecture is TargetArchitecture.X64 or TargetArchitecture.ARM64)))
                 {
                     builder.UseInlinedThreadStatics(scanResults.GetInlinedThreadStatics());
                 }

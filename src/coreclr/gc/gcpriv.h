@@ -141,7 +141,10 @@ inline void FATAL_GC_ERROR()
 // This means any empty regions can be freely used for any generation. For
 // Server GC we will balance regions between heaps.
 // For now disable regions for standalone GC and macOS builds
-#if defined (HOST_64BIT) && !defined (BUILD_AS_STANDALONE) && !defined(__APPLE__)
+// For SunOS or illumos this is temporary, until we can add MAP_PRIVATE
+// to the mmap() calls in unix/gcenv.unix.cpp  More details here:
+//    https://github.com/dotnet/runtime/issues/104211
+#if defined (HOST_64BIT) && !defined (BUILD_AS_STANDALONE) && !defined(__APPLE__) && !defined(__sun)
 #define USE_REGIONS
 #endif //HOST_64BIT && BUILD_AS_STANDALONE && !__APPLE__
 
@@ -1399,6 +1402,7 @@ public:
     size_t get_num_free_regions();
     size_t get_size_committed_in_free() { return size_committed_in_free_regions; }
     size_t get_size_free_regions() { return size_free_regions; }
+    size_t get_size_free_regions(int max_age);
     heap_segment* get_first_free_region() { return head_free_region; }
     static void unlink_region (heap_segment* region);
     static void add_region (heap_segment* region, region_free_list to_free_list[count_free_region_kinds]);
@@ -1465,9 +1469,7 @@ class gc_heap
     friend struct ::alloc_context;
     friend void ProfScanRootsHelper(Object** object, ScanContext *pSC, uint32_t dwFlags);
     friend void GCProfileWalkHeapWorker(BOOL fProfilerPinned, BOOL fShouldWalkHeapRootsForEtw, BOOL fShouldWalkHeapObjectsForEtw);
-#ifdef FEATURE_64BIT_ALIGNMENT
     friend Object* AllocAlign8(alloc_context* acontext, gc_heap* hp, size_t size, uint32_t flags);
-#endif //FEATURE_64BIT_ALIGNMENT
     friend class t_join;
     friend class gc_mechanisms;
     friend class seg_free_spaces;
@@ -1682,6 +1684,11 @@ private:
     PER_HEAP_ISOLATED_METHOD void verify_region_to_generation_map();
 
     PER_HEAP_ISOLATED_METHOD void compute_gc_and_ephemeral_range (int condemned_gen_number, bool end_of_gc_p);
+
+    PER_HEAP_ISOLATED_METHOD void distribute_free_regions();
+
+    PER_HEAP_ISOLATED_METHOD void age_free_regions (const char* msg);
+
 #ifdef STRESS_REGIONS
     PER_HEAP_METHOD void pin_by_gc (uint8_t* object);
 #endif //STRESS_REGIONS
@@ -2108,6 +2115,9 @@ private:
     PER_HEAP_METHOD void walk_survivors_relocation (void* profiling_context, record_surv_fn fn);
     PER_HEAP_METHOD void walk_survivors_for_uoh (void* profiling_context, record_surv_fn fn, int gen_number);
 
+    PER_HEAP_ISOLATED_METHOD size_t generation_allocator_efficiency_percent (generation* inst);
+    PER_HEAP_ISOLATED_METHOD size_t generation_unusable_fragmentation (generation* inst, int hn);
+
     PER_HEAP_METHOD int generation_to_condemn (int n,
                                BOOL* blocking_collection_p,
                                BOOL* elevation_requested_p,
@@ -2132,6 +2142,7 @@ private:
 
 #ifdef DYNAMIC_HEAP_COUNT
     PER_HEAP_ISOLATED_METHOD size_t get_total_soh_stable_size();
+    PER_HEAP_ISOLATED_METHOD void update_total_soh_stable_size();
     PER_HEAP_ISOLATED_METHOD void assign_new_budget (int gen_number, size_t desired_per_heap);
     PER_HEAP_METHOD bool prepare_rethread_fl_items();
     PER_HEAP_METHOD void rethread_fl_items(int gen_idx);
@@ -2380,11 +2391,23 @@ private:
                                       );
     PER_HEAP_METHOD void reset_heap_segment_pages (heap_segment* seg);
     PER_HEAP_METHOD void decommit_heap_segment_pages (heap_segment* seg, size_t extra_space);
+
 #if defined(MULTIPLE_HEAPS)
     PER_HEAP_METHOD size_t decommit_ephemeral_segment_pages_step ();
 #endif //MULTIPLE_HEAPS
     PER_HEAP_METHOD size_t decommit_heap_segment_pages_worker (heap_segment* seg, uint8_t *new_committed);
+
+#if !defined(USE_REGIONS) || defined(MULTIPLE_HEAPS)
+    PER_HEAP_METHOD uint8_t* get_smoothed_decommit_target (uint8_t* previous_decommit_target,
+        uint8_t* new_decommit_target, heap_segment* seg);
+
+    PER_HEAP_METHOD void decommit_ephemeral_segment_pages();
+#endif //!USE_REGIONS || MULTIPLE_HEAPS
+
+#if defined(MULTIPLE_HEAPS) || defined(USE_REGIONS)
     PER_HEAP_ISOLATED_METHOD bool decommit_step (uint64_t step_milliseconds);
+#endif //MULTIPLE_HEAPS || USE_REGIONS
+
 #ifdef USE_REGIONS
     PER_HEAP_ISOLATED_METHOD size_t decommit_region (heap_segment* region, int bucket, int h_number);
 #endif //USE_REGIONS
@@ -2407,7 +2430,6 @@ private:
     PER_HEAP_METHOD void rearrange_heap_segments(BOOL compacting);
 #endif //!USE_REGIONS
     PER_HEAP_METHOD void delay_free_segments();
-    PER_HEAP_ISOLATED_METHOD void distribute_free_regions();
 #ifdef BACKGROUND_GC
     PER_HEAP_ISOLATED_METHOD void reset_write_watch_for_gc_heap(void* base_address, size_t region_size);
     PER_HEAP_ISOLATED_METHOD void get_write_watch_for_gc_heap(bool reset, void *base_address, size_t region_size, void** dirty_pages, uintptr_t* dirty_page_count_ref, bool is_runtime_suspended);
@@ -2586,7 +2608,9 @@ private:
     PER_HEAP_ISOLATED_METHOD bool prepare_to_change_heap_count (int new_n_heaps);
     PER_HEAP_METHOD bool change_heap_count (int new_n_heaps);
 
-    PER_HEAP_ISOLATED_METHOD size_t get_msl_wait_time();
+    PER_HEAP_ISOLATED_METHOD void get_msl_wait_time (size_t* soh_msl_wait_time, size_t* uoh_msl_wait_time);
+
+    PER_HEAP_ISOLATED_METHOD void process_datas_sample();
 #endif //DYNAMIC_HEAP_COUNT
 #endif //USE_REGIONS
 
@@ -3070,8 +3094,6 @@ private:
 
     PER_HEAP_METHOD ptrdiff_t estimate_gen_growth (int gen);
 
-    PER_HEAP_METHOD void decommit_ephemeral_segment_pages();
-
 #ifdef HOST_64BIT
     PER_HEAP_ISOLATED_METHOD size_t trim_youngest_desired (uint32_t memory_load,
                                   size_t total_new_allocation,
@@ -3100,7 +3122,7 @@ private:
                             size_t allocated_size,
                             size_t* etw_allocation_amount);
     // this also resets allocated_since_last_gc
-    PER_HEAP_ISOLATED_METHOD size_t get_total_allocated_since_last_gc();
+    PER_HEAP_ISOLATED_METHOD void get_total_allocated_since_last_gc (size_t oh_allocated[total_oh_count]);
     PER_HEAP_METHOD size_t get_current_allocated();
     PER_HEAP_ISOLATED_METHOD size_t get_total_allocated();
     PER_HEAP_ISOLATED_METHOD size_t get_total_promoted();
@@ -3184,7 +3206,7 @@ private:
     // Restores BGC settings if necessary.
     PER_HEAP_ISOLATED_METHOD void recover_bgc_settings();
 
-    PER_HEAP_METHOD BOOL is_bgc_in_progress();
+    PER_HEAP_ISOLATED_METHOD BOOL is_bgc_in_progress();
 
     PER_HEAP_METHOD void clear_commit_flag();
 
@@ -3670,13 +3692,16 @@ private:
     PER_HEAP_FIELD_SINGLE_GC_ALLOC size_t     bgc_loh_size_increased;
     PER_HEAP_FIELD_SINGLE_GC_ALLOC size_t     bgc_poh_size_increased;
 
-
     // Updated by the allocator and reinit-ed in each BGC
     PER_HEAP_FIELD_SINGLE_GC_ALLOC size_t     background_soh_alloc_count;
     PER_HEAP_FIELD_SINGLE_GC_ALLOC size_t     background_uoh_alloc_count;
 
     PER_HEAP_FIELD_SINGLE_GC_ALLOC VOLATILE(int32_t) uoh_alloc_thread_count;
 #endif //BACKGROUND_GC
+
+#ifdef STRESS_DYNAMIC_HEAP_COUNT
+    PER_HEAP_FIELD_SINGLE_GC_ALLOC bool uoh_msl_before_gc_p;
+#endif //STRESS_DYNAMIC_HEAP_COUNT
 
     /************************************/
     // PER_HEAP_FIELD_MAINTAINED fields //
@@ -4142,9 +4167,13 @@ private:
     PER_HEAP_ISOLATED_FIELD_SINGLE_GC uint8_t* gc_high; // high end of the highest region being condemned
 #endif //USE_REGIONS
 
+#ifdef DYNAMIC_HEAP_COUNT
+    PER_HEAP_ISOLATED_FIELD_SINGLE_GC uint64_t before_distribute_free_regions_time;
+
 #ifdef STRESS_DYNAMIC_HEAP_COUNT
     PER_HEAP_ISOLATED_FIELD_SINGLE_GC int heaps_in_this_gc;
 #endif //STRESS_DYNAMIC_HEAP_COUNT
+#endif //DYNAMIC_HEAP_COUNT
 
     /**************************************************/
     // PER_HEAP_ISOLATED_FIELD_SINGLE_GC_ALLOC fields //
@@ -4254,7 +4283,7 @@ private:
     // to smooth out the situation when we rarely pick the gen2 GCs in the first array.
     struct dynamic_heap_count_data_t
     {
-        float target_tcp = 5.0;
+        float target_tcp = 2.0;
         float target_gen2_tcp = 10.0;
 
         static const int recorded_adjustment_size = 4;
@@ -4361,7 +4390,8 @@ private:
         {
             int adjustment_idx = (current_adjustment_index + recorded_adjustment_size + distance_to_current) % recorded_adjustment_size;
             adjustment* adj = &adjustment_history[adjustment_idx];
-            dprintf (6666, ("adj->metric %d, metric %d, adj#%d: hc_change > 0 = %d, change_int > 0 = %d",
+            dprintf (6666, ("adj->metric %s, metric %s, adj#%d: hc_change > 0 = %d, change_int > 0 = %d",
+                str_adjust_metrics[adj->metric], str_adjust_metrics[metric],
                 adjustment_idx, (adj->hc_change > 0), (change_int > 0)));
             if ((adj->metric == metric) && ((change_int > 0) == (adj->hc_change > 0)))
             {
@@ -4589,10 +4619,30 @@ private:
             init_recorded_tcp();
         }
 
-        bool should_change (float tcp, float* tcp_to_consider, size_t current_gc_index)
+        enum decide_change_condition
         {
+            init_change_condition = 0x0000,
+            change = 0x0001,
+            too_few_samples = 0x0002,
+            not_enough_diff_accumulated = 0x0004,
+            already_toward_target = 0x0008,
+            tcp_in_range = 0x0010,
+            temp_change = 0x0020
+        };
+
+        bool should_change (float tcp, float* tcp_to_consider, size_t current_gc_index,
+                            // The following are only for diagnostics
+                            decide_change_condition* change_decision,
+                            int* recorded_tcp_count, float* recorded_tcp_slope,
+                            size_t* num_gcs_since_last_change,
+                            float* current_around_target_accumulation)
+        {
+            *change_decision = decide_change_condition::init_change_condition;
+
             adjustment* adj = get_last_adjustment();
             size_t last_changed_gc_index = adj->gc_index;
+            *recorded_tcp_count = 0;
+            *recorded_tcp_slope = 0.0f;
 
             check_success_after_adjust (current_gc_index, adj, tcp);
 
@@ -4600,18 +4650,21 @@ private:
             dprintf (6666, ("accumulating %.3f + %.3f -> %.3f",
                 around_target_accumulation, diff_to_target, (around_target_accumulation + diff_to_target)));
             around_target_accumulation += diff_to_target;
+            *current_around_target_accumulation = around_target_accumulation;
 
-            size_t num_gcs_since_last_change = current_gc_index - last_changed_gc_index;
-            dprintf (6666, ("we adjusted at GC#%Id, %Id GCs ago", last_changed_gc_index, num_gcs_since_last_change));
-            if (last_changed_gc_index && (num_gcs_since_last_change < (2 * sample_size)))
+            *num_gcs_since_last_change = current_gc_index - last_changed_gc_index;
+            dprintf (6666, ("we adjusted at GC#%Id, %Id GCs ago", last_changed_gc_index, *num_gcs_since_last_change));
+            if (last_changed_gc_index && (*num_gcs_since_last_change < (2 * sample_size)))
             {
-                dprintf (6666, ("we just adjusted %Id GCs ago, skipping", num_gcs_since_last_change));
+                *change_decision = decide_change_condition::too_few_samples;
+                dprintf (6666, ("we just adjusted %Id GCs ago, skipping", *num_gcs_since_last_change));
                 return false;
             }
 
             // If we haven't accumulated enough changes.
             if ((around_target_accumulation < around_target_threshold) && (around_target_accumulation > -around_target_threshold))
             {
+                *change_decision = decide_change_condition::not_enough_diff_accumulated;
                 dprintf (6666, ("accumulated %.3f < %.3f and > %.3f, skipping",
                     around_target_accumulation, around_target_threshold, -around_target_threshold));
                 return false;
@@ -4620,7 +4673,9 @@ private:
             // If the slope clearly indicates it's already going the direction we want to.
             float avg_recorded_tcp = 0.0;
             int tcp_count = rearrange_recorded_tcp ();
+            *recorded_tcp_count = tcp_count;
             float tcp_slope = slope (recorded_tcp_rearranged, tcp_count, &avg_recorded_tcp);
+            *recorded_tcp_slope = tcp_slope;
             dprintf (6666, ("acc thres exceeded! %s slope of %d tcps is %.3f",
                 ((around_target_accumulation > 0.0) ? "above" : "below"), tcp_count, tcp_slope));
 
@@ -4629,6 +4684,7 @@ private:
                 (((around_target_accumulation > 0.0) && (tcp_slope < -0.2)) ||
                 ((around_target_accumulation < 0.0) && (tcp_slope > 0.2))))
             {
+                *change_decision = decide_change_condition::already_toward_target;
                 dprintf (6666, ("already trending the right direction, skipping"));
                 reset_accumulation();
                 return false;
@@ -4638,6 +4694,7 @@ private:
             float diff_pct = diff_to_target / target_tcp;
             if (is_tcp_in_range (diff_pct, tcp_slope))
             {
+                *change_decision = decide_change_condition::tcp_in_range;
                 dprintf (6666, ("diff %.3f, slope %.3f already in range", diff_pct, tcp_slope));
                 reset_accumulation();
                 return false;
@@ -4648,6 +4705,7 @@ private:
 
             if (is_temp_change (tcp_to_consider))
             {
+                *change_decision = decide_change_condition::temp_change;
                 dprintf (6666, ("this is a temporary change, ignore"));
                 reset_accumulation();
                 return false;
@@ -4677,8 +4735,20 @@ private:
             return (int)round(current_hc * (4.0 * pow (current_hc, -0.7)));
         }
 
-        int get_hc_change_factors (int change_int, size_t last_change_gc_index)
+        enum hc_change_freq_reason
         {
+            // Default is just a number we set to not change really often.
+            default_reason = 0x0000,
+            expensive_hc_change = 0x0001,
+            dec = 0x0002,
+            dec_multiple = 0x0004,
+            fluctuation = 0x0008
+        };
+
+        int get_hc_change_freq_factors (int change_int, size_t last_change_gc_index, hc_change_freq_reason* reason)
+        {
+            *reason = hc_change_freq_reason::default_reason;
+
             int factor = 3;
             int inc_factor = factor;
 
@@ -4703,7 +4773,8 @@ private:
 
                 if (change_heap_count_time > avg_gc_pause_time)
                 {
-                    factor *= 2 * (int)(change_heap_count_time/ avg_gc_pause_time);
+                    factor *= 2 * (int)(change_heap_count_time / avg_gc_pause_time);
+                    *reason = hc_change_freq_reason::expensive_hc_change;
                 }
 
                 dprintf (6666, ("last HC change took %.3fms  / avg gc pause %.3fms = %d , factor %d",
@@ -4715,6 +4786,7 @@ private:
             {
                 // Dec in general should be done less frequently than inc.
                 factor *= 2;
+                *reason = (hc_change_freq_reason)((int)*reason | hc_change_freq_reason::dec);
 
                 adjustment* adj = get_last_adjustment();
                 int last_hc_change = adj->hc_change;
@@ -4726,6 +4798,7 @@ private:
                     // If it's the 2nd time in a row we want to dec, we also delay it.
                     dprintf (6666, ("last was dec, factor %d->%d", factor, (factor * 2)));
                     factor *= 2;
+                    *reason = (hc_change_freq_reason)((int)*reason | hc_change_freq_reason::dec_multiple);
                 }
                 else
                 {
@@ -4747,6 +4820,7 @@ private:
                             {
                                 dprintf (6666, ("We dec-ed and quickly followed with an inc, factor %d -> %d", factor, (factor * 4)));
                                 factor *= 4;
+                                *reason = (hc_change_freq_reason)((int)*reason | hc_change_freq_reason::fluctuation);
                             }
                         }
                     }
@@ -4756,8 +4830,22 @@ private:
             return factor;
         }
 
-        adjust_metric should_change_hc (int max_hc_datas, int min_hc_datas, int max_hc_growth, int& change_int, size_t current_gc_index)
+        // If we did consider changing, which adjustment are we actually doing? These are the reasons that caused us
+        // to make that decision.
+        enum decide_adjustment_reason
         {
+            init_adjustment_reason = 0x0000,
+            limited_by_bounds = 0x0001,
+            cannot_adjust_budget = 0x0002,
+            change_pct_too_small = 0x0004,
+            change_too_soon = 0x0008
+        };
+
+        adjust_metric should_change_hc (int max_hc_datas, int min_hc_datas, int max_hc_growth, int& change_int, size_t current_gc_index,
+                                        // These are only for diagnostics.
+                                        decide_adjustment_reason* adj_reason, int* hc_change_freq_factor, hc_change_freq_reason* hc_freq_reason)
+        {
+            *adj_reason = decide_adjustment_reason::init_adjustment_reason;
             adjust_metric adj_metric = not_adjusted;
 
             int saved_change_int = change_int;
@@ -4774,15 +4862,16 @@ private:
                 }
             }
 
+            if (saved_change_int != change_int)
+            {
+                *adj_reason = decide_adjustment_reason::limited_by_bounds;
+                dprintf (6666, ("change %d heaps instead of %d so we don't go over upper/lower limit", change_int, saved_change_int));
+            }
+
             if (change_int == 0)
             {
                 dprintf (6666, ("cannot change due to upper/lower limit!"));
                 return adj_metric;
-            }
-
-            if (saved_change_int != change_int)
-            {
-                dprintf (6666, ("change %d heaps instead of %d so we don't go over upper/lower limit", change_int, saved_change_int));
             }
 
             // Now we need to decide whether we should change the HC or the budget.
@@ -4801,11 +4890,13 @@ private:
             // because we use this to indicate if at some point we should change HC instead.
             if ((change_int > 0) && (n_heaps == min_hc_datas))
             {
+                *adj_reason = (decide_adjustment_reason)((int)*adj_reason | decide_adjustment_reason::cannot_adjust_budget);
                 dprintf (6666, ("we are already at min datas heaps %d, cannot inc budget so must inc HC", n_heaps));
                 adj_metric = adjust_hc;
             }
             else if ((change_int < 0) && (n_heaps == max_hc_datas))
             {
+                *adj_reason = (decide_adjustment_reason)((int)*adj_reason | decide_adjustment_reason::cannot_adjust_budget);
                 dprintf (6666, ("we are already at max datas heaps %d, cannot dec budget so must dec HC", n_heaps));
                 adj_metric = adjust_hc;
             }
@@ -4821,13 +4912,13 @@ private:
             if (last_change_gc_index)
             {
                 size_t num_gcs_since_change = current_gc_index - last_change_gc_index;
-                int hc_change_factor = get_hc_change_factors (change_int, last_change_gc_index);
+                *hc_change_freq_factor = get_hc_change_freq_factors (change_int, last_change_gc_index, hc_freq_reason);
 
-                dprintf (6666, ("hc would change %.3f, factor is %d", hc_change_pct, hc_change_factor));
+                dprintf (6666, ("hc would change %.3f, factor is %d", hc_change_pct, *hc_change_freq_factor));
                 if (hc_change_pct < 0.2)
                 {
                     // Should we also consider absolute time here?
-                    int delayed_hc_change_factor = hc_change_factor * 3;
+                    int delayed_hc_change_freq_factor = *hc_change_freq_factor * 3;
                     int count = 0;
                     if (adj->metric == adjust_budget)
                     {
@@ -4835,20 +4926,22 @@ private:
                     }
 
                     dprintf (6666, ("we've changed budget instead of HC %d times from %Id GCs ago, thres %d times",
-                                    count, num_gcs_since_change, delayed_hc_change_factor));
+                                    count, num_gcs_since_change, delayed_hc_change_freq_factor));
 
-                    if (count < delayed_hc_change_factor)
+                    if (count < delayed_hc_change_freq_factor)
                     {
+                        *adj_reason = (decide_adjustment_reason)((int)*adj_reason | decide_adjustment_reason::change_pct_too_small);
                         adj_metric = adjust_budget;
                     }
                 }
                 else
                 {
-                    bool change_p = (num_gcs_since_change > (size_t)(hc_change_factor * sample_size));
-                    dprintf (6666, ("It's been %Id GCs since we wanted to change HC last time, thres %d GCs, %s",
-                        num_gcs_since_change, (hc_change_factor * sample_size), (change_p ? "change" : "don't change yet")));
+                    bool change_p = (num_gcs_since_change > (size_t)(*hc_change_freq_factor * sample_size));
+                    dprintf (6666, ("It's been %Id GCs since we changed last time, thres %d GCs, %s",
+                        num_gcs_since_change, (*hc_change_freq_factor * sample_size), (change_p ? "change" : "don't change yet")));
                     if (!change_p)
                     {
+                        *adj_reason = (decide_adjustment_reason)((int)*adj_reason | decide_adjustment_reason::change_too_soon);
                         adj_metric = not_adjusted;
                     }
                 }
@@ -4904,12 +4997,15 @@ private:
             size_t total_budget_old_gen = compute_total_gen0_budget (total_soh_stable_size);
             size_t budget_old_gen_per_heap = total_budget_old_gen / n_heaps;
             budget_old_gen_per_heap = Align (budget_old_gen_per_heap, get_alignment_constant (TRUE));
-
-            dprintf (6666, ("-> %Id / heap (% .3fmb)",
-                budget_old_gen_per_heap, ((double)budget_old_gen_per_heap / 1000.0 / 1000.0)));
+            size_t saved_budget_old_gen_per_heap = budget_old_gen_per_heap;
 
             budget_old_gen_per_heap = min (max_gen0_new_allocation, budget_old_gen_per_heap);
             budget_old_gen_per_heap = max (min_gen0_new_allocation, budget_old_gen_per_heap);
+
+            dprintf (6666, ("BCD: %Id/heap (%.3fmb) -> %.3fmb, BCS %Id/heap (%.3fmb)",
+                saved_budget_old_gen_per_heap, ((double)saved_budget_old_gen_per_heap / 1000.0 / 1000.0),
+                ((double)budget_old_gen_per_heap / 1000.0 / 1000.0),
+                bcs_per_heap, ((double)bcs_per_heap / 1000.0 / 1000.0)));
 
             // We want to return a number between bcs and bcd
             if (bcs_per_heap < budget_old_gen_per_heap)
@@ -4954,15 +5050,15 @@ private:
 
                         size_t new_budget_per_heap = (size_t)(last_budget_per_heap / last_alloc_time * target_alloc_time);
                         new_budget_per_heap = Align (new_budget_per_heap, get_alignment_constant (TRUE));
+                        size_t saved_new_budget_per_heap = new_budget_per_heap;
 
-                        dprintf (6666, ("adjust last budget %Id to %Id (%.3fmb)",
-                            last_budget_per_heap, new_budget_per_heap, (new_budget_per_heap / 1000.0 / 1000.0)));
+                        new_budget_per_heap = max (new_budget_per_heap, bcs_per_heap);
+                        new_budget_per_heap = min (new_budget_per_heap, budget_old_gen_per_heap);
 
-                        if ((new_budget_per_heap >= bcs_per_heap) && (new_budget_per_heap <= budget_old_gen_per_heap))
-                        {
-                            dprintf (6666, ("setting this as the new budget!"));
-                            return new_budget_per_heap;
-                        }
+                        dprintf (6666, ("adjust last budget %Id to %Id->%Id (%.3fmb)",
+                            last_budget_per_heap, saved_new_budget_per_heap, new_budget_per_heap, (new_budget_per_heap / 1000.0 / 1000.0)));
+
+                        return new_budget_per_heap;
                     }
                 }
             }
@@ -4979,6 +5075,7 @@ private:
             // Recording the gen2 GC indices so we know how far apart they are. Currently unused
             // but we should consider how much value there is if they are very far apart.
             size_t gc_index;
+            uint64_t gc_duration; 
             // This is (gc_elapsed_time / time inbetween this and the last gen2 GC)
             float gc_percent;
         };
@@ -4989,6 +5086,19 @@ private:
         size_t          current_gen2_samples_count;
         size_t          processed_gen2_samples_count;
         size_t          gen2_last_changed_sample_count;
+
+        gen2_sample& get_last_gen2_sample()
+        {
+            int last_sample_index = (gen2_sample_index + sample_size - 1) % sample_size;
+            gen2_sample& s = gen2_samples[last_sample_index];
+            return s;
+        }
+
+        gen2_sample& get_current_gen2_sample()
+        {
+            gen2_sample& s = gen2_samples[gen2_sample_index];
+            return s;
+        }
 
         int             new_n_heaps;
         // the heap count we changed from
@@ -5009,10 +5119,20 @@ private:
         }
     };
     PER_HEAP_ISOLATED_FIELD_MAINTAINED dynamic_heap_count_data_t dynamic_heap_count_data;
+    PER_HEAP_ISOLATED_FIELD_MAINTAINED size_t current_total_soh_stable_size;
     PER_HEAP_ISOLATED_FIELD_MAINTAINED uint64_t last_suspended_end_time;
+    PER_HEAP_ISOLATED_FIELD_MAINTAINED uint64_t change_heap_count_time;
+
     // If the last full GC is blocking, this is that GC's index; for BGC, this is the settings.gc_index
     // when the BGC ended.
     PER_HEAP_ISOLATED_FIELD_MAINTAINED size_t gc_index_full_gc_end;
+
+    PER_HEAP_ISOLATED_FIELD_MAINTAINED bool trigger_initial_gen2_p;
+#ifdef BACKGROUND_GC
+    // This is set when change_heap_count wants the next GC to be a BGC for rethreading gen2 FL
+    // and reset during that BGC.
+    PER_HEAP_ISOLATED_FIELD_MAINTAINED bool trigger_bgc_for_rethreading_p;
+#endif //BACKGROUND_GC
 #endif //DYNAMIC_HEAP_COUNT
 
     /****************************************************/
@@ -5204,14 +5324,15 @@ private:
     // at the beginning of a BGC and the PM triggered full GCs
     // fall into this case.
     PER_HEAP_ISOLATED_FIELD_DIAG_ONLY uint64_t suspended_start_time;
-    // Right now this is diag only but may be used functionally later.
-    PER_HEAP_ISOLATED_FIELD_DIAG_ONLY uint64_t change_heap_count_time;
-    // TEMP END
     PER_HEAP_ISOLATED_FIELD_DIAG_ONLY uint64_t end_gc_time;
     PER_HEAP_ISOLATED_FIELD_DIAG_ONLY uint64_t total_suspended_time;
     PER_HEAP_ISOLATED_FIELD_DIAG_ONLY uint64_t process_start_time;
     PER_HEAP_ISOLATED_FIELD_DIAG_ONLY last_recorded_gc_info last_ephemeral_gc_info;
     PER_HEAP_ISOLATED_FIELD_DIAG_ONLY last_recorded_gc_info last_full_blocking_gc_info;
+
+    // The following fields are for the dprintf in do_pre_gc.
+    PER_HEAP_ISOLATED_FIELD_DIAG_ONLY uint64_t last_alloc_reset_suspended_end_time;
+    PER_HEAP_ISOLATED_FIELD_DIAG_ONLY size_t max_peak_heap_size;
 
 #ifdef BACKGROUND_GC
     PER_HEAP_ISOLATED_FIELD_DIAG_ONLY gc_history_global bgc_data_global;
@@ -5316,10 +5437,6 @@ private:
 #ifdef HEAP_ANALYZE
     PER_HEAP_ISOLATED_FIELD_DIAG_ONLY BOOL heap_analyze_enabled;
 #endif //HEAP_ANALYZE
-
-#if defined(MULTIPLE_HEAPS) && defined(STRESS_DYNAMIC_HEAP_COUNT)
-    PER_HEAP_FIELD bool uoh_msl_before_gc_p;
-#endif //MULTIPLE_HEAPS && STRESS_DYNAMIC_HEAP_COUNT
 
     /***************************************************/
     // Fields that don't fit into the above categories //
@@ -5757,6 +5874,12 @@ size_t& generation_sweep_allocated (generation* inst)
 {
     return inst->sweep_allocated;
 }
+// These are allocations we did while doing planning, we use this to calculate free list efficiency.
+inline
+size_t generation_total_plan_allocated (generation* inst)
+{
+    return (inst->free_list_allocated + inst->end_seg_allocated + inst->condemned_allocated);
+}
 #ifdef DOUBLY_LINKED_FL
 inline
 BOOL&  generation_set_bgc_mark_bit_p (generation* inst)
@@ -5786,32 +5909,6 @@ size_t& generation_allocated_since_last_pin (generation* inst)
     return inst->allocated_since_last_pin;
 }
 #endif //FREE_USAGE_STATS
-
-// Return the percentage of efficiency (between 0 and 100) of the allocator.
-inline
-size_t generation_allocator_efficiency_percent (generation* inst)
-{
-    // Use integer division to prevent potential floating point exception.
-    // FPE may occur if we use floating point division because of speculative execution.
-    uint64_t free_obj_space = generation_free_obj_space (inst);
-    uint64_t free_list_allocated = generation_free_list_allocated (inst);
-    if ((free_list_allocated + free_obj_space) == 0)
-      return 0;
-    return (size_t)((100 * free_list_allocated) / (free_list_allocated + free_obj_space));
-}
-
-inline
-size_t generation_unusable_fragmentation (generation* inst)
-{
-    // Use integer division to prevent potential floating point exception.
-    // FPE may occur if we use floating point division because of speculative execution.
-    uint64_t free_obj_space = generation_free_obj_space (inst);
-    uint64_t free_list_allocated = generation_free_list_allocated (inst);
-    uint64_t free_list_space = generation_free_list_space (inst);
-    if ((free_list_allocated + free_obj_space) == 0)
-      return 0;
-    return (size_t)(free_obj_space + (free_obj_space * free_list_space) / (free_list_allocated + free_obj_space));
-}
 
 #define plug_skew           sizeof(ObjHeader)
 // We always use USE_PADDING_TAIL when fitting so items on the free list should be
@@ -5942,12 +6039,15 @@ public:
     uint8_t*        background_allocated;
 #ifdef MULTIPLE_HEAPS
     gc_heap*        heap;
-#ifdef _DEBUG
+#if defined(_DEBUG) && !defined(USE_REGIONS)
     uint8_t*        saved_committed;
     size_t          saved_desired_allocation;
-#endif // _DEBUG
+#endif //_DEBUG && ! USE_REGIONS
 #endif //MULTIPLE_HEAPS
+
+#if !defined(USE_REGIONS) || defined(MULTIPLE_HEAPS)
     uint8_t*        decommit_target;
+#endif //!USE_REGIONS || MULTIPLE_HEAPS
     uint8_t*        plan_allocated;
     // In the plan phase we change the allocated for a seg but we need this
     // value to correctly calculate how much space we can reclaim in
@@ -5979,6 +6079,7 @@ public:
     // the region's free list.
     #define MAX_AGE_IN_FREE 99
     #define AGE_IN_FREE_TO_DECOMMIT 20
+    #define MIN_AGE_TO_DECOMMIT_HUGE 2
     int             age_in_free;
     // This is currently only used by regions that are swept in plan -
     // we then thread this list onto the generation's free list.
@@ -6250,11 +6351,13 @@ uint8_t*& heap_segment_committed (heap_segment* inst)
 {
   return inst->committed;
 }
+#if !defined(USE_REGIONS) || defined(MULTIPLE_HEAPS)
 inline
 uint8_t*& heap_segment_decommit_target (heap_segment* inst)
 {
     return inst->decommit_target;
 }
+#endif //!USE_REGIONS || MULTIPLE_HEAPS
 inline
 uint8_t*& heap_segment_used (heap_segment* inst)
 {
