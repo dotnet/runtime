@@ -3079,6 +3079,9 @@ GenTree* Lowering::LowerHWIntrinsicCmpOp(GenTreeHWIntrinsic* node, genTreeOps cm
                         node->Op(1) = op1Intrinsic->Op(1);
                         node->Op(2) = op1Intrinsic->Op(2);
 
+                        // Make sure we aren't contained since ptestm will do its own containment check
+                        node->Op(2)->ClearContained();
+
                         BlockRange().Remove(op1);
                         BlockRange().Remove(op2);
 
@@ -9829,7 +9832,8 @@ bool Lowering::IsContainableHWIntrinsicOp(GenTreeHWIntrinsic* parentNode, GenTre
                 }
 
                 bool childSupportsRegOptional;
-                if (IsContainableHWIntrinsicOp(hwintrinsic, broadcastOperand, &childSupportsRegOptional))
+                if (IsContainableHWIntrinsicOp(hwintrinsic, broadcastOperand, &childSupportsRegOptional) &&
+                    IsSafeToContainMem(parentNode, hwintrinsic))
                 {
                     return true;
                 }
@@ -10420,9 +10424,7 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                     {
                         containedOperand = op2;
                     }
-                    else if ((isCommutative || (intrinsicId == NI_BMI2_MultiplyNoFlags) ||
-                              (intrinsicId == NI_BMI2_X64_MultiplyNoFlags)) &&
-                             IsContainableHWIntrinsicOp(node, op1, &supportsOp1RegOptional))
+                    else if (isCommutative && IsContainableHWIntrinsicOp(node, op1, &supportsOp1RegOptional))
                     {
                         containedOperand = op1;
                         swapOperands     = true;
