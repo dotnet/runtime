@@ -508,7 +508,35 @@ internal sealed partial class SOSDacImpl : ISOSDacInterface, ISOSDacInterface2, 
     public unsafe int GetOOMData(ulong oomAddr, void* data) => HResults.E_NOTIMPL;
     public unsafe int GetOOMStaticData(void* data) => HResults.E_NOTIMPL;
     public unsafe int GetPEFileBase(ulong addr, ulong* peBase) => HResults.E_NOTIMPL;
-    public unsafe int GetPEFileName(ulong addr, uint count, char* fileName, uint* pNeeded) => HResults.E_NOTIMPL;
+
+    public unsafe int GetPEFileName(ulong addr, uint count, char* fileName, uint* pNeeded)
+    {
+        try
+        {
+            Contracts.ILoader contract = _target.Contracts.Loader;
+            Contracts.ModuleHandle handle = contract.GetModuleHandle(addr);
+            string path = contract.GetPath(handle);
+
+            // Return not implemented for empty paths for non-reflection emit assemblies (for example, loaded from memory)
+            if (string.IsNullOrEmpty(path))
+            {
+                Contracts.ModuleFlags flags = contract.GetFlags(handle);
+                if (!flags.HasFlag(Contracts.ModuleFlags.ReflectionEmit))
+                {
+                    return HResults.E_NOTIMPL;
+                }
+            }
+
+            CopyStringToTargetBuffer(fileName, count, pNeeded, path);
+        }
+        catch (System.Exception ex)
+        {
+            return ex.HResult;
+        }
+
+        return HResults.S_OK;
+    }
+
     public unsafe int GetPrivateBinPaths(ulong appDomain, int count, char* paths, uint* pNeeded) => HResults.E_NOTIMPL;
     public unsafe int GetRCWData(ulong addr, void* data) => HResults.E_NOTIMPL;
     public unsafe int GetRCWInterfaces(ulong rcw, uint count, void* interfaces, uint* pNeeded) => HResults.E_NOTIMPL;
