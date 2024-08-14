@@ -18496,6 +18496,11 @@ void emitter::emitInsPairSanityCheck(instrDesc* firstId, instrDesc* secondId)
             break;
 
         case IF_SVE_FU_2A: // <Zda>.<T>, <Zn>.<T>, #<const>
+        // Tied registers
+        case IF_SVE_AW_2A: // <Zdn>.<T>, <Zdn>.<T>, <Zm>.<T>, #<const>
+        case IF_SVE_BY_2A: // <Zdn>.B, <Zdn>.B, <Zm>.B, #<imm>
+        case IF_SVE_FV_2A: // <Zdn>.<T>, <Zdn>.<T>, <Zm>.<T>, <const>
+        case IF_SVE_HN_2A: // <Zdn>.<T>, <Zdn>.<T>, <Zm>.<T>, #<imm>
             assert(!movprefxIsPredicated);
             assert(secondId->idReg1() != secondId->idReg2());
             break;
@@ -18515,15 +18520,16 @@ void emitter::emitInsPairSanityCheck(instrDesc* firstId, instrDesc* secondId)
         case IF_SVE_HR_3A: // <Zd>.<T>, <Pg>/M, <Zn>.<T>
         case IF_SVE_HS_3A: // <Zd>.<H|S|D>, <Pg>/M, <Zn>.<H|S|D>
         case IF_SVE_HP_3B: // <Zd>.<H|S|D>, <Pg>/M, <Zn>.<H|S|D>
-            assert(secondId->idReg1() != secondId->idReg3());
-            break;
-
         // Tied registers
-        case IF_SVE_AW_2A: // <Zdn>.<T>, <Zdn>.<T>, <Zm>.<T>, #<const>
-        case IF_SVE_BY_2A: // <Zdn>.B, <Zdn>.B, <Zm>.B, #<imm>
-        case IF_SVE_FV_2A: // <Zdn>.<T>, <Zdn>.<T>, <Zm>.<T>, <const>
-        case IF_SVE_HN_2A: // <Zdn>.<T>, <Zdn>.<T>, <Zm>.<T>, #<imm>
-            assert(!movprefxIsPredicated);
+        case IF_SVE_AA_3A: // <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T>
+        case IF_SVE_AB_3B: // <Zdn>.D, <Pg>/M, <Zdn>.D, <Zm>.D
+        case IF_SVE_AC_3A: // <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T>
+        case IF_SVE_AO_3A: // <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.D
+        case IF_SVE_CM_3A: // <Zdn>.<T>, <Pg>, <Zdn>.<T>, <Zm>.<T>
+        case IF_SVE_GP_3A: // <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T>, <const>
+        case IF_SVE_GR_3A: // <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T>
+        case IF_SVE_HL_3A: // <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T>
+        case IF_SVE_HL_3B: // <Zdn>.H, <Pg>/M, <Zdn>.H, <Zm>.H
             assert(secondId->idReg1() != secondId->idReg3());
             break;
 
@@ -18578,29 +18584,11 @@ void emitter::emitInsPairSanityCheck(instrDesc* firstId, instrDesc* secondId)
         case IF_SVE_HC_3A:   // <Zda>.S, <Zn>.B, <Zm>.B[<imm>]
         case IF_SVE_HD_3A:   // <Zda>.S, <Zn>.H, <Zm>.H
         case IF_SVE_HD_3A_A: // <Zda>.D, <Zn>.D, <Zm>.D
-            assert(!movprefxIsPredicated);
-            assert(secondId->idReg1() != secondId->idReg2());
-            assert(secondId->idReg1() != secondId->idReg3());
-            break;
-
-        // Tied registers
-        case IF_SVE_AA_3A: // <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T>
-        case IF_SVE_AB_3B: // <Zdn>.D, <Pg>/M, <Zdn>.D, <Zm>.D
-        case IF_SVE_AC_3A: // <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T>
-        case IF_SVE_AO_3A: // <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.D
-        case IF_SVE_CM_3A: // <Zdn>.<T>, <Pg>, <Zdn>.<T>, <Zm>.<T>
-        case IF_SVE_GP_3A: // <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T>, <const>
-        case IF_SVE_GR_3A: // <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T>
-        case IF_SVE_HL_3A: // <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T>
-        case IF_SVE_HL_3B: // <Zdn>.H, <Pg>/M, <Zdn>.H, <Zm>.H
-            assert(secondId->idReg1() != secondId->idReg4());
-            break;
-
         // Tied registers
         case IF_SVE_AV_3A: // <Zdn>.D, <Zdn>.D, <Zm>.D, <Zk>.D
             assert(!movprefxIsPredicated);
+            assert(secondId->idReg1() != secondId->idReg2());
             assert(secondId->idReg1() != secondId->idReg3());
-            assert(secondId->idReg1() != secondId->idReg4());
             break;
 
         case IF_SVE_AR_4A: // <Zda>.<T>, <Pg>/M, <Zn>.<T>, <Zm>.<T>
