@@ -3079,6 +3079,9 @@ GenTree* Lowering::LowerHWIntrinsicCmpOp(GenTreeHWIntrinsic* node, genTreeOps cm
                         node->Op(1) = op1Intrinsic->Op(1);
                         node->Op(2) = op1Intrinsic->Op(2);
 
+                        // Make sure we aren't contained since ptestm will do its own containment check
+                        node->Op(2)->ClearContained();
+
                         BlockRange().Remove(op1);
                         BlockRange().Remove(op2);
 
