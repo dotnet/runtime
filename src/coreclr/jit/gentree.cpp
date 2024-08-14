@@ -20187,6 +20187,8 @@ bool GenTree::isCommutativeHWIntrinsic() const
 
             case NI_AVX512F_Add:
             case NI_AVX512F_Multiply:
+            case NI_BMI2_MultiplyNoFlags:
+            case NI_BMI2_X64_MultiplyNoFlags:
             {
                 return node->GetOperandCount() == 2;
             }
