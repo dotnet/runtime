@@ -218,6 +218,7 @@ export function generateBackwardBranchTable (
 
         switch (opcode) {
             case MintOpcode.MINT_CALL_HANDLER:
+            case MintOpcode.MINT_CALL_HANDLER_S:
                 // While this formally isn't a backward branch target, we want to record
                 //  the offset of its following instruction so that the jiterpreter knows
                 //  to generate the necessary dispatch code to enable branching back to it.
@@ -505,15 +506,21 @@ export function generateWasmBody (
             }
 
             // Other conditional branch types are handled by the relop table.
+            case MintOpcode.MINT_BRFALSE_I4_S:
+            case MintOpcode.MINT_BRTRUE_I4_S:
             case MintOpcode.MINT_BRFALSE_I4_SP:
             case MintOpcode.MINT_BRTRUE_I4_SP:
+            case MintOpcode.MINT_BRFALSE_I8_S:
+            case MintOpcode.MINT_BRTRUE_I8_S:
                 if (!emit_branch(builder, ip, frame, opcode))
                     ip = abort;
                 else
                     isConditionallyExecuted = true;
                 break;
 
+            case MintOpcode.MINT_BR_S:
             case MintOpcode.MINT_CALL_HANDLER:
+            case MintOpcode.MINT_CALL_HANDLER_S:
                 if (!emit_branch(builder, ip, frame, opcode))
                     ip = abort;
                 else {
@@ -1286,6 +1293,7 @@ export function generateWasmBody (
             // These are generated in place of regular LEAVEs inside of the body of a catch clause.
             // We can safely assume that during normal execution, catch clauses won't be running.
             case MintOpcode.MINT_LEAVE_CHECK:
+            case MintOpcode.MINT_LEAVE_S_CHECK:
                 append_bailout(builder, ip, BailoutReason.LeaveCheck);
                 pruneOpcodes = true;
                 break;
@@ -2735,9 +2743,10 @@ function emit_unop (builder: WasmBuilder, ip: MintOpcodePtr, opcode: MintOpcode)
 
 function append_call_handler_store_ret_ip (
     builder: WasmBuilder, ip: MintOpcodePtr,
-    frame: NativePointer
+    frame: NativePointer, opcode: MintOpcode
 ) {
-    const retIp = <any>ip + (4 * 2),
+    const shortOffset = (opcode === MintOpcode.MINT_CALL_HANDLER_S),
+        retIp = shortOffset ? <any>ip + (3 * 2) : <any>ip + (4 * 2),
         clauseIndex = getU16(retIp - 2),
         clauseDataOffset = get_imethod_clause_data_offset(frame, clauseIndex);
 
@@ -2764,8 +2773,11 @@ function getBranchDisplacement (
         case MintOpArgType.MintOpBranch:
             result = getI32_unaligned(payloadAddress);
             break;
-        case MintOpArgType.MintOpShortAndBranch:
-            result = getI32_unaligned(payloadAddress + 2);
+        case MintOpArgType.MintOpShortBranch:
+            result = getI16(payloadAddress);
+            break;
+        case MintOpArgType.MintOpShortAndShortBranch:
+            result = getI16(payloadAddress + 2);
             break;
         default:
             return undefined;
@@ -2796,8 +2808,11 @@ function emit_branch (
     //  branch target (if possible), bailing out at the end otherwise
     switch (opcode) {
         case MintOpcode.MINT_CALL_HANDLER:
-        case MintOpcode.MINT_BR: {
-            const isCallHandler = opcode === MintOpcode.MINT_CALL_HANDLER;
+        case MintOpcode.MINT_CALL_HANDLER_S:
+        case MintOpcode.MINT_BR:
+        case MintOpcode.MINT_BR_S: {
+            const isCallHandler = (opcode === MintOpcode.MINT_CALL_HANDLER) ||
+                (opcode === MintOpcode.MINT_CALL_HANDLER_S);
 
             const destination = <any>ip + (displacement * 2);
 
@@ -2809,7 +2824,7 @@ function emit_branch (
                     if (builder.backBranchTraceLevel > 1)
                         mono_log_info(`0x${(<any>ip).toString(16)} performing backward branch to 0x${destination.toString(16)}`);
                     if (isCallHandler)
-                        append_call_handler_store_ret_ip(builder, ip, frame);
+                        append_call_handler_store_ret_ip(builder, ip, frame, opcode);
                     builder.cfg.branch(destination, true, CfgBranchType.Unconditional);
                     modifyCounter(JiterpCounter.BackBranchesEmitted, 1);
                     return true;
@@ -2834,32 +2849,32 @@ function emit_branch (
                 //  the current branch block after updating eip
                 builder.branchTargets.add(destination);
                 if (isCallHandler)
-                    append_call_handler_store_ret_ip(builder, ip, frame);
+                    append_call_handler_store_ret_ip(builder, ip, frame, opcode);
                 builder.cfg.branch(destination, false, CfgBranchType.Unconditional);
                 return true;
             }
         }
 
-        case MintOpcode.MINT_BRTRUE_I4:
-        case MintOpcode.MINT_BRFALSE_I4:
+        case MintOpcode.MINT_BRTRUE_I4_S:
+        case MintOpcode.MINT_BRFALSE_I4_S:
         case MintOpcode.MINT_BRTRUE_I4_SP:
         case MintOpcode.MINT_BRFALSE_I4_SP:
-        case MintOpcode.MINT_BRTRUE_I8:
-        case MintOpcode.MINT_BRFALSE_I8: {
-            const is64 = (opcode === MintOpcode.MINT_BRTRUE_I8) ||
-                (opcode === MintOpcode.MINT_BRFALSE_I8);
+        case MintOpcode.MINT_BRTRUE_I8_S:
+        case MintOpcode.MINT_BRFALSE_I8_S: {
+            const is64 = (opcode === MintOpcode.MINT_BRTRUE_I8_S) ||
+                (opcode === MintOpcode.MINT_BRFALSE_I8_S);
 
             // Load the condition
 
             append_ldloc(builder, getArgU16(ip, 1), is64 ? WasmOpcode.i64_load : WasmOpcode.i32_load);
             if (
-                (opcode === MintOpcode.MINT_BRFALSE_I4) ||
+                (opcode === MintOpcode.MINT_BRFALSE_I4_S) ||
                 (opcode === MintOpcode.MINT_BRFALSE_I4_SP)
             )
                 builder.appendU8(WasmOpcode.i32_eqz);
-            else if (opcode === MintOpcode.MINT_BRFALSE_I8) {
+            else if (opcode === MintOpcode.MINT_BRFALSE_I8_S) {
                 builder.appendU8(WasmOpcode.i64_eqz);
-            } else if (opcode === MintOpcode.MINT_BRTRUE_I8) {
+            } else if (opcode === MintOpcode.MINT_BRTRUE_I8_S) {
                 // do (i64 == 0) == 0 because br_if can only branch on an i32 operand
                 builder.appendU8(WasmOpcode.i64_eqz);
                 builder.appendU8(WasmOpcode.i32_eqz);

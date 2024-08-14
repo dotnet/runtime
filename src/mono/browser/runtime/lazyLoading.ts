@@ -53,7 +53,7 @@ export async function loadLazyAssembly (assemblyNameToLoad: string): Promise<boo
 
     let pdbNameToLoad = assemblyNameWithoutExtension + ".pdb";
     let shouldLoadPdb = false;
-    if (loaderHelpers.config.debugLevel != 0 && loaderHelpers.isDebuggingSupported()) {
+    if (loaderHelpers.config.debugLevel != 0) {
         shouldLoadPdb = Object.prototype.hasOwnProperty.call(lazyAssemblies, pdbNameToLoad);
         if (loaderHelpers.config.resources!.fingerprinting) {
             const map = loaderHelpers.config.resources!.fingerprinting;

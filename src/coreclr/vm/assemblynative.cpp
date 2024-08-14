@@ -707,16 +707,16 @@ extern "C" void QCALLTYPE AssemblyNative_GetModules(QCall::AssemblyHandle pAssem
     HENUMInternalHolder phEnum(pAssembly->GetMDImport());
     phEnum.EnumInit(mdtFile, mdTokenNil);
 
-    InlineSArray<DomainAssembly *, 8> modules;
+    InlineSArray<Module *, 8> modules;
 
-    modules.Append(pAssembly);
+    modules.Append(pAssembly->GetModule());
 
     mdFile mdFile;
     while (pAssembly->GetMDImport()->EnumNext(&phEnum, &mdFile))
     {
         if (fLoadIfNotFound)
         {
-            DomainAssembly* pModule = pAssembly->GetModule()->LoadModule(mdFile);
+            Module* pModule = pAssembly->GetModule()->LoadModule(mdFile);
             modules.Append(pModule);
         }
     }
@@ -733,9 +733,9 @@ extern "C" void QCALLTYPE AssemblyNative_GetModules(QCall::AssemblyHandle pAssem
 
         for(COUNT_T i = 0; i < modules.GetCount(); i++)
         {
-            DomainAssembly * pModule = modules[i];
+            Module * pModule = modules[i];
 
-            OBJECTREF o = pModule->GetExposedModuleObject();
+            OBJECTREF o = pModule->GetExposedObject();
             orModules->SetAt(i, o);
         }
 
