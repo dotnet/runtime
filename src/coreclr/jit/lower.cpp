@@ -2002,6 +2002,23 @@ void Lowering::LowerArgsForCall(GenTreeCall* call)
 }
 
 #if defined(TARGET_X86) && defined(FEATURE_IJW)
+//------------------------------------------------------------------------
+// LowerSpecialCopyArgs: Lower special copy arguments for P/Invoke IL stubs
+//
+// Arguments:
+//    call - the call node
+//
+// Notes:
+//    This method is used for P/Invoke IL stubs on x86 to handle arguments with special copy semantics.
+//    In particular, this method implements copy-constructor semantics for managed-to-unmanaged IL stubs
+//    for C++/CLI. In this case, the managed argument is passed by (managed or unmanaged) pointer in the
+//    P/Invoke signature with a speial modreq, but is passed to the unmanaged function by value.
+//    The value passed to the unmanaged function must be created through a copy-constructor call copying from
+//    the original source argument.
+//    We assume that the IL stub will be generated such that the following holds true:
+//       - If an argument to the IL stub has the special modreq, then its corresponding argument to the
+//         unmanaged function will be passed as the same argument index. Therefore, we can introduce the copy call
+//         from the original source argument to the argument slot in the unmanaged call.
 void Lowering::LowerSpecialCopyArgs(GenTreeCall* call)
 {
     // We only need to use the special copy helper on P/Invoke IL stubs
@@ -2032,16 +2049,33 @@ void Lowering::LowerSpecialCopyArgs(GenTreeCall* call)
     }
 }
 
+//------------------------------------------------------------------------
+// InsertSpecialCopyArg: Insert a call to the special copy helper to copy from the (possibly value pointed-to by) local
+// lclnum to the argument slot represented by putArgStk
+//
+// Arguments:
+//    putArgStk - the PutArgStk node representing the stack slot of the argument
+//    argType - the struct type of the argument
+//    lclNum - the local to use as the source for the special copy helper
+//
+// Notes:
+//   This method assumes that lclNum is either a by-ref to a struct of type argType
+//   or a struct of type argType.
+//   We use this to preserve special copy semantics for interop calls where we pass in a byref to a struct into a
+//   P/Invoke with a special modreq and the native function expects to recieve the struct by value with the argument
+//   being passed in having been created by the special copy helper.
+//
 void Lowering::InsertSpecialCopyArg(GenTreePutArgStk* putArgStk, CORINFO_CLASS_HANDLE argType, unsigned lclNum)
 {
     assert(putArgStk != nullptr);
     GenTree* dest = comp->gtNewPhysRegNode(REG_SPBASE, TYP_I_IMPL);
 
     GenTree*  src;
-    var_types lclType = genActualType(comp->lvaGetDesc(lclNum));
+    var_types lclType = comp->lvaGetDesc(lclNum);
+
     if (lclType == TYP_BYREF || lclType == TYP_I_IMPL)
     {
-        src = comp->gtNewLclVarNode(lclNum, TYP_I_IMPL);
+        src = comp->gtNewLclVarNode(lclNum, lclType);
     }
     else
     {
@@ -2050,7 +2084,7 @@ void Lowering::InsertSpecialCopyArg(GenTreePutArgStk* putArgStk, CORINFO_CLASS_H
     }
 
     GenTree* destPlaceholder = comp->gtNewZeroConNode(dest->TypeGet());
-    GenTree* srcPlaceholder  = comp->gtNewZeroConNode(genActualType(src));
+    GenTree* srcPlaceholder  = comp->gtNewZeroConNode(src);
 
     GenTreeCall* call =
         comp->gtNewCallNode(CT_USER_FUNC, comp->info.compCompHnd->getSpecialCopyHelper(argType), TYP_VOID);

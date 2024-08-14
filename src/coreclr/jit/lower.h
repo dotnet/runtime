@@ -184,8 +184,8 @@ private:
     void     LowerArgsForCall(GenTreeCall* call);
     void     ReplaceArgWithPutArgOrBitcast(GenTree** ppChild, GenTree* newNode);
 #if defined(TARGET_X86) && defined(FEATURE_IJW)
-    void     LowerSpecialCopyArgs(GenTreeCall* call);
-    void     InsertSpecialCopyArg(GenTreePutArgStk* putArgStk, CORINFO_CLASS_HANDLE argType, unsigned lclNum);
+    void LowerSpecialCopyArgs(GenTreeCall* call);
+    void InsertSpecialCopyArg(GenTreePutArgStk* putArgStk, CORINFO_CLASS_HANDLE argType, unsigned lclNum);
 #endif // defined(TARGET_X86) && defined(FEATURE_IJW)
     GenTree* NewPutArg(GenTreeCall* call, GenTree* arg, CallArg* callArg, var_types type);
     void     LowerArg(GenTreeCall* call, CallArg* callArg, bool late);
