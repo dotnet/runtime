@@ -213,6 +213,10 @@ public sealed partial class QuicConnection : IAsyncDisposable
     /// Set when CONNECTED is received.
     /// </summary>
     private SslApplicationProtocol _negotiatedApplicationProtocol;
+    /// <summary>
+    /// Set when CONNECTED is received.
+    /// </summary>
+    private TlsCipherSuite _negotiatedCipherSuite;
 
     /// <summary>
     /// Will contain TLS secret after CONNECTED event is received and store it into SSLKEYLOGFILE.
@@ -288,22 +292,10 @@ public sealed partial class QuicConnection : IAsyncDisposable
     public SslApplicationProtocol NegotiatedApplicationProtocol => _negotiatedApplicationProtocol;
 
     /// <summary>
-    /// Negotiated TLS cipher suite
+    /// Gets the cipher suite which was negotiated for this connection.
     /// </summary>
     [CLSCompliant(false)]
-    public TlsCipherSuite NegotiatedCipherSuite
-    {
-        get
-        {
-            QUIC_HANDSHAKE_INFO info;
-            unsafe
-            {
-                MsQuicHelpers.GetMsQuicParameter(_handle, QUIC_PARAM_TLS_HANDSHAKE_INFO, (uint)sizeof(QUIC_HANDSHAKE_INFO), (byte*)&info);
-            }
-
-            return (TlsCipherSuite)info.CipherSuite;
-        }
-    }
+    public TlsCipherSuite NegotiatedCipherSuite => _negotiatedCipherSuite;
 
     /// <inheritdoc />
     public override string ToString() => _handle.ToString();
@@ -626,6 +618,15 @@ public sealed partial class QuicConnection : IAsyncDisposable
     private unsafe int HandleEventConnected(ref CONNECTED_DATA data)
     {
         _negotiatedApplicationProtocol = new SslApplicationProtocol(new Span<byte>(data.NegotiatedAlpn, data.NegotiatedAlpnLength).ToArray());
+
+        QUIC_HANDSHAKE_INFO info = MsQuicHelpers.GetMsQuicParameter<QUIC_HANDSHAKE_INFO>(_handle, QUIC_PARAM_TLS_HANDSHAKE_INFO);
+        _negotiatedCipherSuite = info.CipherSuite switch
+        {
+            QUIC_CIPHER_SUITE.TLS_AES_128_GCM_SHA256 => TlsCipherSuite.TLS_AES_128_GCM_SHA256,
+            QUIC_CIPHER_SUITE.TLS_AES_256_GCM_SHA384 => TlsCipherSuite.TLS_AES_256_GCM_SHA384,
+            QUIC_CIPHER_SUITE.TLS_CHACHA20_POLY1305_SHA256 => TlsCipherSuite.TLS_CHACHA20_POLY1305_SHA256,
+            _ => default
+        };
 
         QuicAddr remoteAddress = MsQuicHelpers.GetMsQuicParameter<QuicAddr>(_handle, QUIC_PARAM_CONN_REMOTE_ADDRESS);
         _remoteEndPoint = MsQuicHelpers.QuicAddrToIPEndPoint(&remoteAddress);
