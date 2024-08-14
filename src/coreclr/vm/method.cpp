@@ -68,7 +68,7 @@ static_assert_no_msg((sizeof(DynamicMethodDesc)     & MethodDesc::ALIGNMENT_MASK
 #define METHOD_DESC_SIZES(adjustment)                                       \
     adjustment + sizeof(MethodDesc),                 /* mcIL            */  \
     adjustment + sizeof(FCallMethodDesc),            /* mcFCall         */  \
-    adjustment + sizeof(NDirectMethodDesc),          /* mcNDirect       */  \
+    adjustment + sizeof(NDirectMethodDesc),          /* mcPInvoke       */  \
     adjustment + sizeof(EEImplMethodDesc),           /* mcEEImpl        */  \
     adjustment + sizeof(ArrayMethodDesc),            /* mcArray         */  \
     adjustment + sizeof(InstantiatedMethodDesc),     /* mcInstantiated  */  \
@@ -2570,7 +2570,7 @@ BOOL MethodDesc::MayHaveNativeCode()
         break;
     case mcFCall:           // FCalls do not have real native code.
         return FALSE;
-    case mcNDirect:         // NDirect never have native code (note that the NDirect method
+    case mcPInvoke:         // NDirect never have native code (note that the NDirect method
         return FALSE;       //  does not appear as having a native code even for stubs as IL)
     case mcEEImpl:          // Runtime provided implementation. No native code.
         return FALSE;
