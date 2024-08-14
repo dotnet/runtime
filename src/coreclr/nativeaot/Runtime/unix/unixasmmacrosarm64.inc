@@ -302,12 +302,12 @@ C_FUNC(\Name):
 .endm
 
 // Note: these must match the defs in PInvokeTransitionFrameFlags
-PTFF_SAVE_SP            = 0x00000400
-PTFF_SAVE_X0            = 0x00000800
-PTFF_SAVE_X1            = 0x00001000
-PTFF_SAVE_ALL_PRESERVED = 0x000003FF  // NOTE: x19-x28
+#define PTFF_SAVE_SP            0x00000400
+#define PTFF_SAVE_X0            0x00000800
+#define PTFF_SAVE_X1            0x00001000
+#define PTFF_SAVE_ALL_PRESERVED 0x000003FF  // NOTE: x19-x28
 
-DEFAULT_FRAME_SAVE_FLAGS = PTFF_SAVE_ALL_PRESERVED + PTFF_SAVE_SP
+#define DEFAULT_FRAME_SAVE_FLAGS (PTFF_SAVE_ALL_PRESERVED + PTFF_SAVE_SP)
 
 .macro PUSH_COOP_PINVOKE_FRAME trashReg
 
@@ -345,7 +345,7 @@ DEFAULT_FRAME_SAVE_FLAGS = PTFF_SAVE_ALL_PRESERVED + PTFF_SAVE_SP
 .endm
 
 // Bit position for the flags above, to be used with tbz / tbnz instructions
-PTFF_THREAD_ABORT_BIT = 36
+#define PTFF_THREAD_ABORT_BIT 36
 
 //
 // CONSTANTS -- INTEGER
@@ -356,8 +356,8 @@ PTFF_THREAD_ABORT_BIT = 36
 #define TSF_SuppressGcStress__OR__TSF_DoNotTriggerGC 0x18
 
 // Bit position for the flags above, to be used with tbz / tbnz instructions
-TrapThreadsFlags_AbortInProgress_Bit = 0
-TrapThreadsFlags_TrapThreads_Bit     = 1
+#define TrapThreadsFlags_AbortInProgress_Bit 0
+#define TrapThreadsFlags_TrapThreads_Bit     1
 
 // These must match the TrapThreadsFlags enum
 #define TrapThreadsFlags_None            0
