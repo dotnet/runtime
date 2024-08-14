@@ -155,7 +155,8 @@ namespace System.Diagnostics.Tracing
             if (_pollingIntervalInMilliseconds == 0 || pollingIntervalInSeconds * 1000 < _pollingIntervalInMilliseconds)
             {
                 _pollingIntervalInMilliseconds = (int)(pollingIntervalInSeconds * 1000);
-                ResetCounters(); // Reset statistics for counters before we start the thread.
+                // Schedule IncrementingPollingCounter reset and synchronously reset other counters
+                HandleCountersReset();
 
                 _timeStampSinceCollectionStarted = DateTime.UtcNow;
                 _nextPollingTimeStamp = DateTime.UtcNow + new TimeSpan(0, 0, (int)pollingIntervalInSeconds);
@@ -189,26 +190,35 @@ namespace System.Diagnostics.Tracing
             Debug.Assert(Monitor.IsEntered(s_counterGroupLock));
             _pollingIntervalInMilliseconds = 0;
             s_counterGroupEnabledList?.Remove(this);
+
+            if (s_needsResetIncrementingPollingCounters.Count > 0)
+            {
+                foreach (DiagnosticCounter diagnosticCounter in _counters)
+                {
+                    if (diagnosticCounter is IncrementingPollingCounter pollingCounter)
+                        s_needsResetIncrementingPollingCounters.Remove(pollingCounter);
+                }
+            }
         }
 
-        private void ResetCounters()
+        private void HandleCountersReset()
         {
-            lock (s_counterGroupLock) // Lock the CounterGroup
+            Debug.Assert(Monitor.IsEntered(s_counterGroupLock));
+            foreach (DiagnosticCounter counter in _counters)
             {
-                foreach (DiagnosticCounter counter in _counters)
+                if (counter is IncrementingEventCounter ieCounter)
                 {
-                    if (counter is IncrementingEventCounter ieCounter)
-                    {
-                        ieCounter.UpdateMetric();
-                    }
-                    else if (counter is IncrementingPollingCounter ipCounter)
-                    {
-                        ipCounter.UpdateMetric();
-                    }
-                    else if (counter is EventCounter eCounter)
-                    {
-                        eCounter.ResetStatistics();
-                    }
+                    ieCounter.UpdateMetric();
+                }
+                else if (counter is IncrementingPollingCounter ipCounter)
+                {
+                    // IncrementingPollingCounters will be reset on timer thread
+                    // We need this to avoid deadlocks caused by running IncrementingPollingCounter._totalValueProvider under EventListener.EventListenersLock
+                    s_needsResetIncrementingPollingCounters.Add(ipCounter);
+                }
+                else if (counter is EventCounter eCounter)
+                {
+                    eCounter.ResetStatistics();
                 }
             }
         }
@@ -264,6 +274,7 @@ namespace System.Diagnostics.Tracing
         private static AutoResetEvent? s_pollingThreadSleepEvent;
 
         private static List<CounterGroup>? s_counterGroupEnabledList;
+        private static List<IncrementingPollingCounter> s_needsResetIncrementingPollingCounters = [];
 
         private static void PollForValues()
         {
@@ -274,6 +285,7 @@ namespace System.Diagnostics.Tracing
             // calling into the callbacks can cause a re-entrancy into CounterGroup.Enable()
             // and result in a deadlock. (See https://github.com/dotnet/runtime/issues/40190 for details)
             var onTimers = new List<CounterGroup>();
+            List<IncrementingPollingCounter>? countersToReset = null;
             while (true)
             {
                 int sleepDurationInMilliseconds = int.MaxValue;
@@ -292,7 +304,24 @@ namespace System.Diagnostics.Tracing
                         millisecondsTillNextPoll = Math.Max(1, millisecondsTillNextPoll);
                         sleepDurationInMilliseconds = Math.Min(sleepDurationInMilliseconds, millisecondsTillNextPoll);
                     }
+
+                    if (s_needsResetIncrementingPollingCounters.Count > 0)
+                    {
+                        countersToReset = s_needsResetIncrementingPollingCounters;
+                        s_needsResetIncrementingPollingCounters = [];
+                    }
                 }
+
+                if (countersToReset != null)
+                {
+                    foreach (IncrementingPollingCounter counter in countersToReset)
+                    {
+                        counter.UpdateMetric();
+                    }
+
+                    countersToReset = null;
+                }
+
                 foreach (CounterGroup onTimer in onTimers)
                 {
                     onTimer.OnTimer();

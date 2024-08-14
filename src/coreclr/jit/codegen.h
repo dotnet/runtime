@@ -1010,7 +1010,7 @@ protected:
     class HWIntrinsicImmOpHelper final
     {
     public:
-        HWIntrinsicImmOpHelper(CodeGen* codeGen, GenTree* immOp, GenTreeHWIntrinsic* intrin);
+        HWIntrinsicImmOpHelper(CodeGen* codeGen, GenTree* immOp, GenTreeHWIntrinsic* intrin, int numInstrs = 1);
 
         HWIntrinsicImmOpHelper(
             CodeGen* codeGen, regNumber immReg, int immLowerBound, int immUpperBound, GenTreeHWIntrinsic* intrin);
@@ -1058,6 +1058,7 @@ protected:
         int            immUpperBound;
         regNumber      nonConstImmReg;
         regNumber      branchTargetReg;
+        int            numInstrs;
     };
 
 #endif // TARGET_ARM64

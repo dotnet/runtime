@@ -15,7 +15,7 @@ using Microsoft.CodeAnalysis.Diagnostics;
 namespace ILLink.RoslynAnalyzer
 {
 	[DiagnosticAnalyzer (LanguageNames.CSharp)]
-	public class DynamicallyAccessedMembersAnalyzer : DiagnosticAnalyzer
+	public sealed class DynamicallyAccessedMembersAnalyzer : DiagnosticAnalyzer
 	{
 		internal const string DynamicallyAccessedMembers = nameof (DynamicallyAccessedMembers);
 		internal const string DynamicallyAccessedMembersAttribute = nameof (DynamicallyAccessedMembersAttribute);
@@ -98,8 +98,7 @@ namespace ILLink.RoslynAnalyzer
 					foreach (var operationBlock in context.OperationBlocks) {
 						TrimDataFlowAnalysis trimDataFlowAnalysis = new (context, dataFlowAnalyzerContext, operationBlock);
 						trimDataFlowAnalysis.InterproceduralAnalyze ();
-						foreach (var diagnostic in trimDataFlowAnalysis.CollectDiagnostics ())
-							context.ReportDiagnostic (diagnostic);
+						trimDataFlowAnalysis.ReportDiagnostics (context.ReportDiagnostic);
 					}
 				});
 
@@ -117,16 +116,12 @@ namespace ILLink.RoslynAnalyzer
 						return;
 
 					var location = GetPrimaryLocation (type.Locations);
-					DiagnosticContext diagnosticContext = new (location);
 
 					if (type.BaseType is INamedTypeSymbol baseType)
-						GenericArgumentDataFlow.ProcessGenericArgumentDataFlow (diagnosticContext, baseType);
+						GenericArgumentDataFlow.ProcessGenericArgumentDataFlow (location, baseType, context.ReportDiagnostic);
 
 					foreach (var interfaceType in type.Interfaces)
-						GenericArgumentDataFlow.ProcessGenericArgumentDataFlow (diagnosticContext, interfaceType);
-
-					foreach (var diagnostic in diagnosticContext.Diagnostics)
-						context.ReportDiagnostic (diagnostic);
+						GenericArgumentDataFlow.ProcessGenericArgumentDataFlow (location, interfaceType, context.ReportDiagnostic);
 				}, SymbolKind.NamedType);
 				context.RegisterSymbolAction (context => {
 					VerifyMemberOnlyApplyToTypesOrStrings (context, context.Symbol);
