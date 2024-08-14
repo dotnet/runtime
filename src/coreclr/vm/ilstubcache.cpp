@@ -147,9 +147,7 @@ namespace
             case DynamicMethodDesc::StubCOMToCLRInterop:    return "IL_STUB_COMtoCLR";
             case DynamicMethodDesc::StubStructMarshalInterop: return "IL_STUB_StructMarshal";
             case DynamicMethodDesc::StubArrayOp:            return "IL_STUB_Array";
-#ifdef FEATURE_MULTICASTSTUB_AS_IL
             case DynamicMethodDesc::StubMulticastDelegate:  return "IL_STUB_MulticastDelegate_Invoke";
-#endif
 #ifdef FEATURE_INSTANTIATINGSTUB_AS_IL
             case DynamicMethodDesc::StubUnboxingIL:         return "IL_STUB_UnboxingStub";
             case DynamicMethodDesc::StubInstantiating:      return "IL_STUB_InstantiatingStub";
@@ -195,7 +193,7 @@ MethodDesc* ILStubCache::CreateNewMethodDesc(LoaderHeap* pCreationHeap, MethodTa
     // the no metadata part of the method desc
     pMD->m_pszMethodName = (PTR_CUTF8)"IL_STUB";
     pMD->InitializeFlags(DynamicMethodDesc::FlagPublic | DynamicMethodDesc::FlagIsILStub);
-    pMD->SetTemporaryEntryPoint(pMT->GetLoaderAllocator(), pamTracker);
+    pMD->SetTemporaryEntryPoint(pamTracker);
 
     //
     // convert signature to a compatible signature if needed
@@ -239,13 +237,11 @@ MethodDesc* ILStubCache::CreateNewMethodDesc(LoaderHeap* pCreationHeap, MethodTa
         pMD->SetILStubType(DynamicMethodDesc::StubArrayOp);
     }
     else
-#ifdef FEATURE_MULTICASTSTUB_AS_IL
     if (SF_IsMulticastDelegateStub(dwStubFlags))
     {
         pMD->SetILStubType(DynamicMethodDesc::StubMulticastDelegate);
     }
     else
-#endif
     if (SF_IsWrapperDelegateStub(dwStubFlags))
     {
         pMD->SetILStubType(DynamicMethodDesc::StubWrapperDelegate);

@@ -2,12 +2,18 @@
   <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.props))" />
 
   <ItemGroup>
-    <TestConsoleAppSourceFiles Include="XmlSchema.Write.cs" />
+    <TestConsoleAppSourceFiles Include="XmlSchema.Write.cs">
+      <!-- What the test is testing is RUC and there was a half-hearted attempt to make it safe, but it isn't: https://github.com/dotnet/runtime/blob/5f067ce8b50087e032d13a1b97ae5ec39fc54739/src/libraries/System.Private.Xml/src/System/Xml/Schema/XmlSchema.cs#L134-L137 -->
+      <NativeAotIncompatible>true</NativeAotIncompatible>
+    </TestConsoleAppSourceFiles>
     <TestConsoleAppSourceFiles Include="XmlSerializer.Deserialize.cs" />
     <TestConsoleAppSourceFiles Include="XmlSerializer.Deserialize.SealerOpt.cs"
                                ExtraTrimmerArgs="--enable-opt sealer" />
     <TestConsoleAppSourceFiles Include="XmlSerializer.Serialize.cs" />
-    <TestConsoleAppSourceFiles Include="XslCompiledTransformTests.cs" />
+    <TestConsoleAppSourceFiles Include="XslCompiledTransformTests.cs">
+      <!-- https://github.com/dotnet/runtime/issues/84389 -->
+      <NativeAotIncompatible>true</NativeAotIncompatible>
+    </TestConsoleAppSourceFiles>
     <TestConsoleAppSourceFiles Include="XmlUrlResolverDefaults.Disabled.IsNetworkingEnabledByDefault.cs">
       <DisabledFeatureSwitches>System.Xml.XmlResolver.IsNetworkingEnabledByDefault</DisabledFeatureSwitches>
     </TestConsoleAppSourceFiles>

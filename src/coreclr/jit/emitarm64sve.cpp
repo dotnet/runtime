@@ -2727,6 +2727,7 @@ void emitter::emitInsSve_R_R_I(instruction     ins,
             if (sopt == INS_SCALABLE_OPTS_WITH_VECTOR_PAIR)
             {
                 fmt = IF_SVE_BQ_2A;
+                unreached(); // Not supported yet.
             }
             else
             {
@@ -3858,6 +3859,9 @@ void emitter::emitInsSve_R_R_R(instruction     ins,
             assert(isLowPredicateRegister(reg2));
             assert(isVectorRegister(reg3));
             assert(insOptsScalableStandard(opt));
+            // TODO-SVE: We currently support only the destructive version of splice. Remove the following assert when
+            // the constructive version is added, as described in https://github.com/dotnet/runtime/issues/103850.
+            assert(sopt != INS_SCALABLE_OPTS_WITH_VECTOR_PAIR);
             fmt = (sopt == INS_SCALABLE_OPTS_WITH_VECTOR_PAIR) ? IF_SVE_CV_3A : IF_SVE_CV_3B;
             break;
 
@@ -4406,7 +4410,6 @@ void emitter::emitInsSve_R_R_R(instruction     ins,
 /*****************************************************************************
  *
  *  Add a SVE instruction referencing three registers and a constant.
- *  Do not call this directly. Use 'emitIns_R_R_R_I' instead.
  */
 
 void emitter::emitInsSve_R_R_R_I(instruction     ins,
@@ -5573,7 +5576,7 @@ void emitter::emitInsSve_R_R_R_I(instruction     ins,
             assert(isLowPredicateRegister(reg2));
             assert(isVectorRegister(reg3));
             assert(isScalableVectorSize(size));
-            imm = emitEncodeRotationImm90_or_270(imm);
+            assert(emitIsValidEncodedRotationImm90_or_270(imm));
             fmt = IF_SVE_GP_3A;
             break;
 
@@ -5822,14 +5825,13 @@ void emitter::emitInsSve_R_R_R_I_I(instruction ins,
 
         case INS_sve_fcmla:
             assert(opt == INS_OPTS_SCALABLE_S);
-            assert(isVectorRegister(reg1));    // ddddd
-            assert(isVectorRegister(reg2));    // nnnnn
-            assert(isLowVectorRegister(reg3)); // mmmm
-            assert(isValidUimm<1>(imm1));      // i
-            assert(isValidRot(imm2));          // rr
+            assert(isVectorRegister(reg1));                      // ddddd
+            assert(isVectorRegister(reg2));                      // nnnnn
+            assert(isLowVectorRegister(reg3));                   // mmmm
+            assert(isValidUimm<1>(imm1));                        // i
+            assert(emitIsValidEncodedRotationImm0_to_270(imm2)); // rr
 
-            // Convert imm2 from rotation value (0-270) to bitwise representation (0-3)
-            imm = (imm1 << 2) | emitEncodeRotationImm0_to_270(imm2);
+            imm = (imm1 << 2) | imm2;
             fmt = IF_SVE_GV_3A;
             break;
 
@@ -5856,7 +5858,6 @@ void emitter::emitInsSve_R_R_R_I_I(instruction ins,
 /*****************************************************************************
  *
  *  Add a SVE instruction referencing four registers.
- *  Do not call this directly. Use 'emitIns_R_R_R_R' instead.
  */
 
 void emitter::emitInsSve_R_R_R_R(instruction     ins,
@@ -6987,7 +6988,7 @@ void emitter::emitInsSve_R_R_R_R_I(instruction ins,
             assert(isVectorRegister(reg3));
             assert(isVectorRegister(reg4));
             assert(isScalableVectorSize(size));
-            imm = emitEncodeRotationImm0_to_270(imm);
+            assert(emitIsValidEncodedRotationImm0_to_270(imm));
             fmt = IF_SVE_GT_4A;
             break;
 
@@ -9794,7 +9795,7 @@ void emitter::emitIns_PRFOP_R_R_I(instruction ins,
 
 /*static*/ bool emitter::emitIsValidEncodedRotationImm90_or_270(ssize_t imm)
 {
-    return (imm == 0) || (imm == 1);
+    return isValidUimm<1>(imm);
 }
 
 /************************************************************************
@@ -9863,7 +9864,7 @@ void emitter::emitIns_PRFOP_R_R_I(instruction ins,
 
 /*static*/ bool emitter::emitIsValidEncodedRotationImm0_to_270(ssize_t imm)
 {
-    return (imm >= 0) && (imm <= 3);
+    return isValidUimm<2>(imm);
 }
 
 /*****************************************************************************
@@ -10294,7 +10295,7 @@ BYTE* emitter::emitOutput_InstrSve(BYTE* dst, instrDesc* id)
             dst += emitOutput_Instr(dst, code);
             break;
 
-        case IF_SVE_CV_3A: // ........xx...... ...VVVnnnnnddddd -- SVE vector splice (destructive)
+        case IF_SVE_CV_3A: // ........xx...... ...VVVnnnnnddddd -- SVE vector splice (constructive)
         case IF_SVE_CV_3B: // ........xx...... ...VVVmmmmmddddd -- SVE vector splice (destructive)
             code = emitInsCodeSve(ins, fmt);
             code |= insEncodeReg_V<4, 0>(id->idReg1());                   // ddddd
@@ -13257,7 +13258,7 @@ void emitter::emitInsSveSanityCheck(instrDesc* id)
             assert(isScalableVectorSize(id->idOpSize()));
             break;
 
-        case IF_SVE_CV_3A: // ........xx...... ...VVVnnnnnddddd -- SVE vector splice (destructive)
+        case IF_SVE_CV_3A: // ........xx...... ...VVVnnnnnddddd -- SVE vector splice (constructive)
         case IF_SVE_CV_3B: // ........xx...... ...VVVmmmmmddddd -- SVE vector splice (destructive)
             assert(isScalableVectorSize(id->idOpSize())); // xx
             assert(insOptsScalableStandard(id->idInsOpt()));
@@ -14822,27 +14823,38 @@ void emitter::emitDispInsSveHelp(instrDesc* id)
             emitDispSveReg(id->idReg3(), id->idInsOpt(), false);                                   // mmmmm
             break;
 
-        // <V><dn>, <Pg>, <V><dn>, <Zm>.<T>
         // <R><dn>, <Pg>, <R><dn>, <Zm>.<T>
         case IF_SVE_CN_3A: // ........xx...... ...gggmmmmmddddd -- SVE conditionally extract element to SIMD&FP scalar
         case IF_SVE_CO_3A: // ........xx...... ...gggmmmmmddddd -- SVE conditionally extract element to general register
-        case IF_SVE_HJ_3A: // ........xx...... ...gggmmmmmddddd -- SVE floating-point serial reduction (predicated)
             emitDispReg(id->idReg1(), size, true);                                                 // ddddd
             emitDispLowPredicateReg(id->idReg2(), insGetPredicateType(fmt), id->idInsOpt(), true); // ggg
             emitDispReg(id->idReg1(), size, true);                                                 // ddddd
             emitDispSveReg(id->idReg3(), id->idInsOpt(), false);                                   // mmmmm
             break;
 
+        // <V><dn>, <Pg>, <V><dn>, <Zm>.<T>
+        case IF_SVE_HJ_3A: // ........xx...... ...gggmmmmmddddd -- SVE floating-point serial reduction (predicated)
+            emitDispVectorReg(id->idReg1(), id->idInsOpt(), true);                                 // ddddd
+            emitDispLowPredicateReg(id->idReg2(), insGetPredicateType(fmt), id->idInsOpt(), true); // ggg
+            emitDispVectorReg(id->idReg1(), id->idInsOpt(), true);                                 // ddddd
+            emitDispSveReg(id->idReg3(), id->idInsOpt(), false);                                   // mmmmm
+            break;
+
         // <V><d>, <Pg>, <Zn>.<T>
-        // <R><d>, <Pg>, <Zn>.<T>
         case IF_SVE_AF_3A: // ........xx...... ...gggnnnnnddddd -- SVE bitwise logical reduction (predicated)
         case IF_SVE_AK_3A: // ........xx...... ...gggnnnnnddddd -- SVE integer min/max reduction (predicated)
         case IF_SVE_CR_3A: // ........xx...... ...gggnnnnnddddd -- SVE extract element to SIMD&FP scalar register
-        case IF_SVE_CS_3A: // ........xx...... ...gggnnnnnddddd -- SVE extract element to general register
         case IF_SVE_HE_3A: // ........xx...... ...gggnnnnnddddd -- SVE floating-point recursive reduction
-            emitDispReg(id->idReg1(), size, true);                                              // ddddd
-            emitDispPredicateReg(id->idReg2(), insGetPredicateType(fmt), id->idInsOpt(), true); // ggg
-            emitDispSveReg(id->idReg3(), id->idInsOpt(), false);                                // mmmmm
+            emitDispVectorReg(id->idReg1(), id->idInsOpt(), true);                                 // ddddd
+            emitDispLowPredicateReg(id->idReg2(), insGetPredicateType(fmt), id->idInsOpt(), true); // ggg
+            emitDispSveReg(id->idReg3(), id->idInsOpt(), false);                                   // mmmmm
+            break;
+
+        // <R><d>, <Pg>, <Zn>.<T>
+        case IF_SVE_CS_3A: // ........xx...... ...gggnnnnnddddd -- SVE extract element to general register
+            emitDispReg(id->idReg1(), size, true);                                                 // ddddd
+            emitDispLowPredicateReg(id->idReg2(), insGetPredicateType(fmt), id->idInsOpt(), true); // ggg
+            emitDispSveReg(id->idReg3(), id->idInsOpt(), false);                                   // mmmmm
             break;
 
         // <Vd>.<T>, <Pg>, <Zn>.<Tb>
@@ -14944,7 +14956,7 @@ void emitter::emitDispInsSveHelp(instrDesc* id)
             break;
 
         // <Zd>.<T>, <Pv>, {<Zn1>.<T>, <Zn2>.<T>}
-        case IF_SVE_CV_3A: // ........xx...... ...VVVnnnnnddddd -- SVE vector splice (destructive)
+        case IF_SVE_CV_3A: // ........xx...... ...VVVnnnnnddddd -- SVE vector splice (constructive)
             emitDispSveReg(id->idReg1(), id->idInsOpt(), true);                                             // ddddd
             emitDispPredicateReg(id->idReg2(), insGetPredicateType(fmt), id->idInsOpt(), true);             // VVV
             emitDispSveConsecutiveRegList(id->idReg3(), insGetSveReg1ListSize(ins), id->idInsOpt(), false); // nnnnn
@@ -16805,7 +16817,7 @@ void emitter::getInsSveExecutionCharacteristics(instrDesc* id, insExecutionChara
             result.insLatency    = PERFSCORE_LATENCY_140C;
             break;
 
-        case IF_SVE_CV_3A: // ........xx...... ...VVVnnnnnddddd -- SVE vector splice (destructive)
+        case IF_SVE_CV_3A: // ........xx...... ...VVVnnnnnddddd -- SVE vector splice (constructive)
         case IF_SVE_CV_3B: // ........xx...... ...VVVmmmmmddddd -- SVE vector splice (destructive)
             result.insLatency    = PERFSCORE_LATENCY_3C;
             result.insThroughput = PERFSCORE_THROUGHPUT_1C;

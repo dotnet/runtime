@@ -7,11 +7,6 @@
   <Import Project="Sdk.props" Sdk="Microsoft.NET.Sdk" />
 
   <PropertyGroup>
-    <NativeAotSupported Condition="$(OutputRID.StartsWith('tizen')) == 'true'">false</NativeAotSupported>
-    <NativeAotSupported Condition="$(OutputRID.EndsWith('-arm')) == 'true'">false</NativeAotSupported>
-    <NativeAotSupported Condition="$(OutputRID.EndsWith('-x86')) == 'true'">false</NativeAotSupported>
-    <!-- Publish crossgen2 as a single-file app on native-OS builds. Cross-OS NativeAOT compilation is not supported yet -->
-    <NativeAotSupported Condition="'$(CrossBuild)' == 'true' and '$(TargetOS)' != '$(HostOS)'">false</NativeAotSupported>
     <PublishTrimmed>true</PublishTrimmed>
     <RuntimeIdentifier>$(PackageRID)</RuntimeIdentifier>
     <SelfContained>true</SelfContained>
@@ -21,7 +16,7 @@
 
   <Import Project="crossgen2.props" />
 
-  <PropertyGroup Condition="'$(NativeAotSupported)' != 'true'">
+  <PropertyGroup Condition="'$(UseNativeAotForComponents)' != 'true'">
     <PublishSingleFile>true</PublishSingleFile>
     <PublishReadyToRun>true</PublishReadyToRun>
     <!-- Disable crossgen on NetBSD, illumos, Solaris, and Haiku for now. This can be revisited when we have full support. -->
@@ -41,7 +36,7 @@
   <Import Project="$(RepositoryEngineeringDir)targetingpacks.targets" />
   <Import Project="$(RepositoryEngineeringDir)codeOptimization.targets" />
 
-  <PropertyGroup Condition="'$(NativeAotSupported)' == 'true'">
+  <PropertyGroup Condition="'$(UseNativeAotForComponents)' == 'true'">
     <IlcToolsPath>$(CoreCLRILCompilerDir)</IlcToolsPath>
     <IlcToolsPath Condition="'$(CrossBuild)' == 'true' or '$(BuildArchitecture)' != '$(TargetArchitecture)' or '$(EnableNativeSanitizers)' != ''">$(CoreCLRCrossILCompilerDir)</IlcToolsPath>
     <SysRoot Condition="('$(CrossBuild)' == 'true' or '$(BuildArchitecture)' != '$(TargetArchitecture)') and '$(HostOS)' != 'windows'">$(ROOTFS_DIR)</SysRoot>
@@ -58,12 +53,12 @@
     <DynamicCodeSupport>false</DynamicCodeSupport>
   </PropertyGroup>
 
-  <ItemGroup Condition="'$(NativeAotSupported)' == 'true'">
+  <ItemGroup Condition="'$(UseNativeAotForComponents)' == 'true'">
     <CustomLinkerArg Condition="'$(CrossBuild)' == 'true' and '$(_hostArchitecture)' == '$(_targetArchitecture)' and '$(_IsApplePlatform)' != 'true' and '$(_hostOS)' != 'windows'" Include="--gcc-toolchain=$(ROOTFS_DIR)/usr" />
   </ItemGroup>
 
   <Import Project="$(CoreCLRBuildIntegrationDir)Microsoft.DotNet.ILCompiler.SingleEntry.targets"
-          Condition="'$(NativeAotSupported)' == 'true'" />
+          Condition="'$(UseNativeAotForComponents)' == 'true'" />
   <Import Project="$(RepositoryEngineeringDir)nativeSanitizers.targets" />
 
   <!-- Needed for the amd64 -> amd64 musl cross-build to pass the target flag. -->
@@ -91,7 +86,7 @@
   </Target>
 
   <Target Name="LocateNativeCompiler"
-          Condition="'$(NativeAotSupported)' == 'true' and '$(HostOS)' != 'windows'"
+          Condition="'$(UseNativeAotForComponents)' == 'true' and '$(HostOS)' != 'windows'"
           BeforeTargets="SetupOSSpecificProps">
       <PropertyGroup>
         <CppCompilerAndLinker Condition="'$(CppCompilerAndLinker)' == ''">clang</CppCompilerAndLinker>

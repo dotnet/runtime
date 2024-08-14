@@ -74,12 +74,13 @@ public:
     const ABIPassingSegment& Segment(unsigned index) const;
     ABIPassingSegment&       Segment(unsigned index);
 
-    bool HasAnyRegisterSegment() const;
-    bool HasAnyFloatingRegisterSegment() const;
-    bool HasAnyStackSegment() const;
-    bool HasExactlyOneRegisterSegment() const;
-    bool HasExactlyOneStackSegment() const;
-    bool IsSplitAcrossRegistersAndStack() const;
+    bool     HasAnyRegisterSegment() const;
+    bool     HasAnyFloatingRegisterSegment() const;
+    bool     HasAnyStackSegment() const;
+    bool     HasExactlyOneRegisterSegment() const;
+    bool     HasExactlyOneStackSegment() const;
+    bool     IsSplitAcrossRegistersAndStack() const;
+    unsigned CountRegsAndStackSlots() const;
 
     static ABIPassingInformation FromSegment(Compiler* comp, const ABIPassingSegment& segment);
     static ABIPassingInformation FromSegments(Compiler*                comp,

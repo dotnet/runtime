@@ -6996,7 +6996,7 @@ HRESULT CordbProcess::RefreshPatchTable(CORDB_ADDRESS address, SIZE_T size, BYTE
                     if (IsPatchInRequestedRange(address, size, patchAddress))
                     {
                         _ASSERTE( buffer != NULL );
-                        _ASSERTE( size != NULL );
+                        _ASSERTE( size != 0 );
 
 
                         //unapply the patch here.
@@ -10405,8 +10405,8 @@ void CordbRCEventThread::ThreadProc()
     unsigned int   waitCount;
 
 #ifdef _DEBUG
-    memset(&rgProcessSet, NULL, MAXIMUM_WAIT_OBJECTS * sizeof(CordbProcess *));
-    memset(&waitSet, NULL, MAXIMUM_WAIT_OBJECTS * sizeof(HANDLE));
+    memset(&rgProcessSet, 0, MAXIMUM_WAIT_OBJECTS * sizeof(CordbProcess *));
+    memset(&waitSet, 0, MAXIMUM_WAIT_OBJECTS * sizeof(HANDLE));
 #endif
 
 
@@ -13502,6 +13502,40 @@ bool CordbProcess::IsSpecialStackOverflowCase(CordbUnmanagedThread *pUThread, co
     // Note: returning true will ensure that the queued first chance AV for this thread is dispatched.
     return true;
 }
+
+#ifdef FEATURE_INTEROP_DEBUGGING
+bool CordbProcess::IsUnmanagedThreadHijacked(ICorDebugThread * pICorDebugThread)
+{
+    PUBLIC_REENTRANT_API_ENTRY_FOR_SHIM(this);
+
+    if (GetShim() == NULL || !IsInteropDebugging())
+    {
+        return false;
+    }
+
+    {
+        RSLockHolder lockHolder(GetProcessLock());
+        CordbThread * pCordbThread = static_cast<CordbThread *> (pICorDebugThread);
+        HRESULT hr = pCordbThread->EnsureThreadIsAlive();
+        if (FAILED(hr))
+        {
+            return false;
+        }
+
+        // And only if we have a CordbUnmanagedThread and we are hijacked to code:Debugger::GenericHijackFunc
+        CordbUnmanagedThread * pUT = GetUnmanagedThread(pCordbThread->GetVolatileOSThreadID());
+        if (pUT != NULL)
+        {
+            if (pUT->IsFirstChanceHijacked() || pUT->IsGenericHijacked())
+            {
+                return true;
+            }
+        }
+    }
+    return false;
+}
+#endif // FEATURE_INTEROP_DEBUGGING
+
 
 //-----------------------------------------------------------------------------
 // Longhorn broke ContinueDebugEvent.

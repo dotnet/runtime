@@ -146,7 +146,7 @@ void LookupMap<TYPE>::AddElement(ModuleBase * pModule, DWORD rid, TYPE value, TA
     // Once set, the values in LookupMap should be immutable.
     TADDR oldFlags;
     TYPE oldValue = GetValueAt(pElement, &oldFlags, supportedFlags);
-    _ASSERTE(oldValue == NULL || (oldValue == value && oldFlags == flags));
+    _ASSERTE(oldValue == (TYPE)NULL || (oldValue == value && oldFlags == flags));
 #endif
     // Avoid unnecessary writes - do not overwrite existing value
     if (*pElement == 0)

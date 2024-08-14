@@ -27,7 +27,8 @@ internal sealed class Thread : IData<Thread>
         TEB = type.Fields.TryGetValue(nameof(TEB), out Target.FieldInfo fieldInfo)
             ? target.ReadPointer(address + (ulong)fieldInfo.Offset)
             : TargetPointer.Null;
-        LastThrownObject = target.ReadPointer(address + (ulong)type.Fields[nameof(LastThrownObject)].Offset);
+        LastThrownObject = target.ProcessedData.GetOrAdd<ObjectHandle>(
+            target.ReadPointer(address + (ulong)type.Fields[nameof(LastThrownObject)].Offset));
         LinkNext = target.ReadPointer(address + (ulong)type.Fields[nameof(LinkNext)].Offset);
 
         // Address of the exception tracker - how it should be read depends on EH funclets feature global value
@@ -41,7 +42,7 @@ internal sealed class Thread : IData<Thread>
     public RuntimeThreadLocals? RuntimeThreadLocals { get; init; }
     public TargetPointer Frame { get; init; }
     public TargetPointer TEB { get; init; }
-    public TargetPointer LastThrownObject { get; init; }
+    public ObjectHandle LastThrownObject { get; init; }
     public TargetPointer LinkNext { get; init; }
     public TargetPointer ExceptionTracker { get; init; }
 }

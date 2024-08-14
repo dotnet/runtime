@@ -408,22 +408,21 @@ void FreeLoaderAllocatorHandlesForTLSData(Thread *pThread)
     }
 }
 
-void AssertThreadStaticDataFreed(ThreadLocalData *pThreadLocalData)
+void AssertThreadStaticDataFreed()
 {
     LIMITED_METHOD_CONTRACT;
 
-    if (!IsAtProcessExit() && !g_fEEShutDown)
-    {
-        _ASSERTE(pThreadLocalData->pThread == NULL);
-        _ASSERTE(pThreadLocalData->pCollectibleTlsArrayData == NULL);
-        _ASSERTE(pThreadLocalData->cCollectibleTlsData == 0);
-        _ASSERTE(pThreadLocalData->pNonCollectibleTlsArrayData == NULL);
-        _ASSERTE(pThreadLocalData->cNonCollectibleTlsData == 0);
-        _ASSERTE(pThreadLocalData->pInFlightData == NULL);
-    }
+    ThreadLocalData *pThreadLocalData = &t_ThreadStatics;
+
+    _ASSERTE(pThreadLocalData->pThread == NULL);
+    _ASSERTE(pThreadLocalData->pCollectibleTlsArrayData == NULL);
+    _ASSERTE(pThreadLocalData->cCollectibleTlsData == 0);
+    _ASSERTE(pThreadLocalData->pNonCollectibleTlsArrayData == NULL);
+    _ASSERTE(pThreadLocalData->cNonCollectibleTlsData == 0);
+    _ASSERTE(pThreadLocalData->pInFlightData == NULL);
 }
 
-void FreeThreadStaticData(ThreadLocalData *pThreadLocalData, Thread* pThread)
+void FreeThreadStaticData(Thread* pThread)
 {
     CONTRACTL {
         NOTHROW;
@@ -432,47 +431,34 @@ void FreeThreadStaticData(ThreadLocalData *pThreadLocalData, Thread* pThread)
     }
     CONTRACTL_END;
 
-    if (pThreadLocalData == NULL)
-        return;
+    SpinLockHolder spinLock(&pThread->m_TlsSpinLock);
 
-    if (!IsAtProcessExit() && !g_fEEShutDown)
+    ThreadLocalData *pThreadLocalData = &t_ThreadStatics;
+
+    for (int32_t iTlsSlot = 0; iTlsSlot < pThreadLocalData->cCollectibleTlsData; ++iTlsSlot)
     {
-        SpinLockHolder spinLock(&pThread->m_TlsSpinLock);
-
-        if (pThreadLocalData->pThread == NULL)
+        if (!IsHandleNullUnchecked(pThreadLocalData->pCollectibleTlsArrayData[iTlsSlot]))
         {
-            return;
+            DestroyLongWeakHandle(pThreadLocalData->pCollectibleTlsArrayData[iTlsSlot]);
         }
-
-        pThreadLocalData = pThread->m_ThreadLocalDataPtr;
-
-        if (pThreadLocalData == NULL)
-            return;
-
-        for (int32_t iTlsSlot = 0; iTlsSlot < pThreadLocalData->cCollectibleTlsData; ++iTlsSlot)
-        {
-            if (!IsHandleNullUnchecked(pThreadLocalData->pCollectibleTlsArrayData[iTlsSlot]))
-            {
-                DestroyLongWeakHandle(pThreadLocalData->pCollectibleTlsArrayData[iTlsSlot]);
-            }
-        }
-
-        delete[] (uint8_t*)pThreadLocalData->pCollectibleTlsArrayData;
-
-        pThreadLocalData->pCollectibleTlsArrayData = 0;
-        pThreadLocalData->cCollectibleTlsData = 0;
-        pThreadLocalData->pNonCollectibleTlsArrayData = 0;
-        pThreadLocalData->cNonCollectibleTlsData = 0;
-
-        while (pThreadLocalData->pInFlightData != NULL)
-        {
-            InFlightTLSData* pInFlightData = pThreadLocalData->pInFlightData;
-            pThreadLocalData->pInFlightData = pInFlightData->pNext;
-            delete pInFlightData;
-        }
-        pThreadLocalData->pThread->m_ThreadLocalDataPtr = NULL;
-        VolatileStoreWithoutBarrier(&pThreadLocalData->pThread, (Thread*)NULL);
     }
+
+    delete[] (uint8_t*)pThreadLocalData->pCollectibleTlsArrayData;
+
+    pThreadLocalData->pCollectibleTlsArrayData = 0;
+    pThreadLocalData->cCollectibleTlsData = 0;
+    pThreadLocalData->pNonCollectibleTlsArrayData = 0;
+    pThreadLocalData->cNonCollectibleTlsData = 0;
+
+    while (pThreadLocalData->pInFlightData != NULL)
+    {
+        InFlightTLSData* pInFlightData = pThreadLocalData->pInFlightData;
+        pThreadLocalData->pInFlightData = pInFlightData->pNext;
+        delete pInFlightData;
+    }
+
+    _ASSERTE(pThreadLocalData->pThread == pThread);
+    pThreadLocalData->pThread = NULL;
 }
 
 void SetTLSBaseValue(TADDR *ppTLSBaseAddress, TADDR pTLSBaseAddress, bool useGCBarrierInsteadOfHandleStore)
@@ -687,7 +673,7 @@ void* GetThreadLocalStaticBase(TLSIndex index)
         }
     }
     GCPROTECT_END();
-    _ASSERTE(gcBaseAddresses.pTLSBaseAddress != NULL);
+    _ASSERTE(gcBaseAddresses.pTLSBaseAddress != (TADDR)NULL);
     return reinterpret_cast<void*>(gcBaseAddresses.pTLSBaseAddress);
 }
 
@@ -798,6 +784,10 @@ void FreeTLSIndicesForLoaderAllocator(LoaderAllocator *pLoaderAllocator)
 
 static void* GetTlsIndexObjectAddress();
 
+#if !defined(TARGET_OSX) && defined(TARGET_UNIX) && (defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64))
+extern "C" size_t GetTLSResolverAddress();
+#endif // !TARGET_OSX && TARGET_UNIX && (TARGET_ARM64 || TARGET_LOONGARCH64)
+
 bool CanJITOptimizeTLSAccess()
 {
     LIMITED_METHOD_CONTRACT;
@@ -813,6 +803,58 @@ bool CanJITOptimizeTLSAccess()
     // Optimization is disabled for FreeBSD/arm64
 #elif defined(FEATURE_INTERPRETER)
     // Optimization is disabled when interpreter may be used
+#elif !defined(TARGET_OSX) && defined(TARGET_UNIX) && defined(TARGET_ARM64)
+    // Optimization is enabled for linux/arm64 only for static resolver.
+    // For static resolver, the TP offset is same for all threads.
+    // For dynamic resolver, TP offset returned is for the current thread and
+    // will be different for the other threads.
+    uint32_t* resolverAddress = reinterpret_cast<uint32_t*>(GetTLSResolverAddress());
+    int ip = 0;
+    if ((resolverAddress[ip] == 0xd503201f) || (resolverAddress[ip] == 0xd503241f))
+    {
+        // nop might not be present in older resolver, so skip it.
+
+        // nop or hint 32
+        ip++;
+    }
+
+    if (
+        // ldr x0, [x0, #8]
+        (resolverAddress[ip] == 0xf9400400) &&
+        // ret
+        (resolverAddress[ip + 1] == 0xd65f03c0)
+    )
+    {
+        optimizeThreadStaticAccess = true;
+#ifdef _DEBUG
+        if (CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_AssertNotStaticTlsResolver) != 0)
+        {
+            _ASSERTE(!"Detected static resolver in use when not expected");
+        }
+#endif
+    }
+#elif defined(TARGET_LOONGARCH64)
+    // Optimization is enabled for linux/loongarch64 only for static resolver.
+    // For static resolver, the TP offset is same for all threads.
+    // For dynamic resolver, TP offset returned is for the current thread and
+    // will be different for the other threads.
+    uint32_t* resolverAddress = reinterpret_cast<uint32_t*>(GetTLSResolverAddress());
+
+    if (
+        // ld.d a0, a0, 8
+        (resolverAddress[0] == 0x28c02084) &&
+        // ret
+        (resolverAddress[1] == 0x4c000020)
+    )
+    {
+        optimizeThreadStaticAccess = true;
+#ifdef _DEBUG
+        if (CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_AssertNotStaticTlsResolver) != 0)
+        {
+            _ASSERTE(!"Detected static resolver in use when not expected");
+        }
+#endif
+    }
 #else
     optimizeThreadStaticAccess = true;
 #if !defined(TARGET_OSX) && defined(TARGET_UNIX) && defined(TARGET_AMD64)
@@ -822,6 +864,12 @@ bool CanJITOptimizeTLSAccess()
     optimizeThreadStaticAccess = GetTlsIndexObjectAddress() != nullptr;
 #endif // !TARGET_OSX && TARGET_UNIX && TARGET_AMD64
 #endif
+
+    if (g_pConfig->DisableOptimizedThreadStaticAccess())
+    {
+        optimizeThreadStaticAccess = false;
+    }
+
     return optimizeThreadStaticAccess;
 }
 

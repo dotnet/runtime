@@ -59,13 +59,7 @@ namespace Mono.Linker
 		public const int NET6 = 6;
 	}
 
-	public interface ITryResolveMetadata
-	{
-		MethodDefinition? TryResolve (MethodReference methodReference);
-		TypeDefinition? TryResolve (TypeReference typeReference);
-	}
-
-	public class LinkContext : IMetadataResolver, ITryResolveMetadata, IDisposable
+	public class LinkContext : IMetadataResolver, ITryResolveMetadata, ITryResolveAssemblyName, IDisposable
 	{
 
 		readonly Pipeline _pipeline;
@@ -74,7 +68,7 @@ namespace Mono.Linker
 		int? _targetRuntime;
 
 		readonly AssemblyResolver _resolver;
-		readonly TypeNameResolver _typeNameResolver;
+		TypeNameResolver? _typeNameResolver;
 
 		readonly AnnotationStore _annotations;
 		readonly CustomAttributeSource _customAttributes;
@@ -152,9 +146,8 @@ namespace Mono.Linker
 			get { return _resolver; }
 		}
 
-		internal TypeNameResolver TypeNameResolver {
-			get { return _typeNameResolver; }
-		}
+		internal TypeNameResolver TypeNameResolver
+			=> _typeNameResolver ??= new TypeNameResolver (this, this);
 
 		public ISymbolReaderProvider SymbolReaderProvider { get; set; }
 
@@ -211,7 +204,6 @@ namespace Mono.Linker
 			_logger = logger ?? throw new ArgumentNullException (nameof (logger));
 
 			_resolver = factory.CreateResolver (this);
-			_typeNameResolver = new TypeNameResolver (this);
 			_actions = new Dictionary<string, AssemblyAction> ();
 			_parameters = new Dictionary<string, string> (StringComparer.Ordinal);
 			_customAttributes = new CustomAttributeSource (this);
@@ -979,7 +971,7 @@ namespace Mono.Linker
 		public TypeDefinition? TryResolve (AssemblyDefinition assembly, string typeNameString)
 		{
 			// It could be cached if it shows up on fast path
-			return _typeNameResolver.TryResolveTypeName (assembly, typeNameString, out TypeReference? typeReference, out _)
+			return TypeNameResolver.TryResolveTypeName (assembly, typeNameString, out TypeReference? typeReference, out _)
 				? TryResolve (typeReference)
 				: null;
 		}

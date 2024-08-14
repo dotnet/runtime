@@ -76,6 +76,12 @@ namespace ILLink.RoslynAnalyzer.Tests
 		}
 
 		[Fact]
+		public Task UnresolvedGenerics ()
+		{
+			return RunTest (allowMissingWarnings: true);
+		}
+
+		[Fact]
 		public Task UsedOverloadedGenericMethodInGenericClassIsNotStripped ()
 		{
 			return RunTest (allowMissingWarnings: true);

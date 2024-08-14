@@ -6,8 +6,6 @@ using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
-#pragma warning disable CS8500 // This takes the address of, gets the size of, or declares a pointer to a managed type
-
 namespace System.Numerics.Tensors
 {
     /// <summary>Performs primitive tensor operations over spans of memory.</summary>

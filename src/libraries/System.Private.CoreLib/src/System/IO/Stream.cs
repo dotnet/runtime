@@ -931,7 +931,7 @@ namespace System.IO
             }
         }
 
-        public virtual void WriteByte(byte value) => Write(new byte[1] { value }, 0, 1);
+        public virtual void WriteByte(byte value) => Write([value], 0, 1);
 
         public static Stream Synchronized(Stream stream)
         {

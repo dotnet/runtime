@@ -127,7 +127,7 @@ internal readonly struct Thread_1 : IThread
             thread.Frame,
             firstNestedException,
             thread.TEB,
-            thread.LastThrownObject,
+            thread.LastThrownObject.Handle,
             GetThreadFromLink(thread.LinkNext));
     }
 

@@ -174,9 +174,6 @@ if %__TotalSpecifiedTargetArch% GTR 1 (
     goto Usage
 )
 
-set __ProcessorArch=%PROCESSOR_ARCHITEW6432%
-if "%__ProcessorArch%"=="" set __ProcessorArch=%PROCESSOR_ARCHITECTURE%
-
 if %__TargetArchX64%==1   set __TargetArch=x64
 if %__TargetArchX86%==1   set __TargetArch=x86
 if %__TargetArchArm%==1   set __TargetArch=arm
@@ -361,18 +358,19 @@ if %__BuildNative% EQU 1 (
     echo %__MsgPrefix%Commencing build of native components for %__TargetOS%.%__TargetArch%.%__BuildType%
 
     REM Set the environment for the native build
-    set __VCTargetArch=amd64
-    if /i "%__HostArch%" == "x86" ( set __VCTargetArch=x86 )
-    if /i "%__HostArch%" == "arm" (
-        set __VCTargetArch=x86_arm
-    )
-    if /i "%__HostArch%" == "arm64" (
-        set __VCTargetArch=x86_arm64
+    if /i "%PROCESSOR_ARCHITECTURE%" == "ARM64" (
+        set __VCBuildArch=arm64
+        if /i "%__HostArch%" == "x64" ( set __VCBuildArch=arm64_amd64 )
+        if /i "%__HostArch%" == "x86" ( set __VCBuildArch=arm64_x86 )
+    ) else (
+        set __VCBuildArch=amd64
+        if /i "%__HostArch%" == "x86" ( set __VCBuildArch=amd64_x86 )
+        if /i "%__HostArch%" == "arm64" ( set __VCBuildArch=amd64_arm64 )
     )
 
     if NOT DEFINED SkipVCEnvInit (
-        echo %__MsgPrefix%Using environment: "%__VCToolsRoot%\vcvarsall.bat" !__VCTargetArch!
-        call                                 "%__VCToolsRoot%\vcvarsall.bat" !__VCTargetArch!
+        echo %__MsgPrefix%Using environment: "%__VCToolsRoot%\vcvarsall.bat" !__VCBuildArch!
+        call                                 "%__VCToolsRoot%\vcvarsall.bat" !__VCBuildArch!
     )
     @if defined _echo @echo on
 

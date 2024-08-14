@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Xunit;
@@ -21,7 +22,7 @@ namespace Wasm.Build.Tests
         {
         }
 
-        private string StringReplaceWithAssert(string oldContent, string oldValue, string newValue) 
+        private string StringReplaceWithAssert(string oldContent, string oldValue, string newValue)
         {
             string newContent = oldContent.Replace(oldValue, newValue);
             if (oldValue != newValue && oldContent == newContent)
@@ -57,11 +58,11 @@ namespace Wasm.Build.Tests
         private void UpdateBrowserMainJs(string targetFramework, string runtimeAssetsRelativePath = DefaultRuntimeAssetsRelativePath)
         {
             base.UpdateBrowserMainJs(
-                (mainJsContent) => 
+                (mainJsContent) =>
                 {
                     // .withExitOnUnhandledError() is available only only >net7.0
                     mainJsContent = StringReplaceWithAssert(
-                        mainJsContent, 
+                        mainJsContent,
                         ".create()",
                         (targetFramework == "net8.0" || targetFramework == "net9.0")
                             ? ".withConsoleForwarding().withElementOnExit().withExitCodeLogging().withExitOnUnhandledError().create()"
@@ -75,8 +76,8 @@ namespace Wasm.Build.Tests
                     mainJsContent = StringReplaceWithAssert(mainJsContent, "from './_framework/dotnet.js'", $"from '{runtimeAssetsRelativePath}dotnet.js'");
 
                     return mainJsContent;
-                }, 
-                targetFramework, 
+                },
+                targetFramework,
                 runtimeAssetsRelativePath
             );
         }
@@ -107,7 +108,7 @@ namespace Wasm.Build.Tests
             File.WriteAllText(mainJsPath, mainJsContent);
         }
 
-        [Theory]
+        [Theory, TestCategory("no-fingerprinting")]
         [InlineData("Debug")]
         [InlineData("Release")]
         public void BrowserBuildThenPublish(string config)
@@ -121,7 +122,7 @@ namespace Wasm.Build.Tests
 
             var buildArgs = new BuildArgs(projectName, config, false, id, null);
 
-            AddItemsPropertiesToProject(projectFile, 
+            AddItemsPropertiesToProject(projectFile,
                 atTheEnd:
                     """
                     <Target Name="CheckLinkedFiles" AfterTargets="ILLink">
@@ -294,7 +295,7 @@ namespace Wasm.Build.Tests
             return data;
         }
 
-        [Theory]
+        [Theory, TestCategory("no-fingerprinting")]
         [MemberData(nameof(TestDataForAppBundleDir))]
         public async Task RunWithDifferentAppBundleLocations(bool forConsole, bool runOutsideProjectDirectory, string extraProperties)
             => await (forConsole
@@ -385,13 +386,7 @@ namespace Wasm.Build.Tests
             data.Add("Debug", false, false);
             data.Add("Debug", false, true);
             data.Add("Release", false, false); // Release relinks by default
-
-            // [ActiveIssue("https://github.com/dotnet/runtime/issues/71887", TestPlatforms.Windows)]
-            if (!OperatingSystem.IsWindows())
-            {
-                data.Add("Debug", true, false);
-                data.Add("Release", true, false);
-            }
+            data.Add("Release", true, false);
 
             return data;
         }
@@ -604,11 +599,12 @@ namespace Wasm.Build.Tests
                 Assert.False(Directory.Exists(strippedAssemblyDir), $"Expected {strippedAssemblyDir} to not exist");
 
             string assemblyToExamine = "System.Private.CoreLib.dll";
+            string assemblyToExamineWithoutExtension = Path.GetFileNameWithoutExtension(assemblyToExamine);
             string originalAssembly = Path.Combine(objBuildDir, origAssemblyDir, assemblyToExamine);
             string strippedAssembly = Path.Combine(objBuildDir, strippedAssemblyDir, assemblyToExamine);
-            string bundledAssembly = Path.Combine(frameworkDir, Path.ChangeExtension(assemblyToExamine, ProjectProviderBase.WasmAssemblyExtension));
+            string? bundledAssembly = Directory.EnumerateFiles(frameworkDir, $"*{ProjectProviderBase.WasmAssemblyExtension}").FirstOrDefault(f => Path.GetFileNameWithoutExtension(f).StartsWith(assemblyToExamineWithoutExtension));
             Assert.True(File.Exists(originalAssembly), $"Expected {nameof(originalAssembly)} {originalAssembly} to exist");
-            Assert.True(File.Exists(bundledAssembly), $"Expected {nameof(bundledAssembly)} {bundledAssembly} to exist");
+            Assert.True(bundledAssembly != null && File.Exists(bundledAssembly), $"Expected {nameof(bundledAssembly)} {bundledAssembly} to exist");
             if (expectILStripping)
                 Assert.True(File.Exists(strippedAssembly), $"Expected {nameof(strippedAssembly)} {strippedAssembly} to exist");
             else
@@ -664,8 +660,8 @@ namespace Wasm.Build.Tests
 
             void AssertFile(string suffix)
             {
-                var fileName = $"{id}{suffix}";
-                Assert.True(copyOutputSymbolsToPublishDirectory == File.Exists(Path.Combine(publishFrameworkPath, fileName)), $"The {fileName} file {(copyOutputSymbolsToPublishDirectory ? "should" : "shouldn't")} exist in publish folder");
+                var fileName = Directory.EnumerateFiles(publishFrameworkPath, $"*{suffix}").FirstOrDefault(f => Path.GetFileNameWithoutExtension(f).StartsWith(id));
+                Assert.True(copyOutputSymbolsToPublishDirectory == (fileName != null && File.Exists(fileName)), $"The {fileName} file {(copyOutputSymbolsToPublishDirectory ? "should" : "shouldn't")} exist in publish folder");
             }
         }
     }

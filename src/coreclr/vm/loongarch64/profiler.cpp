@@ -134,14 +134,14 @@ LPVOID ProfileArgIterator::GetNextArgAddr()
 
                 UINT64* dst = (UINT64*)&pData->buffer[bufferPos];
                 m_bufferPos += 16;
-                if (pArgLocDesc->m_structFields & STRUCT_FLOAT_FIELD_FIRST)
+                if (pArgLocDesc->m_structFields.flags & FpStruct::FloatInt)
                 {
                     *dst++ = *(UINT64*)pArg;
                     *dst = pData->argumentRegisters.a[pArgLocDesc->m_idxGenReg];
                 }
                 else
                 {
-                    _ASSERTE(pArgLocDesc->m_structFields & STRUCT_FLOAT_FIELD_SECOND);
+                    _ASSERTE(pArgLocDesc->m_structFields.flags & FpStruct::IntFloat);
                     *dst++ = pData->argumentRegisters.a[pArgLocDesc->m_idxGenReg];
                     *dst = *(UINT64*)pArg;
                 }
@@ -163,8 +163,8 @@ LPVOID ProfileArgIterator::GetNextArgAddr()
         {
             if (pArgLocDesc->m_cFloatReg == 1)
             {
-                _ASSERTE(!(pArgLocDesc->m_structFields & STRUCT_FLOAT_FIELD_FIRST));
-                _ASSERTE(pArgLocDesc->m_structFields & STRUCT_FLOAT_FIELD_SECOND);
+                _ASSERTE(!(pArgLocDesc->m_structFields.flags & FpStruct::FloatInt));
+                _ASSERTE(pArgLocDesc->m_structFields.flags & FpStruct::IntFloat);
 
                 UINT32 bufferPos = m_bufferPos;
                 UINT64* dst  = (UINT64*)&pData->buffer[bufferPos];
@@ -258,11 +258,11 @@ LPVOID ProfileArgIterator::GetReturnBufferAddr(void)
         return (LPVOID)pData->argumentRegisters.a[0];
     }
 
-    UINT fpReturnSize = m_argIterator.GetFPReturnSize();
+    FpStruct::Flags fpReturnSize = FpStruct::Flags(m_argIterator.GetFPReturnSize());
 
     if (fpReturnSize != 0)
     {
-        if ((fpReturnSize & (UINT)STRUCT_FLOAT_FIELD_ONLY_ONE) || (fpReturnSize & (UINT)STRUCT_FLOAT_FIELD_ONLY_TWO))
+        if (fpReturnSize & (FpStruct::OnlyOne | FpStruct::BothFloat))
         {
             return &pData->floatArgumentRegisters.f[0];
         }
@@ -275,14 +275,14 @@ LPVOID ProfileArgIterator::GetReturnBufferAddr(void)
 
             // using the tail 16 bytes for return structure.
             UINT64* dst = (UINT64*)&pData->buffer[sizeof(pData->buffer) - 16];
-            if (fpReturnSize & (UINT)STRUCT_FLOAT_FIELD_FIRST)
+            if (fpReturnSize & FpStruct::FloatInt)
             {
                 *(double*)dst = pData->floatArgumentRegisters.f[0];
                 *(dst + 1) = pData->argumentRegisters.a[0];
             }
             else
             {
-                _ASSERTE(fpReturnSize & (UINT)STRUCT_FLOAT_FIELD_SECOND);
+                _ASSERTE(fpReturnSize & FpStruct::IntFloat);
                 *dst = pData->argumentRegisters.a[0];
                 *(double*)(dst + 1) = pData->floatArgumentRegisters.f[0];
             }

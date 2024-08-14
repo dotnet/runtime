@@ -291,10 +291,7 @@ namespace System
             object? obj = GCHandle.InternalGet(wo.WeakHandle);
             KeepAlive(wo);
 
-            if (obj is null)
-            {
-                throw new ArgumentNullException(nameof(wo));
-            }
+            ArgumentNullException.ThrowIfNull(obj, nameof(wo));
 
             return GetGeneration(obj);
         }
@@ -790,9 +787,7 @@ namespace System
                 // for debug builds we always want to call AllocateNewArray to detect AllocateNewArray bugs
 #if !DEBUG
                 // small arrays are allocated using `new[]` as that is generally faster.
-#pragma warning disable 8500 // sizeof of managed types
                 if (length < 2048 / sizeof(T))
-#pragma warning restore 8500
                 {
                     return new T[length];
                 }
@@ -892,9 +887,7 @@ namespace System
                 Configurations = new Dictionary<string, object>()
             };
 
-#pragma warning disable CS8500 // takes address of managed type
             _EnumerateConfigurationValues(&context, &ConfigCallback);
-#pragma warning restore CS8500
             return context.Configurations!;
         }
 

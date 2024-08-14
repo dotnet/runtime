@@ -50,6 +50,7 @@ namespace System.Net.Quic
         public System.TimeSpan KeepAliveInterval { get { throw null; } set { } }
         public int MaxInboundBidirectionalStreams { get { throw null; } set { } }
         public int MaxInboundUnidirectionalStreams { get { throw null; } set { } }
+        public System.Action<System.Net.Quic.QuicConnection, System.Net.Quic.QuicStreamCapacityChangedArgs>? StreamCapacityCallback { get { throw null; } set { } }
     }
     public enum QuicError
     {
@@ -146,6 +147,13 @@ namespace System.Net.Quic
         public System.Threading.Tasks.ValueTask WriteAsync(System.ReadOnlyMemory<byte> buffer, bool completeWrites, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
         public override System.Threading.Tasks.ValueTask WriteAsync(System.ReadOnlyMemory<byte> buffer, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
         public override void WriteByte(byte value) { }
+    }
+    public readonly partial struct QuicStreamCapacityChangedArgs
+    {
+        private readonly object _dummy;
+        private readonly int _dummyPrimitive;
+        public int BidirectionalIncrement { get { throw null; } init { } }
+        public int UnidirectionalIncrement { get { throw null; } init { } }
     }
     public enum QuicStreamType
     {

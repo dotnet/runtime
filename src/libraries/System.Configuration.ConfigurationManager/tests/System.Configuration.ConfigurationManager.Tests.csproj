@@ -6,6 +6,7 @@
     <DefineConstants>$(DefineConstants);LEGACY_GETRESOURCESTRING_USER</DefineConstants>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="$(CommonTestPath)TestUtilities\System\DisableParallelization.cs" Link="Common\TestUtilities\System\DisableParallelization.cs" />
     <Compile Include="$(CommonTestPath)System\IO\TempDirectory.cs" Link="Common\System\IO\TempDirectory.cs" />
     <Compile Include="$(CommonTestPath)System\IO\TempFile.cs" Link="Common\System\IO\TempFile.cs" />
     <Compile Include="..\src\System\Configuration\ConfigPathUtility.cs" Link="Source\ConfigPathUtility.cs" />
@@ -77,6 +78,7 @@
     <Compile Include="System\Configuration\SettingsManageabilityAttributeTests.cs" />
     <Compile Include="System\Configuration\SettingsPropertyIsReadOnlyExceptionTests.cs" />
     <Compile Include="System\Configuration\SettingsPropertyNotFoundExceptionTests.cs" />
+    <Compile Include="System\Configuration\SettingsPropertyTests.cs" />
     <Compile Include="System\Configuration\SettingsPropertyWrongTypeExceptionTests.cs" />
     <Compile Include="System\Configuration\SmokeTest.cs" />
     <Compile Include="System\Configuration\StringUtilTests.cs" />
@@ -92,7 +94,7 @@
     <Compile Include="System\Configuration\UrlPathTests.cs" />
     <Compile Include="System\Configuration\ValidatiorUtilsTests.cs" />
     <Compile Include="System\Diagnostics\DiagnosticsTestData.cs" Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'" />
-    <Compile Include="System\Diagnostics\TraceSourceConfigurationTests.cs"  Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'" />
+    <Compile Include="System\Diagnostics\TraceSourceConfigurationTests.cs" Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'" />
     <Compile Include="System\Drawing\Configuration\SystemDrawingSectionTests.cs" />
   </ItemGroup>
   <ItemGroup>

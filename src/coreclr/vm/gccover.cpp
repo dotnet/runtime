@@ -695,7 +695,7 @@ enum
 
 void replaceSafePointInstructionWithGcStressInstr(GcInfoDecoder* decoder, UINT32 safePointOffset, LPVOID pGCCover)
 {
-    PCODE pCode = NULL;
+    PCODE pCode = (PCODE)NULL;
     IJitManager::MethodRegionInfo *ptr = &(((GCCoverageInfo*)pGCCover)->methodRegion);
 
     //Get code address from offset
@@ -905,7 +905,7 @@ void replaceSafePointInstructionWithGcStressInstr(GcInfoDecoder* decoder, UINT32
 //Replaces the provided interruptible range with corresponding 2 or 4 byte gcStress illegal instruction
 bool replaceInterruptibleRangesWithGcStressInstr (UINT32 startOffset, UINT32 stopOffset, LPVOID pGCCover)
 {
-    PCODE pCode = NULL;
+    PCODE pCode = (PCODE)NULL;
     PBYTE rangeStart = NULL;
     PBYTE rangeStop = NULL;
 
@@ -1417,16 +1417,9 @@ BOOL OnGcCoverageInterrupt(PCONTEXT regs)
         RemoveGcCoverageInterrupt(instrPtr, savedInstrPtr, gcCover, offset);
         return TRUE;
     }
-
-    // If the thread is in preemptive mode then we must be in a
-    // PInvoke stub, a method that has an inline PInvoke frame,
-    // or be in a reverse PInvoke stub that's about to return.
-    //
-    // The PInvoke cases should should properly report GC refs if we
-    // trigger GC here. But a reverse PInvoke stub may over-report
-    // leading to spurious failures, as we would not normally report
-    // anything for this method at this point.
-    if (!pThread->PreemptiveGCDisabled() && pMD->HasUnmanagedCallersOnlyAttribute())
+    
+    // The thread is in preemptive mode. Normally, it should not be able to trigger GC.
+    if (!pThread->PreemptiveGCDisabled())
     {
         RemoveGcCoverageInterrupt(instrPtr, savedInstrPtr, gcCover, offset);
         return TRUE;
@@ -1816,37 +1809,19 @@ void DoGcStress (PCONTEXT regs, NativeCodeVersion nativeCodeVersion)
         frame.Push(pThread);
     }
 
-    DWORD_PTR retValRegs[2] = { 0 };
-    UINT  numberOfRegs = 0;
+    // The legacy X86 GC encoder does not encode the state of return registers at
+    // call sites, so we must add an extra frame to protect returns.
+#ifdef TARGET_X86
+    DWORD_PTR retValReg = 0;
 
     if (afterCallProtect[0])
     {
-#if defined(TARGET_AMD64)
-        retValRegs[numberOfRegs++] = regs->Rax;
-#elif defined(TARGET_X86)
-        retValRegs[numberOfRegs++] = regs->Eax;
-#elif  defined(TARGET_ARM)
-        retValRegs[numberOfRegs++] = regs->R0;
-#elif defined(TARGET_ARM64)
-        retValRegs[numberOfRegs++] = regs->X0;
-#elif defined(TARGET_LOONGARCH64)
-        retValRegs[numberOfRegs++] = regs->A0;
-#elif defined(TARGET_RISCV64)
-        retValRegs[numberOfRegs++] = regs->A0;
-#endif // TARGET_ARM64
-    }
-
-    if (afterCallProtect[1])
-    {
-#if defined(TARGET_AMD64) && defined(TARGET_UNIX)
-        retValRegs[numberOfRegs++] = regs->Rdx;
-#else // !TARGET_AMD64 || !TARGET_UNIX
-        _ASSERTE(!"Not expected multi reg return with pointers.");
-#endif // !TARGET_AMD64 || !TARGET_UNIX
+        retValReg = regs->Eax;
     }
 
     _ASSERTE(sizeof(OBJECTREF) == sizeof(DWORD_PTR));
-    GCFrame gcFrame(pThread, (OBJECTREF*)retValRegs, numberOfRegs, TRUE);
+    GCFrame gcFrame(pThread, (OBJECTREF*)&retValReg, 1, TRUE);
+#endif
 
     MethodDesc *pMD = nativeCodeVersion.GetMethodDesc();
     LOG((LF_GCROOTS, LL_EVERYTHING, "GCCOVER: Doing GC at method %s::%s offset 0x%x\n",
@@ -1872,36 +1847,12 @@ void DoGcStress (PCONTEXT regs, NativeCodeVersion nativeCodeVersion)
 
     CONSISTENCY_CHECK(!pThread->HasPendingGCStressInstructionUpdate());
 
-    if (numberOfRegs != 0)
+#ifdef TARGET_X86
+    if (afterCallProtect[0])
     {
-        if (afterCallProtect[0])
-        {
-#if defined(TARGET_AMD64)
-            regs->Rax = retValRegs[0];
-#elif defined(TARGET_X86)
-            regs->Eax = retValRegs[0];
-#elif defined(TARGET_ARM)
-            regs->R0 = retValRegs[0];
-#elif defined(TARGET_ARM64)
-            regs->X[0] = retValRegs[0];
-#elif defined(TARGET_LOONGARCH64)
-            regs->A0 = retValRegs[0];
-#elif defined(TARGET_RISCV64)
-            regs->A0 = retValRegs[0];
-#else
-            PORTABILITY_ASSERT("DoGCStress - return register");
-#endif
-        }
-
-        if (afterCallProtect[1])
-        {
-#if defined(TARGET_AMD64) && defined(TARGET_UNIX)
-            regs->Rdx = retValRegs[numberOfRegs - 1];
-#else // !TARGET_AMD64 || !TARGET_UNIX
-            _ASSERTE(!"Not expected multi reg return with pointers.");
-#endif // !TARGET_AMD64 || !TARGET_UNIX
-        }
+        regs->Eax = retValReg;
     }
+#endif
 
     if (!Thread::UseRedirectForGcStress())
     {

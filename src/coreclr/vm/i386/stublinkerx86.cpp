@@ -2861,138 +2861,6 @@ void StubLinkerCPU::EmitSharedComMethodStubEpilog(TADDR pFrameVptr,
 
 
 #if !defined(FEATURE_STUBS_AS_IL) && defined(TARGET_X86)
-/*==============================================================================
-    Pushes a TransitionFrame on the stack
-    If you make any changes to the prolog instruction sequence, be sure
-    to update UpdateRegdisplay, too!!  This service should only be called from
-    within the runtime.  It should not be called for any unmanaged -> managed calls in.
-
-    At the end of the generated prolog stub code:
-    pFrame is in ESI/RSI.
-    the previous pFrame is in EDI/RDI
-    The current Thread* is in EBX/RBX.
-    For x86, ESP points to TransitionFrame
-    For amd64, ESP points to the space reserved for the outgoing argument registers
-*/
-
-VOID StubLinkerCPU::EmitMethodStubProlog(TADDR pFrameVptr, int transitionBlockOffset)
-{
-    STANDARD_VM_CONTRACT;
-
-    // push ebp     ;; save callee-saved register
-    // mov ebp,esp
-    // push ebx     ;; save callee-saved register
-    // push esi     ;; save callee-saved register
-    // push edi     ;; save callee-saved register
-    X86EmitPushEBPframe();
-
-    X86EmitPushReg(kEBX);
-    X86EmitPushReg(kESI);
-    X86EmitPushReg(kEDI);
-
-    // Push & initialize ArgumentRegisters
-    #define ARGUMENT_REGISTER(regname) X86EmitPushReg(k##regname);
-    ENUM_ARGUMENT_REGISTERS();
-    #undef ARGUMENT_REGISTER
-
-    // Push m_datum
-    X86EmitPushReg(kEAX);
-
-    // push edx ;leave room for m_next (edx is an arbitrary choice)
-    X86EmitPushReg(kEDX);
-
-    // push Frame vptr
-    X86EmitPushImmPtr((LPVOID) pFrameVptr);
-
-    // mov esi,esp
-    X86EmitMovRegSP(kESI);
-
-    X86EmitPushImmPtr((LPVOID)GetProcessGSCookie());
-
-    // ebx <-- GetThread()
-    X86EmitCurrentThreadFetch(kEBX, 0);
-
-#if _DEBUG
-
-    // call ObjectRefFlush
-    X86EmitPushReg(kEBX);                   // arg on stack
-
-    // Make the call
-    X86EmitCall(NewExternalCodeLabel((LPVOID) Thread::ObjectRefFlush), sizeof(void*));
-
-#endif // _DEBUG
-
-    // mov edi,[ebx + Thread.GetFrame()]    ;; get previous frame
-    X86EmitIndexRegLoad(kEDI, kEBX, Thread::GetOffsetOfCurrentFrame());
-
-    // mov [esi + Frame.m_next], edi
-    X86EmitIndexRegStore(kESI, Frame::GetOffsetOfNextLink(), kEDI);
-
-    // mov [ebx + Thread.GetFrame()], esi
-    X86EmitIndexRegStore(kEBX, Thread::GetOffsetOfCurrentFrame(), kESI);
-
-#if _DEBUG
-
-    if (Frame::ShouldLogTransitions())
-    {
-        // call LogTransition
-        X86EmitPushReg(kESI);                   // arg on stack
-
-        X86EmitCall(NewExternalCodeLabel((LPVOID) Frame::LogTransition), sizeof(void*));
-    }
-
-#endif // _DEBUG
-
-
-    // For x86, the patch label can be specified only after the GSCookie is pushed
-    // Otherwise the debugger will see a Frame without a valid GSCookie
-}
-
-/*==============================================================================
- EmitMethodStubEpilog generates the part of the stub that will pop off the
- Frame
-
- restoreArgRegs - indicates whether the argument registers need to be
-                  restored from m_argumentRegisters
-
- At this point of the stub:
-    pFrame is in ESI/RSI.
-    the previous pFrame is in EDI/RDI
-    The current Thread* is in EBX/RBX.
-    For x86, ESP points to the FramedMethodFrame::NegInfo
-*/
-
-VOID StubLinkerCPU::EmitMethodStubEpilog(WORD numArgBytes, int transitionBlockOffset)
-{
-    STANDARD_VM_CONTRACT;
-
-    // mov [ebx + Thread.GetFrame()], edi  ;; restore previous frame
-    X86EmitIndexRegStore(kEBX, Thread::GetOffsetOfCurrentFrame(), kEDI);
-
-    // deallocate Frame
-    X86EmitAddEsp(sizeof(GSCookie) + transitionBlockOffset + TransitionBlock::GetOffsetOfCalleeSavedRegisters());
-
-    // pop edi        ; restore callee-saved registers
-    // pop esi
-    // pop ebx
-    // pop ebp
-    X86EmitPopReg(kEDI);
-    X86EmitPopReg(kESI);
-    X86EmitPopReg(kEBX);
-    X86EmitPopReg(kEBP);
-
-#if defined(UNIX_X86_ABI)
-    // Caller deallocates argument space.  (Bypasses ASSERT in
-    // X86EmitReturn.)
-    numArgBytes = 0;
-#endif
-
-    X86EmitReturn(numArgBytes);
-}
-
-
-// On entry, ESI should be pointing to the Frame
-
 VOID StubLinkerCPU::EmitCheckGSCookie(X86Reg frameReg, int gsCookieOffset)
 {
     STANDARD_VM_CONTRACT;
@@ -3109,9 +2977,13 @@ VOID StubLinkerCPU::EmitComputedInstantiatingMethodStub(MethodDesc* pSharedMD, s
 #ifdef TARGET_AMD64
 VOID StubLinkerCPU::EmitLoadMethodAddressIntoAX(MethodDesc *pMD)
 {
-    if (pMD->HasStableEntryPoint())
+    STANDARD_VM_CONTRACT;
+
+    PCODE multiCallableAddr = pMD->TryGetMultiCallableAddrOfCode(CORINFO_ACCESS_PREFER_SLOT_OVER_TEMPORARY_ENTRYPOINT);
+
+    if (multiCallableAddr != (PCODE)NULL)
     {
-        X86EmitRegLoad(kRAX, pMD->GetStableEntryPoint());// MOV RAX, DWORD
+        X86EmitRegLoad(kRAX, multiCallableAddr);// MOV RAX, DWORD
     }
     else
     {
@@ -3124,14 +2996,17 @@ VOID StubLinkerCPU::EmitLoadMethodAddressIntoAX(MethodDesc *pMD)
 
 VOID StubLinkerCPU::EmitTailJumpToMethod(MethodDesc *pMD)
 {
+    STANDARD_VM_CONTRACT;
+
 #ifdef TARGET_AMD64
     EmitLoadMethodAddressIntoAX(pMD);
     Emit16(X86_INSTR_JMP_EAX);
 #else
+    PCODE multiCallableAddr = pMD->TryGetMultiCallableAddrOfCode(CORINFO_ACCESS_PREFER_SLOT_OVER_TEMPORARY_ENTRYPOINT);
     // Use direct call if possible
-    if (pMD->HasStableEntryPoint())
+    if (multiCallableAddr != (PCODE)NULL)
     {
-        X86EmitNearJump(NewExternalCodeLabel((LPVOID) pMD->GetStableEntryPoint()));
+        X86EmitNearJump(NewExternalCodeLabel((LPVOID)multiCallableAddr));
     }
     else
     {
@@ -3718,41 +3593,6 @@ VOID StubLinkerCPU::EmitShuffleThunk(ShuffleEntry *pShuffleEntryArray)
 
 #if !defined(FEATURE_STUBS_AS_IL)
 
-#if defined(TARGET_X86) && !defined(FEATURE_MULTICASTSTUB_AS_IL)
-//===========================================================================
-// Computes hash code for MulticastDelegate.Invoke()
-UINT_PTR StubLinkerCPU::HashMulticastInvoke(MetaSig* pSig)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-    }
-    CONTRACTL_END;
-
-    ArgIterator argit(pSig);
-
-    UINT numStackBytes = argit.SizeOfArgStack();
-
-    if (numStackBytes > 0x7FFF)
-        COMPlusThrow(kNotSupportedException, W("NotSupported_TooManyArgs"));
-
-    // check if the function is returning a float, in which case the stub has to take
-    // care of popping the floating point stack except for the last invocation
-
-    _ASSERTE(!(numStackBytes & 3));
-
-    UINT hash = numStackBytes;
-
-    if (CorTypeInfo::IsFloat(pSig->GetReturnType()))
-    {
-        hash |= 2;
-    }
-
-    return hash;
-}
-#endif // defined(TARGET_X86) && !defined(FEATURE_MULTICASTSTUB_AS_IL)
-
 #ifdef TARGET_X86
 //===========================================================================
 // Emits code for MulticastDelegate.Invoke()
@@ -3789,126 +3629,6 @@ VOID StubLinkerCPU::EmitDelegateInvoke()
     X86EmitReturn(0);
 }
 #endif // TARGET_X86
-
-#if defined(TARGET_X86) && !defined(FEATURE_MULTICASTSTUB_AS_IL)
-VOID StubLinkerCPU::EmitMulticastInvoke(UINT_PTR hash)
-{
-    STANDARD_VM_CONTRACT;
-
-    int thisRegOffset = MulticastFrame::GetOffsetOfTransitionBlock() +
-        TransitionBlock::GetOffsetOfArgumentRegisters() + offsetof(ArgumentRegisters, THIS_REG);
-
-    // push the methoddesc on the stack
-    // mov eax, [ecx + offsetof(_methodAuxPtr)]
-    X86EmitIndexRegLoad(SCRATCH_REGISTER_X86REG, THIS_kREG, DelegateObject::GetOffsetOfMethodPtrAux());
-
-    // Push a MulticastFrame on the stack.
-    EmitMethodStubProlog(MulticastFrame::GetMethodFrameVPtr(), MulticastFrame::GetOffsetOfTransitionBlock());
-
-    // Frame is ready to be inspected by debugger for patch location
-    EmitPatchLabel();
-
-    // TODO: on AMD64, pick different regs for locals so don't need the pushes
-
-    // push edi     ;; Save EDI (want to use it as loop index)
-    X86EmitPushReg(kEDI);
-
-    // xor edi,edi  ;; Loop counter: EDI=0,1,2...
-    X86EmitZeroOutReg(kEDI);
-
-    CodeLabel *pLoopLabel = NewCodeLabel();
-    CodeLabel *pEndLoopLabel = NewCodeLabel();
-
-    EmitLabel(pLoopLabel);
-
-    // Entry:
-    //   EDI == iteration counter
-
-    // mov ecx, [esi + this]     ;; get delegate
-    X86EmitIndexRegLoad(THIS_kREG, kESI, thisRegOffset);
-
-    // cmp edi,[ecx]._invocationCount
-    X86EmitOp(0x3b, kEDI, THIS_kREG, DelegateObject::GetOffsetOfInvocationCount());
-
-    // je ENDLOOP
-    X86EmitCondJump(pEndLoopLabel, X86CondCode::kJZ);
-
-    UINT16 numStackBytes = static_cast<UINT16>(hash & ~3);
-
-    //    ..repush & reenregister args..
-    INT32 ofs = numStackBytes + MulticastFrame::GetOffsetOfTransitionBlock() + TransitionBlock::GetOffsetOfArgs();
-    while (ofs != MulticastFrame::GetOffsetOfTransitionBlock() + TransitionBlock::GetOffsetOfArgs())
-    {
-        ofs -= sizeof(void*);
-        X86EmitIndexPush(kESI, ofs);
-    }
-
-    #define ARGUMENT_REGISTER(regname) if (k##regname != THIS_kREG) { X86EmitIndexRegLoad(k##regname, kESI, \
-        offsetof(ArgumentRegisters, regname) + MulticastFrame::GetOffsetOfTransitionBlock() + TransitionBlock::GetOffsetOfArgumentRegisters()); }
-
-    ENUM_ARGUMENT_REGISTERS_BACKWARD();
-
-    #undef ARGUMENT_REGISTER
-
-    //    mov SCRATCHREG, [ecx+Delegate._invocationList]  ;;fetch invocation list
-    X86EmitIndexRegLoad(SCRATCH_REGISTER_X86REG, THIS_kREG, DelegateObject::GetOffsetOfInvocationList());
-
-    //    mov SCRATCHREG, [SCRATCHREG+m_Array+edi*4]    ;; index into invocation list
-    X86EmitOp(0x8b, kEAX, SCRATCH_REGISTER_X86REG, PtrArray::GetDataOffset(), kEDI, sizeof(void*));
-
-    //    mov THISREG, [SCRATCHREG+Delegate.object]  ;;replace "this" pointer
-    X86EmitIndexRegLoad(THIS_kREG, SCRATCH_REGISTER_X86REG, DelegateObject::GetOffsetOfTarget());
-
-    //    call [SCRATCHREG+Delegate.target] ;; call current subscriber
-    X86EmitOffsetModRM(0xff, (X86Reg)2, SCRATCH_REGISTER_X86REG, DelegateObject::GetOffsetOfMethodPtr());
-    INDEBUG(Emit8(0x90));       // Emit a nop after the call in debug so that
-                                // we know that this is a call that can directly call
-                                // managed code
-
-    //    inc edi
-    Emit8(0x47);
-
-    if (hash & 2) // CorTypeInfo::IsFloat(pSig->GetReturnType())
-    {
-        // if the return value is a float/double check if we just did the last call - if not,
-        // emit the pop of the float stack
-
-        // mov SCRATCHREG, [esi + this]     ;; get delegate
-        X86EmitIndexRegLoad(SCRATCH_REGISTER_X86REG, kESI, thisRegOffset);
-
-        // cmp edi,[SCRATCHREG]._invocationCount
-        X86EmitOffsetModRM(0x3b, kEDI, SCRATCH_REGISTER_X86REG, DelegateObject::GetOffsetOfInvocationCount());
-
-        CodeLabel *pNoFloatStackPopLabel = NewCodeLabel();
-
-        // je NOFLOATSTACKPOP
-        X86EmitCondJump(pNoFloatStackPopLabel, X86CondCode::kJZ);
-
-        // fstp 0
-        Emit16(0xd8dd);
-
-        // NoFloatStackPopLabel:
-        EmitLabel(pNoFloatStackPopLabel);
-    }
-
-    // The debugger may need to stop here, so grab the offset of this code.
-    EmitPatchLabel();
-
-    // jmp LOOP
-    X86EmitNearJump(pLoopLabel);
-
-    //ENDLOOP:
-    EmitLabel(pEndLoopLabel);
-
-    // pop edi     ;; Restore edi
-    X86EmitPopReg(kEDI);
-
-    EmitCheckGSCookie(kESI, MulticastFrame::GetOffsetOfGSCookie());
-
-    // Epilog
-    EmitMethodStubEpilog(numStackBytes, MulticastFrame::GetOffsetOfTransitionBlock());
-}
-#endif // defined(TARGET_X86) && !defined(FEATURE_MULTICASTSTUB_AS_IL)
 
 #endif // !FEATURE_STUBS_AS_IL
 

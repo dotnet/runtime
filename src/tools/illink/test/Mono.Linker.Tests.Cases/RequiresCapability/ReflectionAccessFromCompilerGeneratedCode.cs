@@ -24,9 +24,8 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 		class ReflectionAccessFromStateMachine
 		{
 			[ExpectedWarning ("IL2026", "--TypeWithMethodWithRequires.MethodWithRequires--", CompilerGeneratedCode = true)]
-			[ExpectedWarning ("IL3002", "--TypeWithMethodWithRequires.MethodWithRequires--", Tool.NativeAot, "https://github.com/dotnet/runtime/issues/101998", CompilerGeneratedCode = true)]
-			[ExpectedWarning ("IL3050", "--TypeWithMethodWithRequires.MethodWithRequires--", Tool.NativeAot, "https://github.com/dotnet/runtime/issues/101998", CompilerGeneratedCode = true)]
-			[UnexpectedWarning ("IL2118", nameof (TypeWithMethodWithRequires.MethodWithLocalFunctionCallsRUC), "LocalFunction", Tool.Trimmer, "https://github.com/dotnet/runtime/issues/85042", CompilerGeneratedCode = true)]
+			[ExpectedWarning ("IL3002", "--TypeWithMethodWithRequires.MethodWithRequires--", Tool.NativeAot, "Analyzer doesn't warn for reflection access to arbitrary Requires attributes", CompilerGeneratedCode = true)]
+			[ExpectedWarning ("IL3050", "--TypeWithMethodWithRequires.MethodWithRequires--", Tool.NativeAot, "Analyzer doesn't warn for reflection access to arbitrary Requires attributes", CompilerGeneratedCode = true)]
 			[ExpectedWarning ("IL2111", nameof (TypeWithMethodWithRequires.MethodWithAnnotations), CompilerGeneratedCode = true)]
 			static IEnumerable<int> TestIterator ()
 			{
@@ -44,9 +43,8 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 			}
 
 			[ExpectedWarning ("IL2026", "--TypeWithMethodWithRequires.MethodWithRequires--", CompilerGeneratedCode = true)]
-			[ExpectedWarning ("IL3002", "--TypeWithMethodWithRequires.MethodWithRequires--", Tool.NativeAot, "https://github.com/dotnet/runtime/issues/101998", CompilerGeneratedCode = true)]
-			[ExpectedWarning ("IL3050", "--TypeWithMethodWithRequires.MethodWithRequires--", Tool.NativeAot, "https://github.com/dotnet/runtime/issues/101998", CompilerGeneratedCode = true)]
-			[UnexpectedWarning ("IL2118", nameof (TypeWithMethodWithRequires.MethodWithLocalFunctionCallsRUC), "LocalFunction", Tool.Trimmer, "https://github.com/dotnet/runtime/issues/85042", CompilerGeneratedCode = true)]
+			[ExpectedWarning ("IL3002", "--TypeWithMethodWithRequires.MethodWithRequires--", Tool.NativeAot, "Analyzer doesn't warn for reflection access to arbitrary Requires attributes", CompilerGeneratedCode = true)]
+			[ExpectedWarning ("IL3050", "--TypeWithMethodWithRequires.MethodWithRequires--", Tool.NativeAot, "Analyzer doesn't warn for reflection access to arbitrary Requires attributes", CompilerGeneratedCode = true)]
 			[ExpectedWarning ("IL2111", nameof (TypeWithMethodWithRequires.MethodWithAnnotations), CompilerGeneratedCode = true)]
 			static async void TestAsync ()
 			{
@@ -83,9 +81,8 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 			static void TestLocalFunction ()
 			{
 				[ExpectedWarning ("IL2026", "--TypeWithMethodWithRequires.MethodWithRequires--")]
-				[ExpectedWarning ("IL3002", "--TypeWithMethodWithRequires.MethodWithRequires--", Tool.NativeAot, "https://github.com/dotnet/runtime/issues/101998")]
-				[ExpectedWarning ("IL3050", "--TypeWithMethodWithRequires.MethodWithRequires--", Tool.NativeAot, "https://github.com/dotnet/runtime/issues/101998")]
-				[UnexpectedWarning ("IL2118", nameof (TypeWithMethodWithRequires.MethodWithLocalFunctionCallsRUC), "LocalFunction", Tool.Trimmer, "https://github.com/dotnet/runtime/issues/85042")]
+				[ExpectedWarning ("IL3002", "--TypeWithMethodWithRequires.MethodWithRequires--", Tool.NativeAot, "Analyzer doesn't warn for reflection access to arbitrary Requires attributes")]
+				[ExpectedWarning ("IL3050", "--TypeWithMethodWithRequires.MethodWithRequires--", Tool.NativeAot, "Analyzer doesn't warn for reflection access to arbitrary Requires attributes")]
 				[ExpectedWarning ("IL2111", nameof (TypeWithMethodWithRequires.MethodWithAnnotations))]
 				void LocalFunction ()
 				{
@@ -138,9 +135,8 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 			{
 				var lambda =
 				[ExpectedWarning ("IL2026", "--TypeWithMethodWithRequires.MethodWithRequires--")]
-				[ExpectedWarning ("IL3002", "--TypeWithMethodWithRequires.MethodWithRequires--", Tool.NativeAot, "https://github.com/dotnet/runtime/issues/101998")]
-				[ExpectedWarning ("IL3050", "--TypeWithMethodWithRequires.MethodWithRequires--", Tool.NativeAot, "https://github.com/dotnet/runtime/issues/101998")]
-				[UnexpectedWarning ("IL2118", nameof (TypeWithMethodWithRequires.MethodWithLocalFunctionCallsRUC), "LocalFunction", Tool.Trimmer, "https://github.com/dotnet/runtime/issues/85042")]
+				[ExpectedWarning ("IL3002", "--TypeWithMethodWithRequires.MethodWithRequires--", Tool.NativeAot, "Analyzer doesn't warn for reflection access to arbitrary Requires attributes")]
+				[ExpectedWarning ("IL3050", "--TypeWithMethodWithRequires.MethodWithRequires--", Tool.NativeAot, "Analyzer doesn't warn for reflection access to arbitrary Requires attributes")]
 				[ExpectedWarning ("IL2111", nameof (TypeWithMethodWithRequires.MethodWithAnnotations))]
 				() => {
 					typeof (TypeWithMethodWithRequires).RequiresAll ();

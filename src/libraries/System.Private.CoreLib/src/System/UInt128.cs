@@ -344,7 +344,7 @@ namespace System
         /// <param name="value">The value to convert.</param>
         /// <returns><paramref name="value" /> converted to a <see cref="Int128" />.</returns>
         [CLSCompliant(false)]
-        public static explicit operator Int128(UInt128 value) => new Int128(value._upper, value._lower);
+        public static explicit operator Int128(UInt128 value) => Unsafe.BitCast<UInt128, Int128>(value);
 
         /// <summary>Explicitly converts a 128-bit unsigned integer to a <see cref="Int128" /> value, throwing an overflow exception for any values that fall outside the representable range.</summary>
         /// <param name="value">The value to convert.</param>
@@ -357,7 +357,7 @@ namespace System
             {
                 ThrowHelper.ThrowOverflowException();
             }
-            return new Int128(value._upper, value._lower);
+            return Unsafe.BitCast<UInt128, Int128>(value);
         }
 
         /// <summary>Explicitly converts a 128-bit unsigned integer to a <see cref="IntPtr" /> value.</summary>
@@ -1197,8 +1197,8 @@ namespace System
                 // block of the divisor. Thus, guessing digits of the quotient
                 // will be more precise. Additionally we'll get r = a % b.
 
-                uint divHi = right[right.Length - 1];
-                uint divLo = right.Length > 1 ? right[right.Length - 2] : 0;
+                uint divHi = right[^1];
+                uint divLo = right.Length > 1 ? right[^2] : 0;
 
                 // We measure the leading zeros of the divisor
                 int shift = BitOperations.LeadingZeroCount(divHi);
@@ -1207,7 +1207,7 @@ namespace System
                 // And, we make sure the most significant bit is set
                 if (shift > 0)
                 {
-                    uint divNx = right.Length > 2 ? right[right.Length - 3] : 0;
+                    uint divNx = right.Length > 2 ? right[^3] : 0;
 
                     divHi = (divHi << shift) | (divLo >> backShift);
                     divLo = (divLo << shift) | (divNx >> backShift);

@@ -15,9 +15,7 @@ namespace System.Runtime
         private static unsafe IntPtr RhpCidResolve(IntPtr callerTransitionBlockParam, IntPtr pCell)
         {
             IntPtr locationOfThisPointer = callerTransitionBlockParam + TransitionBlock.GetThisOffset();
-#pragma warning disable 8500 // address of managed types
             object pObject = *(object*)locationOfThisPointer;
-#pragma warning restore 8500
             IntPtr dispatchResolveTarget = RhpCidResolve_Worker(pObject, pCell);
             return dispatchResolveTarget;
         }

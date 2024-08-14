@@ -236,15 +236,17 @@ enum HWIntrinsicFlag : unsigned int
     // then the intrinsic should be switched to a scalar only version.
     HW_Flag_HasScalarInputVariant = 0x2000000,
 
+    // The intrinsic uses a mask in arg1 to select elements present in the result, and must use a low vector register.
+    HW_Flag_LowVectorOperation = 0x4000000,
+
+    // The intrinsic uses a mask in arg1 to select elements present in the result, which zeros inactive elements
+    // (instead of merging).
+    HW_Flag_ZeroingMaskedOperation = 0x8000000,
+
 #endif // TARGET_XARCH
 
     // The intrinsic is a FusedMultiplyAdd intrinsic
     HW_Flag_FmaIntrinsic = 0x40000000,
-
-#if defined(TARGET_ARM64)
-    // The intrinsic uses a mask in arg1 to select elements present in the result, and must use a low vector register.
-    HW_Flag_LowVectorOperation = 0x4000000,
-#endif
 
     HW_Flag_CanBenefitFromConstantProp = 0x80000000,
 };
@@ -481,6 +483,10 @@ struct TernaryLogicInfo
 
     static const TernaryLogicInfo& lookup(uint8_t control);
 
+    static uint8_t GetTernaryControlByte(genTreeOps oper, uint8_t op1, uint8_t op2);
+    static uint8_t GetTernaryControlByte(TernaryLogicOperKind oper, uint8_t op1, uint8_t op2);
+    static uint8_t GetTernaryControlByte(const TernaryLogicInfo& info, uint8_t op1, uint8_t op2, uint8_t op3);
+
     TernaryLogicUseFlags GetAllUseFlags() const
     {
         uint8_t useFlagsBits = 0;
@@ -514,8 +520,11 @@ struct HWIntrinsicInfo
                                            CORINFO_SIG_INFO* sig,
                                            const char*       className,
                                            const char*       methodName,
-                                           const char*       enclosingClassName);
-    static CORINFO_InstructionSet lookupIsa(const char* className, const char* enclosingClassName);
+                                           const char*       innerEnclosingClassName,
+                                           const char*       outerEnclosingClassName);
+    static CORINFO_InstructionSet lookupIsa(const char* className,
+                                            const char* innerEnclosingClassName,
+                                            const char* outerEnclosingClassName);
 
     static unsigned lookupSimdSize(Compiler* comp, NamedIntrinsic id, CORINFO_SIG_INFO* sig);
 
@@ -535,6 +544,10 @@ struct HWIntrinsicInfo
 #ifdef TARGET_XARCH
     static bool                isAVX2GatherIntrinsic(NamedIntrinsic id);
     static FloatComparisonMode lookupFloatComparisonModeForSwappedArgs(FloatComparisonMode comparison);
+    static NamedIntrinsic      lookupIdForFloatComparisonMode(NamedIntrinsic      intrinsic,
+                                                              FloatComparisonMode comparison,
+                                                              var_types           simdBaseType,
+                                                              unsigned            simdSize);
 #endif
 
     // Member lookup
@@ -555,8 +568,10 @@ struct HWIntrinsicInfo
         return static_cast<CORINFO_InstructionSet>(result);
     }
 
-#ifdef TARGET_XARCH
+#if defined(TARGET_XARCH)
     static int lookupIval(Compiler* comp, NamedIntrinsic id, var_types simdBaseType);
+#elif defined(TARGET_ARM64)
+    static int lookupIval(NamedIntrinsic id);
 #endif
 
     static bool tryLookupSimdSize(NamedIntrinsic id, unsigned* pSimdSize)
@@ -872,6 +887,32 @@ struct HWIntrinsicInfo
         }
     }
 
+    static bool IsVariableShift(NamedIntrinsic id)
+    {
+#ifdef TARGET_XARCH
+        switch (id)
+        {
+            case NI_AVX2_ShiftRightArithmeticVariable:
+            case NI_AVX512F_ShiftRightArithmeticVariable:
+            case NI_AVX512F_VL_ShiftRightArithmeticVariable:
+            case NI_AVX512BW_ShiftRightArithmeticVariable:
+            case NI_AVX512BW_VL_ShiftRightArithmeticVariable:
+            case NI_AVX10v1_ShiftRightArithmeticVariable:
+            case NI_AVX2_ShiftRightLogicalVariable:
+            case NI_AVX512F_ShiftRightLogicalVariable:
+            case NI_AVX512BW_ShiftRightLogicalVariable:
+            case NI_AVX512BW_VL_ShiftRightLogicalVariable:
+            case NI_AVX10v1_ShiftRightLogicalVariable:
+            case NI_AVX2_ShiftLeftLogicalVariable:
+            case NI_AVX512BW_VL_ShiftLeftLogicalVariable:
+                return true;
+            default:
+                return false;
+        }
+#endif // TARGET_XARCH
+        return false;
+    }
+
     static bool HasImmediateOperand(NamedIntrinsic id)
     {
 #if defined(TARGET_ARM64)
@@ -945,12 +986,24 @@ struct HWIntrinsicInfo
         return (flags & HW_Flag_HasScalarInputVariant) != 0;
     }
 
+    static bool IsZeroingMaskedOperation(NamedIntrinsic id)
+    {
+        const HWIntrinsicFlag flags = lookupFlags(id);
+        return (flags & HW_Flag_ZeroingMaskedOperation) != 0;
+    }
+
     static NamedIntrinsic GetScalarInputVariant(NamedIntrinsic id)
     {
         assert(HasScalarInputVariant(id));
 
         switch (id)
         {
+            case NI_Sve_ConditionalExtractAfterLastActiveElement:
+                return NI_Sve_ConditionalExtractAfterLastActiveElementScalar;
+
+            case NI_Sve_ConditionalExtractLastActiveElement:
+                return NI_Sve_ConditionalExtractLastActiveElementScalar;
+
             case NI_Sve_SaturatingDecrementBy16BitElementCount:
                 return NI_Sve_SaturatingDecrementBy16BitElementCountScalar;
 
@@ -1012,6 +1065,11 @@ struct HWIntrinsicInfo
         HWIntrinsicFlag flags = lookupFlags(id);
         return (flags & HW_Flag_PermuteVar2x) != 0;
     }
+
+    static bool IsTernaryLogic(NamedIntrinsic id)
+    {
+        return (id == NI_AVX512F_TernaryLogic) || (id == NI_AVX512F_VL_TernaryLogic) || (id == NI_AVX10v1_TernaryLogic);
+    }
 #endif // TARGET_XARCH
 
 #if defined(TARGET_ARM64)
@@ -1064,6 +1122,14 @@ struct HWIntrinsicInfo
                 break;
             }
 
+            case NI_Sve_MultiplyAddRotateComplexBySelectedScalar:
+            {
+                assert(sig->numArgs == 5);
+                *imm1Pos = 0;
+                *imm2Pos = 1;
+                break;
+            }
+
             default:
             {
                 assert(sig->numArgs > 0);
@@ -1084,6 +1150,7 @@ struct HWIntrinsic final
         , op2(nullptr)
         , op3(nullptr)
         , op4(nullptr)
+        , op5(nullptr)
         , numOperands(0)
         , baseType(TYP_UNDEF)
     {
@@ -1113,6 +1180,7 @@ struct HWIntrinsic final
     GenTree*            op2;
     GenTree*            op3;
     GenTree*            op4;
+    GenTree*            op5;
     size_t              numOperands;
     var_types           baseType;
 
@@ -1123,6 +1191,9 @@ private:
 
         switch (numOperands)
         {
+            case 5:
+                op5 = node->Op(5);
+                FALLTHROUGH;
             case 4:
                 op4 = node->Op(4);
                 FALLTHROUGH;

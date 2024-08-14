@@ -12,20 +12,10 @@ namespace System.Collections.Frozen.Tests
         [Fact]
         public void AlternateLookup_Empty()
         {
-            FrozenDictionary<string, string>[] unsupported =
-            [
-                FrozenDictionary<string, string>.Empty,
-                FrozenDictionary.ToFrozenDictionary<string, string>([]),
-                FrozenDictionary.ToFrozenDictionary<string, string>([], EqualityComparer<string>.Default),
-            ];
-            foreach (FrozenDictionary<string, string> frozen in unsupported)
-            {
-                Assert.Throws<InvalidOperationException>(() => frozen.GetAlternateLookup<ReadOnlySpan<char>>());
-                Assert.False(frozen.TryGetAlternateLookup<ReadOnlySpan<char>>(out _));
-            }
-
             FrozenDictionary<string, string>[] supported =
             [
+                FrozenDictionary.ToFrozenDictionary<string, string>([]),
+                FrozenDictionary.ToFrozenDictionary<string, string>([], EqualityComparer<string>.Default),
                 FrozenDictionary.ToFrozenDictionary<string, string>([], StringComparer.Ordinal),
                 FrozenDictionary.ToFrozenDictionary<string, string>([], StringComparer.OrdinalIgnoreCase),
             ];
@@ -39,7 +29,7 @@ namespace System.Collections.Frozen.Tests
         [Fact]
         public void UnsupportedComparer_ThrowsOrReturnsFalse()
         {
-            FrozenDictionary<string, int> frozen = new Dictionary<string, int> { ["a"] = 1, ["b"] = 2 }.ToFrozenDictionary();
+            FrozenDictionary<char, int> frozen = new Dictionary<char, int> { ['a'] = 1, ['b'] = 2 }.ToFrozenDictionary();
             Assert.Throws<InvalidOperationException>(() => frozen.GetAlternateLookup<ReadOnlySpan<char>>());
             Assert.False(frozen.TryGetAlternateLookup<ReadOnlySpan<char>>(out _));
         }
