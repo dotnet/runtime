@@ -198,6 +198,12 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 else if (IsCollection(type))
                 {
                     spec = CreateCollectionSpec(typeParseInfo);
+
+                    // fallback to treating as an object, if we can create it
+                    if (spec is UnsupportedTypeSpec && type is INamedTypeSymbol && !type.IsAbstract)
+                    {
+                        spec = CreateObjectSpec(typeParseInfo);
+                    }
                 }
                 else if (SymbolEqualityComparer.Default.Equals(type, _typeSymbols.IConfigurationSection))
                 {
