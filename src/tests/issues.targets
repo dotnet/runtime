@@ -1229,7 +1229,7 @@
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/JitBlue/Runtime_62692/Runtime_62692_*/**">
             <Issue>https://github.com/dotnet/runtime/issues/100368</Issue>
         </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/JitBlue/Runtime_101046/Runtime_101046_*/**">
+        <ExcludeList Include="$(XUnitTestBinBase)/JIT/Regression/JitBlue/Runtime_101046/**">
             <Issue>https://github.com/dotnet/runtime/issues/106393</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/Loader/classloader/StaticVirtualMethods/Reabstraction/**">
