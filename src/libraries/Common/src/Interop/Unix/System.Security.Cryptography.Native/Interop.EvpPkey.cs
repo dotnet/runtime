@@ -281,7 +281,8 @@ internal static partial class Interop
         private static partial IntPtr CryptoNative_LoadKeyFromProvider(
             string providerName,
             string keyUri,
-            ref IntPtr extraHandle);
+            ref IntPtr extraHandle,
+            [MarshalAs(UnmanagedType.Bool)] out bool haveProvider);
 
         internal static SafeEvpPKeyHandle LoadKeyFromProvider(
             string providerName,
@@ -292,7 +293,13 @@ internal static partial class Interop
 
             try
             {
-                evpPKeyHandle = CryptoNative_LoadKeyFromProvider(providerName, keyUri, ref extraHandle);
+                evpPKeyHandle = CryptoNative_LoadKeyFromProvider(providerName, keyUri, ref extraHandle, out bool haveProvider);
+
+                if (!haveProvider)
+                {
+                    Debug.Assert(evpPKeyHandle == IntPtr.Zero && extraHandle == IntPtr.Zero, "both handles should be null if provider is not supported");
+                    throw new PlatformNotSupportedException(SR.PlatformNotSupported_CryptographyOpenSSL3NotFound);
+                }
 
                 if (evpPKeyHandle == IntPtr.Zero || extraHandle == IntPtr.Zero)
                 {
