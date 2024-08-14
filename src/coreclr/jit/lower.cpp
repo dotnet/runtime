@@ -2024,7 +2024,7 @@ void Lowering::LowerSpecialCopyArgs(GenTreeCall* call)
     // We only need to use the special copy helper on P/Invoke IL stubs
     // for the unmanaged call.
     if (comp->opts.jitFlags->IsSet(JitFlags::JIT_FLAG_IL_STUB) && comp->compMethodRequiresPInvokeFrame() &&
-        call->IsUnmanaged())
+        call->IsUnmanaged() && comp->compHasSpecialCopyArgs())
     {
         // Unmanaged calling conventions on Windows x86 are passed in reverse order
         // of managed args, so we need to count down the number of args.
@@ -2032,6 +2032,7 @@ void Lowering::LowerSpecialCopyArgs(GenTreeCall* call)
         // which will be first in the list.
         // The this parameter is always passed in registers, so we can ignore it.
         unsigned argIndex = call->gtArgs.CountUserArgs() - 1;
+        assert(call->gtArgs.CountUserArgs() == comp->info.compILargsCount);
         for (CallArg& arg : call->gtArgs.Args())
         {
             if (!arg.IsUserArg())
@@ -2043,12 +2044,6 @@ void Lowering::LowerSpecialCopyArgs(GenTreeCall* call)
                 argIndex == call->gtArgs.CountUserArgs() - 1)
             {
                 assert(arg.GetNode()->OperIs(GT_PUTARG_REG));
-                continue;
-            }
-
-            if (argIndex >= comp->info.compILargsCount)
-            {
-                argIndex--;
                 continue;
             }
 
