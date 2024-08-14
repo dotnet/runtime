@@ -73,7 +73,6 @@
     <BrowserWorkloadDisabled>true</BrowserWorkloadDisabled>
     <OverrideImportRuntimeIlcPackageTarget>false</OverrideImportRuntimeIlcPackageTarget>
     <WasmExperimentalNativeAOTLLVMILCompilerVersion Condition="'$(WasmExperimentalNativeAOTLLVMILCompilerVersion)' == ''">${WasmExperimentalNativeAOTLLVMILCompilerVersion}</WasmExperimentalNativeAOTLLVMILCompilerVersion>
-    <RestoreAdditionalProjectSources>$(RestoreAdditionalProjectSources);https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-experimental/nuget/v3/index.json</RestoreAdditionalProjectSources>
   </PropertyGroup>
 
   <ItemGroup Condition="'$(_IsUsingNativeAOT)' == 'true' and ('$(RuntimeIdentifier)' == 'browser-wasm' or '$(RuntimeIdentifier)' == 'wasi-wasm')">
@@ -87,7 +86,7 @@
   </ItemGroup>
 
   <!-- Mono AOT library mode support -->
-  <PropertyGroup Condition="'$(PublishAot)' != 'true' and '$(NativeLib)' != ''">
+  <PropertyGroup Condition="'$(_IsUsingNativeAOT)' != 'true' and '$(NativeLib)' != ''">
     <_IsAndroidLibraryMode Condition="'$(RuntimeIdentifier)' == 'android-arm64' or '$(RuntimeIdentifier)' == 'android-arm' or '$(RuntimeIdentifier)' == 'android-x64' or '$(RuntimeIdentifier)' == 'android-x86'">true</_IsAndroidLibraryMode>
     <_IsAppleMobileLibraryMode Condition="'$(RuntimeIdentifier)' == 'ios-arm64' or '$(RuntimeIdentifier)' == 'iossimulator-arm64' or '$(RuntimeIdentifier)' == 'iossimulator-x64' or '$(RuntimeIdentifier)' == 'maccatalyst-arm64' or '$(RuntimeIdentifier)' == 'maccatalyst-x64' or '$(RuntimeIdentifier)' == 'tvos-arm64'">true</_IsAppleMobileLibraryMode>
     <_IsiOSLibraryMode Condition="'$(RuntimeIdentifier)' == 'ios-arm64' or '$(RuntimeIdentifier)' == 'iossimulator-arm64' or '$(RuntimeIdentifier)' == 'iossimulator-x64'">true</_IsiOSLibraryMode>

@@ -37,7 +37,12 @@ public class NativeAOTTests : BuildTestBase
 
         var buildArgs = ExpandBuildArgs(new BuildArgs(projectName, config, AOT: false, id, null));
 
-        AddItemsPropertiesToProject(projectFile, extraProperties: "<PublishAot>true</PublishAot>");
+        AddItemsPropertiesToProject(projectFile, extraProperties: 
+            """
+            <RestoreAdditionalProjectSources>$(RestoreAdditionalProjectSources);https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-experimental/nuget/v3/index.json</RestoreAdditionalProjectSources>
+            <PublishAot>true</PublishAot>
+            """
+        );
 
         try
         {
