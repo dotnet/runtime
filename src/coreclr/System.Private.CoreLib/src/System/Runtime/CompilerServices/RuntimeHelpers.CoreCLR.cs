@@ -344,12 +344,6 @@ namespace System.Runtime.CompilerServices
             return x.CompareTo(y);
         }
 
-
-        // The body of this function will be created by the EE for the specific type.
-        // See getILIntrinsicImplementation for how this happens.
-        [Intrinsic]
-        internal static extern unsafe void CopyConstruct<T>(T* dest, T* src) where T : unmanaged;
-
         internal static ref byte GetRawData(this object obj) =>
             ref Unsafe.As<RawData>(obj).Data;
 

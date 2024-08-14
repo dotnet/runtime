@@ -516,59 +516,13 @@ void Compiler::gsParamsToShadows()
             continue;
         }
 
-#if defined(TARGET_X86) && defined(FEATURE_IJW)
-        if (lclNum < info.compArgsCount && argRequiresSpecialCopy(lclNum) && (varDsc->TypeGet() == TYP_STRUCT))
-        {
-            JITDUMP("arg%02u requires special copy, using special copy helper to copy to shadow var V%02u\n", lclNum,
-                    shadowVarNum);
-            CORINFO_METHOD_HANDLE copyHelper =
-                info.compCompHnd->getSpecialCopyHelper(varDsc->GetLayout()->GetClassHandle());
-            GenTreeCall* call = gtNewCallNode(CT_USER_FUNC, copyHelper, TYP_VOID);
+        GenTree* src = gtNewLclvNode(lclNum, varDsc->TypeGet());
+        src->gtFlags |= GTF_DONT_CSE;
+        GenTree* store = gtNewStoreLclVarNode(shadowVarNum, src);
 
-            GenTree* src = gtNewLclVarAddrNode(lclNum);
-            GenTree* dst = gtNewLclVarAddrNode(shadowVarNum);
-
-            call->gtArgs.PushBack(this, NewCallArg::Primitive(dst));
-            call->gtArgs.PushBack(this, NewCallArg::Primitive(src));
-
-            fgEnsureFirstBBisScratch();
-            compCurBB = fgFirstBB; // Needed by some morphing
-            if (opts.IsReversePInvoke())
-            {
-                JITDUMP(
-                    "Inserting special copy helper call at the end of the first block after Reverse P/Invoke transition\n");
-
-#ifdef DEBUG
-                // assert that we don't have any uses of the local variable in the first block
-                // before we insert the shadow copy statement.
-                for (Statement* const stmt : fgFirstBB->Statements())
-                {
-                    assert(!gtHasRef(stmt->GetRootNode(), lclNum));
-                }
-#endif
-                // If we are in a reverse P/Invoke, then we need to insert
-                // the call at the end of the first block as we need to do the GC transition
-                // before we can call the helper.
-                (void)fgNewStmtAtEnd(fgFirstBB, fgMorphTree(call));
-            }
-            else
-            {
-                JITDUMP("Inserting special copy helper call at the beginning of the first block\n");
-                (void)fgNewStmtAtBeg(fgFirstBB, fgMorphTree(call));
-            }
-        }
-        else
-#endif // TARGET_X86 && FEATURE_IJW
-        {
-            GenTree* src = gtNewLclvNode(lclNum, varDsc->TypeGet());
-            src->gtFlags |= GTF_DONT_CSE;
-
-            GenTree* store = gtNewStoreLclVarNode(shadowVarNum, src);
-
-            fgEnsureFirstBBisScratch();
-            compCurBB = fgFirstBB; // Needed by some morphing
-            (void)fgNewStmtAtBeg(fgFirstBB, fgMorphTree(store));
-        }
+        fgEnsureFirstBBisScratch();
+        compCurBB = fgFirstBB; // Needed by some morphing
+        (void)fgNewStmtAtBeg(fgFirstBB, fgMorphTree(store));
     }
     compCurBB = nullptr;
 

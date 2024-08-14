@@ -87,8 +87,9 @@ struct OverrideProcArgs
 
         struct
         {
-            MethodTable* m_pSigMod;
             MethodTable* m_pMT;
+            MethodDesc*  m_pCopyCtor;
+            MethodDesc*  m_pDtor;
         } mm;
 
         struct
@@ -112,7 +113,8 @@ typedef MarshalerOverrideStatus (*OVERRIDEPROC)(NDirectStubLinker*    psl,
                                                 BOOL                  fManagedToNative,
                                                 OverrideProcArgs*     pargs,
                                                 UINT*                 pResID,
-                                                UINT                  argidx);
+                                                UINT                  argidx,
+                                                UINT                  nativeStackOffset);
 
 typedef MarshalerOverrideStatus (*RETURNOVERRIDEPROC)(NDirectStubLinker*  psl,
                                                       BOOL                fManagedToNative,
@@ -354,6 +356,7 @@ public:
 
     void GenerateArgumentIL(NDirectStubLinker* psl,
                             int argOffset, // the argument's index is m_paramidx + argOffset
+                            UINT nativeStackOffset, // offset of the argument on the native stack
                             BOOL fMngToNative);
 
     void GenerateReturnIL(NDirectStubLinker* psl,

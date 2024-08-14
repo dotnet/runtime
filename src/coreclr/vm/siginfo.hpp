@@ -49,7 +49,6 @@ unsigned GetSizeForCorElementType(CorElementType etyp);
 
 class SigBuilder;
 class ArgDestination;
-class TokenLookupMap;
 
 typedef const struct HardCodedMetaSig *LPHARDCODEDMETASIG;
 
@@ -126,8 +125,8 @@ public:
     //=========================================================================
 
 
-        void ConvertToInternalExactlyOne(Module* pSigModule, SigTypeContext *pTypeContext, SigBuilder * pSigBuilder, TokenLookupMap* pTokenMap = nullptr);
-        void ConvertToInternalSignature(Module* pSigModule, SigTypeContext *pTypeContext, SigBuilder * pSigBuilder, TokenLookupMap* pTokenMap = nullptr);
+        void ConvertToInternalExactlyOne(Module* pSigModule, SigTypeContext *pTypeContext, SigBuilder * pSigBuilder, BOOL bSkipCustomModifier = TRUE);
+        void ConvertToInternalSignature(Module* pSigModule, SigTypeContext *pTypeContext, SigBuilder * pSigBuilder, BOOL bSkipCustomModifier = TRUE);
 
 
     //=========================================================================
@@ -278,8 +277,7 @@ public:
         //------------------------------------------------------------------------
         // Tests for the existence of a custom modifier
         //------------------------------------------------------------------------
-        BOOL HasCustomModifier(Module *pModule, LPCSTR szModName, CorElementType cmodtype, mdToken* pModifierType = NULL) const;
-        BOOL HasCustomModifier(DynamicResolver *pResolver, LPCSTR szModName, CorElementType cmodtype, mdToken* pModifierType = NULL) const;
+        BOOL HasCustomModifier(Module *pModule, LPCSTR szModName, CorElementType cmodtype) const;
 
         //------------------------------------------------------------------------
         // Tests for ELEMENT_TYPE_CLASS or ELEMENT_TYPE_VALUETYPE followed by a TypeDef,

@@ -488,6 +488,9 @@ public:
     DWORD   GetCleanupWorkListLocalNum();
     DWORD   GetThreadLocalNum();
     DWORD   GetReturnValueLocalNum();
+#if defined(TARGET_X86) && defined(FEATURE_IJW)
+    DWORD   GetCopyCtorChainLocalNum();
+#endif // defined(TARGET_X86) && defined(FEATURE_IJW)
     void    SetCleanupNeeded();
     void    SetExceptionCleanupNeeded();
     BOOL    IsCleanupWorkListSetup();
@@ -557,6 +560,10 @@ protected:
     DWORD               m_dwTargetEntryPointLocalNum;
 #endif // FEATURE_COMINTEROP
 
+#if defined(TARGET_X86) && defined(FEATURE_IJW)
+    DWORD               m_dwCopyCtorChainLocalNum;
+#endif // defined(TARGET_X86) && defined(FEATURE_IJW)
+
     BOOL                m_fHasCleanupCode;
     BOOL                m_fHasExceptionCleanupCode;
     BOOL                m_fCleanupWorkListIsSetup;
@@ -592,7 +599,6 @@ HRESULT FindPredefinedILStubMethod(MethodDesc *pTargetMD, DWORD dwStubFlags, Met
 #ifndef DACCESS_COMPILE
 void MarshalStructViaILStub(MethodDesc* pStubMD, void* pManagedData, void* pNativeData, StructMarshalStubs::MarshalOperation operation, void** ppCleanupWorkList = nullptr);
 void MarshalStructViaILStubCode(PCODE pStubCode, void* pManagedData, void* pNativeData, StructMarshalStubs::MarshalOperation operation, void** ppCleanupWorkList = nullptr);
-bool GenerateCopyConstructorHelper(MethodDesc* ftn, TypeHandle type, DynamicResolver** ppResolver, COR_ILMETHOD_DECODER** ppHeader, CORINFO_METHOD_INFO* methInfo);
 #endif // DACCESS_COMPILE
 
 //
