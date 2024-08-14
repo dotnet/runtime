@@ -261,6 +261,6 @@
     <EmsdkPackageVersion>$(MicrosoftNETRuntimeEmscriptenVersion)</EmsdkPackageVersion>
     <NodePackageVersion>$(runtimewinx64MicrosoftNETCoreRuntimeWasmNodeTransportPackageVersion)</NodePackageVersion>
     <EmsdkVersion>3.1.34</EmsdkVersion>
-    <WasmExperimentalNativeAOTLLVMILCompilerVersion>9.0.0-preview.5.24318.1</WasmExperimentalNativeAOTLLVMILCompilerVersion>
+    <WasmExperimentalNativeAOTLLVMILCompilerVersion>9.0.0-rc.1.24413.1</WasmExperimentalNativeAOTLLVMILCompilerVersion>
   </PropertyGroup>
 </Project>
