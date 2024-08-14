@@ -37,7 +37,7 @@ namespace System.Reflection.Emit.Tests
             yield return new object[] { typeof(uint), (uint)1 };
 
             yield return new object[] { typeof(int), 0 };
-            yield return new object[] { typeof(int), 1 };
+            yield return new object[] { typeof(int), Test.Second };
 
             yield return new object[] { typeof(ulong), (ulong)0 };
             yield return new object[] { typeof(ulong), (ulong)1 };
