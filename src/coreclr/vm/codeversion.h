@@ -499,6 +499,7 @@ template<>
 struct cdac_data<MethodDescVersioningState>
 {
     static constexpr size_t NativeCodeVersionNode = offsetof(MethodDescVersioningState, m_pFirstVersionNode);
+    static constexpr size_t Flags = offsetof(MethodDescVersioningState, m_flags);
 };
 
 class ILCodeVersioningState

@@ -143,11 +143,12 @@ internal sealed partial class SOSDacImpl : ISOSDacInterface, ISOSDacInterface2, 
             if (nativeCodeAddr != TargetCodePointer.Null)
             {
                 data->bHasNativeCode = 1;
-                data->NativeCodeAddr = 0xffffffff_fffffffful;
+                data->NativeCodeAddr = nativeCodeAddr;
             }
             else
             {
                 data->bHasNativeCode = 0;
+                data->NativeCodeAddr = 0xffffffff_fffffffful;
             }
             if (rtsContract.HasNativeCodeSlot(methodDescHandle))
             {
@@ -157,29 +158,30 @@ internal sealed partial class SOSDacImpl : ISOSDacInterface, ISOSDacInterface2, 
             {
                 data->AddressOfNativeCodeSlot = 0;
             }
-            data->MDToken = rtsContract.GetMemberDef(methodDescHandle);
+            data->MDToken = rtsContract.GetMethodToken(methodDescHandle);
             data->MethodDescPtr = methodDesc;
             TargetPointer methodTableAddr = rtsContract.GetMethodTable(methodDescHandle);
             data->MethodTablePtr = methodTableAddr;
             TypeHandle typeHandle = rtsContract.GetTypeHandle(methodTableAddr);
             data->ModulePtr = rtsContract.GetModule(typeHandle);
-            if (!nativeCodeContract.IsReJITEnabled())
+
+            // TODO[cdac]: everything in the ReJIT TRY/CATCH in GetMethodDescDataImpl in request.cpp
+            if (pcNeededRevertedRejitData != null)
             {
-                *pcNeededRevertedRejitData = 0; // TODO[cdac]: copy active code version data
-            }
-            else
-            {
-                return HResults.E_NOTIMPL; // TODO[cdac]: copy rejit data
+
+                throw new NotImplementedException(); // TODO[cdac]: rejit stuff
             }
 
+#if false // TODO[cdac]: HAVE_GCCOVER
             if (requestedNativeCodeVersion.Valid)
             {
                 TargetPointer gcCoverAddr = nativeCodeContract.GetGCCoverageInfo(requestedNativeCodeVersion);
                 if (gcCoverAddr != TargetPointer.Null)
                 {
-                    return HResults.E_NOTIMPL; // TODO[cdac]: copy gc cover data
+                    return HResults.E_NOTIMPL; // TODO[cdac]: gc stress code copy
                 }
             }
+#endif
 
             if (data->bIsDynamic != 0)
             {

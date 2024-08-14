@@ -36,6 +36,13 @@ internal readonly partial struct NativeCodePointers_1 : INativeCodePointers
         public bool IsValid => Module != TargetPointer.Null || ILCodeVersionNode != TargetPointer.Null;
     }
 
+    [Flags]
+    internal enum MethodDescVersioningStateFlags : byte
+    {
+        IsDefaultVersionActiveChildFlag = 0x4
+    };
+
+
     internal struct NativeCodeVersionContract
     {
         private readonly Target _target;
@@ -110,9 +117,50 @@ internal readonly partial struct NativeCodePointers_1 : INativeCodePointers
             return ILCodeVersionHandleFromState(ilState);
         }
 
-        public NativeCodeVersionHandle FindActiveNativeCodeVersion(ILCodeVersionHandle methodDefActiveVersion)
+        private bool IsActiveNativeCodeVersion(NativeCodeVersionHandle nativeCodeVersion)
         {
-            throw new NotImplementedException();
+            if (nativeCodeVersion.MethodDescAddress != TargetPointer.Null)
+            {
+                MethodDescHandle md = _target.Contracts.RuntimeTypeSystem.GetMethodDescHandle(nativeCodeVersion.MethodDescAddress);
+                TargetPointer versioningStateAddress = _target.Contracts.RuntimeTypeSystem.GetMethodDescVersioningState(md);
+                if (versioningStateAddress == TargetPointer.Null)
+                {
+                    return true;
+                }
+                Data.MethodDescVersioningState versioningState = _target.ProcessedData.GetOrAdd<Data.MethodDescVersioningState>(versioningStateAddress);
+                return (((MethodDescVersioningStateFlags)versioningState.Flags) & MethodDescVersioningStateFlags.IsDefaultVersionActiveChildFlag) != 0;
+            }
+            else if (nativeCodeVersion.CodeVersionNodeAddress != TargetPointer.Null)
+            {
+                // NativeCodeVersionNode::IsActiveChildVersion
+                // Data.NativeCodeVersionNode codeVersion = _target.ProcessedData.GetOrAdd<Data.NativeCodeVersionNode>(nativeCodeVersion.CodeVersionNodeAddress);
+                // return codeVersion has flag IsActive
+                throw new NotImplementedException(); // TODO[cdac]: IsActiveNativeCodeVersion - explicit
+            }
+            else
+            {
+                throw new ArgumentException("Invalid NativeCodeVersionHandle");
+            }
+        }
+
+        public NativeCodeVersionHandle FindActiveNativeCodeVersion(ILCodeVersionHandle methodDefActiveVersion, TargetPointer methodDescAddress)
+        {
+            if (methodDefActiveVersion.Module != TargetPointer.Null)
+            {
+                NativeCodeVersionHandle provisionalHandle = new NativeCodeVersionHandle(methodDescAddress: methodDescAddress, codeVersionNodeAddress: TargetPointer.Null);
+                if (IsActiveNativeCodeVersion(provisionalHandle))
+                {
+                    return provisionalHandle;
+                }
+                else
+                {
+                    throw new NotImplementedException(); // TODO[cdac]: iterate through versioning state nodes
+                }
+            }
+            else
+            {
+                throw new NotImplementedException(); // TODO: [cdac] find explicit il code version
+            }
         }
 
     }

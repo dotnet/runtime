@@ -80,7 +80,7 @@ internal readonly partial struct NativeCodePointers_1 : INativeCodePointers
         {
             return NativeCodeVersionHandle.Invalid;
         }
-        return _nativeCodeVersionContract.FindActiveNativeCodeVersion(methodDefActiveVersion);
+        return _nativeCodeVersionContract.FindActiveNativeCodeVersion(methodDefActiveVersion, methodDesc);
     }
 
     bool INativeCodePointers.IsReJITEnabled()
@@ -107,8 +107,21 @@ internal readonly partial struct NativeCodePointers_1 : INativeCodePointers
         return true;
     }
 
-    TargetCodePointer INativeCodePointers.GetNativeCode(NativeCodeVersionHandle codeVersionHandle) => throw new NotImplementedException();
-
-    TargetPointer INativeCodePointers.GetGCCoverageInfo(NativeCodeVersionHandle codeVersionHandle) => throw new NotImplementedException();
+    TargetCodePointer INativeCodePointers.GetNativeCode(NativeCodeVersionHandle codeVersionHandle)
+    {
+        if (codeVersionHandle.MethodDescAddress != TargetPointer.Null)
+        {
+            MethodDescHandle md = _target.Contracts.RuntimeTypeSystem.GetMethodDescHandle(codeVersionHandle.MethodDescAddress);
+            return _target.Contracts.RuntimeTypeSystem.GetNativeCode(md);
+        }
+        else if (codeVersionHandle.CodeVersionNodeAddress != TargetPointer.Null)
+        {
+            throw new NotImplementedException(); // TODO[cdac]: get native code from NativeCodeVersionNode
+        }
+        else
+        {
+            throw new ArgumentException("Invalid NativeCodeVersionHandle");
+        }
+    }
 
 }

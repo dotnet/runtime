@@ -1097,7 +1097,9 @@ HRESULT ClrDataAccess::GetMethodDescData(
             _ASSERTE(methodDescData->GCStressCodeCopy == mdDataLocal.GCStressCodeCopy);
             _ASSERTE(methodDescData->managedDynamicMethodObject == mdDataLocal.managedDynamicMethodObject);
             _ASSERTE(methodDescData->requestedIP == mdDataLocal.requestedIP);
-            _ASSERTE(methodDescData->cJittedRejitVersions == mdDataLocal.cJittedRejitVersions);
+            // TODO[cdac]: cdacreader always returns 0 currently
+            _ASSERTE(methodDescData->cJittedRejitVersions == 0 || methodDescData->cJittedRejitVersions == mdDataLocal.cJittedRejitVersions);
+            // TODO[cdac]: compare rejitDataCurrent and rejitDataRequested, too
             if (rgRevertedRejitData != NULL)
             {
                 _ASSERTE (cNeededRevertedRejitDataLocal == *pcNeededRevertedRejitData);

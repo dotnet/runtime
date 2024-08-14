@@ -13,7 +13,9 @@ internal sealed class MethodDescVersioningState : IData<MethodDescVersioningStat
         Target.TypeInfo type = target.GetTypeInfo(DataType.MethodDescVersioningState);
 
         NativeCodeVersionNode = target.ReadPointer(address + (ulong)type.Fields[nameof(NativeCodeVersionNode)].Offset);
+        Flags = target.Read<byte>(address + (ulong)type.Fields[nameof(Flags)].Offset);
     }
 
     public TargetPointer NativeCodeVersionNode { get; init; }
+    public byte Flags { get; init; }
 }

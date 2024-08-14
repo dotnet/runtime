@@ -98,19 +98,19 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
                 _chunk = chunk;
             }
 
-            private bool HasFlag(MethodDescFlags flag) => (_desc.Flags & (ushort)flag) != 0;
-            private bool HasFlag(MethodDescEntryPointFlags flag) => (_desc.EntryPointFlags & (byte)flag) != 0;
+            private bool HasFlags(MethodDescFlags flag) => (_desc.Flags & (ushort)flag) != 0;
+            private bool HasFlags(MethodDescEntryPointFlags flag) => (_desc.EntryPointFlags & (byte)flag) != 0;
 
-            private bool HasFlag(MethodDescFlags3 flag) => (_desc.Flags3AndTokenRemainder & (ushort)flag) != 0;
+            private bool HasFlags(MethodDescFlags3 flag) => (_desc.Flags3AndTokenRemainder & (ushort)flag) != 0;
 
             internal byte ChunkIndex => _desc.ChunkIndex;
             internal TargetPointer MethodTable => _chunk.MethodTable;
             internal ushort Slot => _desc.Slot;
-            internal bool HasNonVtableSlot => HasFlag(MethodDescFlags.HasNonVtableSlot);
-            internal bool HasMethodImpl => HasFlag(MethodDescFlags.HasMethodImpl);
-            internal bool HasNativeCodeSlot => HasFlag(MethodDescFlags.HasNativeCodeSlot);
+            internal bool HasNonVtableSlot => HasFlags(MethodDescFlags.HasNonVtableSlot);
+            internal bool HasMethodImpl => HasFlags(MethodDescFlags.HasMethodImpl);
+            internal bool HasNativeCodeSlot => HasFlags(MethodDescFlags.HasNativeCodeSlot);
 
-            internal bool TemporaryEntryPointAssigned => HasFlag(MethodDescEntryPointFlags.TemporaryEntryPointAssigned);
+            internal bool TemporaryEntryPointAssigned => HasFlags(MethodDescEntryPointFlags.TemporaryEntryPointAssigned);
 
             internal TargetPointer CodeData => _desc.CodeData;
 
@@ -150,8 +150,8 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
             internal int AdditionalPointersCount => AdditionalPointersHelper(MethodDescFlags.MethodDescAdditionalPointersMask);
             #endregion Additional Pointers
 
-            internal bool HasStableEntryPoint => HasFlag(MethodDescFlags3.HasStableEntryPoint);
-            internal bool HasPrecode => HasFlag(MethodDescFlags3.HasPrecode);
+            internal bool HasStableEntryPoint => HasFlags(MethodDescFlags3.HasStableEntryPoint);
+            internal bool HasPrecode => HasFlags(MethodDescFlags3.HasPrecode);
 
         }
 
@@ -306,14 +306,14 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
 
     private TargetPointer GetAddrOfNativeCodeSlot(TargetPointer methodDescPointer, NonValidated.MethodDesc umd)
     {
-        uint offset = MethodDescAdditioinalPointersOffset(umd);
+        uint offset = MethodDescAdditionalPointersOffset(umd);
         offset += (uint)(_target.PointerSize * umd.NativeCodeSlotIndex);
         return methodDescPointer.Value + offset;
     }
 
     private TargetPointer GetAddresOfNonVtableSlot(TargetPointer methodDescPointer, NonValidated.MethodDesc umd)
     {
-        uint offset = MethodDescAdditioinalPointersOffset(umd);
+        uint offset = MethodDescAdditionalPointersOffset(umd);
         offset += (uint)(_target.PointerSize * umd.NonVtableSlotIndex);
         return methodDescPointer.Value + offset;
     }
@@ -366,7 +366,7 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
         return _target.ReadCodePointer(addrOfSlot);
     }
 
-    private uint MethodDescAdditioinalPointersOffset(NonValidated.MethodDesc umd)
+    private uint MethodDescAdditionalPointersOffset(NonValidated.MethodDesc umd)
     {
         MethodClassification cls = umd.Classification;
         switch (cls)
@@ -394,7 +394,7 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
 
     internal uint GetMethodDescBaseSize(NonValidated.MethodDesc umd)
     {
-        uint baseSize = MethodDescAdditioinalPointersOffset(umd);
+        uint baseSize = MethodDescAdditionalPointersOffset(umd);
         baseSize += (uint)(_target.PointerSize * umd.AdditionalPointersCount);
         return baseSize;
     }

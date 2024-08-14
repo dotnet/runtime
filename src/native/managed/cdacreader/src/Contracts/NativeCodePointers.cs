@@ -34,26 +34,26 @@ internal interface INativeCodePointers : IContract
 
     public virtual TargetCodePointer GetNativeCode(NativeCodeVersionHandle codeVersionHandle) => throw new NotImplementedException();
 
-    public virtual TargetPointer GetGCCoverageInfo(NativeCodeVersionHandle codeVersionHandle) => throw new NotImplementedException();
 }
 
 internal struct NativeCodeVersionHandle
 {
     // no public constructors
-    internal readonly TargetPointer _methodDescAddress;
-    internal readonly TargetPointer _codeVersionNodeAddress;
+    internal readonly TargetPointer MethodDescAddress;
+    internal readonly TargetPointer CodeVersionNodeAddress;
     internal NativeCodeVersionHandle(TargetPointer methodDescAddress, TargetPointer codeVersionNodeAddress)
     {
         if (methodDescAddress != TargetPointer.Null && codeVersionNodeAddress != TargetPointer.Null)
         {
             throw new ArgumentException("Only one of methodDescAddress and codeVersionNodeAddress can be non-null");
         }
-        _methodDescAddress = methodDescAddress;
-        _codeVersionNodeAddress = codeVersionNodeAddress;
+        MethodDescAddress = methodDescAddress;
+        CodeVersionNodeAddress = codeVersionNodeAddress;
     }
 
     internal static NativeCodeVersionHandle Invalid => new(TargetPointer.Null, TargetPointer.Null);
-    public bool Valid => _methodDescAddress != TargetPointer.Null || _codeVersionNodeAddress != TargetPointer.Null;
+    public bool Valid => MethodDescAddress != TargetPointer.Null || CodeVersionNodeAddress != TargetPointer.Null;
+
 }
 
 internal readonly struct NativeCodePointers : INativeCodePointers
