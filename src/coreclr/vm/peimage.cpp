@@ -615,9 +615,8 @@ void PEImage::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
 
 #endif // #ifdef DACCESS_COMPILE
 
-
-PEImage::PEImage():
-    m_path(),
+PEImage::PEImage(const WCHAR* path):
+    m_path{path},
     m_pathHash(0),
     m_refCount(1),
     m_bInHashMap(FALSE),
@@ -788,7 +787,7 @@ PTR_PEImage PEImage::CreateFromByteArray(const BYTE* array, COUNT_T size)
     }
     CONTRACT_END;
 
-    PEImageHolder pImage(new PEImage());
+    PEImageHolder pImage(new PEImage(NULL /*path*/));
     PTR_PEImageLayout pLayout = PEImageLayout::CreateFromByteArray(pImage, array, size);
     _ASSERTE(!pLayout->IsMapped());
 
