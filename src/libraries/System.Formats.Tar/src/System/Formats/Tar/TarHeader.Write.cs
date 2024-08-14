@@ -629,7 +629,7 @@ namespace System.Formats.Tar
                 checksum += FormatNumeric(_gid, buffer.Slice(FieldLocations.Gid, FieldLengths.Gid));
             }
 
-            if (_size > 0)
+            if (_size >= 0)
             {
                 checksum += FormatNumeric(_size, buffer.Slice(FieldLocations.Size, FieldLengths.Size));
             }
