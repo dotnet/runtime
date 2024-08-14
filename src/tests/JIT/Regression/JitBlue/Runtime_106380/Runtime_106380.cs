@@ -22,7 +22,10 @@ public class Runtime_106380
     [Fact]
     public static void TestEntryPoint()
     {
-        new Runtime_106380().Method0();
+        if (AdvSimd.IsSupported)
+        {
+            new Runtime_106380().Method0();
+        }
     }
 }
 
