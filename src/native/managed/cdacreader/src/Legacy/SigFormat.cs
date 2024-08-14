@@ -3,24 +3,23 @@
 
 using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Linq;
+using System.Reflection.Metadata;
+using System.Reflection.Metadata.Ecma335;
 using System.Text;
 using System.Threading.Tasks;
 using System.Xml.Linq;
 using Microsoft.Diagnostics.DataContractReader.Contracts;
-using Microsoft.Diagnostics.DataContractReader.Helpers;
 
 namespace Microsoft.Diagnostics.DataContractReader.Legacy
 {
     internal static class SigFormat
     {
-        private const uint IMAGE_CEE_CS_CALLCONV_MASK = 0xF;
-        private const uint IMAGE_CEE_CS_CALLCONV_VARARG = 0x5;
-        private const uint IMAGE_CEE_CS_CALLCONV_GENERIC = 0x10;
-        public static void AppendSigFormat(Target target,
+        public static unsafe void AppendSigFormat(Target target,
             StringBuilder stringBuilder,
             ReadOnlySpan<byte> signature,
-            EcmaMetadataReader? metadata,
+            MetadataReader? metadata,
             string? memberName,
             string? className,
             string? namespaceName,
@@ -28,14 +27,32 @@ namespace Microsoft.Diagnostics.DataContractReader.Legacy
             ReadOnlySpan<TypeHandle> methodInstantiation,
             bool CStringParmsOnly)
         {
-            byte callConv = checked((byte)GetData(ref signature));
-
-            if ((callConv & IMAGE_CEE_CS_CALLCONV_GENERIC) != 0)
+            fixed (byte* pSignature = signature)
             {
-                GetData(ref signature); // Ignore generic parameter count
+                BlobReader blobReader = new BlobReader(pSignature, signature.Length);
+                AppendSigFormat(target, stringBuilder, blobReader, metadata, memberName, className, namespaceName, typeInstantiation, methodInstantiation, CStringParmsOnly);
             }
-            int cArgs = (int)GetData(ref signature);
-            bool isVarArg = (callConv & IMAGE_CEE_CS_CALLCONV_MASK) == IMAGE_CEE_CS_CALLCONV_VARARG;
+        }
+
+        public static void AppendSigFormat(Target target,
+            StringBuilder stringBuilder,
+            BlobReader signature,
+            MetadataReader? metadata,
+            string? memberName,
+            string? className,
+            string? namespaceName,
+            ReadOnlySpan<TypeHandle> typeInstantiation,
+            ReadOnlySpan<TypeHandle> methodInstantiation,
+            bool CStringParmsOnly)
+        {
+            SignatureHeader header = signature.ReadSignatureHeader();
+
+            if (header.IsGeneric)
+            {
+                signature.ReadCompressedInteger(); // Ignore generic parameter count
+            }
+            int cArgs = (int)signature.ReadCompressedInteger();
+            bool isVarArg = header.CallingConvention == SignatureCallingConvention.VarArgs;
 
             if (!CStringParmsOnly)
             {
@@ -80,65 +97,19 @@ namespace Microsoft.Diagnostics.DataContractReader.Legacy
             stringBuilder.Append(')');
         }
 
-        private static Contracts.CorElementType GetElemType(ref ReadOnlySpan<byte> signature)
-        {
-            CorElementType result = (Contracts.CorElementType)signature[0];
-            signature = signature.Slice(1);
-            return result;
-        }
-
-        private static uint GetData(ref ReadOnlySpan<byte> signature)
-        {
-            byte headerByte = signature[0];
-            if ((headerByte & 0x80) == 0)
-            {
-                signature = signature.Slice(1);
-                return headerByte;
-            }
-            else if ((headerByte & 0x40) == 0)
-            {
-                int result = ((headerByte & 0x3f) << 8) | signature[1];
-                signature = signature.Slice(2);
-                return (uint)result;
-            }
-            else if ((headerByte & 0x20) == 0)
-            {
-                int result = ((headerByte & 0x1f) << 24) | (signature[1] << 16) | (signature[2] << 8) | signature[3];
-                signature = signature.Slice(4);
-                return (uint)result;
-            }
-            throw new InvalidOperationException("Invalid signature format");
-        }
-
-        private static uint GetToken(ref ReadOnlySpan<byte> signature)
-        {
-            uint data = GetData(ref signature);
-            MetadataTable table;
-            switch (data & 3)
-            {
-                case 0: table = MetadataTable.TypeDef; break;
-                case 1: table = MetadataTable.TypeRef; break;
-                case 2: table = MetadataTable.TypeSpec; break;
-                default: throw new InvalidOperationException("Invalid signature format");
-            }
-
-            return EcmaMetadataReader.CreateToken(table, data >> 2);
-        }
-
-        private static void AddTypeString(Target target,
+        private static unsafe void AddTypeString(Target target,
             StringBuilder stringBuilder,
-            ref ReadOnlySpan<byte> signature,
+            ref BlobReader signature,
             ReadOnlySpan<TypeHandle> typeInstantiation,
             ReadOnlySpan<TypeHandle> methodInstantiation,
-            EcmaMetadataReader? metadata)
+            MetadataReader? metadata)
         {
             string _namespace;
             string name;
-            EcmaMetadataCursor cursor;
 
             while (true)
             {
-                switch (GetElemType(ref signature))
+                switch ((CorElementType)signature.ReadByte())
                 {
                     case CorElementType.Void: stringBuilder.Append("Void"); return;
                     case CorElementType.Boolean: stringBuilder.Append("Boolean"); return;
@@ -163,17 +134,18 @@ namespace Microsoft.Diagnostics.DataContractReader.Legacy
                     case CorElementType.Class:
                         if (metadata == null)
                             throw new InvalidOperationException("Invalid signature without metadata reader");
-                        uint token = GetToken(ref signature);
-                        cursor = metadata.GetCursor(token);
-                        switch (EcmaMetadataReader.TokenToTable(token))
+                        EntityHandle handle = signature.ReadTypeHandle();
+                        switch (handle.Kind)
                         {
-                            case MetadataTable.TypeDef:
-                                _namespace = metadata.GetColumnAsUtf8String(cursor, MetadataColumnIndex.TypeDef_TypeNamespace);
-                                name = metadata.GetColumnAsUtf8String(cursor, MetadataColumnIndex.TypeDef_TypeNamespace);
+                            case HandleKind.TypeDefinition:
+                                TypeDefinition typeDef = metadata.GetTypeDefinition((TypeDefinitionHandle)handle);
+                                _namespace = metadata.GetString(typeDef.Namespace);
+                                name = metadata.GetString(typeDef.Name);
                                 break;
-                            case MetadataTable.TypeRef:
-                                _namespace = metadata.GetColumnAsUtf8String(cursor, MetadataColumnIndex.TypeRef_TypeNamespace);
-                                name = metadata.GetColumnAsUtf8String(cursor, MetadataColumnIndex.TypeRef_TypeNamespace);
+                            case HandleKind.TypeReference:
+                                TypeReference typeRef = metadata.GetTypeReference((TypeReferenceHandle)handle);
+                                _namespace = metadata.GetString(typeRef.Namespace);
+                                name = metadata.GetString(typeRef.Name);
                                 break;
                             default:
                                 return;
@@ -188,9 +160,8 @@ namespace Microsoft.Diagnostics.DataContractReader.Legacy
                         return;
 
                     case CorElementType.Internal:
-                        TargetPointer typeHandlePointer = target.ReadPointerFromSpan(signature);
+                        TargetPointer typeHandlePointer = target.ReadPointerFromSpan(signature.ReadBytes(target.PointerSize));
                         IRuntimeTypeSystem runtimeTypeSystem = target.Contracts.RuntimeTypeSystem;
-                        signature.Slice(target.PointerSize);
                         TypeHandle th = runtimeTypeSystem.GetTypeHandle(typeHandlePointer);
                         switch (runtimeTypeSystem.GetSignatureCorElementType(th))
                         {
@@ -214,10 +185,11 @@ namespace Microsoft.Diagnostics.DataContractReader.Legacy
                         uint typeDefToken = runtimeTypeSystem.GetTypeDefToken(th);
                         TargetPointer modulePointer = target.Contracts.RuntimeTypeSystem.GetModule(th);
                         Contracts.ModuleHandle module = target.Contracts.Loader.GetModuleHandle(modulePointer);
-                        EcmaMetadataReader internalTypeMetadata = target.Metadata.GetMetadata(module).EcmaMetadataReader;
-                        cursor = internalTypeMetadata.GetCursor(typeDefToken);
-                        _namespace = internalTypeMetadata.GetColumnAsUtf8String(cursor, MetadataColumnIndex.TypeDef_TypeNamespace);
-                        name = internalTypeMetadata.GetColumnAsUtf8String(cursor, MetadataColumnIndex.TypeDef_TypeNamespace);
+                        MetadataReader internalTypeMetadata = target.Contracts.EcmaMetadata.GetMetadata(module)!;
+
+                        TypeDefinition internalTypeDef = internalTypeMetadata.GetTypeDefinition((TypeDefinitionHandle)MetadataTokens.Handle((int)typeDefToken));
+                        _namespace = internalTypeMetadata.GetString(internalTypeDef.Namespace);
+                        name = internalTypeMetadata.GetString(internalTypeDef.Name);
 
                         if (!string.IsNullOrEmpty(_namespace))
                         {
@@ -242,10 +214,10 @@ namespace Microsoft.Diagnostics.DataContractReader.Legacy
                         return;
 
                     case CorElementType.MVar:
-                        uint mvarIndex = GetData(ref signature);
-                        if (methodInstantiation.Length > (int)mvarIndex)
+                        int mvarIndex = signature.ReadCompressedInteger();
+                        if (methodInstantiation.Length > mvarIndex)
                         {
-                            AddType(target, stringBuilder, methodInstantiation[(int)mvarIndex]);
+                            AddType(target, stringBuilder, methodInstantiation[mvarIndex]);
                         }
                         else
                         {
@@ -254,10 +226,10 @@ namespace Microsoft.Diagnostics.DataContractReader.Legacy
                         return;
 
                     case CorElementType.Var:
-                        uint varIndex = GetData(ref signature);
-                        if (methodInstantiation.Length > (int)varIndex)
+                        int varIndex = signature.ReadCompressedInteger();
+                        if (methodInstantiation.Length > varIndex)
                         {
-                            AddType(target, stringBuilder, methodInstantiation[(int)varIndex]);
+                            AddType(target, stringBuilder, methodInstantiation[varIndex]);
                         }
                         else
                         {
@@ -267,9 +239,9 @@ namespace Microsoft.Diagnostics.DataContractReader.Legacy
 
                     case CorElementType.GenericInst:
                         AddTypeString(target, stringBuilder, ref signature, typeInstantiation, methodInstantiation, metadata);
-                        uint genericArgCount = GetData(ref signature);
+                        int genericArgCount = signature.ReadCompressedInteger();
                         stringBuilder.Append('<');
-                        for (uint i = 0; i < genericArgCount; i++)
+                        for (int i = 0; i < genericArgCount; i++)
                         {
                             if (i != 0)
                                 stringBuilder.Append(',');
@@ -286,27 +258,27 @@ namespace Microsoft.Diagnostics.DataContractReader.Legacy
                     case CorElementType.Array:
                         AddTypeString(target, stringBuilder, ref signature, typeInstantiation, methodInstantiation, metadata);
                         stringBuilder.Append('[');
-                        uint rank = GetData(ref signature);
+                        int rank = signature.ReadCompressedInteger();
                         for (uint i = 1; i < rank; i++)
                         {
                             stringBuilder.Append(',');
                         }
                         stringBuilder.Append(']');
-                        uint numSizes = GetData(ref signature);
-                        for (uint i = 0; i < numSizes; i++)
+                        int numSizes = signature.ReadCompressedInteger();
+                        for (int i = 0; i < numSizes; i++)
                         {
-                            GetData(ref signature);
+                            _ = signature.ReadCompressedInteger();
                         }
-                        uint numLoBounds = GetData(ref signature);
-                        for (uint i = 0; i < numLoBounds; i++)
+                        int numLoBounds = signature.ReadCompressedInteger();
+                        for (int i = 0; i < numLoBounds; i++)
                         {
-                            GetData(ref signature);
+                            _ = signature.ReadCompressedSignedInteger();
                         }
                         return;
 
                     case CorElementType.FnPtr:
-                        uint callConv = GetData(ref signature);
-                        uint cArgs = GetData(ref signature);
+                        SignatureHeader fnPtrHeader = signature.ReadSignatureHeader();
+                        int cArgs = signature.ReadCompressedInteger();
                         AddTypeString(target, stringBuilder, ref signature, typeInstantiation, methodInstantiation, metadata);
                         stringBuilder.Append(" (");
                         for (uint i = 0; i < cArgs; i++)
@@ -315,7 +287,7 @@ namespace Microsoft.Diagnostics.DataContractReader.Legacy
                             if (i != cArgs - 1)
                                 stringBuilder.Append(", ");
                         }
-                        if ((callConv & IMAGE_CEE_CS_CALLCONV_MASK) == IMAGE_CEE_CS_CALLCONV_VARARG)
+                        if (fnPtrHeader.CallingConvention == SignatureCallingConvention.VarArgs)
                         {
                             if (cArgs > 0)
                                 stringBuilder.Append(", ");
@@ -326,7 +298,7 @@ namespace Microsoft.Diagnostics.DataContractReader.Legacy
 
                     case CorElementType.CModOpt:
                     case CorElementType.CModReqd:
-                        GetToken(ref signature);
+                        _ = signature.ReadTypeHandle();
                         break;
 
                     default:
@@ -374,10 +346,10 @@ namespace Microsoft.Diagnostics.DataContractReader.Legacy
                     uint typeDefToken = runtimeTypeSystem.GetTypeDefToken(typeHandle);
                     TargetPointer modulePointer = target.Contracts.RuntimeTypeSystem.GetModule(typeHandle);
                     Contracts.ModuleHandle module = target.Contracts.Loader.GetModuleHandle(modulePointer);
-                    EcmaMetadataReader metadata = target.Metadata.GetMetadata(module).EcmaMetadataReader;
-                    EcmaMetadataCursor cursor = metadata.GetCursor(typeDefToken);
-                    string _namespace = metadata.GetColumnAsUtf8String(cursor, MetadataColumnIndex.TypeDef_TypeNamespace);
-                    string name = metadata.GetColumnAsUtf8String(cursor, MetadataColumnIndex.TypeDef_TypeNamespace);
+                    MetadataReader metadata = target.Contracts.EcmaMetadata.GetMetadata(module)!;
+                    TypeDefinition typeDef = metadata.GetTypeDefinition((TypeDefinitionHandle)MetadataTokens.Handle((int)typeDefToken));
+                    string _namespace = metadata.GetString(typeDef.Namespace);
+                    string name = metadata.GetString(typeDef.Name);
 
                     if (!string.IsNullOrEmpty(_namespace))
                     {
@@ -419,9 +391,9 @@ namespace Microsoft.Diagnostics.DataContractReader.Legacy
                 case CorElementType.Var:
                     runtimeTypeSystem.IsGenericVariable(typeHandle, out TargetPointer genericVariableModulePointer, out uint typeVarToken);
                     Contracts.ModuleHandle genericVariableModule = target.Contracts.Loader.GetModuleHandle(genericVariableModulePointer);
-                    EcmaMetadataReader genericVariableMetadata = target.Metadata.GetMetadata(genericVariableModule).EcmaMetadataReader;
-                    EcmaMetadataCursor genericVariableCursor = genericVariableMetadata.GetCursor(typeVarToken);
-                    stringBuilder.Append(genericVariableMetadata.GetColumnAsUtf8String(genericVariableCursor, MetadataColumnIndex.GenericParam_Name));
+                    MetadataReader generatedVariableMetadata = target.Contracts.EcmaMetadata.GetMetadata(genericVariableModule)!;
+                    GenericParameter genericVariable = generatedVariableMetadata.GetGenericParameter((GenericParameterHandle)MetadataTokens.Handle((int)typeVarToken));
+                    stringBuilder.Append(generatedVariableMetadata.GetString(genericVariable.Name));
                     return;
 
                 case CorElementType.SzArray:
@@ -443,6 +415,7 @@ namespace Microsoft.Diagnostics.DataContractReader.Legacy
 
                 case CorElementType.FnPtr:
                     runtimeTypeSystem.IsFunctionPointer(typeHandle, out ReadOnlySpan<TypeHandle> retAndArgTypes, out byte callConv);
+                    SignatureHeader header = new SignatureHeader(callConv);
                     AddType(target, stringBuilder, retAndArgTypes[0]);
                     stringBuilder.Append(" (");
                     for (int i = 1; i < retAndArgTypes.Length; i++)
@@ -451,7 +424,7 @@ namespace Microsoft.Diagnostics.DataContractReader.Legacy
                         if (i != retAndArgTypes.Length - 1)
                             stringBuilder.Append(", ");
                     }
-                    if ((callConv & IMAGE_CEE_CS_CALLCONV_MASK) == IMAGE_CEE_CS_CALLCONV_VARARG)
+                    if (header.CallingConvention == SignatureCallingConvention.VarArgs)
                     {
                         if (retAndArgTypes.Length > 1)
                             stringBuilder.Append(", ");
