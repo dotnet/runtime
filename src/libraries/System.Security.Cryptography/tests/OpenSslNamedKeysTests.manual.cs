@@ -46,7 +46,7 @@ namespace System.Security.Cryptography.Tests
 
         public static bool ShouldRunEngineTests { get; } = PlatformDetection.OpenSslPresentOnSystem && StringToBool(Environment.GetEnvironmentVariable(TestEngineEnabledEnvVarName));
 
-        public static bool ProvidersSupported { get; } = PlatformDetection.OpenSslPresentOnSystem && PlatformDetection.OpenSslVersion >= new Version(3, 0, 0);
+        public static bool ProvidersSupported { get; } = PlatformDetection.IsOpenSsl3;
         public static bool ProvidersNotSupported => !ProvidersSupported;
         public static bool ShouldRunProviderEcDsaTests { get; } = ProvidersSupported && !string.IsNullOrEmpty(TpmEcDsaKeyHandleUri);
         public static bool ShouldRunProviderEcDhTests { get; } = ProvidersSupported && !string.IsNullOrEmpty(TpmEcDhKeyHandleUri);
