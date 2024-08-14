@@ -8,6 +8,7 @@
 // Debug: Outputs 1600094603
 // Release: Outputs 1600094604
 using System;
+using Xunit;
 
 public class Runtime_106338
 {
