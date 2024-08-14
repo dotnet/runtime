@@ -503,6 +503,7 @@ namespace System.Reflection.Metadata
                 fullName: null,
                 assemblyName: AssemblyName,
                 elementOrGenericType: this,
+                declaringType: null,
                 genericTypeArguments: ImmutableArray<TypeName>.Empty,
                 rankOrModifier: rankOrModifier);
 #endif
