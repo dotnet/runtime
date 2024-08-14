@@ -5,9 +5,9 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
-using System.Net;
 using System.Numerics;
 using System.Runtime.CompilerServices;
+using System.Text;
 using Microsoft.Diagnostics.DataContractReader.Data;
 
 namespace Microsoft.Diagnostics.DataContractReader;
@@ -265,6 +265,12 @@ public sealed unsafe class Target
 
     public int PointerSize => _config.PointerSize;
 
+    /// <summary>
+    /// Read a value from the target in target endianness
+    /// </summary>
+    /// <typeparam name="T">Type of value to read</typeparam>
+    /// <param name="address">Address to start reading from</param>
+    /// <returns>Value read from the target</returns>
     public T Read<T>(ulong address) where T : unmanaged, IBinaryInteger<T>, IMinMaxValue<T>
     {
         if (!TryRead(address, _config.IsLittleEndian, _reader, out T value))
@@ -319,6 +325,11 @@ public sealed unsafe class Target
         return T.IsNegative(T.MinValue);
     }
 
+    /// <summary>
+    /// Read a pointer from the target in target endianness
+    /// </summary>
+    /// <param name="address">Address to start reading from</param>
+    /// <returns>Pointer read from the target</returns>}
     public TargetPointer ReadPointer(ulong address)
     {
         if (!TryReadPointer(address, _config, _reader, out TargetPointer pointer))
@@ -352,6 +363,60 @@ public sealed unsafe class Target
         }
     }
 
+    /// <summary>
+    /// Read a null-terminated UTF-8 string from the target
+    /// </summary>
+    /// <param name="address">Address to start reading from</param>
+    /// <returns>String read from the target</returns>}
+    public string ReadUtf8String(ulong address)
+    {
+        // Read characters until we find the null terminator
+        ulong end = address;
+        while (Read<byte>(end) != 0)
+        {
+            end += sizeof(byte);
+        }
+
+        int length = (int)(end - address);
+        if (length == 0)
+            return string.Empty;
+
+        Span<byte> span = stackalloc byte[length];
+        ReadBuffer(address, span);
+        return Encoding.UTF8.GetString(span);
+    }
+
+    /// <summary>
+    /// Read a null-terminated UTF-16 string from the target in target endianness
+    /// </summary>
+    /// <param name="address">Address to start reading from</param>
+    /// <returns>String read from the target</returns>}
+    public string ReadUtf16String(ulong address)
+    {
+        // Read characters until we find the null terminator
+        ulong end = address;
+        while (Read<char>(end) != 0)
+        {
+            end += sizeof(char);
+        }
+
+        int length = (int)(end - address);
+        if (length == 0)
+            return string.Empty;
+
+        Span<byte> span = stackalloc byte[length];
+        ReadBuffer(address, span);
+        string result = _config.IsLittleEndian
+            ? Encoding.Unicode.GetString(span)
+            : Encoding.BigEndianUnicode.GetString(span);
+        return result;
+    }
+
+    /// <summary>
+    /// Read a native unsigned integer from the target in target endianness
+    /// </summary>
+    /// <param name="address">Address to start reading from</param>
+    /// <returns>Value read from the target</returns>
     public TargetNUInt ReadNUInt(ulong address)
     {
         if (!TryReadNUInt(address, _config, _reader, out ulong value))
