@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.ComponentModel;
+using System.Runtime.InteropServices;
 using System.Threading;
 using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
@@ -30,5 +31,26 @@ namespace System.Diagnostics.Tests
 
             Assert.Throws<PlatformNotSupportedException>(() => thread.PriorityLevel = level);
         }
+
+        private static int GetCurrentThreadId()
+        {
+            // The magic values come from https://github.com/torvalds/linux.
+            int SYS_gettid = RuntimeInformation.ProcessArchitecture switch
+            {
+                Architecture.Arm => 224,
+                Architecture.Arm64 => 178,
+                Architecture.X86 => 224,
+                Architecture.X64 => 186,
+                Architecture.S390x => 236,
+                Architecture.Ppc64le => 207,
+                Architecture.RiscV64 => 178,
+                _ => 178,
+            };
+
+            return syscall(SYS_gettid);
+        }
+
+        [DllImport("libc")]
+        private static extern int syscall(int nr);
     }
 }

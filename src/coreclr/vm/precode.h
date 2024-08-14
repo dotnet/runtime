@@ -467,12 +467,6 @@ public:
     {
         SUPPORTS_DAC;
         unsigned int align = PRECODE_ALIGNMENT;
-
-#if defined(TARGET_ARM) && defined(HAS_COMPACT_ENTRYPOINTS)
-        // Precodes have to be aligned to allow fast compact entry points check
-        _ASSERTE (align >= sizeof(void*));
-#endif // TARGET_ARM && HAS_COMPACT_ENTRYPOINTS
-
         return align;
     }
 
@@ -583,22 +577,6 @@ public:
         LIMITED_METHOD_DAC_CONTRACT;
 
         return ALIGN_UP(SizeOf(t), AlignOf(t));
-    }
-
-    static Precode * GetPrecodeForTemporaryEntryPoint(TADDR temporaryEntryPoints, int index);
-
-    static SIZE_T SizeOfTemporaryEntryPoints(PrecodeType t, int count);
-    static SIZE_T SizeOfTemporaryEntryPoints(TADDR temporaryEntryPoints, int count);
-
-    static TADDR AllocateTemporaryEntryPoints(MethodDescChunk* pChunk,
-        LoaderAllocator *pLoaderAllocator, AllocMemTracker *pamTracker);
-
-    static DWORD GetMaxTemporaryEntryPointsCount()
-    {
-        SIZE_T maxPrecodeCodeSize = Max(FixupPrecode::CodeSize, StubPrecode::CodeSize);
-        SIZE_T count = GetStubCodePageSize() / maxPrecodeCodeSize;
-        _ASSERTE(count < MAXDWORD);
-        return (DWORD)count;
     }
 
 #ifdef DACCESS_COMPILE

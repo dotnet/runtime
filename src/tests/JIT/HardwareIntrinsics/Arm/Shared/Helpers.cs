@@ -28,6 +28,314 @@ namespace JIT.HardwareIntrinsics.Arm
             return new Vector<T>(arr);
         }
 
+        public static byte[] CreateMaskForFirstActiveElement(byte[] mask, byte[] srcMask)
+        {
+            var count = srcMask.Length;
+            var result = new byte[count];
+            Array.Copy(srcMask, 0, result, 0, count);
+            for (var i = 0; i < count; i++)
+            {
+                if (mask[i] != 0)
+                {
+                    result[i] = 1;
+                    return result;
+                }
+            }
+            return result;
+        }
+
+        public static short[] CreateMaskForFirstActiveElement(short[] mask, short[] srcMask)
+        {
+            var count = srcMask.Length;
+            var result = new short[count];
+            Array.Copy(srcMask, 0, result, 0, count);
+            for (var i = 0; i < count; i++)
+            {
+                if (mask[i] != 0)
+                {
+                    result[i] = 1;
+                    return result;
+                }
+            }
+            return result;
+        }
+
+        public static int[] CreateMaskForFirstActiveElement(int[] mask, int[] srcMask)
+        {
+            var count = srcMask.Length;
+            var result = new int[count];
+            Array.Copy(srcMask, 0, result, 0, count);
+            for (var i = 0; i < count; i++)
+            {
+                if (mask[i] != 0)
+                {
+                    result[i] = 1;
+                    return result;
+                }
+            }
+            return result;
+        }
+
+        public static long[] CreateMaskForFirstActiveElement(long[] mask, long[] srcMask)
+        {
+            var count = srcMask.Length;
+            var result = new long[count];
+            Array.Copy(srcMask, 0, result, 0, count);
+            for (var i = 0; i < count; i++)
+            {
+                if (mask[i] != 0)
+                {
+                    result[i] = 1;
+                    return result;
+                }
+            }
+            return result;
+        }
+
+        public static sbyte[] CreateMaskForFirstActiveElement(sbyte[] mask, sbyte[] srcMask)
+        {
+            var count = srcMask.Length;
+            var result = new sbyte[count];
+            Array.Copy(srcMask, 0, result, 0, count);
+            for (var i = 0; i < count; i++)
+            {
+                if (mask[i] != 0)
+                {
+                    result[i] = 1;
+                    return result;
+                }
+            }
+            return result;
+        }
+
+        public static ushort[] CreateMaskForFirstActiveElement(ushort[] mask, ushort[] srcMask)
+        {
+            var count = srcMask.Length;
+            var result = new ushort[count];
+            Array.Copy(srcMask, 0, result, 0, count);
+            for (var i = 0; i < count; i++)
+            {
+                if (mask[i] != 0)
+                {
+                    result[i] = 1;
+                    return result;
+                }
+            }
+            return result;
+        }
+
+        public static uint[] CreateMaskForFirstActiveElement(uint[] mask, uint[] srcMask)
+        {
+            var count = srcMask.Length;
+            var result = new uint[count];
+            Array.Copy(srcMask, 0, result, 0, count);
+            for (var i = 0; i < count; i++)
+            {
+                if (mask[i] != 0)
+                {
+                    result[i] = 1;
+                    return result;
+                }
+            }
+            return result;
+        }
+
+        public static ulong[] CreateMaskForFirstActiveElement(ulong[] mask, ulong[] srcMask)
+        {
+            var count = srcMask.Length;
+            var result = new ulong[count];
+            Array.Copy(srcMask, 0, result, 0, count);
+            for (var i = 0; i < count; i++)
+            {
+                if (mask[i] != 0)
+                {
+                    result[i] = 1;
+                    return result;
+                }
+            }
+            return result;
+        }
+
+        public static int LastActiveElement(byte[] v)
+        {
+            for (var i = v.Length - 1; i >= 0; i--)
+            {
+                if (v[i] != 0)
+                {
+                    return i;
+                }
+            }
+            return -1;
+        }
+
+        public static int LastActiveElement(sbyte[] v)
+        {
+            for (var i = v.Length - 1; i >= 0; i--)
+            {
+                if (v[i] != 0)
+                {
+                    return i;
+                }
+            }
+            return -1;
+        }
+
+        public static int LastActiveElement(short[] v)
+        {
+            for (var i = v.Length - 1; i >= 0; i--)
+            {
+                if (v[i] != 0)
+                {
+                    return i;
+                }
+            }
+            return -1;
+        }
+
+        public static int LastActiveElement(ushort[] v)
+        {
+            for (var i = v.Length - 1; i >= 0; i--)
+            {
+                if (v[i] != 0)
+                {
+                    return i;
+                }
+            }
+            return -1;
+        }
+
+        public static int LastActiveElement(int[] v)
+        {
+            for (var i = v.Length - 1; i >= 0; i--)
+            {
+                if (v[i] != 0)
+                {
+                    return i;
+                }
+            }
+            return -1;
+        }
+
+        public static int LastActiveElement(uint[] v)
+        {
+            for (var i = v.Length - 1; i >= 0; i--)
+            {
+                if (v[i] != 0)
+                {
+                    return i;
+                }
+            }
+            return -1;
+        }
+
+        public static int LastActiveElement(long[] v)
+        {
+            for (var i = v.Length - 1; i >= 0; i--)
+            {
+                if (v[i] != 0)
+                {
+                    return i;
+                }
+            }
+            return -1;
+        }
+
+        public static int LastActiveElement(ulong[] v)
+        {
+            for (var i = v.Length - 1; i >= 0; i--)
+            {
+                if (v[i] != 0)
+                {
+                    return i;
+                }
+            }
+            return -1;
+        }
+
+        private static int LastActiveElement(float[] v)
+        {
+            for (int i = v.Length - 1; i >= 0; i--)
+            {
+                if (Unsafe.BitCast<float, int>(v[i]) != 0)
+                {
+                    return i;
+                }
+            }
+            return -1;
+        }
+
+        private static int LastActiveElement(double[] v)
+        {
+            for (int i = v.Length - 1; i >= 0; i--)
+            {
+                if (Unsafe.BitCast<double, long>(v[i]) != 0)
+                {
+                    return i;
+                }
+            }
+            return -1;
+        }
+
+        public static byte[] CreateMaskForNextActiveElement(byte[] mask, byte[] srcMask)
+        {
+            var count = srcMask.Length;
+            var result = new byte[count];
+            for (var i = LastActiveElement(srcMask) + 1; i < count; i++)
+            {
+                if (mask[i] != 0)
+                {
+                    result[i] = 1;
+                    return result;
+                }
+            }
+            return result;
+        }
+
+        public static ushort[] CreateMaskForNextActiveElement(ushort[] mask, ushort[] srcMask)
+        {
+            var count = srcMask.Length;
+            var result = new ushort[count];
+            for (var i = LastActiveElement(srcMask) + 1; i < count; i++)
+            {
+                if (mask[i] != 0)
+                {
+                    result[i] = 1;
+                    return result;
+                }
+            }
+            return result;
+        }
+
+        public static uint[] CreateMaskForNextActiveElement(uint[] mask, uint[] srcMask)
+        {
+            var count = srcMask.Length;
+            var result = new uint[count];
+            for (var i = LastActiveElement(srcMask) + 1; i < count; i++)
+            {
+                if (mask[i] != 0)
+                {
+                    result[i] = 1;
+                    return result;
+                }
+            }
+            return result;
+        }
+
+        public static ulong[] CreateMaskForNextActiveElement(ulong[] mask, ulong[] srcMask)
+        {
+            var count = srcMask.Length;
+            var result = new ulong[count];
+            for (var i = LastActiveElement(srcMask) + 1; i < count; i++)
+            {
+                if (mask[i] != 0)
+                {
+                    result[i] = 1;
+                    return result;
+                }
+            }
+            return result;
+        }
+
         public static sbyte CountLeadingSignBits(sbyte op1)
         {
             return (sbyte)(CountLeadingZeroBits((sbyte)((ulong)op1 ^ ((ulong)op1 >> 1))) - 1);
@@ -1431,6 +1739,196 @@ namespace JIT.HardwareIntrinsics.Arm
             return BitConverter.Int32BitsToSingle(result);
         }
 
+
+        public static double SveAbsoluteCompareGreaterThan(double left, double right)
+        {
+            long result = 0;
+
+            left = Math.Abs(left);
+            right = Math.Abs(right);
+
+            if (left > right)
+            {
+                result = 1;
+            }
+
+            return BitConverter.Int64BitsToDouble(result);
+        }
+
+        public static float SveAbsoluteCompareGreaterThan(float left, float right)
+        {
+            int result = 0;
+
+            left = Math.Abs(left);
+            right = Math.Abs(right);
+
+            if (left > right)
+            {
+                result = 1;
+            }
+
+            return BitConverter.Int32BitsToSingle(result);
+        }
+
+        public static double SveAbsoluteCompareGreaterThanOrEqual(double left, double right)
+        {
+            long result = 0;
+
+            left = Math.Abs(left);
+            right = Math.Abs(right);
+
+            if (left >= right)
+            {
+                result = 1;
+            }
+
+            return BitConverter.Int64BitsToDouble(result);
+        }
+
+        public static float SveAbsoluteCompareGreaterThanOrEqual(float left, float right)
+        {
+            int result = 0;
+
+            left = Math.Abs(left);
+            right = Math.Abs(right);
+
+            if (left >= right)
+            {
+                result = 1;
+            }
+
+            return BitConverter.Int32BitsToSingle(result);
+        }
+
+        public static double SveAbsoluteCompareLessThan(double left, double right)
+        {
+            long result = 0;
+
+            left = Math.Abs(left);
+            right = Math.Abs(right);
+
+            if (left < right)
+            {
+                result = 1;
+            }
+
+            return BitConverter.Int64BitsToDouble(result);
+        }
+
+        public static float SveAbsoluteCompareLessThan(float left, float right)
+        {
+            int result = 0;
+
+            left = Math.Abs(left);
+            right = Math.Abs(right);
+
+            if (left < right)
+            {
+                result = 1;
+            }
+
+            return BitConverter.Int32BitsToSingle(result);
+        }
+
+        public static double SveAbsoluteCompareLessThanOrEqual(double left, double right)
+        {
+            long result = 0;
+
+            left = Math.Abs(left);
+            right = Math.Abs(right);
+
+            if (left <= right)
+            {
+                result = 1;
+            }
+
+            return BitConverter.Int64BitsToDouble(result);
+        }
+
+        public static float SveAbsoluteCompareLessThanOrEqual(float left, float right)
+        {
+            int result = 0;
+
+            left = Math.Abs(left);
+            right = Math.Abs(right);
+
+            if (left <= right)
+            {
+                result = 1;
+            }
+
+            return BitConverter.Int32BitsToSingle(result);
+        }
+
+        public static double SveCompareEqual(double left, double right) => BitConverter.Int64BitsToDouble((left == right) ? 1 : 0);
+        public static float SveCompareEqual(float left, float right) => BitConverter.Int32BitsToSingle((left == right) ? 1 : 0);
+        public static sbyte SveCompareEqual(sbyte left, sbyte right) => (sbyte)((left == right) ? 1 : 0);
+        public static byte SveCompareEqual(byte left, byte right) => (byte)((left == right) ? 1 : 0);
+        public static short SveCompareEqual(short left, short right) => (short)((left == right) ? 1 : 0);
+        public static ushort SveCompareEqual(ushort left, ushort right) => (ushort)((left == right) ? 1 : 0);
+        public static int SveCompareEqual(int left, int right) => (int)((left == right) ? 1 : 0);
+        public static uint SveCompareEqual(uint left, uint right) => (uint)((left == right) ? 1 : 0);
+        public static long SveCompareEqual(long left, long right) => (long)((left == right) ? 1 : 0);
+        public static ulong SveCompareEqual(ulong left, ulong right) => (ulong)((left == right) ? 1 : 0);
+
+        public static double SveCompareNotEqual(double left, double right) => BitConverter.Int64BitsToDouble((left != right) ? 1 : 0);
+        public static float SveCompareNotEqual(float left, float right) => BitConverter.Int32BitsToSingle((left != right) ? 1 : 0);
+        public static sbyte SveCompareNotEqual(sbyte left, sbyte right) => (sbyte)((left != right) ? 1 : 0);
+        public static byte SveCompareNotEqual(byte left, byte right) => (byte)((left != right) ? 1 : 0);
+        public static short SveCompareNotEqual(short left, short right) => (short)((left != right) ? 1 : 0);
+        public static ushort SveCompareNotEqual(ushort left, ushort right) => (ushort)((left != right) ? 1 : 0);
+        public static int SveCompareNotEqual(int left, int right) => (int)((left != right) ? 1 : 0);
+        public static uint SveCompareNotEqual(uint left, uint right) => (uint)((left != right) ? 1 : 0);
+        public static long SveCompareNotEqual(long left, long right) => (long)((left != right) ? 1 : 0);
+        public static ulong SveCompareNotEqual(ulong left, ulong right) => (ulong)((left != right) ? 1 : 0);
+        
+        public static double SveCompareGreaterThan(double left, double right) => BitConverter.Int64BitsToDouble((left > right) ? 1 : 0);
+        public static float SveCompareGreaterThan(float left, float right) => BitConverter.Int32BitsToSingle((left > right) ? 1 : 0);
+        public static sbyte SveCompareGreaterThan(sbyte left, sbyte right) => (sbyte)((left > right) ? 1 : 0);
+        public static byte SveCompareGreaterThan(byte left, byte right) => (byte)((left > right) ? 1 : 0);
+        public static short SveCompareGreaterThan(short left, short right) => (short)((left > right) ? 1 : 0);
+        public static ushort SveCompareGreaterThan(ushort left, ushort right) => (ushort)((left > right) ? 1 : 0);
+        public static int SveCompareGreaterThan(int left, int right) => (int)((left > right) ? 1 : 0);
+        public static uint SveCompareGreaterThan(uint left, uint right) => (uint)((left > right) ? 1 : 0);
+        public static long SveCompareGreaterThan(long left, long right) => (long)((left > right) ? 1 : 0);
+        public static ulong SveCompareGreaterThan(ulong left, ulong right) => (ulong)((left > right) ? 1 : 0);
+        
+        public static double SveCompareGreaterThanOrEqual(double left, double right) => BitConverter.Int64BitsToDouble((left >= right) ? 1 : 0);
+        public static float SveCompareGreaterThanOrEqual(float left, float right) => BitConverter.Int32BitsToSingle((left >= right) ? 1 : 0);
+        public static sbyte SveCompareGreaterThanOrEqual(sbyte left, sbyte right) => (sbyte)((left >= right) ? 1 : 0);
+        public static byte SveCompareGreaterThanOrEqual(byte left, byte right) => (byte)((left >= right) ? 1 : 0);
+        public static short SveCompareGreaterThanOrEqual(short left, short right) => (short)((left >= right) ? 1 : 0);
+        public static ushort SveCompareGreaterThanOrEqual(ushort left, ushort right) => (ushort)((left >= right) ? 1 : 0);
+        public static int SveCompareGreaterThanOrEqual(int left, int right) => (int)((left >= right) ? 1 : 0);
+        public static uint SveCompareGreaterThanOrEqual(uint left, uint right) => (uint)((left >= right) ? 1 : 0);
+        public static long SveCompareGreaterThanOrEqual(long left, long right) => (long)((left >= right) ? 1 : 0);
+        public static ulong SveCompareGreaterThanOrEqual(ulong left, ulong right) => (ulong)((left >= right) ? 1 : 0);
+
+        public static double SveCompareLessThan(double left, double right) => BitConverter.Int64BitsToDouble((left < right) ? 1 : 0);
+        public static float SveCompareLessThan(float left, float right) => BitConverter.Int32BitsToSingle((left < right) ? 1 : 0);
+        public static sbyte SveCompareLessThan(sbyte left, sbyte right) => (sbyte)((left < right) ? 1 : 0);
+        public static byte SveCompareLessThan(byte left, byte right) => (byte)((left < right) ? 1 : 0);
+        public static short SveCompareLessThan(short left, short right) => (short)((left < right) ? 1 : 0);
+        public static ushort SveCompareLessThan(ushort left, ushort right) => (ushort)((left < right) ? 1 : 0);
+        public static int SveCompareLessThan(int left, int right) => (int)((left < right) ? 1 : 0);
+        public static uint SveCompareLessThan(uint left, uint right) => (uint)((left < right) ? 1 : 0);
+        public static long SveCompareLessThan(long left, long right) => (long)((left < right) ? 1 : 0);
+        public static ulong SveCompareLessThan(ulong left, ulong right) => (ulong)((left < right) ? 1 : 0);      
+
+        public static double SveCompareLessThanOrEqual(double left, double right) => BitConverter.Int64BitsToDouble((left <= right) ? 1 : 0);
+        public static float SveCompareLessThanOrEqual(float left, float right) => BitConverter.Int32BitsToSingle((left <= right) ? 1 : 0);
+        public static sbyte SveCompareLessThanOrEqual(sbyte left, sbyte right) => (sbyte)((left <= right) ? 1 : 0);
+        public static byte SveCompareLessThanOrEqual(byte left, byte right) => (byte)((left <= right) ? 1 : 0);
+        public static short SveCompareLessThanOrEqual(short left, short right) => (short)((left <= right) ? 1 : 0);
+        public static ushort SveCompareLessThanOrEqual(ushort left, ushort right) => (ushort)((left <= right) ? 1 : 0);
+        public static int SveCompareLessThanOrEqual(int left, int right) => (int)((left <= right) ? 1 : 0);
+        public static uint SveCompareLessThanOrEqual(uint left, uint right) => (uint)((left <= right) ? 1 : 0);
+        public static long SveCompareLessThanOrEqual(long left, long right) => (long)((left <= right) ? 1 : 0);
+        public static ulong SveCompareLessThanOrEqual(ulong left, ulong right) => (ulong)((left <= right) ? 1 : 0);
+
+        public static double SveCompareUnordered(double left, double right) => BitConverter.Int64BitsToDouble((double.IsNaN(left) || double.IsNaN(right)) ? 1 : 0);
+        public static float SveCompareUnordered(float left, float right) => BitConverter.Int32BitsToSingle((float.IsNaN(left) || float.IsNaN(right)) ? 1 : 0);
+
         public static double CompareEqual(double left, double right)
         {
             long result = 0;
@@ -1942,6 +2440,28 @@ namespace JIT.HardwareIntrinsics.Arm
         public static long MultiplyWideningUpperAndAdd(long[] op1, int[] op2, int[] op3, int i) => MultiplyWideningAndAdd(op1[i], op2[i + op2.Length / 2], op3[i + op3.Length / 2]);
 
         public static long MultiplyWideningUpperAndSubtract(long[] op1, int[] op2, int[] op3, int i) => MultiplyWideningAndSubtract(op1[i], op2[i + op2.Length / 2], op3[i + op3.Length / 2]);
+
+        public static T ShiftLeft<T>(T op1, ulong op2) where T : INumber<T>
+        {
+            T two = T.One + T.One;
+            for (ulong i = 0; (op1 != T.Zero) && (i < op2); i++)
+            {
+                op1 *= two;
+            }
+
+            return op1;
+        }
+
+        public static T ShiftRight<T>(T op1, ulong op2) where T : INumber<T>
+        {
+            T two = T.One + T.One;
+            for (ulong i = 0; (op1 != T.Zero) && (i < op2); i++)
+            {
+                op1 /= two;
+            }
+
+            return op1;
+        }
 
         public static T SignExtend<T>(T n, int numBits, bool zeroExtend) where T : struct, IComparable, IConvertible
         {
@@ -3616,6 +4136,40 @@ namespace JIT.HardwareIntrinsics.Arm
             return ovf ? byte.MaxValue : result;
         }
 
+        public static double AddSequentialAcross(double[] op1, double[] op2, double[] mask = null)
+        {
+            // If mask isn't provided, default to all true
+            mask = mask ?? Enumerable.Repeat<double>(1.0, op1.Length).ToArray();
+            double result = op1[0];
+
+            for (int i = 0; i < op1.Length; i++)
+            {
+                if (mask[i] != 0.0)
+                {
+                    result += op2[i];
+                }
+            }
+
+            return result;
+        }
+
+        public static float AddSequentialAcross(float[] op1, float[] op2, float[] mask = null)
+        {
+            // If mask isn't provided, default to all true
+            mask = mask ?? Enumerable.Repeat<float>((float)1.0, op1.Length).ToArray();
+            float result = op1[0];
+
+            for (int i = 0; i < op1.Length; i++)
+            {
+                if (mask[i] != 0.0)
+                {
+                    result += op2[i];
+                }
+            }
+
+            return result;
+        }
+
         public static sbyte NegateSaturate(sbyte op1) => SubtractSaturate((sbyte)0, op1);
 
         public static sbyte SubtractSaturate(sbyte op1, sbyte op2)
@@ -4680,6 +5234,51 @@ namespace JIT.HardwareIntrinsics.Arm
 
         public static float MinNumberPairwise(float[] op1, float[] op2, int i) => Pairwise(MinNumber, op1, op2, i);
 
+        public static float[] MultiplyAddRotateComplex(float[] op1, float[] op2, float[] op3, byte imm)
+        {
+            for (int i = 0; i < op1.Length; i += 2)
+            {
+                int real = i;
+                int img = i + 1;
+                (float ans1, float ans2) = imm switch
+                {
+                    0 => (FusedMultiplyAdd(op1[real], op2[real], op3[real]), FusedMultiplyAdd(op1[img], op2[real], op3[img])),
+                    1 => (FusedMultiplySubtract(op1[real], op2[img], op3[img]), FusedMultiplyAdd(op1[img], op2[img], op3[real])),
+                    2 => (FusedMultiplySubtract(op1[real], op2[real], op3[real]), FusedMultiplySubtract(op1[img], op2[real], op3[img])),
+                    3 => (FusedMultiplyAdd(op1[real], op2[img], op3[img]), FusedMultiplySubtract(op1[img], op2[img], op3[real])),
+                    _ => (0.0f, 0.0f)
+                };
+
+                op1[real] = ans1;
+                op1[img] = ans2;
+            }
+
+            return op1;
+        }
+
+        public static float[] MultiplyAddRotateComplexBySelectedScalar(float[] op1, float[] op2, float[] op3, byte index, byte imm)
+        {
+            for (int i = 0; i < op1.Length; i += 2)
+            {
+                int real = i;
+                int img = i + 1;
+                (float op3Real, float op3Img) = (op3[index * 2], op3[(index * 2) + 1]);
+                (float ans1, float ans2) = imm switch
+                {
+                    0 => (FusedMultiplyAdd(op1[real], op2[real], op3Real), FusedMultiplyAdd(op1[img], op2[real], op3Img)),
+                    1 => (FusedMultiplySubtract(op1[real], op2[img], op3Img), FusedMultiplyAdd(op1[img], op2[img], op3Real)),
+                    2 => (FusedMultiplySubtract(op1[real], op2[real], op3Real), FusedMultiplySubtract(op1[img], op2[real], op3Img)),
+                    3 => (FusedMultiplyAdd(op1[real], op2[img], op3Img), FusedMultiplySubtract(op1[img], op2[img], op3Real)),
+                    _ => (0.0f, 0.0f)
+                };
+
+                op1[real] = ans1;
+                op1[img] = ans2;
+            }
+
+            return op1;
+        }
+
         public static float MultiplyExtended(float op1, float op2)
         {
             bool inf1 = float.IsInfinity(op1);
@@ -4696,6 +5295,139 @@ namespace JIT.HardwareIntrinsics.Arm
             {
                 return op1 * op2;
             }
+        }
+
+        public static float TrigonometricMultiplyAddCoefficient(float op1, float op2, byte imm)
+        {
+            int index = (op2 < 0) ? (imm + 8) : imm;
+            uint coeff = index switch
+            {
+                 0 => 0x3f800000,
+                 1 => 0xbe2aaaab,
+                 2 => 0x3c088886,
+                 3 => 0xb95008b9,
+                 4 => 0x36369d6d,
+                 5 => 0x00000000,
+                 6 => 0x00000000,
+                 7 => 0x00000000,
+                 8 => 0x3f800000,
+                 9 => 0xbf000000,
+                10 => 0x3d2aaaa6,
+                11 => 0xbab60705,
+                12 => 0x37cd37cc,
+                13 => 0x00000000,
+                14 => 0x00000000,
+                15 => 0x00000000,
+                 _ => 0x00000000
+            };
+
+            return MathF.FusedMultiplyAdd(op1, Math.Abs(op2), BitConverter.UInt32BitsToSingle(coeff));
+        }
+
+        public static float TrigonometricSelectCoefficient(float op1, uint op2)
+        {
+            float result = ((op2 % 2) == 0) ? op1 : (float)1.0;
+            bool isNegative = (op2 & 0b10) == 0b10;
+            
+            if (isNegative != (result < 0))
+            {
+                result *= -1;
+            }
+
+            return result;
+        }
+
+        public static float TrigonometricStartingValue(float op1, uint op2)
+        {
+            float result = op1 * op1;
+
+            if (float.IsNaN(result))
+            {
+                return result;
+            }
+
+            if ((op2 % 2) == 1)
+            {
+                result *= -1;
+            }
+
+            return result;
+        }
+
+        public static float FPExponentialAccelerator(uint op1)
+        {
+            uint index = op1 & 0b111111;
+            uint coeff = index switch
+            {
+                 0 => 0x000000,
+                 1 => 0x0164d2,
+                 2 => 0x02cd87,
+                 3 => 0x043a29,
+                 4 => 0x05aac3,
+                 5 => 0x071f62,
+                 6 => 0x08980f,
+                 7 => 0x0a14d5,
+                 8 => 0x0b95c2,
+                 9 => 0x0d1adf,
+                10 => 0x0ea43a,
+                11 => 0x1031dc,
+                12 => 0x11c3d3,
+                13 => 0x135a2b,
+                14 => 0x14f4f0,
+                15 => 0x16942d,
+                16 => 0x1837f0,
+                17 => 0x19e046,
+                18 => 0x1b8d3a,
+                19 => 0x1d3eda,
+                20 => 0x1ef532,
+                21 => 0x20b051,
+                22 => 0x227043,
+                23 => 0x243516,
+                24 => 0x25fed7,
+                25 => 0x27cd94,
+                26 => 0x29a15b,
+                27 => 0x2b7a3a,
+                28 => 0x2d583f,
+                29 => 0x2f3b79,
+                30 => 0x3123f6,
+                31 => 0x3311c4,
+                32 => 0x3504f3,
+                33 => 0x36fd92,
+                34 => 0x38fbaf,
+                35 => 0x3aff5b,
+                36 => 0x3d08a4,
+                37 => 0x3f179a,
+                38 => 0x412c4d,
+                39 => 0x4346cd,
+                40 => 0x45672a,
+                41 => 0x478d75,
+                42 => 0x49b9be,
+                43 => 0x4bec15,
+                44 => 0x4e248c,
+                45 => 0x506334,
+                46 => 0x52a81e,
+                47 => 0x54f35b,
+                48 => 0x5744fd,
+                49 => 0x599d16,
+                50 => 0x5bfbb8,
+                51 => 0x5e60f5,
+                52 => 0x60ccdf,
+                53 => 0x633f89,
+                54 => 0x65b907,
+                55 => 0x68396a,
+                56 => 0x6ac0c7,
+                57 => 0x6d4f30,
+                58 => 0x6fe4ba,
+                59 => 0x728177,
+                60 => 0x75257d,
+                61 => 0x77d0df,
+                62 => 0x7a83b3,
+                63 => 0x7d3e0c,
+                 _ => 0x000000
+            };
+
+            uint result = ((op1 & 0b11111111000000) << 17) | coeff;
+            return BitConverter.UInt32BitsToSingle(result);
         }
 
         public static float FPReciprocalStepFused(float op1, float op2) => FusedMultiplySubtract(2, op1, op2);
@@ -4724,6 +5456,28 @@ namespace JIT.HardwareIntrinsics.Arm
 
         public static double MinNumberPairwise(double[] op1, double[] op2, int i) => Pairwise(MinNumber, op1, op2, i);
 
+        public static double[] MultiplyAddRotateComplex(double[] op1, double[] op2, double[] op3, byte imm)
+        {
+            for (int i = 0; i < op1.Length; i += 2)
+            {
+                int real = i;
+                int img = i + 1;
+                (double ans1, double ans2) = imm switch
+                {
+                    0 => (FusedMultiplyAdd(op1[real], op2[real], op3[real]), FusedMultiplyAdd(op1[img], op2[real], op3[img])),
+                    1 => (FusedMultiplySubtract(op1[real], op2[img], op3[img]), FusedMultiplyAdd(op1[img], op2[img], op3[real])),
+                    2 => (FusedMultiplySubtract(op1[real], op2[real], op3[real]), FusedMultiplySubtract(op1[img], op2[real], op3[img])),
+                    3 => (FusedMultiplyAdd(op1[real], op2[img], op3[img]), FusedMultiplySubtract(op1[img], op2[img], op3[real])),
+                    _ => (0.0, 0.0)
+                };
+
+                op1[real] = ans1;
+                op1[img] = ans2;
+            }
+
+            return op1;
+        }
+
         public static double MultiplyExtended(double op1, double op2)
         {
             bool inf1 = double.IsInfinity(op1);
@@ -4740,6 +5494,139 @@ namespace JIT.HardwareIntrinsics.Arm
             {
                 return op1 * op2;
             }
+        }
+
+        public static double TrigonometricMultiplyAddCoefficient(double op1, double op2, byte imm)
+        {
+            int index = (op2 < 0) ? (imm + 8) : imm;
+            ulong coeff = index switch
+            {
+                 0 => 0x3ff0000000000000,
+                 1 => 0xbfc5555555555543,
+                 2 => 0x3f8111111110f30c,
+                 3 => 0xbf2a01a019b92fc6,
+                 4 => 0x3ec71de351f3d22b,
+                 5 => 0xbe5ae5e2b60f7b91,
+                 6 => 0x3de5d8408868552f,
+                 7 => 0x0000000000000000,
+                 8 => 0x3ff0000000000000,
+                 9 => 0xbfe0000000000000,
+                10 => 0x3fa5555555555536,
+                11 => 0xbf56c16c16c13a0b,
+                12 => 0x3efa01a019b1e8d8,
+                13 => 0xbe927e4f7282f468,
+                14 => 0x3e21ee96d2641b13,
+                15 => 0xbda8f76380fbb401,
+                 _ => 0x0000000000000000
+            };
+
+            return Math.FusedMultiplyAdd(op1, Math.Abs(op2), BitConverter.UInt64BitsToDouble(coeff));
+        }
+
+        public static double TrigonometricSelectCoefficient(double op1, ulong op2)
+        {
+            double result = ((op2 % 2) == 0) ? op1 : 1.0;
+            bool isNegative = (op2 & 0b10) == 0b10;
+            
+            if (isNegative != (result < 0))
+            {
+                result *= -1;
+            }
+
+            return result;
+        }
+
+        public static double TrigonometricStartingValue(double op1, ulong op2)
+        {
+            double result = op1 * op1;
+
+            if (double.IsNaN(result))
+            {
+                return result;
+            }
+
+            if ((op2 % 2) == 1)
+            {
+                result *= -1;
+            }
+
+            return result;
+        }
+        
+        public static double FPExponentialAccelerator(ulong op1)
+        {
+            ulong index = op1 & 0b111111;
+            ulong coeff = index switch
+            {
+                 0 => 0x0000000000000,
+                 1 => 0x02C9A3E778061,
+                 2 => 0x059B0D3158574,
+                 3 => 0x0874518759BC8,
+                 4 => 0x0B5586CF9890F,
+                 5 => 0x0E3EC32D3D1A2,
+                 6 => 0x11301D0125B51,
+                 7 => 0x1429AAEA92DE0,
+                 8 => 0x172B83C7D517B,
+                 9 => 0x1A35BEB6FCB75,
+                10 => 0x1D4873168B9AA,
+                11 => 0x2063B88628CD6,
+                12 => 0x2387A6E756238,
+                13 => 0x26B4565E27CDD,
+                14 => 0x29E9DF51FDEE1,
+                15 => 0x2D285A6E4030B,
+                16 => 0x306FE0A31B715,
+                17 => 0x33C08B26416FF,
+                18 => 0x371A7373AA9CB,
+                19 => 0x3A7DB34E59FF7,
+                20 => 0x3DEA64C123422,
+                21 => 0x4160A21F72E2A,
+                22 => 0x44E086061892D,
+                23 => 0x486A2B5C13CD0,
+                24 => 0x4BFDAD5362A27,
+                25 => 0x4F9B2769D2CA7,
+                26 => 0x5342B569D4F82,
+                27 => 0x56F4736B527DA,
+                28 => 0x5AB07DD485429,
+                29 => 0x5E76F15AD2148,
+                30 => 0x6247EB03A5585,
+                31 => 0x6623882552225,
+                32 => 0x6A09E667F3BCD,
+                33 => 0x6DFB23C651A2F,
+                34 => 0x71F75E8EC5F74,
+                35 => 0x75FEB564267C9,
+                36 => 0x7A11473EB0187,
+                37 => 0x7E2F336CF4E62,
+                38 => 0x82589994CCE13,
+                39 => 0x868D99B4492ED,
+                40 => 0x8ACE5422AA0DB,
+                41 => 0x8F1AE99157736,
+                42 => 0x93737B0CDC5E5,
+                43 => 0x97D829FDE4E50,
+                44 => 0x9C49182A3F090,
+                45 => 0xA0C667B5DE565,
+                46 => 0xA5503B23E255D,
+                47 => 0xA9E6B5579FDBF,
+                48 => 0xAE89F995AD3AD,
+                49 => 0xB33A2B84F15FB,
+                50 => 0xB7F76F2FB5E47,
+                51 => 0xBCC1E904BC1D2,
+                52 => 0xC199BDD85529C,
+                53 => 0xC67F12E57D14B,
+                54 => 0xCB720DCEF9069,
+                55 => 0xD072D4A07897C,
+                56 => 0xD5818DCFBA487,
+                57 => 0xDA9E603DB3285,
+                58 => 0xDFC97337B9B5F,
+                59 => 0xE502EE78B3FF6,
+                60 => 0xEA4AFA2A490DA,
+                61 => 0xEFA1BEE615A27,
+                62 => 0xF50765B6E4540,
+                63 => 0xFA7C1819E90D8,
+                 _ => 0x0000000000000
+            };
+
+            ulong result = ((op1 & 0b11111111111000000) << 46) | coeff;
+            return BitConverter.UInt64BitsToDouble(result);
         }
 
         public static double FPReciprocalStepFused(double op1, double op2) => FusedMultiplySubtract(2, op1, op2);
@@ -5264,6 +6151,28 @@ namespace JIT.HardwareIntrinsics.Arm
 
         public static float AddPairwise(float[] op1, float[] op2, int i) => Pairwise(Add, op1, op2, i);
 
+        public static float[] AddRotateComplex(float[] op1, float[] op2, byte rot)
+        {
+            for (int i = 0; i < op1.Length; i += 2)
+            {
+                int real = i;
+                int img = i + 1;
+
+                if (rot == 0)
+                {
+                    op1[real] -= op2[img];
+                    op1[img] += op2[real];
+                }
+                else
+                {
+                    op1[real] += op2[img];
+                    op1[img] -= op2[real];
+                }
+            }
+
+            return op1;
+        }
+
         public static float Max(float op1, float op2) => Math.Max(op1, op2);
 
         public static float MaxPairwise(float[] op1, int i) => Pairwise(Max, op1, i);
@@ -5313,6 +6222,28 @@ namespace JIT.HardwareIntrinsics.Arm
         public static double AddPairwise(double[] op1, int i) => Pairwise(Add, op1, i);
 
         public static double AddPairwise(double[] op1, double[] op2, int i) => Pairwise(Add, op1, op2, i);
+
+        public static double[] AddRotateComplex(double[] op1, double[] op2, byte rot)
+        {
+            for (int i = 0; i < op1.Length; i += 2)
+            {
+                int real = i;
+                int img = i + 1;
+
+                if (rot == 0)
+                {
+                    op1[real] -= op2[img];
+                    op1[img] += op2[real];
+                }
+                else
+                {
+                    op1[real] += op2[img];
+                    op1[img] -= op2[real];
+                }
+            }
+
+            return op1;
+        }
 
         public static double Max(double op1, double op2) => Math.Max(op1, op2);
 
@@ -6173,17 +7104,75 @@ namespace JIT.HardwareIntrinsics.Arm
 
         public static float RoundToZero(float op1) => MathF.Round(op1, MidpointRounding.ToZero);
 
-        public static int ConvertDoubleToInt32(double op1) => (int)Math.Clamp(op1, long.MinValue, long.MaxValue);
+        private static int ConvertToInt32(double op1) => (int)Math.Clamp(op1, int.MinValue, int.MaxValue);
 
-        public static int ConvertToInt32(float op1) => (int)Math.Clamp(op1, int.MinValue, int.MaxValue);
+        public static int[] ConvertToInt32(double[] op1)
+        {
+            int[] result = new int[op1.Length * 2];
+
+            for (int i = 0; i < op1.Length; i++)
+            {
+                int index = i * 2;
+                result[index] = ConvertToInt32(op1[i]);
+                if (op1[i] < 0)
+                {
+                    // Sign-extend next lane with all ones
+                    result[index + 1] = -1;
+                }
+            }
+
+            return result;
+        }
+
+        public static int[] ConvertToInt32(float[] op1) => Array.ConvertAll(op1, num => ConvertToInt32(num));
 
         private static long ConvertToInt64(double op1) => (long)Math.Clamp(op1, long.MinValue, long.MaxValue);
+        
+        public static long[] ConvertToInt64(double[] op1) => Array.ConvertAll(op1, num => ConvertToInt64(num));
 
-        public static uint ConvertDoubleToUInt32(double op1) => (uint)Math.Clamp(op1, ulong.MinValue, ulong.MaxValue);
+        public static long[] ConvertToInt64(float[] op1)
+        {
+            long[] result = new long[op1.Length / 2];
 
-        public static uint ConvertToUInt32(float op1) => (uint)Math.Clamp(op1, uint.MinValue, uint.MaxValue);
+            for (int i = 0; i < result.Length; i++)
+            {
+                result[i] = ConvertToInt64(op1[i * 2]);
+            }
+
+            return result;
+        }
+
+        private static uint ConvertToUInt32(double op1) => (uint)Math.Clamp(op1, uint.MinValue, uint.MaxValue);
+
+        public static uint[] ConvertToUInt32(double[] op1)
+        {
+            uint[] result = new uint[op1.Length * 2];
+
+            for (int i = 0; i < op1.Length; i++)
+            {
+                result[i * 2] = ConvertToUInt32(op1[i]);
+            }
+
+            return result;
+        }
+
+        public static uint[] ConvertToUInt32(float[] op1) => Array.ConvertAll(op1, num => ConvertToUInt32(num));
 
         private static ulong ConvertToUInt64(double op1) => (ulong)Math.Clamp(op1, ulong.MinValue, ulong.MaxValue);
+
+        public static ulong[] ConvertToUInt64(double[] op1) => Array.ConvertAll(op1, num => ConvertToUInt64(num));
+
+        public static ulong[] ConvertToUInt64(float[] op1)
+        {
+            ulong[] result = new ulong[op1.Length / 2];
+
+            for (int i = 0; i < result.Length; i++)
+            {
+                result[i] = ConvertToUInt64(op1[i * 2]);
+            }
+
+            return result;
+        }
 
         public static Int32 ConvertToInt32RoundAwayFromZero(float op1) => ConvertToInt32(RoundAwayFromZero(op1));
 
@@ -6231,15 +7220,95 @@ namespace JIT.HardwareIntrinsics.Arm
 
         public static float ConvertToSingle(double op1) => (float)op1;
 
+        public static float[] ConvertToSingle(double[] op1)
+        {
+            float[] result = new float[op1.Length * 2];
+
+            for (int i = 0; i < op1.Length; i++)
+            {
+                result[i * 2] = (float)op1[i];
+            }
+
+            return result;
+        }
+
+        public static float[] ConvertToSingle(int[] op1) => Array.ConvertAll(op1, num => (float)num);
+
+        public static float[] ConvertToSingle(long[] op1)
+        {
+            float[] result = new float[op1.Length * 2];
+
+            for (int i = 0; i < op1.Length; i++)
+            {
+                result[i * 2] = (float)op1[i];
+            }
+
+            return result;
+        }
+
+        public static float[] ConvertToSingle(uint[] op1) => Array.ConvertAll(op1, num => (float)num);
+
+        public static float[] ConvertToSingle(ulong[] op1)
+        {
+            float[] result = new float[op1.Length * 2];
+
+            for (int i = 0; i < op1.Length; i++)
+            {
+                result[i * 2] = (float)op1[i];
+            }
+
+            return result;
+        }
+
         public static float ConvertToSingleUpper(float[] op1, double[] op2, int i) => i < op1.Length ? op1[i] : ConvertToSingle(op2[i - op1.Length]);
 
         public static double ConvertToDouble(float op1) => op1;
 
-        public static double ConvertToDoubleUpper(float[] op1, int i) => ConvertToDouble(op1[i + op1.Length / 2]);
-
         public static double ConvertToDouble(long op1) => op1;
 
         public static double ConvertToDouble(ulong op1) => op1;
+
+        public static double[] ConvertToDouble(float[] op1)
+        {
+            double[] result = new double[op1.Length / 2];
+
+            for (int i = 0; i < result.Length; i++)
+            {
+                result[i] = op1[i * 2];
+            }
+
+            return result;
+        }
+
+        public static double[] ConvertToDouble(int[] op1)
+        {
+            double[] result = new double[op1.Length / 2];
+
+            for (int i = 0; i < result.Length; i++)
+            {
+                result[i] = op1[i * 2];
+            }
+
+            return result;
+        }
+
+        public static double[] ConvertToDouble(long[] op1) => Array.ConvertAll(op1, num => (double)num);
+
+        public static double[] ConvertToDouble(uint[] op1)
+        {
+            double[] result = new double[op1.Length / 2];
+
+            for (int i = 0; i < result.Length; i++)
+            {
+                result[i] = op1[i * 2];
+            }
+
+            return result;
+        }
+
+        public static double[] ConvertToDouble(ulong[] op1) => Array.ConvertAll(op1, num => (double)num);
+
+        public static double ConvertToDoubleUpper(float[] op1, int i) => ConvertToDouble(op1[i + op1.Length / 2]);
 
         public static short ReverseElement8(short val)
         {
@@ -6936,6 +8005,25 @@ namespace JIT.HardwareIntrinsics.Arm
             return result;
         }
 
+        public static int LoadInt16FromByteArray(byte[] array, int offset)
+        {
+            int ret = 0;
+            for (int i = 1; i >= 0; i--)
+            {
+                ret = (ret << 8) + (int)array[offset+i];
+            }
+            return ret;
+        }
+
+        public static int LoadInt16FromByteArray(byte[] array, uint offset)
+        {
+            int ret = 0;
+            for (int i = 1; i >= 0; i--)
+            {
+                ret = (ret << 8) + (int)array[offset+i];
+            }
+            return ret;
+        }
         public static int LoadInt32FromByteArray(byte[] array, int offset)
         {
             int ret = 0;
@@ -6972,6 +8060,26 @@ namespace JIT.HardwareIntrinsics.Arm
             for (long i = 7; i >= 0; i--)
             {
                 ret = (ret << 8) + (long)array[offset+(ulong)i];
+            }
+            return ret;
+        }
+
+        public static uint LoadUInt16FromByteArray(byte[] array, int offset)
+        {
+            uint ret = 0;
+            for (int i = 1; i >= 0; i--)
+            {
+                ret = (ret << 8) + (uint)array[offset+i];
+            }
+            return ret;
+        }
+
+        public static uint LoadUInt16FromByteArray(byte[] array, uint offset)
+        {
+            uint ret = 0;
+            for (int i = 1; i >= 0; i--)
+            {
+                ret = (ret << 8) + (uint)array[offset+i];
             }
             return ret;
         }
@@ -7316,5 +8424,1369 @@ namespace JIT.HardwareIntrinsics.Arm
             return (index < rangeSize) ? first[start + index] : second[index - rangeSize];
         }
 
+        public static T LastActive<T>(T[] mask, T[] x) where T : IBinaryInteger<T>
+        {
+            for (var i = mask.Length - 1; i >= 0; i--)
+            {
+                if (mask[i] != T.Zero)
+                {
+                    return x[i];
+                }
+            }
+            return T.Zero;
+        }
+
+        public static T[] CreateBreakAfterMask<T>(T[] mask, T[] op) where T : IBinaryInteger<T>
+        {
+            var count = mask.Length;
+            var result = new T[count];
+            var isBreakSet = false;
+            for (var i = 0; i < count; i++)
+            {
+                var isElementActive = op[i] != T.Zero;
+                if (mask[i] != T.Zero)
+                {
+                    if (isBreakSet)
+                    {
+                        result[i] = T.Zero;
+                    }
+                    else
+                    {
+                        result[i] = T.One;
+                    }
+                    isBreakSet = isBreakSet || isElementActive;
+                }
+                else
+                {
+                    result[i] = T.Zero;
+                }
+            }
+            return result;
+        }
+
+        public static T[] CreateBreakAfterPropagateMask<T>(T[] mask, T[] op1, T[] op2) where T : IBinaryInteger<T>
+        {
+            var count = mask.Length;
+            var result = new T[count];
+            var isLastActive = LastActive(mask, op1) != T.Zero;
+            for (var i = 0; i < count; i++)
+            {
+                if (mask[i] != T.Zero)
+                {
+                    if (isLastActive)
+                    {
+                        result[i] = T.One;
+                    }
+                    else
+                    {
+                        result[i] = T.Zero;
+                    }
+                    isLastActive = isLastActive && (op2[i] == T.Zero);
+                }
+                else
+                {
+                    result[i] = T.Zero;
+                }
+            }
+            return result;
+        }
+
+        public static T[] CreateBreakBeforeMask<T>(T[] mask, T[] op) where T : IBinaryInteger<T>
+        {
+            var count = mask.Length;
+            var result = new T[count];
+            var isBreakSet = false;
+            for (var i = 0; i < count; i++)
+            {
+                var isElementActive = op[i] != T.Zero;
+                if (mask[i] != T.Zero)
+                {
+                    isBreakSet = isBreakSet || isElementActive;
+                    if (isBreakSet)
+                    {
+                        result[i] = T.Zero;
+                    }
+                    else
+                    {
+                        result[i] = T.One;
+                    }
+                }
+                else
+                {
+                    result[i] = T.Zero;
+                }
+            }
+            return result;
+        }
+
+        public static T[] CreateBreakBeforePropagateMask<T>(T[] mask, T[] op1, T[] op2) where T : IBinaryInteger<T>
+        {
+            var count = mask.Length;
+            var result = new T[count];
+            var isLastActive = LastActive(mask, op1) != T.Zero;
+            for (var i = 0; i < count; i++)
+            {
+                if (mask[i] != T.Zero)
+                {
+                    isLastActive = isLastActive && (op2[i] == T.Zero);
+                    if (isLastActive)
+                    {
+                        result[i] = T.One;
+                    }
+                    else
+                    {
+                        result[i] = T.Zero;
+                    }
+                }
+                else
+                {
+                    result[i] = T.Zero;
+                }
+            }
+            return result;
+        }
+
+        private static T ConditionalSelectResult<T>(T maskResult, T result, T falseResult) where T : INumberBase<T>
+        {
+            return (maskResult != T.Zero) ? result : falseResult;
+        }
+
+        private static T ConditionalSelectTrueResult<T>(T maskResult, T result, T trueResult) where T : INumberBase<T>
+        {
+            return (maskResult != T.Zero) ? trueResult : result;
+        }
+
+
+        private static TElem GetLoadVectorExpectedResultByIndex<TMem, TElem>(int index, TMem[] firstOp, TElem[] result)
+            where TMem  : INumberBase<TMem>
+            where TElem : INumberBase<TElem>
+        {
+            return (firstOp[index] == TMem.Zero) ? TElem.Zero : TElem.CreateTruncating(firstOp[index]);
+        }
+
+        private static bool CheckLoadVectorBehaviorCore<TMem, TElem>(TMem[] firstOp, TElem[] result, Func<int, TElem, TElem> map)
+            where TMem  : INumberBase<TMem>
+            where TElem : INumberBase<TElem>
+        {
+            for (var i = 0; i < firstOp.Length; i++)
+            {
+                TElem expectedResult = GetLoadVectorExpectedResultByIndex(i, firstOp, result);
+                expectedResult = map(i, expectedResult);
+                if (result[i] != expectedResult)
+                {
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        public static bool CheckLoadVectorBehavior<TMem, TElem>(TMem[] firstOp, TElem[] result)
+            where TMem  : INumberBase<TMem>, IConvertible
+            where TElem : INumberBase<TElem>
+        {
+            return CheckLoadVectorBehaviorCore(firstOp, result, (_, loadResult) => loadResult);
+        }
+
+        public static bool CheckLoadVectorBehavior<TMem, TElem>(TElem[] maskOp, TMem[] firstOp, TElem[] result, TElem[] falseOp)
+            where TMem  : INumberBase<TMem>, IConvertible
+            where TElem : INumberBase<TElem>
+        {
+            return CheckLoadVectorBehaviorCore(firstOp, result, (i, loadResult) => ConditionalSelectResult(maskOp[i], loadResult, falseOp[i]));
+        }
+
+        private static T GetGatherVectorResultByIndex<T, ExtendedElementT, Index>(int index, T[] mask, ExtendedElementT[] data, Index[] indices)
+                where T : INumberBase<T> 
+                where ExtendedElementT : INumberBase<ExtendedElementT> 
+                where Index : IBinaryInteger<Index>
+        {
+            return (mask[index] == T.Zero) ? T.Zero : T.CreateTruncating(data[int.CreateChecked(indices[index])]);
+        }
+
+        private static unsafe T GetGatherVectorBasesResultByIndex<T, AddressT, ExtendedElementT>(int index, T[] mask, AddressT[] data)
+                where T : INumberBase<T> 
+                where AddressT : unmanaged, INumberBase<AddressT>
+                where ExtendedElementT : unmanaged, INumberBase<ExtendedElementT>
+        {
+            return (mask[index] == T.Zero) ? T.Zero : T.CreateTruncating(*(ExtendedElementT*)Unsafe.BitCast<AddressT, nint>(data[index]));
+        }
+
+        private static bool GetGatherVectorResultByByteOffset<T, ExtendedElementT, Offset>(int index, T[] mask, byte[] data, Offset[] offsets, T result)
+                where T : INumberBase<T>
+                where ExtendedElementT : INumberBase<ExtendedElementT>
+                where Offset : IBinaryInteger<Offset>
+        {
+            if (mask[index] == T.Zero)
+            {
+                return result == T.Zero;
+            }
+
+            int offset = int.CreateChecked(offsets[index]);
+
+            if (typeof(ExtendedElementT) == typeof(Int16))
+            {
+                return ExtendedElementT.CreateTruncating(result) == ExtendedElementT.CreateTruncating(LoadInt16FromByteArray(data, offset));
+            }
+            else if (typeof(ExtendedElementT) == typeof(UInt16))
+            {
+                return ExtendedElementT.CreateTruncating(result) == ExtendedElementT.CreateTruncating(LoadUInt16FromByteArray(data, offset));
+            }
+            else if (typeof(ExtendedElementT) == typeof(int))
+            {
+                return ExtendedElementT.CreateTruncating(result) == ExtendedElementT.CreateTruncating(LoadInt32FromByteArray(data, offset));
+            }
+            else if (typeof(ExtendedElementT) == typeof(uint))
+            {
+                return ExtendedElementT.CreateTruncating(result) == ExtendedElementT.CreateTruncating(LoadUInt32FromByteArray(data, offset));
+            }
+            else if (typeof(ExtendedElementT) == typeof(long))
+            {
+                return ExtendedElementT.CreateTruncating(result) == ExtendedElementT.CreateTruncating(LoadInt64FromByteArray(data, offset));
+            }
+            else if (typeof(ExtendedElementT) == typeof(ulong))
+            {
+                return ExtendedElementT.CreateTruncating(result) == ExtendedElementT.CreateTruncating(LoadUInt64FromByteArray(data, offset));
+            }
+            else if (typeof(ExtendedElementT) == typeof(float))
+            {
+                return BitConverter.SingleToInt32Bits((float)(object)result) == LoadInt32FromByteArray(data, offset);
+            }
+            else if (typeof(ExtendedElementT) == typeof(double))
+            {
+                return BitConverter.DoubleToInt64Bits((double)(object)result) == LoadInt64FromByteArray(data, offset);
+            }
+            else
+            {
+                return false;
+            }
+        }
+
+        private static bool CheckGatherVectorBehaviorCore<T, ExtendedElementT, Index>(T[] mask, ExtendedElementT[] data, Index[] indices, T[] result, Func<int, T, T> map) 
+                where T : INumberBase<T>
+                where ExtendedElementT : INumberBase<ExtendedElementT> 
+                where Index : IBinaryInteger<Index>
+        {
+            for (var i = 0; i < mask.Length; i++)
+            {
+                T gatherResult = GetGatherVectorResultByIndex(i, mask, data, indices);
+                gatherResult = map(i, gatherResult);
+                if (result[i] != gatherResult)
+                {
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        private static bool CheckGatherVectorBasesBehaviorCore<T, AddressT, ExtendedElementT>(T[] mask, AddressT[] data, T[] result, Func<int, T, T> map) 
+                where T : INumberBase<T> 
+                where AddressT : unmanaged, INumberBase<AddressT>
+                where ExtendedElementT : unmanaged, INumberBase<ExtendedElementT>
+        {
+            for (var i = 0; i < mask.Length; i++)
+            {
+                T gatherResult = GetGatherVectorBasesResultByIndex<T, AddressT, ExtendedElementT>(i, mask, data);
+                gatherResult = map(i, gatherResult);
+                if (result[i] != gatherResult)
+                {
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        public static bool CheckGatherVectorBehavior<T, ExtendedElementT, Index>(T[] mask, ExtendedElementT[] data, Index[] indices, T[] result) 
+                where T : INumberBase<T> 
+                where ExtendedElementT : INumberBase<ExtendedElementT> 
+                where Index : IBinaryInteger<Index>
+        {
+            return CheckGatherVectorBehaviorCore(mask, data, indices, result, (_, gatherResult) => gatherResult);
+        }
+
+        public static bool CheckGatherVectorConditionalSelectBehavior<T, ExtendedElementT, Index>(T[] cndSelMask, T[] mask, ExtendedElementT[] data, Index[] indices, T[] cndSelFalse, T[] result) 
+                where T : INumberBase<T> 
+                where ExtendedElementT : INumberBase<ExtendedElementT> 
+                where Index : IBinaryInteger<Index>
+        {
+            return CheckGatherVectorBehaviorCore(mask, data, indices, result, (i, gatherResult) => ConditionalSelectResult(cndSelMask[i], gatherResult, cndSelFalse[i]));
+        }
+
+        public static bool CheckGatherVectorConditionalSelectTrueBehavior<T, ExtendedElementT, Index>(T[] cndSelMask, T[] mask, ExtendedElementT[] data, Index[] indices, T[] cndSelTrue, T[] result) 
+                where T : INumberBase<T> 
+                where ExtendedElementT : INumberBase<ExtendedElementT> 
+                where Index : IBinaryInteger<Index>
+        {
+            return CheckGatherVectorBehaviorCore(mask, data, indices, result, (i, gatherResult) => ConditionalSelectTrueResult(cndSelMask[i], gatherResult, cndSelTrue[i]));
+        }
+
+
+        public static bool CheckGatherVectorBasesBehavior<T, AddressT, ExtendedElementT>(T[] mask, AddressT[] data, T[] result) 
+                where T : INumberBase<T> 
+                where AddressT : unmanaged, INumberBase<AddressT>
+                where ExtendedElementT : unmanaged, INumberBase<ExtendedElementT> 
+        {
+            return CheckGatherVectorBasesBehaviorCore<T, AddressT, ExtendedElementT>(mask, data, result, (_, gatherResult) => gatherResult);
+        }
+
+        public static bool CheckGatherVectorBasesConditionalSelectBehavior<T, AddressT, ExtendedElementT>(T[] cndSelMask, T[] mask, AddressT[] data, T[] cndSelFalse, T[] result) 
+                where T : INumberBase<T> 
+                where AddressT : unmanaged, INumberBase<AddressT>
+                where ExtendedElementT : unmanaged, INumberBase<ExtendedElementT>
+        {
+            return CheckGatherVectorBasesBehaviorCore<T, AddressT, ExtendedElementT>(mask, data, result, (i, gatherResult) => ConditionalSelectResult(cndSelMask[i], gatherResult, cndSelFalse[i]));
+        }
+
+        public static bool CheckGatherVectorBasesConditionalSelectTrueBehavior<T, AddressT, ExtendedElementT>(T[] cndSelMask, T[] mask, AddressT[] data, T[] cndSelTrue, T[] result) 
+                where T : INumberBase<T> 
+                where AddressT : unmanaged, INumberBase<AddressT>
+                where ExtendedElementT : unmanaged, INumberBase<ExtendedElementT>
+        {
+            return CheckGatherVectorBasesBehaviorCore<T, AddressT, ExtendedElementT>(mask, data, result, (i, gatherResult) => ConditionalSelectTrueResult(cndSelMask[i], gatherResult, cndSelTrue[i]));
+        }
+
+        private static bool CheckFirstFaultingBehaviorCore<T, TFault>(T[] result, Vector<TFault> faultResult, Func<int, bool> checkIter) 
+                where T : INumberBase<T>
+                where TFault : INumberBase<TFault>
+        {
+            bool hitFault = false;
+
+            for (var i = 0; i < result.Length; i++)
+            {
+                if (hitFault)
+                {
+                    if (faultResult[i] != TFault.Zero)
+                    {
+                        return false;
+                    }
+                }
+                else
+                {
+                    if (faultResult[i] == TFault.Zero)
+                    {
+                        // There has to be a valid value for the first element, so check it.
+                        if (i == 0)
+                        {
+                            return false;
+                        }
+                        hitFault = true;
+                    }
+                    else
+                    {
+                        if (!checkIter(i))
+                        {
+                            return false;
+                        }
+                    }
+                }
+            }
+
+            return true;
+        }
+
+        private static bool CheckFaultResultHasAtLeastOneZero<T>(Vector<T> faultResult) where T : INumberBase<T>
+        {
+            for (var i = 0; i < Vector<T>.Count; i++)
+            {
+                if (faultResult[i] == T.Zero)
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        public static bool CheckLoadVectorFirstFaultingBehavior<TMem, TElem, TFault>(TMem[] firstOp, TElem[] result, Vector<TFault> faultResult)
+                where TMem  : INumberBase<TMem>, IConvertible
+                where TElem : INumberBase<TElem>
+                where TFault : INumberBase<TFault>
+        {
+            // Checking first faulting behavior requires at least one zero to ensure we are testing the behavior.
+            if (!CheckFaultResultHasAtLeastOneZero(faultResult))
+            {
+                TestLibrary.TestFramework.LogInformation("Fault result requires at least one zero.");
+                return false;
+            }
+
+            var validElementCount = firstOp.Length;
+            var expectedFaultResult = 
+                InitVector<TFault>(i =>
+                {
+                    if (i < validElementCount)
+                    {
+                        return TFault.One;
+                    }
+                    return TFault.Zero;
+                });
+            if (expectedFaultResult != faultResult)
+            {
+                TestLibrary.TestFramework.LogInformation($"Expected fault result: {expectedFaultResult}\nActual fault result: {faultResult}");
+                return false;
+            }
+
+            return CheckFirstFaultingBehaviorCore(result, faultResult, i => GetLoadVectorExpectedResultByIndex(i, firstOp, result) == result[i]);
+        }
+
+        public static bool CheckGatherVectorFirstFaultingBehavior<T, ExtendedElementT, Index, TFault>(T[] mask, ExtendedElementT[] data, Index[] indices, T[] result, Vector<TFault> faultResult)
+                where T : INumberBase<T> 
+                where ExtendedElementT : INumberBase<ExtendedElementT> 
+                where Index : IBinaryInteger<Index>
+                where TFault : INumberBase<TFault>
+        {
+            // Checking first faulting behavior requires at least one zero to ensure we are testing the behavior.
+            if (!CheckFaultResultHasAtLeastOneZero(faultResult))
+            {
+                TestLibrary.TestFramework.LogInformation("Fault result requires at least one zero.");
+                return false;
+            }
+
+            var hasFaulted = false;
+            var expectedFaultResult = 
+                InitVector<TFault>(i =>
+                {
+                    if (hasFaulted)
+                    {
+                        return TFault.Zero;
+                    }
+
+                    if (mask[i] == T.Zero)
+                    {
+                        return TFault.One;
+                    }
+
+                    var index = int.CreateChecked(indices[i]);
+                    if (index < 0 || index >= data.Length)
+                    {
+                        hasFaulted = true;
+                        return TFault.Zero;
+                    }
+                    return TFault.One;
+                });
+            if (expectedFaultResult != faultResult)
+            {
+                TestLibrary.TestFramework.LogInformation($"Expected fault result: {expectedFaultResult}\nActual fault result: {faultResult}");
+                return false;
+            }
+
+            return CheckFirstFaultingBehaviorCore(result, faultResult, i => GetGatherVectorResultByIndex(i, mask, data, indices) == result[i]);
+        }
+
+        public static bool CheckGatherVectorBasesFirstFaultingBehavior<T, AddressT, ExtendedElementT, TFault>(T[] mask, AddressT[] data, T[] result, Vector<TFault> faultResult)
+                where T : INumberBase<T> 
+                where AddressT : unmanaged, INumberBase<AddressT>
+                where ExtendedElementT : unmanaged, INumberBase<ExtendedElementT> 
+                where TFault : INumberBase<TFault>
+        {
+            // Checking first faulting behavior requires at least one zero to ensure we are testing the behavior.
+            if (!CheckFaultResultHasAtLeastOneZero(faultResult))
+            {
+                TestLibrary.TestFramework.LogInformation("Fault result requires at least one zero.");
+                return false;
+            }
+
+            var hasFaulted = false;
+            var expectedFaultResult = 
+                InitVector<TFault>(i =>
+                {
+                    if (hasFaulted)
+                    {
+                        return TFault.Zero;
+                    }
+                    
+                    if (mask[i] == T.Zero)
+                    {
+                        return TFault.One;
+                    }
+
+                    if (data[i] == AddressT.Zero)
+                    {
+                        hasFaulted = true;
+                        return TFault.Zero;
+                    }
+                    return TFault.One;
+                });
+            if (expectedFaultResult != faultResult)
+            {
+                TestLibrary.TestFramework.LogInformation($"Expected fault result: {expectedFaultResult}\nActual fault result: {faultResult}");
+                return false;
+            }
+
+            return CheckFirstFaultingBehaviorCore(result, faultResult, i => GetGatherVectorBasesResultByIndex<T, AddressT, ExtendedElementT>(i, mask, data) == result[i]);
+        }
+        
+        public static bool CheckGatherVectorWithByteOffsetFirstFaultingBehavior<T, ExtendedElementT, Offset, TFault>(T[] mask, ExtendedElementT[] data, Offset[] offsets, T[] result, Vector<TFault> faultResult)
+                where T : INumberBase<T>
+                where ExtendedElementT : INumberBase<ExtendedElementT>
+                where Offset : IBinaryInteger<Offset>
+                where TFault : INumberBase<TFault>
+        {
+            // Checking first faulting behavior requires at least one zero to ensure we are testing the behavior.
+            if (!CheckFaultResultHasAtLeastOneZero(faultResult))
+            {
+                TestLibrary.TestFramework.LogInformation("Fault result requires at least one zero.");
+                return false;
+            }
+
+            var hasFaulted = false;
+            var expectedFaultResult =
+                InitVector<TFault>(i =>
+                {
+                    if (hasFaulted)
+                    {
+                        return TFault.Zero;
+                    }
+
+                    if (mask[i] == T.Zero)
+                    {
+                        return TFault.One;
+                    }
+
+                    var offset = int.CreateChecked(offsets[i]);
+                    var endOffset = data.Length * Unsafe.SizeOf<ExtendedElementT>();
+                    if (offset < 0 || offset >= endOffset)
+                    {
+                        hasFaulted = true;
+                        return TFault.Zero;
+                    }
+                    return TFault.One;
+                });
+            if (expectedFaultResult != faultResult)
+            {
+                TestLibrary.TestFramework.LogInformation($"Expected fault result: {expectedFaultResult}\nActual fault result: {faultResult}");
+                return false;
+            }
+
+            byte[] bytes = new byte[data.Length * Unsafe.SizeOf<ExtendedElementT>()];
+            Buffer.BlockCopy(data, 0, bytes, 0, bytes.Length);
+            return CheckFirstFaultingBehaviorCore(result, faultResult, i => GetGatherVectorResultByByteOffset<T, ExtendedElementT, Offset>(i, mask, bytes, offsets, result[i]));
+        }
+
+        public static T[] CreateBreakPropagateMask<T>(T[] op1, T[] op2) where T : IBinaryInteger<T>
+        {
+            var count = op1.Length;
+            var result = new T[count];
+
+            // embedded true mask
+            var mask = new T[count];
+            for (var i = 0; i < count; i++)
+            {
+                mask[i] = T.One;
+            }
+
+            if (LastActive(mask, op1) != T.Zero)
+            {
+                Array.Copy(op2, result, count);
+            }
+
+            return result;
+        }
+
+        private static byte ConditionalExtract(byte[] op1, byte op2, byte[] op3, bool after)
+        {
+            int last = LastActiveElement(op1);
+            if (last < 0)
+            {
+                return op2;
+            }
+
+            int pos = last;
+            if (after)
+            {
+                pos++;
+        	if (pos == op1.Length) {
+                  pos = 0;
+                }
+            }
+
+            return op3[pos];
+        }
+
+        private static byte[] ConditionalExtract(byte[] op1, byte[] op2, byte[] op3, bool after, bool replicate)
+        {
+            int last = LastActiveElement(op1);
+            if (last < 0)
+            {
+                return op2;
+            }
+
+            byte[] result = new byte[op1.Length];
+            int pos = last;
+            if (after)
+            {
+                pos++;
+        	if (pos == op1.Length) {
+                  pos = 0;
+                }
+            }
+
+            if (replicate)
+            {
+                Array.Fill(result, op3[pos]);
+            }
+            else
+            {
+                Array.Fill<byte>(result, 0, 0, op1.Length);
+        	result[0] = op3[pos];
+            }
+
+            return result;
+        }
+
+        public static byte ConditionalExtractAfterLastActiveElement(byte[] op1, byte op2, byte[] op3)
+        {
+            return ConditionalExtract(op1, op2, op3, /* after = */ true);
+        }
+
+        public static byte ConditionalExtractLastActiveElement(byte[] op1, byte op2, byte[] op3)
+        {
+            return ConditionalExtract(op1, op2, op3, /* after = */ false);
+        }
+
+        public static byte[] ConditionalExtractAfterLastActiveElement(byte[] op1, byte[] op2, byte[] op3)
+        {
+            return ConditionalExtract(op1, op2, op3, /* after = */ true, /* replicate = */ false);
+        }
+
+        public static byte[] ConditionalExtractAfterLastActiveElementAndReplicate(byte[] op1, byte[] op2, byte[] op3)
+        {
+            return ConditionalExtract(op1, op2, op3, /* after = */ true, /* replicate = */ true);
+        }
+
+        public static byte[] ConditionalExtractLastActiveElement(byte[] op1, byte[] op2, byte[] op3)
+        {
+            return ConditionalExtract(op1, op2, op3, /* after = */ false, /* replicate = */ false);
+        }
+
+        public static byte[] ConditionalExtractLastActiveElementAndReplicate(byte[] op1, byte[] op2, byte[] op3)
+        {
+            return ConditionalExtract(op1, op2, op3, /* after = */ false, /* replicate = */ true);
+        }
+
+        private static sbyte ConditionalExtract(sbyte[] op1, sbyte op2, sbyte[] op3, bool after)
+        {
+            int last = LastActiveElement(op1);
+            if (last < 0)
+            {
+                return op2;
+            }
+
+            int pos = last;
+            if (after)
+            {
+                pos++;
+        	if (pos == op1.Length) {
+                  pos = 0;
+                }
+            }
+
+            return op3[pos];
+        }
+
+        private static sbyte[] ConditionalExtract(sbyte[] op1, sbyte[] op2, sbyte[] op3, bool after, bool replicate)
+        {
+            int last = LastActiveElement(op1);
+            if (last < 0)
+            {
+                return op2;
+            }
+
+            sbyte[] result = new sbyte[op1.Length];
+            int pos = last;
+            if (after)
+            {
+                pos++;
+        	if (pos == op1.Length) {
+                  pos = 0;
+                }
+            }
+
+            if (replicate)
+            {
+                Array.Fill(result, op3[pos]);
+            }
+            else
+            {
+                Array.Fill<sbyte>(result, 0, 0, op1.Length);
+        	result[0] = op3[pos];
+            }
+
+            return result;
+        }
+
+        public static sbyte ConditionalExtractAfterLastActiveElement(sbyte[] op1, sbyte op2, sbyte[] op3)
+        {
+            return ConditionalExtract(op1, op2, op3, /* after = */ true);
+        }
+
+        public static sbyte ConditionalExtractLastActiveElement(sbyte[] op1, sbyte op2, sbyte[] op3)
+        {
+            return ConditionalExtract(op1, op2, op3, /* after = */ false);
+        }
+
+        public static sbyte[] ConditionalExtractAfterLastActiveElement(sbyte[] op1, sbyte[] op2, sbyte[] op3)
+        {
+            return ConditionalExtract(op1, op2, op3, /* after = */ true, /* replicate = */ false);
+        }
+
+        public static sbyte[] ConditionalExtractAfterLastActiveElementAndReplicate(sbyte[] op1, sbyte[] op2, sbyte[] op3)
+        {
+            return ConditionalExtract(op1, op2, op3, /* after = */ true, /* replicate = */ true);
+        }
+
+        public static sbyte[] ConditionalExtractLastActiveElement(sbyte[] op1, sbyte[] op2, sbyte[] op3)
+        {
+            return ConditionalExtract(op1, op2, op3, /* after = */ false, /* replicate = */ false);
+        }
+
+        public static sbyte[] ConditionalExtractLastActiveElementAndReplicate(sbyte[] op1, sbyte[] op2, sbyte[] op3)
+        {
+            return ConditionalExtract(op1, op2, op3, /* after = */ false, /* replicate = */ true);
+        }
+
+        private static short ConditionalExtract(short[] op1, short op2, short[] op3, bool after)
+        {
+            int last = LastActiveElement(op1);
+            if (last < 0)
+            {
+                return op2;
+            }
+
+            int pos = last;
+            if (after)
+            {
+                pos++;
+        	if (pos == op1.Length) {
+                  pos = 0;
+                }
+            }
+
+            return op3[pos];
+        }
+
+        private static short[] ConditionalExtract(short[] op1, short[] op2, short[] op3, bool after, bool replicate)
+        {
+            int last = LastActiveElement(op1);
+            if (last < 0)
+            {
+                return op2;
+            }
+
+            short[] result = new short[op1.Length];
+            int pos = last;
+            if (after)
+            {
+                pos++;
+        	if (pos == op1.Length) {
+                  pos = 0;
+                }
+            }
+
+            if (replicate)
+            {
+                Array.Fill(result, op3[pos]);
+            }
+            else
+            {
+                Array.Fill<short>(result, 0, 0, op1.Length);
+        	result[0] = op3[pos];
+            }
+
+            return result;
+        }
+
+        public static short ConditionalExtractAfterLastActiveElement(short[] op1, short op2, short[] op3)
+        {
+            return ConditionalExtract(op1, op2, op3, /* after = */ true);
+        }
+
+        public static short ConditionalExtractLastActiveElement(short[] op1, short op2, short[] op3)
+        {
+            return ConditionalExtract(op1, op2, op3, /* after = */ false);
+        }
+
+        public static short[] ConditionalExtractAfterLastActiveElement(short[] op1, short[] op2, short[] op3)
+        {
+            return ConditionalExtract(op1, op2, op3, /* after = */ true, /* replicate = */ false);
+        }
+
+        public static short[] ConditionalExtractAfterLastActiveElementAndReplicate(short[] op1, short[] op2, short[] op3)
+        {
+            return ConditionalExtract(op1, op2, op3, /* after = */ true, /* replicate = */ true);
+        }
+
+        public static short[] ConditionalExtractLastActiveElement(short[] op1, short[] op2, short[] op3)
+        {
+            return ConditionalExtract(op1, op2, op3, /* after = */ false, /* replicate = */ false);
+        }
+
+        public static short[] ConditionalExtractLastActiveElementAndReplicate(short[] op1, short[] op2, short[] op3)
+        {
+            return ConditionalExtract(op1, op2, op3, /* after = */ false, /* replicate = */ true);
+        }
+
+        private static ushort ConditionalExtract(ushort[] op1, ushort op2, ushort[] op3, bool after)
+        {
+            int last = LastActiveElement(op1);
+            if (last < 0)
+            {
+                return op2;
+            }
+
+            int pos = last;
+            if (after)
+            {
+                pos++;
+        	if (pos == op1.Length) {
+                  pos = 0;
+                }
+            }
+
+            return op3[pos];
+        }
+
+        private static ushort[] ConditionalExtract(ushort[] op1, ushort[] op2, ushort[] op3, bool after, bool replicate)
+        {
+            int last = LastActiveElement(op1);
+            if (last < 0)
+            {
+                return op2;
+            }
+
+            ushort[] result = new ushort[op1.Length];
+            int pos = last;
+            if (after)
+            {
+                pos++;
+        	if (pos == op1.Length) {
+                  pos = 0;
+                }
+            }
+
+            if (replicate)
+            {
+                Array.Fill(result, op3[pos]);
+            }
+            else
+            {
+                Array.Fill<ushort>(result, 0, 0, op1.Length);
+        	result[0] = op3[pos];
+            }
+
+            return result;
+        }
+
+        public static ushort ConditionalExtractAfterLastActiveElement(ushort[] op1, ushort op2, ushort[] op3)
+        {
+            return ConditionalExtract(op1, op2, op3, /* after = */ true);
+        }
+
+        public static ushort ConditionalExtractLastActiveElement(ushort[] op1, ushort op2, ushort[] op3)
+        {
+            return ConditionalExtract(op1, op2, op3, /* after = */ false);
+        }
+
+        public static ushort[] ConditionalExtractAfterLastActiveElement(ushort[] op1, ushort[] op2, ushort[] op3)
+        {
+            return ConditionalExtract(op1, op2, op3, /* after = */ true, /* replicate = */ false);
+        }
+
+        public static ushort[] ConditionalExtractAfterLastActiveElementAndReplicate(ushort[] op1, ushort[] op2, ushort[] op3)
+        {
+            return ConditionalExtract(op1, op2, op3, /* after = */ true, /* replicate = */ true);
+        }
+
+        public static ushort[] ConditionalExtractLastActiveElement(ushort[] op1, ushort[] op2, ushort[] op3)
+        {
+            return ConditionalExtract(op1, op2, op3, /* after = */ false, /* replicate = */ false);
+        }
+
+        public static ushort[] ConditionalExtractLastActiveElementAndReplicate(ushort[] op1, ushort[] op2, ushort[] op3)
+        {
+            return ConditionalExtract(op1, op2, op3, /* after = */ false, /* replicate = */ true);
+        }
+
+        private static int ConditionalExtract(int[] op1, int op2, int[] op3, bool after)
+        {
+            int last = LastActiveElement(op1);
+            if (last < 0)
+            {
+                return op2;
+            }
+
+            int pos = last;
+            if (after)
+            {
+                pos++;
+        	if (pos == op1.Length) {
+                  pos = 0;
+                }
+            }
+
+            return op3[pos];
+        }
+
+        private static int[] ConditionalExtract(int[] op1, int[] op2, int[] op3, bool after, bool replicate)
+        {
+            int last = LastActiveElement(op1);
+            if (last < 0)
+            {
+                return op2;
+            }
+
+            int[] result = new int[op1.Length];
+            int pos = last;
+            if (after)
+            {
+                pos++;
+        	if (pos == op1.Length) {
+                  pos = 0;
+                }
+            }
+
+            if (replicate)
+            {
+                Array.Fill(result, op3[pos]);
+            }
+            else
+            {
+                Array.Fill<int>(result, 0, 0, op1.Length);
+        	result[0] = op3[pos];
+            }
+
+            return result;
+        }
+
+        public static int ConditionalExtractAfterLastActiveElement(int[] op1, int op2, int[] op3)
+        {
+            return ConditionalExtract(op1, op2, op3, /* after = */ true);
+        }
+
+        public static int ConditionalExtractLastActiveElement(int[] op1, int op2, int[] op3)
+        {
+            return ConditionalExtract(op1, op2, op3, /* after = */ false);
+        }
+
+        public static int[] ConditionalExtractAfterLastActiveElement(int[] op1, int[] op2, int[] op3)
+        {
+            return ConditionalExtract(op1, op2, op3, /* after = */ true, /* replicate = */ false);
+        }
+
+        public static int[] ConditionalExtractAfterLastActiveElementAndReplicate(int[] op1, int[] op2, int[] op3)
+        {
+            return ConditionalExtract(op1, op2, op3, /* after = */ true, /* replicate = */ true);
+        }
+
+        public static int[] ConditionalExtractLastActiveElement(int[] op1, int[] op2, int[] op3)
+        {
+            return ConditionalExtract(op1, op2, op3, /* after = */ false, /* replicate = */ false);
+        }
+
+        public static int[] ConditionalExtractLastActiveElementAndReplicate(int[] op1, int[] op2, int[] op3)
+        {
+            return ConditionalExtract(op1, op2, op3, /* after = */ false, /* replicate = */ true);
+        }
+
+        private static uint ConditionalExtract(uint[] op1, uint op2, uint[] op3, bool after)
+        {
+            int last = LastActiveElement(op1);
+            if (last < 0)
+            {
+                return op2;
+            }
+
+            int pos = last;
+            if (after)
+            {
+                pos++;
+        	if (pos == op1.Length) {
+                  pos = 0;
+                }
+            }
+
+            return op3[pos];
+        }
+
+        private static uint[] ConditionalExtract(uint[] op1, uint[] op2, uint[] op3, bool after, bool replicate)
+        {
+            int last = LastActiveElement(op1);
+            if (last < 0)
+            {
+                return op2;
+            }
+
+            uint[] result = new uint[op1.Length];
+            int pos = last;
+            if (after)
+            {
+                pos++;
+        	if (pos == op1.Length) {
+                  pos = 0;
+                }
+            }
+
+            if (replicate)
+            {
+                Array.Fill(result, op3[pos]);
+            }
+            else
+            {
+                Array.Fill<uint>(result, 0, 0, op1.Length);
+        	result[0] = op3[pos];
+            }
+
+            return result;
+        }
+
+        public static uint ConditionalExtractAfterLastActiveElement(uint[] op1, uint op2, uint[] op3)
+        {
+            return ConditionalExtract(op1, op2, op3, /* after = */ true);
+        }
+
+        public static uint ConditionalExtractLastActiveElement(uint[] op1, uint op2, uint[] op3)
+        {
+            return ConditionalExtract(op1, op2, op3, /* after = */ false);
+        }
+
+        public static uint[] ConditionalExtractAfterLastActiveElement(uint[] op1, uint[] op2, uint[] op3)
+        {
+            return ConditionalExtract(op1, op2, op3, /* after = */ true, /* replicate = */ false);
+        }
+
+        public static uint[] ConditionalExtractAfterLastActiveElementAndReplicate(uint[] op1, uint[] op2, uint[] op3)
+        {
+            return ConditionalExtract(op1, op2, op3, /* after = */ true, /* replicate = */ true);
+        }
+
+        public static uint[] ConditionalExtractLastActiveElement(uint[] op1, uint[] op2, uint[] op3)
+        {
+            return ConditionalExtract(op1, op2, op3, /* after = */ false, /* replicate = */ false);
+        }
+
+        public static uint[] ConditionalExtractLastActiveElementAndReplicate(uint[] op1, uint[] op2, uint[] op3)
+        {
+            return ConditionalExtract(op1, op2, op3, /* after = */ false, /* replicate = */ true);
+        }
+
+        private static long ConditionalExtract(long[] op1, long op2, long[] op3, bool after)
+        {
+            int last = LastActiveElement(op1);
+            if (last < 0)
+            {
+                return op2;
+            }
+
+            int pos = last;
+            if (after)
+            {
+                pos++;
+        	if (pos == op1.Length) {
+                  pos = 0;
+                }
+            }
+
+            return op3[pos];
+        }
+
+        private static long[] ConditionalExtract(long[] op1, long[] op2, long[] op3, bool after, bool replicate)
+        {
+            int last = LastActiveElement(op1);
+            if (last < 0)
+            {
+                return op2;
+            }
+
+            long[] result = new long[op1.Length];
+            int pos = last;
+            if (after)
+            {
+                pos++;
+        	if (pos == op1.Length) {
+                  pos = 0;
+                }
+            }
+
+            if (replicate)
+            {
+                Array.Fill(result, op3[pos]);
+            }
+            else
+            {
+                Array.Fill<long>(result, 0, 0, op1.Length);
+        	result[0] = op3[pos];
+            }
+
+            return result;
+        }
+
+        public static long ConditionalExtractAfterLastActiveElement(long[] op1, long op2, long[] op3)
+        {
+            return ConditionalExtract(op1, op2, op3, /* after = */ true);
+        }
+
+        public static long ConditionalExtractLastActiveElement(long[] op1, long op2, long[] op3)
+        {
+            return ConditionalExtract(op1, op2, op3, /* after = */ false);
+        }
+
+        public static long[] ConditionalExtractAfterLastActiveElement(long[] op1, long[] op2, long[] op3)
+        {
+            return ConditionalExtract(op1, op2, op3, /* after = */ true, /* replicate = */ false);
+        }
+
+        public static long[] ConditionalExtractAfterLastActiveElementAndReplicate(long[] op1, long[] op2, long[] op3)
+        {
+            return ConditionalExtract(op1, op2, op3, /* after = */ true, /* replicate = */ true);
+        }
+
+        public static long[] ConditionalExtractLastActiveElement(long[] op1, long[] op2, long[] op3)
+        {
+            return ConditionalExtract(op1, op2, op3, /* after = */ false, /* replicate = */ false);
+        }
+
+        public static long[] ConditionalExtractLastActiveElementAndReplicate(long[] op1, long[] op2, long[] op3)
+        {
+            return ConditionalExtract(op1, op2, op3, /* after = */ false, /* replicate = */ true);
+        }
+
+        public static ulong ConditionalExtractAfterLastActiveElement(ulong[] op1, ulong op2, ulong[] op3)
+        {
+            return ConditionalExtract(op1, op2, op3, /* after = */ true);
+        }
+
+        private static ulong ConditionalExtract(ulong[] op1, ulong op2, ulong[] op3, bool after)
+        {
+            int last = LastActiveElement(op1);
+            if (last < 0)
+            {
+                return op2;
+            }
+
+            int pos = last;
+            if (after)
+            {
+                pos++;
+        	if (pos == op1.Length) {
+                  pos = 0;
+                }
+            }
+
+            return op3[pos];
+        }
+
+        private static ulong[] ConditionalExtract(ulong[] op1, ulong[] op2, ulong[] op3, bool after, bool replicate)
+        {
+            int last = LastActiveElement(op1);
+            if (last < 0)
+            {
+                return op2;
+            }
+
+            ulong[] result = new ulong[op1.Length];
+            int pos = last;
+            if (after)
+            {
+                pos++;
+        	if (pos == op1.Length) {
+                  pos = 0;
+                }
+            }
+
+            if (replicate)
+            {
+                Array.Fill(result, op3[pos]);
+            }
+            else
+            {
+                Array.Fill<ulong>(result, 0, 0, op1.Length);
+        	result[0] = op3[pos];
+            }
+
+            return result;
+        }
+
+        public static ulong ConditionalExtractLastActiveElement(ulong[] op1, ulong op2, ulong[] op3)
+        {
+            return ConditionalExtract(op1, op2, op3, /* after = */ false);
+        }
+
+        public static ulong[] ConditionalExtractAfterLastActiveElement(ulong[] op1, ulong[] op2, ulong[] op3)
+        {
+            return ConditionalExtract(op1, op2, op3, /* after = */ true, /* replicate = */ false);
+        }
+
+        public static ulong[] ConditionalExtractAfterLastActiveElementAndReplicate(ulong[] op1, ulong[] op2, ulong[] op3)
+        {
+            return ConditionalExtract(op1, op2, op3, /* after = */ true, /* replicate = */ true);
+        }
+
+        public static ulong[] ConditionalExtractLastActiveElement(ulong[] op1, ulong[] op2, ulong[] op3)
+        {
+            return ConditionalExtract(op1, op2, op3, /* after = */ false, /* replicate = */ false);
+        }
+
+        public static ulong[] ConditionalExtractLastActiveElementAndReplicate(ulong[] op1, ulong[] op2, ulong[] op3)
+        {
+            return ConditionalExtract(op1, op2, op3, /* after = */ false, /* replicate = */ true);
+        }
+
+        private static float ConditionalExtract(float[] op1, float op2, float[] op3, bool after)
+        {
+            int last = LastActiveElement(op1);
+            if (last < 0)
+            {
+                return op2;
+            }
+
+            int pos = last;
+            if (after)
+            {
+                pos++;
+        	if (pos == op1.Length) {
+                  pos = 0;
+                }
+            }
+
+            return op3[pos];
+        }
+
+        private static float[] ConditionalExtract(float[] op1, float[] op2, float[] op3, bool after, bool replicate)
+        {
+            int last = LastActiveElement(op1);
+            if (last < 0)
+            {
+                return op2;
+            }
+
+            float[] result = new float[op1.Length];
+            int pos = last;
+            if (after)
+            {
+                pos++;
+        	if (pos == op1.Length) {
+                  pos = 0;
+                }
+            }
+
+            if (replicate)
+            {
+                Array.Fill(result, op3[pos]);
+            }
+            else
+            {
+                Array.Fill<float>(result, 0, 0, op1.Length);
+        	result[0] = op3[pos];
+            }
+
+            return result;
+        }
+
+        public static float ConditionalExtractAfterLastActiveElement(float[] op1, float op2, float[] op3)
+        {
+            return ConditionalExtract(op1, op2, op3, /* after = */ true);
+        }
+
+        public static float ConditionalExtractLastActiveElement(float[] op1, float op2, float[] op3)
+        {
+            return ConditionalExtract(op1, op2, op3, /* after = */ false);
+        }
+
+        public static float[] ConditionalExtractAfterLastActiveElement(float[] op1, float[] op2, float[] op3)
+        {
+            return ConditionalExtract(op1, op2, op3, /* after = */ true, /* replicate = */ false);
+        }
+
+        public static float[] ConditionalExtractAfterLastActiveElementAndReplicate(float[] op1, float[] op2, float[] op3)
+        {
+            return ConditionalExtract(op1, op2, op3, /* after = */ true, /* replicate = */ true);
+        }
+
+        public static float[] ConditionalExtractLastActiveElement(float[] op1, float[] op2, float[] op3)
+        {
+            return ConditionalExtract(op1, op2, op3, /* after = */ false, /* replicate = */ false);
+        }
+
+        public static float[] ConditionalExtractLastActiveElementAndReplicate(float[] op1, float[] op2, float[] op3)
+        {
+            return ConditionalExtract(op1, op2, op3, /* after = */ false, /* replicate = */ true);
+        }
+
+        private static double ConditionalExtract(double[] op1, double op2, double[] op3, bool after)
+        {
+            int last = LastActiveElement(op1);
+            if (last < 0)
+            {
+                return op2;
+            }
+
+            int pos = last;
+            if (after)
+            {
+                pos++;
+        	if (pos == op1.Length) {
+                  pos = 0;
+                }
+            }
+
+            return op3[pos];
+        }
+
+        private static double[] ConditionalExtract(double[] op1, double[] op2, double[] op3, bool after, bool replicate)
+        {
+            int last = LastActiveElement(op1);
+            if (last < 0)
+            {
+                return op2;
+            }
+
+            double[] result = new double[op1.Length];
+            int pos = last;
+            if (after)
+            {
+                pos++;
+        	if (pos == op1.Length) {
+                  pos = 0;
+                }
+            }
+
+            if (replicate)
+            {
+                Array.Fill(result, op3[pos]);
+            }
+            else
+            {
+                Array.Fill<double>(result, 0, 0, op1.Length);
+        	result[0] = op3[pos];
+            }
+
+            return result;
+        }
+
+        public static double ConditionalExtractAfterLastActiveElement(double[] op1, double op2, double[] op3)
+        {
+            return ConditionalExtract(op1, op2, op3, /* after = */ true);
+        }
+
+        public static double ConditionalExtractLastActiveElement(double[] op1, double op2, double[] op3)
+        {
+            return ConditionalExtract(op1, op2, op3, /* after = */ false);
+        }
+
+        public static double[] ConditionalExtractAfterLastActiveElement(double[] op1, double[] op2, double[] op3)
+        {
+            return ConditionalExtract(op1, op2, op3, /* after = */ true, /* replicate = */ false);
+        }
+
+        public static double[] ConditionalExtractAfterLastActiveElementAndReplicate(double[] op1, double[] op2, double[] op3)
+        {
+            return ConditionalExtract(op1, op2, op3, /* after = */ true, /* replicate = */ true);
+        }
+
+        public static double[] ConditionalExtractLastActiveElement(double[] op1, double[] op2, double[] op3)
+        {
+            return ConditionalExtract(op1, op2, op3, /* after = */ false, /* replicate = */ false);
+        }
+
+        public static double[] ConditionalExtractLastActiveElementAndReplicate(double[] op1, double[] op2, double[] op3)
+        {
+            return ConditionalExtract(op1, op2, op3, /* after = */ false, /* replicate = */ true);
+        }
     }
 }

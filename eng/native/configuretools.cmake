@@ -77,10 +77,10 @@ endif()
 
 if (NOT CLR_CMAKE_HOST_WIN32)
   # detect linker
-  separate_arguments(ldVersion UNIX_COMMAND "${CMAKE_C_COMPILER} ${CMAKE_SHARED_LINKER_FLAGS} -Wl,--version")
-  execute_process(COMMAND ${ldVersion}
+  execute_process(COMMAND sh -c "${CMAKE_C_COMPILER} ${CMAKE_SHARED_LINKER_FLAGS} -Wl,--version | head -1"
     ERROR_QUIET
-    OUTPUT_VARIABLE ldVersionOutput)
+    OUTPUT_VARIABLE ldVersionOutput
+    OUTPUT_STRIP_TRAILING_WHITESPACE)
 
   if("${ldVersionOutput}" MATCHES "LLD")
     set(LD_LLVM 1)
@@ -91,7 +91,6 @@ if (NOT CLR_CMAKE_HOST_WIN32)
   else(CLR_CMAKE_HOST_OSX OR CLR_CMAKE_HOST_MACCATALYST)
     set(LD_OSX 1)
   endif()
-  string(STRIP "${ldVersionOutput}" ldVersionOutput)
   message("-- The linker identification is ${ldVersionOutput}")
 endif()
 

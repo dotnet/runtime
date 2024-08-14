@@ -234,9 +234,6 @@ void InitializeExceptionHandling()
 
     g_theTrackerAllocator.Init();
 
-    // Initialize the lock used for synchronizing access to the stacktrace in the exception object
-    g_StackTraceArrayLock.Init(LOCK_TYPE_DEFAULT, TRUE);
-
     g_isNewExceptionHandlingEnabled = Configuration::GetKnobBooleanValue(W("System.Runtime.LegacyExceptionHandling"), CLRConfig::EXTERNAL_LegacyExceptionHandling ) == 0;
 
 #ifdef TARGET_UNIX
@@ -2436,7 +2433,7 @@ CLRUnwindStatus ExceptionTracker::ProcessExplicitFrame(
         // update our exception stacktrace
         //
 
-        BOOL bReplaceStack      = FALSE;
+        BOOL bIsNewException    = FALSE;
         BOOL bSkipLastElement   = FALSE;
 
         if (STS_FirstRethrowFrame == STState)
@@ -2446,7 +2443,7 @@ CLRUnwindStatus ExceptionTracker::ProcessExplicitFrame(
         else
         if (STS_NewException == STState)
         {
-            bReplaceStack    = TRUE;
+            bIsNewException = TRUE;
         }
 
         // Normally, we need to notify the profiler in two cases:
@@ -2466,18 +2463,20 @@ CLRUnwindStatus ExceptionTracker::ProcessExplicitFrame(
                 //
                 // notify profiler of new/rethrown exception
                 //
-                if (bSkipLastElement || bReplaceStack)
+                if (bSkipLastElement || bIsNewException)
                 {
                     GCX_COOP();
                     EEToProfilerExceptionInterfaceWrapper::ExceptionThrown(pThread);
-                    UpdatePerformanceMetrics(pcfThisFrame, bSkipLastElement, bReplaceStack);
+                    UpdatePerformanceMetrics(pcfThisFrame, bSkipLastElement, bIsNewException);
                 }
 
                 //
                 // Update stack trace
                 //
-                m_StackTraceInfo.AppendElement(CanAllocateMemory(), 0, sf.SP, pMD, pcfThisFrame);
-                m_StackTraceInfo.SaveStackTrace(CanAllocateMemory(), m_hThrowable, bReplaceStack, bSkipLastElement);
+                if (!bSkipLastElement)
+                {
+                    StackTraceInfo::AppendElement(m_hThrowable, 0, sf.SP, pMD, pcfThisFrame);
+                }
 
                 //
                 // make callback to debugger and/or profiler
@@ -2725,7 +2724,7 @@ CLRUnwindStatus ExceptionTracker::ProcessManagedCallFrame(
         BOOL                    fFoundHandler    = FALSE;
         DWORD_PTR               dwHandlerStartPC = 0;
 
-        BOOL bReplaceStack      = FALSE;
+        BOOL bIsNewException    = FALSE;
         BOOL bSkipLastElement   = FALSE;
         bool fUnwindFinished    = false;
 
@@ -2736,17 +2735,17 @@ CLRUnwindStatus ExceptionTracker::ProcessManagedCallFrame(
         else
         if (STS_NewException == STState)
         {
-            bReplaceStack    = TRUE;
+            bIsNewException = TRUE;
         }
 
         // We need to notify the profiler on the first pass in two cases:
         // 1) a brand new exception is thrown, and
         // 2) an exception is rethrown.
-        if (fIsFirstPass && (bSkipLastElement || bReplaceStack))
+        if (fIsFirstPass && (bSkipLastElement || bIsNewException))
         {
             GCX_COOP();
             EEToProfilerExceptionInterfaceWrapper::ExceptionThrown(pThread);
-            UpdatePerformanceMetrics(pcfThisFrame, bSkipLastElement, bReplaceStack);
+            UpdatePerformanceMetrics(pcfThisFrame, bSkipLastElement, bIsNewException);
         }
 
         if (!fUnwindingToFindResumeFrame)
@@ -2758,8 +2757,10 @@ CLRUnwindStatus ExceptionTracker::ProcessManagedCallFrame(
             {
                 GCX_COOP();
 
-                m_StackTraceInfo.AppendElement(CanAllocateMemory(), uControlPC, sf.SP, pMD, pcfThisFrame);
-                m_StackTraceInfo.SaveStackTrace(CanAllocateMemory(), m_hThrowable, bReplaceStack, bSkipLastElement);
+                if (!bSkipLastElement)
+                {
+                    StackTraceInfo::AppendElement(m_hThrowable, uControlPC, sf.SP, pMD, pcfThisFrame);
+                }
             }
 
             //
@@ -4053,11 +4054,6 @@ ExceptionTracker* ExceptionTracker::GetOrCreateTracker(
             CONSISTENCY_CHECK(NULL == pTracker->m_hThrowable);
 
             pThread->SafeSetThrowables(oThrowable);
-
-            if (pTracker->CanAllocateMemory())
-            {
-                pTracker->m_StackTraceInfo.AllocateStackTrace();
-            }
         }
         INDEBUG(oThrowable = NULL);
 
@@ -5430,6 +5426,19 @@ BOOL IsSafeToCallExecutionManager()
 
 BOOL IsSafeToHandleHardwareException(PCONTEXT contextRecord, PEXCEPTION_RECORD exceptionRecord)
 {
+#ifdef FEATURE_EMULATE_SINGLESTEP    
+    Thread *pThread = GetThreadNULLOk();
+    if (pThread && pThread->IsSingleStepEnabled() &&
+        exceptionRecord->ExceptionCode != STATUS_BREAKPOINT &&
+        exceptionRecord->ExceptionCode != STATUS_SINGLE_STEP &&
+        exceptionRecord->ExceptionCode != STATUS_STACK_OVERFLOW)
+    {
+        // tried to consolidate the code and only call HandleSingleStep here but 
+        // for some reason not investigated the debugger tests failed with this change
+        pThread->HandleSingleStep(contextRecord, exceptionRecord->ExceptionCode);
+    }
+#endif
+
     PCODE controlPc = GetIP(contextRecord);
 
     if (IsIPInWriteBarrierCodeCopy(controlPc))
@@ -7501,7 +7510,6 @@ void ExceptionTracker::ReleaseResources()
         }
         m_hThrowable = NULL;
     }
-    m_StackTraceInfo.FreeStackTrace();
 
 #ifndef TARGET_UNIX
     // Clear any held Watson Bucketing details
@@ -7626,18 +7634,17 @@ extern "C" void QCALLTYPE AppendExceptionStackFrame(QCall::ObjectHandleOnStack e
         Frame* pFrame = pThread->GetFrame();
         MarkInlinedCallFrameAsEHHelperCall(pFrame);
 
-        bool canAllocateMemory = !(exceptionObj.Get() == CLRException::GetPreallocatedOutOfMemoryException()) &&
-                                !(exceptionObj.Get() == CLRException::GetPreallocatedStackOverflowException());
-
-        MethodDesc *pMD = pExInfo->m_frameIter.m_crawl.GetFunction();
+        if ((flags & RH_EH_FIRST_RETHROW_FRAME) == 0)
+        {
+            MethodDesc *pMD = pExInfo->m_frameIter.m_crawl.GetFunction();
 #if _DEBUG
-        EECodeInfo codeInfo(ip);
-        _ASSERTE(codeInfo.IsValid());
-        _ASSERTE(pMD == codeInfo.GetMethodDesc());
+            EECodeInfo codeInfo(ip);
+            _ASSERTE(codeInfo.IsValid());
+            _ASSERTE(pMD == codeInfo.GetMethodDesc());
 #endif // _DEBUG
 
-        pExInfo->m_StackTraceInfo.AppendElement(canAllocateMemory, ip, sp, pMD, &pExInfo->m_frameIter.m_crawl);
-        pExInfo->m_StackTraceInfo.SaveStackTrace(canAllocateMemory, pExInfo->m_hThrowable, /*bReplaceStack*/FALSE, /*bSkipLastElement*/FALSE);
+            StackTraceInfo::AppendElement(pExInfo->m_hThrowable, ip, sp, pMD, &pExInfo->m_frameIter.m_crawl);
+        }
     }
 
     // Notify the debugger that we are on the first pass for a managed exception.
@@ -7679,27 +7686,23 @@ UINT_PTR GetEstablisherFrame(REGDISPLAY* pvRegDisplay, ExInfo* exInfo)
 #endif
 }
 
-size_t GetSSPForFrameOnCurrentStack(CONTEXT *pContext)
-{
-    size_t *targetSSP = 0;
-
 #if defined(HOST_AMD64) && defined(HOST_WINDOWS)
-    targetSSP = (size_t *)_rdsspq();
-    // Find the shadow stack pointer for the frame we are going to restore to.
+size_t GetSSPForFrameOnCurrentStack(TADDR ip)
+{
+    size_t *targetSSP = (size_t *)_rdsspq();
     // The SSP we search is pointing to the return address of the frame represented
-    // by the passed in context. So we search for the instruction pointer from 
+    // by the passed in IP. So we search for the instruction pointer from 
     // the context and return one slot up from there.
     if (targetSSP != NULL)
     {
-        size_t ip = GetIP(pContext);
         while (*targetSSP++ != ip)
         {
         }
     }
-#endif // HOST_AMD64 && HOST_WINDOWS
 
     return (size_t)targetSSP;
 }
+#endif // HOST_AMD64 && HOST_WINDOWS
 
 extern "C" void * QCALLTYPE CallCatchFunclet(QCall::ObjectHandleOnStack exceptionObj, BYTE* pHandlerIP, REGDISPLAY* pvRegDisplay, ExInfo* exInfo)
 {
@@ -7717,7 +7720,12 @@ extern "C" void * QCALLTYPE CallCatchFunclet(QCall::ObjectHandleOnStack exceptio
     exInfo->m_ScannedStackRange.ExtendUpperBound(exInfo->m_frameIter.m_crawl.GetRegisterSet()->SP);
     DWORD_PTR dwResumePC = 0;
     UINT_PTR callerTargetSp = 0;
-    size_t targetSSP = GetSSPForFrameOnCurrentStack(pvRegDisplay->pCurrentContext);
+#if defined(HOST_AMD64) && defined(HOST_WINDOWS)
+    size_t targetSSP = exInfo->m_frameIter.m_crawl.GetRegisterSet()->SSP;
+    _ASSERTE(targetSSP == 0 || (*(size_t*)(targetSSP-8) == exInfo->m_frameIter.m_crawl.GetRegisterSet()->ControlPC));
+#else
+    size_t targetSSP = 0;
+#endif
 
     if (pHandlerIP != NULL)
     {
@@ -7877,7 +7885,7 @@ extern "C" void * QCALLTYPE CallCatchFunclet(QCall::ObjectHandleOnStack exceptio
 #elif defined(HOST_RISCV) || defined(HOST_LOONGARCH64)
         pvRegDisplay->pCurrentContext->Ra = GetIP(pvRegDisplay->pCurrentContext);
 #endif
-        SetIP(pvRegDisplay->pCurrentContext, (PCODE)(void (*)(Object*))RealCOMPlusThrow);
+        SetIP(pvRegDisplay->pCurrentContext, (PCODE)(void (*)(Object*))PropagateExceptionThroughNativeFrames);
 #if defined(HOST_AMD64)
         SetSP(pvRegDisplay->pCurrentContext, targetSp - 8);
 #elif defined(HOST_X86)
@@ -7935,6 +7943,12 @@ extern "C" void QCALLTYPE ResumeAtInterceptionLocation(REGDISPLAY* pvRegDisplay)
 
     pThread->GetExceptionState()->GetDebuggerState()->GetDebuggerInterceptInfo(&pInterceptMD, NULL, (PBYTE*)&(sfInterceptStackFrame.SP), &ulRelOffset, NULL);
 
+#if defined(HOST_AMD64) && defined(HOST_WINDOWS)
+    TADDR targetSSP = pExInfo->m_frameIter.m_crawl.GetRegisterSet()->SSP;
+#else
+    TADDR targetSSP = 0;
+#endif
+
     ExInfo::PopExInfos(pThread, (void*)targetSp);
 
     PCODE pStartAddress = pInterceptMD->GetNativeCode();
@@ -7946,8 +7960,6 @@ extern "C" void QCALLTYPE ResumeAtInterceptionLocation(REGDISPLAY* pvRegDisplay)
     // so we need to adjust it to get the actual IP.
     _ASSERTE(FitsIn<DWORD>(ulRelOffset));
     uResumePC = codeInfo.GetJitManager()->GetCodeAddressForRelOffset(codeInfo.GetMethodToken(), static_cast<DWORD>(ulRelOffset));
-
-    size_t targetSSP = GetSSPForFrameOnCurrentStack(pvRegDisplay->pCurrentContext);
 
     SetIP(pvRegDisplay->pCurrentContext, uResumePC);
     ClrRestoreNonvolatileContext(pvRegDisplay->pCurrentContext, targetSSP);
@@ -8375,11 +8387,7 @@ extern "C" bool QCALLTYPE SfiInit(StackFrameIterator* pThis, CONTEXT* pStackwalk
                 if (pMD != NULL)
                 {
                     GCX_COOP();
-                    bool canAllocateMemory = !(pExInfo->m_exception == CLRException::GetPreallocatedOutOfMemoryException()) &&
-                        !(pExInfo->m_exception == CLRException::GetPreallocatedStackOverflowException());
-
-                    pExInfo->m_StackTraceInfo.AppendElement(canAllocateMemory, 0, GetRegdisplaySP(pExInfo->m_frameIter.m_crawl.GetRegisterSet()), pMD, &pExInfo->m_frameIter.m_crawl);
-                    pExInfo->m_StackTraceInfo.SaveStackTrace(canAllocateMemory, pExInfo->m_hThrowable, /*bReplaceStack*/FALSE, /*bSkipLastElement*/FALSE);
+                    StackTraceInfo::AppendElement(pExInfo->m_hThrowable, 0, GetRegdisplaySP(pExInfo->m_frameIter.m_crawl.GetRegisterSet()), pMD, &pExInfo->m_frameIter.m_crawl);
 
 #if defined(DEBUGGING_SUPPORTED)
                     if (NotifyDebuggerOfStub(pThread, pFrame))
@@ -8426,6 +8434,14 @@ extern "C" bool QCALLTYPE SfiInit(StackFrameIterator* pThis, CONTEXT* pStackwalk
     if (result)
     {
         TADDR controlPC = pThis->m_crawl.GetRegisterSet()->ControlPC;
+
+#if defined(HOST_AMD64) && defined(HOST_WINDOWS)
+        // Get the SSP for the first managed frame. It is incremented during the stack walk so that
+        // when we reach the handling frame, it contains correct SSP to set when resuming after
+        // the catch handler.
+        pThis->m_crawl.GetRegisterSet()->SSP = GetSSPForFrameOnCurrentStack(controlPC);
+#endif
+
         if (!pThis->m_crawl.HasFaulted() && !pThis->m_crawl.IsIPadjusted())
         {
             controlPC -= STACKWALK_CONTROLPC_ADJUST_OFFSET;
@@ -8644,11 +8660,7 @@ extern "C" bool QCALLTYPE SfiNext(StackFrameIterator* pThis, uint* uExCollideCla
                 if (pMD != NULL)
                 {
                     GCX_COOP();
-                    bool canAllocateMemory = !(pTopExInfo->m_exception == CLRException::GetPreallocatedOutOfMemoryException()) &&
-                                             !(pTopExInfo->m_exception == CLRException::GetPreallocatedStackOverflowException());
-
-                    pTopExInfo->m_StackTraceInfo.AppendElement(canAllocateMemory, 0, GetRegdisplaySP(pTopExInfo->m_frameIter.m_crawl.GetRegisterSet()), pMD, &pTopExInfo->m_frameIter.m_crawl);
-                    pTopExInfo->m_StackTraceInfo.SaveStackTrace(canAllocateMemory, pTopExInfo->m_hThrowable, /*bReplaceStack*/FALSE, /*bSkipLastElement*/FALSE);
+                    StackTraceInfo::AppendElement(pTopExInfo->m_hThrowable, 0, GetRegdisplaySP(pTopExInfo->m_frameIter.m_crawl.GetRegisterSet()), pMD, &pTopExInfo->m_frameIter.m_crawl);
 
 #if defined(DEBUGGING_SUPPORTED)
                     if (NotifyDebuggerOfStub(pThread, pFrame))

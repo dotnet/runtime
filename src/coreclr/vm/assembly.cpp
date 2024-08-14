@@ -705,24 +705,10 @@ Module *Assembly::FindModuleByExportedType(mdExportedType mdType,
             // We should never get here in the GC case - the above should have succeeded.
             CONSISTENCY_CHECK(!FORBIDGC_LOADER_USE_ENABLED());
 
-            DomainAssembly* pDomainModule = NULL;
-            if (loadFlag == Loader::Load)
-            {
-                pDomainModule = GetModule()->LoadModule(mdLinkRef);
-            }
+            if (loadFlag != Loader::Load)
+                return NULL;
 
-            if (pDomainModule == NULL)
-                RETURN NULL;
-            else
-            {
-                pModule = pDomainModule->GetModule();
-                if (pModule == NULL)
-                {
-                    _ASSERTE(loadFlag!=Loader::Load);
-                }
-
-                RETURN pModule;
-            }
+            return GetModule()->LoadModule(mdLinkRef);
 #endif // DACCESS_COMPILE
         }
 
@@ -849,8 +835,8 @@ Module * Assembly::FindModuleByTypeRef(
 #ifndef DACCESS_COMPILE
             if (loadFlag == Loader::Load)
             {
-                DomainAssembly* pActualDomainAssembly = pModule->LoadModule(tkType);
-                RETURN(pActualDomainAssembly->GetModule());
+                Module* pActualModule = pModule->LoadModule(tkType);
+                RETURN(pActualModule);
             }
             else
             {
@@ -1493,7 +1479,7 @@ MethodDesc* Assembly::GetEntryPoint()
     Module *pModule = NULL;
     switch(TypeFromToken(mdEntry)) {
     case mdtFile:
-        pModule = m_pModule->LoadModule(mdEntry)->GetModule();
+        pModule = m_pModule->LoadModule(mdEntry);
 
         mdEntry = pModule->GetEntryPointToken();
         if ( (TypeFromToken(mdEntry) != mdtMethodDef) ||
@@ -1590,9 +1576,8 @@ BOOL Assembly::FileNotFound(HRESULT hr)
 
 
 BOOL Assembly::GetResource(LPCSTR szName, DWORD *cbResource,
-                              PBYTE *pbInMemoryResource, Assembly** pAssemblyRef,
-                              LPCSTR *szFileName, DWORD *dwLocation,
-                              BOOL fSkipRaiseResolveEvent)
+                             PBYTE *pbInMemoryResource, Assembly** pAssemblyRef,
+                             LPCSTR *szFileName, DWORD *dwLocation)
 {
     CONTRACTL
     {
@@ -1602,13 +1587,10 @@ BOOL Assembly::GetResource(LPCSTR szName, DWORD *cbResource,
     }
     CONTRACTL_END;
 
-    DomainAssembly *pAssembly = NULL;
-    BOOL result = GetDomainAssembly()->GetResource(szName, cbResource,
-                                                   pbInMemoryResource, &pAssembly,
-                                                   szFileName, dwLocation,
-                                                   fSkipRaiseResolveEvent);
-    if (result && pAssemblyRef != NULL && pAssembly != NULL)
-        *pAssemblyRef = pAssembly->GetAssembly();
+    BOOL result = GetPEAssembly()->GetResource(szName, cbResource,
+                                                pbInMemoryResource, pAssemblyRef,
+                                                szFileName, dwLocation,
+                                                this);
 
     return result;
 }

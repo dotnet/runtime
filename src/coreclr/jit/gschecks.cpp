@@ -416,6 +416,7 @@ void Compiler::gsParamsToShadows()
         shadowVarDsc->lvDoNotEnregister = varDsc->lvDoNotEnregister;
 #ifdef DEBUG
         shadowVarDsc->SetDoNotEnregReason(varDsc->GetDoNotEnregReason());
+        shadowVarDsc->SetHiddenBufferStructArg(varDsc->IsHiddenBufferStructArg());
 #endif
 
         if (varTypeIsStruct(type))
@@ -503,6 +504,7 @@ void Compiler::gsParamsToShadows()
         }
     }
 
+    compCurBB = fgFirstBB;
     // Now insert code to copy the params to their shadow copy.
     for (UINT lclNum = 0; lclNum < lvaOldCount; lclNum++)
     {
@@ -522,6 +524,7 @@ void Compiler::gsParamsToShadows()
         compCurBB = fgFirstBB; // Needed by some morphing
         (void)fgNewStmtAtBeg(fgFirstBB, fgMorphTree(store));
     }
+    compCurBB = nullptr;
 
     // If the method has "Jmp CalleeMethod", then we need to copy shadow params back to original
     // params before "jmp" to CalleeMethod.

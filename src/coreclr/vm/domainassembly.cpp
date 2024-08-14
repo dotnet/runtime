@@ -33,7 +33,6 @@ DomainAssembly::DomainAssembly(PEAssembly* pPEAssembly, LoaderAllocator* pLoader
     m_pLoaderAllocator(pLoaderAllocator),
     m_level(FILE_LOAD_CREATE),
     m_loading(TRUE),
-    m_hExposedModuleObject{},
     m_hExposedAssemblyObject{},
     m_pError(NULL),
     m_bDisableActivationCheck(FALSE),
@@ -310,71 +309,6 @@ BOOL DomainAssembly::IsVisibleToDebugger()
 
 #ifndef DACCESS_COMPILE
 
-//---------------------------------------------------------------------------------------
-//
-// Returns managed representation of the module (Module or ModuleBuilder).
-// Returns NULL if the managed scout was already collected (see code:LoaderAllocator#AssemblyPhases).
-//
-OBJECTREF DomainAssembly::GetExposedModuleObject()
-{
-    CONTRACTL
-    {
-        INSTANCE_CHECK;
-        THROWS;
-        MODE_COOPERATIVE;
-        GC_TRIGGERS;
-    }
-    CONTRACTL_END;
-
-    LoaderAllocator * pLoaderAllocator = GetLoaderAllocator();
-
-    if (m_hExposedModuleObject == (LOADERHANDLE)NULL)
-    {
-        // Atomically create a handle
-        LOADERHANDLE handle = pLoaderAllocator->AllocateHandle(NULL);
-
-        InterlockedCompareExchangeT(&m_hExposedModuleObject, handle, static_cast<LOADERHANDLE>(0));
-    }
-
-    if (pLoaderAllocator->GetHandleValue(m_hExposedModuleObject) == NULL)
-    {
-        REFLECTMODULEBASEREF refClass = NULL;
-
-        // Will be true only if LoaderAllocator managed object was already collected and therefore we should
-        // return NULL
-        bool fIsLoaderAllocatorCollected = false;
-
-        GCPROTECT_BEGIN(refClass);
-
-        refClass = (REFLECTMODULEBASEREF) AllocateObject(CoreLibBinder::GetClass(CLASS__MODULE));
-        refClass->SetModule(GetModule());
-
-        // Attach the reference to the assembly to keep the LoaderAllocator for this collectible type
-        // alive as long as a reference to the module is kept alive.
-        if (GetModule()->GetAssembly() != NULL)
-        {
-            OBJECTREF refAssembly = GetModule()->GetAssembly()->GetExposedObject();
-            if ((refAssembly == NULL) && GetModule()->GetAssembly()->IsCollectible())
-            {
-                fIsLoaderAllocatorCollected = true;
-            }
-            refClass->SetAssembly(refAssembly);
-        }
-
-        pLoaderAllocator->CompareExchangeValueInHandle(m_hExposedModuleObject, (OBJECTREF)refClass, NULL);
-        GCPROTECT_END();
-
-        if (fIsLoaderAllocatorCollected)
-        {   // The LoaderAllocator managed object was already collected, we cannot re-create it
-            // Note: We did not publish the allocated Module/ModuleBuilder object, it will get collected
-            // by GC
-            return NULL;
-        }
-    }
-
-    return pLoaderAllocator->GetHandleValue(m_hExposedModuleObject);
-}
-
 BOOL DomainAssembly::DoIncrementalLoad(FileLoadLevel level)
 {
     STANDARD_VM_CONTRACT;
@@ -389,30 +323,12 @@ BOOL DomainAssembly::DoIncrementalLoad(FileLoadLevel level)
         Begin();
         break;
 
-    case FILE_LOAD_FIND_NATIVE_IMAGE:
-        break;
-
-    case FILE_LOAD_VERIFY_NATIVE_IMAGE_DEPENDENCIES:
-        break;
-
     case FILE_LOAD_ALLOCATE:
         Allocate();
         break;
 
-    case FILE_LOAD_ADD_DEPENDENCIES:
-        AddDependencies();
-        break;
-
-    case FILE_LOAD_PRE_LOADLIBRARY:
-        PreLoadLibrary();
-        break;
-
-    case FILE_LOAD_LOADLIBRARY:
-        LoadLibrary();
-        break;
-
-    case FILE_LOAD_POST_LOADLIBRARY:
-        PostLoadLibrary();
+    case FILE_LOAD_POST_ALLOCATE:
+        PostAllocate();
         break;
 
     case FILE_LOAD_EAGER_FIXUPS:
@@ -453,29 +369,7 @@ BOOL DomainAssembly::DoIncrementalLoad(FileLoadLevel level)
     return TRUE;
 }
 
-void DomainAssembly::PreLoadLibrary()
-{
-    CONTRACTL
-    {
-        INSTANCE_CHECK;
-        STANDARD_VM_CHECK;
-    }
-    CONTRACTL_END;
-
-} // DomainAssembly::PreLoadLibrary
-
-void DomainAssembly::LoadLibrary()
-{
-    CONTRACTL
-    {
-        INSTANCE_CHECK;
-        STANDARD_VM_CHECK;
-    }
-    CONTRACTL_END;
-
-}
-
-void DomainAssembly::PostLoadLibrary()
+void DomainAssembly::PostAllocate()
 {
     CONTRACTL
     {
@@ -509,11 +403,6 @@ void DomainAssembly::PostLoadLibrary()
     }
 
 #endif
-}
-
-void DomainAssembly::AddDependencies()
-{
-    STANDARD_VM_CONTRACT;
 }
 
 void DomainAssembly::EagerFixups()
@@ -744,18 +633,16 @@ void DomainAssembly::Allocate()
         INSTANCE_CHECK;
         STANDARD_VM_CHECK;
         INJECT_FAULT(COMPlusThrowOM(););
+        PRECONDITION(m_pAssembly == NULL);
     }
     CONTRACTL_END;
 
     AllocMemTracker   amTracker;
     AllocMemTracker * pamTracker = &amTracker;
 
-    Assembly * pAssembly = m_pAssembly;
-
-    if (pAssembly==NULL)
+    Assembly * pAssembly;
     {
-        //! If you decide to remove "if" do not remove this brace: order is important here - in the case of an exception,
-        //! the Assembly holder must destruct before the AllocMemTracker declared above.
+        // Order is important here - in the case of an exception, the Assembly holder must destruct before the AllocMemTracker declared above.
         NewHolder<Assembly> assemblyHolder(NULL);
 
         assemblyHolder = pAssembly = Assembly::Create(GetPEAssembly(), GetDebuggerInfoBits(), this->IsCollectible(), pamTracker, this->IsCollectible() ? this->GetLoaderAllocator() : NULL);
@@ -766,6 +653,9 @@ void DomainAssembly::Allocate()
     }
 
     SetAssembly(pAssembly);
+
+    // Creating the Assembly should have ensured the PEAssembly is loaded
+    _ASSERT(GetPEAssembly()->IsLoaded());
 }
 
 void DomainAssembly::DeliverAsyncEvents()
@@ -814,42 +704,6 @@ void DomainAssembly::DeliverSyncEvents()
     }
 #endif // DEBUGGING_SUPPORTED
 }
-
-/*
-  // The enum for dwLocation from managed code:
-    public enum ResourceLocation
-    {
-        Embedded = 1,
-        ContainedInAnotherAssembly = 2,
-        ContainedInManifestFile = 4
-    }
-*/
-
-BOOL DomainAssembly::GetResource(LPCSTR szName, DWORD *cbResource,
-                                 PBYTE *pbInMemoryResource, DomainAssembly** pAssemblyRef,
-                                 LPCSTR *szFileName, DWORD *dwLocation,
-                                 BOOL fSkipRaiseResolveEvent)
-{
-    CONTRACTL
-    {
-        INSTANCE_CHECK;
-        THROWS;
-        MODE_ANY;
-        INJECT_FAULT(COMPlusThrowOM(););
-    }
-    CONTRACTL_END;
-
-    return GetPEAssembly()->GetResource( szName,
-                                   cbResource,
-                                   pbInMemoryResource,
-                                   pAssemblyRef,
-                                   szFileName,
-                                   dwLocation,
-                                   fSkipRaiseResolveEvent,
-                                   this,
-                                   AppDomain::GetCurrentDomain() );
-}
-
 
 DWORD DomainAssembly::ComputeDebuggingConfig()
 {

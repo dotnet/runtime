@@ -247,7 +247,7 @@
   <ItemGroup>
     <UpToDateCheckInput Include="@(NativeFileReference)" />
   </ItemGroup>
-  
+
   <PropertyGroup>
     <_WasmDebuggerSupport Condition="'$(WasmDebugLevel)' != '' and '$(WasmDebugLevel)' != '0'">true</_WasmDebuggerSupport>
     <_WasmDebuggerSupport Condition="'$(WasmDebugLevel)' != '' and '$(WasmDebugLevel)' == '0'">false</_WasmDebuggerSupport>
@@ -321,7 +321,7 @@
     <PropertyGroup Condition="'$(WasmMainAssemblyFileName)' != '' and '$(_WasmOutputFileName)' == ''">
       <_WasmOutputFileName Condition="'$(WasmSingleFileBundle)' == 'true'">$([System.IO.Path]::GetFileNameWithoutExtension('$(WasmMainAssemblyFileName)')).wasm</_WasmOutputFileName>
       <_WasmOutputFileName Condition="'$(WasmSingleFileBundle)' != 'true'">dotnet.wasm</_WasmOutputFileName>
-      <_WasmOutputFileName Condition="'$(_WasmOutputFileName)' != ''">$([System.IO.Path]::Combine($(_WasiIntermediateOutputPath), $(_WasmOutputFileName)))</_WasmOutputFileName>
+      <_WasmOutputFileName Condition="'$(_WasmOutputFileName)' != ''">$([System.IO.Path]::Combine($(_WasmIntermediateOutputPath), $(_WasmOutputFileName)))</_WasmOutputFileName>
     </PropertyGroup>
 
     <MakeDir Directories="$(_WasmIntermediateOutputPath)" />
@@ -393,7 +393,7 @@
       <WasmOptConfigurationFlags ParameterType="Microsoft.Build.Framework.ITaskItem[]" Required="false" Output="true" />
       <EmccDefaultExportedFunctions ParameterType="Microsoft.Build.Framework.ITaskItem[]" Required="false" Output="true" />
       <EmccDefaultExportedRuntimeMethods ParameterType="Microsoft.Build.Framework.ITaskItem[]" Required="false" Output="true" />
-      <BoolPropertiesThatTriggerRelinking ParameterType="Microsoft.Build.Framework.ITaskItem[]" Required="false" Output="true" />
+      <PropertiesThatTriggerRelinking ParameterType="Microsoft.Build.Framework.ITaskItem[]" Required="false" Output="true" />
     </ParameterGroup>
   </UsingTask>
 
@@ -405,7 +405,7 @@
 
       <!-- shared by browser/wasi -->
       <Output TaskParameter="WasmOptConfigurationFlags" ItemName="_DefaulWasmOptConfigurationFlags" />
-      <Output TaskParameter="BoolPropertiesThatTriggerRelinking" ItemName="_BoolPropertiesThatTriggerRelinking" />
+      <Output TaskParameter="PropertiesThatTriggerRelinking" ItemName="_PropertiesThatTriggerRelinking" />
     </ReadWasmProps>
 
     <CreateProperty Value="%(_EmccPropItems.Value)" Condition="%(_EmccPropItems.Identity) != ''">
@@ -511,15 +511,15 @@
            Text="$(_ToolchainMissingErrorMessage) SDK is required for AOT'ing assemblies." />
 
     <ItemGroup>
-      <_ChangedBoolPropertiesThatTriggerRelinking Include="%(_BoolPropertiesThatTriggerRelinking.Identity)" Condition="'$(%(_BoolPropertiesThatTriggerRelinking.Identity))' != '' and
-                                                                                                            '$(%(_BoolPropertiesThatTriggerRelinking.Identity))' != '%(_BoolPropertiesThatTriggerRelinking.DefaultValueInRuntimePack)'" />
+      <_ChangedPropertiesThatTriggerRelinking Include="%(_PropertiesThatTriggerRelinking.Identity)" Condition="'$(%(_PropertiesThatTriggerRelinking.Identity))' != '' and
+                                                                                                            '$(%(_PropertiesThatTriggerRelinking.Identity))' != '%(_PropertiesThatTriggerRelinking.DefaultValueInRuntimePack)'" />
     </ItemGroup>
     <PropertyGroup>
-      <_WasmBuildNativeRequired Condition="@(_ChangedBoolPropertiesThatTriggerRelinking->Count()) > 0">true</_WasmBuildNativeRequired>
+      <_WasmBuildNativeRequired Condition="@(_ChangedPropertiesThatTriggerRelinking->Count()) > 0">true</_WasmBuildNativeRequired>
     </PropertyGroup>
 
     <Error Condition="'$(WasmBuildNative)' == 'false' and '$(_WasmBuildNativeRequired)' == 'true'"
-           Text="WasmBuildNative is required because %(_ChangedBoolPropertiesThatTriggerRelinking.Identity)=$(%(_ChangedBoolPropertiesThatTriggerRelinking.Identity)), but WasmBuildNative is already set to 'false'." />
+           Text="WasmBuildNative is required because %(_ChangedPropertiesThatTriggerRelinking.Identity)=$(%(_ChangedPropertiesThatTriggerRelinking.Identity)), but WasmBuildNative is already set to 'false'." />
 
     <PropertyGroup>
       <WasmBuildNative Condition="'$(WasmBuildNative)' == '' and '$(_WasmBuildNativeRequired)' == 'true'">true</WasmBuildNative>
@@ -621,6 +621,8 @@
 
     <Error Condition="'$(RunAOTCompilation)' == 'true' and '$(PublishTrimmed)' != 'true'"
            Text="AOT is not supported without IL trimming (PublishTrimmed=true required)." />
+    <Error Condition="'$(RunAOTCompilation)' == 'true' and '$(Configuration)' == 'Debug'"
+           Text="AOT is not supported in debug configuration (Configuration=Release required)." />
     <Error Condition="'@(_WasmAssembliesInternal)' == ''" Text="Item _WasmAssembliesInternal is empty" />
     <Error Condition="'$(_IsToolchainMissing)' == 'true'"
            Text="$(_ToolchainMissingErrorMessage) SDK is required for AOT'ing assemblies." />
@@ -704,7 +706,7 @@
       DisableParallelAot="$(DisableParallelAot)"
       DedupAssembly="$(_WasmDedupAssembly)"
       CacheFilePath="$(_AOTCompilerCacheFile)"
-      LLVMDebug="dwarfdebug"
+      UseDwarfDebug="$(WasmNativeDebugSymbols)"
       LLVMPath="$(_WasmLLVMPathForAOT)"
       CollectTrimmingEligibleMethods="$(WasmStripILAfterAOT)"
       TrimmingEligibleMethodsOutputDirectory="$(_WasmIntermediateOutputPath)tokens"
@@ -929,7 +931,7 @@
   <Target Name="_RunWasmOptPostLink" Condition="'$(WasmRunWasmOpt)' == 'true'">
     <Error Condition="'$(_WasmOutputFileName)' == ''" Text="Could not determine %24(_WasmOutputFileName)" />
 
-    <Exec Command="wasm-opt$(_ExeExt) @(WasmOptConfigurationFlags, ' ') &quot;$(_WasmIntermediateOutputPath)$(_WasmOutputFileName)&quot; -o &quot;$(_WasmIntermediateOutputPath)$(_WasmOutputFileName)&quot;"
+    <Exec Command="wasm-opt$(_ExeExt) --enable-simd --enable-exception-handling --enable-bulk-memory @(WasmOptConfigurationFlags, ' ') &quot;$(_WasmIntermediateOutputPath)$(_WasmOutputFileName)&quot; -o &quot;$(_WasmIntermediateOutputPath)$(_WasmOutputFileName)&quot;"
           IgnoreStandardErrorWarningFormat="true"
           EnvironmentVariables="@(WasmToolchainEnvVars)" />
   </Target>

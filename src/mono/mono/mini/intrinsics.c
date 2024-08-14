@@ -508,11 +508,13 @@ emit_unsafe_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignatu
 		EMIT_NEW_BIALU (cfg, ins, OP_COMPARE, -1, args [0]->dreg, args [1]->dreg);
 		EMIT_NEW_UNALU (cfg, ins, OP_PCGT_UN, dreg, -1);
 		return ins;
-	} else if (!strcmp (cmethod->name, "Add")) {
+	} else if (!strcmp (cmethod->name, "Add") || !strcmp (cmethod->name, "Subtract")) {
 		g_assert (ctx);
 		g_assert (ctx->method_inst);
 		g_assert (ctx->method_inst->type_argc == 1);
 		g_assert (fsig->param_count == 2);
+
+		int op = (!strcmp (cmethod->name, "Add")) ? OP_PADD : OP_PSUB;
 
 		int mul_reg = alloc_preg (cfg);
 
@@ -535,18 +537,20 @@ MONO_RESTORE_WARNING
 		ins->type = STACK_PTR;
 
 		int dreg = alloc_preg (cfg);
-		EMIT_NEW_BIALU (cfg, ins, OP_PADD, dreg, args [0]->dreg, mul_reg);
+		EMIT_NEW_BIALU (cfg, ins, op, dreg, args [0]->dreg, mul_reg);
 		ins->type = STACK_PTR;
 		return ins;
-	} else if (!strcmp (cmethod->name, "AddByteOffset")) {
+	} else if (!strcmp (cmethod->name, "AddByteOffset") || !strcmp (cmethod->name, "SubtractByteOffset")) {
 		g_assert (ctx);
 		g_assert (ctx->method_inst);
 		g_assert (ctx->method_inst->type_argc == 1);
 		g_assert (fsig->param_count == 2);
 
+		int op = (!strcmp (cmethod->name, "AddByteOffset")) ? OP_PADD : OP_PSUB;
+
 		if (fsig->params [1]->type == MONO_TYPE_I || fsig->params [1]->type == MONO_TYPE_U) {
 			int dreg = alloc_preg (cfg);
-			EMIT_NEW_BIALU (cfg, ins, OP_PADD, dreg, args [0]->dreg, args [1]->dreg);
+			EMIT_NEW_BIALU (cfg, ins, op, dreg, args [0]->dreg, args [1]->dreg);
 			ins->type = STACK_PTR;
 			return ins;
 		} else if (fsig->params [1]->type == MONO_TYPE_U8) {
@@ -558,7 +562,7 @@ MONO_DISABLE_WARNING(4127) /* conditional expression is constant */
 			}
 MONO_RESTORE_WARNING
 			int dreg = alloc_preg (cfg);
-			EMIT_NEW_BIALU (cfg, ins, OP_PADD, dreg, args [0]->dreg, sreg);
+			EMIT_NEW_BIALU (cfg, ins, op, dreg, args [0]->dreg, sreg);
 			ins->type = STACK_PTR;
 			return ins;
 		}
@@ -578,29 +582,33 @@ MONO_RESTORE_WARNING
 		}
 		ins->type = STACK_I4;
 		return ins;
-	} else if (!strcmp (cmethod->name, "ReadUnaligned")) {
+	} else if (!strcmp (cmethod->name, "ReadUnaligned") || !strcmp (cmethod->name, "Read")) {
 		g_assert (ctx);
 		g_assert (ctx->method_inst);
 		g_assert (ctx->method_inst->type_argc == 1);
 		g_assert (fsig->param_count == 1);
 
+		int flag = (!strcmp (cmethod->name, "ReadUnaligned")) ? MONO_INST_UNALIGNED : 0;
+
 		t = ctx->method_inst->type_argv [0];
 		t = mini_get_underlying_type (t);
 		if (cfg->gshared && t != ctx->method_inst->type_argv [0] && MONO_TYPE_ISSTRUCT (t) && mono_class_check_context_used (mono_class_from_mono_type_internal (t)))
 			cfg->prefer_instances = TRUE;
-		return mini_emit_memory_load (cfg, t, args [0], 0, MONO_INST_UNALIGNED);
-	} else if (!strcmp (cmethod->name, "WriteUnaligned")) {
+		return mini_emit_memory_load (cfg, t, args [0], 0, flag);
+	} else if (!strcmp (cmethod->name, "WriteUnaligned") || !strcmp (cmethod->name, "Write")) {
 		g_assert (ctx);
 		g_assert (ctx->method_inst);
 		g_assert (ctx->method_inst->type_argc == 1);
 		g_assert (fsig->param_count == 2);
 
+		int flag = (!strcmp (cmethod->name, "WriteUnaligned")) ? MONO_INST_UNALIGNED : 0;
+
 		t = ctx->method_inst->type_argv [0];
 
 		t = mini_get_underlying_type (t);
 		if (cfg->gshared && t != ctx->method_inst->type_argv [0] && MONO_TYPE_ISSTRUCT (t) && mono_class_check_context_used (mono_class_from_mono_type_internal (t)))
 			cfg->prefer_instances = TRUE;
-		mini_emit_memory_store (cfg, t, args [0], args [1], MONO_INST_UNALIGNED);
+		mini_emit_memory_store (cfg, t, args [0], args [1], flag);
 		MONO_INST_NEW (cfg, ins, OP_NOP);
 		MONO_ADD_INS (cfg->cbb, ins);
 		return ins;
@@ -613,6 +621,142 @@ MONO_RESTORE_WARNING
 		int dreg = alloc_preg (cfg);
 		EMIT_NEW_BIALU (cfg, ins, OP_PSUB, dreg, args [1]->dreg, args [0]->dreg);
 		ins->type = STACK_PTR;
+		return ins;
+	} else if (!strcmp (cmethod->name, "BitCast")) {
+		g_assert (ctx);
+		g_assert (ctx->method_inst);
+		g_assert (ctx->method_inst->type_argc == 2);
+		g_assert (fsig->param_count == 1);
+
+		// We explicitly do not handle gsharedvt as it is meant as a slow fallback strategy
+		// instead we fallback to the managed implementation which will do the right things
+
+		MonoType *tfrom = ctx->method_inst->type_argv [0];
+		if (mini_is_gsharedvt_variable_type (tfrom)) {
+			return NULL;
+		}
+
+		MonoType *tto = ctx->method_inst->type_argv [1];
+		if (mini_is_gsharedvt_variable_type (tto)) {
+			return NULL;
+		}
+
+		// The underlying API always throws for reference type inputs, so we
+		// fallback to the managed implementation to let that handling occur
+
+		MonoTypeEnum tfrom_type = tfrom->type;
+		if (MONO_TYPE_IS_REFERENCE (tfrom)) {
+			return NULL;
+		}
+
+		MonoTypeEnum tto_type = tto->type;
+		if (MONO_TYPE_IS_REFERENCE (tto)) {
+			return NULL;
+		}
+
+		// We also always throw for Nullable<T> inputs, so fallback to the
+		// managed implementation here as well.
+
+		MonoClass *tfrom_klass = mono_class_from_mono_type_internal (tfrom);
+		if (mono_class_is_nullable (tfrom_klass)) {
+			return NULL;
+		}
+
+		MonoClass *tto_klass = mono_class_from_mono_type_internal (tto);
+		if (mono_class_is_nullable (tto_klass)) {
+			return NULL;
+		}
+
+		// The same applies for when the type sizes do not match, as this will always throw
+		// and so its not an expected case and we can fallback to the managed implementation
+
+		int tfrom_align, tto_align;
+		gint32 size = mono_type_size (tfrom, &tfrom_align);
+
+		if (size != mono_type_size (tto, &tto_align)) {
+			return NULL;
+		}
+		g_assert (size < G_MAXUINT16);
+
+		// We have several different move opcodes to handle the data depending on the
+		// source and target types, so detect and optimize the most common ones falling
+		// back to what is effectively `ReadUnaligned<TTo>(ref As<TFrom, byte>(ref source))`
+		// for anything that can't be special cased as potentially zero-cost move.
+
+		guint32 opcode = OP_LDADDR;
+		MonoStackType tto_stack = STACK_OBJ;
+
+		bool tfrom_is_primitive_or_enum = false;
+		if (m_class_is_primitive(tfrom_klass)) {
+			tfrom_is_primitive_or_enum = true;
+		} else if (m_class_is_enumtype(tfrom_klass)) {
+			tfrom_is_primitive_or_enum = true;
+			tfrom_type = mono_class_enum_basetype_internal(tfrom_klass)->type;
+		}
+
+		bool tto_is_primitive_or_enum = false;
+		if (m_class_is_primitive(tto_klass)) {
+			tto_is_primitive_or_enum = true;
+		} else if (m_class_is_enumtype(tto_klass)) {
+			tto_is_primitive_or_enum = true;
+			tto_type = mono_class_enum_basetype_internal(tto_klass)->type;
+		}
+
+		if (tfrom_is_primitive_or_enum && tto_is_primitive_or_enum) {
+			if (size == 1) {
+				opcode = (tto_type == MONO_TYPE_I1) ? OP_ICONV_TO_I1 : OP_ICONV_TO_U1;
+				tto_stack = STACK_I4;
+			} else if (size == 2) {
+				opcode = (tto_type == MONO_TYPE_I2) ? OP_ICONV_TO_I2 : OP_ICONV_TO_U2;
+				tto_stack = STACK_I4;
+			} else if (size == 4) {
+				if ((tfrom_type == MONO_TYPE_R4) && ((tto_type == MONO_TYPE_I4) || (tto_type == MONO_TYPE_U4))) {
+					opcode = OP_MOVE_F_TO_I4;
+					tto_stack = STACK_I4;
+				} else if ((tto_type == MONO_TYPE_R4) && ((tfrom_type == MONO_TYPE_I4) || (tfrom_type == MONO_TYPE_U4))) {
+					opcode = OP_MOVE_I4_TO_F;
+					tto_stack = STACK_R4;
+				} else {
+					opcode = OP_MOVE;
+					tto_stack = STACK_I4;
+				}
+			} else if (size == 8) {
+#if TARGET_SIZEOF_VOID_P == 8
+					if ((tfrom_type == MONO_TYPE_R8) && ((tto_type == MONO_TYPE_I8) || (tto_type == MONO_TYPE_U8))) {
+						opcode = OP_MOVE_F_TO_I8;
+						tto_stack = STACK_I8;
+					} else if ((tto_type == MONO_TYPE_R8) && ((tfrom_type == MONO_TYPE_I8) || (tfrom_type == MONO_TYPE_U8))) {
+						opcode = OP_MOVE_I8_TO_F;
+						tto_stack = STACK_R8;
+					} else {
+						opcode = OP_MOVE;
+						tto_stack = STACK_I8;
+					}
+#else
+					return NULL;
+#endif
+			}
+		} else if (mini_class_is_simd (cfg, tfrom_klass) && mini_class_is_simd (cfg, tto_klass)) {
+#if TARGET_SIZEOF_VOID_P == 8
+				opcode = OP_XCAST;
+				tto_stack = STACK_VTYPE;
+#else
+				return NULL;
+#endif
+		}
+
+		if (opcode == OP_LDADDR) {
+			MonoInst *addr;
+			EMIT_NEW_VARLOADA_VREG (cfg, addr, args [0]->dreg, tfrom);
+			addr->klass = tfrom_klass;
+
+			return mini_emit_memory_load (cfg, tto, addr, 0, MONO_INST_UNALIGNED);
+		}
+
+		int dreg = mono_alloc_dreg (cfg, tto_stack);
+		EMIT_NEW_UNALU (cfg, ins, opcode, dreg, args [0]->dreg);
+		ins->type = tto_stack;
+		ins->klass = tto_klass;
 		return ins;
 	} else if (!strcmp (cmethod->name, "Unbox")) {
 		g_assert (ctx);
@@ -660,16 +804,6 @@ MONO_RESTORE_WARNING
 	else if (!strcmp (cmethod->name, "SkipInit")) {
  		MONO_INST_NEW (cfg, ins, OP_NOP);
 		MONO_ADD_INS (cfg->cbb, ins);
-		return ins;
-	} else if (!strcmp (cmethod->name, "SubtractByteOffset")) {
-		g_assert (ctx);
-		g_assert (ctx->method_inst);
-		g_assert (ctx->method_inst->type_argc == 1);
-		g_assert (fsig->param_count == 2);
-
-		int dreg = alloc_preg (cfg);
-		EMIT_NEW_BIALU (cfg, ins, OP_PSUB, dreg, args [0]->dreg, args [1]->dreg);
-		ins->type = STACK_PTR;
 		return ins;
 	} else if (!strcmp (cmethod->name, "IsNullRef")) {
 		g_assert (fsig->param_count == 1);
@@ -2138,7 +2272,25 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 	if (in_corlib &&
 		((!strcmp ("System.Numerics", cmethod_klass_name_space) && !strcmp ("Vector", cmethod_klass_name)) ||
 		!strncmp ("System.Runtime.Intrinsics", cmethod_klass_name_space, 25))) {
-		if (!strcmp (cmethod->name, "get_IsHardwareAccelerated")) {
+		const char* cmethod_name = cmethod->name;
+
+		if (strncmp(cmethod_name, "System.Runtime.Intrinsics.ISimdVector<System.Runtime.Intrinsics.Vector", 70) == 0) {
+			// We want explicitly implemented ISimdVector<TSelf, T> APIs to still be expanded where possible
+			// but, they all prefix the qualified name of the interface first, so we'll check for that and
+			// skip the prefix before trying to resolve the method.
+
+			if (strncmp(cmethod_name + 70, "<T>,T>.", 7) == 0) {
+				cmethod_name += 77;
+			} else if (strncmp(cmethod_name + 70, "64<T>,T>.", 9) == 0) {
+				cmethod_name += 79;
+			} else if ((strncmp(cmethod_name + 70, "128<T>,T>.", 10) == 0) ||
+				(strncmp(cmethod_name + 70, "256<T>,T>.", 10) == 0) ||
+				(strncmp(cmethod_name + 70, "512<T>,T>.", 10) == 0)) {
+				cmethod_name += 80;
+			}
+		}
+		
+		if (!strcmp (cmethod_name, "get_IsHardwareAccelerated")) {
 			EMIT_NEW_ICONST (cfg, ins, 0);
 			ins->type = STACK_I4;
 			return ins;

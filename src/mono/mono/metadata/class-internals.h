@@ -1465,6 +1465,14 @@ mono_class_has_default_constructor (MonoClass *klass, gboolean public_only);
 gboolean
 mono_method_has_unmanaged_callers_only_attribute (MonoMethod *method);
 
+typedef struct _MonoVarianceSearchTableEntry {
+    MonoClass *klass;
+    int offset;
+} MonoVarianceSearchTableEntry;
+
+MonoVarianceSearchTableEntry *
+mono_class_get_variance_search_table (MonoClass *klass, int *table_size);
+
 // There are many ways to do on-demand initialization.
 //   Some allow multiple concurrent initializations. Some do not.
 //   Some allow multiple concurrent writes to the global. Some do not.

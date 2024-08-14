@@ -2119,6 +2119,7 @@ access_reg(unw_addr_space_t as, unw_regnum_t regnum, unw_word_t *valp, int write
 #elif defined(TARGET_LOONGARCH64)
     case UNW_LOONGARCH64_R1:    *valp = (unw_word_t)winContext->Ra; break;
     case UNW_LOONGARCH64_R2:    *valp = (unw_word_t)winContext->Tp; break;
+    case UNW_LOONGARCH64_R3:    *valp = (unw_word_t)winContext->Sp; break;
     case UNW_LOONGARCH64_R22:   *valp = (unw_word_t)winContext->Fp; break;
     case UNW_LOONGARCH64_R23:   *valp = (unw_word_t)winContext->S0; break;
     case UNW_LOONGARCH64_R24:   *valp = (unw_word_t)winContext->S1; break;

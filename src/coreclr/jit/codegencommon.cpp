@@ -30,6 +30,8 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #include "patchpointinfo.h"
 #include "optcse.h" // for cse metrics
 
+#include "jitstd/algorithm.h"
+
 /*****************************************************************************/
 
 void CodeGenInterface::setFramePointerRequiredEH(bool value)
@@ -1514,8 +1516,22 @@ void CodeGen::genExitCode(BasicBlock* block)
     bool jmpEpilog = block->HasFlag(BBF_HAS_JMP);
     if (compiler->getNeedsGSSecurityCookie())
     {
+#ifndef JIT32_GCENCODER
+        // At this point the gc info that we track in codegen is often incorrect,
+        // as it could be missing return registers or arg registers (in a case of tail call).
+        // GS cookie check will emit a call and that will pass our GC info to emit and potentially mess things up.
+        // While we could infer returns/args and force them to be live and it seems to work in JIT32_GCENCODER case,
+        // it appears to be nontrivial in more general case.
+        // So, instead, we just claim that the whole thing is not GC-interruptible.
+        // Effectively this starts the epilog a few instructions earlier.
+        //
+        // CONSIDER: is that a good place to be that codegen loses track of returns/args at this point?
+        GetEmitter()->emitDisableGC();
+#endif
+
         genEmitGSCookieCheck(jmpEpilog);
 
+#ifdef JIT32_GCENCODER
         if (jmpEpilog)
         {
             // Dev10 642944 -
@@ -1538,6 +1554,7 @@ void CodeGen::genExitCode(BasicBlock* block)
             GetEmitter()->emitThisGCrefRegs = GetEmitter()->emitInitGCrefRegs = gcInfo.gcRegGCrefSetCur;
             GetEmitter()->emitThisByrefRegs = GetEmitter()->emitInitByrefRegs = gcInfo.gcRegByrefSetCur;
         }
+#endif
     }
 
     genReserveEpilog(block);
@@ -2404,8 +2421,16 @@ void CodeGen::genReportEH()
     // Tell the VM how many EH clauses to expect.
     compiler->eeSetEHcount(EHCount);
 
-    XTnum = 0; // This is the index we pass to the VM
+    struct EHClauseInfo
+    {
+        CORINFO_EH_CLAUSE clause;
+        EHblkDsc*         HBtab;
+    };
 
+    EHClauseInfo* clauses = new (compiler, CMK_Codegen) EHClauseInfo[compiler->compHndBBtabCount];
+
+    // Set up EH clause table, but don't report anything to the VM, yet.
+    XTnum = 0;
     for (EHblkDsc* const HBtab : EHClauses(compiler))
     {
         UNATIVE_OFFSET tryBeg, tryEnd, hndBeg, hndEnd, hndTyp;
@@ -2427,7 +2452,43 @@ void CodeGen::genReportEH()
             hndTyp = HBtab->ebdTyp;
         }
 
-        CORINFO_EH_CLAUSE_FLAGS flags = ToCORINFO_EH_CLAUSE_FLAGS(HBtab->ebdHandlerType);
+        // Note that we reuse the CORINFO_EH_CLAUSE type, even though the names of
+        // the fields aren't accurate.
+
+        CORINFO_EH_CLAUSE clause;
+        clause.ClassToken    = hndTyp; /* filter offset is passed back here for filter-based exception handlers */
+        clause.Flags         = ToCORINFO_EH_CLAUSE_FLAGS(HBtab->ebdHandlerType);
+        clause.TryOffset     = tryBeg;
+        clause.TryLength     = tryEnd;
+        clause.HandlerOffset = hndBeg;
+        clause.HandlerLength = hndEnd;
+        clauses[XTnum++]     = {clause, HBtab};
+    }
+
+    // The JIT's ordering of EH clauses does not guarantee that clauses covering the same try region are contiguous.
+    // We need this property to hold true so the CORINFO_EH_CLAUSE_SAMETRY flag is accurate.
+    jitstd::sort(clauses, clauses + compiler->compHndBBtabCount,
+                 [this](const EHClauseInfo& left, const EHClauseInfo& right) {
+        const unsigned short leftTryIndex  = left.HBtab->ebdTryBeg->bbTryIndex;
+        const unsigned short rightTryIndex = right.HBtab->ebdTryBeg->bbTryIndex;
+
+        if (leftTryIndex == rightTryIndex)
+        {
+            // We have two clauses mapped to the same try region.
+            // Make sure we report the clause with the smaller index first.
+            const ptrdiff_t leftIndex  = left.HBtab - this->compiler->compHndBBtab;
+            const ptrdiff_t rightIndex = right.HBtab - this->compiler->compHndBBtab;
+            return leftIndex < rightIndex;
+        }
+
+        return leftTryIndex < rightTryIndex;
+    });
+
+    // Now, report EH clauses to the VM in order of increasing try region index.
+    for (XTnum = 0; XTnum < compiler->compHndBBtabCount; XTnum++)
+    {
+        CORINFO_EH_CLAUSE& clause = clauses[XTnum].clause;
+        EHblkDsc* const    HBtab  = clauses[XTnum].HBtab;
 
         if (XTnum > 0)
         {
@@ -2436,33 +2497,18 @@ void CodeGen::genReportEH()
             // native code offsets because of different try blocks can have same offsets. Alternative
             // solution to this problem would be inserting extra nops to ensure that different try
             // blocks have different offsets.
-            if (EHblkDsc::ebdIsSameTry(HBtab, HBtab - 1))
+            if (EHblkDsc::ebdIsSameTry(HBtab, clauses[XTnum - 1].HBtab))
             {
                 // The SAMETRY bit should only be set on catch clauses. This is ensured in IL, where only 'catch' is
                 // allowed to be mutually-protect. E.g., the C# "try {} catch {} catch {} finally {}" actually exists in
                 // IL as "try { try {} catch {} catch {} } finally {}".
                 assert(HBtab->HasCatchHandler());
-                flags = (CORINFO_EH_CLAUSE_FLAGS)(flags | CORINFO_EH_CLAUSE_SAMETRY);
+                clause.Flags = (CORINFO_EH_CLAUSE_FLAGS)(clause.Flags | CORINFO_EH_CLAUSE_SAMETRY);
             }
         }
 
-        // Note that we reuse the CORINFO_EH_CLAUSE type, even though the names of
-        // the fields aren't accurate.
-
-        CORINFO_EH_CLAUSE clause;
-        clause.ClassToken    = hndTyp; /* filter offset is passed back here for filter-based exception handlers */
-        clause.Flags         = flags;
-        clause.TryOffset     = tryBeg;
-        clause.TryLength     = tryEnd;
-        clause.HandlerOffset = hndBeg;
-        clause.HandlerLength = hndEnd;
-
         assert(XTnum < EHCount);
-
-        // Tell the VM about this EH clause.
         compiler->eeSetEHinfo(XTnum, &clause);
-
-        ++XTnum;
     }
 
     // Now output duplicated clauses.
@@ -3170,6 +3216,13 @@ var_types CodeGen::genParamStackType(LclVarDsc* dsc, const ABIPassingSegment& se
             // can always use the full register size here. This allows us to
             // use stp more often.
             return TYP_I_IMPL;
+#elif defined(TARGET_RISCV64) || defined(TARGET_LOONGARCH64)
+            // On RISC-V/LoongArch structs passed according to floating-point calling convention are enregistered one
+            // field per register regardless of the field layout in memory, so the small int load/store instructions
+            // must not be upsized to 4 bytes, otherwise for example:
+            // * struct { struct{} e1,e2,e3; byte b; float f; } -- 4-byte store for 'b' would trash 'f'
+            // * struct { float f; struct{} e1,e2,e3; byte b; } -- 4-byte store for 'b' would trash adjacent stack slot
+            return seg.GetRegisterType();
 #else
             return genActualType(seg.GetRegisterType());
 #endif
@@ -4024,9 +4077,15 @@ void CodeGen::genZeroInitFrame(int untrLclHi, int untrLclLo, regNumber initReg, 
                 continue;
             }
 
-            // TODO-Review: I'm not sure that we're correctly handling the mustInit case for
-            // partially-enregistered vars in the case where we don't use a block init.
-            noway_assert(varDsc->lvIsInReg() || varDsc->lvOnFrame);
+            // Locals that are (only) in registers to begin with do not need
+            // their stack home zeroed. Their register will be zeroed later in
+            // the prolog.
+            if (varDsc->lvIsInReg() && !varDsc->lvLiveInOutOfHndlr)
+            {
+                continue;
+            }
+
+            noway_assert(varDsc->lvOnFrame);
 
             // lvMustInit can only be set for GC types or TYP_STRUCT types
             // or when compInitMem is true
@@ -4034,11 +4093,6 @@ void CodeGen::genZeroInitFrame(int untrLclHi, int untrLclLo, regNumber initReg, 
 
             noway_assert(varTypeIsGC(varDsc->TypeGet()) || (varDsc->TypeGet() == TYP_STRUCT) ||
                          compiler->info.compInitMem || compiler->opts.compDbgCode);
-
-            if (!varDsc->lvOnFrame)
-            {
-                continue;
-            }
 
             if ((varDsc->TypeGet() == TYP_STRUCT) && !compiler->info.compInitMem &&
                 (varDsc->lvExactSize() >= TARGET_POINTER_SIZE))
@@ -4689,43 +4743,13 @@ void CodeGen::genReserveProlog(BasicBlock* block)
 
 void CodeGen::genReserveEpilog(BasicBlock* block)
 {
-    regMaskTP gcrefRegsArg = gcInfo.gcRegGCrefSetCur;
-    regMaskTP byrefRegsArg = gcInfo.gcRegByrefSetCur;
-
-    /* The return value is special-cased: make sure it goes live for the epilog */
-
-    bool jmpEpilog = block->HasFlag(BBF_HAS_JMP);
-
-    if (IsFullPtrRegMapRequired() && !jmpEpilog)
-    {
-        if (varTypeIsGC(compiler->info.compRetNativeType))
-        {
-            noway_assert(genTypeStSz(compiler->info.compRetNativeType) == genTypeStSz(TYP_I_IMPL));
-
-            gcInfo.gcMarkRegPtrVal(REG_INTRET, compiler->info.compRetNativeType);
-
-            switch (compiler->info.compRetNativeType)
-            {
-                case TYP_REF:
-                    gcrefRegsArg |= RBM_INTRET;
-                    break;
-                case TYP_BYREF:
-                    byrefRegsArg |= RBM_INTRET;
-                    break;
-                default:
-                    break;
-            }
-
-            JITDUMP("Extending return value GC liveness to epilog\n");
-        }
-    }
-
     JITDUMP("Reserving epilog IG for block " FMT_BB "\n", block->bbNum);
 
     assert(block != nullptr);
-    const VARSET_TP& gcrefVarsArg(GetEmitter()->emitThisGCrefVars);
-    GetEmitter()->emitCreatePlaceholderIG(IGPT_EPILOG, block, gcrefVarsArg, gcrefRegsArg, byrefRegsArg,
-                                          block->IsLast());
+    // We pass empty GC info, because epilog is always an extend IG and will ignore what we pass.
+    // Besides, at this point the GC info that we track in CodeGen is often incorrect.
+    // See comments in genExitCode for more info.
+    GetEmitter()->emitCreatePlaceholderIG(IGPT_EPILOG, block, VarSetOps::MakeEmpty(compiler), 0, 0, block->IsLast());
 }
 
 /*****************************************************************************
@@ -7358,18 +7382,19 @@ void CodeGen::genStructReturn(GenTree* treeNode)
         assert(varDsc->lvIsMultiRegRet);
 
 #if defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
-        // On LoongArch64, for a struct like "{ int, double }", "retTypeDesc" will be "{ TYP_INT, TYP_DOUBLE }",
-        // i. e. not include the padding for the first field, and so the general loop below won't work.
-        var_types type  = retTypeDesc.GetReturnRegType(0);
-        regNumber toReg = retTypeDesc.GetABIReturnReg(0, compiler->info.compCallConv);
-        GetEmitter()->emitIns_R_S(ins_Load(type), emitTypeSize(type), toReg, lclNode->GetLclNum(), 0);
+        var_types type   = retTypeDesc.GetReturnRegType(0);
+        unsigned  offset = retTypeDesc.GetReturnFieldOffset(0);
+        regNumber toReg  = retTypeDesc.GetABIReturnReg(0, compiler->info.compCallConv);
+
+        GetEmitter()->emitIns_R_S(ins_Load(type), emitTypeSize(type), toReg, lclNode->GetLclNum(), offset);
         if (regCount > 1)
         {
             assert(regCount == 2);
-            int offset = genTypeSize(type);
-            type       = retTypeDesc.GetReturnRegType(1);
-            offset     = (int)((unsigned int)offset < genTypeSize(type) ? genTypeSize(type) : offset);
-            toReg      = retTypeDesc.GetABIReturnReg(1, compiler->info.compCallConv);
+            assert(offset + genTypeSize(type) <= retTypeDesc.GetReturnFieldOffset(1));
+            type   = retTypeDesc.GetReturnRegType(1);
+            offset = retTypeDesc.GetReturnFieldOffset(1);
+            toReg  = retTypeDesc.GetABIReturnReg(1, compiler->info.compCallConv);
+
             GetEmitter()->emitIns_R_S(ins_Load(type), emitTypeSize(type), toReg, lclNode->GetLclNum(), offset);
         }
 #else // !TARGET_LOONGARCH64 && !TARGET_RISCV64
@@ -7747,6 +7772,11 @@ void CodeGen::genMultiRegStoreToLocal(GenTreeLclVar* lclNode)
         assert(regCount == varDsc->lvFieldCnt);
     }
 
+#if defined(TARGET_RISCV64) || defined(TARGET_LOONGARCH64)
+    // genMultiRegStoreToLocal is only used for calls on RISC-V and LoongArch
+    const ReturnTypeDesc* returnTypeDesc = actualOp1->AsCall()->GetReturnTypeDesc();
+#endif
+
 #ifdef SWIFT_SUPPORT
     const uint32_t* offsets = nullptr;
     if (actualOp1->IsCall() && (actualOp1->AsCall()->GetUnmanagedCallConv() == CorInfoCallConvExtension::Swift))
@@ -7797,8 +7827,8 @@ void CodeGen::genMultiRegStoreToLocal(GenTreeLclVar* lclNode)
         else
         {
 #if defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
-            // should consider the padding field within a struct.
-            offset = (offset % genTypeSize(srcType)) ? AlignUp(offset, genTypeSize(srcType)) : offset;
+            // Should consider the padding, empty struct fields, etc within a struct.
+            offset = returnTypeDesc->GetReturnFieldOffset(i);
 #endif
 #ifdef SWIFT_SUPPORT
             if (offsets != nullptr)
@@ -8295,7 +8325,7 @@ void CodeGen::genCodeForReuseVal(GenTree* treeNode)
     assert(treeNode->IsReuseRegVal());
 
     // For now, this is only used for constant nodes.
-    assert(treeNode->OperIs(GT_CNS_INT, GT_CNS_DBL, GT_CNS_VEC));
+    assert(treeNode->OperIs(GT_CNS_INT, GT_CNS_DBL, GT_CNS_VEC, GT_CNS_MSK));
     JITDUMP("  TreeNode is marked ReuseReg\n");
 
     if (treeNode->IsIntegralConst(0) && GetEmitter()->emitCurIGnonEmpty())

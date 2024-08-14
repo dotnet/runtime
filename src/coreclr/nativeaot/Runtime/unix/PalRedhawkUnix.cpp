@@ -636,6 +636,11 @@ REDHAWK_PALEXPORT UInt32_BOOL REDHAWK_PALAPI __stdcall PalSwitchToThread()
     return false;
 }
 
+REDHAWK_PALEXPORT UInt32_BOOL REDHAWK_PALAPI PalAreShadowStacksEnabled()
+{
+    return false;
+}
+
 extern "C" UInt32_BOOL CloseHandle(HANDLE handle)
 {
     if ((handle == NULL) || (handle == INVALID_HANDLE_VALUE))
@@ -1070,6 +1075,11 @@ REDHAWK_PALEXPORT UInt32_BOOL REDHAWK_PALAPI PalRegisterHijackCallback(_In_ PalH
     return AddSignalHandler(INJECT_ACTIVATION_SIGNAL, ActivationHandler, &g_previousActivationHandler);
 }
 
+REDHAWK_PALIMPORT HijackFunc* REDHAWK_PALAPI PalGetHijackTarget(HijackFunc* defaultHijackTarget)
+{
+    return defaultHijackTarget;
+}
+
 REDHAWK_PALEXPORT void REDHAWK_PALAPI PalHijack(HANDLE hThread, _In_opt_ void* pThreadToHijack)
 {
     ThreadUnixHandle* threadHandle = (ThreadUnixHandle*)hThread;
@@ -1082,7 +1092,6 @@ REDHAWK_PALEXPORT void REDHAWK_PALAPI PalHijack(HANDLE hThread, _In_opt_ void* p
     // stack overflow too. Those are held in the sigsegv_handler with blocked signals until
     // the process exits.
     // ESRCH may happen on some OSes when the thread is exiting.
-    // The thread should leave cooperative mode, but we could have seen it in its earlier state.
     if ((status == EAGAIN)
      || (status == ESRCH)
 #ifdef __APPLE__
@@ -1125,6 +1134,11 @@ REDHAWK_PALEXPORT uint32_t REDHAWK_PALAPI PalCompatibleWaitAny(UInt32_BOOL alert
     ASSERT(handleCount == 1);
 
     return WaitForSingleObjectEx(pHandles[0], timeout, alertable);
+}
+
+REDHAWK_PALEXPORT HANDLE PalCreateLowMemoryResourceNotification()
+{
+    return NULL;
 }
 
 #if !__has_builtin(_mm_pause)

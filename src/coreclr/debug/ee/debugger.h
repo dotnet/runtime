@@ -2492,7 +2492,7 @@ public:
         }
         CONTRACTL_END;
 
-        if (g_fProcessDetach)
+        if (IsAtProcessExit())
             return true;
 
         if (g_pEEInterface->GetThread())

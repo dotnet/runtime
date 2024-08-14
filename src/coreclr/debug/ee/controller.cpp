@@ -1109,7 +1109,7 @@ void DebuggerController::DisableAll()
         // thus leaving the patchtable in an inconsistent state such that we may fail trying to walk it.
         // Since we're exiting anyways, leaving int3 in the code can't harm anybody.
         //
-        if (!g_fProcessDetach)
+        if (!IsAtProcessExit())
         {
             HASHFIND f;
             for (DebuggerControllerPatch *patch = g_patches->GetFirstPatch(&f);
@@ -3202,7 +3202,7 @@ void DebuggerController::ApplyTraceFlag(Thread *thread)
     g_pEEInterface->MarkThreadForDebugStepping(thread, true);
     LOG((LF_CORDB,LL_INFO1000, "DC::ApplyTraceFlag marked thread for debug stepping\n"));
 
-    SetSSFlag(reinterpret_cast<DT_CONTEXT *>(context) ARM_ARG(thread) ARM64_ARG(thread) RISCV64_ARG(thread));
+    SetSSFlag(reinterpret_cast<DT_CONTEXT *>(context) ARM_ARG(thread) ARM64_ARG(thread) RISCV64_ARG(thread) LOONGARCH64_ARG(thread));
 }
 
 //
@@ -3232,14 +3232,14 @@ void DebuggerController::UnapplyTraceFlag(Thread *thread)
         // so there should be nothing to do. However, we still assert b/c we want to know how
         // we'd actually hit this.
         // @todo - is there a path if TriggerUnwind() calls DisableAll(). But why would
-        CONSISTENCY_CHECK_MSGF(false, ("How did we get here?. thread=%p\n", thread));
+        //CONSISTENCY_CHECK_MSGF(false, ("How did we get here?. thread=%p\n", thread)); it can be caused in a scenario where we are stepping and an AV is thrown
         LOG((LF_CORDB,LL_INFO1000, "DC::UnapplyTraceFlag couldn't get context.\n"));
         return;
     }
 
     // Always need to unmark for stepping
     g_pEEInterface->MarkThreadForDebugStepping(thread, false);
-    UnsetSSFlag(reinterpret_cast<DT_CONTEXT *>(context) ARM_ARG(thread) ARM64_ARG(thread) RISCV64_ARG(thread));
+    UnsetSSFlag(reinterpret_cast<DT_CONTEXT *>(context) ARM_ARG(thread) ARM64_ARG(thread) RISCV64_ARG(thread) LOONGARCH64_ARG(thread));
 }
 
 void DebuggerController::EnableExceptionHook()
@@ -6259,7 +6259,6 @@ void DebuggerStepper::TrapStepOut(ControllerStackInfo *info, bool fForceTraditio
         _ASSERTE(IsCloserToLeaf(dbgLastFP, info->m_activeFrame.fp));
 #endif
 
-#ifdef FEATURE_MULTICASTSTUB_AS_IL
         if (info->m_activeFrame.md != nullptr && info->m_activeFrame.md->IsILStub() && info->m_activeFrame.md->AsDynamicMethodDesc()->IsMulticastStub())
         {
             LOG((LF_CORDB, LL_INFO10000,
@@ -6286,10 +6285,8 @@ void DebuggerStepper::TrapStepOut(ControllerStackInfo *info, bool fForceTraditio
                               true))
                 break;
         }
-        else
-#endif // FEATURE_MULTICASTSTUB_AS_IL
-        if (info->m_activeFrame.md != nullptr && info->m_activeFrame.md->IsILStub() &&
-            info->m_activeFrame.md->AsDynamicMethodDesc()->GetILStubType() == DynamicMethodDesc::StubTailCallCallTarget)
+        else if (info->m_activeFrame.md != nullptr && info->m_activeFrame.md->IsILStub() &&
+                 info->m_activeFrame.md->AsDynamicMethodDesc()->GetILStubType() == DynamicMethodDesc::StubTailCallCallTarget)
         {
             // Normally the stack trace would not include IL stubs, but we
             // include this specific IL stub so that we can check if a call into
@@ -7281,6 +7278,9 @@ void DebuggerStepper::TriggerMethodEnter(Thread * thread,
     // the assert if we end up in the method we started in (which could happen if we trace call
     // instructions before the JMC probe).
     // m_StepInStartMethod may be null (if this step-in didn't start from managed code).
+#if defined(TARGET_ARM64) && defined(__APPLE__)
+    LOG((LF_CORDB, LL_INFO10000, "DebuggerStepper::TriggerMethodEnter: Consistency_check_MSGF not needed because we skip setting breakpoints in certain patches on arm64-macOS\n"));
+#else
     if ((m_StepInStartMethod != pDesc) &&
         (!m_StepInStartMethod->IsLCGMethod()))
     {
@@ -7291,27 +7291,27 @@ void DebuggerStepper::TriggerMethodEnter(Thread * thread,
 
         SString sLog;
         StubManager::DbgGetLog(&sLog);
-
-        // Assert b/c the Stub-manager should have caught us first.
-        // We don't want people relying on TriggerMethodEnter as the real implementation for Traditional Step-in
-        // (see above for reasons why). However, using TME will provide a bandage for the final retail product
-        // in cases where we are missing a stub-manager.
-        CONSISTENCY_CHECK_MSGF(false, (
-            "\nThe Stubmanagers failed to identify and trace a stub on step-in. The stub-managers for this code-path path need to be fixed.\n"
-            "See http://team/sites/clrdev/Devdocs/StubManagers.rtf for more information on StubManagers.\n"
-            "Stepper this=0x%p, startMethod='%s::%s'\n"
-            "---------------------------------\n"
-            "Stub manager log:\n%s"
-            "\n"
-            "The thread is now in managed method '%s::%s'.\n"
-            "---------------------------------\n",
-            this,
-            ((m_StepInStartMethod == NULL) ? "unknown" : m_StepInStartMethod->m_pszDebugClassName),
-            ((m_StepInStartMethod == NULL) ? "unknown" : m_StepInStartMethod->m_pszDebugMethodName),
-            sLog.GetUTF8(),
-            pDesc->m_pszDebugClassName, pDesc->m_pszDebugMethodName
-            ));
+            // Assert b/c the Stub-manager should have caught us first.
+            // We don't want people relying on TriggerMethodEnter as the real implementation for Traditional Step-in
+            // (see above for reasons why). However, using TME will provide a bandage for the final retail product
+            // in cases where we are missing a stub-manager.
+            CONSISTENCY_CHECK_MSGF(false, (
+                "\nThe Stubmanagers failed to identify and trace a stub on step-in. The stub-managers for this code-path path need to be fixed.\n"
+                "See http://team/sites/clrdev/Devdocs/StubManagers.rtf for more information on StubManagers.\n"
+                "Stepper this=0x%p, startMethod='%s::%s'\n"
+                "---------------------------------\n"
+                "Stub manager log:\n%s"
+                "\n"
+                "The thread is now in managed method '%s::%s'.\n"
+                "---------------------------------\n",
+                this,
+                ((m_StepInStartMethod == NULL) ? "unknown" : m_StepInStartMethod->m_pszDebugClassName),
+                ((m_StepInStartMethod == NULL) ? "unknown" : m_StepInStartMethod->m_pszDebugMethodName),
+                sLog.GetUTF8(),
+                pDesc->m_pszDebugClassName, pDesc->m_pszDebugMethodName
+                ));
     }
+#endif //defined(TARGET_ARM64) && defined(__APPLE__)
 #endif
 
     // Place a patch to stop us.

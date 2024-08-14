@@ -184,63 +184,26 @@ internal readonly struct MemberTypeInfo
     {
         (BinaryType binaryType, object? additionalInfo) = Infos[0];
 
-        switch (binaryType)
+        TypeName elementTypeName = binaryType switch
         {
-            case BinaryType.String:
-                return typeof(string).BuildCoreLibArrayTypeName(arrayInfo.Rank);
-            case BinaryType.StringArray:
-                return typeof(string[]).BuildCoreLibArrayTypeName(arrayInfo.Rank);
-            case BinaryType.Object:
-                return typeof(object).BuildCoreLibArrayTypeName(arrayInfo.Rank);
-            case BinaryType.ObjectArray:
-                return typeof(object[]).BuildCoreLibArrayTypeName(arrayInfo.Rank);
-            case BinaryType.Primitive:
-                Type primitiveType = ((PrimitiveType)additionalInfo!) switch
-                {
-                    PrimitiveType.Boolean => typeof(bool),
-                    PrimitiveType.Byte => typeof(byte),
-                    PrimitiveType.Char => typeof(char),
-                    PrimitiveType.Decimal => typeof(decimal),
-                    PrimitiveType.Double => typeof(double),
-                    PrimitiveType.Int16 => typeof(short),
-                    PrimitiveType.Int32 => typeof(int),
-                    PrimitiveType.Int64 => typeof(long),
-                    PrimitiveType.SByte => typeof(sbyte),
-                    PrimitiveType.Single => typeof(float),
-                    PrimitiveType.TimeSpan => typeof(TimeSpan),
-                    PrimitiveType.DateTime => typeof(DateTime),
-                    PrimitiveType.UInt16 => typeof(ushort),
-                    PrimitiveType.UInt32 => typeof(uint),
-                    _ => typeof(ulong),
-                };
+            BinaryType.String => TypeNameHelpers.GetPrimitiveTypeName(PrimitiveType.String),
+            BinaryType.StringArray => TypeNameHelpers.GetPrimitiveSZArrayTypeName(PrimitiveType.String),
+            BinaryType.Primitive => TypeNameHelpers.GetPrimitiveTypeName((PrimitiveType)additionalInfo!),
+            BinaryType.PrimitiveArray => TypeNameHelpers.GetPrimitiveSZArrayTypeName((PrimitiveType)additionalInfo!),
+            BinaryType.Object => TypeNameHelpers.GetPrimitiveTypeName(TypeNameHelpers.ObjectPrimitiveType),
+            BinaryType.ObjectArray => TypeNameHelpers.GetPrimitiveSZArrayTypeName(TypeNameHelpers.ObjectPrimitiveType),
+            BinaryType.SystemClass => (TypeName)additionalInfo!,
+            BinaryType.Class => ((ClassTypeInfo)additionalInfo!).TypeName,
+            _ => throw new ArgumentOutOfRangeException(paramName: nameof(binaryType), actualValue: binaryType, message: null)
+        };
 
-                return primitiveType.BuildCoreLibArrayTypeName(arrayInfo.Rank);
-            case BinaryType.PrimitiveArray:
-                Type primitiveArrayType = ((PrimitiveType)additionalInfo!) switch
-                {
-                    PrimitiveType.Boolean => typeof(bool[]),
-                    PrimitiveType.Byte => typeof(byte[]),
-                    PrimitiveType.Char => typeof(char[]),
-                    PrimitiveType.Decimal => typeof(decimal[]),
-                    PrimitiveType.Double => typeof(double[]),
-                    PrimitiveType.Int16 => typeof(short[]),
-                    PrimitiveType.Int32 => typeof(int[]),
-                    PrimitiveType.Int64 => typeof(long[]),
-                    PrimitiveType.SByte => typeof(sbyte[]),
-                    PrimitiveType.Single => typeof(float[]),
-                    PrimitiveType.TimeSpan => typeof(TimeSpan[]),
-                    PrimitiveType.DateTime => typeof(DateTime[]),
-                    PrimitiveType.UInt16 => typeof(ushort[]),
-                    PrimitiveType.UInt32 => typeof(uint[]),
-                    _ => typeof(ulong[]),
-                };
-
-                return primitiveArrayType.BuildCoreLibArrayTypeName(arrayInfo.Rank);
-            case BinaryType.SystemClass:
-                return ((TypeName)additionalInfo!).BuildArrayTypeName(arrayInfo.Rank);
-            default:
-                Debug.Assert(binaryType is BinaryType.Class, "The parsers should reject other inputs");
-                return (((ClassTypeInfo)additionalInfo!).TypeName).BuildArrayTypeName(arrayInfo.Rank);
-        }
+        // In general, arrayRank == 1 may have two different meanings:
+        // - [] is a single-dimensional array with a zero lower bound (SZArray),
+        // - [*] is a single-dimensional array with an arbitrary lower bound (variable bound array).
+        // Variable bound arrays are not supported by design, so in our case it's always SZArray.
+        // That is why we don't call TypeName.MakeArrayTypeName(1) because it would create [*] instead of [] name.
+        return arrayInfo.Rank == 1
+            ? elementTypeName.MakeSZArrayTypeName()
+            : elementTypeName.MakeArrayTypeName(arrayInfo.Rank);
     }
 }

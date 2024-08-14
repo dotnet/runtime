@@ -6,8 +6,6 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
 
-#pragma warning disable CS8500 // This takes the address of, gets the size of, or declares a pointer to a managed type
-
 namespace System.Numerics.Tensors
 {
     public static unsafe partial class TensorPrimitives
@@ -143,9 +141,12 @@ namespace System.Numerics.Tensors
 
                         // We need to the ensure the underlying data can be aligned and only align
                         // it if it can. It is possible we have an unaligned ref, in which case we
-                        // can never achieve the required SIMD alignment.
+                        // can never achieve the required SIMD alignment. This cannot be done for
+                        // float or double since that changes how results compound together.
 
-                        bool canAlign = ((nuint)xPtr % (nuint)sizeof(T)) == 0;
+                        bool canAlign = (typeof(T) != typeof(float)) &&
+                                        (typeof(T) != typeof(double)) &&
+                                        ((nuint)xPtr % (nuint)sizeof(T)) == 0;
 
                         if (canAlign)
                         {
@@ -158,9 +159,18 @@ namespace System.Numerics.Tensors
                             misalignment = ((uint)sizeof(Vector128<T>) - ((nuint)xPtr % (uint)sizeof(Vector128<T>))) / (uint)sizeof(T);
 
                             xPtr += misalignment;
-
                             Debug.Assert(((nuint)xPtr % (uint)sizeof(Vector128<T>)) == 0);
 
+                            remainder -= misalignment;
+                        }
+                        else
+                        {
+                            // We can't align, but this also means we're processing the full data from beg
+                            // so account for that to ensure we don't double process and include them in the
+                            // aggregate twice.
+
+                            misalignment = (uint)Vector128<T>.Count;
+                            xPtr += misalignment;
                             remainder -= misalignment;
                         }
 
@@ -312,9 +322,12 @@ namespace System.Numerics.Tensors
 
                         // We need to the ensure the underlying data can be aligned and only align
                         // it if it can. It is possible we have an unaligned ref, in which case we
-                        // can never achieve the required SIMD alignment.
+                        // can never achieve the required SIMD alignment. This cannot be done for
+                        // float or double since that changes how results compound together.
 
-                        bool canAlign = ((nuint)xPtr % (nuint)sizeof(T)) == 0;
+                        bool canAlign = (typeof(T) != typeof(float)) &&
+                                        (typeof(T) != typeof(double)) &&
+                                        ((nuint)xPtr % (nuint)sizeof(T)) == 0;
 
                         if (canAlign)
                         {
@@ -330,6 +343,16 @@ namespace System.Numerics.Tensors
 
                             Debug.Assert(((nuint)xPtr % (uint)sizeof(Vector256<T>)) == 0);
 
+                            remainder -= misalignment;
+                        }
+                        else
+                        {
+                            // We can't align, but this also means we're processing the full data from beg
+                            // so account for that to ensure we don't double process and include them in the
+                            // aggregate twice.
+
+                            misalignment = (uint)Vector256<T>.Count;
+                            xPtr += misalignment;
                             remainder -= misalignment;
                         }
 
@@ -481,9 +504,12 @@ namespace System.Numerics.Tensors
 
                         // We need to the ensure the underlying data can be aligned and only align
                         // it if it can. It is possible we have an unaligned ref, in which case we
-                        // can never achieve the required SIMD alignment.
+                        // can never achieve the required SIMD alignment. This cannot be done for
+                        // float or double since that changes how results compound together.
 
-                        bool canAlign = ((nuint)xPtr % (nuint)sizeof(T)) == 0;
+                        bool canAlign = (typeof(T) != typeof(float)) &&
+                                        (typeof(T) != typeof(double)) &&
+                                        ((nuint)xPtr % (nuint)sizeof(T)) == 0;
 
                         if (canAlign)
                         {
@@ -499,6 +525,16 @@ namespace System.Numerics.Tensors
 
                             Debug.Assert(((nuint)xPtr % (uint)sizeof(Vector512<T>)) == 0);
 
+                            remainder -= misalignment;
+                        }
+                        else
+                        {
+                            // We can't align, but this also means we're processing the full data from beg
+                            // so account for that to ensure we don't double process and include them in the
+                            // aggregate twice.
+
+                            misalignment = (uint)Vector512<T>.Count;
+                            xPtr += misalignment;
                             remainder -= misalignment;
                         }
 
@@ -1229,9 +1265,12 @@ namespace System.Numerics.Tensors
 
                         // We need to the ensure the underlying data can be aligned and only align
                         // it if it can. It is possible we have an unaligned ref, in which case we
-                        // can never achieve the required SIMD alignment.
+                        // can never achieve the required SIMD alignment. This cannot be done for
+                        // float or double since that changes how results compound together.
 
-                        bool canAlign = ((nuint)xPtr % (nuint)sizeof(T)) == 0;
+                        bool canAlign = (typeof(T) != typeof(float)) &&
+                                        (typeof(T) != typeof(double)) &&
+                                        ((nuint)xPtr % (nuint)sizeof(T)) == 0;
 
                         if (canAlign)
                         {
@@ -1247,6 +1286,19 @@ namespace System.Numerics.Tensors
                             yPtr += misalignment;
 
                             Debug.Assert(((nuint)xPtr % (uint)sizeof(Vector128<T>)) == 0);
+
+                            remainder -= misalignment;
+                        }
+                        else
+                        {
+                            // We can't align, but this also means we're processing the full data from beg
+                            // so account for that to ensure we don't double process and include them in the
+                            // aggregate twice.
+
+                            misalignment = (uint)Vector128<T>.Count;
+
+                            xPtr += misalignment;
+                            yPtr += misalignment;
 
                             remainder -= misalignment;
                         }
@@ -1420,9 +1472,12 @@ namespace System.Numerics.Tensors
 
                         // We need to the ensure the underlying data can be aligned and only align
                         // it if it can. It is possible we have an unaligned ref, in which case we
-                        // can never achieve the required SIMD alignment.
+                        // can never achieve the required SIMD alignment. This cannot be done for
+                        // float or double since that changes how results compound together.
 
-                        bool canAlign = ((nuint)xPtr % (nuint)sizeof(T)) == 0;
+                        bool canAlign = (typeof(T) != typeof(float)) &&
+                                        (typeof(T) != typeof(double)) &&
+                                        ((nuint)xPtr % (nuint)sizeof(T)) == 0;
 
                         if (canAlign)
                         {
@@ -1438,6 +1493,19 @@ namespace System.Numerics.Tensors
                             yPtr += misalignment;
 
                             Debug.Assert(((nuint)xPtr % (uint)sizeof(Vector256<T>)) == 0);
+
+                            remainder -= misalignment;
+                        }
+                        else
+                        {
+                            // We can't align, but this also means we're processing the full data from beg
+                            // so account for that to ensure we don't double process and include them in the
+                            // aggregate twice.
+
+                            misalignment = (uint)Vector256<T>.Count;
+
+                            xPtr += misalignment;
+                            yPtr += misalignment;
 
                             remainder -= misalignment;
                         }
@@ -1611,9 +1679,12 @@ namespace System.Numerics.Tensors
 
                         // We need to the ensure the underlying data can be aligned and only align
                         // it if it can. It is possible we have an unaligned ref, in which case we
-                        // can never achieve the required SIMD alignment.
+                        // can never achieve the required SIMD alignment. This cannot be done for
+                        // float or double since that changes how results compound together.
 
-                        bool canAlign = ((nuint)xPtr % (nuint)sizeof(T)) == 0;
+                        bool canAlign = (typeof(T) != typeof(float)) &&
+                                        (typeof(T) != typeof(double)) &&
+                                        ((nuint)xPtr % (nuint)sizeof(T)) == 0;
 
                         if (canAlign)
                         {
@@ -1629,6 +1700,19 @@ namespace System.Numerics.Tensors
                             yPtr += misalignment;
 
                             Debug.Assert(((nuint)xPtr % (uint)sizeof(Vector512<T>)) == 0);
+
+                            remainder -= misalignment;
+                        }
+                        else
+                        {
+                            // We can't align, but this also means we're processing the full data from beg
+                            // so account for that to ensure we don't double process and include them in the
+                            // aggregate twice.
+
+                            misalignment = (uint)Vector512<T>.Count;
+
+                            xPtr += misalignment;
+                            yPtr += misalignment;
 
                             remainder -= misalignment;
                         }
@@ -2278,28 +2362,28 @@ namespace System.Numerics.Tensors
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static Vector128<T> CreateAlignmentMaskVector128<T>(int count)
         {
-            if (Unsafe.SizeOf<T>() == 1)
+            if (sizeof(T) == 1)
             {
                 return Vector128.LoadUnsafe(
                     ref Unsafe.As<byte, T>(ref MemoryMarshal.GetReference(AlignmentByteMask_64x65)),
                     (uint)(count * 64));
             }
 
-            if (Unsafe.SizeOf<T>() == 2)
+            if (sizeof(T) == 2)
             {
                 return Vector128.LoadUnsafe(
                     ref Unsafe.As<ushort, T>(ref MemoryMarshal.GetReference(AlignmentUInt16Mask_32x33)),
                     (uint)(count * 32));
             }
 
-            if (Unsafe.SizeOf<T>() == 4)
+            if (sizeof(T) == 4)
             {
                 return Vector128.LoadUnsafe(
                     ref Unsafe.As<uint, T>(ref MemoryMarshal.GetReference(AlignmentUInt32Mask_16x17)),
                     (uint)(count * 16));
             }
 
-            Debug.Assert(Unsafe.SizeOf<T>() == 8);
+            Debug.Assert(sizeof(T) == 8);
             {
                 return Vector128.LoadUnsafe(
                     ref Unsafe.As<ulong, T>(ref MemoryMarshal.GetReference(AlignmentUInt64Mask_8x9)),
@@ -2314,28 +2398,28 @@ namespace System.Numerics.Tensors
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static Vector256<T> CreateAlignmentMaskVector256<T>(int count)
         {
-            if (Unsafe.SizeOf<T>() == 1)
+            if (sizeof(T) == 1)
             {
                 return Vector256.LoadUnsafe(
                     ref Unsafe.As<byte, T>(ref MemoryMarshal.GetReference(AlignmentByteMask_64x65)),
                     (uint)(count * 64));
             }
 
-            if (Unsafe.SizeOf<T>() == 2)
+            if (sizeof(T) == 2)
             {
                 return Vector256.LoadUnsafe(
                     ref Unsafe.As<ushort, T>(ref MemoryMarshal.GetReference(AlignmentUInt16Mask_32x33)),
                     (uint)(count * 32));
             }
 
-            if (Unsafe.SizeOf<T>() == 4)
+            if (sizeof(T) == 4)
             {
                 return Vector256.LoadUnsafe(
                     ref Unsafe.As<uint, T>(ref MemoryMarshal.GetReference(AlignmentUInt32Mask_16x17)),
                     (uint)(count * 16));
             }
 
-            Debug.Assert(Unsafe.SizeOf<T>() == 8);
+            Debug.Assert(sizeof(T) == 8);
             {
                 return Vector256.LoadUnsafe(
                     ref Unsafe.As<ulong, T>(ref MemoryMarshal.GetReference(AlignmentUInt64Mask_8x9)),
@@ -2350,28 +2434,28 @@ namespace System.Numerics.Tensors
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static Vector512<T> CreateAlignmentMaskVector512<T>(int count)
         {
-            if (Unsafe.SizeOf<T>() == 1)
+            if (sizeof(T) == 1)
             {
                 return Vector512.LoadUnsafe(
                     ref Unsafe.As<byte, T>(ref MemoryMarshal.GetReference(AlignmentByteMask_64x65)),
                     (uint)(count * 64));
             }
 
-            if (Unsafe.SizeOf<T>() == 2)
+            if (sizeof(T) == 2)
             {
                 return Vector512.LoadUnsafe(
                     ref Unsafe.As<ushort, T>(ref MemoryMarshal.GetReference(AlignmentUInt16Mask_32x33)),
                     (uint)(count * 32));
             }
 
-            if (Unsafe.SizeOf<T>() == 4)
+            if (sizeof(T) == 4)
             {
                 return Vector512.LoadUnsafe(
                     ref Unsafe.As<uint, T>(ref MemoryMarshal.GetReference(AlignmentUInt32Mask_16x17)),
                     (uint)(count * 16));
             }
 
-            Debug.Assert(Unsafe.SizeOf<T>() == 8);
+            Debug.Assert(sizeof(T) == 8);
             {
                 return Vector512.LoadUnsafe(
                     ref Unsafe.As<ulong, T>(ref MemoryMarshal.GetReference(AlignmentUInt64Mask_8x9)),
@@ -2386,28 +2470,28 @@ namespace System.Numerics.Tensors
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static Vector128<T> CreateRemainderMaskVector128<T>(int count)
         {
-            if (Unsafe.SizeOf<T>() == 1)
+            if (sizeof(T) == 1)
             {
                 return Vector128.LoadUnsafe(
                     ref Unsafe.As<byte, T>(ref MemoryMarshal.GetReference(RemainderByteMask_64x65)),
                     (uint)(count * 64) + 48); // last 16 bytes in the row
             }
 
-            if (Unsafe.SizeOf<T>() == 2)
+            if (sizeof(T) == 2)
             {
                 return Vector128.LoadUnsafe(
                     ref Unsafe.As<ushort, T>(ref MemoryMarshal.GetReference(RemainderUInt16Mask_32x33)),
                     (uint)(count * 32) + 24); // last 8 shorts in the row
             }
 
-            if (Unsafe.SizeOf<T>() == 4)
+            if (sizeof(T) == 4)
             {
                 return Vector128.LoadUnsafe(
                     ref Unsafe.As<uint, T>(ref MemoryMarshal.GetReference(RemainderUInt32Mask_16x17)),
                     (uint)(count * 16) + 12); // last 4 ints in the row
             }
 
-            Debug.Assert(Unsafe.SizeOf<T>() == 8);
+            Debug.Assert(sizeof(T) == 8);
             {
                 return Vector128.LoadUnsafe(
                     ref Unsafe.As<ulong, T>(ref MemoryMarshal.GetReference(RemainderUInt64Mask_8x9)),
@@ -2422,28 +2506,28 @@ namespace System.Numerics.Tensors
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static Vector256<T> CreateRemainderMaskVector256<T>(int count)
         {
-            if (Unsafe.SizeOf<T>() == 1)
+            if (sizeof(T) == 1)
             {
                 return Vector256.LoadUnsafe(
                     ref Unsafe.As<byte, T>(ref MemoryMarshal.GetReference(RemainderByteMask_64x65)),
                     (uint)(count * 64) + 32); // last 32 bytes in the row
             }
 
-            if (Unsafe.SizeOf<T>() == 2)
+            if (sizeof(T) == 2)
             {
                 return Vector256.LoadUnsafe(
                     ref Unsafe.As<ushort, T>(ref MemoryMarshal.GetReference(RemainderUInt16Mask_32x33)),
                     (uint)(count * 32) + 16); // last 16 shorts in the row
             }
 
-            if (Unsafe.SizeOf<T>() == 4)
+            if (sizeof(T) == 4)
             {
                 return Vector256.LoadUnsafe(
                     ref Unsafe.As<uint, T>(ref MemoryMarshal.GetReference(RemainderUInt32Mask_16x17)),
                     (uint)(count * 16) + 8); // last 8 ints in the row
             }
 
-            Debug.Assert(Unsafe.SizeOf<T>() == 8);
+            Debug.Assert(sizeof(T) == 8);
             {
                 return Vector256.LoadUnsafe(
                     ref Unsafe.As<ulong, T>(ref MemoryMarshal.GetReference(RemainderUInt64Mask_8x9)),
@@ -2458,28 +2542,28 @@ namespace System.Numerics.Tensors
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static Vector512<T> CreateRemainderMaskVector512<T>(int count)
         {
-            if (Unsafe.SizeOf<T>() == 1)
+            if (sizeof(T) == 1)
             {
                 return Vector512.LoadUnsafe(
                     ref Unsafe.As<byte, T>(ref MemoryMarshal.GetReference(RemainderByteMask_64x65)),
                     (uint)(count * 64));
             }
 
-            if (Unsafe.SizeOf<T>() == 2)
+            if (sizeof(T) == 2)
             {
                 return Vector512.LoadUnsafe(
                     ref Unsafe.As<ushort, T>(ref MemoryMarshal.GetReference(RemainderUInt16Mask_32x33)),
                     (uint)(count * 32));
             }
 
-            if (Unsafe.SizeOf<T>() == 4)
+            if (sizeof(T) == 4)
             {
                 return Vector512.LoadUnsafe(
                     ref Unsafe.As<uint, T>(ref MemoryMarshal.GetReference(RemainderUInt32Mask_16x17)),
                     (uint)(count * 16));
             }
 
-            Debug.Assert(Unsafe.SizeOf<T>() == 8);
+            Debug.Assert(sizeof(T) == 8);
             {
                 return Vector512.LoadUnsafe(
                     ref Unsafe.As<ulong, T>(ref MemoryMarshal.GetReference(RemainderUInt64Mask_8x9)),

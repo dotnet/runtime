@@ -19,17 +19,18 @@
     <_WasiCompileRspPath>$(NativeBinDir)src\wasi-compile.rsp</_WasiCompileRspPath>
     <_WasiLinkRspPath>$(NativeBinDir)src\wasi-link.rsp</_WasiLinkRspPath>
     <WasmNativeStrip Condition="'$(ContinuousIntegrationBuild)' == 'true'">false</WasmNativeStrip>
-    <WasiSdkRoot Condition="'$(WasiSdkRoot)' == ''">$(WASI_SDK_PATH)</WasiSdkRoot>
-    <WasiClang>$(WasiSdkRoot)\bin\clang</WasiClang>
+    <WASI_SDK_PATH Condition="'$(WASI_SDK_PATH)' == '' or !Exists('$(WASI_SDK_PATH)/VERSION24')">$([MSBuild]::NormalizeDirectory($(MSBuildThisFileDirectory), 'wasi-sdk'))</WASI_SDK_PATH>
+    <WASI_SDK_PATH>$([MSBuild]::EnsureTrailingSlash('$(WASI_SDK_PATH)').Replace('\', '/'))</WASI_SDK_PATH>
+    <WasiClang>$(WASI_SDK_PATH)bin/clang</WasiClang>
     <WasiClang Condition="$([MSBuild]::IsOSPlatform('Windows'))">$(WasiClang).exe</WasiClang>
-    <WasiLLVMAr>$(WasiSdkRoot)\bin\llvm-ar</WasiLLVMAr>
+    <WasiLLVMAr>$(WASI_SDK_PATH)bin/llvm-ar</WasiLLVMAr>
     <WasiLLVMAr Condition="$([MSBuild]::IsOSPlatform('Windows'))">$(WasiLLVMAr).exe</WasiLLVMAr>
   </PropertyGroup>
 
   <Target Name="CheckEnv">
     <Error Condition="'$(TargetArchitecture)' != 'wasm'" Text="Expected TargetArchitecture==wasm, got '$(TargetArchitecture)'"/>
     <Error Condition="'$(TargetOS)' != 'wasi'" Text="Expected TargetOS==wasi, got '$(TargetOS)'"/>
-    <Error Condition="'$(WASI_SDK_PATH)' == ''" Text="The WASI_SDK_PATH environment variable should be set pointing to the WASI SDK root dir."/>
+    <Error Condition="'$(WASI_SDK_PATH)' == '' or !Exists('$(WASI_SDK_PATH)/VERSION24')" Text="The WASI_SDK_PATH environment variable should be set pointing to the WASI SDK root dir and match expected version."/>
   </Target>
 
   <ItemGroup>
@@ -49,6 +50,7 @@
       <WasmPInvokeModule Include="libSystem.Native" />
       <WasmPInvokeModule Include="libSystem.IO.Compression.Native" />
       <WasmPInvokeModule Include="libSystem.Globalization.Native" />
+      <WasmPInvokeModule Include="libz" />
       <WasmPInvokeAssembly Include="@(LibrariesRuntimeFiles)" Condition="'%(Extension)' == '.dll' and '%(IsNative)' != 'true'" />
     </ItemGroup>
 
@@ -145,8 +147,8 @@
       <_WasiCompileFlags Include="-D_WASI_EMULATED_PROCESS_CLOCKS"/>
       <_WasiCompileFlags Include="-D_WASI_EMULATED_SIGNAL"/>
       <_WasiCompileFlags Include="-D_WASI_EMULATED_MMAN"/>
-      <!-- keep in sync with src\mono\wasi\build\WasiApp.Native.targets -->
-      <!-- keep stack-size in sync with wasm_get_stack_size until after https://github.com/llvm/llvm-project/commit/1532be98f99384990544bd5289ba339bca61e15b in WASI SDK -->
+      <!-- keep in sync with src\mono\wasi\build\WasiApp.targets -->
+      <!-- keep in sync with src\native\libs\CMakeLists.txt -->
       <_WasiLinkFlags Include="-Wl,-z,stack-size=8388608,--initial-memory=52428800,-lwasi-emulated-process-clocks,-lwasi-emulated-signal,-lwasi-emulated-mman"/>
     </ItemGroup>
 
@@ -156,7 +158,7 @@
 {
   "items": {
     "WasmOptConfigurationFlags": [@(WasmOptConfigurationFlags -> '%22%(Identity)%22', ',')],
-    "BoolPropertiesThatTriggerRelinking": [
+    "PropertiesThatTriggerRelinking": [
       { "identity": "InvariantTimezone",      "defaultValueInRuntimePack": "$(InvariantTimezone)" },
       { "identity": "InvariantGlobalization", "defaultValueInRuntimePack": "$(InvariantGlobalization)" },
       { "identity": "WasmNativeStrip",        "defaultValueInRuntimePack": "$(WasmNativeStrip)" },
@@ -200,22 +202,28 @@
                                   $(ICULibDir)/libicui18n.a;
                                   $(ICULibDir)/libicudata.a" />
       <ICULibFiles Include="$(ICULibDir)/*.dat" />
+      <WASIComponentImports Include="$(RepoRoot)src/libraries/System.Net.Http/src/System/Net/Http/WasiHttpHandler/WasiHttpWorld_component_type.wit" />
     </ItemGroup>
     <PropertyGroup>
       <PInvokeTableFile>$(WasiObjDir)\pinvoke-table.h</PInvokeTableFile>
       <InterpToNativeTableFile>$(WasiObjDir)\wasm_m2n_invoke.g.h</InterpToNativeTableFile>
-      <WASI_SDK_PATH>$([MSBuild]::EnsureTrailingSlash('$(WASI_SDK_PATH)').Replace('\', '/'))</WASI_SDK_PATH>
-
       <CMakeConfigurationWasiFlags Condition="'$(Configuration)' == 'Debug'">-g -Os -DDEBUG=1 -DENABLE_AOT_PROFILER=1</CMakeConfigurationWasiFlags>
       <CMakeConfigurationWasiFlags Condition="'$(Configuration)' == 'Release'">-Oz </CMakeConfigurationWasiFlags>
 
       <CMakeConfigurationLinkFlags Condition="'$(Configuration)' == 'Debug'"  >$(CMakeConfigurationWasiFlags)</CMakeConfigurationLinkFlags>
       <CMakeConfigurationLinkFlags Condition="'$(Configuration)' == 'Release'">-O2</CMakeConfigurationLinkFlags>
 
+      <!-- 
+      this together with some DLLImports makes dependency on wasi:http@0.2.0
+      it will get trimmed when HTTP is not used and using publish + native rebuild
+      but the default dotnet.wasm and requires -S http argument to wasmtime
+      -->
+      <CMakeConfigurationLinkFlags>$(CMakeBuildRuntimeConfigureCmd) -Wl,--component-type,&quot;$([MSBuild]::NormalizePath('$(RepoRoot)', 'src/libraries/System.Net.Http/src/System/Net/Http/WasiHttpHandler/WasiHttpWorld_component_type.wit').Replace('\','/'))&quot;</CMakeConfigurationLinkFlags>
+
       <CMakeBuildRuntimeConfigureCmd>cmake $(MSBuildThisFileDirectory)runtime</CMakeBuildRuntimeConfigureCmd>
       <CMakeBuildRuntimeConfigureCmd Condition="'$(OS)' == 'Windows_NT'">cmake -G Ninja $(MSBuildThisFileDirectory)runtime</CMakeBuildRuntimeConfigureCmd>
 
-      <CMakeBuildRuntimeConfigureCmd>$(CMakeBuildRuntimeConfigureCmd) --no-warn-unused-cli -DCMAKE_TOOLCHAIN_FILE=&quot;$([MSBuild]::NormalizePath('$(WASI_SDK_PATH)', 'share/cmake/wasi-sdk.cmake'))&quot;</CMakeBuildRuntimeConfigureCmd>
+      <CMakeBuildRuntimeConfigureCmd>$(CMakeBuildRuntimeConfigureCmd) --no-warn-unused-cli -DCMAKE_TOOLCHAIN_FILE=&quot;$([MSBuild]::NormalizePath('$(WASI_SDK_PATH)', 'share/cmake/wasi-sdk-p2.cmake'))&quot;</CMakeBuildRuntimeConfigureCmd>
       <CMakeBuildRuntimeConfigureCmd>$(CMakeBuildRuntimeConfigureCmd) -DWASI_SDK_PREFIX=$(WASI_SDK_PATH)</CMakeBuildRuntimeConfigureCmd>
       <CMakeBuildRuntimeConfigureCmd>$(CMakeBuildRuntimeConfigureCmd) -DCMAKE_SYSROOT=$(WASI_SDK_PATH)share/wasi-sysroot</CMakeBuildRuntimeConfigureCmd>
       <CMakeBuildRuntimeConfigureCmd>$(CMakeBuildRuntimeConfigureCmd) -DCMAKE_CXX_FLAGS="--sysroot=$(WASI_SDK_PATH)share/wasi-sysroot"</CMakeBuildRuntimeConfigureCmd>
@@ -266,7 +274,8 @@
 
     <Copy SourceFiles="@(ICULibFiles);
                        @(ICULibNativeFiles);
-                       @(_WasmArchivedTimezones);"
+                       @(_WasmArchivedTimezones);
+                       @(WASIComponentImports);"
           DestinationFolder="$(NativeBinDir)"
           SkipUnchangedFiles="true" />
 
@@ -284,7 +293,7 @@
           DestinationFolder="$(MicrosoftNetCoreAppRuntimePackNativeDir)"
           SkipUnchangedFiles="true" />
 
-    <Copy SourceFiles="@(IcuDataFiles);@(ICULibNativeFiles);@(_WasmArchivedTimezones)"
+    <Copy SourceFiles="@(IcuDataFiles);@(ICULibNativeFiles);@(_WasmArchivedTimezones);@(WASIComponentImports);"
           DestinationFolder="$(MicrosoftNetCoreAppRuntimePackNativeDir)"
           SkipUnchangedFiles="true" />
 

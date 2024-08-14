@@ -238,7 +238,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         [Fact]
         public unsafe void CreateFunctionInternal()
         {
-            Func<bool> internals = Utils.CreateFunctionBool("return INTERNAL.mono_wasm_runtime_is_ready");
+            Func<bool> internals = Utils.CreateFunctionBool("return true");
             Assert.True(internals());
         }
 
@@ -1146,6 +1146,17 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             await Task.Delay(100);
             Assert.True(task.IsCompleted);
             await task;
+        }
+
+        [Fact]
+        public async Task JsImportResolvedPromiseReturnsCompletedTask()
+        {
+            var promise = JavaScriptTestHelper.ReturnResolvedPromise();
+#if !FEATURE_WASM_MANAGED_THREADS
+            Assert.False(promise.IsCompleted);
+#endif
+            await promise;
+            Assert.True(promise.IsCompleted);
         }
 
         #endregion

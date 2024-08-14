@@ -200,7 +200,7 @@ namespace System.Runtime
                 // disallow all exceptions leaking out of callbacks
             }
 #else
-            Debug.Assert(false, "Unhandled exceptions should be processed by the native runtime only");
+            Debug.Fail("Unhandled exceptions should be processed by the native runtime only");
 #endif
         }
 
@@ -279,12 +279,11 @@ namespace System.Runtime
                 isFirstFrame = false;
             }
 #else
-#pragma warning disable CS8500
             fixed (EH.ExInfo* pExInfo = &exInfo)
             {
                 InternalCalls.RhpAppendExceptionStackFrame(ObjectHandleOnStack.Create(ref exception), ip, sp, flags, pExInfo);
             }
-#pragma warning restore CS8500
+
             // Clear flags only if we called the function
             isFirstRethrowFrame = false;
             isFirstFrame = false;
@@ -430,7 +429,7 @@ namespace System.Runtime
                     return new InvalidCastException();
 
                 default:
-                    Debug.Assert(false, "unexpected ExceptionID");
+                    Debug.Fail("unexpected ExceptionID");
                     FallbackFailFast(RhFailFastReason.InternalError, null);
                     return null;
             }
@@ -461,7 +460,7 @@ namespace System.Runtime
             // the rest of the struct is left unspecified.
         }
 
-        // N.B. -- These values are burned into the throw helper assembly code and are also known the the
+        // N.B. -- These values are burned into the throw helper assembly code and are also known to the
         //         StackFrameIterator code.
         [Flags]
         internal enum ExKind : byte
@@ -686,20 +685,18 @@ namespace System.Runtime
             if (unwoundReversePInvoke)
             {
                 object exceptionObj = exInfo.ThrownException;
-#pragma warning disable CS8500
                 fixed (EH.ExInfo* pExInfo = &exInfo)
                 {
                     InternalCalls.RhpCallCatchFunclet(
                         ObjectHandleOnStack.Create(ref exceptionObj), null, exInfo._frameIter.RegisterSet, pExInfo);
                 }
-#pragma warning restore CS8500
             }
             else
             {
                 InternalCalls.ResumeAtInterceptionLocation(exInfo._frameIter.RegisterSet);
             }
 
-            Debug.Assert(false, "unreachable");
+            Debug.Fail("unreachable");
             FallbackFailFast(RhFailFastReason.InternalError, null);
         }
 #endif // !NATIVEAOT
@@ -906,7 +903,7 @@ namespace System.Runtime
                     pReversePInvokePropagationContext, pReversePInvokePropagationCallback, frameIter.RegisterSet, ref exInfo, frameIter.PreviousTransitionFrame);
                 // the helper should jump to propagation handler and not return
 #endif
-                Debug.Assert(false, "unreachable");
+                Debug.Fail("unreachable");
                 FallbackFailFast(RhFailFastReason.InternalError, null);
             }
 #endif // FEATURE_OBJCMARSHAL
@@ -922,16 +919,14 @@ namespace System.Runtime
             InternalCalls.RhpCallCatchFunclet(
                 exceptionObj, pCatchHandler, frameIter.RegisterSet, ref exInfo);
 #else // NATIVEAOT
-#pragma warning disable CS8500
             fixed (EH.ExInfo* pExInfo = &exInfo)
             {
                 InternalCalls.RhpCallCatchFunclet(
                     ObjectHandleOnStack.Create(ref exceptionObj), pCatchHandler, frameIter.RegisterSet, pExInfo);
             }
-#pragma warning restore CS8500
 #endif // NATIVEAOT
             // currently, RhpCallCatchFunclet will resume after the catch
-            Debug.Assert(false, "unreachable");
+            Debug.Fail("unreachable");
             FallbackFailFast(RhFailFastReason.InternalError, null);
         }
 
@@ -1209,12 +1204,10 @@ namespace System.Runtime
 #if NATIVEAOT
                 InternalCalls.RhpCallFinallyFunclet(pFinallyHandler, exInfo._frameIter.RegisterSet);
 #else // NATIVEAOT
-#pragma warning disable CS8500
                 fixed (EH.ExInfo* pExInfo = &exInfo)
                 {
                     InternalCalls.RhpCallFinallyFunclet(pFinallyHandler, exInfo._frameIter.RegisterSet, pExInfo);
                 }
-#pragma warning restore CS8500
 #endif // NATIVEAOT
                 exInfo._idxCurClause = MaxTryRegionIdx;
             }
