@@ -72,9 +72,9 @@ namespace System.Reflection.Metadata
 #if SYSTEM_REFLECTION_METADATA
         private TypeName(string? fullName,
             AssemblyNameInfo? assemblyName,
-            TypeName? elementOrGenericType = default,
-            TypeName? declaringType = default,
-            ImmutableArray<TypeName> genericTypeArguments = default,
+            TypeName? elementOrGenericType,
+            TypeName? declaringType,
+            ImmutableArray<TypeName> genericTypeArguments,
             sbyte rankOrModifier = default,
             int nestedNameLength = -1)
         {

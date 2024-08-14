@@ -68,25 +68,44 @@ internal static class TypeNameHelpers
 
     internal static PrimitiveType GetPrimitiveType<T>()
     {
-        if (typeof(T) == typeof(bool)) return PrimitiveType.Boolean;
-        else if (typeof(T) == typeof(byte)) return PrimitiveType.Byte;
-        else if (typeof(T) == typeof(sbyte)) return PrimitiveType.SByte;
-        else if (typeof(T) == typeof(char)) return PrimitiveType.Char;
-        else if (typeof(T) == typeof(short)) return PrimitiveType.Int16;
-        else if (typeof(T) == typeof(ushort)) return PrimitiveType.UInt16;
-        else if (typeof(T) == typeof(int)) return PrimitiveType.Int32;
-        else if (typeof(T) == typeof(uint)) return PrimitiveType.UInt32;
-        else if (typeof(T) == typeof(long)) return PrimitiveType.Int64;
-        else if (typeof(T) == typeof(ulong)) return PrimitiveType.UInt64;
-        else if (typeof(T) == typeof(float)) return PrimitiveType.Single;
-        else if (typeof(T) == typeof(double)) return PrimitiveType.Double;
-        else if (typeof(T) == typeof(decimal)) return PrimitiveType.Decimal;
-        else if (typeof(T) == typeof(DateTime)) return PrimitiveType.DateTime;
-        else if (typeof(T) == typeof(TimeSpan)) return PrimitiveType.TimeSpan;
-        else if (typeof(T) == typeof(string)) return PrimitiveType.String;
-        else if (typeof(T) == typeof(IntPtr)) return IntPtrPrimitiveType;
-        else if (typeof(T) == typeof(UIntPtr)) return UIntPtrPrimitiveType;
-        else throw new InvalidOperationException();
+        if (typeof(T) == typeof(bool))
+            return PrimitiveType.Boolean;
+        else if (typeof(T) == typeof(byte))
+            return PrimitiveType.Byte;
+        else if (typeof(T) == typeof(sbyte))
+            return PrimitiveType.SByte;
+        else if (typeof(T) == typeof(char))
+            return PrimitiveType.Char;
+        else if (typeof(T) == typeof(short))
+            return PrimitiveType.Int16;
+        else if (typeof(T) == typeof(ushort))
+            return PrimitiveType.UInt16;
+        else if (typeof(T) == typeof(int))
+            return PrimitiveType.Int32;
+        else if (typeof(T) == typeof(uint))
+            return PrimitiveType.UInt32;
+        else if (typeof(T) == typeof(long))
+            return PrimitiveType.Int64;
+        else if (typeof(T) == typeof(ulong))
+            return PrimitiveType.UInt64;
+        else if (typeof(T) == typeof(float))
+            return PrimitiveType.Single;
+        else if (typeof(T) == typeof(double))
+            return PrimitiveType.Double;
+        else if (typeof(T) == typeof(decimal))
+            return PrimitiveType.Decimal;
+        else if (typeof(T) == typeof(DateTime))
+            return PrimitiveType.DateTime;
+        else if (typeof(T) == typeof(TimeSpan))
+            return PrimitiveType.TimeSpan;
+        else if (typeof(T) == typeof(string))
+            return PrimitiveType.String;
+        else if (typeof(T) == typeof(IntPtr))
+            return IntPtrPrimitiveType;
+        else if (typeof(T) == typeof(UIntPtr))
+            return UIntPtrPrimitiveType;
+        else
+            throw new InvalidOperationException();
     }
 
     internal static TypeName ParseNonSystemClassRecordTypeName(this string rawName, BinaryLibraryRecord libraryRecord, PayloadOptions payloadOptions)
