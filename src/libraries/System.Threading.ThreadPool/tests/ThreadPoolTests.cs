@@ -1394,15 +1394,14 @@ namespace System.Threading.ThreadPools.Tests
                         var done = new AutoResetEvent(false);
 
                         // Receiver
+                        var receiveBuffer = new byte[1];
+                        using var listener = new TcpListener(IPAddress.Loopback, 0);
+                        listener.Start();
                         var t = ThreadTestHelpers.CreateGuardedThread(
                             out Action checkForThreadErrors,
                             out Action waitForThread,
                             async () =>
                             {
-                                using var listener = new TcpListener(IPAddress.Loopback, 55555);
-                                var receiveBuffer = new byte[1];
-                                listener.Start();
-                                done.Set(); // indicate listener started
                                 while (true)
                                 {
                                     // Accept a connection, receive a byte
@@ -1415,7 +1414,6 @@ namespace System.Threading.ThreadPools.Tests
                             });
                         t.IsBackground = true;
                         t.Start();
-                        done.CheckedWait(); // wait for listener to start
 
                         // Sender
                         var sendBuffer = new byte[1];
@@ -1423,7 +1421,7 @@ namespace System.Threading.ThreadPools.Tests
                         {
                             // Connect, send a byte
                             using var client = new TcpClient();
-                            await client.ConnectAsync(IPAddress.Loopback, 55555);
+                            await client.ConnectAsync((IPEndPoint)listener.LocalEndpoint);
                             int bytesSent =
                                 await client.Client.SendAsync(new ArraySegment<byte>(sendBuffer), SocketFlags.None);
                             Assert.Equal(1, bytesSent);
