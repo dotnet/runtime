@@ -8,6 +8,7 @@ using System.Runtime.CompilerServices;
 using System.Runtime.ExceptionServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
+using System.Security.Authentication;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading;
 using System.Threading.Channels;
@@ -217,6 +218,10 @@ public sealed partial class QuicConnection : IAsyncDisposable
     /// Set when CONNECTED is received.
     /// </summary>
     private TlsCipherSuite _negotiatedCipherSuite;
+    /// <summary>
+    /// Set when CONNECTED is received.
+    /// </summary>
+    private SslProtocols _negotiatedSslProtocol;
 
     /// <summary>
     /// Will contain TLS secret after CONNECTED event is received and store it into SSLKEYLOGFILE.
@@ -296,6 +301,11 @@ public sealed partial class QuicConnection : IAsyncDisposable
     /// </summary>
     [CLSCompliant(false)]
     public TlsCipherSuite NegotiatedCipherSuite => _negotiatedCipherSuite;
+
+    /// <summary>
+    /// Gets a <see cref="System.Security.Authentication.SslProtocols"/> value that indicates the security protocol used to authenticate this connection.
+    /// </summary>
+    public SslProtocols SslProtocol => _negotiatedSslProtocol;
 
     /// <inheritdoc />
     public override string ToString() => _handle.ToString();
@@ -626,6 +636,11 @@ public sealed partial class QuicConnection : IAsyncDisposable
             QUIC_CIPHER_SUITE.TLS_AES_256_GCM_SHA384 => TlsCipherSuite.TLS_AES_256_GCM_SHA384,
             QUIC_CIPHER_SUITE.TLS_CHACHA20_POLY1305_SHA256 => TlsCipherSuite.TLS_CHACHA20_POLY1305_SHA256,
             _ => default
+        };
+        _negotiatedSslProtocol = info.TlsProtocolVersion switch
+        {
+            QUIC_TLS_PROTOCOL_VERSION.TLS_1_3 => SslProtocols.Tls13,
+            _ => SslProtocols.None
         };
 
         QuicAddr remoteAddress = MsQuicHelpers.GetMsQuicParameter<QuicAddr>(_handle, QUIC_PARAM_CONN_REMOTE_ADDRESS);

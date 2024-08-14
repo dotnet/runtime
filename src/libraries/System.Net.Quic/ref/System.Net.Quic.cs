@@ -31,6 +31,7 @@ namespace System.Net.Quic
         public System.Net.Security.SslApplicationProtocol NegotiatedApplicationProtocol { get { throw null; } }
         [System.CLSCompliantAttribute(false)]
         public System.Net.Security.TlsCipherSuite NegotiatedCipherSuite { get { throw null; } }
+        public System.Security.Authentication.SslProtocols SslProtocol { get { throw null; } }
         public System.Security.Cryptography.X509Certificates.X509Certificate? RemoteCertificate { get { throw null; } }
         public System.Net.IPEndPoint RemoteEndPoint { get { throw null; } }
         public string TargetHostName { get { throw null; } }

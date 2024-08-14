@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Net.Sockets;
 using System.Net.Security;
+using System.Security.Authentication;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading;
 using System.Threading.Tasks;
@@ -52,9 +53,12 @@ namespace System.Net.Quic.Tests
             Assert.Equal(options.ClientAuthenticationOptions.TargetHost, serverConnection.TargetHostName);
 
             Assert.Equal(clientConnection.NegotiatedCipherSuite, serverConnection.NegotiatedCipherSuite);
-            Assert.True(clientConnection.NegotiatedCipherSuite ==  TlsCipherSuite.TLS_AES_128_GCM_SHA256 ||
+            Assert.True(clientConnection.NegotiatedCipherSuite == TlsCipherSuite.TLS_AES_128_GCM_SHA256 ||
                         clientConnection.NegotiatedCipherSuite == TlsCipherSuite.TLS_AES_256_GCM_SHA384 ||
                         clientConnection.NegotiatedCipherSuite == TlsCipherSuite.TLS_CHACHA20_POLY1305_SHA256);
+
+            Assert.Equal(clientConnection.SslProtocol, serverConnection.SslProtocol);
+            Assert.Equal(SslProtocols.Tls13, clientConnection.SslProtocol); // only TLS 1.3 is defined for QUIC at the moment
         }
 
         private static async Task<QuicStream> OpenAndUseStreamAsync(QuicConnection c)
