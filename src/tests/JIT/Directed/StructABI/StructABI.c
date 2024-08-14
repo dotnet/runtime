@@ -246,7 +246,10 @@ union Issue80393_S {
 
 DLLEXPORT union Issue80393_S Issue80393_HFA(union Issue80393_S value)
 {
-    return value;
+    union Issue80393_S result;
+    result.f1_f3.f1 = 1.0 + value.f1_f3.f1;
+    result.f1_f3.f3 = 3.0 + value.f1_f3.f3;
+    return result;
 }
 
 DLLEXPORT struct SingleByte EchoSingleByte(struct SingleByte value)
