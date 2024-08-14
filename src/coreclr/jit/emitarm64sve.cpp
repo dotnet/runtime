@@ -18468,6 +18468,7 @@ void emitter::emitInsPairSanityCheck(instrDesc* firstId, instrDesc* secondId)
     // instruction encoding, or a unary operation with merging predication, but excluding other MOVPRFX instructions."
     // "The prefixed instruction must not use the destination register in any other operand position, even if
     // they have different names but refer to the same architectural register state."
+    // "A predicated MOVPRFX cannot be used with an unpredicated instruction."
     switch (secondId->idInsFmt())
     {
         case IF_SVE_BN_1A: // <Zdn>.D{, <pattern>{, MUL #<imm>}}
@@ -18492,7 +18493,6 @@ void emitter::emitInsPairSanityCheck(instrDesc* firstId, instrDesc* secondId)
         // Tied registers
         case IF_SVE_AM_2A: // <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, #<const>
         case IF_SVE_HM_2A: // <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <const>
-            assert(movprefxIsPredicated);
             break;
 
         case IF_SVE_FU_2A: // <Zda>.<T>, <Zn>.<T>, #<const>
@@ -18515,7 +18515,6 @@ void emitter::emitInsPairSanityCheck(instrDesc* firstId, instrDesc* secondId)
         case IF_SVE_HR_3A: // <Zd>.<T>, <Pg>/M, <Zn>.<T>
         case IF_SVE_HS_3A: // <Zd>.<H|S|D>, <Pg>/M, <Zn>.<H|S|D>
         case IF_SVE_HP_3B: // <Zd>.<H|S|D>, <Pg>/M, <Zn>.<H|S|D>
-            assert(movprefxIsPredicated);
             assert(secondId->idReg1() != secondId->idReg3());
             break;
 
@@ -18594,7 +18593,6 @@ void emitter::emitInsPairSanityCheck(instrDesc* firstId, instrDesc* secondId)
         case IF_SVE_GR_3A: // <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T>
         case IF_SVE_HL_3A: // <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T>
         case IF_SVE_HL_3B: // <Zdn>.H, <Pg>/M, <Zdn>.H, <Zm>.H
-            assert(movprefxIsPredicated);
             assert(secondId->idReg1() != secondId->idReg4());
             break;
 
@@ -18611,7 +18609,6 @@ void emitter::emitInsPairSanityCheck(instrDesc* firstId, instrDesc* secondId)
         case IF_SVE_HU_4A: // <Zda>.<T>, <Pg>/M, <Zn>.<T>, <Zm>.<T>
         case IF_SVE_HU_4B: // <Zda>.H, <Pg>/M, <Zn>.H, <Zm>.H
         case IF_SVE_HV_4A: // <Zdn>.<T>, <Pg>/M, <Zm>.<T>, <Za>.<T>
-            assert(movprefxIsPredicated);
             assert(secondId->idReg1() != secondId->idReg3());
             assert(secondId->idReg1() != secondId->idReg4());
             break;
