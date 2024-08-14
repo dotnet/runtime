@@ -491,29 +491,6 @@ FCFuncStart(gComAwareWeakReferenceFuncs)
     FCFuncElement("HasInteropInfo", ComAwareWeakReferenceNative::HasInteropInfo)
 FCFuncEnd()
 
-#ifdef FEATURE_COMINTEROP
-
-//
-// ECall helpers for the standard managed interfaces.
-//
-
-#define MNGSTDITF_BEGIN_INTERFACE(FriendlyName, strMngItfName, strUCOMMngItfName, strCustomMarshalerName, strCustomMarshalerCookie, strManagedViewName, NativeItfIID, bCanCastOnNativeItfQI) \
-FCFuncStart(g##FriendlyName##Funcs)
-
-#define MNGSTDITF_DEFINE_METH_IMPL(FriendlyName, FCallMethName, MethName, MethSig, FcallDecl) \
-    FCUnreferenced FCFuncElementSig(#MethName, MethSig, FriendlyName::FCallMethName)
-
-#define MNGSTDITF_END_INTERFACE(FriendlyName) \
-FCFuncEnd()
-
-#include "mngstditflist.h"
-
-#undef MNGSTDITF_BEGIN_INTERFACE
-#undef MNGSTDITF_DEFINE_METH_IMPL
-#undef MNGSTDITF_END_INTERFACE
-
-#endif // FEATURE_COMINTEROP
-
 //
 //
 // Class definitions

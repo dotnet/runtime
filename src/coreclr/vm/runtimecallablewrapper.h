@@ -62,7 +62,6 @@
 #include "vars.hpp"
 #include "spinlock.h"
 #include "interoputil.h"
-#include "mngstdinterfaces.h"
 #include "excep.h"
 #include "comcache.h"
 #include "threads.h"

@@ -2556,27 +2556,6 @@ void ComObject::ThrowInvalidCastException(OBJECTREF *pObj, MethodTable *pCastToM
             COMPlusThrow(kInvalidCastException, IDS_EE_RCW_INVALIDCAST_IENUMERABLE,
                 strHRDescription.GetUnicode(), strComObjClassName.GetUnicode(), strCastToName.GetUnicode(), strIID);
         }
-        else if ((pNativeIID = MngStdInterfaceMap::GetNativeIIDForType(thCastTo)) != NULL)
-        {
-            // Convert the source interface IID to a string.
-            WCHAR strNativeItfIID[GUID_STR_BUFFER_LEN];
-            GuidToLPWSTR(*pNativeIID, strNativeItfIID);
-
-            // Query for the interface to determine the failure HRESULT.
-            HRESULT hr2 = pRCW->SafeQueryInterfaceRemoteAware(iid, (IUnknown**)&pItf);
-
-            // If this function was called, it means the QI call failed in the past. If it
-            // no longer fails now, we still need to throw, so throw a generic invalid cast exception.
-            if (SUCCEEDED(hr2))
-                COMPlusThrow(kInvalidCastException, IDS_EE_CANNOTCAST, strComObjClassName.GetUnicode(), strCastToName.GetUnicode());
-
-            // Obtain the textual description of the 2nd HRESULT.
-            SString strHR2Description;
-            GetHRMsg(hr2, strHR2Description);
-
-            COMPlusThrow(kInvalidCastException, IDS_EE_RCW_INVALIDCAST_MNGSTDITF, strHRDescription.GetUnicode(), strComObjClassName.GetUnicode(),
-                strCastToName.GetUnicode(), strIID, strNativeItfIID, strHR2Description.GetUnicode());
-        }
         else
         {
             COMPlusThrow(kInvalidCastException, IDS_EE_RCW_INVALIDCAST_ITF,
