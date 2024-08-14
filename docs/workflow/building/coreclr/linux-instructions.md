@@ -50,13 +50,7 @@ To do cross-building using Docker, you need to use either specific images design
 
 ### Docker Images
 
-This table of images might often become stale as we change our images as our requirements change. The images used for our official builds can be found in [the pipeline resources](/eng/pipelines/common/templates/pipeline-with-resources.yml) of our Azure DevOps builds under the `container` key of the platform you plan to build. These image tags don't include version numbers, and our build infrastructure will automatically use the latest version of the image. You can ensure you are using the latest version by using `docker pull`, for example:
-
-```
-docker pull mcr.microsoft.com/dotnet-buildtools/prereqs:cbl-mariner-2.0-cross-arm64
-```
-
-All official builds are cross-builds with a rootfs for the target OS, and will use the clang version available on the container.
+The images used for our official builds can be found in [the pipeline resources](/eng/pipelines/common/templates/pipeline-with-resources.yml) of our Azure DevOps builds under the `container` key of the platform you plan to build. Our build infrastructure will automatically use the latest version of the image.
 
 | Host OS               | Target OS    | Target Arch     | Image                                                                                  | crossrootfs dir      |
 | --------------------- | ------------ | --------------- | -------------------------------------------------------------------------------------- | -------------------- |
@@ -67,6 +61,17 @@ All official builds are cross-builds with a rootfs for the target OS, and will u
 | Azure Linux (x64)     | Alpine       | arm64 (arm64v8) | `mcr.microsoft.com/dotnet-buildtools/prereqs:azurelinux-3.0-cross-arm64-alpine-net9.0` | `/crossrootfs/arm64` |
 | Azure Linux (x64)     | Ubuntu 16.04 | arm64 (arm64v8) | `mcr.microsoft.com/dotnet-buildtools/prereqs:azurelinux-3.0-cross-arm64-net9.0`        | `/crossrootfs/arm64` |
 | Azure Linux (x64)     | Ubuntu 16.04 | x86             | `mcr.microsoft.com/dotnet-buildtools/prereqs:azurelinux-3.0-cross-x86-net9.0`          | `/crossrootfs/x86`   |
+
+Notes:
+
+- All official builds are cross-builds with a rootfs for the target OS, and use the clang version available on the container.
+- These images are built using Dockerfiles maintained in the [dotnet-buildtools-prereqs-docker repo](https://github.com/dotnet/dotnet-buildtools-prereqs-docker).
+
+
+The following images are used for more extended scenarios, including for community-supported builds, and may require different patterns of use.
+
+| Host OS               | Target OS    | Target Arch     | Image                                                                                  | crossrootfs dir      |
+| --------------------- | ------------ | --------------- | -------------------------------------------------------------------------------------- | -------------------- |
 | Azure Linux (x64)     | Android Bionic | x64           | `mcr.microsoft.com/dotnet-buildtools/prereqs:azurelinux-3.0-cross-android-amd64-net9.0`|                      |
 | Azure Linux (x64)     | Android Bionic (w/OpenSSL) | x64 | `mcr.microsoft.com/dotnet-buildtools/prereqs:azurelinux-3.0-android-openssl-net9.0`  |                      |
 | Azure Linux (x64)     | Android Bionic (w/Docker) | x64 | `mcr.microsoft.com/dotnet-buildtools/prereqs:azurelinux-3.0-android-docker-net9.0`    |                      |
@@ -80,9 +85,6 @@ All official builds are cross-builds with a rootfs for the target OS, and will u
 | Ubuntu (x64)          | Ubuntu 22.04 | x64             | `mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-22.04-debpkg`                      |                      |
 | Ubuntu (x64)          | Tizen 9.0    | Arm32 (armel)   | `mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-22.04-cross-armel-tizen`           | `/crossrootfs/armel` |
 | Ubuntu (x64)          | Ubuntu 20.04 | Arm32 (v6)      | `mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-20.04-cross-armv6-raspbian-10`     | `/crossrootfs/armv6` |
-
-
-These Docker images are built using the Dockerfiles maintained in the [dotnet-buildtools-prereqs-docker repo](https://github.com/dotnet/dotnet-buildtools-prereqs-docker).
 
 ## Build using your own Environment
 
