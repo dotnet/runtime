@@ -4904,11 +4904,6 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
         return gtSetEvalOrderMinOpts(tree);
     }
 
-#ifdef DEBUG
-    /* Clear the GTF_DEBUG_NODE_MORPHED flag as well */
-    tree->gtDebugFlags &= ~GTF_DEBUG_NODE_MORPHED;
-#endif
-
     /* Is this a FP value? */
 
     bool isflt = varTypeIsFloating(tree->TypeGet());
@@ -16866,50 +16861,28 @@ bool Compiler::gtTreeHasSideEffects(GenTree* tree, GenTreeFlags flags /* = GTF_S
         return false;
     }
 
-    if (sideEffectFlags == GTF_CALL)
+    if ((sideEffectFlags == GTF_CALL) && tree->IsHelperCall())
     {
-        if (tree->IsHelperCall())
+        // Generally all trees that contain GT_CALL nodes are considered to have side-effects.
+        // However, for some pure helper calls we lie about this.
+        if (gtNodeHasSideEffects(tree, flags, ignoreCctors))
         {
-            // Generally all trees that contain GT_CALL nodes are considered to have side-effects.
-            // However, for some pure helper calls we lie about this.
-            if (gtNodeHasSideEffects(tree, flags, ignoreCctors))
-            {
-                return true;
-            }
-
-            // The GTF_CALL may be contributed by an operand, so check for
-            // that.
-            bool hasCallInOperand = false;
-            tree->VisitOperands([=, &hasCallInOperand](GenTree* op) {
-                if (gtTreeHasSideEffects(op, GTF_CALL, ignoreCctors))
-                {
-                    hasCallInOperand = true;
-                    return GenTree::VisitResult::Abort;
-                }
-                return GenTree::VisitResult::Continue;
-            });
-
-            return hasCallInOperand;
+            return true;
         }
-        else if (tree->OperIs(GT_INTRINSIC))
-        {
-            if (gtNodeHasSideEffects(tree, flags, ignoreCctors))
-            {
-                return true;
-            }
 
-            if (gtNodeHasSideEffects(tree->AsOp()->gtOp1, flags, ignoreCctors))
+        // The GTF_CALL may be contributed by an operand, so check for
+        // that.
+        bool hasCallInOperand = false;
+        tree->VisitOperands([=, &hasCallInOperand](GenTree* op) {
+            if (gtTreeHasSideEffects(op, GTF_CALL, ignoreCctors))
             {
-                return true;
+                hasCallInOperand = true;
+                return GenTree::VisitResult::Abort;
             }
+            return GenTree::VisitResult::Continue;
+        });
 
-            if ((tree->AsOp()->gtOp2 != nullptr) && gtNodeHasSideEffects(tree->AsOp()->gtOp2, flags, ignoreCctors))
-            {
-                return true;
-            }
-
-            return false;
-        }
+        return hasCallInOperand;
     }
 
     return true;
@@ -26702,16 +26675,27 @@ bool GenTreeHWIntrinsic::OperIsMemoryLoad(GenTree** pAddr) const
 
             case NI_Sve_GatherVector:
             case NI_Sve_GatherVectorByteZeroExtend:
+            case NI_Sve_GatherVectorByteZeroExtendFirstFaulting:
             case NI_Sve_GatherVectorFirstFaulting:
             case NI_Sve_GatherVectorInt16SignExtend:
+            case NI_Sve_GatherVectorInt16SignExtendFirstFaulting:
             case NI_Sve_GatherVectorInt16WithByteOffsetsSignExtend:
+            case NI_Sve_GatherVectorInt16WithByteOffsetsSignExtendFirstFaulting:
             case NI_Sve_GatherVectorInt32SignExtend:
+            case NI_Sve_GatherVectorInt32SignExtendFirstFaulting:
             case NI_Sve_GatherVectorInt32WithByteOffsetsSignExtend:
+            case NI_Sve_GatherVectorInt32WithByteOffsetsSignExtendFirstFaulting:
             case NI_Sve_GatherVectorSByteSignExtend:
+            case NI_Sve_GatherVectorSByteSignExtendFirstFaulting:
             case NI_Sve_GatherVectorUInt16WithByteOffsetsZeroExtend:
+            case NI_Sve_GatherVectorUInt16WithByteOffsetsZeroExtendFirstFaulting:
             case NI_Sve_GatherVectorUInt16ZeroExtend:
+            case NI_Sve_GatherVectorUInt16ZeroExtendFirstFaulting:
             case NI_Sve_GatherVectorUInt32WithByteOffsetsZeroExtend:
+            case NI_Sve_GatherVectorUInt32WithByteOffsetsZeroExtendFirstFaulting:
             case NI_Sve_GatherVectorUInt32ZeroExtend:
+            case NI_Sve_GatherVectorUInt32ZeroExtendFirstFaulting:
+            case NI_Sve_GatherVectorWithByteOffsetFirstFaulting:
             case NI_Sve_GatherVectorWithByteOffsets:
             case NI_Sve_LoadVector:
             case NI_Sve_LoadVectorNonTemporal:
@@ -26832,14 +26816,24 @@ bool GenTreeHWIntrinsic::OperIsMemoryLoad(GenTree** pAddr) const
     {
 #ifdef TARGET_ARM64
         static_assert_no_msg(
-            AreContiguous(NI_Sve_GatherVector, NI_Sve_GatherVectorByteZeroExtend, NI_Sve_GatherVectorFirstFaulting,
-                          NI_Sve_GatherVectorInt16SignExtend, NI_Sve_GatherVectorInt16WithByteOffsetsSignExtend,
-                          NI_Sve_GatherVectorInt32SignExtend, NI_Sve_GatherVectorInt32WithByteOffsetsSignExtend,
-                          NI_Sve_GatherVectorSByteSignExtend, NI_Sve_GatherVectorUInt16WithByteOffsetsZeroExtend,
-                          NI_Sve_GatherVectorUInt16ZeroExtend, NI_Sve_GatherVectorUInt32WithByteOffsetsZeroExtend,
-                          NI_Sve_GatherVectorUInt32ZeroExtend));
-        assert(varTypeIsI(addr) || (varTypeIsSIMD(addr) && ((intrinsicId >= NI_Sve_GatherVector) &&
-                                                            (intrinsicId <= NI_Sve_GatherVectorUInt32ZeroExtend))));
+            AreContiguous(NI_Sve_GatherVector, NI_Sve_GatherVectorByteZeroExtend,
+                          NI_Sve_GatherVectorByteZeroExtendFirstFaulting, NI_Sve_GatherVectorFirstFaulting,
+                          NI_Sve_GatherVectorInt16SignExtend, NI_Sve_GatherVectorInt16SignExtendFirstFaulting,
+                          NI_Sve_GatherVectorInt16WithByteOffsetsSignExtend,
+                          NI_Sve_GatherVectorInt16WithByteOffsetsSignExtendFirstFaulting,
+                          NI_Sve_GatherVectorInt32SignExtend, NI_Sve_GatherVectorInt32SignExtendFirstFaulting,
+                          NI_Sve_GatherVectorInt32WithByteOffsetsSignExtend,
+                          NI_Sve_GatherVectorInt32WithByteOffsetsSignExtendFirstFaulting,
+                          NI_Sve_GatherVectorSByteSignExtend, NI_Sve_GatherVectorSByteSignExtendFirstFaulting,
+                          NI_Sve_GatherVectorUInt16WithByteOffsetsZeroExtend,
+                          NI_Sve_GatherVectorUInt16WithByteOffsetsZeroExtendFirstFaulting,
+                          NI_Sve_GatherVectorUInt16ZeroExtend, NI_Sve_GatherVectorUInt16ZeroExtendFirstFaulting,
+                          NI_Sve_GatherVectorUInt32WithByteOffsetsZeroExtend,
+                          NI_Sve_GatherVectorUInt32WithByteOffsetsZeroExtendFirstFaulting,
+                          NI_Sve_GatherVectorUInt32ZeroExtend, NI_Sve_GatherVectorUInt32ZeroExtendFirstFaulting));
+        assert(varTypeIsI(addr) ||
+               (varTypeIsSIMD(addr) && ((intrinsicId >= NI_Sve_GatherVector) &&
+                                        (intrinsicId <= NI_Sve_GatherVectorUInt32ZeroExtendFirstFaulting))));
 #else
         assert(varTypeIsI(addr));
 #endif
