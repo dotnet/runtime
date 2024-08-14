@@ -435,7 +435,6 @@ namespace ILCompiler.ObjectWriter
                             n.Offset == 0 && isMethod ? nodeContents.Data.Length : 0,
                             global: true,
                             altEntry: n.Offset != 0);
-                            global: true);
 
                         if (n is IMethodNode)
                         {
