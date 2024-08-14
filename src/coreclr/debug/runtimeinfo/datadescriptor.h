@@ -407,6 +407,7 @@ CDAC_TYPE_FIELD(RangeSection, /*pointer*/, NextForDelete, cdac_data<RangeSection
 CDAC_TYPE_FIELD(RangeSection, /*pointer*/, JitManager, cdac_data<RangeSection>::JitManager)
 CDAC_TYPE_FIELD(RangeSection, /*int32_t*/, Flags, cdac_data<RangeSection>::Flags)
 CDAC_TYPE_FIELD(RangeSection, /*pointer*/, HeapList, cdac_data<RangeSection>::HeapList)
+CDAC_TYPE_FIELD(RangeSection, /*pointer*/, R2RModule, cdac_data<RangeSection>::R2RModule)
 CDAC_TYPE_END(RangeSection)
 
 CDAC_TYPE_BEGIN(IJitManager)

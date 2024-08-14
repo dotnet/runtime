@@ -148,17 +148,16 @@ internal readonly partial struct NativeCodePointers_1 : INativeCodePointers
                     return false;
                 }
                 TargetPointer jitManagerAddress = _rangeSection.JitManager;
-                // FIXME(cdac): prototype uses R2RModule to determine if the RangeSection belongs to the JIT or to R2R,
-                // we don't need an extra JitManagerKind field.
-                Data.IJitManager jitManager = target.ProcessedData.GetOrAdd<Data.IJitManager>(_rangeSection.JitManager);
-                switch ((JitManagerKind)jitManager.JitManagerKind)
+                TargetPointer r2rModule = _rangeSection.R2RModule;
+                JitManagerKind jitManagerKind = r2rModule == TargetPointer.Null ? JitManagerKind.EEJitManager : JitManagerKind.ReadyToRunJitManager;
+                switch (jitManagerKind)
                 {
                     case JitManagerKind.EEJitManager:
                         return EEJitCodeToMethodInfo(target, jitManagerAddress, jittedCodeAddress, out info);
                     case JitManagerKind.ReadyToRunJitManager:
                         return ReadyToRunJitCodeToMethodInfo(target, jitManagerAddress, jittedCodeAddress, out info);
                     default:
-                        throw new InvalidOperationException($"Invalid JitManagerKind {jitManager.JitManagerKind}");
+                        throw new InvalidOperationException($"Invalid JitManagerKind");
                 }
             }
 

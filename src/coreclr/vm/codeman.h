@@ -147,7 +147,6 @@ public:
 
 public:
 // if we're using the indirect codeheaders then all enumeration is done by the code header
-
 } RealCodeHeader;
 
 typedef struct _hpCodeHdr
@@ -641,6 +640,7 @@ template<> struct cdac_data<RangeSection>
     static constexpr size_t JitManager = offsetof(RangeSection, _pjit);
     static constexpr size_t Flags = offsetof(RangeSection, _flags);
     static constexpr size_t HeapList = offsetof(RangeSection, _pHeapList);
+    static constexpr size_t R2RModule = offsetof(RangeSection, _pR2RModule);
 };
 
 enum class RangeSectionLockState
@@ -1555,11 +1555,7 @@ public:
     };
 
 #ifndef DACCESS_COMPILE
-protected:
-    enum class JitManagerKind : uint32_t;
-    IJitManager(JitManagerKind);
-
-public:
+    IJitManager();
 #endif // !DACCESS_COMPILE
 
     virtual DWORD GetCodeType() = 0;
@@ -1657,19 +1653,6 @@ public:
 
 protected:
     PTR_ICodeManager m_runtimeSupport;
-    enum class JitManagerKind : uint32_t {
-        EE = 0,
-        ReadyToRun = 1,
-    };
-    JitManagerKind m_jitManagerKind;
-
-    template<typename T> friend struct ::cdac_data;
-};
-
-template<>
-struct cdac_data<IJitManager>
-{
-    static constexpr size_t JitManagerKind = offsetof(IJitManager, m_jitManagerKind);
 };
 
 //-----------------------------------------------------------------------------

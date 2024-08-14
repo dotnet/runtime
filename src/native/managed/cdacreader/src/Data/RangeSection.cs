@@ -17,6 +17,7 @@ internal sealed class RangeSection : IData<RangeSection>
         JitManager = target.ReadPointer(address + (ulong)type.Fields[nameof(JitManager)].Offset);
         Flags = target.Read<int>(address + (ulong)type.Fields[nameof(Flags)].Offset);
         HeapList = target.ReadPointer(address + (ulong)type.Fields[nameof(HeapList)].Offset);
+        R2RModule = target.ReadPointer(address + (ulong)type.Fields[nameof(R2RModule)].Offset);
     }
 
     public TargetPointer RangeBegin { get; init; }
@@ -25,4 +26,5 @@ internal sealed class RangeSection : IData<RangeSection>
     public TargetPointer JitManager { get; init; }
     public TargetPointer HeapList { get; init; }
     public int Flags { get; init; }
+    public TargetPointer R2RModule { get; init; }
 }
