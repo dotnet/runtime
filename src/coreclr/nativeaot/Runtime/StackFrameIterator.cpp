@@ -2139,9 +2139,9 @@ bool StackFrameIterator::Next(uint32_t* puExCollideClauseIdx, bool* pfUnwoundRev
     return isValid;
 }
 
-FCIMPL4(FC_BOOL_RET, RhpSfiInit, StackFrameIterator* pThis, PAL_LIMITED_CONTEXT* pStackwalkCtx, CLR_BOOL instructionFault, CLR_BOOL* pfIsExceptionIntercepted)
+FCIMPL4(FC_BOOL_RET, RhpSfiInit, StackFrameIterator* pThis, PAL_LIMITED_CONTEXT* pStackwalkCtx, FC_BOOL_ARG instructionFault, CLR_BOOL* pfIsExceptionIntercepted)
 {
-    bool isValid = pThis->Init(pStackwalkCtx, instructionFault);
+    bool isValid = pThis->Init(pStackwalkCtx, FC_ACCESS_BOOL(instructionFault));
 
     if (pfIsExceptionIntercepted)
     {

@@ -40,7 +40,6 @@ class ExceptionNative
 public:
     static FCDECL1(FC_BOOL_RET, IsImmutableAgileException, Object* pExceptionUNSAFE);
     static FCDECL1(FC_BOOL_RET, IsTransient, INT32 hresult);
-    static FCDECL3(StringObject *, StripFileInfo, Object *orefExcepUNSAFE, StringObject *orefStrUNSAFE, CLR_BOOL isRemoteStackTrace);
     static FCDECL0(VOID, PrepareForForeignExceptionRaise);
     static FCDECL1(Object *, GetFrozenStackTrace, Object* pExceptionObjectUnsafe);
 

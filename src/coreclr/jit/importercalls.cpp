@@ -6184,6 +6184,18 @@ void Compiler::impPopCallArgs(CORINFO_SIG_INFO* sig, GenTreeCall* call)
             argNode = impImplicitR4orR8Cast(argNode, jitSigType);
             // insert any widening or narrowing casts for backwards compatibility
             argNode = impImplicitIorI4Cast(argNode, jitSigType);
+
+            if ((compAppleArm64Abi() || TargetArchitecture::IsArm32) && call->IsUnmanaged() &&
+                varTypeIsSmall(jitSigType))
+            {
+                // Apple arm64 and arm32 ABIs require arguments to be zero/sign
+                // extended up to 32 bit. The managed ABI does not require
+                // this.
+                if (fgCastNeeded(argNode, jitSigType))
+                {
+                    argNode = gtNewCastNode(TYP_INT, argNode, false, jitSigType);
+                }
+            }
         }
 
         NewCallArg arg;

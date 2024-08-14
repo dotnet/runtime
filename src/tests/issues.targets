@@ -1232,6 +1232,9 @@
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/JitBlue/Runtime_62692/Runtime_62692_*/**">
             <Issue>https://github.com/dotnet/runtime/issues/100368</Issue>
         </ExcludeList>
+        <ExcludeList Include="$(XUnitTestBinBase)/JIT/Regression/JitBlue/Runtime_101046/**">
+            <Issue>https://github.com/dotnet/runtime/issues/106393</Issue>
+        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/Loader/classloader/StaticVirtualMethods/Reabstraction/**">
             <Issue>https://github.com/dotnet/runtime/issues/88775</Issue>
         </ExcludeList>
@@ -2957,6 +2960,9 @@
             <Issue>https://github.com/dotnet/runtime/issues/64127</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XUnitTestBinBase)/JIT/Directed/aliasing_retbuf/aliasing_retbuf/*">
+            <Issue>https://github.com/dotnet/runtime/issues/64127</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XUnitTestBinBase)/JIT/Regression/JitBlue/Runtime_101046/**">
             <Issue>https://github.com/dotnet/runtime/issues/64127</Issue>
         </ExcludeList>
         <ExcludeList Include = "$(XunitTestBinBase)/Loader/classloader/TypeInitialization/CircularCctors/CircularCctorFourThreadsBFI/**">

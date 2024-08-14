@@ -170,9 +170,9 @@ FCIMPL0(int32_t, RhGetMaxGcGeneration)
 }
 FCIMPLEND
 
-FCIMPL2(int32_t, RhGetGcCollectionCount, int32_t generation, CLR_BOOL getSpecialGCCount)
+FCIMPL2(int32_t, RhGetGcCollectionCount, int32_t generation, FC_BOOL_ARG getSpecialGCCount)
 {
-    return GCHeapUtilities::GetGCHeap()->CollectionCount(generation, getSpecialGCCount);
+    return GCHeapUtilities::GetGCHeap()->CollectionCount(generation, FC_ACCESS_BOOL(getSpecialGCCount));
 }
 FCIMPLEND
 

@@ -152,7 +152,7 @@ public:
                    GetStackFramesInternal,
                    StackFrameHelper* pStackFrameHelper,
                    INT32 iSkip,
-                   CLR_BOOL fNeedFileInfo,
+                   FC_BOOL_ARG fNeedFileInfo,
                    Object* pException
                   );
 

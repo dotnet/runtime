@@ -1815,7 +1815,7 @@ FCIMPLEND
 FCIMPL3(Object *, SignatureNative::GetCustomModifiersAtOffset,
     SignatureNative* pSignatureUNSAFE,
     INT32 offset,
-    CLR_BOOL fRequired)
+    FC_BOOL_ARG fRequired)
 {
     FCALL_CONTRACT;
 
@@ -1840,7 +1840,7 @@ FCIMPL3(Object *, SignatureNative::GetCustomModifiersAtOffset,
         INT32 cMods = 0;
         CorElementType cmodType;
 
-        CorElementType cmodTypeExpected = fRequired ? ELEMENT_TYPE_CMOD_REQD : ELEMENT_TYPE_CMOD_OPT;
+        CorElementType cmodTypeExpected = FC_ACCESS_BOOL(fRequired) ? ELEMENT_TYPE_CMOD_REQD : ELEMENT_TYPE_CMOD_OPT;
 
         // Discover the number of required and optional custom modifiers.
         while(TRUE)
