@@ -128,7 +128,7 @@ CodeGen::HWIntrinsicImmOpHelper::HWIntrinsicImmOpHelper(CodeGen*            code
 // Note: This instance is designed to be used via the same for loop as the standard constructor.
 //
 CodeGen::HWIntrinsicImmOpHelper::HWIntrinsicImmOpHelper(
-    CodeGen* codeGen, regNumber immReg, int immLowerBound, int immUpperBound, GenTreeHWIntrinsic* intrin)
+    CodeGen* codeGen, regNumber immReg, int immLowerBound, int immUpperBound, GenTreeHWIntrinsic* intrin, int numInstrs)
     : codeGen(codeGen)
     , endLabel(nullptr)
     , nonZeroLabel(nullptr)
@@ -137,7 +137,7 @@ CodeGen::HWIntrinsicImmOpHelper::HWIntrinsicImmOpHelper(
     , immUpperBound(immUpperBound)
     , nonConstImmReg(immReg)
     , branchTargetReg(REG_NA)
-    , numInstrs(1)
+    , numInstrs(numInstrs)
 {
     assert(codeGen != nullptr);
 
@@ -2584,9 +2584,9 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
             {
                 assert(isRMW);
 
-                HWIntrinsicImmOpHelper helper(this, intrin.op3, node);
+                HWIntrinsicImmOpHelper helper(this, intrin.op3, node, (targetReg != op1Reg) ? 2 : 1);
 
-                for (helper.EmitBegin(); !helper.Done(); helper.EmitCaseEnd(), (targetReg != op1Reg) ? 2 : 1)
+                for (helper.EmitBegin(); !helper.Done(); helper.EmitCaseEnd())
                 {
                     if (targetReg != op1Reg)
                     {
@@ -2635,8 +2635,8 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                     GetEmitter()->emitIns_R_R_R(INS_orr, scalarSize, op4Reg, op4Reg, op5Reg);
 
                     // Generate the table using the combined immediate
-                    HWIntrinsicImmOpHelper helper(this, op4Reg, 0, 7, node);
-                    for (helper.EmitBegin(); !helper.Done(); helper.EmitCaseEnd(), (targetReg != op1Reg) ? 2 : 1)
+                    HWIntrinsicImmOpHelper helper(this, op4Reg, 0, 7, node, (targetReg != op1Reg) ? 2 : 1);
+                    for (helper.EmitBegin(); !helper.Done(); helper.EmitCaseEnd())
                     {
                         if (targetReg != op1Reg)
                         {
