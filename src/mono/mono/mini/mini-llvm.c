@@ -2978,10 +2978,10 @@ build_named_alloca (EmitContext *ctx, MonoType *t, char const *name)
 
 	g_assert (!mini_is_gsharedvt_variable_type (t));
 
-	if (mini_class_is_simd (ctx->cfg, k))
-		align = mono_class_value_size (k, NULL);
+	if (mini_class_is_simd (ctx->cfg, k) && !m_type_is_byref (t))
+		align = mono_class_value_size (k, NULL); // FIXME mono_type_size should report correct alignment
 	else
-		align = mono_class_min_align (k);
+		mono_type_size (t, &align);
 
 	/* Sometimes align is not a power of 2 */
 	while (mono_is_power_of_two (align) == -1)
@@ -6298,6 +6298,9 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			LLVMValueRef cmp, args [16];
 			gboolean likely = (ins->flags & MONO_INST_LIKELY) != 0;
 			gboolean unlikely = FALSE;
+
+			if (!ins->next)
+				break;
 
 			if (MONO_IS_COND_BRANCH_OP (ins->next)) {
 				if (ins->next->inst_false_bb->out_of_line)
