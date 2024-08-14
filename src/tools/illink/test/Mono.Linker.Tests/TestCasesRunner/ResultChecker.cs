@@ -14,6 +14,7 @@ using Mono.Cecil;
 using Mono.Cecil.Cil;
 using Mono.Linker;
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
+using Mono.Linker.Tests.Cases.Expectations.Helpers;
 using Mono.Linker.Tests.Cases.Expectations.Metadata;
 using Mono.Linker.Tests.Extensions;
 using Mono.Linker.Tests.TestCasesRunner.ILVerification;
@@ -370,6 +371,12 @@ namespace Mono.Linker.Tests.TestCasesRunner
 
 							VerifyKeptMemberInAssembly (checkAttrInAssembly, linkedType);
 							break;
+						case nameof (CreatedMemberInAssemblyAttribute):
+							if (linkedType == null)
+								Assert.Fail ($"Type `{expectedTypeName}` should have been kept in assembly {assemblyName}");
+
+							VerifyCreatedMemberInAssembly (checkAttrInAssembly, linkedType);
+							break;
 						case nameof (RemovedForwarderAttribute):
 							if (linkedAssembly.MainModule.ExportedTypes.Any (l => l.Name == expectedTypeName))
 								Assert.Fail ($"Forwarder `{expectedTypeName}' should have been removed from assembly {assemblyName}");
@@ -642,6 +649,26 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			}
 		}
 
+		void VerifyCreatedMemberInAssembly (CustomAttribute inAssemblyAttribute, TypeDefinition linkedType)
+		{
+			var memberNames = (CustomAttributeArgument[]) inAssemblyAttribute.ConstructorArguments[2].Value;
+			Assert.IsTrue (memberNames.Length > 0, "Invalid CreatedMemberInAssemblyAttribute. Expected member names.");
+			foreach (var memberNameAttr in memberNames) {
+				string memberName = (string) memberNameAttr.Value;
+
+				if (TryVerifyCreatedMemberInAssemblyAsField (memberName, linkedType))
+					continue;
+
+				if (TryVerifyCreatedMemberInAssemblyAsProperty (memberName, linkedType))
+					continue;
+
+				if (TryVerifyCreatedMemberInAssemblyAsMethod (memberName, linkedType))
+					continue;
+
+				Assert.Fail ($"Member `{memberName}` on Type `{linkedType}` should have been created");
+			}
+		}
+
 		void VerifyRemovedOverrideOnMethodInAssembly (CustomAttribute attr, TypeDefinition type)
 		{
 			var methodname = (string) attr.ConstructorArguments[2].Value;
@@ -708,6 +735,24 @@ namespace Mono.Linker.Tests.TestCasesRunner
 
 			linkedMethod = null;
 			return false;
+		}
+
+		protected virtual bool TryVerifyCreatedMemberInAssemblyAsField (string memberName, TypeDefinition linkedType)
+		{
+			var linkedField = linkedType.Fields.FirstOrDefault (m => m.Name == memberName);
+			return linkedField != null;
+		}
+
+		protected virtual bool TryVerifyCreatedMemberInAssemblyAsProperty (string memberName, TypeDefinition linkedType)
+		{
+			var linkedProperty = linkedType.Properties.FirstOrDefault (m => m.Name == memberName);
+			return linkedProperty != null;
+		}
+
+		protected virtual bool TryVerifyCreatedMemberInAssemblyAsMethod (string memberName, TypeDefinition linkedType)
+		{
+			var linkedMethod = linkedType.Methods.FirstOrDefault (m => m.GetSignature () == memberName);
+			return linkedMethod != null;
 		}
 
 		void VerifyKeptReferencesInAssembly (CustomAttribute inAssemblyAttribute)

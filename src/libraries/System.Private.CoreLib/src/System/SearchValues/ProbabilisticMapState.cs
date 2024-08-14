@@ -8,8 +8,6 @@ using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
-#pragma warning disable CS8500 // Takes the address of a managed type
-
 namespace System.Buffers
 {
     /// <summary>

@@ -1090,18 +1090,12 @@ void CodeGen::genHWIntrinsic_R_R_RM_I(
 
     assert(targetReg != REG_NA);
 
-    if (op2->isContained() || op2->isUsedFromSpillTemp())
-    {
-        assert(HWIntrinsicInfo::SupportsContainment(node->GetHWIntrinsicId()));
-        assertIsContainableHWIntrinsicOp(compiler->m_pLowering, node, op2);
-    }
-
     if (ins == INS_insertps)
     {
-        if (op1Reg == REG_NA)
+        if (op1->isContained())
         {
             // insertps is special and can contain op1 when it is zero
-            assert(op1->isContained() && op1->IsVectorZero());
+            assert(op1->IsVectorZero());
             op1Reg = targetReg;
         }
 
@@ -1113,6 +1107,12 @@ void CodeGen::genHWIntrinsic_R_R_RM_I(
             GetEmitter()->emitIns_SIMD_R_R_R_I(ins, simdSize, targetReg, op1Reg, op1Reg, ival, instOptions);
             return;
         }
+    }
+
+    if (op2->isContained() || op2->isUsedFromSpillTemp())
+    {
+        assert(HWIntrinsicInfo::SupportsContainment(node->GetHWIntrinsicId()));
+        assertIsContainableHWIntrinsicOp(compiler->m_pLowering, node, op2);
     }
 
     assert(op1Reg != REG_NA);
@@ -1298,9 +1298,7 @@ void CodeGen::genHWIntrinsic_R_R_R_RM_I(
             // non-RMW based codegen.
 
 #if defined(DEBUG)
-            NamedIntrinsic intrinsicId = node->GetHWIntrinsicId();
-            assert((intrinsicId == NI_AVX512F_TernaryLogic) || (intrinsicId == NI_AVX512F_VL_TernaryLogic) ||
-                   (intrinsicId == NI_AVX10v1_TernaryLogic));
+            assert(HWIntrinsicInfo::IsTernaryLogic(node->GetHWIntrinsicId()));
 
             uint8_t                 control  = static_cast<uint8_t>(ival);
             const TernaryLogicInfo& info     = TernaryLogicInfo::lookup(control);
@@ -1310,6 +1308,19 @@ void CodeGen::genHWIntrinsic_R_R_R_RM_I(
 #endif // DEBUG
 
             op2Reg = targetReg;
+        }
+        else
+        {
+#if defined(DEBUG)
+            if (HWIntrinsicInfo::IsTernaryLogic(node->GetHWIntrinsicId()))
+            {
+                uint8_t                 control  = static_cast<uint8_t>(ival);
+                const TernaryLogicInfo& info     = TernaryLogicInfo::lookup(control);
+                TernaryLogicUseFlags    useFlags = info.GetAllUseFlags();
+
+                assert(useFlags == TernaryLogicUseFlags::BC);
+            }
+#endif // DEBUG
         }
     }
 
@@ -2228,7 +2239,7 @@ void CodeGen::genSSE42Intrinsic(GenTreeHWIntrinsic* node, insOpts instOptions)
         {
             assert(instOptions == INS_OPTS_NONE);
 
-            assert((op2->GetRegNum() != targetReg) || (op1Reg == targetReg));
+            assert(!op2->isUsedFromReg() || (op2->GetRegNum() != targetReg) || (op1Reg == targetReg));
             emit->emitIns_Mov(INS_mov, emitTypeSize(targetType), targetReg, op1Reg, /* canSkip */ true);
 
             if ((baseType == TYP_UBYTE) || (baseType == TYP_USHORT)) // baseType is the type of the second argument
@@ -2840,6 +2851,46 @@ void CodeGen::genAvxFamilyIntrinsic(GenTreeHWIntrinsic* node, insOpts instOption
             {
                 assert(count == 64);
                 ins = INS_kxorq;
+            }
+
+            op1Reg = op1->GetRegNum();
+
+            GenTree*  op2    = node->Op(2);
+            regNumber op2Reg = op2->GetRegNum();
+
+            assert(emitter::isMaskReg(targetReg));
+            assert(emitter::isMaskReg(op1Reg));
+            assert(emitter::isMaskReg(op2Reg));
+
+            // Use EA_32BYTE to ensure the VEX.L bit gets set
+            emit->emitIns_R_R_R(ins, EA_32BYTE, targetReg, op1Reg, op2Reg);
+            break;
+        }
+
+        case NI_EVEX_XnorMask:
+        {
+            assert(instOptions == INS_OPTS_NONE);
+
+            uint32_t simdSize = node->GetSimdSize();
+            uint32_t count    = simdSize / genTypeSize(baseType);
+
+            if (count <= 8)
+            {
+                assert((count == 2) || (count == 4) || (count == 8));
+                ins = INS_kxnorb;
+            }
+            else if (count == 16)
+            {
+                ins = INS_kxnorw;
+            }
+            else if (count == 32)
+            {
+                ins = INS_kxnord;
+            }
+            else
+            {
+                assert(count == 64);
+                ins = INS_kxnorq;
             }
 
             op1Reg = op1->GetRegNum();

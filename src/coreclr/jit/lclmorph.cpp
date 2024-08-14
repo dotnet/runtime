@@ -665,12 +665,9 @@ public:
 
         WalkTree(stmt->GetRootNodePointer(), nullptr);
 
-        // If we have an address on the stack then we don't need to do anything.
-        // The address tree isn't actually used and it will be discarded during
-        // morphing. So just mark any value as consumed to keep PopValue happy.
-        INDEBUG(TopValue(0).Consume());
-
+        EscapeValue(TopValue(0), nullptr);
         PopValue();
+
         assert(m_valueStack.Empty());
         m_madeChanges |= m_stmtModified;
 
@@ -1245,17 +1242,16 @@ private:
         LclVarDsc* varDsc = m_compiler->lvaGetDesc(lclNum);
 
         GenTreeFlags defFlag            = GTF_EMPTY;
-        GenTreeCall* callUser           = user->IsCall() ? user->AsCall() : nullptr;
+        GenTreeCall* callUser           = (user != nullptr) && user->IsCall() ? user->AsCall() : nullptr;
         bool         hasHiddenStructArg = false;
         if (m_compiler->opts.compJitOptimizeStructHiddenBuffer && (callUser != nullptr) &&
             m_compiler->IsValidLclAddr(lclNum, val.Offset()))
         {
-            // We will only attempt this optimization for locals that are:
-            // a) Not susceptible to liveness bugs (see "lvaSetHiddenBufferStructArg").
-            // b) Do not later turn into indirections.
-            //
+            // We will only attempt this optimization for locals that do not
+            // later turn into indirections.
             bool isSuitableLocal =
-                varTypeIsStruct(varDsc) && varDsc->lvIsTemp && !m_compiler->lvaIsImplicitByRefLocal(lclNum);
+                varTypeIsStruct(varDsc) && !m_compiler->lvaIsImplicitByRefLocal(lclNum) &&
+                (!varDsc->lvIsStructField || !m_compiler->lvaIsImplicitByRefLocal(varDsc->lvParentLcl));
 #ifdef TARGET_X86
             if (m_compiler->lvaIsArgAccessedViaVarArgsCookie(lclNum))
             {

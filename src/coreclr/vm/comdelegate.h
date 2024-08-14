@@ -45,8 +45,8 @@ public:
     static FCDECL3(void, DelegateConstruct, Object* refThis, Object* target, PCODE method);
 
     // Get the invoke method for the delegate. Used to transition delegates to multicast delegates.
-    static FCDECL1(PCODE, GetMulticastInvoke, Object* refThis);
-    static FCDECL1(MethodDesc*, GetInvokeMethod, Object* refThis);
+    static FCDECL1(PCODE, GetMulticastInvoke, MethodTable* pDelegateMT);
+    static FCDECL1(MethodDesc*, GetInvokeMethod, MethodTable* pDelegateMT);
     static PCODE GetWrapperInvoke(MethodDesc* pMD);
     // determines where the delegate needs to be wrapped for non-security reason
     static BOOL NeedsWrapperDelegate(MethodDesc* pTargetMD);
@@ -113,6 +113,8 @@ public:
                              MethodTable   *pExactMethodType,
                              BOOL           fIsOpenDelegate);
 };
+
+extern "C" PCODE QCALLTYPE Delegate_GetMulticastInvokeSlow(MethodTable* pDelegateMT);
 
 extern "C" PCODE QCALLTYPE Delegate_AdjustTarget(QCall::ObjectHandleOnStack target, PCODE method);
 

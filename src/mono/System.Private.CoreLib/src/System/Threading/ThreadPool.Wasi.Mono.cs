@@ -9,8 +9,6 @@ using System.Runtime.Versioning;
 using System.Diagnostics.CodeAnalysis;
 using Microsoft.Win32.SafeHandles;
 
-#pragma warning disable IDE0060
-
 namespace System.Threading
 {
 #if FEATURE_WASM_MANAGED_THREADS
@@ -37,7 +35,7 @@ namespace System.Threading
     {
         // Indicates whether the thread pool should yield the thread from the dispatch loop to the runtime periodically so that
         // the runtime may use the thread for processing other work
-        internal static bool YieldFromDispatchLoop => true;
+        internal static bool YieldFromDispatchLoop => false;
 
         private const bool IsWorkerTrackingEnabledInConfig = false;
 
@@ -79,7 +77,6 @@ namespace System.Threading
 
         internal static unsafe void RequestWorkerThread()
         {
-            throw new PlatformNotSupportedException();
         }
 
         internal static void NotifyWorkItemProgress()
@@ -90,15 +87,11 @@ namespace System.Threading
 
         internal static void NotifyThreadUnblocked()
         {
-            throw new PlatformNotSupportedException();
         }
 
         internal static object? GetOrCreateThreadLocalCompletionCountObject() => null;
 
-        internal static bool NotifyWorkItemComplete(object? _1, int _2)
-        {
-            throw new PlatformNotSupportedException();
-        }
+        internal static bool NotifyWorkItemComplete(object? _1, int _2) => true;
 
         private static RegisteredWaitHandle RegisterWaitForSingleObject(
              WaitHandle? waitObject,
@@ -134,10 +127,12 @@ namespace System.Threading
             throw new PlatformNotSupportedException(SR.Arg_PlatformNotSupported); // Replaced by ThreadPoolBoundHandle.BindHandle
         }
 
+#pragma warning disable IDE0060
         [Conditional("unnecessary")]
         internal static void ReportThreadStatus(bool isWorking)
         {
 
         }
+#pragma warning restore IDE0060
     }
 }

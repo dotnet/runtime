@@ -86,7 +86,7 @@ jobs:
           ${V8_ENGINE_PATH} -e 'console.log(`V8 version: ${this.version()}`)'
     - ${{ if ne(parameters.runtimeType, 'wasm') }}:
       - HelixPreCommandsWasmOnLinux: echo
-    - HelixPreCommandStemWindows: 'set ORIGPYPATH=%PYTHONPATH%;py -m pip install -U pip;py -3 -m venv %HELIX_WORKITEM_PAYLOAD%\.venv;call %HELIX_WORKITEM_PAYLOAD%\.venv\Scripts\activate.bat;set PYTHONPATH=;py -3 -m pip install -U pip;py -3 -m pip install urllib3==1.26.15;py -3 -m pip install azure.storage.blob==12.13.0;py -3 -m pip install azure.storage.queue==12.4.0;py -3 -m pip install azure.identity==1.16.1;set "PERFLAB_UPLOAD_TOKEN=$(HelixPerfUploadTokenValue)"'
+    - HelixPreCommandStemWindows: 'set ORIGPYPATH=%PYTHONPATH%;py -m pip install -U pip;py -3 -m venv %HELIX_WORKITEM_PAYLOAD%\.venv;call %HELIX_WORKITEM_PAYLOAD%\.venv\Scripts\activate.bat;echo on;set PYTHONPATH=;python -m pip install -U pip;python -m pip install urllib3==1.26.15;python -m pip install azure.storage.blob==12.13.0;python -m pip install azure.storage.queue==12.4.0;python -m pip install azure.identity==1.16.1;set "PERFLAB_UPLOAD_TOKEN=$(HelixPerfUploadTokenValue)"'
     - HelixPreCommandStemLinux: >-
         export ORIGPYPATH=$PYTHONPATH
         export CRYPTOGRAPHY_ALLOW_OPENSSL_102=true;

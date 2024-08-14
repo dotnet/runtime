@@ -6,11 +6,7 @@
     <DefineConstants>$(DefineConstants);CP_NO_ZEROMEMORY</DefineConstants>
     <UseCompilerGeneratedDocXmlFile>false</UseCompilerGeneratedDocXmlFile>
     <IsPackable>true</IsPackable>
-    <PackageDescription>Provides classes that can read and write the ASN.1 BER, CER, and DER data formats.
-
-Commonly Used Types:
-System.Formats.Asn1.AsnReader
-System.Formats.Asn1.AsnWriter</PackageDescription>
+    <PackageDescription>Provides classes that can read and write the ASN.1 BER, CER, and DER data formats.</PackageDescription>
   </PropertyGroup>
 
   <ItemGroup>

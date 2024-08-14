@@ -101,8 +101,6 @@ struct ExceptionTrackerBase
     OBJECTHANDLE    m_hThrowable;
     // EXCEPTION_RECORD and CONTEXT_RECORD describing the exception and its location
     DAC_EXCEPTION_POINTERS m_ptrs;
-    // Stack trace of the current exception
-    StackTraceInfo m_StackTraceInfo;
     // Information for the funclet we are calling
     EHClauseInfo   m_EHClauseInfo;
     // Flags representing exception handling state (exception is rethrown, unwind has started, various debugger notifications sent etc)
@@ -137,9 +135,6 @@ public:
         m_fDeliveredFirstChanceNotification(FALSE),
         m_ExceptionCode((pExceptionRecord != PTR_NULL) ? pExceptionRecord->ExceptionCode : 0)
     {
-#ifndef DACCESS_COMPILE
-        m_StackTraceInfo.Init();
-#endif //  DACCESS_COMPILE
 #ifndef TARGET_UNIX
         // Init the WatsonBucketTracker
         m_WatsonBucketTracker.Init();
@@ -515,8 +510,6 @@ private:
 
     static bool
         IsFilterStartOffset(EE_ILEXCEPTION_CLAUSE* pEHClause, DWORD_PTR dwHandlerStartPC);
-
-    void SaveStackTrace();
 
     inline BOOL CanAllocateMemory()
     {

@@ -1,5 +1,5 @@
 # Builds and copies library artifacts into target dotnet sdk image
-ARG BUILD_BASE_IMAGE=mcr.microsoft.com/dotnet-buildtools/prereqs:centos-stream8
+ARG BUILD_BASE_IMAGE=mcr.microsoft.com/dotnet-buildtools/prereqs:centos-stream9
 ARG SDK_BASE_IMAGE=mcr.microsoft.com/dotnet/nightly/sdk:8.0
 
 FROM $BUILD_BASE_IMAGE as corefxbuild
@@ -14,7 +14,7 @@ FROM $SDK_BASE_IMAGE as target
 
 ARG VERSION=9.0
 ARG CONFIGURATION=Release
-ENV _DOTNET_INSTALL_CHANNEL="$VERSION.1xx"
+ENV _DOTNET_INSTALL_CHANNEL=$VERSION
 
 # Install latest daily SDK:
 RUN wget https://dot.net/v1/dotnet-install.sh

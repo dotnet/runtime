@@ -502,7 +502,8 @@ namespace System
             [UnsupportedOSPlatform("tvos")]
             set
             {
-                ConsolePal.Title = value ?? throw new ArgumentNullException(nameof(value));
+                ArgumentNullException.ThrowIfNull(value);
+                ConsolePal.Title = value;
             }
         }
 

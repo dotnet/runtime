@@ -63,6 +63,9 @@ void Compiler::lvaInit()
 #endif // JIT32_GCENCODER
     lvaNewObjArrayArgs  = BAD_VAR_NUM;
     lvaGSSecurityCookie = BAD_VAR_NUM;
+#ifdef TARGET_ARM64
+    lvaFfrRegister = BAD_VAR_NUM;
+#endif
 #ifdef TARGET_X86
     lvaVarargsBaseOfStkArgs = BAD_VAR_NUM;
 #endif // TARGET_X86
@@ -898,71 +901,50 @@ void Compiler::lvaInitUserArgs(InitVarDscInfo* varDscInfo, unsigned skipArgs, un
         }
         else
 #elif defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
-        uint32_t  floatFlags          = STRUCT_NO_FLOAT_FIELD;
+        const CORINFO_FPSTRUCT_LOWERING* lowering = nullptr;
+
         var_types argRegTypeInStruct1 = TYP_UNKNOWN;
         var_types argRegTypeInStruct2 = TYP_UNKNOWN;
 
         if ((strip(corInfoType) == CORINFO_TYPE_VALUECLASS) && (argSize <= MAX_PASS_MULTIREG_BYTES))
         {
-#if defined(TARGET_LOONGARCH64)
-            floatFlags = info.compCompHnd->getLoongArch64PassStructInRegisterFlags(typeHnd);
-#else
-            floatFlags = info.compCompHnd->getRISCV64PassStructInRegisterFlags(typeHnd);
-#endif
+            lowering = GetFpStructLowering(typeHnd);
         }
 
-        if ((floatFlags & STRUCT_HAS_FLOAT_FIELDS_MASK) != 0)
+        if ((lowering != nullptr) && !lowering->byIntegerCallConv)
         {
             assert(varTypeIsStruct(argType));
-            int floatNum = 0;
-            if ((floatFlags & STRUCT_FLOAT_FIELD_ONLY_ONE) != 0)
-            {
-                assert(argSize <= 8);
+            assert((lowering->numLoweredElements == 1) || (lowering->numLoweredElements == 2));
+            if (lowering->numLoweredElements == 1)
                 assert(varDsc->lvExactSize() <= argSize);
 
-                floatNum              = 1;
-                canPassArgInRegisters = varDscInfo->canEnreg(TYP_DOUBLE, 1);
+            cSlotsToEnregister  = lowering->numLoweredElements;
+            argRegTypeInStruct1 = JITtype2varType(lowering->loweredElements[0]);
+            if (lowering->numLoweredElements == 2)
+                argRegTypeInStruct2 = JITtype2varType(lowering->loweredElements[1]);
 
-                argRegTypeInStruct1 = (varDsc->lvExactSize() == 8) ? TYP_DOUBLE : TYP_FLOAT;
-            }
-            else if ((floatFlags & STRUCT_FLOAT_FIELD_ONLY_TWO) != 0)
+            int floatNum = (int)varTypeIsFloating(argRegTypeInStruct1) + (int)varTypeIsFloating(argRegTypeInStruct2);
+            assert(floatNum > 0);
+
+            canPassArgInRegisters = varDscInfo->canEnreg(TYP_DOUBLE, floatNum);
+            if (canPassArgInRegisters && (floatNum < lowering->numLoweredElements))
             {
-                floatNum              = 2;
-                canPassArgInRegisters = varDscInfo->canEnreg(TYP_DOUBLE, 2);
-
-                argRegTypeInStruct1 = (floatFlags & STRUCT_FIRST_FIELD_SIZE_IS8) ? TYP_DOUBLE : TYP_FLOAT;
-                argRegTypeInStruct2 = (floatFlags & STRUCT_SECOND_FIELD_SIZE_IS8) ? TYP_DOUBLE : TYP_FLOAT;
+                assert(floatNum == 1);
+                assert(lowering->numLoweredElements == 2);
+                assert(varTypeIsIntegralOrI(argRegTypeInStruct1) || varTypeIsIntegralOrI(argRegTypeInStruct2));
+                canPassArgInRegisters = varDscInfo->canEnreg(TYP_I_IMPL, 1);
             }
-            else if ((floatFlags & STRUCT_FLOAT_FIELD_FIRST) != 0)
-            {
-                floatNum              = 1;
-                canPassArgInRegisters = varDscInfo->canEnreg(TYP_DOUBLE, 1);
-                canPassArgInRegisters = canPassArgInRegisters && varDscInfo->canEnreg(TYP_I_IMPL, 1);
-
-                argRegTypeInStruct1 = (floatFlags & STRUCT_FIRST_FIELD_SIZE_IS8) ? TYP_DOUBLE : TYP_FLOAT;
-                argRegTypeInStruct2 = (floatFlags & STRUCT_SECOND_FIELD_SIZE_IS8) ? TYP_LONG : TYP_INT;
-            }
-            else if ((floatFlags & STRUCT_FLOAT_FIELD_SECOND) != 0)
-            {
-                floatNum              = 1;
-                canPassArgInRegisters = varDscInfo->canEnreg(TYP_DOUBLE, 1);
-                canPassArgInRegisters = canPassArgInRegisters && varDscInfo->canEnreg(TYP_I_IMPL, 1);
-
-                argRegTypeInStruct1 = (floatFlags & STRUCT_FIRST_FIELD_SIZE_IS8) ? TYP_LONG : TYP_INT;
-                argRegTypeInStruct2 = (floatFlags & STRUCT_SECOND_FIELD_SIZE_IS8) ? TYP_DOUBLE : TYP_FLOAT;
-            }
-
-            assert((floatNum == 1) || (floatNum == 2));
 
             if (!canPassArgInRegisters)
             {
-                // On LoongArch64, if there aren't any remaining floating-point registers to pass the argument,
-                // integer registers (if any) are used instead.
-                canPassArgInRegisters = varDscInfo->canEnreg(argType, cSlotsToEnregister);
-
+                // If a struct eligible for passing according to floating-point calling convention cannot be fully
+                // enregistered, it is passed according to integer calling convention -- in up to two integer registers
+                // and/or stack slots, as a lump of bits laid out like in memory.
+                cSlotsToEnregister  = cSlots;
                 argRegTypeInStruct1 = TYP_UNKNOWN;
                 argRegTypeInStruct2 = TYP_UNKNOWN;
 
+                canPassArgInRegisters = varDscInfo->canEnreg(argType, cSlotsToEnregister);
                 if (cSlotsToEnregister == 2)
                 {
                     if (!canPassArgInRegisters && varDscInfo->canEnreg(TYP_I_IMPL, 1))
@@ -1091,15 +1073,13 @@ void Compiler::lvaInitUserArgs(InitVarDscInfo* varDscInfo, unsigned skipArgs, un
                 {
                     varDsc->SetArgReg(
                         genMapRegArgNumToRegNum(firstAllocatedRegArgNum, argRegTypeInStruct1, info.compCallConv));
-                    varDsc->lvIs4Field1 = (genTypeSize(argRegTypeInStruct1) == 4) ? 1 : 0;
                     if (argRegTypeInStruct2 != TYP_UNKNOWN)
                     {
                         secondAllocatedRegArgNum = varDscInfo->allocRegArg(argRegTypeInStruct2, 1);
                         varDsc->SetOtherArgReg(
                             genMapRegArgNumToRegNum(secondAllocatedRegArgNum, argRegTypeInStruct2, info.compCallConv));
-                        varDsc->lvIs4Field2 = (genTypeSize(argRegTypeInStruct2) == 4) ? 1 : 0;
                     }
-                    else if (cSlots > 1)
+                    else if (cSlotsToEnregister > 1)
                     {
                         // Here a struct-arg which needs two registers but only one integer register available,
                         // it has to be split. But we reserved extra 8-bytes for the whole struct.
@@ -1675,9 +1655,7 @@ void Compiler::lvaInitVarDsc(LclVarDsc*              varDsc,
     varDsc->lvIsImplicitByRef = 0;
 #endif // FEATURE_IMPLICIT_BYREFS
 #if defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
-    varDsc->lvIs4Field1 = 0;
-    varDsc->lvIs4Field2 = 0;
-    varDsc->lvIsSplit   = 0;
+    varDsc->lvIsSplit = 0;
 #endif // TARGET_LOONGARCH64 || TARGET_RISCV64
 
     // Set the lvType (before this point it is TYP_UNDEF).
@@ -2371,9 +2349,15 @@ bool Compiler::StructPromotionHelper::CanPromoteStructType(CORINFO_CLASS_HANDLE 
     if (fieldsSize != treeNodes[0].size)
     {
         structPromotionInfo.containsHoles = true;
-    }
 
-    structPromotionInfo.anySignificantPadding = treeNodes[0].hasSignificantPadding && structPromotionInfo.containsHoles;
+        if (treeNodes[0].hasSignificantPadding)
+        {
+            // Struct has significant data not covered by fields we would promote;
+            // this would typically result in dependent promotion, so leave this
+            // struct to physical promotion.
+            return false;
+        }
+    }
 
     // Cool, this struct is promotable.
 
@@ -2564,9 +2548,11 @@ bool Compiler::StructPromotionHelper::CanPromoteStructVar(unsigned lclNum)
         return false;
     }
 
-    if (varDsc->IsAddressExposed())
+    if (varDsc->lvDoNotEnregister)
     {
-        JITDUMP("  struct promotion of V%02u is disabled because it has already been marked address exposed\n", lclNum);
+        // Promoting structs that are marked DNER will result in dependent
+        // promotion. Allow physical promotion to handle these.
+        JITDUMP("  struct promotion of V%02u is disabled because it has already been marked DNER\n", lclNum);
         return false;
     }
 
@@ -2716,11 +2702,6 @@ bool Compiler::StructPromotionHelper::ShouldPromoteStructVar(unsigned lclNum)
                 structPromotionInfo.fieldCnt, varDsc->lvFieldAccessed);
         shouldPromote = false;
     }
-    else if (varDsc->lvIsMultiRegRet && structPromotionInfo.anySignificantPadding)
-    {
-        JITDUMP("Not promoting multi-reg returned struct local V%02u with significant padding.\n", lclNum);
-        shouldPromote = false;
-    }
 #if defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
     else if ((structPromotionInfo.fieldCnt == 2) && (varTypeIsFloating(structPromotionInfo.fields[0].fldType) ||
                                                      varTypeIsFloating(structPromotionInfo.fields[1].fldType)))
@@ -2739,13 +2720,8 @@ bool Compiler::StructPromotionHelper::ShouldPromoteStructVar(unsigned lclNum)
         // multiple registers?
         if (compiler->lvaIsMultiregStruct(varDsc, compiler->info.compIsVarArgs))
         {
-            if (structPromotionInfo.anySignificantPadding)
-            {
-                JITDUMP("Not promoting multi-reg struct local V%02u with significant padding.\n", lclNum);
-                shouldPromote = false;
-            }
-            else if ((structPromotionInfo.fieldCnt != 2) &&
-                     !((structPromotionInfo.fieldCnt == 1) && varTypeIsSIMD(structPromotionInfo.fields[0].fldType)))
+            if ((structPromotionInfo.fieldCnt != 2) &&
+                !((structPromotionInfo.fieldCnt == 1) && varTypeIsSIMD(structPromotionInfo.fields[0].fldType)))
             {
                 JITDUMP("Not promoting multireg struct local V%02u, because lvIsParam is true, #fields != 2 and it's "
                         "not a single SIMD.\n",
@@ -2834,11 +2810,10 @@ void Compiler::StructPromotionHelper::PromoteStructVar(unsigned lclNum)
     assert(varDsc->GetLayout()->GetClassHandle() == structPromotionInfo.typeHnd);
     assert(structPromotionInfo.canPromote);
 
-    varDsc->lvFieldCnt              = structPromotionInfo.fieldCnt;
-    varDsc->lvFieldLclStart         = compiler->lvaCount;
-    varDsc->lvPromoted              = true;
-    varDsc->lvContainsHoles         = structPromotionInfo.containsHoles;
-    varDsc->lvAnySignificantPadding = structPromotionInfo.anySignificantPadding;
+    varDsc->lvFieldCnt      = structPromotionInfo.fieldCnt;
+    varDsc->lvFieldLclStart = compiler->lvaCount;
+    varDsc->lvPromoted      = true;
+    varDsc->lvContainsHoles = structPromotionInfo.containsHoles;
 
 #ifdef DEBUG
     // Don't stress this in LCL_FLD stress.
@@ -3071,12 +3046,6 @@ void Compiler::lvaSetVarAddrExposed(unsigned varNum DEBUGARG(AddressExposedReaso
 //    *do not* mark the local address-exposed and treat the call much like a local store node throughout
 //    the compilation.
 //
-//    TODO-ADDR-Bug: currently, we rely on these locals not being present in call argument lists,
-//    outside of the buffer address argument itself, as liveness - currently - treats the location node
-//    associated with the address itself as the definition point, and call arguments can be reordered
-//    rather arbitrarily. We should fix liveness to treat the call as the definition point instead and
-//    enable this optimization for "!lvIsTemp" locals.
-//
 void Compiler::lvaSetHiddenBufferStructArg(unsigned varNum)
 {
     LclVarDsc* varDsc = lvaGetDesc(varNum);
@@ -3178,7 +3147,6 @@ void Compiler::lvaSetVarDoNotEnregister(unsigned varNum DEBUGARG(DoNotEnregister
             break;
         case DoNotEnregisterReason::HiddenBufferStructArg:
             JITDUMP("it is hidden buffer struct arg\n");
-            assert(varDsc->IsHiddenBufferStructArg());
             break;
         case DoNotEnregisterReason::DontEnregStructs:
             JITDUMP("struct enregistration is disabled\n");
@@ -8103,6 +8071,14 @@ Compiler::fgWalkResult Compiler::lvaStressLclFldCB(GenTree** pTree, fgWalkData* 
         if (lcl->OperIs(GT_LCL_FLD, GT_STORE_LCL_FLD) ||
             (lcl->OperIs(GT_LCL_ADDR) && (lcl->AsLclFld()->GetLclOffs() != 0)))
         {
+            varDsc->lvNoLclFldStress = true;
+            return WALK_CONTINUE;
+        }
+
+        // Ignore locals used in runtime lookups
+        if ((tree->gtFlags & GTF_VAR_CONTEXT) != 0)
+        {
+            assert(tree->OperIs(GT_LCL_VAR));
             varDsc->lvNoLclFldStress = true;
             return WALK_CONTINUE;
         }
