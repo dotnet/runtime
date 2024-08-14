@@ -15,6 +15,11 @@
         "release/8.0-rc":{
             "MergeToBranch": "release/8.0",
             "ExtraSwitches": "-QuietComments"
+        },
+        // Automate merging runtime release/9.0-rc branches back to release/9.0
+        "release/9.0-rc":{
+            "MergeToBranch": "release/9.0",
+            "ExtraSwitches": "-QuietComments"
         }
     }
 }
