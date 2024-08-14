@@ -15,15 +15,8 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 	readonly struct ReflectionAccessAnalyzer
 	{
 		readonly Action<Diagnostic>? _reportDiagnostic;
-		readonly TypeNameResolver _typeNameResolver;
 
-		public ReflectionAccessAnalyzer (
-			Action<Diagnostic>? reportDiagnostic,
-			TypeNameResolver typeNameResolver)
-		{
-			_reportDiagnostic = reportDiagnostic;
-			_typeNameResolver = typeNameResolver;
-		}
+		public ReflectionAccessAnalyzer (Action<Diagnostic>? reportDiagnostic) => _reportDiagnostic = reportDiagnostic;
 
 #pragma warning disable CA1822 // Mark members as static - the other partial implementations might need to be instance methods
 		internal void GetReflectionAccessDiagnostics (Location location, ITypeSymbol typeSymbol, DynamicallyAccessedMemberTypes requiredMemberTypes, bool declaredOnly = false)
@@ -144,11 +137,6 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 				var diagnosticContext = new DiagnosticContext (location, _reportDiagnostic);
 				diagnosticContext.AddDiagnostic (DiagnosticId.DynamicallyAccessedMembersFieldAccessedViaReflection, fieldSymbol.GetDisplayName ());
 			}
-		}
-
-		internal bool TryResolveTypeNameAndMark (string typeName, in DiagnosticContext diagnosticContext, bool needsAssemblyName, [NotNullWhen (true)] out ITypeSymbol? type)
-		{
-			return _typeNameResolver.TryResolveTypeName (typeName, diagnosticContext, out type, needsAssemblyName);
 		}
 	}
 }

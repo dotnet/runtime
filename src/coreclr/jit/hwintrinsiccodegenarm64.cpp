@@ -551,7 +551,7 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                     // If `falseReg` is zero, then move the first operand of `intrinEmbMask` in the
                     // destination using /Z.
 
-                    assert(targetReg != embMaskOp2Reg);
+                    assert((targetReg != embMaskOp2Reg) || (embMaskOp1Reg == embMaskOp2Reg));
                     assert(intrin.op3->isContained() || !intrin.op1->IsMaskAllBitsSet());
                     GetEmitter()->emitInsSve_R_R_R(INS_sve_movprfx, emitSize, targetReg, maskReg, embMaskOp1Reg, opt);
                 }
@@ -730,6 +730,13 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                             embOpt = INS_OPTS_SCALABLE_B;
                             break;
 
+                        case NI_Sve_AddSequentialAcross:
+                            // Predicate functionality is currently not exposed for this API,
+                            // but the FADDA instruction only has a predicated variant.
+                            // Thus, we expect the JIT to wrap this with CndSel.
+                            assert(intrin.op3->IsVectorZero());
+                            break;
+
                         default:
                             break;
                     }
@@ -782,6 +789,16 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                                                               /* canSkip */ true);
                                 }
                                 emitInsHelper(targetReg, maskReg, embMaskOp1Reg);
+                                break;
+
+                            case NI_Sve_AddSequentialAcross:
+                                assert(targetReg != embMaskOp2Reg);
+                                if (targetReg != embMaskOp1Reg)
+                                {
+                                    GetEmitter()->emitIns_Mov(INS_fmov, GetEmitter()->optGetSveElemsize(embOpt),
+                                                              targetReg, embMaskOp1Reg, /* canSkip */ true);
+                                }
+                                emitInsHelper(targetReg, maskReg, embMaskOp2Reg);
                                 break;
 
                             default:
@@ -853,7 +870,6 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
 
                     if (HWIntrinsicInfo::IsFmaIntrinsic(intrinEmbMask.id))
                     {
-                        assert(falseReg != embMaskOp3Reg);
                         // For FMA, the operation we are trying to perform is:
                         //      result = op1 + (op2 * op3)
                         //
@@ -2097,7 +2113,17 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                 break;
             }
 
+            case NI_Sve_GatherVectorByteZeroExtendFirstFaulting:
             case NI_Sve_GatherVectorFirstFaulting:
+            case NI_Sve_GatherVectorInt16SignExtendFirstFaulting:
+            case NI_Sve_GatherVectorInt16WithByteOffsetsSignExtendFirstFaulting:
+            case NI_Sve_GatherVectorInt32SignExtendFirstFaulting:
+            case NI_Sve_GatherVectorInt32WithByteOffsetsSignExtendFirstFaulting:
+            case NI_Sve_GatherVectorSByteSignExtendFirstFaulting:
+            case NI_Sve_GatherVectorUInt16WithByteOffsetsZeroExtendFirstFaulting:
+            case NI_Sve_GatherVectorUInt16ZeroExtendFirstFaulting:
+            case NI_Sve_GatherVectorUInt32WithByteOffsetsZeroExtendFirstFaulting:
+            case NI_Sve_GatherVectorUInt32ZeroExtendFirstFaulting:
             {
                 if (node->GetAuxiliaryType() == TYP_UNKNOWN)
                 {
@@ -2122,6 +2148,7 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                         GetEmitter()->emitIns_R(INS_sve_wrffr, emitSize, op4Reg, opt);
                     }
                 }
+
                 FALLTHROUGH;
             }
             case NI_Sve_GatherVector:
@@ -2144,7 +2171,9 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                     emitAttr baseSize = emitActualTypeSize(intrin.baseType);
                     bool     isLoadingBytes =
                         ((ins == INS_sve_ld1b) || (ins == INS_sve_ld1sb) || (ins == INS_sve_ldff1b) ||
-                         (ins == INS_sve_ldff1sb) || (intrin.id == NI_Sve_GatherVectorWithByteOffsetFirstFaulting));
+                         (ins == INS_sve_ldff1sb) || (intrin.id == NI_Sve_GatherVectorWithByteOffsetFirstFaulting) ||
+                         (intrin.id == NI_Sve_GatherVectorUInt32WithByteOffsetsZeroExtendFirstFaulting) ||
+                         (intrin.id == NI_Sve_GatherVectorUInt16WithByteOffsetsZeroExtendFirstFaulting));
                     insScalableOpts sopt = INS_SCALABLE_OPTS_NONE;
 
                     if (baseSize == EA_4BYTE)

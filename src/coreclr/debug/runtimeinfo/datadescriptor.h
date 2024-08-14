@@ -220,6 +220,7 @@ CDAC_TYPE_FIELD(Module, /*pointer*/, Flags, cdac_data<Module>::Flags)
 CDAC_TYPE_FIELD(Module, /*pointer*/, LoaderAllocator, cdac_data<Module>::LoaderAllocator)
 CDAC_TYPE_FIELD(Module, /*pointer*/, ThunkHeap, cdac_data<Module>::ThunkHeap)
 CDAC_TYPE_FIELD(Module, /*pointer*/, DynamicMetadata, cdac_data<Module>::DynamicMetadata)
+CDAC_TYPE_FIELD(Module, /*pointer*/, Path, cdac_data<Module>::Path)
 
 CDAC_TYPE_FIELD(Module, /*pointer*/, FieldDefToDescMap, cdac_data<Module>::FieldDefToDescMap)
 CDAC_TYPE_FIELD(Module, /*pointer*/, ManifestModuleReferencesMap, cdac_data<Module>::ManifestModuleReferencesMap)
