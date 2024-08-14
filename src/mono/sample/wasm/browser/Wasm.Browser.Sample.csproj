@@ -3,10 +3,4 @@
   <ItemGroup>
     <WasmExtraFilesToDeploy Include="main.js" />
   </ItemGroup>
-   <PropertyGroup>
-    <OutputType>Library</OutputType>
-    <RuntimeIdentifier>browser-wasm</RuntimeIdentifier>
-    <!-- <TrimmerRootAssembly>@(AssemblyName)</TrimmerRootAssembly> -->
-    <!-- <ILLinkTrimAssembly>false</ILLinkTrimAssembly> -->
-  </PropertyGroup>
 </Project>
