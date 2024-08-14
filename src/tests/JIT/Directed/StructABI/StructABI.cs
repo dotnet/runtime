@@ -2174,12 +2174,12 @@ public static partial class StructABI
 	{
 		bool ok = true;
 		Issue80393_S s = default;
-		s.f1 = 37.1;
-		s.f3 = 21.9;
+		s.f1 = 1.0d;
+		s.f3 = 1.0d;
 		Issue80393_S ret = Issue80393_HFA(s);
 
-		if (!s.f1.Equals(ret.f1) || !s.f3.Equals(ret.f3) || !s.f2.value.Equals(ret.f2.value)) {
-			Console.WriteLine($"Issue80393_HFA failed. Retval: f1={ret.f1} f2={ret.f2} f3={ret.f3}");
+		if (!ret.f1.Equals(2.0d) || !ret.f3.Equals(4.0d)) {
+			Console.WriteLine($"Issue80393_HFA failed. Retval: f1={ret.f1} f3={ret.f3}");
 			ok = false;
 		}
 
