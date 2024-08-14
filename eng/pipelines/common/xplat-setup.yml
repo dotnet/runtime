@@ -172,10 +172,9 @@ jobs:
         ${{ if and(in(parameters.osGroup, 'osx', 'maccatalyst', 'ios', 'iossimulator', 'tvos', 'tvossimulator'), eq(variables['System.TeamProject'], 'public')) }}:
           vmImage: 'macos-12'
 
-        # OSX Internal Pool
+        # Official build OSX pool
         ${{ if and(in(parameters.osGroup, 'osx', 'maccatalyst', 'ios', 'iossimulator', 'tvos', 'tvossimulator'), ne(variables['System.TeamProject'], 'public')) }}:
-          name: "Azure Pipelines"
-          vmImage: 'macOS-12'
+          vmImage: 'macos-13-arm64'
           os: macOS
 
         # Official Build Windows Pool
