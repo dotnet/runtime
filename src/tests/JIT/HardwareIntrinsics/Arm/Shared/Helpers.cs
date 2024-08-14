@@ -8005,6 +8005,25 @@ namespace JIT.HardwareIntrinsics.Arm
             return result;
         }
 
+        public static int LoadInt16FromByteArray(byte[] array, int offset)
+        {
+            int ret = 0;
+            for (int i = 1; i >= 0; i--)
+            {
+                ret = (ret << 8) + (int)array[offset+i];
+            }
+            return ret;
+        }
+
+        public static int LoadInt16FromByteArray(byte[] array, uint offset)
+        {
+            int ret = 0;
+            for (int i = 1; i >= 0; i--)
+            {
+                ret = (ret << 8) + (int)array[offset+i];
+            }
+            return ret;
+        }
         public static int LoadInt32FromByteArray(byte[] array, int offset)
         {
             int ret = 0;
@@ -8041,6 +8060,26 @@ namespace JIT.HardwareIntrinsics.Arm
             for (long i = 7; i >= 0; i--)
             {
                 ret = (ret << 8) + (long)array[offset+(ulong)i];
+            }
+            return ret;
+        }
+
+        public static uint LoadUInt16FromByteArray(byte[] array, int offset)
+        {
+            uint ret = 0;
+            for (int i = 1; i >= 0; i--)
+            {
+                ret = (ret << 8) + (uint)array[offset+i];
+            }
+            return ret;
+        }
+
+        public static uint LoadUInt16FromByteArray(byte[] array, uint offset)
+        {
+            uint ret = 0;
+            for (int i = 1; i >= 0; i--)
+            {
+                ret = (ret << 8) + (uint)array[offset+i];
             }
             return ret;
         }
@@ -8571,8 +8610,9 @@ namespace JIT.HardwareIntrinsics.Arm
             return (mask[index] == T.Zero) ? T.Zero : T.CreateTruncating(*(ExtendedElementT*)Unsafe.BitCast<AddressT, nint>(data[index]));
         }
 
-        private static bool GetGatherVectorResultByByteOffset<T, Offset>(int index, T[] mask, byte[] data, Offset[] offsets, T result)
+        private static bool GetGatherVectorResultByByteOffset<T, ExtendedElementT, Offset>(int index, T[] mask, byte[] data, Offset[] offsets, T result)
                 where T : INumberBase<T>
+                where ExtendedElementT : INumberBase<ExtendedElementT>
                 where Offset : IBinaryInteger<Offset>
         {
             if (mask[index] == T.Zero)
@@ -8582,27 +8622,35 @@ namespace JIT.HardwareIntrinsics.Arm
 
             int offset = int.CreateChecked(offsets[index]);
 
-            if (typeof(T) == typeof(int))
+            if (typeof(ExtendedElementT) == typeof(Int16))
             {
-                return result == T.CreateTruncating(LoadInt32FromByteArray(data, offset));
+                return ExtendedElementT.CreateTruncating(result) == ExtendedElementT.CreateTruncating(LoadInt16FromByteArray(data, offset));
             }
-            else if (typeof(T) == typeof(uint))
+            else if (typeof(ExtendedElementT) == typeof(UInt16))
             {
-                return result == T.CreateTruncating(LoadUInt32FromByteArray(data, offset));
+                return ExtendedElementT.CreateTruncating(result) == ExtendedElementT.CreateTruncating(LoadUInt16FromByteArray(data, offset));
             }
-            else if (typeof(T) == typeof(long))
+            else if (typeof(ExtendedElementT) == typeof(int))
             {
-                return result == T.CreateTruncating(LoadInt64FromByteArray(data, offset));
+                return ExtendedElementT.CreateTruncating(result) == ExtendedElementT.CreateTruncating(LoadInt32FromByteArray(data, offset));
             }
-            else if (typeof(T) == typeof(ulong))
+            else if (typeof(ExtendedElementT) == typeof(uint))
             {
-                return result == T.CreateTruncating(LoadUInt64FromByteArray(data, offset));
+                return ExtendedElementT.CreateTruncating(result) == ExtendedElementT.CreateTruncating(LoadUInt32FromByteArray(data, offset));
             }
-            else if (typeof(T) == typeof(float))
+            else if (typeof(ExtendedElementT) == typeof(long))
+            {
+                return ExtendedElementT.CreateTruncating(result) == ExtendedElementT.CreateTruncating(LoadInt64FromByteArray(data, offset));
+            }
+            else if (typeof(ExtendedElementT) == typeof(ulong))
+            {
+                return ExtendedElementT.CreateTruncating(result) == ExtendedElementT.CreateTruncating(LoadUInt64FromByteArray(data, offset));
+            }
+            else if (typeof(ExtendedElementT) == typeof(float))
             {
                 return BitConverter.SingleToInt32Bits((float)(object)result) == LoadInt32FromByteArray(data, offset);
             }
-            else if (typeof(T) == typeof(double))
+            else if (typeof(ExtendedElementT) == typeof(double))
             {
                 return BitConverter.DoubleToInt64Bits((double)(object)result) == LoadInt64FromByteArray(data, offset);
             }
@@ -8908,7 +8956,7 @@ namespace JIT.HardwareIntrinsics.Arm
 
             byte[] bytes = new byte[data.Length * Unsafe.SizeOf<ExtendedElementT>()];
             Buffer.BlockCopy(data, 0, bytes, 0, bytes.Length);
-            return CheckFirstFaultingBehaviorCore(result, faultResult, i => GetGatherVectorResultByByteOffset<T, Offset>(i, mask, bytes, offsets, result[i]));
+            return CheckFirstFaultingBehaviorCore(result, faultResult, i => GetGatherVectorResultByByteOffset<T, ExtendedElementT, Offset>(i, mask, bytes, offsets, result[i]));
         }
 
         public static T[] CreateBreakPropagateMask<T>(T[] op1, T[] op2) where T : IBinaryInteger<T>
