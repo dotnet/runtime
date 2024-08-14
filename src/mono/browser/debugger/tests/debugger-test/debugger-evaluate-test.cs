@@ -2291,4 +2291,27 @@ namespace DebuggerTests
             myVar.MyMethod();
         }
     }
+
+    public struct EvaluateOnValueTypeWithoutExtraSpace
+    {
+        public double X;
+        public double Y;
+        public double Z;
+        public EvaluateOnValueTypeWithoutExtraSpace(float InX, float InY, float InZ)
+        {
+            X = InX; Y = InY; Z = InZ;
+        }
+        public double DistSquaredXY(in EvaluateOnValueTypeWithoutExtraSpace B) // the keyword "in" here is crucial, with it the crash produced
+        {
+            double DX = X - B.X;
+            double DY = Y - B.Y;
+            return DX * DX + DY * DY;
+        }
+        public static void run()
+        {
+            EvaluateOnValueTypeWithoutExtraSpace f1 = new EvaluateOnValueTypeWithoutExtraSpace(1, 1, 1);
+            EvaluateOnValueTypeWithoutExtraSpace f2 = new EvaluateOnValueTypeWithoutExtraSpace(2, 2, 2);
+            Console.WriteLine("pause here");
+        }
+    }
 }
