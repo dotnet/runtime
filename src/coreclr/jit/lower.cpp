@@ -2026,11 +2026,29 @@ void Lowering::LowerSpecialCopyArgs(GenTreeCall* call)
     if (comp->opts.jitFlags->IsSet(JitFlags::JIT_FLAG_IL_STUB) && comp->compMethodRequiresPInvokeFrame() &&
         call->IsUnmanaged())
     {
-        unsigned argIndex = 0;
+        // Unmanaged calling conventions on Windows x86 are passed in reverse order
+        // of managed args, so we need to count down the number of args.
+        // If the call is thiscall, we need to account for the this parameter,
+        // which will be first in the list.
+        // The this parameter is always passed in registers, so we can ignore it.
+        unsigned argIndex = call->gtArgs.CountUserArgs() - 1;
         for (CallArg& arg : call->gtArgs.Args())
         {
             if (!arg.IsUserArg())
             {
+                continue;
+            }
+
+            if (call->GetUnmanagedCallConv() == CorInfoCallConvExtension::Thiscall &&
+                argIndex == call->gtArgs.CountUserArgs() - 1)
+            {
+                assert(arg.GetNode()->OperIs(GT_PUTARG_REG));
+                continue;
+            }
+
+            if (argIndex >= comp->info.compILargsCount)
+            {
+                argIndex--;
                 continue;
             }
 
@@ -2044,7 +2062,8 @@ void Lowering::LowerSpecialCopyArgs(GenTreeCall* call)
                 assert(arg.GetNode()->OperIs(GT_PUTARG_STK));
                 InsertSpecialCopyArg(arg.GetNode()->AsPutArgStk(), arg.GetSignatureClassHandle(), paramLclNum);
             }
-            argIndex++;
+
+            argIndex--;
         }
     }
 }
@@ -2071,7 +2090,7 @@ void Lowering::InsertSpecialCopyArg(GenTreePutArgStk* putArgStk, CORINFO_CLASS_H
     GenTree* dest = comp->gtNewPhysRegNode(REG_SPBASE, TYP_I_IMPL);
 
     GenTree*  src;
-    var_types lclType = comp->lvaGetDesc(lclNum);
+    var_types lclType = comp->lvaGetRealType(lclNum);
 
     if (lclType == TYP_BYREF || lclType == TYP_I_IMPL)
     {
@@ -2084,7 +2103,7 @@ void Lowering::InsertSpecialCopyArg(GenTreePutArgStk* putArgStk, CORINFO_CLASS_H
     }
 
     GenTree* destPlaceholder = comp->gtNewZeroConNode(dest->TypeGet());
-    GenTree* srcPlaceholder  = comp->gtNewZeroConNode(src);
+    GenTree* srcPlaceholder  = comp->gtNewZeroConNode(src->TypeGet());
 
     GenTreeCall* call =
         comp->gtNewCallNode(CT_USER_FUNC, comp->info.compCompHnd->getSpecialCopyHelper(argType), TYP_VOID);

@@ -7214,15 +7214,15 @@ const WCHAR* MethodContext::repGetStringConfigValue(const WCHAR* name)
 
 void MethodContext::recGetSpecialCopyHelper(CORINFO_CLASS_HANDLE type, CORINFO_METHOD_HANDLE helper)
 {
-    if (getSpecialCopyHelper == nullptr)
-        getSpecialCopyHelper = new LightWeightMap<DWORDLONG, DWORDLONG>();
+    if (GetSpecialCopyHelper == nullptr)
+        GetSpecialCopyHelper = new LightWeightMap<DWORDLONG, DWORDLONG>();
 
     DWORDLONG key;
     ZeroMemory(&key, sizeof(key)); // Zero key including any struct padding
     key = CastHandle(type);
 
     DWORDLONG value = CastHandle(helper);
-    getSpecialCopyHelper->Add(key, value);
+    GetSpecialCopyHelper->Add(key, value);
     DEBUG_REC(dmpGetSpecialCopyHelper(key, value));
 }
 
@@ -7234,7 +7234,7 @@ void MethodContext::dmpGetSpecialCopyHelper(DWORDLONG key, DWORDLONG value)
 CORINFO_METHOD_HANDLE MethodContext::repGetSpecialCopyHelper(CORINFO_CLASS_HANDLE type)
 {
     DWORDLONG key = CastHandle(type);
-    DWORDLONG value = LookupByKeyOrMiss(getSpecialCopyHelper, key, ": key %016" PRIX64 "", key);
+    DWORDLONG value = LookupByKeyOrMiss(GetSpecialCopyHelper, key, ": key %016" PRIX64 "", key);
     DEBUG_REP(dmpGetSpecialCopyHelper(key, value));
     return (CORINFO_METHOD_HANDLE)value;
 }
