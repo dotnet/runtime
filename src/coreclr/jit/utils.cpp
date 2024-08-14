@@ -2272,8 +2272,13 @@ double FloatingPointUtils::convertUInt64ToDouble(uint64_t uIntVal)
 
 float FloatingPointUtils::convertUInt64ToFloat(uint64_t u64)
 {
+#ifdef TARGET_ARM64
+    // ARM64 supports casting directly to float
+    return (float)u64;
+#else  // !TARGET_ARM64
     double d = convertUInt64ToDouble(u64);
     return (float)d;
+#endif // !TARGET_ARM64
 }
 
 uint64_t FloatingPointUtils::convertDoubleToUInt64(double d)
