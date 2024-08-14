@@ -3128,6 +3128,10 @@ public:
 #ifndef TARGET_LOONGARCH64
     void emitInsSanityCheck(instrDesc* id);
 #endif // TARGET_LOONGARCH64
+
+#ifdef TARGET_ARM64
+    void emitInsPairSanityCheck(instrDesc* prevId, instrDesc* id);
+#endif
 #endif // DEBUG
 
 #ifdef TARGET_ARMARCH
