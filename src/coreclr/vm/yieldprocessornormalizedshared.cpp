@@ -181,7 +181,9 @@ void YieldProcessorNormalization::PerformMeasurement()
             }
             if (i < NsPerYieldMeasurementCount - 1)
             {
+#ifndef FEATURE_NATIVEAOT
                 FireEtwYieldProcessorMeasurement(GetClrInstanceId(), latestNsPerYield, s_establishedNsPerYield);
+#endif
             }
         }
     }
@@ -205,7 +207,9 @@ void YieldProcessorNormalization::PerformMeasurement()
         AtomicStore(&s_establishedNsPerYield, establishedNsPerYield);
     }
 
+#ifndef FEATURE_NATIVEAOT
     FireEtwYieldProcessorMeasurement(GetClrInstanceId(), latestNsPerYield, s_establishedNsPerYield);
+#endif
 
     // Calculate the number of yields required to span the duration of a normalized yield
     unsigned int yieldsPerNormalizedYield = max(1u, (unsigned int)(TargetNsPerNormalizedYield / establishedNsPerYield + 0.5));
@@ -296,7 +300,9 @@ void YieldProcessorNormalization::FireMeasurementEvents()
         double nsPerYield = AtomicLoad(&s_nsPerYieldMeasurements[nextIndex]);
         if (nsPerYield != 0) // the array may not be fully initialized yet
         {
+#ifndef FEATURE_NATIVEAOT
             FireEtwYieldProcessorMeasurement(GetClrInstanceId(), nsPerYield, establishedNsPerYield);
+#endif
         }
 
         if (++nextIndex >= NsPerYieldMeasurementCount)
