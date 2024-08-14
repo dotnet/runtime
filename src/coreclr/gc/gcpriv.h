@@ -153,8 +153,8 @@ inline void FATAL_GC_ERROR()
 
 #if defined(USE_REGIONS) && defined(MULTIPLE_HEAPS)
 // can only change heap count with regions
-#define DYNAMIC_HEAP_COUNT
-//#define STRESS_DYNAMIC_HEAP_COUNT
+#define DYNAMIC_ADAPTATION
+//#define STRESS_DYNAMIC_ADAPTATION
 #endif //USE_REGIONS && MULTIPLE_HEAPS
 
 #ifdef USE_REGIONS
@@ -354,10 +354,10 @@ struct GCDebugSpinLock {
     // number of times we went to calling DisablePreemptiveGC in WaitLonger.
     unsigned int num_disable_preemptive_w;
 #endif
-#if defined(DYNAMIC_HEAP_COUNT)
+#if defined(DYNAMIC_ADAPTATION)
     // time in microseconds we wait for the more space lock
     uint64_t msl_wait_time;
-#endif //DYNAMIC_HEAP_COUNT
+#endif //DYNAMIC_ADAPTATION
 
     GCDebugSpinLock()
         : lock(-1)
@@ -367,9 +367,9 @@ struct GCDebugSpinLock {
 #if defined (SYNCHRONIZATION_STATS)
         , num_switch_thread(0), num_wait_longer(0), num_switch_thread_w(0), num_disable_preemptive_w(0)
 #endif
-#if defined(DYNAMIC_HEAP_COUNT)
+#if defined(DYNAMIC_ADAPTATION)
         , msl_wait_time(0)
-#endif //DYNAMIC_HEAP_COUNT
+#endif //DYNAMIC_ADAPTATION
     {
     }
 
@@ -577,13 +577,13 @@ enum gc_type
     gc_type_max = 3
 };
 
-#ifdef DYNAMIC_HEAP_COUNT
+#ifdef DYNAMIC_ADAPTATION
 enum gc_dynamic_adaptation_mode
 {
     dynamic_adaptation_default = 0,
     dynamic_adaptation_to_application_sizes = 1,
 };
-#endif //DYNAMIC_HEAP_COUNT
+#endif //DYNAMIC_ADAPTATION
 
 //encapsulates the mechanism for the current gc
 class gc_mechanisms
@@ -760,7 +760,7 @@ struct etw_bucket_info
 };
 #endif //FEATURE_EVENT_TRACE
 
-#ifdef DYNAMIC_HEAP_COUNT
+#ifdef DYNAMIC_ADAPTATION
 struct min_fl_list_info
 {
     uint8_t* head;
@@ -772,7 +772,7 @@ struct min_fl_list_info
 
     void thread_item_no_prev (uint8_t* item);
 };
-#endif //DYNAMIC_HEAP_COUNT
+#endif //DYNAMIC_ADAPTATION
 
 class allocator
 {
@@ -890,7 +890,7 @@ public:
     void unlink_item_no_undo_added (unsigned int bn, uint8_t* item, uint8_t* previous_item);
 #endif //DOUBLY_LINKED_FL
 
-#ifdef DYNAMIC_HEAP_COUNT
+#ifdef DYNAMIC_ADAPTATION
     void count_items (gc_heap* this_hp, size_t* fl_items_count, size_t* fl_items_for_oh_count);
     void rethread_items (size_t* num_total_fl_items,
                          size_t* num_total_fl_items_rethread,
@@ -899,7 +899,7 @@ public:
                          size_t* free_list_space_per_heap,
                          int num_heap);
     void merge_items (gc_heap* current_heap, int to_num_heaps, int from_num_heaps);
-#endif //DYNAMIC_HEAP_COUNT
+#endif //DYNAMIC_ADAPTATION
 
     void copy_to_alloc_list (alloc_list* toalist);
     void copy_from_alloc_list (alloc_list* fromalist);
@@ -2140,14 +2140,14 @@ private:
     // synchronized
     PER_HEAP_METHOD void gc1();
 
-#ifdef DYNAMIC_HEAP_COUNT
+#ifdef DYNAMIC_ADAPTATION
     PER_HEAP_ISOLATED_METHOD size_t get_total_soh_stable_size();
     PER_HEAP_ISOLATED_METHOD void update_total_soh_stable_size();
     PER_HEAP_ISOLATED_METHOD void assign_new_budget (int gen_number, size_t desired_per_heap);
     PER_HEAP_METHOD bool prepare_rethread_fl_items();
     PER_HEAP_METHOD void rethread_fl_items(int gen_idx);
     PER_HEAP_ISOLATED_METHOD void merge_fl_from_other_heaps (int gen_idx, int to_n_heaps, int from_n_heaps);
-#endif //DYNAMIC_HEAP_COUNT
+#endif //DYNAMIC_ADAPTATION
 
     PER_HEAP_ISOLATED_METHOD void save_data_for_no_gc();
 
@@ -2588,7 +2588,7 @@ private:
 
     PER_HEAP_ISOLATED_METHOD void equalize_promoted_bytes (int condemned_gen_number);
 
-#ifdef DYNAMIC_HEAP_COUNT
+#ifdef DYNAMIC_ADAPTATION
     // check that the fields of a decommissioned heap have their expected values,
     // i.e. were not inadvertently modified
     PER_HEAP_METHOD void check_decommissioned_heap();
@@ -2611,7 +2611,7 @@ private:
     PER_HEAP_ISOLATED_METHOD void get_msl_wait_time (size_t* soh_msl_wait_time, size_t* uoh_msl_wait_time);
 
     PER_HEAP_ISOLATED_METHOD void process_datas_sample();
-#endif //DYNAMIC_HEAP_COUNT
+#endif //DYNAMIC_ADAPTATION
 #endif //USE_REGIONS
 
 #if !defined(USE_REGIONS) || defined(_DEBUG)
@@ -3699,9 +3699,9 @@ private:
     PER_HEAP_FIELD_SINGLE_GC_ALLOC VOLATILE(int32_t) uoh_alloc_thread_count;
 #endif //BACKGROUND_GC
 
-#ifdef STRESS_DYNAMIC_HEAP_COUNT
+#ifdef STRESS_DYNAMIC_ADAPTATION
     PER_HEAP_FIELD_SINGLE_GC_ALLOC bool uoh_msl_before_gc_p;
-#endif //STRESS_DYNAMIC_HEAP_COUNT
+#endif //STRESS_DYNAMIC_ADAPTATION
 
     /************************************/
     // PER_HEAP_FIELD_MAINTAINED fields //
@@ -3781,12 +3781,12 @@ private:
     PER_HEAP_FIELD_MAINTAINED mark*  loh_pinned_queue;
 #endif //FEATURE_LOH_COMPACTION
 
-#ifdef DYNAMIC_HEAP_COUNT
+#ifdef DYNAMIC_ADAPTATION
     PER_HEAP_FIELD_MAINTAINED GCEvent gc_idle_thread_event;
 #ifdef BACKGROUND_GC
     PER_HEAP_FIELD_MAINTAINED GCEvent bgc_idle_thread_event;
 #endif //BACKGROUND_GC
-#endif //DYNAMIC_HEAP_COUNT
+#endif //DYNAMIC_ADAPTATION
 
     /******************************************/
     // PER_HEAP_FIELD_MAINTAINED_ALLOC fields //
@@ -4167,13 +4167,13 @@ private:
     PER_HEAP_ISOLATED_FIELD_SINGLE_GC uint8_t* gc_high; // high end of the highest region being condemned
 #endif //USE_REGIONS
 
-#ifdef DYNAMIC_HEAP_COUNT
+#ifdef DYNAMIC_ADAPTATION
     PER_HEAP_ISOLATED_FIELD_SINGLE_GC uint64_t before_distribute_free_regions_time;
 
-#ifdef STRESS_DYNAMIC_HEAP_COUNT
+#ifdef STRESS_DYNAMIC_ADAPTATION
     PER_HEAP_ISOLATED_FIELD_SINGLE_GC int heaps_in_this_gc;
-#endif //STRESS_DYNAMIC_HEAP_COUNT
-#endif //DYNAMIC_HEAP_COUNT
+#endif //STRESS_DYNAMIC_ADAPTATION
+#endif //DYNAMIC_ADAPTATION
 
     /**************************************************/
     // PER_HEAP_ISOLATED_FIELD_SINGLE_GC_ALLOC fields //
@@ -4272,7 +4272,7 @@ private:
     PER_HEAP_ISOLATED_FIELD_MAINTAINED BOOL should_expand_in_full_gc;
 #endif //USE_REGIONS
 
-#ifdef DYNAMIC_HEAP_COUNT
+#ifdef DYNAMIC_ADAPTATION
     // Sample collection -
     //
     // For every GC, we collect the msl wait time + GC pause duration info and use both to calculate the
@@ -5109,9 +5109,9 @@ private:
 
         bool            should_change_heap_count;
         int             heap_count_to_change_to;
-#ifdef STRESS_DYNAMIC_HEAP_COUNT
+#ifdef STRESS_DYNAMIC_ADAPTATION
         int             lowest_heap_with_msl_uoh;
-#endif //STRESS_DYNAMIC_HEAP_COUNT
+#endif //STRESS_DYNAMIC_ADAPTATION
 
         float get_median_gen2_gc_percent()
         {
@@ -5133,7 +5133,7 @@ private:
     // and reset during that BGC.
     PER_HEAP_ISOLATED_FIELD_MAINTAINED bool trigger_bgc_for_rethreading_p;
 #endif //BACKGROUND_GC
-#endif //DYNAMIC_HEAP_COUNT
+#endif //DYNAMIC_ADAPTATION
 
     /****************************************************/
     //  PER_HEAP_ISOLATED_FIELD_MAINTAINED_ALLOC fields //
@@ -5280,9 +5280,9 @@ private:
     PER_HEAP_ISOLATED_FIELD_INIT_ONLY size_t youngest_gen_desired_th;
 #endif //HOST_64BIT
 
-#ifdef DYNAMIC_HEAP_COUNT
+#ifdef DYNAMIC_ADAPTATION
     PER_HEAP_ISOLATED_FIELD_INIT_ONLY int dynamic_adaptation_mode;
-#endif //DYNAMIC_HEAP_COUNT
+#endif //DYNAMIC_ADAPTATION
 
     /********************************************/
     // PER_HEAP_ISOLATED_FIELD_DIAG_ONLY fields //
