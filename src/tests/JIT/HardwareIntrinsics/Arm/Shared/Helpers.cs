@@ -8574,6 +8574,22 @@ namespace JIT.HardwareIntrinsics.Arm
             return GetLoadVectorExpectedResultByIndex(index, mask, data, result);
         }
 
+        private static bool CheckLoadVectorBehaviorCore<TMem, TElem>(TElem[] mask, TMem[] data, TElem[] result, Func<int, TElem, TElem> map)
+            where TMem  : INumberBase<TMem>
+            where TElem : INumberBase<TElem>
+        {
+            for (var i = 0; i < data.Length; i++)
+            {
+                TElem expectedResult = GetLoadVectorExpectedResultByIndex(i, mask, data, result);
+                expectedResult = map(i, expectedResult);
+                if (result[i] != expectedResult)
+                {
+                    return false;
+                }
+            }
+            return true;
+        }
+
         private static bool CheckLoadVectorBehaviorCore<TMem, TElem>(TMem[] data, TElem[] result, Func<int, TElem, TElem> map)
             where TMem  : INumberBase<TMem>
             where TElem : INumberBase<TElem>
@@ -8588,6 +8604,13 @@ namespace JIT.HardwareIntrinsics.Arm
                 }
             }
             return true;
+        }
+
+        public static bool CheckLoadVectorBehavior<TMem, TElem>(TElem[] mask, TMem[] data, TElem[] result)
+            where TMem  : INumberBase<TMem>, IConvertible
+            where TElem : INumberBase<TElem>
+        {
+            return CheckLoadVectorBehaviorCore(mask, data, result, (_, loadResult) => loadResult);
         }
 
         public static bool CheckLoadVectorBehavior<TMem, TElem>(TMem[] data, TElem[] result)
