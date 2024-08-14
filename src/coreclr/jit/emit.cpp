@@ -7097,7 +7097,7 @@ unsigned emitter::emitEndCodeGen(Compiler*         comp,
 #endif
 #if defined(DEBUG) && defined(TARGET_ARM64)
     instrDesc* prevId = nullptr;
-#endif // DEBUG && TARGET_ARM64
+#endif // defined(DEBUG) && defined(TARGET_ARM64)
 
     for (insGroup* ig = emitIGlist; ig != nullptr; ig = ig->igNext)
     {
@@ -7115,7 +7115,7 @@ unsigned emitter::emitEndCodeGen(Compiler*         comp,
         {
             assert(prevId->idIns() != INS_sve_movprfx);
         }
-#endif // DEBUG && TARGET_ARM64
+#endif // defined(DEBUG) && defined(TARGET_ARM64)
 
         assert(!(ig->igFlags & IGF_PLACEHOLDER)); // There better not be any placeholder groups left
 

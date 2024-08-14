@@ -18435,7 +18435,7 @@ void emitter::getInsSveExecutionCharacteristics(instrDesc* id, insExecutionChara
 #ifdef DEBUG
 /*****************************************************************************
  *
- *  Sanity check two instruction are valid when placed next to each other
+ *  Sanity check two instructions are valid when placed next to each other
  */
 
 void emitter::emitInsPairSanityCheck(instrDesc* firstId, instrDesc* secondId)
