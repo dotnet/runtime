@@ -13419,13 +13419,14 @@ void gc_heap::distribute_free_regions()
 
         ptrdiff_t balance = total_num_free_regions[kind] + num_huge_region_units_to_consider[kind] - total_budget_in_region_units[kind];
 
+        // first check if we should decommit any regions
         if ((balance > 0)
 #ifdef BACKGROUND_GC
             && (!background_running_p() || (settings.condemned_generation == max_generation))
 #endif
             )
         {
-            // Ignore young huge regions if they are contributing to a surplus.
+            // ignore young huge regions when determining how much to decommit
             num_regions_to_decommit[kind] =
                 max(static_cast<ptrdiff_t>(0),
                     (balance - static_cast<ptrdiff_t>(num_young_huge_region_units_to_consider[kind])));
