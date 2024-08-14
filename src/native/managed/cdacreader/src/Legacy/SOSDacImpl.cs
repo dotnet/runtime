@@ -341,8 +341,9 @@ internal sealed partial class SOSDacImpl : ISOSDacInterface, ISOSDacInterface2, 
             data->dwTransientFlags = (uint)flags;
 
             data->ilBase = contract.GetILBase(handle);
-            data->metadataStart = contract.GetMetadataAddress(handle, out ulong metadataSize);
-            data->metadataSize = metadataSize;
+            TargetSpan readOnlyMetadata = _target.Contracts.EcmaMetadata.GetReadOnlyMetadataAddress(handle);
+            data->metadataStart = readOnlyMetadata.Address;
+            data->metadataSize = readOnlyMetadata.Size;
 
             data->LoaderAllocator = contract.GetLoaderAllocator(handle);
             data->ThunkHeap = contract.GetThunkHeap(handle);
