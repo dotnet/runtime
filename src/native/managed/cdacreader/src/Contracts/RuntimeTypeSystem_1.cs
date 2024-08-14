@@ -110,20 +110,6 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
         IsEligibleForTieredCompilation = 0x8000,
     }
 
-    internal enum MethodClassification
-    {
-        IL = 0, // IL
-        FCall = 1, // FCall (also includes tlbimped ctor, Delegate ctor)
-        NDirect = 2, // N/Direct
-        EEImpl = 3, // special method; implementation provided by EE (like Delegate Invoke)
-        Array = 4, // Array ECall
-        Instantiated = 5, // Instantiated generic methods, including descriptors
-                          // for both shared and unshared code (see InstantiatedMethodDesc)
-
-        ComInterop = 6, // if FEATURE_COMINTEROP
-        Dynamic = 7, // for method desc with no metadata behind
-    }
-
     internal enum InstantiatedMethodDescFlags2 : ushort
     {
         KindMask = 0x07,
@@ -191,22 +177,8 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
         public bool IsUnboxingStub => HasFlags(MethodDescFlags3.IsUnboxingStub);
 
         public TargetPointer CodeData => _desc.CodeData;
+        public bool IsIL => Classification == MethodClassification.IL || Classification == MethodClassification.Instantiated;
 
-        public uint Token { get; }
-
-        private static uint ComputeToken(Target target, Data.MethodDesc desc, Data.MethodDescChunk chunk)
-        {
-            int tokenRemainderBitCount = target.ReadGlobal<byte>(Constants.Globals.MethodDescTokenRemainderBitCount);
-            int tokenRangeBitCount = 24 - tokenRemainderBitCount;
-            uint allRidBitsSet = 0xFFFFFF;
-            uint tokenRemainderMask = allRidBitsSet >> tokenRangeBitCount;
-            uint tokenRangeMask = allRidBitsSet >> tokenRemainderBitCount;
-
-            uint tokenRemainder = (uint)(desc.Flags3AndTokenRemainder & tokenRemainderMask);
-            uint tokenRange = ((uint)(chunk.FlagsAndTokenRange & tokenRangeMask)) << tokenRemainderBitCount;
-
-            return 0x06000000 | tokenRange | tokenRemainder;
-        }
     }
 
     private class InstantiatedMethodDesc : IData<InstantiatedMethodDesc>

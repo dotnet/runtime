@@ -375,7 +375,7 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
                 return _target.GetTypeInfo(DataType.MethodDesc).Size ?? throw new InvalidOperationException("size of MethodDesc not known");
             case MethodClassification.FCall:
                 throw new NotImplementedException();
-            case MethodClassification.NDirect:
+            case MethodClassification.PInvoke:
                 throw new NotImplementedException();
             case MethodClassification.EEImpl:
                 throw new NotImplementedException();
