@@ -302,6 +302,12 @@ public class TypeMatchTests : ReadTests
 
         Assert.True(one.TypeNameMatches(typeof(T)));
 
+        Assert.Equal(typeof(T).GetTypeFullNameIncludingTypeForwards(), one.TypeName.FullName);
+        if (typeof(T) != typeof(TimeSpan)) // TimeSpan is missing type forwards
+        {
+            Assert.Equal(typeof(T).GetAssemblyNameIncludingTypeForwards(), one.TypeName.AssemblyName!.FullName);
+        }
+
         foreach (Type type in PrimitiveTypes)
         {
             Assert.Equal(typeof(T) == type, one.TypeNameMatches(type));

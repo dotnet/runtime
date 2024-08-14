@@ -226,7 +226,7 @@ public static class NrbfDecoder
             SerializationRecordType.ArraySinglePrimitive => DecodeArraySinglePrimitiveRecord(reader),
             SerializationRecordType.ArraySingleString => ArraySingleStringRecord.Decode(reader),
             SerializationRecordType.BinaryArray => BinaryArrayRecord.Decode(reader, recordMap, options),
-            SerializationRecordType.BinaryLibrary => BinaryLibraryRecord.Decode(reader),
+            SerializationRecordType.BinaryLibrary => BinaryLibraryRecord.Decode(reader, options),
             SerializationRecordType.BinaryObjectString => BinaryObjectStringRecord.Decode(reader),
             SerializationRecordType.ClassWithId => ClassWithIdRecord.Decode(reader, recordMap),
             SerializationRecordType.ClassWithMembersAndTypes => ClassWithMembersAndTypesRecord.Decode(reader, recordMap, options),
