@@ -649,6 +649,7 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                         if (intrin.op3->isContained())
                         {
                             assert(intrin.op3->IsVectorZero());
+
                             if (intrin.op1->isContained() || intrin.op1->IsMaskAllBitsSet())
                             {
                                 // We already skip importing ConditionalSelect if op1 == trueAll, however
@@ -659,6 +660,8 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                             }
                             else
                             {
+                                assert(!HWIntrinsicInfo::IsZeroingMaskedOperation(intrinEmbMask.id));
+
                                 // If falseValue is zero, just zero out those lanes of targetReg using `movprfx`
                                 // and /Z
                                 GetEmitter()->emitIns_R_R_R(INS_sve_movprfx, emitSize, targetReg, maskReg, targetReg,
@@ -679,6 +682,14 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                             GetEmitter()->emitIns_R_R_R_R(INS_sve_sel, emitSize, targetReg, maskReg, targetReg,
                                                           falseReg, opt);
                             break;
+                        }
+                        else if (HWIntrinsicInfo::IsZeroingMaskedOperation(intrinEmbMask.id))
+                        {
+                            // At this point, target != embMaskOp1Reg != falseReg, so just go ahead
+                            // and move the falseReg unpredicated into targetReg.
+                            // Cannot use movprfx for zeroing mask operations.
+                            GetEmitter()->emitIns_Mov(INS_mov, emitTypeSize(node), targetReg, falseReg,
+                                                      /* canSkip */ true);
                         }
                         else
                         {
