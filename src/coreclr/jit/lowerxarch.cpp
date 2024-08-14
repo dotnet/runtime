@@ -3070,11 +3070,12 @@ GenTree* Lowering::LowerHWIntrinsicCmpOp(GenTreeHWIntrinsic* node, genTreeOps cm
                 GenTreeHWIntrinsic* op1Intrinsic   = op1->AsHWIntrinsic();
                 NamedIntrinsic      op1IntrinsicId = op1Intrinsic->GetHWIntrinsicId();
 
-                switch (op1IntrinsicId)
+                bool       isScalar = false;
+                genTreeOps oper     = op1Intrinsic->GetOperForHWIntrinsicId(&isScalar);
+
+                switch (oper)
                 {
-                    case NI_AVX512F_And:
-                    case NI_AVX512DQ_And:
-                    case NI_AVX10v1_V512_And:
+                    case GT_AND:
                     {
                         // We have `(x & y) == 0` with GenCondition::EQ (jz, setz, cmovz)
                         // or `(x & y) != 0`with GenCondition::NE (jnz, setnz, cmovnz)
@@ -3094,11 +3095,62 @@ GenTree* Lowering::LowerHWIntrinsicCmpOp(GenTreeHWIntrinsic* node, genTreeOps cm
 
                         assert(testIntrinsicId == NI_EVEX_PTESTM);
 
-                        node->Op(1) = op1Intrinsic->Op(1);
-                        node->Op(2) = op1Intrinsic->Op(2);
+                        GenTree* nestedOp1 = op1Intrinsic->Op(1);
+                        GenTree* nestedOp2 = op1Intrinsic->Op(2);
+
+                        if (nestedOp2->isContained() && nestedOp2->OperIsHWIntrinsic())
+                        {
+                            GenTreeHWIntrinsic* nestedIntrin   = nestedOp2->AsHWIntrinsic();
+                            NamedIntrinsic      nestedIntrinId = nestedIntrin->GetHWIntrinsicId();
+
+                            if ((nestedIntrinId == NI_SSE3_MoveAndDuplicate) ||
+                                (nestedIntrinId == NI_AVX2_BroadcastScalarToVector128) ||
+                                (nestedIntrinId == NI_AVX2_BroadcastScalarToVector256) ||
+                                (nestedIntrinId == NI_AVX512F_BroadcastScalarToVector512))
+                            {
+                                // We need to rewrite the embedded broadcast back to a regular constant
+                                // so that the subsequent containment check for ptestm can determine
+                                // if the embedded broadcast is still relevant
+
+                                GenTree* broadcastOp = nestedIntrin->Op(1);
+
+                                if (broadcastOp->OperIsHWIntrinsic(NI_Vector128_CreateScalarUnsafe))
+                                {
+                                    BlockRange().Remove(broadcastOp);
+                                    broadcastOp = broadcastOp->AsHWIntrinsic()->Op(1);
+                                }
+
+                                assert(broadcastOp->OperIsConst());
+
+                                GenTree* vecCns =
+                                    comp->gtNewSimdCreateBroadcastNode(simdType, broadcastOp,
+                                                                       op1Intrinsic->GetSimdBaseJitType(), simdSize);
+
+                                BlockRange().InsertAfter(broadcastOp, vecCns);
+                                nestedOp2 = vecCns;
+
+                                BlockRange().Remove(broadcastOp);
+                                BlockRange().Remove(nestedIntrin);
+                            }
+                        }
+
+                        node->Op(1) = nestedOp1;
+                        node->Op(2) = nestedOp2;
 
                         // Make sure we aren't contained since ptestm will do its own containment check
-                        node->Op(2)->ClearContained();
+                        nestedOp2->ClearContained();
+
+                        if (varTypeIsSmall(simdBaseType))
+                        {
+                            // Fixup the base type so embedded broadcast and the mask size checks still work
+                            node->NormalizeJitBaseTypeToInt(testIntrinsicId, simdBaseType);
+
+                            simdBaseJitType = node->GetSimdBaseJitType();
+                            simdBaseType    = node->GetSimdBaseType();
+
+                            maskBaseJitType = simdBaseJitType;
+                            maskBaseType    = simdBaseType;
+                        }
 
                         BlockRange().Remove(op1);
                         BlockRange().Remove(op2);
