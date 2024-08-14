@@ -1819,7 +1819,6 @@ private:
     TieredCompilationManager m_tieredCompilationManager;
 
 #endif
-
 };  // class AppDomain
 
 // Just a ref holder

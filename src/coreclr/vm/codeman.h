@@ -1464,8 +1464,6 @@ struct cdac_data<RangeSectionMap>
     };
 };
 
-
-
 struct RangeSectionMapData
 {
     BYTE Data[sizeof(RangeSectionMap)];

@@ -14,8 +14,8 @@
 #if defined(TARGET_AMD64)
 
 #define OFFSETOF_PRECODE_TYPE              0
-#define OFFSETOF_PRECODE_TYPE_CALL_OR_JMP  5 // FIXME: unused
-#define OFFSETOF_PRECODE_TYPE_MOV_R10     10 // FIXME: unused
+#define OFFSETOF_PRECODE_TYPE_CALL_OR_JMP  5
+#define OFFSETOF_PRECODE_TYPE_MOV_R10     10
 
 #define SIZEOF_PRECODE_BASE               16
 
@@ -24,8 +24,8 @@
 EXTERN_C VOID STDCALL PrecodeRemotingThunk();
 
 #define OFFSETOF_PRECODE_TYPE              0
-#define OFFSETOF_PRECODE_TYPE_CALL_OR_JMP  5 // FIXME: unuxed
-#define OFFSETOF_PRECODE_TYPE_MOV_RM_R     6 // FIXME: unused
+#define OFFSETOF_PRECODE_TYPE_CALL_OR_JMP  5
+#define OFFSETOF_PRECODE_TYPE_MOV_RM_R     6
 
 #define SIZEOF_PRECODE_BASE                8
 

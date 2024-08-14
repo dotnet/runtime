@@ -585,6 +585,7 @@ private:
     // string helper
     void InitializeStringData(DWORD token, EEStringData *pstrData, CQuickBytes *pqb);
 #endif
+
 };
 
 // A code:Module represents a DLL or EXE file loaded from the disk. A module live in a code:Assembly

@@ -1207,7 +1207,6 @@ PTR_VOID GetUnwindDataBlob(TADDR moduleBase, PTR_RUNTIME_FUNCTION pRuntimeFuncti
 
 EEJitManager::EEJitManager()
     :
-    IJitManager (),
     // CRST_DEBUGGER_THREAD - We take this lock on debugger thread during EnC add method, among other things
     // CRST_TAKEN_DURING_SHUTDOWN - We take this lock during shutdown if ETW is on (to do rundown)
     m_CodeHeapCritSec( CrstSingleUseLock,
@@ -5485,7 +5484,6 @@ int HotColdMappingLookupTable::LookupMappingForMethod(ReadyToRunInfo* pInfo, ULO
 #ifndef DACCESS_COMPILE
 
 ReadyToRunJitManager::ReadyToRunJitManager()
-    : IJitManager()
 {
     WRAPPER_NO_CONTRACT;
 }
