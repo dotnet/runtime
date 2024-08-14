@@ -353,10 +353,6 @@ End
 Crst Nls
 End
 
-Crst ObjectList
-    SameLevelAs ObjectList
-End
-
 Crst PEImage
     AcquiredBefore UniqueStack
 End
