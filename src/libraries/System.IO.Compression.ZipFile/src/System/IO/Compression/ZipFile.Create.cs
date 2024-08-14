@@ -102,39 +102,39 @@ namespace System.IO.Compression
         /// If the file exists and is not a Zip file, a <code>ZipArchiveException</code> will be thrown.
         /// If the file exists and is empty or does not exist, a new Zip file will be created.
         /// Note that creating a Zip file with the <code>ZipArchiveMode.Create</code> mode is more efficient when creating a new Zip file.</param>
-        /// <param name="entryNameEncoding">The encoding to use when reading or writing entry names in this ZipArchive.
+        /// <param name="entryNameEncoding">The encoding to use when reading or writing entry names and comments in this ZipArchive.
         ///         ///     <para>NOTE: Specifying this parameter to values other than <c>null</c> is discouraged.
         ///         However, this may be necessary for interoperability with ZIP archive tools and libraries that do not correctly support
-        ///         UTF-8 encoding for entry names.<br />
+        ///         UTF-8 encoding for entry names or comments.<br />
         ///         This value is used as follows:</para>
         ///     <para><strong>Reading (opening) ZIP archive files:</strong></para>
         ///     <para>If <c>entryNameEncoding</c> is not specified (<c>== null</c>):</para>
         ///     <list>
         ///         <item>For entries where the language encoding flag (EFS) in the general purpose bit flag of the local file header is <em>not</em> set,
-        ///         use the current system default code page (<c>Encoding.Default</c>) in order to decode the entry name.</item>
+        ///         use the current system default code page (<c>Encoding.Default</c>) in order to decode the entry name and comment.</item>
         ///         <item>For entries where the language encoding flag (EFS) in the general purpose bit flag of the local file header <em>is</em> set,
-        ///         use UTF-8 (<c>Encoding.UTF8</c>) in order to decode the entry name.</item>
+        ///         use UTF-8 (<c>Encoding.UTF8</c>) in order to decode the entry name and comment.</item>
         ///     </list>
         ///     <para>If <c>entryNameEncoding</c> is specified (<c>!= null</c>):</para>
         ///     <list>
         ///         <item>For entries where the language encoding flag (EFS) in the general purpose bit flag of the local file header is <em>not</em> set,
-        ///         use the specified <c>entryNameEncoding</c> in order to decode the entry name.</item>
+        ///         use the specified <c>entryNameEncoding</c> in order to decode the entry name and comment.</item>
         ///         <item>For entries where the language encoding flag (EFS) in the general purpose bit flag of the local file header <em>is</em> set,
-        ///         use UTF-8 (<c>Encoding.UTF8</c>) in order to decode the entry name.</item>
+        ///         use UTF-8 (<c>Encoding.UTF8</c>) in order to decode the entry name and comment.</item>
         ///     </list>
         ///     <para><strong>Writing (saving) ZIP archive files:</strong></para>
         ///     <para>If <c>entryNameEncoding</c> is not specified (<c>== null</c>):</para>
         ///     <list>
-        ///         <item>For entry names that contain characters outside the ASCII range,
+        ///         <item>For entry names or comments that contain characters outside the ASCII range,
         ///         the language encoding flag (EFS) will be set in the general purpose bit flag of the local file header,
-        ///         and UTF-8 (<c>Encoding.UTF8</c>) will be used in order to encode the entry name into bytes.</item>
-        ///         <item>For entry names that do not contain characters outside the ASCII range,
+        ///         and UTF-8 (<c>Encoding.UTF8</c>) will be used in order to encode the entry name and comment into bytes.</item>
+        ///         <item>For entry names or comments that do not contain characters outside the ASCII range,
         ///         the language encoding flag (EFS) will not be set in the general purpose bit flag of the local file header,
-        ///         and the current system default code page (<c>Encoding.Default</c>) will be used to encode the entry names into bytes.</item>
+        ///         and the current system default code page (<c>Encoding.Default</c>) will be used to encode the entry names and comments into bytes.</item>
         ///     </list>
         ///     <para>If <c>entryNameEncoding</c> is specified (<c>!= null</c>):</para>
         ///     <list>
-        ///         <item>The specified <c>entryNameEncoding</c> will always be used to encode the entry names into bytes.
+        ///         <item>The specified <c>entryNameEncoding</c> will always be used to encode the entry names and comments into bytes.
         ///         The language encoding flag (EFS) in the general purpose bit flag of the local file header will be set if and only
         ///         if the specified <c>entryNameEncoding</c> is a UTF-8 encoding.</item>
         ///     </list>
@@ -322,23 +322,23 @@ namespace System.IO.Compression
         /// <param name="includeBaseDirectory"><code>true</code> to indicate that a directory named <code>sourceDirectoryName</code> should
         /// be included at the root of the archive. <code>false</code> to indicate that the files and directories in <code>sourceDirectoryName</code>
         /// should be included directly in the archive.</param>
-        /// <param name="entryNameEncoding">The encoding to use when reading or writing entry names in this ZipArchive.
+        /// <param name="entryNameEncoding">The encoding to use when reading or writing entry names and comments in this ZipArchive.
         ///         ///     <para>NOTE: Specifying this parameter to values other than <c>null</c> is discouraged.
         ///         However, this may be necessary for interoperability with ZIP archive tools and libraries that do not correctly support
-        ///         UTF-8 encoding for entry names.<br />
+        ///         UTF-8 encoding for entry names or comments.<br />
         ///         This value is used as follows while creating the archive:</para>
         ///     <para>If <c>entryNameEncoding</c> is not specified (<c>== null</c>):</para>
         ///     <list>
-        ///         <item>For file names that contain characters outside the ASCII range:<br />
+        ///         <item>For file names or comments that contain characters outside the ASCII range:<br />
         ///         The language encoding flag (EFS) will be set in the general purpose bit flag of the local file header of the corresponding entry,
-        ///         and UTF-8 (<c>Encoding.UTF8</c>) will be used in order to encode the entry name into bytes.</item>
-        ///         <item>For file names that do not contain characters outside the ASCII range:<br />
+        ///         and UTF-8 (<c>Encoding.UTF8</c>) will be used in order to encode the entry name and comment into bytes.</item>
+        ///         <item>For file names or comments that do not contain characters outside the ASCII range:<br />
         ///         the language encoding flag (EFS) will not be set in the general purpose bit flag of the local file header of the corresponding entry,
-        ///         and the current system default code page (<c>Encoding.Default</c>) will be used to encode the entry names into bytes.</item>
+        ///         and the current system default code page (<c>Encoding.Default</c>) will be used to encode the entry names and comments into bytes.</item>
         ///     </list>
         ///     <para>If <c>entryNameEncoding</c> is specified (<c>!= null</c>):</para>
         ///     <list>
-        ///         <item>The specified <c>entryNameEncoding</c> will always be used to encode the entry names into bytes.
+        ///         <item>The specified <c>entryNameEncoding</c> will always be used to encode the entry names and comments into bytes.
         ///         The language encoding flag (EFS) in the general purpose bit flag of the local file header for each entry will be set if and only
         ///         if the specified <c>entryNameEncoding</c> is a UTF-8 encoding.</item>
         ///     </list>
@@ -408,7 +408,7 @@ namespace System.IO.Compression
         /// <param name="destination">The stream where the zip archive is to be stored.</param>
         /// <param name="compressionLevel">One of the enumeration values that indicates whether to emphasize speed or compression effectiveness when creating the entry.</param>
         /// <param name="includeBaseDirectory"><see langword="true" /> to include the directory name from <paramref name="sourceDirectoryName" /> at the root of the archive; <see langword="false" /> to include only the contents of the directory.</param>
-        /// <param name="entryNameEncoding">The encoding to use when reading or writing entry names in this archive. Specify a value for this parameter only when an encoding is required for interoperability with zip archive tools and libraries that do not support UTF-8 encoding for entry names.</param>
+        /// <param name="entryNameEncoding">The encoding to use when reading or writing entry names in this archive. Specify a value for this parameter only when an encoding is required for interoperability with zip archive tools and libraries that do not support UTF-8 encoding for entry names or comments.</param>
         /// <remarks>
         /// The directory structure from the file system is preserved in the archive. If the directory is empty, an empty archive is created.
         /// Use this method overload to specify the compression level and character encoding, and whether to include the base directory in the archive.

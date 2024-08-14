@@ -348,7 +348,7 @@ export function prepareAssets () {
         }
 
 
-        if (config.debugLevel != 0 && loaderHelpers.isDebuggingSupported()) {
+        if (config.debugLevel != 0) {
             if (resources.corePdb) {
                 for (const name in resources.corePdb) {
                     addAsset({
