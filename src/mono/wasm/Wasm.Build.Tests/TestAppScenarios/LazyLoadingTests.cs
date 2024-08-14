@@ -31,7 +31,7 @@ public class LazyLoadingTests : AppTestBase
     public async Task LoadLazyAssemblyBeforeItIsNeeded(string lazyLoadingTestExtension, string[] allLazyLoadingTestExtensions)
     {
         CopyTestAsset("WasmBasicTestApp", "LazyLoadingTests", "App");
-        BuildProject("Debug", extraArgs: $"-p:LazyLoadingTestExtension={lazyLoadingTestExtension}");
+        BuildProject("Debug", extraArgs: $"-p:LazyLoadingTestExtension={lazyLoadingTestExtension} -p:WasmSingleFileBundle=true -p:_WasmOutputFileName=dotnet.native.wasm");
 
         // We are running the app and passing all possible lazy extensions to test matrix of all possibilities.
         // We don't need to rebuild the application to test how client is trying to load the assembly.
