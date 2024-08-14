@@ -17,8 +17,8 @@ namespace Tracing.Tests
         public volatile int TPIODequeue = 0;
 
         public int TPIOPackGoal = 0;
-        public int TPIOEnqueueGoal = 0;
-        public int TPIODequeueGoal = 0;
+        public int TPIOEnqueueGoal = 1;
+        public int TPIODequeueGoal = 1;
 
         public ManualResetEvent TPWaitWorkerThreadEvent = new ManualResetEvent(false);
         public ManualResetEvent TPWaitIOPackEvent = new ManualResetEvent(false);
@@ -91,13 +91,12 @@ namespace Tracing.Tests
                     }
                 }
 
-                /*
                 // RegisterWaitForSingleObject should fire an IOEnqueue and IODequeue event
                 ManualResetEvent manualResetEvent = new ManualResetEvent(false);
                 WaitOrTimerCallback work = (x, timedOut) => { int y = (int)x; };
                 ThreadPool.RegisterWaitForSingleObject(manualResetEvent, work, 1, 100, true);
                 manualResetEvent.Set();
-                */
+
                 ManualResetEvent[] waitEvents = new ManualResetEvent[] {listener.TPWaitIOPackEvent,
                                                                         listener.TPWaitIOEnqueueEvent,
                                                                         listener.TPWaitIODequeueEvent};
