@@ -126,7 +126,7 @@ namespace Microsoft.Interop.JavaScript
                     // this is the method wrappers to be called from JS
                     foreach (var generated in generatedSources)
                     {
-                        source.AppendLine(generated.Item1);
+                        source.Append(generated.Item1);
                         source.Append("\r\n");
                     }
 
