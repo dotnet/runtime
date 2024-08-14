@@ -386,11 +386,12 @@ internal sealed class PInvokeTableGenerator
             sb.Append(") { \n");
             if (!is_void)
                 sb.Append($"  {MapType(method.ReturnType)} res;\n");
-
+#if TARGET_WASI
             if (_isLibraryMode && HasAttribute(method, "System.Runtime.InteropServices.UnmanagedCallersOnlyAttribute"))
             {
                 sb.Append($"  initialize_runtime(); \n");
             }
+#endif
 
             // In case when null force interpreter to initialize the pointers
             sb.Append($"  if (!(WasmInterpEntrySig_{cb_index})wasm_native_to_interp_ftndescs [{cb_index}].func) {{\n");
