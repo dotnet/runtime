@@ -536,7 +536,15 @@ unsigned Compiler::optValnumCSE_Index(GenTree* tree, Statement* stmt)
     // than the one from its op2.  For this case we want to create two different
     // CSE candidates. This allows us to CSE the GT_COMMA separately from its value.
     //
-    if (tree->OperGet() == GT_COMMA)
+    // Even this exception has an exception: for struct typed GT_COMMAs we
+    // cannot allow the comma and op2 to be separate candidates as, if we
+    // decide to CSE both the comma and its op2, then creating the store with
+    // the comma will sink it into the op2, potentially breaking the op2 CSE
+    // definition if it itself is another comma. This restriction is related to
+    // the fact that we do not have af first class representation for struct
+    // temporaries in our IR.
+    //
+    if (tree->OperIs(GT_COMMA) && !varTypeIsStruct(tree))
     {
         // op2 is the value produced by a GT_COMMA
         GenTree* op2      = tree->AsOp()->gtOp2;
@@ -588,7 +596,7 @@ unsigned Compiler::optValnumCSE_Index(GenTree* tree, Statement* stmt)
             key = vnLibNorm;
         }
     }
-    else // Not a GT_COMMA or a GT_CNS_INT
+    else // Not a primitive GT_COMMA or a GT_CNS_INT
     {
         key = vnLibNorm;
     }
