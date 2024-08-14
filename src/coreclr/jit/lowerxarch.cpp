@@ -1672,6 +1672,11 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
                         BlockRange().InsertBefore(userIntrin, op4);
 
                         userIntrin->ResetHWIntrinsicId(ternaryLogicId, comp, op1, op2, op3, op4);
+                        if (varTypeIsSmall(simdBaseType))
+                        {
+                            assert(HWIntrinsicInfo::NeedsNormalizeSmallTypeToInt(ternaryLogicId));
+                            userIntrin->NormalizeJitBaseTypeToInt(ternaryLogicId, simdBaseType);
+                        }
                         return nextNode;
                     }
                 }
@@ -1737,6 +1742,11 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
             BlockRange().InsertBefore(node, control);
 
             node->ResetHWIntrinsicId(ternaryLogicId, comp, op1, op2, op3, control);
+            if (varTypeIsSmall(simdBaseType))
+            {
+                assert(HWIntrinsicInfo::NeedsNormalizeSmallTypeToInt(ternaryLogicId));
+                node->NormalizeJitBaseTypeToInt(ternaryLogicId, simdBaseType);
+            }
             return LowerNode(node);
         }
     }
@@ -1823,6 +1833,10 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
             LowerNode(op2);
 
             node->ResetHWIntrinsicId(intrinsicId, comp, op1, op2);
+            if (HWIntrinsicInfo::NeedsNormalizeSmallTypeToInt(intrinsicId) && varTypeIsSmall(simdBaseType))
+            {
+                node->NormalizeJitBaseTypeToInt(intrinsicId, simdBaseType);
+            }
             break;
         }
 
@@ -1882,6 +1896,10 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
             LowerNode(op3);
 
             node->ResetHWIntrinsicId(intrinsicId, comp, op1, op2, op3);
+            if (HWIntrinsicInfo::NeedsNormalizeSmallTypeToInt(intrinsicId) && varTypeIsSmall(simdBaseType))
+            {
+                node->NormalizeJitBaseTypeToInt(intrinsicId, simdBaseType);
+            }
             break;
         }
 
@@ -3455,6 +3473,11 @@ GenTree* Lowering::LowerHWIntrinsicCndSel(GenTreeHWIntrinsic* node)
         BlockRange().InsertBefore(node, control);
 
         node->ResetHWIntrinsicId(ternaryLogicId, comp, op1, op2, op3, control);
+        if (varTypeIsSmall(simdBaseType))
+        {
+            assert(HWIntrinsicInfo::NeedsNormalizeSmallTypeToInt(ternaryLogicId));
+            node->NormalizeJitBaseTypeToInt(ternaryLogicId, simdBaseType);
+        }
         return LowerNode(node);
     }
 
