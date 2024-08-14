@@ -653,6 +653,19 @@ void Compiler::lvaInitUserArgs(InitVarDscInfo* varDscInfo, unsigned skipArgs, un
         CorInfoTypeWithMod corInfoType = info.compCompHnd->getArgType(&info.compMethodInfo->args, argLst, &typeHnd);
         varDsc->lvIsParam              = 1;
 
+#if defined(TARGET_X86) && defined(FEATURE_IJW)
+        if ((corInfoType & CORINFO_TYPE_MOD_COPY_WITH_HELPER) != 0)
+        {
+            CorInfoType typeWithoutMod = strip(corInfoType);
+            if (typeWithoutMod == CORINFO_TYPE_VALUECLASS || typeWithoutMod == CORINFO_TYPE_PTR ||
+                typeWithoutMod == CORINFO_TYPE_BYREF)
+            {
+                JITDUMP("Marking user arg%02u as requiring special copy semantics\n", i);
+                recordArgRequiresSpecialCopy(i);
+            }
+        }
+#endif // TARGET_X86 && FEATURE_IJW
+
         lvaInitVarDsc(varDsc, varDscInfo->varNum, strip(corInfoType), typeHnd, argLst, &info.compMethodInfo->args);
 
         if (strip(corInfoType) == CORINFO_TYPE_CLASS)

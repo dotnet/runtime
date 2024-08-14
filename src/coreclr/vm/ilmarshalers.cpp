@@ -2644,8 +2644,7 @@ MarshalerOverrideStatus ILHandleRefMarshaler::ArgumentOverride(NDirectStubLinker
                                                 BOOL               fManagedToNative,
                                                 OverrideProcArgs*  pargs,
                                                 UINT*              pResID,
-                                                UINT               argidx,
-                                                UINT               nativeStackOffset)
+                                                UINT               argidx)
 {
     CONTRACTL
     {
@@ -2737,8 +2736,7 @@ MarshalerOverrideStatus ILSafeHandleMarshaler::ArgumentOverride(NDirectStubLinke
                                                 BOOL               fManagedToNative,
                                                 OverrideProcArgs*  pargs,
                                                 UINT*              pResID,
-                                                UINT               argidx,
-                                                UINT               nativeStackOffset)
+                                                UINT               argidx)
 {
     CONTRACTL
     {
@@ -3095,8 +3093,7 @@ MarshalerOverrideStatus ILCriticalHandleMarshaler::ArgumentOverride(NDirectStubL
                                                 BOOL               fManagedToNative,
                                                 OverrideProcArgs*  pargs,
                                                 UINT*              pResID,
-                                                UINT               argidx,
-                                                UINT               nativeStackOffset)
+                                                UINT               argidx)
 {
     CONTRACTL
     {
@@ -3402,8 +3399,7 @@ MarshalerOverrideStatus ILBlittableValueClassWithCopyCtorMarshaler::ArgumentOver
                                                 BOOL               fManagedToNative,
                                                 OverrideProcArgs*  pargs,
                                                 UINT*              pResID,
-                                                UINT               argidx,
-                                                UINT               nativeStackOffset)
+                                                UINT               argidx)
 {
     CONTRACTL
     {
@@ -3424,75 +3420,40 @@ MarshalerOverrideStatus ILBlittableValueClassWithCopyCtorMarshaler::ArgumentOver
 
     if (fManagedToNative)
     {
-        // 1) create new native value type local
-        // 2) run new->CopyCtor(old)
-        // 3) run old->Dtor()
-
+#ifdef TARGET_X86
         LocalDesc   locDesc(pargs->mm.m_pMT);
+        pslIL->SetStubTargetArgType(&locDesc);              // native type is the value type
+        locDesc.MakeByRef();
 
-        DWORD       dwNewValueTypeLocal;
+        locDesc.MakePinned();
+
+        DWORD       dwPinnedArgLocal;
 
         // Step 1
-        dwNewValueTypeLocal = pslIL->NewLocal(locDesc);
+        dwPinnedArgLocal = pslIL->NewLocal(locDesc);
 
-        // Step 2
-        if (pargs->mm.m_pCopyCtor)
-        {
-            // Managed copy constructor has signature of CopyCtor(T* new, T old);
-            pslIL->EmitLDLOCA(dwNewValueTypeLocal);
-            pslIL->EmitLDARG(argidx);
-            pslIL->EmitCALL(pslIL->GetToken(pargs->mm.m_pCopyCtor), 2, 0);
-        }
-        else
-        {
-            pslIL->EmitLDARG(argidx);
-            pslIL->EmitLDOBJ(pslIL->GetToken(pargs->mm.m_pMT));
-            pslIL->EmitSTLOC(dwNewValueTypeLocal);
-        }
+        pslIL->EmitLDARG(argidx);
+        pslIL->EmitSTLOC(dwPinnedArgLocal);
 
-        // Step 3
-        if (pargs->mm.m_pDtor)
-        {
-            // Managed destructor has signature of Destructor(T old);
-            pslIL->EmitLDARG(argidx);
-            pslIL->EmitCALL(pslIL->GetToken(pargs->mm.m_pDtor), 1, 0);
-        }
-#ifdef TARGET_X86
-        pslIL->SetStubTargetArgType(&locDesc);              // native type is the value type
-        pslILDispatch->EmitLDLOC(dwNewValueTypeLocal);      // we load the local directly
-
-        // Record this argument's stack slot in the copy constructor chain so we can correctly invoke the copy constructor.
-        DWORD ctorCookie = pslIL->NewLocal(CoreLibBinder::GetClass(CLASS__COPY_CONSTRUCTOR_COOKIE));
-        pslIL->EmitLDLOCA(ctorCookie);
-        pslIL->EmitINITOBJ(pslIL->GetToken(CoreLibBinder::GetClass(CLASS__COPY_CONSTRUCTOR_COOKIE)));
-        pslIL->EmitLDLOCA(ctorCookie);
-        pslIL->EmitLDLOCA(dwNewValueTypeLocal);
-        pslIL->EmitSTFLD(pslIL->GetToken(CoreLibBinder::GetField(FIELD__COPY_CONSTRUCTOR_COOKIE__SOURCE)));
-        pslIL->EmitLDLOCA(ctorCookie);
-        pslIL->EmitLDC(nativeStackOffset);
-        pslIL->EmitSTFLD(pslIL->GetToken(CoreLibBinder::GetField(FIELD__COPY_CONSTRUCTOR_COOKIE__DESTINATION_OFFSET)));
-
-        if (pargs->mm.m_pCopyCtor)
-        {
-            pslIL->EmitLDLOCA(ctorCookie);
-            pslIL->EmitLDFTN(pslIL->GetToken(pargs->mm.m_pCopyCtor));
-            pslIL->EmitSTFLD(pslIL->GetToken(CoreLibBinder::GetField(FIELD__COPY_CONSTRUCTOR_COOKIE__COPY_CONSTRUCTOR)));
-        }
-
-        if (pargs->mm.m_pDtor)
-        {
-            pslIL->EmitLDLOCA(ctorCookie);
-            pslIL->EmitLDFTN(pslIL->GetToken(pargs->mm.m_pDtor));
-            pslIL->EmitSTFLD(pslIL->GetToken(CoreLibBinder::GetField(FIELD__COPY_CONSTRUCTOR_COOKIE__DESTRUCTOR)));
-        }
-
-        pslIL->EmitLDLOCA(psl->GetCopyCtorChainLocalNum());
-        pslIL->EmitLDLOCA(ctorCookie);
-        pslIL->EmitCALL(METHOD__COPY_CONSTRUCTOR_CHAIN__ADD, 2, 0);
-
+        pslILDispatch->EmitLDARG(argidx);
+        pslILDispatch->EmitLDOBJ(pslIL->GetToken(pargs->mm.m_pMT));
 #else
-        pslIL->SetStubTargetArgType(ELEMENT_TYPE_I);        // native type is a pointer
-        EmitLoadNativeLocalAddrForByRefDispatch(pslILDispatch, dwNewValueTypeLocal);
+        LocalDesc   locDesc(pargs->mm.m_pMT);
+
+        locDesc.MakeByRef();
+        locDesc.MakePinned();
+
+        DWORD       dwPinnedArgLocal;
+
+        // Step 1
+        dwPinnedArgLocal = pslIL->NewLocal(locDesc);
+
+        pslIL->EmitLDARG(argidx);
+        pslIL->EmitSTLOC(dwPinnedArgLocal);
+
+        pslIL->SetStubTargetArgType(ELEMENT_TYPE_U);        // native type is a pointer
+        pslILDispatch->EmitLDLOC(dwPinnedArgLocal);
+        pslILDispatch->EmitCONV_U();
 #endif
 
         return OVERRIDDEN;
@@ -3504,10 +3465,9 @@ MarshalerOverrideStatus ILBlittableValueClassWithCopyCtorMarshaler::ArgumentOver
         // but on other platforms it comes by-reference
 #ifdef TARGET_X86
         LocalDesc locDesc(pargs->mm.m_pMT);
+        locDesc.AddModifier(true, pslIL->GetToken(pargs->mm.m_pSigMod));
         pslIL->SetStubTargetArgType(&locDesc);
 
-        DWORD       dwNewValueTypeLocal;
-        dwNewValueTypeLocal = pslIL->NewLocal(locDesc);
         pslILDispatch->EmitLDARGA(argidx);
 #else
         LocalDesc   locDesc(pargs->mm.m_pMT);
