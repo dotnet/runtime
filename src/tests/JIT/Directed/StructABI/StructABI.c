@@ -234,6 +234,8 @@ struct Issue80393_S_Doubles
 };
 
 struct Issue80393_F2_Offset {
+    // 3 padding bytes to approximate C# FieldOffset of 3.
+    // This padding prevents the outer union from being treated as an HVA/HFA by clang for either arm32 or arm64.
     char padding[3];
     struct Issue80393_F2 F2;
 };
@@ -244,9 +246,15 @@ union Issue80393_S {
 };
 #pragma pack(pop)
 
+// NOTE: If investigating this in isolation, make sure you set -mfloat-abi=hard -mfpu=neon when building for arm32
 DLLEXPORT union Issue80393_S Issue80393_HFA(union Issue80393_S value)
 {
+    // Simply doing 'return value' like most of these other functions isn't enough to exercise everything, because
+    //  depending on the calling convention it can turn the whole function into a no-op, where 'value' flows in
+    //  via the same registers that the result flows out through.
     union Issue80393_S result;
+    // Use the value argument as part of the result so we can tell whether it was passed in correctly, in addition
+    //  to checking whether the return value was passed correctly back to C#.
     result.f1_f3.f1 = 1.0 + value.f1_f3.f1;
     result.f1_f3.f3 = 3.0 + value.f1_f3.f3;
     return result;
