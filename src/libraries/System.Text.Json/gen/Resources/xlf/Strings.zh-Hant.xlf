@@ -142,16 +142,6 @@
         <target state="translated">類型具有使用 JsonExtensionDataAttribute 標註的多個成員。</target>
         <note />
       </trans-unit>
-      <trans-unit id="TypeContainsRefLikeMemberFormat">
-        <source>The type '{0}' includes the ref like property, field or constructor parameter '{1}'. No source code will be generated for the property, field or constructor.</source>
-        <target state="new">The type '{0}' includes the ref like property, field or constructor parameter '{1}'. No source code will be generated for the property, field or constructor.</target>
-        <note />
-      </trans-unit>
-      <trans-unit id="TypeContainsRefLikeMemberTitle">
-        <source>Type includes ref like property, field or constructor parameter.</source>
-        <target state="new">Type includes ref like property, field or constructor parameter.</target>
-        <note />
-      </trans-unit>
       <trans-unit id="TypeNotSupportedMessageFormat">
         <source>Did not generate serialization metadata for type '{0}'.</source>
         <target state="translated">未產生類型 '{0}' 的序列化中繼資料。</target>
