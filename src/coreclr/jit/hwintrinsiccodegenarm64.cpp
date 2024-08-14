@@ -2408,17 +2408,17 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
             {
                 assert(isRMW);
 
+                if (targetReg != op1Reg)
+                {
+                    assert(targetReg != op2Reg);
+
+                    GetEmitter()->emitIns_Mov(INS_mov, emitTypeSize(node), targetReg, op1Reg, /* canSkip */ true);
+                }
+
                 HWIntrinsicImmOpHelper helper(this, intrin.op3, node);
 
                 for (helper.EmitBegin(); !helper.Done(); helper.EmitCaseEnd())
                 {
-                    if (targetReg != op1Reg)
-                    {
-                        assert(targetReg != op2Reg);
-
-                        GetEmitter()->emitIns_R_R(INS_sve_movprfx, EA_SCALABLE, targetReg, op1Reg);
-                    }
-
                     const int elementIndex = helper.ImmValue();
                     const int byteIndex    = genTypeSize(intrin.baseType) * elementIndex;
 
@@ -2560,7 +2560,7 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
 
                 HWIntrinsicImmOpHelper helper(this, intrin.op3, node);
 
-                for (helper.EmitBegin(); !helper.Done(); helper.EmitCaseEnd())
+                for (helper.EmitBegin(); !helper.Done(); helper.EmitCaseEnd(), (targetReg != op1Reg) ? 2 : 1)
                 {
                     if (targetReg != op1Reg)
                     {
@@ -2610,7 +2610,7 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
 
                     // Generate the table using the combined immediate
                     HWIntrinsicImmOpHelper helper(this, op4Reg, 0, 7, node);
-                    for (helper.EmitBegin(); !helper.Done(); helper.EmitCaseEnd())
+                    for (helper.EmitBegin(); !helper.Done(); helper.EmitCaseEnd(), (targetReg != op1Reg) ? 2 : 1)
                     {
                         if (targetReg != op1Reg)
                         {
