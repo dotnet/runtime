@@ -141,7 +141,7 @@ Copyright (c) .NET Foundation. All rights reserved.
 
     <Delete Files="@(_LinkedResolvedFileToPublishCandidate)" />
     <ItemGroup>
-      <TrimmerRootAssembly Condition="'%(Identity)' == '@(IntermediateAssembly)' And '$(OutputType)' == 'Library'">
+      <TrimmerRootAssembly Condition="'$(RuntimeIdentifier)' == 'browser-wasm' And '%(Identity)' == '@(IntermediateAssembly)' And '$(OutputType)' == 'Library'">
         <RootMode>all</RootMode>
       </TrimmerRootAssembly>
     </ItemGroup>
