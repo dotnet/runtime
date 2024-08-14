@@ -80,8 +80,8 @@ internal readonly partial struct NativeCodePointers_1 : INativeCodePointers
         private enum ILCodeVersionKind
         {
             Unknown = 0,
-            Explicit = 1,
-            Synthetic = 2,
+            Explicit = 1, // means Node is set
+            Synthetic = 2, // means Module and Token are set
         }
         private static ILCodeVersionHandle ILCodeVersionHandleFromState(Data.ILCodeVersioningState ilState)
         {

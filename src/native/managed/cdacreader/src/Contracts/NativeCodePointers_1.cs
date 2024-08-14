@@ -106,4 +106,9 @@ internal readonly partial struct NativeCodePointers_1 : INativeCodePointers
             return false;
         return true;
     }
+
+    TargetCodePointer INativeCodePointers.GetNativeCode(NativeCodeVersionHandle codeVersionHandle) => throw new NotImplementedException();
+
+    TargetPointer INativeCodePointers.GetGCCoverageInfo(NativeCodeVersionHandle codeVersionHandle) => throw new NotImplementedException();
+
 }

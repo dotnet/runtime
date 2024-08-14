@@ -171,6 +171,14 @@ internal interface IRuntimeTypeSystem : IContract
 
     public virtual TargetPointer GetMethodDescVersioningState(MethodDescHandle methodDesc) => throw new NotImplementedException();
     public virtual uint GetMethodToken(MethodDescHandle methodDesc) => throw new NotImplementedException();
+
+    public virtual ushort GetSlotNumber(MethodDescHandle methodDesc) => throw new NotImplementedException();
+
+    public virtual bool HasNativeCodeSlot(MethodDescHandle methodDesc) => throw new NotImplementedException();
+
+    public virtual TargetPointer GetAddressOfNativeCodeSlot(MethodDescHandle methodDesc) => throw new NotImplementedException();
+
+    public virtual uint GetMemberDef(MethodDescHandle methodDesc) => throw new NotImplementedException();
     #endregion MethodDesc inspection APIs
 }
 

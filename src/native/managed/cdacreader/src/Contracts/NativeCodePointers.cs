@@ -31,6 +31,10 @@ internal interface INativeCodePointers : IContract
 
     public virtual bool IsReJITEnabled() => throw new NotImplementedException();
     public virtual bool CodeVersionManagerSupportsMethod(TargetPointer methodDesc) => throw new NotImplementedException();
+
+    public virtual TargetCodePointer GetNativeCode(NativeCodeVersionHandle codeVersionHandle) => throw new NotImplementedException();
+
+    public virtual TargetPointer GetGCCoverageInfo(NativeCodeVersionHandle codeVersionHandle) => throw new NotImplementedException();
 }
 
 internal struct NativeCodeVersionHandle

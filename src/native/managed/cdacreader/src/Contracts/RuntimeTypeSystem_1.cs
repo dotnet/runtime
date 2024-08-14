@@ -943,4 +943,12 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
         return methodDesc.Token;
     }
 
+    ushort IRuntimeTypeSystem.GetSlotNumber(MethodDescHandle methodDesc) => throw new NotImplementedException();
+
+    bool IRuntimeTypeSystem.HasNativeCodeSlot(MethodDescHandle methodDesc) => throw new NotImplementedException();
+
+    TargetPointer IRuntimeTypeSystem.GetAddressOfNativeCodeSlot(MethodDescHandle methodDesc) => throw new NotImplementedException();
+
+    uint IRuntimeTypeSystem.GetMemberDef(MethodDescHandle methodDesc) => throw new NotImplementedException();
+
 }
