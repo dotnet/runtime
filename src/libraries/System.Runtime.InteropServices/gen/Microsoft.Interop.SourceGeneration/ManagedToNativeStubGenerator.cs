@@ -86,6 +86,11 @@ namespace Microsoft.Interop
                 && noMarshallingNeeded;
         }
 
+        public string GetNativeIdentifier(TypePositionInfo info)
+        {
+            return _context.GetIdentifiers(info).native;
+        }
+
         /// <summary>
         /// Generate the method body of the managed-to-unmanaged stub.
         /// </summary>

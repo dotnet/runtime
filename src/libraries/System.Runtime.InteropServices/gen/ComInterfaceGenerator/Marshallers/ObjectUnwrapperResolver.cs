@@ -15,7 +15,18 @@ namespace Microsoft.Interop
     internal sealed class ObjectUnwrapperResolver : IMarshallingGeneratorResolver
     {
         public ResolvedGenerator Create(TypePositionInfo info, StubCodeContext context)
-            => info.MarshallingAttributeInfo is ObjectUnwrapperInfo ? ResolvedGenerator.Resolved(new Marshaller().Bind(info)) : ResolvedGenerator.UnresolvedGenerator;
+        {
+            if (info.MarshallingAttributeInfo is ObjectUnwrapperInfo)
+            {
+                return context.Direction == MarshalDirection.UnmanagedToManaged
+                    ? ResolvedGenerator.Resolved(new Marshaller().Bind(info))
+                    : ResolvedGenerator.Resolved(new Forwarder().Bind(info));
+            }
+            else
+            {
+                return ResolvedGenerator.UnresolvedGenerator;
+            }
+        }
 
         private sealed class Marshaller : IUnboundMarshallingGenerator
         {
