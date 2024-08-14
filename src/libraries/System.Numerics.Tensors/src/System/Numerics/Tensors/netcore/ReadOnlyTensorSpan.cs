@@ -599,10 +599,10 @@ namespace System.Numerics.Tensors
             return retVal;
         }
 
-        //public static explicit operator TensorSpan<T>(Array? array);
-#pragma warning disable 1591 // TODO: Document this API. https://github.com/dotnet/runtime/issues/105981
+        /// <summary>
+        /// Defines an implicit conversion of an array to a <see cref="TensorSpan{T}"/>.
+        /// </summary>
         public static implicit operator ReadOnlyTensorSpan<T>(T[]? array) => new ReadOnlyTensorSpan<T>(array);
-#pragma warning restore 1591
 
         /// <summary>
         /// Returns a <see cref="string"/> with the name of the type and the number of elements.

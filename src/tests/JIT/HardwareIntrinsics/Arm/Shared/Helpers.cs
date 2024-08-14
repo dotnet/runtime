@@ -8005,6 +8005,25 @@ namespace JIT.HardwareIntrinsics.Arm
             return result;
         }
 
+        public static int LoadInt16FromByteArray(byte[] array, int offset)
+        {
+            int ret = 0;
+            for (int i = 1; i >= 0; i--)
+            {
+                ret = (ret << 8) + (int)array[offset+i];
+            }
+            return ret;
+        }
+
+        public static int LoadInt16FromByteArray(byte[] array, uint offset)
+        {
+            int ret = 0;
+            for (int i = 1; i >= 0; i--)
+            {
+                ret = (ret << 8) + (int)array[offset+i];
+            }
+            return ret;
+        }
         public static int LoadInt32FromByteArray(byte[] array, int offset)
         {
             int ret = 0;
@@ -8041,6 +8060,26 @@ namespace JIT.HardwareIntrinsics.Arm
             for (long i = 7; i >= 0; i--)
             {
                 ret = (ret << 8) + (long)array[offset+(ulong)i];
+            }
+            return ret;
+        }
+
+        public static uint LoadUInt16FromByteArray(byte[] array, int offset)
+        {
+            uint ret = 0;
+            for (int i = 1; i >= 0; i--)
+            {
+                ret = (ret << 8) + (uint)array[offset+i];
+            }
+            return ret;
+        }
+
+        public static uint LoadUInt16FromByteArray(byte[] array, uint offset)
+        {
+            uint ret = 0;
+            for (int i = 1; i >= 0; i--)
+            {
+                ret = (ret << 8) + (uint)array[offset+i];
             }
             return ret;
         }
@@ -8571,6 +8610,56 @@ namespace JIT.HardwareIntrinsics.Arm
             return (mask[index] == T.Zero) ? T.Zero : T.CreateTruncating(*(ExtendedElementT*)Unsafe.BitCast<AddressT, nint>(data[index]));
         }
 
+        private static bool GetGatherVectorResultByByteOffset<T, ExtendedElementT, Offset>(int index, T[] mask, byte[] data, Offset[] offsets, T result)
+                where T : INumberBase<T>
+                where ExtendedElementT : INumberBase<ExtendedElementT>
+                where Offset : IBinaryInteger<Offset>
+        {
+            if (mask[index] == T.Zero)
+            {
+                return result == T.Zero;
+            }
+
+            int offset = int.CreateChecked(offsets[index]);
+
+            if (typeof(ExtendedElementT) == typeof(Int16))
+            {
+                return ExtendedElementT.CreateTruncating(result) == ExtendedElementT.CreateTruncating(LoadInt16FromByteArray(data, offset));
+            }
+            else if (typeof(ExtendedElementT) == typeof(UInt16))
+            {
+                return ExtendedElementT.CreateTruncating(result) == ExtendedElementT.CreateTruncating(LoadUInt16FromByteArray(data, offset));
+            }
+            else if (typeof(ExtendedElementT) == typeof(int))
+            {
+                return ExtendedElementT.CreateTruncating(result) == ExtendedElementT.CreateTruncating(LoadInt32FromByteArray(data, offset));
+            }
+            else if (typeof(ExtendedElementT) == typeof(uint))
+            {
+                return ExtendedElementT.CreateTruncating(result) == ExtendedElementT.CreateTruncating(LoadUInt32FromByteArray(data, offset));
+            }
+            else if (typeof(ExtendedElementT) == typeof(long))
+            {
+                return ExtendedElementT.CreateTruncating(result) == ExtendedElementT.CreateTruncating(LoadInt64FromByteArray(data, offset));
+            }
+            else if (typeof(ExtendedElementT) == typeof(ulong))
+            {
+                return ExtendedElementT.CreateTruncating(result) == ExtendedElementT.CreateTruncating(LoadUInt64FromByteArray(data, offset));
+            }
+            else if (typeof(ExtendedElementT) == typeof(float))
+            {
+                return BitConverter.SingleToInt32Bits((float)(object)result) == LoadInt32FromByteArray(data, offset);
+            }
+            else if (typeof(ExtendedElementT) == typeof(double))
+            {
+                return BitConverter.DoubleToInt64Bits((double)(object)result) == LoadInt64FromByteArray(data, offset);
+            }
+            else
+            {
+                return false;
+            }
+        }
+
         private static bool CheckGatherVectorBehaviorCore<T, ExtendedElementT, Index>(T[] mask, ExtendedElementT[] data, Index[] indices, T[] result, Func<int, T, T> map) 
                 where T : INumberBase<T>
                 where ExtendedElementT : INumberBase<ExtendedElementT> 
@@ -8823,6 +8912,53 @@ namespace JIT.HardwareIntrinsics.Arm
             return CheckFirstFaultingBehaviorCore(result, faultResult, i => GetGatherVectorBasesResultByIndex<T, AddressT, ExtendedElementT>(i, mask, data) == result[i]);
         }
         
+        public static bool CheckGatherVectorWithByteOffsetFirstFaultingBehavior<T, ExtendedElementT, Offset, TFault>(T[] mask, ExtendedElementT[] data, Offset[] offsets, T[] result, Vector<TFault> faultResult)
+                where T : INumberBase<T>
+                where ExtendedElementT : INumberBase<ExtendedElementT>
+                where Offset : IBinaryInteger<Offset>
+                where TFault : INumberBase<TFault>
+        {
+            // Checking first faulting behavior requires at least one zero to ensure we are testing the behavior.
+            if (!CheckFaultResultHasAtLeastOneZero(faultResult))
+            {
+                TestLibrary.TestFramework.LogInformation("Fault result requires at least one zero.");
+                return false;
+            }
+
+            var hasFaulted = false;
+            var expectedFaultResult =
+                InitVector<TFault>(i =>
+                {
+                    if (hasFaulted)
+                    {
+                        return TFault.Zero;
+                    }
+
+                    if (mask[i] == T.Zero)
+                    {
+                        return TFault.One;
+                    }
+
+                    var offset = int.CreateChecked(offsets[i]);
+                    var endOffset = data.Length * Unsafe.SizeOf<ExtendedElementT>();
+                    if (offset < 0 || offset >= endOffset)
+                    {
+                        hasFaulted = true;
+                        return TFault.Zero;
+                    }
+                    return TFault.One;
+                });
+            if (expectedFaultResult != faultResult)
+            {
+                TestLibrary.TestFramework.LogInformation($"Expected fault result: {expectedFaultResult}\nActual fault result: {faultResult}");
+                return false;
+            }
+
+            byte[] bytes = new byte[data.Length * Unsafe.SizeOf<ExtendedElementT>()];
+            Buffer.BlockCopy(data, 0, bytes, 0, bytes.Length);
+            return CheckFirstFaultingBehaviorCore(result, faultResult, i => GetGatherVectorResultByByteOffset<T, ExtendedElementT, Offset>(i, mask, bytes, offsets, result[i]));
+        }
+
         public static T[] CreateBreakPropagateMask<T>(T[] op1, T[] op2) where T : IBinaryInteger<T>
         {
             var count = op1.Length;

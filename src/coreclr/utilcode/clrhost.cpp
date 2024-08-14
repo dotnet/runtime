@@ -31,6 +31,13 @@ void* GetClrModuleBase()
 
 void* GetClrModuleBase()
 {
+    return GetCurrentModuleBase();
+}
+
+#endif // DACCESS_COMPILE
+
+void* GetCurrentModuleBase()
+{
     LIMITED_METHOD_CONTRACT;
 
 #if HOST_WINDOWS
@@ -47,8 +54,6 @@ void* GetClrModuleBase()
     return pRet;
 #endif // HOST_WINDOWS
 }
-
-#endif // DACCESS_COMPILE
 
 thread_local int t_CantAllocCount;
 
