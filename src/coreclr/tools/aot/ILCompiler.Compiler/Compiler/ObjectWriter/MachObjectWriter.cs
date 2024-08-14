@@ -355,7 +355,7 @@ namespace ILCompiler.ObjectWriter
             {
                 Log2Alignment = 1,
                 Flags = flags,
-                KeepDataLayout = section.Type is SectionType.ReadOnly or SectionType.Writeable or SectionType.Uninitialized
+                KeepDataLayout = section.IsDataSection
             };
 
             int sectionIndex = _sections.Count;

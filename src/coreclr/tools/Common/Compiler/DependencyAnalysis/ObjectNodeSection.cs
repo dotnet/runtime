@@ -43,6 +43,17 @@ namespace ILCompiler.DependencyAnalysis
             }
         }
 
+        /// <summary>
+        /// Returns true if the section contains regular data (as opposed to code, debug info or unwinding data)
+        /// </summary>
+        public bool IsDataSection
+        {
+            get
+            {
+                return Type is SectionType.ReadOnly or SectionType.Writeable or SectionType.Uninitialized;
+            }
+        }
+
         public static readonly ObjectNodeSection XDataSection = new ObjectNodeSection("xdata", SectionType.ReadOnly);
         public static readonly ObjectNodeSection DataSection = new ObjectNodeSection("data", SectionType.Writeable);
         public static readonly ObjectNodeSection ReadOnlyDataSection = new ObjectNodeSection("rdata", SectionType.ReadOnly);
