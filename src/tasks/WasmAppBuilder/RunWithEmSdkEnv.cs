@@ -33,11 +33,14 @@ namespace Microsoft.WebAssembly.Build.Tasks
             }
             else
             {
+                string preEnvScriptPath = Path.Combine(EmSdkPath, "pre_emsdk_env.sh");
+                if (!CheckEnvScript(preEnvScriptPath))
+                    return false;
                 string envScriptPath = Path.Combine(EmSdkPath, "emsdk_env.sh");
                 if (!CheckEnvScript(envScriptPath))
                     return false;
 
-                Command = $"bash -c 'source {envScriptPath} > /dev/null 2>&1 && {Command}'";
+                Command = $"bash -c 'source {preEnvScriptPath}  > /dev/null 2>&1 && source {envScriptPath} > /dev/null 2>&1 && {Command}'";
             }
 
             var workingDir = string.IsNullOrEmpty(WorkingDirectory) ? Directory.GetCurrentDirectory() : WorkingDirectory;
