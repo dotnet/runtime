@@ -43,6 +43,8 @@ public static partial class XmlSerializerTests
     }
 #endif
 
+    public static bool DefaultValueAttributeIsSupported => AppContext.TryGetSwitch("System.ComponentModel.DefaultValueAttribute.IsSupported", out bool isEnabled) ? isEnabled : true;
+
     [Fact]
     public static void Xml_TypeWithDateTimePropertyAsXmlTime()
     {
@@ -823,7 +825,7 @@ string.Format(@"<?xml version=""1.0"" encoding=""utf-8""?>
         Assert.StrictEqual(obj.TimeSpanProperty, deserializedObj.TimeSpanProperty);
     }
 
-    [Fact]
+    [ConditionalFact(nameof(DefaultValueAttributeIsSupported))]
     public static void Xml_TypeWithDefaultTimeSpanProperty()
     {
         var obj = new TypeWithDefaultTimeSpanProperty { TimeSpanProperty2 = new TimeSpan(0, 1, 0) };
@@ -868,7 +870,7 @@ string.Format(@"<?xml version=""1.0"" encoding=""utf-8""?>
         }
     }
 
-    [Fact]
+    [ConditionalFact(nameof(DefaultValueAttributeIsSupported))]
     public static void Xml_TypeWithDateTimeOffsetProperty()
     {
         var now = new DateTimeOffset(DateTime.Now);
@@ -893,7 +895,7 @@ string.Format(@"<?xml version=""1.0"" encoding=""utf-8""?>
         Assert.True(deserializedObj.NullableDTOWithDefault == null);
     }
 
-    [Fact]
+    [ConditionalFact(nameof(DefaultValueAttributeIsSupported))]
     public static void Xml_DeserializeTypeWithEmptyDateTimeOffsetProperties()
     {
         //var def = DateTimeOffset.Parse("3/17/1977 5:00:01 PM -05:00");  //  "1977-03-17T17:00:01-05:00"

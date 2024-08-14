@@ -24,7 +24,9 @@
     <TestConsoleAppSourceFiles Include="DebuggerVisualizerAttributeTests.cs" >
       <EnabledProperties>DebuggerSupport</EnabledProperties>
     </TestConsoleAppSourceFiles>
-    <TestConsoleAppSourceFiles Include="DefaultValueAttributeCtorTest.cs" />
+    <TestConsoleAppSourceFiles Include="DefaultValueAttributeCtorTest.cs">
+      <EnabledProperties>_DefaultValueAttributeSupport</EnabledProperties>
+    </TestConsoleAppSourceFiles>
     <TestConsoleAppSourceFiles Include="GenericArraySortHelperTest.cs" />
     <TestConsoleAppSourceFiles Include="InheritedAttributeTests.cs" />
     <TestConsoleAppSourceFiles Include="InterfacesOnArrays.cs" />
