@@ -25,7 +25,7 @@ namespace System.Reflection.Metadata
         /// Positive value is array rank.
         /// Negative value is modifier encoded using constants defined in <see cref="TypeNameParserHelpers"/>.
         /// </summary>
-        private readonly sbyte _rankOrModifier;
+        private readonly int _rankOrModifier;
         /// <summary>
         /// To avoid the need of allocating a string for all declaring types (example: A+B+C+D+E+F+G),
         /// length of the name is stored and the fullName passed in ctor represents the full name of the nested type.
@@ -50,7 +50,7 @@ namespace System.Reflection.Metadata
 #else
             ImmutableArray<TypeName>.Builder? genericTypeArguments = default,
 #endif
-            sbyte rankOrModifier = default,
+            int rankOrModifier = default,
             int nestedNameLength = -1)
         {
             _fullName = fullName;
@@ -75,7 +75,7 @@ namespace System.Reflection.Metadata
             TypeName? elementOrGenericType,
             TypeName? declaringType,
             ImmutableArray<TypeName> genericTypeArguments,
-            sbyte rankOrModifier = default,
+            int rankOrModifier = default,
             int nestedNameLength = -1)
         {
             _fullName = fullName;
@@ -461,7 +461,7 @@ namespace System.Reflection.Metadata
         public TypeName MakeArrayTypeName(int rank)
             => rank <= 0
                 ? throw new ArgumentOutOfRangeException(nameof(rank))
-                : MakeElementTypeName((sbyte)rank);
+                : MakeElementTypeName(rank);
 
         /// <summary>
         /// Creates a <see cref="TypeName" /> object that represents a pointer to the current type.
@@ -498,7 +498,7 @@ namespace System.Reflection.Metadata
             return new TypeName(fullName: null, AssemblyName, elementOrGenericType: this, declaringType: _declaringType, genericTypeArguments: typeArguments);
         }
 
-        private TypeName MakeElementTypeName(sbyte rankOrModifier)
+        private TypeName MakeElementTypeName(int rankOrModifier)
             => new TypeName(
                 fullName: null,
                 assemblyName: AssemblyName,
