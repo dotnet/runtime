@@ -150,13 +150,30 @@ namespace System
 
         bool IDynamicInterfaceCastable.IsInterfaceImplemented(RuntimeTypeHandle interfaceType, bool throwIfNotImplemented)
         {
-            if (interfaceType.Equals(typeof(IEnumerable).TypeHandle)
-                || interfaceType.Equals(typeof(ICustomAdapter).TypeHandle))
+            if (interfaceType.Equals(typeof(IEnumerable).TypeHandle))
+            {
+                return IsIEnumerable(this);
+            }
+            else if (interfaceType.Equals(typeof(IEnumerator).TypeHandle))
+            {
+                return IsIEnumerator(this);
+            }
+            else if (interfaceType.Equals(typeof(ICustomAdapter).TypeHandle))
+            {
+                // This is for backwards compatibility purposes.
+                return IsIEnumerator(this) || IsIEnumerable(this);
+            }
+            else
+            {
+                return false;
+            }
+
+            static bool IsIEnumerable(__ComObject co)
             {
                 try
                 {
                     // We just need to know the query was successful.
-                    _ = IEnumerableOverDispatchImpl.QueryForNewEnum(this);
+                    _ = IEnumerableOverDispatchImpl.QueryForNewEnum(co);
                     return true;
                 }
                 catch
@@ -168,13 +185,10 @@ namespace System
                     return false;
                 }
             }
-            else if (interfaceType.Equals(typeof(IEnumerator).TypeHandle))
+
+            static bool IsIEnumerator(__ComObject co)
             {
-                return this is IEnumVARIANT;
-            }
-            else
-            {
-                return false;
+                return co is IEnumVARIANT;
             }
         }
 
@@ -211,7 +225,7 @@ namespace System
                 return typeof(IEnumeratorOverEnumVARIANTImpl).TypeHandle;
             }
 
-            return default(RuntimeTypeHandle);
+            return default;
         }
 
         [DynamicInterfaceCastableImplementation]
@@ -260,8 +274,6 @@ namespace System
 
             IEnumerator IEnumerable.GetEnumerator()
             {
-                Debug.Assert(OperatingSystem.IsWindows());
-
                 IEnumVARIANT enumVariant = QueryForNewEnum((__ComObject)this);
                 IntPtr enumVariantPtr = IntPtr.Zero;
                 try
