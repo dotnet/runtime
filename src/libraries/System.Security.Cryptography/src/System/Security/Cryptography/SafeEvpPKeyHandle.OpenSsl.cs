@@ -243,6 +243,13 @@ namespace System.Security.Cryptography
                 throw new PlatformNotSupportedException(SR.PlatformNotSupported_CryptographyOpenSSL);
             }
 
+            // 3.0+ are M_NN_00_PP_p (Major, Minor, 0, Patch, Preview)
+            // 1.x.y are 1_XX_YY_PP_p
+            if (SafeEvpPKeyHandle.OpenSslVersion < 0x3_00_00_00_0)
+            {
+                throw new PlatformNotSupportedException(SR.PlatformNotSupported_CryptographyOpenSSL3NotFound);
+            }
+
             return Interop.Crypto.LoadKeyFromProvider(providerName, keyUri);
         }
     }
