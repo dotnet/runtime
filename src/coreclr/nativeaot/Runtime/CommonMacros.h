@@ -291,8 +291,6 @@ typedef uint8_t CODE_LOCATION;
 #define FCIMPLEND \
     }
 
-typedef bool CLR_BOOL;
-
 typedef int32_t FC_BOOL_RET;
 typedef int32_t FC_BOOL_ARG;
 
