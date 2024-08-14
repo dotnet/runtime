@@ -3743,8 +3743,18 @@ uint32_t CEEInfo::getClassAttribsInternal (CORINFO_CLASS_HANDLE clsHnd)
             if (pMT->IsByRefLike())
                 ret |= CORINFO_FLG_BYREF_LIKE;
 
-            if (pClass->IsUnsafeValueClass())
+            // In Reverse P/Invoke stubs, we are generating the code
+            // and we are not generating the code patterns that the GS checks
+            // are meant to catch.
+            // As a result, we can skip setting this flag.
+            // We do this as the GS checks (emitted when this flag is set)
+            // can break C++/CLI's copy-constructor semantics by missing copies.
+            if (pClass->IsUnsafeValueClass()
+                && !(m_pMethodBeingCompiled->IsILStub()
+                    && dac_cast<PTR_DynamicMethodDesc>(m_pMethodBeingCompiled)->GetILStubType() == DynamicMethodDesc::StubNativeToCLRInterop))
+            {
                 ret |= CORINFO_FLG_UNSAFE_VALUECLASS;
+            }
         }
         if (pClass->HasExplicitFieldOffsetLayout() && pClass->HasOverlaidField())
             ret |= CORINFO_FLG_OVERLAPPING_FIELDS;
@@ -7634,26 +7644,6 @@ static void getMethodInfoHelper(
         SigPointer localSig = pResolver->GetLocalSig();
         localSig.GetSignature(&pLocalSig, &cbLocalSig);
     }
-    else if (ftn->GetMemberDef() == CoreLibBinder::GetMethod(METHOD__RUNTIME_HELPERS__COPY_CONSTRUCT)->GetMemberDef())
-    {
-        _ASSERTE(ftn->HasMethodInstantiation());
-        Instantiation inst = ftn->GetMethodInstantiation();
-
-        _ASSERTE(inst.GetNumArgs() == 1);
-        TypeHandle type = inst[0];
-
-        if (!GenerateCopyConstructorHelper(ftn, type, &cxt.TransientResolver, &cxt.Header, methInfo))
-        {
-            ThrowHR(COR_E_BADIMAGEFORMAT);
-        }
-
-        scopeHnd = cxt.CreateScopeHandle();
-
-        _ASSERTE(cxt.Header != NULL);
-        getMethodInfoILMethodHeaderHelper(cxt.Header, methInfo);
-        pLocalSig = cxt.Header->LocalVarSig;
-        cbLocalSig = cxt.Header->cbLocalVarSig;
-    }
     else
     {
         if (!ftn->TryGenerateUnsafeAccessor(&cxt.TransientResolver, &cxt.Header))
@@ -9438,32 +9428,6 @@ CORINFO_ARG_LIST_HANDLE CEEInfo::getArgNext(CORINFO_ARG_LIST_HANDLE args)
 
 /*********************************************************************/
 
-namespace
-{
-    bool HasCopyConstructorModifier(SigPointer sig, CORINFO_MODULE_HANDLE scope)
-    {
-        if (IsDynamicScope(scope))
-        {
-            DynamicResolver* pResolver = GetDynamicResolver(scope);
-            if (sig.HasCustomModifier(pResolver, "Microsoft.VisualC.NeedsCopyConstructorModifier", ELEMENT_TYPE_CMOD_REQD) ||
-                sig.HasCustomModifier(pResolver, "System.Runtime.CompilerServices.IsCopyConstructed", ELEMENT_TYPE_CMOD_REQD))
-            {
-                return true;
-            }
-        }
-        else
-        {
-            Module* pModule = GetModule(scope);
-            if (sig.HasCustomModifier(pModule, "Microsoft.VisualC.NeedsCopyConstructorModifier", ELEMENT_TYPE_CMOD_REQD) ||
-                sig.HasCustomModifier(pModule, "System.Runtime.CompilerServices.IsCopyConstructed", ELEMENT_TYPE_CMOD_REQD))
-            {
-                return true;
-            }
-        }
-        return false;
-    }
-}
-
 CorInfoTypeWithMod CEEInfo::getArgType (
         CORINFO_SIG_INFO*       sig,
         CORINFO_ARG_LIST_HANDLE args,
@@ -9494,16 +9458,11 @@ CorInfoTypeWithMod CEEInfo::getArgType (
         IfFailThrow(ptr.PeekElemType(&eType));
     }
 
-    Module* pModule = GetModule(sig->scope);
-
-    if (HasCopyConstructorModifier(ptr, sig->scope))
-    {
-        result = CorInfoTypeWithMod((int)result | CORINFO_TYPE_MOD_COPY_WITH_HELPER);
-    }
-
     // Now read off the "real" element type after taking any instantiations into consideration
     SigTypeContext typeContext;
     GetTypeContext(&sig->sigInst,&typeContext);
+
+    Module* pModule = GetModule(sig->scope);
 
     CorElementType type = ptr.PeekElemTypeClosed(pModule, &typeContext);
 
@@ -9541,14 +9500,6 @@ CorInfoTypeWithMod CEEInfo::getArgType (
             {
                 classMustBeLoadedBeforeCodeIsRun(CORINFO_CLASS_HANDLE(thPtr.AsPtr()));
             }
-        }
-        FALLTHROUGH;
-
-    case ELEMENT_TYPE_BYREF:
-        IfFailThrow(ptr.GetElemType(NULL));
-        if (HasCopyConstructorModifier(ptr, sig->scope))
-        {
-            result = CorInfoTypeWithMod((int)result | CORINFO_TYPE_MOD_COPY_WITH_HELPER);
         }
         break;
 
@@ -10000,40 +9951,6 @@ void CEEInfo::getAddressOfPInvokeTarget(CORINFO_METHOD_HANDLE method,
     }
 
     EE_TO_JIT_TRANSITION();
-}
-
-CORINFO_METHOD_HANDLE CEEInfo::getSpecialCopyHelper(CORINFO_CLASS_HANDLE type)
-{
-    CONTRACTL {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_PREEMPTIVE;
-    } CONTRACTL_END;
-
-    CORINFO_METHOD_HANDLE result = NULL;
-
-    JIT_TO_EE_TRANSITION();
-
-    TypeHandle th = TypeHandle(type);
-
-    _ASSERTE(th.IsValueType());
-
-    MethodDesc* pHelperMD = CoreLibBinder::GetMethod(METHOD__RUNTIME_HELPERS__COPY_CONSTRUCT);
-
-    pHelperMD = MethodDesc::FindOrCreateAssociatedMethodDesc(
-        pHelperMD,
-        pHelperMD->GetMethodTable(),
-        FALSE,
-        Instantiation(&th, 1),
-        FALSE,
-        FALSE);
-
-    pHelperMD->CheckRestore();
-    result = (CORINFO_METHOD_HANDLE)pHelperMD;
-
-    EE_TO_JIT_TRANSITION();
-
-    return result;
 }
 
 /*********************************************************************/
