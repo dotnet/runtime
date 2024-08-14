@@ -1722,39 +1722,6 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 			if (cfg->gen_write_barriers && is_ref)
 				mini_emit_write_barrier (cfg, args [0], args [1]);
 		}
-		else if ((strcmp (cmethod->name, "CompareExchange") == 0) && fsig->param_count == 4 &&
-		         fsig->params [1]->type == MONO_TYPE_I4) {
-			MonoInst *cmp, *ceq;
-
-			if (!mono_arch_opcode_supported (OP_ATOMIC_CAS_I4))
-				return NULL;
-
-			/* int32 r = CAS (location, value, comparand); */
-			MONO_INST_NEW (cfg, ins, OP_ATOMIC_CAS_I4);
-			ins->dreg = alloc_ireg (cfg);
-			ins->sreg1 = args [0]->dreg;
-			ins->sreg2 = args [1]->dreg;
-			ins->sreg3 = args [2]->dreg;
-			ins->type = STACK_I4;
-			MONO_ADD_INS (cfg->cbb, ins);
-
-			/* bool result = r == comparand; */
-			MONO_INST_NEW (cfg, cmp, OP_ICOMPARE);
-			cmp->sreg1 = ins->dreg;
-			cmp->sreg2 = args [2]->dreg;
-			cmp->type = STACK_I4;
-			MONO_ADD_INS (cfg->cbb, cmp);
-
-			MONO_INST_NEW (cfg, ceq, OP_ICEQ);
-			ceq->dreg = alloc_ireg (cfg);
-			ceq->type = STACK_I4;
-			MONO_ADD_INS (cfg->cbb, ceq);
-
-			/* *success = result; */
-			MONO_EMIT_NEW_STORE_MEMBASE (cfg, OP_STOREI1_MEMBASE_REG, args [3]->dreg, 0, ceq->dreg);
-
-			cfg->has_atomic_cas_i4 = TRUE;
-		}
 		else if (strcmp (cmethod->name, "MemoryBarrier") == 0 && fsig->param_count == 0)
 			ins = mini_emit_memory_barrier (cfg, MONO_MEMORY_BARRIER_SEQ);
 
