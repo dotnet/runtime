@@ -41,5 +41,17 @@ namespace Microsoft.Extensions.DependencyInjection
 
             return services;
         }
+
+        /// <summary>
+        /// Add an <see cref="IHostedService"/> registration for the given type.
+        /// </summary>
+        /// <param name="services">The <see cref="IServiceCollection"/> to register with.</param>
+        /// <param name="type">The type of the hosted service.</param>
+        /// <returns>The original <see cref="IServiceCollection"/>.</returns>
+        public static IServiceCollection AddHostedService(this IServiceCollection services, Type type)
+        {
+            services.TryAddEnumerable(ServiceDescriptor.Singleton(typeof(IHostedService), type));
+            return services;
+        }
     }
 }
