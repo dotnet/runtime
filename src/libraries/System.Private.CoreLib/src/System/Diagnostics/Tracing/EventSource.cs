@@ -230,6 +230,11 @@ namespace System.Diagnostics.Tracing
         private static bool InitializeIsSupported() =>
             AppContext.TryGetSwitch("System.Diagnostics.Tracing.EventSource.IsSupported", out bool isSupported) ? isSupported : true;
 
+        internal static bool IsMeterSupported { get; } = InitializeIsMeterSupported();
+
+        private static bool InitializeIsMeterSupported() =>
+            AppContext.TryGetSwitch("System.Diagnostics.Metrics.Meter.IsSupported", out bool isSupported) ? isSupported : true;
+
 #if FEATURE_EVENTSOURCE_XPLAT
 #pragma warning disable CA1823 // field is used to keep listener alive
         private static readonly EventListener? persistent_Xplat_Listener = IsSupported ? XplatEventLogger.InitializePersistentListener() : null;
@@ -3831,7 +3836,7 @@ namespace System.Diagnostics.Tracing
             // Functionally we could preregister NativeRuntimeEventSource and RuntimeEventSource as well, but it may not provide
             // much benefit. The main benefit for MetricsEventSource is that the app may never use it and it defers
             // pulling the System.Diagnostics.DiagnosticSource assembly into the process until it is needed.
-            if (AppContext.TryGetSwitch("System.Diagnostics.Metrics.Meter.IsSupported", out bool isSupported) ? isSupported : true)
+            if (IsMeterSupported)
             {
                 const string name = "System.Diagnostics.Metrics";
                 Guid id = new Guid("20752bc4-c151-50f5-f27b-df92d8af5a61");
