@@ -49,6 +49,9 @@ namespace System.Net.Quic.Tests
                 // https://github.com/microsoft/msquic/issues/3813
                 Assert.Equal(clientConnection.LocalEndPoint, serverConnection.RemoteEndPoint);
             }
+            Assert.Equal(ApplicationProtocol.ToString(), clientConnection.NegotiatedApplicationProtocol.ToString());
+            Assert.Equal(ApplicationProtocol.ToString(), serverConnection.NegotiatedApplicationProtocol.ToString());
+
             Assert.Equal(options.ClientAuthenticationOptions.TargetHost, clientConnection.TargetHostName);
             Assert.Equal(options.ClientAuthenticationOptions.TargetHost, serverConnection.TargetHostName);
 
