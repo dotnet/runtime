@@ -410,11 +410,6 @@ CDAC_TYPE_FIELD(RangeSection, /*pointer*/, HeapList, cdac_data<RangeSection>::He
 CDAC_TYPE_FIELD(RangeSection, /*pointer*/, R2RModule, cdac_data<RangeSection>::R2RModule)
 CDAC_TYPE_END(RangeSection)
 
-CDAC_TYPE_BEGIN(IJitManager)
-CDAC_TYPE_INDETERMINATE(IJitManager)
-CDAC_TYPE_FIELD(IJitManager, /*uint32*/, JitManagerKind, cdac_data<IJitManager>::JitManagerKind)
-CDAC_TYPE_END(IJitManager)
-
 CDAC_TYPE_BEGIN(RealCodeHeader)
 CDAC_TYPE_INDETERMINATE(RealCodeHeader)
 CDAC_TYPE_FIELD(RealCodeHeader, /*pointer*/, MethodDesc, offsetof(RealCodeHeader, phdrMDesc))

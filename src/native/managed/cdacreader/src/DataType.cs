@@ -58,7 +58,6 @@ public enum DataType
     RangeSectionMap,
     RangeSectionFragment,
     RangeSection,
-    IJitManager,
     RealCodeHeader,
     HeapList,
     MethodDescVersioningState,
