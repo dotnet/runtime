@@ -282,13 +282,13 @@ namespace System.Reflection.Metadata
         /// </remarks>
         public int GetNodeCount()
         {
+            // This method does not check for integer overflows because it's impossible to parse
+            // a TypeName with NodeCount > int.MaxValue (TypeNameParseOptions.MaxNodes is an int).
             int result = 1;
 
-            TypeName? declaring = _declaringType;
-            while (declaring is not null)
+            if (IsNested)
             {
-                result++;
-                declaring = declaring._declaringType;
+                result += DeclaringType.GetNodeCount();
             }
 
             if (IsArray || IsPointer || IsByRef)
