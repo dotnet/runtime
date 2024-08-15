@@ -305,7 +305,6 @@ namespace System.Reflection.Emit
         {
             ThrowIfCreated();
 
-
             MethodBuilderImpl methodBuilder = new(name, attributes, callingConvention, returnType, returnTypeRequiredCustomModifiers,
                 returnTypeOptionalCustomModifiers, parameterTypes, parameterTypeRequiredCustomModifiers, parameterTypeOptionalCustomModifiers, _module, this);
             _methodDefinitions.Add(methodBuilder);
@@ -616,23 +615,22 @@ namespace System.Reflection.Emit
         public override string? Namespace => _namespace;
         public override Assembly Assembly => _module.Assembly;
         public override Module Module => _module;
-        public override Type UnderlyingSystemType
-        {
-            get
-            {
-                if (IsEnum)
-                {
-                    if (_enumUnderlyingType == null)
-                    {
-                        throw new InvalidOperationException(SR.InvalidOperation_NoUnderlyingTypeOnEnum);
-                    }
+        public override Type UnderlyingSystemType => this;
 
-                    return _enumUnderlyingType;
-                }
-                else
+        public override Type GetEnumUnderlyingType()
+        {
+            if (IsEnum)
+            {
+                if (_enumUnderlyingType == null)
                 {
-                    return this;
+                    throw new InvalidOperationException(SR.InvalidOperation_NoUnderlyingTypeOnEnum);
                 }
+
+                return _enumUnderlyingType;
+            }
+            else
+            {
+                throw new ArgumentException(SR.Argument_MustBeEnum);
             }
         }
         public override bool IsSZArray => false;

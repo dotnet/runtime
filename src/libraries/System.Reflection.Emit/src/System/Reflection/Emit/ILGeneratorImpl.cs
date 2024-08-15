@@ -601,7 +601,7 @@ namespace System.Reflection.Emit
             }
 
             EmitOpcode(opcode);
-            UpdateStackSize(GetStackChange(opcode, methodInfo, optionalParameterTypes));
+            UpdateStackSize(GetStackChange(opcode, methodInfo, _moduleBuilder.GetTypeFromCoreAssembly(CoreTypeId.Void), optionalParameterTypes));
             if (optionalParameterTypes == null || optionalParameterTypes.Length == 0)
             {
                 WriteOrReserveToken(_moduleBuilder.TryGetMethodHandle(methodInfo), methodInfo);
@@ -613,12 +613,12 @@ namespace System.Reflection.Emit
             }
         }
 
-        private static int GetStackChange(OpCode opcode, MethodInfo methodInfo, Type[]? optionalParameterTypes)
+        private static int GetStackChange(OpCode opcode, MethodInfo methodInfo, Type voidType, Type[]? optionalParameterTypes)
         {
             int stackChange = 0;
 
             // Push the return value if there is one.
-            if (methodInfo.ReturnType != typeof(void))
+            if (methodInfo.ReturnType != voidType)
             {
                 stackChange++;
             }
@@ -665,7 +665,7 @@ namespace System.Reflection.Emit
                 }
             }
 
-            int stackChange = GetStackChange(returnType, parameterTypes);
+            int stackChange = GetStackChange(returnType, _moduleBuilder.GetTypeFromCoreAssembly(CoreTypeId.Void), parameterTypes);
 
             // Pop off VarArg arguments.
             if (optionalParameterTypes != null)
@@ -685,17 +685,17 @@ namespace System.Reflection.Emit
 
         public override void EmitCalli(OpCode opcode, CallingConvention unmanagedCallConv, Type? returnType, Type[]? parameterTypes)
         {
-            int stackChange = GetStackChange(returnType, parameterTypes);
+            int stackChange = GetStackChange(returnType, _moduleBuilder.GetTypeFromCoreAssembly(CoreTypeId.Void), parameterTypes);
             UpdateStackSize(stackChange);
             Emit(OpCodes.Calli);
             _il.Token(_moduleBuilder.GetSignatureToken(unmanagedCallConv, returnType, parameterTypes));
         }
 
-        private static int GetStackChange(Type? returnType, Type[]? parameterTypes)
+        private static int GetStackChange(Type? returnType, Type voidType, Type[]? parameterTypes)
         {
             int stackChange = 0;
             // If there is a non-void return type, push one.
-            if (returnType != typeof(void))
+            if (returnType != voidType)
             {
                 stackChange++;
             }
