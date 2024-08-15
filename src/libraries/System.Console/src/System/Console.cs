@@ -814,6 +814,12 @@ namespace System
         }
 
         [MethodImplAttribute(MethodImplOptions.NoInlining)]
+        public static void WriteLine(ReadOnlySpan<char> value)
+        {
+            Out.WriteLine(value);
+        }
+
+        [MethodImplAttribute(MethodImplOptions.NoInlining)]
         public static void WriteLine([StringSyntax(StringSyntaxAttribute.CompositeFormat)] string format, object? arg0)
         {
             Out.WriteLine(format, arg0);
@@ -965,6 +971,12 @@ namespace System
 
         [MethodImplAttribute(MethodImplOptions.NoInlining)]
         public static void Write(string? value)
+        {
+            Out.Write(value);
+        }
+
+        [MethodImplAttribute(MethodImplOptions.NoInlining)]
+        public static void Write(ReadOnlySpan<char> value)
         {
             Out.Write(value);
         }
