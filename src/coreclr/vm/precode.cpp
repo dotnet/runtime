@@ -672,7 +672,7 @@ void PrecodeMachineDescriptor::Init()
     // mask off the thumb bit
     g_PrecodeMachineDescriptor.CodePointerToInstrPointerMask = ~1;
 #endif
-    g_PrecodeMachineDescriptor.OffsetOfPrecodeType = OFFSETOF_PRECODE_TYPE; // FIXME(cdac): sometimes OFFSETOF_PRECODE_TYPE is undefined?
+    g_PrecodeMachineDescriptor.OffsetOfPrecodeType = OFFSETOF_PRECODE_TYPE;
     // cDAC will do (where N = 8*ReadWidthOfPrecodeType):
     //   uintN_t PrecodeType = *(uintN_t*)(pPrecode + OffsetOfPrecodeType);
     //   PrecodeType >>= ShiftOfPrecodeType;
@@ -684,7 +684,6 @@ void PrecodeMachineDescriptor::Init()
     g_PrecodeMachineDescriptor.ReadWidthOfPrecodeType = 1;
     g_PrecodeMachineDescriptor.ShiftOfPrecodeType = 0;
 #endif
-    // uint8_t SizeOfPrecodeBase = SIZEOF_PRECODE_BASE;
 
     g_PrecodeMachineDescriptor.InvalidPrecodeType = InvalidPrecode::Type;
     g_PrecodeMachineDescriptor.StubPrecodeType = StubPrecode::Type;

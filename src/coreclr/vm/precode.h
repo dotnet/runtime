@@ -601,50 +601,27 @@ static_assert_no_msg(sizeof(Precode) <= sizeof(ThisPtrRetBufPrecode));
 // A summary of the precode layout for diagnostic purposes
 struct PrecodeMachineDescriptor
 {
-#ifndef TARGET_ARM
-    uintptr_t CodePointerToInstrPointerMask = ~0;
-#else
-    // mask off the thumb bit
-    uintptr_t CodePointerToInstrPointerMask = ~1;
-#endif
-    uint8_t OffsetOfPrecodeType = OFFSETOF_PRECODE_TYPE; // FIXME(cdac): sometimes OFFSETOF_PRECODE_TYPE is undefined?
+    uintptr_t CodePointerToInstrPointerMask;
+    uint8_t OffsetOfPrecodeType;
     // cDAC will do (where N = 8*ReadWidthOfPrecodeType):
     //   uintN_t PrecodeType = *(uintN_t*)(pPrecode + OffsetOfPrecodeType);
     //   PrecodeType >>= ShiftOfPrecodeType;
     //   return (byte)PrecodeType;
-#ifdef TARGET_LOONGARCH64
-    uint8_t ReadWidthOfPrecodeType = 2;
-    uint8_t ShiftOfPrecodeType = 5;
-#else
-    uint8_t ReadWidthOfPrecodeType = 1;
-    uint8_t ShiftOfPrecodeType = 0;
-#endif
-    // uint8_t SizeOfPrecodeBase = SIZEOF_PRECODE_BASE;
+    uint8_t ReadWidthOfPrecodeType;
+    uint8_t ShiftOfPrecodeType;
 
-    uint8_t InvalidPrecodeType = InvalidPrecode::Type;
-    uint8_t StubPrecodeType = StubPrecode::Type;
-#ifdef HAS_NDIRECT_IMPORT_PRECODE
-    uint8_t HasNDirectImportPrecode = 1;
-    uint8_t NDirectImportPrecodeType = NDirectImportPrecode::Type;
-#else
-    uint8_t HasNDirectImportPrecode = 0;
-    uint8_t NDirectImportPrecodeType = 0;
-#endif // HAS_NDIRECT_IMPORT_PRECODE
-#ifdef HAS_FIXUP_PRECODE
-    uint8_t HasFixupPrecode = 1;
-    uint8_t FixupPrecodeType = FixupPrecode::Type;
-#else
-    uint8_t HasFixupPrecode = 0;
-    uint8_t FixupPrecodeType = 0;
-#endif // HAS_FIXUP_PRECODE
-#ifdef HAS_THISPTR_RETBUF_PRECODE
-    uint8_t HasThisPtrRetBufPrecode = 1;
-    uint8_t HasThisPointerRetBufPrecodeType = ThisPtrRetBufPrecode::Type;
-#else
-    uint8_t HasThisPtrRetBufPrecode = 0;
-    uint8_t HasThisPointerRetBufPrecodeType = 0;
-#endif // HAS_THISPTR_RETBUF_PRECODE
-    uint32_t StubCodePageSize = GetStubCodePageSize();
+    uint8_t InvalidPrecodeType;
+    uint8_t StubPrecodeType;
+    uint8_t HasNDirectImportPrecode;
+    uint8_t NDirectImportPrecodeType;
+
+    uint8_t HasFixupPrecode;
+    uint8_t FixupPrecodeType;
+
+    uint8_t HasThisPtrRetBufPrecode;
+    uint8_t HasThisPointerRetBufPrecodeType;
+
+    uint32_t StubCodePageSize;
 public:
     PrecodeMachineDescriptor() = default;
     PrecodeMachineDescriptor(const PrecodeMachineDescriptor&) = delete;
