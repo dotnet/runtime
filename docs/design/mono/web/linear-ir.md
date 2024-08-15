@@ -96,7 +96,7 @@ The JIT allocates a large number of vregs. Most of these are created during the 
 ### Transitioning between the two states
 
 -   Most vregs start out being local. Others, like the ones representing the arguments and locals of a method, start out being global.
--   Some transformations done by the JIT can break the invariant that an lvreg is local to a basic block. There is a separate pass, mono_handle_global_vregs (), which verifies this invariant and transforms lvregs into global vregs if neccesary. This pass also does the opposite transformation, by transforming global vregs used only in one bblock into an lvreg.
+-   Some transformations done by the JIT can break the invariant that an lvreg is local to a basic block. There is a separate pass, mono_handle_global_vregs (), which verifies this invariant and transforms lvregs into global vregs if necessary. This pass also does the opposite transformation, by transforming global vregs used only in one bblock into an lvreg.
 -   If an address of a vreg needs to be taken, the vreg is transformed into a global vreg.
 
 JIT Passes

@@ -353,6 +353,7 @@ private:
     GenTree* LowerIndir(GenTreeIndir* ind);
     bool     OptimizeForLdpStp(GenTreeIndir* ind);
     bool     TryMakeIndirsAdjacent(GenTreeIndir* prevIndir, GenTreeIndir* indir);
+    bool     IsStoreToLoadForwardingCandidateInLoop(GenTreeIndir* prevIndir, GenTreeIndir* indir);
     bool     TryMoveAddSubRMWAfterIndir(GenTreeLclVarCommon* store);
     bool     TryMakeIndirAndStoreAdjacent(GenTreeIndir* prevIndir, GenTreeLclVarCommon* store);
     void     MarkTree(GenTree* root);
@@ -431,6 +432,7 @@ private:
     void LowerHWIntrinsicFusedMultiplyAddScalar(GenTreeHWIntrinsic* node);
     void LowerModPow2(GenTree* node);
     bool TryLowerAddForPossibleContainment(GenTreeOp* node, GenTree** next);
+    void StoreFFRValue(GenTreeHWIntrinsic* node);
 #endif // !TARGET_XARCH && !TARGET_ARM64
     GenTree* InsertNewSimdCreateScalarUnsafeNode(var_types   type,
                                                  GenTree*    op1,
@@ -631,6 +633,7 @@ private:
         }
     };
     ArrayStack<SavedIndir> m_blockIndirs;
+    bool                   m_ffrTrashed;
 #endif
 };
 

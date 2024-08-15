@@ -37,7 +37,7 @@ Install the following packages for the toolchain:
 * CMake 3.20 or newer
 * llvm
 * lld
-* clang 16 or newer
+* clang (for WASM 16 or newer)
 * build-essential
 * python-is-python3
 * curl

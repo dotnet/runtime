@@ -1257,7 +1257,8 @@ int LinearScan::BuildCall(GenTreeCall* call)
             ctrlExprCandidates = RBM_INT_CALLEE_TRASH.GetIntRegSet();
         }
 #ifdef TARGET_X86
-        else if (call->IsVirtualStub() && (call->gtCallType == CT_INDIRECT))
+        else if (call->IsVirtualStub() && (call->gtCallType == CT_INDIRECT) &&
+                 !compiler->IsTargetAbi(CORINFO_NATIVEAOT_ABI))
         {
             // On x86, we need to generate a very specific pattern for indirect VSD calls:
             //
