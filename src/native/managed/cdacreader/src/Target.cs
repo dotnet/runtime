@@ -381,7 +381,9 @@ public sealed unsafe class Target
         if (length == 0)
             return string.Empty;
 
-        Span<byte> span = stackalloc byte[length];
+        Span<byte> span = length <= StackAllocByteThreshold
+            ? stackalloc byte[length]
+            : new byte[length];
         ReadBuffer(address, span);
         return Encoding.UTF8.GetString(span);
     }
@@ -404,7 +406,9 @@ public sealed unsafe class Target
         if (length == 0)
             return string.Empty;
 
-        Span<byte> span = stackalloc byte[length];
+        Span<byte> span = length <= StackAllocByteThreshold
+            ? stackalloc byte[length]
+            : new byte[length];
         ReadBuffer(address, span);
         string result = _config.IsLittleEndian
             ? Encoding.Unicode.GetString(span)
