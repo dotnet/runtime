@@ -279,7 +279,7 @@ Function :
     Restore default signal handlers
 
 Parameters :
-    None
+    isChildProcess - indicates that it is called from a child process fork
 
     (no return value)
 
@@ -288,34 +288,42 @@ reason for this function is that during PAL_Terminate, we reach a point where
 SEH isn't possible anymore (handle manager is off, etc). Past that point,
 we can't avoid crashing on a signal.
 --*/
-void SEHCleanupSignals()
+void SEHCleanupSignals(bool isChildProcess)
 {
     TRACE("Restoring default signal handlers\n");
 
-    if (g_registered_signal_handlers)
+    if (isChildProcess)
     {
-        restore_signal(SIGILL, &g_previous_sigill);
+        if (g_registered_signal_handlers)
+        {
+            restore_signal(SIGILL, &g_previous_sigill);
 #if !HAVE_MACH_EXCEPTIONS
-        restore_signal(SIGTRAP, &g_previous_sigtrap);
+            restore_signal(SIGTRAP, &g_previous_sigtrap);
 #endif
-        restore_signal(SIGFPE, &g_previous_sigfpe);
-        restore_signal(SIGBUS, &g_previous_sigbus);
-        restore_signal(SIGABRT, &g_previous_sigabrt);
-        restore_signal(SIGSEGV, &g_previous_sigsegv);
-        restore_signal(SIGINT, &g_previous_sigint);
-        restore_signal(SIGQUIT, &g_previous_sigquit);
-    }
+            restore_signal(SIGFPE, &g_previous_sigfpe);
+            restore_signal(SIGBUS, &g_previous_sigbus);
+            restore_signal(SIGSEGV, &g_previous_sigsegv);
+            restore_signal(SIGINT, &g_previous_sigint);
+            restore_signal(SIGQUIT, &g_previous_sigquit);
+        }
 
 #ifdef INJECT_ACTIVATION_SIGNAL
-    if (g_registered_activation_handler)
-    {
-        restore_signal(INJECT_ACTIVATION_SIGNAL, &g_previous_activation);
-    }
+        if (g_registered_activation_handler)
+        {
+            restore_signal(INJECT_ACTIVATION_SIGNAL, &g_previous_activation);
+        }
 #endif
 
-    if (g_registered_sigterm_handler)
+        if (g_registered_sigterm_handler)
+        {
+            restore_signal(SIGTERM, &g_previous_sigterm);
+        }
+    }
+
+    // Restore only the SIGABRT so that abort that ends up the process can actually end it
+    if (g_registered_signal_handlers)
     {
-        restore_signal(SIGTERM, &g_previous_sigterm);
+        restore_signal(SIGABRT, &g_previous_sigabrt);
     }
 }
 
@@ -863,7 +871,7 @@ static void inject_activation_handler(int code, siginfo_t *siginfo, void *contex
 
         ULONG contextFlags = CONTEXT_CONTROL | CONTEXT_INTEGER | CONTEXT_FLOATING_POINT;
 
-#if defined(HOST_AMD64)
+#if defined(HOST_AMD64) || defined(HOST_ARM64)
         contextFlags |= CONTEXT_XSTATE;
 #endif
 
@@ -935,7 +943,13 @@ PAL_ERROR InjectActivationInternal(CorUnix::CPalThread* pThread)
     }
 #endif
 
-    if ((status != 0) && (status != EAGAIN))
+    // ESRCH may happen on some OSes when the thread is exiting.
+    if (status == EAGAIN || status == ESRCH)
+    {
+        return ERROR_CANCELLED;
+    }
+
+    if (status != 0)
     {
         // Failure to send the signal is fatal. There are only two cases when sending
         // the signal can fail. First, if the signal ID is invalid and second,
@@ -1047,7 +1061,7 @@ static bool common_signal_handler(int code, siginfo_t *siginfo, void *sigcontext
 
     ULONG contextFlags = CONTEXT_CONTROL | CONTEXT_INTEGER | CONTEXT_FLOATING_POINT;
 
-#if defined(HOST_AMD64)
+#if defined(HOST_AMD64) || defined(HOST_ARM64)
     contextFlags |= CONTEXT_XSTATE;
 #endif
 

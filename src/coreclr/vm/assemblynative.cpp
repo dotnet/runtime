@@ -63,10 +63,6 @@ extern "C" void QCALLTYPE AssemblyNative_InternalLoad(NativeAssemblyNameParts* p
         {
             pRefAssembly = SystemDomain::GetCallersAssembly(stackMark);
         }
-        if (pRefAssembly)
-        {
-            pParentAssembly = pRefAssembly->GetDomainAssembly();
-        }
     }
 
     AssemblySpec spec;
@@ -93,8 +89,8 @@ extern "C" void QCALLTYPE AssemblyNative_InternalLoad(NativeAssemblyNameParts* p
     spec.Init(ssName.GetUTF8(), &asmInfo,
         pAssemblyNameParts->_pPublicKeyOrToken, pAssemblyNameParts->_cbPublicKeyOrToken, pAssemblyNameParts->_flags);
 
-    if (pParentAssembly != NULL)
-        spec.SetParentAssembly(pParentAssembly);
+    if (pRefAssembly != NULL)
+        spec.SetParentAssembly(pRefAssembly);
 
     // Have we been passed the reference to the binder against which this load should be triggered?
     // If so, then use it to set the fallback load context binder.
@@ -138,7 +134,7 @@ Assembly* AssemblyNative::LoadFromPEImage(AssemblyBinder* pBinder, PEImage *pIma
     ReleaseHolder<BINDER_SPACE::Assembly> pAssembly;
 
     // Set the caller's assembly to be CoreLib
-    DomainAssembly *pCallersAssembly = SystemDomain::System()->SystemAssembly()->GetDomainAssembly();
+    Assembly *pCallersAssembly = SystemDomain::System()->SystemAssembly();
 
     // Initialize the AssemblySpec
     AssemblySpec spec;
@@ -650,9 +646,9 @@ extern "C" BYTE * QCALLTYPE AssemblyNative_GetResource(QCall::AssemblyHandle pAs
     if (*pNameUTF8 == '\0')
         COMPlusThrow(kArgumentException, W("Format_StringZeroLength"));
 
-    pAssembly->GetResource(pNameUTF8, length,
+    pAssembly->GetPEAssembly()->GetResource(pNameUTF8, length,
                            &pbInMemoryResource, NULL, NULL,
-                           NULL, FALSE);
+                           NULL, pAssembly->GetAssembly());
 
     END_QCALL;
 
@@ -679,12 +675,12 @@ extern "C" INT32 QCALLTYPE AssemblyNative_GetManifestResourceInfo(QCall::Assembl
     if (*pNameUTF8 == '\0')
         COMPlusThrow(kArgumentException, W("Format_StringZeroLength"));
 
-    DomainAssembly * pReferencedAssembly = NULL;
+    Assembly * pReferencedAssembly = NULL;
     LPCSTR pFileName = NULL;
     DWORD dwLocation = 0;
 
-    if (pAssembly->GetResource(pNameUTF8, NULL, NULL, &pReferencedAssembly, &pFileName,
-                              &dwLocation, FALSE))
+    if (pAssembly->GetPEAssembly()->GetResource(pNameUTF8, NULL, NULL, &pReferencedAssembly, &pFileName,
+                              &dwLocation, pAssembly->GetAssembly()))
     {
         if (pFileName)
             retFileName.Set(pFileName);
@@ -692,7 +688,7 @@ extern "C" INT32 QCALLTYPE AssemblyNative_GetManifestResourceInfo(QCall::Assembl
         GCX_COOP();
 
         if (pReferencedAssembly)
-            retAssembly.Set(pReferencedAssembly->GetExposedAssemblyObject());
+            retAssembly.Set(pReferencedAssembly->GetExposedObject());
 
         rv = dwLocation;
     }
@@ -711,16 +707,16 @@ extern "C" void QCALLTYPE AssemblyNative_GetModules(QCall::AssemblyHandle pAssem
     HENUMInternalHolder phEnum(pAssembly->GetMDImport());
     phEnum.EnumInit(mdtFile, mdTokenNil);
 
-    InlineSArray<DomainAssembly *, 8> modules;
+    InlineSArray<Module *, 8> modules;
 
-    modules.Append(pAssembly);
+    modules.Append(pAssembly->GetModule());
 
     mdFile mdFile;
     while (pAssembly->GetMDImport()->EnumNext(&phEnum, &mdFile))
     {
         if (fLoadIfNotFound)
         {
-            DomainAssembly* pModule = pAssembly->GetModule()->LoadModule(mdFile);
+            Module* pModule = pAssembly->GetModule()->LoadModule(mdFile);
             modules.Append(pModule);
         }
     }
@@ -737,9 +733,9 @@ extern "C" void QCALLTYPE AssemblyNative_GetModules(QCall::AssemblyHandle pAssem
 
         for(COUNT_T i = 0; i < modules.GetCount(); i++)
         {
-            DomainAssembly * pModule = modules[i];
+            Module * pModule = modules[i];
 
-            OBJECTREF o = pModule->GetExposedModuleObject();
+            OBJECTREF o = pModule->GetExposedObject();
             orModules->SetAt(i, o);
         }
 

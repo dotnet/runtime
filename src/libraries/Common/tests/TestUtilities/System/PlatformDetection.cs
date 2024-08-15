@@ -731,11 +731,11 @@ namespace System
             {
                 return true;
             }
-            else if (IsNativeAot)
+            else if (IsNativeAot || IsBrowser || IsMobile)
             {
                 return false;
             }
-            
+
             Assembly assembly = typeof(System.Runtime.Serialization.Formatters.Binary.BinaryFormatter).Assembly;
             AssemblyName name = assembly.GetName();
             Version assemblyVersion = name.Version;

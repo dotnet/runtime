@@ -30,7 +30,7 @@ namespace System.Buffers
         {
             get
             {
-                if (IndexOfAnyAsciiSearcher.IsVectorizationSupported && _startingAsciiChars.Bitmap128() != default)
+                if (IndexOfAnyAsciiSearcher.IsVectorizationSupported && _startingAsciiChars.Bitmap != default)
                 {
                     // If there are a lot of starting characters such that we often find one early,
                     // the ASCII fast scan may end up performing worse than checking one character at a time.

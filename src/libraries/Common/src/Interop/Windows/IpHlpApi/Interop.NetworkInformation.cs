@@ -503,7 +503,7 @@ internal static partial class Interop
             uint* outBufLen);
 
         [LibraryImport(Interop.Libraries.IpHlpApi)]
-        internal static unsafe partial uint GetBestInterfaceEx(Span<byte> ipAddress, int* index);
+        internal static unsafe partial uint GetBestInterfaceEx(ReadOnlySpan<byte> ipAddress, int* index);
 
         [LibraryImport(Interop.Libraries.IpHlpApi)]
         internal static partial uint GetIfEntry2(ref MibIfRow2 pIfRow);

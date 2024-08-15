@@ -48,7 +48,7 @@ namespace System.Formats.Nrbf
         public static System.Formats.Nrbf.SerializationRecord Decode(System.IO.Stream payload, out System.Collections.Generic.IReadOnlyDictionary<System.Formats.Nrbf.SerializationRecordId, System.Formats.Nrbf.SerializationRecord> recordMap, System.Formats.Nrbf.PayloadOptions options=null, bool leaveOpen=false) { throw null; }
         public static System.Formats.Nrbf.SerializationRecord Decode(System.IO.Stream payload, System.Formats.Nrbf.PayloadOptions? options=null, bool leaveOpen=false) { throw null; }
         public static System.Formats.Nrbf.ClassRecord DecodeClassRecord(System.IO.Stream payload, System.Formats.Nrbf.PayloadOptions? options=null, bool leaveOpen=false) { throw null; }
-        public static bool StartsWithPayloadHeader(byte[] bytes) { throw null; }
+        public static bool StartsWithPayloadHeader(System.ReadOnlySpan<byte> bytes) { throw null; }
         public static bool StartsWithPayloadHeader(System.IO.Stream stream) { throw null; }
     }
     public sealed partial class PayloadOptions

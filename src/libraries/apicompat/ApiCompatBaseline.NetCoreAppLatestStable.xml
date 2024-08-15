@@ -3,6 +3,24 @@
 <Suppressions xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
   <Suppression>
     <DiagnosticId>CP0014</DiagnosticId>
+    <Target>M:System.Console.SetWindowSize(System.Int32,System.Int32):[T:System.Runtime.Versioning.UnsupportedOSPlatformAttribute]</Target>
+    <Left>net8.0/mscorlib.dll</Left>
+    <Right>net9.0/mscorlib.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0014</DiagnosticId>
+    <Target>P:System.Console.WindowHeight:[T:System.Runtime.Versioning.UnsupportedOSPlatformAttribute]</Target>
+    <Left>net8.0/mscorlib.dll</Left>
+    <Right>net9.0/mscorlib.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0014</DiagnosticId>
+    <Target>P:System.Console.WindowWidth:[T:System.Runtime.Versioning.UnsupportedOSPlatformAttribute]</Target>
+    <Left>net8.0/mscorlib.dll</Left>
+    <Right>net9.0/mscorlib.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0014</DiagnosticId>
     <Target>M:System.ComponentModel.DesignerAttribute.#ctor(System.String,System.String)$0:[T:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute]</Target>
     <Left>net8.0/netstandard.dll</Left>
     <Right>net9.0/netstandard.dll</Right>
@@ -93,6 +111,12 @@
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0014</DiagnosticId>
+    <Target>M:System.Console.SetWindowSize(System.Int32,System.Int32):[T:System.Runtime.Versioning.UnsupportedOSPlatformAttribute]</Target>
+    <Left>net8.0/netstandard.dll</Left>
+    <Right>net9.0/netstandard.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0014</DiagnosticId>
     <Target>P:System.ComponentModel.DesignerAttribute.DesignerBaseTypeName:[T:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute]</Target>
     <Left>net8.0/netstandard.dll</Left>
     <Right>net9.0/netstandard.dll</Right>
@@ -118,6 +142,18 @@
   <Suppression>
     <DiagnosticId>CP0014</DiagnosticId>
     <Target>P:System.ComponentModel.EnumConverter.EnumType:[T:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute]</Target>
+    <Left>net8.0/netstandard.dll</Left>
+    <Right>net9.0/netstandard.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0014</DiagnosticId>
+    <Target>P:System.Console.WindowHeight:[T:System.Runtime.Versioning.UnsupportedOSPlatformAttribute]</Target>
+    <Left>net8.0/netstandard.dll</Left>
+    <Right>net9.0/netstandard.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0014</DiagnosticId>
+    <Target>P:System.Console.WindowWidth:[T:System.Runtime.Versioning.UnsupportedOSPlatformAttribute]</Target>
     <Left>net8.0/netstandard.dll</Left>
     <Right>net9.0/netstandard.dll</Right>
   </Suppression>
@@ -351,6 +387,24 @@
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0014</DiagnosticId>
+    <Target>M:System.Console.SetWindowSize(System.Int32,System.Int32):[T:System.Runtime.Versioning.UnsupportedOSPlatformAttribute]</Target>
+    <Left>net8.0/System.Console.dll</Left>
+    <Right>net9.0/System.Console.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0014</DiagnosticId>
+    <Target>P:System.Console.WindowHeight:[T:System.Runtime.Versioning.UnsupportedOSPlatformAttribute]</Target>
+    <Left>net8.0/System.Console.dll</Left>
+    <Right>net9.0/System.Console.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0014</DiagnosticId>
+    <Target>P:System.Console.WindowWidth:[T:System.Runtime.Versioning.UnsupportedOSPlatformAttribute]</Target>
+    <Left>net8.0/System.Console.dll</Left>
+    <Right>net9.0/System.Console.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0014</DiagnosticId>
     <Target>M:System.ComponentModel.DesignerAttribute.#ctor(System.String,System.String)$0:[T:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute]</Target>
     <Left>net8.0/System.dll</Left>
     <Right>net9.0/System.dll</Right>
@@ -468,6 +522,48 @@
     <Target>P:System.ComponentModel.EnumConverter.EnumType:[T:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute]</Target>
     <Left>net8.0/System.dll</Left>
     <Right>net9.0/System.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0014</DiagnosticId>
+    <Target>M:System.Runtime.Intrinsics.X86.X86Base.DivRem(System.UInt32,System.Int32,System.Int32):[T:System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]</Target>
+    <Left>net8.0/System.Runtime.Intrinsics.dll</Left>
+    <Right>net9.0/System.Runtime.Intrinsics.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0014</DiagnosticId>
+    <Target>M:System.Runtime.Intrinsics.X86.X86Base.DivRem(System.UInt32,System.UInt32,System.UInt32):[T:System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]</Target>
+    <Left>net8.0/System.Runtime.Intrinsics.dll</Left>
+    <Right>net9.0/System.Runtime.Intrinsics.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0014</DiagnosticId>
+    <Target>M:System.Runtime.Intrinsics.X86.X86Base.DivRem(System.UIntPtr,System.IntPtr,System.IntPtr):[T:System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]</Target>
+    <Left>net8.0/System.Runtime.Intrinsics.dll</Left>
+    <Right>net9.0/System.Runtime.Intrinsics.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0014</DiagnosticId>
+    <Target>M:System.Runtime.Intrinsics.X86.X86Base.DivRem(System.UIntPtr,System.UIntPtr,System.UIntPtr):[T:System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]</Target>
+    <Left>net8.0/System.Runtime.Intrinsics.dll</Left>
+    <Right>net9.0/System.Runtime.Intrinsics.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0014</DiagnosticId>
+    <Target>M:System.Runtime.Intrinsics.X86.X86Base.X64.DivRem(System.UInt64,System.Int64,System.Int64):[T:System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]</Target>
+    <Left>net8.0/System.Runtime.Intrinsics.dll</Left>
+    <Right>net9.0/System.Runtime.Intrinsics.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0014</DiagnosticId>
+    <Target>M:System.Runtime.Intrinsics.X86.X86Base.X64.DivRem(System.UInt64,System.UInt64,System.UInt64):[T:System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]</Target>
+    <Left>net8.0/System.Runtime.Intrinsics.dll</Left>
+    <Right>net9.0/System.Runtime.Intrinsics.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0014</DiagnosticId>
+    <Target>T:System.Runtime.Intrinsics.X86.AvxVnni:[T:System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]</Target>
+    <Left>net8.0/System.Runtime.Intrinsics.dll</Left>
+    <Right>net9.0/System.Runtime.Intrinsics.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0015</DiagnosticId>

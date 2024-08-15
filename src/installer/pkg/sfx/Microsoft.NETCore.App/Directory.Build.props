@@ -1,15 +1,13 @@
 <Project>
+
   <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.props, $(MSBuildThisFileDirectory)..))" />
 
   <PropertyGroup>
     <SharedFrameworkName>$(MicrosoftNetCoreAppFrameworkName)</SharedFrameworkName>
     <IsShipping Condition="'$(PgoInstrument)' != ''">false</IsShipping>
     <SharedFrameworkFriendlyName>.NET Runtime</SharedFrameworkFriendlyName>
+    <EnableDefaultPackageReadmeFile>true</EnableDefaultPackageReadmeFile>
   </PropertyGroup>
-
-  <ItemGroup>
-    <PackageOverridesFile Include="$(MSBuildThisFileDirectory)PackageOverrides.txt" />
-  </ItemGroup>
 
   <!--
   Native files that are always included in the singlefile bundle can be listed here.
@@ -109,7 +107,7 @@
     <PlatformManifestFileEntry Include="libclrgc.dylib" IsNative="true" />
     <PlatformManifestFileEntry Include="clrgcexp.dll" IsNative="true" />
     <PlatformManifestFileEntry Include="libclrgcexp.so" IsNative="true" />
-    <PlatformManifestFileEntry Include="libclrgcexp.dylib" IsNative="true" />    
+    <PlatformManifestFileEntry Include="libclrgcexp.dylib" IsNative="true" />
     <PlatformManifestFileEntry Include="clretwrc.dll" IsNative="true" />
     <PlatformManifestFileEntry Include="clrjit.dll" IsNative="true" />
     <PlatformManifestFileEntry Condition="'$(PgoInstrument)' != ''" Include="pgort140.dll" IsNative="true" />
@@ -235,7 +233,7 @@
     <PlatformManifestFileEntry Include="dotnet.runtime.js.map" IsNative="true" />
     <PlatformManifestFileEntry Include="dotnet.native.js" IsNative="true" />
     <PlatformManifestFileEntry Include="dotnet.globalization.js" IsNative="true" />
-    <PlatformManifestFileEntry Include="dotnet.native.worker.js" IsNative="true" />
+    <PlatformManifestFileEntry Include="dotnet.native.worker.mjs" IsNative="true" />
     <PlatformManifestFileEntry Include="dotnet.native.js.symbols" IsNative="true" />
     <PlatformManifestFileEntry Include="dotnet.d.ts" IsNative="true" />
     <PlatformManifestFileEntry Include="dotnet.native.wasm" IsNative="true" />
@@ -273,10 +271,14 @@
     <PlatformManifestFileEntry Include="stubs.c" IsNative="true" />
     <PlatformManifestFileEntry Include="synthetic-pthread.c" IsNative="true" />
     <PlatformManifestFileEntry Include="dotnet.wasm" IsNative="true" />
+    <PlatformManifestFileEntry Include="WasiHttpWorld_component_type.wit" IsNative="true" />
     <!-- ICU-specific files -->
     <PlatformManifestFileEntry Include="libicudata.a" IsNative="true" />
     <PlatformManifestFileEntry Include="libicui18n.a" IsNative="true" />
     <PlatformManifestFileEntry Include="libicuuc.a" IsNative="true" />
+    <!-- zlib-specific files -->
+    <PlatformManifestFileEntry Include="libz.a" IsNative="true" />
+    <PlatformManifestFileEntry Include="zlibstatic.lib" IsNative="true" />
   </ItemGroup>
 
  <ItemGroup>
@@ -311,5 +313,9 @@
   <PropertyGroup Condition="'$(TargetArchitecture)' == 'arm64' AND '$(BuildArchitecture)' != 'arm64'">
     <_hostArch>amd64</_hostArch>
   </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.DotNet.Build.Tasks.Templating" Version="$(MicrosoftDotNetBuildTasksTemplatingVersion)" />
+  </ItemGroup>
 
 </Project>

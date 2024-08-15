@@ -243,6 +243,7 @@ extern "C" FCDECL2(VOID, JIT_WriteBarrierEnsureNonHeapTarget, Object **dst, Obje
 extern "C" FCDECL2(Object*, ChkCastAny_NoCacheLookup, CORINFO_CLASS_HANDLE type, Object* obj);
 extern "C" FCDECL2(Object*, IsInstanceOfAny_NoCacheLookup, CORINFO_CLASS_HANDLE type, Object* obj);
 extern "C" FCDECL2(LPVOID, Unbox_Helper, CORINFO_CLASS_HANDLE type, Object* obj);
+extern "C" FCDECL2(void, JIT_Unbox_TypeTest, CORINFO_CLASS_HANDLE type, CORINFO_CLASS_HANDLE boxType);
 extern "C" FCDECL3(void, JIT_Unbox_Nullable, void * destPtr, CORINFO_CLASS_HANDLE type, Object* obj);
 
 // ARM64 JIT_WriteBarrier uses speciall ABI and thus is not callable directly
@@ -1036,8 +1037,8 @@ inline void WriteJitHelperCountToSTRESSLOG() { }
 
 // enum for dynamically assigned helper calls
 enum DynamicCorInfoHelpFunc {
-#define JITHELPER(code, pfnHelper, sig)
-#define DYNAMICJITHELPER(code, pfnHelper, sig) DYNAMIC_##code,
+#define JITHELPER(code, pfnHelper, binderId)
+#define DYNAMICJITHELPER(code, pfnHelper, binderId) DYNAMIC_##code,
 #include "jithelpers.h"
     DYNAMIC_CORINFO_HELP_COUNT
 };
@@ -1050,6 +1051,8 @@ GARY_DECL(VMHELPDEF, hlpDynamicFuncTable, DYNAMIC_CORINFO_HELP_COUNT);
 
 #define SetJitHelperFunction(ftnNum, pFunc) _SetJitHelperFunction(DYNAMIC_##ftnNum, (void*)(pFunc))
 void    _SetJitHelperFunction(DynamicCorInfoHelpFunc ftnNum, void * pFunc);
+
+VMHELPDEF LoadDynamicJitHelper(DynamicCorInfoHelpFunc ftnNum, MethodDesc** methodDesc = NULL);
 
 void *GenFastGetSharedStaticBase(bool bCheckCCtor);
 
@@ -1133,8 +1136,8 @@ extern thread_local int64_t t_cbILJittedForThread;
 extern thread_local int64_t t_cMethodsJittedForThread;
 extern thread_local int64_t t_c100nsTicksInJitForThread;
 
-FCDECL1(INT64, GetCompiledILBytes, CLR_BOOL currentThread);
-FCDECL1(INT64, GetCompiledMethodCount, CLR_BOOL currentThread);
-FCDECL1(INT64, GetCompilationTimeInTicks, CLR_BOOL currentThread);
+FCDECL1(INT64, GetCompiledILBytes, FC_BOOL_ARG currentThread);
+FCDECL1(INT64, GetCompiledMethodCount, FC_BOOL_ARG currentThread);
+FCDECL1(INT64, GetCompilationTimeInTicks, FC_BOOL_ARG currentThread);
 
 #endif // JITINTERFACE_H

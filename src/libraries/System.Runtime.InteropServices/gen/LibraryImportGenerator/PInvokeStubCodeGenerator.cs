@@ -30,6 +30,8 @@ namespace Microsoft.Interop
     {
         public bool StubIsBasicForwarder { get; }
 
+        public bool HasForwardedTypes { get; }
+
         /// <summary>
         /// Identifier for managed return value
         /// </summary>
@@ -59,7 +61,7 @@ namespace Microsoft.Interop
 
             diagnosticsBag.ReportGeneratorDiagnostics(bindingDiagnostics);
 
-            if (_marshallers.ManagedReturnMarshaller.Generator.UsesNativeIdentifier(_marshallers.ManagedReturnMarshaller.TypeInfo, _context))
+            if (_marshallers.ManagedReturnMarshaller.UsesNativeIdentifier(_context))
             {
                 // If we need a different native return identifier, then recreate the context with the correct identifier before we generate any code.
                 _context = new ManagedToNativeStubCodeContext(ReturnIdentifier, $"{ReturnIdentifier}{StubCodeContext.GeneratedNativeIdentifierSuffix}");
@@ -69,11 +71,16 @@ namespace Microsoft.Interop
 
             bool noMarshallingNeeded = true;
 
-            foreach (BoundGenerator generator in _marshallers.SignatureMarshallers)
+            foreach (IBoundMarshallingGenerator generator in _marshallers.SignatureMarshallers)
             {
                 // Check if generator is either blittable or just a forwarder.
-                noMarshallingNeeded &= generator is { Generator: BlittableMarshaller, TypeInfo.IsByRef: false }
-                        or { Generator: Forwarder };
+                noMarshallingNeeded &= (generator.IsBlittable() && !generator.TypeInfo.IsByRef) || generator.IsForwarder();
+
+                // Track if any generators are just forwarders - for types other than void, this indicates
+                // types that can't be marshalled by the source generated.
+                // In .NET 7+ support, we would have emitted a diagnostic error about lack of support
+                // In down-level support, we do not error - tracking this allows us to switch to generating a basic forwarder (DllImport declaration)
+                HasForwardedTypes |= generator.IsForwarder() && generator is { TypeInfo.ManagedType: not SpecialTypeInfo { SpecialType: Microsoft.CodeAnalysis.SpecialType.System_Void } };
             }
 
             StubIsBasicForwarder = !setLastError

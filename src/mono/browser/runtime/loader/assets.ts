@@ -318,6 +318,9 @@ export function prepareAssets () {
         }
 
         const addAsset = (asset: AssetEntryInternal, isCore: boolean) => {
+            if (resources.fingerprinting && (asset.behavior == "assembly" || asset.behavior == "pdb" || asset.behavior == "resource")) {
+                asset.virtualPath = getNonFingerprintedAssetName(asset.name);
+            }
             if (isCore) {
                 asset.isCore = true;
                 coreAssetsToLoad.push(asset);
@@ -347,7 +350,7 @@ export function prepareAssets () {
         }
 
 
-        if (config.debugLevel != 0 && loaderHelpers.isDebuggingSupported()) {
+        if (config.debugLevel != 0) {
             if (resources.corePdb) {
                 for (const name in resources.corePdb) {
                     addAsset({
@@ -418,7 +421,7 @@ export function prepareAssets () {
                         behavior: "icu",
                         loadRemote: true
                     });
-                } else if (name === "segmentation-rules.json") {
+                } else if (name.startsWith("segmentation-rules") && name.endsWith(".json")) {
                     assetsToLoad.push({
                         name,
                         hash: resources.icu[name],
@@ -458,6 +461,15 @@ export function prepareAssets () {
     }
 
     config.assets = [...coreAssetsToLoad, ...assetsToLoad, ...modulesAssets];
+}
+
+export function getNonFingerprintedAssetName (assetName: string) {
+    const fingerprinting = loaderHelpers.config.resources?.fingerprinting;
+    if (fingerprinting && fingerprinting[assetName]) {
+        return fingerprinting[assetName];
+    }
+
+    return assetName;
 }
 
 export function prepareAssetsWorker () {
@@ -840,6 +852,7 @@ export function preloadWorkers () {
         const workerNumber = loaderHelpers.workerNextNumber++;
         const worker: Partial<PThreadWorker> = new Worker(jsModuleWorker.resolvedUrl!, {
             name: "dotnet-worker-" + workerNumber.toString().padStart(3, "0"),
+            type: "module",
         });
         worker.info = {
             workerNumber,

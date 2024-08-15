@@ -92,7 +92,7 @@
       <RunScriptCommands Condition="'$(OS)' == 'Windows_NT'" Include="set BUILT_NUGETS_PATH=$(LibrariesShippingPackagesDir)" />
 
       <RunScriptCommands Condition="'$(OS)' != 'Windows_NT'" Include="export PATH=$(WasmtimeDir):%24PATH" />
-      <RunScriptCommands Condition="'$(OS)' == 'Windows_NT'" Include="set PATH=$(WasmtimeDir);%PATH%" />
+      <RunScriptCommands Condition="'$(OS)' == 'Windows_NT'" Include="set PATH=$(WasmtimeDir)%3B%PATH%" />
     </ItemGroup>
 
     <ItemGroup>

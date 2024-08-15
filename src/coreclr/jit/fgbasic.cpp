@@ -72,8 +72,10 @@ void Compiler::fgInit()
 #endif // SWIFT_SUPPORT
 
     /* We haven't reached the global morphing phase */
-    fgGlobalMorph     = false;
-    fgGlobalMorphDone = false;
+    fgGlobalMorph       = false;
+    fgGlobalMorphDone   = false;
+    fgRemoveRestOfBlock = false;
+    fgHasNoReturnCall   = false;
 
     fgModified = false;
 
@@ -1387,6 +1389,7 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
                             case NI_System_Type_get_IsByRefLike:
                             case NI_System_Type_get_IsGenericType:
                             case NI_System_Type_GetTypeFromHandle:
+                            case NI_System_Type_GetGenericTypeDefinition:
                             case NI_System_String_get_Length:
                             case NI_System_Buffers_Binary_BinaryPrimitives_ReverseEndianness:
 #if defined(FEATURE_HW_INTRINSICS)

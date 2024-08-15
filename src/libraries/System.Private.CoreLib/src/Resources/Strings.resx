@@ -1011,8 +1011,11 @@
   <data name="Argument_CultureNotSupportedInInvariantMode" xml:space="preserve">
     <value>Only the invariant culture is supported in globalization-invariant mode. See https://aka.ms/GlobalizationInvariantMode for more information.</value>
   </data>
-  <data name="Argument_CustomAssemblyLoadContextRequestedNameMismatch" xml:space="preserve">
-    <value>Resolved assembly's simple name should be the same as of the requested assembly.</value>
+  <data name="InvalidOperation_ResolvedAssemblyMustBeRuntimeAssembly" xml:space="preserve">
+    <value>Resolved assembly must be a runtime Assembly object.</value>
+  </data>
+  <data name="InvalidOperation_ResolvedAssemblyRequestedNameMismatch" xml:space="preserve">
+    <value>Resolved assembly's simple name must be the same as of the requested assembly.</value>
   </data>
   <data name="Argument_CustomCultureCannotBePassedByNumber" xml:space="preserve">
     <value>Customized cultures cannot be passed by LCID, only by name.</value>
@@ -3494,6 +3497,12 @@
   <data name="TargetInvocation_MethodCannotBeInvoked" xml:space="preserve">
     <value>Method cannot be invoked.</value>
   </data>
+  <data name="TargetInvocation_TargetDoesNotImplementIDispatch" xml:space="preserve">
+    <value>COM target does not implement IDispatch.</value>
+  </data>
+  <data name="TargetInvocation_InterfaceNotIDispatch" xml:space="preserve">
+    <value>The interface does not support late bound calls since it does not derive from IDispatch.</value>
+  </data>
   <data name="Task_ContinueWith_ESandLR" xml:space="preserve">
     <value>The specified TaskContinuationOptions combined LongRunning and ExecuteSynchronously.  Synchronous continuations should not be long running.</value>
   </data>
@@ -4321,6 +4330,9 @@
   </data>
   <data name="NotSupported_EmitDebugInfo" xml:space="preserve">
     <value>Emitting debug info is not supported for this member.</value>
+  </data>
+  <data name="NotSupported_ReferenceEnumOrPrimitiveTypeRequired" xml:space="preserve">
+    <value>The specified type must be a reference type, a primitive type, or an enum type.</value>
   </data>
   <data name="Argument_BadFieldForInitializeArray" xml:space="preserve">
     <value>The field is invalid for initializing array or span.</value>

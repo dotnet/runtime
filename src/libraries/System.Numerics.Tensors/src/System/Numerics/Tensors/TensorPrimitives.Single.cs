@@ -440,7 +440,7 @@ namespace System.Numerics.Tensors
         /// </para>
         /// </remarks>
         public static void Max(ReadOnlySpan<float> x, ReadOnlySpan<float> y, Span<float> destination) =>
-            InvokeSpanSpanIntoSpan<MaxPropagateNaNOperator_Single>(x, y, destination);
+            InvokeSpanSpanIntoSpan<MaxOperator_Single>(x, y, destination);
 
         /// <summary>Searches for the single-precision floating-point number with the largest magnitude in the specified tensor.</summary>
         /// <param name="x">The tensor, represented as a span.</param>
@@ -476,7 +476,7 @@ namespace System.Numerics.Tensors
         /// </para>
         /// </remarks>
         public static void MaxMagnitude(ReadOnlySpan<float> x, ReadOnlySpan<float> y, Span<float> destination) =>
-            InvokeSpanSpanIntoSpan<MaxMagnitudePropagateNaNOperator_Single>(x, y, destination);
+            InvokeSpanSpanIntoSpan<MaxMagnitudeOperator_Single>(x, y, destination);
 
         /// <summary>Searches for the smallest single-precision floating-point number in the specified tensor.</summary>
         /// <param name="x">The tensor, represented as a span.</param>
@@ -517,7 +517,7 @@ namespace System.Numerics.Tensors
         /// </para>
         /// </remarks>
         public static void Min(ReadOnlySpan<float> x, ReadOnlySpan<float> y, Span<float> destination) =>
-            InvokeSpanSpanIntoSpan<MinPropagateNaNOperator_Single>(x, y, destination);
+            InvokeSpanSpanIntoSpan<MinOperator_Single>(x, y, destination);
 
         /// <summary>Searches for the single-precision floating-point number with the smallest magnitude in the specified tensor.</summary>
         /// <param name="x">The tensor, represented as a span.</param>
@@ -558,7 +558,7 @@ namespace System.Numerics.Tensors
         /// </para>
         /// </remarks>
         public static void MinMagnitude(ReadOnlySpan<float> x, ReadOnlySpan<float> y, Span<float> destination) =>
-            InvokeSpanSpanIntoSpan<MinMagnitudePropagateNaNOperator_Single>(x, y, destination);
+            InvokeSpanSpanIntoSpan<MinMagnitudeOperator_Single>(x, y, destination);
 
         /// <summary>Computes the element-wise product of single-precision floating-point numbers in the specified tensors.</summary>
         /// <param name="x">The first tensor, represented as a span.</param>

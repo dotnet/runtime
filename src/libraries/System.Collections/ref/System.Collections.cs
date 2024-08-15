@@ -618,16 +618,12 @@ namespace System.Collections.Generic
     public static partial class CollectionExtensions
     {
         public static void AddRange<T>(this System.Collections.Generic.List<T> list, params System.ReadOnlySpan<T> source) { }
-        public static System.Collections.Generic.Dictionary<TKey, TValue>.AlternateLookup<TAlternateKey> GetAlternateLookup<TKey, TValue, TAlternateKey>(this System.Collections.Generic.Dictionary<TKey, TValue> dictionary) where TKey : notnull where TAlternateKey : notnull, allows ref struct { throw null; }
-        public static System.Collections.Generic.HashSet<T>.AlternateLookup<TAlternate> GetAlternateLookup<T, TAlternate>(this System.Collections.Generic.HashSet<T> set) where TAlternate : allows ref struct { throw null; }
         public static void CopyTo<T>(this System.Collections.Generic.List<T> list, System.Span<T> destination) { }
         public static TValue? GetValueOrDefault<TKey, TValue>(this System.Collections.Generic.IReadOnlyDictionary<TKey, TValue> dictionary, TKey key) { throw null; }
         public static TValue GetValueOrDefault<TKey, TValue>(this System.Collections.Generic.IReadOnlyDictionary<TKey, TValue> dictionary, TKey key, TValue defaultValue) { throw null; }
         public static void InsertRange<T>(this System.Collections.Generic.List<T> list, int index, params System.ReadOnlySpan<T> source) { }
         public static bool Remove<TKey, TValue>(this System.Collections.Generic.IDictionary<TKey, TValue> dictionary, TKey key, [System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute(false)] out TValue value) { throw null; }
         public static bool TryAdd<TKey, TValue>(this System.Collections.Generic.IDictionary<TKey, TValue> dictionary, TKey key, TValue value) { throw null; }
-        public static bool TryGetAlternateLookup<TKey, TValue, TAlternateKey>(this System.Collections.Generic.Dictionary<TKey, TValue> dictionary, out System.Collections.Generic.Dictionary<TKey, TValue>.AlternateLookup<TAlternateKey> lookup) where TKey : notnull where TAlternateKey : notnull, allows ref struct { throw null; }
-        public static bool TryGetAlternateLookup<T, TAlternate>(this System.Collections.Generic.HashSet<T> set, out System.Collections.Generic.HashSet<T>.AlternateLookup<TAlternate> lookup) where TAlternate : allows ref struct { throw null; }
         public static System.Collections.ObjectModel.ReadOnlyCollection<T> AsReadOnly<T>(this IList<T> list) { throw null; }
         public static System.Collections.ObjectModel.ReadOnlyDictionary<TKey, TValue> AsReadOnly<TKey, TValue>(this IDictionary<TKey, TValue> dictionary) where TKey : notnull { throw null; }
     }
@@ -675,6 +671,7 @@ namespace System.Collections.Generic
         public bool ContainsKey(TKey key) { throw null; }
         public bool ContainsValue(TValue value) { throw null; }
         public int EnsureCapacity(int capacity) { throw null; }
+        public System.Collections.Generic.Dictionary<TKey, TValue>.AlternateLookup<TAlternateKey> GetAlternateLookup<TAlternateKey>() where TAlternateKey : notnull, allows ref struct { throw null; }
         public System.Collections.Generic.Dictionary<TKey, TValue>.Enumerator GetEnumerator() { throw null; }
         [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
@@ -696,6 +693,7 @@ namespace System.Collections.Generic
         public void TrimExcess() { }
         public void TrimExcess(int capacity) { }
         public bool TryAdd(TKey key, TValue value) { throw null; }
+        public bool TryGetAlternateLookup<TAlternateKey>(out System.Collections.Generic.Dictionary<TKey, TValue>.AlternateLookup<TAlternateKey> lookup) where TAlternateKey : notnull, allows ref struct { throw null; }
         public bool TryGetValue(TKey key, [System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute(false)] out TValue value) { throw null; }
         public readonly partial struct AlternateLookup<TAlternateKey> where TAlternateKey : notnull, allows ref struct
         {
@@ -812,6 +810,7 @@ namespace System.Collections.Generic
         public static System.Collections.Generic.IEqualityComparer<System.Collections.Generic.HashSet<T>> CreateSetComparer() { throw null; }
         public int EnsureCapacity(int capacity) { throw null; }
         public void ExceptWith(System.Collections.Generic.IEnumerable<T> other) { }
+        public System.Collections.Generic.HashSet<T>.AlternateLookup<TAlternate> GetAlternateLookup<TAlternate>() where TAlternate : allows ref struct { throw null; }
         public System.Collections.Generic.HashSet<T>.Enumerator GetEnumerator() { throw null; }
         [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
@@ -832,6 +831,7 @@ namespace System.Collections.Generic
         System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() { throw null; }
         public void TrimExcess() { }
         public void TrimExcess(int capacity) { }
+        public bool TryGetAlternateLookup<TAlternate>(out System.Collections.Generic.HashSet<T>.AlternateLookup<TAlternate> lookup) where TAlternate : allows ref struct { throw null; }
         public bool TryGetValue(T equalValue, [System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute(false)] out T actualValue) { throw null; }
         public void UnionWith(System.Collections.Generic.IEnumerable<T> other) { }
         public readonly partial struct AlternateLookup<TAlternate> where TAlternate : allows ref struct

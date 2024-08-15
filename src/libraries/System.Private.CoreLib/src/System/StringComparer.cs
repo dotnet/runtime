@@ -88,10 +88,12 @@ namespace System
             {
                 case StringComparer stringComparer:
                     return stringComparer.IsWellKnownOrdinalComparerCore(out ignoreCase);
-                case GenericEqualityComparer<string>:
-                    // special-case EqualityComparer<string>.Default, which is Ordinal-equivalent
+
+                case StringEqualityComparer: // EqualityComparer<string>.Default
+                case GenericEqualityComparer<string>: // EqualityComparer<string>.Default serialized
                     ignoreCase = false;
                     return true;
+
                 default:
                     // unknown comparer
                     ignoreCase = default;
@@ -407,7 +409,7 @@ namespace System
         // Equals method for the comparer itself.
         public override bool Equals([NotNullWhen(true)] object? obj)
         {
-            if (!(obj is OrdinalComparer comparer))
+            if (obj is not OrdinalComparer comparer)
             {
                 return false;
             }

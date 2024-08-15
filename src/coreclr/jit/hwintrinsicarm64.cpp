@@ -124,15 +124,19 @@ static CORINFO_InstructionSet lookupInstructionSet(const char* className)
 //
 // Arguments:
 //    className -- The name of the class associated with the InstructionSet to lookup
-//    enclosingClassName -- The name of the enclosing class or nullptr if one doesn't exist
+//    innerEnclosingClassName -- The name of the inner enclosing class or nullptr if one doesn't exist
+//    outerEnclosingClassName -- The name of the outer enclosing class or nullptr if one doesn't exist
 //
 // Return Value:
 //    The InstructionSet associated with className and enclosingClassName
-CORINFO_InstructionSet HWIntrinsicInfo::lookupIsa(const char* className, const char* enclosingClassName)
+//
+CORINFO_InstructionSet HWIntrinsicInfo::lookupIsa(const char* className,
+                                                  const char* innerEnclosingClassName,
+                                                  const char* outerEnclosingClassName)
 {
     assert(className != nullptr);
 
-    if (enclosingClassName == nullptr)
+    if (innerEnclosingClassName == nullptr)
     {
         // No nested class is the most common, so fast path it
         return lookupInstructionSet(className);
@@ -142,7 +146,7 @@ CORINFO_InstructionSet HWIntrinsicInfo::lookupIsa(const char* className, const c
     // or intrinsics in the platform specific namespace, we assume
     // that it will be one we can handle and don't try to early out.
 
-    CORINFO_InstructionSet enclosingIsa = lookupInstructionSet(enclosingClassName);
+    CORINFO_InstructionSet enclosingIsa = lookupIsa(innerEnclosingClassName, outerEnclosingClassName, nullptr);
 
     if (strcmp(className, "Arm64") == 0)
     {
@@ -492,12 +496,52 @@ void HWIntrinsicInfo::lookupImmBounds(
                 }
                 break;
 
+            case NI_Sve_GatherPrefetch8Bit:
+            case NI_Sve_GatherPrefetch16Bit:
+            case NI_Sve_GatherPrefetch32Bit:
+            case NI_Sve_GatherPrefetch64Bit:
             case NI_Sve_PrefetchBytes:
             case NI_Sve_PrefetchInt16:
             case NI_Sve_PrefetchInt32:
             case NI_Sve_PrefetchInt64:
                 immLowerBound = (int)SVE_PRFOP_PLDL1KEEP;
                 immUpperBound = (int)SVE_PRFOP_CONST15;
+                break;
+
+            case NI_Sve_AddRotateComplex:
+                immLowerBound = 0;
+                immUpperBound = 1;
+                break;
+
+            case NI_Sve_MultiplyAddRotateComplex:
+                immLowerBound = 0;
+                immUpperBound = 3;
+                break;
+
+            case NI_Sve_MultiplyAddRotateComplexBySelectedScalar:
+                // rotation comes after index in the intrinsic's signature,
+                // but flip the order here so we check the larger range first.
+                // This conforms to the existing logic in LinearScan::BuildHWIntrinsic
+                // when determining if we need an internal register for the jump table.
+                // This flipped ordering is reflected in HWIntrinsicInfo::GetImmOpsPositions.
+                if (immNumber == 1)
+                {
+                    // Bounds for rotation
+                    immLowerBound = 0;
+                    immUpperBound = 3;
+                }
+                else
+                {
+                    // Bounds for index
+                    assert(immNumber == 2);
+                    immLowerBound = 0;
+                    immUpperBound = 1;
+                }
+                break;
+
+            case NI_Sve_TrigonometricMultiplyAddCoefficient:
+                immLowerBound = 0;
+                immUpperBound = 7;
                 break;
 
             default:
@@ -524,7 +568,65 @@ void HWIntrinsicInfo::lookupImmBounds(
 //
 GenTree* Compiler::impNonConstFallback(NamedIntrinsic intrinsic, var_types simdType, CorInfoType simdBaseJitType)
 {
-    return nullptr;
+    bool isRightShift = true;
+
+    switch (intrinsic)
+    {
+        case NI_AdvSimd_ShiftLeftLogical:
+        case NI_AdvSimd_ShiftLeftLogicalScalar:
+            isRightShift = false;
+            FALLTHROUGH;
+
+        case NI_AdvSimd_ShiftRightLogical:
+        case NI_AdvSimd_ShiftRightLogicalScalar:
+        case NI_AdvSimd_ShiftRightArithmetic:
+        case NI_AdvSimd_ShiftRightArithmeticScalar:
+        {
+            // AdvSimd.ShiftLeft* and AdvSimd.ShiftRight* can be replaced with AdvSimd.Shift*, which takes op2 in a simd
+            // register
+
+            GenTree* op2 = impPopStack().val;
+            GenTree* op1 = impSIMDPopStack();
+
+            // AdvSimd.ShiftLogical does right-shifts with negative immediates, hence the negation
+            if (isRightShift)
+            {
+                op2 = gtNewOperNode(GT_NEG, genActualType(op2->TypeGet()), op2);
+            }
+
+            NamedIntrinsic fallbackIntrinsic;
+            switch (intrinsic)
+            {
+                case NI_AdvSimd_ShiftLeftLogical:
+                case NI_AdvSimd_ShiftRightLogical:
+                    fallbackIntrinsic = NI_AdvSimd_ShiftLogical;
+                    break;
+
+                case NI_AdvSimd_ShiftLeftLogicalScalar:
+                case NI_AdvSimd_ShiftRightLogicalScalar:
+                    fallbackIntrinsic = NI_AdvSimd_ShiftLogicalScalar;
+                    break;
+
+                case NI_AdvSimd_ShiftRightArithmetic:
+                    fallbackIntrinsic = NI_AdvSimd_ShiftArithmetic;
+                    break;
+
+                case NI_AdvSimd_ShiftRightArithmeticScalar:
+                    fallbackIntrinsic = NI_AdvSimd_ShiftArithmeticScalar;
+                    break;
+
+                default:
+                    unreached();
+            }
+
+            GenTree* tmpOp = gtNewSimdCreateBroadcastNode(simdType, op2, simdBaseJitType, genTypeSize(simdType));
+            return gtNewSimdHWIntrinsicNode(simdType, op1, tmpOp, fallbackIntrinsic, simdBaseJitType,
+                                            genTypeSize(simdType));
+        }
+
+        default:
+            return nullptr;
+    }
 }
 
 //------------------------------------------------------------------------
@@ -607,15 +709,39 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             break;
         }
 
+        case NI_AdvSimd_BitwiseClear:
         case NI_Vector64_AndNot:
         case NI_Vector128_AndNot:
         {
             assert(sig->numArgs == 2);
 
+            // We don't want to support creating AND_NOT nodes prior to LIR
+            // as it can break important optimizations. We'll produces this
+            // in lowering instead so decompose into the individual operations
+            // on import
+
             op2 = impSIMDPopStack();
             op1 = impSIMDPopStack();
 
-            retNode = gtNewSimdBinOpNode(GT_AND_NOT, retType, op1, op2, simdBaseJitType, simdSize);
+            op2     = gtFoldExpr(gtNewSimdUnOpNode(GT_NOT, retType, op2, simdBaseJitType, simdSize));
+            retNode = gtNewSimdBinOpNode(GT_AND, retType, op1, op2, simdBaseJitType, simdSize);
+            break;
+        }
+
+        case NI_AdvSimd_OrNot:
+        {
+            assert(sig->numArgs == 2);
+
+            // We don't want to support creating OR_NOT nodes prior to LIR
+            // as it can break important optimizations. We'll produces this
+            // in lowering instead so decompose into the individual operations
+            // on import
+
+            op2 = impSIMDPopStack();
+            op1 = impSIMDPopStack();
+
+            op2     = gtFoldExpr(gtNewSimdUnOpNode(GT_NOT, retType, op2, simdBaseJitType, simdSize));
+            retNode = gtNewSimdBinOpNode(GT_OR, retType, op1, op2, simdBaseJitType, simdSize);
             break;
         }
 
@@ -1450,6 +1576,14 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             break;
         }
 
+        case NI_Vector64_get_Indices:
+        case NI_Vector128_get_Indices:
+        {
+            assert(sig->numArgs == 0);
+            retNode = gtNewSimdGetIndicesNode(retType, simdBaseJitType, simdSize);
+            break;
+        }
+
         case NI_Vector64_get_One:
         case NI_Vector128_get_One:
         {
@@ -1570,6 +1704,61 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             op1 = impSIMDPopStack();
 
             retNode = gtNewSimdCmpOpAnyNode(GT_GE, retType, op1, op2, simdBaseJitType, simdSize);
+            break;
+        }
+
+        case NI_Vector64_IsNaN:
+        case NI_Vector128_IsNaN:
+        {
+            assert(sig->numArgs == 1);
+            var_types simdType = getSIMDTypeForSize(simdSize);
+
+            op1     = impSIMDPopStack();
+            retNode = gtNewSimdIsNaNNode(retType, op1, simdBaseJitType, simdSize);
+            break;
+        }
+
+        case NI_Vector64_IsNegative:
+        case NI_Vector128_IsNegative:
+        {
+            assert(sig->numArgs == 1);
+            var_types simdType = getSIMDTypeForSize(simdSize);
+
+            op1     = impSIMDPopStack();
+            retNode = gtNewSimdIsNegativeNode(retType, op1, simdBaseJitType, simdSize);
+            break;
+        }
+
+        case NI_Vector64_IsPositive:
+        case NI_Vector128_IsPositive:
+        {
+            assert(sig->numArgs == 1);
+            var_types simdType = getSIMDTypeForSize(simdSize);
+
+            op1     = impSIMDPopStack();
+            retNode = gtNewSimdIsPositiveNode(retType, op1, simdBaseJitType, simdSize);
+            break;
+        }
+
+        case NI_Vector64_IsPositiveInfinity:
+        case NI_Vector128_IsPositiveInfinity:
+        {
+            assert(sig->numArgs == 1);
+            var_types simdType = getSIMDTypeForSize(simdSize);
+
+            op1     = impSIMDPopStack();
+            retNode = gtNewSimdIsPositiveInfinityNode(retType, op1, simdBaseJitType, simdSize);
+            break;
+        }
+
+        case NI_Vector64_IsZero:
+        case NI_Vector128_IsZero:
+        {
+            assert(sig->numArgs == 1);
+            var_types simdType = getSIMDTypeForSize(simdSize);
+
+            op1     = impSIMDPopStack();
+            retNode = gtNewSimdIsZeroNode(retType, op1, simdBaseJitType, simdSize);
             break;
         }
 
@@ -1744,6 +1933,23 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             break;
         }
 
+        case NI_Vector64_MaxNative:
+        case NI_Vector128_MaxNative:
+        {
+            assert(sig->numArgs == 2);
+
+            if (BlockNonDeterministicIntrinsics(mustExpand))
+            {
+                break;
+            }
+
+            op2 = impSIMDPopStack();
+            op1 = impSIMDPopStack();
+
+            retNode = gtNewSimdMaxNativeNode(retType, op1, op2, simdBaseJitType, simdSize);
+            break;
+        }
+
         case NI_Vector64_Min:
         case NI_Vector128_Min:
         {
@@ -1756,16 +1962,27 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             break;
         }
 
+        case NI_Vector64_MinNative:
+        case NI_Vector128_MinNative:
+        {
+            assert(sig->numArgs == 2);
+
+            if (BlockNonDeterministicIntrinsics(mustExpand))
+            {
+                break;
+            }
+
+            op2 = impSIMDPopStack();
+            op1 = impSIMDPopStack();
+
+            retNode = gtNewSimdMinNativeNode(retType, op1, op2, simdBaseJitType, simdSize);
+            break;
+        }
+
         case NI_Vector64_op_Multiply:
         case NI_Vector128_op_Multiply:
         {
             assert(sig->numArgs == 2);
-
-            if (varTypeIsLong(simdBaseType))
-            {
-                // TODO-ARM64-CQ: We should support long/ulong multiplication.
-                break;
-            }
 
             CORINFO_ARG_LIST_HANDLE arg1     = sig->args;
             CORINFO_ARG_LIST_HANDLE arg2     = info.compCompHnd->getArgNext(arg1);
@@ -1786,24 +2003,34 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
         case NI_Vector128_MultiplyAddEstimate:
         {
             assert(sig->numArgs == 3);
-            assert(varTypeIsFloating(simdBaseType));
 
             if (BlockNonDeterministicIntrinsics(mustExpand))
             {
                 break;
             }
 
-            impSpillSideEffect(true, verCurrentState.esStackDepth -
-                                         3 DEBUGARG("Spilling op1 side effects for MultiplyAddEstimate"));
+            if (varTypeIsFloating(simdBaseType))
+            {
+                impSpillSideEffect(true, verCurrentState.esStackDepth -
+                                             3 DEBUGARG("Spilling op1 side effects for MultiplyAddEstimate"));
 
-            impSpillSideEffect(true, verCurrentState.esStackDepth -
-                                         2 DEBUGARG("Spilling op2 side effects for MultiplyAddEstimate"));
+                impSpillSideEffect(true, verCurrentState.esStackDepth -
+                                             2 DEBUGARG("Spilling op2 side effects for MultiplyAddEstimate"));
+            }
 
             op3 = impSIMDPopStack();
             op2 = impSIMDPopStack();
             op1 = impSIMDPopStack();
 
-            retNode = gtNewSimdFmaNode(retType, op1, op2, op3, simdBaseJitType, simdSize);
+            if (varTypeIsFloating(simdBaseType))
+            {
+                retNode = gtNewSimdFmaNode(retType, op1, op2, op3, simdBaseJitType, simdSize);
+            }
+            else
+            {
+                GenTree* mulNode = gtNewSimdBinOpNode(GT_MUL, retType, op1, op2, simdBaseJitType, simdSize);
+                retNode          = gtNewSimdBinOpNode(GT_ADD, retType, mulNode, op3, simdBaseJitType, simdSize);
+            }
             break;
         }
 
@@ -1907,6 +2134,25 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             break;
         }
 
+        case NI_Vector64_Round:
+        case NI_Vector128_Round:
+        {
+            if (sig->numArgs != 1)
+            {
+                break;
+            }
+
+            if (!varTypeIsFloating(simdBaseType))
+            {
+                retNode = impSIMDPopStack();
+                break;
+            }
+
+            op1     = impSIMDPopStack();
+            retNode = gtNewSimdRoundNode(retType, op1, simdBaseJitType, simdSize);
+            break;
+        }
+
         case NI_Vector64_Shuffle:
         case NI_Vector128_Shuffle:
         {
@@ -1915,7 +2161,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
             GenTree* indices = impStackTop(0).val;
 
-            if (!indices->IsVectorConst() || !IsValidForShuffle(indices->AsVecCon(), simdSize, simdBaseType))
+            if (!indices->IsCnsVec() || !IsValidForShuffle(indices->AsVecCon(), simdSize, simdBaseType))
             {
                 assert(sig->numArgs == 2);
 
@@ -2246,6 +2492,22 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
             op1     = impSIMDPopStack();
             retNode = gtNewSimdSumNode(retType, op1, simdBaseJitType, simdSize);
+            break;
+        }
+
+        case NI_Vector64_Truncate:
+        case NI_Vector128_Truncate:
+        {
+            assert(sig->numArgs == 1);
+
+            if (!varTypeIsFloating(simdBaseType))
+            {
+                retNode = impSIMDPopStack();
+                break;
+            }
+
+            op1     = impSIMDPopStack();
+            retNode = gtNewSimdTruncNode(retType, op1, simdBaseJitType, simdSize);
             break;
         }
 
@@ -2717,6 +2979,156 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
             retNode->AsHWIntrinsic()->SetSimdBaseJitType(simdBaseJitType);
             retNode->AsHWIntrinsic()->SetAuxiliaryJitType(op1BaseJitType);
+            break;
+        }
+        case NI_Sve_GatherPrefetch8Bit:
+        case NI_Sve_GatherPrefetch16Bit:
+        case NI_Sve_GatherPrefetch32Bit:
+        case NI_Sve_GatherPrefetch64Bit:
+        case NI_Sve_PrefetchBytes:
+        case NI_Sve_PrefetchInt16:
+        case NI_Sve_PrefetchInt32:
+        case NI_Sve_PrefetchInt64:
+        {
+            assert((sig->numArgs == 3) || (sig->numArgs == 4));
+            assert(!isScalar);
+
+            var_types            argType       = TYP_UNKNOWN;
+            CORINFO_CLASS_HANDLE argClass      = NO_CLASS_HANDLE;
+            int                  immLowerBound = 0;
+            int                  immUpperBound = 0;
+
+            CORINFO_ARG_LIST_HANDLE arg1 = sig->args;
+            CORINFO_ARG_LIST_HANDLE arg2 = info.compCompHnd->getArgNext(arg1);
+            CORINFO_ARG_LIST_HANDLE arg3 = info.compCompHnd->getArgNext(arg2);
+
+            HWIntrinsicInfo::lookupImmBounds(intrinsic, simdSize, simdBaseType, 1, &immLowerBound, &immUpperBound);
+
+            if (sig->numArgs == 3)
+            {
+                argType = JITtype2varType(strip(info.compCompHnd->getArgType(sig, arg3, &argClass)));
+                op3     = getArgForHWIntrinsic(argType, argClass);
+
+                assert(HWIntrinsicInfo::isImmOp(intrinsic, op3));
+                op3 = addRangeCheckIfNeeded(intrinsic, op3, mustExpand, immLowerBound, immUpperBound);
+
+                argType                    = JITtype2varType(strip(info.compCompHnd->getArgType(sig, arg2, &argClass)));
+                op2                        = getArgForHWIntrinsic(argType, argClass);
+                CorInfoType op2BaseJitType = getBaseJitTypeOfSIMDType(argClass);
+                argType                    = JITtype2varType(strip(info.compCompHnd->getArgType(sig, arg1, &argClass)));
+                op1                        = impPopStack().val;
+
+#ifdef DEBUG
+
+                if ((intrinsic == NI_Sve_GatherPrefetch8Bit) || (intrinsic == NI_Sve_GatherPrefetch16Bit) ||
+                    (intrinsic == NI_Sve_GatherPrefetch32Bit) || (intrinsic == NI_Sve_GatherPrefetch64Bit))
+                {
+                    assert(varTypeIsSIMD(op2->TypeGet()));
+                }
+                else
+                {
+                    assert(varTypeIsIntegral(op2->TypeGet()));
+                }
+#endif
+                retNode = gtNewSimdHWIntrinsicNode(retType, op1, op2, op3, intrinsic, simdBaseJitType, simdSize);
+                retNode->AsHWIntrinsic()->SetAuxiliaryJitType(op2BaseJitType);
+            }
+            else
+            {
+                CORINFO_ARG_LIST_HANDLE arg4 = info.compCompHnd->getArgNext(arg3);
+                argType = JITtype2varType(strip(info.compCompHnd->getArgType(sig, arg4, &argClass)));
+                op4     = getArgForHWIntrinsic(argType, argClass);
+
+                assert(HWIntrinsicInfo::isImmOp(intrinsic, op4));
+                op4 = addRangeCheckIfNeeded(intrinsic, op4, mustExpand, immLowerBound, immUpperBound);
+
+                argType                    = JITtype2varType(strip(info.compCompHnd->getArgType(sig, arg3, &argClass)));
+                op3                        = getArgForHWIntrinsic(argType, argClass);
+                CorInfoType op3BaseJitType = getBaseJitTypeOfSIMDType(argClass);
+                argType                    = JITtype2varType(strip(info.compCompHnd->getArgType(sig, arg2, &argClass)));
+                op2                        = getArgForHWIntrinsic(argType, argClass);
+                argType                    = JITtype2varType(strip(info.compCompHnd->getArgType(sig, arg1, &argClass)));
+                op1                        = impPopStack().val;
+
+                assert(varTypeIsSIMD(op3->TypeGet()));
+                retNode = gtNewSimdHWIntrinsicNode(retType, op1, op2, op3, op4, intrinsic, simdBaseJitType, simdSize);
+                retNode->AsHWIntrinsic()->SetAuxiliaryJitType(op3BaseJitType);
+            }
+
+            break;
+        }
+        case NI_Sve_ConditionalExtractAfterLastActiveElementScalar:
+        case NI_Sve_ConditionalExtractLastActiveElementScalar:
+        {
+            assert(sig->numArgs == 3);
+
+#ifdef DEBUG
+            isValidScalarIntrinsic = true;
+#endif
+
+            CORINFO_ARG_LIST_HANDLE arg1     = sig->args;
+            CORINFO_ARG_LIST_HANDLE arg2     = info.compCompHnd->getArgNext(arg1);
+            CORINFO_ARG_LIST_HANDLE arg3     = info.compCompHnd->getArgNext(arg2);
+            var_types               argType  = TYP_UNKNOWN;
+            CORINFO_CLASS_HANDLE    argClass = NO_CLASS_HANDLE;
+
+            argType                    = JITtype2varType(strip(info.compCompHnd->getArgType(sig, arg3, &argClass)));
+            op3                        = getArgForHWIntrinsic(argType, argClass);
+            argType                    = JITtype2varType(strip(info.compCompHnd->getArgType(sig, arg2, &argClass)));
+            op2                        = getArgForHWIntrinsic(argType, argClass);
+            CorInfoType op2BaseJitType = getBaseJitTypeOfSIMDType(argClass);
+            argType                    = JITtype2varType(strip(info.compCompHnd->getArgType(sig, arg1, &argClass)));
+            op1                        = getArgForHWIntrinsic(argType, argClass);
+
+            retNode = gtNewScalarHWIntrinsicNode(retType, op1, op2, op3, intrinsic);
+
+            retNode->AsHWIntrinsic()->SetSimdBaseJitType(simdBaseJitType);
+            retNode->AsHWIntrinsic()->SetAuxiliaryJitType(op2BaseJitType);
+            break;
+        }
+
+        case NI_Sve_MultiplyAddRotateComplexBySelectedScalar:
+        {
+            assert(sig->numArgs == 5);
+            assert(!isScalar);
+
+            CORINFO_ARG_LIST_HANDLE arg1     = sig->args;
+            CORINFO_ARG_LIST_HANDLE arg2     = info.compCompHnd->getArgNext(arg1);
+            CORINFO_ARG_LIST_HANDLE arg3     = info.compCompHnd->getArgNext(arg2);
+            CORINFO_ARG_LIST_HANDLE arg4     = info.compCompHnd->getArgNext(arg3);
+            CORINFO_ARG_LIST_HANDLE arg5     = info.compCompHnd->getArgNext(arg4);
+            var_types               argType  = TYP_UNKNOWN;
+            CORINFO_CLASS_HANDLE    argClass = NO_CLASS_HANDLE;
+
+            int imm1LowerBound, imm1UpperBound; // Range for rotation
+            int imm2LowerBound, imm2UpperBound; // Range for index
+            HWIntrinsicInfo::lookupImmBounds(intrinsic, simdSize, simdBaseType, 1, &imm1LowerBound, &imm1UpperBound);
+            HWIntrinsicInfo::lookupImmBounds(intrinsic, simdSize, simdBaseType, 2, &imm2LowerBound, &imm2UpperBound);
+
+            argType      = JITtype2varType(strip(info.compCompHnd->getArgType(sig, arg5, &argClass)));
+            GenTree* op5 = getArgForHWIntrinsic(argType, argClass);
+            assert(HWIntrinsicInfo::isImmOp(intrinsic, op5));
+            op5 = addRangeCheckIfNeeded(intrinsic, op5, mustExpand, imm1LowerBound, imm1UpperBound);
+
+            argType = JITtype2varType(strip(info.compCompHnd->getArgType(sig, arg4, &argClass)));
+            op4     = getArgForHWIntrinsic(argType, argClass);
+            assert(HWIntrinsicInfo::isImmOp(intrinsic, op4));
+            op4 = addRangeCheckIfNeeded(intrinsic, op4, mustExpand, imm2LowerBound, imm2UpperBound);
+
+            argType = JITtype2varType(strip(info.compCompHnd->getArgType(sig, arg3, &argClass)));
+            op3     = getArgForHWIntrinsic(argType, argClass);
+            argType = JITtype2varType(strip(info.compCompHnd->getArgType(sig, arg2, &argClass)));
+            op2     = getArgForHWIntrinsic(argType, argClass);
+            argType = JITtype2varType(strip(info.compCompHnd->getArgType(sig, arg1, &argClass)));
+            op1     = getArgForHWIntrinsic(argType, argClass);
+
+            SetOpLclRelatedToSIMDIntrinsic(op1);
+            SetOpLclRelatedToSIMDIntrinsic(op2);
+            SetOpLclRelatedToSIMDIntrinsic(op3);
+            SetOpLclRelatedToSIMDIntrinsic(op4);
+            SetOpLclRelatedToSIMDIntrinsic(op5);
+            retNode = new (this, GT_HWINTRINSIC) GenTreeHWIntrinsic(retType, getAllocator(CMK_ASTNode), intrinsic,
+                                                                    simdBaseJitType, simdSize, op1, op2, op3, op4, op5);
             break;
         }
 

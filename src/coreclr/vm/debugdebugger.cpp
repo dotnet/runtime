@@ -233,7 +233,7 @@ FCIMPLEND
 FCIMPL4(void, DebugStackTrace::GetStackFramesInternal,
         StackFrameHelper* pStackFrameHelperUNSAFE,
         INT32 iSkip,
-        CLR_BOOL fNeedFileInfo,
+        FC_BOOL_ARG fNeedFileInfo,
         Object* pExceptionUNSAFE
        )
 {
@@ -282,7 +282,7 @@ FCIMPL4(void, DebugStackTrace::GetStackFramesInternal,
     if (data.cElements != 0)
     {
 #if defined(FEATURE_ISYM_READER) && defined(FEATURE_COMINTEROP)
-        if (fNeedFileInfo)
+        if (FC_ACCESS_BOOL(fNeedFileInfo))
         {
              // Calls to COM up ahead.
             EnsureComStarted();
@@ -467,7 +467,7 @@ FCIMPL4(void, DebugStackTrace::GetStackFramesInternal,
             }
 #endif
             // Check if the user wants the filenumber, linenumber info and that it is possible.
-            if (!fIsEnc && fNeedFileInfo)
+            if (!fIsEnc && FC_ACCESS_BOOL(fNeedFileInfo))
             {
 #ifdef FEATURE_ISYM_READER
                 BOOL fPortablePDB = FALSE;
@@ -1044,9 +1044,9 @@ void DebugStackTrace::GetStackFramesFromException(OBJECTREF * e,
 
     // Now get the _stackTrace reference
     StackTraceArray traceData;
-    EXCEPTIONREF(*e)->GetStackTrace(traceData, pDynamicMethodArray);
 
     GCPROTECT_BEGIN(traceData);
+        EXCEPTIONREF(*e)->GetStackTrace(traceData, pDynamicMethodArray);
         // The number of frame info elements in the stack trace info
         pData->cElements = static_cast<int>(traceData.Size());
 

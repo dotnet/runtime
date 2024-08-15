@@ -518,16 +518,14 @@ namespace Microsoft.WebAssembly.Diagnostics
 
         private unsafe T ReadBigEndian<T>() where T : struct
         {
-            Span<byte> data = stackalloc byte[Unsafe.SizeOf<T>()];
+            Span<byte> data = stackalloc byte[sizeof(T)];
             T ret = default;
             Read(data);
             if (BitConverter.IsLittleEndian)
             {
                 data.Reverse();
             }
-#pragma warning disable CS8500 // takes address of managed type
             data.CopyTo(new Span<byte>(&ret, data.Length));
-#pragma warning restore CS8500
             return ret;
         }
     }
@@ -547,10 +545,8 @@ namespace Microsoft.WebAssembly.Diagnostics
 
         private unsafe void WriteBigEndian<T>(T val) where T : struct
         {
-            Span<byte> data = stackalloc byte[Unsafe.SizeOf<T>()];
-#pragma warning disable CS8500 // takes address of managed type
+            Span<byte> data = stackalloc byte[sizeof(T)];
             new Span<byte>(&val, data.Length).CopyTo(data);
-#pragma warning restore CS8500
             if (BitConverter.IsLittleEndian)
             {
                 data.Reverse();

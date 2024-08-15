@@ -110,12 +110,12 @@ namespace System.Diagnostics
                         return;
                     }
 
-                    Type[] parameterTypes = new Type[]
-                    {
+                    Type[] parameterTypes =
+                    [
                         typeof(Assembly), typeof(string), typeof(IntPtr), typeof(int), typeof(bool), typeof(IntPtr),
                         typeof(int), typeof(int), typeof(int),
                         typeof(string).MakeByRefType(), typeof(int).MakeByRefType(), typeof(int).MakeByRefType()
-                    };
+                    ];
                     MethodInfo? symbolsMethodInfo = symbolsType.GetMethod("GetSourceLineInfo", BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Instance, null, parameterTypes, null);
                     if (symbolsMethodInfo == null)
                     {

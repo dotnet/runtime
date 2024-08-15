@@ -410,7 +410,7 @@ FCIMPL4(Object*, RuntimeMethodHandle::InvokeMethod,
     Object *target,
     PVOID* args, // An array of byrefs
     SignatureNative* pSigUNSAFE,
-    CLR_BOOL fConstructor)
+    FC_BOOL_ARG fConstructor)
 {
     FCALL_CONTRACT;
 
@@ -443,7 +443,7 @@ FCIMPL4(Object*, RuntimeMethodHandle::InvokeMethod,
 
     BOOL fCtorOfVariableSizedObject = FALSE;
 
-    if (fConstructor)
+    if (FC_ACCESS_BOOL(fConstructor))
     {
         // If we are invoking a constructor on an array then we must
         // handle this specially.
@@ -550,7 +550,7 @@ FCIMPL4(Object*, RuntimeMethodHandle::InvokeMethod,
     if (!pMeth->IsStatic() && !fCtorOfVariableSizedObject) {
         PVOID pThisPtr;
 
-        if (fConstructor)
+        if (FC_ACCESS_BOOL(fConstructor))
         {
             // Copy "this" pointer: only unbox if type is value type and method is not unboxing stub
             if (ownerType.IsValueType() && !pMeth->IsUnboxingStub()) {
@@ -632,7 +632,6 @@ FCIMPL4(Object*, RuntimeMethodHandle::InvokeMethod,
 
         UINT structSize = argit.GetArgSize();
 
-        bool needsStackCopy = false;
         ArgDestination argDest(pTransitionBlock, ofs, argit.GetArgLocDescForStructInRegs());
 
 #ifdef ENREGISTERED_PARAMTYPE_MAXSIZE
@@ -647,7 +646,7 @@ FCIMPL4(Object*, RuntimeMethodHandle::InvokeMethod,
             *(PVOID *)pArgDst = pStackCopy;
 
             // save the info into ValueClassInfo
-            if (pMT->ContainsPointers())
+            if (pMT->ContainsGCPointers())
             {
                 pValueClasses = new (_alloca(sizeof(ValueClassInfo))) ValueClassInfo(pStackCopy, pMT, pValueClasses);
             }
@@ -673,7 +672,7 @@ FCIMPL4(Object*, RuntimeMethodHandle::InvokeMethod,
     CallDescrWorkerWithHandler(&callDescrData);
 
     // It is still illegal to do a GC here.  The return type might have/contain GC pointers.
-    if (fConstructor)
+    if (FC_ACCESS_BOOL(fConstructor))
     {
         // We have a special case for Strings...The object is returned...
         if (fCtorOfVariableSizedObject) {
@@ -704,7 +703,18 @@ FCIMPL4(Object*, RuntimeMethodHandle::InvokeMethod,
         // we have allocated for this purpose.
         else if (!fHasRetBuffArg)
         {
-            CopyValueClass(gc.retVal->GetData(), &callDescrData.returnValue, gc.retVal->GetMethodTable());
+#if defined(TARGET_RISCV64) || defined(TARGET_LOONGARCH64)
+            if (callDescrData.fpReturnSize != FpStruct::UseIntCallConv)
+            {
+                FpStructInRegistersInfo info = argit.GetReturnFpStructInRegistersInfo();
+                bool hasPointers = gc.retVal->GetMethodTable()->ContainsGCPointers();
+                CopyReturnedFpStructFromRegisters(gc.retVal->GetData(), callDescrData.returnValue, info, hasPointers);
+            }
+            else
+#endif // defined(TARGET_RISCV64) || defined(TARGET_LOONGARCH64)
+            {
+                CopyValueClass(gc.retVal->GetData(), &callDescrData.returnValue, gc.retVal->GetMethodTable());
+            }
         }
         // From here on out, it is OK to have GCs since the return object (which may have had
         // GC pointers has been put into a GC object and thus protected.
@@ -1306,7 +1316,8 @@ extern "C" void QCALLTYPE ReflectionInvocation_RunClassConstructor(QCall::TypeHa
         return;
 
     MethodTable *pMT = typeHnd.AsMethodTable();
-    if (pMT->IsClassInited())
+    // The ContainsGenericVariables check is to preserve back-compat where we assume the generic type is already initialized
+    if (pMT->IsClassInited() || pMT->ContainsGenericVariables())
         return;
 
     BEGIN_QCALL;
