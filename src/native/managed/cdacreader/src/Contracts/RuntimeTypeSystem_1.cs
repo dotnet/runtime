@@ -937,7 +937,7 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
                 return false;
             if (IsWrapperStub(md))
                 return false;
-            return _target.Contracts.NativeCodePointers.CodeVersionManagerSupportsMethod(methodDesc.Address);
+            return _target.Contracts.CodeVersions.CodeVersionManagerSupportsMethod(methodDesc.Address);
         }
         return false;
     }

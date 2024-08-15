@@ -5,15 +5,15 @@ using System;
 
 namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 
-internal interface INativeCodePointers : IContract
+internal interface ICodeVersions : IContract
 {
-    static string IContract.Name { get; } = nameof(NativeCodePointers);
+    static string IContract.Name { get; } = nameof(CodeVersions);
     static IContract IContract.Create(Target target, int version)
     {
         return version switch
         {
             1 => new NativeCodePointers_1(target),
-            _ => default(NativeCodePointers),
+            _ => default(CodeVersions),
         };
     }
 
@@ -46,7 +46,7 @@ internal struct NativeCodeVersionHandle
 
 }
 
-internal readonly struct NativeCodePointers : INativeCodePointers
+internal readonly struct CodeVersions : ICodeVersions
 {
     // throws NotImplementedException for all methods
 }

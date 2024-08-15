@@ -109,7 +109,7 @@ internal sealed partial class SOSDacImpl : ISOSDacInterface, ISOSDacInterface2, 
         {
             Contracts.IRuntimeTypeSystem rtsContract = _target.Contracts.RuntimeTypeSystem;
             Contracts.MethodDescHandle methodDescHandle = rtsContract.GetMethodDescHandle(methodDesc);
-            Contracts.INativeCodePointers nativeCodeContract = _target.Contracts.NativeCodePointers;
+            Contracts.ICodeVersions nativeCodeContract = _target.Contracts.CodeVersions;
 
             if (rgRevertedRejitData != null)
             {
