@@ -23,13 +23,13 @@ extern "C" INT32 QCALLTYPE ObjectNative_GetHashCodeSlow(QCall::ObjectHandleOnSta
 {
     QCALL_CONTRACT;
 
-    _ASSERTE(objHandle.Get() != NULL);
     INT32 idx = 0;
 
     BEGIN_QCALL;
 
     GCX_COOP();
 
+    _ASSERTE(objHandle.Get() != NULL);
     idx = objHandle.Get()->GetHashCodeEx();
 
     END_QCALL;
