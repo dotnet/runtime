@@ -227,6 +227,9 @@ enum HWIntrinsicFlag : unsigned int
 
     // The intrinsic is an embedded masking compatible intrinsic
     HW_Flag_EmbMaskingCompatible = 0x10000000,
+
+    // The base type of this intrinsic needs to be normalized to int/uint unless it is long/ulong.
+    HW_Flag_NormalizeSmallTypeToInt = 0x20000000,
 #elif defined(TARGET_ARM64)
 
     // The intrinsic has an enum operand. Using this implies HW_Flag_HasImmediateOperand.
@@ -236,15 +239,17 @@ enum HWIntrinsicFlag : unsigned int
     // then the intrinsic should be switched to a scalar only version.
     HW_Flag_HasScalarInputVariant = 0x2000000,
 
+    // The intrinsic uses a mask in arg1 to select elements present in the result, and must use a low vector register.
+    HW_Flag_LowVectorOperation = 0x4000000,
+
+    // The intrinsic uses a mask in arg1 to select elements present in the result, which zeros inactive elements
+    // (instead of merging).
+    HW_Flag_ZeroingMaskedOperation = 0x8000000,
+
 #endif // TARGET_XARCH
 
     // The intrinsic is a FusedMultiplyAdd intrinsic
     HW_Flag_FmaIntrinsic = 0x40000000,
-
-#if defined(TARGET_ARM64)
-    // The intrinsic uses a mask in arg1 to select elements present in the result, and must use a low vector register.
-    HW_Flag_LowVectorOperation = 0x4000000,
-#endif
 
     HW_Flag_CanBenefitFromConstantProp = 0x80000000,
 };
@@ -753,6 +758,12 @@ struct HWIntrinsicInfo
         HWIntrinsicFlag flags = lookupFlags(id);
         return (flags & HW_Flag_MaybeMemoryStore) != 0;
     }
+
+    static bool NeedsNormalizeSmallTypeToInt(NamedIntrinsic id)
+    {
+        HWIntrinsicFlag flags = lookupFlags(id);
+        return (flags & HW_Flag_NormalizeSmallTypeToInt) != 0;
+    }
 #endif
 
     static bool NoJmpTableImm(NamedIntrinsic id)
@@ -982,6 +993,12 @@ struct HWIntrinsicInfo
     {
         const HWIntrinsicFlag flags = lookupFlags(id);
         return (flags & HW_Flag_HasScalarInputVariant) != 0;
+    }
+
+    static bool IsZeroingMaskedOperation(NamedIntrinsic id)
+    {
+        const HWIntrinsicFlag flags = lookupFlags(id);
+        return (flags & HW_Flag_ZeroingMaskedOperation) != 0;
     }
 
     static NamedIntrinsic GetScalarInputVariant(NamedIntrinsic id)
