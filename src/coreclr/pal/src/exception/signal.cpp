@@ -621,8 +621,7 @@ static void sigsegv_handler(int code, siginfo_t *siginfo, void *context)
 
         // If the failure address is at most one page above or below the stack pointer,
         // we have a stack overflow.
-        bool isStackOverflow = (failureAddress - (sp - GetVirtualPageSize())) < 2 * GetVirtualPageSize();
-        if (isStackOverflow)
+        if ((failureAddress - (sp - GetVirtualPageSize())) < 2 * GetVirtualPageSize())
         {
             if (GetCurrentPalThread())
             {
@@ -652,8 +651,7 @@ static void sigsegv_handler(int code, siginfo_t *siginfo, void *context)
                 PROCAbort(SIGSEGV, siginfo);
             }
         }
-
-        if (!isStackOverflow)
+        else
         {
             // Now that we know the SIGSEGV didn't happen due to a stack overflow, execute the common
             // hardware signal handler on the original stack.
