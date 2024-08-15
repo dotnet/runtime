@@ -1911,11 +1911,11 @@ EEClass::CheckForHFA()
                     requiredAlignment = 16;
                     break;
                 default:
-                    requiredAlignment = 0;
-                    break;
+                    // VT without a valid HFA type inside of this struct means this struct is not an HFA
+                    return false;
                 }
 
-                if (requiredAlignment && (pFD->GetOffset() % requiredAlignment != 0))
+                if (requiredAlignment && (pFD->GetOffset() % requiredAlignment != 0)) // HFAs don't have unaligned fields.
                 {
                     return false;
                 }
