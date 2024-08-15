@@ -208,7 +208,7 @@
                      '@(ProjectReference)' != ''">
     <!-- Find project references that overlap with NetCoreApp, are direct (NuGetPackageId is not set), actually referenced (ReferenceOutputAssembly), and not hidden with PrivateAssets
          ProjectReferences can opt out of this checking by setting AllowFrameworkPackageReference, though they should not. -->
-    <Warning Text="Project reference '%(_overlappingProjectFrameworkReference.Identity)' is a reference to a framework assembly and is not required in $(NetCoreAppCurrent) (NetCoreAppCurrent)."
+    <Warning Text="Project reference '%(ProjectReference.Identity)' is a reference to a framework assembly and is not required in $(NetCoreAppCurrent) (NetCoreAppCurrent)."
              Code="NETPKG0001"
              Condition="$(NetCoreAppLibrary.Contains('%(ProjectReference.Filename);')) and
                         '%(ProjectReference.ReferenceOutputAssembly)' != 'false' and
