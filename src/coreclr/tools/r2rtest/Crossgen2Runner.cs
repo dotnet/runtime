@@ -24,15 +24,12 @@ namespace R2RTest
     class Crossgen2Runner : CompilerRunner
     {
         private Crossgen2RunnerOptions Crossgen2RunnerOptions;
+
         public override CompilerIndex Index => CompilerIndex.CPAOT;
+        protected override string CompilerPath => _options.Crossgen2Path != null ? _options.Crossgen2Path.FullName : Path.Combine(_options.CoreRootDirectory.FullName, "crossgen2", RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? "crossgen2.exe" : "crossgen2");
 
-        // Crossgen2 runs on top of corerun.
-        protected override string CompilerRelativePath => "";
+        protected readonly List<string> _referenceFiles = new();
 
-        protected override string CompilerFileName => _options.DotNetCli;
-        protected readonly List<string> _referenceFiles = new List<string>();
-
-        private string Crossgen2Path => _options.Crossgen2Path != null ? _options.Crossgen2Path.FullName : Path.Combine(_options.CoreRootDirectory.FullName, "crossgen2", RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? "crossgen2.exe" : "crossgen2");
         private bool CompositeMode => Crossgen2RunnerOptions != null ? Crossgen2RunnerOptions.Composite : _options.Composite;
 
         public Crossgen2Runner(BuildOptions options, Crossgen2RunnerOptions crossgen2RunnerOptions, IEnumerable<string> references, string overrideOutputPath = null)
@@ -64,7 +61,7 @@ namespace R2RTest
         public override ProcessParameters CompilationProcess(string outputFileName, IEnumerable<string> inputAssemblyFileNames)
         {
             ProcessParameters processParameters = base.CompilationProcess(outputFileName, inputAssemblyFileNames);
-            processParameters.ProcessPath = Crossgen2Path;
+
             // DOTNET_ variables
             processParameters.EnvironmentOverrides["DOTNET_GCStress"] = "";
             processParameters.EnvironmentOverrides["DOTNET_HeapVerify"] = "";
@@ -76,6 +73,7 @@ namespace R2RTest
             processParameters.EnvironmentOverrides["COMPlus_HeapVerify"] = "";
             processParameters.EnvironmentOverrides["COMPlus_ReadyToRun"] = "";
             processParameters.EnvironmentOverrides["COMPlus_GCName"] = "";
+
             return processParameters;
         }
 
