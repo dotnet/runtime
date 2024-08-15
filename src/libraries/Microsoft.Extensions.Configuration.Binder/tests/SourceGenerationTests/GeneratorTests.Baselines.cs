@@ -1075,6 +1075,12 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
             "MyDictionary"
         };
 
+        private readonly static string [] s_rootCollectionTypesToGenerateDiagnostics = new string []
+        {
+            "List<IntPtr>",
+            "MyDictionary",
+        };
+
         [Fact]
         public async Task UnsupportedTypes()
         {
@@ -1082,6 +1088,12 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
             for (int i = 0; i < s_typesToSkip.Length; i++)
             {
                 sb1.AppendLine($"public {s_typesToSkip[i]} SkipProp{i} {{ get; set; }}");
+            }
+
+            StringBuilder sb2 = new();
+            for (int i = 0; i < s_rootCollectionTypesToGenerateDiagnostics.Length; i++)
+            {
+                sb2.AppendLine($"configuration.Get<{s_rootCollectionTypesToGenerateDiagnostics[i]}>(_ => {{ }});");
             }
 
             string source = $$"""
@@ -1105,8 +1117,7 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
                         configuration.Get<Options>(_ => { });
 
                         // Should generate a diagnostics
-                        configuration.Get<List<IntPtr>>(_ => { });
-                        configuration.Get<MyDictionary>(_ => { });
+                        {{sb2}}
                 	}
                 }
 
@@ -1132,15 +1143,7 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
                 "UnsupportedTypes.generated.txt",
                 source, expectedDiags: ExpectedDiagnostics.FromGeneratorOnly);
 
-            foreach(var diagnostic in result.Diagnostics)
-            {
-                Console.WriteLine(diagnostic);
-            }
-
-            // SYSLIB1100: Cannot create instance of type 'System.Collections.Generic.IEqualityComparer<string>' because it is missing a public instance constructor.
-            // SYSLIB1100: Cannot create instance of type 'System.Collections.Generic.Dictionary<string, Action>+KeyCollection' because it is missing a public instance constructor.
-            // SYSLIB1100: The collection type is not supported: 'System.Collections.ICollection'.
-            Assert.Equal(3, result.Diagnostics.Where(diag => diag.Id == Diagnostics.TypeNotSupported.Id).Count());
+            Assert.Equal(s_rootCollectionTypesToGenerateDiagnostics.Length, result.Diagnostics.Where(diag => diag.Id == Diagnostics.TypeNotSupported.Id).Count());
             Assert.True(result.GeneratedSource.HasValue);
             string generatedSource = result.GeneratedSource.Value.SourceText.ToString();
             Assert.DoesNotContain(generatedSource, "SkipProp");

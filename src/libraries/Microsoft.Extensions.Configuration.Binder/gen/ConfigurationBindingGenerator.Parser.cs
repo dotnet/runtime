@@ -199,8 +199,11 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 {
                     spec = CreateCollectionSpec(typeParseInfo);
 
-                    // fallback to treating as an object, if we can create it
-                    if (spec is UnsupportedTypeSpec && type is INamedTypeSymbol && !type.IsAbstract)
+                    // fallback to treating as an object if we couldn't treat as a collection and
+                    // it does not implement ICollection<> nor IDictionary<,>
+                    if (spec is UnsupportedTypeSpec && type is INamedTypeSymbol namedType &&
+                        GetInterface(namedType, _typeSymbols.GenericICollection_Unbound) is null &&
+                        GetInterface(namedType, _typeSymbols.GenericIDictionary_Unbound) is null)
                     {
                         spec = CreateObjectSpec(typeParseInfo);
                     }
