@@ -1825,11 +1825,8 @@ void StackFrameIterator::PrepareToYieldFrame()
     ASSERT(m_pInstance->IsManaged(m_ControlPC) ||
          ((m_dwFlags & SkipNativeFrames) == 0 && (m_dwFlags & UnwoundReversePInvoke) != 0));
 
-    // Do not adjust the PC if ExCollide is set. In that case it was either copied from
-    // existing stack frame iterator that was already adjusted, or it's set to the
-    // beginning of the faulting instruction from ExInfo and adjusting it would cause
-    // us to move to the previous instruction which may no longer be in the same try
-    // block.
+    // Do not adjust the PC if ExCollide is set. In that case the m_ControlPC was copied from
+    // another stack frame iterator and it already has a correct value.
     if ((m_dwFlags & (ApplyReturnAddressAdjustment | ExCollide)) == ApplyReturnAddressAdjustment)
     {
         m_ControlPC = AdjustReturnAddressBackward(m_ControlPC);
