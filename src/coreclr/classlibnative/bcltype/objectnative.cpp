@@ -19,106 +19,49 @@
 #include "comsynchronizable.h"
 #include "eeconfig.h"
 
-
-NOINLINE static INT32 GetHashCodeHelper(OBJECTREF objRef)
+extern "C" INT32 QCALLTYPE ObjectNative_GetHashCodeSlow(QCall::ObjectHandleOnStack objHandle)
 {
-    DWORD idx = 0;
+    QCALL_CONTRACT;
 
-    FC_INNER_PROLOG(ObjectNative::GetHashCode);
+    _ASSERTE(objHandle.Get() != NULL);
+    INT32 idx = 0;
 
-    HELPER_METHOD_FRAME_BEGIN_RET_ATTRIB_1(Frame::FRAME_ATTR_EXACT_DEPTH|Frame::FRAME_ATTR_CAPTURE_DEPTH_2, objRef);
+    BEGIN_QCALL;
 
-    idx = objRef->GetHashCodeEx();
+    GCX_COOP();
 
-    HELPER_METHOD_FRAME_END();
-    FC_INNER_EPILOG();
+    idx = objHandle.Get()->GetHashCodeEx();
+
+    END_QCALL;
+
     return idx;
 }
 
-// Note that we obtain a sync block index without actually building a sync block.
-// That's because a lot of objects are hashed, without requiring support for
-FCIMPL1(INT32, ObjectNative::GetHashCode, Object* obj) {
+FCIMPL1(INT32, ObjectNative::TryGetHashCode, Object* obj)
+{
+    FCALL_CONTRACT;
 
-    CONTRACTL
-    {
-        FCALL_CHECK;
-        INJECT_FAULT(FCThrow(kOutOfMemoryException););
-    }
-    CONTRACTL_END;
-
-    VALIDATEOBJECT(obj);
-
-    if (obj == 0)
+    if (obj == NULL)
         return 0;
 
-    OBJECTREF objRef(obj);
-
+    OBJECTREF objRef = ObjectToOBJECTREF(obj);
+    DWORD bits = objRef->GetHeader()->GetBits();
+    if (bits & BIT_SBLK_IS_HASH_OR_SYNCBLKINDEX)
     {
-        DWORD bits = objRef->GetHeader()->GetBits();
-
-        if (bits & BIT_SBLK_IS_HASH_OR_SYNCBLKINDEX)
+        if (bits & BIT_SBLK_IS_HASHCODE)
         {
-            if (bits & BIT_SBLK_IS_HASHCODE)
-            {
-                // Common case: the object already has a hash code
-                return  bits & MASK_HASHCODE;
-            }
-            else
-            {
-                // We have a sync block index. This means if we already have a hash code,
-                // it is in the sync block, otherwise we generate a new one and store it there
-                SyncBlock *psb = objRef->PassiveGetSyncBlock();
-                if (psb != NULL)
-                {
-                    DWORD hashCode = psb->GetHashCode();
-                    if (hashCode != 0)
-                        return  hashCode;
-                }
-            }
+            // Common case: the object already has a hash code
+            return bits & MASK_HASHCODE;
+        }
+        else
+        {
+            // We have a sync block index. This means if we already have a hash code,
+            // it is in the sync block, otherwise we will return 0, which means "not set".
+            SyncBlock *psb = objRef->PassiveGetSyncBlock();
+            if (psb != NULL)
+                return psb->GetHashCode();
         }
     }
-
-    FC_INNER_RETURN(INT32, GetHashCodeHelper(objRef));
-}
-FCIMPLEND
-
-FCIMPL1(INT32, ObjectNative::TryGetHashCode, Object* obj) {
-
-    CONTRACTL
-    {
-        FCALL_CHECK;
-    }
-    CONTRACTL_END;
-
-    VALIDATEOBJECT(obj);
-
-    if (obj == 0)
-        return 0;
-
-    OBJECTREF objRef(obj);
-
-    {
-        DWORD bits = objRef->GetHeader()->GetBits();
-
-        if (bits & BIT_SBLK_IS_HASH_OR_SYNCBLKINDEX)
-        {
-            if (bits & BIT_SBLK_IS_HASHCODE)
-            {
-                // Common case: the object already has a hash code
-                return  bits & MASK_HASHCODE;
-            }
-            else
-            {
-                // We have a sync block index. There may be a hash code stored within the sync block.
-                SyncBlock *psb = objRef->PassiveGetSyncBlock();
-                if (psb != NULL)
-                {
-                    return psb->GetHashCode();
-                }
-            }
-        }
-    }
-
     return 0;
 }
 FCIMPLEND
@@ -146,48 +89,19 @@ FCIMPL2(FC_BOOL_RET, ObjectNative::ContentEquals, Object *pThisRef, Object *pCom
 }
 FCIMPLEND
 
-NOINLINE static Object* GetClassHelper(OBJECTREF objRef)
+extern "C" void QCALLTYPE ObjectNative_GetTypeSlow(MethodTable* pMT, QCall::ObjectHandleOnStack ret)
 {
-    FC_INNER_PROLOG(ObjectNative::GetClass);
-    _ASSERTE(objRef != NULL);
-    TypeHandle typeHandle = objRef->GetTypeHandle();
-    OBJECTREF refType = NULL;
+    QCALL_CONTRACT;
+    _ASSERTE(pMT != NULL);
 
-    HELPER_METHOD_FRAME_BEGIN_RET_ATTRIB_1(Frame::FRAME_ATTR_EXACT_DEPTH|Frame::FRAME_ATTR_CAPTURE_DEPTH_2, refType);
+    BEGIN_QCALL;
 
-        refType = typeHandle.GetManagedClassObject();
+    GCX_COOP();
 
-    HELPER_METHOD_FRAME_END();
-    FC_INNER_EPILOG();
-    return OBJECTREFToObject(refType);
+    ret.Set(pMT->GetManagedClassObject());
+
+    END_QCALL;
 }
-
-// This routine is called by the Object.GetType() routine.   It is a major way to get the System.Type
-FCIMPL1(Object*, ObjectNative::GetClass, Object* pThis)
-{
-    CONTRACTL
-    {
-        FCALL_CHECK;
-        INJECT_FAULT(FCThrow(kOutOfMemoryException););
-    }
-    CONTRACTL_END;
-
-    OBJECTREF objRef = ObjectToOBJECTREF(pThis);
-    if (objRef != NULL)
-    {
-        MethodTable* pMT = objRef->GetMethodTable();
-        OBJECTREF typePtr = pMT->GetManagedClassObjectIfExists();
-        if (typePtr != NULL)
-        {
-            return OBJECTREFToObject(typePtr);
-        }
-    }
-    else
-        FCThrow(kNullReferenceException);
-
-    FC_INNER_RETURN(Object*, GetClassHelper(objRef));
-}
-FCIMPLEND
 
 extern "C" void QCALLTYPE ObjectNative_AllocateUninitializedClone(QCall::ObjectHandleOnStack objHandle)
 {
@@ -200,10 +114,10 @@ extern "C" void QCALLTYPE ObjectNative_AllocateUninitializedClone(QCall::ObjectH
     OBJECTREF refClone = objHandle.Get();
     _ASSERTE(refClone != NULL); // Should be handled at managed side
     MethodTable* pMT = refClone->GetMethodTable();
-    
+
     // assert that String has overloaded the Clone() method
     _ASSERTE(pMT != g_pStringClass);
-    
+
     if (pMT->IsArray())
     {
         objHandle.Set(DupArrayForCloning((BASEARRAYREF)refClone));
