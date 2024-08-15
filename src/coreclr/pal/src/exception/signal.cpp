@@ -621,7 +621,8 @@ static void sigsegv_handler(int code, siginfo_t *siginfo, void *context)
 
         // If the failure address is at most one page above or below the stack pointer,
         // we have a stack overflow.
-        if ((failureAddress - (sp - GetVirtualPageSize())) < 2 * GetVirtualPageSize())
+        bool isStackOverflow = (failureAddress - (sp - GetVirtualPageSize())) < 2 * GetVirtualPageSize();
+        if (isStackOverflow)
         {
             if (GetCurrentPalThread())
             {
@@ -641,6 +642,9 @@ static void sigsegv_handler(int code, siginfo_t *siginfo, void *context)
                 {
                     PROCAbort(SIGSEGV, siginfo);
                 }
+
+                // The current executable (shared library) doesn't have hardware exception handler installed or opted to not to 
+                // handle it. So this handler will invoke the previously installed handler at the end of this function.
             }
             else
             {
@@ -649,26 +653,29 @@ static void sigsegv_handler(int code, siginfo_t *siginfo, void *context)
             }
         }
 
-        // Now that we know the SIGSEGV didn't happen due to a stack overflow, execute the common
-        // hardware signal handler on the original stack.
+        if (!isStackOverflow)
+        {
+            // Now that we know the SIGSEGV didn't happen due to a stack overflow, execute the common
+            // hardware signal handler on the original stack.
 
-        if (GetCurrentPalThread() && IsRunningOnAlternateStack(context))
-        {
-            if (SwitchStackAndExecuteHandler(code, siginfo, context, 0 /* sp */)) // sp == 0 indicates execution on the original stack
+            if (GetCurrentPalThread() && IsRunningOnAlternateStack(context))
             {
-                return;
+                if (SwitchStackAndExecuteHandler(code, siginfo, context, 0 /* sp */)) // sp == 0 indicates execution on the original stack
+                {
+                    return;
+                }
             }
-        }
-        else
-        {
-            // The code flow gets here when the signal handler is not running on an alternate stack or when it wasn't created
-            // by coreclr. In both cases, we execute the common_signal_handler directly.
-            // If thread isn't created by coreclr and has alternate signal stack GetCurrentPalThread() will return NULL too.
-            // But since in this case we don't handle hardware exceptions (IsSafeToHandleHardwareException returns false)
-            // we can call common_signal_handler on the alternate stack.
-            if (common_signal_handler(code, siginfo, context, 2, (size_t)0, (size_t)siginfo->si_addr))
+            else
             {
-                return;
+                // The code flow gets here when the signal handler is not running on an alternate stack or when it wasn't created
+                // by coreclr. In both cases, we execute the common_signal_handler directly.
+                // If thread isn't created by coreclr and has alternate signal stack GetCurrentPalThread() will return NULL too.
+                // But since in this case we don't handle hardware exceptions (IsSafeToHandleHardwareException returns false)
+                // we can call common_signal_handler on the alternate stack.
+                if (common_signal_handler(code, siginfo, context, 2, (size_t)0, (size_t)siginfo->si_addr))
+                {
+                    return;
+                }
             }
         }
     }
