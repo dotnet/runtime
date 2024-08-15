@@ -2113,9 +2113,7 @@ ClrDataAccess::GetMethodTableData(CLRDATA_ADDRESS mt, struct DacpMethodTableData
             _ASSERTE(MTData->dwAttrClass = mtDataLocal.dwAttrClass);
             _ASSERTE(MTData->bContainsPointers == mtDataLocal.bContainsPointers);
             _ASSERTE(MTData->bIsShared == mtDataLocal.bIsShared);
-            _ASSERTE(MTData->bIsDynamic == mtDataLocal.bIsDynamic
-                // DAC returns the flag value instead of 0 or 1
-                || (MTData->bIsDynamic != FALSE && mtDataLocal.bIsDynamic != FALSE));
+            _ASSERTE(MTData->bIsDynamic == mtDataLocal.bIsDynamic);
         }
 #endif
     }
@@ -2162,7 +2160,7 @@ ClrDataAccess::GetMethodTableDataImpl(CLRDATA_ADDRESS mt, struct DacpMethodTable
         MTData->dwAttrClass = pMT->GetAttrClass();
         MTData->bContainsPointers = pMT->ContainsGCPointers();
         MTData->bIsShared = FALSE;
-        MTData->bIsDynamic = pMT->IsDynamicStatics();
+        MTData->bIsDynamic = pMT->IsDynamicStatics() ? TRUE : FALSE;
     }
     return S_OK;
 }
