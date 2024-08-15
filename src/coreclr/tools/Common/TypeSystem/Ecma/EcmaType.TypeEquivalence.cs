@@ -80,12 +80,12 @@ namespace Internal.TypeSystem.Ecma
                     if (this.HasCustomAttribute("System.Runtime.InteropServices", "ImportedFromTypeLibAttribute") || this.HasCustomAttribute("System.Runtime.InteropServices", "PrimaryInteropAssemblyAttribute"))
                     {
                         // This type has a TypeIdentifier attribute if it has an appropriate shape to be considered type equivalent
+                        if (!TypeHasCharacteristicsRequiredToBeTypeEquivalent)
+                            return null;
+
+                        _data = ComputeTypeIdentifierFromGuids();
+                        return _data;
                     }
-
-                    if (!TypeHasCharacteristicsRequiredToBeTypeEquivalent)
-                        return null;
-
-                    _data = ComputeTypeIdentifierFromGuids();
                 }
 
                 return null;
