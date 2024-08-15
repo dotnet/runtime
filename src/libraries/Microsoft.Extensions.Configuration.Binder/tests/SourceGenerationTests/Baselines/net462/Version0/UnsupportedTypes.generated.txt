@@ -37,7 +37,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
         /// <summary>Attempts to bind the configuration instance to a new instance of type T.</summary>
         [InterceptsLocation(@"src-0.cs", 18, 23)]
         [InterceptsLocation(@"src-0.cs", 21, 23)]
-        [InterceptsLocation(@"src-0.cs", 22, 23)]
+        [InterceptsLocation(@"src-0.cs", 22, 15)]
         public static T? Get<T>(this IConfiguration configuration, Action<BinderOptions>? configureOptions) => (T?)(GetCore(configuration, typeof(T), configureOptions) ?? default(T));
 
         /// <summary>Attempts to bind the given object instance to configuration values by matching property names against configuration keys recursively.</summary>
@@ -62,9 +62,6 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
         #region Core binding extensions.
         private readonly static Lazy<HashSet<string>> s_configKeys_RecordAction = new(() => new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "x" });
         private readonly static Lazy<HashSet<string>> s_configKeys_Options = new(() => new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "Name", "Age", "List", "Array", "Record" });
-        private readonly static Lazy<HashSet<string>> s_configKeys_ListIntPtr = new(() => new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "Capacity", "Count", "System.Collections.IList.IsFixedSize", "System.Collections.Generic.ICollection<T>.IsReadOnly", "System.Collections.IList.IsReadOnly", "System.Collections.ICollection.IsSynchronized", "System.Collections.ICollection.SyncRoot", "System.Collections.IList.Item" });
-        private readonly static Lazy<HashSet<string>> s_configKeys_DictionaryKeyCollectionStringAction = new(() => new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "Count", "System.Collections.Generic.ICollection<TKey>.IsReadOnly", "System.Collections.ICollection.IsSynchronized", "System.Collections.ICollection.SyncRoot" });
-        private readonly static Lazy<HashSet<string>> s_configKeys_MyDictionary = new(() => new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "Comparer", "Count", "Keys", "System.Collections.Generic.IDictionary<TKey,TValue>.Keys", "System.Collections.Generic.IReadOnlyDictionary<TKey,TValue>.Keys", "System.Collections.Generic.ICollection<System.Collections.Generic.KeyValuePair<TKey,TValue>>.IsReadOnly", "System.Collections.ICollection.IsSynchronized", "System.Collections.ICollection.SyncRoot", "System.Collections.IDictionary.IsFixedSize", "System.Collections.IDictionary.IsReadOnly", "System.Collections.IDictionary.Keys", "System.Collections.IDictionary.Values", "System.Collections.IDictionary.Item" });
 
         public static object? GetCore(this IConfiguration configuration, Type type, Action<BinderOptions>? configureOptions)
         {
@@ -88,15 +85,9 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             }
             else if (type == typeof(global::System.Collections.Generic.List<global::System.IntPtr>))
             {
-                var instance = new global::System.Collections.Generic.List<global::System.IntPtr>();
-                BindCore(configuration, ref instance, defaultValueIfNotFound: true, binderOptions);
-                return instance;
             }
             else if (type == typeof(global::MyDictionary))
             {
-                var instance = new global::MyDictionary();
-                BindCore(configuration, ref instance, defaultValueIfNotFound: true, binderOptions);
-                return instance;
             }
 
             throw new NotSupportedException($"Unable to bind to type '{type}': generator did not detect the type as input.");
@@ -115,19 +106,19 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
         public static void BindCore(IConfiguration configuration, ref string[] instance, bool defaultValueIfNotFound, BinderOptions? binderOptions)
         {
-            var temp3 = new List<string>();
+            var temp1 = new List<string>();
 
             foreach (IConfigurationSection section in configuration.GetChildren())
             {
                 if (section.Value is string value)
                 {
-                    temp3.Add(value);
+                    temp1.Add(value);
                 }
             }
 
             int originalCount = instance.Length;
-            Array.Resize(ref instance, originalCount + temp3.Count);
-            temp3.CopyTo(instance, originalCount);
+            Array.Resize(ref instance, originalCount + temp1.Count);
+            temp1.CopyTo(instance, originalCount);
         }
 
         public static void BindCore(IConfiguration configuration, ref global::Record<global::System.Action> instance, bool defaultValueIfNotFound, BinderOptions? binderOptions)
@@ -139,9 +130,9 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
         {
             ValidateConfigurationKeys(typeof(global::Options), s_configKeys_Options, configuration, binderOptions);
 
-            if (configuration["Name"] is string value4)
+            if (configuration["Name"] is string value2)
             {
-                instance.Name = value4;
+                instance.Name = value2;
             }
             else if (defaultValueIfNotFound)
             {
@@ -152,115 +143,46 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 }
             }
 
-            if (configuration["Age"] is string value5)
+            if (configuration["Age"] is string value3)
             {
-                instance.Age = ParseInt(value5, configuration.GetSection("Age").Path);
+                instance.Age = ParseInt(value3, configuration.GetSection("Age").Path);
             }
             else if (defaultValueIfNotFound)
             {
                 instance.Age = instance.Age;
             }
 
-            if (AsConfigWithChildren(configuration.GetSection("List")) is IConfigurationSection section6)
+            if (AsConfigWithChildren(configuration.GetSection("List")) is IConfigurationSection section4)
             {
-                global::System.Collections.Generic.List<string>? temp8 = instance.List;
-                temp8 ??= new global::System.Collections.Generic.List<string>();
-                BindCore(section6, ref temp8, defaultValueIfNotFound: false, binderOptions);
-                instance.List = temp8;
+                global::System.Collections.Generic.List<string>? temp6 = instance.List;
+                temp6 ??= new global::System.Collections.Generic.List<string>();
+                BindCore(section4, ref temp6, defaultValueIfNotFound: false, binderOptions);
+                instance.List = temp6;
             }
 
-            if (AsConfigWithChildren(configuration.GetSection("Array")) is IConfigurationSection section9)
+            if (AsConfigWithChildren(configuration.GetSection("Array")) is IConfigurationSection section7)
             {
-                string[]? temp11 = instance.Array;
-                temp11 ??= new string[0];
-                BindCore(section9, ref temp11, defaultValueIfNotFound: false, binderOptions);
-                instance.Array = temp11;
+                string[]? temp9 = instance.Array;
+                temp9 ??= new string[0];
+                BindCore(section7, ref temp9, defaultValueIfNotFound: false, binderOptions);
+                instance.Array = temp9;
             }
 
-            if (AsConfigWithChildren(configuration.GetSection("Record")) is IConfigurationSection section12)
+            if (AsConfigWithChildren(configuration.GetSection("Record")) is IConfigurationSection section10)
             {
-                global::Record<global::System.Action>? temp14 = instance.Record;
-                temp14 ??= InitializeRecordAction(section12, binderOptions);
-                BindCore(section12, ref temp14, defaultValueIfNotFound: false, binderOptions);
-                instance.Record = temp14;
-            }
-        }
-
-        public static void BindCore(IConfiguration configuration, ref global::System.Collections.Generic.List<global::System.IntPtr> instance, bool defaultValueIfNotFound, BinderOptions? binderOptions)
-        {
-            ValidateConfigurationKeys(typeof(global::System.Collections.Generic.List<global::System.IntPtr>), s_configKeys_ListIntPtr, configuration, binderOptions);
-
-            if (configuration["Capacity"] is string value15)
-            {
-                instance.Capacity = ParseInt(value15, configuration.GetSection("Capacity").Path);
-            }
-            else if (defaultValueIfNotFound)
-            {
-                instance.Capacity = instance.Capacity;
-            }
-        }
-
-        public static void BindCore(IConfiguration configuration, ref global::System.Collections.Generic.Dictionary<string, global::System.Action>.KeyCollection instance, bool defaultValueIfNotFound, BinderOptions? binderOptions)
-        {
-            ValidateConfigurationKeys(typeof(global::System.Collections.Generic.Dictionary<string, global::System.Action>.KeyCollection), s_configKeys_DictionaryKeyCollectionStringAction, configuration, binderOptions);
-        }
-
-        public static void BindCore(IConfiguration configuration, ref global::System.Collections.Generic.ICollection<string> instance, bool defaultValueIfNotFound, BinderOptions? binderOptions)
-        {
-            foreach (IConfigurationSection section in configuration.GetChildren())
-            {
-                if (section.Value is string value)
-                {
-                    instance.Add(value);
-                }
-            }
-        }
-
-        public static void BindCore(IConfiguration configuration, ref global::System.Collections.Generic.IEnumerable<string> instance, bool defaultValueIfNotFound, BinderOptions? binderOptions)
-        {
-            if (instance is not ICollection<string> temp)
-            {
-                return;
-            }
-
-            foreach (IConfigurationSection section in configuration.GetChildren())
-            {
-                if (section.Value is string value)
-                {
-                    temp.Add(value);
-                }
-            }
-        }
-
-        public static void BindCore(IConfiguration configuration, ref global::MyDictionary instance, bool defaultValueIfNotFound, BinderOptions? binderOptions)
-        {
-            ValidateConfigurationKeys(typeof(global::MyDictionary), s_configKeys_MyDictionary, configuration, binderOptions);
-
-            if (AsConfigWithChildren(configuration.GetSection("Comparer")) is IConfigurationSection section16)
-            {
-                throw new InvalidOperationException("Cannot create instance of type 'System.Collections.Generic.IEqualityComparer<string>' because it is missing a public instance constructor.");
-            }
-
-            if (AsConfigWithChildren(configuration.GetSection("Keys")) is IConfigurationSection section18)
-            {
-                global::System.Collections.Generic.Dictionary<string, global::System.Action>.KeyCollection? temp20 = instance.Keys;
-                if (temp20 is not null)
-                {
-                    BindCore(section18, ref temp20, defaultValueIfNotFound: false, binderOptions);
-                }
-                else
-                {
-                    throw new InvalidOperationException("Cannot create instance of type 'System.Collections.Generic.Dictionary<string, Action>+KeyCollection' because it is missing a public instance constructor.");
-                }
+                global::Record<global::System.Action>? temp12 = instance.Record;
+                temp12 ??= InitializeRecordAction(section10, binderOptions);
+                BindCore(section10, ref temp12, defaultValueIfNotFound: false, binderOptions);
+                instance.Record = temp12;
             }
         }
 
         public static global::Record<global::System.Action> InitializeRecordAction(IConfiguration configuration, BinderOptions? binderOptions)
         {
             int x = (int)(10);
-            if (configuration["x"] is string value21)
+            if (configuration["x"] is string value13)
             {
-                x = ParseInt(value21, configuration.GetSection("x").Path);
+                x = ParseInt(value13, configuration.GetSection("x").Path);
             }
 
             return new global::Record<global::System.Action>(x)
@@ -337,18 +259,6 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             catch (Exception exception)
             {
                 throw new InvalidOperationException($"Failed to convert configuration value at '{path}' to type '{typeof(int)}'.", exception);
-            }
-        }
-
-        public static bool ParseBool(string value, string? path)
-        {
-            try
-            {
-                return bool.Parse(value);
-            }
-            catch (Exception exception)
-            {
-                throw new InvalidOperationException($"Failed to convert configuration value at '{path}' to type '{typeof(bool)}'.", exception);
             }
         }
         #endregion Core binding extensions.
