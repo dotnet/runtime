@@ -366,6 +366,240 @@ void SigPointer::ConvertToInternalSignature(Module* pSigModule, SigTypeContext *
         cArgs--;
     }
 }
+
+void SigPointer::ConvertToInternalExactlyOne(DynamicResolver* pResolver, Module* pSigModule, SigTypeContext *pTypeContext, SigBuilder * pSigBuilder, TokenLookupMap* pTokenLookupMap)
+{
+    CONTRACTL
+    {
+        INSTANCE_CHECK;
+        STANDARD_VM_CHECK;
+
+        PRECONDITION(CheckPointer(pSigModule));
+    }
+    CONTRACTL_END
+
+    SigPointer sigStart = *this;
+
+    CorElementType typ = ELEMENT_TYPE_END;
+
+    // If we don't have a token lookup map, skip custom modifiers.
+    // We can't accurately represent them in the internal signature unless we can
+    // resolve tokens through a token lookup map.
+    if (pTokenLookupMap == nullptr)
+    {
+        // GetElemType eats sentinel and custom modifiers
+        IfFailThrowBF(GetElemType(&typ), BFA_BAD_COMPLUS_SIG, pSigModule);
+    }
+    else
+    {
+        BYTE byElemType;
+
+        IfFailThrowBF(SkipAnyVASentinel(), BFA_BAD_COMPLUS_SIG, pSigModule);
+
+        // Call GetByte and make sure we don't lose custom modifiers
+        IfFailThrowBF(GetByte(&byElemType), BFA_BAD_COMPLUS_SIG, pSigModule);
+        typ = (CorElementType) byElemType;
+    }
+
+    if (typ == ELEMENT_TYPE_CLASS || typ == ELEMENT_TYPE_VALUETYPE)
+    {
+        IfFailThrowBF(GetToken(NULL), BFA_BAD_COMPLUS_SIG, pSigModule);
+        mdToken token;
+        sigStart.GetToken(&token);
+        ResolvedToken resolved;
+        pResolver->ResolveToken(token, &resolved);
+
+        pSigBuilder->AppendElementType(ELEMENT_TYPE_INTERNAL);
+        pSigBuilder->AppendPointer(resolved.TypeHandle.AsPtr());
+        return;
+    }
+
+    if (pTypeContext != NULL)
+    {
+        uint32_t varNum;
+        if (typ == ELEMENT_TYPE_VAR)
+        {
+            IfFailThrowBF(GetData(&varNum), BFA_BAD_COMPLUS_SIG, pSigModule);
+            THROW_BAD_FORMAT_MAYBE(varNum < pTypeContext->m_classInst.GetNumArgs(), BFA_BAD_COMPLUS_SIG, pSigModule);
+
+            pSigBuilder->AppendElementType(ELEMENT_TYPE_INTERNAL);
+            pSigBuilder->AppendPointer(pTypeContext->m_classInst[varNum].AsPtr());
+            return;
+        }
+        if (typ == ELEMENT_TYPE_MVAR)
+        {
+            IfFailThrowBF(GetData(&varNum), BFA_BAD_COMPLUS_SIG, pSigModule);
+            THROW_BAD_FORMAT_MAYBE(varNum < pTypeContext->m_methodInst.GetNumArgs(), BFA_BAD_COMPLUS_SIG, pSigModule);
+
+            pSigBuilder->AppendElementType(ELEMENT_TYPE_INTERNAL);
+            pSigBuilder->AppendPointer(pTypeContext->m_methodInst[varNum].AsPtr());
+            return;
+        }
+    }
+
+    pSigBuilder->AppendElementType(typ);
+
+    if (!CorIsPrimitiveType(typ))
+    {
+        switch (typ)
+        {
+            default:
+                THROW_BAD_FORMAT(BFA_BAD_COMPLUS_SIG, pSigModule);
+                break;
+            case ELEMENT_TYPE_VAR:
+            case ELEMENT_TYPE_MVAR:
+                {
+                    uint32_t varNum;
+                    // Skip variable number
+                    IfFailThrowBF(GetData(&varNum), BFA_BAD_COMPLUS_SIG, pSigModule);
+                    pSigBuilder->AppendData(varNum);
+                }
+                break;
+            case ELEMENT_TYPE_OBJECT:
+            case ELEMENT_TYPE_STRING:
+            case ELEMENT_TYPE_TYPEDBYREF:
+                break;
+
+            case ELEMENT_TYPE_BYREF: //fallthru
+            case ELEMENT_TYPE_PTR:
+            case ELEMENT_TYPE_PINNED:
+            case ELEMENT_TYPE_SZARRAY:
+                ConvertToInternalExactlyOne(pResolver, pSigModule, pTypeContext, pSigBuilder, pTokenLookupMap);
+                break;
+
+            case ELEMENT_TYPE_FNPTR:
+                ConvertToInternalSignature(pResolver, pSigModule, pTypeContext, pSigBuilder, pTokenLookupMap);
+                break;
+
+            case ELEMENT_TYPE_ARRAY:
+                {
+                    ConvertToInternalExactlyOne(pResolver, pSigModule, pTypeContext, pSigBuilder, pTokenLookupMap);
+
+                    uint32_t rank = 0; // Get rank
+                    IfFailThrowBF(GetData(&rank), BFA_BAD_COMPLUS_SIG, pSigModule);
+                    pSigBuilder->AppendData(rank);
+
+                    if (rank)
+                    {
+                        uint32_t nsizes = 0;
+                        IfFailThrowBF(GetData(&nsizes), BFA_BAD_COMPLUS_SIG, pSigModule);
+                        pSigBuilder->AppendData(nsizes);
+
+                        while (nsizes--)
+                        {
+                            uint32_t data = 0;
+                            IfFailThrowBF(GetData(&data), BFA_BAD_COMPLUS_SIG, pSigModule);
+                            pSigBuilder->AppendData(data);
+                        }
+
+                        uint32_t nlbounds = 0;
+                        IfFailThrowBF(GetData(&nlbounds), BFA_BAD_COMPLUS_SIG, pSigModule);
+                        pSigBuilder->AppendData(nlbounds);
+
+                        while (nlbounds--)
+                        {
+                            uint32_t data = 0;
+                            IfFailThrowBF(GetData(&data), BFA_BAD_COMPLUS_SIG, pSigModule);
+                            pSigBuilder->AppendData(data);
+                        }
+                    }
+                }
+                break;
+
+            case ELEMENT_TYPE_INTERNAL:
+                {
+                    // this check is not functional in DAC and provides no security against a malicious dump
+                    // the DAC is prepared to receive an invalid type handle
+#ifndef DACCESS_COMPILE
+                    if (pSigModule->IsSigInIL(m_ptr))
+                        THROW_BAD_FORMAT(BFA_BAD_COMPLUS_SIG, pSigModule);
+#endif
+
+                    TypeHandle hType;
+
+                    IfFailThrowBF(GetPointer((void**)&hType), BFA_BAD_COMPLUS_SIG, pSigModule);
+
+                    pSigBuilder->AppendPointer(hType.AsPtr());
+                }
+                break;
+
+            case ELEMENT_TYPE_GENERICINST:
+                {
+                    TypeHandle genericType = GetGenericInstType(pSigModule);
+
+                    pSigBuilder->AppendElementType(ELEMENT_TYPE_INTERNAL);
+                    pSigBuilder->AppendPointer(genericType.AsPtr());
+
+                    uint32_t argCnt = 0; // Get number of parameters
+                    IfFailThrowBF(GetData(&argCnt), BFA_BAD_COMPLUS_SIG, pSigModule);
+                    pSigBuilder->AppendData(argCnt);
+
+                    while (argCnt--)
+                    {
+                        ConvertToInternalExactlyOne(pResolver, pSigModule, pTypeContext, pSigBuilder, pTokenLookupMap);
+                    }
+                }
+                break;
+
+            // Note: the following is only for correctly computing IL stub hash for modifiers in order to support C++ scenarios
+            case ELEMENT_TYPE_CMOD_OPT:
+            case ELEMENT_TYPE_CMOD_REQD:
+                {
+                    _ASSERTE_MSG(pTokenLookupMap != nullptr, "A token lookup map must be provided for custom modifiers");
+                    mdToken tk;
+                    IfFailThrowBF(GetToken(&tk), BFA_BAD_COMPLUS_SIG, pSigModule);
+                    ResolvedToken resolved;
+                    pResolver->ResolveToken(tk, &resolved);
+                    pSigBuilder->AppendToken(pTokenLookupMap->GetToken(resolved.TypeHandle));
+
+                    ConvertToInternalExactlyOne(pResolver, pSigModule, pTypeContext, pSigBuilder, pTokenLookupMap);
+                }
+                break;
+        }
+    }
+}
+
+void SigPointer::ConvertToInternalSignature(DynamicResolver* pResolver, Module* pSigModule, SigTypeContext *pTypeContext, SigBuilder * pSigBuilder, TokenLookupMap* pTokenLookupMap)
+{
+    CONTRACTL
+    {
+        INSTANCE_CHECK;
+        STANDARD_VM_CHECK;
+
+        PRECONDITION(CheckPointer(pSigModule));
+    }
+    CONTRACTL_END
+
+    BYTE uCallConv = 0;
+    IfFailThrowBF(GetByte(&uCallConv), BFA_BAD_COMPLUS_SIG, pSigModule);
+
+    if ((uCallConv & IMAGE_CEE_CS_CALLCONV_MASK) == IMAGE_CEE_CS_CALLCONV_FIELD)
+        THROW_BAD_FORMAT(BFA_UNEXPECTED_FIELD_SIGNATURE, pSigModule);
+
+    pSigBuilder->AppendByte(uCallConv);
+
+    // Skip type parameter count
+    if (uCallConv & IMAGE_CEE_CS_CALLCONV_GENERIC)
+    {
+        uint32_t nParams = 0;
+        IfFailThrowBF(GetData(&nParams), BFA_BAD_COMPLUS_SIG, pSigModule);
+        pSigBuilder->AppendData(nParams);
+    }
+
+    // Get arg count;
+    uint32_t cArgs = 0;
+    IfFailThrowBF(GetData(&cArgs), BFA_BAD_COMPLUS_SIG, pSigModule);
+    pSigBuilder->AppendData(cArgs);
+
+    cArgs++; // +1 for return type
+
+    // Skip args.
+    while (cArgs)
+    {
+        ConvertToInternalExactlyOne(pResolver, pSigModule, pTypeContext, pSigBuilder, pTokenLookupMap);
+        cArgs--;
+    }
+}
 #endif // DACCESS_COMPILE
 
 

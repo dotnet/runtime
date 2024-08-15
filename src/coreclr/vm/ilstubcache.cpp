@@ -216,6 +216,7 @@ MethodDesc* ILStubCache::CreateNewMethodDesc(LoaderHeap* pCreationHeap, MethodTa
     }
     else
     {
+        pMD->SetFlags(DynamicMethodDesc::FlagIndependentSig);
         CreateModuleIndependentSignature(pCreationHeap, pamTracker, pSigModule, pSig, cbSig, pTypeContext, &tokenLookupMap, &pNewSig, &cbNewSig);
     }
     pMD->SetStoredMethodSig(pNewSig, cbNewSig);

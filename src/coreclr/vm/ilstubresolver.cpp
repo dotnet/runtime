@@ -142,7 +142,7 @@ void ILStubResolver::ResolveToken(mdToken token, ResolvedToken* resolvedToken)
     {
     case mdtMethodDef:
         {
-            MethodDesc* pMD = m_pCompileTimeState->m_tokenLookupMap.LookupMethodDef(token);
+            MethodDesc* pMD = m_tokenLookupMap.LookupMethodDef(token);
             _ASSERTE(pMD);
             resolvedToken->Method = pMD;
             resolvedToken->TypeHandle = TypeHandle(pMD->GetMethodTable());
@@ -151,7 +151,7 @@ void ILStubResolver::ResolveToken(mdToken token, ResolvedToken* resolvedToken)
 
     case mdtTypeDef:
         {
-            TypeHandle typeHnd = m_pCompileTimeState->m_tokenLookupMap.LookupTypeDef(token);
+            TypeHandle typeHnd = m_tokenLookupMap.LookupTypeDef(token);
             _ASSERTE(!typeHnd.IsNull());
             resolvedToken->TypeHandle = typeHnd;
         }
@@ -159,7 +159,7 @@ void ILStubResolver::ResolveToken(mdToken token, ResolvedToken* resolvedToken)
 
     case mdtFieldDef:
         {
-            FieldDesc* pFD = m_pCompileTimeState->m_tokenLookupMap.LookupFieldDef(token);
+            FieldDesc* pFD = m_tokenLookupMap.LookupFieldDef(token);
             _ASSERTE(pFD);
             resolvedToken->Field = pFD;
             resolvedToken->TypeHandle = TypeHandle(pFD->GetEnclosingMethodTable());
@@ -169,13 +169,13 @@ void ILStubResolver::ResolveToken(mdToken token, ResolvedToken* resolvedToken)
 #if !defined(DACCESS_COMPILE)
     case mdtMemberRef:
         {
-            TokenLookupMap::MemberRefEntry entry = m_pCompileTimeState->m_tokenLookupMap.LookupMemberRef(token);
+            TokenLookupMap::MemberRefEntry entry = m_tokenLookupMap.LookupMemberRef(token);
             if (entry.Type == mdtFieldDef)
             {
                 _ASSERTE(entry.Entry.Field != NULL);
 
                 if (entry.ClassSignatureToken != mdTokenNil)
-                    resolvedToken->TypeSignature = m_pCompileTimeState->m_tokenLookupMap.LookupSig(entry.ClassSignatureToken);
+                    resolvedToken->TypeSignature = m_tokenLookupMap.LookupSig(entry.ClassSignatureToken);
 
                 resolvedToken->Field = entry.Entry.Field;
                 resolvedToken->TypeHandle = TypeHandle(entry.Entry.Field->GetApproxEnclosingMethodTable());
@@ -186,7 +186,7 @@ void ILStubResolver::ResolveToken(mdToken token, ResolvedToken* resolvedToken)
                 _ASSERTE(entry.Entry.Method != NULL);
 
                 if (entry.ClassSignatureToken != mdTokenNil)
-                    resolvedToken->TypeSignature = m_pCompileTimeState->m_tokenLookupMap.LookupSig(entry.ClassSignatureToken);
+                    resolvedToken->TypeSignature = m_tokenLookupMap.LookupSig(entry.ClassSignatureToken);
 
                 resolvedToken->Method = entry.Entry.Method;
                 MethodTable* pMT = entry.Entry.Method->GetMethodTable();
@@ -198,14 +198,14 @@ void ILStubResolver::ResolveToken(mdToken token, ResolvedToken* resolvedToken)
 
     case mdtMethodSpec:
         {
-            TokenLookupMap::MethodSpecEntry entry = m_pCompileTimeState->m_tokenLookupMap.LookupMethodSpec(token);
+            TokenLookupMap::MethodSpecEntry entry = m_tokenLookupMap.LookupMethodSpec(token);
             _ASSERTE(entry.Method != NULL);
 
             if (entry.ClassSignatureToken != mdTokenNil)
-                resolvedToken->TypeSignature = m_pCompileTimeState->m_tokenLookupMap.LookupSig(entry.ClassSignatureToken);
+                resolvedToken->TypeSignature = m_tokenLookupMap.LookupSig(entry.ClassSignatureToken);
 
             if (entry.MethodSignatureToken != mdTokenNil)
-                resolvedToken->MethodSignature = m_pCompileTimeState->m_tokenLookupMap.LookupSig(entry.MethodSignatureToken);
+                resolvedToken->MethodSignature = m_tokenLookupMap.LookupSig(entry.MethodSignatureToken);
 
             resolvedToken->Method = entry.Method;
             MethodTable* pMT = entry.Method->GetMethodTable();
@@ -231,7 +231,7 @@ ILStubResolver::ResolveSignature(
     if (token == TOKEN_ILSTUB_TARGET_SIG)
         return m_pCompileTimeState->m_StubTargetMethodSig;
 
-    return m_pCompileTimeState->m_tokenLookupMap.LookupSig(token);
+    return m_tokenLookupMap.LookupSig(token);
 }
 
 //---------------------------------------------------------------------------------------
@@ -500,15 +500,9 @@ void
 ILStubResolver::SetTokenLookupMap(
     TokenLookupMap * pMap)
 {
-    CONTRACTL
-    {
-        STANDARD_VM_CHECK;
-        PRECONDITION(CheckPointer(m_pCompileTimeState));
-    }
-    CONTRACTL_END;
+    STANDARD_VM_CONTRACT;
 
-    // run copy ctor
-    new (&m_pCompileTimeState->m_tokenLookupMap) TokenLookupMap(pMap);
+    m_tokenLookupMap = TokenLookupMap(pMap);
 }
 
 bool ILStubResolver::IsCompiled()

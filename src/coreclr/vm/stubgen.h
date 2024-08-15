@@ -294,27 +294,38 @@ public:
         m_nextAvailableRid = 0;
     }
 
-    // copy ctor
-    TokenLookupMap(TokenLookupMap* pSrc)
+    TokenLookupMap(const TokenLookupMap& src)
+    {
+        *this = src;
+    }
+
+    TokenLookupMap& operator=(const TokenLookupMap& src)
     {
         STANDARD_VM_CONTRACT;
 
-        m_nextAvailableRid = pSrc->m_nextAvailableRid;
-        size_t size = pSrc->m_qbEntries.Size();
+        m_nextAvailableRid = src.m_nextAvailableRid;
+        size_t size = src.m_qbEntries.Size();
         m_qbEntries.AllocThrows(size);
-        memcpy(m_qbEntries.Ptr(), pSrc->m_qbEntries.Ptr(), size);
+        memcpy(m_qbEntries.Ptr(), src.m_qbEntries.Ptr(), size);
 
-        m_signatures.Preallocate(pSrc->m_signatures.GetCount());
-        for (COUNT_T i = 0; i < pSrc->m_signatures.GetCount(); i++)
+        m_signatures.Preallocate(src.m_signatures.GetCount());
+        for (COUNT_T i = 0; i < src.m_signatures.GetCount(); i++)
         {
-            const CQuickBytesSpecifySize<16>& src = pSrc->m_signatures[i];
+            const CQuickBytesSpecifySize<16>& sigSrc = src.m_signatures[i];
             auto dst = m_signatures.Append();
-            dst->AllocThrows(src.Size());
-            memcpy(dst->Ptr(), src.Ptr(), src.Size());
+            dst->AllocThrows(sigSrc.Size());
+            memcpy(dst->Ptr(), sigSrc.Ptr(), sigSrc.Size());
         }
 
-        m_memberRefs.Set(pSrc->m_memberRefs);
-        m_methodSpecs.Set(pSrc->m_methodSpecs);
+        m_memberRefs.Set(src.m_memberRefs);
+        m_methodSpecs.Set(src.m_methodSpecs);
+
+        return *this;
+    }
+
+    TokenLookupMap(TokenLookupMap* pSrc)
+        :TokenLookupMap(*pSrc)
+    {
     }
 
     TypeHandle LookupTypeDef(mdToken token)

@@ -407,8 +407,19 @@ public:
         SigBuilder sigBuilder;
 
         {
-            SigPointer sigPtr(pStubMD->GetSig());
-            sigPtr.ConvertToInternalSignature(pStubMD->GetModule(), NULL, &sigBuilder, GetTokenLookupMap());
+            if (pStubMD->IsNoMetadata() && pStubMD->AsDynamicMethodDesc()->HasFlags(DynamicMethodDesc::FlagIndependentSig))
+            {
+                // We already have a module-independent signature, but it is based on the current resolver in the stub method desc.
+                // We need to convert it based on our token lookup map.
+                SigPointer sigPtr(pStubMD->GetSig());
+                sigPtr.ConvertToInternalSignature(pStubMD->AsDynamicMethodDesc()->GetResolver(), pStubMD->GetModule(), NULL, &sigBuilder, GetTokenLookupMap());
+            }
+            else
+            {
+                // Convert to a module independent signature
+                SigPointer sigPtr(pStubMD->GetSig());
+                sigPtr.ConvertToInternalSignature(pStubMD->GetModule(), NULL, &sigBuilder, GetTokenLookupMap());
+            }
         }
 
         //
@@ -429,6 +440,7 @@ public:
             memcpyNoGCRefs((void *)pNewSig, GetStubTargetMethodSig(), cbNewSig);
 
             pStubMD->AsDynamicMethodDesc()->SetStoredMethodSig(pNewSig, cbNewSig);
+            pStubMD->AsDynamicMethodDesc()->SetFlags(DynamicMethodDesc::FlagIndependentSig);
 
             SigPointer  sigPtr(pNewSig, cbNewSig);
             uint32_t    callConvInfo;
@@ -467,8 +479,21 @@ public:
     void ConvertMethodDescSigToModuleIndependentSig(MethodDesc* pStubMD)
     {
         SigBuilder sigBuilder;
-        SigPointer sigPtr(pStubMD->GetSig());
-        sigPtr.ConvertToInternalSignature(pStubMD->GetModule(), NULL, &sigBuilder, GetTokenLookupMap());
+        _ASSERTE(pStubMD->IsNoMetadata());
+        DynamicMethodDesc* pDMD = pStubMD->AsDynamicMethodDesc();
+        if (pDMD->HasFlags(DynamicMethodDesc::FlagIndependentSig))
+        {
+            // We already have a module-independent signature, but it is based on the current resolver in the stub method desc.
+            // We need to convert it based on our token lookup map.
+            SigPointer sigPtr(pStubMD->GetSig());
+            sigPtr.ConvertToInternalSignature(pDMD->GetResolver(), pStubMD->GetModule(), NULL, &sigBuilder, GetTokenLookupMap());
+        }
+        else
+        {
+            SigPointer sigPtr(pStubMD->GetSig());
+            sigPtr.ConvertToInternalSignature(pStubMD->GetModule(), NULL, &sigBuilder, GetTokenLookupMap());
+        }
+
 
         //
         // make a domain-local copy of the sig so that this state can outlive the
@@ -480,7 +505,8 @@ public:
 
         memcpyNoGCRefs((void *)pNewSig, pNewSigBuffer, cbNewSig);
 
-        pStubMD->AsDynamicMethodDesc()->SetStoredMethodSig(pNewSig, cbNewSig);
+        pDMD->SetStoredMethodSig(pNewSig, cbNewSig);
+        pDMD->SetFlags(DynamicMethodDesc::FlagIndependentSig);
     }
 
     void EmitInvokeTarget(MethodDesc *pStubMD)
