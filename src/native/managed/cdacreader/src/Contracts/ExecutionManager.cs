@@ -31,8 +31,6 @@ internal interface IExecutionManager : IContract
     TargetPointer GetMethodDesc(EECodeInfoHandle codeInfoHandle) => throw new NotImplementedException();
     TargetCodePointer GetStartAddress(EECodeInfoHandle codeInfoHandle) => throw new NotImplementedException();
 
-    // TODO[cdac]: this should be on a ReJIT contract
-    bool IsReJITEnabled() => throw new NotImplementedException();
 }
 
 internal readonly struct ExecutionManager : IExecutionManager

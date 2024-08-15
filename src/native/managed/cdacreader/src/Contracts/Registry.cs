@@ -28,6 +28,7 @@ internal sealed class Registry
     public ICodeVersions CodeVersions => GetContract<ICodeVersions>();
     public IPrecodeStubs PrecodeStubs => GetContract<IPrecodeStubs>();
     public IExecutionManager ExecutionManager => GetContract<IExecutionManager>();
+    public IReJIT ReJIT => GetContract<IReJIT>();
 
     private T GetContract<T>() where T : IContract
     {

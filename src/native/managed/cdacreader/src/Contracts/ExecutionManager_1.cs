@@ -326,14 +326,4 @@ internal readonly partial struct ExecutionManager_1 : IExecutionManager
         }
         return info.StartAddress;
     }
-
-    bool IExecutionManager.IsReJITEnabled()
-    {
-        bool profEnabledReJIT = (_profControlBlock.GlobalEventMask & (ulong)Legacy.COR_PRF_MONITOR.COR_PRF_ENABLE_REJIT) != 0;
-        // FIXME: it is very likely this is always true in the DAC
-        // Most people don't set DOTNET_ProfAPI_RejitOnAttach = 0
-        // See https://github.com/dotnet/runtime/issues/106148
-        bool clrConfigEnabledReJIT = true;
-        return profEnabledReJIT || clrConfigEnabledReJIT;
-    }
 }
