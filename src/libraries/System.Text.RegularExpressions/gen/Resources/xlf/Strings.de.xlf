@@ -192,9 +192,9 @@
         <target state="translated">Zeitüberschreitung des RegEx-Moduls beim Versuch, ein Muster mit einer Eingabezeichenfolge in Übereinstimmung zu bringen. Dies kann viele Ursachen haben, darunter sehr große Eingaben oder übermäßige Rückverfolgung aufgrund von geschachtelten Quantifizierern, Rückverweisen und anderen Faktoren.</target>
         <note />
       </trans-unit>
-      <trans-unit id="RegexMemberMustHaveValidSignatureMessage">
-        <source>GeneratedRegexAttribute method or property must be partial, parameterless, non-generic, non-abstract, and return Regex. If a property, it must also be get-only.</source>
-        <target state="new">GeneratedRegexAttribute method or property must be partial, parameterless, non-generic, non-abstract, and return Regex. If a property, it must also be get-only.</target>
+      <trans-unit id="RegexMethodMustHaveValidSignatureMessage">
+        <source>GeneratedRegexAttribute method must be partial, parameterless, non-generic, non-abstract, and return Regex.</source>
+        <target state="translated">Die GeneratedRegexAttribute-Methode muss partiell, parameterlos, nicht generisch, nicht abstrakt sein und RegEx zurückgeben.</target>
         <note />
       </trans-unit>
       <trans-unit id="ReversedCharacterRange">
