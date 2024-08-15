@@ -25,8 +25,12 @@ namespace R2RTest
     {
         private Crossgen2RunnerOptions Crossgen2RunnerOptions;
 
-        public override CompilerIndex Index => CompilerIndex.CPAOT;
+        // Crossgen2 runs as a standalone binary
+        protected override string CompilerRelativePath => "";
+        protected override string CompilerFileName => "";
+
         protected override string CompilerPath => _options.Crossgen2Path != null ? _options.Crossgen2Path.FullName : Path.Combine(_options.CoreRootDirectory.FullName, "crossgen2", RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? "crossgen2.exe" : "crossgen2");
+        public override CompilerIndex Index => CompilerIndex.CPAOT;
 
         protected readonly List<string> _referenceFiles = new();
 
