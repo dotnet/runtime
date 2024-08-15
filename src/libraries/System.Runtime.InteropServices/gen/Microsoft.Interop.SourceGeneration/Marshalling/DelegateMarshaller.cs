@@ -10,7 +10,7 @@ using static Microsoft.Interop.SyntaxFactoryExtensions;
 
 namespace Microsoft.Interop
 {
-    public sealed class DelegateMarshaller : IMarshallingGenerator
+    public sealed class DelegateMarshaller : IUnboundMarshallingGenerator
     {
         public ManagedTypeInfo AsNativeType(TypePositionInfo info)
         {

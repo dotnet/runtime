@@ -43,11 +43,9 @@
 #include "ilinstrumentation.h"
 #include "codeversion.h"
 
-class Stub;
 class MethodDesc;
 class FieldDesc;
 class Crst;
-class ClassConverter;
 class RefClassWriter;
 class ReflectionModule;
 class EEStringData;
@@ -56,11 +54,9 @@ class SigTypeContext;
 class Assembly;
 class BaseDomain;
 class AppDomain;
-class DomainModule;
 class SystemDomain;
 class Module;
 class SString;
-class Pending;
 class MethodTable;
 class DynamicMethodTable;
 class TieredCompilationManager;
@@ -615,6 +611,7 @@ class Module : public ModuleBase
 
 private:
     PTR_CUTF8               m_pSimpleName; // Cached simple name for better performance and easier diagnostics
+    const WCHAR*            m_path;        // Cached path for easier diagnostics
 
     PTR_PEAssembly          m_pPEAssembly;
     PTR_VOID                m_baseAddress; // Cached base address for easier diagnostics
@@ -1319,9 +1316,6 @@ public:
 
     mdAssemblyRef FindAssemblyRef(Assembly *targetAssembly);
 
-    void          CreateAssemblyRefByNameTable(AllocMemTracker *pamTracker);
-    bool          HasReferenceByName(LPCUTF8 pModuleName);
-
 #endif // !DACCESS_COMPILE
 
     DWORD GetAssemblyRefMax() {LIMITED_METHOD_CONTRACT;  return m_ManifestModuleReferencesMap.GetSize() - 1; }
@@ -1384,7 +1378,13 @@ public:
     }
 
     HRESULT GetScopeName(LPCUTF8 * pszName) { WRAPPER_NO_CONTRACT; return m_pPEAssembly->GetScopeName(pszName); }
-    const SString &GetPath() { WRAPPER_NO_CONTRACT; return m_pPEAssembly->GetPath(); }
+    const SString &GetPath()
+    {
+        WRAPPER_NO_CONTRACT;
+        // Validate the pointers are the same to ensure the lifetime of m_path is handled.
+        _ASSERTE(m_path == m_pPEAssembly->GetPath().GetUnicode());
+        return m_pPEAssembly->GetPath();
+    }
 
 #ifdef LOGGING
     LPCUTF8 GetDebugName() { WRAPPER_NO_CONTRACT; return m_pPEAssembly->GetDebugName(); }
@@ -1588,10 +1588,6 @@ private:
     PTR_JITInlineTrackingMap m_pJitInlinerTrackingMap;
 #endif // defined(PROFILING_SUPPORTED) || defined(PROFILING_SUPPORTED_DATA)
 
-
-    LPCSTR               *m_AssemblyRefByNameTable;  // array that maps mdAssemblyRef tokens into their simple name
-    DWORD                 m_AssemblyRefByNameCount;  // array size
-
     // a.dll calls a method in b.dll and that method call a method in c.dll. When ngening
     // a.dll it is possible then method in b.dll can be inlined. When that happens a.ni.dll stores
     // an added native metadata which has information about assemblyRef to c.dll
@@ -1643,14 +1639,16 @@ struct cdac_data<Module>
     static constexpr size_t LoaderAllocator = offsetof(Module, m_loaderAllocator);
     static constexpr size_t ThunkHeap = offsetof(Module, m_pThunkHeap);
     static constexpr size_t DynamicMetadata = offsetof(Module, m_pDynamicMetadata);
+    static constexpr size_t Path = offsetof(Module, m_path);
 
     // Lookup map pointers
-    static constexpr size_t FieldDefToDescMap = offsetof(Module, m_FieldDefToDescMap) + offsetof(LookupMap<PTR_FieldDesc>, pTable);
-    static constexpr size_t ManifestModuleReferencesMap = offsetof(Module, m_ManifestModuleReferencesMap) + offsetof(LookupMap<PTR_Module>, pTable);
-    static constexpr size_t MemberRefToDescMap = offsetof(Module, m_MemberRefMap) + offsetof(LookupMap<TADDR>, pTable);
-    static constexpr size_t MethodDefToDescMap = offsetof(Module, m_MethodDefToDescMap) + offsetof(LookupMap<PTR_MethodDesc>, pTable);
-    static constexpr size_t TypeDefToMethodTableMap = offsetof(Module, m_TypeDefToMethodTableMap) + offsetof(LookupMap<PTR_MethodTable>, pTable);
-    static constexpr size_t TypeRefToMethodTableMap = offsetof(Module, m_TypeRefToMethodTableMap) + offsetof(LookupMap<PTR_TypeRef>, pTable);
+    static constexpr size_t FieldDefToDescMap = offsetof(Module, m_FieldDefToDescMap);
+    static constexpr size_t ManifestModuleReferencesMap = offsetof(Module, m_ManifestModuleReferencesMap);
+    static constexpr size_t MemberRefToDescMap = offsetof(Module, m_MemberRefMap);
+    static constexpr size_t MethodDefToDescMap = offsetof(Module, m_MethodDefToDescMap);
+    static constexpr size_t TypeDefToMethodTableMap = offsetof(Module, m_TypeDefToMethodTableMap);
+    static constexpr size_t TypeRefToMethodTableMap = offsetof(Module, m_TypeRefToMethodTableMap);
+    static constexpr size_t MethodDefToILCodeVersioningStateMap = offsetof(Module, m_ILCodeVersioningStateMap);
 };
 
 //
