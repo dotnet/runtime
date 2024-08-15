@@ -391,7 +391,6 @@ namespace System
         public static bool IsHybridGlobalizationOnApplePlatform => m_isHybrid.Value && (IsMacCatalyst || IsiOS || IstvOS);
         public static bool IsNotHybridGlobalizationOnBrowser => !IsHybridGlobalizationOnBrowser;
         public static bool IsNotInvariantGlobalization => !IsInvariantGlobalization;
-        public static bool IsNotInvariantGlobalizationAndNotHybridGlobalizationOnBrowser => IsNotInvariantGlobalization && IsNotHybridGlobalizationOnBrowser;
         public static bool IsNotHybridGlobalization => !IsHybridGlobalization;
         public static bool IsNotHybridGlobalizationOnApplePlatform => !IsHybridGlobalizationOnApplePlatform;
 

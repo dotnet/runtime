@@ -288,7 +288,7 @@ Web API does not expose locale-sensitive indexing function. There is a discussio
 
 - Methods that calculate `matchLength` always return throw PlatformNotSupported exception:
 
-[CompareInfo.IndexOf](https://learn.microsoft.com/dotnet/api/system.globalization.compareinfo.issuffix?view=system-globalization-compareinfo-issuffix(system-readonlyspan((system-char))-system-readonlyspan((system-char))-system-globalization-compareoptions-system-int32@))
+[CompareInfo.IndexOf](https://learn.microsoft.com/en-us/dotnet/api/system.globalization.compareinfo.indexof?view=system-globalization-compareinfo-indexof(system-readonlyspan((system-char))-system-readonlyspan((system-char))-system-globalization-compareoptions-system-int32@))
 
 [CompareInfo.LastIndexOf](https://learn.microsoft.com/en-us/dotnet/api/system.globalization.compareinfo.lastindexof?view=system-globalization-compareinfo-lastindexof(system-readonlyspan((system-char))-system-readonlyspan((system-char))-system-globalization-compareoptions-system-int32@))
 
@@ -472,7 +472,7 @@ Affected public APIs:
 - String.LastIndexOf
 
 Methods that calculate `matchLength` throw PlatformNotSupported exception:
-[CompareInfo.IndexOf](https://learn.microsoft.com/dotnet/api/system.globalization.compareinfo.issuffix?view=system-globalization-compareinfo-issuffix(system-readonlyspan((system-char))-system-readonlyspan((system-char))-system-globalization-compareoptions-system-int32@))
+[CompareInfo.IndexOf](https://learn.microsoft.com/en-us/dotnet/api/system.globalization.compareinfo.indexof?view=system-globalization-compareinfo-indexof(system-readonlyspan((system-char))-system-readonlyspan((system-char))-system-globalization-compareoptions-system-int32@))
 
 [CompareInfo.LastIndexOf](https://learn.microsoft.com/en-us/dotnet/api/system.globalization.compareinfo.lastindexof?view=system-globalization-compareinfo-lastindexof(system-readonlyspan((system-char))-system-readonlyspan((system-char))-system-globalization-compareoptions-system-int32@))
 
