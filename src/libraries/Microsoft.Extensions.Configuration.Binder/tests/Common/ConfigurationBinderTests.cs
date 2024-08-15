@@ -1544,6 +1544,79 @@ if (!System.Diagnostics.Debugger.IsAttached) { System.Diagnostics.Debugger.Launc
             Assert.Equal(new string[] { "a", "b", "c" }, options.Array);
         }
 
+        /// <summary>
+        /// Test binding to recursive types using Dictionary or Collections.
+        /// This ensure no stack overflow will occur during the compilation through the source gen or at runtime.
+        /// </summary>
+        [Fact]
+        public void BindToRecursiveTypesTest()
+        {
+            string jsonConfig = @"{
+                ""Tree"": {
+                    ""Branch1"": {
+                        ""Leaf1"": {},
+                        ""Leaf2"": {}
+                    },
+                    ""Branch2"": {
+                        ""Leaf3"": {}
+                    }
+                },
+                ""Flat"": [
+                    {
+                        ""Element1"": {
+                            ""SubElement1"": {}
+                        }
+                    },
+                    {
+                        ""Element2"": {
+                            ""SubElement2"": {}
+                        }
+                    },
+                    {
+                        ""Element3"": {}
+                    }
+                ]
+            }";
+
+            var configuration = new ConfigurationBuilder()
+                        .AddJsonStream(new System.IO.MemoryStream(System.Text.Encoding.UTF8.GetBytes(jsonConfig)))
+                        .Build();
+
+            var instance = new TypeWithRecursionThroughCollections();
+            configuration.Bind(instance);
+
+            Assert.NotNull(instance.Tree);
+            Assert.Equal(2, instance.Tree.Count);
+
+            Assert.NotNull(instance.Tree["Branch1"]);
+            Assert.Equal(2, instance.Tree["Branch1"].Count);
+            Assert.Equal(["Leaf1", "Leaf2"], instance.Tree["Branch1"].Keys);
+            Assert.Equal([[], []], instance.Tree["Branch1"].Values);
+
+            Assert.NotNull(instance.Tree["Branch2"]);
+            Assert.Equal(1, instance.Tree["Branch2"].Count);
+            Assert.Equal(["Leaf3"], instance.Tree["Branch2"].Keys);
+            Assert.Equal([[]], instance.Tree["Branch2"].Values);
+
+            Assert.NotNull(instance.Flat);
+            Assert.Equal(3, instance.Flat.Length);
+
+            Assert.Equal(["Element1"], instance.Flat[0].Keys);
+            Assert.Equal(["Element2"], instance.Flat[1].Keys);
+            Assert.Equal(["Element3"], instance.Flat[2].Keys);
+
+            Assert.Equal(1, instance.Flat[0].Values.Count);
+            Assert.Equal(["SubElement1"], instance.Flat[0].Values.ToArray()[0].Keys);
+            Assert.Equal([[]], instance.Flat[0].Values.ToArray()[0].Values);
+
+            Assert.Equal(1, instance.Flat[1].Values.Count);
+            Assert.Equal(["SubElement2"], instance.Flat[1].Values.ToArray()[0].Keys);
+            Assert.Equal([[]], instance.Flat[1].Values.ToArray()[0].Values);
+
+            Assert.Equal(1, instance.Flat[2].Values.Count);
+            Assert.Equal([[]], instance.Flat[2].Values.ToArray());
+        }
+
         [Fact]
         public void CanBindReadonlyRecordStructOptions()
         {
