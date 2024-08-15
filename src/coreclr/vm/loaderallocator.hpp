@@ -332,7 +332,7 @@ protected:
     bool                m_fTerminated;
     bool                m_fMarked;
     int                 m_nGCCount;
-    BYTE                m_IsCollectible;
+    const BYTE          m_IsCollectible;
 
     // Pre-allocated blocks of heap for collectible assemblies. Will be set to NULL as soon as it is
     // used. See code in GetVSDHeapInitialBlock and GetCodeHeapInitialBlock
