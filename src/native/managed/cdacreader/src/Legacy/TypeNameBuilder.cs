@@ -3,9 +3,10 @@
 
 using System;
 using System.Collections.Generic;
+using System.Reflection.Metadata;
+using System.Reflection.Metadata.Ecma335;
 using System.Text;
 using Microsoft.Diagnostics.DataContractReader.Contracts;
-using Microsoft.Diagnostics.DataContractReader.Helpers;
 
 namespace Microsoft.Diagnostics.DataContractReader.Legacy;
 
@@ -17,6 +18,7 @@ internal enum TypeNameFormat
     FormatAngleBrackets = 4,
     FormatAssembly = 8,
     FormatGenericParam = 16,
+    FormatSignature = 32,
 }
 
 internal struct TypeNameBuilder
@@ -43,23 +45,153 @@ internal struct TypeNameBuilder
     private int InstNesting;
     private Stack<int>? GenericStartsStack;
 
-    private TypeNameBuilder(StringBuilder typeString, Target target, TypeNameFormat format)
+    private TypeNameBuilder(StringBuilder typeString, Target target, TypeNameFormat format, bool initialStateIsName = false)
     {
         TypeString = typeString;
         Target = target;
         UseAngleBracketsForGenerics = format.HasFlag(TypeNameFormat.FormatAngleBrackets);
-        State = ParseState.Start;
+        if (initialStateIsName)
+            State = ParseState.Name;
+        else
+            State = ParseState.Start;
+    }
+
+    public static void AppendMethodInternal(Target target, StringBuilder stringBuilder, Contracts.MethodDescHandle method, TypeNameFormat format)
+    {
+        AppendMethodImpl(target, stringBuilder, method, default, format);
+    }
+
+    public static void AppendMethodImpl(Target target, StringBuilder stringBuilder, Contracts.MethodDescHandle method, ReadOnlySpan<TypeHandle> typeInstantiation, TypeNameFormat format)
+    {
+        IRuntimeTypeSystem runtimeTypeSystem = target.Contracts.RuntimeTypeSystem;
+        ILoader loader = target.Contracts.Loader;
+        ReadOnlySpan<byte> methodNameSpan;
+        TypeHandle th = default;
+        Contracts.ModuleHandle module = default;
+
+        bool isNoMetadataMethod = runtimeTypeSystem.IsNoMetadataMethod(method, out methodNameSpan);
+        if (isNoMetadataMethod)
+        {
+            if (runtimeTypeSystem.IsDynamicMethod(method))
+            {
+                stringBuilder.Append("DynamicClass");
+            }
+            else if (runtimeTypeSystem.IsILStub(method))
+            {
+                stringBuilder.Append("ILStubClass");
+            }
+        }
+        else
+        {
+            th = runtimeTypeSystem.GetTypeHandle(runtimeTypeSystem.GetMethodTable(method));
+            AppendType(target, stringBuilder, th, typeInstantiation, format);
+        }
+
+        stringBuilder.Append('.');
+
+        if (isNoMetadataMethod)
+        {
+            stringBuilder.Append(Encoding.UTF8.GetString(methodNameSpan));
+        }
+        else if (runtimeTypeSystem.IsArrayMethod(method, out ArrayFunctionType functionType))
+        {
+            string arrayName;
+
+            switch (functionType)
+            {
+                case ArrayFunctionType.Set:
+                    arrayName = "Set";
+                    break;
+                case ArrayFunctionType.Get:
+                    arrayName = "Get";
+                    break;
+                case ArrayFunctionType.Address:
+                    arrayName = "Address";
+                    break;
+                case ArrayFunctionType.Constructor:
+                    arrayName = ".ctor";
+                    break;
+                default:
+                    throw new ArgumentException(nameof(method));
+            }
+
+            stringBuilder.Append(arrayName);
+        }
+        else
+        {
+            module = loader.GetModuleHandle(runtimeTypeSystem.GetModule(th));
+            MetadataReader reader = target.Contracts.EcmaMetadata.GetMetadata(module)!;
+            MethodDefinition methodDef = reader.GetMethodDefinition(MetadataTokens.MethodDefinitionHandle((int)runtimeTypeSystem.GetMethodToken(method)));
+            stringBuilder.Append(reader.GetString(methodDef.Name));
+        }
+
+        ReadOnlySpan<TypeHandle> genericMethodInstantiation = runtimeTypeSystem.GetGenericMethodInstantiation(method);
+        if (genericMethodInstantiation.Length > 0 && !runtimeTypeSystem.IsGenericMethodDefinition(method))
+        {
+            AppendInst(target, stringBuilder, genericMethodInstantiation, format);
+        }
+
+        if (format.HasFlag(TypeNameFormat.FormatSignature))
+        {
+            ReadOnlySpan<byte> signature;
+            MetadataReader? reader = default;
+            if (!runtimeTypeSystem.IsStoredSigMethodDesc(method, out signature))
+            {
+                reader = target.Contracts.EcmaMetadata.GetMetadata(module);
+                if (reader is not null)
+                {
+                    MethodDefinition methodDef = reader.GetMethodDefinition(MetadataTokens.MethodDefinitionHandle((int)runtimeTypeSystem.GetMethodToken(method)));
+                    signature = reader.GetBlobBytes(methodDef.Signature);
+                }
+            }
+
+            ReadOnlySpan<TypeHandle> typeInstantiationSigFormat = default;
+            if (!th.IsNull)
+            {
+                typeInstantiationSigFormat = runtimeTypeSystem.GetInstantiation(th);
+            }
+
+            SigFormat.AppendSigFormat(target, stringBuilder, signature, reader, null, null, null, typeInstantiationSigFormat, runtimeTypeSystem.GetGenericMethodInstantiation(method), true);
+        }
+    }
+
+    public static TypeHandle GetExactOwningType(IRuntimeTypeSystem runtimeTypeSystem, TypeHandle possiblyDerivedType, MethodDescHandle method)
+    {
+        TypeHandle approxOwner = runtimeTypeSystem.GetTypeHandle(runtimeTypeSystem.GetMethodTable(method));
+
+        uint typeDefTokenOfOwner = runtimeTypeSystem.GetTypeDefToken(approxOwner);
+        TargetPointer moduleOfOwner = runtimeTypeSystem.GetModule(approxOwner);
+
+        do
+        {
+            uint typeDefTokenOfPossiblyDerivedType = runtimeTypeSystem.GetTypeDefToken(possiblyDerivedType);
+            TargetPointer moduleOfPossiblyDerivedType = runtimeTypeSystem.GetModule(possiblyDerivedType);
+
+            if ((typeDefTokenOfOwner == typeDefTokenOfPossiblyDerivedType) && (moduleOfOwner == moduleOfPossiblyDerivedType))
+            {
+                return possiblyDerivedType;
+            }
+
+            TargetPointer parentTypePointer = runtimeTypeSystem.GetParentMethodTable(possiblyDerivedType);
+            if (parentTypePointer.Value == 0)
+                throw new InvalidOperationException("Invalid parent type");
+
+            // TODO(cdac) - Consider adding infinite loop detection here
+            possiblyDerivedType = runtimeTypeSystem.GetTypeHandle(parentTypePointer);
+        } while (true);
     }
 
     public static void AppendType(Target target, StringBuilder stringBuilder, Contracts.TypeHandle typeHandle, TypeNameFormat format)
     {
         AppendType(target, stringBuilder, typeHandle, default, format);
     }
+
     public static void AppendType(Target target, StringBuilder stringBuilder, Contracts.TypeHandle typeHandle, ReadOnlySpan<TypeHandle> typeInstantiation, TypeNameFormat format)
     {
         TypeNameBuilder builder = new(stringBuilder, target, format);
         AppendTypeCore(ref builder, typeHandle, typeInstantiation, format);
     }
+
     private static void AppendTypeCore(ref TypeNameBuilder tnb, Contracts.TypeHandle typeHandle, ReadOnlySpan<Contracts.TypeHandle> instantiation, TypeNameFormat format)
     {
         bool toString = format.HasFlag(TypeNameFormat.FormatNamespace) && !format.HasFlag(TypeNameFormat.FormatFullInst) && !format.HasFlag(TypeNameFormat.FormatAssembly);
@@ -89,12 +221,12 @@ internal struct TypeNameBuilder
             else if (typeSystemContract.IsGenericVariable(typeHandle, out TargetPointer modulePointer, out uint genericParamToken))
             {
                 Contracts.ModuleHandle module = tnb.Target.Contracts.Loader.GetModuleHandle(modulePointer);
-                EcmaMetadataReader reader = tnb.Target.Metadata.GetMetadata(module).EcmaMetadataReader;
-                EcmaMetadataCursor cursor = reader.GetCursor(genericParamToken);
+                MetadataReader reader = tnb.Target.Contracts.EcmaMetadata.GetMetadata(module)!;
+                var handle = (GenericParameterHandle)MetadataTokens.Handle((int)genericParamToken);
+                GenericParameter genericParam = reader.GetGenericParameter(handle);
                 if (format.HasFlag(TypeNameFormat.FormatGenericParam))
                 {
-                    uint owner = reader.GetColumnAsToken(cursor, MetadataColumnIndex.GenericParam_Owner);
-                    if (EcmaMetadataReader.TokenToTable(owner) == MetadataTable.TypeDef)
+                    if (genericParam.Parent.Kind == HandleKind.TypeDefinition)
                     {
                         tnb.TypeString.Append('!');
                     }
@@ -103,7 +235,7 @@ internal struct TypeNameBuilder
                         tnb.TypeString.Append("!!");
                     }
                 }
-                tnb.AddName(reader.GetColumnAsUtf8String(cursor, MetadataColumnIndex.GenericParam_Name));
+                tnb.AddName(reader.GetString(genericParam.Name));
                 format &= ~TypeNameFormat.FormatAssembly;
             }
             else if (typeSystemContract.IsFunctionPointer(typeHandle, out ReadOnlySpan<TypeHandle> retAndArgTypes, out byte callConv))
@@ -143,14 +275,14 @@ internal struct TypeNameBuilder
                 // ...otherwise it's just a plain type def or an instantiated type
                 uint typeDefToken = typeSystemContract.GetTypeDefToken(typeHandle);
                 Contracts.ModuleHandle moduleHandle = tnb.Target.Contracts.Loader.GetModuleHandle(typeSystemContract.GetModule(typeHandle));
-                if (EcmaMetadataReader.RidFromToken(typeDefToken) == 0)
+                if (MetadataTokens.EntityHandle((int)typeDefToken).IsNil)
                 {
                     tnb.AddName("(dynamicClass)");
                 }
                 else
                 {
-                    EcmaMetadataReader reader = tnb.Target.Metadata.GetMetadata(moduleHandle).EcmaMetadataReader;
-                    AppendNestedTypeDef(ref tnb, reader, typeDefToken, format);
+                    MetadataReader reader = tnb.Target.Contracts.EcmaMetadata.GetMetadata(moduleHandle)!;
+                    AppendNestedTypeDef(ref tnb, reader, (TypeDefinitionHandle)MetadataTokens.EntityHandle((int)typeDefToken), format);
                 }
 
                 // Append instantiation
@@ -175,13 +307,22 @@ internal struct TypeNameBuilder
 
                 Contracts.ModuleHandle module = tnb.Target.Contracts.Loader.GetModuleHandle(modulePtr);
                 // NOTE: The DAC variant of assembly name generation is different than the runtime version. The DAC variant is simpler, and only uses SimpleName
-                EcmaMetadataReader mr = tnb.Target.Metadata.GetMetadata(module).EcmaMetadataReader;
-                EcmaMetadataCursor cursor = mr.GetCursor(0x20000001);
-                string assemblySimpleName = mr.GetColumnAsUtf8String(cursor, MetadataColumnIndex.Assembly_Name);
+
+                MetadataReader mr = tnb.Target.Contracts.EcmaMetadata.GetMetadata(module)!;
+                string assemblySimpleName = mr.GetString(mr.GetAssemblyDefinition().Name);
 
                 tnb.AddAssemblySpec(assemblySimpleName);
             }
         }
+    }
+
+    // Append a square-bracket-enclosed, comma-separated list of n type parameters in inst to the string s
+    // and enclose each parameter in square brackets to disambiguate the commas
+    // The following flags in the FormatFlags argument are significant: FormatNamespace FormatFullInst FormatAssembly FormatNoVersion
+    private static void AppendInst(Target target, StringBuilder stringBuilder, ReadOnlySpan<TypeHandle> inst, TypeNameFormat format)
+    {
+        TypeNameBuilder tnb = new (stringBuilder, target, format, initialStateIsName: true);
+        AppendInst(ref tnb, inst, format);
     }
 
     private static void AppendInst(ref TypeNameBuilder tnb, ReadOnlySpan<TypeHandle> inst, TypeNameFormat format)
@@ -333,38 +474,34 @@ internal struct TypeNameBuilder
         }
     }
 
-    private static void AppendNestedTypeDef(ref TypeNameBuilder tnb, EcmaMetadataReader reader, uint typeDefToken, TypeNameFormat format)
+    private static void AppendNestedTypeDef(ref TypeNameBuilder tnb, MetadataReader reader, TypeDefinitionHandle typeDefToken, TypeNameFormat format)
     {
-        EcmaMetadataCursor cursor = reader.GetCursor(typeDefToken);
-        System.Reflection.TypeAttributes typeDefAttributes = (System.Reflection.TypeAttributes)reader.GetColumnAsConstant(cursor, MetadataColumnIndex.TypeDef_Flags);
+        TypeDefinition typeDef = reader.GetTypeDefinition(typeDefToken);
+        System.Reflection.TypeAttributes typeDefAttributes = typeDef.Attributes;
         if ((int)(typeDefAttributes & System.Reflection.TypeAttributes.VisibilityMask) >= (int)System.Reflection.TypeAttributes.NestedPublic)
         {
-            uint currentTypeDefToken = typeDefToken;
-            List<uint> nestedTokens = new();
-            EcmaMetadataCursor nestedTypesCursor = reader.GetCursor(EcmaMetadataReader.CreateToken(MetadataTable.NestedClass, 1));
-            while (reader.TryFindRowFromCursor(nestedTypesCursor, MetadataColumnIndex.NestedClass_NestedClass, currentTypeDefToken, out EcmaMetadataCursor foundNestedClassRecord))
+            List<TypeDefinitionHandle> nestedTokens = [];
+            for (TypeDefinitionHandle enclosingType = typeDef.GetDeclaringType(); !enclosingType.IsNil; enclosingType = reader.GetTypeDefinition(enclosingType).GetDeclaringType())
             {
-                currentTypeDefToken = reader.GetColumnAsToken(foundNestedClassRecord, MetadataColumnIndex.NestedClass_EnclosingClass);
-                nestedTokens.Add(currentTypeDefToken);
+                nestedTokens.Add(enclosingType);
             }
 
             for (int i = nestedTokens.Count - 1; i >= 0; i--)
             {
-                AppendTypeDef(ref tnb, reader, nestedTokens[i], format);
+                AppendTypeDef(ref tnb, reader, reader.GetTypeDefinition(nestedTokens[i]), format);
             }
         }
-        AppendTypeDef(ref tnb, reader, typeDefToken, format);
+        AppendTypeDef(ref tnb, reader, typeDef, format);
     }
 
-    private static void AppendTypeDef(ref TypeNameBuilder tnb, EcmaMetadataReader reader, uint typeDefToken, TypeNameFormat format)
+    private static void AppendTypeDef(ref TypeNameBuilder tnb, MetadataReader reader, TypeDefinition typeDef, TypeNameFormat format)
     {
-        EcmaMetadataCursor cursor = reader.GetCursor(typeDefToken);
         string? typeNamespace = null;
         if (format.HasFlag(TypeNameFormat.FormatNamespace))
         {
-            typeNamespace = reader.GetColumnAsUtf8String(cursor, MetadataColumnIndex.TypeDef_TypeNamespace);
+            typeNamespace = reader.GetString(typeDef.Namespace);
         }
-        tnb.AddName(reader.GetColumnAsUtf8String(cursor, MetadataColumnIndex.TypeDef_TypeName), typeNamespace);
+        tnb.AddName(reader.GetString(typeDef.Name), typeNamespace);
     }
 
     private static void AppendParamTypeQualifier(ref TypeNameBuilder tnb, CorElementType kind, uint rank)

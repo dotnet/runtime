@@ -167,11 +167,8 @@ NOINLINE ReflectModuleBaseObject* GetRuntimeModuleHelper(LPVOID __me, Module *pM
     if (pModule == NULL)
         return NULL;
 
-    DomainAssembly * pDomainAssembly = pModule->GetDomainAssembly();
-
-    OBJECTREF refModule = (pDomainAssembly != NULL) ? pDomainAssembly->GetExposedModuleObjectIfExists() : NULL;
-
-    if(refModule != NULL)
+    OBJECTREF refModule = pModule->GetExposedObjectIfExists();
+    if (refModule != NULL)
         return (ReflectModuleBaseObject*)OBJECTREFToObject(refModule);
 
     HELPER_METHOD_FRAME_BEGIN_RET_ATTRIB_1(Frame::FRAME_ATTR_EXACT_DEPTH|Frame::FRAME_ATTR_CAPTURE_DEPTH_2, keepAlive);
@@ -1818,7 +1815,7 @@ FCIMPLEND
 FCIMPL3(Object *, SignatureNative::GetCustomModifiersAtOffset,
     SignatureNative* pSignatureUNSAFE,
     INT32 offset,
-    CLR_BOOL fRequired)
+    FC_BOOL_ARG fRequired)
 {
     FCALL_CONTRACT;
 
@@ -1843,7 +1840,7 @@ FCIMPL3(Object *, SignatureNative::GetCustomModifiersAtOffset,
         INT32 cMods = 0;
         CorElementType cmodType;
 
-        CorElementType cmodTypeExpected = fRequired ? ELEMENT_TYPE_CMOD_REQD : ELEMENT_TYPE_CMOD_OPT;
+        CorElementType cmodTypeExpected = FC_ACCESS_BOOL(fRequired) ? ELEMENT_TYPE_CMOD_REQD : ELEMENT_TYPE_CMOD_OPT;
 
         // Discover the number of required and optional custom modifiers.
         while(TRUE)

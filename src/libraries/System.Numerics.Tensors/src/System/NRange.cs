@@ -18,15 +18,15 @@ namespace System.Buffers
     [Experimental(Experimentals.TensorTDiagId, UrlFormat = Experimentals.SharedUrlFormat)]
     public readonly struct NRange : IEquatable<NRange>
     {
-        /// <summary>Represent the inclusive start NIndex of the NRange.</summary>
+        /// <summary>Represents the inclusive start NIndex of the NRange.</summary>
         public NIndex Start { get; }
 
-        /// <summary>Represent the exclusive end NIndex of the NRange.</summary>
+        /// <summary>Represents the exclusive end NIndex of the NRange.</summary>
         public NIndex End { get; }
 
-        /// <summary>Construct an NRange object using the start and end NIndexes.</summary>
-        /// <param name="start">Represent the inclusive start NIndex of the NRange.</param>
-        /// <param name="end">Represent the exclusive end NIndex of the NRange.</param>
+        /// <summary>Constructs an <see cref="NRange"/> object using the start and end <see cref="NIndex"/>.</summary>
+        /// <param name="start">Represent the inclusive start <see cref="NIndex"/> of the <see cref="NRange"/>.</param>
+        /// <param name="end">Represent the exclusive end <see cref="NIndex"/> of the <see cref="NRange"/>.</param>
         public NRange(NIndex start, NIndex end)
         {
             Start = start;
@@ -34,7 +34,7 @@ namespace System.Buffers
         }
 
         /// <summary>
-        /// Construct a <see cref="NRange"/> object using a <see cref="Range"/>.
+        /// Constructs an <see cref="NRange"/> object using a <see cref="Range"/>.
         /// </summary>
         /// <param name="range">The <see cref="Range"/> to use.</param>
         public NRange(Range range)
@@ -43,7 +43,7 @@ namespace System.Buffers
             End = range.End;
         }
 
-        /// <summary>Indicates whether the current NRange object is equal to another object of the same type.</summary>
+        /// <summary>Indicates whether the current <see cref="NRange"/> object is equal to another object of the same type.</summary>
         /// <param name="value">An object to compare with this object</param>
         public override bool Equals([NotNullWhen(true)] object? value) =>
             value is NRange r &&
@@ -121,12 +121,34 @@ namespace System.Buffers
 
         private static void ThrowArgumentOutOfRangeException() => throw new ArgumentOutOfRangeException("length");
 
+        /// <summary>
+        /// Implicitly converts a <see cref="Range"/> to an <see cref="NRange"/>.
+        /// </summary>
+        /// <param name="range"></param>
         public static implicit operator NRange(Range range) => new NRange(range.Start, range.End);
 
+        /// <summary>
+        /// Explicitly converts an <see cref="NRange"/> to a <see cref="Range"/> without doing bounds checks.
+        /// </summary>
+        /// <param name="value"><see cref="NRange"/> to convert.</param>
         public static explicit operator Range(NRange value) => new Range((Index)value.Start, (Index)value.End);
+
+        /// <summary>
+        /// Explicitly converts an <see cref="NRange"/> to a <see cref="Range"/>.
+        /// </summary>
+        /// <param name="value"><see cref="NRange"/> to convert.</param>
         public static explicit operator checked Range(NRange value) => new Range(checked((Index)value.Start), checked((Index)value.End));
 
+        /// <summary>
+        /// Converts a <see cref="NRange"/> to a <see cref="Range"/>.
+        /// </summary>
+        /// <returns>The converted Range.</returns>
         public Range ToRange() => new Range(checked((Index)Start), checked((Index)End));
+
+        /// <summary>
+        /// Converts a <see cref="NRange"/> to a <see cref="Range"/> wihout doing bounds checks.
+        /// </summary>
+        /// <returns>The converted Range.</returns>
         public Range ToRangeUnchecked() => new Range((Index)Start, (Index)End);
     }
 }

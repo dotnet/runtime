@@ -186,6 +186,7 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
     // We need to validate that other phases of the compiler haven't introduced unsupported intrinsics
     assert(compiler->compIsaSupportedDebugOnly(isa));
     assert(HWIntrinsicInfo::RequiresCodegen(intrinsicId));
+    assert(!HWIntrinsicInfo::NeedsNormalizeSmallTypeToInt(intrinsicId) || !varTypeIsSmall(node->GetSimdBaseType()));
 
     bool    isTableDriven = genIsTableDrivenHWIntrinsic(intrinsicId, category);
     insOpts instOptions   = INS_OPTS_NONE;
@@ -1090,18 +1091,12 @@ void CodeGen::genHWIntrinsic_R_R_RM_I(
 
     assert(targetReg != REG_NA);
 
-    if (op2->isContained() || op2->isUsedFromSpillTemp())
-    {
-        assert(HWIntrinsicInfo::SupportsContainment(node->GetHWIntrinsicId()));
-        assertIsContainableHWIntrinsicOp(compiler->m_pLowering, node, op2);
-    }
-
     if (ins == INS_insertps)
     {
-        if (op1Reg == REG_NA)
+        if (op1->isContained())
         {
             // insertps is special and can contain op1 when it is zero
-            assert(op1->isContained() && op1->IsVectorZero());
+            assert(op1->IsVectorZero());
             op1Reg = targetReg;
         }
 
@@ -1113,6 +1108,12 @@ void CodeGen::genHWIntrinsic_R_R_RM_I(
             GetEmitter()->emitIns_SIMD_R_R_R_I(ins, simdSize, targetReg, op1Reg, op1Reg, ival, instOptions);
             return;
         }
+    }
+
+    if (op2->isContained() || op2->isUsedFromSpillTemp())
+    {
+        assert(HWIntrinsicInfo::SupportsContainment(node->GetHWIntrinsicId()));
+        assertIsContainableHWIntrinsicOp(compiler->m_pLowering, node, op2);
     }
 
     assert(op1Reg != REG_NA);
