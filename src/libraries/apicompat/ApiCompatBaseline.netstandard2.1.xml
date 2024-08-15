@@ -1,5 +1,5 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<!-- https://learn.microsoft.com/en-us/dotnet/fundamentals/package-validation/diagnostic-ids -->
+<!-- https://learn.microsoft.com/dotnet/fundamentals/package-validation/diagnostic-ids -->
 <Suppressions xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
   <Suppression>
     <DiagnosticId>CP0014</DiagnosticId>
@@ -874,6 +874,132 @@
   <Suppression>
     <DiagnosticId>CP0015</DiagnosticId>
     <Target>T:System.Xml.Serialization.XmlNamespaceDeclarationsAttribute:[T:System.AttributeUsageAttribute]</Target>
+    <Left>netstandard2.1/netstandard.dll</Left>
+    <Right>net9.0/netstandard.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0021</DiagnosticId>
+    <Target>M:System.Linq.Enumerable.ToDictionary``2(System.Collections.Generic.IEnumerable{``0},System.Func{``0,``1},System.Collections.Generic.IEqualityComparer{``1})``1:notnull</Target>
+    <Left>netstandard2.1/netstandard.dll</Left>
+    <Right>net9.0/netstandard.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0021</DiagnosticId>
+    <Target>M:System.Linq.Enumerable.ToDictionary``2(System.Collections.Generic.IEnumerable{``0},System.Func{``0,``1})``1:notnull</Target>
+    <Left>netstandard2.1/netstandard.dll</Left>
+    <Right>net9.0/netstandard.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0021</DiagnosticId>
+    <Target>M:System.Linq.Enumerable.ToDictionary``3(System.Collections.Generic.IEnumerable{``0},System.Func{``0,``1},System.Func{``0,``2},System.Collections.Generic.IEqualityComparer{``1})``1:notnull</Target>
+    <Left>netstandard2.1/netstandard.dll</Left>
+    <Right>net9.0/netstandard.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0021</DiagnosticId>
+    <Target>M:System.Linq.Enumerable.ToDictionary``3(System.Collections.Generic.IEnumerable{``0},System.Func{``0,``1},System.Func{``0,``2})``1:notnull</Target>
+    <Left>netstandard2.1/netstandard.dll</Left>
+    <Right>net9.0/netstandard.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0021</DiagnosticId>
+    <Target>M:System.Linq.ParallelEnumerable.ToDictionary``2(System.Linq.ParallelQuery{``0},System.Func{``0,``1},System.Collections.Generic.IEqualityComparer{``1})``1:notnull</Target>
+    <Left>netstandard2.1/netstandard.dll</Left>
+    <Right>net9.0/netstandard.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0021</DiagnosticId>
+    <Target>M:System.Linq.ParallelEnumerable.ToDictionary``2(System.Linq.ParallelQuery{``0},System.Func{``0,``1})``1:notnull</Target>
+    <Left>netstandard2.1/netstandard.dll</Left>
+    <Right>net9.0/netstandard.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0021</DiagnosticId>
+    <Target>M:System.Linq.ParallelEnumerable.ToDictionary``3(System.Linq.ParallelQuery{``0},System.Func{``0,``1},System.Func{``0,``2},System.Collections.Generic.IEqualityComparer{``1})``1:notnull</Target>
+    <Left>netstandard2.1/netstandard.dll</Left>
+    <Right>net9.0/netstandard.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0021</DiagnosticId>
+    <Target>M:System.Linq.ParallelEnumerable.ToDictionary``3(System.Linq.ParallelQuery{``0},System.Func{``0,``1},System.Func{``0,``2})``1:notnull</Target>
+    <Left>netstandard2.1/netstandard.dll</Left>
+    <Right>net9.0/netstandard.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0021</DiagnosticId>
+    <Target>M:System.Linq.ParallelEnumerable.ToLookup``2(System.Linq.ParallelQuery{``0},System.Func{``0,``1},System.Collections.Generic.IEqualityComparer{``1})``1:notnull</Target>
+    <Left>netstandard2.1/netstandard.dll</Left>
+    <Right>net9.0/netstandard.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0021</DiagnosticId>
+    <Target>M:System.Linq.ParallelEnumerable.ToLookup``2(System.Linq.ParallelQuery{``0},System.Func{``0,``1})``1:notnull</Target>
+    <Left>netstandard2.1/netstandard.dll</Left>
+    <Right>net9.0/netstandard.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0021</DiagnosticId>
+    <Target>M:System.Linq.ParallelEnumerable.ToLookup``3(System.Linq.ParallelQuery{``0},System.Func{``0,``1},System.Func{``0,``2},System.Collections.Generic.IEqualityComparer{``1})``1:notnull</Target>
+    <Left>netstandard2.1/netstandard.dll</Left>
+    <Right>net9.0/netstandard.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0021</DiagnosticId>
+    <Target>M:System.Linq.ParallelEnumerable.ToLookup``3(System.Linq.ParallelQuery{``0},System.Func{``0,``1},System.Func{``0,``2})``1:notnull</Target>
+    <Left>netstandard2.1/netstandard.dll</Left>
+    <Right>net9.0/netstandard.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0021</DiagnosticId>
+    <Target>M:System.Runtime.InteropServices.Marshal.CreateAggregatedObject``1(System.IntPtr,``0)``0:notnull</Target>
+    <Left>netstandard2.1/netstandard.dll</Left>
+    <Right>net9.0/netstandard.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0021</DiagnosticId>
+    <Target>M:System.Runtime.InteropServices.Marshal.GetFunctionPointerForDelegate``1(``0)``0:notnull</Target>
+    <Left>netstandard2.1/netstandard.dll</Left>
+    <Right>net9.0/netstandard.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0021</DiagnosticId>
+    <Target>T:System.Collections.Concurrent.ConcurrentDictionary`2``0:notnull</Target>
+    <Left>netstandard2.1/netstandard.dll</Left>
+    <Right>net9.0/netstandard.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0021</DiagnosticId>
+    <Target>T:System.Collections.Generic.Dictionary`2``0:notnull</Target>
+    <Left>netstandard2.1/netstandard.dll</Left>
+    <Right>net9.0/netstandard.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0021</DiagnosticId>
+    <Target>T:System.Collections.Generic.SortedDictionary`2``0:notnull</Target>
+    <Left>netstandard2.1/netstandard.dll</Left>
+    <Right>net9.0/netstandard.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0021</DiagnosticId>
+    <Target>T:System.Collections.Generic.SortedList`2``0:notnull</Target>
+    <Left>netstandard2.1/netstandard.dll</Left>
+    <Right>net9.0/netstandard.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0021</DiagnosticId>
+    <Target>T:System.Collections.ObjectModel.KeyedCollection`2``0:notnull</Target>
+    <Left>netstandard2.1/netstandard.dll</Left>
+    <Right>net9.0/netstandard.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0021</DiagnosticId>
+    <Target>T:System.Collections.ObjectModel.ReadOnlyDictionary`2``0:notnull</Target>
+    <Left>netstandard2.1/netstandard.dll</Left>
+    <Right>net9.0/netstandard.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0021</DiagnosticId>
+    <Target>T:System.Tuple`8``7:notnull</Target>
     <Left>netstandard2.1/netstandard.dll</Left>
     <Right>net9.0/netstandard.dll</Right>
   </Suppression>

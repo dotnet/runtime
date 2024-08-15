@@ -167,11 +167,8 @@ NOINLINE ReflectModuleBaseObject* GetRuntimeModuleHelper(LPVOID __me, Module *pM
     if (pModule == NULL)
         return NULL;
 
-    DomainAssembly * pDomainAssembly = pModule->GetDomainAssembly();
-
-    OBJECTREF refModule = (pDomainAssembly != NULL) ? pDomainAssembly->GetExposedModuleObjectIfExists() : NULL;
-
-    if(refModule != NULL)
+    OBJECTREF refModule = pModule->GetExposedObjectIfExists();
+    if (refModule != NULL)
         return (ReflectModuleBaseObject*)OBJECTREFToObject(refModule);
 
     HELPER_METHOD_FRAME_BEGIN_RET_ATTRIB_1(Frame::FRAME_ATTR_EXACT_DEPTH|Frame::FRAME_ATTR_CAPTURE_DEPTH_2, keepAlive);
@@ -445,73 +442,58 @@ FCIMPL1(INT32, RuntimeTypeHandle::GetArrayRank, ReflectClassBaseObject *pTypeUNS
 }
 FCIMPLEND
 
-FCIMPL1(INT32, RuntimeTypeHandle::GetNumVirtuals, ReflectClassBaseObject *pTypeUNSAFE) {
+FCIMPL1(INT32, RuntimeTypeHandle::GetNumVirtuals, ReflectClassBaseObject* pTypeUNSAFE) {
     CONTRACTL {
         FCALL_CHECK;
     }
     CONTRACTL_END;
 
     REFLECTCLASSBASEREF refType = (REFLECTCLASSBASEREF)ObjectToOBJECTREF(pTypeUNSAFE);
-
-    if (refType == NULL)
-        FCThrowRes(kArgumentNullException, W("Arg_InvalidHandle"));
+    _ASSERTE(refType != NULL);
 
     TypeHandle typeHandle = refType->GetType();
-
-    if (typeHandle.IsGenericVariable())
-        FCThrowRes(kArgumentException, W("Arg_InvalidHandle"));
+    _ASSERTE(!typeHandle.IsGenericVariable());
 
     MethodTable *pMT = typeHandle.GetMethodTable();
-
-    if (pMT)
-        return (INT32)pMT->GetNumVirtuals();
-    else
+    if (pMT == NULL)
         return 0;
+    return (INT32)pMT->GetNumVirtuals();
 }
 FCIMPLEND
 
-FCIMPL1(INT32, RuntimeTypeHandle::GetNumVirtualsAndStaticVirtuals, ReflectClassBaseObject *pTypeUNSAFE) {
-    CONTRACTL {
-        FCALL_CHECK;
-    }
-    CONTRACTL_END;
-
-    REFLECTCLASSBASEREF refType = (REFLECTCLASSBASEREF)ObjectToOBJECTREF(pTypeUNSAFE);
-
-    if (refType == NULL)
-        FCThrowRes(kArgumentNullException, W("Arg_InvalidHandle"));
-
-    TypeHandle typeHandle = refType->GetType();
-
-    if (typeHandle.IsGenericVariable())
-        FCThrowRes(kArgumentException, W("Arg_InvalidHandle"));
+extern "C" INT32 QCALLTYPE RuntimeTypeHandle_GetNumVirtualsAndStaticVirtuals(QCall::TypeHandle pTypeHandle)
+{
+    QCALL_CONTRACT;
 
     INT32 numVirtuals = 0;
 
-    HELPER_METHOD_FRAME_BEGIN_RET_1(refType);
+    BEGIN_QCALL;
+
+    TypeHandle typeHandle = pTypeHandle.AsTypeHandle();
+    _ASSERTE(!typeHandle.IsGenericVariable());
+
     MethodTable *pMT = typeHandle.GetMethodTable();
-    if (pMT)
+    if (pMT != NULL)
     {
         numVirtuals = (INT32)pMT->GetNumVirtuals();
-
         if (pMT->HasVirtualStaticMethods())
         {
             for (MethodTable::MethodIterator it(pMT); it.IsValid(); it.Next())
             {
                 MethodDesc *pMD = it.GetMethodDesc();
-                if (pMD->IsVirtual() &&
-                    pMD->IsStatic())
+                if (pMD->IsVirtual()
+                    && pMD->IsStatic())
                 {
                     numVirtuals++;
                 }
             }
         }
     }
-    HELPER_METHOD_FRAME_END();
+
+    END_QCALL;
 
     return numVirtuals;
 }
-FCIMPLEND
 
 FCIMPL2(MethodDesc *, RuntimeTypeHandle::GetMethodAt, ReflectClassBaseObject *pTypeUNSAFE, INT32 slot) {
     CONTRACTL {
@@ -1488,21 +1470,6 @@ FCIMPL1(FC_BOOL_RET, RuntimeTypeHandle::ContainsGenericVariables, PTR_ReflectCla
 }
 FCIMPLEND
 
-FCIMPL1(IMDInternalImport*, RuntimeTypeHandle::GetMetadataImport, ReflectClassBaseObject * pTypeUNSAFE)
-{
-    FCALL_CONTRACT;
-
-    REFLECTCLASSBASEREF refType = (REFLECTCLASSBASEREF)ObjectToOBJECTREF(pTypeUNSAFE);
-
-    if (refType == NULL)
-        FCThrowRes(kArgumentNullException, W("Arg_InvalidHandle"));
-
-    Module *pModule = refType->GetType().GetModule();
-
-    return pModule->GetMDImport();
-}
-FCIMPLEND
-
 extern "C" void* QCALLTYPE RuntimeTypeHandle_AllocateTypeAssociatedMemory(QCall::TypeHandle type, uint32_t size)
 {
     QCALL_CONTRACT;
@@ -1848,7 +1815,7 @@ FCIMPLEND
 FCIMPL3(Object *, SignatureNative::GetCustomModifiersAtOffset,
     SignatureNative* pSignatureUNSAFE,
     INT32 offset,
-    CLR_BOOL fRequired)
+    FC_BOOL_ARG fRequired)
 {
     FCALL_CONTRACT;
 
@@ -1873,7 +1840,7 @@ FCIMPL3(Object *, SignatureNative::GetCustomModifiersAtOffset,
         INT32 cMods = 0;
         CorElementType cmodType;
 
-        CorElementType cmodTypeExpected = fRequired ? ELEMENT_TYPE_CMOD_REQD : ELEMENT_TYPE_CMOD_OPT;
+        CorElementType cmodTypeExpected = FC_ACCESS_BOOL(fRequired) ? ELEMENT_TYPE_CMOD_REQD : ELEMENT_TYPE_CMOD_OPT;
 
         // Discover the number of required and optional custom modifiers.
         while(TRUE)
@@ -2790,20 +2757,6 @@ FCIMPL1(INT32, ModuleHandle::GetToken, ReflectModuleBaseObject * pModuleUNSAFE) 
 }
 FCIMPLEND
 
-FCIMPL1(IMDInternalImport*, ModuleHandle::GetMetadataImport, ReflectModuleBaseObject * pModuleUNSAFE)
-{
-    FCALL_CONTRACT;
-
-    REFLECTMODULEBASEREF refModule = (REFLECTMODULEBASEREF)ObjectToOBJECTREF(pModuleUNSAFE);
-
-    if (refModule == NULL)
-        FCThrowRes(kArgumentNullException, W("Arg_InvalidHandle"));
-
-    Module *pModule = refModule->GetModule();
-    return pModule->GetMDImport();
-}
-FCIMPLEND
-
 extern "C" void QCALLTYPE ModuleHandle_ResolveType(QCall::ModuleHandle pModule, INT32 tkType, TypeHandle *typeArgs, INT32 typeArgsCount, TypeHandle *methodArgs, INT32 methodArgsCount, QCall::ObjectHandleOnStack retType)
 {
     QCALL_CONTRACT;
@@ -2921,7 +2874,7 @@ FCIMPL5(ReflectMethodObject*, ModuleHandle::GetDynamicMethod, ReflectMethodObjec
     DWORD length = gc.nameRef->GetStringLength();
     NewArrayHolder<char> pName(new char[(length + 1) * 2]);
     pName[0] = '\0';
-    length = WszWideCharToMultiByte(CP_UTF8, 0, gc.nameRef->GetBuffer(), length, pName, (length + 1) * 2 - sizeof(char), NULL, NULL);
+    length = WideCharToMultiByte(CP_UTF8, 0, gc.nameRef->GetBuffer(), length, pName, (length + 1) * 2 - sizeof(char), NULL, NULL);
     if (length)
         pName[length / sizeof(char)] = '\0';
 

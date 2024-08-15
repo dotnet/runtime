@@ -403,7 +403,7 @@ namespace System.Text.Json.Serialization.Tests
             public int myInt { get; set; }
 
             [JsonPropertyName("BlahObject")]
-            public object myObject { get; set; }
+            public object? myObject { get; set; }
         }
 
         public class DuplicatePropertyNameDesignTime_TestClass

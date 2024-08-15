@@ -87,7 +87,7 @@ const char* GlobalizationNative_GetCalendarInfoNative(const char* localeName, Ca
 {
     @autoreleasepool
     {
-        NSString *locName = [NSString stringWithFormat:@"%s", localeName];
+        NSString *locName = [[NSString alloc] initWithUTF8String:localeName];
         NSLocale *currentLocale = [[NSLocale alloc] initWithLocaleIdentifier:locName];
 
         if (dataType == CalendarData_MonthDay)
@@ -130,7 +130,7 @@ const char* GlobalizationNative_GetCalendarInfoNative(const char* localeName, Ca
                 NSString *longFormatString = [dateFormat dateFormat];
                 [dateFormat setDateStyle:NSDateFormatterFullStyle];
                 NSString *fullFormatString = [dateFormat dateFormat];
-                result = @[longFormatString, fullFormatString];
+                result = @[fullFormatString, longFormatString];
                 break;
             }
             case CalendarData_DayNames:
@@ -162,8 +162,8 @@ const char* GlobalizationNative_GetCalendarInfoNative(const char* localeName, Ca
                 assert(false);
                 return NULL;
         }
-
-        NSString *arrayToString = [[result valueForKey:@"description"] componentsJoinedByString:@"||"];
+        NSArray *descriptionsArray = [result valueForKey:@"description"];
+        NSString *arrayToString = [descriptionsArray componentsJoinedByString:@"||"];
         return arrayToString ? strdup([arrayToString UTF8String]) : NULL;
     }
 }
@@ -211,7 +211,7 @@ int32_t GlobalizationNative_GetJapaneseEraStartDateNative(int32_t era, int32_t* 
         for (int month = 0; month <= 12; month++)
         {
             NSDateComponents *eraComponents = [japaneseCalendar components:NSCalendarUnitEra fromDate:date];
-            currentEra = [eraComponents era];
+            currentEra = (int32_t)[eraComponents era];
             if (currentEra == era)
             {
                 for (int day = 0; day < 31; day++)
@@ -220,7 +220,7 @@ int32_t GlobalizationNative_GetJapaneseEraStartDateNative(int32_t era, int32_t* 
                     startDateComponents.day = startDateComponents.day - 1;
                     date = [japaneseCalendar dateFromComponents:startDateComponents];
                     eraComponents = [japaneseCalendar components:NSCalendarUnitEra fromDate:date];
-                    currentEra = [eraComponents era];
+                    currentEra = (int32_t)[eraComponents era];
                     if (currentEra != era)
                     {
                         // add back 1 day to get back into the specified Era
@@ -228,9 +228,9 @@ int32_t GlobalizationNative_GetJapaneseEraStartDateNative(int32_t era, int32_t* 
                         date = [japaneseCalendar dateFromComponents:startDateComponents];
                         NSCalendar *gregorianCalendar = [[NSCalendar alloc] initWithCalendarIdentifier:NSCalendarIdentifierGregorian];
                         NSDateComponents *components = [gregorianCalendar components:NSCalendarUnitDay | NSCalendarUnitMonth | NSCalendarUnitYear fromDate:date];
-                        *startYear = [components year];
-                        *startMonth = [components month];
-                        *startDay = [components day];
+                        *startYear = (int32_t)[components year];
+                        *startMonth = (int32_t)[components month];
+                        *startDay = (int32_t)[components day];
                         return 1;
                     }
                 }
@@ -239,7 +239,7 @@ int32_t GlobalizationNative_GetJapaneseEraStartDateNative(int32_t era, int32_t* 
             startDateComponents.month = startDateComponents.month + 1;
             date = [japaneseCalendar dateFromComponents:startDateComponents];
             eraComponents = [japaneseCalendar components:NSCalendarUnitEra fromDate:date];
-            currentEra = [eraComponents era];
+            currentEra = (int32_t)[eraComponents era];
         }
 
         return 0;
@@ -267,17 +267,18 @@ int32_t GlobalizationNative_GetCalendarsNative(const char* localeName, CalendarI
             NSCalendarIdentifierRepublicOfChina,
         ];
 
-        NSString *locName = [NSString stringWithFormat:@"%s", localeName];
+        NSString *locName = [[NSString alloc] initWithUTF8String:localeName];
         NSLocale *currentLocale = [[NSLocale alloc] initWithLocaleIdentifier:locName];
         NSString *defaultCalendarIdentifier = [currentLocale calendarIdentifier];
-        int32_t calendarCount = MIN(calendarIdentifiers.count, calendarsCapacity);
+        int32_t calendarCount = (int32_t)calendarIdentifiers.count < calendarsCapacity ? (int32_t)calendarIdentifiers.count : calendarsCapacity;
         int32_t calendarIndex = 0;
         CalendarId defaultCalendarId = GetCalendarId([defaultCalendarIdentifier UTF8String]);
         // If the default calendar is not supported, return the Gregorian calendar as the default.
         calendars[calendarIndex++] = defaultCalendarId == UNINITIALIZED_VALUE ? GREGORIAN : defaultCalendarId;
         for (int i = 0; i < calendarCount; i++)
         {
-            CalendarId calendarId = GetCalendarId([calendarIdentifiers[i] UTF8String]);
+            NSCalendarIdentifier calendarIdentifier = calendarIdentifiers[(NSUInteger)i];
+            CalendarId calendarId = GetCalendarId([calendarIdentifier UTF8String]);
             if (calendarId == UNINITIALIZED_VALUE || calendarId == defaultCalendarId)
                 continue;
             calendars[calendarIndex++] = calendarId;

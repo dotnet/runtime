@@ -27,6 +27,15 @@ namespace System.Numerics
         internal const int kcbitUlong = 64;
         internal const int DecimalScaleFactorMask = 0x00FF0000;
 
+        // Various APIs only allow up to int.MaxValue bits, so we will restrict ourselves
+        // to fit within this given our underlying storage representation and the maximum
+        // array length. This gives us just shy of 256MB as the largest allocation size.
+        //
+        // Such a value allows for almost 646,456,974 digits, which is more than large enough
+        // for typical scenarios. If user code requires more than this, they should likely
+        // roll their own type that utilizes native memory and other specialized techniques.
+        internal static int MaxLength => Array.MaxLength / kcbitUint;
+
         // For values int.MinValue < n <= int.MaxValue, the value is stored in sign
         // and _bits is null. For all other values, sign is +1 or -1 and the bits are in _bits
         internal readonly int _sign; // Do not rename (binary serialization)
@@ -485,24 +494,24 @@ namespace System.Numerics
         /// </summary>
         /// <param name="value">The absolute value of the number</param>
         /// <param name="negative">The bool indicating the sign of the value.</param>
-        private BigInteger(ReadOnlySpan<uint> value, bool negative)
+        internal BigInteger(ReadOnlySpan<uint> value, bool negative)
         {
+            // Try to conserve space as much as possible by checking for wasted leading span entries
+            // sometimes the span has leading zeros from bit manipulation operations & and ^
+
+            int length = value.LastIndexOfAnyExcept(0u) + 1;
+            value = value[..length];
+
             if (value.Length > MaxLength)
             {
                 ThrowHelper.ThrowOverflowException();
             }
 
-            int len;
-
-            // Try to conserve space as much as possible by checking for wasted leading span entries
-            // sometimes the span has leading zeros from bit manipulation operations & and ^
-            for (len = value.Length; len > 0 && value[len - 1] == 0; len--);
-
-            if (len == 0)
+            if (value.Length == 0)
             {
-                this = s_bnZeroInt;
+                this = default;
             }
-            else if (len == 1 && value[0] < kuMaskHighBit)
+            else if (value.Length == 1 && value[0] < kuMaskHighBit)
             {
                 // Values like (Int32.MaxValue+1) are stored as "0x80000000" and as such cannot be packed into _sign
                 _sign = negative ? -(int)value[0] : (int)value[0];
@@ -516,7 +525,7 @@ namespace System.Numerics
             else
             {
                 _sign = negative ? -1 : +1;
-                _bits = value.Slice(0, len).ToArray();
+                _bits = value.ToArray();
             }
             AssertValid();
         }
@@ -527,87 +536,88 @@ namespace System.Numerics
         /// <param name="value"></param>
         private BigInteger(Span<uint> value)
         {
+            bool isNegative;
+            int length;
+
+            if ((value.Length > 0) && ((int)value[^1] < 0))
+            {
+                isNegative = true;
+                length = value.LastIndexOfAnyExcept(uint.MaxValue) + 1;
+
+                if ((length == 0) || ((int)value[length - 1] > 0))
+                {
+                    // We ne need to preserve the sign bit
+                    length++;
+                }
+                Debug.Assert((int)value[length - 1] < 0);
+            }
+            else
+            {
+                isNegative = false;
+                length = value.LastIndexOfAnyExcept(0u) + 1;
+            }
+            value = value[..length];
+
             if (value.Length > MaxLength)
             {
                 ThrowHelper.ThrowOverflowException();
             }
 
-            int dwordCount = value.Length;
-            bool isNegative = dwordCount > 0 && ((value[dwordCount - 1] & kuMaskHighBit) == kuMaskHighBit);
-
-            // Try to conserve space as much as possible by checking for wasted leading span entries
-            while (dwordCount > 0 && value[dwordCount - 1] == 0) dwordCount--;
-
-            if (dwordCount == 0)
+            if (value.Length == 0)
             {
-                // BigInteger.Zero
+                // 0
                 this = s_bnZeroInt;
-                AssertValid();
-                return;
             }
-            if (dwordCount == 1)
+            else if (value.Length == 1)
             {
-                if (unchecked((int)value[0]) < 0 && !isNegative)
+                if (isNegative)
                 {
-                    _bits = new uint[1];
-                    _bits[0] = value[0];
-                    _sign = +1;
+                    if (value[0] == uint.MaxValue)
+                    {
+                        // -1
+                        this = s_bnMinusOneInt;
+                    }
+                    else if (value[0] == kuMaskHighBit)
+                    {
+                        // int.MinValue
+                        this = s_bnMinInt;
+                    }
+                    else
+                    {
+                        _sign = unchecked((int)value[0]);
+                        _bits = null;
+                    }
                 }
-                // Handle the special cases where the BigInteger likely fits into _sign
-                else if (int.MinValue == unchecked((int)value[0]))
+                else if (unchecked((int)value[0]) < 0)
                 {
-                    this = s_bnMinInt;
+                    _sign = +1;
+                    _bits = [value[0]];
                 }
                 else
                 {
                     _sign = unchecked((int)value[0]);
                     _bits = null;
                 }
-                AssertValid();
-                return;
-            }
-
-            if (!isNegative)
-            {
-                // Handle the simple positive value cases where the input is already in sign magnitude
-                _sign = +1;
-                value = value.Slice(0, dwordCount);
-                _bits = value.ToArray();
-                AssertValid();
-                return;
-            }
-
-            // Finally handle the more complex cases where we must transform the input into sign magnitude
-            NumericsHelpers.DangerousMakeTwosComplement(value); // mutates val
-
-            // Pack _bits to remove any wasted space after the twos complement
-            int len = value.Length;
-            while (len > 0 && value[len - 1] == 0) len--;
-
-            // The number is represented by a single dword
-            if (len == 1 && unchecked((int)(value[0])) > 0)
-            {
-                if (value[0] == 1 /* abs(-1) */)
-                {
-                    this = s_bnMinusOneInt;
-                }
-                else if (value[0] == kuMaskHighBit /* abs(Int32.MinValue) */)
-                {
-                    this = s_bnMinInt;
-                }
-                else
-                {
-                    _sign = (-1) * ((int)value[0]);
-                    _bits = null;
-                }
             }
             else
             {
-                _sign = -1;
-                _bits = value.Slice(0, len).ToArray();
+                if (isNegative)
+                {
+                    NumericsHelpers.DangerousMakeTwosComplement(value);
+
+                    // Retrim any leading zeros carried from the sign
+                    length = value.LastIndexOfAnyExcept(0u) + 1;
+                    value = value[..length];
+
+                    _sign = -1;
+                }
+                else
+                {
+                    _sign = +1;
+                }
+                _bits = value.ToArray();
             }
             AssertValid();
-            return;
         }
 
         public static BigInteger Zero { get { return s_bnZeroInt; } }
@@ -615,8 +625,6 @@ namespace System.Numerics
         public static BigInteger One { get { return s_bnOneInt; } }
 
         public static BigInteger MinusOne { get { return s_bnMinusOneInt; } }
-
-        internal static int MaxLength => Array.MaxLength / sizeof(uint);
 
         public bool IsPowerOfTwo
         {
@@ -629,15 +637,10 @@ namespace System.Numerics
 
                 if (_sign != 1)
                     return false;
+
                 int iu = _bits.Length - 1;
-                if (!BitOperations.IsPow2(_bits[iu]))
-                    return false;
-                while (--iu >= 0)
-                {
-                    if (_bits[iu] != 0)
-                        return false;
-                }
-                return true;
+
+                return BitOperations.IsPow2(_bits[iu]) && !_bits.AsSpan(0, iu).ContainsAnyExcept(0u);
             }
         }
 
@@ -4137,6 +4140,9 @@ namespace System.Numerics
 
         /// <inheritdoc cref="INumberBase{TSelf}.MinMagnitudeNumber(TSelf, TSelf)" />
         static BigInteger INumberBase<BigInteger>.MinMagnitudeNumber(BigInteger x, BigInteger y) => MinMagnitude(x, y);
+
+        /// <inheritdoc cref="INumberBase{TSelf}.MultiplyAddEstimate(TSelf, TSelf, TSelf)" />
+        static BigInteger INumberBase<BigInteger>.MultiplyAddEstimate(BigInteger left, BigInteger right, BigInteger addend) => (left * right) + addend;
 
         /// <inheritdoc cref="INumberBase{TSelf}.TryConvertFromChecked{TOther}(TOther, out TSelf)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

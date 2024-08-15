@@ -93,11 +93,11 @@ The main types provided by this library are:
 
 <!-- Links to further documentation -->
 
-* [System.Reflection.Metadata.MetadataReader](https://docs.microsoft.com/dotnet/api/system.reflection.metadata.metadatareader)
-* [System.Reflection.PortableExecutable.PEReader](https://docs.microsoft.com/dotnet/api/system.reflection.portableexecutable.pereader)
-* [System.Reflection.Metadata.Ecma335.MetadataBuilder](https://docs.microsoft.com/dotnet/api/system.reflection.metadata.ecma335.metadatabuilder)
-* [System.Reflection.PortableExecutable.PEBuilder](https://docs.microsoft.com/dotnet/api/system.reflection.portableexecutable.pebuilder)
-* [System.Reflection.PortableExecutable.ManagedPEBuilder](https://docs.microsoft.com/dotnet/api/system.reflection.portableexecutable.managedpebuilder)
+* [System.Reflection.Metadata.MetadataReader](https://learn.microsoft.com/dotnet/api/system.reflection.metadata.metadatareader)
+* [System.Reflection.PortableExecutable.PEReader](https://learn.microsoft.com/dotnet/api/system.reflection.portableexecutable.pereader)
+* [System.Reflection.Metadata.Ecma335.MetadataBuilder](https://learn.microsoft.com/dotnet/api/system.reflection.metadata.ecma335.metadatabuilder)
+* [System.Reflection.PortableExecutable.PEBuilder](https://learn.microsoft.com/dotnet/api/system.reflection.portableexecutable.pebuilder)
+* [System.Reflection.PortableExecutable.ManagedPEBuilder](https://learn.microsoft.com/dotnet/api/system.reflection.portableexecutable.managedpebuilder)
 
 ## Feedback & Contributing
 

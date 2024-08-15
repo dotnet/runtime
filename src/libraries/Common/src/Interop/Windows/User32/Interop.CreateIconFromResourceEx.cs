@@ -3,7 +3,7 @@
 
 using System;
 using System.Runtime.InteropServices;
-#if NET7_0_OR_GREATER
+#if NET
 using System.Runtime.InteropServices.Marshalling;
 #endif
 

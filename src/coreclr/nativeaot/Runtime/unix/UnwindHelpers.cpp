@@ -34,6 +34,8 @@ using libunwind::Registers_arm;
 #elif defined(TARGET_ARM64)
 using libunwind::Registers_arm64;
 using libunwind::CompactUnwinder_arm64;
+#elif defined(TARGET_LOONGARCH64)
+using libunwind::Registers_loongarch;
 #elif defined(TARGET_X86)
 using libunwind::Registers_x86;
 #else
@@ -777,7 +779,7 @@ libunwind::v128 Registers_REGDISPLAY::getVectorRegister(int num) const
 {
     num -= UNW_ARM64_D8;
 
-    if (num < 0 || num >= sizeof(D) / sizeof(uint64_t))
+    if (num < 0 || (size_t)num >= sizeof(D) / sizeof(uint64_t))
     {
         PORTABILITY_ASSERT("unsupported arm64 vector register");
     }
@@ -796,7 +798,7 @@ void Registers_REGDISPLAY::setVectorRegister(int num, libunwind::v128 value)
 {
     num -= UNW_ARM64_D8;
 
-    if (num < 0 || num >= sizeof(D) / sizeof(uint64_t))
+    if (num < 0 || (size_t)num >= sizeof(D) / sizeof(uint64_t))
     {
         PORTABILITY_ASSERT("unsupported arm64 vector register");
     }
@@ -805,6 +807,286 @@ void Registers_REGDISPLAY::setVectorRegister(int num, libunwind::v128 value)
 }
 
 #endif // TARGET_ARM64
+
+#if defined(TARGET_LOONGARCH64)
+
+// Shim that implements methods required by libunwind over REGDISPLAY
+struct Registers_REGDISPLAY : REGDISPLAY
+{
+    inline static int  getArch() { return libunwind::REGISTERS_LOONGARCH; }
+    inline static int  lastDwarfRegNum() { return _LIBUNWIND_HIGHEST_DWARF_REGISTER_LOONGARCH; }
+
+    bool        validRegister(int num) const;
+    bool        validFloatRegister(int num) { return false; };
+    bool        validVectorRegister(int num) const;
+
+    uint64_t    getRegister(int num) const;
+    void        setRegister(int num, uint64_t value, uint64_t location);
+
+    double      getFloatRegister(int num) const {abort();}
+    void        setFloatRegister(int num, double value) {abort();}
+
+    libunwind::v128    getVectorRegister(int num) const;
+    void        setVectorRegister(int num, libunwind::v128 value);
+
+    uint64_t    getSP() const         { return SP;}
+    void        setSP(uint64_t value, uint64_t location) { SP = value;}
+    uint64_t    getIP() const         { return IP;}
+    void        setIP(uint64_t value, uint64_t location) { IP = value; }
+    uint64_t    getFP() const         { return *pFP;}
+    void        setFP(uint64_t value, uint64_t location) { pFP = (PTR_uintptr_t)location;}
+};
+
+inline bool Registers_REGDISPLAY::validRegister(int num) const {
+    if (num == UNW_REG_SP || num == UNW_LOONGARCH_R3)
+        return true;
+
+    if (num == UNW_LOONGARCH_R22)
+        return true;
+
+    if (num == UNW_REG_IP)
+        return true;
+
+    if (num >= UNW_LOONGARCH_R0 && num <= UNW_LOONGARCH_R31)
+        return true;
+
+    return false;
+}
+
+bool Registers_REGDISPLAY::validVectorRegister(int num) const
+{
+    if (num >= UNW_LOONGARCH_F24 && num <= UNW_LOONGARCH_F31)
+        return true;
+
+    return false;
+}
+
+inline uint64_t Registers_REGDISPLAY::getRegister(int regNum) const {
+    if (regNum == UNW_REG_SP || regNum == UNW_LOONGARCH_R3)
+        return SP;
+
+    if (regNum == UNW_LOONGARCH_R22)
+        return *pFP;
+
+    if (regNum == UNW_LOONGARCH_R1)
+        return *pRA;
+
+    if (regNum == UNW_REG_IP)
+        return IP;
+
+    switch (regNum)
+    {
+    case (UNW_LOONGARCH_R0):
+        return *pR0;
+    case (UNW_LOONGARCH_R2):
+        return *pR2;
+    case (UNW_LOONGARCH_R4):
+        return *pR4;
+    case (UNW_LOONGARCH_R5):
+        return *pR5;
+    case (UNW_LOONGARCH_R6):
+        return *pR6;
+    case (UNW_LOONGARCH_R7):
+        return *pR7;
+    case (UNW_LOONGARCH_R8):
+        return *pR8;
+    case (UNW_LOONGARCH_R9):
+        return *pR9;
+    case (UNW_LOONGARCH_R10):
+        return *pR10;
+    case (UNW_LOONGARCH_R11):
+        return *pR11;
+    case (UNW_LOONGARCH_R12):
+        return *pR12;
+    case (UNW_LOONGARCH_R13):
+        return *pR13;
+    case (UNW_LOONGARCH_R14):
+        return *pR14;
+    case (UNW_LOONGARCH_R15):
+        return *pR15;
+    case (UNW_LOONGARCH_R16):
+        return *pR16;
+    case (UNW_LOONGARCH_R17):
+        return *pR17;
+    case (UNW_LOONGARCH_R18):
+        return *pR18;
+    case (UNW_LOONGARCH_R19):
+        return *pR19;
+    case (UNW_LOONGARCH_R20):
+        return *pR20;
+    case (UNW_LOONGARCH_R21):
+        return *pR21;
+    case (UNW_LOONGARCH_R23):
+        return *pR23;
+    case (UNW_LOONGARCH_R24):
+        return *pR24;
+    case (UNW_LOONGARCH_R25):
+        return *pR25;
+    case (UNW_LOONGARCH_R26):
+        return *pR26;
+    case (UNW_LOONGARCH_R27):
+        return *pR27;
+    case (UNW_LOONGARCH_R28):
+        return *pR28;
+    case (UNW_LOONGARCH_R29):
+        return *pR29;
+    case (UNW_LOONGARCH_R30):
+        return *pR30;
+    case (UNW_LOONGARCH_R31):
+        return *pR31;
+    }
+
+    PORTABILITY_ASSERT("unsupported loongarch64 register");
+}
+
+void Registers_REGDISPLAY::setRegister(int num, uint64_t value, uint64_t location)
+{
+    if (num == UNW_REG_SP || num == UNW_LOONGARCH_R3) {
+        SP = (uintptr_t )value;
+        return;
+    }
+
+    if (num == UNW_LOONGARCH_R22) {
+        pFP = (PTR_uintptr_t)location;
+        return;
+    }
+
+    if (num == UNW_LOONGARCH_R1) {
+        pRA = (PTR_uintptr_t)location;
+        return;
+    }
+
+    if (num == UNW_REG_IP) {
+        IP = value;
+        return;
+    }
+
+    switch (num)
+    {
+    case (UNW_LOONGARCH_R0):
+        pR0 = (PTR_uintptr_t)location;
+        break;
+    case (UNW_LOONGARCH_R2):
+        pR2 = (PTR_uintptr_t)location;
+        break;
+    case (UNW_LOONGARCH_R4):
+        pR4 = (PTR_uintptr_t)location;
+        break;
+    case (UNW_LOONGARCH_R5):
+        pR5 = (PTR_uintptr_t)location;
+        break;
+    case (UNW_LOONGARCH_R6):
+        pR6 = (PTR_uintptr_t)location;
+        break;
+    case (UNW_LOONGARCH_R7):
+        pR7 = (PTR_uintptr_t)location;
+        break;
+    case (UNW_LOONGARCH_R8):
+        pR8 = (PTR_uintptr_t)location;
+        break;
+    case (UNW_LOONGARCH_R9):
+        pR9 = (PTR_uintptr_t)location;
+        break;
+    case (UNW_LOONGARCH_R10):
+        pR10 = (PTR_uintptr_t)location;
+        break;
+    case (UNW_LOONGARCH_R11):
+        pR11 = (PTR_uintptr_t)location;
+        break;
+    case (UNW_LOONGARCH_R12):
+        pR12 = (PTR_uintptr_t)location;
+        break;
+    case (UNW_LOONGARCH_R13):
+        pR13 = (PTR_uintptr_t)location;
+        break;
+    case (UNW_LOONGARCH_R14):
+        pR14 = (PTR_uintptr_t)location;
+        break;
+    case (UNW_LOONGARCH_R15):
+        pR15 = (PTR_uintptr_t)location;
+        break;
+    case (UNW_LOONGARCH_R16):
+        pR16 = (PTR_uintptr_t)location;
+        break;
+    case (UNW_LOONGARCH_R17):
+        pR17 = (PTR_uintptr_t)location;
+        break;
+    case (UNW_LOONGARCH_R18):
+        pR18 = (PTR_uintptr_t)location;
+        break;
+    case (UNW_LOONGARCH_R19):
+        pR19 = (PTR_uintptr_t)location;
+        break;
+    case (UNW_LOONGARCH_R20):
+        pR20 = (PTR_uintptr_t)location;
+        break;
+    case (UNW_LOONGARCH_R21):
+        pR21 = (PTR_uintptr_t)location;
+        break;
+    case (UNW_LOONGARCH_R23):
+        pR23 = (PTR_uintptr_t)location;
+        break;
+    case (UNW_LOONGARCH_R24):
+        pR24 = (PTR_uintptr_t)location;
+        break;
+    case (UNW_LOONGARCH_R25):
+        pR25 = (PTR_uintptr_t)location;
+        break;
+    case (UNW_LOONGARCH_R26):
+        pR26 = (PTR_uintptr_t)location;
+        break;
+    case (UNW_LOONGARCH_R27):
+        pR27 = (PTR_uintptr_t)location;
+        break;
+    case (UNW_LOONGARCH_R28):
+        pR28 = (PTR_uintptr_t)location;
+        break;
+    case (UNW_LOONGARCH_R29):
+        pR29 = (PTR_uintptr_t)location;
+        break;
+    case (UNW_LOONGARCH_R30):
+        pR30 = (PTR_uintptr_t)location;
+        break;
+    case (UNW_LOONGARCH_R31):
+        pR31 = (PTR_uintptr_t)location;
+        break;
+    default:
+        PORTABILITY_ASSERT("unsupported loongarch64 register");
+    }
+}
+
+libunwind::v128 Registers_REGDISPLAY::getVectorRegister(int num) const
+{
+    num -= UNW_LOONGARCH_F24;
+
+    if (num < 0 || num >= sizeof(F) / sizeof(uint64_t))
+    {
+        PORTABILITY_ASSERT("unsupported loongarch64 vector register");
+    }
+
+    libunwind::v128 result;
+
+    result.vec[0] = 0;
+    result.vec[1] = 0;
+    result.vec[2] = F[num] >> 32;
+    result.vec[3] = F[num] & 0xFFFFFFFF;
+
+    return result;
+}
+
+void Registers_REGDISPLAY::setVectorRegister(int num, libunwind::v128 value)
+{
+    num -= UNW_LOONGARCH_F24;
+
+    if (num < 0 || num >= sizeof(F) / sizeof(uint64_t))
+    {
+        PORTABILITY_ASSERT("unsupported loongarch64 vector register");
+    }
+
+    F[num] = (uint64_t)value.vec[2] << 32 | (uint64_t)value.vec[3];
+}
+
+#endif // TARGET_LOONGARCH64
 
 bool UnwindHelpers::StepFrame(REGDISPLAY *regs, unw_word_t start_ip, uint32_t format, unw_word_t unwind_info)
 {
@@ -815,6 +1097,12 @@ bool UnwindHelpers::StepFrame(REGDISPLAY *regs, unw_word_t start_ip, uint32_t fo
 #if defined(TARGET_ARM64)
     if ((format & UNWIND_ARM64_MODE_MASK) != UNWIND_ARM64_MODE_DWARF) {
         CompactUnwinder_arm64<LocalAddressSpace, Registers_REGDISPLAY> compactInst;
+        int stepRet = compactInst.stepWithCompactEncoding(format, start_ip, _addressSpace, *(Registers_REGDISPLAY*)regs);
+        return stepRet == UNW_STEP_SUCCESS;
+    }
+#elif defined(TARGET_LOONGARCH64)
+    if ((format & UNWIND_LOONGARCH64_MODE_MASK) != UNWIND_LOONGARCH64_MODE_DWARF) {
+        CompactUnwinder_loongarch64<LocalAddressSpace, Registers_REGDISPLAY> compactInst;
         int stepRet = compactInst.stepWithCompactEncoding(format, start_ip, _addressSpace, *(Registers_REGDISPLAY*)regs);
         return stepRet == UNW_STEP_SUCCESS;
     }
@@ -867,6 +1155,8 @@ bool UnwindHelpers::GetUnwindProcInfo(PCODE pc, UnwindInfoSections &uwInfoSectio
     libunwind::UnwindCursor<LocalAddressSpace, Registers_arm64> uc(_addressSpace);
 #elif defined(HOST_X86)
     libunwind::UnwindCursor<LocalAddressSpace, Registers_x86> uc(_addressSpace);
+#elif defined(HOST_LOONGARCH64)
+    libunwind::UnwindCursor<LocalAddressSpace, Registers_loongarch> uc(_addressSpace);
 #else
     #error "Unwinding is not implemented for this architecture yet."
 #endif
@@ -884,6 +1174,12 @@ bool UnwindHelpers::GetUnwindProcInfo(PCODE pc, UnwindInfoSections &uwInfoSectio
             return true;
         } else {
             dwarfOffsetHint = procInfo->format & UNWIND_ARM64_DWARF_SECTION_OFFSET;
+        }
+#elif defined(TARGET_LOONGARCH64)
+        if ((procInfo->format & UNWIND_LOONGARCH64_MODE_MASK) != UNWIND_LOONGARCH64_MODE_DWARF) {
+            return true;
+        } else {
+            dwarfOffsetHint = procInfo->format & UNWIND_LOONGARCH64_DWARF_SECTION_OFFSET;
         }
 #elif defined(TARGET_AMD64)
         if ((procInfo->format & UNWIND_X86_64_MODE_MASK) != UNWIND_X86_64_MODE_DWARF) {

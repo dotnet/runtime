@@ -50,6 +50,12 @@ namespace System.Text.Json.SourceGeneration
                 type = type.WithNullableAnnotation(NullableAnnotation.None);
             }
 
+            if (type is IArrayTypeSymbol arrayType)
+            {
+                ITypeSymbol elementType = compilation.EraseCompileTimeMetadata(arrayType.ElementType);
+                return compilation.CreateArrayTypeSymbol(elementType, arrayType.Rank);
+            }
+
             if (type is INamedTypeSymbol namedType)
             {
                 if (namedType.IsTupleType)
@@ -189,6 +195,9 @@ namespace System.Text.Json.SourceGeneration
                 SpecialType.System_Single or SpecialType.System_Double or SpecialType.System_Decimal;
         }
 
+        public static bool IsNullableType(this ITypeSymbol type)
+            => !type.IsValueType || type.OriginalDefinition.SpecialType is SpecialType.System_Nullable_T;
+
         public static bool IsNullableValueType(this ITypeSymbol type, [NotNullWhen(true)] out ITypeSymbol? elementType)
         {
             if (type.IsValueType && type is INamedTypeSymbol { OriginalDefinition.SpecialType: SpecialType.System_Nullable_T })
@@ -268,6 +277,108 @@ namespace System.Text.Json.SourceGeneration
                     Debug.Fail("unexpected syntax kind");
                     return null;
             }
+        }
+
+        public static void ResolveNullabilityAnnotations(this IFieldSymbol field, out bool isGetterNonNullable, out bool isSetterNonNullable)
+        {
+            if (field.Type.IsNullableType())
+            {
+                // Because System.Text.Json cannot distinguish between nullable and non-nullable type parameters,
+                // (e.g. the same metadata is being used for both KeyValuePair<string, string?> and KeyValuePair<string, string>),
+                // we derive nullability annotations from the original definition of the field and not its instantiation.
+                // This preserves compatibility with the capabilities of the reflection-based NullabilityInfo reader.
+                field = field.OriginalDefinition;
+
+                isGetterNonNullable = IsOutputTypeNonNullable(field, field.Type);
+                isSetterNonNullable = IsInputTypeNonNullable(field, field.Type);
+            }
+            else
+            {
+                isGetterNonNullable = isSetterNonNullable = false;
+            }
+        }
+
+        public static void ResolveNullabilityAnnotations(this IPropertySymbol property, out bool isGetterNonNullable, out bool isSetterNonNullable)
+        {
+            if (property.Type.IsNullableType())
+            {
+                // Because System.Text.Json cannot distinguish between nullable and non-nullable type parameters,
+                // (e.g. the same metadata is being used for both KeyValuePair<string, string?> and KeyValuePair<string, string>),
+                // we derive nullability annotations from the original definition of the field and not its instantiation.
+                // This preserves compatibility with the capabilities of the reflection-based NullabilityInfo reader.
+                property = property.OriginalDefinition;
+
+                isGetterNonNullable = property.GetMethod != null && IsOutputTypeNonNullable(property, property.Type);
+                isSetterNonNullable = property.SetMethod != null && IsInputTypeNonNullable(property, property.Type);
+            }
+            else
+            {
+                isGetterNonNullable = isSetterNonNullable = false;
+            }
+        }
+
+        public static bool IsNullable(this IParameterSymbol parameter)
+        {
+            if (parameter.Type.IsNullableType())
+            {
+                // Because System.Text.Json cannot distinguish between nullable and non-nullable type parameters,
+                // (e.g. the same metadata is being used for both KeyValuePair<string, string?> and KeyValuePair<string, string>),
+                // we derive nullability annotations from the original definition of the field and not instation.
+                // This preserves compatibility with the capabilities of the reflection-based NullabilityInfo reader.
+                parameter = parameter.OriginalDefinition;
+                return !IsInputTypeNonNullable(parameter, parameter.Type);
+            }
+
+            return false;
+        }
+
+        private static bool IsOutputTypeNonNullable(this ISymbol symbol, ITypeSymbol returnType)
+        {
+            if (symbol.HasCodeAnalysisAttribute("MaybeNullAttribute"))
+            {
+                return false;
+            }
+
+            if (symbol.HasCodeAnalysisAttribute("NotNullAttribute"))
+            {
+                return true;
+            }
+
+            if (returnType is ITypeParameterSymbol { HasNotNullConstraint: false })
+            {
+                return false;
+            }
+
+            return returnType.NullableAnnotation is NullableAnnotation.NotAnnotated;
+        }
+
+        private static bool IsInputTypeNonNullable(this ISymbol symbol, ITypeSymbol inputType)
+        {
+            Debug.Assert(inputType.IsNullableType());
+
+            if (symbol.HasCodeAnalysisAttribute("AllowNullAttribute"))
+            {
+                return false;
+            }
+
+            if (symbol.HasCodeAnalysisAttribute("DisallowNullAttribute"))
+            {
+                return true;
+            }
+
+            if (inputType is ITypeParameterSymbol { HasNotNullConstraint: false })
+            {
+                return false;
+            }
+
+            return inputType.NullableAnnotation is NullableAnnotation.NotAnnotated;
+        }
+
+        private static bool HasCodeAnalysisAttribute(this ISymbol symbol, string attributeName)
+        {
+            return symbol.GetAttributes().Any(attr =>
+                attr.AttributeClass?.Name == attributeName &&
+                attr.AttributeClass.ContainingNamespace.ToDisplayString() == "System.Diagnostics.CodeAnalysis");
         }
     }
 }

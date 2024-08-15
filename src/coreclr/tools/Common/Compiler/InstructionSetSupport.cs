@@ -69,12 +69,19 @@ namespace ILCompiler
             if (!potentialTypeDesc.IsIntrinsic || !(potentialTypeDesc is MetadataType potentialType))
                 return "";
 
+            string suffix = "";
             if (architecture == TargetArchitecture.X64)
             {
                 if (potentialType.Name == "X64")
                     potentialType = (MetadataType)potentialType.ContainingType;
                 if (potentialType.Name == "VL")
                     potentialType = (MetadataType)potentialType.ContainingType;
+                if (potentialType.Name == "V512")
+                {
+                    suffix = "_V512";
+                    potentialType = (MetadataType)potentialType.ContainingType;
+                }
+
                 if (potentialType.Namespace != "System.Runtime.Intrinsics.X86")
                     return "";
             }
@@ -82,6 +89,11 @@ namespace ILCompiler
             {
                 if (potentialType.Name == "VL")
                     potentialType = (MetadataType)potentialType.ContainingType;
+                if (potentialType.Name == "V512")
+                {
+                    suffix = "_V512";
+                    potentialType = (MetadataType)potentialType.ContainingType;
+                }
                 if (potentialType.Namespace != "System.Runtime.Intrinsics.X86")
                     return "";
             }
@@ -97,6 +109,10 @@ namespace ILCompiler
                 if (potentialType.Namespace != "System.Runtime.Intrinsics.Arm")
                     return "";
             }
+            else if (architecture == TargetArchitecture.LoongArch64)
+            {
+                return "";
+            }
             else if (architecture == TargetArchitecture.RiscV64)
             {
                 return "";
@@ -106,7 +122,7 @@ namespace ILCompiler
                 throw new InternalCompilerErrorException($"Unknown architecture '{architecture}'");
             }
 
-            return potentialType.Name;
+            return potentialType.Name + suffix;
         }
 
         public SimdVectorLength GetVectorTSimdVector()
@@ -197,7 +213,7 @@ namespace ILCompiler
             var support = new Dictionary<string, InstructionSet>();
             foreach (var instructionSet in InstructionSetFlags.ArchitectureToValidInstructionSets(architecture))
             {
-                // Only instruction sets with associated R2R enum values are are specifiable
+                // Only instruction sets with associated R2R enum values are specifiable
                 if (instructionSet.Specifiable)
                     support.Add(instructionSet.Name, instructionSet.InstructionSet);
             }
@@ -210,7 +226,7 @@ namespace ILCompiler
             var support = new InstructionSetFlags();
             foreach (var instructionSet in InstructionSetFlags.ArchitectureToValidInstructionSets(architecture))
             {
-                // Only instruction sets with associated R2R enum values are are specifiable
+                // Only instruction sets with associated R2R enum values are specifiable
                 if (!instructionSet.Specifiable)
                     support.AddInstructionSet(instructionSet.InstructionSet);
             }

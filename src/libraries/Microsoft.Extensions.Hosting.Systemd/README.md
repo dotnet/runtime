@@ -2,7 +2,7 @@
 
 `Microsoft.Extensions.Hosting.Systemd` contains implementation for using hosting in Systemd Services.
 
-Documentation can be found at https://learn.microsoft.com/en-us/dotnet/core/extensions/generic-host.
+Documentation can be found at https://learn.microsoft.com/dotnet/core/extensions/generic-host.
 
 ## Contribution Bar
 - [x] [We consider new features, new APIs, bug fixes, and performance changes](https://github.com/dotnet/runtime/tree/main/src/libraries#contribution-bar)

@@ -259,9 +259,8 @@ public:
     ~Assembly();
 
     BOOL GetResource(LPCSTR szName, DWORD *cbResource,
-                     PBYTE *pbInMemoryResource, Assembly **pAssemblyRef,
-                     LPCSTR *szFileName, DWORD *dwLocation,
-                     BOOL fSkipRaiseResolveEvent = FALSE);
+                    PBYTE *pbInMemoryResource, Assembly **pAssemblyRef,
+                    LPCSTR *szFileName, DWORD *dwLocation);
 
     //****************************************************************************************
 #ifdef DACCESS_COMPILE

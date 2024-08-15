@@ -93,6 +93,7 @@ public class decimaldiv
     }
 
     [Fact]
+    [OuterLoop]
     public static int TestEntryPoint()
     {
         bool passed = true;

@@ -1197,8 +1197,8 @@ namespace System
                 // block of the divisor. Thus, guessing digits of the quotient
                 // will be more precise. Additionally we'll get r = a % b.
 
-                uint divHi = right[right.Length - 1];
-                uint divLo = right.Length > 1 ? right[right.Length - 2] : 0;
+                uint divHi = right[^1];
+                uint divLo = right.Length > 1 ? right[^2] : 0;
 
                 // We measure the leading zeros of the divisor
                 int shift = BitOperations.LeadingZeroCount(divHi);
@@ -1207,7 +1207,7 @@ namespace System
                 // And, we make sure the most significant bit is set
                 if (shift > 0)
                 {
-                    uint divNx = right.Length > 2 ? right[right.Length - 3] : 0;
+                    uint divNx = right.Length > 2 ? right[^3] : 0;
 
                     divHi = (divHi << shift) | (divLo >> backShift);
                     divLo = (divLo << shift) | (divNx >> backShift);
@@ -1396,18 +1396,18 @@ namespace System
             // Basically, it's an optimized version of FOIL method applied to
             // low and high qwords of each operand
 
-            UInt128 al = left._lower;
-            UInt128 ah = left._upper;
+            ulong al = left._lower;
+            ulong ah = left._upper;
 
-            UInt128 bl = right._lower;
-            UInt128 bh = right._upper;
+            ulong bl = right._lower;
+            ulong bh = right._upper;
 
-            UInt128 mull = al * bl;
-            UInt128 t = ah * bl + mull._upper;
-            UInt128 tl = al * bh + t._lower;
+            UInt128 mull = Math.BigMul(al, bl);
+            UInt128 t = Math.BigMul(ah, bl) + mull._upper;
+            UInt128 tl = Math.BigMul(al, bh) + t._lower;
 
             lower = new UInt128(tl._lower, mull._lower);
-            return ah * bh + t._upper + tl._upper;
+            return Math.BigMul(ah, bh) + t._upper + tl._upper;
         }
 
         //
@@ -1587,6 +1587,9 @@ namespace System
 
         /// <inheritdoc cref="INumberBase{TSelf}.MinMagnitudeNumber(TSelf, TSelf)" />
         static UInt128 INumberBase<UInt128>.MinMagnitudeNumber(UInt128 x, UInt128 y) => Min(x, y);
+
+        /// <inheritdoc cref="INumberBase{TSelf}.MultiplyAddEstimate(TSelf, TSelf, TSelf)" />
+        static UInt128 INumberBase<UInt128>.MultiplyAddEstimate(UInt128 left, UInt128 right, UInt128 addend) => (left * right) + addend;
 
         /// <inheritdoc cref="INumberBase{TSelf}.TryConvertFromChecked{TOther}(TOther, out TSelf)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

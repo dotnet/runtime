@@ -32,6 +32,10 @@ if (CLR_CMAKE_TARGET_UNIX OR CLR_CMAKE_TARGET_BROWSER OR CLR_CMAKE_TARGET_WASI)
     set(CMAKE_INSTALL_PREFIX $ENV{__CMakeBinDir})
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=gnu99 -Wno-declaration-after-statement")
 
+    if (CLR_CMAKE_TARGET_BROWSER)
+        set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wno-pre-c11-compat")
+    endif()
+
     add_compile_options(-I${CMAKE_CURRENT_SOURCE_DIR}/Common)
     add_compile_options(-I${CMAKE_CURRENT_BINARY_DIR}/Common)
 
@@ -51,6 +55,8 @@ if (CLR_CMAKE_TARGET_UNIX OR CLR_CMAKE_TARGET_BROWSER OR CLR_CMAKE_TARGET_WASI)
         add_compile_options(-D_WASI_EMULATED_PROCESS_CLOCKS)
         add_compile_options(-D_WASI_EMULATED_SIGNAL)
         add_compile_options(-D_WASI_EMULATED_MMAN)
+        # keep in sync with src\mono\wasi\build\WasiApp.targets
+        # keep in sync with src\mono\wasi\wasi.proj
         add_link_options(-Wl,-z,stack-size=1048576,--initial-memory=5242880,--max-memory=52428800,-lwasi-emulated-process-clocks,-lwasi-emulated-signal,-lwasi-emulated-mman)
     endif ()
 
@@ -109,7 +115,7 @@ if (CLR_CMAKE_TARGET_UNIX OR CLR_CMAKE_TARGET_BROWSER OR CLR_CMAKE_TARGET_WASI)
         add_subdirectory(System.IO.Ports.Native)
     endif ()
 
-    if (CMAKE_C_COMPILER_ID STREQUAL Clang)
+    if (CMAKE_C_COMPILER_ID MATCHES "Clang")
         add_compile_options(-Weverything)
         add_compile_options(-Wno-format-nonliteral)
         add_compile_options(-Wno-disabled-macro-expansion)
@@ -118,6 +124,8 @@ if (CLR_CMAKE_TARGET_UNIX OR CLR_CMAKE_TARGET_BROWSER OR CLR_CMAKE_TARGET_WASI)
         add_compile_options(-Wno-cast-align)
         add_compile_options(-Wno-typedef-redefinition)
         add_compile_options(-Wno-c11-extensions)
+        add_compile_options(-Wno-pre-c11-compat) # fixes build on Debian
+        add_compile_options(-Wno-unknown-warning-option) # unknown warning option '-Wno-pre-c11-compat'
         add_compile_options(-Wno-thread-safety-analysis)
         if (CLR_CMAKE_TARGET_BROWSER OR CLR_CMAKE_TARGET_WASI)
             add_compile_options(-Wno-unsafe-buffer-usage)

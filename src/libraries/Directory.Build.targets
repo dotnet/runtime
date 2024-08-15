@@ -126,12 +126,15 @@
                                                 '$(IsTestProject)' != 'true' and
                                                 '$(IsTestSupportProject)' != 'true' and
                                                 '$(IsGeneratorProject)' != 'true'">true</SkipTargetingPackShimReferences>
+
+    <!-- Make libraries packages use and require a package readme file. -->
+    <EnableDefaultPackageReadmeFile Condition="'$(EnableDefaultPackageReadmeFile)' == '' and '$(IsShipping)' == 'true'">true</EnableDefaultPackageReadmeFile>
   </PropertyGroup>
 
   <Import Project="$(RepositoryEngineeringDir)codeOptimization.targets" />
   <Import Project="$(RepositoryEngineeringDir)references.targets" />
   <Import Project="$(RepositoryEngineeringDir)testing\tests.targets" Condition="'$(EnableTestSupport)' == 'true'" />
-  <Import Project="$(RepositoryEngineeringDir)testing\linker\trimmingTests.targets" Condition="'$(IsPublishedAppTestProject)' == 'true'" />
+  <Import Project="$(RepositoryEngineeringDir)testing\linker\trimmingTests.targets" Condition="'$(IsTrimmingTestProject)' == 'true'" />
   <Import Project="$(RepositoryEngineeringDir)testing\runtimeConfiguration.targets" />
   <Import Project="$(RepositoryEngineeringDir)testing\runsettings.targets" Condition="'$(EnableRunSettingsSupport)' == 'true'" />
   <Import Project="$(RepositoryEngineeringDir)testing\coverage.targets" Condition="'$(EnableRunSettingsSupport)' == 'true' or '$(EnableCoverageSupport)' == 'true'" />
@@ -170,6 +173,7 @@
   <!-- Adds Nullable annotation attributes to C# non .NETCoreApp builds. -->
   <ItemGroup Condition="'$(Nullable)' != '' and
                         '$(Nullable)' != 'disable' and
+                        '$(SkipIncludeNullableAttributes)' != 'true' and
                         '$(MSBuildProjectExtension)' == '.csproj' and
                         '$(TargetFrameworkIdentifier)' != '.NETCoreApp'">
     <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\NullableAttributes.cs" Link="System\Diagnostics\CodeAnalysis\NullableAttributes.cs" />

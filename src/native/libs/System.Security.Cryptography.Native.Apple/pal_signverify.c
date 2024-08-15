@@ -16,7 +16,10 @@ static int32_t ExecuteSignTransform(SecTransformRef signer, CFDataRef* pSignatur
     assert(pErrorOut != NULL);
 
     int32_t ret = INT_MIN;
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wdeprecated-declarations"
     CFTypeRef signerResponse = SecTransformExecute(signer, pErrorOut);
+#pragma clang diagnostic pop
     CFDataRef signature = NULL;
 
     if (signerResponse == NULL || *pErrorOut != NULL)
@@ -62,7 +65,10 @@ static int32_t ExecuteVerifyTransform(SecTransformRef verifier, CFErrorRef* pErr
     assert(pErrorOut != NULL);
 
     int32_t ret = kErrorSeeError;
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wdeprecated-declarations"
     CFTypeRef verifierResponse = SecTransformExecute(verifier, pErrorOut);
+#pragma clang diagnostic pop
 
     if (verifierResponse != NULL)
     {
@@ -79,6 +85,8 @@ static int32_t ExecuteVerifyTransform(SecTransformRef verifier, CFErrorRef* pErr
 
 static int32_t ConfigureSignVerifyTransform(SecTransformRef xform, CFDataRef cfDataHash, CFErrorRef* pErrorOut)
 {
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wdeprecated-declarations"
     if (!SecTransformSetAttribute(xform, kSecInputIsAttributeName, kSecInputIsDigest, pErrorOut))
     {
         return 0;
@@ -88,13 +96,14 @@ static int32_t ConfigureSignVerifyTransform(SecTransformRef xform, CFDataRef cfD
     {
         return 0;
     }
+#pragma clang diagnostic pop
 
     return 1;
 }
 #endif
 
 // Legacy algorithm identifiers
-const SecKeyAlgorithm kSecKeyAlgorithmRSASignatureDigestPKCS1v15MD5 = CFSTR("algid:sign:RSA:digest-PKCS1v15:MD5");
+static const SecKeyAlgorithm kSecKeyAlgorithmRSASignatureDigestPKCS1v15MD5 = CFSTR("algid:sign:RSA:digest-PKCS1v15:MD5");
 
 static CFStringRef GetSignatureAlgorithmIdentifier(PAL_HashAlgorithm hashAlgorithm,
                                                    PAL_SignatureAlgorithm signatureAlgorithm)

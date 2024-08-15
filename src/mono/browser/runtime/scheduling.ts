@@ -79,9 +79,7 @@ export function mono_wasm_schedule_timer (shortestDueTimeMs: number): void {
 function mono_wasm_schedule_timer_tick () {
     if (WasmEnableThreads) return;
     Module.maybeExit();
-    if (WasmEnableThreads) {
-        forceThreadMemoryViewRefresh();
-    }
+    forceThreadMemoryViewRefresh();
     if (!loaderHelpers.is_runtime_running()) {
         return;
     }

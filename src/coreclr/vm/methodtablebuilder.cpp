@@ -1260,7 +1260,7 @@ MethodTableBuilder::BuildMethodTableThrowing(
     }
     CONTRACTL_END;
 
-    pModule->EnsureLibraryLoaded();
+    pModule->EnsureAllocated();
 
     // The following structs, defined as private members of MethodTableBuilder, contain the necessary local
     // parameters needed for BuildMethodTable Look at the struct definitions for a detailed list of all
@@ -1490,13 +1490,26 @@ MethodTableBuilder::BuildMethodTableThrowing(
 #if defined(TARGET_X86) || defined(TARGET_AMD64) || defined(TARGET_ARM64)
     if (bmtProp->fIsIntrinsicType && !bmtGenerics->HasInstantiation())
     {
-        LPCUTF8 className;
         LPCUTF8 nameSpace;
-        HRESULT hr = GetMDImport()->GetNameOfTypeDef(bmtInternal->pType->GetTypeDefToken(), &className, &nameSpace);
+        HRESULT hr = S_OK;
 
-        if (bmtInternal->pType->IsNested())
+        if (!bmtInternal->pType->IsNested())
         {
-            IfFailThrow(GetMDImport()->GetNameOfTypeDef(bmtInternal->pType->GetEnclosingTypeToken(), NULL, &nameSpace));
+            hr = GetMDImport()->GetNameOfTypeDef(bmtInternal->pType->GetTypeDefToken(), NULL, &nameSpace);
+        }
+        else
+        {
+            mdTypeDef rootEnclosingTD = bmtInternal->pType->GetEnclosingTypeToken();
+
+            mdTypeDef td = rootEnclosingTD;
+            // Some are hardware intrinsics are nested twice, so try to go
+            // another level up to get the namespace.
+            if (SUCCEEDED(GetMDImport()->GetNestedClassProps(rootEnclosingTD, &td)))
+            {
+                rootEnclosingTD = td;
+            }
+
+            IfFailThrow(GetMDImport()->GetNameOfTypeDef(td, NULL, &nameSpace));
         }
 
 #if defined(TARGET_ARM64)
@@ -1673,21 +1686,10 @@ MethodTableBuilder::BuildMethodTableThrowing(
     //
 
     // We decide here if we need a dynamic entry for our statics. We need it here because
-    // the offsets of our fields will depend on this. For the dynamic case (which requires
-    // an extra indirection (indirect depending of methodtable) we'll allocate the slot
-    // in setupmethodtable
-    if (((pAllocator->IsCollectible() ||  pModule->IsReflection() || bmtGenerics->HasInstantiation() || !pModule->IsStaticStoragePrepared(cl)) &&
-        (bmtVT->GetClassCtorSlotIndex() != INVALID_SLOT_INDEX || bmtEnumFields->dwNumStaticFields !=0))
-#ifdef FEATURE_METADATA_UPDATER
-        // Classes in modules that have been edited (would do on class level if there were a
-        // way to tell if the class had been edited) also have dynamic statics as the number
-        // of statics might have changed, so can't use the static module-wide storage
-        || (pModule->IsEditAndContinueEnabled() &&
-                ((EditAndContinueModule*)pModule)->GetApplyChangesCount() > CorDB_DEFAULT_ENC_FUNCTION_VERSION)
-#endif // FEATURE_METADATA_UPDATER
-        )
+    // the offsets of our fields will depend on this.
+    if (bmtEnumFields->dwNumStaticFields != 0)
     {
-        // We will need a dynamic id
+        // We will need static variables
         bmtProp->fDynamicStatics = true;
 
         if (bmtGenerics->HasInstantiation())
@@ -1889,7 +1891,7 @@ MethodTableBuilder::BuildMethodTableThrowing(
 
     // GC reqires the series to be sorted.
     // TODO: fix it so that we emit them in the correct order in the first place.
-    if (pMT->ContainsPointers())
+    if (pMT->ContainsGCPointers())
     {
         CGCDesc* gcDesc = CGCDesc::GetCGCDescFromMT(pMT);
         qsort(gcDesc->GetLowestSeries(), (int)gcDesc->GetNumSeries(), sizeof(CGCDescSeries), compareCGCDescSeries);
@@ -1911,15 +1913,6 @@ MethodTableBuilder::BuildMethodTableThrowing(
 
             pMT->SetupGenericsStaticsInfo(pStaticFieldDescs);
         }
-        else
-        {
-            // Get an id for the dynamic class. We store it in the class because
-            // no class that is persisted in ngen should have it (ie, if the class is ngened
-            // The id is stored in an optional field so we need to ensure an optional field descriptor has
-            // been allocated for this EEClass instance.
-            EnsureOptionalFieldsAreAllocated(GetHalfBakedClass(), m_pAllocMemTracker, pAllocator->GetLowFrequencyHeap());
-            SetModuleDynamicID(GetModule()->AllocateDynamicEntry(pMT));
-        }
     }
 
     //
@@ -1927,7 +1920,7 @@ MethodTableBuilder::BuildMethodTableThrowing(
     //
 
     // structs with GC pointers MUST be pointer sized aligned because the GC assumes it
-    if (IsValueClass() && pMT->ContainsPointers() && (bmtFP->NumInstanceFieldBytes % TARGET_POINTER_SIZE != 0))
+    if (IsValueClass() && pMT->ContainsGCPointers() && (bmtFP->NumInstanceFieldBytes % TARGET_POINTER_SIZE != 0))
     {
         BuildMethodTableThrowException(IDS_CLASSLOAD_BADFORMAT);
     }
@@ -2118,7 +2111,7 @@ MethodTableBuilder::ResolveInterfaces(
         MethodTable * pParentClass = GetParentMethodTable();
         PREFIX_ASSUME(pParentClass != NULL);
 
-        bmtParent->NumParentPointerSeries  = pParentClass->ContainsPointers() ?
+        bmtParent->NumParentPointerSeries  = pParentClass->ContainsGCPointers() ?
             (DWORD)CGCDesc::GetCGCDescFromMT(pParentClass)->GetNumSeries() : 0;
 
         if (pParentClass->HasFieldsWhichMustBeInited())
@@ -3190,14 +3183,14 @@ MethodTableBuilder::EnumerateClassMethods()
                 }
                 else
                 {
-                    type = mcNDirect;
+                    type = mcPInvoke;
                 }
             }
             // The NAT_L attribute is present, marking this method as NDirect
             else
             {
                 CONSISTENCY_CHECK(hr == S_OK);
-                type = mcNDirect;
+                type = mcPInvoke;
             }
         }
         else if (IsMiRuntime(dwImplFlags))
@@ -3858,7 +3851,7 @@ VOID    MethodTableBuilder::InitializeFieldDescs(FieldDesc *pFieldDescList,
 
         FieldDesc * pFD;
         DWORD       dwLog2FieldSize = 0;
-        BOOL        bCurrentFieldIsGCPointer = FALSE;
+        BOOL        bCurrentFieldIsObjectRef = FALSE;
         mdToken     dwByValueClassToken = 0;
         MethodTable * pByValueClass = NULL;
         BOOL        fIsByValue = FALSE;
@@ -4030,7 +4023,7 @@ VOID    MethodTableBuilder::InitializeFieldDescs(FieldDesc *pFieldDescList,
         case ELEMENT_TYPE_OBJECT:
             {
                 dwLog2FieldSize = LOG2_PTRSIZE;
-                bCurrentFieldIsGCPointer = TRUE;
+                bCurrentFieldIsObjectRef = TRUE;
                 FieldDescElementType = ELEMENT_TYPE_CLASS;
 
                 if (!fIsStatic)
@@ -4375,7 +4368,7 @@ IS_VALUETYPE:
                 IfFailThrow(pFD->SetOffset(pLayoutFieldInfo->m_placement.m_offset));
             else if (IsManagedSequential() && !fIsStatic)
                 IfFailThrow(pFD->SetOffset(pLayoutFieldInfo->m_placement.m_offset));
-            else if (bCurrentFieldIsGCPointer)
+            else if (bCurrentFieldIsObjectRef)
                 pFD->SetOffset(FIELD_OFFSET_UNPLACED_GC_PTR);
             else
                 pFD->SetOffset(FIELD_OFFSET_UNPLACED);
@@ -4391,7 +4384,7 @@ IS_VALUETYPE:
 
             dwCurrentDeclaredField++;
 
-            if (bCurrentFieldIsGCPointer)
+            if (bCurrentFieldIsObjectRef)
             {
                 bmtFP->NumInstanceGCPointerFields++;
             }
@@ -4469,7 +4462,7 @@ IS_VALUETYPE:
             {
                 bmtFP->NumThreadStaticFieldsOfSize[dwLog2FieldSize]++;
 
-                if (bCurrentFieldIsGCPointer)
+                if (bCurrentFieldIsObjectRef)
                     bmtFP->NumThreadStaticGCPointerFields++;
 
                 if (fIsByValue)
@@ -4479,7 +4472,7 @@ IS_VALUETYPE:
             {
                 bmtFP->NumRegularStaticFieldsOfSize[dwLog2FieldSize]++;
 
-                if (bCurrentFieldIsGCPointer)
+                if (bCurrentFieldIsObjectRef)
                     bmtFP->NumRegularStaticGCPointerFields++;
 
                 if (fIsByValue)
@@ -5100,7 +5093,7 @@ MethodTableBuilder::ValidateMethods()
             {
                 BuildMethodTableThrowException(IDS_CLASSLOAD_BAD_UNMANAGED_RVA, it.Token());
             }
-            if (it.MethodType() != mcNDirect)
+            if (it.MethodType() != mcPInvoke)
             {
                 BuildMethodTableThrowException(BFA_BAD_UNMANAGED_ENTRY_POINT);
             }
@@ -6106,7 +6099,7 @@ MethodTableBuilder::InitMethodDesc(
 
     switch (Classification)
     {
-    case mcNDirect:
+    case mcPInvoke:
         {
             // NDirect specific initialization.
             NDirectMethodDesc *pNewNMD = (NDirectMethodDesc*)pNewMD;
@@ -6868,7 +6861,7 @@ VOID MethodTableBuilder::ValidateInterfaceMethodConstraints()
 
             // Grab the method token
             MethodTable * pMTItf = pItf->GetMethodTable();
-            CONSISTENCY_CHECK(CheckPointer(pMTItf->GetMethodDescForSlot(it.GetSlotNumber())));
+            CONSISTENCY_CHECK(CheckPointer(pMTItf->GetMethodDescForSlot_NoThrow(it.GetSlotNumber())));
             mdMethodDef mdTok = pItf->GetMethodTable()->GetMethodDescForSlot(it.GetSlotNumber())->GetMemberDef();
 
             // Default to the current module. The code immediately below determines if this
@@ -6955,9 +6948,6 @@ VOID MethodTableBuilder::AllocAndInitMethodDescs()
     SIZE_T sizeOfMethodDescs = 0; // current running size of methodDesc chunk
     int startIndex = 0; // start of the current chunk (index into bmtMethod array)
 
-    // Limit the maximum MethodDescs per chunk by the number of precodes that can fit to a single memory page,
-    // since we allocate consecutive temporary entry points for all MethodDescs in the whole chunk.
-    DWORD maxPrecodesPerPage = Precode::GetMaxTemporaryEntryPointsCount();
     DWORD methodDescCount = 0;
 
     DeclaredMethodIterator it(*this);
@@ -6998,8 +6988,7 @@ VOID MethodTableBuilder::AllocAndInitMethodDescs()
         }
 
         if (tokenRange != currentTokenRange ||
-            sizeOfMethodDescs + size > MethodDescChunk::MaxSizeOfMethodDescs ||
-            methodDescCount + currentSlotMethodDescCount > maxPrecodesPerPage)
+            sizeOfMethodDescs + size > MethodDescChunk::MaxSizeOfMethodDescs)
         {
             if (sizeOfMethodDescs != 0)
             {
@@ -7039,11 +7028,12 @@ VOID MethodTableBuilder::AllocAndInitMethodDescChunk(COUNT_T startIndex, COUNT_T
         PRECONDITION(sizeOfMethodDescs <= MethodDescChunk::MaxSizeOfMethodDescs);
     } CONTRACTL_END;
 
+    PTR_LoaderHeap pHeap = GetLoaderAllocator()->GetHighFrequencyHeap();
     void * pMem = GetMemTracker()->Track(
-        GetLoaderAllocator()->GetHighFrequencyHeap()->AllocMem(S_SIZE_T(sizeof(TADDR) + sizeof(MethodDescChunk) + sizeOfMethodDescs)));
+        pHeap->AllocMem(S_SIZE_T(sizeof(MethodDescChunk) + sizeOfMethodDescs)));
 
     // Skip pointer to temporary entrypoints
-    MethodDescChunk * pChunk = (MethodDescChunk *)((BYTE*)pMem + sizeof(TADDR));
+    MethodDescChunk * pChunk = (MethodDescChunk *)((BYTE*)pMem);
 
     COUNT_T methodDescCount = 0;
 
@@ -7064,8 +7054,6 @@ VOID MethodTableBuilder::AllocAndInitMethodDescChunk(COUNT_T startIndex, COUNT_T
         MethodDesc * pMD = (MethodDesc *)((BYTE *)pChunk + offset);
 
         pMD->SetChunkIndex(pChunk);
-        pMD->SetMethodDescIndex(methodDescCount);
-
         InitNewMethodDesc(pMDMethod, pMD);
 
 #ifdef _PREFAST_
@@ -7108,7 +7096,6 @@ VOID MethodTableBuilder::AllocAndInitMethodDescChunk(COUNT_T startIndex, COUNT_T
 
             // Reset the chunk index
             pUnboxedMD->SetChunkIndex(pChunk);
-            pUnboxedMD->SetMethodDescIndex(methodDescCount);
 
             if (bmtGenerics->GetNumGenericArgs() == 0) {
                 pUnboxedMD->SetHasNonVtableSlot();
@@ -7909,11 +7896,8 @@ VOID MethodTableBuilder::PlaceRegularStaticFields()
 
     // Tell the module to give us the offsets we'll be using and commit space for us
     // if necessary
-    DWORD dwNonGCOffset, dwGCOffset;
-    GetModule()->GetOffsetsForRegularStaticData(bmtInternal->pType->GetTypeDefToken(),
-                                                bmtProp->fDynamicStatics,
-                                                GetNumHandleRegularStatics(), dwCumulativeStaticFieldPos,
-                                                &dwGCOffset, &dwNonGCOffset);
+    uint32_t dwNonGCOffset, dwGCOffset;
+    MethodTable::GetStaticsOffsets(StaticsOffsetType::Normal, bmtProp->fGenericsStatics, &dwGCOffset, &dwNonGCOffset);
 
     // Allocate boxed statics first ("x << LOG2_PTRSIZE" is equivalent to "x * sizeof(void *)")
     dwCumulativeStaticGCFieldPos = bmtFP->NumRegularStaticGCBoxedFields<<LOG2_PTRSIZE;
@@ -7961,17 +7945,9 @@ VOID MethodTableBuilder::PlaceRegularStaticFields()
         LOG((LF_CLASSLOADER, LL_INFO1000000, "Offset of %s: %i\n", pCurField->m_debugName, pCurField->GetOffset()));
     }
 
-    if (bmtProp->fDynamicStatics)
-    {
-        _ASSERTE(dwNonGCOffset == 0 ||  // no statics at all
-                 dwNonGCOffset == OFFSETOF__DomainLocalModule__NormalDynamicEntry__m_pDataBlob); // We need space to point to the GC statics
-        bmtProp->dwNonGCRegularStaticFieldBytes = dwCumulativeStaticFieldPos;
-    }
-    else
-    {
-        bmtProp->dwNonGCRegularStaticFieldBytes = 0; // Non dynamics shouldnt be using this
-    }
-    LOG((LF_CLASSLOADER, LL_INFO10000, "STATICS: Static field bytes needed (0 is normal for non dynamic case)%i\n", bmtProp->dwNonGCRegularStaticFieldBytes));
+    _ASSERTE(dwNonGCOffset == 0 || (dwNonGCOffset == sizeof(TADDR) * 2));
+    bmtProp->dwNonGCRegularStaticFieldBytes = dwCumulativeStaticFieldPos;
+    LOG((LF_CLASSLOADER, LL_INFO10000, "STATICS: Static field bytes needed %i\n", bmtProp->dwNonGCRegularStaticFieldBytes));
 }
 
 
@@ -8023,12 +7999,9 @@ VOID MethodTableBuilder::PlaceThreadStaticFields()
 
     // Tell the module to give us the offsets we'll be using and commit space for us
     // if necessary
-    DWORD dwNonGCOffset, dwGCOffset;
+    uint32_t dwNonGCOffset, dwGCOffset;
 
-    GetModule()->GetOffsetsForThreadStaticData(bmtInternal->pType->GetTypeDefToken(),
-                                               bmtProp->fDynamicStatics,
-                                               GetNumHandleThreadStatics(), dwCumulativeStaticFieldPos,
-                                               &dwGCOffset, &dwNonGCOffset);
+    MethodTable::GetStaticsOffsets(StaticsOffsetType::ThreadLocal, bmtProp->fGenericsStatics, &dwGCOffset, &dwNonGCOffset);
 
     // Allocate boxed statics first ("x << LOG2_PTRSIZE" is equivalent to "x * sizeof(void *)")
     dwCumulativeStaticGCFieldPos = bmtFP->NumThreadStaticGCBoxedFields<<LOG2_PTRSIZE;
@@ -8076,15 +8049,14 @@ VOID MethodTableBuilder::PlaceThreadStaticFields()
         LOG((LF_CLASSLOADER, LL_INFO1000000, "Offset of %s: %i\n", pCurField->m_debugName, pCurField->GetOffset()));
     }
 
-    if (bmtProp->fDynamicStatics)
+    if (dwCumulativeStaticFieldPos != 0)
     {
-        _ASSERTE(dwNonGCOffset == 0 ||  // no thread statics at all
-                 dwNonGCOffset == OFFSETOF__ThreadLocalModule__DynamicEntry__m_pDataBlob); // We need space to point to the GC statics
+        _ASSERTE(bmtProp->fDynamicStatics);
         bmtProp->dwNonGCThreadStaticFieldBytes = dwCumulativeStaticFieldPos;
     }
     else
     {
-        bmtProp->dwNonGCThreadStaticFieldBytes = 0; // Non dynamics shouldnt be using this
+        bmtProp->dwNonGCThreadStaticFieldBytes = 0;
     }
     LOG((LF_CLASSLOADER, LL_INFO10000, "STATICS: ThreadStatic field bytes needed (0 is normal for non dynamic case)%i\n", bmtProp->dwNonGCThreadStaticFieldBytes));
 }
@@ -8351,7 +8323,7 @@ VOID    MethodTableBuilder::PlaceInstanceFields(MethodTable ** pByValueClassCach
                 }
                 else
 #endif // FEATURE_64BIT_ALIGNMENT
-                if (pByValueMT->ContainsPointers())
+                if (pByValueMT->ContainsGCPointers())
                 {
                     // this field type has GC pointers in it, which need to be pointer-size aligned
                     // so do this if it has not been done already
@@ -8369,13 +8341,13 @@ VOID    MethodTableBuilder::PlaceInstanceFields(MethodTable ** pByValueClassCach
                 pFieldDescList[i].SetOffset(dwCumulativeInstanceFieldPos - dwOffsetBias);
                 dwCumulativeInstanceFieldPos += pByValueMT->GetNumInstanceFieldBytes();
 
-                if (pByValueMT->ContainsPointers())
+                if (pByValueMT->ContainsGCPointers())
                 {
                     // Add pointer series for by-value classes
                     dwNumGCPointerSeries += (DWORD)CGCDesc::GetCGCDescFromMT(pByValueMT)->GetNumSeries();
                 }
 
-                if (!pByValueMT->ContainsPointers() || !pByValueMT->IsAllGCPointers())
+                if (!pByValueMT->ContainsGCPointers() || !pByValueMT->IsAllGCPointers())
                 {
                     isAllGCPointers = false;
                 }
@@ -8718,7 +8690,7 @@ MethodTableBuilder::HandleExplicitLayout(
             else
             {
                 MethodTable *pByValueMT = pByValueClassCache[valueClassCacheIndex];
-                if (pByValueMT->IsByRefLike() || pByValueMT->ContainsPointers())
+                if (pByValueMT->IsByRefLike() || pByValueMT->ContainsGCPointers())
                 {
                     if ((pFD->GetOffset() & ((ULONG)TARGET_POINTER_SIZE - 1)) != 0)
                     {
@@ -8915,7 +8887,7 @@ MethodTableBuilder::HandleExplicitLayout(
     memset((void*)vcLayout, nonoref, fieldSize);
 
     // If the type contains pointers fill it out from the GC data
-    if (pMT->ContainsPointers())
+    if (pMT->ContainsGCPointers())
     {
         // use pointer series to locate the orefs
         CGCDesc* map = CGCDesc::GetCGCDescFromMT(pMT);
@@ -9131,7 +9103,7 @@ MethodTableBuilder::HandleGCForExplicitLayout()
 
     if (bmtFP->NumGCPointerSeries != 0)
     {
-        pMT->SetContainsPointers();
+        pMT->SetContainsGCPointers();
 
         // Copy the pointer series map from the parent
         CGCDesc::Init( (PVOID) pMT, bmtFP->NumGCPointerSeries );
@@ -9266,7 +9238,7 @@ void MethodTableBuilder::CopyExactParentSlots(MethodTable *pMT)
             // fix up wrongly-inherited method descriptors
             MethodDesc* pMD = hMTData->GetImplMethodDesc(i);
             CONSISTENCY_CHECK(CheckPointer(pMD));
-            CONSISTENCY_CHECK(pMD == pMT->GetMethodDescForSlot(i));
+            CONSISTENCY_CHECK(pMD == pMT->GetMethodDescForSlot_NoThrow(i));
 
             if (pMD->GetMethodTable() == pMT)
                 continue;
@@ -10052,6 +10024,9 @@ void MethodTableBuilder::CheckForSystemTypes()
                     // 16-byte alignment for __m256.
 
                     pLayout->m_ManagedLargestAlignmentRequirementOfAllMembers = 16;
+    #elif defined(TARGET_LOONGARCH64)
+                    // TODO-LoongArch64: Update alignment to proper value when implement LoongArch64 intrinsic.
+                    pLayout->m_ManagedLargestAlignmentRequirementOfAllMembers = 16;
     #elif defined(TARGET_RISCV64)
                     // TODO-RISCV64: Update alignment to proper value when we implement RISC-V intrinsic.
                     // RISC-V Vector Extenstion Intrinsic Document
@@ -10074,6 +10049,9 @@ void MethodTableBuilder::CheckForSystemTypes()
 
                     pLayout->m_ManagedLargestAlignmentRequirementOfAllMembers = 16;
 
+    #elif defined(TARGET_LOONGARCH64)
+                    // TODO-LoongArch64: Update alignment to proper value when implement LoongArch64 intrinsic.
+                    pLayout->m_ManagedLargestAlignmentRequirementOfAllMembers = 16;
     #elif defined(TARGET_RISCV64)
                     // TODO-RISCV64: Update alignment to proper value when we implement RISC-V intrinsic.
                     // RISC-V Vector Extenstion Intrinsic Document
@@ -10265,6 +10243,7 @@ MethodTable * MethodTableBuilder::AllocateNewMT(
     BOOL isInterface,
     BOOL fDynamicStatics,
     BOOL fHasGenericsStaticsInfo,
+    bool fHasThreadStatics,
     BOOL fHasVirtualStaticMethods
 #ifdef FEATURE_COMINTEROP
         , BOOL fHasDynamicInterfaceMap
@@ -10367,7 +10346,20 @@ MethodTable * MethodTableBuilder::AllocateNewMT(
         pMT->SetFlag(MethodTable::enum_flag_HasPerInstInfo);
     }
 
-    pMT->AllocateAuxiliaryData(pAllocator, pLoaderModule, pamTracker, fHasGenericsStaticsInfo, static_cast<WORD>(dwNonVirtualSlots), S_SIZE_T(dispatchMapAllocationSize));
+    MethodTableStaticsFlags staticsFlags = MethodTableStaticsFlags::None;
+    if (fDynamicStatics)
+        staticsFlags |= MethodTableStaticsFlags::Present;
+
+    if (fHasGenericsStaticsInfo)
+    {
+        _ASSERTE(fDynamicStatics);
+        staticsFlags |= MethodTableStaticsFlags::Generic;
+    }
+
+    if (fHasThreadStatics)
+        staticsFlags |= MethodTableStaticsFlags::Thread;
+
+    pMT->AllocateAuxiliaryData(pAllocator, pLoaderModule, pamTracker, staticsFlags, static_cast<WORD>(dwNonVirtualSlots), S_SIZE_T(dispatchMapAllocationSize));
 
     pMT->GetAuxiliaryDataForWrite()->SetIsNotFullyLoadedForBuildMethodTable();
 
@@ -10463,7 +10455,7 @@ MethodTable * MethodTableBuilder::AllocateNewMT(
 
     if (fDynamicStatics)
     {
-        pMT->SetDynamicStatics(fHasGenericsStaticsInfo);
+        pMT->SetDynamicStatics();
     }
 
     // the dictionary pointers follow the interface map
@@ -10567,6 +10559,7 @@ MethodTableBuilder::SetupMethodTable2(
                                    IsInterface(),
                                    bmtProp->fDynamicStatics,
                                    bmtProp->fGenericsStatics,
+                                   bmtEnumFields->dwNumThreadStaticFields != 0,
                                    bmtProp->fHasVirtualStaticMethods,
 #ifdef FEATURE_COMINTEROP
                                    fHasDynamicInterfaceMap,
@@ -10656,6 +10649,7 @@ MethodTableBuilder::SetupMethodTable2(
         pMT->SetHasClassConstructor();
         CONSISTENCY_CHECK(pMT->GetClassConstructorSlot() == bmtVT->pCCtor->GetSlotIndex());
     }
+
     if (bmtVT->pDefaultCtor != NULL)
     {
         pMT->SetHasDefaultConstructor();
@@ -10833,9 +10827,8 @@ MethodTableBuilder::SetupMethodTable2(
     {
         for (MethodDescChunk *pChunk = GetHalfBakedClass()->GetChunks(); pChunk != NULL; pChunk = pChunk->GetNextChunk())
         {
-            // Make sure that temporary entrypoints are create for methods. NGEN uses temporary
-            // entrypoints as surrogate keys for precodes.
-            pChunk->EnsureTemporaryEntryPointsCreated(GetLoaderAllocator(), GetMemTracker());
+            // Make sure that eligibility for versionability is computed
+            pChunk->DetermineAndSetIsEligibleForTieredCompilation();
         }
     }
 
@@ -10875,7 +10868,7 @@ MethodTableBuilder::SetupMethodTable2(
                 //
                 DWORD indirectionIndex = MethodTable::GetIndexOfVtableIndirection(iCurSlot);
                 if (GetParentMethodTable()->GetVtableIndirections()[indirectionIndex] != pMT->GetVtableIndirections()[indirectionIndex])
-                    pMT->SetSlot(iCurSlot, pMD->GetInitialEntryPointForCopiedSlot());
+                    pMT->SetSlot(iCurSlot, pMD->GetInitialEntryPointForCopiedSlot(pMT, GetMemTracker()));
             }
             else
             {
@@ -10884,8 +10877,14 @@ MethodTableBuilder::SetupMethodTable2(
                 //
                 _ASSERTE(iCurSlot >= bmtVT->cVirtualSlots || ChangesImplementationOfVirtualSlot(iCurSlot));
 
-                PCODE addr = pMD->GetTemporaryEntryPoint();
-                _ASSERTE(addr != NULL);
+                if ((pMD->GetSlot() == iCurSlot) && (GetParentMethodTable() == NULL || iCurSlot >= GetParentMethodTable()->GetNumVirtuals()))
+                    continue; // For cases where the method is defining the method desc slot, we don't need to fill it in yet
+
+                pMD->EnsureTemporaryEntryPointCore(GetMemTracker());
+                // Use the IfExists variant, as GetTemporaryEntrypoint isn't safe to call during MethodTable construction, as it might allocate
+                // without using the MemTracker.
+                PCODE addr = pMD->GetTemporaryEntryPointIfExists();
+                _ASSERTE(addr != (PCODE)NULL);
 
                 if (pMD->HasNonVtableSlot())
                 {
@@ -10900,7 +10899,7 @@ MethodTableBuilder::SetupMethodTable2(
                 {
                     // The rest of the system assumes that certain methods always have stable entrypoints.
                     // Create them now.
-                    pMD->GetOrCreatePrecode();
+                    pMD->MarkPrecodeAsStableEntrypoint();
                 }
             }
         }
@@ -10949,7 +10948,7 @@ MethodTableBuilder::SetupMethodTable2(
                 MethodDesc* pMD = hMTData->GetImplMethodDesc(i);
 
                 CONSISTENCY_CHECK(CheckPointer(pMD));
-                CONSISTENCY_CHECK(pMD == pMT->GetMethodDescForSlot(i));
+                CONSISTENCY_CHECK(pMD == pMT->GetMethodDescForSlot_NoThrow(i));
 
                 // This indicates that the method body in this slot was copied here through a methodImpl.
                 // Thus, copy the value of the slot from which the body originally came, in case it was
@@ -10959,11 +10958,11 @@ MethodTableBuilder::SetupMethodTable2(
                 {
                     MethodDesc *pOriginalMD = hMTData->GetImplMethodDesc(originalIndex);
                     CONSISTENCY_CHECK(CheckPointer(pOriginalMD));
-                    CONSISTENCY_CHECK(pOriginalMD == pMT->GetMethodDescForSlot(originalIndex));
+                    CONSISTENCY_CHECK(pOriginalMD == pMT->GetMethodDescForSlot_NoThrow(originalIndex));
                     if (pMD != pOriginalMD)
                     {
                         // Copy the slot value in the method's original slot.
-                        pMT->SetSlot(i, pOriginalMD->GetInitialEntryPointForCopiedSlot());
+                        pMT->SetSlot(i, pOriginalMD->GetInitialEntryPointForCopiedSlot(pMT, GetMemTracker()));
                         hMTData->InvalidateCachedVirtualSlot(i);
 
                         // Update the pMD to the new method desc we just copied over ourselves with. This will
@@ -11020,8 +11019,7 @@ MethodTableBuilder::SetupMethodTable2(
                     // If we fail to find an _IMPLEMENTATION_ for the interface MD, then
                     // we are a ComImportMethod, otherwise we still be a ComImportMethod or
                     // we can be a ManagedMethod.
-                    DispatchSlot impl(it.GetTarget());
-                    if (!impl.IsNull())
+                    if (!it.IsTargetNull())
                     {
                         pClsMD = it.GetMethodDesc();
 
@@ -11262,7 +11260,7 @@ void MethodTableBuilder::VerifyVirtualMethodsImplemented(MethodTable::MethodData
             MethodTable::MethodIterator it(hData);
             for (; it.IsValid() && it.IsVirtual(); it.Next())
             {
-                if (it.GetTarget().IsNull())
+                if (it.IsTargetNull())
                 {
                     MethodDesc *pMD = it.GetDeclMethodDesc();
 
@@ -11581,7 +11579,7 @@ VOID MethodTableBuilder::HandleGCForValueClasses(MethodTable ** pByValueClassCac
         CGCDescSeries *pSeries;
         CGCDescSeries *pHighest;
 
-        pMT->SetContainsPointers();
+        pMT->SetContainsGCPointers();
 
         CGCDesc::Init( (PVOID) pMT, bmtFP->NumGCPointerSeries );
 
@@ -11637,7 +11635,7 @@ VOID MethodTableBuilder::HandleGCForValueClasses(MethodTable ** pByValueClassCac
             {
                 MethodTable* pByValueMT = pByValueClassCache[i];
 
-                if (pByValueMT->ContainsPointers())
+                if (pByValueMT->ContainsGCPointers())
                 {
                     // Offset of the by value class in the class we are building, does NOT include Object
                     DWORD       dwCurrentOffset = pFieldDescList[i].GetOffset();

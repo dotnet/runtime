@@ -37,7 +37,7 @@ namespace Mono.Linker.Tests.Cases.Warnings.WarningSuppression
 			return "test";
 		}
 
-		[ExpectedWarning ("IL2121", "IL2071", ProducedBy = Tool.Trimmer)]
+		[ExpectedWarning ("IL2121", "IL2071", Tool.Trimmer, "")]
 		public class RedundantSuppressionOnType
 		{
 			public static void Test ()
@@ -48,7 +48,7 @@ namespace Mono.Linker.Tests.Cases.Warnings.WarningSuppression
 
 		public class RedundantSuppressionOnMethod
 		{
-			[ExpectedWarning ("IL2121", "IL2071", ProducedBy = Tool.Trimmer)]
+			[ExpectedWarning ("IL2121", "IL2071", Tool.Trimmer, "")]
 			public static void Test ()
 			{
 				TrimmerCompatibleMethod ();
@@ -62,7 +62,7 @@ namespace Mono.Linker.Tests.Cases.Warnings.WarningSuppression
 				NestedType.TrimmerCompatibleMethod ();
 			}
 
-			[ExpectedWarning ("IL2121", "IL2071", ProducedBy = Tool.Trimmer)]
+			[ExpectedWarning ("IL2121", "IL2071", Tool.Trimmer, "")]
 			public class NestedType
 			{
 				public static void TrimmerCompatibleMethod ()
@@ -80,7 +80,7 @@ namespace Mono.Linker.Tests.Cases.Warnings.WarningSuppression
 			}
 
 			public static string TrimmerCompatibleProperty {
-				[ExpectedWarning ("IL2121", "IL2071", ProducedBy = Tool.Trimmer)]
+				[ExpectedWarning ("IL2121", "IL2071", Tool.Trimmer, "")]
 				get {
 					return TrimmerCompatibleMethod ();
 				}

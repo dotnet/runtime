@@ -478,7 +478,7 @@ namespace System.Net.Http.Json.Functional.Tests
                 Exception ex = await Assert.ThrowsAsync<TaskCanceledException>(() =>
                     useDeleteAsync ? client.DeleteFromJsonAsync<string>(uri) : client.GetFromJsonAsync<string>(uri));
 
-#if NETCOREAPP
+#if NET
                 Assert.Contains("HttpClient.Timeout", ex.Message);
                 Assert.IsType<TimeoutException>(ex.InnerException);
 #endif
@@ -526,7 +526,7 @@ namespace System.Net.Http.Json.Functional.Tests
                     }
                 });
 
-#if NETCOREAPP
+#if NET
                 Assert.Contains("HttpClient.Timeout", ex.Message);
                 Assert.IsType<TimeoutException>(ex.InnerException);
 #endif

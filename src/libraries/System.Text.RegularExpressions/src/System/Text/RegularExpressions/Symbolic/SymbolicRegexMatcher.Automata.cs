@@ -4,6 +4,7 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Runtime.CompilerServices;
 using System.Threading;
 
 namespace System.Text.RegularExpressions.Symbolic
@@ -25,7 +26,7 @@ namespace System.Text.RegularExpressions.Symbolic
         /// Cache for the states that have been created. Each state is uniquely identified by its associated
         /// <see cref="SymbolicRegexNode{TSet}"/> and the kind of the previous character.
         /// </summary>
-        private readonly Dictionary<(SymbolicRegexNode<TSet> Node, uint PrevCharKind), MatchingState<TSet>> _stateCache = new();
+        private readonly Dictionary<(SymbolicRegexNode<TSet> Node, uint PrevCharKind), MatchingState<TSet>> _stateCache = [];
 
         /// <summary>
         /// Maps state ids to states, initial capacity is given by <see cref="InitialDfaStateCapacity"/>.
@@ -39,6 +40,14 @@ namespace System.Text.RegularExpressions.Symbolic
         /// The first valid entry is at index 1.
         /// </summary>
         private StateFlags[] _stateFlagsArray;
+
+        /// <summary>Cached nullability info for each state ID.</summary>
+        /// <remarks>
+        /// _nullabilityArray[stateId] == the <see cref="MatchingState{TSet}.NullabilityInfo"/> for that state.
+        /// Used to short-circuit nullability in the hot loop.
+        /// Important: the pattern must not contain endZ for this to be valid.
+        /// </remarks>
+        private byte[] _nullabilityArray;
 
         /// <summary>
         /// The transition function for DFA mode.
@@ -69,7 +78,7 @@ namespace System.Text.RegularExpressions.Symbolic
         /// It is the inverse of used entries in _nfaStateArray.
         /// The range of this map is 0 to its size - 1.
         /// </summary>
-        private readonly Dictionary<int, int> _nfaIdByCoreId = new();
+        private readonly Dictionary<int, int> _nfaIdByCoreId = [];
 
         /// <summary>
         /// Transition function for NFA transitions in NFA mode.
@@ -106,6 +115,13 @@ namespace System.Text.RegularExpressions.Symbolic
         }
 
         private int DeltaOffset(int stateId, int mintermId) => (stateId << _mintermsLog) | mintermId;
+
+        /// <summary>
+        /// Pre-computed hot-loop version of nullability check
+        /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private bool IsNullableWithContext(byte stateNullability, int mintermId) =>
+            (stateNullability & (1 << (int)GetPositionKind(mintermId))) != 0;
 
         /// <summary>Returns the span from <see cref="_dfaDelta"/> that may contain transitions for the given state</summary>
         private Span<int> GetDeltasFor(MatchingState<TSet> state)
@@ -153,6 +169,78 @@ namespace System.Text.RegularExpressions.Symbolic
         }
 
         /// <summary>
+        /// Analyze the specified reversed pattern to gather details that help to optimize the reverse matching process
+        /// for when finding the beginning of a match.
+        /// </summary>
+        /// <remarks>
+        /// Optimized reversal state computation during construction which skips the fixed length suffix, e.g. for the pattern abc.*def
+        /// 1) the end is found at abc.*def|
+        /// 2) the reversal starts at abc.*|
+        /// </remarks>
+        /// <param name="node">Reversed initial pattern</param>
+        /// <returns>The match reversal details.</returns>
+        private MatchReversalInfo<TSet> CreateOptimizedReversal(SymbolicRegexNode<TSet> node)
+        {
+            int pos = 0;
+            while (true)
+            {
+                if (node._info.ContainsSomeAnchor)
+                {
+                    // Bail if it contains any anchors as it invalidates the optimization.
+                    // (This could potentially be a very good future optimization for anchors but there's too many edge cases to guarantee it works.
+                    // One example which fails currently: pattern: @"\By\b", input: "xy")
+                    pos = 0;
+                    break;
+                }
+
+                if (node._kind is not SymbolicRegexNodeKind.Concat)
+                {
+                    if (node._kind is SymbolicRegexNodeKind.CaptureStart)
+                    {
+                        node = _builder.Epsilon; // The entire match is fixed length.
+                    }
+                    break;
+                }
+
+                SymbolicRegexNode<TSet>? left = node._left;
+                Debug.Assert(left is not null);
+
+                if (left._kind is SymbolicRegexNodeKind.CaptureEnd or SymbolicRegexNodeKind.BoundaryAnchor or SymbolicRegexNodeKind.Singleton)
+                {
+                    node = node._right!;
+                    if (left._kind is SymbolicRegexNodeKind.Singleton)
+                    {
+                        pos++;
+                    }
+                }
+                else if (left._kind is SymbolicRegexNodeKind.Loop)
+                {
+                    if (left._lower <= 0 || left._left!.Kind is not SymbolicRegexNodeKind.Singleton)
+                    {
+                        break;
+                    }
+
+                    node = left._lower == left._upper ?
+                        node._right! : // The entire loop is fixed
+                        _builder.CreateConcat( // Subtract the fixed part of the loop.
+                            _builder.CreateLoop(left._left, left.IsLazy, 0, left._upper - left._lower),
+                            node._right!);
+                    pos += left._lower;
+                }
+                else
+                {
+                    break;
+                }
+            }
+
+            Debug.Assert(pos >= 0);
+            return
+                pos == 0 ? new MatchReversalInfo<TSet>(MatchReversalKind.MatchStart, 0) :
+                node == _builder.Epsilon ? new MatchReversalInfo<TSet>(MatchReversalKind.FixedLength, pos) :
+                new MatchReversalInfo<TSet>(MatchReversalKind.PartialFixedLength, pos, GetOrCreateState_NoLock(_builder.CreateDisableBacktrackingSimulation(node), 0));
+        }
+
+        /// <summary>
         /// Create a state with given node and previous character context.
         /// </summary>
         /// <param name="node">the pattern that this state will represent</param>
@@ -178,9 +266,11 @@ namespace System.Text.RegularExpressions.Symbolic
                     ArrayResizeAndVolatilePublish(ref _stateArray, newsize);
                     ArrayResizeAndVolatilePublish(ref _dfaDelta, newsize << _mintermsLog);
                     ArrayResizeAndVolatilePublish(ref _stateFlagsArray, newsize);
+                    ArrayResizeAndVolatilePublish(ref _nullabilityArray, newsize);
                 }
                 _stateArray[state.Id] = state;
-                _stateFlagsArray[state.Id] = state.BuildStateFlags(Solver, isInitialState);
+                _stateFlagsArray[state.Id] = state.BuildStateFlags(isInitialState);
+                _nullabilityArray[state.Id] = (byte)state.NullabilityInfo;
             }
 
             return state;
@@ -265,18 +355,17 @@ namespace System.Text.RegularExpressions.Symbolic
 
         /// <summary>Gets or creates a new DFA transition.</summary>
         /// <remarks>This function locks the matcher for safe concurrent use of the <see cref="_builder"/></remarks>
-        private bool TryCreateNewTransition(
-            MatchingState<TSet> sourceState, int mintermId, int offset, bool checkThreshold, [NotNullWhen(true)] out MatchingState<TSet>? nextState)
+        private bool TryCreateNewTransition(MatchingState<TSet> sourceState, int mintermId, int offset, bool checkThreshold, long timeoutOccursAt, [NotNullWhen(true)] out MatchingState<TSet>? nextState)
         {
             Debug.Assert(offset < _dfaDelta.Length);
-
             lock (this)
             {
                 // check if meanwhile delta[offset] has become defined possibly by another thread
                 MatchingState<TSet>? targetState = _stateArray[_dfaDelta[offset]];
                 if (targetState is null)
                 {
-                    if (checkThreshold && _stateCache.Count >= SymbolicRegexThresholds.NfaThreshold)
+                    if ((timeoutOccursAt != 0 && Environment.TickCount64 > timeoutOccursAt) || // if there's an active timer
+                        (checkThreshold && _builder._nodeCache.Count >= SymbolicRegexThresholds.NfaNodeCountThreshold)) // if # of nodes exceeds the NFA threshold
                     {
                         nextState = null;
                         return false;
@@ -312,10 +401,10 @@ namespace System.Text.RegularExpressions.Symbolic
                     MatchingState<TSet> coreState = GetState(coreId);
                     TSet minterm = GetMintermFromId(mintermId);
                     uint nextCharKind = GetPositionKind(mintermId);
-                    SymbolicRegexNode<TSet>? targetNode = coreTargetId > 0 ?
+                    SymbolicRegexNode<TSet> targetNode = coreTargetId > 0 ?
                         GetState(coreTargetId).Node : coreState.Next(_builder, minterm, nextCharKind);
 
-                    List<int> targetsList = new();
+                    List<int> targetsList = [];
                     ForEachNfaState(targetNode, nextCharKind, targetsList, static (int nfaId, List<int> targetsList) =>
                         targetsList.Add(nfaId));
 
@@ -342,8 +431,9 @@ namespace System.Text.RegularExpressions.Symbolic
                     TSet minterm = GetMintermFromId(mintermId);
                     uint nextCharKind = GetPositionKind(mintermId);
                     List<(SymbolicRegexNode<TSet> Node, DerivativeEffect[] Effects)>? transition = coreState.NfaNextWithEffects(_builder, minterm, nextCharKind);
+
                     // Build the new state and store it into the array.
-                    List<(int, DerivativeEffect[])> targetsList = new();
+                    List<(int, DerivativeEffect[])> targetsList = [];
                     foreach ((SymbolicRegexNode<TSet> Node, DerivativeEffect[] Effects) entry in transition)
                     {
                         ForEachNfaState(entry.Node, nextCharKind, (targetsList, entry.Effects),

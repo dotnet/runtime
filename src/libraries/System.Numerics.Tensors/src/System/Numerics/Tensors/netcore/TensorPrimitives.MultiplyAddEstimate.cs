@@ -1,6 +1,7 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.Arm;
@@ -10,7 +11,7 @@ namespace System.Numerics.Tensors
 {
     public static partial class TensorPrimitives
     {
-        /// <summary>Computes the element-wise result of <c>(<paramref name="x" /> * <paramref name="y" />) * <paramref name="addend" /></c> for the specified tensors of numbers.</summary>
+        /// <summary>Computes the element-wise result of <c>(<paramref name="x" /> * <paramref name="y" />) + <paramref name="addend" /></c> for the specified tensors of numbers.</summary>
         /// <param name="x">The first tensor, represented as a span.</param>
         /// <param name="y">The second tensor, represented as a span.</param>
         /// <param name="addend">The third tensor, represented as a span.</param>
@@ -36,7 +37,7 @@ namespace System.Numerics.Tensors
             where T : INumberBase<T> =>
             InvokeSpanSpanSpanIntoSpan<T, MultiplyAddEstimateOperator<T>>(x, y, addend, destination);
 
-        /// <summary>Computes the element-wise result of <c>(<paramref name="x" /> * <paramref name="y" />) * <paramref name="addend" /></c> for the specified tensors of numbers.</summary>
+        /// <summary>Computes the element-wise result of <c>(<paramref name="x" /> * <paramref name="y" />) + <paramref name="addend" /></c> for the specified tensors of numbers.</summary>
         /// <param name="x">The first tensor, represented as a span.</param>
         /// <param name="y">The second tensor, represented as a span.</param>
         /// <param name="addend">The third tensor, represented as a scalar.</param>
@@ -62,7 +63,7 @@ namespace System.Numerics.Tensors
             where T : INumberBase<T> =>
             InvokeSpanSpanScalarIntoSpan<T, MultiplyAddEstimateOperator<T>>(x, y, addend, destination);
 
-        /// <summary>Computes the element-wise result of <c>(<paramref name="x" /> * <paramref name="y" />) * <paramref name="addend" /></c> for the specified tensors of numbers.</summary>
+        /// <summary>Computes the element-wise result of <c>(<paramref name="x" /> * <paramref name="y" />) + <paramref name="addend" /></c> for the specified tensors of numbers.</summary>
         /// <param name="x">The first tensor, represented as a span.</param>
         /// <param name="y">The second tensor, represented as a scalar.</param>
         /// <param name="addend">The third tensor, represented as a span.</param>
@@ -88,40 +89,51 @@ namespace System.Numerics.Tensors
             InvokeSpanScalarSpanIntoSpan<T, MultiplyAddEstimateOperator<T>>(x, y, addend, destination);
 
         /// <summary>(x * y) + z</summary>
-        private readonly struct MultiplyAddEstimateOperator<T> : ITernaryOperator<T> where T : INumberBase<T>
+        private readonly struct MultiplyAddEstimateOperator<T> : ITernaryOperator<T>
+            where T : INumberBase<T>
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public static T Invoke(T x, T y, T z)
             {
-                // TODO https://github.com/dotnet/runtime/issues/98053: Use T.MultiplyAddEstimate when it's available.
-
+#if NET9_0_OR_GREATER
+                return T.MultiplyAddEstimate(x, y, z);
+#else
                 if (Fma.IsSupported || AdvSimd.IsSupported)
                 {
                     if (typeof(T) == typeof(Half))
                     {
-                        Half result = Half.FusedMultiplyAdd(Unsafe.As<T, Half>(ref x), Unsafe.As<T, Half>(ref y), Unsafe.As<T, Half>(ref z));
-                        return Unsafe.As<Half, T>(ref result);
+                        return (T)(object)Half.FusedMultiplyAdd((Half)(object)x, (Half)(object)y, (Half)(object)z);
                     }
 
                     if (typeof(T) == typeof(float))
                     {
-                        float result = float.FusedMultiplyAdd(Unsafe.As<T, float>(ref x), Unsafe.As<T, float>(ref y), Unsafe.As<T, float>(ref z));
-                        return Unsafe.As<float, T>(ref result);
+                        return (T)(object)float.FusedMultiplyAdd((float)(object)x, (float)(object)y, (float)(object)z);
                     }
 
                     if (typeof(T) == typeof(double))
                     {
-                        double result = double.FusedMultiplyAdd(Unsafe.As<T, double>(ref x), Unsafe.As<T, double>(ref y), Unsafe.As<T, double>(ref z));
-                        return Unsafe.As<double, T>(ref result);
+                        return (T)(object)double.FusedMultiplyAdd((double)(object)x, (double)(object)y, (double)(object)z);
                     }
                 }
 
                 return (x * y) + z;
+#endif
             }
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public static Vector128<T> Invoke(Vector128<T> x, Vector128<T> y, Vector128<T> z)
             {
+#if NET9_0_OR_GREATER
+                if (typeof(T) == typeof(double))
+                {
+                    return Vector128.MultiplyAddEstimate(x.AsDouble(), y.AsDouble(), z.AsDouble()).As<double, T>();
+                }
+                else
+                {
+                    Debug.Assert(typeof(T) == typeof(float));
+                    return Vector128.MultiplyAddEstimate(x.AsSingle(), y.AsSingle(), z.AsSingle()).As<float, T>();
+                }
+#else
                 if (Fma.IsSupported)
                 {
                     if (typeof(T) == typeof(float)) return Fma.MultiplyAdd(x.AsSingle(), y.AsSingle(), z.AsSingle()).As<float, T>();
@@ -139,11 +151,23 @@ namespace System.Numerics.Tensors
                 }
 
                 return (x * y) + z;
+#endif
             }
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public static Vector256<T> Invoke(Vector256<T> x, Vector256<T> y, Vector256<T> z)
             {
+#if NET9_0_OR_GREATER
+                if (typeof(T) == typeof(double))
+                {
+                    return Vector256.MultiplyAddEstimate(x.AsDouble(), y.AsDouble(), z.AsDouble()).As<double, T>();
+                }
+                else
+                {
+                    Debug.Assert(typeof(T) == typeof(float));
+                    return Vector256.MultiplyAddEstimate(x.AsSingle(), y.AsSingle(), z.AsSingle()).As<float, T>();
+                }
+#else
                 if (Fma.IsSupported)
                 {
                     if (typeof(T) == typeof(float)) return Fma.MultiplyAdd(x.AsSingle(), y.AsSingle(), z.AsSingle()).As<float, T>();
@@ -151,11 +175,23 @@ namespace System.Numerics.Tensors
                 }
 
                 return (x * y) + z;
+#endif
             }
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public static Vector512<T> Invoke(Vector512<T> x, Vector512<T> y, Vector512<T> z)
             {
+#if NET9_0_OR_GREATER
+                if (typeof(T) == typeof(double))
+                {
+                    return Vector512.MultiplyAddEstimate(x.AsDouble(), y.AsDouble(), z.AsDouble()).As<double, T>();
+                }
+                else
+                {
+                    Debug.Assert(typeof(T) == typeof(float));
+                    return Vector512.MultiplyAddEstimate(x.AsSingle(), y.AsSingle(), z.AsSingle()).As<float, T>();
+                }
+#else
                 if (Avx512F.IsSupported)
                 {
                     if (typeof(T) == typeof(float)) return Avx512F.FusedMultiplyAdd(x.AsSingle(), y.AsSingle(), z.AsSingle()).As<float, T>();
@@ -163,6 +199,7 @@ namespace System.Numerics.Tensors
                 }
 
                 return (x * y) + z;
+#endif
             }
         }
     }

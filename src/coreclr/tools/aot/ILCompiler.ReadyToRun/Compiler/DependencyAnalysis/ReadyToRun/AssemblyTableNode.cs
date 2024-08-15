@@ -33,7 +33,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         public override void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
             sb.Append(nameMangler.CompilationUnitPrefix);
-            sb.Append("__ReadyToRunAssemblyTable");
+            sb.Append("__ReadyToRunAssemblyTable"u8);
         }
 
         public override ObjectData GetData(NodeFactory factory, bool relocsOnly = false)

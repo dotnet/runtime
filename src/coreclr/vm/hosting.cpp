@@ -16,12 +16,6 @@ LPVOID ClrVirtualAlloc(LPVOID lpAddress, SIZE_T dwSize, DWORD flAllocationType, 
     }
     CONTRACTL_END;
 
-#ifdef FAILPOINTS_ENABLED
-        if (RFS_HashStack ())
-            return NULL;
-#endif
-
-
 #ifdef _DEBUG
         if (g_fEEStarted) {
             // On Debug build we make sure that a thread is not going to do memory allocation

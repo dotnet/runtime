@@ -244,16 +244,12 @@ namespace ILCompiler.ObjectWriter
             {
                 case TargetOS.OSX:
                     buildVersion.Platform = PLATFORM_MACOS;
-                    buildVersion.MinimumPlatformVersion = 0x0A_0C_00; // 10.12.0
+                    buildVersion.MinimumPlatformVersion = 0x0C_00_00; // 12.0.0
                     break;
 
                 case TargetOS.MacCatalyst:
                     buildVersion.Platform = PLATFORM_MACCATALYST;
-                    buildVersion.MinimumPlatformVersion = _cpuType switch
-                    {
-                        CPU_TYPE_X86_64 => 0x0D_05_00u, // 13.5.0
-                        _ => 0x0E_02_00u, // 14.2.0
-                    };
+                    buildVersion.MinimumPlatformVersion = 0x0F_02_00; // 15.0.0
                     break;
 
                 case TargetOS.iOS:
@@ -268,7 +264,7 @@ namespace ILCompiler.ObjectWriter
                         TargetOS.tvOSSimulator => PLATFORM_TVOSSIMULATOR,
                         _ => 0,
                     };
-                    buildVersion.MinimumPlatformVersion = 0x0B_00_00; // 11.0.0
+                    buildVersion.MinimumPlatformVersion = 0x0C_02_00; // 12.2.0
                     break;
             }
             buildVersion.Write(outputFileStream);
@@ -479,12 +475,15 @@ namespace ILCompiler.ObjectWriter
             foreach ((string name, SymbolDefinition definition) in definedSymbols)
             {
                 MachSection section = _sections[definition.SectionIndex];
+                // Sections in our object file should not be altered during native linking as the runtime
+                // depends on the layout generated during compilation. For this reason we mark all symbols
+                // with N_NO_DEAD_STRIP to prevent breaking up sections into subsections during linking.
                 sortedDefinedSymbols.Add(new MachSymbol
                 {
                     Name = name,
                     Section = section,
                     Value = section.VirtualAddress + (ulong)definition.Value,
-                    Descriptor = 0,
+                    Descriptor = N_NO_DEAD_STRIP,
                     Type = N_SECT | N_EXT,
                 });
             }

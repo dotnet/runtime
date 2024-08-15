@@ -23,7 +23,9 @@ namespace System.Net.Sockets
         internal bool ExposedHandleOrUntrackedConfiguration { get; private set; }
         internal bool PreferInlineCompletions { get; set; } = SocketAsyncEngine.InlineSocketCompletionsEnabled;
         internal bool IsSocket { get; set; } = true; // (ab)use Socket class for performing async I/O on non-socket fds.
-
+#if SYSTEM_NET_SOCKETS_APPLE_PLATFROM
+        internal bool TfoEnabled { get; set; }
+#endif
         internal void RegisterConnectResult(SocketError error)
         {
             switch (error)
@@ -44,6 +46,9 @@ namespace System.Net.Sockets
             target.DualMode = DualMode;
             target.ExposedHandleOrUntrackedConfiguration = ExposedHandleOrUntrackedConfiguration;
             target.IsSocket = IsSocket;
+#if SYSTEM_NET_SOCKETS_APPLE_PLATFROM
+            target.TfoEnabled = TfoEnabled;
+#endif
         }
 
         internal void SetExposed() => ExposedHandleOrUntrackedConfiguration = true;
@@ -96,18 +101,10 @@ namespace System.Net.Sockets
             ExposedHandleOrUntrackedConfiguration = true;
         }
 
-        internal SocketAsyncContext AsyncContext
-        {
-            get
-            {
-                if (Volatile.Read(ref _asyncContext) == null)
-                {
-                    Interlocked.CompareExchange(ref _asyncContext, new SocketAsyncContext(this), null);
-                }
-
-                return _asyncContext!;
-            }
-        }
+        internal SocketAsyncContext AsyncContext =>
+            _asyncContext ??
+            Interlocked.CompareExchange(ref _asyncContext, new SocketAsyncContext(this), null) ??
+            _asyncContext!;
 
         /// <summary>
         /// This represents whether the Socket instance is blocking or non-blocking *from the user's point of view*,

@@ -6,27 +6,57 @@
 #ifndef MEASUREMENTS_IMPLEMENTATION
 #define MEASUREMENTS_IMPLEMENTATION 1
 
-// If this is too large and libc's rand() is low quality (i.e. MSVC),
-//  initializing the data will take forever
-#define INNER_COUNT 1024 * 16
+#define INNER_COUNT 1024 * 32
 #define BASELINE_SIZE 20480
 
 static dn_simdhash_u32_ptr_t *random_u32s_hash;
 static dn_vector_t *sequential_u32s, *random_u32s, *random_unused_u32s;
+
+// rand() isn't guaranteed to give 32 random bits on all targets, so
+//  use xoshiro seeded with 4 known integers
+// We want to use the same random sequence on every benchmark run, otherwise
+//  execution times could vary
+uint64_t rol64(uint64_t x, int k) {
+	return (x << k) | (x >> (64 - k));
+}
+
+static uint64_t rng_state[4] = {
+    0x6ED11324ABA9232Cul,
+    0x1F0C07E6522724A6ul,
+    0x293F7FDA2AF571D4ul,
+    0x5804EC9FFD70112Aul,
+};
+
+uint64_t xoshiro256ss() {
+	uint64_t const result = rol64(rng_state[1] * 5, 7) * 9;
+	uint64_t const t = rng_state[1] << 17;
+
+	rng_state[2] ^= rng_state[0];
+	rng_state[3] ^= rng_state[1];
+	rng_state[1] ^= rng_state[2];
+	rng_state[0] ^= rng_state[3];
+
+	rng_state[2] ^= t;
+	rng_state[3] = rol64(rng_state[3], 45);
+
+	return result;
+}
+
+static uint32_t random_uint () {
+    return (uint32_t)(xoshiro256ss() & 0xFFFFFFFFu);
+}
 
 static void init_data () {
     random_u32s_hash = dn_simdhash_u32_ptr_new(INNER_COUNT, NULL);
     sequential_u32s = dn_vector_alloc(sizeof(uint32_t));
     random_u32s = dn_vector_alloc(sizeof(uint32_t));
     random_unused_u32s = dn_vector_alloc(sizeof(uint32_t));
-    // For consistent data between runs
-    srand(1);
 
     for (uint32_t i = 0; i < INNER_COUNT; i++) {
         dn_vector_push_back(sequential_u32s, i);
 
 retry: {
-        uint32_t key = (uint32_t)(rand() & 0xFFFFFFFFu);
+        uint32_t key = random_uint();
         if (!dn_simdhash_u32_ptr_try_add(random_u32s_hash, key, NULL))
             goto retry;
 
@@ -36,7 +66,7 @@ retry: {
 
     for (uint32_t i = 0; i < INNER_COUNT; i++) {
 retry2: {
-        uint32_t key = (uint32_t)(rand() & 0xFFFFFFFFu);
+        uint32_t key = random_uint();
         if (!dn_simdhash_u32_ptr_try_add(random_u32s_hash, key, NULL))
             goto retry2;
 

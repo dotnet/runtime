@@ -8,6 +8,11 @@
     <!-- We don't run the scanner in optimized builds -->
     <CLRTestTargetUnsupported Condition="'$(IlcMultiModule)' == 'true'">true</CLRTestTargetUnsupported>
   </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="ShimLibrary.csproj" />
+  </ItemGroup>
+
   <ItemGroup>
     <Compile Include="Dataflow.cs" />
     <Compile Include="DeadCodeElimination.cs" />

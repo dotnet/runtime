@@ -111,6 +111,7 @@
 
   <!-- Sources -->
   <ItemGroup>
+    <Compile Include="$(BclSourcesRoot)\Internal\Runtime\CompilerHelpers\ThrowHelpers.cs" />
     <Compile Include="$(BclSourcesRoot)\Internal\Runtime\InteropServices\ComActivationContextInternal.cs" />
     <Compile Include="$(BclSourcesRoot)\Internal\Runtime\InteropServices\ComponentActivator.CoreCLR.cs" />
     <Compile Include="$(BclSourcesRoot)\System\__Canon.cs" />
@@ -192,7 +193,7 @@
     <Compile Include="$(BclSourcesRoot)\System\Reflection\RuntimeModule.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Reflection\RuntimeParameterInfo.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Reflection\RuntimePropertyInfo.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Reflection\TypeNameParser.CoreCLR.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Reflection\TypeNameResolver.CoreCLR.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Reflection\Metadata\RuntimeTypeMetadataUpdateHandler.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\CastHelpers.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\ICastableHelpers.cs" />
@@ -237,7 +238,12 @@
     <Compile Include="$(CommonPath)System\Collections\Generic\ArrayBuilder.cs">
       <Link>Common\System\Collections\Generic\ArrayBuilder.cs</Link>
     </Compile>
-    <Compile Include="src\System\RuntimeType.CreateUninitializedCache.CoreCLR.cs" />    
+    <Compile Include="$(CommonPath)System\Experimentals.cs">
+      <Link>Common\System\Experimentals.cs</Link>
+    </Compile>
+    <Compile Include="src\System\RuntimeType.BoxCache.cs" />
+    <Compile Include="src\System\RuntimeType.CreateUninitializedCache.CoreCLR.cs" />
+    <Compile Include="src\System\RuntimeType.GenericCache.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(FeatureComWrappers)' == 'true'">
     <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\ComWrappers.cs" />

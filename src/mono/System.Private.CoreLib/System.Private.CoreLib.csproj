@@ -13,8 +13,6 @@
     <Platforms>x64;x86;arm;armv6;arm64;riscv64;s390x;wasm;ppc64le</Platforms>
 
     <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
-    <FeatureWasmManagedThreads Condition="'$(WasmEnableThreads)' == 'true'">true</FeatureWasmManagedThreads>
-    <DefineConstants Condition="'$(FeatureWasmManagedThreads)' == 'true'">$(DefineConstants);FEATURE_WASM_MANAGED_THREADS</DefineConstants>
   </PropertyGroup>
 
   <!-- Note that various places in SPCL depend on this resource name i.e. TplEventSource -->
@@ -36,8 +34,7 @@
     <!-- Override InformationalVersion during servicing as it's returned via public api. -->
     <InformationalVersion Condition="'$(PreReleaseVersionLabel)' == 'servicing'">$(ProductVersion)</InformationalVersion>
     <InformationalVersion Condition="'$(StabilizePackageVersion)' == 'true'">$(ProductVersion)</InformationalVersion>
-    <!-- AD0001 : https://github.com/dotnet/runtime/issues/90356 -->
-    <NoWarn>$(NoWarn),0419,0649,AD0001</NoWarn>
+    <NoWarn>$(NoWarn),0419,0649</NoWarn>
     <Nullable>enable</Nullable>
 
     <!-- Ignore all previous constants since SPCL is sensitive to what is defined and the Sdk adds some by default -->
@@ -142,6 +139,7 @@
 
     <ILLinkSubstitutionsXmls Include="$(ILLinkDirectory)ILLink.Substitutions.$(Platform).xml" Condition="Exists('$(ILLinkDirectory)ILLink.Substitutions.$(Platform).xml')" />
     <ILLinkSubstitutionsXmls Include="$(ILLinkDirectory)ILLink.Substitutions.iOS.xml" Condition="'$(TargetsiOS)' == 'true' or '$(TargetstvOS)' == 'true'" />
+    <ILLinkSubstitutionsXmls Include="$(ILLinkDirectory)ILLink.Substitutions.wasm.singlethread.xml" Condition="'$(Platform)' == 'wasm' and '$(FeatureWasmManagedThreads)' != 'true'" />
     <ILLinkSubstitutionsXmls Include="$(ILLinkDirectory)ILLink.Substitutions.Intrinsics.x86.xml" />
     <ILLinkSubstitutionsXmls Include="$(ILLinkDirectory)ILLink.Substitutions.Intrinsics.Vectors.xml" />
 
@@ -236,7 +234,7 @@
       <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\UnmanagedMarshal.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Reflection\Metadata\AssemblyExtensions.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Reflection\Metadata\MetadataUpdater.cs" />
-      <Compile Include="$(BclSourcesRoot)\System\Reflection\TypeNameParser.Mono.cs" />
+      <Compile Include="$(BclSourcesRoot)\System\Reflection\TypeNameResolver.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Runtime\ControlledExecution.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Runtime\DependentHandle.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Runtime\GCFrameRegistration.Mono.cs" />
@@ -260,6 +258,9 @@
       <Compile Include="$(BclSourcesRoot)\System\Threading\Thread.Mono.cs" />
       <Compile Include="$(CommonPath)System\Collections\Generic\ArrayBuilder.cs">
         <Link>CommonSystem\Collections\Generic\ArrayBuilder.cs</Link>
+      </Compile>
+      <Compile Include="$(CommonPath)System\Experimentals.cs">
+        <Link>CommonSystem\Experimentals.cs</Link>
       </Compile>
   </ItemGroup>
   <ItemGroup Condition="('$(TargetsUnix)' == 'true' or '$(TargetsBrowser)' == 'true' or '$(TargetsWasi)' == 'true') and '$(FeaturePortableThreadPool)' == 'true'">

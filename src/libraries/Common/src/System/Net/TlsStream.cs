@@ -8,6 +8,9 @@ using System.Security.Cryptography.X509Certificates;
 using System.Threading;
 using System.Threading.Tasks;
 
+#pragma warning disable SYSLIB0014 // ServicePointManager is obsolete
+// This type is used by FtpWebRequest (already obsolete) and SmtpClient (discouraged).
+
 namespace System.Net
 {
     internal sealed class TlsStream : NetworkStream
@@ -66,6 +69,11 @@ namespace System.Net
         public override Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
         {
             return _sslStream.WriteAsync(buffer, offset, count, cancellationToken);
+        }
+
+        public override ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default(CancellationToken))
+        {
+            return _sslStream.WriteAsync(buffer, cancellationToken);
         }
 
         public override int Read(byte[] buffer, int offset, int size)

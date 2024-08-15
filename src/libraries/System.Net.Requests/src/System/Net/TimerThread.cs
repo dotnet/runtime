@@ -445,14 +445,14 @@ namespace System.Net
         {
             internal InfiniteTimer() : base(Timeout.Infinite) { }
 
-            private int _cancelled;
+            private bool _canceled;
 
             internal override bool HasExpired => false;
 
             /// <summary>
             /// <para>Cancels the timer.  Returns true the first time, false after that.</para>
             /// </summary>
-            internal override bool Cancel() => Interlocked.Exchange(ref _cancelled, 1) == 0;
+            internal override bool Cancel() => !Interlocked.Exchange(ref _canceled, true);
         }
 
         /// <summary>

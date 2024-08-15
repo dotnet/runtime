@@ -7,6 +7,8 @@
 #pragma hdrstop
 #endif
 
+#include "lower.h" // for LowerRange()
+
 // Flowgraph Miscellany
 
 //------------------------------------------------------------------------
@@ -679,8 +681,9 @@ bool Compiler::fgIsCommaThrow(GenTree* tree, bool forFolding /* = false */)
 //    cls       - The class handle
 //    helper    - The helper function
 //    typeIndex - The static block type index. Used only for
-//                CORINFO_HELP_GETSHARED_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED or
-//                CORINFO_HELP_GETSHARED_GCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED to cache
+//                CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED,
+//                CORINFO_HELP_GETDYNAMIC_GCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED, or
+//                CORINFO_HELP_GETDYNAMIC_GCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED2 to cache
 //                the static block in an array at index typeIndex.
 //
 // Return Value:
@@ -696,56 +699,49 @@ GenTreeCall* Compiler::fgGetStaticsCCtorHelper(CORINFO_CLASS_HANDLE cls, CorInfo
     // We need the return type.
     switch (helper)
     {
-        case CORINFO_HELP_GETSHARED_GCSTATIC_BASE_NOCTOR:
-        case CORINFO_HELP_GETSHARED_GCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED:
-            bNeedClassID = false;
-            FALLTHROUGH;
-
-        case CORINFO_HELP_GETSHARED_GCTHREADSTATIC_BASE_NOCTOR:
+        case CORINFO_HELP_GET_GCSTATIC_BASE_NOCTOR:
+        case CORINFO_HELP_GET_NONGCSTATIC_BASE_NOCTOR:
+        case CORINFO_HELP_GET_GCTHREADSTATIC_BASE_NOCTOR:
+        case CORINFO_HELP_GET_NONGCTHREADSTATIC_BASE_NOCTOR:
+        case CORINFO_HELP_GETDYNAMIC_GCSTATIC_BASE_NOCTOR:
+        case CORINFO_HELP_GETDYNAMIC_NONGCSTATIC_BASE_NOCTOR:
+        case CORINFO_HELP_GETDYNAMIC_GCTHREADSTATIC_BASE_NOCTOR:
+        case CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE_NOCTOR:
+        case CORINFO_HELP_GETDYNAMIC_GCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED:
+        case CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED:
             callFlags |= GTF_CALL_HOISTABLE;
             FALLTHROUGH;
 
-        case CORINFO_HELP_GETSHARED_GCSTATIC_BASE:
-        case CORINFO_HELP_GETSHARED_GCSTATIC_BASE_DYNAMICCLASS:
-        case CORINFO_HELP_GETSHARED_NONGCSTATIC_BASE_DYNAMICCLASS:
-        case CORINFO_HELP_GETSHARED_GCTHREADSTATIC_BASE:
-        case CORINFO_HELP_GETSHARED_GCTHREADSTATIC_BASE_DYNAMICCLASS:
-        case CORINFO_HELP_GETSHARED_NONGCTHREADSTATIC_BASE_DYNAMICCLASS:
+        case CORINFO_HELP_GET_GCSTATIC_BASE:
+        case CORINFO_HELP_GET_NONGCSTATIC_BASE:
+        case CORINFO_HELP_GETDYNAMIC_GCSTATIC_BASE:
+        case CORINFO_HELP_GETDYNAMIC_NONGCSTATIC_BASE:
+        case CORINFO_HELP_GET_GCTHREADSTATIC_BASE:
+        case CORINFO_HELP_GET_NONGCTHREADSTATIC_BASE:
+        case CORINFO_HELP_GETDYNAMIC_GCTHREADSTATIC_BASE:
+        case CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE:
             // type = TYP_BYREF;
             break;
 
-        case CORINFO_HELP_GETSHARED_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED:
-        case CORINFO_HELP_GETSHARED_NONGCSTATIC_BASE_NOCTOR:
-            bNeedClassID = false;
-            FALLTHROUGH;
-
-        case CORINFO_HELP_GETSHARED_NONGCTHREADSTATIC_BASE_NOCTOR:
+        case CORINFO_HELP_GETPINNED_GCSTATIC_BASE_NOCTOR:
+        case CORINFO_HELP_GETPINNED_NONGCSTATIC_BASE_NOCTOR:
+        case CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED2:
             callFlags |= GTF_CALL_HOISTABLE;
             FALLTHROUGH;
 
-        case CORINFO_HELP_GETSHARED_NONGCSTATIC_BASE:
-        case CORINFO_HELP_GETSHARED_NONGCTHREADSTATIC_BASE:
-        case CORINFO_HELP_CLASSINIT_SHARED_DYNAMICCLASS:
+        case CORINFO_HELP_GETPINNED_GCSTATIC_BASE:
+        case CORINFO_HELP_GETPINNED_NONGCSTATIC_BASE:
             type = TYP_I_IMPL;
+            break;
+
+        case CORINFO_HELP_INITCLASS:
+            type = TYP_VOID;
             break;
 
         default:
             assert(!"unknown shared statics helper");
             break;
     }
-
-    GenTree* opModuleIDArg;
-    GenTree* opClassIDArg;
-
-    // Get the class ID
-    unsigned clsID;
-    size_t   moduleID;
-    void*    pclsID;
-    void*    pmoduleID;
-
-    clsID = info.compCompHnd->getClassDomainID(cls, &pclsID);
-
-    moduleID = info.compCompHnd->getClassModuleIdForStatics(cls, nullptr, &pmoduleID);
 
     if (!(callFlags & GTF_CALL_HOISTABLE))
     {
@@ -755,37 +751,36 @@ GenTreeCall* Compiler::fgGetStaticsCCtorHelper(CORINFO_CLASS_HANDLE cls, CorInfo
         }
     }
 
-    if (pmoduleID)
-    {
-        opModuleIDArg = gtNewIndOfIconHandleNode(TYP_I_IMPL, (size_t)pmoduleID, GTF_ICON_CIDMID_HDL, true);
-    }
-    else
-    {
-        opModuleIDArg = gtNewIconNode((size_t)moduleID, TYP_I_IMPL);
-    }
-
     GenTreeCall* result;
-    if (bNeedClassID)
-    {
-        if (pclsID)
-        {
-            opClassIDArg = gtNewIndOfIconHandleNode(TYP_INT, (size_t)pclsID, GTF_ICON_CIDMID_HDL, true);
-        }
-        else
-        {
-            opClassIDArg = gtNewIconNode(clsID, TYP_INT);
-        }
 
-        result = gtNewHelperCallNode(helper, type, opModuleIDArg, opClassIDArg);
-    }
-    else if ((helper == CORINFO_HELP_GETSHARED_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED) ||
-             (helper == CORINFO_HELP_GETSHARED_GCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED))
+    if ((helper == CORINFO_HELP_GETDYNAMIC_GCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED) ||
+        (helper == CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED) ||
+        (helper == CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED2))
     {
         result = gtNewHelperCallNode(helper, type, gtNewIconNode(typeIndex));
     }
+    else if (helper == CORINFO_HELP_GETDYNAMIC_GCTHREADSTATIC_BASE_NOCTOR ||
+             helper == CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE_NOCTOR ||
+             helper == CORINFO_HELP_GETDYNAMIC_GCTHREADSTATIC_BASE ||
+             helper == CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE)
+    {
+        result = gtNewHelperCallNode(helper, type,
+                                     gtNewIconNode((size_t)info.compCompHnd->getClassThreadStaticDynamicInfo(cls),
+                                                   TYP_I_IMPL));
+    }
+    else if (helper == CORINFO_HELP_GETDYNAMIC_GCSTATIC_BASE || helper == CORINFO_HELP_GETDYNAMIC_NONGCSTATIC_BASE ||
+             helper == CORINFO_HELP_GETDYNAMIC_GCSTATIC_BASE_NOCTOR ||
+             helper == CORINFO_HELP_GETDYNAMIC_NONGCSTATIC_BASE_NOCTOR ||
+             helper == CORINFO_HELP_GETPINNED_GCSTATIC_BASE || helper == CORINFO_HELP_GETPINNED_NONGCSTATIC_BASE ||
+             helper == CORINFO_HELP_GETPINNED_GCSTATIC_BASE_NOCTOR ||
+             helper == CORINFO_HELP_GETPINNED_NONGCSTATIC_BASE_NOCTOR)
+    {
+        result = gtNewHelperCallNode(helper, type,
+                                     gtNewIconNode(info.compCompHnd->getClassStaticDynamicInfo(cls), TYP_I_IMPL));
+    }
     else
     {
-        result = gtNewHelperCallNode(helper, type, opModuleIDArg);
+        result = gtNewHelperCallNode(helper, type, gtNewIconEmbClsHndNode(cls));
     }
 
     if (IsStaticHelperEligibleForExpansion(result))
@@ -1061,14 +1056,26 @@ GenTree* Compiler::fgOptimizeDelegateConstructor(GenTreeCall*            call,
                 else
                 {
                     assert(oper != GT_FTN_ADDR);
-                    CORINFO_CONST_LOOKUP genericLookup;
-                    info.compCompHnd->getReadyToRunHelper(&ldftnToken->m_token, &pLookup.lookupKind,
-                                                          CORINFO_HELP_READYTORUN_GENERIC_HANDLE, info.compMethodHnd,
-                                                          &genericLookup);
-                    GenTree* ctxTree = getRuntimeContextTree(pLookup.lookupKind.runtimeLookupKind);
-                    call             = gtNewHelperCallNode(CORINFO_HELP_READYTORUN_DELEGATE_CTOR, TYP_VOID, thisPointer,
-                                                           targetObjPointers, ctxTree);
-                    call->setEntryPoint(genericLookup);
+
+                    if (pLookup.lookupKind.runtimeLookupKind != CORINFO_LOOKUP_NOT_SUPPORTED)
+                    {
+                        CORINFO_CONST_LOOKUP genericLookup;
+                        info.compCompHnd->getReadyToRunHelper(&ldftnToken->m_token, &pLookup.lookupKind,
+                                                              CORINFO_HELP_READYTORUN_GENERIC_HANDLE,
+                                                              info.compMethodHnd, &genericLookup);
+                        GenTree* ctxTree = getRuntimeContextTree(pLookup.lookupKind.runtimeLookupKind);
+                        call = gtNewHelperCallNode(CORINFO_HELP_READYTORUN_DELEGATE_CTOR, TYP_VOID, thisPointer,
+                                                   targetObjPointers, ctxTree);
+                        call->setEntryPoint(genericLookup);
+                    }
+                    else
+                    {
+                        // Runtime does not support inlining of all shapes of runtime lookups
+                        // Inlining has to be aborted in such a case
+                        assert(compIsForInlining());
+                        compInlineResult->NoteFatal(InlineObservation::CALLSITE_GENERIC_DICTIONARY_LOOKUP);
+                        JITDUMP("not optimized, generic inlining restriction\n");
+                    }
                 }
             }
             else
@@ -2438,7 +2445,10 @@ PhaseStatus Compiler::fgAddInternal()
 
         LclVarDsc* varDsc = lvaGetDesc(lvaInlinedPInvokeFrameVar);
         // Make room for the inlined frame.
-        lvaSetStruct(lvaInlinedPInvokeFrameVar, typGetBlkLayout(eeGetEEInfo()->inlinedCallFrameInfo.size), false);
+        const CORINFO_EE_INFO* eeInfo = eeGetEEInfo();
+        unsigned frameSize            = info.compPublishStubParam ? eeInfo->inlinedCallFrameInfo.sizeWithSecretStubArg
+                                                                  : eeInfo->inlinedCallFrameInfo.size;
+        lvaSetStruct(lvaInlinedPInvokeFrameVar, typGetBlkLayout(frameSize), false);
     }
 
     // Do we need to insert a "JustMyCode" callback?
@@ -3083,17 +3093,12 @@ bool Compiler::fgFuncletsAreCold()
 //
 // Notes:
 //    Walk the basic blocks list to determine the first block to place in the
-//    cold section.  This would be the first of a series of rarely executed blocks
+//    cold section. This would be the first of a series of rarely executed blocks
 //    such that no succeeding blocks are in a try region or an exception handler
 //    or are rarely executed.
 //
 PhaseStatus Compiler::fgDetermineFirstColdBlock()
 {
-    // Since we may need to create a new transition block
-    // we assert that it is OK to create new blocks.
-    //
-    assert(fgPredsComputed);
-    assert(fgSafeBasicBlockCreation);
     assert(fgFirstColdBlock == nullptr);
 
     if (!opts.compProcedureSplitting)
@@ -3134,15 +3139,6 @@ PhaseStatus Compiler::fgDetermineFirstColdBlock()
 
         for (lblk = nullptr, block = fgFirstBB; block != nullptr; lblk = block, block = block->Next())
         {
-            bool blockMustBeInHotSection = false;
-
-#if HANDLER_ENTRY_MUST_BE_IN_HOT_SECTION
-            if (bbIsHandlerBeg(block))
-            {
-                blockMustBeInHotSection = true;
-            }
-#endif // HANDLER_ENTRY_MUST_BE_IN_HOT_SECTION
-
             // Make note of if we're in the funclet section,
             // so we can stop the search early.
             if (block == fgFirstFuncletBB)
@@ -3156,7 +3152,7 @@ PhaseStatus Compiler::fgDetermineFirstColdBlock()
                 // We have a candidate for first cold block
 
                 // Is this a hot block?
-                if (blockMustBeInHotSection || (block->isRunRarely() == false))
+                if (!block->isRunRarely())
                 {
                     // We have to restart the search for the first cold block
                     firstColdBlock       = nullptr;
@@ -3195,7 +3191,7 @@ PhaseStatus Compiler::fgDetermineFirstColdBlock()
                 }
 
                 // Is this a cold block?
-                if (!blockMustBeInHotSection && block->isRunRarely())
+                if (block->isRunRarely())
                 {
                     //
                     // If the last block that was hot was a BBJ_COND
@@ -3540,69 +3536,84 @@ PhaseStatus Compiler::fgCreateThrowHelperBlocks()
         // graph optimizations. Note that no target block points to these blocks.
         //
         newBlk->SetFlags(BBF_IMPORTED | BBF_DONT_REMOVE);
-
-        // Figure out what code to insert
-        //
-        int helper = CORINFO_HELP_UNDEF;
-
-        switch (add->acdKind)
-        {
-            case SCK_RNGCHK_FAIL:
-                helper = CORINFO_HELP_RNGCHKFAIL;
-                break;
-
-            case SCK_DIV_BY_ZERO:
-                helper = CORINFO_HELP_THROWDIVZERO;
-                break;
-
-            case SCK_ARITH_EXCPN:
-                helper = CORINFO_HELP_OVERFLOW;
-                noway_assert(SCK_OVERFLOW == SCK_ARITH_EXCPN);
-                break;
-
-            case SCK_ARG_EXCPN:
-                helper = CORINFO_HELP_THROW_ARGUMENTEXCEPTION;
-                break;
-
-            case SCK_ARG_RNG_EXCPN:
-                helper = CORINFO_HELP_THROW_ARGUMENTOUTOFRANGEEXCEPTION;
-                break;
-
-            case SCK_FAIL_FAST:
-                helper = CORINFO_HELP_FAIL_FAST;
-                break;
-
-            default:
-                noway_assert(!"unexpected code addition kind");
-        }
-
-        noway_assert(helper != CORINFO_HELP_UNDEF);
-
-        // Add the appropriate helper call.
-        //
-        GenTreeCall* tree = gtNewHelperCallNode(helper, TYP_VOID);
-
-        // There are no args here but fgMorphArgs has side effects
-        // such as setting the outgoing arg area (which is necessary
-        // on AMD if there are any calls).
-        //
-        tree = fgMorphArgs(tree);
-
-        // Store the tree in the new basic block.
-        //
-        if (fgNodeThreading != NodeThreading::LIR)
-        {
-            fgInsertStmtAtEnd(newBlk, fgNewStmtFromTree(tree));
-        }
-        else
-        {
-            LIR::AsRange(newBlk).InsertAtEnd(LIR::SeqTree(this, tree));
-        }
     }
 
     fgRngChkThrowAdded = true;
 
     return PhaseStatus::MODIFIED_EVERYTHING;
+}
+
+//------------------------------------------------------------------------
+// fgCreateThrowHelperBlockCode: create the code for throw helper blocks
+//
+void Compiler::fgCreateThrowHelperBlockCode(AddCodeDsc* add)
+{
+    assert(add->acdUsed);
+
+    // Find the block created earlier. It should be empty.
+    //
+    BasicBlock* const block = add->acdDstBlk;
+    assert(block->isEmpty());
+
+    // Figure out what code to insert
+    //
+    int helper = CORINFO_HELP_UNDEF;
+
+    switch (add->acdKind)
+    {
+        case SCK_RNGCHK_FAIL:
+            helper = CORINFO_HELP_RNGCHKFAIL;
+            break;
+
+        case SCK_DIV_BY_ZERO:
+            helper = CORINFO_HELP_THROWDIVZERO;
+            break;
+
+        case SCK_ARITH_EXCPN:
+            helper = CORINFO_HELP_OVERFLOW;
+            noway_assert(SCK_OVERFLOW == SCK_ARITH_EXCPN);
+            break;
+
+        case SCK_ARG_EXCPN:
+            helper = CORINFO_HELP_THROW_ARGUMENTEXCEPTION;
+            break;
+
+        case SCK_ARG_RNG_EXCPN:
+            helper = CORINFO_HELP_THROW_ARGUMENTOUTOFRANGEEXCEPTION;
+            break;
+
+        case SCK_FAIL_FAST:
+            helper = CORINFO_HELP_FAIL_FAST;
+            break;
+
+        default:
+            noway_assert(!"unexpected code addition kind");
+    }
+
+    noway_assert(helper != CORINFO_HELP_UNDEF);
+
+    // Add the appropriate helper call.
+    //
+    GenTreeCall* tree = gtNewHelperCallNode(helper, TYP_VOID);
+
+    // There are no args here but fgMorphArgs has side effects
+    // such as setting the outgoing arg area (which is necessary
+    // on AMD if there are any calls).
+    //
+    tree = fgMorphArgs(tree);
+
+    // Store the tree in the new basic block.
+    //
+    if (fgNodeThreading != NodeThreading::LIR)
+    {
+        fgInsertStmtAtEnd(block, fgNewStmtFromTree(tree));
+    }
+    else
+    {
+        LIR::AsRange(block).InsertAtEnd(tree);
+        LIR::ReadOnlyRange range(tree, tree);
+        m_pLowering->LowerRange(block, range);
+    }
 }
 
 //------------------------------------------------------------------------
@@ -4043,8 +4054,8 @@ bool FlowGraphDfsTree::Contains(BasicBlock* block) const
 // block `descendant`
 //
 // Arguments:
-//   ancestor   -- block that is possible ancestor
-//   descendant -- block that is possible descendant
+//   ancestor   - block that is possible ancestor
+//   descendant - block that is possible descendant
 //
 // Returns:
 //   True if `ancestor` is ancestor of `descendant` in the depth first spanning
@@ -4063,6 +4074,9 @@ bool FlowGraphDfsTree::IsAncestor(BasicBlock* ancestor, BasicBlock* descendant) 
 //------------------------------------------------------------------------
 // fgComputeDfs: Compute a depth-first search tree for the flow graph.
 //
+// Type parameters:
+//   useProfile - If true, determines order of successors visited using profile data
+//
 // Returns:
 //   The tree.
 //
@@ -4070,6 +4084,7 @@ bool FlowGraphDfsTree::IsAncestor(BasicBlock* ancestor, BasicBlock* descendant) 
 //   Preorder and postorder numbers are assigned into the BasicBlock structure.
 //   The tree returned contains a postorder of the basic blocks.
 //
+template <const bool useProfile /* = false */>
 FlowGraphDfsTree* Compiler::fgComputeDfs()
 {
     BasicBlock** postOrder = new (this, CMK_DepthFirstSearch) BasicBlock*[fgBBcount];
@@ -4095,9 +4110,16 @@ FlowGraphDfsTree* Compiler::fgComputeDfs()
         }
     };
 
-    unsigned numBlocks = fgRunDfs(visitPreorder, visitPostorder, visitEdge);
+    unsigned numBlocks =
+        fgRunDfs<decltype(visitPreorder), decltype(visitPostorder), decltype(visitEdge), useProfile>(visitPreorder,
+                                                                                                     visitPostorder,
+                                                                                                     visitEdge);
     return new (this, CMK_DepthFirstSearch) FlowGraphDfsTree(this, postOrder, numBlocks, hasCycle);
 }
+
+// Add explicit instantiations.
+template FlowGraphDfsTree* Compiler::fgComputeDfs<false>();
+template FlowGraphDfsTree* Compiler::fgComputeDfs<true>();
 
 //------------------------------------------------------------------------
 // fgInvalidateDfsTree: Invalidate computed DFS tree and dependent annotations
@@ -4127,6 +4149,28 @@ FlowGraphNaturalLoop::FlowGraphNaturalLoop(const FlowGraphDfsTree* dfsTree, Basi
     , m_entryEdges(dfsTree->GetCompiler()->getAllocator(CMK_Loops))
     , m_exitEdges(dfsTree->GetCompiler()->getAllocator(CMK_Loops))
 {
+}
+
+//------------------------------------------------------------------------
+// GetPreheader: Get the preheader of this loop, if it has one.
+//
+// Returns:
+//   The preheader, or nullptr if there is no preheader.
+//
+BasicBlock* FlowGraphNaturalLoop::GetPreheader() const
+{
+    if (m_entryEdges.size() != 1)
+    {
+        return nullptr;
+    }
+
+    BasicBlock* preheader = m_entryEdges[0]->getSourceBlock();
+    if (!preheader->KindIs(BBJ_ALWAYS))
+    {
+        return nullptr;
+    }
+
+    return preheader;
 }
 
 //------------------------------------------------------------------------
@@ -5569,7 +5613,7 @@ bool FlowGraphNaturalLoop::InitBlockEntersLoopOnTrue(BasicBlock* initBlock)
 // the loop.
 //
 // Returns:
-//   Block with highest bbNum.
+//   First block in block order contained in the loop.
 //
 // Remarks:
 //   Mostly exists as a quirk while transitioning from the old loop
@@ -5577,12 +5621,13 @@ bool FlowGraphNaturalLoop::InitBlockEntersLoopOnTrue(BasicBlock* initBlock)
 //
 BasicBlock* FlowGraphNaturalLoop::GetLexicallyTopMostBlock()
 {
-    BasicBlock* top = m_header;
-    VisitLoopBlocks([&top](BasicBlock* loopBlock) {
-        if (loopBlock->bbNum < top->bbNum)
-            top = loopBlock;
-        return BasicBlockVisit::Continue;
-    });
+    BasicBlock* top = m_dfsTree->GetCompiler()->fgFirstBB;
+
+    while (!ContainsBlock(top))
+    {
+        top = top->Next();
+        assert(top != nullptr);
+    }
 
     return top;
 }
@@ -5592,7 +5637,7 @@ BasicBlock* FlowGraphNaturalLoop::GetLexicallyTopMostBlock()
 // within the loop.
 //
 // Returns:
-//   Block with highest bbNum.
+//   Last block in block order contained in the loop.
 //
 // Remarks:
 //   Mostly exists as a quirk while transitioning from the old loop
@@ -5600,12 +5645,13 @@ BasicBlock* FlowGraphNaturalLoop::GetLexicallyTopMostBlock()
 //
 BasicBlock* FlowGraphNaturalLoop::GetLexicallyBottomMostBlock()
 {
-    BasicBlock* bottom = m_header;
-    VisitLoopBlocks([&bottom](BasicBlock* loopBlock) {
-        if (loopBlock->bbNum > bottom->bbNum)
-            bottom = loopBlock;
-        return BasicBlockVisit::Continue;
-    });
+    BasicBlock* bottom = m_dfsTree->GetCompiler()->fgLastBB;
+
+    while (!ContainsBlock(bottom))
+    {
+        bottom = bottom->Prev();
+        assert(bottom != nullptr);
+    }
 
     return bottom;
 }
@@ -5737,6 +5783,109 @@ void FlowGraphNaturalLoop::Duplicate(BasicBlock** insertAfter, BlockToBlockMap* 
 
         return BasicBlockVisit::Continue;
     });
+}
+
+//------------------------------------------------------------------------
+// MayExecuteBlockMultipleTimesPerIteration:
+//   Check if the loop may execute a particular loop block multiple times for
+//   each iteration.
+//
+// Parameters:
+//   block - The basic block
+//
+// Returns:
+//   True if so. May return true even if the true answer is false.
+//
+bool FlowGraphNaturalLoop::MayExecuteBlockMultipleTimesPerIteration(BasicBlock* block)
+{
+    assert(ContainsBlock(block));
+
+    if (ContainsImproperHeader())
+    {
+        // To be more precise we could check if 'block' can reach itself
+        // without going through the header, but this case is rare.
+        return true;
+    }
+
+    for (FlowGraphNaturalLoop* child = GetChild(); child != nullptr; child = child->GetSibling())
+    {
+        if (child->ContainsBlock(block))
+        {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+//------------------------------------------------------------------------
+// IsPostDominatedOnLoopIteration:
+//   Check whether control will always flow through "postDominator" if starting
+//   at "block" and a backedge is taken.
+//
+// Parameters:
+//   block         - The basic block
+//   postDominator - Block to query postdominance of
+//
+// Returns:
+//   True if so.
+//
+bool FlowGraphNaturalLoop::IsPostDominatedOnLoopIteration(BasicBlock* block, BasicBlock* postDominator)
+{
+    assert(ContainsBlock(block) && ContainsBlock(postDominator));
+
+    unsigned index;
+    bool     gotIndex = TryGetLoopBlockBitVecIndex(block, &index);
+    assert(gotIndex);
+
+    Compiler*               comp = m_dfsTree->GetCompiler();
+    ArrayStack<BasicBlock*> stack(comp->getAllocator(CMK_Loops));
+
+    BitVecTraits traits = LoopBlockTraits();
+    BitVec       visited(BitVecOps::MakeEmpty(&traits));
+
+    stack.Push(block);
+    BitVecOps::AddElemD(&traits, visited, index);
+
+    auto queueSuccs = [=, &stack, &traits, &visited](BasicBlock* succ) {
+        if (succ == m_header)
+        {
+            // We managed to reach the header without going through "postDominator".
+            return BasicBlockVisit::Abort;
+        }
+
+        unsigned index;
+        if (!TryGetLoopBlockBitVecIndex(succ, &index) || !BitVecOps::IsMember(&traits, m_blocks, index))
+        {
+            // Block is not inside loop
+            return BasicBlockVisit::Continue;
+        }
+
+        if (!BitVecOps::TryAddElemD(&traits, visited, index))
+        {
+            // Block already visited
+            return BasicBlockVisit::Continue;
+        }
+
+        stack.Push(succ);
+        return BasicBlockVisit::Continue;
+    };
+
+    while (stack.Height() > 0)
+    {
+        BasicBlock* block = stack.Pop();
+        if (block == postDominator)
+        {
+            continue;
+        }
+
+        if (block->VisitAllSuccs(comp, queueSuccs) == BasicBlockVisit::Abort)
+        {
+            return false;
+        }
+    }
+
+    return true;
 }
 
 //------------------------------------------------------------------------
@@ -5942,13 +6091,10 @@ bool NaturalLoopIterInfo::ArrLenLimit(Compiler* comp, ArrIndex* index)
 //   finger2 - A basic block that might share IDom ancestor with finger1.
 //
 // Returns:
-//   A basic block whose IDom is the dominator for finger1 and finger2, or else
-//   nullptr. This may be called while immediate dominators are being computed,
-//   and if the input values are members of the same loop (each reachable from
-//   the other), then one may not yet have its immediate dominator computed
-//   when we are attempting to find the immediate dominator of the other. So a
-//   nullptr return value means that the the two inputs are in a cycle, not
-//   that they don't have a common dominator ancestor.
+//   A basic block that is the dominator for finger1 and finger2. This can be
+//   called while the dominator tree is still being computed, in which case the
+//   returned result may not be the "latest" such dominator (but will converge
+//   towards it with more iterations over the basic blocks).
 //
 // Remarks:
 //   See "A simple, fast dominance algorithm" by Keith D. Cooper, Timothy J.
@@ -5956,23 +6102,19 @@ bool NaturalLoopIterInfo::ArrLenLimit(Compiler* comp, ArrIndex* index)
 //
 BasicBlock* FlowGraphDominatorTree::IntersectDom(BasicBlock* finger1, BasicBlock* finger2)
 {
+    assert((finger1 != nullptr) && (finger2 != nullptr));
+
     while (finger1 != finger2)
     {
-        if ((finger1 == nullptr) || (finger2 == nullptr))
-        {
-            return nullptr;
-        }
-        while ((finger1 != nullptr) && (finger1->bbPostorderNum < finger2->bbPostorderNum))
+        while (finger1->bbPostorderNum < finger2->bbPostorderNum)
         {
             finger1 = finger1->bbIDom;
+            assert(finger1 != nullptr);
         }
-        if (finger1 == nullptr)
-        {
-            return nullptr;
-        }
-        while ((finger2 != nullptr) && (finger2->bbPostorderNum < finger1->bbPostorderNum))
+        while (finger2->bbPostorderNum < finger1->bbPostorderNum)
         {
             finger2 = finger2->bbIDom;
+            assert(finger2 != nullptr);
         }
     }
     return finger1;
@@ -6074,8 +6216,8 @@ FlowGraphDominatorTree* FlowGraphDominatorTree::Build(const FlowGraphDfsTree* df
 
     // First compute immediate dominators.
     unsigned numIters = 0;
-    bool     changed  = true;
-    while (changed)
+    bool     changed;
+    do
     {
         changed = false;
 
@@ -6120,7 +6262,7 @@ FlowGraphDominatorTree* FlowGraphDominatorTree::Build(const FlowGraphDfsTree* df
         }
 
         numIters++;
-    }
+    } while (changed && dfsTree->HasCycle());
 
     // Now build dominator tree.
     DomTreeNode* domTree = new (comp, CMK_DominatorMemory) DomTreeNode[count]{};

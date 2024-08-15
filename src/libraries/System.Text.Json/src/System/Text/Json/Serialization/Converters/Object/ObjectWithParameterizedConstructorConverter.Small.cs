@@ -66,15 +66,25 @@ namespace System.Text.Json.Serialization.Converters
 
             bool success = info.EffectiveConverter.TryRead(ref reader, info.ParameterType, info.Options, ref state, out TArg? value, out _);
 
-            arg = value is null && jsonParameterInfo.IgnoreNullTokensOnRead
-                ? info.DefaultValue // Use default value specified on parameter, if any.
-                : value;
-
             if (success)
             {
+                if (value is null)
+                {
+                    if (info.IgnoreNullTokensOnRead)
+                    {
+                        // Use default value specified on parameter, if any.
+                        value = info.EffectiveDefaultValue;
+                    }
+                    else if (!info.IsNullable && info.Options.RespectNullableAnnotations)
+                    {
+                        ThrowHelper.ThrowJsonException_ConstructorParameterDisallowNull(info.Name, state.Current.JsonTypeInfo.Type);
+                    }
+                }
+
                 state.Current.MarkRequiredPropertyAsRead(jsonParameterInfo.MatchingProperty);
             }
 
+            arg = value;
             return success;
         }
 
@@ -86,27 +96,25 @@ namespace System.Text.Json.Serialization.Converters
 
             var arguments = new Arguments<TArg0, TArg1, TArg2, TArg3>();
 
-            List<KeyValuePair<string, JsonParameterInfo>> cache = typeInfo.ParameterCache!.List;
-            for (int i = 0; i < typeInfo.ParameterCount; i++)
+            foreach (JsonParameterInfo parameterInfo in typeInfo.ParameterCache)
             {
-                JsonParameterInfo parameterInfo = cache[i].Value;
                 switch (parameterInfo.Position)
                 {
                     case 0:
-                        arguments.Arg0 = ((JsonParameterInfo<TArg0>)parameterInfo).DefaultValue;
+                        arguments.Arg0 = ((JsonParameterInfo<TArg0>)parameterInfo).EffectiveDefaultValue;
                         break;
                     case 1:
-                        arguments.Arg1 = ((JsonParameterInfo<TArg1>)parameterInfo).DefaultValue;
+                        arguments.Arg1 = ((JsonParameterInfo<TArg1>)parameterInfo).EffectiveDefaultValue;
                         break;
                     case 2:
-                        arguments.Arg2 = ((JsonParameterInfo<TArg2>)parameterInfo).DefaultValue;
+                        arguments.Arg2 = ((JsonParameterInfo<TArg2>)parameterInfo).EffectiveDefaultValue;
                         break;
                     case 3:
-                        arguments.Arg3 = ((JsonParameterInfo<TArg3>)parameterInfo).DefaultValue;
+                        arguments.Arg3 = ((JsonParameterInfo<TArg3>)parameterInfo).EffectiveDefaultValue;
                         break;
                     default:
                         Debug.Fail("More than 4 params: we should be in override for LargeObjectWithParameterizedConstructorConverter.");
-                        throw new InvalidOperationException();
+                        break;
                 }
             }
 

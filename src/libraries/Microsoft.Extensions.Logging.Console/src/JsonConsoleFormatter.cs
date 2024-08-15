@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Buffers;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
@@ -27,15 +28,35 @@ namespace Microsoft.Extensions.Logging.Console
 
         public override void Write<TState>(in LogEntry<TState> logEntry, IExternalScopeProvider? scopeProvider, TextWriter textWriter)
         {
-            string message = logEntry.Formatter(logEntry.State, logEntry.Exception);
-            if (logEntry.Exception == null && message == null)
+            if (logEntry.State is BufferedLogRecord bufferedRecord)
             {
-                return;
+                string message = bufferedRecord.FormattedMessage ?? string.Empty;
+                WriteInternal(null, textWriter, message, bufferedRecord.LogLevel, logEntry.Category, bufferedRecord.EventId.Id, bufferedRecord.Exception,
+                    bufferedRecord.Attributes.Count > 0, null, bufferedRecord.Attributes, bufferedRecord.Timestamp);
             }
-            LogLevel logLevel = logEntry.LogLevel;
-            string category = logEntry.Category;
-            int eventId = logEntry.EventId.Id;
-            Exception? exception = logEntry.Exception;
+            else
+            {
+                string message = logEntry.Formatter(logEntry.State, logEntry.Exception);
+                if (logEntry.Exception == null && message == null)
+                {
+                    return;
+                }
+
+                DateTimeOffset stamp = FormatterOptions.TimestampFormat != null
+                    ? (FormatterOptions.UseUtcTimestamp ? DateTimeOffset.UtcNow : DateTimeOffset.Now)
+                    : DateTimeOffset.MinValue;
+
+                // We extract most of the work into a non-generic method to save code size. If this was left in the generic
+                // method, we'd get generic specialization for all TState parameters, but that's unnecessary.
+                WriteInternal(scopeProvider, textWriter, message, logEntry.LogLevel, logEntry.Category, logEntry.EventId.Id, logEntry.Exception?.ToString(),
+                    logEntry.State != null, logEntry.State?.ToString(), logEntry.State as IReadOnlyList<KeyValuePair<string, object?>>, stamp);
+            }
+        }
+
+        private void WriteInternal(IExternalScopeProvider? scopeProvider, TextWriter textWriter, string? message, LogLevel logLevel,
+            string category, int eventId, string? exception, bool hasState, string? stateMessage, IReadOnlyList<KeyValuePair<string, object?>>? stateProperties,
+            DateTimeOffset stamp)
+        {
             const int DefaultBufferSize = 1024;
             using (var output = new PooledByteBufferWriter(DefaultBufferSize))
             {
@@ -45,26 +66,25 @@ namespace Microsoft.Extensions.Logging.Console
                     var timestampFormat = FormatterOptions.TimestampFormat;
                     if (timestampFormat != null)
                     {
-                        DateTimeOffset dateTimeOffset = FormatterOptions.UseUtcTimestamp ? DateTimeOffset.UtcNow : DateTimeOffset.Now;
-                        writer.WriteString("Timestamp", dateTimeOffset.ToString(timestampFormat));
+                        writer.WriteString("Timestamp", stamp.ToString(timestampFormat));
                     }
-                    writer.WriteNumber(nameof(logEntry.EventId), eventId);
-                    writer.WriteString(nameof(logEntry.LogLevel), GetLogLevelString(logLevel));
-                    writer.WriteString(nameof(logEntry.Category), category);
+                    writer.WriteNumber(nameof(LogEntry<object>.EventId), eventId);
+                    writer.WriteString(nameof(LogEntry<object>.LogLevel), GetLogLevelString(logLevel));
+                    writer.WriteString(nameof(LogEntry<object>.Category), category);
                     writer.WriteString("Message", message);
 
                     if (exception != null)
                     {
-                        writer.WriteString(nameof(Exception), exception.ToString());
+                        writer.WriteString(nameof(Exception), exception);
                     }
 
-                    if (logEntry.State != null)
+                    if (hasState)
                     {
-                        writer.WriteStartObject(nameof(logEntry.State));
-                        writer.WriteString("Message", logEntry.State.ToString());
-                        if (logEntry.State is IReadOnlyCollection<KeyValuePair<string, object>> stateProperties)
+                        writer.WriteStartObject(nameof(LogEntry<object>.State));
+                        writer.WriteString("Message", stateMessage);
+                        if (stateProperties != null)
                         {
-                            foreach (KeyValuePair<string, object> item in stateProperties)
+                            foreach (KeyValuePair<string, object?> item in stateProperties)
                             {
                                 WriteItem(writer, item);
                             }
@@ -75,11 +95,30 @@ namespace Microsoft.Extensions.Logging.Console
                     writer.WriteEndObject();
                     writer.Flush();
                 }
-#if NETCOREAPP
-                textWriter.Write(Encoding.UTF8.GetString(output.WrittenMemory.Span));
-#else
-                textWriter.Write(Encoding.UTF8.GetString(output.WrittenMemory.Span.ToArray()));
-#endif
+
+                var messageBytes = output.WrittenMemory.Span;
+                var logMessageBuffer = ArrayPool<char>.Shared.Rent(Encoding.UTF8.GetMaxCharCount(messageBytes.Length));
+                try
+                {
+ #if NET
+                    var charsWritten = Encoding.UTF8.GetChars(messageBytes, logMessageBuffer);
+ #else
+                    int charsWritten;
+                    unsafe
+                    {
+                        fixed (byte* messageBytesPtr = messageBytes)
+                        fixed (char* logMessageBufferPtr = logMessageBuffer)
+                        {
+                            charsWritten = Encoding.UTF8.GetChars(messageBytesPtr, messageBytes.Length, logMessageBufferPtr, logMessageBuffer.Length);
+                        }
+                    }
+ #endif
+                    textWriter.Write(logMessageBuffer, 0, charsWritten);
+                }
+                finally
+                {
+                    ArrayPool<char>.Shared.Return(logMessageBuffer);
+                }
             }
             textWriter.Write(Environment.NewLine);
         }
@@ -105,11 +144,11 @@ namespace Microsoft.Extensions.Logging.Console
                 writer.WriteStartArray("Scopes");
                 scopeProvider.ForEachScope((scope, state) =>
                 {
-                    if (scope is IEnumerable<KeyValuePair<string, object>> scopeItems)
+                    if (scope is IEnumerable<KeyValuePair<string, object?>> scopeItems)
                     {
                         state.WriteStartObject();
                         state.WriteString("Message", scope.ToString());
-                        foreach (KeyValuePair<string, object> item in scopeItems)
+                        foreach (KeyValuePair<string, object?> item in scopeItems)
                         {
                             WriteItem(state, item);
                         }
@@ -124,7 +163,7 @@ namespace Microsoft.Extensions.Logging.Console
             }
         }
 
-        private static void WriteItem(Utf8JsonWriter writer, KeyValuePair<string, object> item)
+        private static void WriteItem(Utf8JsonWriter writer, KeyValuePair<string, object?> item)
         {
             var key = item.Key;
             switch (item.Value)
@@ -139,7 +178,7 @@ namespace Microsoft.Extensions.Logging.Console
                     writer.WriteNumber(key, sbyteValue);
                     break;
                 case char charValue:
-#if NETCOREAPP
+#if NET
                     writer.WriteString(key, MemoryMarshal.CreateSpan(ref charValue, 1));
 #else
                     writer.WriteString(key, charValue.ToString());

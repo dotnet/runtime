@@ -156,6 +156,14 @@ private void SomeVectorizationHelper()
 }
 ```
 
+#### Non-Deterministic Intrinsics in System.Private.Corelib
+
+Some APIs exposed in System.Private.Corelib are intentionally non-deterministic across hardware and instead only ensure determinism within the scope of a single process. To facilitate the support of such APIs, the JIT defines `Compiler::BlockNonDeterministicIntrinsics(bool mustExpand)` which should be used to help block such APIs from expanding in scenarios such as ReadyToRun. Additionally, such APIs should recursively call themselves so that indirect invocation (such as via a delegate, function pointer, reflection, etc) will compute the same result.
+
+An example of such a non-deterministic API is the `ConvertToIntegerNative` APIs exposed on `System.Single` and `System.Double`. These APIs convert from the source value to the target integer type using the fastest mechanism available for the underlying hardware. They exist due to the IEEE 754 specification leaving conversions undefined when the input cannot fit into the output (for example converting `float.MaxValue` to `int`) and thus different hardware having historically provided differing behaviors on these edge cases. They allow developers who do not need to be concerned with edge case handling but where the performance overhead of normalizing results for the default cast operator is too great.
+
+Another example is the various `*Estimate` APIs, such as `float.ReciprocalSqrtEstimate`. These APIs allow a user to likewise opt into a faster result at the cost of some inaccuracy, where the exact inaccuracy encountered depends on the input and the underlying hardware the instruction is executed against.
+
 # Mechanisms in the JIT to generate correct code to handle varied instruction set support
 
 The JIT receives flags which instruct it on what instruction sets are valid to use, and has access to a new jit interface api `notifyInstructionSetUsage(isa, bool supportBehaviorRequired)`.

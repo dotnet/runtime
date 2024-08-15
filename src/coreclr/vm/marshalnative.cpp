@@ -438,9 +438,9 @@ extern "C" void QCALLTYPE MarshalNative_GetExceptionForHR(INT32 errorCode, LPVOI
 
     BEGIN_QCALL;
 
+#ifdef FEATURE_COMINTEROP
     // Retrieve the IErrorInfo to use.
     IErrorInfo* pErrorInfo = (IErrorInfo*)errorInfo;
-#ifdef FEATURE_COMINTEROP
     if (pErrorInfo == (IErrorInfo*)(-1))
     {
         pErrorInfo = NULL;
@@ -456,7 +456,11 @@ extern "C" void QCALLTYPE MarshalNative_GetExceptionForHR(INT32 errorCode, LPVOI
 
     OBJECTREF exceptObj = NULL;
     GCPROTECT_BEGIN(exceptObj);
+#ifdef FEATURE_COMINTEROP
     ::GetExceptionForHR(errorCode, pErrorInfo, &exceptObj);
+#else
+    ::GetExceptionForHR(errorCode, &exceptObj);
+#endif // FEATURE_COMINTEROP
     retVal.Set(exceptObj);
     GCPROTECT_END();
 
@@ -530,6 +534,33 @@ extern "C" IDispatch* QCALLTYPE MarshalNative_GetIDispatchForObject(QCall::Objec
     OBJECTREF oref = o.Get();
     GCPROTECT_BEGIN(oref);
     retVal = (IDispatch*)GetComIPFromObjectRef(&oref, ComIpType_Dispatch, NULL);
+    GCPROTECT_END();
+
+    END_QCALL;
+    return retVal;
+}
+
+//====================================================================
+// return the IUnknown* or IDispatch* for an Object.
+//====================================================================
+extern "C" void* QCALLTYPE MarshalNative_GetIUnknownOrIDispatchForObject(QCall::ObjectHandleOnStack o, BOOL* isIDispatch)
+{
+    QCALL_CONTRACT;
+
+    void* retVal = NULL;
+
+    BEGIN_QCALL;
+
+    // Ensure COM is started up.
+    EnsureComStarted();
+
+    GCX_COOP();
+
+    OBJECTREF oref = o.Get();
+    GCPROTECT_BEGIN(oref);
+    ComIpType fetchedIpType = ComIpType_None;
+    retVal = GetComIPFromObjectRef(&oref, ComIpType_Both, &fetchedIpType);
+    *isIDispatch = fetchedIpType == ComIpType_Dispatch;
     GCPROTECT_END();
 
     END_QCALL;

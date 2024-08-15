@@ -44,7 +44,7 @@ namespace System.Security.Cryptography.Pkcs
             }
 
             internal override bool VerifySignature(
-#if NETCOREAPP || NETSTANDARD2_1
+#if NET || NETSTANDARD2_1
                 ReadOnlySpan<byte> valueHash,
                 ReadOnlyMemory<byte> signature,
 #else
@@ -80,7 +80,7 @@ namespace System.Security.Cryptography.Pkcs
                     bufSize = 2 * fieldSize;
                 }
 
-#if NETCOREAPP || NETSTANDARD2_1
+#if NET || NETSTANDARD2_1
                 byte[] rented = CryptoPool.Rent(bufSize);
                 Span<byte> ieee = new Span<byte>(rented, 0, bufSize);
 
@@ -95,7 +95,7 @@ namespace System.Security.Cryptography.Pkcs
                     }
 
                     return key.VerifyHash(valueHash, ieee);
-#if NETCOREAPP || NETSTANDARD2_1
+#if NET || NETSTANDARD2_1
                 }
                 finally
                 {
@@ -105,7 +105,7 @@ namespace System.Security.Cryptography.Pkcs
             }
 
             protected override bool Sign(
-#if NETCOREAPP || NETSTANDARD2_1
+#if NET || NETSTANDARD2_1
                 ReadOnlySpan<byte> dataHash,
 #else
                 byte[] dataHash,
@@ -152,7 +152,7 @@ namespace System.Security.Cryptography.Pkcs
 
                 signatureAlgorithm = oidValue;
 
-#if NETCOREAPP || NETSTANDARD2_1
+#if NET || NETSTANDARD2_1
                 int bufSize;
                 checked
                 {
@@ -188,7 +188,7 @@ namespace System.Security.Cryptography.Pkcs
 #endif
 
                 signatureValue = DsaIeeeToDer(key.SignHash(
-#if NETCOREAPP || NETSTANDARD2_1
+#if NET || NETSTANDARD2_1
                     dataHash.ToArray()
 #else
                     dataHash

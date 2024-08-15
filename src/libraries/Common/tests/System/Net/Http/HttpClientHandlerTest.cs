@@ -5,7 +5,9 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net.Http.Headers;
-using System.Net.Sockets;
+#if !NETFRAMEWORK
+using System.Net.Quic;
+#endif
 using System.Net.Test.Common;
 using System.Security.Authentication;
 using System.Security.Cryptography;
@@ -245,14 +247,7 @@ namespace System.Net.Http.Functional.Tests
                 using (HttpClient client = CreateHttpClient(handler))
                 {
                     handler.Proxy = new WebProxy(proxyUri);
-                    try
-                    {
-                        await client.GetAsync(ipv6Address);
-                    }
-                    catch (Exception ex)
-                    {
-                        _output.WriteLine($"Ignored exception:{Environment.NewLine}{ex}");
-                    }
+                    await IgnoreExceptions(client.GetAsync(ipv6Address));
                 }
             }, server => server.AcceptConnectionAsync(async connection =>
             {
@@ -267,7 +262,7 @@ namespace System.Net.Http.Functional.Tests
         public static IEnumerable<object[]> SecureAndNonSecure_IPBasedUri_MemberData() =>
             from address in new[] { IPAddress.Loopback, IPAddress.IPv6Loopback }
             from useSsl in BoolValues
-            // we could not create SslStream in browser, [ActiveIssue("https://github.com/dotnet/runtime/issues/37669", TestPlatforms.Browser)]
+                // we could not create SslStream in browser, [ActiveIssue("https://github.com/dotnet/runtime/issues/37669", TestPlatforms.Browser)]
             where PlatformDetection.IsNotBrowser || !useSsl
             select new object[] { address, useSsl };
 
@@ -297,14 +292,8 @@ namespace System.Net.Http.Functional.Tests
                         // we could not create SslStream in browser, [ActiveIssue("https://github.com/dotnet/runtime/issues/37669", TestPlatforms.Browser)]
                         handler.ServerCertificateCustomValidationCallback = TestHelper.AllowAllCertificates;
                     }
-                    try
-                    {
-                        await client.GetAsync(url);
-                    }
-                    catch (Exception ex)
-                    {
-                        _output.WriteLine($"Ignored exception:{Environment.NewLine}{ex}");
-                    }
+
+                    await IgnoreExceptions(client.GetAsync(url));
                 }
             }, server => server.AcceptConnectionAsync(async connection =>
             {
@@ -409,6 +398,7 @@ namespace System.Net.Http.Functional.Tests
 
         [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/86317", typeof(PlatformDetection), nameof(PlatformDetection.IsNodeJS))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/101115", typeof(PlatformDetection), nameof(PlatformDetection.IsFirefox))]
         public async Task PostAsync_ManyDifferentRequestHeaders_SentCorrectly()
         {
             if (IsWinHttpHandler && UseVersion >= HttpVersion20.Value)
@@ -823,6 +813,7 @@ namespace System.Net.Http.Functional.Tests
         [InlineData("7gibberish")] // valid size then gibberish
         [InlineData("7\v\f")] // unacceptable whitespace
         [ActiveIssue("https://github.com/dotnet/runtime/issues/86317", typeof(PlatformDetection), nameof(PlatformDetection.IsNodeJS))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/101115", typeof(PlatformDetection), nameof(PlatformDetection.IsFirefox))]
         public async Task GetAsync_InvalidChunkSize_ThrowsHttpRequestException(string chunkSize)
         {
             if (UseVersion != HttpVersion.Version11)
@@ -856,6 +847,7 @@ namespace System.Net.Http.Functional.Tests
 
         [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/86317", typeof(PlatformDetection), nameof(PlatformDetection.IsNodeJS))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/101115", typeof(PlatformDetection), nameof(PlatformDetection.IsFirefox))]
         public async Task GetAsync_InvalidChunkTerminator_ThrowsHttpRequestException()
         {
             if (UseVersion != HttpVersion.Version11)
@@ -877,14 +869,15 @@ namespace System.Net.Http.Functional.Tests
                 "\r\n" +
                 "5\r\n" +
                 "hello" + // missing \r\n terminator
-                            //"5\r\n" +
-                            //"world" + // missing \r\n terminator
+                          //"5\r\n" +
+                          //"world" + // missing \r\n terminator
                 "0\r\n" +
                 "\r\n"));
         }
 
         [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/86317", typeof(PlatformDetection), nameof(PlatformDetection.IsNodeJS))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/101115", typeof(PlatformDetection), nameof(PlatformDetection.IsFirefox))]
         public async Task GetAsync_InfiniteChunkSize_ThrowsHttpRequestException()
         {
             if (UseVersion != HttpVersion.Version11)
@@ -903,18 +896,15 @@ namespace System.Net.Http.Functional.Tests
                     Task serverTask = server.AcceptConnectionAsync(async connection =>
                     {
                         await connection.ReadRequestHeaderAndSendCustomResponseAsync("HTTP/1.1 200 OK\r\n" + LoopbackServer.CorsHeaders + "Transfer-Encoding: chunked\r\n\r\n");
-                        try
+
+                        await IgnoreExceptions(async () =>
                         {
                             while (!cts.IsCancellationRequested) // infinite to make sure implementation doesn't OOM
                             {
                                 await connection.WriteStringAsync(new string(' ', 10000));
                                 await Task.Delay(1);
                             }
-                        }
-                        catch (Exception ex)
-                        {
-                            _output.WriteLine($"Ignored exception:{Environment.NewLine}{ex}");
-                        }
+                        });
                     });
 
                     await Assert.ThrowsAsync<HttpRequestException>(() => client.GetAsync(url));
@@ -1003,9 +993,9 @@ namespace System.Net.Http.Functional.Tests
                 return;
             }
 
-            if (enableWasmStreaming && !PlatformDetection.IsBrowser)
+            if (enableWasmStreaming && !PlatformDetection.IsChromium)
             {
-                // enableWasmStreaming makes only sense on Browser platform
+                // enableWasmStreaming makes only sense on Chrome
                 return;
             }
 
@@ -1091,7 +1081,7 @@ namespace System.Net.Http.Functional.Tests
                         if (PlatformDetection.IsBrowser)
                         {
 #if !NETFRAMEWORK
-                            if(slowChunks)
+                            if (slowChunks)
                             {
                                 Assert.Equal(1, await responseStream.ReadAsync(new Memory<byte>(buffer2)));
                                 Assert.Equal((byte)'h', buffer2[0]);
@@ -1201,7 +1191,7 @@ namespace System.Net.Http.Functional.Tests
                     {
                         case true:
                             await connection.SendResponseAsync(HttpStatusCode.OK, headers: new HttpHeaderData[] { new HttpHeaderData("Transfer-Encoding", "chunked") }, isFinal: false);
-                            if(PlatformDetection.IsBrowser && slowChunks)
+                            if (PlatformDetection.IsBrowser && slowChunks)
                             {
                                 await connection.SendResponseBodyAsync("1\r\nh\r\n", false);
                                 await tcs.Task;
@@ -1216,12 +1206,12 @@ namespace System.Net.Http.Functional.Tests
                             break;
 
                         case false:
-                            await connection.SendResponseAsync(HttpStatusCode.OK, headers: new HttpHeaderData[] { new HttpHeaderData("Content-Length", "11")}, content: "hello world");
+                            await connection.SendResponseAsync(HttpStatusCode.OK, headers: new HttpHeaderData[] { new HttpHeaderData("Content-Length", "11") }, content: "hello world");
                             break;
 
                         case null:
                             // This inject Content-Length header with null value to hint Loopback code to not include one automatically.
-                            await connection.SendResponseAsync(HttpStatusCode.OK, headers: new HttpHeaderData[] { new HttpHeaderData("Content-Length", null)}, isFinal: false);
+                            await connection.SendResponseAsync(HttpStatusCode.OK, headers: new HttpHeaderData[] { new HttpHeaderData("Content-Length", null) }, isFinal: false);
                             await connection.SendResponseBodyAsync("hello world");
                             break;
                     }
@@ -1323,7 +1313,7 @@ namespace System.Net.Http.Functional.Tests
             server => server.AcceptConnectionSendResponseAndCloseAsync());
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsChromium))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/65429", typeof(PlatformDetection), nameof(PlatformDetection.IsNodeJS))]
         public async Task ReadAsStreamAsync_StreamingCancellation()
         {
@@ -1396,6 +1386,12 @@ namespace System.Net.Http.Functional.Tests
                         await connection.SendResponseAsync(HttpStatusCode.OK, headers: new HttpHeaderData[] { new HttpHeaderData("Transfer-Encoding", "chunked") }, isFinal: false);
                         await connection.SendResponseBodyAsync("1\r\nh\r\n", false);
                     }
+#if !NETFRAMEWORK
+                    catch (QuicException ex) when (ex.ApplicationErrorCode == 0x10c /*H3_REQUEST_CANCELLED*/)
+                    {
+                        // The request was cancelled before we sent the body, ignore
+                    }
+#endif
                     catch (IOException ex)
                     {
                         // when testing in the browser, we are using the WebSocket for the loopback
@@ -1411,6 +1407,7 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/101115", typeof(PlatformDetection), nameof(PlatformDetection.IsFirefox))]
         public async Task Dispose_DisposingHandlerCancelsActiveOperationsWithoutResponses()
         {
             if (IsWinHttpHandler && UseVersion >= HttpVersion20.Value)
@@ -1424,6 +1421,11 @@ namespace System.Net.Http.Functional.Tests
                 return;
             }
 
+            // Tasks are stored and awaited outside of the CreateServerAsync callbacks
+            // to let server disposal abort any pending operations.
+            Task serverTask1 = null;
+            Task serverTask2 = null;
+
             await LoopbackServerFactory.CreateServerAsync(async (server1, url1) =>
             {
                 await LoopbackServerFactory.CreateServerAsync(async (server2, url2) =>
@@ -1433,13 +1435,13 @@ namespace System.Net.Http.Functional.Tests
                         var unblockServers = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
 
                         // First server connects but doesn't send any response yet
-                        Task serverTask1 = server1.AcceptConnectionAsync(async connection1 =>
+                        serverTask1 = server1.AcceptConnectionAsync(async connection1 =>
                         {
                             await unblockServers.Task;
                         });
 
                         // Second server connects and sends some but not all headers
-                        Task serverTask2 = server2.AcceptConnectionAsync(async connection2 =>
+                        serverTask2 = server2.AcceptConnectionAsync(async connection2 =>
                         {
                             await connection2.ReadRequestDataAsync();
                             await connection2.SendPartialResponseHeadersAsync(HttpStatusCode.OK);
@@ -1450,10 +1452,10 @@ namespace System.Net.Http.Functional.Tests
                         Task serverTask3 = server3.AcceptConnectionAsync(async connection3 =>
                         {
                             await connection3.ReadRequestDataAsync();
-                            await connection3.SendResponseAsync(HttpStatusCode.OK, new HttpHeaderData[] { new HttpHeaderData("Content-Length", "20") }, isFinal : false);
-                            await connection3.SendResponseBodyAsync("1234567890", isFinal : false);
+                            await connection3.SendResponseAsync(HttpStatusCode.OK, new HttpHeaderData[] { new HttpHeaderData("Content-Length", "20") }, isFinal: false);
+                            await connection3.SendResponseBodyAsync("1234567890", isFinal: false);
                             await unblockServers.Task;
-                            await connection3.SendResponseBodyAsync("1234567890", isFinal : true);
+                            await connection3.SendResponseBodyAsync("1234567890", isFinal: true);
                         });
 
                         // Make three requests
@@ -1476,9 +1478,14 @@ namespace System.Net.Http.Functional.Tests
                         {
                             Assert.Equal("12345678901234567890", await response3.Content.ReadAsStringAsync());
                         }
+
+                        await serverTask3;
                     });
                 });
             });
+
+            await IgnoreExceptions(serverTask1);
+            await IgnoreExceptions(serverTask2);
         }
 
         [Theory]
@@ -1527,7 +1534,7 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-#region Post Methods Tests
+        #region Post Methods Tests
 
         [Fact]
         [SkipOnPlatform(TestPlatforms.Browser, "ExpectContinue not supported on Browser")]
@@ -1571,13 +1578,13 @@ namespace System.Net.Http.Functional.Tests
 
         public static IEnumerable<object[]> Interim1xxStatusCode()
         {
-            yield return new object[] { (HttpStatusCode) 100 }; // 100 Continue.
+            yield return new object[] { (HttpStatusCode)100 }; // 100 Continue.
             // 101 SwitchingProtocols will be treated as a final status code.
-            yield return new object[] { (HttpStatusCode) 102 }; // 102 Processing.
-            yield return new object[] { (HttpStatusCode) 103 }; // 103 EarlyHints.
-            yield return new object[] { (HttpStatusCode) 150 };
-            yield return new object[] { (HttpStatusCode) 180 };
-            yield return new object[] { (HttpStatusCode) 199 };
+            yield return new object[] { (HttpStatusCode)102 }; // 102 Processing.
+            yield return new object[] { (HttpStatusCode)103 }; // 103 EarlyHints.
+            yield return new object[] { (HttpStatusCode)150 };
+            yield return new object[] { (HttpStatusCode)180 };
+            yield return new object[] { (HttpStatusCode)199 };
         }
 
         [Theory]
@@ -1638,7 +1645,7 @@ namespace System.Net.Http.Functional.Tests
                             new HttpHeaderData("Content-type", "text/xml"),
                             new HttpHeaderData("Set-Cookie", SetCookieIgnored1)}, isFinal: false);
 
-                    await connection.SendResponseAsync(responseStatusCode, headers:  new HttpHeaderData[] {
+                    await connection.SendResponseAsync(responseStatusCode, headers: new HttpHeaderData[] {
                         new HttpHeaderData("Cookie", "ignore_cookie=choco2"),
                         new HttpHeaderData("Content-type", "text/plain"),
                         new HttpHeaderData("Set-Cookie", SetCookieIgnored2)}, isFinal: false);
@@ -1656,7 +1663,7 @@ namespace System.Net.Http.Functional.Tests
             });
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotNodeJS))]
         [MemberData(nameof(Interim1xxStatusCode))]
         public async Task SendAsync_Unexpected1xxResponses_DropAllInterimResponses(HttpStatusCode responseStatusCode)
         {
@@ -1742,7 +1749,7 @@ namespace System.Net.Http.Functional.Tests
                 {
                     await connection.ReadRequestDataAsync(readBody: false);
                     // Send multiple 100-Continue responses.
-                    for (int count = 0 ; count < 4; count++)
+                    for (int count = 0; count < 4; count++)
                     {
                         await connection.SendResponseAsync(HttpStatusCode.Continue, isFinal: false);
                     }
@@ -1793,15 +1800,7 @@ namespace System.Net.Http.Functional.Tests
             {
                 await server.AcceptConnectionAsync(async connection =>
                 {
-                    try
-                    {
-                        await connection.ReadRequestDataAsync(readBody: true);
-                    }
-                    catch (Exception ex)
-                    {
-                        _output.WriteLine($"Ignored exception:{Environment.NewLine}{ex}");
-                    }
-                    await clientFinished.Task.WaitAsync(TimeSpan.FromMinutes(2));
+                    await IgnoreExceptions(connection.ReadRequestDataAsync(readBody: true));
                 });
             });
         }
@@ -1846,7 +1845,7 @@ namespace System.Net.Http.Functional.Tests
                 {
                     await connection.ReadRequestDataAsync(readBody: false);
 
-                    await connection.SendResponseAsync(HttpStatusCode.OK, headers: new HttpHeaderData[] {new HttpHeaderData("Content-Length", $"{ResponseString.Length}")}, isFinal : false);
+                    await connection.SendResponseAsync(HttpStatusCode.OK, headers: new HttpHeaderData[] { new HttpHeaderData("Content-Length", $"{ResponseString.Length}") }, isFinal: false);
 
                     byte[] body = await connection.ReadRequestBodyAsync();
                     Assert.Equal(RequestString, Encoding.ASCII.GetString(body));
@@ -1897,7 +1896,7 @@ namespace System.Net.Http.Functional.Tests
             });
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotNodeJS))]
         [InlineData(false, false)]
         [InlineData(false, true)]
         [InlineData(true, false)]
@@ -2008,22 +2007,6 @@ namespace System.Net.Http.Functional.Tests
             Assert.Equal(new Version(1, 1), receivedRequestVersion);
         }
 
-        [SkipOnPlatform(TestPlatforms.Browser, "Version is not supported on Browser")]
-        [Fact]
-        public async Task SendAsync_RequestVersionNotSpecified_ServerReceivesVersion11Request()
-        {
-            // SocketsHttpHandler treats 0.0 as a bad version, and throws.
-            if (!IsWinHttpHandler)
-            {
-                return;
-            }
-
-            // The default value for HttpRequestMessage.Version is Version(1,1).
-            // So, we need to set something different (0,0), to test the "unknown" version.
-            Version receivedRequestVersion = await SendRequestAndGetRequestVersionAsync(new Version(0, 0));
-            Assert.Equal(new Version(1, 1), receivedRequestVersion);
-        }
-
         private async Task<Version> SendRequestAndGetRequestVersionAsync(Version requestVersion)
         {
             Version receivedRequestVersion = null;
@@ -2127,7 +2110,7 @@ namespace System.Net.Http.Functional.Tests
                 }
             });
         }
-#endregion
+        #endregion
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowserDomSupported))]
         public async Task GetAsync_InvalidUrl_ExpectedExceptionThrown()

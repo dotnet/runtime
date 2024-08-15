@@ -48,6 +48,14 @@ inline OBJECTREF ObjectFromHandle(OBJECTHANDLE handle)
     return UNCHECKED_OBJECTREF_TO_OBJECTREF(*PTR_UNCHECKED_OBJECTREF(handle));
 }
 
+// Given a handle, returns an OBJECTREF for the object it refers to.
+inline _UNCHECKED_OBJECTREF ObjectFromHandleUnchecked(OBJECTHANDLE handle)
+{
+    _ASSERTE(handle);
+
+    return (*PTR_UNCHECKED_OBJECTREF(handle));
+}
+
 // Quick inline check for whether a handle is null
 inline BOOL IsHandleNullUnchecked(OBJECTHANDLE handle)
 {

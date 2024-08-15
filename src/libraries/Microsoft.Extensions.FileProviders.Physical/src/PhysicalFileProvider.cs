@@ -162,7 +162,7 @@ namespace Microsoft.Extensions.FileProviders
             string root = PathUtils.EnsureTrailingSlash(Path.GetFullPath(Root));
 
             FileSystemWatcher? watcher;
-#if NETCOREAPP
+#if NET
             //  For browser/iOS/tvOS we will proactively fallback to polling since FileSystemWatcher is not supported.
             if (OperatingSystem.IsBrowser() || (OperatingSystem.IsIOS() && !OperatingSystem.IsMacCatalyst()) || OperatingSystem.IsTvOS())
             {

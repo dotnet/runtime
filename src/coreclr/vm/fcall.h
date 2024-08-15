@@ -151,7 +151,7 @@
 //    Also, initialize all the OBJECTREF's first.  Like this:
 //
 //    FCIMPL4(Object*, COMNlsInfo::nativeChangeCaseString, LocaleIDObject* localeUNSAFE,
-//            INT_PTR pNativeTextInfo, StringObject* pStringUNSAFE, CLR_BOOL bIsToUpper)
+//            INT_PTR pNativeTextInfo, StringObject* pStringUNSAFE, FC_BOOL_ARG bIsToUpper)
 //    {
 //      [ignoring CONTRACT for now]
 //      struct _gc
@@ -797,7 +797,7 @@ LPVOID __FCThrowArgument(LPVOID me, enum RuntimeExceptionKind reKind, LPCWSTR ar
 // The HelperMethodFrame knows how to get its return address.  Let other code get at it, too.
 //  (Uses comma operator to call InsureInit & discard result.
 #define HELPER_METHOD_FRAME_GET_RETURN_ADDRESS()                                        \
-    ( static_cast<UINT_PTR>( (__helperframe.InsureInit(false, NULL)), (__helperframe.MachineState()->GetRetAddr()) ) )
+    ( static_cast<UINT_PTR>( (__helperframe.InsureInit(NULL)), (__helperframe.MachineState()->GetRetAddr()) ) )
 
     // Very short routines, or routines that are guaranteed to force GC or EH
     // don't need to poll the GC.  USE VERY SPARINGLY!!!
@@ -809,7 +809,7 @@ Object* FC_GCPoll(void* me, Object* objToProtect = NULL);
     {                                                       \
         INCONTRACT(Thread::TriggersGC(GetThread());)        \
         INCONTRACT(__fCallCheck.SetDidPoll();)              \
-        if (g_TrapReturningThreads.LoadWithoutBarrier())    \
+        if (g_TrapReturningThreads)    \
         {                                                   \
             if (FC_GCPoll(__me))                            \
                 return ret;                                 \
@@ -824,7 +824,7 @@ Object* FC_GCPoll(void* me, Object* objToProtect = NULL);
     {                                                       \
         INCONTRACT(__fCallCheck.SetDidPoll();)              \
         Object* __temp = OBJECTREFToObject(obj);            \
-        if (g_TrapReturningThreads.LoadWithoutBarrier())    \
+        if (g_TrapReturningThreads)    \
         {                                                   \
             __temp = FC_GCPoll(__me, __temp);               \
             while (0 == FC_NO_TAILCALL) { }; /* side effect the compile can't remove */  \
@@ -865,7 +865,7 @@ private:
 #endif
     bool          didGCPoll;            // GC poll was done
     bool          notNeeded;            // GC poll not needed
-    unsigned __int64 startTicks;        // tick count at beginning of FCall
+    uint64_t startTicks;        // tick count at beginning of FCall
 };
 
         // FC_COMMON_PROLOG is used for both FCalls and HCalls
@@ -1335,7 +1335,10 @@ typedef UINT32 FC_UINT8_RET;
 typedef INT32 FC_INT16_RET;
 typedef UINT32 FC_UINT16_RET;
 
+// Small primitive args are not widened.
+typedef INT32 FC_BOOL_ARG;
 
+#define FC_ACCESS_BOOL(x) ((BYTE)x != 0)
 
 // The fcall entrypoints has to be at unique addresses. Use this helper macro to make
 // the code of the fcalls unique if you get assert in ecall.cpp that mentions it.

@@ -17,7 +17,7 @@ extends:
 
     containers:
       linux_arm:
-        image: mcr.microsoft.com/dotnet-buildtools/prereqs:azurelinux-3.0-cross-arm-net8.0
+        image: mcr.microsoft.com/dotnet-buildtools/prereqs:azurelinux-3.0-cross-arm-net9.0
         env:
           ROOTFS_DIR: /crossrootfs/arm
 
@@ -27,46 +27,57 @@ extends:
           ROOTFS_DIR: /crossrootfs/armv6
 
       linux_arm64:
-        image: mcr.microsoft.com/dotnet-buildtools/prereqs:cbl-mariner-2.0-cross-biarch-amd64-arm64
+        image: mcr.microsoft.com/dotnet-buildtools/prereqs:azurelinux-3.0-cross-arm64-net9.0
         env:
-          ROOTFS_HOST_DIR: /crossrootfs/x64
           ROOTFS_DIR: /crossrootfs/arm64
 
       linux_musl_x64:
-        image: mcr.microsoft.com/dotnet-buildtools/prereqs:azurelinux-3.0-cross-amd64-alpine-net8.0
+        image: mcr.microsoft.com/dotnet-buildtools/prereqs:azurelinux-3.0-cross-amd64-alpine-net9.0
         env:
           ROOTFS_DIR: /crossrootfs/x64
 
       linux_musl_arm:
-        image: mcr.microsoft.com/dotnet-buildtools/prereqs:azurelinux-3.0-cross-arm-alpine-net8.0
+        image: mcr.microsoft.com/dotnet-buildtools/prereqs:azurelinux-3.0-cross-arm-alpine-net9.0
         env:
           ROOTFS_DIR: /crossrootfs/arm
 
       linux_musl_arm64:
-        image: mcr.microsoft.com/dotnet-buildtools/prereqs:azurelinux-3.0-cross-arm64-alpine-net8.0
+        image: mcr.microsoft.com/dotnet-buildtools/prereqs:azurelinux-3.0-cross-arm64-alpine-net9.0
         env:
           ROOTFS_DIR: /crossrootfs/arm64
 
       # This container contains all required toolsets to build for Android and for Linux with bionic libc.
+      android:
+        image: mcr.microsoft.com/dotnet-buildtools/prereqs:azurelinux-3.0-cross-android-amd64-net9.0
+
+      # This container contains all required toolsets to build for Android and for Linux with bionic libc and a special layout of OpenSSL.
       linux_bionic:
-        image: mcr.microsoft.com/dotnet-buildtools/prereqs:cbl-mariner-2.0-cross-android-amd64
+        image: mcr.microsoft.com/dotnet-buildtools/prereqs:azurelinux-3.0-android-openssl-net9.0
 
       # This container contains all required toolsets to build for Android as well as tooling to build docker images.
       android_docker:
-        image: mcr.microsoft.com/dotnet-buildtools/prereqs:cbl-mariner-2.0-android-docker
+        image: mcr.microsoft.com/dotnet-buildtools/prereqs:azurelinux-3.0-android-docker-net9.0
 
       linux_x64:
-        image: mcr.microsoft.com/dotnet-buildtools/prereqs:azurelinux-3.0-cross-amd64-net8.0
+        image: mcr.microsoft.com/dotnet-buildtools/prereqs:azurelinux-3.0-cross-amd64-net9.0
         env:
           ROOTFS_DIR: /crossrootfs/x64
 
       linux_x86:
-        image: mcr.microsoft.com/dotnet-buildtools/prereqs:azurelinux-3.0-cross-x86-net8.0
+        image: mcr.microsoft.com/dotnet-buildtools/prereqs:azurelinux-3.0-cross-x86-net9.0
         env:
           ROOTFS_DIR: /crossrootfs/x86
 
       linux_x64_dev_innerloop:
         image: mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-22.04
+
+      linux_musl_x64_dev_innerloop:
+        image: mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.19-WithNode
+
+      linux_x64_sanitizer:
+        image: mcr.microsoft.com/dotnet-buildtools/prereqs:azurelinux-3.0-cross-amd64-net9.0-sanitizer
+        env:
+          ROOTFS_DIR: /crossrootfs/x64
 
       # We use a CentOS Stream 8 image here to test building from source on CentOS Stream 8.
       SourceBuild_centos_x64:
@@ -77,38 +88,38 @@ extends:
         image: mcr.microsoft.com/dotnet-buildtools/prereqs:almalinux-8-source-build
 
       linux_s390x:
-        image: mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-18.04-cross-s390x
+        image: mcr.microsoft.com/dotnet-buildtools/prereqs:azurelinux-3.0-cross-s390x-net9.0
         env:
           ROOTFS_DIR: /crossrootfs/s390x
 
       linux_ppc64le:
-        image: mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-18.04-cross-ppc64le
+        image: mcr.microsoft.com/dotnet-buildtools/prereqs:azurelinux-3.0-cross-ppc64le-net9.0
         env:
           ROOTFS_DIR: /crossrootfs/ppc64le
 
       linux_riscv64:
-        image: mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-22.04-cross-riscv64
+        image: mcr.microsoft.com/dotnet-buildtools/prereqs:azurelinux-3.0-cross-riscv64-net9.0
         env:
           ROOTFS_DIR: /crossrootfs/riscv64
 
-      debian-12-gcc13-amd64:
-        image: mcr.microsoft.com/dotnet-buildtools/prereqs:debian-12-gcc13-amd64
+      debian-12-gcc14-amd64:
+        image: mcr.microsoft.com/dotnet-buildtools/prereqs:debian-12-gcc14-amd64
 
       linux_x64_llvmaot:
         image: mcr.microsoft.com/dotnet-buildtools/prereqs:centos-stream8
 
       browser_wasm:
-        image: mcr.microsoft.com/dotnet-buildtools/prereqs:cbl-mariner-2.0-webassembly-20230913040940-1edc1c6
+        image: mcr.microsoft.com/dotnet-buildtools/prereqs:azurelinux-3.0-webassembly-amd64-net9.0
         env:
           ROOTFS_DIR: /crossrootfs/x64
 
       wasi_wasm:
-        image: mcr.microsoft.com/dotnet-buildtools/prereqs:cbl-mariner-2.0-webassembly
+        image: mcr.microsoft.com/dotnet-buildtools/prereqs:azurelinux-3.0-webassembly-amd64-net9.0
         env:
           ROOTFS_DIR: /crossrootfs/x64
 
       freebsd_x64:
-        image: mcr.microsoft.com/dotnet-buildtools/prereqs:cbl-mariner-2.0-cross-amd64-freebsd-13
+        image: mcr.microsoft.com/dotnet-buildtools/prereqs:azurelinux-3.0-cross-freebsd-13-net9.0
         env:
           ROOTFS_DIR: /crossrootfs/x64
 
@@ -121,4 +132,4 @@ extends:
         image: mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-22.04-debpkg
 
       rpmpkg:
-        image: mcr.microsoft.com/dotnet-buildtools/prereqs:cbl-mariner-2.0-fpm
+        image: mcr.microsoft.com/dotnet-buildtools/prereqs:azurelinux-3.0-fpm-net9.0

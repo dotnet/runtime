@@ -863,7 +863,7 @@ namespace System.Text
             if (_emitUTF8Identifier)
             {
                 // Allocate new array to prevent users from modifying it.
-                return new byte[3] { 0xEF, 0xBB, 0xBF };
+                return [0xEF, 0xBB, 0xBF];
             }
             else
                 return Array.Empty<byte>();

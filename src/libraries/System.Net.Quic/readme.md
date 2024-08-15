@@ -18,7 +18,7 @@ During the build, the `msquic.dll` is automatically downloaded and placed in cor
 
 ### Linux
 
-On Linux, `libmsquic` is published via official Microsoft Linux package repository `packages.microsoft.com`. In order to consume packages from it, you have to add it manually, see https://docs.microsoft.com/en-us/windows-server/administration/linux-package-repository-for-microsoft-software. After that, you should be able to install `libmsquic` via the package manager of your distro, e.g. for Ubuntu:
+On Linux, `libmsquic` is published via official Microsoft Linux package repository `packages.microsoft.com`. In order to consume packages from it, you have to add it manually, see https://learn.microsoft.com/windows-server/administration/linux-package-repository-for-microsoft-software. After that, you should be able to install `libmsquic` via the package manager of your distro, e.g. for Ubuntu:
 ```
 apt install libmsquic
 ```

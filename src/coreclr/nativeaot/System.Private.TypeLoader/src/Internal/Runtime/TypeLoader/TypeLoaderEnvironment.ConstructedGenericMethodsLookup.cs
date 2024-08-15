@@ -153,7 +153,7 @@ namespace Internal.Runtime.TypeLoader
 
                 DefType parsedDeclaringType = context.ResolveRuntimeTypeHandle(parsedDeclaringTypeHandle) as DefType;
                 Instantiation parsedArgs = context.ResolveRuntimeTypeHandles(parsedArgsHandles);
-                InstantiatedMethod parsedGenericMethod = (InstantiatedMethod)context.ResolveGenericMethodInstantiation(false, parsedDeclaringType, nameAndSignature, parsedArgs, IntPtr.Zero, false);
+                InstantiatedMethod parsedGenericMethod = (InstantiatedMethod)context.ResolveGenericMethodInstantiation(false, parsedDeclaringType, nameAndSignature, parsedArgs);
 
                 return parsedGenericMethod == _methodToLookup;
             }
@@ -164,7 +164,7 @@ namespace Internal.Runtime.TypeLoader
 
                 DefType parsedDeclaringType = context.ResolveRuntimeTypeHandle(entry._declaringTypeHandle) as DefType;
                 Instantiation parsedArgs = context.ResolveRuntimeTypeHandles(entry._genericMethodArgumentHandles);
-                InstantiatedMethod parsedGenericMethod = (InstantiatedMethod)context.ResolveGenericMethodInstantiation(false, parsedDeclaringType, entry._methodNameAndSignature, parsedArgs, IntPtr.Zero, false);
+                InstantiatedMethod parsedGenericMethod = (InstantiatedMethod)context.ResolveGenericMethodInstantiation(false, parsedDeclaringType, entry._methodNameAndSignature, parsedArgs);
 
                 return parsedGenericMethod == _methodToLookup;
             }
@@ -267,9 +267,7 @@ namespace Internal.Runtime.TypeLoader
                 return false;
             }
 
-            methodPointer = templateMethod.IsCanonicalMethod(CanonicalFormKind.Universal) ?
-                templateMethod.UsgFunctionPointer :
-                templateMethod.FunctionPointer;
+            methodPointer = templateMethod.FunctionPointer;
 
             if (!TryLookupGenericMethodDictionary(new MethodDescBasedGenericMethodLookup(method), out dictionaryPointer))
             {

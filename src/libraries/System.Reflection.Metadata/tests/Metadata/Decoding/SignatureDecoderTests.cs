@@ -278,10 +278,14 @@ namespace System.Reflection.Metadata.Decoding.Tests
             public static unsafe int DoSomething()
             {
                 byte[] bytes = new byte[] { 1, 2, 3 };
+                Keep(ref bytes);
                 fixed (byte* bytePtr = bytes)
                 {
                     return *bytePtr;
                 }
+
+                // Reference local variables to prevent them from being optimized out by Roslyn
+                static void Keep<T>(ref T value) { };
             }
         }
 

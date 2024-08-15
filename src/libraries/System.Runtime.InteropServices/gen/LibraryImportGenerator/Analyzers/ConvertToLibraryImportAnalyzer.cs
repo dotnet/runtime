@@ -133,12 +133,12 @@ namespace Microsoft.Interop.Analyzers
                 if (s_unsupportedTypeNames.Contains(info.ManagedType.FullTypeName))
                 {
                     anyExplicitlyUnsupportedInfo = true;
-                    return ResolvedGenerator.Resolved(forwarder);
+                    return ResolvedGenerator.Resolved(forwarder.Bind(info));
                 }
                 if (HasUnsupportedMarshalAsInfo(info))
                 {
                     anyExplicitlyUnsupportedInfo = true;
-                    return ResolvedGenerator.Resolved(forwarder);
+                    return ResolvedGenerator.Resolved(forwarder.Bind(info));
                 }
                 return factory.Create(info, stubCodeContext);
             }), stubCodeContext, forwarder, out var bindingFailures);

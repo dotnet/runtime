@@ -9,13 +9,13 @@ namespace System.Text.Json.Serialization.Tests
 {
     public class SimpleTestClassWithNonGenericCollectionWrappers : ITestClass
     {
-        public WrapperForIList MyIListWrapper { get; set; }
-        public WrapperForIDictionary MyIDictionaryWrapper { get; set; }
-        public HashtableWrapper MyHashtableWrapper { get; set; }
-        public ArrayListWrapper MyArrayListWrapper { get; set; }
-        public SortedListWrapper MySortedListWrapper { get; set; }
-        public StackWrapper MyStackWrapper { get; set; }
-        public QueueWrapper MyQueueWrapper { get; set; }
+        public WrapperForIList? MyIListWrapper { get; set; }
+        public WrapperForIDictionary? MyIDictionaryWrapper { get; set; }
+        public HashtableWrapper? MyHashtableWrapper { get; set; }
+        public ArrayListWrapper? MyArrayListWrapper { get; set; }
+        public SortedListWrapper? MySortedListWrapper { get; set; }
+        public StackWrapper? MyStackWrapper { get; set; }
+        public QueueWrapper? MyQueueWrapper { get; set; }
 
         public static readonly string s_json =
             @"{" +

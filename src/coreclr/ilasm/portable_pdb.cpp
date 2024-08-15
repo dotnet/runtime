@@ -209,6 +209,7 @@ HRESULT PortablePdbWriter::DefineSequencePoints(Method* method)
     ULONG localSigRid = 0;
     ULONG offset = 0;
     ULONG deltaLines = 0;
+    ULONG currDocumentRid = 0;
     LONG deltaColumns = 0;
     LONG deltaStartLine = 0;
     LONG deltaStartColumn = 0;
@@ -225,7 +226,11 @@ HRESULT PortablePdbWriter::DefineSequencePoints(Method* method)
         // LocalSignature
         localSigRid = RidFromToken(method->m_LocalsSig);
         CompressUnsignedLong(localSigRid, blob);
-        // InitialDocument TODO: skip this for now
+        currDocumentRid = RidFromToken(method->m_FirstDocument->GetToken());
+        if(method->m_HasMultipleDocuments)
+        {
+            CompressUnsignedLong(currDocumentRid, blob);
+        }
     }
 
     // SequencePointRecord :: = sequence-point-record | hidden-sequence-point-record
@@ -250,6 +255,15 @@ HRESULT PortablePdbWriter::DefineSequencePoints(Method* method)
 
         if (!currSeqPoint->IsHidden)
         {
+            //document
+            if(RidFromToken(currSeqPoint->pOwnerDocument->GetToken()) != currDocumentRid)
+            {
+                //document-record
+                currDocumentRid = RidFromToken(currSeqPoint->pOwnerDocument->GetToken());
+                CompressUnsignedLong(0, blob);
+                CompressUnsignedLong(currDocumentRid, blob);
+            }
+
             //offset
             offset = (i == 0) ? currSeqPoint->PC : currSeqPoint->PC - prevSeqPoint->PC;
             CompressUnsignedLong(offset, blob);
@@ -311,8 +325,8 @@ HRESULT PortablePdbWriter::DefineSequencePoints(Method* method)
     // finally define sequence points for the method
     if ((isValid && currSeqPoint != NULL) || hasEmptyMethodBody)
     {
-        mdDocument document = hasEmptyMethodBody ? m_currentDocument->GetToken() : currSeqPoint->pOwnerDocument->GetToken();
-        ULONG documentRid = RidFromToken(document);
+        mdDocument document = hasEmptyMethodBody ? m_currentDocument->GetToken() : method->m_FirstDocument->GetToken();
+        ULONG documentRid = method->m_HasMultipleDocuments ? 0 : RidFromToken(document);
         hr = m_pdbEmitter->DefineSequencePoints(documentRid, blob->ptr(), blob->length());
     }
 

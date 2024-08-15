@@ -399,5 +399,12 @@ namespace System.Runtime.CompilerServices.Tests
         {
             new RequiresLocationAttribute();
         }
+
+        [Fact]
+        public static void OverloadResolutionPriorityAttributeTests()
+        {
+            var attr = new OverloadResolutionPriorityAttribute(42);
+            Assert.Equal(42, attr.Priority);
+        }
     }
 }

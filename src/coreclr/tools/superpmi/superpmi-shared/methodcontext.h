@@ -169,12 +169,14 @@ public:
                                       char*                 methodname,
                                       const char**          moduleName,
                                       const char**          namespaceName,
-                                      const char**          enclosingClassName);
+                                      const char**          enclosingClassNames,
+                                      size_t                maxEnclosingClassNames);
     void dmpGetMethodNameFromMetadata(Agnostic_CORINFO_METHODNAME_TOKENin key, Agnostic_CORINFO_METHODNAME_TOKENout value);
     const char* repGetMethodNameFromMetadata(CORINFO_METHOD_HANDLE ftn,
                                              const char**          className,
                                              const char**          namespaceName,
-                                             const char**          enclosingClassName);
+                                             const char**          enclosingClassNames,
+                                             size_t                maxEnclosingClassNames);
 
     void recGetJitFlags(CORJIT_FLAGS* jitFlags, DWORD sizeInBytes, DWORD result);
     void dmpGetJitFlags(DWORD key, DD value);
@@ -247,6 +249,10 @@ public:
     void recGetTypeForBox(CORINFO_CLASS_HANDLE cls, CORINFO_CLASS_HANDLE result);
     void dmpGetTypeForBox(DWORDLONG key, DWORDLONG value);
     CORINFO_CLASS_HANDLE repGetTypeForBox(CORINFO_CLASS_HANDLE cls);
+
+    void recGetTypeForBoxOnStack(CORINFO_CLASS_HANDLE cls, CORINFO_CLASS_HANDLE result);
+    void dmpGetTypeForBoxOnStack(DWORDLONG key, DWORDLONG value);
+    CORINFO_CLASS_HANDLE repGetTypeForBoxOnStack(CORINFO_CLASS_HANDLE cls);
 
     void recGetBoxHelper(CORINFO_CLASS_HANDLE cls, CorInfoHelpFunc result);
     void dmpGetBoxHelper(DWORDLONG key, DWORD value);
@@ -418,6 +424,10 @@ public:
     void dmpHaveSameMethodDefinition(const DLDL& key, DWORD value);
     bool repHaveSameMethodDefinition(CORINFO_METHOD_HANDLE methHnd1, CORINFO_METHOD_HANDLE methHnd2);
 
+    void recGetTypeDefinition(CORINFO_CLASS_HANDLE type, CORINFO_CLASS_HANDLE result);
+    void dmpGetTypeDefinition(DWORDLONG key, DWORDLONG value);
+    CORINFO_CLASS_HANDLE repGetTypeDefinition(CORINFO_CLASS_HANDLE type);
+
     void recGetNewHelper(CORINFO_CLASS_HANDLE  classHandle,
                          bool                  hasSideEffects,
                          CorInfoHelpFunc       result,
@@ -484,9 +494,9 @@ public:
     void     dmpGetThreadLocalFieldInfo(DLD key, DWORD value);
     uint32_t repGetThreadLocalFieldInfo(CORINFO_FIELD_HANDLE field, bool isGCType);
 
-    void recGetThreadLocalStaticBlocksInfo(CORINFO_THREAD_STATIC_BLOCKS_INFO* pInfo, bool isGCType);
+    void recGetThreadLocalStaticBlocksInfo(CORINFO_THREAD_STATIC_BLOCKS_INFO* pInfo);
     void dmpGetThreadLocalStaticBlocksInfo(DWORD key, const Agnostic_GetThreadLocalStaticBlocksInfo& value);
-    void repGetThreadLocalStaticBlocksInfo(CORINFO_THREAD_STATIC_BLOCKS_INFO* pInfo, bool isGCType);
+    void repGetThreadLocalStaticBlocksInfo(CORINFO_THREAD_STATIC_BLOCKS_INFO* pInfo);
 
     void recGetThreadLocalStaticInfo_NativeAOT(CORINFO_THREAD_STATIC_INFO_NATIVEAOT* pInfo);
     void dmpGetThreadLocalStaticInfo_NativeAOT(DWORDLONG key, const Agnostic_GetThreadStaticInfo_NativeAOT& value);
@@ -592,9 +602,13 @@ public:
     void dmpGetAddrOfCaptureThreadGlobal(DWORD key, DLDL value);
     int32_t* repGetAddrOfCaptureThreadGlobal(void** ppIndirection);
 
-    void recGetClassDomainID(CORINFO_CLASS_HANDLE cls, void** ppIndirection, unsigned result);
-    void dmpGetClassDomainID(DWORDLONG key, DLD value);
-    unsigned repGetClassDomainID(CORINFO_CLASS_HANDLE cls, void** ppIndirection);
+    void recGetClassStaticDynamicInfo(CORINFO_CLASS_HANDLE cls, size_t result);
+    void dmpGetClassStaticDynamicInfo(DWORDLONG key, DLD value);
+    size_t repGetClassStaticDynamicInfo(CORINFO_CLASS_HANDLE cls);
+
+    void recGetClassThreadStaticDynamicInfo(CORINFO_CLASS_HANDLE cls, size_t result);
+    void dmpGetClassThreadStaticDynamicInfo(DWORDLONG key, DLD value);
+    size_t repGetClassThreadStaticDynamicInfo(CORINFO_CLASS_HANDLE cls);
 
     void recGetLocationOfThisType(CORINFO_METHOD_HANDLE context, CORINFO_LOOKUP_KIND* result);
     void dmpGetLocationOfThisType(DWORDLONG key, const Agnostic_CORINFO_LOOKUP_KIND& value);
@@ -709,11 +723,11 @@ public:
     void recAllocPgoInstrumentationBySchema(CORINFO_METHOD_HANDLE ftnHnd, ICorJitInfo::PgoInstrumentationSchema* pSchema, UINT32 countSchemaItems, BYTE** pInstrumentationData, HRESULT result);
     void dmpAllocPgoInstrumentationBySchema(DWORDLONG key, const Agnostic_AllocPgoInstrumentationBySchema& value);
     HRESULT repAllocPgoInstrumentationBySchema(CORINFO_METHOD_HANDLE ftnHnd, ICorJitInfo::PgoInstrumentationSchema* pSchema, UINT32 countSchemaItems, BYTE** pInstrumentationData);
-    bool repAllocPgoInstrumentationBySchemaRecorded(CORINFO_METHOD_HANDLE ftnHnd, ICorJitInfo::PgoInstrumentationSchema* pSchema, UINT32 countSchemaItems, BYTE** pInstrumentationData);
+    bool repAllocPgoInstrumentationBySchemaRecorded(CORINFO_METHOD_HANDLE ftnHnd, ICorJitInfo::PgoInstrumentationSchema* pSchema, UINT32 countSchemaItems, BYTE** pInstrumentationData, HRESULT* result);
 
-    void recGetPgoInstrumentationResults(CORINFO_METHOD_HANDLE ftnHnd, ICorJitInfo::PgoInstrumentationSchema** pSchema, UINT32* pCountSchemaItems, BYTE** pInstrumentationData, ICorJitInfo::PgoSource* pPgoSource, HRESULT result);
+    void recGetPgoInstrumentationResults(CORINFO_METHOD_HANDLE ftnHnd, ICorJitInfo::PgoInstrumentationSchema** pSchema, UINT32* pCountSchemaItems, BYTE** pInstrumentationData, ICorJitInfo::PgoSource* pPgoSource, bool* pDynamicPgo, HRESULT result);
     void dmpGetPgoInstrumentationResults(DWORDLONG key, const Agnostic_GetPgoInstrumentationResults& value);
-    HRESULT repGetPgoInstrumentationResults(CORINFO_METHOD_HANDLE ftnHnd, ICorJitInfo::PgoInstrumentationSchema** pSchema, UINT32* pCountSchemaItems, BYTE** pInstrumentationData, ICorJitInfo::PgoSource* pPgoSource);
+    HRESULT repGetPgoInstrumentationResults(CORINFO_METHOD_HANDLE ftnHnd, ICorJitInfo::PgoInstrumentationSchema** pSchema, UINT32* pCountSchemaItems, BYTE** pInstrumentationData, ICorJitInfo::PgoSource* pPgoSource, bool* pDynamicPgo);
 
     void recIsMoreSpecificType(CORINFO_CLASS_HANDLE cls1, CORINFO_CLASS_HANDLE cls2, bool result);
     void dmpIsMoreSpecificType(DLDL key, DWORD value);
@@ -722,6 +736,10 @@ public:
     void recIsExactType(CORINFO_CLASS_HANDLE cls, bool result);
     void dmpIsExactType(DWORDLONG key, DWORD value);
     bool repIsExactType(CORINFO_CLASS_HANDLE cls);
+
+    void recIsGenericType(CORINFO_CLASS_HANDLE cls, TypeCompareState result);
+    void dmpIsGenericType(DWORDLONG key, DWORD value);
+    TypeCompareState repIsGenericType(CORINFO_CLASS_HANDLE cls);
 
     void recIsNullableType(CORINFO_CLASS_HANDLE cls, TypeCompareState result);
     void dmpIsNullableType(DWORDLONG key, DWORD value);
@@ -771,13 +789,9 @@ public:
     void dmpGetSwiftLowering(DWORDLONG key, const Agnostic_GetSwiftLowering& value);
     void repGetSwiftLowering(CORINFO_CLASS_HANDLE structHnd, CORINFO_SWIFT_LOWERING* pLowering);
 
-    void recGetLoongArch64PassStructInRegisterFlags(CORINFO_CLASS_HANDLE structHnd, DWORD value);
-    void dmpGetLoongArch64PassStructInRegisterFlags(DWORDLONG key, DWORD value);
-    DWORD repGetLoongArch64PassStructInRegisterFlags(CORINFO_CLASS_HANDLE structHnd);
-
-    void recGetRISCV64PassStructInRegisterFlags(CORINFO_CLASS_HANDLE structHnd, DWORD value);
-    void dmpGetRISCV64PassStructInRegisterFlags(DWORDLONG key, DWORD value);
-    DWORD repGetRISCV64PassStructInRegisterFlags(CORINFO_CLASS_HANDLE structHnd);
+    void recGetFpStructLowering(CORINFO_CLASS_HANDLE structHnd, CORINFO_FPSTRUCT_LOWERING* pLowering);
+    void dmpGetFpStructLowering(DWORDLONG key, const Agnostic_GetFpStructLowering& value);
+    void repGetFpStructLowering(CORINFO_CLASS_HANDLE structHnd, CORINFO_FPSTRUCT_LOWERING* pLowering);
 
     void recGetRelocTypeHint(void* target, WORD result);
     void dmpGetRelocTypeHint(DWORDLONG key, DWORD value);
@@ -908,7 +922,6 @@ public:
     }
 
     CompileResult* cr;
-    CompileResult* originalCR;
     int            index;
     bool           ignoreStoredConfig;
 
@@ -998,7 +1011,7 @@ enum mcPackets
     Packet_GetChildType = 39,
     Packet_GetClassAlignmentRequirement = 40,
     Packet_GetClassAttribs = 41,
-    Packet_GetClassDomainID = 42,
+    //Packet_GetClassDomainID = 42,
     Packet_GetClassGClayout = 43,
     Packet_GetClassModuleIdForStatics = 44,
     Packet_GetClassName = 45,
@@ -1146,7 +1159,7 @@ enum mcPackets
     Packet_GetAssemblyName = 191,
     Packet_IsIntrinsic = 192,
     Packet_UpdateEntryPointForTailCall = 193,
-    Packet_GetLoongArch64PassStructInRegisterFlags = 194,
+    //Packet_GetLoongArch64PassStructInRegisterFlags = 194,
     Packet_GetExactClasses = 195,
     Packet_GetRuntimeTypePointer = 196,
     Packet_PrintObjectDescription = 197,
@@ -1162,7 +1175,7 @@ enum mcPackets
     Packet_GetThreadLocalFieldInfo = 207,
     Packet_GetThreadLocalStaticBlocksInfo = 208,
     Packet_GetThreadLocalStaticInfo_NativeAOT = 209,
-    Packet_GetRISCV64PassStructInRegisterFlags = 210,
+    //Packet_GetRISCV64PassStructInRegisterFlags = 210,
     Packet_GetObjectContent = 211,
     Packet_GetTypeLayout = 212,
     Packet_HaveSameMethodDefinition = 213,
@@ -1170,6 +1183,12 @@ enum mcPackets
     Packet_IsExactType = 215,
     Packet_GetSwiftLowering = 216,
     Packet_IsNullableType = 217,
+    Packet_GetClassStaticDynamicInfo = 218,
+    Packet_GetClassThreadStaticDynamicInfo = 219,
+    Packet_IsGenericType = 220,
+    Packet_GetTypeForBoxOnStack = 221,
+    Packet_GetTypeDefinition = 222,
+    Packet_GetFpStructLowering = 223,
 };
 
 void SetDebugDumpVariables();

@@ -53,10 +53,18 @@ public class SharedExceptions
             {
                 oomStack = oomStack.Substring(0, oomStack.IndexOf(':') - 1);
             }
+            if (oomStack.IndexOf("+ 0x") != -1)
+            {
+                oomStack = oomStack.Substring(0, oomStack.IndexOf("+ 0x") - 1);
+            }
 
             if (expectedStack.IndexOf(':') != -1)
             {
                 expectedStack = expectedStack.Substring(0, expectedStack.IndexOf(':') - 1);
+            }
+            if (expectedStack.IndexOf("+ 0x") != -1)
+            {
+                expectedStack = expectedStack.Substring(0, expectedStack.IndexOf("+ 0x") - 1);
             }
 
             if (oomStack != expectedStack)

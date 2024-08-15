@@ -122,7 +122,7 @@ namespace System.CommandLine
                 string[] instructionSetParamsInput = instructionSet.Split(',');
                 for (int i = 0; i < instructionSetParamsInput.Length; i++)
                 {
-                    instructionSet = instructionSetParamsInput[i];
+                    instructionSet = instructionSetParamsInput[i].Trim();
 
                     if (string.IsNullOrEmpty(instructionSet))
                         throw new CommandLineException(string.Format(mustNotBeMessage, ""));
@@ -223,6 +223,8 @@ namespace System.CommandLine
 
                     optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("avx512vbmi");
                     optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("avx512vbmi_vl");
+                    optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("avx10v1");
+                    optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("avx10v1_v512");
                 }
             }
             else if (targetArchitecture == TargetArchitecture.ARM64)

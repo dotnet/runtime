@@ -205,13 +205,13 @@ public:
     }
     inline LPCWSTR GetName(__inout_ecount (iMaxSize) LPWSTR szName, int iMaxSize)
     {
-        VERIFY(::WszMultiByteToWideChar(CP_ACP, 0, rcName, -1, szName, iMaxSize));
+        VERIFY(::MultiByteToWideChar(CP_ACP, 0, rcName, -1, szName, iMaxSize));
         return (szName);
     }
     inline void SetName(LPCWSTR szName)
     {
         int size;
-        size = WszWideCharToMultiByte(CP_ACP, 0, szName, -1, rcName, MAXSTREAMNAME, 0, 0);
+        size = WideCharToMultiByte(CP_ACP, 0, szName, -1, rcName, MAXSTREAMNAME, 0, 0);
         _ASSERTE(size > 0);
     }
 

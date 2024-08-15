@@ -45,8 +45,6 @@
 // if someone changes the frame size.  You are expected to keep this hard coded constant
 // up to date so that changes in the frame size trigger errors at compile time if the code is not altered
 
-void generate_noref_copy (unsigned nbytes, StubLinkerCPU* sl);
-
 #ifdef FEATURE_EH_FUNCLETS
 void UpdateRegDisplayFromCalleeSavedRegisters(REGDISPLAY * pRD, CalleeSavedRegisters * regs)
 {
@@ -238,7 +236,7 @@ void HelperMethodFrame::UpdateRegDisplay(const PREGDISPLAY pRD, bool updateFloat
         // This allocation throws on OOM.
         MachState* pUnwoundState = (MachState*)DacAllocHostOnlyInstance(sizeof(*pUnwoundState), true);
 
-        InsureInit(false, pUnwoundState);
+        InsureInit(pUnwoundState);
 
         pRD->PCTAddr = dac_cast<TADDR>(pUnwoundState->pRetAddr());
         pRD->pCurrentContext->Eip = pRD->ControlPC = pUnwoundState->GetRetAddr();
@@ -297,7 +295,7 @@ void HelperMethodFrame::UpdateRegDisplay(const PREGDISPLAY pRD, bool updateFloat
     {
         MachState unwindState;
 
-        InsureInit(false, &unwindState);
+        InsureInit(&unwindState);
         pRD->PCTAddr = dac_cast<TADDR>(unwindState.pRetAddr());
         pRD->ControlPC = unwindState.GetRetAddr();
         pRD->SP = unwindState._esp;
@@ -373,7 +371,7 @@ EXTERN_C MachState* STDCALL HelperMethodFrameConfirmState(HelperMethodFrame* fra
     BEGIN_DEBUG_ONLY_CODE;
     if (!state->isValid())
     {
-        frame->InsureInit(false, NULL);
+        frame->InsureInit(NULL);
         _ASSERTE(state->_pEsi != &state->_esi || state->_esi  == (TADDR)esiVal);
         _ASSERTE(state->_pEdi != &state->_edi || state->_edi  == (TADDR)ediVal);
         _ASSERTE(state->_pEbx != &state->_ebx || state->_ebx  == (TADDR)ebxVal);
@@ -911,18 +909,6 @@ Stub *GenerateInitPInvokeFrameHelper()
     RETURN psl->Link(SystemDomain::GetGlobalLoaderAllocator()->GetExecutableHeap());
 }
 
-
-extern "C" VOID STDCALL StubRareEnableWorker(Thread *pThread)
-{
-    WRAPPER_NO_CONTRACT;
-
-    //printf("RareEnable\n");
-    pThread->RareEnablePreemptiveGC();
-}
-
-
-
-
 // Disable when calling into managed code from a place that fails via Exceptions
 extern "C" VOID STDCALL StubRareDisableTHROWWorker(Thread *pThread)
 {
@@ -1008,84 +994,6 @@ void ResumeAtJit(PCONTEXT pContext, LPVOID oldESP)
 #pragma warning (default : 4731)
 #endif // !FEATURE_METADATA_UPDATER
 
-
-#ifndef TARGET_UNIX
-#pragma warning(push)
-#pragma warning(disable: 4035)
-extern "C" DWORD xmmYmmStateSupport()
-{
-    // No CONTRACT
-    STATIC_CONTRACT_NOTHROW;
-    STATIC_CONTRACT_GC_NOTRIGGER;
-
-    __asm
-    {
-        mov     ecx, 0                  ; Specify xcr0
-        xgetbv                          ; result in EDX:EAX
-        and eax, 06H
-        cmp eax, 06H                    ; check OS has enabled both XMM and YMM state support
-        jne     not_supported
-        mov     eax, 1
-        jmp     done
-    not_supported:
-        mov     eax, 0
-    done:
-    }
-}
-#pragma warning(pop)
-
-#pragma warning(push)
-#pragma warning(disable: 4035)
-extern "C" DWORD avx512StateSupport()
-{
-    // No CONTRACT
-    STATIC_CONTRACT_NOTHROW;
-    STATIC_CONTRACT_GC_NOTRIGGER;
-
-    __asm
-    {
-        mov     ecx, 0                  ; Specify xcr0
-        xgetbv                          ; result in EDX:EAX
-        and eax, 0E6H
-        cmp eax, 0E6H                  ; check OS has enabled XMM, YMM and ZMM state support
-        jne     not_supported
-        mov     eax, 1
-        jmp     done
-    not_supported:
-        mov     eax, 0
-    done:
-    }
-}
-#pragma warning(pop)
-
-
-#else // !TARGET_UNIX
-
-extern "C" DWORD xmmYmmStateSupport()
-{
-    DWORD eax;
-    __asm("  xgetbv\n" \
-        : "=a"(eax) /*output in eax*/\
-        : "c"(0) /*inputs - 0 in ecx*/\
-        : "edx" /* registers that are clobbered*/
-        );
-    // check OS has enabled both XMM and YMM state support
-    return ((eax & 0x06) == 0x06) ? 1 : 0;
-}
-
-extern "C" DWORD avx512StateSupport()
-{
-    DWORD eax;
-    __asm("  xgetbv\n" \
-        : "=a"(eax) /*output in eax*/\
-        : "c"(0) /*inputs - 0 in ecx*/\
-        : "edx" /* registers that are clobbered*/
-        );
-    // check OS has enabled XMM, YMM and ZMM state support
-    return ((eax & 0x0E6) == 0x0E6) ? 1 : 0;
-}
-
-#endif // !TARGET_UNIX
 
 void UMEntryThunkCode::Encode(UMEntryThunkCode *pEntryThunkCodeRX, BYTE* pTargetCode, void* pvSecretParam)
 {

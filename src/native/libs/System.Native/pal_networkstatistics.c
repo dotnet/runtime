@@ -18,6 +18,7 @@
 #if HAVE_NETINET_TCP_VAR_H
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wreserved-id-macro"
+#pragma clang diagnostic ignored "-Wunused-macros"
 #define _WANT_INPCB
 #define _WANT_TCPCB
 #pragma clang diagnostic pop
@@ -57,6 +58,10 @@
 #include <netinet/ip_var.h>
 #elif HAVE_IOS_NETINET_IP_VAR_H
 #include "ios/netinet/ip_var.h"
+#endif
+#ifdef __FreeBSD__
+#include <sys/callout.h>
+#include <sys/osd.h>
 #endif
 #include <netinet/tcp_var.h>
 #include <netinet/tcp.h>

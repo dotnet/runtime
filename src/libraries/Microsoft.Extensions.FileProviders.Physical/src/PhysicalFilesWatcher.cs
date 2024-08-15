@@ -88,7 +88,7 @@ namespace Microsoft.Extensions.FileProviders.Physical
 
             if (fileSystemWatcher != null)
             {
-#if NETCOREAPP
+#if NET
                 if (OperatingSystem.IsBrowser() || (OperatingSystem.IsIOS() && !OperatingSystem.IsMacCatalyst()) || OperatingSystem.IsTvOS())
                 {
                     throw new PlatformNotSupportedException(SR.Format(SR.FileSystemWatcher_PlatformNotSupported, typeof(FileSystemWatcher)));
@@ -160,7 +160,7 @@ namespace Microsoft.Extensions.FileProviders.Physical
             }
 
             IChangeToken changeToken;
-#if NET5_0_OR_GREATER
+#if NET
             bool isWildCard = pattern.Contains('*');
 #else
             bool isWildCard = pattern.IndexOf('*') != -1;

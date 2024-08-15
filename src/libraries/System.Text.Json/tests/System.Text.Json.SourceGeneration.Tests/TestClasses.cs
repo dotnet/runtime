@@ -87,7 +87,7 @@ namespace System.Text.Json.SourceGeneration.Tests
         public DateTimeOffset Date { get; set; }
         public int TemperatureCelsius { get; set; }
         public string Summary { get; set; }
-        public string SummaryField;
+        public string? SummaryField;
         public List<DateTimeOffset> DatesAvailable { get; set; }
         public Dictionary<string, HighLowTemps> TemperatureRanges { get; set; }
         public string[] SummaryWords { get; set; }
@@ -115,7 +115,7 @@ namespace System.Text.Json.SourceGeneration.Tests
 
     public class MyType
     {
-        public MyType Type;
+        public MyType? Type;
     }
 
     public class MyType2
@@ -332,5 +332,29 @@ namespace System.Text.Json.SourceGeneration.Tests
         public string FieldWithCustomName;
 
         public new int ShadowProperty { get; set; }
+    }
+
+    public sealed class ClassWithConflictingIgnoredProperties
+    {
+        [JsonIgnore]
+        public List<string>? UserList { get; set; }
+
+        [JsonPropertyName("userlist")]
+        public List<string>? SystemTextJsonUserList { get; set; }
+
+        [JsonIgnore]
+        public List<string>? UserGroupsList { get; set; }
+
+        [JsonPropertyName("usergroupslist")]
+        public List<string>? SystemTextJsonUserGroupsList { get; set; }
+
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
+        public List<string>? SystemTextJsonIPAddresses { get; set; }
+
+        [JsonIgnore]
+        public List<object>? QueryParams { get; set; }
+
+        [JsonPropertyName("queryparams")]
+        public List<object>? SystemTextJsonQueryParams { get; set; }
     }
 }

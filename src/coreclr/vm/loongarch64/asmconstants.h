@@ -71,35 +71,8 @@ ASMCONSTANTS_C_ASSERT(CallDescrData__fpReturnSize         == offsetof(CallDescrD
 ASMCONSTANTS_C_ASSERT(CallDescrData__pTarget              == offsetof(CallDescrData, pTarget))
 ASMCONSTANTS_C_ASSERT(CallDescrData__returnValue          == offsetof(CallDescrData, returnValue))
 
-#define CallDescrData__flagOneFloat             0x1
-#define CallDescrData__flagOneDouble            0x11
-#define CallDescrData__flagFloatInt             0x2
-#define CallDescrData__flagFloatLong            0x22
-#define CallDescrData__flagDoubleInt            0x12
-#define CallDescrData__flagDoubleLong           0x32
-#define CallDescrData__flagIntFloat             0x4
-#define CallDescrData__flagIntDouble            0x24
-#define CallDescrData__flagLongFloat            0x14
-#define CallDescrData__flagLongDouble           0x34
-#define CallDescrData__flagFloatFloat           0x8
-#define CallDescrData__flagFloatDouble          0x28
-#define CallDescrData__flagDoubleFloat          0x18
-#define CallDescrData__flagDoubleDouble         0x38
-
-ASMCONSTANTS_C_ASSERT(CallDescrData__flagOneFloat         == (int)STRUCT_FLOAT_FIELD_ONLY_ONE)
-ASMCONSTANTS_C_ASSERT(CallDescrData__flagOneDouble        == (int)(STRUCT_FLOAT_FIELD_ONLY_ONE | STRUCT_FIRST_FIELD_SIZE_IS8))
-ASMCONSTANTS_C_ASSERT(CallDescrData__flagFloatInt         == (int)STRUCT_FLOAT_FIELD_FIRST)
-ASMCONSTANTS_C_ASSERT(CallDescrData__flagFloatLong        == (int)(STRUCT_FLOAT_FIELD_FIRST | STRUCT_SECOND_FIELD_SIZE_IS8))
-ASMCONSTANTS_C_ASSERT(CallDescrData__flagDoubleInt        == (int)(STRUCT_FLOAT_FIELD_FIRST | STRUCT_FIRST_FIELD_SIZE_IS8))
-ASMCONSTANTS_C_ASSERT(CallDescrData__flagDoubleLong       == (int)(CallDescrData__flagDoubleInt | STRUCT_SECOND_FIELD_SIZE_IS8))
-ASMCONSTANTS_C_ASSERT(CallDescrData__flagIntFloat         == (int)STRUCT_FLOAT_FIELD_SECOND)
-ASMCONSTANTS_C_ASSERT(CallDescrData__flagIntDouble        == (int)(STRUCT_FLOAT_FIELD_SECOND | STRUCT_SECOND_FIELD_SIZE_IS8))
-ASMCONSTANTS_C_ASSERT(CallDescrData__flagLongFloat        == (int)(STRUCT_FLOAT_FIELD_SECOND | STRUCT_FIRST_FIELD_SIZE_IS8))
-ASMCONSTANTS_C_ASSERT(CallDescrData__flagLongDouble       == (int)(CallDescrData__flagLongFloat | STRUCT_SECOND_FIELD_SIZE_IS8))
-ASMCONSTANTS_C_ASSERT(CallDescrData__flagFloatFloat       == (int)STRUCT_FLOAT_FIELD_ONLY_TWO)
-ASMCONSTANTS_C_ASSERT(CallDescrData__flagFloatDouble      == (int)(STRUCT_FLOAT_FIELD_ONLY_TWO | STRUCT_SECOND_FIELD_SIZE_IS8))
-ASMCONSTANTS_C_ASSERT(CallDescrData__flagDoubleFloat      == (int)(STRUCT_FLOAT_FIELD_ONLY_TWO | STRUCT_FIRST_FIELD_SIZE_IS8))
-ASMCONSTANTS_C_ASSERT(CallDescrData__flagDoubleDouble     == (int)(CallDescrData__flagDoubleFloat | STRUCT_SECOND_FIELD_SIZE_IS8))
+#define FpStruct__BothFloat           0b10
+ASMCONSTANTS_C_ASSERT(FpStruct__BothFloat == (int)FpStruct::BothFloat)
 
 #define                  CORINFO_NullReferenceException_ASM 0
 ASMCONSTANTS_C_ASSERT(   CORINFO_NullReferenceException_ASM
@@ -206,10 +179,13 @@ ASMCONSTANTS_C_ASSERT((1<<FixupPrecode_ALIGNMENT_SHIFT_1) == sizeof(FixupPrecode
 ASMCONSTANTS_C_ASSERT(ResolveCacheElem__target == offsetof(ResolveCacheElem, target));
 ASMCONSTANTS_C_ASSERT(ResolveCacheElem__pNext == offsetof(ResolveCacheElem, pNext));
 
-#define DomainLocalModule__m_pDataBlob 0x30
-#define DomainLocalModule__m_pGCStatics 0x20
-ASMCONSTANTS_C_ASSERT(DomainLocalModule__m_pDataBlob == offsetof(DomainLocalModule, m_pDataBlob));
-ASMCONSTANTS_C_ASSERT(DomainLocalModule__m_pGCStatics == offsetof(DomainLocalModule, m_pGCStatics));
+#define                OFFSETOF__DynamicStaticsInfo__m_pNonGCStatics 0x8
+ASMCONSTANTS_C_ASSERT(OFFSETOF__DynamicStaticsInfo__m_pNonGCStatics
+                    == offsetof(DynamicStaticsInfo, m_pNonGCStatics));
+
+#define                OFFSETOF__DynamicStaticsInfo__m_pGCStatics 0
+ASMCONSTANTS_C_ASSERT(OFFSETOF__DynamicStaticsInfo__m_pGCStatics
+                    == offsetof(DynamicStaticsInfo, m_pGCStatics));
 
 // For JIT_PInvokeBegin and JIT_PInvokeEnd helpers
 #define               Frame__m_Next 0x08
@@ -218,16 +194,16 @@ ASMCONSTANTS_C_ASSERT(Frame__m_Next == offsetof(Frame, m_Next))
 #define               InlinedCallFrame__m_Datum 0x10
 ASMCONSTANTS_C_ASSERT(InlinedCallFrame__m_Datum == offsetof(InlinedCallFrame, m_Datum))
 
-#define               InlinedCallFrame__m_pCallSiteSP 0x20
+#define               InlinedCallFrame__m_pCallSiteSP 0x18
 ASMCONSTANTS_C_ASSERT(InlinedCallFrame__m_pCallSiteSP == offsetof(InlinedCallFrame, m_pCallSiteSP))
 
-#define               InlinedCallFrame__m_pCallerReturnAddress 0x28
+#define               InlinedCallFrame__m_pCallerReturnAddress 0x20
 ASMCONSTANTS_C_ASSERT(InlinedCallFrame__m_pCallerReturnAddress == offsetof(InlinedCallFrame, m_pCallerReturnAddress))
 
-#define               InlinedCallFrame__m_pCalleeSavedFP 0x30
+#define               InlinedCallFrame__m_pCalleeSavedFP 0x28
 ASMCONSTANTS_C_ASSERT(InlinedCallFrame__m_pCalleeSavedFP == offsetof(InlinedCallFrame, m_pCalleeSavedFP))
 
-#define               InlinedCallFrame__m_pThread 0x38
+#define               InlinedCallFrame__m_pThread 0x30
 ASMCONSTANTS_C_ASSERT(InlinedCallFrame__m_pThread == offsetof(InlinedCallFrame, m_pThread))
 
 #define FixupPrecodeData__Target 0x00

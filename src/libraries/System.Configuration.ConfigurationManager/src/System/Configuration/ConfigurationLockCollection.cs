@@ -220,7 +220,7 @@ namespace System.Configuration
 
             string parentListEnclosed = "," + _seedList + ",";
             if (name.Equals(_ignoreName) ||
-#if NETCOREAPP
+#if NET
                 parentListEnclosed.Contains("," + name + ",", StringComparison.Ordinal))
 #else
                 parentListEnclosed.IndexOf("," + name + ",", StringComparison.Ordinal) >= 0)
