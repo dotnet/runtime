@@ -25,7 +25,7 @@ namespace System.Reflection.Metadata
         /// Positive value is array rank.
         /// Negative value is modifier encoded using constants defined in <see cref="TypeNameParserHelpers"/>.
         /// </summary>
-        private readonly sbyte _rankOrModifier;
+        private readonly int _rankOrModifier;
         /// <summary>
         /// To avoid the need of allocating a string for all declaring types (example: A+B+C+D+E+F+G),
         /// length of the name is stored and the fullName passed in ctor represents the full name of the nested type.
@@ -50,7 +50,7 @@ namespace System.Reflection.Metadata
 #else
             ImmutableArray<TypeName>.Builder? genericTypeArguments = default,
 #endif
-            sbyte rankOrModifier = default,
+            int rankOrModifier = default,
             int nestedNameLength = -1)
         {
             _fullName = fullName;
@@ -68,6 +68,25 @@ namespace System.Reflection.Metadata
                 : genericTypeArguments.Count == genericTypeArguments.Capacity ? genericTypeArguments.MoveToImmutable() : genericTypeArguments.ToImmutableArray();
 #endif
         }
+
+#if SYSTEM_REFLECTION_METADATA
+        private TypeName(string? fullName,
+            AssemblyNameInfo? assemblyName,
+            TypeName? elementOrGenericType,
+            TypeName? declaringType,
+            ImmutableArray<TypeName> genericTypeArguments,
+            int rankOrModifier = default,
+            int nestedNameLength = -1)
+        {
+            _fullName = fullName;
+            AssemblyName = assemblyName;
+            _elementOrGenericType = elementOrGenericType;
+            _declaringType = declaringType;
+            _genericArguments = genericTypeArguments;
+            _rankOrModifier = rankOrModifier;
+            _nestedNameLength = nestedNameLength;
+        }
+#endif
 
         /// <summary>
         /// The assembly-qualified name of the type; e.g., "System.Int32, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089".
@@ -391,6 +410,102 @@ namespace System.Reflection.Metadata
         ReadOnlySpan<TypeName> GetGenericArguments() => CollectionsMarshal.AsSpan(_genericArguments);
 #else
         ImmutableArray<TypeName> GetGenericArguments() => _genericArguments;
+#endif
+
+#if SYSTEM_REFLECTION_METADATA
+        /// <summary>
+        /// Creates a new <see cref="TypeName" /> object that represents current simple name with provided assembly name.
+        /// </summary>
+        /// <param name="assemblyName">Assembly name.</param>
+        /// <returns>Created simple name.</returns>
+        /// <exception cref="InvalidOperationException">The current type name is not simple.</exception>
+        public TypeName WithAssemblyName(AssemblyNameInfo? assemblyName)
+        {
+            if (!IsSimple)
+            {
+                TypeNameParserHelpers.ThrowInvalidOperation_NotSimpleName(FullName);
+            }
+
+            TypeName? declaringType = IsNested
+                ? DeclaringType.WithAssemblyName(assemblyName)
+                : null;
+
+            return new TypeName(fullName: _fullName,
+                assemblyName: assemblyName,
+                elementOrGenericType: null,
+                declaringType: declaringType,
+                genericTypeArguments: ImmutableArray<TypeName>.Empty,
+                nestedNameLength: _nestedNameLength);
+        }
+
+        /// <summary>
+        /// Creates a <see cref="TypeName" /> object representing a one-dimensional array
+        /// of the current type, with a lower bound of zero.
+        /// </summary>
+        /// <returns>
+        /// A <see cref="TypeName" /> object representing a one-dimensional array
+        /// of the current type, with a lower bound of zero.
+        /// </returns>
+        public TypeName MakeSZArrayTypeName() => MakeElementTypeName(TypeNameParserHelpers.SZArray);
+
+        /// <summary>
+        /// Creates a <see cref="TypeName" /> object representing an array of the current type,
+        /// with the specified number of dimensions.
+        /// </summary>
+        /// <param name="rank">The number of dimensions for the array. This number must be more than zero and less than or equal to 32.</param>
+        /// <returns>
+        /// A <see cref="TypeName" /> object representing an array of the current type,
+        /// with the specified number of dimensions.
+        /// </returns>
+        /// <exception cref="ArgumentOutOfRangeException">rank is invalid. For example, 0 or negative.</exception>
+        public TypeName MakeArrayTypeName(int rank)
+            => rank <= 0
+                ? throw new ArgumentOutOfRangeException(nameof(rank))
+                : MakeElementTypeName(rank);
+
+        /// <summary>
+        /// Creates a <see cref="TypeName" /> object that represents a pointer to the current type.
+        /// </summary>
+        /// <returns>
+        /// A <see cref="TypeName" /> object that represents a pointer to the current type.
+        /// </returns>
+        public TypeName MakePointerTypeName() => MakeElementTypeName(TypeNameParserHelpers.Pointer);
+
+        /// <summary>
+        /// Creates a <see cref="TypeName" /> object that represents a managed reference to the current type.
+        /// </summary>
+        /// <returns>
+        /// A <see cref="TypeName" /> object that represents a managed reference to the current type.
+        /// </returns>
+        public TypeName MakeByRefTypeName() => MakeElementTypeName(TypeNameParserHelpers.ByRef);
+
+        /// <summary>
+        /// Creates a new constructed generic type name.
+        /// </summary>
+        /// <param name="typeArguments">An array of type names to be used as generic arguments of the current simple type name.</param>
+        /// <returns>
+        /// A <see cref="TypeName" /> representing the constructed type name formed by using the elements
+        /// of <paramref name="typeArguments"/> for the generic arguments of the current simple type name.
+        /// </returns>
+        /// <exception cref="InvalidOperationException">The current type name is not simple.</exception>
+        public TypeName MakeGenericTypeName(ImmutableArray<TypeName> typeArguments)
+        {
+            if (!IsSimple)
+            {
+                TypeNameParserHelpers.ThrowInvalidOperation_NotSimpleName(FullName);
+            }
+
+            return new TypeName(fullName: null, AssemblyName, elementOrGenericType: this, declaringType: _declaringType, genericTypeArguments: typeArguments);
+        }
+
+        private TypeName MakeElementTypeName(int rankOrModifier)
+            => new TypeName(
+                fullName: null,
+                assemblyName: AssemblyName,
+                elementOrGenericType: this,
+                declaringType: null,
+                genericTypeArguments: ImmutableArray<TypeName>.Empty,
+                rankOrModifier: rankOrModifier);
 #endif
     }
 }

@@ -6,6 +6,7 @@
     <SharedFrameworkName>$(MicrosoftNetCoreAppFrameworkName)</SharedFrameworkName>
     <IsShipping Condition="'$(PgoInstrument)' != ''">false</IsShipping>
     <SharedFrameworkFriendlyName>.NET Runtime</SharedFrameworkFriendlyName>
+    <EnableDefaultPackageReadmeFile>true</EnableDefaultPackageReadmeFile>
   </PropertyGroup>
 
   <!--
@@ -106,7 +107,7 @@
     <PlatformManifestFileEntry Include="libclrgc.dylib" IsNative="true" />
     <PlatformManifestFileEntry Include="clrgcexp.dll" IsNative="true" />
     <PlatformManifestFileEntry Include="libclrgcexp.so" IsNative="true" />
-    <PlatformManifestFileEntry Include="libclrgcexp.dylib" IsNative="true" />    
+    <PlatformManifestFileEntry Include="libclrgcexp.dylib" IsNative="true" />
     <PlatformManifestFileEntry Include="clretwrc.dll" IsNative="true" />
     <PlatformManifestFileEntry Include="clrjit.dll" IsNative="true" />
     <PlatformManifestFileEntry Condition="'$(PgoInstrument)' != ''" Include="pgort140.dll" IsNative="true" />
@@ -270,6 +271,7 @@
     <PlatformManifestFileEntry Include="stubs.c" IsNative="true" />
     <PlatformManifestFileEntry Include="synthetic-pthread.c" IsNative="true" />
     <PlatformManifestFileEntry Include="dotnet.wasm" IsNative="true" />
+    <PlatformManifestFileEntry Include="WasiHttpWorld_component_type.wit" IsNative="true" />
     <!-- ICU-specific files -->
     <PlatformManifestFileEntry Include="libicudata.a" IsNative="true" />
     <PlatformManifestFileEntry Include="libicui18n.a" IsNative="true" />

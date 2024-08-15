@@ -172,7 +172,7 @@ public:
         if (m_currentFloatRegIndex < m_argLocDesc->m_cFloatReg)
         {
 #if defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
-            if ((m_argLocDesc->m_structFields & STRUCT_FLOAT_FIELD_SECOND) && (m_currentGenRegIndex < m_argLocDesc->m_cGenReg))
+            if ((m_argLocDesc->m_structFields.flags & FpStruct::IntFloat) && (m_currentGenRegIndex < m_argLocDesc->m_cGenReg))
             {
                 // the first field is integer so just skip this.
             }
@@ -2120,35 +2120,42 @@ extern "C" BOOL QCALLTYPE Delegate_InternalEqualMethodHandles(QCall::ObjectHandl
     return fRet;
 }
 
-FCIMPL1(MethodDesc*, COMDelegate::GetInvokeMethod, Object* refThisIn)
+FCIMPL1(MethodDesc*, COMDelegate::GetInvokeMethod, MethodTable* pDelegateMT)
 {
     FCALL_CONTRACT;
+    _ASSERTE(pDelegateMT != NULL);
 
-    OBJECTREF refThis = ObjectToOBJECTREF(refThisIn);
-    MethodTable * pDelMT = refThis->GetMethodTable();
-
-    MethodDesc* pMD = ((DelegateEEClass*)(pDelMT->GetClass()))->GetInvokeMethod();
-    _ASSERTE(pMD);
+    MethodDesc* pMD = ((DelegateEEClass*)(pDelegateMT->GetClass()))->GetInvokeMethod();
+    _ASSERTE(pMD != NULL);
     return pMD;
 }
 FCIMPLEND
 
-FCIMPL1(PCODE, COMDelegate::GetMulticastInvoke, Object* refThisIn)
+FCIMPL1(PCODE, COMDelegate::GetMulticastInvoke, MethodTable* pDelegateMT)
 {
     FCALL_CONTRACT;
+    _ASSERTE(pDelegateMT != NULL);
 
-    OBJECTREF refThis = ObjectToOBJECTREF(refThisIn);
-    MethodTable *pDelegateMT = refThis->GetMethodTable();
+    DelegateEEClass* delegateEEClass = (DelegateEEClass*)pDelegateMT->GetClass();
+    Stub *pStub = delegateEEClass->m_pMultiCastInvokeStub;
+    return (pStub != NULL) ? pStub->GetEntryPoint() : (PCODE)NULL;
+}
+FCIMPLEND
 
-    DelegateEEClass *delegateEEClass = ((DelegateEEClass*)(pDelegateMT->GetClass()));
+extern "C" PCODE QCALLTYPE Delegate_GetMulticastInvokeSlow(MethodTable* pDelegateMT)
+{
+    QCALL_CONTRACT;
+    _ASSERTE(pDelegateMT != NULL);
+
+    PCODE fptr = (PCODE)NULL;
+
+    BEGIN_QCALL;
+
+    DelegateEEClass *delegateEEClass = (DelegateEEClass*)pDelegateMT->GetClass();
     Stub *pStub = delegateEEClass->m_pMultiCastInvokeStub;
     if (pStub == NULL)
     {
         MethodDesc* pMD = delegateEEClass->GetInvokeMethod();
-
-        HELPER_METHOD_FRAME_BEGIN_RET_0();
-
-        GCX_PREEMP();
 
         MetaSig sig(pMD);
 
@@ -2162,7 +2169,7 @@ FCIMPL1(PCODE, COMDelegate::GetMulticastInvoke, Object* refThisIn)
         DWORD dwLoopCounterNum = pCode->NewLocal(ELEMENT_TYPE_I4);
 
         DWORD dwReturnValNum = -1;
-        if(fReturnVal)
+        if (fReturnVal)
             dwReturnValNum = pCode->NewLocal(sig.GetRetTypeHandleNT());
 
         ILCodeLabel *nextDelegate = pCode->NewCodeLabel();
@@ -2192,7 +2199,7 @@ FCIMPL1(PCODE, COMDelegate::GetMulticastInvoke, Object* refThisIn)
         pCode->EmitCALL(pCode->GetToken(pMD), sig.NumFixedArgs(), fReturnVal);
 
         // Save return value.
-        if(fReturnVal)
+        if (fReturnVal)
             pCode->EmitSTLOC(dwReturnValNum);
 
         // increment counter
@@ -2203,7 +2210,7 @@ FCIMPL1(PCODE, COMDelegate::GetMulticastInvoke, Object* refThisIn)
 
         //Label_checkCount
         pCode->EmitLabel(checkCount);
-        
+
 #ifdef DEBUGGING_SUPPORTED
         ILCodeLabel *invokeTraceHelper = pCode->NewCodeLabel();
         ILCodeLabel *debuggerCheckEnd = pCode->NewCodeLabel();
@@ -2228,7 +2235,7 @@ FCIMPL1(PCODE, COMDelegate::GetMulticastInvoke, Object* refThisIn)
         pCode->EmitBLT(nextDelegate);
 
         // load the return value. return value from the last delegate call is returned
-        if(fReturnVal)
+        if (fReturnVal)
             pCode->EmitLDLOC(dwReturnValNum);
 
         // return
@@ -2247,8 +2254,7 @@ FCIMPL1(PCODE, COMDelegate::GetMulticastInvoke, Object* refThisIn)
 
         PCCOR_SIGNATURE pSig;
         DWORD cbSig;
-
-        pMD->GetSig(&pSig,&cbSig);
+        pMD->GetSig(&pSig, &cbSig);
 
         MethodDesc* pStubMD = ILStubCache::CreateAndLinkNewILStubMethodDesc(pMD->GetLoaderAllocator(),
                                                                pMD->GetMethodTable(),
@@ -2257,17 +2263,18 @@ FCIMPL1(PCODE, COMDelegate::GetMulticastInvoke, Object* refThisIn)
                                                                pSig, cbSig,
                                                                NULL,
                                                                &sl);
-
         pStub = Stub::NewStub(JitILStub(pStubMD));
 
         InterlockedCompareExchangeT<PTR_Stub>(&delegateEEClass->m_pMultiCastInvokeStub, pStub, NULL);
-
-        HELPER_METHOD_FRAME_END();
+        pStub = delegateEEClass->m_pMultiCastInvokeStub;
     }
 
-    return pStub->GetEntryPoint();
+    fptr = pStub->GetEntryPoint();
+
+    END_QCALL;
+
+    return fptr;
 }
-FCIMPLEND
 
 PCODE COMDelegate::GetWrapperInvoke(MethodDesc* pMD)
 {

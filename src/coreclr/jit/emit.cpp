@@ -7095,8 +7095,28 @@ unsigned emitter::emitEndCodeGen(Compiler*         comp,
     *instrCount                                       = 0;
     jitstd::list<RichIPMapping>::iterator nextMapping = emitComp->genRichIPmappings.begin();
 #endif
+#if defined(DEBUG) && defined(TARGET_ARM64)
+    instrDesc* prevId = nullptr;
+#endif // defined(DEBUG) && defined(TARGET_ARM64)
+
     for (insGroup* ig = emitIGlist; ig != nullptr; ig = ig->igNext)
     {
+
+#if defined(DEBUG) && defined(TARGET_ARM64)
+        instrDesc* currId = emitFirstInstrDesc(ig->igData);
+        for (unsigned cnt = ig->igInsCnt; cnt > 0; cnt--)
+        {
+            emitInsPairSanityCheck(prevId, currId);
+            prevId = currId;
+            emitAdvanceInstrDesc(&currId, emitSizeOfInsDsc(currId));
+        }
+        // Final instruction can't be a movprfx
+        if (ig->igNext == nullptr)
+        {
+            assert(prevId->idIns() != INS_sve_movprfx);
+        }
+#endif // defined(DEBUG) && defined(TARGET_ARM64)
+
         assert(!(ig->igFlags & IGF_PLACEHOLDER)); // There better not be any placeholder groups left
 
         /* Is this the first cold block? */
@@ -10427,9 +10447,9 @@ regMaskTP emitter::emitGetGCRegsKilledByNoGCCall(CorInfoHelpFunc helper)
 //    of the last instruction in the region makes GC safe again.
 //    In particular - once the IP is on the first instruction, but not executed it yet,
 //    it is still safe to do GC.
-//    The only special case is when NoGC region is used for prologs/epilogs.
-//    In such case the GC info could be incorrect until the prolog completes and epilogs
-//    may have unwindability restrictions, so the first instruction cannot have GC.
+//    The only special case is when NoGC region is used for prologs.
+//    In such case the GC info could be incorrect until the prolog completes, so the first
+//    instruction cannot have GC.
 
 void emitter::emitDisableGC()
 {
@@ -10457,6 +10477,11 @@ void emitter::emitDisableGC()
         JITDUMP("Disable GC: %u no-gc requests\n", emitNoGCRequestCount);
         assert(emitNoGCIG);
     }
+}
+
+bool emitter::emitGCDisabled()
+{
+    return emitNoGCIG == true;
 }
 
 //------------------------------------------------------------------------

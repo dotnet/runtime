@@ -158,6 +158,37 @@ void DispatchCallDebuggerWrapper(
     PAL_ENDTRY
 }
 
+#if defined(TARGET_RISCV64) || defined(TARGET_LOONGARCH64)
+void CopyReturnedFpStructFromRegisters(void* dest, UINT64 returnRegs[2], FpStructInRegistersInfo info,
+    bool handleGcRefs)
+{
+    _ASSERTE(info.flags != FpStruct::UseIntCallConv);
+
+    auto copyReg = [handleGcRefs, dest, returnRegs](uint32_t destOffset, unsigned regIndex, bool isInt, unsigned sizeShift)
+    {
+        const UINT64* srcField = &returnRegs[regIndex];
+        void* destField = (char*)dest + destOffset;
+        int size = 1 << sizeShift;
+
+        static const int ptrShift = 3;
+        static_assert((1 << ptrShift) == TARGET_POINTER_SIZE, "");
+        bool maybeRef = handleGcRefs && isInt && sizeShift == ptrShift && (destOffset & ((1 << ptrShift) - 1)) == 0;
+
+        if (maybeRef)
+            memmoveGCRefs(destField, srcField, size);
+        else
+            memcpyNoGCRefs(destField, srcField, size);
+    };
+
+    // returnRegs contain [ fa0, fa1/a0 ]; FpStruct::IntFloat is the only case where the field order is swapped
+    bool swap = info.flags & FpStruct::IntFloat;
+
+    copyReg(info.offset1st, (swap ? 1 : 0), (info.flags & FpStruct::IntFloat), info.SizeShift1st());
+    if ((info.flags & FpStruct::OnlyOne) == 0)
+        copyReg(info.offset2nd, (swap ? 0 : 1), (info.flags & FpStruct::FloatInt), info.SizeShift2nd());
+}
+#endif // TARGET_RISCV64 || TARGET_LOONGARCH64
+
 // Helper for VM->managed calls with simple signatures.
 void * DispatchCallSimple(
                     SIZE_T *pSrc,
@@ -554,15 +585,27 @@ void MethodDescCallSite::CallTargetWorker(const ARG_SLOT *pArguments, ARG_SLOT *
         CallDescrWorkerWithHandler(&callDescrData);
     }
 
+#ifdef FEATURE_HFA
     if (pvRetBuff != NULL)
     {
         memcpyNoGCRefs(pvRetBuff, &callDescrData.returnValue, sizeof(callDescrData.returnValue));
     }
+#endif // FEATURE_HFA
 
     if (pReturnValue != NULL)
     {
         _ASSERTE((DWORD)cbReturnValue <= sizeof(callDescrData.returnValue));
-        memcpyNoGCRefs(pReturnValue, &callDescrData.returnValue, cbReturnValue);
+#if defined(TARGET_RISCV64) || defined(TARGET_LOONGARCH64)
+        if (callDescrData.fpReturnSize != FpStruct::UseIntCallConv)
+        {
+            FpStructInRegistersInfo info = m_argIt.GetReturnFpStructInRegistersInfo();
+            CopyReturnedFpStructFromRegisters(pReturnValue, callDescrData.returnValue, info, false);
+        }
+        else
+#endif // defined(TARGET_RISCV64) || defined(TARGET_LOONGARCH64)
+        {
+            memcpyNoGCRefs(pReturnValue, &callDescrData.returnValue, cbReturnValue);
+        }
 
 #if !defined(HOST_64BIT) && BIGENDIAN
         {

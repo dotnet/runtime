@@ -239,11 +239,8 @@ namespace System.Net.Sockets.Tests
                     Assert.ThrowsAny<Exception>(() => client.Connect(server.LocalEndPoint));
                 }
 
-                // Verify via Select that there's an error
-                const int FailedTimeout = 10 * 1000 * 1000; // 10 seconds
-                var errorList = new List<Socket> { client };
-                Socket.Select(null, null, errorList, FailedTimeout);
-                Assert.Equal(1, errorList.Count);
+                // Verify via Poll that there's an error
+                Assert.True(client.Poll(10_000_000, SelectMode.SelectError));
 
                 // Get the last error and validate it's what's expected
                 int errorCode;

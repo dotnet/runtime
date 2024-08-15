@@ -18,6 +18,10 @@
     <!-- Filter out failing (wrong framwork, platform, runtime or activeissue) tests -->
     <TestCaseFilter>$$TESTCASEFILTER$$</TestCaseFilter>
     <DotNetHostPath>$$DOTNETHOSTPATH$$</DotNetHostPath>
+    <EnvironmentVariables>
+      <!-- Configures xunit to not print out passing tests with output when diagnostic messages are enabled. -->
+      <XUNIT_HIDE_PASSING_OUTPUT_DIAGNOSTICS>1</XUNIT_HIDE_PASSING_OUTPUT_DIAGNOSTICS>
+    </EnvironmentVariables>
   </RunConfiguration>
   <LoggerRunSettings>
     <Loggers>
