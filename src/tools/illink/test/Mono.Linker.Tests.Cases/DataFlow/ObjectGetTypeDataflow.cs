@@ -20,6 +20,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			EnumTypeSatisfiesPublicFields.Test ();
 			EnumConstraintSatisfiesPublicFields.Test ();
 			InstantiatedTypeParameterAsSource.Test ();
+			EnumerationOverInstances.Test ();
 		}
 
 		class SealedConstructorAsSource
@@ -349,6 +350,28 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 				TestGenericClassOutParameter ();
 				TestGenericClassField ();
 				TestGenericClassProperty ();
+			}
+		}
+
+		class EnumerationOverInstances
+		{
+			[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)]
+			class AnnotatedBase
+			{
+			}
+
+			class Derived : AnnotatedBase
+			{
+				public void Method () { }
+			}
+
+			static IEnumerable<AnnotatedBase> GetInstances () => new AnnotatedBase[] { new Derived () };
+
+			public static void Test ()
+			{
+				foreach (var instance in GetInstances ()) {
+					instance.GetType ().GetMethod ("Method");
+				}
 			}
 		}
 	}

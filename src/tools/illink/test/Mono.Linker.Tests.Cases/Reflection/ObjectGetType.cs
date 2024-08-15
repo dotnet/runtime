@@ -1408,7 +1408,6 @@ namespace Mono.Linker.Tests.Cases.Reflection
 			static IEnumerable<AnnotatedBase> GetInstances () => new AnnotatedBase[] { new Derived () };
 
 			[Kept]
-			[UnexpectedWarning ("IL2075", nameof (Type.GetType), Tool.NativeAot, "https://github.com/dotnet/runtime/issues/93719")]
 			public static void Test ()
 			{
 				foreach (var instance in GetInstances ()) {
