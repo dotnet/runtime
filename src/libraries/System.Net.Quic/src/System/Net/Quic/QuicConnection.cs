@@ -630,18 +630,13 @@ public sealed partial class QuicConnection : IAsyncDisposable
         _negotiatedApplicationProtocol = new SslApplicationProtocol(new Span<byte>(data.NegotiatedAlpn, data.NegotiatedAlpnLength).ToArray());
 
         QUIC_HANDSHAKE_INFO info = MsQuicHelpers.GetMsQuicParameter<QUIC_HANDSHAKE_INFO>(_handle, QUIC_PARAM_TLS_HANDSHAKE_INFO);
-        _negotiatedCipherSuite = info.CipherSuite switch
-        {
-            QUIC_CIPHER_SUITE.TLS_AES_128_GCM_SHA256 => TlsCipherSuite.TLS_AES_128_GCM_SHA256,
-            QUIC_CIPHER_SUITE.TLS_AES_256_GCM_SHA384 => TlsCipherSuite.TLS_AES_256_GCM_SHA384,
-            QUIC_CIPHER_SUITE.TLS_CHACHA20_POLY1305_SHA256 => TlsCipherSuite.TLS_CHACHA20_POLY1305_SHA256,
-            _ => default
-        };
-        _negotiatedSslProtocol = info.TlsProtocolVersion switch
-        {
-            QUIC_TLS_PROTOCOL_VERSION.TLS_1_3 => SslProtocols.Tls13,
-            _ => SslProtocols.None
-        };
+
+        // QUIC_CIPHER_SUITE and QUIC_TLS_PROTOCOL_VERSION use the same values as the corresponding TlsCipherSuite and SslProtocols members.
+        _negotiatedCipherSuite = (TlsCipherSuite)info.CipherSuite;
+        _negotiatedSslProtocol = (SslProtocols)info.TlsProtocolVersion;
+
+        // currently only TLS 1.3 is defined for QUIC
+        Debug.Assert(_negotiatedSslProtocol == SslProtocols.Tls13, $"Unexpected TLS version {info.TlsProtocolVersion}");
 
         QuicAddr remoteAddress = MsQuicHelpers.GetMsQuicParameter<QuicAddr>(_handle, QUIC_PARAM_CONN_REMOTE_ADDRESS);
         _remoteEndPoint = MsQuicHelpers.QuicAddrToIPEndPoint(&remoteAddress);
