@@ -2622,7 +2622,7 @@ if (!System.Diagnostics.Debugger.IsAttached) { System.Diagnostics.Debugger.Launc
 
             Assert.Equal("John,Jane,Stephen", result.Names);
             Assert.True(result.Enabled);
-            Assert.Equal(["new", "class", "rosebud"], result.Keywords);
+            Assert.Equal(new [] { "new", "class", "rosebud"}, result.Keywords);
         }
     }
 }
