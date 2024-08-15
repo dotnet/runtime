@@ -304,6 +304,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
 			static void GenericOutParameter<T> (out T value) => value = default;
 
+			[UnexpectedWarning ("IL2072", Tool.Analyzer, "https://github.com/dotnet/runtime/issues/101734")]
 			static void TestGenericMethodOutParameter ()
 			{
 				GenericOutParameter (out Annotated value);
@@ -326,6 +327,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 				Generic<Annotated>.ReturnType ().GetType ().RequiresPublicFields ();
 			}
 
+			[UnexpectedWarning ("IL2072", Tool.Analyzer, "https://github.com/dotnet/runtime/issues/101734")]
 			static void TestGenericClassOutParameter ()
 			{
 				Generic<Annotated>.OutParameter (out var value);
