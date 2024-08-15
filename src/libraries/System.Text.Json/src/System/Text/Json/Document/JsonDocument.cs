@@ -950,6 +950,7 @@ namespace System.Text.Json
             ref StackRowStack stack)
         {
             bool inArray = false;
+            int numberOfProperties = 0;
             int arrayItemsCount = 0;
             int numberOfRowsForMembers = 0;
             int numberOfRowsForValues = 0;
@@ -977,9 +978,10 @@ namespace System.Text.Json
 
                     numberOfRowsForValues++;
                     database.Append(tokenType, tokenStart, DbRow.UnknownSize);
-                    var row = new StackRow(numberOfRowsForMembers + 1);
+                    var row = new StackRow(numberOfProperties, numberOfRowsForMembers + 1);
                     stack.Push(row);
                     numberOfRowsForMembers = 0;
+                    numberOfProperties = 0;
                 }
                 else if (tokenType == JsonTokenType.EndObject)
                 {
@@ -987,7 +989,7 @@ namespace System.Text.Json
 
                     numberOfRowsForValues++;
                     numberOfRowsForMembers++;
-                    database.SetLength(rowIndex, numberOfRowsForMembers);
+                    database.SetLength(rowIndex, numberOfProperties);
 
                     int newRowIndex = database.Length;
                     database.Append(tokenType, tokenStart, reader.ValueSpan.Length);
@@ -995,7 +997,8 @@ namespace System.Text.Json
                     database.SetNumberOfRows(newRowIndex, numberOfRowsForMembers);
 
                     StackRow row = stack.Pop();
-                    numberOfRowsForMembers += row.SizeOrLength;
+                    numberOfRowsForMembers += row.NumberOfRows;
+                    numberOfProperties = row.SizeOrLength;
                 }
                 else if (tokenType == JsonTokenType.StartArray)
                 {
@@ -1047,6 +1050,7 @@ namespace System.Text.Json
                 {
                     numberOfRowsForValues++;
                     numberOfRowsForMembers++;
+                    numberOfProperties++;
 
                     // Adding 1 to skip the start quote will never overflow
                     Debug.Assert(tokenStart < int.MaxValue);
