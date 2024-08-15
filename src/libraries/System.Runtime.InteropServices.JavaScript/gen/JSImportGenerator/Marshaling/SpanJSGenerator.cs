@@ -12,16 +12,18 @@ namespace Microsoft.Interop.JavaScript
     {
         private readonly MarshalerType _elementMarshalerType;
 
-        public SpanJSGenerator(MarshalerType elementMarshalerType)
-            : base(MarshalerType.Span)
+        public SpanJSGenerator(TypePositionInfo info, MarshalerType elementMarshalerType)
+            : base(info, MarshalerType.Span)
         {
             _elementMarshalerType = elementMarshalerType;
         }
 
-        public override IEnumerable<ExpressionSyntax> GenerateBind(TypePositionInfo info, StubCodeContext context)
+        public override IEnumerable<ExpressionSyntax> GenerateBind(StubCodeContext context)
         {
             yield return InvocationExpression(MarshalerTypeName(Type),
                 ArgumentList(SingletonSeparatedList(Argument(MarshalerTypeName(_elementMarshalerType)))));
         }
+
+        public override IBoundMarshallingGenerator Rebind(TypePositionInfo info) => new SpanJSGenerator(info, _elementMarshalerType);
     }
 }

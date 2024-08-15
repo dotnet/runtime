@@ -22,24 +22,24 @@ namespace Microsoft.Interop
         public ResolvedGenerator Create(TypePositionInfo info, StubCodeContext context)
         {
             ResolvedGenerator generator = _inner.Create(info, context);
-            return generator.IsResolvedWithoutErrors ? ValidateByValueMarshalKind(info, context, generator) : generator;
+            return generator.IsResolvedWithoutErrors ? ValidateByValueMarshalKind(context, generator) : generator;
         }
 
-        private static ResolvedGenerator ValidateByValueMarshalKind(TypePositionInfo info, StubCodeContext context, ResolvedGenerator generator)
+        private static ResolvedGenerator ValidateByValueMarshalKind(StubCodeContext context, ResolvedGenerator generator)
         {
-            if (generator.Generator is Forwarder)
+            if (generator.Generator.IsForwarder())
             {
                 // Forwarder allows everything since it just forwards to a P/Invoke.
                 // The Default marshal kind is always valid.
                 return generator;
             }
 
-            var support = generator.Generator.SupportsByValueMarshalKind(info.ByValueContentsMarshalKind, info, context, out GeneratorDiagnostic? diagnostic);
+            var support = generator.Generator.SupportsByValueMarshalKind(generator.Generator.TypeInfo.ByValueContentsMarshalKind, context, out GeneratorDiagnostic? diagnostic);
             Debug.Assert(support == ByValueMarshalKindSupport.Supported || diagnostic is not null);
             return support switch
             {
                 ByValueMarshalKindSupport.Supported => generator,
-                ByValueMarshalKindSupport.NotSupported => ResolvedGenerator.ResolvedWithDiagnostics(s_forwarder, generator.Diagnostics.Add(diagnostic!)),
+                ByValueMarshalKindSupport.NotSupported => ResolvedGenerator.ResolvedWithDiagnostics(s_forwarder.Bind(generator.Generator.TypeInfo), generator.Diagnostics.Add(diagnostic!)),
                 ByValueMarshalKindSupport.Unnecessary => generator with { Diagnostics = generator.Diagnostics.Add(diagnostic!) },
                 ByValueMarshalKindSupport.NotRecommended => generator with { Diagnostics = generator.Diagnostics.Add(diagnostic!) },
                 _ => throw new UnreachableException()

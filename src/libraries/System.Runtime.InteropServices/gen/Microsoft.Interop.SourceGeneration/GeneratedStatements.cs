@@ -71,9 +71,9 @@ namespace Microsoft.Interop
         private static ImmutableArray<StatementSyntax> GenerateStatementsForStubContext(BoundGenerators marshallers, StubCodeContext context)
         {
             ImmutableArray<StatementSyntax>.Builder statementsToUpdate = ImmutableArray.CreateBuilder<StatementSyntax>();
-            foreach (BoundGenerator marshaller in marshallers.SignatureMarshallers)
+            foreach (IBoundMarshallingGenerator marshaller in marshallers.SignatureMarshallers)
             {
-                statementsToUpdate.AddRange(marshaller.Generator.Generate(marshaller.TypeInfo, context));
+                statementsToUpdate.AddRange(marshaller.Generate(context));
             }
 
             if (statementsToUpdate.Count > 0)
@@ -95,10 +95,10 @@ namespace Microsoft.Interop
             }
             InvocationExpressionSyntax invoke = InvocationExpression(expressionToInvoke);
             // Generate code for each parameter for the current stage
-            foreach (BoundGenerator marshaller in marshallers.NativeParameterMarshallers)
+            foreach (IBoundMarshallingGenerator marshaller in marshallers.NativeParameterMarshallers)
             {
                 // Get arguments for invocation
-                ArgumentSyntax argSyntax = marshaller.Generator.AsArgument(marshaller.TypeInfo, context);
+                ArgumentSyntax argSyntax = marshaller.AsArgument(context);
                 invoke = invoke.AddArgumentListArguments(argSyntax);
             }
             // Assign to return value if necessary
@@ -109,7 +109,7 @@ namespace Microsoft.Interop
 
             var (managed, native) = context.GetIdentifiers(marshallers.NativeReturnMarshaller.TypeInfo);
 
-            string targetIdentifier = marshallers.NativeReturnMarshaller.Generator.UsesNativeIdentifier(marshallers.NativeReturnMarshaller.TypeInfo, context)
+            string targetIdentifier = marshallers.NativeReturnMarshaller.UsesNativeIdentifier(context)
                 ? native
                 : managed;
 
@@ -129,10 +129,10 @@ namespace Microsoft.Interop
             }
             InvocationExpressionSyntax invoke = InvocationExpression(expressionToInvoke);
             // Generate code for each parameter for the current stage
-            foreach (BoundGenerator marshaller in marshallers.ManagedParameterMarshallers)
+            foreach (IBoundMarshallingGenerator marshaller in marshallers.ManagedParameterMarshallers)
             {
                 // Get arguments for invocation
-                ArgumentSyntax argSyntax = marshaller.Generator.AsManagedArgument(marshaller.TypeInfo, context);
+                ArgumentSyntax argSyntax = marshaller.AsManagedArgument(context);
                 invoke = invoke.AddArgumentListArguments(argSyntax);
             }
             // Assign to return value if necessary
@@ -156,16 +156,14 @@ namespace Microsoft.Interop
             }
             ImmutableArray<StatementSyntax>.Builder catchClauseBuilder = ImmutableArray.CreateBuilder<StatementSyntax>();
 
-            BoundGenerator managedExceptionMarshaller = marshallers.ManagedExceptionMarshaller;
+            IBoundMarshallingGenerator managedExceptionMarshaller = marshallers.ManagedExceptionMarshaller;
 
             var (managed, _) = context.GetIdentifiers(managedExceptionMarshaller.TypeInfo);
 
             catchClauseBuilder.AddRange(
-                managedExceptionMarshaller.Generator.Generate(
-                    managedExceptionMarshaller.TypeInfo, context with { CurrentStage = StubCodeContext.Stage.Marshal }));
+                managedExceptionMarshaller.Generate(context with { CurrentStage = StubCodeContext.Stage.Marshal }));
             catchClauseBuilder.AddRange(
-                managedExceptionMarshaller.Generator.Generate(
-                    managedExceptionMarshaller.TypeInfo, context with { CurrentStage = StubCodeContext.Stage.PinnedMarshal }));
+                managedExceptionMarshaller.Generate(context with { CurrentStage = StubCodeContext.Stage.PinnedMarshal }));
             return ImmutableArray.Create(
                 CatchClause(
                     CatchDeclaration(TypeSyntaxes.System_Exception, Identifier(managed)),

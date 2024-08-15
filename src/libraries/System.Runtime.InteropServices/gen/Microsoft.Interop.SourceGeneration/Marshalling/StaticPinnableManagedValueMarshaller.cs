@@ -10,22 +10,19 @@ using static Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
 
 namespace Microsoft.Interop
 {
-    public sealed class StaticPinnableManagedValueMarshaller : IMarshallingGenerator
+    public sealed class StaticPinnableManagedValueMarshaller(IBoundMarshallingGenerator innerMarshallingGenerator, TypeSyntax getPinnableReferenceType) : IBoundMarshallingGenerator
     {
-        private readonly IMarshallingGenerator _innerMarshallingGenerator;
-        private readonly TypeSyntax _getPinnableReferenceType;
+        public TypePositionInfo TypeInfo => innerMarshallingGenerator.TypeInfo;
 
-        public StaticPinnableManagedValueMarshaller(IMarshallingGenerator innerMarshallingGenerator, TypeSyntax getPinnableReferenceType)
-        {
-            _innerMarshallingGenerator = innerMarshallingGenerator;
-            _getPinnableReferenceType = getPinnableReferenceType;
-        }
+        public ManagedTypeInfo NativeType => innerMarshallingGenerator.NativeType;
 
-        public ValueBoundaryBehavior GetValueBoundaryBehavior(TypePositionInfo info, StubCodeContext context)
+        public SignatureBehavior NativeSignatureBehavior => innerMarshallingGenerator.NativeSignatureBehavior;
+
+        public ValueBoundaryBehavior GetValueBoundaryBehavior(StubCodeContext context)
         {
-            if (IsPinningPathSupported(info, context))
+            if (IsPinningPathSupported(context))
             {
-                if (AsNativeType(info).Syntax is PointerTypeSyntax pointerType
+                if (NativeType.Syntax is PointerTypeSyntax pointerType
                     && pointerType.ElementType is PredefinedTypeSyntax predefinedType
                     && predefinedType.Keyword.IsKind(SyntaxKind.VoidKeyword))
                 {
@@ -36,48 +33,39 @@ namespace Microsoft.Interop
                 return ValueBoundaryBehavior.CastNativeIdentifier;
             }
 
-            return _innerMarshallingGenerator.GetValueBoundaryBehavior(info, context);
+            return innerMarshallingGenerator.GetValueBoundaryBehavior( context);
         }
 
-        public ManagedTypeInfo AsNativeType(TypePositionInfo info)
+        public IEnumerable<StatementSyntax> Generate(StubCodeContext context)
         {
-            return _innerMarshallingGenerator.AsNativeType(info);
-        }
-
-        public SignatureBehavior GetNativeSignatureBehavior(TypePositionInfo info)
-        {
-            return _innerMarshallingGenerator.GetNativeSignatureBehavior(info);
-        }
-
-        public IEnumerable<StatementSyntax> Generate(TypePositionInfo info, StubCodeContext context)
-        {
-            if (IsPinningPathSupported(info, context))
+            if (IsPinningPathSupported(context))
             {
-                return GeneratePinningPath(info, context);
+                return GeneratePinningPath(context);
             }
 
-            return _innerMarshallingGenerator.Generate(info, context);
+            return innerMarshallingGenerator.Generate(context);
         }
 
-        public bool UsesNativeIdentifier(TypePositionInfo info, StubCodeContext context)
+        public bool UsesNativeIdentifier(StubCodeContext context)
         {
-            if (IsPinningPathSupported(info, context))
+            if (IsPinningPathSupported(context))
             {
                 return false;
             }
 
-            return _innerMarshallingGenerator.UsesNativeIdentifier(info, context);
-        }
-        private static bool IsPinningPathSupported(TypePositionInfo info, StubCodeContext context)
-        {
-            return context.SingleFrameSpansNativeContext && !info.IsByRef && !context.IsInStubReturnPosition(info);
+            return innerMarshallingGenerator.UsesNativeIdentifier(context);
         }
 
-        private IEnumerable<StatementSyntax> GeneratePinningPath(TypePositionInfo info, StubCodeContext context)
+        private bool IsPinningPathSupported(StubCodeContext context)
+        {
+            return context.SingleFrameSpansNativeContext && !TypeInfo.IsByRef && !context.IsInStubReturnPosition(TypeInfo);
+        }
+
+        private IEnumerable<StatementSyntax> GeneratePinningPath(StubCodeContext context)
         {
             if (context.CurrentStage == StubCodeContext.Stage.Pin)
             {
-                (string managedIdentifier, string nativeIdentifier) = context.GetIdentifiers(info);
+                (string managedIdentifier, string nativeIdentifier) = context.GetIdentifiers(innerMarshallingGenerator.TypeInfo);
 
                 // fixed (void* <nativeIdentifier> = &<getPinnableReferenceType>.GetPinnableReference(<managedIdentifier>))
                 yield return FixedStatement(
@@ -89,7 +77,7 @@ namespace Microsoft.Interop
                                     PrefixUnaryExpression(SyntaxKind.AddressOfExpression,
                                     InvocationExpression(
                                         MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,
-                                            _getPinnableReferenceType,
+                                            getPinnableReferenceType,
                                             IdentifierName(ShapeMemberNames.GetPinnableReference)),
                                         ArgumentList(SingletonSeparatedList(
                                             Argument(IdentifierName(managedIdentifier))))))
@@ -100,9 +88,11 @@ namespace Microsoft.Interop
             }
         }
 
-        public ByValueMarshalKindSupport SupportsByValueMarshalKind(ByValueContentsMarshalKind marshalKind, TypePositionInfo info, StubCodeContext context, out GeneratorDiagnostic? diagnostic)
+        public ByValueMarshalKindSupport SupportsByValueMarshalKind(ByValueContentsMarshalKind marshalKind, StubCodeContext context, out GeneratorDiagnostic? diagnostic)
         {
-            return _innerMarshallingGenerator.SupportsByValueMarshalKind(marshalKind, info, context, out diagnostic);
+            return innerMarshallingGenerator.SupportsByValueMarshalKind(marshalKind, context, out diagnostic);
         }
+
+        public IBoundMarshallingGenerator Rebind(TypePositionInfo info) => innerMarshallingGenerator.Rebind(info);
     }
 }

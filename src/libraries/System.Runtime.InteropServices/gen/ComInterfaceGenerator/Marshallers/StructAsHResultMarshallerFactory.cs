@@ -19,13 +19,13 @@ namespace Microsoft.Interop
             // Value type with MarshalAs(UnmanagedType.Error), to be marshalled as an unmanaged HRESULT.
             if (info is { ManagedType: ValueTypeInfo, MarshallingAttributeInfo: MarshalAsInfo(UnmanagedType.Error, _) })
             {
-                return ResolvedGenerator.Resolved(s_marshaller);
+                return ResolvedGenerator.Resolved(s_marshaller.Bind(info));
             }
 
             return ResolvedGenerator.UnresolvedGenerator;
         }
 
-        private sealed class Marshaller : IMarshallingGenerator
+        private sealed class Marshaller : IUnboundMarshallingGenerator
         {
             public ManagedTypeInfo AsNativeType(TypePositionInfo info) => SpecialTypeInfo.Int32;
 

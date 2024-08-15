@@ -142,7 +142,7 @@ namespace Microsoft.Interop
                                     CastExpression(OriginalDeclaringInterface.Info.Type.Syntax, IdentifierName("this"))),
                                 IdentifierName(MethodInfo.MethodName)),
                             ArgumentList(
-                                SeparatedList(GenerationContext.SignatureContext.ManagedParameters.Select(p => forwarder.AsArgument(p, new ManagedStubCodeContext())))))))
+                                SeparatedList(GenerationContext.SignatureContext.ManagedParameters.Select(p => forwarder.Bind(p).AsArgument(new ManagedStubCodeContext())))))))
                 .WithSemicolonToken(Token(SyntaxKind.SemicolonToken));
         }
 

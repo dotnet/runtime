@@ -77,7 +77,7 @@ namespace Microsoft.Interop
 
             diagnosticsBag.ReportGeneratorDiagnostics(bindingFailures);
 
-            if (_marshallers.ManagedReturnMarshaller.Generator.UsesNativeIdentifier(_marshallers.ManagedReturnMarshaller.TypeInfo, _context))
+            if (_marshallers.ManagedReturnMarshaller.UsesNativeIdentifier(_context))
             {
                 // If we need a different native return identifier, then recreate the context with the correct identifier before we generate any code.
                 _context = new ManagedToNativeStubCodeContext(ReturnIdentifier, $"{ReturnIdentifier}{StubCodeContext.GeneratedNativeIdentifierSuffix}");

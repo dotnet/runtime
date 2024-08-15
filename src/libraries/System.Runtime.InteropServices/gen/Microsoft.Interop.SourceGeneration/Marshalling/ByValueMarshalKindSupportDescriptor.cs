@@ -40,7 +40,7 @@ namespace Microsoft.Interop
     }
 
     /// <summary>
-    /// Provides an implementation of <see cref="IMarshallingGenerator.SupportsByValueMarshalKind(ByValueContentsMarshalKind, TypePositionInfo, StubCodeContext, out GeneratorDiagnostic?)"/> through <see cref="GetSupport(ByValueContentsMarshalKind, TypePositionInfo, StubCodeContext, out GeneratorDiagnostic?)"/>
+    /// Provides an implementation of <see cref="IUnboundMarshallingGenerator.SupportsByValueMarshalKind(ByValueContentsMarshalKind, TypePositionInfo, StubCodeContext, out GeneratorDiagnostic?)"/> through <see cref="GetSupport(ByValueContentsMarshalKind, TypePositionInfo, StubCodeContext, out GeneratorDiagnostic?)"/>
     /// </summary>
     public record ByValueMarshalKindSupportDescriptor(
         ByValueMarshalKindSupportInfo DefaultSupport,
