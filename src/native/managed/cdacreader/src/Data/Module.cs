@@ -25,13 +25,13 @@ internal sealed class Module : IData<Module>
         DynamicMetadata = target.ReadPointer(address + (ulong)type.Fields[nameof(DynamicMetadata)].Offset);
         Path = target.ReadPointer(address + (ulong)type.Fields[nameof(Path)].Offset);
 
-        FieldDefToDescMap = target.ReadPointer(address + (ulong)type.Fields[nameof(FieldDefToDescMap)].Offset);
-        ManifestModuleReferencesMap = target.ReadPointer(address + (ulong)type.Fields[nameof(ManifestModuleReferencesMap)].Offset);
-        MemberRefToDescMap = target.ReadPointer(address + (ulong)type.Fields[nameof(MemberRefToDescMap)].Offset);
-        MethodDefToDescMap = target.ReadPointer(address + (ulong)type.Fields[nameof(MethodDefToDescMap)].Offset);
-        TypeDefToMethodTableMap = target.ReadPointer(address + (ulong)type.Fields[nameof(TypeDefToMethodTableMap)].Offset);
-        TypeRefToMethodTableMap = target.ReadPointer(address + (ulong)type.Fields[nameof(TypeRefToMethodTableMap)].Offset);
-        MethodDefToILCodeVersioningStateMap = target.ReadPointer(address + (ulong)type.Fields[nameof(MethodDefToILCodeVersioningStateMap)].Offset);
+        FieldDefToDescMap = address + (ulong)type.Fields[nameof(FieldDefToDescMap)].Offset;
+        ManifestModuleReferencesMap = address + (ulong)type.Fields[nameof(ManifestModuleReferencesMap)].Offset;
+        MemberRefToDescMap = address + (ulong)type.Fields[nameof(MemberRefToDescMap)].Offset;
+        MethodDefToDescMap = address + (ulong)type.Fields[nameof(MethodDefToDescMap)].Offset;
+        TypeDefToMethodTableMap = address + (ulong)type.Fields[nameof(TypeDefToMethodTableMap)].Offset;
+        TypeRefToMethodTableMap = address + (ulong)type.Fields[nameof(TypeRefToMethodTableMap)].Offset;
+        MethodDefToILCodeVersioningStateMap = address + (ulong)type.Fields[nameof(MethodDefToILCodeVersioningStateMap)].Offset;
     }
 
     public TargetPointer Assembly { get; init; }
