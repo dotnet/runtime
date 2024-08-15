@@ -10,20 +10,17 @@ internal interface INativeCodePointers : IContract
     static string IContract.Name { get; } = nameof(NativeCodePointers);
     static IContract IContract.Create(Target target, int version)
     {
-        TargetPointer precodeMachineDescriptorAddress = target.ReadGlobalPointer(Constants.Globals.PrecodeMachineDescriptor);
-        Data.PrecodeMachineDescriptor precodeMachineDescriptor = target.ProcessedData.GetOrAdd<Data.PrecodeMachineDescriptor>(precodeMachineDescriptorAddress);
         TargetPointer executionManagerCodeRangeMapAddress = target.ReadGlobalPointer(Constants.Globals.ExecutionManagerCodeRangeMapAddress);
         Data.RangeSectionMap rangeSectionMap = target.ProcessedData.GetOrAdd<Data.RangeSectionMap>(executionManagerCodeRangeMapAddress);
         TargetPointer profControlBlockAddress = target.ReadGlobalPointer(Constants.Globals.ProfilerControlBlock);
         Data.ProfControlBlock profControlBlock = target.ProcessedData.GetOrAdd<Data.ProfControlBlock>(profControlBlockAddress);
         return version switch
         {
-            1 => new NativeCodePointers_1(target, precodeMachineDescriptor, rangeSectionMap, profControlBlock),
+            1 => new NativeCodePointers_1(target, rangeSectionMap, profControlBlock),
             _ => default(NativeCodePointers),
         };
     }
 
-    public virtual TargetPointer MethodDescFromStubAddress(TargetCodePointer codeAddress) => throw new NotImplementedException();
     public virtual TargetPointer ExecutionManagerGetCodeMethodDesc(TargetCodePointer jittedCodeAddress) => throw new NotImplementedException();
 
     public virtual NativeCodeVersionHandle GetSpecificNativeCodeVersion(TargetCodePointer ip) => throw new NotImplementedException();

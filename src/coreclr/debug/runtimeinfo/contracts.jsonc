@@ -15,6 +15,7 @@
   "Loader": 1,
   "NativeCodePointers": 1,
   "Object": 1,
+  "PrecodeStubs": 1,
   "RuntimeTypeSystem": 1,
   "Thread": 1
 }

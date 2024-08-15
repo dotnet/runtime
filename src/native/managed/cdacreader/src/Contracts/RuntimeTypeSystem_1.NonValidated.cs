@@ -424,8 +424,8 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
             TargetCodePointer temporaryEntryPoint = GetTemporaryEntryPointIfExists(umd);
             if (temporaryEntryPoint != TargetCodePointer.Null)
             {
-                Contracts.INativeCodePointers codePointers = _target.Contracts.NativeCodePointers;
-                TargetPointer methodDesc = codePointers.MethodDescFromStubAddress(temporaryEntryPoint);
+                Contracts.IPrecodeStubs precode = _target.Contracts.PrecodeStubs;
+                TargetPointer methodDesc = precode.MethodDescFromStubAddress(temporaryEntryPoint);
                 if (methodDesc != methodDescPointer)
                 {
                     return false;
