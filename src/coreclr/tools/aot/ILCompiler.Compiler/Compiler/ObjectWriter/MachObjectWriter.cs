@@ -113,7 +113,7 @@ namespace ILCompiler.ObjectWriter
                     Name = $"lsection{sectionIndex}",
                     Section = section,
                     Value = section.VirtualAddress,
-                    Descriptor = 0,
+                    Descriptor = N_NO_DEAD_STRIP,
                     Type = N_SECT,
                 };
                 _symbolTable.Add(machSymbol);
