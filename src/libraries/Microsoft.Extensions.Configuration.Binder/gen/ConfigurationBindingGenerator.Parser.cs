@@ -545,7 +545,9 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 return conversion.IsReference && conversion.IsImplicit;
             }
 
-            private bool IsUnsupportedType(ITypeSymbol type)
+            [ThreadStatic] private static HashSet<ITypeSymbol> ts_visitedTypes;
+
+            private bool IsUnsupportedType(ITypeSymbol type, bool rootCall = true)
             {
                 if (type.OriginalDefinition.SpecialType == SpecialType.System_Nullable_T)
                 {
@@ -562,9 +564,28 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                     return true;
                 }
 
+                if (rootCall)
+                {
+                    ts_visitedTypes ??= new HashSet<ITypeSymbol>(SymbolEqualityComparer.Default);
+                    ts_visitedTypes.Clear();
+                }
+                else if (ts_visitedTypes.Contains(type))
+                {
+                    // avoid infinite recursion in nested types like
+                    // public record ExampleSettings
+                    // {
+                    //     public TreeElement? Tree { get; set; }
+                    // }
+                    // public sealed class TreeElement : Dictionary<string, TreeElement>;
+                    //
+                    // return false for the second call. The type will continue be checked in the first call anyway.
+                    return false;
+                }
+                ts_visitedTypes.Add(type);
+
                 if (type is IArrayTypeSymbol arrayTypeSymbol)
                 {
-                    return arrayTypeSymbol.Rank > 1 || IsUnsupportedType(arrayTypeSymbol.ElementType);
+                    return arrayTypeSymbol.Rank > 1 || IsUnsupportedType(arrayTypeSymbol.ElementType, rootCall: false);
                 }
 
                 if (IsCollection(type))
@@ -573,11 +594,11 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
                     if (IsCandidateDictionary(collectionType, out ITypeSymbol? keyType, out ITypeSymbol? elementType))
                     {
-                        return IsUnsupportedType(keyType) || IsUnsupportedType(elementType);
+                        return IsUnsupportedType(keyType, rootCall: false) || IsUnsupportedType(elementType, rootCall: false);
                     }
                     else if (TryGetElementType(collectionType, out elementType))
                     {
-                        return IsUnsupportedType(elementType);
+                        return IsUnsupportedType(elementType, rootCall: false);
                     }
                 }
 
