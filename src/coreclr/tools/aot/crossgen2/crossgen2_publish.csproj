@@ -11,12 +11,12 @@
     <RuntimeIdentifier>$(PackageRID)</RuntimeIdentifier>
     <SelfContained>true</SelfContained>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
-    <UseLocalAppHostPack>true</UseLocalAppHostPack>
   </PropertyGroup>
 
   <Import Project="crossgen2.props" />
 
   <PropertyGroup Condition="'$(UseNativeAotForComponents)' != 'true'">
+    <UseLocalAppHostPack>true</UseLocalAppHostPack>
     <PublishSingleFile>true</PublishSingleFile>
     <PublishReadyToRun>true</PublishReadyToRun>
     <!-- Disable crossgen on NetBSD, illumos, Solaris, and Haiku for now. This can be revisited when we have full support. -->
@@ -37,6 +37,7 @@
   <Import Project="$(RepositoryEngineeringDir)codeOptimization.targets" />
 
   <PropertyGroup Condition="'$(UseNativeAotForComponents)' == 'true'">
+    <UseLocalAppHostPack>false</UseLocalAppHostPack>
     <PublishAot>true</PublishAot>
     <IlcToolsPath>$(CoreCLRILCompilerDir)</IlcToolsPath>
     <IlcToolsPath Condition="'$(CrossBuild)' == 'true' or '$(BuildArchitecture)' != '$(TargetArchitecture)' or '$(EnableNativeSanitizers)' != ''">$(CoreCLRCrossILCompilerDir)</IlcToolsPath>
