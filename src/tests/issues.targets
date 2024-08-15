@@ -386,9 +386,6 @@
         <ExcludeList Include="$(XunitTestBinBase)/JIT/jit64/regress/vsw/373472/**">
             <Issue>Allocates large contiguous array that is not consistently available on 32-bit platforms</Issue>
         </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/profiler/multiple/multiple/*">
-            <Issue>https://github.com/dotnet/runtime/issues/57875</Issue>
-        </ExcludeList>
     </ItemGroup>
 
     <!-- All OSX targets on CoreCLR Runtime -->
