@@ -10,7 +10,7 @@ namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 
 
 #pragma warning disable SA1121 // Use built in alias
-internal readonly partial struct NativeCodePointers_1 : INativeCodePointers
+internal readonly partial struct ExecutionManager_1 : IExecutionManager
 {
     // Given a contiguous region of memory in which we lay out a collection of non-overlapping code blocks that are
     // not too small (so that two adjacent ones aren't too close together) and  where the start of each code block is preceeded by a code header aligned on some power of 2,

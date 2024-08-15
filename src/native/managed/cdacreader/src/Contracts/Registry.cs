@@ -27,6 +27,7 @@ internal sealed class Registry
     public IDacStreams DacStreams => GetContract<IDacStreams>();
     public INativeCodePointers NativeCodePointers => GetContract<INativeCodePointers>();
     public IPrecodeStubs PrecodeStubs => GetContract<IPrecodeStubs>();
+    public IExecutionManager ExecutionManager => GetContract<IExecutionManager>();
 
     private T GetContract<T>() where T : IContract
     {

@@ -8,38 +8,26 @@ namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 internal readonly partial struct NativeCodePointers_1 : INativeCodePointers
 {
     private readonly Target _target;
-    private readonly ExecutionManagerContract _executionManagerContract;
     private readonly NativeCodeVersionContract _nativeCodeVersionContract;
 
 
-    public NativeCodePointers_1(Target target, Data.RangeSectionMap topRangeSectionMap, Data.ProfControlBlock profControlBlock)
+    public NativeCodePointers_1(Target target)
     {
         _target = target;
-        _executionManagerContract = new ExecutionManagerContract(target, topRangeSectionMap, profControlBlock);
         _nativeCodeVersionContract = new NativeCodeVersionContract(target);
-    }
-
-
-    TargetPointer INativeCodePointers.ExecutionManagerGetCodeMethodDesc(TargetCodePointer jittedCodeAddress)
-    {
-        EECodeInfo? info = _executionManagerContract.GetEECodeInfo(jittedCodeAddress);
-        if (info == null || !info.Valid)
-        {
-            throw new InvalidOperationException($"Failed to get EECodeInfo for {jittedCodeAddress}");
-        }
-        return info.MethodDescAddress;
     }
 
     NativeCodeVersionHandle INativeCodePointers.GetSpecificNativeCodeVersion(TargetCodePointer ip)
     {
         // ExecutionManager::GetNativeCodeVersion(PCODE ip))
         // and EECodeInfo::GetNativeCodeVersion
-        EECodeInfo? info = _executionManagerContract.GetEECodeInfo(ip);
-        if (info == null || !info.Valid)
+        Contracts.IExecutionManager executionManager = _target.Contracts.ExecutionManager;
+        EECodeInfoHandle? info = executionManager.GetEECodeInfoHandle(ip);
+        if (!info.HasValue)
         {
             return NativeCodeVersionHandle.Invalid;
         }
-        TargetPointer methodDescAddress = info.MethodDescAddress;
+        TargetPointer methodDescAddress = executionManager.GetMethodDesc(info.Value);
         if (methodDescAddress == TargetPointer.Null)
         {
             return NativeCodeVersionHandle.Invalid;
@@ -52,7 +40,8 @@ internal readonly partial struct NativeCodePointers_1 : INativeCodePointers
         }
         else
         {
-            return _nativeCodeVersionContract.GetSpecificNativeCodeVersion(rts, md, info.StartAddress);
+            TargetCodePointer startAddress = executionManager.GetStartAddress(info.Value);
+            return _nativeCodeVersionContract.GetSpecificNativeCodeVersion(rts, md, startAddress);
         }
     }
 
@@ -72,11 +61,6 @@ internal readonly partial struct NativeCodePointers_1 : INativeCodePointers
             return NativeCodeVersionHandle.Invalid;
         }
         return _nativeCodeVersionContract.FindActiveNativeCodeVersion(methodDefActiveVersion, methodDesc);
-    }
-
-    bool INativeCodePointers.IsReJITEnabled()
-    {
-        return _executionManagerContract.IsReJITEnabled();
     }
 
     bool INativeCodePointers.CodeVersionManagerSupportsMethod(TargetPointer methodDescAddress)

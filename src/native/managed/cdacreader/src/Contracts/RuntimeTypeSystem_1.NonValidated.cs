@@ -435,9 +435,13 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
             if (HasNativeCode(methodDescPointer, umd) && !umd.IsFCall)
             {
                 TargetCodePointer jitCodeAddr = GetCodePointer(methodDescPointer, umd);
-                //FIXME: this is the wrong code.
-
-                TargetPointer methodDesc = _target.Contracts.NativeCodePointers.ExecutionManagerGetCodeMethodDesc(jitCodeAddr);
+                Contracts.IExecutionManager executionManager = _target.Contracts.ExecutionManager;
+                EECodeInfoHandle? codeInfo = executionManager.GetEECodeInfoHandle(jitCodeAddr);
+                if (!codeInfo.HasValue)
+                {
+                    return false;
+                }
+                TargetPointer methodDesc = executionManager.GetMethodDesc(codeInfo.Value);
                 if (methodDesc == TargetPointer.Null)
                 {
                     return false;

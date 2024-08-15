@@ -931,7 +931,7 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
         if (md.IsEligibleForTieredCompilation)
             return true;
         // MethodDesc::IsEligibleForReJIT
-        if (_target.Contracts.NativeCodePointers.IsReJITEnabled())
+        if (_target.Contracts.ExecutionManager.IsReJITEnabled())
         {
             if (!md.IsIL)
                 return false;

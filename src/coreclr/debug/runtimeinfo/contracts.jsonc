@@ -12,6 +12,7 @@
   "DacStreams": 1,
   "EcmaMetadata" : 1,
   "Exception": 1,
+  "ExecutionManager": 1,
   "Loader": 1,
   "NativeCodePointers": 1,
   "Object": 1,
