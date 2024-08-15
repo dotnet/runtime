@@ -179,6 +179,11 @@ namespace JIT.HardwareIntrinsics.Arm
             {
                 succeeded = true;
             }
+
+            if (!succeeded)
+            {
+                Succeeded = false;
+            }
         }
 
         public void RunBasicScenario_UnsafeRead_InvalidImm2()
@@ -196,6 +201,11 @@ namespace JIT.HardwareIntrinsics.Arm
             catch (ArgumentOutOfRangeException)
             {
                 succeeded = true;
+            }
+
+            if (!succeeded)
+            {
+                Succeeded = false;
             }
         }
 

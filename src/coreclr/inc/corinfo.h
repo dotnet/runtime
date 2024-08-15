@@ -348,8 +348,6 @@ enum CorInfoHelpFunc
     CORINFO_HELP_DBL2ULNG_OVF,
     CORINFO_HELP_FLTREM,
     CORINFO_HELP_DBLREM,
-    CORINFO_HELP_FLTROUND,              // unused, remove once MINIMUM_READYTORUN_MAJOR_VERSION > 9
-    CORINFO_HELP_DBLROUND,              // unused, remove once MINIMUM_READYTORUN_MAJOR_VERSION > 9
 
     /* Allocating a new object. Always use ICorClassInfo::getNewHelper() to decide
        which is the right helper to use to allocate an object of a given type. */
@@ -604,26 +602,6 @@ enum CorInfoHelpFunc
     CORINFO_HELP_DISPATCH_INDIRECT_CALL,    // CFG: Validate and dispatch to pointer
 
     CORINFO_HELP_COUNT,
-};
-
-//This describes the signature for a helper method.
-enum CorInfoHelpSig
-{
-    CORINFO_HELP_SIG_UNDEF,
-    CORINFO_HELP_SIG_NO_ALIGN_STUB,
-    CORINFO_HELP_SIG_NO_UNWIND_STUB,
-    CORINFO_HELP_SIG_REG_ONLY,
-    CORINFO_HELP_SIG_4_STACK,
-    CORINFO_HELP_SIG_8_STACK,
-    CORINFO_HELP_SIG_12_STACK,
-    CORINFO_HELP_SIG_16_STACK,
-
-    CORINFO_HELP_SIG_EBPCALL, //special calling convention that uses EDX and
-                              //EBP as arguments
-
-    CORINFO_HELP_SIG_CANNOT_USE_ALIGN_STUB,
-
-    CORINFO_HELP_SIG_COUNT
 };
 
 // The enumeration is returned in 'getSig','getType', getArgType methods
@@ -3016,15 +2994,19 @@ public:
             size_t*               pRequiredBufferSize = nullptr
             ) = 0;
 
-    // Return method name as in metadata, or nullptr if there is none,
-    // and optionally return the class, enclosing class, and namespace names
-    // as in metadata.
+    // Return method name as in metadata, or nullptr if there is none, and
+    // optionally return the class, enclosing classes, and namespace name as
+    // in metadata. Enclosing classes are returned from inner-most enclosed class
+    // to outer-most, with nullptr in the array indicating that no more
+    // enclosing classes were left. The namespace returned corresponds to the
+    // outer most (potentially enclosing) class that was returned.
     // Suitable for non-debugging use.
     virtual const char* getMethodNameFromMetadata(
-            CORINFO_METHOD_HANDLE       ftn,                  /* IN */
-            const char                **className,            /* OUT */
-            const char                **namespaceName,        /* OUT */
-            const char                **enclosingClassName    /* OUT */
+            CORINFO_METHOD_HANDLE       ftn,                   /* IN */
+            const char**                className,             /* OUT */
+            const char**                namespaceName,         /* OUT */
+            const char**                enclosingClassNames,   /* OUT */
+            size_t                      maxEnclosingClassNames /* IN */
             ) = 0;
 
     // this function is for debugging only.  It returns a value that

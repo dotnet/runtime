@@ -7,6 +7,9 @@
       <method signature="System.Boolean IsEnabled(System.Diagnostics.Tracing.EventLevel,System.Diagnostics.Tracing.EventKeywords)" body="stub" value="false" />
       <method signature="System.Boolean IsEnabled(System.Diagnostics.Tracing.EventLevel,System.Diagnostics.Tracing.EventKeywords,System.Diagnostics.Tracing.EventChannel)" body="stub" value="false" />
     </type>
+    <type fullname="System.Diagnostics.Tracing.EventSource" feature="System.Diagnostics.Metrics.Meter.IsSupported" featurevalue="false">
+      <method signature="System.Boolean get_IsMeterSupported()" body="stub" value="false" />
+    </type>
     <type fullname="System.Diagnostics.StackTrace" feature="System.Diagnostics.StackTrace.IsSupported" featurevalue="false">
       <method signature="System.Boolean get_IsSupported()" body="stub" value="false" />
     </type>

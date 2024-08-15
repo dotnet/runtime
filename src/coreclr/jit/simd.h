@@ -668,10 +668,10 @@ void EvaluateUnarySimd(genTreeOps oper, bool scalar, var_types baseType, TSimd* 
 template <typename TBase>
 TBase EvaluateBinaryScalarRSZ(TBase arg0, TBase arg1)
 {
-#if defined(TARGET_XARCH)
+#if defined(TARGET_XARCH) || defined(TARGET_ARM64)
     if ((arg1 < 0) || (arg1 >= (sizeof(TBase) * 8)))
     {
-        // For SIMD, xarch allows overshifting and treats
+        // For SIMD, xarch and ARM64 allow overshifting and treat
         // it as zeroing. So ensure we do the same here.
         //
         // The xplat APIs ensure the shiftAmount is masked
@@ -760,10 +760,10 @@ TBase EvaluateBinaryScalarSpecialized(genTreeOps oper, TBase arg0, TBase arg1)
 
         case GT_LSH:
         {
-#if defined(TARGET_XARCH)
+#if defined(TARGET_XARCH) || defined(TARGET_ARM64)
             if ((arg1 < 0) || (arg1 >= (sizeof(TBase) * 8)))
             {
-                // For SIMD, xarch allows overshifting and treats
+                // For SIMD, xarch and ARM64 allow overshifting and treat
                 // it as zeroing. So ensure we do the same here.
                 //
                 // The xplat APIs ensure the shiftAmount is masked
@@ -802,25 +802,35 @@ TBase EvaluateBinaryScalarSpecialized(genTreeOps oper, TBase arg0, TBase arg1)
         case GT_ROL:
         {
             // Normalize the "rotate by" value
-            arg1 %= (sizeof(TBase) * BITS_PER_BYTE);
+            // EvaluateBinaryScalarRSZ allows overshifting and treats
+            // it as zeroing.
+            // But ROL ensures the rotateAmount is masked
+            // to be within range, so we pre-calculates this.
+            unsigned rotateCountMask = (sizeof(TBase) * BITS_PER_BYTE) - 1;
+            arg1 &= rotateCountMask;
             return EvaluateBinaryScalarSpecialized<TBase>(GT_LSH, arg0, arg1) |
-                   EvaluateBinaryScalarRSZ<TBase>(arg0, (sizeof(TBase) * 8) - arg1);
+                   EvaluateBinaryScalarRSZ<TBase>(arg0, (sizeof(TBase) * BITS_PER_BYTE) - arg1);
         }
 
         case GT_ROR:
         {
             // Normalize the "rotate by" value
-            arg1 %= (sizeof(TBase) * BITS_PER_BYTE);
+            // EvaluateBinaryScalarRSZ allows overshifting and treats
+            // it as zeroing.
+            // But ROR ensures the rotateAmount is masked
+            // to be within range, so we pre-calculates this.
+            unsigned rotateCountMask = (sizeof(TBase) * BITS_PER_BYTE) - 1;
+            arg1 &= rotateCountMask;
             return EvaluateBinaryScalarRSZ<TBase>(arg0, arg1) |
-                   EvaluateBinaryScalarSpecialized<TBase>(GT_LSH, arg0, (sizeof(TBase) * 8) - arg1);
+                   EvaluateBinaryScalarSpecialized<TBase>(GT_LSH, arg0, (sizeof(TBase) * BITS_PER_BYTE) - arg1);
         }
 
         case GT_RSH:
         {
-#if defined(TARGET_XARCH)
+#if defined(TARGET_XARCH) || defined(TARGET_ARM64)
             if ((arg1 < 0) || (arg1 >= (sizeof(TBase) * 8)))
             {
-                // For SIMD, xarch allows overshifting and treats
+                // For SIMD, xarch and ARM64 allow overshifting and treat
                 // it as propagating the sign bit (returning Zero
                 // or AllBitsSet). So ensure we do the same here.
                 //
