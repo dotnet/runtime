@@ -698,14 +698,15 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
             return false;
         }
 
-        int arrayMethodIndex = methodDesc.Slot - GetNumVtableSlots(GetTypeHandle(methodDesc.MethodTable));
+        MethodTable methodTable = _methodTables[GetTypeHandle(methodDesc.MethodTable).Address];
+        int arrayMethodIndex = methodDesc.Slot - methodTable.NumVirtuals;
 
         functionType = arrayMethodIndex switch
         {
             0 => ArrayFunctionType.Get,
             1 => ArrayFunctionType.Set,
             2 => ArrayFunctionType.Address,
-            > 3 => ArrayFunctionType.Constructor,
+            >= 3 => ArrayFunctionType.Constructor,
             _ => throw new InvalidOperationException()
         };
 
