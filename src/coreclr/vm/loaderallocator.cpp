@@ -18,7 +18,6 @@
 UINT64 LoaderAllocator::cLoaderAllocatorsCreated = 1;
 
 LoaderAllocator::LoaderAllocator(bool collectible) :
-    m_IsCollectible(collectible ? 1 : 0);
     m_stubPrecodeRangeList(STUB_CODE_BLOCK_STUBPRECODE, collectible),
     m_fixupPrecodeRangeList(STUB_CODE_BLOCK_FIXUPPRECODE, collectible)
 {
@@ -69,6 +68,7 @@ LoaderAllocator::LoaderAllocator(bool collectible) :
     m_pLastUsedCodeHeap = NULL;
     m_pLastUsedDynamicCodeHeap = NULL;
     m_pJumpStubCache = NULL;
+    m_IsCollectible = collectible ? 1 : 0;
 
     m_pMarshalingData = NULL;
 
