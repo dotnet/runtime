@@ -20187,6 +20187,8 @@ bool GenTree::isCommutativeHWIntrinsic() const
 
             case NI_AVX512F_Add:
             case NI_AVX512F_Multiply:
+            case NI_BMI2_MultiplyNoFlags:
+            case NI_BMI2_X64_MultiplyNoFlags:
             {
                 return node->GetOperandCount() == 2;
             }
@@ -20931,6 +20933,13 @@ GenTree* Compiler::gtNewSimdBinOpNode(
             std::swap(op1, op2);
 #endif // TARGET_XARCH
         }
+#ifdef TARGET_XARCH
+        if (HWIntrinsicInfo::NeedsNormalizeSmallTypeToInt(intrinsic) && varTypeIsSmall(simdBaseType))
+        {
+            simdBaseJitType = varTypeIsUnsigned(simdBaseType) ? CORINFO_TYPE_UINT : CORINFO_TYPE_INT;
+            simdBaseType    = JitType2PreciseVarType(simdBaseJitType);
+        }
+#endif // TARGET_XARCH
         return gtNewSimdHWIntrinsicNode(type, op1, op2, intrinsic, simdBaseJitType, simdSize);
     }
 
@@ -25688,6 +25697,15 @@ GenTree* Compiler::gtNewSimdTernaryLogicNode(var_types   type,
         assert((simdSize == 16) || (simdSize == 32));
         intrinsic = NI_AVX512F_VL_TernaryLogic;
     }
+
+#ifdef TARGET_XARCH
+    assert(HWIntrinsicInfo::NeedsNormalizeSmallTypeToInt(intrinsic));
+    if (varTypeIsSmall(simdBaseType))
+    {
+        simdBaseJitType = varTypeIsUnsigned(simdBaseType) ? CORINFO_TYPE_UINT : CORINFO_TYPE_INT;
+        simdBaseType    = JitType2PreciseVarType(simdBaseJitType);
+    }
+#endif // TARGET_XARCH
 
     return gtNewSimdHWIntrinsicNode(type, op1, op2, op3, op4, intrinsic, simdBaseJitType, simdSize);
 }

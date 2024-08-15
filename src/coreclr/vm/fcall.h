@@ -151,7 +151,7 @@
 //    Also, initialize all the OBJECTREF's first.  Like this:
 //
 //    FCIMPL4(Object*, COMNlsInfo::nativeChangeCaseString, LocaleIDObject* localeUNSAFE,
-//            INT_PTR pNativeTextInfo, StringObject* pStringUNSAFE, CLR_BOOL bIsToUpper)
+//            INT_PTR pNativeTextInfo, StringObject* pStringUNSAFE, FC_BOOL_ARG bIsToUpper)
 //    {
 //      [ignoring CONTRACT for now]
 //      struct _gc
@@ -1335,7 +1335,10 @@ typedef UINT32 FC_UINT8_RET;
 typedef INT32 FC_INT16_RET;
 typedef UINT32 FC_UINT16_RET;
 
+// Small primitive args are not widened.
+typedef INT32 FC_BOOL_ARG;
 
+#define FC_ACCESS_BOOL(x) ((BYTE)x != 0)
 
 // The fcall entrypoints has to be at unique addresses. Use this helper macro to make
 // the code of the fcalls unique if you get assert in ecall.cpp that mentions it.
