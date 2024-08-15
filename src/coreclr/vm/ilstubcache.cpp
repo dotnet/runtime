@@ -36,11 +36,12 @@ void ILStubCache::Init(LoaderAllocator* pAllocator)
 
 #ifndef DACCESS_COMPILE
 
-void CreateModuleIndependentSignature(LoaderHeap* pCreationHeap,
+static void CreateModuleIndependentSignature(LoaderHeap* pCreationHeap,
                                       AllocMemTracker* pamTracker,
                                       Module* pSigModule,
                                       PCCOR_SIGNATURE pSig, DWORD cbSig,
                                       SigTypeContext *pTypeContext,
+                                      TokenLookupMap* pTokenLookupMap,
                                       PCCOR_SIGNATURE* ppNewSig, DWORD* pcbNewSig)
 {
     CONTRACTL
@@ -55,7 +56,7 @@ void CreateModuleIndependentSignature(LoaderHeap* pCreationHeap,
     SigPointer  sigPtr(pSig, cbSig);
 
     SigBuilder sigBuilder;
-    sigPtr.ConvertToInternalSignature(pSigModule, pTypeContext, &sigBuilder);
+    sigPtr.ConvertToInternalSignature(pSigModule, pTypeContext, &sigBuilder, pTokenLookupMap);
 
     DWORD cbNewSig;
     PVOID pConvertedSig = sigBuilder.GetSignature(&cbNewSig);
@@ -201,6 +202,10 @@ MethodDesc* ILStubCache::CreateNewMethodDesc(LoaderHeap* pCreationHeap, MethodTa
     PCCOR_SIGNATURE pNewSig;
     DWORD           cbNewSig;
 
+    // We may have modreqs/modopts we need to preserve,
+    // so we need to have a token lookup map to resolve them.
+    TokenLookupMap tokenLookupMap;
+
     // If we are in the same module and don't have any generics, we can use the incoming signature.
     // Note that pTypeContext may be non-empty and the signature can still have no E_T_(M)VAR in it.
     // We could do a more precise check if we cared.
@@ -211,7 +216,7 @@ MethodDesc* ILStubCache::CreateNewMethodDesc(LoaderHeap* pCreationHeap, MethodTa
     }
     else
     {
-        CreateModuleIndependentSignature(pCreationHeap, pamTracker, pSigModule, pSig, cbSig, pTypeContext, &pNewSig, &cbNewSig);
+        CreateModuleIndependentSignature(pCreationHeap, pamTracker, pSigModule, pSig, cbSig, pTypeContext, &tokenLookupMap, &pNewSig, &cbNewSig);
     }
     pMD->SetStoredMethodSig(pNewSig, cbNewSig);
 
@@ -230,7 +235,9 @@ MethodDesc* ILStubCache::CreateNewMethodDesc(LoaderHeap* pCreationHeap, MethodTa
     // Poison the ILStubResolver storage
     memset((void*)pMD->m_pResolver, 0xCC, sizeof(ILStubResolver));
 #endif // _DEBUG
-    pMD->m_pResolver = new (pMD->m_pResolver) ILStubResolver();
+    ILStubResolver* resolver = new (pMD->m_pResolver) ILStubResolver();
+    
+    resolver->SetTokenLookupMap(&tokenLookupMap); // This creates a local copy of the token lookup map inside the resolver.
 
     if (SF_IsArrayOpStub(dwStubFlags))
     {
