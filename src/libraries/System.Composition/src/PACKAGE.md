@@ -1,5 +1,3 @@
-
-
 ## About
 
 <!-- A description of the package and where one can find more documentation -->
