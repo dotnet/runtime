@@ -228,6 +228,7 @@ namespace System.Net
             _dataSocket = null;
             _passiveEndPoint = null;
             _sslStream = null;
+            _dataStream = null;
 
             base.ClearState();
         }
