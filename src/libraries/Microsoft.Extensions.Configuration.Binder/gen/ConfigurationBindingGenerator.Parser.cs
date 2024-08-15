@@ -197,16 +197,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 }
                 else if (IsCollection(type))
                 {
-                    spec = CreateCollectionSpec(typeParseInfo);
-
-                    // fallback to treating as an object if we couldn't treat as a collection and
-                    // it does not implement ICollection<> nor IDictionary<,>
-                    if (spec is UnsupportedTypeSpec && type is INamedTypeSymbol namedType &&
-                        GetInterface(namedType, _typeSymbols.GenericICollection_Unbound) is null &&
-                        GetInterface(namedType, _typeSymbols.GenericIDictionary_Unbound) is null)
-                    {
-                        spec = CreateObjectSpec(typeParseInfo);
-                    }
+                    spec = CreateCollectionSpec(typeParseInfo) ?? CreateObjectSpec(typeParseInfo);
                 }
                 else if (SymbolEqualityComparer.Default.Equals(type, _typeSymbols.IConfigurationSection))
                 {
@@ -369,33 +360,36 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 };
             }
 
-            private TypeSpec CreateCollectionSpec(TypeParseInfo typeParseInfo)
+            private TypeSpec? CreateCollectionSpec(TypeParseInfo typeParseInfo)
             {
                 INamedTypeSymbol type = (INamedTypeSymbol)typeParseInfo.TypeSymbol;
 
-                TypeSpec spec;
+                TypeSpec? spec;
                 if (IsCandidateDictionary(type, out ITypeSymbol? keyType, out ITypeSymbol? elementType))
                 {
                     spec = CreateDictionarySpec(typeParseInfo, keyType, elementType);
-                    Debug.Assert(spec is DictionarySpec or UnsupportedTypeSpec);
+                    Debug.Assert(spec is DictionarySpec or UnsupportedTypeSpec or null);
                 }
                 else
                 {
                     spec = CreateEnumerableSpec(typeParseInfo);
-                    Debug.Assert(spec is EnumerableSpec or UnsupportedTypeSpec);
+                    Debug.Assert(spec is EnumerableSpec or UnsupportedTypeSpec or null);
                 }
 
                 return spec;
             }
 
-            private TypeSpec CreateDictionarySpec(TypeParseInfo typeParseInfo, ITypeSymbol keyTypeSymbol, ITypeSymbol elementTypeSymbol)
+            private TypeSpec? CreateDictionarySpec(TypeParseInfo typeParseInfo, ITypeSymbol keyTypeSymbol, ITypeSymbol elementTypeSymbol)
             {
+                INamedTypeSymbol type = (INamedTypeSymbol)typeParseInfo.TypeSymbol;
+
+                // treat as unsupported if it implements IDictionary<,>, otherwise we'll try to fallback and treat as an object
+                bool isDictionary = _typeSymbols.GenericICollection is not null && GetInterface(type, _typeSymbols.GenericIDictionary_Unbound) is not null;
+
                 if (IsUnsupportedType(keyTypeSymbol) || IsUnsupportedType(elementTypeSymbol))
                 {
-                    return CreateUnsupportedCollectionSpec(typeParseInfo);
+                    return isDictionary ? CreateUnsupportedCollectionSpec(typeParseInfo) : null;
                 }
-
-                INamedTypeSymbol type = (INamedTypeSymbol)typeParseInfo.TypeSymbol;
 
                 CollectionInstantiationStrategy instantiationStrategy;
                 CollectionInstantiationConcreteType instantiationConcreteType;
@@ -411,14 +405,15 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                     {
                         populationCastType = CollectionPopulationCastType.NotApplicable;
                     }
-                    else if (_typeSymbols.GenericIDictionary is not null && GetInterface(type, _typeSymbols.GenericIDictionary_Unbound) is not null)
+                    else if (isDictionary)
                     {
                         // implements IDictionary<,> -- cast to it.
                         populationCastType = CollectionPopulationCastType.IDictionary;
                     }
                     else
                     {
-                        return CreateUnsupportedCollectionSpec(typeParseInfo);
+                        // not a dictionary
+                        return null;
                     }
                 }
                 else if (_typeSymbols.Dictionary is not null &&
@@ -438,7 +433,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 }
                 else
                 {
-                    return CreateUnsupportedCollectionSpec(typeParseInfo);
+                    return isDictionary ? CreateUnsupportedCollectionSpec(typeParseInfo) : null;
                 }
 
                 TypeRef keyTypeRef = EnqueueTransitiveType(typeParseInfo, keyTypeSymbol, DiagnosticDescriptors.DictionaryKeyNotSupported);
@@ -456,18 +451,20 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 };
             }
 
-            private TypeSpec CreateEnumerableSpec(TypeParseInfo typeParseInfo)
+            private TypeSpec? CreateEnumerableSpec(TypeParseInfo typeParseInfo)
             {
                 INamedTypeSymbol type = (INamedTypeSymbol)typeParseInfo.TypeSymbol;
 
+                bool isCollection = _typeSymbols.GenericICollection is not null && GetInterface(type, _typeSymbols.GenericICollection_Unbound) is not null;
+
                 if (!TryGetElementType(type, out ITypeSymbol? elementType))
                 {
-                    return CreateUnsupportedCollectionSpec(typeParseInfo);
+                    return isCollection ? CreateUnsupportedCollectionSpec(typeParseInfo) : null;
                 }
 
                 if (IsUnsupportedType(elementType))
                 {
-                    return CreateUnsupportedCollectionSpec(typeParseInfo);
+                    return isCollection ? CreateUnsupportedCollectionSpec(typeParseInfo) : null;
                 }
 
                 CollectionInstantiationStrategy instantiationStrategy;
@@ -484,14 +481,15 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                     {
                         populationCastType = CollectionPopulationCastType.NotApplicable;
                     }
-                    else if (_typeSymbols.GenericICollection is not null && GetInterface(type, _typeSymbols.GenericICollection_Unbound) is not null)
+                    else if (isCollection)
                     {
                         // implements ICollection<> -- cast to it
                         populationCastType = CollectionPopulationCastType.ICollection;
                     }
                     else
                     {
-                        return CreateUnsupportedCollectionSpec(typeParseInfo);
+                        // not a collection
+                        return null;
                     }
                 }
                 else if ((IsInterfaceMatch(type, _typeSymbols.GenericICollection_Unbound) || IsInterfaceMatch(type, _typeSymbols.GenericIList_Unbound)))
@@ -532,7 +530,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 }
                 else
                 {
-                    return CreateUnsupportedCollectionSpec(typeParseInfo);
+                    return isCollection ? CreateUnsupportedCollectionSpec(typeParseInfo) : null;
                 }
 
                 TypeRef elementTypeRef = EnqueueTransitiveType(typeParseInfo, elementType, DiagnosticDescriptors.ElementTypeNotSupported);
