@@ -658,27 +658,27 @@ namespace System.DirectoryServices.Protocols
     public partial class SecurityPackageContextConnectionInformation
     {
         internal SecurityPackageContextConnectionInformation() { }
-#if NET9_0_OR_GREATER
+#if NET10_0_OR_GREATER
         [Obsolete("KeyExchangeAlgorithm, KeyExchangeStrength, CipherAlgorithm, CipherAlgorithmStrength, HashAlgorithm and HashStrength properties of SslStream are obsolete. Use NegotiatedCipherSuite instead.", DiagnosticId = "SYSLIB0058", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
 #endif
         public System.Security.Authentication.CipherAlgorithmType AlgorithmIdentifier { get { throw null; } }
-#if NET9_0_OR_GREATER
+#if NET10_0_OR_GREATER
         [Obsolete("KeyExchangeAlgorithm, KeyExchangeStrength, CipherAlgorithm, CipherAlgorithmStrength, HashAlgorithm and HashStrength properties of SslStream are obsolete. Use NegotiatedCipherSuite instead.", DiagnosticId = "SYSLIB0058", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
 #endif
         public int CipherStrength { get { throw null; } }
-#if NET9_0_OR_GREATER
+#if NET10_0_OR_GREATER
         [Obsolete("KeyExchangeAlgorithm, KeyExchangeStrength, CipherAlgorithm, CipherAlgorithmStrength, HashAlgorithm and HashStrength properties of SslStream are obsolete. Use NegotiatedCipherSuite instead.", DiagnosticId = "SYSLIB0058", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
 #endif
         public int ExchangeStrength { get { throw null; } }
-#if NET9_0_OR_GREATER
+#if NET10_0_OR_GREATER
         [Obsolete("KeyExchangeAlgorithm, KeyExchangeStrength, CipherAlgorithm, CipherAlgorithmStrength, HashAlgorithm and HashStrength properties of SslStream are obsolete. Use NegotiatedCipherSuite instead.", DiagnosticId = "SYSLIB0058", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
 #endif
         public System.Security.Authentication.HashAlgorithmType Hash { get { throw null; } }
-#if NET9_0_OR_GREATER
+#if NET10_0_OR_GREATER
         [Obsolete("KeyExchangeAlgorithm, KeyExchangeStrength, CipherAlgorithm, CipherAlgorithmStrength, HashAlgorithm and HashStrength properties of SslStream are obsolete. Use NegotiatedCipherSuite instead.", DiagnosticId = "SYSLIB0058", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
 #endif
         public int HashStrength { get { throw null; } }
-#if NET9_0_OR_GREATER
+#if NET10_0_OR_GREATER
         [Obsolete("KeyExchangeAlgorithm, KeyExchangeStrength, CipherAlgorithm, CipherAlgorithmStrength, HashAlgorithm and HashStrength properties of SslStream are obsolete. Use NegotiatedCipherSuite instead.", DiagnosticId = "SYSLIB0058", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
 #endif
         public int KeyExchangeAlgorithm { get { throw null; } }
