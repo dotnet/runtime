@@ -136,17 +136,15 @@ namespace Microsoft.Interop
     /// Marshalling strategy to cache the initial value of a given <see cref="TypePositionInfo"/> in a local variable and cleanup that value in the cleanup stage.
     /// Useful in scenarios where the value is always owned in all code-paths that reach the <see cref="StubCodeContext.Stage.CleanupCallerAllocated"/> stage, so additional ownership tracking is extraneous.
     /// </summary>
-    internal sealed class FreeAlwaysOwnedOriginalValueGenerator : IMarshallingGenerator
+    internal sealed class FreeAlwaysOwnedOriginalValueGenerator(IBoundMarshallingGenerator inner) : IBoundMarshallingGenerator
     {
-        private readonly IMarshallingGenerator _inner;
+        public TypePositionInfo TypeInfo => inner.TypeInfo;
 
-        public FreeAlwaysOwnedOriginalValueGenerator(IMarshallingGenerator inner)
-        {
-            _inner = inner;
-        }
+        public ManagedTypeInfo NativeType => inner.NativeType;
 
-        public ManagedTypeInfo AsNativeType(TypePositionInfo info) => _inner.AsNativeType(info);
-        public IEnumerable<StatementSyntax> Generate(TypePositionInfo info, StubCodeContext context)
+        public SignatureBehavior NativeSignatureBehavior => inner.NativeSignatureBehavior;
+
+        public IEnumerable<StatementSyntax> Generate(StubCodeContext context)
         {
             if (context.CurrentStage == StubCodeContext.Stage.Setup)
             {
@@ -167,20 +165,20 @@ namespace Microsoft.Interop
                     yield return statement;
                 }
 
-                yield return OwnershipTrackingHelpers.DeclareOriginalValueIdentifier(info, context, AsNativeType(info));
+                yield return OwnershipTrackingHelpers.DeclareOriginalValueIdentifier(inner.TypeInfo, context, NativeType);
             }
 
             IEnumerable<StatementSyntax> GenerateStatementsFromInner(StubCodeContext contextForStage)
             {
-                return _inner.Generate(info, contextForStage);
+                return inner.Generate(contextForStage);
             }
         }
 
-        public SignatureBehavior GetNativeSignatureBehavior(TypePositionInfo info) => _inner.GetNativeSignatureBehavior(info);
-        public ValueBoundaryBehavior GetValueBoundaryBehavior(TypePositionInfo info, StubCodeContext context) => _inner.GetValueBoundaryBehavior(info, context);
-        public ByValueMarshalKindSupport SupportsByValueMarshalKind(ByValueContentsMarshalKind marshalKind, TypePositionInfo info, StubCodeContext context, out GeneratorDiagnostic? diagnostic)
-            => _inner.SupportsByValueMarshalKind(marshalKind, info, context, out diagnostic);
-        public bool UsesNativeIdentifier(TypePositionInfo info, StubCodeContext context) => _inner.UsesNativeIdentifier(info, context);
+        public ValueBoundaryBehavior GetValueBoundaryBehavior(StubCodeContext context) => inner.GetValueBoundaryBehavior(context);
+        public IBoundMarshallingGenerator Rebind(TypePositionInfo info) => new FreeAlwaysOwnedOriginalValueGenerator(inner.Rebind(info));
+        public ByValueMarshalKindSupport SupportsByValueMarshalKind(ByValueContentsMarshalKind marshalKind, StubCodeContext context, out GeneratorDiagnostic? diagnostic)
+            => inner.SupportsByValueMarshalKind(marshalKind, context, out diagnostic);
+        public bool UsesNativeIdentifier(StubCodeContext context) => inner.UsesNativeIdentifier(context);
     }
 
 #pragma warning disable SA1400 // Access modifier should be declared https://github.com/DotNetAnalyzers/StyleCopAnalyzers/issues/3659
