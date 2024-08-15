@@ -42,13 +42,13 @@
     <MSBuild Condition="'$(Crossgen2Supported)' == 'true'"
       Targets="Restore"
       BuildInParallel="true"
-      Properties="NativeAotSupported=$(NativeAotSupported);MSBuildRestoreSessionId=$([System.Guid]::NewGuid());"
+      Properties="NativeAotSupported=$(NativeAotSupported);UseNativeAotForComponents=$(UseNativeAotForComponents);MSBuildRestoreSessionId=$([System.Guid]::NewGuid());"
       Projects="$(InstallerProjectRoot)pkg\sfx\Microsoft.NETCore.App\Microsoft.NETCore.App.Crossgen2.sfxproj" />
 
     <MSBuild Condition="'$(Crossgen2Supported)' == 'true'"
       Targets="PublishToDisk"
       BuildInParallel="true"
-      Properties="NativeAotSupported=$(NativeAotSupported);OutputPath=$(CORE_ROOT)\crossgen2;"
+      Properties="NativeAotSupported=$(NativeAotSupported);UseNativeAotForComponents=$(UseNativeAotForComponents);OutputPath=$(CORE_ROOT)\crossgen2;"
       Projects="$(InstallerProjectRoot)pkg\sfx\Microsoft.NETCore.App\Microsoft.NETCore.App.Crossgen2.sfxproj" />
 
     <ItemGroup>
