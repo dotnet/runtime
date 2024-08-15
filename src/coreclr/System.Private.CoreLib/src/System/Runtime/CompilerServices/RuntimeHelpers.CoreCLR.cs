@@ -812,8 +812,8 @@ namespace System.Runtime.CompilerServices
     internal unsafe struct MethodTableAuxiliaryData
     {
         private uint Flags;
-        private nint m_pLoaderModule;
-        private nint m_hExposedClassObject;
+        private void* LoaderModule;
+        private nint ExposedClassObjectRaw;
 
         private const uint enum_flag_HasCheckedCanCompareBitsOrUseFastGetHashCode = 0x0002;  // Whether we have checked the overridden Equals or GetHashCode
         private const uint enum_flag_CanCompareBitsOrUseFastGetHashCode = 0x0004;     // Is any field type or sub field type overridden Equals or GetHashCode
@@ -833,7 +833,7 @@ namespace System.Runtime.CompilerServices
         {
             get
             {
-                return *(RuntimeType*)Unsafe.AsPointer(ref m_hExposedClassObject);
+                return *(RuntimeType*)Unsafe.AsPointer(ref ExposedClassObjectRaw);
             }
         }
     }

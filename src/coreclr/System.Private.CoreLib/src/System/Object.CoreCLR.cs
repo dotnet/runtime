@@ -17,8 +17,7 @@ namespace System
         public unsafe Type GetType()
         {
             MethodTable* pMT = RuntimeHelpers.GetMethodTable(this);
-            Type? type = pMT->AuxiliaryData->ExposedClassObject;
-            type ??= GetTypeWorker(pMT);
+            Type type = pMT->AuxiliaryData->ExposedClassObject ?? GetTypeWorker(pMT);
             GC.KeepAlive(this);
             return type;
 
