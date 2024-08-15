@@ -227,6 +227,9 @@ enum HWIntrinsicFlag : unsigned int
 
     // The intrinsic is an embedded masking compatible intrinsic
     HW_Flag_EmbMaskingCompatible = 0x10000000,
+
+    // The base type of this intrinsic needs to be normalized to int/uint unless it is long/ulong.
+    HW_Flag_NormalizeSmallTypeToInt = 0x20000000,
 #elif defined(TARGET_ARM64)
 
     // The intrinsic has an enum operand. Using this implies HW_Flag_HasImmediateOperand.
@@ -754,6 +757,12 @@ struct HWIntrinsicInfo
     {
         HWIntrinsicFlag flags = lookupFlags(id);
         return (flags & HW_Flag_MaybeMemoryStore) != 0;
+    }
+
+    static bool NeedsNormalizeSmallTypeToInt(NamedIntrinsic id)
+    {
+        HWIntrinsicFlag flags = lookupFlags(id);
+        return (flags & HW_Flag_NormalizeSmallTypeToInt) != 0;
     }
 #endif
 
