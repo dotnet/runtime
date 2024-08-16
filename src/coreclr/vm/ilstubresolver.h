@@ -94,6 +94,7 @@ protected:
         COR_ILMETHOD_DECODER   m_ILHeader;
         COR_ILMETHOD_SECT_EH * m_pEHSect;
         SigPointer             m_StubTargetMethodSig;
+        TokenLookupMap         m_tokenLookupMap;
     };
     typedef DPTR(struct CompileTimeState) PTR_CompileTimeState;
 
@@ -103,7 +104,6 @@ protected:
     PTR_MethodDesc          m_pStubTargetMD;
     CORJIT_FLAGS            m_jitFlags;
     PTR_LoaderHeap          m_loaderHeap;
-    TokenLookupMap          m_tokenLookupMap;
 };
 
 typedef Holder<ILStubResolver*, DoNothing<ILStubResolver*>, ILStubResolver::StubGenFailed, 0> ILStubGenHolder;

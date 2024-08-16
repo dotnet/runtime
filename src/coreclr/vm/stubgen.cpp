@@ -1938,7 +1938,13 @@ DWORD StubSigBuilder::Append(LocalDesc* pLoc)
     }
     CONTRACTL_END;
 
-    EnsureEnoughQuickBytes(pLoc->cbType + sizeof(TypeHandle));
+    // Ensure we have enough bytes for the provided signature,
+    // the handle for ELEMENT_TYPE_INTERNAL,
+    // and the byte and handle for ELEMENT_TYPE_CMOD_INTERNAL
+    const size_t InternalPayloadSize = sizeof(TypeHandle);
+    const size_t CModInternalPayloadSize = sizeof(BYTE) + sizeof(TypeHandle);
+    EnsureEnoughQuickBytes(pLoc->cbType + InternalPayloadSize + CModInternalPayloadSize);
+    BYTE* pbSigStart = m_pbSigCursor;
 
     memcpyNoGCRefs(m_pbSigCursor, pLoc->ElementType, pLoc->cbType);
     m_pbSigCursor   += pLoc->cbType;
@@ -1958,6 +1964,23 @@ DWORD StubSigBuilder::Append(LocalDesc* pLoc)
                 m_pbSigCursor   += sizeof(TypeHandle);
                 m_cbSig         += sizeof(TypeHandle);
                 break;
+            
+            case ELEMENT_TYPE_CMOD_INTERNAL:
+            {
+                // Nove later elements in the signature to make room for the CMOD_INTERNAL payload
+                memmove(pbSigStart + i + 1 + CModInternalPayloadSize, pbSigStart + i + 1, pLoc->cbType - i - 1);
+                _ASSERTE(pbSigStart[i] == ELEMENT_TYPE_CMOD_INTERNAL);
+                BYTE* pbSigInternalPayload = pbSigStart + i + 1;
+
+                // Write the "required" byte
+                *pbSigInternalPayload++ = pLoc->InternalModifierRequired ? 1 : 0;
+
+                // Write the modifier
+                SET_UNALIGNED_PTR(pbSigInternalPayload, (UINT_PTR)pLoc->InternalModifierToken.AsPtr());
+                m_pbSigCursor   += CModInternalPayloadSize;
+                m_cbSig         += CModInternalPayloadSize;
+                break;
+            }
 
             case ELEMENT_TYPE_FNPTR:
                 {
@@ -2083,8 +2106,26 @@ void FunctionSigBuilder::SetReturnType(LocalDesc* pLoc)
         {
             case ELEMENT_TYPE_INTERNAL:
                 m_qbReturnSig.ReSizeThrows(m_qbReturnSig.Size() + sizeof(TypeHandle));
-                SET_UNALIGNED_PTR((BYTE *)m_qbReturnSig.Ptr() + m_qbReturnSig.Size() - + sizeof(TypeHandle), (UINT_PTR)pLoc->InternalToken.AsPtr());
+                SET_UNALIGNED_PTR((BYTE *)m_qbReturnSig.Ptr() + m_qbReturnSig.Size() - sizeof(TypeHandle), (UINT_PTR)pLoc->InternalToken.AsPtr());
                 break;
+
+            case ELEMENT_TYPE_CMOD_INTERNAL:
+                {
+                    // Nove later elements in the signature to make room for the CMOD_INTERNAL payload
+                    const size_t CModInternalPayloadSize = sizeof(BYTE) + sizeof(TypeHandle);
+                    m_qbReturnSig.ReSizeThrows(m_qbReturnSig.Size() + CModInternalPayloadSize);
+                    BYTE* pbSigStart = (BYTE*)m_qbReturnSig.Ptr();
+                    memmove(pbSigStart + i + 1 + CModInternalPayloadSize, pbSigStart + i + 1, pLoc->cbType - i);
+                    _ASSERTE(pbSigStart[i] == ELEMENT_TYPE_CMOD_INTERNAL);
+                    BYTE* pbSigInternalPayload = pbSigStart + i + 1;
+
+                    // Write the "required" byte
+                    *pbSigInternalPayload++ = pLoc->InternalModifierRequired ? 1 : 0;
+
+                    // Write the modifier
+                    SET_UNALIGNED_PTR(pbSigInternalPayload, (UINT_PTR)pLoc->InternalModifierToken.AsPtr());
+                    break;
+                }
 
             case ELEMENT_TYPE_FNPTR:
                 {
@@ -2601,17 +2642,19 @@ CorCallingConvention ILStubLinker::GetStubTargetCallingConv()
     return m_nativeFnSigBuilder.GetCallingConv();
 }
 
-namespace
+void ILStubLinker::TransformArgForJIT(LocalDesc *pLoc)
 {
-    void TransformArgSignatureForJIT(BYTE sig[], size_t* cbSig, TypeHandle internalToken)
+    STANDARD_VM_CONTRACT;
+    // Turn everything into blittable primitives. The reason this method is needed are
+    // byrefs which are OK only when they ref stack data or are pinned. This condition
+    // cannot be verified by code:NDirect.MarshalingRequired so we explicitly get rid
+    // of them here.
+    bool again;
+    BYTE* elementType = pLoc->ElementType;
+    do
     {
-        STANDARD_VM_CONTRACT;
-        _ASSERTE(*cbSig > 0);
-        // Turn everything into blittable primitives. The reason this method is needed are
-        // byrefs which are OK only when they ref stack data or are pinned. This condition
-        // cannot be verified by code:NDirect.MarshalingRequired so we explicitly get rid
-        // of them here.
-        switch (sig[0])
+        again = false;
+        switch (*elementType)
         {
             // primitives
             case ELEMENT_TYPE_VOID:
@@ -2651,49 +2694,45 @@ namespace
             {
                 // Transform ELEMENT_TYPE_BYREF to ELEMENT_TYPE_PTR to retain the pointed-to type information
                 // while making the type blittable.
-                sig[0] = ELEMENT_TYPE_PTR;
-                break;
-            }
-
-            case ELEMENT_TYPE_CMOD_OPT:
-            case ELEMENT_TYPE_CMOD_REQD:
-            {
-                // Keep the custom modifier,
-                // but scan the rest of the signature after the modifier token.
-
-                size_t cbModOpt = CorSigUncompressedDataSize(&sig[1]);
-                size_t cbRemainingSig = *cbSig - 1 - cbModOpt;
-                TransformArgSignatureForJIT(&sig[1 + cbModOpt], &cbRemainingSig, internalToken);
-                *cbSig = 1 + cbModOpt + cbRemainingSig;
+                *elementType = ELEMENT_TYPE_PTR;
                 break;
             }
 
             case ELEMENT_TYPE_INTERNAL:
             {
                 // JIT will handle structures
-                if (internalToken.IsValueType())
+                if (pLoc->InternalToken.IsValueType())
                 {
-                    _ASSERTE(internalToken.IsNativeValueType() || !internalToken.GetMethodTable()->ContainsGCPointers());
+                    _ASSERTE(pLoc->InternalToken.IsNativeValueType() || !pLoc->InternalToken.GetMethodTable()->ContainsGCPointers());
                     break;
                 }
                 FALLTHROUGH;
             }
 
+            case ELEMENT_TYPE_CMOD_REQD:
+            case ELEMENT_TYPE_CMOD_OPT:
+            {
+                _ASSERTE("Custom modifiers should be represented in a LocalDesc as ELEMENT_TYPE_CMOD_INTERNAL. Use AddModifier to add custom modifiers.");
+                FALLTHROUGH;
+            }
+            case ELEMENT_TYPE_CMOD_INTERNAL:
+            {
+                again = true;
+                break;
+            }
+
             // ref types -> ELEMENT_TYPE_I
             default:
             {
-                sig[0] = ELEMENT_TYPE_I;
-                *cbSig = 1;
-                break;
+                pLoc->ElementType[0] = ELEMENT_TYPE_I;
+                pLoc->cbType = 1;
+                return;
             }
         }
+        elementType++;
+        _ASSERTE(elementType - pLoc->ElementType <= (ptrdiff_t)pLoc->cbType);
     }
-}
-
-void ILStubLinker::TransformArgForJIT(LocalDesc *pLoc)
-{
-    STANDARD_VM_CONTRACT;
-    return TransformArgSignatureForJIT(pLoc->ElementType, &pLoc->cbType, pLoc->InternalToken);
+    while(again);
 }
 
 Module *ILStubLinker::GetStubSigModule()

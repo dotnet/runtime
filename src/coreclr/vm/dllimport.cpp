@@ -407,19 +407,9 @@ public:
         SigBuilder sigBuilder;
 
         {
-            if (pStubMD->IsNoMetadata() && pStubMD->AsDynamicMethodDesc()->HasFlags(DynamicMethodDesc::FlagIndependentSig))
-            {
-                // We already have a module-independent signature, but it is based on the current resolver in the stub method desc.
-                // We need to convert it based on our token lookup map.
-                SigPointer sigPtr(pStubMD->GetSig());
-                sigPtr.ConvertToInternalSignature(pStubMD->AsDynamicMethodDesc()->GetResolver(), pStubMD->GetModule(), NULL, &sigBuilder, GetTokenLookupMap());
-            }
-            else
-            {
-                // Convert to a module independent signature
-                SigPointer sigPtr(pStubMD->GetSig());
-                sigPtr.ConvertToInternalSignature(pStubMD->GetModule(), NULL, &sigBuilder, GetTokenLookupMap());
-            }
+            // Convert to a module independent signature
+            SigPointer sigPtr(pStubMD->GetSig());
+            sigPtr.ConvertToInternalSignature(pStubMD->GetModule(), NULL, &sigBuilder, /* bSkipCustomModifier */ FALSE);
         }
 
         //
@@ -440,7 +430,6 @@ public:
             memcpyNoGCRefs((void *)pNewSig, GetStubTargetMethodSig(), cbNewSig);
 
             pStubMD->AsDynamicMethodDesc()->SetStoredMethodSig(pNewSig, cbNewSig);
-            pStubMD->AsDynamicMethodDesc()->SetFlags(DynamicMethodDesc::FlagIndependentSig);
 
             SigPointer  sigPtr(pNewSig, cbNewSig);
             uint32_t    callConvInfo;
@@ -480,20 +469,8 @@ public:
     {
         SigBuilder sigBuilder;
         _ASSERTE(pStubMD->IsNoMetadata());
-        DynamicMethodDesc* pDMD = pStubMD->AsDynamicMethodDesc();
-        if (pDMD->HasFlags(DynamicMethodDesc::FlagIndependentSig))
-        {
-            // We already have a module-independent signature, but it is based on the current resolver in the stub method desc.
-            // We need to convert it based on our token lookup map.
-            SigPointer sigPtr(pStubMD->GetSig());
-            sigPtr.ConvertToInternalSignature(pDMD->GetResolver(), pStubMD->GetModule(), NULL, &sigBuilder, GetTokenLookupMap());
-        }
-        else
-        {
-            SigPointer sigPtr(pStubMD->GetSig());
-            sigPtr.ConvertToInternalSignature(pStubMD->GetModule(), NULL, &sigBuilder, GetTokenLookupMap());
-        }
-
+        SigPointer sigPtr(pStubMD->GetSig());
+        sigPtr.ConvertToInternalSignature(pStubMD->GetModule(), NULL, &sigBuilder, /* bSkipCustomModifier */ FALSE);
 
         //
         // make a domain-local copy of the sig so that this state can outlive the
@@ -505,8 +482,7 @@ public:
 
         memcpyNoGCRefs((void *)pNewSig, pNewSigBuffer, cbNewSig);
 
-        pDMD->SetStoredMethodSig(pNewSig, cbNewSig);
-        pDMD->SetFlags(DynamicMethodDesc::FlagIndependentSig);
+        pStubMD->AsDynamicMethodDesc()->SetStoredMethodSig(pNewSig, cbNewSig);
     }
 
     void EmitInvokeTarget(MethodDesc *pStubMD)
@@ -4022,7 +3998,6 @@ namespace
         DWORD       m_StubFlags;
 
         INT32       m_iLCIDArg;
-        INT32       m_tokenMapHash;
         INT32       m_nParams;
         BYTE        m_rgbSigAndParamData[1];
         // (dwParamAttr, cbNativeType)          // length: number of parameters
@@ -4078,11 +4053,9 @@ namespace
 
         // note that ConvertToInternalSignature also resolves generics so different instantiations will get different
         // hash blobs for methods that have generic parameters in their signature
-        // The signature may have custom modifiers, so provide a token lookup map to resolve them.
-        // We'll include a hash of the token lookup map in the hash blob.
-        TokenLookupMap tokenLookupMap;
+        // The signature may have custom modifiers that influence behavior, so don't skip them
         SigBuilder sigBuilder;
-        sigPtr.ConvertToInternalSignature(pParams->m_pModule, pParams->m_pTypeContext, &sigBuilder, &tokenLookupMap);
+        sigPtr.ConvertToInternalSignature(pParams->m_pModule, pParams->m_pTypeContext, &sigBuilder, /* bSkipCustomModifier */ FALSE);
 
         DWORD cbSig;
         PVOID pSig = sigBuilder.GetSignature(&cbSig);
@@ -4117,7 +4090,6 @@ namespace
         pBlob->m_nlFlags                = static_cast<BYTE>(pParams->m_nlFlags & ~nlfNoMangle); // this flag does not affect the stub
         pBlob->m_iLCIDArg               = pParams->m_iLCIDArg;
 
-        pBlob->m_tokenMapHash           = tokenLookupMap.GetHashValue();
         pBlob->m_StubFlags              = pParams->m_dwStubFlags;
         pBlob->m_nParams                = pParams->m_nParamTokens;
 

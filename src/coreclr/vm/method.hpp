@@ -2500,9 +2500,6 @@ public:
         // Flags for DynamicMethodDesc
         // Define new flags in descending order. This allows the IL type enumeration to increase naturally.
         FlagNone                = 0x00000000,
-        FlagIndependentSig      = 0x00000400, // The signature stored for this MethodDesc is already module independent.
-                                              // The tokens stored in the signature should be resolved through the Resolver,
-                                              // not whatever module this MethodDesc is attached to.
         FlagPublic              = 0x00000800,
         FlagStatic              = 0x00001000,
         FlagRequiresCOM         = 0x00002000,
@@ -2510,7 +2507,7 @@ public:
         FlagIsILStub            = 0x00008000,
         FlagIsDelegate          = 0x00010000,
         FlagIsCALLI             = 0x00020000,
-        FlagMask                = 0x0003fc00,
+        FlagMask                = 0x0003f800,
         StackArgSizeMask        = 0xfffc0000, // native stack arg size for IL stubs
         ILStubTypeMask          = ~(FlagMask | StackArgSizeMask)
     };

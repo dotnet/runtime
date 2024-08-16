@@ -1855,13 +1855,24 @@ FCIMPL3(Object *, SignatureNative::GetCustomModifiersAtOffset,
                 {
                     cMods ++;
                 }
+
+                IfFailThrow(sp.GetToken(NULL));
+            }
+            else if (cmodType == ELEMENT_TYPE_CMOD_INTERNAL)
+            {
+                BYTE required;
+                IfFailThrow(sp.GetByte(&required));
+                if (fRequired == (required != 0))
+                {
+                    cMods ++;
+                }
+
+                IfFailThrow(sp.GetPointer(NULL));
             }
             else if (cmodType != ELEMENT_TYPE_SENTINEL)
             {
                 break;
             }
-
-            IfFailThrow(sp.GetToken(NULL));
         }
 
         // Reset sp and populate the arrays for the required and optional custom
@@ -1879,18 +1890,35 @@ FCIMPL3(Object *, SignatureNative::GetCustomModifiersAtOffset,
             IfFailThrow(sp.GetByte(&data));
             cmodType = (CorElementType)data;
 
-            mdToken token;
-            IfFailThrow(sp.GetToken(&token));
-
-            if (cmodType == cmodTypeExpected)
+            if (cmodType == ELEMENT_TYPE_CMOD_INTERNAL)
             {
-                TypeHandle th = ClassLoader::LoadTypeDefOrRefOrSpecThrowing(pModule, token,
-                                                                            &typeContext,
-                                                                            ClassLoader::ThrowIfNotFound,
-                                                                            ClassLoader::FailIfUninstDefOrRef);
+                BYTE required;
+                IfFailThrow(sp.GetByte(&required));
 
-                OBJECTREF refType = th.GetManagedClassObject();
-                gc.retVal->SetAt(--cMods, refType);
+                TypeHandle th;
+                IfFailThrow(sp.GetPointer((void**)&th));
+
+                if (fRequired == (required != 0))
+                {
+                    OBJECTREF refType = th.GetManagedClassObject();
+                    gc.retVal->SetAt(--cMods, refType);
+                }
+            }
+            else
+            {
+                mdToken token;
+                IfFailThrow(sp.GetToken(&token));
+
+                if (cmodType == cmodTypeExpected)
+                {
+                    TypeHandle th = ClassLoader::LoadTypeDefOrRefOrSpecThrowing(pModule, token,
+                                                                                &typeContext,
+                                                                                ClassLoader::ThrowIfNotFound,
+                                                                                ClassLoader::FailIfUninstDefOrRef);
+
+                    OBJECTREF refType = th.GetManagedClassObject();
+                    gc.retVal->SetAt(--cMods, refType);
+                }
             }
         }
     }

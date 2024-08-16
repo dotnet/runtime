@@ -582,19 +582,32 @@ class SigParser
                 return hr;
 
             while ((ELEMENT_TYPE_CMOD_REQD == bElementType) ||
-                   (ELEMENT_TYPE_CMOD_OPT == bElementType))
+                   (ELEMENT_TYPE_CMOD_OPT == bElementType) ||
+                   (ELEMENT_TYPE_CMOD_INTERNAL == bElementType))
             {
                 sigTemp.SkipBytes(1);
+                if (ELEMENT_TYPE_CMOD_INTERNAL == bElementType)
+                {
+                    void * pMT;
+                    uint8_t required;
+                    if (FAILED(hr = sigTemp.GetByte(&required)))
+                        return hr;
+                    
+                    if (FAILED(hr = sigTemp.GetPointer(&pMT)))
+                        return hr;
+                    
+                }
+                else
+                {
+                    mdToken token;
 
-                mdToken token;
+                    hr = sigTemp.GetToken(&token);
 
-                hr = sigTemp.GetToken(&token);
+                    if (FAILED(hr))
+                        return hr;
+                }
 
-                if (FAILED(hr))
-                    return hr;
-
-                hr = sigTemp.PeekByte(&bElementType);
-                if (FAILED(hr))
+                if (FAILED(hr = sigTemp.PeekByte(&bElementType)))
                     return hr;
             }
 
@@ -643,19 +656,32 @@ class SigParser
             while (ELEMENT_TYPE_CMOD_REQD == bElementType ||
                    ELEMENT_TYPE_CMOD_OPT == bElementType ||
                    ELEMENT_TYPE_MODIFIER == bElementType ||
-                   ELEMENT_TYPE_PINNED == bElementType)
+                   ELEMENT_TYPE_PINNED == bElementType ||
+                   ELEMENT_TYPE_CMOD_INTERNAL == bElementType)
             {
                 sigTemp.SkipBytes(1);
+                if (ELEMENT_TYPE_CMOD_INTERNAL == bElementType)
+                {
+                    void * pMT;
+                    uint8_t required;
+                    if (FAILED(hr = sigTemp.GetByte(&required)))
+                        return hr;
+                    
+                    if (FAILED(hr = sigTemp.GetPointer(&pMT)))
+                        return hr;
+                    
+                }
+                else
+                {
+                    mdToken token;
 
-                mdToken token;
+                    hr = sigTemp.GetToken(&token);
 
-                hr = sigTemp.GetToken(&token);
+                    if (FAILED(hr))
+                        return hr;
+                }
 
-                if (FAILED(hr))
-                    return hr;
-
-                hr = sigTemp.PeekByte(&bElementType);
-                if (FAILED(hr))
+                if (FAILED(hr = sigTemp.PeekByte(&bElementType)))
                     return hr;
             }
 

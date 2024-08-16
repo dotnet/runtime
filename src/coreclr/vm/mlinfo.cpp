@@ -779,6 +779,7 @@ namespace
             // Skip modreqs and modopts in the signature.
             case ELEMENT_TYPE_CMOD_OPT:
             case ELEMENT_TYPE_CMOD_REQD:
+            case ELEMENT_TYPE_CMOD_INTERNAL:
             {
                 if(FAILED(sig.GetElemType(NULL)))
                 {
@@ -913,6 +914,7 @@ MarshalInfo::MarshalInfo(Module* pModule,
 
     CorNativeType nativeType        = NATIVE_TYPE_DEFAULT;
     Assembly *pAssembly             = pModule->GetAssembly();
+    Module* pCopyCtorModule         = NULL;
     mdToken pCopyCtorModifier       = mdTokenNil;
     m_BestFit                       = BestFit;
     m_ThrowOnUnmappableChar         = ThrowOnUnmappableChar;
@@ -1040,8 +1042,8 @@ MarshalInfo::MarshalInfo(Module* pModule,
             // Skip ET_BYREF
             IfFailGoto(sigtmp.GetByte(NULL), lFail);
 
-            if (sigtmp.HasCustomModifier(pModule, "Microsoft.VisualC.NeedsCopyConstructorModifier", ELEMENT_TYPE_CMOD_REQD, &pCopyCtorModifier) ||
-                sigtmp.HasCustomModifier(pModule, "System.Runtime.CompilerServices.IsCopyConstructed", ELEMENT_TYPE_CMOD_REQD, &pCopyCtorModifier) )
+            if (sigtmp.HasCustomModifier(pModule, "Microsoft.VisualC.NeedsCopyConstructorModifier", ELEMENT_TYPE_CMOD_REQD, &pCopyCtorModule, &pCopyCtorModifier) ||
+                sigtmp.HasCustomModifier(pModule, "System.Runtime.CompilerServices.IsCopyConstructed", ELEMENT_TYPE_CMOD_REQD, &pCopyCtorModule, &pCopyCtorModifier) )
             {
                 mtype = ELEMENT_TYPE_VALUETYPE;
                 m_byref = FALSE;
@@ -1072,8 +1074,8 @@ MarshalInfo::MarshalInfo(Module* pModule,
             if (!th.IsEnum())
             {
                 // Check for Copy Constructor Modifier
-                if (sigtmp.HasCustomModifier(pModule, "Microsoft.VisualC.NeedsCopyConstructorModifier", ELEMENT_TYPE_CMOD_REQD, &pCopyCtorModifier) ||
-                    sigtmp.HasCustomModifier(pModule, "System.Runtime.CompilerServices.IsCopyConstructed", ELEMENT_TYPE_CMOD_REQD, &pCopyCtorModifier) )
+                if (sigtmp.HasCustomModifier(pModule, "Microsoft.VisualC.NeedsCopyConstructorModifier", ELEMENT_TYPE_CMOD_REQD, &pCopyCtorModule, &pCopyCtorModifier) ||
+                    sigtmp.HasCustomModifier(pModule, "System.Runtime.CompilerServices.IsCopyConstructed", ELEMENT_TYPE_CMOD_REQD, &pCopyCtorModule, &pCopyCtorModifier) )
                 {
                     mtype = mtype2;
 
@@ -2044,7 +2046,7 @@ MarshalInfo::MarshalInfo(Module* pModule,
                         if (pCopyCtorModifier != mdTokenNil && !IsFieldScenario()) // We don't support automatically discovering copy constructors for fields.
                         {
 #if defined(FEATURE_IJW)
-                            m_args.mm.m_pSigMod = ClassLoader::LoadTypeDefOrRefThrowing(pModule, pCopyCtorModifier).AsMethodTable();
+                            m_args.mm.m_pSigMod = ClassLoader::LoadTypeDefOrRefThrowing(pCopyCtorModule, pCopyCtorModifier).AsMethodTable();
                             m_args.mm.m_pMT = m_pMT;
                             m_type = MARSHAL_TYPE_BLITTABLEVALUECLASSWITHCOPYCTOR;
 #else // !defined(FEATURE_IJW)
