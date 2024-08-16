@@ -223,7 +223,7 @@ Native C++ code is not everything in our runtime. Nowadays, there are lots of st
 
 #### Resolving Signature Validation Errors in Visual Studio
 
-Visual Studio 2022 version 17.5 and later validates that the debugging libraries that shipped with the .NET Runtime are signed before loading them. If they are unsigned, Visual Studio shows an error similar to the following:
+Visual Studio 2022 version 17.5 and later validates the debugging libraries shipped with the .NET Runtime are signed before loading them. If they are unsigned, Visual Studio shows an error similar to the following:
 
 > Unable to attach to CoreCLR. Signature validation failed for a .NET Runtime Debugger library because the file is unsigned.
 >
