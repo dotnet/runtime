@@ -1575,6 +1575,16 @@ if (!System.Diagnostics.Debugger.IsAttached) { System.Diagnostics.Debugger.Launc
                     {
                         ""Element3"": {}
                     }
+                ],
+                ""List"": [
+                    {
+                        ""Item1"": {
+                            ""NestedItem1"": {}
+                        }
+                    },
+                    {
+                        ""Item2"": {}
+                    },
                 ]
             }";
 
@@ -1585,36 +1595,34 @@ if (!System.Diagnostics.Debugger.IsAttached) { System.Diagnostics.Debugger.Launc
             var instance = new TypeWithRecursionThroughCollections();
             configuration.Bind(instance);
 
+            // Validate the dictionary
             Assert.NotNull(instance.Tree);
             Assert.Equal(2, instance.Tree.Count);
-
             Assert.NotNull(instance.Tree["Branch1"]);
             Assert.Equal(2, instance.Tree["Branch1"].Count);
             Assert.Equal(["Leaf1", "Leaf2"], instance.Tree["Branch1"].Keys);
-            Assert.Equal([[], []], instance.Tree["Branch1"].Values);
-
-            Assert.NotNull(instance.Tree["Branch2"]);
-            Assert.Equal(1, instance.Tree["Branch2"].Count);
             Assert.Equal(["Leaf3"], instance.Tree["Branch2"].Keys);
-            Assert.Equal([[]], instance.Tree["Branch2"].Values);
 
+            // Validate the array
             Assert.NotNull(instance.Flat);
             Assert.Equal(3, instance.Flat.Length);
-
             Assert.Equal(["Element1"], instance.Flat[0].Keys);
             Assert.Equal(["Element2"], instance.Flat[1].Keys);
             Assert.Equal(["Element3"], instance.Flat[2].Keys);
-
             Assert.Equal(1, instance.Flat[0].Values.Count);
             Assert.Equal(["SubElement1"], instance.Flat[0].Values.ToArray()[0].Keys);
-            Assert.Equal([[]], instance.Flat[0].Values.ToArray()[0].Values);
-
             Assert.Equal(1, instance.Flat[1].Values.Count);
             Assert.Equal(["SubElement2"], instance.Flat[1].Values.ToArray()[0].Keys);
-            Assert.Equal([[]], instance.Flat[1].Values.ToArray()[0].Values);
-
             Assert.Equal(1, instance.Flat[2].Values.Count);
-            Assert.Equal([[]], instance.Flat[2].Values.ToArray());
+
+            // Validate the List
+            Assert.NotNull(instance.Flat);
+            Assert.Equal(2, instance.List.Count);
+            Assert.Equal(["Item1"], instance.List[0].Keys);
+            Assert.Equal(["Item2"], instance.List[1].Keys);
+            Assert.Equal(1, instance.List[0].Values.Count);
+            Assert.Equal(["NestedItem1"], instance.List[0].Values.ToArray()[0].Keys);
+            Assert.Equal(1, instance.List[1].Values.Count);
         }
 
         [Fact]

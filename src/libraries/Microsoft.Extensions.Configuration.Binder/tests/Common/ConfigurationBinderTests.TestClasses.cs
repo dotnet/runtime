@@ -194,6 +194,7 @@ namespace Microsoft.Extensions
         {
             public TreeElement? Tree { get; set; }
             public TreeElement?[]? Flat { get; set; }
+            public List<TreeElement>? List { get; set; }
         }
 
         public record RecordWithArrayParameter(string[] Array);
