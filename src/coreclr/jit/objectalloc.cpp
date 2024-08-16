@@ -377,7 +377,6 @@ bool ObjectAllocator::MorphAllocObjNodes()
     for (BasicBlock* const block : comp->Blocks())
     {
         const bool basicBlockHasNewObj       = block->HasFlag(BBF_HAS_NEWOBJ);
-        const bool basicBlockHasBackwardJump = block->HasFlag(BBF_BACKWARD_JUMP);
 #ifndef DEBUG
         if (!basicBlockHasNewObj)
         {
@@ -436,11 +435,6 @@ bool ObjectAllocator::MorphAllocObjNodes()
                 if (!IsObjectStackAllocationEnabled())
                 {
                     onHeapReason = "[object stack allocation disabled]";
-                    canStack     = false;
-                }
-                else if (basicBlockHasBackwardJump)
-                {
-                    onHeapReason = "[alloc in loop]";
                     canStack     = false;
                 }
                 else if (!CanAllocateLclVarOnStack(lclNum, clsHnd, &onHeapReason))
