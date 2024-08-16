@@ -268,6 +268,9 @@
         <ExcludeList Include="$(XunitTestBinBase)/JIT/opt/Tailcall/TailcallVerifyWithPrefix/*">
             <Issue>Depends on implicit tailcalls to be performed</Issue>
         </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/JitBlue/DevDiv_255294/DevDiv_255294/*">
+            <Issue>https://github.com/dotnet/runtime/issues/8034 The test causes OutOfMemory exception in crossgen mode.</Issue>
+        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/baseservices/varargs/varargsupport/*">
             <Issue>Varargs supported on this platform</Issue>
         </ExcludeList>
