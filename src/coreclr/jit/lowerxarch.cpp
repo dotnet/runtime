@@ -1430,10 +1430,9 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
         const uint8_t B = 0xCC;
         const uint8_t C = 0xAA;
 
-        var_types   simdType        = node->TypeGet();
-        CorInfoType simdBaseJitType = node->GetSimdBaseJitType();
-        var_types   simdBaseType    = node->GetSimdBaseType();
-        unsigned    simdSize        = node->GetSimdSize();
+        var_types simdType     = node->TypeGet();
+        var_types simdBaseType = node->GetSimdBaseType();
+        unsigned  simdSize     = node->GetSimdSize();
 
         GenTree* op1 = node->Op(1);
         GenTree* op2 = node->Op(2);
@@ -1454,6 +1453,10 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
 
                 bool       userIsScalar = false;
                 genTreeOps userOper     = userIntrin->GetOperForHWIntrinsicId(&isScalar);
+
+                // userIntrin may have re-interpreted the base type
+                //
+                simdBaseType = userIntrin->GetSimdBaseType();
 
                 if (GenTreeHWIntrinsic::OperIsBitwiseHWIntrinsic(userOper))
                 {
