@@ -2434,6 +2434,9 @@
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/JitBlue/Runtime_76273/Runtime_76273/**">
             <Issue>https://github.com/dotnet/runtime/issues/90372</Issue>
         </ExcludeList>
+        <ExcludeList Include = "$(XUnitTestBinBase)/JIT/HardwareIntrinsics/X86/X86Base/Pause*/**">
+            <Issue>https://github.com/dotnet/runtime/issues/73454;https://github.com/dotnet/runtime/pull/61707#issuecomment-973122341</Issue>
+        </ExcludeList>
         <ExcludeList Include = "$(XUnitTestBinBase)/JIT/HardwareIntrinsics/X86/X86Base/X86Base*/**">
             <Issue>https://github.com/dotnet/runtime/issues/75767</Issue>
         </ExcludeList>
