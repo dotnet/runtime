@@ -950,8 +950,7 @@ namespace System.Text.Json
             ref StackRowStack stack)
         {
             bool inArray = false;
-            int numberOfProperties = 0;
-            int arrayItemsCount = 0;
+            int arrayItemsOrPropertyCount = 0;
             int numberOfRowsForMembers = 0;
             int numberOfRowsForValues = 0;
 
@@ -973,14 +972,14 @@ namespace System.Text.Json
                 {
                     if (inArray)
                     {
-                        arrayItemsCount++;
+                        arrayItemsOrPropertyCount++;
                     }
 
                     numberOfRowsForValues++;
                     database.Append(tokenType, tokenStart, DbRow.UnknownSize);
-                    var row = new StackRow(numberOfProperties, numberOfRowsForMembers + 1);
+                    var row = new StackRow(arrayItemsOrPropertyCount, numberOfRowsForMembers + 1);
                     stack.Push(row);
-                    numberOfProperties = 0;
+                    arrayItemsOrPropertyCount = 0;
                     numberOfRowsForMembers = 0;
                 }
                 else if (tokenType == JsonTokenType.EndObject)
@@ -989,7 +988,7 @@ namespace System.Text.Json
 
                     numberOfRowsForValues++;
                     numberOfRowsForMembers++;
-                    database.SetLength(rowIndex, numberOfProperties);
+                    database.SetLength(rowIndex, arrayItemsOrPropertyCount);
 
                     int newRowIndex = database.Length;
                     database.Append(tokenType, tokenStart, reader.ValueSpan.Length);
@@ -997,21 +996,21 @@ namespace System.Text.Json
                     database.SetNumberOfRows(newRowIndex, numberOfRowsForMembers);
 
                     StackRow row = stack.Pop();
-                    numberOfProperties = row.SizeOrLength;
+                    arrayItemsOrPropertyCount = row.SizeOrLength;
                     numberOfRowsForMembers += row.NumberOfRows;
                 }
                 else if (tokenType == JsonTokenType.StartArray)
                 {
                     if (inArray)
                     {
-                        arrayItemsCount++;
+                        arrayItemsOrPropertyCount++;
                     }
 
                     numberOfRowsForMembers++;
                     database.Append(tokenType, tokenStart, DbRow.UnknownSize);
-                    var row = new StackRow(arrayItemsCount, numberOfRowsForValues + 1);
+                    var row = new StackRow(arrayItemsOrPropertyCount, numberOfRowsForValues + 1);
                     stack.Push(row);
-                    arrayItemsCount = 0;
+                    arrayItemsOrPropertyCount = 0;
                     numberOfRowsForValues = 0;
                 }
                 else if (tokenType == JsonTokenType.EndArray)
@@ -1020,7 +1019,7 @@ namespace System.Text.Json
 
                     numberOfRowsForValues++;
                     numberOfRowsForMembers++;
-                    database.SetLength(rowIndex, arrayItemsCount);
+                    database.SetLength(rowIndex, arrayItemsOrPropertyCount);
                     database.SetNumberOfRows(rowIndex, numberOfRowsForValues);
 
                     // If the array item count is (e.g.) 12 and the number of rows is (e.g.) 13
@@ -1033,7 +1032,7 @@ namespace System.Text.Json
                     // This check is similar to tracking the start array and painting it when
                     // StartObject or StartArray is encountered, but avoids the mixed state
                     // where "UnknownSize" implies "has complex children".
-                    if (arrayItemsCount + 1 != numberOfRowsForValues)
+                    if (arrayItemsOrPropertyCount + 1 != numberOfRowsForValues)
                     {
                         database.SetHasComplexChildren(rowIndex);
                     }
@@ -1043,14 +1042,14 @@ namespace System.Text.Json
                     database.SetNumberOfRows(newRowIndex, numberOfRowsForValues);
 
                     StackRow row = stack.Pop();
-                    arrayItemsCount = row.SizeOrLength;
+                    arrayItemsOrPropertyCount = row.SizeOrLength;
                     numberOfRowsForValues += row.NumberOfRows;
                 }
                 else if (tokenType == JsonTokenType.PropertyName)
                 {
                     numberOfRowsForValues++;
                     numberOfRowsForMembers++;
-                    numberOfProperties++;
+                    arrayItemsOrPropertyCount++;
 
                     // Adding 1 to skip the start quote will never overflow
                     Debug.Assert(tokenStart < int.MaxValue);
@@ -1072,7 +1071,7 @@ namespace System.Text.Json
 
                     if (inArray)
                     {
-                        arrayItemsCount++;
+                        arrayItemsOrPropertyCount++;
                     }
 
                     if (tokenType == JsonTokenType.String)
