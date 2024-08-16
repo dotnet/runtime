@@ -61,6 +61,7 @@ namespace PInvokeTests
         public static void TestNativeRoundTrip()
         {
             IEnumerator nativeEnumerator = IEnumeratorNative.GetIntegerEnumerator(1, 10);
+            Assert.True(nativeEnumerator is ICustomAdapter);
             Assert.Equal(nativeEnumerator, IEnumeratorNative.PassThroughEnumerator(nativeEnumerator));
         }
 
@@ -69,6 +70,21 @@ namespace PInvokeTests
         {
             IEnumerator managedEnumerator = Enumerable.Range(1, 10).GetEnumerator();
             Assert.Equal(managedEnumerator, IEnumeratorNative.PassThroughEnumerator(managedEnumerator));
+        }
+
+        [Fact]
+        public static void TestSupportForICustomAdapter()
+        {
+            {
+                IEnumerable nativeEnumerable = IEnumeratorNative.GetIntegerEnumeration(1, 10);
+                Assert.True(nativeEnumerable is ICustomAdapter);
+                IEnumerator nativeEnumerator = nativeEnumerable.GetEnumerator();
+                Assert.True(nativeEnumerator is ICustomAdapter);
+            }
+            {
+                IEnumerator nativeEnumerator = IEnumeratorNative.GetIntegerEnumerator(1, 10);
+                Assert.True(nativeEnumerator is ICustomAdapter);
+            }
         }
 
         private static IEnumerable<int> EnumeratorAsEnumerable(IEnumerator enumerator)
