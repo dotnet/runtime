@@ -2602,5 +2602,27 @@ if (!System.Diagnostics.Debugger.IsAttached) { System.Diagnostics.Debugger.Launc
             Assert.Equal(53, obj.X);
             Assert.Equal(53, obj.XBase);
         }
+
+        [Fact]
+        public void CanGetEnumerableNotCollection()
+        {
+            var builder = new ConfigurationBuilder();
+            builder.AddInMemoryCollection(new KeyValuePair<string, string?>[]
+            {
+                new("Names", "John,Jane,Stephen"),
+                new("Enabled", "true"),
+                new("Keywords:1", "new"),
+                new("Keywords:2", "class"),
+                new("Keywords:3", "rosebud")
+            });
+
+            var config = builder.Build();
+
+            var result = config.Get<EnumerableNotCollection>();
+
+            Assert.Equal("John,Jane,Stephen", result.Names);
+            Assert.True(result.Enabled);
+            Assert.Equal(new [] { "new", "class", "rosebud"}, result.Keywords);
+        }
     }
 }
