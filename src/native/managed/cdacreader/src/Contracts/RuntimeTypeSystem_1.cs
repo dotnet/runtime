@@ -708,9 +708,8 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
         //    Address
         //    .ctor        // possibly more
         // See ArrayMethodDesc for details in coreclr
-        MethodTable methodTable = _methodTables[GetTypeHandle(methodDesc.MethodTable).Address];
+        MethodTable methodTable = GetOrCreateMethodTable(methodDesc);
         int arrayMethodIndex = methodDesc.Slot - methodTable.NumVirtuals;
-
         functionType = arrayMethodIndex switch
         {
             0 => ArrayFunctionType.Get,
@@ -779,5 +778,12 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
         }
 
         return AsDynamicMethodDesc(methodDesc).IsILStub;
+    }
+
+    private MethodTable GetOrCreateMethodTable(MethodDesc methodDesc)
+    {
+        // Ensures that the method table is valid, created, and cached
+        _ = GetTypeHandle(methodDesc.MethodTable);
+        return _methodTables[methodDesc.MethodTable];
     }
 }
