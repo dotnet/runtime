@@ -1455,7 +1455,7 @@ BOOL TypeVarTypeDesc::SatisfiesConstraints(SigTypeContext *pTypeContextOfConstra
 
         if ((specialConstraints & gpDefaultConstructorConstraint) != 0)
         {
-            if (thArg.IsTypeDesc() || (!thArg.AsMethodTable()->HasExplicitOrImplicitPublicDefaultConstructor()))
+            if (thArg.IsTypeDesc() || (!thArg.AsMethodTable()->HasExplicitOrImplicitPublicDefaultConstructor() || thArg.IsAbstract()))
                 return FALSE;
         }
 
