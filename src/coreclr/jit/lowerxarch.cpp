@@ -3975,7 +3975,7 @@ GenTree* Lowering::LowerHWIntrinsicTernaryLogic(GenTreeHWIntrinsic* node)
 
                         if (!op1->IsCnsVec())
                         {
-                            op1->SetUnusedValue();
+                            node->Op(1)->SetUnusedValue();
                             op1 = comp->gtNewZeroConNode(simdType);
 
                             BlockRange().InsertBefore(node, op1);
@@ -3984,7 +3984,7 @@ GenTree* Lowering::LowerHWIntrinsicTernaryLogic(GenTreeHWIntrinsic* node)
 
                         if (!op2->IsCnsVec())
                         {
-                            op2->SetUnusedValue();
+                            node->Op(2)->SetUnusedValue();
                             op2 = comp->gtNewZeroConNode(simdType);
 
                             BlockRange().InsertBefore(node, op2);
@@ -3997,7 +3997,7 @@ GenTree* Lowering::LowerHWIntrinsicTernaryLogic(GenTreeHWIntrinsic* node)
                     {
                         if (!op1->IsCnsVec())
                         {
-                            op1->SetUnusedValue();
+                            node->Op(1)->SetUnusedValue();
                             op1 = comp->gtNewZeroConNode(simdType);
 
                             BlockRange().InsertBefore(node, op1);
