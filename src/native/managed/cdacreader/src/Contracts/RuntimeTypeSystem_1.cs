@@ -698,6 +698,16 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
             return false;
         }
 
+        // To get the array function index, subtract the number of virtuals from the method's slot
+        // The array vtable looks like:
+        //    System.Object vtable
+        //    System.Array vtable
+        //    type[] vtable
+        //    Get
+        //    Set
+        //    Address
+        //    .ctor        // possibly more
+        // See ArrayMethodDesc for details in coreclr
         MethodTable methodTable = _methodTables[GetTypeHandle(methodDesc.MethodTable).Address];
         int arrayMethodIndex = methodDesc.Slot - methodTable.NumVirtuals;
 
