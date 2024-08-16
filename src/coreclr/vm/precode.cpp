@@ -688,11 +688,11 @@ void PrecodeMachineDescriptor::Init()
     g_PrecodeMachineDescriptor.InvalidPrecodeType = InvalidPrecode::Type;
     g_PrecodeMachineDescriptor.StubPrecodeType = StubPrecode::Type;
 #ifdef HAS_NDIRECT_IMPORT_PRECODE
-    g_PrecodeMachineDescriptor.HasNDirectImportPrecode = 1;
-    g_PrecodeMachineDescriptor.NDirectImportPrecodeType = NDirectImportPrecode::Type;
+    g_PrecodeMachineDescriptor.HasPInvokeImportPrecode = 1;
+    g_PrecodeMachineDescriptor.PInvokeImportPrecodeType = NDirectImportPrecode::Type;
 #else
-    g_PrecodeMachineDescriptor.HasNDirectImportPrecode = 0;
-    g_PrecodeMachineDescriptor.NDirectImportPrecodeType = 0;
+    g_PrecodeMachineDescriptor.HasPInvokeImportPrecode = 0;
+    g_PrecodeMachineDescriptor.PInvokeImportPrecodeType = 0;
 #endif // HAS_NDIRECT_IMPORT_PRECODE
 #ifdef HAS_FIXUP_PRECODE
     g_PrecodeMachineDescriptor.HasFixupPrecode = 1;

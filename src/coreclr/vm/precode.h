@@ -612,8 +612,8 @@ struct PrecodeMachineDescriptor
 
     uint8_t InvalidPrecodeType;
     uint8_t StubPrecodeType;
-    uint8_t HasNDirectImportPrecode;
-    uint8_t NDirectImportPrecodeType;
+    uint8_t HasPInvokeImportPrecode;
+    uint8_t PInvokeImportPrecodeType;
 
     uint8_t HasFixupPrecode;
     uint8_t FixupPrecodeType;

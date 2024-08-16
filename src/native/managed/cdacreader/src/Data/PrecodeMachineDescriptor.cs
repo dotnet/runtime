@@ -17,9 +17,9 @@ internal sealed class PrecodeMachineDescriptor : IData<PrecodeMachineDescriptor>
         ShiftOfPrecodeType = target.Read<byte>(address + (ulong)type.Fields[nameof(ShiftOfPrecodeType)].Offset);
         InvalidPrecodeType = target.Read<byte>(address + (ulong)type.Fields[nameof(InvalidPrecodeType)].Offset);
         StubPrecodeType = target.Read<byte>(address + (ulong)type.Fields[nameof(StubPrecodeType)].Offset);
-        if (target.Read<byte>(address + (ulong)type.Fields[nameof(HasNDirectImportPrecode)].Offset) == 1)
+        if (target.Read<byte>(address + (ulong)type.Fields[nameof(HasPInvokeImportPrecode)].Offset) == 1)
         {
-            NDirectImportPrecodeType = target.Read<byte>(address + (ulong)type.Fields[nameof(NDirectImportPrecodeType)].Offset);
+            PInvokeImportPrecodeType = target.Read<byte>(address + (ulong)type.Fields[nameof(PInvokeImportPrecodeType)].Offset);
         }
         if (target.Read<byte>(address + (ulong)type.Fields[nameof(HasFixupPrecode)].Offset) == 1)
         {
@@ -34,10 +34,10 @@ internal sealed class PrecodeMachineDescriptor : IData<PrecodeMachineDescriptor>
     public byte ShiftOfPrecodeType { get; init; }
     public byte InvalidPrecodeType { get; init; }
     public byte StubPrecodeType { get; init; }
-    public byte? NDirectImportPrecodeType { get; init; }
+    public byte? PInvokeImportPrecodeType { get; init; }
     public byte? FixupPrecodeType { get; init; }
 
     public uint StubCodePageSize { get; init; }
-    private const string HasNDirectImportPrecode = nameof(HasNDirectImportPrecode);
+    private const string HasPInvokeImportPrecode = nameof(HasPInvokeImportPrecode);
     private const string HasFixupPrecode = nameof(HasFixupPrecode);
 }

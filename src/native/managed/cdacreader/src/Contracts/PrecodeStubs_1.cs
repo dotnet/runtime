@@ -13,7 +13,7 @@ internal readonly struct PrecodeStubs_1 : IPrecodeStubs
     internal enum KnownPrecodeType
     {
         Stub = 1,
-        NDirectImport,
+        PInvokeImport, // also known as NDirectImport in the runtime
         Fixup,
         ThisPtrRetBuf,
     }
@@ -45,9 +45,9 @@ internal readonly struct PrecodeStubs_1 : IPrecodeStubs
         }
     }
 
-    internal sealed class NDirectImportPrecode : StubPrecode
+    internal sealed class PInvokeImportPrecode : StubPrecode
     {
-        internal NDirectImportPrecode(TargetPointer instrPointer) : base(instrPointer, KnownPrecodeType.NDirectImport) { }
+        internal PInvokeImportPrecode(TargetPointer instrPointer) : base(instrPointer, KnownPrecodeType.PInvokeImport) { }
     }
 
     internal sealed class FixupPrecode : ValidPrecode
@@ -113,9 +113,9 @@ internal readonly struct PrecodeStubs_1 : IPrecodeStubs
         {
             return KnownPrecodeType.Stub;
         }
-        else if (MachineDescriptor.NDirectImportPrecodeType is byte ndType && precodeType == ndType)
+        else if (MachineDescriptor.PInvokeImportPrecodeType is byte ndType && precodeType == ndType)
         {
-            return KnownPrecodeType.NDirectImport;
+            return KnownPrecodeType.PInvokeImport;
         }
         else if (MachineDescriptor.FixupPrecodeType is byte fixupType && precodeType == fixupType)
         {
@@ -147,8 +147,8 @@ internal readonly struct PrecodeStubs_1 : IPrecodeStubs
                     return new StubPrecode(instrPointer);
                 case KnownPrecodeType.Fixup:
                     return new FixupPrecode(instrPointer);
-                case KnownPrecodeType.NDirectImport:
-                    return new NDirectImportPrecode(instrPointer);
+                case KnownPrecodeType.PInvokeImport:
+                    return new PInvokeImportPrecode(instrPointer);
                 case KnownPrecodeType.ThisPtrRetBuf:
                     return new ThisPtrRetBufPrecode(instrPointer);
                 default:
