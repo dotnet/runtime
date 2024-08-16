@@ -50,6 +50,8 @@ Contracts used:
 ```csharp
 ```
 
+**TODO** Methods
+
 ### NibbleMap
 
 **TODO**
