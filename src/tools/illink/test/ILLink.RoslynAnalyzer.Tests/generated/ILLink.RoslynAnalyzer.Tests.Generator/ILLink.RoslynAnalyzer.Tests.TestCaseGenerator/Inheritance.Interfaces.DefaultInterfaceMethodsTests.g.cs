@@ -64,12 +64,6 @@ namespace ILLink.RoslynAnalyzer.Tests.Inheritance.Interfaces
 		}
 
 		[Fact]
-		public Task StaticDimOnDerivedInterface ()
-		{
-			return RunTest (allowMissingWarnings: true);
-		}
-
-		[Fact]
 		public Task StaticDimProvidedByUnreferencedIfaceInHierarchy ()
 		{
 			return RunTest (allowMissingWarnings: true);

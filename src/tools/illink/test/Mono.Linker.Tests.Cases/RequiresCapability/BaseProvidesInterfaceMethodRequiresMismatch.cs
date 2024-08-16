@@ -16,6 +16,8 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 	[SkipKeptItemsValidation]
 	[SetupCompileBefore ("library.dll", new[] { "Dependencies/AbstractBaseWithNoMethodsImplementsInterface.il" })]
 	[Define ("IL_ASSEMBLY_AVAILABLE")]
+	//
+	[LogContains ("IL2046: AbstractBaseWithNoMethodsImplementsInterface.Derived.M()", ProducedBy = Tool.None)]
 	class BaseProvidesInterfaceMethodRequiresMismatch
 	{
 		[RequiresUnreferencedCode ("Message")]
