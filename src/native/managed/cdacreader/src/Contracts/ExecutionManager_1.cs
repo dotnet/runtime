@@ -235,7 +235,7 @@ internal readonly partial struct ExecutionManager_1 : IExecutionManager
         return checked((int)addressBitsUsedInLevel);
     }
 
-    internal EECodeInfo? GetEECodeInfo(TargetCodePointer jittedCodeAddress)
+    private EECodeInfo? GetEECodeInfo(TargetCodePointer jittedCodeAddress)
     {
         RangeSection range = LookupRangeSection(jittedCodeAddress);
         range.JitCodeToMethodInfo(_target, jittedCodeAddress, out EECodeInfo? info);
