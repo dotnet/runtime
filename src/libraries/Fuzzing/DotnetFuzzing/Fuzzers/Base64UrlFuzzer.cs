@@ -8,7 +8,7 @@ using System.Reflection;
 
 namespace DotnetFuzzing.Fuzzers
 {
-    internal class Base64UrlFuzzer : IFuzzer
+    internal sealed class Base64UrlFuzzer : IFuzzer
     {
         public string[] TargetAssemblies => [];
 
