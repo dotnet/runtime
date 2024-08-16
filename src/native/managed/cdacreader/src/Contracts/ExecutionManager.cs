@@ -18,11 +18,9 @@ internal interface IExecutionManager : IContract
     {
         TargetPointer executionManagerCodeRangeMapAddress = target.ReadGlobalPointer(Constants.Globals.ExecutionManagerCodeRangeMapAddress);
         Data.RangeSectionMap rangeSectionMap = target.ProcessedData.GetOrAdd<Data.RangeSectionMap>(executionManagerCodeRangeMapAddress);
-        TargetPointer profControlBlockAddress = target.ReadGlobalPointer(Constants.Globals.ProfilerControlBlock);
-        Data.ProfControlBlock profControlBlock = target.ProcessedData.GetOrAdd<Data.ProfControlBlock>(profControlBlockAddress);
         return version switch
         {
-            1 => new ExecutionManager_1(target, rangeSectionMap, profControlBlock),
+            1 => new ExecutionManager_1(target, rangeSectionMap),
             _ => default(ExecutionManager),
         };
     }

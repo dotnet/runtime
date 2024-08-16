@@ -9,6 +9,7 @@ using Microsoft.Diagnostics.DataContractReader.Contracts.RuntimeTypeSystem_1_NS;
 using System.Diagnostics;
 using System.Text;
 using System.Reflection;
+using System.Reflection.Metadata;
 
 namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 
@@ -156,8 +157,8 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
         private static uint ComputeToken(Target target, Data.MethodDesc desc, Data.MethodDescChunk chunk)
         {
             int tokenRemainderBitCount = target.ReadGlobal<byte>(Constants.Globals.MethodDescTokenRemainderBitCount);
-            int tokenRangeBitCount = 24 - tokenRemainderBitCount;
-            uint allRidBitsSet = 0xFFFFFF;
+            int tokenRangeBitCount = Constants.EcmaMetadata.RowIdBitCount - tokenRemainderBitCount;
+            uint allRidBitsSet = Constants.EcmaMetadata.RIDMask;
             uint tokenRemainderMask = allRidBitsSet >> tokenRangeBitCount;
             uint tokenRangeMask = allRidBitsSet >> tokenRemainderBitCount;
 

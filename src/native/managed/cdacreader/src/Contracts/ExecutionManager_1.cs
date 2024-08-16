@@ -10,10 +10,9 @@ namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 
 internal readonly partial struct ExecutionManager_1 : IExecutionManager
 {
-    internal class EECodeInfo
+    private class EECodeInfo
     {
         private readonly int _codeHeaderOffset;
-        // maps EECodeInfoHandle.Address (which is the CodeHeaderAddress) to the EECodeInfo
 
         public TargetCodePointer StartAddress { get; }
         // note: this is the address of the pointer to the "real code header", you need to
@@ -98,8 +97,9 @@ internal readonly partial struct ExecutionManager_1 : IExecutionManager
 
 
     internal readonly Target _target;
+    // maps EECodeInfoHandle.Address (which is the CodeHeaderAddress) to the EECodeInfo
+
     private readonly Dictionary<TargetPointer, EECodeInfo> _codeInfos = new();
-    private readonly Data.ProfControlBlock _profControlBlock;
     private readonly Data.RangeSectionMap _topRangeSectionMap;
     private readonly TargetCodeManagerDescriptor _targetCodeManagerDescriptor;
 
@@ -110,12 +110,11 @@ internal readonly partial struct ExecutionManager_1 : IExecutionManager
         ReadyToRunJitManager = 1,
     }
 
-    public ExecutionManager_1(Target target, Data.RangeSectionMap topRangeSectionMap, Data.ProfControlBlock profControlBlock)
+    public ExecutionManager_1(Target target, Data.RangeSectionMap topRangeSectionMap)
     {
         _target = target;
         _topRangeSectionMap = topRangeSectionMap;
         _targetCodeManagerDescriptor = TargetCodeManagerDescriptor.Create(target);
-        _profControlBlock = profControlBlock;
     }
 
     [Flags]

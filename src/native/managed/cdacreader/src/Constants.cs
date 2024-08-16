@@ -45,4 +45,14 @@ internal static class Constants
         internal const string StubCodeBlockLast = nameof(StubCodeBlockLast);
         internal const string ProfilerControlBlock = nameof(ProfilerControlBlock);
     }
+
+    internal static class EcmaMetadata
+    {
+        internal const int RowIdBitCount = 24;
+        internal const uint RIDMask = (1 << RowIdBitCount) - 1;
+
+        internal static uint GetRowId(uint token) => token & RIDMask;
+
+        internal static uint MakeToken(uint rid, uint table) => rid | (table << RowIdBitCount);
+    }
 }

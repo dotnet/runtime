@@ -92,9 +92,9 @@ internal readonly struct Loader_1 : ILoader
             module.MethodDefToILCodeVersioningStateMap);
     }
 
-    TargetPointer ILoader.GetModuleLookupMapElement(TargetPointer table, uint rid, out TargetNUInt flags)
+    TargetPointer ILoader.GetModuleLookupMapElement(TargetPointer table, uint token, out TargetNUInt flags)
     {
-        rid &= 0x00FFFFFF; // FIXME: do we have a util that does this?
+        uint rid = Constants.EcmaMetadata.GetRowId(token);
         ArgumentOutOfRangeException.ThrowIfZero(rid);
         flags = new TargetNUInt(0);
         if (table == TargetPointer.Null)
