@@ -70,7 +70,7 @@ namespace System.Diagnostics.Tracing
             EventSourceSettings config,
             params string[]? traits)
             : this(
-                GenerateGuidFromName((eventSourceName ?? throw new ArgumentNullException(nameof(eventSourceName))).ToUpperInvariant()),
+                EventSourceUtility.GenerateGuidFromName((eventSourceName ?? throw new ArgumentNullException(nameof(eventSourceName))).ToUpperInvariant()),
                 eventSourceName,
                 config, traits)
         {

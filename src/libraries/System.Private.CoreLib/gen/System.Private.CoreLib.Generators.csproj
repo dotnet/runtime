@@ -5,15 +5,18 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Include="BitOperations.cs" />
     <Compile Include="ProductVersionInfoGenerator.cs" />
     <Compile Include="EventSourceGenerator.cs" />
     <Compile Include="EventSourceGenerator.Emitter.cs" />
     <Compile Include="EventSourceGenerator.Parser.cs" />
     <Compile Include="IntrinsicsInSystemPrivateCoreLibAnalyzer.cs" />
+    <Compile Include="$(CommonPath)System\Sha1ForNonSecretPurposes.cs" Link="Common\System\Sha1ForNonSecretPurposes.cs" />
     <Compile Include="$(CoreLibSharedDir)\System\Runtime\CompilerServices\IsExternalInit.cs" Link="Common\System\Runtime\CompilerServices\IsExternalInit.cs" />
   </ItemGroup>
 
   <ItemGroup>
+    <Compile Include="$(CoreLibSharedDir)System\Diagnostics\Tracing\EventSourceUtility.cs" Link="Production\EventSourceUtility.cs" />
     <Compile Include="$(CoreLibSharedDir)System\Collections\Generic\ValueListBuilder.cs" Link="Production\ValueListBuilder.cs" />
     <Compile Include="$(CoreLibSharedDir)System\Collections\Generic\ValueListBuilder.Pop.cs" Link="Production\ValueListBuilder.Pop.cs" />
   </ItemGroup>
