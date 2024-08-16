@@ -25,11 +25,14 @@ namespace Microsoft.WebAssembly.Build.Tasks
         {
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             {
+                string preEnvScriptPath = Path.Combine(EmSdkPath, "pre_emsdk_env.cmd");
+                if (!CheckEnvScript(preEnvScriptPath))
+                    return false;
                 string envScriptPath = Path.Combine(EmSdkPath, "emsdk_env.cmd");
                 if (!CheckEnvScript(envScriptPath))
                     return false;
 
-                Command = $"@cmd /c \"call \"{envScriptPath}\" > nul 2>&1 && {Command}\"";
+                Command = $"@cmd /c \"call \"{preEnvScriptPath}\" > nul 2>&1 && call \"{envScriptPath}\" > nul 2>&1 && {Command}\"";
             }
             else
             {

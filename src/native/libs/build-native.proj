@@ -79,10 +79,14 @@
           Condition="$([MSBuild]::IsOsPlatform(Windows))">
     <PropertyGroup>
         <_BuildNativeArgs Condition="'$(Ninja)' == 'false'">$(_BuildNativeArgs) msbuild</_BuildNativeArgs>
+        <!-- how to change pass EMSDK_PATH to here? Now it's empty  -->
+        <DOTNET_EMSCRIPTEN_LLVM_ROOT>$(EMSDK_PATH)\bin</DOTNET_EMSCRIPTEN_LLVM_ROOT>
+        <_BuildNativeEnvironmentVariables>$(_BuildNativeEnvironmentVariables);DOTNET_EMSCRIPTEN_LLVM_ROOT=$(DOTNET_EMSCRIPTEN_LLVM_ROOT);EM_LLVM_ROOT=$(DOTNET_EMSCRIPTEN_LLVM_ROOT)</_BuildNativeEnvironmentVariables>
     </PropertyGroup>
     <!-- Run script that uses CMake to generate and build the native files. -->
     <Message Text="&quot;$(MSBuildThisFileDirectory)build-native.cmd&quot; $(_BuildNativeArgs)" Importance="High"/>
-    <Exec Command="&quot;$(MSBuildThisFileDirectory)build-native.cmd&quot; $(_BuildNativeArgs)" EnvironmentVariables="$(_BuildNativeEnvironmentVariables)" />
+    <Message Text="(EMSDK_PATH) = $(EMSDK_PATH) _BuildNativeEnvironmentVariables = $(_BuildNativeEnvironmentVariables)" Importance="High"/>
+    <Exec Command="&quot;$(MSBuildThisFileDirectory)build-native.cmd&quot; $(_BuildNativeArgs)" EnvironmentVariables="$(_BuildNativeEnvironmentVariables)" EchoOff="false" />
   </Target>
 
   <UsingTask TaskName="AndroidLibBuilderTask"

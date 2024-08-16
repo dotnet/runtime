@@ -173,7 +173,7 @@
       <BrowserLocalPath>$([MSBuild]::NormalizeDirectory('$(MSBuildThisFileDirectory)', 'browser'))</BrowserLocalPath>
       <EmsdkLocalPath>emsdk</EmsdkLocalPath>
       <EmscriptenVersion>%(_VersionLines.Identity)</EmscriptenVersion>
-      <PythonCmd Condition="'$(HostOS)' == 'windows'and '$(TargetsBrowser)' == 'true'">setlocal EnableDelayedExpansion &amp;&amp; call &quot;$([MSBuild]::NormalizePath('$(EMSDK_PATH)', 'emsdk_env$(ScriptExt)'))&quot; &amp;&amp; !EMSDK_PYTHON!</PythonCmd>
+      <PythonCmd Condition="'$(HostOS)' == 'windows'and '$(TargetsBrowser)' == 'true'">setlocal EnableDelayedExpansion &amp;&amp; call &quot;$([MSBuild]::NormalizePath('$(EMSDK_PATH)', 'pre_emsdk_env$(ScriptExt)'))&quot;  &amp;&amp; call &quot;$([MSBuild]::NormalizePath('$(EMSDK_PATH)', 'emsdk_env$(ScriptExt)'))&quot; &amp;&amp; !EMSDK_PYTHON!</PythonCmd>
     </PropertyGroup>
 
     <RemoveDir Directories="$(EMSDK_PATH)" />
@@ -248,8 +248,8 @@
     See https://github.com/llvm/llvm-project/pull/98373
     See https://github.com/dotnet/runtime/issues/104773
     -->
-    <Exec Command="wasm-opt --version" IgnoreExitCode="true" 
-      IgnoreStandardErrorWarningFormat="true" 
+    <Exec Command="wasm-opt --version" IgnoreExitCode="true"
+      IgnoreStandardErrorWarningFormat="true"
       StandardErrorImportance="low"
       StandardOutputImportance="Low" >
       <Output TaskParameter="ExitCode" PropertyName="_WasmOptExitCode"/>
@@ -624,32 +624,46 @@
       <_MonoCFLAGSOption>-DCMAKE_C_FLAGS="@(_MonoCPPFLAGS, ' ') @(_MonoCFLAGS, ' ')"</_MonoCFLAGSOption>
       <_MonoCXXFLAGSOption>-DCMAKE_CXX_FLAGS="@(_MonoCPPFLAGS, ' ') @(_MonoCXXFLAGS, ' ')"</_MonoCXXFLAGSOption>
       <EMSDK_PATH>$([MSBuild]::EnsureTrailingSlash('$(EMSDK_PATH)').Replace('\', '/'))</EMSDK_PATH>
+      <NuGetPackageRoot >$([MSBuild]::EnsureTrailingSlash('$(NuGetPackageRoot)').Replace('\', '/'))</NuGetPackageRoot>
       <DOTNET_EMSCRIPTEN_LLVM_ROOT>$(EMSDK_PATH)bin</DOTNET_EMSCRIPTEN_LLVM_ROOT>
-      <DOTNET_EMSCRIPTEN_NODE_PATH>$(NuGetPackageRoot)runtime.$(_portableHostOS)-$(BuildArchitecture).microsoft.netcore.runtime.wasm.node.transport/%(PackageReference.Version)/tools/$(_portableHostOS)-$(BuildArchitecture)/bin</DOTNET_EMSCRIPTEN_NODE_PATH>
+      <DOTNET_EMSCRIPTEN_NODE_PATH>$(NuGetPackageRoot)runtime.$(_portableHostOS)-$(BuildArchitecture).microsoft.netcore.runtime.wasm.node.transport/$(NodePackageVersion)/tools/$(_portableHostOS)-$(BuildArchitecture)/bin</DOTNET_EMSCRIPTEN_NODE_PATH>
       <DOTNET_EMSCRIPTEN_NODE_JS>$(DOTNET_EMSCRIPTEN_NODE_PATH)/node</DOTNET_EMSCRIPTEN_NODE_JS>
       <DOTNET_EMSCRIPTEN_CACHE>$(EM_FROZEN_CACHE)</DOTNET_EMSCRIPTEN_CACHE>
       <DOTNET_EMSCRIPTEN_CACHE Condition="'$(DOTNET_EMSCRIPTEN_CACHE)' == '' or ('$(DOTNET_EMSCRIPTEN_CACHE)' != 'true' and '$(DOTNET_EMSCRIPTEN_CACHE)' != 'false')">true</DOTNET_EMSCRIPTEN_CACHE>
-      <EMSDK_PYTHON  Condition="'$(TargetsBrowser)' == 'true' and '$(HostOS)' != 'windows'">$(NuGetPackageRoot)Microsoft.NET.Runtime.Emscripten.$(EmsdkVersion).Python.win-$(BuildArchitecture)/%(PackageReference.Version)/tools/</EMSDK_PYTHON>
+      <EMSDK_PYTHON Condition="'$(TargetsBrowser)' == 'true' and '$(HostOS)' == 'windows'">$(NuGetPackageRoot)Microsoft.NET.Runtime.Emscripten.$(EmsdkVersion).Python.win-$(BuildArchitecture)/$(EmsdkPackageVersion)/tools/python.exe</EMSDK_PYTHON>
       <_PreEmsdkEnvScriptPath>$(EMSDK_PATH)pre_emsdk_env$(ScriptExt)</_PreEmsdkEnvScriptPath>
+      <_ScriptExecutor Condition="'$(HostOS)' != 'windows'">.</_ScriptExecutor>
+      <_ScriptExecutor Condition="'$(HostOS)' == 'windows'">call</_ScriptExecutor>
     </PropertyGroup>
     <ItemGroup>
       <_MonoCMakeArgs Include="$(_MonoCFLAGSOption)"/>
       <_MonoCMakeArgs Include="$(_MonoCXXFLAGSOption)"/>
     </ItemGroup>
 
-    <ItemGroup>
-      <!-- ToDo: translate to Windows later -->
+    <ItemGroup Condition="'$(HostOS)' != 'windows'">
       <_PreEmsdkEnvScriptLines Include="#!/bin/bash" />
-      <!-- check on Windows if Python works -->
       <_PreEmsdkEnvScriptLines Include="export EMSDK_PATH=$(EMSDK_PATH)" />
       <_PreEmsdkEnvScriptLines Include="export DOTNET_EMSCRIPTEN_LLVM_ROOT=$(DOTNET_EMSCRIPTEN_LLVM_ROOT)" />
-      <!-- <_PreEmsdkEnvScriptLines Include="export DOTNET_EMSCRIPTEN_NODE_PATH=$(DOTNET_EMSCRIPTEN_NODE_PATH)" /> -->
       <_PreEmsdkEnvScriptLines Include="export DOTNET_EMSCRIPTEN_NODE_JS=$(DOTNET_EMSCRIPTEN_NODE_JS)" />
-      <!-- <_PreEmsdkEnvScriptLines Include="export EMSDK_PYTHON=$(EMSDK_PYTHON)" /> -->
       <_PreEmsdkEnvScriptLines Include="export DOTNET_EMSCRIPTEN_BINARYEN_ROOT=$(EMSDK_PATH)" />
       <_PreEmsdkEnvScriptLines Include="export FROZEN_CACHE=$(DOTNET_EMSCRIPTEN_CACHE)" />
     </ItemGroup>
-    
+
+    <ItemGroup Condition="'$(HostOS)' == 'windows'">
+      <_PreEmsdkEnvScriptLines Include="@echo off" />
+      <_PreEmsdkEnvScriptLines Include="set EMSDK_PATH=$(EMSDK_PATH)" />
+      <_PreEmsdkEnvScriptLines Include="set EMSDK_PYTHON=$(EMSDK_PYTHON)" />
+      <_PreEmsdkEnvScriptLines Include="set DOTNET_EMSCRIPTEN_LLVM_ROOT=$(DOTNET_EMSCRIPTEN_LLVM_ROOT)" />
+      <_PreEmsdkEnvScriptLines Include="set DOTNET_EMSCRIPTEN_NODE_JS=$(DOTNET_EMSCRIPTEN_NODE_JS)" />
+      <_PreEmsdkEnvScriptLines Include="set EM_NODE_JS=$(DOTNET_EMSCRIPTEN_NODE_JS)" />
+      <!-- ToDo: clean it up -->
+      <_PreEmsdkEnvScriptLines Include="set EM_LLVM_ROOT=$([MSBuild]::EnsureTrailingSlash('$(DOTNET_EMSCRIPTEN_LLVM_ROOT)').Replace('/', '\'))" />
+      <_PreEmsdkEnvScriptLines Include="set DOTNET_EMSCRIPTEN_NODE_PATH=$(DOTNET_EMSCRIPTEN_NODE_PATH)" />
+      <_PreEmsdkEnvScriptLines Include="set DOTNET_EMSCRIPTEN_BINARYEN_ROOT=$(EMSDK_PATH)" />
+      <_PreEmsdkEnvScriptLines Include="set EM_BINARYEN_ROOT=$(EMSDK_PATH)" />
+      <_PreEmsdkEnvScriptLines Include="set FROZEN_CACHE=$(DOTNET_EMSCRIPTEN_CACHE)" />
+    </ItemGroup>
+    <!-- ToDo: extract the common ones and use with OS-dependent command: export or set -->
     <WriteLinesToFile File="$(_PreEmsdkEnvScriptPath)" Lines="@(_PreEmsdkEnvScriptLines)" Overwrite="true" />
 
     <PropertyGroup>
@@ -662,10 +676,10 @@
 
       <_MonoCMakeConfigureCommand Condition="'$(TargetsBrowser)' != 'true' and '$(TargetsWasi)' != 'true' and '$(HostOS)' == 'windows'">call &quot;$(RepositoryEngineeringDir)native\init-vs-env.cmd&quot; $(_CompilerTargetArch) &amp;&amp; cd /D &quot;$(MonoObjDir)&quot; &amp;&amp; @(_MonoBuildEnv, ' ') $(_MonoCMakeConfigureCommand)</_MonoCMakeConfigureCommand>
       <_MonoCMakeConfigureCommand Condition="'$(TargetsBrowser)' == 'true' and '$(HostOS)' != 'windows'">bash -c 'source $(_PreEmsdkEnvScriptPath)  &amp;&amp; source $(_EmsdkEnvScriptPath) 2>&amp;1 &amp;&amp; emcmake $(_MonoCMakeConfigureCommand)'</_MonoCMakeConfigureCommand>
-      <_MonoCMakeConfigureCommand Condition="'$(TargetsBrowser)' == 'true' and '$(HostOS)' == 'windows'">call &quot;$(RepositoryEngineeringDir)native\init-vs-env.cmd&quot; &amp;&amp; call &quot;$(_EmsdkEnvScriptPath)&quot; &amp;&amp; emcmake $(_MonoCMakeConfigureCommand)</_MonoCMakeConfigureCommand>
+      <_MonoCMakeConfigureCommand Condition="'$(TargetsBrowser)' == 'true' and '$(HostOS)' == 'windows'">call &quot;$(_PreEmsdkEnvScriptPath)&quot;  &amp;&amp; call &quot;$(RepositoryEngineeringDir)native\init-vs-env.cmd&quot; &amp;&amp; call &quot;$(_EmsdkEnvScriptPath)&quot; &amp;&amp; emcmake $(_MonoCMakeConfigureCommand)</_MonoCMakeConfigureCommand>
       <_MonoCMakeConfigureCommand Condition="'$(TargetsWasi)' == 'true' and '$(HostOS)' == 'windows'">call &quot;$(RepositoryEngineeringDir)native\init-vs-env.cmd&quot; &amp;&amp; cmake $(_MonoCMakeConfigureCommand)</_MonoCMakeConfigureCommand>
 
-      <_MonoCMakeBuildCommand>. $(_PreEmsdkEnvScriptPath) &amp;&amp; cmake --build . --target install --config $(Configuration)</_MonoCMakeBuildCommand>
+      <_MonoCMakeBuildCommand>$(_ScriptExecutor) &quot;$(_PreEmsdkEnvScriptPath)&quot; &amp;&amp; cmake --build . --target install --config $(Configuration)</_MonoCMakeBuildCommand>
       <_MonoCMakeBuildCommand Condition="'$(MonoVerboseBuild)' == 'true'">$(_MonoCMakeBuildCommand) --verbose</_MonoCMakeBuildCommand>
       <_MonoCMakeBuildCommand Condition="'$(_MonoUseNinja)' != 'true'">$(_MonoCMakeBuildCommand) --parallel $([System.Environment]::ProcessorCount)</_MonoCMakeBuildCommand>
       <_MonoCMakeBuildCommand Condition="'$(TargetsBrowser)' != 'true' and '$(TargetsWasi)' != 'true' and '$(HostOS)' != 'windows'">@(_MonoBuildEnv, ' ') $(_MonoCMakeBuildCommand)</_MonoCMakeBuildCommand>
@@ -918,7 +932,7 @@
       <_MonoAotCMakeConfigureCommand Condition="'$(_MonoSkipInitCompiler)' != 'true' and '$(HostOS)' != 'windows'">sh -c 'build_arch=&quot;$(_CompilerTargetArch)&quot; ROOTFS_DIR=&quot;$(MonoCrossDir)&quot; compiler=&quot;$(MonoCCompiler)&quot; . &quot;$(RepositoryEngineeringCommonDir)native/init-compiler.sh&quot; &amp;&amp; @(_MonoAotBuildEnv, ' ') $(_MonoAotCMakeConfigureCommand)'</_MonoAotCMakeConfigureCommand>
       <_MonoAotCMakeConfigureCommand Condition="'$(_MonoSkipInitCompiler)' == 'true' and '$(HostOS)' != 'windows'">$(_MonoAOTCCOption) $(_MonoAOTCXXOption) @(_MonoAotBuildEnv, ' ') $(_MonoAotCMakeConfigureCommand)</_MonoAotCMakeConfigureCommand>
       <_MonoAotCMakeConfigureCommand Condition="'$(HostOS)' == 'windows'">call &quot;$(RepositoryEngineeringDir)native\init-vs-env.cmd&quot; $(_CompilerTargetArch) &amp;&amp; cd /D &quot;$(MonoObjCrossDir)&quot; &amp;&amp; @(_MonoAotBuildEnv, ' ') $(_MonoAotCMakeConfigureCommand)</_MonoAotCMakeConfigureCommand>
-      <_MonoAotCMakeBuildCommand>. $(_PreEmsdkEnvScriptPath) &amp;&amp; cmake --build . --target install --config $(Configuration)</_MonoAotCMakeBuildCommand>
+      <_MonoAotCMakeBuildCommand>$(_ScriptExecutor) &quot;$(_PreEmsdkEnvScriptPath)&quot; &amp;&amp; cmake --build . --target install --config $(Configuration)</_MonoAotCMakeBuildCommand>
       <_MonoAotCMakeBuildCommand Condition="'$(MonoVerboseBuild)' == 'true'">$(_MonoAotCMakeBuildCommand) --verbose</_MonoAotCMakeBuildCommand>
       <_MonoAotCMakeBuildCommand Condition="'$(_MonoUseNinja)' != 'true'">$(_MonoAotCMakeBuildCommand) --parallel $([System.Environment]::ProcessorCount)</_MonoAotCMakeBuildCommand>
       <_MonoAotCMakeBuildCommand Condition="'$(HostOS)' != 'windows'">@(_MonoAotBuildEnv, ' ') $(_MonoAotCMakeBuildCommand)</_MonoAotCMakeBuildCommand>
