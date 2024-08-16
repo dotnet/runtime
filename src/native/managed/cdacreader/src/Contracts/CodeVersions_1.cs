@@ -5,12 +5,12 @@ using System;
 
 namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 
-internal readonly partial struct NativeCodePointers_1 : ICodeVersions
+internal readonly partial struct CodeVersions_1 : ICodeVersions
 {
     private readonly Target _target;
 
 
-    public NativeCodePointers_1(Target target)
+    public CodeVersions_1(Target target)
     {
         _target = target;
     }

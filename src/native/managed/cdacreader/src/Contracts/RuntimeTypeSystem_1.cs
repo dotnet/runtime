@@ -845,7 +845,6 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
         return AsDynamicMethodDesc(methodDesc).IsILStub;
     }
 
-    // FIXME: move to RuntimeT
     private TargetPointer GetAddressOfSlot(TypeHandle typeHandle, uint slotNum)
     {
         if (!typeHandle.IsMethodTable())

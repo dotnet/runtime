@@ -12,7 +12,7 @@ internal interface ICodeVersions : IContract
     {
         return version switch
         {
-            1 => new NativeCodePointers_1(target),
+            1 => new CodeVersions_1(target),
             _ => default(CodeVersions),
         };
     }

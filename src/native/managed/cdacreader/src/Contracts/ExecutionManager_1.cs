@@ -262,7 +262,7 @@ internal readonly partial struct ExecutionManager_1 : IExecutionManager
             {
                 break;
             }
-            rangeSectionFragmentPtr = new ExMgrPtr(fragment.Next); // TODO: load?
+            rangeSectionFragmentPtr = new ExMgrPtr(fragment.Next);
         }
         if (!rangeSectionFragmentPtr.IsNull)
         {
