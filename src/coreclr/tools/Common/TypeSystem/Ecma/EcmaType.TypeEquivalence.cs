@@ -14,6 +14,7 @@ namespace Internal.TypeSystem.Ecma
         private TypeIdentifierData ComputeTypeIdentifierFromGuids()
         {
             CustomAttributeValue<TypeDesc>? guidAttribute;
+
             if (IsInterface && _typeDefinition.Attributes.HasFlag(TypeAttributes.Import))
             {
                 // ComImport interfaces get scope from their GUID
@@ -23,6 +24,7 @@ namespace Internal.TypeSystem.Ecma
             {
                 // other equivalent types get it from the declaring assembly
                 var attributeHandle = this.MetadataReader.GetCustomAttributeHandle(MetadataReader.GetAssemblyDefinition().GetCustomAttributes(), "System.Runtime.InteropServices", "GuidAttribute");
+
                 if (attributeHandle.IsNil)
                     return null;
 
@@ -40,6 +42,7 @@ namespace Internal.TypeSystem.Ecma
 
             string scope = (string)guidAttribute.Value.FixedArguments[0].Value;
             string name = this.Name;
+
             if (this.Namespace != null)
                 name = this.Namespace + "." + name;
 
@@ -53,6 +56,7 @@ namespace Internal.TypeSystem.Ecma
 
             // Check for type identifier attribute
             var typeIdentifierAttribute = this.GetDecodedCustomAttribute("System.Runtime.InteropServices", "TypeIdentifierAttribute");
+
             if (typeIdentifierAttribute.HasValue)
             {
                 // If the type has a type identifier attribute it is always considered to be type equivalent
@@ -68,28 +72,38 @@ namespace Internal.TypeSystem.Ecma
                 if (typeIdentifierAttribute.Value.FixedArguments[1].Type != Context.GetWellKnownType(WellKnownType.String))
                     return null;
 
-                _data = new TypeIdentifierData((string)typeIdentifierAttribute.Value.FixedArguments[0].Value, (string)typeIdentifierAttribute.Value.FixedArguments[1].Value);
-                return _data;
+                return new TypeIdentifierData((string)typeIdentifierAttribute.Value.FixedArguments[0].Value, (string)typeIdentifierAttribute.Value.FixedArguments[1].Value);
             }
-            else
+
+            // In addition to the TypeIdentifierAttribute certain other types may also be opted in to type equivalence
+            if (Context.SupportsCOMInterop)
             {
-                // In addition to the TypeIdentifierAttribute certain other types may also be opted in to type equivalence
-                if (Context.SupportsCOMInterop)
+                // 1. The assembly is marked with ImportedFromTypeLibAttribute or PrimaryInteropAssemblyAttribute
+                // We will verify this by checking for their attribute handles using the Metadata Reader.
+
+                CustomAttributeHandle importedFromTypeLibHdl = this.MetadataReader.GetCustomAttributeHandle(
+                    MetadataReader.GetAssemblyDefinition().GetCustomAttributes(),
+                    "System.Runtime.InteropServices",
+                    "ImportedFromTypeLibAttribute"
+                );
+
+                CustomAttributeHandle primaryInteropAssemblyHdl = this.MetadataReader.GetCustomAttributeHandle(
+                    MetadataReader.GetAssemblyDefinition().GetCustomAttributes(),
+                    "System.Runtime.InteropServices",
+                    "PrimaryInteropAssemblyAttribute"
+                );
+
+                if (!importedFromTypeLibHdl.IsNil || !primaryInteropAssemblyHdl.IsNil)
                 {
-                    // 1. Type is within assembly marked with ImportedFromTypeLibAttribute or PrimaryInteropAssemblyAttribute
-                    if (this.HasCustomAttribute("System.Runtime.InteropServices", "ImportedFromTypeLibAttribute") || this.HasCustomAttribute("System.Runtime.InteropServices", "PrimaryInteropAssemblyAttribute"))
-                    {
-                        // This type has a TypeIdentifier attribute if it has an appropriate shape to be considered type equivalent
-                        if (!TypeHasCharacteristicsRequiredToBeTypeEquivalent)
-                            return null;
+                    // This type has a TypeIdentifier attribute if it has an appropriate shape to be considered type equivalent
+                    if (!TypeHasCharacteristicsRequiredToBeTypeEquivalent)
+                        return null;
 
-                        _data = ComputeTypeIdentifierFromGuids();
-                        return _data;
-                    }
+                    return ComputeTypeIdentifierFromGuids();
                 }
-
-                return null;
             }
+
+            return null;
         }
 
         public override TypeIdentifierData TypeIdentifierData
