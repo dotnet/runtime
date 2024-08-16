@@ -3465,22 +3465,29 @@ namespace System.Text.Json.Tests
         }
 
         [Fact]
-        public static void VerifyGetPropertyCountUsingEnumerateObject()
+        public static void VerifyGetPropertyCountAndArrayLengthUsingEnumerateMethods()
         {
             using (JsonDocument doc = JsonDocument.Parse(SR.ProjectLockJson))
             {
-                CheckPropertyCountAgainstEnumerateObject(doc.RootElement);
+                CheckPropertyCountAndArrayLengthAgainstEnumerateMethods(doc.RootElement);
             }
 
-            void CheckPropertyCountAgainstEnumerateObject(JsonElement obj)
+            void CheckPropertyCountAndArrayLengthAgainstEnumerateMethods(JsonElement elem)
             {
-                Assert.Equal(obj.EnumerateObject().Count(), obj.GetPropertyCount());
-
-                foreach (JsonProperty prop in obj.EnumerateObject())
+                if (elem.ValueKind == JsonValueKind.Object)
                 {
-                    if (prop.Value.ValueKind == JsonValueKind.Object)
+                    Assert.Equal(elem.EnumerateObject().Count(), elem.GetPropertyCount());
+                    foreach (JsonProperty prop in elem.EnumerateObject())
                     {
-                        CheckPropertyCountAgainstEnumerateObject(prop.Value);
+                        CheckPropertyCountAndArrayLengthAgainstEnumerateMethods(prop.Value);
+                    }
+                }
+                else if (elem.ValueKind == JsonValueKind.Array) 
+                {
+                    Assert.Equal(elem.EnumerateArray().Count(), elem.GetArrayLength());
+                    foreach (JsonElement item in elem.EnumerateArray())
+                    {
+                        CheckPropertyCountAndArrayLengthAgainstEnumerateMethods(item);
                     }
                 }
             }
