@@ -937,6 +937,12 @@ namespace System.Tests
                 // Char
                 yield return new object[] { s_charEnumType, (char)1, Enum.Parse(s_charEnumType, "Value1") };
                 yield return new object[] { s_charEnumType, (char)2, Enum.Parse(s_charEnumType, "Value2") };
+
+                // IntPtr
+                yield return new object[] { s_intPtrEnumType, (nint)1, Enum.ToObject(s_intPtrEnumType, 1) };
+
+                // UIntPtr
+                yield return new object[] { s_uintPtrEnumType, (nuint)1, Enum.ToObject(s_uintPtrEnumType, 1) };
             }
         }
 
@@ -982,8 +988,6 @@ namespace System.Tests
             {
                 yield return new object[] { s_floatEnumType, 1.0f, typeof(ArgumentException) };
                 yield return new object[] { s_doubleEnumType, 1.0, typeof(ArgumentException) };
-                yield return new object[] { s_intPtrEnumType, (IntPtr)1, typeof(ArgumentException) };
-                yield return new object[] { s_uintPtrEnumType, (UIntPtr)1, typeof(ArgumentException) };
             }
         }
 

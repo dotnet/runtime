@@ -2110,7 +2110,7 @@ ClrDataAccess::GetMethodTableData(CLRDATA_ADDRESS mt, struct DacpMethodTableData
             _ASSERTE(MTData->wNumVtableSlots == mtDataLocal.wNumVtableSlots);
             _ASSERTE(MTData->wNumVirtuals == mtDataLocal.wNumVirtuals);
             _ASSERTE(MTData->cl == mtDataLocal.cl);
-            _ASSERTE(MTData->dwAttrClass = mtDataLocal.dwAttrClass);
+            _ASSERTE(MTData->dwAttrClass == mtDataLocal.dwAttrClass);
             _ASSERTE(MTData->bContainsPointers == mtDataLocal.bContainsPointers);
             _ASSERTE(MTData->bIsShared == mtDataLocal.bIsShared);
             _ASSERTE(MTData->bIsDynamic == mtDataLocal.bIsDynamic);
@@ -2632,6 +2632,7 @@ DWORD DACGetNumComponents(TADDR addr, ICorDebugDataTarget* target)
     // This expects that the first member after the MethodTable pointer (from Object)
     // is a 32-bit integer representing the number of components.
     // This holds for ArrayBase and StringObject - see coreclr/vm/object.h
+    // Free objects also have a component count set at this offset- see SetFree in coreclr/gc/gc.cpp
     addr += sizeof(size_t); // Method table pointer
     ULONG32 returned = 0;
     DWORD Value = 0;

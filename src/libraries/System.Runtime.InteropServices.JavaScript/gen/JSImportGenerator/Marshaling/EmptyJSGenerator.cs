@@ -7,11 +7,10 @@ using Microsoft.CodeAnalysis.CSharp.Syntax;
 
 namespace Microsoft.Interop.JavaScript
 {
-    internal sealed class EmptyJSGenerator : IJSMarshallingGenerator
+    internal sealed class EmptyJSGenerator : IUnboundMarshallingGenerator
     {
         public ManagedTypeInfo AsNativeType(TypePositionInfo info) => info.ManagedType;
         public IEnumerable<StatementSyntax> Generate(TypePositionInfo info, StubCodeContext context) => Array.Empty<StatementSyntax>();
-        public IEnumerable<ExpressionSyntax> GenerateBind(TypePositionInfo info, StubCodeContext context) => Array.Empty<ExpressionSyntax>();
         public SignatureBehavior GetNativeSignatureBehavior(TypePositionInfo info) => SignatureBehavior.ManagedTypeAndAttributes;
         public ValueBoundaryBehavior GetValueBoundaryBehavior(TypePositionInfo info, StubCodeContext context) => ValueBoundaryBehavior.ManagedIdentifier;
         public ByValueMarshalKindSupport SupportsByValueMarshalKind(ByValueContentsMarshalKind marshalKind, TypePositionInfo info, StubCodeContext context, out GeneratorDiagnostic? diagnostic)

@@ -160,6 +160,7 @@ namespace System
         public static void Write(object? value) { }
         public static void Write(float value) { }
         public static void Write(string? value) { }
+        public static void Write(System.ReadOnlySpan<char> value) { }
         public static void Write([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("CompositeFormat")] string format, object? arg0) { }
         public static void Write([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("CompositeFormat")] string format, object? arg0, object? arg1) { }
         public static void Write([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("CompositeFormat")] string format, object? arg0, object? arg1, object? arg2) { }
@@ -181,6 +182,7 @@ namespace System
         public static void WriteLine(object? value) { }
         public static void WriteLine(float value) { }
         public static void WriteLine(string? value) { }
+        public static void WriteLine(ReadOnlySpan<char> value) { }
         public static void WriteLine([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("CompositeFormat")] string format, object? arg0) { }
         public static void WriteLine([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("CompositeFormat")] string format, object? arg0, object? arg1) { }
         public static void WriteLine([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("CompositeFormat")] string format, object? arg0, object? arg1, object? arg2) { }
