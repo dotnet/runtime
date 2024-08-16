@@ -523,53 +523,5 @@
       <property name="Scope">member</property>
       <property name="Target">M:System.Reflection.Context.Delegation.DelegatingType.GetInterface(System.String,System.Boolean)</property>
     </attribute>
-    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
-      <argument>ILLink</argument>
-      <argument>IL2094</argument>
-      <property name="Scope">member</property>
-      <property name="Target">M:System.Reflection.Context.Projection.ProjectingType.GetField(System.String,System.Reflection.BindingFlags)</property>
-    </attribute>
-    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
-      <argument>ILLink</argument>
-      <argument>IL2094</argument>
-      <property name="Scope">member</property>
-      <property name="Target">M:System.Reflection.Context.Projection.ProjectingType.GetFields(System.Reflection.BindingFlags)</property>
-    </attribute>
-    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
-      <argument>ILLink</argument>
-      <argument>IL2094</argument>
-      <property name="Scope">member</property>
-      <property name="Target">M:System.Reflection.Context.Projection.ProjectingType.GetMembers(System.Reflection.BindingFlags)</property>
-    </attribute>
-    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
-      <argument>ILLink</argument>
-      <argument>IL2094</argument>
-      <property name="Scope">member</property>
-      <property name="Target">M:System.Reflection.Context.Projection.ProjectingType.GetMethods(System.Reflection.BindingFlags)</property>
-    </attribute>
-    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
-      <argument>ILLink</argument>
-      <argument>IL2094</argument>
-      <property name="Scope">member</property>
-      <property name="Target">M:System.Reflection.Context.Projection.ProjectingType.GetProperties(System.Reflection.BindingFlags)</property>
-    </attribute>
-    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
-      <argument>ILLink</argument>
-      <argument>IL2094</argument>
-      <property name="Scope">member</property>
-      <property name="Target">M:System.Reflection.Context.Projection.ProjectingType.GetDefaultMembers()</property>
-    </attribute>
-    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
-      <argument>ILLink</argument>
-      <argument>IL2094</argument>
-      <property name="Scope">member</property>
-      <property name="Target">M:System.Reflection.Context.Custom.CustomType.GetProperties(System.Reflection.BindingFlags)</property>
-    </attribute>
-    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
-      <argument>ILLink</argument>
-      <argument>IL2094</argument>
-      <property name="Scope">member</property>
-      <property name="Target">M:System.Reflection.Context.Custom.CustomType.GetMethods(System.Reflection.BindingFlags)</property>
-    </attribute>
   </assembly>
 </linker>
