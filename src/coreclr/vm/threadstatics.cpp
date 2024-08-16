@@ -784,9 +784,9 @@ void FreeTLSIndicesForLoaderAllocator(LoaderAllocator *pLoaderAllocator)
 
 static void* GetTlsIndexObjectAddress();
 
-#if !defined(TARGET_OSX) && defined(TARGET_UNIX) && defined(TARGET_ARM64)
+#if !defined(TARGET_OSX) && defined(TARGET_UNIX) && (defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64))
 extern "C" size_t GetTLSResolverAddress();
-#endif // !TARGET_OSX && TARGET_UNIX && TARGET_ARM64
+#endif // !TARGET_OSX && TARGET_UNIX && (TARGET_ARM64 || TARGET_LOONGARCH64)
 
 bool CanJITOptimizeTLSAccess()
 {
@@ -823,6 +823,28 @@ bool CanJITOptimizeTLSAccess()
         (resolverAddress[ip] == 0xf9400400) &&
         // ret
         (resolverAddress[ip + 1] == 0xd65f03c0)
+    )
+    {
+        optimizeThreadStaticAccess = true;
+#ifdef _DEBUG
+        if (CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_AssertNotStaticTlsResolver) != 0)
+        {
+            _ASSERTE(!"Detected static resolver in use when not expected");
+        }
+#endif
+    }
+#elif defined(TARGET_LOONGARCH64)
+    // Optimization is enabled for linux/loongarch64 only for static resolver.
+    // For static resolver, the TP offset is same for all threads.
+    // For dynamic resolver, TP offset returned is for the current thread and
+    // will be different for the other threads.
+    uint32_t* resolverAddress = reinterpret_cast<uint32_t*>(GetTLSResolverAddress());
+
+    if (
+        // ld.d a0, a0, 8
+        (resolverAddress[0] == 0x28c02084) &&
+        // ret
+        (resolverAddress[1] == 0x4c000020)
     )
     {
         optimizeThreadStaticAccess = true;

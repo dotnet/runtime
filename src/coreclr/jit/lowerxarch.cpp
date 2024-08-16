@@ -1430,10 +1430,9 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
         const uint8_t B = 0xCC;
         const uint8_t C = 0xAA;
 
-        var_types   simdType        = node->TypeGet();
-        CorInfoType simdBaseJitType = node->GetSimdBaseJitType();
-        var_types   simdBaseType    = node->GetSimdBaseType();
-        unsigned    simdSize        = node->GetSimdSize();
+        var_types simdType     = node->TypeGet();
+        var_types simdBaseType = node->GetSimdBaseType();
+        unsigned  simdSize     = node->GetSimdSize();
 
         GenTree* op1 = node->Op(1);
         GenTree* op2 = node->Op(2);
@@ -1454,6 +1453,10 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
 
                 bool       userIsScalar = false;
                 genTreeOps userOper     = userIntrin->GetOperForHWIntrinsicId(&isScalar);
+
+                // userIntrin may have re-interpreted the base type
+                //
+                simdBaseType = userIntrin->GetSimdBaseType();
 
                 if (GenTreeHWIntrinsic::OperIsBitwiseHWIntrinsic(userOper))
                 {
@@ -1672,6 +1675,11 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
                         BlockRange().InsertBefore(userIntrin, op4);
 
                         userIntrin->ResetHWIntrinsicId(ternaryLogicId, comp, op1, op2, op3, op4);
+                        if (varTypeIsSmall(simdBaseType))
+                        {
+                            assert(HWIntrinsicInfo::NeedsNormalizeSmallTypeToInt(ternaryLogicId));
+                            userIntrin->NormalizeJitBaseTypeToInt(ternaryLogicId, simdBaseType);
+                        }
                         return nextNode;
                     }
                 }
@@ -1737,6 +1745,11 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
             BlockRange().InsertBefore(node, control);
 
             node->ResetHWIntrinsicId(ternaryLogicId, comp, op1, op2, op3, control);
+            if (varTypeIsSmall(simdBaseType))
+            {
+                assert(HWIntrinsicInfo::NeedsNormalizeSmallTypeToInt(ternaryLogicId));
+                node->NormalizeJitBaseTypeToInt(ternaryLogicId, simdBaseType);
+            }
             return LowerNode(node);
         }
     }
@@ -1823,6 +1836,10 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
             LowerNode(op2);
 
             node->ResetHWIntrinsicId(intrinsicId, comp, op1, op2);
+            if (HWIntrinsicInfo::NeedsNormalizeSmallTypeToInt(intrinsicId) && varTypeIsSmall(simdBaseType))
+            {
+                node->NormalizeJitBaseTypeToInt(intrinsicId, simdBaseType);
+            }
             break;
         }
 
@@ -1882,6 +1899,10 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
             LowerNode(op3);
 
             node->ResetHWIntrinsicId(intrinsicId, comp, op1, op2, op3);
+            if (HWIntrinsicInfo::NeedsNormalizeSmallTypeToInt(intrinsicId) && varTypeIsSmall(simdBaseType))
+            {
+                node->NormalizeJitBaseTypeToInt(intrinsicId, simdBaseType);
+            }
             break;
         }
 
@@ -3052,11 +3073,12 @@ GenTree* Lowering::LowerHWIntrinsicCmpOp(GenTreeHWIntrinsic* node, genTreeOps cm
                 GenTreeHWIntrinsic* op1Intrinsic   = op1->AsHWIntrinsic();
                 NamedIntrinsic      op1IntrinsicId = op1Intrinsic->GetHWIntrinsicId();
 
-                switch (op1IntrinsicId)
+                bool       isScalar = false;
+                genTreeOps oper     = op1Intrinsic->GetOperForHWIntrinsicId(&isScalar);
+
+                switch (oper)
                 {
-                    case NI_AVX512F_And:
-                    case NI_AVX512DQ_And:
-                    case NI_AVX10v1_V512_And:
+                    case GT_AND:
                     {
                         // We have `(x & y) == 0` with GenCondition::EQ (jz, setz, cmovz)
                         // or `(x & y) != 0`with GenCondition::NE (jnz, setnz, cmovnz)
@@ -3076,8 +3098,62 @@ GenTree* Lowering::LowerHWIntrinsicCmpOp(GenTreeHWIntrinsic* node, genTreeOps cm
 
                         assert(testIntrinsicId == NI_EVEX_PTESTM);
 
-                        node->Op(1) = op1Intrinsic->Op(1);
-                        node->Op(2) = op1Intrinsic->Op(2);
+                        GenTree* nestedOp1 = op1Intrinsic->Op(1);
+                        GenTree* nestedOp2 = op1Intrinsic->Op(2);
+
+                        if (nestedOp2->isContained() && nestedOp2->OperIsHWIntrinsic())
+                        {
+                            GenTreeHWIntrinsic* nestedIntrin   = nestedOp2->AsHWIntrinsic();
+                            NamedIntrinsic      nestedIntrinId = nestedIntrin->GetHWIntrinsicId();
+
+                            if ((nestedIntrinId == NI_SSE3_MoveAndDuplicate) ||
+                                (nestedIntrinId == NI_AVX2_BroadcastScalarToVector128) ||
+                                (nestedIntrinId == NI_AVX2_BroadcastScalarToVector256) ||
+                                (nestedIntrinId == NI_AVX512F_BroadcastScalarToVector512))
+                            {
+                                // We need to rewrite the embedded broadcast back to a regular constant
+                                // so that the subsequent containment check for ptestm can determine
+                                // if the embedded broadcast is still relevant
+
+                                GenTree* broadcastOp = nestedIntrin->Op(1);
+
+                                if (broadcastOp->OperIsHWIntrinsic(NI_Vector128_CreateScalarUnsafe))
+                                {
+                                    BlockRange().Remove(broadcastOp);
+                                    broadcastOp = broadcastOp->AsHWIntrinsic()->Op(1);
+                                }
+
+                                assert(broadcastOp->OperIsConst());
+
+                                GenTree* vecCns =
+                                    comp->gtNewSimdCreateBroadcastNode(simdType, broadcastOp,
+                                                                       op1Intrinsic->GetSimdBaseJitType(), simdSize);
+
+                                BlockRange().InsertAfter(broadcastOp, vecCns);
+                                nestedOp2 = vecCns;
+
+                                BlockRange().Remove(broadcastOp);
+                                BlockRange().Remove(nestedIntrin);
+                            }
+                        }
+
+                        node->Op(1) = nestedOp1;
+                        node->Op(2) = nestedOp2;
+
+                        // Make sure we aren't contained since ptestm will do its own containment check
+                        nestedOp2->ClearContained();
+
+                        if (varTypeIsSmall(simdBaseType))
+                        {
+                            // Fixup the base type so embedded broadcast and the mask size checks still work
+                            node->NormalizeJitBaseTypeToInt(testIntrinsicId, simdBaseType);
+
+                            simdBaseJitType = node->GetSimdBaseJitType();
+                            simdBaseType    = node->GetSimdBaseType();
+
+                            maskBaseJitType = simdBaseJitType;
+                            maskBaseType    = simdBaseType;
+                        }
 
                         BlockRange().Remove(op1);
                         BlockRange().Remove(op2);
@@ -3455,6 +3531,11 @@ GenTree* Lowering::LowerHWIntrinsicCndSel(GenTreeHWIntrinsic* node)
         BlockRange().InsertBefore(node, control);
 
         node->ResetHWIntrinsicId(ternaryLogicId, comp, op1, op2, op3, control);
+        if (varTypeIsSmall(simdBaseType))
+        {
+            assert(HWIntrinsicInfo::NeedsNormalizeSmallTypeToInt(ternaryLogicId));
+            node->NormalizeJitBaseTypeToInt(ternaryLogicId, simdBaseType);
+        }
         return LowerNode(node);
     }
 
@@ -9829,7 +9910,8 @@ bool Lowering::IsContainableHWIntrinsicOp(GenTreeHWIntrinsic* parentNode, GenTre
                 }
 
                 bool childSupportsRegOptional;
-                if (IsContainableHWIntrinsicOp(hwintrinsic, broadcastOperand, &childSupportsRegOptional))
+                if (IsContainableHWIntrinsicOp(hwintrinsic, broadcastOperand, &childSupportsRegOptional) &&
+                    IsSafeToContainMem(parentNode, hwintrinsic))
                 {
                     return true;
                 }
@@ -10420,9 +10502,7 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                     {
                         containedOperand = op2;
                     }
-                    else if ((isCommutative || (intrinsicId == NI_BMI2_MultiplyNoFlags) ||
-                              (intrinsicId == NI_BMI2_X64_MultiplyNoFlags)) &&
-                             IsContainableHWIntrinsicOp(node, op1, &supportsOp1RegOptional))
+                    else if (isCommutative && IsContainableHWIntrinsicOp(node, op1, &supportsOp1RegOptional))
                     {
                         containedOperand = op1;
                         swapOperands     = true;

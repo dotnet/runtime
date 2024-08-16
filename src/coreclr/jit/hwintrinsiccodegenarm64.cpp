@@ -23,6 +23,7 @@
 //    codeGen   -- an instance of CodeGen class.
 //    immOp     -- an immediate operand of the intrinsic.
 //    intrin    -- a hardware intrinsic tree node.
+//    numInstrs -- number of instructions that will be in each switch entry. Default 1.
 //
 // Note: This class is designed to be used in the following way
 //       HWIntrinsicImmOpHelper helper(this, immOp, intrin);
@@ -35,11 +36,15 @@
 //       This allows to combine logic for cases when immOp->isContainedIntOrIImmed() is either true or false in a form
 //       of a for-loop.
 //
-CodeGen::HWIntrinsicImmOpHelper::HWIntrinsicImmOpHelper(CodeGen* codeGen, GenTree* immOp, GenTreeHWIntrinsic* intrin)
+CodeGen::HWIntrinsicImmOpHelper::HWIntrinsicImmOpHelper(CodeGen*            codeGen,
+                                                        GenTree*            immOp,
+                                                        GenTreeHWIntrinsic* intrin,
+                                                        int                 numInstrs)
     : codeGen(codeGen)
     , endLabel(nullptr)
     , nonZeroLabel(nullptr)
     , branchTargetReg(REG_NA)
+    , numInstrs(numInstrs)
 {
     assert(codeGen != nullptr);
     assert(varTypeIsIntegral(immOp));
@@ -123,7 +128,7 @@ CodeGen::HWIntrinsicImmOpHelper::HWIntrinsicImmOpHelper(CodeGen* codeGen, GenTre
 // Note: This instance is designed to be used via the same for loop as the standard constructor.
 //
 CodeGen::HWIntrinsicImmOpHelper::HWIntrinsicImmOpHelper(
-    CodeGen* codeGen, regNumber immReg, int immLowerBound, int immUpperBound, GenTreeHWIntrinsic* intrin)
+    CodeGen* codeGen, regNumber immReg, int immLowerBound, int immUpperBound, GenTreeHWIntrinsic* intrin, int numInstrs)
     : codeGen(codeGen)
     , endLabel(nullptr)
     , nonZeroLabel(nullptr)
@@ -132,6 +137,7 @@ CodeGen::HWIntrinsicImmOpHelper::HWIntrinsicImmOpHelper(
     , immUpperBound(immUpperBound)
     , nonConstImmReg(immReg)
     , branchTargetReg(REG_NA)
+    , numInstrs(numInstrs)
 {
     assert(codeGen != nullptr);
 
@@ -181,18 +187,32 @@ void CodeGen::HWIntrinsicImmOpHelper::EmitBegin()
         }
         else
         {
-            // Here we assume that each case consists of one arm64 instruction followed by "b endLabel".
+            assert(numInstrs == 1 || numInstrs == 2);
+
+            // Here we assume that each case consists of numInstrs arm64 instructions followed by "b endLabel".
             // Since an arm64 instruction is 4 bytes, we branch to AddressOf(beginLabel) + (nonConstImmReg << 3).
             GetEmitter()->emitIns_R_L(INS_adr, EA_8BYTE, beginLabel, branchTargetReg);
             GetEmitter()->emitIns_R_R_R_I(INS_add, EA_8BYTE, branchTargetReg, branchTargetReg, nonConstImmReg, 3,
                                           INS_OPTS_LSL);
 
+            // For two instructions, add the extra one.
+            if (numInstrs == 2)
+            {
+                GetEmitter()->emitIns_R_R_R_I(INS_add, EA_8BYTE, branchTargetReg, branchTargetReg, nonConstImmReg, 2,
+                                              INS_OPTS_LSL);
+            }
+
             // If the lower bound is non zero we need to adjust the branch target value by subtracting
-            // (immLowerBound << 3).
+            // the lower bound
             if (immLowerBound != 0)
             {
-                GetEmitter()->emitIns_R_R_I(INS_sub, EA_8BYTE, branchTargetReg, branchTargetReg,
-                                            ((ssize_t)immLowerBound << 3));
+                ssize_t lowerReduce = ((ssize_t)immLowerBound << 3);
+                if (numInstrs == 2)
+                {
+                    lowerReduce += ((ssize_t)immLowerBound << 2);
+                }
+
+                GetEmitter()->emitIns_R_R_I(INS_sub, EA_8BYTE, branchTargetReg, branchTargetReg, lowerReduce);
             }
 
             GetEmitter()->emitIns_R(INS_br, EA_8BYTE, branchTargetReg);
@@ -516,13 +536,22 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
             }
 
             // Shared code for setting up embedded mask arg for intrinsics with 3+ operands
+
+            auto emitEmbeddedMaskSetupInstrs = [&] {
+                if (intrin.op3->IsVectorZero() || (targetReg != falseReg) || (targetReg != embMaskOp1Reg))
+                {
+                    return 1;
+                }
+                return 0;
+            };
+
             auto emitEmbeddedMaskSetup = [&] {
                 if (intrin.op3->IsVectorZero())
                 {
                     // If `falseReg` is zero, then move the first operand of `intrinEmbMask` in the
                     // destination using /Z.
 
-                    assert(targetReg != embMaskOp2Reg);
+                    assert((targetReg != embMaskOp2Reg) || (embMaskOp1Reg == embMaskOp2Reg));
                     assert(intrin.op3->isContained() || !intrin.op1->IsMaskAllBitsSet());
                     GetEmitter()->emitInsSve_R_R_R(INS_sve_movprfx, emitSize, targetReg, maskReg, embMaskOp1Reg, opt);
                 }
@@ -620,6 +649,7 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                         if (intrin.op3->isContained())
                         {
                             assert(intrin.op3->IsVectorZero());
+
                             if (intrin.op1->isContained() || intrin.op1->IsMaskAllBitsSet())
                             {
                                 // We already skip importing ConditionalSelect if op1 == trueAll, however
@@ -630,6 +660,8 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                             }
                             else
                             {
+                                assert(!HWIntrinsicInfo::IsZeroingMaskedOperation(intrinEmbMask.id));
+
                                 // If falseValue is zero, just zero out those lanes of targetReg using `movprfx`
                                 // and /Z
                                 GetEmitter()->emitIns_R_R_R(INS_sve_movprfx, emitSize, targetReg, maskReg, targetReg,
@@ -650,6 +682,14 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                             GetEmitter()->emitIns_R_R_R_R(INS_sve_sel, emitSize, targetReg, maskReg, targetReg,
                                                           falseReg, opt);
                             break;
+                        }
+                        else if (HWIntrinsicInfo::IsZeroingMaskedOperation(intrinEmbMask.id))
+                        {
+                            // At this point, target != embMaskOp1Reg != falseReg, so just go ahead
+                            // and move the falseReg unpredicated into targetReg.
+                            // Cannot use movprfx for zeroing mask operations.
+                            GetEmitter()->emitIns_Mov(INS_mov, emitTypeSize(node), targetReg, falseReg,
+                                                      /* canSkip */ true);
                         }
                         else
                         {
@@ -701,6 +741,13 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                             embOpt = INS_OPTS_SCALABLE_B;
                             break;
 
+                        case NI_Sve_AddSequentialAcross:
+                            // Predicate functionality is currently not exposed for this API,
+                            // but the FADDA instruction only has a predicated variant.
+                            // Thus, we expect the JIT to wrap this with CndSel.
+                            assert(intrin.op3->IsVectorZero());
+                            break;
+
                         default:
                             break;
                     }
@@ -721,6 +768,24 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                         }
                     };
 
+                    auto emitInsMovPrfxHelper = [&](regNumber reg1, regNumber reg2, regNumber reg3, regNumber reg4) {
+                        if (hasShift)
+                        {
+                            HWIntrinsicImmOpHelper helper(this, intrinEmbMask.op2, op2->AsHWIntrinsic(), 2);
+                            for (helper.EmitBegin(); !helper.Done(); helper.EmitCaseEnd())
+                            {
+                                GetEmitter()->emitIns_R_R(INS_sve_movprfx, EA_SCALABLE, reg1, reg3);
+                                GetEmitter()->emitInsSve_R_R_I(insEmbMask, emitSize, reg1, reg2, helper.ImmValue(),
+                                                               embOpt, sopt);
+                            }
+                        }
+                        else
+                        {
+                            GetEmitter()->emitIns_R_R(INS_sve_movprfx, EA_SCALABLE, reg1, reg3);
+                            GetEmitter()->emitIns_R_R_R(insEmbMask, emitSize, reg1, reg2, reg4, embOpt, sopt);
+                        }
+                    };
+
                     if (intrin.op3->IsVectorZero())
                     {
                         // If `falseReg` is zero, then move the first operand of `intrinEmbMask` in the
@@ -737,14 +802,40 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                                 emitInsHelper(targetReg, maskReg, embMaskOp1Reg);
                                 break;
 
+                            case NI_Sve_AddSequentialAcross:
+                                assert(targetReg != embMaskOp2Reg);
+                                if (targetReg != embMaskOp1Reg)
+                                {
+                                    GetEmitter()->emitIns_Mov(INS_fmov, GetEmitter()->optGetSveElemsize(embOpt),
+                                                              targetReg, embMaskOp1Reg, /* canSkip */ true);
+                                }
+                                emitInsHelper(targetReg, maskReg, embMaskOp2Reg);
+                                break;
+
                             default:
                                 assert(targetReg != embMaskOp2Reg);
-                                GetEmitter()->emitIns_R_R_R(INS_sve_movprfx, emitSize, targetReg, maskReg,
-                                                            embMaskOp1Reg, opt);
 
                                 // Finally, perform the actual "predicated" operation so that `targetReg` is the first
                                 // operand and `embMaskOp2Reg` is the second operand.
-                                emitInsHelper(targetReg, maskReg, embMaskOp2Reg);
+
+                                if (hasShift)
+                                {
+                                    HWIntrinsicImmOpHelper helper(this, intrinEmbMask.op2, op2->AsHWIntrinsic(), 2);
+                                    for (helper.EmitBegin(); !helper.Done(); helper.EmitCaseEnd())
+                                    {
+                                        GetEmitter()->emitIns_R_R_R(INS_sve_movprfx, EA_SCALABLE, targetReg, maskReg,
+                                                                    embMaskOp1Reg, opt);
+                                        GetEmitter()->emitInsSve_R_R_I(insEmbMask, emitSize, targetReg, maskReg,
+                                                                       helper.ImmValue(), embOpt, sopt);
+                                    }
+                                }
+                                else
+                                {
+                                    GetEmitter()->emitIns_R_R_R(INS_sve_movprfx, EA_SCALABLE, targetReg, maskReg,
+                                                                embMaskOp1Reg, opt);
+                                    GetEmitter()->emitIns_R_R_R(insEmbMask, emitSize, targetReg, maskReg, embMaskOp2Reg,
+                                                                embOpt, sopt);
+                                }
                                 break;
                         }
                     }
@@ -768,30 +859,29 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                                 // into targetReg. Next, do the predicated operation on the targetReg and last,
                                 // use "sel" to select the active lanes based on mask, and set inactive lanes
                                 // to falseReg.
-
                                 assert(targetReg != embMaskOp2Reg);
                                 assert(HWIntrinsicInfo::IsEmbeddedMaskedOperation(intrinEmbMask.id));
 
-                                GetEmitter()->emitIns_R_R(INS_sve_movprfx, EA_SCALABLE, targetReg, embMaskOp1Reg);
-
-                                emitInsHelper(targetReg, maskReg, embMaskOp2Reg);
+                                emitInsMovPrfxHelper(targetReg, maskReg, embMaskOp1Reg, embMaskOp2Reg);
                             }
 
                             GetEmitter()->emitIns_R_R_R_R(INS_sve_sel, emitSize, targetReg, maskReg, targetReg,
                                                           falseReg, opt);
-                            break;
                         }
                         else if (targetReg != embMaskOp1Reg)
                         {
                             // embMaskOp1Reg is same as `falseReg`, but not same as `targetReg`. Move the
                             // `embMaskOp1Reg` i.e. `falseReg` in `targetReg`, using "unpredicated movprfx", so the
                             // subsequent `insEmbMask` operation can be merged on top of it.
-                            GetEmitter()->emitIns_R_R(INS_sve_movprfx, EA_SCALABLE, targetReg, falseReg);
-                        }
 
-                        // Finally, perform the actual "predicated" operation so that `targetReg` is the first operand
-                        // and `embMaskOp2Reg` is the second operand.
-                        emitInsHelper(targetReg, maskReg, embMaskOp2Reg);
+                            emitInsMovPrfxHelper(targetReg, maskReg, falseReg, embMaskOp2Reg);
+                        }
+                        else
+                        {
+                            // Finally, perform the actual "predicated" operation so that `targetReg` is the first
+                            // operand and `embMaskOp2Reg` is the second operand.
+                            emitInsHelper(targetReg, maskReg, embMaskOp2Reg);
+                        }
                     }
                     else
                     {
@@ -809,7 +899,6 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
 
                     if (HWIntrinsicInfo::IsFmaIntrinsic(intrinEmbMask.id))
                     {
-                        assert(falseReg != embMaskOp3Reg);
                         // For FMA, the operation we are trying to perform is:
                         //      result = op1 + (op2 * op3)
                         //
@@ -907,14 +996,14 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                         }
                     }
 
-                    emitEmbeddedMaskSetup();
-
                     // Finally, perform the desired operation.
                     if (HWIntrinsicInfo::HasImmediateOperand(intrinEmbMask.id))
                     {
-                        HWIntrinsicImmOpHelper helper(this, intrinEmbMask.op3, op2->AsHWIntrinsic());
+                        HWIntrinsicImmOpHelper helper(this, intrinEmbMask.op3, op2->AsHWIntrinsic(),
+                                                      emitEmbeddedMaskSetupInstrs() + 1);
                         for (helper.EmitBegin(); !helper.Done(); helper.EmitCaseEnd())
                         {
+                            emitEmbeddedMaskSetup();
                             GetEmitter()->emitInsSve_R_R_R_I(insEmbMask, emitSize, targetReg, maskReg, embMaskOp2Reg,
                                                              helper.ImmValue(), opt);
                         }
@@ -922,6 +1011,7 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                     else
                     {
                         assert(HWIntrinsicInfo::IsFmaIntrinsic(intrinEmbMask.id));
+                        emitEmbeddedMaskSetup();
                         GetEmitter()->emitInsSve_R_R_R_R(insEmbMask, emitSize, targetReg, maskReg, embMaskOp2Reg,
                                                          embMaskOp3Reg, opt);
                     }
@@ -935,11 +1025,11 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                     assert(intrinEmbMask.op4->isContained() == (embMaskOp4Reg == REG_NA));
                     assert(HWIntrinsicInfo::HasImmediateOperand(intrinEmbMask.id));
 
-                    emitEmbeddedMaskSetup();
-
-                    HWIntrinsicImmOpHelper helper(this, intrinEmbMask.op4, op2->AsHWIntrinsic());
+                    HWIntrinsicImmOpHelper helper(this, intrinEmbMask.op4, op2->AsHWIntrinsic(),
+                                                  emitEmbeddedMaskSetupInstrs() + 1);
                     for (helper.EmitBegin(); !helper.Done(); helper.EmitCaseEnd())
                     {
+                        emitEmbeddedMaskSetup();
                         GetEmitter()->emitInsSve_R_R_R_R_I(insEmbMask, emitSize, targetReg, maskReg, embMaskOp2Reg,
                                                            embMaskOp3Reg, helper.ImmValue(), opt);
                     }
@@ -2052,7 +2142,17 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                 break;
             }
 
+            case NI_Sve_GatherVectorByteZeroExtendFirstFaulting:
             case NI_Sve_GatherVectorFirstFaulting:
+            case NI_Sve_GatherVectorInt16SignExtendFirstFaulting:
+            case NI_Sve_GatherVectorInt16WithByteOffsetsSignExtendFirstFaulting:
+            case NI_Sve_GatherVectorInt32SignExtendFirstFaulting:
+            case NI_Sve_GatherVectorInt32WithByteOffsetsSignExtendFirstFaulting:
+            case NI_Sve_GatherVectorSByteSignExtendFirstFaulting:
+            case NI_Sve_GatherVectorUInt16WithByteOffsetsZeroExtendFirstFaulting:
+            case NI_Sve_GatherVectorUInt16ZeroExtendFirstFaulting:
+            case NI_Sve_GatherVectorUInt32WithByteOffsetsZeroExtendFirstFaulting:
+            case NI_Sve_GatherVectorUInt32ZeroExtendFirstFaulting:
             {
                 if (node->GetAuxiliaryType() == TYP_UNKNOWN)
                 {
@@ -2077,6 +2177,7 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                         GetEmitter()->emitIns_R(INS_sve_wrffr, emitSize, op4Reg, opt);
                     }
                 }
+
                 FALLTHROUGH;
             }
             case NI_Sve_GatherVector:
@@ -2090,14 +2191,18 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
             case NI_Sve_GatherVectorUInt16ZeroExtend:
             case NI_Sve_GatherVectorUInt32WithByteOffsetsZeroExtend:
             case NI_Sve_GatherVectorUInt32ZeroExtend:
+            case NI_Sve_GatherVectorWithByteOffsetFirstFaulting:
             {
                 if (!varTypeIsSIMD(intrin.op2->gtType))
                 {
                     // GatherVector...(Vector<T> mask, T* address, Vector<T2> indices)
 
-                    emitAttr baseSize   = emitActualTypeSize(intrin.baseType);
-                    bool isLoadingBytes = ((ins == INS_sve_ld1b) || (ins == INS_sve_ld1sb) || (ins == INS_sve_ldff1b) ||
-                                           (ins == INS_sve_ldff1sb));
+                    emitAttr baseSize = emitActualTypeSize(intrin.baseType);
+                    bool     isLoadingBytes =
+                        ((ins == INS_sve_ld1b) || (ins == INS_sve_ld1sb) || (ins == INS_sve_ldff1b) ||
+                         (ins == INS_sve_ldff1sb) || (intrin.id == NI_Sve_GatherVectorWithByteOffsetFirstFaulting) ||
+                         (intrin.id == NI_Sve_GatherVectorUInt32WithByteOffsetsZeroExtendFirstFaulting) ||
+                         (intrin.id == NI_Sve_GatherVectorUInt16WithByteOffsetsZeroExtendFirstFaulting));
                     insScalableOpts sopt = INS_SCALABLE_OPTS_NONE;
 
                     if (baseSize == EA_4BYTE)
@@ -2335,7 +2440,7 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                 {
                     assert(targetReg != op2Reg);
 
-                    GetEmitter()->emitIns_R_R(INS_sve_movprfx, EA_SCALABLE, targetReg, op1Reg);
+                    GetEmitter()->emitIns_Mov(INS_mov, emitTypeSize(node), targetReg, op1Reg, /* canSkip */ true);
                 }
 
                 HWIntrinsicImmOpHelper helper(this, intrin.op3, node);
@@ -2481,17 +2586,17 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
             {
                 assert(isRMW);
 
-                if (targetReg != op1Reg)
-                {
-                    assert(targetReg != op2Reg);
-
-                    GetEmitter()->emitInsSve_R_R(INS_sve_movprfx, EA_SCALABLE, targetReg, op1Reg);
-                }
-
-                HWIntrinsicImmOpHelper helper(this, intrin.op3, node);
+                HWIntrinsicImmOpHelper helper(this, intrin.op3, node, (targetReg != op1Reg) ? 2 : 1);
 
                 for (helper.EmitBegin(); !helper.Done(); helper.EmitCaseEnd())
                 {
+                    if (targetReg != op1Reg)
+                    {
+                        assert(targetReg != op2Reg);
+
+                        GetEmitter()->emitInsSve_R_R(INS_sve_movprfx, EA_SCALABLE, targetReg, op1Reg);
+                    }
+
                     GetEmitter()->emitInsSve_R_R_I(ins, emitSize, targetReg, op2Reg, helper.ImmValue(), opt);
                 }
                 break;
@@ -2502,16 +2607,16 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                 assert(isRMW);
                 assert(hasImmediateOperand);
 
-                if (targetReg != op1Reg)
-                {
-                    assert(targetReg != op2Reg);
-                    assert(targetReg != op3Reg);
-                    GetEmitter()->emitInsSve_R_R(INS_sve_movprfx, EA_SCALABLE, targetReg, op1Reg);
-                }
-
                 // If both immediates are constant, we don't need a jump table
                 if (intrin.op4->IsCnsIntOrI() && intrin.op5->IsCnsIntOrI())
                 {
+                    if (targetReg != op1Reg)
+                    {
+                        assert(targetReg != op2Reg);
+                        assert(targetReg != op3Reg);
+                        GetEmitter()->emitInsSve_R_R(INS_sve_movprfx, EA_SCALABLE, targetReg, op1Reg);
+                    }
+
                     assert(intrin.op4->isContainedIntOrIImmed() && intrin.op5->isContainedIntOrIImmed());
                     GetEmitter()->emitInsSve_R_R_R_I_I(ins, emitSize, targetReg, op2Reg, op3Reg,
                                                        intrin.op4->AsIntCon()->gtIconVal,
@@ -2532,9 +2637,16 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                     GetEmitter()->emitIns_R_R_R(INS_orr, scalarSize, op4Reg, op4Reg, op5Reg);
 
                     // Generate the table using the combined immediate
-                    HWIntrinsicImmOpHelper helper(this, op4Reg, 0, 7, node);
+                    HWIntrinsicImmOpHelper helper(this, op4Reg, 0, 7, node, (targetReg != op1Reg) ? 2 : 1);
                     for (helper.EmitBegin(); !helper.Done(); helper.EmitCaseEnd())
                     {
+                        if (targetReg != op1Reg)
+                        {
+                            assert(targetReg != op2Reg);
+                            assert(targetReg != op3Reg);
+                            GetEmitter()->emitInsSve_R_R(INS_sve_movprfx, EA_SCALABLE, targetReg, op1Reg);
+                        }
+
                         // Extract index and rotation from the immediate
                         const int     value    = helper.ImmValue();
                         const ssize_t index    = value & 1;
