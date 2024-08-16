@@ -23,7 +23,7 @@ LD = link
 AR = lib
 RC = rc
 CP = copy /y
-CFLAGS  = -nologo -MD -W3 -O2 -Oy- -Zi -Fd"zlib" $(LOC)
+CFLAGS  = -nologo -MD -W4 -O2 -Oy- -Zi -Fd"zlib" $(LOC)
 WFLAGS  = \
 	-D_ARM_WINAPI_PARTITION_DESKTOP_SDK_AVAILABLE=1 \
 	-D_CRT_SECURE_NO_DEPRECATE \
