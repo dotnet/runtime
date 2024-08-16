@@ -36,7 +36,7 @@ System.IO.Hashing.XxHash32</PackageDescription>
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">
-    <Compile Include="System\IO\Hashing\BitOperations.cs" />
+    <Compile Include="$(CommonPath)System\Numerics\BitOperations.cs" Link="Common\System\Numerics\BitOperations.cs" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">
