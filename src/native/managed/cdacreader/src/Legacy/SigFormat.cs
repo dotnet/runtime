@@ -301,6 +301,11 @@ namespace Microsoft.Diagnostics.DataContractReader.Legacy
                         _ = signature.ReadTypeHandle();
                         break;
 
+                    case CorElementType.CModInternal:
+                        _ = signature.ReadByte();
+                        _ = signature.ReadBytes(target.PointerSize);
+                        break;
+
                     default:
                         stringBuilder.Append("**UNKNOWN TYPE**");
                         return;
