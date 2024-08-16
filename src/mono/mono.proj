@@ -173,10 +173,41 @@
       <BrowserLocalPath>$([MSBuild]::NormalizeDirectory('$(MSBuildThisFileDirectory)', 'browser'))</BrowserLocalPath>
       <EmsdkLocalPath>emsdk</EmsdkLocalPath>
       <EmscriptenVersion>%(_VersionLines.Identity)</EmscriptenVersion>
-      <PythonCmd Condition="'$(HostOS)' == 'windows'and '$(TargetsBrowser)' == 'true'">setlocal EnableDelayedExpansion &amp;&amp; call &quot;$([MSBuild]::NormalizePath('$(EMSDK_PATH)', 'pre_emsdk_env$(ScriptExt)'))&quot;  &amp;&amp; call &quot;$([MSBuild]::NormalizePath('$(EMSDK_PATH)', 'emsdk_env$(ScriptExt)'))&quot; &amp;&amp; !EMSDK_PYTHON!</PythonCmd>
+      <PythonCmd Condition="'$(HostOS)' == 'windows' and '$(TargetsBrowser)' == 'true'">setlocal EnableDelayedExpansion &amp;&amp; call &quot;$([MSBuild]::NormalizePath('$(EMSDK_PATH)', 'pre_emsdk_env$(ScriptExt)'))&quot;  &amp;&amp; call &quot;$([MSBuild]::NormalizePath('$(EMSDK_PATH)', 'emsdk_env$(ScriptExt)'))&quot; &amp;&amp; !EMSDK_PYTHON!</PythonCmd>
+      <EMSDK_PATH>$([MSBuild]::EnsureTrailingSlash('$(EMSDK_PATH)').Replace('\', '/'))</EMSDK_PATH>
+      <NuGetPackageRoot >$([MSBuild]::EnsureTrailingSlash('$(NuGetPackageRoot)').Replace('\', '/'))</NuGetPackageRoot>
+      <DOTNET_EMSCRIPTEN_LLVM_ROOT>$(EMSDK_PATH)bin</DOTNET_EMSCRIPTEN_LLVM_ROOT>
+      <!-- Condition="'$(HostOS)' == 'windows'" -->
+      <DOTNET_EMSCRIPTEN_LLVM_ROOT >$([MSBuild]::EnsureTrailingSlash('$(DOTNET_EMSCRIPTEN_LLVM_ROOT)').Replace('/', '\'))</DOTNET_EMSCRIPTEN_LLVM_ROOT>
+      <!-- keep in sync with EmscriptenNodeToolsPath in src/mono/browser/build/EmSdkRepo.Defaults.props -->
+      <DOTNET_EMSCRIPTEN_NODE_PATH>$(NuGetPackageRoot)runtime.$(_portableHostOS)-$(BuildArchitecture).microsoft.netcore.runtime.wasm.node.transport/$(NodePackageVersion)/tools/$(_portableHostOS)-$(BuildArchitecture)/bin</DOTNET_EMSCRIPTEN_NODE_PATH>
+      <DOTNET_EMSCRIPTEN_NODE_JS>$(DOTNET_EMSCRIPTEN_NODE_PATH)/node</DOTNET_EMSCRIPTEN_NODE_JS>
+      <DOTNET_EMSCRIPTEN_CACHE>$(EM_FROZEN_CACHE)</DOTNET_EMSCRIPTEN_CACHE>
+      <DOTNET_EMSCRIPTEN_CACHE Condition="'$(DOTNET_EMSCRIPTEN_CACHE)' == '' or ('$(DOTNET_EMSCRIPTEN_CACHE)' != 'true' and '$(DOTNET_EMSCRIPTEN_CACHE)' != 'false')">true</DOTNET_EMSCRIPTEN_CACHE>
+      <EMSDK_PYTHON Condition="'$(TargetsBrowser)' == 'true' and '$(HostOS)' == 'windows'">$(NuGetPackageRoot)Microsoft.NET.Runtime.Emscripten.$(EmsdkVersion).Python.win-$(BuildArchitecture)/$(EmsdkPackageVersion)/tools/python.exe</EMSDK_PYTHON>      
+      <_PreEmsdkEnvScriptPath>$(EMSDK_PATH)pre_emsdk_env$(ScriptExt)</_PreEmsdkEnvScriptPath>
+      <_SetOrExport Condition="'$(HostOS)' != 'windows'">export</_SetOrExport>
+      <_SetOrExport Condition="'$(HostOS)' == 'windows'">set</_SetOrExport>
     </PropertyGroup>
 
     <RemoveDir Directories="$(EMSDK_PATH)" />
+
+    <ItemGroup>      
+      <_PreEmsdkEnvScriptLines Condition="$(HostOS) == 'windows'" Include="@echo off" />
+      <_PreEmsdkEnvScriptLines Condition="$(HostOS) != 'windows'" Include="#!/bin/bash" />
+      <_PreEmsdkEnvScriptLines Include="$(_SetOrExport) EMSDK_PATH=$(EMSDK_PATH)" />
+      <_PreEmsdkEnvScriptLines Condition="$(HostOS) == 'windows'" Include="$(_SetOrExport) EMSDK_PYTHON=$(EMSDK_PYTHON)" />
+      <_PreEmsdkEnvScriptLines Condition="$(HostOS) == 'windows'" Include="$(_SetOrExport) EM_BINARYEN_ROOT=$(EMSDK_PATH)" />
+      <_PreEmsdkEnvScriptLines Condition="$(HostOS) == 'windows'" Include="$(_SetOrExport) DOTNET_EMSCRIPTEN_NODE_PATH=$(DOTNET_EMSCRIPTEN_NODE_PATH)" />
+      <_PreEmsdkEnvScriptLines Condition="$(HostOS) == 'windows'" Include="$(_SetOrExport) EM_NODE_JS=$(DOTNET_EMSCRIPTEN_NODE_JS)" />
+      <_PreEmsdkEnvScriptLines Condition="$(HostOS) == 'windows'" Include="$(_SetOrExport) EM_LLVM_ROOT=$(DOTNET_EMSCRIPTEN_LLVM_ROOT)" />
+      <_PreEmsdkEnvScriptLines Include="$(_SetOrExport) DOTNET_EMSCRIPTEN_NODE_JS=$(DOTNET_EMSCRIPTEN_NODE_JS)" />
+      <_PreEmsdkEnvScriptLines Include="$(_SetOrExport) DOTNET_EMSCRIPTEN_LLVM_ROOT=$(DOTNET_EMSCRIPTEN_LLVM_ROOT)" />
+      <_PreEmsdkEnvScriptLines Include="$(_SetOrExport) DOTNET_EMSCRIPTEN_BINARYEN_ROOT=$(EMSDK_PATH)" />
+      <_PreEmsdkEnvScriptLines Include="$(_SetOrExport) FROZEN_CACHE=$(DOTNET_EMSCRIPTEN_CACHE)" />
+    </ItemGroup>
+
+    <WriteLinesToFile File="$(_PreEmsdkEnvScriptPath)" Lines="@(_PreEmsdkEnvScriptLines)" Overwrite="true" />
 
     <ItemGroup>
       <EmsdkFiles   Condition="'%(PackageReference.Identity)' != 'runtime.$(_portableHostOS)-$(BuildArchitecture).Microsoft.NETCore.Runtime.Wasm.Node.Transport' and '%(PackageReference.Identity)' != 'Microsoft.NET.Runtime.Emscripten.$(EmsdkVersion).Python.win-$(BuildArchitecture)'"
@@ -623,16 +654,6 @@
     <PropertyGroup>
       <_MonoCFLAGSOption>-DCMAKE_C_FLAGS="@(_MonoCPPFLAGS, ' ') @(_MonoCFLAGS, ' ')"</_MonoCFLAGSOption>
       <_MonoCXXFLAGSOption>-DCMAKE_CXX_FLAGS="@(_MonoCPPFLAGS, ' ') @(_MonoCXXFLAGS, ' ')"</_MonoCXXFLAGSOption>
-      <EMSDK_PATH>$([MSBuild]::EnsureTrailingSlash('$(EMSDK_PATH)').Replace('\', '/'))</EMSDK_PATH>
-      <NuGetPackageRoot >$([MSBuild]::EnsureTrailingSlash('$(NuGetPackageRoot)').Replace('\', '/'))</NuGetPackageRoot>
-      <DOTNET_EMSCRIPTEN_LLVM_ROOT>$(EMSDK_PATH)bin</DOTNET_EMSCRIPTEN_LLVM_ROOT>
-      <!-- keep in sync with EmscriptenNodeToolsPath in src/mono/browser/build/EmSdkRepo.Defaults.props -->
-      <DOTNET_EMSCRIPTEN_NODE_PATH>$(NuGetPackageRoot)runtime.$(_portableHostOS)-$(BuildArchitecture).microsoft.netcore.runtime.wasm.node.transport/$(NodePackageVersion)/tools/$(_portableHostOS)-$(BuildArchitecture)/bin</DOTNET_EMSCRIPTEN_NODE_PATH>
-      <DOTNET_EMSCRIPTEN_NODE_JS>$(DOTNET_EMSCRIPTEN_NODE_PATH)/node</DOTNET_EMSCRIPTEN_NODE_JS>
-      <DOTNET_EMSCRIPTEN_CACHE>$(EM_FROZEN_CACHE)</DOTNET_EMSCRIPTEN_CACHE>
-      <DOTNET_EMSCRIPTEN_CACHE Condition="'$(DOTNET_EMSCRIPTEN_CACHE)' == '' or ('$(DOTNET_EMSCRIPTEN_CACHE)' != 'true' and '$(DOTNET_EMSCRIPTEN_CACHE)' != 'false')">true</DOTNET_EMSCRIPTEN_CACHE>
-      <EMSDK_PYTHON Condition="'$(TargetsBrowser)' == 'true' and '$(HostOS)' == 'windows'">$(NuGetPackageRoot)Microsoft.NET.Runtime.Emscripten.$(EmsdkVersion).Python.win-$(BuildArchitecture)/$(EmsdkPackageVersion)/tools/python.exe</EMSDK_PYTHON>
-      <_PreEmsdkEnvScriptPath>$(EMSDK_PATH)pre_emsdk_env$(ScriptExt)</_PreEmsdkEnvScriptPath>
       <_ScriptExecutor Condition="'$(HostOS)' != 'windows'">.</_ScriptExecutor>
       <_ScriptExecutor Condition="'$(HostOS)' == 'windows'">call</_ScriptExecutor>
     </PropertyGroup>
@@ -640,33 +661,6 @@
       <_MonoCMakeArgs Include="$(_MonoCFLAGSOption)"/>
       <_MonoCMakeArgs Include="$(_MonoCXXFLAGSOption)"/>
     </ItemGroup>
-
-    <ItemGroup Condition="'$(HostOS)' != 'windows'">
-      <_PreEmsdkEnvScriptLines Include="#!/bin/bash" />
-      <_PreEmsdkEnvScriptLines Include="export EMSDK_PATH=$(EMSDK_PATH)" />
-      <_PreEmsdkEnvScriptLines Include="export DOTNET_EMSCRIPTEN_LLVM_ROOT=$(DOTNET_EMSCRIPTEN_LLVM_ROOT)" />
-      <_PreEmsdkEnvScriptLines Include="export DOTNET_EMSCRIPTEN_NODE_JS=$(DOTNET_EMSCRIPTEN_NODE_JS)" />
-      <_PreEmsdkEnvScriptLines Include="export DOTNET_EMSCRIPTEN_BINARYEN_ROOT=$(EMSDK_PATH)" />
-      <_PreEmsdkEnvScriptLines Include="export FROZEN_CACHE=$(DOTNET_EMSCRIPTEN_CACHE)" />
-    </ItemGroup>
-
-    <ItemGroup Condition="'$(HostOS)' == 'windows'">
-      <_PreEmsdkEnvScriptLines Include="@echo off" />
-      <_PreEmsdkEnvScriptLines Include="set EMSDK_PATH=$(EMSDK_PATH)" />
-      <_PreEmsdkEnvScriptLines Include="set EMSDK_PYTHON=$(EMSDK_PYTHON)" />
-      <_PreEmsdkEnvScriptLines Include="set DOTNET_EMSCRIPTEN_LLVM_ROOT=$(DOTNET_EMSCRIPTEN_LLVM_ROOT)" />
-      <_PreEmsdkEnvScriptLines Include="set DOTNET_EMSCRIPTEN_NODE_JS=$(DOTNET_EMSCRIPTEN_NODE_JS)" />
-      <_PreEmsdkEnvScriptLines Include="set EM_NODE_JS=$(DOTNET_EMSCRIPTEN_NODE_JS)" />
-      <!-- ToDo: clean it up -->
-      <_PreEmsdkEnvScriptLines Include="set EM_LLVM_ROOT=$([MSBuild]::EnsureTrailingSlash('$(DOTNET_EMSCRIPTEN_LLVM_ROOT)').Replace('/', '\'))" />
-      <_PreEmsdkEnvScriptLines Include="set DOTNET_EMSCRIPTEN_NODE_PATH=$(DOTNET_EMSCRIPTEN_NODE_PATH)" />
-      <_PreEmsdkEnvScriptLines Include="set DOTNET_EMSCRIPTEN_BINARYEN_ROOT=$(EMSDK_PATH)" />
-      <_PreEmsdkEnvScriptLines Include="set EM_BINARYEN_ROOT=$(EMSDK_PATH)" />
-      <_PreEmsdkEnvScriptLines Include="set FROZEN_CACHE=$(DOTNET_EMSCRIPTEN_CACHE)" />
-    </ItemGroup>
-    <!-- ToDo: extract the common ones and use with OS-dependent command: export or set -->
-    <!-- ToDo: consider moving the following line and all the connected env variables to ProvisionEmscripten target -->
-    <WriteLinesToFile File="$(_PreEmsdkEnvScriptPath)" Lines="@(_PreEmsdkEnvScriptLines)" Overwrite="true" />
 
     <PropertyGroup>
       <_EmsdkEnvScriptPath>$([MSBuild]::NormalizePath('$(EMSDK_PATH)', 'emsdk_env$(ScriptExt)'))</_EmsdkEnvScriptPath>
