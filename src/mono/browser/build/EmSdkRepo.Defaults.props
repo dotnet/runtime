@@ -8,7 +8,7 @@
     <EmscriptenUpstreamEmscriptenPath>$([MSBuild]::NormalizeDirectory($(EmscriptenSdkToolsPath), 'emscripten'))</EmscriptenUpstreamEmscriptenPath>
 
     <!-- gets the path like emsdk/python/3.7.4-2_64bit -->
-    <EmscriptenNodeToolsPath Condition="'$(EmscriptenNodeToolsPath)' == ''">$([MSBuild]::NormalizeDirectory($(EmscriptenSdkToolsPath), 'node', 'bin'))</EmscriptenNodeToolsPath>
+    <EmscriptenNodeToolsPath Condition="'$(EmscriptenNodeToolsPath)' == ''">$(NuGetPackageRoot)runtime.$(_portableHostOS)-$(BuildArchitecture).microsoft.netcore.runtime.wasm.node.transport/$(NodePackageVersion)/tools/$(_portableHostOS)-$(BuildArchitecture)/bin</EmscriptenNodeToolsPath>
 
     <_UsingEMSDK_PATH>true</_UsingEMSDK_PATH>
   </PropertyGroup>
