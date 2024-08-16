@@ -38,5 +38,9 @@ namespace Mono.Linker
 		[MemberNotNullWhen (true, nameof (RuntimeInterfaceImplementation))]
 		public bool IsOverrideOfInterfaceMember
 			=> RuntimeInterfaceImplementation != null;
+
+		[MemberNotNullWhen (true, nameof (RuntimeInterfaceImplementation))]
+		internal bool IsInterfaceMethodProvidedByBaseType
+			=> IsOverrideOfInterfaceMember && (Override.DeclaringType != RuntimeInterfaceImplementation.Implementor);
 	}
 }

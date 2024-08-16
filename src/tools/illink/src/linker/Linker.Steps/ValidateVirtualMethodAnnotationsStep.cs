@@ -16,6 +16,8 @@ namespace Mono.Linker.Steps
 				var baseOverrideInformations = annotations.GetBaseMethods (method);
 				if (baseOverrideInformations != null) {
 					foreach (var baseOv in baseOverrideInformations) {
+						if (baseOv.IsOverrideOfInterfaceMember && !baseOv.RuntimeInterfaceImplementation.HasExplicitImplementation)
+							continue;
 						annotations.FlowAnnotations.ValidateMethodAnnotationsAreSame (baseOv);
 						ValidateMethodRequiresUnreferencedCodeAreSame (baseOv);
 					}
@@ -28,6 +30,9 @@ namespace Mono.Linker.Steps
 						// when validating the override from the list.
 						// This avoids validating the edge twice (it would produce the same warning twice)
 						if (annotations.VirtualMethodsWithAnnotationsToValidate.Contains (overrideInformation.Override))
+							continue;
+
+						if (overrideInformation.IsOverrideOfInterfaceMember && !overrideInformation.RuntimeInterfaceImplementation.HasExplicitImplementation)
 							continue;
 
 						annotations.FlowAnnotations.ValidateMethodAnnotationsAreSame (overrideInformation);

@@ -17,11 +17,11 @@ namespace Mono.Linker.Tests.TestCasesRunner
 		public static IEnumerable<string> ValidateRuntimeInterfaces (TypeMapInfo typeMapInfo, TypeDefinition typeDef, string expectedInterfaceName, IEnumerable<string> expectedImplChain)
 		{
 			var runtimeInterfaces = typeMapInfo.GetRecursiveInterfaces (typeDef);
-			if (!runtimeInterfaces.HasValue) {
+			if (runtimeInterfaces is []) {
 				yield return ($"Expected type `{typeDef}` to have runtime interface `{expectedInterfaceName}`, but it has none");
 				yield break;
 			}
-			var runtimeInterface = runtimeInterfaces.Value.SingleOrDefault (i => i.InflatedInterfaceType.FullName == expectedInterfaceName);
+			var runtimeInterface = runtimeInterfaces.SingleOrDefault (i => i.InflatedInterfaceType.FullName == expectedInterfaceName);
 			if (runtimeInterface == default) {
 				yield return ($"Expected type `{typeDef}` to have runtime interface `{expectedInterfaceName}`");
 				yield break;

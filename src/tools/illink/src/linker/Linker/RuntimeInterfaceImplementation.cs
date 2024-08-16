@@ -41,6 +41,11 @@ namespace Mono.Linker
 		/// </summary>
 		public TypeDefinition? InterfaceTypeDefinition { get; }
 
+		/// <summary>
+		/// Returns true if an interface implementation is directly on the implementing type.
+		/// </summary>
+		public bool HasExplicitImplementation => InterfaceImplementationChains.Any (c => c.IsExplicitInterfaceImplementation && c.TypeWithInterfaceImplementation == Implementor);
+
 		public RuntimeInterfaceImplementation (TypeDefinition implementor, TypeReference interfaceType, TypeDefinition? interfaceTypeDefinition, IEnumerable<InterfaceImplementationChain> interfaceImplementations)
 		{
 			Implementor = implementor;

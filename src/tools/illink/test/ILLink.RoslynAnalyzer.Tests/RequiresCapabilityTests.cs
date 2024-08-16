@@ -123,5 +123,11 @@ namespace ILLink.RoslynAnalyzer.Tests
 		{
 			return RunTest (nameof (SuppressRequires));
 		}
+
+		[Fact]
+		public Task BaseProvidesInterfaceMethodRequiresMismatch ()
+		{
+			return RunTest (nameof (BaseProvidesInterfaceMethodRequiresMismatch));
+		}
 	}
 }

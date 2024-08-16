@@ -2324,8 +2324,6 @@ namespace Mono.Linker.Steps
 		void MarkInterfaceImplementations (TypeDefinition type)
 		{
 			var ifaces = Annotations.GetRuntimeInterfaces (type);
-			if (ifaces is null)
-				return;
 			foreach (var runtimeInterface in ifaces) {
 				// Only mark interface implementations of interface types that have been marked.
 				// This enables stripping of interfaces that are never used
@@ -2526,10 +2524,7 @@ namespace Mono.Linker.Steps
 		void MarkICustomMarshalerMethods (TypeDefinition inputType, in DependencyInfo reason, MessageOrigin origin)
 		{
 			var runtimeInterfaces = Annotations.GetRuntimeInterfaces (inputType);
-			if (runtimeInterfaces is null)
-				return;
 			foreach (var runtimeInterface in runtimeInterfaces) {
-
 				var iface_type = runtimeInterface.InterfaceTypeDefinition;
 				if (false == iface_type?.IsTypeOf ("System.Runtime.InteropServices", "ICustomMarshaler"))
 					continue;
@@ -3233,9 +3228,7 @@ namespace Mono.Linker.Steps
 				return;
 			var interfaceToBeImplemented = ov.DeclaringType;
 			var ifaces = Annotations.GetRuntimeInterfaces (method.DeclaringType);
-			if (ifaces is null)
-				return;
-			Debug.Assert (ifaces.Value.SingleOrDefault (i => TypeReferenceEqualityComparer.AreEqual (i.InflatedInterfaceType, interfaceToBeImplemented, Context)) is not null);
+			Debug.Assert (ifaces.SingleOrDefault (i => TypeReferenceEqualityComparer.AreEqual (i.InflatedInterfaceType, interfaceToBeImplemented, Context)) is not null);
 			foreach (var iface in ifaces) {
 				if (TypeReferenceEqualityComparer.AreEqual (iface.InflatedInterfaceType, interfaceToBeImplemented, Context)) {
 					MarkRuntimeInterfaceImplementation (iface, new MessageOrigin (method.DeclaringType));

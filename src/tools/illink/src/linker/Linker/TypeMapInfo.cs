@@ -130,7 +130,7 @@ namespace Mono.Linker
 				MapType (nested);
 		}
 
-		internal ImmutableArray<RuntimeInterfaceImplementation>? GetRecursiveInterfaces (TypeDefinition type)
+		internal ImmutableArray<RuntimeInterfaceImplementation> GetRecursiveInterfaces (TypeDefinition type)
 		{
 			return _recursiveInterfaces.GetRuntimeInterfaceImplementations (type);
 		}

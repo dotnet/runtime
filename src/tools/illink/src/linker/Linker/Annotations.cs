@@ -707,7 +707,7 @@ namespace Mono.Linker
 				VirtualMethodsWithAnnotationsToValidate.Add (method);
 		}
 
-		internal ImmutableArray<RuntimeInterfaceImplementation>? GetRuntimeInterfaces (TypeDefinition type)
+		internal ImmutableArray<RuntimeInterfaceImplementation> GetRuntimeInterfaces (TypeDefinition type)
 		{
 			return TypeMapInfo.GetRecursiveInterfaces (type);
 		}

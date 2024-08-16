@@ -19,8 +19,14 @@ namespace Mono.Linker
 		/// </summary>
 		public ImmutableArray<InterfaceImplementation> InterfaceImplementations { get; }
 
+		/// <summary>
+		/// Returns true if the interface implementation is directly on the implementing type.
+		/// </summary>
+		public bool IsExplicitInterfaceImplementation => InterfaceImplementations.Length == 1;
+
 		public InterfaceImplementationChain (TypeReference typeWithInterfaceImplementation, ImmutableArray<InterfaceImplementation> interfaceImplementation)
 		{
+			Debug.Assert (interfaceImplementation.Length > 0);
 			TypeWithInterfaceImplementation = typeWithInterfaceImplementation;
 			InterfaceImplementations = interfaceImplementation;
 		}

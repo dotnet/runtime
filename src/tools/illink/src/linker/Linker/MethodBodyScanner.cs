@@ -142,8 +142,6 @@ namespace Mono.Linker
 		void AddMatchingInterfaces (HashSet<(RuntimeInterfaceImplementation, TypeDefinition)> results, TypeDefinition type, TypeDefinition[] interfaceTypes)
 		{
 			var runtimeInterfaces = context.Annotations.GetRuntimeInterfaces (type);
-			if (runtimeInterfaces is null)
-				return;
 			foreach (var iface in runtimeInterfaces) {
 				if (interfaceTypes.Contains (iface.InterfaceTypeDefinition)) {
 					results.Add ((iface, type));
