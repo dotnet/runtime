@@ -3458,9 +3458,32 @@ namespace System.Text.Json.Tests
         [InlineData("""{ "foo" : [1,2,3,4] }""", 1)]
         [InlineData("""{}""", 0)]
         [InlineData("""{ "foo" : {"nested:" : {"nested": 1, "bla": [1, 2, {"bla": 3}] } }, "test": true, "foo2" : {"nested:" : {"nested": 1, "bla": [1, 2, {"bla": 3}] } }}""", 3)]
-        public static void TestGetPropertyCount(string json, int expectedCount) {
+        public static void TestGetPropertyCount(string json, int expectedCount)
+        {
             JsonElement element = JsonSerializer.Deserialize<JsonElement>(json);
             Assert.Equal(expectedCount, element.GetPropertyCount());
+        }
+
+        [Fact]
+        public static void VerifyGetPropertyCountUsingEnumerateObject()
+        {
+            using (JsonDocument doc = JsonDocument.Parse(SR.ProjectLockJson))
+            {
+                CheckPropertyCountAgainstEnumerateObject(doc.RootElement);
+            }
+
+            void CheckPropertyCountAgainstEnumerateObject(JsonElement obj)
+            {
+                Assert.Equal(obj.EnumerateObject().Count(), obj.GetPropertyCount());
+
+                foreach (JsonProperty prop in obj.EnumerateObject())
+                {
+                    if (prop.Value.ValueKind == JsonValueKind.Object)
+                    {
+                        CheckPropertyCountAgainstEnumerateObject(prop.Value);
+                    }
+                }
+            }
         }
 
         [Fact]
