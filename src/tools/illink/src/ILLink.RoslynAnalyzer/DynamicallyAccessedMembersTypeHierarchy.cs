@@ -31,7 +31,7 @@ namespace ILLink.RoslynAnalyzer
 			}
 
 			// Most of the DynamicallyAccessedMemberTypes don't select members on interfaces. We only need to apply
-			// annotations to interfaces separately if dealing with DAMT.All or DAMT.Interfaces.u
+			// annotations to interfaces separately if dealing with DAMT.All or DAMT.Interfaces.
 			if (annotation.HasFlag (DynamicallyAccessedMemberTypes.Interfaces))
 			{
 				var annotationToApplyToInterfaces = annotation == DynamicallyAccessedMemberTypes.All ? annotation : DynamicallyAccessedMemberTypes.Interfaces;
