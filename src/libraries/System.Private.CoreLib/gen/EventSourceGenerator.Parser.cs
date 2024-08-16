@@ -112,6 +112,7 @@ namespace Generators
             namespaceBytes.CopyTo(combinedBytes);
 
 #pragma warning disable CA5350 // Do Not Use Weak Cryptographic Algorithms
+            // codeql[cs/weak-crypto] = SHA1 is used but not as a secret.  This cannot change for compatibility reasons.
             using (SHA1 sha = SHA1.Create())
             {
                 bytes = sha.ComputeHash(combinedBytes);
