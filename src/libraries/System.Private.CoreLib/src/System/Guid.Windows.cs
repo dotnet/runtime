@@ -26,5 +26,12 @@ namespace System
             // we ever hit this condition.
             throw new Exception() { HResult = hr };
         }
+
+        private static Guid CreateRandomizedPartialVersion7()
+        {
+            // CoCreateGuid (above) is faster than Interop.BCrypt.BCryptGenRandom and does more than what we need, so
+            // we may as well use that here.
+            return NewGuid();
+        }
     }
 }

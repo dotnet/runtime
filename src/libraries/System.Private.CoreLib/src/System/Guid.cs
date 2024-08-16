@@ -303,12 +303,11 @@ namespace System
         /// </remarks>
         public static Guid CreateVersion7(DateTimeOffset timestamp)
         {
-            // NewGuid uses CoCreateGuid on Windows and Interop.GetCryptographicallySecureRandomBytes on Unix to get
-            // cryptographically-secure random bytes. We could use Interop.BCrypt.BCryptGenRandom to generate the random
-            // bytes on Windows, as is done in RandomNumberGenerator, but that's measurably slower than using CoCreateGuid.
-            // And while CoCreateGuid only generates 122 bits of randomness, the other 6 bits being for the version / variant
-            // fields, this method also needs those bits to be non-random, so we can just use NewGuid for efficiency.
-            Guid result = NewGuid();
+            // Version 7 contains two major components: a timestamp, and randomized data.
+            // This function call creates a GUID with _at least_ the randomized data set.
+            // On Windows this creates a full Version 4 GUID, as it is faster than just getting random data.
+            // On Unix this only fills the random data bytes and leaves the rest unset.
+            Guid result = CreateRandomizedPartialVersion7();
 
             // 2^48 is roughly 8925.5 years, which from the Unix Epoch means we won't
             // overflow until around July of 10,895. So there isn't any need to handle

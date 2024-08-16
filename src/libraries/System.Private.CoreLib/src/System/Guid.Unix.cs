@@ -33,5 +33,22 @@ namespace System
 
             return g;
         }
+
+        private static unsafe Guid CreateRandomizedPartialVersion7()
+        {
+            Guid g;
+
+            byte* randomDataStartOffset = ((byte*)&g) + 6;
+            int randomDataLength = sizeof(Guid) - 6;
+
+#if !TARGET_WASI
+            Interop.GetCryptographicallySecureRandomBytes(randomDataStartOffset, randomDataLength);
+#else
+            // TODOWASI: crypto secure random bytes
+            Interop.GetRandomBytes(randomDataStartOffset, randomDataLength);
+#endif
+
+            return g;
+        }
     }
 }
