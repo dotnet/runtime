@@ -95,7 +95,6 @@ public sealed unsafe class Target
 
     internal Contracts.Registry Contracts { get; }
     internal DataCache ProcessedData { get; }
-    internal Helpers.Metadata Metadata { get; }
 
     public delegate int ReadFromTargetDelegate(ulong address, Span<byte> bufferToFill);
 
@@ -116,7 +115,6 @@ public sealed unsafe class Target
     {
         Contracts = new Contracts.Registry(this);
         ProcessedData = new DataCache(this);
-        Metadata = new Helpers.Metadata(this);
         _config = config;
         _reader = reader;
 

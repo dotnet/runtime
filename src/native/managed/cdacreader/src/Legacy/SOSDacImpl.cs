@@ -341,8 +341,9 @@ internal sealed partial class SOSDacImpl : ISOSDacInterface, ISOSDacInterface2, 
             data->dwTransientFlags = (uint)flags;
 
             data->ilBase = contract.GetILBase(handle);
-            data->metadataStart = contract.GetMetadataAddress(handle, out ulong metadataSize);
-            data->metadataSize = metadataSize;
+            TargetSpan readOnlyMetadata = _target.Contracts.EcmaMetadata.GetReadOnlyMetadataAddress(handle);
+            data->metadataStart = readOnlyMetadata.Address;
+            data->metadataSize = readOnlyMetadata.Size;
 
             data->LoaderAllocator = contract.GetLoaderAllocator(handle);
             data->ThunkHeap = contract.GetThunkHeap(handle);
@@ -351,12 +352,12 @@ internal sealed partial class SOSDacImpl : ISOSDacInterface, ISOSDacInterface2, 
             ulong tableDataOffset = (ulong)lookupMapTypeInfo.Fields[nameof(Data.ModuleLookupMap.TableData)].Offset;
 
             Contracts.ModuleLookupTables tables = contract.GetLookupTables(handle);
-            data->FieldDefToDescMap = tables.FieldDefToDesc + tableDataOffset;
-            data->ManifestModuleReferencesMap = tables.ManifestModuleReferences + tableDataOffset;
-            data->MemberRefToDescMap = tables.MemberRefToDesc + tableDataOffset;
-            data->MethodDefToDescMap = tables.MethodDefToDesc + tableDataOffset;
-            data->TypeDefToMethodTableMap = tables.TypeDefToMethodTable + tableDataOffset;
-            data->TypeRefToMethodTableMap = tables.TypeRefToMethodTable + tableDataOffset;
+            data->FieldDefToDescMap = _target.ReadPointer(tables.FieldDefToDesc + tableDataOffset);
+            data->ManifestModuleReferencesMap = _target.ReadPointer(tables.ManifestModuleReferences + tableDataOffset);
+            data->MemberRefToDescMap = _target.ReadPointer(tables.MemberRefToDesc + tableDataOffset);
+            data->MethodDefToDescMap = _target.ReadPointer(tables.MethodDefToDesc + tableDataOffset);
+            data->TypeDefToMethodTableMap = _target.ReadPointer(tables.TypeDefToMethodTable + tableDataOffset);
+            data->TypeRefToMethodTableMap = _target.ReadPointer(tables.TypeRefToMethodTable + tableDataOffset);
 
             // Always 0 - .NET no longer has these concepts
             data->dwModuleID = 0;
@@ -407,6 +408,12 @@ internal sealed partial class SOSDacImpl : ISOSDacInterface, ISOSDacInterface2, 
             if (runtimeTypeSystemContract.IsFreeObjectMethodTable(handle))
             {
                 data->ObjectType = DacpObjectType.OBJ_FREE;
+
+                // Free objects have their component count explicitly set at the same offset as that for arrays
+                // Update the size to include those components
+                Target.TypeInfo arrayTypeInfo = _target.GetTypeInfo(DataType.Array);
+                ulong numComponentsOffset = (ulong)_target.GetTypeInfo(DataType.Array).Fields[Data.Array.FieldNames.NumComponents].Offset;
+                data->Size += _target.Read<uint>(objAddr + numComponentsOffset) * data->dwComponentSize;
             }
             else if (mt == _stringMethodTable)
             {
@@ -507,7 +514,35 @@ internal sealed partial class SOSDacImpl : ISOSDacInterface, ISOSDacInterface2, 
     public unsafe int GetOOMData(ulong oomAddr, void* data) => HResults.E_NOTIMPL;
     public unsafe int GetOOMStaticData(void* data) => HResults.E_NOTIMPL;
     public unsafe int GetPEFileBase(ulong addr, ulong* peBase) => HResults.E_NOTIMPL;
-    public unsafe int GetPEFileName(ulong addr, uint count, char* fileName, uint* pNeeded) => HResults.E_NOTIMPL;
+
+    public unsafe int GetPEFileName(ulong addr, uint count, char* fileName, uint* pNeeded)
+    {
+        try
+        {
+            Contracts.ILoader contract = _target.Contracts.Loader;
+            Contracts.ModuleHandle handle = contract.GetModuleHandle(addr);
+            string path = contract.GetPath(handle);
+
+            // Return not implemented for empty paths for non-reflection emit assemblies (for example, loaded from memory)
+            if (string.IsNullOrEmpty(path))
+            {
+                Contracts.ModuleFlags flags = contract.GetFlags(handle);
+                if (!flags.HasFlag(Contracts.ModuleFlags.ReflectionEmit))
+                {
+                    return HResults.E_NOTIMPL;
+                }
+            }
+
+            CopyStringToTargetBuffer(fileName, count, pNeeded, path);
+        }
+        catch (System.Exception ex)
+        {
+            return ex.HResult;
+        }
+
+        return HResults.S_OK;
+    }
+
     public unsafe int GetPrivateBinPaths(ulong appDomain, int count, char* paths, uint* pNeeded) => HResults.E_NOTIMPL;
     public unsafe int GetRCWData(ulong addr, void* data) => HResults.E_NOTIMPL;
     public unsafe int GetRCWInterfaces(ulong rcw, uint count, void* interfaces, uint* pNeeded) => HResults.E_NOTIMPL;

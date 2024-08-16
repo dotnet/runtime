@@ -2110,7 +2110,7 @@ ClrDataAccess::GetMethodTableData(CLRDATA_ADDRESS mt, struct DacpMethodTableData
             _ASSERTE(MTData->wNumVtableSlots == mtDataLocal.wNumVtableSlots);
             _ASSERTE(MTData->wNumVirtuals == mtDataLocal.wNumVirtuals);
             _ASSERTE(MTData->cl == mtDataLocal.cl);
-            _ASSERTE(MTData->dwAttrClass = mtDataLocal.dwAttrClass);
+            _ASSERTE(MTData->dwAttrClass == mtDataLocal.dwAttrClass);
             _ASSERTE(MTData->bContainsPointers == mtDataLocal.bContainsPointers);
             _ASSERTE(MTData->bIsShared == mtDataLocal.bIsShared);
             _ASSERTE(MTData->bIsDynamic == mtDataLocal.bIsDynamic);
@@ -2160,7 +2160,7 @@ ClrDataAccess::GetMethodTableDataImpl(CLRDATA_ADDRESS mt, struct DacpMethodTable
         MTData->dwAttrClass = pMT->GetAttrClass();
         MTData->bContainsPointers = pMT->ContainsGCPointers();
         MTData->bIsShared = FALSE;
-        MTData->bIsDynamic = pMT->IsDynamicStatics();
+        MTData->bIsDynamic = pMT->IsDynamicStatics() ? TRUE : FALSE;
     }
     return S_OK;
 }
@@ -2542,6 +2542,41 @@ ClrDataAccess::GetPEFileName(CLRDATA_ADDRESS moduleAddr, unsigned int count, _In
         return E_INVALIDARG;
 
     SOSDacEnter();
+
+    if (m_cdacSos != NULL)
+    {
+        hr = m_cdacSos->GetPEFileName(moduleAddr, count, fileName, pNeeded);
+        if (FAILED(hr))
+        {
+            hr = GetPEFileNameImpl(moduleAddr, count, fileName, pNeeded);
+        }
+#ifdef _DEBUG
+        else
+        {
+            NewArrayHolder<WCHAR> fileNameLocal(new WCHAR[count]);
+            unsigned int neededLocal = 0;
+            HRESULT hrLocal = GetPEFileNameImpl(moduleAddr, count, fileNameLocal, &neededLocal);
+
+            DacAssertsEnabledHolder assertsEnabled;
+            _ASSERTE(hr == hrLocal);
+            _ASSERTE(pNeeded == NULL || *pNeeded == neededLocal);
+            _ASSERTE(fileName == NULL || u16_strncmp(fileName, fileNameLocal, count) == 0);
+        }
+#endif
+    }
+    else
+    {
+        hr = GetPEFileNameImpl(moduleAddr, count, fileName, pNeeded);;
+    }
+
+
+    SOSDacLeave();
+    return hr;
+}
+
+HRESULT
+ClrDataAccess::GetPEFileNameImpl(CLRDATA_ADDRESS moduleAddr, unsigned int count, _Inout_updates_z_(count) WCHAR *fileName, unsigned int *pNeeded)
+{
     PTR_Module pModule = PTR_Module(TO_TADDR(moduleAddr));
     PEAssembly* pPEAssembly = pModule->GetPEAssembly();
 
@@ -2549,11 +2584,11 @@ ClrDataAccess::GetPEFileName(CLRDATA_ADDRESS moduleAddr, unsigned int count, _In
     if (!pPEAssembly->GetPath().IsEmpty())
     {
         if (!pPEAssembly->GetPath().DacGetUnicode(count, fileName, pNeeded))
-            hr = E_FAIL;
+            return E_FAIL;
     }
     else if (!pPEAssembly->IsReflectionEmit())
     {
-        hr = E_NOTIMPL;
+        return E_NOTIMPL;
     }
     else
     {
@@ -2564,8 +2599,7 @@ ClrDataAccess::GetPEFileName(CLRDATA_ADDRESS moduleAddr, unsigned int count, _In
             *pNeeded = 1;
     }
 
-    SOSDacLeave();
-    return hr;
+    return S_OK;
 }
 
 HRESULT
@@ -2598,6 +2632,7 @@ DWORD DACGetNumComponents(TADDR addr, ICorDebugDataTarget* target)
     // This expects that the first member after the MethodTable pointer (from Object)
     // is a 32-bit integer representing the number of components.
     // This holds for ArrayBase and StringObject - see coreclr/vm/object.h
+    // Free objects also have a component count set at this offset- see SetFree in coreclr/gc/gc.cpp
     addr += sizeof(size_t); // Method table pointer
     ULONG32 returned = 0;
     DWORD Value = 0;
