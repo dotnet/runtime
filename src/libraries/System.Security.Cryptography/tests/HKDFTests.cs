@@ -14,6 +14,8 @@ namespace System.Security.Cryptography.Tests
         protected abstract byte[] Expand(HashAlgorithmName hash, byte[] prk, int outputLength, byte[] info);
         protected abstract byte[] DeriveKey(HashAlgorithmName hash, byte[] ikm, int outputLength, byte[] salt, byte[] info);
 
+        internal static bool MD5Supported => !PlatformDetection.IsBrowser && !PlatformDetection.IsAzureLinux;
+
         [Theory]
         [MemberData(nameof(GetHkdfTestCases))]
         public void ExtractTests(HkdfTestCase test)
@@ -22,9 +24,8 @@ namespace System.Security.Cryptography.Tests
             Assert.Equal(test.Prk, prk);
         }
 
-        [Theory]
+        [ConditionalTheory(nameof(MD5Supported))]
         [MemberData(nameof(GetHkdfTestCases))]
-        [SkipOnPlatform(TestPlatforms.Browser, "MD5 is not supported on Browser")]
         public void ExtractTamperHashTests(HkdfTestCase test)
         {
             byte[] prk = Extract(HashAlgorithmName.MD5, 128 / 8, test.Ikm, test.Salt);
@@ -257,7 +258,7 @@ namespace System.Security.Cryptography.Tests
             yield return new object[] { HashAlgorithmName.SHA256, 256 / 8 - 1 };
             yield return new object[] { HashAlgorithmName.SHA512, 512 / 8 - 1 };
 
-            if (!PlatformDetection.IsBrowser)
+            if (MD5Supported)
             {
                 yield return new object[] { HashAlgorithmName.MD5, 128 / 8 - 1 };
             }
