@@ -110,8 +110,6 @@
              Link="Common\System\Net\DebugSafeHandleZeroOrMinusOneIsInvalid.cs" />
     <Compile Include="$(CommonPath)System\Net\DebugSafeHandle.cs"
              Link="Common\System\Net\DebugSafeHandle.cs" />
-    <Compile Include="$(CommonPath)System\Net\TlsStream.cs"
-             Link="Common\System\Net\TlsStream.cs" />
     <Compile Include="$(CommonPath)System\Net\InternalException.cs"
              Link="Common\System\Net\InternalException.cs" />
     <Compile Include="$(CommonPath)System\Net\ExceptionCheck.cs"
