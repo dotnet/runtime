@@ -9,6 +9,8 @@ using System.Runtime.InteropServices;
 using TestLibrary;
 using Xunit;
 
+using IEnumVARIANT = System.Runtime.InteropServices.ComTypes.IEnumVARIANT;
+
 namespace PInvokeTests
 {
     static class IEnumeratorNative
@@ -77,12 +79,15 @@ namespace PInvokeTests
             {
                 IEnumerable nativeEnumerable = IEnumeratorNative.GetIntegerEnumeration(1, 10);
                 Assert.True(nativeEnumerable is ICustomAdapter);
+                Assert.True(Marshal.IsComObject(((ICustomAdapter)nativeEnumerable).GetUnderlyingObject()));
                 IEnumerator nativeEnumerator = nativeEnumerable.GetEnumerator();
                 Assert.True(nativeEnumerator is ICustomAdapter);
+                Assert.True(((ICustomAdapter)nativeEnumerator).GetUnderlyingObject() is IEnumVARIANT);
             }
             {
                 IEnumerator nativeEnumerator = IEnumeratorNative.GetIntegerEnumerator(1, 10);
                 Assert.True(nativeEnumerator is ICustomAdapter);
+                Assert.True(((ICustomAdapter)nativeEnumerator).GetUnderlyingObject() is IEnumVARIANT);
             }
         }
 
