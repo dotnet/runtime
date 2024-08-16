@@ -172,6 +172,7 @@ export type LoaderHelpers = {
     invokeLibraryInitializers: (functionName: string, args: any[]) => Promise<void>,
     libraryInitializers?: { scriptName: string, exports: any }[];
 
+    isDebuggingSupported(): boolean,
     isChromium: boolean,
     isFirefox: boolean
 
