@@ -7,7 +7,7 @@ using System.Runtime.CompilerServices;
 
 namespace System.Buffers
 {
-    /// <summary>Represent a range that has start and end indices.</summary>
+    /// <summary>Represents a range that has start and end indices.</summary>
     /// <remarks>
     /// <code>
     /// int[] someArray = new int[5] { 1, 2, 3, 4, 5 };
@@ -25,8 +25,8 @@ namespace System.Buffers
         public NIndex End { get; }
 
         /// <summary>Constructs an <see cref="NRange"/> object using the start and end <see cref="NIndex"/>.</summary>
-        /// <param name="start">Represent the inclusive start <see cref="NIndex"/> of the <see cref="NRange"/>.</param>
-        /// <param name="end">Represent the exclusive end <see cref="NIndex"/> of the <see cref="NRange"/>.</param>
+        /// <param name="start">The inclusive start <see cref="NIndex"/> of the <see cref="NRange"/>.</param>
+        /// <param name="end">The exclusive end <see cref="NIndex"/> of the <see cref="NRange"/>.</param>
         public NRange(NIndex start, NIndex end)
         {
             Start = start;
@@ -43,15 +43,15 @@ namespace System.Buffers
             End = range.End;
         }
 
-        /// <summary>Indicates whether the current <see cref="NRange"/> object is equal to another object of the same type.</summary>
-        /// <param name="value">An object to compare with this object</param>
+        /// <summary>Compares the current <see cref="NRange"/> object to another object of the same type for equality.</summary>
+        /// <param name="value">An object to compare with this object.</param>
         public override bool Equals([NotNullWhen(true)] object? value) =>
             value is NRange r &&
             r.Start.Equals(Start) &&
             r.End.Equals(End);
 
-        /// <summary>Indicates whether the current NRange object is equal to another NRange object.</summary>
-        /// <param name="other">An object to compare with this object</param>
+        /// <summary>Compares the current NRange object to another NRange object for equality.</summary>
+        /// <param name="other">An object to compare with this object.</param>
         public bool Equals(NRange other) => other.Start.Equals(Start) && other.End.Equals(End);
 
         /// <summary>Returns the hash code for this instance.</summary>
@@ -89,21 +89,21 @@ namespace System.Buffers
             return new string(span.Slice(0, pos));
         }
 
-        /// <summary>Create an NRange object starting from start NIndex to the end of the collection.</summary>
+        /// <summary>Creates an NRange object starting from start NIndex to the end of the collection.</summary>
         public static NRange StartAt(NIndex start) => new NRange(start, NIndex.End);
 
-        /// <summary>Create an NRange object starting from first element in the collection to the end NIndex.</summary>
+        /// <summary>Creates an NRange object starting from first element in the collection to the end NIndex.</summary>
         public static NRange EndAt(NIndex end) => new NRange(NIndex.Start, end);
 
-        /// <summary>Create an NRange object starting from first element to the end.</summary>
+        /// <summary>Creates an NRange object starting from first element to the end.</summary>
         public static NRange All => new NRange(NIndex.Start, NIndex.End);
 
-        /// <summary>Calculate the start offset and length of NRange object using a collection length.</summary>
-        /// <param name="length">The length of the collection that the NRange will be used with. length has to be a positive value.</param>
+        /// <summary>Calculates the start offset and length of the NRange object using a collection length.</summary>
+        /// <param name="length">The length of the collection that the NRange will be used with. Must be a positive value.</param>
         /// <remarks>
-        /// For performance reason, we don't validate the input length parameter against negative values.
-        /// It is expected NRange will be used with collections which always have non negative length/count.
-        /// We validate the NRange is inside the length scope though.
+        /// For performance reasons, the input length parameter isn't validated against negative values.
+        /// It's expected NRange will be used with collections that always have a non-negative length/count.
+        /// The NRange is validated to be inside the length scope, however.
         /// </remarks>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public (nint Offset, nint Length) GetOffsetAndLength(nint length)
@@ -146,7 +146,7 @@ namespace System.Buffers
         public Range ToRange() => new Range(checked((Index)Start), checked((Index)End));
 
         /// <summary>
-        /// Converts a <see cref="NRange"/> to a <see cref="Range"/> wihout doing bounds checks.
+        /// Converts a <see cref="NRange"/> to a <see cref="Range"/> without doing bounds checks.
         /// </summary>
         /// <returns>The converted Range.</returns>
         public Range ToRangeUnchecked() => new Range((Index)Start, (Index)End);

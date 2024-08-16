@@ -17,18 +17,18 @@ namespace Microsoft.Extensions.FileProviders
         private readonly IFileProvider[] _fileProviders;
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="CompositeFileProvider" /> class using a collection of file provider.
+        /// Initializes a new instance of the <see cref="CompositeFileProvider" /> class using a collection of file provider objects.
         /// </summary>
-        /// <param name="fileProviders">The collection of <see cref="IFileProvider" /></param>
+        /// <param name="fileProviders">The collection of <see cref="IFileProvider" /> objects.</param>
         public CompositeFileProvider(params IFileProvider[]? fileProviders)
         {
             _fileProviders = fileProviders ?? Array.Empty<IFileProvider>();
         }
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="CompositeFileProvider" /> class using a collection of file provider.
+        /// Initializes a new instance of the <see cref="CompositeFileProvider" /> class using a collection of file provider objects.
         /// </summary>
-        /// <param name="fileProviders">The collection of <see cref="IFileProvider" /></param>
+        /// <param name="fileProviders">The collection of <see cref="IFileProvider" /> objects.</param>
         public CompositeFileProvider(IEnumerable<IFileProvider> fileProviders)
         {
             ThrowHelper.ThrowIfNull(fileProviders);
@@ -40,7 +40,7 @@ namespace Microsoft.Extensions.FileProviders
         /// Locates a file at the given path.
         /// </summary>
         /// <param name="subpath">The path that identifies the file. </param>
-        /// <returns>The file information. Caller must check Exists property. This will be the first existing <see cref="IFileInfo"/> returned by the provided <see cref="IFileProvider"/> or a not found <see cref="IFileInfo"/> if no existing files is found.</returns>
+        /// <returns>The file information. Caller must check Exists property. This will be the first existing <see cref="IFileInfo"/> returned by the provided <see cref="IFileProvider"/> or a not found <see cref="IFileInfo"/> if no existing files are found.</returns>
         public IFileInfo GetFileInfo(string subpath)
         {
             foreach (IFileProvider fileProvider in _fileProviders)
@@ -55,12 +55,12 @@ namespace Microsoft.Extensions.FileProviders
         }
 
         /// <summary>
-        /// Enumerate a directory at the given path, if any.
+        /// Enumerates a directory at the given path, if any.
         /// </summary>
-        /// <param name="subpath">The path that identifies the directory</param>
-        /// <returns>Contents of the directory. Caller must check Exists property.
+        /// <param name="subpath">The path that identifies the directory.</param>
+        /// <returns>The contents of the directory. Caller must check Exists property.
         /// The content is a merge of the contents of the provided <see cref="IFileProvider"/>.
-        /// When there is multiple <see cref="IFileInfo"/> with the same Name property, only the first one is included on the results.</returns>
+        /// When there are multiple <see cref="IFileInfo"/> objects with the same Name property, only the first one is included in the results.</returns>
         public IDirectoryContents GetDirectoryContents(string subpath)
         {
             var directoryContents = new CompositeDirectoryContents(_fileProviders, subpath);
@@ -70,9 +70,9 @@ namespace Microsoft.Extensions.FileProviders
         /// <summary>
         /// Creates a <see cref="IChangeToken"/> for the specified <paramref name="pattern"/>.
         /// </summary>
-        /// <param name="pattern">Filter string used to determine what files or folders to monitor. Example: **/*.cs, *.*, subFolder/**/*.cshtml.</param>
-        /// <returns>An <see cref="IChangeToken"/> that is notified when a file matching <paramref name="pattern"/> is added, modified or deleted.
-        /// The change token will be notified when one of the change token returned by the provided <see cref="IFileProvider"/> will be notified.</returns>
+        /// <param name="pattern">A filter string used to determine what files or folders to monitor. Examples: \*\*/\*.cs, \*.\*, subFolder/\*\*/\*.cshtml.</param>
+        /// <returns>An <see cref="IChangeToken"/> that is notified when a file matching <paramref name="pattern"/> is added, modified, or deleted.
+        /// The change token will be notified when one of the change token returned by the provided <see cref="IFileProvider"/> is notified.</returns>
         public IChangeToken Watch(string pattern)
         {
             // Watch all file providers
