@@ -4269,7 +4269,7 @@ private:
     PER_HEAP_ISOLATED_FIELD_MAINTAINED region_free_list global_regions_to_decommit[count_free_region_kinds];
     // At the end of each distribute_free_regions call, we record the size of global_regions_to_decommit so that
     // we can see the decommit progress during the next call.
-    PER_HEAP_ISOLATED_FIELD_MAINTAINED size_t to_decommit_size_last_distribute[count_core_free_region_kinds];
+    PER_HEAP_ISOLATED_FIELD_MAINTAINED size_t to_decommit_size_last_distribute;
 
     PER_HEAP_ISOLATED_FIELD_MAINTAINED region_free_list global_free_huge_regions;
 #else //USE_REGIONS
