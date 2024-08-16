@@ -408,6 +408,12 @@ internal sealed partial class SOSDacImpl : ISOSDacInterface, ISOSDacInterface2, 
             if (runtimeTypeSystemContract.IsFreeObjectMethodTable(handle))
             {
                 data->ObjectType = DacpObjectType.OBJ_FREE;
+
+                // Free objects have their component count explicitly set at the same offset as that for arrays
+                // Update the size to include those components
+                Target.TypeInfo arrayTypeInfo = _target.GetTypeInfo(DataType.Array);
+                ulong numComponentsOffset = (ulong)_target.GetTypeInfo(DataType.Array).Fields[Data.Array.FieldNames.NumComponents].Offset;
+                data->Size += _target.Read<uint>(objAddr + numComponentsOffset) * data->dwComponentSize;
             }
             else if (mt == _stringMethodTable)
             {
