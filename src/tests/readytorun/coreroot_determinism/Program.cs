@@ -13,7 +13,7 @@ public class Program
 {
     public static int CompareDLLs(string folder1, string folder2)
     {
-        int result = 100;
+        int result = 2;
 
         string superIlcFolder1 = Directory.GetDirectories(folder1, "CPAOT*").First();
         string superIlcFolder2 = Directory.GetDirectories(folder2, "CPAOT*").First();
