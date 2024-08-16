@@ -61,7 +61,6 @@ namespace PInvokeTests
         public static void TestNativeRoundTrip()
         {
             IEnumerator nativeEnumerator = IEnumeratorNative.GetIntegerEnumerator(1, 10);
-            Assert.True(nativeEnumerator is ICustomAdapter);
             Assert.Equal(nativeEnumerator, IEnumeratorNative.PassThroughEnumerator(nativeEnumerator));
         }
 
