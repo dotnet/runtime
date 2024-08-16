@@ -11004,7 +11004,7 @@ void emitter::emitDispEmbBroadcastCount(instrDesc* id) const
         return;
     }
     ssize_t baseSize   = GetInputSizeInBytes(id);
-    ssize_t vectorSize = (ssize_t)emitGetBaseMemOpSize(id);
+    ssize_t vectorSize = (ssize_t)emitGetMemOpSize(id, /* ignoreEmbeddedBroadcast */ true);
     printf(" {1to%d}", vectorSize / baseSize);
 }
 
