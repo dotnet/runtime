@@ -757,26 +757,26 @@ namespace Mono.Linker.Tests.TestCasesRunner
 				throw new NotImplementedException (instr.Operand.GetType ().ToString ());
 
 			default: {
-				string operandString = null;
-				switch (instr.OpCode.OperandType) {
-				case OperandType.InlineField:
-				case OperandType.InlineMethod:
-				case OperandType.InlineType:
-				case OperandType.InlineTok:
-					operandString = instr.Operand switch {
-						FieldReference fieldRef => fieldRef.FullName,
-						MethodReference methodRef => methodRef.FullName,
-						TypeReference typeRef => typeRef.FullName,
-						_ => null
-					};
-					break;
-				}
+					string operandString = null;
+					switch (instr.OpCode.OperandType) {
+					case OperandType.InlineField:
+					case OperandType.InlineMethod:
+					case OperandType.InlineType:
+					case OperandType.InlineTok:
+						operandString = instr.Operand switch {
+							FieldReference fieldRef => fieldRef.FullName,
+							MethodReference methodRef => methodRef.FullName,
+							TypeReference typeRef => typeRef.FullName,
+							_ => null
+						};
+						break;
+					}
 
-				if (operandString != null)
-					return $"{instr.OpCode.ToString ()} {operandString}";
-				else
-					return instr.OpCode.ToString ();
-			}
+					if (operandString != null)
+						return $"{instr.OpCode.ToString ()} {operandString}";
+					else
+						return instr.OpCode.ToString ();
+				}
 			}
 		}
 
