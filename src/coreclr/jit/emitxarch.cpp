@@ -356,6 +356,22 @@ bool emitter::DoesWriteZeroFlag(instruction ins)
 }
 
 //------------------------------------------------------------------------
+// DoesWriteParityFlag: check if the instruction write the
+//     PF flag.
+//
+// Arguments:
+//    ins - instruction to test
+//
+// Return Value:
+//    true if instruction writes the PF flag, false otherwise.
+//
+bool emitter::DoesWriteParityFlag(instruction ins)
+{
+    insFlags flags = CodeGenInterface::instInfo[ins];
+    return (flags & Writes_PF) != 0;
+}
+
+//------------------------------------------------------------------------
 // DoesWriteSignFlag: check if the instruction writes the
 //     SF flag.
 //
@@ -979,7 +995,8 @@ bool emitter::AreFlagsSetToZeroCmp(regNumber reg, emitAttr opSize, GenCondition 
     // Certain instruction like and, or and xor modifies exactly same flags
     // as "test" instruction.
     // They reset OF and CF to 0 and modifies SF, ZF and PF.
-    if (DoesResetOverflowAndCarryFlags(lastIns) && DoesWriteSignFlag(lastIns))
+    if (DoesResetOverflowAndCarryFlags(lastIns) && DoesWriteSignFlag(lastIns) && DoesWriteZeroFlag(lastIns) &&
+        DoesWriteParityFlag(lastIns))
     {
         return id->idOpSize() == opSize;
     }
