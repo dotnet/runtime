@@ -37,6 +37,7 @@ namespace Microsoft.Extensions.DependencyInjection
         internal static bool VerifyOpenGenericServiceTrimmability { get; } =
             AppContext.TryGetSwitch("Microsoft.Extensions.DependencyInjection.VerifyOpenGenericServiceTrimmability", out bool verifyOpenGenerics) ? verifyOpenGenerics : false;
 
+        [FeatureSwitchDefinition("Microsoft.Extensions.DependencyInjection.DisableDynamicEngine")]
         internal static bool DisableDynamicEngine { get; } =
             AppContext.TryGetSwitch("Microsoft.Extensions.DependencyInjection.DisableDynamicEngine", out bool disableDynamicEngine) ? disableDynamicEngine : false;
 

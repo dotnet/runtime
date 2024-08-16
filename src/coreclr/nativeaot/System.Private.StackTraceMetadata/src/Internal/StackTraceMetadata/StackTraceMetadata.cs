@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Reflection.Runtime.General;
 
 using Internal.Metadata.NativeFormat;
@@ -186,7 +187,7 @@ namespace Internal.StackTraceMetadata
             return $"{reader.GetString(scopeRef.Name)}, Version={scopeRef.MajorVersion}.{scopeRef.MinorVersion}.{scopeRef.BuildNumber}.{scopeRef.RevisionNumber}";
         }
 
-        // Can be rewritten to false through a feature switch.
+        [FeatureSwitchDefinition("System.Reflection.IsReflectionExecutionAvailable")]
         private static bool IsReflectionExecutionAvailable() => true;
 
         /// <summary>

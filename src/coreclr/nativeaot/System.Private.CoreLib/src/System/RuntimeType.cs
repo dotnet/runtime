@@ -46,6 +46,7 @@ namespace System
             RuntimeImports.RhHandleFree(_runtimeTypeInfoHandle);
         }
 
+        [FeatureSwitchDefinition("System.Reflection")]
         private static bool IsReflectionDisabled => false;
 
         private static bool DoNotThrowForNames => AppContext.TryGetSwitch("Switch.System.Reflection.Disabled.DoNotThrowForNames", out bool doNotThrow) && doNotThrow;
