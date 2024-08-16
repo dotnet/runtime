@@ -196,8 +196,6 @@
     <SubsetName Include="Libs.Native" Description="The native libraries used in the shared framework." />
     <SubsetName Include="Libs.Sfx" Description="The managed shared framework libraries." />
     <SubsetName Include="Libs.Oob" Description="The managed out-of-band libraries." />
-    <SubsetName Include="Libs.Ref" OnDemand="true" Description="The managed reference libraries." />
-    <SubsetName Include="Libs.Src" OnDemand="true" Description="The managed implementation libraries." />
     <SubsetName Include="Libs.PreTest" Description="Test assets which are necessary to run tests." />
     <SubsetName Include="Libs.Tests" OnDemand="true" Description="The test projects. Note that building this doesn't execute tests: you must also pass the '-test' argument." />
 
@@ -481,20 +479,16 @@
     <ProjectToBuild Include="$(SharedNativeRoot)libs\build-native.proj" Category="libs" />
   </ItemGroup>
 
-  <ItemGroup Condition="$(_subset.Contains('+libs.ref+')) or $(_subset.Contains('+libs.src+')) or $(_subset.Contains('+libs.sfx+'))">
+  <ItemGroup Condition="$(_subset.Contains('+libs.sfx+'))">
     <ProjectToBuild Include="$(LibrariesProjectRoot)sfx.proj"
                     Category="libs"
                     Condition="'$(BuildTargetFramework)' == '$(NetCoreAppCurrent)' or
                                '$(BuildTargetFramework)' == '' or
-                               '$(BuildAllConfigurations)' == 'true'">
-      <AdditionalProperties Condition="$(_subset.Contains('+libs.ref+'))">%(AdditionalProperties);RefOnly=true</AdditionalProperties>
-    </ProjectToBuild>
+                               '$(BuildAllConfigurations)' == 'true'" />
   </ItemGroup>
 
-  <ItemGroup Condition="$(_subset.Contains('+libs.ref+')) or $(_subset.Contains('+libs.src+')) or $(_subset.Contains('+libs.oob+'))">
-    <ProjectToBuild Include="$(LibrariesProjectRoot)oob.proj" Category="libs">
-      <AdditionalProperties Condition="$(_subset.Contains('+libs.ref+'))">%(AdditionalProperties);RefOnly=true</AdditionalProperties>
-    </ProjectToBuild>
+  <ItemGroup Condition="$(_subset.Contains('+libs.oob+'))">
+    <ProjectToBuild Include="$(LibrariesProjectRoot)oob.proj" Category="libs" />
   </ItemGroup>
 
   <ItemGroup Condition="$(_subset.Contains('+mono.wasmruntime+'))">
