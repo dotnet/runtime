@@ -488,6 +488,11 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Theory]
+        [InlineData("1:2")]
+        [InlineData("01:2")]
+        [InlineData("1:02")]
+        [InlineData("01:23:1")]
+        [InlineData("1.1:1:1.0")]
         [InlineData("1:00:00")]
         [InlineData("1")]
         [InlineData("10")]
@@ -654,6 +659,12 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Theory]
+        [InlineData("1:2", "01:02")]
+        [InlineData("01:2", "01:02")]
+        [InlineData("01:23:1", "01:23:01")]
+        [InlineData("1:00:00")] // 'g' Format
+        [InlineData("00:00")]
+        [InlineData("23:59")]
         [InlineData("23:59:59")]
         [InlineData("23:59:59.9", "23:59:59.9000000")]
         [InlineData("02:48:05.4775807")]
@@ -680,8 +691,9 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Theory]
-        [InlineData("00:00")]
-        [InlineData("23:59")]
+        [InlineData("0")]
+        [InlineData("01")]
+        [InlineData("01:")]
         [InlineData("\t23:59:59")] // Otherwise valid but has invalid json character
         [InlineData("\\t23:59:59")] // Otherwise valid but has leading whitespace
         [InlineData("23:59:59   ")] // Otherwise valid but has trailing whitespace
@@ -693,7 +705,6 @@ namespace System.Text.Json.Serialization.Tests
         [InlineData("900000000.00:00:00")]
         [InlineData("1.00:00:00")]
         [InlineData("0.00:00:00")]
-        [InlineData("1:00:00")] // 'g' Format
         [InlineData("1:2:00:00")] // 'g' Format
         [InlineData("+00:00:00")]
         [InlineData("2021-06-18")]

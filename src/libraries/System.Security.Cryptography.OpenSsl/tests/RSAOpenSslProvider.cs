@@ -8,6 +8,7 @@ namespace System.Security.Cryptography.Rsa.Tests
     public class RSAOpenSslProvider : IRSAProvider
     {
         private bool? _supportsSha1Signatures;
+        private bool? _supportsMd5Signatures;
 
         public RSA Create() => new RSAOpenSsl();
 
@@ -22,6 +23,7 @@ namespace System.Security.Cryptography.Rsa.Tests
         public bool SupportsPss => true;
 
         public bool SupportsSha1Signatures => _supportsSha1Signatures ??= SignatureSupport.CanProduceSha1Signature(Create());
+        public bool SupportsMd5Signatures => _supportsMd5Signatures ??= SignatureSupport.CanProduceMd5Signature(Create());
 
         public bool SupportsSha3 => SHA3_256.IsSupported; // If SHA3_256 is supported, assume 384 and 512 are, too.
     }

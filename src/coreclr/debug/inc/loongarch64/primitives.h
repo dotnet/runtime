@@ -48,6 +48,7 @@ inline CORDB_ADDRESS GetPatchEndAddr(CORDB_ADDRESS patchAddr)
 
 constexpr CorDebugRegister g_JITToCorDbgReg[] =
 {
+    (CorDebugRegister)(255),
     REGISTER_LOONGARCH64_RA,
     REGISTER_LOONGARCH64_TP,
     REGISTER_LOONGARCH64_SP,
