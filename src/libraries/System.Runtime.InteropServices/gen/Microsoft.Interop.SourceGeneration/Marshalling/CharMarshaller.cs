@@ -11,7 +11,7 @@ using static Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
 
 namespace Microsoft.Interop
 {
-    public sealed class Utf16CharMarshaller : IMarshallingGenerator
+    public sealed class Utf16CharMarshaller : IUnboundMarshallingGenerator
     {
         private static readonly ManagedTypeInfo s_nativeType = SpecialTypeInfo.UInt16;
 
