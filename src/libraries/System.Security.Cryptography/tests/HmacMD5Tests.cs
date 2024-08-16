@@ -9,13 +9,12 @@ using Xunit;
 
 namespace System.Security.Cryptography.Tests
 {
-    [SkipOnPlatform(TestPlatforms.Browser, "Not supported on Browser")]
     [ConditionalClass(typeof(HmacMD5Tests.Traits), nameof(HmacMD5Tests.Traits.IsSupported))]
     public class HmacMD5Tests : Rfc2202HmacTests<HmacMD5Tests.Traits>
     {
         public sealed class Traits : IHmacTrait
         {
-            public static bool IsSupported => !PlatformDetection.IsAzureLinux;
+            public static bool IsSupported => !PlatformDetection.IsAzureLinux && !PlatformDetection.IsBrowser;
             public static int HashSizeInBytes => HMACMD5.HashSizeInBytes;
         }
 
