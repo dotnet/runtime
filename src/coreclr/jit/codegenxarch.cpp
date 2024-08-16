@@ -8242,7 +8242,11 @@ void CodeGen::genPutArgStkFieldList(GenTreePutArgStk* putArgStk)
             adjustment -= pushSize;
             while (adjustment != 0)
             {
-                inst_IV(INS_push, 0);
+                int pushCount = pushSize / EA_PTRSIZE;
+                for (int i = 0; i < pushCount; i++)
+                {
+                    inst_IV(INS_push, 0);
+                }
                 currentOffset -= pushSize;
                 AddStackLevel(pushSize);
                 adjustment -= pushSize;
