@@ -3,7 +3,6 @@
     <OutputType>Exe</OutputType>
     <CLRTestPriority>0</CLRTestPriority>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <ControlFlowGuard>Guard</ControlFlowGuard>
     <Optimize>true</Optimize>
     <!-- x86 support tracked at https://github.com/dotnet/runtime/issues/99516 -->
     <CLRTestTargetUnsupported Condition="'$(TargetsWindows)' != 'true' or '$(TargetArchitecture)' == 'x86' ">true</CLRTestTargetUnsupported>
