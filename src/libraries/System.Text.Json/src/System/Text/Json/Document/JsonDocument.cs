@@ -980,8 +980,8 @@ namespace System.Text.Json
                     database.Append(tokenType, tokenStart, DbRow.UnknownSize);
                     var row = new StackRow(numberOfProperties, numberOfRowsForMembers + 1);
                     stack.Push(row);
-                    numberOfRowsForMembers = 0;
                     numberOfProperties = 0;
+                    numberOfRowsForMembers = 0;
                 }
                 else if (tokenType == JsonTokenType.EndObject)
                 {
@@ -997,8 +997,8 @@ namespace System.Text.Json
                     database.SetNumberOfRows(newRowIndex, numberOfRowsForMembers);
 
                     StackRow row = stack.Pop();
-                    numberOfRowsForMembers += row.NumberOfRows;
                     numberOfProperties = row.SizeOrLength;
+                    numberOfRowsForMembers += row.NumberOfRows;
                 }
                 else if (tokenType == JsonTokenType.StartArray)
                 {
