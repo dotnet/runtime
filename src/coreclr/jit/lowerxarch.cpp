@@ -3927,6 +3927,13 @@ GenTree* Lowering::LowerHWIntrinsicTernaryLogic(GenTreeHWIntrinsic* node)
                     }
                 }
 
+                // Update the locals to reflect any operand swaps we did above.
+
+                op1 = node->Op(1);
+                op2 = node->Op(2);
+                op3 = node->Op(3);
+                assert(op4 == node->Op(4));
+
                 GenTree* replacementNode = nullptr;
 
                 switch (useFlags)
