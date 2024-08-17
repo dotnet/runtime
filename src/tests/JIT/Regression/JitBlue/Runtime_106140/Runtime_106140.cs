@@ -11,7 +11,7 @@ public class Runtime_106140
 {
     public struct S1
     {
-        public int F0;
+        public double F0;
         public Vector256<short> F1;
         public S1(bool f3) : this()
         {
