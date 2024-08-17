@@ -1,0 +1,29 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
+    <Nullable>enable</Nullable>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="System\ThrowHelper.cs" />
+    <Compile Include="System\Numerics\Colors\Argb.cs" />
+    <Compile Include="System\Numerics\Colors\Argb.T.cs" />
+    <Compile Include="System\Numerics\Colors\Rgba.cs" />
+    <Compile Include="System\Numerics\Colors\Rgba.T.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="Resources\Strings.resx">
+      <Generator>ResXFileCodeGenerator</Generator>
+    </EmbeddedResource>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Reference Include="System.Collections" />
+    <Reference Include="System.Memory" />
+    <Reference Include="System.Runtime" />
+  </ItemGroup>
+
+</Project>
