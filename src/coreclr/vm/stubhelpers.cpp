@@ -246,37 +246,8 @@ FORCEINLINE static void *GetCOMIPFromRCW_GetTarget(IUnknown *pUnk, CLRToCOMCallI
 {
     LIMITED_METHOD_CONTRACT;
 
-
     LPVOID *lpVtbl = *(LPVOID **)pUnk;
     return lpVtbl[pComInfo->m_cachedComSlot];
-}
-
-NOINLINE static IUnknown* GetCOMIPFromRCWHelper(LPVOID pFCall, OBJECTREF pSrc, MethodDesc* pMD, void **ppTarget)
-{
-    FC_INNER_PROLOG(pFCall);
-
-    IUnknown *pIntf = NULL;
-
-    // This is only called in IL stubs which are in CER, so we don't need to worry about ThreadAbort
-    HELPER_METHOD_FRAME_BEGIN_RET_ATTRIB_1(Frame::FRAME_ATTR_NO_THREAD_ABORT|Frame::FRAME_ATTR_EXACT_DEPTH|Frame::FRAME_ATTR_CAPTURE_DEPTH_2, pSrc);
-
-    SafeComHolder<IUnknown> pRetUnk;
-
-    CLRToCOMCallInfo *pComInfo = CLRToCOMCallInfo::FromMethodDesc(pMD);
-    pRetUnk = ComObject::GetComIPFromRCWThrowing(&pSrc, pComInfo->m_pInterfaceMT);
-
-    *ppTarget = GetCOMIPFromRCW_GetTarget(pRetUnk, pComInfo);
-    _ASSERTE(*ppTarget != NULL);
-
-    GetCOMIPFromRCW_ClearFP();
-
-    pIntf = pRetUnk.Extract();
-
-    // No exception will be thrown here (including thread abort as it is delayed in IL stubs)
-    HELPER_METHOD_FRAME_END();
-
-    FC_INNER_EPILOG();
-    return pIntf;
 }
 
 //==================================================================================================================
@@ -289,7 +260,7 @@ NOINLINE static IUnknown* GetCOMIPFromRCWHelper(LPVOID pFCall, OBJECTREF pSrc, M
 
 // This helper can handle any CLR->COM call, it supports hosting,
 // and clears FP state on x86 for compatibility with VB6.
-FCIMPL4(IUnknown*, StubHelpers::GetCOMIPFromRCW, Object* pSrcUNSAFE, MethodDesc* pMD, void **ppTarget, CLR_BOOL* pfNeedsRelease)
+FCIMPL3(IUnknown*, StubHelpers::GetCOMIPFromRCW, Object* pSrcUNSAFE, MethodDesc* pMD, void **ppTarget)
 {
     CONTRACTL
     {
@@ -299,13 +270,10 @@ FCIMPL4(IUnknown*, StubHelpers::GetCOMIPFromRCW, Object* pSrcUNSAFE, MethodDesc*
     CONTRACTL_END;
 
     OBJECTREF pSrc = ObjectToOBJECTREF(pSrcUNSAFE);
-    *pfNeedsRelease = false;
-
     CLRToCOMCallInfo *pComInfo = CLRToCOMCallInfo::FromMethodDesc(pMD);
     RCW *pRCW = pSrc->PassiveGetSyncBlock()->GetInteropInfoNoCreate()->GetRawRCW();
     if (pRCW != NULL)
     {
-
         IUnknown * pUnk = GetCOMIPFromRCW_GetIUnknownFromRCWCache(pRCW, pComInfo->m_pInterfaceMT);
         if (pUnk != NULL)
         {
@@ -317,14 +285,40 @@ FCIMPL4(IUnknown*, StubHelpers::GetCOMIPFromRCW, Object* pSrcUNSAFE, MethodDesc*
             }
         }
     }
-
-    /* if we didn't find the COM interface pointer in the cache we will have to erect an HMF */
-    *pfNeedsRelease = true;
-    FC_INNER_RETURN(IUnknown*, GetCOMIPFromRCWHelper(StubHelpers::GetCOMIPFromRCW, pSrc, pMD, ppTarget));
+    return NULL;
 }
 FCIMPLEND
 
 #include <optdefault.h>
+
+extern "C" IUnknown* QCALLTYPE StubHelpers_GetCOMIPFromRCWSlow(QCall::ObjectHandleOnStack pSrc, MethodDesc* pMD, void** ppTarget)
+{
+    QCALL_CONTRACT;
+    _ASSERTE(pMD != NULL);
+    _ASSERTE(ppTarget != NULL);
+
+    IUnknown *pIntf = NULL;
+    BEGIN_QCALL;
+
+    GCX_COOP();
+
+    OBJECTREF objRef = pSrc.Get();
+    GCPROTECT_BEGIN(objRef);
+
+    CLRToCOMCallInfo* pComInfo = CLRToCOMCallInfo::FromMethodDesc(pMD);
+    SafeComHolder<IUnknown> pRetUnk = ComObject::GetComIPFromRCWThrowing(&objRef, pComInfo->m_pInterfaceMT);
+    *ppTarget = GetCOMIPFromRCW_GetTarget(pRetUnk, pComInfo);
+    _ASSERTE(*ppTarget != NULL);
+
+    GetCOMIPFromRCW_ClearFP();
+    pIntf = pRetUnk.Extract();
+
+    GCPROTECT_END();
+
+    END_QCALL;
+
+    return pIntf;
+}
 
 extern "C" void QCALLTYPE ObjectMarshaler_ConvertToNative(QCall::ObjectHandleOnStack pSrcUNSAFE, VARIANT* pDest)
 {
