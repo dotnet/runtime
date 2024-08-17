@@ -66,6 +66,7 @@ namespace System.Text.Json
         public System.Text.Json.JsonElement GetProperty(System.ReadOnlySpan<byte> utf8PropertyName) { throw null; }
         public System.Text.Json.JsonElement GetProperty(System.ReadOnlySpan<char> propertyName) { throw null; }
         public System.Text.Json.JsonElement GetProperty(string propertyName) { throw null; }
+        public int GetPropertyCount() { throw null; }
         public string GetRawText() { throw null; }
         [System.CLSCompliantAttribute(false)]
         public sbyte GetSByte() { throw null; }
