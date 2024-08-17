@@ -12,7 +12,7 @@ namespace System.Buffers.Text
         /// </summary>
         /// <param name="source">The Utf8 string to parse</param>
         /// <param name="value">Receives the parsed value</param>
-        /// <param name="bytesConsumed">On a successful parse, receives the length in bytes of the substring that was parsed</param>
+        /// <param name="bytesConsumed">On a successful parse, receives the length in bytes of the substring that was parsed.</param>
         /// <param name="standardFormat">Expected format of the Utf8 string. Supported formats are <c>'G'</c>, <c>'l'</c>, and <c>default</c>.</param>
         /// <returns>
         /// true for success. "bytesConsumed" contains the length in bytes of the substring that was parsed.
