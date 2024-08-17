@@ -82,9 +82,6 @@ Crst PinnedHeapHandleTable
                    SystemDomain
 End
 
-Crst ArgBasedStubCache
-End
-
 Crst AssemblyLoader
     AcquiredBefore DeadlockDetection UniqueStack DebuggerMutex
 End
@@ -203,11 +200,7 @@ Crst Exception
 End
 
 Crst ExecutableAllocatorLock
-    AcquiredAfter LoaderHeap ArgBasedStubCache UMEntryThunkFreeListLock COMCallWrapper
-End
-
-Crst ExecuteManRangeLock
-    AcquiredAfter NativeImageEagerFixups
+    AcquiredAfter LoaderHeap UMEntryThunkFreeListLock COMCallWrapper
 End
 
 Crst FCall
@@ -294,12 +287,8 @@ Crst JitPatchpoint
     AcquiredBefore LoaderHeap
 End
 
-Crst JitPerf
-    Unordered
-End
-
 Crst JumpStubCache
-    AcquiredBefore ExecuteManRangeLock LoaderHeap SingleUseLock
+    AcquiredBefore LoaderHeap SingleUseLock
     AcquiredAfter AppDomainCache
                   ILStubGen
                   TypeIDMap BaseDomain AssemblyLoader
@@ -342,15 +331,8 @@ Crst Module
     AcquiredBefore LoaderHeap UniqueStack
 End
 
-Crst ModuleFixup
-    AcquiredBefore PinnedHeapHandleTable GlobalStrLiteralMap IbcProfile SyncBlockCache
-End
-
 Crst ModuleLookupTable
     AcquiredBefore LoaderHeap
-End
-
-Crst Nls
 End
 
 Crst PEImage
@@ -360,7 +342,7 @@ End
 Crst PendingTypeLoadEntry
     AcquiredBefore AppDomainCache PinnedHeapHandleTable AssemblyLoader AvailableClass AvailableParamTypes
                    BaseDomain ClassInit DeadlockDetection DebuggerController DebuggerJitInfo DebuggerMutex
-                   GenericDictionaryExpansion Exception ExecuteManRangeLock FuncPtrStubs
+                   GenericDictionaryExpansion Exception FuncPtrStubs
                    FusionAppCtx GlobalStrLiteralMap HandleTable IbcProfile
                    IJWFixupData IJWHash ISymUnmanagedReader Jit JumpStubCache LoaderHeap
                    Module ModuleLookupTable PEImage
@@ -415,27 +397,17 @@ Crst EtwTypeLogHash
     AcquiredAfter SingleUseLock
 End
 
-Crst SavedExceptionInfo
-    AcquiredBefore DebuggerController
-End
-
-Crst SaveModuleProfileData
-End
-
 Crst SigConvert
     AcquiredBefore LoaderHeap
 End
 
 Crst SingleUseLock
-    AcquiredBefore ExecuteManRangeLock LoaderHeap UniqueStack DebuggerJitInfo
+    AcquiredBefore LoaderHeap UniqueStack DebuggerJitInfo
 End
 
 Crst UnwindInfoTableLock
     AcquiredAfter StubUnwindInfoHeapSegments SingleUseLock
     AcquiredBefore StressLog
-End
-
-Crst SpecialStatics
 End
 
 Crst StressLog
@@ -465,7 +437,7 @@ Crst SystemBaseDomain
 End
 
 Crst SystemDomain
-    AcquiredBefore DebuggerMutex HandleTable IbcProfile SaveModuleProfileData
+    AcquiredBefore DebuggerMutex HandleTable IbcProfile
                    ThreadIdDispenser ThreadStore
 End
 
@@ -481,7 +453,7 @@ End
 
 Crst ThreadStore
     AcquiredBefore AvailableParamTypes DeadlockDetection DebuggerController
-                   DebuggerHeapLock DebuggerJitInfo DynamicIL ExecuteManRangeLock HandleTable IbcProfile
+                   DebuggerHeapLock DebuggerJitInfo DynamicIL HandleTable IbcProfile
                    JitGenericHandleCache JumpStubCache LoaderHeap ModuleLookupTable ProfilerGCRefDataFreeList
                    SingleUseLock SyncBlockCache SystemDomainDelayedUnloadList ThreadIdDispenser DebuggerMutex
                    JitInlineTrackingMap
@@ -528,9 +500,6 @@ Crst MulticoreJitManager
     AcquiredBefore MulticoreJitHash ThreadStore
 End
 
-Crst StackSampler
-End
-
 Crst InlineTrackingMap
     AcquiredBefore IbcProfile
 End
@@ -548,7 +517,7 @@ Crst NotifyGdb
 End
 
 Crst ReadyToRunEntryPointToMethodDescMap
-    AcquiredBefore ExecuteManRangeLock UniqueStack
+    AcquiredBefore UniqueStack
 End
 
 Crst TieredCompilation
