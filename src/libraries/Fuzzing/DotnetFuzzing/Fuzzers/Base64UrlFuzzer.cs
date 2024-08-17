@@ -16,14 +16,17 @@ namespace DotnetFuzzing.Fuzzers
 
         public void FuzzTarget(ReadOnlySpan<byte> bytes)
         {
-            using PooledBoundedMemory<byte> inputPoisoned = PooledBoundedMemory<byte>.Rent(bytes, PoisonPagePlacement.After);
-            Span<byte> input = inputPoisoned.Span;
             int encodedLength = Base64Url.GetEncodedLength(bytes.Length);
-            using PooledBoundedMemory<char> destPoisoned = PooledBoundedMemory<char>.Rent(encodedLength, PoisonPagePlacement.After);
-            Span<char> encoderDest = destPoisoned.Span;
             int maxDecodedLength = Base64Url.GetMaxDecodedLength(encodedLength);
+
+            using PooledBoundedMemory<byte> inputPoisoned = PooledBoundedMemory<byte>.Rent(bytes, PoisonPagePlacement.After);
+            using PooledBoundedMemory<char> destPoisoned = PooledBoundedMemory<char>.Rent(encodedLength, PoisonPagePlacement.After);
             using PooledBoundedMemory<byte> decoderDestPoisoned = PooledBoundedMemory<byte>.Rent(maxDecodedLength, PoisonPagePlacement.After);
+
+            Span<byte> input = inputPoisoned.Span;
+            Span<char> encoderDest = destPoisoned.Span;
             Span<byte> decoderDest = decoderDestPoisoned.Span;
+
             { // IsFinalBlock = true
                 OperationStatus status = Base64Url.EncodeToChars(input, encoderDest, out int bytesConsumed, out int bytesEncoded); 
 
