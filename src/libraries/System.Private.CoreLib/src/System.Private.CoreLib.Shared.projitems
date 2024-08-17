@@ -64,14 +64,14 @@
     <ILLinkSubstitutionsXmls Include="$(ILLinkSharedDirectory)ILLink.Substitutions.Browser.xml" Condition="'$(TargetsBrowser)' == 'true'" />
     <ILLinkLinkAttributesXmls Include="$(ILLinkSharedDirectory)ILLink.LinkAttributes.Shared.xml" />
     <ILLinkSuppressionsLibraryBuildXml Include="$(ILLinkSharedDirectory)ILLink.Suppressions.LibraryBuild.xml" />
+    <ILLinkDescriptorsLibraryBuildXml Include="$(ILLinkSharedDirectory)ILLink.Descriptors.LibraryBuild.xml" />
+    <ILLinkDescriptorsLibraryBuildXml Include="$(ILLinkSharedDirectory)ILLink.Descriptors.LibraryBuild.WASI.xml" Condition="'$(TargetsWasi)' == 'true'" />
   </ItemGroup>
-  <PropertyGroup>
-    <ILLinkDescriptorsLibraryBuildXml>$(ILLinkSharedDirectory)ILLink.Descriptors.LibraryBuild.xml</ILLinkDescriptorsLibraryBuildXml>
-  </PropertyGroup>
   <ItemGroup>
     <Compile Include="$(MSBuildThisFileDirectory)Internal\AssemblyAttributes.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Internal\Console.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Internal\Padding.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Internal\Runtime\CompilerHelpers\ThrowHelpers.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Internal\Runtime\InteropServices\ComponentActivator.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Internal\Runtime\InteropServices\IsolatedComponentLoadContext.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Microsoft\Win32\SafeHandles\CriticalHandleMinusOneIsInvalid.cs" />
@@ -441,7 +441,6 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\SearchValues\Any1SearchValues.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\SearchValues\Any2SearchValues.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\SearchValues\Any3SearchValues.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\SearchValues\AsciiWithSecondSetCharSearchValues.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\SearchValues\BitVector256.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\SearchValues\ProbabilisticMapState.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\SearchValues\ProbabilisticWithAsciiCharSearchValues.cs" />
@@ -2801,5 +2800,12 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Numerics\IUnaryNegationOperators.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Numerics\IUnaryPlusOperators.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Numerics\IUnsignedNumber.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetsWasi)' == 'true'">
+    <Compile Include="$(MSBuildThisFileDirectory)System\Threading\Wasi\WasiEventLoop.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Threading\Wasi\WasiPoll.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Threading\Wasi\WasiPollWorld.wit.imports.wasi.clocks.v0_2_1.MonotonicClockInterop.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Threading\Wasi\WasiPollWorld.wit.imports.wasi.io.v0_2_1.IPoll.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Threading\Wasi\WasiPollWorld.wit.imports.wasi.io.v0_2_1.PollInterop.cs" />
   </ItemGroup>
 </Project>

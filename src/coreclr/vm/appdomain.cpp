@@ -39,7 +39,6 @@
 #ifdef FEATURE_COMINTEROP
 #include "comtoclrcall.h"
 #include "runtimecallablewrapper.h"
-#include "mngstdinterfaces.h"
 #include "olevariant.h"
 #include "olecontexthelpers.h"
 #endif // FEATURE_COMINTEROP
@@ -468,9 +467,6 @@ BaseDomain::BaseDomain()
     // Note that m_handleStore is overridden by app domains
     m_handleStore = GCHandleUtilities::GetGCHandleManager()->GetGlobalHandleStore();
 
-#ifdef FEATURE_COMINTEROP
-    m_pMngStdInterfacesInfo = NULL;
-#endif
     m_FileLoadLock.PreInit();
     m_JITLock.PreInit();
     m_ClassInitLock.PreInit();
@@ -528,11 +524,6 @@ void BaseDomain::Init()
     // Has to switch thread to GC_NOTRIGGER while being held (see code:BaseDomain#AssemblyListLock)
     m_crstAssemblyList.Init(CrstAssemblyList, CrstFlags(
         CRST_GC_NOTRIGGER_WHEN_TAKEN | CRST_DEBUGGER_THREAD | CRST_TAKEN_DURING_SHUTDOWN));
-
-#ifdef FEATURE_COMINTEROP
-    // Allocate the managed standard interfaces information.
-    m_pMngStdInterfacesInfo = new MngStdInterfacesInfo();
-#endif // FEATURE_COMINTEROP
 
     m_dwSizedRefHandles = 0;
     // For server GC this value indicates the number of GC heaps used in circular order to allocate sized
@@ -1164,7 +1155,7 @@ void SystemDomain::LoadBaseSystemClasses()
 
         // Only partially load the system assembly. Other parts of the code will want to access
         // the globals in this function before finishing the load.
-        m_pSystemAssembly = DefaultDomain()->LoadDomainAssembly(NULL, m_pSystemPEAssembly, FILE_LOAD_POST_LOADLIBRARY)->GetAssembly();
+        m_pSystemAssembly = DefaultDomain()->LoadDomainAssembly(NULL, m_pSystemPEAssembly, FILE_LOAD_POST_ALLOCATE)->GetAssembly();
 
         // Set up binder for CoreLib
         CoreLibBinder::AttachModule(m_pSystemAssembly->GetModule());
@@ -1238,7 +1229,6 @@ void SystemDomain::LoadBaseSystemClasses()
         // further loading of nonprimitive types may need casting support.
         // initialize cast cache here.
         CastCache::Initialize();
-        ECall::PopulateManagedHelpers();
 
         // used by IsImplicitInterfaceOfSZArray
         CoreLibBinder::GetClass(CLASS__IENUMERABLEGENERIC);
@@ -1265,6 +1255,8 @@ void SystemDomain::LoadBaseSystemClasses()
 
         g_pCastHelpers = CoreLibBinder::GetClass(CLASS__CASTHELPERS);
 
+        g_pIDynamicInterfaceCastableInterface = CoreLibBinder::GetClass(CLASS__IDYNAMICINTERFACECASTABLE);
+
     #ifdef FEATURE_COMINTEROP
         if (g_pConfig->IsBuiltInCOMSupported())
         {
@@ -1275,8 +1267,6 @@ void SystemDomain::LoadBaseSystemClasses()
             g_pBaseCOMObject = NULL;
         }
     #endif
-
-        g_pIDynamicInterfaceCastableInterface = CoreLibBinder::GetClass(CLASS__IDYNAMICINTERFACECASTABLE);
 
     #ifdef FEATURE_ICASTABLE
         g_pICastableInterface = CoreLibBinder::GetClass(CLASS__ICASTABLE);
@@ -2119,13 +2109,8 @@ static const char *fileLoadLevelName[] =
 {
     "CREATE",                             // FILE_LOAD_CREATE
     "BEGIN",                              // FILE_LOAD_BEGIN
-    "FIND_NATIVE_IMAGE",                  // FILE_LOAD_FIND_NATIVE_IMAGE
-    "VERIFY_NATIVE_IMAGE_DEPENDENCIES",   // FILE_LOAD_VERIFY_NATIVE_IMAGE_DEPENDENCIES
     "ALLOCATE",                           // FILE_LOAD_ALLOCATE
-    "ADD_DEPENDENCIES",                   // FILE_LOAD_ADD_DEPENDENCIES
-    "PRE_LOADLIBRARY",                    // FILE_LOAD_PRE_LOADLIBRARY
-    "LOADLIBRARY",                        // FILE_LOAD_LOADLIBRARY
-    "POST_LOADLIBRARY",                   // FILE_LOAD_POST_LOADLIBRARY
+    "POST_ALLOCATE",                      // FILE_LOAD_POST_ALLOCATE
     "EAGER_FIXUPS",                       // FILE_LOAD_EAGER_FIXUPS
     "DELIVER_EVENTS",                     // FILE_LOAD_DELIVER_EVENTS
     "VTABLE FIXUPS",                      // FILE_LOAD_VTABLE_FIXUPS
@@ -2193,7 +2178,6 @@ BOOL FileLoadLock::CompleteLoadLevel(FileLoadLevel level, BOOL success)
         switch(level)
         {
             case FILE_LOAD_ALLOCATE:
-            case FILE_LOAD_ADD_DEPENDENCIES:
             case FILE_LOAD_DELIVER_EVENTS:
             case FILE_LOADED:
             case FILE_ACTIVE: // The timing of stress logs is not critical, so even for the FILE_ACTIVE stage we need not do it while the m_pList lock is held.
@@ -2809,53 +2793,26 @@ void AppDomain::TryIncrementalLoad(DomainAssembly *pFile, FileLoadLevel workLeve
 
     EX_TRY
     {
+        // Do the work
+        BOOL success = pFile->DoIncrementalLoad(workLevel);
 
-        // Special case: for LoadLibrary, we cannot hold the lock during the
-        // actual LoadLibrary call, because we might get a callback from _CorDllMain on any
-        // other thread.  (Note that this requires DomainAssembly's LoadLibrary to be independently threadsafe.)
-
-        if (workLevel == FILE_LOAD_LOADLIBRARY)
+        // Complete the level.
+        if (pLoadLock->CompleteLoadLevel(workLevel, success) &&
+            pLoadLock->GetLoadLevel()==FILE_LOAD_DELIVER_EVENTS)
         {
             lockHolder.Release();
             released = TRUE;
-        }
-
-        // Do the work
-        BOOL success = pFile->DoIncrementalLoad(workLevel);
-        if (released)
-        {
-            // Reobtain lock to increment level. (Note that another thread may
-            // have already done it which is OK.
-            if (pLoadLock->Acquire(workLevel))
-            {
-                // note lockHolder.Acquire isn't wired up to actually take the lock
-                lockHolder = pLoadLock;
-                released = FALSE;
-            }
-        }
-
-        if (!released)
-        {
-            // Complete the level.
-            if (pLoadLock->CompleteLoadLevel(workLevel, success) &&
-                pLoadLock->GetLoadLevel()==FILE_LOAD_DELIVER_EVENTS)
-            {
-                lockHolder.Release();
-                released = TRUE;
-                pFile->DeliverAsyncEvents();
-            };
-        }
+            pFile->DeliverAsyncEvents();
+        };
     }
     EX_HOOK
     {
         Exception *pEx = GET_EXCEPTION();
 
-
         //We will cache this error and wire this load to forever fail,
         // unless the exception is transient or the file is loaded OK but just cannot execute
         if (!pEx->IsTransient() && !pFile->IsLoaded())
         {
-
             if (released)
             {
                 // Reobtain lock to increment level. (Note that another thread may
@@ -3965,7 +3922,7 @@ Assembly* AppDomain::RaiseTypeResolveEventThrowing(Assembly* pAssembly, LPCSTR s
     GCX_COOP();
 
     struct {
-        OBJECTREF AssemblyRef;
+        ASSEMBLYREF AssemblyRef;
         STRINGREF str;
     } gc;
     gc.AssemblyRef = NULL;
@@ -3974,7 +3931,7 @@ Assembly* AppDomain::RaiseTypeResolveEventThrowing(Assembly* pAssembly, LPCSTR s
     GCPROTECT_BEGIN(gc);
 
     if (pAssembly != NULL)
-        gc.AssemblyRef = pAssembly->GetExposedObject();
+        gc.AssemblyRef = (ASSEMBLYREF)pAssembly->GetExposedObject();
 
     MethodDescCallSite onTypeResolve(METHOD__ASSEMBLYLOADCONTEXT__ON_TYPE_RESOLVE);
 
@@ -3984,14 +3941,16 @@ Assembly* AppDomain::RaiseTypeResolveEventThrowing(Assembly* pAssembly, LPCSTR s
         ObjToArgSlot(gc.AssemblyRef),
         ObjToArgSlot(gc.str)
     };
-    ASSEMBLYREF ResultingAssemblyRef = (ASSEMBLYREF) onTypeResolve.Call_RetOBJECTREF(args);
+    gc.AssemblyRef = (ASSEMBLYREF) onTypeResolve.Call_RetOBJECTREF(args);
 
-    if (ResultingAssemblyRef != NULL)
+    if (gc.AssemblyRef != NULL)
     {
-        pResolvedAssembly = ResultingAssemblyRef->GetAssembly();
+        _ASSERTE(CoreLibBinder::IsClass(gc.AssemblyRef->GetMethodTable(), CLASS__ASSEMBLY));
+
+        pResolvedAssembly = gc.AssemblyRef->GetAssembly();
 
         if (pResultingAssemblyRef)
-            *pResultingAssemblyRef = ResultingAssemblyRef;
+            *pResultingAssemblyRef = gc.AssemblyRef;
         else
         {
             if (pResolvedAssembly->IsCollectible())
@@ -4023,7 +3982,7 @@ Assembly* AppDomain::RaiseResourceResolveEvent(Assembly* pAssembly, LPCSTR szNam
     GCX_COOP();
 
     struct {
-        OBJECTREF AssemblyRef;
+        ASSEMBLYREF AssemblyRef;
         STRINGREF str;
     } gc;
     gc.AssemblyRef = NULL;
@@ -4032,7 +3991,7 @@ Assembly* AppDomain::RaiseResourceResolveEvent(Assembly* pAssembly, LPCSTR szNam
     GCPROTECT_BEGIN(gc);
 
     if (pAssembly != NULL)
-        gc.AssemblyRef=pAssembly->GetExposedObject();
+        gc.AssemblyRef=(ASSEMBLYREF)pAssembly->GetExposedObject();
 
     MethodDescCallSite onResourceResolve(METHOD__ASSEMBLYLOADCONTEXT__ON_RESOURCE_RESOLVE);
     gc.str = StringObject::NewString(szName);
@@ -4041,10 +4000,12 @@ Assembly* AppDomain::RaiseResourceResolveEvent(Assembly* pAssembly, LPCSTR szNam
         ObjToArgSlot(gc.AssemblyRef),
         ObjToArgSlot(gc.str)
     };
-    ASSEMBLYREF ResultingAssemblyRef = (ASSEMBLYREF) onResourceResolve.Call_RetOBJECTREF(args);
-    if (ResultingAssemblyRef != NULL)
+    gc.AssemblyRef = (ASSEMBLYREF) onResourceResolve.Call_RetOBJECTREF(args);
+    if (gc.AssemblyRef != NULL)
     {
-        pResolvedAssembly = ResultingAssemblyRef->GetAssembly();
+        _ASSERTE(CoreLibBinder::IsClass(gc.AssemblyRef->GetMethodTable(), CLASS__ASSEMBLY));
+
+        pResolvedAssembly = gc.AssemblyRef->GetAssembly();
         if (pResolvedAssembly->IsCollectible())
         {
             COMPlusThrow(kNotSupportedException, W("NotSupported_CollectibleAssemblyResolve"));
@@ -4085,7 +4046,7 @@ AppDomain::RaiseAssemblyResolveEvent(
     Assembly* pAssembly = NULL;
 
     struct {
-        OBJECTREF AssemblyRef;
+        ASSEMBLYREF AssemblyRef;
         STRINGREF str;
     } gc;
     gc.AssemblyRef = NULL;
@@ -4095,7 +4056,7 @@ AppDomain::RaiseAssemblyResolveEvent(
     {
         if (pSpec->GetParentAssembly() != NULL)
         {
-            gc.AssemblyRef=pSpec->GetParentAssembly()->GetExposedObject();
+            gc.AssemblyRef=(ASSEMBLYREF)pSpec->GetParentAssembly()->GetExposedObject();
         }
 
         MethodDescCallSite onAssemblyResolve(METHOD__ASSEMBLYLOADCONTEXT__ON_ASSEMBLY_RESOLVE);
@@ -4106,11 +4067,13 @@ AppDomain::RaiseAssemblyResolveEvent(
             ObjToArgSlot(gc.str)
         };
 
-        ASSEMBLYREF ResultingAssemblyRef = (ASSEMBLYREF) onAssemblyResolve.Call_RetOBJECTREF(args);
+        gc.AssemblyRef = (ASSEMBLYREF) onAssemblyResolve.Call_RetOBJECTREF(args);
 
-        if (ResultingAssemblyRef != NULL)
+        if (gc.AssemblyRef != NULL)
         {
-            pAssembly = ResultingAssemblyRef->GetAssembly();
+            _ASSERTE(CoreLibBinder::IsClass(gc.AssemblyRef->GetMethodTable(), CLASS__ASSEMBLY));
+
+            pAssembly = gc.AssemblyRef->GetAssembly();
             if (pAssembly->IsCollectible())
             {
                 COMPlusThrow(kNotSupportedException, W("NotSupported_CollectibleAssemblyResolve"));
@@ -4542,6 +4505,8 @@ HRESULT RuntimeInvokeHostAssemblyResolver(INT_PTR pManagedAssemblyLoadContextToB
         {
             // If we are here, assembly was successfully resolved via Load or Resolving events.
             _ASSERTE(_gcRefs.oRefLoadedAssembly != NULL);
+
+            _ASSERTE(CoreLibBinder::IsClass(_gcRefs.oRefLoadedAssembly->GetMethodTable(), CLASS__ASSEMBLY));
 
             // We were able to get the assembly loaded. Now, get its name since the host could have
             // performed the resolution using an assembly with different name.

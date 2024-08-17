@@ -1089,7 +1089,7 @@ get_call_info (MonoMemPool *mp, MonoMethodSignature *sig)
 			MonoClass *swift_self = mono_class_try_get_swift_self_class ();
 			MonoClass *swift_error = mono_class_try_get_swift_error_class ();
 			MonoClass *swift_indirect_result = mono_class_try_get_swift_indirect_result_class ();
-			MonoClass *swift_error_ptr = mono_class_create_ptr (m_class_get_this_arg (swift_error));
+			MonoClass *swift_error_ptr = swift_error ? mono_class_create_ptr (m_class_get_this_arg (swift_error)) : NULL;
 			MonoClass *klass = mono_class_from_mono_type_internal (sig->params [i]);
 			if (klass == swift_indirect_result)
 				cinfo->need_swift_return_buffer = TRUE;
@@ -1553,7 +1553,7 @@ gpointer
 mono_arch_get_swift_error (CallContext *ccontext, MonoMethodSignature *sig, int *arg_index)
 {
 	MonoClass *swift_error = mono_class_try_get_swift_error_class ();
-	MonoClass *swift_error_ptr = mono_class_create_ptr (m_class_get_this_arg (swift_error));
+	MonoClass *swift_error_ptr = swift_error ? mono_class_create_ptr (m_class_get_this_arg (swift_error)) : NULL;
 	for (guint i = 0; i < sig->param_count + sig->hasthis; i++) {
 		MonoClass *klass = mono_class_from_mono_type_internal (sig->params [i]);
 		if (klass && (klass == swift_error || klass == swift_error_ptr)) {
@@ -5835,7 +5835,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 #else
 			// NT does not have varargs rax use, and NT ABI does not have red zone.
 			// Use red-zone mov/jmp instead of push/ret to preserve call/ret speculation stack.
-			// FIXME Just like NT the direct cases are are not ideal.
+			// FIXME Just like NT the direct cases are not ideal.
 			amd64_mov_membase_reg (code, AMD64_RSP, -8, AMD64_RAX, 8);
 			code = amd64_handle_varargs_call (cfg, code, call, FALSE);
 #ifdef MONO_ARCH_HAVE_SWIFTCALL

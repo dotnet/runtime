@@ -9,7 +9,7 @@
 static const HWIntrinsicInfo hwIntrinsicInfoArray[] = {
 // clang-format off
 #if defined(TARGET_XARCH)
-#define HARDWARE_INTRINSIC(isa, name, size, numarg, extra, t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, category, flag) \
+#define HARDWARE_INTRINSIC(isa, name, size, numarg, t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, category, flag) \
     { \
             /* name */ #name, \
            /* flags */ static_cast<HWIntrinsicFlag>(flag), \
@@ -22,7 +22,7 @@ static const HWIntrinsicInfo hwIntrinsicInfoArray[] = {
     },
 #include "hwintrinsiclistxarch.h"
 #elif defined (TARGET_ARM64)
-#define HARDWARE_INTRINSIC(isa, name, size, numarg, extra, t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, category, flag) \
+#define HARDWARE_INTRINSIC(isa, name, size, numarg, t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, category, flag) \
     { \
             /* name */ #name, \
            /* flags */ static_cast<HWIntrinsicFlag>(flag), \
@@ -759,75 +759,6 @@ CorInfoType Compiler::getBaseJitTypeFromArgIfNeeded(NamedIntrinsic       intrins
     return simdBaseJitType;
 }
 
-//------------------------------------------------------------------------
-// vnEncodesResultTypeForHWIntrinsic(NamedIntrinsic hwIntrinsicID):
-//
-// Arguments:
-//    hwIntrinsicID -- The id for the HW intrinsic
-//
-// Return Value:
-//   Returns true if this intrinsic requires value numbering to add an
-//   extra SimdType argument that encodes the resulting type.
-//   If we don't do this overloaded versions can return the same VN
-//   leading to incorrect CSE substitutions.
-//
-/* static */ bool Compiler::vnEncodesResultTypeForHWIntrinsic(NamedIntrinsic hwIntrinsicID)
-{
-    // No extra type information is needed for scalar/special HW Intrinsic.
-    //
-    unsigned simdSize = 0;
-    if (HWIntrinsicInfo::tryLookupSimdSize(hwIntrinsicID, &simdSize) && (simdSize == 0))
-    {
-        return false;
-    }
-
-    int numArgs = HWIntrinsicInfo::lookupNumArgs(hwIntrinsicID);
-
-    // HW Intrinsic's with -1 for numArgs have a varying number of args, so we currently
-    // give them a unique value number, and don't add an extra argument.
-    //
-    if (numArgs == -1)
-    {
-        return false;
-    }
-
-    // We iterate over all of the different baseType's for this intrinsic in the HWIntrinsicInfo table
-    // We set  diffInsCount to the number of instructions that can execute differently.
-    //
-    unsigned diffInsCount = 0;
-#ifdef TARGET_XARCH
-    instruction lastIns = INS_invalid;
-#endif
-    for (var_types baseType = TYP_BYTE; (baseType <= TYP_DOUBLE); baseType = (var_types)(baseType + 1))
-    {
-        instruction curIns = HWIntrinsicInfo::lookupIns(hwIntrinsicID, baseType);
-        if (curIns != INS_invalid)
-        {
-#ifdef TARGET_XARCH
-            if (curIns != lastIns)
-            {
-                diffInsCount++;
-                // remember the last valid instruction that we saw
-                lastIns = curIns;
-            }
-#elif defined(TARGET_ARM64)
-            // On ARM64 we use the same instruction and specify an insOpt arrangement
-            // so we always consider the instruction operation to be different
-            //
-            diffInsCount++;
-#endif // TARGET
-            if (diffInsCount >= 2)
-            {
-                // We can  early exit the loop now
-                break;
-            }
-        }
-    }
-
-    // If we see two (or more) different instructions we need the extra VNF_SimdType arg
-    return (diffInsCount >= 2);
-}
-
 struct HWIntrinsicIsaRange
 {
     NamedIntrinsic FirstId;
@@ -1049,7 +980,8 @@ NamedIntrinsic HWIntrinsicInfo::lookupId(Compiler*         comp,
                                          CORINFO_SIG_INFO* sig,
                                          const char*       className,
                                          const char*       methodName,
-                                         const char*       enclosingClassName)
+                                         const char*       innerEnclosingClassName,
+                                         const char*       outerEnclosingClassName)
 {
 #if defined(DEBUG)
     static bool validationCompleted = false;
@@ -1061,7 +993,13 @@ NamedIntrinsic HWIntrinsicInfo::lookupId(Compiler*         comp,
     }
 #endif // DEBUG
 
-    CORINFO_InstructionSet isa = lookupIsa(className, enclosingClassName);
+    // Signatures that have a 'this' parameter are illegal intrinsics.
+    if (sig->hasThis())
+    {
+        return NI_Illegal;
+    }
+
+    CORINFO_InstructionSet isa = lookupIsa(className, innerEnclosingClassName, outerEnclosingClassName);
 
     if (isa == InstructionSet_ILLEGAL)
     {
@@ -1660,7 +1598,27 @@ bool Compiler::CheckHWIntrinsicImmRange(NamedIntrinsic intrinsic,
         {
             assert(!mustExpand);
             // The imm-HWintrinsics that do not accept all imm8 values may throw
-            // ArgumentOutOfRangeException when the imm argument is not in the valid range
+            // ArgumentOutOfRangeException when the imm argument is not in the valid range,
+            // unless the intrinsic can be transformed into one that does accept all imm8 values
+
+#ifdef TARGET_ARM64
+            switch (intrinsic)
+            {
+                case NI_AdvSimd_ShiftLeftLogical:
+                case NI_AdvSimd_ShiftLeftLogicalScalar:
+                case NI_AdvSimd_ShiftRightLogical:
+                case NI_AdvSimd_ShiftRightLogicalScalar:
+                case NI_AdvSimd_ShiftRightArithmetic:
+                case NI_AdvSimd_ShiftRightArithmeticScalar:
+                    *useFallback = true;
+                    break;
+
+                default:
+                    assert(*useFallback == false);
+                    break;
+            }
+#endif // TARGET_ARM64
+
             return false;
         }
     }
@@ -1685,7 +1643,7 @@ bool Compiler::CheckHWIntrinsicImmRange(NamedIntrinsic intrinsic,
                 }
             }
             else
-#endif // TARGET_XARCH
+#endif // TARGET_X86
             {
                 *useFallback = true;
                 return false;
@@ -1860,6 +1818,13 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
     if (simdBaseJitType != CORINFO_TYPE_UNDEF)
     {
         simdBaseType = JitType2PreciseVarType(simdBaseJitType);
+#ifdef TARGET_XARCH
+        if (HWIntrinsicInfo::NeedsNormalizeSmallTypeToInt(intrinsic) && varTypeIsSmall(simdBaseType))
+        {
+            simdBaseJitType = varTypeIsUnsigned(simdBaseType) ? CORINFO_TYPE_UINT : CORINFO_TYPE_INT;
+            simdBaseType    = JitType2PreciseVarType(simdBaseJitType);
+        }
+#endif // TARGET_XARCH
     }
 
     const unsigned simdSize = HWIntrinsicInfo::lookupSimdSize(this, intrinsic, sig);
@@ -2217,16 +2182,28 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
 #elif defined(TARGET_ARM64)
                     case NI_Sve_GatherVector:
                     case NI_Sve_GatherVectorByteZeroExtend:
+                    case NI_Sve_GatherVectorByteZeroExtendFirstFaulting:
+                    case NI_Sve_GatherVectorFirstFaulting:
                     case NI_Sve_GatherVectorInt16SignExtend:
+                    case NI_Sve_GatherVectorInt16SignExtendFirstFaulting:
                     case NI_Sve_GatherVectorInt16WithByteOffsetsSignExtend:
+                    case NI_Sve_GatherVectorInt16WithByteOffsetsSignExtendFirstFaulting:
                     case NI_Sve_GatherVectorInt32SignExtend:
+                    case NI_Sve_GatherVectorInt32SignExtendFirstFaulting:
                     case NI_Sve_GatherVectorInt32WithByteOffsetsSignExtend:
+                    case NI_Sve_GatherVectorInt32WithByteOffsetsSignExtendFirstFaulting:
                     case NI_Sve_GatherVectorSByteSignExtend:
+                    case NI_Sve_GatherVectorSByteSignExtendFirstFaulting:
                     case NI_Sve_GatherVectorUInt16WithByteOffsetsZeroExtend:
+                    case NI_Sve_GatherVectorUInt16WithByteOffsetsZeroExtendFirstFaulting:
                     case NI_Sve_GatherVectorUInt16ZeroExtend:
+                    case NI_Sve_GatherVectorUInt16ZeroExtendFirstFaulting:
                     case NI_Sve_GatherVectorUInt32WithByteOffsetsZeroExtend:
+                    case NI_Sve_GatherVectorUInt32WithByteOffsetsZeroExtendFirstFaulting:
                     case NI_Sve_GatherVectorUInt32ZeroExtend:
+                    case NI_Sve_GatherVectorWithByteOffsetFirstFaulting:
                     case NI_Sve_GatherVectorWithByteOffsets:
+                    case NI_Sve_GatherVectorUInt32ZeroExtendFirstFaulting:
                         assert(varTypeIsSIMD(op3->TypeGet()));
                         if (numArgs == 3)
                         {
@@ -2297,10 +2274,15 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
 
         switch (intrinsic)
         {
-            case NI_Sve_CreateBreakAfterMask:
             case NI_Sve_CreateBreakAfterPropagateMask:
-            case NI_Sve_CreateBreakBeforeMask:
             case NI_Sve_CreateBreakBeforePropagateMask:
+            {
+                // HWInstrinsic requires a mask for op3
+                convertToMaskIfNeeded(retNode->AsHWIntrinsic()->Op(3));
+                FALLTHROUGH;
+            }
+            case NI_Sve_CreateBreakAfterMask:
+            case NI_Sve_CreateBreakBeforeMask:
             case NI_Sve_CreateMaskForFirstActiveElement:
             case NI_Sve_CreateMaskForNextActiveElement:
             case NI_Sve_GetActiveElementCount:
@@ -2310,29 +2292,15 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
             {
                 // HWInstrinsic requires a mask for op2
                 convertToMaskIfNeeded(retNode->AsHWIntrinsic()->Op(2));
-                break;
+                FALLTHROUGH;
             }
-
             default:
-                break;
-        }
-
-        switch (intrinsic)
-        {
-            case NI_Sve_CreateBreakAfterPropagateMask:
-            case NI_Sve_CreateBreakBeforePropagateMask:
             {
-                // HWInstrinsic requires a mask for op3
-                convertToMaskIfNeeded(retNode->AsHWIntrinsic()->Op(3));
+                // HWInstrinsic requires a mask for op1
+                convertToMaskIfNeeded(retNode->AsHWIntrinsic()->Op(1));
                 break;
             }
-
-            default:
-                break;
         }
-
-        // HWInstrinsic requires a mask for op1
-        convertToMaskIfNeeded(retNode->AsHWIntrinsic()->Op(1));
 
         if (HWIntrinsicInfo::IsMultiReg(intrinsic))
         {

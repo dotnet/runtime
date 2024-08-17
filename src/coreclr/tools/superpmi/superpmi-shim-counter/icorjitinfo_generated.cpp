@@ -986,10 +986,11 @@ const char* interceptor_ICJI::getMethodNameFromMetadata(
           CORINFO_METHOD_HANDLE ftn,
           const char** className,
           const char** namespaceName,
-          const char** enclosingClassName)
+          const char** enclosingClassNames,
+          size_t maxEnclosingClassNames)
 {
     mcs->AddCall("getMethodNameFromMetadata");
-    return original_ICorJitInfo->getMethodNameFromMetadata(ftn, className, namespaceName, enclosingClassName);
+    return original_ICorJitInfo->getMethodNameFromMetadata(ftn, className, namespaceName, enclosingClassNames, maxEnclosingClassNames);
 }
 
 unsigned interceptor_ICJI::getMethodHash(
@@ -1015,18 +1016,12 @@ void interceptor_ICJI::getSwiftLowering(
     original_ICorJitInfo->getSwiftLowering(structHnd, pLowering);
 }
 
-uint32_t interceptor_ICJI::getLoongArch64PassStructInRegisterFlags(
-          CORINFO_CLASS_HANDLE structHnd)
+void interceptor_ICJI::getFpStructLowering(
+          CORINFO_CLASS_HANDLE structHnd,
+          CORINFO_FPSTRUCT_LOWERING* pLowering)
 {
-    mcs->AddCall("getLoongArch64PassStructInRegisterFlags");
-    return original_ICorJitInfo->getLoongArch64PassStructInRegisterFlags(structHnd);
-}
-
-uint32_t interceptor_ICJI::getRISCV64PassStructInRegisterFlags(
-          CORINFO_CLASS_HANDLE structHnd)
-{
-    mcs->AddCall("getRISCV64PassStructInRegisterFlags");
-    return original_ICorJitInfo->getRISCV64PassStructInRegisterFlags(structHnd);
+    mcs->AddCall("getFpStructLowering");
+    original_ICorJitInfo->getFpStructLowering(structHnd, pLowering);
 }
 
 uint32_t interceptor_ICJI::getThreadTLSIndex(

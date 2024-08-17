@@ -1260,7 +1260,7 @@ MethodTableBuilder::BuildMethodTableThrowing(
     }
     CONTRACTL_END;
 
-    pModule->EnsureLibraryLoaded();
+    pModule->EnsureAllocated();
 
     // The following structs, defined as private members of MethodTableBuilder, contain the necessary local
     // parameters needed for BuildMethodTable Look at the struct definitions for a detailed list of all
@@ -1490,13 +1490,26 @@ MethodTableBuilder::BuildMethodTableThrowing(
 #if defined(TARGET_X86) || defined(TARGET_AMD64) || defined(TARGET_ARM64)
     if (bmtProp->fIsIntrinsicType && !bmtGenerics->HasInstantiation())
     {
-        LPCUTF8 className;
         LPCUTF8 nameSpace;
-        HRESULT hr = GetMDImport()->GetNameOfTypeDef(bmtInternal->pType->GetTypeDefToken(), &className, &nameSpace);
+        HRESULT hr = S_OK;
 
-        if (bmtInternal->pType->IsNested())
+        if (!bmtInternal->pType->IsNested())
         {
-            IfFailThrow(GetMDImport()->GetNameOfTypeDef(bmtInternal->pType->GetEnclosingTypeToken(), NULL, &nameSpace));
+            hr = GetMDImport()->GetNameOfTypeDef(bmtInternal->pType->GetTypeDefToken(), NULL, &nameSpace);
+        }
+        else
+        {
+            mdTypeDef rootEnclosingTD = bmtInternal->pType->GetEnclosingTypeToken();
+
+            mdTypeDef td = rootEnclosingTD;
+            // Some are hardware intrinsics are nested twice, so try to go
+            // another level up to get the namespace.
+            if (SUCCEEDED(GetMDImport()->GetNestedClassProps(rootEnclosingTD, &td)))
+            {
+                rootEnclosingTD = td;
+            }
+
+            IfFailThrow(GetMDImport()->GetNameOfTypeDef(td, NULL, &nameSpace));
         }
 
 #if defined(TARGET_ARM64)
@@ -3170,14 +3183,14 @@ MethodTableBuilder::EnumerateClassMethods()
                 }
                 else
                 {
-                    type = mcNDirect;
+                    type = mcPInvoke;
                 }
             }
             // The NAT_L attribute is present, marking this method as NDirect
             else
             {
                 CONSISTENCY_CHECK(hr == S_OK);
-                type = mcNDirect;
+                type = mcPInvoke;
             }
         }
         else if (IsMiRuntime(dwImplFlags))
@@ -3242,11 +3255,6 @@ MethodTableBuilder::EnumerateClassMethods()
             {
                 // Methods in instantiated interfaces need nothing special - they are not visible from COM etc.
                 type = mcIL;
-            }
-            else if (bmtProp->fIsMngStandardItf)
-            {
-                // If the interface is a standard managed interface then allocate space for an FCall method desc.
-                type = mcFCall;
             }
             else if (IsMdAbstract(dwMemberAttrs))
             {
@@ -5080,7 +5088,7 @@ MethodTableBuilder::ValidateMethods()
             {
                 BuildMethodTableThrowException(IDS_CLASSLOAD_BAD_UNMANAGED_RVA, it.Token());
             }
-            if (it.MethodType() != mcNDirect)
+            if (it.MethodType() != mcPInvoke)
             {
                 BuildMethodTableThrowException(BFA_BAD_UNMANAGED_ENTRY_POINT);
             }
@@ -6086,7 +6094,7 @@ MethodTableBuilder::InitMethodDesc(
 
     switch (Classification)
     {
-    case mcNDirect:
+    case mcPInvoke:
         {
             // NDirect specific initialization.
             NDirectMethodDesc *pNewNMD = (NDirectMethodDesc*)pNewMD;
@@ -11358,10 +11366,8 @@ VOID MethodTableBuilder::CheckForRemotingProxyAttrib()
 
 
 //*******************************************************************************
-// Checks for a bunch of special interface names and if it matches then it sets
-// bmtProp->fIsMngStandardItf to TRUE. Additionally, it checks to see if the
-// type is an interface and if it has ComEventInterfaceAttribute custom attribute
-// set, then it sets bmtProp->fComEventItfType to true.
+// Checks to see if the type is an interface and if it has ComEventInterfaceAttribute
+// custom attribute set, then it sets bmtProp->fComEventItfType to true.
 //
 // NOTE: This only does anything when COM interop is enabled.
 
@@ -11369,54 +11375,6 @@ VOID MethodTableBuilder::CheckForSpecialTypes()
 {
 #ifdef FEATURE_COMINTEROP
     STANDARD_VM_CONTRACT;
-
-
-    Module *pModule = GetModule();
-    IMDInternalImport *pMDImport = pModule->GetMDImport();
-
-    // Check to see if this type is a managed standard interface. All the managed
-    // standard interfaces live in CoreLib so checking for that first
-    // makes the strcmp that comes afterwards acceptable.
-    if (pModule->IsSystem())
-    {
-        if (IsInterface())
-        {
-            LPCUTF8 pszClassName;
-            LPCUTF8 pszClassNamespace;
-            if (FAILED(pMDImport->GetNameOfTypeDef(GetCl(), &pszClassName, &pszClassNamespace)))
-            {
-                pszClassName = pszClassNamespace = NULL;
-            }
-            if ((pszClassName != NULL) && (pszClassNamespace != NULL))
-            {
-                LPUTF8 pszFullyQualifiedName = NULL;
-                MAKE_FULLY_QUALIFIED_NAME(pszFullyQualifiedName, pszClassNamespace, pszClassName);
-
-                // This is just to give us a scope to break out of.
-                do
-                {
-
-#define MNGSTDITF_BEGIN_INTERFACE(FriendlyName, strMngItfName, strUCOMMngItfName, strCustomMarshalerName, strCustomMarshalerCookie, strManagedViewName, NativeItfIID, bCanCastOnNativeItfQI) \
-                    if (strcmp(strMngItfName, pszFullyQualifiedName) == 0) \
-                    { \
-                        bmtProp->fIsMngStandardItf = true; \
-                        break; \
-                    }
-
-#define MNGSTDITF_DEFINE_METH_IMPL(FriendlyName, ECallMethName, MethName, MethSig, FcallDecl)
-
-#define MNGSTDITF_END_INTERFACE(FriendlyName)
-
-#include "mngstditflist.h"
-
-#undef MNGSTDITF_BEGIN_INTERFACE
-#undef MNGSTDITF_DEFINE_METH_IMPL
-#undef MNGSTDITF_END_INTERFACE
-
-                } while (FALSE);
-            }
-        }
-    }
 
     // Check to see if the type is a COM event interface (classic COM interop only).
     if (IsInterface())
