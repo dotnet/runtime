@@ -50,8 +50,8 @@
     <MakeDir Condition="'$(Crossgen2Supported)' == 'true'" Directories="$(ArtifactsObjDir)coreclr\crossgen2_publish\$(TargetOS).$(TargetArchitecture).$(RuntimeConfiguration)" />
 
     <PropertyGroup Condition="'$(Crossgen2Supported)' == 'true'">
-      <_apphostPath Condition="Exists('$(ArtifactsObjDir)$(TargetOS)-$(TargetArchitecture).$(HostConfiguration)')">$(ArtifactsObjDir)$(TargetOS)-$(TargetArchitecture).$(HostConfiguration)\apphost\standalone\apphost</_apphostPath>
-      <_apphostPath>$(ArtifactsObjDir)$(TargetOS)-$(TargetArchitecture).$(LibrariesConfiguration)\apphost\standalone\apphost</_apphostPath>
+      <_apphostPath Condition="Exists('$(ArtifactsBinDir)$(TargetOS)-$(TargetArchitecture).$(HostConfiguration)')">$(ArtifactsBinDir)$(TargetOS)-$(TargetArchitecture).$(HostConfiguration)\corehost\apphost</_apphostPath>
+      <_apphostPath Condition="Exists('$(ArtifactsBinDir)$(TargetOS)-$(TargetArchitecture).$(LibrariesConfiguration)')">$(ArtifactsBinDir)$(TargetOS)-$(TargetArchitecture).$(LibrariesConfiguration)\corehost\apphost</_apphostPath>
     </PropertyGroup>
 
     <Copy
