@@ -38,8 +38,10 @@ namespace System
         {
             Guid g;
 
-            byte* randomDataStartOffset = ((byte*)&g) + 6;
-            int randomDataLength = sizeof(Guid) - 6;
+            const int TimeStampSizeInBytes = 6;
+
+            byte* randomDataStartOffset = ((byte*)&g) + TimeStampSizeInBytes;
+            int randomDataLength = sizeof(Guid) - TimeStampSizeInBytes;
 
 #if !TARGET_WASI
             Interop.GetCryptographicallySecureRandomBytes(randomDataStartOffset, randomDataLength);
