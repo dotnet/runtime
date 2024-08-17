@@ -579,7 +579,6 @@ if(CLR_CMAKE_TARGET_WIN32)
         comtoclrcall.cpp
         dispatchinfo.cpp
         dispparammarshaler.cpp
-        mngstdinterfaces.cpp
         olecontexthelpers.cpp
         runtimecallablewrapper.cpp
         stdinterfaces.cpp
@@ -595,7 +594,6 @@ if(CLR_CMAKE_TARGET_WIN32)
         comtoclrcall.h
         dispatchinfo.h
         dispparammarshaler.h
-        mngstdinterfaces.h
         olecontexthelpers.h
         runtimecallablewrapper.h
         stdinterfaces.h
