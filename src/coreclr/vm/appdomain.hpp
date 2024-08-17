@@ -41,7 +41,6 @@ class AppDomain;
 class GlobalStringLiteralMap;
 class StringLiteralMap;
 class FrozenObjectHeapManager;
-class MngStdInterfacesInfo;
 class DomainAssembly;
 class TypeEquivalenceHashTable;
 
@@ -478,15 +477,6 @@ public:
         _ASSERTE(!"Not an AppDomain");
         return NULL;
     }
-
-#ifdef FEATURE_COMINTEROP
-    MngStdInterfacesInfo * GetMngStdInterfacesInfo()
-    {
-        LIMITED_METHOD_CONTRACT;
-
-        return m_pMngStdInterfacesInfo;
-    }
-#endif // FEATURE_COMINTEROP
     //****************************************************************************************
     // Get the class init lock. The method is limited to friends because inappropriate use
     // will cause deadlocks in the system
@@ -671,11 +661,6 @@ protected:
 
     // The pinned heap handle table.
     PinnedHeapHandleTable       *m_pPinnedHeapHandleTable;
-
-#ifdef FEATURE_COMINTEROP
-    // Information regarding the managed standard interfaces.
-    MngStdInterfacesInfo        *m_pMngStdInterfacesInfo;
-#endif // FEATURE_COMINTEROP
 
     // Protects allocation of slot IDs for thread statics
     static CrstStatic m_MethodTableExposedClassObjectCrst;

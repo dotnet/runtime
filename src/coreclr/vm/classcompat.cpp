@@ -2771,11 +2771,6 @@ VOID    MethodTableBuilder::EnumerateClassMethods()
                 // Static methods in interfaces need nothing special.
                 Classification = mcIL;
             }
-            else if (bmtProp->fIsMngStandardItf)
-            {
-                // If the interface is a standard managed interface then allocate space for an FCall method desc.
-                Classification = mcFCall;
-            }
             else if (IsMdAbstract(dwMemberAttrs))
             {
                 // If COM interop is supported then all other interface MDs may be
