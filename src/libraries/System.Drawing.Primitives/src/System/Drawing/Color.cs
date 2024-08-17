@@ -4,6 +4,7 @@
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Numerics.Colors;
 using System.Runtime.CompilerServices;
 
 namespace System.Drawing
@@ -333,7 +334,7 @@ namespace System.Drawing
         internal const uint ARGBBlueMask = 0xFFu << ARGBBlueShift;
 
         // User supplied name of color. Will not be filled in if
-        // we map to a "knowncolor"
+        // we map to a "knownColor"
         private readonly string? name; // Do not rename (binary serialization)
 
         // Standard 32bit sRGB (ARGB)
@@ -398,10 +399,10 @@ namespace System.Drawing
 
                 if (IsKnownColor)
                 {
-                    string tablename = KnownColorNames.KnownColorToName((KnownColor)knownColor);
-                    Debug.Assert(tablename != null, $"Could not find known color '{(KnownColor)knownColor}' in the KnownColorTable");
+                    string tableName = KnownColorNames.KnownColorToName((KnownColor)knownColor);
+                    Debug.Assert(tableName != null, $"Could not find known color '{(KnownColor)knownColor}' in the KnownColorTable");
 
-                    return tablename;
+                    return tableName;
                 }
 
                 // if we reached here, just encode the value
@@ -441,6 +442,10 @@ namespace System.Drawing
         private static Color FromArgb(uint argb) => new Color(argb, StateARGBValueValid, null, (KnownColor)0);
 
         public static Color FromArgb(int argb) => FromArgb(unchecked((uint)argb));
+
+        public static Color FromArgb(Argb<byte> argb) => FromArgb(BitConverter.IsLittleEndian ?
+            Argb.ToUInt32LittleEndian(argb) :
+            Argb.ToUInt32BigEndian(argb));
 
         public static Color FromArgb(int alpha, int red, int green, int blue)
         {
@@ -567,6 +572,10 @@ namespace System.Drawing
 
         public int ToArgb() => unchecked((int)Value);
 
+        public Argb<byte> ToArgbValue() => BitConverter.IsLittleEndian ?
+            Argb.CreateLittleEndian(unchecked((uint)Value)) :
+            Argb.CreateBigEndian(unchecked((uint)Value));
+
         public KnownColor ToKnownColor() => (KnownColor)knownColor;
 
         public override string ToString() =>
@@ -581,6 +590,10 @@ namespace System.Drawing
                 && left.name == right.name;
 
         public static bool operator !=(Color left, Color right) => !(left == right);
+
+        public static implicit operator Color(Argb<byte> argb) => FromArgb(argb);
+
+        public static explicit operator Argb<byte>(in Color color) => color.ToArgbValue();
 
         public override bool Equals([NotNullWhen(true)] object? obj) => obj is Color other && Equals(other);
 
