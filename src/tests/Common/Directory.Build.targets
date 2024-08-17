@@ -35,7 +35,36 @@
   </ItemDefinitionGroup>
 
   <Target Name="CopyDependencyToCoreRoot"
-          DependsOnTargets="ResolveAssemblyReferences;ResolveRuntimeFilesFromLocalBuild">
+    DependsOnTargets="ResolveAssemblyReferences;ResolveRuntimeFilesFromLocalBuild">
+
+    <!-- Copy apphost to crossgen2_publish directory.
+        The default configuration between product and tests are flipped. When we build project like:
+        `build -c debug -rc checked`, the corresponding test command is `src/tests/build -checked -p:LibrariesConfiguration=debug`,
+        instead of `-debug -p:RuntimeConfiguration=checked`. That forces us to either pass the
+        `HostConfiguration=debug` explicitly or fix this disparity; both of which will break the dev workflow.
+        
+        As a workaround, we will first check if the directory pointed by `HostConfiguration` exists, then check
+        `LibrariesConfiguration`.
+    -->
+
+    <MakeDir Condition="'$(Crossgen2Supported)' == 'true'" Directories="$(ArtifactsObjDir)coreclr\crossgen2_publish\$(TargetOS).$(TargetArchitecture).$(RuntimeConfiguration)" />
+
+    <PropertyGroup Condition="'$(Crossgen2Supported)' == 'true'">
+      <_apphostPath Condition="Exists('$(ArtifactsObjDir)$(TargetOS)-$(TargetArchitecture).$(HostConfiguration)')">$(ArtifactsObjDir)$(TargetOS)-$(TargetArchitecture).$(HostConfiguration)\apphost\standalone\apphost</_apphostPath>
+      <_apphostPath>$(ArtifactsObjDir)$(TargetOS)-$(TargetArchitecture).$(LibrariesConfiguration)\apphost\standalone\apphost</_apphostPath>
+    </PropertyGroup>
+
+    <Copy
+      SourceFiles="$(_apphostPath)"
+      DestinationFiles="$(ArtifactsObjDir)coreclr\crossgen2_publish\$(TargetOS).$(TargetArchitecture).$(RuntimeConfiguration)\apphost"
+      Condition="'$(Crossgen2Supported)' == 'true'"
+      SkipUnchangedFiles="$(SkipCopyUnchangedFiles)"
+      OverwriteReadOnlyFiles="$(OverwriteReadOnlyFiles)"
+      Retries="$(CopyRetryCount)"
+      RetryDelayMilliseconds="$(CopyRetryDelayMilliseconds)"
+      UseHardlinksIfPossible="$(CreateHardLinksForCopyFilesToOutputDirectoryIfPossible)">
+      <Output TaskParameter="DestinationFiles" ItemName="FileWrites" />
+    </Copy>
 
     <!-- Publish crossgen2 on supported platforms. -->
 
