@@ -8,7 +8,9 @@
 
   <ItemGroup>
     <Compile Include="Argb.T.Tests.cs" />
+    <Compile Include="Argb.Tests.cs" />
     <Compile Include="Rgba.T.Tests.cs" />
+    <Compile Include="Rgba.Tests.cs" />
     <Compile Include="TestHelpers.cs" />
   </ItemGroup>
 
