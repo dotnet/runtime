@@ -7,9 +7,7 @@ using System.Runtime.Intrinsics;
 
 namespace System.Runtime.Intrinsics.Wasm
 {
-    /// <summary>
-    /// Provides access to the WebAssembly packed SIMD instructions via intrinsics
-    /// </summary>
+    /// <summary>Provides access to the WebAssembly packed SIMD instructions via intrinsics.</summary>
     [Intrinsic]
     [CLSCompliant(false)]
     public abstract class PackedSimd

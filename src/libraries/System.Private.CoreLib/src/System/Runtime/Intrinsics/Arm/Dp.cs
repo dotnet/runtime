@@ -6,9 +6,7 @@ using System.Runtime.CompilerServices;
 
 namespace System.Runtime.Intrinsics.Arm
 {
-    /// <summary>
-    /// Provides access to the ARMv8.2-DotProd hardware instructions via intrinsics
-    /// </summary>
+    /// <summary>Provides access to the ARMv8.2-DotProd hardware instructions via intrinsics.</summary>
     [Intrinsic]
     [CLSCompliant(false)]
     public abstract class Dp : AdvSimd

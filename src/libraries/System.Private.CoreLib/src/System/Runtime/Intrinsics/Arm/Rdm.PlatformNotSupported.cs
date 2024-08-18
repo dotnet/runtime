@@ -6,9 +6,7 @@ using System.Runtime.CompilerServices;
 
 namespace System.Runtime.Intrinsics.Arm
 {
-    /// <summary>
-    /// Provides access to the ARMv8.1-RDMA hardware instructions via intrinsics
-    /// </summary>
+    /// <summary>Provides access to the ARMv8.1-RDMA hardware instructions via intrinsics.</summary>
     [CLSCompliant(false)]
     public abstract class Rdm : AdvSimd
     {

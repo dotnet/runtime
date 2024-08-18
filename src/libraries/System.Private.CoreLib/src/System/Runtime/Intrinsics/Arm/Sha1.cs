@@ -5,9 +5,7 @@ using System.Runtime.CompilerServices;
 
 namespace System.Runtime.Intrinsics.Arm
 {
-    /// <summary>
-    /// Provides access to the ARM SHA1 hardware instructions via intrinsics
-    /// </summary>
+    /// <summary>Provides access to the ARM SHA1 hardware instructions via intrinsics.</summary>
     [Intrinsic]
     [CLSCompliant(false)]
     public abstract class Sha1 : ArmBase

@@ -8,9 +8,7 @@ using System.Numerics;
 
 namespace System.Runtime.Intrinsics.Arm
 {
-    /// <summary>
-    /// Provides access to the ARM SVE hardware instructions via intrinsics
-    /// </summary>
+    /// <summary>Provides access to the ARM SVE hardware instructions via intrinsics.</summary>
     [CLSCompliant(false)]
     [Experimental(Experimentals.ArmSveDiagId, UrlFormat = Experimentals.SharedUrlFormat)]
 #if SYSTEM_PRIVATE_CORELIB

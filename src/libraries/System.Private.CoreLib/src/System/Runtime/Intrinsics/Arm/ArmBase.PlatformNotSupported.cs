@@ -5,9 +5,7 @@ using System.Runtime.CompilerServices;
 
 namespace System.Runtime.Intrinsics.Arm
 {
-    /// <summary>
-    /// Provides access to the ARM base hardware instructions via intrinsics
-    /// </summary>
+    /// <summary>Provides access to the ARM base hardware instructions via intrinsics.</summary>
     [CLSCompliant(false)]
 #if SYSTEM_PRIVATE_CORELIB
     public

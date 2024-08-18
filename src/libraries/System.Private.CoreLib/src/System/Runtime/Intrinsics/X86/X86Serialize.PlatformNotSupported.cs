@@ -6,9 +6,7 @@ using System.Runtime.InteropServices;
 
 namespace System.Runtime.Intrinsics.X86
 {
-    /// <summary>
-    /// Provides access to the x86 SERIALIZE hardware instruction via intrinsics
-    /// </summary>
+    /// <summary>Provides access to the x86 SERIALIZE hardware instruction via intrinsics.</summary>
     [CLSCompliant(false)]
     public abstract class X86Serialize : X86Base
     {
