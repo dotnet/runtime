@@ -10,14 +10,14 @@ namespace Mono.Linker.Dataflow
 {
 	public readonly struct TrimAnalysisPatternStore
 	{
-		readonly Dictionary<(MessageOrigin, bool), TrimAnalysisAssignmentPattern> AssignmentPatterns;
+		readonly Dictionary<(MessageOrigin, int?), TrimAnalysisAssignmentPattern> AssignmentPatterns;
 		readonly Dictionary<MessageOrigin, TrimAnalysisMethodCallPattern> MethodCallPatterns;
 		readonly ValueSetLattice<SingleValue> Lattice;
 		readonly LinkContext _context;
 
 		public TrimAnalysisPatternStore (ValueSetLattice<SingleValue> lattice, LinkContext context)
 		{
-			AssignmentPatterns = new Dictionary<(MessageOrigin, bool), TrimAnalysisAssignmentPattern> ();
+			AssignmentPatterns = new Dictionary<(MessageOrigin, int?), TrimAnalysisAssignmentPattern> ();
 			MethodCallPatterns = new Dictionary<MessageOrigin, TrimAnalysisMethodCallPattern> ();
 			Lattice = lattice;
 			_context = context;
@@ -25,18 +25,13 @@ namespace Mono.Linker.Dataflow
 
 		public void Add (TrimAnalysisAssignmentPattern pattern)
 		{
-			// While trimming, each pattern should have a unique origin (which has ILOffset)
-			// but we don't track the correct ILOffset for return instructions.
-			// https://github.com/dotnet/linker/issues/2778
-			// For now, work around it with a separate bit.
-			bool isReturnValue = pattern.Target.AsSingleValue () is MethodReturnValue;
-
-			if (!AssignmentPatterns.TryGetValue ((pattern.Origin, isReturnValue), out var existingPattern)) {
-				AssignmentPatterns.Add ((pattern.Origin, isReturnValue), pattern);
+			var key = (pattern.Origin, pattern.ParameterIndex);
+			if (!AssignmentPatterns.TryGetValue (key, out var existingPattern)) {
+				AssignmentPatterns.Add (key, pattern);
 				return;
 			}
 
-			AssignmentPatterns[(pattern.Origin, isReturnValue)] = pattern.Merge (Lattice, existingPattern);
+			AssignmentPatterns[key] = pattern.Merge (Lattice, existingPattern);
 		}
 
 		public void Add (TrimAnalysisMethodCallPattern pattern)

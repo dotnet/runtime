@@ -244,6 +244,7 @@
       <LibrariesRuntimeFiles
                              Include="
         $(LibrariesNativeArtifactsPath)dotnet.wasm;
+        $(LibrariesNativeArtifactsPath)*.wit;
         $(LibrariesNativeArtifactsPath)*.dat;"
         IsNative="true" />
 

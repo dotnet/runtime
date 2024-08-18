@@ -5696,8 +5696,7 @@ decode_value_internal (MonoType *t, int type, MonoDomain *domain, guint8 *addr, 
 {
 	ErrorCode err;
 
-	if (m_type_is_byref (t)) {
-		g_assert (extra_space != NULL && *extra_space != NULL);
+	if (m_type_is_byref (t) && extra_space != NULL && *extra_space != NULL) {
 		*(guint8**)addr = *extra_space; //assign the extra_space allocated for byref fields to the addr
 		guint8 *buf_int = buf;
 		addr = *(guint8**)addr; //dereference the pointer as it's a byref field
@@ -6752,16 +6751,18 @@ get_source_files_for_type (MonoClass *klass)
 
 		if (minfo) {
 			mono_debug_get_seq_points (minfo, NULL, &source_file_list, NULL, NULL, NULL);
-			for (guint j = 0; j < source_file_list->len; ++j) {
-				guint i;
-				sinfo = (MonoDebugSourceInfo *)g_ptr_array_index (source_file_list, j);
-				for (i = 0; i < files->len; ++i)
-					if (!strcmp ((const char*)g_ptr_array_index (files, i), (const char*)sinfo->source_file))
-						break;
-				if (i == files->len)
-					g_ptr_array_add (files, g_strdup (sinfo->source_file));
+			if (source_file_list != NULL) {
+				for (guint j = 0; j < source_file_list->len; ++j) {
+					guint i;
+					sinfo = (MonoDebugSourceInfo *)g_ptr_array_index (source_file_list, j);
+					for (i = 0; i < files->len; ++i)
+						if (!strcmp ((const char*)g_ptr_array_index (files, i), (const char*)sinfo->source_file))
+							break;
+					if (i == files->len)
+						g_ptr_array_add (files, g_strdup (sinfo->source_file));
+				}
+				g_ptr_array_free (source_file_list, TRUE);
 			}
-			g_ptr_array_free (source_file_list, TRUE);
 		}
 	}
 
@@ -9203,6 +9204,7 @@ method_commands_internal (int command, MonoMethod *method, MonoDomain *domain, g
 	}
 	case MDBGPROT_CMD_METHOD_GET_CLASS_TOKEN: {
 		buffer_add_int (buf, m_class_get_type_token (method->klass));
+		break;
 	}
 	case CMD_METHOD_GET_DECLARING_TYPE: {
 		buffer_add_typeid (buf, domain, method->klass);

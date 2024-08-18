@@ -5188,12 +5188,12 @@ BOOL MethodTable::FindDispatchEntry(UINT32 typeID,
 
 #ifndef DACCESS_COMPILE
 
-void ThrowExceptionForAbstractOverride(
+void ThrowEntryPointNotFoundException(
     MethodTable *pTargetClass,
     MethodTable *pInterfaceMT,
     MethodDesc *pInterfaceMD)
 {
-    LIMITED_METHOD_CONTRACT;
+    STANDARD_VM_CONTRACT;
 
     SString assemblyName;
 
@@ -5240,9 +5240,7 @@ MethodTable::FindDispatchImpl(
 {
     CONTRACT (BOOL) {
         INSTANCE_CHECK;
-        MODE_ANY;
-        THROWS;
-        GC_TRIGGERS;
+        STANDARD_VM_CHECK;
         PRECONDITION(CheckPointer(pImplSlot));
         POSTCONDITION(!RETVAL || !pImplSlot->IsNull() || IsComObjectType());
     } CONTRACT_END;
@@ -5352,9 +5350,7 @@ MethodTable::FindDispatchImpl(
                     if (pDefaultMethod->IsAbstract())
                     {
                         if (throwOnConflict)
-                        {
-                            ThrowExceptionForAbstractOverride(this, pIfcMT, pIfcMD);
-                        }
+                            ThrowEntryPointNotFoundException(this, pIfcMT, pIfcMD);
                     }
                     else
                     {
@@ -5395,18 +5391,12 @@ MethodTable::FindDispatchImpl(
 
 #ifndef DACCESS_COMPILE
 
-struct MatchCandidate
-{
-    MethodTable *pMT;
-    MethodDesc *pMD;
-};
-
-void ThrowExceptionForConflictingOverride(
+void ThrowAmbiguousResolutionException(
     MethodTable *pTargetClass,
     MethodTable *pInterfaceMT,
     MethodDesc *pInterfaceMD)
 {
-    LIMITED_METHOD_CONTRACT;
+    STANDARD_VM_CONTRACT;
 
     SString assemblyName;
 
@@ -5591,7 +5581,6 @@ BOOL MethodTable::FindDefaultInterfaceImplementation(
 {
     CONTRACT(BOOL) {
         INSTANCE_CHECK;
-        MODE_ANY;
         THROWS;
         GC_TRIGGERS;
         PRECONDITION(CheckPointer(pInterfaceMD));
@@ -5601,6 +5590,11 @@ BOOL MethodTable::FindDefaultInterfaceImplementation(
     } CONTRACT_END;
 
 #ifdef FEATURE_DEFAULT_INTERFACES
+    struct MatchCandidate
+    {
+        MethodTable *pMT;
+        MethodDesc *pMD;
+    };
     bool allowVariance = (findDefaultImplementationFlags & FindDefaultInterfaceImplementationFlags::AllowVariance) != FindDefaultInterfaceImplementationFlags::None;
     CQuickArray<MatchCandidate> candidates;
     unsigned candidatesCount = 0;
@@ -5746,7 +5740,7 @@ BOOL MethodTable::FindDefaultInterfaceImplementation(
             bool throwOnConflict = (findDefaultImplementationFlags & FindDefaultInterfaceImplementationFlags::ThrowOnConflict) != FindDefaultInterfaceImplementationFlags::None;
 
             if (throwOnConflict)
-                ThrowExceptionForConflictingOverride(this, pInterfaceMT, pInterfaceMD);
+                ThrowAmbiguousResolutionException(this, pInterfaceMT, pInterfaceMD);
 
             *ppDefaultMethod = pBestCandidateMD;
             RETURN(FALSE);
@@ -5777,6 +5771,7 @@ DispatchSlot MethodTable::FindDispatchSlot(UINT32 typeID, UINT32 slotNumber, BOO
     }
     CONTRACTL_END;
 
+    GCX_PREEMP();
     DispatchSlot implSlot(0);
     FindDispatchImpl(typeID, slotNumber, &implSlot, throwOnConflict);
     return implSlot;
@@ -7872,6 +7867,11 @@ MethodTable::ResolveVirtualStaticMethod(
     BOOL* uniqueResolution,
     ClassLoadLevel level)
 {
+    CONTRACTL{
+       THROWS;
+       GC_TRIGGERS;
+    } CONTRACTL_END;
+
     bool verifyImplemented = (resolveVirtualStaticMethodFlags & ResolveVirtualStaticMethodFlags::VerifyImplemented) != ResolveVirtualStaticMethodFlags::None;
     bool allowVariantMatches = (resolveVirtualStaticMethodFlags & ResolveVirtualStaticMethodFlags::AllowVariantMatches) != ResolveVirtualStaticMethodFlags::None;
     bool instantiateMethodParameters = (resolveVirtualStaticMethodFlags & ResolveVirtualStaticMethodFlags::InstantiateResultOverFinalMethodDesc) != ResolveVirtualStaticMethodFlags::None;
