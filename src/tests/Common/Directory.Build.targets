@@ -47,37 +47,34 @@
         `LibrariesConfiguration`.
     -->
 
-    <MakeDir Condition="'$(Crossgen2Supported)' == 'true'" Directories="$(ArtifactsObjDir)coreclr\crossgen2_publish\$(TargetOS).$(TargetArchitecture).$(RuntimeConfiguration)" />
-
     <PropertyGroup Condition="'$(Crossgen2Supported)' == 'true'">
-      <_apphostPath Condition="Exists('$(ArtifactsBinDir)$(TargetOS)-$(TargetArchitecture).$(HostConfiguration)')">$(ArtifactsBinDir)$(TargetOS)-$(TargetArchitecture).$(HostConfiguration)\corehost\apphost</_apphostPath>
-      <_apphostPath Condition="Exists('$(ArtifactsBinDir)$(TargetOS)-$(TargetArchitecture).$(LibrariesConfiguration)')">$(ArtifactsBinDir)$(TargetOS)-$(TargetArchitecture).$(LibrariesConfiguration)\corehost\apphost</_apphostPath>
+      <_targetOS>$(TargetOS)</_targetOS>
+      <_targetOS Condition="'$(_targetOS)' == 'windows'">win</_targetOS>
+      <_apphostPath Condition="Exists('$(ArtifactsBinDir)$(_targetOS)-$(TargetArchitecture).$(HostConfiguration)\corehost\apphost$(ExeSuffix)')">$(ArtifactsBinDir)$(_targetOS)-$(TargetArchitecture).$(HostConfiguration)\corehost\apphost$(ExeSuffix)</_apphostPath>
+      <_apphostPath Condition="'$(_apphostPath)' == '' and Exists('$(ArtifactsBinDir)$(_targetOS)-$(TargetArchitecture).$(LibrariesConfiguration)\corehost\apphost$(ExeSuffix)')">$(ArtifactsBinDir)$(_targetOS)-$(TargetArchitecture).$(LibrariesConfiguration)\corehost\apphost$(ExeSuffix)</_apphostPath>
+      <_toolsConfiguration Condition="Exists('$(ArtifactsBinDir)ILLink.Tasks\$(ToolsConfiguration)\$(NetCoreAppToolCurrent)\ILLink.Tasks.dll')">$(ToolsConfiguration)</_toolsConfiguration>
+      <_toolsConfiguration Condition="Exists('$(ArtifactsBinDir)ILLink.Tasks\$(LibrariesConfiguration)\$(NetCoreAppToolCurrent)\ILLink.Tasks.dll')">$(LibrariesConfiguration)</_toolsConfiguration>
     </PropertyGroup>
+
+    <MakeDir Condition="'$(Crossgen2Supported)' == 'true'" Directories="$(ArtifactsObjDir)coreclr\crossgen2_publish\$(TargetOS).$(TargetArchitecture).$(RuntimeConfiguration)" />
 
     <Copy
       SourceFiles="$(_apphostPath)"
-      DestinationFiles="$(ArtifactsObjDir)coreclr\crossgen2_publish\$(TargetOS).$(TargetArchitecture).$(RuntimeConfiguration)\apphost"
-      Condition="'$(Crossgen2Supported)' == 'true'"
-      SkipUnchangedFiles="$(SkipCopyUnchangedFiles)"
-      OverwriteReadOnlyFiles="$(OverwriteReadOnlyFiles)"
-      Retries="$(CopyRetryCount)"
-      RetryDelayMilliseconds="$(CopyRetryDelayMilliseconds)"
-      UseHardlinksIfPossible="$(CreateHardLinksForCopyFilesToOutputDirectoryIfPossible)">
-      <Output TaskParameter="DestinationFiles" ItemName="FileWrites" />
-    </Copy>
+      DestinationFiles="$(ArtifactsObjDir)coreclr\crossgen2_publish\$(TargetOS).$(TargetArchitecture).$(RuntimeConfiguration)\apphost$(ExeSuffix)"
+      Condition="'$(Crossgen2Supported)' == 'true'" />
 
     <!-- Publish crossgen2 on supported platforms. -->
 
     <MSBuild Condition="'$(Crossgen2Supported)' == 'true'"
       Targets="Restore"
       BuildInParallel="true"
-      Properties="NativeAotSupported=$(NativeAotSupported);UseNativeAotForComponents=$(UseNativeAotForComponents);MSBuildRestoreSessionId=$([System.Guid]::NewGuid());"
+      Properties="NativeAotSupported=$(NativeAotSupported);UseNativeAotForComponents=$(UseNativeAotForComponents);ToolsConfiguration=$(_toolsConfiguration);MSBuildRestoreSessionId=$([System.Guid]::NewGuid());"
       Projects="$(InstallerProjectRoot)pkg\sfx\Microsoft.NETCore.App\Microsoft.NETCore.App.Crossgen2.sfxproj" />
 
     <MSBuild Condition="'$(Crossgen2Supported)' == 'true'"
       Targets="PublishToDisk"
       BuildInParallel="true"
-      Properties="NativeAotSupported=$(NativeAotSupported);UseNativeAotForComponents=$(UseNativeAotForComponents);OutputPath=$(CORE_ROOT)\crossgen2;"
+      Properties="NativeAotSupported=$(NativeAotSupported);UseNativeAotForComponents=$(UseNativeAotForComponents);ToolsConfiguration=$(_toolsConfiguration);OutputPath=$(CORE_ROOT)\crossgen2;"
       Projects="$(InstallerProjectRoot)pkg\sfx\Microsoft.NETCore.App\Microsoft.NETCore.App.Crossgen2.sfxproj" />
 
     <ItemGroup>
