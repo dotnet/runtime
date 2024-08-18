@@ -22,7 +22,7 @@
                                   ) and
                                   '$(MSBuildProjectExtension)' == '.csproj' and
                                   (
-                                    !$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net7.0')) or
+                                    '$(TargetFrameworkIdentifier)' != '.NETCoreApp' or
                                     (
                                       '$(DisableImplicitFrameworkReferences)' == 'true' and
                                       (
@@ -45,7 +45,7 @@
 
   <ItemGroup Condition="'@(EnabledGenerators)' != '' and
                         @(EnabledGenerators->AnyHaveMetadataValue('Identity', 'LibraryImportGenerator')) and
-                        !$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net7.0'))">
+                        '$(TargetFrameworkIdentifier)' != '.NETCoreApp'">
     <Compile Include="$(CoreLibSharedDir)System\Runtime\InteropServices\LibraryImportAttribute.cs" />
     <Compile Include="$(CoreLibSharedDir)System\Runtime\InteropServices\StringMarshalling.cs" />
   </ItemGroup>

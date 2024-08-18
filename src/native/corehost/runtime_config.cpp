@@ -437,8 +437,8 @@ const uint32_t runtime_config_t::get_compat_major_version_from_tfm() const
     // TFM is in form
     // - netcoreapp#.#  for <= 3.1
     // - net#.#  for >= 5.0
-    // In theory it could contain a suffix like `net6.0-windows` (or more than one)
-    // or it may lack the minor version like `net6`. SDK will normalize this, but the runtime should not 100% rely on it
+    // In theory it could contain a suffix like `net10.0-windows` (or more than one)
+    // or it may lack the minor version like `net10`. SDK will normalize this, but the runtime should not 100% rely on it
 
     if (m_tfm.empty())
         return runtime_config_t::unknown_version;

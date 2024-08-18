@@ -163,7 +163,7 @@ In the src directory for a library there should be only **one** `.csproj` file t
 
 All libraries should use `<Reference Include="..." />` for all their references to libraries that compose the shared framework of the current .NETCoreApp. That will cause them to be resolved against the locally built targeting pack which is located at `artifacts\bin\microsoft.netcore.app.ref`. The only exception to that rule right now is for partial facades which directly reference System.Private.CoreLib and thus need to directly reference other partial facades to avoid type conflicts.
 
-Other target frameworks than .NETCoreApp latest (i.e. `netstandard2.0`, `net462`, `net6.0`) should use ProjectReference items to reference dependencies.
+Other target frameworks than .NETCoreApp latest (i.e. `netstandard2.0`, `net462`, `net8.0`) should use ProjectReference items to reference dependencies.
 
 ### src\ILLink
 Contains the files used to direct the trimming tool. See [ILLink files](../workflow/trimming/ILLink-files.md).
