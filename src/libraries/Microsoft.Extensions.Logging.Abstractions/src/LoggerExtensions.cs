@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Globalization;
 
 namespace Microsoft.Extensions.Logging
 {
@@ -418,7 +419,12 @@ namespace Microsoft.Extensions.Logging
 
         private static string MessageFormatter(FormattedLogValues state, Exception? error)
         {
-            return state.ToString();
+            if (error == null)
+            {
+                return state.ToString();
+            }
+
+            return string.Format(CultureInfo.InvariantCulture, "{0}{1}{2}", state, Environment.NewLine, error);
         }
     }
 }
