@@ -23,13 +23,15 @@ internal sealed class Module : IData<Module>
         LoaderAllocator = target.ReadPointer(address + (ulong)type.Fields[nameof(LoaderAllocator)].Offset);
         ThunkHeap = target.ReadPointer(address + (ulong)type.Fields[nameof(ThunkHeap)].Offset);
         DynamicMetadata = target.ReadPointer(address + (ulong)type.Fields[nameof(DynamicMetadata)].Offset);
+        Path = target.ReadPointer(address + (ulong)type.Fields[nameof(Path)].Offset);
 
-        FieldDefToDescMap = target.ReadPointer(address + (ulong)type.Fields[nameof(FieldDefToDescMap)].Offset);
-        ManifestModuleReferencesMap = target.ReadPointer(address + (ulong)type.Fields[nameof(ManifestModuleReferencesMap)].Offset);
-        MemberRefToDescMap = target.ReadPointer(address + (ulong)type.Fields[nameof(MemberRefToDescMap)].Offset);
-        MethodDefToDescMap = target.ReadPointer(address + (ulong)type.Fields[nameof(MethodDefToDescMap)].Offset);
-        TypeDefToMethodTableMap = target.ReadPointer(address + (ulong)type.Fields[nameof(TypeDefToMethodTableMap)].Offset);
-        TypeRefToMethodTableMap = target.ReadPointer(address + (ulong)type.Fields[nameof(TypeRefToMethodTableMap)].Offset);
+        FieldDefToDescMap = address + (ulong)type.Fields[nameof(FieldDefToDescMap)].Offset;
+        ManifestModuleReferencesMap = address + (ulong)type.Fields[nameof(ManifestModuleReferencesMap)].Offset;
+        MemberRefToDescMap = address + (ulong)type.Fields[nameof(MemberRefToDescMap)].Offset;
+        MethodDefToDescMap = address + (ulong)type.Fields[nameof(MethodDefToDescMap)].Offset;
+        TypeDefToMethodTableMap = address + (ulong)type.Fields[nameof(TypeDefToMethodTableMap)].Offset;
+        TypeRefToMethodTableMap = address + (ulong)type.Fields[nameof(TypeRefToMethodTableMap)].Offset;
+        MethodDefToILCodeVersioningStateMap = address + (ulong)type.Fields[nameof(MethodDefToILCodeVersioningStateMap)].Offset;
     }
 
     public TargetPointer Assembly { get; init; }
@@ -38,6 +40,7 @@ internal sealed class Module : IData<Module>
     public TargetPointer LoaderAllocator { get; init; }
     public TargetPointer ThunkHeap { get; init; }
     public TargetPointer DynamicMetadata { get; init; }
+    public TargetPointer Path { get; init; }
 
     public TargetPointer FieldDefToDescMap { get; init; }
     public TargetPointer ManifestModuleReferencesMap { get; init; }
@@ -45,6 +48,7 @@ internal sealed class Module : IData<Module>
     public TargetPointer MethodDefToDescMap { get; init; }
     public TargetPointer TypeDefToMethodTableMap { get; init; }
     public TargetPointer TypeRefToMethodTableMap { get; init; }
+    public TargetPointer MethodDefToILCodeVersioningStateMap { get; init; }
 
     private TargetPointer _metadataStart = TargetPointer.Null;
     private ulong _metadataSize;

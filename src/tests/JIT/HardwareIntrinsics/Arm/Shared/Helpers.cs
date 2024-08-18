@@ -8005,6 +8005,25 @@ namespace JIT.HardwareIntrinsics.Arm
             return result;
         }
 
+        public static int LoadInt16FromByteArray(byte[] array, int offset)
+        {
+            int ret = 0;
+            for (int i = 1; i >= 0; i--)
+            {
+                ret = (ret << 8) + (int)array[offset+i];
+            }
+            return ret;
+        }
+
+        public static int LoadInt16FromByteArray(byte[] array, uint offset)
+        {
+            int ret = 0;
+            for (int i = 1; i >= 0; i--)
+            {
+                ret = (ret << 8) + (int)array[offset+i];
+            }
+            return ret;
+        }
         public static int LoadInt32FromByteArray(byte[] array, int offset)
         {
             int ret = 0;
@@ -8041,6 +8060,26 @@ namespace JIT.HardwareIntrinsics.Arm
             for (long i = 7; i >= 0; i--)
             {
                 ret = (ret << 8) + (long)array[offset+(ulong)i];
+            }
+            return ret;
+        }
+
+        public static uint LoadUInt16FromByteArray(byte[] array, int offset)
+        {
+            uint ret = 0;
+            for (int i = 1; i >= 0; i--)
+            {
+                ret = (ret << 8) + (uint)array[offset+i];
+            }
+            return ret;
+        }
+
+        public static uint LoadUInt16FromByteArray(byte[] array, uint offset)
+        {
+            uint ret = 0;
+            for (int i = 1; i >= 0; i--)
+            {
+                ret = (ret << 8) + (uint)array[offset+i];
             }
             return ret;
         }
@@ -8518,20 +8557,30 @@ namespace JIT.HardwareIntrinsics.Arm
         }
 
 
-        private static TElem GetLoadVectorExpectedResultByIndex<TMem, TElem>(int index, TMem[] firstOp, TElem[] result)
+        private static TElem GetLoadVectorExpectedResultByIndex<TMem, TElem>(int index, TElem[] mask, TMem[] data, TElem[] result)
             where TMem  : INumberBase<TMem>
             where TElem : INumberBase<TElem>
         {
-            return (firstOp[index] == TMem.Zero) ? TElem.Zero : TElem.CreateTruncating(firstOp[index]);
+            return (mask[index] == TElem.Zero) ? TElem.Zero : TElem.CreateTruncating(data[index]);
         }
 
-        private static bool CheckLoadVectorBehaviorCore<TMem, TElem>(TMem[] firstOp, TElem[] result, Func<int, TElem, TElem> map)
+        private static TElem GetLoadVectorExpectedResultByIndex<TMem, TElem>(int index, TMem[] data, TElem[] result)
             where TMem  : INumberBase<TMem>
             where TElem : INumberBase<TElem>
         {
-            for (var i = 0; i < firstOp.Length; i++)
+            TElem[] mask = new TElem[result.Length];
+            Array.Fill(mask, TElem.One);
+
+            return GetLoadVectorExpectedResultByIndex(index, mask, data, result);
+        }
+
+        private static bool CheckLoadVectorBehaviorCore<TMem, TElem>(TElem[] mask, TMem[] data, TElem[] result, Func<int, TElem, TElem> map)
+            where TMem  : INumberBase<TMem>
+            where TElem : INumberBase<TElem>
+        {
+            for (var i = 0; i < data.Length; i++)
             {
-                TElem expectedResult = GetLoadVectorExpectedResultByIndex(i, firstOp, result);
+                TElem expectedResult = GetLoadVectorExpectedResultByIndex(i, mask, data, result);
                 expectedResult = map(i, expectedResult);
                 if (result[i] != expectedResult)
                 {
@@ -8541,18 +8590,41 @@ namespace JIT.HardwareIntrinsics.Arm
             return true;
         }
 
-        public static bool CheckLoadVectorBehavior<TMem, TElem>(TMem[] firstOp, TElem[] result)
-            where TMem  : INumberBase<TMem>, IConvertible
+        private static bool CheckLoadVectorBehaviorCore<TMem, TElem>(TMem[] data, TElem[] result, Func<int, TElem, TElem> map)
+            where TMem  : INumberBase<TMem>
             where TElem : INumberBase<TElem>
         {
-            return CheckLoadVectorBehaviorCore(firstOp, result, (_, loadResult) => loadResult);
+            for (var i = 0; i < data.Length; i++)
+            {
+                TElem expectedResult = GetLoadVectorExpectedResultByIndex(i, data, result);
+                expectedResult = map(i, expectedResult);
+                if (result[i] != expectedResult)
+                {
+                    return false;
+                }
+            }
+            return true;
         }
 
-        public static bool CheckLoadVectorBehavior<TMem, TElem>(TElem[] maskOp, TMem[] firstOp, TElem[] result, TElem[] falseOp)
+        public static bool CheckLoadVectorBehavior<TMem, TElem>(TElem[] mask, TMem[] data, TElem[] result)
             where TMem  : INumberBase<TMem>, IConvertible
             where TElem : INumberBase<TElem>
         {
-            return CheckLoadVectorBehaviorCore(firstOp, result, (i, loadResult) => ConditionalSelectResult(maskOp[i], loadResult, falseOp[i]));
+            return CheckLoadVectorBehaviorCore(mask, data, result, (_, loadResult) => loadResult);
+        }
+
+        public static bool CheckLoadVectorBehavior<TMem, TElem>(TMem[] data, TElem[] result)
+            where TMem  : INumberBase<TMem>, IConvertible
+            where TElem : INumberBase<TElem>
+        {
+            return CheckLoadVectorBehaviorCore(data, result, (_, loadResult) => loadResult);
+        }
+
+        public static bool CheckLoadVectorBehavior<TMem, TElem>(TElem[] maskOp, TMem[] data, TElem[] result, TElem[] falseOp)
+            where TMem  : INumberBase<TMem>, IConvertible
+            where TElem : INumberBase<TElem>
+        {
+            return CheckLoadVectorBehaviorCore(data, result, (i, loadResult) => ConditionalSelectResult(maskOp[i], loadResult, falseOp[i]));
         }
 
         private static T GetGatherVectorResultByIndex<T, ExtendedElementT, Index>(int index, T[] mask, ExtendedElementT[] data, Index[] indices)
@@ -8571,8 +8643,9 @@ namespace JIT.HardwareIntrinsics.Arm
             return (mask[index] == T.Zero) ? T.Zero : T.CreateTruncating(*(ExtendedElementT*)Unsafe.BitCast<AddressT, nint>(data[index]));
         }
 
-        private static bool GetGatherVectorResultByByteOffset<T, Offset>(int index, T[] mask, byte[] data, Offset[] offsets, T result)
+        private static bool GetGatherVectorResultByByteOffset<T, ExtendedElementT, Offset>(int index, T[] mask, byte[] data, Offset[] offsets, T result)
                 where T : INumberBase<T>
+                where ExtendedElementT : INumberBase<ExtendedElementT>
                 where Offset : IBinaryInteger<Offset>
         {
             if (mask[index] == T.Zero)
@@ -8582,27 +8655,35 @@ namespace JIT.HardwareIntrinsics.Arm
 
             int offset = int.CreateChecked(offsets[index]);
 
-            if (typeof(T) == typeof(int))
+            if (typeof(ExtendedElementT) == typeof(Int16))
             {
-                return result == T.CreateTruncating(LoadInt32FromByteArray(data, offset));
+                return ExtendedElementT.CreateTruncating(result) == ExtendedElementT.CreateTruncating(LoadInt16FromByteArray(data, offset));
             }
-            else if (typeof(T) == typeof(uint))
+            else if (typeof(ExtendedElementT) == typeof(UInt16))
             {
-                return result == T.CreateTruncating(LoadUInt32FromByteArray(data, offset));
+                return ExtendedElementT.CreateTruncating(result) == ExtendedElementT.CreateTruncating(LoadUInt16FromByteArray(data, offset));
             }
-            else if (typeof(T) == typeof(long))
+            else if (typeof(ExtendedElementT) == typeof(int))
             {
-                return result == T.CreateTruncating(LoadInt64FromByteArray(data, offset));
+                return ExtendedElementT.CreateTruncating(result) == ExtendedElementT.CreateTruncating(LoadInt32FromByteArray(data, offset));
             }
-            else if (typeof(T) == typeof(ulong))
+            else if (typeof(ExtendedElementT) == typeof(uint))
             {
-                return result == T.CreateTruncating(LoadUInt64FromByteArray(data, offset));
+                return ExtendedElementT.CreateTruncating(result) == ExtendedElementT.CreateTruncating(LoadUInt32FromByteArray(data, offset));
             }
-            else if (typeof(T) == typeof(float))
+            else if (typeof(ExtendedElementT) == typeof(long))
+            {
+                return ExtendedElementT.CreateTruncating(result) == ExtendedElementT.CreateTruncating(LoadInt64FromByteArray(data, offset));
+            }
+            else if (typeof(ExtendedElementT) == typeof(ulong))
+            {
+                return ExtendedElementT.CreateTruncating(result) == ExtendedElementT.CreateTruncating(LoadUInt64FromByteArray(data, offset));
+            }
+            else if (typeof(ExtendedElementT) == typeof(float))
             {
                 return BitConverter.SingleToInt32Bits((float)(object)result) == LoadInt32FromByteArray(data, offset);
             }
-            else if (typeof(T) == typeof(double))
+            else if (typeof(ExtendedElementT) == typeof(double))
             {
                 return BitConverter.DoubleToInt64Bits((double)(object)result) == LoadInt64FromByteArray(data, offset);
             }
@@ -8746,7 +8827,7 @@ namespace JIT.HardwareIntrinsics.Arm
             return false;
         }
 
-        public static bool CheckLoadVectorFirstFaultingBehavior<TMem, TElem, TFault>(TMem[] firstOp, TElem[] result, Vector<TFault> faultResult)
+        public static bool CheckLoadVectorFirstFaultingBehavior<TMem, TElem, TFault>(TElem[] mask, TMem[] data, TElem[] result, Vector<TFault> faultResult)
                 where TMem  : INumberBase<TMem>, IConvertible
                 where TElem : INumberBase<TElem>
                 where TFault : INumberBase<TFault>
@@ -8758,14 +8839,27 @@ namespace JIT.HardwareIntrinsics.Arm
                 return false;
             }
 
-            var validElementCount = firstOp.Length;
+            var validElementCount = data.Length;
+            var hasFaulted = false;
             var expectedFaultResult = 
                 InitVector<TFault>(i =>
                 {
+                    if (hasFaulted)
+                    {
+                        return TFault.Zero;
+                    }
+
+                    if (mask[i] == TElem.Zero)
+                    {
+                        return TFault.One;
+                    }
+
                     if (i < validElementCount)
                     {
                         return TFault.One;
                     }
+
+                    hasFaulted = true;
                     return TFault.Zero;
                 });
             if (expectedFaultResult != faultResult)
@@ -8774,7 +8868,7 @@ namespace JIT.HardwareIntrinsics.Arm
                 return false;
             }
 
-            return CheckFirstFaultingBehaviorCore(result, faultResult, i => GetLoadVectorExpectedResultByIndex(i, firstOp, result) == result[i]);
+            return CheckFirstFaultingBehaviorCore(result, faultResult, i => GetLoadVectorExpectedResultByIndex(i, mask, data, result) == result[i]);
         }
 
         public static bool CheckGatherVectorFirstFaultingBehavior<T, ExtendedElementT, Index, TFault>(T[] mask, ExtendedElementT[] data, Index[] indices, T[] result, Vector<TFault> faultResult)
@@ -8908,7 +9002,7 @@ namespace JIT.HardwareIntrinsics.Arm
 
             byte[] bytes = new byte[data.Length * Unsafe.SizeOf<ExtendedElementT>()];
             Buffer.BlockCopy(data, 0, bytes, 0, bytes.Length);
-            return CheckFirstFaultingBehaviorCore(result, faultResult, i => GetGatherVectorResultByByteOffset<T, Offset>(i, mask, bytes, offsets, result[i]));
+            return CheckFirstFaultingBehaviorCore(result, faultResult, i => GetGatherVectorResultByByteOffset<T, ExtendedElementT, Offset>(i, mask, bytes, offsets, result[i]));
         }
 
         public static T[] CreateBreakPropagateMask<T>(T[] op1, T[] op2) where T : IBinaryInteger<T>

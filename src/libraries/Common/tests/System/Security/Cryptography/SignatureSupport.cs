@@ -5,14 +5,17 @@ namespace System.Security.Cryptography.Tests
 {
     internal static class SignatureSupport
     {
-        internal static bool CanProduceSha1Signature(AsymmetricAlgorithm algorithm)
+        internal static bool CanProduceSha1Signature(AsymmetricAlgorithm algorithm) => CanProduceSignature(algorithm, HashAlgorithmName.SHA1);
+        internal static bool CanProduceMd5Signature(AsymmetricAlgorithm algorithm) => CanProduceSignature(algorithm, HashAlgorithmName.MD5);
+
+        private static bool CanProduceSignature(AsymmetricAlgorithm algorithm, HashAlgorithmName hashAlgorithmName)
         {
             using (algorithm)
             {
 #if NETFRAMEWORK
                 return true;
 #else
-                // We expect all non-Linux platforms to support SHA1 signatures, currently.
+                // We expect all non-Linux platforms to support any signatures, currently.
                 if (!OperatingSystem.IsLinux())
                 {
                     return true;
@@ -23,7 +26,7 @@ namespace System.Security.Cryptography.Tests
                     case ECDsa ecdsa:
                         try
                         {
-                            ecdsa.SignData(Array.Empty<byte>(), HashAlgorithmName.SHA1);
+                            ecdsa.SignData(Array.Empty<byte>(), hashAlgorithmName);
                             return true;
                         }
                         catch (CryptographicException)
@@ -33,7 +36,7 @@ namespace System.Security.Cryptography.Tests
                     case RSA rsa:
                         try
                         {
-                            rsa.SignData(Array.Empty<byte>(), HashAlgorithmName.SHA1, RSASignaturePadding.Pkcs1);
+                            rsa.SignData(Array.Empty<byte>(), hashAlgorithmName, RSASignaturePadding.Pkcs1);
                             return true;
                         }
                         catch (CryptographicException)
