@@ -248,7 +248,7 @@ if defined RunCrossGen2 (
     ) else (
         set __R2RDumpCommand="dotnet"
     )
-    set __R2RDumpCommand="!_DebuggerFullPath!" "!__R2RDumpCommand!" "!CORE_ROOT!\r2rdump\r2rdump.dll"
+    set __R2RDumpCommand=!_DebuggerFullPath! !__R2RDumpCommand! "!CORE_ROOT!\r2rdump\r2rdump.dll"
     set __R2RDumpCommand=!__R2RDumpCommand! --header --sc --in !__OutputFile! --out !__OutputFile!.r2rdump --val
 
     set __Command=!_DebuggerFullPath! "!CORE_ROOT!\crossgen2\crossgen2.exe"
