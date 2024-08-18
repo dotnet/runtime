@@ -545,7 +545,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 return conversion.IsReference && conversion.IsImplicit;
             }
 
-            private static HashSet<ITypeSymbol>? s_visitedTypes;
+            private HashSet<ITypeSymbol>? _visitedTypes = new(SymbolEqualityComparer.Default);
 
             private bool IsUnsupportedType(ITypeSymbol type, HashSet<ITypeSymbol>? visitedTypes = null)
             {
@@ -567,7 +567,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 if (visitedTypes?.Contains(type) is true)
                 {
                     // avoid infinite recursion in nested types like
-                    // public record ExampleSettings
+                    // public record RecursiveType
                     // {
                     //     public TreeElement? Tree { get; set; }
                     // }
@@ -578,54 +578,42 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 }
 
                 IArrayTypeSymbol? arrayTypeSymbol = type as IArrayTypeSymbol;
-                bool isCollection = IsCollection(type);
-
-                if (arrayTypeSymbol is null && !isCollection)
+                if (arrayTypeSymbol is null)
                 {
-                    return false;
+                    if (!IsCollection(type))
+                    {
+                        return false;
+                    }
                 }
 
-                bool restoreVisitedTypes = false;
                 if (visitedTypes is null)
                 {
-                    visitedTypes = Interlocked.Exchange(ref s_visitedTypes, null) ?? new(SymbolEqualityComparer.Default);
+                    visitedTypes = _visitedTypes;
                     visitedTypes.Clear();
-                    restoreVisitedTypes = true;
                 }
 
                 visitedTypes.Add(type);
 
-                bool result;
                 if (arrayTypeSymbol is not null)
                 {
-                    result = arrayTypeSymbol.Rank > 1 || IsUnsupportedType(arrayTypeSymbol.ElementType, visitedTypes);
+                    return arrayTypeSymbol.Rank > 1 || IsUnsupportedType(arrayTypeSymbol.ElementType, visitedTypes);
                 }
-                else
+
+                Debug.Assert(IsCollection(type));
+
+                INamedTypeSymbol collectionType = (INamedTypeSymbol)type;
+
+                if (IsCandidateDictionary(collectionType, out ITypeSymbol? keyType, out ITypeSymbol? elementType))
                 {
-                    Debug.Assert(isCollection);
-
-                    INamedTypeSymbol collectionType = (INamedTypeSymbol)type;
-
-                    if (IsCandidateDictionary(collectionType, out ITypeSymbol? keyType, out ITypeSymbol? elementType))
-                    {
-                        result = IsUnsupportedType(keyType, visitedTypes) || IsUnsupportedType(elementType, visitedTypes);
-                    }
-                    else if (TryGetElementType(collectionType, out elementType))
-                    {
-                        result = IsUnsupportedType(elementType, visitedTypes);
-                    }
-                    else
-                    {
-                        result = false;
-                    }
+                    return IsUnsupportedType(keyType, visitedTypes) || IsUnsupportedType(elementType, visitedTypes);
                 }
 
-                if (restoreVisitedTypes)
+                if (TryGetElementType(collectionType, out elementType))
                 {
-                    Interlocked.Exchange(ref s_visitedTypes, visitedTypes);
+                    return IsUnsupportedType(elementType, visitedTypes);
                 }
 
-                return result;
+                return false;
             }
 
             private bool ConstructorParametersContainUnsupportedType(IMethodSymbol ctor)
