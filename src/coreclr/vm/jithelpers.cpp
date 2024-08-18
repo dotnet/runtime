@@ -1080,35 +1080,6 @@ BOOL ObjIsInstanceOfCore(Object *pObject, TypeHandle toTypeHnd, BOOL throwCastEx
         }
         else
 #endif // FEATURE_COMINTEROP
-#ifdef FEATURE_ICASTABLE
-        // If type implements ICastable interface we give it a chance to tell us if it can be casted
-        // to a given type.
-        if (pMT->IsICastable())
-        {
-            // Make actual call to ICastableHelpers.IsInstanceOfInterface(obj, interfaceTypeObj, out exception)
-            OBJECTREF exception = NULL;
-            GCPROTECT_BEGIN(exception);
-
-            PREPARE_NONVIRTUAL_CALLSITE(METHOD__ICASTABLEHELPERS__ISINSTANCEOF);
-
-            OBJECTREF managedType = toTypeHnd.GetManagedClassObject(); //GC triggers
-
-            DECLARE_ARGHOLDER_ARRAY(args, 3);
-            args[ARGNUM_0] = OBJECTREF_TO_ARGHOLDER(obj);
-            args[ARGNUM_1] = OBJECTREF_TO_ARGHOLDER(managedType);
-            args[ARGNUM_2] = PTR_TO_ARGHOLDER(&exception);
-
-            CALL_MANAGED_METHOD(fCast, BOOL, args);
-            INDEBUG(managedType = NULL); // managedType isn't protected during the call
-
-            if (!fCast && throwCastException && exception != NULL)
-            {
-                RealCOMPlusThrow(exception);
-            }
-            GCPROTECT_END(); //exception
-        }
-        else
-#endif // FEATURE_ICASTABLE
         if (pMT->IsIDynamicInterfaceCastable())
         {
             fCast = DynamicInterfaceCastable::IsInstanceOf(&obj, toTypeHnd, throwCastException);

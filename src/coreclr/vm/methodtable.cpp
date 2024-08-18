@@ -375,24 +375,6 @@ void MethodTable::SetComObjectType()
     SetFlag(enum_flag_ComObject);
 }
 
-#ifdef FEATURE_ICASTABLE
-void MethodTable::SetICastable()
-{
-    LIMITED_METHOD_CONTRACT;
-    SetFlag(enum_flag_ICastable);
-}
-#endif
-
-BOOL MethodTable::IsICastable()
-{
-    LIMITED_METHOD_DAC_CONTRACT;
-#ifdef FEATURE_ICASTABLE
-    return GetFlag(enum_flag_ICastable);
-#else
-    return FALSE;
-#endif
-}
-
 void MethodTable::SetIDynamicInterfaceCastable()
 {
     LIMITED_METHOD_CONTRACT;
@@ -498,42 +480,6 @@ PTR_MethodTable InterfaceInfo_t::GetApproxMethodTable(Module * pContainingModule
 
     MethodTable *pServerMT = (*pServer)->GetMethodTable();
     PREFIX_ASSUME(pServerMT != NULL);
-
-#ifdef FEATURE_ICASTABLE
-    // In case of ICastable, instead of trying to find method implementation in the real object type
-    // we call GetMethodDescForInterfaceMethod() again with whatever type it returns.
-    // It allows objects that implement ICastable to mimic behavior of other types.
-    if (pServerMT->IsICastable() &&
-        !pItfMD->HasMethodInstantiation() &&
-        !TypeHandle(pServerMT).CanCastTo(ownerType)) // we need to make sure object doesn't implement this interface in a natural way
-    {
-        GCStress<cfg_any>::MaybeTrigger();
-
-        // Make call to ICastableHelpers.GetImplType(obj, interfaceTypeObj)
-        PREPARE_NONVIRTUAL_CALLSITE(METHOD__ICASTABLEHELPERS__GETIMPLTYPE);
-
-        OBJECTREF ownerManagedType = ownerType.GetManagedClassObject(); //GC triggers
-
-        DECLARE_ARGHOLDER_ARRAY(args, 2);
-        args[ARGNUM_0] = OBJECTREF_TO_ARGHOLDER(*pServer);
-        args[ARGNUM_1] = OBJECTREF_TO_ARGHOLDER(ownerManagedType);
-
-        OBJECTREF impTypeObj = NULL;
-        CALL_MANAGED_METHOD_RETREF(impTypeObj, OBJECTREF, args);
-
-        INDEBUG(ownerManagedType = NULL); //ownerManagedType wasn't protected during the call
-        if (impTypeObj == NULL) // GetImplType returns default(RuntimeTypeHandle)
-        {
-            COMPlusThrow(kEntryPointNotFoundException);
-        }
-
-        ReflectClassBaseObject* resultTypeObj = ((ReflectClassBaseObject*)OBJECTREFToObject(impTypeObj));
-        TypeHandle resultTypeHnd = resultTypeObj->GetType();
-        MethodTable *pResultMT = resultTypeHnd.GetMethodTable();
-
-        RETURN(pResultMT->GetMethodDescForInterfaceMethod(ownerType, pItfMD, TRUE /* throwOnConflict */));
-    }
-#endif
 
     // For IDynamicInterfaceCastable, instead of trying to find method implementation in the real object type
     // we call GetInterfaceImplementation on the object and call GetMethodDescForInterfaceMethod
@@ -1462,8 +1408,8 @@ BOOL MethodTable::CanCastTo(MethodTable* pTargetMT, TypeHandlePairList* pVisited
                                 CanCastToClass(pTargetMT, pVisited);
 
     // We only consider type-based conversion rules here.
-    // Therefore a negative result cannot rule out convertibility for ICastable, IDynamicInterfaceCastable, and COM objects
-    if (result || !(pTargetMT->IsInterface() && (this->IsComObjectType() || this->IsICastable() || this->IsIDynamicInterfaceCastable())))
+    // Therefore a negative result cannot rule out convertibility for IDynamicInterfaceCastable and COM objects
+    if (result || !(pTargetMT->IsInterface() && (this->IsComObjectType() || this->IsIDynamicInterfaceCastable())))
     {
         CastCache::TryAddToCache(this, pTargetMT, (BOOL)result);
     }
