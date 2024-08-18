@@ -501,7 +501,7 @@ namespace Microsoft.Extensions.Logging.Test
             Assert.Equal(0, trace.EventId);
             Assert.Equal(_exception, trace.Exception);
             Assert.Equal(
-                "Test 1",
+                $"Test 1{Environment.NewLine}{_exception}",
                 trace.Formatter(trace.State, trace.Exception));
 
             Assert.True(sink.Writes.TryTake(out var information));
@@ -509,7 +509,7 @@ namespace Microsoft.Extensions.Logging.Test
             Assert.Equal(0, information.EventId);
             Assert.Equal(_exception, information.Exception);
             Assert.Equal(
-                "Test 1",
+                $"Test 1{Environment.NewLine}{_exception}",
                 information.Formatter(information.State, information.Exception));
 
             Assert.True(sink.Writes.TryTake(out var warning));
@@ -517,7 +517,7 @@ namespace Microsoft.Extensions.Logging.Test
             Assert.Equal(0, warning.EventId);
             Assert.Equal(_exception, warning.Exception);
             Assert.Equal(
-                "Test 1",
+                $"Test 1{Environment.NewLine}{_exception}",
                 warning.Formatter(warning.State, warning.Exception));
 
             Assert.True(sink.Writes.TryTake(out var error));
@@ -525,7 +525,7 @@ namespace Microsoft.Extensions.Logging.Test
             Assert.Equal(0, error.EventId);
             Assert.Equal(_exception, error.Exception);
             Assert.Equal(
-                "Test 1",
+                $"Test 1{Environment.NewLine}{_exception}",
                 error.Formatter(error.State, error.Exception));
 
             Assert.True(sink.Writes.TryTake(out var critical));
@@ -533,7 +533,7 @@ namespace Microsoft.Extensions.Logging.Test
             Assert.Equal(0, critical.EventId);
             Assert.Equal(_exception, critical.Exception);
             Assert.Equal(
-                "Test 1",
+                $"Test 1{Environment.NewLine}{_exception}",
                 critical.Formatter(critical.State, critical.Exception));
 
             Assert.True(sink.Writes.TryTake(out var debug));
@@ -541,7 +541,7 @@ namespace Microsoft.Extensions.Logging.Test
             Assert.Equal(0, debug.EventId);
             Assert.Equal(_exception, debug.Exception);
             Assert.Equal(
-                "Test 1",
+                $"Test 1{Environment.NewLine}{_exception}",
                 debug.Formatter(debug.State, debug.Exception));
         }
 
@@ -573,7 +573,7 @@ namespace Microsoft.Extensions.Logging.Test
             Assert.Equal(1, trace.EventId);
             Assert.Equal(_exception, trace.Exception);
             Assert.Equal(
-                "Test 1",
+                $"Test 1{Environment.NewLine}{_exception}",
                 trace.Formatter(trace.State, trace.Exception));
 
             Assert.True(sink.Writes.TryTake(out var information));
@@ -582,7 +582,7 @@ namespace Microsoft.Extensions.Logging.Test
             Assert.Equal(2, information.EventId);
             Assert.Equal(_exception, information.Exception);
             Assert.Equal(
-                "Test 1",
+                $"Test 1{Environment.NewLine}{_exception}",
                 information.Formatter(information.State, information.Exception));
 
             Assert.True(sink.Writes.TryTake(out var warning));
@@ -591,7 +591,7 @@ namespace Microsoft.Extensions.Logging.Test
             Assert.Equal(3, warning.EventId);
             Assert.Equal(_exception, warning.Exception);
             Assert.Equal(
-                "Test 1",
+                $"Test 1{Environment.NewLine}{_exception}",
                 warning.Formatter(warning.State, warning.Exception));
 
             Assert.True(sink.Writes.TryTake(out var error));
@@ -600,7 +600,7 @@ namespace Microsoft.Extensions.Logging.Test
             Assert.Equal(4, error.EventId);
             Assert.Equal(_exception, error.Exception);
             Assert.Equal(
-                "Test 1",
+                $"Test 1{Environment.NewLine}{_exception}",
                 error.Formatter(error.State, error.Exception));
 
             Assert.True(sink.Writes.TryTake(out var critical));
@@ -609,7 +609,7 @@ namespace Microsoft.Extensions.Logging.Test
             Assert.Equal(5, critical.EventId);
             Assert.Equal(_exception, critical.Exception);
             Assert.Equal(
-                "Test 1",
+                $"Test 1{Environment.NewLine}{_exception}",
                 critical.Formatter(critical.State, critical.Exception));
 
             Assert.True(sink.Writes.TryTake(out var debug));
@@ -618,7 +618,7 @@ namespace Microsoft.Extensions.Logging.Test
             Assert.Equal(6, debug.EventId);
             Assert.Equal(_exception, debug.Exception);
             Assert.Equal(
-                "Test 1",
+                $"Test 1{Environment.NewLine}{_exception}",
                 debug.Formatter(debug.State, debug.Exception));
         }
 
@@ -848,7 +848,7 @@ namespace Microsoft.Extensions.Logging.Test
             Assert.Equal(0, write.EventId);
             Assert.Equal(_exception, write.Exception);
             Assert.Equal(
-                "Test 1",
+                $"Test 1{Environment.NewLine}{_exception}",
                 write.Formatter(write.State, write.Exception));
         }
 
@@ -879,7 +879,7 @@ namespace Microsoft.Extensions.Logging.Test
             Assert.Equal(eventId, write.EventId);
             Assert.Equal(_exception, write.Exception);
             Assert.Equal(
-                "Test 1",
+                $"Test 1{Environment.NewLine}{_exception}",
                 write.Formatter(write.State, write.Exception));
         }
 
