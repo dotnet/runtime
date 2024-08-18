@@ -90,102 +90,102 @@ namespace System.Numerics
 #endif
         }
 
-        /// <summary>Reinterprets a <see cref="Vector{T}" /> as a new <see langword="Vector{Byte}" />.</summary>
+        /// <summary>Reinterprets a <see cref="Vector{T}" /> as a new <see langword="Vector&lt;Byte&gt;" />.</summary>
         /// <typeparam name="T">The type of the input vector.</typeparam>
         /// <param name="value">The vector to reinterpret.</param>
-        /// <returns><paramref name="value" /> reinterpreted as a new <see langword="Vector{Byte}" />.</returns>
+        /// <returns><paramref name="value" /> reinterpreted as a new <see langword="Vector&lt;Byte&gt;" />.</returns>
         /// <exception cref="NotSupportedException">The type of <paramref name="value" /> (<typeparamref name="T" />) is not supported.</exception>
         [Intrinsic]
         public static Vector<byte> AsVectorByte<T>(Vector<T> value) => value.As<T, byte>();
 
-        /// <summary>Reinterprets a <see cref="Vector{T}" /> as a new <see langword="Vector{Double}" />.</summary>
+        /// <summary>Reinterprets a <see cref="Vector{T}" /> as a new <see langword="Vector&lt;Double&gt;" />.</summary>
         /// <typeparam name="T">The type of the input vector.</typeparam>
         /// <param name="value">The vector to reinterpret.</param>
-        /// <returns><paramref name="value" /> reinterpreted as a new <see langword="Vector{Double}" />.</returns>
+        /// <returns><paramref name="value" /> reinterpreted as a new <see langword="Vector&lt;Double&gt;" />.</returns>
         /// <exception cref="NotSupportedException">The type of <paramref name="value" /> (<typeparamref name="T" />) is not supported.</exception>
         [Intrinsic]
         public static Vector<double> AsVectorDouble<T>(Vector<T> value) => value.As<T, double>();
 
-        /// <summary>Reinterprets a <see cref="Vector{T}" /> as a new <see langword="Vector{Int16}" />.</summary>
+        /// <summary>Reinterprets a <see cref="Vector{T}" /> as a new <see langword="Vector&lt;Int16&gt;" />.</summary>
         /// <typeparam name="T">The type of the input vector.</typeparam>
         /// <param name="value">The vector to reinterpret.</param>
-        /// <returns><paramref name="value" /> reinterpreted as a new <see langword="Vector{Int16}" />.</returns>
+        /// <returns><paramref name="value" /> reinterpreted as a new <see langword="Vector&lt;Int16&gt;" />.</returns>
         /// <exception cref="NotSupportedException">The type of <paramref name="value" /> (<typeparamref name="T" />) is not supported.</exception>
         [Intrinsic]
         public static Vector<short> AsVectorInt16<T>(Vector<T> value) => value.As<T, short>();
 
-        /// <summary>Reinterprets a <see cref="Vector{T}" /> as a new <see langword="Vector{Int32}" />.</summary>
+        /// <summary>Reinterprets a <see cref="Vector{T}" /> as a new <see langword="Vector&lt;Int32&gt;" />.</summary>
         /// <typeparam name="T">The type of the input vector.</typeparam>
         /// <param name="value">The vector to reinterpret.</param>
-        /// <returns><paramref name="value" /> reinterpreted as a new <see langword="Vector{Int32}" />.</returns>
+        /// <returns><paramref name="value" /> reinterpreted as a new <see langword="Vector&lt;Int32&gt;" />.</returns>
         /// <exception cref="NotSupportedException">The type of <paramref name="value" /> (<typeparamref name="T" />) is not supported.</exception>
         [Intrinsic]
         public static Vector<int> AsVectorInt32<T>(Vector<T> value) => value.As<T, int>();
 
-        /// <summary>Reinterprets a <see cref="Vector{T}" /> as a new <see langword="Vector{Int64}" />.</summary>
+        /// <summary>Reinterprets a <see cref="Vector{T}" /> as a new <see langword="Vector&lt;Int64&gt;" />.</summary>
         /// <typeparam name="T">The type of the input vector.</typeparam>
         /// <param name="value">The vector to reinterpret.</param>
-        /// <returns><paramref name="value" /> reinterpreted as a new <see langword="Vector{Int64}" />.</returns>
+        /// <returns><paramref name="value" /> reinterpreted as a new <see langword="Vector&lt;Int64&gt;" />.</returns>
         /// <exception cref="NotSupportedException">The type of <paramref name="value" /> (<typeparamref name="T" />) is not supported.</exception>
         [Intrinsic]
         public static Vector<long> AsVectorInt64<T>(Vector<T> value) => value.As<T, long>();
 
-        /// <summary>Reinterprets a <see cref="Vector{T}" /> as a new <see langword="Vector{IntPtr}" />.</summary>
+        /// <summary>Reinterprets a <see cref="Vector{T}" /> as a new <see langword="Vector&lt;IntPtr&gt;" />.</summary>
         /// <typeparam name="T">The type of the input vector.</typeparam>
         /// <param name="value">The vector to reinterpret.</param>
-        /// <returns><paramref name="value" /> reinterpreted as a new <see langword="Vector{IntPtr}" />.</returns>
+        /// <returns><paramref name="value" /> reinterpreted as a new <see langword="Vector&lt;IntPtr&gt;" />.</returns>
         /// <exception cref="NotSupportedException">The type of <paramref name="value" /> (<typeparamref name="T" />) is not supported.</exception>
         [Intrinsic]
         public static Vector<nint> AsVectorNInt<T>(Vector<T> value) => value.As<T, nint>();
 
-        /// <summary>Reinterprets a <see cref="Vector{T}" /> as a new <see langword="Vector{UIntPtr}" />.</summary>
+        /// <summary>Reinterprets a <see cref="Vector{T}" /> as a new <see langword="Vector&lt;UIntPtr&gt;" />.</summary>
         /// <typeparam name="T">The type of the input vector.</typeparam>
         /// <param name="value">The vector to reinterpret.</param>
-        /// <returns><paramref name="value" /> reinterpreted as a new <see langword="Vector{UIntPtr}" />.</returns>
+        /// <returns><paramref name="value" /> reinterpreted as a new <see langword="Vector&lt;UIntPtr&gt;" />.</returns>
         /// <exception cref="NotSupportedException">The type of <paramref name="value" /> (<typeparamref name="T" />) is not supported.</exception>
         [Intrinsic]
         [CLSCompliant(false)]
         public static Vector<nuint> AsVectorNUInt<T>(Vector<T> value) => value.As<T, nuint>();
 
-        /// <summary>Reinterprets a <see cref="Vector{T}" /> as a new <see langword="Vector{SByte}" />.</summary>
+        /// <summary>Reinterprets a <see cref="Vector{T}" /> as a new <see langword="Vector&lt;SByte&gt;" />.</summary>
         /// <typeparam name="T">The type of the input vector.</typeparam>
         /// <param name="value">The vector to reinterpret.</param>
-        /// <returns><paramref name="value" /> reinterpreted as a new <see langword="Vector{SByte}" />.</returns>
+        /// <returns><paramref name="value" /> reinterpreted as a new <see langword="Vector&lt;SByte&gt;" />.</returns>
         /// <exception cref="NotSupportedException">The type of <paramref name="value" /> (<typeparamref name="T" />) is not supported.</exception>
         [Intrinsic]
         [CLSCompliant(false)]
         public static Vector<sbyte> AsVectorSByte<T>(Vector<T> value) => value.As<T, sbyte>();
 
-        /// <summary>Reinterprets a <see cref="Vector{T}" /> as a new <see langword="Vector{Single}" />.</summary>
+        /// <summary>Reinterprets a <see cref="Vector{T}" /> as a new <see langword="Vector&lt;Single&gt;" />.</summary>
         /// <typeparam name="T">The type of the input vector.</typeparam>
         /// <param name="value">The vector to reinterpret.</param>
-        /// <returns><paramref name="value" /> reinterpreted as a new <see langword="Vector{Single}" />.</returns>
+        /// <returns><paramref name="value" /> reinterpreted as a new <see langword="Vector&lt;Single&gt;" />.</returns>
         /// <exception cref="NotSupportedException">The type of <paramref name="value" /> (<typeparamref name="T" />) is not supported.</exception>
         [Intrinsic]
         public static Vector<float> AsVectorSingle<T>(Vector<T> value) => value.As<T, float>();
 
-        /// <summary>Reinterprets a <see cref="Vector{T}" /> as a new <see langword="Vector{UInt16}" />.</summary>
+        /// <summary>Reinterprets a <see cref="Vector{T}" /> as a new <see langword="Vector&lt;UInt16&gt;" />.</summary>
         /// <typeparam name="T">The type of the input vector.</typeparam>
         /// <param name="value">The vector to reinterpret.</param>
-        /// <returns><paramref name="value" /> reinterpreted as a new <see langword="Vector{UInt16}" />.</returns>
+        /// <returns><paramref name="value" /> reinterpreted as a new <see langword="Vector&lt;UInt16&gt;" />.</returns>
         /// <exception cref="NotSupportedException">The type of <paramref name="value" /> (<typeparamref name="T" />) is not supported.</exception>
         [Intrinsic]
         [CLSCompliant(false)]
         public static Vector<ushort> AsVectorUInt16<T>(Vector<T> value) => value.As<T, ushort>();
 
-        /// <summary>Reinterprets a <see cref="Vector{T}" /> as a new <see langword="Vector{UInt32}" />.</summary>
+        /// <summary>Reinterprets a <see cref="Vector{T}" /> as a new <see langword="Vector&lt;UInt32&gt;" />.</summary>
         /// <typeparam name="T">The type of the input vector.</typeparam>
         /// <param name="value">The vector to reinterpret.</param>
-        /// <returns><paramref name="value" /> reinterpreted as a new <see langword="Vector{UInt32}" />.</returns>
+        /// <returns><paramref name="value" /> reinterpreted as a new <see langword="Vector&lt;UInt32&gt;" />.</returns>
         /// <exception cref="NotSupportedException">The type of <paramref name="value" /> (<typeparamref name="T" />) is not supported.</exception>
         [Intrinsic]
         [CLSCompliant(false)]
         public static Vector<uint> AsVectorUInt32<T>(Vector<T> value) => value.As<T, uint>();
 
-        /// <summary>Reinterprets a <see cref="Vector{T}" /> as a new <see langword="Vector{UInt64}" />.</summary>
+        /// <summary>Reinterprets a <see cref="Vector{T}" /> as a new <see langword="Vector&lt;UInt64&gt;" />.</summary>
         /// <typeparam name="T">The type of the input vector.</typeparam>
         /// <param name="value">The vector to reinterpret.</param>
-        /// <returns><paramref name="value" /> reinterpreted as a new <see langword="Vector{UInt64}" />.</returns>
+        /// <returns><paramref name="value" /> reinterpreted as a new <see langword="Vector&lt;UInt64&gt;" />.</returns>
         /// <exception cref="NotSupportedException">The type of <paramref name="value" /> (<typeparamref name="T" />) is not supported.</exception>
         [Intrinsic]
         [CLSCompliant(false)]
@@ -321,7 +321,7 @@ namespace System.Numerics
         [Intrinsic]
         public static Vector<double> ConditionalSelect(Vector<long> condition, Vector<double> left, Vector<double> right) => ConditionalSelect(condition.As<long, double>(), left, right);
 
-        /// <summary>Converts a <see langword="Vector{Int64}" /> to a <see langword="Vector{Double}" />.</summary>
+        /// <summary>Converts a <see langword="Vector&lt;Int64&gt;" /> to a <see langword="Vector&lt;Double&gt;" />.</summary>
         /// <param name="value">The vector to convert.</param>
         /// <returns>The converted vector.</returns>
         [Intrinsic]
@@ -340,7 +340,7 @@ namespace System.Numerics
             }
         }
 
-        /// <summary>Converts a <see langword="Vector{UInt64}" /> to a <see langword="Vector{Double}" />.</summary>
+        /// <summary>Converts a <see langword="Vector&lt;UInt64&gt;" /> to a <see langword="Vector&lt;Double&gt;" />.</summary>
         /// <param name="value">The vector to convert.</param>
         /// <returns>The converted vector.</returns>
         [Intrinsic]
@@ -360,7 +360,7 @@ namespace System.Numerics
             }
         }
 
-        /// <summary>Converts a <see langword="Vector{Single}" /> to a <see langword="Vector{Int32}" /> using saturation on overflow.</summary>
+        /// <summary>Converts a <see langword="Vector&lt;Single&gt;" /> to a <see langword="Vector&lt;Int32&gt;" /> using saturation on overflow.</summary>
         /// <param name="value">The vector to convert.</param>
         /// <returns>The converted vector.</returns>
         [Intrinsic]
@@ -377,7 +377,7 @@ namespace System.Numerics
             return result;
         }
 
-        /// <summary>Converts a <see langword="Vector{Single}" /> to a <see langword="Vector{Int32}" /> using platform specific behavior on overflow.</summary>
+        /// <summary>Converts a <see langword="Vector&lt;Single&gt;" /> to a <see langword="Vector&lt;Int32&gt;" /> using platform specific behavior on overflow.</summary>
         /// <param name="value">The vector to convert.</param>
         /// <returns>The converted vector.</returns>
         [Intrinsic]
@@ -394,7 +394,7 @@ namespace System.Numerics
             return result;
         }
 
-        /// <summary>Converts a <see langword="Vector{Double}" /> to a <see langword="Vector{Int64}" /> using saturation on overflow.</summary>
+        /// <summary>Converts a <see langword="Vector&lt;Double&gt;" /> to a <see langword="Vector&lt;Int64&gt;" /> using saturation on overflow.</summary>
         /// <param name="value">The vector to convert.</param>
         /// <returns>The converted vector.</returns>
         [Intrinsic]
@@ -411,7 +411,7 @@ namespace System.Numerics
             return result;
         }
 
-        /// <summary>Converts a <see langword="Vector{Double}" /> to a <see langword="Vector{Int64}" /> using platform specific behavior on overflow.</summary>
+        /// <summary>Converts a <see langword="Vector&lt;Double&gt;" /> to a <see langword="Vector&lt;Int64&gt;" /> using platform specific behavior on overflow.</summary>
         /// <param name="value">The vector to convert.</param>
         /// <returns>The converted vector.</returns>
         [Intrinsic]
@@ -428,7 +428,7 @@ namespace System.Numerics
             return result;
         }
 
-        /// <summary>Converts a <see langword="Vector{Int32}" /> to a <see langword="Vector{Single}" />.</summary>
+        /// <summary>Converts a <see langword="Vector&lt;Int32&gt;" /> to a <see langword="Vector&lt;Single&gt;" />.</summary>
         /// <param name="value">The vector to convert.</param>
         /// <returns>The converted vector.</returns>
         [Intrinsic]
@@ -445,7 +445,7 @@ namespace System.Numerics
             return result;
         }
 
-        /// <summary>Converts a <see langword="Vector{UInt32}" /> to a <see langword="Vector{Single}" />.</summary>
+        /// <summary>Converts a <see langword="Vector&lt;UInt32&gt;" /> to a <see langword="Vector&lt;Single&gt;" />.</summary>
         /// <param name="value">The vector to convert.</param>
         /// <returns>The converted vector.</returns>
         [Intrinsic]
@@ -465,7 +465,7 @@ namespace System.Numerics
             }
         }
 
-        /// <summary>Converts a <see langword="Vector{Single}" /> to a <see langword="Vector{UInt32}" /> using saturation on overflow.</summary>
+        /// <summary>Converts a <see langword="Vector&lt;Single&gt;" /> to a <see langword="Vector&lt;UInt32&gt;" /> using saturation on overflow.</summary>
         /// <param name="value">The vector to convert.</param>
         /// <returns>The converted vector.</returns>
         [Intrinsic]
@@ -483,7 +483,7 @@ namespace System.Numerics
             return result;
         }
 
-        /// <summary>Converts a <see langword="Vector{Single}" /> to a <see langword="Vector{UInt32}" /> using platform specific behavior on overflow.</summary>
+        /// <summary>Converts a <see langword="Vector&lt;Single&gt;" /> to a <see langword="Vector&lt;UInt32&gt;" /> using platform specific behavior on overflow.</summary>
         /// <param name="value">The vector to convert.</param>
         /// <returns>The converted vector.</returns>
         [Intrinsic]
@@ -501,7 +501,7 @@ namespace System.Numerics
             return result;
         }
 
-        /// <summary>Converts a <see langword="Vector{Double}" /> to a <see langword="Vector{UInt64}" /> using saturation on overflow.</summary>
+        /// <summary>Converts a <see langword="Vector&lt;Double&gt;" /> to a <see langword="Vector&lt;UInt64&gt;" /> using saturation on overflow.</summary>
         /// <param name="value">The vector to convert.</param>
         /// <returns>The converted vector.</returns>
         [Intrinsic]
@@ -519,7 +519,7 @@ namespace System.Numerics
             return result;
         }
 
-        /// <summary>Converts a <see langword="Vector{Double}" /> to a <see langword="Vector{UInt64}" /> using platform specific behavior on overflow.</summary>
+        /// <summary>Converts a <see langword="Vector&lt;Double&gt;" /> to a <see langword="Vector&lt;UInt64&gt;" /> using platform specific behavior on overflow.</summary>
         /// <param name="value">The vector to convert.</param>
         /// <returns>The converted vector.</returns>
         [Intrinsic]
@@ -1997,10 +1997,10 @@ namespace System.Numerics
             return result;
         }
 
-        /// <summary>Narrows two <see langword="Vector{Double}" /> instances into one <see langword="Vector{Single}" />.</summary>
+        /// <summary>Narrows two <see langword="Vector&lt;Double&gt;" /> instances into one <see langword="Vector&lt;Single&gt;" />.</summary>
         /// <param name="low">The vector that will be narrowed to the lower half of the result vector.</param>
         /// <param name="high">The vector that will be narrowed to the upper half of the result vector.</param>
-        /// <returns>A <see langword="Vector{Single}" /> containing elements narrowed from <paramref name="low" /> and <paramref name="high" />.</returns>
+        /// <returns>A <see langword="Vector&lt;Single&gt;" /> containing elements narrowed from <paramref name="low" /> and <paramref name="high" />.</returns>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector<float> Narrow(Vector<double> low, Vector<double> high)
@@ -2022,10 +2022,10 @@ namespace System.Numerics
             return result;
         }
 
-        /// <summary>Narrows two <see langword="Vector{Int16}" /> instances into one <see langword="Vector{SByte}" />.</summary>
+        /// <summary>Narrows two <see langword="Vector&lt;Int16&gt;" /> instances into one <see langword="Vector&lt;SByte&gt;" />.</summary>
         /// <param name="low">The vector that will be narrowed to the lower half of the result vector.</param>
         /// <param name="high">The vector that will be narrowed to the upper half of the result vector.</param>
-        /// <returns>A <see langword="Vector{SByte}" /> containing elements narrowed from <paramref name="low" /> and <paramref name="high" />.</returns>
+        /// <returns>A <see langword="Vector&lt;SByte&gt;" /> containing elements narrowed from <paramref name="low" /> and <paramref name="high" />.</returns>
         [Intrinsic]
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -2048,10 +2048,10 @@ namespace System.Numerics
             return result;
         }
 
-        /// <summary>Narrows two <see langword="Vector{Int32}" /> instances into one <see langword="Vector{Int16}" />.</summary>
+        /// <summary>Narrows two <see langword="Vector&lt;Int32&gt;" /> instances into one <see langword="Vector&lt;Int16&gt;" />.</summary>
         /// <param name="low">The vector that will be narrowed to the lower half of the result vector.</param>
         /// <param name="high">The vector that will be narrowed to the upper half of the result vector.</param>
-        /// <returns>A <see langword="Vector{Int16}" /> containing elements narrowed from <paramref name="low" /> and <paramref name="high" />.</returns>
+        /// <returns>A <see langword="Vector&lt;Int16&gt;" /> containing elements narrowed from <paramref name="low" /> and <paramref name="high" />.</returns>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector<short> Narrow(Vector<int> low, Vector<int> high)
@@ -2073,10 +2073,10 @@ namespace System.Numerics
             return result;
         }
 
-        /// <summary>Narrows two <see langword="Vector{Int64}" /> instances into one <see langword="Vector{Int32}" />.</summary>
+        /// <summary>Narrows two <see langword="Vector&lt;Int64&gt;" /> instances into one <see langword="Vector&lt;Int32&gt;" />.</summary>
         /// <param name="low">The vector that will be narrowed to the lower half of the result vector.</param>
         /// <param name="high">The vector that will be narrowed to the upper half of the result vector.</param>
-        /// <returns>A <see langword="Vector{Int32}" /> containing elements narrowed from <paramref name="low" /> and <paramref name="high" />.</returns>
+        /// <returns>A <see langword="Vector&lt;Int32&gt;" /> containing elements narrowed from <paramref name="low" /> and <paramref name="high" />.</returns>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector<int> Narrow(Vector<long> low, Vector<long> high)
@@ -2098,10 +2098,10 @@ namespace System.Numerics
             return result;
         }
 
-        /// <summary>Narrows two <see langword="Vector{UInt16}" /> instances into one <see langword="Vector{Byte}" />.</summary>
+        /// <summary>Narrows two <see langword="Vector&lt;UInt16&gt;" /> instances into one <see langword="Vector&lt;Byte&gt;" />.</summary>
         /// <param name="low">The vector that will be narrowed to the lower half of the result vector.</param>
         /// <param name="high">The vector that will be narrowed to the upper half of the result vector.</param>
-        /// <returns>A <see langword="Vector{Byte}" /> containing elements narrowed from <paramref name="low" /> and <paramref name="high" />.</returns>
+        /// <returns>A <see langword="Vector&lt;Byte&gt;" /> containing elements narrowed from <paramref name="low" /> and <paramref name="high" />.</returns>
         [Intrinsic]
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -2124,10 +2124,10 @@ namespace System.Numerics
             return result;
         }
 
-        /// <summary>Narrows two <see langword="Vector{UInt32}" /> instances into one <see langword="Vector{UInt16}" />.</summary>
+        /// <summary>Narrows two <see langword="Vector&lt;UInt32&gt;" /> instances into one <see langword="Vector&lt;UInt16&gt;" />.</summary>
         /// <param name="low">The vector that will be narrowed to the lower half of the result vector.</param>
         /// <param name="high">The vector that will be narrowed to the upper half of the result vector.</param>
-        /// <returns>A <see langword="Vector{UInt16}" /> containing elements narrowed from <paramref name="low" /> and <paramref name="high" />.</returns>
+        /// <returns>A <see langword="Vector&lt;UInt16&gt;" /> containing elements narrowed from <paramref name="low" /> and <paramref name="high" />.</returns>
         [Intrinsic]
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -2150,10 +2150,10 @@ namespace System.Numerics
             return result;
         }
 
-        /// <summary>Narrows two <see langword="Vector{UInt64}" /> instances into one <see langword="Vector{UInt32}" />.</summary>
+        /// <summary>Narrows two <see langword="Vector&lt;UInt64&gt;" /> instances into one <see langword="Vector&lt;UInt32&gt;" />.</summary>
         /// <param name="low">The vector that will be narrowed to the lower half of the result vector.</param>
         /// <param name="high">The vector that will be narrowed to the upper half of the result vector.</param>
-        /// <returns>A <see langword="Vector{UInt32}" /> containing elements narrowed from <paramref name="low" /> and <paramref name="high" />.</returns>
+        /// <returns>A <see langword="Vector&lt;UInt32&gt;" /> containing elements narrowed from <paramref name="low" /> and <paramref name="high" />.</returns>
         [Intrinsic]
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -2715,49 +2715,49 @@ namespace System.Numerics
         [Intrinsic]
         public static Vector<float> Truncate(Vector<float> vector) => Truncate<float>(vector);
 
-        /// <summary>Widens a <see langword="Vector{Byte}" /> into two <see cref="Vector{UInt16} " />.</summary>
+        /// <summary>Widens a <see langword="Vector&lt;Byte&gt;" /> into two <see cref="Vector{UInt16} " />.</summary>
         /// <param name="source">The vector whose elements are to be widened.</param>
         /// <returns>A pair of vectors that contain the widened lower and upper halves of <paramref name="source" />.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static (Vector<ushort> Lower, Vector<ushort> Upper) Widen(Vector<byte> source) => (WidenLower(source), WidenUpper(source));
 
-        /// <summary>Widens a <see langword="Vector{Int16}" /> into two <see cref="Vector{Int32} " />.</summary>
+        /// <summary>Widens a <see langword="Vector&lt;Int16&gt;" /> into two <see cref="Vector{Int32} " />.</summary>
         /// <param name="source">The vector whose elements are to be widened.</param>
         /// <returns>A pair of vectors that contain the widened lower and upper halves of <paramref name="source" />.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static (Vector<int> Lower, Vector<int> Upper) Widen(Vector<short> source) => (WidenLower(source), WidenUpper(source));
 
-        /// <summary>Widens a <see langword="Vector{Int32}" /> into two <see cref="Vector{Int64} " />.</summary>
+        /// <summary>Widens a <see langword="Vector&lt;Int32&gt;" /> into two <see cref="Vector{Int64} " />.</summary>
         /// <param name="source">The vector whose elements are to be widened.</param>
         /// <returns>A pair of vectors that contain the widened lower and upper halves of <paramref name="source" />.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static (Vector<long> Lower, Vector<long> Upper) Widen(Vector<int> source) => (WidenLower(source), WidenUpper(source));
 
-        /// <summary>Widens a <see langword="Vector{SByte}" /> into two <see cref="Vector{Int16} " />.</summary>
+        /// <summary>Widens a <see langword="Vector&lt;SByte&gt;" /> into two <see cref="Vector{Int16} " />.</summary>
         /// <param name="source">The vector whose elements are to be widened.</param>
         /// <returns>A pair of vectors that contain the widened lower and upper halves of <paramref name="source" />.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static (Vector<short> Lower, Vector<short> Upper) Widen(Vector<sbyte> source) => (WidenLower(source), WidenUpper(source));
 
-        /// <summary>Widens a <see langword="Vector{Single}" /> into two <see cref="Vector{Double} " />.</summary>
+        /// <summary>Widens a <see langword="Vector&lt;Single&gt;" /> into two <see cref="Vector{Double} " />.</summary>
         /// <param name="source">The vector whose elements are to be widened.</param>
         /// <returns>A pair of vectors that contain the widened lower and upper halves of <paramref name="source" />.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static (Vector<double> Lower, Vector<double> Upper) Widen(Vector<float> source) => (WidenLower(source), WidenUpper(source));
 
-        /// <summary>Widens a <see langword="Vector{UInt16}" /> into two <see cref="Vector{UInt32} " />.</summary>
+        /// <summary>Widens a <see langword="Vector&lt;UInt16&gt;" /> into two <see cref="Vector{UInt32} " />.</summary>
         /// <param name="source">The vector whose elements are to be widened.</param>
         /// <returns>A pair of vectors that contain the widened lower and upper halves of <paramref name="source" />.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static (Vector<uint> Lower, Vector<uint> Upper) Widen(Vector<ushort> source) => (WidenLower(source), WidenUpper(source));
 
-        /// <summary>Widens a <see langword="Vector{UInt32}" /> into two <see cref="Vector{UInt64} " />.</summary>
+        /// <summary>Widens a <see langword="Vector&lt;UInt32&gt;" /> into two <see cref="Vector{UInt64} " />.</summary>
         /// <param name="source">The vector whose elements are to be widened.</param>
         /// <returns>A pair of vectors that contain the widened lower and upper halves of <paramref name="source" />.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static (Vector<ulong> Lower, Vector<ulong> Upper) Widen(Vector<uint> source) => (WidenLower(source), WidenUpper(source));
 
-        /// <summary>Widens a <see langword="Vector{Byte}" /> into two <see cref="Vector{UInt16} " />.</summary>
+        /// <summary>Widens a <see langword="Vector&lt;Byte&gt;" /> into two <see cref="Vector{UInt16} " />.</summary>
         /// <param name="source">The vector whose elements are to be widened.</param>
         /// <param name="low">A vector that will contain the widened result of the lower half of <paramref name="source" />.</param>
         /// <param name="high">A vector that will contain the widened result of the upper half of <paramref name="source" />.</param>
@@ -2769,7 +2769,7 @@ namespace System.Numerics
             high = WidenUpper(source);
         }
 
-        /// <summary>Widens a <see langword="Vector{Int16}" /> into two <see cref="Vector{Int32} " />.</summary>
+        /// <summary>Widens a <see langword="Vector&lt;Int16&gt;" /> into two <see cref="Vector{Int32} " />.</summary>
         /// <param name="source">The vector whose elements are to be widened.</param>
         /// <param name="low">A vector that will contain the widened result of the lower half of <paramref name="source" />.</param>
         /// <param name="high">A vector that will contain the widened result of the upper half of <paramref name="source" />.</param>
@@ -2780,7 +2780,7 @@ namespace System.Numerics
             high = WidenUpper(source);
         }
 
-        /// <summary>Widens a <see langword="Vector{Int32}" /> into two <see cref="Vector{Int64} " />.</summary>
+        /// <summary>Widens a <see langword="Vector&lt;Int32&gt;" /> into two <see cref="Vector{Int64} " />.</summary>
         /// <param name="source">The vector whose elements are to be widened.</param>
         /// <param name="low">A vector that will contain the widened result of the lower half of <paramref name="source" />.</param>
         /// <param name="high">A vector that will contain the widened result of the upper half of <paramref name="source" />.</param>
@@ -2791,7 +2791,7 @@ namespace System.Numerics
             high = WidenUpper(source);
         }
 
-        /// <summary>Widens a <see langword="Vector{SByte}" /> into two <see cref="Vector{Int16} " />.</summary>
+        /// <summary>Widens a <see langword="Vector&lt;SByte&gt;" /> into two <see cref="Vector{Int16} " />.</summary>
         /// <param name="source">The vector whose elements are to be widened.</param>
         /// <param name="low">A vector that will contain the widened result of the lower half of <paramref name="source" />.</param>
         /// <param name="high">A vector that will contain the widened result of the upper half of <paramref name="source" />.</param>
@@ -2803,7 +2803,7 @@ namespace System.Numerics
             high = WidenUpper(source);
         }
 
-        /// <summary>Widens a <see langword="Vector{Single}" /> into two <see cref="Vector{Double} " />.</summary>
+        /// <summary>Widens a <see langword="Vector&lt;Single&gt;" /> into two <see cref="Vector{Double} " />.</summary>
         /// <param name="source">The vector whose elements are to be widened.</param>
         /// <param name="low">A vector that will contain the widened result of the lower half of <paramref name="source" />.</param>
         /// <param name="high">A vector that will contain the widened result of the upper half of <paramref name="source" />.</param>
@@ -2814,7 +2814,7 @@ namespace System.Numerics
             high = WidenUpper(source);
         }
 
-        /// <summary>Widens a <see langword="Vector{UInt16}" /> into two <see cref="Vector{UInt32} " />.</summary>
+        /// <summary>Widens a <see langword="Vector&lt;UInt16&gt;" /> into two <see cref="Vector{UInt32} " />.</summary>
         /// <param name="source">The vector whose elements are to be widened.</param>
         /// <param name="low">A vector that will contain the widened result of the lower half of <paramref name="source" />.</param>
         /// <param name="high">A vector that will contain the widened result of the upper half of <paramref name="source" />.</param>
@@ -2826,7 +2826,7 @@ namespace System.Numerics
             high = WidenUpper(source);
         }
 
-        /// <summary>Widens a <see langword="Vector{UInt32}" /> into two <see cref="Vector{UInt64} " />.</summary>
+        /// <summary>Widens a <see langword="Vector&lt;UInt32&gt;" /> into two <see cref="Vector{UInt64} " />.</summary>
         /// <param name="source">The vector whose elements are to be widened.</param>
         /// <param name="low">A vector that will contain the widened result of the lower half of <paramref name="source" />.</param>
         /// <param name="high">A vector that will contain the widened result of the upper half of <paramref name="source" />.</param>
@@ -2838,7 +2838,7 @@ namespace System.Numerics
             high = WidenUpper(source);
         }
 
-        /// <summary>Widens the lower half of a <see langword="Vector{Byte}" /> into a <see cref="Vector{UInt16} " />.</summary>
+        /// <summary>Widens the lower half of a <see langword="Vector&lt;Byte&gt;" /> into a <see cref="Vector{UInt16} " />.</summary>
         /// <param name="source">The vector whose elements are to be widened.</param>
         /// <returns>A vector that contain the widened lower half of <paramref name="source" />.</returns>
         [Intrinsic]
@@ -2857,7 +2857,7 @@ namespace System.Numerics
             return lower;
         }
 
-        /// <summary>Widens the lower half of a <see langword="Vector{Int16}" /> into a <see cref="Vector{Int32} " />.</summary>
+        /// <summary>Widens the lower half of a <see langword="Vector&lt;Int16&gt;" /> into a <see cref="Vector{Int32} " />.</summary>
         /// <param name="source">The vector whose elements are to be widened.</param>
         /// <returns>A vector that contain the widened lower half of <paramref name="source" />.</returns>
         [Intrinsic]
@@ -2875,7 +2875,7 @@ namespace System.Numerics
             return lower;
         }
 
-        /// <summary>Widens the lower half of a <see langword="Vector{Int32}" /> into a <see cref="Vector{Int64} " />.</summary>
+        /// <summary>Widens the lower half of a <see langword="Vector&lt;Int32&gt;" /> into a <see cref="Vector{Int64} " />.</summary>
         /// <param name="source">The vector whose elements are to be widened.</param>
         /// <returns>A vector that contain the widened lower half of <paramref name="source" />.</returns>
         [Intrinsic]
@@ -2893,7 +2893,7 @@ namespace System.Numerics
             return lower;
         }
 
-        /// <summary>Widens the lower half of a <see langword="Vector{SByte}" /> into a <see cref="Vector{Int16} " />.</summary>
+        /// <summary>Widens the lower half of a <see langword="Vector&lt;SByte&gt;" /> into a <see cref="Vector{Int16} " />.</summary>
         /// <param name="source">The vector whose elements are to be widened.</param>
         /// <returns>A vector that contain the widened lower half of <paramref name="source" />.</returns>
         [Intrinsic]
@@ -2912,7 +2912,7 @@ namespace System.Numerics
             return lower;
         }
 
-        /// <summary>Widens the lower half of a <see langword="Vector{Single}" /> into a <see cref="Vector{Double} " />.</summary>
+        /// <summary>Widens the lower half of a <see langword="Vector&lt;Single&gt;" /> into a <see cref="Vector{Double} " />.</summary>
         /// <param name="source">The vector whose elements are to be widened.</param>
         /// <returns>A vector that contain the widened lower half of <paramref name="source" />.</returns>
         [Intrinsic]
@@ -2930,7 +2930,7 @@ namespace System.Numerics
             return lower;
         }
 
-        /// <summary>Widens the lower half of a <see langword="Vector{UInt16}" /> into a <see cref="Vector{UInt32} " />.</summary>
+        /// <summary>Widens the lower half of a <see langword="Vector&lt;UInt16&gt;" /> into a <see cref="Vector{UInt32} " />.</summary>
         /// <param name="source">The vector whose elements are to be widened.</param>
         /// <returns>A vector that contain the widened lower half of <paramref name="source" />.</returns>
         [Intrinsic]
@@ -2949,7 +2949,7 @@ namespace System.Numerics
             return lower;
         }
 
-        /// <summary>Widens the lower half of a <see langword="Vector{UInt32}" /> into a <see cref="Vector{UInt64} " />.</summary>
+        /// <summary>Widens the lower half of a <see langword="Vector&lt;UInt32&gt;" /> into a <see cref="Vector{UInt64} " />.</summary>
         /// <param name="source">The vector whose elements are to be widened.</param>
         /// <returns>A vector that contain the widened lower half of <paramref name="source" />.</returns>
         [Intrinsic]
@@ -2968,7 +2968,7 @@ namespace System.Numerics
             return lower;
         }
 
-        /// <summary>Widens the upper half of a <see langword="Vector{Byte}" /> into a <see cref="Vector{UInt16} " />.</summary>
+        /// <summary>Widens the upper half of a <see langword="Vector&lt;Byte&gt;" /> into a <see cref="Vector{UInt16} " />.</summary>
         /// <param name="source">The vector whose elements are to be widened.</param>
         /// <returns>A vector that contain the widened upper half of <paramref name="source" />.</returns>
         [Intrinsic]
@@ -2987,7 +2987,7 @@ namespace System.Numerics
             return upper;
         }
 
-        /// <summary>Widens the upper half of a <see langword="Vector{Int16}" /> into a <see cref="Vector{Int32} " />.</summary>
+        /// <summary>Widens the upper half of a <see langword="Vector&lt;Int16&gt;" /> into a <see cref="Vector{Int32} " />.</summary>
         /// <param name="source">The vector whose elements are to be widened.</param>
         /// <returns>A vector that contain the widened upper half of <paramref name="source" />.</returns>
         [Intrinsic]
@@ -3005,7 +3005,7 @@ namespace System.Numerics
             return upper;
         }
 
-        /// <summary>Widens the upper half of a <see langword="Vector{Int32}" /> into a <see cref="Vector{Int64} " />.</summary>
+        /// <summary>Widens the upper half of a <see langword="Vector&lt;Int32&gt;" /> into a <see cref="Vector{Int64} " />.</summary>
         /// <param name="source">The vector whose elements are to be widened.</param>
         /// <returns>A vector that contain the widened upper half of <paramref name="source" />.</returns>
         [Intrinsic]
@@ -3023,7 +3023,7 @@ namespace System.Numerics
             return upper;
         }
 
-        /// <summary>Widens the upper half of a <see langword="Vector{SByte}" /> into a <see cref="Vector{Int16} " />.</summary>
+        /// <summary>Widens the upper half of a <see langword="Vector&lt;SByte&gt;" /> into a <see cref="Vector{Int16} " />.</summary>
         /// <param name="source">The vector whose elements are to be widened.</param>
         /// <returns>A vector that contain the widened upper half of <paramref name="source" />.</returns>
         [Intrinsic]
@@ -3042,7 +3042,7 @@ namespace System.Numerics
             return upper;
         }
 
-        /// <summary>Widens the upper half of a <see langword="Vector{Single}" /> into a <see cref="Vector{Double} " />.</summary>
+        /// <summary>Widens the upper half of a <see langword="Vector&lt;Single&gt;" /> into a <see cref="Vector{Double} " />.</summary>
         /// <param name="source">The vector whose elements are to be widened.</param>
         /// <returns>A vector that contain the widened upper half of <paramref name="source" />.</returns>
         [Intrinsic]
@@ -3060,7 +3060,7 @@ namespace System.Numerics
             return upper;
         }
 
-        /// <summary>Widens the upper half of a <see langword="Vector{UInt16}" /> into a <see cref="Vector{UInt32} " />.</summary>
+        /// <summary>Widens the upper half of a <see langword="Vector&lt;UInt16&gt;" /> into a <see cref="Vector{UInt32} " />.</summary>
         /// <param name="source">The vector whose elements are to be widened.</param>
         /// <returns>A vector that contain the widened upper half of <paramref name="source" />.</returns>
         [Intrinsic]
@@ -3079,7 +3079,7 @@ namespace System.Numerics
             return upper;
         }
 
-        /// <summary>Widens the upper half of a <see langword="Vector{UInt32}" /> into a <see cref="Vector{UInt64} " />.</summary>
+        /// <summary>Widens the upper half of a <see langword="Vector&lt;UInt32&gt;" /> into a <see cref="Vector{UInt64} " />.</summary>
         /// <param name="source">The vector whose elements are to be widened.</param>
         /// <returns>A vector that contain the widened upper half of <paramref name="source" />.</returns>
         [Intrinsic]
