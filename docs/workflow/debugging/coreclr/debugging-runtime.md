@@ -84,7 +84,7 @@ Steps 1-9 only need to be done once as long as there's been no changes to the CM
         },
         {
           "name": "CORE_LIBRARIES",
-          // for example net9.0-windows-Debug-x64
+          // for example net10.0-windows-debug-x64
           "value": "${cmake.installRoot}\\..\\..\\runtime\\<tfm>-windows-<configuration>-<arch>\\"
         }
       ],

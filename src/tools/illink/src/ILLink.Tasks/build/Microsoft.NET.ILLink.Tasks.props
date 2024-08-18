@@ -18,7 +18,7 @@ Copyright (c) .NET Foundation. All rights reserved.
     <!-- Older SDKs used this property as a sentinel instead, to control the import of this file
          (but not the targets, which were included with the SDK). -->
     <UsingILLinkTasksSdk>true</UsingILLinkTasksSdk>
-    <ILLinkTasksAssembly Condition="'$(MSBuildRuntimeType)' == 'Core'">$(MSBuildThisFileDirectory)..\tools\net9.0\ILLink.Tasks.dll</ILLinkTasksAssembly>
+    <ILLinkTasksAssembly Condition="'$(MSBuildRuntimeType)' == 'Core'">$(MSBuildThisFileDirectory)..\tools\net10.0\ILLink.Tasks.dll</ILLinkTasksAssembly>
     <ILLinkTasksAssembly Condition="'$(MSBuildRuntimeType)' != 'Core'">$(MSBuildThisFileDirectory)..\tools\net472\ILLink.Tasks.dll</ILLinkTasksAssembly>
 
     <ILLinkAnalyzersPropsPath Condition="'$(ILLinkAnalyzersPropsPath)' == ''">$(MSBuildThisFileDirectory)Microsoft.NET.ILLink.Analyzers.props</ILLinkAnalyzersPropsPath>

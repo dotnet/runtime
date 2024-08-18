@@ -124,8 +124,8 @@ This is the default case for applications - running against an installed .NET ru
 ```XML
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <!-- Ensure that the target framework is correct e.g. 'net9.0' -->
-    <TargetFramework>net9.0</TargetFramework>
+    <!-- Ensure that the target framework is correct e.g. 'net10.0' -->
+    <TargetFramework>net10.0</TargetFramework>
     <!-- modify version in this line with one reported by `dotnet --info` under ".NET runtimes installed" -> Microsoft.NETCore.App -->
     <RuntimeFrameworkVersion>9.0.0-preview.5.22224.3</RuntimeFrameworkVersion>
   </PropertyGroup>
@@ -147,8 +147,8 @@ make it self-contained by adding a RuntimeIdentifier (RID).
 ```XML
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <!-- Ensure that the target framework is correct e.g. 'net9.0' -->
-    <TargetFramework>net9.0</TargetFramework>
+    <!-- Ensure that the target framework is correct e.g. 'net10.0' -->
+    <TargetFramework>net10.0</TargetFramework>
     <!-- modify build in this line with version reported by `dotnet --info` as above under ".NET runtimes installed" -> Microsoft.NETCore.App -->
     <!-- moreover, this can be any valid Microsoft.NETCore.App package version from https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet9/nuget/v3/index.json -->
     <RuntimeFrameworkVersion>9.0.0-preview.5.22224.3</RuntimeFrameworkVersion>
@@ -159,7 +159,7 @@ make it self-contained by adding a RuntimeIdentifier (RID).
 ```
 $ dotnet restore
 $ dotnet publish
-$ bin\Debug\net9.0\win-x64\publish\App.exe
+$ bin\Debug\net10.0\win-x64\publish\App.exe
 ```
 
 ### Daily builds table

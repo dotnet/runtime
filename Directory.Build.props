@@ -1,4 +1,5 @@
 <Project>
+
   <PropertyGroup>
     <!-- For non-SDK projects that import this file and then import Microsoft.Common.props,
          tell Microsoft.Common.props not to import Directory.Build.props again. -->
@@ -86,7 +87,7 @@
 
   <!-- The TFMs to build and test against. -->
   <PropertyGroup>
-    <NetCoreAppCurrentVersion>9.0</NetCoreAppCurrentVersion>
+    <NetCoreAppCurrentVersion>10.0</NetCoreAppCurrentVersion>
     <NetCoreAppCurrentIdentifier>.NETCoreApp</NetCoreAppCurrentIdentifier>
     <NetCoreAppCurrentTargetFrameworkMoniker>$(NetCoreAppCurrentIdentifier),Version=v$(NetCoreAppCurrentVersion)</NetCoreAppCurrentTargetFrameworkMoniker>
     <MicrosoftNetCoreAppFrameworkName>Microsoft.NETCore.App</MicrosoftNetCoreAppFrameworkName>
@@ -94,10 +95,8 @@
     <NetCoreAppCurrent>net$(NetCoreAppCurrentVersion)</NetCoreAppCurrent>
 
     <!-- The previous supported .NET version. -->
-    <NetCoreAppPreviousVersion>8.0</NetCoreAppPreviousVersion>
-    <!-- For the .NET 9 release, set NetCoreAppPrevious to empty as NuGet has issues
-         with duplicate TFMs (when using both NetCoreAppPrevious and NetCoreAppMinimum). -->
-    <NetCoreAppPrevious />
+    <NetCoreAppPrevious>net9.0</NetCoreAppPrevious>
+    <NetCoreAppPrevious Condition="'$(DotNetBuildSourceOnly)' == 'true'">$(NetCoreAppCurrent)</NetCoreAppPrevious>
 
     <!-- The minimum supported .NET version. -->
     <NetCoreAppMinimum>net8.0</NetCoreAppMinimum>
@@ -122,8 +121,9 @@
     <NetFrameworkCurrent Condition="'$(DotNetBuildSourceOnly)' == 'true'" />
 
     <!-- Important: Set this to the GA version (or a close approximation) during servicing and adjust the TFM property below. -->
-    <ApiCompatNetCoreAppBaselineVersion>8.0.0</ApiCompatNetCoreAppBaselineVersion>
-    <ApiCompatNetCoreAppBaselineTFM>net8.0</ApiCompatNetCoreAppBaselineTFM>
+    <!-- TODO: Update to 9.0.0 when .NET 9 is generally available. https://github.com/dotnet/runtime/issues/106598 -->
+    <ApiCompatNetCoreAppBaselineVersion>9.0.0-preview.7.24405.7</ApiCompatNetCoreAppBaselineVersion>
+    <ApiCompatNetCoreAppBaselineTFM>net9.0</ApiCompatNetCoreAppBaselineTFM>
   </PropertyGroup>
 
   <PropertyGroup Label="CalculateConfiguration">
