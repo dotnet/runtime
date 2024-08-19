@@ -4130,6 +4130,7 @@ void Compiler::fgInvalidateDfsTree()
     m_dfsTree          = nullptr;
     m_loops            = nullptr;
     m_domTree          = nullptr;
+    m_domFrontiers     = nullptr;
     m_reachabilitySets = nullptr;
     fgSsaValid         = false;
 }
@@ -6340,6 +6341,147 @@ FlowGraphDominatorTree* FlowGraphDominatorTree::Build(const FlowGraphDfsTree* df
 
     return new (comp, CMK_DominatorMemory) FlowGraphDominatorTree(dfsTree, domTree, preorderNums, postorderNums);
 }
+
+FlowGraphDominanceFrontiers::FlowGraphDominanceFrontiers(FlowGraphDominatorTree* domTree)
+    : m_domTree(domTree)
+    , m_map(domTree->GetDfsTree()->GetCompiler()->getAllocator(CMK_DominatorMemory))
+    , m_poTraits(domTree->GetDfsTree()->PostOrderTraits())
+    , m_visited(BitVecOps::MakeEmpty(&m_poTraits))
+{
+}
+
+FlowGraphDominanceFrontiers* FlowGraphDominanceFrontiers::Build(FlowGraphDominatorTree* domTree)
+{
+    const FlowGraphDfsTree* dfsTree = domTree->GetDfsTree();
+    Compiler*               comp    = dfsTree->GetCompiler();
+
+    FlowGraphDominanceFrontiers* result = new (comp, CMK_DominatorMemory) FlowGraphDominanceFrontiers(domTree);
+
+    for (unsigned i = 0; i < dfsTree->GetPostOrderCount(); i++)
+    {
+        BasicBlock* block = dfsTree->GetPostOrder(i);
+
+        // Recall that B3 is in the dom frontier of B1 if there exists a B2
+        // such that B1 dom B2, !(B1 dom B3), and B3 is an immediate successor
+        // of B2.  (Note that B1 might be the same block as B2.)
+        // In that definition, we're considering "block" to be B3, and trying
+        // to find B1's.  To do so, first we consider the predecessors of "block",
+        // searching for candidate B2's -- "block" is obviously an immediate successor
+        // of its immediate predecessors.  If there are zero or one preds, then there
+        // is no pred, or else the single pred dominates "block", so no B2 exists.
+        FlowEdge* blockPreds = comp->BlockPredsWithEH(block);
+
+        // If block has 0/1 predecessor, skip, apart from handler entry blocks
+        // that are always in the dominance frontier of its enclosed blocks.
+        if (!comp->bbIsHandlerBeg(block) && ((blockPreds == nullptr) || (blockPreds->getNextPredEdge() == nullptr)))
+        {
+            continue;
+        }
+
+        // Otherwise, there are > 1 preds.  Each is a candidate B2 in the definition --
+        // *unless* it dominates "block"/B3.
+
+        for (FlowEdge* pred = blockPreds; pred != nullptr; pred = pred->getNextPredEdge())
+        {
+            BasicBlock* predBlock = pred->getSourceBlock();
+
+            if (!dfsTree->Contains(predBlock))
+            {
+                continue;
+            }
+
+            // If we've found a B2, then consider the possible B1's.  We start with
+            // B2, since a block dominates itself, then traverse upwards in the dominator
+            // tree, stopping when we reach the root, or the immediate dominator of "block"/B3.
+            // (Note that we are guaranteed to encounter this immediate dominator of "block"/B3:
+            // a predecessor must be dominated by B3's immediate dominator.)
+            // Along this way, make "block"/B3 part of the dom frontier of the B1.
+            // When we reach this immediate dominator, the definition no longer applies, since this
+            // potential B1 *does* dominate "block"/B3, so we stop.
+            for (BasicBlock* b1 = predBlock; (b1 != nullptr) && (b1 != block->bbIDom); // !root && !loop
+                 b1             = b1->bbIDom)
+            {
+                BlkVector& b1DF = *result->m_map.Emplace(b1, comp->getAllocator(CMK_DominatorMemory));
+                // It's possible to encounter the same DF multiple times, ensure that we don't add duplicates.
+                if (b1DF.empty() || (b1DF.back() != block))
+                {
+                    b1DF.push_back(block);
+                }
+            }
+        }
+    }
+
+    return result;
+}
+
+void FlowGraphDominanceFrontiers::ComputeIteratedDominanceFrontier(BasicBlock* block, BlkVector* result)
+{
+    assert(result->empty());
+
+    BlkVector* bDF = m_map.LookupPointer(block);
+
+    if (bDF == nullptr)
+    {
+        return;
+    }
+
+    // Compute IDF(b) - start by adding DF(b) to IDF(b).
+    result->reserve(bDF->size());
+    BitVecOps::ClearD(&m_poTraits, m_visited);
+
+    for (BasicBlock* f : *bDF)
+    {
+        BitVecOps::AddElemD(&m_poTraits, m_visited, f->bbPostorderNum);
+        result->push_back(f);
+    }
+
+    // Now for each block f from IDF(b) add DF(f) to IDF(b). This may result in new
+    // blocks being added to IDF(b) and the process repeats until no more new blocks
+    // are added. Note that since we keep adding to bIDF we can't use iterators as
+    // they may get invalidated. This happens to be a convenient way to avoid having
+    // to track newly added blocks in a separate set.
+    for (size_t newIndex = 0; newIndex < result->size(); newIndex++)
+    {
+        BasicBlock* f   = (*result)[newIndex];
+        BlkVector*  fDF = m_map.LookupPointer(f);
+
+        if (fDF == nullptr)
+        {
+            continue;
+        }
+
+        for (BasicBlock* ff : *fDF)
+        {
+            if (BitVecOps::TryAddElemD(&m_poTraits, m_visited, ff->bbPostorderNum))
+            {
+                result->push_back(ff);
+            }
+        }
+    }
+}
+
+#ifdef DEBUG
+void FlowGraphDominanceFrontiers::Dump()
+{
+    printf("DF:\n");
+    for (unsigned i = 0; i < m_domTree->GetDfsTree()->GetPostOrderCount(); ++i)
+    {
+        BasicBlock* b = m_domTree->GetDfsTree()->GetPostOrder(i);
+        printf("Block " FMT_BB " := {", b->bbNum);
+
+        BlkVector* bDF = m_map.LookupPointer(b);
+        if (bDF != nullptr)
+        {
+            int index = 0;
+            for (BasicBlock* f : *bDF)
+            {
+                printf("%s" FMT_BB, (index++ == 0) ? "" : ",", f->bbNum);
+            }
+        }
+        printf("}\n");
+    }
+}
+#endif
 
 //------------------------------------------------------------------------
 // BlockToNaturalLoopMap::GetLoop: Map a block back to its most nested

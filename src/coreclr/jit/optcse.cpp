@@ -17,6 +17,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #endif
 
 #include "optcse.h"
+#include "ssabuilder.h"
 
 #ifdef DEBUG
 #define RLDUMP(...)                                                                                                    \
@@ -4841,20 +4842,20 @@ void CSE_HeuristicCommon::PerformCSE(CSE_Candidate* successfulCandidate)
     unsigned      cseSsaNum = SsaConfig::RESERVED_SSA_NUM;
     LclSsaVarDsc* ssaVarDsc = nullptr;
 
-    if (dsc->csdDefCount == 1)
-    {
-        JITDUMP(FMT_CSE " is single-def, so associated CSE temp V%02u will be in SSA\n", dsc->csdIndex, cseLclVarNum);
-        lclDsc->lvInSsa = true;
+    // if (dsc->csdDefCount == 1)
+    //{
+    //     JITDUMP(FMT_CSE " is single-def, so associated CSE temp V%02u will be in SSA\n", dsc->csdIndex,
+    //     cseLclVarNum); lclDsc->lvInSsa = true;
 
-        // Allocate the ssa num
-        CompAllocator allocator = m_pCompiler->getAllocator(CMK_SSA);
-        cseSsaNum               = lclDsc->lvPerSsaData.AllocSsaNum(allocator);
-        ssaVarDsc               = lclDsc->GetPerSsaData(cseSsaNum);
-    }
-    else
-    {
-        INDEBUG(lclDsc->lvIsMultiDefCSE = 1);
-    }
+    //    // Allocate the ssa num
+    //    CompAllocator allocator = m_pCompiler->getAllocator(CMK_SSA);
+    //    cseSsaNum               = lclDsc->lvPerSsaData.AllocSsaNum(allocator);
+    //    ssaVarDsc               = lclDsc->GetPerSsaData(cseSsaNum);
+    //}
+    // else
+    //{
+    //    INDEBUG(lclDsc->lvIsMultiDefCSE = 1);
+    //}
 
     // Verify that all of the ValueNumbers in this list are correct as
     // Morph will change them when it performs a mutating operation.
@@ -5037,7 +5038,7 @@ void CSE_HeuristicCommon::PerformCSE(CSE_Candidate* successfulCandidate)
             //
 
             // Create a reference to the CSE temp
-            GenTree* cseLclVar = m_pCompiler->gtNewLclvNode(cseLclVarNum, cseLclVarTyp);
+            GenTreeLclVar* cseLclVar = m_pCompiler->gtNewLclvNode(cseLclVarNum, cseLclVarTyp);
             cseLclVar->gtVNPair.SetBoth(dsc->csdConstDefVN);
 
             // Assign the ssa num for the lclvar use. Note it may be the reserved num.
@@ -5302,8 +5303,34 @@ void CSE_HeuristicCommon::PerformCSE(CSE_Candidate* successfulCandidate)
 
         /* re-morph the statement */
         m_pCompiler->fgMorphBlockStmt(blk, stmt DEBUGARG("optValnumCSE"));
-
     } while (lst != nullptr);
+
+    ArrayStack<UseDefLocation> defs(m_pCompiler->getAllocator(CMK_CSE));
+    ArrayStack<UseDefLocation> uses(m_pCompiler->getAllocator(CMK_CSE));
+
+    lst = dsc->csdTreeList;
+    do
+    {
+        Statement* lstStmt = lst->tslStmt;
+        for (GenTree* tree : lstStmt->TreeList())
+        {
+            if (tree->OperIs(GT_LCL_VAR) && (tree->AsLclVar()->GetLclNum() == cseLclVarNum))
+            {
+                uses.Push(UseDefLocation(lst->tslBlock, lstStmt, tree->AsLclVar()));
+            }
+            if (tree->OperIs(GT_STORE_LCL_VAR) && (tree->AsLclVar()->GetLclNum() == cseLclVarNum))
+            {
+                defs.Push(UseDefLocation(lst->tslBlock, lstStmt, tree->AsLclVar()));
+            }
+        }
+
+        do
+        {
+            lst = lst->tslNext;
+        } while ((lst != nullptr) && (lst->tslStmt == lstStmt));
+    } while (lst != nullptr);
+
+    SsaBuilder::InsertInSsa(m_pCompiler, cseLclVarNum, defs, uses);
 }
 
 void CSE_Heuristic::AdjustHeuristic(CSE_Candidate* successfulCandidate)
@@ -5687,6 +5714,7 @@ PhaseStatus Compiler::optOptimizeValnumCSEs()
     }
 
     optValnumCSE_phase = false;
+    fgInvalidateDfsTree();
 
     return heuristic->MadeChanges() ? PhaseStatus::MODIFIED_EVERYTHING : PhaseStatus::MODIFIED_NOTHING;
 }

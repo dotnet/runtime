@@ -1974,6 +1974,7 @@ void Compiler::compInit(ArenaAllocator*       pAlloc,
 #endif // DEBUG
 
     vnStore                    = nullptr;
+    vnState                    = nullptr;
     m_outlinedCompositeSsaNums = nullptr;
     m_nodeToLoopMemoryBlockMap = nullptr;
     m_signatureToLookupInfoMap = nullptr;

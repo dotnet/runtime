@@ -391,6 +391,11 @@ bool Compiler::optCanSinkWidenedIV(unsigned lclNum, FlowGraphNaturalLoop* loop)
 {
     LclVarDsc* dsc = lvaGetDesc(lclNum);
 
+    if (!dsc->lvTracked)
+    {
+        return false;
+    }
+
     BasicBlockVisit result = loop->VisitRegularExitBlocks([=](BasicBlock* exit) {
         if (!VarSetOps::IsMember(this, exit->bbLiveIn, dsc->lvVarIndex))
         {
@@ -1282,6 +1287,11 @@ bool Compiler::optPrimaryIVHasNonLoopUses(unsigned lclNum, FlowGraphNaturalLoop*
     if (varDsc->lvDoNotEnregister)
     {
         // This filters out locals that may be live into exceptional exits.
+        return true;
+    }
+
+    if (!varDsc->lvTracked)
+    {
         return true;
     }
 

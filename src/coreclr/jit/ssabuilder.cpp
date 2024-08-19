@@ -86,190 +86,8 @@ void Compiler::fgResetForSsa()
 SsaBuilder::SsaBuilder(Compiler* pCompiler)
     : m_pCompiler(pCompiler)
     , m_allocator(pCompiler->getAllocator(CMK_SSA))
-    , m_visitedTraits(0, pCompiler) // at this point we do not know the size, SetupBBRoot can add a block
     , m_renameStack(m_allocator, pCompiler->lvaCount)
 {
-}
-
-//------------------------------------------------------------------------
-// ComputeDominanceFrontiers: Compute flow graph dominance frontiers
-//
-// Arguments:
-//    postOrder - an array containing all flow graph blocks
-//    count     - the number of blocks in the postOrder array
-//    mapDF     - a caller provided hashtable that will be populated
-//                with blocks and their dominance frontiers (only those
-//                blocks that have non-empty frontiers will be included)
-//
-// Notes:
-//     Recall that the dominance frontier of a block B is the set of blocks
-//     B3 such that there exists some B2 s.t. B3 is a successor of B2, and
-//     B dominates B2. Note that this dominance need not be strict -- B2
-//     and B may be the same node.
-//     See "A simple, fast dominance algorithm", by Cooper, Harvey, and Kennedy.
-//
-void SsaBuilder::ComputeDominanceFrontiers(BasicBlock** postOrder, int count, BlkToBlkVectorMap* mapDF)
-{
-    DBG_SSA_JITDUMP("Computing DF:\n");
-
-    for (int i = 0; i < count; ++i)
-    {
-        BasicBlock* block = postOrder[i];
-
-        DBG_SSA_JITDUMP("Considering block " FMT_BB ".\n", block->bbNum);
-
-        // Recall that B3 is in the dom frontier of B1 if there exists a B2
-        // such that B1 dom B2, !(B1 dom B3), and B3 is an immediate successor
-        // of B2.  (Note that B1 might be the same block as B2.)
-        // In that definition, we're considering "block" to be B3, and trying
-        // to find B1's.  To do so, first we consider the predecessors of "block",
-        // searching for candidate B2's -- "block" is obviously an immediate successor
-        // of its immediate predecessors.  If there are zero or one preds, then there
-        // is no pred, or else the single pred dominates "block", so no B2 exists.
-
-        FlowEdge* blockPreds = m_pCompiler->BlockPredsWithEH(block);
-
-        // If block has 0/1 predecessor, skip, apart from handler entry blocks
-        // that are always in the dominance frontier of its enclosed blocks.
-        if (!m_pCompiler->bbIsHandlerBeg(block) &&
-            ((blockPreds == nullptr) || (blockPreds->getNextPredEdge() == nullptr)))
-        {
-            DBG_SSA_JITDUMP("   Has %d preds; skipping.\n", blockPreds == nullptr ? 0 : 1);
-            continue;
-        }
-
-        // Otherwise, there are > 1 preds.  Each is a candidate B2 in the definition --
-        // *unless* it dominates "block"/B3.
-
-        FlowGraphDfsTree*       dfsTree = m_pCompiler->m_dfsTree;
-        FlowGraphDominatorTree* domTree = m_pCompiler->m_domTree;
-
-        for (FlowEdge* pred = blockPreds; pred != nullptr; pred = pred->getNextPredEdge())
-        {
-            BasicBlock* predBlock = pred->getSourceBlock();
-            DBG_SSA_JITDUMP("   Considering predecessor " FMT_BB ".\n", predBlock->bbNum);
-
-            if (!dfsTree->Contains(predBlock))
-            {
-                DBG_SSA_JITDUMP("    Unreachable node\n");
-                continue;
-            }
-
-            // If we've found a B2, then consider the possible B1's.  We start with
-            // B2, since a block dominates itself, then traverse upwards in the dominator
-            // tree, stopping when we reach the root, or the immediate dominator of "block"/B3.
-            // (Note that we are guaranteed to encounter this immediate dominator of "block"/B3:
-            // a predecessor must be dominated by B3's immediate dominator.)
-            // Along this way, make "block"/B3 part of the dom frontier of the B1.
-            // When we reach this immediate dominator, the definition no longer applies, since this
-            // potential B1 *does* dominate "block"/B3, so we stop.
-            for (BasicBlock* b1 = predBlock; (b1 != nullptr) && (b1 != block->bbIDom); // !root && !loop
-                 b1             = b1->bbIDom)
-            {
-                DBG_SSA_JITDUMP("      Adding " FMT_BB " to dom frontier of pred dom " FMT_BB ".\n", block->bbNum,
-                                b1->bbNum);
-
-                BlkVector& b1DF = *mapDF->Emplace(b1, m_allocator);
-                // It's possible to encounter the same DF multiple times, ensure that we don't add duplicates.
-                if (b1DF.empty() || (b1DF.back() != block))
-                {
-                    b1DF.push_back(block);
-                }
-            }
-        }
-    }
-
-#ifdef DEBUG
-    if (m_pCompiler->verboseSsa)
-    {
-        printf("\nComputed DF:\n");
-        for (int i = 0; i < count; ++i)
-        {
-            BasicBlock* b = postOrder[i];
-            printf("Block " FMT_BB " := {", b->bbNum);
-
-            BlkVector* bDF = mapDF->LookupPointer(b);
-            if (bDF != nullptr)
-            {
-                int index = 0;
-                for (BasicBlock* f : *bDF)
-                {
-                    printf("%s" FMT_BB, (index++ == 0) ? "" : ",", f->bbNum);
-                }
-            }
-            printf("}\n");
-        }
-    }
-#endif
-}
-
-//------------------------------------------------------------------------
-// ComputeIteratedDominanceFrontier: Compute the iterated dominance frontier
-// for the specified block.
-//
-// Arguments:
-//    b     - the block to computed the frontier for
-//    mapDF - a map containing the dominance frontiers of all blocks
-//    bIDF  - a caller provided vector where the IDF is to be stored
-//
-// Notes:
-//    The iterated dominance frontier is formed by a closure operation:
-//    the IDF of B is the smallest set that includes B's dominance frontier,
-//    and also includes the dominance frontier of all elements of the set.
-//
-void SsaBuilder::ComputeIteratedDominanceFrontier(BasicBlock* b, const BlkToBlkVectorMap* mapDF, BlkVector* bIDF)
-{
-    assert(bIDF->empty());
-
-    BlkVector* bDF = mapDF->LookupPointer(b);
-
-    if (bDF != nullptr)
-    {
-        // Compute IDF(b) - start by adding DF(b) to IDF(b).
-        bIDF->reserve(bDF->size());
-        BitVecOps::ClearD(&m_visitedTraits, m_visited);
-
-        for (BasicBlock* f : *bDF)
-        {
-            BitVecOps::AddElemD(&m_visitedTraits, m_visited, f->bbPostorderNum);
-            bIDF->push_back(f);
-        }
-
-        // Now for each block f from IDF(b) add DF(f) to IDF(b). This may result in new
-        // blocks being added to IDF(b) and the process repeats until no more new blocks
-        // are added. Note that since we keep adding to bIDF we can't use iterators as
-        // they may get invalidated. This happens to be a convenient way to avoid having
-        // to track newly added blocks in a separate set.
-        for (size_t newIndex = 0; newIndex < bIDF->size(); newIndex++)
-        {
-            BasicBlock* f   = (*bIDF)[newIndex];
-            BlkVector*  fDF = mapDF->LookupPointer(f);
-
-            if (fDF != nullptr)
-            {
-                for (BasicBlock* ff : *fDF)
-                {
-                    if (BitVecOps::TryAddElemD(&m_visitedTraits, m_visited, ff->bbPostorderNum))
-                    {
-                        bIDF->push_back(ff);
-                    }
-                }
-            }
-        }
-    }
-
-#ifdef DEBUG
-    if (m_pCompiler->verboseSsa)
-    {
-        printf("IDF(" FMT_BB ") := {", b->bbNum);
-        int index = 0;
-        for (BasicBlock* f : *bIDF)
-        {
-            printf("%s" FMT_BB, (index++ == 0) ? "" : ",", f->bbNum);
-        }
-        printf("}\n");
-    }
-#endif
 }
 
 /**
@@ -280,7 +98,7 @@ void SsaBuilder::ComputeIteratedDominanceFrontier(BasicBlock* b, const BlkToBlkV
  *
  * @return If there is a phi node for the lclNum, returns the GT_PHI tree, else NULL.
  */
-static GenTree* GetPhiNode(BasicBlock* block, unsigned lclNum)
+static Statement* GetPhiNode(BasicBlock* block, unsigned lclNum)
 {
     // Walk the statements for phi nodes.
     for (Statement* const stmt : block->Statements())
@@ -295,7 +113,7 @@ static GenTree* GetPhiNode(BasicBlock* block, unsigned lclNum)
         GenTree* tree = stmt->GetRootNode();
         if (tree->AsLclVar()->GetLclNum() == lclNum)
         {
-            return tree->AsLclVar()->Data();
+            return stmt;
         }
     }
 
@@ -309,19 +127,22 @@ static GenTree* GetPhiNode(BasicBlock* block, unsigned lclNum)
 //    block  - The block where to insert the statement
 //    lclNum - The variable number
 //
-void SsaBuilder::InsertPhi(BasicBlock* block, unsigned lclNum)
+// Returns:
+//   Inserted phi definition.
+//
+Statement* SsaBuilder::InsertPhi(Compiler* comp, BasicBlock* block, unsigned lclNum)
 {
-    var_types type = m_pCompiler->lvaGetDesc(lclNum)->TypeGet();
+    var_types type = comp->lvaGetDesc(lclNum)->TypeGet();
 
     // PHIs and all the associated nodes do not generate any code so the costs are always 0
-    GenTree* phi = new (m_pCompiler, GT_PHI) GenTreePhi(type);
+    GenTree* phi = new (comp, GT_PHI) GenTreePhi(type);
     phi->SetCosts(0, 0);
-    GenTree* store = m_pCompiler->gtNewStoreLclVarNode(lclNum, phi);
+    GenTreeLclVar* store = comp->gtNewStoreLclVarNode(lclNum, phi);
     store->SetCosts(0, 0);
     store->gtType = type; // TODO-ASG-Cleanup: delete. This quirk avoided diffs from costing-induced tail dup.
 
     // Create the statement and chain everything in linear order - PHI, STORE_LCL_VAR.
-    Statement* stmt = m_pCompiler->gtNewStmt(store);
+    Statement* stmt = comp->gtNewStmt(store);
     stmt->SetTreeList(phi);
     phi->gtNext   = store;
     store->gtPrev = phi;
@@ -334,9 +155,10 @@ void SsaBuilder::InsertPhi(BasicBlock* block, unsigned lclNum)
     }
 #endif // DEBUG
 
-    m_pCompiler->fgInsertStmtAtBeg(block, stmt);
+    comp->fgInsertStmtAtBeg(block, stmt);
 
     JITDUMP("Added PHI definition for V%02u at start of " FMT_BB ".\n", lclNum, block->bbNum);
+    return stmt;
 }
 
 //------------------------------------------------------------------------
@@ -378,16 +200,26 @@ void SsaBuilder::AddPhiArg(
     }
 
     // Didn't find a match, add a new phi arg
-    //
-    var_types type = m_pCompiler->lvaGetDesc(lclNum)->TypeGet();
+    AddNewPhiArg(m_pCompiler, block, stmt, phi, lclNum, ssaNum, pred);
+}
 
-    GenTree* phiArg = new (m_pCompiler, GT_PHI_ARG) GenTreePhiArg(type, lclNum, ssaNum, pred);
+void SsaBuilder::AddNewPhiArg(Compiler*   comp,
+                              BasicBlock* block,
+                              Statement*  stmt,
+                              GenTreePhi* phi,
+                              unsigned    lclNum,
+                              unsigned    ssaNum,
+                              BasicBlock* pred)
+{
+    var_types type = comp->lvaGetDesc(lclNum)->TypeGet();
+
+    GenTree* phiArg = new (comp, GT_PHI_ARG) GenTreePhiArg(type, lclNum, ssaNum, pred);
     // Costs are not relevant for PHI args.
     phiArg->SetCosts(0, 0);
     // The argument order doesn't matter so just insert at the front of the list because
     // it's easier. It's also easier to insert in linear order since the first argument
     // will be first in linear order as well.
-    phi->gtUses = new (m_pCompiler, CMK_ASTNode) GenTreePhi::Use(phiArg, phi->gtUses);
+    phi->gtUses = new (comp, CMK_ASTNode) GenTreePhi::Use(phiArg, phi->gtUses);
 
     GenTree* head = stmt->GetTreeList();
     assert(head->OperIs(GT_PHI, GT_PHI_ARG));
@@ -395,7 +227,7 @@ void SsaBuilder::AddPhiArg(
     phiArg->gtNext = head;
     head->gtPrev   = phiArg;
 
-    LclVarDsc* const    varDsc  = m_pCompiler->lvaGetDesc(lclNum);
+    LclVarDsc* const    varDsc  = comp->lvaGetDesc(lclNum);
     LclSsaVarDsc* const ssaDesc = varDsc->GetPerSsaData(ssaNum);
     ssaDesc->AddPhiUse(block);
 
@@ -427,9 +259,10 @@ void SsaBuilder::InsertPhiFunctions()
     unsigned          count     = dfsTree->GetPostOrderCount();
 
     // Compute dominance frontier.
-    BlkToBlkVectorMap mapDF(m_allocator);
-    ComputeDominanceFrontiers(postOrder, count, &mapDF);
+    m_pCompiler->m_domFrontiers = FlowGraphDominanceFrontiers::Build(m_pCompiler->m_domTree);
     EndPhase(PHASE_BUILD_SSA_DF);
+
+    DBEXEC(m_pCompiler->verboseSsa, m_pCompiler->m_domTree->Dump());
 
     // Use the same IDF vector for all blocks to avoid unnecessary memory allocations
     BlkVector blockIDF(m_allocator);
@@ -442,7 +275,20 @@ void SsaBuilder::InsertPhiFunctions()
         DBG_SSA_JITDUMP("Considering dominance frontier of block " FMT_BB ":\n", block->bbNum);
 
         blockIDF.clear();
-        ComputeIteratedDominanceFrontier(block, &mapDF, &blockIDF);
+        m_pCompiler->m_domFrontiers->ComputeIteratedDominanceFrontier(block, &blockIDF);
+
+#ifdef DEBUG
+        if (m_pCompiler->verboseSsa)
+        {
+            printf("IDF(" FMT_BB ") := {", block->bbNum);
+            int index = 0;
+            for (BasicBlock* f : blockIDF)
+            {
+                printf("%s" FMT_BB, (index++ == 0) ? "" : ",", f->bbNum);
+            }
+            printf("}\n");
+        }
+#endif
 
         if (blockIDF.empty())
         {
@@ -480,7 +326,7 @@ void SsaBuilder::InsertPhiFunctions()
                 {
                     // We have a variable i that is defined in block j and live at l, and l belongs to dom frontier of
                     // j. So insert a phi node at l.
-                    InsertPhi(bbInDomFront, lclNum);
+                    InsertPhi(m_pCompiler, bbInDomFront, lclNum);
                 }
             }
         }
@@ -1300,9 +1146,6 @@ void SsaBuilder::Build()
 {
     JITDUMP("*************** In SsaBuilder::Build()\n");
 
-    m_visitedTraits = m_pCompiler->m_dfsTree->PostOrderTraits();
-    m_visited       = BitVecOps::MakeEmpty(&m_visitedTraits);
-
     // Compute liveness on the graph.
     m_pCompiler->fgLocalVarLiveness();
     EndPhase(PHASE_BUILD_SSA_LIVENESS);
@@ -1505,3 +1348,335 @@ void Compiler::JitTestCheckSSA()
     }
 }
 #endif // DEBUG
+
+class IncrementalSsaBuilder
+{
+    Compiler*                   m_comp;
+    unsigned                    m_lclNum;
+    ArrayStack<UseDefLocation>& m_defs;
+    ArrayStack<UseDefLocation>& m_uses;
+    BitVecTraits                m_poTraits;
+    BitVec                      m_defBlocks;
+    BitVec                      m_iteratedDominanceFrontiers;
+
+    UseDefLocation FindOrCreateReachingDef(const UseDefLocation& use);
+    bool           FindReachingDefInBlock(const UseDefLocation& use, BasicBlock* block, UseDefLocation* def);
+    bool           FindReachingDefInSameStatement(const UseDefLocation& use, UseDefLocation* def);
+    Statement*     LatestStatement(Statement* stmt1, Statement* stmt2);
+public:
+    IncrementalSsaBuilder(Compiler*                   comp,
+                          unsigned                    lclNum,
+                          ArrayStack<UseDefLocation>& defs,
+                          ArrayStack<UseDefLocation>& uses)
+        : m_comp(comp)
+        , m_lclNum(lclNum)
+        , m_defs(defs)
+        , m_uses(uses)
+        , m_poTraits(comp->m_dfsTree->PostOrderTraits())
+        , m_defBlocks(BitVecOps::MakeEmpty(&m_poTraits))
+        , m_iteratedDominanceFrontiers(BitVecOps::MakeEmpty(&m_poTraits))
+    {
+    }
+
+    void Insert();
+};
+
+//------------------------------------------------------------------------
+// FindOrCreateReachingDef: Given a use indicated by a block and potentially a
+// statement and tree, find the reaching definition for it, potentially
+// creating it if the reaching definition is a phi that has not been created
+// yet.
+//
+// Parameters:
+//   use - The use. The block must be non-null. The statement and tree can be
+//         null, meaning that the use is happening after the last statement in the
+//         block.
+//
+// Returns:
+//   Location of a definition node that is the reaching def.
+//
+UseDefLocation IncrementalSsaBuilder::FindOrCreateReachingDef(const UseDefLocation& use)
+{
+    for (BasicBlock* dom = use.Block; dom != nullptr; dom = dom->bbIDom)
+    {
+        UseDefLocation reachingDef;
+        if (BitVecOps::IsMember(&m_poTraits, m_defBlocks, dom->bbPostorderNum) &&
+            FindReachingDefInBlock(use, dom, &reachingDef))
+        {
+            return reachingDef;
+        }
+
+        if (BitVecOps::IsMember(&m_poTraits, m_iteratedDominanceFrontiers, dom->bbPostorderNum))
+        {
+            Statement* phiDef = GetPhiNode(dom, m_lclNum);
+            if (phiDef == nullptr)
+            {
+                phiDef = SsaBuilder::InsertPhi(m_comp, dom, m_lclNum);
+
+                LclVarDsc* dsc    = m_comp->lvaGetDesc(m_lclNum);
+                unsigned   ssaNum = dsc->lvPerSsaData.AllocSsaNum(m_comp->getAllocator(CMK_SSA), dom,
+                                                                  phiDef->GetRootNode()->AsLclVarCommon());
+                phiDef->GetRootNode()->AsLclVar()->SetSsaNum(ssaNum);
+
+                GenTreePhi* phi = phiDef->GetRootNode()->AsLclVar()->Data()->AsPhi();
+
+                for (FlowEdge* predEdge = m_comp->BlockPredsWithEH(dom); predEdge != nullptr;
+                     predEdge           = predEdge->getNextPredEdge())
+                {
+                    BasicBlock* pred = predEdge->getSourceBlock();
+                    if (!m_comp->m_dfsTree->Contains(pred))
+                    {
+                        continue;
+                    }
+
+                    // TODO: This cannot be recursive
+                    UseDefLocation phiArgDef = FindOrCreateReachingDef(UseDefLocation(pred, nullptr, nullptr));
+                    SsaBuilder::AddNewPhiArg(m_comp, dom, phiDef, phi, m_lclNum, phiArgDef.Tree->GetSsaNum(), pred);
+                }
+
+                m_comp->fgValueNumberPhiDef(phiDef->GetRootNode()->AsLclVar(), dom);
+            }
+
+            return UseDefLocation(dom, phiDef, phiDef->GetRootNode()->AsLclVar());
+        }
+    }
+
+    assert(!"Found use without any def");
+    unreached();
+}
+
+//------------------------------------------------------------------------
+// FindReachingDefInBlock: Given a use, try to find a definition in the
+// specified block.
+//
+// Parameters:
+//   use   - The use. The block must be non-null. The statement and tree can be
+//           null, meaning that the use is happening after the last statement in the
+//           block.
+//   block - The block to look for a definition in.
+//   def   - [out] The found definition, if any.
+//
+// Returns:
+//   True if a reaching definition was found in "block".
+//
+// Remarks:
+//   If the use occurs in "block", then this function takes care to find the
+//   latest definition before the use.
+//
+bool IncrementalSsaBuilder::FindReachingDefInBlock(const UseDefLocation& use, BasicBlock* block, UseDefLocation* def)
+{
+    Statement*     latestDefStmt = nullptr;
+    GenTreeLclVar* latestTree    = nullptr;
+
+    for (int i = 0; i < m_defs.Height(); i++)
+    {
+        UseDefLocation& candidate = m_defs.BottomRef(i);
+        if (candidate.Block != block)
+        {
+            continue;
+        }
+
+        if (candidate.Stmt == use.Stmt)
+        {
+            if (FindReachingDefInSameStatement(use, def))
+            {
+                return true;
+            }
+
+            continue;
+        }
+
+        if ((candidate.Block == use.Block) && (use.Stmt != nullptr) &&
+            (LatestStatement(use.Stmt, candidate.Stmt) != use.Stmt))
+        {
+            // Def is after use
+            continue;
+        }
+
+        if (candidate.Stmt == latestDefStmt)
+        {
+            latestTree = nullptr;
+        }
+        else if ((latestDefStmt == nullptr) || (LatestStatement(candidate.Stmt, latestDefStmt) == candidate.Stmt))
+        {
+            latestDefStmt = candidate.Stmt;
+            latestTree    = candidate.Tree;
+        }
+    }
+
+    if (latestDefStmt == nullptr)
+    {
+        return false;
+    }
+
+    if (latestTree == nullptr)
+    {
+        for (GenTree* tree : latestDefStmt->TreeList())
+        {
+            if (tree->OperIs(GT_STORE_LCL_VAR) && (tree->AsLclVar()->GetLclNum() == m_lclNum))
+            {
+                latestTree = tree->AsLclVar();
+            }
+        }
+
+        assert(latestTree != nullptr);
+    }
+
+    *def = UseDefLocation(use.Block, latestDefStmt, latestTree);
+    return true;
+}
+
+//------------------------------------------------------------------------
+// FindReachingDefInSameStatement: Given a use, try to find a definition within
+// the same statement as that use.
+//
+// Parameters:
+//   use   - The use.
+//   def   - [out] The found definition, if any.
+//
+// Returns:
+//   True if a reaching definition was found in the same statement as the use.
+//
+bool IncrementalSsaBuilder::FindReachingDefInSameStatement(const UseDefLocation& use, UseDefLocation* def)
+{
+    for (GenTree* tree = use.Tree->gtPrev; tree != nullptr; tree = tree->gtPrev)
+    {
+        if (tree->OperIs(GT_STORE_LCL_VAR) && (tree->AsLclVar()->GetLclNum() == m_lclNum))
+        {
+            *def = UseDefLocation(use.Block, use.Stmt, tree->AsLclVar());
+            return true;
+        }
+    }
+
+    return false;
+}
+
+//------------------------------------------------------------------------
+// LatestStatement: Given two statements in the same block, find the latest one
+// of them.
+//
+// Parameters:
+//   stmt1 - The first statement
+//   stmt2 - The second statement
+//
+// Returns:
+//   Latest of the two statements.
+//
+Statement* IncrementalSsaBuilder::LatestStatement(Statement* stmt1, Statement* stmt2)
+{
+    if (stmt1 == stmt2)
+    {
+        return stmt1;
+    }
+
+    Statement* cursor1 = stmt1->GetNextStmt();
+    Statement* cursor2 = stmt2->GetNextStmt();
+
+    while (true)
+    {
+        if ((cursor1 == stmt2) || (cursor2 == nullptr))
+        {
+            return stmt2;
+        }
+
+        if ((cursor2 == stmt1) || (cursor1 == nullptr))
+        {
+            return stmt1;
+        }
+
+        cursor1 = cursor1->GetNextStmt();
+        cursor2 = cursor2->GetNextStmt();
+    }
+}
+
+//------------------------------------------------------------------------
+// Insert: Insert the uses and definitions in SSA.
+//
+void IncrementalSsaBuilder::Insert()
+{
+    FlowGraphDfsTree* dfsTree = m_comp->m_dfsTree;
+
+    // Alloc SSA numbers for all real definitions.
+    for (int i = 0; i < m_defs.Height(); i++)
+    {
+        UseDefLocation& def = m_defs.BottomRef(i);
+        if (!dfsTree->Contains(def.Block))
+        {
+            continue;
+        }
+
+        BitVecOps::AddElemD(&m_poTraits, m_defBlocks, def.Block->bbPostorderNum);
+
+        LclVarDsc* dsc    = m_comp->lvaGetDesc(m_lclNum);
+        unsigned   ssaNum = dsc->lvPerSsaData.AllocSsaNum(m_comp->getAllocator(CMK_SSA), def.Block, def.Tree);
+        def.Tree->SetSsaNum(ssaNum);
+        LclSsaVarDsc* ssaDsc = dsc->GetPerSsaData(ssaNum);
+        ssaDsc->m_vnPair     = def.Tree->Data()->gtVNPair;
+    }
+
+    // Compute iterated dominance frontiers of all real definitions. These are
+    // the blocks that unpruned phi definitions would be inserted into. We
+    // insert the phis lazily to end up with pruned SSA, but we still need to
+    // know which blocks are candidates for phis.
+    BlkVector idf(m_comp->getAllocator(CMK_SSA));
+
+    for (int i = 0; i < m_defs.Height(); i++)
+    {
+        BasicBlock* block = m_defs.BottomRef(i).Block;
+        idf.clear();
+        m_comp->m_domFrontiers->ComputeIteratedDominanceFrontier(block, &idf);
+
+        for (BasicBlock* idfBlock : idf)
+        {
+            BitVecOps::AddElemD(&m_poTraits, m_iteratedDominanceFrontiers, idfBlock->bbPostorderNum);
+        }
+    }
+
+    // Finally compute all the reaching defs for the uses.
+    for (int i = 0; i < m_uses.Height(); i++)
+    {
+        UseDefLocation& use = m_uses.BottomRef(i);
+        if (!dfsTree->Contains(use.Block))
+        {
+            continue;
+        }
+
+        UseDefLocation def = FindOrCreateReachingDef(use);
+        use.Tree->SetSsaNum(def.Tree->GetSsaNum());
+    }
+}
+
+//------------------------------------------------------------------------
+// InsertInSsa: Insert a specified local in SSA given its local number and all
+// of its definitions and uses in the IR.
+//
+// Parameters:
+//   comp   - Compiler instance
+//   lclNum - The local that is being inserted into SSA
+//   defs   - All STORE_LCL_VAR definitions of the local
+//   uses   - All LCL_VAR uses of the local
+//
+void SsaBuilder::InsertInSsa(Compiler*                   comp,
+                             unsigned                    lclNum,
+                             ArrayStack<UseDefLocation>& defs,
+                             ArrayStack<UseDefLocation>& uses)
+{
+    if (comp->m_dfsTree == nullptr)
+    {
+        comp->m_dfsTree = comp->fgComputeDfs();
+    }
+
+    if (comp->m_domTree == nullptr)
+    {
+        comp->m_domTree = FlowGraphDominatorTree::Build(comp->m_dfsTree);
+    }
+
+    if (comp->m_domFrontiers == nullptr)
+    {
+        comp->m_domFrontiers = FlowGraphDominanceFrontiers::Build(comp->m_domTree);
+    }
+
+    IncrementalSsaBuilder builder(comp, lclNum, defs, uses);
+    builder.Insert();
+    comp->lvaGetDesc(lclNum)->lvInSsa = true;
+}

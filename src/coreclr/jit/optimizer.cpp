@@ -6186,7 +6186,7 @@ PhaseStatus Compiler::optVNBasedDeadStoreRemoval()
             LclSsaVarDsc*        defDsc = varDsc->lvPerSsaData.GetSsaDefByIndex(defIndex);
             GenTreeLclVarCommon* store  = defDsc->GetDefNode();
 
-            if (store != nullptr)
+            if (store != nullptr && defDsc->m_vnPair.BothDefined())
             {
                 assert(store->OperIsLocalStore() && defDsc->m_vnPair.BothDefined());
 
