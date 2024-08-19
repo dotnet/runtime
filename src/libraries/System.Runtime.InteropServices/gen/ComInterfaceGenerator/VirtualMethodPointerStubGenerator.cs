@@ -79,10 +79,6 @@ namespace Microsoft.Interop
             code = Block(List([
                 .. setupStatements,
                 code,
-                MethodInvocationStatement(
-                    TypeSyntaxes.System_GC,
-                    IdentifierName("KeepAlive"),
-                    Argument(ThisExpression()))
             ]));
 
             // The owner type will always be an interface type, so the syntax will always be a NameSyntax as it's the name of a named type
@@ -103,7 +99,7 @@ namespace Microsoft.Interop
             ExpressionSyntax untypedFunctionPointerExpression,
             ImmutableArray<FunctionPointerUnmanagedCallingConventionSyntax> callConv)
         {
-            List<FunctionPointerParameterSyntax> functionPointerParameters = new();
+            List<FunctionPointerParameterSyntax> functionPointerParameters = [];
             var (paramList, retType, _) = stubGenerator.GenerateTargetMethodSignatureData();
             functionPointerParameters.AddRange(paramList.Parameters.Select(p => FunctionPointerParameter(attributeLists: default, p.Modifiers, p.Type)));
             functionPointerParameters.Add(FunctionPointerParameter(retType));

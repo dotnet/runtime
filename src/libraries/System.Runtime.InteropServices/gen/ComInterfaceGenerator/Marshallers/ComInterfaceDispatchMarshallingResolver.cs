@@ -22,7 +22,7 @@ namespace Microsoft.Interop
             {
                 return context.Direction == MarshalDirection.UnmanagedToManaged
                     ? ResolvedGenerator.Resolved(new Marshaller().Bind(info))
-                    : ResolvedGenerator.Resolved(new Forwarder().Bind(info));
+                    : ResolvedGenerator.Resolved(KeepAliveThisMarshaller.Instance.Bind(info));
             }
             else
             {
