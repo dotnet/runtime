@@ -68,11 +68,8 @@ public:
     static FCDECL3(void,            ValidateByref, void *pByref, MethodDesc *pMD, Object *pThisUNSAFE);
 
 #ifdef PROFILING_SUPPORTED
-    //-------------------------------------------------------
-    // Profiler helper
-    //-------------------------------------------------------
-    static FCDECL3(SIZE_T,          ProfilerBeginTransitionCallback,    SIZE_T pSecretParam, Thread* pThread, Object* unsafe_pThis);
-    static FCDECL2(void,            ProfilerEndTransitionCallback,      MethodDesc* pRealMD, Thread* pThread);
+    static FCDECL0(INT32,           ProfilerGetSystemError);
+    static FCDECL1(void,            ProfilerSetSystemError, INT32 error);
 #endif
 
     static FCDECL2(void,            MulticastDebuggerTraceHelper, Object*, INT32);
@@ -81,6 +78,11 @@ public:
 };
 
 extern "C" void* QCALLTYPE StubHelpers_CreateCustomMarshalerHelper(MethodDesc* pMD, mdToken paramToken, TypeHandle hndManagedType);
+
+#ifdef PROFILING_SUPPORTED
+extern "C" void* QCALLTYPE StubHelpers_ProfilerBeginTransitionCallbackWorker(MethodDesc* pTargetMD, MethodTable* pMT);
+extern "C" void QCALLTYPE StubHelpers_ProfilerEndTransitionCallbackWorker(MethodDesc* pTargetMD);
+#endif
 
 #ifdef FEATURE_COMINTEROP
 extern "C" void QCALLTYPE ObjectMarshaler_ConvertToNative(QCall::ObjectHandleOnStack pSrcUNSAFE, VARIANT* pDest);
