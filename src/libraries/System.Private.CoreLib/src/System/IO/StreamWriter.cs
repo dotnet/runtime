@@ -77,7 +77,7 @@ namespace System.IO
         {
         }
 
-        public StreamWriter(Stream stream, Encoding encoding)
+        public StreamWriter(Stream stream, Encoding? encoding)
             : this(stream, encoding, DefaultBufferSize, false)
         {
         }
@@ -86,7 +86,7 @@ namespace System.IO
         // character encoding is set by encoding and the buffer size,
         // in number of 16-bit characters, is set by bufferSize.
         //
-        public StreamWriter(Stream stream, Encoding encoding, int bufferSize)
+        public StreamWriter(Stream stream, Encoding? encoding, int bufferSize)
             : this(stream, encoding, bufferSize, false)
         {
         }
