@@ -6,7 +6,6 @@
     <SharedFrameworkName>$(MicrosoftNetCoreAppFrameworkName)</SharedFrameworkName>
     <IsShipping Condition="'$(PgoInstrument)' != ''">false</IsShipping>
     <SharedFrameworkFriendlyName>.NET Runtime</SharedFrameworkFriendlyName>
-    <EnableDefaultPackageReadmeFile>true</EnableDefaultPackageReadmeFile>
   </PropertyGroup>
 
   <!--
