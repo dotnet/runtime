@@ -8,20 +8,25 @@ using System.Runtime.Intrinsics;
 
 namespace System.Runtime.Intrinsics.X86
 {
-    /// <summary>
-    /// This class provides access to Intel SSSE3 hardware instructions via intrinsics
-    /// </summary>
+    /// <summary>Provides access to X86 SSSE3 hardware instructions via intrinsics.</summary>
     [CLSCompliant(false)]
     public abstract class Ssse3 : Sse3
     {
         internal Ssse3() { }
 
+        /// <summary>Gets a value that indicates whether the APIs in this class are supported.</summary>
+        /// <value><see langword="true" /> if the APIs are supported; otherwise, <see langword="false" />.</value>
+        /// <remarks>A value of <see langword="false" /> indicates that the APIs will throw <see cref="PlatformNotSupportedException" />.</remarks>
         public static new bool IsSupported { [Intrinsic] get { return false; } }
 
+        /// <summary>Provides access to the x86 SSSE3 hardware instructions, that are only available to 64-bit processes, via intrinsics.</summary>
         public new abstract class X64 : Sse3.X64
         {
             internal X64() { }
 
+            /// <summary>Gets a value that indicates whether the APIs in this class are supported.</summary>
+            /// <value><see langword="true" /> if the APIs are supported; otherwise, <see langword="false" />.</value>
+            /// <remarks>A value of <see langword="false" /> indicates that the APIs will throw <see cref="PlatformNotSupportedException" />.</remarks>
             public static new bool IsSupported { [Intrinsic] get { return false; } }
         }
 
