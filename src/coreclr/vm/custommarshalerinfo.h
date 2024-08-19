@@ -113,6 +113,6 @@ public:
 };
 
 
-typedef EEHashTable<EECMInfoHashtableKey*, EECMInfoHashtableHelper, TRUE> EECMInfoHashTable;
+typedef EEHashTable<EECMInfoHashtableKey*, EECMInfoHashtableHelper, FALSE> EECMInfoHashTable;
 
 #endif // _CUSTOMMARSHALERINFO_H_

@@ -951,7 +951,7 @@ CustomMarshalerInfo *EEMarshalingData::GetCustomMarshalerInfo(Assembly *pAssembl
         }
 
         // Add the custom marshaler helper to the hash table.
-        m_CMInfoHashTable.InsertValue(&Key, pNewCMInfo, FALSE);
+        m_CMInfoHashTable.InsertValue(&Key, pNewCMInfo);
 
         // If we create the CM info, then add it to the linked list.
         if (pNewCMInfo)
