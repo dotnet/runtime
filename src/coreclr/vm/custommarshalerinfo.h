@@ -49,19 +49,6 @@ public:
     void                InvokeCleanUpManagedMeth(OBJECTREF MngObj);
 
     // Accessors.
-    int GetNativeSize()
-    {
-        LIMITED_METHOD_CONTRACT;
-        // [COMPAT] We only support non-value classes, so the native size is the size of a pointer.
-        return sizeof(void*);
-    }
-
-    int GetManagedSize()
-    {
-        WRAPPER_NO_CONTRACT;
-        return m_hndManagedType.GetSize();
-    }
-
     TypeHandle GetManagedType()
     {
         LIMITED_METHOD_CONTRACT;
@@ -72,18 +59,6 @@ public:
     {
         LIMITED_METHOD_CONTRACT;
         return m_pLoaderAllocator->GetHandleValue(m_hndCustomMarshaler);
-    }
-
-    TypeHandle GetCustomMarshalerType()
-    {
-        CONTRACTL
-        {
-            NOTHROW;
-            GC_NOTRIGGER;
-            MODE_COOPERATIVE;
-        }
-        CONTRACTL_END;
-        return m_pLoaderAllocator->GetHandleValue(m_hndCustomMarshaler)->GetTypeHandle();
     }
 
     // Helper function to retrieve a custom marshaler method desc.
