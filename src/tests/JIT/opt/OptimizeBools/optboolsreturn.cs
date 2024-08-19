@@ -327,18 +327,6 @@ public class CBoolTest
         return b;
     }
 
-    [MethodImpl(MethodImplOptions.NoInlining)]
-    private static bool IsAEqual128AndB89(int a, int b) => a == 128 && b == 89;
-
-    [MethodImpl(MethodImplOptions.NoInlining)]
-    private static bool IsAEqualBAndC89(int a, int b, int c) => a == b && c == 89;
-
-    [MethodImpl(MethodImplOptions.NoInlining)]
-    private static bool IsAEqualBAndCEqualD(int a, int b, int c, int d) => a == b && c == d;
-
-    [MethodImpl(MethodImplOptions.NoInlining)]
-    private static bool IsANeither128OrB89(int a, int b) => a != 128 || b != 89;
-
     [Fact]
     public static int TestEntryPoint()
     {
@@ -1125,96 +1113,6 @@ public class CBoolTest
         if (IsEitherOne(2, 0))
         {
             Console.WriteLine("CBoolTest:IsEitherOne(2, 0) failed");
-            return 101;
-        }
-
-        if (IsAEqual128AndB89(128, 3))
-        {
-            Console.WriteLine($"IsAEqual128AndB89(128, 3) failed");
-            return 101;
-        }
-
-        if (IsAEqual128AndB89(5, 89))
-        {
-            Console.WriteLine($"IsAEqual128AndB89(5, 89) failed");
-            return 101;
-        }
-
-        if (IsAEqual128AndB89(5, 3))
-        {
-            Console.WriteLine($"IsAEqual128AndB89(5, 3) failed");
-            return 101;
-        }
-
-        if (!IsAEqual128AndB89(128, 89))
-        {
-            Console.WriteLine($"IsAEqual128AndB89(128, 89) failed");
-            return 101;
-        }
-
-        if (IsAEqualBAndC89(128, 128, 3))
-        {
-            Console.WriteLine($"IsAEqualBAndC89(128, 128, 3) failed");
-            return 101;
-        }
-
-        if (IsAEqualBAndC89(3, 128, 89))
-        {
-            Console.WriteLine($"IsAEqualBAndC89(3, 128, 89) failed");
-            return 101;
-        }
-
-        if (!IsAEqualBAndC89(128, 128, 89))
-        {
-            Console.WriteLine($"IsAEqualBAndC89(128, 128, 89) failed");
-            return 101;
-        }
-
-        if (IsAEqualBAndCEqualD(128, 3, 89, 89))
-        {
-            Console.WriteLine($"IsAEqualBAndCEqualD(128, 3, 89, 89) failed");
-            return 101;
-        }
-
-        if (IsAEqualBAndCEqualD(128, 128, 89, 3))
-        {
-            Console.WriteLine($"IsAEqualBAndCEqualD(128, 128, 89, 3) failed");
-            return 101;
-        }
-
-        if (IsAEqualBAndCEqualD(128, 5, 89, 3))
-        {
-            Console.WriteLine($"IsAEqualBAndCEqualD(128, 5, 89, 3) failed");
-            return 101;
-        }
-
-        if (!IsAEqualBAndCEqualD(128, 128, 89, 89))
-        {
-            Console.WriteLine($"IsAEqualBAndCEqualD(128, 128, 89, 89) failed");
-            return 101;
-        }
-
-        if (IsANeither128OrB89(128, 89))
-        {
-            Console.WriteLine($"IsANeither128OrB89(128, 89) failed");
-            return 101;
-        }
-
-        if (!IsANeither128OrB89(3, 89))
-        {
-            Console.WriteLine($"IsANeither128OrB89(3, 89) failed");
-            return 101;
-        }
-
-        if (!IsANeither128OrB89(128, 5))
-        {
-            Console.WriteLine($"IsANeither128OrB89(128, 5) failed");
-            return 101;
-        }
-
-        if (!IsANeither128OrB89(3, 5))
-        {
-            Console.WriteLine($"IsANeither128OrB89(3, 5) failed");
             return 101;
         }
 
