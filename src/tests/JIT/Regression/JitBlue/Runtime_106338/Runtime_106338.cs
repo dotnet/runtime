@@ -8,6 +8,8 @@
 // Debug: Outputs 1600094603
 // Release: Outputs 1600094604
 using System;
+using System.Runtime.InteropServices;
+using System.Runtime.Intrinsics.X86;
 using Xunit;
 
 public class Runtime_106338
@@ -15,8 +17,13 @@ public class Runtime_106338
     [Fact]
     public static void TestEntryPoint()
     {
-        ulong vr10 = 16105307123914158031UL;
-        float vr11 = 4294967295U | vr10;
-        Assert.Equal(1600094603U, BitConverter.SingleToUInt32Bits(vr11));
+        bool runTest = (RuntimeInformation.ProcessArchitecture == Architecture.Arm64) || Avx512F.IsSupported;
+
+        if (runTest)
+        {
+            ulong vr10 = 16105307123914158031UL;
+            float vr11 = 4294967295U | vr10;
+            Assert.Equal(1600094603U, BitConverter.SingleToUInt32Bits(vr11));
+        }
     }
 }
