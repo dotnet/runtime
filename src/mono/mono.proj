@@ -185,6 +185,7 @@
       <DOTNET_EMSCRIPTEN_CACHE>$(EM_FROZEN_CACHE)</DOTNET_EMSCRIPTEN_CACHE>
       <DOTNET_EMSCRIPTEN_CACHE Condition="'$(DOTNET_EMSCRIPTEN_CACHE)' == '' or ('$(DOTNET_EMSCRIPTEN_CACHE)' != 'true' and '$(DOTNET_EMSCRIPTEN_CACHE)' != 'false')">true</DOTNET_EMSCRIPTEN_CACHE>
       <EMSDK_PYTHON Condition="'$(TargetsBrowser)' == 'true' and '$(HostOS)' == 'windows'">$(NuGetPackageRoot)Microsoft.NET.Runtime.Emscripten.$(EmsdkVersion).Python.win-$(BuildArchitecture)/$(EmsdkPackageVersion)/tools/python.exe</EMSDK_PYTHON>      
+      <NodeModulesBinFiles Include="$(DOTNET_EMSCRIPTEN_NODE_PATH)/npm.js" />
       <_PreEmsdkEnvScriptPath>$(EMSDK_PATH)pre_emsdk_env$(ScriptExt)</_PreEmsdkEnvScriptPath>
       <_SetOrExport Condition="'$(HostOS)' != 'windows'">export</_SetOrExport>
       <_SetOrExport Condition="'$(HostOS)' == 'windows'">set</_SetOrExport>
@@ -224,6 +225,12 @@
     <Copy Condition="'$(HostOS)' == 'windows'" SourceFiles="@(PythonFiles)" DestinationFolder="$(EMSDK_PATH)python/%(RecursiveDir)">
       <Output TaskParameter="DestinationFiles" ItemName="FileWrites"/>
     </Copy>
+
+    <WriteLinesToFile
+      Condition="$([MSBuild]::IsOSPlatform(Linux)) or $([MSBuild]::IsOSPlatform(OSX))"
+      Lines="#!/usr/bin/env node;require('../lib/node_modules/%(Filename)/lib/cli.js')(process)"
+      File="%(NodeModulesBinFiles.RootDir)%(NodeModulesBinFiles.Directory)%(NodeModulesBinFiles.Filename)"
+      Overwrite="true" />
 
     <PropertyGroup>
       <ShouldProvisionEmscripten>false</ShouldProvisionEmscripten>
@@ -699,14 +706,6 @@
       Condition="'$(_MonoSkipCMakeConfigure)' != 'true'"
       File="$(MonoObjDir)cmake_cmd_line.txt"
       Lines="$(_MonoCMakeConfigureCommand)"
-      Overwrite="true" />
-    <ItemGroup>
-      <NodeModulesBinFiles Include="$(DOTNET_EMSCRIPTEN_NODE_PATH)/npm.js" />
-    </ItemGroup>
-    <WriteLinesToFile
-      Condition="$([MSBuild]::IsOSPlatform(Linux)) or $([MSBuild]::IsOSPlatform(OSX))"
-      Lines="#!/usr/bin/env node;require('../lib/node_modules/%(Filename)/lib/cli.js')(process)"
-      File="%(NodeModulesBinFiles.RootDir)%(NodeModulesBinFiles.Directory)%(NodeModulesBinFiles.Filename)"
       Overwrite="true" />
 
     <!-- build -->
