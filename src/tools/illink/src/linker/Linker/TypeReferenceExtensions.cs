@@ -176,6 +176,7 @@ namespace Mono.Linker
 
 		public static TypeReference InflateGenericType (IGenericInstance genericInstanceProvider, TypeReference typeToInflate)
 		{
+			Debug.Assert (genericInstanceProvider is GenericInstanceType or GenericInstanceMethod);
 			if (typeToInflate is ArrayType arrayType) {
 				var inflatedElementType = InflateGenericType (genericInstanceProvider, arrayType.ElementType);
 

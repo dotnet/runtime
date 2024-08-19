@@ -320,6 +320,16 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 				public static T field;
 
 				public static T Property { get; }
+
+				public class Nested {
+					public static T ReturnType () => default;
+
+					public static void OutParameter (out T value) => value = default;
+
+					public static T field;
+
+					public static T Property { get; }
+				}
 			}
 
 			static void TestGenericClassReturnType ()
@@ -344,6 +354,28 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 				Generic<Annotated>.Property.GetType ().RequiresPublicFields ();
 			}
 
+			static void TestNestedGenericClassReturnType ()
+			{
+				Generic<Annotated>.Nested.ReturnType ().GetType ().RequiresPublicFields ();
+			}
+
+			[UnexpectedWarning ("IL2072", Tool.Analyzer, "https://github.com/dotnet/runtime/issues/101734")]
+			static void TestNestedGenericClassOutParameter ()
+			{
+				Generic<Annotated>.Nested.OutParameter (out var value);
+				value.GetType ().RequiresPublicFields ();
+			}
+
+			static void TestNestedGenericClassField ()
+			{
+				Generic<Annotated>.Nested.field.GetType ().RequiresPublicFields ();
+			}
+
+			static void TestNestedGenericClassProperty ()
+			{
+				Generic<Annotated>.Nested.Property.GetType ().RequiresPublicFields ();
+			}
+
 			public static void Test ()
 			{
 				TestGenericMethodReturnType ();
@@ -352,6 +384,10 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 				TestGenericClassOutParameter ();
 				TestGenericClassField ();
 				TestGenericClassProperty ();
+				TestNestedGenericClassReturnType ();
+				TestNestedGenericClassOutParameter ();
+				TestNestedGenericClassField ();
+				TestNestedGenericClassProperty ();
 			}
 		}
 
