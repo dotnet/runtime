@@ -52,19 +52,19 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)]
 			class Generic<T> {
 				[Kept]
-				[ExpectedWarning ("IL2112", Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/runtime/issues/102002")]
+				[ExpectedWarning ("IL2112")]
 				[KeptAttributeAttribute (typeof (RequiresUnreferencedCodeAttribute))]
 				[RequiresUnreferencedCode (nameof (KeptForMethodParameter))]
 				public void KeptForMethodParameter () {}
 
 				[Kept]
-				[ExpectedWarning ("IL2112", Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/runtime/issues/102002")]
+				[ExpectedWarning ("IL2112")]
 				[KeptAttributeAttribute (typeof (RequiresUnreferencedCodeAttribute))]
 				[RequiresUnreferencedCode (nameof (KeptForField))]
 				public void KeptForField () {}
 
 				[Kept]
-				[ExpectedWarning ("IL2112", Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/runtime/issues/102002")]
+				[ExpectedWarning ("IL2112")]
 				[KeptAttributeAttribute (typeof (RequiresUnreferencedCodeAttribute))]
 				[RequiresUnreferencedCode (nameof (KeptJustBecause))]
 				public void KeptJustBecause () {}
