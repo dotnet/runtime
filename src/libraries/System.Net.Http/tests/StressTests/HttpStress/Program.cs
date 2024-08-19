@@ -195,6 +195,7 @@ namespace HttpStress
                     lock (s_unobservedExceptions)
                     {
                         string text = e.Exception.ToString();
+                        Console.WriteLine($"Unobserved exception: {e.Exception}");
                         s_unobservedExceptions[text] = s_unobservedExceptions.GetValueOrDefault(text) + 1;
                     }
                 };

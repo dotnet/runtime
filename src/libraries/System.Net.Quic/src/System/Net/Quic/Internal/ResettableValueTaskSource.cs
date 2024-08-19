@@ -234,6 +234,10 @@ internal sealed class ResettableValueTaskSource : IValueTaskSource
     /// <returns><c>true</c> if this is the first call that set the result; otherwise, <c>false</c>.</returns>
     public bool TrySetException(Exception exception, bool final = false)
     {
+        if (exception is QuicException quicException && _keepAlive.IsAllocated)
+        {
+            quicException.Sender = _keepAlive.Target;
+        }
         return TryComplete(exception, final);
     }
 

@@ -75,4 +75,8 @@ public sealed class QuicException : IOException
     /// The transport protocol error code associated with the error.
     /// </summary>
     public long? TransportErrorCode { get; }
+
+    internal object? Sender { get; set; }
+
+    public override string ToString() => Sender is null ? base.ToString() : $"[{Sender}] {base.ToString()}";
 }
