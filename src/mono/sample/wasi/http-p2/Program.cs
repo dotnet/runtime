@@ -13,8 +13,9 @@ public static class WasiMainWrapper
 {
     public static async Task<int> MainAsync(string[] args)
     {
+        await Task.Delay(100);
+
         using HttpClient client = new();
-        client.Timeout = Timeout.InfiniteTimeSpan;
         client.DefaultRequestHeaders.Accept.Clear();
         client.DefaultRequestHeaders.Add("User-Agent", "dotnet WASI unit test");
         
