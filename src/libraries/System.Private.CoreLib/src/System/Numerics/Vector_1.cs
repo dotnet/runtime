@@ -243,7 +243,7 @@ namespace System.Numerics
         /// <summary>Computes the bitwise-and of two vectors.</summary>
         /// <param name="left">The vector to bitwise-and with <paramref name="right" />.</param>
         /// <param name="right">The vector to bitwise-and with <paramref name="left" />.</param>
-        /// <returns>The bitwise-and of <paramref name="left" /> and <paramref name="right"/>.</returns>
+        /// <returns>The bitwise-and of <paramref name="left" /> and <paramref name="right" />.</returns>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector<T> operator &(Vector<T> left, Vector<T> right)
@@ -266,7 +266,7 @@ namespace System.Numerics
         /// <summary>Computes the bitwise-or of two vectors.</summary>
         /// <param name="left">The vector to bitwise-or with <paramref name="right" />.</param>
         /// <param name="right">The vector to bitwise-or with <paramref name="left" />.</param>
-        /// <returns>The bitwise-or of <paramref name="left" /> and <paramref name="right"/>.</returns>
+        /// <returns>The bitwise-or of <paramref name="left" /> and <paramref name="right" />.</returns>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector<T> operator |(Vector<T> left, Vector<T> right)
@@ -365,90 +365,90 @@ namespace System.Numerics
             return result.As<ulong, T>();
         }
 
-        /// <summary>Reinterprets a <see cref="Vector{T}" /> as a new <see cref="Vector{Byte}" />.</summary>
+        /// <summary>Reinterprets a <see cref="Vector{T}" /> as a new <see langword="Vector&lt;Byte&gt;" />.</summary>
         /// <param name="value">The vector to reinterpret.</param>
-        /// <returns><paramref name="value" /> reinterpreted as a new <see cref="Vector{Byte}" />.</returns>
+        /// <returns><paramref name="value" /> reinterpreted as a new <see langword="Vector&lt;Byte&gt;" />.</returns>
         /// <exception cref="NotSupportedException">The type of <paramref name="value" /> (<typeparamref name="T" />) is not supported.</exception>
         [Intrinsic]
         public static explicit operator Vector<byte>(Vector<T> value) => value.As<T, byte>();
 
-        /// <summary>Reinterprets a <see cref="Vector{T}" /> as a new <see cref="Vector{Double}" />.</summary>
+        /// <summary>Reinterprets a <see cref="Vector{T}" /> as a new <see langword="Vector&lt;Double&gt;" />.</summary>
         /// <param name="value">The vector to reinterpret.</param>
-        /// <returns><paramref name="value" /> reinterpreted as a new <see cref="Vector{Double}" />.</returns>
+        /// <returns><paramref name="value" /> reinterpreted as a new <see langword="Vector&lt;Double&gt;" />.</returns>
         /// <exception cref="NotSupportedException">The type of <paramref name="value" /> (<typeparamref name="T" />) is not supported.</exception>
         [Intrinsic]
         public static explicit operator Vector<double>(Vector<T> value) => value.As<T, double>();
 
-        /// <summary>Reinterprets a <see cref="Vector{T}" /> as a new <see cref="Vector{Int16}" />.</summary>
+        /// <summary>Reinterprets a <see cref="Vector{T}" /> as a new <see langword="Vector&lt;Int16&gt;" />.</summary>
         /// <param name="value">The vector to reinterpret.</param>
-        /// <returns><paramref name="value" /> reinterpreted as a new <see cref="Vector{Int16}" />.</returns>
+        /// <returns><paramref name="value" /> reinterpreted as a new <see langword="Vector&lt;Int16&gt;" />.</returns>
         /// <exception cref="NotSupportedException">The type of <paramref name="value" /> (<typeparamref name="T" />) is not supported.</exception>
         [Intrinsic]
         public static explicit operator Vector<short>(Vector<T> value) => value.As<T, short>();
 
-        /// <summary>Reinterprets a <see cref="Vector{T}" /> as a new <see cref="Vector{Int32}" />.</summary>
+        /// <summary>Reinterprets a <see cref="Vector{T}" /> as a new <see langword="Vector&lt;Int32&gt;" />.</summary>
         /// <param name="value">The vector to reinterpret.</param>
-        /// <returns><paramref name="value" /> reinterpreted as a new <see cref="Vector{Int32}" />.</returns>
+        /// <returns><paramref name="value" /> reinterpreted as a new <see langword="Vector&lt;Int32&gt;" />.</returns>
         /// <exception cref="NotSupportedException">The type of <paramref name="value" /> (<typeparamref name="T" />) is not supported.</exception>
         [Intrinsic]
         public static explicit operator Vector<int>(Vector<T> value) => value.As<T, int>();
 
-        /// <summary>Reinterprets a <see cref="Vector{T}" /> as a new <see cref="Vector{Int64}" />.</summary>
+        /// <summary>Reinterprets a <see cref="Vector{T}" /> as a new <see langword="Vector&lt;Int64&gt;" />.</summary>
         /// <param name="value">The vector to reinterpret.</param>
-        /// <returns><paramref name="value" /> reinterpreted as a new <see cref="Vector{Int64}" />.</returns>
+        /// <returns><paramref name="value" /> reinterpreted as a new <see langword="Vector&lt;Int64&gt;" />.</returns>
         /// <exception cref="NotSupportedException">The type of <paramref name="value" /> (<typeparamref name="T" />) is not supported.</exception>
         [Intrinsic]
         public static explicit operator Vector<long>(Vector<T> value) => value.As<T, long>();
 
-        /// <summary>Reinterprets a <see cref="Vector{T}" /> as a new <see cref="Vector{IntPtr}" />.</summary>
+        /// <summary>Reinterprets a <see cref="Vector{T}" /> as a new <see langword="Vector&lt;IntPtr&gt;" />.</summary>
         /// <param name="value">The vector to reinterpret.</param>
-        /// <returns><paramref name="value" /> reinterpreted as a new <see cref="Vector{IntPtr}" />.</returns>
+        /// <returns><paramref name="value" /> reinterpreted as a new <see langword="Vector&lt;IntPtr&gt;" />.</returns>
         /// <exception cref="NotSupportedException">The type of <paramref name="value" /> (<typeparamref name="T" />) is not supported.</exception>
         [Intrinsic]
         public static explicit operator Vector<nint>(Vector<T> value) => value.As<T, nint>();
 
-        /// <summary>Reinterprets a <see cref="Vector{T}" /> as a new <see cref="Vector{UIntPtr}" />.</summary>
+        /// <summary>Reinterprets a <see cref="Vector{T}" /> as a new <see langword="Vector&lt;UIntPtr&gt;" />.</summary>
         /// <param name="value">The vector to reinterpret.</param>
-        /// <returns><paramref name="value" /> reinterpreted as a new <see cref="Vector{UIntPtr}" />.</returns>
+        /// <returns><paramref name="value" /> reinterpreted as a new <see langword="Vector&lt;UIntPtr&gt;" />.</returns>
         /// <exception cref="NotSupportedException">The type of <paramref name="value" /> (<typeparamref name="T" />) is not supported.</exception>
         [Intrinsic]
         [CLSCompliant(false)]
         public static explicit operator Vector<nuint>(Vector<T> value) => value.As<T, nuint>();
 
-        /// <summary>Reinterprets a <see cref="Vector{T}" /> as a new <see cref="Vector{SByte}" />.</summary>
+        /// <summary>Reinterprets a <see cref="Vector{T}" /> as a new <see langword="Vector&lt;SByte&gt;" />.</summary>
         /// <param name="value">The vector to reinterpret.</param>
-        /// <returns><paramref name="value" /> reinterpreted as a new <see cref="Vector{SByte}" />.</returns>
+        /// <returns><paramref name="value" /> reinterpreted as a new <see langword="Vector&lt;SByte&gt;" />.</returns>
         /// <exception cref="NotSupportedException">The type of <paramref name="value" /> (<typeparamref name="T" />) is not supported.</exception>
         [Intrinsic]
         [CLSCompliant(false)]
         public static explicit operator Vector<sbyte>(Vector<T> value) => value.As<T, sbyte>();
 
-        /// <summary>Reinterprets a <see cref="Vector{T}" /> as a new <see cref="Vector{Single}" />.</summary>
+        /// <summary>Reinterprets a <see cref="Vector{T}" /> as a new <see langword="Vector&lt;Single&gt;" />.</summary>
         /// <param name="value">The vector to reinterpret.</param>
-        /// <returns><paramref name="value" /> reinterpreted as a new <see cref="Vector{Single}" />.</returns>
+        /// <returns><paramref name="value" /> reinterpreted as a new <see langword="Vector&lt;Single&gt;" />.</returns>
         /// <exception cref="NotSupportedException">The type of <paramref name="value" /> (<typeparamref name="T" />) is not supported.</exception>
         [Intrinsic]
         public static explicit operator Vector<float>(Vector<T> value) => value.As<T, float>();
 
-        /// <summary>Reinterprets a <see cref="Vector{T}" /> as a new <see cref="Vector{UInt16}" />.</summary>
+        /// <summary>Reinterprets a <see cref="Vector{T}" /> as a new <see langword="Vector&lt;UInt16&gt;" />.</summary>
         /// <param name="value">The vector to reinterpret.</param>
-        /// <returns><paramref name="value" /> reinterpreted as a new <see cref="Vector{UInt16}" />.</returns>
+        /// <returns><paramref name="value" /> reinterpreted as a new <see langword="Vector&lt;UInt16&gt;" />.</returns>
         /// <exception cref="NotSupportedException">The type of <paramref name="value" /> (<typeparamref name="T" />) is not supported.</exception>
         [Intrinsic]
         [CLSCompliant(false)]
         public static explicit operator Vector<ushort>(Vector<T> value) => value.As<T, ushort>();
 
-        /// <summary>Reinterprets a <see cref="Vector{T}" /> as a new <see cref="Vector{UInt32}" />.</summary>
+        /// <summary>Reinterprets a <see cref="Vector{T}" /> as a new <see langword="Vector&lt;UInt32&gt;" />.</summary>
         /// <param name="value">The vector to reinterpret.</param>
-        /// <returns><paramref name="value" /> reinterpreted as a new <see cref="Vector{UInt32}" />.</returns>
+        /// <returns><paramref name="value" /> reinterpreted as a new <see langword="Vector&lt;UInt32&gt;" />.</returns>
         /// <exception cref="NotSupportedException">The type of <paramref name="value" /> (<typeparamref name="T" />) is not supported.</exception>
         [Intrinsic]
         [CLSCompliant(false)]
         public static explicit operator Vector<uint>(Vector<T> value) => value.As<T, uint>();
 
-        /// <summary>Reinterprets a <see cref="Vector{T}" /> as a new <see cref="Vector{UInt64}" />.</summary>
+        /// <summary>Reinterprets a <see cref="Vector{T}" /> as a new <see langword="Vector&lt;UInt64&gt;" />.</summary>
         /// <param name="value">The vector to reinterpret.</param>
-        /// <returns><paramref name="value" /> reinterpreted as a new <see cref="Vector{UInt64}" />.</returns>
+        /// <returns><paramref name="value" /> reinterpreted as a new <see langword="Vector&lt;UInt64&gt;" />.</returns>
         /// <exception cref="NotSupportedException">The type of <paramref name="value" /> (<typeparamref name="T" />) is not supported.</exception>
         [Intrinsic]
         [CLSCompliant(false)]
