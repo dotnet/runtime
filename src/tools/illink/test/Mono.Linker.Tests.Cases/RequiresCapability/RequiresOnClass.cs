@@ -768,13 +768,13 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 			[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicFields | DynamicallyAccessedMemberTypes.NonPublicFields)]
 			[RequiresUnreferencedCode ("This class is dangerous")]
 			[RequiresDynamicCode ("This class is dangerous")]
-			[ExpectedWarning ("IL2113", "BaseForDAMAnnotatedClass.baseField", Tool.Trimmer | Tool.NativeAot, "")]
+			[ExpectedWarning ("IL2113", "BaseForDAMAnnotatedClass.baseField")]
 			class DAMAnnotatedClass : BaseForDAMAnnotatedClass
 			{
-				[ExpectedWarning ("IL2112", "DAMAnnotatedClass.publicField", Tool.Trimmer | Tool.NativeAot, "")]
+				[ExpectedWarning ("IL2112", "DAMAnnotatedClass.publicField")]
 				public static int publicField;
 
-				[ExpectedWarning ("IL2112", "DAMAnnotatedClass.privatefield", Tool.Trimmer | Tool.NativeAot, "")]
+				[ExpectedWarning ("IL2112", "DAMAnnotatedClass.privatefield")]
 				static int privatefield;
 			}
 
@@ -786,7 +786,7 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 			[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.All)]
 			class DAMAnnotatedClassAccessedFromRUCScope
 			{
-				[ExpectedWarning ("IL2112", "DAMAnnotatedClassAccessedFromRUCScope.RUCMethod", Tool.Trimmer | Tool.NativeAot, "")]
+				[ExpectedWarning ("IL2112", "DAMAnnotatedClassAccessedFromRUCScope.RUCMethod")]
 				[RequiresUnreferencedCode ("--RUCMethod--")]
 				public static void RUCMethod () { }
 			}
@@ -1184,21 +1184,21 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 			[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.NonPublicProperties)]
 			[RequiresUnreferencedCode ("This class is dangerous")]
 			[RequiresDynamicCode ("This class is dangerous")]
-			[ExpectedWarning ("IL2113", "BaseForDAMAnnotatedClass.baseProperty.get", Tool.Trimmer | Tool.NativeAot, "")]
-			[ExpectedWarning ("IL2113", "BaseForDAMAnnotatedClass.baseProperty.set", Tool.Trimmer | Tool.NativeAot, "")]
+			[ExpectedWarning ("IL2113", "BaseForDAMAnnotatedClass.baseProperty.get")]
+			[ExpectedWarning ("IL2113", "BaseForDAMAnnotatedClass.baseProperty.set")]
 			class DAMAnnotatedClass : BaseForDAMAnnotatedClass
 			{
 				public static int publicProperty {
-					[ExpectedWarning ("IL2112", "DAMAnnotatedClass.publicProperty.get", Tool.Trimmer | Tool.NativeAot, "")]
+					[ExpectedWarning ("IL2112", "DAMAnnotatedClass.publicProperty.get")]
 					get;
-					[ExpectedWarning ("IL2112", "DAMAnnotatedClass.publicProperty.set", Tool.Trimmer | Tool.NativeAot, "")]
+					[ExpectedWarning ("IL2112", "DAMAnnotatedClass.publicProperty.set")]
 					set;
 				}
 
 				static int privateProperty {
-					[ExpectedWarning ("IL2112", "DAMAnnotatedClass.privateProperty.get", Tool.Trimmer | Tool.NativeAot, "")]
+					[ExpectedWarning ("IL2112", "DAMAnnotatedClass.privateProperty.get")]
 					get;
-					[ExpectedWarning ("IL2112", "DAMAnnotatedClass.privateProperty.set", Tool.Trimmer | Tool.NativeAot, "")]
+					[ExpectedWarning ("IL2112", "DAMAnnotatedClass.privateProperty.set")]
 					set;
 				}
 			}

@@ -39,7 +39,7 @@ namespace ILLink.Shared.TrimAnalysis
 			_isNewObj = operation.Kind == OperationKind.ObjectCreation;
 			_diagnosticContext = new DiagnosticContext (location, reportDiagnostic);
 			_annotations = FlowAnnotations.Instance;
-			_reflectionAccessAnalyzer = new (reportDiagnostic);
+			_reflectionAccessAnalyzer = new (reportDiagnostic, typeHierarchyType: null);
 			_requireDynamicallyAccessedMembersAction = new (_diagnosticContext, _reflectionAccessAnalyzer);
 			_multiValueLattice = multiValueLattice;
 		}

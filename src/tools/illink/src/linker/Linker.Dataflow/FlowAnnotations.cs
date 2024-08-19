@@ -130,7 +130,7 @@ namespace ILLink.Shared.TrimAnalysis
 			//       public override Type GetTypeWithFields() { return typeof(TestType); }
 			//   }
 			//
-			// If TestType from above is trimmed, it may note have all its fields, and there would be no warnings generated.
+			// If TestType from above is trimmed, it may not have all its fields, and there would be no warnings generated.
 			// But there has to be code like this somewhere in the app, in order to generate the override:
 			//   class RuntimeTypeGenerator
 			//   {

@@ -1427,6 +1427,7 @@ namespace Mono.Linker.Tests.Cases.Reflection
 			[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)]
 			class AnnotatedType
 			{
+				[ExpectedWarning ("IL2112", Tool.Analyzer, "Analyzer warns about DAM on type access to members even without call to object.GetType().")]
 				[RequiresUnreferencedCode ("AnnotatedType.Method")]
 				public void Method () { }
 			}
@@ -1444,6 +1445,7 @@ namespace Mono.Linker.Tests.Cases.Reflection
 
 			class DerivedFromAnnotatedBase : AnnotatedBase
 			{
+				[ExpectedWarning ("IL2112", Tool.Analyzer, "Analyzer warns about DAM on type access to members even without call to object.GetType().")]
 				[RequiresUnreferencedCode ("DerivedFromAnnotatedBase.Method")]
 				public void Method () { }
 			}
