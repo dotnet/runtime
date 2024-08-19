@@ -176,9 +176,7 @@
       <PythonCmd Condition="'$(HostOS)' == 'windows' and '$(TargetsBrowser)' == 'true'">setlocal EnableDelayedExpansion &amp;&amp; call &quot;$([MSBuild]::NormalizePath('$(EMSDK_PATH)', 'pre_emsdk_env$(ScriptExt)'))&quot;  &amp;&amp; call &quot;$([MSBuild]::NormalizePath('$(EMSDK_PATH)', 'emsdk_env$(ScriptExt)'))&quot; &amp;&amp; !EMSDK_PYTHON!</PythonCmd>
       <EMSDK_PATH>$([MSBuild]::EnsureTrailingSlash('$(EMSDK_PATH)').Replace('\', '/'))</EMSDK_PATH>
       <NuGetPackageRoot >$([MSBuild]::EnsureTrailingSlash('$(NuGetPackageRoot)').Replace('\', '/'))</NuGetPackageRoot>
-      <DOTNET_EMSCRIPTEN_LLVM_ROOT>$(EMSDK_PATH)bin</DOTNET_EMSCRIPTEN_LLVM_ROOT>
-      <!-- Condition="'$(HostOS)' == 'windows'" -->
-      <DOTNET_EMSCRIPTEN_LLVM_ROOT >$([MSBuild]::EnsureTrailingSlash('$(DOTNET_EMSCRIPTEN_LLVM_ROOT)').Replace('/', '\'))</DOTNET_EMSCRIPTEN_LLVM_ROOT>
+      <DOTNET_EMSCRIPTEN_LLVM_ROOT>$([MSBuild]::EnsureTrailingSlash('$(EMSDK_PATH)bin').Replace('/', '\'))</DOTNET_EMSCRIPTEN_LLVM_ROOT>
       <!-- keep in sync with EmscriptenNodeToolsPath in src/mono/browser/build/EmSdkRepo.Defaults.props -->
       <DOTNET_EMSCRIPTEN_NODE_PATH>$(NuGetPackageRoot)runtime.$(_portableHostOS)-$(BuildArchitecture).microsoft.netcore.runtime.wasm.node.transport/$(NodePackageVersion)/tools/$(_portableHostOS)-$(BuildArchitecture)/bin</DOTNET_EMSCRIPTEN_NODE_PATH>
       <DOTNET_EMSCRIPTEN_NODE_JS>$(DOTNET_EMSCRIPTEN_NODE_PATH)/node</DOTNET_EMSCRIPTEN_NODE_JS>
@@ -212,8 +210,6 @@
     <ItemGroup>
       <EmsdkFiles   Condition="'%(PackageReference.Identity)' != 'runtime.$(_portableHostOS)-$(BuildArchitecture).Microsoft.NETCore.Runtime.Wasm.Node.Transport' and '%(PackageReference.Identity)' != 'Microsoft.NET.Runtime.Emscripten.$(EmsdkVersion).Python.win-$(BuildArchitecture)'"
                     Include="$(NuGetPackageRoot)\$([System.String]::Copy(%(PackageReference.Identity)).ToLowerInvariant())\%(PackageReference.Version)\tools\**" />
-      <NodeFiles    Condition="'%(PackageReference.Identity)' == 'runtime.$(_portableHostOS)-$(BuildArchitecture).Microsoft.NETCore.Runtime.Wasm.Node.Transport'"
-                    Include="$(NuGetPackageRoot)\$([System.String]::Copy(%(PackageReference.Identity)).ToLowerInvariant())\%(PackageReference.Version)\tools\$(_portableHostOS)-$(BuildArchitecture)\**" />
       <PythonFiles  Condition="'$(HostOS)' == 'windows' and '%(PackageReference.Identity)' == 'Microsoft.NET.Runtime.Emscripten.$(EmsdkVersion).Python.win-$(BuildArchitecture)'"
                     Include="$(NuGetPackageRoot)\$([System.String]::Copy(%(PackageReference.Identity)).ToLowerInvariant())\%(PackageReference.Version)\tools\**" />
     </ItemGroup>
