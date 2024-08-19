@@ -106,27 +106,27 @@ int64_t AtomicLoad64WithoutTearing(int64_t volatile *valueRef)
 #endif // TARGET_64BIT
 }
 
-FCIMPL1(INT64, GetCompiledILBytes, CLR_BOOL currentThread)
+FCIMPL1(INT64, GetCompiledILBytes, FC_BOOL_ARG currentThread)
 {
     FCALL_CONTRACT;
 
-    return currentThread ? t_cbILJittedForThread : AtomicLoad64WithoutTearing(&g_cbILJitted);
+    return FC_ACCESS_BOOL(currentThread) ? t_cbILJittedForThread : AtomicLoad64WithoutTearing(&g_cbILJitted);
 }
 FCIMPLEND
 
-FCIMPL1(INT64, GetCompiledMethodCount, CLR_BOOL currentThread)
+FCIMPL1(INT64, GetCompiledMethodCount, FC_BOOL_ARG currentThread)
 {
     FCALL_CONTRACT;
 
-    return currentThread ? t_cMethodsJittedForThread : AtomicLoad64WithoutTearing(&g_cMethodsJitted);
+    return FC_ACCESS_BOOL(currentThread) ? t_cMethodsJittedForThread : AtomicLoad64WithoutTearing(&g_cMethodsJitted);
 }
 FCIMPLEND
 
-FCIMPL1(INT64, GetCompilationTimeInTicks, CLR_BOOL currentThread)
+FCIMPL1(INT64, GetCompilationTimeInTicks, FC_BOOL_ARG currentThread)
 {
     FCALL_CONTRACT;
 
-    return currentThread ? t_c100nsTicksInJitForThread : AtomicLoad64WithoutTearing(&g_c100nsTicksInJit);
+    return FC_ACCESS_BOOL(currentThread) ? t_c100nsTicksInJitForThread : AtomicLoad64WithoutTearing(&g_c100nsTicksInJit);
 }
 FCIMPLEND
 
@@ -4209,8 +4209,8 @@ TypeCompareState CEEInfo::compareTypesForCast(
     else
 #endif // FEATURE_COMINTEROP
 
-    // If casting from ICastable or IDynamicInterfaceCastable, don't try to optimize
-    if (fromHnd.GetMethodTable()->IsICastable() || fromHnd.GetMethodTable()->IsIDynamicInterfaceCastable())
+    // If casting from IDynamicInterfaceCastable, don't try to optimize
+    if (fromHnd.GetMethodTable()->IsIDynamicInterfaceCastable())
     {
         result = TypeCompareState::May;
     }
