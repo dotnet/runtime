@@ -17,9 +17,6 @@
 #include "vars.hpp"
 #include "slist.h"
 
-
-// This enumeration is used to retrieve a method desc from CustomMarshalerInfo::GetCustomMarshalerMD().
-
 class CustomMarshalerInfo final
 {
 public:
@@ -31,11 +28,6 @@ public:
     // the new and delete operators to ensure this.
     void* operator      new(size_t size, LoaderHeap* pHeap);
     void  operator      delete(void* pMem);
-
-    // Helpers used to invoke the different methods in the ICustomMarshaler interface.
-    OBJECTREF           InvokeMarshalNativeToManagedMeth(void* pNative);
-    void*               InvokeMarshalManagedToNativeMeth(OBJECTREF MngObj);
-    void                InvokeCleanUpManagedMeth(OBJECTREF MngObj);
 
     // Accessors.
     OBJECTREF GetCustomMarshaler()
