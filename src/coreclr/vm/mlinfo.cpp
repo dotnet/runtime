@@ -942,7 +942,7 @@ CustomMarshalerHelper *EEMarshalingData::GetCustomMarshalerHelper(Assembly *pAss
         pNewCMInfo = new (m_pHeap) CustomMarshalerInfo(m_pAllocator, hndCustomMarshalerType, hndManagedType, strCookie, cCookieStrBytes);
 
         // Create the custom marshaler helper in the specified heap.
-        pNewCMHelper = new (m_pHeap) NonSharedCustomMarshalerHelper(pNewCMInfo);
+        pNewCMHelper = new (m_pHeap) CustomMarshalerHelper(pNewCMInfo);
     }
 
     {

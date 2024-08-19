@@ -568,7 +568,7 @@ void CustomMarshalerHelper::InvokeCleanUpManagedMeth(OBJECTREF MngObj)
 }
 
 
-void *NonSharedCustomMarshalerHelper::operator new(size_t size, LoaderHeap *pHeap)
+void *CustomMarshalerHelper::operator new(size_t size, LoaderHeap *pHeap)
 {
     CONTRACTL
     {
@@ -580,11 +580,11 @@ void *NonSharedCustomMarshalerHelper::operator new(size_t size, LoaderHeap *pHea
     }
     CONTRACTL_END;
 
-    return pHeap->AllocMem(S_SIZE_T(sizeof(NonSharedCustomMarshalerHelper)));
+    return pHeap->AllocMem(S_SIZE_T(sizeof(CustomMarshalerHelper)));
 }
 
 
-void NonSharedCustomMarshalerHelper::operator delete(void *pMem)
+void CustomMarshalerHelper::operator delete(void *pMem)
 {
     // Instances of this class are always allocated on the loader heap so
     // the delete operator has nothing to do.

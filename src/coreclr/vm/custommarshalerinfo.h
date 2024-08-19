@@ -182,9 +182,20 @@ public:
 typedef EEHashTable<EECMHelperHashtableKey*, EECMHelperHashtableHelper, TRUE> EECMHelperHashTable;
 
 
-class CustomMarshalerHelper
+class CustomMarshalerHelper final
 {
 public:
+    CustomMarshalerHelper(CustomMarshalerInfo* pCMInfo)
+        : m_pCMInfo(pCMInfo)
+    {
+        WRAPPER_NO_CONTRACT;
+    }
+    
+    // CustomMarshalerHelpers are always allocated on the loader heap so we need to redefine
+    // the new and delete operators to ensure this.
+    void *operator new(size_t size, LoaderHeap *pHeap);
+    void operator delete(void* pMem);
+
     // Helpers used to invoke the different methods in the ICustomMarshaler interface.
     OBJECTREF           InvokeMarshalNativeToManagedMeth(void* pNative);
     void*               InvokeMarshalManagedToNativeMeth(OBJECTREF MngObj);
@@ -217,35 +228,8 @@ public:
     }
 
     // Helper function to retrieve the custom marshaler object.
-    virtual CustomMarshalerInfo* GetCustomMarshalerInfo() = 0;
-
-protected:
-    ~CustomMarshalerHelper( void )
+    CustomMarshalerInfo* GetCustomMarshalerInfo()
     {
-        LIMITED_METHOD_CONTRACT;
-    }
-};
-
-
-class NonSharedCustomMarshalerHelper : public CustomMarshalerHelper
-{
-public:
-    // Constructor.
-    NonSharedCustomMarshalerHelper(CustomMarshalerInfo* pCMInfo) : m_pCMInfo(pCMInfo)
-    {
-        WRAPPER_NO_CONTRACT;
-    }
-
-    // CustomMarshalerHelpers's are always allocated on the loader heap so we need to redefine
-    // the new and delete operators to ensure this.
-    void *operator new(size_t size, LoaderHeap *pHeap);
-    void operator delete(void* pMem);
-
-protected:
-    // Helper function to retrieve the custom marshaler object.
-    virtual CustomMarshalerInfo* GetCustomMarshalerInfo()
-    {
-        LIMITED_METHOD_CONTRACT;
         return m_pCMInfo;
     }
 
