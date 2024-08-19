@@ -552,7 +552,9 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 return conversion.IsReference && conversion.IsImplicit;
             }
 
-            private bool IsUnsupportedType(ITypeSymbol type)
+            private HashSet<ITypeSymbol>? _visitedTypes = new(SymbolEqualityComparer.Default);
+
+            private bool IsUnsupportedType(ITypeSymbol type, HashSet<ITypeSymbol>? visitedTypes = null)
             {
                 if (type.OriginalDefinition.SpecialType == SpecialType.System_Nullable_T)
                 {
@@ -569,23 +571,53 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                     return true;
                 }
 
-                if (type is IArrayTypeSymbol arrayTypeSymbol)
+                if (visitedTypes?.Contains(type) is true)
                 {
-                    return arrayTypeSymbol.Rank > 1 || IsUnsupportedType(arrayTypeSymbol.ElementType);
+                    // avoid infinite recursion in nested types like
+                    // public record RecursiveType
+                    // {
+                    //     public TreeElement? Tree { get; set; }
+                    // }
+                    // public sealed class TreeElement : Dictionary<string, TreeElement>;
+                    //
+                    // return false for the second call. The type will continue be checked in the first call anyway.
+                    return false;
                 }
 
-                if (IsCollection(type))
+                IArrayTypeSymbol? arrayTypeSymbol = type as IArrayTypeSymbol;
+                if (arrayTypeSymbol is null)
                 {
-                    INamedTypeSymbol collectionType = (INamedTypeSymbol)type;
+                    if (!IsCollection(type))
+                    {
+                        return false;
+                    }
+                }
 
-                    if (IsCandidateDictionary(collectionType, out ITypeSymbol? keyType, out ITypeSymbol? elementType))
-                    {
-                        return IsUnsupportedType(keyType) || IsUnsupportedType(elementType);
-                    }
-                    else if (TryGetElementType(collectionType, out elementType))
-                    {
-                        return IsUnsupportedType(elementType);
-                    }
+                if (visitedTypes is null)
+                {
+                    visitedTypes = _visitedTypes;
+                    visitedTypes.Clear();
+                }
+
+                visitedTypes.Add(type);
+
+                if (arrayTypeSymbol is not null)
+                {
+                    return arrayTypeSymbol.Rank > 1 || IsUnsupportedType(arrayTypeSymbol.ElementType, visitedTypes);
+                }
+
+                Debug.Assert(IsCollection(type));
+
+                INamedTypeSymbol collectionType = (INamedTypeSymbol)type;
+
+                if (IsCandidateDictionary(collectionType, out ITypeSymbol? keyType, out ITypeSymbol? elementType))
+                {
+                    return IsUnsupportedType(keyType, visitedTypes) || IsUnsupportedType(elementType, visitedTypes);
+                }
+
+                if (TryGetElementType(collectionType, out elementType))
+                {
+                    return IsUnsupportedType(elementType, visitedTypes);
                 }
 
                 return false;
