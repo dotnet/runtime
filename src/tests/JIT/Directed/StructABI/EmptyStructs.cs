@@ -1,6 +1,12 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+// Note: this test checks passing empty struct fields in .NET; confronting it against C++ on native compilers is just
+// a means to assert compliance to the platform calling convention. The native part is using C++ because it defines
+// empty structs as 1 byte like in .NET. Empty structs in C are undefined (it's a GCC extension to define them as 0
+// bytes) and .NET managed/unmanaged interop follows the C ABI, not C++, so signatures with empty struct fields should
+// not be used in any real-world interop calls.
+
 using System;
 using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
