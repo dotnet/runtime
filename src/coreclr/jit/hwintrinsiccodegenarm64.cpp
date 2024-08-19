@@ -468,27 +468,6 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                 emitShift(intrin.op2, op1Reg);
             }
         }
-        else if (HWIntrinsicInfo::HasEnumOperand(intrin.id))
-        {
-            assert(hasImmediateOperand);
-
-            switch (intrin.numOperands)
-            {
-                case 1:
-                {
-                    HWIntrinsicImmOpHelper helper(this, intrin.op1, node);
-                    for (helper.EmitBegin(); !helper.Done(); helper.EmitCaseEnd())
-                    {
-                        const insSvePattern pattern = (insSvePattern)helper.ImmValue();
-                        GetEmitter()->emitIns_R_PATTERN(ins, emitSize, targetReg, opt, pattern);
-                    }
-                };
-                break;
-
-                default:
-                    unreached();
-            }
-        }
         else if (intrin.numOperands >= 2 && intrin.op2->IsEmbMaskOp())
         {
             // Handle case where op2 is operation that needs embedded mask
@@ -1043,18 +1022,33 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
         }
         else
         {
-            assert(!hasImmediateOperand);
-
             switch (intrin.numOperands)
             {
                 case 0:
+                    assert(!hasImmediateOperand);
                     GetEmitter()->emitIns_R(ins, emitSize, targetReg, opt);
                     break;
+
                 case 1:
-                    GetEmitter()->emitIns_R_R(ins, emitSize, targetReg, op1Reg, opt);
+                    if (hasImmediateOperand)
+                    {
+                        assert(HWIntrinsicInfo::IsScalable(intrin.id));
+                        HWIntrinsicImmOpHelper helper(this, intrin.op1, node);
+                        for (helper.EmitBegin(); !helper.Done(); helper.EmitCaseEnd())
+                        {
+                            const insSvePattern pattern = (insSvePattern)helper.ImmValue();
+                            GetEmitter()->emitIns_R_PATTERN(ins, emitSize, targetReg, opt, pattern);
+                        }
+                    }
+                    else
+                    {
+                        GetEmitter()->emitIns_R_R(ins, emitSize, targetReg, op1Reg, opt);
+                    }
                     break;
 
                 case 2:
+                    assert(!hasImmediateOperand);
+
                     // This handles optimizations for instructions that have
                     // an implicit 'zero' vector of what would be the second operand.
                     if (HWIntrinsicInfo::SupportsContainment(intrin.id) && intrin.op2->isContained() &&
@@ -1110,6 +1104,8 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                     break;
 
                 case 3:
+                    assert(!hasImmediateOperand);
+
                     if (isRMW)
                     {
                         if (HWIntrinsicInfo::IsExplicitMaskedOperation(intrin.id))
@@ -1803,7 +1799,6 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
             case NI_Sve_PrefetchInt64:
             {
                 assert(hasImmediateOperand);
-                assert(HWIntrinsicInfo::HasEnumOperand(intrin.id));
                 HWIntrinsicImmOpHelper helper(this, intrin.op3, node);
                 for (helper.EmitBegin(); !helper.Done(); helper.EmitCaseEnd())
                 {
