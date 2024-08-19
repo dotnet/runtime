@@ -104,7 +104,15 @@ namespace ILLink.Shared.TrimAnalysis
 
 		static bool ShouldWarnWhenAccessedForReflection (IFieldSymbol field)
 		{
-			return field.GetDynamicallyAccessedMemberTypes () != DynamicallyAccessedMemberTypes.None;
+			return GetFieldAnnotation (field) != DynamicallyAccessedMemberTypes.None;
+		}
+
+		internal static DynamicallyAccessedMemberTypes GetFieldAnnotation (IFieldSymbol field)
+		{
+			if (!field.Type.IsTypeInterestingForDataflow (isByRef: field.RefKind is not RefKind.None))
+				return DynamicallyAccessedMemberTypes.None;
+
+			return field.GetDynamicallyAccessedMemberTypes ();
 		}
 
 		internal static DynamicallyAccessedMemberTypes GetTypeAnnotations (INamedTypeSymbol type)

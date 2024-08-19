@@ -343,7 +343,6 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 				RequirePublicFields (unsupportedTypeInstance);
 			}
 
-			[UnexpectedWarning ("IL2074", Tool.Analyzer, "https://github.com/dotnet/runtime/issues/101211")]
 			static void TestUnsupportedType () {
 				var t = GetUnsupportedTypeInstance ();
 				unsupportedTypeInstance = t;
@@ -356,7 +355,6 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 				[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)]
 				public ref string stringRef;
 
-				[UnexpectedWarning ("IL2069", Tool.Analyzer, "https://github.com/dotnet/runtime/issues/101211")]
 				public StringRef (ref string s)
 				{
 					stringRef = ref s;
