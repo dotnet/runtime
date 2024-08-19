@@ -19,6 +19,8 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			InstantiatedGenericAsSource.Test ();
 			EnumTypeSatisfiesPublicFields.Test ();
 			EnumConstraintSatisfiesPublicFields.Test ();
+			InstantiatedTypeParameterAsSource.Test ();
+			EnumerationOverInstances.Test ();
 		}
 
 		class SealedConstructorAsSource
@@ -187,12 +189,6 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 				}
 			}
 
-			// Note: this doesn't warn for ILLink as a consequence of https://github.com/dotnet/runtime/issues/105345.
-			// ILLink sees the field type as a generic parameter, whereas the other tools see it as System.Enum.
-			// The other tools don't warn because of the built-in handling for variables of type System.Enum,
-			// and ILLink doesn't warn because this goes through the case that handles generic parameters constrained to be Enum.
-			// When https://github.com/dotnet/runtime/issues/105345 is fixed this should go through the built-in handling for
-			// System.Enum, like it does for ILC and the analyzer.
 			static void TestAccessTypeGenericParameterAsField ()
 			{
 				TypeGenericParameterAsField<Enum>.field.GetType ().RequiresPublicFields ();
@@ -230,7 +226,6 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 				}
 			}
 
-			// Note: this happens to work for ILLink due to https://github.com/dotnet/runtime/issues/105345.
 			static void TestAccessTypeGenericParameterAsReturnType ()
 			{
 				TypeGenericParameterAsReturnType<Enum>.Method ().GetType ().RequiresPublicFields ();
@@ -275,7 +270,6 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			}
 
 			[Kept]
-			// Note: this happens to work for ILLink due to https://github.com/dotnet/runtime/issues/105345.
 			static void TestMethodGenericParameterAsReturnType ()
 			{
 				MethodGenericParameterAsReturnType<Enum> ().GetType ().RequiresPublicFields ();
@@ -293,6 +287,129 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 				TestAccessTypeGenericParameterAsField ();
 				MethodGenericParameterAsParameter<Enum> (EnumType.Value);
 				TestMethodGenericParameterAsReturnType ();
+			}
+		}
+
+		class InstantiatedTypeParameterAsSource
+		{
+			[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicFields)]
+			class Annotated {}
+
+			static T GenericReturnType<T> () => default;
+
+			static void TestGenericMethodReturnType ()
+			{
+				GenericReturnType<Annotated> ().GetType ().RequiresPublicFields ();
+			}
+
+			static void GenericOutParameter<T> (out T value) => value = default;
+
+			[UnexpectedWarning ("IL2072", Tool.Analyzer, "https://github.com/dotnet/runtime/issues/101734")]
+			static void TestGenericMethodOutParameter ()
+			{
+				GenericOutParameter (out Annotated value);
+				value.GetType ().RequiresPublicFields ();
+			}
+
+			class Generic<T>
+			{
+				public static T ReturnType () => default;
+
+				public static void OutParameter (out T value) => value = default;
+
+				public static T field;
+
+				public static T Property { get; }
+
+				public class Nested {
+					public static T ReturnType () => default;
+
+					public static void OutParameter (out T value) => value = default;
+
+					public static T field;
+
+					public static T Property { get; }
+				}
+			}
+
+			static void TestGenericClassReturnType ()
+			{
+				Generic<Annotated>.ReturnType ().GetType ().RequiresPublicFields ();
+			}
+
+			[UnexpectedWarning ("IL2072", Tool.Analyzer, "https://github.com/dotnet/runtime/issues/101734")]
+			static void TestGenericClassOutParameter ()
+			{
+				Generic<Annotated>.OutParameter (out var value);
+				value.GetType ().RequiresPublicFields ();
+			}
+
+			static void TestGenericClassField ()
+			{
+				Generic<Annotated>.field.GetType ().RequiresPublicFields ();
+			}
+
+			static void TestGenericClassProperty ()
+			{
+				Generic<Annotated>.Property.GetType ().RequiresPublicFields ();
+			}
+
+			static void TestNestedGenericClassReturnType ()
+			{
+				Generic<Annotated>.Nested.ReturnType ().GetType ().RequiresPublicFields ();
+			}
+
+			[UnexpectedWarning ("IL2072", Tool.Analyzer, "https://github.com/dotnet/runtime/issues/101734")]
+			static void TestNestedGenericClassOutParameter ()
+			{
+				Generic<Annotated>.Nested.OutParameter (out var value);
+				value.GetType ().RequiresPublicFields ();
+			}
+
+			static void TestNestedGenericClassField ()
+			{
+				Generic<Annotated>.Nested.field.GetType ().RequiresPublicFields ();
+			}
+
+			static void TestNestedGenericClassProperty ()
+			{
+				Generic<Annotated>.Nested.Property.GetType ().RequiresPublicFields ();
+			}
+
+			public static void Test ()
+			{
+				TestGenericMethodReturnType ();
+				TestGenericMethodOutParameter ();
+				TestGenericClassReturnType ();
+				TestGenericClassOutParameter ();
+				TestGenericClassField ();
+				TestGenericClassProperty ();
+				TestNestedGenericClassReturnType ();
+				TestNestedGenericClassOutParameter ();
+				TestNestedGenericClassField ();
+				TestNestedGenericClassProperty ();
+			}
+		}
+
+		class EnumerationOverInstances
+		{
+			[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)]
+			class AnnotatedBase
+			{
+			}
+
+			class Derived : AnnotatedBase
+			{
+				public void Method () { }
+			}
+
+			static IEnumerable<AnnotatedBase> GetInstances () => new AnnotatedBase[] { new Derived () };
+
+			public static void Test ()
+			{
+				foreach (var instance in GetInstances ()) {
+					instance.GetType ().GetMethod ("Method");
+				}
 			}
 		}
 	}

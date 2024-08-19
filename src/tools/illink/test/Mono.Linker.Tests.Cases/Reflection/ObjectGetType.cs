@@ -1400,8 +1400,7 @@ namespace Mono.Linker.Tests.Cases.Reflection
 			[KeptMember (".ctor()")]
 			class Derived : AnnotatedBase
 			{
-				// https://github.com/dotnet/runtime/issues/93719
-				// [Kept]
+				[Kept]
 				public void Method () { }
 			}
 
@@ -1409,7 +1408,6 @@ namespace Mono.Linker.Tests.Cases.Reflection
 			static IEnumerable<AnnotatedBase> GetInstances () => new AnnotatedBase[] { new Derived () };
 
 			[Kept]
-			[UnexpectedWarning ("IL2075", nameof (Type.GetType), Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/runtime/issues/93719")]
 			public static void Test ()
 			{
 				foreach (var instance in GetInstances ()) {
