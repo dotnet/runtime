@@ -5,13 +5,13 @@
 #include "AsmOffsets.inc"
 
 // GC type flags
-GC_ALLOC_FINALIZE               = 1
+#define GC_ALLOC_FINALIZE               1
 
 //
 // Rename fields of nested structs
 //
-OFFSETOF__Thread__m_alloc_context__alloc_ptr        = OFFSETOF__Thread__m_rgbAllocContextBuffer + OFFSETOF__gc_alloc_context__alloc_ptr
-OFFSETOF__Thread__m_alloc_context__alloc_limit      = OFFSETOF__Thread__m_rgbAllocContextBuffer + OFFSETOF__gc_alloc_context__alloc_limit
+#define OFFSETOF__Thread__m_alloc_context__alloc_ptr        (OFFSETOF__Thread__m_rgbAllocContextBuffer + OFFSETOF__gc_alloc_context__alloc_ptr)
+#define OFFSETOF__Thread__m_alloc_context__alloc_limit      (OFFSETOF__Thread__m_rgbAllocContextBuffer + OFFSETOF__gc_alloc_context__alloc_limit)
 
 
 

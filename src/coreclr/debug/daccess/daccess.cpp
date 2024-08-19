@@ -34,6 +34,8 @@ extern "C" bool TryGetSymbol(ICorDebugDataTarget* dataTarget, uint64_t baseAddre
 #define CAN_USE_CDAC
 #endif
 
+extern TADDR g_ClrModuleBase;
+
 #include "dwbucketmanager.hpp"
 #include "gcinterface.dac.h"
 
@@ -5531,6 +5533,15 @@ ClrDataAccess::Initialize(void)
     // Do some validation
     IfFailRet(VerifyDlls());
 
+    // To support EH SxS, utilcode requires the base address of the runtime as part of its initialization
+    // so that functions like "WasThrownByUs" work correctly since they use the CLR base address to check
+    // if an exception was raised by a given instance of the runtime or not.
+    //
+    // Thus, when DAC is initialized, initialize utilcode with the base address of the runtime loaded in the
+    // target process. This is similar to work done in CorDB::SetTargetCLR for mscordbi.
+
+    g_ClrModuleBase = m_globalBase; // Base address of the runtime in the target process
+
     return S_OK;
 }
 
@@ -5656,8 +5667,8 @@ ClrDataAccess::GetJitHelperName(
 
     // Check if its a dynamically generated JIT helper
     const static CorInfoHelpFunc s_rgDynamicHCallIds[] = {
-#define DYNAMICJITHELPER(code, fn, sig) code,
-#define JITHELPER(code, fn,sig)
+#define DYNAMICJITHELPER(code, fn, binderId) code,
+#define JITHELPER(code, fn, binderId)
 #include <jithelpers.h>
     };
 

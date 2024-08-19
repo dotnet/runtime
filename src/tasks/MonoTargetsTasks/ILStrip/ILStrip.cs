@@ -96,10 +96,7 @@ public class ILStrip : Microsoft.Build.Utilities.Task
                                                         }
                                                     });
 
-            if (TrimIndividualMethods)
-            {
-                UpdatedAssemblies = ConvertAssembliesDictToOrderedList(_processedAssemblies, Assemblies).ToArray();
-            }
+            UpdatedAssemblies = ConvertAssembliesDictToOrderedList(_processedAssemblies, Assemblies).ToArray();
 
             if (!result.IsCompleted && !Log.HasLoggedErrors)
             {
@@ -130,7 +127,14 @@ public class ILStrip : Microsoft.Build.Utilities.Task
 
         try
         {
-            AssemblyStripper.AssemblyStripper.StripAssembly (assemblyFile, outputPath);
+            if(!AssemblyStripper.AssemblyStripper.TryStripAssembly(assemblyFile, outputPath))
+            {
+                Log.LogMessage(MessageImportance.Low, $"[ILStrip] Skipping {assemblyFile} because it is not a managed assembly.");
+            }
+            else
+            {
+                _processedAssemblies.GetOrAdd(assemblyItem.ItemSpec, GetTrimmedAssemblyItem(assemblyItem, outputPath, assemblyFile));
+            }
         }
         catch (Exception ex)
         {
