@@ -253,6 +253,7 @@ namespace ILLink.Shared.TrimAnalysis
 
 					DynamicallyAccessedMemberTypes returnAnnotation = GetMemberTypesForDynamicallyAccessedMembersAttribute (method, providerIfNotMember: method.MethodReturnType);
 					if (returnAnnotation != DynamicallyAccessedMemberTypes.None && !IsTypeInterestingForDataflow (method.ReturnType)) {
+						returnAnnotation = DynamicallyAccessedMemberTypes.None;
 						_context.LogWarning (method, DiagnosticId.DynamicallyAccessedMembersOnMethodReturnValueCanOnlyApplyToTypesOrStrings, method.GetDisplayName ());
 					}
 

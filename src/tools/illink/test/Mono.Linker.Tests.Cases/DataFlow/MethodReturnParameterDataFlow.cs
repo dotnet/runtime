@@ -198,9 +198,6 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			static UnsupportedType GetUnsupportedTypeInstance () => null;
 
 			[ExpectedWarning ("IL2106")]
-			// Linker and NativeAot should not produce IL2073
-			// They produce dataflow warnings despite the invalid annotations.
-			[UnexpectedWarning ("IL2073", Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/runtime/issues/101211")]
 			[return: DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)]
 			static UnsupportedType GetWithPublicMethods () {
 				return GetUnsupportedTypeInstance ();
