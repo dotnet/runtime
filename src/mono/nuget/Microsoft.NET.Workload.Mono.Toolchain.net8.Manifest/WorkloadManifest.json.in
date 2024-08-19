@@ -17,7 +17,6 @@
     "wasm-experimental-net8": {
       "description": ".NET WebAssembly experimental tooling for net8.0",
       "packs": [
-        "Microsoft.NET.Runtime.WebAssembly.Templates.net8",
         "Microsoft.NETCore.App.Runtime.Mono.multithread.net8.browser-wasm"
       ],
       "extends": [ "wasm-tools-net8" ],
@@ -160,13 +159,6 @@
       "version": "${PackageVersionNet8}",
       "alias-to": {
         "any": "Microsoft.NET.Runtime.WebAssembly.Sdk"
-      }
-    },
-    "Microsoft.NET.Runtime.WebAssembly.Templates.net8": {
-      "kind": "template",
-      "version": "${PackageVersionNet8}",
-      "alias-to": {
-        "any": "Microsoft.NET.Runtime.WebAssembly.Templates"
       }
     },
     "Microsoft.NETCore.App.Runtime.Mono.net8.android-arm": {
