@@ -2,16 +2,18 @@
 <Project>
   <PropertyGroup>
     <_RuntimePackInWorkloadVersionCurrent>${PackageVersion}</_RuntimePackInWorkloadVersionCurrent>
+    <_RuntimePackInWorkloadVersion9>${PackageVersionNet9}</_RuntimePackInWorkloadVersion9>
     <_RuntimePackInWorkloadVersion8>${PackageVersionNet8}</_RuntimePackInWorkloadVersion8>
     <_RuntimePackInWorkloadVersion7>${PackageVersionNet7}</_RuntimePackInWorkloadVersion7>
     <_RuntimePackInWorkloadVersion6>${PackageVersionNet6}</_RuntimePackInWorkloadVersion6>
 
     <TargetsCurrent Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp' and $([MSBuild]::VersionEquals('$(TargetFrameworkVersion)', '9.0'))">true</TargetsCurrent>
     <!-- force net8 to use the current targets until the SDK can target net9 -->
-    <ForceNet8Current Condition="'$(ForceNet8Current)' == ''">false</ForceNet8Current>
-    <TargetsCurrent Condition="'$(ForceNet8Current)' == 'true' and '$(TargetFrameworkIdentifier)' == '.NETCoreApp' and $([MSBuild]::VersionGreaterThanOrEquals('$(TargetFrameworkVersion)', '8.0'))">true</TargetsCurrent>
+    <TreatPreviousAsCurrent Condition="'$(TreatPreviousAsCurrent)' == ''">true</TreatPreviousAsCurrent>
+    <TargetsCurrent Condition="'$(TreatPreviousAsCurrent)' == 'true' and '$(TargetFrameworkIdentifier)' == '.NETCoreApp' and $([MSBuild]::VersionGreaterThanOrEquals('$(TargetFrameworkVersion)', '9.0'))">true</TargetsCurrent>
   </PropertyGroup>
   <PropertyGroup Condition="'$(TargetsCurrent)' != 'true'">
+    <TargetsNet9    Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp' and $([MSBuild]::VersionEquals('$(TargetFrameworkVersion)', '9.0'))">true</TargetsNet9>
     <TargetsNet8    Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp' and $([MSBuild]::VersionEquals('$(TargetFrameworkVersion)', '8.0'))">true</TargetsNet8>
     <TargetsNet7    Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp' and $([MSBuild]::VersionEquals('$(TargetFrameworkVersion)', '7.0'))">true</TargetsNet7>
     <TargetsNet6    Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp' and $([MSBuild]::VersionEquals('$(TargetFrameworkVersion)', '6.0'))">true</TargetsNet6>
@@ -31,7 +33,8 @@
 
   <PropertyGroup Condition="'$(RuntimeIdentifier)' == 'browser-wasm'">
     <SelfContained>true</SelfContained>
-    <WasmNativeWorkloadAvailable Condition="'$(TargetsCurrent)' == 'true'">$(WasmNativeWorkload9)</WasmNativeWorkloadAvailable>
+    <WasmNativeWorkloadAvailable Condition="'$(TargetsCurrent)' == 'true'">$(WasmNativeWorkload10)</WasmNativeWorkloadAvailable>
+    <WasmNativeWorkloadAvailable Condition="'$(TargetsNet9)' == 'true'">$(WasmNativeWorkload9)</WasmNativeWorkloadAvailable>
     <WasmNativeWorkloadAvailable Condition="'$(TargetsNet8)' == 'true'">$(WasmNativeWorkload8)</WasmNativeWorkloadAvailable>
     <WasmNativeWorkloadAvailable Condition="'$(TargetsNet7)' == 'true'">$(WasmNativeWorkload7)</WasmNativeWorkloadAvailable>
     <WasmNativeWorkloadAvailable Condition="'$(TargetsNet6)' == 'true'">$(WasmNativeWorkload)</WasmNativeWorkloadAvailable>
@@ -178,7 +181,7 @@
     <SdkSupportedTargetPlatformVersion Include="1.0" />
   </ItemGroup>
 
-  <ItemGroup Condition="(('$(RuntimeIdentifier)' == 'wasi-wasm' and '$(TargetsNet8)' == 'true') or '$(TargetsCurrent)' == 'true') and '$(_MonoWorkloadTargetsMobile)' == 'true'">
+  <ItemGroup Condition="(('$(RuntimeIdentifier)' == 'wasi-wasm' and $([MSBuild]::VersionGreaterThanOrEquals('$(TargetFrameworkVersion)', '8.0'))) or '$(TargetsCurrent)' == 'true') and '$(_MonoWorkloadTargetsMobile)' == 'true'">
     <KnownRuntimePack Update="@(KnownRuntimePack)">
       <!-- FIXMEWASI: workaround for now -->
       <RuntimePackRuntimeIdentifiers Condition="'$(RuntimeIdentifier)' == 'wasi-wasm'">%(RuntimePackRuntimeIdentifiers);wasi-wasm</RuntimePackRuntimeIdentifiers>
@@ -192,6 +195,7 @@
     </KnownFrameworkReference>
     <KnownWebAssemblySdkPack Update="@(KnownWebAssemblySdkPack)">
       <WebAssemblySdkPackVersion Condition="'%(KnownWebAssemblySdkPack.TargetFramework)' == '${NetCoreAppCurrent}'">$(_KnownWebAssemblySdkPackVersion)</WebAssemblySdkPackVersion>
+      <WebAssemblySdkPackVersion Condition="'%(KnownWebAssemblySdkPack.TargetFramework)' == 'net9.0'">$(_KnownWebAssemblySdkPackVersion)</WebAssemblySdkPackVersion>
       <WebAssemblySdkPackVersion Condition="'%(KnownWebAssemblySdkPack.TargetFramework)' == 'net8.0'">$(_KnownWebAssemblySdkPackVersion)</WebAssemblySdkPackVersion>
     </KnownWebAssemblySdkPack>
   </ItemGroup>
