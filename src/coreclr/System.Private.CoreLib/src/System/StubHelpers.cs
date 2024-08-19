@@ -792,16 +792,6 @@ namespace System.StubHelpers
 
     internal static unsafe partial class MngdRefCustomMarshaler
     {
-        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "CustomMarshaler_GetMarshalerObject")]
-        private static partial void GetMarshaler(IntPtr pCMHelper, ObjectHandleOnStack retMarshaler);
-
-        internal static ICustomMarshaler GetMarshaler(IntPtr pCMHelper)
-        {
-            ICustomMarshaler? marshaler = null;
-            GetMarshaler(pCMHelper, ObjectHandleOnStack.Create(ref marshaler));
-            return marshaler!;
-        }
-
         internal static unsafe void ConvertContentsToNative(ICustomMarshaler marshaler, in object pManagedHome, IntPtr* pNativeHome)
         {
             // COMPAT: We never pass null to MarshalManagedToNative.
@@ -1463,8 +1453,15 @@ namespace System.StubHelpers
             s_pendingExceptionObject = exception;
         }
 
-        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "StubHelpers_CreateCustomMarshalerHelper")]
-        internal static partial IntPtr CreateCustomMarshalerHelper(IntPtr pMD, int paramToken, IntPtr hndManagedType);
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "StubHelpers_CreateCustomMarshaler")]
+        internal static partial void CreateCustomMarshaler(IntPtr pMD, int paramToken, IntPtr hndManagedType, ObjectHandleOnStack customMarshaler);
+
+        internal static object CreateCustomMarshaler(IntPtr pMD, int paramToken, IntPtr hndManagedType)
+        {
+            object? retVal = null;
+            CreateCustomMarshaler(pMD, paramToken, hndManagedType, ObjectHandleOnStack.Create(ref retVal));
+            return retVal!;
+        }
 
         //-------------------------------------------------------
         // SafeHandle Helpers

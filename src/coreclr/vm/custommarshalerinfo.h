@@ -115,6 +115,4 @@ public:
 
 typedef EEHashTable<EECMInfoHashtableKey*, EECMInfoHashtableHelper, TRUE> EECMInfoHashTable;
 
-extern "C" void QCALLTYPE CustomMarshaler_GetMarshalerObject(CustomMarshalerInfo* pCMHelper, QCall::ObjectHandleOnStack retObject);
-
 #endif // _CUSTOMMARSHALERINFO_H_

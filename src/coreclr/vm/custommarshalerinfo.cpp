@@ -302,14 +302,3 @@ DWORD EECMInfoHashtableHelper::Hash(EECMInfoHashtableKey *pKey)
         HashBytes((const BYTE *) pKey->GetCookieString(), pKey->GetCookieStringByteCount()) +
         HashBytes((const BYTE *) pKey->GetMarshalerInstantiation().GetRawArgs(), pKey->GetMarshalerInstantiation().GetNumArgs() * sizeof(LPVOID)));
 }
-
-extern "C" void QCALLTYPE CustomMarshaler_GetMarshalerObject(CustomMarshalerInfo* pCMHelper, QCall::ObjectHandleOnStack retObject)
-{
-    QCALL_CONTRACT;
-    BEGIN_QCALL;
-    GCX_COOP();
-
-    retObject.Set(pCMHelper->GetCustomMarshaler());
-
-    END_QCALL;
-}

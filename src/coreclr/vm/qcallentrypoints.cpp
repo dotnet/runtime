@@ -225,7 +225,6 @@ static const Entry s_QCall[] =
     DllImportEntry(MultiCoreJIT_InternalStartProfile)
 #endif
     DllImportEntry(LoaderAllocator_Destroy)
-    DllImportEntry(CustomMarshaler_GetMarshalerObject)
     DllImportEntry(String_Intern)
     DllImportEntry(String_IsInterned)
     DllImportEntry(AppDomain_CreateDynamicAssembly)
@@ -422,7 +421,7 @@ static const Entry s_QCall[] =
 #if defined(TARGET_X86) || defined(TARGET_AMD64)
     DllImportEntry(X86BaseCpuId)
 #endif
-    DllImportEntry(StubHelpers_CreateCustomMarshalerHelper)
+    DllImportEntry(StubHelpers_CreateCustomMarshaler)
     DllImportEntry(StubHelpers_SetStringTrailByte)
     DllImportEntry(StubHelpers_ThrowInteropParamException)
 #if defined(FEATURE_COMINTEROP)

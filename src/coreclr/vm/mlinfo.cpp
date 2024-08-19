@@ -4010,13 +4010,13 @@ bool IsUnsupportedTypedrefReturn(MetaSig& msig)
 
 #include "stubhelpers.h"
 
-extern "C" void* QCALLTYPE StubHelpers_CreateCustomMarshalerHelper(MethodDesc* pMD, mdToken paramToken, TypeHandle hndManagedType)
+extern "C" void QCALLTYPE StubHelpers_CreateCustomMarshaler(MethodDesc* pMD, mdToken paramToken, TypeHandle hndManagedType, QCall::ObjectHandleOnStack retObject)
 {
     QCALL_CONTRACT;
 
-    CustomMarshalerInfo* pCMInfo = NULL;
-
     BEGIN_QCALL;
+
+    CustomMarshalerInfo* pCMInfo = NULL;
 
     Module* pModule = pMD->GetModule();
     Assembly* pAssembly = pModule->GetAssembly();
@@ -4057,8 +4057,8 @@ extern "C" void* QCALLTYPE StubHelpers_CreateCustomMarshalerHelper(MethodDesc* p
                                                 hndManagedType);
     }
 
-    END_QCALL;
+    retObject.Set(pCMInfo->GetCustomMarshaler());
 
-    return (void*)pCMInfo;
+    END_QCALL;
 }
 
