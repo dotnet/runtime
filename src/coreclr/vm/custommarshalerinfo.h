@@ -67,12 +67,6 @@ public:
         return m_hndManagedType;
     }
 
-    BOOL IsDataByValue()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return m_bDataIsByValue;
-    }
-
     OBJECTREF GetCustomMarshaler()
     {
         LIMITED_METHOD_CONTRACT;
@@ -106,7 +100,6 @@ private:
     MethodDesc*         m_pMarshalManagedToNativeMD;
     MethodDesc*         m_pCleanUpNativeDataMD;
     MethodDesc*         m_pCleanUpManagedDataMD;
-    BOOL                m_bDataIsByValue;
 };
 
 

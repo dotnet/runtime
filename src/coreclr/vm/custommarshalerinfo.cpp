@@ -30,7 +30,6 @@ CustomMarshalerInfo::CustomMarshalerInfo(LoaderAllocator *pLoaderAllocator, Type
 , m_pMarshalManagedToNativeMD(NULL)
 , m_pCleanUpNativeDataMD(NULL)
 , m_pCleanUpManagedDataMD(NULL)
-, m_bDataIsByValue(FALSE)
 {
     CONTRACTL
     {
@@ -51,11 +50,8 @@ CustomMarshalerInfo::CustomMarshalerInfo(LoaderAllocator *pLoaderAllocator, Type
                      GetFullyQualifiedNameForClassW(hndCustomMarshalerType.GetMethodTable()));
     }
 
-    // Determine if this type is a value class.
-    m_bDataIsByValue = m_hndManagedType.GetMethodTable()->IsValueType();
-
-    // Custom marshalling of value classes is not currently supported.
-    if (m_bDataIsByValue)
+    // Custom marshalling of value classes is not supported.
+    if (m_hndManagedType.GetMethodTable()->IsValueType())
         COMPlusThrow(kNotSupportedException, W("NotSupported_ValueClassCM"));
 
     // Run the <clinit> on the marshaler since it might not have run yet.
@@ -114,16 +110,8 @@ CustomMarshalerInfo::CustomMarshalerInfo(LoaderAllocator *pLoaderAllocator, Type
     m_hndCustomMarshaler = pLoaderAllocator->AllocateHandle(CustomMarshalerObj);
     GCPROTECT_END();
 
-    // Retrieve the size of the native data.
-    if (m_bDataIsByValue)
-    {
-        // <TODO>@TODO(DM): Call GetNativeDataSize() to retrieve the size of the native data.</TODO>
-        _ASSERTE(!"Value classes are not yet supported by the custom marshaler!");
-    }
-    else
-    {
-        m_NativeSize = sizeof(void *);
-    }
+    // We only support non-value classes, so the native size is the size of a pointer.
+    m_NativeSize = sizeof(void *);
 
     GCPROTECT_END();
 }
