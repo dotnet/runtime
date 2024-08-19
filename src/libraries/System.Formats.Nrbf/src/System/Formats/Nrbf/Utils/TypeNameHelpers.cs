@@ -125,7 +125,7 @@ internal static class TypeNameHelpers
 
         if (typeName is null)
         {
-            throw new SerializationException(SR.Format(SR.Serialization_InvalidTypeOrAssemblyName, rawName, libraryRecord.RawLibraryName));
+            throw new SerializationException(SR.Serialization_InvalidTypeOrAssemblyName);
         }
 
         if (typeName.AssemblyName is null)
@@ -169,7 +169,7 @@ internal static class TypeNameHelpers
             else
             {
                 // BinaryFormatter can not serialize pointers or references.
-                ThrowHelper.ThrowInvalidTypeName(typeName.FullName);
+                ThrowHelper.ThrowInvalidTypeName();
             }
         }
 

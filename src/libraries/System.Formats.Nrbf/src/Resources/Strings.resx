@@ -136,13 +136,13 @@
     <value>Member reference was pointing to a record of unexpected type.</value>
   </data>
   <data name="Serialization_InvalidTypeName" xml:space="preserve">
-    <value>Invalid type name: `{0}`.</value>
+    <value>Invalid type name.</value>
   </data>
   <data name="Serialization_TypeMismatch" xml:space="preserve">
     <value>Expected the array to be of type {0}, but its element type was {1}.</value>
   </data>
   <data name="Serialization_InvalidTypeOrAssemblyName" xml:space="preserve">
-    <value>Invalid type or assembly name: `{0},{1}`.</value>
+    <value>Invalid type or assembly name.</value>
   </data>
   <data name="Serialization_DuplicateMemberName" xml:space="preserve">
     <value>Duplicate member name: `{0}`.</value>
@@ -160,6 +160,6 @@
     <value>Only arrays with zero offsets are supported.</value>
   </data>
   <data name="Serialization_InvalidAssemblyName" xml:space="preserve">
-    <value>Invalid assembly name: `{0}`.</value>
+    <value>Invalid assembly name.</value>
   </data>
 </root>

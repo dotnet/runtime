@@ -57,7 +57,7 @@ internal sealed class BinaryLibraryRecord : SerializationRecord
         }
         else if (!options.UndoTruncatedTypeNames)
         {
-            ThrowHelper.ThrowInvalidAssemblyName(rawName);
+            ThrowHelper.ThrowInvalidAssemblyName();
         }
 
         return new BinaryLibraryRecord(id, rawName);
