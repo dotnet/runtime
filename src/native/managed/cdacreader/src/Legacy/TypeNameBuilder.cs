@@ -588,7 +588,6 @@ internal struct TypeNameBuilder
             }
             TypeString.Append(']');
         }
-        TypeString.Append("[]");
     }
 
     private static ReadOnlySpan<char> TypeNameReservedChars()
