@@ -169,7 +169,7 @@ namespace ILLink.Shared.TrimAnalysis
 
 		public static DynamicallyAccessedMemberTypes GetMethodReturnValueAnnotation (IMethodSymbol method)
 		{
-			if (!method.ReturnType.IsTypeInterestingForDataflow (isByRef: method.ReturnsByRef))
+			if (!method.OriginalDefinition.ReturnType.IsTypeInterestingForDataflow (isByRef: method.ReturnsByRef))
 				return DynamicallyAccessedMemberTypes.None;
 
 			var returnDamt = method.GetDynamicallyAccessedMemberTypesOnReturnType ();
