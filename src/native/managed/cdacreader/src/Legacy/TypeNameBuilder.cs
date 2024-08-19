@@ -149,6 +149,12 @@ internal struct TypeNameBuilder
             if (!th.IsNull)
             {
                 typeInstantiationSigFormat = runtimeTypeSystem.GetInstantiation(th);
+                if (typeInstantiationSigFormat.IsEmpty && runtimeTypeSystem.IsArray(th, out _))
+                {
+                    // For arrays, fill in the instantiation with the element type handle
+                    // See MethodTable::GetArrayInstantiation for coreclr equivalent
+                    typeInstantiationSigFormat = new[] { runtimeTypeSystem.GetTypeParam(th) };
+                }
             }
 
             SigFormat.AppendSigFormat(target, stringBuilder, signature, reader, null, null, null, typeInstantiationSigFormat, runtimeTypeSystem.GetGenericMethodInstantiation(method), true);
