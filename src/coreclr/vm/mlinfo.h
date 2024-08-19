@@ -264,9 +264,6 @@ public:
     // CM info has not been created yet for this pair then it will be created and returned.
     CustomMarshalerHelper *GetCustomMarshalerHelper(Assembly *pAssembly, TypeHandle hndManagedType, LPCUTF8 strMarshalerTypeName, DWORD cMarshalerTypeNameBytes, LPCUTF8 strCookie, DWORD cCookieStrBytes);
 
-    // This method returns the custom marshaling info associated with shared CM helper.
-    CustomMarshalerInfo *GetCustomMarshalerInfo(SharedCustomMarshalerHelper *pSharedCMHelper);
-
 #ifdef FEATURE_COMINTEROP
     // This method retrieves OLE_COLOR marshaling info.
     OleColorMarshalingInfo *GetOleColorMarshalingInfo();
@@ -275,7 +272,6 @@ public:
 private:
     EEPtrHashTable                      m_structILStubCache;
     EECMHelperHashTable                 m_CMHelperHashtable;
-    EEPtrHashTable                      m_SharedCMHelperToCMInfoMap;
     LoaderAllocator*                    m_pAllocator;
     LoaderHeap*                         m_pHeap;
     CMINFOLIST                          m_pCMInfoList;

@@ -822,7 +822,6 @@ EEMarshalingData::EEMarshalingData(LoaderAllocator* pAllocator, CrstBase *pCrst)
     LockOwner lock = {pCrst, IsOwnerOfCrst};
     m_structILStubCache.Init(INITIAL_NUM_STRUCT_ILSTUB_HASHTABLE_BUCKETS, &lock);
     m_CMHelperHashtable.Init(INITIAL_NUM_CMHELPER_HASHTABLE_BUCKETS, &lock);
-    m_SharedCMHelperToCMInfoMap.Init(INITIAL_NUM_CMINFO_HASHTABLE_BUCKETS, &lock);
 }
 
 
@@ -969,70 +968,6 @@ CustomMarshalerHelper *EEMarshalingData::GetCustomMarshalerHelper(Assembly *pAss
     }
 
     RETURN pNewCMHelper;
-}
-
-CustomMarshalerInfo *EEMarshalingData::GetCustomMarshalerInfo(SharedCustomMarshalerHelper *pSharedCMHelper)
-{
-    CONTRACT (CustomMarshalerInfo*)
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_COOPERATIVE;
-        INJECT_FAULT(COMPlusThrowOM());
-        POSTCONDITION(CheckPointer(RETVAL));
-    }
-    CONTRACT_END;
-
-    CustomMarshalerInfo *pCMInfo = NULL;
-    NewHolder<CustomMarshalerInfo> pNewCMInfo(NULL);
-    TypeHandle hndCustomMarshalerType;
-
-    // Lookup the custom marshaler helper in the hashtable.
-    if (m_SharedCMHelperToCMInfoMap.GetValue(pSharedCMHelper, (HashDatum*)&pCMInfo))
-        RETURN pCMInfo;
-
-    // Append a NULL terminator to the marshaler type name.
-    CQuickArray<char> strCMMarshalerTypeName;
-    DWORD strLen = pSharedCMHelper->GetMarshalerTypeNameByteCount();
-    strCMMarshalerTypeName.ReSizeThrows(pSharedCMHelper->GetMarshalerTypeNameByteCount() + 1);
-    memcpy(strCMMarshalerTypeName.Ptr(), pSharedCMHelper->GetMarshalerTypeName(), strLen);
-    strCMMarshalerTypeName[strLen] = 0;
-
-    // Load the custom marshaler class.
-    hndCustomMarshalerType = TypeName::GetTypeReferencedByCustomAttribute(strCMMarshalerTypeName.Ptr(), pSharedCMHelper->GetAssembly());
-    if (hndCustomMarshalerType.IsGenericTypeDefinition())
-    {
-        // Instantiate generic custom marshalers using the instantiation of the type being marshaled.
-        hndCustomMarshalerType = hndCustomMarshalerType.Instantiate(pSharedCMHelper->GetManagedType().GetInstantiation());
-    }
-
-    // Create the custom marshaler info in the specified heap.
-    pNewCMInfo = new (m_pHeap) CustomMarshalerInfo(m_pAllocator,
-                                                   hndCustomMarshalerType,
-                                                   pSharedCMHelper->GetManagedType(),
-                                                   pSharedCMHelper->GetCookieString(),
-                                                   pSharedCMHelper->GetCookieStringByteCount());
-
-    {
-        CrstHolder lock(m_lock);
-
-        // Verify that the custom marshaler info has not already been added by another thread.
-        if (m_SharedCMHelperToCMInfoMap.GetValue(pSharedCMHelper, (HashDatum*)&pCMInfo))
-        {
-            RETURN pCMInfo;
-        }
-
-        // Add the custom marshaler helper to the hash table.
-        m_SharedCMHelperToCMInfoMap.InsertValue(pSharedCMHelper, pNewCMInfo, FALSE);
-
-        // Add the custom marshaler into the linked list.
-        m_pCMInfoList.InsertHead(pNewCMInfo);
-
-        // Release the lock and return the custom marshaler info.
-    }
-
-    pNewCMInfo.SuppressRelease();
-    RETURN pNewCMInfo;
 }
 
 #ifdef FEATURE_COMINTEROP

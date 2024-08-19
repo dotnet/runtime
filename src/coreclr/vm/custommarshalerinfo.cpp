@@ -591,61 +591,6 @@ void NonSharedCustomMarshalerHelper::operator delete(void *pMem)
     LIMITED_METHOD_CONTRACT;
 }
 
-
-SharedCustomMarshalerHelper::SharedCustomMarshalerHelper(Assembly *pAssembly, TypeHandle hndManagedType, LPCUTF8 strMarshalerTypeName, DWORD cMarshalerTypeNameBytes, LPCUTF8 strCookie, DWORD cCookieStrBytes)
-: m_pAssembly(pAssembly)
-, m_hndManagedType(hndManagedType)
-, m_cMarshalerTypeNameBytes(cMarshalerTypeNameBytes)
-, m_strMarshalerTypeName(strMarshalerTypeName)
-, m_cCookieStrBytes(cCookieStrBytes)
-, m_strCookie(strCookie)
-{
-    WRAPPER_NO_CONTRACT;
-}
-
-
-void *SharedCustomMarshalerHelper::operator new(size_t size, LoaderHeap *pHeap)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_NOTRIGGER;
-        MODE_ANY;
-        INJECT_FAULT(COMPlusThrowOM());
-        PRECONDITION(CheckPointer(pHeap));
-    }
-    CONTRACTL_END;
-
-    return pHeap->AllocMem(S_SIZE_T(sizeof(SharedCustomMarshalerHelper)));
-}
-
-
-void SharedCustomMarshalerHelper::operator delete(void *pMem)
-{
-    // Instances of this class are always allocated on the loader heap so
-    // the delete operator has nothing to do.
-    LIMITED_METHOD_CONTRACT;
-}
-
-
-CustomMarshalerInfo *SharedCustomMarshalerHelper::GetCustomMarshalerInfo()
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_COOPERATIVE;
-    }
-    CONTRACTL_END;
-
-    // Retrieve the marshalling data for the current app domain.
-    EEMarshalingData *pMarshalingData = AppDomain::GetCurrentDomain()->GetLoaderAllocator()->GetMarshalingData();
-
-    // Retrieve the custom marshaling information for the current shared custom
-    // marshaling helper.
-    return pMarshalingData->GetCustomMarshalerInfo(this);
-}
-
 extern "C" void QCALLTYPE CustomMarshaler_GetMarshalerObject(CustomMarshalerHelper* pCMHelper, QCall::ObjectHandleOnStack retObject)
 {
     QCALL_CONTRACT;

@@ -253,68 +253,6 @@ private:
     CustomMarshalerInfo* m_pCMInfo;
 };
 
-
-class SharedCustomMarshalerHelper : public CustomMarshalerHelper
-{
-public:
-    // Constructor.
-    SharedCustomMarshalerHelper(Assembly* pAssembly, TypeHandle hndManagedType, LPCUTF8 strMarshalerTypeName, DWORD cMarshalerTypeNameBytes, LPCUTF8 strCookie, DWORD cCookieStrBytes);
-
-    // CustomMarshalerHelpers's are always allocated on the loader heap so we need to redefine
-    // the new and delete operators to ensure this.
-    void* operator new(size_t size, LoaderHeap* pHeap);
-    void  operator delete(void* pMem);
-
-    // Accessors.
-    inline Assembly* GetAssembly()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return m_pAssembly;
-    }
-
-    inline TypeHandle GetManagedType()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return m_hndManagedType;
-    }
-
-    inline DWORD GetMarshalerTypeNameByteCount()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return m_cMarshalerTypeNameBytes;
-    }
-
-    inline LPCSTR GetMarshalerTypeName()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return m_strMarshalerTypeName;
-    }
-
-    inline LPCSTR GetCookieString()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return m_strCookie;
-    }
-
-    inline ULONG GetCookieStringByteCount()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return m_cCookieStrBytes;
-    }
-
-protected:
-    // Helper function to retrieve the custom marshaler object.
-    virtual CustomMarshalerInfo* GetCustomMarshalerInfo();
-
-private:
-    Assembly*       m_pAssembly;
-    TypeHandle      m_hndManagedType;
-    DWORD           m_cMarshalerTypeNameBytes;
-    LPCUTF8         m_strMarshalerTypeName;
-    DWORD           m_cCookieStrBytes;
-    LPCUTF8         m_strCookie;
-};
-
 extern "C" void QCALLTYPE CustomMarshaler_GetMarshalerObject(CustomMarshalerHelper* pCMHelper, QCall::ObjectHandleOnStack retObject);
 
 #endif // _CUSTOMMARSHALERINFO_H_
