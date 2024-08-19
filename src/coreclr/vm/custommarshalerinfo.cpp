@@ -19,12 +19,7 @@
 
 namespace
 {
-    enum class CustomMarshalerMethod
-    {
-        GetInstance
-    };
-
-    MethodDesc * GetCustomMarshalerMD(CustomMarshalerMethod Method, TypeHandle hndCustomMarshalertype)
+    MethodDesc * FindGetInstanceMethod(TypeHandle hndCustomMarshalerType)
     {
         CONTRACTL
         {
@@ -35,30 +30,31 @@ namespace
         CONTRACTL_END;
 
 
-        MethodTable *pMT = hndCustomMarshalertype.AsMethodTable();
+        MethodTable *pMT = hndCustomMarshalerType.AsMethodTable();
 
-        _ASSERTE(pMT->CanCastToInterface(CoreLibBinder::GetClass(CLASS__ICUSTOM_MARSHALER)));
-
-        MethodDesc *pMD = NULL;
-
-        switch (Method)
+        MethodDesc *pMD = MemberLoader::FindMethod(pMT, "GetInstance", &gsig_SM_Str_RetICustomMarshaler);
+        if (!pMD)
         {
-            case CustomMarshalerMethod::GetInstance:
-                // Must look this up by name since it's static
-                pMD = MemberLoader::FindMethod(pMT, "GetInstance", &gsig_SM_Str_RetICustomMarshaler);
-                if (!pMD)
-                {
-                    DefineFullyQualifiedNameForClassW()
-                    COMPlusThrow(kApplicationException,
-                                IDS_EE_GETINSTANCENOTIMPL,
-                                GetFullyQualifiedNameForClassW(pMT));
-                }
-                break;
-            default:
-                _ASSERTE(!"Unknown custom marshaler method");
-        }
+            DefineFullyQualifiedNameForClassW()
+            COMPlusThrow(kApplicationException,
+                        IDS_EE_GETINSTANCENOTIMPL,
+                        GetFullyQualifiedNameForClassW(pMT));
+        };
 
-        _ASSERTE(pMD && "Unable to find specified CustomMarshaler method");
+        // If the GetInstance method is generic, get an instantiating stub for it -
+        // the CallDescr infrastructure doesn't know how to pass secret generic arguments.
+        if (pMD->RequiresInstMethodTableArg())
+        {
+            pMD = MethodDesc::FindOrCreateAssociatedMethodDesc(
+                pMD,
+                hndCustomMarshalerType.GetMethodTable(),
+                FALSE,           // forceBoxedEntryPoint
+                Instantiation(), // methodInst
+                FALSE,           // allowInstParam
+                FALSE);          // forceRemotableMethod
+
+            _ASSERTE(!pMD->RequiresInstMethodTableArg());
+        }
 
         // Ensure that the value types in the signature are loaded.
         MetaSig::EnsureSigValueTypesLoaded(pMD);
@@ -103,26 +99,11 @@ CustomMarshalerInfo::CustomMarshalerInfo(LoaderAllocator *pLoaderAllocator, Type
     hndCustomMarshalerType.GetMethodTable()->EnsureInstanceActive();
     hndCustomMarshalerType.GetMethodTable()->CheckRunClassInitThrowing();
 
-    // Create a COM+ string that will contain the string cookie.
+    // Create a .NET string that will contain the string cookie.
     STRINGREF CookieStringObj = StringObject::NewString(strCookie, cCookieStrBytes);
     GCPROTECT_BEGIN(CookieStringObj);
     // Load the method desc for the static method to retrieve the instance.
-    MethodDesc *pGetCustomMarshalerMD = GetCustomMarshalerMD(CustomMarshalerMethod::GetInstance, hndCustomMarshalerType);
-
-    // If the GetInstance method is generic, get an instantiating stub for it -
-    // the CallDescr infrastructure doesn't know how to pass secret generic arguments.
-    if (pGetCustomMarshalerMD->RequiresInstMethodTableArg())
-    {
-        pGetCustomMarshalerMD = MethodDesc::FindOrCreateAssociatedMethodDesc(
-            pGetCustomMarshalerMD,
-            hndCustomMarshalerType.GetMethodTable(),
-            FALSE,           // forceBoxedEntryPoint
-            Instantiation(), // methodInst
-            FALSE,           // allowInstParam
-            FALSE);          // forceRemotableMethod
-
-        _ASSERTE(!pGetCustomMarshalerMD->RequiresInstMethodTableArg());
-    }
+    MethodDesc *pGetCustomMarshalerMD = FindGetInstanceMethod(hndCustomMarshalerType);
 
     MethodDescCallSite getCustomMarshaler(pGetCustomMarshalerMD, (OBJECTREF*)&CookieStringObj);
 
