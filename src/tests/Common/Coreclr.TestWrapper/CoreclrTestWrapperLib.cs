@@ -687,6 +687,7 @@ namespace CoreclrTestLib
             using (var errorWriter = new StreamWriter(errorStream))
             using (Process process = new Process())
             {
+                outputWriter.WriteLine("Andrew modified CoreclrTestWrapper is running '" + executable + "'");
                 if (MobileAppHandler.IsRetryRequested(testBinaryBase))
                 {
                     outputWriter.WriteLine("\nWork item retry had been requested earlier - skipping test...");
@@ -719,6 +720,7 @@ namespace CoreclrTestLib
                     Task copyOutput = process.StandardOutput.BaseStream.CopyToAsync(outputStream, 4096, cts.Token);
                     Task copyError = process.StandardError.BaseStream.CopyToAsync(errorStream, 4096, cts.Token);
 
+                    
                     if (process.WaitForExit(timeout))
                     {
                         // Process completed. Check process.ExitCode here.

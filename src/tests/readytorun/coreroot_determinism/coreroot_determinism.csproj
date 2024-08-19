@@ -10,6 +10,8 @@
     <!-- We skip the ReadyToRun tests when sanitized due to build complexity -->
     <DisableProjectBuild Condition="'$(EnableNativeSanitizers)' != ''">true</DisableProjectBuild>
     <OldToolsVersion>2.0</OldToolsVersion>
+    <!-- Rerun the test for 100 times or stop if we get a failure -->
+    <CLRTestLoop>true</CLRTestLoop>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="Program.cs" />
