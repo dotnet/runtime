@@ -11,6 +11,7 @@ namespace System.Formats.Nrbf
         internal ArrayRecord() { }
         public override System.Formats.Nrbf.SerializationRecordId Id { get { throw null; } }
         public abstract System.ReadOnlySpan<int> Lengths { get; }
+        public virtual long TotalElementsCount { get; }
         public int Rank { get { throw null; } }
         [System.Diagnostics.CodeAnalysis.RequiresDynamicCode("The code for an array of the specified type might not be available.")]
         public System.Array GetArray(System.Type expectedArrayType, bool allowNulls = true) { throw null; }

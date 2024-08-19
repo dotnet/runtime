@@ -223,10 +223,13 @@ public class RectangularArraysTests : ReadTests
     internal static void Verify(Array input, ArrayRecord arrayRecord)
     {
         Assert.Equal(input.Rank, arrayRecord.Lengths.Length);
+        long totalElementsCount = 1;
         for (int i = 0; i < input.Rank; i++)
         {
             Assert.Equal(input.GetLength(i), arrayRecord.Lengths[i]);
+            totalElementsCount *= input.GetLength(i);
         }
+        Assert.Equal(totalElementsCount, arrayRecord.TotalElementsCount);
         Assert.Equal(input.GetType().FullName, arrayRecord.TypeName.FullName);
         Assert.Equal(input.GetType().GetAssemblyNameIncludingTypeForwards(), arrayRecord.TypeName.AssemblyName!.FullName);
     }

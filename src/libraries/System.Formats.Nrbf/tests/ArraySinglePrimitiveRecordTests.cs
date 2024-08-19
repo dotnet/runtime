@@ -94,6 +94,7 @@ public class ArraySinglePrimitiveRecordTests : ReadTests
         SZArrayRecord<T> arrayRecord = (SZArrayRecord<T>)NrbfDecoder.Decode(stream);
 
         Assert.Equal(size, arrayRecord.Length);
+        Assert.Equal(size, arrayRecord.TotalElementsCount);
         T?[] output = arrayRecord.GetArray();
         Assert.Equal(input, output);
         Assert.Same(output, arrayRecord.GetArray());

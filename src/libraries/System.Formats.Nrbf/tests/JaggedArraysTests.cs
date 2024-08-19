@@ -19,6 +19,19 @@ public class JaggedArraysTests : ReadTests
 
         Verify(input, arrayRecord);
         Assert.Equal(input, arrayRecord.GetArray(input.GetType()));
+        Assert.Equal(input.Length * 3, arrayRecord.TotalElementsCount);
+    }
+
+    [Fact]
+    public void TotalElementsCountDoesNotIncludeNullArrays()
+    {
+        int[][] input = [[1, 2, 3], null];
+
+        var arrayRecord = (ArrayRecord)NrbfDecoder.Decode(Serialize(input));
+
+        Verify(input, arrayRecord);
+        Assert.Equal(input, arrayRecord.GetArray(input.GetType()));
+        Assert.Equal(3, arrayRecord.TotalElementsCount);
     }
 
     [Fact]
@@ -36,6 +49,7 @@ public class JaggedArraysTests : ReadTests
         Verify(input, arrayRecord);
         Assert.Equal(input, arrayRecord.GetArray(input.GetType()));
         Assert.Equal(1, arrayRecord.Rank);
+        Assert.Equal(input.Length * 1 * 3, arrayRecord.TotalElementsCount);
     }
 
     [Fact]
@@ -60,6 +74,7 @@ public class JaggedArraysTests : ReadTests
         Verify(input, arrayRecord);
         Assert.Equal(input, arrayRecord.GetArray(input.GetType()));
         Assert.Equal(1, arrayRecord.Rank);
+        Assert.Equal(input.Length * 3 * 3, arrayRecord.TotalElementsCount);
     }
 
     [Fact]
@@ -75,6 +90,7 @@ public class JaggedArraysTests : ReadTests
 
         Verify(input, arrayRecord);
         Assert.Equal(input, arrayRecord.GetArray(input.GetType()));
+        Assert.Equal(input.Length * 3, arrayRecord.TotalElementsCount);
     }
 
     [Fact]
@@ -90,6 +106,7 @@ public class JaggedArraysTests : ReadTests
 
         Verify(input, arrayRecord);
         Assert.Equal(input, arrayRecord.GetArray(input.GetType()));
+        Assert.Equal(input.Length * 3, arrayRecord.TotalElementsCount);
     }
 
     [Serializable]
@@ -102,14 +119,17 @@ public class JaggedArraysTests : ReadTests
     public void CanReadJaggedArraysOfComplexTypes()
     {
         ComplexType[][] input = new ComplexType[3][];
+        long totalElementsCount = 0;
         for (int i = 0; i < input.Length; i++)
         {
             input[i] = Enumerable.Range(0, i + 1).Select(j => new ComplexType { SomeField = j }).ToArray();
+            totalElementsCount += input[i].Length;
         }
 
         var arrayRecord = (ArrayRecord)NrbfDecoder.Decode(Serialize(input));
 
         Verify(input, arrayRecord);
+        Assert.Equal(totalElementsCount, arrayRecord.TotalElementsCount);
         var output = (ClassRecord?[][])arrayRecord.GetArray(input.GetType());
         for (int i = 0; i < input.Length; i++)
         {

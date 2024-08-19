@@ -6,6 +6,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Reflection.Metadata;
 using System.Formats.Nrbf.Utils;
+using System.Diagnostics;
 
 namespace System.Formats.Nrbf;
 
@@ -27,18 +28,75 @@ internal sealed class BinaryArrayRecord : ArrayRecord
     ];
 
     private TypeName? _typeName;
+    private long _totalElementsCount;
 
     private BinaryArrayRecord(ArrayInfo arrayInfo, MemberTypeInfo memberTypeInfo)
         : base(arrayInfo)
     {
         MemberTypeInfo = memberTypeInfo;
         Values = [];
+
+        // We need to parse all elements of the jagged array to obtain total elements count;
+        _totalElementsCount = arrayInfo.ArrayType != BinaryArrayType.Jagged ? arrayInfo.TotalElementsCount : -1;
     }
 
     public override SerializationRecordType RecordType => SerializationRecordType.BinaryArray;
 
     /// <inheritdoc/>
     public override ReadOnlySpan<int> Lengths => new int[1] { Length };
+
+    /// <inheritdoc/>
+    public override long TotalElementsCount
+    {
+        get
+        {
+            if (_totalElementsCount >= 0)
+            {
+                return _totalElementsCount;
+            }
+
+            Debug.Assert(ArrayInfo.ArrayType == BinaryArrayType.Jagged);
+
+            long result = 0;
+            foreach (object value in Values)
+            {
+                object item = value is MemberReferenceRecord referenceRecord
+                    ? referenceRecord.GetReferencedRecord()
+                    : value;
+
+                if (item is not SerializationRecord record)
+                {
+                    result++;
+                    continue;
+                }
+
+                switch (record.RecordType)
+                {
+                    case SerializationRecordType.BinaryArray:
+                    case SerializationRecordType.ArraySinglePrimitive:
+                    case SerializationRecordType.ArraySingleObject:
+                    case SerializationRecordType.ArraySingleString:
+                        ArrayRecord nestedArrayRecord = (ArrayRecord)record;
+                        // This may be a recursive call!
+                        result += nestedArrayRecord.TotalElementsCount;
+                        break;
+                    case SerializationRecordType.ObjectNull:
+                    case SerializationRecordType.ObjectNullMultiple256:
+                    case SerializationRecordType.ObjectNullMultiple:
+                        // Null Records nested inside jagged array do not increase total elements count.
+                        // Example: "int[][] input = [[1, 2, 3], null]" is just 3 elements in total.
+                        break;
+                    default:
+                        result++;
+                        break;
+                }
+            }
+
+            _totalElementsCount = result;
+
+            return result;
+        }
+    }
 
     public override TypeName TypeName
         => _typeName ??= MemberTypeInfo.GetArrayTypeName(ArrayInfo);

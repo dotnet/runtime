@@ -28,6 +28,12 @@ public abstract class ArrayRecord : SerializationRecord
     public abstract ReadOnlySpan<int> Lengths { get; }
 
     /// <summary>
+    /// When overridden in a derived class, gets the total number of all elements in every dimension.
+    /// </summary>
+    /// <value>A number that represent the total number of all elements in every dimension.</value>
+    public virtual long TotalElementsCount => ArrayInfo.TotalElementsCount;
+
+    /// <summary>
     /// Gets the rank of the array.
     /// </summary>
     /// <value>The rank of the array.</value>
