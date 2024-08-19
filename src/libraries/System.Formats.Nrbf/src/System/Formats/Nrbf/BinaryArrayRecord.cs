@@ -62,13 +62,13 @@ internal sealed class BinaryArrayRecord : ArrayRecord
     private static long GetJaggedArrayTotalElementsCount(BinaryArrayRecord jaggedArrayRecord)
     {
         long result = 0;
-        Stack<BinaryArrayRecord>? jaggedArrayRecords = null;
+        Queue<BinaryArrayRecord>? jaggedArrayRecords = null;
 
         do
         {
             if (jaggedArrayRecords is not null)
             {
-                jaggedArrayRecord = jaggedArrayRecords.Pop();
+                jaggedArrayRecord = jaggedArrayRecords.Dequeue();
             }
 
             Debug.Assert(jaggedArrayRecord.ArrayInfo.ArrayType == BinaryArrayType.Jagged);
@@ -94,7 +94,7 @@ internal sealed class BinaryArrayRecord : ArrayRecord
                         ArrayRecord nestedArrayRecord = (ArrayRecord)record;
                         if (nestedArrayRecord.ArrayInfo.ArrayType == BinaryArrayType.Jagged)
                         {
-                            (jaggedArrayRecords ??= new()).Push((BinaryArrayRecord)nestedArrayRecord);
+                            (jaggedArrayRecords ??= new()).Enqueue((BinaryArrayRecord)nestedArrayRecord);
                         }
                         else
                         {
