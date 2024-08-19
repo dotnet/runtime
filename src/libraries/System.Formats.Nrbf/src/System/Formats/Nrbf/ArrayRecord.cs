@@ -50,7 +50,12 @@ public abstract class ArrayRecord : SerializationRecord
 
     internal long ValuesToRead { get; private protected set; }
 
-    internal ArrayInfo ArrayInfo { get; }
+    private protected ArrayInfo ArrayInfo { get; }
+
+    internal bool IsJagged
+        => ArrayInfo.ArrayType == BinaryArrayType.Jagged
+        // It is possible to have binary array records have an element type of array without being marked as jagged.
+        || TypeName.GetElementType().IsArray;
 
     /// <summary>
     /// Allocates an array and fills it with the data provided in the serialized records (in case of primitive types like <see cref="string"/> or <see cref="int"/>) or the serialized records themselves.

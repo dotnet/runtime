@@ -35,9 +35,8 @@ internal sealed class BinaryArrayRecord : ArrayRecord
     {
         MemberTypeInfo = memberTypeInfo;
         Values = [];
-
-        // We need to parse all elements of the jagged array to obtain total elements count;
-        _totalElementsCount = arrayInfo.ArrayType != BinaryArrayType.Jagged ? arrayInfo.TotalElementsCount : -1;
+        // We need to parse all elements of the jagged array to obtain total elements count.
+        _totalElementsCount = -1;
     }
 
     public override SerializationRecordType RecordType => SerializationRecordType.BinaryArray;
@@ -52,70 +51,13 @@ internal sealed class BinaryArrayRecord : ArrayRecord
         {
             if (_totalElementsCount < 0)
             {
-                _totalElementsCount = GetJaggedArrayTotalElementsCount(this);
+                _totalElementsCount = IsJagged
+                    ? GetJaggedArrayTotalElementsCount(this)
+                    : ArrayInfo.TotalElementsCount;
             }
 
             return _totalElementsCount;
         }
-    }
-
-    private static long GetJaggedArrayTotalElementsCount(BinaryArrayRecord jaggedArrayRecord)
-    {
-        long result = 0;
-        Queue<BinaryArrayRecord>? jaggedArrayRecords = null;
-
-        do
-        {
-            if (jaggedArrayRecords is not null)
-            {
-                jaggedArrayRecord = jaggedArrayRecords.Dequeue();
-            }
-
-            Debug.Assert(jaggedArrayRecord.ArrayInfo.ArrayType == BinaryArrayType.Jagged);
-
-            foreach (object value in jaggedArrayRecord.Values)
-            {
-                object item = value is MemberReferenceRecord referenceRecord
-                    ? referenceRecord.GetReferencedRecord()
-                    : value;
-
-                if (item is not SerializationRecord record)
-                {
-                    result++;
-                    continue;
-                }
-
-                switch (record.RecordType)
-                {
-                    case SerializationRecordType.BinaryArray:
-                    case SerializationRecordType.ArraySinglePrimitive:
-                    case SerializationRecordType.ArraySingleObject:
-                    case SerializationRecordType.ArraySingleString:
-                        ArrayRecord nestedArrayRecord = (ArrayRecord)record;
-                        if (nestedArrayRecord.ArrayInfo.ArrayType == BinaryArrayType.Jagged)
-                        {
-                            (jaggedArrayRecords ??= new()).Enqueue((BinaryArrayRecord)nestedArrayRecord);
-                        }
-                        else
-                        {
-                            result += nestedArrayRecord.TotalElementsCount;
-                        }
-                        break;
-                    case SerializationRecordType.ObjectNull:
-                    case SerializationRecordType.ObjectNullMultiple256:
-                    case SerializationRecordType.ObjectNullMultiple:
-                        // Null Records nested inside jagged array do not increase total elements count.
-                        // Example: "int[][] input = [[1, 2, 3], null]" is just 3 elements in total.
-                        break;
-                    default:
-                        result++;
-                        break;
-                }
-            }
-        }
-        while (jaggedArrayRecords is not null && jaggedArrayRecords.Count > 0);
-
-        return result;
     }
 
     public override TypeName TypeName
@@ -233,6 +175,65 @@ internal sealed class BinaryArrayRecord : ArrayRecord
         return memberTypeInfo.ShouldBeRepresentedAsArrayOfClassRecords()
             ? new ArrayOfClassesRecord(arrayInfo, memberTypeInfo)
             : new BinaryArrayRecord(arrayInfo, memberTypeInfo);
+    }
+
+    private static long GetJaggedArrayTotalElementsCount(BinaryArrayRecord jaggedArrayRecord)
+    {
+        long result = 0;
+        Queue<BinaryArrayRecord>? jaggedArrayRecords = null;
+
+        do
+        {
+            if (jaggedArrayRecords is not null)
+            {
+                jaggedArrayRecord = jaggedArrayRecords.Dequeue();
+            }
+
+            Debug.Assert(jaggedArrayRecord.IsJagged);
+
+            foreach (object value in jaggedArrayRecord.Values)
+            {
+                object item = value is MemberReferenceRecord referenceRecord
+                    ? referenceRecord.GetReferencedRecord()
+                    : value;
+
+                if (item is not SerializationRecord record)
+                {
+                    result++;
+                    continue;
+                }
+
+                switch (record.RecordType)
+                {
+                    case SerializationRecordType.BinaryArray:
+                    case SerializationRecordType.ArraySinglePrimitive:
+                    case SerializationRecordType.ArraySingleObject:
+                    case SerializationRecordType.ArraySingleString:
+                        ArrayRecord nestedArrayRecord = (ArrayRecord)record;
+                        if (nestedArrayRecord.IsJagged)
+                        {
+                            (jaggedArrayRecords ??= new()).Enqueue((BinaryArrayRecord)nestedArrayRecord);
+                        }
+                        else
+                        {
+                            result += nestedArrayRecord.TotalElementsCount;
+                        }
+                        break;
+                    case SerializationRecordType.ObjectNull:
+                    case SerializationRecordType.ObjectNullMultiple256:
+                    case SerializationRecordType.ObjectNullMultiple:
+                        // Null Records nested inside jagged array do not increase total elements count.
+                        // Example: "int[][] input = [[1, 2, 3], null]" is just 3 elements in total.
+                        break;
+                    default:
+                        result++;
+                        break;
+                }
+            }
+        }
+        while (jaggedArrayRecords is not null && jaggedArrayRecords.Count > 0);
+
+        return result;
     }
 
     private protected override void AddValue(object value) => Values.Add(value);

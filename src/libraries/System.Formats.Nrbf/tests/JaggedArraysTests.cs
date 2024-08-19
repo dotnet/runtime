@@ -1,4 +1,5 @@
 ﻿using System.Formats.Nrbf.Utils;
+using System.IO;
 using System.Linq;
 using Xunit;
 
@@ -32,6 +33,38 @@ public class JaggedArraysTests : ReadTests
         Verify(input, arrayRecord);
         Assert.Equal(input, arrayRecord.GetArray(input.GetType()));
         Assert.Equal(3, arrayRecord.TotalElementsCount);
+    }
+
+    [Fact]
+    public void ItIsPossibleToHaveBinaryArrayRecordsHaveAnElementTypeOfArrayWithoutBeingMarkedAsJagged()
+    {
+        int[][][] input = new int[3][][];
+        for (int i = 0; i < input.Length; i++)
+        {
+            input[i] = new int[4][];
+
+            for (int j = 0; j < input[i].Length; j++)
+            {
+                input[i][j] = [i, j, 0, 1, 2];
+            }
+        }
+
+        byte[] serialized = Serialize(input).ToArray();
+        const int ArrayTypeByteIndex =
+            sizeof(byte) + sizeof(int) * 4 + // stream header
+            sizeof(byte) + // SerializationRecordType.BinaryArray
+            sizeof(int); // SerializationRecordId
+
+        Assert.Equal((byte)BinaryArrayType.Jagged, serialized[ArrayTypeByteIndex]);
+
+        // change the reported array type 
+        serialized[ArrayTypeByteIndex] = (byte)BinaryArrayType.Single;
+
+        var arrayRecord = (ArrayRecord)NrbfDecoder.Decode(new MemoryStream(serialized));
+
+        Verify(input, arrayRecord);
+        Assert.Equal(input, arrayRecord.GetArray(input.GetType()));
+        Assert.Equal(3 * 4 * 5, arrayRecord.TotalElementsCount);
     }
 
     [Fact]
