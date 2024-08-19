@@ -5,6 +5,7 @@
     <StringResourcesPath>../../src/Resources/Strings.resx</StringResourcesPath>
     <TargetFramework>$(NetCoreAppCurrent)-browser</TargetFramework>
     <DefineConstants>$(DefineConstants);NETSTANDARD</DefineConstants>
+    <NoWarn>$(NoWarn);SYSLIB0057</NoWarn>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(TargetOS)' == 'browser'">
