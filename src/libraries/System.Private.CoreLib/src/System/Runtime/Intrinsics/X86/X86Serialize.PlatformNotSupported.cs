@@ -30,7 +30,7 @@ namespace System.Runtime.Intrinsics.X86
         }
 
         /// <summary>
-        /// void _serialize (void);
+        ///   <para>void _serialize (void);</para>
         /// </summary>
         public static void Serialize() { throw new PlatformNotSupportedException(); }
 

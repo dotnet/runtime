@@ -29,57 +29,57 @@ namespace System.Runtime.Intrinsics.Arm
             public static new bool IsSupported { get => IsSupported; }
 
             /// <summary>
-            /// uint32_t __crc32d (uint32_t a, uint64_t b)
-            ///   A64: CRC32X Wd, Wn, Xm
+            ///   <para>uint32_t __crc32d (uint32_t a, uint64_t b)</para>
+            ///   <para>  A64: CRC32X Wd, Wn, Xm</para>
             /// </summary>
             public static uint ComputeCrc32(uint crc, ulong data) => ComputeCrc32(crc, data);
 
             /// <summary>
-            /// uint32_t __crc32cd (uint32_t a, uint64_t b)
-            ///   A64: CRC32CX Wd, Wn, Xm
+            ///   <para>uint32_t __crc32cd (uint32_t a, uint64_t b)</para>
+            ///   <para>  A64: CRC32CX Wd, Wn, Xm</para>
             /// </summary>
             public static uint ComputeCrc32C(uint crc, ulong data) => ComputeCrc32C(crc, data);
         }
 
         /// <summary>
-        /// uint32_t __crc32b (uint32_t a, uint8_t b)
-        ///   A32: CRC32B Rd, Rn, Rm
-        ///   A64: CRC32B Wd, Wn, Wm
+        ///   <para>uint32_t __crc32b (uint32_t a, uint8_t b)</para>
+        ///   <para>  A32: CRC32B Rd, Rn, Rm</para>
+        ///   <para>  A64: CRC32B Wd, Wn, Wm</para>
         /// </summary>
         public static uint ComputeCrc32(uint crc, byte data) => ComputeCrc32(crc, data);
 
         /// <summary>
-        /// uint32_t __crc32h (uint32_t a, uint16_t b)
-        ///   A32: CRC32H Rd, Rn, Rm
-        ///   A64: CRC32H Wd, Wn, Wm
+        ///   <para>uint32_t __crc32h (uint32_t a, uint16_t b)</para>
+        ///   <para>  A32: CRC32H Rd, Rn, Rm</para>
+        ///   <para>  A64: CRC32H Wd, Wn, Wm</para>
         /// </summary>
         public static uint ComputeCrc32(uint crc, ushort data) => ComputeCrc32(crc, data);
 
         /// <summary>
-        /// uint32_t __crc32w (uint32_t a, uint32_t b)
-        ///   A32: CRC32W Rd, Rn, Rm
-        ///   A64: CRC32W Wd, Wn, Wm
+        ///   <para>uint32_t __crc32w (uint32_t a, uint32_t b)</para>
+        ///   <para>  A32: CRC32W Rd, Rn, Rm</para>
+        ///   <para>  A64: CRC32W Wd, Wn, Wm</para>
         /// </summary>
         public static uint ComputeCrc32(uint crc, uint data) => ComputeCrc32(crc, data);
 
         /// <summary>
-        /// uint32_t __crc32cb (uint32_t a, uint8_t b)
-        ///   A32: CRC32CB Rd, Rn, Rm
-        ///   A64: CRC32CB Wd, Wn, Wm
+        ///   <para>uint32_t __crc32cb (uint32_t a, uint8_t b)</para>
+        ///   <para>  A32: CRC32CB Rd, Rn, Rm</para>
+        ///   <para>  A64: CRC32CB Wd, Wn, Wm</para>
         /// </summary>
         public static uint ComputeCrc32C(uint crc, byte data) => ComputeCrc32C(crc, data);
 
         /// <summary>
-        /// uint32_t __crc32ch (uint32_t a, uint16_t b)
-        ///   A32: CRC32CH Rd, Rn, Rm
-        ///   A64: CRC32CH Wd, Wn, Wm
+        ///   <para>uint32_t __crc32ch (uint32_t a, uint16_t b)</para>
+        ///   <para>  A32: CRC32CH Rd, Rn, Rm</para>
+        ///   <para>  A64: CRC32CH Wd, Wn, Wm</para>
         /// </summary>
         public static uint ComputeCrc32C(uint crc, ushort data) => ComputeCrc32C(crc, data);
 
         /// <summary>
-        /// uint32_t __crc32cw (uint32_t a, uint32_t b)
-        ///   A32: CRC32CW Rd, Rn, Rm
-        ///   A64: CRC32CW Wd, Wn, Wm
+        ///   <para>uint32_t __crc32cw (uint32_t a, uint32_t b)</para>
+        ///   <para>  A32: CRC32CW Rd, Rn, Rm</para>
+        ///   <para>  A64: CRC32CW Wd, Wn, Wm</para>
         /// </summary>
         public static uint ComputeCrc32C(uint crc, uint data) => ComputeCrc32C(crc, data);
     }

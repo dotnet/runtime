@@ -8,87 +8,87 @@ namespace System.Runtime.Intrinsics.Arm
     public enum SveMaskPattern : byte
     {
         /// <summary>
-        /// POW2
+        ///   <para>POW2</para>
         /// </summary>
         LargestPowerOf2 = 0,      // The largest power of 2.
 
         /// <summary>
-        /// VL1
+        ///   <para>VL1</para>
         /// </summary>
         VectorCount1 = 1,         // Exactly 1 element.
 
         /// <summary>
-        /// VL2
+        ///   <para>VL2</para>
         /// </summary>
         VectorCount2 = 2,         // Exactly 2 elements.
 
         /// <summary>
-        /// VL3
+        ///   <para>VL3</para>
         /// </summary>
         VectorCount3 = 3,         // Exactly 3 elements.
 
         /// <summary>
-        /// VL4
+        ///   <para>VL4</para>
         /// </summary>
         VectorCount4 = 4,         // Exactly 4 elements.
 
         /// <summary>
-        /// VL5
+        ///   <para>VL5</para>
         /// </summary>
         VectorCount5 = 5,         // Exactly 5 elements.
 
         /// <summary>
-        /// VL6
+        ///   <para>VL6</para>
         /// </summary>
         VectorCount6 = 6,         // Exactly 6 elements.
 
         /// <summary>
-        /// VL7
+        ///   <para>VL7</para>
         /// </summary>
         VectorCount7 = 7,         // Exactly 7 elements.
 
         /// <summary>
-        /// VL8
+        ///   <para>VL8</para>
         /// </summary>
         VectorCount8 = 8,         // Exactly 8 elements.
 
         /// <summary>
-        /// VL16
+        ///   <para>VL16</para>
         /// </summary>
         VectorCount16 = 9,        // Exactly 16 elements.
 
         /// <summary>
-        /// VL32
+        ///   <para>VL32</para>
         /// </summary>
         VectorCount32 = 10,       // Exactly 32 elements.
 
         /// <summary>
-        /// VL64
+        ///   <para>VL64</para>
         /// </summary>
         VectorCount64 = 11,       // Exactly 64 elements.
 
         /// <summary>
-        /// VL128
+        ///   <para>VL128</para>
         /// </summary>
         VectorCount128 = 12,      // Exactly 128 elements.
 
         /// <summary>
-        /// VL256
+        ///   <para>VL256</para>
         /// </summary>
         VectorCount256 = 13,      // Exactly 256 elements.
 
         /// <summary>
-        /// MUL4
+        ///   <para>MUL4</para>
         /// </summary>
         LargestMultipleOf4 = 29,  // The largest multiple of 4.
 
         /// <summary>
-        /// MUL3
+        ///   <para>MUL3</para>
         /// </summary>
         LargestMultipleOf3 = 30,  // The largest multiple of 3.
 
         /// <summary>
-        /// ALL
+        ///   <para>ALL</para>
         /// </summary>
         All  = 31                 // All available (implicitly a multiple of two).
     }
@@ -96,62 +96,62 @@ namespace System.Runtime.Intrinsics.Arm
     public enum SvePrefetchType : byte
     {
         /// <summary>
-        /// PLDL1KEEP
+        ///   <para>PLDL1KEEP</para>
         /// </summary>
         LoadL1Temporal = 0,
 
         /// <summary>
-        /// PLDL1STRM
+        ///   <para>PLDL1STRM</para>
         /// </summary>
         LoadL1NonTemporal = 1,
 
         /// <summary>
-        /// PLDL2KEEP
+        ///   <para>PLDL2KEEP</para>
         /// </summary>
         LoadL2Temporal = 2,
 
         /// <summary>
-        /// PLDL2STRM
+        ///   <para>PLDL2STRM</para>
         /// </summary>
         LoadL2NonTemporal = 3,
 
         /// <summary>
-        /// PLDL3KEEP
+        ///   <para>PLDL3KEEP</para>
         /// </summary>
         LoadL3Temporal = 4,
 
         /// <summary>
-        /// PLDL3STRM
+        ///   <para>PLDL3STRM</para>
         /// </summary>
         LoadL3NonTemporal = 5,
 
         /// <summary>
-        /// PSTL1KEEP
+        ///   <para>PSTL1KEEP</para>
         /// </summary>
         StoreL1Temporal = 8,
 
         /// <summary>
-        /// PSTL1STRM
+        ///   <para>PSTL1STRM</para>
         /// </summary>
         StoreL1NonTemporal = 9,
 
         /// <summary>
-        /// PSTL2KEEP
+        ///   <para>PSTL2KEEP</para>
         /// </summary>
         StoreL2Temporal = 10,
 
         /// <summary>
-        /// PSTL2STRM
+        ///   <para>PSTL2STRM</para>
         /// </summary>
         StoreL2NonTemporal = 11,
 
         /// <summary>
-        /// PSTL3KEEP
+        ///   <para>PSTL3KEEP</para>
         /// </summary>
         StoreL3Temporal = 12,
 
         /// <summary>
-        /// PSTL3STRM
+        ///   <para>PSTL3STRM</para>
         /// </summary>
         StoreL3NonTemporal = 13
     };

@@ -15,42 +15,42 @@ namespace System.Runtime.Intrinsics.Wasm
         public static bool IsSupported { get => IsSupported; }
 
         /// <summary>
-        ///   i32.clz
+        ///   <para>  i32.clz</para>
         /// </summary>
         public static int LeadingZeroCount(int value) => LeadingZeroCount(value);
 
         /// <summary>
-        ///   i32.clz
+        ///   <para>  i32.clz</para>
         /// </summary>
         public static int LeadingZeroCount(uint value) => LeadingZeroCount(value);
 
         /// <summary>
-        ///   i64.clz
+        ///   <para>  i64.clz</para>
         /// </summary>
         public static int LeadingZeroCount(long value) => LeadingZeroCount(value);
 
         /// <summary>
-        ///   i64.clz
+        ///   <para>  i64.clz</para>
         /// </summary>
         public static int LeadingZeroCount(ulong value) => LeadingZeroCount(value);
 
         /// <summary>
-        ///   i32.ctz
+        ///   <para>  i32.ctz</para>
         /// </summary>
         public static int TrailingZeroCount(int value) => TrailingZeroCount(value);
 
         /// <summary>
-        ///   i32.ctz
+        ///   <para>  i32.ctz</para>
         /// </summary>
         public static int TrailingZeroCount(uint value) => TrailingZeroCount(value);
 
         /// <summary>
-        ///   i64.ctz
+        ///   <para>  i64.ctz</para>
         /// </summary>
         public static int TrailingZeroCount(long value) => TrailingZeroCount(value);
 
         /// <summary>
-        ///   i64.ctz
+        ///   <para>  i64.ctz</para>
         /// </summary>
         public static int TrailingZeroCount(ulong value) => TrailingZeroCount(value);
     }

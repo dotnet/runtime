@@ -11,42 +11,42 @@ namespace System.Runtime.Intrinsics.Wasm
         public static bool IsSupported => false;
 
         /// <summary>
-        ///   i32.clz
+        ///   <para>  i32.clz</para>
         /// </summary>
         public static int LeadingZeroCount(int value) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
-        ///   i32.clz
+        ///   <para>  i32.clz</para>
         /// </summary>
         public static int LeadingZeroCount(uint value) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
-        ///   i64.clz
+        ///   <para>  i64.clz</para>
         /// </summary>
         public static int LeadingZeroCount(long value) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
-        ///   i64.clz
+        ///   <para>  i64.clz</para>
         /// </summary>
         public static int LeadingZeroCount(ulong value) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
-        ///   i32.ctz
+        ///   <para>  i32.ctz</para>
         /// </summary>
         public static int TrailingZeroCount(int value) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
-        ///   i32.ctz
+        ///   <para>  i32.ctz</para>
         /// </summary>
         public static int TrailingZeroCount(uint value) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
-        ///   i64.ctz
+        ///   <para>  i64.ctz</para>
         /// </summary>
         public static int TrailingZeroCount(long value) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
-        ///   i64.ctz
+        ///   <para>  i64.ctz</para>
         /// </summary>
         public static int TrailingZeroCount(ulong value) { throw new PlatformNotSupportedException(); }
 
