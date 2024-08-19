@@ -65,11 +65,11 @@ internal struct TypeNameBuilder
     {
         IRuntimeTypeSystem runtimeTypeSystem = target.Contracts.RuntimeTypeSystem;
         ILoader loader = target.Contracts.Loader;
-        ReadOnlySpan<byte> methodNameSpan;
+        string methodName;
         TypeHandle th = default;
         Contracts.ModuleHandle module = default;
 
-        bool isNoMetadataMethod = runtimeTypeSystem.IsNoMetadataMethod(method, out methodNameSpan);
+        bool isNoMetadataMethod = runtimeTypeSystem.IsNoMetadataMethod(method, out methodName);
         if (isNoMetadataMethod)
         {
             if (runtimeTypeSystem.IsDynamicMethod(method))
@@ -91,7 +91,7 @@ internal struct TypeNameBuilder
 
         if (isNoMetadataMethod)
         {
-            stringBuilder.Append(Encoding.UTF8.GetString(methodNameSpan));
+            stringBuilder.Append(methodName);
         }
         else if (runtimeTypeSystem.IsArrayMethod(method, out ArrayFunctionType functionType))
         {
