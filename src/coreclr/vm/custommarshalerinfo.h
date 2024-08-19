@@ -52,7 +52,8 @@ public:
     int GetNativeSize()
     {
         LIMITED_METHOD_CONTRACT;
-        return m_NativeSize;
+        // [COMPAT] We only support non-value classes, so the native size is the size of a pointer.
+        return sizeof(void*);
     }
 
     int GetManagedSize()
@@ -92,7 +93,6 @@ public:
     SLink               m_Link;
 
 private:
-    int                 m_NativeSize;
     TypeHandle          m_hndManagedType;
     LoaderAllocator*    m_pLoaderAllocator;
     LOADERHANDLE        m_hndCustomMarshaler;

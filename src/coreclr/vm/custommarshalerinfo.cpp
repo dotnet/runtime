@@ -22,8 +22,7 @@
 //==========================================================================
 
 CustomMarshalerInfo::CustomMarshalerInfo(LoaderAllocator *pLoaderAllocator, TypeHandle hndCustomMarshalerType, TypeHandle hndManagedType, LPCUTF8 strCookie, DWORD cCookieStrBytes)
-: m_NativeSize(0)
-, m_hndManagedType(hndManagedType)
+: m_hndManagedType(hndManagedType)
 , m_pLoaderAllocator(pLoaderAllocator)
 , m_hndCustomMarshaler{}
 , m_pMarshalNativeToManagedMD(NULL)
@@ -109,10 +108,6 @@ CustomMarshalerInfo::CustomMarshalerInfo(LoaderAllocator *pLoaderAllocator, Type
 
     m_hndCustomMarshaler = pLoaderAllocator->AllocateHandle(CustomMarshalerObj);
     GCPROTECT_END();
-
-    // We only support non-value classes, so the native size is the size of a pointer.
-    m_NativeSize = sizeof(void *);
-
     GCPROTECT_END();
 }
 
