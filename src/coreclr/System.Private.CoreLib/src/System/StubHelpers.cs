@@ -1504,7 +1504,7 @@ namespace System.StubHelpers
 #if PROFILING_SUPPORTED
         // FCalls are used to avoid impact to system error.
         [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern unsafe int ProfilerGetSystemError();
+        private static extern int ProfilerGetSystemError();
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern void ProfilerSetSystemError(int error);
