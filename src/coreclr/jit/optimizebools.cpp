@@ -1304,7 +1304,6 @@ void OptBoolsDsc::optOptimizeBoolsKeepFirstBlockAndFreeTheRest(bool optReturnBlo
         assert(m_b2->KindIs(BBJ_COND));
         assert(m_b1->TrueTargetIs(m_b2->GetTrueTarget()));
         assert(m_b1->FalseTargetIs(m_b2));
-        assert(!m_b2->IsLast());
 
         // We now reach B2's false target via B1 false.
         //

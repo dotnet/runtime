@@ -456,6 +456,34 @@ extern "C" void QCALLTYPE ExceptionNative_GetMethodFromStackTrace(QCall::ObjectH
     END_QCALL;
 }
 
+extern "C" void QCALLTYPE ExceptionNative_ThrowAmbiguousResolutionException(
+    MethodTable* pTargetClass,
+    MethodTable* pInterfaceMT,
+    MethodDesc* pInterfaceMD)
+{
+    QCALL_CONTRACT;
+
+    BEGIN_QCALL;
+
+    ThrowAmbiguousResolutionException(pTargetClass, pInterfaceMT, pInterfaceMD);
+
+    END_QCALL;
+}
+
+extern "C" void QCALLTYPE ExceptionNative_ThrowEntryPointNotFoundException(
+    MethodTable* pTargetClass,
+    MethodTable* pInterfaceMT,
+    MethodDesc* pInterfaceMD)
+{
+    QCALL_CONTRACT;
+
+    BEGIN_QCALL;
+
+    ThrowEntryPointNotFoundException(pTargetClass, pInterfaceMT, pInterfaceMD);
+
+    END_QCALL;
+}
+
 extern "C" void QCALLTYPE Buffer_Clear(void *dst, size_t length)
 {
     QCALL_CONTRACT;

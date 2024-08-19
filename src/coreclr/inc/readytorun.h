@@ -408,9 +408,7 @@ enum ReadyToRunHelper
     READYTORUN_HELPER_DblRem                    = 0xE0,
     READYTORUN_HELPER_FltRem                    = 0xE1,
 
-    // These two helpers can be removed once MINIMUM_READYTORUN_MAJOR_VERSION is 10+
-    // alongside the CORINFO_HELP_FLTROUND/CORINFO_HELP_DBLROUND
-    // counterparts and all related code.
+    // Unused since READYTORUN_MAJOR_VERSION 10.0
     READYTORUN_HELPER_DblRound                  = 0xE2,
     READYTORUN_HELPER_FltRound                  = 0xE3,
 

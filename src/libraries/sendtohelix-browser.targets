@@ -247,6 +247,8 @@
         <!-- VSF is emulated on the UI thread and all calls are slow because they are marshaled -->
         <Timeout Condition="'%(FileName)' == 'System.IO.FileSystem.Tests' and '$(WasmEnableThreads)' == 'true'">01:20:00</Timeout>
         <Timeout Condition="'%(FileName)' == 'System.Private.Xml.Tests' and '$(WasmEnableThreads)' == 'true'">01:20:00</Timeout>
+        <Timeout Condition="'%(FileName)' == 'Microsoft.VisualBasic.Core.Tests' and '$(WasmEnableThreads)' == 'true'">01:20:00</Timeout>
+        <Timeout Condition="'%(FileName)' == 'System.IO.Tests' and '$(WasmEnableThreads)' == 'true'">01:20:00</Timeout>
       </HelixWorkItem>
     </ItemGroup>
 

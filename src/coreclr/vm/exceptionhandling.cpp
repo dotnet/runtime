@@ -5426,6 +5426,19 @@ BOOL IsSafeToCallExecutionManager()
 
 BOOL IsSafeToHandleHardwareException(PCONTEXT contextRecord, PEXCEPTION_RECORD exceptionRecord)
 {
+#ifdef FEATURE_EMULATE_SINGLESTEP
+    Thread *pThread = GetThreadNULLOk();
+    if (pThread && pThread->IsSingleStepEnabled() &&
+        exceptionRecord->ExceptionCode != STATUS_BREAKPOINT &&
+        exceptionRecord->ExceptionCode != STATUS_SINGLE_STEP &&
+        exceptionRecord->ExceptionCode != STATUS_STACK_OVERFLOW)
+    {
+        // tried to consolidate the code and only call HandleSingleStep here but
+        // for some reason not investigated the debugger tests failed with this change
+        pThread->HandleSingleStep(contextRecord, exceptionRecord->ExceptionCode);
+    }
+#endif
+
     PCODE controlPc = GetIP(contextRecord);
 
     if (IsIPInWriteBarrierCodeCopy(controlPc))
@@ -7678,7 +7691,7 @@ size_t GetSSPForFrameOnCurrentStack(TADDR ip)
 {
     size_t *targetSSP = (size_t *)_rdsspq();
     // The SSP we search is pointing to the return address of the frame represented
-    // by the passed in IP. So we search for the instruction pointer from 
+    // by the passed in IP. So we search for the instruction pointer from
     // the context and return one slot up from there.
     if (targetSSP != NULL)
     {
@@ -7869,10 +7882,10 @@ extern "C" void * QCALLTYPE CallCatchFunclet(QCall::ObjectHandleOnStack exceptio
         pvRegDisplay->pCurrentContext->Lr = GetIP(pvRegDisplay->pCurrentContext);
 #elif defined(HOST_ARM)
         pvRegDisplay->pCurrentContext->Lr = GetIP(pvRegDisplay->pCurrentContext);
-#elif defined(HOST_RISCV) || defined(HOST_LOONGARCH64)
+#elif defined(HOST_RISCV64) || defined(HOST_LOONGARCH64)
         pvRegDisplay->pCurrentContext->Ra = GetIP(pvRegDisplay->pCurrentContext);
 #endif
-        SetIP(pvRegDisplay->pCurrentContext, (PCODE)(void (*)(Object*))RealCOMPlusThrow);
+        SetIP(pvRegDisplay->pCurrentContext, (PCODE)(void (*)(Object*))PropagateExceptionThroughNativeFrames);
 #if defined(HOST_AMD64)
         SetSP(pvRegDisplay->pCurrentContext, targetSp - 8);
 #elif defined(HOST_X86)

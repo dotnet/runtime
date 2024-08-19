@@ -139,7 +139,9 @@ void InvokeUtil::CopyArg(TypeHandle th, PVOID argRef, ArgDestination *argDest) {
 
     switch (type) {
 #ifdef TARGET_RISCV64
-    // RISC-V call convention requires signed ints sign-extended (unsigned -- zero-extended) to register width
+    // RISC-V call convention requires integer scalars narrower than XLEN bits to be widened according to the sign
+    // of their type up to 32 bits, then sign-extended to XLEN bits. In practice it means type-extending all ints
+    // except `uint` which is sign-extended regardless.
     case ELEMENT_TYPE_BOOLEAN:
     case ELEMENT_TYPE_U1:
         _ASSERTE(argRef != NULL);
@@ -164,18 +166,13 @@ void InvokeUtil::CopyArg(TypeHandle th, PVOID argRef, ArgDestination *argDest) {
 
     case ELEMENT_TYPE_R4:
         _ASSERTE(argRef != NULL);
-        // NaN-box the register value or single-float instructions will treat it as NaN
-        *(UINT64 *)pArgDst = 0xffffffff00000000L | *(UINT32 *)argRef;
+        argDest->CopySingleFloatToRegister(argRef);
         break;
 
     case ELEMENT_TYPE_I4:
-        _ASSERTE(argRef != NULL);
-        *(INT64 *)pArgDst = *(INT32 *)argRef;
-        break;
-
     case ELEMENT_TYPE_U4:
         _ASSERTE(argRef != NULL);
-        *(UINT64 *)pArgDst = *(UINT32 *)argRef;
+        *(INT64 *)pArgDst = *(INT32 *)argRef;
         break;
 
 #else // !TARGET_RISCV64

@@ -25,8 +25,6 @@ namespace System.Formats.Nrbf;
 [DebuggerDisplay("{Value}")]
 public abstract class PrimitiveTypeRecord<T> : PrimitiveTypeRecord
 {
-    private static TypeName? s_typeName;
-
     private protected PrimitiveTypeRecord(T value) => Value = value;
 
     /// <summary>
@@ -36,8 +34,7 @@ public abstract class PrimitiveTypeRecord<T> : PrimitiveTypeRecord
     public new T Value { get; }
 
     /// <inheritdoc />
-    public override TypeName TypeName
-        => s_typeName ??= TypeName.Parse(typeof(T).FullName.AsSpan()).WithCoreLibAssemblyName();
+    public override TypeName TypeName => TypeNameHelpers.GetPrimitiveTypeName(TypeNameHelpers.GetPrimitiveType<T>());
 
     internal override object? GetValue() => Value;
 }

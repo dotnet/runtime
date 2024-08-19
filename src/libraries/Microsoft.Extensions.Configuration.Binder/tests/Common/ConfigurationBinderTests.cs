@@ -1523,6 +1523,27 @@ if (!System.Diagnostics.Debugger.IsAttached) { System.Diagnostics.Debugger.Launc
             Assert.Equal("the color is Green", options.Color);
         }
 
+        /// <summary>
+        /// This test to ensure the binding of the constructor/property array is done once and not duplicating values in the array.
+        /// </summary>
+        [Fact]
+        public void CanBindOnParametersAndProperties_RecordWithArrayConstructorParameter()
+        {
+            var dic = new Dictionary<string, string>
+            {
+                { "Array:0", "a" },
+                { "Array:1", "b" },
+                { "Array:2", "c" },
+            };
+
+            var configurationBuilder = new ConfigurationBuilder();
+            configurationBuilder.AddInMemoryCollection(dic);
+            var config = configurationBuilder.Build();
+
+            var options = config.Get<RecordWithArrayParameter>();
+            Assert.Equal(new string[] { "a", "b", "c" }, options.Array);
+        }
+
         [Fact]
         public void CanBindReadonlyRecordStructOptions()
         {
@@ -2525,7 +2546,7 @@ if (!System.Diagnostics.Debugger.IsAttached) { System.Diagnostics.Debugger.Launc
         {
             /// the source generator will bind to the most derived property only.
             /// the reflection binder will bind the same data to all properties (including hidden).
-            
+
             var config = TestHelpers.GetConfigurationFromJsonString("""
                 {
                     "A": "AVal",
@@ -2580,6 +2601,28 @@ if (!System.Diagnostics.Debugger.IsAttached) { System.Diagnostics.Debugger.Launc
 
             Assert.Equal(53, obj.X);
             Assert.Equal(53, obj.XBase);
+        }
+
+        [Fact]
+        public void CanGetEnumerableNotCollection()
+        {
+            var builder = new ConfigurationBuilder();
+            builder.AddInMemoryCollection(new KeyValuePair<string, string?>[]
+            {
+                new("Names", "John,Jane,Stephen"),
+                new("Enabled", "true"),
+                new("Keywords:1", "new"),
+                new("Keywords:2", "class"),
+                new("Keywords:3", "rosebud")
+            });
+
+            var config = builder.Build();
+
+            var result = config.Get<EnumerableNotCollection>();
+
+            Assert.Equal("John,Jane,Stephen", result.Names);
+            Assert.True(result.Enabled);
+            Assert.Equal(new [] { "new", "class", "rosebud"}, result.Keywords);
         }
     }
 }
