@@ -31,7 +31,7 @@ enum EnumCustomMarshalerMethods
 };
 
 
-class CustomMarshalerInfo
+class CustomMarshalerInfo final
 {
 public:
     // Constructor and destructor.
@@ -46,7 +46,6 @@ public:
     // Helpers used to invoke the different methods in the ICustomMarshaler interface.
     OBJECTREF           InvokeMarshalNativeToManagedMeth(void* pNative);
     void*               InvokeMarshalManagedToNativeMeth(OBJECTREF MngObj);
-    void                InvokeCleanUpNativeMeth(void* pNative);
     void                InvokeCleanUpManagedMeth(OBJECTREF MngObj);
 
     // Accessors.
@@ -115,10 +114,10 @@ typedef SList<CustomMarshalerInfo, true> CMINFOLIST;
 
 class Assembly;
 
-class EECMHelperHashtableKey
+class EECMInfoHashtableKey
 {
 public:
-    EECMHelperHashtableKey(DWORD cMarshalerTypeNameBytes, LPCSTR strMarshalerTypeName, DWORD cCookieStrBytes, LPCSTR strCookie, Instantiation instantiation, Assembly* invokingAssembly)
+    EECMInfoHashtableKey(DWORD cMarshalerTypeNameBytes, LPCSTR strMarshalerTypeName, DWORD cCookieStrBytes, LPCSTR strCookie, Instantiation instantiation, Assembly* invokingAssembly)
     : m_cMarshalerTypeNameBytes(cMarshalerTypeNameBytes)
     , m_strMarshalerTypeName(strMarshalerTypeName)
     , m_cCookieStrBytes(cCookieStrBytes)
@@ -169,74 +168,18 @@ public:
 };
 
 
-class EECMHelperHashtableHelper
+class EECMInfoHashtableHelper
 {
 public:
-    static EEHashEntry_t*  AllocateEntry(EECMHelperHashtableKey* pKey, BOOL bDeepCopy, AllocationHeap Heap);
+    static EEHashEntry_t*  AllocateEntry(EECMInfoHashtableKey* pKey, BOOL bDeepCopy, AllocationHeap Heap);
     static void            DeleteEntry(EEHashEntry_t* pEntry, AllocationHeap Heap);
-    static BOOL            CompareKeys(EEHashEntry_t* pEntry, EECMHelperHashtableKey* pKey);
-    static DWORD           Hash(EECMHelperHashtableKey* pKey);
+    static BOOL            CompareKeys(EEHashEntry_t* pEntry, EECMInfoHashtableKey* pKey);
+    static DWORD           Hash(EECMInfoHashtableKey* pKey);
 };
 
 
-typedef EEHashTable<EECMHelperHashtableKey*, EECMHelperHashtableHelper, TRUE> EECMHelperHashTable;
+typedef EEHashTable<EECMInfoHashtableKey*, EECMInfoHashtableHelper, TRUE> EECMInfoHashTable;
 
-
-class CustomMarshalerHelper final
-{
-public:
-    CustomMarshalerHelper(CustomMarshalerInfo* pCMInfo)
-        : m_pCMInfo(pCMInfo)
-    {
-        WRAPPER_NO_CONTRACT;
-    }
-    
-    // CustomMarshalerHelpers are always allocated on the loader heap so we need to redefine
-    // the new and delete operators to ensure this.
-    void *operator new(size_t size, LoaderHeap *pHeap);
-    void operator delete(void* pMem);
-
-    // Helpers used to invoke the different methods in the ICustomMarshaler interface.
-    OBJECTREF           InvokeMarshalNativeToManagedMeth(void* pNative);
-    void*               InvokeMarshalManagedToNativeMeth(OBJECTREF MngObj);
-    void                InvokeCleanUpNativeMeth(void* pNative);
-    void                InvokeCleanUpManagedMeth(OBJECTREF MngObj);
-
-    // Accessors.
-    int GetNativeSize()
-    {
-        WRAPPER_NO_CONTRACT;
-        return GetCustomMarshalerInfo()->GetNativeSize();
-    }
-
-    int GetManagedSize()
-    {
-        WRAPPER_NO_CONTRACT;
-        return GetCustomMarshalerInfo()->GetManagedSize();
-    }
-
-    TypeHandle GetManagedType()
-    {
-        WRAPPER_NO_CONTRACT;
-        return GetCustomMarshalerInfo()->GetManagedType();
-    }
-
-    BOOL IsDataByValue()
-    {
-        WRAPPER_NO_CONTRACT;
-        return GetCustomMarshalerInfo()->IsDataByValue();
-    }
-
-    // Helper function to retrieve the custom marshaler object.
-    CustomMarshalerInfo* GetCustomMarshalerInfo()
-    {
-        return m_pCMInfo;
-    }
-
-private:
-    CustomMarshalerInfo* m_pCMInfo;
-};
-
-extern "C" void QCALLTYPE CustomMarshaler_GetMarshalerObject(CustomMarshalerHelper* pCMHelper, QCall::ObjectHandleOnStack retObject);
+extern "C" void QCALLTYPE CustomMarshaler_GetMarshalerObject(CustomMarshalerInfo* pCMHelper, QCall::ObjectHandleOnStack retObject);
 
 #endif // _CUSTOMMARSHALERINFO_H_

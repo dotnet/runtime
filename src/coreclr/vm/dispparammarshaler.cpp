@@ -556,7 +556,7 @@ void DispParamCustomMarshaler::MarshalNativeToManaged(VARIANT *pSrcVar, OBJECTRE
     IUnknown *pUnk = bByref ? *V_UNKNOWNREF(pSrcVar) : V_UNKNOWN(pSrcVar);
 
     // Marshal the contents of the VARIANT using the custom marshaler.
-    *pDestObj = m_pCMHelper->InvokeMarshalNativeToManagedMeth(pUnk);
+    *pDestObj = m_pCMInfo->InvokeMarshalNativeToManagedMeth(pUnk);
 }
 
 void DispParamCustomMarshaler::MarshalManagedToNative(OBJECTREF *pSrcObj, VARIANT *pDestVar)
@@ -577,7 +577,7 @@ void DispParamCustomMarshaler::MarshalManagedToNative(OBJECTREF *pSrcObj, VARIAN
     SafeVariantClear(pDestVar);
 
     // Invoke the MarshalManagedToNative method.
-    pUnk = (IUnknown*)m_pCMHelper->InvokeMarshalManagedToNativeMeth(*pSrcObj);
+    pUnk = (IUnknown*)m_pCMInfo->InvokeMarshalManagedToNativeMeth(*pSrcObj);
     if (!pUnk)
     {
         // Put a null IDispatch pointer in the VARIANT.
@@ -631,7 +631,7 @@ void DispParamCustomMarshaler::MarshalManagedToNativeRef(OBJECTREF *pSrcObj, VAR
     SafeVariantClear(&vtmp);
 
     // Convert the object using the custom marshaler.
-    V_UNKNOWN(&vtmp) = (IUnknown*)m_pCMHelper->InvokeMarshalManagedToNativeMeth(*pSrcObj);
+    V_UNKNOWN(&vtmp) = (IUnknown*)m_pCMInfo->InvokeMarshalManagedToNativeMeth(*pSrcObj);
     V_VT(&vtmp) = m_vt;
 
     // Call VariantChangeType if required.
@@ -661,5 +661,5 @@ void DispParamCustomMarshaler::CleanUpManaged(OBJECTREF *pObj)
         MODE_COOPERATIVE;
     }
     CONTRACTL_END;
-    m_pCMHelper->InvokeCleanUpManagedMeth(*pObj);
+    m_pCMInfo->InvokeCleanUpManagedMeth(*pObj);
 }

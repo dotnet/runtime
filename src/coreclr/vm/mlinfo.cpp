@@ -387,9 +387,9 @@ namespace
 //==========================================================================
 // Set's up the custom marshaler information.
 //==========================================================================
-CustomMarshalerHelper *SetupCustomMarshalerHelper(LPCUTF8 strMarshalerTypeName, DWORD cMarshalerTypeNameBytes, LPCUTF8 strCookie, DWORD cCookieStrBytes, Assembly *pAssembly, TypeHandle hndManagedType)
+CustomMarshalerInfo *SetupCustomMarshalerInfo(LPCUTF8 strMarshalerTypeName, DWORD cMarshalerTypeNameBytes, LPCUTF8 strCookie, DWORD cCookieStrBytes, Assembly *pAssembly, TypeHandle hndManagedType)
 {
-    CONTRACT (CustomMarshalerHelper*)
+    CONTRACT (CustomMarshalerInfo*)
     {
         STANDARD_VM_CHECK;
         PRECONDITION(CheckPointer(pAssembly));
@@ -403,7 +403,7 @@ CustomMarshalerHelper *SetupCustomMarshalerHelper(LPCUTF8 strMarshalerTypeName, 
     pMarshalingData = pAssembly->GetLoaderAllocator()->GetMarshalingData();
 
     // Retrieve the custom marshaler helper from the EE marshaling data.
-    RETURN pMarshalingData->GetCustomMarshalerHelper(pAssembly, hndManagedType, strMarshalerTypeName, cMarshalerTypeNameBytes, strCookie, cCookieStrBytes);
+    RETURN pMarshalingData->GetCustomMarshalerInfo(pAssembly, hndManagedType, strMarshalerTypeName, cMarshalerTypeNameBytes, strCookie, cCookieStrBytes);
 }
 
 namespace
@@ -821,7 +821,7 @@ EEMarshalingData::EEMarshalingData(LoaderAllocator* pAllocator, CrstBase *pCrst)
 
     LockOwner lock = {pCrst, IsOwnerOfCrst};
     m_structILStubCache.Init(INITIAL_NUM_STRUCT_ILSTUB_HASHTABLE_BUCKETS, &lock);
-    m_CMHelperHashtable.Init(INITIAL_NUM_CMHELPER_HASHTABLE_BUCKETS, &lock);
+    m_CMInfoHashTable.Init(INITIAL_NUM_CMHELPER_HASHTABLE_BUCKETS, &lock);
 }
 
 
@@ -894,9 +894,9 @@ void EEMarshalingData::CacheStructILStub(MethodTable* pMT, MethodDesc* pStubMD)
 }
 
 
-CustomMarshalerHelper *EEMarshalingData::GetCustomMarshalerHelper(Assembly *pAssembly, TypeHandle hndManagedType, LPCUTF8 strMarshalerTypeName, DWORD cMarshalerTypeNameBytes, LPCUTF8 strCookie, DWORD cCookieStrBytes)
+CustomMarshalerInfo *EEMarshalingData::GetCustomMarshalerInfo(Assembly *pAssembly, TypeHandle hndManagedType, LPCUTF8 strMarshalerTypeName, DWORD cMarshalerTypeNameBytes, LPCUTF8 strCookie, DWORD cCookieStrBytes)
 {
-    CONTRACT (CustomMarshalerHelper*)
+    CONTRACT (CustomMarshalerInfo*)
     {
         THROWS;
         GC_TRIGGERS;
@@ -907,18 +907,17 @@ CustomMarshalerHelper *EEMarshalingData::GetCustomMarshalerHelper(Assembly *pAss
     }
     CONTRACT_END;
 
-    CustomMarshalerHelper *pCMHelper = NULL;
-    CustomMarshalerHelper* pNewCMHelper = NULL;
+    CustomMarshalerInfo *pCMInfo = NULL;
     NewHolder<CustomMarshalerInfo> pNewCMInfo(NULL);
 
     TypeHandle hndCustomMarshalerType;
 
     // Create the key that will be used to lookup in the hashtable.
-    EECMHelperHashtableKey Key(cMarshalerTypeNameBytes, strMarshalerTypeName, cCookieStrBytes, strCookie, hndManagedType.GetInstantiation(), pAssembly);
+    EECMInfoHashtableKey Key(cMarshalerTypeNameBytes, strMarshalerTypeName, cCookieStrBytes, strCookie, hndManagedType.GetInstantiation(), pAssembly);
 
     // Lookup the custom marshaler helper in the hashtable.
-    if (m_CMHelperHashtable.GetValue(&Key, (HashDatum*)&pCMHelper))
-        RETURN pCMHelper;
+    if (m_CMInfoHashTable.GetValue(&Key, (HashDatum*)&pCMInfo))
+        RETURN pCMInfo;
 
     {
         GCX_COOP();
@@ -940,22 +939,19 @@ CustomMarshalerHelper *EEMarshalingData::GetCustomMarshalerHelper(Assembly *pAss
 
         // Create the custom marshaler info in the specified heap.
         pNewCMInfo = new (m_pHeap) CustomMarshalerInfo(m_pAllocator, hndCustomMarshalerType, hndManagedType, strCookie, cCookieStrBytes);
-
-        // Create the custom marshaler helper in the specified heap.
-        pNewCMHelper = new (m_pHeap) CustomMarshalerHelper(pNewCMInfo);
     }
 
     {
         CrstHolder lock(m_lock);
 
         // Verify that the custom marshaler helper has not already been added by another thread.
-        if (m_CMHelperHashtable.GetValue(&Key, (HashDatum*)&pCMHelper))
+        if (m_CMInfoHashTable.GetValue(&Key, (HashDatum*)&pCMInfo))
         {
-            RETURN pCMHelper;
+            RETURN pCMInfo;
         }
 
         // Add the custom marshaler helper to the hash table.
-        m_CMHelperHashtable.InsertValue(&Key, pNewCMHelper, FALSE);
+        m_CMInfoHashTable.InsertValue(&Key, pNewCMInfo, FALSE);
 
         // If we create the CM info, then add it to the linked list.
         if (pNewCMInfo)
@@ -967,7 +963,7 @@ CustomMarshalerHelper *EEMarshalingData::GetCustomMarshalerHelper(Assembly *pAss
         // Release the lock and return the custom marshaler info.
     }
 
-    RETURN pNewCMHelper;
+    RETURN pNewCMInfo;
 }
 
 #ifdef FEATURE_COMINTEROP
@@ -1192,7 +1188,7 @@ MarshalInfo::MarshalInfo(Module* pModule,
     m_ms                            = ms;
     m_fAnsi                         = (ms == MARSHAL_SCENARIO_NDIRECT || ms == MARSHAL_SCENARIO_FIELD) && (nlType == nltAnsi);
     m_nativeArgSize                 = 0;
-    m_pCMHelper                     = NULL;
+    m_pCMInfo                     = NULL;
     m_CMVt                          = VT_EMPTY;
     m_args.m_pMarshalInfo           = this;
     m_args.m_pMT                    = NULL;
@@ -1389,7 +1385,7 @@ MarshalInfo::MarshalInfo(Module* pModule,
                 IfFailGoto(E_FAIL, lFail);
         }
 
-        // Set m_type to MARSHAL_TYPE_UNKNOWN in case SetupCustomMarshalerHelper throws.
+        // Set m_type to MARSHAL_TYPE_UNKNOWN in case SetupCustomMarshalerInfo throws.
         m_type = MARSHAL_TYPE_UNKNOWN;
 
         if (fLoadCustomMarshal)
@@ -1399,7 +1395,7 @@ MarshalInfo::MarshalInfo(Module* pModule,
 
             if (!fEmitsIL)
             {
-                m_pCMHelper = SetupCustomMarshalerHelper(ParamInfo.m_strCMMarshalerTypeName,
+                m_pCMInfo = SetupCustomMarshalerInfo(ParamInfo.m_strCMMarshalerTypeName,
                                                         ParamInfo.m_cCMMarshalerTypeNameBytes,
                                                         ParamInfo.m_strCMCookie,
                                                         ParamInfo.m_cCMCookieStrBytes,
@@ -1408,7 +1404,7 @@ MarshalInfo::MarshalInfo(Module* pModule,
             }
             else
             {
-                m_pCMHelper = NULL;
+                m_pCMInfo = NULL;
                 MethodDesc* pMDforModule = pMD;
                 if (pMD->IsILStub())
                 {
@@ -1887,7 +1883,7 @@ MarshalInfo::MarshalInfo(Module* pModule,
                     {
                         if (!fEmitsIL)
                         {
-                            m_pCMHelper = SetupCustomMarshalerHelper(ENUMERATOR_TO_ENUM_VARIANT_CM_NAME,
+                            m_pCMInfo = SetupCustomMarshalerInfo(ENUMERATOR_TO_ENUM_VARIANT_CM_NAME,
                                                                      ENUMERATOR_TO_ENUM_VARIANT_CM_NAME_LEN,
                                                                      ENUMERATOR_TO_ENUM_VARIANT_CM_COOKIE,
                                                                      ENUMERATOR_TO_ENUM_VARIANT_CM_COOKIE_LEN,
@@ -1895,7 +1891,7 @@ MarshalInfo::MarshalInfo(Module* pModule,
                         }
                         else
                         {
-                            m_pCMHelper = NULL;
+                            m_pCMInfo = NULL;
                             MethodDesc* pMDforModule = pMD;
                             if (pMD->IsILStub())
                             {
@@ -3562,7 +3558,7 @@ DispParamMarshaler *MarshalInfo::GenerateDispParamMarshaler()
             break;
 
         case MARSHAL_TYPE_REFERENCECUSTOMMARSHALER:
-            pDispParamMarshaler = new DispParamCustomMarshaler(m_pCMHelper, m_CMVt);
+            pDispParamMarshaler = new DispParamCustomMarshaler(m_pCMInfo, m_CMVt);
             break;
     }
 
@@ -4018,7 +4014,7 @@ extern "C" void* QCALLTYPE StubHelpers_CreateCustomMarshalerHelper(MethodDesc* p
 {
     QCALL_CONTRACT;
 
-    CustomMarshalerHelper* pCMHelper = NULL;
+    CustomMarshalerInfo* pCMInfo = NULL;
 
     BEGIN_QCALL;
 
@@ -4029,7 +4025,7 @@ extern "C" void* QCALLTYPE StubHelpers_CreateCustomMarshalerHelper(MethodDesc* p
     if (!hndManagedType.IsTypeDesc() &&
         IsTypeRefOrDef(g_CollectionsEnumeratorClassName, hndManagedType.GetModule(), hndManagedType.GetCl()))
     {
-        pCMHelper = SetupCustomMarshalerHelper(ENUMERATOR_TO_ENUM_VARIANT_CM_NAME,
+        pCMInfo = SetupCustomMarshalerInfo(ENUMERATOR_TO_ENUM_VARIANT_CM_NAME,
                                                ENUMERATOR_TO_ENUM_VARIANT_CM_NAME_LEN,
                                                ENUMERATOR_TO_ENUM_VARIANT_CM_COOKIE,
                                                ENUMERATOR_TO_ENUM_VARIANT_CM_COOKIE_LEN,
@@ -4053,7 +4049,7 @@ extern "C" void* QCALLTYPE StubHelpers_CreateCustomMarshalerHelper(MethodDesc* p
         CONSISTENCY_CHECK(ParamInfo.m_NativeType == NATIVE_TYPE_CUSTOMMARSHALER);
 
         // Set up the custom marshaler info.
-        pCMHelper = SetupCustomMarshalerHelper(ParamInfo.m_strCMMarshalerTypeName,
+        pCMInfo = SetupCustomMarshalerInfo(ParamInfo.m_strCMMarshalerTypeName,
                                                 ParamInfo.m_cCMMarshalerTypeNameBytes,
                                                 ParamInfo.m_strCMCookie,
                                                 ParamInfo.m_cCMCookieStrBytes,
@@ -4063,6 +4059,6 @@ extern "C" void* QCALLTYPE StubHelpers_CreateCustomMarshalerHelper(MethodDesc* p
 
     END_QCALL;
 
-    return (void*)pCMHelper;
+    return (void*)pCMInfo;
 }
 

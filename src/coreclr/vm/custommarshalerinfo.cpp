@@ -230,35 +230,6 @@ void *CustomMarshalerInfo::InvokeMarshalManagedToNativeMeth(OBJECTREF MngObj)
     return RetVal;
 }
 
-
-void CustomMarshalerInfo::InvokeCleanUpNativeMeth(void *pNative)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_COOPERATIVE;
-        PRECONDITION(CheckPointer(pNative, NULL_OK));
-    }
-    CONTRACTL_END;
-
-    if (!pNative)
-        return;
-
-    OBJECTREF customMarshaler = m_pLoaderAllocator->GetHandleValue(m_hndCustomMarshaler);
-    GCPROTECT_BEGIN (customMarshaler);
-    MethodDescCallSite cleanUpNativeData(m_pCleanUpNativeDataMD, &customMarshaler);
-
-    ARG_SLOT Args[] = {
-        ObjToArgSlot(customMarshaler),
-        PtrToArgSlot(pNative)
-    };
-
-    cleanUpNativeData.Call(Args);
-    GCPROTECT_END();
-}
-
-
 void CustomMarshalerInfo::InvokeCleanUpManagedMeth(OBJECTREF MngObj)
 {
     CONTRACTL
@@ -361,7 +332,7 @@ MethodDesc *CustomMarshalerInfo::GetCustomMarshalerMD(EnumCustomMarshalerMethods
 // Implementation of the custom marshaler hashtable helper.
 //==========================================================================
 
-EEHashEntry_t * EECMHelperHashtableHelper::AllocateEntry(EECMHelperHashtableKey *pKey, BOOL bDeepCopy, void* pHeap)
+EEHashEntry_t * EECMInfoHashtableHelper::AllocateEntry(EECMInfoHashtableKey *pKey, BOOL bDeepCopy, void* pHeap)
 {
     CONTRACTL
     {
@@ -376,11 +347,11 @@ EEHashEntry_t * EECMHelperHashtableHelper::AllocateEntry(EECMHelperHashtableKey 
 
     if (bDeepCopy)
     {
-        S_SIZE_T cbEntry = S_SIZE_T(sizeof(EEHashEntry) - 1 + sizeof(EECMHelperHashtableKey));
+        S_SIZE_T cbEntry = S_SIZE_T(sizeof(EEHashEntry) - 1 + sizeof(EECMInfoHashtableKey));
         cbEntry += S_SIZE_T(pKey->GetMarshalerTypeNameByteCount());
         cbEntry += S_SIZE_T(pKey->GetCookieStringByteCount());
         cbEntry += S_SIZE_T(pKey->GetMarshalerInstantiation().GetNumArgs()) * S_SIZE_T(sizeof(LPVOID));
-        cbEntry += S_SIZE_T(sizeof(LPVOID)); // For EECMHelperHashtableKey::m_invokingAssembly
+        cbEntry += S_SIZE_T(sizeof(LPVOID)); // For EECMInfoHashtableKey::m_invokingAssembly
 
         if (cbEntry.IsOverflow())
             return NULL;
@@ -389,11 +360,11 @@ EEHashEntry_t * EECMHelperHashtableHelper::AllocateEntry(EECMHelperHashtableKey 
         if (!pEntry)
             return NULL;
 
-        EECMHelperHashtableKey *pEntryKey = (EECMHelperHashtableKey *) pEntry->Key;
+        EECMInfoHashtableKey *pEntryKey = (EECMInfoHashtableKey *) pEntry->Key;
         pEntryKey->m_cMarshalerTypeNameBytes = pKey->GetMarshalerTypeNameByteCount();
-        pEntryKey->m_strMarshalerTypeName = (LPSTR) pEntry->Key + sizeof(EECMHelperHashtableKey);
+        pEntryKey->m_strMarshalerTypeName = (LPSTR) pEntry->Key + sizeof(EECMInfoHashtableKey);
         pEntryKey->m_cCookieStrBytes = pKey->GetCookieStringByteCount();
-        pEntryKey->m_strCookie = (LPSTR) pEntry->Key + sizeof(EECMHelperHashtableKey) + pEntryKey->m_cMarshalerTypeNameBytes;
+        pEntryKey->m_strCookie = (LPSTR) pEntry->Key + sizeof(EECMInfoHashtableKey) + pEntryKey->m_cMarshalerTypeNameBytes;
         pEntryKey->m_Instantiation = Instantiation(
             (TypeHandle *) (pEntryKey->m_strCookie + pEntryKey->m_cCookieStrBytes),
             pKey->GetMarshalerInstantiation().GetNumArgs());
@@ -406,11 +377,11 @@ EEHashEntry_t * EECMHelperHashtableHelper::AllocateEntry(EECMHelperHashtableKey 
     else
     {
         pEntry = (EEHashEntry_t *)
-            new (nothrow) BYTE[sizeof(EEHashEntry) - 1 + sizeof(EECMHelperHashtableKey)];
+            new (nothrow) BYTE[sizeof(EEHashEntry) - 1 + sizeof(EECMInfoHashtableKey)];
         if (!pEntry)
             return NULL;
 
-        EECMHelperHashtableKey *pEntryKey = (EECMHelperHashtableKey *) pEntry->Key;
+        EECMInfoHashtableKey *pEntryKey = (EECMInfoHashtableKey *) pEntry->Key;
         pEntryKey->m_cMarshalerTypeNameBytes = pKey->GetMarshalerTypeNameByteCount();
         pEntryKey->m_strMarshalerTypeName = pKey->GetMarshalerTypeName();
         pEntryKey->m_cCookieStrBytes = pKey->GetCookieStringByteCount();
@@ -423,7 +394,7 @@ EEHashEntry_t * EECMHelperHashtableHelper::AllocateEntry(EECMHelperHashtableKey 
 }
 
 
-void EECMHelperHashtableHelper::DeleteEntry(EEHashEntry_t *pEntry, void* pHeap)
+void EECMInfoHashtableHelper::DeleteEntry(EEHashEntry_t *pEntry, void* pHeap)
 {
     CONTRACTL
     {
@@ -438,7 +409,7 @@ void EECMHelperHashtableHelper::DeleteEntry(EEHashEntry_t *pEntry, void* pHeap)
 }
 
 
-BOOL EECMHelperHashtableHelper::CompareKeys(EEHashEntry_t *pEntry, EECMHelperHashtableKey *pKey)
+BOOL EECMInfoHashtableHelper::CompareKeys(EEHashEntry_t *pEntry, EECMInfoHashtableKey *pKey)
 {
     CONTRACTL
     {
@@ -450,7 +421,7 @@ BOOL EECMHelperHashtableHelper::CompareKeys(EEHashEntry_t *pEntry, EECMHelperHas
     }
     CONTRACTL_END;
 
-    EECMHelperHashtableKey *pEntryKey = (EECMHelperHashtableKey *) pEntry->Key;
+    EECMInfoHashtableKey *pEntryKey = (EECMInfoHashtableKey *) pEntry->Key;
 
     if (pEntryKey->GetMarshalerTypeNameByteCount() != pKey->GetMarshalerTypeNameByteCount())
         return FALSE;
@@ -481,7 +452,7 @@ BOOL EECMHelperHashtableHelper::CompareKeys(EEHashEntry_t *pEntry, EECMHelperHas
 }
 
 
-DWORD EECMHelperHashtableHelper::Hash(EECMHelperHashtableKey *pKey)
+DWORD EECMInfoHashtableHelper::Hash(EECMInfoHashtableKey *pKey)
 {
     WRAPPER_NO_CONTRACT;
 
@@ -491,113 +462,13 @@ DWORD EECMHelperHashtableHelper::Hash(EECMHelperHashtableKey *pKey)
         HashBytes((const BYTE *) pKey->GetMarshalerInstantiation().GetRawArgs(), pKey->GetMarshalerInstantiation().GetNumArgs() * sizeof(LPVOID)));
 }
 
-
-OBJECTREF CustomMarshalerHelper::InvokeMarshalNativeToManagedMeth(void *pNative)
-{
-    WRAPPER_NO_CONTRACT;
-    return GetCustomMarshalerInfo()->InvokeMarshalNativeToManagedMeth(pNative);
-}
-
-
-void *CustomMarshalerHelper::InvokeMarshalManagedToNativeMeth(OBJECTREF MngObj)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_COOPERATIVE;
-    }
-    CONTRACTL_END;
-
-    void *RetVal = NULL;
-
-    GCPROTECT_BEGIN(MngObj)
-    {
-        CustomMarshalerInfo *pCMInfo = GetCustomMarshalerInfo();
-        RetVal = pCMInfo->InvokeMarshalManagedToNativeMeth(MngObj);
-    }
-    GCPROTECT_END();
-
-    return RetVal;
-}
-
-
-void CustomMarshalerHelper::InvokeCleanUpNativeMeth(void *pNative)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_COOPERATIVE;
-    }
-    CONTRACTL_END;
-
-    OBJECTREF ExceptionObj = NULL;
-    GCPROTECT_BEGIN(ExceptionObj)
-    {
-        EX_TRY
-        {
-            GetCustomMarshalerInfo()->InvokeCleanUpNativeMeth(pNative);
-        }
-        EX_CATCH
-        {
-            ExceptionObj = GET_THROWABLE();
-        }
-        EX_END_CATCH(SwallowAllExceptions);
-    }
-    GCPROTECT_END();
-}
-
-
-void CustomMarshalerHelper::InvokeCleanUpManagedMeth(OBJECTREF MngObj)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_COOPERATIVE;
-    }
-    CONTRACTL_END;
-
-    GCPROTECT_BEGIN(MngObj)
-    {
-        CustomMarshalerInfo *pCMInfo = GetCustomMarshalerInfo();
-        pCMInfo->InvokeCleanUpManagedMeth(MngObj);
-    }
-    GCPROTECT_END();
-}
-
-
-void *CustomMarshalerHelper::operator new(size_t size, LoaderHeap *pHeap)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_NOTRIGGER;
-        MODE_ANY;
-        INJECT_FAULT(COMPlusThrowOM());
-        PRECONDITION(CheckPointer(pHeap));
-    }
-    CONTRACTL_END;
-
-    return pHeap->AllocMem(S_SIZE_T(sizeof(CustomMarshalerHelper)));
-}
-
-
-void CustomMarshalerHelper::operator delete(void *pMem)
-{
-    // Instances of this class are always allocated on the loader heap so
-    // the delete operator has nothing to do.
-    LIMITED_METHOD_CONTRACT;
-}
-
-extern "C" void QCALLTYPE CustomMarshaler_GetMarshalerObject(CustomMarshalerHelper* pCMHelper, QCall::ObjectHandleOnStack retObject)
+extern "C" void QCALLTYPE CustomMarshaler_GetMarshalerObject(CustomMarshalerInfo* pCMHelper, QCall::ObjectHandleOnStack retObject)
 {
     QCALL_CONTRACT;
     BEGIN_QCALL;
     GCX_COOP();
 
-    retObject.Set(pCMHelper->GetCustomMarshalerInfo()->GetCustomMarshaler());
+    retObject.Set(pCMHelper->GetCustomMarshaler());
 
     END_QCALL;
 }

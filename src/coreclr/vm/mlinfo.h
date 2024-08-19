@@ -260,9 +260,9 @@ public:
     void CacheStructILStub(MethodTable* pMT, MethodDesc* pStubMD);
 #endif
 
-    // This method returns the custom marshaling helper associated with the name cookie pair. If the
+    // This method returns the custom marshaling info associated with the name cookie pair. If the
     // CM info has not been created yet for this pair then it will be created and returned.
-    CustomMarshalerHelper *GetCustomMarshalerHelper(Assembly *pAssembly, TypeHandle hndManagedType, LPCUTF8 strMarshalerTypeName, DWORD cMarshalerTypeNameBytes, LPCUTF8 strCookie, DWORD cCookieStrBytes);
+    CustomMarshalerInfo *GetCustomMarshalerInfo(Assembly *pAssembly, TypeHandle hndManagedType, LPCUTF8 strMarshalerTypeName, DWORD cMarshalerTypeNameBytes, LPCUTF8 strCookie, DWORD cCookieStrBytes);
 
 #ifdef FEATURE_COMINTEROP
     // This method retrieves OLE_COLOR marshaling info.
@@ -271,7 +271,7 @@ public:
 
 private:
     EEPtrHashTable                      m_structILStubCache;
-    EECMHelperHashTable                 m_CMHelperHashtable;
+    EECMInfoHashTable                   m_CMInfoHashTable;
     LoaderAllocator*                    m_pAllocator;
     LoaderHeap*                         m_pHeap;
     CMINFOLIST                          m_pCMInfoList;
@@ -542,7 +542,7 @@ private:
 #endif // FEATURE_COMINTEROP
 
     // Information used by NT_CUSTOMMARSHALER.
-    CustomMarshalerHelper* m_pCMHelper;
+    CustomMarshalerInfo* m_pCMInfo;
     VARTYPE         m_CMVt;
 
     OverrideProcArgs  m_args;
