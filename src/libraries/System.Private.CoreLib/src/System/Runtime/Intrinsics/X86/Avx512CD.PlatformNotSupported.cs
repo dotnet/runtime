@@ -8,18 +8,25 @@ using System.Runtime.Intrinsics;
 
 namespace System.Runtime.Intrinsics.X86
 {
-    /// <summary>This class provides access to X86 AVX512CD hardware instructions via intrinsics</summary>
+    /// <summary>Provides access to X86 AVX512CD hardware instructions via intrinsics.</summary>
     [CLSCompliant(false)]
     public abstract class Avx512CD : Avx512F
     {
         internal Avx512CD() { }
 
+        /// <summary>Gets a value that indicates whether the APIs in this class are supported.</summary>
+        /// <value><see langword="true" /> if the APIs are supported; otherwise, <see langword="false" />.</value>
+        /// <remarks>A value of <see langword="false" /> indicates that the APIs will throw <see cref="PlatformNotSupportedException" />.</remarks>
         public static new bool IsSupported { [Intrinsic] get { return false; } }
 
+        /// <summary>Provides access to the x86 AVX512CD+VL hardware instructions via intrinsics.</summary>
         public new abstract class VL : Avx512F.VL
         {
             internal VL() { }
 
+            /// <summary>Gets a value that indicates whether the APIs in this class are supported.</summary>
+            /// <value><see langword="true" /> if the APIs are supported; otherwise, <see langword="false" />.</value>
+            /// <remarks>A value of <see langword="false" /> indicates that the APIs will throw <see cref="PlatformNotSupportedException" />.</remarks>
             public static new bool IsSupported { [Intrinsic] get { return false; } }
 
             /// <summary>
@@ -105,10 +112,14 @@ namespace System.Runtime.Intrinsics.X86
             public static Vector256<ulong> LeadingZeroCount(Vector256<ulong> value) { throw new PlatformNotSupportedException(); }
         }
 
+        /// <summary>Provides access to the x86 AVX512CD hardware instructions, that are only available to 64-bit processes, via intrinsics.</summary>
         public new abstract class X64 : Avx512F.X64
         {
             internal X64() { }
 
+            /// <summary>Gets a value that indicates whether the APIs in this class are supported.</summary>
+            /// <value><see langword="true" /> if the APIs are supported; otherwise, <see langword="false" />.</value>
+            /// <remarks>A value of <see langword="false" /> indicates that the APIs will throw <see cref="PlatformNotSupportedException" />.</remarks>
             public static new bool IsSupported { [Intrinsic] get { return false; } }
         }
 

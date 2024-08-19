@@ -6,15 +6,16 @@ using System.Runtime.CompilerServices;
 
 namespace System.Runtime.Intrinsics.Arm
 {
-    /// <summary>
-    /// This class provides access to the ARM AdvSIMD hardware instructions via intrinsics
-    /// </summary>
+    /// <summary>Provides access to the ARM AdvSIMD hardware instructions via intrinsics.</summary>
     [Intrinsic]
     [CLSCompliant(false)]
     public abstract class AdvSimd : ArmBase
     {
         internal AdvSimd() { }
 
+        /// <summary>Gets a value that indicates whether the APIs in this class are supported.</summary>
+        /// <value><see langword="true" /> if the APIs are supported; otherwise, <see langword="false" />.</value>
+        /// <remarks>A value of <see langword="false" /> indicates that the APIs will throw <see cref="PlatformNotSupportedException" />.</remarks>
         public static new bool IsSupported { get => IsSupported; }
 
         // [Intrinsic]
@@ -147,11 +148,15 @@ namespace System.Runtime.Intrinsics.Arm
         //     public static Vector64<float> MultiplySubtractScalar(Vector64<float> minuend, Vector64<float> left, Vector64<float> right) => MultiplySubtractScalar(minuend, left, right);
         // }
 
+        /// <summary>Provides access to the ARM AdvSIMD hardware instructions, that are only available to 64-bit processes, via intrinsics.</summary>
         [Intrinsic]
         public new abstract class Arm64 : ArmBase.Arm64
         {
             internal Arm64() { }
 
+            /// <summary>Gets a value that indicates whether the APIs in this class are supported.</summary>
+            /// <value><see langword="true" /> if the APIs are supported; otherwise, <see langword="false" />.</value>
+            /// <remarks>A value of <see langword="false" /> indicates that the APIs will throw <see cref="PlatformNotSupportedException" />.</remarks>
             public static new bool IsSupported { get => IsSupported; }
 
             /// <summary>

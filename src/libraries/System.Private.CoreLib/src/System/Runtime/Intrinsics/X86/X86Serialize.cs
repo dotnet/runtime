@@ -6,22 +6,27 @@ using System.Runtime.InteropServices;
 
 namespace System.Runtime.Intrinsics.X86
 {
-    /// <summary>
-    /// This class provides access to Intel SERIALIZE hardware instruction via intrinsics
-    /// </summary>
+    /// <summary>Provides access to the x86 SERIALIZE hardware instruction via intrinsics.</summary>
     [Intrinsic]
     [CLSCompliant(false)]
     public abstract class X86Serialize : X86Base
     {
         internal X86Serialize() { }
 
+        /// <summary>Gets a value that indicates whether the APIs in this class are supported.</summary>
+        /// <value><see langword="true" /> if the APIs are supported; otherwise, <see langword="false" />.</value>
+        /// <remarks>A value of <see langword="false" /> indicates that the APIs will throw <see cref="PlatformNotSupportedException" />.</remarks>
         public static new bool IsSupported { get => IsSupported; }
 
+        /// <summary>Provides access to the x86 SERIALIZE hardware instructions, that are only available to 64-bit processes, via intrinsics.</summary>
         [Intrinsic]
         public new abstract class X64 : X86Base.X64
         {
             internal X64() { }
 
+            /// <summary>Gets a value that indicates whether the APIs in this class are supported.</summary>
+            /// <value><see langword="true" /> if the APIs are supported; otherwise, <see langword="false" />.</value>
+            /// <remarks>A value of <see langword="false" /> indicates that the APIs will throw <see cref="PlatformNotSupportedException" />.</remarks>
             public static new bool IsSupported { get => IsSupported; }
         }
 
