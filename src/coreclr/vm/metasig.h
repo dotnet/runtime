@@ -449,12 +449,10 @@ DEFINE_METASIG_T(IM(Obj_EventArgs_RetVoid, j C(EVENT_ARGS), v))
 
 DEFINE_METASIG_T(IM(Exception_RetVoid, C(EXCEPTION), v))
 
-DEFINE_METASIG(IM(IntPtr_RetObj, I, j))
 DEFINE_METASIG(IM(IntPtr_RetVoid, I, v))
 DEFINE_METASIG_T(IM(RefGuid_RetIntPtr, r(g(GUID)), I))
 
 DEFINE_METASIG(IM(Obj_RetInt, j, i))
-DEFINE_METASIG(IM(Obj_RetIntPtr, j, I))
 DEFINE_METASIG(IM(Obj_RetVoid, j, v))
 DEFINE_METASIG(IM(Obj_RetObj, j, j))
 DEFINE_METASIG(IM(Obj_IntPtr_RetVoid, j I, v))

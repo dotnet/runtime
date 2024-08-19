@@ -50,9 +50,6 @@ public:
 private:
     LoaderAllocator*    m_pLoaderAllocator;
     LOADERHANDLE        m_hndCustomMarshaler;
-    MethodDesc*         m_pMarshalNativeToManagedMD;
-    MethodDesc*         m_pMarshalManagedToNativeMD;
-    MethodDesc*         m_pCleanUpManagedDataMD;
 };
 
 

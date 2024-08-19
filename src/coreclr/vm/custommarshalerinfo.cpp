@@ -21,9 +21,6 @@ namespace
 {
     enum class CustomMarshalerMethod
     {
-        MarshalNativeToManaged,
-        MarshalManagedToNative,
-        CleanUpManagedData,
         GetInstance
     };
 
@@ -46,22 +43,6 @@ namespace
 
         switch (Method)
         {
-            case CustomMarshalerMethod::MarshalNativeToManaged:
-                pMD = pMT->GetMethodDescForInterfaceMethod(
-                        CoreLibBinder::GetMethod(METHOD__ICUSTOM_MARSHALER__MARSHAL_NATIVE_TO_MANAGED),
-                        TRUE /* throwOnConflict */);
-                break;
-            case CustomMarshalerMethod::MarshalManagedToNative:
-                pMD = pMT->GetMethodDescForInterfaceMethod(
-                        CoreLibBinder::GetMethod(METHOD__ICUSTOM_MARSHALER__MARSHAL_MANAGED_TO_NATIVE),
-                        TRUE /* throwOnConflict */);
-                break;
-
-            case CustomMarshalerMethod::CleanUpManagedData:
-                pMD = pMT->GetMethodDescForInterfaceMethod(
-                            CoreLibBinder::GetMethod(METHOD__ICUSTOM_MARSHALER__CLEANUP_MANAGED_DATA),
-                            TRUE /* throwOnConflict */);
-                break;
             case CustomMarshalerMethod::GetInstance:
                 // Must look this up by name since it's static
                 pMD = MemberLoader::FindMethod(pMT, "GetInstance", &gsig_SM_Str_RetICustomMarshaler);
@@ -94,9 +75,6 @@ namespace
 CustomMarshalerInfo::CustomMarshalerInfo(LoaderAllocator *pLoaderAllocator, TypeHandle hndCustomMarshalerType, TypeHandle hndManagedType, LPCUTF8 strCookie, DWORD cCookieStrBytes)
 : m_pLoaderAllocator(pLoaderAllocator)
 , m_hndCustomMarshaler{}
-, m_pMarshalNativeToManagedMD(NULL)
-, m_pMarshalManagedToNativeMD(NULL)
-, m_pCleanUpManagedDataMD(NULL)
 {
     CONTRACTL
     {
@@ -166,12 +144,6 @@ CustomMarshalerInfo::CustomMarshalerInfo(LoaderAllocator *pLoaderAllocator, Type
                      IDS_EE_NOCUSTOMMARSHALER,
                      GetFullyQualifiedNameForClassW(hndCustomMarshalerType.GetMethodTable()));
     }
-    // Load the method desc's for all the methods in the ICustomMarshaler interface based on the type of the marshaler object.
-    TypeHandle customMarshalerObjType = CustomMarshalerObj->GetMethodTable();
-
-    m_pMarshalNativeToManagedMD = GetCustomMarshalerMD(CustomMarshalerMethod::MarshalNativeToManaged, customMarshalerObjType);
-    m_pMarshalManagedToNativeMD = GetCustomMarshalerMD(CustomMarshalerMethod::MarshalManagedToNative, customMarshalerObjType);
-    m_pCleanUpManagedDataMD = GetCustomMarshalerMD(CustomMarshalerMethod::CleanUpManagedData, customMarshalerObjType);
 
     m_hndCustomMarshaler = pLoaderAllocator->AllocateHandle(CustomMarshalerObj);
     GCPROTECT_END();
@@ -230,21 +202,25 @@ OBJECTREF CustomMarshalerInfo::InvokeMarshalNativeToManagedMeth(void *pNative)
     if (!pNative)
         return NULL;
 
-    OBJECTREF managedObject;
+    struct {
+        OBJECTREF managedObject;
+        OBJECTREF customMarshaler;
+    } gc = { NULL, m_pLoaderAllocator->GetHandleValue(m_hndCustomMarshaler) };
 
     OBJECTREF customMarshaler = m_pLoaderAllocator->GetHandleValue(m_hndCustomMarshaler);
-    GCPROTECT_BEGIN (customMarshaler);
-    MethodDescCallSite marshalNativeToManaged(m_pMarshalNativeToManagedMD, &customMarshaler);
+    GCPROTECT_BEGIN (gc);
+    MethodDescCallSite marshalNativeToManaged(METHOD__MNGD_REF_CUSTOM_MARSHALER__CONVERT_CONTENTS_TO_MANAGED);
 
     ARG_SLOT Args[] = {
-        ObjToArgSlot(customMarshaler),
-        PtrToArgSlot(pNative)
+        ObjToArgSlot(gc.customMarshaler),
+        PtrToArgSlot(&gc.managedObject),
+        PtrToArgSlot(&pNative)
     };
 
-    managedObject = marshalNativeToManaged.Call_RetOBJECTREF(Args);
+    marshalNativeToManaged.Call(Args);
     GCPROTECT_END ();
 
-    return managedObject;
+    return gc.managedObject;
 }
 
 
@@ -263,18 +239,22 @@ void *CustomMarshalerInfo::InvokeMarshalManagedToNativeMeth(OBJECTREF MngObj)
     if (!MngObj)
         return NULL;
 
-    GCPROTECT_BEGIN (MngObj);
+    struct {
+        OBJECTREF managedObject;
+        OBJECTREF customMarshaler;
+    } gc = { MngObj, m_pLoaderAllocator->GetHandleValue(m_hndCustomMarshaler) };
+
     OBJECTREF customMarshaler = m_pLoaderAllocator->GetHandleValue(m_hndCustomMarshaler);
-    GCPROTECT_BEGIN (customMarshaler);
-    MethodDescCallSite marshalManagedToNative(m_pMarshalManagedToNativeMD, &customMarshaler);
+    GCPROTECT_BEGIN (gc);
+    MethodDescCallSite marshalNativeToManaged(METHOD__MNGD_REF_CUSTOM_MARSHALER__CONVERT_CONTENTS_TO_NATIVE);
 
     ARG_SLOT Args[] = {
-        ObjToArgSlot(customMarshaler),
-        ObjToArgSlot(MngObj)
+        ObjToArgSlot(gc.customMarshaler),
+        PtrToArgSlot(&gc.managedObject),
+        PtrToArgSlot(&RetVal)
     };
 
-    RetVal = marshalManagedToNative.Call_RetLPVOID(Args);
-    GCPROTECT_END ();
+    marshalNativeToManaged.Call(Args);
     GCPROTECT_END ();
 
     return RetVal;
@@ -293,18 +273,24 @@ void CustomMarshalerInfo::InvokeCleanUpManagedMeth(OBJECTREF MngObj)
     if (!MngObj)
         return;
 
-    GCPROTECT_BEGIN (MngObj);
+    struct {
+        OBJECTREF managedObject;
+        OBJECTREF customMarshaler;
+    } gc = { MngObj, m_pLoaderAllocator->GetHandleValue(m_hndCustomMarshaler) };
+
     OBJECTREF customMarshaler = m_pLoaderAllocator->GetHandleValue(m_hndCustomMarshaler);
-    GCPROTECT_BEGIN (customMarshaler);
-    MethodDescCallSite cleanUpManagedData(m_pCleanUpManagedDataMD, &customMarshaler);
+    GCPROTECT_BEGIN (gc);
+    MethodDescCallSite marshalNativeToManaged(METHOD__MNGD_REF_CUSTOM_MARSHALER__CLEAR_MANAGED);
+
+    void* dummyNative = nullptr;
 
     ARG_SLOT Args[] = {
-        ObjToArgSlot(customMarshaler),
-        ObjToArgSlot(MngObj)
+        ObjToArgSlot(gc.customMarshaler),
+        PtrToArgSlot(&gc.managedObject),
+        PtrToArgSlot(&dummyNative)
     };
 
-    cleanUpManagedData.Call(Args);
-    GCPROTECT_END ();
+    marshalNativeToManaged.Call(Args);
     GCPROTECT_END ();
 }
 
