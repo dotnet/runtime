@@ -207,8 +207,9 @@
       <MsiPackageProjects Include="%(Msis.PackageProject)" />
     </ItemGroup>
 
-    <!-- We disable PackageValidation which runs because these projects import the repo's Directory.Build.props and Directory.Build.targets file. -->
-    <MSBuild Projects="@(MsiPackageProjects)" Properties="OutputPath=$(ArtifactsShippingPackagesDir);IncludeSymbols=false;EnablePackageValidation=false" Targets="restore;pack" />
+    <!-- Disable PackageValidation which runs because these projects import the repo's Directory.Build.props and Directory.Build.targets file.
+         Don't validate that the packages have a package readme file. -->
+    <MSBuild Projects="@(MsiPackageProjects)" Properties="OutputPath=$(ArtifactsShippingPackagesDir);IncludeSymbols=false;EnablePackageValidation=false;EnableDefaultPackageReadmeFile=false" Targets="restore;pack" />
   </Target>
 
   <!-- Target to create a single wixpack for signing -->
