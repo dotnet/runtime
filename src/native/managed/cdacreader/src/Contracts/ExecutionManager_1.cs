@@ -3,13 +3,31 @@
 
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 
 namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 
 internal readonly partial struct ExecutionManager_1 : IExecutionManager
 {
+    internal readonly Target _target;
+
+    // maps EECodeInfoHandle.Address (which is the CodeHeaderAddress) to the EECodeInfo
+    private readonly Dictionary<TargetPointer, EECodeInfo> _codeInfos = new();
+    private readonly Data.RangeSectionMap _topRangeSectionMap;
+    private readonly RangeSectionLookupAlgorithm _rangeSectionLookupAlgorithm;
+    private readonly EEJitManager _eeJitManager;
+    private readonly ReadyToRunJitManager _r2rJitManager;
+
+    public ExecutionManager_1(Target target, Data.RangeSectionMap topRangeSectionMap)
+    {
+        _target = target;
+        _topRangeSectionMap = topRangeSectionMap;
+        _rangeSectionLookupAlgorithm = RangeSectionLookupAlgorithm.Create(target);
+        NibbleMap nibbleMap = NibbleMap.Create(target);
+        _eeJitManager = new EEJitManager(target, nibbleMap);
+        _r2rJitManager = new ReadyToRunJitManager(target);
+    }
+
     private class EECodeInfo
     {
         private readonly int _codeHeaderOffset;
@@ -34,7 +52,8 @@ internal readonly partial struct ExecutionManager_1 : IExecutionManager
         public bool Valid => JitManagerAddress != TargetPointer.Null;
     }
 
-    // RangeFragment and RangeSection pointers have a collectible flag on the lowest bit
+    // "ExecutionManagerPointer": a pointer to a RangeFragment and RangeSection.
+    // The pointers have a collectible flag on the lowest bit
     private struct ExMgrPtr
     {
         public readonly TargetPointer RawValue;
@@ -66,19 +85,19 @@ internal readonly partial struct ExecutionManager_1 : IExecutionManager
         }
     }
 
-    private readonly struct TargetCodeManagerDescriptor
+    private readonly struct RangeSectionLookupAlgorithm
     {
-        public int MapLevels { get; }
-        public int BitsPerLevel { get; } = 8;
-        public int MaxSetBit { get; }
-        public int EntriesPerMapLevel { get; } = 256;
+        private int MapLevels { get; }
+        private int BitsPerLevel { get; } = 8;
+        private int MaxSetBit { get; }
+        private int EntriesPerMapLevel { get; } = 256;
 
-        private TargetCodeManagerDescriptor(int mapLevels, int maxSetBit)
+        private RangeSectionLookupAlgorithm(int mapLevels, int maxSetBit)
         {
             MapLevels = mapLevels;
             MaxSetBit = maxSetBit;
         }
-        public static TargetCodeManagerDescriptor Create(Target target)
+        public static RangeSectionLookupAlgorithm Create(Target target)
         {
             if (target.PointerSize == 4)
             {
@@ -93,28 +112,34 @@ internal readonly partial struct ExecutionManager_1 : IExecutionManager
                 throw new InvalidOperationException("Invalid pointer size");
             }
         }
-    }
 
+        // note: level is 1-indexed
+        private int EffectiveBitsForLevel(TargetCodePointer address, int level)
+        {
+            ulong addressAsInt = address.Value;
+            ulong addressBitsUsedInMap = addressAsInt >> (MaxSetBit + 1 - (MapLevels * BitsPerLevel));
+            ulong addressBitsShifted = addressBitsUsedInMap >> ((level - 1) * BitsPerLevel);
+            ulong addressBitsUsedInLevel = (ulong)(EntriesPerMapLevel - 1) & addressBitsShifted;
+            return checked((int)addressBitsUsedInLevel);
+        }
 
-    internal readonly Target _target;
-    // maps EECodeInfoHandle.Address (which is the CodeHeaderAddress) to the EECodeInfo
+        internal ExMgrPtr /*PTR_RangeSectionFragment*/ FindFragment(Target target, Data.RangeSectionMap topRangeSectionMap, TargetCodePointer jittedCodeAddress)
+        {
+            /* The outer levels are all pointer arrays to the next level down.  Level 1 is an array of pointers to a RangeSectionFragment */
+            int topLevelIndex = EffectiveBitsForLevel(jittedCodeAddress, MapLevels);
 
-    private readonly Dictionary<TargetPointer, EECodeInfo> _codeInfos = new();
-    private readonly Data.RangeSectionMap _topRangeSectionMap;
-    private readonly TargetCodeManagerDescriptor _targetCodeManagerDescriptor;
+            ExMgrPtr top = new ExMgrPtr(topRangeSectionMap.TopLevelData);
 
-
-    internal enum JitManagerKind
-    {
-        EEJitManager = 0,
-        ReadyToRunJitManager = 1,
-    }
-
-    public ExecutionManager_1(Target target, Data.RangeSectionMap topRangeSectionMap)
-    {
-        _target = target;
-        _topRangeSectionMap = topRangeSectionMap;
-        _targetCodeManagerDescriptor = TargetCodeManagerDescriptor.Create(target);
+            ExMgrPtr nextLevelAddress = top.Offset(target.PointerSize, topLevelIndex);
+            for (int level = MapLevels - 1; level >= 1; level--)
+            {
+                ExMgrPtr rangeSectionL = nextLevelAddress.LoadPointer(target);
+                if (rangeSectionL.IsNull)
+                    return ExMgrPtr.Null;
+                nextLevelAddress = rangeSectionL.Offset(target.PointerSize, EffectiveBitsForLevel(jittedCodeAddress, level));
+            }
+            return nextLevelAddress;
+        }
     }
 
     [Flags]
@@ -123,177 +148,112 @@ internal readonly partial struct ExecutionManager_1 : IExecutionManager
         CodeHeap = 0x02,
         RangeList = 0x04,
     }
-
-    private sealed class RangeSection
+    private abstract class JitManager
     {
-        private readonly Data.RangeSection? _rangeSection;
+        public Target Target { get; }
 
-        public RangeSection()
+        protected JitManager(Target target)
         {
-            _rangeSection = default;
-        }
-        public RangeSection(Data.RangeSection rangeSection)
-        {
-            _rangeSection = rangeSection;
+            Target = target;
         }
 
-        private bool HasFlags(RangeSectionFlags mask) => (_rangeSection!.Flags & (int)mask) != 0;
-        private bool IsRangeList => HasFlags(RangeSectionFlags.RangeList);
-        private bool IsCodeHeap => HasFlags(RangeSectionFlags.CodeHeap);
+        public abstract bool GetMethodInfo(RangeSection rangeSection, TargetCodePointer jittedCodeAddress, [NotNullWhen(true)] out EECodeInfo? info);
 
-        public bool JitCodeToMethodInfo(Target target, TargetCodePointer jittedCodeAddress, [NotNullWhen(true)] out EECodeInfo? info)
+    }
+
+    private class ReadyToRunJitManager : JitManager
+    {
+        public ReadyToRunJitManager(Target target) : base(target)
         {
-            info = null;
-            if (_rangeSection == null)
-            {
-                return false;
-            }
-            TargetPointer jitManagerAddress = _rangeSection.JitManager;
-            TargetPointer r2rModule = _rangeSection.R2RModule;
-            JitManagerKind jitManagerKind = r2rModule == TargetPointer.Null ? JitManagerKind.EEJitManager : JitManagerKind.ReadyToRunJitManager;
-            switch (jitManagerKind)
-            {
-                case JitManagerKind.EEJitManager:
-                    return EEJitCodeToMethodInfo(target, jitManagerAddress, jittedCodeAddress, out info);
-                case JitManagerKind.ReadyToRunJitManager:
-                    return ReadyToRunJitCodeToMethodInfo(target, jitManagerAddress, jittedCodeAddress, out info);
-                default:
-                    throw new InvalidOperationException($"Invalid JitManagerKind");
-            }
         }
-
-        private bool EEJitCodeToMethodInfo(Target target, TargetPointer jitManagerAddress, TargetCodePointer jittedCodeAddress, [NotNullWhen(true)] out EECodeInfo? info)
-        {
-            info = null;
-            // EEJitManager::JitCodeToMethodInfo
-            if (IsRangeList)
-            {
-                return false;
-            }
-            TargetPointer start = EEFindMethodCode(target, jittedCodeAddress);
-            if (start == TargetPointer.Null)
-            {
-                return false;
-            }
-            Debug.Assert(start.Value <= jittedCodeAddress.Value);
-            TargetNUInt relativeOffset = new TargetNUInt(jittedCodeAddress.Value - start.Value);
-            int codeHeaderOffset = target.PointerSize;
-            TargetPointer codeHeaderIndirect = new TargetPointer(start - (ulong)codeHeaderOffset);
-            if (IsStubCodeBlock(target, codeHeaderIndirect))
-            {
-                return false;
-            }
-            TargetPointer codeHeaderAddress = target.ReadPointer(codeHeaderIndirect);
-            Data.RealCodeHeader realCodeHeader = target.ProcessedData.GetOrAdd<Data.RealCodeHeader>(codeHeaderAddress);
-            info = new EECodeInfo(jittedCodeAddress, codeHeaderOffset, relativeOffset, realCodeHeader, jitManagerAddress);
-            return true;
-        }
-
-        private static bool IsStubCodeBlock(Target target, TargetPointer codeHeaderIndirect)
-        {
-            uint stubCodeBlockLast = target.ReadGlobal<uint>(Constants.Globals.StubCodeBlockLast);
-            return codeHeaderIndirect.Value <= stubCodeBlockLast;
-        }
-
-        private TargetPointer EEFindMethodCode(Target target, TargetCodePointer jittedCodeAddress)
-        {
-            // EEJitManager::FindMethodCode
-            if (_rangeSection == null)
-            {
-                throw new InvalidOperationException();
-            }
-            if (!IsCodeHeap)
-            {
-                throw new InvalidOperationException("RangeSection is not a code heap");
-            }
-            TargetPointer heapListAddress = _rangeSection.HeapList;
-            Data.HeapList heapList = target.ProcessedData.GetOrAdd<Data.HeapList>(heapListAddress);
-            if (jittedCodeAddress < heapList.StartAddress || jittedCodeAddress > heapList.EndAddress)
-            {
-                return TargetPointer.Null;
-            }
-            TargetPointer mapBase = heapList.MapBase;
-            TargetPointer mapStart = heapList.HeaderMap;
-            NibbleMap nibbleMap = NibbleMap.Create(target, (uint)target.PointerSize);
-            return nibbleMap.FindMethodCode(mapBase, mapStart, jittedCodeAddress);
-
-        }
-        private bool ReadyToRunJitCodeToMethodInfo(Target target, TargetPointer jitManagerAddress, TargetCodePointer jittedCodeAddress, [NotNullWhen(true)] out EECodeInfo? info)
+        public override bool GetMethodInfo(RangeSection rangeSection, TargetCodePointer jittedCodeAddress, [NotNullWhen(true)] out EECodeInfo? info)
         {
             throw new NotImplementedException(); // TODO(cdac): ReadyToRunJitManager::JitCodeToMethodInfo
         }
     }
 
-
-    // note: level is 1-indexed
-    private static int EffectiveBitsForLevel(TargetCodeManagerDescriptor descriptor, TargetCodePointer address, int level)
+    private sealed class RangeSection
     {
-        ulong addressAsInt = address.Value;
-        ulong addressBitsUsedInMap = addressAsInt >> (descriptor.MaxSetBit + 1 - (descriptor.MapLevels * descriptor.BitsPerLevel));
-        ulong addressBitsShifted = addressBitsUsedInMap >> ((level - 1) * descriptor.BitsPerLevel);
-        ulong addressBitsUsedInLevel = (ulong)(descriptor.EntriesPerMapLevel - 1) & addressBitsShifted;
-        return checked((int)addressBitsUsedInLevel);
+        public readonly Data.RangeSection? Data;
+
+        public RangeSection()
+        {
+            Data = default;
+        }
+        public RangeSection(Data.RangeSection rangeSection)
+        {
+            Data = rangeSection;
+        }
+
+        private bool HasFlags(RangeSectionFlags mask) => (Data!.Flags & (int)mask) != 0;
+        internal bool IsRangeList => HasFlags(RangeSectionFlags.RangeList);
+        internal bool IsCodeHeap => HasFlags(RangeSectionFlags.CodeHeap);
+
+        internal static bool IsStubCodeBlock(Target target, TargetPointer codeHeaderIndirect)
+        {
+            uint stubCodeBlockLast = target.ReadGlobal<uint>(Constants.Globals.StubCodeBlockLast);
+            return codeHeaderIndirect.Value <= stubCodeBlockLast;
+        }
+
+        internal static RangeSection Find(Target target, Data.RangeSectionMap topRangeSectionMap, RangeSectionLookupAlgorithm rangeSectionLookup, TargetCodePointer jittedCodeAddress)
+        {
+            ExMgrPtr rangeSectionFragmentPtr = rangeSectionLookup.FindFragment(target, topRangeSectionMap, jittedCodeAddress);
+            if (rangeSectionFragmentPtr.IsNull)
+            {
+                return new RangeSection();
+            }
+            while (!rangeSectionFragmentPtr.IsNull)
+            {
+                Data.RangeSectionFragment fragment = rangeSectionFragmentPtr.Load<Data.RangeSectionFragment>(target);
+                if (fragment.Contains(jittedCodeAddress))
+                {
+                    break;
+                }
+                rangeSectionFragmentPtr = new ExMgrPtr(fragment.Next);
+            }
+            if (!rangeSectionFragmentPtr.IsNull)
+            {
+                Data.RangeSectionFragment fragment = rangeSectionFragmentPtr.Load<Data.RangeSectionFragment>(target);
+                Data.RangeSection rangeSection = target.ProcessedData.GetOrAdd<Data.RangeSection>(fragment.RangeSection);
+                if (rangeSection.NextForDelete != TargetPointer.Null)
+                {
+                    return new RangeSection();
+                }
+                return new RangeSection(rangeSection);
+            }
+            return new RangeSection();
+        }
+    }
+
+    private JitManager GetJitManager(Data.RangeSection rangeSectionData)
+    {
+        if (rangeSectionData.R2RModule == TargetPointer.Null)
+        {
+            return _eeJitManager;
+        }
+        else
+        {
+            return _r2rJitManager;
+        }
     }
 
     private EECodeInfo? GetEECodeInfo(TargetCodePointer jittedCodeAddress)
     {
-        RangeSection range = LookupRangeSection(jittedCodeAddress);
-        range.JitCodeToMethodInfo(_target, jittedCodeAddress, out EECodeInfo? info);
-        return info;
-    }
-
-    private static bool InRange(Data.RangeSectionFragment fragment, TargetCodePointer address)
-    {
-        return fragment.RangeBegin <= address && address < fragment.RangeEndOpen;
-    }
-
-    private RangeSection LookupRangeSection(TargetCodePointer jittedCodeAddress)
-    {
-        ExMgrPtr rangeSectionFragmentPtr = GetRangeSectionForAddress(jittedCodeAddress);
-        if (rangeSectionFragmentPtr.IsNull)
+        RangeSection range = RangeSection.Find(_target, _topRangeSectionMap, _rangeSectionLookupAlgorithm, jittedCodeAddress);
+        if (range.Data == null)
         {
-            return new RangeSection();
+            return null;
         }
-        while (!rangeSectionFragmentPtr.IsNull)
+        JitManager jitManager = GetJitManager(range.Data);
+        if (jitManager.GetMethodInfo(range, jittedCodeAddress, out EECodeInfo? info))
         {
-            Data.RangeSectionFragment fragment = rangeSectionFragmentPtr.Load<Data.RangeSectionFragment>(_target);
-            if (InRange(fragment, jittedCodeAddress))
-            {
-                break;
-            }
-            rangeSectionFragmentPtr = new ExMgrPtr(fragment.Next);
+            return info;
         }
-        if (!rangeSectionFragmentPtr.IsNull)
+        else
         {
-            Data.RangeSectionFragment fragment = rangeSectionFragmentPtr.Load<Data.RangeSectionFragment>(_target);
-            Data.RangeSection rangeSection = _target.ProcessedData.GetOrAdd<Data.RangeSection>(fragment.RangeSection);
-            if (rangeSection.NextForDelete != TargetPointer.Null)
-            {
-                return new RangeSection();
-            }
-            return new RangeSection(rangeSection);
+            return null;
         }
-        return new RangeSection();
     }
-
-    private ExMgrPtr /*PTR_RangeSectionFragment*/ GetRangeSectionForAddress(TargetCodePointer jittedCodeAddress)
-    {
-        /* The outer levels are all pointer arrays to the next level down.  Level 1 is an array of pointers to a RangeSectionFragment */
-        int topLevelIndex = EffectiveBitsForLevel(_targetCodeManagerDescriptor, jittedCodeAddress, _targetCodeManagerDescriptor.MapLevels);
-
-        ExMgrPtr top = new ExMgrPtr(_topRangeSectionMap.TopLevelData);
-
-        ExMgrPtr nextLevelAddress = top.Offset(_target.PointerSize, topLevelIndex);
-        for (int level = _targetCodeManagerDescriptor.MapLevels - 1; level >= 1; level--)
-        {
-            ExMgrPtr rangeSectionL = nextLevelAddress.LoadPointer(_target);
-            if (rangeSectionL.IsNull)
-                return ExMgrPtr.Null;
-            nextLevelAddress = rangeSectionL.Offset(_target.PointerSize, EffectiveBitsForLevel(_targetCodeManagerDescriptor, jittedCodeAddress, level));
-        }
-        return nextLevelAddress;
-    }
-
     EECodeInfoHandle? IExecutionManager.GetEECodeInfoHandle(TargetCodePointer ip)
     {
         // TODO: some kind of cache based on ip, too?

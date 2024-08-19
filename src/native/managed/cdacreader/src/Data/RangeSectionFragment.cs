@@ -21,4 +21,7 @@ internal sealed class RangeSectionFragment : IData<RangeSectionFragment>
     public TargetPointer RangeEndOpen { get; init; }
     public TargetPointer RangeSection { get; init; }
     public TargetPointer Next { get; init; }
+
+    public bool Contains(TargetCodePointer address)
+        => RangeBegin <= address && address < RangeEndOpen;
 }

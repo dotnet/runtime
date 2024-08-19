@@ -28,8 +28,9 @@ internal readonly partial struct ExecutionManager_1 : IExecutionManager
     internal sealed class NibbleMap
     {
 
-        public static NibbleMap Create(Target target, uint codeHeaderSize)
+        public static NibbleMap Create(Target target)
         {
+            uint codeHeaderSize = (uint)target.PointerSize;
             return new NibbleMap(target, codeHeaderSize);
         }
 
