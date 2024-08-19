@@ -1391,12 +1391,13 @@ size_t interceptor_ICJI::printMethodName(CORINFO_METHOD_HANDLE ftn, char* buffer
 const char* interceptor_ICJI::getMethodNameFromMetadata(CORINFO_METHOD_HANDLE ftn,                  /* IN */
                                                         const char**          className,            /* OUT */
                                                         const char**          namespaceName,        /* OUT */
-                                                        const char**          enclosingClassName   /* OUT */
+                                                        const char**          enclosingClassNames,  /* OUT */
+                                                        size_t                maxEnclosingClassNames
                                                         )
 {
     mc->cr->AddCall("getMethodNameFromMetadata");
-    const char* temp = original_ICorJitInfo->getMethodNameFromMetadata(ftn, className, namespaceName, enclosingClassName);
-    mc->recGetMethodNameFromMetadata(ftn, (char*)temp, className, namespaceName, enclosingClassName);
+    const char* temp = original_ICorJitInfo->getMethodNameFromMetadata(ftn, className, namespaceName, enclosingClassNames, maxEnclosingClassNames);
+    mc->recGetMethodNameFromMetadata(ftn, (char*)temp, className, namespaceName, enclosingClassNames, maxEnclosingClassNames);
     return temp;
 }
 
@@ -1430,20 +1431,11 @@ void interceptor_ICJI::getSwiftLowering(CORINFO_CLASS_HANDLE structHnd, CORINFO_
     mc->recGetSwiftLowering(structHnd, pLowering);
 }
 
-uint32_t interceptor_ICJI::getLoongArch64PassStructInRegisterFlags(CORINFO_CLASS_HANDLE structHnd)
+void interceptor_ICJI::getFpStructLowering(CORINFO_CLASS_HANDLE structHnd, CORINFO_FPSTRUCT_LOWERING* pLowering)
 {
-    mc->cr->AddCall("getLoongArch64PassStructInRegisterFlags");
-    uint32_t temp = original_ICorJitInfo->getLoongArch64PassStructInRegisterFlags(structHnd);
-    mc->recGetLoongArch64PassStructInRegisterFlags(structHnd, temp);
-    return temp;
-}
-
-uint32_t interceptor_ICJI::getRISCV64PassStructInRegisterFlags(CORINFO_CLASS_HANDLE structHnd)
-{
-    mc->cr->AddCall("getRISCV64PassStructInRegisterFlags");
-    uint32_t temp = original_ICorJitInfo->getRISCV64PassStructInRegisterFlags(structHnd);
-    mc->recGetRISCV64PassStructInRegisterFlags(structHnd, temp);
-    return temp;
+    mc->cr->AddCall("getFpStructLowering");
+    original_ICorJitInfo->getFpStructLowering(structHnd, pLowering);
+    mc->recGetFpStructLowering(structHnd, pLowering);
 }
 
 // Stuff on ICorDynamicInfo
