@@ -8,9 +8,7 @@ using System.Numerics;
 
 namespace System.Runtime.Intrinsics.Arm
 {
-    /// <summary>
-    /// This class provides access to the ARM SVE hardware instructions via intrinsics
-    /// </summary>
+    /// <summary>Provides access to the ARM SVE hardware instructions via intrinsics.</summary>
     [Intrinsic]
     [CLSCompliant(false)]
     [Experimental(Experimentals.ArmSveDiagId, UrlFormat = Experimentals.SharedUrlFormat)]
@@ -18,13 +16,20 @@ namespace System.Runtime.Intrinsics.Arm
     {
         internal Sve() { }
 
+        /// <summary>Gets a value that indicates whether the APIs in this class are supported.</summary>
+        /// <value><see langword="true" /> if the APIs are supported; otherwise, <see langword="false" />.</value>
+        /// <remarks>A value of <see langword="false" /> indicates that the APIs will throw <see cref="PlatformNotSupportedException" />.</remarks>
         public static new bool IsSupported { get => IsSupported; }
 
+        /// <summary>Provides access to the ARM SVE hardware instructions, that are only available to 64-bit processes, via intrinsics.</summary>
         [Intrinsic]
         public new abstract class Arm64 : AdvSimd.Arm64
         {
             internal Arm64() { }
 
+            /// <summary>Gets a value that indicates whether the APIs in this class are supported.</summary>
+            /// <value><see langword="true" /> if the APIs are supported; otherwise, <see langword="false" />.</value>
+            /// <remarks>A value of <see langword="false" /> indicates that the APIs will throw <see cref="PlatformNotSupportedException" />.</remarks>
             public static new bool IsSupported { get => IsSupported; }
         }
 
