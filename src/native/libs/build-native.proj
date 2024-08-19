@@ -81,13 +81,12 @@
       <_BuildNativeArgs Condition="'$(Ninja)' == 'false'">$(_BuildNativeArgs) msbuild</_BuildNativeArgs>
       <ProvisionEmscriptenDir>$([MSBuild]::NormalizeDirectory('$(MSBuildThisFileDirectory)', '..', '..', 'mono', 'browser', 'emsdk'))</ProvisionEmscriptenDir>
       <EMSDK_PATH Condition="Exists('$(ProvisionEmscriptenDir)') and '$(EMSDK_PATH)' == ''">$(ProvisionEmscriptenDir.Replace('\', '/'))</EMSDK_PATH>
-      <DOTNET_EMSCRIPTEN_LLVM_ROOT>$(EMSDK_PATH)\bin</DOTNET_EMSCRIPTEN_LLVM_ROOT>
+      <DOTNET_EMSCRIPTEN_LLVM_ROOT>$(EMSDK_PATH)bin</DOTNET_EMSCRIPTEN_LLVM_ROOT>
       <DOTNET_EMSCRIPTEN_NODE_JS>$(NuGetPackageRoot)runtime.$(_portableHostOS)-$(BuildArchitecture).microsoft.netcore.runtime.wasm.node.transport/$(NodePackageVersion)/tools/$(_portableHostOS)-$(BuildArchitecture)/bin/node</DOTNET_EMSCRIPTEN_NODE_JS>
       <_BuildNativeEnvironmentVariables>$(_BuildNativeEnvironmentVariables);DOTNET_EMSCRIPTEN_LLVM_ROOT=$(DOTNET_EMSCRIPTEN_LLVM_ROOT);EM_LLVM_ROOT=$(DOTNET_EMSCRIPTEN_LLVM_ROOT);DOTNET_EMSCRIPTEN_NODE_JS=$(DOTNET_EMSCRIPTEN_NODE_JS);DOTNET_EMSCRIPTEN_BINARYEN_ROOT=$(EMSDK_PATH)</_BuildNativeEnvironmentVariables>
     </PropertyGroup>
     <!-- Run script that uses CMake to generate and build the native files. -->
-    <Message Text="&quot;$(MSBuildThisFileDirectory)build-native.cmd&quot; $(_BuildNativeArgs)" Importance="High"/>
-    <Message Text="_BuildNativeEnvironmentVariables = $(_BuildNativeEnvironmentVariables); ProvisionEmscriptenDir=$(ProvisionEmscriptenDir)" Importance="High"/>
+    <Message Text="&quot;$(MSBuildThisFileDirectory)build-native.cmd&quot; $(_BuildNativeArgs) with EnvironmentVariables=$(_BuildNativeEnvironmentVariables)" Importance="High"/>
     <Exec Command="&quot;$(MSBuildThisFileDirectory)build-native.cmd&quot; $(_BuildNativeArgs)" EnvironmentVariables="$(_BuildNativeEnvironmentVariables)" EchoOff="false" />
   </Target>
 
