@@ -2710,7 +2710,7 @@ static bool HandleInlineArray(int elementTypeIndex, int nElements, FpStructInReg
     int nFlattenedFieldsPerElement = typeIndex - elementTypeIndex;
     if (nFlattenedFieldsPerElement == 0)
     {
-        assert(nElements == 1); // HasImpliedRepeatedFields must have returned a false positive
+        assert(nElements == 1); // HasImpliedRepeatedFields must have returned a false positive, it can't be an array
         LOG((LF_JIT, LL_EVERYTHING, "FpStructInRegistersInfo:%*s  * ignoring empty struct\n",
             nestingLevel * 4, ""));
         return true;
@@ -2819,6 +2819,17 @@ static bool FlattenFields(TypeHandle th, uint32_t offset, FpStructInRegistersInf
         {
             assert(nFields == 1);
             int nElements = pMT->GetNumInstanceFieldBytes() / fields[0].GetSize();
+
+            // Only InlineArrays can have element type of empty struct, fixed-size buffers take only primitives
+            if ((typeIndex - elementTypeIndex) == 0 && pMT->GetClass()->IsInlineArray())
+            {
+                assert(nElements > 0); // InlineArray length must be > 0
+                LOG((LF_JIT, LL_EVERYTHING, "FpStructInRegistersInfo:%*s "
+                    " * struct %s containing a %i-element array of empty structs %s is passed by integer calling convention\n",
+                    nestingLevel * 4, "", pMT->GetDebugClassName(), nElements, fields[0].GetDebugName()));
+                return false;
+            }
+
             if (!HandleInlineArray(elementTypeIndex, nElements, info, typeIndex DEBUG_ARG(nestingLevel + 1)))
                 return false;
         }
