@@ -338,7 +338,6 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			{
 			}
 
-			[UnexpectedWarning ("IL2077", Tool.Analyzer, "https://github.com/dotnet/runtime/issues/101211")]
 			static void TestFlowOutOfField ()
 			{
 				RequirePublicFields (unsupportedTypeInstance);
@@ -372,7 +371,6 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 				{
 				}
 
-				[UnexpectedWarning ("IL2077", Tool.Analyzer, "https://github.com/dotnet/runtime/issues/101211")]
 				void TestFlowOutOfField ()
 				{
 					RequirePublicFields (ref stringRef);

@@ -128,6 +128,10 @@ namespace ILLink.Shared.TrimAnalysis
 
 		internal static DynamicallyAccessedMemberTypes GetMethodParameterAnnotation (ParameterProxy param)
 		{
+			bool isByRef = param.ParameterSymbol is IParameterSymbol paramSymbol && paramSymbol.RefKind is not RefKind.None;
+			if (!param.ParameterType.Type.IsTypeInterestingForDataflow (isByRef))
+				return DynamicallyAccessedMemberTypes.None;
+
 			IMethodSymbol method = param.Method.Method;
 			if (param.IsImplicitThis)
 				return method.GetDynamicallyAccessedMemberTypes ();

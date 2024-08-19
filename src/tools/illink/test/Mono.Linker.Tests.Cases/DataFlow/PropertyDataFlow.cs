@@ -885,7 +885,6 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 				{
 				}
 
-				[UnexpectedWarning ("IL2072", Tool.Analyzer, "https://github.com/dotnet/runtime/issues/101211")]
 				public static void Test ()
 				{
 					var instance = new StringRefProperty ();
