@@ -109,7 +109,7 @@ namespace ILLink.Shared.TrimAnalysis
 
 		internal static DynamicallyAccessedMemberTypes GetFieldAnnotation (IFieldSymbol field)
 		{
-			if (!field.Type.IsTypeInterestingForDataflow (isByRef: field.RefKind is not RefKind.None))
+			if (!field.OriginalDefinition.Type.IsTypeInterestingForDataflow (isByRef: field.RefKind is not RefKind.None))
 				return DynamicallyAccessedMemberTypes.None;
 
 			return field.GetDynamicallyAccessedMemberTypes ();
@@ -136,15 +136,17 @@ namespace ILLink.Shared.TrimAnalysis
 
 		internal static DynamicallyAccessedMemberTypes GetMethodParameterAnnotation (ParameterProxy param)
 		{
-			bool isByRef = param.ParameterSymbol is IParameterSymbol paramSymbol && paramSymbol.RefKind is not RefKind.None;
-			if (!param.ParameterType.Type.IsTypeInterestingForDataflow (isByRef))
-				return DynamicallyAccessedMemberTypes.None;
-
-			IMethodSymbol method = param.Method.Method;
-			if (param.IsImplicitThis)
-				return method.GetDynamicallyAccessedMemberTypes ();
+			if (param.IsImplicitThis) {
+				if (!param.Method.Method.ContainingType.IsTypeInterestingForDataflow (isByRef: false))
+					return DynamicallyAccessedMemberTypes.None;
+				return param.Method.Method.GetDynamicallyAccessedMemberTypes ();
+			}
 
 			IParameterSymbol parameter = param.ParameterSymbol!;
+			bool isByRef = parameter.RefKind is not RefKind.None;
+			if (!parameter.OriginalDefinition.Type.IsTypeInterestingForDataflow (isByRef))
+				return DynamicallyAccessedMemberTypes.None;
+
 			var damt = parameter.GetDynamicallyAccessedMemberTypes ();
 
 			var parameterMethod = (IMethodSymbol) parameter.ContainingSymbol;

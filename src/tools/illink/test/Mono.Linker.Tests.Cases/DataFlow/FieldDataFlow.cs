@@ -382,10 +382,23 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 				}
 			}
 
+			class GenericField<T>
+			{
+				[ExpectedWarning ("IL2097")]
+				[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)]
+				public static T field;
+			}
+
+			static void TestTypeGenericParameter ()
+			{
+				GenericField<Type>.field = GetUnknownType ();
+			}
+
 			public static void Test ()
 			{
 				TestUnsupportedType ();
 				StringRef.Test ();
+				TestTypeGenericParameter ();
 			}
 		}
 
