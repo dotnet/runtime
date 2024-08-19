@@ -52,27 +52,28 @@ internal sealed class BinaryArrayRecord : ArrayRecord
         {
             if (_totalElementsCount < 0)
             {
-                Debug.Assert(ArrayInfo.ArrayType == BinaryArrayType.Jagged);
-
-                Stack<BinaryArrayRecord> jaggedArrayRecords = new();
-                jaggedArrayRecords.Push(this);
-
-                _totalElementsCount = GetTotalElementsCount(jaggedArrayRecords);
+                _totalElementsCount = GetJaggedArrayTotalElementsCount(this);
             }
 
             return _totalElementsCount;
         }
     }
 
-    private static long GetTotalElementsCount(Stack<BinaryArrayRecord> jaggedArrayRecords)
+    private static long GetJaggedArrayTotalElementsCount(BinaryArrayRecord jaggedArrayRecord)
     {
         long result = 0;
-        while (jaggedArrayRecords.Count != 0)
-        {
-            BinaryArrayRecord current = jaggedArrayRecords.Pop();
-            Debug.Assert(current.ArrayInfo.ArrayType == BinaryArrayType.Jagged);
+        Stack<BinaryArrayRecord>? jaggedArrayRecords = null;
 
-            foreach (object value in current.Values)
+        do
+        {
+            if (jaggedArrayRecords is not null)
+            {
+                jaggedArrayRecord = jaggedArrayRecords.Pop();
+            }
+
+            Debug.Assert(jaggedArrayRecord.ArrayInfo.ArrayType == BinaryArrayType.Jagged);
+
+            foreach (object value in jaggedArrayRecord.Values)
             {
                 object item = value is MemberReferenceRecord referenceRecord
                     ? referenceRecord.GetReferencedRecord()
@@ -93,7 +94,7 @@ internal sealed class BinaryArrayRecord : ArrayRecord
                         ArrayRecord nestedArrayRecord = (ArrayRecord)record;
                         if (nestedArrayRecord.ArrayInfo.ArrayType == BinaryArrayType.Jagged)
                         {
-                            jaggedArrayRecords.Push((BinaryArrayRecord)nestedArrayRecord);
+                            (jaggedArrayRecords ??= new()).Push((BinaryArrayRecord)nestedArrayRecord);
                         }
                         else
                         {
@@ -112,6 +113,7 @@ internal sealed class BinaryArrayRecord : ArrayRecord
                 }
             }
         }
+        while (jaggedArrayRecords is not null && jaggedArrayRecords.Count > 0);
 
         return result;
     }
