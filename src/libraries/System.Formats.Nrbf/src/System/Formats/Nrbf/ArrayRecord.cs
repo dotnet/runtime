@@ -50,7 +50,7 @@ public abstract class ArrayRecord : SerializationRecord
 
     internal long ValuesToRead { get; private protected set; }
 
-    private protected ArrayInfo ArrayInfo { get; }
+    internal ArrayInfo ArrayInfo { get; }
 
     /// <summary>
     /// Allocates an array and fills it with the data provided in the serialized records (in case of primitive types like <see cref="string"/> or <see cref="int"/>) or the serialized records themselves.

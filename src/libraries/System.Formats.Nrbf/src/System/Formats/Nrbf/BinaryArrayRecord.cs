@@ -50,15 +50,29 @@ internal sealed class BinaryArrayRecord : ArrayRecord
     {
         get
         {
-            if (_totalElementsCount >= 0)
+            if (_totalElementsCount < 0)
             {
-                return _totalElementsCount;
+                Debug.Assert(ArrayInfo.ArrayType == BinaryArrayType.Jagged);
+
+                Stack<BinaryArrayRecord> jaggedArrayRecords = new();
+                jaggedArrayRecords.Push(this);
+
+                _totalElementsCount = GetTotalElementsCount(jaggedArrayRecords);
             }
 
-            Debug.Assert(ArrayInfo.ArrayType == BinaryArrayType.Jagged);
+            return _totalElementsCount;
+        }
+    }
 
-            long result = 0;
-            foreach (object value in Values)
+    private static long GetTotalElementsCount(Stack<BinaryArrayRecord> jaggedArrayRecords)
+    {
+        long result = 0;
+        while (jaggedArrayRecords.Count != 0)
+        {
+            BinaryArrayRecord current = jaggedArrayRecords.Pop();
+            Debug.Assert(current.ArrayInfo.ArrayType == BinaryArrayType.Jagged);
+
+            foreach (object value in current.Values)
             {
                 object item = value is MemberReferenceRecord referenceRecord
                     ? referenceRecord.GetReferencedRecord()
@@ -77,8 +91,14 @@ internal sealed class BinaryArrayRecord : ArrayRecord
                     case SerializationRecordType.ArraySingleObject:
                     case SerializationRecordType.ArraySingleString:
                         ArrayRecord nestedArrayRecord = (ArrayRecord)record;
-                        // This may be a recursive call!
-                        result += nestedArrayRecord.TotalElementsCount;
+                        if (nestedArrayRecord.ArrayInfo.ArrayType == BinaryArrayType.Jagged)
+                        {
+                            jaggedArrayRecords.Push((BinaryArrayRecord)nestedArrayRecord);
+                        }
+                        else
+                        {
+                            result += nestedArrayRecord.TotalElementsCount;
+                        }
                         break;
                     case SerializationRecordType.ObjectNull:
                     case SerializationRecordType.ObjectNullMultiple256:
@@ -91,11 +111,9 @@ internal sealed class BinaryArrayRecord : ArrayRecord
                         break;
                 }
             }
-
-            _totalElementsCount = result;
-
-            return result;
         }
+
+        return result;
     }
 
     public override TypeName TypeName
