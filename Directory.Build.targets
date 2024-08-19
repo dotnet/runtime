@@ -39,7 +39,7 @@
       Define this here (not just in Versions.props) because the SDK resets it
       unconditionally in Microsoft.NETCoreSdk.BundledVersions.props.
     -->
-    <NETCoreAppMaximumVersion>$(MajorVersion).$(MinorVersion)</NETCoreAppMaximumVersion>
+    <NETCoreAppMaximumVersion>$(NetCoreAppCurrentVersion)</NETCoreAppMaximumVersion>
     <!-- SDK sets product to assembly but we want it to be our product name -->
     <Product>Microsoft%AE .NET</Product>
     <!-- Use the .NET product branding version for informational version description -->
