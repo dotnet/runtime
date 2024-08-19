@@ -329,7 +329,7 @@ foreach ($argument in $PSBoundParameters.Keys)
 }
 
 if ($env:TreatWarningsAsErrors -eq 'false') {
-  $arguments += " -warnAsError 0"
+  $arguments += " -warnAsError `$false"
 }
 
 # disable terminal logger for now: https://github.com/dotnet/runtime/issues/97211
