@@ -252,7 +252,9 @@ if defined RunCrossGen2 (
     set __R2RDumpCommand=!__R2RDumpCommand! --header --sc --in !__OutputFile! --out !__OutputFile!.r2rdump --val
 
     set __Command=!_DebuggerFullPath! "!CORE_ROOT!\crossgen2\crossgen2.exe"
-    for /r "%CORE_ROOT%" %%i in (System*.dll) do @echo %%i
+    py.exe -m pip install pefile
+    py -c "import pefile, sys; dll_path = sys.argv[1]; pe = pefile.PE(dll_path); [print(entry.dll.de
+code('utf-8')) for entry in pe.DIRECTORY_ENTRY_IMPORT]" %CORE_ROOT%\System.Runtime.dll
     set __Command=!__Command! @"!__ResponseFile!"
     set __Command=!__Command! !ExtraCrossGen2Args!
     echo !__InputFile!>>!__ResponseFile!
