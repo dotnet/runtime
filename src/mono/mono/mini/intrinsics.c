@@ -1619,11 +1619,18 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 		else if ((strcmp (cmethod->name, "CompareExchange") == 0) && fsig->param_count == 3) {
 			MonoInst *f2i_new = NULL, *f2i_cmp = NULL, *i2f;
 			guint32 opcode, f2i_opcode = 0, i2f_opcode = 0;
-			gboolean is_ref = mini_type_is_reference (fsig->params [1]);
-			gboolean is_float = fsig->params [1]->type == MONO_TYPE_R4 || fsig->params [1]->type == MONO_TYPE_R8;
+			MonoType *param1_type = mini_get_underlying_type (fsig->params[1]);
+			gboolean is_ref = mini_type_is_reference (param1_type);
+			gboolean is_float = param1_type->type == MONO_TYPE_R4 || param1_type->type == MONO_TYPE_R8;
 
-			if (fsig->params [1]->type == MONO_TYPE_I4 ||
-			    fsig->params [1]->type == MONO_TYPE_R4) {
+			if (param1_type->type == MONO_TYPE_U1) {
+				opcode = OP_ATOMIC_CAS_U1;
+			}
+			else if (param1_type->type == MONO_TYPE_I1) {
+				opcode = OP_ATOMIC_CAS_I1;
+			}
+			else if (param1_type->type == MONO_TYPE_I4 ||
+			    param1_type->type == MONO_TYPE_R4) {
 				opcode = OP_ATOMIC_CAS_I4;
 				f2i_opcode = OP_MOVE_F_TO_I4;
 				i2f_opcode = OP_MOVE_I4_TO_F;
@@ -1631,15 +1638,15 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 			}
 #if SIZEOF_REGISTER == 8
 			else if (is_ref ||
-			         fsig->params [1]->type == MONO_TYPE_I8 ||
-			         fsig->params [1]->type == MONO_TYPE_R8 ||
-			         fsig->params [1]->type == MONO_TYPE_I) {
+			         param1_type->type == MONO_TYPE_I8 ||
+			         param1_type->type == MONO_TYPE_R8 ||
+			         param1_type->type == MONO_TYPE_I) {
 				opcode = OP_ATOMIC_CAS_I8;
 				f2i_opcode = OP_MOVE_F_TO_I8;
 				i2f_opcode = OP_MOVE_I8_TO_F;
 			}
 #else
-			else if (is_ref || fsig->params [1]->type == MONO_TYPE_I) {
+			else if (is_ref || param1_type->type == MONO_TYPE_I) {
 				opcode = OP_ATOMIC_CAS_I4;
 				cfg->has_atomic_cas_i4 = TRUE;
 			}
@@ -1681,7 +1688,11 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 			ins->sreg3 = is_float ? f2i_cmp->dreg : args [2]->dreg;
 			MONO_ADD_INS (cfg->cbb, ins);
 
-			switch (fsig->params [1]->type) {
+			switch (param1_type->type) {
+			case MONO_TYPE_U1:
+			case MONO_TYPE_I1:
+				ins->type = STACK_I4;// FIXME: we also need to sign/zero extend the result?
+				break;
 			case MONO_TYPE_I4:
 				ins->type = STACK_I4;
 				break;
@@ -1702,7 +1713,7 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 				ins->type = STACK_R8;
 				break;
 			default:
-				g_assert (mini_type_is_reference (fsig->params [1]));
+				g_assert (mini_type_is_reference (param1_type));
 				ins->type = STACK_OBJ;
 				break;
 			}
