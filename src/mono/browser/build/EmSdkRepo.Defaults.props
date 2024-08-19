@@ -8,14 +8,14 @@
     <EmscriptenUpstreamEmscriptenPath>$([MSBuild]::NormalizeDirectory($(EmscriptenSdkToolsPath), 'emscripten'))</EmscriptenUpstreamEmscriptenPath>
 
     <!-- gets the path like emsdk/python/3.7.4-2_64bit -->
-    <EmscriptenNodeToolsPath Condition="'$(EmscriptenNodeToolsPath)' == ''">$(NuGetPackageRoot)runtime.$(_portableHostOS)-$(BuildArchitecture).microsoft.netcore.runtime.wasm.node.transport/$(NodePackageVersion)/tools/$(_portableHostOS)-$(BuildArchitecture)/bin</EmscriptenNodeToolsPath>
+    <EmscriptenNodeToolsPath Condition="'$(EmscriptenNodeToolsPath)' == ''">$([System.IO.Path]::Combine($(NuGetPackageRoot), 'runtime.$(_portableHostOS)-$(BuildArchitecture).microsoft.netcore.runtime.wasm.node.transport', '$(NodePackageVersion)', 'tools', '$(_portableHostOS)-$(BuildArchitecture)', 'bin'))</EmscriptenNodeToolsPath>
 
     <_UsingEMSDK_PATH>true</_UsingEMSDK_PATH>
   </PropertyGroup>
 
   <!-- Emscripten uses system python on Linux and macos, so we don't need $(EmscriptenPythonToolsPath) -->
   <PropertyGroup Condition="!$([MSBuild]::IsOSPlatform('linux')) and !$([MSBuild]::IsOSPlatform('OSX'))">
-    <EmscriptenPythonToolsPath>$(NuGetPackageRoot)Microsoft.NET.Runtime.Emscripten.$(EmsdkVersion).Python.win-$(BuildArchitecture)/$(EmsdkPackageVersion)/tools</EmscriptenPythonToolsPath>
+    <EmscriptenPythonToolsPath>$([System.IO.Path]::Combine($(NuGetPackageRoot), 'Microsoft.NET.Runtime.Emscripten.$(EmsdkVersion).Python.win-$(BuildArchitecture)', '$(EmsdkPackageVersion)', 'tools'))</EmscriptenPythonToolsPath>
 
     <_EMSDKMissingPaths Condition="'$(_EMSDKMissingPaths)' == '' and ('$(EmscriptenPythonToolsPath)' == '' or !Exists('$(EmscriptenPythonToolsPath)'))">%24(EmscriptenPythonToolsPath)=$(EmscriptenPythonToolsPath) </_EMSDKMissingPaths>
   </PropertyGroup>
