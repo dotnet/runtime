@@ -5,7 +5,7 @@
 
 import os
 import xml.dom.minidom as DOM
-from utilities import open_for_update
+from utilities import open_for_update, parseInclusionList
 import argparse
 import sys
 
@@ -74,6 +74,20 @@ def getCSharpTypeFromManifestType(manifestType):
 
 def getManifestsToGenerate():
     return manifestsToGenerate
+
+def includeEvent(inclusionList, providerName, eventName):
+    if len(inclusionList) == 0:
+        return True
+    if providerName in inclusionList and eventName in inclusionList[providerName]:
+        return True
+    elif providerName in inclusionList and "*" in inclusionList[providerName]:
+        return True
+    elif "*" in inclusionList and eventName in inclusionList["*"]:
+        return True
+    elif "*" in inclusionList and "*" in inclusionList["*"]:
+        return True
+    else:
+        return False
 
 def generateEvent(eventNode, providerNode, outputFile, stringTable):
 
@@ -166,7 +180,9 @@ def generateEvent(eventNode, providerNode, outputFile, stringTable):
     writeOutput(outputFile, "}\n\n")
 
 
-def generateEvents(providerNode, outputFile, stringTable):
+def generateEvents(providerNode, outputFile, stringTable, inclusion_list):
+
+    providerName = providerNode.getAttribute("name")
 
     # Get the events element.
     for node in providerNode.getElementsByTagName("events"):
@@ -180,6 +196,10 @@ def generateEvents(providerNode, outputFile, stringTable):
     # key = eventID, value = version
     eventList = dict()
     for eventNode in eventNodes:
+        eventName    = eventNode.getAttribute('symbol')
+        if not includeEvent(inclusion_list, providerName, eventName):
+            continue
+
         eventID = eventNode.getAttribute("value")
         eventVersion = eventNode.getAttribute("version")
         eventList[eventID] = eventVersion
@@ -187,6 +207,10 @@ def generateEvents(providerNode, outputFile, stringTable):
     # Iterate over each event node and process it.
     # Only emit events for the latest version of the event, otherwise EventSource initialization will fail.
     for eventNode in eventNodes:
+        eventName    = eventNode.getAttribute('symbol')
+        if not includeEvent(inclusion_list, providerName, eventName):
+            continue
+
         eventID = eventNode.getAttribute("value")
         eventVersion = eventNode.getAttribute("version")
         if eventID in eventList and eventList[eventID] == eventVersion:
@@ -297,7 +321,29 @@ def generateEnumTypeMap(providerNode):
 
     return typeMap
 
-def generateKeywordsClass(providerNode, outputFile):
+def generateKeywordsClass(providerNode, outputFile, inclusion_list):
+
+    providerName = providerNode.getAttribute("name")
+
+    # Get the events element.
+    for node in providerNode.getElementsByTagName("events"):
+        eventsNode = node
+        break
+
+    # Get the list of event nodes.
+    eventNodes = eventsNode.getElementsByTagName("event")
+
+    # Build the list of used keywords
+    keywordSet = set()
+    for eventNode in eventNodes:
+        eventName    = eventNode.getAttribute('symbol')
+        if not includeEvent(inclusion_list, providerName, eventName):
+            continue
+
+        # Not all events have keywords specified, and some have multiple keywords specified.
+        keywords = eventNode.getAttribute("keywords")
+        if keywords:
+            keywordSet = keywordSet.union(keywords.split())
 
     # Find the keywords element.
     for node in providerNode.getElementsByTagName("keywords"):
@@ -309,7 +355,11 @@ def generateKeywordsClass(providerNode, outputFile):
     increaseTabLevel()
 
     for keywordNode in keywordsNode.getElementsByTagName("keyword"):
-        writeOutput(outputFile, "public const EventKeywords " + keywordNode.getAttribute("name") + " = (EventKeywords)" + keywordNode.getAttribute("mask") + ";\n")
+        keywordName = keywordNode.getAttribute("name")
+        if keywordName not in keywordSet:
+            continue;
+
+        writeOutput(outputFile, "public const EventKeywords " + keywordName + " = (EventKeywords)" + keywordNode.getAttribute("mask") + ";\n")
 
     decreaseTabLevel()
     writeOutput(outputFile, "}\n\n")
@@ -330,7 +380,7 @@ def loadStringTable(manifest):
 
     return stringTable
 
-def generateEventSources(manifestFullPath, intermediatesDirFullPath):
+def generateEventSources(manifestFullPath, intermediatesDirFullPath, inclusion_list):
 
     # Open the manifest for reading.
     manifest = DOM.parse(manifestFullPath)
@@ -371,7 +421,7 @@ namespace System.Diagnostics.Tracing
             increaseTabLevel()
 
             # Write the keywords class.
-            generateKeywordsClass(providerNode, outputFile)
+            generateKeywordsClass(providerNode, outputFile, inclusion_list)
 
             #### Disable enums until they are needed ####
             # Generate the enum type map.
@@ -386,7 +436,7 @@ namespace System.Diagnostics.Tracing
             #### Disable enums until they are needed ####
 
             # Generate events.
-            generateEvents(providerNode, outputFile, stringTable)
+            generateEvents(providerNode, outputFile, stringTable, inclusion_list)
 
             # Write the class footer.
             decreaseTabLevel()
@@ -405,6 +455,8 @@ def main(argv):
                           help='full path to manifest containing the description of events')
     required.add_argument('--intermediate', type=str, required=True,
                           help='full path to eventprovider intermediate directory')
+    required.add_argument('--inc',  type=str,default="",
+                          help='full path to inclusion list')
     args, unknown = parser.parse_known_args(argv)
     if unknown:
         print('Unknown argument(s): ', ', '.join(unknown))
@@ -412,6 +464,7 @@ def main(argv):
 
     manifestFullPath = args.man
     intermediatesDirFullPath = args.intermediate
+    inclusion_filename = args.inc
 
     # Ensure the intermediates directory exists.
     try:
@@ -420,8 +473,10 @@ def main(argv):
         if not os.path.isdir(intermediatesDirFullPath):
             raise
 
+    inclusion_list = parseInclusionList(inclusion_filename)
+
     # Generate event sources.
-    generateEventSources(manifestFullPath, intermediatesDirFullPath)
+    generateEventSources(manifestFullPath, intermediatesDirFullPath, inclusion_list)
     return 0
 
 if __name__ == '__main__':
