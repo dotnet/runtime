@@ -18,19 +18,9 @@
   <PropertyGroup>
     <CLRTestBashPreCommands><![CDATA[
 $(CLRTestBashPreCommands)
-    if [[ "$OSTYPE" == "darwin"* ]]; then
-        sysctl -a
-        sysctl -a | grep machdep.cpu.leaf7_features | grep AVX >/dev/null
-        if [ $? -ne 0 ]; then
-          echo No support for AVX, test not applicable.
-          exit 0
-        fi
-    fi
-    if [[ "$OSTYPE" == "linux"* ]]; then
-        if ! grep -q '^flags.*avx' /proc/cpuinfo 2>/dev/null; then
-          echo No support for AVX, test not applicable.
-          exit 0
-        fi
+    if ! cc -dM -E -march=native - < /dev/null 2>/dev/null | grep -q __AVX__; then
+      echo No support for AVX, test not applicable.
+      exit 0
     fi
 ]]></CLRTestBashPreCommands>
   </PropertyGroup>

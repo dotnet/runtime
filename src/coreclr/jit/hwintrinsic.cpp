@@ -980,7 +980,8 @@ NamedIntrinsic HWIntrinsicInfo::lookupId(Compiler*         comp,
                                          CORINFO_SIG_INFO* sig,
                                          const char*       className,
                                          const char*       methodName,
-                                         const char*       enclosingClassName)
+                                         const char*       innerEnclosingClassName,
+                                         const char*       outerEnclosingClassName)
 {
 #if defined(DEBUG)
     static bool validationCompleted = false;
@@ -992,7 +993,13 @@ NamedIntrinsic HWIntrinsicInfo::lookupId(Compiler*         comp,
     }
 #endif // DEBUG
 
-    CORINFO_InstructionSet isa = lookupIsa(className, enclosingClassName);
+    // Signatures that have a 'this' parameter are illegal intrinsics.
+    if (sig->hasThis())
+    {
+        return NI_Illegal;
+    }
+
+    CORINFO_InstructionSet isa = lookupIsa(className, innerEnclosingClassName, outerEnclosingClassName);
 
     if (isa == InstructionSet_ILLEGAL)
     {
@@ -1811,6 +1818,13 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
     if (simdBaseJitType != CORINFO_TYPE_UNDEF)
     {
         simdBaseType = JitType2PreciseVarType(simdBaseJitType);
+#ifdef TARGET_XARCH
+        if (HWIntrinsicInfo::NeedsNormalizeSmallTypeToInt(intrinsic) && varTypeIsSmall(simdBaseType))
+        {
+            simdBaseJitType = varTypeIsUnsigned(simdBaseType) ? CORINFO_TYPE_UINT : CORINFO_TYPE_INT;
+            simdBaseType    = JitType2PreciseVarType(simdBaseJitType);
+        }
+#endif // TARGET_XARCH
     }
 
     const unsigned simdSize = HWIntrinsicInfo::lookupSimdSize(this, intrinsic, sig);
@@ -2168,17 +2182,28 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
 #elif defined(TARGET_ARM64)
                     case NI_Sve_GatherVector:
                     case NI_Sve_GatherVectorByteZeroExtend:
+                    case NI_Sve_GatherVectorByteZeroExtendFirstFaulting:
                     case NI_Sve_GatherVectorFirstFaulting:
                     case NI_Sve_GatherVectorInt16SignExtend:
+                    case NI_Sve_GatherVectorInt16SignExtendFirstFaulting:
                     case NI_Sve_GatherVectorInt16WithByteOffsetsSignExtend:
+                    case NI_Sve_GatherVectorInt16WithByteOffsetsSignExtendFirstFaulting:
                     case NI_Sve_GatherVectorInt32SignExtend:
+                    case NI_Sve_GatherVectorInt32SignExtendFirstFaulting:
                     case NI_Sve_GatherVectorInt32WithByteOffsetsSignExtend:
+                    case NI_Sve_GatherVectorInt32WithByteOffsetsSignExtendFirstFaulting:
                     case NI_Sve_GatherVectorSByteSignExtend:
+                    case NI_Sve_GatherVectorSByteSignExtendFirstFaulting:
                     case NI_Sve_GatherVectorUInt16WithByteOffsetsZeroExtend:
+                    case NI_Sve_GatherVectorUInt16WithByteOffsetsZeroExtendFirstFaulting:
                     case NI_Sve_GatherVectorUInt16ZeroExtend:
+                    case NI_Sve_GatherVectorUInt16ZeroExtendFirstFaulting:
                     case NI_Sve_GatherVectorUInt32WithByteOffsetsZeroExtend:
+                    case NI_Sve_GatherVectorUInt32WithByteOffsetsZeroExtendFirstFaulting:
                     case NI_Sve_GatherVectorUInt32ZeroExtend:
+                    case NI_Sve_GatherVectorWithByteOffsetFirstFaulting:
                     case NI_Sve_GatherVectorWithByteOffsets:
+                    case NI_Sve_GatherVectorUInt32ZeroExtendFirstFaulting:
                         assert(varTypeIsSIMD(op3->TypeGet()));
                         if (numArgs == 3)
                         {

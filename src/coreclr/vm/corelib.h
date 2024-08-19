@@ -152,7 +152,6 @@ DEFINE_METHOD(CLASS,                GET_METHODS,            GetMethods,         
 DEFINE_METHOD(CLASS,                INVOKE_MEMBER,          InvokeMember,               IM_Str_BindingFlags_Binder_Obj_ArrObj_ArrParameterModifier_CultureInfo_ArrStr_RetObj)
 DEFINE_METHOD(CLASS,                GET_METHOD_BASE,        GetMethodBase,              SM_RuntimeType_RuntimeMethodHandleInternal_RetMethodBase)
 DEFINE_METHOD(CLASS,                GET_FIELD_INFO,         GetFieldInfo,               SM_RuntimeType_IRuntimeFieldInfo_RetFieldInfo)
-DEFINE_METHOD(CLASS,                GET_PROPERTY_INFO,      GetPropertyInfo,            SM_RuntimeType_Int_RetPropertyInfo)
 
 #ifdef FEATURE_COMINTEROP
 DEFINE_METHOD(CLASS,                FORWARD_CALL_TO_INVOKE, ForwardCallToInvokeMember,  IM_Str_BindingFlags_Obj_ArrObj_ArrBool_ArrInt_ArrType_Type_RetObj)
@@ -395,6 +394,8 @@ DEFINE_METHOD(ICUSTOM_MARSHALER,    CLEANUP_NATIVE_DATA,    CleanUpNativeData,  
 DEFINE_METHOD(ICUSTOM_MARSHALER,    CLEANUP_MANAGED_DATA,   CleanUpManagedData,         IM_Obj_RetVoid)
 DEFINE_METHOD(ICUSTOM_MARSHALER,    GET_NATIVE_DATA_SIZE,   GetNativeDataSize,          IM_RetInt)
 
+DEFINE_CLASS(ICUSTOMADAPTER,    Interop,    ICustomAdapter)
+
 DEFINE_CLASS(IDYNAMICINTERFACECASTABLE,         Interop,   IDynamicInterfaceCastable)
 DEFINE_CLASS(DYNAMICINTERFACECASTABLEHELPERS,   Interop,   DynamicInterfaceCastableHelpers)
 DEFINE_METHOD(DYNAMICINTERFACECASTABLEHELPERS,  IS_INTERFACE_IMPLEMENTED,       IsInterfaceImplemented,     SM_IDynamicInterfaceCastable_RuntimeType_Bool_RetBool)
@@ -405,6 +406,9 @@ BEGIN_ILLINK_FEATURE_SWITCH(System.Runtime.InteropServices.BuiltInComInterop.IsS
 DEFINE_CLASS(ICUSTOM_QUERYINTERFACE,      Interop,          ICustomQueryInterface)
 DEFINE_METHOD(ICUSTOM_QUERYINTERFACE,     GET_INTERFACE,    GetInterface,               IM_RefGuid_OutIntPtr_RetCustomQueryInterfaceResult)
 DEFINE_CLASS(CUSTOMQUERYINTERFACERESULT,  Interop,          CustomQueryInterfaceResult)
+
+DEFINE_CLASS(ENUMERATORTOENUMVARIANTMARSHALER,   CustomMarshalers,  EnumeratorToEnumVariantMarshaler)
+DEFINE_METHOD(ENUMERATORTOENUMVARIANTMARSHALER,  INTERNALMARSHALNATIVETOMANAGED,    InternalMarshalNativeToManaged,   SM_IntPtr_RetObj)
 #endif //FEATURE_COMINTEROP
 END_ILLINK_FEATURE_SWITCH()
 
@@ -628,7 +632,6 @@ DEFINE_METHOD(RTFIELD,              GET_FIELDHANDLE,        GetFieldHandle,     
 
 DEFINE_CLASS(RUNTIME_HELPERS,       CompilerServices,       RuntimeHelpers)
 DEFINE_METHOD(RUNTIME_HELPERS,      IS_BITWISE_EQUATABLE,    IsBitwiseEquatable, NoSig)
-DEFINE_METHOD(RUNTIME_HELPERS,      GET_METHOD_TABLE,        GetMethodTable,     NoSig)
 DEFINE_METHOD(RUNTIME_HELPERS,      GET_RAW_DATA,            GetRawData,         NoSig)
 DEFINE_METHOD(RUNTIME_HELPERS,      GET_UNINITIALIZED_OBJECT, GetUninitializedObject, SM_Type_RetObj)
 DEFINE_METHOD(RUNTIME_HELPERS,      ENUM_EQUALS,            EnumEquals, NoSig)
@@ -642,19 +645,19 @@ DEFINE_METHOD(SPAN_HELPERS,         MEMSET,                 Fill, SM_RefByte_Byt
 DEFINE_METHOD(SPAN_HELPERS,         MEMZERO,                ClearWithoutReferences, SM_RefByte_UIntPtr_RetVoid)
 DEFINE_METHOD(SPAN_HELPERS,         MEMCOPY,                Memmove, SM_RefByte_RefByte_UIntPtr_RetVoid)
 
-DEFINE_CLASS(THROWHELPER,     System,                 ThrowHelper)
-DEFINE_METHOD(THROWHELPER,    THROWARGUMENTEXCEPTION,             ThrowArgumentException, SM_RetVoid)
-DEFINE_METHOD(THROWHELPER,    THROWARGUMENTOUTOFRANGEEXCEPTION,   ThrowArgumentOutOfRangeException, SM_RetVoid)
-DEFINE_METHOD(THROWHELPER,    THROWINDEXOUTOFRANGEEXCEPTION,      ThrowIndexOutOfRangeException, SM_RetVoid)
-DEFINE_METHOD(THROWHELPER,    THROWNOTIMPLEMENTEDEXCEPTION,       ThrowNotImplementedException, SM_RetVoid)
-DEFINE_METHOD(THROWHELPER,    THROWPLATFORMNOTSUPPORTEDEXCEPTION, ThrowPlatformNotSupportedException, SM_RetVoid)
-DEFINE_METHOD(THROWHELPER,    THROWTYPENOTSUPPORTED,              ThrowTypeNotSupportedException, SM_RetVoid)
-DEFINE_METHOD(THROWHELPER,    THROWOVERFLOWEXCEPTION,             ThrowOverflowException, SM_RetVoid)
-DEFINE_METHOD(THROWHELPER,    THROWDIVIDEBYZEROEXCEPTION,         ThrowDivideByZeroException, SM_RetVoid)
-DEFINE_METHOD(THROWHELPER,    THROWNULLREFEXCEPTION,              ThrowNullReferenceException, SM_RetVoid)
-DEFINE_METHOD(THROWHELPER,    THROWVERIFICATIONEXCEPTION,         ThrowVerificationException, SM_Int_RetVoid)
-DEFINE_METHOD(THROWHELPER,    THROWAMBIGUOUSRESOLUTIONEXCEPTION,  ThrowAmbiguousResolutionException, SM_PtrVoid_PtrVoid_PtrVoid_RetVoid)
-DEFINE_METHOD(THROWHELPER,    THROWENTRYPOINTNOTFOUNDEXCEPTION,   ThrowEntryPointNotFoundException, SM_PtrVoid_PtrVoid_PtrVoid_RetVoid)
+DEFINE_CLASS(THROWHELPERS,     InternalCompilerHelpers,             ThrowHelpers)
+DEFINE_METHOD(THROWHELPERS,    THROWARGUMENTEXCEPTION,              ThrowArgumentException, SM_RetVoid)
+DEFINE_METHOD(THROWHELPERS,    THROWARGUMENTOUTOFRANGEEXCEPTION,    ThrowArgumentOutOfRangeException, SM_RetVoid)
+DEFINE_METHOD(THROWHELPERS,    THROWINDEXOUTOFRANGEEXCEPTION,       ThrowIndexOutOfRangeException, SM_RetVoid)
+DEFINE_METHOD(THROWHELPERS,    THROWNOTIMPLEMENTEDEXCEPTION,        ThrowNotImplementedException, SM_RetVoid)
+DEFINE_METHOD(THROWHELPERS,    THROWPLATFORMNOTSUPPORTEDEXCEPTION,  ThrowPlatformNotSupportedException, SM_RetVoid)
+DEFINE_METHOD(THROWHELPERS,    THROWTYPENOTSUPPORTED,               ThrowTypeNotSupportedException, SM_RetVoid)
+DEFINE_METHOD(THROWHELPERS,    THROWOVERFLOWEXCEPTION,              ThrowOverflowException, SM_RetVoid)
+DEFINE_METHOD(THROWHELPERS,    THROWDIVIDEBYZEROEXCEPTION,          ThrowDivideByZeroException, SM_RetVoid)
+DEFINE_METHOD(THROWHELPERS,    THROWNULLREFEXCEPTION,               ThrowNullReferenceException, SM_RetVoid)
+DEFINE_METHOD(THROWHELPERS,    THROWVERIFICATIONEXCEPTION,          ThrowVerificationException, SM_Int_RetVoid)
+DEFINE_METHOD(THROWHELPERS,    THROWAMBIGUOUSRESOLUTIONEXCEPTION,   ThrowAmbiguousResolutionException, SM_PtrVoid_PtrVoid_PtrVoid_RetVoid)
+DEFINE_METHOD(THROWHELPERS,    THROWENTRYPOINTNOTFOUNDEXCEPTION,    ThrowEntryPointNotFoundException, SM_PtrVoid_PtrVoid_PtrVoid_RetVoid)
 
 DEFINE_CLASS(UNSAFE,                CompilerServices,       Unsafe)
 DEFINE_METHOD(UNSAFE,               AS_POINTER,             AsPointer, NoSig)
@@ -775,8 +778,8 @@ DEFINE_FIELD_U(rgiColumnNumber,            StackFrameHelper,   rgiColumnNumber)
 DEFINE_FIELD_U(rgiLastFrameFromForeignExceptionStackTrace,            StackFrameHelper,   rgiLastFrameFromForeignExceptionStackTrace)
 DEFINE_FIELD_U(iFrameCount,                StackFrameHelper,   iFrameCount)
 
-DEFINE_CLASS(RUNTIME_EVENT_SOURCE,  Tracing,                RuntimeEventSource)
-DEFINE_METHOD(RUNTIME_EVENT_SOURCE, INITIALIZE, Initialize, SM_RetVoid)
+DEFINE_CLASS(EVENT_SOURCE,           Tracing,            EventSource)
+DEFINE_METHOD(EVENT_SOURCE,          INITIALIZE_DEFAULT_EVENT_SOURCES, InitializeDefaultEventSources, SM_RetVoid)
 
 DEFINE_CLASS(STARTUP_HOOK_PROVIDER,  System,                StartupHookProvider)
 DEFINE_METHOD(STARTUP_HOOK_PROVIDER, MANAGED_STARTUP, ManagedStartup, SM_PtrChar_RetVoid)
@@ -1119,15 +1122,6 @@ DEFINE_FIELD_U(_userMessage,        ContractExceptionObject,    _UserMessage)
 DEFINE_FIELD_U(_condition,          ContractExceptionObject,    _Condition)
 
 DEFINE_CLASS(MODULEBASE,        Reflection,         Module)
-
-#ifdef FEATURE_ICASTABLE
-DEFINE_CLASS(ICASTABLE,         CompilerServices,   ICastable)
-
-DEFINE_CLASS(ICASTABLEHELPERS,  CompilerServices,   ICastableHelpers)
-DEFINE_METHOD(ICASTABLEHELPERS,        ISINSTANCEOF,       IsInstanceOfInterface, SM_ICastable_RtType_RefException_RetBool)
-DEFINE_METHOD(ICASTABLEHELPERS,        GETIMPLTYPE,        GetImplType, SM_ICastable_RtType_RetRtType)
-
-#endif // FEATURE_ICASTABLE
 
 DEFINE_CLASS(STACKALLOCATEDBOX,   CompilerServices,     StackAllocatedBox`1)
 

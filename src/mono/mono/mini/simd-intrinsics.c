@@ -2982,7 +2982,8 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 				return ins;
 			} else {
 				g_assert ((arg0_type == MONO_TYPE_I4) || (arg0_type == MONO_TYPE_U4));
-				return emit_simd_ins_for_sig (cfg, klass, OP_SSE2_PSHUFD, 0, arg0_type, fsig, new_args);
+				return NULL;
+//				return emit_simd_ins_for_sig (cfg, klass, OP_SSE2_PSHUFD, 0, arg0_type, fsig, args);
 			}
 		}
 		// There is no variable shuffle until avx512

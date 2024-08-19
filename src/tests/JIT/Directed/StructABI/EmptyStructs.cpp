@@ -287,8 +287,28 @@ extern "C" DLLEXPORT DoubleFloatNestedEmpty Echo_DoubleFloatNestedEmpty_InIntege
 	float fa0, float fa1, float fa2, float fa3, float fa4, float fa5, float fa6,
 	DoubleFloatNestedEmpty a1_a2, int a3, float fa7)
 {
-	return a1_a2;
 	a1_a2.Float0 += (float)a3 + fa7;
+	return a1_a2;
+}
+
+
+struct ArrayOfEmpties
+{
+	Empty e[1];
+};
+
+struct ArrayOfEmptiesFloatDouble
+{
+	ArrayOfEmpties ArrayOfEmpties0;
+	float Float0;
+	double Double0;
+};
+
+extern "C" DLLEXPORT ArrayOfEmptiesFloatDouble Echo_ArrayOfEmptiesFloatDouble_RiscV(int a0, float fa0,
+	ArrayOfEmptiesFloatDouble a1_a2, int a3, float fa1)
+{
+	a1_a2.Double0 += (double)a3 + fa1;
+	return a1_a2;
 }
 
 

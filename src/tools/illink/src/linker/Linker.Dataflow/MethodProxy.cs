@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Immutable;
+using System.Diagnostics.CodeAnalysis;
 using Mono.Cecil;
 using Mono.Linker;
 
@@ -10,11 +11,28 @@ namespace ILLink.Shared.TypeSystemProxy
 {
 	internal readonly partial struct MethodProxy : IEquatable<MethodProxy>
 	{
-		public MethodProxy (MethodDefinition method) => Method = method;
+		public static bool TryCreate (MethodReference method, ITryResolveMetadata resolver, [NotNullWhen (true)] out MethodProxy? methodProxy)
+		{
+			if (resolver.TryResolve (method) is not MethodDefinition methodDef) {
+				methodProxy = null;
+				return false;
+			}
 
-		public static implicit operator MethodProxy (MethodDefinition method) => new (method);
+			methodProxy = new MethodProxy (method, methodDef);
+			return true;
+		}
 
-		public readonly MethodDefinition Method;
+		private MethodProxy (MethodReference method, MethodDefinition methodDef)
+		{
+			Method = method;
+			Definition = methodDef;
+		}
+
+		public static implicit operator MethodProxy (MethodDefinition method) => new (method, method);
+
+		public readonly MethodReference Method;
+
+		internal MethodDefinition Definition { get; }
 
 		public string Name { get => Method.Name; }
 
@@ -22,25 +40,28 @@ namespace ILLink.Shared.TypeSystemProxy
 
 		internal partial bool IsDeclaredOnType (string fullTypeName) => Method.IsDeclaredOnType (fullTypeName);
 
-		internal partial bool HasMetadataParameters () => Method.HasMetadataParameters ();
+		internal partial bool HasMetadataParameters () => Definition.HasMetadataParameters ();
 
 		/// <summary>
 		/// Gets the number of entries in the 'Parameters' section of a method's metadata (i.e. excludes the implicit 'this' from the count)
 		/// </summary>
-		internal partial int GetMetadataParametersCount () => Method.GetMetadataParametersCount ();
+		internal partial int GetMetadataParametersCount () => Definition.GetMetadataParametersCount ();
 
 		/// <summary>
 		/// Returns the number of parameters that are passed to the method in IL (including the implicit 'this' parameter).
 		/// In pseudocode: <code>method.HasImplicitThis() ? 1 + MetadataParametersCount : MetadataParametersCount;</code>
 		/// </summary>
-		internal partial int GetParametersCount () => Method.GetParametersCount ();
+		internal partial int GetParametersCount () => Definition.GetParametersCount ();
 
 		/// <summary>
 		/// Use only when iterating over all parameters. When wanting to index, use GetParameters(ParameterIndex)
 		/// </summary>
-		internal partial ParameterProxyEnumerable GetParameters () => Method.GetParameters ();
+		internal partial ParameterProxyEnumerable GetParameters ()
+		{
+			return new ParameterProxyEnumerable (0, Definition.GetParametersCount (), this);
+		}
 
-		internal partial ParameterProxy GetParameter (ParameterIndex index) => Method.GetParameter (index);
+		internal partial ParameterProxy GetParameter (ParameterIndex index) => Definition.GetParameter (index);
 
 		internal partial bool HasGenericParameters () => Method.HasGenericParameters;
 
@@ -59,9 +80,9 @@ namespace ILLink.Shared.TypeSystemProxy
 			return builder.ToImmutableArray ();
 		}
 
-		internal partial bool IsConstructor () => Method.IsConstructor;
+		internal partial bool IsConstructor () => Definition.IsConstructor;
 
-		internal partial bool IsStatic () => Method.IsStatic;
+		internal partial bool IsStatic () => Definition.IsStatic;
 
 		internal partial bool HasImplicitThis () => Method.HasImplicitThis ();
 

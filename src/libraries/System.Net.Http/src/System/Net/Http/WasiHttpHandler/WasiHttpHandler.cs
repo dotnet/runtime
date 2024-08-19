@@ -314,7 +314,7 @@ namespace System.Net.Http
                 }
                 else
                 {
-                    await WasiEventLoop.RegisterWasiPollable(future.Subscribe()).ConfigureAwait(false);
+                    await RegisterWasiPollable(future.Subscribe()).ConfigureAwait(false);
                 }
             }
         }
@@ -461,18 +461,21 @@ namespace System.Net.Http
             }
         }
 
-        private static class WasiEventLoop
+        private static Task RegisterWasiPollable(IPoll.Pollable pollable)
         {
-            internal static Task RegisterWasiPollable(IPoll.Pollable pollable)
-            {
-                var handle = pollable.Handle;
-                pollable.Handle = 0;
-                return CallRegisterWasiPollable((Thread)null!, handle);
+            var handle = pollable.Handle;
 
-                [UnsafeAccessor(UnsafeAccessorKind.StaticMethod, Name = "RegisterWasiPollable")]
-                static extern Task CallRegisterWasiPollable(Thread t, int handle);
-            }
+            // this will effectively neutralize Dispose() of the Pollable()
+            // because in the CoreLib we create another instance, which will dispose it
+            pollable.Handle = 0;
+            GC.SuppressFinalize(pollable);
+
+            return CallRegisterWasiPollableHandle((Thread)null!, handle);
+
         }
+
+        [UnsafeAccessor(UnsafeAccessorKind.StaticMethod, Name = "RegisterWasiPollableHandle")]
+        private static extern Task CallRegisterWasiPollableHandle(Thread t, int handle);
 
         private sealed class InputStream : Stream
         {
@@ -559,8 +562,7 @@ namespace System.Net.Http
                             var buffer = result;
                             if (buffer.Length == 0)
                             {
-                                await WasiEventLoop
-                                    .RegisterWasiPollable(stream.Subscribe())
+                                await RegisterWasiPollable(stream.Subscribe())
                                     .ConfigureAwait(false);
                             }
                             else
@@ -697,7 +699,7 @@ namespace System.Net.Http
                     var count = (int)stream.CheckWrite();
                     if (count == 0)
                     {
-                        await WasiEventLoop.RegisterWasiPollable(stream.Subscribe()).ConfigureAwait(false);
+                        await RegisterWasiPollable(stream.Subscribe()).ConfigureAwait(false);
                     }
                     else if (offset == limit)
                     {
