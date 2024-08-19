@@ -176,8 +176,7 @@ NESTED_END ThePreStub, _TEXT
 
 LEAF_ENTRY ThePreStubPatch, _TEXT
     nop
-.globl C_FUNC(ThePreStubPatchLabel)
-C_FUNC(ThePreStubPatchLabel):
+PATCH_LABEL ThePreStubPatchLabel
     ret lr
 LEAF_END ThePreStubPatch, _TEXT
 
