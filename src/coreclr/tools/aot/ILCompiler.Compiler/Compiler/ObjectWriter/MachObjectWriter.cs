@@ -484,7 +484,7 @@ namespace ILCompiler.ObjectWriter
                     Section = section,
                     Value = section.VirtualAddress + (ulong)definition.Value,
                     Descriptor = N_NO_DEAD_STRIP,
-                    Type = N_SECT | N_EXT,
+                    Type = (byte)(N_SECT | N_EXT | (definition.Global ? 0 : N_PEXT)),
                 });
             }
             sortedDefinedSymbols.Sort((symA, symB) => string.CompareOrdinal(symA.Name, symB.Name));
