@@ -19,17 +19,6 @@
 
 
 // This enumeration is used to retrieve a method desc from CustomMarshalerInfo::GetCustomMarshalerMD().
-enum EnumCustomMarshalerMethods
-{
-    CustomMarshalerMethods_MarshalNativeToManaged = 0,
-    CustomMarshalerMethods_MarshalManagedToNative,
-    CustomMarshalerMethods_CleanUpNativeData,
-    CustomMarshalerMethods_CleanUpManagedData,
-    CustomMarshalerMethods_GetNativeDataSize,
-    CustomMarshalerMethods_GetInstance,
-    CustomMarshalerMethods_LastMember
-};
-
 
 class CustomMarshalerInfo final
 {
@@ -49,31 +38,20 @@ public:
     void                InvokeCleanUpManagedMeth(OBJECTREF MngObj);
 
     // Accessors.
-    TypeHandle GetManagedType()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return m_hndManagedType;
-    }
-
     OBJECTREF GetCustomMarshaler()
     {
         LIMITED_METHOD_CONTRACT;
         return m_pLoaderAllocator->GetHandleValue(m_hndCustomMarshaler);
     }
 
-    // Helper function to retrieve a custom marshaler method desc.
-    static MethodDesc*  GetCustomMarshalerMD(EnumCustomMarshalerMethods Method, TypeHandle hndCustomMarshalertype);
-
     // Link used to contain this CM info in a linked list.
     SLink               m_Link;
 
 private:
-    TypeHandle          m_hndManagedType;
     LoaderAllocator*    m_pLoaderAllocator;
     LOADERHANDLE        m_hndCustomMarshaler;
     MethodDesc*         m_pMarshalNativeToManagedMD;
     MethodDesc*         m_pMarshalManagedToNativeMD;
-    MethodDesc*         m_pCleanUpNativeDataMD;
     MethodDesc*         m_pCleanUpManagedDataMD;
 };
 

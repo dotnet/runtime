@@ -17,17 +17,85 @@
 #include "mlinfo.h"
 #include "sigbuilder.h"
 
+namespace
+{
+    enum class CustomMarshalerMethod
+    {
+        MarshalNativeToManaged,
+        MarshalManagedToNative,
+        CleanUpManagedData,
+        GetInstance
+    };
+
+    MethodDesc * GetCustomMarshalerMD(CustomMarshalerMethod Method, TypeHandle hndCustomMarshalertype)
+    {
+        CONTRACTL
+        {
+            THROWS;
+            GC_TRIGGERS;
+            MODE_COOPERATIVE;
+        }
+        CONTRACTL_END;
+
+
+        MethodTable *pMT = hndCustomMarshalertype.AsMethodTable();
+
+        _ASSERTE(pMT->CanCastToInterface(CoreLibBinder::GetClass(CLASS__ICUSTOM_MARSHALER)));
+
+        MethodDesc *pMD = NULL;
+
+        switch (Method)
+        {
+            case CustomMarshalerMethod::MarshalNativeToManaged:
+                pMD = pMT->GetMethodDescForInterfaceMethod(
+                        CoreLibBinder::GetMethod(METHOD__ICUSTOM_MARSHALER__MARSHAL_NATIVE_TO_MANAGED),
+                        TRUE /* throwOnConflict */);
+                break;
+            case CustomMarshalerMethod::MarshalManagedToNative:
+                pMD = pMT->GetMethodDescForInterfaceMethod(
+                        CoreLibBinder::GetMethod(METHOD__ICUSTOM_MARSHALER__MARSHAL_MANAGED_TO_NATIVE),
+                        TRUE /* throwOnConflict */);
+                break;
+
+            case CustomMarshalerMethod::CleanUpManagedData:
+                pMD = pMT->GetMethodDescForInterfaceMethod(
+                            CoreLibBinder::GetMethod(METHOD__ICUSTOM_MARSHALER__CLEANUP_MANAGED_DATA),
+                            TRUE /* throwOnConflict */);
+                break;
+            case CustomMarshalerMethod::GetInstance:
+                // Must look this up by name since it's static
+                pMD = MemberLoader::FindMethod(pMT, "GetInstance", &gsig_SM_Str_RetICustomMarshaler);
+                if (!pMD)
+                {
+                    DefineFullyQualifiedNameForClassW()
+                    COMPlusThrow(kApplicationException,
+                                IDS_EE_GETINSTANCENOTIMPL,
+                                GetFullyQualifiedNameForClassW(pMT));
+                }
+                break;
+            default:
+                _ASSERTE(!"Unknown custom marshaler method");
+        }
+
+        _ASSERTE(pMD && "Unable to find specified CustomMarshaler method");
+
+        // Ensure that the value types in the signature are loaded.
+        MetaSig::EnsureSigValueTypesLoaded(pMD);
+
+        // Return the specified method desc.
+        return pMD;
+    }
+}
+
 //==========================================================================
 // Implementation of the custom marshaler info class.
 //==========================================================================
 
 CustomMarshalerInfo::CustomMarshalerInfo(LoaderAllocator *pLoaderAllocator, TypeHandle hndCustomMarshalerType, TypeHandle hndManagedType, LPCUTF8 strCookie, DWORD cCookieStrBytes)
-: m_hndManagedType(hndManagedType)
-, m_pLoaderAllocator(pLoaderAllocator)
+: m_pLoaderAllocator(pLoaderAllocator)
 , m_hndCustomMarshaler{}
 , m_pMarshalNativeToManagedMD(NULL)
 , m_pMarshalManagedToNativeMD(NULL)
-, m_pCleanUpNativeDataMD(NULL)
 , m_pCleanUpManagedDataMD(NULL)
 {
     CONTRACTL
@@ -50,7 +118,7 @@ CustomMarshalerInfo::CustomMarshalerInfo(LoaderAllocator *pLoaderAllocator, Type
     }
 
     // Custom marshalling of value classes is not supported.
-    if (m_hndManagedType.GetMethodTable()->IsValueType())
+    if (hndManagedType.GetMethodTable()->IsValueType())
         COMPlusThrow(kNotSupportedException, W("NotSupported_ValueClassCM"));
 
     // Run the <clinit> on the marshaler since it might not have run yet.
@@ -61,7 +129,7 @@ CustomMarshalerInfo::CustomMarshalerInfo(LoaderAllocator *pLoaderAllocator, Type
     STRINGREF CookieStringObj = StringObject::NewString(strCookie, cCookieStrBytes);
     GCPROTECT_BEGIN(CookieStringObj);
     // Load the method desc for the static method to retrieve the instance.
-    MethodDesc *pGetCustomMarshalerMD = GetCustomMarshalerMD(CustomMarshalerMethods_GetInstance, hndCustomMarshalerType);
+    MethodDesc *pGetCustomMarshalerMD = GetCustomMarshalerMD(CustomMarshalerMethod::GetInstance, hndCustomMarshalerType);
 
     // If the GetInstance method is generic, get an instantiating stub for it -
     // the CallDescr infrastructure doesn't know how to pass secret generic arguments.
@@ -101,10 +169,9 @@ CustomMarshalerInfo::CustomMarshalerInfo(LoaderAllocator *pLoaderAllocator, Type
     // Load the method desc's for all the methods in the ICustomMarshaler interface based on the type of the marshaler object.
     TypeHandle customMarshalerObjType = CustomMarshalerObj->GetMethodTable();
 
-    m_pMarshalNativeToManagedMD = GetCustomMarshalerMD(CustomMarshalerMethods_MarshalNativeToManaged, customMarshalerObjType);
-    m_pMarshalManagedToNativeMD = GetCustomMarshalerMD(CustomMarshalerMethods_MarshalManagedToNative, customMarshalerObjType);
-    m_pCleanUpNativeDataMD = GetCustomMarshalerMD(CustomMarshalerMethods_CleanUpNativeData, customMarshalerObjType);
-    m_pCleanUpManagedDataMD = GetCustomMarshalerMD(CustomMarshalerMethods_CleanUpManagedData, customMarshalerObjType);
+    m_pMarshalNativeToManagedMD = GetCustomMarshalerMD(CustomMarshalerMethod::MarshalNativeToManaged, customMarshalerObjType);
+    m_pMarshalManagedToNativeMD = GetCustomMarshalerMD(CustomMarshalerMethod::MarshalManagedToNative, customMarshalerObjType);
+    m_pCleanUpManagedDataMD = GetCustomMarshalerMD(CustomMarshalerMethod::CleanUpManagedData, customMarshalerObjType);
 
     m_hndCustomMarshaler = pLoaderAllocator->AllocateHandle(CustomMarshalerObj);
     GCPROTECT_END();
@@ -240,76 +307,6 @@ void CustomMarshalerInfo::InvokeCleanUpManagedMeth(OBJECTREF MngObj)
     GCPROTECT_END ();
     GCPROTECT_END ();
 }
-
-MethodDesc *CustomMarshalerInfo::GetCustomMarshalerMD(EnumCustomMarshalerMethods Method, TypeHandle hndCustomMarshalertype)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_COOPERATIVE;
-    }
-    CONTRACTL_END;
-
-
-    MethodTable *pMT = hndCustomMarshalertype.AsMethodTable();
-
-    _ASSERTE(pMT->CanCastToInterface(CoreLibBinder::GetClass(CLASS__ICUSTOM_MARSHALER)));
-
-    MethodDesc *pMD = NULL;
-
-    switch (Method)
-    {
-        case CustomMarshalerMethods_MarshalNativeToManaged:
-            pMD = pMT->GetMethodDescForInterfaceMethod(
-                       CoreLibBinder::GetMethod(METHOD__ICUSTOM_MARSHALER__MARSHAL_NATIVE_TO_MANAGED),
-                       TRUE /* throwOnConflict */);
-            break;
-        case CustomMarshalerMethods_MarshalManagedToNative:
-            pMD = pMT->GetMethodDescForInterfaceMethod(
-                       CoreLibBinder::GetMethod(METHOD__ICUSTOM_MARSHALER__MARSHAL_MANAGED_TO_NATIVE),
-                       TRUE /* throwOnConflict */);
-            break;
-        case CustomMarshalerMethods_CleanUpNativeData:
-            pMD = pMT->GetMethodDescForInterfaceMethod(
-                        CoreLibBinder::GetMethod(METHOD__ICUSTOM_MARSHALER__CLEANUP_NATIVE_DATA),
-                        TRUE /* throwOnConflict */);
-            break;
-
-        case CustomMarshalerMethods_CleanUpManagedData:
-            pMD = pMT->GetMethodDescForInterfaceMethod(
-                        CoreLibBinder::GetMethod(METHOD__ICUSTOM_MARSHALER__CLEANUP_MANAGED_DATA),
-                        TRUE /* throwOnConflict */);
-            break;
-        case CustomMarshalerMethods_GetNativeDataSize:
-            pMD = pMT->GetMethodDescForInterfaceMethod(
-                        CoreLibBinder::GetMethod(METHOD__ICUSTOM_MARSHALER__GET_NATIVE_DATA_SIZE),
-                        TRUE /* throwOnConflict */);
-            break;
-        case CustomMarshalerMethods_GetInstance:
-            // Must look this up by name since it's static
-            pMD = MemberLoader::FindMethod(pMT, "GetInstance", &gsig_SM_Str_RetICustomMarshaler);
-            if (!pMD)
-            {
-                DefineFullyQualifiedNameForClassW()
-                COMPlusThrow(kApplicationException,
-                             IDS_EE_GETINSTANCENOTIMPL,
-                             GetFullyQualifiedNameForClassW(pMT));
-            }
-            break;
-        default:
-            _ASSERTE(!"Unknown custom marshaler method");
-    }
-
-    _ASSERTE(pMD && "Unable to find specified CustomMarshaler method");
-
-    // Ensure that the value types in the signature are loaded.
-    MetaSig::EnsureSigValueTypesLoaded(pMD);
-
-    // Return the specified method desc.
-    return pMD;
-}
-
 
 //==========================================================================
 // Implementation of the custom marshaler hashtable helper.
