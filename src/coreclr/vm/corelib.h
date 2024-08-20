@@ -632,7 +632,6 @@ DEFINE_METHOD(RTFIELD,              GET_FIELDHANDLE,        GetFieldHandle,     
 
 DEFINE_CLASS(RUNTIME_HELPERS,       CompilerServices,       RuntimeHelpers)
 DEFINE_METHOD(RUNTIME_HELPERS,      IS_BITWISE_EQUATABLE,    IsBitwiseEquatable, NoSig)
-DEFINE_METHOD(RUNTIME_HELPERS,      GET_METHOD_TABLE,        GetMethodTable,     NoSig)
 DEFINE_METHOD(RUNTIME_HELPERS,      GET_RAW_DATA,            GetRawData,         NoSig)
 DEFINE_METHOD(RUNTIME_HELPERS,      GET_UNINITIALIZED_OBJECT, GetUninitializedObject, SM_Type_RetObj)
 DEFINE_METHOD(RUNTIME_HELPERS,      ENUM_EQUALS,            EnumEquals, NoSig)
@@ -1123,15 +1122,6 @@ DEFINE_FIELD_U(_userMessage,        ContractExceptionObject,    _UserMessage)
 DEFINE_FIELD_U(_condition,          ContractExceptionObject,    _Condition)
 
 DEFINE_CLASS(MODULEBASE,        Reflection,         Module)
-
-#ifdef FEATURE_ICASTABLE
-DEFINE_CLASS(ICASTABLE,         CompilerServices,   ICastable)
-
-DEFINE_CLASS(ICASTABLEHELPERS,  CompilerServices,   ICastableHelpers)
-DEFINE_METHOD(ICASTABLEHELPERS,        ISINSTANCEOF,       IsInstanceOfInterface, SM_ICastable_RtType_RefException_RetBool)
-DEFINE_METHOD(ICASTABLEHELPERS,        GETIMPLTYPE,        GetImplType, SM_ICastable_RtType_RetRtType)
-
-#endif // FEATURE_ICASTABLE
 
 DEFINE_CLASS(STACKALLOCATEDBOX,   CompilerServices,     StackAllocatedBox`1)
 

@@ -436,16 +436,8 @@ namespace System.Runtime.CompilerServices
         //
         // GC.KeepAlive(o);
         //
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [Intrinsic]
-        internal static unsafe MethodTable* GetMethodTable(object obj)
-        {
-            // The body of this function will be replaced by the EE with unsafe code
-            // See getILIntrinsicImplementationForRuntimeHelpers for how this happens.
-
-            return (MethodTable*)Unsafe.Add(ref Unsafe.As<byte, IntPtr>(ref obj.GetRawData()), -1);
-        }
-
+        internal static unsafe MethodTable* GetMethodTable(object obj) => GetMethodTable(obj);
 
         [LibraryImport(QCall, EntryPoint = "MethodTable_AreTypesEquivalent")]
         [return: MarshalAs(UnmanagedType.Bool)]
@@ -682,7 +674,6 @@ namespace System.Runtime.CompilerServices
         // Types that require non-trivial interface cast have this bit set in the category
         private const uint enum_flag_NonTrivialInterfaceCast = 0x00080000 // enum_flag_Category_Array
                                                              | 0x40000000 // enum_flag_ComObject
-                                                             | 0x00400000 // enum_flag_ICastable;
                                                              | 0x10000000 // enum_flag_IDynamicInterfaceCastable;
                                                              | 0x00040000; // enum_flag_Category_ValueType
 

@@ -65,11 +65,11 @@ internal struct TypeNameBuilder
     {
         IRuntimeTypeSystem runtimeTypeSystem = target.Contracts.RuntimeTypeSystem;
         ILoader loader = target.Contracts.Loader;
-        ReadOnlySpan<byte> methodNameSpan;
+        string methodName;
         TypeHandle th = default;
         Contracts.ModuleHandle module = default;
 
-        bool isNoMetadataMethod = runtimeTypeSystem.IsNoMetadataMethod(method, out methodNameSpan);
+        bool isNoMetadataMethod = runtimeTypeSystem.IsNoMetadataMethod(method, out methodName);
         if (isNoMetadataMethod)
         {
             if (runtimeTypeSystem.IsDynamicMethod(method))
@@ -91,7 +91,7 @@ internal struct TypeNameBuilder
 
         if (isNoMetadataMethod)
         {
-            stringBuilder.Append(Encoding.UTF8.GetString(methodNameSpan));
+            stringBuilder.Append(methodName);
         }
         else if (runtimeTypeSystem.IsArrayMethod(method, out ArrayFunctionType functionType))
         {
@@ -149,6 +149,12 @@ internal struct TypeNameBuilder
             if (!th.IsNull)
             {
                 typeInstantiationSigFormat = runtimeTypeSystem.GetInstantiation(th);
+                if (typeInstantiationSigFormat.IsEmpty && runtimeTypeSystem.IsArray(th, out _))
+                {
+                    // For arrays, fill in the instantiation with the element type handle
+                    // See MethodTable::GetArrayInstantiation for coreclr equivalent
+                    typeInstantiationSigFormat = new[] { runtimeTypeSystem.GetTypeParam(th) };
+                }
             }
 
             SigFormat.AppendSigFormat(target, stringBuilder, signature, reader, null, null, null, typeInstantiationSigFormat, runtimeTypeSystem.GetGenericMethodInstantiation(method), true);
