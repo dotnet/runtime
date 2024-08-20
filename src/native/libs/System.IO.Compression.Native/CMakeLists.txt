@@ -184,12 +184,7 @@ else ()
 endif ()
 
 if((NOT CLR_CMAKE_USE_SYSTEM_ZLIB) AND STATIC_LIBS_ONLY)
-    if (CLR_CMAKE_TARGET_UNIX)
-        # zlib on Unix needs to be installed in the same location as System.IO.Compression.Native so that we can then treat is as a 'z' native library.
-        install_static_library(zlib ${STATIC_LIB_DESTINATION} nativeaot)
-    else()
-        install_static_library(zlib aotsdk nativeaot)
-    endif()
+    install_static_library(zlib aotsdk nativeaot)
 endif()
 
 install (TARGETS System.IO.Compression.Native-Static DESTINATION ${STATIC_LIB_DESTINATION} COMPONENT libs)
