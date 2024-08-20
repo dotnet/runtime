@@ -440,10 +440,13 @@ internal sealed partial class SOSDacImpl : ISOSDacInterface, ISOSDacInterface2, 
                 // Update the size to include the array components
                 data->Size += numComponents * data->dwComponentSize;
 
-                // Get the type of the array elements
+                // Get the type handle of the array elements
                 TypeHandle element = runtimeTypeSystemContract.GetTypeParam(handle);
                 data->ElementTypeHandle = element.Address;
-                data->ElementType = (uint)runtimeTypeSystemContract.GetSignatureCorElementType(element);
+
+                // Get the element type from the canonical method table - see MethodTable::GetArrayElementType for coreclr equivalent
+                TypeHandle canonical = runtimeTypeSystemContract.GetTypeHandle(runtimeTypeSystemContract.GetCanonicalMethodTable(handle));
+                data->ElementType = (uint)runtimeTypeSystemContract.GetSignatureCorElementType(runtimeTypeSystemContract.GetTypeParam(canonical));
 
                 // Validate the element type handles for arrays of arrays
                 while (runtimeTypeSystemContract.IsArray(element, out _))
