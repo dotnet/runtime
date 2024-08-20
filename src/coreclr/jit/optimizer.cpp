@@ -3420,7 +3420,7 @@ bool Compiler::optNarrowTree(GenTree* tree, var_types srct, var_types dstt, Valu
                 // If 'dstt' is unsigned and one of the operands can be narrowed into 'dsst',
                 // the result of the GT_AND will also fit into 'dstt' and can be narrowed.
                 // The same is true if one of the operands is an int const and can be narrowed into 'dsst'.
-                if (!gtIsActiveCSE_Candidate(op2) && ((op2->gtOper == GT_CNS_INT) || varTypeIsUnsigned(dstt)))
+                if ((op2->gtOper == GT_CNS_INT) || varTypeIsUnsigned(dstt))
                 {
                     if (optNarrowTree(op2, srct, dstt, NoVNPair, false))
                     {
@@ -3433,8 +3433,7 @@ bool Compiler::optNarrowTree(GenTree* tree, var_types srct, var_types dstt, Valu
                     }
                 }
 
-                if ((opToNarrow == nullptr) && !gtIsActiveCSE_Candidate(op1) &&
-                    ((op1->gtOper == GT_CNS_INT) || varTypeIsUnsigned(dstt)))
+                if ((opToNarrow == nullptr) && ((op1->gtOper == GT_CNS_INT) || varTypeIsUnsigned(dstt)))
                 {
                     if (optNarrowTree(op1, srct, dstt, NoVNPair, false))
                     {
@@ -3494,8 +3493,7 @@ bool Compiler::optNarrowTree(GenTree* tree, var_types srct, var_types dstt, Valu
                 noway_assert(genActualType(tree->gtType) == genActualType(op1->gtType));
                 noway_assert(genActualType(tree->gtType) == genActualType(op2->gtType));
             COMMON_BINOP:
-                if (gtIsActiveCSE_Candidate(op1) || gtIsActiveCSE_Candidate(op2) ||
-                    !optNarrowTree(op1, srct, dstt, NoVNPair, doit) || !optNarrowTree(op2, srct, dstt, NoVNPair, doit))
+                if (!optNarrowTree(op1, srct, dstt, NoVNPair, doit) || !optNarrowTree(op2, srct, dstt, NoVNPair, doit))
                 {
                     noway_assert(doit == false);
                     return false;
@@ -3581,7 +3579,7 @@ bool Compiler::optNarrowTree(GenTree* tree, var_types srct, var_types dstt, Valu
                 return false;
 
             case GT_COMMA:
-                if (!gtIsActiveCSE_Candidate(op2) && optNarrowTree(op2, srct, dstt, vnpNarrow, doit))
+                if (optNarrowTree(op2, srct, dstt, vnpNarrow, doit))
                 {
                     /* Simply change the type of the tree */
 
