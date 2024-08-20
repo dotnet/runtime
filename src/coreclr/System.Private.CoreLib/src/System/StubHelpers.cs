@@ -1498,54 +1498,15 @@ namespace System.StubHelpers
         internal static extern IntPtr GetCOMIPFromRCW(object objSrc, IntPtr pCPCMD, out IntPtr ppTarget, out bool pfNeedsRelease);
 #endif // FEATURE_COMINTEROP
 
+#if PROFILING_SUPPORTED
         //-------------------------------------------------------
         // Profiler helpers
         //-------------------------------------------------------
-#if PROFILING_SUPPORTED
-        // FCalls are used to avoid impact to system error.
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern int ProfilerGetSystemError();
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "StubHelpers_ProfilerBeginTransitionCallback")]
+        internal static unsafe partial void* ProfilerBeginTransitionCallback(void* pTargetMD);
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern void ProfilerSetSystemError(int error);
-
-        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "StubHelpers_ProfilerBeginTransitionCallbackWorker")]
-        private static unsafe partial void* ProfilerBeginTransitionCallbackWorker(void* pTargetMD, MethodTable* pMT);
-
-        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "StubHelpers_ProfilerEndTransitionCallbackWorker")]
-        private static unsafe partial void ProfilerEndTransitionCallbackWorker(void* pTargetMD);
-
-        internal static unsafe IntPtr ProfilerBeginTransitionCallback(IntPtr pSecretParam, object pThis)
-        {
-            // Get the current error to retain.
-            int lastError = ProfilerGetSystemError();
-
-            MethodTable* pMT = null;
-            void* pTargetMD = pSecretParam.ToPointer(); // The secretParam is the target MethodDesc.
-
-            // If the target MethodDesc is non-null this is either the COM interop or the pinvoke case.
-            // If it is null, it is the calli pinvoke case or the unmanaged delegate case.
-            if (pTargetMD is null)
-            {
-                // calli pinvoke - We have an unmanaged target address but no MD.
-                // unmanaged delegate  - Retrieve the MD by using the "this" object's MethodTable.
-                pMT = pThis is null
-                    ? null
-                    : RuntimeHelpers.GetMethodTable(pThis);
-            }
-
-            void* res = ProfilerBeginTransitionCallbackWorker(pTargetMD, pMT);
-            ProfilerSetSystemError(lastError);
-            return (IntPtr)res;
-        }
-
-        internal static unsafe void ProfilerEndTransitionCallback(IntPtr pMD)
-        {
-            // Get the current error to retain.
-            int lastError = ProfilerGetSystemError();
-            ProfilerEndTransitionCallbackWorker(pMD.ToPointer());
-            ProfilerSetSystemError(lastError);
-        }
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "StubHelpers_ProfilerEndTransitionCallback")]
+        internal static unsafe partial void ProfilerEndTransitionCallback(void* pTargetMD);
 #endif // PROFILING_SUPPORTED
 
         //------------------------------------------------------

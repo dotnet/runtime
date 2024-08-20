@@ -452,10 +452,6 @@ FCFuncStart(gStubHelperFuncs)
     FCFuncElement("InternalGetCOMHRExceptionObject", StubHelpers::GetCOMHRExceptionObject)
     FCFuncElement("GetCOMIPFromRCW", StubHelpers::GetCOMIPFromRCW)
 #endif // FEATURE_COMINTEROP
-#ifdef PROFILING_SUPPORTED
-    FCFuncElement("ProfilerGetSystemError", StubHelpers::ProfilerGetSystemError)
-    FCFuncElement("ProfilerSetSystemError", StubHelpers::ProfilerSetSystemError)
-#endif
     FCFuncElement("AllocateInternal", StubHelpers::AllocateInternal)
     FCFuncElement("MarshalToUnmanagedVaListInternal", StubHelpers::MarshalToUnmanagedVaListInternal)
     FCFuncElement("MarshalToManagedVaListInternal", StubHelpers::MarshalToManagedVaListInternal)

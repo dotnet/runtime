@@ -498,44 +498,27 @@ extern "C" void QCALLTYPE StubHelpers_ThrowInteropParamException(INT resID, INT 
 }
 
 #ifdef PROFILING_SUPPORTED
-FCIMPL0(INT32, StubHelpers::ProfilerGetSystemError)
+extern "C" void* QCALLTYPE StubHelpers_ProfilerBeginTransitionCallback(MethodDesc* pTargetMD)
 {
-    FCALL_CONTRACT;
-    return ::GetLastError();
-}
-FCIMPLEND
+    BEGIN_PRESERVE_LAST_ERROR;
 
-FCIMPL1(void, StubHelpers::ProfilerSetSystemError, INT32 error)
-{
-    FCALL_CONTRACT;
-    ::SetLastError(error);
-}
-FCIMPLEND
-
-extern "C" void* QCALLTYPE StubHelpers_ProfilerBeginTransitionCallbackWorker(MethodDesc* pTargetMD, MethodTable* pMT)
-{
     QCALL_CONTRACT;
 
     BEGIN_QCALL;
-
-    if (pTargetMD == NULL && pMT != NULL)
-    {
-        // unmanaged delegate case
-        _ASSERTE(pMT->IsDelegate());
-        EEClass * pClass = pMT->GetClass();
-        pTargetMD = ((DelegateEEClass*)pClass)->GetInvokeMethod();
-        _ASSERTE(pTargetMD != NULL);
-    }
 
     ProfilerManagedToUnmanagedTransitionMD(pTargetMD, COR_PRF_TRANSITION_CALL);
 
     END_QCALL;
 
+    END_PRESERVE_LAST_ERROR;
+
     return pTargetMD;
 }
 
-extern "C" void QCALLTYPE StubHelpers_ProfilerEndTransitionCallbackWorker(MethodDesc* pTargetMD)
+extern "C" void QCALLTYPE StubHelpers_ProfilerEndTransitionCallback(MethodDesc* pTargetMD)
 {
+    BEGIN_PRESERVE_LAST_ERROR;
+
     QCALL_CONTRACT;
 
     BEGIN_QCALL;
@@ -543,6 +526,8 @@ extern "C" void QCALLTYPE StubHelpers_ProfilerEndTransitionCallbackWorker(Method
     ProfilerUnmanagedToManagedTransitionMD(pTargetMD, COR_PRF_TRANSITION_RETURN);
 
     END_QCALL;
+
+    END_PRESERVE_LAST_ERROR;
 }
 #endif // PROFILING_SUPPORTED
 

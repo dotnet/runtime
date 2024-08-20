@@ -2242,29 +2242,25 @@ DWORD NDirectStubLinker::EmitProfilerBeginTransitionCallback(ILCodeStream* pcsEm
 {
     STANDARD_VM_CONTRACT;
 
-    if (SF_IsForwardDelegateStub(dwStubFlags) || SF_IsCALLIStub(dwStubFlags))
+    if (!SF_IsForwardDelegateStub(dwStubFlags) && !SF_IsCALLIStub(dwStubFlags))
     {
-        // secret argument does not contain MD nor UMEntryThunk
-        pcsEmit->EmitLoadNullPtr();
-    }
-    else
-    {
+        // COM interop or the pinvoke case, should have a non-null 'secret argument'.
         EmitLoadStubContext(pcsEmit, dwStubFlags);
     }
-
-    // In the unmanaged delegate case, we need the "this" object to retrieve the MD
-    // in StubHelpers::ProfilerEnterCallback().
-    if (SF_IsDelegateStub(dwStubFlags))
+    else if (SF_IsDelegateStub(dwStubFlags))
     {
+        // In the unmanaged delegate case, we use the "this" object to retrieve the MD
         _ASSERTE(SF_IsForwardStub(dwStubFlags));
         pcsEmit->EmitLoadThis();
+        pcsEmit->EmitCALL(METHOD__DELEGATE__GET_INVOKE_METHOD, 1, 1);
     }
     else
     {
-        pcsEmit->EmitLDNULL();
+        // It is the calli pinvoke case, so pass null.
+        pcsEmit->EmitLoadNullPtr();
     }
 
-    pcsEmit->EmitCALL(METHOD__STUBHELPERS__PROFILER_BEGIN_TRANSITION_CALLBACK, 2, 1);
+    pcsEmit->EmitCALL(METHOD__STUBHELPERS__PROFILER_BEGIN_TRANSITION_CALLBACK, 1, 1);
 
     // Store the MD for StubHelpers::ProfilerLeaveCallback().
     DWORD dwMethodDescLocalNum = pcsEmit->NewLocal(ELEMENT_TYPE_I);
