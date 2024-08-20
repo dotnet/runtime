@@ -6,7 +6,7 @@
 // acquired before or after other Crst types) into a header file that defines a enum to describe each Crst
 // type and tables that map type to numerical ranking and a string based name.
 //
-// To use the tool, run "csc.exe CrstTypeTool.cs" and run the resulting executable.
+// To use the tool, run "dotnet run --project src/coreclr/inc/CrstTypeTool/" from repo root.
 //
 // The Crst type definition file is written in a very simple language. Comments begin with '//' and continue
 // to the end of the line. All remaining tokens after comment removal are simply sequences of non-whitespace
@@ -51,7 +51,7 @@ using System.IO;
 using System.Text.RegularExpressions;
 
 // The main application class containing the program entry point.
-internal partial class CrstTypeTool
+internal sealed partial class CrstTypeTool
 {
     // A hash containing every Crst type defined by the input .def file along with its attributes. Keyed by
     // Crst type name (which is case sensitive and doesn't include the 'Crst' enum prefix).
@@ -63,16 +63,8 @@ internal partial class CrstTypeTool
         try
         {
             // Calculate the filenames of the input and output files.
-            string inputFile = "CrstTypes.def";
-            string outputFile = "crsttypes_generated.h";
-
-            // A common error is to forget to check out the crsttypes_generated.h file first. Handle this case specially
-            // so we can give a good error message.
-            if (File.Exists(outputFile) && (File.GetAttributes(outputFile) & FileAttributes.ReadOnly) != 0)
-            {
-                Console.WriteLine(outputFile + " is read-only, you must check it out of TFS/SD first");
-                return 2;
-            }
+            string inputFile = Path.Combine("src", "coreclr", "inc", "CrstTypes.def");
+            string outputFile = Path.Combine("src", "coreclr", "inc", "crsttypes_generated.h");
 
             // Create an instance of our application class to store state in (specifically the collection of
             // Crst type definitions).
@@ -141,7 +133,7 @@ internal partial class CrstTypeTool
         writer.WriteLine();
         writer.WriteLine("// This file describes the range of Crst types available and their mapping to a numeric level (used by the");
         writer.WriteLine("// runtime in debug mode to validate we're deadlock free). To modify these settings edit the");
-        writer.WriteLine("// file:CrstTypes.def file and run the clr\\artifacts\\CrstTypeTool utility to generate a new version of this file.");
+        writer.WriteLine("// file:CrstTypes.def file and run the .\\CrstTypeTool utility to generate a new version of this file.");
         writer.WriteLine();
 
         // Emit the CrstType enum to define a value for each crst type (along with the kNumberOfCrstTypes
@@ -472,7 +464,7 @@ internal partial class CrstTypeTool
 // Class used to parse a CrstTypes.def file into a dictionary of Crst type definitions. It uses a simple lexer
 // that removes comments then forms tokens out of any consecutive non-whitespace characters. An equally simple
 // recursive descent parser forms Crst instances by parsing the token stream.
-internal partial class TypeFileParser
+internal sealed partial class TypeFileParser
 {
     // Remember the input file name and the dictionary we're meant to populate.
     private string m_typeFileName;
@@ -697,7 +689,7 @@ internal partial class TypeFileParser
     }
 
     // Class encapsulating a single token captured from the input file.
-    internal class Token
+    internal sealed class Token
     {
         // Hash of keyword text to enum values.
         // No sense building complex finite state machines to improve the efficiency of
@@ -766,7 +758,7 @@ internal partial class TypeFileParser
 
     // Syntax error used when an unexpected token is encountered which further lists the valid tokens that
     // would otherwise have been accepted.
-    internal class UnexpectedTokenError : ParseError
+    internal sealed class UnexpectedTokenError : ParseError
     {
         // Produce an unexpected token message with a file, line and column coming from an error token and
         // optionally the names of zero or more tokens that would have been accepted.
@@ -799,7 +791,7 @@ internal partial class TypeFileParser
     }
 
     // Syntax error used when we unexpectedly ran out of tokens.
-    internal class UnexpectedEofError : ParseError
+    internal sealed class UnexpectedEofError : ParseError
     {
         public UnexpectedEofError()
             : base("Unexpected end of file")
@@ -809,7 +801,7 @@ internal partial class TypeFileParser
 
 // This class represents an instance of a Crst type. These are unqiuely identified by case-sensitive name (the
 // same as the enum name used in vm code, minus the 'Crst' prefix).
-internal class CrstType : IComparable<CrstType>
+internal sealed class CrstType : IComparable<CrstType>
 {
     // Special level constants used to indicate unordered Crst types or those types we haven't gotten around
     // to ranking yet.
@@ -859,7 +851,7 @@ internal class CrstType : IComparable<CrstType>
 // parsing has finished we are guaranteed to have discovered all the distinct, disjoint groups and to have
 // fully populated them with the transitive closure of all related types. We can them normalize all groups
 // members so they share the same AcquiredBefore relationships.
-internal class CrstTypeGroup
+internal sealed class CrstTypeGroup
 {
     // We record every group that has been formed so far. This makes normalizing all groups easier.
     private static List<CrstTypeGroup> s_groups = new List<CrstTypeGroup>();
