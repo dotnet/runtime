@@ -60,6 +60,7 @@ namespace Mono.Linker.Tests.Cases.Reflection
 			TestInvalidTypeCombination ();
 			TestEscapedTypeName ();
 			AssemblyTypeResolutionBehavior.Test ();
+			InstantiatedGenericEquality.Test ();
 		}
 
 		[Kept]
@@ -676,6 +677,32 @@ namespace Mono.Linker.Tests.Cases.Reflection
 			class PointerElementGenericArgumentType {}
 
 			class ByRefElementGenericArgumentType {}
+		}
+
+		[Kept]
+		class InstantiatedGenericEquality
+		{
+			[Kept]
+			class Generic<T> {
+				[Kept]
+				public void Method () { }
+			}
+
+			// Regression test for an issue where ILLink's representation of a generic instantiated type
+			// was using reference equality. The test uses a local function to ensure that it goes through the
+			// interprocedural analysis code path that merges patterns and relies on a correct implementation
+			// of equality.
+			[Kept]
+			public static void Test ()
+			{
+				var type = Type.GetType("Mono.Linker.Tests.Cases.Reflection.TypeUsedViaReflection+InstantiatedGenericEquality+Generic`1[[System.Int32]]");
+
+				var lambda = () => {
+					type.GetMethod ("Method");
+				};
+
+				lambda ();
+			}
 		}
 
 		[Kept]
