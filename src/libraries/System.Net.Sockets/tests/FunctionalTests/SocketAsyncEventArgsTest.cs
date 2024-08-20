@@ -1099,7 +1099,8 @@ namespace System.Net.Sockets.Tests
                 return socket;
             });
             Socket a = portBlocker.MainSocket;
-            Socket b = portBlocker.SecondarySocket;
+            // the port blocker did not call Socket.Bind so we called bind() but we did not update properties on Socket
+            Socket b  = new Socket(portBlocker.SecondarySocket.SafeHandle);
 
             a.Listen(1);
             b.Listen(1);
