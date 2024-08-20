@@ -542,7 +542,7 @@ static inline guint8 mono_atomic_cas_u8(volatile guint8 *dest,
 	return gcc_sync_val_compare_and_swap (dest, comp, exch);
 }
 
-static inline guint16 mono_atomic_cas_u8(volatile guint16 *dest,
+static inline guint16 mono_atomic_cas_u16(volatile guint16 *dest,
 						guint16 exch, guint16 comp)
 {
 	return gcc_sync_val_compare_and_swap (dest, comp, exch);
