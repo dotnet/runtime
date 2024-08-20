@@ -29,9 +29,7 @@ namespace System.Runtime.Intrinsics.X86
             public static new bool IsSupported { [Intrinsic] get => false; }
         }
 
-        /// <summary>
-        ///   <para>void _serialize (void);</para>
-        /// </summary>
+        /// <summary>void _serialize (void);</summary>
         public static void Serialize() { throw new PlatformNotSupportedException(); }
 
     }

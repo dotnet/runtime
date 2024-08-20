@@ -28,44 +28,28 @@ namespace System.Runtime.Intrinsics.Arm
             /// <remarks>A value of <see langword="false" /> indicates that the APIs will throw <see cref="PlatformNotSupportedException" />.</remarks>
             public static bool IsSupported { get => IsSupported; }
 
-            /// <summary>
-            ///   <para>  A64: CLS Wd, Wn</para>
-            /// </summary>
+            /// <summary>  A64: CLS Wd, Wn</summary>
             public static int LeadingSignCount(int value) => LeadingSignCount(value);
 
-            /// <summary>
-            ///   <para>  A64: CLS Xd, Xn</para>
-            /// </summary>
+            /// <summary>  A64: CLS Xd, Xn</summary>
             public static int LeadingSignCount(long value) => LeadingSignCount(value);
 
-            /// <summary>
-            ///   <para>  A64: CLZ Xd, Xn</para>
-            /// </summary>
+            /// <summary>  A64: CLZ Xd, Xn</summary>
             public static int LeadingZeroCount(long value) => LeadingZeroCount(value);
 
-            /// <summary>
-            ///   <para>  A64: CLZ Xd, Xn</para>
-            /// </summary>
+            /// <summary>  A64: CLZ Xd, Xn</summary>
             public static int LeadingZeroCount(ulong value) => LeadingZeroCount(value);
 
-            /// <summary>
-            ///   <para>  A64: SMULH Xd, Xn, Xm</para>
-            /// </summary>
+            /// <summary>  A64: SMULH Xd, Xn, Xm</summary>
             public static long MultiplyHigh(long left, long right) => MultiplyHigh(left, right);
 
-            /// <summary>
-            ///   <para>  A64: UMULH Xd, Xn, Xm</para>
-            /// </summary>
+            /// <summary>  A64: UMULH Xd, Xn, Xm</summary>
             public static ulong MultiplyHigh(ulong left, ulong right) => MultiplyHigh(left, right);
 
-            /// <summary>
-            ///   <para>  A64: RBIT Xd, Xn</para>
-            /// </summary>
+            /// <summary>  A64: RBIT Xd, Xn</summary>
             public static long ReverseElementBits(long value) => ReverseElementBits(value);
 
-            /// <summary>
-            ///   <para>  A64: RBIT Xd, Xn</para>
-            /// </summary>
+            /// <summary>  A64: RBIT Xd, Xn</summary>
             public static ulong ReverseElementBits(ulong value) => ReverseElementBits(value);
         }
 

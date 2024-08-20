@@ -7,152 +7,94 @@ namespace System.Runtime.Intrinsics.Arm
     // Matches the field "pattern" within the Arm Architecture Reference Manual
     public enum SveMaskPattern : byte
     {
-        /// <summary>
-        ///   <para>POW2</para>
-        /// </summary>
+        /// <summary>POW2</summary>
         LargestPowerOf2 = 0,      // The largest power of 2.
 
-        /// <summary>
-        ///   <para>VL1</para>
-        /// </summary>
+        /// <summary>VL1</summary>
         VectorCount1 = 1,         // Exactly 1 element.
 
-        /// <summary>
-        ///   <para>VL2</para>
-        /// </summary>
+        /// <summary>VL2</summary>
         VectorCount2 = 2,         // Exactly 2 elements.
 
-        /// <summary>
-        ///   <para>VL3</para>
-        /// </summary>
+        /// <summary>VL3</summary>
         VectorCount3 = 3,         // Exactly 3 elements.
 
-        /// <summary>
-        ///   <para>VL4</para>
-        /// </summary>
+        /// <summary>VL4</summary>
         VectorCount4 = 4,         // Exactly 4 elements.
 
-        /// <summary>
-        ///   <para>VL5</para>
-        /// </summary>
+        /// <summary>VL5</summary>
         VectorCount5 = 5,         // Exactly 5 elements.
 
-        /// <summary>
-        ///   <para>VL6</para>
-        /// </summary>
+        /// <summary>VL6</summary>
         VectorCount6 = 6,         // Exactly 6 elements.
 
-        /// <summary>
-        ///   <para>VL7</para>
-        /// </summary>
+        /// <summary>VL7</summary>
         VectorCount7 = 7,         // Exactly 7 elements.
 
-        /// <summary>
-        ///   <para>VL8</para>
-        /// </summary>
+        /// <summary>VL8</summary>
         VectorCount8 = 8,         // Exactly 8 elements.
 
-        /// <summary>
-        ///   <para>VL16</para>
-        /// </summary>
+        /// <summary>VL16</summary>
         VectorCount16 = 9,        // Exactly 16 elements.
 
-        /// <summary>
-        ///   <para>VL32</para>
-        /// </summary>
+        /// <summary>VL32</summary>
         VectorCount32 = 10,       // Exactly 32 elements.
 
-        /// <summary>
-        ///   <para>VL64</para>
-        /// </summary>
+        /// <summary>VL64</summary>
         VectorCount64 = 11,       // Exactly 64 elements.
 
-        /// <summary>
-        ///   <para>VL128</para>
-        /// </summary>
+        /// <summary>VL128</summary>
         VectorCount128 = 12,      // Exactly 128 elements.
 
-        /// <summary>
-        ///   <para>VL256</para>
-        /// </summary>
+        /// <summary>VL256</summary>
         VectorCount256 = 13,      // Exactly 256 elements.
 
-        /// <summary>
-        ///   <para>MUL4</para>
-        /// </summary>
+        /// <summary>MUL4</summary>
         LargestMultipleOf4 = 29,  // The largest multiple of 4.
 
-        /// <summary>
-        ///   <para>MUL3</para>
-        /// </summary>
+        /// <summary>MUL3</summary>
         LargestMultipleOf3 = 30,  // The largest multiple of 3.
 
-        /// <summary>
-        ///   <para>ALL</para>
-        /// </summary>
+        /// <summary>ALL</summary>
         All  = 31                 // All available (implicitly a multiple of two).
     }
 
     public enum SvePrefetchType : byte
     {
-        /// <summary>
-        ///   <para>PLDL1KEEP</para>
-        /// </summary>
+        /// <summary>PLDL1KEEP</summary>
         LoadL1Temporal = 0,
 
-        /// <summary>
-        ///   <para>PLDL1STRM</para>
-        /// </summary>
+        /// <summary>PLDL1STRM</summary>
         LoadL1NonTemporal = 1,
 
-        /// <summary>
-        ///   <para>PLDL2KEEP</para>
-        /// </summary>
+        /// <summary>PLDL2KEEP</summary>
         LoadL2Temporal = 2,
 
-        /// <summary>
-        ///   <para>PLDL2STRM</para>
-        /// </summary>
+        /// <summary>PLDL2STRM</summary>
         LoadL2NonTemporal = 3,
 
-        /// <summary>
-        ///   <para>PLDL3KEEP</para>
-        /// </summary>
+        /// <summary>PLDL3KEEP</summary>
         LoadL3Temporal = 4,
 
-        /// <summary>
-        ///   <para>PLDL3STRM</para>
-        /// </summary>
+        /// <summary>PLDL3STRM</summary>
         LoadL3NonTemporal = 5,
 
-        /// <summary>
-        ///   <para>PSTL1KEEP</para>
-        /// </summary>
+        /// <summary>PSTL1KEEP</summary>
         StoreL1Temporal = 8,
 
-        /// <summary>
-        ///   <para>PSTL1STRM</para>
-        /// </summary>
+        /// <summary>PSTL1STRM</summary>
         StoreL1NonTemporal = 9,
 
-        /// <summary>
-        ///   <para>PSTL2KEEP</para>
-        /// </summary>
+        /// <summary>PSTL2KEEP</summary>
         StoreL2Temporal = 10,
 
-        /// <summary>
-        ///   <para>PSTL2STRM</para>
-        /// </summary>
+        /// <summary>PSTL2STRM</summary>
         StoreL2NonTemporal = 11,
 
-        /// <summary>
-        ///   <para>PSTL3KEEP</para>
-        /// </summary>
+        /// <summary>PSTL3KEEP</summary>
         StoreL3Temporal = 12,
 
-        /// <summary>
-        ///   <para>PSTL3STRM</para>
-        /// </summary>
+        /// <summary>PSTL3STRM</summary>
         StoreL3NonTemporal = 13
     };
 }

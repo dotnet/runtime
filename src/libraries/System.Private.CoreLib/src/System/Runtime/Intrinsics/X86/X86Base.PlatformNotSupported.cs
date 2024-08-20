@@ -93,27 +93,19 @@ namespace System.Runtime.Intrinsics.X86
         /// </summary>
         public static (int Eax, int Ebx, int Ecx, int Edx) CpuId(int functionId, int subFunctionId) { throw new PlatformNotSupportedException(); }
 
-        /// <summary>
-        ///   <para>  DIV reg/m32</para>
-        /// </summary>
+        /// <summary>  DIV reg/m32</summary>
         [Experimental(Experimentals.X86BaseDivRemDiagId, UrlFormat = Experimentals.SharedUrlFormat)]
         public static (uint Quotient, uint Remainder) DivRem(uint lower, uint upper, uint divisor) { throw new PlatformNotSupportedException(); }
 
-        /// <summary>
-        ///   <para>  IDIV reg/m32</para>
-        /// </summary>
+        /// <summary>  IDIV reg/m32</summary>
         [Experimental(Experimentals.X86BaseDivRemDiagId, UrlFormat = Experimentals.SharedUrlFormat)]
         public static (int Quotient, int Remainder) DivRem(uint lower, int upper, int divisor) { throw new PlatformNotSupportedException(); }
 
-        /// <summary>
-        ///   <para>  IDIV reg/m</para>
-        /// </summary>
+        /// <summary>  IDIV reg/m</summary>
         [Experimental(Experimentals.X86BaseDivRemDiagId, UrlFormat = Experimentals.SharedUrlFormat)]
         public static (nuint Quotient, nuint Remainder) DivRem(nuint lower, nuint upper, nuint divisor) { throw new PlatformNotSupportedException(); }
 
-        /// <summary>
-        ///   <para>  IDIV reg/m</para>
-        /// </summary>
+        /// <summary>  IDIV reg/m</summary>
         [Experimental(Experimentals.X86BaseDivRemDiagId, UrlFormat = Experimentals.SharedUrlFormat)]
         public static (nint Quotient, nint Remainder) DivRem(nuint lower, nint upper, nint divisor) { throw new PlatformNotSupportedException(); }
 

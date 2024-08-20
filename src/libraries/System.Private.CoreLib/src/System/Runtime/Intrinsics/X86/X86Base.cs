@@ -115,15 +115,11 @@ namespace System.Runtime.Intrinsics.X86
         [Experimental(Experimentals.X86BaseDivRemDiagId, UrlFormat = Experimentals.SharedUrlFormat)]
         public static (int Quotient, int Remainder) DivRem(uint lower, int upper, int divisor) => DivRem(lower, upper, divisor);
 
-        /// <summary>
-        ///   <para>  IDIV reg/m</para>
-        /// </summary>
+        /// <summary>  IDIV reg/m</summary>
         [Experimental(Experimentals.X86BaseDivRemDiagId, UrlFormat = Experimentals.SharedUrlFormat)]
         public static (nuint Quotient, nuint Remainder) DivRem(nuint lower, nuint upper, nuint divisor) => DivRem(lower, upper, divisor);
 
-        /// <summary>
-        ///   <para>  IDIV reg/m</para>
-        /// </summary>
+        /// <summary>  IDIV reg/m</summary>
         [Experimental(Experimentals.X86BaseDivRemDiagId, UrlFormat = Experimentals.SharedUrlFormat)]
         public static (nint Quotient, nint Remainder) DivRem(nuint lower, nint upper, nint divisor) => DivRem(lower, upper, divisor);
 

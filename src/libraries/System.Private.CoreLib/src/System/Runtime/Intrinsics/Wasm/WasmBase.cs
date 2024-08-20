@@ -14,44 +14,28 @@ namespace System.Runtime.Intrinsics.Wasm
         /// <remarks>A value of <see langword="false" /> indicates that the APIs will throw <see cref="PlatformNotSupportedException" />.</remarks>
         public static bool IsSupported { get => IsSupported; }
 
-        /// <summary>
-        ///   <para>  i32.clz</para>
-        /// </summary>
+        /// <summary>  i32.clz</summary>
         public static int LeadingZeroCount(int value) => LeadingZeroCount(value);
 
-        /// <summary>
-        ///   <para>  i32.clz</para>
-        /// </summary>
+        /// <summary>  i32.clz</summary>
         public static int LeadingZeroCount(uint value) => LeadingZeroCount(value);
 
-        /// <summary>
-        ///   <para>  i64.clz</para>
-        /// </summary>
+        /// <summary>  i64.clz</summary>
         public static int LeadingZeroCount(long value) => LeadingZeroCount(value);
 
-        /// <summary>
-        ///   <para>  i64.clz</para>
-        /// </summary>
+        /// <summary>  i64.clz</summary>
         public static int LeadingZeroCount(ulong value) => LeadingZeroCount(value);
 
-        /// <summary>
-        ///   <para>  i32.ctz</para>
-        /// </summary>
+        /// <summary>  i32.ctz</summary>
         public static int TrailingZeroCount(int value) => TrailingZeroCount(value);
 
-        /// <summary>
-        ///   <para>  i32.ctz</para>
-        /// </summary>
+        /// <summary>  i32.ctz</summary>
         public static int TrailingZeroCount(uint value) => TrailingZeroCount(value);
 
-        /// <summary>
-        ///   <para>  i64.ctz</para>
-        /// </summary>
+        /// <summary>  i64.ctz</summary>
         public static int TrailingZeroCount(long value) => TrailingZeroCount(value);
 
-        /// <summary>
-        ///   <para>  i64.ctz</para>
-        /// </summary>
+        /// <summary>  i64.ctz</summary>
         public static int TrailingZeroCount(ulong value) => TrailingZeroCount(value);
     }
 }
