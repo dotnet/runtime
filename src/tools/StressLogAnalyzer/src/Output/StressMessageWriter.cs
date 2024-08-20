@@ -25,7 +25,7 @@ internal sealed class StressMessageWriter(IThreadNameOutput threadOutput, TimeTr
 
         if (writeFormatString)
         {
-            string format = target.ReadZeroTerminatedUtf8String(message.FormatString, 1024);
+            string format = target.ReadUtf8String(message.FormatString);
             await output.WriteAsync($"***|\"{format}\"|*** ").ConfigureAwait(false);
         }
 

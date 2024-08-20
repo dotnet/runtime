@@ -100,7 +100,7 @@ public sealed class StressMessageFormatter
     {
         try
         {
-            builder.Append(ReadZeroTerminatedString<byte>(ptr, maxLength: 256));
+            builder.Append(_target.ReadUtf8String(ptr));
         }
         catch (InvalidOperationException)
         {
@@ -112,7 +112,7 @@ public sealed class StressMessageFormatter
     {
         try
         {
-            builder.Append(ReadZeroTerminatedString<char>(ptr, maxLength: 256));
+            builder.Append(_target.ReadUtf16String(ptr));
         }
         catch (InvalidOperationException)
         {
@@ -193,32 +193,10 @@ public sealed class StressMessageFormatter
         }
     }
 
-    private unsafe string ReadZeroTerminatedString<T>(TargetPointer pointer, int maxLength)
-        where T : unmanaged, IBinaryInteger<T>, IMinMaxValue<T>
-    {
-        StringBuilder sb = new();
-        for (T ch = _target.Read<T>(pointer);
-            ch != T.Zero;
-            ch = _target.Read<T>(pointer = new TargetPointer((ulong)pointer + (ulong)sizeof(T))))
-        {
-            if (sb.Length > maxLength)
-            {
-                break;
-            }
-
-            // char implements INumberBase<char> explicitly, so we need to call the helper method to use CreateChecked.
-            sb.Append(MakeTruncatingHelper<char>(ch));
-        }
-        return sb.ToString();
-
-        static U MakeTruncatingHelper<U>(T value) where U : INumberBase<U> => U.CreateChecked(value);
-    }
-
     public string GetFormattedMessage(StressMsgData stressMsg)
     {
         Debug.Assert(stressMsg.FormatString != TargetPointer.Null);
-        TargetPointer nextCharPtr = stressMsg.FormatString;
-        string formatString = ReadZeroTerminatedString<byte>(stressMsg.FormatString, maxLength: 256);
+        string formatString = _target.ReadUtf8String(stressMsg.FormatString);
         int currentArg = 0;
         int startIndex = 0;
         StringBuilder sb = new();

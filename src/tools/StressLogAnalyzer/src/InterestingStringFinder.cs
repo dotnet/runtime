@@ -93,7 +93,7 @@ namespace StressLogAnalyzer
 
             StringCacheEntry CalculateEntryForString(TargetPointer address)
             {
-                string formatString = target.ReadZeroTerminatedUtf8String(address, 1024);
+                string formatString = target.ReadUtf8String(address);
                 bool defaultInteresting = false;
                 if (_knownStrings.TryGetValue(formatString, out WellKnownString wellKnown))
                 {
@@ -144,7 +144,7 @@ namespace StressLogAnalyzer
 
         public bool IsWellKnown(TargetPointer formatStringPointer, out WellKnownString wellKnownString)
         {
-            return _knownStrings.TryGetValue(target.ReadZeroTerminatedUtf8String(formatStringPointer, 1024), out wellKnownString);
+            return _knownStrings.TryGetValue(target.ReadUtf8String(formatStringPointer), out wellKnownString);
         }
     }
 }
