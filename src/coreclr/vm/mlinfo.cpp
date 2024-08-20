@@ -394,7 +394,9 @@ namespace
     {
         CONTRACT (CustomMarshalerInfo*)
         {
-            STANDARD_VM_CHECK;
+            THROWS;
+            GC_TRIGGERS;
+            MODE_ANY;
             PRECONDITION(CheckPointer(pAssembly));
             POSTCONDITION(CheckPointer(RETVAL));
         }

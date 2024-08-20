@@ -176,7 +176,7 @@ CustomMarshalerInfo* CustomMarshalerInfo::CreateIEnumeratorMarshalerInfo(LoaderH
     {
         THROWS;
         GC_TRIGGERS;
-        MODE_COOPERATIVE;
+        MODE_ANY;
         PRECONDITION(CheckPointer(pHeap));
         PRECONDITION(CheckPointer(pLoaderAllocator));
     }
@@ -185,6 +185,7 @@ CustomMarshalerInfo* CustomMarshalerInfo::CreateIEnumeratorMarshalerInfo(LoaderH
     CustomMarshalerInfo* pInfo = nullptr;
     OBJECTREF IEnumeratorMarshalerObj = nullptr;
 
+    GCX_COOP();
     GCPROTECT_BEGIN(IEnumeratorMarshalerObj);
 
     MethodDescCallSite getMarshaler(METHOD__STUBHELPERS__GET_IENUMERATOR_TO_ENUM_VARIANT_MARSHALER);
