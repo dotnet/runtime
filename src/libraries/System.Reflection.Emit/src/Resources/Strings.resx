@@ -303,4 +303,7 @@
   <data name="InvalidOperation_UnmatchingSymScope" xml:space="preserve">
     <value>Unmatching symbol scope.</value>
   </data>
+  <data name="Argument_MustBeEnum" xml:space="preserve">
+    <value>Type provided must be an Enum.</value>
+  </data>
 </root>
