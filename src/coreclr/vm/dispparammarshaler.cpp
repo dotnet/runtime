@@ -96,7 +96,6 @@ void DispParamOleColorMarshaler::MarshalNativeToManaged(VARIANT *pSrcVar, OBJECT
     OLE_COLOR OleColor = bByref ? *V_UI4REF(pSrcVar) : V_UI4(pSrcVar);
 
     // Convert the OLECOLOR to a System.Drawing.Color.
-    SYSTEMCOLOR MngColor;
     ConvertOleColorToSystemColor(OleColor, pDestObj);
 }
 
