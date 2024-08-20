@@ -2459,13 +2459,27 @@ interp_handle_intrinsics (TransformData *td, MonoMethod *target_method, MonoClas
 			*op = MINT_MONO_MEMORY_BARRIER;
 		else if (!strcmp (tm, "Exchange") && csignature->param_count == 2 && csignature->params [0]->type == MONO_TYPE_I8 && csignature->params [1]->type == MONO_TYPE_I8)
 			*op = MINT_MONO_EXCHANGE_I8;
-		else if (!strcmp (tm, "CompareExchange") && csignature->param_count == 3 &&
-			 (csignature->params[1]->type == MONO_TYPE_I4 ||
-			  csignature->params[1]->type == MONO_TYPE_I8)) {
-			if (csignature->params[1]->type == MONO_TYPE_I4)
-				*op = MINT_MONO_CMPXCHG_I4;
-			else
-				*op = MINT_MONO_CMPXCHG_I8;
+		else if (!strcmp (tm, "CompareExchange") && csignature->param_count == 3) {
+			MonoType *t = mini_get_underlying_type (csignature->params[1]);
+			if (t->type == MONO_TYPE_I4 ||
+			    t->type == MONO_TYPE_I8 ||
+			    t->type == MONO_TYPE_U1 ||
+			    t->type == MONO_TYPE_I1) {
+				switch (t->type) {
+				case MONO_TYPE_U1:
+				case MONO_TYPE_I1:
+					*op = MINT_MONO_CMPXCHG_U1;
+					break;
+				case MONO_TYPE_I4:
+					*op = MINT_MONO_CMPXCHG_I4;
+					break;
+				case MONO_TYPE_I8:
+					*op = MINT_MONO_CMPXCHG_I8;
+					break;
+				default:
+					g_assert_not_reached ();
+				}
+			}
 		}
 	} else if (in_corlib && !strcmp (klass_name_space, "System.Threading") && !strcmp (klass_name, "Thread")) {
 		if (!strcmp (tm, "MemoryBarrier") && csignature->param_count == 0)
