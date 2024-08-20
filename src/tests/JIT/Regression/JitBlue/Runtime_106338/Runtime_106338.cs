@@ -15,6 +15,7 @@ using Xunit;
 public class Runtime_106338
 {
     [Fact]
+    [SkipOnMono("https://github.com/dotnet/runtime/issues/100368", TestPlatforms.Any)]
     public static void TestEntryPoint()
     {
         ulong vr10 = 16105307123914158031UL;
