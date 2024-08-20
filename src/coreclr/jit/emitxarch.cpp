@@ -356,6 +356,22 @@ bool emitter::DoesWriteZeroFlag(instruction ins)
 }
 
 //------------------------------------------------------------------------
+// DoesWriteParityFlag: check if the instruction write the
+//     PF flag.
+//
+// Arguments:
+//    ins - instruction to test
+//
+// Return Value:
+//    true if instruction writes the PF flag, false otherwise.
+//
+bool emitter::DoesWriteParityFlag(instruction ins)
+{
+    insFlags flags = CodeGenInterface::instInfo[ins];
+    return (flags & Writes_PF) != 0;
+}
+
+//------------------------------------------------------------------------
 // DoesWriteSignFlag: check if the instruction writes the
 //     SF flag.
 //
@@ -979,7 +995,8 @@ bool emitter::AreFlagsSetToZeroCmp(regNumber reg, emitAttr opSize, GenCondition 
     // Certain instruction like and, or and xor modifies exactly same flags
     // as "test" instruction.
     // They reset OF and CF to 0 and modifies SF, ZF and PF.
-    if (DoesResetOverflowAndCarryFlags(lastIns))
+    if (DoesResetOverflowAndCarryFlags(lastIns) && DoesWriteSignFlag(lastIns) && DoesWriteZeroFlag(lastIns) &&
+        DoesWriteParityFlag(lastIns))
     {
         return id->idOpSize() == opSize;
     }
@@ -3133,7 +3150,6 @@ inline bool hasTupleTypeInfo(instruction ins)
 insTupleType emitter::insTupleTypeInfo(instruction ins) const
 {
     assert((unsigned)ins < ArrLen(insTupleTypeInfos));
-    assert(insTupleTypeInfos[ins] != INS_TT_NONE);
     return insTupleTypeInfos[ins];
 }
 
@@ -6602,6 +6618,7 @@ void emitter::emitIns_R_R(instruction ins, emitAttr attr, regNumber reg1, regNum
         assert(UseEvexEncoding());
         id->idSetEvexbContext(instOptions);
     }
+    SetEvexEmbMaskIfNeeded(id, instOptions);
 
     UNATIVE_OFFSET sz = emitInsSizeRR(id);
     id->idCodeSize(sz);
@@ -10987,7 +11004,7 @@ void emitter::emitDispEmbBroadcastCount(instrDesc* id) const
         return;
     }
     ssize_t baseSize   = GetInputSizeInBytes(id);
-    ssize_t vectorSize = (ssize_t)emitGetBaseMemOpSize(id);
+    ssize_t vectorSize = (ssize_t)emitGetMemOpSize(id, /* ignoreEmbeddedBroadcast */ true);
     printf(" {1to%d}", vectorSize / baseSize);
 }
 

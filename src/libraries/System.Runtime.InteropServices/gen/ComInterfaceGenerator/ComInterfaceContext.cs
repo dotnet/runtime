@@ -15,6 +15,7 @@ namespace Microsoft.Interop
         internal ComInterfaceInfo Info { get; init; }
         internal ComInterfaceContext? Base { get; init; }
         internal ComInterfaceOptions Options { get; init; }
+        internal bool IsExternallyDefined { get; init; }
 
         private ComInterfaceContext(ComInterfaceInfo info, ComInterfaceContext? @base, ComInterfaceOptions options)
         {
@@ -51,7 +52,7 @@ namespace Microsoft.Interop
 
                 if (iface.BaseInterfaceKey is null)
                 {
-                    var baselessCtx = DiagnosticOr<ComInterfaceContext>.From(new ComInterfaceContext(iface, null, iface.Options));
+                    var baselessCtx = DiagnosticOr<ComInterfaceContext>.From(new ComInterfaceContext(iface, null, iface.Options) { IsExternallyDefined = iface.IsExternallyDefined });
                     nameToContextCache[iface.ThisInterfaceKey] = baselessCtx;
                     return baselessCtx;
                 }
@@ -75,7 +76,7 @@ namespace Microsoft.Interop
                 }
                 DiagnosticOr<ComInterfaceContext> baseContext = baseCachedValue ?? baseReturnedValue;
                 Debug.Assert(baseContext.HasValue);
-                var ctx = DiagnosticOr<ComInterfaceContext>.From(new ComInterfaceContext(iface, baseContext.Value, iface.Options));
+                var ctx = DiagnosticOr<ComInterfaceContext>.From(new ComInterfaceContext(iface, baseContext.Value, iface.Options) { IsExternallyDefined = iface.IsExternallyDefined });
                 nameToContextCache[iface.ThisInterfaceKey] = ctx;
                 return ctx;
             }

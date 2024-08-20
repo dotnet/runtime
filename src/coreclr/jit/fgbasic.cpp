@@ -72,8 +72,10 @@ void Compiler::fgInit()
 #endif // SWIFT_SUPPORT
 
     /* We haven't reached the global morphing phase */
-    fgGlobalMorph     = false;
-    fgGlobalMorphDone = false;
+    fgGlobalMorph       = false;
+    fgGlobalMorphDone   = false;
+    fgRemoveRestOfBlock = false;
+    fgHasNoReturnCall   = false;
 
     fgModified = false;
 
