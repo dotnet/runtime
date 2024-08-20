@@ -83,7 +83,7 @@ WRITE_BARRIER_ENTRY JIT_CheckedWriteBarrier
 
     // Do not perform the work if g_GCShadow is 0
     ldr  x12, LOCAL_LABEL(wbs_GCShadow)
-    cbz  x12, LOCAL_LABEL(ShadowUpdateEnd)
+    cbz  x12, LOCAL_LABEL(ShadowUpdateEnd2)
 
     // Compute address of shadow heap location:
     //   pShadow = g_GCShadow + (x14 - g_lowest_address)
@@ -94,7 +94,7 @@ WRITE_BARRIER_ENTRY JIT_CheckedWriteBarrier
     // if (pShadow >= g_GCShadowEnd) goto end
     ldr  x17, LOCAL_LABEL(wbs_GCShadowEnd)
     cmp  x12, x17
-    bhs  LOCAL_LABEL(ShadowUpdateEnd)
+    bhs  LOCAL_LABEL(ShadowUpdateEnd2)
 
     // *pShadow = x15
     str  x15, [x12]
@@ -106,41 +106,41 @@ WRITE_BARRIER_ENTRY JIT_CheckedWriteBarrier
     // if ([x14] == x15) goto end
     ldr  x17, [x14]
     cmp  x17, x15
-    beq LOCAL_LABEL(ShadowUpdateEnd)
+    beq LOCAL_LABEL(ShadowUpdateEnd2)
 
     // *pShadow = INVALIDGCVALUE (0xcccccccd)
     movz x17, #0xcccd
     movk x17, #0xcccc, LSL #16
     str  x17, [x12]
 
-LOCAL_LABEL(ShadowUpdateEnd):
+LOCAL_LABEL(ShadowUpdateEnd2):
 #endif
 
 #ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
     // Update the write watch table if necessary
     ldr  x12, LOCAL_LABEL(wbs_sw_ww_table)
-    cbz  x12, LOCAL_LABEL(CheckCardTable)
+    cbz  x12, LOCAL_LABEL(CheckCardTable2)
     add  x12, x12, x14, lsr #0xc  // SoftwareWriteWatch::AddressToTableByteIndexShift
     ldrb w17, [x12]
-    cbnz x17, LOCAL_LABEL(CheckCardTable)
+    cbnz x17, LOCAL_LABEL(CheckCardTable2)
     mov  w17, #0xFF
     strb w17, [x12]
 #endif
 
-LOCAL_LABEL(CheckCardTable):
+LOCAL_LABEL(CheckCardTable2):
     // Branch to Exit if the reference is not in the Gen0 heap
     ldr  x12, LOCAL_LABEL(wbs_ephemeral_low)
     ldr  x17, LOCAL_LABEL(wbs_ephemeral_high)
     cmp  x15, x12
     ccmp x15, x17, #0x2, hs
-    bhs  LOCAL_LABEL(Exit)
+    bhs  LOCAL_LABEL(Exit2)
 
     // Check if we need to update the card table
     ldr  x12, LOCAL_LABEL(wbs_card_table)
     add  x15, x12, x14, lsr #11
     ldrb w12, [x15]
     cmp  x12, 0xFF
-    beq  LOCAL_LABEL(Exit)
+    beq  LOCAL_LABEL(Exit2)
 
     // Update the card table
     mov  x12, 0xFF
@@ -152,14 +152,14 @@ LOCAL_LABEL(CheckCardTable):
     add  x15, x12, x14, lsr #21
     ldrb w12, [x15]
     cmp  x12, 0xFF
-    beq  LOCAL_LABEL(Exit)
+    beq  LOCAL_LABEL(Exit2)
 
     // Update the card bundle
     mov  x12, 0xFF
     strb w12, [x15]
 #endif
 
-LOCAL_LABEL(Exit):
+LOCAL_LABEL(Exit2):
     add  x14, x14, 8
     ret  lr
 
