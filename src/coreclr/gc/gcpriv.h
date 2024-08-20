@@ -145,7 +145,7 @@ inline void FATAL_GC_ERROR()
 // to the mmap() calls in unix/gcenv.unix.cpp  More details here:
 //    https://github.com/dotnet/runtime/issues/104211
 #if defined (HOST_64BIT) && !defined (BUILD_AS_STANDALONE) && !defined(__APPLE__) && !defined(__sun)
-#define USE_REGIONS
+// #define USE_REGIONS
 #endif //HOST_64BIT && BUILD_AS_STANDALONE && !__APPLE__
 
 //#define SPINLOCK_HISTORY
@@ -2413,9 +2413,9 @@ private:
 #endif //USE_REGIONS
     PER_HEAP_METHOD void decommit_heap_segment (heap_segment* seg);
     PER_HEAP_ISOLATED_METHOD bool virtual_alloc_commit_for_heap (void* addr, size_t size, int h_number);
-    PER_HEAP_ISOLATED_METHOD bool virtual_commit (void* address, size_t size, int bucket, int h_number=-1, bool* hard_limit_exceeded_p=NULL);
-    PER_HEAP_ISOLATED_METHOD bool virtual_decommit (void* address, size_t size, int bucket, int h_number=-1);
-    PER_HEAP_ISOLATED_METHOD void reduce_committed_bytes (void* address, size_t size, int bucket, int h_number, bool decommit_succeeded_p);
+    PER_HEAP_ISOLATED_METHOD bool virtual_commit (int reason, void* address, size_t size, int bucket, int h_number=-1, bool* hard_limit_exceeded_p=NULL);
+    PER_HEAP_ISOLATED_METHOD bool virtual_decommit (int reason, void* address, size_t size, int bucket, int h_number=-1);
+    PER_HEAP_ISOLATED_METHOD void reduce_committed_bytes (int reason, void* address, size_t size, int bucket, int h_number, bool decommit_succeeded_p);
     friend void destroy_card_table (uint32_t*);
     PER_HEAP_ISOLATED_METHOD void destroy_card_table_helper (uint32_t* c_table);
     PER_HEAP_ISOLATED_METHOD void virtual_free (void* add, size_t size, heap_segment* sg=NULL);

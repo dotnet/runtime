@@ -146,6 +146,15 @@ if not defined CLRTestExecutionArguments (set CLRTestExecutionArguments=$(CLRTes
       ]]></BatchCLRTestArgPrep>
 
       <!-- By default, be prepared to do a full check -->
+      <BatchLoopPart2  Condition="'$(CLRTestLoop)' == 'true'"><![CDATA[SET /A RetryCount=%RetryCount%-1
+  IF NOT "%RetryCount%"=="0" (
+    GOTO :RetryingRerun
+  ) ELSE (
+    ECHO END EXECUTION - PASSED BUT ALSO FAILED
+    ECHO FAILED
+    popd
+    Exit /b 1
+  )]]></BatchLoopPart2>
       <BatchCLRTestExitCodeCheck><![CDATA[
 ECHO Expected: %CLRTestExpectedExitCode%
 ECHO Actual: %CLRTestExitCode%
@@ -157,6 +166,7 @@ IF NOT "%CLRTestExitCode%"=="%CLRTestExpectedExitCode%" (
 ) ELSE (
   ECHO END EXECUTION - PASSED
   ECHO PASSED
+  $(BatchLoopPart2)
   popd
   Exit /b 0
 )
@@ -305,6 +315,8 @@ REM Local CoreShim requested - see MSBuild property 'CLRTestScriptLocalCoreShim'
 ECHO Copying '%CORE_ROOT%\CoreShim.dll'...
 COPY /y %CORE_ROOT%\CoreShim.dll .
       ]]></BatchCopyCoreShimLocalCmds>
+      <BatchLoopPart1 Condition="'$(CLRTestLoop)' == 'true'"><![CDATA[SET RetryCount=100
+:RetryingRerun]]></BatchLoopPart1>
       <BatchCLRTestLaunchCmds Condition="'$(CLRTestKind)' == 'BuildAndRun' And $(TargetOS) != 'android'">
     <![CDATA[
 $(BatchLinkerTestLaunchCmds)
@@ -323,6 +335,7 @@ if defined RunCrossGen2 (
 )
 
 ECHO %LAUNCHER% %ExePath% %CLRTestExecutionArguments%
+$(BatchLoopPart1)
 %LAUNCHER% %ExePath% %CLRTestExecutionArguments%
 set CLRTestExitCode=!ERRORLEVEL!
 if defined RunCrossGen2 (
