@@ -51,11 +51,11 @@ using System.IO;
 using System.Text.RegularExpressions;
 
 // The main application class containing the program entry point.
-class CrstTypeTool
+internal class CrstTypeTool
 {
     // A hash containing every Crst type defined by the input .def file along with its attributes. Keyed by
     // Crst type name (which is case sensitive and doesn't include the 'Crst' enum prefix).
-    Dictionary<string, CrstType> m_crsts = new Dictionary<string, CrstType>();
+    private Dictionary<string, CrstType> m_crsts = new Dictionary<string, CrstType>();
 
     // The program entry point.
     public static int Main()
@@ -114,7 +114,7 @@ class CrstTypeTool
     }
 
     // Emit the crsttypes_generated.h output file.
-    void WriteHeaderFile(string fileName)
+    private void WriteHeaderFile(string fileName)
     {
         FileStream stream = new FileStream(fileName, FileMode.Create, FileAccess.Write, FileShare.None);
         StreamWriter writer = new StreamWriter(stream);
@@ -220,7 +220,7 @@ class CrstTypeTool
     // Perform checking of the Crst type definitions we've read just read. Various forms of logic error are
     // scanned for including cycles in the dependency graph. Returns true if no errors are found. If false is
     // returned a descriptive error message will have already been written to the console.
-    bool ValidateCrsts()
+    private bool ValidateCrsts()
     {
         // Look at each Crst type definition in turn.
         foreach (CrstType crst in m_crsts.Values)
@@ -228,7 +228,7 @@ class CrstTypeTool
             // Catch Crst types that are referenced but never defined.
             if (!crst.Defined)
             {
-                Console.WriteLine(String.Format("Error: CrstType 'Crst{0}' is referenced without being defined",
+                Console.WriteLine(string.Format("Error: CrstType 'Crst{0}' is referenced without being defined",
                                                 crst.Name));
                 return false;
             }
@@ -238,7 +238,7 @@ class CrstTypeTool
             if (crst.Level == CrstType.CrstUnordered && (crst.AcquiredBeforeList.Count > 0 ||
                                                          crst.Group != null))
             {
-                Console.WriteLine(String.Format("Error: CrstType 'Crst{0}' is declared as both unordered and acquired before 'Crst{1}'",
+                Console.WriteLine(string.Format("Error: CrstType 'Crst{0}' is declared as both unordered and acquired before 'Crst{1}'",
                                                 crst.Name, crst.AcquiredBeforeList[0].Name));
                 return false;
             }
@@ -247,7 +247,7 @@ class CrstTypeTool
             // indicates an ordering).
             if (crst.Level == CrstType.CrstUnordered && crst.Group != null)
             {
-                Console.WriteLine(String.Format("Error: CrstType 'Crst{0}' is declared as both unordered and in the same level as another CrstType",
+                Console.WriteLine(string.Format("Error: CrstType 'Crst{0}' is declared as both unordered and in the same level as another CrstType",
                                                 crst.Name));
                 return false;
             }
@@ -255,7 +255,7 @@ class CrstTypeTool
             // Catch the simple cycle where the Crst type depends on itself.
             if (crst.AcquiredBeforeList.Contains(crst))
             {
-                Console.WriteLine(String.Format("Error: CrstType 'Crst{0}' is declared as being acquired before itself",
+                Console.WriteLine(string.Format("Error: CrstType 'Crst{0}' is declared as being acquired before itself",
                                                 crst.Name));
                 return false;
             }
@@ -264,10 +264,10 @@ class CrstTypeTool
             List<CrstType> cycleList = new List<CrstType>();
             if (FindCycle(crst, crst, cycleList))
             {
-                Console.WriteLine(String.Format("Error: CrstType 'Crst{0}' is involved in a dependency cycle with the following CrstTypes:",
+                Console.WriteLine(string.Format("Error: CrstType 'Crst{0}' is involved in a dependency cycle with the following CrstTypes:",
                                                 crst.Name));
                 foreach (CrstType cycleCrst in cycleList)
-                    Console.WriteLine(String.Format("    Crst{0}", cycleCrst.Name));
+                    Console.WriteLine(string.Format("    Crst{0}", cycleCrst.Name));
                 return false;
             }
         }
@@ -286,10 +286,10 @@ class CrstTypeTool
             List<CrstType> cycleList = new List<CrstType>();
             if (FindCycle(crst, crst, cycleList))
             {
-                Console.WriteLine(String.Format("Error: CrstType 'Crst{0}' is involved in a dependency cycle with the following CrstTypes:",
+                Console.WriteLine(string.Format("Error: CrstType 'Crst{0}' is involved in a dependency cycle with the following CrstTypes:",
                                                 crst.Name));
                 foreach (CrstType cycleCrst in cycleList)
-                    Console.WriteLine(String.Format("    Crst{0}", cycleCrst));
+                    Console.WriteLine(string.Format("    Crst{0}", cycleCrst));
                 Console.WriteLine("Note that the cycle was detected only after 'SameLevelAs' processing was performed so some CrstType dependencies are implied by peer CrstTypes");
                 return false;
             }
@@ -306,7 +306,7 @@ class CrstTypeTool
     // Note that this algorithm is not designed to detect general cycles in the graph, only those that involve
     // the 'rootCrst' directly. This is somewhat inefficient but gives us a simple way to generate clear error
     // messages.
-    bool FindCycle(CrstType rootCrst, CrstType currCrst, List<CrstType> cycleList)
+    private bool FindCycle(CrstType rootCrst, CrstType currCrst, List<CrstType> cycleList)
     {
         // Add the current Crst type to the list of those we've seen.
         cycleList.Add(currCrst);
@@ -338,7 +338,7 @@ class CrstTypeTool
     // (Crst types that may only be acquired if a lower type is not already held).
     // **** NOTE: The leveling process is destructive in that we will lose all dependency information from the
     // Crst type definitions during the course of the algorithm.
-    void LevelCrsts()
+    private void LevelCrsts()
     {
         // Note that Crst type dependency rules have been normalized (by the input parser) so that all
         // AcquiredBefore/AcquiredAfter relationships have been reduced to AcquiredBefore relationships (i.e.
@@ -442,7 +442,7 @@ class CrstTypeTool
             // call to ValidateCrsts(), so this check is pure paranoia.
             if (!madeProgress)
             {
-                Console.WriteLine(String.Format("{0} unsorted remain", unsorted));
+                Console.WriteLine(string.Format("{0} unsorted remain", unsorted));
                 throw new Exception("Cycle detected trying to assign level " + currLevel.ToString());
             }
 
@@ -464,7 +464,7 @@ class CrstTypeTool
 
     // Predicate method used with List<T>.FindAll() to locate Crst types that haven't had their rank assigned
     // yet.
-    static bool Unleveled(CrstType crst)
+    private static bool Unleveled(CrstType crst)
     {
         return crst.Level == CrstType.CrstUnassigned;
     }
@@ -473,19 +473,19 @@ class CrstTypeTool
 // Class used to parse a CrstTypes.def file into a dictionary of Crst type definitions. It uses a simple lexer
 // that removes comments then forms tokens out of any consecutive non-whitespace characters. An equally simple
 // recursive descent parser forms Crst instances by parsing the token stream.
-class TypeFileParser
+internal class TypeFileParser
 {
     // Remember the input file name and the dictionary we're meant to populate.
-    string m_typeFileName;
-    Dictionary<string, CrstType> m_crsts;
+    private string m_typeFileName;
+    private Dictionary<string, CrstType> m_crsts;
 
     // Compile regular expressions for detecting comments and tokens in the parser input.
-    Regex m_commentRegex = new Regex(@"//.*");
-    Regex m_tokenRegex = new Regex(@"^(\s*(\S+)\s*)*");
+    private Regex m_commentRegex = new Regex(@"//.*");
+    private Regex m_tokenRegex = new Regex(@"^(\s*(\S+)\s*)*");
 
     // Input is lexed into an array of tokens. We record the index of the token being currently parsed.
-    Token[] m_tokens;
-    int m_currToken;
+    private Token[] m_tokens;
+    private int m_currToken;
 
     // Parse the given file into Crst type definitions and place these definitions in the dictionary provided.
     // Syntax errors are signalled via ParseError derived exceptions.
@@ -514,7 +514,7 @@ class TypeFileParser
     }
 
     // Parse a single Crst type definition.
-    void ParseCrst()
+    private void ParseCrst()
     {
         // The next token had better be an identifier (the Crst type name).
         Token token = NextToken();
@@ -529,7 +529,7 @@ class TypeFileParser
         {
             crst = m_crsts[token.Text];
             if (crst.Defined)
-                throw new ParseError(String.Format("Duplicate definition for CrstType '{0}'", token.Text), token);
+                throw new ParseError(string.Format("Duplicate definition for CrstType '{0}'", token.Text), token);
         }
         else
         {
@@ -600,7 +600,7 @@ class TypeFileParser
     // Parse a list of Crst type names. Any other token terminates the list (without error and without
     // consuming that token from the stream). The list of tokens is returned as a list of corresponding
     // CrstTypes (which are auto-vivified in the output dictionary if they haven't been declared yet).
-    void ParseList(List<CrstType> list)
+    private void ParseList(List<CrstType> list)
     {
         // Parse tokens until we find a non-identifier.
         while (true)
@@ -630,7 +630,7 @@ class TypeFileParser
     }
 
     // Lex the input file into an array of tokens.
-    void InitTokenStream()
+    private void InitTokenStream()
     {
         StreamReader file = new StreamReader(m_typeFileName);
         int lineNumber = 1;
@@ -665,13 +665,13 @@ class TypeFileParser
     }
 
     // Have we run out of tokens to parse?
-    bool IsEof()
+    private bool IsEof()
     {
         return m_currToken >= m_tokens.Length;
     }
 
     // Get the next token and throw an exception if we ran out.
-    Token NextToken()
+    private Token NextToken()
     {
         if (m_currToken >= m_tokens.Length)
             throw new UnexpectedEofError();
@@ -679,7 +679,7 @@ class TypeFileParser
     }
 
     // Push the last token parsed back into the stream.
-    void UnwindToken()
+    private void UnwindToken()
     {
         if (m_currToken <= 0)
             throw new InvalidOperationException();
@@ -703,18 +703,18 @@ class TypeFileParser
     internal class Token
     {
         // Hash of keyword text to enum values.
-        static Dictionary<string, KeywordId> s_keywords;
+        private static Dictionary<string, KeywordId> s_keywords;
 
         // The characters comprising the text of the token from the input file.
-        string m_text;
+        private string m_text;
 
         // Where the token was found (for error messages).
-        string m_file;
-        int m_line;
-        int m_column;
+        private string m_file;
+        private int m_line;
+        private int m_column;
 
         // The ID of the keyword this token represents (or KeywordId.Id).
-        KeywordId m_id;
+        private KeywordId m_id;
 
         // Static class initialization.
         static Token()
@@ -748,7 +748,7 @@ class TypeFileParser
         }
 
         public string Text { get { return m_text; } }
-        public string Location { get { return String.Format("{0} line {1}, column {2}", m_file, m_line, m_column); } }
+        public string Location { get { return string.Format("{0} line {1}, column {2}", m_file, m_line, m_column); } }
         public KeywordId Id { get { return m_id; } }
     }
 
@@ -762,7 +762,7 @@ class TypeFileParser
 
         // An error message tagged with a file, line and column (coming from an error token).
         public ParseError(string message, Token errorToken)
-            : base(String.Format("{0}: {1}", errorToken.Location, message))
+            : base(string.Format("{0}: {1}", errorToken.Location, message))
         { }
 
         // Produce a textual name for the given keyword type.
@@ -770,7 +770,7 @@ class TypeFileParser
         {
             if (id == KeywordId.Id)
                 return "a CrstType name";
-            return String.Format("'{0}'", id.ToString());
+            return string.Format("'{0}'", id.ToString());
         }
     }
 
@@ -784,22 +784,22 @@ class TypeFileParser
             : base(FormatErrorMessage(errorToken, expected))
         { }
 
-        static string FormatErrorMessage(Token errorToken, KeywordId[] expected)
+        private static string FormatErrorMessage(Token errorToken, KeywordId[] expected)
         {
-            StringBuilder message = new StringBuilder(String.Format("Unexpected token '{0}' at {1}",
+            StringBuilder message = new StringBuilder(string.Format("Unexpected token '{0}' at {1}",
                                                                     errorToken.Text, errorToken.Location));
             if (expected.Length == 0)
             {
             }
             else if (expected.Length == 1)
             {
-                message.Append(String.Format("; expected {0}", IdToName(expected[0])));
+                message.Append(string.Format("; expected {0}", IdToName(expected[0])));
             }
             else
             {
                 message.Append("; expected one of ");
                 for (int i = 0; i < expected.Length - 1; i++)
-                    message.Append(String.Format("{0}, ", IdToName(expected[i])));
+                    message.Append(string.Format("{0}, ", IdToName(expected[i])));
                 message.Append(IdToName(expected[expected.Length - 1]));
 
             }
@@ -819,7 +819,7 @@ class TypeFileParser
 
 // This class represents an instance of a Crst type. These are unqiuely identified by case-sensitive name (the
 // same as the enum name used in vm code, minus the 'Crst' prefix).
-class CrstType : IComparable
+internal class CrstType : IComparable
 {
     // Special level constants used to indicate unordered Crst types or those types we haven't gotten around
     // to ranking yet.
@@ -827,24 +827,24 @@ class CrstType : IComparable
     public static readonly int CrstUnassigned = -2;
 
     // Name of the type, e.g. "AppDomainCache" for the CrstAppDomainCache type.
-    string m_name;
+    private string m_name;
 
     // The numeric ranking assigned to this type. Starts as CrstUnassigned and then becomes either
     // CrstUnordered (while parsing the input file) or a number >= 0 (during LevelCrsts()).
-    int m_level;
+    private int m_level;
 
     // List of Crst types that can be legally acquired while this one is held. (AcquiredAfter relationships
     // are by switching the terms and adding to the second type's AcquiredBefore list).
-    List<CrstType> m_acquiredBeforeCrsts;
+    private List<CrstType> m_acquiredBeforeCrsts;
 
     // Either null if this Crst type is not in (or has not yet been determined to be in) a SameLevelAs
     // relationship or points to a CrstTypeGroup that records all the sibling types at the same level (that
     // have been discovered thus far during parsing).
-    CrstTypeGroup m_group;
+    private CrstTypeGroup m_group;
 
     // Set once a definition for this type has been discovered. Used to detect double definitions and types
     // referenced without definitions.
-    bool m_defined;
+    private bool m_defined;
 
     public CrstType(string name)
     {
@@ -879,13 +879,13 @@ class CrstType : IComparable
 // parsing has finished we are guaranteed to have discovered all the distinct, disjoint groups and to have
 // fully populated them with the transitive closure of all related types. We can them normalize all groups
 // members so they share the same AcquiredBefore relationships.
-class CrstTypeGroup
+internal class CrstTypeGroup
 {
     // We record every group that has been formed so far. This makes normalizing all groups easier.
-    static List<CrstTypeGroup> s_groups = new List<CrstTypeGroup>();
+    private static List<CrstTypeGroup> s_groups = new List<CrstTypeGroup>();
 
     // Crst types that are members of the current group. There are no duplicates in this list.
-    List<CrstType> m_members = new List<CrstType>();
+    private List<CrstType> m_members = new List<CrstType>();
 
     // Declare a SameLevelAs relationship between the two Crst types given. Groups will be assigned, created
     // or merged as required to maintain our guarantees (each CrstType is a member of at most one group and
@@ -967,7 +967,7 @@ class CrstTypeGroup
     // Normalize this group. This involves adjusting the AcquiredBefore list of each member to be the union of
     // all such rules within the group. This step allows us to detect cycles in the dependency graph that
     // would otherwise remain hidden if we only examined the unnormalized AcquiredBefore rules.
-    void NormalizeRules()
+    private void NormalizeRules()
     {
         // This local will contain the union of all AcquiredBefore rules.
         List<CrstType> acquiredBeforeList = new List<CrstType>();
