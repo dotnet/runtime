@@ -1,4 +1,5 @@
-﻿<root>
+﻿<?xml version="1.0" encoding="utf-8"?>
+<root>
   <!-- 
     Microsoft ResX Schema 
     
@@ -283,7 +284,7 @@
   </data>
   <data name="PlatformNotSupported_PerfCounters" xml:space="preserve">
     <value>Performance Counters are not supported on this platform.</value>
-  </data>  
+  </data>
   <data name="Perflib_Argument_InvalidCounterSetInstanceType" xml:space="preserve">
     <value>CounterSetInstanceType '{0}' is not a valid CounterSetInstanceType.</value>
   </data>
@@ -343,5 +344,8 @@
   </data>
   <data name="UnauthorizedAccess_RegistryKeyGeneric_Key" xml:space="preserve">
     <value>Access to the registry key '{0}' is denied.</value>
+  </data>
+  <data name="InvalidPerfData" xml:space="preserve">
+    <value>Invalid performance counter data.</value>
   </data>
 </root>
