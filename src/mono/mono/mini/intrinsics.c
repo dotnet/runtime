@@ -1639,6 +1639,17 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 				// sign extend result
 				u2i_result_opcode = OP_ICONV_TO_I1;
 			}
+			else if (param1_type->type == MONO_TYPE_U2) {
+				opcode = OP_ATOMIC_CAS_U2;
+				// FIXME: do we next to zext the result in this case?
+			}
+			else if (param1_type->type == MONO_TYPE_I2) {
+				opcode = OP_ATOMIC_CAS_U2;
+				// zero extend expected comparand
+				i2u_cmp_opcode = OP_ICONV_TO_U2;
+				// sign extend result
+				u2i_result_opcode = OP_ICONV_TO_I2;
+			}
 			else if (param1_type->type == MONO_TYPE_I4 ||
 			    param1_type->type == MONO_TYPE_R4) {
 				opcode = OP_ATOMIC_CAS_I4;
@@ -1716,6 +1727,8 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 			switch (param1_type->type) {
 			case MONO_TYPE_U1:
 			case MONO_TYPE_I1:
+			case MONO_TYPE_U2:
+			case MONO_TYPE_I2:
 				ins->type = STACK_I4;
 				break;
 			case MONO_TYPE_I4:
