@@ -298,7 +298,7 @@ internal static partial class Interop
                 if (!haveProvider)
                 {
                     Debug.Assert(evpPKeyHandle == IntPtr.Zero && extraHandle == IntPtr.Zero, "both handles should be null if provider is not supported");
-                    throw new PlatformNotSupportedException(SR.PlatformNotSupported_CryptographyOpenSSL3NotFound);
+                    throw new PlatformNotSupportedException(SR.PlatformNotSupported_CryptographyOpenSSLProvidersNotSupported);
                 }
 
                 if (evpPKeyHandle == IntPtr.Zero || extraHandle == IntPtr.Zero)
