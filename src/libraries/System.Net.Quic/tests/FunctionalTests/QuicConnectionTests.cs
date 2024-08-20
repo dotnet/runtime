@@ -398,7 +398,7 @@ namespace System.Net.Quic.Tests
             };
 
             (QuicConnection clientConnection, QuicConnection serverConnection) = await CreateConnectedQuicConnection(clientOptions);
-            await streamsAvailableFired.WaitAsync(PassingTestTimeout);
+            await streamsAvailableFired.WaitAsync().WaitAsync(PassingTestTimeout);
             Assert.Equal(QuicDefaults.DefaultServerMaxInboundBidirectionalStreams, bidiIncrement);
             Assert.Equal(QuicDefaults.DefaultServerMaxInboundUnidirectionalStreams, unidiIncrement);
             Assert.Equal(QuicDefaults.DefaultServerMaxInboundBidirectionalStreams, bidiTotal);
@@ -437,7 +437,7 @@ namespace System.Net.Quic.Tests
             {
                 Assert.True(cancelledStream.IsCanceled);
                 await (await serverConnection.AcceptInboundStreamAsync()).DisposeAsync();
-                await streamsAvailableFired.WaitAsync(PassingTestTimeout);
+                await streamsAvailableFired.WaitAsync().WaitAsync(PassingTestTimeout);
                 Assert.Equal(unidirectional ? 0 : (first ? QuicDefaults.DefaultServerMaxInboundBidirectionalStreams + 1 : 1), bidiIncrement);
                 Assert.Equal(unidirectional ? (first ? QuicDefaults.DefaultServerMaxInboundUnidirectionalStreams + 1 : 1) : 0, unidiIncrement);
                 first = false;
@@ -476,7 +476,7 @@ namespace System.Net.Quic.Tests
 
             while (maxStreamIndex < Limit)
             {
-                await streamsAvailableFired.WaitAsync(PassingTestTimeout);
+                await streamsAvailableFired.WaitAsync().WaitAsync(PassingTestTimeout);
             }
             Assert.Equal(Limit, maxStreamIndex);
 
@@ -518,7 +518,7 @@ namespace System.Net.Quic.Tests
             // wait for the callback
             while (maxStreamIndex < 3 * Limit)
             {
-                await streamsAvailableFired.WaitAsync(PassingTestTimeout);
+                await streamsAvailableFired.WaitAsync().WaitAsync(PassingTestTimeout);
             }
 
             // by now, we opened and closed 2 * Limit, and expect a budget of 'Limit' more
