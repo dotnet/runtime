@@ -425,6 +425,10 @@ static const Entry s_QCall[] =
     DllImportEntry(StubHelpers_CreateCustomMarshalerHelper)
     DllImportEntry(StubHelpers_SetStringTrailByte)
     DllImportEntry(StubHelpers_ThrowInteropParamException)
+#ifdef PROFILING_SUPPORTED
+    DllImportEntry(StubHelpers_ProfilerBeginTransitionCallback)
+    DllImportEntry(StubHelpers_ProfilerEndTransitionCallback)
+#endif
 #if defined(FEATURE_COMINTEROP)
     DllImportEntry(ObjectMarshaler_ConvertToNative)
     DllImportEntry(ObjectMarshaler_ConvertToManaged)
