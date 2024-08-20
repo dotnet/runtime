@@ -52,6 +52,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			DirectCall.Test ();
 			RequiresAndDynamicallyAccessedMembersValidation.Test ();
 			InstantiatedGeneric.Test ();
+			AnnotationOnUnsupportedType.Test ();
 		}
 
 		static void RequirePublicMethods ([DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)] Type type)
@@ -1092,6 +1093,26 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			public static void Test ()
 			{
 				new InstantiatedDerived ().ReturnValue ();
+			}
+		}
+
+		class AnnotationOnUnsupportedType
+		{
+			class UnsupportedType {
+				[ExpectedWarning ("IL2041")]
+				[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)]
+				public virtual void UnsupportedAnnotationMismatch () { }
+			}
+
+			class DerivedUnsupportedType : UnsupportedType {
+				[ExpectedWarning ("IL2041")]
+				[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicFields)]
+				public override void UnsupportedAnnotationMismatch () { }
+			}
+
+			public static void Test ()
+			{
+				new DerivedUnsupportedType ().UnsupportedAnnotationMismatch ();
 			}
 		}
 	}
