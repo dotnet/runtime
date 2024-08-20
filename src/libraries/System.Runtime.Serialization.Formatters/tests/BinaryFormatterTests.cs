@@ -674,7 +674,7 @@ namespace System.Runtime.Serialization.Formatters.Tests
             byte[] data = Convert.FromBase64String(base64Blob);
             base64Blob = Encoding.UTF8.GetString(data);
 
-            return Regex.Replace(base64Blob, @"Version=\d+\.\d+\.\d+\.\d+", "Version=0.0.0.0", RegexOptions.Multiline)
+            return Regex.Replace(base64Blob, @"Version=\d+\.\d+\.\d+\.\d+.", "Version=0.0.0.0", RegexOptions.Multiline)
                 // Ignore the old Test key and Open public keys.
                 .Replace("PublicKeyToken=cc7b13ffcd2ddd51", "PublicKeyToken=null")
                 .Replace("PublicKeyToken=9d77cc7ad39b68eb", "PublicKeyToken=null")
