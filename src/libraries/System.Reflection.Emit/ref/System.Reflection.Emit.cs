@@ -479,7 +479,6 @@ namespace System.Reflection.Emit
     {
         public PersistedAssemblyBuilder(System.Reflection.AssemblyName name, System.Reflection.Assembly coreAssembly, System.Collections.Generic.IEnumerable<System.Reflection.Emit.CustomAttributeBuilder>? assemblyAttributes = null) { }
         public override string? FullName { get { throw null; } }
-        public override bool IsDynamic { get { throw null; } }
         public override System.Reflection.Module ManifestModule { get { throw null; } }
         [System.Diagnostics.CodeAnalysis.RequiresDynamicCode("Defining a dynamic assembly requires dynamic code.")]
         protected override System.Reflection.Emit.ModuleBuilder DefineDynamicModuleCore(string name) { throw null; }

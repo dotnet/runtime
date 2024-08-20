@@ -357,6 +357,7 @@ namespace System.Reflection.Emit
                 if (il != null)
                 {
                     FillMemberReferences(il);
+                    il.AddExceptionBlocks();
                     StandaloneSignatureHandle signature = il.LocalCount == 0 ? default :
                         _metadataBuilder.AddStandaloneSignature(_metadataBuilder.GetOrAddBlob(MetadataSignatureHelper.GetLocalSignature(il.Locals, this)));
                     offset = AddMethodBody(method, il, signature, methodBodyEncoder);
