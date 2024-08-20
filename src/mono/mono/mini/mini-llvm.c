@@ -7618,6 +7618,7 @@ MONO_RESTORE_WARNING
 			break;
 		}
 		case OP_ATOMIC_CAS_U1:
+		case OP_ATOMIC_CAS_U2:
 		case OP_ATOMIC_CAS_I4:
 		case OP_ATOMIC_CAS_I8: {
 			LLVMValueRef args [3], val;
@@ -7626,6 +7627,9 @@ MONO_RESTORE_WARNING
 			switch (ins->opcode) {
 			case OP_ATOMIC_CAS_U1:
 				t = LLVMInt8Type ();
+				break;
+			case OP_ATOMIC_CAS_U2:
+				t = LLVMInt16Type ();
 				break;
 			case OP_ATOMIC_CAS_I4:
 				t = LLVMInt32Type ();

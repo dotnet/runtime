@@ -6916,6 +6916,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			break;
 		}
 		case OP_ATOMIC_CAS_U1:
+		case OP_ATOMIC_CAS_U2:
 		case OP_ATOMIC_CAS_I4:
 		case OP_ATOMIC_CAS_I8: {
 			guint32 size;
@@ -6923,6 +6924,9 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			switch (ins->opcode) {
 			case OP_ATOMIC_CAS_U1:
 				size = 1;
+				break;
+			case OP_ATOMIC_CAS_U2:
+				size = 2;
 				break;
 			case OP_ATOMIC_CAS_I4:
 				size = 4;
