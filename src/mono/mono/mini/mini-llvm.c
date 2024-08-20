@@ -7617,15 +7617,25 @@ MONO_RESTORE_WARNING
 			ARM64_ATOMIC_FENCE_FIX;
 			break;
 		}
+		case OP_ATOMIC_CAS_U1:
 		case OP_ATOMIC_CAS_I4:
 		case OP_ATOMIC_CAS_I8: {
 			LLVMValueRef args [3], val;
 			LLVMTypeRef t;
 
-			if (ins->opcode == OP_ATOMIC_CAS_I4)
+			switch (ins->opcode) {
+			case OP_ATOMIC_CAS_U1:
+				t = LLVMInt8Type ();
+				break;
+			case OP_ATOMIC_CAS_I4:
 				t = LLVMInt32Type ();
-			else
+				break;
+			case OP_ATOMIC_CAS_I8:
 				t = LLVMInt64Type ();
+				break;
+			default:
+				g_assert_not_reached ();
+			}
 
 			args [0] = convert (ctx, lhs, pointer_type (t));
 			/* comparand */
