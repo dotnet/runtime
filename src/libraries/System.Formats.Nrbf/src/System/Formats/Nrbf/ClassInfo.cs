@@ -70,7 +70,7 @@ internal sealed class ClassInfo
                 continue;
             }
 #endif
-            throw new SerializationException(SR.Format(SR.Serialization_DuplicateMemberName, memberName));
+            ThrowHelper.ThrowDuplicateMemberName();
         }
 
         return new ClassInfo(id, typeName, memberNames);

@@ -6,11 +6,14 @@ using System.Runtime.Serialization;
 
 namespace System.Formats.Nrbf.Utils;
 
-// The exception messages do not contain type or assembly names on purpose,
+// The exception messages do not contain member/type/assembly names on purpose,
 // as it's most likely corrupted/tampered/malicious data.
 internal static class ThrowHelper
 {
-    internal static void ThrowInvalidValue(object value)
+    internal static void ThrowDuplicateMemberName()
+        => throw new SerializationException(SR.Serialization_DuplicateMemberName);
+
+    internal static void ThrowInvalidValue(int value)
         => throw new SerializationException(SR.Format(SR.Serialization_InvalidValue, value));
 
     internal static void ThrowInvalidReference()
@@ -21,9 +24,6 @@ internal static class ThrowHelper
 
     internal static void ThrowUnexpectedNullRecordCount()
         => throw new SerializationException(SR.Serialization_UnexpectedNullRecordCount);
-
-    internal static void ThrowMaxArrayLength(long limit, long actual)
-        => throw new SerializationException(SR.Format(SR.Serialization_MaxArrayLength, actual, limit));
 
     internal static void ThrowArrayContainedNulls()
         => throw new SerializationException(SR.Serialization_ArrayContainedNulls);
