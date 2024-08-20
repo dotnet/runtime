@@ -109,7 +109,7 @@ SEHCleanup()
 {
     TRACE("Cleaning up SEH\n");
 
-    SEHCleanupSignals();
+    SEHCleanupSignals(false /* isChildProcess */);
 }
 
 /*++

@@ -21,6 +21,7 @@ namespace System.Numerics.Tensors
     /// </summary>
     [DebuggerTypeProxy(typeof(TensorSpanDebugView<>))]
     [DebuggerDisplay("{ToString(),raw}")]
+    [Experimental(Experimentals.TensorTDiagId, UrlFormat = Experimentals.SharedUrlFormat)]
     public readonly ref struct ReadOnlyTensorSpan<T>
     {
         /// <summary>A byref or a native ptr.</summary>
@@ -598,7 +599,9 @@ namespace System.Numerics.Tensors
             return retVal;
         }
 
-        //public static explicit operator TensorSpan<T>(Array? array);
+        /// <summary>
+        /// Defines an implicit conversion of an array to a <see cref="TensorSpan{T}"/>.
+        /// </summary>
         public static implicit operator ReadOnlyTensorSpan<T>(T[]? array) => new ReadOnlyTensorSpan<T>(array);
 
         /// <summary>

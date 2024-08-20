@@ -369,13 +369,14 @@ namespace System.IO.Compression
         [Fact]
         public void Ctor_ArgumentValidation()
         {
-            Assert.Throws<ArgumentNullException>(() => CreateStream(null, CompressionLevel.Fastest));
-            Assert.Throws<ArgumentNullException>(() => CreateStream(null, CompressionMode.Decompress));
-            Assert.Throws<ArgumentNullException>(() => CreateStream(null, CompressionMode.Compress));
+            Assert.Throws<ArgumentNullException>("stream", () => CreateStream(null, CompressionLevel.Fastest));
+            Assert.Throws<ArgumentNullException>("stream", () => CreateStream(null, CompressionMode.Decompress));
+            Assert.Throws<ArgumentNullException>("stream", () => CreateStream(null, CompressionMode.Compress));
 
-            Assert.Throws<ArgumentNullException>(() => CreateStream(null, CompressionLevel.Fastest, true));
-            Assert.Throws<ArgumentNullException>(() => CreateStream(null, CompressionMode.Decompress, false));
-            Assert.Throws<ArgumentNullException>(() => CreateStream(null, CompressionMode.Compress, true));
+            Assert.Throws<ArgumentNullException>("stream", () => CreateStream(null, CompressionLevel.Fastest, true));
+            Assert.Throws<ArgumentNullException>("stream", () => CreateStream(null, CompressionMode.Decompress, false));
+            Assert.Throws<ArgumentNullException>("stream", () => CreateStream(null, CompressionMode.Compress, true));
+            Assert.Throws<ArgumentNullException>("compressionOptions", () => CreateStream(new MemoryStream(), null, true));
 
             AssertExtensions.Throws<ArgumentException>("mode", () => CreateStream(new MemoryStream(), (CompressionMode)42));
             AssertExtensions.Throws<ArgumentException>("mode", () => CreateStream(new MemoryStream(), (CompressionMode)43, true));
@@ -471,17 +472,18 @@ namespace System.IO.Compression
         }
 
         [Theory]
-        [MemberData(nameof(UncompressedTestFiles))]
+        [MemberData(nameof(UncompressedTestFilesZLib))]
         public async Task CompressionLevel_SizeInOrder(string testFile)
         {
             using var uncompressedStream = await LocalMemoryStream.readAppFileAsync(testFile);
 
             async Task<long> GetLengthAsync(CompressionLevel compressionLevel)
             {
+                uncompressedStream.Position = 0;
                 using var mms = new MemoryStream();
                 using var compressor = CreateStream(mms, compressionLevel);
                 await uncompressedStream.CopyToAsync(compressor);
-                compressor.Flush();
+                await compressor.FlushAsync();
                 return mms.Length;
             }
 
@@ -493,6 +495,69 @@ namespace System.IO.Compression
             Assert.True(noCompressionLength >= fastestLength);
             Assert.True(fastestLength >= optimalLength);
             Assert.True(optimalLength >= smallestLength);
+        }
+
+        [Theory]
+        [MemberData(nameof(ZLibOptionsRoundTripTestData))]
+        public async Task RoundTripWithZLibCompressionOptions(string testFile, ZLibCompressionOptions options)
+        {
+            using var uncompressedStream = await LocalMemoryStream.readAppFileAsync(testFile);
+            var compressedStream = await CompressTestFile(uncompressedStream, options);
+            using var decompressor = CreateStream(compressedStream, mode: CompressionMode.Decompress);
+            using var decompressorOutput = new MemoryStream();
+            await decompressor.CopyToAsync(decompressorOutput);
+            await decompressor.DisposeAsync();
+            decompressorOutput.Position = 0;
+            uncompressedStream.Position = 0;
+
+            byte[] uncompressedStreamBytes = uncompressedStream.ToArray();
+            byte[] decompressorOutputBytes = decompressorOutput.ToArray();
+
+            Assert.Equal(uncompressedStreamBytes.Length, decompressorOutputBytes.Length);
+            for (int i = 0; i < uncompressedStreamBytes.Length; i++)
+            {
+                Assert.Equal(uncompressedStreamBytes[i], decompressorOutputBytes[i]);
+            }
+        }
+
+        private async Task<MemoryStream> CompressTestFile(LocalMemoryStream testStream, ZLibCompressionOptions options)
+        {
+            var compressorOutput = new MemoryStream();
+            using (var compressionStream = CreateStream(compressorOutput, options, leaveOpen: true))
+            {
+                var buffer = new byte[4096];
+                int bytesRead;
+                while ((bytesRead = await testStream.ReadAsync(buffer, 0, buffer.Length)) > 0)
+                {
+                    await compressionStream.WriteAsync(buffer, 0, bytesRead);
+                }
+            }
+
+            compressorOutput.Position = 0;
+            return compressorOutput;
+        }
+
+        protected async Task CompressionLevel_SizeInOrderBase(string testFile)
+        {
+            using var uncompressedStream = await LocalMemoryStream.readAppFileAsync(testFile);
+
+            async Task<long> GetLengthAsync(int compressionLevel)
+            {
+                uncompressedStream.Position = 0;
+                using var mms = new MemoryStream();
+                using var compressor = CreateStream(mms, new ZLibCompressionOptions() { CompressionLevel = compressionLevel, CompressionStrategy = ZLibCompressionStrategy.Default }, leaveOpen: false);
+                await uncompressedStream.CopyToAsync(compressor);
+                await compressor.FlushAsync();
+                return mms.Length;
+            }
+
+            long prev = await GetLengthAsync(0);
+            for (int i = 1; i < 10; i++)
+            {
+                long cur = await GetLengthAsync(i);
+                Assert.True(cur <= prev, $"Expected {cur} <= {prev} for quality {i}");
+                prev = cur;
+            }
         }
     }
 

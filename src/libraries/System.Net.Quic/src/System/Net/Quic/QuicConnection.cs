@@ -8,6 +8,7 @@ using System.Runtime.CompilerServices;
 using System.Runtime.ExceptionServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
+using System.Security.Authentication;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading;
 using System.Threading.Channels;
@@ -109,9 +110,9 @@ public sealed partial class QuicConnection : IAsyncDisposable
     private readonly MsQuicContextSafeHandle _handle;
 
     /// <summary>
-    /// Set to non-zero once disposed. Prevents double and/or concurrent disposal.
+    /// Set to true once disposed. Prevents double and/or concurrent disposal.
     /// </summary>
-    private int _disposed;
+    private bool _disposed;
 
     private readonly ValueTaskSource _connectedTcs = new ValueTaskSource();
     private readonly ResettableValueTaskSource _shutdownTcs = new ResettableValueTaskSource()
@@ -213,6 +214,14 @@ public sealed partial class QuicConnection : IAsyncDisposable
     /// Set when CONNECTED is received.
     /// </summary>
     private SslApplicationProtocol _negotiatedApplicationProtocol;
+    /// <summary>
+    /// Set when CONNECTED is received.
+    /// </summary>
+    private TlsCipherSuite _negotiatedCipherSuite;
+    /// <summary>
+    /// Set when CONNECTED is received.
+    /// </summary>
+    private SslProtocols _negotiatedSslProtocol;
 
     /// <summary>
     /// Will contain TLS secret after CONNECTED event is received and store it into SSLKEYLOGFILE.
@@ -286,6 +295,17 @@ public sealed partial class QuicConnection : IAsyncDisposable
     /// Final, negotiated application protocol.
     /// </summary>
     public SslApplicationProtocol NegotiatedApplicationProtocol => _negotiatedApplicationProtocol;
+
+    /// <summary>
+    /// Gets the cipher suite which was negotiated for this connection.
+    /// </summary>
+    [CLSCompliant(false)]
+    public TlsCipherSuite NegotiatedCipherSuite => _negotiatedCipherSuite;
+
+    /// <summary>
+    /// Gets a <see cref="System.Security.Authentication.SslProtocols"/> value that indicates the security protocol used to authenticate this connection.
+    /// </summary>
+    public SslProtocols SslProtocol => _negotiatedSslProtocol;
 
     /// <inheritdoc />
     public override string ToString() => _handle.ToString();
@@ -502,7 +522,7 @@ public sealed partial class QuicConnection : IAsyncDisposable
     /// <returns>An asynchronous task that completes with the opened <see cref="QuicStream" />.</returns>
     public async ValueTask<QuicStream> OpenOutboundStreamAsync(QuicStreamType type, CancellationToken cancellationToken = default)
     {
-        ObjectDisposedException.ThrowIf(_disposed == 1, this);
+        ObjectDisposedException.ThrowIf(_disposed, this);
 
         QuicStream? stream = null;
         try
@@ -524,7 +544,7 @@ public sealed partial class QuicConnection : IAsyncDisposable
             }
 
             // Propagate ODE if disposed in the meantime.
-            ObjectDisposedException.ThrowIf(_disposed == 1, this);
+            ObjectDisposedException.ThrowIf(_disposed, this);
 
             // Propagate connection error when the connection was closed (remotely = ABORTED / locally = INVALID_STATE).
             if (ex is QuicException qex && qex.QuicError == QuicError.InternalError &&
@@ -544,7 +564,7 @@ public sealed partial class QuicConnection : IAsyncDisposable
     /// <returns>An asynchronous task that completes with the accepted <see cref="QuicStream" />.</returns>
     public async ValueTask<QuicStream> AcceptInboundStreamAsync(CancellationToken cancellationToken = default)
     {
-        ObjectDisposedException.ThrowIf(_disposed == 1, this);
+        ObjectDisposedException.ThrowIf(_disposed, this);
 
         if (!_canAccept)
         {
@@ -583,7 +603,7 @@ public sealed partial class QuicConnection : IAsyncDisposable
     /// <returns>An asynchronous task that completes when the connection is closed.</returns>
     public ValueTask CloseAsync(long errorCode, CancellationToken cancellationToken = default)
     {
-        ObjectDisposedException.ThrowIf(_disposed == 1, this);
+        ObjectDisposedException.ThrowIf(_disposed, this);
         ThrowHelper.ValidateErrorCode(nameof(errorCode), errorCode, $"{nameof(CloseAsync)}.{nameof(errorCode)}");
 
         if (_shutdownTcs.TryGetValueTask(out ValueTask valueTask, this, cancellationToken))
@@ -608,6 +628,15 @@ public sealed partial class QuicConnection : IAsyncDisposable
     private unsafe int HandleEventConnected(ref CONNECTED_DATA data)
     {
         _negotiatedApplicationProtocol = new SslApplicationProtocol(new Span<byte>(data.NegotiatedAlpn, data.NegotiatedAlpnLength).ToArray());
+
+        QUIC_HANDSHAKE_INFO info = MsQuicHelpers.GetMsQuicParameter<QUIC_HANDSHAKE_INFO>(_handle, QUIC_PARAM_TLS_HANDSHAKE_INFO);
+
+        // QUIC_CIPHER_SUITE and QUIC_TLS_PROTOCOL_VERSION use the same values as the corresponding TlsCipherSuite and SslProtocols members.
+        _negotiatedCipherSuite = (TlsCipherSuite)info.CipherSuite;
+        _negotiatedSslProtocol = (SslProtocols)info.TlsProtocolVersion;
+
+        // currently only TLS 1.3 is defined for QUIC
+        Debug.Assert(_negotiatedSslProtocol == SslProtocols.Tls13, $"Unexpected TLS version {info.TlsProtocolVersion}");
 
         QuicAddr remoteAddress = MsQuicHelpers.GetMsQuicParameter<QuicAddr>(_handle, QUIC_PARAM_CONN_REMOTE_ADDRESS);
         _remoteEndPoint = MsQuicHelpers.QuicAddrToIPEndPoint(&remoteAddress);
@@ -645,7 +674,7 @@ public sealed partial class QuicConnection : IAsyncDisposable
         // make sure we log at least some secrets in case of shutdown before handshake completes.
         _tlsSecret?.WriteSecret();
 
-        Exception exception = ExceptionDispatchInfo.SetCurrentStackTrace(_disposed == 1 ? new ObjectDisposedException(GetType().FullName) : ThrowHelper.GetOperationAbortedException());
+        Exception exception = ExceptionDispatchInfo.SetCurrentStackTrace(_disposed ? new ObjectDisposedException(GetType().FullName) : ThrowHelper.GetOperationAbortedException());
         _connectionCloseTcs.TrySetException(exception);
         _acceptQueue.Writer.TryComplete(exception);
         _connectedTcs.TrySetException(exception);
@@ -783,7 +812,7 @@ public sealed partial class QuicConnection : IAsyncDisposable
     /// <returns>A task that represents the asynchronous dispose operation.</returns>
     public async ValueTask DisposeAsync()
     {
-        if (Interlocked.Exchange(ref _disposed, 1) != 0)
+        if (Interlocked.Exchange(ref _disposed, true))
         {
             return;
         }

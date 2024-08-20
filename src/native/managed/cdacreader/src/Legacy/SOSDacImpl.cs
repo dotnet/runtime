@@ -8,6 +8,7 @@ using System.Diagnostics;
 using System.Diagnostics.Contracts;
 using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.Marshalling;
+using System.Text;
 
 namespace Microsoft.Diagnostics.DataContractReader.Legacy;
 
@@ -24,10 +25,14 @@ namespace Microsoft.Diagnostics.DataContractReader.Legacy;
 internal sealed partial class SOSDacImpl : ISOSDacInterface, ISOSDacInterface2, ISOSDacInterface9
 {
     private readonly Target _target;
+    private readonly TargetPointer _stringMethodTable;
+    private readonly TargetPointer _objectMethodTable;
 
     public SOSDacImpl(Target target)
     {
         _target = target;
+        _stringMethodTable = _target.ReadPointer(_target.ReadGlobalPointer(Constants.Globals.StringMethodTable));
+        _objectMethodTable = _target.ReadPointer(_target.ReadGlobalPointer(Constants.Globals.ObjectMethodTable));
     }
 
     public unsafe int GetAppDomainConfigFile(ulong appDomain, int count, char* configFile, uint* pNeeded) => HResults.E_NOTIMPL;
@@ -79,9 +84,107 @@ internal sealed partial class SOSDacImpl : ISOSDacInterface, ISOSDacInterface2, 
     public unsafe int GetJitHelperFunctionName(ulong ip, uint count, byte* name, uint* pNeeded) => HResults.E_NOTIMPL;
     public unsafe int GetJitManagerList(uint count, void* managers, uint* pNeeded) => HResults.E_NOTIMPL;
     public unsafe int GetJumpThunkTarget(void* ctx, ulong* targetIP, ulong* targetMD) => HResults.E_NOTIMPL;
-    public unsafe int GetMethodDescData(ulong methodDesc, ulong ip, void* data, uint cRevertedRejitVersions, void* rgRevertedRejitData, uint* pcNeededRevertedRejitData) => HResults.E_NOTIMPL;
+    public unsafe int GetMethodDescData(ulong methodDesc, ulong ip, DacpMethodDescData* data, uint cRevertedRejitVersions, DacpReJitData* rgRevertedRejitData, uint* pcNeededRevertedRejitData)
+    {
+        if (methodDesc == 0)
+        {
+            return HResults.E_INVALIDARG;
+        }
+        if (cRevertedRejitVersions != 0 && rgRevertedRejitData == null)
+        {
+            return HResults.E_INVALIDARG;
+        }
+        if (rgRevertedRejitData != null && pcNeededRevertedRejitData == null)
+        {
+            // If you're asking for reverted rejit data, you'd better ask for the number of
+            // elements we return
+            return HResults.E_INVALIDARG;
+        }
+        try
+        {
+            Contracts.IRuntimeTypeSystem rtsContract = _target.Contracts.RuntimeTypeSystem;
+            Contracts.MethodDescHandle methodDescHandle = rtsContract.GetMethodDescHandle(methodDesc);
+
+            data->MethodTablePtr = rtsContract.GetMethodTable(methodDescHandle);
+
+            return HResults.E_NOTIMPL;
+        }
+        catch (global::System.Exception ex)
+        {
+            return ex.HResult;
+        }
+    }
+
     public unsafe int GetMethodDescFromToken(ulong moduleAddr, uint token, ulong* methodDesc) => HResults.E_NOTIMPL;
-    public unsafe int GetMethodDescName(ulong methodDesc, uint count, char* name, uint* pNeeded) => HResults.E_NOTIMPL;
+    public unsafe int GetMethodDescName(ulong methodDesc, uint count, char* name, uint* pNeeded)
+    {
+        if (methodDesc == 0)
+            return HResults.E_INVALIDARG;
+
+        int hr = HResults.S_OK;
+        if (pNeeded != null)
+            *pNeeded = 0;
+        try
+        {
+            StringBuilder stringBuilder = new StringBuilder();
+            Contracts.IRuntimeTypeSystem rtsContract = _target.Contracts.RuntimeTypeSystem;
+            Contracts.MethodDescHandle methodDescHandle = rtsContract.GetMethodDescHandle(methodDesc);
+            try
+            {
+                TypeNameBuilder.AppendMethodInternal(_target, stringBuilder, methodDescHandle, TypeNameFormat.FormatSignature | TypeNameFormat.FormatNamespace | TypeNameFormat.FormatFullInst);
+            }
+            catch
+            {
+                hr = HResults.E_FAIL;
+                if (rtsContract.IsNoMetadataMethod(methodDescHandle, out _))
+                {
+                    // In heap dumps, trying to format the signature can fail
+                    // in certain cases.
+                    stringBuilder.Clear();
+                    TypeNameBuilder.AppendMethodInternal(_target, stringBuilder, methodDescHandle, TypeNameFormat.FormatNamespace | TypeNameFormat.FormatFullInst);
+                    hr = HResults.S_OK;
+                }
+                else
+                {
+                    string? fallbackNameString = _target.Contracts.DacStreams.StringFromEEAddress(methodDesc);
+                    if (!string.IsNullOrEmpty(fallbackNameString))
+                    {
+                        stringBuilder.Clear();
+                        stringBuilder.Append(fallbackNameString);
+                        hr = HResults.S_OK;
+                    }
+                    else
+                    {
+                        TargetPointer modulePtr = rtsContract.GetModule(rtsContract.GetTypeHandle(rtsContract.GetMethodTable(methodDescHandle)));
+                        Contracts.ModuleHandle module = _target.Contracts.Loader.GetModuleHandle(modulePtr);
+                        string modulePath = _target.Contracts.Loader.GetPath(module);
+                        ReadOnlySpan<char> moduleSpan = modulePath.AsSpan();
+                        int pathNameSpanIndex = moduleSpan.LastIndexOf(_target.DirectorySeparator);
+                        if (pathNameSpanIndex != -1)
+                        {
+                            moduleSpan = moduleSpan.Slice(pathNameSpanIndex + 1);
+                        }
+                        stringBuilder.Clear();
+                        stringBuilder.Append(moduleSpan);
+                        stringBuilder.Append("!Unknown");
+                        hr = HResults.S_OK;
+                    }
+                }
+            }
+
+            if (hr ==  HResults.S_OK)
+            {
+                CopyStringToTargetBuffer(name, count, pNeeded, stringBuilder.ToString());
+            }
+        }
+        catch (System.Exception ex)
+        {
+            return ex.HResult;
+        }
+
+        return hr;
+    }
+
     public unsafe int GetMethodDescPtrFromFrame(ulong frameAddr, ulong* ppMD) => HResults.E_NOTIMPL;
     public unsafe int GetMethodDescPtrFromIP(ulong ip, ulong* ppMD) => HResults.E_NOTIMPL;
     public unsafe int GetMethodDescTransparencyData(ulong methodDesc, void* data) => HResults.E_NOTIMPL;
@@ -238,19 +341,23 @@ internal sealed partial class SOSDacImpl : ISOSDacInterface, ISOSDacInterface2, 
             data->dwTransientFlags = (uint)flags;
 
             data->ilBase = contract.GetILBase(handle);
-            data->metadataStart = contract.GetMetadataAddress(handle, out ulong metadataSize);
-            data->metadataSize = metadataSize;
+            TargetSpan readOnlyMetadata = _target.Contracts.EcmaMetadata.GetReadOnlyMetadataAddress(handle);
+            data->metadataStart = readOnlyMetadata.Address;
+            data->metadataSize = readOnlyMetadata.Size;
 
             data->LoaderAllocator = contract.GetLoaderAllocator(handle);
             data->ThunkHeap = contract.GetThunkHeap(handle);
 
+            Target.TypeInfo lookupMapTypeInfo = _target.GetTypeInfo(DataType.ModuleLookupMap);
+            ulong tableDataOffset = (ulong)lookupMapTypeInfo.Fields[nameof(Data.ModuleLookupMap.TableData)].Offset;
+
             Contracts.ModuleLookupTables tables = contract.GetLookupTables(handle);
-            data->FieldDefToDescMap = tables.FieldDefToDesc;
-            data->ManifestModuleReferencesMap = tables.ManifestModuleReferences;
-            data->MemberRefToDescMap = tables.MemberRefToDesc;
-            data->MethodDefToDescMap = tables.MethodDefToDesc;
-            data->TypeDefToMethodTableMap = tables.TypeDefToMethodTable;
-            data->TypeRefToMethodTableMap = tables.TypeRefToMethodTable;
+            data->FieldDefToDescMap = _target.ReadPointer(tables.FieldDefToDesc + tableDataOffset);
+            data->ManifestModuleReferencesMap = _target.ReadPointer(tables.ManifestModuleReferences + tableDataOffset);
+            data->MemberRefToDescMap = _target.ReadPointer(tables.MemberRefToDesc + tableDataOffset);
+            data->MethodDefToDescMap = _target.ReadPointer(tables.MethodDefToDesc + tableDataOffset);
+            data->TypeDefToMethodTableMap = _target.ReadPointer(tables.TypeDefToMethodTable + tableDataOffset);
+            data->TypeRefToMethodTableMap = _target.ReadPointer(tables.TypeRefToMethodTable + tableDataOffset);
 
             // Always 0 - .NET no longer has these concepts
             data->dwModuleID = 0;
@@ -283,7 +390,88 @@ internal sealed partial class SOSDacImpl : ISOSDacInterface, ISOSDacInterface2, 
     }
 
     public unsafe int GetObjectClassName(ulong obj, uint count, char* className, uint* pNeeded) => HResults.E_NOTIMPL;
-    public unsafe int GetObjectData(ulong objAddr, void* data) => HResults.E_NOTIMPL;
+
+    public unsafe int GetObjectData(ulong objAddr, DacpObjectData* data)
+    {
+        try
+        {
+            Contracts.IObject objectContract = _target.Contracts.Object;
+            Contracts.IRuntimeTypeSystem runtimeTypeSystemContract = _target.Contracts.RuntimeTypeSystem;
+
+            TargetPointer mt = objectContract.GetMethodTableAddress(objAddr);
+            TypeHandle handle = runtimeTypeSystemContract.GetTypeHandle(mt);
+
+            data->MethodTable = mt;
+            data->Size = runtimeTypeSystemContract.GetBaseSize(handle);
+            data->dwComponentSize = runtimeTypeSystemContract.GetComponentSize(handle); ;
+
+            if (runtimeTypeSystemContract.IsFreeObjectMethodTable(handle))
+            {
+                data->ObjectType = DacpObjectType.OBJ_FREE;
+
+                // Free objects have their component count explicitly set at the same offset as that for arrays
+                // Update the size to include those components
+                Target.TypeInfo arrayTypeInfo = _target.GetTypeInfo(DataType.Array);
+                ulong numComponentsOffset = (ulong)_target.GetTypeInfo(DataType.Array).Fields[Data.Array.FieldNames.NumComponents].Offset;
+                data->Size += _target.Read<uint>(objAddr + numComponentsOffset) * data->dwComponentSize;
+            }
+            else if (mt == _stringMethodTable)
+            {
+                data->ObjectType = DacpObjectType.OBJ_STRING;
+
+                // Update the size to include the string character components
+                data->Size += (uint)objectContract.GetStringValue(objAddr).Length * data->dwComponentSize;
+            }
+            else if (mt == _objectMethodTable)
+            {
+                data->ObjectType = DacpObjectType.OBJ_OBJECT;
+            }
+            else if (runtimeTypeSystemContract.IsArray(handle, out uint rank))
+            {
+                data->ObjectType = DacpObjectType.OBJ_ARRAY;
+                data->dwRank = rank;
+
+                TargetPointer arrayData = objectContract.GetArrayData(objAddr, out uint numComponents, out TargetPointer boundsStart, out TargetPointer lowerBounds);
+                data->ArrayDataPtr = arrayData;
+                data->dwNumComponents = numComponents;
+                data->ArrayBoundsPtr = boundsStart;
+                data->ArrayLowerBoundsPtr = lowerBounds;
+
+                // Update the size to include the array components
+                data->Size += numComponents * data->dwComponentSize;
+
+                // Get the type of the array elements
+                TypeHandle element = runtimeTypeSystemContract.GetTypeParam(handle);
+                data->ElementTypeHandle = element.Address;
+                data->ElementType = (uint)runtimeTypeSystemContract.GetSignatureCorElementType(element);
+
+                // Validate the element type handles for arrays of arrays
+                while (runtimeTypeSystemContract.IsArray(element, out _))
+                {
+                    element = runtimeTypeSystemContract.GetTypeParam(element);
+                }
+            }
+            else
+            {
+                data->ObjectType = DacpObjectType.OBJ_OTHER;
+            }
+
+            // Populate COM data if this is a COM object
+            if (_target.ReadGlobal<byte>(Constants.Globals.FeatureCOMInterop) != 0
+                && objectContract.GetBuiltInComData(objAddr, out TargetPointer rcw, out TargetPointer ccw))
+            {
+                data->RCW = rcw;
+                data->CCW = ccw;
+            }
+
+        }
+        catch (System.Exception ex)
+        {
+            return ex.HResult;
+        }
+
+        return HResults.S_OK;
+    }
 
     public unsafe int GetObjectExceptionData(ulong objectAddress, DacpExceptionObjectData* data)
     {
@@ -308,11 +496,53 @@ internal sealed partial class SOSDacImpl : ISOSDacInterface, ISOSDacInterface2, 
         return HResults.S_OK;
     }
 
-    public unsafe int GetObjectStringData(ulong obj, uint count, char* stringData, uint* pNeeded) => HResults.E_NOTIMPL;
+    public unsafe int GetObjectStringData(ulong obj, uint count, char* stringData, uint* pNeeded)
+    {
+        try
+        {
+            Contracts.IObject contract = _target.Contracts.Object;
+            string str = contract.GetStringValue(obj);
+            CopyStringToTargetBuffer(stringData, count, pNeeded, str);
+        }
+        catch (System.Exception ex)
+        {
+            return ex.HResult;
+        }
+
+        return HResults.S_OK;
+    }
     public unsafe int GetOOMData(ulong oomAddr, void* data) => HResults.E_NOTIMPL;
     public unsafe int GetOOMStaticData(void* data) => HResults.E_NOTIMPL;
     public unsafe int GetPEFileBase(ulong addr, ulong* peBase) => HResults.E_NOTIMPL;
-    public unsafe int GetPEFileName(ulong addr, uint count, char* fileName, uint* pNeeded) => HResults.E_NOTIMPL;
+
+    public unsafe int GetPEFileName(ulong addr, uint count, char* fileName, uint* pNeeded)
+    {
+        try
+        {
+            Contracts.ILoader contract = _target.Contracts.Loader;
+            Contracts.ModuleHandle handle = contract.GetModuleHandle(addr);
+            string path = contract.GetPath(handle);
+
+            // Return not implemented for empty paths for non-reflection emit assemblies (for example, loaded from memory)
+            if (string.IsNullOrEmpty(path))
+            {
+                Contracts.ModuleFlags flags = contract.GetFlags(handle);
+                if (!flags.HasFlag(Contracts.ModuleFlags.ReflectionEmit))
+                {
+                    return HResults.E_NOTIMPL;
+                }
+            }
+
+            CopyStringToTargetBuffer(fileName, count, pNeeded, path);
+        }
+        catch (System.Exception ex)
+        {
+            return ex.HResult;
+        }
+
+        return HResults.S_OK;
+    }
+
     public unsafe int GetPrivateBinPaths(ulong appDomain, int count, char* paths, uint* pNeeded) => HResults.E_NOTIMPL;
     public unsafe int GetRCWData(ulong addr, void* data) => HResults.E_NOTIMPL;
     public unsafe int GetRCWInterfaces(ulong rcw, uint count, void* interfaces, uint* pNeeded) => HResults.E_NOTIMPL;
@@ -389,7 +619,28 @@ internal sealed partial class SOSDacImpl : ISOSDacInterface, ISOSDacInterface2, 
     }
 
     public unsafe int GetTLSIndex(uint* pIndex) => HResults.E_NOTIMPL;
-    public unsafe int GetUsefulGlobals(void* data) => HResults.E_NOTIMPL;
+
+    public unsafe int GetUsefulGlobals(DacpUsefulGlobalsData* data)
+    {
+        try
+        {
+            data->ArrayMethodTable = _target.ReadPointer(
+                _target.ReadGlobalPointer(Constants.Globals.ObjectArrayMethodTable));
+            data->StringMethodTable = _stringMethodTable;
+            data->ObjectMethodTable = _objectMethodTable;
+            data->ExceptionMethodTable = _target.ReadPointer(
+                _target.ReadGlobalPointer(Constants.Globals.ExceptionMethodTable));
+            data->FreeMethodTable = _target.ReadPointer(
+                _target.ReadGlobalPointer(Constants.Globals.FreeObjectMethodTable));
+        }
+        catch (System.Exception ex)
+        {
+            return ex.HResult;
+        }
+
+        return HResults.S_OK;
+    }
+
     public unsafe int GetWorkRequestData(ulong addrWorkRequest, void* data) => HResults.E_NOTIMPL;
     public unsafe int IsRCWDCOMProxy(ulong rcwAddress, int* inDCOMProxy) => HResults.E_NOTIMPL;
     public unsafe int TraverseEHInfo(ulong ip, void* pCallback, void* token) => HResults.E_NOTIMPL;

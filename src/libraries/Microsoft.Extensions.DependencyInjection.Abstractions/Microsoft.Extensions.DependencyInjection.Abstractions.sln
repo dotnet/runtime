@@ -1,6 +1,4 @@
 ﻿Microsoft Visual Studio Solution File, Format Version 12.00
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.Bcl.AsyncInterfaces", "..\Microsoft.Bcl.AsyncInterfaces\ref\Microsoft.Bcl.AsyncInterfaces.csproj", "{57D9CDC0-FB4C-4408-8E75-B04079EAE7C8}"
-EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.Bcl.AsyncInterfaces", "..\Microsoft.Bcl.AsyncInterfaces\src\Microsoft.Bcl.AsyncInterfaces.csproj", "{F170EDB3-E92B-456A-8749-F3ACE3471510}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.Extensions.DependencyInjection.Abstractions", "ref\Microsoft.Extensions.DependencyInjection.Abstractions.csproj", "{B8B63EFF-64D9-49AB-ACE9-6182DADC7574}"
@@ -21,9 +19,9 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Mono.Linker", "..\..\tools\
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Mono.Linker", "..\..\tools\illink\src\linker\ref\Mono.Linker.csproj", "{8DE4021B-2C3E-4DB2-A33A-A26FBF527118}"
 EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "ref", "ref", "{C494A755-24D9-4E80-AEC3-CF8FEBAFCAC6}"
-EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{09E0C315-2A88-4F30-93DA-E22625BF82AB}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "ref", "ref", "{C494A755-24D9-4E80-AEC3-CF8FEBAFCAC6}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "gen", "gen", "{BF723277-314D-45F4-B29A-6A8683860A93}"
 EndProject
@@ -41,10 +39,6 @@ Global
 		Release|Any CPU = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{57D9CDC0-FB4C-4408-8E75-B04079EAE7C8}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{57D9CDC0-FB4C-4408-8E75-B04079EAE7C8}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{57D9CDC0-FB4C-4408-8E75-B04079EAE7C8}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{57D9CDC0-FB4C-4408-8E75-B04079EAE7C8}.Release|Any CPU.Build.0 = Release|Any CPU
 		{F170EDB3-E92B-456A-8749-F3ACE3471510}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{F170EDB3-E92B-456A-8749-F3ACE3471510}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{F170EDB3-E92B-456A-8749-F3ACE3471510}.Release|Any CPU.ActiveCfg = Release|Any CPU
@@ -90,10 +84,9 @@ Global
 		HideSolutionNode = FALSE
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
-		{57D9CDC0-FB4C-4408-8E75-B04079EAE7C8} = {C494A755-24D9-4E80-AEC3-CF8FEBAFCAC6}
-		{B8B63EFF-64D9-49AB-ACE9-6182DADC7574} = {C494A755-24D9-4E80-AEC3-CF8FEBAFCAC6}
 		{F170EDB3-E92B-456A-8749-F3ACE3471510} = {09E0C315-2A88-4F30-93DA-E22625BF82AB}
 		{D1AEAA98-0D46-4E23-8644-6BD5EBCE32AF} = {09E0C315-2A88-4F30-93DA-E22625BF82AB}
+		{B8B63EFF-64D9-49AB-ACE9-6182DADC7574} = {C494A755-24D9-4E80-AEC3-CF8FEBAFCAC6}
 		{DAC5CD72-8A72-40C3-BD9D-703B7CB6FE04} = {BF723277-314D-45F4-B29A-6A8683860A93}
 		{B7469EEF-415C-485B-9FEC-3D9640400A7B} = {BF723277-314D-45F4-B29A-6A8683860A93}
 		{C1EC51FB-C819-4CC5-9600-42CCE195DE78} = {83FB9805-C27B-4039-A30D-7010422CCDCE}

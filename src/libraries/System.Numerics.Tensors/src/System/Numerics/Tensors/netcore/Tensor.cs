@@ -5,6 +5,7 @@ using System.Buffers;
 using System.Collections;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Reflection.Metadata.Ecma335;
 using System.Runtime.CompilerServices;
@@ -17,6 +18,10 @@ using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace System.Numerics.Tensors
 {
+    /// <summary>
+    /// Represents a tensor.
+    /// </summary>
+    [Experimental(Experimentals.TensorTDiagId, UrlFormat = Experimentals.SharedUrlFormat)]
     public sealed class Tensor<T>
         : ITensor<Tensor<T>, T>
     {
@@ -172,7 +177,7 @@ namespace System.Numerics.Tensors
         /// Gets the length of each dimension in this <see cref="Tensor{T}"/>.
         /// </summary>
         /// <value><see cref="ReadOnlySpan{T}"/> with the lengths of each dimension.</value>
-        void IReadOnlyTensor<Tensor<T>, T>.GetLengths(Span<nint> destination) => _lengths.CopyTo(destination);
+        ReadOnlySpan<nint> IReadOnlyTensor<Tensor<T>, T>.Lengths => _lengths;
 
 
         /// <summary>
@@ -185,7 +190,7 @@ namespace System.Numerics.Tensors
         /// Gets the strides of each dimension in this <see cref="Tensor{T}"/>.
         /// </summary>
         /// <value><see cref="ReadOnlySpan{T}"/> with the strides of each dimension.</value>
-        void IReadOnlyTensor<Tensor<T>, T>.GetStrides(scoped Span<nint> destination) => _strides.CopyTo(destination);
+        ReadOnlySpan<nint> IReadOnlyTensor<Tensor<T>, T>.Strides => _strides;
 
         bool ITensor<Tensor<T>, T>.IsReadOnly => false;
 
@@ -363,10 +368,19 @@ namespace System.Numerics.Tensors
             }
         }
 
+        /// <summary>
+        /// Defines an implicit conversion of an array to a <see cref="Tensor{T}"/>.
+        /// </summary>
         public static implicit operator Tensor<T>(T[] array) => new Tensor<T>(array, [array.Length]);
 
+        /// <summary>
+        /// Defines an implicit conversion of a <see cref="Tensor{T}"/> to a <see cref="TensorSpan{T}"/>.
+        /// </summary>
         public static implicit operator TensorSpan<T>(Tensor<T> value) => new TensorSpan<T>(ref MemoryMarshal.GetArrayDataReference(value._values), value._lengths, value._strides, value._flattenedLength);
 
+        /// <summary>
+        /// Defines an implicit conversion of a <see cref="Tensor{T}"/> to a <see cref="TensorSpan{T}"/>.
+        /// </summary>
         public static implicit operator ReadOnlyTensorSpan<T>(Tensor<T> value) => new ReadOnlyTensorSpan<T>(ref MemoryMarshal.GetArrayDataReference(value._values), value._lengths, value._strides, value.FlattenedLength);
 
         /// <summary>
@@ -612,6 +626,11 @@ namespace System.Numerics.Tensors
         }
 
         // REVIEW: PENDING API REVIEW TO DETERMINE IMPLEMENTATION
+        /// <summary>
+        /// Gets the hash code for the <see cref="Tensor{T}"/>.
+        /// </summary>
+        /// <returns>The hash code of the tensor.</returns>
+        /// <exception cref="NotImplementedException">In all cases.</exception>
         public override int GetHashCode()
         {
             throw new NotImplementedException();
@@ -652,10 +671,12 @@ namespace System.Numerics.Tensors
         /// <returns>A <see cref="string"/> representation of the <see cref="Tensor{T}"/></returns>
         public string ToString(params ReadOnlySpan<nint> maximumLengths)
         {
+            if (maximumLengths.Length == 0)
+                maximumLengths = (from number in Enumerable.Range(0, Rank) select (nint)5).ToArray();
             var sb = new StringBuilder();
             sb.AppendLine(ToMetadataString());
             sb.AppendLine("{");
-            sb.Append(AsTensorSpan().ToString(10, 10));
+            sb.Append(AsTensorSpan().ToString(maximumLengths));
             sb.AppendLine("}");
             return sb.ToString();
         }

@@ -38,10 +38,10 @@ namespace System.Net.Http
         // https://www.rfc-editor.org/rfc/rfc9114.html#section-7.2.4.1-2.2.1
         private uint _maxHeaderListSize = uint.MaxValue; // Defaults to infinite
 
-        // Once the server's streams are received, these are set to 1. Further receipt of these streams results in a connection error.
-        private int _haveServerControlStream;
-        private int _haveServerQpackDecodeStream;
-        private int _haveServerQpackEncodeStream;
+        // Once the server's streams are received, these are set to true. Further receipt of these streams results in a connection error.
+        private bool _haveServerControlStream;
+        private bool _haveServerQpackDecodeStream;
+        private bool _haveServerQpackEncodeStream;
 
         // A connection-level error will abort any future operations.
         private Exception? _abortException;
@@ -598,7 +598,7 @@ namespace System.Net.Http
                     switch (buffer.ActiveSpan[0])
                     {
                         case (byte)Http3StreamType.Control:
-                            if (Interlocked.Exchange(ref _haveServerControlStream, 1) != 0)
+                            if (Interlocked.Exchange(ref _haveServerControlStream, true))
                             {
                                 // A second control stream has been received.
                                 throw HttpProtocolException.CreateHttp3ConnectionException(Http3ErrorCode.StreamCreationError);
@@ -614,7 +614,7 @@ namespace System.Net.Http
                             await ProcessServerControlStreamAsync(stream, bufferCopy).ConfigureAwait(false);
                             return;
                         case (byte)Http3StreamType.QPackDecoder:
-                            if (Interlocked.Exchange(ref _haveServerQpackDecodeStream, 1) != 0)
+                            if (Interlocked.Exchange(ref _haveServerQpackDecodeStream, true))
                             {
                                 // A second QPack decode stream has been received.
                                 throw HttpProtocolException.CreateHttp3ConnectionException(Http3ErrorCode.StreamCreationError);
@@ -625,7 +625,7 @@ namespace System.Net.Http
                             await stream.CopyToAsync(Stream.Null).ConfigureAwait(false);
                             return;
                         case (byte)Http3StreamType.QPackEncoder:
-                            if (Interlocked.Exchange(ref _haveServerQpackEncodeStream, 1) != 0)
+                            if (Interlocked.Exchange(ref _haveServerQpackEncodeStream, true))
                             {
                                 // A second QPack encode stream has been received.
                                 throw HttpProtocolException.CreateHttp3ConnectionException(Http3ErrorCode.StreamCreationError);

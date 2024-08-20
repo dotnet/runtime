@@ -355,10 +355,10 @@ namespace Internal.Runtime.TypeLoader
                     else
                     {
                         Debug.Assert(TypeBeingBuilt.RetrieveRuntimeTypeHandleIfPossible() ||
-                             TypeBeingBuilt.IsTemplateCanonical() ||
                              (TypeBeingBuilt is PointerType) ||
                              (TypeBeingBuilt is ByRefType) ||
-                             (TypeBeingBuilt is FunctionPointerType));
+                             (TypeBeingBuilt is FunctionPointerType) ||
+                             TypeBeingBuilt.IsTemplateCanonical());
                         _instanceGCLayout = s_emptyLayout;
                     }
                 }

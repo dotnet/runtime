@@ -12,7 +12,7 @@
             <Issue>https://github.com/dotnet/runtime/issues/76041</Issue>
         </ExcludeList>
         <ExcludeList Include = "$(XunitTestBinBase)/JIT/opt/ValueNumbering/ExposedLocalsNumbering/**">
-            <Issue>https://github.com/dotnet/runtime/issues/80184</Issue>
+            <Issue>https://github.com/dotnet/runtime/issues/105187</Issue>
         </ExcludeList>
         <ExcludeList Include = "$(XunitTestBinBase)/JIT/opt/SSA/MemorySsa/**">
             <Issue>https://github.com/dotnet/runtime/issues/86112</Issue>
@@ -89,9 +89,6 @@
 
     <!-- All Unix targets  on CoreCLR Runtime -->
     <ItemGroup Condition="'$(XunitTestBinBase)' != '' and '$(TargetsWindows)' != 'true' and '$(RuntimeFlavor)' == 'coreclr' ">
-        <ExcludeList Include="$(XunitTestBinBase)/baseservices/exceptions/stackoverflow/stackoverflowtester/*">
-            <Issue>https://github.com/dotnet/runtime/issues/46175</Issue>
-        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/baseservices/typeequivalence/signatures/nopiatestil/*">
             <Issue>CoreCLR doesn't support type equivalence on Unix</Issue>
         </ExcludeList>
@@ -407,9 +404,6 @@
         <ExcludeList Include="$(XunitTestBinBase)/tracing/runtimeeventsource/nativeruntimeeventsource/*">
             <Issue>https://github.com/dotnet/runtime/issues/68690</Issue>
         </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/tracing/eventpipe/eventsourceerror/eventsourceerror/*">
-            <Issue>https://github.com/dotnet/runtime/issues/80666</Issue>
-        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/JIT/jit64/regress/vsw/373472/**">
             <Issue>Allocates large contiguous array that is not consistently available on 32-bit platforms</Issue>
         </ExcludeList>
@@ -427,6 +421,15 @@
 
     <!-- OSX x64 on CoreCLR Runtime -->
     <ItemGroup Condition="'$(XunitTestBinBase)' != '' and '$(TargetsOSX)' == 'true' and '$(TargetArchitecture)' == 'x64' and '$(RuntimeFlavor)' == 'coreclr' ">
+        <ExcludeList Include="$(XunitTestBinBase)/baseservices/exceptions/stackoverflow/stackoverflowtester/*">
+            <Issue>https://github.com/dotnet/runtime/issues/84911</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/baseservices/exceptions/simple/ParallelCrashMainThread/*">
+            <Issue>https://github.com/dotnet/runtime/issues/80356</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/baseservices/exceptions/unhandled/unhandledTester/*">
+            <Issue>https://github.com/dotnet/runtime/issues/80356</Issue>
+        </ExcludeList>
     </ItemGroup>
 
     <!-- OSX arm64 on CoreCLR Runtime -->
@@ -673,7 +676,7 @@
             <Issue>https://github.com/dotnet/runtime/issues/85663</Issue>
         </ExcludeList>
     </ItemGroup>
-    
+
     <!-- Crossgen2 win-arm64 specific excludes -->
     <ItemGroup Condition="'$(XunitTestBinBase)' != '' and ('$(TestBuildMode)' == 'crossgen2' or '$(TestBuildMode)' == 'crossgen') and '$(RuntimeFlavor)' == 'coreclr' and '$(TargetArchitecture)' == 'arm64' and '$(TargetOS)' == 'windows'">
         <ExcludeList Include="$(XunitTestBinBase)/JIT/opt/Devirtualization/Comparer_get_Default/*">
@@ -683,6 +686,9 @@
 
     <!-- NativeAOT specific -->
     <ItemGroup Condition="'$(XunitTestBinBase)' != '' and '$(TestBuildMode)' == 'nativeaot' and '$(RuntimeFlavor)' == 'coreclr'">
+        <ExcludeList Include="$(XunitTestBinBase)/tracing/eventlistener/EventListenerThreadPool/**">
+            <Issue>https://github.com/dotnet/runtime/issues/105556</Issue>
+        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/baseservices/threading/regressions/beta2/437017/**">
             <Issue>https://github.com/dotnet/runtime/issues/102544</Issue>
         </ExcludeList>
@@ -1206,9 +1212,6 @@
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/CLR-x86-JIT/V1.1-M1-Beta1/b143840/b143840/**">
             <Issue>https://github.com/dotnet/runtime/issues/101363</Issue>
         </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/CLR-x86-JIT/V1-M10/b08944/b08944b/**">
-            <Issue>https://github.com/dotnet/runtime/issues/101364</Issue>
-        </ExcludeList>
     </ItemGroup>
 
     <!-- run.proj finds all the *.cmd/*.sh scripts in a test folder and creates corresponding test methods.
@@ -1225,6 +1228,9 @@
     <ItemGroup Condition="'$(RuntimeFlavor)' == 'mono'" >
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/JitBlue/Runtime_62692/Runtime_62692_*/**">
             <Issue>https://github.com/dotnet/runtime/issues/100368</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XUnitTestBinBase)/JIT/Regression/JitBlue/Runtime_101046/**">
+            <Issue>https://github.com/dotnet/runtime/issues/106393</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/Loader/classloader/StaticVirtualMethods/Reabstraction/**">
             <Issue>https://github.com/dotnet/runtime/issues/88775</Issue>
@@ -1459,9 +1465,6 @@
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/Interop/COM/ComWrappers/**">
             <Issue>Not supported on Mono</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/Interop/ICastable/Castable/**">
-            <Issue>needs triage</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/Interop/ICustomMarshaler/ConflictingNames/MultipleALCs/**">
             <Issue>https://github.com/dotnet/runtime/issues/34072</Issue>
@@ -2953,6 +2956,9 @@
         <ExcludeList Include="$(XUnitTestBinBase)/JIT/Directed/aliasing_retbuf/aliasing_retbuf/*">
             <Issue>https://github.com/dotnet/runtime/issues/64127</Issue>
         </ExcludeList>
+        <ExcludeList Include="$(XUnitTestBinBase)/JIT/Regression/JitBlue/Runtime_101046/**">
+            <Issue>https://github.com/dotnet/runtime/issues/64127</Issue>
+        </ExcludeList>
         <ExcludeList Include = "$(XunitTestBinBase)/Loader/classloader/TypeInitialization/CircularCctors/CircularCctorFourThreadsBFI/**">
             <Issue>https://github.com/dotnet/runtime/issues/41472</Issue>
         </ExcludeList>
@@ -3037,9 +3043,6 @@
         </ExcludeList>
         <ExcludeList Include = "$(XunitTestBinBase)/tracing/eventcounter/regression-25709/**">
             <Issue>https://github.com/dotnet/runtime/issues/84786</Issue>
-        </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/GC/Regressions/v2.0-beta2/452950/452950/**">
-            <Issue>needs triage</Issue>
         </ExcludeList>
         <ExcludeList Include = "$(XunitTestBinBase)/GC/Stress/Framework/ReliabilityFramework/**">
             <Issue>needs triage</Issue>
@@ -3688,6 +3691,9 @@
             <Issue>https://github.com/dotnet/runtime/issues/92129</Issue>
         </ExcludeList>
         <ExcludeList Include = "$(XunitTestBinBase)/JIT/SIMD/Vector3Interop_ro/**">
+            <Issue>https://github.com/dotnet/runtime/issues/92129</Issue>
+        </ExcludeList>
+        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Directed/PrimitiveABI/**">
             <Issue>https://github.com/dotnet/runtime/issues/92129</Issue>
         </ExcludeList>
     </ItemGroup>

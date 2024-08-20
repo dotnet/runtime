@@ -24,7 +24,6 @@ namespace ILLink.Shared.TrimAnalysis
 		readonly MarkStep _markStep;
 		readonly ReflectionMarker _reflectionMarker;
 		readonly MethodDefinition _callingMethodDefinition;
-		readonly MethodReference _calledMethodReference;
 
 		public HandleCallAction (
 			LinkContext context,
@@ -32,8 +31,7 @@ namespace ILLink.Shared.TrimAnalysis
 			MarkStep markStep,
 			ReflectionMarker reflectionMarker,
 			in DiagnosticContext diagnosticContext,
-			MethodDefinition callingMethodDefinition,
-			MethodReference calledMethodReference)
+			MethodDefinition callingMethodDefinition)
 		{
 			_context = context;
 			_operation = operation;
@@ -44,7 +42,6 @@ namespace ILLink.Shared.TrimAnalysis
 			_callingMethodDefinition = callingMethodDefinition;
 			_annotations = context.Annotations.FlowAnnotations;
 			_requireDynamicallyAccessedMembersAction = new (reflectionMarker, diagnosticContext);
-			_calledMethodReference = calledMethodReference;
 		}
 
 		private partial bool TryHandleIntrinsic (
@@ -55,15 +52,14 @@ namespace ILLink.Shared.TrimAnalysis
 			out MultiValue? methodReturnValue)
 		{
 			MultiValue? maybeMethodReturnValue = methodReturnValue = null;
-			Debug.Assert (calledMethod.Method == _context.Resolve (_calledMethodReference));
 
 			switch (intrinsicId) {
 			case IntrinsicId.None: {
-					if (ReflectionMethodBodyScanner.IsPInvokeDangerous (calledMethod.Method, _context, out bool comDangerousMethod)) {
+					if (ReflectionMethodBodyScanner.IsPInvokeDangerous (calledMethod.Definition, _context, out bool comDangerousMethod)) {
 						Debug.Assert (comDangerousMethod); // Currently COM dangerous is the only one we detect
 						_diagnosticContext.AddDiagnostic (DiagnosticId.CorrectnessOfCOMCannotBeGuaranteed, calledMethod.GetDisplayName ());
 					}
-					if (_context.Annotations.DoesMethodRequireUnreferencedCode (calledMethod.Method, out RequiresUnreferencedCodeAttribute? requiresUnreferencedCode))
+					if (_context.Annotations.DoesMethodRequireUnreferencedCode (calledMethod.Definition, out RequiresUnreferencedCodeAttribute? requiresUnreferencedCode))
 						MarkStep.ReportRequiresUnreferencedCode (calledMethod.GetDisplayName (), requiresUnreferencedCode, _diagnosticContext);
 
 					return TryHandleSharedIntrinsic (calledMethod, instanceValue, argumentValues, intrinsicId, out methodReturnValue);
@@ -77,7 +73,7 @@ namespace ILLink.Shared.TrimAnalysis
 				break;
 
 			case IntrinsicId.Array_Empty: {
-					AddReturnValue (ArrayValue.Create (0, ((GenericInstanceMethod) _calledMethodReference).GenericArguments[0]));
+					AddReturnValue (ArrayValue.Create (0, ((GenericInstanceMethod) calledMethod.Method).GenericArguments[0]));
 				}
 				break;
 
@@ -108,8 +104,7 @@ namespace ILLink.Shared.TrimAnalysis
 						// Note that valueNode can be statically typed in IL as some generic argument type.
 						// For example:
 						//   void Method<T>(T instance) { instance.GetType().... }
-						// Currently this case will end up with null StaticType - since there's no typedef for the generic argument type.
-						// But it could be that T is annotated with for example PublicMethods:
+						// It could be that T is annotated with for example PublicMethods:
 						//   void Method<[DAM(PublicMethods)] T>(T instance) { instance.GetType().GetMethod("Test"); }
 						// In this case it's in theory possible to handle it, by treating the T basically as a base class
 						// for the actual type of "instance". But the analysis for this would be pretty complicated (as the marking
@@ -120,11 +115,26 @@ namespace ILLink.Shared.TrimAnalysis
 						// In this case to get correct results, trimmer would have to mark all public methods on Derived. Which
 						// currently it won't do.
 
-						TypeDefinition? staticType = (valueNode as IValueWithStaticType)?.StaticType?.Type;
-						if (staticType is null) {
-							// We don't know anything about the type GetType was called on. Track this as a usual result of a method call without any annotations
-							AddReturnValue (_context.Annotations.FlowAnnotations.GetMethodReturnValue (calledMethod, _isNewObj));
-						} else if (staticType.IsSealed || staticType.IsTypeOf ("System", "Delegate") || staticType.IsTypeOf ("System", "Array")) {
+						TypeReference? staticType = (valueNode as IValueWithStaticType)?.StaticType?.Type;
+						if (staticType?.IsByReference == true)
+							staticType = ((ByReferenceType) staticType).ElementType;
+						TypeDefinition? staticTypeDef = staticType?.ResolveToTypeDefinition (_context);
+						if (staticType is null || staticTypeDef is null) {
+							DynamicallyAccessedMemberTypes annotation = default;
+							if (staticType is GenericParameter genericParam && genericParam.HasConstraints) {
+								foreach (var constraint in genericParam.Constraints) {
+									if (constraint.ConstraintType.IsTypeOf ("System", "Enum"))
+										annotation = DynamicallyAccessedMemberTypes.PublicFields;
+								}
+							}
+
+							if (annotation != default) {
+								AddReturnValue (_context.Annotations.FlowAnnotations.GetMethodReturnValue (calledMethod, _isNewObj, annotation));
+							} else {
+								// We don't know anything about the type GetType was called on. Track this as a usual result of a method call without any annotations
+								AddReturnValue (_context.Annotations.FlowAnnotations.GetMethodReturnValue (calledMethod, _isNewObj));
+							}
+						} else if (staticTypeDef.IsSealed || staticTypeDef.IsTypeOf ("System", "Delegate") || staticTypeDef.IsTypeOf ("System", "Array")) {
 							// We can treat this one the same as if it was a typeof() expression
 
 							// We can allow Object.GetType to be modeled as System.Delegate because we keep all methods
@@ -141,13 +151,15 @@ namespace ILLink.Shared.TrimAnalysis
 							// where a parameter is annotated and if something in the method sets a specific known type to it
 							// we will also make it just work, even if the annotation doesn't match the usage.
 							AddReturnValue (new SystemTypeValue (staticType));
+						} else if (staticTypeDef.IsTypeOf ("System", "Enum")) {
+							AddReturnValue (_context.Annotations.FlowAnnotations.GetMethodReturnValue (calledMethod, _isNewObj, DynamicallyAccessedMemberTypes.PublicFields));
 						} else {
 							// Make sure the type is marked (this will mark it as used via reflection, which is sort of true)
 							// This should already be true for most cases (method params, fields, ...), but just in case
 							_reflectionMarker.MarkType (_diagnosticContext.Origin, staticType);
 
 							var annotation = _markStep.DynamicallyAccessedMembersTypeHierarchy
-								.ApplyDynamicallyAccessedMembersToTypeHierarchy (staticType);
+								.ApplyDynamicallyAccessedMembersToTypeHierarchy (staticTypeDef);
 
 							// Return a value which is "unknown type" with annotation. For now we'll use the return value node
 							// for the method, which means we're loosing the information about which staticType this
@@ -181,9 +193,9 @@ namespace ILLink.Shared.TrimAnalysis
 
 		private partial bool MethodIsTypeConstructor (MethodProxy method)
 		{
-			if (!method.Method.IsConstructor)
+			if (!method.Definition.IsConstructor)
 				return false;
-			TypeDefinition? type = method.Method.DeclaringType;
+			TypeDefinition? type = method.Definition.DeclaringType;
 			while (type is not null) {
 				if (type.IsTypeOf (WellKnownType.System_Type))
 					return true;
@@ -194,19 +206,21 @@ namespace ILLink.Shared.TrimAnalysis
 
 		private partial IEnumerable<SystemReflectionMethodBaseValue> GetMethodsOnTypeHierarchy (TypeProxy type, string name, BindingFlags? bindingFlags)
 		{
-			foreach (var method in type.Type.GetMethodsOnTypeHierarchy (_context, m => m.Name == name, bindingFlags))
-				yield return new SystemReflectionMethodBaseValue (new MethodProxy (method));
+			foreach (var method in type.Type.GetMethodsOnTypeHierarchy (_context, m => m.Name == name, bindingFlags)) {
+				if (MethodProxy.TryCreate (method, _context, out MethodProxy? methodProxy))
+					yield return new SystemReflectionMethodBaseValue (methodProxy.Value);
+			}
 		}
 
 		private partial IEnumerable<SystemTypeValue> GetNestedTypesOnType (TypeProxy type, string name, BindingFlags? bindingFlags)
 		{
-			foreach (var nestedType in type.Type.GetNestedTypesOnType (t => t.Name == name, bindingFlags))
+			foreach (var nestedType in type.Type.GetNestedTypesOnType (_context, t => t.Name == name, bindingFlags))
 				yield return new SystemTypeValue (new TypeProxy (nestedType));
 		}
 
 		private partial bool TryGetBaseType (TypeProxy type, out TypeProxy? baseType)
 		{
-			if (type.Type.BaseType is TypeReference baseTypeRef && _context.TryResolve (baseTypeRef) is TypeDefinition baseTypeDefinition) {
+			if (type.Type.ResolveToTypeDefinition (_context)?.BaseType is TypeReference baseTypeRef && _context.TryResolve (baseTypeRef) is TypeDefinition baseTypeDefinition) {
 				baseType = new TypeProxy (baseTypeDefinition);
 				return true;
 			}
@@ -266,7 +280,7 @@ namespace ILLink.Shared.TrimAnalysis
 
 		private partial bool MarkAssociatedProperty (MethodProxy method)
 		{
-			if (method.Method.TryGetProperty (out PropertyDefinition? propertyDefinition)) {
+			if (method.Definition.TryGetProperty (out PropertyDefinition? propertyDefinition)) {
 				_reflectionMarker.MarkProperty (_diagnosticContext.Origin, propertyDefinition);
 				return true;
 			}

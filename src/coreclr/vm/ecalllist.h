@@ -54,10 +54,6 @@ FCFuncStart(gDependentHandleFuncs)
     FCFuncElement("InternalFree",                  DependentHandle::InternalFree)
 FCFuncEnd()
 
-FCFuncStart(gObjectFuncs)
-    FCFuncElement("GetType", ObjectNative::GetClass)
-FCFuncEnd()
-
 FCFuncStart(gStringFuncs)
     FCDynamic("FastAllocateString", ECall::FastAllocateString)
     FCDynamicSig(COR_CTOR_METHOD_NAME, &gsig_IM_ArrChar_RetVoid, ECall::CtorCharArrayManaged)
@@ -92,7 +88,6 @@ FCFuncEnd()
 
 FCFuncStart(gExceptionFuncs)
     FCFuncElement("IsImmutableAgileException", ExceptionNative::IsImmutableAgileException)
-    FCFuncElement("GetMethodFromStackTrace", SystemNative::GetMethodFromStackTrace)
     FCFuncElement("PrepareForForeignExceptionRaise", ExceptionNative::PrepareForForeignExceptionRaise)
     FCFuncElement("GetFrozenStackTrace", ExceptionNative::GetFrozenStackTrace)
     FCFuncElement("GetExceptionCount", ExceptionNative::GetExceptionCount)
@@ -133,7 +128,6 @@ FCFuncStart(gCOMTypeHandleFuncs)
     FCFuncElement("GetInterfaces", RuntimeTypeHandle::GetInterfaces)
     FCFuncElement("GetAttributes", RuntimeTypeHandle::GetAttributes)
     FCFuncElement("GetNumVirtuals", RuntimeTypeHandle::GetNumVirtuals)
-    FCFuncElement("GetNumVirtualsAndStaticVirtuals", RuntimeTypeHandle::GetNumVirtualsAndStaticVirtuals)
     FCFuncElement("CanCastTo", RuntimeTypeHandle::CanCastTo)
     FCFuncElement("GetGenericVariableIndex", RuntimeTypeHandle::GetGenericVariableIndex)
     FCFuncElement("IsGenericVariable", RuntimeTypeHandle::IsGenericVariable)
@@ -434,7 +428,6 @@ FCFuncEnd()
 
 FCFuncStart(gRuntimeHelpers)
     FCFuncElement("PrepareDelegate", ReflectionInvocation::PrepareDelegate)
-    FCFuncElement("GetHashCode", ObjectNative::GetHashCode)
     FCFuncElement("TryGetHashCode", ObjectNative::TryGetHashCode)
     FCFuncElement("ContentEquals", ObjectNative::ContentEquals)
     FCFuncElement("EnsureSufficientExecutionStack", ReflectionInvocation::EnsureSufficientExecutionStack)
@@ -493,29 +486,6 @@ FCFuncStart(gComAwareWeakReferenceFuncs)
     FCFuncElement("HasInteropInfo", ComAwareWeakReferenceNative::HasInteropInfo)
 FCFuncEnd()
 
-#ifdef FEATURE_COMINTEROP
-
-//
-// ECall helpers for the standard managed interfaces.
-//
-
-#define MNGSTDITF_BEGIN_INTERFACE(FriendlyName, strMngItfName, strUCOMMngItfName, strCustomMarshalerName, strCustomMarshalerCookie, strManagedViewName, NativeItfIID, bCanCastOnNativeItfQI) \
-FCFuncStart(g##FriendlyName##Funcs)
-
-#define MNGSTDITF_DEFINE_METH_IMPL(FriendlyName, FCallMethName, MethName, MethSig, FcallDecl) \
-    FCUnreferenced FCFuncElementSig(#MethName, MethSig, FriendlyName::FCallMethName)
-
-#define MNGSTDITF_END_INTERFACE(FriendlyName) \
-FCFuncEnd()
-
-#include "mngstditflist.h"
-
-#undef MNGSTDITF_BEGIN_INTERFACE
-#undef MNGSTDITF_DEFINE_METH_IMPL
-#undef MNGSTDITF_END_INTERFACE
-
-#endif // FEATURE_COMINTEROP
-
 //
 //
 // Class definitions
@@ -539,11 +509,6 @@ FCClassElement("GC", "System", gGCInterfaceFuncs)
 FCClassElement("GCFrameRegistration", "System.Runtime", gGCFrameRegistration)
 FCClassElement("GCHandle", "System.Runtime.InteropServices", gGCHandleFuncs)
 FCClassElement("GCSettings", "System.Runtime", gGCSettingsFuncs)
-#ifdef FEATURE_COMINTEROP
-FCClassElement("IEnumerable", "System.Collections", gStdMngIEnumerableFuncs)
-FCClassElement("IEnumerator", "System.Collections", gStdMngIEnumeratorFuncs)
-FCClassElement("IReflect", "System.Reflection", gStdMngIReflectFuncs)
-#endif
 FCClassElement("Interlocked", "System.Threading", gInterlockedFuncs)
 FCClassElement("JitInfo", "System.Runtime", gJitInfoFuncs)
 FCClassElement("Marshal", "System.Runtime.InteropServices", gInteropMarshalFuncs)
@@ -553,7 +518,6 @@ FCClassElement("MetadataImport", "System.Reflection", gMetaDataImport)
 FCClassElement("MethodTable", "System.Runtime.CompilerServices", gMethodTableFuncs)
 FCClassElement("ModuleHandle", "System", gCOMModuleHandleFuncs)
 FCClassElement("Monitor", "System.Threading", gMonitorFuncs)
-FCClassElement("Object", "System", gObjectFuncs)
 
 FCClassElement("RuntimeAssembly", "System.Reflection", gRuntimeAssemblyFuncs)
 FCClassElement("RuntimeFieldHandle", "System", gCOMFieldHandleNewFuncs)
