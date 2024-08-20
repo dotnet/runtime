@@ -51,7 +51,7 @@ using System.IO;
 using System.Text.RegularExpressions;
 
 // The main application class containing the program entry point.
-internal class CrstTypeTool
+internal partial class CrstTypeTool
 {
     // A hash containing every Crst type defined by the input .def file along with its attributes. Keyed by
     // Crst type name (which is case sensitive and doesn't include the 'Crst' enum prefix).
@@ -173,8 +173,7 @@ internal class CrstTypeTool
         foreach (CrstType crst in crsts)
         {
             string crstLine = "    " + crst.Level + ",";
-            crstLine = crstLine + new string(' ', 16 - crstLine.Length);
-            writer.WriteLine(crstLine + "// Crst" + crst.Name);
+            writer.WriteLine(crstLine.PadRight(16) + "// Crst" + crst.Name);
         }
         writer.WriteLine("};");
         writer.WriteLine();
@@ -306,7 +305,7 @@ internal class CrstTypeTool
     // Note that this algorithm is not designed to detect general cycles in the graph, only those that involve
     // the 'rootCrst' directly. This is somewhat inefficient but gives us a simple way to generate clear error
     // messages.
-    private bool FindCycle(CrstType rootCrst, CrstType currCrst, List<CrstType> cycleList)
+    private static bool FindCycle(CrstType rootCrst, CrstType currCrst, List<CrstType> cycleList)
     {
         // Add the current Crst type to the list of those we've seen.
         cycleList.Add(currCrst);
@@ -473,15 +472,18 @@ internal class CrstTypeTool
 // Class used to parse a CrstTypes.def file into a dictionary of Crst type definitions. It uses a simple lexer
 // that removes comments then forms tokens out of any consecutive non-whitespace characters. An equally simple
 // recursive descent parser forms Crst instances by parsing the token stream.
-internal class TypeFileParser
+internal partial class TypeFileParser
 {
     // Remember the input file name and the dictionary we're meant to populate.
     private string m_typeFileName;
     private Dictionary<string, CrstType> m_crsts;
 
     // Compile regular expressions for detecting comments and tokens in the parser input.
-    private Regex m_commentRegex = new Regex(@"//.*");
-    private Regex m_tokenRegex = new Regex(@"^(\s*(\S+)\s*)*");
+    [GeneratedRegex(@"//.*")]
+    private static partial Regex CommentRegex();
+
+    [GeneratedRegex(@"^(\s*(\S+)\s*)*")]
+    private static partial Regex TokenRegex();
 
     // Input is lexed into an array of tokens. We record the index of the token being currently parsed.
     private Token[] m_tokens;
@@ -524,10 +526,8 @@ internal class TypeFileParser
         // The Crst instance might already exist in the dictionary (forward references to a Crst type cause
         // these entries to auto-vivify). But in that case the entry better not be marked as 'Defined' which
         // would indicate a double declaration.
-        CrstType crst;
-        if (m_crsts.ContainsKey(token.Text))
+        if (m_crsts.TryGetValue(token.Text, out CrstType crst))
         {
-            crst = m_crsts[token.Text];
             if (crst.Defined)
                 throw new ParseError(string.Format("Duplicate definition for CrstType '{0}'", token.Text), token);
         }
@@ -615,10 +615,7 @@ internal class TypeFileParser
             }
 
             // Look up or add a new CrstType corresponding to this type name.
-            CrstType crst;
-            if (m_crsts.ContainsKey(token.Text))
-                crst = m_crsts[token.Text];
-            else
+            if (!m_crsts.TryGetValue(token.Text, out CrstType crst))
             {
                 crst = new CrstType(token.Text);
                 m_crsts[crst.Name] = crst;
@@ -641,10 +638,10 @@ internal class TypeFileParser
         while ((line = file.ReadLine()) != null)
         {
             // Remove comments from the current line.
-            line = m_commentRegex.Replace(line, "");
+            line = CommentRegex().Replace(line, "");
 
             // Match all contiguous non-whitespace characters as individual tokens.
-            Match match = m_tokenRegex.Match(line);
+            Match match = TokenRegex().Match(line);
             if (match.Success)
             {
                 // For each token captured build a token instance and record the token text and the file, line
@@ -703,7 +700,19 @@ internal class TypeFileParser
     internal class Token
     {
         // Hash of keyword text to enum values.
-        private static Dictionary<string, KeywordId> s_keywords;
+        // No sense building complex finite state machines to improve the efficiency of
+        // keyword lexing here since the input file (and keyword set) is never going to be
+        // big enough to justify the extra work.
+        private static Dictionary<string, KeywordId> s_keywords =
+            new Dictionary<string, KeywordId>(StringComparer.OrdinalIgnoreCase)
+            {
+                { "crst", KeywordId.Crst },
+                { "end", KeywordId.End },
+                { "acquiredbefore", KeywordId.AcquiredBefore },
+                { "acquiredafter", KeywordId.AcquiredAfter },
+                { "unordered", KeywordId.Unordered },
+                { "samelevelas", KeywordId.SameLevelAs }
+            };
 
         // The characters comprising the text of the token from the input file.
         private string m_text;
@@ -716,21 +725,6 @@ internal class TypeFileParser
         // The ID of the keyword this token represents (or KeywordId.Id).
         private KeywordId m_id;
 
-        // Static class initialization.
-        static Token()
-        {
-            // Populate the keyword hash. No sense building complex finite state machines to improve the
-            // efficiency of keyword lexing here since the input file (and keyword set) is never going to be
-            // big enough to justify the extra work.
-            s_keywords = new Dictionary<string, KeywordId>();
-            s_keywords.Add("crst", KeywordId.Crst);
-            s_keywords.Add("end", KeywordId.End);
-            s_keywords.Add("acquiredbefore", KeywordId.AcquiredBefore);
-            s_keywords.Add("acquiredafter", KeywordId.AcquiredAfter);
-            s_keywords.Add("unordered", KeywordId.Unordered);
-            s_keywords.Add("samelevelas", KeywordId.SameLevelAs);
-        }
-
         public Token(string file, string text, int line, int column)
         {
             m_file = file;
@@ -738,11 +732,9 @@ internal class TypeFileParser
             m_line = line;
             m_column = column;
 
-            // Map token text to keyword ID. True keywords (not identifiers) are case insensitive so normalize
-            // the text to lower case before performing the keyword hash lookup.
-            string canonName = m_text.ToLower();
-            if (s_keywords.ContainsKey(canonName))
-                m_id = s_keywords[canonName];
+            // Map token text to keyword ID.
+            if (s_keywords.TryGetValue(m_text, out KeywordId value))
+                m_id = value;
             else
                 m_id = KeywordId.Id;
         }
@@ -823,8 +815,8 @@ internal class CrstType : IComparable
 {
     // Special level constants used to indicate unordered Crst types or those types we haven't gotten around
     // to ranking yet.
-    public static readonly int CrstUnordered = -1;
-    public static readonly int CrstUnassigned = -2;
+    public const int CrstUnordered = -1;
+    public const int CrstUnassigned = -2;
 
     // Name of the type, e.g. "AppDomainCache" for the CrstAppDomainCache type.
     private string m_name;
