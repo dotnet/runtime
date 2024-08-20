@@ -213,15 +213,11 @@ namespace Mono.Linker.Tests.Cases.Reflection
 		}
 
 		[Kept]
-#if !NATIVEAOT // https://github.com/dotnet/runtime/issues/106214
-		[KeptMember (".ctor()")]
-#endif
 		[KeptAttributeAttribute (typeof (RequiresUnreferencedCodeAttribute))]
 		[RequiresUnreferencedCode (nameof (Pointer))]
 		public class Pointer { }
 
 		[Kept]
-		[UnexpectedWarning ("IL2026", nameof (Pointer), Tool.Trimmer, "https://github.com/dotnet/runtime/issues/106214")]
 		public static void TestPointer ()
 		{
 			const string reflectionTypeKeptString = "Mono.Linker.Tests.Cases.Reflection.TypeUsedViaReflection+Pointer*";
@@ -230,15 +226,11 @@ namespace Mono.Linker.Tests.Cases.Reflection
 		}
 
 		[Kept]
-#if !NATIVEAOT // https://github.com/dotnet/runtime/issues/106214
-		[KeptMember (".ctor()")]
-#endif
 		[KeptAttributeAttribute (typeof (RequiresUnreferencedCodeAttribute))]
 		[RequiresUnreferencedCode (nameof (Reference))]
 		public class Reference { }
 
 		[Kept]
-		[UnexpectedWarning ("IL2026", nameof (Reference), Tool.Trimmer, "https://github.com/dotnet/runtime/issues/106214")]
 		public static void TestReference ()
 		{
 			const string reflectionTypeKeptString = "Mono.Linker.Tests.Cases.Reflection.TypeUsedViaReflection+Reference&";
