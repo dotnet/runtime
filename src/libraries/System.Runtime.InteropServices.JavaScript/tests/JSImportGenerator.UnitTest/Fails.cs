@@ -53,9 +53,9 @@ namespace JSImportGenerator.Unit.Tests
 
         [Theory]
         [MemberData(nameof(CodeSnippetsToFail))]
-        public async Task ValidateFailSnippets(string source, string[]? generatorMessages, string[]? compilerMessages)
+        public void ValidateFailSnippets(string source, string[]? generatorMessages, string[]? compilerMessages)
         {
-            Compilation comp = await TestUtils.CreateCompilation(source, allowUnsafe: true);
+            Compilation comp = TestUtils.CreateCompilation(source, allowUnsafe: true);
             TestUtils.AssertPreSourceGeneratorCompilation(comp);
 
             var newComp = TestUtils.RunGenerators(comp, out var generatorDiags,
