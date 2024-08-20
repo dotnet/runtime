@@ -689,7 +689,7 @@ namespace Mono.Linker.Tests.Cases.Reflection
 			}
 
 			// Regression test for an issue where ILLink's representation of a generic instantiated type
-			// was using reference equality. The test uses a local function to ensure that it goes through the
+			// was using reference equality. The test uses a lambda to ensure that it goes through the
 			// interprocedural analysis code path that merges patterns and relies on a correct implementation
 			// of equality.
 			[Kept]
