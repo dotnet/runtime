@@ -1622,12 +1622,22 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 			MonoType *param1_type = mini_get_underlying_type (fsig->params[1]);
 			gboolean is_ref = mini_type_is_reference (param1_type);
 			gboolean is_float = param1_type->type == MONO_TYPE_R4 || param1_type->type == MONO_TYPE_R8;
+			guint32 i2u_cmp_opcode = 0, u2i_result_opcode = 0;
+			MonoInst *i2u_cmp = NULL, *u2i_result = NULL;
 
+			// for small signed types the "compare" part of CAS is done on zero
+			// extended, but .NET stack temps are always i4, so we need to zext the
+			// "expected" value and then sext the output
 			if (param1_type->type == MONO_TYPE_U1) {
 				opcode = OP_ATOMIC_CAS_U1;
+				// FIXME: do we next to zext the result in this case?
 			}
 			else if (param1_type->type == MONO_TYPE_I1) {
-				opcode = OP_ATOMIC_CAS_I1;
+				opcode = OP_ATOMIC_CAS_U1;
+				// zero extend expected comparand
+				i2u_cmp_opcode = OP_ICONV_TO_U1;
+				// sign extend result
+				u2i_result_opcode = OP_ICONV_TO_I1;
 			}
 			else if (param1_type->type == MONO_TYPE_I4 ||
 			    param1_type->type == MONO_TYPE_R4) {
@@ -1677,6 +1687,13 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 				MONO_ADD_INS (cfg->cbb, f2i_cmp);
 			}
 
+			if (i2u_cmp_opcode) {
+				MONO_INST_NEW (cfg, i2u_cmp, i2u_cmp_opcode);
+				i2u_cmp->dreg = mono_alloc_ireg (cfg);
+				i2u_cmp->sreg1 = args[2]->dreg;
+				MONO_ADD_INS (cfg->cbb, i2u_cmp);
+			}
+			
 			if (is_ref && !mini_debug_options.weak_memory_model)
 				mini_emit_memory_barrier (cfg, MONO_MEMORY_BARRIER_REL);
 
@@ -1684,14 +1701,22 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 			MONO_INST_NEW (cfg, ins, opcode);
 			ins->dreg = is_ref ? alloc_ireg_ref (cfg) : alloc_ireg (cfg);
 			ins->sreg1 = args [0]->dreg;
-			ins->sreg2 = is_float ? f2i_new->dreg : args [1]->dreg;
-			ins->sreg3 = is_float ? f2i_cmp->dreg : args [2]->dreg;
+			if (is_float) {
+				ins->sreg2 = f2i_new->dreg;
+				ins->sreg3 = f2i_cmp->dreg;
+			} else if (i2u_cmp_opcode) {
+				ins->sreg2 = args[1]->dreg;
+				ins->sreg3 = i2u_cmp->dreg;
+			} else {
+				ins->sreg2 = args[1]->dreg;
+				ins->sreg3 = args[2]->dreg;
+			}
 			MONO_ADD_INS (cfg->cbb, ins);
 
 			switch (param1_type->type) {
 			case MONO_TYPE_U1:
 			case MONO_TYPE_I1:
-				ins->type = STACK_I4;// FIXME: we also need to sign/zero extend the result?
+				ins->type = STACK_I4;
 				break;
 			case MONO_TYPE_I4:
 				ins->type = STACK_I4;
@@ -1728,6 +1753,14 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 				MONO_ADD_INS (cfg->cbb, i2f);
 
 				ins = i2f;
+			}
+			if (u2i_result_opcode) {
+				MONO_INST_NEW (cfg, u2i_result, u2i_result_opcode);
+				u2i_result->dreg = mono_alloc_ireg (cfg);
+				u2i_result->sreg1 = ins->dreg;
+				MONO_ADD_INS (cfg->cbb, u2i_result);
+
+				ins = u2i_result;
 			}
 
 			if (cfg->gen_write_barriers && is_ref)

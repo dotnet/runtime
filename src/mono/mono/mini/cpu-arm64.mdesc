@@ -484,7 +484,6 @@ atomic_add_i4: dest:i src1:i src2:i len:32
 atomic_add_i8: dest:i src1:i src2:i len:32
 atomic_exchange_i4: dest:i src1:i src2:i len:32
 atomic_exchange_i8: dest:i src1:i src2:i len:32
-atomic_cas_i1: dest:i src1:i src2:i src3:i len:36
 atomic_cas_u1: dest:i src1:i src2:i src3:i len:32
 atomic_cas_i4: dest:i src1:i src2:i src3:i len:32
 atomic_cas_i8: dest:i src1:i src2:i src3:i len:32
