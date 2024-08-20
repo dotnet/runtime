@@ -49,7 +49,7 @@ namespace System
             try
             {
                 // Call the default constructor on the allocated instance.
-                if (RuntimeHelpers.IsReference<T>())
+                if (!typeof(T).IsValueType)
                 {
                     // Grab a pointer to the optimized allocator for the type and call it.
                     IntPtr allocator = AllocatorOf<T>();
