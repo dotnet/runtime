@@ -1349,8 +1349,6 @@ void Compiler::JitTestCheckSSA()
 }
 #endif // DEBUG
 
-typedef JitHashTable<BasicBlock*, JitPtrKeyFuncs<BasicBlock>, unsigned> BlockToReachingDefMap;
-
 class IncrementalSsaBuilder
 {
     Compiler*                   m_comp;
@@ -1360,9 +1358,8 @@ class IncrementalSsaBuilder
     BitVecTraits                m_poTraits;
     BitVec                      m_defBlocks;
     BitVec                      m_iteratedDominanceFrontiers;
-    BlockToReachingDefMap       m_reachingDefCache;
 
-    unsigned FindOrCreateReachingDef(const UseDefLocation& use);
+    UseDefLocation FindOrCreateReachingDef(const UseDefLocation& use);
     bool           FindReachingDefInBlock(const UseDefLocation& use, BasicBlock* block, UseDefLocation* def);
     bool           FindReachingDefInSameStatement(const UseDefLocation& use, UseDefLocation* def);
     Statement*     LatestStatement(Statement* stmt1, Statement* stmt2);
@@ -1378,7 +1375,6 @@ public:
         , m_poTraits(comp->m_dfsTree->PostOrderTraits())
         , m_defBlocks(BitVecOps::MakeEmpty(&m_poTraits))
         , m_iteratedDominanceFrontiers(BitVecOps::MakeEmpty(&m_poTraits))
-        , m_reachingDefCache(comp->getAllocator(CMK_SSA))
     {
     }
 
@@ -1397,23 +1393,17 @@ public:
 //         block.
 //
 // Returns:
-//   SSA number of reaching def.
+//   Location of a definition node that is the reaching def.
 //
-unsigned IncrementalSsaBuilder::FindOrCreateReachingDef(const UseDefLocation& use)
+UseDefLocation IncrementalSsaBuilder::FindOrCreateReachingDef(const UseDefLocation& use)
 {
-    unsigned cachedSsaNum = SsaConfig::RESERVED_SSA_NUM;
-    if ((use.Stmt == nullptr) && (use.Tree == nullptr) && m_reachingDefCache.Lookup(use.Block, &cachedSsaNum))
-    {
-        return cachedSsaNum;
-    }
-
-    UseDefLocation reachingDef;
     for (BasicBlock* dom = use.Block; dom != nullptr; dom = dom->bbIDom)
     {
+        UseDefLocation reachingDef;
         if (BitVecOps::IsMember(&m_poTraits, m_defBlocks, dom->bbPostorderNum) &&
             FindReachingDefInBlock(use, dom, &reachingDef))
         {
-            break;
+            return reachingDef;
         }
 
         if (BitVecOps::IsMember(&m_poTraits, m_iteratedDominanceFrontiers, dom->bbPostorderNum))
@@ -1440,8 +1430,8 @@ unsigned IncrementalSsaBuilder::FindOrCreateReachingDef(const UseDefLocation& us
                     }
 
                     // TODO: This cannot be recursive
-                    unsigned phiArgSsaNum = FindOrCreateReachingDef(UseDefLocation(pred, nullptr, nullptr));
-                    SsaBuilder::AddNewPhiArg(m_comp, dom, phiDef, phi, m_lclNum, phiArgSsaNum, pred);
+                    UseDefLocation phiArgDef = FindOrCreateReachingDef(UseDefLocation(pred, nullptr, nullptr));
+                    SsaBuilder::AddNewPhiArg(m_comp, dom, phiDef, phi, m_lclNum, phiArgDef.Tree->GetSsaNum(), pred);
                 }
 
                 m_comp->fgValueNumberPhiDef(phiDef->GetRootNode()->AsLclVar(), dom);
@@ -1450,19 +1440,12 @@ unsigned IncrementalSsaBuilder::FindOrCreateReachingDef(const UseDefLocation& us
                 DISPSTMT(phiDef);
             }
 
-            reachingDef = UseDefLocation(dom, phiDef, phiDef->GetRootNode()->AsLclVar());
-            break;
+            return UseDefLocation(dom, phiDef, phiDef->GetRootNode()->AsLclVar());
         }
     }
 
-    assert((reachingDef.Tree != nullptr) && !"Found use without any def");
-
-    if ((reachingDef.Block != use.Block) || ((use.Stmt == nullptr) && (use.Tree == nullptr)))
-    {
-        m_reachingDefCache.Set(use.Block, reachingDef.Tree->GetSsaNum());
-    }
-
-    return reachingDef.Tree->GetSsaNum();
+    assert(!"Found use without any def");
+    unreached();
 }
 
 //------------------------------------------------------------------------
@@ -1662,10 +1645,10 @@ void IncrementalSsaBuilder::Insert()
             continue;
         }
 
-        unsigned ssaNum = FindOrCreateReachingDef(use);
-        use.Tree->SetSsaNum(ssaNum);
-        dsc->GetPerSsaData(ssaNum)->AddUse(use.Block);
-        JITDUMP("  [%06u] u:%u\n", Compiler::dspTreeID(use.Tree), ssaNum);
+        UseDefLocation def = FindOrCreateReachingDef(use);
+        use.Tree->SetSsaNum(def.Tree->GetSsaNum());
+        dsc->GetPerSsaData(def.Tree->GetSsaNum())->AddUse(use.Block);
+        JITDUMP("  [%06u] u:%u\n", Compiler::dspTreeID(use.Tree), def.Tree->GetSsaNum());
     }
 }
 
