@@ -2,9 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Diagnostics;
 using System.IO;
 using System.Xml;
+using System.Xml.Linq;
 using System.Xml.Schema;
 
 if (args.Length != 3)
@@ -14,9 +14,6 @@ if (args.Length != 3)
 }
 
 ValidateXML(args[0]);
-string? Message = null;
-string? SymbolicName = null;
-string? NumericValue = null;
 
 using StreamWriter HSW = File.CreateText(args[1]);
 using StreamWriter RSW = File.CreateText(args[2]);
@@ -35,78 +32,43 @@ PrintHeader(HSW);
 PrintLicenseHeader(RSW);
 PrintResourceHeader(RSW);
 
-XmlTextReader rdr = new XmlTextReader(args[0]);
-rdr.WhitespaceHandling = WhitespaceHandling.None;
-
-while (rdr.Read())
+XDocument doc = XDocument.Load(args[0]);
+foreach (XElement element in doc.Descendants("HRESULT"))
 {
+    string NumericValue = element.Attribute("NumericValue")!.Value;
+    string? Message = element.Element("Message")?.Value;
+    string? SymbolicName = element.Element("SymbolicName")?.Value;
 
-    switch (rdr.NodeType)
+    // For CLR Hresult's we take the last 4 digits as the resource strings.
+
+    if (NumericValue.StartsWith("0x", StringComparison.OrdinalIgnoreCase))
     {
+        int num = int.Parse(NumericValue.AsSpan(2), System.Globalization.NumberStyles.HexNumber);
 
-        case XmlNodeType.Element:
+        if ((num > minSR) && (num <= maxSR))
+        {
+            num &= 0xffff;
+            HSW.WriteLine("#define " + SymbolicName + " SMAKEHR(0x" + num.ToString("x") + ")");
+        }
+        else if ((num > minHR) && (num <= maxHR))
+        {
+            num &= 0xffff;
+            HSW.WriteLine("#define " + SymbolicName + " EMAKEHR(0x" + num.ToString("x") + ")");
+        }
+        else
+        {
+            HSW.WriteLine("#define " + SymbolicName + " " + NumericValue);
+        }
+    }
+    else
+    {
+        HSW.WriteLine("#define " + SymbolicName + " " + NumericValue);
+    }
 
-            if (rdr.Name == "HRESULT")
-            {
-                NumericValue = rdr.GetAttribute("NumericValue");
-            }
-            if (rdr.Name == "Message")
-            {
-                Message = rdr.ReadString();
-            }
-            if (rdr.Name == "SymbolicName")
-            {
-                SymbolicName = rdr.ReadString();
-            }
-
-            break;
-
-        case XmlNodeType.EndElement:
-            if (rdr.Name == "HRESULT")
-            {
-
-                // For CLR Hresult's we take the last 4 digits as the resource strings.
-
-                Debug.Assert(NumericValue != null);
-                if (NumericValue.StartsWith("0x", StringComparison.OrdinalIgnoreCase))
-                {
-                    int num = int.Parse(NumericValue.AsSpan(2), System.Globalization.NumberStyles.HexNumber);
-
-                    if ((num > minSR) && (num <= maxSR))
-                    {
-                        num &= 0xffff;
-                        HSW.WriteLine("#define " + SymbolicName + " SMAKEHR(0x" + num.ToString("x") + ")");
-                    }
-                    else if ((num > minHR) && (num <= maxHR))
-                    {
-                        num &= 0xffff;
-                        HSW.WriteLine("#define " + SymbolicName + " EMAKEHR(0x" + num.ToString("x") + ")");
-                    }
-                    else
-                    {
-                        HSW.WriteLine("#define " + SymbolicName + " " + NumericValue);
-                    }
-
-
-
-                }
-                else
-                {
-                    HSW.WriteLine("#define " + SymbolicName + " " + NumericValue);
-                }
-
-                if (Message != null)
-                {
-                    RSW.Write("\tMSG_FOR_URT_HR(" + SymbolicName + ") ");
-                    RSW.WriteLine(Message);
-                }
-
-                SymbolicName = null;
-                NumericValue = null;
-                Message = null;
-            }
-            break;
-
+    if (Message != null)
+    {
+        RSW.Write("\tMSG_FOR_URT_HR(" + SymbolicName + ") ");
+        RSW.WriteLine(Message);
     }
 }
 
