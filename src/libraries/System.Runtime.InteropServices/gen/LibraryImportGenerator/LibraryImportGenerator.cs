@@ -342,7 +342,7 @@ namespace Microsoft.Interop
                 // If we have any forwarded types, we're generating a "partial" stub.
                 // In this case, we'll already emit errors for whatever type we failed to marshal.
                 // So, don't emit additional errors for the stub itself.
-                return (PrintForwarderStub(pinvokeStub.StubMethodSyntaxTemplate, !stubGenerator.HasForwardedTypes, pinvokeStub, diagnostics), pinvokeStub.Diagnostics.Array.AddRange(diagnostics.Diagnostics));
+                return (PrintForwarderStub(pinvokeStub.StubMethodSyntaxTemplate, explicitForwarding: false, pinvokeStub, diagnostics), pinvokeStub.Diagnostics.Array.AddRange(diagnostics.Diagnostics));
             }
 
             ImmutableArray<AttributeSyntax> forwardedAttributes = pinvokeStub.ForwardedAttributes.Array;
