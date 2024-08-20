@@ -13,6 +13,14 @@ internal static partial class Interop
         internal struct PERF_COUNTER_BLOCK
         {
             internal int ByteLength;
+
+            public readonly void Validate(int bufferSize)
+            {
+                if (ByteLength < 0 || ByteLength > bufferSize)
+                {
+                    throw new InvalidOperationException(SR.InvalidPerfData);
+                }
+            }
         }
 
         [StructLayout(LayoutKind.Sequential)]
@@ -28,6 +36,18 @@ internal static partial class Interop
             internal int CounterType;
             internal int CounterSize;
             internal int CounterOffset;
+
+            public readonly void Validate(int bufferSize)
+            {
+                if (ByteLength < 0 ||
+                    ByteLength > bufferSize ||
+                    CounterOffset < 0 ||
+                    CounterOffset > bufferSize ||
+                    CounterOffset + CounterSize < CounterOffset)
+                {
+                    throw new InvalidOperationException(SR.InvalidPerfData);
+                }
+            }
         }
 
         [StructLayout(LayoutKind.Sequential)]
@@ -49,6 +69,17 @@ internal static partial class Interop
             internal long PerfTime100nSec;
             internal int SystemNameLength;
             internal int SystemNameOffset;
+
+            public readonly void Validate(int bufferSize)
+            {
+                if (TotalByteLength < 0 ||
+                    TotalByteLength > bufferSize ||
+                    HeaderLength < 0 ||
+                    HeaderLength > TotalByteLength)
+                {
+                    throw new InvalidOperationException(SR.InvalidPerfData);
+                }
+            }
         }
 
         [StructLayout(LayoutKind.Sequential)]
@@ -64,6 +95,18 @@ internal static partial class Interop
             internal static ReadOnlySpan<char> GetName(in PERF_INSTANCE_DEFINITION instance, ReadOnlySpan<byte> data)
                 => (instance.NameLength == 0) ? default
                     : MemoryMarshal.Cast<byte, char>(data.Slice(instance.NameOffset, instance.NameLength - sizeof(char))); // NameLength includes the null-terminator
+
+            public readonly void Validate(int bufferSize)
+            {
+                if (ByteLength < 0 ||
+                    ByteLength > bufferSize ||
+                    NameOffset < 0 ||
+                    NameOffset > ByteLength ||
+                    NameLength > ByteLength - NameOffset)
+                {
+                    throw new InvalidOperationException(SR.InvalidPerfData);
+                }
+            }
         }
 
         [StructLayout(LayoutKind.Sequential)]
@@ -83,6 +126,19 @@ internal static partial class Interop
             internal int CodePage;
             internal long PerfTime;
             internal long PerfFreq;
+
+            public readonly void Validate(int bufferSize)
+            {
+                if (HeaderLength < 0 ||
+                    HeaderLength > TotalByteLength ||
+                    DefinitionLength < 0 ||
+                    DefinitionLength > TotalByteLength ||
+                    TotalByteLength < 0 ||
+                    TotalByteLength > bufferSize)
+                {
+                    throw new InvalidOperationException(SR.InvalidPerfData);
+                }
+            }
         }
 
         [StructLayout(LayoutKind.Sequential)]

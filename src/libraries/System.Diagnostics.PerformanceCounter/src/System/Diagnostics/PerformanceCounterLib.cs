@@ -141,6 +141,8 @@ namespace System.Diagnostics
                             ReadOnlySpan<byte> data = GetPerformanceData("Global");
 
                             ref readonly PERF_DATA_BLOCK dataBlock = ref MemoryMarshal.AsRef<PERF_DATA_BLOCK>(data);
+                            dataBlock.Validate(data.Length);
+
                             int pos = dataBlock.HeaderLength;
 
                             int numPerfObjects = dataBlock.NumObjectTypes;
@@ -153,6 +155,7 @@ namespace System.Diagnostics
                             for (int index = 0; index < numPerfObjects && pos < dataBlock.TotalByteLength; index++)
                             {
                                 ref readonly PERF_OBJECT_TYPE perfObject = ref MemoryMarshal.AsRef<PERF_OBJECT_TYPE>(data.Slice(pos));
+                                perfObject.Validate(data.Length);
 
                                 CategoryEntry newCategoryEntry = new CategoryEntry(in perfObject);
                                 int nextPos = pos + perfObject.TotalByteLength;
@@ -165,6 +168,8 @@ namespace System.Diagnostics
                                 for (int index2 = 0; index2 < newCategoryEntry.CounterIndexes.Length; ++index2)
                                 {
                                     ref readonly PERF_COUNTER_DEFINITION perfCounter = ref MemoryMarshal.AsRef<PERF_COUNTER_DEFINITION>(data.Slice(pos));
+                                    perfCounter.Validate(data.Length);
+
                                     if (perfCounter.CounterNameTitleIndex != previousCounterIndex)
                                     {
                                         newCategoryEntry.CounterIndexes[index3] = perfCounter.CounterNameTitleIndex;
@@ -1392,6 +1397,7 @@ namespace System.Diagnostics
             int categoryIndex = entry.NameIndex;
 
             ref readonly PERF_DATA_BLOCK dataBlock = ref MemoryMarshal.AsRef<PERF_DATA_BLOCK>(data);
+            dataBlock.Validate(data.Length);
 
             _systemFrequency = dataBlock.PerfFreq;
             _timeStamp = dataBlock.PerfTime;
@@ -1411,6 +1417,7 @@ namespace System.Diagnostics
             for (int index = 0; index < numPerfObjects; index++)
             {
                 ref readonly PERF_OBJECT_TYPE perfObjectType = ref MemoryMarshal.AsRef<PERF_OBJECT_TYPE>(data.Slice(pos));
+                perfObjectType.Validate(data.Length);
 
                 if (perfObjectType.ObjectNameTitleIndex == categoryIndex)
                 {
@@ -1425,6 +1432,7 @@ namespace System.Diagnostics
                 throw new InvalidOperationException(SR.Format(SR.CantReadCategoryIndex, categoryIndex.ToString()));
 
             ref readonly PERF_OBJECT_TYPE perfObject = ref MemoryMarshal.AsRef<PERF_OBJECT_TYPE>(data.Slice(pos));
+            perfObject.Validate(data.Length);
 
             _counterFrequency = perfObject.PerfFreq;
             _counterTimeStamp = perfObject.PerfTime;
@@ -1444,6 +1452,8 @@ namespace System.Diagnostics
             for (int index = 0; index < samples.Length; ++index)
             {
                 ref readonly PERF_COUNTER_DEFINITION perfCounter = ref MemoryMarshal.AsRef<PERF_COUNTER_DEFINITION>(data.Slice(pos));
+                perfCounter.Validate();
+
                 samples[index] = new CounterDefinitionSample(in perfCounter, this, instanceNumber);
                 pos += perfCounter.ByteLength;
 
@@ -1481,6 +1491,8 @@ namespace System.Diagnostics
                 for (int i = 0; i < instanceNumber; i++)
                 {
                     ref readonly PERF_INSTANCE_DEFINITION perfInstance = ref MemoryMarshal.AsRef<PERF_INSTANCE_DEFINITION>(data.Slice(pos));
+                    perfInstance.Validate(data.Length);
+
                     if (perfInstance.ParentObjectTitleIndex > 0 && parentInstanceNames == null)
                         parentInstanceNames = GetInstanceNamesFromIndex(perfInstance.ParentObjectTitleIndex);
 
@@ -1512,7 +1524,9 @@ namespace System.Diagnostics
                     for (int index = 0; index < samples.Length; ++index)
                         samples[index].SetInstanceValue(i, data.Slice(pos));
 
-                    pos += MemoryMarshal.AsRef<PERF_COUNTER_BLOCK>(data.Slice(pos)).ByteLength;
+                    ref readonly PERF_COUNTER_BLOCK perfCounterBlock = ref MemoryMarshal.AsRef<PERF_COUNTER_BLOCK>(data.Slice(pos));
+                    perfCounterBlock.Validate(data.Length);
+                    pos += perfCounterBlock.ByteLength;
                 }
             }
         }
@@ -1524,6 +1538,8 @@ namespace System.Diagnostics
             ReadOnlySpan<byte> data = _library.GetPerformanceData(categoryIndex.ToString(CultureInfo.InvariantCulture));
 
             ref readonly PERF_DATA_BLOCK dataBlock = ref MemoryMarshal.AsRef<PERF_DATA_BLOCK>(data);
+            dataBlock.Validate(data.Length);
+
             int pos = dataBlock.HeaderLength;
             int numPerfObjects = dataBlock.NumObjectTypes;
 
@@ -1531,6 +1547,7 @@ namespace System.Diagnostics
             for (int index = 0; index < numPerfObjects; index++)
             {
                 ref readonly PERF_OBJECT_TYPE type = ref MemoryMarshal.AsRef<PERF_OBJECT_TYPE>(data.Slice(pos));
+                type.Validate(data.Length);
 
                 if (type.ObjectNameTitleIndex == categoryIndex)
                 {
@@ -1545,6 +1562,7 @@ namespace System.Diagnostics
                 return Array.Empty<string>();
 
             ref readonly PERF_OBJECT_TYPE perfObject = ref MemoryMarshal.AsRef<PERF_OBJECT_TYPE>(data.Slice(pos));
+            perfObject.Validate(data.Length);
 
             int counterNumber = perfObject.NumCounters;
             int instanceNumber = perfObject.NumInstances;
@@ -1556,17 +1574,23 @@ namespace System.Diagnostics
             CounterDefinitionSample[] samples = new CounterDefinitionSample[counterNumber];
             for (int index = 0; index < samples.Length; ++index)
             {
-                pos += MemoryMarshal.AsRef<PERF_COUNTER_DEFINITION>(data.Slice(pos)).ByteLength;
+                ref readonly PERF_COUNTER_DEFINITION perfCounterDefinition = ref MemoryMarshal.AsRef<PERF_COUNTER_DEFINITION>(data.Slice(pos));
+                perfCounterDefinition.Validate(data.Length);
+                pos += perfCounterDefinition.ByteLength;
             }
 
             string[] instanceNames = new string[instanceNumber];
             for (int i = 0; i < instanceNumber; i++)
             {
                 ref readonly PERF_INSTANCE_DEFINITION perfInstance = ref MemoryMarshal.AsRef<PERF_INSTANCE_DEFINITION>(data.Slice(pos));
+                perfInstance.Validate(data.Length);
+
                 instanceNames[i] = PERF_INSTANCE_DEFINITION.GetName(in perfInstance, data.Slice(pos)).ToString();
                 pos += perfInstance.ByteLength;
 
-                pos += MemoryMarshal.AsRef<PERF_COUNTER_BLOCK>(data.Slice(pos)).ByteLength;
+                ref readonly PERF_COUNTER_BLOCK perfCounterBlock = ref MemoryMarshal.AsRef<PERF_COUNTER_BLOCK>(data.Slice(pos));
+                perfCounterBlock.Validate(data.Length);
+                pos += perfCounterBlock.ByteLength;
             }
 
             return instanceNames;

@@ -476,11 +476,13 @@ namespace System.Diagnostics
             List<ThreadInfo> threadInfos = new List<ThreadInfo>();
 
             ref readonly PERF_DATA_BLOCK dataBlock = ref MemoryMarshal.AsRef<PERF_DATA_BLOCK>(data);
+            dataBlock.Validate(data.Length);
 
             int typePos = dataBlock.HeaderLength;
             for (int i = 0; i < dataBlock.NumObjectTypes; i++)
             {
                 ref readonly PERF_OBJECT_TYPE type = ref MemoryMarshal.AsRef<PERF_OBJECT_TYPE>(data.Slice(typePos));
+                type.Validate(data.Length);
 
                 PERF_COUNTER_DEFINITION[] counters = new PERF_COUNTER_DEFINITION[type.NumCounters];
 
@@ -488,6 +490,7 @@ namespace System.Diagnostics
                 for (int j = 0; j < type.NumCounters; j++)
                 {
                     ref readonly PERF_COUNTER_DEFINITION counter = ref MemoryMarshal.AsRef<PERF_COUNTER_DEFINITION>(data.Slice(counterPos));
+                    counter.Validate(data.Length);
 
                     string counterName = library.GetCounterName(counter.CounterNameTitleIndex);
 
@@ -504,6 +507,7 @@ namespace System.Diagnostics
                 for (int j = 0; j < type.NumInstances; j++)
                 {
                     ref readonly PERF_INSTANCE_DEFINITION instance = ref MemoryMarshal.AsRef<PERF_INSTANCE_DEFINITION>(data.Slice(instancePos));
+                    instance.Validate(data.Length);
 
                     ReadOnlySpan<char> instanceName = PERF_INSTANCE_DEFINITION.GetName(in instance, data.Slice(instancePos));
 
@@ -563,7 +567,9 @@ namespace System.Diagnostics
 
                     instancePos += instance.ByteLength;
 
-                    instancePos += MemoryMarshal.AsRef<PERF_COUNTER_BLOCK>(data.Slice(instancePos)).ByteLength;
+                    ref readonly PERF_COUNTER_BLOCK perfCounterBlock = ref MemoryMarshal.AsRef<PERF_COUNTER_BLOCK>(data.Slice(instancePos));
+                    perfCounterBlock.Validate(data.Length);
+                    instancePos += perfCounterBlock.ByteLength;
                 }
 
                 typePos += type.TotalByteLength;
