@@ -200,8 +200,11 @@
     <!-- Environment variables required for running emsdk commands like `emcc` -->
     <ItemGroup Condition="'$(EmscriptenSdkToolsPath)' != ''">
       <EmscriptenEnvVars Include="DOTNET_EMSCRIPTEN_LLVM_ROOT=$(EmscriptenSdkToolsPath)bin" />
+      <EmscriptenEnvVars Include="EM_LLVM_ROOT=$(EmscriptenSdkToolsPath)bin" />
       <EmscriptenEnvVars Include="DOTNET_EMSCRIPTEN_BINARYEN_ROOT=$(EmscriptenSdkToolsPath)" />
+      <EmscriptenEnvVars Include="EM_LLVM_ROOTBINARYEN_ROOT=$(EmscriptenSdkToolsPath)" />
       <EmscriptenEnvVars Include="DOTNET_EMSCRIPTEN_NODE_JS=$([MSBuild]::NormalizePath($(EmscriptenNodeToolsPath), 'node$(_ExeExt)'))" />
+      <EmscriptenEnvVars Include="EM_NODE_JS=$([MSBuild]::NormalizePath($(EmscriptenNodeToolsPath), 'node$(_ExeExt)'))" />
     </ItemGroup>
 
     <ItemGroup>
