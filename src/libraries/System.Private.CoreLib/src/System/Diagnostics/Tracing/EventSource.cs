@@ -224,6 +224,65 @@ namespace System.Diagnostics.Tracing
     [DynamicallyAccessedMembers(ManifestMemberTypes)]
     public partial class EventSource : IDisposable
     {
+        // private instance state
+        private string m_name = null!;                  // My friendly name (privided in ctor)
+        internal int m_id;                              // A small integer that is unique to this instance.
+        private Guid m_guid;                            // GUID representing the ETW eventSource to the OS.
+        internal volatile EventMetadata[]? m_eventData; // None per-event data
+        private volatile byte[]? m_rawManifest;          // Bytes to send out representing the event schema
+
+        private EventHandler<EventCommandEventArgs>? m_eventCommandExecuted;
+
+        private readonly EventSourceSettings m_config;      // configuration information
+
+        private bool m_eventSourceDisposed;              // has Dispose been called.
+
+        // Enabling bits
+        private bool m_eventSourceEnabled;              // am I enabled (any of my events are enabled for any dispatcher)
+        internal EventLevel m_level;                    // highest level enabled by any output dispatcher
+        internal EventKeywords m_matchAnyKeyword;       // the logical OR of all levels enabled by any output dispatcher (zero is a special case) meaning 'all keywords'
+
+        // Dispatching state
+        internal volatile EventDispatcher? m_Dispatchers;    // Linked list of code:EventDispatchers we write the data to (we also do ETW specially)
+        private volatile OverrideEventProvider m_etwProvider = null!;   // This hooks up ETW commands to our 'OnEventCommand' callback
+#if FEATURE_PERFTRACING
+        private object? m_createEventLock;
+        private IntPtr m_writeEventStringEventHandle = IntPtr.Zero;
+        private volatile OverrideEventProvider m_eventPipeProvider = null!;
+#endif
+        private bool m_completelyInited;                // The EventSource constructor has returned without exception.
+        private Exception? m_constructionException;      // If there was an exception construction, this is it
+        private byte m_outOfBandMessageCount;           // The number of out of band messages sent (we throttle them
+        private EventCommandEventArgs? m_deferredCommands; // If we get commands before we are fully we store them here and run the when we are fully inited.
+
+        private string[]? m_traits;                      // Used to implement GetTraits
+
+        [ThreadStatic]
+        private static byte m_EventSourceExceptionRecurenceCount; // current recursion count inside ThrowEventSourceException
+
+        internal volatile ulong[]? m_channelData;
+
+        // We use a single instance of ActivityTracker for all EventSources instances to allow correlation between multiple event providers.
+        // We have m_activityTracker field simply because instance field is more efficient than static field fetch.
+        private ActivityTracker m_activityTracker = null!;
+        internal const string ActivityStartSuffix = "Start";
+        internal const string ActivityStopSuffix = "Stop";
+
+        // This switch controls an opt-in, off-by-default mechanism for allowing multiple EventSources to have the same
+        // name and by extension GUID. This is not considered a mainline scenario and is explicitly intended as a release
+        // valve for users that make heavy use of AssemblyLoadContext and experience exceptions from EventSource.
+        // This does not solve any issues that might arise from this configuration. For instance:
+        //
+        // * If multiple manifest-mode EventSources have the same name/GUID, it is ambiguous which manifest should be used by an ETW parser.
+        //   This can result in events being incorrectly parse. The data will still be there, but EventTrace (or other libraries) won't
+        //   know how to parse it.
+        // * Potential issues in parsing self-describing EventSources that use the same name/GUID, event name, and payload type from the same AssemblyLoadContext
+        //   but have different event IDs set.
+        //
+        // Most users should not turn this on.
+        internal const string DuplicateSourceNamesSwitch = "System.Diagnostics.Tracing.EventSource.AllowDuplicateSourceNames";
+        private static readonly bool AllowDuplicateSourceNames = AppContext.TryGetSwitch(DuplicateSourceNamesSwitch, out bool isEnabled) ? isEnabled : false;
+
 
         internal static bool IsSupported { get; } = InitializeIsSupported();
 
@@ -3843,74 +3902,20 @@ namespace System.Diagnostics.Tracing
                 EventSourceInitHelper.PreregisterEventProviders(id, name, EventSourceInitHelper.GetMetricsEventSource);
             }
         }
-
-        // private instance state
-        private string m_name = null!;                  // My friendly name (privided in ctor)
-        internal int m_id;                              // A small integer that is unique to this instance.
-        private Guid m_guid;                            // GUID representing the ETW eventSource to the OS.
-        internal volatile EventMetadata[]? m_eventData; // None per-event data
-        private volatile byte[]? m_rawManifest;          // Bytes to send out representing the event schema
-
-        private EventHandler<EventCommandEventArgs>? m_eventCommandExecuted;
-
-        private readonly EventSourceSettings m_config;      // configuration information
-
-        private bool m_eventSourceDisposed;              // has Dispose been called.
-
-        // Enabling bits
-        private bool m_eventSourceEnabled;              // am I enabled (any of my events are enabled for any dispatcher)
-        internal EventLevel m_level;                    // highest level enabled by any output dispatcher
-        internal EventKeywords m_matchAnyKeyword;       // the logical OR of all levels enabled by any output dispatcher (zero is a special case) meaning 'all keywords'
-
-        // Dispatching state
-        internal volatile EventDispatcher? m_Dispatchers;    // Linked list of code:EventDispatchers we write the data to (we also do ETW specially)
-        private volatile OverrideEventProvider m_etwProvider = null!;   // This hooks up ETW commands to our 'OnEventCommand' callback
-#if FEATURE_PERFTRACING
-        private object? m_createEventLock;
-        private IntPtr m_writeEventStringEventHandle = IntPtr.Zero;
-        private volatile OverrideEventProvider m_eventPipeProvider = null!;
-#endif
-        private bool m_completelyInited;                // The EventSource constructor has returned without exception.
-        private Exception? m_constructionException;      // If there was an exception construction, this is it
-        private byte m_outOfBandMessageCount;           // The number of out of band messages sent (we throttle them
-        private EventCommandEventArgs? m_deferredCommands; // If we get commands before we are fully we store them here and run the when we are fully inited.
-
-        private string[]? m_traits;                      // Used to implement GetTraits
-
-        [ThreadStatic]
-        private static byte m_EventSourceExceptionRecurenceCount; // current recursion count inside ThrowEventSourceException
-
-        internal volatile ulong[]? m_channelData;
-
-        // We use a single instance of ActivityTracker for all EventSources instances to allow correlation between multiple event providers.
-        // We have m_activityTracker field simply because instance field is more efficient than static field fetch.
-        private ActivityTracker m_activityTracker = null!;
-        internal const string ActivityStartSuffix = "Start";
-        internal const string ActivityStopSuffix = "Stop";
-
-        // This switch controls an opt-in, off-by-default mechanism for allowing multiple EventSources to have the same
-        // name and by extension GUID. This is not considered a mainline scenario and is explicitly intended as a release
-        // valve for users that make heavy use of AssemblyLoadContext and experience exceptions from EventSource.
-        // This does not solve any issues that might arise from this configuration. For instance:
-        //
-        // * If multiple manifest-mode EventSources have the same name/GUID, it is ambiguous which manifest should be used by an ETW parser.
-        //   This can result in events being incorrectly parse. The data will still be there, but EventTrace (or other libraries) won't
-        //   know how to parse it.
-        // * Potential issues in parsing self-describing EventSources that use the same name/GUID, event name, and payload type from the same AssemblyLoadContext
-        //   but have different event IDs set.
-        //
-        // Most users should not turn this on.
-        internal const string DuplicateSourceNamesSwitch = "System.Diagnostics.Tracing.EventSource.AllowDuplicateSourceNames";
-        private static readonly bool AllowDuplicateSourceNames = AppContext.TryGetSwitch(DuplicateSourceNamesSwitch, out bool isEnabled) ? isEnabled : false;
-
 #endregion
     }
 
-    // This type is logically just more static EventSource functionality but it needs to be a seperate class
+    // This type is logically just more static EventSource functionality but it needs to be a separate class
     // to ensure that the IL linker can remove unused methods in it. Methods defined within the EventSource type
     // are never removed because EventSource has the potential to reflect over its own members.
     internal static class EventSourceInitHelper
     {
+        private static List<Func<EventSource?>> s_preregisteredEventSourceFactories = new List<Func<EventSource?>>();
+        private static readonly Dictionary<Guid, EventSource.OverrideEventProvider> s_preregisteredEtwProviders = new Dictionary<Guid, EventSource.OverrideEventProvider>();
+#if FEATURE_PERFTRACING
+        private static readonly Dictionary<string, EventSource.OverrideEventProvider> s_preregisteredEventPipeProviders = new Dictionary<string, EventSource.OverrideEventProvider>();
+#endif
+
         internal static EventSource? GetMetricsEventSource()
         {
             Type? metricsEventSourceType = Type.GetType(
@@ -4006,8 +4011,6 @@ namespace System.Diagnostics.Tracing
             }
         }
 
-        private static List<Func<EventSource?>> s_preregisteredEventSourceFactories = new List<Func<EventSource?>>();
-
         internal static EventSource.OverrideEventProvider? TryGetPreregisteredEtwProvider(Guid id)
         {
             lock (s_preregisteredEtwProviders)
@@ -4016,8 +4019,6 @@ namespace System.Diagnostics.Tracing
                 return provider;
             }
         }
-
-        private static readonly Dictionary<Guid, EventSource.OverrideEventProvider> s_preregisteredEtwProviders = new Dictionary<Guid, EventSource.OverrideEventProvider>();
 
 #if FEATURE_PERFTRACING
         internal static EventSource.OverrideEventProvider? TryGetPreregisteredEventPipeProvider(string name)
@@ -4028,8 +4029,6 @@ namespace System.Diagnostics.Tracing
                 return provider;
             }
         }
-
-        private static readonly Dictionary<string, EventSource.OverrideEventProvider> s_preregisteredEventPipeProviders = new Dictionary<string, EventSource.OverrideEventProvider>();
 #endif
     }
 
