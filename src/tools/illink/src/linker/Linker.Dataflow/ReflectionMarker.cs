@@ -111,9 +111,12 @@ namespace Mono.Linker.Dataflow
 			_markStep.MarkTypeVisibleToReflection (type, new DependencyInfo (dependencyKind, origin.Provider), origin);
 		}
 
-		internal void MarkMethod (in MessageOrigin origin, MethodDefinition method, DependencyKind dependencyKind = DependencyKind.AccessedViaReflection)
+		internal void MarkMethod (in MessageOrigin origin, MethodReference methodRef, DependencyKind dependencyKind = DependencyKind.AccessedViaReflection)
 		{
 			if (!_enabled)
+				return;
+
+			if (_context.TryResolve (methodRef) is not MethodDefinition method)
 				return;
 
 			_markStep.MarkMethodVisibleToReflection (method, new DependencyInfo (dependencyKind, origin.Provider), origin);

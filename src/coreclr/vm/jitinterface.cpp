@@ -106,27 +106,27 @@ int64_t AtomicLoad64WithoutTearing(int64_t volatile *valueRef)
 #endif // TARGET_64BIT
 }
 
-FCIMPL1(INT64, GetCompiledILBytes, CLR_BOOL currentThread)
+FCIMPL1(INT64, GetCompiledILBytes, FC_BOOL_ARG currentThread)
 {
     FCALL_CONTRACT;
 
-    return currentThread ? t_cbILJittedForThread : AtomicLoad64WithoutTearing(&g_cbILJitted);
+    return FC_ACCESS_BOOL(currentThread) ? t_cbILJittedForThread : AtomicLoad64WithoutTearing(&g_cbILJitted);
 }
 FCIMPLEND
 
-FCIMPL1(INT64, GetCompiledMethodCount, CLR_BOOL currentThread)
+FCIMPL1(INT64, GetCompiledMethodCount, FC_BOOL_ARG currentThread)
 {
     FCALL_CONTRACT;
 
-    return currentThread ? t_cMethodsJittedForThread : AtomicLoad64WithoutTearing(&g_cMethodsJitted);
+    return FC_ACCESS_BOOL(currentThread) ? t_cMethodsJittedForThread : AtomicLoad64WithoutTearing(&g_cMethodsJitted);
 }
 FCIMPLEND
 
-FCIMPL1(INT64, GetCompilationTimeInTicks, CLR_BOOL currentThread)
+FCIMPL1(INT64, GetCompilationTimeInTicks, FC_BOOL_ARG currentThread)
 {
     FCALL_CONTRACT;
 
-    return currentThread ? t_c100nsTicksInJitForThread : AtomicLoad64WithoutTearing(&g_c100nsTicksInJit);
+    return FC_ACCESS_BOOL(currentThread) ? t_c100nsTicksInJitForThread : AtomicLoad64WithoutTearing(&g_c100nsTicksInJit);
 }
 FCIMPLEND
 
@@ -4209,8 +4209,8 @@ TypeCompareState CEEInfo::compareTypesForCast(
     else
 #endif // FEATURE_COMINTEROP
 
-    // If casting from ICastable or IDynamicInterfaceCastable, don't try to optimize
-    if (fromHnd.GetMethodTable()->IsICastable() || fromHnd.GetMethodTable()->IsIDynamicInterfaceCastable())
+    // If casting from IDynamicInterfaceCastable, don't try to optimize
+    if (fromHnd.GetMethodTable()->IsIDynamicInterfaceCastable())
     {
         result = TypeCompareState::May;
     }
@@ -6323,7 +6323,7 @@ size_t CEEInfo::printMethodName(CORINFO_METHOD_HANDLE ftnHnd, char* buffer, size
     return bytesWritten;
 }
 
-const char* CEEInfo::getMethodNameFromMetadata(CORINFO_METHOD_HANDLE ftnHnd, const char** className, const char** namespaceName, const char **enclosingClassName)
+const char* CEEInfo::getMethodNameFromMetadata(CORINFO_METHOD_HANDLE ftnHnd, const char** className, const char** namespaceName, const char** enclosingClassNames, size_t maxEnclosingClassNames)
 {
     CONTRACTL {
         THROWS;
@@ -6345,9 +6345,9 @@ const char* CEEInfo::getMethodNameFromMetadata(CORINFO_METHOD_HANDLE ftnHnd, con
         *namespaceName = NULL;
     }
 
-    if (enclosingClassName != NULL)
+    for (size_t i = 0; i < maxEnclosingClassNames; i++)
     {
-        *enclosingClassName = NULL;
+        enclosingClassNames[i] = NULL;
     }
 
     MethodDesc *ftn = GetMethod(ftnHnd);
@@ -6363,11 +6363,22 @@ const char* CEEInfo::getMethodNameFromMetadata(CORINFO_METHOD_HANDLE ftnHnd, con
         {
             IfFailThrow(pMDImport->GetNameOfTypeDef(pMT->GetCl(), className, namespaceName));
         }
-        // Query enclosingClassName when the method is in a nested class
+
+        // Query enclosing classes when the method is in a nested class
         // and get the namespace of enclosing classes (nested class's namespace is empty)
-        if ((enclosingClassName != NULL || namespaceName != NULL) && pMT->GetClass()->IsNested())
+        if (maxEnclosingClassNames > 0 && pMT->GetClass()->IsNested())
         {
-            IfFailThrow(pMDImport->GetNameOfTypeDef(pMT->GetEnclosingCl(), enclosingClassName, namespaceName));
+            mdTypeDef td = pMT->GetCl();
+
+            for (size_t i = 0; i < maxEnclosingClassNames; i++)
+            {
+                if (!SUCCEEDED(pMDImport->GetNestedClassProps(td, &td)))
+                {
+                    break;
+                }
+
+                IfFailThrow(pMDImport->GetNameOfTypeDef(td, &enclosingClassNames[i], namespaceName));
+            }
         }
     }
 
@@ -7316,43 +7327,6 @@ bool getILIntrinsicImplementationForRuntimeHelpers(MethodDesc * ftn,
 
         methInfo->ILCodeSize = sizeof(returnTrue);
         methInfo->maxStack = 1;
-        methInfo->EHcount = 0;
-        methInfo->options = (CorInfoOptions)0;
-        return true;
-    }
-
-    if (tk == CoreLibBinder::GetMethod(METHOD__RUNTIME_HELPERS__GET_METHOD_TABLE)->GetMemberDef())
-    {
-        mdToken tokRawData = CoreLibBinder::GetField(FIELD__RAW_DATA__DATA)->GetMemberDef();
-
-        // In the CLR, an object is laid out as follows.
-        // [ object_header || MethodTable* (64-bit pointer) || instance_data ]
-        //                    ^                                ^-- ref <theObj>.firstField points here
-        //                    `-- <theObj> reference (type O) points here
-        //
-        // So essentially what we want to do is to turn an object reference (type O) into a
-        // native int&, then dereference it to get the MethodTable*. (Essentially, an object
-        // reference is a MethodTable**.) Per ECMA-335, Sec. III.1.5, we can add
-        // (but not subtract) a & and an int32 to produce a &. So we'll get a reference to
-        // <theObj>.firstField (type &), then back up one pointer length to get a value of
-        // essentially type (MethodTable*)&. Both of these are legal GC-trackable references
-        // to <theObj>, regardless of <theObj>'s actual length.
-
-        static BYTE ilcode[] = { CEE_LDARG_0,         // stack contains [ O ] = <theObj>
-                                 CEE_LDFLDA,0,0,0,0,  // stack contains [ & ] = ref <theObj>.firstField
-                                 CEE_LDC_I4_S,(BYTE)(-TARGET_POINTER_SIZE), // stack contains [ &, int32 ] = -IntPtr.Size
-                                 CEE_ADD,             // stack contains [ & ] = ref <theObj>.methodTablePtr
-                                 CEE_LDIND_I,         // stack contains [ native int ] = <theObj>.methodTablePtr
-                                 CEE_RET };
-
-        ilcode[2] = (BYTE)(tokRawData);
-        ilcode[3] = (BYTE)(tokRawData >> 8);
-        ilcode[4] = (BYTE)(tokRawData >> 16);
-        ilcode[5] = (BYTE)(tokRawData >> 24);
-
-        methInfo->ILCode = const_cast<BYTE*>(ilcode);
-        methInfo->ILCodeSize = sizeof(ilcode);
-        methInfo->maxStack = 2;
         methInfo->EHcount = 0;
         methInfo->options = (CorInfoOptions)0;
         return true;

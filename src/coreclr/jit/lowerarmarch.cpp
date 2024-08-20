@@ -1781,7 +1781,26 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
 
             break;
         }
+
+        case NI_Sve_GatherVectorByteZeroExtendFirstFaulting:
         case NI_Sve_GatherVectorFirstFaulting:
+        case NI_Sve_GatherVectorInt16SignExtendFirstFaulting:
+        case NI_Sve_GatherVectorInt16WithByteOffsetsSignExtendFirstFaulting:
+        case NI_Sve_GatherVectorInt32SignExtendFirstFaulting:
+        case NI_Sve_GatherVectorInt32WithByteOffsetsSignExtendFirstFaulting:
+        case NI_Sve_GatherVectorSByteSignExtendFirstFaulting:
+        case NI_Sve_GatherVectorUInt16WithByteOffsetsZeroExtendFirstFaulting:
+        case NI_Sve_GatherVectorUInt16ZeroExtendFirstFaulting:
+        case NI_Sve_GatherVectorUInt32WithByteOffsetsZeroExtendFirstFaulting:
+        case NI_Sve_GatherVectorUInt32ZeroExtendFirstFaulting:
+        case NI_Sve_GatherVectorWithByteOffsetFirstFaulting:
+        case NI_Sve_LoadVectorByteZeroExtendFirstFaulting:
+        case NI_Sve_LoadVectorFirstFaulting:
+        case NI_Sve_LoadVectorInt16SignExtendFirstFaulting:
+        case NI_Sve_LoadVectorInt32SignExtendFirstFaulting:
+        case NI_Sve_LoadVectorSByteSignExtendFirstFaulting:
+        case NI_Sve_LoadVectorUInt16ZeroExtendFirstFaulting:
+        case NI_Sve_LoadVectorUInt32ZeroExtendFirstFaulting:
         {
             LIR::Use use;
             bool     foundUse = BlockRange().TryGetUse(node, &use);
@@ -1825,47 +1844,7 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
             StoreFFRValue(node);
             break;
         }
-        case NI_Sve_LoadVectorByteZeroExtendFirstFaulting:
-        case NI_Sve_LoadVectorFirstFaulting:
-        case NI_Sve_LoadVectorInt16SignExtendFirstFaulting:
-        case NI_Sve_LoadVectorInt32SignExtendFirstFaulting:
-        case NI_Sve_LoadVectorSByteSignExtendFirstFaulting:
-        case NI_Sve_LoadVectorUInt16ZeroExtendFirstFaulting:
-        case NI_Sve_LoadVectorUInt32ZeroExtendFirstFaulting:
-        {
-            LIR::Use use;
-            bool     foundUse = BlockRange().TryGetUse(node, &use);
 
-            if (m_ffrTrashed)
-            {
-                // Consume the FFR register value from local variable to simulate "use" of FFR,
-                // only if it was trashed. If it was not trashed, we do not have to reload the
-                // contents of the FFR register.
-
-                unsigned lclNum = comp->getFFRegisterVarNum();
-                GenTree* lclVar = comp->gtNewLclvNode(lclNum, TYP_MASK);
-                BlockRange().InsertBefore(node, lclVar);
-                LowerNode(lclVar);
-
-                node->ResetHWIntrinsicId(intrinsicId, comp, node->Op(1), node->Op(2), lclVar);
-            }
-
-            if (foundUse)
-            {
-                unsigned   tmpNum    = comp->lvaGrabTemp(true DEBUGARG("Return value result/FFR"));
-                LclVarDsc* tmpVarDsc = comp->lvaGetDesc(tmpNum);
-                tmpVarDsc->lvType    = node->TypeGet();
-                GenTree* storeLclVar;
-                use.ReplaceWithLclVar(comp, tmpNum, &storeLclVar);
-            }
-            else
-            {
-                node->SetUnusedValue();
-            }
-
-            StoreFFRValue(node);
-            break;
-        }
         default:
             break;
     }
@@ -4049,9 +4028,17 @@ GenTree* Lowering::LowerHWIntrinsicCndSel(GenTreeHWIntrinsic* cndSelNode)
         // `trueValue`
         GenTreeHWIntrinsic* nestedCndSel = op2->AsHWIntrinsic();
         GenTree*            nestedOp1    = nestedCndSel->Op(1);
+        GenTree*            nestedOp2    = nestedCndSel->Op(2);
         assert(varTypeIsMask(nestedOp1));
+        assert(nestedOp2->OperIsHWIntrinsic());
 
-        if (nestedOp1->IsMaskAllBitsSet())
+        NamedIntrinsic nestedOp2Id = nestedOp2->AsHWIntrinsic()->GetHWIntrinsicId();
+
+        // If the nested op uses Pg/Z, then inactive lanes will result in zeros, so can only transform if
+        // op3 is all zeros.
+
+        if (nestedOp1->IsMaskAllBitsSet() &&
+            (!HWIntrinsicInfo::IsZeroingMaskedOperation(nestedOp2Id) || op3->IsVectorZero()))
         {
             GenTree* nestedOp2 = nestedCndSel->Op(2);
             GenTree* nestedOp3 = nestedCndSel->Op(3);
@@ -4145,7 +4132,18 @@ void Lowering::StoreFFRValue(GenTreeHWIntrinsic* node)
 #ifdef DEBUG
     switch (node->GetHWIntrinsicId())
     {
+        case NI_Sve_GatherVectorByteZeroExtendFirstFaulting:
         case NI_Sve_GatherVectorFirstFaulting:
+        case NI_Sve_GatherVectorInt16SignExtendFirstFaulting:
+        case NI_Sve_GatherVectorInt16WithByteOffsetsSignExtendFirstFaulting:
+        case NI_Sve_GatherVectorInt32SignExtendFirstFaulting:
+        case NI_Sve_GatherVectorInt32WithByteOffsetsSignExtendFirstFaulting:
+        case NI_Sve_GatherVectorSByteSignExtendFirstFaulting:
+        case NI_Sve_GatherVectorUInt16WithByteOffsetsZeroExtendFirstFaulting:
+        case NI_Sve_GatherVectorUInt16ZeroExtendFirstFaulting:
+        case NI_Sve_GatherVectorUInt32WithByteOffsetsZeroExtendFirstFaulting:
+        case NI_Sve_GatherVectorUInt32ZeroExtendFirstFaulting:
+        case NI_Sve_GatherVectorWithByteOffsetFirstFaulting:
         case NI_Sve_LoadVectorByteZeroExtendFirstFaulting:
         case NI_Sve_LoadVectorFirstFaulting:
         case NI_Sve_LoadVectorInt16SignExtendFirstFaulting:
@@ -4154,8 +4152,8 @@ void Lowering::StoreFFRValue(GenTreeHWIntrinsic* node)
         case NI_Sve_LoadVectorUInt16ZeroExtendFirstFaulting:
         case NI_Sve_LoadVectorUInt32ZeroExtendFirstFaulting:
         case NI_Sve_SetFfr:
-
             break;
+
         default:
             assert(!"Unexpected HWIntrinsicId");
     }
