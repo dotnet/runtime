@@ -1435,6 +1435,9 @@ UseDefLocation IncrementalSsaBuilder::FindOrCreateReachingDef(const UseDefLocati
                 }
 
                 m_comp->fgValueNumberPhiDef(phiDef->GetRootNode()->AsLclVar(), dom);
+
+                JITDUMP("  New phi def:\n");
+                DISPSTMT(phiDef);
             }
 
             return UseDefLocation(dom, phiDef, phiDef->GetRootNode()->AsLclVar());
@@ -1596,6 +1599,7 @@ void IncrementalSsaBuilder::Insert()
 {
     FlowGraphDfsTree* dfsTree = m_comp->m_dfsTree;
 
+    LclVarDsc* dsc = m_comp->lvaGetDesc(m_lclNum);
     // Alloc SSA numbers for all real definitions.
     for (int i = 0; i < m_defs.Height(); i++)
     {
@@ -1607,11 +1611,11 @@ void IncrementalSsaBuilder::Insert()
 
         BitVecOps::AddElemD(&m_poTraits, m_defBlocks, def.Block->bbPostorderNum);
 
-        LclVarDsc* dsc    = m_comp->lvaGetDesc(m_lclNum);
-        unsigned   ssaNum = dsc->lvPerSsaData.AllocSsaNum(m_comp->getAllocator(CMK_SSA), def.Block, def.Tree);
+        unsigned ssaNum = dsc->lvPerSsaData.AllocSsaNum(m_comp->getAllocator(CMK_SSA), def.Block, def.Tree);
         def.Tree->SetSsaNum(ssaNum);
         LclSsaVarDsc* ssaDsc = dsc->GetPerSsaData(ssaNum);
         ssaDsc->m_vnPair     = def.Tree->Data()->gtVNPair;
+        JITDUMP("  [%06u] d:%u\n", Compiler::dspTreeID(def.Tree), ssaNum);
     }
 
     // Compute iterated dominance frontiers of all real definitions. These are
@@ -1643,6 +1647,8 @@ void IncrementalSsaBuilder::Insert()
 
         UseDefLocation def = FindOrCreateReachingDef(use);
         use.Tree->SetSsaNum(def.Tree->GetSsaNum());
+        dsc->GetPerSsaData(def.Tree->GetSsaNum())->AddUse(use.Block);
+        JITDUMP("  [%06u] u:%u\n", Compiler::dspTreeID(use.Tree), def.Tree->GetSsaNum());
     }
 }
 
@@ -1656,11 +1662,56 @@ void IncrementalSsaBuilder::Insert()
 //   defs   - All STORE_LCL_VAR definitions of the local
 //   uses   - All LCL_VAR uses of the local
 //
+// Remarks:
+//   All uses are required to never read an uninitialized value of the local.
+//   That is, this function requires that all paths through the function go
+//   through one of the defs in "defs" before any use in "uses".
+//
 void SsaBuilder::InsertInSsa(Compiler*                   comp,
                              unsigned                    lclNum,
                              ArrayStack<UseDefLocation>& defs,
                              ArrayStack<UseDefLocation>& uses)
 {
+    LclVarDsc* dsc = comp->lvaGetDesc(lclNum);
+    assert(!dsc->lvInSsa);
+
+    JITDUMP("Putting V%02u into SSA form\n", lclNum);
+    JITDUMP("  %d defs:", defs.Height());
+    for (int i = 0; i < defs.Height(); i++)
+    {
+        JITDUMP(" [%06u]", Compiler::dspTreeID(defs.Bottom(i).Tree));
+    }
+
+    JITDUMP("\n  %d uses:", uses.Height());
+    for (int i = 0; i < uses.Height(); i++)
+    {
+        JITDUMP(" [%06u]", Compiler::dspTreeID(uses.Bottom(i).Tree));
+    }
+
+    if (defs.Height() == 1)
+    {
+        JITDUMP("  Single-def local; putting into SSA directly\n");
+
+        UseDefLocation& def = defs.BottomRef(0);
+
+        unsigned ssaNum = dsc->lvPerSsaData.AllocSsaNum(comp->getAllocator(CMK_SSA), def.Block, def.Tree);
+        def.Tree->SetSsaNum(ssaNum);
+        JITDUMP("  [%06u] d:%u\n", Compiler::dspTreeID(def.Tree), ssaNum);
+
+        LclSsaVarDsc* ssaDsc = dsc->GetPerSsaData(ssaNum);
+        ssaDsc->m_vnPair     = def.Tree->Data()->gtVNPair;
+
+        for (int i = 0; i < uses.Height(); i++)
+        {
+            UseDefLocation& use = uses.BottomRef(i);
+            use.Tree->SetSsaNum(ssaNum);
+            ssaDsc->AddUse(use.Block);
+            JITDUMP("  [%06u] u:%u\n", Compiler::dspTreeID(use.Tree), ssaNum);
+        }
+
+        return;
+    }
+
     if (comp->m_dfsTree == nullptr)
     {
         comp->m_dfsTree = comp->fgComputeDfs();
@@ -1678,5 +1729,5 @@ void SsaBuilder::InsertInSsa(Compiler*                   comp,
 
     IncrementalSsaBuilder builder(comp, lclNum, defs, uses);
     builder.Insert();
-    comp->lvaGetDesc(lclNum)->lvInSsa = true;
+    dsc->lvInSsa = true;
 }
