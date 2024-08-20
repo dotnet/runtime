@@ -2199,21 +2199,34 @@ void ConvertOleColorToSystemColor(OLE_COLOR SrcOleColor, SYSTEMCOLOR *pDestSysCo
     }
     CONTRACTL_END;
 
-    // Retrieve the method desc to use for the current AD.
-    MethodDesc *pOleColorToSystemColorMD =
-        GetAppDomain()->GetLoaderAllocator()->GetMarshalingData()->GetOleColorMarshalingInfo()->GetOleColorToSystemColorMD();
+    OBJECTREF boxedSysColor = NULL;
 
-    MethodDescCallSite oleColorToSystemColor(pOleColorToSystemColorMD);
+    GCPROTECT_BEGIN(boxedSysColor);
 
-    _ASSERTE(pOleColorToSystemColorMD->HasRetBuffArg());
+    ConvertOleColorToSystemColor(SrcOleColor, &boxedSysColor);
+
+    CopyValueClass(pDestSysColor, boxedSysColor->UnBox(), boxedSysColor->GetMethodTable());
+    GCPROTECT_END();
+}
+
+void ConvertOleColorToSystemColor(OLE_COLOR SrcOleColor, OBJECTREF *pDestSysColor)
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_COOPERATIVE;
+    }
+    CONTRACTL_END;
+
+    MethodDescCallSite oleColorToSystemColor(METHOD__COLORMARSHALER__CONVERT_TO_MANAGED);
 
     ARG_SLOT Args[] =
     {
-        PtrToArgSlot(pDestSysColor),
-        PtrToArgSlot(SrcOleColor)
+        PtrToArgSlot(&SrcOleColor)
     };
 
-    oleColorToSystemColor.Call(Args);
+    *pDestSysColor = oleColorToSystemColor.Call_RetOBJECTREF(Args);
 }
 
 //--------------------------------------------------------------------------------
@@ -2228,14 +2241,24 @@ OLE_COLOR ConvertSystemColorToOleColor(OBJECTREF *pSrcObj)
     }
     CONTRACTL_END;
 
-    // Retrieve the method desc to use for the current AD.
-    MethodDesc *pSystemColorToOleColorMD =
-        GetAppDomain()->GetLoaderAllocator()->GetMarshalingData()->GetOleColorMarshalingInfo()->GetSystemColorToOleColorMD();
-    MethodDescCallSite systemColorToOleColor(pSystemColorToOleColorMD);
+    OLE_COLOR result;
+    OBJECTREF sysColor = nullptr;
 
-    // Set up the args and call the method.
-    SYSTEMCOLOR *pSrcSysColor = (SYSTEMCOLOR *)(*pSrcObj)->UnBox();
-    return systemColorToOleColor.CallWithValueTypes_RetOleColor((const ARG_SLOT *)&pSrcSysColor);
+    GCPROTECT_BEGIN(sysColor);
+
+    sysColor = *pSrcObj;
+
+    MethodDescCallSite sysColorToOleColor(METHOD__COLORMARSHALER__CONVERT_TO_NATIVE);
+
+    ARG_SLOT Args[] =
+    {
+        ObjToArgSlot(sysColor)
+    };
+
+    result = (OLE_COLOR)sysColorToOleColor.Call_RetI4(Args);
+
+    GCPROTECT_END();
+    return result;
 }
 
 //--------------------------------------------------------------------------------

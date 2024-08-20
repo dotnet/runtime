@@ -1812,6 +1812,11 @@ void ILCodeStream::EmitUNALIGNED(BYTE alignment)
     Emit(CEE_UNALIGNED, 0, alignment);
 }
 
+void ILCodeStream::EmitUNBOX_ANY(int token)
+{
+    WRAPPER_NO_CONTRACT;
+    Emit(CEE_UNBOX_ANY, 0, token);
+}
 
 void ILCodeStream::EmitNEWOBJ(BinderMethodID id, int numInArgs)
 {

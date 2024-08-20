@@ -103,6 +103,13 @@ struct OverrideProcArgs
         {
             UINT32 fixedStringLength;
         } fs;
+
+#ifdef FEATURE_COMINTEROP
+        struct
+        {
+            MethodTable* m_pColorType;
+        } color;
+#endif
     };
 };
 
@@ -190,45 +197,6 @@ BOOL ParseNativeTypeInfo(mdToken                    token,
 BOOL IsFixedBuffer(mdFieldDef field, IMDInternalImport* pInternalImport);
 #endif
 
-#ifdef FEATURE_COMINTEROP
-class OleColorMarshalingInfo
-{
-public:
-    // Constructor.
-    OleColorMarshalingInfo();
-
-    // OleColorMarshalingInfo's are always allocated on the loader heap so we need to redefine
-    // the new and delete operators to ensure this.
-    void *operator new(size_t size, LoaderHeap *pHeap);
-    void operator delete(void *pMem);
-
-    // Accessors.
-    TypeHandle GetColorType()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return m_hndColorType;
-    }
-    MethodDesc *GetOleColorToSystemColorMD()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return m_OleColorToSystemColorMD;
-    }
-    MethodDesc *GetSystemColorToOleColorMD()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return m_SystemColorToOleColorMD;
-    }
-
-
-private:
-    TypeHandle  m_hndColorType;
-    MethodDesc* m_OleColorToSystemColorMD;
-    MethodDesc* m_SystemColorToOleColorMD;
-};
-
-#endif // FEATURE_COMINTEROP
-
-
 class EEMarshalingData
 {
 public:
@@ -266,8 +234,6 @@ public:
 
 #ifdef FEATURE_COMINTEROP
     CustomMarshalerInfo *GetIEnumeratorMarshalerInfo();
-    // This method retrieves OLE_COLOR marshaling info.
-    OleColorMarshalingInfo *GetOleColorMarshalingInfo();
 #endif // FEATURE_COMINTEROP
 
 private:
@@ -277,7 +243,6 @@ private:
     LoaderHeap*                         m_pHeap;
 #ifdef FEATURE_COMINTEROP
     CustomMarshalerInfo*                m_pIEnumeratorMarshalerInfo;
-    OleColorMarshalingInfo*             m_pOleColorInfo;
 #endif // FEATURE_COMINTEROP
     CrstBase*                           m_lock;
 };

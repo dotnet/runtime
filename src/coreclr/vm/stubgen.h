@@ -932,6 +932,7 @@ public:
     void EmitSUB        ();
     void EmitTHROW      ();
     void EmitUNALIGNED  (BYTE alignment);
+    void EmitUNBOX_ANY  (int token);
 
     // Overloads to simplify common usage patterns
     void EmitNEWOBJ     (BinderMethodID id, int numInArgs);

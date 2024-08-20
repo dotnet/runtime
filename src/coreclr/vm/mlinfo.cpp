@@ -25,16 +25,6 @@
 #include "dispparammarshaler.h"
 #endif // FEATURE_COMINTEROP
 
-#ifdef FEATURE_COMINTEROP
-    DEFINE_ASM_QUAL_TYPE_NAME(COLOR_TRANSLATOR_ASM_QUAL_TYPE_NAME, g_ColorTranslatorClassName, g_DrawingAsmName);
-    DEFINE_ASM_QUAL_TYPE_NAME(COLOR_ASM_QUAL_TYPE_NAME, g_ColorClassName, g_DrawingAsmName);
-
-    #define OLECOLOR_TO_SYSTEMCOLOR_METH_NAME   "FromOle"
-    #define SYSTEMCOLOR_TO_OLECOLOR_METH_NAME   "ToOle"
-#endif // FEATURE_COMINTEROP
-
-
-
 #define INITIAL_NUM_STRUCT_ILSTUB_HASHTABLE_BUCKETS 32
 #define INITIAL_NUM_CMHELPER_HASHTABLE_BUCKETS 32
 #define INITIAL_NUM_CMINFO_HASHTABLE_BUCKETS 32
@@ -755,69 +745,6 @@ VOID CollateParamTokens(IMDInternalImport *pInternalImport, mdMethodDef md, ULON
     }
 }
 
-
-#ifdef FEATURE_COMINTEROP
-OleColorMarshalingInfo::OleColorMarshalingInfo() :
-    m_OleColorToSystemColorMD(NULL),
-    m_SystemColorToOleColorMD(NULL)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-
-    SString qualifiedColorTranslatorTypeName(SString::Utf8, COLOR_TRANSLATOR_ASM_QUAL_TYPE_NAME);
-
-    // Load the color translator class.
-    TypeHandle hndColorTranslatorType = TypeName::GetTypeFromAsmQualifiedName(qualifiedColorTranslatorTypeName.GetUnicode(), TRUE /* bThrowIfNotFound */);
-
-    SString qualifiedColorTypeName(SString::Utf8, COLOR_ASM_QUAL_TYPE_NAME);
-    // Load the color class.
-    m_hndColorType = TypeName::GetTypeFromAsmQualifiedName(qualifiedColorTypeName.GetUnicode(), TRUE /* bThrowIfNotFound */);
-
-    // Retrieve the method to convert an OLE_COLOR to a System.Drawing.Color.
-    m_OleColorToSystemColorMD = MemberLoader::FindMethodByName(hndColorTranslatorType.GetMethodTable(), OLECOLOR_TO_SYSTEMCOLOR_METH_NAME);
-    _ASSERTE(m_OleColorToSystemColorMD && "Unable to find the translator method to convert an OLE_COLOR to a System.Drawing.Color!");
-    _ASSERTE(m_OleColorToSystemColorMD->IsStatic() && "The translator method to convert an OLE_COLOR to a System.Drawing.Color must be static!");
-
-    // Retrieve the method to convert a System.Drawing.Color to an OLE_COLOR.
-    m_SystemColorToOleColorMD = MemberLoader::FindMethodByName(hndColorTranslatorType.GetMethodTable(), SYSTEMCOLOR_TO_OLECOLOR_METH_NAME);
-    _ASSERTE(m_SystemColorToOleColorMD && "Unable to find the translator method to convert a System.Drawing.Color to an OLE_COLOR!");
-    _ASSERTE(m_SystemColorToOleColorMD->IsStatic() && "The translator method to convert a System.Drawing.Color to an OLE_COLOR must be static!");
-}
-
-
-void *OleColorMarshalingInfo::operator new(size_t size, LoaderHeap *pHeap)
-{
-    CONTRACT (void*)
-    {
-        THROWS;
-        GC_NOTRIGGER;
-        MODE_ANY;
-        INJECT_FAULT(COMPlusThrowOM());
-        PRECONDITION(CheckPointer(pHeap));
-        POSTCONDITION(CheckPointer(RETVAL));
-    }
-    CONTRACT_END;
-
-    void* mem = pHeap->AllocMem(S_SIZE_T(size));
-
-    RETURN mem;
-}
-
-
-void OleColorMarshalingInfo::operator delete(void *pMem)
-{
-    LIMITED_METHOD_CONTRACT;
-    // Instances of this class are always allocated on the loader heap so
-    // the delete operator has nothing to do.
-}
-
-#endif // FEATURE_COMINTEROP
-
 EEMarshalingData::EEMarshalingData(LoaderAllocator* pAllocator, CrstBase *pCrst) :
     m_pAllocator(pAllocator),
     m_pHeap(pAllocator->GetLowFrequencyHeap()),
@@ -842,10 +769,10 @@ EEMarshalingData::~EEMarshalingData()
     WRAPPER_NO_CONTRACT;
 
 #ifdef FEATURE_COMINTEROP
-    if (m_pOleColorInfo)
+    if (m_pIEnumeratorMarshalerInfo)
     {
-        delete m_pOleColorInfo;
-        m_pOleColorInfo = NULL;
+        delete m_pIEnumeratorMarshalerInfo;
+        m_pIEnumeratorMarshalerInfo = NULL;
     }
 #endif
 }
@@ -990,34 +917,6 @@ CustomMarshalerInfo *EEMarshalingData::GetIEnumeratorMarshalerInfo()
     }
 
     RETURN m_pIEnumeratorMarshalerInfo;
-}
-
-OleColorMarshalingInfo *EEMarshalingData::GetOleColorMarshalingInfo()
-{
-    CONTRACT (OleColorMarshalingInfo*)
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
-        INJECT_FAULT(COMPlusThrowOM());
-        POSTCONDITION(CheckPointer(RETVAL));
-    }
-    CONTRACT_END;
-
-    if (m_pOleColorInfo == NULL)
-    {
-        OleColorMarshalingInfo *pOleColorInfo = new (m_pHeap) OleColorMarshalingInfo();
-
-    if (InterlockedCompareExchangeT(&m_pOleColorInfo, pOleColorInfo, NULL) != NULL)
-        {
-            // Another thread beat us to it. Delete on OleColorMarshalingInfo is an empty operation
-            // which is OK, since the possible leak is rare, small, and constant. This is the same
-            // pattern as in code:GetCustomMarshalerInfo.
-            delete pOleColorInfo;
-        }
-    }
-
-    RETURN m_pOleColorInfo;
 }
 #endif // FEATURE_COMINTEROP
 
@@ -2246,6 +2145,14 @@ MarshalInfo::MarshalInfo(Module* pModule,
                 {
                     IfFailGoto(E_FAIL, lFail);
                 }
+
+                GCX_COOP();
+
+                FieldDesc* pColorTypeField = CoreLibBinder::GetField(FIELD__COLORMARSHALER__COLOR_TYPE);
+                pColorTypeField->CheckRunClassInitThrowing();
+                void* colorTypeHandle = pColorTypeField->GetStaticValuePtr();
+
+                m_args.color.m_pColorType = TypeHandle::FromPtr(colorTypeHandle).GetMethodTable();
 
                 m_type = MARSHAL_TYPE_OLECOLOR;
             }

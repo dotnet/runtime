@@ -278,6 +278,7 @@ void GetComSourceInterfacesForClass(MethodTable *pClassMT, CQuickArray<MethodTab
 //--------------------------------------------------------------------------------
 // These methods convert an OLE_COLOR to a System.Color and vice versa.
 void ConvertOleColorToSystemColor(OLE_COLOR SrcOleColor, SYSTEMCOLOR *pDestSysColor);
+void ConvertOleColorToSystemColor(OLE_COLOR SrcOleColor, OBJECTREF *pDestSysColor);
 OLE_COLOR ConvertSystemColorToOleColor(SYSTEMCOLOR *pSrcSysColor);
 OLE_COLOR ConvertSystemColorToOleColor(OBJECTREF *pSrcObj);
 
@@ -388,9 +389,6 @@ VOID EnsureComStarted(BOOL fCoInitCurrentThread = TRUE);
 
 IUnknown* MarshalObjectToInterface(OBJECTREF* ppObject, MethodTable* pItfMT, MethodTable* pClassMT, DWORD dwFlags);
 void UnmarshalObjectFromInterface(OBJECTREF *ppObjectDest, IUnknown **ppUnkSrc, MethodTable *pItfMT, MethodTable *pClassMT, DWORD dwFlags);
-
-#define DEFINE_ASM_QUAL_TYPE_NAME(varname, typename, asmname)          static const char varname##[] = { typename##", "##asmname## };
-
 #else // FEATURE_COMINTEROP
 inline HRESULT EnsureComStartedNoThrow()
 {

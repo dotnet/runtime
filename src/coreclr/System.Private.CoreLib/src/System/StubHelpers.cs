@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.CustomMarshalers;
@@ -1631,4 +1632,37 @@ namespace System.StubHelpers
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern IntPtr NextCallReturnAddress();
     }  // class StubHelpers
+
+#if FEATURE_COMINTEROP
+    internal static class ColorMarshaler
+    {
+        private static readonly MethodInvoker OleColorToDrawingColorMethod;
+        private static readonly MethodInvoker DrawingColorToOleColorMethod;
+
+        internal static readonly IntPtr ColorType;
+
+#pragma warning disable CA1810 // explicit static cctor
+        static ColorMarshaler()
+        {
+            Type colorTranslatorType = Type.GetType("System.Drawing.ColorTranslator, System.Drawing.Primitives", throwOnError: true)!;
+            Type colorType = Type.GetType("System.Drawing.Color, System.Drawing.Primitives", throwOnError: true)!;
+
+            ColorType = colorType.TypeHandle.Value;
+
+            OleColorToDrawingColorMethod = MethodInvoker.Create(colorTranslatorType.GetMethod("FromOle", [typeof(int)])!);
+            DrawingColorToOleColorMethod = MethodInvoker.Create(colorTranslatorType.GetMethod("ToOle", [colorType])!);
+        }
+#pragma warning restore CA1810 // explicit static cctor
+
+        internal static object ConvertToManaged(int managedColor)
+        {
+            return OleColorToDrawingColorMethod.Invoke(null, managedColor)!;
+        }
+
+        internal static int ConvertToNative(object? managedColor)
+        {
+            return (int)DrawingColorToOleColorMethod.Invoke(null, managedColor)!;
+        }
+    }
+#endif
 }

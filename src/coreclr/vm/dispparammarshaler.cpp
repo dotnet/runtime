@@ -97,13 +97,7 @@ void DispParamOleColorMarshaler::MarshalNativeToManaged(VARIANT *pSrcVar, OBJECT
 
     // Convert the OLECOLOR to a System.Drawing.Color.
     SYSTEMCOLOR MngColor;
-    ConvertOleColorToSystemColor(OleColor, &MngColor);
-
-    // Box the System.Drawing.Color value class and give back the boxed object.
-    TypeHandle hndColorType =
-        AppDomain::GetCurrentDomain()->GetLoaderAllocator()->GetMarshalingData()->GetOleColorMarshalingInfo()->GetColorType();
-
-    *pDestObj = hndColorType.GetMethodTable()->Box(&MngColor);
+    ConvertOleColorToSystemColor(OleColor, pDestObj);
 }
 
 void DispParamOleColorMarshaler::MarshalManagedToNative(OBJECTREF *pSrcObj, VARIANT *pDestVar)
