@@ -114,7 +114,7 @@ namespace ILLink.Shared.TrimAnalysis
 							// This can be seen a little bit as a violation of the annotation, but we already have similar cases
 							// where a parameter is annotated and if something in the method sets a specific known type to it
 							// we will also make it just work, even if the annotation doesn't match the usage.
-							AddReturnValue (new SystemTypeValue (new (staticType)));
+							AddReturnValue (GetSystemTypeValue (new (staticType)));
 						} else if (staticType.IsTypeOf ("System", "Enum")) {
 							AddReturnValue (FlowAnnotations.Instance.GetMethodReturnValue (calledMethod, _isNewObj, DynamicallyAccessedMemberTypes.PublicFields));
 						} else {
@@ -239,5 +239,7 @@ namespace ILLink.Shared.TrimAnalysis
 		}
 
 		private partial string GetContainingSymbolDisplayName () => _operation.FindContainingSymbol (_owningSymbol).GetDisplayName ();
+
+		private partial SystemTypeValue GetSystemTypeValue (TypeProxy type) => new SystemTypeValue (type);
 	}
 }

@@ -150,7 +150,7 @@ namespace ILLink.Shared.TrimAnalysis
 							// This can be seen a little bit as a violation of the annotation, but we already have similar cases
 							// where a parameter is annotated and if something in the method sets a specific known type to it
 							// we will also make it just work, even if the annotation doesn't match the usage.
-							AddReturnValue (new SystemTypeValue (staticType));
+							AddReturnValue (GetSystemTypeValue (staticType));
 						} else if (staticTypeDef.IsTypeOf ("System", "Enum")) {
 							AddReturnValue (_context.Annotations.FlowAnnotations.GetMethodReturnValue (calledMethod, _isNewObj, DynamicallyAccessedMemberTypes.PublicFields));
 						} else {
@@ -215,7 +215,7 @@ namespace ILLink.Shared.TrimAnalysis
 		private partial IEnumerable<SystemTypeValue> GetNestedTypesOnType (TypeProxy type, string name, BindingFlags? bindingFlags)
 		{
 			foreach (var nestedType in type.Type.GetNestedTypesOnType (_context, t => t.Name == name, bindingFlags))
-				yield return new SystemTypeValue (new TypeProxy (nestedType));
+				yield return GetSystemTypeValue (new TypeProxy (nestedType));
 		}
 
 		private partial bool TryGetBaseType (TypeProxy type, out TypeProxy? baseType)
@@ -289,5 +289,7 @@ namespace ILLink.Shared.TrimAnalysis
 		}
 
 		private partial string GetContainingSymbolDisplayName () => _callingMethodDefinition.GetDisplayName ();
+
+		private partial SystemTypeValue GetSystemTypeValue (TypeProxy type) => new SystemTypeValue (type, _context);
 	}
 }

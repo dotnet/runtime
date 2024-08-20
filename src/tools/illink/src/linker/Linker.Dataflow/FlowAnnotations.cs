@@ -774,13 +774,13 @@ namespace ILLink.Shared.TrimAnalysis
 
 					case TypeReference underlyingType:
 						if (underlyingType.ResolveToTypeDefinition (_context) is TypeDefinition underlyingTypeDefinition)
-							return new NullableSystemTypeValue (genericArgumentType, new SystemTypeValue (underlyingTypeDefinition));
+							return new NullableSystemTypeValue (genericArgumentType, new SystemTypeValue (underlyingTypeDefinition, _context));
 						else
 							return UnknownValue.Instance;
 					}
 				}
 				// All values except for Nullable<T>, including Nullable<> (with no type arguments)
-				return new SystemTypeValue (genericArgumentType);
+				return new SystemTypeValue (genericArgumentType, _context);
 			} else {
 				return UnknownValue.Instance;
 			}

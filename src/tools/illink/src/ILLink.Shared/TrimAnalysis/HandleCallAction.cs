@@ -130,7 +130,7 @@ namespace ILLink.Shared.TrimAnalysis
 						RuntimeTypeHandleForNullableValueWithDynamicallyAccessedMembers nullableDamType when nullableDamType.UnderlyingTypeValue is ValueWithDynamicallyAccessedMembers underlyingTypeValue
 							=> new NullableValueWithDynamicallyAccessedMembers (nullableDamType.NullableType, underlyingTypeValue),
 						RuntimeTypeHandleValue typeHandle
-							=> new SystemTypeValue (typeHandle.RepresentedType),
+							=> GetSystemTypeValue (typeHandle.RepresentedType),
 						RuntimeTypeHandleForGenericParameterValue genericParam
 							=> _annotations.GetGenericParameterValue (genericParam.GenericParameter),
 						RuntimeTypeHandleForValueWithDynamicallyAccessedMembers valueWithDynamicallyAccessedMembers
@@ -833,7 +833,7 @@ namespace ILLink.Shared.TrimAnalysis
 								// Intentionally ignore - it's not wrong for code to call Type.GetType on non-existing name, the code might expect null/exception back.
 								AddReturnValue (MultiValueLattice.Top);
 							} else {
-								AddReturnValue (new SystemTypeValue (foundType));
+								AddReturnValue (GetSystemTypeValue (foundType));
 							}
 						} else if (typeNameValue == NullValue.Instance) {
 							// Nothing to do - this throws at runtime
@@ -884,7 +884,7 @@ namespace ILLink.Shared.TrimAnalysis
 											AddReturnValue (MultiValueLattice.Top);
 											break;
 										case SystemTypeValue systemTypeValue:
-											AddReturnValue (new NullableSystemTypeValue (typeValue.RepresentedType, new SystemTypeValue (systemTypeValue.RepresentedType)));
+											AddReturnValue (new NullableSystemTypeValue (typeValue.RepresentedType, GetSystemTypeValue (systemTypeValue.RepresentedType)));
 											break;
 										// Generic Parameters and method parameters with annotations
 										case ValueWithDynamicallyAccessedMembers damValue:
@@ -968,7 +968,7 @@ namespace ILLink.Shared.TrimAnalysis
 							AddReturnValue (_annotations.GetMethodReturnValue (calledMethod, _isNewObj, propagatedMemberTypes));
 						} else if (value is SystemTypeValue systemTypeValue) {
 							if (TryGetBaseType (systemTypeValue.RepresentedType, out var baseType))
-								AddReturnValue (new SystemTypeValue (baseType.Value));
+								AddReturnValue (GetSystemTypeValue (baseType.Value));
 							else
 								AddReturnValue (annotatedMethodReturnValue);
 						} else if (value == NullValue.Instance) {
@@ -1477,5 +1477,7 @@ namespace ILLink.Shared.TrimAnalysis
 
 		// Only used for internal diagnostic purposes (not even for warning messages)
 		private partial string GetContainingSymbolDisplayName ();
+
+		private partial SystemTypeValue GetSystemTypeValue (TypeProxy type);
 	}
 }

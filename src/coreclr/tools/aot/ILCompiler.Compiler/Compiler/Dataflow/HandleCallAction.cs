@@ -683,6 +683,8 @@ namespace ILLink.Shared.TrimAnalysis
 
         private partial string GetContainingSymbolDisplayName() => _callingMethod.GetDisplayName();
 
+        private partial SystemTypeValue GetSystemTypeValue (TypeProxy type) => new SystemTypeValue (type);
+
         private sealed class MakeGenericMethodSite : INodeWithRuntimeDeterminedDependencies
         {
             private readonly MethodDesc _method;

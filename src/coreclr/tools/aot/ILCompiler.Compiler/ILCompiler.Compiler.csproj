@@ -390,6 +390,7 @@
     <Compile Include="Compiler\Dataflow\ReflectionMarker.cs" />
     <Compile Include="Compiler\Dataflow\RequireDynamicallyAccessedMembersAction.cs" />
     <Compile Include="Compiler\Dataflow\ScannerExtensions.cs" />
+    <Compile Include="Compiler\Dataflow\SystemTypeValue.cs" />
     <Compile Include="Compiler\Dataflow\TrimAnalysisAssignmentPattern.cs" />
     <Compile Include="Compiler\Dataflow\TrimAnalysisFieldAccessPattern.cs" />
     <Compile Include="Compiler\Dataflow\TrimAnalysisGenericInstantiationAccessPattern.cs" />
