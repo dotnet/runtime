@@ -461,7 +461,26 @@ namespace Internal.TypeSystem
             // Unless the current type has a name/sig match for the group, look to the base type to define the unification group further
             if ((nameSigMatchMethod == null) && (baseType != null))
             {
+                // TODO?! Check to see if we should do this check even if the virtual name/sig match finds something.
+                // We may want to build up a unification group for the base just to check the further MethodImpl case here.
                 FindBaseUnificationGroup(baseType, unificationGroup);
+
+                // We should check to see if a the DefiningMethod on the base unification group is overriden via MethodImpl
+                // TODO?! check to see if we need to check for MethodImpls affecting other members of the unification group
+                // other than the defining method
+                if (unificationGroup.DefiningMethod != null)
+                {
+                    methodImpl = FindImplFromDeclFromMethodImpls(currentType, unificationGroup.DefiningMethod);
+                    if (methodImpl != null)
+                    {
+                        if (methodImpl.RequiresSlotUnification())
+                        {
+                            unificationGroup.AddMethodRequiringSlotUnification(unificationGroup.DefiningMethod);
+                            unificationGroup.AddMethodRequiringSlotUnification(methodImpl);
+                        }
+                        unificationGroup.SetDefiningMethod(methodImpl);
+                    }
+                }
             }
 
             Debug.Assert(unificationGroup.IsInGroupOrIsDefiningSlot(originalDefiningMethod));
