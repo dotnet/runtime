@@ -365,8 +365,7 @@ typedef simd16_t simd_t;
 
 inline bool IsUnaryBitwiseOperation(genTreeOps oper)
 {
-    return (oper == GT_LZCNT) ||
-           (oper == GT_NOT);
+    return (oper == GT_LZCNT) || (oper == GT_NOT);
 }
 
 template <typename TBase>
@@ -705,15 +704,8 @@ void EvaluateUnarySimd(genTreeOps oper, bool scalar, var_types baseType, TSimd* 
 
 inline bool IsBinaryBitwiseOperation(genTreeOps oper)
 {
-    return (oper == GT_AND) ||
-           (oper == GT_AND_NOT) ||
-           (oper == GT_LSH) ||
-           (oper == GT_OR) ||
-           (oper == GT_ROL) ||
-           (oper == GT_ROR) ||
-           (oper == GT_RSH) ||
-           (oper == GT_RSZ) ||
-           (oper == GT_XOR);
+    return (oper == GT_AND) || (oper == GT_AND_NOT) || (oper == GT_LSH) || (oper == GT_OR) || (oper == GT_ROL) ||
+           (oper == GT_ROR) || (oper == GT_RSH) || (oper == GT_RSZ) || (oper == GT_XOR);
 }
 
 template <typename TBase>
