@@ -7219,6 +7219,16 @@ MINT_IN_CASE(MINT_BRTRUE_I8_SP) ZEROP_SP(gint64, !=); MINT_IN_BREAK;
 			ip += 5;
 			MINT_IN_BREAK;
 		}
+		MINT_IN_CASE(MINT_MONO_CMPXCHG_U2) {
+			guint16 *dest = LOCAL_VAR(ip[2], guint16*);
+			guint16 value = LOCAL_VAR(ip[3], guint16);
+			guint16 comparand = LOCAL_VAR(ip[4], guint16);
+			NULL_CHECK(dest);
+
+			LOCAL_VAR(ip[1], uint16_t) = mono_atomic_cas_u16(dest, value, comparand);
+			ip += 5;
+			MINT_IN_BREAK;
+		}
 		MINT_IN_CASE(MINT_MONO_CMPXCHG_I4) {
 			gint32 *dest = LOCAL_VAR(ip[2], gint32*);
 			gint32 value = LOCAL_VAR(ip[3], gint32);
