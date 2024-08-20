@@ -46,10 +46,6 @@ if (CLR_CMAKE_TARGET_UNIX OR CLR_CMAKE_TARGET_BROWSER OR CLR_CMAKE_TARGET_WASI)
     # Disable implicit fallthrough warning for Zlib and Brotli
     set(FLAGS -Wno-implicit-fallthrough)
 
-    # Disable no strict prototypes warning for Zlib
-    # https://github.com/madler/zlib/issues/633
-    set(FLAGS "${FLAGS} -Wno-strict-prototypes")
-
     # Delete this suppression once brotli is upgraded to vNext (current latest v1.0.9
     # does not contain upstream fix: https://github.com/google/brotli/commit/0a3944c)
     if (NOT CLR_CMAKE_TARGET_WASI)
