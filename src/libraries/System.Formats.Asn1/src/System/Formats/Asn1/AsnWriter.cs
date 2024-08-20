@@ -199,6 +199,71 @@ namespace System.Formats.Asn1
             return _buffer.AsSpan(0, _offset).ToArray();
         }
 
+#if NET9_0_OR_GREATER
+        /// <summary>
+        ///   Provides the encoded representation of the data to the specified callback.
+        /// </summary>
+        /// <param name="encodeCallback">
+        ///   The callback that receives the encoded data.
+        /// </param>
+        /// <typeparam name="TReturn">
+        ///   The type of the return value.
+        /// </typeparam>
+        /// <returns>
+        ///   Returns the value returned from <paramref name="encodeCallback" />.
+        /// </returns>
+        /// <exception cref="ArgumentNullException">
+        ///   <paramref name="encodeCallback"/> is <see langword="null"/>.
+        /// </exception>
+        /// <exception cref="InvalidOperationException">
+        ///   A <see cref="PushSequence"/> or <see cref="PushSetOf"/> has not been closed via
+        ///   <see cref="PopSequence"/> or <see cref="PopSetOf"/>.
+        /// </exception>
+        public TReturn Encode<TReturn>(Func<ReadOnlySpan<byte>, TReturn> encodeCallback)
+        {
+            if (encodeCallback is null)
+                throw new ArgumentNullException(nameof(encodeCallback));
+
+            ReadOnlySpan<byte> encoded = EncodeAsSpan();
+            return encodeCallback(encoded);
+        }
+
+        /// <summary>
+        ///   Provides the encoded representation of the data to the specified callback.
+        /// </summary>
+        /// <param name="encodeCallback">
+        ///   The callback that receives the encoded data.
+        /// </param>
+        /// <param name="state">
+        ///   The state to pass to <paramref name="encodeCallback" />.
+        /// </param>
+        /// <typeparam name="TState">
+        ///   The type of the state.
+        /// </typeparam>
+        /// <typeparam name="TReturn">
+        ///   The type of the return value.
+        /// </typeparam>
+        /// <returns>
+        ///   Returns the value returned from <paramref name="encodeCallback" />.
+        /// </returns>
+        /// <exception cref="ArgumentNullException">
+        ///   <paramref name="encodeCallback"/> is <see langword="null"/>.
+        /// </exception>
+        /// <exception cref="InvalidOperationException">
+        ///   A <see cref="PushSequence"/> or <see cref="PushSetOf"/> has not been closed via
+        ///   <see cref="PopSequence"/> or <see cref="PopSetOf"/>.
+        /// </exception>
+        public TReturn Encode<TState, TReturn>(TState state, Func<TState, ReadOnlySpan<byte>, TReturn> encodeCallback)
+            where TState : allows ref struct
+        {
+            if (encodeCallback is null)
+                throw new ArgumentNullException(nameof(encodeCallback));
+
+            ReadOnlySpan<byte> encoded = EncodeAsSpan();
+            return encodeCallback(state, encoded);
+        }
+#endif
+
         private ReadOnlySpan<byte> EncodeAsSpan()
         {
             if ((_nestingStack?.Count ?? 0) != 0)
