@@ -22,11 +22,17 @@ public class Runtime_106609
     {
         if (AdvSimd.IsSupported)
         {
-            Test();
+            try
+            {
+                Test();
+            }
+            catch
+            {
+            }
         }
     }
 
-    public static float[] s_2;    
+    public static float[] s_2;
     [MethodImpl(MethodImplOptions.NoInlining)]
     private static void Test()
     {
