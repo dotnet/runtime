@@ -642,7 +642,7 @@ public:
     //------------------------------------------------------------
     int GetNextOffset();
 
-    CorElementType GetArgType(TypeHandle *pTypeHandle = NULL)
+    CorElementType GetArgType(TypeHandle *pTypeHandle = NULL) const
     {
         LIMITED_METHOD_CONTRACT;
         if (pTypeHandle != NULL)
@@ -652,7 +652,7 @@ public:
         return m_argType;
     }
 
-    int GetArgSize()
+    int GetArgSize() const
     {
         LIMITED_METHOD_CONTRACT;
         return m_argSize;

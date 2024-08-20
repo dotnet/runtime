@@ -379,7 +379,6 @@ BOOL AddNextShuffleEntryToArray(ArgLocDesc sArgSrc, ArgLocDesc sArgDst, SArray<S
                 if (sArgDst.m_structFields.flags != FpStruct::UseIntCallConv)
                 {
                     // Transfer struct from integer to hardware floating-point calling convention, i.e. lowering.
-                    _ASSERTE(sArgSrc.m_structFields.flags == FpStruct::UseIntCallConv);
                     _ASSERTE(sArgDst.m_structFields.flags & (FpStruct::FloatInt | FpStruct::IntFloat));
 
                     // Lowering can happen only if the struct is passed to delegate in the first stack slot(s)
@@ -391,7 +390,8 @@ BOOL AddNextShuffleEntryToArray(ArgLocDesc sArgSrc, ArgLocDesc sArgDst, SArray<S
                         _ASSERTE(!iteratorSrc.HasNextOfs());
                     }
 
-                    for (int i = 0;;)
+                    int i = 0;
+                    for (; /*break in loop body*/; ++i, entry.dstofs = iteratorDst.GetNextOfs())
                     {
                         _ASSERTE(entry.dstofs & ShuffleEntry::REGMASK);
                         bool isFloatField = (bool(sArgDst.m_structFields.flags & FpStruct::FloatInt) == (i == 0));
@@ -411,21 +411,52 @@ BOOL AddNextShuffleEntryToArray(ArgLocDesc sArgSrc, ArgLocDesc sArgDst, SArray<S
                         entry.dstofs |= ShuffleEntry::LOWERINGMASK | sizeShift | offset;
                         pShuffleEntryArray->Append(entry);
 
-                        if (++i >= 2) break;
-
-                        _ASSERTE(iteratorDst.HasNextOfs());
-                        entry.dstofs = iteratorDst.GetNextOfs();
+                        if (!iteratorDst.HasNextOfs())
+                            break;
                     }
+                    _ASSERTE(i == 1);
 
                     break;
                 }
-                else // delowering
+                else
                 {
-                    _ASSERTE((entry.srcofs & (ShuffleEntry::OFSFIELDSHIFTSIZEMASK | ShuffleEntry::OFSFIELDOFFSETMASK)) == 0);
-                    _ASSERTE(!"todo");
+                    // Transfer struct from hardware floating-point to integer calling convention, i.e. delowering.
+                    if (iteratorDst.HasNextOfs())
+                    {
+                        // Just sanity-check the second slot. We use the base (first) stack slot for both fields
+                        _ASSERTE(iteratorDst.GetNextOfs() == entry.dstofs + 1);
+                        _ASSERTE(!iteratorDst.HasNextOfs());
+                    }
+
+                    FpStructInRegistersInfo fpInfo = sArgSrc.m_structFields;
+                    _ASSERTE(fpInfo.flags & (FpStruct::OnlyOne | FpStruct::BothFloat));
+                    int i = 0;
+                    for (; /*break in loop body*/; ++i, entry.srcofs = iteratorSrc.GetNextOfs())
+                    {
+                        _ASSERTE(entry.srcofs & (ShuffleEntry::REGMASK | ShuffleEntry::FPREGMASK));
+
+                        unsigned sizeShift = (i == 0) ? fpInfo.SizeShift1st() : fpInfo.SizeShift2nd();
+                        unsigned offset = (i == 0) ? fpInfo.offset1st : fpInfo.offset2nd;
+                        _ASSERTE((1u << sizeShift) + offset <= ENREGISTERED_PARAMTYPE_MAXSIZE);
+
+                        sizeShift <<= ShuffleEntry::OFSFIELDSHIFTSIZEPOS;
+                        offset <<= ShuffleEntry::OFSFIELDOFFSETPOS;
+                        _ASSERTE((sizeShift & ShuffleEntry::OFSFIELDSHIFTSIZEMASK) == sizeShift);
+                        _ASSERTE((offset & ShuffleEntry::OFSFIELDOFFSETMASK) == offset);
+
+                        _ASSERTE((entry.srcofs & (ShuffleEntry::OFSFIELDSHIFTSIZEMASK | ShuffleEntry::OFSFIELDOFFSETMASK)) == 0);
+                        entry.srcofs |= ShuffleEntry::LOWERINGMASK | sizeShift | offset;
+                        pShuffleEntryArray->Append(entry);
+
+                        if (!iteratorSrc.HasNextOfs())
+                            break;
+                    }
+                    _ASSERTE(i == ((fpInfo.flags & FpStruct::BothFloat) ? 2 : 1) - 1);
+
+                    break;
                 }
             }
-#endif
+#endif // TARGET_RISCV64
 
             pShuffleEntryArray->Append(entry);
         }
@@ -546,6 +577,22 @@ BOOL GenerateShuffleArrayPortable(MethodDesc* pMethodSrc, MethodDesc *pMethodDst
         // a stack slot.
         sArgPlacerSrc.GetArgLoc(ofsSrc, &sArgSrc);
         sArgPlacerDst.GetArgLoc(ofsDst, &sArgDst);
+
+#if defined(TARGET_RISCV64)
+        // For shuffling purposes treat floats and doubles like single-field FpStructs with zero field offset
+        auto fixFpStructFieldsForStandaloneFloats = [](const ArgIterator& argPlacer, ArgLocDesc& arg)
+        {
+            if (arg.m_cFloatReg == 1 && arg.m_structFields.flags == FpStruct::UseIntCallConv)
+            {
+                CorElementType srcType = argPlacer.GetArgType();
+                _ASSERTE(CorTypeInfo::IsFloat_NoThrow(srcType));
+                int sizeShift = (srcType == ELEMENT_TYPE_R4) ? 2 : 3;
+                arg.m_structFields = { FpStruct::Flags(FpStruct::OnlyOne | (sizeShift << FpStruct::PosSizeShift1st)) };
+            }
+        };
+        fixFpStructFieldsForStandaloneFloats(sArgPlacerSrc, sArgSrc);
+        fixFpStructFieldsForStandaloneFloats(sArgPlacerSrc, sArgSrc);
+#endif
 
         if (!AddNextShuffleEntryToArray(sArgSrc, sArgDst, pShuffleEntryArray, shuffleType))
             return FALSE;
