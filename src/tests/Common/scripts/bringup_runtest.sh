@@ -495,10 +495,6 @@ function copy_test_native_bin_to_test_root {
     if [ -z "$testNativeBinDir" ]; then
         exit_with_error "$errorSource" "--testNativeBinDir is required."
     fi
-    testNativeBinDir=$testNativeBinDir/src
-    if [ ! -d "$testNativeBinDir" ]; then
-        exit_with_error "$errorSource" "Directory specified by --testNativeBinDir does not exist: $testNativeBinDir"
-    fi
 
     # Copy native test components from the native test build into the respective test directory in the test root directory
     find "$testNativeBinDir" -type f -iname "*.$libExtension" |
