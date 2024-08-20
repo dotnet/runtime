@@ -36,8 +36,7 @@ namespace System.Threading
 #if TARGET_X86 || TARGET_AMD64 || TARGET_ARM64 || TARGET_RISCV64
             return CompareExchange(location1, value, comparand); // Must expand intrinsic
 #else
-            // test readability of the location
-            _ = *location1;
+            Debug.Assert(location1 != null);
             return RuntimeImports.InterlockedCompareExchange(location1, value, comparand);
 #endif
         }
