@@ -2,10 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Diagnostics;
+using System.IO;
 using System.Xml;
 using System.Xml.Schema;
-using System.IO;
-using System.Diagnostics;
 
 if (args.Length != 3)
 {
@@ -17,11 +17,9 @@ ValidateXML(args[0]);
 string? Message = null;
 string? SymbolicName = null;
 string? NumericValue = null;
-string tempheaderfile = "temp.h";
-string temprcfile = "temp.rc";
 
-StreamWriter HSW = File.CreateText(tempheaderfile);
-StreamWriter RSW = File.CreateText(temprcfile);
+using StreamWriter HSW = File.CreateText(args[1]);
+using StreamWriter RSW = File.CreateText(args[2]);
 
 int FaciltyUrt = 0x13;
 int SeveritySuccess = 0;
@@ -48,15 +46,15 @@ while (rdr.Read())
 
         case XmlNodeType.Element:
 
-            if (rdr.Name.ToString() == "HRESULT")
+            if (rdr.Name == "HRESULT")
             {
                 NumericValue = rdr.GetAttribute("NumericValue");
             }
-            if (rdr.Name.ToString() == "Message")
+            if (rdr.Name == "Message")
             {
                 Message = rdr.ReadString();
             }
-            if (rdr.Name.ToString() == "SymbolicName")
+            if (rdr.Name == "SymbolicName")
             {
                 SymbolicName = rdr.ReadString();
             }
@@ -64,26 +62,24 @@ while (rdr.Read())
             break;
 
         case XmlNodeType.EndElement:
-            if (rdr.Name.ToString() == "HRESULT")
+            if (rdr.Name == "HRESULT")
             {
 
                 // For CLR Hresult's we take the last 4 digits as the resource strings.
 
                 Debug.Assert(NumericValue != null);
-                if ((NumericValue.StartsWith("0x")) || (NumericValue.StartsWith("0X")))
+                if (NumericValue.StartsWith("0x", StringComparison.OrdinalIgnoreCase))
                 {
-
-                    string HexResult = NumericValue.Substring(2);
-                    int num = int.Parse(HexResult, System.Globalization.NumberStyles.HexNumber);
+                    int num = int.Parse(NumericValue.AsSpan(2), System.Globalization.NumberStyles.HexNumber);
 
                     if ((num > minSR) && (num <= maxSR))
                     {
-                        num = num & 0xffff;
+                        num &= 0xffff;
                         HSW.WriteLine("#define " + SymbolicName + " SMAKEHR(0x" + num.ToString("x") + ")");
                     }
                     else if ((num > minHR) && (num <= maxHR))
                     {
-                        num = num & 0xffff;
+                        num &= 0xffff;
                         HSW.WriteLine("#define " + SymbolicName + " EMAKEHR(0x" + num.ToString("x") + ")");
                     }
                     else
@@ -117,34 +113,6 @@ while (rdr.Read())
 PrintFooter(HSW);
 PrintResourceFooter(RSW);
 
-HSW.Close();
-RSW.Close();
-
-bool AreFilesEqual = false;
-
-if (File.Exists(args[1]))
-{
-    StreamReader sr1 = new StreamReader(tempheaderfile);
-    StreamReader sr2 = new StreamReader(args[1]);
-    AreFilesEqual = CompareFiles(sr1, sr2);
-    sr1.Close();
-    sr2.Close();
-}
-
-if (!AreFilesEqual)
-{
-    File.Copy(tempheaderfile, args[1], true);
-    File.Copy(temprcfile, args[2], true);
-}
-
-if (!File.Exists(args[2]))
-{
-    File.Copy(temprcfile, args[2], true);
-}
-
-File.Delete(tempheaderfile);
-File.Delete(temprcfile);
-
 void ValidateXML(string XMLFile)
 {
 
@@ -154,7 +122,11 @@ void ValidateXML(string XMLFile)
     settings.ValidationType = ValidationType.Schema;
     settings.ValidationFlags |= XmlSchemaValidationFlags.ProcessInlineSchema;
 
-    settings.ValidationEventHandler += new ValidationEventHandler(ValidationCallBack);
+    settings.ValidationEventHandler += (s, e) =>
+    {
+        Console.WriteLine("Validation Error: {0}", e.Message);
+        Environment.Exit(-1);
+    };
 
     // Create the XmlReader object.
     XmlReader reader = XmlReader.Create(XMLFile, settings);
@@ -164,13 +136,6 @@ void ValidateXML(string XMLFile)
     while (reader.Read())
     {
     }
-}
-
-// Display any validation errors.
-void ValidationCallBack(object? sender, ValidationEventArgs e)
-{
-    Console.WriteLine("Validation Error: {0}", e.Message);
-    Environment.Exit(-1);
 }
 
 void PrintLicenseHeader(StreamWriter SW)
@@ -222,29 +187,6 @@ void PrintResourceHeader(StreamWriter SW)
 void PrintResourceFooter(StreamWriter SW)
 {
     SW.WriteLine("END");
-}
-
-bool CompareFiles(StreamReader sr1, StreamReader sr2)
-{
-    string line1, line2;
-
-    while (true)
-    {
-        line1 = sr1.ReadLine();
-        line2 = sr2.ReadLine();
-
-        if ((line1 == null) && (line2 == null))
-        {
-            return true;
-        }
-
-        if (line1 != line2)
-        {
-            return false;
-        }
-
-    }
-
 }
 
 int MakeHresult(int sev, int fac, int code)
