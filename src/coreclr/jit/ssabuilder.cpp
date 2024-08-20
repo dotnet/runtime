@@ -1711,6 +1711,7 @@ void SsaBuilder::InsertInSsa(Compiler*                   comp,
             JITDUMP("  [%06u] u:%u\n", Compiler::dspTreeID(use.Tree), ssaNum);
         }
 
+        dsc->lvInSsa = true;
         return;
     }
 

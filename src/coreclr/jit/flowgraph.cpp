@@ -6350,6 +6350,30 @@ FlowGraphDominanceFrontiers::FlowGraphDominanceFrontiers(FlowGraphDominatorTree*
 {
 }
 
+//------------------------------------------------------------------------
+// FlowGraphDominanceFrontiers::Build: Build the dominance frontiers for all
+// blocks.
+//
+// Parameters:
+//   domTree - Dominator tree to build dominance frontiers for
+//
+// Returns:
+//   Data structure representing dominance frontiers.
+//
+// Remarks:
+//   Recall that the dominance frontier of a block B is the set of blocks
+//   B3 such that there exists some B2 s.t. B3 is a successor of B2, and
+//   B dominates B2. Note that this dominance need not be strict -- B2
+//   and B may be the same node.
+//
+//   In other words, a block B' is in DF(B) if B dominates an immediate
+//   predecessor of B', but does not dominate B'. Intuitively, these blocks are
+//   the "first" blocks that are no longer dominated by B; these are the places
+//   we are interested in inserting phi definitions that may refer to defs in
+//   B.
+//
+//   See "A simple, fast dominance algorithm", by Cooper, Harvey, and Kennedy.
+//
 FlowGraphDominanceFrontiers* FlowGraphDominanceFrontiers::Build(FlowGraphDominatorTree* domTree)
 {
     const FlowGraphDfsTree* dfsTree = domTree->GetDfsTree();
@@ -6414,6 +6438,20 @@ FlowGraphDominanceFrontiers* FlowGraphDominanceFrontiers::Build(FlowGraphDominat
     return result;
 }
 
+//------------------------------------------------------------------------
+// ComputeIteratedDominanceFrontier: Compute the iterated dominance frontier of
+// a block. This is the transitive closure of taking dominance frontiers.
+//
+// Parameters:
+//   block  - Block to compute iterated dominance frontier for.
+//   result - Vector to add blocks of IDF into.
+//
+// Remarks:
+//   When we create phi definitions we are creating new definitions that
+//   themselves induce the creation of more phi nodes. Thus, the transitive
+//   closure of DF(B) contains all blocks that may have phi definitions
+//   referring to defs in B, or referring to other phis referring to defs in B.
+//
 void FlowGraphDominanceFrontiers::ComputeIteratedDominanceFrontier(BasicBlock* block, BlkVector* result)
 {
     assert(result->empty());
@@ -6461,6 +6499,10 @@ void FlowGraphDominanceFrontiers::ComputeIteratedDominanceFrontier(BasicBlock* b
 }
 
 #ifdef DEBUG
+//------------------------------------------------------------------------
+// FlowGraphDominanceFrontiers::Dump: Dump a textual representation of the
+// dominance frontiers to jitstdout.
+//
 void FlowGraphDominanceFrontiers::Dump()
 {
     printf("DF:\n");
