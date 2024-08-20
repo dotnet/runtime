@@ -19,10 +19,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ILLinkSubstitutionsXmls Include="$(ILLinkDirectory)ILLink.Substitutions.xml" />
-  </ItemGroup>
-
-  <ItemGroup>
     <Compile Include="**\*.cs" />
     <Compile Remove="ServiceLookup\ILEmit\**\*.cs" />
     <Compile Condition="'$(ILEmitBackend)' == 'true'" Include="ServiceLookup\ILEmit\*.cs" />

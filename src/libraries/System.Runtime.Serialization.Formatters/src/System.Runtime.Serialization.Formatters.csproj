@@ -18,10 +18,6 @@
     <SuppressDependenciesWhenPacking Condition="'$(FunctioningBinaryFormatter)' != 'true'">true</SuppressDependenciesWhenPacking>
   </PropertyGroup>
 
-  <ItemGroup Condition="'$(FunctioningBinaryFormatter)' == 'true'">
-    <ILLinkSubstitutionsXmls Include="$(ILLinkDirectory)ILLink.Substitutions.xml" />
-  </ItemGroup>
-
   <ItemGroup>
     <Compile Include="System.Runtime.Serialization.Formatters.TypeForwards.cs" />
     <Compile Include="System\Runtime\Serialization\DeserializationEventHandler.cs" />

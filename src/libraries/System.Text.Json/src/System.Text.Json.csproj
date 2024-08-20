@@ -20,10 +20,6 @@ The System.Text.Json library is built-in as part of the shared framework in .NET
   </PropertyGroup>
 
   <ItemGroup>
-    <ILLinkSubstitutionsXmls Include="ILLink\ILLink.Substitutions.xml" />
-  </ItemGroup>
-
-  <ItemGroup>
     <Compile Include="$(CommonPath)System\HexConverter.cs" Link="Common\System\HexConverter.cs" />
     <Compile Include="$(CommonPath)System\Text\ValueStringBuilder.cs" Link="Common\ValueStringBuilder.cs" />
     <Compile Include="$(CommonPath)System\Text\Json\PooledByteBufferWriter.cs" Link="Common\System\Text\Json\PooledByteBufferWriter.cs" />
