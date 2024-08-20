@@ -1384,7 +1384,7 @@ static inline UINT16 GetRegMasks(UINT16 ofs)
 {
     using SE = ShuffleEntry;
     _ASSERTE(InRegister(ofs));
-    return ofs & (SE::REGMASK | SE::FPREGMASK | SE::LOWERINGMASK);
+    return ofs & (SE::REGMASK | SE::FPREGMASK | SE::CALLCONVTRANSFERMASK);
 }
 
 // Emits code to adjust arguments for static delegate target.
@@ -1414,7 +1414,7 @@ VOID StubLinkerCPU::EmitShuffleThunk(ShuffleEntry *pShuffleEntryArray)
 |fa0 |fa1 |fa2 |fa3 |fa4 |fa5 |fa6 |fa7 |
 */
     using SE = ShuffleEntry;
-    static const UINT16 regMasks = SE::REGMASK | SE::FPREGMASK | SE::LOWERINGMASK;
+    static const UINT16 regMasks = SE::REGMASK | SE::FPREGMASK | SE::CALLCONVTRANSFERMASK;
 
     const ShuffleEntry* entry = pShuffleEntryArray;
 
@@ -1426,7 +1426,7 @@ VOID StubLinkerCPU::EmitShuffleThunk(ShuffleEntry *pShuffleEntryArray)
     {
         IntReg dst = argRegBase + GetRegisterOffset(entry->dstofs);
         IntReg src = argRegBase + GetRegisterOffset(entry->srcofs);
-        _ASSERTE(src.reg - dst.reg == 1); // arguments in integer regs are always shuffled by 1 to the left
+        _ASSERTE(dst.reg == src.reg - 1); // arguments in integer registers are always shuffled by 1 to the left
         EmitMovReg(dst, src);
     }
 
@@ -1438,7 +1438,7 @@ VOID StubLinkerCPU::EmitShuffleThunk(ShuffleEntry *pShuffleEntryArray)
         _ASSERTE(GetRegisterOffset(entry->dstofs) < NUM_ARGUMENT_REGISTERS);
         _ASSERTE(GetStackSlot(entry->srcofs) == 0); // first stack slot
 
-        if ((entry->dstofs & regMasks) == SE::REGMASK) // Shuffle within integer calling convention
+        if (GetRegMasks(entry->dstofs) == SE::REGMASK) // Shuffle within integer calling convention
         {
             UINT16 lastRegOffset = GetRegisterOffset(entry->dstofs);
             _ASSERTE(lastRegOffset == NUM_ARGUMENT_REGISTERS - 1);
@@ -1460,12 +1460,12 @@ VOID StubLinkerCPU::EmitShuffleThunk(ShuffleEntry *pShuffleEntryArray)
         }
         else // Transfer an argument on the stack from integer to floating-point calling convention
         {
-            _ASSERTE(entry->dstofs & SE::LOWERINGMASK); // the argument must be a lowered FP struct
+            _ASSERTE(entry->dstofs & SE::CALLCONVTRANSFERMASK);
             // The lowered FP struct must have an integer field (i.e. FpStruct::FloatInt or FpStruct::IntFloat),
             // otherwise it couldn't take advantage of the integer register freed by the shuffling at the beginning.
             _ASSERTE(entry[1].srcofs != SE::SENTINEL);
-            _ASSERTE(entry[1].dstofs & SE::LOWERINGMASK); // has two fields
-            _ASSERTE(IsRegisterFloating(entry[0].dstofs) != IsRegisterFloating(entry[1].dstofs));
+            _ASSERTE(entry[1].dstofs & SE::CALLCONVTRANSFERMASK); // has two fields
+            _ASSERTE(IsRegisterFloating(entry[0].dstofs) != IsRegisterFloating(entry[1].dstofs)); // integer and floating
 
             // The floating field of the lowered FP struct will displace subsequent arguments passed in FP registers.
             // Since we're shuffling one to the right, iterate in reverse order.
@@ -1486,16 +1486,23 @@ VOID StubLinkerCPU::EmitShuffleThunk(ShuffleEntry *pShuffleEntryArray)
                 }
                 else
                 {
-                    _ASSERTE(OnStack(end->srcofs));  // we already handled all arguments in integer registers
+                    _ASSERTE(OnStack(end->srcofs)); // we already handled all arguments in integer registers
                 }
             }
 
-            for (const ShuffleEntry* e = end - 1; e >= begin; --e)
+            const ShuffleEntry* e = end - 1;
+            if (OnStack(e->dstofs)) // Transfer an argument from floating-point to integer calling convention (onto stack)
             {
-                // TODO
+                _ASSERTE(InRegister(e->srcofs));
+                _ASSERTE(e->srcofs & SE::CALLCONVTRANSFERMASK);
             }
-                    // _ASSERTE((end->srcofs & SE::REGMASK) && (end->srcofs & SE::FPREGMASK));
-                    // _ASSERTE((end->dstofs & SE::OFSREGMASK) - (end->srcofs & SE::OFSREGMASK));
+            for (; e >= begin; --e)
+            {
+                FloatReg src = argRegBase + GetRegisterOffset(e->srcofs);
+                FloatReg dst = argRegBase + GetRegisterOffset(e->dstofs);
+                _ASSERTE(dst.reg == src.reg + 1); // arguments in floating registers are always shuffled by 1 to the right
+                EmitMovReg(dst, src);
+            }
 #ifdef _DEBUG
 
 #endif // _DEBUG
@@ -1506,8 +1513,8 @@ VOID StubLinkerCPU::EmitShuffleThunk(ShuffleEntry *pShuffleEntryArray)
             {
                 _ASSERTE((entry[i].dstofs & SE::OFSREGMASK) < NUM_ARGUMENT_REGISTERS);
                 int destReg = argRegBase + (entry[i].dstofs & SE::OFSREGMASK);
-                sizeShift = (entry[i].dstofs & SE::OFSFIELDSHIFTSIZEMASK) >> SE::OFSFIELDSHIFTSIZEPOS;
-                fieldOffset = (entry[i].dstofs & SE::OFSFIELDOFFSETMASK) >> SE::OFSFIELDOFFSETPOS;
+                sizeShift = (entry[i].dstofs & SE::FIELDSIZESHIFTMASK) >> SE::FIELDSIZESHIFTPOS;
+                fieldOffset = (entry[i].dstofs & SE::FIELDOFFSETMASK) >> SE::FIELDOFFSETPOS;
                 EmitAnyLoad(IsRegisterFloating(entry[i].dstofs), sizeShift, destReg, RegSp, 0 + fieldOffset);
             }
             fpToIntCallConvArgSlotCount = ALIGN_UP(fieldOffset + (1u << sizeShift), sizeof(void*)) / sizeof(void*);
@@ -1590,7 +1597,7 @@ VOID StubLinkerCPU::EmitShuffleThunk(ShuffleEntry *pShuffleEntryArray)
     //     }
     //     else if (pEntry->dstofs & ShuffleEntry::REGMASK)
     //     {
-    //         // if (pEntry->dstofs & ShuffleEntry::LOWERINGMASK)
+    //         // if (pEntry->dstofs & ShuffleEntry::CALLCONVTRANSFERMASK)
     //         //     continue;
 
     //         // source must be on the stack

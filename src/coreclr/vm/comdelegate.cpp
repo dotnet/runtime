@@ -402,13 +402,13 @@ BOOL AddNextShuffleEntryToArray(ArgLocDesc sArgSrc, ArgLocDesc sArgDst, SArray<S
                         unsigned offset = (i == 0) ? sArgDst.m_structFields.offset1st : sArgDst.m_structFields.offset2nd;
                         _ASSERTE((1u << sizeShift) + offset <= ENREGISTERED_PARAMTYPE_MAXSIZE);
 
-                        sizeShift <<= ShuffleEntry::OFSFIELDSHIFTSIZEPOS;
-                        offset <<= ShuffleEntry::OFSFIELDOFFSETPOS;
-                        _ASSERTE((sizeShift & ShuffleEntry::OFSFIELDSHIFTSIZEMASK) == sizeShift);
-                        _ASSERTE((offset & ShuffleEntry::OFSFIELDOFFSETMASK) == offset);
+                        sizeShift <<= ShuffleEntry::FIELDSIZESHIFTPOS;
+                        offset <<= ShuffleEntry::FIELDOFFSETPOS;
+                        _ASSERTE((sizeShift & ShuffleEntry::FIELDSIZESHIFTMASK) == sizeShift);
+                        _ASSERTE((offset & ShuffleEntry::FIELDOFFSETMASK) == offset);
 
-                        _ASSERTE((entry.dstofs & (ShuffleEntry::OFSFIELDSHIFTSIZEMASK | ShuffleEntry::OFSFIELDOFFSETMASK)) == 0);
-                        entry.dstofs |= ShuffleEntry::LOWERINGMASK | sizeShift | offset;
+                        _ASSERTE((entry.dstofs & (ShuffleEntry::FIELDSIZESHIFTMASK | ShuffleEntry::FIELDOFFSETMASK)) == 0);
+                        entry.dstofs |= ShuffleEntry::CALLCONVTRANSFERMASK | sizeShift | offset;
                         pShuffleEntryArray->Append(entry);
 
                         if (!iteratorDst.HasNextOfs())
@@ -439,13 +439,13 @@ BOOL AddNextShuffleEntryToArray(ArgLocDesc sArgSrc, ArgLocDesc sArgDst, SArray<S
                         unsigned offset = (i == 0) ? fpInfo.offset1st : fpInfo.offset2nd;
                         _ASSERTE((1u << sizeShift) + offset <= ENREGISTERED_PARAMTYPE_MAXSIZE);
 
-                        sizeShift <<= ShuffleEntry::OFSFIELDSHIFTSIZEPOS;
-                        offset <<= ShuffleEntry::OFSFIELDOFFSETPOS;
-                        _ASSERTE((sizeShift & ShuffleEntry::OFSFIELDSHIFTSIZEMASK) == sizeShift);
-                        _ASSERTE((offset & ShuffleEntry::OFSFIELDOFFSETMASK) == offset);
+                        sizeShift <<= ShuffleEntry::FIELDSIZESHIFTPOS;
+                        offset <<= ShuffleEntry::FIELDOFFSETPOS;
+                        _ASSERTE((sizeShift & ShuffleEntry::FIELDSIZESHIFTMASK) == sizeShift);
+                        _ASSERTE((offset & ShuffleEntry::FIELDOFFSETMASK) == offset);
 
-                        _ASSERTE((entry.srcofs & (ShuffleEntry::OFSFIELDSHIFTSIZEMASK | ShuffleEntry::OFSFIELDOFFSETMASK)) == 0);
-                        entry.srcofs |= ShuffleEntry::LOWERINGMASK | sizeShift | offset;
+                        _ASSERTE((entry.srcofs & (ShuffleEntry::FIELDSIZESHIFTMASK | ShuffleEntry::FIELDOFFSETMASK)) == 0);
+                        entry.srcofs |= ShuffleEntry::CALLCONVTRANSFERMASK | sizeShift | offset;
                         pShuffleEntryArray->Append(entry);
 
                         if (!iteratorSrc.HasNextOfs())
@@ -862,15 +862,15 @@ VOID GenerateShuffleArray(MethodDesc* pInvoke, MethodDesc *pTargetMeth, SArray<S
             ShuffleInfo src = getShuffleInfo(entry.srcofs);
             ShuffleInfo dst = getShuffleInfo(entry.dstofs);
 #if defined(TARGET_RISCV64)
-            static const int REGLOWERINGMASK = SE::LOWERINGMASK | SE::REGMASK;
+            static const int REGLOWERINGMASK = SE::CALLCONVTRANSFERMASK | SE::REGMASK;
             bool isDelowered = ((entry.srcofs & REGLOWERINGMASK) == REGLOWERINGMASK);
             bool isLowered   = ((entry.dstofs & REGLOWERINGMASK) == REGLOWERINGMASK);
             if (isDelowered || isLowered)
             {
                 _ASSERTE(isDelowered != isLowered);
                 UINT16 ofs = isDelowered ? entry.srcofs : entry.dstofs;
-                int fieldSize = 1 << ((ofs & SE::OFSFIELDSHIFTSIZEMASK) >> SE::OFSFIELDSHIFTSIZEPOS);
-                int fieldOffset = (ofs & SE::OFSFIELDOFFSETMASK) >> SE::OFSFIELDOFFSETPOS;
+                int fieldSize = 1 << ((ofs & SE::FIELDSIZESHIFTMASK) >> SE::FIELDSIZESHIFTPOS);
+                int fieldOffset = (ofs & SE::FIELDOFFSETMASK) >> SE::FIELDOFFSETPOS;
                 LOGALWAYS(("    [%u] %s %i -> %s %i (%slowered field size: %i, offset: %i)\n",
                     i, src.type, src.offset, dst.type, dst.offset, (isDelowered ? "de" : ""), fieldSize, fieldOffset));
             }
