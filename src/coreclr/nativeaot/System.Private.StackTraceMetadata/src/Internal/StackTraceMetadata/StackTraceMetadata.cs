@@ -187,7 +187,6 @@ namespace Internal.StackTraceMetadata
             return $"{reader.GetString(scopeRef.Name)}, Version={scopeRef.MajorVersion}.{scopeRef.MinorVersion}.{scopeRef.BuildNumber}.{scopeRef.RevisionNumber}";
         }
 
-        [FeatureSwitchDefinition("System.Reflection.IsReflectionExecutionAvailable")]
         private static bool IsReflectionExecutionAvailable() => true;
 
         /// <summary>
