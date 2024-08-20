@@ -6915,14 +6915,24 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			amd64_mov_reg_reg (code, ins->dreg, GP_SCRATCH_REG, size);
 			break;
 		}
+		case OP_ATOMIC_CAS_U1:
 		case OP_ATOMIC_CAS_I4:
 		case OP_ATOMIC_CAS_I8: {
 			guint32 size;
 
-			if (ins->opcode == OP_ATOMIC_CAS_I8)
-				size = 8;
-			else
+			switch (ins->opcode) {
+			case OP_ATOMIC_CAS_U1:
+				size = 1;
+				break;
+			case OP_ATOMIC_CAS_I4:
 				size = 4;
+				break;
+			case OP_ATOMIC_CAS_I8:
+				size = 8;
+				break;
+			default:
+				g_assert_not_reached ();
+			}
 
 			/*
 			 * See http://msdn.microsoft.com/en-us/magazine/cc302329.aspx for
@@ -9825,6 +9835,7 @@ mono_arch_opcode_supported (int opcode)
 	case OP_ATOMIC_ADD_I8:
 	case OP_ATOMIC_EXCHANGE_I4:
 	case OP_ATOMIC_EXCHANGE_I8:
+	case OP_ATOMIC_CAS_U1:
 	case OP_ATOMIC_CAS_I4:
 	case OP_ATOMIC_CAS_I8:
 	case OP_ATOMIC_LOAD_I1:
