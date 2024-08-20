@@ -5714,7 +5714,6 @@ PhaseStatus Compiler::optOptimizeValnumCSEs()
     }
 
     optValnumCSE_phase = false;
-    fgInvalidateDfsTree();
 
     return heuristic->MadeChanges() ? PhaseStatus::MODIFIED_EVERYTHING : PhaseStatus::MODIFIED_NOTHING;
 }
