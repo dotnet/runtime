@@ -75,10 +75,10 @@ namespace JSImportGenerator.Unit.Tests
         }
 
         [Fact]
-        public async Task ValidateRequireAllowUnsafeBlocksDiagnostic()
+        public void ValidateRequireAllowUnsafeBlocksDiagnostic()
         {
             string source = CodeSnippets.TrivialClassDeclarations;
-            Compilation comp = await TestUtils.CreateCompilation(new[] { source }, allowUnsafe: false);
+            Compilation comp = TestUtils.CreateCompilation(new[] { source }, allowUnsafe: false);
             TestUtils.AssertPreSourceGeneratorCompilation(comp);
 
             var newComp = TestUtils.RunGenerators(comp, out var generatorDiags,
