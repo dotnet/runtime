@@ -1289,9 +1289,8 @@ AGAIN:
                 {
                     cns += addConst->IconValue();
                     op2 = op2->AsOp()->gtOp1;
+                    goto AGAIN;
                 }
-
-                goto AGAIN;
             }
             break;
 
