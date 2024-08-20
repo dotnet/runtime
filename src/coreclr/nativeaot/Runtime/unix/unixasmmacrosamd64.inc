@@ -33,7 +33,12 @@ C_FUNC(\Name):
 .endm
 
 .macro ALTERNATE_ENTRY Name
+#if defined(__APPLE__)
+        .alt_entry C_FUNC(\Name)
+        .private_extern C_FUNC(\Name)
+#else
         .global C_FUNC(\Name)
+#endif
 C_FUNC(\Name):
 .endm
 
@@ -306,7 +311,7 @@ C_FUNC(\Name):
 1:
 .endm
 
-DEFAULT_FRAME_SAVE_FLAGS = PTFF_SAVE_ALL_PRESERVED + PTFF_SAVE_RSP
+#define DEFAULT_FRAME_SAVE_FLAGS (PTFF_SAVE_ALL_PRESERVED + PTFF_SAVE_RSP)
 
 .macro PUSH_COOP_PINVOKE_FRAME trashReg
     push_nonvol_reg rbp                         // push RBP frame
