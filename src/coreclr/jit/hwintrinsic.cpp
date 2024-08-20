@@ -2261,11 +2261,9 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
     }
 
 #if defined(FEATURE_MASKED_HW_INTRINSICS) && defined(TARGET_ARM64)
-    auto convertToMaskIfNeeded = [&](GenTree*& op) {
-        if (!varTypeIsMask(op))
-        {
-            op = gtNewSimdCvtVectorToMaskNode(TYP_MASK, op, simdBaseJitType, simdSize);
-        }
+    auto convertToMask = [&](GenTree*& op) {
+        assert(varTypeIsSIMD(op));
+        op = gtNewSimdCvtVectorToMaskNode(TYP_MASK, op, simdBaseJitType, simdSize);
     };
 
     if (HWIntrinsicInfo::IsExplicitMaskedOperation(intrinsic))
@@ -2278,7 +2276,7 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
             case NI_Sve_CreateBreakBeforePropagateMask:
             {
                 // HWInstrinsic requires a mask for op3
-                convertToMaskIfNeeded(retNode->AsHWIntrinsic()->Op(3));
+                convertToMask(retNode->AsHWIntrinsic()->Op(3));
                 FALLTHROUGH;
             }
             case NI_Sve_CreateBreakAfterMask:
@@ -2291,13 +2289,13 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
             case NI_Sve_TestLastTrue:
             {
                 // HWInstrinsic requires a mask for op2
-                convertToMaskIfNeeded(retNode->AsHWIntrinsic()->Op(2));
+                convertToMask(retNode->AsHWIntrinsic()->Op(2));
                 FALLTHROUGH;
             }
             default:
             {
                 // HWInstrinsic requires a mask for op1
-                convertToMaskIfNeeded(retNode->AsHWIntrinsic()->Op(1));
+                convertToMask(retNode->AsHWIntrinsic()->Op(1));
                 break;
             }
         }
@@ -2317,8 +2315,8 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
         {
             case NI_Sve_CreateBreakPropagateMask:
             {
-                convertToMaskIfNeeded(retNode->AsHWIntrinsic()->Op(1));
-                convertToMaskIfNeeded(retNode->AsHWIntrinsic()->Op(2));
+                convertToMask(retNode->AsHWIntrinsic()->Op(1));
+                convertToMask(retNode->AsHWIntrinsic()->Op(2));
                 break;
             }
 
