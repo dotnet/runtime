@@ -2272,7 +2272,7 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
             {
                 // HWInstrinsic requires a mask for op3
                 GenTree*& op = retNode->AsHWIntrinsic()->Op(3);
-                op = gtNewSimdCvtVectorToMaskNode(TYP_MASK, op, simdBaseJitType, simdSize);
+                op           = gtNewSimdCvtVectorToMaskNode(TYP_MASK, op, simdBaseJitType, simdSize);
                 FALLTHROUGH;
             }
             case NI_Sve_CreateBreakAfterMask:
@@ -2286,14 +2286,14 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
             {
                 // HWInstrinsic requires a mask for op2
                 GenTree*& op = retNode->AsHWIntrinsic()->Op(2);
-                op = gtNewSimdCvtVectorToMaskNode(TYP_MASK, op, simdBaseJitType, simdSize);
+                op           = gtNewSimdCvtVectorToMaskNode(TYP_MASK, op, simdBaseJitType, simdSize);
                 FALLTHROUGH;
             }
             default:
             {
                 // HWInstrinsic requires a mask for op1
                 GenTree*& op = retNode->AsHWIntrinsic()->Op(1);
-                op = gtNewSimdCvtVectorToMaskNode(TYP_MASK, op, simdBaseJitType, simdSize);
+                op           = gtNewSimdCvtVectorToMaskNode(TYP_MASK, op, simdBaseJitType, simdSize);
                 break;
             }
         }
@@ -2315,8 +2315,8 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
             {
                 GenTree*& op1 = retNode->AsHWIntrinsic()->Op(1);
                 GenTree*& op2 = retNode->AsHWIntrinsic()->Op(2);
-                op1 = gtNewSimdCvtVectorToMaskNode(TYP_MASK, op1, simdBaseJitType, simdSize);
-                op2 = gtNewSimdCvtVectorToMaskNode(TYP_MASK, op2, simdBaseJitType, simdSize);
+                op1           = gtNewSimdCvtVectorToMaskNode(TYP_MASK, op1, simdBaseJitType, simdSize);
+                op2           = gtNewSimdCvtVectorToMaskNode(TYP_MASK, op2, simdBaseJitType, simdSize);
                 break;
             }
 
