@@ -481,6 +481,22 @@ PTR_MethodTable InterfaceInfo_t::GetApproxMethodTable(Module * pContainingModule
     MethodTable *pServerMT = (*pServer)->GetMethodTable();
     PREFIX_ASSUME(pServerMT != NULL);
 
+#ifdef FEATURE_COMINTEROP
+    if (pServerMT->IsComObjectType() && !pItfMD->HasMethodInstantiation())
+    {
+        // interop needs an exact MethodDesc
+        pItfMD = MethodDesc::FindOrCreateAssociatedMethodDesc(
+            pItfMD,
+            ownerType.GetMethodTable(),
+            FALSE,              // forceBoxedEntryPoint
+            Instantiation(),    // methodInst
+            FALSE,              // allowInstParam
+            TRUE);              // forceRemotableMethod
+
+        RETURN(pServerMT->GetMethodDescForComInterfaceMethod(pItfMD, false));
+    }
+#endif // !FEATURE_COMINTEROP
+
     // For IDynamicInterfaceCastable, instead of trying to find method implementation in the real object type
     // we call GetInterfaceImplementation on the object and call GetMethodDescForInterfaceMethod
     // with whatever type it returns.
@@ -500,22 +516,6 @@ PTR_MethodTable InterfaceInfo_t::GetApproxMethodTable(Module * pContainingModule
 
         RETURN(implTypeHandle.GetMethodTable()->GetMethodDescForInterfaceMethod(ownerType, pItfMD, TRUE /* throwOnConflict */));
     }
-
-#ifdef FEATURE_COMINTEROP
-    if (pServerMT->IsComObjectType() && !pItfMD->HasMethodInstantiation())
-    {
-        // interop needs an exact MethodDesc
-        pItfMD = MethodDesc::FindOrCreateAssociatedMethodDesc(
-            pItfMD,
-            ownerType.GetMethodTable(),
-            FALSE,              // forceBoxedEntryPoint
-            Instantiation(),    // methodInst
-            FALSE,              // allowInstParam
-            TRUE);              // forceRemotableMethod
-
-        RETURN(pServerMT->GetMethodDescForComInterfaceMethod(pItfMD, false));
-    }
-#endif // !FEATURE_COMINTEROP
 
     // Handle pure COM+ types.
     RETURN (pServerMT->GetMethodDescForInterfaceMethod(ownerType, pItfMD, TRUE /* throwOnConflict */));
