@@ -322,7 +322,7 @@ namespace System.Threading
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static unsafe byte CompareExchange(ref byte location1, byte value, byte comparand)
         {
-#if (MONO && TARGET_ARM64) || (!MONO && (TARGET_X86 || TARGET_AMD64 || TARGET_ARM64))
+#if (MONO && (TARGET_ARM64 || TARGET_AMD64 || TARGET_WASM)) || (!MONO && (TARGET_X86 || TARGET_AMD64 || TARGET_ARM64))
             return CompareExchange(ref location1, value, comparand); // Must expand intrinsic
 #else
             // this relies on GC keeping 4B alignment for refs and on subtracting to such alignment being in the same object
