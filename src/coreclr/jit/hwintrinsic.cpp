@@ -2261,11 +2261,6 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
     }
 
 #if defined(FEATURE_MASKED_HW_INTRINSICS) && defined(TARGET_ARM64)
-    auto convertToMask = [&](GenTree*& op) {
-        assert(varTypeIsSIMD(op));
-        op = gtNewSimdCvtVectorToMaskNode(TYP_MASK, op, simdBaseJitType, simdSize);
-    };
-
     if (HWIntrinsicInfo::IsExplicitMaskedOperation(intrinsic))
     {
         assert(numArgs > 0);
@@ -2276,7 +2271,8 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
             case NI_Sve_CreateBreakBeforePropagateMask:
             {
                 // HWInstrinsic requires a mask for op3
-                convertToMask(retNode->AsHWIntrinsic()->Op(3));
+                GenTree*& op = retNode->AsHWIntrinsic()->Op(3);
+                op = gtNewSimdCvtVectorToMaskNode(TYP_MASK, op, simdBaseJitType, simdSize);
                 FALLTHROUGH;
             }
             case NI_Sve_CreateBreakAfterMask:
@@ -2289,13 +2285,15 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
             case NI_Sve_TestLastTrue:
             {
                 // HWInstrinsic requires a mask for op2
-                convertToMask(retNode->AsHWIntrinsic()->Op(2));
+                GenTree*& op = retNode->AsHWIntrinsic()->Op(2);
+                op = gtNewSimdCvtVectorToMaskNode(TYP_MASK, op, simdBaseJitType, simdSize);
                 FALLTHROUGH;
             }
             default:
             {
                 // HWInstrinsic requires a mask for op1
-                convertToMask(retNode->AsHWIntrinsic()->Op(1));
+                GenTree*& op = retNode->AsHWIntrinsic()->Op(1);
+                op = gtNewSimdCvtVectorToMaskNode(TYP_MASK, op, simdBaseJitType, simdSize);
                 break;
             }
         }
@@ -2315,8 +2313,10 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
         {
             case NI_Sve_CreateBreakPropagateMask:
             {
-                convertToMask(retNode->AsHWIntrinsic()->Op(1));
-                convertToMask(retNode->AsHWIntrinsic()->Op(2));
+                GenTree*& op1 = retNode->AsHWIntrinsic()->Op(1);
+                GenTree*& op2 = retNode->AsHWIntrinsic()->Op(2);
+                op1 = gtNewSimdCvtVectorToMaskNode(TYP_MASK, op1, simdBaseJitType, simdSize);
+                op2 = gtNewSimdCvtVectorToMaskNode(TYP_MASK, op2, simdBaseJitType, simdSize);
                 break;
             }
 
