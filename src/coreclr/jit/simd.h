@@ -363,7 +363,7 @@ typedef simd64_t simd_t;
 typedef simd16_t simd_t;
 #endif
 
-bool IsUnaryBitwiseOperation(genTreeOps oper)
+inline bool IsUnaryBitwiseOperation(genTreeOps oper)
 {
     return (oper == GT_LZCNT) ||
            (oper == GT_NOT);
@@ -703,7 +703,7 @@ void EvaluateUnarySimd(genTreeOps oper, bool scalar, var_types baseType, TSimd* 
     }
 }
 
-bool IsBinaryBitwiseOperation(genTreeOps oper)
+inline bool IsBinaryBitwiseOperation(genTreeOps oper)
 {
     return (oper == GT_AND) ||
            (oper == GT_AND_NOT) ||
