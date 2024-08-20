@@ -76,7 +76,92 @@ WRITE_BARRIER_ENTRY JIT_CheckedWriteBarrier
     ccmp x14,  x17, #0x2, hs
     bhs  LOCAL_LABEL(NotInHeap)
 
-    b C_FUNC(JIT_WriteBarrier)
+    stlr  x15, [x14]
+
+#ifdef WRITE_BARRIER_CHECK
+    // Update GC Shadow Heap
+
+    // Do not perform the work if g_GCShadow is 0
+    ldr  x12, LOCAL_LABEL(wbs_GCShadow)
+    cbz  x12, LOCAL_LABEL(ShadowUpdateEnd)
+
+    // Compute address of shadow heap location:
+    //   pShadow = g_GCShadow + (x14 - g_lowest_address)
+    ldr  x17, LOCAL_LABEL(wbs_lowest_address)
+    sub  x17, x14, x17
+    add  x12, x17, x12
+
+    // if (pShadow >= g_GCShadowEnd) goto end
+    ldr  x17, LOCAL_LABEL(wbs_GCShadowEnd)
+    cmp  x12, x17
+    bhs  LOCAL_LABEL(ShadowUpdateEnd)
+
+    // *pShadow = x15
+    str  x15, [x12]
+
+    // Ensure that the write to the shadow heap occurs before the read from the GC heap so that race
+    // conditions are caught by INVALIDGCVALUE.
+    dmb  ish
+
+    // if ([x14] == x15) goto end
+    ldr  x17, [x14]
+    cmp  x17, x15
+    beq LOCAL_LABEL(ShadowUpdateEnd)
+
+    // *pShadow = INVALIDGCVALUE (0xcccccccd)
+    movz x17, #0xcccd
+    movk x17, #0xcccc, LSL #16
+    str  x17, [x12]
+
+LOCAL_LABEL(ShadowUpdateEnd):
+#endif
+
+#ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
+    // Update the write watch table if necessary
+    ldr  x12, LOCAL_LABEL(wbs_sw_ww_table)
+    cbz  x12, LOCAL_LABEL(CheckCardTable)
+    add  x12, x12, x14, lsr #0xc  // SoftwareWriteWatch::AddressToTableByteIndexShift
+    ldrb w17, [x12]
+    cbnz x17, LOCAL_LABEL(CheckCardTable)
+    mov  w17, #0xFF
+    strb w17, [x12]
+#endif
+
+LOCAL_LABEL(CheckCardTable):
+    // Branch to Exit if the reference is not in the Gen0 heap
+    ldr  x12, LOCAL_LABEL(wbs_ephemeral_low)
+    ldr  x17, LOCAL_LABEL(wbs_ephemeral_high)
+    cmp  x15, x12
+    ccmp x15, x17, #0x2, hs
+    bhs  LOCAL_LABEL(Exit)
+
+    // Check if we need to update the card table
+    ldr  x12, LOCAL_LABEL(wbs_card_table)
+    add  x15, x12, x14, lsr #11
+    ldrb w12, [x15]
+    cmp  x12, 0xFF
+    beq  LOCAL_LABEL(Exit)
+
+    // Update the card table
+    mov  x12, 0xFF
+    strb w12, [x15]
+
+#ifdef FEATURE_MANUALLY_MANAGED_CARD_BUNDLES
+    // Check if we need to update the card bundle table
+    ldr  x12, LOCAL_LABEL(wbs_card_bundle_table)
+    add  x15, x12, x14, lsr #21
+    ldrb w12, [x15]
+    cmp  x12, 0xFF
+    beq  LOCAL_LABEL(Exit)
+
+    // Update the card bundle
+    mov  x12, 0xFF
+    strb w12, [x15]
+#endif
+
+LOCAL_LABEL(Exit):
+    add  x14, x14, 8
+    ret  lr
 
 LOCAL_LABEL(NotInHeap):
     str  x15, [x14], 8
@@ -183,10 +268,6 @@ LOCAL_LABEL(CheckCardTable):
 #endif
 
 LOCAL_LABEL(Exit):
-    // Increment by 8 to implement JIT_ByRefWriteBarrier contract.
-    // TODO: Consider duplicating the logic to get rid of this redundant 'add'
-    // for JIT_WriteBarrier/JIT_CheckedWriteBarrier
-    add  x14, x14, 8
     ret  lr
 WRITE_BARRIER_END JIT_WriteBarrier
 
