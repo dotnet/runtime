@@ -49,6 +49,18 @@ namespace System.Formats.Asn1.Tests.Writer
             Assert.Equal(0, written);
             Assert.True(writer.EncodedValueEquals(ReadOnlySpan<byte>.Empty));
 
+#if NET9_0_OR_GREATER
+            writer.Encode<object>(encoded => {
+                Assert.Equal(0, encoded.Length);
+                return null;
+            });
+
+            writer.Encode<object, object>(null, (_, encoded) => {
+                Assert.Equal(0, encoded.Length);
+                return null;
+            });
+#endif
+
             Span<byte> negativeTest = stackalloc byte[] { 5, 0 };
             Assert.False(writer.EncodedValueEquals(negativeTest));
         }
