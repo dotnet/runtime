@@ -715,7 +715,7 @@ internal partial class TypeFileParser
             };
 
         // The characters comprising the text of the token from the input file.
-        private string m_text;
+        public string Text { get; }
 
         // Where the token was found (for error messages).
         private string m_file;
@@ -723,25 +723,23 @@ internal partial class TypeFileParser
         private int m_column;
 
         // The ID of the keyword this token represents (or KeywordId.Id).
-        private KeywordId m_id;
+        public KeywordId Id { get; }
 
         public Token(string file, string text, int line, int column)
         {
             m_file = file;
-            m_text = text;
+            Text = text;
             m_line = line;
             m_column = column;
 
             // Map token text to keyword ID.
-            if (s_keywords.TryGetValue(m_text, out KeywordId value))
-                m_id = value;
+            if (s_keywords.TryGetValue(Text, out KeywordId value))
+                Id = value;
             else
-                m_id = KeywordId.Id;
+                Id = KeywordId.Id;
         }
 
-        public string Text { get { return m_text; } }
-        public string Location { get { return string.Format("{0} line {1}, column {2}", m_file, m_line, m_column); } }
-        public KeywordId Id { get { return m_id; } }
+        public string Location => $"{m_file} line {m_line}, column {m_column}";
     }
 
     // Base class for all syntax errors reported by the parser.
@@ -811,7 +809,7 @@ internal partial class TypeFileParser
 
 // This class represents an instance of a Crst type. These are unqiuely identified by case-sensitive name (the
 // same as the enum name used in vm code, minus the 'Crst' prefix).
-internal class CrstType : IComparable
+internal class CrstType : IComparable<CrstType>
 {
     // Special level constants used to indicate unordered Crst types or those types we haven't gotten around
     // to ranking yet.
@@ -819,44 +817,34 @@ internal class CrstType : IComparable
     public const int CrstUnassigned = -2;
 
     // Name of the type, e.g. "AppDomainCache" for the CrstAppDomainCache type.
-    private string m_name;
+    public string Name { get; }
 
     // The numeric ranking assigned to this type. Starts as CrstUnassigned and then becomes either
     // CrstUnordered (while parsing the input file) or a number >= 0 (during LevelCrsts()).
-    private int m_level;
+    public int Level { get; set; } = CrstUnassigned;
 
     // List of Crst types that can be legally acquired while this one is held. (AcquiredAfter relationships
     // are by switching the terms and adding to the second type's AcquiredBefore list).
-    private List<CrstType> m_acquiredBeforeCrsts;
+    public List<CrstType> AcquiredBeforeList { get; set; } = new List<CrstType>();
 
     // Either null if this Crst type is not in (or has not yet been determined to be in) a SameLevelAs
     // relationship or points to a CrstTypeGroup that records all the sibling types at the same level (that
     // have been discovered thus far during parsing).
-    private CrstTypeGroup m_group;
+    public CrstTypeGroup Group { get; set; }
 
     // Set once a definition for this type has been discovered. Used to detect double definitions and types
     // referenced without definitions.
-    private bool m_defined;
+    public bool Defined { get; set; }
 
     public CrstType(string name)
     {
-        m_name = name;
-        m_level = CrstUnassigned;
-        m_acquiredBeforeCrsts = new List<CrstType>();
-        m_group = null;
-        m_defined = false;
+        Name = name;
     }
 
-    public string Name { get { return m_name; } }
-    public int Level { get { return m_level; } set { m_level = value; } }
-    public List<CrstType> AcquiredBeforeList { get { return m_acquiredBeforeCrsts; } set { m_acquiredBeforeCrsts = value; } }
-    public CrstTypeGroup Group { get { return m_group; } set { m_group = value; } }
-    public bool Defined { get { return m_defined; } set { m_defined = value; } }
-
     // Helper used to sort CrstTypes. The sort order is lexical based on the type name.
-    public int CompareTo(object other)
+    public int CompareTo(CrstType other)
     {
-        return m_name.CompareTo(((CrstType)other).m_name);
+        return Name.CompareTo(other.Name);
     }
 }
 
