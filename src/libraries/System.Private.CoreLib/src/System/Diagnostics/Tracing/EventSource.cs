@@ -1608,7 +1608,7 @@ namespace System.Diagnostics.Tracing
 
                 // Register the provider with ETW
                 Func<EventSource?> eventSourceFactory = () => this;
-                OverrideEventProvider? etwProvider = TryGetPreregisteredEtwProvider(eventSourceGuid);
+                OverrideEventProvider? etwProvider = EventSourceInitHelper.TryGetPreregisteredEtwProvider(eventSourceGuid);
                 if(etwProvider == null)
                 {
                     etwProvider = new OverrideEventProvider(eventSourceFactory, EventProviderType.ETW);
@@ -1632,7 +1632,7 @@ namespace System.Diagnostics.Tracing
 
 #if FEATURE_PERFTRACING
                 // Register the provider with EventPipe
-                OverrideEventProvider? eventPipeProvider = TryGetPreregisteredEventPipeProvider(eventSourceName);
+                OverrideEventProvider? eventPipeProvider = EventSourceInitHelper.TryGetPreregisteredEventPipeProvider(eventSourceName);
                 if (eventPipeProvider == null)
                 {
                     eventPipeProvider = new OverrideEventProvider(eventSourceFactory, EventProviderType.EventPipe);
@@ -2407,7 +2407,7 @@ namespace System.Diagnostics.Tracing
         /// <summary>
         /// This class lets us hook the 'OnEventCommand' from the eventSource.
         /// </summary>
-        private sealed class OverrideEventProvider : EventProvider
+        internal sealed class OverrideEventProvider : EventProvider
         {
             public OverrideEventProvider(Func<EventSource?> eventSourceFactory, EventProviderType providerType)
                 : base(providerType)
@@ -3840,130 +3840,9 @@ namespace System.Diagnostics.Tracing
             {
                 const string name = "System.Diagnostics.Metrics";
                 Guid id = new Guid("20752bc4-c151-50f5-f27b-df92d8af5a61");
-                PreregisterEventProviders(id, name, GetMetricsEventSource);
+                EventSourceInitHelper.PreregisterEventProviders(id, name, EventSourceInitHelper.GetMetricsEventSource);
             }
         }
-
-        private static EventSource? GetMetricsEventSource()
-        {
-            Type? metricsEventSourceType = Type.GetType(
-                "System.Diagnostics.Metrics.MetricsEventSource, System.Diagnostics.DiagnosticSource",
-                throwOnError: false);
-
-            if (metricsEventSourceType == null)
-            {
-                return null;
-            }
-            MethodInfo? getInstanceMethod = metricsEventSourceType.GetMethod("GetInstance", BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Static, null, Type.EmptyTypes, null);
-            if (getInstanceMethod == null)
-            {
-                return null;
-            }
-            return getInstanceMethod.Invoke(null, null) as EventSource;
-        }
-
-        // Pre-registration creates and registers an EventProvider prior to the EventSource being constructed.
-        // If a tracing session is started using the provider then the EventSource will be constructed on demand.
-        private static unsafe void PreregisterEventProviders(Guid id, string name, Func<EventSource?> eventSourceFactory)
-        {
-            // NOTE: Pre-registration has some minor limitations and variations to normal EventSource behavior:
-            // 1. Instead of delivering OnEventCommand callbacks during the EventSource constructor it may deliver them after
-            //    the constructor instead. This occurs because the EventProvider callback might create the EventSource instance
-            //    in the factory method, then deliver the callback.
-            // 2. EventSource traits aren't supported. Normally EventSource.Initialize() would init provider metadata including
-            //    traits but the SetInformation() call we use below generates metadata from name only. If we want traits support
-            //    in the future it could be added.
-
-            // NOTE: You might think this preregister logic could be simplified by using an Action to create the EventSource instead of
-            // Func<EventSource> and then allow the EventSource to initialize as normal. This doesn't work however because calling
-            // EtwEventProvider.Register() inside of an ETW callback deadlocks. Instead we have to bind the EventSource to the
-            // EtwEventProvider that was already registered and use the callback we got on that provider to invoke EventSource.SendCommand().
-            try
-            {
-                s_preregisteredEventSourceFactories.Add(eventSourceFactory);
-
-                OverrideEventProvider etwProvider = new OverrideEventProvider(eventSourceFactory, EventProviderType.ETW);
-                etwProvider.Register(id, name);
-#if TARGET_WINDOWS
-                byte[] providerMetadata = Statics.MetadataForString(name, 0, 0, 0);
-                fixed (byte* pMetadata = providerMetadata)
-                {
-                    etwProvider.SetInformation(
-                        Interop.Advapi32.EVENT_INFO_CLASS.SetTraits,
-                        pMetadata,
-                        (uint)providerMetadata.Length);
-                }
-#endif // TARGET_WINDOWS
-                lock (s_preregisteredEtwProviders)
-                {
-                    s_preregisteredEtwProviders[id] = etwProvider;
-                }
-
-#if FEATURE_PERFTRACING
-                OverrideEventProvider eventPipeProvider = new OverrideEventProvider(eventSourceFactory, EventProviderType.EventPipe);
-                eventPipeProvider.Register(id, name);
-                lock (s_preregisteredEventPipeProviders)
-                {
-                    s_preregisteredEventPipeProviders[name] = eventPipeProvider;
-                }
-#endif
-            }
-            catch (Exception)
-            {
-                // If there is a failure registering then the normal EventSource.Initialize() path can try to register
-                // again if/when the EventSource is constructed.
-            }
-        }
-
-        internal static void EnsurePreregisteredEventSourcesExist()
-        {
-            if (!EventSource.IsSupported)
-            {
-                return;
-            }
-
-            // In a multi-threaded race its possible that one thread will be creating the EventSources while a 2nd thread
-            // exits this function and observes the s_EventSources list without the new EventSources in it.
-            // There is no known issue here having a small window of time where the pre-registered EventSources are not in
-            // the list as long as we still guarantee they get initialized in the near future and reported to the
-            // same EventListener.OnEventSourceCreated() callback.
-            Func<EventSource?>[] factories;
-            lock(s_preregisteredEventSourceFactories)
-            {
-                factories = s_preregisteredEventSourceFactories.ToArray();
-                s_preregisteredEventSourceFactories.Clear();
-            }
-            foreach (Func<EventSource?> factory in factories)
-            {
-                factory();
-            }
-        }
-
-        private static List<Func<EventSource?>> s_preregisteredEventSourceFactories = new List<Func<EventSource?>>();
-
-        private static OverrideEventProvider? TryGetPreregisteredEtwProvider(Guid id)
-        {
-            lock (s_preregisteredEtwProviders)
-            {
-                s_preregisteredEtwProviders.Remove(id, out OverrideEventProvider? provider);
-                return provider;
-            }
-        }
-
-        private static readonly Dictionary<Guid, OverrideEventProvider> s_preregisteredEtwProviders = new Dictionary<Guid, OverrideEventProvider>();
-
-#if FEATURE_PERFTRACING
-        private static OverrideEventProvider? TryGetPreregisteredEventPipeProvider(string name)
-        {
-            lock (s_preregisteredEventPipeProviders)
-            {
-                s_preregisteredEventPipeProviders.Remove(name, out OverrideEventProvider? provider);
-                return provider;
-            }
-        }
-
-        private static readonly Dictionary<string, OverrideEventProvider> s_preregisteredEventPipeProviders = new Dictionary<string, OverrideEventProvider>();
-#endif
 
         // private instance state
         private string m_name = null!;                  // My friendly name (privided in ctor)
@@ -4025,6 +3904,133 @@ namespace System.Diagnostics.Tracing
         private static readonly bool AllowDuplicateSourceNames = AppContext.TryGetSwitch(DuplicateSourceNamesSwitch, out bool isEnabled) ? isEnabled : false;
 
 #endregion
+    }
+
+    // This type is logically just more static EventSource functionality but it needs to be a seperate class
+    // to ensure that the IL linker can remove unused methods in it. Methods defined within the EventSource type
+    // are never removed because EventSource has the potential to reflect over its own members.
+    internal static class EventSourceInitHelper
+    {
+        internal static EventSource? GetMetricsEventSource()
+        {
+            Type? metricsEventSourceType = Type.GetType(
+                "System.Diagnostics.Metrics.MetricsEventSource, System.Diagnostics.DiagnosticSource",
+                throwOnError: false);
+
+            if (metricsEventSourceType == null)
+            {
+                return null;
+            }
+            MethodInfo? getInstanceMethod = metricsEventSourceType.GetMethod("GetInstance", BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Static, null, Type.EmptyTypes, null);
+            if (getInstanceMethod == null)
+            {
+                return null;
+            }
+            return getInstanceMethod.Invoke(null, null) as EventSource;
+        }
+
+        // Pre-registration creates and registers an EventProvider prior to the EventSource being constructed.
+        // If a tracing session is started using the provider then the EventSource will be constructed on demand.
+        internal static unsafe void PreregisterEventProviders(Guid id, string name, Func<EventSource?> eventSourceFactory)
+        {
+            // NOTE: Pre-registration has some minor limitations and variations to normal EventSource behavior:
+            // 1. Instead of delivering OnEventCommand callbacks during the EventSource constructor it may deliver them after
+            //    the constructor instead. This occurs because the EventProvider callback might create the EventSource instance
+            //    in the factory method, then deliver the callback.
+            // 2. EventSource traits aren't supported. Normally EventSource.Initialize() would init provider metadata including
+            //    traits but the SetInformation() call we use below generates metadata from name only. If we want traits support
+            //    in the future it could be added.
+
+            // NOTE: You might think this preregister logic could be simplified by using an Action to create the EventSource instead of
+            // Func<EventSource> and then allow the EventSource to initialize as normal. This doesn't work however because calling
+            // EtwEventProvider.Register() inside of an ETW callback deadlocks. Instead we have to bind the EventSource to the
+            // EtwEventProvider that was already registered and use the callback we got on that provider to invoke EventSource.SendCommand().
+            try
+            {
+                s_preregisteredEventSourceFactories.Add(eventSourceFactory);
+
+                EventSource.OverrideEventProvider etwProvider = new EventSource.OverrideEventProvider(eventSourceFactory, EventProviderType.ETW);
+                etwProvider.Register(id, name);
+#if TARGET_WINDOWS
+                byte[] providerMetadata = Statics.MetadataForString(name, 0, 0, 0);
+                fixed (byte* pMetadata = providerMetadata)
+                {
+                    etwProvider.SetInformation(
+                        Interop.Advapi32.EVENT_INFO_CLASS.SetTraits,
+                        pMetadata,
+                        (uint)providerMetadata.Length);
+                }
+#endif // TARGET_WINDOWS
+                lock (s_preregisteredEtwProviders)
+                {
+                    s_preregisteredEtwProviders[id] = etwProvider;
+                }
+
+#if FEATURE_PERFTRACING
+                EventSource.OverrideEventProvider eventPipeProvider = new EventSource.OverrideEventProvider(eventSourceFactory, EventProviderType.EventPipe);
+                eventPipeProvider.Register(id, name);
+                lock (s_preregisteredEventPipeProviders)
+                {
+                    s_preregisteredEventPipeProviders[name] = eventPipeProvider;
+                }
+#endif
+            }
+            catch (Exception)
+            {
+                // If there is a failure registering then the normal EventSource.Initialize() path can try to register
+                // again if/when the EventSource is constructed.
+            }
+        }
+
+        internal static void EnsurePreregisteredEventSourcesExist()
+        {
+            if (!EventSource.IsSupported)
+            {
+                return;
+            }
+
+            // In a multi-threaded race its possible that one thread will be creating the EventSources while a 2nd thread
+            // exits this function and observes the s_EventSources list without the new EventSources in it.
+            // There is no known issue here having a small window of time where the pre-registered EventSources are not in
+            // the list as long as we still guarantee they get initialized in the near future and reported to the
+            // same EventListener.OnEventSourceCreated() callback.
+            Func<EventSource?>[] factories;
+            lock (s_preregisteredEventSourceFactories)
+            {
+                factories = s_preregisteredEventSourceFactories.ToArray();
+                s_preregisteredEventSourceFactories.Clear();
+            }
+            foreach (Func<EventSource?> factory in factories)
+            {
+                factory();
+            }
+        }
+
+        private static List<Func<EventSource?>> s_preregisteredEventSourceFactories = new List<Func<EventSource?>>();
+
+        internal static EventSource.OverrideEventProvider? TryGetPreregisteredEtwProvider(Guid id)
+        {
+            lock (s_preregisteredEtwProviders)
+            {
+                s_preregisteredEtwProviders.Remove(id, out EventSource.OverrideEventProvider? provider);
+                return provider;
+            }
+        }
+
+        private static readonly Dictionary<Guid, EventSource.OverrideEventProvider> s_preregisteredEtwProviders = new Dictionary<Guid, EventSource.OverrideEventProvider>();
+
+#if FEATURE_PERFTRACING
+        internal static EventSource.OverrideEventProvider? TryGetPreregisteredEventPipeProvider(string name)
+        {
+            lock (s_preregisteredEventPipeProviders)
+            {
+                s_preregisteredEventPipeProviders.Remove(name, out EventSource.OverrideEventProvider? provider);
+                return provider;
+            }
+        }
+
+        private static readonly Dictionary<string, EventSource.OverrideEventProvider> s_preregisteredEventPipeProviders = new Dictionary<string, EventSource.OverrideEventProvider>();
+#endif
     }
 
     /// <summary>
@@ -4585,7 +4591,7 @@ namespace System.Diagnostics.Tracing
         {
             // Pre-registered EventSources may not have been constructed yet but we need to do so now to ensure they are
             // reported to the EventListener.
-            EventSource.EnsurePreregisteredEventSourcesExist();
+            EventSourceInitHelper.EnsurePreregisteredEventSourcesExist();
 
             lock (EventListenersLock)
             {
