@@ -1488,6 +1488,7 @@ void ILOleColorMarshaler::EmitConvertContentsCLRToNative(ILCodeStream* pslILEmit
     STANDARD_VM_CONTRACT;
 
     EmitLoadManagedValue(pslILEmit);
+    pslILEmit->EmitBOX(pslILEmit->GetToken(m_pargs->color.m_pColorType));
     pslILEmit->EmitCALL(METHOD__COLORMARSHALER__CONVERT_TO_NATIVE, 1, 1);
     EmitStoreNativeValue(pslILEmit);
 }
