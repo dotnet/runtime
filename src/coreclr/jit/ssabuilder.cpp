@@ -1688,6 +1688,8 @@ void SsaBuilder::InsertInSsa(Compiler*                   comp,
         JITDUMP(" [%06u]", Compiler::dspTreeID(uses.Bottom(i).Tree));
     }
 
+    JITDUMP("\n");
+
     if (defs.Height() == 1)
     {
         JITDUMP("  Single-def local; putting into SSA directly\n");
