@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
 using System.Runtime.InteropServices;
+using System.Threading;
 using Xunit;
 
 namespace System.Runtime.CompilerServices.Tests
@@ -101,7 +102,8 @@ namespace System.Runtime.CompilerServices.Tests
             RuntimeTypeHandle t = typeof(HasCctor).TypeHandle;
             RuntimeHelpers.RunClassConstructor(t);
             Assert.Equal("Hello", HasCctorReceiver.S);
-            return;
+            // Should not throw
+            RuntimeHelpers.RunClassConstructor(typeof(GenericHasCctor<>).TypeHandle);
         }
 
         internal class HasCctor
@@ -115,6 +117,14 @@ namespace System.Runtime.CompilerServices.Tests
         internal class HasCctorReceiver
         {
             public static string S;
+        }
+
+        internal class GenericHasCctor<T>
+        {
+            static GenericHasCctor()
+            {
+                Thread.Yield(); // Make sure the preinitialization optimization doesn't eat this.
+            }
         }
 
         [Fact]

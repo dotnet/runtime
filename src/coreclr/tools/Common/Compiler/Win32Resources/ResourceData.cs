@@ -60,6 +60,10 @@ namespace ILCompiler.Win32Resources
         /// <summary>
         /// Find a resource in the resource data
         /// </summary>
+        /// <remarks>
+        /// The Win32 APIs typcially perform an uppercase transform on string arguments - during add and find.
+        /// If the resource will be read by Win32 APIs, it is recommended to make the resource name upper case.
+        /// </remarks>
         public byte[] FindResource(string name, string type, ushort language)
         {
             return FindResourceInternal(name, type, language);
@@ -68,6 +72,10 @@ namespace ILCompiler.Win32Resources
         /// <summary>
         /// Find a resource in the resource data
         /// </summary>
+        /// <remarks>
+        /// The Win32 APIs typcially perform an uppercase transform on string arguments - during add and find.
+        /// If the resource will be read by Win32 APIs, it is recommended to make the resource name upper case.
+        /// </remarks>
         public byte[] FindResource(ushort name, string type, ushort language)
         {
             return FindResourceInternal(name, type, language);
@@ -76,6 +84,10 @@ namespace ILCompiler.Win32Resources
         /// <summary>
         /// Find a resource in the resource data
         /// </summary>
+        /// <remarks>
+        /// The Win32 APIs typcially perform an uppercase transform on string arguments - during add and find.
+        /// If the resource will be read by Win32 APIs, it is recommended to make the resource name upper case.
+        /// </remarks>
         public byte[] FindResource(string name, ushort type, ushort language)
         {
             return FindResourceInternal(name, type, language);
@@ -92,16 +104,28 @@ namespace ILCompiler.Win32Resources
         /// <summary>
         /// Add or update resource
         /// </summary>
+        /// <remarks>
+        /// The Win32 APIs typcially perform an uppercase transform on string arguments - during add and find.
+        /// If the resource will be read by Win32 APIs, it is recommended to make the resource name upper case.
+        /// </remarks>
         public void AddResource(string name, string type, ushort language, byte[] data) => AddResourceInternal(name, type, language, data);
 
         /// <summary>
         /// Add or update resource
         /// </summary>
+        /// <remarks>
+        /// The Win32 APIs typcially perform an uppercase transform on string arguments - during add and find.
+        /// If the resource will be read by Win32 APIs, it is recommended to make the resource name upper case.
+        /// </remarks>
         public void AddResource(string name, ushort type, ushort language, byte[] data) => AddResourceInternal(name, type, language, data);
 
         /// <summary>
         /// Add or update resource
         /// </summary>
+        /// <remarks>
+        /// The Win32 APIs typcially perform an uppercase transform on string arguments - during add and find.
+        /// If the resource will be read by Win32 APIs, it is recommended to make the resource name upper case.
+        /// </remarks>
         public void AddResource(ushort name, string type, ushort language, byte[] data) => AddResourceInternal(name, type, language, data);
 
         /// <summary>

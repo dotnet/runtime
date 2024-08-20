@@ -18,24 +18,12 @@ namespace System
     public unsafe partial struct RuntimeTypeHandle : IEquatable<RuntimeTypeHandle>, ISerializable
     {
         // Returns handle for interop with EE. The handle is guaranteed to be non-null.
-        internal RuntimeTypeHandle GetNativeHandle()
-        {
-            // Create local copy to avoid a race condition
-            RuntimeType type = m_type;
-            if (type == null)
-                throw new ArgumentNullException(null, SR.Arg_InvalidHandle);
-            return new RuntimeTypeHandle(type);
-        }
+        internal RuntimeTypeHandle GetNativeHandle() =>
+            new RuntimeTypeHandle(m_type ?? throw new ArgumentNullException(null, SR.Arg_InvalidHandle));
 
         // Returns type for interop with EE. The type is guaranteed to be non-null.
-        internal RuntimeType GetTypeChecked()
-        {
-            // Create local copy to avoid a race condition
-            RuntimeType type = m_type;
-            if (type == null)
-                throw new ArgumentNullException(null, SR.Arg_InvalidHandle);
-            return type;
-        }
+        internal RuntimeType GetTypeChecked() =>
+            m_type ?? throw new ArgumentNullException(null, SR.Arg_InvalidHandle);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern bool IsInstanceOfType(RuntimeType type, [NotNullWhen(true)] object? o);
@@ -441,8 +429,14 @@ namespace System
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern int GetNumVirtuals(RuntimeType type);
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern int GetNumVirtualsAndStaticVirtuals(RuntimeType type);
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "RuntimeTypeHandle_GetNumVirtualsAndStaticVirtuals")]
+        private static partial int GetNumVirtualsAndStaticVirtuals(QCallTypeHandle type);
+
+        internal static int GetNumVirtualsAndStaticVirtuals(RuntimeType type)
+        {
+            Debug.Assert(type != null);
+            return GetNumVirtualsAndStaticVirtuals(new QCallTypeHandle(ref type));
+        }
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "RuntimeTypeHandle_VerifyInterfaceIsImplemented")]
         private static partial void VerifyInterfaceIsImplemented(QCallTypeHandle handle, QCallTypeHandle interfaceHandle);
@@ -784,7 +778,7 @@ namespace System
 
         public override bool Equals(object? obj)
         {
-            if (!(obj is RuntimeMethodHandle))
+            if (obj is not RuntimeMethodHandle)
                 return false;
 
             RuntimeMethodHandle handle = (RuntimeMethodHandle)obj;
@@ -1092,14 +1086,8 @@ namespace System
     public unsafe partial struct RuntimeFieldHandle : IEquatable<RuntimeFieldHandle>, ISerializable
     {
         // Returns handle for interop with EE. The handle is guaranteed to be non-null.
-        internal RuntimeFieldHandle GetNativeHandle()
-        {
-            // Create local copy to avoid a race condition
-            IRuntimeFieldInfo field = m_ptr;
-            if (field == null)
-                throw new ArgumentNullException(null, SR.Arg_InvalidHandle);
-            return new RuntimeFieldHandle(field);
-        }
+        internal RuntimeFieldHandle GetNativeHandle() =>
+            new RuntimeFieldHandle(m_ptr ?? throw new ArgumentNullException(null, SR.Arg_InvalidHandle));
 
         private readonly IRuntimeFieldInfo m_ptr;
 
@@ -1127,7 +1115,7 @@ namespace System
 
         public override bool Equals(object? obj)
         {
-            if (!(obj is RuntimeFieldHandle))
+            if (obj is not RuntimeFieldHandle)
                 return false;
 
             RuntimeFieldHandle handle = (RuntimeFieldHandle)obj;
@@ -1259,7 +1247,7 @@ namespace System
 
         public override bool Equals([NotNullWhen(true)] object? obj)
         {
-            if (!(obj is ModuleHandle))
+            if (obj is not ModuleHandle)
                 return false;
 
             ModuleHandle handle = (ModuleHandle)obj;

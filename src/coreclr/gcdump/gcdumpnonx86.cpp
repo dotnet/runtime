@@ -70,7 +70,42 @@ PCSTR GetRegName (UINT32 regnum)
     _snprintf_s(szRegName, ARRAY_SIZE(szRegName), sizeof(szRegName), "r%u", regnum);
     return szRegName;
 #elif defined(TARGET_LOONGARCH64)
-    assert(!"unimplemented on LOONGARCH yet");
+    switch (regnum)
+    {
+    case 0: return "r0";
+    case 1: return "ra";
+    case 2: return "tp";
+    case 3: return "sp";
+    case 4: return "a0";
+    case 5: return "a1";
+    case 6: return "a2";
+    case 7: return "a3";
+    case 8: return "a4";
+    case 9: return "a5";
+    case 10: return "a6";
+    case 11: return "a7";
+    case 12: return "t0";
+    case 13: return "t1";
+    case 14: return "t2";
+    case 15: return "t3";
+    case 16: return "t4";
+    case 17: return "t5";
+    case 18: return "t6";
+    case 19: return "t7";
+    case 20: return "t8";
+    case 21: return "x0";
+    case 22: return "fp";
+    case 23: return "s0";
+    case 24: return "s1";
+    case 25: return "s2";
+    case 26: return "s3";
+    case 27: return "s4";
+    case 28: return "s5";
+    case 29: return "s6";
+    case 30: return "s7";
+    case 31: return "s8";
+    }
+
     return "???";
 #elif defined(TARGET_RISCV64)
     switch (regnum)
@@ -325,7 +360,7 @@ size_t      GCDump::DumpGCTable(PTR_CBYTE      gcInfoBlock,
                                                   | DECODE_GC_LIFETIMES
                                                   | DECODE_PROLOG_LENGTH
                                                   | DECODE_RETURN_KIND
-#if defined(TARGET_ARM) || defined(TARGET_ARM64) || defined(TARGET_RISCV64)
+#if defined(TARGET_ARM) || defined(TARGET_ARM64) || defined(TARGET_RISCV64) || defined(TARGET_LOONGARCH64)
                                                   | DECODE_HAS_TAILCALLS
 #endif
                                                  ),
@@ -458,7 +493,7 @@ size_t      GCDump::DumpGCTable(PTR_CBYTE      gcInfoBlock,
 
 #ifdef TARGET_AMD64
     gcPrintf("Wants Report Only Leaf: %u\n", hdrdecoder.WantsReportOnlyLeaf());
-#elif defined(TARGET_ARM) || defined(TARGET_ARM64) || defined(TARGET_RISCV64)
+#elif defined(TARGET_ARM) || defined(TARGET_ARM64) || defined(TARGET_RISCV64) || defined(TARGET_LOONGARCH64)
     gcPrintf("Has tailcalls: %u\n", hdrdecoder.HasTailCalls());
 #endif // TARGET_AMD64
 #ifdef FIXED_STACK_PARAMETER_SCRATCH_AREA

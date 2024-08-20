@@ -6,9 +6,7 @@ using System.Runtime.CompilerServices;
 
 namespace System.Runtime.Intrinsics.Arm
 {
-    /// <summary>
-    /// This class provides access to the ARM AdvSIMD hardware instructions via intrinsics
-    /// </summary>
+    /// <summary>Provides access to the ARM AdvSIMD hardware instructions via intrinsics.</summary>
     [CLSCompliant(false)]
 #if SYSTEM_PRIVATE_CORELIB
     public
@@ -150,6 +148,7 @@ namespace System.Runtime.Intrinsics.Arm
         //     public static Vector64<float> MultiplySubtractScalar(Vector64<float> minuend, Vector64<float> left, Vector64<float> right) { throw new PlatformNotSupportedException(); }
         // }
 
+        /// <summary>Provides access to the ARM AdvSIMD hardware instructions, that are only available to 64-bit processes, via intrinsics.</summary>
         public new abstract class Arm64 : ArmBase.Arm64
         {
             internal Arm64() { }

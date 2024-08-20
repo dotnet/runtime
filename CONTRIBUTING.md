@@ -200,7 +200,7 @@ Ports have a weaker contribution bar, at least initially. A functionally correct
 
 #### Copying Files from Other Projects
 
-The .NET runtime uses some files from other projects, typically where a binary distribution does not exist or would be inconvenient.
+The .NET runtime uses some files from other projects, per [copyright](./docs/project/copyright.md) rules.
 
 The following rules must be followed for PRs that include files from another project:
 

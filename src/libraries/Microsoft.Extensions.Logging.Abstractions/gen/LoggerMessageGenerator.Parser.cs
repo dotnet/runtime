@@ -181,7 +181,7 @@ namespace Microsoft.Extensions.Logging.Generators
                                                     break;
 
                                                 default:
-                                                    Debug.Assert(false, "Unexpected number of arguments in attribute constructor.");
+                                                    Debug.Fail("Unexpected number of arguments in attribute constructor.");
                                                     break;
                                             }
                                         }

@@ -4275,6 +4275,13 @@ struct ReturnTypeDesc
 private:
     var_types m_regType[MAX_RET_REG_COUNT];
 
+#if defined(TARGET_RISCV64) || defined(TARGET_LOONGARCH64)
+    // Structs according to hardware floating-point calling convention are passed as two logical fields, each in
+    // separate register, disregarding struct layout such as packing, custom alignment, padding with empty structs, etc.
+    // We need size (can be derived from m_regType) & offset of each field for memory load/stores
+    unsigned m_fieldOffset[MAX_RET_REG_COUNT];
+#endif
+
 #ifdef DEBUG
     bool m_inited;
 #endif
@@ -4306,6 +4313,9 @@ public:
         for (unsigned i = 0; i < MAX_RET_REG_COUNT; ++i)
         {
             m_regType[i] = TYP_UNKNOWN;
+#if defined(TARGET_RISCV64) || defined(TARGET_LOONGARCH64)
+            m_fieldOffset[i] = 0;
+#endif
         }
 #ifdef DEBUG
         m_inited = false;
@@ -4351,8 +4361,11 @@ public:
         for (unsigned i = regCount + 1; i < MAX_RET_REG_COUNT; ++i)
         {
             assert(m_regType[i] == TYP_UNKNOWN);
-        }
+#if defined(TARGET_RISCV64) || defined(TARGET_LOONGARCH64)
+            assert(m_fieldOffset[i] == 0);
 #endif
+        }
+#endif // DEBUG
 
         return regCount;
     }
@@ -4400,6 +4413,25 @@ public:
 
         return result;
     }
+
+    unsigned GetSingleReturnFieldOffset() const
+    {
+        assert(!IsMultiRegRetType());
+        assert(m_regType[0] != TYP_UNKNOWN);
+#if defined(TARGET_RISCV64) || defined(TARGET_LOONGARCH64)
+        return m_fieldOffset[0];
+#else
+        return 0;
+#endif
+    }
+
+#if defined(TARGET_RISCV64) || defined(TARGET_LOONGARCH64)
+    unsigned GetReturnFieldOffset(unsigned index) const
+    {
+        assert(m_regType[index] != TYP_UNKNOWN);
+        return m_fieldOffset[index];
+    }
+#endif
 
     // Get i'th ABI return register
     regNumber GetABIReturnReg(unsigned idx, CorInfoCallConvExtension callConv) const;
@@ -4508,9 +4540,6 @@ struct CallArgABIInformation
         : NumRegs(0)
         , ByteOffset(0)
         , ByteSize(0)
-#if defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
-        , StructFloatFieldType()
-#endif
         , ArgType(TYP_UNDEF)
         , PassedByRef(false)
 #if FEATURE_ARG_SPLIT
@@ -4537,18 +4566,6 @@ public:
     unsigned NumRegs;
     unsigned ByteOffset;
     unsigned ByteSize;
-#if defined(UNIX_AMD64_ABI)
-    // Unix amd64 will split floating point types and integer types in structs
-    // between floating point and general purpose registers. Keep track of that
-    // information so we do not need to recompute it later.
-    SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASSING_DESCRIPTOR StructDesc;
-#endif // UNIX_AMD64_ABI
-#if defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
-    // For LoongArch64's ABI, the struct which has float field(s) and no more than two fields
-    // may be passed by float register(s).
-    // e.g  `struct {int a; float b;}` passed by an integer register and a float register.
-    var_types StructFloatFieldType[2];
-#endif
     // The type used to pass this argument. This is generally the original
     // argument type, but when a struct is passed as a scalar type, this is
     // that type. Note that if a struct is passed by reference, this will still
@@ -6620,6 +6637,7 @@ struct GenTreeHWIntrinsic : public GenTreeJitIntrinsic
 
     static NamedIntrinsic GetHWIntrinsicIdForUnOp(
         Compiler* comp, genTreeOps oper, GenTree* op1, var_types simdBaseType, unsigned simdSize, bool isScalar);
+
     static NamedIntrinsic GetHWIntrinsicIdForBinOp(Compiler*  comp,
                                                    genTreeOps oper,
                                                    GenTree*   op1,
@@ -6627,14 +6645,20 @@ struct GenTreeHWIntrinsic : public GenTreeJitIntrinsic
                                                    var_types  simdBaseType,
                                                    unsigned   simdSize,
                                                    bool       isScalar);
+
     static NamedIntrinsic GetHWIntrinsicIdForCmpOp(Compiler*  comp,
                                                    genTreeOps oper,
+                                                   var_types  type,
                                                    GenTree*   op1,
                                                    GenTree*   op2,
                                                    var_types  simdBaseType,
                                                    unsigned   simdSize,
                                                    bool       isScalar);
-    static genTreeOps     GetOperForHWIntrinsicId(NamedIntrinsic id, var_types simdBaseType, bool* isScalar);
+
+    static var_types GetLookupTypeForCmpOp(
+        Compiler* comp, genTreeOps oper, var_types type, var_types simdBaseType, unsigned simdSize);
+
+    static genTreeOps GetOperForHWIntrinsicId(NamedIntrinsic id, var_types simdBaseType, bool* isScalar);
 
     genTreeOps GetOperForHWIntrinsicId(bool* isScalar) const
     {
@@ -6642,6 +6666,20 @@ struct GenTreeHWIntrinsic : public GenTreeJitIntrinsic
     }
 
     bool ShouldConstantProp(GenTree* operand, GenTreeVecCon* vecCon);
+
+    void NormalizeJitBaseTypeToInt(NamedIntrinsic id, var_types simdBaseType)
+    {
+        assert(varTypeIsSmall(simdBaseType));
+
+        if (varTypeIsUnsigned(simdBaseType))
+        {
+            SetSimdBaseJitType(CORINFO_TYPE_UINT);
+        }
+        else
+        {
+            SetSimdBaseJitType(CORINFO_TYPE_UINT);
+        }
+    }
 
 private:
     void SetHWIntrinsicId(NamedIntrinsic intrinsicId);

@@ -918,13 +918,7 @@ namespace System.Globalization
                 // since windows doesn't know about zh-CHS and zh-CHT,
                 // we leave sRealName == zh-Hanx but we still need to
                 // pretend that it was zh-CHX.
-                switch (_sName)
-                {
-                    case "zh-CHS":
-                    case "zh-CHT":
-                        return _sName;
-                }
-                return _sRealName;
+                return _sName is "zh-CHS" or "zh-CHT" ? _sName : _sRealName;
             }
         }
 

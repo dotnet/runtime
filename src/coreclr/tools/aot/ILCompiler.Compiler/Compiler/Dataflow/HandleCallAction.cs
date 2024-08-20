@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using ILCompiler;
 using ILCompiler.Dataflow;
@@ -377,8 +378,7 @@ namespace ILLink.Shared.TrimAnalysis
                             // Note that valueNode can be statically typed in IL as some generic argument type.
                             // For example:
                             //   void Method<T>(T instance) { instance.GetType().... }
-                            // Currently this case will end up with null StaticType - since there's no typedef for the generic argument type.
-                            // But it could be that T is annotated with for example PublicMethods:
+                            // It could be that T is annotated with for example PublicMethods:
                             //   void Method<[DAM(PublicMethods)] T>(T instance) { instance.GetType().GetMethod("Test"); }
                             // In this case it's in theory possible to handle it, by treating the T basically as a base class
                             // for the actual type of "instance". But the analysis for this would be pretty complicated (as the marking
@@ -390,10 +390,34 @@ namespace ILLink.Shared.TrimAnalysis
                             // currently it won't do.
 
                             TypeDesc? staticType = (valueNode as IValueWithStaticType)?.StaticType?.Type;
+                            if (staticType?.IsByRef == true)
+                            {
+                                staticType = ((ByRefType)staticType).ParameterType;
+                            }
                             if (staticType is null || (!staticType.IsDefType && !staticType.IsArray))
                             {
-                                // We don't know anything about the type GetType was called on. Track this as a usual "result of a method call without any annotations"
-                                AddReturnValue(_reflectionMarker.Annotations.GetMethodReturnValue(calledMethod, _isNewObj));
+                                DynamicallyAccessedMemberTypes annotation = default;
+                                if (staticType is GenericParameterDesc genericParam)
+                                {
+                                    foreach (TypeDesc constraint in genericParam.TypeConstraints)
+                                    {
+                                        if (constraint.IsWellKnownType(Internal.TypeSystem.WellKnownType.Enum))
+                                        {
+                                            annotation = DynamicallyAccessedMemberTypes.PublicFields;
+                                            break;
+                                        }
+                                    }
+                                }
+
+                                if (annotation != default)
+                                {
+                                    AddReturnValue(_reflectionMarker.Annotations.GetMethodReturnValue(calledMethod, _isNewObj, annotation));
+                                }
+                                else
+                                {
+                                    // We don't know anything about the type GetType was called on. Track this as a usual "result of a method call without any annotations"
+                                    AddReturnValue(_reflectionMarker.Annotations.GetMethodReturnValue(calledMethod, _isNewObj));
+                                }
                             }
                             else if (staticType.IsSealed() || staticType.IsTypeOf("System", "Delegate"))
                             {
@@ -411,6 +435,10 @@ namespace ILLink.Shared.TrimAnalysis
                                 // where a parameter is annotated and if something in the method sets a specific known type to it
                                 // we will also make it just work, even if the annotation doesn't match the usage.
                                 AddReturnValue(new SystemTypeValue(staticType));
+                            }
+                            else if (staticType.IsTypeOf("System", "Enum"))
+                            {
+                                AddReturnValue(_reflectionMarker.Annotations.GetMethodReturnValue(calledMethod, _isNewObj, DynamicallyAccessedMemberTypes.PublicFields));
                             }
                             else
                             {

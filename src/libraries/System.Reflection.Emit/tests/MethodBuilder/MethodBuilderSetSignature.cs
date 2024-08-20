@@ -191,7 +191,6 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/2389", TestRuntimes.Mono)]
         public void SetSignature_AllParametersNull()
         {
             TypeBuilder type = Helpers.DynamicType(TypeAttributes.Abstract);
@@ -202,7 +201,6 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/2389", TestRuntimes.Mono)]
         public void SetSignature_NullReturnType_CustomModifiersSetToWrongTypes()
         {
             TypeBuilder type = Helpers.DynamicType(TypeAttributes.Abstract);
