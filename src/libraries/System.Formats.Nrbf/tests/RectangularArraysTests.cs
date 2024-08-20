@@ -229,7 +229,7 @@ public class RectangularArraysTests : ReadTests
             Assert.Equal(input.GetLength(i), arrayRecord.Lengths[i]);
             totalElementsCount *= input.GetLength(i);
         }
-        Assert.Equal(totalElementsCount, arrayRecord.TotalElementsCount);
+        Assert.Equal(totalElementsCount, arrayRecord.FlattenedLength);
         Assert.Equal(input.GetType().FullName, arrayRecord.TypeName.FullName);
         Assert.Equal(input.GetType().GetAssemblyNameIncludingTypeForwards(), arrayRecord.TypeName.AssemblyName!.FullName);
     }

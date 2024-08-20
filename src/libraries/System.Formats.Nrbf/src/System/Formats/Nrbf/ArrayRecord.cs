@@ -18,7 +18,7 @@ public abstract class ArrayRecord : SerializationRecord
     private protected ArrayRecord(ArrayInfo arrayInfo)
     {
         ArrayInfo = arrayInfo;
-        ValuesToRead = arrayInfo.TotalElementsCount;
+        ValuesToRead = arrayInfo.FlattenedLength;
     }
 
     /// <summary>
@@ -31,7 +31,7 @@ public abstract class ArrayRecord : SerializationRecord
     /// When overridden in a derived class, gets the total number of all elements in every dimension.
     /// </summary>
     /// <value>A number that represent the total number of all elements in every dimension.</value>
-    public virtual long TotalElementsCount => ArrayInfo.TotalElementsCount;
+    public virtual long FlattenedLength => ArrayInfo.FlattenedLength;
 
     /// <summary>
     /// Gets the rank of the array.

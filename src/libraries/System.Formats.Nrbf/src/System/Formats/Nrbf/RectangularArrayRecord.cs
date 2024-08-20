@@ -31,7 +31,7 @@ internal sealed class RectangularArrayRecord : ArrayRecord
 #if DEBUG
         _values = new LinkedList<object>();
 #else
-        _values = arrayInfo.TotalElementsCount <= ArrayInfo.MaxArrayLength
+        _values = arrayInfo.FlattenedLength <= ArrayInfo.MaxArrayLength
             ? new List<object>(canPreAllocate ? arrayInfo.GetSZArrayLength() : Math.Min(4, arrayInfo.GetSZArrayLength()))
             : new LinkedList<object>();
 #endif
@@ -181,7 +181,7 @@ internal sealed class RectangularArrayRecord : ArrayRecord
 
             if (sizeOfSingleValue > 0)
             {
-                long size = arrayInfo.TotalElementsCount * sizeOfSingleValue;
+                long size = arrayInfo.FlattenedLength * sizeOfSingleValue;
                 bool? isDataAvailable = reader.IsDataAvailable(size);
                 if (isDataAvailable.HasValue)
                 {

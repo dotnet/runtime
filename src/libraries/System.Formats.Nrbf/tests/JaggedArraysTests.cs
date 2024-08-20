@@ -20,11 +20,11 @@ public class JaggedArraysTests : ReadTests
 
         Verify(input, arrayRecord);
         Assert.Equal(input, arrayRecord.GetArray(input.GetType()));
-        Assert.Equal(input.Length * 3, arrayRecord.TotalElementsCount);
+        Assert.Equal(input.Length * 3, arrayRecord.FlattenedLength);
     }
 
     [Fact]
-    public void TotalElementsCountDoesNotIncludeNullArrays()
+    public void FlattenedLengthDoesNotIncludeNullArrays()
     {
         int[][] input = [[1, 2, 3], null];
 
@@ -32,7 +32,7 @@ public class JaggedArraysTests : ReadTests
 
         Verify(input, arrayRecord);
         Assert.Equal(input, arrayRecord.GetArray(input.GetType()));
-        Assert.Equal(3, arrayRecord.TotalElementsCount);
+        Assert.Equal(3, arrayRecord.FlattenedLength);
     }
 
     [Fact]
@@ -64,7 +64,7 @@ public class JaggedArraysTests : ReadTests
 
         Verify(input, arrayRecord);
         Assert.Equal(input, arrayRecord.GetArray(input.GetType()));
-        Assert.Equal(3 * 4 * 5, arrayRecord.TotalElementsCount);
+        Assert.Equal(3 * 4 * 5, arrayRecord.FlattenedLength);
     }
 
     [Fact]
@@ -82,7 +82,7 @@ public class JaggedArraysTests : ReadTests
         Verify(input, arrayRecord);
         Assert.Equal(input, arrayRecord.GetArray(input.GetType()));
         Assert.Equal(1, arrayRecord.Rank);
-        Assert.Equal(input.Length * 1 * 3, arrayRecord.TotalElementsCount);
+        Assert.Equal(input.Length * 1 * 3, arrayRecord.FlattenedLength);
     }
 
     [Fact]
@@ -107,7 +107,7 @@ public class JaggedArraysTests : ReadTests
         Verify(input, arrayRecord);
         Assert.Equal(input, arrayRecord.GetArray(input.GetType()));
         Assert.Equal(1, arrayRecord.Rank);
-        Assert.Equal(input.Length * 3 * 3, arrayRecord.TotalElementsCount);
+        Assert.Equal(input.Length * 3 * 3, arrayRecord.FlattenedLength);
     }
 
     [Fact]
@@ -123,7 +123,7 @@ public class JaggedArraysTests : ReadTests
 
         Verify(input, arrayRecord);
         Assert.Equal(input, arrayRecord.GetArray(input.GetType()));
-        Assert.Equal(input.Length * 3, arrayRecord.TotalElementsCount);
+        Assert.Equal(input.Length * 3, arrayRecord.FlattenedLength);
     }
 
     [Fact]
@@ -139,7 +139,7 @@ public class JaggedArraysTests : ReadTests
 
         Verify(input, arrayRecord);
         Assert.Equal(input, arrayRecord.GetArray(input.GetType()));
-        Assert.Equal(input.Length * 3, arrayRecord.TotalElementsCount);
+        Assert.Equal(input.Length * 3, arrayRecord.FlattenedLength);
     }
 
     [Serializable]
@@ -162,7 +162,7 @@ public class JaggedArraysTests : ReadTests
         var arrayRecord = (ArrayRecord)NrbfDecoder.Decode(Serialize(input));
 
         Verify(input, arrayRecord);
-        Assert.Equal(totalElementsCount, arrayRecord.TotalElementsCount);
+        Assert.Equal(totalElementsCount, arrayRecord.FlattenedLength);
         var output = (ClassRecord?[][])arrayRecord.GetArray(input.GetType());
         for (int i = 0; i < input.Length; i++)
         {

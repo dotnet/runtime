@@ -45,15 +45,15 @@ internal sealed class BinaryArrayRecord : ArrayRecord
     public override ReadOnlySpan<int> Lengths => new int[1] { Length };
 
     /// <inheritdoc/>
-    public override long TotalElementsCount
+    public override long FlattenedLength
     {
         get
         {
             if (_totalElementsCount < 0)
             {
                 _totalElementsCount = IsJagged
-                    ? GetJaggedArrayTotalElementsCount(this)
-                    : ArrayInfo.TotalElementsCount;
+                    ? GetJaggedArrayFlattenedLength(this)
+                    : ArrayInfo.FlattenedLength;
             }
 
             return _totalElementsCount;
@@ -177,7 +177,7 @@ internal sealed class BinaryArrayRecord : ArrayRecord
             : new BinaryArrayRecord(arrayInfo, memberTypeInfo);
     }
 
-    private static long GetJaggedArrayTotalElementsCount(BinaryArrayRecord jaggedArrayRecord)
+    private static long GetJaggedArrayFlattenedLength(BinaryArrayRecord jaggedArrayRecord)
     {
         long result = 0;
         Queue<BinaryArrayRecord>? jaggedArrayRecords = null;
@@ -216,14 +216,17 @@ internal sealed class BinaryArrayRecord : ArrayRecord
                         }
                         else
                         {
-                            result += nestedArrayRecord.TotalElementsCount;
+                            Debug.Assert(nestedArrayRecord is not BinaryArrayRecord, "Ensure lack of recursive call");
+                            result += nestedArrayRecord.FlattenedLength;
                         }
                         break;
                     case SerializationRecordType.ObjectNull:
                     case SerializationRecordType.ObjectNullMultiple256:
                     case SerializationRecordType.ObjectNullMultiple:
-                        // Null Records nested inside jagged array do not increase total elements count.
-                        // Example: "int[][] input = [[1, 2, 3], null]" is just 3 elements in total.
+                        // Null Records that represent null arrays (not null elements in the most inner array)
+                        // nested inside jagged array do not increase flat length count.
+                        // Example: "string[][] input = [["1", "2", "3"], null]" is 3 elements in total.
+                        // Example: "string[][] input = [["1", "2", "3"], ["4", "5", null]]" is 6 elements in total.
                         break;
                     default:
                         result++;
