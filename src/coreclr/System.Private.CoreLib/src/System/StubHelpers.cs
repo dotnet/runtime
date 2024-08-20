@@ -5,7 +5,9 @@ using System.Diagnostics;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+#if FEATURE_COMINTEROP
 using System.Runtime.InteropServices.CustomMarshalers;
+#endif
 using System.Runtime.InteropServices.Marshalling;
 using System.Runtime.Versioning;
 using System.Text;
@@ -1459,16 +1461,20 @@ namespace System.StubHelpers
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "StubHelpers_CreateCustomMarshaler")]
         internal static partial void CreateCustomMarshaler(IntPtr pMD, int paramToken, IntPtr hndManagedType, ObjectHandleOnStack customMarshaler);
 
+#if FEATURE_COMINTEROP
         [SupportedOSPlatform("windows")]
         internal static object GetIEnumeratorToEnumVariantMarshaler() => EnumeratorToEnumVariantMarshaler.GetInstance(string.Empty);
+#endif
 
         internal static object CreateCustomMarshaler(IntPtr pMD, int paramToken, IntPtr hndManagedType)
         {
+#if FEATURE_COMINTEROP
             if (hndManagedType == typeof(System.Collections.IEnumerator).TypeHandle.Value
                 && OperatingSystem.IsWindows())
             {
                 return GetIEnumeratorToEnumVariantMarshaler();
             }
+#endif
 
             object? retVal = null;
             CreateCustomMarshaler(pMD, paramToken, hndManagedType, ObjectHandleOnStack.Create(ref retVal));
