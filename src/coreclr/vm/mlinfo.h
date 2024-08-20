@@ -265,6 +265,7 @@ public:
     CustomMarshalerInfo *GetCustomMarshalerInfo(Assembly *pAssembly, TypeHandle hndManagedType, LPCUTF8 strMarshalerTypeName, DWORD cMarshalerTypeNameBytes, LPCUTF8 strCookie, DWORD cCookieStrBytes);
 
 #ifdef FEATURE_COMINTEROP
+    CustomMarshalerInfo *GetIEnumeratorMarshalerInfo();
     // This method retrieves OLE_COLOR marshaling info.
     OleColorMarshalingInfo *GetOleColorMarshalingInfo();
 #endif // FEATURE_COMINTEROP
@@ -274,8 +275,8 @@ private:
     EECMInfoHashTable                   m_CMInfoHashTable;
     LoaderAllocator*                    m_pAllocator;
     LoaderHeap*                         m_pHeap;
-    CMINFOLIST                          m_pCMInfoList;
 #ifdef FEATURE_COMINTEROP
+    CustomMarshalerInfo*                m_pIEnumeratorMarshalerInfo;
     OleColorMarshalingInfo*             m_pOleColorInfo;
 #endif // FEATURE_COMINTEROP
     CrstBase*                           m_lock;

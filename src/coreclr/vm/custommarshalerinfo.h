@@ -36,16 +36,21 @@ public:
         return m_pLoaderAllocator->GetHandleValue(m_hndCustomMarshaler);
     }
 
-    // Link used to contain this CM info in a linked list.
-    SLink               m_Link;
+#ifdef FEATURE_COMINTEROP
+    static CustomMarshalerInfo* CreateIEnumeratorMarshalerInfo(LoaderHeap* pHeap, LoaderAllocator* pLoaderAllocator);
+#endif // FEATURE_COMINTEROP
 
 private:
     LoaderAllocator*    m_pLoaderAllocator;
     LOADERHANDLE        m_hndCustomMarshaler;
+
+    CustomMarshalerInfo(LoaderAllocator* pLoaderAllocator, LOADERHANDLE hndCustomMarshaler)
+        : m_pLoaderAllocator(pLoaderAllocator)
+        , m_hndCustomMarshaler(hndCustomMarshaler)
+    {
+        LIMITED_METHOD_CONTRACT;
+    }
 };
-
-
-typedef SList<CustomMarshalerInfo, true> CMINFOLIST;
 
 class Assembly;
 

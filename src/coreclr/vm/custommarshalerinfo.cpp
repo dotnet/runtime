@@ -169,6 +169,35 @@ void CustomMarshalerInfo::operator delete(void *pMem)
     LIMITED_METHOD_CONTRACT;
 }
 
+#ifdef FEATURE_COMINTEROP
+CustomMarshalerInfo* CustomMarshalerInfo::CreateIEnumeratorMarshalerInfo(LoaderHeap* pHeap, LoaderAllocator* pLoaderAllocator)
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_COOPERATIVE;
+        PRECONDITION(CheckPointer(pHeap));
+        PRECONDITION(CheckPointer(pLoaderAllocator));
+    }
+    CONTRACTL_END;
+
+    CustomMarshalerInfo* pInfo = nullptr;
+    OBJECTREF IEnumeratorMarshalerObj = nullptr;
+
+    GCPROTECT_BEGIN(IEnumeratorMarshalerObj);
+
+    MethodDescCallSite getMarshaler(METHOD__STUBHELPERS__GET_IENUMERATOR_TO_ENUM_VARIANT_MARSHALER);
+    IEnumeratorMarshalerObj = getMarshaler.Call_RetOBJECTREF(NULL);
+
+    pInfo = new (pHeap) CustomMarshalerInfo(pLoaderAllocator, pLoaderAllocator->AllocateHandle(IEnumeratorMarshalerObj));
+
+    GCPROTECT_END();
+
+    return pInfo;
+}
+#endif
+
 //==========================================================================
 // Implementation of the custom marshaler hashtable helper.
 //==========================================================================
@@ -245,6 +274,10 @@ void EECMInfoHashtableHelper::DeleteEntry(EEHashEntry_t *pEntry, void* pHeap)
         PRECONDITION(CheckPointer(pEntry));
     }
     CONTRACTL_END;
+
+    CustomMarshalerInfo* pInfo = reinterpret_cast<CustomMarshalerInfo*>(pEntry->Data);
+
+    delete pInfo;
 
     delete[] (BYTE*)pEntry;
 }

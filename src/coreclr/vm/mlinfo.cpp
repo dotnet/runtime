@@ -26,12 +26,6 @@
 #endif // FEATURE_COMINTEROP
 
 #ifdef FEATURE_COMINTEROP
-    DEFINE_ASM_QUAL_TYPE_NAME(ENUMERATOR_TO_ENUM_VARIANT_CM_NAME, g_EnumeratorToEnumClassName, g_CorelibAsmName);
-
-    static const int        ENUMERATOR_TO_ENUM_VARIANT_CM_NAME_LEN    = ARRAY_SIZE(ENUMERATOR_TO_ENUM_VARIANT_CM_NAME);
-    static const char       ENUMERATOR_TO_ENUM_VARIANT_CM_COOKIE[]    = {""};
-    static const int        ENUMERATOR_TO_ENUM_VARIANT_CM_COOKIE_LEN  = ARRAY_SIZE(ENUMERATOR_TO_ENUM_VARIANT_CM_COOKIE);
-
     DEFINE_ASM_QUAL_TYPE_NAME(COLOR_TRANSLATOR_ASM_QUAL_TYPE_NAME, g_ColorTranslatorClassName, g_DrawingAsmName);
     DEFINE_ASM_QUAL_TYPE_NAME(COLOR_ASM_QUAL_TYPE_NAME, g_ColorClassName, g_DrawingAsmName);
 
@@ -382,32 +376,50 @@ namespace
             }
         }
     }
-}
 
-//==========================================================================
-// Set's up the custom marshaler information.
-//==========================================================================
-CustomMarshalerInfo *SetupCustomMarshalerInfo(LPCUTF8 strMarshalerTypeName, DWORD cMarshalerTypeNameBytes, LPCUTF8 strCookie, DWORD cCookieStrBytes, Assembly *pAssembly, TypeHandle hndManagedType)
-{
-    CONTRACT (CustomMarshalerInfo*)
+    //==========================================================================
+    // Sets up the custom marshaler information.
+    //==========================================================================
+    CustomMarshalerInfo *SetupCustomMarshalerInfo(LPCUTF8 strMarshalerTypeName, DWORD cMarshalerTypeNameBytes, LPCUTF8 strCookie, DWORD cCookieStrBytes, Assembly *pAssembly, TypeHandle hndManagedType)
     {
-        STANDARD_VM_CHECK;
-        PRECONDITION(CheckPointer(pAssembly));
-        POSTCONDITION(CheckPointer(RETVAL));
+        CONTRACT (CustomMarshalerInfo*)
+        {
+            STANDARD_VM_CHECK;
+            PRECONDITION(CheckPointer(pAssembly));
+            POSTCONDITION(CheckPointer(RETVAL));
+        }
+        CONTRACT_END;
+
+        EEMarshalingData *pMarshalingData = NULL;
+
+        // The assembly is not shared so we use the current app domain's marshaling data.
+        pMarshalingData = pAssembly->GetLoaderAllocator()->GetMarshalingData();
+
+        // Retrieve the custom marshaler helper from the EE marshaling data.
+        RETURN pMarshalingData->GetCustomMarshalerInfo(pAssembly, hndManagedType, strMarshalerTypeName, cMarshalerTypeNameBytes, strCookie, cCookieStrBytes);
     }
-    CONTRACT_END;
 
-    EEMarshalingData *pMarshalingData = NULL;
+#ifdef FEATURE_COMINTEROP
+    CustomMarshalerInfo *GetIEnumeratorCustomMarshalerInfo(Assembly *pAssembly)
+    {
+        CONTRACT (CustomMarshalerInfo*)
+        {
+            STANDARD_VM_CHECK;
+            PRECONDITION(CheckPointer(pAssembly));
+            POSTCONDITION(CheckPointer(RETVAL));
+        }
+        CONTRACT_END;
 
-    // The assembly is not shared so we use the current app domain's marshaling data.
-    pMarshalingData = pAssembly->GetLoaderAllocator()->GetMarshalingData();
+        EEMarshalingData *pMarshalingData = NULL;
 
-    // Retrieve the custom marshaler helper from the EE marshaling data.
-    RETURN pMarshalingData->GetCustomMarshalerInfo(pAssembly, hndManagedType, strMarshalerTypeName, cMarshalerTypeNameBytes, strCookie, cCookieStrBytes);
-}
+        // The assembly is not shared so we use the current app domain's marshaling data.
+        pMarshalingData = pAssembly->GetLoaderAllocator()->GetMarshalingData();
 
-namespace
-{
+        // Retrieve the custom marshaler helper from the EE marshaling data.
+        RETURN pMarshalingData->GetIEnumeratorMarshalerInfo();
+    }
+#endif // FEATURE_COMINTEROP
+
     //==========================================================================
     // Return: S_OK if there is valid data to compress
     //         S_FALSE if at end of data block
@@ -829,17 +841,6 @@ EEMarshalingData::~EEMarshalingData()
 {
     WRAPPER_NO_CONTRACT;
 
-    CustomMarshalerInfo *pCMInfo;
-
-    // <TODO>@TODO(DM): Remove the linked list of CMInfo's and instead hang the OBJECTHANDLE
-    // contained inside the CMInfo off the AppDomain directly. The AppDomain can have
-    // a list of tasks to do when it gets teared down and we could leverage that
-    // to release the object handles.</TODO>
-
-    // Walk through the linked list and delete all the custom marshaler info's.
-    while ((pCMInfo = m_pCMInfoList.RemoveHead()) != NULL)
-        delete pCMInfo;
-
 #ifdef FEATURE_COMINTEROP
     if (m_pOleColorInfo)
     {
@@ -954,11 +955,7 @@ CustomMarshalerInfo *EEMarshalingData::GetCustomMarshalerInfo(Assembly *pAssembl
         m_CMInfoHashTable.InsertValue(&Key, pNewCMInfo);
 
         // If we create the CM info, then add it to the linked list.
-        if (pNewCMInfo)
-        {
-            m_pCMInfoList.InsertHead(pNewCMInfo);
-            pNewCMInfo.SuppressRelease();
-        }
+        pNewCMInfo.SuppressRelease();
 
         // Release the lock and return the custom marshaler info.
     }
@@ -967,6 +964,34 @@ CustomMarshalerInfo *EEMarshalingData::GetCustomMarshalerInfo(Assembly *pAssembl
 }
 
 #ifdef FEATURE_COMINTEROP
+CustomMarshalerInfo *EEMarshalingData::GetIEnumeratorMarshalerInfo()
+{
+    CONTRACT (CustomMarshalerInfo*)
+    {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_ANY;
+        INJECT_FAULT(COMPlusThrowOM());
+        POSTCONDITION(CheckPointer(RETVAL));
+    }
+    CONTRACT_END;
+
+    if (m_pIEnumeratorMarshalerInfo == NULL)
+    {
+        CustomMarshalerInfo *pMarshalerInfo = CustomMarshalerInfo::CreateIEnumeratorMarshalerInfo(m_pHeap, m_pAllocator);
+
+        if (InterlockedCompareExchangeT(&m_pIEnumeratorMarshalerInfo, pMarshalerInfo, NULL) != NULL)
+        {
+            // Another thread beat us to it. Delete on CustomMarshalerInfo is an empty operation
+            // which is OK, since the possible leak is rare, small, and constant. This is the same
+            // pattern as in code:GetCustomMarshalerInfo.
+            delete pMarshalerInfo;
+        }
+    }
+
+    RETURN m_pIEnumeratorMarshalerInfo;
+}
+
 OleColorMarshalingInfo *EEMarshalingData::GetOleColorMarshalingInfo()
 {
     CONTRACT (OleColorMarshalingInfo*)
@@ -1883,11 +1908,7 @@ MarshalInfo::MarshalInfo(Module* pModule,
                     {
                         if (!fEmitsIL)
                         {
-                            m_pCMInfo = SetupCustomMarshalerInfo(ENUMERATOR_TO_ENUM_VARIANT_CM_NAME,
-                                                                     ENUMERATOR_TO_ENUM_VARIANT_CM_NAME_LEN,
-                                                                     ENUMERATOR_TO_ENUM_VARIANT_CM_COOKIE,
-                                                                     ENUMERATOR_TO_ENUM_VARIANT_CM_COOKIE_LEN,
-                                                                     pAssembly, sigTH);
+                            m_pCMInfo = GetIEnumeratorCustomMarshalerInfo(pAssembly);
                         }
                         else
                         {
@@ -4025,37 +4046,31 @@ extern "C" void QCALLTYPE StubHelpers_CreateCustomMarshaler(MethodDesc* pMD, mdT
     if (!hndManagedType.IsTypeDesc() &&
         IsTypeRefOrDef(g_CollectionsEnumeratorClassName, hndManagedType.GetModule(), hndManagedType.GetCl()))
     {
-        pCMInfo = SetupCustomMarshalerInfo(ENUMERATOR_TO_ENUM_VARIANT_CM_NAME,
-                                               ENUMERATOR_TO_ENUM_VARIANT_CM_NAME_LEN,
-                                               ENUMERATOR_TO_ENUM_VARIANT_CM_COOKIE,
-                                               ENUMERATOR_TO_ENUM_VARIANT_CM_COOKIE_LEN,
-                                               pAssembly, hndManagedType);
+        _ASSERTE(!"Setting the custom marshaler for IEnumerator should be done on the managed side.");
     }
-    else
 #endif // FEATURE_COMINTEROP
-    {
-        //
-        // Retrieve the native type for the current parameter.
-        //
 
-        BOOL result;
-        NativeTypeParamInfo ParamInfo;
-        result = ParseNativeTypeInfo(paramToken, pModule->GetMDImport(), &ParamInfo);
+    //
+    // Retrieve the native type for the current parameter.
+    //
 
-        //
-        // this should all have been done at stub creation time
-        //
-        CONSISTENCY_CHECK(result != 0);
-        CONSISTENCY_CHECK(ParamInfo.m_NativeType == NATIVE_TYPE_CUSTOMMARSHALER);
+    BOOL result;
+    NativeTypeParamInfo ParamInfo;
+    result = ParseNativeTypeInfo(paramToken, pModule->GetMDImport(), &ParamInfo);
 
-        // Set up the custom marshaler info.
-        pCMInfo = SetupCustomMarshalerInfo(ParamInfo.m_strCMMarshalerTypeName,
-                                                ParamInfo.m_cCMMarshalerTypeNameBytes,
-                                                ParamInfo.m_strCMCookie,
-                                                ParamInfo.m_cCMCookieStrBytes,
-                                                pAssembly,
-                                                hndManagedType);
-    }
+    //
+    // this should all have been done at stub creation time
+    //
+    CONSISTENCY_CHECK(result != 0);
+    CONSISTENCY_CHECK(ParamInfo.m_NativeType == NATIVE_TYPE_CUSTOMMARSHALER);
+
+    // Set up the custom marshaler info.
+    pCMInfo = SetupCustomMarshalerInfo(ParamInfo.m_strCMMarshalerTypeName,
+                                            ParamInfo.m_cCMMarshalerTypeNameBytes,
+                                            ParamInfo.m_strCMCookie,
+                                            ParamInfo.m_cCMCookieStrBytes,
+                                            pAssembly,
+                                            hndManagedType);
 
     retObject.Set(pCMInfo->GetCustomMarshaler());
 
