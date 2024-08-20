@@ -152,7 +152,6 @@ DEFINE_METHOD(CLASS,                GET_METHODS,            GetMethods,         
 DEFINE_METHOD(CLASS,                INVOKE_MEMBER,          InvokeMember,               IM_Str_BindingFlags_Binder_Obj_ArrObj_ArrParameterModifier_CultureInfo_ArrStr_RetObj)
 DEFINE_METHOD(CLASS,                GET_METHOD_BASE,        GetMethodBase,              SM_RuntimeType_RuntimeMethodHandleInternal_RetMethodBase)
 DEFINE_METHOD(CLASS,                GET_FIELD_INFO,         GetFieldInfo,               SM_RuntimeType_IRuntimeFieldInfo_RetFieldInfo)
-DEFINE_METHOD(CLASS,                GET_PROPERTY_INFO,      GetPropertyInfo,            SM_RuntimeType_Int_RetPropertyInfo)
 
 #ifdef FEATURE_COMINTEROP
 DEFINE_METHOD(CLASS,                FORWARD_CALL_TO_INVOKE, ForwardCallToInvokeMember,  IM_Str_BindingFlags_Obj_ArrObj_ArrBool_ArrInt_ArrType_Type_RetObj)
@@ -260,7 +259,6 @@ DEFINE_CLASS(INT128,               System,                 Int128)
 DEFINE_CLASS(UINT128,              System,                 UInt128)
 
 DEFINE_CLASS(MATH,                  System,                 Math)
-DEFINE_METHOD(MATH,                 ROUND,                  Round,                      SM_Dbl_RetDbl)
 #ifndef TARGET_64BIT
 DEFINE_METHOD(MATH,                 MULTIPLY_CHECKED_INT64, MultiplyChecked,            SM_Long_Long_RetLong)
 DEFINE_METHOD(MATH,                 MULTIPLY_CHECKED_UINT64, MultiplyChecked,           SM_ULong_ULong_RetULong)
@@ -269,9 +267,6 @@ DEFINE_METHOD(MATH,                 CONVERT_TO_INT32_CHECKED, ConvertToInt32Chec
 DEFINE_METHOD(MATH,                 CONVERT_TO_UINT32_CHECKED, ConvertToUInt32Checked,  NoSig)
 DEFINE_METHOD(MATH,                 CONVERT_TO_INT64_CHECKED, ConvertToInt64Checked,    NoSig)
 DEFINE_METHOD(MATH,                 CONVERT_TO_UINT64_CHECKED, ConvertToUInt64Checked,  NoSig)
-
-DEFINE_CLASS(MATHF,                 System,                 MathF)
-DEFINE_METHOD(MATHF,                ROUND,                  Round,                      SM_Flt_RetFlt)
 
 DEFINE_CLASS(DYNAMICMETHOD,         ReflectionEmit,         DynamicMethod)
 
@@ -399,6 +394,8 @@ DEFINE_METHOD(ICUSTOM_MARSHALER,    CLEANUP_NATIVE_DATA,    CleanUpNativeData,  
 DEFINE_METHOD(ICUSTOM_MARSHALER,    CLEANUP_MANAGED_DATA,   CleanUpManagedData,         IM_Obj_RetVoid)
 DEFINE_METHOD(ICUSTOM_MARSHALER,    GET_NATIVE_DATA_SIZE,   GetNativeDataSize,          IM_RetInt)
 
+DEFINE_CLASS(ICUSTOMADAPTER,    Interop,    ICustomAdapter)
+
 DEFINE_CLASS(IDYNAMICINTERFACECASTABLE,         Interop,   IDynamicInterfaceCastable)
 DEFINE_CLASS(DYNAMICINTERFACECASTABLEHELPERS,   Interop,   DynamicInterfaceCastableHelpers)
 DEFINE_METHOD(DYNAMICINTERFACECASTABLEHELPERS,  IS_INTERFACE_IMPLEMENTED,       IsInterfaceImplemented,     SM_IDynamicInterfaceCastable_RuntimeType_Bool_RetBool)
@@ -409,6 +406,9 @@ BEGIN_ILLINK_FEATURE_SWITCH(System.Runtime.InteropServices.BuiltInComInterop.IsS
 DEFINE_CLASS(ICUSTOM_QUERYINTERFACE,      Interop,          ICustomQueryInterface)
 DEFINE_METHOD(ICUSTOM_QUERYINTERFACE,     GET_INTERFACE,    GetInterface,               IM_RefGuid_OutIntPtr_RetCustomQueryInterfaceResult)
 DEFINE_CLASS(CUSTOMQUERYINTERFACERESULT,  Interop,          CustomQueryInterfaceResult)
+
+DEFINE_CLASS(ENUMERATORTOENUMVARIANTMARSHALER,   CustomMarshalers,  EnumeratorToEnumVariantMarshaler)
+DEFINE_METHOD(ENUMERATORTOENUMVARIANTMARSHALER,  INTERNALMARSHALNATIVETOMANAGED,    InternalMarshalNativeToManaged,   SM_IntPtr_RetObj)
 #endif //FEATURE_COMINTEROP
 END_ILLINK_FEATURE_SWITCH()
 
@@ -632,7 +632,6 @@ DEFINE_METHOD(RTFIELD,              GET_FIELDHANDLE,        GetFieldHandle,     
 
 DEFINE_CLASS(RUNTIME_HELPERS,       CompilerServices,       RuntimeHelpers)
 DEFINE_METHOD(RUNTIME_HELPERS,      IS_BITWISE_EQUATABLE,    IsBitwiseEquatable, NoSig)
-DEFINE_METHOD(RUNTIME_HELPERS,      GET_METHOD_TABLE,        GetMethodTable,     NoSig)
 DEFINE_METHOD(RUNTIME_HELPERS,      GET_RAW_DATA,            GetRawData,         NoSig)
 DEFINE_METHOD(RUNTIME_HELPERS,      GET_UNINITIALIZED_OBJECT, GetUninitializedObject, SM_Type_RetObj)
 DEFINE_METHOD(RUNTIME_HELPERS,      ENUM_EQUALS,            EnumEquals, NoSig)
@@ -645,6 +644,20 @@ DEFINE_CLASS(SPAN_HELPERS,          System,                 SpanHelpers)
 DEFINE_METHOD(SPAN_HELPERS,         MEMSET,                 Fill, SM_RefByte_Byte_UIntPtr_RetVoid)
 DEFINE_METHOD(SPAN_HELPERS,         MEMZERO,                ClearWithoutReferences, SM_RefByte_UIntPtr_RetVoid)
 DEFINE_METHOD(SPAN_HELPERS,         MEMCOPY,                Memmove, SM_RefByte_RefByte_UIntPtr_RetVoid)
+
+DEFINE_CLASS(THROWHELPERS,     InternalCompilerHelpers,             ThrowHelpers)
+DEFINE_METHOD(THROWHELPERS,    THROWARGUMENTEXCEPTION,              ThrowArgumentException, SM_RetVoid)
+DEFINE_METHOD(THROWHELPERS,    THROWARGUMENTOUTOFRANGEEXCEPTION,    ThrowArgumentOutOfRangeException, SM_RetVoid)
+DEFINE_METHOD(THROWHELPERS,    THROWINDEXOUTOFRANGEEXCEPTION,       ThrowIndexOutOfRangeException, SM_RetVoid)
+DEFINE_METHOD(THROWHELPERS,    THROWNOTIMPLEMENTEDEXCEPTION,        ThrowNotImplementedException, SM_RetVoid)
+DEFINE_METHOD(THROWHELPERS,    THROWPLATFORMNOTSUPPORTEDEXCEPTION,  ThrowPlatformNotSupportedException, SM_RetVoid)
+DEFINE_METHOD(THROWHELPERS,    THROWTYPENOTSUPPORTED,               ThrowTypeNotSupportedException, SM_RetVoid)
+DEFINE_METHOD(THROWHELPERS,    THROWOVERFLOWEXCEPTION,              ThrowOverflowException, SM_RetVoid)
+DEFINE_METHOD(THROWHELPERS,    THROWDIVIDEBYZEROEXCEPTION,          ThrowDivideByZeroException, SM_RetVoid)
+DEFINE_METHOD(THROWHELPERS,    THROWNULLREFEXCEPTION,               ThrowNullReferenceException, SM_RetVoid)
+DEFINE_METHOD(THROWHELPERS,    THROWVERIFICATIONEXCEPTION,          ThrowVerificationException, SM_Int_RetVoid)
+DEFINE_METHOD(THROWHELPERS,    THROWAMBIGUOUSRESOLUTIONEXCEPTION,   ThrowAmbiguousResolutionException, SM_PtrVoid_PtrVoid_PtrVoid_RetVoid)
+DEFINE_METHOD(THROWHELPERS,    THROWENTRYPOINTNOTFOUNDEXCEPTION,    ThrowEntryPointNotFoundException, SM_PtrVoid_PtrVoid_PtrVoid_RetVoid)
 
 DEFINE_CLASS(UNSAFE,                CompilerServices,       Unsafe)
 DEFINE_METHOD(UNSAFE,               AS_POINTER,             AsPointer, NoSig)
@@ -765,6 +778,9 @@ DEFINE_FIELD_U(rgiColumnNumber,            StackFrameHelper,   rgiColumnNumber)
 DEFINE_FIELD_U(rgiLastFrameFromForeignExceptionStackTrace,            StackFrameHelper,   rgiLastFrameFromForeignExceptionStackTrace)
 DEFINE_FIELD_U(iFrameCount,                StackFrameHelper,   iFrameCount)
 
+DEFINE_CLASS(EVENT_SOURCE,           Tracing,            EventSource)
+DEFINE_METHOD(EVENT_SOURCE,          INITIALIZE_DEFAULT_EVENT_SOURCES, InitializeDefaultEventSources, SM_RetVoid)
+
 DEFINE_CLASS(STARTUP_HOOK_PROVIDER,  System,                StartupHookProvider)
 DEFINE_METHOD(STARTUP_HOOK_PROVIDER, MANAGED_STARTUP, ManagedStartup, SM_PtrChar_RetVoid)
 DEFINE_METHOD(STARTUP_HOOK_PROVIDER, CALL_STARTUP_HOOK, CallStartupHook, SM_PtrChar_RetVoid)
@@ -829,7 +845,6 @@ DEFINE_FIELD_U(_startHelper,              ThreadBaseObject,   m_StartHelper)
 DEFINE_FIELD_U(_DONT_USE_InternalThread,  ThreadBaseObject,   m_InternalThread)
 DEFINE_FIELD_U(_priority,                 ThreadBaseObject,   m_Priority)
 DEFINE_CLASS(THREAD,                Threading,              Thread)
-DEFINE_METHOD(THREAD,               INTERNAL_GET_CURRENT_THREAD,             InternalGetCurrentThread,                    SM_RetIntPtr)
 DEFINE_METHOD(THREAD,               START_CALLBACK,                          StartCallback,                               IM_RetVoid)
 #ifdef FEATURE_OBJCMARSHAL
 DEFINE_CLASS(AUTORELEASEPOOL,       Threading,              AutoreleasePool)
@@ -867,11 +882,11 @@ DEFINE_FIELD_U(_id,                         AssemblyLoadContextBaseObject, _id)
 DEFINE_FIELD_U(_state,                      AssemblyLoadContextBaseObject, _state)
 DEFINE_FIELD_U(_isCollectible,              AssemblyLoadContextBaseObject, _isCollectible)
 DEFINE_CLASS(ASSEMBLYLOADCONTEXT,  Loader,                AssemblyLoadContext)
-DEFINE_METHOD(ASSEMBLYLOADCONTEXT,  RESOLVE,          Resolve,                      SM_IntPtr_AssemblyName_RetAssemblyBase)
+DEFINE_METHOD(ASSEMBLYLOADCONTEXT,  RESOLVE,          Resolve,                      SM_IntPtr_AssemblyName_RetAssembly)
 DEFINE_METHOD(ASSEMBLYLOADCONTEXT,  RESOLVEUNMANAGEDDLL,           ResolveUnmanagedDll,           SM_Str_IntPtr_RetIntPtr)
 DEFINE_METHOD(ASSEMBLYLOADCONTEXT,  RESOLVEUNMANAGEDDLLUSINGEVENT, ResolveUnmanagedDllUsingEvent, SM_Str_AssemblyBase_IntPtr_RetIntPtr)
-DEFINE_METHOD(ASSEMBLYLOADCONTEXT,  RESOLVEUSINGEVENT,             ResolveUsingResolvingEvent,    SM_IntPtr_AssemblyName_RetAssemblyBase)
-DEFINE_METHOD(ASSEMBLYLOADCONTEXT,  RESOLVESATELLITEASSEMBLY,      ResolveSatelliteAssembly,      SM_IntPtr_AssemblyName_RetAssemblyBase)
+DEFINE_METHOD(ASSEMBLYLOADCONTEXT,  RESOLVEUSINGEVENT,             ResolveUsingResolvingEvent,    SM_IntPtr_AssemblyName_RetAssembly)
+DEFINE_METHOD(ASSEMBLYLOADCONTEXT,  RESOLVESATELLITEASSEMBLY,      ResolveSatelliteAssembly,      SM_IntPtr_AssemblyName_RetAssembly)
 DEFINE_FIELD(ASSEMBLYLOADCONTEXT,   ASSEMBLY_LOAD,              AssemblyLoad)
 DEFINE_METHOD(ASSEMBLYLOADCONTEXT,  ON_ASSEMBLY_LOAD,           OnAssemblyLoad,             SM_Assembly_RetVoid)
 DEFINE_METHOD(ASSEMBLYLOADCONTEXT,  ON_RESOURCE_RESOLVE,        OnResourceResolve,          SM_Assembly_Str_RetAssembly)
@@ -937,8 +952,8 @@ DEFINE_METHOD(STUBHELPERS,          SAFE_HANDLE_ADD_REF,    SafeHandleAddRef,   
 DEFINE_METHOD(STUBHELPERS,          SAFE_HANDLE_RELEASE,    SafeHandleRelease,          SM_SafeHandle_RetVoid)
 
 #ifdef PROFILING_SUPPORTED
-DEFINE_METHOD(STUBHELPERS,          PROFILER_BEGIN_TRANSITION_CALLBACK, ProfilerBeginTransitionCallback, SM_IntPtr_IntPtr_Obj_RetIntPtr)
-DEFINE_METHOD(STUBHELPERS,          PROFILER_END_TRANSITION_CALLBACK,   ProfilerEndTransitionCallback,   SM_IntPtr_IntPtr_RetVoid)
+DEFINE_METHOD(STUBHELPERS,          PROFILER_BEGIN_TRANSITION_CALLBACK, ProfilerBeginTransitionCallback, SM_PtrVoid_RetPtrVoid)
+DEFINE_METHOD(STUBHELPERS,          PROFILER_END_TRANSITION_CALLBACK,   ProfilerEndTransitionCallback,   SM_PtrVoid_RetVoid)
 #endif
 
 DEFINE_METHOD(STUBHELPERS,          MULTICAST_DEBUGGER_TRACE_HELPER,    MulticastDebuggerTraceHelper,    SM_Obj_Int_RetVoid)
@@ -1106,15 +1121,6 @@ DEFINE_FIELD_U(_userMessage,        ContractExceptionObject,    _UserMessage)
 DEFINE_FIELD_U(_condition,          ContractExceptionObject,    _Condition)
 
 DEFINE_CLASS(MODULEBASE,        Reflection,         Module)
-
-#ifdef FEATURE_ICASTABLE
-DEFINE_CLASS(ICASTABLE,         CompilerServices,   ICastable)
-
-DEFINE_CLASS(ICASTABLEHELPERS,  CompilerServices,   ICastableHelpers)
-DEFINE_METHOD(ICASTABLEHELPERS,        ISINSTANCEOF,       IsInstanceOfInterface, SM_ICastable_RtType_RefException_RetBool)
-DEFINE_METHOD(ICASTABLEHELPERS,        GETIMPLTYPE,        GetImplType, SM_ICastable_RtType_RetRtType)
-
-#endif // FEATURE_ICASTABLE
 
 DEFINE_CLASS(STACKALLOCATEDBOX,   CompilerServices,     StackAllocatedBox`1)
 

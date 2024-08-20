@@ -46,6 +46,11 @@ namespace System.Diagnostics.Metrics
     {
         public static readonly MetricsEventSource Log = new();
 
+        // Although this API isn't public, it is invoked via reflection from System.Private.CoreLib and needs the same back-compat
+        // consideration as a public API. See EventSource.InitializeDefaultEventSources() in System.Private.CoreLib source for more
+        // details. We have a unit test GetInstanceMethodIsReflectable that verifies this method isn't accidentally removed or renamed.
+        public static MetricsEventSource GetInstance() { return Log; }
+
         private const string SharedSessionId = "SHARED";
         private const string ClientIdKey = "ClientId";
         private const string MaxHistogramsKey = "MaxHistograms";
@@ -644,6 +649,12 @@ namespace System.Diagnostics.Metrics
                     return;
                 }
 
+                if (metricsSpecs.Length == 0)
+                {
+                    _aggregationManager!.IncludeAll();
+                    return;
+                }
+
                 string[] specStrings = metricsSpecs.Split(s_instrumentSeparators, StringSplitOptions.RemoveEmptyEntries);
                 foreach (string specString in specStrings)
                 {
@@ -652,6 +663,19 @@ namespace System.Diagnostics.Metrics
                     if (spec.InstrumentName != null)
                     {
                         _aggregationManager!.Include(spec.MeterName, spec.InstrumentName);
+                    }
+                    else if (spec.MeterName.Length > 0
+                        && spec.MeterName[spec.MeterName.Length - 1] == '*')
+                    {
+                        if (spec.MeterName.Length == 1)
+                        {
+                            _aggregationManager!.IncludeAll();
+                        }
+                        else
+                        {
+                            _aggregationManager!.IncludePrefix(
+                                spec.MeterName.Substring(0, spec.MeterName.Length - 1));
+                        }
                     }
                     else
                     {
@@ -680,6 +704,11 @@ namespace System.Diagnostics.Metrics
                 {
                     Log.GaugeValuePublished(sessionId, instrument.Meter.Name, instrument.Meter.Version, instrument.Name, instrument.Unit, Helpers.FormatTags(stats.Labels),
                         lastValueStats.LastValue.HasValue ? lastValueStats.LastValue.Value.ToString(CultureInfo.InvariantCulture) : "", instrumentId);
+                }
+                else if (stats.AggregationStatistics is SynchronousLastValueStatistics synchronousLastValueStats)
+                {
+                    Log.GaugeValuePublished(sessionId, instrument.Meter.Name, instrument.Meter.Version, instrument.Name, instrument.Unit, Helpers.FormatTags(stats.Labels),
+                        synchronousLastValueStats.LastValue.ToString(CultureInfo.InvariantCulture), instrumentId);
                 }
                 else if (stats.AggregationStatistics is HistogramStatistics histogramStats)
                 {

@@ -32,7 +32,6 @@ internal static partial class Interop
         [UnsupportedOSPlatform("tvos")]
         [SupportedOSPlatform("ios13.0")]
         [SupportedOSPlatform("tvos13.0")]
-        [SupportedOSPlatform("maccatalyst")]
         internal static unsafe void ChaCha20Poly1305Encrypt(
             ReadOnlySpan<byte> key,
             ReadOnlySpan<byte> nonce,
@@ -70,7 +69,6 @@ internal static partial class Interop
         [UnsupportedOSPlatform("tvos")]
         [SupportedOSPlatform("ios13.0")]
         [SupportedOSPlatform("tvos13.0")]
-        [SupportedOSPlatform("maccatalyst")]
         internal static unsafe void ChaCha20Poly1305Decrypt(
             ReadOnlySpan<byte> key,
             ReadOnlySpan<byte> nonce,
@@ -115,7 +113,6 @@ internal static partial class Interop
         [UnsupportedOSPlatform("tvos")]
         [SupportedOSPlatform("ios13.0")]
         [SupportedOSPlatform("tvos13.0")]
-        [SupportedOSPlatform("maccatalyst")]
         internal static unsafe void AesGcmEncrypt(
             ReadOnlySpan<byte> key,
             ReadOnlySpan<byte> nonce,
@@ -153,7 +150,6 @@ internal static partial class Interop
         [UnsupportedOSPlatform("tvos")]
         [SupportedOSPlatform("ios13.0")]
         [SupportedOSPlatform("tvos13.0")]
-        [SupportedOSPlatform("maccatalyst")]
         internal static unsafe void AesGcmDecrypt(
             ReadOnlySpan<byte> key,
             ReadOnlySpan<byte> nonce,

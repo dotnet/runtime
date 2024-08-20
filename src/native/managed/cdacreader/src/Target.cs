@@ -7,6 +7,7 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Numerics;
 using System.Runtime.CompilerServices;
+using System.Text;
 using Microsoft.Diagnostics.DataContractReader.Data;
 
 namespace Microsoft.Diagnostics.DataContractReader;
@@ -94,7 +95,6 @@ public sealed unsafe class Target
 
     internal Contracts.Registry Contracts { get; }
     internal DataCache ProcessedData { get; }
-    internal Helpers.Metadata Metadata { get; }
 
     public delegate int ReadFromTargetDelegate(ulong address, Span<byte> bufferToFill);
 
@@ -115,7 +115,6 @@ public sealed unsafe class Target
     {
         Contracts = new Contracts.Registry(this);
         ProcessedData = new DataCache(this);
-        Metadata = new Helpers.Metadata(this);
         _config = config;
         _reader = reader;
 
@@ -266,6 +265,12 @@ public sealed unsafe class Target
 
     public int PointerSize => _config.PointerSize;
 
+    /// <summary>
+    /// Read a value from the target in target endianness
+    /// </summary>
+    /// <typeparam name="T">Type of value to read</typeparam>
+    /// <param name="address">Address to start reading from</param>
+    /// <returns>Value read from the target</returns>
     public T Read<T>(ulong address) where T : unmanaged, IBinaryInteger<T>, IMinMaxValue<T>
     {
         if (!TryRead(address, _config.IsLittleEndian, _reader, out T value))
@@ -286,6 +291,23 @@ public sealed unsafe class Target
             : T.TryReadBigEndian(buffer, !IsSigned<T>(), out value);
     }
 
+    private static T Read<T>(ReadOnlySpan<byte> bytes, bool isLittleEndian) where T : unmanaged, IBinaryInteger<T>, IMinMaxValue<T>
+    {
+        if (sizeof(T) != bytes.Length)
+            throw new ArgumentException(nameof(bytes));
+
+        T value;
+        if (isLittleEndian)
+        {
+            T.TryReadLittleEndian(bytes, !IsSigned<T>(), out value);
+        }
+        else
+        {
+            T.TryReadBigEndian(bytes, !IsSigned<T>(), out value);
+        }
+        return value;
+    }
+
     public void ReadBuffer(ulong address, Span<byte> buffer)
     {
         if (!TryReadBuffer(address, buffer))
@@ -303,12 +325,29 @@ public sealed unsafe class Target
         return T.IsNegative(T.MinValue);
     }
 
+    /// <summary>
+    /// Read a pointer from the target in target endianness
+    /// </summary>
+    /// <param name="address">Address to start reading from</param>
+    /// <returns>Pointer read from the target</returns>}
     public TargetPointer ReadPointer(ulong address)
     {
         if (!TryReadPointer(address, _config, _reader, out TargetPointer pointer))
             throw new InvalidOperationException($"Failed to read pointer at 0x{address:x8}.");
 
         return pointer;
+    }
+
+    public TargetPointer ReadPointerFromSpan(ReadOnlySpan<byte> bytes)
+    {
+        if (_config.PointerSize == sizeof(uint))
+        {
+            return new TargetPointer(Read<uint>(bytes.Slice(0, sizeof(uint)), _config.IsLittleEndian));
+        }
+        else
+        {
+            return new TargetPointer(Read<ulong>(bytes.Slice(0, sizeof(ulong)), _config.IsLittleEndian));
+        }
     }
 
     public void ReadPointers(ulong address, Span<TargetPointer> buffer)
@@ -324,6 +363,64 @@ public sealed unsafe class Target
         }
     }
 
+    /// <summary>
+    /// Read a null-terminated UTF-8 string from the target
+    /// </summary>
+    /// <param name="address">Address to start reading from</param>
+    /// <returns>String read from the target</returns>}
+    public string ReadUtf8String(ulong address)
+    {
+        // Read characters until we find the null terminator
+        ulong end = address;
+        while (Read<byte>(end) != 0)
+        {
+            end += sizeof(byte);
+        }
+
+        int length = (int)(end - address);
+        if (length == 0)
+            return string.Empty;
+
+        Span<byte> span = length <= StackAllocByteThreshold
+            ? stackalloc byte[length]
+            : new byte[length];
+        ReadBuffer(address, span);
+        return Encoding.UTF8.GetString(span);
+    }
+
+    /// <summary>
+    /// Read a null-terminated UTF-16 string from the target in target endianness
+    /// </summary>
+    /// <param name="address">Address to start reading from</param>
+    /// <returns>String read from the target</returns>}
+    public string ReadUtf16String(ulong address)
+    {
+        // Read characters until we find the null terminator
+        ulong end = address;
+        while (Read<char>(end) != 0)
+        {
+            end += sizeof(char);
+        }
+
+        int length = (int)(end - address);
+        if (length == 0)
+            return string.Empty;
+
+        Span<byte> span = length <= StackAllocByteThreshold
+            ? stackalloc byte[length]
+            : new byte[length];
+        ReadBuffer(address, span);
+        string result = _config.IsLittleEndian
+            ? Encoding.Unicode.GetString(span)
+            : Encoding.BigEndianUnicode.GetString(span);
+        return result;
+    }
+
+    /// <summary>
+    /// Read a native unsigned integer from the target in target endianness
+    /// </summary>
+    /// <param name="address">Address to start reading from</param>
+    /// <returns>Value read from the target</returns>
     public TargetNUInt ReadNUInt(ulong address)
     {
         if (!TryReadNUInt(address, _config, _reader, out ulong value))
@@ -370,6 +467,8 @@ public sealed unsafe class Target
         => IsAligned(value, _config.PointerSize);
     public bool IsAlignedToPointerSize(TargetPointer pointer)
         => IsAligned(pointer.Value, _config.PointerSize);
+
+    public char DirectorySeparator => (char)ReadGlobal<byte>(Constants.Globals.DirectorySeparator);
 
     public T ReadGlobal<T>(string name) where T : struct, INumber<T>
         => ReadGlobal<T>(name, out _);

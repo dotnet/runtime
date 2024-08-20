@@ -743,7 +743,7 @@ var_types Compiler::getArgTypeForStruct(CORINFO_CLASS_HANDLE clsHnd,
 
                 // Otherwise we pass this struct by value on the stack
                 // setup wbPassType and useType indicate that this is passed by value according to the X86/ARM32 ABI
-                // On LOONGARCH64 struct that is 1-16 bytes is passed by value in one/two register(s)
+                // On LOONGARCH64 and RISCV64 struct that is 1-16 bytes is passed by value in one/two register(s)
                 howToPassStruct = SPK_ByValue;
                 useType         = TYP_STRUCT;
 
@@ -5255,11 +5255,11 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
         // Conditional to Switch conversion
         //
         DoPhase(this, PHASE_SWITCH_RECOGNITION, &Compiler::optSwitchRecognition);
-    }
 
-    // Determine start of cold region if we are hot/cold splitting
-    //
-    DoPhase(this, PHASE_DETERMINE_FIRST_COLD_BLOCK, &Compiler::fgDetermineFirstColdBlock);
+        // Determine start of cold region if we are hot/cold splitting
+        //
+        DoPhase(this, PHASE_DETERMINE_FIRST_COLD_BLOCK, &Compiler::fgDetermineFirstColdBlock);
+    }
 
 #ifdef DEBUG
     // Stash the current estimate of the function's size if necessary.

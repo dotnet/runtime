@@ -13503,6 +13503,40 @@ bool CordbProcess::IsSpecialStackOverflowCase(CordbUnmanagedThread *pUThread, co
     return true;
 }
 
+#ifdef FEATURE_INTEROP_DEBUGGING
+bool CordbProcess::IsUnmanagedThreadHijacked(ICorDebugThread * pICorDebugThread)
+{
+    PUBLIC_REENTRANT_API_ENTRY_FOR_SHIM(this);
+
+    if (GetShim() == NULL || !IsInteropDebugging())
+    {
+        return false;
+    }
+
+    {
+        RSLockHolder lockHolder(GetProcessLock());
+        CordbThread * pCordbThread = static_cast<CordbThread *> (pICorDebugThread);
+        HRESULT hr = pCordbThread->EnsureThreadIsAlive();
+        if (FAILED(hr))
+        {
+            return false;
+        }
+
+        // And only if we have a CordbUnmanagedThread and we are hijacked to code:Debugger::GenericHijackFunc
+        CordbUnmanagedThread * pUT = GetUnmanagedThread(pCordbThread->GetVolatileOSThreadID());
+        if (pUT != NULL)
+        {
+            if (pUT->IsFirstChanceHijacked() || pUT->IsGenericHijacked())
+            {
+                return true;
+            }
+        }
+    }
+    return false;
+}
+#endif // FEATURE_INTEROP_DEBUGGING
+
+
 //-----------------------------------------------------------------------------
 // Longhorn broke ContinueDebugEvent.
 // In previous OS releases, DBG_CONTINUE would continue a  non-continuable exception.

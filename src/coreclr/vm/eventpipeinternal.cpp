@@ -44,7 +44,10 @@ extern "C" UINT64 QCALLTYPE EventPipeInternal_Enable(
             nullptr,
             nullptr,
             nullptr);
-        EventPipeAdapter::StartStreaming(sessionID);
+        if (sessionID != 0)
+        {
+            EventPipeAdapter::StartStreaming(sessionID);
+        }
     }
     END_QCALL;
 

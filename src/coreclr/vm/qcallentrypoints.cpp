@@ -43,7 +43,6 @@
 
 #ifdef FEATURE_COMINTEROP
 #include "variant.h"
-#include "mngstdinterfaces.h"
 #endif // FEATURE_COMINTEROP
 
 #include "interoplibinterface.h"
@@ -89,6 +88,7 @@ static const Entry s_QCall[] =
     DllImportEntry(Delegate_BindToMethodName)
     DllImportEntry(Delegate_BindToMethodInfo)
     DllImportEntry(Delegate_InitializeVirtualCallStub)
+    DllImportEntry(Delegate_GetMulticastInvokeSlow)
     DllImportEntry(Delegate_AdjustTarget)
     DllImportEntry(Delegate_InternalAlloc)
     DllImportEntry(Delegate_InternalAllocLike)
@@ -99,6 +99,8 @@ static const Entry s_QCall[] =
     DllImportEntry(Environment_GetProcessorCount)
     DllImportEntry(ExceptionNative_GetMessageFromNativeResources)
     DllImportEntry(ExceptionNative_GetMethodFromStackTrace)
+    DllImportEntry(ExceptionNative_ThrowAmbiguousResolutionException)
+    DllImportEntry(ExceptionNative_ThrowEntryPointNotFoundException)
     DllImportEntry(RuntimeTypeHandle_CreateInstanceForAnotherGenericParameter)
     DllImportEntry(QCall_GetGCHandleForTypeHandle)
     DllImportEntry(QCall_FreeGCHandleForTypeHandle)
@@ -112,6 +114,7 @@ static const Entry s_QCall[] =
     DllImportEntry(RuntimeTypeHandle_MakeArray)
     DllImportEntry(RuntimeTypeHandle_IsCollectible)
     DllImportEntry(RuntimeTypeHandle_GetConstraints)
+    DllImportEntry(RuntimeTypeHandle_GetNumVirtualsAndStaticVirtuals)
     DllImportEntry(RuntimeTypeHandle_VerifyInterfaceIsImplemented)
     DllImportEntry(RuntimeTypeHandle_GetInterfaceMethodImplementation)
     DllImportEntry(RuntimeTypeHandle_IsVisible)
@@ -333,6 +336,8 @@ static const Entry s_QCall[] =
     DllImportEntry(GetFileLoadExceptionMessage)
     DllImportEntry(FileLoadException_GetMessageForHR)
     DllImportEntry(Interlocked_MemoryBarrierProcessWide)
+    DllImportEntry(ObjectNative_GetHashCodeSlow)
+    DllImportEntry(ObjectNative_GetTypeSlow)
     DllImportEntry(ObjectNative_AllocateUninitializedClone)
     DllImportEntry(Monitor_Wait)
     DllImportEntry(Monitor_Pulse)
@@ -420,6 +425,10 @@ static const Entry s_QCall[] =
     DllImportEntry(StubHelpers_CreateCustomMarshalerHelper)
     DllImportEntry(StubHelpers_SetStringTrailByte)
     DllImportEntry(StubHelpers_ThrowInteropParamException)
+#ifdef PROFILING_SUPPORTED
+    DllImportEntry(StubHelpers_ProfilerBeginTransitionCallback)
+    DllImportEntry(StubHelpers_ProfilerEndTransitionCallback)
+#endif
 #if defined(FEATURE_COMINTEROP)
     DllImportEntry(ObjectMarshaler_ConvertToNative)
     DllImportEntry(ObjectMarshaler_ConvertToManaged)

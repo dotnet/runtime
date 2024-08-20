@@ -1722,39 +1722,6 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 			if (cfg->gen_write_barriers && is_ref)
 				mini_emit_write_barrier (cfg, args [0], args [1]);
 		}
-		else if ((strcmp (cmethod->name, "CompareExchange") == 0) && fsig->param_count == 4 &&
-		         fsig->params [1]->type == MONO_TYPE_I4) {
-			MonoInst *cmp, *ceq;
-
-			if (!mono_arch_opcode_supported (OP_ATOMIC_CAS_I4))
-				return NULL;
-
-			/* int32 r = CAS (location, value, comparand); */
-			MONO_INST_NEW (cfg, ins, OP_ATOMIC_CAS_I4);
-			ins->dreg = alloc_ireg (cfg);
-			ins->sreg1 = args [0]->dreg;
-			ins->sreg2 = args [1]->dreg;
-			ins->sreg3 = args [2]->dreg;
-			ins->type = STACK_I4;
-			MONO_ADD_INS (cfg->cbb, ins);
-
-			/* bool result = r == comparand; */
-			MONO_INST_NEW (cfg, cmp, OP_ICOMPARE);
-			cmp->sreg1 = ins->dreg;
-			cmp->sreg2 = args [2]->dreg;
-			cmp->type = STACK_I4;
-			MONO_ADD_INS (cfg->cbb, cmp);
-
-			MONO_INST_NEW (cfg, ceq, OP_ICEQ);
-			ceq->dreg = alloc_ireg (cfg);
-			ceq->type = STACK_I4;
-			MONO_ADD_INS (cfg->cbb, ceq);
-
-			/* *success = result; */
-			MONO_EMIT_NEW_STORE_MEMBASE (cfg, OP_STOREI1_MEMBASE_REG, args [3]->dreg, 0, ceq->dreg);
-
-			cfg->has_atomic_cas_i4 = TRUE;
-		}
 		else if (strcmp (cmethod->name, "MemoryBarrier") == 0 && fsig->param_count == 0)
 			ins = mini_emit_memory_barrier (cfg, MONO_MEMORY_BARRIER_SEQ);
 
@@ -2272,7 +2239,25 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 	if (in_corlib &&
 		((!strcmp ("System.Numerics", cmethod_klass_name_space) && !strcmp ("Vector", cmethod_klass_name)) ||
 		!strncmp ("System.Runtime.Intrinsics", cmethod_klass_name_space, 25))) {
-		if (!strcmp (cmethod->name, "get_IsHardwareAccelerated")) {
+		const char* cmethod_name = cmethod->name;
+
+		if (strncmp(cmethod_name, "System.Runtime.Intrinsics.ISimdVector<System.Runtime.Intrinsics.Vector", 70) == 0) {
+			// We want explicitly implemented ISimdVector<TSelf, T> APIs to still be expanded where possible
+			// but, they all prefix the qualified name of the interface first, so we'll check for that and
+			// skip the prefix before trying to resolve the method.
+
+			if (strncmp(cmethod_name + 70, "<T>,T>.", 7) == 0) {
+				cmethod_name += 77;
+			} else if (strncmp(cmethod_name + 70, "64<T>,T>.", 9) == 0) {
+				cmethod_name += 79;
+			} else if ((strncmp(cmethod_name + 70, "128<T>,T>.", 10) == 0) ||
+				(strncmp(cmethod_name + 70, "256<T>,T>.", 10) == 0) ||
+				(strncmp(cmethod_name + 70, "512<T>,T>.", 10) == 0)) {
+				cmethod_name += 80;
+			}
+		}
+		
+		if (!strcmp (cmethod_name, "get_IsHardwareAccelerated")) {
 			EMIT_NEW_ICONST (cfg, ins, 0);
 			ins->type = STACK_I4;
 			return ins;
