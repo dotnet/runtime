@@ -801,6 +801,11 @@ namespace VirtualStaticInterfaceMethodTestGen
                 twOutputTest.WriteLine("    .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (");
                 twOutputTest.WriteLine("        01 00 00 00");
                 twOutputTest.WriteLine("    )");
+                twOutputTest.WriteLine("    // [SkipOnCoreClr(\"GC Stress Incompatible\", RuntimeTestModes.AnyGCStress)]");
+                twOutputTest.WriteLine("    .custom instance void [Microsoft.DotNet.XUnitExtensions]Xunit.SkipOnCoreClrAttribute::.ctor(string, valuetype [Microsoft.DotNet.XUnitExtensions]Xunit.RuntimeTestModes) = (");
+                twOutputTest.WriteLine("        01 00 16 47 43 20 53 74 72 65 73 73 20 49 6e 63");
+                twOutputTest.WriteLine("        6f 6d 70 61 74 69 62 6c 65 c0 00 00 00 00 00");
+	            twOutputTest.WriteLine("    )");
                 twOutputTest.WriteLine("    .entrypoint");
                 twOutputTest.WriteLine("    .locals init (class [System.Runtime]System.Exception V_0)");
                 twOutputTest.Write(swMainMethodBody.ToString());

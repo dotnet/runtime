@@ -37,7 +37,7 @@
 
     <!-- Temporarily `false`, till sdk gets a fix for supporting the new file -->
     <WasmEmitSymbolMap Condition="'$(WasmEmitSymbolMap)' == '' and '$(RunAOTCompilation)' != 'true'">false</WasmEmitSymbolMap>
-    <TrimMode Condition="'$(TrimMode)' == ''">partial</TrimMode>
+    <TrimMode Condition="'$(TrimMode)' == ''">full</TrimMode>
 
     <WasmRunWasmOpt Condition="'$(WasmRunWasmOpt)' == ''">false</WasmRunWasmOpt>
 
@@ -101,7 +101,7 @@
     </PropertyGroup>
 
     <PropertyGroup>
-      <_ToolchainMissingErrorMessage Condition="'$(WASI_SDK_PATH)' == '' and '$(WasiSdkRoot)' == ''">Could not find wasi-sdk. Install wasi-sdk and set %24(WASI_SDK_PATH) . It can be obtained from https://github.com/WebAssembly/wasi-sdk/releases</_ToolchainMissingErrorMessage>
+      <_ToolchainMissingErrorMessage Condition="'$(WASI_SDK_PATH)' == '' or !Exists('$(WASI_SDK_PATH)/VERSION24')">Could not find wasi-sdk. Install wasi-sdk and set %24(WASI_SDK_PATH) . It can be obtained from https://github.com/WebAssembly/wasi-sdk/releases</_ToolchainMissingErrorMessage>
       <_ToolchainMissingErrorMessage Condition="'$(_ToolchainMissingErrorMessage)' == '' and '$(_ToolchainMissingPaths)' != ''">Using WASI_SDK_PATH=$(WASI_SDK_PATH), cannot find $(_ToolchainMissingPaths) .</_ToolchainMissingErrorMessage>
       <_IsToolchainMissing Condition="'$(_ToolchainMissingErrorMessage)' != ''">true</_IsToolchainMissing>
     </PropertyGroup>
@@ -159,6 +159,8 @@
        <!--TODOWASI this needs similar AOT logic as EMCC in https://github.com/dotnet/runtime/pull/80507-->
       <WasmInitialHeapSize Condition="'$(WasmInitialHeapSize)' == ''">52428800</WasmInitialHeapSize>
       <WasmClang>$(WasiClang)</WasmClang>
+      <_WasiAfterRuntimeLoadedDeclarations>@(WasiAfterRuntimeLoadedDeclarations, ' ')</_WasiAfterRuntimeLoadedDeclarations>
+      <_WasiAfterRuntimeLoadedCalls>@(WasiAfterRuntimeLoadedCalls, ' ')</_WasiAfterRuntimeLoadedCalls>
     </PropertyGroup>
 
     <ItemGroup>
@@ -182,7 +184,8 @@
 
       <_WasiClangCommonFlags Include="$(_DefaultWasiClangFlags)" />
       <_WasiClangCommonFlags Include="$(WasiClangFlags)" />
-      <_WasiClangCommonFlags Include="--sysroot=&quot;$(WasiSdkRoot.Replace('\', '/'))/share/wasi-sysroot&quot;" />
+      <_WasiClangCommonFlags Include="--sysroot=&quot;$(WASI_SDK_PATH.Replace('\', '/'))share/wasi-sysroot&quot;" />
+      <_WasiClangCommonFlags Include="--target=wasm32-unknown-wasip2" />
       <_WasiClangCommonFlags Include="-g"                                Condition="'$(WasmNativeStrip)' == 'false'" />
       <_WasiClangCommonFlags Include="-v"                                Condition="'$(WasiClangVerbose)' != 'false'" />
       <!--<_WasiClangCommonFlags Include="-s DISABLE_EXCEPTION_CATCHING=0"   Condition="'$(WasmEnableExceptionHandling)' == 'false'" />-->
@@ -204,10 +207,10 @@
 
       <_WasiClangCFlags Include="-g" Condition="'$(WasmNativeDebugSymbols)' == 'true'" />
 
-      <_WasiClangCFlags Condition="'@(WasiAfterRuntimeLoadedDeclarations)' != ''"
-                         Include="-D WASI_AFTER_RUNTIME_LOADED_DECLARATIONS=&quot;@(WasiAfterRuntimeLoadedDeclarations, ' ')&quot;" />
-      <_WasiClangCFlags Condition="'@(WasiAfterRuntimeLoadedCalls)' != ''"
-                         Include="-D WASI_AFTER_RUNTIME_LOADED_CALLS=&quot;@(WasiAfterRuntimeLoadedCalls, ' ')&quot;" />
+      <_WasiClangCFlags Condition="'$(_WasiAfterRuntimeLoadedDeclarations)' != ''"
+                         Include="-D WASI_AFTER_RUNTIME_LOADED_DECLARATIONS=&quot;$(_WasiAfterRuntimeLoadedDeclarations)&quot;" />
+      <_WasiClangCFlags Condition="'$(_WasiAfterRuntimeLoadedCalls)' != ''"
+                         Include="-D WASI_AFTER_RUNTIME_LOADED_CALLS=&quot;$(_WasiAfterRuntimeLoadedCalls)&quot;" />
 
       <_WasiClangLDFlags Include="$(WasiClangLinkOptimizationFlag)" />
       <_WasiClangLDFlags Include="@(_WasiClangCommonFlags)" />
@@ -323,8 +326,8 @@
       <_WasmNativeFileForLinking Remove="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)$(_WasmEHLibToExclude)" />
       <_WasmNativeFileForLinking Remove="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)$(_WasmSIMDLibToExclude)" />
 
-      <_WasmNativeFileForLinking Include="$(WasiSysRoot)\lib\wasm32-wasi\libc++.a" />
-      <_WasmNativeFileForLinking Include="$(WasiSysRoot)\lib\wasm32-wasi\libc++abi.a" />
+      <_WasmNativeFileForLinking Include="$(WasiSysRoot)\lib\wasm32-wasip2\libc++.a" />
+      <_WasmNativeFileForLinking Include="$(WasiSysRoot)\lib\wasm32-wasip2\libc++abi.a" />
 
       <_WasmNativeFileForLinking Include="@(NativeFileReference)" />
     </ItemGroup>
@@ -343,7 +346,14 @@
 
       <_WasiLinkStepArgs Include="-Wl,--export=malloc,--export=free,--export=__heap_base,--export=__data_end" />
       <!-- keep in sync with src\mono\wasi\wasi.proj -->
+      <!-- keep in sync with src\native\libs\CMakeLists.txt -->
       <_WasiLinkStepArgs Include="-Wl,-z,stack-size=8388608,-lwasi-emulated-process-clocks,-lwasi-emulated-signal,-lwasi-emulated-mman"/>
+      <!-- 
+      this together with some DLLImports makes dependency on wasi:http@0.2.0
+      it will get trimmed when HTTP is not used and using publish + native rebuild
+      otherwise it will be included in the dotnet.wasm and required -S http argument to wasmtime
+      -->
+      <_WasiLinkStepArgs Include="-Wl,--component-type,&quot;$([MSBuild]::NormalizePath('$(MicrosoftNetCoreAppRuntimePackRidNativeDir)', 'WasiHttpWorld_component_type.wit').Replace('\','/'))&quot;"/>
       <_WasiLinkStepArgs Include="-Wl,-s" Condition="'$(WasmNativeStrip)' == 'true'"/>
 
       <_WasiLinkStepArgs Include="&quot;@$(_WasmDefaultLinkFlagsRsp.Replace('\', '/'))&quot;" />
@@ -382,7 +392,7 @@
     <PropertyGroup>
       <_WasiOutputFileName Condition="'$(WasmSingleFileBundle)' == 'true'">$([System.IO.Path]::GetFileNameWithoutExtension('$(WasmMainAssemblyFileName)')).wasm</_WasiOutputFileName>
       <_WasiOutputFileName Condition="'$(WasmSingleFileBundle)' != 'true'">dotnet.wasm</_WasiOutputFileName>
-      <_WasiOutputFileName Condition="'$(_WasiOutputFileName)' != ''">$([System.IO.Path]::Combine($(_WasiIntermediateOutputPath), $(_WasiOutputFileName)))</_WasiOutputFileName>
+      <_WasiOutputFileName Condition="'$(_WasiOutputFileName)' != ''">$([System.IO.Path]::Combine($(_WasmIntermediateOutputPath), $(_WasiOutputFileName)))</_WasiOutputFileName>
     </PropertyGroup>
 
     <Error Condition="'$(_WasiOutputFileName)' == ''" Text="Could not determine $(_WasiOutputFileName)" />

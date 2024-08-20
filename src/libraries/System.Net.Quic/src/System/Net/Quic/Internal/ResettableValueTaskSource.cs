@@ -310,6 +310,13 @@ internal sealed class ResettableValueTaskSource : IValueTaskSource
         {
             if (_finalTaskSource is null)
             {
+                if (_isSignaled)
+                {
+                    return _exception is null
+                        ? Task.CompletedTask
+                        : Task.FromException(_exception);
+                }
+
                 _finalTaskSource = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
                 if (!_isCompleted)
                 {
@@ -318,10 +325,6 @@ internal sealed class ResettableValueTaskSource : IValueTaskSource
                     {
                         ((GCHandle)state!).Free();
                     }, handle, CancellationToken.None, TaskContinuationOptions.ExecuteSynchronously, TaskScheduler.Default);
-                }
-                if (_isSignaled)
-                {
-                    TrySignal(out _);
                 }
             }
             return _finalTaskSource.Task;

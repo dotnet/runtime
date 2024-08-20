@@ -167,8 +167,7 @@ namespace System.Runtime.CompilerServices
         [RequiresUnreferencedCode("Trimmer can't guarantee existence of class constructor")]
         public static void RunClassConstructor(RuntimeTypeHandle type)
         {
-            RuntimeType rt = type.GetRuntimeType();
-            if (rt is null)
+            RuntimeType rt = type.GetRuntimeType() ??
                 throw new ArgumentException(SR.InvalidOperation_HandleIsNotInitialized, nameof(type));
 
             RunClassConstructor(new QCallTypeHandle(ref rt));
@@ -187,8 +186,7 @@ namespace System.Runtime.CompilerServices
 
         public static void RunModuleConstructor(ModuleHandle module)
         {
-            RuntimeModule rm = module.GetRuntimeModule();
-            if (rm is null)
+            RuntimeModule rm = module.GetRuntimeModule() ??
                 throw new ArgumentException(SR.InvalidOperation_HandleIsNotInitialized, nameof(module));
 
             RunModuleConstructor(new QCallModule(ref rm));
@@ -204,8 +202,7 @@ namespace System.Runtime.CompilerServices
 
         public static unsafe void PrepareMethod(RuntimeMethodHandle method, RuntimeTypeHandle[]? instantiation)
         {
-            IRuntimeMethodInfo methodInfo = method.GetMethodInfo();
-            if (methodInfo == null)
+            IRuntimeMethodInfo methodInfo = method.GetMethodInfo() ??
                 throw new ArgumentException(SR.InvalidOperation_HandleIsNotInitialized, nameof(method));
 
             // defensive copy of user-provided array, per CopyRuntimeTypeHandles contract
@@ -223,19 +220,35 @@ namespace System.Runtime.CompilerServices
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern void PrepareDelegate(Delegate d);
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        public static extern int GetHashCode(object? o);
-
         /// <summary>
         /// If a hash code has been assigned to the object, it is returned. Otherwise zero is
         /// returned.
         /// </summary>
-        /// <remarks>
-        /// The advantage of this over <see cref="GetHashCode" /> is that it avoids assigning a hash
-        /// code to the object if it does not already have one.
-        /// </remarks>
         [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern int TryGetHashCode(object o);
+        internal static extern int TryGetHashCode(object? o);
+
+        [LibraryImport(QCall, EntryPoint = "ObjectNative_GetHashCodeSlow")]
+        private static partial int GetHashCodeSlow(ObjectHandleOnStack o);
+
+        public static int GetHashCode(object? o)
+        {
+            int hashCode = TryGetHashCode(o);
+            if (hashCode == 0)
+            {
+                return GetHashCodeWorker(o);
+            }
+            return hashCode;
+
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            static int GetHashCodeWorker(object? o)
+            {
+                if (o is null)
+                {
+                    return 0;
+                }
+                return GetHashCodeSlow(ObjectHandleOnStack.Create(ref o));
+            }
+        }
 
         public static new unsafe bool Equals(object? o1, object? o2)
         {
@@ -423,16 +436,8 @@ namespace System.Runtime.CompilerServices
         //
         // GC.KeepAlive(o);
         //
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [Intrinsic]
-        internal static unsafe MethodTable* GetMethodTable(object obj)
-        {
-            // The body of this function will be replaced by the EE with unsafe code
-            // See getILIntrinsicImplementationForRuntimeHelpers for how this happens.
-
-            return (MethodTable*)Unsafe.Add(ref Unsafe.As<byte, IntPtr>(ref obj.GetRawData()), -1);
-        }
-
+        internal static unsafe MethodTable* GetMethodTable(object obj) => GetMethodTable(obj);
 
         [LibraryImport(QCall, EntryPoint = "MethodTable_AreTypesEquivalent")]
         [return: MarshalAs(UnmanagedType.Bool)]
@@ -654,7 +659,7 @@ namespace System.Runtime.CompilerServices
         private const uint enum_flag_IsByRefLike = 0x00001000;
 
         // WFLAGS_HIGH_ENUM
-        private const uint enum_flag_ContainsPointers = 0x01000000;
+        private const uint enum_flag_ContainsGCPointers = 0x01000000;
         private const uint enum_flag_ContainsGenericVariables = 0x20000000;
         private const uint enum_flag_HasComponentSize = 0x80000000;
         private const uint enum_flag_HasTypeEquivalence = 0x02000000;
@@ -669,7 +674,6 @@ namespace System.Runtime.CompilerServices
         // Types that require non-trivial interface cast have this bit set in the category
         private const uint enum_flag_NonTrivialInterfaceCast = 0x00080000 // enum_flag_Category_Array
                                                              | 0x40000000 // enum_flag_ComObject
-                                                             | 0x00400000 // enum_flag_ICastable;
                                                              | 0x10000000 // enum_flag_IDynamicInterfaceCastable;
                                                              | 0x00040000; // enum_flag_Category_ValueType
 
@@ -707,7 +711,7 @@ namespace System.Runtime.CompilerServices
 
         public bool HasComponentSize => (Flags & enum_flag_HasComponentSize) != 0;
 
-        public bool ContainsGCPointers => (Flags & enum_flag_ContainsPointers) != 0;
+        public bool ContainsGCPointers => (Flags & enum_flag_ContainsGCPointers) != 0;
 
         public bool NonTrivialInterfaceCast => (Flags & enum_flag_NonTrivialInterfaceCast) != 0;
 
@@ -794,11 +798,12 @@ namespace System.Runtime.CompilerServices
     }
 
     // Subset of src\vm\methodtable.h
-    [StructLayout(LayoutKind.Explicit)]
+    [StructLayout(LayoutKind.Sequential)]
     internal unsafe struct MethodTableAuxiliaryData
     {
-        [FieldOffset(0)]
         private uint Flags;
+        private void* LoaderModule;
+        private nint ExposedClassObjectRaw;
 
         private const uint enum_flag_HasCheckedCanCompareBitsOrUseFastGetHashCode = 0x0002;  // Whether we have checked the overridden Equals or GetHashCode
         private const uint enum_flag_CanCompareBitsOrUseFastGetHashCode = 0x0004;     // Is any field type or sub field type overridden Equals or GetHashCode
@@ -813,12 +818,20 @@ namespace System.Runtime.CompilerServices
                 return (Flags & enum_flag_CanCompareBitsOrUseFastGetHashCode) != 0;
             }
         }
+
+        public RuntimeType? ExposedClassObject
+        {
+            get
+            {
+                return *(RuntimeType*)Unsafe.AsPointer(ref ExposedClassObjectRaw);
+            }
+        }
     }
 
     /// <summary>
     /// A type handle, which can wrap either a pointer to a <c>TypeDesc</c> or to a <see cref="MethodTable"/>.
     /// </summary>
-    internal unsafe struct TypeHandle
+    internal readonly unsafe partial struct TypeHandle
     {
         // Subset of src\vm\typehandle.h
 
@@ -865,6 +878,29 @@ namespace System.Runtime.CompilerServices
         {
             return new TypeHandle((void*)RuntimeTypeHandle.ToIntPtr(typeof(T).TypeHandle));
         }
+
+        public static bool AreSameType(TypeHandle left, TypeHandle right) => left.m_asTAddr == right.m_asTAddr;
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public bool CanCastTo(TypeHandle destTH)
+        {
+            if (m_asTAddr == destTH.m_asTAddr)
+                return true;
+
+            if (!IsTypeDesc && destTH.IsTypeDesc)
+                return false;
+
+            CastResult result = CastCache.TryGet(CastHelpers.s_table!, (nuint)m_asTAddr, (nuint)destTH.m_asTAddr);
+
+            if (result != CastResult.MaybeCast)
+                return result == CastResult.CanCast;
+
+            return CanCastTo_NoCacheLookup(m_asTAddr, destTH.m_asTAddr);
+        }
+
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "TypeHandle_CanCastTo_NoCacheLookup")]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        private static partial bool CanCastTo_NoCacheLookup(void* fromTypeHnd, void* toTypeHnd);
     }
 
     // Helper structs used for tail calls via helper.

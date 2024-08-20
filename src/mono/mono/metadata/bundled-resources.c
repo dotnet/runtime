@@ -78,11 +78,16 @@ bundled_resources_is_known_assembly_extension (const char *ext)
 static char *
 key_from_id (const char *id, char *buffer, guint buffer_len)
 {
-	size_t id_length = strlen (id),
-		extension_offset = -1;
-	const char *extension = g_memrchr (id, '.', id_length);
-	if (extension)
-		extension_offset = extension - id;
+	size_t id_length = 0;
+	size_t extension_offset = -1;
+	const char *extension = NULL;
+
+	if (id){
+		id_length = strlen (id);
+		extension = g_memrchr (id, '.', id_length);
+		if (extension)
+			extension_offset = extension - id;
+	}
 	if (!buffer) {
 		// Add space for .dll and null terminator
 		buffer_len = (guint)(id_length + 6);
@@ -90,7 +95,7 @@ key_from_id (const char *id, char *buffer, guint buffer_len)
 	}
 	buffer[0] = 0;
 
-	if (extension_offset && bundled_resources_is_known_assembly_extension (extension)) {
+	if (extension_offset >= 0 && bundled_resources_is_known_assembly_extension (extension)) {
 		// Subtract from buffer_len to make sure we have space for .dll
 		g_strlcpy (buffer, id, MIN(buffer_len - 4, extension_offset + 2));
 		strcat (buffer, "dll");
@@ -152,6 +157,9 @@ mono_bundled_resources_add (MonoBundledResource **resources_to_bundle, uint32_t 
 
 	for (uint32_t i = 0; i < len; ++i) {
 		MonoBundledResource *resource_to_bundle = (MonoBundledResource *)resources_to_bundle[i];
+
+		g_assert (resource_to_bundle->id);
+
 		if (resource_to_bundle->type == MONO_BUNDLED_ASSEMBLY)
 			assemblyAdded = true;
 

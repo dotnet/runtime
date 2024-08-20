@@ -1,19 +1,13 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#pragma warning disable IDE0060 // implementations provided as intrinsics
-using System;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.Versioning;
 
-//
 // The implementations of most the methods in this file are provided as intrinsics.
 // In CoreCLR, the body of the functions are replaced by the EE with unsafe code. See see getILIntrinsicImplementationForUnsafe for details.
 // In AOT compilers, see Internal.IL.Stubs.UnsafeIntrinsics for details.
-//
-
-#pragma warning disable 8500 // address / sizeof of managed types
 
 namespace System.Runtime.CompilerServices
 {

@@ -8,6 +8,7 @@ using System.Runtime.CompilerServices;
 using System.Runtime.ExceptionServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
+using System.Security.Authentication;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading;
 using System.Threading.Channels;
@@ -87,10 +88,10 @@ public sealed partial class QuicConnection : IAsyncDisposable
             {
                 await connection.DisposeAsync().ConfigureAwait(false);
 
-                // throw OCE with correct token if cancellation requested by user
+                // Throw OCE with correct token if cancellation requested by user.
                 cancellationToken.ThrowIfCancellationRequested();
 
-                // cancellation by the linkedCts.CancelAfter. Convert to Timeout
+                // Cancellation by the linkedCts.CancelAfter, convert to timeout.
                 throw new QuicException(QuicError.ConnectionTimeout, null, SR.Format(SR.net_quic_handshake_timeout, options.HandshakeTimeout));
             }
             catch
@@ -109,14 +110,9 @@ public sealed partial class QuicConnection : IAsyncDisposable
     private readonly MsQuicContextSafeHandle _handle;
 
     /// <summary>
-    /// Set to non-zero once disposed. Prevents double and/or concurrent disposal.
+    /// Set to true once disposed. Prevents double and/or concurrent disposal.
     /// </summary>
-    private int _disposed;
-
-    /// <summary>
-    /// Completed when connection shutdown is initiated.
-    /// </summary>
-    private TaskCompletionSource _connectionCloseTcs = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+    private bool _disposed;
 
     private readonly ValueTaskSource _connectedTcs = new ValueTaskSource();
     private readonly ResettableValueTaskSource _shutdownTcs = new ResettableValueTaskSource()
@@ -139,6 +135,11 @@ public sealed partial class QuicConnection : IAsyncDisposable
             }
         }
     };
+
+    /// <summary>
+    /// Completed when connection shutdown is initiated.
+    /// </summary>
+    private readonly TaskCompletionSource _connectionCloseTcs = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
 
     private readonly CancellationTokenSource _shutdownTokenSource = new CancellationTokenSource();
 
@@ -213,6 +214,14 @@ public sealed partial class QuicConnection : IAsyncDisposable
     /// Set when CONNECTED is received.
     /// </summary>
     private SslApplicationProtocol _negotiatedApplicationProtocol;
+    /// <summary>
+    /// Set when CONNECTED is received.
+    /// </summary>
+    private TlsCipherSuite _negotiatedCipherSuite;
+    /// <summary>
+    /// Set when CONNECTED is received.
+    /// </summary>
+    private SslProtocols _negotiatedSslProtocol;
 
     /// <summary>
     /// Will contain TLS secret after CONNECTED event is received and store it into SSLKEYLOGFILE.
@@ -286,6 +295,17 @@ public sealed partial class QuicConnection : IAsyncDisposable
     /// Final, negotiated application protocol.
     /// </summary>
     public SslApplicationProtocol NegotiatedApplicationProtocol => _negotiatedApplicationProtocol;
+
+    /// <summary>
+    /// Gets the cipher suite which was negotiated for this connection.
+    /// </summary>
+    [CLSCompliant(false)]
+    public TlsCipherSuite NegotiatedCipherSuite => _negotiatedCipherSuite;
+
+    /// <summary>
+    /// Gets a <see cref="System.Security.Authentication.SslProtocols"/> value that indicates the security protocol used to authenticate this connection.
+    /// </summary>
+    public SslProtocols SslProtocol => _negotiatedSslProtocol;
 
     /// <inheritdoc />
     public override string ToString() => _handle.ToString();
@@ -369,7 +389,7 @@ public sealed partial class QuicConnection : IAsyncDisposable
             {
                 Debug.Assert(host is not null);
 
-                // Given just a ServerName to connect to, msquic would also use the first address after the resolution
+                // Given just a ServerName to connect to, MsQuic would also use the first address after the resolution
                 // (https://github.com/microsoft/msquic/issues/1181) and it would not return a well-known error code
                 // for resolution failures we could rely on. By doing the resolution in managed code, we can guarantee
                 // that a SocketException will surface to the user if the name resolution fails.
@@ -502,7 +522,7 @@ public sealed partial class QuicConnection : IAsyncDisposable
     /// <returns>An asynchronous task that completes with the opened <see cref="QuicStream" />.</returns>
     public async ValueTask<QuicStream> OpenOutboundStreamAsync(QuicStreamType type, CancellationToken cancellationToken = default)
     {
-        ObjectDisposedException.ThrowIf(_disposed == 1, this);
+        ObjectDisposedException.ThrowIf(_disposed, this);
 
         QuicStream? stream = null;
         try
@@ -524,15 +544,11 @@ public sealed partial class QuicConnection : IAsyncDisposable
             }
 
             // Propagate ODE if disposed in the meantime.
-            ObjectDisposedException.ThrowIf(_disposed == 1, this);
+            ObjectDisposedException.ThrowIf(_disposed, this);
 
-            // In case of an incoming race when the connection is closed by the peer just before we open the stream,
-            // we receive QUIC_STATUS_ABORTED from MsQuic, but we don't know how the connection was closed. We throw
-            // special exception and handle it here where we can determine the shutdown reason.
-            bool connectionAbortedByPeer = ThrowHelper.IsConnectionAbortedWhenStartingStreamException(ex);
-
-            // Propagate connection error if present.
-            if (_connectionCloseTcs.Task.IsFaulted || connectionAbortedByPeer)
+            // Propagate connection error when the connection was closed (remotely = ABORTED / locally = INVALID_STATE).
+            if (ex is QuicException qex && qex.QuicError == QuicError.InternalError &&
+               (qex.HResult == QUIC_STATUS_ABORTED || qex.HResult == QUIC_STATUS_INVALID_STATE))
             {
                 await _connectionCloseTcs.Task.ConfigureAwait(false);
             }
@@ -548,7 +564,7 @@ public sealed partial class QuicConnection : IAsyncDisposable
     /// <returns>An asynchronous task that completes with the accepted <see cref="QuicStream" />.</returns>
     public async ValueTask<QuicStream> AcceptInboundStreamAsync(CancellationToken cancellationToken = default)
     {
-        ObjectDisposedException.ThrowIf(_disposed == 1, this);
+        ObjectDisposedException.ThrowIf(_disposed, this);
 
         if (!_canAccept)
         {
@@ -587,7 +603,7 @@ public sealed partial class QuicConnection : IAsyncDisposable
     /// <returns>An asynchronous task that completes when the connection is closed.</returns>
     public ValueTask CloseAsync(long errorCode, CancellationToken cancellationToken = default)
     {
-        ObjectDisposedException.ThrowIf(_disposed == 1, this);
+        ObjectDisposedException.ThrowIf(_disposed, this);
         ThrowHelper.ValidateErrorCode(nameof(errorCode), errorCode, $"{nameof(CloseAsync)}.{nameof(errorCode)}");
 
         if (_shutdownTcs.TryGetValueTask(out ValueTask valueTask, this, cancellationToken))
@@ -612,6 +628,15 @@ public sealed partial class QuicConnection : IAsyncDisposable
     private unsafe int HandleEventConnected(ref CONNECTED_DATA data)
     {
         _negotiatedApplicationProtocol = new SslApplicationProtocol(new Span<byte>(data.NegotiatedAlpn, data.NegotiatedAlpnLength).ToArray());
+
+        QUIC_HANDSHAKE_INFO info = MsQuicHelpers.GetMsQuicParameter<QUIC_HANDSHAKE_INFO>(_handle, QUIC_PARAM_TLS_HANDSHAKE_INFO);
+
+        // QUIC_CIPHER_SUITE and QUIC_TLS_PROTOCOL_VERSION use the same values as the corresponding TlsCipherSuite and SslProtocols members.
+        _negotiatedCipherSuite = (TlsCipherSuite)info.CipherSuite;
+        _negotiatedSslProtocol = (SslProtocols)info.TlsProtocolVersion;
+
+        // currently only TLS 1.3 is defined for QUIC
+        Debug.Assert(_negotiatedSslProtocol == SslProtocols.Tls13, $"Unexpected TLS version {info.TlsProtocolVersion}");
 
         QuicAddr remoteAddress = MsQuicHelpers.GetMsQuicParameter<QuicAddr>(_handle, QUIC_PARAM_CONN_REMOTE_ADDRESS);
         _remoteEndPoint = MsQuicHelpers.QuicAddrToIPEndPoint(&remoteAddress);
@@ -649,7 +674,7 @@ public sealed partial class QuicConnection : IAsyncDisposable
         // make sure we log at least some secrets in case of shutdown before handshake completes.
         _tlsSecret?.WriteSecret();
 
-        Exception exception = ExceptionDispatchInfo.SetCurrentStackTrace(_disposed == 1 ? new ObjectDisposedException(GetType().FullName) : ThrowHelper.GetOperationAbortedException());
+        Exception exception = ExceptionDispatchInfo.SetCurrentStackTrace(_disposed ? new ObjectDisposedException(GetType().FullName) : ThrowHelper.GetOperationAbortedException());
         _connectionCloseTcs.TrySetException(exception);
         _acceptQueue.Writer.TryComplete(exception);
         _connectedTcs.TrySetException(exception);
@@ -787,7 +812,7 @@ public sealed partial class QuicConnection : IAsyncDisposable
     /// <returns>A task that represents the asynchronous dispose operation.</returns>
     public async ValueTask DisposeAsync()
     {
-        if (Interlocked.Exchange(ref _disposed, 1) != 0)
+        if (Interlocked.Exchange(ref _disposed, true))
         {
             return;
         }
@@ -822,8 +847,10 @@ public sealed partial class QuicConnection : IAsyncDisposable
         // Wait for SHUTDOWN_COMPLETE, the last event, so that all resources can be safely released.
         await _shutdownTcs.GetFinalTask(this).ConfigureAwait(false);
         Debug.Assert(_connectedTcs.IsCompleted);
+        Debug.Assert(_connectionCloseTcs.Task.IsCompleted);
         _handle.Dispose();
         _shutdownTokenSource.Dispose();
+        _connectionCloseTcs.Task.ObserveException();
         _configuration?.Dispose();
 
         // Dispose remote certificate only if it hasn't been accessed via getter, in which case the accessing code becomes the owner of the certificate lifetime.

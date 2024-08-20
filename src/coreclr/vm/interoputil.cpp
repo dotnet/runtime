@@ -2187,43 +2187,6 @@ void GetComSourceInterfacesForClass(MethodTable *pMT, CQuickArray<MethodTable *>
     }
 }
 
-
-//--------------------------------------------------------------------------------
-// These methods convert a native IEnumVARIANT to a managed IEnumerator.
-OBJECTREF ConvertEnumVariantToMngEnum(IEnumVARIANT *pNativeEnum)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_COOPERATIVE;
-    }
-    CONTRACTL_END;
-
-    OBJECTREF MngEnum = NULL;
-    OBJECTREF EnumeratorToEnumVariantMarshaler = NULL;
-    GCPROTECT_BEGIN(EnumeratorToEnumVariantMarshaler)
-    {
-        // Retrieve the custom marshaler and the MD to use to convert the IEnumVARIANT.
-        StdMngIEnumerator *pStdMngIEnumInfo = SystemDomain::GetCurrentDomain()->GetMngStdInterfacesInfo()->GetStdMngIEnumerator();
-        MethodDesc *pEnumNativeToManagedMD = pStdMngIEnumInfo->GetCustomMarshalerMD(CustomMarshalerMethods_MarshalNativeToManaged);
-        EnumeratorToEnumVariantMarshaler = pStdMngIEnumInfo->GetCustomMarshaler();
-        MethodDescCallSite enumNativeToManaged(pEnumNativeToManagedMD, &EnumeratorToEnumVariantMarshaler);
-
-        // Prepare the arguments that will be passed to MarshalNativeToManaged.
-        ARG_SLOT MarshalNativeToManagedArgs[] = {
-            ObjToArgSlot(EnumeratorToEnumVariantMarshaler),
-            (ARG_SLOT)pNativeEnum
-        };
-
-        // Retrieve the managed view for the current native interface pointer.
-        MngEnum = enumNativeToManaged.Call_RetOBJECTREF(MarshalNativeToManagedArgs);
-    }
-    GCPROTECT_END();
-
-    return MngEnum;
-}
-
 //--------------------------------------------------------------------------------
 // This method converts an OLE_COLOR to a System.Color.
 void ConvertOleColorToSystemColor(OLE_COLOR SrcOleColor, SYSTEMCOLOR *pDestSysColor)
@@ -3042,7 +3005,27 @@ public:
     }
 };
 
+//--------------------------------------------------------------------------------
+// This methods converts an IEnumVARIANT to a managed IEnumerator.
+static OBJECTREF ConvertEnumVariantToMngEnum(IEnumVARIANT* pNativeEnum)
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_COOPERATIVE;
+    }
+    CONTRACTL_END;
 
+    OBJECTREF retObjRef;
+
+    PREPARE_NONVIRTUAL_CALLSITE(METHOD__ENUMERATORTOENUMVARIANTMARSHALER__INTERNALMARSHALNATIVETOMANAGED);
+    DECLARE_ARGHOLDER_ARRAY(args, 1);
+    args[ARGNUM_0]  = PTR_TO_ARGHOLDER(pNativeEnum);
+    CALL_MANAGED_METHOD_RETREF(retObjRef, OBJECTREF, args);
+
+    return retObjRef;
+}
 
 //--------------------------------------------------------------------------------
 // InvokeDispMethod will convert a set of managed objects and call IDispatch.  The
@@ -3082,6 +3065,7 @@ void IUInvokeDispMethod(
     DISPID              MemberID            = 0;
     ByrefArgumentInfo*  aByrefArgInfos      = NULL;
     BOOL                bSomeArgsAreByref   = FALSE;
+    SafeComHolder<IUnknown> pUnk            = NULL;
     SafeComHolder<IDispatch> pDisp          = NULL;
     SafeComHolder<IDispatchEx> pDispEx      = NULL;
     VariantPtrHolder    pVarResult          = NULL;
@@ -3121,7 +3105,7 @@ void IUInvokeDispMethod(
     {
         CorIfaceAttr ifaceType = pInvokedMT->GetComInterfaceType();
         if (!IsDispatchBasedItf(ifaceType))
-            COMPlusThrow(kTargetInvocationException, IDS_EE_INTERFACE_NOT_DISPATCH_BASED);
+            COMPlusThrow(kTargetException, W("TargetInvocation_InterfaceNotIDispatch"));
     }
 
     // Validate that the target is a COM object.
@@ -3156,7 +3140,10 @@ void IUInvokeDispMethod(
     {
         // The invoked type is a dispatch or dual interface so we will make the
         // invocation on it.
-        pDisp = (IDispatch *)ComObject::GetComIPFromRCWThrowing(pTarget, pInvokedMT);
+        pUnk = ComObject::GetComIPFromRCWThrowing(pTarget, pInvokedMT);
+        hr = SafeQueryInterface(pUnk, IID_IDispatch, (IUnknown**)&pDisp);
+        if (FAILED(hr))
+            COMPlusThrow(kTargetException, W("TargetInvocation_TargetDoesNotImplementIDispatch"));
     }
     else
     {
@@ -3167,9 +3154,9 @@ void IUInvokeDispMethod(
         RCWPROTECT_BEGIN(pRCW, *pTarget);
 
         // Retrieve the IDispatch pointer from the wrapper.
-        pDisp = (IDispatch*)pRCW->GetIDispatch();
+        pDisp = pRCW->GetIDispatch();
         if (!pDisp)
-            COMPlusThrow(kTargetInvocationException, IDS_EE_NO_IDISPATCH_ON_TARGET);
+            COMPlusThrow(kTargetException, W("TargetInvocation_TargetDoesNotImplementIDispatch"));
 
         // If we aren't ignoring case, then we need to try and QI for IDispatchEx to
         // be able to use IDispatchEx::GetDispID() which has a flag to control case

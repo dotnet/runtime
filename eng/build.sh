@@ -550,7 +550,7 @@ if [[ "$os" == "wasi" ]]; then
 fi
 
 if [[ "${TreatWarningsAsErrors:-}" == "false" ]]; then
-    arguments="$arguments -warnAsError 0"
+    arguments="$arguments -warnAsError false"
 fi
 
 # disable terminal logger for now: https://github.com/dotnet/runtime/issues/97211
