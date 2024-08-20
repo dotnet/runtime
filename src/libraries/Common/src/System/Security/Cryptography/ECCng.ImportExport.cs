@@ -59,7 +59,7 @@ namespace System.Security.Cryptography
                     }
 
                     // We better have computed the right allocation size above!
-                    Debug.Assert(offset == blobSize, "offset == blobSize");
+                    Debug.Assert(offset == blobSize);
                 }
             }
             return blob;
@@ -143,7 +143,7 @@ namespace System.Security.Cryptography
                     }
 
                     // We better have computed the right allocation size above!
-                    Debug.Assert(offset == blobSize, "offset == blobSize");
+                    Debug.Assert(offset == blobSize);
                 }
 
                 return blob;
@@ -311,7 +311,7 @@ namespace System.Security.Cryptography
                 }
 
                 // We better have computed the right allocation size above!
-                Debug.Assert(offset == blobSize, "offset == blobSize");
+                Debug.Assert(offset == blobSize);
             }
 
             return blob;

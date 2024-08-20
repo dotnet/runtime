@@ -75,12 +75,6 @@ namespace System.Configuration
             }
         }
 
-        private static bool IsHostedInAspnet()
-        {
-            // See System.Web.Hosting.ApplicationManager::PopulateDomainBindings
-            return AppDomain.CurrentDomain.GetData(".appDomain") != null;
-        }
-
         private object Deserialize()
         {
             object value = null;
@@ -112,25 +106,8 @@ namespace System.Configuration
                         }
                     }
                 }
-                catch (Exception exception)
+                catch (Exception)
                 {
-                    try
-                    {
-                        if (IsHostedInAspnet())
-                        {
-                            object[] args = new object[] { Property, this, exception };
-
-                            const string webBaseEventTypeName = "System.Web.Management.WebBaseEvent, System.Web";
-                            Type type = Type.GetType(webBaseEventTypeName, true);
-
-                            type.InvokeMember("RaisePropertyDeserializationWebErrorEvent",
-                                BindingFlags.NonPublic | BindingFlags.Static | BindingFlags.InvokeMethod,
-                                null, null, args, CultureInfo.InvariantCulture);
-                        }
-                    }
-                    catch
-                    {
-                    }
                 }
 
                 if (throwBinaryFormatterDeprecationException)

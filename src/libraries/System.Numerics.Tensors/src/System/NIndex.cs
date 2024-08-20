@@ -14,11 +14,12 @@ namespace System.Buffers
     /// int lastElement = someArray[^1]; // lastElement = 5
     /// </code>
     /// </remarks>
+    [Experimental(Experimentals.TensorTDiagId, UrlFormat = Experimentals.SharedUrlFormat)]
     public readonly struct NIndex : IEquatable<NIndex>
     {
         private readonly nint _value;
 
-        /// <summary>Construct an NIndex using a value and indicating if the NIndex is from the start or from the end.</summary>
+        /// <summary>Construct an <see cref="NIndex"/> using a value and indicating if the <see cref="NIndex"/> is from the start or from the end.</summary>
         /// <param name="value">The index value. it has to be zero or positive number.</param>
         /// <param name="fromEnd">Indicating if the index is from the start or from the end.</param>
         /// <remarks>
@@ -58,13 +59,13 @@ namespace System.Buffers
             _value = value;
         }
 
-        /// <summary>Create an NIndex pointing at first element.</summary>
+        /// <summary>Create an <see cref="NIndex"/> pointing at first element.</summary>
         public static NIndex Start => new NIndex((nint)0);
 
-        /// <summary>Create an NIndex pointing at beyond last element.</summary>
+        /// <summary>Create an <see cref="NIndex"/> pointing at beyond last element.</summary>
         public static NIndex End => new NIndex((nint)~0);
 
-        /// <summary>Create an NIndex from the start at the position indicated by the value.</summary>
+        /// <summary>Create an <see cref="NIndex"/> from the start at the position indicated by the value.</summary>
         /// <param name="value">The index value from the start.</param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static NIndex FromStart(nint value)
@@ -90,10 +91,19 @@ namespace System.Buffers
             return new NIndex(~value);
         }
 
+        /// <summary>
+        /// Converts the <see cref="NIndex"/> to an <see cref="Index"/>.
+        /// </summary>
+        /// <returns>The converted Index.</returns>
         public Index ToIndex() => checked((Index)this);
+
+        /// <summary>
+        /// Converts the <see cref="NIndex"/> to an <see cref="Index"/> without doing bounds checks.
+        /// </summary>
+        /// <returns>The converted Index.</returns>
         public Index ToIndexUnchecked() => (Index)this;
 
-        /// <summary>Returns the NIndex value.</summary>
+        /// <summary>Returns the <see cref="NIndex"/> value.</summary>
         public nint Value
         {
             get
@@ -105,7 +115,7 @@ namespace System.Buffers
             }
         }
 
-        /// <summary>Indicates whether the NIndex is from the start or the end.</summary>
+        /// <summary>Indicates whether the <see cref="NIndex"/> is from the start or the end.</summary>
         public bool IsFromEnd => _value < 0;
 
         /// <summary>Calculate the offset from the start using the giving collection length.</summary>

@@ -13,7 +13,9 @@ internal static class Constants
         internal const string FinalizerThread = nameof(FinalizerThread);
         internal const string GCThread = nameof(GCThread);
 
+        internal const string FeatureCOMInterop = nameof(FeatureCOMInterop);
         internal const string FeatureEHFunclets = nameof(FeatureEHFunclets);
+
         internal const string ObjectToMethodTableUnmask = nameof(ObjectToMethodTableUnmask);
         internal const string SOSBreakingChangeVersion = nameof(SOSBreakingChangeVersion);
 
@@ -35,5 +37,14 @@ internal static class Constants
         internal const string StressLogChunkSize = nameof(StressLogChunkSize);
 
         internal const string MethodDescAlignment = nameof(MethodDescAlignment);
+        internal const string ObjectHeaderSize = nameof(ObjectHeaderSize);
+        internal const string SyncBlockValueToObjectOffset = nameof(SyncBlockValueToObjectOffset);
+
+        internal const string SyncTableEntries = nameof(SyncTableEntries);
+
+        internal const string ArrayBoundsZero = nameof(ArrayBoundsZero);
+
+        internal const string MethodDescTokenRemainderBitCount = nameof(MethodDescTokenRemainderBitCount);
+        internal const string DirectorySeparator = nameof(DirectorySeparator);
     }
 }

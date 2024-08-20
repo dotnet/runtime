@@ -32,9 +32,6 @@ public class ComputeWasmBuildAssets : Task
     public ITaskItem[] ProjectSatelliteAssemblies { get; set; }
 
     [Required]
-    public string DotNetJsVersion { get; set; }
-
-    [Required]
     public string OutputPath { get; set; }
 
     [Required]
@@ -52,11 +49,13 @@ public class ComputeWasmBuildAssets : Task
     [Required]
     public bool CopySymbols { get; set; }
 
-    public bool FingerprintDotNetJs { get; set; }
-
     public bool EnableThreads { get; set; }
 
     public bool EmitSourceMap { get; set; }
+
+    public bool FingerprintAssets { get; set; }
+
+    public bool FingerprintDotNetJs { get; set; }
 
     [Output]
     public ITaskItem[] AssetCandidates { get; set; }
@@ -117,45 +116,8 @@ public class ComputeWasmBuildAssets : Task
                     continue;
                 }
 
-                string candidateFileName = candidate.GetMetadata("FileName");
-                string extension = candidate.GetMetadata("Extension");
-                if (candidateFileName.StartsWith("dotnet") && (extension == ".js" || extension == ".mjs"))
-                {
-                    string newDotnetJSFileName = null;
-                    string newDotNetJSFullPath = null;
-                    if (candidateFileName != "dotnet" || FingerprintDotNetJs)
-                    {
-                        var itemHash = FileHasher.GetFileHash(candidate.ItemSpec);
-                        newDotnetJSFileName = $"{candidateFileName}.{DotNetJsVersion}.{itemHash}{extension}";
-
-                        var originalFileFullPath = Path.GetFullPath(candidate.ItemSpec);
-                        var originalFileDirectory = Path.GetDirectoryName(originalFileFullPath);
-
-                        newDotNetJSFullPath = Path.Combine(originalFileDirectory, newDotnetJSFileName);
-                    }
-                    else
-                    {
-                        newDotNetJSFullPath = candidate.ItemSpec;
-                        newDotnetJSFileName = Path.GetFileName(newDotNetJSFullPath);
-                    }
-
-                    var newDotNetJs = new TaskItem(newDotNetJSFullPath, candidate.CloneCustomMetadata());
-                    newDotNetJs.SetMetadata("OriginalItemSpec", candidate.ItemSpec);
-
-                    var newRelativePath = $"_framework/{newDotnetJSFileName}";
-                    newDotNetJs.SetMetadata("RelativePath", newRelativePath);
-
-                    newDotNetJs.SetMetadata("AssetTraitName", "WasmResource");
-                    newDotNetJs.SetMetadata("AssetTraitValue", "native");
-
-                    assetCandidates.Add(newDotNetJs);
-                    continue;
-                }
-                else
-                {
-                    string relativePath = AssetsComputingHelper.GetCandidateRelativePath(candidate);
-                    candidate.SetMetadata("RelativePath", relativePath);
-                }
+                string relativePath = AssetsComputingHelper.GetCandidateRelativePath(candidate, FingerprintAssets, FingerprintDotNetJs);
+                candidate.SetMetadata("RelativePath", relativePath);
 
                 // Workaround for https://github.com/dotnet/aspnetcore/issues/37574.
                 // For items added as "Reference" in project references, the OriginalItemSpec is incorrect.
@@ -265,6 +227,8 @@ public class ComputeWasmBuildAssets : Task
                 break;
             case ".wasm":
             case ".blat":
+            case ".js" when filename.StartsWith("dotnet"):
+            case ".mjs" when filename.StartsWith("dotnet"):
             case ".dat" when filename.StartsWith("icudt"):
             case ".json" when filename.StartsWith("segmentation-rules"):
                 candidate.SetMetadata("AssetTraitName", "WasmResource");

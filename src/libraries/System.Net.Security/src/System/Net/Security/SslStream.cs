@@ -85,7 +85,7 @@ namespace System.Net.Security
 
             public ReadOnlySpan<byte> DecryptedReadOnlySpanSliced(int length)
             {
-                Debug.Assert(length <= DecryptedLength, "length <= DecryptedLength");
+                Debug.Assert(length <= DecryptedLength);
                 return _buffer.ActiveSpan.Slice(0, length);
             }
 

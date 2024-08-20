@@ -1296,64 +1296,25 @@ namespace System.Globalization
             return results.ToArray();
         }
 
-        public string[] GetAllDateTimePatterns(char format)
-        {
-            string[] result;
-
-            switch (format)
+        public string[] GetAllDateTimePatterns(char format) =>
+            format switch
             {
-                case 'd':
-                    result = AllShortDatePatterns;
-                    break;
-                case 'D':
-                    result = AllLongDatePatterns;
-                    break;
-                case 'f':
-                    result = GetCombinedPatterns(AllLongDatePatterns, AllShortTimePatterns, " ");
-                    break;
-                case 'F':
-                case 'U':
-                    result = GetCombinedPatterns(AllLongDatePatterns, AllLongTimePatterns, " ");
-                    break;
-                case 'g':
-                    result = GetCombinedPatterns(AllShortDatePatterns, AllShortTimePatterns, " ");
-                    break;
-                case 'G':
-                    result = GetCombinedPatterns(AllShortDatePatterns, AllLongTimePatterns, " ");
-                    break;
-                case 'm':
-                case 'M':
-                    result = [MonthDayPattern];
-                    break;
-                case 'o':
-                case 'O':
-                    result = [RoundtripFormat];
-                    break;
-                case 'r':
-                case 'R':
-                    result = [rfc1123Pattern];
-                    break;
-                case 's':
-                    result = [sortableDateTimePattern];
-                    break;
-                case 't':
-                    result = AllShortTimePatterns;
-                    break;
-                case 'T':
-                    result = AllLongTimePatterns;
-                    break;
-                case 'u':
-                    result = [UniversalSortableDateTimePattern];
-                    break;
-                case 'y':
-                case 'Y':
-                    result = AllYearMonthPatterns;
-                    break;
-                default:
-                    throw new ArgumentException(SR.Format(SR.Format_BadFormatSpecifier, format), nameof(format));
-            }
-            return result;
-        }
+                'd' => AllShortDatePatterns,
+                'D' => AllLongDatePatterns,
+                'f' => GetCombinedPatterns(AllLongDatePatterns, AllShortTimePatterns, " "),
+                'F' or 'U' => GetCombinedPatterns(AllLongDatePatterns, AllLongTimePatterns, " "),
+                'g' => GetCombinedPatterns(AllShortDatePatterns, AllShortTimePatterns, " "),
+                'G' => GetCombinedPatterns(AllShortDatePatterns, AllLongTimePatterns, " "),
+                'm' or 'M' => [MonthDayPattern],
+                'o' or 'O' => [RoundtripFormat],
+                'r' or 'R' => [rfc1123Pattern],
+                's' => [sortableDateTimePattern],
+                't' => AllShortTimePatterns,
+                'T' => AllLongTimePatterns,
+                'u' => [UniversalSortableDateTimePattern],
+                'y' or 'Y' => AllYearMonthPatterns,
+                _ => throw new ArgumentException(SR.Format(SR.Format_BadFormatSpecifier, format), nameof(format)),
+            };
 
         public string GetDayName(DayOfWeek dayofweek)
         {
@@ -1797,27 +1758,16 @@ namespace System.Globalization
             return formatFlags;
         }
 
-        internal bool HasForceTwoDigitYears
-        {
-            get
-            {
-                switch (calendar.ID)
-                {
-                    // Handle Japanese and Taiwan cases.
-                    // If is y/yy, do not get (year % 100). "y" will print
-                    // year without leading zero.  "yy" will print year with two-digit in leading zero.
-                    // If pattern is yyy/yyyy/..., print year value with two-digit in leading zero.
-                    // So year 5 is "05", and year 125 is "125".
-                    // The reason for not doing (year % 100) is for Taiwan calendar.
-                    // If year 125, then output 125 and not 25.
-                    // Note: OS uses "yyyy" for Taiwan calendar by default.
-                    case (CalendarId.JAPAN):
-                    case (CalendarId.TAIWAN):
-                        return true;
-                }
-                return false;
-            }
-        }
+        internal bool HasForceTwoDigitYears =>
+            // Handle Japanese and Taiwan cases.
+            // If is y/yy, do not get (year % 100). "y" will print
+            // year without leading zero.  "yy" will print year with two-digit in leading zero.
+            // If pattern is yyy/yyyy/..., print year value with two-digit in leading zero.
+            // So year 5 is "05", and year 125 is "125".
+            // The reason for not doing (year % 100) is for Taiwan calendar.
+            // If year 125, then output 125 and not 25.
+            // Note: OS uses "yyyy" for Taiwan calendar by default.
+            calendar.ID is CalendarId.JAPAN or CalendarId.TAIWAN;
 
         /// <summary>
         /// Returns whether the YearMonthAdjustment function has any fix-up work to do for this culture/calendar.

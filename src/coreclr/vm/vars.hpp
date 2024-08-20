@@ -350,11 +350,6 @@ GPTR_DECL(MethodTable,      g_pBaseCOMObject);
 #endif
 
 GPTR_DECL(MethodTable,      g_pIDynamicInterfaceCastableInterface);
-
-#ifdef FEATURE_ICASTABLE
-GPTR_DECL(MethodTable,      g_pICastableInterface);
-#endif // FEATURE_ICASTABLE
-
 GPTR_DECL(MethodDesc,       g_pObjectFinalizerMD);
 
 #ifdef FEATURE_INTEROP_DEBUGGING
@@ -639,6 +634,17 @@ GSCookie GetProcessGSCookie() { return *(RAW_KEYWORD(volatile) GSCookie *)(&s_gs
 #ifdef TARGET_WINDOWS
 typedef BOOL(WINAPI* PINITIALIZECONTEXT2)(PVOID Buffer, DWORD ContextFlags, PCONTEXT* Context, PDWORD ContextLength, ULONG64 XStateCompactionMask);
 extern PINITIALIZECONTEXT2 g_pfnInitializeContext2;
+
+#ifdef TARGET_ARM64
+typedef DWORD64(WINAPI* PGETENABLEDXSTATEFEATURES)();
+extern PGETENABLEDXSTATEFEATURES g_pfnGetEnabledXStateFeatures;
+
+typedef BOOL(WINAPI* PGETXSTATEFEATURESMASK)(PCONTEXT Context, PDWORD64 FeatureMask);
+extern PGETXSTATEFEATURESMASK g_pfnGetXStateFeaturesMask;
+
+typedef BOOL(WINAPI* PSETXSTATEFEATURESMASK)(PCONTEXT Context, DWORD64 FeatureMask);
+extern PSETXSTATEFEATURESMASK g_pfnSetXStateFeaturesMask;
+#endif // TARGET_ARM64
 
 #ifdef TARGET_X86
 typedef VOID(__cdecl* PRTLRESTORECONTEXT)(PCONTEXT ContextRecord, struct _EXCEPTION_RECORD* ExceptionRecord);
