@@ -103,6 +103,14 @@ mono_atomic_cas_u8 (volatile guint8 *dest, guint8 exch, guint8 comp)
 	return comp;
 }
 
+static inline guint16
+mono_atomic_cas_u16 (volatile guint16 *dest, guint16 exch, guint16 comp)
+{
+	g_static_assert (sizeof (atomic_short) == sizeof (*dest) && ATOMIC_SHORT_LOCK_FREE == 2);
+	(void)atomic_compare_exchange_strong ((volatile atomic_short *)dest, (short*)&comp, exch);
+	return comp;
+}
+
 static inline gint32
 mono_atomic_cas_i32 (volatile gint32 *dest, gint32 exch, gint32 comp)
 {
@@ -325,6 +333,12 @@ mono_atomic_cas_u8 (volatile guint8 *dest, guint8 exch, guint8 comp)
 	return _InterlockedCompareExchange8 ((char volatile *)dest, (char)exch, (char)comp);
 }
 
+static inline guint16
+mono_atomic_cas_u16 (volatile guint16 *dest, guint16 exch, guint16 comp)
+{
+	return _InterlockedCompareExchange16 ((short volatile *)dest, (char)exch, (char)comp);
+}
+
 static inline gint32
 mono_atomic_cas_i32 (volatile gint32 *dest, gint32 exch, gint32 comp)
 {
@@ -524,6 +538,12 @@ mono_atomic_store_ptr (volatile gpointer *dst, gpointer val)
 
 static inline guint8 mono_atomic_cas_u8(volatile guint8 *dest,
 						guint8 exch, guint8 comp)
+{
+	return gcc_sync_val_compare_and_swap (dest, comp, exch);
+}
+
+static inline guint16 mono_atomic_cas_u8(volatile guint16 *dest,
+						guint16 exch, guint16 comp)
 {
 	return gcc_sync_val_compare_and_swap (dest, comp, exch);
 }
@@ -747,6 +767,7 @@ static inline void mono_atomic_store_i64(volatile gint64 *dst, gint64 val)
 
 /* Fallbacks seem to not be used anymore, they should be removed. */
 /* extern guint8 mono_atomic_cas_u8(volatile guint8 *dest, guint8 exch, guint8 comp); */
+/* extern guint16 mono_atomic_cas_u16(volatile guint16 *dest, guint16 exch, guint16 comp); */
 extern gint32 mono_atomic_cas_i32(volatile gint32 *dest, gint32 exch, gint32 comp);
 extern gint64 mono_atomic_cas_i64(volatile gint64 *dest, gint64 exch, gint64 comp);
 extern gpointer mono_atomic_cas_ptr(volatile gpointer *dest, gpointer exch, gpointer comp);
