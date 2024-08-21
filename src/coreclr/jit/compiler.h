@@ -2944,35 +2944,6 @@ public:
         return m_dominancePreds;
     }
 
-    struct BasicBlockLocalPair
-    {
-        BasicBlock* Block;
-        unsigned LclNum;
-
-        BasicBlockLocalPair(BasicBlock* block, unsigned lclNum)
-            : Block(block)
-            , LclNum(lclNum)
-        {
-        }
-
-        static bool Equals(const BasicBlockLocalPair& x, const BasicBlockLocalPair& y)
-        {
-            return (x.Block == y.Block) && (x.LclNum == y.LclNum);
-        }
-        static unsigned GetHashCode(const BasicBlockLocalPair& val)
-        {
-            unsigned hash = static_cast<unsigned>(reinterpret_cast<uintptr_t>(&val));
-            hash ^= val.LclNum + 0x9e3779b9 + (hash << 19) + (hash >> 13);
-            return hash;
-        }
-    };
-
-    typedef JitHashTable<BasicBlockLocalPair, BasicBlockLocalPair, bool> BasicBlockLocalPairSet;
-
-    BasicBlockLocalPairSet* m_insertedSsaLocalsLiveIn;
-    bool IsInsertedSsaLiveIn(BasicBlock* block, unsigned lclNum);
-    bool AddInsertedSsaLiveIn(BasicBlock* block, unsigned lclNum);
-
     void* ehEmitCookie(BasicBlock* block);
     UNATIVE_OFFSET ehCodeOffset(BasicBlock* block);
 

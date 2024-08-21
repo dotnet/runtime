@@ -1349,58 +1349,6 @@ void Compiler::JitTestCheckSSA()
 }
 #endif // DEBUG
 
-class IncrementalLiveInBuilder
-{
-    Compiler* m_comp;
-    ArrayStack<BasicBlock*> m_queue;
-    BitVecTraits m_traits;
-    BitVec m_visited;
-
-public:
-    IncrementalLiveInBuilder(Compiler* comp)
-        : m_comp(comp)
-        , m_queue(comp->getAllocator(CMK_SSA))
-        , m_traits(comp->fgBBNumMax + 1, comp)
-        , m_visited(BitVecOps::MakeEmpty(&m_traits))
-    {
-    }
-
-    void MarkLiveInBackwards(unsigned lclNum, const UseDefLocation& use, const UseDefLocation& reachingDef);
-};
-
-void IncrementalLiveInBuilder::MarkLiveInBackwards(unsigned lclNum, const UseDefLocation& use, const UseDefLocation& reachingDef)
-{
-    BitVecOps::ClearD(&m_traits, m_visited);
-    m_queue.Reset();
-
-    m_queue.Push(use.Block);
-    BitVecOps::AddElemD(&m_traits, m_visited, use.Block->bbNum);
-
-    while (!m_queue.Empty())
-    {
-        BasicBlock* block = m_queue.Pop();
-        if (block == reachingDef.Block)
-        {
-            continue;
-        }
-
-        if (!m_comp->AddInsertedSsaLiveIn(block, lclNum))
-        {
-            // Already marked live-in here; expect to have been marked live in
-            // to this reaching def.
-            continue;
-        }
-
-        for (FlowEdge* edge = m_comp->BlockPredsWithEH(block); edge != nullptr; edge = edge->getNextPredEdge())
-        {
-            if (BitVecOps::TryAddElemD(&m_traits, m_visited, edge->getSourceBlock()->bbNum))
-            {
-                m_queue.Push(edge->getSourceBlock());
-            }
-        }
-    }
-}
-
 class IncrementalSsaBuilder
 {
     Compiler*                   m_comp;
@@ -1410,7 +1358,6 @@ class IncrementalSsaBuilder
     BitVecTraits                m_poTraits;
     BitVec                      m_defBlocks;
     BitVec                      m_iteratedDominanceFrontiers;
-    IncrementalLiveInBuilder    m_liveInBuilder;
 
     UseDefLocation FindOrCreateReachingDef(const UseDefLocation& use);
     bool           FindReachingDefInBlock(const UseDefLocation& use, BasicBlock* block, UseDefLocation* def);
@@ -1428,12 +1375,10 @@ public:
         , m_poTraits(comp->m_dfsTree->PostOrderTraits())
         , m_defBlocks(BitVecOps::MakeEmpty(&m_poTraits))
         , m_iteratedDominanceFrontiers(BitVecOps::MakeEmpty(&m_poTraits))
-        , m_liveInBuilder(comp)
     {
     }
 
     void Insert();
-    static void MarkLiveInBackwards(Compiler* comp, unsigned lclNum, const UseDefLocation& use, const UseDefLocation& reachingDef, BitVec& visitedSet);
 };
 
 //------------------------------------------------------------------------
@@ -1475,10 +1420,6 @@ UseDefLocation IncrementalSsaBuilder::FindOrCreateReachingDef(const UseDefLocati
 
                 GenTreePhi* phi = phiDef->GetRootNode()->AsLclVar()->Data()->AsPhi();
 
-                // The local is always live into blocks with phi defs.
-                bool marked = m_comp->AddInsertedSsaLiveIn(dom, m_lclNum);
-                assert(marked);
-
                 for (FlowEdge* predEdge = m_comp->BlockPredsWithEH(dom); predEdge != nullptr;
                      predEdge           = predEdge->getNextPredEdge())
                 {
@@ -1489,13 +1430,8 @@ UseDefLocation IncrementalSsaBuilder::FindOrCreateReachingDef(const UseDefLocati
                     }
 
                     // TODO: This cannot be recursive
-                    UseDefLocation phiArgUse = UseDefLocation(pred, nullptr, nullptr);
-                    UseDefLocation phiArgReachingDef = FindOrCreateReachingDef(phiArgUse);
-                    SsaBuilder::AddNewPhiArg(m_comp, dom, phiDef, phi, m_lclNum, phiArgReachingDef.Tree->GetSsaNum(), pred);
-
-                    // The phi arg is modelled at the end of the pred block;
-                    // mark liveness for it.
-                    m_liveInBuilder.MarkLiveInBackwards(m_lclNum, phiArgUse, phiArgReachingDef);
+                    UseDefLocation phiArgDef = FindOrCreateReachingDef(UseDefLocation(pred, nullptr, nullptr));
+                    SsaBuilder::AddNewPhiArg(m_comp, dom, phiDef, phi, m_lclNum, phiArgDef.Tree->GetSsaNum(), pred);
                 }
 
                 m_comp->fgValueNumberPhiDef(phiDef->GetRootNode()->AsLclVar(), dom);
@@ -1713,8 +1649,6 @@ void IncrementalSsaBuilder::Insert()
         use.Tree->SetSsaNum(def.Tree->GetSsaNum());
         dsc->GetPerSsaData(def.Tree->GetSsaNum())->AddUse(use.Block);
         JITDUMP("  [%06u] u:%u\n", Compiler::dspTreeID(use.Tree), def.Tree->GetSsaNum());
-
-        m_liveInBuilder.MarkLiveInBackwards(m_lclNum, use, def);
     }
 }
 
@@ -1769,16 +1703,12 @@ void SsaBuilder::InsertInSsa(Compiler*                   comp,
         LclSsaVarDsc* ssaDsc = dsc->GetPerSsaData(ssaNum);
         ssaDsc->m_vnPair     = def.Tree->Data()->gtVNPair;
 
-        IncrementalLiveInBuilder liveIn(comp);
-
         for (int i = 0; i < uses.Height(); i++)
         {
             UseDefLocation& use = uses.BottomRef(i);
             use.Tree->SetSsaNum(ssaNum);
             ssaDsc->AddUse(use.Block);
             JITDUMP("  [%06u] u:%u\n", Compiler::dspTreeID(use.Tree), ssaNum);
-
-            liveIn.MarkLiveInBackwards(lclNum, use, def);
         }
 
         dsc->lvInSsa = true;

@@ -328,26 +328,6 @@ FlowEdge* Compiler::BlockDominancePreds(BasicBlock* blk)
     return res;
 }
 
-bool Compiler::IsInsertedSsaLiveIn(BasicBlock* block, unsigned lclNum)
-{
-    if (m_insertedSsaLocalsLiveIn == nullptr)
-    {
-        return false;
-    }
-
-    return m_insertedSsaLocalsLiveIn->Lookup(BasicBlockLocalPair(block, lclNum));
-}
-
-bool Compiler::AddInsertedSsaLiveIn(BasicBlock* block, unsigned lclNum)
-{
-    if (m_insertedSsaLocalsLiveIn == nullptr)
-    {
-        m_insertedSsaLocalsLiveIn = new (this, CMK_SSA) BasicBlockLocalPairSet(getAllocator(CMK_SSA));
-    }
-
-    return !m_insertedSsaLocalsLiveIn->Set(BasicBlockLocalPair(block, lclNum), true, BasicBlockLocalPairSet::Overwrite);
-}
-
 //------------------------------------------------------------------------
 // IsLastHotBlock: see if this is the last block before the cold section
 //
