@@ -1226,13 +1226,13 @@ typedef union {
 		amd64_codegen_pre(inst); \
 		if ((size) == 2) \
 			x86_prefix((inst), X86_OPERAND_PREFIX); \
-		amd64_emit_rex ((inst),(size),(reg),0,(basereg)); \
+		if ((size) > 2) amd64_emit_rex ((inst),(size),(reg),0,(basereg)); \
 		switch ((size)) { \
 		case 1: x86_byte((inst), 0x0f); x86_byte((inst), 0xb0); break; \
 		case 2: case 4: case 8: x86_byte((inst), 0x0f); x86_byte((inst), 0xb1); break; \
 		default: assert (0); \
 		}\
-		x86_membase_emit((inst),((basereg)&0x7),(disp),((reg)&0x7)); \
+		x86_membase_emit((inst),((reg)&0x7),((basereg)&0x7),(disp)); \
 		amd64_codegen_post(inst); \
 	} while (0)
 #define amd64_xchg_reg_reg_size(inst,dreg,reg,size) do { amd64_codegen_pre(inst); amd64_emit_rex ((inst),(size),(dreg),0,(reg)); x86_xchg_reg_reg((inst),((dreg)&0x7),((reg)&0x7),(size) == 8 ? 4 : (size)); amd64_codegen_post(inst); } while (0)
