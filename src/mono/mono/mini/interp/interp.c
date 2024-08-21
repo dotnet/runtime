@@ -7188,6 +7188,38 @@ MINT_IN_CASE(MINT_BRTRUE_I8_SP) ZEROP_SP(gint64, !=); MINT_IN_BREAK;
 			mono_memory_barrier ();
 			MINT_IN_BREAK;
 		}
+		MINT_IN_CASE(MINT_MONO_EXCHANGE_U1) {
+			guint8 *dest = LOCAL_VAR (ip [2], guint8*);
+			guint8 exch = LOCAL_VAR (ip[3], guint8);
+			NULL_CHECK(dest);
+			LOCAL_VAR(ip[1], guint32) = (guint32)mono_atomic_xchg_u8(dest, exch);
+			ip += 4;
+			MINT_IN_BREAK;
+		}
+		MINT_IN_CASE(MINT_MONO_EXCHANGE_I1) {
+			gint8 *dest = LOCAL_VAR (ip [2], gint8*);
+			gint8 exch = LOCAL_VAR (ip[3], gint8);
+			NULL_CHECK(dest);
+			LOCAL_VAR(ip[1], gint32) = (gint32)(gint8)mono_atomic_xchg_u8((guint8*)dest, exch);
+			ip += 4;
+			MINT_IN_BREAK;
+		}
+		MINT_IN_CASE(MINT_MONO_EXCHANGE_U2) {
+			guint16 *dest = LOCAL_VAR (ip [2], guint16*);
+			guint16 exch = LOCAL_VAR (ip[3], guint16);
+			NULL_CHECK(dest);
+			LOCAL_VAR(ip[1], guint32) = (guint32)mono_atomic_xchg_u16(dest, exch);
+			ip += 4;
+			MINT_IN_BREAK;
+		}
+		MINT_IN_CASE(MINT_MONO_EXCHANGE_I2) {
+			gint16 *dest = LOCAL_VAR (ip [2], gint16*);
+			gint16 exch = LOCAL_VAR (ip[3], gint16);
+			NULL_CHECK(dest);
+			LOCAL_VAR(ip[1], gint32) = (gint32)(gint16)mono_atomic_xchg_u16((guint16*)dest, exch);
+			ip += 4;
+			MINT_IN_BREAK;
+		}
 		MINT_IN_CASE(MINT_MONO_EXCHANGE_I8) {
 			gboolean flag = FALSE;
 			gint64 *dest = LOCAL_VAR (ip [2], gint64*);
