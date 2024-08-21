@@ -7,7 +7,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="$(LibrariesProjectRoot)System.Private.DataContractSerialization\src\System.Private.DataContractSerialization.csproj" PrivateAssets="all" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Private.DataContractSerialization\src\System.Private.DataContractSerialization.csproj" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime\src\System.Runtime.csproj" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime.Serialization.Primitives\src\System.Runtime.Serialization.Primitives.csproj" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.Xml.ReaderWriter\src\System.Xml.ReaderWriter.csproj" />

@@ -325,7 +325,7 @@
     <ProjectReference Include="$(LibrariesProjectRoot)System.Linq.Expressions\src\System.Linq.Expressions.csproj" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.Linq\src\System.Linq.csproj" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.ObjectModel\src\System.ObjectModel.csproj" />
-    <ProjectReference Include="$(LibrariesProjectRoot)System.Private.Uri\src\System.Private.Uri.csproj" PrivateAssets="all" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Private.Uri\src\System.Private.Uri.csproj" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime.Numerics\src\System.Runtime.Numerics.csproj" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime.Serialization.Formatters\src\System.Runtime.Serialization.Formatters.csproj" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime\src\System.Runtime.csproj" SkipUseReferenceAssembly="true" />
