@@ -2,8 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Linq;
+using System.Text;
 using Test.Cryptography;
 using Xunit;
+using TempFileHolder = System.Security.Cryptography.X509Certificates.Tests.TempFileHolder;
 
 namespace System.Security.Cryptography.Tests
 {
@@ -43,10 +45,13 @@ namespace System.Security.Cryptography.Tests
         private static string TpmRsaDecryptKeyHandleUri { get; } = GetHandleKeyUri(TpmRsaDecryptKeyHandle);
 
         public static bool ShouldRunEngineTests { get; } = PlatformDetection.OpenSslPresentOnSystem && StringToBool(Environment.GetEnvironmentVariable(TestEngineEnabledEnvVarName));
-        public static bool ShouldRunProviderEcDsaTests { get; } = PlatformDetection.OpenSslPresentOnSystem && !string.IsNullOrEmpty(TpmEcDsaKeyHandleUri);
-        public static bool ShouldRunProviderEcDhTests { get; } = PlatformDetection.OpenSslPresentOnSystem && !string.IsNullOrEmpty(TpmEcDhKeyHandleUri);
-        public static bool ShouldRunProviderRsaSignTests { get; } = PlatformDetection.OpenSslPresentOnSystem && !string.IsNullOrEmpty(TpmRsaSignKeyHandleUri);
-        public static bool ShouldRunProviderRsaDecryptTests { get; } = PlatformDetection.OpenSslPresentOnSystem && !string.IsNullOrEmpty(TpmRsaDecryptKeyHandleUri);
+
+        public static bool ProvidersSupported { get; } = PlatformDetection.IsOpenSsl3;
+        public static bool ProvidersNotSupported => !ProvidersSupported;
+        public static bool ShouldRunProviderEcDsaTests { get; } = ProvidersSupported && !string.IsNullOrEmpty(TpmEcDsaKeyHandleUri);
+        public static bool ShouldRunProviderEcDhTests { get; } = ProvidersSupported && !string.IsNullOrEmpty(TpmEcDhKeyHandleUri);
+        public static bool ShouldRunProviderRsaSignTests { get; } = ProvidersSupported && !string.IsNullOrEmpty(TpmRsaSignKeyHandleUri);
+        public static bool ShouldRunProviderRsaDecryptTests { get; } = ProvidersSupported && !string.IsNullOrEmpty(TpmRsaDecryptKeyHandleUri);
         public static bool ShouldRunAnyProviderTests => ShouldRunProviderEcDsaTests || ShouldRunProviderEcDhTests || ShouldRunProviderRsaSignTests || ShouldRunProviderRsaDecryptTests;
 
         public static bool ShouldRunTpmTssTests => ShouldRunEngineTests && !string.IsNullOrEmpty(TpmEcDsaKeyHandle);
@@ -86,10 +91,15 @@ namespace System.Security.Cryptography.Tests
             "B27434FA544BDAC679E1E16581D0E90203010001").HexToByteArray();
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.OpenSslNotPresentOnSystem))]
-        public static void NotSupported()
+        public static void EngineNotSupported_ThrowsPlatformNotSupported()
         {
             Assert.Throws<PlatformNotSupportedException>(() => SafeEvpPKeyHandle.OpenPublicKeyFromEngine(TestEngineName, TestEngineKeyId));
             Assert.Throws<PlatformNotSupportedException>(() => SafeEvpPKeyHandle.OpenPrivateKeyFromEngine(TestEngineName, TestEngineKeyId));
+        }
+
+        [ConditionalFact(nameof(ProvidersNotSupported))]
+        public static void ProvidersNotSupported_ThrowsPlatformNotSupported()
+        {
             Assert.Throws<PlatformNotSupportedException>(() => SafeEvpPKeyHandle.OpenKeyFromProvider(Tpm2ProviderName, AnyProviderKeyUri));
         }
 
@@ -111,10 +121,14 @@ namespace System.Security.Cryptography.Tests
         {
             Assert.ThrowsAny<CryptographicException>(() => SafeEvpPKeyHandle.OpenPrivateKeyFromEngine("\0", "foo"));
             Assert.ThrowsAny<CryptographicException>(() => SafeEvpPKeyHandle.OpenPublicKeyFromEngine("\0", "foo"));
-            Assert.ThrowsAny<CryptographicException>(() => SafeEvpPKeyHandle.OpenKeyFromProvider("\0", "foo"));
+
+            if (ProvidersSupported)
+            {
+                Assert.ThrowsAny<CryptographicException>(() => SafeEvpPKeyHandle.OpenKeyFromProvider("\0", "foo"));
+            }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.OpenSslPresentOnSystem))]
+        [ConditionalFact(nameof(ProvidersSupported))]
         public static void EmptyUriThroughNullCharacter()
         {
             Assert.ThrowsAny<CryptographicException>(() => SafeEvpPKeyHandle.OpenKeyFromProvider("default", "\0"));
@@ -127,7 +141,7 @@ namespace System.Security.Cryptography.Tests
             Assert.ThrowsAny<CryptographicException>(() => SafeEvpPKeyHandle.OpenPublicKeyFromEngine(NonExistingEngineOrProviderKeyName, TestEngineKeyId));
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.OpenSslPresentOnSystem))]
+        [ConditionalFact(nameof(ProvidersSupported))]
         public static void Provider_NonExisting()
         {
             Assert.ThrowsAny<CryptographicException>(() => SafeEvpPKeyHandle.OpenKeyFromProvider(NonExistingEngineOrProviderKeyName, AnyProviderKeyUri));
@@ -144,6 +158,63 @@ namespace System.Security.Cryptography.Tests
         public static void Provider_NonExistingKey()
         {
             Assert.ThrowsAny<CryptographicException>(() => SafeEvpPKeyHandle.OpenKeyFromProvider(Tpm2ProviderName, NonExistingEngineOrProviderKeyName));
+        }
+
+        [ConditionalFact(nameof(ProvidersSupported))]
+        public static void Provider_Default_RSASignAndDecrypt()
+        {
+            using RSA originalKey = RSA.Create();
+            string pem = originalKey.ExportRSAPrivateKeyPem();
+
+            using TempFileHolder pemFile = new TempFileHolder(Encoding.UTF8.GetBytes(pem));
+            Uri fileUri = new Uri(pemFile.FilePath);
+            string keyUri = fileUri.AbsoluteUri;
+            using SafeEvpPKeyHandle priKeyHandle = SafeEvpPKeyHandle.OpenKeyFromProvider("default", keyUri);
+            using RSA rsaPri = new RSAOpenSsl(priKeyHandle);
+            byte[] data = new byte[] { 1, 2, 3, 1, 1, 2, 3 };
+            byte[] signature = rsaPri.SignData(data, HashAlgorithmName.SHA256, RSASignaturePadding.Pss);
+            Assert.True(originalKey.VerifyData(data, signature, HashAlgorithmName.SHA256, RSASignaturePadding.Pss), "signature does not verify with the right key");
+
+            byte[] encrypted = originalKey.Encrypt(data, RSAEncryptionPadding.OaepSHA256);
+            byte[] decrypted = rsaPri.Decrypt(encrypted, RSAEncryptionPadding.OaepSHA256);
+            Assert.Equal(data, decrypted);
+        }
+
+        [ConditionalFact(nameof(ProvidersSupported))]
+        public static void Provider_Default_ECDsaSignAndVerify()
+        {
+            using ECDsa originalKey = ECDsa.Create();
+            string pem = originalKey.ExportECPrivateKeyPem();
+
+            using TempFileHolder pemFile = new TempFileHolder(Encoding.UTF8.GetBytes(pem));
+            Uri fileUri = new Uri(pemFile.FilePath);
+            string keyUri = fileUri.AbsoluteUri;
+            using SafeEvpPKeyHandle priKeyHandle = SafeEvpPKeyHandle.OpenKeyFromProvider("default", keyUri);
+            using ECDsa ecdsaPri = new ECDsaOpenSsl(priKeyHandle);
+            byte[] data = new byte[] { 1, 2, 3, 1, 1, 2, 3 };
+            byte[] signature = ecdsaPri.SignData(data, HashAlgorithmName.SHA256);
+            Assert.True(originalKey.VerifyData(data, signature, HashAlgorithmName.SHA256), "signature does not verify with the right key");
+        }
+
+        [ConditionalFact(nameof(ProvidersSupported))]
+        public static void Provider_Default_ECDHKeyExchange()
+        {
+            using ECDiffieHellman originalAliceKey = ECDiffieHellman.Create();
+            string pem = originalAliceKey.ExportECPrivateKeyPem();
+
+            using TempFileHolder pemFile = new TempFileHolder(Encoding.UTF8.GetBytes(pem));
+            Uri fileUri = new Uri(pemFile.FilePath);
+            string keyUri = fileUri.AbsoluteUri;
+            using SafeEvpPKeyHandle priKeyHandle = SafeEvpPKeyHandle.OpenKeyFromProvider("default", keyUri);
+            using ECDiffieHellman alicePri = new ECDiffieHellmanOpenSsl(priKeyHandle);
+            using ECDiffieHellman bobPri = ECDiffieHellman.Create(alicePri.ExportParameters(false).Curve);
+
+            byte[] sharedSecret1 = originalAliceKey.DeriveRawSecretAgreement(bobPri.PublicKey);
+            byte[] sharedSecret2 = alicePri.DeriveRawSecretAgreement(bobPri.PublicKey);
+            byte[] sharedSecret3 = bobPri.DeriveRawSecretAgreement(alicePri.PublicKey);
+
+            Assert.Equal(sharedSecret1, sharedSecret2);
+            Assert.Equal(sharedSecret1, sharedSecret3);
         }
 
         [ConditionalFact(nameof(ShouldRunEngineTests))]
