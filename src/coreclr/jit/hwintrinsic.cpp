@@ -718,7 +718,6 @@ uint8_t TernaryLogicInfo::GetTernaryControlByte(const TernaryLogicInfo& info, ui
 //
 // Arguments:
 //    intrinsic       -- id of the intrinsic function.
-//    clsHnd          -- class handle containing the intrinsic function.
 //    method          -- method handle of the intrinsic function.
 //    sig             -- signature of the intrinsic call.
 //    simdBaseJitType -- Predetermined simdBaseJitType, could be CORINFO_TYPE_UNDEF
@@ -726,10 +725,9 @@ uint8_t TernaryLogicInfo::GetTernaryControlByte(const TernaryLogicInfo& info, ui
 // Return Value:
 //    The basetype of intrinsic of it can be fetched from 1st or 2nd argument, else return baseType unmodified.
 //
-CorInfoType Compiler::getBaseJitTypeFromArgIfNeeded(NamedIntrinsic       intrinsic,
-                                                    CORINFO_CLASS_HANDLE clsHnd,
-                                                    CORINFO_SIG_INFO*    sig,
-                                                    CorInfoType          simdBaseJitType)
+CorInfoType Compiler::getBaseJitTypeFromArgIfNeeded(NamedIntrinsic    intrinsic,
+                                                    CORINFO_SIG_INFO* sig,
+                                                    CorInfoType       simdBaseJitType)
 {
     if (HWIntrinsicInfo::BaseTypeFromSecondArg(intrinsic) || HWIntrinsicInfo::BaseTypeFromFirstArg(intrinsic))
     {
@@ -1760,7 +1758,7 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
         }
     }
 
-    simdBaseJitType = getBaseJitTypeFromArgIfNeeded(intrinsic, clsHnd, sig, simdBaseJitType);
+    simdBaseJitType = getBaseJitTypeFromArgIfNeeded(intrinsic, sig, simdBaseJitType);
 
     if (simdBaseJitType == CORINFO_TYPE_UNDEF)
     {
