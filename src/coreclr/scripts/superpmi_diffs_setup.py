@@ -19,8 +19,11 @@
 ################################################################################
 
 import argparse
+import json
 import logging
 import os
+import urllib
+import xml.etree.ElementTree as ET
 
 from coreclr_arguments import *
 from jitutil import copy_directory, set_pipeline_variable, run_command, TempDir, download_files
@@ -205,6 +208,67 @@ def build_jit_analyze(coreclr_args, source_directory, jit_analyze_build_director
         print('Error: {} not found'.format(jit_analyze_tool))
         return 1
 
+def build_partitions(partitions_dir, bin_path, host_bitness):
+    mcs_path = os.path.join(bin_path, "mcs.exe" if is_windows else "mcs")
+    assert(os.path.exists(mcs_path))
+
+    command = [mcs_path, "-printJITEEVersion"]
+    proc = subprocess.Popen(command, stdout=subprocess.PIPE)
+    stdout_jit_ee_version, _ = proc.communicate()
+    return_code = proc.returncode
+    if return_code == 0:
+        jit_ee_version = stdout_jit_ee_version.decode('utf-8').strip()
+        jit_ee_version = jit_ee_version.lower()
+    else:
+        raise Exception("Could not determine JIT-EE version")
+
+    print("JIT-EE version determined to be {}".format(jit_ee_version))
+
+    az_account_name = "clrjit2"
+    az_superpmi_container_name = "superpmi"
+    az_blob_storage_account_uri = "https://" + az_account_name + ".blob.core.windows.net/"
+    az_blob_storage_superpmi_container_uri = az_blob_storage_account_uri + az_superpmi_container_name
+    az_collections_root_folder = "collections"
+    prefix = az_collections_root_folder + "/" + jit_ee_version
+    prefix_urlencoded = urllib.parse.quote(prefix)
+    list_superpmi_container_uri = az_blob_storage_superpmi_container_uri + "?restype=container&comp=list&prefix=" + prefix_urlencoded + "/"
+
+    try:
+        contents = urllib.request.urlopen(list_superpmi_container_uri).read().decode('utf-8')
+    except Exception as exception:
+        raise Exception("Didn't find any collections using %s", list_superpmi_container_uri)
+
+    elem = ET.fromstring(contents)
+
+    if not target_windows:
+        targets = [("linux", "x64")]
+    elif host_bitness == 64:
+        targets = [("windows", "x64"), ("windows", "arm64"), ("linux", "x64"), ("linux", "arm64"), ("osx", "arm64")]
+    else:
+        targets = [("windows", "x86"), ("linux", "arm")]
+
+    targets = [(target_os, arch, []) for (target_os, arch) in targets]
+
+    for blob in elem.findall(".//Blob"):
+        name = blob.find("Name").text
+        for (target_os, arch, collections) in targets:
+            name_pref = prefix + "/" + target_os + "/" + arch + "/"
+            if name.startswith(name_pref) and name.removesuffix(".zip").endswith(".mch"):
+                url = blob.find("Url").text
+                col_name = name[len(name_pref):].removesuffix(".zip")
+                collections.append({ "target_os": target_os, "target_arch": arch, "col_name": col_name, "col_url": url })
+
+    if not os.path.exists(partitions_dir):
+        os.makedirs(partitions_dir)
+
+    for (target_os, arch, collections) in targets:
+        partition_index = 0
+        for col in collections:
+            json_path = os.path.join(partitions_dir, "{}-{}-{}.json".format(target_os, arch, partition_index))
+            print("Partition {}-{}-{}: {}".format(target_os, arch, partition_index, col["col_name"]))
+            partition_index += 1
+            with open(json_path, "w") as file:
+                file.write(json.dumps(col))
 
 def main(main_args):
     """ Prepare the Helix data for SuperPMI diffs Azure DevOps pipeline.
@@ -385,6 +449,11 @@ def main(main_args):
 
     if do_asmdiffs:
         build_jit_analyze(coreclr_args, source_directory, jit_analyze_build_directory)
+
+    ######## Generate partition information
+
+    partitions_dir = os.path.join(correlation_payload_directory, "partitions")
+    build_partitions(partitions_dir, checked_directory if use_checked else release_directory, 64 if coreclr_args.arch == "x64" else 32)
 
     ######## Set pipeline variables
 
