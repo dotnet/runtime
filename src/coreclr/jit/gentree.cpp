@@ -16597,6 +16597,7 @@ GenTree* Compiler::gtNewTempStore(
         valTyp      = lvaGetRealType(val->AsLclVar()->GetLclNum());
         val->gtType = valTyp;
     }
+
     var_types dstTyp = varDsc->TypeGet();
 
     /* If the variable's lvType is not yet set then set it here */
