@@ -12,6 +12,12 @@
 #undef EVP_PKEY_CTX_set_rsa_pss_saltlen
 #undef EVP_PKEY_CTX_set_signature_md
 
+#define OSSL_KDF_PARAM_DIGEST "digest"
+#define OSSL_KDF_PARAM_MAC    "mac"
+#define OSSL_KDF_PARAM_KEY    "key"
+#define OSSL_KDF_PARAM_SALT   "salt"
+#define OSSL_KDF_PARAM_INFO   "info"
+
 #define OSSL_MAC_PARAM_KEY    "key"
 #define OSSL_MAC_PARAM_CUSTOM "custom"
 #define OSSL_MAC_PARAM_XOF    "xof"
