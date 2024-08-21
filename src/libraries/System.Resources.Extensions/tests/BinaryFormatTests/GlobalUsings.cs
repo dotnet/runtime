@@ -6,4 +6,3 @@ global using System.Collections.Generic;
 global using System.Diagnostics;
 global using System.IO;
 global using Xunit;
-global using FluentAssertions;

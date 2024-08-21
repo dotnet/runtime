@@ -88,8 +88,8 @@ internal readonly struct Thread_1 : IThread
         return new ThreadStoreData(
             threadStore.ThreadCount,
             GetThreadFromLink(threadStore.FirstThreadLink),
-            _target.ReadGlobalPointer(Constants.Globals.FinalizerThread),
-            _target.ReadGlobalPointer(Constants.Globals.GCThread));
+            _target.ReadPointer(_target.ReadGlobalPointer(Constants.Globals.FinalizerThread)),
+            _target.ReadPointer(_target.ReadGlobalPointer(Constants.Globals.GCThread)));
     }
 
     ThreadStoreCounts IThread.GetThreadCounts()
@@ -127,7 +127,7 @@ internal readonly struct Thread_1 : IThread
             thread.Frame,
             firstNestedException,
             thread.TEB,
-            thread.LastThrownObject,
+            thread.LastThrownObject.Handle,
             GetThreadFromLink(thread.LinkNext));
     }
 

@@ -498,94 +498,37 @@ extern "C" void QCALLTYPE StubHelpers_ThrowInteropParamException(INT resID, INT 
 }
 
 #ifdef PROFILING_SUPPORTED
-FCIMPL3(SIZE_T, StubHelpers::ProfilerBeginTransitionCallback, SIZE_T pSecretParam, Thread* pThread, Object* unsafe_pThis)
+extern "C" void* QCALLTYPE StubHelpers_ProfilerBeginTransitionCallback(MethodDesc* pTargetMD)
 {
-    FCALL_CONTRACT;
-
-    // We can get here with an ngen image generated with "/prof",
-    // even if the profiler doesn't want to track transitions.
-    if (!CORProfilerTrackTransitions())
-    {
-        return 0;
-    }
-
-    MethodDesc* pRealMD = NULL;
-
     BEGIN_PRESERVE_LAST_ERROR;
 
-    // We must transition to preemptive GC mode before calling out to the profiler,
-    // and the transition requires us to set up a HMF.
-    DELEGATEREF dref = (DELEGATEREF)ObjectToOBJECTREF(unsafe_pThis);
-    HELPER_METHOD_FRAME_BEGIN_RET_1(dref);
+    QCALL_CONTRACT;
 
-    if (pSecretParam == 0)
-    {
-        // Secret param is null.  This is the calli pinvoke case or the unmanaged delegate case.
-        // We have an unmanaged target address but no MD.  For the unmanaged delegate case, we can
-        // still retrieve the MD by looking at the "this" object.
+    BEGIN_QCALL;
 
-        if (dref == NULL)
-        {
-            // calli pinvoke case
-            pRealMD = NULL;
-        }
-        else
-        {
-            // unmanaged delegate case
-            MethodTable* pMT = dref->GetMethodTable();
-            _ASSERTE(pMT->IsDelegate());
+    ProfilerManagedToUnmanagedTransitionMD(pTargetMD, COR_PRF_TRANSITION_CALL);
 
-            EEClass * pClass = pMT->GetClass();
-            pRealMD = ((DelegateEEClass*)pClass)->GetInvokeMethod();
-            _ASSERTE(pRealMD);
-        }
-    }
-    else
-    {
-        // This is either the COM interop or the pinvoke case.
-        pRealMD = (MethodDesc*)pSecretParam;
-    }
-
-    {
-        GCX_PREEMP_THREAD_EXISTS(pThread);
-
-        ProfilerManagedToUnmanagedTransitionMD(pRealMD, COR_PRF_TRANSITION_CALL);
-    }
-
-    HELPER_METHOD_FRAME_END();
+    END_QCALL;
 
     END_PRESERVE_LAST_ERROR;
 
-    return (SIZE_T)pRealMD;
+    return pTargetMD;
 }
-FCIMPLEND
 
-FCIMPL2(void, StubHelpers::ProfilerEndTransitionCallback, MethodDesc* pRealMD, Thread* pThread)
+extern "C" void QCALLTYPE StubHelpers_ProfilerEndTransitionCallback(MethodDesc* pTargetMD)
 {
-    FCALL_CONTRACT;
-
-    // We can get here with an ngen image generated with "/prof",
-    // even if the profiler doesn't want to track transitions.
-    if (!CORProfilerTrackTransitions())
-    {
-        return;
-    }
-
     BEGIN_PRESERVE_LAST_ERROR;
 
-    // We must transition to preemptive GC mode before calling out to the profiler,
-    // and the transition requires us to set up a HMF.
-    HELPER_METHOD_FRAME_BEGIN_0();
-    {
-        GCX_PREEMP_THREAD_EXISTS(pThread);
+    QCALL_CONTRACT;
 
-        ProfilerUnmanagedToManagedTransitionMD(pRealMD, COR_PRF_TRANSITION_RETURN);
-    }
-    HELPER_METHOD_FRAME_END();
+    BEGIN_QCALL;
+
+    ProfilerUnmanagedToManagedTransitionMD(pTargetMD, COR_PRF_TRANSITION_RETURN);
+
+    END_QCALL;
 
     END_PRESERVE_LAST_ERROR;
 }
-FCIMPLEND
 #endif // PROFILING_SUPPORTED
 
 FCIMPL1(Object*, StubHelpers::GetHRExceptionObject, HRESULT hr)
@@ -808,14 +751,12 @@ FCIMPL1(DWORD, StubHelpers::CalcVaListSize, VARARGS *varargs)
 }
 FCIMPLEND
 
-#ifdef FEATURE_MULTICASTSTUB_AS_IL
 FCIMPL2(void, StubHelpers::MulticastDebuggerTraceHelper, Object* element, INT32 count)
 {
     FCALL_CONTRACT;
     FCUnique(0xa5);
 }
 FCIMPLEND
-#endif // FEATURE_MULTICASTSTUB_AS_IL
 
 FCIMPL0(void*, StubHelpers::NextCallReturnAddress)
 {

@@ -2734,7 +2734,6 @@ namespace System.Tests
 
         [Theory]
         [MemberData(nameof(StandardFormatSpecifiers))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/95623", typeof(PlatformDetection), nameof(PlatformDetection.IsHybridGlobalizationOnBrowser))]
         public static void TryFormat_MatchesToString(string format)
         {
             DateTime dt = DateTime.UtcNow;

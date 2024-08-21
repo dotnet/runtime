@@ -37,7 +37,7 @@ if [[ ! -d $daily_dotnet_root ]]; then
     echo "Downloading daily SDK to $daily_dotnet_root"
     mkdir $daily_dotnet_root
     wget https://dot.net/v1/dotnet-install.sh -O $daily_dotnet_root/dotnet-install.sh
-    bash $daily_dotnet_root/dotnet-install.sh --no-path --channel $version.1xx --quality daily --install-dir $daily_dotnet_root
+    bash $daily_dotnet_root/dotnet-install.sh --no-path --channel $version --quality daily --install-dir $daily_dotnet_root
 else
     echo "Daily SDK found in $daily_dotnet_root"
 fi

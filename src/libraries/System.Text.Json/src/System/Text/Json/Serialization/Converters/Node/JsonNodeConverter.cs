@@ -73,7 +73,7 @@ namespace System.Text.Json.Serialization.Converters
                     node = new JsonArray(element, options);
                     break;
                 default:
-                    node = JsonValue.CreateFromElement(ref element, options);
+                    node = new JsonValueOfElement(element, options);
                     break;
             }
 

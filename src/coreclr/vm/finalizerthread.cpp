@@ -312,7 +312,7 @@ VOID FinalizerThread::FinalizerThreadWorker(void *args)
         // Setting the event here, instead of at the bottom of the loop, could
         // cause us to skip draining the Q, if the request is made as soon as
         // the app starts running.
-        SignalFinalizationDone(TRUE);
+        SignalFinalizationDone();
 #endif //0
 
         WaitForFinalizerEvent (hEventFinalizer);
@@ -404,13 +404,15 @@ VOID FinalizerThread::FinalizerThreadWorker(void *args)
         }
         LOG((LF_GC, LL_INFO100, "***** Calling Finalizers\n"));
 
+        int observedFullGcCount =
+            GCHeapUtilities::GetGCHeap()->CollectionCount(GCHeapUtilities::GetGCHeap()->GetMaxGeneration());
         FinalizeAllObjects();
 
         // Anyone waiting to drain the Q can now wake up.  Note that there is a
         // race in that another thread starting a drain, as we leave a drain, may
-        // consider itself satisfied by the drain that just completed.  This is
-        // acceptable.
-        SignalFinalizationDone(TRUE);
+        // consider itself satisfied by the drain that just completed.
+        // Thus we include the Full GC count that we have certaily observed.
+        SignalFinalizationDone(observedFullGcCount);
     }
 
     if (s_InitializedFinalizerThreadForPlatform)
@@ -538,19 +540,18 @@ void FinalizerThread::FinalizerThreadCreate()
     }
 }
 
-void FinalizerThread::SignalFinalizationDone(BOOL fFinalizer)
+static int g_fullGcCountSeenByFinalization;
+
+void FinalizerThread::SignalFinalizationDone(int observedFullGcCount)
 {
     WRAPPER_NO_CONTRACT;
 
-    if (fFinalizer)
-    {
-        InterlockedAnd((LONG*)&g_FinalizerWaiterStatus, ~FWS_WaitInterrupt);
-    }
+    g_fullGcCountSeenByFinalization = observedFullGcCount;
     hEventFinalizerDone->Set();
 }
 
 // Wait for the finalizer thread to complete one pass.
-void FinalizerThread::FinalizerThreadWait(DWORD timeout)
+void FinalizerThread::FinalizerThreadWait()
 {
     ASSERT(hEventFinalizerDone->IsValid());
     ASSERT(hEventFinalizer->IsValid());
@@ -559,6 +560,13 @@ void FinalizerThread::FinalizerThreadWait(DWORD timeout)
     // Can't call this from within a finalized method.
     if (!IsCurrentThreadFinalizer())
     {
+        // We may see a completion of finalization cycle that might not see objects that became
+        // F-reachable in recent GCs. In such case we want to wait for a completion of another cycle.
+        // However, since an object cannot be prevented from promoting, one can only rely on Full GCs
+        // to collect unreferenced objects deterministically. Thus we only care about Full GCs here.
+        int desiredFullGcCount =
+            GCHeapUtilities::GetGCHeap()->CollectionCount(GCHeapUtilities::GetGCHeap()->GetMaxGeneration());
+
         GCX_PREEMP();
 
 #ifdef FEATURE_COMINTEROP
@@ -569,44 +577,33 @@ void FinalizerThread::FinalizerThreadWait(DWORD timeout)
             g_pRCWCleanupList->CleanupWrappersInCurrentCtxThread();
 #endif // FEATURE_COMINTEROP
 
-        ULONGLONG startTime = CLRGetTickCount64();
-        ULONGLONG endTime;
-        if (timeout == INFINITE)
+    tryAgain:
+        hEventFinalizerDone->Reset();
+        EnableFinalization();
+
+        // Under GC stress the finalizer queue may never go empty as frequent
+        // GCs will keep filling up the queue with items.
+        // We will disable GC stress to make sure the current thread is not permanently blocked on that.
+        GCStressPolicy::InhibitHolder iholder;
+
+        //----------------------------------------------------
+        // Do appropriate wait and pump messages if necessary
+        //----------------------------------------------------
+
+        DWORD status;
+        status = hEventFinalizerDone->Wait(INFINITE,TRUE);
+
+        // we use unsigned math here as the collection counts, which are size_t internally,
+        // can in theory overflow an int and wrap around.
+        // unsigned math would have more defined/portable behavior in such case
+        if ((int)((unsigned int)desiredFullGcCount - (unsigned int)g_fullGcCountSeenByFinalization) > 0)
         {
-            endTime = MAXULONGLONG;
-        }
-        else
-        {
-            endTime = timeout + startTime;
+            // There were some Full GCs happening before we started waiting and possibly not seen by the
+            // last finalization cycle. This is rare, but we need to be sure we have seen those,
+            // so we try one more time.
+            goto tryAgain;
         }
 
-        while (TRUE)
-        {
-            hEventFinalizerDone->Reset();
-            EnableFinalization();
-
-            //----------------------------------------------------
-            // Do appropriate wait and pump messages if necessary
-            //----------------------------------------------------
-
-            DWORD status = hEventFinalizerDone->Wait(timeout,TRUE);
-            if (status != WAIT_TIMEOUT && !(g_FinalizerWaiterStatus & FWS_WaitInterrupt))
-            {
-                return;
-            }
-            // recalculate timeout
-            if (timeout != INFINITE)
-            {
-                ULONGLONG curTime = CLRGetTickCount64();
-                if (curTime >= endTime)
-                {
-                    return;
-                }
-                else
-                {
-                    timeout = (DWORD)(endTime - curTime);
-                }
-            }
-        }
+        _ASSERTE(status == WAIT_OBJECT_0);
     }
 }

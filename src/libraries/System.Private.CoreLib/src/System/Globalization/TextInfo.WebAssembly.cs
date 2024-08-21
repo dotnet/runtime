@@ -14,12 +14,25 @@ namespace System.Globalization
             Debug.Assert(!GlobalizationMode.UseNls);
             Debug.Assert(GlobalizationMode.Hybrid);
 
+            if (HasEmptyCultureName)
+            {
+                ReadOnlySpan<char> source = new ReadOnlySpan<char>(src, srcLen);
+                Span<char> destination = new Span<char>(dstBuffer, dstBufferCapacity);
+                if (toUpper)
+                {
+                    InvariantModeCasing.ToUpper(source, destination);
+                }
+                else
+                {
+                    InvariantModeCasing.ToLower(source, destination);
+                }
+                return;
+            }
+
             ReadOnlySpan<char> cultureName = _cultureName.AsSpan();
             fixed (char* pCultureName = &MemoryMarshal.GetReference(cultureName))
             {
-                nint exceptionPtr = HasEmptyCultureName ?
-                    Interop.JsGlobalization.ChangeCaseInvariant(src, srcLen, dstBuffer, dstBufferCapacity, toUpper) :
-                    Interop.JsGlobalization.ChangeCase(pCultureName, cultureName.Length, src, srcLen, dstBuffer, dstBufferCapacity, toUpper);
+                nint exceptionPtr = Interop.JsGlobalization.ChangeCase(pCultureName, cultureName.Length, src, srcLen, dstBuffer, dstBufferCapacity, toUpper);
                 Helper.MarshalAndThrowIfException(exceptionPtr);
             }
         }

@@ -1,26 +1,30 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#pragma warning disable IDE0060 // unused parameters
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 
 namespace System.Runtime.Intrinsics.Arm
 {
-    /// <summary>
-    /// This class provides access to the ARMv8.1-RDMA hardware instructions via intrinsics
-    /// </summary>
+    /// <summary>Provides access to the ARMv8.1-RDMA hardware instructions via intrinsics.</summary>
     [CLSCompliant(false)]
     public abstract class Rdm : AdvSimd
     {
         internal Rdm() { }
 
+        /// <summary>Gets a value that indicates whether the APIs in this class are supported.</summary>
+        /// <value><see langword="true" /> if the APIs are supported; otherwise, <see langword="false" />.</value>
+        /// <remarks>A value of <see langword="false" /> indicates that the APIs will throw <see cref="PlatformNotSupportedException" />.</remarks>
         public static new bool IsSupported { [Intrinsic] get => false; }
 
+        /// <summary>Provides access to the ARMv8.1-RDMA hardware instructions, that are only available to 64-bit processes, via intrinsics.</summary>
         public new abstract class Arm64 : AdvSimd.Arm64
         {
             internal Arm64() { }
 
+            /// <summary>Gets a value that indicates whether the APIs in this class are supported.</summary>
+            /// <value><see langword="true" /> if the APIs are supported; otherwise, <see langword="false" />.</value>
+            /// <remarks>A value of <see langword="false" /> indicates that the APIs will throw <see cref="PlatformNotSupportedException" />.</remarks>
             public static new bool IsSupported { [Intrinsic] get { return false; } }
 
             /// <summary>

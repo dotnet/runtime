@@ -17,6 +17,7 @@ namespace System.Diagnostics.Metrics
         private static readonly List<Meter> s_allMeters = new List<Meter>();
         private List<Instrument> _instruments = new List<Instrument>();
         private Dictionary<string, List<Instrument>> _nonObservableInstrumentsCache = new();
+
         internal bool Disposed { get; private set; }
 
         internal static bool IsSupported { get; } = InitializeIsSupported();

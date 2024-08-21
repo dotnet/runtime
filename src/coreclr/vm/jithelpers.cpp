@@ -533,462 +533,6 @@ HCIMPL1(void*, JIT_GetStaticFieldAddr, FieldDesc* pFD)
 HCIMPLEND
 #include <optdefault.h>
 
-/*********************************************************************/
-#define HCallAssert(cache, target) // suppressed to avoid ambiguous cast errors caused by use of template
-template <typename FIELDTYPE>
-NOINLINE HCIMPL2(FIELDTYPE, JIT_GetField_Framed, Object *obj, FieldDesc *pFD)
-#undef HCallAssert
-{
-    FCALL_CONTRACT;
-
-    FIELDTYPE value = 0;
-
-    // This is an instance field helper
-    _ASSERTE(!pFD->IsStatic());
-
-    OBJECTREF objRef = ObjectToOBJECTREF(obj);
-
-    HELPER_METHOD_FRAME_BEGIN_RET_1(objRef);
-    if (objRef == NULL)
-        COMPlusThrow(kNullReferenceException);
-    pFD->GetInstanceField(objRef, &value);
-    HELPER_METHOD_POLL();
-    HELPER_METHOD_FRAME_END();
-
-    return value;
-}
-HCIMPLEND
-
-/*********************************************************************/
-#include <optsmallperfcritical.h>
-
-HCIMPL2(INT8, JIT_GetField8, Object *obj, FieldDesc *pFD)
-{
-    FCALL_CONTRACT;
-
-    if (obj == NULL || pFD->IsEnCNew())
-    {
-        ENDFORBIDGC();
-        return HCCALL2(JIT_GetField_Framed<INT8>, obj, pFD);
-    }
-
-    INT8 val = VolatileLoad<INT8>((INT8*)pFD->GetAddressGuaranteedInHeap(obj));
-    FC_GC_POLL_RET();
-    return val;
-}
-HCIMPLEND
-
-HCIMPL2(INT16, JIT_GetField16, Object *obj, FieldDesc *pFD)
-{
-    FCALL_CONTRACT;
-
-    if (obj == NULL || pFD->IsEnCNew())
-    {
-        ENDFORBIDGC();
-        return HCCALL2(JIT_GetField_Framed<INT16>, obj, pFD);
-    }
-
-    INT16 val = VolatileLoad<INT16>((INT16*)pFD->GetAddressGuaranteedInHeap(obj));
-    FC_GC_POLL_RET();
-    return val;
-}
-HCIMPLEND
-
-HCIMPL2(INT32, JIT_GetField32, Object *obj, FieldDesc *pFD)
-{
-    FCALL_CONTRACT;
-
-    if (obj == NULL || pFD->IsEnCNew())
-    {
-        ENDFORBIDGC();
-        return HCCALL2(JIT_GetField_Framed<INT32>, obj, pFD);
-    }
-
-    INT32 val = VolatileLoad<INT32>((INT32*)pFD->GetAddressGuaranteedInHeap(obj));
-    FC_GC_POLL_RET();
-    return val;
-}
-HCIMPLEND
-
-HCIMPL2(INT64, JIT_GetField64, Object *obj, FieldDesc *pFD)
-{
-    FCALL_CONTRACT;
-
-    if (obj == NULL || pFD->IsEnCNew())
-    {
-        ENDFORBIDGC();
-        return HCCALL2(JIT_GetField_Framed<INT64>, obj, pFD);
-    }
-
-    INT64 val = VolatileLoad<INT64>((INT64*)pFD->GetAddressGuaranteedInHeap(obj));
-    FC_GC_POLL_RET();
-    return val;
-}
-HCIMPLEND
-
-HCIMPL2(FLOAT, JIT_GetFieldFloat, Object *obj, FieldDesc *pFD)
-{
-    FCALL_CONTRACT;
-
-    if (obj == NULL || pFD->IsEnCNew())
-    {
-        ENDFORBIDGC();
-        return HCCALL2(JIT_GetField_Framed<FLOAT>, obj, pFD);
-    }
-
-    FLOAT val;
-    (INT32&)val = VolatileLoad<INT32>((INT32*)pFD->GetAddressGuaranteedInHeap(obj));
-    FC_GC_POLL_RET();
-    return val;
-}
-HCIMPLEND
-
-HCIMPL2(DOUBLE, JIT_GetFieldDouble, Object *obj, FieldDesc *pFD)
-{
-    FCALL_CONTRACT;
-
-    if (obj == NULL || pFD->IsEnCNew())
-    {
-        ENDFORBIDGC();
-        return HCCALL2(JIT_GetField_Framed<DOUBLE>, obj, pFD);
-    }
-
-    DOUBLE val;
-    (INT64&)val = VolatileLoad<INT64>((INT64*)pFD->GetAddressGuaranteedInHeap(obj));
-    FC_GC_POLL_RET();
-    return val;
-}
-HCIMPLEND
-
-#include <optdefault.h>
-
-/*********************************************************************/
-#define HCallAssert(cache, target) // suppressed to avoid ambiguous cast errors caused by use of template
-template <typename FIELDTYPE>
-NOINLINE HCIMPL3(VOID, JIT_SetField_Framed, Object *obj, FieldDesc* pFD, FIELDTYPE val)
-#undef HCallAssert
-{
-    FCALL_CONTRACT;
-
-    // This is an instance field helper
-    _ASSERTE(!pFD->IsStatic());
-
-    OBJECTREF objRef = ObjectToOBJECTREF(obj);
-
-    HELPER_METHOD_FRAME_BEGIN_1(objRef);
-    if (objRef == NULL)
-        COMPlusThrow(kNullReferenceException);
-    pFD->SetInstanceField(objRef, &val);
-    HELPER_METHOD_POLL();
-    HELPER_METHOD_FRAME_END();
-}
-HCIMPLEND
-
-/*********************************************************************/
-#include <optsmallperfcritical.h>
-
-HCIMPL3(VOID, JIT_SetField8, Object *obj, FieldDesc *pFD, INT8 val)
-{
-    FCALL_CONTRACT;
-
-    if (obj == NULL || pFD->IsEnCNew())
-    {
-        ENDFORBIDGC();
-        return HCCALL3(JIT_SetField_Framed<INT8>, obj, pFD, val);
-    }
-
-    VolatileStore<INT8>((INT8*)pFD->GetAddressGuaranteedInHeap(obj), val);
-    FC_GC_POLL();
-}
-HCIMPLEND
-
-HCIMPL3(VOID, JIT_SetField16, Object *obj, FieldDesc *pFD, INT16 val)
-{
-    FCALL_CONTRACT;
-
-    if (obj == NULL || pFD->IsEnCNew())
-    {
-        ENDFORBIDGC();
-        return HCCALL3(JIT_SetField_Framed<INT16>, obj, pFD, val);
-    }
-
-    VolatileStore<INT16>((INT16*)pFD->GetAddressGuaranteedInHeap(obj), val);
-    FC_GC_POLL();
-}
-HCIMPLEND
-
-HCIMPL3(VOID, JIT_SetField32, Object *obj, FieldDesc *pFD, INT32 val)
-{
-    FCALL_CONTRACT;
-
-    if (obj == NULL || pFD->IsEnCNew())
-    {
-        ENDFORBIDGC();
-        return HCCALL3(JIT_SetField_Framed<INT32>, obj, pFD, val);
-    }
-
-    VolatileStore<INT32>((INT32*)pFD->GetAddressGuaranteedInHeap(obj), val);
-    FC_GC_POLL();
-}
-HCIMPLEND
-
-HCIMPL3(VOID, JIT_SetField64, Object *obj, FieldDesc *pFD, INT64 val)
-{
-    FCALL_CONTRACT;
-
-    if (obj == NULL || pFD->IsEnCNew())
-    {
-        ENDFORBIDGC();
-        return HCCALL3(JIT_SetField_Framed<INT64>, obj, pFD, val);
-    }
-
-    VolatileStore<INT64>((INT64*)pFD->GetAddressGuaranteedInHeap(obj), val);
-    FC_GC_POLL();
-}
-HCIMPLEND
-
-HCIMPL3(VOID, JIT_SetFieldFloat, Object *obj, FieldDesc *pFD, FLOAT val)
-{
-    FCALL_CONTRACT;
-
-    if (obj == NULL || pFD->IsEnCNew())
-    {
-        ENDFORBIDGC();
-        return HCCALL3(JIT_SetField_Framed<FLOAT>, obj, pFD, val);
-    }
-
-    VolatileStore<INT32>((INT32*)pFD->GetAddressGuaranteedInHeap(obj), (INT32&)val);
-    FC_GC_POLL();
-}
-HCIMPLEND
-
-HCIMPL3(VOID, JIT_SetFieldDouble, Object *obj, FieldDesc *pFD, DOUBLE val)
-{
-    FCALL_CONTRACT;
-
-    if (obj == NULL || pFD->IsEnCNew())
-    {
-        ENDFORBIDGC();
-        return HCCALL3(JIT_SetField_Framed<DOUBLE>, obj, pFD, val);
-    }
-
-    VolatileStore<INT64>((INT64*)pFD->GetAddressGuaranteedInHeap(obj), (INT64&)val);
-    FC_GC_POLL();
-}
-HCIMPLEND
-
-#include <optdefault.h>
-
-/*********************************************************************/
-HCIMPL2(Object*, JIT_GetFieldObj_Framed, Object *obj, FieldDesc *pFD)
-{
-    CONTRACTL {
-        FCALL_CHECK;
-        PRECONDITION(!pFD->IsStatic());
-        PRECONDITION(!pFD->IsPrimitive() && !pFD->IsByValue());  // Assert that we are called only for objects
-    } CONTRACTL_END;
-
-    OBJECTREF objRef = ObjectToOBJECTREF(obj);
-    OBJECTREF val = NULL;
-
-    HELPER_METHOD_FRAME_BEGIN_RET_2(objRef, val);        // Set up a frame
-    if (objRef == NULL)
-        COMPlusThrow(kNullReferenceException);
-    pFD->GetInstanceField(objRef, &val);
-    HELPER_METHOD_POLL();
-    HELPER_METHOD_FRAME_END();
-
-    return OBJECTREFToObject(val);
-}
-HCIMPLEND
-
-#include <optsmallperfcritical.h>
-HCIMPL2(Object*, JIT_GetFieldObj, Object *obj, FieldDesc *pFD)
-{
-    CONTRACTL {
-        FCALL_CHECK;
-        PRECONDITION(!pFD->IsStatic());
-        PRECONDITION(!pFD->IsPrimitive() && !pFD->IsByValue());  // Assert that we are called only for objects
-    } CONTRACTL_END;
-
-    if (obj == NULL || pFD->IsEnCNew())
-    {
-        ENDFORBIDGC();
-        return HCCALL2(JIT_GetFieldObj_Framed, obj, pFD);
-    }
-
-    void * address = pFD->GetAddressGuaranteedInHeap(obj);
-    OBJECTREF val = ObjectToOBJECTREF(VolatileLoad((Object **)address));
-
-    FC_GC_POLL_AND_RETURN_OBJREF(val);
-}
-HCIMPLEND
-#include <optdefault.h>
-
-/*********************************************************************/
-HCIMPL3(VOID, JIT_SetFieldObj_Framed, Object *obj, FieldDesc *pFD, Object *value)
-{
-    CONTRACTL {
-        FCALL_CHECK;
-        PRECONDITION(!pFD->IsStatic());
-        PRECONDITION(!pFD->IsPrimitive() && !pFD->IsByValue());  // Assert that we are called only for objects
-    } CONTRACTL_END;
-
-    OBJECTREF objRef = ObjectToOBJECTREF(obj);
-    OBJECTREF val = ObjectToOBJECTREF(value);
-
-    HELPER_METHOD_FRAME_BEGIN_2(objRef, val);
-    if (objRef == NULL)
-        COMPlusThrow(kNullReferenceException);
-    pFD->SetInstanceField(objRef, &val);
-    HELPER_METHOD_POLL();
-    HELPER_METHOD_FRAME_END();
-}
-HCIMPLEND
-
-#include <optsmallperfcritical.h>
-HCIMPL3(VOID, JIT_SetFieldObj, Object *obj, FieldDesc *pFD, Object *value)
-{
-    CONTRACTL {
-        FCALL_CHECK;
-        PRECONDITION(!pFD->IsStatic());
-        PRECONDITION(!pFD->IsPrimitive() && !pFD->IsByValue());  // Assert that we are called only for objects
-    } CONTRACTL_END;
-
-    if (obj == NULL || pFD->IsEnCNew())
-    {
-        ENDFORBIDGC();
-        return HCCALL3(JIT_SetFieldObj_Framed, obj, pFD, value);
-    }
-
-    void * address = pFD->GetAddressGuaranteedInHeap(obj);
-    SetObjectReference((OBJECTREF*)address, ObjectToOBJECTREF(value));
-    FC_GC_POLL();
-}
-HCIMPLEND
-#include <optdefault.h>
-
-/*********************************************************************/
-HCIMPL4(VOID, JIT_GetFieldStruct_Framed, LPVOID retBuff, Object *obj, FieldDesc *pFD, MethodTable *pFieldMT)
-{
-    FCALL_CONTRACT;
-
-    // This may be a  cross context field access. Setup a frame as we will
-    // transition to managed code later
-
-    // This is an instance field helper
-    _ASSERTE(!pFD->IsStatic());
-
-    // Assert that we are not called for objects or primitive types
-    _ASSERTE(!pFD->IsPrimitive());
-
-    OBJECTREF objRef = ObjectToOBJECTREF(obj);
-
-    HELPER_METHOD_FRAME_BEGIN_1(objRef);        // Set up a frame
-
-    if (objRef == NULL)
-        COMPlusThrow(kNullReferenceException);
-
-    // Try an unwrap operation in case that we are not being called
-    // in the same context as the server.
-    // If that is the case then GetObjectFromProxy will return
-    // the server object.
-    BOOL fRemoted = FALSE;
-
-
-    if (!fRemoted)
-    {
-        void * pAddr = pFD->GetAddress(OBJECTREFToObject(objRef));
-        CopyValueClass(retBuff, pAddr, pFieldMT);
-    }
-
-    HELPER_METHOD_FRAME_END();          // Tear down the frame
-}
-HCIMPLEND
-
-#include <optsmallperfcritical.h>
-HCIMPL4(VOID, JIT_GetFieldStruct, LPVOID retBuff, Object *obj, FieldDesc *pFD, MethodTable *pFieldMT)
-{
-    FCALL_CONTRACT;
-
-    _ASSERTE(pFieldMT->IsValueType());
-
-    if (obj == NULL || pFD->IsEnCNew())
-    {
-        ENDFORBIDGC();
-        return HCCALL4(JIT_GetFieldStruct_Framed, retBuff, obj, pFD, pFieldMT);
-    }
-
-    void * pAddr = pFD->GetAddressGuaranteedInHeap(obj);
-    CopyValueClass(retBuff, pAddr, pFieldMT);
-}
-HCIMPLEND
-#include <optdefault.h>
-
-/*********************************************************************/
-HCIMPL4(VOID, JIT_SetFieldStruct_Framed, Object *obj, FieldDesc *pFD, MethodTable *pFieldMT, LPVOID valuePtr)
-{
-    FCALL_CONTRACT;
-
-    // Assert that we are not called for objects or primitive types
-    _ASSERTE(!pFD->IsPrimitive());
-
-    OBJECTREF objRef = ObjectToOBJECTREF(obj);
-
-    // This may be a  cross context field access. Setup a frame as we will
-    // transition to managed code later
-
-    HELPER_METHOD_FRAME_BEGIN_1(objRef);        // Set up a frame
-
-    if (objRef == NULL)
-        COMPlusThrow(kNullReferenceException);
-
-    // Try an unwrap operation in case that we are not being called
-    // in the same context as the server.
-    // If that is the case then GetObjectFromProxy will return
-    // the server object.
-    BOOL fRemoted = FALSE;
-
-
-    if (!fRemoted)
-    {
-        void * pAddr = pFD->GetAddress(OBJECTREFToObject(objRef));
-        CopyValueClass(pAddr, valuePtr, pFieldMT);
-    }
-
-    HELPER_METHOD_FRAME_END();          // Tear down the frame
-}
-HCIMPLEND
-
-#include <optsmallperfcritical.h>
-HCIMPL4(VOID, JIT_SetFieldStruct, Object *obj, FieldDesc *pFD, MethodTable *pFieldMT, LPVOID valuePtr)
-{
-    FCALL_CONTRACT;
-
-    _ASSERTE(pFieldMT->IsValueType());
-
-    if (obj == NULL || pFD->IsEnCNew())
-    {
-        ENDFORBIDGC();
-        return HCCALL4(JIT_SetFieldStruct_Framed, obj, pFD, pFieldMT, valuePtr);
-    }
-
-    void * pAddr = pFD->GetAddressGuaranteedInHeap(obj);
-    CopyValueClass(pAddr, valuePtr, pFieldMT);
-}
-HCIMPLEND
-#include <optdefault.h>
-
-
-
-//========================================================================
-//
-//      STATIC FIELD HELPERS
-//
-//========================================================================
-
-
-
 // Slow helper to tailcall from the fast one
 NOINLINE HCIMPL1(void, JIT_InitClass_Framed, MethodTable* pMT)
 {
@@ -1536,35 +1080,6 @@ BOOL ObjIsInstanceOfCore(Object *pObject, TypeHandle toTypeHnd, BOOL throwCastEx
         }
         else
 #endif // FEATURE_COMINTEROP
-#ifdef FEATURE_ICASTABLE
-        // If type implements ICastable interface we give it a chance to tell us if it can be casted
-        // to a given type.
-        if (pMT->IsICastable())
-        {
-            // Make actual call to ICastableHelpers.IsInstanceOfInterface(obj, interfaceTypeObj, out exception)
-            OBJECTREF exception = NULL;
-            GCPROTECT_BEGIN(exception);
-
-            PREPARE_NONVIRTUAL_CALLSITE(METHOD__ICASTABLEHELPERS__ISINSTANCEOF);
-
-            OBJECTREF managedType = toTypeHnd.GetManagedClassObject(); //GC triggers
-
-            DECLARE_ARGHOLDER_ARRAY(args, 3);
-            args[ARGNUM_0] = OBJECTREF_TO_ARGHOLDER(obj);
-            args[ARGNUM_1] = OBJECTREF_TO_ARGHOLDER(managedType);
-            args[ARGNUM_2] = PTR_TO_ARGHOLDER(&exception);
-
-            CALL_MANAGED_METHOD(fCast, BOOL, args);
-            INDEBUG(managedType = NULL); // managedType isn't protected during the call
-
-            if (!fCast && throwCastException && exception != NULL)
-            {
-                RealCOMPlusThrow(exception);
-            }
-            GCPROTECT_END(); //exception
-        }
-        else
-#endif // FEATURE_ICASTABLE
         if (pMT->IsIDynamicInterfaceCastable())
         {
             fCast = DynamicInterfaceCastable::IsInstanceOf(&obj, toTypeHnd, throwCastException);
@@ -2302,6 +1817,65 @@ HCIMPL2(LPVOID, Unbox_Helper, CORINFO_CLASS_HANDLE type, Object* obj)
     // Fall back to a framed helper that can also handle GC suspension and type equivalence.
     ENDFORBIDGC();
     return HCCALL2(Unbox_Helper_Framed, pMT1, obj);
+}
+HCIMPLEND
+
+/* framed Unbox type test helper that handles enums and full-blown type equivalence */
+NOINLINE HCIMPL2(void, JIT_Unbox_TypeTest_Framed, MethodTable* pMT1, MethodTable* pMT2)
+{
+    FCALL_CONTRACT;
+
+    HELPER_METHOD_FRAME_BEGIN_0();
+    HELPER_METHOD_POLL();
+
+    if (pMT1->GetInternalCorElementType() == pMT2->GetInternalCorElementType() &&
+            (pMT1->IsEnum() || pMT1->IsTruePrimitive()) &&
+            (pMT2->IsEnum() || pMT2->IsTruePrimitive()))
+    {
+        // type test test passes
+    }
+    else if (pMT1->IsEquivalentTo(pMT2))
+    {
+        // the structures are equivalent
+    }
+    else
+    {
+        COMPlusThrowInvalidCastException(TypeHandle(pMT2), TypeHandle(pMT1));
+    }
+    HELPER_METHOD_FRAME_END();
+}
+HCIMPLEND
+
+/*************************************************************/
+/* Unbox type test that handles enums */
+HCIMPL2(void, JIT_Unbox_TypeTest, CORINFO_CLASS_HANDLE type, CORINFO_CLASS_HANDLE boxType)
+{
+    FCALL_CONTRACT;
+
+    TypeHandle typeHnd(type);
+    // boxable types have method tables
+    _ASSERTE(!typeHnd.IsTypeDesc());
+
+    MethodTable* pMT1 = typeHnd.AsMethodTable();
+    // must be a value type
+    _ASSERTE(pMT1->IsValueType());
+
+    TypeHandle boxTypeHnd(boxType);
+    MethodTable* pMT2 = boxTypeHnd.AsMethodTable();
+
+    // we allow enums and their primitive type to be interchangeable.
+    // if suspension is requested, defer to the framed helper.
+    if (pMT1->GetInternalCorElementType() == pMT2->GetInternalCorElementType() &&
+            (pMT1->IsEnum() || pMT1->IsTruePrimitive()) &&
+            (pMT2->IsEnum() || pMT2->IsTruePrimitive()) &&
+            g_TrapReturningThreads == 0)
+    {
+        return;
+    }
+
+    // Fall back to a framed helper that can also handle GC suspension and type equivalence.
+    ENDFORBIDGC();
+    HCCALL2(JIT_Unbox_TypeTest_Framed, pMT1, pMT2);
 }
 HCIMPLEND
 
@@ -3475,7 +3049,7 @@ HCIMPL1(void, IL_Throw,  Object* obj)
     OBJECTREF oref = ObjectToOBJECTREF(obj);
 
 #if defined(_DEBUG) && defined(TARGET_X86)
-    __helperframe.InsureInit(false, NULL);
+    __helperframe.InsureInit(NULL);
     g_ExceptionEIP = (LPVOID)__helperframe.GetReturnAddress();
 #endif // defined(_DEBUG) && defined(TARGET_X86)
 
@@ -3575,243 +3149,6 @@ HCIMPL0(void, IL_Rethrow)
         _ASSERTE(!"No throwable on rethrow");
         RealCOMPlusThrow(kInvalidProgramException, (UINT)IDS_EE_RETHROW_NOT_ALLOWED);
     }
-
-    HELPER_METHOD_FRAME_END();
-}
-HCIMPLEND
-
-/*********************************************************************/
-HCIMPL0(void, JIT_RngChkFail)
-{
-    FCALL_CONTRACT;
-
-    /* Make no assumptions about the current machine state */
-    ResetCurrentContext();
-
-    FC_GC_POLL_NOT_NEEDED();    // throws always open up for GC
-
-    HELPER_METHOD_FRAME_BEGIN_ATTRIB_NOPOLL(Frame::FRAME_ATTR_EXCEPTION);    // Set up a frame
-
-    COMPlusThrow(kIndexOutOfRangeException);
-
-    HELPER_METHOD_FRAME_END();
-}
-HCIMPLEND
-
-/*********************************************************************/
-HCIMPL0(void, JIT_ThrowArgumentException)
-{
-    FCALL_CONTRACT;
-
-    /* Make no assumptions about the current machine state */
-    ResetCurrentContext();
-
-    FC_GC_POLL_NOT_NEEDED();    // throws always open up for GC
-
-    HELPER_METHOD_FRAME_BEGIN_ATTRIB_NOPOLL(Frame::FRAME_ATTR_EXCEPTION);    // Set up a frame
-
-    COMPlusThrow(kArgumentException);
-
-    HELPER_METHOD_FRAME_END();
-}
-HCIMPLEND
-
-/*********************************************************************/
-HCIMPL0(void, JIT_ThrowArgumentOutOfRangeException)
-{
-    FCALL_CONTRACT;
-
-    /* Make no assumptions about the current machine state */
-    ResetCurrentContext();
-
-    FC_GC_POLL_NOT_NEEDED();    // throws always open up for GC
-
-    HELPER_METHOD_FRAME_BEGIN_ATTRIB_NOPOLL(Frame::FRAME_ATTR_EXCEPTION);    // Set up a frame
-
-    COMPlusThrow(kArgumentOutOfRangeException);
-
-    HELPER_METHOD_FRAME_END();
-}
-HCIMPLEND
-
-/*********************************************************************/
-HCIMPL0(void, JIT_ThrowNotImplementedException)
-{
-    FCALL_CONTRACT;
-
-    /* Make no assumptions about the current machine state */
-    ResetCurrentContext();
-
-    FC_GC_POLL_NOT_NEEDED();    // throws always open up for GC
-
-    HELPER_METHOD_FRAME_BEGIN_ATTRIB_NOPOLL(Frame::FRAME_ATTR_EXCEPTION);    // Set up a frame
-
-    COMPlusThrow(kNotImplementedException);
-
-    HELPER_METHOD_FRAME_END();
-}
-HCIMPLEND
-
-/*********************************************************************/
-HCIMPL0(void, JIT_ThrowPlatformNotSupportedException)
-{
-    FCALL_CONTRACT;
-
-    /* Make no assumptions about the current machine state */
-    ResetCurrentContext();
-
-    FC_GC_POLL_NOT_NEEDED();    // throws always open up for GC
-
-    HELPER_METHOD_FRAME_BEGIN_ATTRIB_NOPOLL(Frame::FRAME_ATTR_EXCEPTION);    // Set up a frame
-
-    COMPlusThrow(kPlatformNotSupportedException);
-
-    HELPER_METHOD_FRAME_END();
-}
-HCIMPLEND
-
-/*********************************************************************/
-HCIMPL0(void, JIT_ThrowTypeNotSupportedException)
-{
-    FCALL_CONTRACT;
-
-    /* Make no assumptions about the current machine state */
-    ResetCurrentContext();
-
-    FC_GC_POLL_NOT_NEEDED();    // throws always open up for GC
-
-    HELPER_METHOD_FRAME_BEGIN_ATTRIB_NOPOLL(Frame::FRAME_ATTR_EXCEPTION);    // Set up a frame
-
-    COMPlusThrow(kNotSupportedException, W("Arg_TypeNotSupported"));
-
-    HELPER_METHOD_FRAME_END();
-}
-HCIMPLEND
-
-/*********************************************************************/
-HCIMPL3(void, JIT_ThrowAmbiguousResolutionException,
-    MethodDesc *method,
-    MethodTable *interfaceType,
-    MethodTable *targetType)
-{
-    FCALL_CONTRACT;
-
-    SString strMethodName;
-    SString strInterfaceName;
-    SString strTargetClassName;
-
-    HELPER_METHOD_FRAME_BEGIN_0();    // Set up a frame
-
-    TypeString::AppendMethod(strMethodName, method, method->GetMethodInstantiation());
-    TypeString::AppendType(strInterfaceName, TypeHandle(interfaceType));
-    TypeString::AppendType(strTargetClassName, targetType);
-
-    HELPER_METHOD_FRAME_END();    // Set up a frame
-
-    FCThrowExVoid(
-        kAmbiguousImplementationException,
-        IDS_CLASSLOAD_AMBIGUOUS_OVERRIDE,
-        strMethodName,
-        strInterfaceName,
-        strTargetClassName);
-}
-HCIMPLEND
-
-/*********************************************************************/
-HCIMPL3(void, JIT_ThrowEntryPointNotFoundException,
-    MethodDesc *method,
-    MethodTable *interfaceType,
-    MethodTable *targetType)
-{
-    FCALL_CONTRACT;
-
-    HELPER_METHOD_FRAME_BEGIN_0();    // Set up a frame
-
-    SString strMethodName;
-    SString strInterfaceName;
-    SString strTargetClassName;
-    SString assemblyName;
-
-    targetType->GetAssembly()->GetDisplayName(assemblyName);
-    TypeString::AppendMethod(strMethodName, method, method->GetMethodInstantiation());
-    TypeString::AppendType(strInterfaceName, TypeHandle(interfaceType));
-    TypeString::AppendType(strTargetClassName, targetType);
-
-    COMPlusThrow(
-        kEntryPointNotFoundException,
-        IDS_CLASSLOAD_METHOD_NOT_IMPLEMENTED,
-        strMethodName,
-        strInterfaceName,
-        strTargetClassName,
-        assemblyName);
-
-    HELPER_METHOD_FRAME_END();    // Set up a frame
-}
-HCIMPLEND
-
-/*********************************************************************/
-HCIMPL0(void, JIT_Overflow)
-{
-    FCALL_CONTRACT;
-
-    /* Make no assumptions about the current machine state */
-    ResetCurrentContext();
-
-    FC_GC_POLL_NOT_NEEDED();    // throws always open up for GC
-
-    HELPER_METHOD_FRAME_BEGIN_ATTRIB_NOPOLL(Frame::FRAME_ATTR_EXCEPTION);    // Set up a frame
-
-    COMPlusThrow(kOverflowException);
-
-    HELPER_METHOD_FRAME_END();
-}
-HCIMPLEND
-
-/*********************************************************************/
-HCIMPL0(void, JIT_ThrowDivZero)
-{
-    FCALL_CONTRACT;
-
-    /* Make no assumptions about the current machine state */
-    ResetCurrentContext();
-
-    FC_GC_POLL_NOT_NEEDED();    // throws always open up for GC
-
-    HELPER_METHOD_FRAME_BEGIN_ATTRIB_NOPOLL(Frame::FRAME_ATTR_EXCEPTION);    // Set up a frame
-
-    COMPlusThrow(kDivideByZeroException);
-
-    HELPER_METHOD_FRAME_END();
-}
-HCIMPLEND
-
-/*********************************************************************/
-HCIMPL0(void, JIT_ThrowNullRef)
-{
-  FCALL_CONTRACT;
-
-  /* Make no assumptions about the current machine state */
-  ResetCurrentContext();
-
-  FC_GC_POLL_NOT_NEEDED();    // throws always open up for GC
-
-  HELPER_METHOD_FRAME_BEGIN_ATTRIB_NOPOLL(Frame::FRAME_ATTR_EXCEPTION);    // Set up a frame
-
-  COMPlusThrow(kNullReferenceException);
-
-  HELPER_METHOD_FRAME_END();
-}
-HCIMPLEND
-
-/*********************************************************************/
-HCIMPL1(void, IL_VerificationError,  int ilOffset)
-{
-    FCALL_CONTRACT;
-
-    FC_GC_POLL_NOT_NEEDED();    // throws always open up for GC
-    HELPER_METHOD_FRAME_BEGIN_ATTRIB_NOPOLL(Frame::FRAME_ATTR_EXCEPTION);    // Set up a frame
-
-    COMPlusThrow(kVerificationException);
 
     HELPER_METHOD_FRAME_END();
 }
@@ -4617,13 +3954,13 @@ void JIT_Patchpoint(int* counter, int ilOffset)
         }
 
         // We've successfully created the osr method; make it available.
-        _ASSERTE(ppInfo->m_osrMethodCode == NULL);
+        _ASSERTE(ppInfo->m_osrMethodCode == (PCODE)NULL);
         ppInfo->m_osrMethodCode = osrMethodCode;
         isNewMethod = true;
     }
 
     // If we get here, we have code to transition to...
-    _ASSERTE(osrMethodCode != NULL);
+    _ASSERTE(osrMethodCode != (PCODE)NULL);
 
     {
         Thread *pThread = GetThread();
@@ -4856,7 +4193,7 @@ HCIMPL1(VOID, JIT_PartialCompilationPatchpoint, int ilOffset)
             }
 
             // We've successfully created the osr method; make it available.
-            _ASSERTE(ppInfo->m_osrMethodCode == NULL);
+            _ASSERTE(ppInfo->m_osrMethodCode == (PCODE)NULL);
             ppInfo->m_osrMethodCode = newMethodCode;
             isNewMethod = true;
         }
@@ -4864,7 +4201,7 @@ HCIMPL1(VOID, JIT_PartialCompilationPatchpoint, int ilOffset)
 
     // If we get here, we have code to transition to...
     PCODE osrMethodCode = ppInfo->m_osrMethodCode;
-    _ASSERTE(osrMethodCode != NULL);
+    _ASSERTE(osrMethodCode != (PCODE)NULL);
 
     Thread *pThread = GetThread();
 
@@ -5254,7 +4591,7 @@ HCIMPL3(void, JIT_VTableProfile32, Object* obj, CORINFO_METHOD_HANDLE baseMethod
     WORD slot = pBaseMD->GetSlot();
     _ASSERTE(slot < pBaseMD->GetMethodTable()->GetNumVirtuals());
 
-    MethodDesc* pMD = pMT->GetMethodDescForSlot(slot);
+    MethodDesc* pMD = pMT->GetMethodDescForSlot_NoThrow(slot);
 
     MethodDesc* pRecordedMD = (MethodDesc*)DEFAULT_UNKNOWN_HANDLE;
     if (!pMD->GetLoaderAllocator()->IsCollectible() && !pMD->IsDynamicMethod())
@@ -5303,7 +4640,7 @@ HCIMPL3(void, JIT_VTableProfile64, Object* obj, CORINFO_METHOD_HANDLE baseMethod
     WORD slot = pBaseMD->GetSlot();
     _ASSERTE(slot < pBaseMD->GetMethodTable()->GetNumVirtuals());
 
-    MethodDesc* pMD = pMT->GetMethodDescForSlot(slot);
+    MethodDesc* pMD = pMT->GetMethodDescForSlot_NoThrow(slot);
 
     MethodDesc* pRecordedMD = (MethodDesc*)DEFAULT_UNKNOWN_HANDLE;
     if (!pMD->GetLoaderAllocator()->IsCollectible() && !pMD->IsDynamicMethod())
@@ -5635,16 +4972,24 @@ enum __CorInfoHelpFunc {
 // static helpers - constant array
 const VMHELPDEF hlpFuncTable[CORINFO_HELP_COUNT] =
 {
-#define JITHELPER(code, pfnHelper, sig) HELPERDEF(code, pfnHelper,sig)
-#define DYNAMICJITHELPER(code, pfnHelper,sig) HELPERDEF(code, 1 + DYNAMIC_##code, sig)
+#define JITHELPER(code, pfnHelper, binderId) HELPERDEF(code, pfnHelper, binderId)
+#define DYNAMICJITHELPER(code, pfnHelper, binderId) HELPERDEF(code, 1 + DYNAMIC_##code, binderId)
 #include "jithelpers.h"
 };
 
-// dynamic helpers - filled in at runtime
+// dynamic helpers - filled in at runtime - See definition of DynamicCorInfoHelpFunc.
 VMHELPDEF hlpDynamicFuncTable[DYNAMIC_CORINFO_HELP_COUNT] =
 {
-#define JITHELPER(code, pfnHelper, sig)
-#define DYNAMICJITHELPER(code, pfnHelper, sig) HELPERDEF(DYNAMIC_ ## code, pfnHelper, sig)
+#define JITHELPER(code, pfnHelper, binderId)
+#define DYNAMICJITHELPER(code, pfnHelper, binderId) HELPERDEF(DYNAMIC_ ## code, pfnHelper, binderId)
+#include "jithelpers.h"
+};
+
+// dynamic helpers to Binder ID mapping - See definition of DynamicCorInfoHelpFunc.
+static const BinderMethodID hlpDynamicToBinderMap[DYNAMIC_CORINFO_HELP_COUNT] =
+{
+#define JITHELPER(code, pfnHelper, binderId)
+#define DYNAMICJITHELPER(code, pfnHelper, binderId) (BinderMethodID)binderId,
 #include "jithelpers.h"
 };
 
@@ -5653,8 +4998,8 @@ VMHELPDEF hlpDynamicFuncTable[DYNAMIC_CORINFO_HELP_COUNT] =
 
 VMHELPCOUNTDEF hlpFuncCountTable[CORINFO_HELP_COUNT+1] =
 {
-#define JITHELPER(code, pfnHelper, sig) HELPERCOUNTDEF(pfnHelper)
-#define DYNAMICJITHELPER(code, pfnHelper, sig) HELPERCOUNTDEF(1 + DYNAMIC_##code)
+#define JITHELPER(code, pfnHelper, binderId) HELPERCOUNTDEF(pfnHelper)
+#define DYNAMICJITHELPER(code, pfnHelper, binderId) HELPERCOUNTDEF(1 + DYNAMIC_##code)
 #include "jithelpers.h"
 };
 #endif
@@ -5662,19 +5007,60 @@ VMHELPCOUNTDEF hlpFuncCountTable[CORINFO_HELP_COUNT+1] =
 // Set the JIT helper function in the helper table
 // Handles the case where the function does not reside in mscorwks.dll
 
-void    _SetJitHelperFunction(DynamicCorInfoHelpFunc ftnNum, void * pFunc)
+void _SetJitHelperFunction(DynamicCorInfoHelpFunc ftnNum, void * pFunc)
 {
-    CONTRACTL {
+    CONTRACTL
+    {
         NOTHROW;
         GC_NOTRIGGER;
-    } CONTRACTL_END;
+    }
+    CONTRACTL_END;
 
     _ASSERTE(ftnNum < DYNAMIC_CORINFO_HELP_COUNT);
 
     LOG((LF_JIT, LL_INFO1000000, "Setting JIT dynamic helper %3d (%s) to %p\n",
         ftnNum, hlpDynamicFuncTable[ftnNum].name, pFunc));
 
-    hlpDynamicFuncTable[ftnNum].pfnHelper = (void *) pFunc;
+    hlpDynamicFuncTable[ftnNum].pfnHelper = (void*)pFunc;
+}
+
+VMHELPDEF LoadDynamicJitHelper(DynamicCorInfoHelpFunc ftnNum, MethodDesc** methodDesc)
+{
+    STANDARD_VM_CONTRACT;
+
+    _ASSERTE(ftnNum < DYNAMIC_CORINFO_HELP_COUNT);
+
+    MethodDesc* pMD = NULL;
+    void* helper = VolatileLoad(&hlpDynamicFuncTable[ftnNum].pfnHelper);
+    if (helper == NULL)
+    {
+        BinderMethodID binderId = hlpDynamicToBinderMap[ftnNum];
+
+        LOG((LF_JIT, LL_INFO1000000, "Loading JIT dynamic helper %3d (%s) to binderID %u\n",
+            ftnNum, hlpDynamicFuncTable[ftnNum].name, binderId));
+
+        if (binderId == METHOD__NIL)
+            return {};
+
+        pMD = CoreLibBinder::GetMethod(binderId);
+        PCODE pFunc = pMD->GetMultiCallableAddrOfCode();
+        InterlockedCompareExchangeT<void*>(&hlpDynamicFuncTable[ftnNum].pfnHelper, (void*)pFunc, nullptr);
+    }
+
+    // If the caller wants the MethodDesc, we may need to try and load it.
+    if (methodDesc != NULL)
+    {
+        if (pMD == NULL)
+        {
+            BinderMethodID binderId = hlpDynamicToBinderMap[ftnNum];
+            pMD = binderId != METHOD__NIL
+                ? CoreLibBinder::GetMethod(binderId)
+                : NULL;
+        }
+        *methodDesc = pMD;
+    }
+
+    return hlpDynamicFuncTable[ftnNum];
 }
 
 /*********************************************************************/

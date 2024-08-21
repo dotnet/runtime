@@ -71,11 +71,6 @@ extern "C" void STDCALL DelayLoad_Helper_Obj();
 extern "C" void STDCALL DelayLoad_Helper_ObjObj();
 #endif
 
-#if (defined(TARGET_X86) || defined(TARGET_AMD64))
-extern "C" DWORD xmmYmmStateSupport();
-extern "C" DWORD avx512StateSupport();
-#endif
-
 #ifdef DACCESS_COMPILE
 
 // Used by dac/strike to make sense of non-jit/non-jit-helper call targets

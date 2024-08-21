@@ -1498,15 +1498,15 @@ namespace System.StubHelpers
         internal static extern IntPtr GetCOMIPFromRCW(object objSrc, IntPtr pCPCMD, out IntPtr ppTarget, out bool pfNeedsRelease);
 #endif // FEATURE_COMINTEROP
 
+#if PROFILING_SUPPORTED
         //-------------------------------------------------------
         // Profiler helpers
         //-------------------------------------------------------
-#if PROFILING_SUPPORTED
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern IntPtr ProfilerBeginTransitionCallback(IntPtr pSecretParam, IntPtr pThread, object pThis);
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "StubHelpers_ProfilerBeginTransitionCallback")]
+        internal static unsafe partial void* ProfilerBeginTransitionCallback(void* pTargetMD);
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern void ProfilerEndTransitionCallback(IntPtr pMD, IntPtr pThread);
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "StubHelpers_ProfilerEndTransitionCallback")]
+        internal static unsafe partial void ProfilerEndTransitionCallback(void* pTargetMD);
 #endif // PROFILING_SUPPORTED
 
         //------------------------------------------------------
@@ -1616,10 +1616,8 @@ namespace System.StubHelpers
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern IntPtr GetStubContext();
 
-#if FEATURE_MULTICASTSTUB_AS_IL
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern void MulticastDebuggerTraceHelper(object o, int count);
-#endif
 
         [Intrinsic]
         [MethodImpl(MethodImplOptions.InternalCall)]

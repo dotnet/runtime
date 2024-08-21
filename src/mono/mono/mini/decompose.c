@@ -41,7 +41,7 @@ decompose_long_opcode (MonoCompile *cfg, MonoInst *ins, MonoInst **repl_ins)
 		if (TARGET_SIZEOF_VOID_P == 4)
 			;
 		else
-			ins->opcode = OP_SEXT_I4;
+			ins->opcode = OP_MOVE;
 		break;
 	case OP_LCONV_TO_I8:
 	case OP_LCONV_TO_U8:

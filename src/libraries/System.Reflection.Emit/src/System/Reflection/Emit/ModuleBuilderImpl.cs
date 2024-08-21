@@ -37,8 +37,11 @@ namespace System.Reflection.Emit
         private bool _hasGlobalBeenCreated;
         private Type?[]? _coreTypes;
         private MetadataBuilder _pdbBuilder = new();
-        private static readonly Type[] s_coreTypes = { typeof(void), typeof(object), typeof(bool), typeof(char), typeof(sbyte), typeof(byte), typeof(short), typeof(ushort), typeof(int),
-                                                       typeof(uint), typeof(long), typeof(ulong), typeof(float), typeof(double), typeof(string), typeof(nint), typeof(nuint), typeof(TypedReference) };
+        // The order of the types should match with the CoreTypeId enum values order.
+        private static readonly Type[] s_coreTypes = { typeof(void), typeof(object), typeof(bool), typeof(char), typeof(sbyte),
+                                                       typeof(byte), typeof(short), typeof(ushort), typeof(int), typeof(uint),
+                                                       typeof(long), typeof(ulong), typeof(float), typeof(double), typeof(string),
+                                                       typeof(nint), typeof(nuint), typeof(TypedReference), typeof(ValueType) };
 
         internal ModuleBuilderImpl(string name, Assembly coreAssembly, MetadataBuilder builder, PersistedAssemblyBuilder assemblyBuilder)
         {
@@ -354,6 +357,7 @@ namespace System.Reflection.Emit
                 if (il != null)
                 {
                     FillMemberReferences(il);
+                    il.AddExceptionBlocks();
                     StandaloneSignatureHandle signature = il.LocalCount == 0 ? default :
                         _metadataBuilder.AddStandaloneSignature(_metadataBuilder.GetOrAddBlob(MetadataSignatureHelper.GetLocalSignature(il.Locals, this)));
                     offset = AddMethodBody(method, il, signature, methodBodyEncoder);
@@ -635,7 +639,7 @@ namespace System.Reflection.Emit
                 Debug.Assert(field._handle == handle);
                 WriteCustomAttributes(field._customAttributes, handle);
 
-                if (field._offset > 0 && (typeBuilder.Attributes & TypeAttributes.ExplicitLayout) != 0)
+                if (field._offset >= 0 && (typeBuilder.Attributes & TypeAttributes.ExplicitLayout) != 0)
                 {
                     AddFieldLayout(handle, field._offset);
                 }

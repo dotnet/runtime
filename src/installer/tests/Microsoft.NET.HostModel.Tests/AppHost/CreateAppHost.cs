@@ -25,6 +25,12 @@ namespace Microsoft.NET.HostModel.AppHost.Tests
         private const string AppBinaryPathPlaceholder = "c3ab8ff13720e8ad9047dd39466b3c8974e592c2fa383d4a3960714caef0c4f2";
         private readonly static byte[] AppBinaryPathPlaceholderSearchValue = Encoding.UTF8.GetBytes(AppBinaryPathPlaceholder);
 
+        /// <summary>
+        /// Value embedded in default apphost executable for configuration of how it will search for the .NET install
+        /// </summary>
+        private const string DotNetSearchPlaceholder = "\0\019ff3e9c3602ae8e841925bb461a0adb064a1f1903667a5e0d87e8f608f425ac";
+        private static readonly byte[] DotNetSearchPlaceholderValue = Encoding.UTF8.GetBytes(DotNetSearchPlaceholder);
+
         [Fact]
         public void EmbedAppBinaryPath()
         {
@@ -91,6 +97,54 @@ namespace Microsoft.NET.HostModel.AppHost.Tests
                         sourceAppHostMock,
                         destinationFilePath,
                         appBinaryFilePath));
+
+                File.Exists(destinationFilePath).Should().BeFalse();
+            }
+        }
+
+        [Fact]
+        public void AppRelativePathRooted_Fails()
+        {
+            using (TestArtifact artifact = CreateTestDirectory())
+            {
+                string sourceAppHostMock = PrepareAppHostMockFile(artifact.Location);
+                string destinationFilePath = Path.Combine(artifact.Location, "DestinationAppHost.exe.mock");
+                HostWriter.DotNetSearchOptions options = new()
+                {
+                    Location = HostWriter.DotNetSearchOptions.SearchLocation.AppRelative,
+                    AppRelativeDotNet = artifact.Location
+                };
+
+                Assert.Throws<AppRelativePathRootedException>(() =>
+                    HostWriter.CreateAppHost(
+                        sourceAppHostMock,
+                        destinationFilePath,
+                        "app.dll",
+                        dotNetSearchOptions: options));
+
+                File.Exists(destinationFilePath).Should().BeFalse();
+            }
+        }
+
+        [Fact]
+        public void AppRelativePathTooLong_Fails()
+        {
+            using (TestArtifact artifact = CreateTestDirectory())
+            {
+                string sourceAppHostMock = PrepareAppHostMockFile(artifact.Location);
+                string destinationFilePath = Path.Combine(artifact.Location, "DestinationAppHost.exe.mock");
+                HostWriter.DotNetSearchOptions options = new()
+                {
+                    Location = HostWriter.DotNetSearchOptions.SearchLocation.AppRelative,
+                    AppRelativeDotNet = new string('p', 1024)
+                };
+
+                Assert.Throws<AppRelativePathTooLongException>(() =>
+                    HostWriter.CreateAppHost(
+                        sourceAppHostMock,
+                        destinationFilePath,
+                        "app.dll",
+                        dotNetSearchOptions: options));
 
                 File.Exists(destinationFilePath).Should().BeFalse();
             }
@@ -399,11 +453,11 @@ namespace Microsoft.NET.HostModel.AppHost.Tests
             // The only customization which we do on non-Windows files is the embedding
             // of the binary path, which works the same regardless of the file format.
 
-            int size = WindowsFileHeader.Length + AppBinaryPathPlaceholderSearchValue.Length;
+            int size = WindowsFileHeader.Length + AppBinaryPathPlaceholderSearchValue.Length + DotNetSearchPlaceholderValue.Length;
             byte[] content = new byte[size];
             Array.Copy(WindowsFileHeader, 0, content, 0, WindowsFileHeader.Length);
             Array.Copy(AppBinaryPathPlaceholderSearchValue, 0, content, WindowsFileHeader.Length, AppBinaryPathPlaceholderSearchValue.Length);
-
+            Array.Copy(DotNetSearchPlaceholderValue, 0, content, WindowsFileHeader.Length + AppBinaryPathPlaceholderSearchValue.Length, DotNetSearchPlaceholderValue.Length);
             customize?.Invoke(content);
 
             string filePath = Path.Combine(directory, "SourceAppHost.exe.mock");

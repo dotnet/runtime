@@ -33,7 +33,7 @@ internal static partial class Interop
             return encoded;
         }
         [LibraryImport(Libraries.AndroidCryptoNative, EntryPoint = "AndroidCryptoNative_X509IsKeyStorePrivateKeyEntry")]
-        [return: MarshalAs(UnmanagedType.U1)]
+        [return: MarshalAs(UnmanagedType.Bool)]
         internal static partial bool IsKeyStorePrivateKeyEntry(IntPtr handle);
         [LibraryImport(Libraries.AndroidCryptoNative, EntryPoint = "AndroidCryptoNative_X509GetCertificateForPrivateKeyEntry")]
         private static partial IntPtr GetPrivateKeyEntryCertificate(IntPtr privatKeyEntryHandle);

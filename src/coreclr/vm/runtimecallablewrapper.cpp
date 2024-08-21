@@ -39,6 +39,7 @@ class Object;
 #include "classnames.h"
 #include "objectnative.h"
 #include "finalizerthread.h"
+#include "dynamicinterfacecastable.h"
 
 // static
 SLIST_HEADER RCW::s_RCWStandbyList;
@@ -1709,7 +1710,7 @@ void RCW::MinorCleanup()
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;
-        PRECONDITION(GCHeapUtilities::IsGCInProgress() || ( (g_fEEShutDown & ShutDown_SyncBlock) && g_fProcessDetach ));
+        PRECONDITION(GCHeapUtilities::IsGCInProgress() || ( (g_fEEShutDown & ShutDown_SyncBlock) && IsAtProcessExit() ));
     }
     CONTRACTL_END;
 
@@ -2299,87 +2300,6 @@ void RCW::ReleaseAllInterfaces()
     }
 }
 
-//---------------------------------------------------------------------
-// Returns true if the RCW supports given "standard managed" interface.
-bool RCW::SupportsMngStdInterface(MethodTable *pItfMT)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_COOPERATIVE;
-        PRECONDITION(CheckPointer(pItfMT));
-    }
-    CONTRACTL_END;
-
-    //
-    // Handle casts to normal managed standard interfaces.
-    //
-
-    // Check to see if the interface is a managed standard interface.
-    IID *pNativeIID = MngStdInterfaceMap::GetNativeIIDForType(pItfMT);
-    if (pNativeIID != NULL)
-    {
-        // It is a managed standard interface so we need to check to see if the COM component
-        // implements the native interface associated with it.
-        SafeComHolder<IUnknown> pNativeItf = NULL;
-
-        // QI for the native interface.
-        SafeQueryInterfaceRemoteAware(*pNativeIID, &pNativeItf);
-
-        // If the component supports the native interface then we can say it implements the
-        // standard interface.
-        if (pNativeItf)
-            return true;
-    }
-    else
-    {
-        //
-        // Handle casts to IEnumerable.
-        //
-
-        // If the requested interface is IEnumerable then we need to check to see if the
-        // COM object implements IDispatch and has a member with DISPID_NEWENUM.
-        if (pItfMT == CoreLibBinder::GetClass(CLASS__IENUMERABLE))
-        {
-            SafeComHolder<IDispatch> pDisp = GetIDispatch();
-            if (pDisp)
-            {
-                DISPPARAMS DispParams = {0, 0, NULL, NULL};
-                VariantHolder VarResult;
-
-                // Initialize the return variant.
-                SafeVariantInit(&VarResult);
-
-                HRESULT hr = E_FAIL;
-                {
-                    // We are about to make a call to COM so switch to preemptive GC.
-                    GCX_PREEMP();
-
-                    // Call invoke with DISPID_NEWENUM to see if such a member exists.
-                    hr = pDisp->Invoke(
-                                        DISPID_NEWENUM,
-                                        IID_NULL,
-                                        LOCALE_USER_DEFAULT,
-                                        DISPATCH_METHOD | DISPATCH_PROPERTYGET,
-                                        &DispParams,
-                                        &VarResult,
-                                        NULL,
-                                        NULL
-                                      );
-                }
-
-                // If the invoke succeeded then the component has a member DISPID_NEWENUM
-                // so we can expose it as an IEnumerable.
-                if (SUCCEEDED(hr))
-                    return true;
-            }
-        }
-    }
-
-    return false;
-}
-
 //--------------------------------------------------------------------------------
 // OBJECTREF ComObject::CreateComObjectRef(MethodTable* pMT)
 //  returns NULL for out of memory scenarios
@@ -2491,7 +2411,7 @@ BOOL ComObject::SupportsInterface(OBJECTREF oref, MethodTable* pIntfTable)
                 }
             }
         }
-        else if (pRCW->SupportsMngStdInterface(pIntfTable))
+        else if (DynamicInterfaceCastable::IsInstanceOf(&oref, { pIntfTable }, FALSE))
         {
             bSupportsItf = true;
         }
@@ -2635,27 +2555,6 @@ void ComObject::ThrowInvalidCastException(OBJECTREF *pObj, MethodTable *pCastToM
         {
             COMPlusThrow(kInvalidCastException, IDS_EE_RCW_INVALIDCAST_IENUMERABLE,
                 strHRDescription.GetUnicode(), strComObjClassName.GetUnicode(), strCastToName.GetUnicode(), strIID);
-        }
-        else if ((pNativeIID = MngStdInterfaceMap::GetNativeIIDForType(thCastTo)) != NULL)
-        {
-            // Convert the source interface IID to a string.
-            WCHAR strNativeItfIID[GUID_STR_BUFFER_LEN];
-            GuidToLPWSTR(*pNativeIID, strNativeItfIID);
-
-            // Query for the interface to determine the failure HRESULT.
-            HRESULT hr2 = pRCW->SafeQueryInterfaceRemoteAware(iid, (IUnknown**)&pItf);
-
-            // If this function was called, it means the QI call failed in the past. If it
-            // no longer fails now, we still need to throw, so throw a generic invalid cast exception.
-            if (SUCCEEDED(hr2))
-                COMPlusThrow(kInvalidCastException, IDS_EE_CANNOTCAST, strComObjClassName.GetUnicode(), strCastToName.GetUnicode());
-
-            // Obtain the textual description of the 2nd HRESULT.
-            SString strHR2Description;
-            GetHRMsg(hr2, strHR2Description);
-
-            COMPlusThrow(kInvalidCastException, IDS_EE_RCW_INVALIDCAST_MNGSTDITF, strHRDescription.GetUnicode(), strComObjClassName.GetUnicode(),
-                strCastToName.GetUnicode(), strIID, strNativeItfIID, strHR2Description.GetUnicode());
         }
         else
         {

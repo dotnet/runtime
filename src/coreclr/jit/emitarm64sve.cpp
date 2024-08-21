@@ -2727,6 +2727,7 @@ void emitter::emitInsSve_R_R_I(instruction     ins,
             if (sopt == INS_SCALABLE_OPTS_WITH_VECTOR_PAIR)
             {
                 fmt = IF_SVE_BQ_2A;
+                unreached(); // Not supported yet.
             }
             else
             {
@@ -3858,6 +3859,9 @@ void emitter::emitInsSve_R_R_R(instruction     ins,
             assert(isLowPredicateRegister(reg2));
             assert(isVectorRegister(reg3));
             assert(insOptsScalableStandard(opt));
+            // TODO-SVE: We currently support only the destructive version of splice. Remove the following assert when
+            // the constructive version is added, as described in https://github.com/dotnet/runtime/issues/103850.
+            assert(sopt != INS_SCALABLE_OPTS_WITH_VECTOR_PAIR);
             fmt = (sopt == INS_SCALABLE_OPTS_WITH_VECTOR_PAIR) ? IF_SVE_CV_3A : IF_SVE_CV_3B;
             break;
 
@@ -4406,7 +4410,6 @@ void emitter::emitInsSve_R_R_R(instruction     ins,
 /*****************************************************************************
  *
  *  Add a SVE instruction referencing three registers and a constant.
- *  Do not call this directly. Use 'emitIns_R_R_R_I' instead.
  */
 
 void emitter::emitInsSve_R_R_R_I(instruction     ins,
@@ -5573,7 +5576,7 @@ void emitter::emitInsSve_R_R_R_I(instruction     ins,
             assert(isLowPredicateRegister(reg2));
             assert(isVectorRegister(reg3));
             assert(isScalableVectorSize(size));
-            imm = emitEncodeRotationImm90_or_270(imm);
+            assert(emitIsValidEncodedRotationImm90_or_270(imm));
             fmt = IF_SVE_GP_3A;
             break;
 
@@ -5822,14 +5825,13 @@ void emitter::emitInsSve_R_R_R_I_I(instruction ins,
 
         case INS_sve_fcmla:
             assert(opt == INS_OPTS_SCALABLE_S);
-            assert(isVectorRegister(reg1));    // ddddd
-            assert(isVectorRegister(reg2));    // nnnnn
-            assert(isLowVectorRegister(reg3)); // mmmm
-            assert(isValidUimm<1>(imm1));      // i
-            assert(isValidRot(imm2));          // rr
+            assert(isVectorRegister(reg1));                      // ddddd
+            assert(isVectorRegister(reg2));                      // nnnnn
+            assert(isLowVectorRegister(reg3));                   // mmmm
+            assert(isValidUimm<1>(imm1));                        // i
+            assert(emitIsValidEncodedRotationImm0_to_270(imm2)); // rr
 
-            // Convert imm2 from rotation value (0-270) to bitwise representation (0-3)
-            imm = (imm1 << 2) | emitEncodeRotationImm0_to_270(imm2);
+            imm = (imm1 << 2) | imm2;
             fmt = IF_SVE_GV_3A;
             break;
 
@@ -5856,7 +5858,6 @@ void emitter::emitInsSve_R_R_R_I_I(instruction ins,
 /*****************************************************************************
  *
  *  Add a SVE instruction referencing four registers.
- *  Do not call this directly. Use 'emitIns_R_R_R_R' instead.
  */
 
 void emitter::emitInsSve_R_R_R_R(instruction     ins,
@@ -6987,7 +6988,7 @@ void emitter::emitInsSve_R_R_R_R_I(instruction ins,
             assert(isVectorRegister(reg3));
             assert(isVectorRegister(reg4));
             assert(isScalableVectorSize(size));
-            imm = emitEncodeRotationImm0_to_270(imm);
+            assert(emitIsValidEncodedRotationImm0_to_270(imm));
             fmt = IF_SVE_GT_4A;
             break;
 
@@ -9794,7 +9795,7 @@ void emitter::emitIns_PRFOP_R_R_I(instruction ins,
 
 /*static*/ bool emitter::emitIsValidEncodedRotationImm90_or_270(ssize_t imm)
 {
-    return (imm == 0) || (imm == 1);
+    return isValidUimm<1>(imm);
 }
 
 /************************************************************************
@@ -9863,7 +9864,7 @@ void emitter::emitIns_PRFOP_R_R_I(instruction ins,
 
 /*static*/ bool emitter::emitIsValidEncodedRotationImm0_to_270(ssize_t imm)
 {
-    return (imm >= 0) && (imm <= 3);
+    return isValidUimm<2>(imm);
 }
 
 /*****************************************************************************
@@ -10294,7 +10295,7 @@ BYTE* emitter::emitOutput_InstrSve(BYTE* dst, instrDesc* id)
             dst += emitOutput_Instr(dst, code);
             break;
 
-        case IF_SVE_CV_3A: // ........xx...... ...VVVnnnnnddddd -- SVE vector splice (destructive)
+        case IF_SVE_CV_3A: // ........xx...... ...VVVnnnnnddddd -- SVE vector splice (constructive)
         case IF_SVE_CV_3B: // ........xx...... ...VVVmmmmmddddd -- SVE vector splice (destructive)
             code = emitInsCodeSve(ins, fmt);
             code |= insEncodeReg_V<4, 0>(id->idReg1());                   // ddddd
@@ -13257,7 +13258,7 @@ void emitter::emitInsSveSanityCheck(instrDesc* id)
             assert(isScalableVectorSize(id->idOpSize()));
             break;
 
-        case IF_SVE_CV_3A: // ........xx...... ...VVVnnnnnddddd -- SVE vector splice (destructive)
+        case IF_SVE_CV_3A: // ........xx...... ...VVVnnnnnddddd -- SVE vector splice (constructive)
         case IF_SVE_CV_3B: // ........xx...... ...VVVmmmmmddddd -- SVE vector splice (destructive)
             assert(isScalableVectorSize(id->idOpSize())); // xx
             assert(insOptsScalableStandard(id->idInsOpt()));
@@ -14822,27 +14823,38 @@ void emitter::emitDispInsSveHelp(instrDesc* id)
             emitDispSveReg(id->idReg3(), id->idInsOpt(), false);                                   // mmmmm
             break;
 
-        // <V><dn>, <Pg>, <V><dn>, <Zm>.<T>
         // <R><dn>, <Pg>, <R><dn>, <Zm>.<T>
         case IF_SVE_CN_3A: // ........xx...... ...gggmmmmmddddd -- SVE conditionally extract element to SIMD&FP scalar
         case IF_SVE_CO_3A: // ........xx...... ...gggmmmmmddddd -- SVE conditionally extract element to general register
-        case IF_SVE_HJ_3A: // ........xx...... ...gggmmmmmddddd -- SVE floating-point serial reduction (predicated)
             emitDispReg(id->idReg1(), size, true);                                                 // ddddd
             emitDispLowPredicateReg(id->idReg2(), insGetPredicateType(fmt), id->idInsOpt(), true); // ggg
             emitDispReg(id->idReg1(), size, true);                                                 // ddddd
             emitDispSveReg(id->idReg3(), id->idInsOpt(), false);                                   // mmmmm
             break;
 
+        // <V><dn>, <Pg>, <V><dn>, <Zm>.<T>
+        case IF_SVE_HJ_3A: // ........xx...... ...gggmmmmmddddd -- SVE floating-point serial reduction (predicated)
+            emitDispVectorReg(id->idReg1(), id->idInsOpt(), true);                                 // ddddd
+            emitDispLowPredicateReg(id->idReg2(), insGetPredicateType(fmt), id->idInsOpt(), true); // ggg
+            emitDispVectorReg(id->idReg1(), id->idInsOpt(), true);                                 // ddddd
+            emitDispSveReg(id->idReg3(), id->idInsOpt(), false);                                   // mmmmm
+            break;
+
         // <V><d>, <Pg>, <Zn>.<T>
-        // <R><d>, <Pg>, <Zn>.<T>
         case IF_SVE_AF_3A: // ........xx...... ...gggnnnnnddddd -- SVE bitwise logical reduction (predicated)
         case IF_SVE_AK_3A: // ........xx...... ...gggnnnnnddddd -- SVE integer min/max reduction (predicated)
         case IF_SVE_CR_3A: // ........xx...... ...gggnnnnnddddd -- SVE extract element to SIMD&FP scalar register
-        case IF_SVE_CS_3A: // ........xx...... ...gggnnnnnddddd -- SVE extract element to general register
         case IF_SVE_HE_3A: // ........xx...... ...gggnnnnnddddd -- SVE floating-point recursive reduction
-            emitDispReg(id->idReg1(), size, true);                                              // ddddd
-            emitDispPredicateReg(id->idReg2(), insGetPredicateType(fmt), id->idInsOpt(), true); // ggg
-            emitDispSveReg(id->idReg3(), id->idInsOpt(), false);                                // mmmmm
+            emitDispVectorReg(id->idReg1(), id->idInsOpt(), true);                                 // ddddd
+            emitDispLowPredicateReg(id->idReg2(), insGetPredicateType(fmt), id->idInsOpt(), true); // ggg
+            emitDispSveReg(id->idReg3(), id->idInsOpt(), false);                                   // mmmmm
+            break;
+
+        // <R><d>, <Pg>, <Zn>.<T>
+        case IF_SVE_CS_3A: // ........xx...... ...gggnnnnnddddd -- SVE extract element to general register
+            emitDispReg(id->idReg1(), size, true);                                                 // ddddd
+            emitDispLowPredicateReg(id->idReg2(), insGetPredicateType(fmt), id->idInsOpt(), true); // ggg
+            emitDispSveReg(id->idReg3(), id->idInsOpt(), false);                                   // mmmmm
             break;
 
         // <Vd>.<T>, <Pg>, <Zn>.<Tb>
@@ -14944,7 +14956,7 @@ void emitter::emitDispInsSveHelp(instrDesc* id)
             break;
 
         // <Zd>.<T>, <Pv>, {<Zn1>.<T>, <Zn2>.<T>}
-        case IF_SVE_CV_3A: // ........xx...... ...VVVnnnnnddddd -- SVE vector splice (destructive)
+        case IF_SVE_CV_3A: // ........xx...... ...VVVnnnnnddddd -- SVE vector splice (constructive)
             emitDispSveReg(id->idReg1(), id->idInsOpt(), true);                                             // ddddd
             emitDispPredicateReg(id->idReg2(), insGetPredicateType(fmt), id->idInsOpt(), true);             // VVV
             emitDispSveConsecutiveRegList(id->idReg3(), insGetSveReg1ListSize(ins), id->idInsOpt(), false); // nnnnn
@@ -16805,7 +16817,7 @@ void emitter::getInsSveExecutionCharacteristics(instrDesc* id, insExecutionChara
             result.insLatency    = PERFSCORE_LATENCY_140C;
             break;
 
-        case IF_SVE_CV_3A: // ........xx...... ...VVVnnnnnddddd -- SVE vector splice (destructive)
+        case IF_SVE_CV_3A: // ........xx...... ...VVVnnnnnddddd -- SVE vector splice (constructive)
         case IF_SVE_CV_3B: // ........xx...... ...VVVmmmmmddddd -- SVE vector splice (destructive)
             result.insLatency    = PERFSCORE_LATENCY_3C;
             result.insThroughput = PERFSCORE_THROUGHPUT_1C;
@@ -18419,5 +18431,213 @@ void emitter::getInsSveExecutionCharacteristics(instrDesc* id, insExecutionChara
     }
 }
 #endif // defined(DEBUG) || defined(LATE_DISASM)
+
+#ifdef DEBUG
+/*****************************************************************************
+ *
+ *  Sanity check two instructions are valid when placed next to each other
+ */
+
+void emitter::emitInsPairSanityCheck(instrDesc* firstId, instrDesc* secondId)
+{
+    if (firstId == nullptr || secondId == nullptr)
+    {
+        return;
+    }
+
+    // Currently only concerned with instructions that follow movprfx
+    if (firstId->idIns() != INS_sve_movprfx)
+    {
+        return;
+    }
+
+    bool movprefxIsPredicated = false;
+    if (firstId->idInsFmt() == IF_SVE_AH_3A)
+    {
+        movprefxIsPredicated = true;
+    }
+    else
+    {
+        // Unpredicated version
+        assert(firstId->idInsFmt() == IF_SVE_BI_2A);
+    }
+
+    // Quoted sections are taken from the Arm manual.
+
+    // "It is required that the prefixed instruction at PC+4 must be an SVE destructive binary or ternary
+    // instruction encoding, or a unary operation with merging predication, but excluding other MOVPRFX instructions."
+    // "The prefixed instruction must not use the destination register in any other operand position, even if
+    // they have different names but refer to the same architectural register state."
+    // "A predicated MOVPRFX cannot be used with an unpredicated instruction."
+    switch (secondId->idInsFmt())
+    {
+        case IF_SVE_BN_1A: // <Zdn>.D{, <pattern>{, MUL #<imm>}}
+        case IF_SVE_BP_1A: // <Zdn>.D{, <pattern>{, MUL #<imm>}}
+        case IF_SVE_CC_2A: // <Zdn>.<T>, <V><m>
+        case IF_SVE_CD_2A: // <Zdn>.<T>, <R><m>
+        case IF_SVE_DN_2A: // <Zdn>.<T>, <Pm>.<T>
+        case IF_SVE_DP_2A: // <Zdn>.<T>, <Pm>.<T>
+        // Tied registers
+        case IF_SVE_BS_1A: // <Zdn>.<T>, <Zdn>.<T>, #<const>
+        case IF_SVE_EC_1A: // <Zdn>.<T>, <Zdn>.<T>, #<imm>{, <shift>}
+        case IF_SVE_ED_1A: // <Zdn>.<T>, <Zdn>.<T>, #<imm>
+        case IF_SVE_EE_1A: // <Zdn>.<T>, <Zdn>.<T>, #<imm>
+            assert(!movprefxIsPredicated);
+            break;
+
+        case IF_SVE_BU_2A:   // <Zd>.<T>, <Pg>/M, #<const>
+        case IF_SVE_BV_2A_A: // <Zd>.<T>, <Pg>/M, #<imm>{, <shift>}
+        case IF_SVE_BV_2A_J: // <Zd>.<T>, <Pg>/M, #<imm>{, <shift>}
+        case IF_SVE_BV_2B:   // <Zd>.<T>, <Pg>/M, #0.0
+        case IF_SVE_CQ_3A:   // <Zd>.<T>, <Pg>/M, <R><n|SP>
+        // Tied registers
+        case IF_SVE_AM_2A: // <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, #<const>
+        case IF_SVE_HM_2A: // <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <const>
+            break;
+
+        case IF_SVE_FU_2A: // <Zda>.<T>, <Zn>.<T>, #<const>
+        // Tied registers
+        case IF_SVE_AW_2A: // <Zdn>.<T>, <Zdn>.<T>, <Zm>.<T>, #<const>
+        case IF_SVE_BY_2A: // <Zdn>.B, <Zdn>.B, <Zm>.B, #<imm>
+        case IF_SVE_FV_2A: // <Zdn>.<T>, <Zdn>.<T>, <Zm>.<T>, <const>
+        case IF_SVE_HN_2A: // <Zdn>.<T>, <Zdn>.<T>, <Zm>.<T>, #<imm>
+            assert(!movprefxIsPredicated);
+            assert(secondId->idReg1() != secondId->idReg2());
+            break;
+
+        case IF_SVE_AP_3A: // <Zd>.<T>, <Pg>/M, <Zn>.<T>
+        case IF_SVE_AQ_3A: // <Zd>.<T>, <Pg>/M, <Zn>.<T>
+        case IF_SVE_CP_3A: // <Zd>.<T>, <Pg>/M, <V><n>
+        case IF_SVE_CT_3A: // <Zd>.Q, <Pg>/M, <Zn>.Q
+        case IF_SVE_CU_3A: // <Zd>.<T>, <Pg>/M, <Zn>.<T>
+        case IF_SVE_ES_3A: // <Zd>.<T>, <Pg>/M, <Zn>.<T>
+        case IF_SVE_EQ_3A: // <Zda>.<T>, <Pg>/M, <Zn>.<Tb>
+        case IF_SVE_HO_3A: // <Zd>.H, <Pg>/M, <Zn>.S
+        case IF_SVE_HO_3B: // <Zd>.D, <Pg>/M, <Zn>.S
+        case IF_SVE_HO_3C: // <Zd>.S, <Pg>/M, <Zn>.D
+        case IF_SVE_HP_3A: // <Zd>.<T>, <Pg>/M, <Zn>.<T>
+        case IF_SVE_HQ_3A: // <Zd>.<T>, <Pg>/M, <Zn>.<T>
+        case IF_SVE_HR_3A: // <Zd>.<T>, <Pg>/M, <Zn>.<T>
+        case IF_SVE_HS_3A: // <Zd>.<H|S|D>, <Pg>/M, <Zn>.<H|S|D>
+        case IF_SVE_HP_3B: // <Zd>.<H|S|D>, <Pg>/M, <Zn>.<H|S|D>
+        // Tied registers
+        case IF_SVE_AA_3A: // <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T>
+        case IF_SVE_AB_3B: // <Zdn>.D, <Pg>/M, <Zdn>.D, <Zm>.D
+        case IF_SVE_AC_3A: // <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T>
+        case IF_SVE_AO_3A: // <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.D
+        case IF_SVE_CM_3A: // <Zdn>.<T>, <Pg>, <Zdn>.<T>, <Zm>.<T>
+        case IF_SVE_GP_3A: // <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T>, <const>
+        case IF_SVE_GR_3A: // <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T>
+        case IF_SVE_HL_3A: // <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T>
+        case IF_SVE_HL_3B: // <Zdn>.H, <Pg>/M, <Zdn>.H, <Zm>.H
+            assert(secondId->idReg1() != secondId->idReg3());
+            break;
+
+        case IF_SVE_EF_3A:   // <Zda>.S, <Zn>.H, <Zm>.H
+        case IF_SVE_EG_3A:   // <Zda>.S, <Zn>.H, <Zm>.H[<imm>]
+        case IF_SVE_EH_3A:   // <Zda>.<T>, <Zn>.<Tb>, <Zm>.<Tb>
+        case IF_SVE_EI_3A:   // <Zda>.S, <Zn>.B, <Zm>.B
+        case IF_SVE_EJ_3A:   // <Zda>.<T>, <Zn>.<Tb>, <Zm>.<Tb>, <const>
+        case IF_SVE_EK_3A:   // <Zda>.<T>, <Zn>.<T>, <Zm>.<T>, <const>
+        case IF_SVE_EL_3A:   // <Zda>.<T>, <Zn>.<Tb>, <Zm>.<Tb>
+        case IF_SVE_EM_3A:   // <Zda>.<T>, <Zn>.<T>, <Zm>.<T>
+        case IF_SVE_EW_3A:   // <Zda>.D, <Zn>.D, <Zm>.D
+        case IF_SVE_EW_3B:   // <Zdn>.D, <Zm>.D, <Za>.D
+        case IF_SVE_EY_3A:   // <Zda>.S, <Zn>.B, <Zm>.B[<imm>]
+        case IF_SVE_EY_3B:   // <Zda>.D, <Zn>.H, <Zm>.H[<imm>]
+        case IF_SVE_EZ_3A:   // <Zda>.S, <Zn>.B, <Zm>.B[<imm>]
+        case IF_SVE_FA_3A:   // <Zda>.S, <Zn>.B, <Zm>.B[<imm>], <const>
+        case IF_SVE_FA_3B:   // <Zda>.D, <Zn>.H, <Zm>.H[<imm>], <const>
+        case IF_SVE_FB_3A:   // <Zda>.H, <Zn>.H, <Zm>.H[<imm>], <const>
+        case IF_SVE_FB_3B:   // <Zda>.S, <Zn>.S, <Zm>.S[<imm>], <const>
+        case IF_SVE_FC_3A:   // <Zda>.H, <Zn>.H, <Zm>.H[<imm>], <const>
+        case IF_SVE_FC_3B:   // <Zda>.S, <Zn>.S, <Zm>.S[<imm>], <const>
+        case IF_SVE_FF_3A:   // <Zda>.H, <Zn>.H, <Zm>.H[<imm>]
+        case IF_SVE_FF_3B:   // <Zda>.S, <Zn>.S, <Zm>.S[<imm>]
+        case IF_SVE_FF_3C:   // <Zda>.D, <Zn>.D, <Zm>.D[<imm>]
+        case IF_SVE_FG_3A:   // <Zda>.S, <Zn>.H, <Zm>.H[<imm>]
+        case IF_SVE_FG_3B:   // <Zda>.D, <Zn>.S, <Zm>.S[<imm>]
+        case IF_SVE_FJ_3A:   // <Zda>.S, <Zn>.H, <Zm>.H[<imm>]
+        case IF_SVE_FJ_3B:   // <Zda>.D, <Zn>.S, <Zm>.S[<imm>]
+        case IF_SVE_FK_3A:   // <Zda>.H, <Zn>.H, <Zm>.H[<imm>]
+        case IF_SVE_FK_3B:   // <Zda>.S, <Zn>.S, <Zm>.S[<imm>]
+        case IF_SVE_FK_3C:   // <Zda>.D, <Zn>.D, <Zm>.D[<imm>]
+        case IF_SVE_FO_3A:   // <Zda>.S, <Zn>.B, <Zm>.B
+        case IF_SVE_FW_3A:   // <Zda>.<T>, <Zn>.<T>, <Zm>.<T>
+        case IF_SVE_FY_3A:   // <Zda>.<T>, <Zn>.<T>, <Zm>.<T>
+        case IF_SVE_GM_3A:   // <Zda>.H, <Zn>.B, <Zm>.B[<imm>]
+        case IF_SVE_GN_3A:   // <Zda>.H, <Zn>.B, <Zm>.B
+        case IF_SVE_GO_3A:   // <Zda>.S, <Zn>.B, <Zm>.B
+        case IF_SVE_GU_3A:   // <Zda>.S, <Zn>.S, <Zm>.S[<imm>]
+        case IF_SVE_GU_3B:   // <Zda>.D, <Zn>.D, <Zm>.D[<imm>]
+        case IF_SVE_GU_3C:   // <Zda>.H, <Zn>.H, <Zm>.H[<imm>]
+        case IF_SVE_GV_3A:   // <Zda>.S, <Zn>.S, <Zm>.S[<imm>], <const>
+        case IF_SVE_GW_3B:   // <Zd>.H, <Zn>.H, <Zm>.H
+        case IF_SVE_GY_3A:   // <Zda>.H, <Zn>.B, <Zm>.B[<imm>]
+        case IF_SVE_GY_3B:   // <Zda>.S, <Zn>.H, <Zm>.H[<imm>]
+        case IF_SVE_GY_3B_D: // <Zda>.S, <Zn>.B, <Zm>.B[<imm>]
+        case IF_SVE_GZ_3A:   // <Zda>.S, <Zn>.H, <Zm>.H[<imm>]
+        case IF_SVE_HA_3A:   // <Zda>.S, <Zn>.H, <Zm>.H
+        case IF_SVE_HA_3A_E: // <Zda>.H, <Zn>.B, <Zm>.B
+        case IF_SVE_HA_3A_F: // <Zda>.S, <Zn>.B, <Zm>.B
+        case IF_SVE_HB_3A:   // <Zda>.S, <Zn>.H, <Zm>.H
+        case IF_SVE_HC_3A:   // <Zda>.S, <Zn>.B, <Zm>.B[<imm>]
+        case IF_SVE_HD_3A:   // <Zda>.S, <Zn>.H, <Zm>.H
+        case IF_SVE_HD_3A_A: // <Zda>.D, <Zn>.D, <Zm>.D
+        // Tied registers
+        case IF_SVE_AV_3A: // <Zdn>.D, <Zdn>.D, <Zm>.D, <Zk>.D
+            assert(!movprefxIsPredicated);
+            assert(secondId->idReg1() != secondId->idReg2());
+            assert(secondId->idReg1() != secondId->idReg3());
+            break;
+
+        case IF_SVE_AR_4A: // <Zda>.<T>, <Pg>/M, <Zn>.<T>, <Zm>.<T>
+        case IF_SVE_AS_4A: // <Zdn>.<T>, <Pg>/M, <Zm>.<T>, <Za>.<T>
+        case IF_SVE_GT_4A: // <Zda>.<T>, <Pg>/M, <Zn>.<T>, <Zm>.<T>, <const>
+        case IF_SVE_HU_4A: // <Zda>.<T>, <Pg>/M, <Zn>.<T>, <Zm>.<T>
+        case IF_SVE_HU_4B: // <Zda>.H, <Pg>/M, <Zn>.H, <Zm>.H
+        case IF_SVE_HV_4A: // <Zdn>.<T>, <Pg>/M, <Zm>.<T>, <Za>.<T>
+            assert(secondId->idReg1() != secondId->idReg3());
+            assert(secondId->idReg1() != secondId->idReg4());
+            break;
+
+        case IF_SVE_AT_3A: // <Zd>.<T>, <Zn>.<T>, <Zm>.<T>
+            // Only a subset of this group is valid
+            switch (secondId->idIns())
+            {
+                case INS_sve_sclamp:
+                case INS_sve_uclamp:
+                case INS_sve_eorbt:
+                case INS_sve_eortb:
+                case INS_sve_fclamp:
+                    break;
+                default:
+                    assert(!"Got unexpected instruction format within group after MOVPRFX");
+            }
+            assert(!movprefxIsPredicated);
+            assert(secondId->idReg1() != secondId->idReg2());
+            assert(secondId->idReg1() != secondId->idReg3());
+            break;
+
+        default:
+            assert(!"Got unexpected instruction format after MOVPRFX");
+            break;
+    }
+
+    // "The prefixed instruction must specify the same destination vector as the MOVPRFX instruction."
+    assert(firstId->idReg1() == secondId->idReg1());
+
+    if (movprefxIsPredicated)
+    {
+        // "The prefixed instruction must specify the same predicate register"
+        assert(isPredicateRegister(firstId->idReg2()));
+        assert(isPredicateRegister(secondId->idReg2()));
+        assert(firstId->idReg2() == secondId->idReg2());
+
+        // "predicated using the same governing predicate register and source element size as this instruction."
+        assert(firstId->idInsOpt() == secondId->idInsOpt());
+    }
+}
+#endif // DEBUG
 
 #endif // TARGET_ARM64

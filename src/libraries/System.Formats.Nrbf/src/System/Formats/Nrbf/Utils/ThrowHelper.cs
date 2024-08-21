@@ -14,6 +14,9 @@ internal static class ThrowHelper
     internal static void ThrowInvalidReference()
         => throw new SerializationException(SR.Serialization_InvalidReference);
 
+    internal static void ThrowInvalidTypeName(string name)
+        => throw new SerializationException(SR.Format(SR.Serialization_InvalidTypeName, name));
+
     internal static void ThrowUnexpectedNullRecordCount()
         => throw new SerializationException(SR.Serialization_UnexpectedNullRecordCount);
 
@@ -22,6 +25,9 @@ internal static class ThrowHelper
 
     internal static void ThrowArrayContainedNulls()
         => throw new SerializationException(SR.Serialization_ArrayContainedNulls);
+
+    internal static void ThrowInvalidAssemblyName(string rawName)
+        => throw new SerializationException(SR.Format(SR.Serialization_InvalidAssemblyName, rawName));
 
     internal static void ThrowEndOfStreamException()
         => throw new EndOfStreamException();

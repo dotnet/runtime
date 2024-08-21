@@ -5,14 +5,6 @@ import { globalizationHelpers } from "./globals";
 import { Int32Ptr, VoidPtr } from "./types/emscripten";
 import { VoidPtrNull } from "./types/internal";
 
-
-export function mono_wasm_change_case_invariant (src: number, srcLength: number, dst: number, dstLength: number, toUpper: number) : VoidPtr {
-    if (typeof globalizationHelpers.mono_wasm_change_case_invariant === "function") {
-        return globalizationHelpers.mono_wasm_change_case_invariant(src, srcLength, dst, dstLength, toUpper);
-    }
-    return VoidPtrNull;
-}
-
 export function mono_wasm_change_case (culture: number, cultureLength: number, src: number, srcLength: number, dst: number, dstLength: number, toUpper: number) : VoidPtr {
     if (typeof globalizationHelpers.mono_wasm_change_case === "function") {
         return globalizationHelpers.mono_wasm_change_case(culture, cultureLength, src, srcLength, dst, dstLength, toUpper);

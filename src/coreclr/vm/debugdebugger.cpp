@@ -233,7 +233,7 @@ FCIMPLEND
 FCIMPL4(void, DebugStackTrace::GetStackFramesInternal,
         StackFrameHelper* pStackFrameHelperUNSAFE,
         INT32 iSkip,
-        CLR_BOOL fNeedFileInfo,
+        FC_BOOL_ARG fNeedFileInfo,
         Object* pExceptionUNSAFE
        )
 {
@@ -282,7 +282,7 @@ FCIMPL4(void, DebugStackTrace::GetStackFramesInternal,
     if (data.cElements != 0)
     {
 #if defined(FEATURE_ISYM_READER) && defined(FEATURE_COMINTEROP)
-        if (fNeedFileInfo)
+        if (FC_ACCESS_BOOL(fNeedFileInfo))
         {
              // Calls to COM up ahead.
             EnsureComStarted();
@@ -467,7 +467,7 @@ FCIMPL4(void, DebugStackTrace::GetStackFramesInternal,
             }
 #endif
             // Check if the user wants the filenumber, linenumber info and that it is possible.
-            if (!fIsEnc && fNeedFileInfo)
+            if (!fIsEnc && FC_ACCESS_BOOL(fNeedFileInfo))
             {
 #ifdef FEATURE_ISYM_READER
                 BOOL fPortablePDB = FALSE;
@@ -693,7 +693,7 @@ FCIMPL4(void, DebugStackTrace::GetStackFramesInternal,
                     pLoadedPeSize[iNumValidFrames] = (CLR_I4)peSize;
 
                     // Set flag indicating PE file in memory has the on disk layout
-                    if (!pPEAssembly->IsDynamic())
+                    if (!pPEAssembly->IsReflectionEmit())
                     {
                         // This flag is only available for non-dynamic assemblies.
                         CLR_U1 *pIsFileLayout = (CLR_U1 *)((BOOLARRAYREF)pStackFrameHelper->rgiIsFileLayout)->GetDirectPointerToNonObjectElements();
@@ -1044,9 +1044,9 @@ void DebugStackTrace::GetStackFramesFromException(OBJECTREF * e,
 
     // Now get the _stackTrace reference
     StackTraceArray traceData;
-    EXCEPTIONREF(*e)->GetStackTrace(traceData, pDynamicMethodArray);
 
     GCPROTECT_BEGIN(traceData);
+        EXCEPTIONREF(*e)->GetStackTrace(traceData, pDynamicMethodArray);
         // The number of frame info elements in the stack trace info
         pData->cElements = static_cast<int>(traceData.Size());
 
@@ -1134,7 +1134,7 @@ void DebugStackTrace::DebugStackTraceElement::InitPass1(
     _ASSERTE(pFunc != NULL);
 
     // May have a null IP for ecall frames. If IP is null, then dwNativeOffset should be 0 too.
-    _ASSERTE ( (ip != NULL) || (dwNativeOffset == 0) );
+    _ASSERTE ( (ip != (PCODE)NULL) || (dwNativeOffset == 0) );
 
     this->pFunc = pFunc;
     this->dwOffset = dwNativeOffset;
