@@ -140,13 +140,13 @@ namespace System.IO
         {
         }
 
-        public StreamWriter(string path, bool append, Encoding encoding)
+        public StreamWriter(string path, bool append, Encoding? encoding)
             : this(path, append, encoding, DefaultBufferSize)
         {
         }
 
-        public StreamWriter(string path, bool append, Encoding encoding, int bufferSize) :
-            this(ValidateArgsAndOpenPath(path, append, encoding, bufferSize), encoding, bufferSize, leaveOpen: false)
+        public StreamWriter(string path, bool append, Encoding? encoding, int bufferSize) :
+            this(ValidateArgsAndOpenPath(path, append, bufferSize), encoding, bufferSize, leaveOpen: false)
         {
         }
 
@@ -155,8 +155,8 @@ namespace System.IO
         {
         }
 
-        public StreamWriter(string path, Encoding encoding, FileStreamOptions options)
-            : this(ValidateArgsAndOpenPath(path, encoding, options), encoding, DefaultFileStreamBufferSize)
+        public StreamWriter(string path, Encoding? encoding, FileStreamOptions options)
+            : this(ValidateArgsAndOpenPath(path, options), encoding, DefaultFileStreamBufferSize)
         {
         }
 
@@ -169,10 +169,9 @@ namespace System.IO
             _charBuffer = Array.Empty<char>();
         }
 
-        private static FileStream ValidateArgsAndOpenPath(string path, Encoding encoding, FileStreamOptions options)
+        private static FileStream ValidateArgsAndOpenPath(string path, FileStreamOptions options)
         {
             ArgumentException.ThrowIfNullOrEmpty(path);
-            ArgumentNullException.ThrowIfNull(encoding);
             ArgumentNullException.ThrowIfNull(options);
             if ((options.Access & FileAccess.Write) == 0)
             {
@@ -182,10 +181,9 @@ namespace System.IO
             return new FileStream(path, options);
         }
 
-        private static FileStream ValidateArgsAndOpenPath(string path, bool append, Encoding encoding, int bufferSize)
+        private static FileStream ValidateArgsAndOpenPath(string path, bool append, int bufferSize)
         {
             ArgumentException.ThrowIfNullOrEmpty(path);
-            ArgumentNullException.ThrowIfNull(encoding);
             ArgumentOutOfRangeException.ThrowIfNegativeOrZero(bufferSize);
 
             return new FileStream(path, append ? FileMode.Append : FileMode.Create, FileAccess.Write, FileShare.Read, DefaultFileStreamBufferSize);
