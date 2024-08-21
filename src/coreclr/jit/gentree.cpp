@@ -27008,7 +27008,7 @@ bool GenTreeHWIntrinsic::OperIsEmbBroadcastCompatible() const
     NamedIntrinsic intrinsicId  = GetHWIntrinsicId();
     var_types      simdBaseType = GetSimdBaseType();
 
-    // MaybeImm variants support embedded broadcasts only for IMM variants (e.g. PSLLQ)
+    // MaybeImm intrinsics support embedded broadcasts only for their IMM variants (e.g. PSLLQ)
     if (HWIntrinsicInfo::MaybeImm(intrinsicId) &&
         !HWIntrinsicInfo::isImmOp(intrinsicId, GetOperandArray()[GetOperandCount() - 1]))
     {
