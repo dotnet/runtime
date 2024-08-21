@@ -283,8 +283,6 @@ function getTraceImports () {
         importDef("array_rank", getRawCwrap("mono_jiterp_get_array_rank")),
         ["a_elesize", "array_rank", getRawCwrap("mono_jiterp_get_array_element_size")],
         importDef("stfld_o", getRawCwrap("mono_jiterp_set_object_field")),
-        importDef("cmpxchg_i32", getRawCwrap("mono_jiterp_cas_i32")),
-        importDef("cmpxchg_i64", getRawCwrap("mono_jiterp_cas_i64")),
         ["stelemr_tc", "stelemr", getRawCwrap("mono_jiterp_stelem_ref")],
         importDef("fma", getRawCwrap("fma")),
         importDef("fmaf", getRawCwrap("fmaf")),
@@ -630,25 +628,6 @@ function initialize_builder (builder: WasmBuilder) {
         WasmValtype.void, true
     );
     builder.defineType(
-        "cmpxchg_i32",
-        {
-            "dest": WasmValtype.i32,
-            "newVal": WasmValtype.i32,
-            "expected": WasmValtype.i32,
-        },
-        WasmValtype.i32, true
-    );
-    builder.defineType(
-        "cmpxchg_i64",
-        {
-            "dest": WasmValtype.i32,
-            "newVal": WasmValtype.i32,
-            "expected": WasmValtype.i32,
-            "oldVal": WasmValtype.i32,
-        },
-        WasmValtype.void, true
-    );
-    builder.defineType(
         "stelemr",
         {
             "o": WasmValtype.i32,
@@ -896,7 +875,12 @@ function generate_wasm (
     } catch (exc: any) {
         threw = true;
         rejected = false;
-        mono_log_error(`${methodFullName || traceName} code generation failed: ${exc} ${exc.stack}`);
+        let desc = builder.containsSimd
+            ? " (simd)"
+            : "";
+        if (builder.containsAtomics)
+            desc += " (atomics)";
+        mono_log_error(`${methodFullName || traceName}${desc} code generation failed: ${exc} ${exc.stack}`);
         recordFailure();
         return 0;
     } finally {
