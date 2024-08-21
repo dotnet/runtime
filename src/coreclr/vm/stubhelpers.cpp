@@ -590,40 +590,23 @@ FCIMPL3(Object*, StubHelpers::GetCOMHRExceptionObject, HRESULT hr, MethodDesc *p
 FCIMPLEND
 #endif // FEATURE_COMINTEROP
 
-FCIMPL1(Object*, StubHelpers::AllocateInternal, EnregisteredTypeHandle pRegisteredTypeHnd)
+extern "C" void QCALLTYPE StubHelpers_MarshalToUnmanagedVaListInternal(va_list va, DWORD cbVaListSize, const VARARGS* pArgIterator)
 {
-    FCALL_CONTRACT;
+    QCALL_CONTRACT;
 
-    TypeHandle typeHnd = TypeHandle::FromPtr(pRegisteredTypeHnd);
-    OBJECTREF objRet = NULL;
-    HELPER_METHOD_FRAME_BEGIN_RET_1(objRet);
-
-    MethodTable* pMT = typeHnd.GetMethodTable();
-    objRet = pMT->Allocate();
-
-    HELPER_METHOD_FRAME_END();
-
-    return OBJECTREFToObject(objRet);
-}
-FCIMPLEND
-
-FCIMPL3(void, StubHelpers::MarshalToUnmanagedVaListInternal, va_list va, DWORD cbVaListSize, const VARARGS* pArgIterator)
-{
-    FCALL_CONTRACT;
-
-    HELPER_METHOD_FRAME_BEGIN_0();
+    BEGIN_QCALL;
     VARARGS::MarshalToUnmanagedVaList(va, cbVaListSize, pArgIterator);
-    HELPER_METHOD_FRAME_END();
+    END_QCALL;
 }
-FCIMPLEND
 
-FCIMPL2(void, StubHelpers::MarshalToManagedVaListInternal, va_list va, VARARGS* pArgIterator)
+extern "C" void QCALLTYPE StubHelpers_MarshalToManagedVaListInternal(va_list va, VARARGS* pArgIterator)
 {
-    FCALL_CONTRACT;
+    QCALL_CONTRACT;
 
+    BEGIN_QCALL;
     VARARGS::MarshalToManagedVaList(va, pArgIterator);
+    END_QCALL;
 }
-FCIMPLEND
 
 FCIMPL3(void, StubHelpers::ValidateObject, Object *pObjUNSAFE, MethodDesc *pMD, Object *pThisUNSAFE)
 {

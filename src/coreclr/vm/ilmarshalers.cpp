@@ -2233,9 +2233,8 @@ void ILLayoutClassPtrMarshalerBase::EmitConvertSpaceNativeToCLR(ILCodeStream* ps
     pslILEmit->EmitBRFALSE(pNullRefLabel);
 
     pslILEmit->EmitLDTOKEN(pslILEmit->GetToken(m_pargs->m_pMT));
-    pslILEmit->EmitCALL(METHOD__RT_TYPE_HANDLE__TO_INTPTR, 1, 1);
-    // static object AllocateInternal(IntPtr typeHandle);
-    pslILEmit->EmitCALL(METHOD__STUBHELPERS__ALLOCATE_INTERNAL, 1, 1);
+    pslILEmit->EmitCALL(METHOD__TYPE__GET_TYPE_FROM_HANDLE, 1, 1);
+    pslILEmit->EmitCALL(METHOD__RUNTIME_HELPERS__GET_UNINITIALIZED_OBJECT, 1, 1);
     EmitStoreManagedValue(pslILEmit);
     pslILEmit->EmitLabel(pNullRefLabel);
 }

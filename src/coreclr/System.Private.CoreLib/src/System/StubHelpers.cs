@@ -1591,14 +1591,11 @@ namespace System.StubHelpers
             }
         }
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern object AllocateInternal(IntPtr typeHandle);
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint="StubHelpers_MarshalToUnmanagedVaListInternal")]
+        internal static partial void MarshalToUnmanagedVaListInternal(IntPtr va_list, uint vaListSize, IntPtr pArgIterator);
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern void MarshalToUnmanagedVaListInternal(IntPtr va_list, uint vaListSize, IntPtr pArgIterator);
-
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern void MarshalToManagedVaListInternal(IntPtr va_list, IntPtr pArgIterator);
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint="StubHelpers_MarshalToUnmanagedVaListInternal")]
+        internal static partial void MarshalToManagedVaListInternal(IntPtr va_list, IntPtr pArgIterator);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern uint CalcVaListSize(IntPtr va_list);

@@ -58,9 +58,6 @@ public:
     static FCDECL3(Object*,         GetCOMHRExceptionObject, HRESULT hr, MethodDesc *pMD, Object *unsafe_pThis);
 #endif // FEATURE_COMINTEROP
 
-    static FCDECL1(Object*,         AllocateInternal,       EnregisteredTypeHandle typeHnd);
-    static FCDECL3(void,            MarshalToUnmanagedVaListInternal, va_list va, DWORD cbVaListSize, const VARARGS* pArgIterator);
-    static FCDECL2(void,            MarshalToManagedVaListInternal, va_list va, VARARGS* pArgIterator);
     static FCDECL0(void*,           GetStubContext);
     static FCDECL2(void,            LogPinnedArgument, MethodDesc *localDesc, Object *nativeArg);
     static FCDECL1(DWORD,           CalcVaListSize, VARARGS *varargs);
@@ -89,5 +86,8 @@ extern "C" void QCALLTYPE InterfaceMarshaler_ConvertToManaged(IUnknown** ppUnk, 
 
 extern "C" void QCALLTYPE StubHelpers_SetStringTrailByte(QCall::StringHandleOnStack str, UINT8 bData);
 extern "C" void QCALLTYPE StubHelpers_ThrowInteropParamException(INT resID, INT paramIdx);
+
+extern "C" void QCALLTYPE StubHelpers_MarshalToUnmanagedVaListInternal(va_list va, DWORD cbVaListSize, const VARARGS* pArgIterator);
+extern "C" void QCALLTYPE StubHelpers_MarshalToManagedVaListInternal(va_list va, VARARGS* pArgIterator);
 
 #endif  // __STUBHELPERS_h__
