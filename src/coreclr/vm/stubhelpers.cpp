@@ -525,63 +525,79 @@ extern "C" void QCALLTYPE StubHelpers_ProfilerEndTransitionCallback(MethodDesc* 
 }
 #endif // PROFILING_SUPPORTED
 
-FCIMPL1(Object*, StubHelpers::GetHRExceptionObject, HRESULT hr)
+extern "C" void QCALLTYPE StubHelpers_GetHRExceptionObject(HRESULT hr, QCall::ObjectHandleOnStack result)
 {
-    FCALL_CONTRACT;
+    QCALL_CONTRACT;
+
+    BEGIN_QCALL;
+
+    GCX_COOP();
 
     OBJECTREF oThrowable = NULL;
+    GCPROTECT_BEGIN(oThrowable);
 
-    HELPER_METHOD_FRAME_BEGIN_RET_1(oThrowable);
-    {
-        // GetExceptionForHR uses equivalant logic as COMPlusThrowHR
-        GetExceptionForHR(hr, &oThrowable);
-    }
-    HELPER_METHOD_FRAME_END();
+    // GetExceptionForHR uses equivalant logic as COMPlusThrowHR
+    GetExceptionForHR(hr, &oThrowable);
+    result.Set(oThrowable);
 
-    return OBJECTREFToObject(oThrowable);
+    GCPROTECT_END();
+
+    END_QCALL;
 }
-FCIMPLEND
 
 #ifdef FEATURE_COMINTEROP
-FCIMPL3(Object*, StubHelpers::GetCOMHRExceptionObject, HRESULT hr, MethodDesc *pMD, Object *unsafe_pThis)
+extern "C" void QCALLTYPE StubHelpers_GetCOMHRExceptionObject(
+    HRESULT hr,
+    MethodDesc* pMD,
+    QCall::ObjectHandleOnStack pThis,
+    QCall::ObjectHandleOnStack result)
 {
-    FCALL_CONTRACT;
+    QCALL_CONTRACT;
 
-    OBJECTREF oThrowable = NULL;
+    BEGIN_QCALL;
 
-    // get 'this'
-    OBJECTREF oref = ObjectToOBJECTREF(unsafe_pThis);
+    GCX_COOP();
 
-    HELPER_METHOD_FRAME_BEGIN_RET_2(oref, oThrowable);
+    struct
     {
-        IErrorInfo *pErrInfo = NULL;
+        OBJECTREF oThrowable;
+        OBJECTREF oref;
+    } gc;
+    gc.oThrowable = NULL;
+    gc.oref = NULL;
+    GCPROTECT_BEGIN(gc);
 
-        if (pMD != NULL)
+    IErrorInfo* pErrorInfo = NULL;
+    if (pMD != NULL)
+    {
+        // Retrieve the interface method table.
+        MethodTable* pItfMT = CLRToCOMCallInfo::FromMethodDesc(pMD)->m_pInterfaceMT;
+
+        // get 'this'
+        gc.oref = ObjectToOBJECTREF(pThis.Get());
+
+        // Get IUnknown pointer for this interface on this object
+        IUnknown* pUnk = ComObject::GetComIPFromRCW(&gc.oref, pItfMT);
+        if (pUnk != NULL)
         {
-            // Retrieve the interface method table.
-            MethodTable *pItfMT = CLRToCOMCallInfo::FromMethodDesc(pMD)->m_pInterfaceMT;
+            // Check to see if the component supports error information for this interface.
+            IID ItfIID;
+            pItfMT->GetGuid(&ItfIID, TRUE);
+            pErrorInfo = GetSupportedErrorInfo(pUnk, ItfIID);
 
-            // Get IUnknown pointer for this interface on this object
-            IUnknown* pUnk = ComObject::GetComIPFromRCW(&oref, pItfMT);
-            if (pUnk != NULL)
-            {
-                // Check to see if the component supports error information for this interface.
-                IID ItfIID;
-                pItfMT->GetGuid(&ItfIID, TRUE);
-                pErrInfo = GetSupportedErrorInfo(pUnk, ItfIID);
-
-                DWORD cbRef = SafeRelease(pUnk);
-                LogInteropRelease(pUnk, cbRef, "IUnk to QI for ISupportsErrorInfo");
-            }
+            DWORD cbRef = SafeRelease(pUnk);
+            LogInteropRelease(pUnk, cbRef, "IUnk to QI for ISupportsErrorInfo");
         }
-
-        GetExceptionForHR(hr, pErrInfo, &oThrowable);
     }
-    HELPER_METHOD_FRAME_END();
 
-    return OBJECTREFToObject(oThrowable);
+    // GetExceptionForHR will handle lifetime of IErrorInfo.
+    GetExceptionForHR(hr, pErrorInfo, &gc.oThrowable);
+    result.Set(gc.oThrowable);
+
+    GCPROTECT_END();
+
+    END_QCALL;
 }
-FCIMPLEND
 #endif // FEATURE_COMINTEROP
 
 FCIMPL3(void, StubHelpers::MarshalToUnmanagedVaListInternal, va_list va, DWORD cbVaListSize, const VARARGS* pArgIterator)

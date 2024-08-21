@@ -429,7 +429,9 @@ static const Entry s_QCall[] =
     DllImportEntry(StubHelpers_ProfilerBeginTransitionCallback)
     DllImportEntry(StubHelpers_ProfilerEndTransitionCallback)
 #endif
+    DllImportEntry(StubHelpers_GetHRExceptionObject)
 #if defined(FEATURE_COMINTEROP)
+    DllImportEntry(StubHelpers_GetCOMHRExceptionObject)
     DllImportEntry(StubHelpers_GetCOMIPFromRCWSlow)
     DllImportEntry(ObjectMarshaler_ConvertToNative)
     DllImportEntry(ObjectMarshaler_ConvertToManaged)

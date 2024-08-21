@@ -52,12 +52,6 @@ public:
 
     static FCDECL2(FC_BOOL_RET,     TryGetStringTrailByte,  StringObject* thisRefUNSAFE, UINT8 *pbData);
 
-    static FCDECL1(Object*,         GetHRExceptionObject,   HRESULT hr);
-
-#ifdef FEATURE_COMINTEROP
-    static FCDECL3(Object*,         GetCOMHRExceptionObject, HRESULT hr, MethodDesc *pMD, Object *unsafe_pThis);
-#endif // FEATURE_COMINTEROP
-
     static FCDECL3(void,            MarshalToUnmanagedVaListInternal, va_list va, DWORD cbVaListSize, const VARARGS* pArgIterator);
     static FCDECL2(void,            MarshalToManagedVaListInternal, va_list va, VARARGS* pArgIterator);
     static FCDECL0(void*,           GetStubContext);
@@ -78,7 +72,11 @@ extern "C" void* QCALLTYPE StubHelpers_ProfilerBeginTransitionCallback(MethodDes
 extern "C" void QCALLTYPE StubHelpers_ProfilerEndTransitionCallback(MethodDesc* pTargetMD);
 #endif
 
+extern "C" void QCALLTYPE StubHelpers_GetHRExceptionObject(HRESULT hr, QCall::ObjectHandleOnStack result);
+
 #ifdef FEATURE_COMINTEROP
+extern "C" void QCALLTYPE StubHelpers_GetCOMHRExceptionObject(HRESULT hr, MethodDesc *pMD, QCall::ObjectHandleOnStack pThis, QCall::ObjectHandleOnStack result);
+
 extern "C" IUnknown* QCALLTYPE StubHelpers_GetCOMIPFromRCWSlow(QCall::ObjectHandleOnStack pSrc, MethodDesc* pMD, void** ppTarget);
 
 extern "C" void QCALLTYPE ObjectMarshaler_ConvertToNative(QCall::ObjectHandleOnStack pSrcUNSAFE, VARIANT* pDest);

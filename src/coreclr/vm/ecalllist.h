@@ -447,9 +447,7 @@ FCFuncStart(gStubHelperFuncs)
     FCFuncElement("TryGetStringTrailByte", StubHelpers::TryGetStringTrailByte)
     FCFuncElement("SetLastError", StubHelpers::SetLastError)
     FCFuncElement("ClearLastError", StubHelpers::ClearLastError)
-    FCFuncElement("InternalGetHRExceptionObject", StubHelpers::GetHRExceptionObject)
 #ifdef FEATURE_COMINTEROP
-    FCFuncElement("InternalGetCOMHRExceptionObject", StubHelpers::GetCOMHRExceptionObject)
     FCFuncElement("GetCOMIPFromRCW", StubHelpers::GetCOMIPFromRCW)
 #endif // FEATURE_COMINTEROP
     FCFuncElement("MarshalToUnmanagedVaListInternal", StubHelpers::MarshalToUnmanagedVaListInternal)
