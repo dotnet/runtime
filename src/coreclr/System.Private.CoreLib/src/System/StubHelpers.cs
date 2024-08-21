@@ -1622,13 +1622,16 @@ namespace System.StubHelpers
         internal static extern uint CalcVaListSize(IntPtr va_list);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern void ValidateObject(object obj, IntPtr pMD, object pThis);
-
-        [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern void LogPinnedArgument(IntPtr localDesc, IntPtr nativeArg);
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern void ValidateByref(IntPtr byref, IntPtr pMD, object pThis); // the byref is pinned so we can safely "cast" it to IntPtr
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint="StubHelpers_ValidateObject")]
+        private static partial void ValidateObject(ObjectHandleOnStack obj, IntPtr pMD);
+
+        internal static void ValidateObject(object obj, IntPtr pMD)
+            => ValidateObject(ObjectHandleOnStack.Create(ref obj), pMD);
+
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint="StubHelpers_ValidateByref")]
+        internal static partial void ValidateByref(IntPtr byref, IntPtr pMD); // the byref is pinned so we can safely "cast" it to IntPtr
 
         [Intrinsic]
         [MethodImpl(MethodImplOptions.InternalCall)]

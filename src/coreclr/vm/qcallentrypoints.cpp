@@ -427,6 +427,8 @@ static const Entry s_QCall[] =
     DllImportEntry(StubHelpers_ThrowInteropParamException)
     DllImportEntry(StubHelpers_MarshalToManagedVaList)
     DllImportEntry(StubHelpers_MarshalToUnmanagedVaList)
+    DllImportEntry(StubHelpers_ValidateObject)
+    DllImportEntry(StubHelpers_ValidateByref)
 #ifdef PROFILING_SUPPORTED
     DllImportEntry(StubHelpers_ProfilerBeginTransitionCallback)
     DllImportEntry(StubHelpers_ProfilerEndTransitionCallback)

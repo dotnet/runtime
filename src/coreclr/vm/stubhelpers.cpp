@@ -28,77 +28,58 @@
 
 #ifdef VERIFY_HEAP
 
-CQuickArray<StubHelpers::ByrefValidationEntry> StubHelpers::s_ByrefValidationEntries;
-SIZE_T StubHelpers::s_ByrefValidationIndex = 0;
-CrstStatic StubHelpers::s_ByrefValidationLock;
-
-// static
-void StubHelpers::Init()
+struct ByrefValidationEntry final
 {
-    WRAPPER_NO_CONTRACT;
-    s_ByrefValidationLock.Init(CrstPinnedByrefValidation);
-}
+    void       *pByref; // pointer to GC heap
+    MethodDesc *pMD;    // interop MD this byref was passed to
+};
 
-// static
-void StubHelpers::ValidateObjectInternal(Object *pObjUNSAFE, BOOL fValidateNextObj)
+static CQuickArray<ByrefValidationEntry> s_ByrefValidationEntries;
+static SIZE_T                            s_ByrefValidationIndex = 0;
+static CrstStatic                        s_ByrefValidationLock;
+
+static void ValidateObjectInternal(Object *pObjUNSAFE, BOOL fValidateNextObj)
 {
-	CONTRACTL
-	{
-	NOTHROW;
-	GC_NOTRIGGER;
-	MODE_ANY;
-}
-	CONTRACTL_END;
-
-	_ASSERTE(GCHeapUtilities::GetGCHeap()->RuntimeStructuresValid());
-
-	// validate the object - there's no need to validate next object's
-	// header since we validate the next object explicitly below
-	if (pObjUNSAFE)
-	{
-		pObjUNSAFE->Validate(/*bDeep=*/ TRUE, /*bVerifyNextHeader=*/ FALSE, /*bVerifySyncBlock=*/ TRUE);
-	}
-
-	// and the next object as required
-	if (fValidateNextObj)
-	{
-		Object *nextObj = GCHeapUtilities::GetGCHeap()->NextObj(pObjUNSAFE);
-		if (nextObj != NULL)
-		{
-			// Note that the MethodTable of the object (i.e. the pointer at offset 0) can change from
-			// g_pFreeObjectMethodTable to NULL, from NULL to <legal-value>, or possibly also from
-			// g_pFreeObjectMethodTable to <legal-value> concurrently while executing this function.
-			// Once <legal-value> is seen, we believe that the object should pass the Validate check.
-			// We have to be careful and read the pointer only once to avoid "phantom reads".
-			MethodTable *pMT = VolatileLoad(nextObj->GetMethodTablePtr());
-			if (pMT != NULL && pMT != g_pFreeObjectMethodTable)
-			{
-				// do *not* verify the next object's syncblock - the next object is not guaranteed to
-				// be "alive" so the finalizer thread may have already released its syncblock
-				nextObj->Validate(/*bDeep=*/ TRUE, /*bVerifyNextHeader=*/ FALSE, /*bVerifySyncBlock=*/ FALSE);
-			}
-		}
-	}
-}
-
-// static
-MethodDesc *StubHelpers::ResolveInteropMethod(Object *pThisUNSAFE, MethodDesc *pMD)
-{
-    WRAPPER_NO_CONTRACT;
-
-    if (pMD == NULL && pThisUNSAFE != NULL)
+    CONTRACTL
     {
-        // if this is a call via delegate, get its Invoke method
-        MethodTable *pMT = pThisUNSAFE->GetMethodTable();
-
-        _ASSERTE(pMT->IsDelegate());
-        return ((DelegateEEClass *)pMT->GetClass())->GetInvokeMethod();
+        NOTHROW;
+        GC_NOTRIGGER;
+        MODE_ANY;
     }
-    return pMD;
+    CONTRACTL_END;
+
+    _ASSERTE(GCHeapUtilities::GetGCHeap()->RuntimeStructuresValid());
+
+    // validate the object - there's no need to validate next object's
+    // header since we validate the next object explicitly below
+    if (pObjUNSAFE)
+    {
+        pObjUNSAFE->Validate(/*bDeep=*/ TRUE, /*bVerifyNextHeader=*/ FALSE, /*bVerifySyncBlock=*/ TRUE);
+    }
+
+    // and the next object as required
+    if (fValidateNextObj)
+    {
+        Object *nextObj = GCHeapUtilities::GetGCHeap()->NextObj(pObjUNSAFE);
+        if (nextObj != NULL)
+        {
+            // Note that the MethodTable of the object (i.e. the pointer at offset 0) can change from
+            // g_pFreeObjectMethodTable to NULL, from NULL to <legal-value>, or possibly also from
+            // g_pFreeObjectMethodTable to <legal-value> concurrently while executing this function.
+            // Once <legal-value> is seen, we believe that the object should pass the Validate check.
+            // We have to be careful and read the pointer only once to avoid "phantom reads".
+            MethodTable *pMT = VolatileLoad(nextObj->GetMethodTablePtr());
+            if (pMT != NULL && pMT != g_pFreeObjectMethodTable)
+            {
+                // do *not* verify the next object's syncblock - the next object is not guaranteed to
+                // be "alive" so the finalizer thread may have already released its syncblock
+                nextObj->Validate(/*bDeep=*/ TRUE, /*bVerifyNextHeader=*/ FALSE, /*bVerifySyncBlock=*/ FALSE);
+            }
+        }
+    }
 }
 
-// static
-void StubHelpers::FormatValidationMessage(MethodDesc *pMD, SString &ssErrorString)
+static void FormatValidationMessage(MethodDesc *pMD, SString &ssErrorString)
 {
     CONTRACTL
     {
@@ -108,25 +89,25 @@ void StubHelpers::FormatValidationMessage(MethodDesc *pMD, SString &ssErrorStrin
     }
     CONTRACTL_END;
 
-    ssErrorString.Append(W("Detected managed heap corruption, likely culprit is interop call through "));
+    ssErrorString.AppendUTF8("Detected managed heap corruption, likely culprit is interop call through ");
 
     if (pMD == NULL)
     {
         // the only case where we don't have interop MD is CALLI
-        ssErrorString.Append(W("CALLI."));
+        ssErrorString.AppendUTF8("CALLI.");
     }
     else
     {
-        ssErrorString.Append(W("method '"));
+        ssErrorString.AppendUTF8("method '");
 
         StackSString ssClassName;
         pMD->GetMethodTable()->_GetFullyQualifiedNameForClass(ssClassName);
 
         ssErrorString.Append(ssClassName);
-        ssErrorString.Append(NAMESPACE_SEPARATOR_CHAR);
+        ssErrorString.AppendUTF8(NAMESPACE_SEPARATOR_CHAR);
         ssErrorString.AppendUTF8(pMD->GetName());
 
-        ssErrorString.Append(W("'."));
+        ssErrorString.AppendUTF8("'.");
     }
 }
 
@@ -177,6 +158,15 @@ void StubHelpers::ProcessByrefValidationList()
 }
 
 #endif // VERIFY_HEAP
+
+// static
+void StubHelpers::Init()
+{
+    WRAPPER_NO_CONTRACT;
+#ifdef VERIFY_HEAP
+    s_ByrefValidationLock.Init(CrstPinnedByrefValidation);
+#endif // VERIFY_HEAP
+}
 
 #ifdef FEATURE_COMINTEROP
 
@@ -618,55 +608,59 @@ extern "C" void QCALLTYPE StubHelpers_MarshalToUnmanagedVaList(va_list va, DWORD
     END_QCALL;
 }
 
-FCIMPL3(void, StubHelpers::ValidateObject, Object *pObjUNSAFE, MethodDesc *pMD, Object *pThisUNSAFE)
+extern "C" void QCALLTYPE StubHelpers_ValidateObject(QCall::ObjectHandleOnStack pObj, MethodDesc *pMD)
 {
-    FCALL_CONTRACT;
+    QCALL_CONTRACT;
+
+    BEGIN_QCALL;
 
 #ifdef VERIFY_HEAP
-    HELPER_METHOD_FRAME_BEGIN_0();
+    GCX_COOP();
 
     StackSString errorString;
     EX_TRY
     {
         AVInRuntimeImplOkayHolder AVOkay;
-		// don't validate the next object if a BGC is in progress.  we can race with background
-	    // sweep which could make the next object a Free object underneath us if it's dead.
-        ValidateObjectInternal(pObjUNSAFE, !(GCHeapUtilities::GetGCHeap()->IsConcurrentGCInProgress()));
+        // don't validate the next object if a BGC is in progress.  we can race with background
+        // sweep which could make the next object a Free object underneath us if it's dead.
+        ValidateObjectInternal(OBJECTREFToObject(pObj.Get()), !(GCHeapUtilities::GetGCHeap()->IsConcurrentGCInProgress()));
     }
     EX_CATCH
     {
-        FormatValidationMessage(ResolveInteropMethod(pThisUNSAFE, pMD), errorString);
+        FormatValidationMessage(pMD, errorString);
         EEPOLICY_HANDLE_FATAL_ERROR_WITH_MESSAGE(COR_E_EXECUTIONENGINE, errorString.GetUnicode());
     }
     EX_END_CATCH_UNREACHABLE;
 
-    HELPER_METHOD_FRAME_END();
 #else // VERIFY_HEAP
-    FCUnique(0xa3);
-    UNREACHABLE_MSG("No validation support without VERIFY_HEAP");
+    EEPOLICY_HANDLE_FATAL_ERROR_WITH_MESSAGE(COR_E_FAILFAST, "No validation support without VERIFY_HEAP");
 #endif // VERIFY_HEAP
+
+    END_QCALL;
 }
-FCIMPLEND
 
-FCIMPL3(void, StubHelpers::ValidateByref, void *pByref, MethodDesc *pMD, Object *pThisUNSAFE)
+extern "C" void QCALLTYPE StubHelpers_ValidateByref(void *pByref, MethodDesc *pMD)
 {
-    FCALL_CONTRACT;
-
-#ifdef VERIFY_HEAP
-    // We cannot validate byrefs at this point as code:GCHeap.GetContainingObject could potentially race
-    // with allocations on other threads. We'll just remember this byref along with the interop MD and
-    // perform the validation on next GC (see code:StubHelpers.ProcessByrefValidationList).
+    QCALL_CONTRACT;
 
     // Skip byref if is not pointing inside managed heap
     if (!GCHeapUtilities::GetGCHeap()->IsHeapPointer(pByref))
     {
         return;
     }
+
+    BEGIN_QCALL;
+
+#ifdef VERIFY_HEAP
+    GCX_COOP();
+
+    // We cannot validate byrefs at this point as code:GCHeap.GetContainingObject could potentially race
+    // with allocations on other threads. We'll just remember this byref along with the interop MD and
+    // perform the validation on next GC (see code:StubHelpers.ProcessByrefValidationList).
+
     ByrefValidationEntry entry;
     entry.pByref = pByref;
-    entry.pMD = ResolveInteropMethod(pThisUNSAFE, pMD);
-
-    HELPER_METHOD_FRAME_BEGIN_0();
+    entry.pMD = pMD;
 
     SIZE_T NumOfEntries = 0;
     {
@@ -695,14 +689,12 @@ FCIMPL3(void, StubHelpers::ValidateByref, void *pByref, MethodDesc *pMD, Object 
         // if the list is too big, trigger GC now
         GCHeapUtilities::GetGCHeap()->GarbageCollect(0);
     }
-
-    HELPER_METHOD_FRAME_END();
 #else // VERIFY_HEAP
-    FCUnique(0xa4);
-    UNREACHABLE_MSG("No validation support without VERIFY_HEAP");
+    EEPOLICY_HANDLE_FATAL_ERROR_WITH_MESSAGE(COR_E_FAILFAST, "No validation support without VERIFY_HEAP");
 #endif // VERIFY_HEAP
+
+    END_QCALL;
 }
-FCIMPLEND
 
 FCIMPL0(void*, StubHelpers::GetStubContext)
 {

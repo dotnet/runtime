@@ -15,27 +15,10 @@
 
 class StubHelpers
 {
-#ifdef VERIFY_HEAP
-    struct ByrefValidationEntry
-    {
-        void       *pByref; // pointer to GC heap
-        MethodDesc *pMD;    // interop MD this byref was passed to
-    };
-
-    static CQuickArray<ByrefValidationEntry> s_ByrefValidationEntries;
-    static SIZE_T                            s_ByrefValidationIndex;
-    static CrstStatic                        s_ByrefValidationLock;
-
-    static void ValidateObjectInternal(Object *pObjUNSAFE, BOOL fValidateNextObj);
-    static MethodDesc *ResolveInteropMethod(Object *pThisUNSAFE, MethodDesc *pMD);
-    static void FormatValidationMessage(MethodDesc *pMD, SString &ssErrorString);
-
 public:
     static void Init();
+#ifdef VERIFY_HEAP
     static void ProcessByrefValidationList();
-#else // VERIFY_HEAP
-public:
-    static void Init() { LIMITED_METHOD_CONTRACT; }
 #endif // VERIFY_HEAP
 
     //-------------------------------------------------------
@@ -55,8 +38,6 @@ public:
     static FCDECL0(void*,           GetStubContext);
     static FCDECL2(void,            LogPinnedArgument, MethodDesc *localDesc, Object *nativeArg);
     static FCDECL1(DWORD,           CalcVaListSize, VARARGS *varargs);
-    static FCDECL3(void,            ValidateObject, Object *pObjUNSAFE, MethodDesc *pMD, Object *pThisUNSAFE);
-    static FCDECL3(void,            ValidateByref, void *pByref, MethodDesc *pMD, Object *pThisUNSAFE);
 
     static FCDECL2(void,            MulticastDebuggerTraceHelper, Object*, INT32);
 
@@ -89,5 +70,8 @@ extern "C" void QCALLTYPE StubHelpers_ThrowInteropParamException(INT resID, INT 
 
 extern "C" void QCALLTYPE StubHelpers_MarshalToManagedVaList(va_list va, VARARGS* pArgIterator);
 extern "C" void QCALLTYPE StubHelpers_MarshalToUnmanagedVaList(va_list va, DWORD cbVaListSize, const VARARGS* pArgIterator);
+
+extern "C" void QCALLTYPE StubHelpers_ValidateObject(QCall::ObjectHandleOnStack pObj, MethodDesc *pMD);
+extern "C" void QCALLTYPE StubHelpers_ValidateByref(void *pByref, MethodDesc *pMD);
 
 #endif  // __STUBHELPERS_h__
