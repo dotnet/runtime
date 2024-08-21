@@ -1226,7 +1226,7 @@ typedef union {
 		amd64_codegen_pre(inst); \
 		if ((size) == 2) \
 			x86_prefix((inst), X86_OPERAND_PREFIX); \
-		if ((size) > 2) amd64_emit_rex ((inst),(size),(reg),0,(basereg)); \
+		amd64_emit_rex ((inst),(size),(reg),0,(basereg)); \
 		switch ((size)) { \
 		case 1: x86_byte((inst), 0x0f); x86_byte((inst), 0xb0); break; \
 		case 2: case 4: case 8: x86_byte((inst), 0x0f); x86_byte((inst), 0xb1); break; \
