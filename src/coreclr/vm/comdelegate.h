@@ -181,13 +181,13 @@ struct ShuffleEntry
         FPSINGLEMASK = 0x2000, // Single precising floating point register
         OFSMASK      = 0x7fff, // Mask to get stack offset
 #if defined(TARGET_RISCV64)
-        CALLCONVTRANSFERMASK = FPSINGLEMASK, // Repurpose FPsingle bit to mean whether field size and offset info is avalilable
+        // Whether it's a field of an argument transferred between integer and floating-point calling conventions,
+        // in which case field size and offset are avalilable.
+        CALLCONVTRANSFERMASK = FPSINGLEMASK,
         OFSREGMASK   = 0x7, // Mask to get register index
-
-        // Note: field size and offset are encoded only if the FP struct is lowered or delowered
         FIELDSIZESHIFTPOS = 3,
         FIELDSIZESHIFTMASK = 0x3 << FIELDSIZESHIFTPOS, // Mask to get field log2(size) of FP struct
-        FIELDOFFSETPOS = 5,
+        FIELDOFFSETPOS = FIELDSIZESHIFTPOS + 2,
         FIELDOFFSETMASK = 0xff << FIELDOFFSETPOS, // Mask to get field offset of FP struct
 #else
         OFSREGMASK   = 0x1fff, // Mask to get register index
