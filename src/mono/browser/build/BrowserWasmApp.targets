@@ -195,8 +195,9 @@
       <EmscriptenSdkToolsPath    Condition="'$(EmscriptenSdkToolsPath)' != ''"   >$([MSBuild]::NormalizeDirectory($(EmscriptenSdkToolsPath)))</EmscriptenSdkToolsPath>
       <EmscriptenNodeToolsPath   Condition="'$(EmscriptenNodeToolsPath)' != ''"  >$([MSBuild]::NormalizeDirectory($(EmscriptenNodeToolsPath)))</EmscriptenNodeToolsPath>
       <EmscriptenUpstreamBinPath Condition="'$(EmscriptenUpstreamBinPath)' != ''">$([MSBuild]::NormalizeDirectory($(EmscriptenUpstreamBinPath)))</EmscriptenUpstreamBinPath>
-      <_EmscriptenNodePath Condition="!$(EmscriptenNodeToolsPath.EndsWith('bin'))">$([MSBuild]::NormalizePath($(EmscriptenNodeToolsPath), 'bin', 'node$(_ExeExt)'))</_EmscriptenNodePath>
-      <_EmscriptenNodePath Condition="$(EmscriptenNodeToolsPath.EndsWith('bin'))" >$([MSBuild]::NormalizePath($(EmscriptenNodeToolsPath), 'node$(_ExeExt)'))</_EmscriptenNodePath>
+      <_EmscriptenNodeToolsPathWithBin>$([System.IO.Path]::Combine($(EmscriptenNodeToolsPath), 'bin', 'node$(_ExeExt)'))</_EmscriptenNodeToolsPathWithBin>
+      <_EmscriptenNodePath Condition="Exists('$(_EmscriptenNodeToolsPathWithBin)')" >$(_EmscriptenNodeToolsPathWithBin)</_EmscriptenNodePath>
+      <_EmscriptenNodePath Condition="'$(_EmscriptenNodePath)' == ''" >$([System.IO.Path]::Combine($(EmscriptenNodeToolsPath), 'node$(_ExeExt)'))</_EmscriptenNodePath>
     </PropertyGroup>
 
     <!-- Environment variables required for running emsdk commands like `emcc` -->
@@ -290,8 +291,9 @@
       <WasmAllowUndefinedSymbols Condition="'$(WasmAllowUndefinedSymbols)' == ''">false</WasmAllowUndefinedSymbols>
 
       <WasmClang>$(EmscriptenUpstreamEmscriptenPath)emcc</WasmClang>
-      <_EmscriptenNodePath Condition="!$(EmscriptenNodeToolsPath.EndsWith('bin'))">$([MSBuild]::NormalizePath($(EmscriptenNodeToolsPath), 'bin', 'node$(_ExeExt)'))</_EmscriptenNodePath>
-      <_EmscriptenNodePath Condition="$(EmscriptenNodeToolsPath.EndsWith('bin'))" >$([MSBuild]::NormalizePath($(EmscriptenNodeToolsPath), 'node$(_ExeExt)'))</_EmscriptenNodePath>
+      <_EmscriptenNodeToolsPathWithBin>$([System.IO.Path]::Combine($(EmscriptenNodeToolsPath), 'bin', 'node$(_ExeExt)'))</_EmscriptenNodeToolsPathWithBin>
+      <_EmscriptenNodePath Condition="Exists('$(_EmscriptenNodeToolsPathWithBin)')" >$(_EmscriptenNodeToolsPathWithBin)</_EmscriptenNodePath>
+      <_EmscriptenNodePath Condition="'$(_EmscriptenNodePath)' == ''" >$([System.IO.Path]::Combine($(EmscriptenNodeToolsPath), 'node$(_ExeExt)'))</_EmscriptenNodePath>
     </PropertyGroup>
 
     <ItemGroup>
