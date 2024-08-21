@@ -11,7 +11,7 @@ set -ex
 #   [cargo](https://rustup.rs/)
 #   [curl](https://curl.se/download.html)
 
-cargo install --locked --no-default-features --features csharp --version 0.29.0 wit-bindgen-cli
+cargo install --locked --no-default-features --features csharp --version 0.30.0 wit-bindgen-cli
 curl -OL https://github.com/WebAssembly/wasi-http/archive/refs/tags/v0.2.1.tar.gz
 tar xzf v0.2.1.tar.gz
 cat >wasi-http-0.2.1/wit/world.wit <<EOF
