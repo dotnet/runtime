@@ -393,28 +393,26 @@ The System.Text.Json library is built-in as part of the shared framework in .NET
   </ItemGroup>
 
   <!-- Application tfms (.NETCoreApp, .NETFramework) need to use the same or higher version of .NETStandard's dependencies. -->
-  <ItemGroup Condition="'$(TargetFramework)' != '$(NetCoreAppCurrent)'">
+  <ItemGroup>
     <ProjectReference Include="$(LibrariesProjectRoot)System.Text.Encodings.Web\src\System.Text.Encodings.Web.csproj" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.IO.Pipelines\src\System.IO.Pipelines.csproj" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)'">
-    <ProjectReference Include="$(LibrariesProjectRoot)System.Collections\src\System.Collections.csproj" PrivateAssets="all" />
-    <ProjectReference Include="$(LibrariesProjectRoot)System.Collections.Concurrent\src\System.Collections.Concurrent.csproj" PrivateAssets="all" />
-    <ProjectReference Include="$(LibrariesProjectRoot)System.IO.Pipelines\src\System.IO.Pipelines.csproj" PrivateAssets="all" />
-    <ProjectReference Include="$(LibrariesProjectRoot)System.Memory\src\System.Memory.csproj" PrivateAssets="all" />
-    <ProjectReference Include="$(LibrariesProjectRoot)System.Numerics.Vectors\src\System.Numerics.Vectors.csproj" PrivateAssets="all" />
-    <ProjectReference Include="$(LibrariesProjectRoot)System.Reflection.Emit.ILGeneration\src\System.Reflection.Emit.ILGeneration.csproj" PrivateAssets="all" />
-    <ProjectReference Include="$(LibrariesProjectRoot)System.Reflection.Emit.Lightweight\src\System.Reflection.Emit.Lightweight.csproj" PrivateAssets="all" />
-    <ProjectReference Include="$(LibrariesProjectRoot)System.Reflection.Primitives\src\System.Reflection.Primitives.csproj" PrivateAssets="all" />
-    <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime\src\System.Runtime.csproj" PrivateAssets="all" />
-    <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime.InteropServices\src\System.Runtime.InteropServices.csproj" PrivateAssets="all" />
-    <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime.Intrinsics\src\System.Runtime.Intrinsics.csproj" PrivateAssets="all" />
-    <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime.Loader\src\System.Runtime.Loader.csproj" PrivateAssets="all" />
-    <ProjectReference Include="$(LibrariesProjectRoot)System.Text.Encoding.Extensions\src\System.Text.Encoding.Extensions.csproj" PrivateAssets="all" />
-    <ProjectReference Include="$(LibrariesProjectRoot)System.Text.Encodings.Web\src\System.Text.Encodings.Web.csproj" PrivateAssets="all" />
-    <ProjectReference Include="$(LibrariesProjectRoot)System.Text.RegularExpressions\src\System.Text.RegularExpressions.csproj" PrivateAssets="all" />
-    <ProjectReference Include="$(LibrariesProjectRoot)System.Threading\src\System.Threading.csproj" PrivateAssets="all" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Collections\src\System.Collections.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Collections.Concurrent\src\System.Collections.Concurrent.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Memory\src\System.Memory.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Numerics.Vectors\src\System.Numerics.Vectors.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Reflection.Emit.ILGeneration\src\System.Reflection.Emit.ILGeneration.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Reflection.Emit.Lightweight\src\System.Reflection.Emit.Lightweight.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Reflection.Primitives\src\System.Reflection.Primitives.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime\src\System.Runtime.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime.InteropServices\src\System.Runtime.InteropServices.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime.Intrinsics\src\System.Runtime.Intrinsics.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime.Loader\src\System.Runtime.Loader.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Text.Encoding.Extensions\src\System.Text.Encoding.Extensions.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Text.RegularExpressions\src\System.Text.RegularExpressions.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Threading\src\System.Threading.csproj" />
   </ItemGroup>
 
   <ItemGroup>

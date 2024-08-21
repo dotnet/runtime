@@ -1,4 +1,5 @@
 <Project>
+
   <PropertyGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">
     <!--
       Disable RAR from transitively discovering dependencies for references. This is required as we don't copy
@@ -23,25 +24,26 @@
       <SetConfiguration Condition="'$(RuntimeFlavor)' == 'Mono' and
                                    '$(Configuration)' != '$(MonoConfiguration)'">Configuration=$(MonoConfiguration)</SetConfiguration>
     </ProjectReference>
-    <!-- If a CoreLib ProjectReference is present, make all P2P assets non transitive. -->
-    <ProjectReference Update="@(ProjectReference->WithMetadataValue('PrivateAssets', ''))"
-                      PrivateAssets="all"
-                      Condition="'$(IsSourceProject)' == 'true' and '@(_coreLibProjectReference)' != ''" />
   </ItemGroup>
 
-  <!-- Make shared framework assemblies not app-local (non private). -->
-  <Target Name="UpdateProjectReferencesWithPrivateAttribute"
-          AfterTargets="AssignProjectConfiguration"
-          BeforeTargets="PrepareProjectReferences"
-          Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp' and
-                     ('$(IsTestProject)' == 'true' or '$(IsTestSupportProject)' == 'true') and
-                     '@(ProjectReferenceWithConfiguration)' != ''">
-    <ItemGroup>
-      <ProjectReferenceWithConfiguration PrivateAssets="all"
-                                         Private="false"
-                                         Condition="$(NetCoreAppLibrary.Contains('%(Filename);')) and '%(ProjectReferenceWithConfiguration.Private)' == ''" />
-    </ItemGroup>
-  </Target>
+  <!-- Mark shared framework assemblies as non-transitive (privateassets=all) and non app-local (private=false). -->
+  <ItemGroup Condition="'@(ProjectReference)' != '' and
+                        '$(TargetFrameworkIdentifier)' == '.NETCoreApp' and
+                        '$(TargetFrameworkVersion)' == 'v$(NetCoreAppCurrentVersion)'">
+    <_ProjectReferenceWithOriginalIdentity Include="@(ProjectReference)"
+                                           OriginalIdentity="%(Identity)" />
+    <_projectReferenceWithFilename Include="@(_ProjectReferenceWithOriginalIdentity->Metadata('Filename'))" />
+
+    <_projectReferenceExcludedWithFilename Include="@(_projectReferenceWithFilename)"
+                                           Exclude="@(NetCoreAppLibrary)" />
+    <_projectReferenceIncludedWithFilename Include="@(_projectReferenceWithFilename)"
+                                           Exclude="@(_projectReferenceExcludedWithFilename)" />
+
+    <ProjectReference Update="@(_projectReferenceIncludedWithFilename->Metadata('OriginalIdentity'))">
+      <PrivateAssets Condition="'%(PrivateAssets)' == ''">all</PrivateAssets>
+      <Private Condition="'%(Private)' == ''">false</Private>
+    </ProjectReference>
+  </ItemGroup>
 
   <Target Name="ReplaceCoreLibSrcWithRefAssemblyForCompilation"
           AfterTargets="FindReferenceAssembliesForReferences"
@@ -52,4 +54,5 @@
       <ReferencePathWithRefAssemblies Include="@(_resolvedCoreLibProjectReference->Metadata('ReferenceAssembly'))" />
     </ItemGroup>
   </Target>
+
 </Project>
