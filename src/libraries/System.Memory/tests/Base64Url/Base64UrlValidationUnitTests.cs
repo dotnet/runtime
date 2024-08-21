@@ -23,12 +23,14 @@ namespace System.Buffers.Text.Tests
         [InlineData("6066==")]
         [InlineData("SM==")]
         [InlineData("SM=")]
+        [InlineData("sEs==")]
+        [InlineData("s\rEs\r\r==")]
         public void BasicValidationEdgeCaseScenario(string base64UrlText)
         {
             Assert.False(Base64Url.IsValid(base64UrlText.AsSpan(), out int decodedLength));
             Assert.Equal(0, decodedLength);
             Span<byte> dest = new byte[Base64Url.GetMaxDecodedLength(base64UrlText.Length)];
-            Assert.Equal(OperationStatus.InvalidData, Base64Url.DecodeFromChars(base64UrlText, dest, out _, out _));
+            Assert.Equal(OperationStatus.InvalidData, Base64Url.DecodeFromChars(base64UrlText.AsSpan(), dest, out _, out _));
         }
 
         [Fact]
@@ -263,6 +265,10 @@ namespace System.Buffers.Text.Tests
 
             Assert.True(Base64Url.IsValid(utf8BytesWithByteToBeIgnored));
             Assert.True(Base64Url.IsValid(utf8BytesWithByteToBeIgnored, out int decodedLength));
+            Assert.Equal(expectedLength, decodedLength);
+
+            Span<byte> dest = new byte[Base64Url.GetMaxDecodedLength(utf8WithByteToBeIgnored.Length)];
+            Assert.Equal(OperationStatus.Done, Base64Url.DecodeFromChars(utf8WithByteToBeIgnored.AsSpan(), dest, out _, out decodedLength));
             Assert.Equal(expectedLength, decodedLength);
         }
 
