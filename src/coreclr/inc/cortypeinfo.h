@@ -54,3 +54,4 @@ TYPEINFO(ELEMENT_TYPE_MVAR,         NULL, NULL,                TARGET_POINTER_SI
 TYPEINFO(ELEMENT_TYPE_CMOD_REQD,    NULL, NULL,                0,                    TYPE_GC_NONE,   false,  false,  false,  false,  false) // 0x1f
 TYPEINFO(ELEMENT_TYPE_CMOD_OPT,     NULL, NULL,                0,                    TYPE_GC_NONE,   false,  false,  false,  false,  false) // 0x20
 TYPEINFO(ELEMENT_TYPE_INTERNAL,     NULL, NULL,                0,                    TYPE_GC_OTHER,  false,  false,  false,  false,  false) // 0x21
+TYPEINFO(ELEMENT_TYPE_CMOD_INTERNAL,NULL, NULL,                0,                    TYPE_GC_NONE,   false,  false,  false,  false,  false) // 0x22

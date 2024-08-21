@@ -2088,6 +2088,9 @@ BYTE* PrettyPrintCABlobValue(PCCOR_SIGNATURE &typePtr,
 
 #ifdef LOGGING
             case ELEMENT_TYPE_INTERNAL :
+            case ELEMENT_TYPE_CMOD_INTERNAL :
+                typePtr += 1;
+                Reiterate = TRUE;
 #endif // LOGGING
                 return NULL;
 

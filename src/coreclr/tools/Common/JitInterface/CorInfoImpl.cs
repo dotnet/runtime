@@ -4464,5 +4464,10 @@ namespace Internal.JitInterface
             }
             return false;
         }
+
+        private CORINFO_METHOD_STRUCT_* getSpecialCopyHelper(CORINFO_CLASS_STRUCT_* type)
+        {
+            throw new NotImplementedException("getSpecialCopyHelper");
+        }
     }
 }

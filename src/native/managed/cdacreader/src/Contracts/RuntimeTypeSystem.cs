@@ -51,6 +51,7 @@ internal enum CorElementType
     CModReqd = 0x1f,
     CModOpt = 0x20,
     Internal = 0x21,
+    CModInternal = 0x22,
     Sentinel = 0x41,
 }
 
