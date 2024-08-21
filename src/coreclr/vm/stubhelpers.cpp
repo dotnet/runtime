@@ -600,23 +600,23 @@ extern "C" void QCALLTYPE StubHelpers_GetCOMHRExceptionObject(
 }
 #endif // FEATURE_COMINTEROP
 
-FCIMPL3(void, StubHelpers::MarshalToUnmanagedVaListInternal, va_list va, DWORD cbVaListSize, const VARARGS* pArgIterator)
+extern "C" void QCALLTYPE StubHelpers_MarshalToManagedVaList(va_list va, VARARGS* pArgIterator)
 {
-    FCALL_CONTRACT;
+    QCALL_CONTRACT;
 
-    HELPER_METHOD_FRAME_BEGIN_0();
-    VARARGS::MarshalToUnmanagedVaList(va, cbVaListSize, pArgIterator);
-    HELPER_METHOD_FRAME_END();
-}
-FCIMPLEND
-
-FCIMPL2(void, StubHelpers::MarshalToManagedVaListInternal, va_list va, VARARGS* pArgIterator)
-{
-    FCALL_CONTRACT;
-
+    BEGIN_QCALL;
     VARARGS::MarshalToManagedVaList(va, pArgIterator);
+    END_QCALL;
 }
-FCIMPLEND
+
+extern "C" void QCALLTYPE StubHelpers_MarshalToUnmanagedVaList(va_list va, DWORD cbVaListSize, const VARARGS* pArgIterator)
+{
+    QCALL_CONTRACT;
+
+    BEGIN_QCALL;
+    VARARGS::MarshalToUnmanagedVaList(va, cbVaListSize, pArgIterator);
+    END_QCALL;
+}
 
 FCIMPL3(void, StubHelpers::ValidateObject, Object *pObjUNSAFE, MethodDesc *pMD, Object *pThisUNSAFE)
 {

@@ -450,8 +450,6 @@ FCFuncStart(gStubHelperFuncs)
 #ifdef FEATURE_COMINTEROP
     FCFuncElement("GetCOMIPFromRCW", StubHelpers::GetCOMIPFromRCW)
 #endif // FEATURE_COMINTEROP
-    FCFuncElement("MarshalToUnmanagedVaListInternal", StubHelpers::MarshalToUnmanagedVaListInternal)
-    FCFuncElement("MarshalToManagedVaListInternal", StubHelpers::MarshalToManagedVaListInternal)
     FCFuncElement("CalcVaListSize", StubHelpers::CalcVaListSize)
     FCFuncElement("ValidateObject", StubHelpers::ValidateObject)
     FCFuncElement("ValidateByref", StubHelpers::ValidateByref)

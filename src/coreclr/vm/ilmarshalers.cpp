@@ -3563,11 +3563,11 @@ void ILArgIteratorMarshaler::EmitConvertSpaceAndContentsCLRToNative(ILCodeStream
     pslILEmit->EmitLOCALLOC();
     EmitStoreNativeValue(pslILEmit);
 
-    // void MarshalToUnmanagedVaListInternal(va_list, uint vaListSize, VARARGS* data)
+    // void MarshalToUnmanagedVaList(va_list, uint vaListSize, VARARGS* data)
     EmitLoadNativeValue(pslILEmit);
     pslILEmit->EmitLDLOC(dwVaListSizeLocal);
     EmitLoadManagedHomeAddr(pslILEmit);
-    pslILEmit->EmitCALL(METHOD__STUBHELPERS__MARSHAL_TO_UNMANAGED_VA_LIST_INTERNAL, 3, 0);
+    pslILEmit->EmitCALL(METHOD__STUBHELPERS__MARSHAL_TO_UNMANAGED_VA_LIST, 3, 0);
 }
 
 void ILArgIteratorMarshaler::EmitConvertContentsNativeToCLR(ILCodeStream* pslILEmit)
@@ -3576,7 +3576,7 @@ void ILArgIteratorMarshaler::EmitConvertContentsNativeToCLR(ILCodeStream* pslILE
     EmitLoadManagedHomeAddr(pslILEmit);
 
     // void MarshalToManagedVaList(va_list va, VARARGS *dataout)
-    pslILEmit->EmitCALL(METHOD__STUBHELPERS__MARSHAL_TO_MANAGED_VA_LIST_INTERNAL, 2, 0);
+    pslILEmit->EmitCALL(METHOD__STUBHELPERS__MARSHAL_TO_MANAGED_VA_LIST, 2, 0);
 }
 
 LocalDesc ILArrayWithOffsetMarshaler::GetNativeType()
