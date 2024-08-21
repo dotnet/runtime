@@ -7215,7 +7215,17 @@ MINT_IN_CASE(MINT_BRTRUE_I8_SP) ZEROP_SP(gint64, !=); MINT_IN_BREAK;
 			guint8 comparand = LOCAL_VAR(ip[4], guint8);
 			NULL_CHECK(dest);
 
-			LOCAL_VAR(ip[1], uint8_t) = mono_atomic_cas_u8(dest, value, comparand);
+			LOCAL_VAR(ip[1], guint32) = (guint32)mono_atomic_cas_u8(dest, value, comparand);
+			ip += 5;
+			MINT_IN_BREAK;
+		}
+		MINT_IN_CASE(MINT_MONO_CMPXCHG_I1) {
+			gint8 *dest = LOCAL_VAR(ip[2], gint8*);
+			gint8 value = LOCAL_VAR(ip[3], gint8);
+			gint8 comparand = LOCAL_VAR(ip[4], gint8);
+			NULL_CHECK(dest);
+
+			LOCAL_VAR(ip[1], gint32) = (gint32)(gint8)mono_atomic_cas_u8((guint8*)dest, value, comparand);
 			ip += 5;
 			MINT_IN_BREAK;
 		}
@@ -7225,7 +7235,17 @@ MINT_IN_CASE(MINT_BRTRUE_I8_SP) ZEROP_SP(gint64, !=); MINT_IN_BREAK;
 			guint16 comparand = LOCAL_VAR(ip[4], guint16);
 			NULL_CHECK(dest);
 
-			LOCAL_VAR(ip[1], uint16_t) = mono_atomic_cas_u16(dest, value, comparand);
+			LOCAL_VAR(ip[1], guint32) = (guint32)mono_atomic_cas_u16(dest, value, comparand);
+			ip += 5;
+			MINT_IN_BREAK;
+		}
+		MINT_IN_CASE(MINT_MONO_CMPXCHG_I2) {
+			gint16 *dest = LOCAL_VAR(ip[2], gint16*);
+			gint16 value = LOCAL_VAR(ip[3], gint16);
+			gint16 comparand = LOCAL_VAR(ip[4], gint16);
+			NULL_CHECK(dest);
+
+			LOCAL_VAR(ip[1], gint32) = (gint32)(gint16)mono_atomic_cas_u16((guint16*)dest, value, comparand);
 			ip += 5;
 			MINT_IN_BREAK;
 		}
