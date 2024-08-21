@@ -2469,12 +2469,16 @@ interp_handle_intrinsics (TransformData *td, MonoMethod *target_method, MonoClas
 			    t->type == MONO_TYPE_I2) {
 				switch (t->type) {
 				case MONO_TYPE_U1:
-				case MONO_TYPE_I1:
 					*op = MINT_MONO_CMPXCHG_U1;
 					break;
+				case MONO_TYPE_I1:
+					*op = MINT_MONO_CMPXCHG_I1;
+					break;
 				case MONO_TYPE_U2:
-				case MONO_TYPE_I2:
 					*op = MINT_MONO_CMPXCHG_U2;
+					break;
+				case MONO_TYPE_I2:
+					*op = MINT_MONO_CMPXCHG_I2;
 					break;
 				case MONO_TYPE_I4:
 					*op = MINT_MONO_CMPXCHG_I4;
