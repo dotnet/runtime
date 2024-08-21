@@ -187,6 +187,20 @@ mono_atomic_dec_i64 (volatile gint64 *dest)
 	return mono_atomic_add_i64 (dest, -1);
 }
 
+static inline guint8
+mono_atomic_xchg_u8 (volatile guint8 *dest, guint8 exch)
+{
+	g_static_assert (sizeof (atomic_char) == sizeof (*dest) && ATOMIC_CHAR_LOCK_FREE == 2);
+	return atomic_exchange ((volatile atomic_char *)dest, exch);
+}
+
+static inline guint16
+mono_atomic_xchg_u16 (volatile guint16 *dest, guint16 exch)
+{
+	g_static_assert (sizeof (atomic_short) == sizeof (*dest) && ATOMIC_SHORT_LOCK_FREE == 2);
+	return atomic_exchange ((volatile atomic_short *)dest, exch);
+}
+
 static inline gint32
 mono_atomic_xchg_i32 (volatile gint32 *dest, gint32 exch)
 {
@@ -393,6 +407,18 @@ mono_atomic_dec_i64 (volatile gint64 *dest)
 	return InterlockedDecrement64 ((LONG64 volatile *)dest);
 }
 
+static inline guint8
+mono_atomic_xchg_u8 (volatile guint8 *dest, guint8 exch)
+{
+	return _InterlockedExchange8 ((char volatile *)dest, (char)exch);
+}
+
+static inline guint16
+mono_atomic_xchg_u16 (volatile guint16 *dest, guint16 exch)
+{
+	return _InterlockedExchange8 ((short volatile *)dest, (short)exch);
+}
+
 static inline gint32
 mono_atomic_xchg_i32 (volatile gint32 *dest, gint32 exch)
 {
@@ -572,6 +598,24 @@ static inline gint32 mono_atomic_inc_i32(volatile gint32 *val)
 static inline gint32 mono_atomic_dec_i32(volatile gint32 *val)
 {
 	return gcc_sync_sub_and_fetch (val, 1);
+}
+
+static inline guint8 mono_atomic_xchg_u8(volatile guint8 *val, guint8 new_val)
+{
+	guint8 old_val;
+	do {
+		old_val = *val;
+	} while (gcc_sync_val_compare_and_swap (val, old_val, new_val) != old_val);
+	return old_val;
+}
+
+static inline guint16 mono_atomic_xchg_u16(volatile guint16 *val, guint16 new_val)
+{
+	guint16 old_val;
+	do {
+		old_val = *val;
+	} while (gcc_sync_val_compare_and_swap (val, old_val, new_val) != old_val);
+	return old_val;
 }
 
 static inline gint32 mono_atomic_xchg_i32(volatile gint32 *val, gint32 new_val)
@@ -777,6 +821,8 @@ extern gint32 mono_atomic_inc_i32(volatile gint32 *dest);
 extern gint64 mono_atomic_inc_i64(volatile gint64 *dest);
 extern gint32 mono_atomic_dec_i32(volatile gint32 *dest);
 extern gint64 mono_atomic_dec_i64(volatile gint64 *dest);
+/*extern guint8 mono_atomic_xchg_u8(volatile guint8 *dest, guint8 exch); */
+/*extern guint16 mono_atomic_xchg_u16(volatile guint16 *dest, guint16 exch); */
 extern gint32 mono_atomic_xchg_i32(volatile gint32 *dest, gint32 exch);
 extern gint64 mono_atomic_xchg_i64(volatile gint64 *dest, gint64 exch);
 extern gpointer mono_atomic_xchg_ptr(volatile gpointer *dest, gpointer exch);

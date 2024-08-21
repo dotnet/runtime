@@ -2457,8 +2457,29 @@ interp_handle_intrinsics (TransformData *td, MonoMethod *target_method, MonoClas
 	} else if (in_corlib && !strcmp (klass_name_space, "System.Threading") && !strcmp (klass_name, "Interlocked")) {
 		if (!strcmp (tm, "MemoryBarrier") && csignature->param_count == 0)
 			*op = MINT_MONO_MEMORY_BARRIER;
-		else if (!strcmp (tm, "Exchange") && csignature->param_count == 2 && csignature->params [0]->type == MONO_TYPE_I8 && csignature->params [1]->type == MONO_TYPE_I8)
-			*op = MINT_MONO_EXCHANGE_I8;
+		else if (!strcmp (tm, "Exchange") && csignature->param_count == 2  && m_type_is_byref (csignature->params[0])) {
+			MonoType *t = mini_get_underlying_type (csignature->params[1]);
+			switch (t->type) {
+			case MONO_TYPE_I1:
+				*op = MINT_MONO_EXCHANGE_I1;
+				break;
+			case MONO_TYPE_U1:
+				*op = MINT_MONO_EXCHANGE_U1;
+				break;
+			case MONO_TYPE_I2:
+				*op = MINT_MONO_EXCHANGE_I2;
+				break;
+			case MONO_TYPE_U2:
+				*op = MINT_MONO_EXCHANGE_U2;
+				break;
+			case MONO_TYPE_I8:
+				*op = MINT_MONO_EXCHANGE_I8;
+				break;
+			default:
+				// no intrinsic
+				break;
+			}
+		}
 		else if (!strcmp (tm, "CompareExchange") && csignature->param_count == 3) {
 			MonoType *t = mini_get_underlying_type (csignature->params[1]);
 			switch (t->type) {

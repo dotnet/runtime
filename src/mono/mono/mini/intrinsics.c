@@ -1522,11 +1522,34 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 		else if (strcmp (cmethod->name, "Exchange") == 0 && fsig->param_count == 2 && m_type_is_byref (fsig->params [0])) {
 			MonoInst *f2i = NULL, *i2f;
 			guint32 opcode, f2i_opcode = 0, i2f_opcode = 0;
-			gboolean is_ref = byref_arg_is_reference (fsig->params [0]);
-			gboolean is_float = fsig->params [0]->type == MONO_TYPE_R4 || fsig->params [0]->type == MONO_TYPE_R8;
+			// params[1] is byval, use it to decide what kind of op to do
+			// get the underlying type so enums and bool work too.
+			MonoType *param_type = mini_get_underlying_type (fsig->params[1]);
+			gboolean is_ref = mini_type_is_reference (param_type);
+			gboolean is_float = param_type->type == MONO_TYPE_R4 || param_type->type == MONO_TYPE_R8;
+			guint32 u2i_result_opcode = 0;
+			MonoInst *u2i_result = NULL;
 
-			if (fsig->params [0]->type == MONO_TYPE_I4 ||
-			    fsig->params [0]->type == MONO_TYPE_R4) {
+			// For small types .NET stack temps are always i4, so we need to zext or
+			// sext the output
+			if (param_type->type == MONO_TYPE_I1) {
+				opcode = OP_ATOMIC_EXCHANGE_U1;
+				u2i_result_opcode = OP_ICONV_TO_I1;
+			}
+			else if (param_type->type == MONO_TYPE_U1) {
+				opcode = OP_ATOMIC_EXCHANGE_U1;
+				u2i_result_opcode = OP_ICONV_TO_U1;
+			}
+			else if (param_type->type == MONO_TYPE_I2) {
+				opcode = OP_ATOMIC_EXCHANGE_U2;
+				u2i_result_opcode = OP_ICONV_TO_I2;
+			}
+			else if (param_type->type == MONO_TYPE_U2) {
+				opcode = OP_ATOMIC_EXCHANGE_U2;
+				u2i_result_opcode = OP_ICONV_TO_U2;
+			}
+			else if (param_type->type == MONO_TYPE_I4 ||
+			    param_type->type == MONO_TYPE_R4) {
 				opcode = OP_ATOMIC_EXCHANGE_I4;
 				f2i_opcode = OP_MOVE_F_TO_I4;
 				i2f_opcode = OP_MOVE_I4_TO_F;
@@ -1577,7 +1600,11 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 			ins->sreg2 = is_float ? f2i->dreg : args [1]->dreg;
 			MONO_ADD_INS (cfg->cbb, ins);
 
-			switch (fsig->params [0]->type) {
+			switch (param_type->type) {
+			case MONO_TYPE_U1:
+			case MONO_TYPE_I1:
+			case MONO_TYPE_U2:
+			case MONO_TYPE_I2:
 			case MONO_TYPE_I4:
 				ins->type = STACK_I4;
 				break;
@@ -1611,6 +1638,13 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 				MONO_ADD_INS (cfg->cbb, i2f);
 
 				ins = i2f;
+			} else if (u2i_result_opcode) {
+				MONO_INST_NEW (cfg, u2i_result, u2i_result_opcode);
+				u2i_result->dreg = mono_alloc_ireg (cfg);
+				u2i_result->sreg1 = ins->dreg;
+				MONO_ADD_INS (cfg->cbb, u2i_result);
+
+				ins = u2i_result;
 			}
 
 			if (cfg->gen_write_barriers && is_ref)
@@ -1625,9 +1659,9 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 			guint32 i2u_cmp_opcode = 0, u2i_result_opcode = 0;
 			MonoInst *i2u_cmp = NULL, *u2i_result = NULL;
 
-			// for small signed types the "compare" part of CAS is done on zero
-			// extended, but .NET stack temps are always i4, so we need to zext the
-			// "expected" value and then sext the output
+			// For small types the "compare" part of CAS is done on zero extended. For
+			// the result, .NET stack temps are always i4, so we need to zext or sext
+			// the output
 			if (param1_type->type == MONO_TYPE_U1) {
 				opcode = OP_ATOMIC_CAS_U1;
 				i2u_cmp_opcode = 0;

@@ -7565,15 +7565,29 @@ MONO_RESTORE_WARNING
 #define ARM64_ATOMIC_FENCE_FIX
 #endif
 
+		case OP_ATOMIC_EXCHANGE_U1:
+		case OP_ATOMIC_EXCHANGE_U2:
 		case OP_ATOMIC_EXCHANGE_I4:
 		case OP_ATOMIC_EXCHANGE_I8: {
 			LLVMValueRef args [2];
 			LLVMTypeRef t;
 
-			if (ins->opcode == OP_ATOMIC_EXCHANGE_I4)
+			switch (ins->opcode) {
+			case OP_ATOMIC_EXCHANGE_U1:
+				t = LLVMInt8Type ();
+				break;
+			case OP_ATOMIC_EXCHANGE_U2:
+				t = LLVMInt16Type ();
+				break;
+			case OP_ATOMIC_EXCHANGE_I4:
 				t = LLVMInt32Type ();
-			else
+				break;
+			case OP_ATOMIC_EXCHANGE_I8:
 				t = LLVMInt64Type ();
+				break;
+			default:
+				g_assert_not_reached ();
+			}
 
 			g_assert (ins->inst_offset == 0);
 

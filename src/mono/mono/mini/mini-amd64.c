@@ -6905,9 +6905,27 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 
 			break;
 		}
+		case OP_ATOMIC_EXCHANGE_U1:
+		case OP_ATOMIC_EXCHANGE_U2:
 		case OP_ATOMIC_EXCHANGE_I4:
 		case OP_ATOMIC_EXCHANGE_I8: {
-			guint32 size = ins->opcode == OP_ATOMIC_EXCHANGE_I4 ? 4 : 8;
+			guint32 size;
+			switch (ins->opcode) {
+			case OP_ATOMIC_EXCHANGE_U1:
+				size = 1;
+				break;
+			case OP_ATOMIC_EXCHANGE_U2:
+				size = 2;
+				break;
+			case OP_ATOMIC_EXCHANGE_I4:
+				size = 4;
+				break;
+			case OP_ATOMIC_EXCHANGE_I8:
+				size = 8;
+				break;
+			default:
+				g_assert_not_reached ();
+			}
 
 			/* LOCK prefix is implied. */
 			amd64_mov_reg_reg (code, GP_SCRATCH_REG, ins->sreg2, size);
@@ -9837,6 +9855,8 @@ mono_arch_opcode_supported (int opcode)
 	switch (opcode) {
 	case OP_ATOMIC_ADD_I4:
 	case OP_ATOMIC_ADD_I8:
+	case OP_ATOMIC_EXCHANGE_U1:
+	case OP_ATOMIC_EXCHANGE_U2:
 	case OP_ATOMIC_EXCHANGE_I4:
 	case OP_ATOMIC_EXCHANGE_I8:
 	case OP_ATOMIC_CAS_U1:

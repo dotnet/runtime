@@ -5086,6 +5086,30 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			arm_movx (code, dreg, ARMREG_IP0);
 			break;
 		}
+		case OP_ATOMIC_EXCHANGE_U1: {
+			guint8 *buf [16];
+
+			buf [0] = code;
+			arm_ldxrb (code, ARMREG_IP0, sreg1);
+			arm_stlxrb (code, ARMREG_IP1, sreg2, sreg1);
+			arm_cbnzw (code, ARMREG_IP1, buf [0]);
+
+			arm_dmb (code, ARM_DMB_ISH);
+			arm_movx (code, dreg, ARMREG_IP0);
+			break;
+		}
+		case OP_ATOMIC_EXCHANGE_U2: {
+			guint8 *buf [16];
+
+			buf [0] = code;
+			arm_ldxrh (code, ARMREG_IP0, sreg1);
+			arm_stlxrh (code, ARMREG_IP1, sreg2, sreg1);
+			arm_cbnzw (code, ARMREG_IP1, buf [0]);
+
+			arm_dmb (code, ARM_DMB_ISH);
+			arm_movx (code, dreg, ARMREG_IP0);
+			break;
+		}
 		case OP_ATOMIC_EXCHANGE_I4: {
 			guint8 *buf [16];
 
@@ -6963,6 +6987,8 @@ mono_arch_opcode_supported (int opcode)
 	switch (opcode) {
 	case OP_ATOMIC_ADD_I4:
 	case OP_ATOMIC_ADD_I8:
+	case OP_ATOMIC_EXCHANGE_U1:
+	case OP_ATOMIC_EXCHANGE_U2:
 	case OP_ATOMIC_EXCHANGE_I4:
 	case OP_ATOMIC_EXCHANGE_I8:
 	case OP_ATOMIC_CAS_U1:
