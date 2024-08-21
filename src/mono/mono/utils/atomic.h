@@ -336,7 +336,7 @@ mono_atomic_cas_u8 (volatile guint8 *dest, guint8 exch, guint8 comp)
 static inline guint16
 mono_atomic_cas_u16 (volatile guint16 *dest, guint16 exch, guint16 comp)
 {
-	return _InterlockedCompareExchange16 ((short volatile *)dest, (char)exch, (char)comp);
+	return _InterlockedCompareExchange16 ((short volatile *)dest, (short)exch, (short)comp);
 }
 
 static inline gint32
