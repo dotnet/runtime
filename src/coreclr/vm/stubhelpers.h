@@ -58,7 +58,6 @@ public:
     static FCDECL3(Object*,         GetCOMHRExceptionObject, HRESULT hr, MethodDesc *pMD, Object *unsafe_pThis);
 #endif // FEATURE_COMINTEROP
 
-    static FCDECL1(Object*,         AllocateInternal,       EnregisteredTypeHandle typeHnd);
     static FCDECL3(void,            MarshalToUnmanagedVaListInternal, va_list va, DWORD cbVaListSize, const VARARGS* pArgIterator);
     static FCDECL2(void,            MarshalToManagedVaListInternal, va_list va, VARARGS* pArgIterator);
     static FCDECL0(void*,           GetStubContext);

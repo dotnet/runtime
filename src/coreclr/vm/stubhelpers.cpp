@@ -584,23 +584,6 @@ FCIMPL3(Object*, StubHelpers::GetCOMHRExceptionObject, HRESULT hr, MethodDesc *p
 FCIMPLEND
 #endif // FEATURE_COMINTEROP
 
-FCIMPL1(Object*, StubHelpers::AllocateInternal, EnregisteredTypeHandle pRegisteredTypeHnd)
-{
-    FCALL_CONTRACT;
-
-    TypeHandle typeHnd = TypeHandle::FromPtr(pRegisteredTypeHnd);
-    OBJECTREF objRet = NULL;
-    HELPER_METHOD_FRAME_BEGIN_RET_1(objRet);
-
-    MethodTable* pMT = typeHnd.GetMethodTable();
-    objRet = pMT->Allocate();
-
-    HELPER_METHOD_FRAME_END();
-
-    return OBJECTREFToObject(objRet);
-}
-FCIMPLEND
-
 FCIMPL3(void, StubHelpers::MarshalToUnmanagedVaListInternal, va_list va, DWORD cbVaListSize, const VARARGS* pArgIterator)
 {
     FCALL_CONTRACT;
