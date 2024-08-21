@@ -1332,7 +1332,6 @@ GenTree* Compiler::getArgForHWIntrinsic(var_types argType, CORINFO_CLASS_HANDLE 
 // Arguments:
 //    intrinsic     -- intrinsic ID
 //    immOp         -- the immediate operand of the intrinsic
-//    mustExpand    -- true if the compiler is compiling the fallback(GT_CALL) of this intrinsics
 //    immLowerBound -- lower incl. bound for a value of the immediate operand (for a non-full-range imm-intrinsic)
 //    immUpperBound -- upper incl. bound for a value of the immediate operand (for a non-full-range imm-intrinsic)
 //
@@ -1340,21 +1339,19 @@ GenTree* Compiler::getArgForHWIntrinsic(var_types argType, CORINFO_CLASS_HANDLE 
 //     add a GT_BOUNDS_CHECK node for non-full-range imm-intrinsic, which would throw ArgumentOutOfRangeException
 //     when the imm-argument is not in the valid range
 //
-GenTree* Compiler::addRangeCheckIfNeeded(
-    NamedIntrinsic intrinsic, GenTree* immOp, bool mustExpand, int immLowerBound, int immUpperBound)
+GenTree* Compiler::addRangeCheckIfNeeded(NamedIntrinsic intrinsic, GenTree* immOp, int immLowerBound, int immUpperBound)
 {
     assert(immOp != nullptr);
     // Full-range imm-intrinsics do not need the range-check
     // because the imm-parameter of the intrinsic method is a byte.
     // AVX2 Gather intrinsics no not need the range-check
     // because their imm-parameter have discrete valid values that are handle by managed code
-    if (mustExpand && HWIntrinsicInfo::isImmOp(intrinsic, immOp)
+    if (!immOp->IsCnsIntOrI() && HWIntrinsicInfo::isImmOp(intrinsic, immOp)
 #ifdef TARGET_XARCH
         && !HWIntrinsicInfo::isAVX2GatherIntrinsic(intrinsic) && !HWIntrinsicInfo::HasFullRangeImm(intrinsic)
 #endif
     )
     {
-        assert(!immOp->IsCnsIntOrI());
         assert(varTypeIsIntegral(immOp));
 
         return addRangeCheckForHWIntrinsic(immOp, immLowerBound, immUpperBound);
@@ -1596,7 +1593,6 @@ bool Compiler::CheckHWIntrinsicImmRange(NamedIntrinsic intrinsic,
 
         if (immOutOfRange)
         {
-            assert(!mustExpand);
             // The imm-HWintrinsics that do not accept all imm8 values may throw
             // ArgumentOutOfRangeException when the imm argument is not in the valid range,
             // unless the intrinsic can be transformed into one that does accept all imm8 values
@@ -1859,15 +1855,30 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
             {
                 return impNonConstFallback(intrinsic, retType, simdBaseJitType);
             }
-            else if (!opts.OptimizationEnabled())
+            else if (immOp2->IsCnsIntOrI())
             {
-                // Only enable late stage rewriting if optimizations are enabled
-                // as we won't otherwise encounter a constant at the later point
-                return nullptr;
+                // If we know the immediate is out-of-range,
+                // convert the intrinsic into a user call (or throw if we must expand)
+                return impUnsupportedNamedIntrinsic(CORINFO_HELP_THROW_ARGUMENTOUTOFRANGEEXCEPTION, method, sig,
+                                                    mustExpand);
             }
             else
             {
-                setMethodHandle = true;
+                // The immediate is unknown, and we aren't using a fallback intrinsic.
+                // In this case, CheckHWIntrinsicImmRange should not return false for intrinsics that must expand.
+                assert(!mustExpand);
+
+                if (opts.OptimizationEnabled())
+                {
+                    // Only enable late stage rewriting if optimizations are enabled
+                    // as we won't otherwise encounter a constant at the later point
+                    setMethodHandle = true;
+                }
+                else
+                {
+                    // Just convert to a user call
+                    return nullptr;
+                }
             }
         }
     }
@@ -1896,15 +1907,30 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
             {
                 return impNonConstFallback(intrinsic, retType, simdBaseJitType);
             }
-            else if (!opts.OptimizationEnabled())
+            else if (immOp1->IsCnsIntOrI())
             {
-                // Only enable late stage rewriting if optimizations are enabled
-                // as we won't otherwise encounter a constant at the later point
-                return nullptr;
+                // If we know the immediate is out-of-range,
+                // convert the intrinsic into a user call (or throw if we must expand)
+                return impUnsupportedNamedIntrinsic(CORINFO_HELP_THROW_ARGUMENTOUTOFRANGEEXCEPTION, method, sig,
+                                                    mustExpand);
             }
             else
             {
-                setMethodHandle = true;
+                // The immediate is unknown, and we aren't using a fallback intrinsic.
+                // In this case, CheckHWIntrinsicImmRange should not return false for intrinsics that must expand.
+                assert(!mustExpand);
+
+                if (opts.OptimizationEnabled())
+                {
+                    // Only enable late stage rewriting if optimizations are enabled
+                    // as we won't otherwise encounter a constant at the later point
+                    setMethodHandle = true;
+                }
+                else
+                {
+                    // Just convert to a user call
+                    return nullptr;
+                }
             }
         }
     }
@@ -1960,7 +1986,7 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
         {
             case 4:
                 op4 = getArgForHWIntrinsic(sigReader.GetOp4Type(), sigReader.op4ClsHnd);
-                op4 = addRangeCheckIfNeeded(intrinsic, op4, mustExpand, immLowerBound, immUpperBound);
+                op4 = addRangeCheckIfNeeded(intrinsic, op4, immLowerBound, immUpperBound);
                 op3 = getArgForHWIntrinsic(sigReader.GetOp3Type(), sigReader.op3ClsHnd);
                 op2 = getArgForHWIntrinsic(sigReader.GetOp2Type(), sigReader.op2ClsHnd);
                 op1 = getArgForHWIntrinsic(sigReader.GetOp1Type(), sigReader.op1ClsHnd);
@@ -1974,7 +2000,7 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
 
             case 2:
                 op2 = getArgForHWIntrinsic(sigReader.GetOp2Type(), sigReader.op2ClsHnd);
-                op2 = addRangeCheckIfNeeded(intrinsic, op2, mustExpand, immLowerBound, immUpperBound);
+                op2 = addRangeCheckIfNeeded(intrinsic, op2, immLowerBound, immUpperBound);
                 op1 = getArgForHWIntrinsic(sigReader.GetOp1Type(), sigReader.op1ClsHnd);
                 break;
 
@@ -2144,7 +2170,7 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
 #ifdef TARGET_ARM64
                 if (intrinsic == NI_AdvSimd_LoadAndInsertScalar)
                 {
-                    op2 = addRangeCheckIfNeeded(intrinsic, op2, mustExpand, immLowerBound, immUpperBound);
+                    op2 = addRangeCheckIfNeeded(intrinsic, op2, immLowerBound, immUpperBound);
 
                     if (op1->OperIs(GT_CAST))
                     {
@@ -2158,12 +2184,12 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
                 }
                 else if ((intrinsic == NI_AdvSimd_Insert) || (intrinsic == NI_AdvSimd_InsertScalar))
                 {
-                    op2 = addRangeCheckIfNeeded(intrinsic, op2, mustExpand, immLowerBound, immUpperBound);
+                    op2 = addRangeCheckIfNeeded(intrinsic, op2, immLowerBound, immUpperBound);
                 }
                 else
 #endif
                 {
-                    op3 = addRangeCheckIfNeeded(intrinsic, op3, mustExpand, immLowerBound, immUpperBound);
+                    op3 = addRangeCheckIfNeeded(intrinsic, op3, immLowerBound, immUpperBound);
                 }
 
                 retNode = isScalar ? gtNewScalarHWIntrinsicNode(nodeRetType, op1, op2, op3, intrinsic)
