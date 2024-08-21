@@ -1105,11 +1105,17 @@ namespace System.Buffers.Text
                 {
                     merge_ab_and_bc = Ssse3.MultiplyAddAdjacent(str.AsByte(), mergeConstant0.AsSByte());
                 }
-                else
+                else if (AdvSimd.Arm64.IsSupported)
                 {
                     Vector128<ushort> evens = AdvSimd.ShiftLeftLogicalWideningLower(AdvSimd.Arm64.UnzipEven(str, one).GetLower(), 6);
                     Vector128<ushort> odds = AdvSimd.Arm64.TransposeOdd(str, Vector128<byte>.Zero).AsUInt16();
                     merge_ab_and_bc = Vector128.Add(evens, odds).AsInt16();
+                }
+                else
+                {
+                    // We explicitly recheck each IsSupported query to ensure that the trimmer can see which paths are live/dead
+                    ThrowHelper.ThrowUnreachableException();
+                    merge_ab_and_bc = default;
                 }
                 // 0000kkkk LLllllll 0000JJJJ JJjjKKKK
                 // 0000hhhh IIiiiiii 0000GGGG GGggHHHH
@@ -1121,11 +1127,17 @@ namespace System.Buffers.Text
                 {
                     output = Sse2.MultiplyAddAdjacent(merge_ab_and_bc, mergeConstant1);
                 }
-                else
+                else if (AdvSimd.Arm64.IsSupported)
                 {
                     Vector128<int> ievens = AdvSimd.ShiftLeftLogicalWideningLower(AdvSimd.Arm64.UnzipEven(merge_ab_and_bc, one.AsInt16()).GetLower(), 12);
                     Vector128<int> iodds = AdvSimd.Arm64.TransposeOdd(merge_ab_and_bc, Vector128<short>.Zero).AsInt32();
                     output = Vector128.Add(ievens, iodds).AsInt32();
+                }
+                else
+                {
+                    // We explicitly recheck each IsSupported query to ensure that the trimmer can see which paths are live/dead
+                    ThrowHelper.ThrowUnreachableException();
+                    output = default;
                 }
                 // 00000000 JJJJJJjj KKKKkkkk LLllllll
                 // 00000000 GGGGGGgg HHHHhhhh IIiiiiii

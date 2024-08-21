@@ -1254,9 +1254,20 @@ namespace System.Buffers
                 Vector128<short> lowerMin = Vector128.Min(lower, Vector128.Create((ushort)255)).AsInt16();
                 Vector128<short> upperMin = Vector128.Min(upper, Vector128.Create((ushort)255)).AsInt16();
 
-                return Sse2.IsSupported
-                    ? Sse2.PackUnsignedSaturate(lowerMin, upperMin)
-                    : PackedSimd.ConvertNarrowingSaturateUnsigned(lowerMin, upperMin);
+                if (Sse2.IsSupported)
+                {
+                    return Sse2.PackUnsignedSaturate(lowerMin, upperMin);
+                }
+                else if (PackedSimd.IsSupported)
+                {
+                    return PackedSimd.ConvertNarrowingSaturateUnsigned(lowerMin, upperMin);
+                }
+                else
+                {
+                    // We explicitly recheck each IsSupported query to ensure that the trimmer can see which paths are live/dead
+                    ThrowHelper.ThrowUnreachableException();
+                    return default;
+                }
             }
 
             // Replace with Vector256.NarrowWithSaturation once https://github.com/dotnet/runtime/issues/75724 is implemented.
@@ -1278,10 +1289,24 @@ namespace System.Buffers
             [CompExactlyDependsOn(typeof(PackedSimd))]
             public static Vector128<byte> PackSources(Vector128<ushort> lower, Vector128<ushort> upper)
             {
-                return
-                    Sse2.IsSupported ? Sse2.PackUnsignedSaturate(lower.AsInt16(), upper.AsInt16()) :
-                    AdvSimd.IsSupported ? AdvSimd.ExtractNarrowingSaturateUpper(AdvSimd.ExtractNarrowingSaturateLower(lower), upper) :
-                    PackedSimd.ConvertNarrowingSaturateUnsigned(lower.AsInt16(), upper.AsInt16());
+                if (Sse2.IsSupported)
+                {
+                    return Sse2.PackUnsignedSaturate(lower.AsInt16(), upper.AsInt16());
+                }
+                else if (AdvSimd.IsSupported)
+                {
+                    return AdvSimd.ExtractNarrowingSaturateUpper(AdvSimd.ExtractNarrowingSaturateLower(lower), upper);
+                }
+                else if (PackedSimd.IsSupported)
+                {
+                    return PackedSimd.ConvertNarrowingSaturateUnsigned(lower.AsInt16(), upper.AsInt16());
+                }
+                else
+                {
+                    // We explicitly recheck each IsSupported query to ensure that the trimmer can see which paths are live/dead
+                    ThrowHelper.ThrowUnreachableException();
+                    return default;
+                }
             }
 
             [CompExactlyDependsOn(typeof(Avx2))]

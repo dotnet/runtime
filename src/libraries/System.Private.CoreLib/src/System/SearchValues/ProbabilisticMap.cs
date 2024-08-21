@@ -219,13 +219,27 @@ namespace System.Buffers
             Vector128<ushort> source0 = Vector128.LoadUnsafe(ref searchSpace);
             Vector128<ushort> source1 = Vector128.LoadUnsafe(ref searchSpace, (nuint)Vector128<ushort>.Count);
 
-            Vector128<byte> sourceLower = Sse2.IsSupported
-                ? Sse2.PackUnsignedSaturate((source0 & Vector128.Create((ushort)255)).AsInt16(), (source1 & Vector128.Create((ushort)255)).AsInt16())
-                : AdvSimd.Arm64.UnzipEven(source0.AsByte(), source1.AsByte());
+            Vector128<byte> sourceLower;
+            Vector128<byte> sourceUpper;
 
-            Vector128<byte> sourceUpper = Sse2.IsSupported
-                ? Sse2.PackUnsignedSaturate((source0 >>> 8).AsInt16(), (source1 >>> 8).AsInt16())
-                : AdvSimd.Arm64.UnzipOdd(source0.AsByte(), source1.AsByte());
+            if (Sse2.IsSupported)
+            {
+                sourceLower = Sse2.PackUnsignedSaturate((source0 & Vector128.Create((ushort)255)).AsInt16(), (source1 & Vector128.Create((ushort)255)).AsInt16());
+                sourceUpper = Sse2.PackUnsignedSaturate((source0 >>> 8).AsInt16(), (source1 >>> 8).AsInt16());
+            }
+            else if (AdvSimd.Arm64.IsSupported)
+            {
+                sourceLower = AdvSimd.Arm64.UnzipEven(source0.AsByte(), source1.AsByte());
+                sourceUpper = AdvSimd.Arm64.UnzipOdd(source0.AsByte(), source1.AsByte());
+            }
+            else
+            {
+                // We explicitly recheck each IsSupported query to ensure that the trimmer can see which paths are live/dead
+                ThrowHelper.ThrowUnreachableException();
+
+                sourceLower = default;
+                sourceUpper = default;
+            }
 
             Vector128<byte> resultLower = IsCharBitNotSet(charMapLower, charMapUpper, sourceLower);
             Vector128<byte> resultUpper = IsCharBitNotSet(charMapLower, charMapUpper, sourceUpper);
