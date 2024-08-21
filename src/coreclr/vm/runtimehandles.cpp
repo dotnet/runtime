@@ -409,17 +409,17 @@ FCIMPL1(ReflectClassBaseObject *, RuntimeTypeHandle::GetElementType, ReflectClas
     TypeHandle typeHandle = refType->GetType();
     TypeHandle typeReturn;
 
-    if (typeHandle.IsArray())
+    if (!typeHandle.IsTypeDesc())
     {
+        if (!typeHandle.AsMethodTable()->IsArray())
+            return NULL;
+
         typeReturn = typeHandle.GetArrayElementTypeHandle();
     }
     else
     {
-        if (!typeHandle.IsTypeDesc())
-            return 0;
-
         if (typeHandle.IsGenericVariable())
-            return 0;
+            return NULL;
 
         typeReturn = typeHandle.AsTypeDesc()->GetTypeParam();
     }
