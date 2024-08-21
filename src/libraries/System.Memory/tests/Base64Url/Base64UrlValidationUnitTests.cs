@@ -10,6 +10,7 @@ namespace System.Buffers.Text.Tests
     public class Base64UrlValidationUnitTests : Base64TestBase
     {
         [Theory]
+        [InlineData("=")]
         [InlineData("==")]
         [InlineData("-%")]
         [InlineData("A=")]
@@ -19,10 +20,15 @@ namespace System.Buffers.Text.Tests
         [InlineData("AAAAA ==")]
         [InlineData("\tLLLL\t=\r")]
         [InlineData("6066=")]
+        [InlineData("6066==")]
+        [InlineData("SM==")]
+        [InlineData("SM=")]
         public void BasicValidationEdgeCaseScenario(string base64UrlText)
         {
             Assert.False(Base64Url.IsValid(base64UrlText.AsSpan(), out int decodedLength));
             Assert.Equal(0, decodedLength);
+            Span<byte> dest = new byte[Base64Url.GetMaxDecodedLength(base64UrlText.Length)];
+            Assert.Equal(OperationStatus.InvalidData, Base64Url.DecodeFromChars(base64UrlText, dest, out _, out _));
         }
 
         [Fact]

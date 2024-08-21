@@ -1,8 +1,8 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics;
 using System.Runtime.CompilerServices;
-using static System.Buffers.Text.Base64Helper;
 
 namespace System.Buffers.Text
 {
@@ -95,32 +95,36 @@ namespace System.Buffers.Text
             public bool ValidateAndDecodeLength(byte lastChar, int length, int paddingCount, out int decodedLength)
             {
                 // Padding is optional for Base64Url, so need to account remainder. If remainder is 1, then it's invalid.
-#if NET
-                (uint whole, uint remainder) = uint.DivRem((uint)(length), 4);
-                if (remainder == 1 || (remainder > 1 && (remainder - paddingCount == 1 || paddingCount == remainder)))
-                {
-                    decodedLength = 0;
-                    return false;
-                }
+                int decodeAbleLength = length - paddingCount;
 
-                decodedLength = (int)((whole * 3) + (remainder > 0 ? remainder - 1 : 0) - paddingCount);
-#else
-                int remainder = (int)((uint)length % 4);
-                if (remainder == 1 || (remainder > 1 && (remainder - paddingCount == 1 || paddingCount == remainder)))
-                {
-                    decodedLength = 0;
-                    return false;
-                }
+                int remainder = (int)((uint)decodeAbleLength % 4);
+                decodedLength = (decodeAbleLength >> 2) * 3 + (remainder > 0 ? remainder - 1 : 0);
 
-                decodedLength = (length >> 2) * 3 + (remainder > 0 ? remainder - 1 : 0) - paddingCount;
-#endif
-                int decoded = default(Base64DecoderByte).DecodingMap[lastChar];
-                if (((remainder == 3 || paddingCount == 1) && (decoded & 0x03) != 0) ||
-                    ((remainder == 2 || paddingCount == 2) && (decoded & 0x0F) != 0))
+                if (remainder > 0)
                 {
-                    // unused lower bits are not 0, reject input
-                    decodedLength = 0;
-                    return false;
+                    if (remainder == 1)
+                    {
+                        decodedLength = 0;
+                        return false;
+                    }
+
+                    int decoded = default(Base64UrlDecoderByte).DecodingMap[lastChar];
+                    if (((remainder == 3) && (decoded & 0x03) != 0) ||
+                        ((remainder == 2) && (decoded & 0x0F) != 0))
+                    {
+                        // unused lower bits are not 0, reject input
+                        decodedLength = 0;
+                        return false;
+                    }
+                }
+                else // if there is not remainder then there should be no padding
+                {
+                    Debug.Assert(remainder == 0);
+                    if (paddingCount != 0)
+                    {
+                        decodedLength = 0;
+                        return false;
+                    }
                 }
 
                 return true;
