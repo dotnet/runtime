@@ -17,7 +17,18 @@ namespace Microsoft.Interop
     internal sealed class ComInterfaceDispatchMarshallingResolver : IMarshallingGeneratorResolver
     {
         public ResolvedGenerator Create(TypePositionInfo info, StubCodeContext context)
-            => info.MarshallingAttributeInfo is ComInterfaceDispatchMarshallingInfo ? ResolvedGenerator.Resolved(new Marshaller().Bind(info)) : ResolvedGenerator.UnresolvedGenerator;
+        {
+            if (info.MarshallingAttributeInfo is ComInterfaceDispatchMarshallingInfo)
+            {
+                return context.Direction == MarshalDirection.UnmanagedToManaged
+                    ? ResolvedGenerator.Resolved(new Marshaller().Bind(info))
+                    : ResolvedGenerator.Resolved(KeepAliveThisMarshaller.Instance.Bind(info));
+            }
+            else
+            {
+                return ResolvedGenerator.UnresolvedGenerator;
+            }
+        }
 
         private sealed class Marshaller : IUnboundMarshallingGenerator
         {

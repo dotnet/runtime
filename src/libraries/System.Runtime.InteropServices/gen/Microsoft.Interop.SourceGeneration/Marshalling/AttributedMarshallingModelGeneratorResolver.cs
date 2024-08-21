@@ -24,9 +24,6 @@ namespace Microsoft.Interop
         private static readonly ImmutableDictionary<string, string> AddDisableRuntimeMarshallingAttributeProperties =
             ImmutableDictionary<string, string>.Empty.Add(GeneratorDiagnosticProperties.AddDisableRuntimeMarshallingAttribute, GeneratorDiagnosticProperties.AddDisableRuntimeMarshallingAttribute);
 
-        private static readonly BlittableMarshaller s_blittable = new BlittableMarshaller();
-        private static readonly Forwarder s_forwarder = new Forwarder();
-
         private readonly IMarshallingGeneratorResolver _elementGeneratorResolver;
 
         public AttributedMarshallingModelGeneratorResolver(
@@ -48,26 +45,6 @@ namespace Microsoft.Interop
             if (info.MarshallingAttributeInfo is NativeMarshallingAttributeInfo marshalInfo)
             {
                 return CreateCustomNativeTypeMarshaller(info, context, marshalInfo);
-            }
-
-            if (info.MarshallingAttributeInfo is UnmanagedBlittableMarshallingInfo blittableInfo)
-            {
-                if (Options.RuntimeMarshallingDisabled || blittableInfo.IsStrictlyBlittable)
-                {
-                    return ResolvedGenerator.Resolved(s_blittable.Bind(info));
-                }
-
-                return ResolvedGenerator.NotSupported(
-                    info, new GeneratorDiagnostic.NotSupported(info, context)
-                    {
-                        NotSupportedDetails = SR.RuntimeMarshallingMustBeDisabled,
-                        DiagnosticProperties = AddDisableRuntimeMarshallingAttributeProperties
-                    });
-            }
-
-            if (info.MarshallingAttributeInfo is MissingSupportMarshallingInfo)
-            {
-                return ResolvedGenerator.Resolved(s_forwarder.Bind(info));
             }
 
             return ResolvedGenerator.UnresolvedGenerator;

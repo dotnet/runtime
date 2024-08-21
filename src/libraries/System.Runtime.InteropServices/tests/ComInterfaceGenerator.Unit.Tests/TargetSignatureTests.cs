@@ -333,7 +333,11 @@ namespace ComInterfaceGenerator.Unit.Tests
                 "DerivedMethod",
                 (newComp, invocation) =>
                 {
-                    Assert.Equal(4, Assert.IsAssignableFrom<ILiteralOperation>(Assert.IsAssignableFrom<IConversionOperation>(invocation.Target).Operand.ChildOperations.Last()).ConstantValue.Value);
+                    ILocalSymbol vtableSlot = Assert.IsAssignableFrom<ILocalReferenceOperation>(invocation.Target).Local;
+                    IVariableDeclaratorOperation vtableSlotDeclarator = Assert.IsAssignableFrom<IVariableDeclaratorOperation>(invocation.SemanticModel!.GetOperation(vtableSlot.DeclaringSyntaxReferences[0].GetSyntax()));
+                    IOperation vtableSlotInitialization = vtableSlotDeclarator.Initializer!.Value;
+
+                    Assert.Equal(4, Assert.IsAssignableFrom<ILiteralOperation>(Assert.IsAssignableFrom<IConversionOperation>(vtableSlotInitialization).Operand.ChildOperations.Last()).ConstantValue.Value);
                 },
                 VerifyCS.DiagnosticWithArguments(GeneratorDiagnostics.BaseInterfaceDefinedInOtherAssembly, "IComInterface2", "IComInterface").WithLocation(1).WithSeverity(DiagnosticSeverity.Warning));
         }
@@ -381,7 +385,11 @@ namespace ComInterfaceGenerator.Unit.Tests
                 "DerivedMethod",
                 (newComp, invocation) =>
                 {
-                    Assert.Equal(5, Assert.IsAssignableFrom<ILiteralOperation>(Assert.IsAssignableFrom<IConversionOperation>(invocation.Target).Operand.ChildOperations.Last()).ConstantValue.Value);
+                    ILocalSymbol vtableSlot = Assert.IsAssignableFrom<ILocalReferenceOperation>(invocation.Target).Local;
+                    IVariableDeclaratorOperation vtableSlotDeclarator = Assert.IsAssignableFrom<IVariableDeclaratorOperation>(invocation.SemanticModel!.GetOperation(vtableSlot.DeclaringSyntaxReferences[0].GetSyntax()));
+                    IOperation vtableSlotInitialization = vtableSlotDeclarator.Initializer!.Value;
+
+                    Assert.Equal(5, Assert.IsAssignableFrom<ILiteralOperation>(Assert.IsAssignableFrom<IConversionOperation>(vtableSlotInitialization).Operand.ChildOperations.Last()).ConstantValue.Value);
                 },
                 VerifyCS.DiagnosticWithArguments(GeneratorDiagnostics.BaseInterfaceDefinedInOtherAssembly, "IComInterface3", "IComInterface2").WithLocation(1).WithSeverity(DiagnosticSeverity.Warning));
         }
@@ -429,7 +437,11 @@ namespace ComInterfaceGenerator.Unit.Tests
                 "DerivedMethod",
                 (newComp, invocation) =>
                 {
-                    Assert.Equal(5, Assert.IsAssignableFrom<ILiteralOperation>(Assert.IsAssignableFrom<IConversionOperation>(invocation.Target).Operand.ChildOperations.Last()).ConstantValue.Value);
+                    ILocalSymbol vtableSlot = Assert.IsAssignableFrom<ILocalReferenceOperation>(invocation.Target).Local;
+                    IVariableDeclaratorOperation vtableSlotDeclarator = Assert.IsAssignableFrom<IVariableDeclaratorOperation>(invocation.SemanticModel!.GetOperation(vtableSlot.DeclaringSyntaxReferences[0].GetSyntax()));
+                    IOperation vtableSlotInitialization = vtableSlotDeclarator.Initializer!.Value;
+
+                    Assert.Equal(5, Assert.IsAssignableFrom<ILiteralOperation>(Assert.IsAssignableFrom<IConversionOperation>(vtableSlotInitialization).Operand.ChildOperations.Last()).ConstantValue.Value);
                 },
                 VerifyCS.DiagnosticWithArguments(GeneratorDiagnostics.BaseInterfaceDefinedInOtherAssembly, "IComInterface2", "IComInterface").WithLocation(1).WithSeverity(DiagnosticSeverity.Warning));
         }
