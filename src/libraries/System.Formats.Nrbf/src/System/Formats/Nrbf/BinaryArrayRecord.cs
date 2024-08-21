@@ -217,7 +217,12 @@ internal sealed class BinaryArrayRecord : ArrayRecord
                         else
                         {
                             Debug.Assert(nestedArrayRecord is not BinaryArrayRecord, "Ensure lack of recursive call");
-                            result += nestedArrayRecord.FlattenedLength;
+                            // In theory somebody could create a payload that would represent
+                            // a very nested array with total elements count > long.MaxValue.
+                            checked
+                            {
+                                result += nestedArrayRecord.FlattenedLength;
+                            }
                         }
                         break;
                     case SerializationRecordType.ObjectNull:
