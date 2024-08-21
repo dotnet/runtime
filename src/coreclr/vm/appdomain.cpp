@@ -459,8 +459,6 @@ BaseDomain::BaseDomain()
     }
     CONTRACTL_END;
 
-    m_pDefaultBinder = NULL;
-
     // Make sure the container is set to NULL so that it gets loaded when it is used.
     m_pPinnedHeapHandleTable = NULL;
 
@@ -503,7 +501,7 @@ void BaseDomain::InitVSD()
     GetLoaderAllocator()->InitVirtualCallStubManager(this);
 }
 
-void BaseDomain::ClearBinderContext()
+void AppDomain::ClearBinderContext()
 {
     CONTRACTL
     {
@@ -862,7 +860,6 @@ void SystemDomain::DetachEnd()
     if(m_pSystemDomain)
     {
         GCX_PREEMP();
-        m_pSystemDomain->ClearBinderContext();
         AppDomain* pAppDomain = GetAppDomain();
         if (pAppDomain)
             pAppDomain->ClearBinderContext();
@@ -1727,6 +1724,7 @@ AppDomain::AppDomain()
     m_NativeTypeLoadLock.PreInit();
     m_FileLoadLock.PreInit();
 
+    m_pDefaultBinder = NULL;
     m_pRootAssembly = NULL;
 
     m_dwFlags = 0;

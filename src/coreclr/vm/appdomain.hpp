@@ -466,7 +466,6 @@ public:
     BaseDomain();
     virtual ~BaseDomain() {}
     void Init();
-    void Stop();
 
     virtual BOOL IsAppDomain()    { LIMITED_METHOD_DAC_CONTRACT; return FALSE; }
 
@@ -580,8 +579,6 @@ public:
 
 #endif // DACCESS_COMPILE
 
-    DefaultAssemblyBinder *GetDefaultBinder() {LIMITED_METHOD_CONTRACT;  return m_pDefaultBinder; }
-
     CrstExplicitInit * GetLoaderAllocatorReferencesLock()
     {
         LIMITED_METHOD_CONTRACT;
@@ -603,8 +600,6 @@ protected:
     // Used to protect the reference lists in the collectible loader allocators attached to this appdomain
     CrstExplicitInit m_crstLoaderAllocatorReferences;
 
-    DefaultAssemblyBinder *m_pDefaultBinder; // Reference to the binding context that holds TPA list details
-
     IGCHandleStore* m_handleStore;
 
     // The pinned heap handle table.
@@ -614,9 +609,6 @@ protected:
     static CrstStatic m_MethodTableExposedClassObjectCrst;
 
 public:
-    // Only call this routine when you can guarantee there are no
-    // loads in progress.
-    void ClearBinderContext();
 
     void InitVSD();
 
@@ -1397,6 +1389,10 @@ public:
 #endif // FEATURE_COMWRAPPERS
 
     DefaultAssemblyBinder *CreateDefaultBinder();
+    DefaultAssemblyBinder *GetDefaultBinder() {LIMITED_METHOD_CONTRACT;  return m_pDefaultBinder; }
+
+    // Only call this routine when you can guarantee there are no loads in progress.
+    void ClearBinderContext();
 
     void SetIgnoreUnhandledExceptions()
     {
@@ -1440,9 +1436,10 @@ public:
     Assembly* RaiseAssemblyResolveEvent(AssemblySpec *pSpec);
 
 private:
+    DefaultAssemblyBinder *m_pDefaultBinder; // Reference to the binding context that holds TPA list details
+
     CrstExplicitInit    m_ReflectionCrst;
     CrstExplicitInit    m_RefClassFactCrst;
-
 
     EEClassFactoryInfoHashTable *m_pRefClassFactHash;   // Hash table that maps a class factory info to a COM comp.
 #ifdef FEATURE_COMINTEROP
