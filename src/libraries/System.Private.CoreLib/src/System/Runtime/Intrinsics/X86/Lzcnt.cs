@@ -29,16 +29,16 @@ namespace System.Runtime.Intrinsics.X86
             public static new bool IsSupported { get => IsSupported; }
 
             /// <summary>
-            /// unsigned __int64 _lzcnt_u64 (unsigned __int64 a)
-            ///   LZCNT r64, r/m64
-            /// This intrinsic is only available on 64-bit processes
+            ///   <para>unsigned __int64 _lzcnt_u64 (unsigned __int64 a)</para>
+            ///   <para>  LZCNT r64, r/m64</para>
+            ///   <para>This intrinsic is only available on 64-bit processes</para>
             /// </summary>
             public static ulong LeadingZeroCount(ulong value) => LeadingZeroCount(value);
         }
 
         /// <summary>
-        /// unsigned int _lzcnt_u32 (unsigned int a)
-        ///   LZCNT r32, r/m32
+        ///   <para>unsigned int _lzcnt_u32 (unsigned int a)</para>
+        ///   <para>  LZCNT r32, r/m32</para>
         /// </summary>
         public static uint LeadingZeroCount(uint value) => LeadingZeroCount(value);
     }
