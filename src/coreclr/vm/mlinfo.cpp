@@ -3981,7 +3981,10 @@ extern "C" void QCALLTYPE StubHelpers_CreateCustomMarshaler(MethodDesc* pMD, mdT
                                             pAssembly,
                                             hndManagedType);
 
-    retObject.Set(pCMInfo->GetCustomMarshaler());
+    {
+        GCX_COOP();
+        retObject.Set(pCMInfo->GetCustomMarshaler());
+    }
 
     END_QCALL;
 }
