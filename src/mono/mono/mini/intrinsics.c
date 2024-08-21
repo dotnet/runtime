@@ -1630,7 +1630,9 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 			// "expected" value and then sext the output
 			if (param1_type->type == MONO_TYPE_U1) {
 				opcode = OP_ATOMIC_CAS_U1;
-				// FIXME: do we next to zext the result in this case?
+				i2u_cmp_opcode = 0;
+				// zext the result
+				u2i_result_opcode = OP_ICONV_TO_U1;
 			}
 			else if (param1_type->type == MONO_TYPE_I1) {
 				opcode = OP_ATOMIC_CAS_U1;
@@ -1641,7 +1643,9 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 			}
 			else if (param1_type->type == MONO_TYPE_U2) {
 				opcode = OP_ATOMIC_CAS_U2;
-				// FIXME: do we next to zext the result in this case?
+				i2u_cmp_opcode = 0;
+				// zext the result
+				u2i_result_opcode = OP_ICONV_TO_U2;
 			}
 			else if (param1_type->type == MONO_TYPE_I2) {
 				opcode = OP_ATOMIC_CAS_U2;
