@@ -23,6 +23,7 @@ namespace System.Buffers.Text.Tests
         [InlineData("6066==")]
         [InlineData("SM==")]
         [InlineData("SM =")]
+        [InlineData("s\rEs\r\r==")]
         public void BasicValidationEdgeCaseScenario(string base64UrlText)
         {
             Assert.False(Base64.IsValid(base64UrlText.AsSpan(), out int decodedLength));

@@ -94,36 +94,32 @@ namespace System.Buffers.Text
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public bool ValidateAndDecodeLength(byte lastChar, int length, int paddingCount, out int decodedLength)
             {
-                // Padding is optional for Base64Url, so need to account remainder. If remainder is 1, then it's invalid.
-                int decodeAbleLength = length - paddingCount;
+                // Padding is optional for Base64Url, so need to account remainder.
+                int remainder = (int)((uint)length % 4);
 
-                int remainder = (int)((uint)decodeAbleLength % 4);
-                decodedLength = (decodeAbleLength >> 2) * 3 + (remainder > 0 ? remainder - 1 : 0);
-
-                if (remainder > 0)
+                if (paddingCount != 0)
                 {
-                    if (remainder == 1)
-                    {
-                        decodedLength = 0;
-                        return false;
-                    }
+                    length -= paddingCount;
+                    remainder = (int)((uint)length % 4);
 
-                    int decoded = default(Base64UrlDecoderByte).DecodingMap[lastChar];
-                    if (((remainder == 3) && (decoded & 0x03) != 0) ||
-                        ((remainder == 2) && (decoded & 0x0F) != 0))
+                    // if there is a padding, there should be remainder and the sum of remainder and padding should not exceed 4
+                    if (remainder == 0 || remainder + paddingCount > 4)
                     {
-                        // unused lower bits are not 0, reject input
                         decodedLength = 0;
                         return false;
                     }
                 }
-                else // if there is not remainder then there should be no padding
+
+                decodedLength = (length >> 2) * 3 + (remainder > 0 ? remainder - 1 : 0);
+
+                if (remainder > 0)
                 {
-                    Debug.Assert(remainder == 0);
-                    if (paddingCount != 0)
+                    int decoded = default(Base64UrlDecoderByte).DecodingMap[lastChar];
+                    switch (remainder)
                     {
-                        decodedLength = 0;
-                        return false;
+                        case 1: return false; // 1 byte is not decode able => invalid.
+                        case 2: return ((decoded & 0x0F) == 0); // if unused lower 4 bits are set to 0
+                        case 3: return ((decoded & 0x03) == 0); // if unused lower 2 bits are set to 0
                     }
                 }
 
