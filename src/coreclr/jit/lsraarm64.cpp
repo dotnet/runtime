@@ -1086,10 +1086,17 @@ int LinearScan::BuildNode(GenTree* tree)
                     }
                     setInternalRegsDelayFree = true;
                 }
+                buildInternalRegisterUses();
+                if (dstCount == 1)
+                {
+                    BuildDef(tree);
+                }
             }
-            buildInternalRegisterUses();
-            if (dstCount == 1)
+            else
             {
+                // We always need the target reg for LSE, even if
+                // return value is unused, see genLockedInstructions
+                buildInternalRegisterUses();
                 BuildDef(tree);
             }
         }
@@ -1977,10 +1984,20 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                 // Nothing needs to be done
             }
 
-            tgtPrefUse = BuildUse(emitOp1);
-            srcCount += 1;
-            srcCount += BuildDelayFreeUses(emitOp2, emitOp1);
-            srcCount += BuildDelayFreeUses(emitOp3, emitOp1);
+            GenTree* ops[] = {intrinEmb.op1, intrinEmb.op2, intrinEmb.op3};
+            for (GenTree* op : ops)
+            {
+                if (op == emitOp1)
+                {
+                    tgtPrefUse = BuildUse(op);
+                    srcCount++;
+                }
+                else if (op == emitOp2 || op == emitOp3)
+                {
+                    srcCount += BuildDelayFreeUses(op, emitOp1);
+                }
+            }
+
             srcCount += BuildDelayFreeUses(intrin.op3, emitOp1);
         }
         else
@@ -2088,14 +2105,24 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                 case NI_Sve_GatherVector:
                 case NI_Sve_GatherVectorByteZeroExtend:
                 case NI_Sve_GatherVectorInt16SignExtend:
+                case NI_Sve_GatherVectorInt16SignExtendFirstFaulting:
                 case NI_Sve_GatherVectorInt16WithByteOffsetsSignExtend:
+                case NI_Sve_GatherVectorInt16WithByteOffsetsSignExtendFirstFaulting:
                 case NI_Sve_GatherVectorInt32SignExtend:
+                case NI_Sve_GatherVectorInt32SignExtendFirstFaulting:
                 case NI_Sve_GatherVectorInt32WithByteOffsetsSignExtend:
+                case NI_Sve_GatherVectorInt32WithByteOffsetsSignExtendFirstFaulting:
                 case NI_Sve_GatherVectorSByteSignExtend:
+                case NI_Sve_GatherVectorSByteSignExtendFirstFaulting:
                 case NI_Sve_GatherVectorUInt16WithByteOffsetsZeroExtend:
+                case NI_Sve_GatherVectorUInt16WithByteOffsetsZeroExtendFirstFaulting:
                 case NI_Sve_GatherVectorUInt16ZeroExtend:
+                case NI_Sve_GatherVectorUInt16ZeroExtendFirstFaulting:
                 case NI_Sve_GatherVectorUInt32WithByteOffsetsZeroExtend:
+                case NI_Sve_GatherVectorUInt32WithByteOffsetsZeroExtendFirstFaulting:
                 case NI_Sve_GatherVectorUInt32ZeroExtend:
+                case NI_Sve_GatherVectorUInt32ZeroExtendFirstFaulting:
+                case NI_Sve_GatherVectorWithByteOffsetFirstFaulting:
                     assert(intrinsicTree->OperIsMemoryLoadOrStore());
                     FALLTHROUGH;
 

@@ -163,6 +163,24 @@ namespace System.Reflection.Emit.Tests
             Assert.Equal(defaultValue, property.GetConstantValue());
         }
 
+        [Theory]
+        [MemberData(nameof(SetConstant_TestData))]
+        public void SetConstantVariousValuesMlcCoreAssembly(Type returnType, object defaultValue)
+        {
+            using (MetadataLoadContext mlc = new MetadataLoadContext(new CoreMetadataAssemblyResolver()))
+            {
+                PersistedAssemblyBuilder ab = new PersistedAssemblyBuilder(new AssemblyName("MyDynamicAssembly"), mlc.CoreAssembly);
+                ModuleBuilder mb = ab.DefineDynamicModule("My Module");
+                Type returnTypeFromCore = returnType != typeof(PropertyBuilderTest11.Colors) ? mlc.CoreAssembly.GetType(returnType.FullName, true) : returnType;
+                TypeBuilder type = mb.DefineType("MyType", TypeAttributes.Public);
+
+                PropertyBuilder property = type.DefineProperty("TestProperty", PropertyAttributes.HasDefault, returnTypeFromCore, null);
+                property.SetConstant(defaultValue);
+
+                Assert.Equal(defaultValue, property.GetConstantValue());
+            }
+        }
+
         [Fact]
         public void SetCustomAttribute_ConstructorInfo_ByteArray_NullConstructorInfo_ThrowsArgumentNullException()
         {
@@ -194,7 +212,6 @@ namespace System.Reflection.Emit.Tests
             MethodAttributes getMethodAttributes = MethodAttributes.Public | MethodAttributes.SpecialName | MethodAttributes.HideBySig;
             MethodBuilder method = type.DefineMethod("TestMethod", getMethodAttributes, typeof(int), null);
             method.GetILGenerator().Emit(OpCodes.Ret);
-            AssertExtensions.Throws<ArgumentException>(() => property.SetConstant((decimal)10));
             CustomAttributeBuilder customAttrBuilder = new CustomAttributeBuilder(typeof(IntPropertyAttribute).GetConstructor([typeof(int)]), [10]);
             type.CreateType();
 
@@ -203,19 +220,6 @@ namespace System.Reflection.Emit.Tests
             Assert.Throws<InvalidOperationException>(() => property.AddOtherMethod(method));
             Assert.Throws<InvalidOperationException>(() => property.SetConstant(1));
             Assert.Throws<InvalidOperationException>(() => property.SetCustomAttribute(customAttrBuilder));
-        }
-
-        [Fact]
-        public void SetConstant_ValidationThrows()
-        {
-            AssemblySaveTools.PopulateAssemblyBuilderAndTypeBuilder(out TypeBuilder type);
-            FieldBuilder field = type.DefineField("TestField", typeof(int), FieldAttributes.Private);
-            PropertyBuilder property = type.DefineProperty("TestProperty", PropertyAttributes.HasDefault, typeof(int), null);
-
-            AssertExtensions.Throws<ArgumentException>(() => property.SetConstant((decimal)10));
-            AssertExtensions.Throws<ArgumentException>(() => property.SetConstant(null));
-            type.CreateType();
-            Assert.Throws<InvalidOperationException>(() => property.SetConstant(1));
         }
     }
 }

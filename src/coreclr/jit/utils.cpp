@@ -1539,8 +1539,6 @@ void HelperCallProperties::init()
             case CORINFO_HELP_DBL2ULNG:
             case CORINFO_HELP_FLTREM:
             case CORINFO_HELP_DBLREM:
-            case CORINFO_HELP_FLTROUND:
-            case CORINFO_HELP_DBLROUND:
                 isPure  = true;
                 noThrow = true;
                 break;
@@ -2274,8 +2272,7 @@ double FloatingPointUtils::convertUInt64ToDouble(uint64_t uIntVal)
 
 float FloatingPointUtils::convertUInt64ToFloat(uint64_t u64)
 {
-    double d = convertUInt64ToDouble(u64);
-    return (float)d;
+    return (float)u64;
 }
 
 uint64_t FloatingPointUtils::convertDoubleToUInt64(double d)

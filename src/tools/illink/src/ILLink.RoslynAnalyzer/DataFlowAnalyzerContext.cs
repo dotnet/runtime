@@ -8,7 +8,7 @@ using Microsoft.CodeAnalysis.Diagnostics;
 
 namespace ILLink.RoslynAnalyzer
 {
-	public readonly struct DataFlowAnalyzerContext
+	internal readonly struct DataFlowAnalyzerContext
 	{
 		private readonly Dictionary<RequiresAnalyzerBase, ImmutableArray<ISymbol>> _enabledAnalyzers;
 

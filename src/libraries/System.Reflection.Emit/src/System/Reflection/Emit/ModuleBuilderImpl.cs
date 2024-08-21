@@ -357,6 +357,7 @@ namespace System.Reflection.Emit
                 if (il != null)
                 {
                     FillMemberReferences(il);
+                    il.AddExceptionBlocks();
                     StandaloneSignatureHandle signature = il.LocalCount == 0 ? default :
                         _metadataBuilder.AddStandaloneSignature(_metadataBuilder.GetOrAddBlob(MetadataSignatureHelper.GetLocalSignature(il.Locals, this)));
                     offset = AddMethodBody(method, il, signature, methodBodyEncoder);
@@ -638,7 +639,7 @@ namespace System.Reflection.Emit
                 Debug.Assert(field._handle == handle);
                 WriteCustomAttributes(field._customAttributes, handle);
 
-                if (field._offset > 0 && (typeBuilder.Attributes & TypeAttributes.ExplicitLayout) != 0)
+                if (field._offset >= 0 && (typeBuilder.Attributes & TypeAttributes.ExplicitLayout) != 0)
                 {
                     AddFieldLayout(handle, field._offset);
                 }

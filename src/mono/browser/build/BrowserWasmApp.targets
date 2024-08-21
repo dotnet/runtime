@@ -358,7 +358,8 @@
       <EmscriptenEnvVars Include="PYTHONPATH=$(EmscriptenPythonToolsPath)" Condition="'$(OS)' == 'Windows_NT'" />
       <EmscriptenEnvVars Include="PYTHONHOME=" Condition="'$(OS)' == 'Windows_NT'" />
       <EmscriptenEnvVars Include="EM_CACHE=$(WasmCachePath)" Condition="'$(WasmCachePath)' != ''" />
-      <EmscriptenEnvVars Include="EM_FROZEN_CACHE=True" Condition="'$(WasmCachePath)' == '$(EmscriptenCacheSdkCacheDir)'" />
+      <EmscriptenEnvVars Include="EM_FROZEN_CACHE=1" Condition="'$(WasmCachePath)' == '$(EmscriptenCacheSdkCacheDir)'" />
+      <EmscriptenEnvVars Include="EM_FROZEN_CACHE=0" Condition="'$(WasmCachePath)' != '' and '$(WasmCachePath)' != '$(EmscriptenCacheSdkCacheDir)'" />
       <EmscriptenEnvVars Include="ENABLE_JS_INTEROP_BY_VALUE=1" Condition="'$(WasmEnableJsInteropByValue)' == 'true'" />
       <EmscriptenEnvVars Include="ENABLE_JS_INTEROP_BY_VALUE=0" Condition="'$(WasmEnableJsInteropByValue)' != 'true'" />
       <EmscriptenEnvVars Include="WASM_ENABLE_SIMD=1" Condition="'$(WasmEnableSIMD)' != 'false'" />

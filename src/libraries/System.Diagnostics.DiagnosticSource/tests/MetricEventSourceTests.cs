@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Diagnostics.Tracing;
 using System.Globalization;
 using System.Linq;
+using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading;
@@ -21,9 +22,28 @@ namespace System.Diagnostics.Metrics.Tests
         const double IntervalSecs = 10;
         static readonly TimeSpan s_waitForEventTimeout = TimeSpan.FromSeconds(60);
 
+        private const string RuntimeMeterName = "System.Runtime";
+
         public MetricEventSourceTests(ITestOutputHelper output)
         {
             _output = output;
+        }
+
+        [Fact]
+        public void GetInstanceMethodIsReflectable()
+        {
+            // The startup code in System.Private.CoreLib needs to be able to get the MetricsEventSource instance via reflection. See EventSource.InitializeDefaultEventSources() in
+            // the System.Private.CoreLib source.
+            // Even though the the type isn't public this test ensures the GetInstance() API isn't removed or renamed.
+            Type? metricsEventSourceType = Type.GetType("System.Diagnostics.Metrics.MetricsEventSource, System.Diagnostics.DiagnosticSource", throwOnError: false);
+            Assert.True(metricsEventSourceType != null, "Unable to get MetricsEventSource type via reflection");
+
+            MethodInfo? getInstanceMethod = metricsEventSourceType.GetMethod("GetInstance", BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Static, null, Type.EmptyTypes, null);
+            Assert.True(getInstanceMethod != null, "Unable to get MetricsEventSource.GetInstance method via reflection");
+
+            object? o = getInstanceMethod.Invoke(null, null);
+            Assert.True(o != null, "Expected non-null result invoking MetricsEventSource.GetInstance() via reflection");
+            Assert.True(o is EventSource, "Expected object returned from MetricsEventSource.GetInstance() to be assignable to EventSource");
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
@@ -213,6 +233,74 @@ namespace System.Diagnostics.Metrics.Tests
             AssertInitialEnumerationCompleteEventPresent(events3);
             AssertCounterEventsPresent(events3, meter3.Name, c3.Name, "", "", ("7", "7"));
             AssertCollectStartStopEventsPresent(events3, IntervalSecs, 2);
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+        [OuterLoop("Slow and has lots of console spew")]
+        public void SingleListener_Wildcard()
+        {
+            using Meter meter = new Meter("Test.TestMeter1");
+            Counter<int> c = meter.CreateCounter<int>("counter1");
+
+            using Meter meter2 = new Meter("Test.TestMeter2", null, new TagList() { { "Mk1", "Mv1" } }, new object());
+            Counter<int> c2 = meter2.CreateCounter<int>("counter2");
+
+            using Meter meter3 = new Meter("Test.TestMeter3", null, new TagList() { { "MMk1", null }, { "MMk2", null } }, new object());
+            Counter<int> c3 = meter3.CreateCounter<int>("counter3");
+
+            EventWrittenEventArgs[] events;
+            using (MetricsEventListener listener = new MetricsEventListener(_output, MetricsEventListener.TimeSeriesValues, isShared: true, IntervalSecs, ""))
+            {
+                listener.WaitForCollectionStop(s_waitForEventTimeout, 1);
+                c.Add(5);
+                c2.Add(10);
+                c3.Add(20);
+                listener.WaitForCollectionStop(s_waitForEventTimeout, 2);
+                events = listener.Events.ToArray();
+            }
+
+            // Note: Need to exclude System.Runtime metrics any anything else in platform
+            events = events.Where(e => e.EventName != "BeginInstrumentReporting"
+                || (e.Payload[1] as string)?.StartsWith("Test.") == true)
+                .ToArray();
+
+            AssertBeginInstrumentReportingEventsPresent(events, c, c2, c3);
+            AssertInitialEnumerationCompleteEventPresent(events);
+            AssertCounterEventsPresent(events, meter.Name, c.Name, "", "", ("5", "5"));
+            AssertCounterEventsPresent(events, meter2.Name, c2.Name, "", "", ("10", "10"));
+            AssertCounterEventsPresent(events, meter3.Name, c3.Name, "", "", ("20", "20"));
+            AssertCollectStartStopEventsPresent(events, IntervalSecs, 2);
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+        [OuterLoop("Slow and has lots of console spew")]
+        public void SingleListener_Prefix()
+        {
+            using Meter meter = new Meter("Company1.TestMeter1");
+            Counter<int> c = meter.CreateCounter<int>("counter1");
+
+            using Meter meter2 = new Meter("Company1.TestMeter2", null, new TagList() { { "Mk1", "Mv1" } }, new object());
+            Counter<int> c2 = meter2.CreateCounter<int>("counter2");
+
+            using Meter meter3 = new Meter("Company2.TestMeter3", null, new TagList() { { "MMk1", null }, { "MMk2", null } }, new object());
+            Counter<int> c3 = meter3.CreateCounter<int>("counter3");
+
+            EventWrittenEventArgs[] events;
+            using (MetricsEventListener listener = new MetricsEventListener(_output, MetricsEventListener.TimeSeriesValues, isShared: true, IntervalSecs, "Company1*"))
+            {
+                listener.WaitForCollectionStop(s_waitForEventTimeout, 1);
+                c.Add(5);
+                c2.Add(10);
+                c3.Add(20);
+                listener.WaitForCollectionStop(s_waitForEventTimeout, 2);
+                events = listener.Events.ToArray();
+            }
+
+            AssertBeginInstrumentReportingEventsPresent(events, c, c2);
+            AssertInitialEnumerationCompleteEventPresent(events);
+            AssertCounterEventsPresent(events, meter.Name, c.Name, "", "", ("5", "5"));
+            AssertCounterEventsPresent(events, meter2.Name, c2.Name, "", "", ("10", "10"));
+            AssertCollectStartStopEventsPresent(events, IntervalSecs, 2);
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
@@ -1141,7 +1229,7 @@ namespace System.Diagnostics.Metrics.Tests
             AssertBeginInstrumentReportingEventsPresent(events, c, oc, og, h, udc, oudc, g);
             AssertInitialEnumerationCompleteEventPresent(events);
             AssertCounterEventsPresent(events, meter.Name, c.Name, "", "", ("5", "5"), ("0", "5"), ("12", "17"));
-            AssertGaugeEventsPresent(events, meter.Name, g.Name, "", "", "-123", "", "123", "");
+            AssertGaugeEventsPresent(events, meter.Name, g.Name, "", "", "-123", "-123", "123", "123");
             AssertCounterEventsPresent(events, meter.Name, oc.Name, "", "", ("",  "17"), ("0", "17"), ("14", "31"), ("0", "31"));
             AssertGaugeEventsPresent(events, meter.Name, og.Name, "", "", "18", "", "36", "");
             AssertHistogramEventsPresent(events, meter.Name, h.Name, "", "", ("0.5=19;0.95=19;0.99=19", "1", "19"), ("", "0", "0"), ("0.5=26;0.95=26;0.99=26", "1", "26"), ("", "0", "0"));
@@ -1204,36 +1292,40 @@ namespace System.Diagnostics.Metrics.Tests
             AssertEndInstrumentReportingEventsPresent(events, c, oc, og, udc, oudc, g);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+        [ConditionalFact(typeof(MetricEventSourceTests), nameof(IsNotBrowserAndRemoteExecuteSupported))]
         [OuterLoop("Slow and has lots of console spew")]
         public void EventSourcePublishesInstruments()
         {
-            object scope = new object();
-
-            using Meter meterA = new Meter("TestMeter10", null, null, scope);
-            using Meter meterB = new Meter("TestMeter11", null, new TagList() { { "Mk1", "Mv1" }, { "Mk2", null } }, scope);
-            Counter<int> c = meterA.CreateCounter<int>("counter1", "hat", "Fooz!!");
-            Gauge<int> g = meterA.CreateGauge<int>("gauge1", "C", "Temperature");
-            int counterState = 3;
-            ObservableCounter<int> oc = meterA.CreateObservableCounter<int>("observableCounter1", () => { counterState += 7; return counterState; }, "MB", "Size of universe",
-                                            new TagList() { { "ock1", "ocv1" }, { "ock2", "ocv2" }, { "ock3", "ocv3" } });
-            int gaugeState = 0;
-            ObservableGauge<int> og = meterA.CreateObservableGauge<int>("observableGauge1", () => { gaugeState += 9; return gaugeState; }, "12394923 asd [],;/", "junk!",
-                                            new TagList() { { "ogk1", "ogv1" } });
-            Histogram<int> h = meterB.CreateHistogram<int>("histogram1", "a unit", "the description", new TagList() { { "hk1", "hv1" }, { "hk2", "" }, {"hk3", null } });
-            UpDownCounter<int> udc = meterA.CreateUpDownCounter<int>("upDownCounter1", "udc unit", "udc description", new TagList() { { "udk1", "udv1" } });
-            int upDownCounterState = 0;
-            ObservableUpDownCounter<int> oudc = meterA.CreateObservableUpDownCounter<int>("observableUpDownCounter1", () => { upDownCounterState += 11; return upDownCounterState; }, "oudc unit", "oudc description");
-
-            EventWrittenEventArgs[] events;
-            using (MetricsEventListener listener = new MetricsEventListener(_output, MetricsEventListener.InstrumentPublishing, null, ""))
+            RemoteExecutor.Invoke(static () =>
             {
-                listener.WaitForEnumerationComplete(s_waitForEventTimeout);
-                events = listener.Events.ToArray();
-            }
 
-            AssertInstrumentPublishingEventsPresent(events, c, oc, og, h, udc, oudc, g);
-            AssertInitialEnumerationCompleteEventPresent(events);
+                object scope = new object();
+
+                using Meter meterA = new Meter("TestMeter10", null, null, scope);
+                using Meter meterB = new Meter("TestMeter11", null, new TagList() { { "Mk1", "Mv1" }, { "Mk2", null } }, scope);
+                Counter<int> c = meterA.CreateCounter<int>("counter1", "hat", "Fooz!!");
+                Gauge<int> g = meterA.CreateGauge<int>("gauge1", "C", "Temperature");
+                int counterState = 3;
+                ObservableCounter<int> oc = meterA.CreateObservableCounter<int>("observableCounter1", () => { counterState += 7; return counterState; }, "MB", "Size of universe",
+                                                new TagList() { { "ock1", "ocv1" }, { "ock2", "ocv2" }, { "ock3", "ocv3" } });
+                int gaugeState = 0;
+                ObservableGauge<int> og = meterA.CreateObservableGauge<int>("observableGauge1", () => { gaugeState += 9; return gaugeState; }, "12394923 asd [],;/", "junk!",
+                                                new TagList() { { "ogk1", "ogv1" } });
+                Histogram<int> h = meterB.CreateHistogram<int>("histogram1", "a unit", "the description", new TagList() { { "hk1", "hv1" }, { "hk2", "" }, {"hk3", null } });
+                UpDownCounter<int> udc = meterA.CreateUpDownCounter<int>("upDownCounter1", "udc unit", "udc description", new TagList() { { "udk1", "udv1" } });
+                int upDownCounterState = 0;
+                ObservableUpDownCounter<int> oudc = meterA.CreateObservableUpDownCounter<int>("observableUpDownCounter1", () => { upDownCounterState += 11; return upDownCounterState; }, "oudc unit", "oudc description");
+
+                EventWrittenEventArgs[] events;
+                using (MetricsEventListener listener = new MetricsEventListener(NullTestOutputHelper.Instance, MetricsEventListener.InstrumentPublishing, null, ""))
+                {
+                    listener.WaitForEnumerationComplete(s_waitForEventTimeout);
+                    events = listener.Events.ToArray();
+                }
+
+                AssertInstrumentPublishingEventsPresent(events, c, oc, og, h, udc, oudc, g);
+                AssertInitialEnumerationCompleteEventPresent(events);
+            }).Dispose();
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
@@ -1518,25 +1610,25 @@ namespace System.Diagnostics.Metrics.Tests
 
         public static IEnumerable<object[]> DifferentMetersAndInstrumentsData()
         {
-            yield return new object[] { new Meter("M1").CreateCounter<int>("C1"), new Meter("M1").CreateCounter<int>("C1"), false};
+            yield return new object[] { new Meter("M1").CreateCounter<int>("C1"), new Meter("M2").CreateCounter<int>("C2"), false};
 
-            var counter = new Meter("M1").CreateCounter<int>("C1");
-            yield return new object[] { counter, counter.Meter.CreateCounter<int>("C1"), false };
+            var counter = new Meter("M2").CreateCounter<int>("C3");
+            yield return new object[] { counter, counter.Meter.CreateCounter<int>("C4"), false };
 
             // Same counters
-            counter = new Meter("M1").CreateCounter<int>("C1");
+            counter = new Meter("M3").CreateCounter<int>("C5");
             yield return new object[] { counter, counter, true };
 
             var scope = new object();
             yield return new object[]
             {
-                new Meter("M1", "v1", new TagList { { "k1", "v1" } }, scope).CreateCounter<int>("C1", "u1", "d1", new TagList { { "k2", "v2" } } ),
-                new Meter("M1", "v1", new TagList { { "k1", "v1" } }, scope).CreateCounter<int>("C1", "u1", "d1", new TagList { { "k2", "v2" } } ),
+                new Meter("M4", "v1", new TagList { { "k1", "v1" } }, scope).CreateCounter<int>("C6", "u1", "d1", new TagList { { "k2", "v2" } } ),
+                new Meter("M5", "v1", new TagList { { "k1", "v1" } }, scope).CreateCounter<int>("C7", "u1", "d1", new TagList { { "k2", "v2" } } ),
                 false, // Same Instrument
             };
 
-            Meter meter = new Meter("M1", "v1", new TagList { { "k1", "v1" } }, scope);
-            yield return new object[] { meter.CreateCounter<int>("C1", "u1", "d1", new TagList { { "k2", "v2" } } ), meter.CreateCounter<int>("C1", "u1", "d1", new TagList { { "k2", "v2" } } ), false };
+            Meter meter = new Meter("M6", "v1", new TagList { { "k1", "v1" } }, scope);
+            yield return new object[] { meter.CreateCounter<int>("C8", "u1", "d1", new TagList { { "k2", "v2" } } ), meter.CreateCounter<int>("C9", "u1", "d1", new TagList { { "k2", "v2" } } ), false };
         }
 
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
@@ -1670,7 +1762,7 @@ namespace System.Diagnostics.Metrics.Tests
 
         private static void AssertInstrumentPublishingEventsPresent(EventWrittenEventArgs[] events, params Instrument[] expectedInstruments)
         {
-            var publishEvents = events.Where(e => e.EventName == "InstrumentPublished").Select(e =>
+            var publishEvents = events.Where(e => e.EventName == "InstrumentPublished" && e.Payload[1].ToString() != RuntimeMeterName).Select(e =>
                 new
                 {
                     MeterName = e.Payload[1].ToString(),
@@ -1727,7 +1819,7 @@ namespace System.Diagnostics.Metrics.Tests
                     Tags = e.Payload[5].ToString(),
                     Rate = e.Payload[6].ToString(),
                     Value = e.Payload[7].ToString(),
-                    InstrumentId = (int)(e.Payload[7]),
+                    InstrumentId = (int)(e.Payload[8]),
                 }).ToArray();
             var filteredEvents = counterEvents.Where(e => e.MeterName == meterName && e.InstrumentName == instrumentName && e.Tags == tags).ToArray();
             Assert.True(filteredEvents.Length >= expected.Length);
