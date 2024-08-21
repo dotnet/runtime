@@ -711,7 +711,6 @@ namespace Mono.Linker.Tests.Cases.Reflection
 				var instance = GetGenericReturnType<int> ();
 
 				var lambda =
-				[UnexpectedWarning ("IL2075", Tool.Trimmer, "")]
 				() => {
 					var type = instance.GetType ();
 					type.GetMethod ("Method");
