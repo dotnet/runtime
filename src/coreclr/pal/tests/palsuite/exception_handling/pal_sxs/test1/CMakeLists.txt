@@ -5,16 +5,14 @@ endif(CLR_CMAKE_HOST_UNIX)
 # Set the RPATH of paltest_pal_sxs_test1 so that it can find dependencies without needing to set LD_LIBRARY
 # For more information: http://www.cmake.org/Wiki/CMake_RPATH_handling.
 if(CORECLR_SET_RPATH)
+  set(CMAKE_BUILD_WITH_INSTALL_RPATH TRUE)
   if(CLR_CMAKE_HOST_OSX)
     set(CMAKE_BUILD_WITH_INSTALL_NAME_DIR ON)
     set(CMAKE_INSTALL_NAME_DIR "@rpath")
-    set(CMAKE_BUILD_WITH_INSTALL_RPATH TRUE)
     set(CMAKE_INSTALL_RPATH "@loader_path")
-  endif(CLR_CMAKE_HOST_OSX)
-  if(CLR_CMAKE_HOST_LINUX OR CLR_CMAKE_HOST_HAIKU)
-    set(CMAKE_BUILD_WITH_INSTALL_RPATH TRUE)
+  else()
     set(CMAKE_INSTALL_RPATH "\$ORIGIN")
-  endif(CLR_CMAKE_HOST_LINUX OR CLR_CMAKE_HOST_HAIKU)
+  endif(CLR_CMAKE_HOST_OSX)
 endif(CORECLR_SET_RPATH)
 
 # Test DLL1
