@@ -5,6 +5,7 @@ using System;
 using System.Numerics;
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.Arm;
+using System.Runtime.Intrinsics.X86;
 using Xunit;
 
 public class Runtime_106546
@@ -24,6 +25,18 @@ public class Runtime_106546
         if (AdvSimd.IsSupported)
         {
             Assert.Throws<ArgumentOutOfRangeException>(() => new Runtime_106546().ShiftRight());
+        }
+    }
+
+    [Fact]
+    public static void TestAvxGatherThrows()
+    {
+        if (Avx2.IsSupported)
+        {
+            Assert.Throws<ArgumentOutOfRangeException>(() => new Runtime_106546().GatherVector128());
+            Assert.Throws<ArgumentOutOfRangeException>(() => new Runtime_106546().GatherVector256());
+            Assert.Throws<ArgumentOutOfRangeException>(() => new Runtime_106546().GatherMaskVector128());
+            Assert.Throws<ArgumentOutOfRangeException>(() => new Runtime_106546().GatherMaskVector256());
         }
     }
 
@@ -62,5 +75,53 @@ public class Runtime_106546
         }
 
         Console.WriteLine(floatVec);
+    }
+
+    private unsafe void GatherVector128()
+    {
+        Vector128<int> indices = Vector128.Create(0, 1, 2, 3);
+        int[] data = new int[]{1, 2, 3, 4};
+
+        fixed (int* ptr = data)
+        {
+            Console.WriteLine(Avx2.GatherVector128(ptr, indices, 0));
+        }
+    }
+
+    private unsafe void GatherVector256()
+    {
+        Vector256<long> indices = Vector256.Create(0L, 1L, 2L, 3L);
+        long[] data = new long[]{1L, 2L, 3L, 4L};
+
+        fixed (long* ptr = data)
+        {
+            Console.WriteLine(Avx2.GatherVector256(ptr, indices, 3));
+        }
+    }
+
+    private unsafe void GatherMaskVector128()
+    {
+        Vector128<int> source = Vector128<int>.Zero;
+        Vector128<int> indices = Vector128.Create(0, 1, 2, 3);
+        Vector128<int> mask = Vector128<int>.AllBitsSet;
+        int[] data = new int[]{1, 2, 3, 4};
+
+        fixed (int* ptr = data)
+        {
+            Console.WriteLine(Avx2.GatherMaskVector128(source, ptr, indices, mask, 5));
+        }
+    }
+
+    private unsafe void GatherMaskVector256()
+    {
+        Vector256<long> source = Vector256<long>.Zero;
+        Vector256<long> indices = Vector256.Create(0L, 1L, 2L, 3L);
+        Vector256<long> mask = Vector256<long>.AllBitsSet;
+        long[] data = new long[]{1L, 2L, 3L, 4L};
+
+        fixed (long* ptr = data)
+        {
+            Console.WriteLine(Avx2.GatherMaskVector256(source, ptr, indices, mask, 7));
+        }
     }
 }
