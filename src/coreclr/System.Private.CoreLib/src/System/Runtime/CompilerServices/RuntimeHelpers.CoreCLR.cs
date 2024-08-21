@@ -220,19 +220,35 @@ namespace System.Runtime.CompilerServices
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern void PrepareDelegate(Delegate d);
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        public static extern int GetHashCode(object? o);
-
         /// <summary>
         /// If a hash code has been assigned to the object, it is returned. Otherwise zero is
         /// returned.
         /// </summary>
-        /// <remarks>
-        /// The advantage of this over <see cref="GetHashCode" /> is that it avoids assigning a hash
-        /// code to the object if it does not already have one.
-        /// </remarks>
         [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern int TryGetHashCode(object o);
+        internal static extern int TryGetHashCode(object? o);
+
+        [LibraryImport(QCall, EntryPoint = "ObjectNative_GetHashCodeSlow")]
+        private static partial int GetHashCodeSlow(ObjectHandleOnStack o);
+
+        public static int GetHashCode(object? o)
+        {
+            int hashCode = TryGetHashCode(o);
+            if (hashCode == 0)
+            {
+                return GetHashCodeWorker(o);
+            }
+            return hashCode;
+
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            static int GetHashCodeWorker(object? o)
+            {
+                if (o is null)
+                {
+                    return 0;
+                }
+                return GetHashCodeSlow(ObjectHandleOnStack.Create(ref o));
+            }
+        }
 
         public static new unsafe bool Equals(object? o1, object? o2)
         {
@@ -420,16 +436,8 @@ namespace System.Runtime.CompilerServices
         //
         // GC.KeepAlive(o);
         //
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [Intrinsic]
-        internal static unsafe MethodTable* GetMethodTable(object obj)
-        {
-            // The body of this function will be replaced by the EE with unsafe code
-            // See getILIntrinsicImplementationForRuntimeHelpers for how this happens.
-
-            return (MethodTable*)Unsafe.Add(ref Unsafe.As<byte, IntPtr>(ref obj.GetRawData()), -1);
-        }
-
+        internal static unsafe MethodTable* GetMethodTable(object obj) => GetMethodTable(obj);
 
         [LibraryImport(QCall, EntryPoint = "MethodTable_AreTypesEquivalent")]
         [return: MarshalAs(UnmanagedType.Bool)]
@@ -666,7 +674,6 @@ namespace System.Runtime.CompilerServices
         // Types that require non-trivial interface cast have this bit set in the category
         private const uint enum_flag_NonTrivialInterfaceCast = 0x00080000 // enum_flag_Category_Array
                                                              | 0x40000000 // enum_flag_ComObject
-                                                             | 0x00400000 // enum_flag_ICastable;
                                                              | 0x10000000 // enum_flag_IDynamicInterfaceCastable;
                                                              | 0x00040000; // enum_flag_Category_ValueType
 
@@ -791,11 +798,12 @@ namespace System.Runtime.CompilerServices
     }
 
     // Subset of src\vm\methodtable.h
-    [StructLayout(LayoutKind.Explicit)]
+    [StructLayout(LayoutKind.Sequential)]
     internal unsafe struct MethodTableAuxiliaryData
     {
-        [FieldOffset(0)]
         private uint Flags;
+        private void* LoaderModule;
+        private nint ExposedClassObjectRaw;
 
         private const uint enum_flag_HasCheckedCanCompareBitsOrUseFastGetHashCode = 0x0002;  // Whether we have checked the overridden Equals or GetHashCode
         private const uint enum_flag_CanCompareBitsOrUseFastGetHashCode = 0x0004;     // Is any field type or sub field type overridden Equals or GetHashCode
@@ -808,6 +816,14 @@ namespace System.Runtime.CompilerServices
             {
                 Debug.Assert(HasCheckedCanCompareBitsOrUseFastGetHashCode);
                 return (Flags & enum_flag_CanCompareBitsOrUseFastGetHashCode) != 0;
+            }
+        }
+
+        public RuntimeType? ExposedClassObject
+        {
+            get
+            {
+                return *(RuntimeType*)Unsafe.AsPointer(ref ExposedClassObjectRaw);
             }
         }
     }

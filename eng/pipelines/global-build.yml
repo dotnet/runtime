@@ -82,7 +82,7 @@ extends:
                 eq(variables['isRollingBuild'], true))
 
       #
-      # Build Libraries AllConfigurations. This exercises the code path where we build libraries for all
+      # Build Libraries AllConfigurations. This exercises the code path where we build libraries and tests for all
       # configurations on a non Windows operating system.
       #
       - template: /eng/pipelines/common/platform-matrix.yml
@@ -93,7 +93,7 @@ extends:
           - linux_x64_dev_innerloop
           jobParameters:
             nameSuffix: Libraries_AllConfigurations
-            buildArgs: -subset libs -allconfigurations
+            buildArgs: -subset libs+libs.tests -allconfigurations
             timeoutInMinutes: 120
             condition:
               or(
