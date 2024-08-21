@@ -391,13 +391,8 @@ bool Compiler::optCanSinkWidenedIV(unsigned lclNum, FlowGraphNaturalLoop* loop)
 {
     LclVarDsc* dsc = lvaGetDesc(lclNum);
 
-    if (!dsc->lvTracked)
-    {
-        return false;
-    }
-
     BasicBlockVisit result = loop->VisitRegularExitBlocks([=](BasicBlock* exit) {
-        if (!VarSetOps::IsMember(this, exit->bbLiveIn, dsc->lvVarIndex))
+        if (dsc->lvTracked ? !VarSetOps::IsMember(this, exit->bbLiveIn, dsc->lvVarIndex) : IsInsertedSsaLiveIn(exit, lclNum))
         {
             JITDUMP("  Exit " FMT_BB " does not need a sink; V%02u is not live-in\n", exit->bbNum, lclNum);
             return BasicBlockVisit::Continue;
@@ -1290,13 +1285,8 @@ bool Compiler::optPrimaryIVHasNonLoopUses(unsigned lclNum, FlowGraphNaturalLoop*
         return true;
     }
 
-    if (!varDsc->lvTracked)
-    {
-        return true;
-    }
-
     BasicBlockVisit visitResult = loop->VisitRegularExitBlocks([=](BasicBlock* block) {
-        if (VarSetOps::IsMember(this, block->bbLiveIn, varDsc->lvVarIndex))
+        if (varDsc->lvTracked ? VarSetOps::IsMember(this, block->bbLiveIn, varDsc->lvVarIndex) : IsInsertedSsaLiveIn(block, lclNum))
         {
             return BasicBlockVisit::Abort;
         }
