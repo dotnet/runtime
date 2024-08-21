@@ -109,7 +109,10 @@ internal static class BinaryReaderExtensions
             {
 #pragma warning disable SYSLIB0050 // Type or member is obsolete
                 SerializationInfo si = new(typeof(DateTime), new FormatterConverter());
-                si.AddValue("ticks", 0L); // legacy value (serialized as long) - specify both just to be safe
+                // We don't know the value of "ticks", so we don't specify it.
+                // If the code somehow runs on a very old runtime that does not know the concept of "dateData"
+                // (it should not be possible as the library targets .NET Standard 2.0)
+                // the ctor is going to throw rather than silently return an invalid value.
                 si.AddValue("dateData", 0xC0000000_00000000UL); // new value (serialized as ulong)
 
 #if NET

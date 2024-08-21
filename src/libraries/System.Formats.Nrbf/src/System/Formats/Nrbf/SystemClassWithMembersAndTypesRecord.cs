@@ -75,29 +75,30 @@ internal sealed class SystemClassWithMembersAndTypesRecord : ClassRecord
                     _ => this
                 };
             }
-            else if (HasMember("_ticks") && MemberValues[0] is long ticks && TypeNameMatches(typeof(TimeSpan)))
+            else if (HasMember("_ticks") && GetRawValue("_ticks") is long ticks && TypeNameMatches(typeof(TimeSpan)))
             {
                 return Create(new TimeSpan(ticks));
             }
         }
         else if (MemberValues.Count == 2
             && HasMember("ticks") && HasMember("dateData")
-            && MemberValues[0] is long && MemberValues[1] is ulong dateData
+            && GetRawValue("ticks") is long && GetRawValue("dateData") is ulong dateData
             && TypeNameMatches(typeof(DateTime)))
         {
             return Create(Utils.BinaryReaderExtensions.CreateDateTimeFromData(dateData));
         }
-        else if(MemberValues.Count == 4
+        else if (MemberValues.Count == 4
             && HasMember("lo") && HasMember("mid") && HasMember("hi") && HasMember("flags")
-            && MemberValues[0] is int && MemberValues[1] is int && MemberValues[2] is int && MemberValues[3] is int
+            && GetRawValue("lo") is int lo && GetRawValue("mid") is int mid
+            && GetRawValue("hi") is int hi && GetRawValue("flags") is int flags
             && TypeNameMatches(typeof(decimal)))
         {
             int[] bits =
             [
-                GetInt32("lo"),
-                GetInt32("mid"),
-                GetInt32("hi"),
-                GetInt32("flags")
+                lo,
+                mid,
+                hi,
+                flags
             ];
 
             return Create(new decimal(bits));
