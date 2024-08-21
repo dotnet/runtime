@@ -2783,7 +2783,11 @@ public:
     }
 
     // The following methods are only valid for the method tables for array types.
-    CorElementType GetArrayElementType();
+    CorElementType GetArrayElementType()
+    {
+        return GetArrayElementTypeHandle().GetSignatureCorElementType();
+    }
+
     DWORD GetRank();
 
     TypeHandle GetArrayElementTypeHandle()
