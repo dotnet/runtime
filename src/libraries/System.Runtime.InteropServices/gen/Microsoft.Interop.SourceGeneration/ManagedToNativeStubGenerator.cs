@@ -141,6 +141,9 @@ namespace Microsoft.Interop
                 fixedBlock = fixedBlock.AddStatements(statements.InvokeStatement);
             }
             tryStatements.Add(statements.Pin.NestFixedStatements(fixedBlock));
+
+            tryStatements.AddRange(statements.NotifyForSuccessfulInvoke);
+
             // <invokeSucceeded> = true;
             if (!(statements.GuaranteedUnmarshal.IsEmpty && statements.CleanupCalleeAllocated.IsEmpty))
             {
@@ -149,7 +152,6 @@ namespace Microsoft.Interop
                     LiteralExpression(SyntaxKind.TrueLiteralExpression))));
             }
 
-            tryStatements.AddRange(statements.NotifyForSuccessfulInvoke);
             tryStatements.AddRange(statements.Unmarshal);
 
             List<StatementSyntax> allStatements = setupStatements;
