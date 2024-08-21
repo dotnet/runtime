@@ -591,7 +591,7 @@ BOOL GenerateShuffleArrayPortable(MethodDesc* pMethodSrc, MethodDesc *pMethodDst
             }
         };
         fixFpStructFieldsForStandaloneFloats(sArgPlacerSrc, sArgSrc);
-        fixFpStructFieldsForStandaloneFloats(sArgPlacerSrc, sArgSrc);
+        fixFpStructFieldsForStandaloneFloats(sArgPlacerDst, sArgDst);
 #endif
 
         if (!AddNextShuffleEntryToArray(sArgSrc, sArgDst, pShuffleEntryArray, shuffleType))
