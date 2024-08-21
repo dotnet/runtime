@@ -679,8 +679,8 @@ static HRESULT PrettyPrintTypeA(
         {
             bool required = *typePtr++ != 0;
             void* pMT;
-            pMT = *((void* UNALIGNED *)typePtr);
-            typePtr += sizeof(void*);
+            memcpy(&pMT, &typePtr, sizeof(pMT));
+            typePtr += sizeof(pMT);
             CHAR tempBuffer[64];
             sprintf_s(tempBuffer, 64, "pMT: %p", pMT);
             IfFailGo(appendStrA(out, tempBuffer));

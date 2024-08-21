@@ -360,7 +360,6 @@ namespace System.Runtime.CompilerServices
             return x.CompareTo(y);
         }
 
-
         // The body of this function will be created by the EE for the specific type.
         // See getILIntrinsicImplementation for how this happens.
         [Intrinsic]

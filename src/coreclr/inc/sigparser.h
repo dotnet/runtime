@@ -589,13 +589,13 @@ class SigParser
                 if (ELEMENT_TYPE_CMOD_INTERNAL == bElementType)
                 {
                     void * pMT;
+                    // If this custom modifier is required or optional
                     uint8_t required;
                     if (FAILED(hr = sigTemp.GetByte(&required)))
                         return hr;
                     
                     if (FAILED(hr = sigTemp.GetPointer(&pMT)))
                         return hr;
-                    
                 }
                 else
                 {
@@ -669,7 +669,6 @@ class SigParser
                     
                     if (FAILED(hr = sigTemp.GetPointer(&pMT)))
                         return hr;
-                    
                 }
                 else
                 {
