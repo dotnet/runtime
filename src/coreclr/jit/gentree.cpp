@@ -27008,6 +27008,13 @@ bool GenTreeHWIntrinsic::OperIsEmbBroadcastCompatible() const
     NamedIntrinsic intrinsicId  = GetHWIntrinsicId();
     var_types      simdBaseType = GetSimdBaseType();
 
+    // MaybeImm variants support embedded broadcasts only for IMM variants (e.g. PSLLQ)
+    if (HWIntrinsicInfo::MaybeImm(intrinsicId) &&
+        !HWIntrinsicInfo::isImmOp(intrinsicId, GetOperandArray()[GetOperandCount() - 1]))
+    {
+        return false;
+    }
+
     switch (intrinsicId)
     {
         case NI_AVX512F_ConvertToVector256Int32:
