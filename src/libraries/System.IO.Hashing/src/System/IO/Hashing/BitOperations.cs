@@ -7,6 +7,8 @@ namespace System.Numerics
 {
     internal static class BitOperations
     {
+        // useless comment
+        
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static uint RotateLeft(uint value, int offset)
             => (value << offset) | (value >> (32 - offset));
