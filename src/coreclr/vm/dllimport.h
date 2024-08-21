@@ -133,7 +133,6 @@ public:
                              DWORD dwStubFlags,
                              MethodDesc* pMD);
 
-    static MethodDesc*      GetILStubMethodDesc(NDirectMethodDesc* pNMD, PInvokeStaticSigInfo* pSigInfo, DWORD dwStubFlags);
     static PCODE            GetStubForILStub(NDirectMethodDesc* pNMD, MethodDesc** ppStubMD, DWORD dwStubFlags);
     static PCODE            GetStubForILStub(MethodDesc* pMD, MethodDesc** ppStubMD, DWORD dwStubFlags);
 
@@ -149,7 +148,7 @@ enum NDirectStubFlags
     NDIRECTSTUB_FL_CONVSIGASVARARG          = 0x00000001,
     NDIRECTSTUB_FL_BESTFIT                  = 0x00000002,
     NDIRECTSTUB_FL_THROWONUNMAPPABLECHAR    = 0x00000004,
-    // unused                               = 0x00000008,
+    NDIRECTSTUB_FL_SKIP_TRANSITION_NOTIFY   = 0x00000008,
     NDIRECTSTUB_FL_DELEGATE                 = 0x00000010,
     NDIRECTSTUB_FL_DOHRESULTSWAPPING        = 0x00000020,
     NDIRECTSTUB_FL_REVERSE_INTEROP          = 0x00000040,
@@ -214,6 +213,7 @@ enum ILStubTypes
 inline bool SF_IsVarArgStub            (DWORD dwStubFlags) { LIMITED_METHOD_CONTRACT; return (dwStubFlags < NDIRECTSTUB_FL_INVALID && 0 != (dwStubFlags & NDIRECTSTUB_FL_CONVSIGASVARARG)); }
 inline bool SF_IsBestFit               (DWORD dwStubFlags) { LIMITED_METHOD_CONTRACT; return (dwStubFlags < NDIRECTSTUB_FL_INVALID && 0 != (dwStubFlags & NDIRECTSTUB_FL_BESTFIT)); }
 inline bool SF_IsThrowOnUnmappableChar (DWORD dwStubFlags) { LIMITED_METHOD_CONTRACT; return (dwStubFlags < NDIRECTSTUB_FL_INVALID && 0 != (dwStubFlags & NDIRECTSTUB_FL_THROWONUNMAPPABLECHAR)); }
+inline bool SF_SkipTransitionNotify    (DWORD dwStubFlags) { LIMITED_METHOD_CONTRACT; return (dwStubFlags < NDIRECTSTUB_FL_INVALID && 0 != (dwStubFlags & NDIRECTSTUB_FL_SKIP_TRANSITION_NOTIFY)); }
 inline bool SF_IsDelegateStub          (DWORD dwStubFlags) { LIMITED_METHOD_CONTRACT; return (dwStubFlags < NDIRECTSTUB_FL_INVALID && 0 != (dwStubFlags & NDIRECTSTUB_FL_DELEGATE)); }
 inline bool SF_IsHRESULTSwapping       (DWORD dwStubFlags) { LIMITED_METHOD_CONTRACT; return (dwStubFlags < NDIRECTSTUB_FL_INVALID && 0 != (dwStubFlags & NDIRECTSTUB_FL_DOHRESULTSWAPPING)); }
 inline bool SF_IsReverseStub           (DWORD dwStubFlags) { LIMITED_METHOD_CONTRACT; return (dwStubFlags < NDIRECTSTUB_FL_INVALID && 0 != (dwStubFlags & NDIRECTSTUB_FL_REVERSE_INTEROP)); }
@@ -486,7 +486,6 @@ public:
     void    EmitLoadRCWThis(ILCodeStream *pcsEmit, DWORD dwStubFlags);
 #endif // FEATURE_COMINTEROP
     DWORD   GetCleanupWorkListLocalNum();
-    DWORD   GetThreadLocalNum();
     DWORD   GetReturnValueLocalNum();
 #if defined(TARGET_X86) && defined(FEATURE_IJW)
     DWORD   GetCopyCtorChainLocalNum();
@@ -568,7 +567,6 @@ protected:
     BOOL                m_fHasExceptionCleanupCode;
     BOOL                m_fCleanupWorkListIsSetup;
     BOOL                m_targetHasThis;
-    DWORD               m_dwThreadLocalNum;                 // managed-to-native only
     DWORD               m_dwArgMarshalIndexLocalNum;
     DWORD               m_dwCleanupWorkListLocalNum;
     DWORD               m_dwRetValLocalNum;

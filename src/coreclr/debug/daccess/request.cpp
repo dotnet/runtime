@@ -2160,7 +2160,7 @@ ClrDataAccess::GetMethodTableDataImpl(CLRDATA_ADDRESS mt, struct DacpMethodTable
         MTData->dwAttrClass = pMT->GetAttrClass();
         MTData->bContainsPointers = pMT->ContainsGCPointers();
         MTData->bIsShared = FALSE;
-        MTData->bIsDynamic = pMT->IsDynamicStatics();
+        MTData->bIsDynamic = pMT->IsDynamicStatics() ? TRUE : FALSE;
     }
     return S_OK;
 }
