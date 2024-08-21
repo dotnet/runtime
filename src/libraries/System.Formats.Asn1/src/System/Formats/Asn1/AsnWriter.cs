@@ -20,6 +20,9 @@ namespace System.Formats.Asn1
         private byte[] _buffer = null!;
         private int _offset;
         private Stack<StackFrame>? _nestingStack;
+#if NET9_0_OR_GREATER
+        private int _encodeDepth;
+#endif
 
         /// <summary>
         ///   Gets the encoding rules in use by this writer.
@@ -78,6 +81,13 @@ namespace System.Formats.Asn1
         /// </summary>
         public void Reset()
         {
+#if NET9_0_OR_GREATER
+            if (_encodeDepth != 0)
+            {
+                throw new InvalidOperationException(SR.AsnWriter_ModifyingWhileEncoding);
+            }
+#endif
+
             if (_offset > 0)
             {
                 Debug.Assert(_buffer != null);
@@ -224,8 +234,16 @@ namespace System.Formats.Asn1
             if (encodeCallback is null)
                 throw new ArgumentNullException(nameof(encodeCallback));
 
-            ReadOnlySpan<byte> encoded = EncodeAsSpan();
-            return encodeCallback(encoded);
+            try
+            {
+                _encodeDepth = checked(_encodeDepth + 1);
+                ReadOnlySpan<byte> encoded = EncodeAsSpan();
+                return encodeCallback(encoded);
+            }
+            finally
+            {
+                _encodeDepth--;
+            }
         }
 
         /// <summary>
@@ -259,8 +277,16 @@ namespace System.Formats.Asn1
             if (encodeCallback is null)
                 throw new ArgumentNullException(nameof(encodeCallback));
 
-            ReadOnlySpan<byte> encoded = EncodeAsSpan();
-            return encodeCallback(state, encoded);
+            try
+            {
+                _encodeDepth = checked(_encodeDepth + 1);
+                ReadOnlySpan<byte> encoded = EncodeAsSpan();
+                return encodeCallback(state, encoded);
+            }
+            finally
+            {
+                _encodeDepth--;
+            }
         }
 #endif
 
@@ -329,6 +355,13 @@ namespace System.Formats.Asn1
             {
                 throw new OverflowException();
             }
+
+#if NET9_0_OR_GREATER
+            if (_encodeDepth != 0)
+            {
+                throw new InvalidOperationException(SR.AsnWriter_ModifyingWhileEncoding);
+            }
+#endif
 
             if (_buffer == null || _buffer.Length - _offset < pendingCount)
             {

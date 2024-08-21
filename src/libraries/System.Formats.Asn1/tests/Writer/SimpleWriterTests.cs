@@ -247,6 +247,38 @@ namespace System.Formats.Asn1.Tests.Writer
             Assert.Equal(1024, buffer?.Length);
         }
 
+#if NET9_0_OR_GREATER
+        [Fact]
+        public static void Encode_Callback_NoModifications()
+        {
+            AsnWriter writer = new AsnWriter(AsnEncodingRules.DER);
+
+            writer.Encode(writer, static (writer, encoded) =>
+            {
+                writer.Encode(writer, static (writer, encoded) =>
+                {
+                    Assert.Throws<InvalidOperationException>(() => writer.WriteNull());
+                    return (object)null;
+                });
+
+                Assert.Throws<InvalidOperationException>(() => writer.WriteNull());
+                return (object)null;
+            });
+
+            writer.Encode(writer, static (writer, encoded) =>
+            {
+                writer.Encode(writer, static (writer, encoded) =>
+                {
+                    Assert.Throws<InvalidOperationException>(() => writer.Reset());
+                    return (object)null;
+                });
+
+                Assert.Throws<InvalidOperationException>(() => writer.Reset());
+                return (object)null;
+            });
+        }
+#endif
+
         private static byte[]? PeekRawBuffer(AsnWriter writer)
         {
             FieldInfo bufField = typeof(AsnWriter).GetField("_buffer", BindingFlags.Instance | BindingFlags.NonPublic);
