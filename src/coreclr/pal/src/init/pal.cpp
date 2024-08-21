@@ -707,9 +707,6 @@ done:
         ASSERT("returning failure, but last error not set\n");
     }
 
-#ifdef __APPLE__
-exit :
-#endif // __APPLE__
     LOGEXIT("PAL_Initialize returns int %d\n", retval);
     return retval;
 }
