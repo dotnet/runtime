@@ -41,6 +41,12 @@ void ERR_set_debug(const char *file, int line, const char *func);
 void ERR_set_error(int lib, int reason, const char *fmt, ...);
 int EVP_CIPHER_get_nid(const EVP_CIPHER *e);
 
+EVP_KDF* EVP_KDF_fetch(OSSL_LIB_CTX *libctx, const char *algorithm, const char *properties);
+void EVP_KDF_free(EVP_KDF *kdf);
+EVP_KDF_CTX *EVP_KDF_CTX_new(EVP_KDF *kdf);
+void EVP_KDF_CTX_free(EVP_KDF_CTX *ctx);
+int EVP_KDF_derive(EVP_KDF_CTX *ctx, unsigned char *key, size_t keylen, const OSSL_PARAM params[]);
+
 int EVP_MAC_CTX_set_params(EVP_MAC_CTX *ctx, const OSSL_PARAM params[]);
 EVP_MAC_CTX *EVP_MAC_CTX_new(EVP_MAC *mac);
 void EVP_MAC_CTX_free(EVP_MAC_CTX *ctx);
@@ -66,6 +72,7 @@ EVP_PKEY_CTX *EVP_PKEY_CTX_new_from_pkey(
 OSSL_PARAM OSSL_PARAM_construct_end(void);
 OSSL_PARAM OSSL_PARAM_construct_int32(const char *key, int32_t *buf);
 OSSL_PARAM OSSL_PARAM_construct_octet_string(const char *key, void *buf, size_t bsize);
+OSSL_PARAM OSSL_PARAM_construct_utf8_string(const char *key, char *buf, size_t bsize);
 
 void OSSL_LIB_CTX_free(OSSL_LIB_CTX*);
 OSSL_LIB_CTX* OSSL_LIB_CTX_new(void);
