@@ -195,6 +195,8 @@
       <EmscriptenSdkToolsPath    Condition="'$(EmscriptenSdkToolsPath)' != ''"   >$([MSBuild]::NormalizeDirectory($(EmscriptenSdkToolsPath)))</EmscriptenSdkToolsPath>
       <EmscriptenNodeToolsPath   Condition="'$(EmscriptenNodeToolsPath)' != ''"  >$([MSBuild]::NormalizeDirectory($(EmscriptenNodeToolsPath)))</EmscriptenNodeToolsPath>
       <EmscriptenUpstreamBinPath Condition="'$(EmscriptenUpstreamBinPath)' != ''">$([MSBuild]::NormalizeDirectory($(EmscriptenUpstreamBinPath)))</EmscriptenUpstreamBinPath>
+      <_EmscriptenNodePath Condition="!$(EmscriptenSdkToolsPath.EndsWith('bin'))">$([MSBuild]::NormalizePath($(EmscriptenNodeToolsPath), 'bin', 'node$(_ExeExt)'))</_EmscriptenNodePath>
+      <_EmscriptenNodePath Condition="$(EmscriptenSdkToolsPath.EndsWith('bin'))" >$([MSBuild]::NormalizePath($(EmscriptenNodeToolsPath), 'node$(_ExeExt)'))</_EmscriptenNodePath>
     </PropertyGroup>
 
     <!-- Environment variables required for running emsdk commands like `emcc` -->
@@ -203,7 +205,7 @@
       <EmscriptenEnvVars Include="EM_LLVM_ROOT=$(EmscriptenSdkToolsPath)bin" />
       <EmscriptenEnvVars Include="DOTNET_EMSCRIPTEN_BINARYEN_ROOT=$(EmscriptenSdkToolsPath)" />
       <EmscriptenEnvVars Include="DOTNET_EMSCRIPTEN_NODE_JS=$([MSBuild]::NormalizePath($(EmscriptenNodeToolsPath), 'bin', 'node$(_ExeExt)'))" />
-      <EmscriptenEnvVars Include="EM_NODE_JS=$([MSBuild]::NormalizePath($(EmscriptenNodeToolsPath), 'bin', 'node$(_ExeExt)'))" />
+      <EmscriptenEnvVars Include="EM_NODE_JS=$(_EmscriptenNodePath)" />
     </ItemGroup>
 
     <ItemGroup>
@@ -287,6 +289,8 @@
       <WasmAllowUndefinedSymbols Condition="'$(WasmAllowUndefinedSymbols)' == ''">false</WasmAllowUndefinedSymbols>
 
       <WasmClang>$(EmscriptenUpstreamEmscriptenPath)emcc</WasmClang>
+      <_EmscriptenNodePath Condition="!$(EmscriptenSdkToolsPath.EndsWith('bin'))">$([MSBuild]::NormalizePath($(EmscriptenNodeToolsPath), 'bin', 'node$(_ExeExt)'))</_EmscriptenNodePath>
+      <_EmscriptenNodePath Condition="$(EmscriptenSdkToolsPath.EndsWith('bin'))" >$([MSBuild]::NormalizePath($(EmscriptenNodeToolsPath), 'node$(_ExeExt)'))</_EmscriptenNodePath>
     </PropertyGroup>
 
     <ItemGroup>
@@ -373,7 +377,7 @@
       <EmscriptenEnvVars Include="RUN_AOT_COMPILATION=1" Condition="'$(RunAOTCompilation)' == 'true'" />
       <EmscriptenEnvVars Include="RUN_AOT_COMPILATION=0" Condition="'$(RunAOTCompilation)' != 'true'" />
       <EmscriptenEnvVars Include="EM_LLVM_ROOT=$(EmscriptenSdkToolsPath)bin" />
-      <EmscriptenEnvVars Include="EM_NODE_JS=$([MSBuild]::NormalizePath($(EmscriptenNodeToolsPath), 'bin', 'node$(_ExeExt)'))" />
+      <EmscriptenEnvVars Include="EM_NODE_JS=$(_EmscriptenNodePath)" />
 
       <WasmToolchainEnvVars Include="@(EmscriptenEnvVars)" />
     </ItemGroup>
