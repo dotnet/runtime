@@ -15,10 +15,10 @@
     </ProjectReference>
   </ItemDefinitionGroup>
 
+  <!-- Set the corresponding CoreLib runtime configuration. -->
   <ItemGroup Condition="'@(ProjectReference)' != ''">
     <_coreLibProjectReference Include="@(ProjectReference->WithMetadataValue('Identity', '$(CoreLibProject)'))" />
-    <ProjectReference Update="@(_coreLibProjectReference)"
-                      Private="false">
+    <ProjectReference Update="@(_coreLibProjectReference)">
       <SetConfiguration Condition="'$(RuntimeFlavor)' == 'CoreCLR' and
                                    '$(Configuration)' != '$(CoreCLRConfiguration)'">Configuration=$(CoreCLRConfiguration)</SetConfiguration>
       <SetConfiguration Condition="'$(RuntimeFlavor)' == 'Mono' and
