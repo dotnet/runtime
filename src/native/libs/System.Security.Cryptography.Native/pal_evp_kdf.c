@@ -146,8 +146,12 @@ cleanup:
 #else
     (void)kdf;
     (void)key;
-    (void)keylen;
+    (void)keyLength;
     (void)algorithm;
+    (void)label;
+    (void)labelLength;
+    (void)context;
+    (void)contextLength;
     (void)destination;
     (void)destinationLength;
     assert(0 && "Inconsistent EVP_KDF API availability.");
