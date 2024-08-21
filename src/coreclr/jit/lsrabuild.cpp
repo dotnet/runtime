@@ -3679,12 +3679,17 @@ int LinearScan::BuildOperandUses(GenTree* node, SingleTypeRegSet candidates)
     {
         GenTreeHWIntrinsic* hwintrinsic = node->AsHWIntrinsic();
 
+        size_t numArgs = hwintrinsic->GetOperandCount();
         if (hwintrinsic->OperIsMemoryLoad())
         {
+#ifdef TARGET_ARM64
+            if (numArgs == 2)
+            {
+                return BuildAddrUses(hwintrinsic->Op(1)) + BuildOperandUses(hwintrinsic->Op(2), candidates);
+            }
+#endif
             return BuildAddrUses(hwintrinsic->Op(1));
         }
-
-        size_t numArgs = hwintrinsic->GetOperandCount();
 
         if (numArgs != 1)
         {
