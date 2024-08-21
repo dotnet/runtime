@@ -195,8 +195,8 @@
       <EmscriptenSdkToolsPath    Condition="'$(EmscriptenSdkToolsPath)' != ''"   >$([MSBuild]::NormalizeDirectory($(EmscriptenSdkToolsPath)))</EmscriptenSdkToolsPath>
       <EmscriptenNodeToolsPath   Condition="'$(EmscriptenNodeToolsPath)' != ''"  >$([MSBuild]::NormalizeDirectory($(EmscriptenNodeToolsPath)))</EmscriptenNodeToolsPath>
       <EmscriptenUpstreamBinPath Condition="'$(EmscriptenUpstreamBinPath)' != ''">$([MSBuild]::NormalizeDirectory($(EmscriptenUpstreamBinPath)))</EmscriptenUpstreamBinPath>
-      <_EmscriptenNodePath Condition="!$(EmscriptenSdkToolsPath.EndsWith('bin'))">$([MSBuild]::NormalizePath($(EmscriptenNodeToolsPath), 'bin', 'node$(_ExeExt)'))</_EmscriptenNodePath>
-      <_EmscriptenNodePath Condition="$(EmscriptenSdkToolsPath.EndsWith('bin'))" >$([MSBuild]::NormalizePath($(EmscriptenNodeToolsPath), 'node$(_ExeExt)'))</_EmscriptenNodePath>
+      <_EmscriptenNodePath Condition="!$(EmscriptenNodeToolsPath.EndsWith('bin'))">$([MSBuild]::NormalizePath($(EmscriptenNodeToolsPath), 'bin', 'node$(_ExeExt)'))</_EmscriptenNodePath>
+      <_EmscriptenNodePath Condition="$(EmscriptenNodeToolsPath.EndsWith('bin'))" >$([MSBuild]::NormalizePath($(EmscriptenNodeToolsPath), 'node$(_ExeExt)'))</_EmscriptenNodePath>
     </PropertyGroup>
 
     <!-- Environment variables required for running emsdk commands like `emcc` -->
@@ -289,8 +289,8 @@
       <WasmAllowUndefinedSymbols Condition="'$(WasmAllowUndefinedSymbols)' == ''">false</WasmAllowUndefinedSymbols>
 
       <WasmClang>$(EmscriptenUpstreamEmscriptenPath)emcc</WasmClang>
-      <_EmscriptenNodePath Condition="!$(EmscriptenSdkToolsPath.EndsWith('bin'))">$([MSBuild]::NormalizePath($(EmscriptenNodeToolsPath), 'bin', 'node$(_ExeExt)'))</_EmscriptenNodePath>
-      <_EmscriptenNodePath Condition="$(EmscriptenSdkToolsPath.EndsWith('bin'))" >$([MSBuild]::NormalizePath($(EmscriptenNodeToolsPath), 'node$(_ExeExt)'))</_EmscriptenNodePath>
+      <_EmscriptenNodePath Condition="!$(EmscriptenNodeToolsPath.EndsWith('bin'))">$([MSBuild]::NormalizePath($(EmscriptenNodeToolsPath), 'bin', 'node$(_ExeExt)'))</_EmscriptenNodePath>
+      <_EmscriptenNodePath Condition="$(EmscriptenNodeToolsPath.EndsWith('bin'))" >$([MSBuild]::NormalizePath($(EmscriptenNodeToolsPath), 'node$(_ExeExt)'))</_EmscriptenNodePath>
     </PropertyGroup>
 
     <ItemGroup>
