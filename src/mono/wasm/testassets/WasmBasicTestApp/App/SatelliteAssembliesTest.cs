@@ -10,11 +10,11 @@ public partial class SatelliteAssembliesTest
     [JSExport]
     public static async Task Run()
     {
-        ResourceLibrary.ResourceAccessor.Read(TestOutput.WriteLine);
+        ResourceLibrary.ResourceAccessor.Read(TestOutput.WriteLine, false);
 
         await LoadSatelliteAssemblies(new[] { "es-ES" });
 
-        ResourceLibrary.ResourceAccessor.Read(TestOutput.WriteLine);
+        ResourceLibrary.ResourceAccessor.Read(TestOutput.WriteLine, true);
     }
 
     [JSImport("INTERNAL.loadSatelliteAssemblies")]
