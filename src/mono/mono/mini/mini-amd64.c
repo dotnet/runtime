@@ -6950,7 +6950,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			amd64_cmpxchg_membase_reg_size (code, ins->sreg1, ins->inst_offset, ins->sreg2, size);
 
 			if (ins->dreg != AMD64_RAX)
-				amd64_mov_reg_reg (code, ins->dreg, AMD64_RAX, size <= 4 ? 4 : size);
+				amd64_mov_reg_reg (code, ins->dreg, AMD64_RAX, size);
 			break;
 		}
 		case OP_ATOMIC_LOAD_I1: {
