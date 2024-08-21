@@ -355,9 +355,9 @@ namespace System.Formats.Tar.Tests
         [Fact]
         void Verify_Size_RegularFile_Empty()
         {
-            MemoryStream emptyData = new(0);
-            MemoryStream output = new();
-            TarWriter archive = new(output, TarEntryFormat.Pax);
+            using MemoryStream emptyData = new(0);
+            using MemoryStream output = new();
+            using TarWriter archive = new(output, TarEntryFormat.Pax);
             PaxTarEntry te = new(TarEntryType.RegularFile, "zero_size")
             { DataStream = emptyData };
             archive.WriteEntry(te);
