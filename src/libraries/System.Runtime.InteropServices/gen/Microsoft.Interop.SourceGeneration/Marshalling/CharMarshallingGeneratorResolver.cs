@@ -25,19 +25,19 @@ namespace Microsoft.Interop
         {
             if (info.ManagedType is SpecialTypeInfo { SpecialType: SpecialType.System_Char })
             {
-                return CreateCharMarshaller(info, context);
+                return CreateCharMarshaller(info);
             }
 
             return ResolvedGenerator.UnresolvedGenerator;
         }
 
-        private ResolvedGenerator CreateCharMarshaller(TypePositionInfo info, StubCodeContext context)
+        private ResolvedGenerator CreateCharMarshaller(TypePositionInfo info)
         {
             MarshallingInfo marshalInfo = info.MarshallingAttributeInfo;
             if (marshalInfo is NoMarshallingInfo)
             {
                 // [Compat] Require explicit marshalling information.
-                return ResolvedGenerator.NotSupported(info, new(info, context)
+                return ResolvedGenerator.NotSupported(info, new(info)
                 {
                     NotSupportedDetails = string.Format(SR.MarshallingStringOrCharAsUndefinedNotSupported, _stringMarshallingAttribute)
                 });
@@ -60,19 +60,19 @@ namespace Microsoft.Interop
                     case CharEncoding.Utf16:
                         return ResolvedGenerator.Resolved(_useBlittableMarshallerForUtf16 ? s_blittable.Bind(info) : s_utf16Char.Bind(info));
                     case CharEncoding.Utf8:
-                        return ResolvedGenerator.NotSupported(info, new(info, context) // [Compat] UTF-8 is not supported for char
+                        return ResolvedGenerator.NotSupported(info, new(info) // [Compat] UTF-8 is not supported for char
                         {
                             NotSupportedDetails = SR.Format(SR.MarshallingCharAsSpecifiedStringMarshallingNotSupported, nameof(CharEncoding.Utf8))
                         });
                     case CharEncoding.Custom:
-                        return ResolvedGenerator.NotSupported(info, new(info, context)
+                        return ResolvedGenerator.NotSupported(info, new(info)
                         {
                             NotSupportedDetails = SR.MarshallingCharAsStringMarshallingCustomNotSupported
                         });
                 }
             }
 
-            return ResolvedGenerator.NotSupported(info, new(info, context));
+            return ResolvedGenerator.NotSupported(info, new(info));
         }
     }
 }

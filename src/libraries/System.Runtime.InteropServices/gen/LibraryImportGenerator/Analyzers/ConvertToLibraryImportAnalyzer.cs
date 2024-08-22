@@ -152,8 +152,6 @@ namespace Microsoft.Interop.Analyzers
             mayRequireAdditionalWork = diagnostics.Diagnostics.Any();
             bool anyExplicitlyUnsupportedInfo = false;
 
-            var stubCodeContext = new ManagedToNativeStubCodeContext("return", "nativeReturn");
-
             var forwarder = new Forwarder();
             // We don't actually need the bound generators. We just need them to be attempted to be bound to determine if the generator will be able to bind them.
             _ = BoundGenerators.Create(targetSignatureContext.ElementTypeInformation, new CallbackGeneratorResolver((info, context) =>
@@ -168,8 +166,8 @@ namespace Microsoft.Interop.Analyzers
                     anyExplicitlyUnsupportedInfo = true;
                     return ResolvedGenerator.Resolved(forwarder.Bind(info));
                 }
-                return factory.Create(info, stubCodeContext);
-            }), stubCodeContext, forwarder, out var bindingFailures);
+                return factory.Create(info, context);
+            }), StubCodeContext.DefaultManagedToNativeStub, forwarder, out var bindingFailures);
 
             mayRequireAdditionalWork |= bindingFailures.Any(d => d.IsFatal);
 

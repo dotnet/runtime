@@ -33,12 +33,12 @@ namespace Microsoft.Interop
                 return ValueBoundaryBehavior.CastNativeIdentifier;
             }
 
-            return innerMarshallingGenerator.GetValueBoundaryBehavior( context);
+            return innerMarshallingGenerator.GetValueBoundaryBehavior(context);
         }
 
-        public IEnumerable<StatementSyntax> Generate(StubCodeContext context)
+        public IEnumerable<StatementSyntax> Generate(StubIdentifierContext context)
         {
-            if (IsPinningPathSupported(context))
+            if (IsPinningPathSupported(context.CodeContext))
             {
                 return GeneratePinningPath(context);
             }
@@ -61,9 +61,9 @@ namespace Microsoft.Interop
             return context.SingleFrameSpansNativeContext && !TypeInfo.IsByRef && !context.IsInStubReturnPosition(TypeInfo);
         }
 
-        private IEnumerable<StatementSyntax> GeneratePinningPath(StubCodeContext context)
+        private IEnumerable<StatementSyntax> GeneratePinningPath(StubIdentifierContext context)
         {
-            if (context.CurrentStage == StubCodeContext.Stage.Pin)
+            if (context.CurrentStage == StubIdentifierContext.Stage.Pin)
             {
                 (string managedIdentifier, string nativeIdentifier) = context.GetIdentifiers(innerMarshallingGenerator.TypeInfo);
 
@@ -88,9 +88,9 @@ namespace Microsoft.Interop
             }
         }
 
-        public ByValueMarshalKindSupport SupportsByValueMarshalKind(ByValueContentsMarshalKind marshalKind, StubCodeContext context, out GeneratorDiagnostic? diagnostic)
+        public ByValueMarshalKindSupport SupportsByValueMarshalKind(ByValueContentsMarshalKind marshalKind, out GeneratorDiagnostic? diagnostic)
         {
-            return innerMarshallingGenerator.SupportsByValueMarshalKind(marshalKind, context, out diagnostic);
+            return innerMarshallingGenerator.SupportsByValueMarshalKind(marshalKind, out diagnostic);
         }
 
         public IBoundMarshallingGenerator Rebind(TypePositionInfo info) => innerMarshallingGenerator.Rebind(info);

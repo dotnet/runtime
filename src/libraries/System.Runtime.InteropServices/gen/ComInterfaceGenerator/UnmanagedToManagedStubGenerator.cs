@@ -17,22 +17,32 @@ namespace Microsoft.Interop
 
         private readonly BoundGenerators _marshallers;
 
-        private readonly NativeToManagedStubCodeContext _context;
+        private readonly StubIdentifierContext _context;
 
         public UnmanagedToManagedStubGenerator(
             ImmutableArray<TypePositionInfo> argTypes,
             GeneratorDiagnosticsBag diagnosticsBag,
             IMarshallingGeneratorResolver generatorResolver)
         {
-            _context = new NativeToManagedStubCodeContext(ReturnIdentifier, ReturnIdentifier);
-            _marshallers = BoundGenerators.Create(argTypes, generatorResolver, _context, new Forwarder(), out var bindingDiagnostics);
+            StubCodeContext stubCodeContext = StubCodeContext.DefaultNativeToManagedStub;
+            _marshallers = BoundGenerators.Create(argTypes, generatorResolver, stubCodeContext, new Forwarder(), out var bindingDiagnostics);
 
             diagnosticsBag.ReportGeneratorDiagnostics(bindingDiagnostics);
 
-            if (_marshallers.NativeReturnMarshaller.UsesNativeIdentifier(_context))
+            if (_marshallers.NativeReturnMarshaller.UsesNativeIdentifier(stubCodeContext))
             {
                 // If we need a different native return identifier, then recreate the context with the correct identifier before we generate any code.
-                _context = new NativeToManagedStubCodeContext(ReturnIdentifier, $"{ReturnIdentifier}{StubCodeContext.GeneratedNativeIdentifierSuffix}");
+                _context = new DefaultIdentifierContext(ReturnIdentifier, $"{ReturnIdentifier}{StubIdentifierContext.GeneratedNativeIdentifierSuffix}")
+                {
+                    CodeContext = stubCodeContext
+                };
+            }
+            else
+            {
+                _context = new DefaultIdentifierContext(ReturnIdentifier, ReturnIdentifier)
+                {
+                    CodeContext = stubCodeContext
+                };
             }
         }
 

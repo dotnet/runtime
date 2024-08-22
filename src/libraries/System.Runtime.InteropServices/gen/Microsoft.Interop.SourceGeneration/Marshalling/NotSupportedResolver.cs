@@ -6,6 +6,6 @@ namespace Microsoft.Interop
     public sealed class NotSupportedResolver : IMarshallingGeneratorResolver
     {
         public ResolvedGenerator Create(TypePositionInfo info, StubCodeContext context) =>
-            ResolvedGenerator.NotSupported(info, new(info, context));
+            ResolvedGenerator.NotSupported(info, new(info));
     }
 }

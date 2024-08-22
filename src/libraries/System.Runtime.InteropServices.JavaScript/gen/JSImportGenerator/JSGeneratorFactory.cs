@@ -19,7 +19,7 @@ namespace Microsoft.Interop.JavaScript
             if (info.IsByRef || info.ByValueContentsMarshalKind != ByValueContentsMarshalKind.Default)
             {
                 // out of scope for Net7.0
-                return ResolvedGenerator.NotSupported(info, new(info, context)
+                return ResolvedGenerator.NotSupported(info, new(info)
                 {
                     NotSupportedDetails = SR.InOutRefNotSupported
                 });
@@ -28,7 +28,7 @@ namespace Microsoft.Interop.JavaScript
 
             ResolvedGenerator fail(string failReason)
             {
-                return ResolvedGenerator.NotSupported(info, new(info, context)
+                return ResolvedGenerator.NotSupported(info, new(info)
                 {
                     NotSupportedDetails = failReason
                 });
@@ -39,7 +39,7 @@ namespace Microsoft.Interop.JavaScript
             {
                 // invalid
                 case { TypeInfo: JSInvalidTypeInfo }:
-                    return ResolvedGenerator.NotSupported(info, new(info, context));
+                    return ResolvedGenerator.NotSupported(info, new(info));
 
                 // void
                 case { TypeInfo: JSSimpleTypeInfo(KnownManagedType.Void), JSType: JSTypeFlags.DiscardNoWait }:
@@ -60,36 +60,36 @@ namespace Microsoft.Interop.JavaScript
 
                 // primitive
                 case { TypeInfo: JSSimpleTypeInfo simple }:
-                    return Create(info, isToJs, simple.KnownType, Array.Empty<KnownManagedType>(), jsMarshalingInfo.JSType, Array.Empty<JSTypeFlags>(), fail);
+                    return Create(info, isToJs, simple.KnownType, [], jsMarshalingInfo.JSType, Array.Empty<JSTypeFlags>(), fail);
 
                 // nullable
                 case { TypeInfo: JSNullableTypeInfo nullable }:
-                    return Create(info, isToJs, nullable.KnownType, new[] { nullable.ResultTypeInfo.KnownType }, jsMarshalingInfo.JSType, null, fail);
+                    return Create(info, isToJs, nullable.KnownType, [nullable.ResultTypeInfo.KnownType], jsMarshalingInfo.JSType, null, fail);
 
                 // array
                 case { TypeInfo: JSArrayTypeInfo array }:
-                    return Create(info, isToJs, array.KnownType, new[] { array.ElementTypeInfo.KnownType }, jsMarshalingInfo.JSType, jsMarshalingInfo.JSTypeArguments, fail);
+                    return Create(info, isToJs, array.KnownType, [array.ElementTypeInfo.KnownType], jsMarshalingInfo.JSType, jsMarshalingInfo.JSTypeArguments, fail);
 
                 // array segment
                 case { TypeInfo: JSArraySegmentTypeInfo segment }:
-                    return Create(info, isToJs, segment.KnownType, new[] { segment.ElementTypeInfo.KnownType }, jsMarshalingInfo.JSType, jsMarshalingInfo.JSTypeArguments, fail);
+                    return Create(info, isToJs, segment.KnownType, [segment.ElementTypeInfo.KnownType], jsMarshalingInfo.JSType, jsMarshalingInfo.JSTypeArguments, fail);
 
                 // span
                 case { TypeInfo: JSSpanTypeInfo span }:
-                    return Create(info, isToJs, span.KnownType, new[] { span.ElementTypeInfo.KnownType }, jsMarshalingInfo.JSType, jsMarshalingInfo.JSTypeArguments, fail);
+                    return Create(info, isToJs, span.KnownType, [span.ElementTypeInfo.KnownType], jsMarshalingInfo.JSType, jsMarshalingInfo.JSTypeArguments, fail);
 
                 // task
                 case { TypeInfo: JSTaskTypeInfo(JSSimpleTypeInfo(KnownManagedType.Void)) task }:
-                    return Create(info, isToJs, task.KnownType, Array.Empty<KnownManagedType>(), jsMarshalingInfo.JSType, jsMarshalingInfo.JSTypeArguments, fail);
+                    return Create(info, isToJs, task.KnownType, [], jsMarshalingInfo.JSType, jsMarshalingInfo.JSTypeArguments, fail);
                 case { TypeInfo: JSTaskTypeInfo task }:
-                    return Create(info, isToJs, task.KnownType, new[] { task.ResultTypeInfo.KnownType }, jsMarshalingInfo.JSType, jsMarshalingInfo.JSTypeArguments, fail);
+                    return Create(info, isToJs, task.KnownType, [task.ResultTypeInfo.KnownType], jsMarshalingInfo.JSType, jsMarshalingInfo.JSTypeArguments, fail);
 
                 // action + function
                 case { TypeInfo: JSFunctionTypeInfo function }:
                     return Create(info, isToJs, function.KnownType, function.ArgsTypeInfo.Select(a => a.KnownType).ToArray(), jsMarshalingInfo.JSType, jsMarshalingInfo.JSTypeArguments, fail);
 
                 default:
-                    return ResolvedGenerator.NotSupported(info, new(info, context));
+                    return ResolvedGenerator.NotSupported(info, new(info));
             }
         }
 

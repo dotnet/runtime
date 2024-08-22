@@ -15,7 +15,7 @@ namespace Microsoft.Interop.JavaScript
         {
         }
 
-        public override IEnumerable<ExpressionSyntax> GenerateBind(StubCodeContext context)
+        public override IEnumerable<ExpressionSyntax> GenerateBind()
         {
             yield return InvocationExpression(MarshalerTypeName(MarshalerType.Nullable),
                     ArgumentList(SingletonSeparatedList(Argument(MarshalerTypeName(Type)))));

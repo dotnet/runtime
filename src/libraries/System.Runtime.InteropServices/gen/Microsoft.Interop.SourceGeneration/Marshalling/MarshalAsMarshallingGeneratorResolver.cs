@@ -59,7 +59,7 @@ namespace Microsoft.Interop
                     SpecialType underlyingSpecialType = enumType.UnderlyingType;
                     if (underlyingSpecialType == SpecialType.System_Boolean || underlyingSpecialType == SpecialType.System_Char)
                     {
-                        return ResolvedGenerator.NotSupported(info, new(info, context));
+                        return ResolvedGenerator.NotSupported(info, new(info));
                     }
                     return ResolvedGenerator.Resolved(s_blittable.Bind(info));
 

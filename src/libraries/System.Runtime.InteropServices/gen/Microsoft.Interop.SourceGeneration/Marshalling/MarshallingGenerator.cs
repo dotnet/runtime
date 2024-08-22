@@ -39,17 +39,17 @@ namespace Microsoft.Interop
         ManagedIdentifier,
 
         /// <summary>
-        /// The native identifier provided by <see cref="StubCodeContext.GetIdentifiers(TypePositionInfo)"/> should be passed by value.
+        /// The native identifier provided by <see cref="StubIdentifierContext.GetIdentifiers(TypePositionInfo)"/> should be passed by value.
         /// </summary>
         NativeIdentifier,
 
         /// <summary>
-        /// The address of the native identifier provided by <see cref="StubCodeContext.GetIdentifiers(TypePositionInfo)"/> should be passed by value.
+        /// The address of the native identifier provided by <see cref="StubIdentifierContext.GetIdentifiers(TypePositionInfo)"/> should be passed by value.
         /// </summary>
         AddressOfNativeIdentifier,
 
         /// <summary>
-        /// The native identifier provided by <see cref="StubCodeContext.GetIdentifiers(TypePositionInfo)"/> should be cast to the native type.
+        /// The native identifier provided by <see cref="StubIdentifierContext.GetIdentifiers(TypePositionInfo)"/> should be cast to the native type.
         /// </summary>
         CastNativeIdentifier
     }
@@ -111,11 +111,11 @@ namespace Microsoft.Interop
         /// <returns>List of statements to be added to the P/Invoke stub</returns>
         /// <remarks>
         /// The generator should return the appropriate statements based on the
-        /// <see cref="StubCodeContext.CurrentStage" /> of <paramref name="context"/>.
-        /// For <see cref="StubCodeContext.Stage.Pin"/>, any statements not of type
+        /// <see cref="StubIdentifierContext.CurrentStage" /> of <paramref name="context"/>.
+        /// For <see cref="StubIdentifierContext.Stage.Pin"/>, any statements not of type
         /// <see cref="FixedStatementSyntax"/> will be ignored.
         /// </remarks>
-        IEnumerable<StatementSyntax> Generate(StubCodeContext context);
+        IEnumerable<StatementSyntax> Generate(StubIdentifierContext context);
 
         /// <summary>
         /// Returns whether or not this marshaller uses an identifier for the native value in addition
@@ -124,7 +124,7 @@ namespace Microsoft.Interop
         /// <param name="context">Code generation context</param>
         /// <returns>If the marshaller uses an identifier for the native value, true; otherwise, false.</returns>
         /// <remarks>
-        /// <see cref="StubCodeContext.CurrentStage" /> of <paramref name="context"/> may not be valid.
+        /// <see cref="StubIdentifierContext.CurrentStage" /> of <paramref name="context"/> may not be valid.
         /// </remarks>
         bool UsesNativeIdentifier(StubCodeContext context);
 
@@ -140,7 +140,7 @@ namespace Microsoft.Interop
         /// It should be non-null if the value is not <see cref="ByValueMarshalKindSupport.Supported"/>
         /// </param>
         /// <returns>If the provided <paramref name="marshalKind"/> is supported and if it is required to specify the requested behavior.</returns>
-        ByValueMarshalKindSupport SupportsByValueMarshalKind(ByValueContentsMarshalKind marshalKind, StubCodeContext context, out GeneratorDiagnostic? diagnostic);
+        ByValueMarshalKindSupport SupportsByValueMarshalKind(ByValueContentsMarshalKind marshalKind, out GeneratorDiagnostic? diagnostic);
 
         /// <summary>
         /// Create a new instance of this generator bound to a different <see cref="TypePositionInfo"/>.
@@ -167,12 +167,12 @@ namespace Microsoft.Interop
 
         public SignatureBehavior NativeSignatureBehavior => unbound.GetNativeSignatureBehavior(TypeInfo);
 
-        public IEnumerable<StatementSyntax> Generate(StubCodeContext context) => unbound.Generate(TypeInfo, context);
+        public IEnumerable<StatementSyntax> Generate(StubIdentifierContext context) => unbound.Generate(TypeInfo, context);
 
         public ValueBoundaryBehavior GetValueBoundaryBehavior(StubCodeContext context) => unbound.GetValueBoundaryBehavior(TypeInfo, context);
 
-        public ByValueMarshalKindSupport SupportsByValueMarshalKind(ByValueContentsMarshalKind marshalKind, StubCodeContext context, out GeneratorDiagnostic? diagnostic)
-            => unbound.SupportsByValueMarshalKind(marshalKind, TypeInfo, context, out diagnostic);
+        public ByValueMarshalKindSupport SupportsByValueMarshalKind(ByValueContentsMarshalKind marshalKind, out GeneratorDiagnostic? diagnostic)
+            => unbound.SupportsByValueMarshalKind(marshalKind, TypeInfo, out diagnostic);
 
         public bool UsesNativeIdentifier(StubCodeContext context) => unbound.UsesNativeIdentifier(TypeInfo, context);
 
@@ -225,11 +225,11 @@ namespace Microsoft.Interop
         /// <returns>List of statements to be added to the P/Invoke stub</returns>
         /// <remarks>
         /// The generator should return the appropriate statements based on the
-        /// <see cref="StubCodeContext.CurrentStage" /> of <paramref name="context"/>.
-        /// For <see cref="StubCodeContext.Stage.Pin"/>, any statements not of type
+        /// <see cref="StubIdentifierContext.CurrentStage" /> of <paramref name="context"/>.
+        /// For <see cref="StubIdentifierContext.Stage.Pin"/>, any statements not of type
         /// <see cref="FixedStatementSyntax"/> will be ignored.
         /// </remarks>
-        IEnumerable<StatementSyntax> Generate(TypePositionInfo info, StubCodeContext context);
+        IEnumerable<StatementSyntax> Generate(TypePositionInfo info, StubIdentifierContext context);
 
         /// <summary>
         /// Returns whether or not this marshaller uses an identifier for the native value in addition
@@ -238,9 +238,6 @@ namespace Microsoft.Interop
         /// <param name="info">Object to marshal</param>
         /// <param name="context">Code generation context</param>
         /// <returns>If the marshaller uses an identifier for the native value, true; otherwise, false.</returns>
-        /// <remarks>
-        /// <see cref="StubCodeContext.CurrentStage" /> of <paramref name="context"/> may not be valid.
-        /// </remarks>
         bool UsesNativeIdentifier(TypePositionInfo info, StubCodeContext context);
 
         /// <summary>
@@ -249,12 +246,11 @@ namespace Microsoft.Interop
         /// </summary>
         /// <param name="marshalKind">The marshal kind.</param>
         /// <param name="info">The TypePositionInfo of the parameter.</param>
-        /// <param name="context">The marshalling context.</param>
         /// <param name="diagnostic">
         /// The diagnostic to report if the return value is not <see cref="ByValueMarshalKindSupport.Supported"/>.
         /// It should be non-null if the value is not <see cref="ByValueMarshalKindSupport.Supported"/>
         /// </param>
         /// <returns>If the provided <paramref name="marshalKind"/> is supported and if it is required to specify the requested behavior.</returns>
-        ByValueMarshalKindSupport SupportsByValueMarshalKind(ByValueContentsMarshalKind marshalKind, TypePositionInfo info, StubCodeContext context, out GeneratorDiagnostic? diagnostic);
+        ByValueMarshalKindSupport SupportsByValueMarshalKind(ByValueContentsMarshalKind marshalKind, TypePositionInfo info, out GeneratorDiagnostic? diagnostic);
     }
 }

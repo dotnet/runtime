@@ -171,7 +171,7 @@ namespace Microsoft.Interop
 
         public ImmutableArray<IBoundMarshallingGenerator> NativeParameterMarshallers { get; private init; }
 
-        public (ParameterListSyntax ParameterList, TypeSyntax ReturnType, AttributeListSyntax? ReturnTypeAttributes) GenerateTargetMethodSignatureData(StubCodeContext context)
+        public (ParameterListSyntax ParameterList, TypeSyntax ReturnType, AttributeListSyntax? ReturnTypeAttributes) GenerateTargetMethodSignatureData(StubIdentifierContext context)
         {
             return (
                 ParameterList(
@@ -212,7 +212,7 @@ namespace Microsoft.Interop
                 if (info.IsNativeReturnPosition
                     && generator.Generator.NativeType != _nativeReturnType)
                 {
-                    return ResolvedGenerator.NotSupported(info, new(info, context)
+                    return ResolvedGenerator.NotSupported(info, new(info)
                     {
                         NotSupportedDetails = SR.MarshallerInNativeReturnPositionMustMatchNativeReturnType
                     });

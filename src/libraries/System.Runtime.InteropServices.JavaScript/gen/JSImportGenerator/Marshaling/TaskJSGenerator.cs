@@ -19,7 +19,7 @@ namespace Microsoft.Interop.JavaScript
             _resultMarshalerType = resultMarshalerType;
         }
 
-        public override IEnumerable<ExpressionSyntax> GenerateBind(StubCodeContext context)
+        public override IEnumerable<ExpressionSyntax> GenerateBind()
         {
             var jsty = (JSTaskTypeInfo)((JSMarshallingInfo)TypeInfo.MarshallingAttributeInfo).TypeInfo;
             if (jsty.ResultTypeInfo is JSSimpleTypeInfo(KnownManagedType.Void))
@@ -33,7 +33,7 @@ namespace Microsoft.Interop.JavaScript
             }
         }
 
-        public override IEnumerable<StatementSyntax> Generate(StubCodeContext context)
+        public override IEnumerable<StatementSyntax> Generate(StubIdentifierContext context)
         {
             var jsty = (JSTaskTypeInfo)((JSMarshallingInfo)TypeInfo.MarshallingAttributeInfo).TypeInfo;
 
@@ -46,14 +46,14 @@ namespace Microsoft.Interop.JavaScript
                 ? Argument(IdentifierName(context.GetIdentifiers(TypeInfo).native))
                 : _inner.AsArgument(context);
 
-            if (context.CurrentStage == StubCodeContext.Stage.UnmarshalCapture && context.Direction == MarshalDirection.ManagedToUnmanaged && TypeInfo.IsManagedReturnPosition)
+            if (context.CurrentStage == StubIdentifierContext.Stage.UnmarshalCapture && context.CodeContext.Direction == MarshalDirection.ManagedToUnmanaged && TypeInfo.IsManagedReturnPosition)
             {
                 yield return jsty.ResultTypeInfo is JSSimpleTypeInfo(KnownManagedType.Void)
                     ? ToManagedMethodVoid(target, source)
                     : ToManagedMethod(target, source, jsty.ResultTypeInfo.Syntax);
             }
 
-            if (context.CurrentStage == StubCodeContext.Stage.Marshal && context.Direction == MarshalDirection.UnmanagedToManaged && TypeInfo.IsManagedReturnPosition)
+            if (context.CurrentStage == StubIdentifierContext.Stage.Marshal && context.CodeContext.Direction == MarshalDirection.UnmanagedToManaged && TypeInfo.IsManagedReturnPosition)
             {
                 yield return jsty.ResultTypeInfo is JSSimpleTypeInfo(KnownManagedType.Void)
                     ? ToJSMethodVoid(target, source)
@@ -65,14 +65,14 @@ namespace Microsoft.Interop.JavaScript
                 yield return x;
             }
 
-            if (context.CurrentStage == StubCodeContext.Stage.PinnedMarshal && context.Direction == MarshalDirection.ManagedToUnmanaged && !TypeInfo.IsManagedReturnPosition)
+            if (context.CurrentStage == StubIdentifierContext.Stage.PinnedMarshal && context.CodeContext.Direction == MarshalDirection.ManagedToUnmanaged && !TypeInfo.IsManagedReturnPosition)
             {
                 yield return jsty.ResultTypeInfo is JSSimpleTypeInfo(KnownManagedType.Void)
                     ? ToJSMethodVoid(target, source)
                     : ToJSMethod(target, source, jsty.ResultTypeInfo.Syntax);
             }
 
-            if (context.CurrentStage == StubCodeContext.Stage.Unmarshal && context.Direction == MarshalDirection.UnmanagedToManaged && !TypeInfo.IsManagedReturnPosition)
+            if (context.CurrentStage == StubIdentifierContext.Stage.Unmarshal && context.CodeContext.Direction == MarshalDirection.UnmanagedToManaged && !TypeInfo.IsManagedReturnPosition)
             {
                 yield return jsty.ResultTypeInfo is JSSimpleTypeInfo(KnownManagedType.Void)
                     ? ToManagedMethodVoid(target, source)

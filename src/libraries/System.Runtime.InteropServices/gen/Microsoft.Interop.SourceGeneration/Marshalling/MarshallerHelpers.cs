@@ -61,29 +61,45 @@ namespace Microsoft.Interop
         public static StatementSyntax CreateSetLastPInvokeErrorStatement(string lastErrorIdentifier) =>
             MethodInvocationStatement(TypeSyntaxes.System_Runtime_InteropServices_Marshal, IdentifierName("SetLastPInvokeError"), Argument(IdentifierName(lastErrorIdentifier)));
 
-        public static string GetMarshallerIdentifier(TypePositionInfo info, StubCodeContext context)
+        public static string GetMarshallerIdentifier(TypePositionInfo info, StubIdentifierContext context)
         {
             return context.GetAdditionalIdentifier(info, "marshaller");
         }
 
-        public static string GetManagedSpanIdentifier(TypePositionInfo info, StubCodeContext context)
+        public static string GetManagedSpanIdentifier(TypePositionInfo info, StubIdentifierContext context)
         {
             return context.GetAdditionalIdentifier(info, "managedSpan");
         }
 
-        public static string GetNativeSpanIdentifier(TypePositionInfo info, StubCodeContext context)
+        public static string GetNativeSpanIdentifier(TypePositionInfo info, StubIdentifierContext context)
         {
             return context.GetAdditionalIdentifier(info, "nativeSpan");
         }
 
-        public static string GetNumElementsIdentifier(TypePositionInfo info, StubCodeContext context)
+        public static string GetNumElementsIdentifier(TypePositionInfo info, StubIdentifierContext context)
         {
             return context.GetAdditionalIdentifier(info, "numElements");
         }
 
-        public static string GetLastIndexMarshalledIdentifier(TypePositionInfo info, StubCodeContext context)
+        public static string GetLastIndexMarshalledIdentifier(TypePositionInfo info, StubIdentifierContext context)
         {
             return context.GetAdditionalIdentifier(info, "lastIndexMarshalled");
+        }
+
+        public static string GetIndexerIdentifier(int i)
+        {
+            return $"__i{i}";
+        }
+
+        public static ExpressionSyntax GetIndexedManagedElementExpression(TypePositionInfo info, StubIdentifierContext context)
+        {
+            ExpressionSyntax indexedManagedElement = IdentifierName(context.GetIdentifiers(info).managed);
+            for (int i = 0; i < context.CodeContext.ElementIndirectionLevel; i++)
+            {
+                indexedManagedElement = ElementAccessExpression(indexedManagedElement)
+                    .AddArgumentListArguments(Argument(IdentifierName(GetIndexerIdentifier(i))));
+            }
+            return indexedManagedElement;
         }
 
         internal static bool CanUseCallerAllocatedBuffer(TypePositionInfo info, StubCodeContext context)
@@ -241,7 +257,7 @@ namespace Microsoft.Interop
         }
 
         // private static readonly InvocationExpressionSyntax SkipInitInvocation =
-        public static StatementSyntax SkipInitOrDefaultInit(TypePositionInfo info, StubCodeContext context)
+        public static StatementSyntax SkipInitOrDefaultInit(TypePositionInfo info, StubIdentifierContext context)
         {
             if (info.ManagedType is not PointerTypeInfo
                 && info.ManagedType is not ValueTypeInfo { IsByRefLike: true }
@@ -263,7 +279,7 @@ namespace Microsoft.Interop
             }
         }
 
-        public static StatementSyntax DefaultInit(TypePositionInfo info, StubCodeContext context)
+        public static StatementSyntax DefaultInit(TypePositionInfo info, StubIdentifierContext context)
         {
             // Assign out params to default
             return AssignmentStatement(
@@ -334,19 +350,19 @@ namespace Microsoft.Interop
         /// <summary>
         /// Returns which stage cleanup should be performed for the parameter.
         /// </summary>
-        public static StubCodeContext.Stage GetCleanupStage(TypePositionInfo info, StubCodeContext context)
+        public static StubIdentifierContext.Stage GetCleanupStage(TypePositionInfo info, StubCodeContext context)
         {
             // Unmanaged to managed doesn't properly handle lifetimes right now and will default to the original behavior.
             // Failures will only occur when marshalling fails, and would only cause leaks, not double frees.
             // See https://github.com/dotnet/runtime/issues/89483 for more details
             if (context.Direction is MarshalDirection.UnmanagedToManaged)
-                return StubCodeContext.Stage.CleanupCallerAllocated;
+                return StubIdentifierContext.Stage.CleanupCallerAllocated;
 
             return GetMarshalDirection(info, context) switch
             {
-                MarshalDirection.UnmanagedToManaged => StubCodeContext.Stage.CleanupCalleeAllocated,
-                MarshalDirection.ManagedToUnmanaged => StubCodeContext.Stage.CleanupCallerAllocated,
-                MarshalDirection.Bidirectional => StubCodeContext.Stage.CleanupCallerAllocated,
+                MarshalDirection.UnmanagedToManaged => StubIdentifierContext.Stage.CleanupCalleeAllocated,
+                MarshalDirection.ManagedToUnmanaged => StubIdentifierContext.Stage.CleanupCallerAllocated,
+                MarshalDirection.Bidirectional => StubIdentifierContext.Stage.CleanupCallerAllocated,
                 _ => throw new UnreachableException()
             };
         }

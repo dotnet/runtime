@@ -16,7 +16,7 @@ namespace Microsoft.Interop.JavaScript
     {
         private readonly BoundGenerators _marshallers;
 
-        private readonly StubCodeContext _context;
+        private readonly StubIdentifierContext _context;
         private readonly JSExportData _jsExportData;
         private readonly JSSignatureContext _signatureContext;
 
@@ -29,21 +29,27 @@ namespace Microsoft.Interop.JavaScript
         {
             _signatureContext = signatureContext;
             _jsExportData = attributeData;
-            _context = new NativeToManagedStubCodeContext(ReturnIdentifier, ReturnIdentifier)
-            {
-                CodeEmitOptions = new(SkipInit: true)
-            };
+            StubCodeContext codeContext = StubCodeContext.DefaultNativeToManagedStub;
 
-            _marshallers = BoundGenerators.Create(argTypes, generatorResolver, _context, new EmptyJSGenerator(), out var bindingFailures);
+            _marshallers = BoundGenerators.Create(argTypes, generatorResolver, codeContext, new EmptyJSGenerator(), out var bindingFailures);
 
             diagnosticsBag.ReportGeneratorDiagnostics(bindingFailures);
 
-            if (_marshallers.ManagedReturnMarshaller.UsesNativeIdentifier(_context))
+            if (_marshallers.ManagedReturnMarshaller.UsesNativeIdentifier(codeContext))
             {
                 // If we need a different native return identifier, then recreate the context with the correct identifier before we generate any code.
-                _context = new NativeToManagedStubCodeContext(ReturnIdentifier, ReturnNativeIdentifier)
+                _context = new DefaultIdentifierContext(ReturnIdentifier, ReturnNativeIdentifier)
                 {
-                    CodeEmitOptions = new(SkipInit: true)
+                    CodeEmitOptions = new(SkipInit: true),
+                    CodeContext = codeContext,
+                };
+            }
+            else
+            {
+                _context = new DefaultIdentifierContext(ReturnIdentifier, ReturnIdentifier)
+                {
+                    CodeEmitOptions = new(SkipInit: true),
+                    CodeContext = codeContext,
                 };
             }
 
@@ -53,7 +59,7 @@ namespace Microsoft.Interop.JavaScript
                 IBoundMarshallingGenerator spanArg = _marshallers.SignatureMarshallers.FirstOrDefault(m => m.TypeInfo.MarshallingAttributeInfo is JSMarshallingInfo(_, JSSpanTypeInfo));
                 if (spanArg != default)
                 {
-                    diagnosticsBag.ReportGeneratorDiagnostic(new GeneratorDiagnostic.NotSupported(spanArg.TypeInfo, _context)
+                    diagnosticsBag.ReportGeneratorDiagnostic(new GeneratorDiagnostic.NotSupported(spanArg.TypeInfo)
                     {
                         NotSupportedDetails = SR.SpanAndTaskNotSupported
                     });
@@ -160,9 +166,9 @@ namespace Microsoft.Interop.JavaScript
 
         private ArgumentSyntax CreateSignaturesSyntax()
         {
-            IEnumerable<ExpressionSyntax> types = _marshallers.ManagedReturnMarshaller is IJSMarshallingGenerator jsGen ? jsGen.GenerateBind(_context) : [];
+            IEnumerable<ExpressionSyntax> types = _marshallers.ManagedReturnMarshaller is IJSMarshallingGenerator jsGen ? jsGen.GenerateBind() : [];
             types = types
-                .Concat(_marshallers.NativeParameterMarshallers.OfType<IJSMarshallingGenerator>().SelectMany(p => p.GenerateBind(_context)));
+                .Concat(_marshallers.NativeParameterMarshallers.OfType<IJSMarshallingGenerator>().SelectMany(p => p.GenerateBind()));
 
             return Argument(ArrayCreationExpression(ArrayType(IdentifierName(Constants.JSMarshalerTypeGlobal))
                 .WithRankSpecifiers(SingletonList(ArrayRankSpecifier(SingletonSeparatedList<ExpressionSyntax>(OmittedArraySizeExpression())))))

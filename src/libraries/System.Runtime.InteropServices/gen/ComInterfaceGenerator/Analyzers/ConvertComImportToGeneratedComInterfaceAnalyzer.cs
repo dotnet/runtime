@@ -87,9 +87,6 @@ namespace Microsoft.Interop.Analyzers
                         mayRequireAdditionalWork = diagnostics.Diagnostics.Any();
                         bool anyExplicitlyUnsupportedInfo = false;
 
-                        var managedToNativeStubCodeContext = new ManagedToNativeStubCodeContext("return", "nativeReturn");
-                        var nativeToManagedStubCodeContext = new NativeToManagedStubCodeContext("return", "nativeReturn");
-
                         var forwarder = new Forwarder();
                         // We don't actually need the bound generators. We just need them to be attempted to be bound to determine if the generator will be able to bind them.
                         BoundGenerators generators = BoundGenerators.Create(targetSignatureContext.ElementTypeInformation, new CallbackGeneratorResolver((info, context) =>
@@ -118,13 +115,13 @@ namespace Microsoft.Interop.Analyzers
                                 info = info with { MarshallingAttributeInfo = inner };
                             }
                             // Run both factories and collect any binding failures.
-                            ResolvedGenerator unmanagedToManagedGenerator = unmanagedToManagedFactory.Create(info, nativeToManagedStubCodeContext);
-                            ResolvedGenerator managedToUnmanagedGenerator = managedToUnmanagedFactory.Create(info, managedToNativeStubCodeContext);
+                            ResolvedGenerator unmanagedToManagedGenerator = unmanagedToManagedFactory.Create(info, StubCodeContext.DefaultNativeToManagedStub);
+                            ResolvedGenerator managedToUnmanagedGenerator = managedToUnmanagedFactory.Create(info, StubCodeContext.DefaultManagedToNativeStub);
                             return managedToUnmanagedGenerator with
                             {
                                 Diagnostics = managedToUnmanagedGenerator.Diagnostics.AddRange(unmanagedToManagedGenerator.Diagnostics)
                             };
-                        }), managedToNativeStubCodeContext, forwarder, out var generatorDiagnostics);
+                        }), StubCodeContext.DefaultManagedToNativeStub, forwarder, out var generatorDiagnostics);
 
                         mayRequireAdditionalWork |= generatorDiagnostics.Any(diag => diag.IsFatal);
 

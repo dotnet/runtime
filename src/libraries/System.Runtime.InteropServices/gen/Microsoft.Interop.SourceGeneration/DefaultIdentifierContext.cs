@@ -5,18 +5,14 @@ using System;
 using System.Diagnostics;
 namespace Microsoft.Interop
 {
-    public sealed record ManagedToNativeStubCodeContext : StubCodeContext
+    public sealed record DefaultIdentifierContext : StubIdentifierContext
     {
-        public override bool SingleFrameSpansNativeContext => true;
-
-        public override bool AdditionalTemporaryStateLivesAcrossStages => true;
-
         private const string InvokeReturnIdentifier = "__invokeRetVal";
         private const string InvokeReturnIdentifierNative = "__invokeRetValUnmanaged";
         private readonly string _returnIdentifier;
         private readonly string _nativeReturnIdentifier;
 
-        public ManagedToNativeStubCodeContext(
+        public DefaultIdentifierContext(
             string returnIdentifier,
             string nativeReturnIdentifier)
         {

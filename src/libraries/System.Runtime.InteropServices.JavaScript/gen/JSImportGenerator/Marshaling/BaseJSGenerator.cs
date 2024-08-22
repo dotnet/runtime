@@ -31,19 +31,19 @@ namespace Microsoft.Interop.JavaScript
 
         public virtual bool UsesNativeIdentifier(StubCodeContext context) => _inner.UsesNativeIdentifier(context);
 
-        public ByValueMarshalKindSupport SupportsByValueMarshalKind(ByValueContentsMarshalKind marshalKind, StubCodeContext context, out GeneratorDiagnostic? diagnostic)
-            => _inner.SupportsByValueMarshalKind(marshalKind, context, out diagnostic);
+        public ByValueMarshalKindSupport SupportsByValueMarshalKind(ByValueContentsMarshalKind marshalKind, out GeneratorDiagnostic? diagnostic)
+            => _inner.SupportsByValueMarshalKind(marshalKind, out diagnostic);
 
-        public virtual IEnumerable<ExpressionSyntax> GenerateBind(StubCodeContext context)
+        public virtual IEnumerable<ExpressionSyntax> GenerateBind()
         {
             yield return MarshalerTypeName(Type);
         }
 
-        public virtual IEnumerable<StatementSyntax> Generate(StubCodeContext context)
+        public virtual IEnumerable<StatementSyntax> Generate(StubIdentifierContext context)
         {
             string argName = context.GetAdditionalIdentifier(TypeInfo, "js_arg");
 
-            if (context.CurrentStage == StubCodeContext.Stage.Setup)
+            if (context.CurrentStage == StubIdentifierContext.Stage.Setup)
             {
                 if (!TypeInfo.IsManagedReturnPosition)
                 {

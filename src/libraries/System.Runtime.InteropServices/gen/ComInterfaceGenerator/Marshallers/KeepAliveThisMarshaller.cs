@@ -15,9 +15,9 @@ namespace Microsoft.Interop
         public static readonly KeepAliveThisMarshaller Instance = new();
 
         public ManagedTypeInfo AsNativeType(TypePositionInfo info) => info.ManagedType;
-        public IEnumerable<StatementSyntax> Generate(TypePositionInfo info, StubCodeContext context)
+        public IEnumerable<StatementSyntax> Generate(TypePositionInfo info, StubIdentifierContext context)
         {
-            if (context.CurrentStage != StubCodeContext.Stage.NotifyForSuccessfulInvoke)
+            if (context.CurrentStage != StubIdentifierContext.Stage.NotifyForSuccessfulInvoke)
             {
                 return [];
             }
@@ -32,8 +32,8 @@ namespace Microsoft.Interop
 
         public SignatureBehavior GetNativeSignatureBehavior(TypePositionInfo info) => SignatureBehavior.NativeType;
         public ValueBoundaryBehavior GetValueBoundaryBehavior(TypePositionInfo info, StubCodeContext context) => ValueBoundaryBehavior.ManagedIdentifier;
-        public ByValueMarshalKindSupport SupportsByValueMarshalKind(ByValueContentsMarshalKind marshalKind, TypePositionInfo info, StubCodeContext context, out GeneratorDiagnostic? diagnostic)
-            => ByValueMarshalKindSupportDescriptor.Default.GetSupport(marshalKind, info, context, out diagnostic);
+        public ByValueMarshalKindSupport SupportsByValueMarshalKind(ByValueContentsMarshalKind marshalKind, TypePositionInfo info, out GeneratorDiagnostic? diagnostic)
+            => ByValueMarshalKindSupportDescriptor.Default.GetSupport(marshalKind, info, out diagnostic);
 
         public bool UsesNativeIdentifier(TypePositionInfo info, StubCodeContext context) => false;
     }

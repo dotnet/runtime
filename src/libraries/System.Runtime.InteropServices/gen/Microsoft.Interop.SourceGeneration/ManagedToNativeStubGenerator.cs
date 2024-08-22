@@ -45,7 +45,7 @@ namespace Microsoft.Interop
         private readonly bool _setLastError;
         private readonly BoundGenerators _marshallers;
 
-        private readonly ManagedToNativeStubCodeContext _context;
+        private readonly DefaultIdentifierContext _context;
 
         public ManagedToNativeStubGenerator(
             ImmutableArray<TypePositionInfo> argTypes,
@@ -56,18 +56,29 @@ namespace Microsoft.Interop
         {
             _setLastError = setLastError;
 
-            _context = new ManagedToNativeStubCodeContext(ReturnIdentifier, ReturnIdentifier);
-            _marshallers = BoundGenerators.Create(argTypes, generatorResolver, _context, new Forwarder(), out var bindingDiagnostics);
+            StubCodeContext codeContext = StubCodeContext.DefaultManagedToNativeStub;
+
+            _marshallers = BoundGenerators.Create(argTypes, generatorResolver, codeContext, new Forwarder(), out var bindingDiagnostics);
 
             diagnosticsBag.ReportGeneratorDiagnostics(bindingDiagnostics);
 
-            if (_marshallers.ManagedReturnMarshaller.UsesNativeIdentifier(_context))
+            if (_marshallers.ManagedReturnMarshaller.UsesNativeIdentifier(codeContext))
             {
                 // If we need a different native return identifier, then recreate the context with the correct identifier before we generate any code.
-                _context = new ManagedToNativeStubCodeContext(ReturnIdentifier, $"{ReturnIdentifier}{StubCodeContext.GeneratedNativeIdentifierSuffix}");
+                _context = new DefaultIdentifierContext(ReturnIdentifier, $"{ReturnIdentifier}{StubIdentifierContext.GeneratedNativeIdentifierSuffix}")
+                {
+                    CodeContext = codeContext,
+                    CodeEmitOptions = codeEmitOptions
+                };
             }
-
-            _context = _context with { CodeEmitOptions = codeEmitOptions };
+            else
+            {
+                _context = new DefaultIdentifierContext(ReturnIdentifier, ReturnIdentifier)
+                {
+                    CodeContext = codeContext,
+                    CodeEmitOptions = codeEmitOptions
+                };
+            }
 
             bool noMarshallingNeeded = true;
 
