@@ -263,7 +263,7 @@ def build_partitions(partitions_dir, bin_path, host_bitness):
 
     for (target_os, arch, collections) in targets:
         partition_index = 0
-        for col in collections:
+        for col in sorted(collections, key=lambda col: col["col_name"]):
             json_path = os.path.join(partitions_dir, "{}-{}-{}.json".format(target_os, arch, partition_index))
             print("Partition {}-{}-{}: {}".format(target_os, arch, partition_index, col["col_name"]))
             partition_index += 1
