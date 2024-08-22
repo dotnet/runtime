@@ -773,7 +773,7 @@ RELEASE_CONFIG_INTEGER(JitEnableCrossBlockLocalAssertionProp, W("JitEnableCrossB
 RELEASE_CONFIG_INTEGER(JitDoReversePostOrderLayout, W("JitDoReversePostOrderLayout"), 1);
 
 // Enable strength reduction
-RELEASE_CONFIG_INTEGER(JitEnableStrengthReduction, W("JitEnableStrengthReduction"), 1)
+RELEASE_CONFIG_INTEGER(JitEnableStrengthReduction, W("JitEnableStrengthReduction"), 0)
 
 // Enable IV optimizations
 RELEASE_CONFIG_INTEGER(JitEnableInductionVariableOpts, W("JitEnableInductionVariableOpts"), 1)
