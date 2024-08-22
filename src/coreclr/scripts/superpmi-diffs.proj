@@ -75,9 +75,9 @@
     <HelixWorkItem Include="@(Partition)">
       <Command>$(WorkItemCommand) -partition_info $(ProductDirectory)/partitions/%(Identity).json</Command>
       <Timeout>$(WorkItemTimeout)</Timeout>
-      <DownloadFilesFromResults Condition=" '$(SuperPmiDiffType)'=='asmdiffs' ">superpmi_download_%(Identity).log;superpmi_asmdiffs_%(Identity).log;superpmi_asmdiffs_summary_%(Identity).md;Asmdiffs_%(Identity).zip</DownloadFilesFromResults>
-      <DownloadFilesFromResults Condition=" '$(SuperPmiDiffType)'=='tpdiff' "  >superpmi_download_%(Identity).log;superpmi_tpdiff_%(Identity).log;superpmi_tpdiff_summary_%(Identity).md</DownloadFilesFromResults>
-      <DownloadFilesFromResults Condition=" '$(SuperPmiDiffType)'=='all' "     >superpmi_download_%(Identity).log;superpmi_asmdiffs_%(Identity).log;superpmi_asmdiffs_summary_%(Identity).md;Asmdiffs_%(Identity).zip;superpmi_tpdiff_%(Identity).log;superpmi_tpdiff_summary_%(Identity).md</DownloadFilesFromResults>
+      <DownloadFilesFromResults Condition=" '$(SuperPmiDiffType)'=='asmdiffs' ">superpmi_download_%(Identity).log;superpmi_asmdiffs_%(Identity).log;superpmi_asmdiffs_summary_%(Identity).json;Asmdiffs_%(Identity).zip</DownloadFilesFromResults>
+      <DownloadFilesFromResults Condition=" '$(SuperPmiDiffType)'=='tpdiff' "  >superpmi_download_%(Identity).log;superpmi_tpdiff_%(Identity).log;superpmi_tpdiff_summary_%(Identity).json</DownloadFilesFromResults>
+      <DownloadFilesFromResults Condition=" '$(SuperPmiDiffType)'=='all' "     >superpmi_download_%(Identity).log;superpmi_asmdiffs_%(Identity).log;superpmi_asmdiffs_summary_%(Identity).json;Asmdiffs_%(Identity).zip;superpmi_tpdiff_%(Identity).log;superpmi_tpdiff_summary_%(Identity).json</DownloadFilesFromResults>
     </HelixWorkItem>
   </ItemGroup>
   </Project>
