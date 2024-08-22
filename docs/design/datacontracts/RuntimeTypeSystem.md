@@ -141,9 +141,6 @@ partial interface IRuntimeTypeSystem : IContract
     // Return true if a MethodDesc is in a collectible module
     public virtual bool IsCollectibleMethod(MethodDescHandle methodDesc);
 
-    // Return true if a MethodDesc is in a module that supports Edit-And-Continue
-    public virtual bool InEnCEnabledModule(MethodDescHandle methodDesc);
-
     // Return true if a MethodDesc supports mulitiple code versions
     public virtual bool IsVersionable(MethodDescHandle methodDesc);
 
