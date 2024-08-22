@@ -69,7 +69,6 @@
       <Sha>9945277ad92ce1d53d6a7a578f9f5bd2af858ddd</Sha>
     </Dependency>
     <!-- Intermediate is necessary for source build. -->
-
     <Dependency Name="Microsoft.SourceBuild.Intermediate.emsdk" Version="9.0.0-rc.1.24420.5">
       <Uri>https://github.com/dotnet/emsdk</Uri>
       <Sha>9945277ad92ce1d53d6a7a578f9f5bd2af858ddd</Sha>
@@ -82,9 +81,9 @@
       <SourceBuild RepoName="source-build-reference-packages" ManagedOnly="true" />
     </Dependency>
     <!-- Intermediate is necessary for source build. -->
-    <Dependency Name="Microsoft.SourceBuild.Intermediate.source-build-externals" Version="9.0.0-alpha.1.24420.1">
+    <Dependency Name="Microsoft.SourceBuild.Intermediate.source-build-externals" Version="9.0.0-alpha.1.24421.1">
       <Uri>https://github.com/dotnet/source-build-externals</Uri>
-      <Sha>ee22054b44ec9615dc3481c4decc1b007a83a2b0</Sha>
+      <Sha>457ff6ef4705a0aa8de628a1f2a15474a05b7150</Sha>
       <SourceBuild RepoName="source-build-externals" ManagedOnly="true" />
     </Dependency>
   </ProductDependencies>
