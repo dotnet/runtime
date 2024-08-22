@@ -1,12 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics.X86;
-using System.Text;
 
 using ILCompiler;
 
@@ -118,27 +116,6 @@ namespace System.CommandLine
             }
             else if (instructionSet != null)
             {
-                // While it's possible to enable individual AVX-512 ISA's, it is not
-                // optimal to do so, since they aren't totally functional this way,
-                // plus it is extremely rare to encounter hardware that doesn't support
-                // all of them. So, here we ensure that we are enabling all the ISA's
-                // if one is specified in the Crossgen2 or ILC command-lines.
-                //
-                // For more information, check this Github comment:
-                // https://github.com/dotnet/runtime/issues/106450#issuecomment-2299504035
-
-                if (instructionSet.Contains("avx512f", StringComparison.OrdinalIgnoreCase)
-                    || instructionSet.Contains("avx512f_vl", StringComparison.OrdinalIgnoreCase)
-                    || instructionSet.Contains("avx512bw", StringComparison.OrdinalIgnoreCase)
-                    || instructionSet.Contains("avx512bw_vl", StringComparison.OrdinalIgnoreCase)
-                    || instructionSet.Contains("avx512cd", StringComparison.OrdinalIgnoreCase)
-                    || instructionSet.Contains("avx512cd_vl", StringComparison.OrdinalIgnoreCase)
-                    || instructionSet.Contains("avx512dq", StringComparison.OrdinalIgnoreCase)
-                    || instructionSet.Contains("avx512dq_vl", StringComparison.OrdinalIgnoreCase))
-                {
-                    instructionSet = EnsureFullAvx512InstructionSet(instructionSet);
-                }
-
                 List<string> instructionSetParams = new List<string>();
                 string[] instructionSetParamsInput = instructionSet.Split(',');
 
@@ -159,8 +136,6 @@ namespace System.CommandLine
 
                     instructionSetParams.Add(instructionSet);
                 }
-
-                Dictionary<string, bool> instructionSetSpecification = new Dictionary<string, bool>();
 
                 foreach (string instructionSetSpecifier in instructionSetParams)
                 {
@@ -276,40 +251,6 @@ namespace System.CommandLine
                 InstructionSetSupportBuilder.GetNonSpecifiableInstructionSetsForArch(targetArchitecture),
                 targetArchitecture,
                 flags);
-        }
-
-        private static string EnsureFullAvx512InstructionSet(string isasStr)
-        {
-            var instructionSetSb = new StringBuilder(isasStr);
-
-            // Since the user can specify any of the AVX-512 instruction sets, or
-            // any possible subset, we have to check for each one individually.
-
-            if (!isasStr.Contains("avx512f", StringComparison.OrdinalIgnoreCase))
-                instructionSetSb.Append(",avx512f");
-
-            if (!isasStr.Contains("avx512f_vl", StringComparison.OrdinalIgnoreCase))
-                instructionSetSb.Append(",avx512f_vl");
-
-            if (!isasStr.Contains("avx512bw", StringComparison.OrdinalIgnoreCase))
-                instructionSetSb.Append(",avx512bw");
-
-            if (!isasStr.Contains("avx512bw_vl", StringComparison.OrdinalIgnoreCase))
-                instructionSetSb.Append(",avx512bw_vl");
-
-            if (!isasStr.Contains("avx512cd", StringComparison.OrdinalIgnoreCase))
-                instructionSetSb.Append(",avx512cd");
-
-            if (!isasStr.Contains("avx512cd_vl", StringComparison.OrdinalIgnoreCase))
-                instructionSetSb.Append(",avx512cd_vl");
-
-            if (!isasStr.Contains("avx512dq", StringComparison.OrdinalIgnoreCase))
-                instructionSetSb.Append(",avx512dq");
-
-            if (!isasStr.Contains("avx512dq_vl", StringComparison.OrdinalIgnoreCase))
-                instructionSetSb.Append(",avx512dq_vl");
-
-            return instructionSetSb.ToString();
         }
     }
 }
