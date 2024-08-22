@@ -1114,7 +1114,7 @@ namespace System.Buffers.Text
                 else
                 {
                     // We explicitly recheck each IsSupported query to ensure that the trimmer can see which paths are live/dead
-                    ThrowHelper.ThrowUnreachableException();
+                    ThrowUnreachableException();
                     merge_ab_and_bc = default;
                 }
                 // 0000kkkk LLllllll 0000JJJJ JJjjKKKK
@@ -1136,7 +1136,7 @@ namespace System.Buffers.Text
                 else
                 {
                     // We explicitly recheck each IsSupported query to ensure that the trimmer can see which paths are live/dead
-                    ThrowHelper.ThrowUnreachableException();
+                    ThrowUnreachableException();
                     output = default;
                 }
                 // 00000000 JJJJJJjj KKKKkkkk LLllllll

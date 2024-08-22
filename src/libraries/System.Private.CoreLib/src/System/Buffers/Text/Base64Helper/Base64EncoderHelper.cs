@@ -514,7 +514,7 @@ namespace System.Buffers.Text
                 else
                 {
                     // We explicitly recheck each IsSupported query to ensure that the trimmer can see which paths are live/dead
-                    ThrowHelper.ThrowUnreachableException();
+                    ThrowUnreachableException();
                     t1 = default;
                 }
                 // 00000000 00kkkkLL 00000000 00JJJJJJ
@@ -558,7 +558,7 @@ namespace System.Buffers.Text
                 else
                 {
                     // We explicitly recheck each IsSupported query to ensure that the trimmer can see which paths are live/dead
-                    ThrowHelper.ThrowUnreachableException();
+                    ThrowUnreachableException();
                     indices = default;
                 }
 
