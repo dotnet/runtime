@@ -1315,75 +1315,6 @@ namespace System.StubHelpers
         }
     }  // class CleanupWorkListElement
 
-    internal unsafe struct CopyConstructorCookie
-    {
-        private void* m_source;
-
-        private nuint m_destinationOffset;
-
-        public delegate*<void*, void*, void> m_copyConstructor;
-
-        public delegate*<void*, void> m_destructor;
-
-        public CopyConstructorCookie* m_next;
-
-        [StackTraceHidden]
-        public void ExecuteCopy(void* destinationBase)
-        {
-            if (m_copyConstructor != null)
-            {
-                m_copyConstructor((byte*)destinationBase + m_destinationOffset, m_source);
-            }
-
-            if (m_destructor != null)
-            {
-                m_destructor(m_source);
-            }
-        }
-    }
-
-    internal unsafe struct CopyConstructorChain
-    {
-        public void* m_realTarget;
-        public CopyConstructorCookie* m_head;
-
-        public void Add(CopyConstructorCookie* cookie)
-        {
-            cookie->m_next = m_head;
-            m_head = cookie;
-        }
-
-        [ThreadStatic]
-        private static CopyConstructorChain s_copyConstructorChain;
-
-        public void Install(void* realTarget)
-        {
-            m_realTarget = realTarget;
-            s_copyConstructorChain = this;
-        }
-
-        [StackTraceHidden]
-        private void ExecuteCopies(void* destinationBase)
-        {
-            for (CopyConstructorCookie* current = m_head; current != null; current = current->m_next)
-            {
-                current->ExecuteCopy(destinationBase);
-            }
-        }
-
-        [UnmanagedCallersOnly]
-        [StackTraceHidden]
-        public static void* ExecuteCurrentCopiesAndGetTarget(void* destinationBase)
-        {
-            void* target = s_copyConstructorChain.m_realTarget;
-            s_copyConstructorChain.ExecuteCopies(destinationBase);
-            // Reset this instance to ensure we don't accidentally execute the copies again.
-            // All of the pointers point to the stack, so we don't need to free any memory.
-            s_copyConstructorChain = default;
-            return target;
-        }
-    }
-
     internal static partial class StubHelpers
     {
         [MethodImpl(MethodImplOptions.InternalCall)]
@@ -1498,15 +1429,15 @@ namespace System.StubHelpers
         internal static extern IntPtr GetCOMIPFromRCW(object objSrc, IntPtr pCPCMD, out IntPtr ppTarget, out bool pfNeedsRelease);
 #endif // FEATURE_COMINTEROP
 
+#if PROFILING_SUPPORTED
         //-------------------------------------------------------
         // Profiler helpers
         //-------------------------------------------------------
-#if PROFILING_SUPPORTED
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern IntPtr ProfilerBeginTransitionCallback(IntPtr pSecretParam, IntPtr pThread, object pThis);
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "StubHelpers_ProfilerBeginTransitionCallback")]
+        internal static unsafe partial void* ProfilerBeginTransitionCallback(void* pTargetMD);
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern void ProfilerEndTransitionCallback(IntPtr pMD, IntPtr pThread);
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "StubHelpers_ProfilerEndTransitionCallback")]
+        internal static unsafe partial void ProfilerEndTransitionCallback(void* pTargetMD);
 #endif // PROFILING_SUPPORTED
 
         //------------------------------------------------------

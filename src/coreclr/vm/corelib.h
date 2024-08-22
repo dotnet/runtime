@@ -639,6 +639,7 @@ DEFINE_METHOD(RUNTIME_HELPERS,      ENUM_COMPARE_TO,        EnumCompareTo, NoSig
 DEFINE_METHOD(RUNTIME_HELPERS,      ALLOC_TAILCALL_ARG_BUFFER, AllocTailCallArgBuffer,  SM_Int_IntPtr_RetIntPtr)
 DEFINE_METHOD(RUNTIME_HELPERS,      GET_TAILCALL_INFO,      GetTailCallInfo, NoSig)
 DEFINE_METHOD(RUNTIME_HELPERS,      DISPATCH_TAILCALLS,     DispatchTailCalls,          NoSig)
+DEFINE_METHOD(RUNTIME_HELPERS,      COPY_CONSTRUCT,         CopyConstruct, NoSig)
 
 DEFINE_CLASS(SPAN_HELPERS,          System,                 SpanHelpers)
 DEFINE_METHOD(SPAN_HELPERS,         MEMSET,                 Fill, SM_RefByte_Byte_UIntPtr_RetVoid)
@@ -845,7 +846,6 @@ DEFINE_FIELD_U(_startHelper,              ThreadBaseObject,   m_StartHelper)
 DEFINE_FIELD_U(_DONT_USE_InternalThread,  ThreadBaseObject,   m_InternalThread)
 DEFINE_FIELD_U(_priority,                 ThreadBaseObject,   m_Priority)
 DEFINE_CLASS(THREAD,                Threading,              Thread)
-DEFINE_METHOD(THREAD,               INTERNAL_GET_CURRENT_THREAD,             InternalGetCurrentThread,                    SM_RetIntPtr)
 DEFINE_METHOD(THREAD,               START_CALLBACK,                          StartCallback,                               IM_RetVoid)
 #ifdef FEATURE_OBJCMARSHAL
 DEFINE_CLASS(AUTORELEASEPOOL,       Threading,              AutoreleasePool)
@@ -953,8 +953,8 @@ DEFINE_METHOD(STUBHELPERS,          SAFE_HANDLE_ADD_REF,    SafeHandleAddRef,   
 DEFINE_METHOD(STUBHELPERS,          SAFE_HANDLE_RELEASE,    SafeHandleRelease,          SM_SafeHandle_RetVoid)
 
 #ifdef PROFILING_SUPPORTED
-DEFINE_METHOD(STUBHELPERS,          PROFILER_BEGIN_TRANSITION_CALLBACK, ProfilerBeginTransitionCallback, SM_IntPtr_IntPtr_Obj_RetIntPtr)
-DEFINE_METHOD(STUBHELPERS,          PROFILER_END_TRANSITION_CALLBACK,   ProfilerEndTransitionCallback,   SM_IntPtr_IntPtr_RetVoid)
+DEFINE_METHOD(STUBHELPERS,          PROFILER_BEGIN_TRANSITION_CALLBACK, ProfilerBeginTransitionCallback, SM_PtrVoid_RetPtrVoid)
+DEFINE_METHOD(STUBHELPERS,          PROFILER_END_TRANSITION_CALLBACK,   ProfilerEndTransitionCallback,   SM_PtrVoid_RetVoid)
 #endif
 
 DEFINE_METHOD(STUBHELPERS,          MULTICAST_DEBUGGER_TRACE_HELPER,    MulticastDebuggerTraceHelper,    SM_Obj_Int_RetVoid)
@@ -1052,21 +1052,6 @@ DEFINE_CLASS(HANDLE_MARSHALER,           StubHelpers,                 HandleMars
 DEFINE_METHOD(HANDLE_MARSHALER,          CONVERT_SAFEHANDLE_TO_NATIVE,ConvertSafeHandleToNative,  SM_SafeHandle_RefCleanupWorkListElement_RetIntPtr)
 DEFINE_METHOD(HANDLE_MARSHALER,          THROW_SAFEHANDLE_FIELD_CHANGED, ThrowSafeHandleFieldChanged, SM_RetVoid)
 DEFINE_METHOD(HANDLE_MARSHALER,          THROW_CRITICALHANDLE_FIELD_CHANGED, ThrowCriticalHandleFieldChanged, SM_RetVoid)
-
-#ifdef TARGET_WINDOWS
-#ifdef TARGET_X86
-DEFINE_CLASS(COPY_CONSTRUCTOR_CHAIN, StubHelpers,                 CopyConstructorChain)
-DEFINE_METHOD(COPY_CONSTRUCTOR_CHAIN, EXECUTE_CURRENT_COPIES_AND_GET_TARGET, ExecuteCurrentCopiesAndGetTarget, SM_PtrVoid_RetPtrVoid)
-DEFINE_METHOD(COPY_CONSTRUCTOR_CHAIN, INSTALL,                    Install,               IM_PtrVoid_RetVoid)
-DEFINE_METHOD(COPY_CONSTRUCTOR_CHAIN, ADD,                        Add,                   IM_PtrCopyConstructorCookie_RetVoid)
-
-DEFINE_CLASS(COPY_CONSTRUCTOR_COOKIE, StubHelpers, CopyConstructorCookie)
-DEFINE_FIELD(COPY_CONSTRUCTOR_COOKIE, SOURCE, m_source)
-DEFINE_FIELD(COPY_CONSTRUCTOR_COOKIE, DESTINATION_OFFSET, m_destinationOffset)
-DEFINE_FIELD(COPY_CONSTRUCTOR_COOKIE, COPY_CONSTRUCTOR, m_copyConstructor)
-DEFINE_FIELD(COPY_CONSTRUCTOR_COOKIE, DESTRUCTOR, m_destructor)
-#endif // TARGET_X86
-#endif // TARGET_WINDOWS
 
 DEFINE_CLASS(COMVARIANT,            Marshalling,            ComVariant)
 
