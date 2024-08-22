@@ -27,6 +27,12 @@ namespace System.Security.Cryptography
         internal override unsafe void DeriveBytes(ReadOnlySpan<byte> label, ReadOnlySpan<byte> context, Span<byte> destination)
         {
             Debug.Assert(Interop.Crypto.EvpKdfAlgs.Kbkdf is { IsInvalid: false });
+
+            if (destination.IsEmpty)
+            {
+                return;
+            }
+
             bool acquired = false;
 
             try
@@ -71,6 +77,11 @@ namespace System.Security.Cryptography
             Span<byte> destination)
         {
             Debug.Assert(Interop.Crypto.EvpKdfAlgs.Kbkdf is { IsInvalid: false });
+
+            if (destination.IsEmpty)
+            {
+                return;
+            }
 
             Interop.Crypto.KbkdfHmacOneShot(
                 Interop.Crypto.EvpKdfAlgs.Kbkdf,

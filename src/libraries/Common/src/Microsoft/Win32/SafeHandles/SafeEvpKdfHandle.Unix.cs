@@ -16,6 +16,7 @@ namespace Microsoft.Win32.SafeHandles
         protected override bool ReleaseHandle()
         {
             Interop.Crypto.EvpKdfFree(handle);
+            handle = 0;
             return true;
         }
 

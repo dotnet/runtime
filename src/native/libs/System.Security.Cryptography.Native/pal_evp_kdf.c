@@ -64,22 +64,22 @@ EVP_KDF* CryptoNative_EvpKdfFetch(const char* algorithm, int32_t* haveFeature)
 
 int32_t CryptoNative_KbkdfHmacOneShot(
     EVP_KDF* kdf,
-    unsigned char* key,
+    uint8_t* key,
     int32_t keyLength,
     char* algorithm,
-    unsigned char* label,
+    uint8_t* label,
     int32_t labelLength,
-    unsigned char* context,
+    uint8_t* context,
     int32_t contextLength,
-    unsigned char* destination,
+    uint8_t* destination,
     int32_t destinationLength)
 {
     assert(kdf);
     assert(key != NULL || keyLength == 0);
     assert(keyLength >= 0);
     assert(algorithm);
-    assert(destination || destinationLength == 0);
-    assert(destinationLength >= 0);
+    assert(destination);
+    assert(destinationLength > 0);
     assert(label != NULL || labelLength == 0);
     assert(context != NULL || contextLength == 0);
 
@@ -93,12 +93,6 @@ int32_t CryptoNative_KbkdfHmacOneShot(
         assert(API_EXISTS(OSSL_PARAM_construct_utf8_string));
         assert(API_EXISTS(OSSL_PARAM_construct_octet_string));
         assert(API_EXISTS(OSSL_PARAM_construct_end));
-
-        if (destinationLength == 0)
-        {
-            // If there is no work to do, bail out early.
-            return 1;
-        }
 
         unsigned char zero[] = { 0 };
 
@@ -139,8 +133,13 @@ int32_t CryptoNative_KbkdfHmacOneShot(
         }
 
         ret = 1;
+
 cleanup:
-        if (ctx != NULL) EVP_KDF_CTX_free(ctx);
+        if (ctx != NULL)
+        {
+            EVP_KDF_CTX_free(ctx);
+        }
+
         return ret;
     }
 #else

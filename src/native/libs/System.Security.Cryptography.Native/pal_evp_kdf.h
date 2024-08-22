@@ -52,12 +52,12 @@ destinationLength: The length of the destination buffer, and the number of bytes
 */
 PALEXPORT int32_t CryptoNative_KbkdfHmacOneShot(
     EVP_KDF* kdf,
-    unsigned char* key,
+    uint8_t* key,
     int32_t keyLength,
     char* algorithm,
-    unsigned char* label,
+    uint8_t* label,
     int32_t labelLength,
-    unsigned char* context,
+    uint8_t* context,
     int32_t contextLength,
-    unsigned char* destination,
+    uint8_t* destination,
     int32_t destinationLength);
