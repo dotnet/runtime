@@ -733,22 +733,23 @@ namespace System.Net.Sockets
                     IPAddress[] addresses = await addressesTask.ConfigureAwait(false);
                     IPAddress? address = null;
                     IPAddress? address2 = null;
-                    int nextAddressIndex = 0;
-                    int nextIPv6Addressindex = -1;
                     AddressFamily currentAddressFamily = AddressFamily.InterNetwork;
+
+                    int nextAddressIndex = 0;
+                    int nextIPv6AddressIndex = GetNextAddress(addresses, AddressFamily.InterNetworkV6, -1);
+                    int nextUPv4AddressIndex = GetNextAddress(addresses, AddressFamily.InterNetwork, -1);
+
 
                     // We can do parallel connect only if siocket was not specified and when there is at least one address of each AF.
                     bool parallelConnect = connectAlgorithm == ConnectAlgorithm.Parallel && _currentSocket == null && RemoteEndPoint!.AddressFamily == AddressFamily.Unspecified &&
-                                           nextAddressIndex >= 0 && nextIPv6Addressindex >= 0;
-
+                                           nextIPv6AddressIndex >= 0 && nextUPv4AddressIndex >= 0;
 
                     if (parallelConnect)
                     {
                         nextAddressIndex = GetNextAddress(addresses, AddressFamily.InterNetwork, -1);
-                        nextIPv6Addressindex = GetNextAddress(addresses, AddressFamily.InterNetworkV6, -1);
+                        nextIPv6AddressIndex = GetNextAddress(addresses, AddressFamily.InterNetworkV6, -1);
                         internalArgs.SecondarySaea = new SocketAsyncEventArgs();
                     }
-
                     internalArgs.SocketError = SocketError.Success;
                     while (true)
                     {
@@ -764,7 +765,7 @@ namespace System.Net.Sockets
                         }
                         else
                         {
-                            if (nextAddressIndex == -1 && nextIPv6Addressindex == -1)
+                            if (nextAddressIndex < 0 && nextIPv6AddressIndex < 0)
                             {
                                 // we used all IPv4 & IPv6 addresses
                                 break;
@@ -786,15 +787,15 @@ namespace System.Net.Sockets
                                     internalArgs.SocketError = SocketError.IOPending;
                             }
 
-                            if (internalArgs.SecondarySaea?.SocketError != SocketError.IOPending || nextIPv6Addressindex > 0)
+                            if (internalArgs.SecondarySaea?.SocketError != SocketError.IOPending || nextIPv6AddressIndex > 0)
                             {
-                                if (nextIPv6Addressindex >= 0)
+                                if (nextIPv6AddressIndex >= 0)
                                 {
-                                    address2 = addresses[nextIPv6Addressindex];
+                                    address2 = addresses[nextIPv6AddressIndex];
                                     if (address == null)
                                     {
                                         // fall-back to normal processing without extra SAE
-                                        address = addresses[nextIPv6Addressindex];
+                                        address = addresses[nextIPv6AddressIndex];
                                         internalArgs.SocketError = SocketError.IOPending;
                                         address2 = null;
                                         internalArgs.SecondarySaea = null;
@@ -802,11 +803,11 @@ namespace System.Net.Sockets
                                     else
                                     {
                                         Debug.Assert(internalArgs.SecondarySaea != null);
-                                        address2 = addresses[nextIPv6Addressindex];
+                                        address2 = addresses[nextIPv6AddressIndex];
                                         internalArgs.SecondarySaea!.SocketError = SocketError.IOPending;
                                     }
 
-                                    nextIPv6Addressindex = GetNextAddress(addresses, AddressFamily.InterNetworkV6, nextIPv6Addressindex);
+                                    nextIPv6AddressIndex = GetNextAddress(addresses, AddressFamily.InterNetworkV6, nextIPv6AddressIndex);
                                 }
                                 else
                                 {
@@ -936,7 +937,7 @@ namespace System.Net.Sockets
                             using (cancellationToken.UnsafeRegister(s => Socket.CancelConnectAsync((SocketAsyncEventArgs)s!), internalArgs))
                             {
                                 await new ValueTask(internalArgs, internalArgs.Version).ConfigureAwait(false);
-                                }
+                            }
                         }
 
                         // If it completed successfully, we're done; cleanup will be handled by the finally.
@@ -1001,7 +1002,7 @@ namespace System.Net.Sockets
                     // Store the results.
                     if (caughtException != null)
                     {
-                         SetResults(caughtException, 0, SocketFlags.None);
+                        SetResults(caughtException, 0, SocketFlags.None);
                         _currentSocket?.UpdateStatusAfterSocketError(_socketError);
                     }
                     else

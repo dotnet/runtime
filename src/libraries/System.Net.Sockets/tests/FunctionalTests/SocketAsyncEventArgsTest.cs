@@ -1133,7 +1133,7 @@ namespace System.Net.Sockets.Tests
                 return socket;
             });
             Socket a = portBlocker.MainSocket;
-            Socket b = portBlocker.SecondarySocket;
+            Socket b = new Socket(portBlocker.SecondarySocket.SafeHandle);
 
             if (preferIPv6)
             {
@@ -1152,8 +1152,7 @@ namespace System.Net.Sockets.Tests
             {
                 mres.Wait(TestSettings.PassingTestTimeout);
             }
-            // we should see attemopt to both sockets
-            //Task.WaitAll(new Task[] { t1, t2 }, TestSettings.PassingTestTimeout);
+            // we should see attempt to both sockets
             Assert.True(saea.ConnectSocket.Connected);
             if (preferIPv6)
             {
