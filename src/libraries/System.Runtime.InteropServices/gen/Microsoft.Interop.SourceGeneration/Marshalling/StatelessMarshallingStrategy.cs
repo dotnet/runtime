@@ -130,9 +130,6 @@ namespace Microsoft.Interop
         {
             return Array.Empty<StatementSyntax>();
         }
-
-        public ICustomTypeMarshallingStrategy Rebind(TypePositionInfo typeInfo, StubCodeContext codeContext)
-            => new StatelessValueMarshalling(typeInfo, codeContext, marshallerTypeSyntax, unmanagedType, shape);
     }
 
     /// <summary>
@@ -236,8 +233,6 @@ namespace Microsoft.Interop
         public bool UsesNativeIdentifier => innerMarshaller.UsesNativeIdentifier;
 
         public IEnumerable<StatementSyntax> GenerateNotifyForSuccessfulInvokeStatements(StubIdentifierContext context) => innerMarshaller.GenerateNotifyForSuccessfulInvokeStatements(context);
-        public ICustomTypeMarshallingStrategy Rebind(TypePositionInfo typeInfo, StubCodeContext codeContext)
-            => new StatelessCallerAllocatedBufferMarshalling(innerMarshaller.Rebind(typeInfo, codeContext), marshallerType, bufferElementType, isLinearCollectionMarshalling);
     }
 
     internal sealed class StatelessFreeMarshalling(ICustomTypeMarshallingStrategy innerMarshaller, TypeSyntax marshallerType) : ICustomTypeMarshallingStrategy
@@ -296,7 +291,6 @@ namespace Microsoft.Interop
         public IEnumerable<StatementSyntax> GenerateSetupStatements(StubIdentifierContext context) => innerMarshaller.GenerateSetupStatements(context);
         public IEnumerable<StatementSyntax> GenerateUnmarshalCaptureStatements(StubIdentifierContext context) => innerMarshaller.GenerateUnmarshalCaptureStatements(context);
         public IEnumerable<StatementSyntax> GenerateUnmarshalStatements(StubIdentifierContext context) => innerMarshaller.GenerateUnmarshalStatements(context);
-        public ICustomTypeMarshallingStrategy Rebind(TypePositionInfo typeInfo, StubCodeContext codeContext) => new StatelessFreeMarshalling(innerMarshaller.Rebind(typeInfo, codeContext), marshallerType);
     }
 
     /// <summary>
@@ -461,9 +455,6 @@ namespace Microsoft.Interop
                             Argument(IdentifierName(numElementsIdentifier))
                         })))));
         }
-
-        public ICustomTypeMarshallingStrategy Rebind(TypePositionInfo typeInfo, StubCodeContext codeContext)
-            => new StatelessLinearCollectionSpaceAllocator(typeInfo, codeContext, marshallerTypeSyntax, unmanagedType, shape, countInfo, countInfoRequiresCast);
 
         public bool UsesNativeIdentifier => true;
     }
@@ -709,15 +700,5 @@ namespace Microsoft.Interop
                 yield return elementsMarshalling.GenerateUnmarshalStatement(context);
             }
         }
-
-        public ICustomTypeMarshallingStrategy Rebind(TypePositionInfo typeInfo, StubCodeContext codeContext)
-            => new StatelessLinearCollectionMarshalling(
-                spaceMarshallingStrategy.Rebind(typeInfo, codeContext),
-                elementsMarshalling,
-                unmanagedType,
-                shape,
-                countInfo,
-                castCountInfo,
-                cleanupElementsAndSpace);
     }
 }

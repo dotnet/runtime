@@ -23,7 +23,5 @@ namespace Microsoft.Interop.JavaScript
             yield return InvocationExpression(MarshalerTypeName(Type),
                 ArgumentList(SingletonSeparatedList(Argument(MarshalerTypeName(_elementMarshalerType)))));
         }
-
-        public override IBoundMarshallingGenerator Rebind(TypePositionInfo info, StubCodeContext context) => new ArraySegmentJSGenerator(info, context, _elementMarshalerType);
     }
 }

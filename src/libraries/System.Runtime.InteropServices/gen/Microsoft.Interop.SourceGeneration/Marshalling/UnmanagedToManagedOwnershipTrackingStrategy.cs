@@ -73,7 +73,6 @@ namespace Microsoft.Interop
         public IEnumerable<StatementSyntax> GenerateUnmarshalCaptureStatements(StubIdentifierContext context) => innerMarshaller.GenerateUnmarshalCaptureStatements(context);
 
         public IEnumerable<StatementSyntax> GenerateUnmarshalStatements(StubIdentifierContext context) => innerMarshaller.GenerateUnmarshalStatements(context);
-        public ICustomTypeMarshallingStrategy Rebind(TypePositionInfo typeInfo, StubCodeContext codeContext) => new UnmanagedToManagedOwnershipTrackingStrategy(innerMarshaller.Rebind(typeInfo, codeContext));
     }
 
     /// <summary>
@@ -128,7 +127,6 @@ namespace Microsoft.Interop
         public IEnumerable<StatementSyntax> GenerateUnmarshalCaptureStatements(StubIdentifierContext context) => innerMarshaller.GenerateUnmarshalCaptureStatements(context);
 
         public IEnumerable<StatementSyntax> GenerateUnmarshalStatements(StubIdentifierContext context) => innerMarshaller.GenerateUnmarshalStatements(context);
-        public ICustomTypeMarshallingStrategy Rebind(TypePositionInfo typeInfo, StubCodeContext codeContext) => new CleanupOwnedOriginalValueMarshalling(innerMarshaller.Rebind(typeInfo, codeContext));
     }
 
     /// <summary>
@@ -146,6 +144,7 @@ namespace Microsoft.Interop
         public SignatureBehavior NativeSignatureBehavior => inner.NativeSignatureBehavior;
 
         public bool UsesNativeIdentifier => inner.UsesNativeIdentifier;
+        public ValueBoundaryBehavior ValueBoundaryBehavior => inner.ValueBoundaryBehavior;
 
         public IEnumerable<StatementSyntax> Generate(StubIdentifierContext context)
         {
@@ -175,8 +174,6 @@ namespace Microsoft.Interop
             }
         }
 
-        public ValueBoundaryBehavior ValueBoundaryBehavior => inner.ValueBoundaryBehavior;
-        public IBoundMarshallingGenerator Rebind(TypePositionInfo info, StubCodeContext context) => new FreeAlwaysOwnedOriginalValueGenerator(inner.Rebind(info, context));
         public ByValueMarshalKindSupport SupportsByValueMarshalKind(ByValueContentsMarshalKind marshalKind, out GeneratorDiagnostic? diagnostic)
             => inner.SupportsByValueMarshalKind(marshalKind, out diagnostic);
     }

@@ -469,7 +469,6 @@ namespace Microsoft.Interop
             StubIdentifierContext context,
             IBoundMarshallingGenerator elementMarshaller,
             out LinearCollectionElementMarshallingCodeContext elementSetupSubContext,
-            out TypePositionInfo localElementInfo,
             params StubIdentifierContext.Stage[] stagesToGeneratePerElement)
         {
             string managedSpanIdentifier = MarshallerHelpers.GetManagedSpanIdentifier(CollectionSource.TypeInfo, context);
@@ -484,21 +483,11 @@ namespace Microsoft.Interop
                 CodeEmitOptions = context.CodeEmitOptions
             };
 
-            IBoundMarshallingGenerator localMarshaller = elementMarshaller.Rebind(elementMarshaller.TypeInfo with
-            {
-                InstanceIdentifier = CollectionSource.TypeInfo.InstanceIdentifier,
-                RefKind = CollectionSource.TypeInfo.IsByRef ? CollectionSource.TypeInfo.RefKind : CollectionSource.TypeInfo.ByValueContentsMarshalKind.GetRefKindForByValueContentsKind(),
-                ManagedIndex = CollectionSource.TypeInfo.ManagedIndex,
-                NativeIndex = CollectionSource.TypeInfo.NativeIndex
-            }, elementCodeContext);
-
-            localElementInfo = localMarshaller.TypeInfo;
-
             List<StatementSyntax> elementStatements = [];
             foreach (StubIdentifierContext.Stage stage in stagesToGeneratePerElement)
             {
                 var elementSubContext = elementSetupSubContext with { CurrentStage = stage };
-                elementStatements.AddRange(localMarshaller.Generate(elementSubContext));
+                elementStatements.AddRange(elementMarshaller.Generate(elementSubContext));
             }
             return elementStatements;
         }
@@ -509,7 +498,7 @@ namespace Microsoft.Interop
             IBoundMarshallingGenerator elementMarshaller,
             params StubIdentifierContext.Stage[] stagesToGeneratePerElement)
         {
-            var elementStatements = GenerateElementStages(context, elementMarshaller, out var elementSetupSubContext, out var localElementInfo, stagesToGeneratePerElement);
+            var elementStatements = GenerateElementStages(context, elementMarshaller, out var elementSetupSubContext, stagesToGeneratePerElement);
 
             if (elementStatements.Count != 0)
             {
@@ -519,7 +508,7 @@ namespace Microsoft.Interop
 
                 if (elementMarshaller.NativeType is PointerTypeInfo nativeTypeInfo)
                 {
-                    PointerNativeTypeAssignmentRewriter rewriter = new(elementSetupSubContext.GetIdentifiers(localElementInfo).native, (PointerTypeSyntax)nativeTypeInfo.Syntax);
+                    PointerNativeTypeAssignmentRewriter rewriter = new(elementSetupSubContext.GetIdentifiers(elementMarshaller.TypeInfo).native, (PointerTypeSyntax)nativeTypeInfo.Syntax);
                     marshallingStatement = (StatementSyntax)rewriter.Visit(marshallingStatement);
                 }
 

@@ -113,9 +113,6 @@ namespace Microsoft.Interop.JavaScript
                 .WithArgumentList(ArgumentList(SeparatedList(arguments))));
         }
 
-        public override IBoundMarshallingGenerator Rebind(TypePositionInfo info, StubCodeContext context) => new FuncJSGenerator(info, context, _isAction, _argumentMarshalerTypes);
-
-
         private static ArgumentSyntax ArgToJS(int i, TypeSyntax sourceType, MarshalerType marshalerType) => Argument(ParenthesizedLambdaExpression()
                             .WithModifiers(TokenList(Token(SyntaxKind.StaticKeyword)))
                             .WithParameterList(ParameterList(SeparatedList(new[]{

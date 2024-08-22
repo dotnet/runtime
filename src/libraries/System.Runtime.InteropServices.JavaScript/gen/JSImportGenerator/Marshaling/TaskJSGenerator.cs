@@ -138,7 +138,5 @@ namespace Microsoft.Interop.JavaScript
                             Argument(IdentifierName("__task_result")),
                         }))))))))}))));
         }
-
-        public override IBoundMarshallingGenerator Rebind(TypePositionInfo info, StubCodeContext codeContext) => new TaskJSGenerator(info, codeContext, _resultMarshalerType);
     }
 }

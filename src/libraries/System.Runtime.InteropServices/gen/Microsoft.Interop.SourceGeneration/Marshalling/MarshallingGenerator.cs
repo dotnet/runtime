@@ -146,14 +146,6 @@ namespace Microsoft.Interop
         /// </param>
         /// <returns>If the provided <paramref name="marshalKind"/> is supported and if it is required to specify the requested behavior.</returns>
         ByValueMarshalKindSupport SupportsByValueMarshalKind(ByValueContentsMarshalKind marshalKind, out GeneratorDiagnostic? diagnostic);
-
-        /// <summary>
-        /// Create a new instance of this generator bound to a different <see cref="TypePositionInfo"/> and <see cref="StubCodeContext">.
-        /// </summary>
-        /// <param name="info">The new info to bind to.</param>
-        /// <param name="context">The new context to bind to.</param>
-        /// <returns>A new instance of this marshaller bound to <paramref name="info"/>.</returns>
-        IBoundMarshallingGenerator Rebind(TypePositionInfo info, StubCodeContext context);
     }
 
     /// <summary>
@@ -183,8 +175,6 @@ namespace Microsoft.Interop
             => unbound.SupportsByValueMarshalKind(marshalKind, TypeInfo, out diagnostic);
 
         public bool UsesNativeIdentifier => unbound.UsesNativeIdentifier(TypeInfo, context);
-
-        public IBoundMarshallingGenerator Rebind(TypePositionInfo info, StubCodeContext context) => new BoundMarshallingGenerator(info, context, unbound);
     }
 
     public static class UnboundMarshallingGeneratorExtensions

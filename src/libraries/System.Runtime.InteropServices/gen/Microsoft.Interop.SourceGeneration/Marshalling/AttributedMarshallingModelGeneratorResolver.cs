@@ -213,6 +213,7 @@ namespace Microsoft.Interop
             {
                 InstanceIdentifier = info.InstanceIdentifier,
                 ManagedIndex = info.ManagedIndex,
+                NativeIndex = info.NativeIndex,
                 RefKind = CreateElementRefKind(info.RefKind, info.ByValueContentsMarshalKind)
             };
             ResolvedGenerator resolvedElementMarshaller = _elementGeneratorResolver.Create(

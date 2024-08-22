@@ -100,7 +100,5 @@ namespace Microsoft.Interop
         {
             return innerMarshallingGenerator.SupportsByValueMarshalKind(marshalKind, out diagnostic);
         }
-
-        public IBoundMarshallingGenerator Rebind(TypePositionInfo info, StubCodeContext context) => innerMarshallingGenerator.Rebind(info, context);
     }
 }

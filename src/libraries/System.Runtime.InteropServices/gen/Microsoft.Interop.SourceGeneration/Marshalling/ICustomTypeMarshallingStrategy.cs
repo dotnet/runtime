@@ -38,7 +38,5 @@ namespace Microsoft.Interop
         IEnumerable<StatementSyntax> GenerateUnmarshalStatements(StubIdentifierContext context);
 
         bool UsesNativeIdentifier { get; }
-
-        ICustomTypeMarshallingStrategy Rebind(TypePositionInfo typeInfo, StubCodeContext codeContext);
     }
 }

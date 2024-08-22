@@ -20,7 +20,5 @@ namespace Microsoft.Interop.JavaScript
             yield return InvocationExpression(MarshalerTypeName(MarshalerType.Nullable),
                     ArgumentList(SingletonSeparatedList(Argument(MarshalerTypeName(Type)))));
         }
-
-        public override IBoundMarshallingGenerator Rebind(TypePositionInfo info, StubCodeContext codeContext) => new NullableJSGenerator(info, codeContext, Type);
     }
 }

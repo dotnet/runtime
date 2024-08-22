@@ -82,8 +82,5 @@ namespace Microsoft.Interop.JavaScript
                     IdentifierName(target), GetToJSMethod(Type)))
                     .WithArgumentList(ArgumentList(SingletonSeparatedList(ToJSMethodRefOrOut(source)))));
         }
-
-        public override IBoundMarshallingGenerator Rebind(TypePositionInfo info, StubCodeContext codeContext)
-            => new PrimitiveJSGenerator(Type, _inner.Rebind(info, codeContext));
     }
 }

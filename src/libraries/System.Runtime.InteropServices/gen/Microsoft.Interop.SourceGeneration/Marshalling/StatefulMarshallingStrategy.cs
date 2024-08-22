@@ -176,9 +176,6 @@ namespace Microsoft.Interop
         {
             return context.GetAdditionalIdentifier(info, MarshallerIdentifier);
         }
-
-        public ICustomTypeMarshallingStrategy Rebind(TypePositionInfo typeInfo, StubCodeContext codeContext)
-            => new StatefulValueMarshalling(typeInfo, codeContext, marshallerType, unmanagedType, shape);
     }
 
     /// <summary>
@@ -259,8 +256,6 @@ namespace Microsoft.Interop
 
         public IEnumerable<StatementSyntax> GenerateGuaranteedUnmarshalStatements(StubIdentifierContext context) => innerMarshaller.GenerateGuaranteedUnmarshalStatements(context);
         public IEnumerable<StatementSyntax> GenerateNotifyForSuccessfulInvokeStatements(StubIdentifierContext context) => innerMarshaller.GenerateNotifyForSuccessfulInvokeStatements(context);
-        public ICustomTypeMarshallingStrategy Rebind(TypePositionInfo typeInfo, StubCodeContext codeContext) =>
-            new StatefulCallerAllocatedBufferMarshalling(innerMarshaller.Rebind(typeInfo, codeContext), marshallerType, bufferElementType);
     }
 
     internal sealed class StatefulLinearCollectionSource(TypePositionInfo info, StubCodeContext codeContext) : IElementsMarshallingCollectionSource
@@ -454,8 +449,6 @@ namespace Microsoft.Interop
         }
 
         public IEnumerable<StatementSyntax> GenerateUnmarshalCaptureStatements(StubIdentifierContext context) => innerMarshaller.GenerateUnmarshalCaptureStatements(context);
-        public ICustomTypeMarshallingStrategy Rebind(TypePositionInfo typeInfo, StubCodeContext codeContext) =>
-            new StatefulLinearCollectionMarshalling(innerMarshaller.Rebind(typeInfo, codeContext), shape, countInfo, castCountInfo, elementsMarshalling, cleanupElements);
 
         public bool UsesNativeIdentifier => true;
 
@@ -517,9 +510,6 @@ namespace Microsoft.Interop
         public IEnumerable<StatementSyntax> GenerateUnmarshalStatements(StubIdentifierContext context) => innerMarshaller.GenerateUnmarshalStatements(context);
 
         public IEnumerable<StatementSyntax> GenerateUnmarshalCaptureStatements(StubIdentifierContext context) => innerMarshaller.GenerateUnmarshalCaptureStatements(context);
-
-        public ICustomTypeMarshallingStrategy Rebind(TypePositionInfo typeInfo, StubCodeContext codeContext)
-            => new StatefulFreeMarshalling(innerMarshaller.Rebind(typeInfo, codeContext));
 
         public bool UsesNativeIdentifier => innerMarshaller.UsesNativeIdentifier;
 

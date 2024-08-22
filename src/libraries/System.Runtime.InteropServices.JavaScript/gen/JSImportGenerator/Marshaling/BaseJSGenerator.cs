@@ -89,7 +89,5 @@ namespace Microsoft.Interop.JavaScript
                     return IdentifierName(Constants.ToJSMethod);
             }
         }
-
-        public abstract IBoundMarshallingGenerator Rebind(TypePositionInfo info, StubCodeContext codeContext);
     }
 }

@@ -23,7 +23,5 @@ namespace Microsoft.Interop.JavaScript
             yield return InvocationExpression(MarshalerTypeName(Type),
                 ArgumentList(SingletonSeparatedList(Argument(MarshalerTypeName(_elementMarshalerType)))));
         }
-
-        public override IBoundMarshallingGenerator Rebind(TypePositionInfo info, StubCodeContext codeContext) => new SpanJSGenerator(info, codeContext, _elementMarshalerType);
     }
 }
