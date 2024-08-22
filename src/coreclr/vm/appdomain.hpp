@@ -477,15 +477,6 @@ public:
         _ASSERTE(!"Not an AppDomain");
         return NULL;
     }
-    //****************************************************************************************
-    // Get the class init lock. The method is limited to friends because inappropriate use
-    // will cause deadlocks in the system
-    ListLock*  GetClassInitLock()
-    {
-        LIMITED_METHOD_CONTRACT;
-
-        return &m_ClassInitLock;
-    }
 
     STRINGREF *IsStringInterned(STRINGREF *pString);
     STRINGREF *GetOrInternString(STRINGREF *pString);
@@ -611,8 +602,6 @@ protected:
 
     // Used to protect the reference lists in the collectible loader allocators attached to this appdomain
     CrstExplicitInit m_crstLoaderAllocatorReferences;
-
-    ListLock         m_ClassInitLock;
 
     DefaultAssemblyBinder *m_pDefaultBinder; // Reference to the binding context that holds TPA list details
 
@@ -956,6 +945,13 @@ public:
         return &m_JITLock;
     }
 
+    ListLock*  GetClassInitLock()
+    {
+        LIMITED_METHOD_CONTRACT;
+
+        return &m_ClassInitLock;
+    }
+
     ListLock* GetILStubGenLock()
     {
         LIMITED_METHOD_CONTRACT;
@@ -976,6 +972,7 @@ public:
 
 private:
     JitListLock      m_JITLock;
+    ListLock         m_ClassInitLock;
     ListLock         m_ILStubGenLock;
     ListLock         m_NativeTypeLoadLock;
     CrstExplicitInit m_crstGenericDictionaryExpansionLock;

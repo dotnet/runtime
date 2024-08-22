@@ -466,8 +466,6 @@ BaseDomain::BaseDomain()
 
     // Note that m_handleStore is overridden by app domains
     m_handleStore = GCHandleUtilities::GetGCHandleManager()->GetGlobalHandleStore();
-
-    m_ClassInitLock.PreInit();
 } //BaseDomain::BaseDomain
 
 //*****************************************************************************
@@ -485,15 +483,6 @@ void BaseDomain::Init()
     //
     // Initialize the domain locks
     //
-    //   The JIT lock (in AppDomain) and the CCtor locks are at the same level (and marked as
-    //   UNSAFE_SAME_LEVEL) because they are all part of the same deadlock detection mechanism. We
-    //   see through cycles of JITting and .cctor execution and then explicitly allow the cycle to
-    //   be broken by giving access to uninitialized classes.  If there is no cycle or if the cycle
-    //   involves other locks that arent part of this special deadlock-breaking semantics, then
-    //   we continue to block.
-    //
-    m_ClassInitLock.Init(CrstClassInit, CrstFlags(CRST_REENTRANCY | CRST_UNSAFE_SAMELEVEL), TRUE);
-
     m_crstLoaderAllocatorReferences.Init(CrstLoaderAllocatorReferences);
 
     m_dwSizedRefHandles = 0;
@@ -1733,6 +1722,7 @@ AppDomain::AppDomain()
     m_cRef=1;
 
     m_JITLock.PreInit();
+    m_ClassInitLock.PreInit();
     m_ILStubGenLock.PreInit();
     m_NativeTypeLoadLock.PreInit();
     m_FileLoadLock.PreInit();
@@ -1797,7 +1787,16 @@ void AppDomain::Init()
 
     SetStage( STAGE_CREATING);
 
+    //
+    //   The JIT lock and the CCtor locks are at the same level (and marked as
+    //   UNSAFE_SAME_LEVEL) because they are all part of the same deadlock detection mechanism. We
+    //   see through cycles of JITting and .cctor execution and then explicitly allow the cycle to
+    //   be broken by giving access to uninitialized classes.  If there is no cycle or if the cycle
+    //   involves other locks that arent part of this special deadlock-breaking semantics, then
+    //   we continue to block.
+    //
     m_JITLock.Init(CrstJit, CrstFlags(CRST_REENTRANCY | CRST_UNSAFE_SAMELEVEL), TRUE);
+    m_ClassInitLock.Init(CrstClassInit, CrstFlags(CRST_REENTRANCY | CRST_UNSAFE_SAMELEVEL), TRUE);
     m_ILStubGenLock.Init(CrstILStubGen, CrstFlags(CRST_REENTRANCY), TRUE);
     m_NativeTypeLoadLock.Init(CrstInteropData, CrstFlags(CRST_REENTRANCY), TRUE);
     m_crstGenericDictionaryExpansionLock.Init(CrstGenericDictionaryExpansion);
