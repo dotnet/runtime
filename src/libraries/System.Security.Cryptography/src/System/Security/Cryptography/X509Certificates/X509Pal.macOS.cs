@@ -84,27 +84,23 @@ namespace System.Security.Cryptography.X509Certificates
                 AsnWriter writer = new AsnWriter(AsnEncodingRules.DER);
                 spki.Encode(writer);
 
-                byte[] rented = CryptoPool.Rent(writer.GetEncodedLength());
-
-                if (!writer.TryEncode(rented, out int written))
-                {
-                    Debug.Fail("TryEncode failed with a pre-allocated buffer");
-                    throw new InvalidOperationException();
-                }
-
                 DSA dsa = DSA.Create();
                 DSA? toDispose = dsa;
 
                 try
                 {
-                    dsa.ImportSubjectPublicKeyInfo(rented.AsSpan(0, written), out _);
+                    writer.Encode(dsa, static (dsa, encoded) =>
+                    {
+                        dsa.ImportSubjectPublicKeyInfo(encoded, out _);
+                        return (object?)null;
+                    });
+
                     toDispose = null;
                     return dsa;
                 }
                 finally
                 {
                     toDispose?.Dispose();
-                    CryptoPool.Return(rented, written);
                 }
             }
 

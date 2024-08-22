@@ -20,6 +20,9 @@ namespace System.Formats.Asn1
         private byte[] _buffer = null!;
         private int _offset;
         private Stack<StackFrame>? _nestingStack;
+#if NET9_0_OR_GREATER
+        private int _encodeDepth;
+#endif
 
         /// <summary>
         ///   Gets the encoding rules in use by this writer.
@@ -78,6 +81,13 @@ namespace System.Formats.Asn1
         /// </summary>
         public void Reset()
         {
+#if NET9_0_OR_GREATER
+            if (_encodeDepth != 0)
+            {
+                throw new InvalidOperationException(SR.AsnWriter_ModifyingWhileEncoding);
+            }
+#endif
+
             if (_offset > 0)
             {
                 Debug.Assert(_buffer != null);
@@ -199,6 +209,87 @@ namespace System.Formats.Asn1
             return _buffer.AsSpan(0, _offset).ToArray();
         }
 
+#if NET9_0_OR_GREATER
+        /// <summary>
+        ///   Provides the encoded representation of the data to the specified callback.
+        /// </summary>
+        /// <param name="encodeCallback">
+        ///   The callback that receives the encoded data.
+        /// </param>
+        /// <typeparam name="TReturn">
+        ///   The type of the return value.
+        /// </typeparam>
+        /// <returns>
+        ///   Returns the value returned from <paramref name="encodeCallback" />.
+        /// </returns>
+        /// <exception cref="ArgumentNullException">
+        ///   <paramref name="encodeCallback"/> is <see langword="null"/>.
+        /// </exception>
+        /// <exception cref="InvalidOperationException">
+        ///   A <see cref="PushSequence"/> or <see cref="PushSetOf"/> has not been closed via
+        ///   <see cref="PopSequence"/> or <see cref="PopSetOf"/>.
+        /// </exception>
+        public TReturn Encode<TReturn>(Func<ReadOnlySpan<byte>, TReturn> encodeCallback)
+        {
+            if (encodeCallback is null)
+                throw new ArgumentNullException(nameof(encodeCallback));
+
+            try
+            {
+                _encodeDepth = checked(_encodeDepth + 1);
+                ReadOnlySpan<byte> encoded = EncodeAsSpan();
+                return encodeCallback(encoded);
+            }
+            finally
+            {
+                _encodeDepth--;
+            }
+        }
+
+        /// <summary>
+        ///   Provides the encoded representation of the data to the specified callback.
+        /// </summary>
+        /// <param name="encodeCallback">
+        ///   The callback that receives the encoded data.
+        /// </param>
+        /// <param name="state">
+        ///   The state to pass to <paramref name="encodeCallback" />.
+        /// </param>
+        /// <typeparam name="TState">
+        ///   The type of the state.
+        /// </typeparam>
+        /// <typeparam name="TReturn">
+        ///   The type of the return value.
+        /// </typeparam>
+        /// <returns>
+        ///   Returns the value returned from <paramref name="encodeCallback" />.
+        /// </returns>
+        /// <exception cref="ArgumentNullException">
+        ///   <paramref name="encodeCallback"/> is <see langword="null"/>.
+        /// </exception>
+        /// <exception cref="InvalidOperationException">
+        ///   A <see cref="PushSequence"/> or <see cref="PushSetOf"/> has not been closed via
+        ///   <see cref="PopSequence"/> or <see cref="PopSetOf"/>.
+        /// </exception>
+        public TReturn Encode<TState, TReturn>(TState state, Func<TState, ReadOnlySpan<byte>, TReturn> encodeCallback)
+            where TState : allows ref struct
+        {
+            if (encodeCallback is null)
+                throw new ArgumentNullException(nameof(encodeCallback));
+
+            try
+            {
+                _encodeDepth = checked(_encodeDepth + 1);
+                ReadOnlySpan<byte> encoded = EncodeAsSpan();
+                return encodeCallback(state, encoded);
+            }
+            finally
+            {
+                _encodeDepth--;
+            }
+        }
+#endif
+
         private ReadOnlySpan<byte> EncodeAsSpan()
         {
             if ((_nestingStack?.Count ?? 0) != 0)
@@ -264,6 +355,13 @@ namespace System.Formats.Asn1
             {
                 throw new OverflowException();
             }
+
+#if NET9_0_OR_GREATER
+            if (_encodeDepth != 0)
+            {
+                throw new InvalidOperationException(SR.AsnWriter_ModifyingWhileEncoding);
+            }
+#endif
 
             if (_buffer == null || _buffer.Length - _offset < pendingCount)
             {
