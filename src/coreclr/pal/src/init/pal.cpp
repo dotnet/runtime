@@ -382,6 +382,16 @@ Initialize(
             goto CLEANUP0a;
         }
 
+        if (flags & PAL_INITIALIZE_FLUSH_PROCESS_WRITE_BUFFERS)
+        {
+            // Initialize before first thread is created for faster load on Linux
+            if (!InitializeFlushProcessWriteBuffers())
+            {
+                palError = ERROR_PALINIT_INITIALIZE_FLUSH_PROCESS_WRITE_BUFFERS;
+                goto CLEANUP0a;
+            }
+        }
+
         // The gSharedFilesPath is allocated dynamically so its destructor does not get
         // called unexpectedly during cleanup
         gSharedFilesPath = InternalNew<PathCharString>();
@@ -785,11 +795,6 @@ PAL_InitializeCoreCLR(const char *szExePath, BOOL runningInExe)
     {
         printf("PROCAbortInitialize FAILED %d (%s)\n", errno, strerror(errno));
         return ERROR_PALINIT_PROCABORT_INITIALIZE;
-    }
-
-    if (!InitializeFlushProcessWriteBuffers())
-    {
-        return ERROR_PALINIT_INITIALIZE_FLUSH_PROCESS_WRITE_BUFFERS;
     }
 
     return ERROR_SUCCESS;
