@@ -160,7 +160,7 @@ jobs:
           targetFolder: '$(SpmiDiffsLocation)'
         condition: always()
 
-    - script: $(PythonScript) $(Build.SourcesDirectory)/src/coreclr/scripts/superpmi_diffs_summarize.py -diff_summary_dir $(SpmiDiffsLocation) -type $(diffType) -platform $(osGroup) -arch $(archType)
+    - script: $(PythonScript) $(Build.SourcesDirectory)/src/coreclr/scripts/superpmi_diffs_summarize.py -source_directory $(Build.SourcesDirectory) -diff_summary_dir $(SpmiDiffsLocation) -type $(diffType) -platform $(osGroup) -arch $(archType)
       displayName: ${{ format('Summarize ({0} {1}{2} {3})', parameters.diffType, parameters.osGroup, parameters.osSubgroup, parameters.archType) }}
       condition: always()
 
