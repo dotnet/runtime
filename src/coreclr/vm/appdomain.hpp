@@ -487,24 +487,6 @@ public:
         return &m_ClassInitLock;
     }
 
-    JitListLock* GetJitLock()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return &m_JITLock;
-    }
-
-    ListLock* GetILStubGenLock()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return &m_ILStubGenLock;
-    }
-
-    ListLock* GetNativeTypeLoadLock()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return &m_NativeTypeLoadLock;
-    }
-
     STRINGREF *IsStringInterned(STRINGREF *pString);
     STRINGREF *GetOrInternString(STRINGREF *pString);
 
@@ -615,12 +597,6 @@ public:
         return &m_crstLoaderAllocatorReferences;
     }
 
-    CrstExplicitInit* GetGenericDictionaryExpansionLock()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return &m_crstGenericDictionaryExpansionLock;
-    }
-
     static CrstStatic* GetMethodTableExposedClassObjectLock()
     {
         LIMITED_METHOD_CONTRACT;
@@ -635,16 +611,8 @@ protected:
 
     // Used to protect the reference lists in the collectible loader allocators attached to this appdomain
     CrstExplicitInit m_crstLoaderAllocatorReferences;
-    CrstExplicitInit m_crstGenericDictionaryExpansionLock;
 
-    //#AssemblyListLock
-    // Used to protect the assembly list. Taken also by GC or debugger thread, therefore we have to avoid
-    // triggering GC while holding this lock (by switching the thread to GC_NOTRIGGER while it is held).
-    CrstExplicitInit m_crstAssemblyList;
     ListLock         m_ClassInitLock;
-    JitListLock      m_JITLock;
-    ListLock         m_ILStubGenLock;
-    ListLock         m_NativeTypeLoadLock;
 
     DefaultAssemblyBinder *m_pDefaultBinder; // Reference to the binding context that holds TPA list details
 
@@ -982,7 +950,35 @@ public:
     PTR_NativeImage SetNativeImage(LPCUTF8 compositeFileName, PTR_NativeImage pNativeImage);
 #endif // DACCESS_COMPILE
 
-    //****************************************************************************************
+    JitListLock* GetJitLock()
+    {
+        LIMITED_METHOD_CONTRACT;
+        return &m_JITLock;
+    }
+
+    ListLock* GetILStubGenLock()
+    {
+        LIMITED_METHOD_CONTRACT;
+        return &m_ILStubGenLock;
+    }
+
+    ListLock* GetNativeTypeLoadLock()
+    {
+        LIMITED_METHOD_CONTRACT;
+        return &m_NativeTypeLoadLock;
+    }
+
+    CrstExplicitInit* GetGenericDictionaryExpansionLock()
+    {
+        LIMITED_METHOD_CONTRACT;
+        return &m_crstGenericDictionaryExpansionLock;
+    }
+
+private:
+    JitListLock      m_JITLock;
+    ListLock         m_ILStubGenLock;
+    ListLock         m_NativeTypeLoadLock;
+    CrstExplicitInit m_crstGenericDictionaryExpansionLock;
 
 protected:
     // Multi-thread safe access to the list of assemblies
@@ -1158,6 +1154,11 @@ public:
         LIMITED_METHOD_CONTRACT;
         return &m_crstAssemblyList;
     }
+
+private:
+    // Used to protect the assembly list. Taken also by GC or debugger thread, therefore we have to avoid
+    // triggering GC while holding this lock (by switching the thread to GC_NOTRIGGER while it is held).
+    CrstExplicitInit m_crstAssemblyList;
 
 public:
     class AssemblyIterator

@@ -467,10 +467,7 @@ BaseDomain::BaseDomain()
     // Note that m_handleStore is overridden by app domains
     m_handleStore = GCHandleUtilities::GetGCHandleManager()->GetGlobalHandleStore();
 
-    m_JITLock.PreInit();
     m_ClassInitLock.PreInit();
-    m_ILStubGenLock.PreInit();
-    m_NativeTypeLoadLock.PreInit();
 } //BaseDomain::BaseDomain
 
 //*****************************************************************************
@@ -488,27 +485,16 @@ void BaseDomain::Init()
     //
     // Initialize the domain locks
     //
-
-    m_crstGenericDictionaryExpansionLock.Init(CrstGenericDictionaryExpansion);
-
-    //
-    //   The JIT lock and the CCtor locks are at the same level (and marked as
+    //   The JIT lock (in AppDomain) and the CCtor locks are at the same level (and marked as
     //   UNSAFE_SAME_LEVEL) because they are all part of the same deadlock detection mechanism. We
     //   see through cycles of JITting and .cctor execution and then explicitly allow the cycle to
     //   be broken by giving access to uninitialized classes.  If there is no cycle or if the cycle
     //   involves other locks that arent part of this special deadlock-breaking semantics, then
     //   we continue to block.
     //
-    m_JITLock.Init(CrstJit, CrstFlags(CRST_REENTRANCY | CRST_UNSAFE_SAMELEVEL), TRUE);
     m_ClassInitLock.Init(CrstClassInit, CrstFlags(CRST_REENTRANCY | CRST_UNSAFE_SAMELEVEL), TRUE);
 
-    m_ILStubGenLock.Init(CrstILStubGen, CrstFlags(CRST_REENTRANCY), TRUE);
-    m_NativeTypeLoadLock.Init(CrstInteropData, CrstFlags(CRST_REENTRANCY), TRUE);
-
     m_crstLoaderAllocatorReferences.Init(CrstLoaderAllocatorReferences);
-    // Has to switch thread to GC_NOTRIGGER while being held (see code:BaseDomain#AssemblyListLock)
-    m_crstAssemblyList.Init(CrstAssemblyList, CrstFlags(
-        CRST_GC_NOTRIGGER_WHEN_TAKEN | CRST_DEBUGGER_THREAD | CRST_TAKEN_DURING_SHUTDOWN));
 
     m_dwSizedRefHandles = 0;
     // For server GC this value indicates the number of GC heaps used in circular order to allocate sized
@@ -1746,6 +1732,9 @@ AppDomain::AppDomain()
 
     m_cRef=1;
 
+    m_JITLock.PreInit();
+    m_ILStubGenLock.PreInit();
+    m_NativeTypeLoadLock.PreInit();
     m_FileLoadLock.PreInit();
 
     m_pRootAssembly = NULL;
@@ -1808,8 +1797,16 @@ void AppDomain::Init()
 
     SetStage( STAGE_CREATING);
 
+    m_JITLock.Init(CrstJit, CrstFlags(CRST_REENTRANCY | CRST_UNSAFE_SAMELEVEL), TRUE);
+    m_ILStubGenLock.Init(CrstILStubGen, CrstFlags(CRST_REENTRANCY), TRUE);
+    m_NativeTypeLoadLock.Init(CrstInteropData, CrstFlags(CRST_REENTRANCY), TRUE);
+    m_crstGenericDictionaryExpansionLock.Init(CrstGenericDictionaryExpansion);
     m_FileLoadLock.Init(CrstAssemblyLoader, CrstFlags(CRST_HOST_BREAKABLE), TRUE);
     m_DomainCacheCrst.Init(CrstAppDomainCache);
+
+    // Has to switch thread to GC_NOTRIGGER while being held
+    m_crstAssemblyList.Init(CrstAssemblyList, CrstFlags(
+        CRST_GC_NOTRIGGER_WHEN_TAKEN | CRST_DEBUGGER_THREAD | CRST_TAKEN_DURING_SHUTDOWN));
 
     BaseDomain::Init();
 
