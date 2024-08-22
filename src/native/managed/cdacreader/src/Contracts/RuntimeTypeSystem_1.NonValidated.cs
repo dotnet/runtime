@@ -311,7 +311,7 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
         return methodDescPointer.Value + offset;
     }
 
-    private TargetPointer GetAddresOfNonVtableSlot(TargetPointer methodDescPointer, NonValidated.MethodDesc umd)
+    private TargetPointer GetAddressOfNonVtableSlot(TargetPointer methodDescPointer, NonValidated.MethodDesc umd)
     {
         uint offset = MethodDescAdditionalPointersOffset(umd);
         offset += (uint)(_target.PointerSize * umd.NonVtableSlotIndex);
@@ -354,7 +354,7 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
     {
         if (umd.HasNonVtableSlot)
         {
-            TargetPointer pSlot = GetAddresOfNonVtableSlot(methodDescAddress, umd);
+            TargetPointer pSlot = GetAddressOfNonVtableSlot(methodDescAddress, umd);
 
             return _target.ReadCodePointer(pSlot);
         }
