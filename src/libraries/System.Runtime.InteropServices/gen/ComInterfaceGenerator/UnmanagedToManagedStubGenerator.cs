@@ -56,7 +56,6 @@ namespace Microsoft.Interop
         /// </remarks>
         public BlockSyntax GenerateStubBody(ExpressionSyntax methodToInvoke)
         {
-            List<StatementSyntax> setupStatements = new();
             GeneratedStatements statements = GeneratedStatements.Create(
                 _marshallers,
                 _context,
@@ -69,27 +68,29 @@ namespace Microsoft.Interop
                 || !statements.ManagedExceptionCatchClauses.IsEmpty;
             VariableDeclarations declarations = VariableDeclarations.GenerateDeclarationsForUnmanagedToManaged(_marshallers, _context, shouldInitializeVariables);
 
-            setupStatements.AddRange(declarations.Initializations);
-            setupStatements.AddRange(declarations.Variables);
-            setupStatements.AddRange(statements.Setup);
+            List<StatementSyntax> setupStatements =
+            [
+                .. declarations.Initializations,
+                .. declarations.Variables,
+                .. statements.Setup,
+            ];
 
-            List<StatementSyntax> tryStatements = new();
-            tryStatements.AddRange(statements.GuaranteedUnmarshal);
-            tryStatements.AddRange(statements.Unmarshal);
-
-            tryStatements.Add(statements.InvokeStatement);
-
-            tryStatements.AddRange(statements.NotifyForSuccessfulInvoke);
-            tryStatements.AddRange(statements.Marshal);
-            tryStatements.AddRange(statements.PinnedMarshal);
+            List<StatementSyntax> tryStatements =
+            [
+                .. statements.GuaranteedUnmarshal,
+                .. statements.Unmarshal,
+                statements.InvokeStatement,
+                .. statements.NotifyForSuccessfulInvoke,
+                .. statements.Marshal,
+                .. statements.PinnedMarshal,
+            ];
 
             List<StatementSyntax> allStatements = setupStatements;
-            List<StatementSyntax> finallyStatements = new();
 
             SyntaxList<CatchClauseSyntax> catchClauses = List(statements.ManagedExceptionCatchClauses);
 
-            finallyStatements.AddRange(statements.CleanupCallerAllocated);
-            if (finallyStatements.Count > 0)
+            ImmutableArray<StatementSyntax> finallyStatements = statements.CleanupCallerAllocated;
+            if (finallyStatements.Length > 0)
             {
                 allStatements.Add(
                     TryStatement(Block(tryStatements), catchClauses, FinallyClause(Block(finallyStatements))));
