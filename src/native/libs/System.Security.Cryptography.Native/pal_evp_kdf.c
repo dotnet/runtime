@@ -99,7 +99,7 @@ int32_t CryptoNative_KbkdfHmacOneShot(
         if (key == NULL || keyLength == 0)
         {
             // OpenSSL does not permit an empty KBKDF key. Since we know we are in HMAC mode, and HMAC keys are zero-extended,
-            // We can create a non-empty key that is functionally equivilent to an empty one.
+            // We can create a non-empty key that is functionally equivalent to an empty one.
             key = zero;
             keyLength = 1;
         }
