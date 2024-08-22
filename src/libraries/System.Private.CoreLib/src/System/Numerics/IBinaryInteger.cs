@@ -29,13 +29,15 @@ namespace System.Numerics
         {
             (TSelf quotient, TSelf remainder) = TSelf.DivRem(left, right);
 
-            if (remainder == TSelf.Zero)
+            if (TSelf.IsZero(remainder))
                 return (quotient, remainder);
 
             switch (mode)
             {
+                case DivisionRounding.Truncate:
+                    break;
                 case DivisionRounding.Floor:
-                    if (right > TSelf.Zero ^ left > TSelf.Zero)
+                    if (TSelf.IsPositive(left) != TSelf.IsPositive(right))
                     {
                         quotient--;
                         remainder += right;
@@ -43,7 +45,7 @@ namespace System.Numerics
                     break;
                 case DivisionRounding.Ceiling:
                 {
-                    if (right > TSelf.Zero ^ left < TSelf.Zero)
+                    if (TSelf.IsPositive(left) == TSelf.IsPositive(right))
                     {
                         quotient++;
                         remainder -= right;
@@ -52,7 +54,7 @@ namespace System.Numerics
                 }
                 case DivisionRounding.AwayFromZero:
                 {
-                    if (right > TSelf.Zero ^ left > TSelf.Zero)
+                    if (TSelf.IsPositive(left) != TSelf.IsPositive(right))
                     {
                         quotient--;
                         remainder += right;
@@ -66,9 +68,9 @@ namespace System.Numerics
                 }
                 case DivisionRounding.Euclidean:
                 {
-                    if (left < TSelf.Zero)
+                    if (TSelf.IsNegative(left))
                     {
-                        if (right > TSelf.Zero)
+                        if (TSelf.IsPositive(right))
                         {
                             quotient--;
                             remainder += right;
@@ -81,6 +83,9 @@ namespace System.Numerics
                     }
                     break;
                 }
+                default:
+                    ThrowHelper.ThrowArgumentException_InvalidEnumValue(mode);
+                    break;
             }
 
             return (quotient, remainder);
@@ -95,20 +100,22 @@ namespace System.Numerics
         {
             (TSelf quotient, TSelf remainder) = TSelf.DivRem(left, right);
 
-            if (remainder == TSelf.Zero)
+            if (TSelf.IsZero(remainder))
                 return quotient;
 
             switch (mode)
             {
+                case DivisionRounding.Truncate:
+                    break;
                 case DivisionRounding.Floor:
-                    if (right > TSelf.Zero ^ left > TSelf.Zero)
+                    if (TSelf.IsPositive(left) != TSelf.IsPositive(right))
                     {
                         quotient--;
                     }
                     break;
                 case DivisionRounding.Ceiling:
                 {
-                    if (right > TSelf.Zero ^ left < TSelf.Zero)
+                    if (TSelf.IsPositive(left) == TSelf.IsPositive(right))
                     {
                         quotient++;
                     }
@@ -116,7 +123,7 @@ namespace System.Numerics
                 }
                 case DivisionRounding.AwayFromZero:
                 {
-                    if (right > TSelf.Zero ^ left > TSelf.Zero)
+                    if (TSelf.IsPositive(left) != TSelf.IsPositive(right))
                     {
                         quotient--;
                     }
@@ -128,9 +135,9 @@ namespace System.Numerics
                 }
                 case DivisionRounding.Euclidean:
                 {
-                    if (left < TSelf.Zero)
+                    if (TSelf.IsNegative(left))
                     {
-                        if (right > TSelf.Zero)
+                        if (TSelf.IsPositive(right))
                         {
                             quotient--;
                         }
@@ -141,6 +148,9 @@ namespace System.Numerics
                     }
                     break;
                 }
+                default:
+                    ThrowHelper.ThrowArgumentException_InvalidEnumValue(mode);
+                    break;
             }
 
             return quotient;
@@ -155,20 +165,22 @@ namespace System.Numerics
         {
             TSelf remainder = left % right;
 
-            if (remainder == TSelf.Zero)
+            if (TSelf.IsZero(remainder))
                 return remainder;
 
             switch (mode)
             {
+                case DivisionRounding.Truncate:
+                    break;
                 case DivisionRounding.Floor:
-                    if (right > TSelf.Zero ^ left > TSelf.Zero)
+                    if (TSelf.IsPositive(left) != TSelf.IsPositive(right))
                     {
                         remainder += right;
                     }
                     break;
                 case DivisionRounding.Ceiling:
                 {
-                    if (right > TSelf.Zero ^ left < TSelf.Zero)
+                    if (TSelf.IsPositive(left) == TSelf.IsPositive(right))
                     {
                         remainder -= right;
                     }
@@ -176,7 +188,7 @@ namespace System.Numerics
                 }
                 case DivisionRounding.AwayFromZero:
                 {
-                    if (right > TSelf.Zero ^ left > TSelf.Zero)
+                    if (TSelf.IsPositive(left) != TSelf.IsPositive(right))
                     {
                         remainder += right;
                     }
@@ -188,9 +200,9 @@ namespace System.Numerics
                 }
                 case DivisionRounding.Euclidean:
                 {
-                    if (left < TSelf.Zero)
+                    if (TSelf.IsNegative(left))
                     {
-                        if (right > TSelf.Zero)
+                        if (TSelf.IsPositive(right))
                         {
                             remainder += right;
                         }
@@ -201,6 +213,9 @@ namespace System.Numerics
                     }
                     break;
                 }
+                default:
+                    ThrowHelper.ThrowArgumentException_InvalidEnumValue(mode);
+                    break;
             }
 
             return remainder;
