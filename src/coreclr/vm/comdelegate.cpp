@@ -822,7 +822,7 @@ VOID GenerateShuffleArray(MethodDesc* pInvoke, MethodDesc *pTargetMeth, SArray<S
 
         for (COUNT_T i = 0; i < pShuffleEntryArray->GetCount(); ++i)
         {
-            const ShuffleEntry& entry = (*pShuffleEntryArray)[i];
+            ShuffleEntry entry = (*pShuffleEntryArray)[i];
             if (entry.srcofs == ShuffleEntry::SENTINEL)
             {
                 LOGALWAYS(("    [%u] sentinel, stack size delta %u\n", i, entry.stacksizedelta));

@@ -188,7 +188,7 @@ struct ShuffleEntry
         FIELDSIZESHIFTPOS = 3,
         FIELDSIZESHIFTMASK = 0x3 << FIELDSIZESHIFTPOS, // Mask to get field log2(size) of FP struct
         FIELDOFFSETPOS = FIELDSIZESHIFTPOS + 2,
-        FIELDOFFSETMASK = 0xff << FIELDOFFSETPOS, // Mask to get field offset of FP struct
+        FIELDOFFSETMASK = 0xf << FIELDOFFSETPOS, // Mask to get field offset of FP struct
 #else
         OFSREGMASK   = 0x1fff, // Mask to get register index
 #endif // TARGET_RISCV64
