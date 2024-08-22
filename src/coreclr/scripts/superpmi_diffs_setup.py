@@ -251,9 +251,6 @@ def build_partitions(partitions_dir, bin_path, host_bitness):
 
     for blob in elem.findall(".//Blob"):
         name = blob.find("Name").text
-        # Testing: Skip largest collections
-        if "coreclr_tests" in name or "libraries" in name:
-            continue
         for (target_os, arch, collections) in targets:
             name_pref = prefix + "/" + target_os + "/" + arch + "/"
             if name.startswith(name_pref) and name.removesuffix(".zip").endswith(".mch"):
