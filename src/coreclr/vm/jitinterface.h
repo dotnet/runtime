@@ -1092,8 +1092,6 @@ struct VirtualFunctionPointerArgs
     CORINFO_METHOD_HANDLE methodHnd;
 };
 
-FCDECL2(CORINFO_MethodPtr, JIT_VirtualFunctionPointer_Dynamic, Object * objectUNSAFE, VirtualFunctionPointerArgs * pArgs);
-
 typedef HCCALL1_PTR(TADDR, FnStaticBaseHelper, TADDR arg0);
 
 struct StaticFieldAddressArgs
@@ -1121,8 +1119,6 @@ CORINFO_GENERIC_HANDLE JIT_GenericHandleWorker(MethodDesc   *pMD,
                                                LPVOID        signature,
                                                DWORD         dictionaryIndexAndSlot = -1,
                                                Module *      pModule = NULL);
-
-void ClearJitGenericHandleCache();
 
 CORJIT_FLAGS GetDebuggerCompileFlags(Module* pModule, CORJIT_FLAGS flags);
 

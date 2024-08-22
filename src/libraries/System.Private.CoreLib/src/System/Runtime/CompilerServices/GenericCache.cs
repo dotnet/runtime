@@ -368,7 +368,7 @@ namespace System.Runtime.CompilerServices
             return table.Length - 1;
         }
 
-        private void FlushCurrentCache()
+        internal void FlushCurrentCache()
         {
             Entry[] table = _table;
             int lastSize = CacheElementCount(table);
