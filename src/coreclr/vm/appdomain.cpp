@@ -467,7 +467,6 @@ BaseDomain::BaseDomain()
     // Note that m_handleStore is overridden by app domains
     m_handleStore = GCHandleUtilities::GetGCHandleManager()->GetGlobalHandleStore();
 
-    m_FileLoadLock.PreInit();
     m_JITLock.PreInit();
     m_ClassInitLock.PreInit();
     m_ILStubGenLock.PreInit();
@@ -491,14 +490,6 @@ void BaseDomain::Init()
     //
 
     m_crstGenericDictionaryExpansionLock.Init(CrstGenericDictionaryExpansion);
-
-    // NOTE: CRST_UNSAFE_COOPGC prevents a GC mode switch to preemptive when entering this crst.
-    // If you remove this flag, we will switch to preemptive mode when entering
-    // m_FileLoadLock, which means all functions that enter it will become
-    // GC_TRIGGERS.  (This includes all uses of PEFileListLockHolder, LoadLockHolder, etc.)  So be sure
-    // to update the contracts if you remove this flag.
-    m_FileLoadLock.Init(CrstAssemblyLoader,
-                        CrstFlags(CRST_HOST_BREAKABLE), TRUE);
 
     //
     //   The JIT lock and the CCtor locks are at the same level (and marked as
@@ -1755,6 +1746,8 @@ AppDomain::AppDomain()
 
     m_cRef=1;
 
+    m_FileLoadLock.PreInit();
+
     m_pRootAssembly = NULL;
 
     m_dwFlags = 0;
@@ -1815,6 +1808,7 @@ void AppDomain::Init()
 
     SetStage( STAGE_CREATING);
 
+    m_FileLoadLock.Init(CrstAssemblyLoader, CrstFlags(CRST_HOST_BREAKABLE), TRUE);
     m_DomainCacheCrst.Init(CrstAppDomainCache);
 
     BaseDomain::Init();

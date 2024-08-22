@@ -627,19 +627,11 @@ public:
         return &m_MethodTableExposedClassObjectCrst;
     }
 
-    void AssertLoadLockHeld()
-    {
-        _ASSERTE(m_FileLoadLock.HasLock());
-    }
-
 protected:
 
     //****************************************************************************************
     // Helper method to initialize the large heap handle table.
     void InitPinnedHeapHandleTable();
-
-    // Critical sections & locks
-    PEFileListLock   m_FileLoadLock;            // Protects the list of assemblies in the domain
 
     // Used to protect the reference lists in the collectible loader allocators attached to this appdomain
     CrstExplicitInit m_crstLoaderAllocatorReferences;
@@ -669,27 +661,6 @@ public:
     // loads in progress.
     void ClearBinderContext();
 
-    //****************************************************************************************
-    // Synchronization holders.
-
-    class LoadLockHolder :  public PEFileListLockHolder
-    {
-    public:
-        LoadLockHolder(BaseDomain *pD, BOOL Take = TRUE)
-          : PEFileListLockHolder(&pD->m_FileLoadLock, Take)
-        {
-            CONTRACTL
-            {
-                NOTHROW;
-                GC_NOTRIGGER;
-                MODE_ANY;
-                CAN_TAKE_LOCK;
-            }
-            CONTRACTL_END;
-        }
-    };
-    friend class LoadLockHolder;
-public:
     void InitVSD();
 
 private:
@@ -1624,6 +1595,11 @@ public:
     }
 #endif
 
+    void AssertLoadLockHeld()
+    {
+        _ASSERTE(m_FileLoadLock.HasLock());
+    }
+
     // The one and only AppDomain
     SPTR_DECL(AppDomain, m_pTheAppDomain);
 
@@ -1700,6 +1676,7 @@ private:
     }
 
 private:
+    PEFileListLock   m_FileLoadLock;            // Protects the list of assemblies in the domain
     CrstExplicitInit m_DomainCacheCrst;         // Protects the Assembly and Unmanaged caches
 
 public:
@@ -1726,6 +1703,24 @@ public:
             WRAPPER_NO_CONTRACT;
         }
     };
+
+    class LoadLockHolder :  public PEFileListLockHolder
+    {
+    public:
+        LoadLockHolder(AppDomain *pD, BOOL Take = TRUE)
+          : PEFileListLockHolder(&pD->m_FileLoadLock, Take)
+        {
+            CONTRACTL
+            {
+                NOTHROW;
+                GC_TRIGGERS;
+                MODE_ANY;
+                CAN_TAKE_LOCK;
+            }
+            CONTRACTL_END;
+        }
+    };
+    friend class LoadLockHolder;
 
     //---------------------------------------------------------
     // Stub caches for Method stubs
