@@ -3220,7 +3220,7 @@ void gc_heap::fire_pevents()
 // because EE is not suspended then. On entry it's fired after the GCStart event, on exit it's fire before the GCStop event.
 void gc_heap::fire_committed_usage_event()
 {
-#if defined(FEATURE_EVENT_TRACE) && defined(USE_REGIONS)
+#ifdef FEATURE_EVENT_TRACE
     if (!EVENT_ENABLED (GCMarkWithType)) return;
 
     size_t total_committed = 0;
@@ -3235,11 +3235,18 @@ void gc_heap::fire_committed_usage_event()
                             new_committed_by_oh);
 
     size_t total_committed_in_use = new_committed_by_oh[soh] + new_committed_by_oh[loh] + new_committed_by_oh[poh];
+#ifdef USE_REGIONS
     size_t total_committed_in_global_decommit = committed_decommit;
     size_t total_committed_in_free = committed_free;
     size_t total_committed_in_global_free = new_committed_by_oh[recorded_committed_free_bucket] - total_committed_in_free - total_committed_in_global_decommit;
+#else
+    assert (committed_decommit == 0);
+    assert (committed_free == 0);
+    size_t total_committed_in_global_decommit = 0;
+    size_t total_committed_in_free = 0;
+    size_t total_committed_in_global_free = 0;
+#endif //USE_REGIONS
     size_t total_bookkeeping_committed = committed_bookkeeping;
-
     GCEventFireCommittedUsage_V1 (
         (uint64_t)total_committed_in_use,
         (uint64_t)total_committed_in_global_decommit,
@@ -3247,7 +3254,7 @@ void gc_heap::fire_committed_usage_event()
         (uint64_t)total_committed_in_global_free,
         (uint64_t)total_bookkeeping_committed
     );
-#endif //FEATURE_EVENT_TRACE && USE_REGIONS
+#endif //FEATURE_EVENT_TRACE
 }
 
 inline BOOL
