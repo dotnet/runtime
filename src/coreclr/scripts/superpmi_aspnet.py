@@ -132,6 +132,8 @@ def build_and_run(coreclr_args):
 
     with tempfile.TemporaryDirectory() as temp_location:
 
+        temp_location = "C:\\work\\tmp\\tmp"
+
         print ("Executing in " + temp_location)
         os.chdir(temp_location)
 
@@ -156,8 +158,9 @@ def build_and_run(coreclr_args):
 
         ## could probably just pass a URL and avoid this
 
-        run_command(
-            ["git", "clone", "--quiet", "--depth", "1", "https://github.com/aspnet/benchmarks"], temp_location, _exit_on_fail=True)
+        if not path.isdir(path.join(temp_location, 'benchmarks')):
+            run_command(
+                ["git", "clone", "--quiet", "--depth", "1", "https://github.com/aspnet/benchmarks"], temp_location, _exit_on_fail=True)
 
         crank_app = path.join(temp_location, "crank")
         mcs_path = determine_mcs_tool_path(coreclr_args)
@@ -247,7 +250,9 @@ def build_and_run(coreclr_args):
                 print("")
 
                 description = ["--description", configName + "-" + scenario + "-" + "-".join(runtime_options)]
-                subprocess.run([crank_app] + crank_arguments + description + runtime_arguments, cwd=temp_location)
+                crank_app_args = [crank_app] + crank_arguments + description + runtime_arguments
+                print(' '.join(crank_app_args))
+                subprocess.run(crank_app_args, cwd=temp_location)
 
         # merge
         command = [mcs_path, "-merge", "temp.mch", "*.mc", "-dedup", "-thin"]
