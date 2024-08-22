@@ -1,7 +1,7 @@
 ﻿Microsoft Visual Studio Solution File, Format Version 12.00
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Private.DataContractSerialization", "src\System.Private.DataContractSerialization.csproj", "{493BBB98-5E20-46BE-A7DC-1584F39DE27D}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "LibraryImportGenerator", "..\System.Runtime.InteropServices\gen\LibraryImportGenerator\LibraryImportGenerator.csproj", "{54116CEF-C987-4CE5-940B-613A016AD6CA}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DownlevelLibraryImportGenerator", "..\System.Runtime.InteropServices\gen\DownlevelLibraryImportGenerator\DownlevelLibraryImportGenerator.csproj", "{6141204E-E468-47C3-9581-5263DFB9D4CF}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.Interop.SourceGeneration", "..\System.Runtime.InteropServices\gen\Microsoft.Interop.SourceGeneration\Microsoft.Interop.SourceGeneration.csproj", "{801938D9-5DB8-4F15-B1C1-FB67723C75F9}"
 EndProject
@@ -39,10 +39,10 @@ Global
 		{493BBB98-5E20-46BE-A7DC-1584F39DE27D}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{493BBB98-5E20-46BE-A7DC-1584F39DE27D}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{493BBB98-5E20-46BE-A7DC-1584F39DE27D}.Release|Any CPU.Build.0 = Release|Any CPU
-		{54116CEF-C987-4CE5-940B-613A016AD6CA}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{54116CEF-C987-4CE5-940B-613A016AD6CA}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{54116CEF-C987-4CE5-940B-613A016AD6CA}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{54116CEF-C987-4CE5-940B-613A016AD6CA}.Release|Any CPU.Build.0 = Release|Any CPU
+		{6141204E-E468-47C3-9581-5263DFB9D4CF}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{6141204E-E468-47C3-9581-5263DFB9D4CF}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{6141204E-E468-47C3-9581-5263DFB9D4CF}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{6141204E-E468-47C3-9581-5263DFB9D4CF}.Release|Any CPU.Build.0 = Release|Any CPU
 		{801938D9-5DB8-4F15-B1C1-FB67723C75F9}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{801938D9-5DB8-4F15-B1C1-FB67723C75F9}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{801938D9-5DB8-4F15-B1C1-FB67723C75F9}.Release|Any CPU.ActiveCfg = Release|Any CPU
@@ -77,7 +77,7 @@ Global
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{493BBB98-5E20-46BE-A7DC-1584F39DE27D} = {14B38A7F-3A3B-4C41-AE5C-D8AA236626DD}
-		{54116CEF-C987-4CE5-940B-613A016AD6CA} = {6EF339F7-5861-440F-88F7-333F04F0ABD7}
+		{6141204E-E468-47C3-9581-5263DFB9D4CF} = {6EF339F7-5861-440F-88F7-333F04F0ABD7}
 		{801938D9-5DB8-4F15-B1C1-FB67723C75F9} = {6EF339F7-5861-440F-88F7-333F04F0ABD7}
 		{FB5A7543-CB37-40A0-807F-76879E1000F5} = {6EF339F7-5861-440F-88F7-333F04F0ABD7}
 		{0F50BEBA-FC93-455A-9234-3E23503154BA} = {C7637E36-CE91-4215-A0F4-78FD03DB7500}
