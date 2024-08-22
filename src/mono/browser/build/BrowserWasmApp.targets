@@ -203,7 +203,7 @@
       <EmscriptenEnvVars Include="DOTNET_EMSCRIPTEN_LLVM_ROOT=$(EmscriptenSdkToolsPath)bin" />
       <EmscriptenEnvVars Include="EM_LLVM_ROOT=$(EmscriptenSdkToolsPath)bin" />
       <EmscriptenEnvVars Include="DOTNET_EMSCRIPTEN_BINARYEN_ROOT=$(EmscriptenSdkToolsPath)" />
-      <EmscriptenEnvVars Include="EM_BINARYEN_ROOT=$(EmscriptenSdkToolsPath)" />
+      <EmscriptenEnvVars Condition="'$(OS)' == 'Windows_NT'" Include="EM_BINARYEN_ROOT=$(EmscriptenSdkToolsPath)" />
       <EmscriptenEnvVars Include="DOTNET_EMSCRIPTEN_NODE_JS=$(_EmscriptenNodePath)" />
       <EmscriptenEnvVars Include="EM_NODE_JS=$(_EmscriptenNodePath)" />
     </ItemGroup>
@@ -374,8 +374,6 @@
       <EmscriptenEnvVars Include="ENABLE_BROWSER_PROFILER=$([System.Convert]::ToInt32($(WasmProfilers.Contains('browser'))))" />
       <EmscriptenEnvVars Include="RUN_AOT_COMPILATION=1" Condition="'$(RunAOTCompilation)' == 'true'" />
       <EmscriptenEnvVars Include="RUN_AOT_COMPILATION=0" Condition="'$(RunAOTCompilation)' != 'true'" />
-      <EmscriptenEnvVars Include="EM_LLVM_ROOT=$(EmscriptenSdkToolsPath)bin" />
-      <EmscriptenEnvVars Include="EM_NODE_JS=$([MSBuild]::NormalizePath($(EmscriptenNodeToolsPath), 'bin', 'node$(_ExeExt)'))" />
 
       <WasmToolchainEnvVars Include="@(EmscriptenEnvVars)" />
     </ItemGroup>

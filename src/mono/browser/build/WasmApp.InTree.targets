@@ -51,4 +51,11 @@
     <ZipDirectory SourceDirectory="$(WasmAppDir)" DestinationFile="$(ZippedApp)" />
     <Copy SourceFiles="$(ZippedApp)" DestinationFolder="$(HelixArchiveRunOnlyAppsDir)" />
   </Target>
+
+  <Target Name="SetupPackagePaths" BeforeTargets="_SetupEmscripten">
+    <PropertyGroup>
+      <EmscriptenNodeToolsPath>$([MSBuild]::NormalizeDirectory( $([System.IO.Path]::Combine($(NuGetPackageRoot), 'runtime.$(_portableHostOS)-$(BuildArchitecture).microsoft.netcore.runtime.wasm.node.transport', '$(NodePackageVersion)', 'tools', '$(_portableHostOS)-$(BuildArchitecture)')) ))</EmscriptenNodeToolsPath>
+      <EmscriptenPythonToolsPath>$([MSBuild]::NormalizeDirectory( $([System.IO.Path]::Combine($(NuGetPackageRoot), 'Microsoft.NET.Runtime.Emscripten.$(EmsdkVersion).Python.win-$(BuildArchitecture)', '$(EmsdkPackageVersion)', 'tools')) ))</EmscriptenPythonToolsPath>
+    </PropertyGroup>
+  </Target>
 </Project>
