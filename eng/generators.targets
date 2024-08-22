@@ -1,19 +1,17 @@
 <Project>
 
   <PropertyGroup>
+    <!-- Enable LibraryImportGenerator for CoreLib. -->
     <EnableLibraryImportGenerator Condition="'$(EnableLibraryImportGenerator)' == '' and
                                              '$(MSBuildProjectName)' == 'System.Private.CoreLib'">true</EnableLibraryImportGenerator>
   </PropertyGroup>
 
   <ItemGroup>
     <EnabledGenerators Include="LibraryImportGenerator" Condition="'$(EnableLibraryImportGenerator)' == 'true'" />
-    <!-- If the current project is not System.Private.CoreLib, we enable the LibraryImportGenerator source generator
+    <!-- We enable the Downlevel LibraryImportGenerator
          when the project is a C# source or test project that:
-         - doesn't target the a TFM that includes LibraryImportGenerator or
-         - doesn't reference the live targeting pack (i.e. when inbox) and
-           - references System.Private.CoreLib, or
-           - references System.Runtime.InteropServices -->
-    <EnabledGenerators Include="LibraryImportGenerator"
+         - doesn't target the a TFM that includes LibraryImportGenerator -->
+    <EnabledGenerators Include="DownlevelLibraryImportGenerator"
                        Condition="'$(EnableLibraryImportGenerator)' == '' and
                                   (
                                     '$(IsSourceProject)' == 'true' or
@@ -21,31 +19,38 @@
                                     '$(IsTestSupportProject)' == 'true'
                                   ) and
                                   '$(MSBuildProjectExtension)' == '.csproj' and
+                                  '$(TargetFrameworkIdentifier)' != '.NETCoreApp'" />
+
+    <!-- We enable the LibraryImportGenerator source generator
+         when the project is a C# source project that:
+         - references System.Private.CoreLib directly
+         - references System.Runtime.InteropServices directly and not through the live targeting pack (i.e. when inbox) -->
+    <EnabledGenerators Include="LibraryImportGenerator"
+                       Condition="'$(EnableLibraryImportGenerator)' == '' and
+                                  '$(IsSourceProject)' == 'true' and
+                                  '$(MSBuildProjectExtension)' == '.csproj' and
                                   (
-                                    '$(TargetFrameworkIdentifier)' != '.NETCoreApp' or
+                                    '$(DisableImplicitFrameworkReferences)' == 'true' and
                                     (
-                                      '$(DisableImplicitFrameworkReferences)' == 'true' and
-                                      (
-                                        '@(Reference->AnyHaveMetadataValue('Identity', 'System.Runtime.InteropServices'))' == 'true' or
-                                        '@(ProjectReference->AnyHaveMetadataValue('Identity', '$(CoreLibProject)'))' == 'true'
-                                      )
+                                      '@(Reference->AnyHaveMetadataValue('Identity', 'System.Runtime.InteropServices'))' == 'true' or
+                                      '@(Reference->AnyHaveMetadataValue('Identity', 'System.Private.CoreLib'))' == 'true'
                                     )
                                   )" />
+
     <!-- We enable the ComInterfaceGenerator source generator
          when the project is a C# source project that:
          - references System.Runtime.InteropServices directly and not through the live targeting pack (i.e. when inbox) -->
     <EnabledGenerators Include="ComInterfaceGenerator"
                        Condition="'$(IsSourceProject)' == 'true' and
-                                  '$(MSBuildProjectExtension)' == '.csproj' and
-                                  (
-                                      '$(DisableImplicitFrameworkReferences)' == 'true' and
-                                      '@(Reference->AnyHaveMetadataValue('Identity', 'System.Runtime.InteropServices'))' == 'true'
-                                  )" />
+                                 '$(MSBuildProjectExtension)' == '.csproj' and
+                                 (
+                                     '$(DisableImplicitFrameworkReferences)' == 'true' and
+                                     '@(Reference->AnyHaveMetadataValue('Identity', 'System.Runtime.InteropServices'))' == 'true'
+                                 )" />
   </ItemGroup>
 
   <ItemGroup Condition="'@(EnabledGenerators)' != '' and
-                        @(EnabledGenerators->AnyHaveMetadataValue('Identity', 'LibraryImportGenerator')) and
-                        '$(TargetFrameworkIdentifier)' != '.NETCoreApp'">
+                        @(EnabledGenerators->AnyHaveMetadataValue('Identity', 'DownlevelLibraryImportGenerator'))">
     <Compile Include="$(CoreLibSharedDir)System\Runtime\InteropServices\LibraryImportAttribute.cs" />
     <Compile Include="$(CoreLibSharedDir)System\Runtime\InteropServices\StringMarshalling.cs" />
   </ItemGroup>
@@ -57,6 +62,11 @@
                       ReferenceOutputAssembly="false"
                       OutputItemType="Analyzer"
                       SetConfiguration="Configuration=$(LibrariesConfiguration)" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime.InteropServices\gen\DownlevelLibraryImportGenerator\DownlevelLibraryImportGenerator.csproj"
+                      ReferenceOutputAssembly="false"
+                      OutputItemType="Analyzer"
+                      SetConfiguration="Configuration=$(LibrariesConfiguration)"
+                      Condition="@(EnabledGenerators->AnyHaveMetadataValue('Identity', 'DownlevelLibraryImportGenerator'))" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime.InteropServices\gen\LibraryImportGenerator\LibraryImportGenerator.csproj"
                       ReferenceOutputAssembly="false"
                       OutputItemType="Analyzer"
