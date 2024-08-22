@@ -189,6 +189,15 @@ namespace Microsoft.Extensions
             }
         }
 
+        public sealed class TreeElement : Dictionary<string, TreeElement>;
+
+        public record TypeWithRecursionThroughCollections
+        {
+            public TreeElement? Tree { get; set; }
+            public TreeElement?[]? Flat { get; set; }
+            public List<TreeElement>? List { get; set; }
+        }
+
         public record RecordWithArrayParameter(string[] Array);
 
         public readonly record struct ReadonlyRecordStructTypeOptions(string Color, int Length);

@@ -360,6 +360,11 @@ namespace System.Runtime.CompilerServices
             return x.CompareTo(y);
         }
 
+        // The body of this function will be created by the EE for the specific type.
+        // See getILIntrinsicImplementation for how this happens.
+        [Intrinsic]
+        internal static extern unsafe void CopyConstruct<T>(T* dest, T* src) where T : unmanaged;
+
         internal static ref byte GetRawData(this object obj) =>
             ref Unsafe.As<RawData>(obj).Data;
 
@@ -436,16 +441,8 @@ namespace System.Runtime.CompilerServices
         //
         // GC.KeepAlive(o);
         //
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [Intrinsic]
-        internal static unsafe MethodTable* GetMethodTable(object obj)
-        {
-            // The body of this function will be replaced by the EE with unsafe code
-            // See getILIntrinsicImplementationForRuntimeHelpers for how this happens.
-
-            return (MethodTable*)Unsafe.Add(ref Unsafe.As<byte, IntPtr>(ref obj.GetRawData()), -1);
-        }
-
+        internal static unsafe MethodTable* GetMethodTable(object obj) => GetMethodTable(obj);
 
         [LibraryImport(QCall, EntryPoint = "MethodTable_AreTypesEquivalent")]
         [return: MarshalAs(UnmanagedType.Bool)]
