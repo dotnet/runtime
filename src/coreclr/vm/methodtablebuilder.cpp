@@ -1807,6 +1807,12 @@ MethodTableBuilder::BuildMethodTableThrowing(
         }
     }
 
+    if (IsValueClass())
+    {
+        if ((int)bmtFP->NumInstanceFieldBytes != (INT64)bmtFP->NumInstanceFieldBytes)
+            BuildMethodTableThrowException(IDS_CLASSLOAD_FIELDTOOLARGE);
+    }
+
     if (CheckIfSIMDAndUpdateSize())
     {
         totalDeclaredFieldSize = bmtFP->NumInstanceFieldBytes;
@@ -1998,13 +2004,6 @@ MethodTableBuilder::BuildMethodTableThrowing(
 
     if (!IsValueClass())
     {
-#ifdef FEATURE_ICASTABLE
-        if (g_pICastableInterface != NULL && pMT->CanCastToInterface(g_pICastableInterface))
-        {
-            pMT->SetICastable();
-        }
-#endif // FEATURE_ICASTABLE
-
         if (g_pIDynamicInterfaceCastableInterface != NULL && pMT->CanCastToInterface(g_pIDynamicInterfaceCastableInterface))
         {
             pMT->SetIDynamicInterfaceCastable();
@@ -3255,11 +3254,6 @@ MethodTableBuilder::EnumerateClassMethods()
             {
                 // Methods in instantiated interfaces need nothing special - they are not visible from COM etc.
                 type = mcIL;
-            }
-            else if (bmtProp->fIsMngStandardItf)
-            {
-                // If the interface is a standard managed interface then allocate space for an FCall method desc.
-                type = mcFCall;
             }
             else if (IsMdAbstract(dwMemberAttrs))
             {
@@ -11371,10 +11365,8 @@ VOID MethodTableBuilder::CheckForRemotingProxyAttrib()
 
 
 //*******************************************************************************
-// Checks for a bunch of special interface names and if it matches then it sets
-// bmtProp->fIsMngStandardItf to TRUE. Additionally, it checks to see if the
-// type is an interface and if it has ComEventInterfaceAttribute custom attribute
-// set, then it sets bmtProp->fComEventItfType to true.
+// Checks to see if the type is an interface and if it has ComEventInterfaceAttribute
+// custom attribute set, then it sets bmtProp->fComEventItfType to true.
 //
 // NOTE: This only does anything when COM interop is enabled.
 
@@ -11382,54 +11374,6 @@ VOID MethodTableBuilder::CheckForSpecialTypes()
 {
 #ifdef FEATURE_COMINTEROP
     STANDARD_VM_CONTRACT;
-
-
-    Module *pModule = GetModule();
-    IMDInternalImport *pMDImport = pModule->GetMDImport();
-
-    // Check to see if this type is a managed standard interface. All the managed
-    // standard interfaces live in CoreLib so checking for that first
-    // makes the strcmp that comes afterwards acceptable.
-    if (pModule->IsSystem())
-    {
-        if (IsInterface())
-        {
-            LPCUTF8 pszClassName;
-            LPCUTF8 pszClassNamespace;
-            if (FAILED(pMDImport->GetNameOfTypeDef(GetCl(), &pszClassName, &pszClassNamespace)))
-            {
-                pszClassName = pszClassNamespace = NULL;
-            }
-            if ((pszClassName != NULL) && (pszClassNamespace != NULL))
-            {
-                LPUTF8 pszFullyQualifiedName = NULL;
-                MAKE_FULLY_QUALIFIED_NAME(pszFullyQualifiedName, pszClassNamespace, pszClassName);
-
-                // This is just to give us a scope to break out of.
-                do
-                {
-
-#define MNGSTDITF_BEGIN_INTERFACE(FriendlyName, strMngItfName, strUCOMMngItfName, strCustomMarshalerName, strCustomMarshalerCookie, strManagedViewName, NativeItfIID, bCanCastOnNativeItfQI) \
-                    if (strcmp(strMngItfName, pszFullyQualifiedName) == 0) \
-                    { \
-                        bmtProp->fIsMngStandardItf = true; \
-                        break; \
-                    }
-
-#define MNGSTDITF_DEFINE_METH_IMPL(FriendlyName, ECallMethName, MethName, MethSig, FcallDecl)
-
-#define MNGSTDITF_END_INTERFACE(FriendlyName)
-
-#include "mngstditflist.h"
-
-#undef MNGSTDITF_BEGIN_INTERFACE
-#undef MNGSTDITF_DEFINE_METH_IMPL
-#undef MNGSTDITF_END_INTERFACE
-
-                } while (FALSE);
-            }
-        }
-    }
 
     // Check to see if the type is a COM event interface (classic COM interop only).
     if (IsInterface())
