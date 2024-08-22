@@ -45,10 +45,10 @@ labelLength: The length of the label. This value must be zero or positive.
 context: A pointer to the context. This value may be NULL if the contextLength is 0. This
        value is set using OSSL_KDF_PARAM_INFO.
 contextLength: The length of the context. This value must be zero or positive.
-destination: The buffer which receives the derived key. This value may be NULL if the
-             destinationLength parameter is 0.
+destination: The buffer which receives the derived key. This value may not be NULL, a destination
+             is required. Callers are expected to early exit for empty destinations.
 destinationLength: The length of the destination buffer, and the number of bytes to
-                   derive from the KDF. This value must be zero or positive.
+                   derive from the KDF. This value must be positive.
 */
 PALEXPORT int32_t CryptoNative_KbkdfHmacOneShot(
     EVP_KDF* kdf,
