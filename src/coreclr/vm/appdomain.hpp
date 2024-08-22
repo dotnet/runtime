@@ -1700,21 +1700,9 @@ private:
     }
 
 private:
-    CrstExplicitInit m_DomainCrst;              // General Protection for the Domain
     CrstExplicitInit m_DomainCacheCrst;         // Protects the Assembly and Unmanaged caches
 
 public:
-    class LockHolder : public CrstHolder
-    {
-    public:
-        LockHolder(AppDomain *pD)
-            : CrstHolder(&pD->m_DomainCrst)
-        {
-            WRAPPER_NO_CONTRACT;
-        }
-    };
-    friend class LockHolder;
-
     // To be used when the thread will remain in preemptive GC mode while holding the lock
     class DomainCacheCrstHolderForGCPreemp : private CrstHolder
     {

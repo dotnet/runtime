@@ -1815,7 +1815,6 @@ void AppDomain::Init()
 
     SetStage( STAGE_CREATING);
 
-    m_DomainCrst.Init(CrstBaseDomain);
     m_DomainCacheCrst.Init(CrstAppDomainCache);
 
     BaseDomain::Init();
@@ -3849,11 +3848,13 @@ RCWCache *AppDomain::CreateRCWCache()
     }
     _ASSERTE(g_pRCWCleanupList);
 
+    if (!m_pRCWCache)
     {
-        AppDomain::LockHolder lh(this);
-
-        if (!m_pRCWCache)
-            m_pRCWCache = new RCWCache(this);
+        NewHolder<RCWCache> pRCWCache = new RCWCache(this);
+        if (InterlockedCompareExchangeT(&m_pRCWCache, (RCWCache *)pRCWCache, NULL) == NULL)
+        {
+            pRCWCache.SuppressRelease();
+        }
     }
 
     RETURN m_pRCWCache;
