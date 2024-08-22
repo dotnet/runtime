@@ -416,7 +416,7 @@ mono_atomic_xchg_u8 (volatile guint8 *dest, guint8 exch)
 static inline guint16
 mono_atomic_xchg_u16 (volatile guint16 *dest, guint16 exch)
 {
-	return _InterlockedExchange8 ((short volatile *)dest, (short)exch);
+	return _InterlockedExchange16 ((short volatile *)dest, (short)exch);
 }
 
 static inline gint32
