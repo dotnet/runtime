@@ -640,8 +640,7 @@ protected:
 
     // Critical sections & locks
     PEFileListLock   m_FileLoadLock;            // Protects the list of assemblies in the domain
-    CrstExplicitInit m_DomainCrst;              // General Protection for the Domain
-    CrstExplicitInit m_DomainCacheCrst;         // Protects the Assembly and Unmanaged caches
+
     // Used to protect the reference lists in the collectible loader allocators attached to this appdomain
     CrstExplicitInit m_crstLoaderAllocatorReferences;
     CrstExplicitInit m_crstGenericDictionaryExpansionLock;
@@ -672,41 +671,6 @@ public:
 
     //****************************************************************************************
     // Synchronization holders.
-
-    class LockHolder : public CrstHolder
-    {
-    public:
-        LockHolder(BaseDomain *pD)
-            : CrstHolder(&pD->m_DomainCrst)
-        {
-            WRAPPER_NO_CONTRACT;
-        }
-    };
-    friend class LockHolder;
-
-    // To be used when the thread will remain in preemptive GC mode while holding the lock
-    class DomainCacheCrstHolderForGCPreemp : private CrstHolder
-    {
-    public:
-        DomainCacheCrstHolderForGCPreemp(BaseDomain *pD)
-            : CrstHolder(&pD->m_DomainCacheCrst)
-        {
-            WRAPPER_NO_CONTRACT;
-        }
-    };
-
-    // To be used when the thread may enter cooperative GC mode while holding the lock. The thread enters a
-    // forbid-suspend-for-debugger region along with acquiring the lock, such that it would not suspend for the debugger while
-    // holding the lock, as that may otherwise cause a FuncEval to deadlock when trying to acquire the lock.
-    class DomainCacheCrstHolderForGCCoop : private CrstAndForbidSuspendForDebuggerHolder
-    {
-    public:
-        DomainCacheCrstHolderForGCCoop(BaseDomain *pD)
-            : CrstAndForbidSuspendForDebuggerHolder(&pD->m_DomainCacheCrst)
-        {
-            WRAPPER_NO_CONTRACT;
-        }
-    };
 
     class LoadLockHolder :  public PEFileListLockHolder
     {
@@ -1734,6 +1698,46 @@ private:
         WRAPPER_NO_CONTRACT;
         return FailedAssemblyIterator::Create(this);
     }
+
+private:
+    CrstExplicitInit m_DomainCrst;              // General Protection for the Domain
+    CrstExplicitInit m_DomainCacheCrst;         // Protects the Assembly and Unmanaged caches
+
+public:
+    class LockHolder : public CrstHolder
+    {
+    public:
+        LockHolder(AppDomain *pD)
+            : CrstHolder(&pD->m_DomainCrst)
+        {
+            WRAPPER_NO_CONTRACT;
+        }
+    };
+    friend class LockHolder;
+
+    // To be used when the thread will remain in preemptive GC mode while holding the lock
+    class DomainCacheCrstHolderForGCPreemp : private CrstHolder
+    {
+    public:
+        DomainCacheCrstHolderForGCPreemp(AppDomain *pD)
+            : CrstHolder(&pD->m_DomainCacheCrst)
+        {
+            WRAPPER_NO_CONTRACT;
+        }
+    };
+
+    // To be used when the thread may enter cooperative GC mode while holding the lock. The thread enters a
+    // forbid-suspend-for-debugger region along with acquiring the lock, such that it would not suspend for the debugger while
+    // holding the lock, as that may otherwise cause a FuncEval to deadlock when trying to acquire the lock.
+    class DomainCacheCrstHolderForGCCoop : private CrstAndForbidSuspendForDebuggerHolder
+    {
+    public:
+        DomainCacheCrstHolderForGCCoop(AppDomain *pD)
+            : CrstAndForbidSuspendForDebuggerHolder(&pD->m_DomainCacheCrst)
+        {
+            WRAPPER_NO_CONTRACT;
+        }
+    };
 
     //---------------------------------------------------------
     // Stub caches for Method stubs

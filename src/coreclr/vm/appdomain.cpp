@@ -490,12 +490,6 @@ void BaseDomain::Init()
     // Initialize the domain locks
     //
 
-    if (this == reinterpret_cast<BaseDomain*>(&g_pSystemDomainMemory[0]))
-        m_DomainCrst.Init(CrstSystemBaseDomain);
-    else
-        m_DomainCrst.Init(CrstBaseDomain);
-
-    m_DomainCacheCrst.Init(CrstAppDomainCache);
     m_crstGenericDictionaryExpansionLock.Init(CrstGenericDictionaryExpansion);
 
     // NOTE: CRST_UNSAFE_COOPGC prevents a GC mode switch to preemptive when entering this crst.
@@ -1820,6 +1814,9 @@ void AppDomain::Init()
     m_pDelayedLoaderAllocatorUnloadList = NULL;
 
     SetStage( STAGE_CREATING);
+
+    m_DomainCrst.Init(CrstBaseDomain);
+    m_DomainCacheCrst.Init(CrstAppDomainCache);
 
     BaseDomain::Init();
 
@@ -3853,7 +3850,7 @@ RCWCache *AppDomain::CreateRCWCache()
     _ASSERTE(g_pRCWCleanupList);
 
     {
-        BaseDomain::LockHolder lh(this);
+        AppDomain::LockHolder lh(this);
 
         if (!m_pRCWCache)
             m_pRCWCache = new RCWCache(this);
