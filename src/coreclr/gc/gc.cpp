@@ -6999,8 +6999,21 @@ void gc_heap::gc_thread_function ()
 
     while (1)
     {
-        // inactive GC threads may observe gc_t_join.joined() being true here
-        assert ((n_heaps <= heap_number) || !gc_t_join.joined());
+#ifdef DYNAMIC_HEAP_COUNT
+        if (gc_heap::dynamic_adaptation_mode == dynamic_adaptation_to_application_sizes)
+        {
+            // Inactive GC threads may observe gc_t_join.joined() being true here.
+            // Before the 1st GC happens, h0's GC thread can also observe gc_t_join.joined() being true because it's
+            // also inactive as the main thread (that inits the GC) will act as h0 (to call change_heap_count).
+            assert (((heap_number == 0) && (VolatileLoadWithoutBarrier (&settings.gc_index) == 0)) ||
+                    (n_heaps <= heap_number) ||
+                    !gc_t_join.joined());
+        }
+        else
+#endif //DYNAMIC_HEAP_COUNT
+        {
+            assert (!gc_t_join.joined());
+        }
 
         if (heap_number == 0)
         {
