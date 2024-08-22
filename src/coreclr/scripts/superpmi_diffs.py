@@ -125,8 +125,8 @@ class Diff:
         # Assume everything succeeded. If any step fails, it will change this to True.
         self.failed = False
 
-        # List of summary MarkDown files
-        self.summary_md_files = []
+        # List of summary json files
+        self.summary_json_files = []
 
     def download_mch(self):
         """ Download MCH files for the diff
@@ -237,19 +237,12 @@ class Diff:
         log_file = os.path.join(self.log_directory, "superpmi_asmdiffs_{}.log".format(self.target))
 
         # This is the summary file name and location written by superpmi.py. If the file exists, remove it to ensure superpmi.py doesn't created a numbered version.
-        overall_md_asmdiffs_summary_file = os.path.join(self.spmi_location, "diff_summary.md")
-        if os.path.isfile(overall_md_asmdiffs_summary_file):
-            os.remove(overall_md_asmdiffs_summary_file)
+        overall_json_asmdiffs_summary_file = os.path.join(self.spmi_location, "diff_summary.json")
+        if os.path.isfile(overall_json_asmdiffs_summary_file):
+            os.remove(overall_json_asmdiffs_summary_file)
 
-        overall_md_asmdiffs_summary_file_target = os.path.join(self.log_directory, "superpmi_asmdiffs_summary_{}.md".format(self.target))
-        self.summary_md_files.append((overall_md_asmdiffs_summary_file, overall_md_asmdiffs_summary_file_target))
-
-        short_md_asmdiffs_summary_file = os.path.join(self.spmi_location, "diff_short_summary.md")
-        if os.path.isfile(short_md_asmdiffs_summary_file):
-            os.remove(short_md_asmdiffs_summary_file)
-
-        short_md_asmdiffs_summary_file_target = os.path.join(self.log_directory, "superpmi_asmdiffs_short_summary_{}.md".format(self.target))
-        self.summary_md_files.append((short_md_asmdiffs_summary_file, short_md_asmdiffs_summary_file_target))
+        overall_json_asmdiffs_summary_file_target = os.path.join(self.log_directory, "superpmi_asmdiffs_summary_{}.json".format(self.target))
+        self.summary_json_files.append((overall_json_asmdiffs_summary_file, overall_json_asmdiffs_summary_file_target))
 
         _, _, return_code = run_command([
             self.python_path,
@@ -264,6 +257,7 @@ class Diff:
             "-diff_jit_path", diff_checked_jit_path,
             "-spmi_location", self.spmi_location,
             "-error_limit", "100",
+            "--summary_as_json",
             "-log_level", "debug",
             "-log_file", log_file] + self.create_jit_options_args())
 
@@ -288,19 +282,12 @@ class Diff:
         log_file = os.path.join(self.log_directory, "superpmi_tpdiff_{}.log".format(self.target))
 
         # This is the summary file name and location written by superpmi.py. If the file exists, remove it to ensure superpmi.py doesn't created a numbered version.
-        overall_md_tpdiff_summary_file = os.path.join(self.spmi_location, "tpdiff_summary.md")
-        if os.path.isfile(overall_md_tpdiff_summary_file):
-            os.remove(overall_md_tpdiff_summary_file)
+        overall_json_tpdiff_summary_file = os.path.join(self.spmi_location, "tpdiff_summary.json")
+        if os.path.isfile(overall_json_tpdiff_summary_file):
+            os.remove(overall_json_tpdiff_summary_file)
 
-        overall_md_tpdiff_summary_file_target = os.path.join(self.log_directory, "superpmi_tpdiff_summary_{}.md".format(self.target))
-        self.summary_md_files.append((overall_md_tpdiff_summary_file, overall_md_tpdiff_summary_file_target))
-
-        short_md_tpdiff_summary_file = os.path.join(self.spmi_location, "tpdiff_short_summary.md")
-        if os.path.isfile(short_md_tpdiff_summary_file):
-            os.remove(short_md_tpdiff_summary_file)
-
-        short_md_tpdiff_summary_file_target = os.path.join(self.log_directory, "superpmi_tpdiff_short_summary_{}.md".format(self.target))
-        self.summary_md_files.append((short_md_tpdiff_summary_file, short_md_tpdiff_summary_file_target))
+        overall_json_tpdiff_summary_file_target = os.path.join(self.log_directory, "superpmi_tpdiff_summary_{}.json".format(self.target))
+        self.summary_json_files.append((overall_json_tpdiff_summary_file, overall_json_tpdiff_summary_file_target))
 
         _, _, return_code = run_command([
             self.python_path,
@@ -315,6 +302,7 @@ class Diff:
             "-diff_jit_path", diff_release_jit_path,
             "-spmi_location", self.spmi_location,
             "-error_limit", "100",
+            "--summary_as_json",
             "-log_level", "debug",
             "-log_file", log_file] + self.create_jit_options_args())
 
@@ -337,10 +325,10 @@ class Diff:
     def summarize(self):
         """ Summarize the diffs
         """
-        # If there are diffs, we'll get summary md files in the spmi_location directory.
+        # If there are diffs, we'll get summary JSON files in the spmi_location directory.
         # If there are no diffs, we still want to create this file and indicate there were no diffs.
 
-        for source, target in self.summary_md_files:
+        for source, target in self.summary_json_files:
             if os.path.isfile(source):
                 try:
                     print("Copying summary file {} -> {}".format(source, target))
@@ -352,7 +340,7 @@ class Diff:
                 # errors when the Helix work item fails to upload this specified file if it doesn't exist. We should change the
                 # upload to be conditional, or otherwise not error.
                 with open(target, "a") as f:
-                    f.write("<empty>")
+                    f.write("\"<empty>\"")
 
 
 def main(main_args):

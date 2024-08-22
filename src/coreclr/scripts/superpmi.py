@@ -346,6 +346,7 @@ base_diff_parser.add_argument("-base_git_hash", help="Use this git hash as the b
 base_diff_parser.add_argument("-jitoption", action="append", help="Option to pass to both baseline and diff JIT. Format is key=value, where key is the option name without leading `DOTNET_`. `key#value` is also accepted.")
 base_diff_parser.add_argument("-base_jit_option", action="append", help="Option to pass to the baseline JIT. Format is key=value, where key is the option name without leading `DOTNET_`. `key#value` is also accepted.")
 base_diff_parser.add_argument("-diff_jit_option", action="append", help="Option to pass to the diff JIT. Format is key=value, where key is the option name without leading `DOTNET_`. `key#value` is also accepted.")
+base_diff_parser.add_argument("--summary_as_json", action="store_true", help="Produce a .json file with summary information that can be summarized to markdown later")
 
 # subparser for asmdiffs
 asm_diff_parser = subparsers.add_parser("asmdiffs", description=asm_diff_description, parents=[core_root_parser, target_parser, superpmi_common_parser, replay_common_parser, base_diff_parser])
@@ -357,7 +358,6 @@ asm_diff_parser.add_argument("-tag", help="Specify a word to add to the director
 asm_diff_parser.add_argument("-metrics", action="append", help="Metrics option to pass to jit-analyze. Can be specified multiple times, one for each metric.")
 asm_diff_parser.add_argument("--diff_with_release", action="store_true", help="Specify if this is asmdiff using release binaries.")
 asm_diff_parser.add_argument("--git_diff", action="store_true", help="Produce a '.diff' file from 'base' and 'diff' folders if there were any differences.")
-asm_diff_parser.add_argument("--summary_as_json", action="store_true", help="Produce a .json file with summary information that can be summarized to markdown later")
 
 # subparser for throughput
 throughput_parser = subparsers.add_parser("tpdiff", description=throughput_description, parents=[target_parser, superpmi_common_parser, replay_common_parser, base_diff_parser])
@@ -3098,23 +3098,32 @@ class SuperPMIReplayThroughputDiff:
             if not os.path.isdir(self.coreclr_args.spmi_location):
                 os.makedirs(self.coreclr_args.spmi_location)
 
-            overall_md_summary_file = create_unique_file_name(self.coreclr_args.spmi_location, "tpdiff_summary", "md")
+            if self.coreclr_args.summary_as_json:
+                overall_json_summary_file = create_unique_file_name(self.coreclr_args.spmi_location, "tpdiff_summary", "json")
+                if os.path.isfile(overall_json_summary_file):
+                    os.remove(overall_json_summary_file)
 
-            if os.path.isfile(overall_md_summary_file):
-                os.remove(overall_md_summary_file)
+                with open(overall_json_summary_file, "w") as write_fh:
+                    json.dump((base_jit_build_string_decoded, diff_jit_build_string_decoded, tp_diffs), write_fh)
+                    logging.info("  Summary JSON file: %s", overall_json_summary_file)
+            else:
+                overall_md_summary_file = create_unique_file_name(self.coreclr_args.spmi_location, "tpdiff_summary", "md")
 
-            with open(overall_md_summary_file, "w") as write_fh:
-                self.write_tpdiff_markdown_summary(write_fh, tp_diffs, base_jit_build_string_decoded, diff_jit_build_string_decoded, True)
-                logging.info("  Summary Markdown file: %s", overall_md_summary_file)
+                if os.path.isfile(overall_md_summary_file):
+                    os.remove(overall_md_summary_file)
 
-            short_md_summary_file = create_unique_file_name(self.coreclr_args.spmi_location, "tpdiff_short_summary", "md")
+                with open(overall_md_summary_file, "w") as write_fh:
+                    self.write_tpdiff_markdown_summary(write_fh, tp_diffs, base_jit_build_string_decoded, diff_jit_build_string_decoded, True)
+                    logging.info("  Summary Markdown file: %s", overall_md_summary_file)
 
-            if os.path.isfile(short_md_summary_file):
-                os.remove(short_md_summary_file)
+                short_md_summary_file = create_unique_file_name(self.coreclr_args.spmi_location, "tpdiff_short_summary", "md")
 
-            with open(short_md_summary_file, "w") as write_fh:
-                self.write_tpdiff_markdown_summary(write_fh, tp_diffs, base_jit_build_string_decoded, diff_jit_build_string_decoded, False)
-                logging.info("  Short Summary Markdown file: %s", short_md_summary_file)                
+                if os.path.isfile(short_md_summary_file):
+                    os.remove(short_md_summary_file)
+
+                with open(short_md_summary_file, "w") as write_fh:
+                    self.write_tpdiff_markdown_summary(write_fh, tp_diffs, base_jit_build_string_decoded, diff_jit_build_string_decoded, False)
+                    logging.info("  Short Summary Markdown file: %s", short_md_summary_file)                
 
         return True
         ################################################################################################ end of replay_with_throughput_diff()
@@ -4607,6 +4616,11 @@ def setup_args(args):
                             lambda unused: True,
                             "Unable to set diff_jit_option.")
 
+        coreclr_args.verify(args,
+                            "summary_as_json",
+                            lambda unused: True,
+                            "Unable to set summary_as_json")
+
         if coreclr_args.jitoption:
             for o in coreclr_args.jitoption:
                 if o.startswith("DOTNET_"):
@@ -4993,11 +5007,6 @@ def setup_args(args):
                             "git_diff",
                             lambda unused: True,
                             "Unable to set git_diff.")
-
-        coreclr_args.verify(args,
-                            "summary_as_json",
-                            lambda unused: True,
-                            "Unable to set summary_as_json")
 
         process_base_jit_path_arg(coreclr_args)
 
