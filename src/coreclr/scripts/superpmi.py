@@ -20,6 +20,7 @@ import argparse
 import asyncio
 import csv
 import datetime
+import json
 import locale
 import logging
 import math
@@ -356,6 +357,7 @@ asm_diff_parser.add_argument("-tag", help="Specify a word to add to the director
 asm_diff_parser.add_argument("-metrics", action="append", help="Metrics option to pass to jit-analyze. Can be specified multiple times, one for each metric.")
 asm_diff_parser.add_argument("--diff_with_release", action="store_true", help="Specify if this is asmdiff using release binaries.")
 asm_diff_parser.add_argument("--git_diff", action="store_true", help="Produce a '.diff' file from 'base' and 'diff' folders if there were any differences.")
+asm_diff_parser.add_argument("--summary_as_json", action="store_true", help="Produce a .json file with summary information that can be summarized to markdown later")
 
 # subparser for throughput
 throughput_parser = subparsers.add_parser("tpdiff", description=throughput_description, parents=[target_parser, superpmi_common_parser, replay_common_parser, base_diff_parser])
@@ -2526,21 +2528,32 @@ class SuperPMIReplayAsmDiffs:
             if not os.path.isdir(self.coreclr_args.spmi_location):
                 os.makedirs(self.coreclr_args.spmi_location)
 
-            overall_md_summary_file = create_unique_file_name(self.coreclr_args.spmi_location, "diff_summary", "md")
-            if os.path.isfile(overall_md_summary_file):
-                os.remove(overall_md_summary_file)
+            summarizable_asm_diffs = self.create_summarizable_asm_diffs(asm_diffs)
 
-            with open(overall_md_summary_file, "w") as write_fh:
-                self.write_asmdiffs_markdown_summary(write_fh, asm_diffs, True)
-                logging.info("  Summary Markdown file: %s", overall_md_summary_file)
+            if self.coreclr_args.summary_as_json:
+                overall_json_summary_file = create_unique_file_name(self.coreclr_args.spmi_location, "diff_summary", "json")
+                if os.path.isfile(overall_json_summary_file):
+                    os.remove(overall_json_summary_file)
 
-            short_md_summary_file = create_unique_file_name(self.coreclr_args.spmi_location, "diff_short_summary", "md")
-            if os.path.isfile(short_md_summary_file):
-                os.remove(short_md_summary_file)
+                with open(overall_json_summary_file, "w") as write_fh:
+                    json.dump(summarizable_asm_diffs, write_fh)
+                    logging.info("  Summary JSON file: %s", overall_json_summary_file)
+            else:
+                overall_md_summary_file = create_unique_file_name(self.coreclr_args.spmi_location, "diff_summary", "md")
+                if os.path.isfile(overall_md_summary_file):
+                    os.remove(overall_md_summary_file)
 
-            with open(short_md_summary_file, "w") as write_fh:
-                self.write_asmdiffs_markdown_summary(write_fh, asm_diffs, False)
-                logging.info("  Short Summary Markdown file: %s", short_md_summary_file)
+                with open(overall_md_summary_file, "w") as write_fh:
+                    self.write_asmdiffs_markdown_summary(write_fh, summarizable_asm_diffs, True)
+                    logging.info("  Summary Markdown file: %s", overall_md_summary_file)
+
+                short_md_summary_file = create_unique_file_name(self.coreclr_args.spmi_location, "diff_short_summary", "md")
+                if os.path.isfile(short_md_summary_file):
+                    os.remove(short_md_summary_file)
+
+                with open(short_md_summary_file, "w") as write_fh:
+                    self.write_asmdiffs_markdown_summary(write_fh, summarizable_asm_diffs, False)
+                    logging.info("  Short Summary Markdown file: %s", short_md_summary_file)
 
         # Report the set of MCH files with asm diffs and replay failures.
 
@@ -2559,12 +2572,73 @@ class SuperPMIReplayAsmDiffs:
         return result
         ################################################################################################ end of replay_with_asm_diffs()
 
+    def create_summarizable_asm_diffs(self, asm_diffs):
+        """ Convert the information for each collection into a format that we
+        can summarize (either immediately or externally)
+
+        Args:
+            asm_diffs : list of tuples (mch_name, base_metrics, diffs_metrics, diffs_info, jit_analyze_summary_file, examples_to_put_in_summary)
+                        where examples_to_put_in_summary is a list of tuples (diff_info_row, base_dasm_path, diff_dasm_path)
+
+        Returns:
+            List of tuples (mch_name, base_Metrics, diffs_metrics, diffs_info, jit_analyze_summary, examples_to_put_in_summary)
+            where examples_to_put_in_summary is a list of tuples (func_name, diff_info_row, diff_text)
+        """
+
+        summarizable_asm_diffs = []
+
+        git_exe = "git.exe" if platform.system() == "Windows" else "git"
+        path_var = os.environ.get("PATH")
+        git_path = find_file(git_exe, path_var.split(os.pathsep)) if path_var is not None else None
+
+        for (mch_file, base_metrics, diff_metrics, diffs, jit_analyze_file, examples_to_put_in_summary) in asm_diffs:
+            with open(jit_analyze_file, "r") as read_fh:
+                jit_analyze_result = read_fh.read()
+
+            example_diffs = []
+            for (diff, base_dasm_path, diff_dasm_path) in examples_to_put_in_summary:
+                context_num = int(diff["Context"])
+                func_name = str(context_num) + ".dasm"
+
+                assert(os.path.exists(base_dasm_path) and os.path.exists(diff_dasm_path))
+
+                with open(base_dasm_path) as f:
+                    first_line = f.readline().rstrip()
+                    if first_line and first_line.startswith("; Assembly listing for method "):
+                        func_name += " - " + first_line[len("; Assembly listing for method "):]
+
+                diff_text = None
+                if git_path is None:
+                    diff_text = "Could not find a git executable in PATH"
+                else:
+                    git_diff_command = [ git_path, "diff", "--diff-algorithm=histogram", "--no-index", "--", base_dasm_path, diff_dasm_path ]
+                    git_diff_proc = subprocess.Popen(git_diff_command, stdout=subprocess.PIPE)
+                    (stdout, _) = git_diff_proc.communicate()
+                    code = git_diff_proc.returncode
+                    diff_lines = stdout.decode().splitlines()
+                    diff_lines = diff_lines[4:] # Exclude patch header
+
+                    if code == 0 or len(diff_lines) <= 0:
+                        diff_text = "No diffs found?"
+                    else:
+                        if len(diff_lines) > 250:
+                            diff_lines = diff_lines[:250]
+                            diff_lines.append("...")
+
+                        diff_text = "```diff\n" + "\n".join(diff_lines) + "\n```"
+
+                example_diffs.append((func_name, diff, diff_text))
+
+            summarizable_asm_diffs.append((mch_file, base_metrics, diff_metrics, diffs, jit_analyze_result, example_diffs))
+
+        return summarizable_asm_diffs
+
     def write_asmdiffs_markdown_summary(self, write_fh, asm_diffs, include_details):
         """ Write a markdown summary file of the diffs that were found.
 
         Args:
             write_fh  : file handle for file to output to
-            asm_diffs : list of tuples: (mch_name, base_metrics, diff_metrics, diffs_info, jit_analyze_summary_file, examples_to_put_in_summary)
+            asm_diffs : list of tuples: (mch_name, base_metrics, diff_metrics, diffs_info, jit_analyze_summary, examples_to_put_in_summary)
 
         """
 
@@ -2734,35 +2808,26 @@ class SuperPMIReplayAsmDiffs:
                     write_fh.write("---\n\n")
                     write_fh.write("#### jit-analyze output\n")
 
-                    for (mch_file, base_metrics, diff_metrics, has_diffs, jit_analyze_summary_file, _) in asm_diffs:
-                        if not has_diffs or jit_analyze_summary_file is None:
+                    for (mch_file, base_metrics, diff_metrics, has_diffs, jit_analyze_summary, _) in asm_diffs:
+                        if not has_diffs or jit_analyze_summary is None:
                             continue
 
-                        with open(jit_analyze_summary_file, "r") as read_fh:
-                            with DetailsSection(write_fh, mch_file):
-                                write_fh.write("To reproduce these diffs on Windows {0}:\n".format(self.coreclr_args.arch))
-                                write_fh.write("```\n")
-                                write_fh.write("superpmi.py asmdiffs -target_os {0} -target_arch {1} -arch {2}\n".format(self.coreclr_args.target_os, self.coreclr_args.target_arch, self.coreclr_args.arch))
-                                write_fh.write("```\n\n")
-
-                                shutil.copyfileobj(read_fh, write_fh)
+                        with DetailsSection(write_fh, mch_file):
+                            write_fh.write("To reproduce these diffs on Windows {0}:\n".format(self.coreclr_args.arch))
+                            write_fh.write("```\n")
+                            write_fh.write("superpmi.py asmdiffs -target_os {0} -target_arch {1} -arch {2}\n".format(self.coreclr_args.target_os, self.coreclr_args.target_arch, self.coreclr_args.arch))
+                            write_fh.write("```\n\n")
+                            write_fh.write(jit_analyze_summary)
 
     def write_example_diffs_to_markdown_summary(self, write_fh, asm_diffs):
         """ Write a section with example diffs to the markdown summary.
 
         Args:
             write_fh  : file handle for file to output to
-            asm_diffs : list of tuples: (mch_name, base_metrics, diff_metrics, diffs_info, jit_analyze_summary_file, examples_to_put_in_summary)
+            asm_diffs : list of tuples: (mch_name, base_metrics, diff_metrics, diffs_info, jit_analyze_summary, examples_to_put_in_summary)
+                        where examples_to_put_in_summary is a list of tuples (func_name, diff_info_row, diff_text)
 
         """
-
-        git_exe = "git.exe" if platform.system() == "Windows" else "git"
-        path_var = os.environ.get("PATH")
-        git_path = find_file(git_exe, path_var.split(os.pathsep)) if path_var is not None else None
-
-        if git_path is None:
-            write_fh.write("\nCould not find a git executable in PATH to create example diffs.\n\n")
-            return
 
         with DetailsSection(write_fh, "Example diffs"):
             for (collection_name, _, _, _, _, examples_to_put_in_summary) in asm_diffs:
@@ -2770,42 +2835,11 @@ class SuperPMIReplayAsmDiffs:
                     continue
 
                 with DetailsSection(write_fh, collection_name):
-                    for (diff, base_dasm_path, diff_dasm_path) in examples_to_put_in_summary:
-                        context_num = int(diff["Context"])
-                        func_name = str(context_num) + ".dasm"
-
-                        if not os.path.exists(base_dasm_path) or not os.path.exists(diff_dasm_path):
-                            write_fh.write("Did not find base/diff .dasm files for context {}; cannot display example diff\n\n".format(context_num))
-                            continue
-
-                        with open(base_dasm_path) as f:
-                            first_line = f.readline().rstrip()
-                            if first_line and first_line.startswith("; Assembly listing for method "):
-                                func_name += " - " + first_line[len("; Assembly listing for method "):]
-
-                        git_diff_command = [ git_path, "diff", "--diff-algorithm=histogram", "--no-index", "--", base_dasm_path, diff_dasm_path ]
-                        git_diff_proc = subprocess.Popen(git_diff_command, stdout=subprocess.PIPE)
-                        (stdout, _) = git_diff_proc.communicate()
-                        code = git_diff_proc.returncode
-                        diff_lines = stdout.decode().splitlines()
-                        diff_lines = diff_lines[4:] # Exclude patch header
-
+                    for (func_name, diff, diff_text) in examples_to_put_in_summary:
                         base_size = int(diff["Base size"])
                         diff_size = int(diff["Diff size"])
                         with DetailsSection(write_fh, "{} ({}) : {}".format(format_delta(base_size, diff_size), compute_and_format_pct(base_size, diff_size), func_name)):
-                            if code == 0 or len(diff_lines) <= 0:
-                                write_fh.write("No diffs found?\n\n")
-                            else:
-                                write_fh.write("```diff\n")
-                                if len(diff_lines) > 250:
-                                    diff_lines = diff_lines[:250]
-                                    diff_lines.append("...")
-
-                                for line in diff_lines:
-                                    write_fh.write(line)
-                                    write_fh.write("\n")
-
-                                write_fh.write("\n```\n")
+                            write_fh.write(diff_text)
 
     def pick_contexts_to_disassemble(self, diffs):
         """ Given information about diffs, pick the context numbers to create .dasm files for and examples to show diffs for.
@@ -4959,6 +4993,11 @@ def setup_args(args):
                             "git_diff",
                             lambda unused: True,
                             "Unable to set git_diff.")
+
+        coreclr_args.verify(args,
+                            "summary_as_json",
+                            lambda unused: True,
+                            "Unable to set summary_as_json")
 
         process_base_jit_path_arg(coreclr_args)
 
