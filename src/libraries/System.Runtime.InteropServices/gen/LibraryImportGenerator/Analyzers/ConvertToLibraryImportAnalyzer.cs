@@ -159,12 +159,12 @@ namespace Microsoft.Interop.Analyzers
                 if (s_unsupportedTypeNames.Contains(info.ManagedType.FullTypeName))
                 {
                     anyExplicitlyUnsupportedInfo = true;
-                    return ResolvedGenerator.Resolved(forwarder.Bind(info));
+                    return ResolvedGenerator.Resolved(forwarder.Bind(info, context));
                 }
                 if (HasUnsupportedMarshalAsInfo(info))
                 {
                     anyExplicitlyUnsupportedInfo = true;
-                    return ResolvedGenerator.Resolved(forwarder.Bind(info));
+                    return ResolvedGenerator.Resolved(forwarder.Bind(info, context));
                 }
                 return factory.Create(info, context);
             }), StubCodeContext.DefaultManagedToNativeStub, forwarder, out var bindingFailures);

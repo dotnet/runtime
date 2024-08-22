@@ -24,25 +24,18 @@ namespace Microsoft.Interop
             GeneratorDiagnosticsBag diagnosticsBag,
             IMarshallingGeneratorResolver generatorResolver)
         {
-            StubCodeContext stubCodeContext = StubCodeContext.DefaultNativeToManagedStub;
-            _marshallers = BoundGenerators.Create(argTypes, generatorResolver, stubCodeContext, new Forwarder(), out var bindingDiagnostics);
+            _marshallers = BoundGenerators.Create(argTypes, generatorResolver, StubCodeContext.DefaultNativeToManagedStub, new Forwarder(), out var bindingDiagnostics);
 
             diagnosticsBag.ReportGeneratorDiagnostics(bindingDiagnostics);
 
-            if (_marshallers.NativeReturnMarshaller.UsesNativeIdentifier(stubCodeContext))
+            if (_marshallers.NativeReturnMarshaller.UsesNativeIdentifier)
             {
                 // If we need a different native return identifier, then recreate the context with the correct identifier before we generate any code.
-                _context = new DefaultIdentifierContext(ReturnIdentifier, $"{ReturnIdentifier}{StubIdentifierContext.GeneratedNativeIdentifierSuffix}")
-                {
-                    CodeContext = stubCodeContext
-                };
+                _context = new DefaultIdentifierContext(ReturnIdentifier, $"{ReturnIdentifier}{StubIdentifierContext.GeneratedNativeIdentifierSuffix}");
             }
             else
             {
-                _context = new DefaultIdentifierContext(ReturnIdentifier, ReturnIdentifier)
-                {
-                    CodeContext = stubCodeContext
-                };
+                _context = new DefaultIdentifierContext(ReturnIdentifier, ReturnIdentifier);
             }
         }
 
@@ -58,8 +51,8 @@ namespace Microsoft.Interop
         {
             GeneratedStatements statements = GeneratedStatements.Create(
                 _marshallers,
-                _context,
-                methodToInvoke);
+                StubCodeContext.DefaultNativeToManagedStub,
+                _context, methodToInvoke);
             Debug.Assert(statements.CleanupCalleeAllocated.IsEmpty);
 
             bool shouldInitializeVariables =

@@ -85,12 +85,10 @@ namespace Microsoft.Interop
         /// </summary>
         public Stage CurrentStage { get; init; } = Stage.Invalid;
 
-        public CodeEmitOptions CodeEmitOptions { get; init; }
-
         /// <summary>
-        /// The context in which the code will be generated.
+        /// Options to control how some code constructs are emitted.
         /// </summary>
-        public required StubCodeContext CodeContext { get; init; }
+        public CodeEmitOptions CodeEmitOptions { get; init; }
 
         /// <summary>
         /// Suffix for all generated native identifiers.

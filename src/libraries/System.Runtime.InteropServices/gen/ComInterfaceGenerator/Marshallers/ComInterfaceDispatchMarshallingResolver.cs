@@ -21,8 +21,8 @@ namespace Microsoft.Interop
             if (info.MarshallingAttributeInfo is ComInterfaceDispatchMarshallingInfo)
             {
                 return context.Direction == MarshalDirection.UnmanagedToManaged
-                    ? ResolvedGenerator.Resolved(new Marshaller().Bind(info))
-                    : ResolvedGenerator.Resolved(KeepAliveThisMarshaller.Instance.Bind(info));
+                    ? ResolvedGenerator.Resolved(new Marshaller().Bind(info, context))
+                    : ResolvedGenerator.Resolved(KeepAliveThisMarshaller.Instance.Bind(info, context));
             }
             else
             {
@@ -37,7 +37,7 @@ namespace Microsoft.Interop
                     $"{TypeNames.GlobalAlias + TypeNames.System_Runtime_InteropServices_ComWrappers_ComInterfaceDispatch}*",
                     $"{TypeNames.System_Runtime_InteropServices_ComWrappers_ComInterfaceDispatch}*",
                     IsFunctionPointer: false);
-            public IEnumerable<StatementSyntax> Generate(TypePositionInfo info, StubIdentifierContext context)
+            public IEnumerable<StatementSyntax> Generate(TypePositionInfo info, StubCodeContext codeContext, StubIdentifierContext context)
             {
                 if (context.CurrentStage != StubIdentifierContext.Stage.Unmarshal)
                 {

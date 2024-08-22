@@ -12,8 +12,8 @@ namespace Microsoft.Interop.JavaScript
     {
         private readonly MarshalerType _elementMarshalerType;
 
-        public ArraySegmentJSGenerator(TypePositionInfo info, MarshalerType elementMarshalerType)
-            : base(info, MarshalerType.ArraySegment)
+        public ArraySegmentJSGenerator(TypePositionInfo info, StubCodeContext context, MarshalerType elementMarshalerType)
+            : base(info, context, MarshalerType.ArraySegment)
         {
             _elementMarshalerType = elementMarshalerType;
         }
@@ -24,6 +24,6 @@ namespace Microsoft.Interop.JavaScript
                 ArgumentList(SingletonSeparatedList(Argument(MarshalerTypeName(_elementMarshalerType)))));
         }
 
-        public override IBoundMarshallingGenerator Rebind(TypePositionInfo info) => new ArraySegmentJSGenerator(info, _elementMarshalerType);
+        public override IBoundMarshallingGenerator Rebind(TypePositionInfo info, StubCodeContext context) => new ArraySegmentJSGenerator(info, context, _elementMarshalerType);
     }
 }

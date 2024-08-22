@@ -34,14 +34,14 @@ namespace Microsoft.Interop
             return ValueBoundaryBehavior.AddressOfNativeIdentifier;
         }
 
-        public IEnumerable<StatementSyntax> Generate(TypePositionInfo info, StubIdentifierContext context)
+        public IEnumerable<StatementSyntax> Generate(TypePositionInfo info, StubCodeContext codeContext, StubIdentifierContext context)
         {
-            if (!info.IsByRef || context.CodeContext.IsInStubReturnPosition(info))
+            if (!info.IsByRef || codeContext.IsInStubReturnPosition(info))
                 yield break;
 
             (string managedIdentifier, string nativeIdentifier) = context.GetIdentifiers(info);
 
-            if (context.CodeContext.SingleFrameSpansNativeContext)
+            if (codeContext.SingleFrameSpansNativeContext)
             {
                 if (context.CurrentStage == StubIdentifierContext.Stage.Pin)
                 {
@@ -62,7 +62,7 @@ namespace Microsoft.Interop
                 yield break;
             }
 
-            MarshalDirection direction = MarshallerHelpers.GetMarshalDirection(info, context.CodeContext);
+            MarshalDirection direction = MarshallerHelpers.GetMarshalDirection(info, codeContext);
 
             switch (context.CurrentStage)
             {

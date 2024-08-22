@@ -11,28 +11,34 @@ namespace Microsoft.Interop
     /// </summary>
     internal interface ICustomTypeMarshallingStrategy
     {
-        ManagedTypeInfo AsNativeType(TypePositionInfo info);
+        TypePositionInfo TypeInfo { get; }
 
-        IEnumerable<StatementSyntax> GenerateCleanupCallerAllocatedResourcesStatements(TypePositionInfo info, StubIdentifierContext context);
+        StubCodeContext CodeContext { get; }
 
-        IEnumerable<StatementSyntax> GenerateCleanupCalleeAllocatedResourcesStatements(TypePositionInfo info, StubIdentifierContext context);
+        ManagedTypeInfo NativeType { get; }
 
-        IEnumerable<StatementSyntax> GenerateGuaranteedUnmarshalStatements(TypePositionInfo info, StubIdentifierContext context);
+        IEnumerable<StatementSyntax> GenerateCleanupCallerAllocatedResourcesStatements(StubIdentifierContext context);
 
-        IEnumerable<StatementSyntax> GenerateMarshalStatements(TypePositionInfo info, StubIdentifierContext context);
+        IEnumerable<StatementSyntax> GenerateCleanupCalleeAllocatedResourcesStatements(StubIdentifierContext context);
 
-        IEnumerable<StatementSyntax> GenerateNotifyForSuccessfulInvokeStatements(TypePositionInfo info, StubIdentifierContext context);
+        IEnumerable<StatementSyntax> GenerateGuaranteedUnmarshalStatements(StubIdentifierContext context);
 
-        IEnumerable<StatementSyntax> GeneratePinnedMarshalStatements(TypePositionInfo info, StubIdentifierContext context);
+        IEnumerable<StatementSyntax> GenerateMarshalStatements(StubIdentifierContext context);
 
-        IEnumerable<StatementSyntax> GeneratePinStatements(TypePositionInfo info, StubIdentifierContext context);
+        IEnumerable<StatementSyntax> GenerateNotifyForSuccessfulInvokeStatements(StubIdentifierContext context);
 
-        IEnumerable<StatementSyntax> GenerateSetupStatements(TypePositionInfo info, StubIdentifierContext context);
+        IEnumerable<StatementSyntax> GeneratePinnedMarshalStatements(StubIdentifierContext context);
 
-        IEnumerable<StatementSyntax> GenerateUnmarshalCaptureStatements(TypePositionInfo info, StubIdentifierContext context);
+        IEnumerable<StatementSyntax> GeneratePinStatements(StubIdentifierContext context);
 
-        IEnumerable<StatementSyntax> GenerateUnmarshalStatements(TypePositionInfo info, StubIdentifierContext context);
+        IEnumerable<StatementSyntax> GenerateSetupStatements(StubIdentifierContext context);
 
-        bool UsesNativeIdentifier(TypePositionInfo info, StubCodeContext context);
+        IEnumerable<StatementSyntax> GenerateUnmarshalCaptureStatements(StubIdentifierContext context);
+
+        IEnumerable<StatementSyntax> GenerateUnmarshalStatements(StubIdentifierContext context);
+
+        bool UsesNativeIdentifier { get; }
+
+        ICustomTypeMarshallingStrategy Rebind(TypePositionInfo typeInfo, StubCodeContext codeContext);
     }
 }

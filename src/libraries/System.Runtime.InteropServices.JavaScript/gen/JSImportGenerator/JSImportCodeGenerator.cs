@@ -36,27 +36,24 @@ namespace Microsoft.Interop.JavaScript
         {
             _jsImportData = attributeData;
             _signatureContext = signatureContext;
-            StubCodeContext codeContext = StubCodeContext.DefaultManagedToNativeStub;
 
-            _marshallers = BoundGenerators.Create(argTypes, generatorResolver, codeContext, new EmptyJSGenerator(), out var bindingFailures);
+            _marshallers = BoundGenerators.Create(argTypes, generatorResolver, StubCodeContext.DefaultManagedToNativeStub, new EmptyJSGenerator(), out var bindingFailures);
 
             diagnosticsBag.ReportGeneratorDiagnostics(bindingFailures);
 
-            if (_marshallers.ManagedReturnMarshaller.UsesNativeIdentifier(codeContext))
+            if (_marshallers.ManagedReturnMarshaller.UsesNativeIdentifier)
             {
                 // If we need a different native return identifier, then recreate the context with the correct identifier before we generate any code.
                 _context = new DefaultIdentifierContext(ReturnIdentifier, ReturnNativeIdentifier)
                 {
-                    CodeEmitOptions = new(SkipInit: true),
-                    CodeContext = codeContext,
+                    CodeEmitOptions = new(SkipInit: true)
                 };
             }
             else
             {
                 _context = new DefaultIdentifierContext(ReturnIdentifier, ReturnIdentifier)
                 {
-                    CodeEmitOptions = new(SkipInit: true),
-                    CodeContext = codeContext,
+                    CodeEmitOptions = new(SkipInit: true)
                 };
             }
 

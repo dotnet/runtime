@@ -94,17 +94,17 @@ namespace Microsoft.Interop.Analyzers
                             if (s_unsupportedTypeNames.Contains(info.ManagedType.FullTypeName))
                             {
                                 anyExplicitlyUnsupportedInfo = true;
-                                return ResolvedGenerator.Resolved(forwarder.Bind(info));
+                                return ResolvedGenerator.Resolved(forwarder.Bind(info, context));
                             }
                             if (HasUnsupportedMarshalAsInfo(info))
                             {
                                 anyExplicitlyUnsupportedInfo = true;
-                                return ResolvedGenerator.Resolved(forwarder.Bind(info));
+                                return ResolvedGenerator.Resolved(forwarder.Bind(info, context));
                             }
                             if (info.MarshallingAttributeInfo is TrackedMarshallingInfo(TrackedMarshallingInfoAnnotation.ExplicitlyUnsupported, _))
                             {
                                 anyExplicitlyUnsupportedInfo = true;
-                                return ResolvedGenerator.Resolved(forwarder.Bind(info));
+                                return ResolvedGenerator.Resolved(forwarder.Bind(info, context));
                             }
                             if (info.MarshallingAttributeInfo is TrackedMarshallingInfo(TrackedMarshallingInfoAnnotation annotation, var inner))
                             {

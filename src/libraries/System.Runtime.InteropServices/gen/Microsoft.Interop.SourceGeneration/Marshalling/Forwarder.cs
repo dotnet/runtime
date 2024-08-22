@@ -24,7 +24,7 @@ namespace Microsoft.Interop
             return ValueBoundaryBehavior.ManagedIdentifier;
         }
 
-        public IEnumerable<StatementSyntax> Generate(TypePositionInfo info, StubIdentifierContext context)
+        public IEnumerable<StatementSyntax> Generate(TypePositionInfo info, StubCodeContext codeContext, StubIdentifierContext context)
         {
             return Array.Empty<StatementSyntax>();
         }

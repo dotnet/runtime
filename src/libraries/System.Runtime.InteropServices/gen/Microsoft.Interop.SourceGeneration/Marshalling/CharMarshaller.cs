@@ -44,11 +44,11 @@ namespace Microsoft.Interop
             return info.IsByRef ? SignatureBehavior.PointerToNativeType : SignatureBehavior.NativeType;
         }
 
-        public IEnumerable<StatementSyntax> Generate(TypePositionInfo info, StubIdentifierContext context)
+        public IEnumerable<StatementSyntax> Generate(TypePositionInfo info, StubCodeContext codeContext, StubIdentifierContext context)
         {
             (string managedIdentifier, string nativeIdentifier) = context.GetIdentifiers(info);
 
-            if (IsPinningPathSupported(info, context.CodeContext))
+            if (IsPinningPathSupported(info, codeContext))
             {
                 if (context.CurrentStage == StubIdentifierContext.Stage.Pin)
                 {
@@ -79,7 +79,7 @@ namespace Microsoft.Interop
                 yield break;
             }
 
-            MarshalDirection elementMarshalDirection = MarshallerHelpers.GetMarshalDirection(info, context.CodeContext);
+            MarshalDirection elementMarshalDirection = MarshallerHelpers.GetMarshalDirection(info, codeContext);
 
             switch (context.CurrentStage)
             {

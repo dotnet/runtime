@@ -17,7 +17,7 @@ namespace Microsoft.Interop
         {
             if (info.MarshallingAttributeInfo is NoMarshallingInfo && CustomTypeToErrorMessageMap.TryGetValue(info.ManagedType, out string errorMessage))
             {
-                return ResolvedGenerator.NotSupported(info, new(info)
+                return ResolvedGenerator.NotSupported(info, context, new(info)
                 {
                     NotSupportedDetails = errorMessage
                 });

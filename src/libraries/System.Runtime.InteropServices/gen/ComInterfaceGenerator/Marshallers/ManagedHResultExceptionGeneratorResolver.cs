@@ -21,8 +21,8 @@ namespace Microsoft.Interop
             {
                 return ResolvedGenerator.Resolved(context.Direction switch
                 {
-                    MarshalDirection.UnmanagedToManaged => new UnmanagedToManagedMarshaller().Bind(info),
-                    MarshalDirection.ManagedToUnmanaged => new ManagedToUnmanagedMarshaller().Bind(info),
+                    MarshalDirection.UnmanagedToManaged => new UnmanagedToManagedMarshaller().Bind(info, context),
+                    MarshalDirection.ManagedToUnmanaged => new ManagedToUnmanagedMarshaller().Bind(info, context),
                     _ => throw new UnreachableException()
                 });
             }
@@ -35,7 +35,7 @@ namespace Microsoft.Interop
         private sealed class ManagedToUnmanagedMarshaller : IUnboundMarshallingGenerator
         {
             public ManagedTypeInfo AsNativeType(TypePositionInfo info) => info.ManagedType;
-            public IEnumerable<StatementSyntax> Generate(TypePositionInfo info, StubIdentifierContext context)
+            public IEnumerable<StatementSyntax> Generate(TypePositionInfo info, StubCodeContext codeContext, StubIdentifierContext context)
             {
                 Debug.Assert(info.MarshallingAttributeInfo is ManagedHResultExceptionMarshallingInfo);
 
@@ -63,7 +63,7 @@ namespace Microsoft.Interop
         private sealed class UnmanagedToManagedMarshaller : IUnboundMarshallingGenerator
         {
             public ManagedTypeInfo AsNativeType(TypePositionInfo info) => info.ManagedType;
-            public IEnumerable<StatementSyntax> Generate(TypePositionInfo info, StubIdentifierContext context)
+            public IEnumerable<StatementSyntax> Generate(TypePositionInfo info, StubCodeContext codeContext, StubIdentifierContext context)
             {
                 Debug.Assert(info.MarshallingAttributeInfo is ManagedHResultExceptionMarshallingInfo);
 

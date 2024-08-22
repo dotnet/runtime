@@ -16,8 +16,8 @@ namespace Microsoft.Interop.JavaScript
         {
         }
 
-        public PrimitiveJSGenerator(TypePositionInfo info, MarshalerType marshalerType)
-            : base(marshalerType, new Forwarder().Bind(info))
+        public PrimitiveJSGenerator(TypePositionInfo info, StubCodeContext context, MarshalerType marshalerType)
+            : base(marshalerType, new Forwarder().Bind(info, context))
         {
         }
 
@@ -33,12 +33,12 @@ namespace Microsoft.Interop.JavaScript
                 ? Argument(IdentifierName(context.GetIdentifiers(TypeInfo).native))
                 : _inner.AsArgument(context);
 
-            if (context.CurrentStage == StubIdentifierContext.Stage.UnmarshalCapture && context.CodeContext.Direction == MarshalDirection.ManagedToUnmanaged && TypeInfo.IsManagedReturnPosition)
+            if (context.CurrentStage == StubIdentifierContext.Stage.UnmarshalCapture && CodeContext.Direction == MarshalDirection.ManagedToUnmanaged && TypeInfo.IsManagedReturnPosition)
             {
                 yield return ToManagedMethod(target, source);
             }
 
-            if (context.CurrentStage == StubIdentifierContext.Stage.Marshal && context.CodeContext.Direction == MarshalDirection.UnmanagedToManaged && TypeInfo.IsManagedReturnPosition)
+            if (context.CurrentStage == StubIdentifierContext.Stage.Marshal && CodeContext.Direction == MarshalDirection.UnmanagedToManaged && TypeInfo.IsManagedReturnPosition)
             {
                 yield return ToJSMethod(target, source);
             }
@@ -48,12 +48,12 @@ namespace Microsoft.Interop.JavaScript
                 yield return x;
             }
 
-            if (context.CurrentStage == StubIdentifierContext.Stage.PinnedMarshal && context.CodeContext.Direction == MarshalDirection.ManagedToUnmanaged && !TypeInfo.IsManagedReturnPosition)
+            if (context.CurrentStage == StubIdentifierContext.Stage.PinnedMarshal && CodeContext.Direction == MarshalDirection.ManagedToUnmanaged && !TypeInfo.IsManagedReturnPosition)
             {
                 yield return ToJSMethod(target, source);
             }
 
-            if (context.CurrentStage == StubIdentifierContext.Stage.Unmarshal && context.CodeContext.Direction == MarshalDirection.UnmanagedToManaged && !TypeInfo.IsManagedReturnPosition)
+            if (context.CurrentStage == StubIdentifierContext.Stage.Unmarshal && CodeContext.Direction == MarshalDirection.UnmanagedToManaged && !TypeInfo.IsManagedReturnPosition)
             {
                 yield return ToManagedMethod(target, source);
             }
@@ -83,7 +83,7 @@ namespace Microsoft.Interop.JavaScript
                     .WithArgumentList(ArgumentList(SingletonSeparatedList(ToJSMethodRefOrOut(source)))));
         }
 
-        public override IBoundMarshallingGenerator Rebind(TypePositionInfo info)
-            => new PrimitiveJSGenerator(Type, _inner.Rebind(info));
+        public override IBoundMarshallingGenerator Rebind(TypePositionInfo info, StubCodeContext codeContext)
+            => new PrimitiveJSGenerator(Type, _inner.Rebind(info, codeContext));
     }
 }

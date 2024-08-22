@@ -145,13 +145,13 @@ namespace Microsoft.Interop
         {
             if (ValidateCustomNativeTypeMarshallingSupported(info, context, marshalInfo) is GeneratorDiagnostic.NotSupported diagnostic)
             {
-                return ResolvedGenerator.NotSupported(info, diagnostic);
+                return ResolvedGenerator.NotSupported(info, context, diagnostic);
             }
 
             CustomTypeMarshallerData marshallerData = GetMarshallerDataForTypePositionInfo(marshalInfo.Marshallers, info, context);
             if (!ValidateRuntimeMarshallingOptions(marshallerData))
             {
-                return ResolvedGenerator.NotSupported(info, new(info)
+                return ResolvedGenerator.NotSupported(info, context, new(info)
                 {
                     NotSupportedDetails = SR.RuntimeMarshallingMustBeDisabled,
                     DiagnosticProperties = AddDisableRuntimeMarshallingAttributeProperties
@@ -165,13 +165,13 @@ namespace Microsoft.Interop
             ICustomTypeMarshallingStrategy marshallingStrategy;
             if (marshallerData.HasState)
             {
-                marshallingStrategy = new StatefulValueMarshalling(marshallerData.MarshallerType, marshallerData.NativeType, marshallerData.Shape);
+                marshallingStrategy = new StatefulValueMarshalling(info, context, marshallerData.MarshallerType, marshallerData.NativeType, marshallerData.Shape);
                 if (marshallerData.Shape.HasFlag(MarshallerShape.CallerAllocatedBuffer))
                     marshallingStrategy = new StatefulCallerAllocatedBufferMarshalling(marshallingStrategy, marshallerData.MarshallerType.Syntax, marshallerData.BufferElementType.Syntax);
             }
             else
             {
-                marshallingStrategy = new StatelessValueMarshalling(marshallerData.MarshallerType.Syntax, marshallerData.NativeType, marshallerData.Shape);
+                marshallingStrategy = new StatelessValueMarshalling(info, context, marshallerData.MarshallerType.Syntax, marshallerData.NativeType, marshallerData.Shape);
                 if (marshallerData.Shape.HasFlag(MarshallerShape.CallerAllocatedBuffer))
                     marshallingStrategy = new StatelessCallerAllocatedBufferMarshalling(marshallingStrategy, marshallerData.MarshallerType.Syntax, marshallerData.BufferElementType.Syntax, isLinearCollectionMarshalling: false);
 
@@ -193,7 +193,7 @@ namespace Microsoft.Interop
                 }
             }
 
-            IBoundMarshallingGenerator marshallingGenerator = new CustomTypeMarshallingGenerator(info, marshallingStrategy, ByValueMarshalKindSupportDescriptor.Default, marshallerData.Shape.HasFlag(MarshallerShape.StatelessPinnableReference));
+            IBoundMarshallingGenerator marshallingGenerator = new CustomTypeMarshallingGenerator(marshallingStrategy, ByValueMarshalKindSupportDescriptor.Default, marshallerData.Shape.HasFlag(MarshallerShape.StatelessPinnableReference));
 
             if (marshallerData.Shape.HasFlag(MarshallerShape.StatelessPinnableReference))
             {
@@ -233,7 +233,7 @@ namespace Microsoft.Interop
                 GeneratorDiagnostic.NotSupported? countInfoDiagnostic = ValidateCountInfo(info, countInfo, context, out countInfoRequiresCast);
                 if (countInfoDiagnostic is not null)
                 {
-                    return ResolvedGenerator.NotSupported(info, countInfoDiagnostic);
+                    return ResolvedGenerator.NotSupported(info, context, countInfoDiagnostic);
                 }
             }
 
@@ -258,7 +258,7 @@ namespace Microsoft.Interop
 
             if (marshallerData.HasState)
             {
-                marshallingStrategy = new StatefulValueMarshalling(marshallerType, nativeType, marshallerData.Shape);
+                marshallingStrategy = new StatefulValueMarshalling(info, context, marshallerType, nativeType, marshallerData.Shape);
                 if (marshallerData.Shape.HasFlag(MarshallerShape.CallerAllocatedBuffer))
                 {
                     // Check if the buffer element type is actually the unmanaged element type
@@ -269,7 +269,7 @@ namespace Microsoft.Interop
                 }
 
                 var freeStrategy = GetFreeStrategy(info, context);
-                IElementsMarshallingCollectionSource collectionSource = new StatefulLinearCollectionSource();
+                IElementsMarshallingCollectionSource collectionSource = new StatefulLinearCollectionSource(info, context);
                 ElementsMarshalling elementsMarshalling = CreateElementsMarshalling(marshallerData, elementMarshaller, unmanagedElementType, collectionSource);
 
                 if (freeStrategy == FreeStrategy.FreeOriginal)
@@ -291,11 +291,11 @@ namespace Microsoft.Interop
             }
             else
             {
-                marshallingStrategy = new StatelessLinearCollectionSpaceAllocator(marshallerTypeSyntax, nativeType, marshallerData.Shape, countInfo, countInfoRequiresCast);
+                marshallingStrategy = new StatelessLinearCollectionSpaceAllocator(info, context, marshallerTypeSyntax, nativeType, marshallerData.Shape, countInfo, countInfoRequiresCast);
 
                 var freeStrategy = GetFreeStrategy(info, context);
 
-                IElementsMarshallingCollectionSource collectionSource = new StatelessLinearCollectionSource(marshallerTypeSyntax);
+                IElementsMarshallingCollectionSource collectionSource = new StatelessLinearCollectionSource(info, context, marshallerTypeSyntax);
                 if (freeStrategy == FreeStrategy.FreeOriginal)
                 {
                     marshallingStrategy = new UnmanagedToManagedOwnershipTrackingStrategy(marshallingStrategy);
@@ -338,7 +338,7 @@ namespace Microsoft.Interop
 
             // Elements in the collection must be blittable to use the pinnable marshaller.
             bool isPinned = marshallerData.Shape.HasFlag(MarshallerShape.StatelessPinnableReference) && elementIsBlittable;
-            IBoundMarshallingGenerator marshallingGenerator = new CustomTypeMarshallingGenerator(info, marshallingStrategy, byValueMarshalKindSupport, isPinned);
+            IBoundMarshallingGenerator marshallingGenerator = new CustomTypeMarshallingGenerator(marshallingStrategy, byValueMarshalKindSupport, isPinned);
             if (isPinned)
             {
                 marshallingGenerator = new StaticPinnableManagedValueMarshaller(marshallingGenerator, marshallerTypeSyntax);

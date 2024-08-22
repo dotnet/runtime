@@ -64,13 +64,13 @@ namespace Microsoft.Interop
                 return GenerateForwardingParameter(generator.TypeInfo, context.GetIdentifiers(generator.TypeInfo).managed);
             }
             string identifierName;
-            if (context.CodeContext.Direction == MarshalDirection.ManagedToUnmanaged)
+            if (generator.CodeContext.Direction == MarshalDirection.ManagedToUnmanaged)
             {
                 // This name doesn't get introduced into the stub's scope, so we can make it pretty
                 // and reuse the native identifier
                 identifierName = context.GetIdentifiers(generator.TypeInfo).native;
             }
-            else if (context.CodeContext.Direction == MarshalDirection.UnmanagedToManaged)
+            else if (generator.CodeContext.Direction == MarshalDirection.UnmanagedToManaged)
             {
                 // This name is introduced into the stub's scope.
                 // When we are passing the managed identifier as-is, we can just use that name everywhere.
@@ -80,7 +80,7 @@ namespace Microsoft.Interop
                 // before we assign it to the managed value.
                 (string managed, string native) = context.GetIdentifiers(generator.TypeInfo);
                 string param = context.GetAdditionalIdentifier(generator.TypeInfo, ParameterIdentifierSuffix);
-                identifierName = generator.GetValueBoundaryBehavior(context.CodeContext) switch
+                identifierName = generator.ValueBoundaryBehavior switch
                 {
                     ValueBoundaryBehavior.ManagedIdentifier => generator.TypeInfo.IsByRef ? param : managed,
                     ValueBoundaryBehavior.NativeIdentifier or ValueBoundaryBehavior.CastNativeIdentifier => native,
@@ -140,7 +140,7 @@ namespace Microsoft.Interop
         {
             TypePositionInfo info = generator.TypeInfo;
             (string managedIdentifier, string nativeIdentifier) = context.GetIdentifiers(info);
-            return generator.GetValueBoundaryBehavior(context.CodeContext) switch
+            return generator.ValueBoundaryBehavior switch
             {
                 ValueBoundaryBehavior.ManagedIdentifier when !info.IsByRef => Argument(IdentifierName(managedIdentifier)),
                 ValueBoundaryBehavior.ManagedIdentifier when info.IsByRef => Argument(IdentifierName(managedIdentifier)).WithRefKindKeyword(MarshallerHelpers.GetManagedArgumentRefKindKeyword(info)),

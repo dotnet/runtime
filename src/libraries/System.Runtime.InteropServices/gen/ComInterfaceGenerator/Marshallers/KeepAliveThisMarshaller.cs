@@ -15,7 +15,7 @@ namespace Microsoft.Interop
         public static readonly KeepAliveThisMarshaller Instance = new();
 
         public ManagedTypeInfo AsNativeType(TypePositionInfo info) => info.ManagedType;
-        public IEnumerable<StatementSyntax> Generate(TypePositionInfo info, StubIdentifierContext context)
+        public IEnumerable<StatementSyntax> Generate(TypePositionInfo info, StubCodeContext codeContext, StubIdentifierContext context)
         {
             if (context.CurrentStage != StubIdentifierContext.Stage.NotifyForSuccessfulInvoke)
             {

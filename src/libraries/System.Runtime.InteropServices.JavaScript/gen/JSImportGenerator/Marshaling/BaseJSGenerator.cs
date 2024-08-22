@@ -23,13 +23,15 @@ namespace Microsoft.Interop.JavaScript
 
         public TypePositionInfo TypeInfo => _inner.TypeInfo;
 
+        public StubCodeContext CodeContext => _inner.CodeContext;
+
         public ManagedTypeInfo NativeType => _inner.NativeType;
 
         public SignatureBehavior NativeSignatureBehavior => _inner.NativeSignatureBehavior;
 
-        public ValueBoundaryBehavior GetValueBoundaryBehavior(StubCodeContext context) => _inner.GetValueBoundaryBehavior(context);
+        public ValueBoundaryBehavior ValueBoundaryBehavior => _inner.ValueBoundaryBehavior;
 
-        public virtual bool UsesNativeIdentifier(StubCodeContext context) => _inner.UsesNativeIdentifier(context);
+        public virtual bool UsesNativeIdentifier => _inner.UsesNativeIdentifier;
 
         public ByValueMarshalKindSupport SupportsByValueMarshalKind(ByValueContentsMarshalKind marshalKind, out GeneratorDiagnostic? diagnostic)
             => _inner.SupportsByValueMarshalKind(marshalKind, out diagnostic);
@@ -88,6 +90,6 @@ namespace Microsoft.Interop.JavaScript
             }
         }
 
-        public abstract IBoundMarshallingGenerator Rebind(TypePositionInfo info);
+        public abstract IBoundMarshallingGenerator Rebind(TypePositionInfo info, StubCodeContext codeContext);
     }
 }

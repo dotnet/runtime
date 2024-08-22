@@ -14,31 +14,36 @@ namespace Microsoft.Interop
     {
         public TypePositionInfo TypeInfo => innerMarshallingGenerator.TypeInfo;
 
+        public StubCodeContext CodeContext => innerMarshallingGenerator.CodeContext;
+
         public ManagedTypeInfo NativeType => innerMarshallingGenerator.NativeType;
 
         public SignatureBehavior NativeSignatureBehavior => innerMarshallingGenerator.NativeSignatureBehavior;
 
-        public ValueBoundaryBehavior GetValueBoundaryBehavior(StubCodeContext context)
+        public ValueBoundaryBehavior ValueBoundaryBehavior
         {
-            if (IsPinningPathSupported(context))
+            get
             {
-                if (NativeType.Syntax is PointerTypeSyntax pointerType
-                    && pointerType.ElementType is PredefinedTypeSyntax predefinedType
-                    && predefinedType.Keyword.IsKind(SyntaxKind.VoidKeyword))
+                if (IsPinningPathSupported(CodeContext))
                 {
-                    return ValueBoundaryBehavior.NativeIdentifier;
+                    if (NativeType.Syntax is PointerTypeSyntax pointerType
+                        && pointerType.ElementType is PredefinedTypeSyntax predefinedType
+                        && predefinedType.Keyword.IsKind(SyntaxKind.VoidKeyword))
+                    {
+                        return Interop.ValueBoundaryBehavior.NativeIdentifier;
+                    }
+
+                    // Cast to native type if it is not void*
+                    return Interop.ValueBoundaryBehavior.CastNativeIdentifier;
                 }
 
-                // Cast to native type if it is not void*
-                return ValueBoundaryBehavior.CastNativeIdentifier;
+                return innerMarshallingGenerator.ValueBoundaryBehavior;
             }
-
-            return innerMarshallingGenerator.GetValueBoundaryBehavior(context);
         }
 
         public IEnumerable<StatementSyntax> Generate(StubIdentifierContext context)
         {
-            if (IsPinningPathSupported(context.CodeContext))
+            if (IsPinningPathSupported(CodeContext))
             {
                 return GeneratePinningPath(context);
             }
@@ -46,14 +51,17 @@ namespace Microsoft.Interop
             return innerMarshallingGenerator.Generate(context);
         }
 
-        public bool UsesNativeIdentifier(StubCodeContext context)
+        public bool UsesNativeIdentifier
         {
-            if (IsPinningPathSupported(context))
+            get
             {
-                return false;
-            }
+                if (IsPinningPathSupported(CodeContext))
+                {
+                    return false;
+                }
 
-            return innerMarshallingGenerator.UsesNativeIdentifier(context);
+                return innerMarshallingGenerator.UsesNativeIdentifier;
+            }
         }
 
         private bool IsPinningPathSupported(StubCodeContext context)
@@ -93,6 +101,6 @@ namespace Microsoft.Interop
             return innerMarshallingGenerator.SupportsByValueMarshalKind(marshalKind, out diagnostic);
         }
 
-        public IBoundMarshallingGenerator Rebind(TypePositionInfo info) => innerMarshallingGenerator.Rebind(info);
+        public IBoundMarshallingGenerator Rebind(TypePositionInfo info, StubCodeContext context) => innerMarshallingGenerator.Rebind(info, context);
     }
 }

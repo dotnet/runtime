@@ -66,7 +66,7 @@ namespace Microsoft.Interop
                 }
 
                 // Declare variable with native type for parameter or return value
-                if (marshaller.UsesNativeIdentifier(context.CodeContext))
+                if (marshaller.UsesNativeIdentifier)
                 {
                     statementsToUpdate.Add(Declare(
                         marshaller.NativeType.Syntax,
@@ -116,7 +116,7 @@ namespace Microsoft.Interop
                 // Declare variable for return value
                 if (marshaller.TypeInfo.IsNativeReturnPosition)
                 {
-                    bool nativeReturnUsesNativeIdentifier = marshaller.UsesNativeIdentifier(context.CodeContext);
+                    bool nativeReturnUsesNativeIdentifier = marshaller.UsesNativeIdentifier;
 
                     // Always initialize the return value.
                     statementsToUpdate.Add(Declare(
@@ -134,12 +134,12 @@ namespace Microsoft.Interop
                 }
                 else
                 {
-                    ValueBoundaryBehavior boundaryBehavior = marshaller.GetValueBoundaryBehavior(context.CodeContext);
+                    ValueBoundaryBehavior boundaryBehavior = marshaller.ValueBoundaryBehavior;
 
                     // Declare variable with native type for parameter
                     // if the marshaller uses the native identifier and the signature uses a different identifier
                     // than the native identifier.
-                    if (marshaller.UsesNativeIdentifier(context.CodeContext)
+                    if (marshaller.UsesNativeIdentifier
                         && boundaryBehavior is not
                             (ValueBoundaryBehavior.NativeIdentifier or ValueBoundaryBehavior.CastNativeIdentifier))
                     {

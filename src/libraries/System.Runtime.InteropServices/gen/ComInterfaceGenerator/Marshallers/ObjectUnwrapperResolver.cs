@@ -19,8 +19,8 @@ namespace Microsoft.Interop
             if (info.MarshallingAttributeInfo is ObjectUnwrapperInfo)
             {
                 return context.Direction == MarshalDirection.UnmanagedToManaged
-                    ? ResolvedGenerator.Resolved(new Marshaller().Bind(info))
-                    : ResolvedGenerator.Resolved(KeepAliveThisMarshaller.Instance.Bind(info));
+                    ? ResolvedGenerator.Resolved(new Marshaller().Bind(info, context))
+                    : ResolvedGenerator.Resolved(KeepAliveThisMarshaller.Instance.Bind(info, context));
             }
             else
             {
@@ -31,7 +31,7 @@ namespace Microsoft.Interop
         private sealed class Marshaller : IUnboundMarshallingGenerator
         {
             public ManagedTypeInfo AsNativeType(TypePositionInfo info) => new PointerTypeInfo("void*", "void*", false);
-            public IEnumerable<StatementSyntax> Generate(TypePositionInfo info, StubIdentifierContext context)
+            public IEnumerable<StatementSyntax> Generate(TypePositionInfo info, StubCodeContext codeContext, StubIdentifierContext context)
             {
                 Debug.Assert(info.MarshallingAttributeInfo is ObjectUnwrapperInfo);
                 TypeSyntax unwrapperType = ((ObjectUnwrapperInfo)info.MarshallingAttributeInfo).UnwrapperType;

@@ -10,8 +10,9 @@ namespace Microsoft.Interop
     {
         private readonly string _managedSpanIdentifier;
         private readonly string _nativeSpanIdentifier;
+        private readonly int _elementIndirectionLevel;
 
-        public string IndexerIdentifier => MarshallerHelpers.GetIndexerIdentifier(CodeContext.ElementIndirectionLevel - 1);
+        public string IndexerIdentifier => MarshallerHelpers.GetIndexerIdentifier(_elementIndirectionLevel - 1);
 
         /// <summary>
         /// Create a <see cref="StubIdentifierContext"/> for marshalling elements of an collection.
@@ -23,11 +24,13 @@ namespace Microsoft.Interop
         public LinearCollectionElementMarshallingCodeContext(
             Stage currentStage,
             string managedSpanIdentifier,
-            string nativeSpanIdentifier)
+            string nativeSpanIdentifier,
+            int elementIndirectionLevel)
         {
             CurrentStage = currentStage;
             _managedSpanIdentifier = managedSpanIdentifier;
             _nativeSpanIdentifier = nativeSpanIdentifier;
+            _elementIndirectionLevel = elementIndirectionLevel;
         }
 
         /// <summary>

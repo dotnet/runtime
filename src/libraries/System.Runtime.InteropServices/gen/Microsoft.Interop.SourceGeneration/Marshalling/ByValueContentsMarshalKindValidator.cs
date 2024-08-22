@@ -22,10 +22,10 @@ namespace Microsoft.Interop
         public ResolvedGenerator Create(TypePositionInfo info, StubCodeContext context)
         {
             ResolvedGenerator generator = _inner.Create(info, context);
-            return generator.IsResolvedWithoutErrors ? ValidateByValueMarshalKind(generator) : generator;
+            return generator.IsResolvedWithoutErrors ? ValidateByValueMarshalKind(generator, context) : generator;
         }
 
-        private static ResolvedGenerator ValidateByValueMarshalKind(ResolvedGenerator generator)
+        private static ResolvedGenerator ValidateByValueMarshalKind(ResolvedGenerator generator, StubCodeContext context)
         {
             if (generator.Generator.IsForwarder())
             {
@@ -39,7 +39,7 @@ namespace Microsoft.Interop
             return support switch
             {
                 ByValueMarshalKindSupport.Supported => generator,
-                ByValueMarshalKindSupport.NotSupported => ResolvedGenerator.ResolvedWithDiagnostics(s_forwarder.Bind(generator.Generator.TypeInfo), generator.Diagnostics.Add(diagnostic!)),
+                ByValueMarshalKindSupport.NotSupported => ResolvedGenerator.ResolvedWithDiagnostics(s_forwarder.Bind(generator.Generator.TypeInfo, context), generator.Diagnostics.Add(diagnostic!)),
                 ByValueMarshalKindSupport.Unnecessary => generator with { Diagnostics = generator.Diagnostics.Add(diagnostic!) },
                 ByValueMarshalKindSupport.NotRecommended => generator with { Diagnostics = generator.Diagnostics.Add(diagnostic!) },
                 _ => throw new UnreachableException()

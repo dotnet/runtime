@@ -91,10 +91,10 @@ namespace Microsoft.Interop
             return $"__i{i}";
         }
 
-        public static ExpressionSyntax GetIndexedManagedElementExpression(TypePositionInfo info, StubIdentifierContext context)
+        public static ExpressionSyntax GetIndexedManagedElementExpression(TypePositionInfo info, StubCodeContext codeContext, StubIdentifierContext context)
         {
             ExpressionSyntax indexedManagedElement = IdentifierName(context.GetIdentifiers(info).managed);
-            for (int i = 0; i < context.CodeContext.ElementIndirectionLevel; i++)
+            for (int i = 0; i < codeContext.ElementIndirectionLevel; i++)
             {
                 indexedManagedElement = ElementAccessExpression(indexedManagedElement)
                     .AddArgumentListArguments(Argument(IdentifierName(GetIndexerIdentifier(i))));

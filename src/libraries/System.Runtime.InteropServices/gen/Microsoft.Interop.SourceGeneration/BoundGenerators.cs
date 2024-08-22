@@ -20,7 +20,7 @@ namespace Microsoft.Interop
 
         public static BoundGenerators Create(ImmutableArray<TypePositionInfo> elementTypeInfo, IMarshallingGeneratorResolver generatorResolver, StubCodeContext context, IUnboundMarshallingGenerator fallbackGenerator, out ImmutableArray<GeneratorDiagnostic> generatorBindingDiagnostics)
         {
-            IBoundMarshallingGenerator defaultBoundGenerator = fallbackGenerator.Bind(new TypePositionInfo(SpecialTypeInfo.Void, NoMarshallingInfo.Instance));
+            IBoundMarshallingGenerator defaultBoundGenerator = fallbackGenerator.Bind(new TypePositionInfo(SpecialTypeInfo.Void, NoMarshallingInfo.Instance), context);
             BoundGenerators result = new();
 
             ImmutableArray<IBoundMarshallingGenerator>.Builder signatureMarshallers = ImmutableArray.CreateBuilder<IBoundMarshallingGenerator>();
@@ -155,7 +155,7 @@ namespace Microsoft.Interop
             {
                 ResolvedGenerator generator = factory.Create(p, context);
                 generatorDiagnostics.AddRange(generator.Diagnostics);
-                return generator.IsResolvedWithoutErrors ? generator.Generator : fallbackGenerator.Bind(p);
+                return generator.IsResolvedWithoutErrors ? generator.Generator : fallbackGenerator.Bind(p, context);
             }
         }
 
@@ -212,7 +212,7 @@ namespace Microsoft.Interop
                 if (info.IsNativeReturnPosition
                     && generator.Generator.NativeType != _nativeReturnType)
                 {
-                    return ResolvedGenerator.NotSupported(info, new(info)
+                    return ResolvedGenerator.NotSupported(info, context, new(info)
                     {
                         NotSupportedDetails = SR.MarshallerInNativeReturnPositionMustMatchNativeReturnType
                     });

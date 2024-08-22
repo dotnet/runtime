@@ -44,18 +44,19 @@ namespace Microsoft.Interop
                 ManagedExceptionCatchClauses = GenerateCatchClauseForManagedException(marshallers, context)
             };
         }
-        public static GeneratedStatements Create(BoundGenerators marshallers, StubIdentifierContext context, ExpressionSyntax expressionToInvoke)
+
+        public static GeneratedStatements Create(BoundGenerators marshallers, StubCodeContext codeContext, StubIdentifierContext context, ExpressionSyntax expressionToInvoke)
         {
             GeneratedStatements statements = Create(marshallers, context);
 
-            if (context.CodeContext.Direction == MarshalDirection.ManagedToUnmanaged)
+            if (codeContext.Direction == MarshalDirection.ManagedToUnmanaged)
             {
                 return statements with
                 {
                     InvokeStatement = GenerateStatementForNativeInvoke(marshallers, context with { CurrentStage = StubIdentifierContext.Stage.Invoke }, expressionToInvoke)
                 };
             }
-            else if (context.CodeContext.Direction == MarshalDirection.UnmanagedToManaged)
+            else if (codeContext.Direction == MarshalDirection.UnmanagedToManaged)
             {
                 return statements with
                 {
@@ -109,7 +110,7 @@ namespace Microsoft.Interop
 
             var (managed, native) = context.GetIdentifiers(marshallers.NativeReturnMarshaller.TypeInfo);
 
-            string targetIdentifier = marshallers.NativeReturnMarshaller.UsesNativeIdentifier(context.CodeContext)
+            string targetIdentifier = marshallers.NativeReturnMarshaller.UsesNativeIdentifier
                 ? native
                 : managed;
 
