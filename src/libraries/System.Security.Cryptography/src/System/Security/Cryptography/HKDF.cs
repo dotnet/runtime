@@ -15,7 +15,7 @@ namespace System.Security.Cryptography
     /// phase to be skipped, and the master key to be used directly as the pseudorandom key.
     /// See <a href="https://tools.ietf.org/html/rfc5869">RFC5869</a> for more information.
     /// </remarks>
-    public static class HKDF
+    public static partial class HKDF
     {
         /// <summary>
         /// Performs the HKDF-Extract function.
@@ -63,13 +63,6 @@ namespace System.Security.Cryptography
             return hashLength;
         }
 
-        private static void Extract(HashAlgorithmName hashAlgorithmName, int hashLength, ReadOnlySpan<byte> ikm, ReadOnlySpan<byte> salt, Span<byte> prk)
-        {
-            Debug.Assert(HashLength(hashAlgorithmName) == hashLength);
-            int written = CryptographicOperations.HmacData(hashAlgorithmName, salt, ikm, prk);
-            Debug.Assert(written == prk.Length, $"Bytes written is {written} bytes which does not match output length ({prk.Length} bytes)");
-        }
-
         /// <summary>
         /// Performs the HKDF-Expand function
         /// See section 2.3 of <a href="https://tools.ietf.org/html/rfc5869#section-2.3">RFC5869</a>
@@ -84,10 +77,14 @@ namespace System.Security.Cryptography
         public static byte[] Expand(HashAlgorithmName hashAlgorithmName, byte[] prk, int outputLength, byte[]? info = null)
         {
             ArgumentNullException.ThrowIfNull(prk);
-
             ArgumentOutOfRangeException.ThrowIfNegativeOrZero(outputLength);
 
             int hashLength = HashLength(hashAlgorithmName);
+
+            if (prk.Length < hashLength)
+            {
+                throw new ArgumentException(SR.Format(SR.Cryptography_Prk_TooSmall, hashLength), nameof(prk));
+            }
 
             // Constant comes from section 2.3 (the constraint on L in the Inputs section)
             int maxOkmLength = 255 * hashLength;
@@ -116,82 +113,15 @@ namespace System.Security.Cryptography
             if (output.Length == 0)
                 throw new ArgumentException(SR.Argument_DestinationTooShort, nameof(output));
 
+            if (prk.Length < hashLength)
+                throw new ArgumentException(SR.Format(SR.Cryptography_Prk_TooSmall, hashLength), nameof(prk));
+
             // Constant comes from section 2.3 (the constraint on L in the Inputs section)
             int maxOkmLength = 255 * hashLength;
             if (output.Length > maxOkmLength)
                 throw new ArgumentException(SR.Format(SR.Cryptography_Okm_TooLarge, maxOkmLength), nameof(output));
 
             Expand(hashAlgorithmName, hashLength, prk, output, info);
-        }
-
-        private static void Expand(HashAlgorithmName hashAlgorithmName, int hashLength, ReadOnlySpan<byte> prk, Span<byte> output, ReadOnlySpan<byte> info)
-        {
-            Debug.Assert(HashLength(hashAlgorithmName) == hashLength);
-
-            if (prk.Length < hashLength)
-                throw new ArgumentException(SR.Format(SR.Cryptography_Prk_TooSmall, hashLength), nameof(prk));
-
-            byte counter = 0;
-            var counterSpan = new Span<byte>(ref counter);
-            Span<byte> t = Span<byte>.Empty;
-            Span<byte> remainingOutput = output;
-
-            const int MaxStackInfoBuffer = 64;
-            Span<byte> tempInfoBuffer = stackalloc byte[MaxStackInfoBuffer];
-            scoped ReadOnlySpan<byte> infoBuffer;
-            byte[]? rentedTempInfoBuffer = null;
-
-            if (output.Overlaps(info))
-            {
-                if (info.Length > MaxStackInfoBuffer)
-                {
-                    rentedTempInfoBuffer = CryptoPool.Rent(info.Length);
-                    tempInfoBuffer = rentedTempInfoBuffer;
-                }
-
-                tempInfoBuffer = tempInfoBuffer.Slice(0, info.Length);
-                info.CopyTo(tempInfoBuffer);
-                infoBuffer = tempInfoBuffer;
-            }
-            else
-            {
-                infoBuffer = info;
-            }
-
-            using (IncrementalHash hmac = IncrementalHash.CreateHMAC(hashAlgorithmName, prk))
-            {
-                for (int i = 1; ; i++)
-                {
-                    hmac.AppendData(t);
-                    hmac.AppendData(infoBuffer);
-                    counter = (byte)i;
-                    hmac.AppendData(counterSpan);
-
-                    if (remainingOutput.Length >= hashLength)
-                    {
-                        t = remainingOutput.Slice(0, hashLength);
-                        remainingOutput = remainingOutput.Slice(hashLength);
-                        GetHashAndReset(hmac, t);
-                    }
-                    else
-                    {
-                        if (remainingOutput.Length > 0)
-                        {
-                            Debug.Assert(hashLength <= 512 / 8, "hashLength is larger than expected, consider increasing this value or using regular allocation");
-                            Span<byte> lastChunk = stackalloc byte[hashLength];
-                            GetHashAndReset(hmac, lastChunk);
-                            lastChunk.Slice(0, remainingOutput.Length).CopyTo(remainingOutput);
-                        }
-
-                        break;
-                    }
-                }
-            }
-
-            if (rentedTempInfoBuffer is not null)
-            {
-                CryptoPool.Return(rentedTempInfoBuffer, clearSize: info.Length);
-            }
         }
 
         /// <summary>
@@ -219,13 +149,8 @@ namespace System.Security.Cryptography
             if (outputLength > maxOkmLength)
                 throw new ArgumentOutOfRangeException(nameof(outputLength), SR.Format(SR.Cryptography_Okm_TooLarge, maxOkmLength));
 
-            Span<byte> prk = stackalloc byte[hashLength];
-
-            Extract(hashAlgorithmName, hashLength, ikm, salt, prk);
-
             byte[] result = new byte[outputLength];
-            Expand(hashAlgorithmName, hashLength, prk, result, info);
-
+            DeriveKeyCore(hashAlgorithmName, hashLength, ikm, result, salt, info);
             return result;
         }
 
@@ -251,21 +176,7 @@ namespace System.Security.Cryptography
                 throw new ArgumentException(SR.Format(SR.Cryptography_Okm_TooLarge, maxOkmLength), nameof(output));
 
             Debug.Assert(hashLength <= 512 / 8, "hashLength is larger than expected, consider increasing this value or using regular allocation");
-            Span<byte> prk = stackalloc byte[hashLength];
-
-            Extract(hashAlgorithmName, hashLength, ikm, salt, prk);
-            Expand(hashAlgorithmName, hashLength, prk, output, info);
-        }
-
-        private static void GetHashAndReset(IncrementalHash hmac, Span<byte> output)
-        {
-            if (!hmac.TryGetHashAndReset(output, out int bytesWritten))
-            {
-                Debug.Fail("HMAC operation failed unexpectedly");
-                throw new CryptographicException(SR.Arg_CryptographyException);
-            }
-
-            Debug.Assert(bytesWritten == output.Length, $"Bytes written is {bytesWritten} bytes which does not match output length ({output.Length} bytes)");
+            DeriveKeyCore(hashAlgorithmName, hashLength, ikm, output, salt, info);
         }
 
         private static int HashLength(HashAlgorithmName hashAlgorithmName)
