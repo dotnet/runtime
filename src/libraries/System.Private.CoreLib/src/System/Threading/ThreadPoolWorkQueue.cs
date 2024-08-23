@@ -1392,8 +1392,6 @@ namespace System.Threading
                 // Reset thread state after all user code for the work item has completed
                 currentThread.ResetThreadPoolThread();
             }
-
-            ThreadInt64PersistentCounter.Add(tl.threadLocalCompletionCountObject!, completedCount);
         }
     }
 
