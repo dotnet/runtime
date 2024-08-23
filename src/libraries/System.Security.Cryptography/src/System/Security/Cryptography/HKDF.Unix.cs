@@ -7,17 +7,17 @@ namespace System.Security.Cryptography
     {
         private static void Extract(HashAlgorithmName hashAlgorithmName, int hashLength, ReadOnlySpan<byte> ikm, ReadOnlySpan<byte> salt, Span<byte> prk)
         {
-            HKDFManagedImplementation.Extract(hashAlgorithmName, hashLength, ikm, salt, prk);
+            throw new NotImplementedException();
         }
 
         private static void Expand(HashAlgorithmName hashAlgorithmName, int hashLength, ReadOnlySpan<byte> prk, Span<byte> output, ReadOnlySpan<byte> info)
         {
-            HKDFManagedImplementation.Expand(hashAlgorithmName, hashLength, prk, output, info);
+            throw new NotImplementedException();
         }
 
         private static void DeriveKeyCore(HashAlgorithmName hashAlgorithmName, int hashLength, ReadOnlySpan<byte> ikm, Span<byte> output, ReadOnlySpan<byte> salt, ReadOnlySpan<byte> info)
         {
-            HKDFManagedImplementation.DeriveKey(hashAlgorithmName, hashLength, ikm, output, salt, info);
+            throw new NotImplementedException();
         }
     }
 }
