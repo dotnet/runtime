@@ -41,6 +41,13 @@ namespace System.Buffers
                 return new RangeByteSearchValues(minInclusive, maxInclusive);
             }
 
+            // Depending on the hardware, UniqueLowNibble can be faster than even range or 2 values.
+            // It's currently consistently faster than 4/5 values on all tested platforms (Arm, Avx2, Avx512).
+            if (values.Length >= 4 && IndexOfAnyAsciiSearcher.CanUseUniqueLowNibbleSearch(values, minInclusive, maxInclusive))
+            {
+                return new UniqueLowNibbleByteSearchValues(values);
+            }
+
             if (values.Length <= 5)
             {
                 Debug.Assert(values.Length is 2 or 3 or 4 or 5);
@@ -122,26 +129,34 @@ namespace System.Buffers
                     : new Any3SearchValues<char, short>(shortValues);
             }
 
+            // If the values are sets of 2 ASCII letters with both cases, we can use an approach that
+            // reduces the number of comparisons by masking off the bit that differs between lower and upper case (0x20).
+            // While this most commonly applies to ASCII letters, it also works for other values that differ by 0x20 (e.g. "[]{}" => "{}").
+            if (IndexOfAnyAsciiSearcher.IsVectorizationSupported && PackedSpanHelpers.PackedIndexOfIsSupported &&
+                maxInclusive < 128 && values.Length == 4 && minInclusive > 0)
+            {
+                Span<char> copy = stackalloc char[4];
+                values.CopyTo(copy);
+                copy.Sort();
+
+                if ((copy[0] ^ copy[2]) == 0x20 &&
+                    (copy[1] ^ copy[3]) == 0x20)
+                {
+                    // We pick the higher two values (with the 0x20 bit set). "AaBb" => 'a', 'b'
+                    return new Any2CharPackedIgnoreCaseSearchValues(copy[2], copy[3]);
+                }
+            }
+
+            // Depending on the hardware, UniqueLowNibble can be faster than most implementations we currently prefer above.
+            // It's currently consistently faster than 4/5 values or Ascii on all tested platforms (Arm, Avx2, Avx512).
+            if (IndexOfAnyAsciiSearcher.CanUseUniqueLowNibbleSearch(values, minInclusive, maxInclusive))
+            {
+                return new UniqueLowNibbleCharSearchValues(values);
+            }
+
             // IndexOfAnyAsciiSearcher for chars is slower than Any3CharSearchValues, but faster than Any4SearchValues
             if (IndexOfAnyAsciiSearcher.IsVectorizationSupported && maxInclusive < 128)
             {
-                // If the values are sets of 2 ASCII letters with both cases, we can use an approach that
-                // reduces the number of comparisons by masking off the bit that differs between lower and upper case (0x20).
-                // While this most commonly applies to ASCII letters, it also works for other values that differ by 0x20 (e.g. "[]{}" => "{}").
-                if (PackedSpanHelpers.PackedIndexOfIsSupported && values.Length == 4 && minInclusive > 0)
-                {
-                    Span<char> copy = stackalloc char[4];
-                    values.CopyTo(copy);
-                    copy.Sort();
-
-                    if ((copy[0] ^ copy[2]) == 0x20 &&
-                        (copy[1] ^ copy[3]) == 0x20)
-                    {
-                        // We pick the higher two values (with the 0x20 bit set). "AaBb" => 'a', 'b'
-                        return new Any2CharPackedIgnoreCaseSearchValues(copy[2], copy[3]);
-                    }
-                }
-
                 return (Ssse3.IsSupported || PackedSimd.IsSupported) && minInclusive == 0
                     ? new AsciiCharSearchValues<IndexOfAnyAsciiSearcher.Ssse3AndWasmHandleZeroInNeedle>(values)
                     : new AsciiCharSearchValues<IndexOfAnyAsciiSearcher.Default>(values);
@@ -162,7 +177,7 @@ namespace System.Buffers
                 // If we have both ASCII and non-ASCII characters, use an implementation that
                 // does an optimistic ASCII fast-path and then falls back to the ProbabilisticMap.
 
-                return (Ssse3.IsSupported || PackedSimd.IsSupported) && values.Contains('\0')
+                return (Ssse3.IsSupported || PackedSimd.IsSupported) && minInclusive == 0
                     ? new ProbabilisticWithAsciiCharSearchValues<IndexOfAnyAsciiSearcher.Ssse3AndWasmHandleZeroInNeedle>(values, maxInclusive)
                     : new ProbabilisticWithAsciiCharSearchValues<IndexOfAnyAsciiSearcher.Default>(values, maxInclusive);
             }
