@@ -1459,8 +1459,8 @@ namespace System.Threading.ThreadPools.Tests
                 manualResetEvent.Wait();
 
                 // Allow work item(s) to be marked as completed during this time, should be only one
-                Thread.Sleep(1000);
-
+                ThreadTestHelpers.WaitForCondition(() => ThreadPool.CompletedWorkItemCount == 1);
+                Thread.Sleep(50);
                 Assert.Equal(1, ThreadPool.CompletedWorkItemCount);
             }).Dispose();
         }
