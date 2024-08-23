@@ -46,6 +46,7 @@
 #include <openssl/store.h>
 #include <openssl/params.h>
 #include <openssl/core_names.h>
+#include <openssl/kdf.h>
 #endif
 
 #if HAVE_OPENSSL_ENGINE
@@ -411,6 +412,11 @@ extern bool g_libSslUses32BitTime;
     LIGHTUP_FUNCTION(EVP_DigestSqueeze) \
     REQUIRED_FUNCTION(EVP_DigestUpdate) \
     REQUIRED_FUNCTION(EVP_get_digestbyname) \
+    LIGHTUP_FUNCTION(EVP_KDF_CTX_free) \
+    LIGHTUP_FUNCTION(EVP_KDF_CTX_new) \
+    LIGHTUP_FUNCTION(EVP_KDF_derive) \
+    LIGHTUP_FUNCTION(EVP_KDF_fetch) \
+    LIGHTUP_FUNCTION(EVP_KDF_free) \
     LIGHTUP_FUNCTION(EVP_MAC_fetch) \
     LIGHTUP_FUNCTION(EVP_MAC_final) \
     LIGHTUP_FUNCTION(EVP_MAC_free) \
@@ -545,6 +551,7 @@ extern bool g_libSslUses32BitTime;
     LIGHTUP_FUNCTION(OSSL_STORE_load) \
     LIGHTUP_FUNCTION(OSSL_STORE_open_ex) \
     LIGHTUP_FUNCTION(OSSL_PARAM_construct_octet_string) \
+    LIGHTUP_FUNCTION(OSSL_PARAM_construct_utf8_string) \
     LIGHTUP_FUNCTION(OSSL_PARAM_construct_int32) \
     LIGHTUP_FUNCTION(OSSL_PARAM_construct_end) \
     REQUIRED_FUNCTION(PKCS8_PRIV_KEY_INFO_free) \
@@ -957,6 +964,11 @@ extern TYPEOF(OPENSSL_gmtime)* OPENSSL_gmtime_ptr;
 #define EVP_DigestUpdate EVP_DigestUpdate_ptr
 #define EVP_get_digestbyname EVP_get_digestbyname_ptr
 #define EVP_md5 EVP_md5_ptr
+#define EVP_KDF_CTX_free EVP_KDF_CTX_free_ptr
+#define EVP_KDF_CTX_new EVP_KDF_CTX_new_ptr
+#define EVP_KDF_derive EVP_KDF_derive_ptr
+#define EVP_KDF_fetch EVP_KDF_fetch_ptr
+#define EVP_KDF_free EVP_KDF_free_ptr
 #define EVP_MAC_fetch EVP_MAC_fetch_ptr
 #define EVP_MAC_final EVP_MAC_final_ptr
 #define EVP_MAC_free EVP_MAC_free_ptr
@@ -1091,6 +1103,7 @@ extern TYPEOF(OPENSSL_gmtime)* OPENSSL_gmtime_ptr;
 #define OSSL_STORE_load OSSL_STORE_load_ptr
 #define OSSL_STORE_open_ex OSSL_STORE_open_ex_ptr
 #define OSSL_PARAM_construct_octet_string OSSL_PARAM_construct_octet_string_ptr
+#define OSSL_PARAM_construct_utf8_string OSSL_PARAM_construct_utf8_string_ptr
 #define OSSL_PARAM_construct_int32 OSSL_PARAM_construct_int32_ptr
 #define OSSL_PARAM_construct_end OSSL_PARAM_construct_end_ptr
 #define PKCS8_PRIV_KEY_INFO_free PKCS8_PRIV_KEY_INFO_free_ptr
