@@ -425,7 +425,7 @@
       <HelixCommandLines Condition="'$(TestWrapperTargetsWindows)' != 'true'" Include="test_exit_code=%24%3F" />
 
       <!-- Add the XUnitLogChecker's running command and store its exit code. -->
-      <HelixCommandLines Include="$(XUnitLogCheckerCommand)" />
+      <HelixCommandLines Condition="'$(IsXunitLogCheckerSupported)' == 'true'" Include="$(XUnitLogCheckerCommand)" />
       <HelixCommandLines Condition="'$(TestWrapperTargetsWindows)' == 'true'" Include="set xunitlogchecker_exit_code=%25ERRORLEVEL%25" />
       <HelixCommandLines Condition="'$(TestWrapperTargetsWindows)' != 'true'" Include="xunitlogchecker_exit_code=%24%3F" />
 
