@@ -391,25 +391,32 @@ namespace Microsoft.Interop
                 yield return statement;
             }
 
-            string numElementsIdentifier = MarshallerHelpers.GetNumElementsIdentifier(TypeInfo, context);
-            // int <numElements>;
-            yield return Declare(
-                    PredefinedType(Token(SyntaxKind.IntKeyword)),
-                    numElementsIdentifier,
-                    initializeToDefault: false);
+            // When we're marshalling a collection and its elements only from managed to unmanaged,
+            // we don't need to declare the numElements local, as it's not used.
+            if (MarshallerHelpers.GetMarshalDirection(TypeInfo, CodeContext) is not MarshalDirection.ManagedToUnmanaged
+                || TypeInfo.ByValueContentsMarshalKind != ByValueContentsMarshalKind.Default)
+            {
+                string numElementsIdentifier = MarshallerHelpers.GetNumElementsIdentifier(TypeInfo, context);
+                // int <numElements>;
+                yield return Declare(
+                        PredefinedType(Token(SyntaxKind.IntKeyword)),
+                        numElementsIdentifier,
+                        initializeToDefault: false);
+
+                // Use the numElements local to ensure the compiler doesn't give errors for using an uninitialized variable.
+                // The value may be used in cleanup before it has been initialized, so this is not safe.
+                yield return MarshallerHelpers.SkipInitOrDefaultInit(
+                    new TypePositionInfo(SpecialTypeInfo.Int32, NoMarshallingInfo.Instance)
+                    {
+                        InstanceIdentifier = numElementsIdentifier
+                    }, context);
+            }
 
             var elementsSetup = elementsMarshalling.GenerateSetupStatement(context);
             if (elementsSetup is not EmptyStatementSyntax)
             {
                 yield return elementsSetup;
             }
-            // Use the numElements local to ensure the compiler doesn't give errors for using an uninitialized variable.
-            // The value may be used in cleanup before it has been initialized, so this is not safe.
-            yield return MarshallerHelpers.SkipInitOrDefaultInit(
-                new TypePositionInfo(SpecialTypeInfo.Int32, NoMarshallingInfo.Instance)
-                {
-                    InstanceIdentifier = numElementsIdentifier
-                }, context);
         }
 
         public IEnumerable<StatementSyntax> GenerateUnmarshalStatements(StubIdentifierContext context)
