@@ -148,7 +148,7 @@ extends:
       #         - template: /eng/pipelines/common/templates/runtimes/native-test-assets-variables.yml
       #           parameters:
       #             testGroup: outerloop
-            disableComponentGovernance: true # No shipping artifacts produced by this pipeline
+      #      disableComponentGovernance: true # No shipping artifacts produced by this pipeline
 
       - template: /eng/pipelines/common/platform-matrix.yml
         parameters:
