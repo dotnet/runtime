@@ -2242,7 +2242,7 @@ OLE_COLOR ConvertSystemColorToOleColor(OBJECTREF *pSrcObj)
     CONTRACTL_END;
 
     OLE_COLOR result;
-    OBJECTREF sysColor = nullptr;
+    OBJECTREF sysColor = NULL;
 
     GCPROTECT_BEGIN(sysColor);
 

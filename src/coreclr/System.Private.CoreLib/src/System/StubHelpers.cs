@@ -1469,8 +1469,8 @@ namespace System.StubHelpers
         internal static object CreateCustomMarshaler(IntPtr pMD, int paramToken, IntPtr hndManagedType)
         {
 #if FEATURE_COMINTEROP
-            if (hndManagedType == typeof(System.Collections.IEnumerator).TypeHandle.Value
-                && OperatingSystem.IsWindows())
+            if (OperatingSystem.IsWindows()
+                && hndManagedType == typeof(System.Collections.IEnumerator).TypeHandle.Value)
             {
                 return GetIEnumeratorToEnumVariantMarshaler();
             }
