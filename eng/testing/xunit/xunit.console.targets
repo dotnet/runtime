@@ -5,7 +5,7 @@
     <TestResultsName>testResults.xml</TestResultsName>
     <UseXunitExcludesTxtFile Condition="'$(TargetOS)' == 'android' or '$(TargetOS)' == 'ios' or '$(TargetOS)' == 'iossimulator' or '$(TargetOS)' == 'tvos' or '$(TargetOS)' == 'tvossimulator' or '$(TargetOS)' == 'maccatalyst'">true</UseXunitExcludesTxtFile>
 
-    <XunitConsolePath>$(XunitConsoleNetCore21AppPath)</XunitConsolePath>
+    <XunitConsolePath Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">$(XunitConsoleNetCore21AppPath)</XunitConsolePath>
     <XunitConsolePath Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">$(XunitConsole472Path)</XunitConsolePath>
 
     <BundleXunitRunner Condition="'$(TargetsMobile)' != 'true' and '$(ArchiveTests)' == 'true'">true</BundleXunitRunner>
@@ -18,7 +18,7 @@
   </ItemGroup>
 
   <PropertyGroup Condition="'$(BundleXunitRunner)' == 'true'">
-    <XunitConsolePath>xunt.console.dll</XunitConsolePath>
+    <XunitConsolePath Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">xunit.console.dll</XunitConsolePath>
     <XunitConsolePath Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">xunit.console.exe</XunitConsolePath>
   </PropertyGroup>
 
