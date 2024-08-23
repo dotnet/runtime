@@ -1169,7 +1169,7 @@ public class XmlSerializableBaseClass : IXmlSerializable
     public virtual void WriteXml(XmlWriter writer)
     {
         writer.WriteAttributeString("AttributeString", AttributeString);
-        writer.WriteAttributeString("DateTimeValue", DateTimeValue.ToString());
+        writer.WriteAttributeString("DateTimeValue", XmlConvert.ToString(DateTimeValue, XmlDateTimeSerializationMode.RoundtripKind));
     }
 
     public virtual void ReadXml(XmlReader reader)
@@ -1177,7 +1177,7 @@ public class XmlSerializableBaseClass : IXmlSerializable
         if (reader.MoveToAttribute("AttributeString"))
             AttributeString = reader.Value;
         if (reader.MoveToAttribute("DateTimeValue"))
-            DateTimeValue = DateTime.Parse(reader.Value);
+            DateTimeValue = XmlConvert.ToDateTime(reader.Value, XmlDateTimeSerializationMode.RoundtripKind);
     }
 
     public XmlSchema? GetSchema() => null;
