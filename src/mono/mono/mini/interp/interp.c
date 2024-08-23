@@ -7220,6 +7220,14 @@ MINT_IN_CASE(MINT_BRTRUE_I8_SP) ZEROP_SP(gint64, !=); MINT_IN_BREAK;
 			ip += 4;
 			MINT_IN_BREAK;
 		}
+		MINT_IN_CASE(MINT_MONO_EXCHANGE_I4) {
+			gint32 *dest = LOCAL_VAR (ip [2], gint32*);
+			gint32 exch = LOCAL_VAR (ip[3], gint32);
+			NULL_CHECK(dest);
+			LOCAL_VAR(ip[1], gint32) = mono_atomic_xchg_i32(dest, exch);
+			ip += 4;
+			MINT_IN_BREAK;
+		}
 		MINT_IN_CASE(MINT_MONO_EXCHANGE_I8) {
 			gboolean flag = FALSE;
 			gint64 *dest = LOCAL_VAR (ip [2], gint64*);

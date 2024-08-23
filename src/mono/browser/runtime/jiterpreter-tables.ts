@@ -330,7 +330,7 @@ export const xchgTable: { [opcode: number]: [wasmOpcode: WasmAtomicOpcode, resul
     [MintOpcode.MINT_MONO_EXCHANGE_I1]: [WasmAtomicOpcode.i32_atomic_rmw8_xchg_u, WasmOpcode.i32_extend_8_s, 0],
     [MintOpcode.MINT_MONO_EXCHANGE_U2]: [WasmAtomicOpcode.i32_atomic_rmw16_xchg_u, WasmOpcode.unreachable, 1],
     [MintOpcode.MINT_MONO_EXCHANGE_I2]: [WasmAtomicOpcode.i32_atomic_rmw16_xchg_u, WasmOpcode.i32_extend_16_s, 1],
-    // [MintOpcode.MINT_MONO_EXCHANGE_I4]: [WasmAtomicOpcode.i32_atomic_rmw_xchg, 2],
+    [MintOpcode.MINT_MONO_EXCHANGE_I4]: [WasmAtomicOpcode.i32_atomic_rmw_xchg, WasmOpcode.unreachable, 2],
     [MintOpcode.MINT_MONO_EXCHANGE_I8]: [WasmAtomicOpcode.i64_atomic_rmw_xchg, WasmOpcode.unreachable, 3],
 };
 
