@@ -23,6 +23,7 @@ from os import path
 from coreclr_arguments import *
 from superpmi import TempDir, determine_mcs_tool_path, determine_superpmi_tool_path, is_nonzero_length_file
 from jitutil import run_command
+from subprocess import Popen, DEVNULL
 
 # Start of parser object creation.
 is_windows = platform.system() == "Windows"
@@ -137,10 +138,6 @@ def build_and_run(coreclr_args):
     checked_root = path.join(source_directory, "artifacts", "bin", "coreclr", target_os + "." + coreclr_args.arch + ".Checked")
     release_root = path.join(source_directory, "artifacts", "bin", "coreclr", target_os + "." + coreclr_args.arch + ".Release")
 
-    # We'll use repo script to install dotnet
-    dotnet_install_script_name = "dotnet-install.cmd" if is_windows else "dotnet-install.sh"
-    dotnet_install_script_path = path.join(source_directory, "eng", "common", dotnet_install_script_name)
-
     temp_location = coreclr_args.temp_location
 
     if not coreclr_args.temp_is_explicit:
@@ -151,14 +148,8 @@ def build_and_run(coreclr_args):
     print ("Executing in " + temp_location)
     os.chdir(temp_location)
 
-    # install dotnet 8.0
-    run_command([dotnet_install_script_path, "-Version", "8.0.0"], temp_location, _exit_on_fail=True)
-    os.environ['DOTNET_MULTILEVEL_LOOKUP'] = '0'
-    os.environ['DOTNET_SKIP_FIRST_TIME_EXPERIENCE'] = '1'
     dotnet_path = path.join(source_directory, ".dotnet")
     dotnet_exe = path.join(dotnet_path, "dotnet.exe") if is_windows else path.join(dotnet_path, "dotnet")
-    # run_command([dotnet_exe, "--info"], temp_location, _exit_on_fail=True)
-    #os.environ['DOTNET_ROOT'] = dotnet_path
 
     ## install crank as local tool
     run_command(
@@ -184,6 +175,10 @@ def build_and_run(coreclr_args):
     crank_agent_app = path.join(temp_location, "crank-agent")
     mcs_path = determine_mcs_tool_path(coreclr_args)
     superpmi_path = determine_superpmi_tool_path(coreclr_args)
+
+    crank_agent_p = None
+    if coreclr_args.local:
+        crank_agent_p = Popen(crank_agent_app, stdout=DEVNULL)
 
     # todo: add grpc/signalr, perhaps
 
@@ -276,6 +271,9 @@ def build_and_run(coreclr_args):
             crank_app_args = [crank_app] + crank_arguments + description + runtime_arguments
             print(' '.join(crank_app_args))
             subprocess.run(crank_app_args, cwd=temp_location)
+
+    if crank_agent_p is not None:
+        crank_agent_p.terminate()
 
     # merge
     command = [mcs_path, "-merge", "temp.mch", "*.mc", "-dedup", "-thin"]
