@@ -31,6 +31,7 @@ parser = argparse.ArgumentParser(description="description")
 parser.add_argument("-source_directory", help="path to source directory")
 parser.add_argument("-output_mch_path", help="Absolute path to the mch file to produce")
 parser.add_argument("-arch", help="Architecture")
+parser.add_argument("-temp_location", required=False, help="Location to temporarily download ASPNET benchmarks and crank")
 
 def setup_args(args):
     """ Setup the args for SuperPMI to use.
@@ -59,6 +60,13 @@ def setup_args(args):
                         "arch",
                         lambda arch: arch.lower() in ["x64", "arm64"],
                         "Unable to set arch")
+    
+    if args.temp_location:
+        coreclr_args.temp_location = args.temp_location
+        coreclr_args.temp_is_explicit = True
+    else:
+        coreclr_args.temp_location = tempfile.TemporaryDirectory().name
+        coreclr_args.temp_is_explicit = False
 
     return coreclr_args
 
@@ -130,158 +138,162 @@ def build_and_run(coreclr_args):
     dotnet_install_script_name = "dotnet-install.cmd" if is_windows else "dotnet-install.sh"
     dotnet_install_script_path = path.join(source_directory, "eng", "common", dotnet_install_script_name)
 
-    with tempfile.TemporaryDirectory() as temp_location:
+    temp_location = coreclr_args.temp_location
 
-        temp_location = "C:\\work\\tmp\\tmp"
+    if not coreclr_args.temp_is_explicit:
+        os.mkdir(temp_location)
 
-        print ("Executing in " + temp_location)
-        os.chdir(temp_location)
+    print ("Executing in " + temp_location)
+    os.chdir(temp_location)
 
-        # install dotnet 8.0
-        run_command([dotnet_install_script_path, "-Version", "8.0.0"], temp_location, _exit_on_fail=True)
-        os.environ['DOTNET_MULTILEVEL_LOOKUP'] = '0'
-        os.environ['DOTNET_SKIP_FIRST_TIME_EXPERIENCE'] = '1'
-        dotnet_path = path.join(source_directory, ".dotnet")
-        dotnet_exe = path.join(dotnet_path, "dotnet.exe") if is_windows else path.join(dotnet_path, "dotnet")
-        # run_command([dotnet_exe, "--info"], temp_location, _exit_on_fail=True)
-        os.environ['DOTNET_ROOT'] = dotnet_path
+    # install dotnet 8.0
+    run_command([dotnet_install_script_path, "-Version", "8.0.0"], temp_location, _exit_on_fail=True)
+    os.environ['DOTNET_MULTILEVEL_LOOKUP'] = '0'
+    os.environ['DOTNET_SKIP_FIRST_TIME_EXPERIENCE'] = '1'
+    dotnet_path = path.join(source_directory, ".dotnet")
+    dotnet_exe = path.join(dotnet_path, "dotnet.exe") if is_windows else path.join(dotnet_path, "dotnet")
+    # run_command([dotnet_exe, "--info"], temp_location, _exit_on_fail=True)
+    os.environ['DOTNET_ROOT'] = dotnet_path
 
-        ## install crank as local tool
+    ## install crank as local tool
+    run_command(
+        [dotnet_exe, "tool", "install", "Microsoft.Crank.Controller", "--version", "0.2.0-*", "--tool-path", temp_location], _exit_on_fail=True)
+
+    ## ideally just do sparse clone, but this doesn't work locally
+    ## git clone --filter=blob:none --no-checkout https://github.com/aspnet/benchmarks
+    ## cd benchmarks
+    ## git sparse-checkout init --cone
+    ## git sparse-checkout set scenarios
+
+    ## could probably just pass a URL and avoid this
+
+    if not path.isdir(path.join(temp_location, 'benchmarks')):
         run_command(
-            [dotnet_exe, "tool", "install", "Microsoft.Crank.Controller", "--version", "0.2.0-*", "--tool-path", temp_location], _exit_on_fail=True)
+            ["git", "clone", "--quiet", "--depth", "1", "https://github.com/aspnet/benchmarks"], temp_location, _exit_on_fail=True)
 
-        ## ideally just do sparse clone, but this doesn't work locally
-        ## git clone --filter=blob:none --no-checkout https://github.com/aspnet/benchmarks
-        ## cd benchmarks
-        ## git sparse-checkout init --cone
-        ## git sparse-checkout set scenarios
+    crank_app = path.join(temp_location, "crank")
+    mcs_path = determine_mcs_tool_path(coreclr_args)
+    superpmi_path = determine_superpmi_tool_path(coreclr_args)
 
-        ## could probably just pass a URL and avoid this
+    # todo: add grpc/signalr, perhaps
 
-        if not path.isdir(path.join(temp_location, 'benchmarks')):
-            run_command(
-                ["git", "clone", "--quiet", "--depth", "1", "https://github.com/aspnet/benchmarks"], temp_location, _exit_on_fail=True)
+    configname_scenario_list = [
+                                ("platform", "plaintext"),
+                                ("json", "json"),
+                                ("plaintext", "mvc"),
+                                ("database", "fortunes_dapper"),
+                                ("database", "fortunes_ef_mvc_https"),
+                                ("database", "updates"),
+                                ("proxy", "proxy-yarp"),
+                                ("staticfiles", "static"),
+                                ("websocket", "websocket"),
+                                ("orchard", "about-sqlite"),
+                                ("signalr", "signalr"),
+                                ("grpc", "grpcaspnetcoreserver-grpcnetclient"),
+                                ("efcore", "NavigationsQuery"),
+                                ("efcore", "Funcletization")
+                                ]
 
-        crank_app = path.join(temp_location, "crank")
-        mcs_path = determine_mcs_tool_path(coreclr_args)
-        superpmi_path = determine_superpmi_tool_path(coreclr_args)
+    # configname_scenario_list = [("quic", "read-write")]
 
-        # todo: add grpc/signalr, perhaps
+    # note tricks to get one element tuples
 
-        configname_scenario_list = [
-                                    ("platform", "plaintext"),
-                                    ("json", "json"),
-                                    ("plaintext", "mvc"),
-                                    ("database", "fortunes_dapper"),
-                                    ("database", "fortunes_ef_mvc_https"),
-                                    ("database", "updates"),
-                                    ("proxy", "proxy-yarp"),
-                                    ("staticfiles", "static"),
-                                    ("websocket", "websocket"),
-                                    ("orchard", "about-sqlite"),
-                                    ("signalr", "signalr"),
-                                    ("grpc", "grpcaspnetcoreserver-grpcnetclient"),
-                                    ("efcore", "NavigationsQuery"),
-                                    ("efcore", "Funcletization")
-                                    ]
+    runtime_options_list = [
+        ("Dummy=0",),
+        ("TieredCompilation=0", ),
+        ("TieredPGO=0",),
+        ("TieredPGO=1", "ReadyToRun=0"),
+        ("ReadyToRun=0", "OSR_HitLimit=0", "TC_OnStackReplacement_InitialCounter=10"),
+        ("TC_PartialCompilation=1",)
+        ]
 
-        # configname_scenario_list = [("quic", "read-write")]
+    # runtime_options_list = [("Dummy=0", )]
 
-        # note tricks to get one element tuples
+    mch_file = path.join(coreclr_args.output_mch_path, "aspnet.run." + target_os + "." + target_arch + ".checked.mch")
+    benchmark_machine = determine_benchmark_machine(coreclr_args)
 
-        runtime_options_list = [
-            ("Dummy=0",),
-            ("TieredCompilation=0", ),
-            ("TieredPGO=0",),
-            ("TieredPGO=1", "ReadyToRun=0"),
-            ("ReadyToRun=0", "OSR_HitLimit=0", "TC_OnStackReplacement_InitialCounter=10"),
-            ("TC_PartialCompilation=1",)
-            ]
+    jitname = determine_native_name(coreclr_args, "clrjit", target_os)
+    coreclrname = determine_native_name(coreclr_args, "coreclr", target_os)
+    spminame = determine_native_name(coreclr_args, "superpmi-shim-collector", target_os)
+    corelibname = "System.Private.CoreLib.dll"
 
-        # runtime_options_list = [("Dummy=0", )]
+    jitpath = path.join(".", jitname)
+    jitlib  = path.join(checked_root, jitname)
+    coreclr = path.join(release_root, coreclrname)
+    corelib = path.join(release_root, corelibname)
+    spmilib = path.join(checked_root, spminame)
 
-        mch_file = path.join(coreclr_args.output_mch_path, "aspnet.run." + target_os + "." + target_arch + ".checked.mch")
-        benchmark_machine = determine_benchmark_machine(coreclr_args)
+    for (configName, scenario) in configname_scenario_list:
+        configYml = configName + ".benchmarks.yml"
+        configFile = path.join(temp_location, "benchmarks", "scenarios", configYml)
 
-        jitname = determine_native_name(coreclr_args, "clrjit", target_os)
-        coreclrname = determine_native_name(coreclr_args, "coreclr", target_os)
-        spminame = determine_native_name(coreclr_args, "superpmi-shim-collector", target_os)
-        corelibname = "System.Private.CoreLib.dll"
-
-        jitpath = path.join(".", jitname)
-        jitlib  = path.join(checked_root, jitname)
-        coreclr = path.join(release_root, coreclrname)
-        corelib = path.join(release_root, corelibname)
-        spmilib = path.join(checked_root, spminame)
-
-        for (configName, scenario) in configname_scenario_list:
-            configYml = configName + ".benchmarks.yml"
-            configFile = path.join(temp_location, "benchmarks", "scenarios", configYml)
-
-            crank_arguments = ["--config", configFile,
-                               "--profile", benchmark_machine,
-                               "--scenario", scenario,
-                               "--application.framework", "net9.0",
-                               "--application.channel", "edge",
-                               "--application.sdkVersion", "latest",
-                               "--application.environmentVariables", "DOTNET_JitName=" + spminame,
-                               "--application.environmentVariables", "SuperPMIShimLogPath=.",
-                               "--application.environmentVariables", "SuperPMIShimPath=" + jitpath,
-                               "--application.environmentVariables", "DOTNET_EnableExtraSuperPmiQueries=1",
-                               "--application.options.downloadFiles", "*.mc",
-                               "--application.options.displayOutput", "true",
+        crank_arguments = ["--config", configFile,
+                            "--profile", benchmark_machine,
+                            "--scenario", scenario,
+                            "--application.framework", "net9.0",
+                            "--application.channel", "edge",
+                            "--application.sdkVersion", "latest",
+                            "--application.environmentVariables", "DOTNET_JitName=" + spminame,
+                            "--application.environmentVariables", "SuperPMIShimLogPath=.",
+                            "--application.environmentVariables", "SuperPMIShimPath=" + jitpath,
+                            "--application.environmentVariables", "DOTNET_EnableExtraSuperPmiQueries=1",
+                            "--application.options.downloadFiles", "*.mc",
+                            "--application.options.displayOutput", "true",
 #                               "--application.options.dumpType", "full",
 #                               "--application.options.fetch", "true",
-                               "--application.options.outputFiles", spmilib,
-                               "--application.options.outputFiles", jitlib,
-                               "--application.options.outputFiles", coreclr,
-                               "--application.options.outputFiles", corelib]
+                            "--application.options.outputFiles", spmilib,
+                            "--application.options.outputFiles", jitlib,
+                            "--application.options.outputFiles", coreclr,
+                            "--application.options.outputFiles", corelib]
 
-            for runtime_options in runtime_options_list:
-                runtime_arguments = []
-                for runtime_option in runtime_options:
-                    runtime_arguments.append("--application.environmentVariables")
-                    runtime_arguments.append("DOTNET_" + runtime_option)
+        for runtime_options in runtime_options_list:
+            runtime_arguments = []
+            for runtime_option in runtime_options:
+                runtime_arguments.append("--application.environmentVariables")
+                runtime_arguments.append("DOTNET_" + runtime_option)
 
-                print("")
-                print("================================")
-                print("Config: " + configName + " scenario: " + scenario + " options: " + " ".join(runtime_options))
-                print("================================")
-                print("")
+            print("")
+            print("================================")
+            print("Config: " + configName + " scenario: " + scenario + " options: " + " ".join(runtime_options))
+            print("================================")
+            print("")
 
-                description = ["--description", configName + "-" + scenario + "-" + "-".join(runtime_options)]
-                crank_app_args = [crank_app] + crank_arguments + description + runtime_arguments
-                print(' '.join(crank_app_args))
-                subprocess.run(crank_app_args, cwd=temp_location)
+            description = ["--description", configName + "-" + scenario + "-" + "-".join(runtime_options)]
+            crank_app_args = [crank_app] + crank_arguments + description + runtime_arguments
+            print(' '.join(crank_app_args))
+            subprocess.run(crank_app_args, cwd=temp_location)
 
-        # merge
-        command = [mcs_path, "-merge", "temp.mch", "*.mc", "-dedup", "-thin"]
+    # merge
+    command = [mcs_path, "-merge", "temp.mch", "*.mc", "-dedup", "-thin"]
+    run_command(command, temp_location)
+
+    # clean
+    command = [superpmi_path, "-v", "ewmi", "-f", "fail.mcl", jitlib, "temp.mch"]
+    run_command(command, temp_location)
+
+    # strip
+    if is_nonzero_length_file("fail.mcl"):
+        print("Replay had failures, cleaning...");
+        fail_file = path.join(coreclr_args.output_mch_path, "fail.mcl");
+        command = [mcs_path, "-strip", "fail.mcl", "temp.mch", mch_file]
         run_command(command, temp_location)
+    else:
+        print("Replay was clean...");
+        shutil.copy2("temp.mch", mch_file)
 
-        # clean
-        command = [superpmi_path, "-v", "ewmi", "-f", "fail.mcl", jitlib, "temp.mch"]
-        run_command(command, temp_location)
+    # index
+    command = [mcs_path, "-toc", mch_file]
+    run_command(command, temp_location)
 
-        # strip
-        if is_nonzero_length_file("fail.mcl"):
-            print("Replay had failures, cleaning...");
-            fail_file = path.join(coreclr_args.output_mch_path, "fail.mcl");
-            command = [mcs_path, "-strip", "fail.mcl", "temp.mch", mch_file]
-            run_command(command, temp_location)
-        else:
-            print("Replay was clean...");
-            shutil.copy2("temp.mch", mch_file)
+    # overall summary
+    print("Merged summary for " + mch_file)
+    command = [mcs_path, "-jitflags", mch_file]
+    run_command(command, temp_location)
 
-        # index
-        command = [mcs_path, "-toc", mch_file]
-        run_command(command, temp_location)
+    os.chdir(source_directory )
 
-        # overall summary
-        print("Merged summary for " + mch_file)
-        command = [mcs_path, "-jitflags", mch_file]
-        run_command(command, temp_location)
-
-        os.chdir(source_directory )
+    if not coreclr_args.temp_is_explicit:
+        shutil.rmtree(temp_location, ignore_errors=True)
 
 def main(main_args):
     """ Main entry point
