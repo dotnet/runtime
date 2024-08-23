@@ -11,91 +11,17 @@ namespace System.Security.Cryptography
     {
         private static void Extract(HashAlgorithmName hashAlgorithmName, int hashLength, ReadOnlySpan<byte> ikm, ReadOnlySpan<byte> salt, Span<byte> prk)
         {
-            Debug.Assert(HashLength(hashAlgorithmName) == hashLength);
-            int written = CryptographicOperations.HmacData(hashAlgorithmName, salt, ikm, prk);
-            Debug.Assert(written == prk.Length, $"Bytes written is {written} bytes which does not match output length ({prk.Length} bytes)");
+            HKDFManagedImplementation.Extract(hashAlgorithmName, hashLength, ikm, salt, prk);
         }
 
         private static void Expand(HashAlgorithmName hashAlgorithmName, int hashLength, ReadOnlySpan<byte> prk, Span<byte> output, ReadOnlySpan<byte> info)
         {
-            Debug.Assert(HashLength(hashAlgorithmName) == hashLength);
-
-            byte counter = 0;
-            var counterSpan = new Span<byte>(ref counter);
-            Span<byte> t = Span<byte>.Empty;
-            Span<byte> remainingOutput = output;
-
-            const int MaxStackInfoBuffer = 64;
-            Span<byte> tempInfoBuffer = stackalloc byte[MaxStackInfoBuffer];
-            scoped ReadOnlySpan<byte> infoBuffer;
-            byte[]? rentedTempInfoBuffer = null;
-
-            if (output.Overlaps(info))
-            {
-                if (info.Length > MaxStackInfoBuffer)
-                {
-                    rentedTempInfoBuffer = CryptoPool.Rent(info.Length);
-                    tempInfoBuffer = rentedTempInfoBuffer;
-                }
-
-                tempInfoBuffer = tempInfoBuffer.Slice(0, info.Length);
-                info.CopyTo(tempInfoBuffer);
-                infoBuffer = tempInfoBuffer;
-            }
-            else
-            {
-                infoBuffer = info;
-            }
-
-            using (IncrementalHash hmac = IncrementalHash.CreateHMAC(hashAlgorithmName, prk))
-            {
-                for (int i = 1; ; i++)
-                {
-                    hmac.AppendData(t);
-                    hmac.AppendData(infoBuffer);
-                    counter = (byte)i;
-                    hmac.AppendData(counterSpan);
-
-                    if (remainingOutput.Length >= hashLength)
-                    {
-                        t = remainingOutput.Slice(0, hashLength);
-                        remainingOutput = remainingOutput.Slice(hashLength);
-                        GetHashAndReset(hmac, t);
-                    }
-                    else
-                    {
-                        if (remainingOutput.Length > 0)
-                        {
-                            Debug.Assert(hashLength <= 512 / 8, "hashLength is larger than expected, consider increasing this value or using regular allocation");
-                            Span<byte> lastChunk = stackalloc byte[hashLength];
-                            GetHashAndReset(hmac, lastChunk);
-                            lastChunk.Slice(0, remainingOutput.Length).CopyTo(remainingOutput);
-                        }
-
-                        break;
-                    }
-                }
-            }
-
-            if (rentedTempInfoBuffer is not null)
-            {
-                CryptoPool.Return(rentedTempInfoBuffer, clearSize: info.Length);
-            }
+            HKDFManagedImplementation.Expand(hashAlgorithmName, hashLength, prk, output, info);
         }
 
         private static void DeriveKeyCore(HashAlgorithmName hashAlgorithmName, int hashLength, ReadOnlySpan<byte> ikm, Span<byte> output, ReadOnlySpan<byte> salt, ReadOnlySpan<byte> info)
         {
-            Span<byte> prk = stackalloc byte[hashLength];
-
-            Extract(hashAlgorithmName, hashLength, ikm, salt, prk);
-            Expand(hashAlgorithmName, hashLength, prk, output, info);
-            CryptographicOperations.ZeroMemory(prk);
-        }
-
-        private static void GetHashAndReset(IncrementalHash hmac, Span<byte> output)
-        {
-            int written = hmac.GetHashAndReset(output);
-            Debug.Assert(written == output.Length, $"Bytes written is {written} bytes which does not match output length ({output.Length} bytes)");
+            HKDFManagedImplementation.DeriveKey(hashAlgorithmName, hashLength, ikm, output, salt, info);
         }
     }
 }
