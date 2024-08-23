@@ -129,6 +129,8 @@ DEFINE_BOOL(jiterpreter_eliminate_null_checks, "jiterpreter-eliminate-null-check
 DEFINE_BOOL(jiterpreter_backward_branches_enabled, "jiterpreter-backward-branches-enabled", TRUE, "Enable performing backward branches without exiting traces")
 // Attempt to use WASM v128 opcodes to implement SIMD interpreter opcodes
 DEFINE_BOOL(jiterpreter_enable_simd, "jiterpreter-simd-enabled", TRUE, "Attempt to use WebAssembly SIMD support")
+// Attempt to use WASM atomics opcodes to implement interpreter atomics opcodes
+DEFINE_BOOL(jiterpreter_enable_atomics, "jiterpreter-atomics-enabled", TRUE, "Attempt to use WebAssembly atomics support")
 // Since the zero page is unallocated, loading array/string/span lengths from null ptrs will yield zero
 DEFINE_BOOL(jiterpreter_zero_page_optimization, "jiterpreter-zero-page-optimization", TRUE, "Exploit the zero page being unallocated to optimize out null checks")
 // We can produce higher quality code by embedding known constants directly into traces instead of loading

@@ -4,7 +4,7 @@
 import WasmEnableThreads from "consts:wasmEnableThreads";
 import { NativePointer, ManagedPointer, VoidPtr } from "./types/emscripten";
 import { Module, mono_assert, runtimeHelpers } from "./globals";
-import { WasmOpcode, WasmSimdOpcode, WasmValtype } from "./jiterpreter-opcodes";
+import { WasmOpcode, WasmSimdOpcode, WasmAtomicOpcode, WasmValtype } from "./jiterpreter-opcodes";
 import { MintOpcode } from "./mintops";
 import cwraps from "./cwraps";
 import { mono_log_error, mono_log_info } from "./logging";
@@ -105,6 +105,9 @@ export class WasmBuilder {
     nextConstantSlot = 0;
     backBranchTraceLevel = 0;
 
+    containsSimd!: boolean;
+    containsAtomics!: boolean;
+
     compressImportNames = false;
     lockImports = false;
 
@@ -153,6 +156,9 @@ export class WasmBuilder {
         this.callHandlerReturnAddresses.length = 0;
 
         this.allowNullCheckOptimization = this.options.eliminateNullChecks;
+
+        this.containsSimd = false;
+        this.containsAtomics = false;
     }
 
     _push () {
@@ -257,9 +263,16 @@ export class WasmBuilder {
 
     appendSimd (value: WasmSimdOpcode, allowLoad?: boolean) {
         this.current.appendU8(WasmOpcode.PREFIX_simd);
-        // Yes that's right. We're using LEB128 to encode 8-bit opcodes. Why? I don't know
         mono_assert(((value | 0) !== 0) || ((value === WasmSimdOpcode.v128_load) && (allowLoad === true)), "Expected non-v128_load simd opcode or allowLoad==true");
+        // Yes that's right. We're using LEB128 to encode 8-bit opcodes. Why? I don't know
         return this.current.appendULeb(value);
+    }
+
+    appendAtomic (value: WasmAtomicOpcode, allowNotify?: boolean) {
+        this.current.appendU8(WasmOpcode.PREFIX_atomic);
+        mono_assert(((value | 0) !== 0) || ((value === WasmAtomicOpcode.memory_atomic_notify) && (allowNotify === true)), "Expected non-notify atomic opcode or allowNotify==true");
+        // Unlike SIMD, the spec appears to say that atomic opcodes are just two sequential bytes with explicit values.
+        return this.current.appendU8(value);
     }
 
     appendU32 (value: number) {
@@ -517,7 +530,7 @@ export class WasmBuilder {
             // memtype (limits = 0x03 n:u32 m:u32    => {min n, max m, shared})
             this.appendU8(0x02);
             this.appendU8(0x03);
-            // emcc seems to generate this min/max by default
+            // HACK: emcc seems to generate this min/max by default
             this.appendULeb(256);
             this.appendULeb(32768);
         } else {
@@ -1900,6 +1913,7 @@ export type JiterpreterOptions = {
     enableCallResume: boolean;
     enableWasmEh: boolean;
     enableSimd: boolean;
+    enableAtomics: boolean;
     zeroPageOptimization: boolean;
     cprop: boolean;
     // For locations where the jiterpreter heuristic says we will be unable to generate
@@ -1946,6 +1960,7 @@ const optionNames: { [jsName: string]: string } = {
     "enableCallResume": "jiterpreter-call-resume-enabled",
     "enableWasmEh": "jiterpreter-wasm-eh-enabled",
     "enableSimd": "jiterpreter-simd-enabled",
+    "enableAtomics": "jiterpreter-atomics-enabled",
     "zeroPageOptimization": "jiterpreter-zero-page-optimization",
     "cprop": "jiterpreter-constant-propagation",
     "enableStats": "jiterpreter-stats-enabled",
