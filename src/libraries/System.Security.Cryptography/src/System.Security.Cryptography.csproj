@@ -419,6 +419,7 @@
     <Compile Include="System\Security\Cryptography\Helpers.cs" />
     <Compile Include="System\Security\Cryptography\HKDF.cs" />
     <Compile Include="System\Security\Cryptography\HKDF.Managed.cs" />
+    <Compile Include="System\Security\Cryptography\HKDFManagedImplementation.cs" />
     <Compile Include="System\Security\Cryptography\HMAC.cs" />
     <Compile Include="System\Security\Cryptography\HMACCommon.cs" />
     <Compile Include="System\Security\Cryptography\HMACMD5.cs" />

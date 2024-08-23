@@ -23,13 +23,16 @@ namespace System.Security.Cryptography
         /// </summary>
         /// <param name="hashAlgorithmName">The hash algorithm used for HMAC operations.</param>
         /// <param name="ikm">The input keying material.</param>
-        /// <param name="salt">The optional salt value (a non-secret random value). If not provided it defaults to a byte array of <see cref="HashLength"/> zeros.</param>
+        /// <param name="salt">
+        ///   The optional salt value (a non-secret random value). If not provided it defaults to a
+        ///   byte array of the same length as the output of the specified hash algorithm.
+        /// </param>
         /// <returns>The pseudo random key (prk).</returns>
         public static byte[] Extract(HashAlgorithmName hashAlgorithmName, byte[] ikm, byte[]? salt = null)
         {
             ArgumentNullException.ThrowIfNull(ikm);
 
-            int hashLength = HashLength(hashAlgorithmName);
+            int hashLength = Helpers.HashLength(hashAlgorithmName);
             byte[] prk = new byte[hashLength];
 
             Extract(hashAlgorithmName, hashLength, ikm, salt, prk);
@@ -47,7 +50,7 @@ namespace System.Security.Cryptography
         /// <returns>The number of bytes written to the <paramref name="prk"/> buffer.</returns>
         public static int Extract(HashAlgorithmName hashAlgorithmName, ReadOnlySpan<byte> ikm, ReadOnlySpan<byte> salt, Span<byte> prk)
         {
-            int hashLength = HashLength(hashAlgorithmName);
+            int hashLength = Helpers.HashLength(hashAlgorithmName);
 
             if (prk.Length < hashLength)
             {
@@ -68,7 +71,10 @@ namespace System.Security.Cryptography
         /// See section 2.3 of <a href="https://tools.ietf.org/html/rfc5869#section-2.3">RFC5869</a>
         /// </summary>
         /// <param name="hashAlgorithmName">The hash algorithm used for HMAC operations.</param>
-        /// <param name="prk">The pseudorandom key of at least <see cref="HashLength"/> bytes (usually the output from Expand step).</param>
+        /// <param name="prk">
+        ///   The pseudorandom key that is at least as long as the output byte array of the specified hash
+        ///   algorithm (usually the output from the Extract step).
+        /// </param>
         /// <param name="outputLength">The length of the output keying material.</param>
         /// <param name="info">The optional context and application specific information.</param>
         /// <returns>The output keying material.</returns>
@@ -79,7 +85,7 @@ namespace System.Security.Cryptography
             ArgumentNullException.ThrowIfNull(prk);
             ArgumentOutOfRangeException.ThrowIfNegativeOrZero(outputLength);
 
-            int hashLength = HashLength(hashAlgorithmName);
+            int hashLength = Helpers.HashLength(hashAlgorithmName);
 
             if (prk.Length < hashLength)
             {
@@ -102,13 +108,16 @@ namespace System.Security.Cryptography
         /// See section 2.3 of <a href="https://tools.ietf.org/html/rfc5869#section-2.3">RFC5869</a>
         /// </summary>
         /// <param name="hashAlgorithmName">The hash algorithm used for HMAC operations.</param>
-        /// <param name="prk">The pseudorandom key of at least <see cref="HashLength"/> bytes (usually the output from Expand step).</param>
+        /// <param name="prk">
+        ///   The pseudorandom key that is at least as long as the output byte array of the specified hash
+        ///   algorithm (usually the output from the Extract step).
+        /// </param>
         /// <param name="output">The destination buffer to receive the output keying material.</param>
         /// <param name="info">The context and application specific information (can be an empty span).</param>
         /// <exception cref="ArgumentException"><paramref name="output"/> is empty, or is larger than the maximum allowed length.</exception>
         public static void Expand(HashAlgorithmName hashAlgorithmName, ReadOnlySpan<byte> prk, Span<byte> output, ReadOnlySpan<byte> info)
         {
-            int hashLength = HashLength(hashAlgorithmName);
+            int hashLength = Helpers.HashLength(hashAlgorithmName);
 
             if (output.Length == 0)
                 throw new ArgumentException(SR.Argument_DestinationTooShort, nameof(output));
@@ -130,7 +139,7 @@ namespace System.Security.Cryptography
         /// <param name="hashAlgorithmName">The hash algorithm used for HMAC operations.</param>
         /// <param name="ikm">The input keying material.</param>
         /// <param name="outputLength">The length of the output keying material.</param>
-        /// <param name="salt">The optional salt value (a non-secret random value). If not provided it defaults to a byte array of <see cref="HashLength"/> zeros.</param>
+        /// <param name="salt">The optional salt value (a non-secret random value).</param>
         /// <param name="info">The optional context and application specific information.</param>
         /// <returns>The output keying material.</returns>
         /// <exception cref="ArgumentNullException"><paramref name="ikm"/>is <see langword="null"/>.</exception>
@@ -141,7 +150,7 @@ namespace System.Security.Cryptography
 
             ArgumentOutOfRangeException.ThrowIfNegativeOrZero(outputLength);
 
-            int hashLength = HashLength(hashAlgorithmName);
+            int hashLength = Helpers.HashLength(hashAlgorithmName);
             Debug.Assert(hashLength <= 512 / 8, "hashLength is larger than expected, consider increasing this value or using regular allocation");
 
             // Constant comes from section 2.3 (the constraint on L in the Inputs section)
@@ -165,7 +174,7 @@ namespace System.Security.Cryptography
         /// <exception cref="ArgumentException"><paramref name="ikm"/> is empty, or is larger than the maximum allowed length.</exception>
         public static void DeriveKey(HashAlgorithmName hashAlgorithmName, ReadOnlySpan<byte> ikm, Span<byte> output, ReadOnlySpan<byte> salt, ReadOnlySpan<byte> info)
         {
-            int hashLength = HashLength(hashAlgorithmName);
+            int hashLength = Helpers.HashLength(hashAlgorithmName);
 
             if (output.Length == 0)
                 throw new ArgumentException(SR.Argument_DestinationTooShort, nameof(output));
@@ -177,46 +186,6 @@ namespace System.Security.Cryptography
 
             Debug.Assert(hashLength <= 512 / 8, "hashLength is larger than expected, consider increasing this value or using regular allocation");
             DeriveKeyCore(hashAlgorithmName, hashLength, ikm, output, salt, info);
-        }
-
-        private static int HashLength(HashAlgorithmName hashAlgorithmName)
-        {
-            if (hashAlgorithmName == HashAlgorithmName.SHA1)
-            {
-                return HMACSHA1.HashSizeInBytes;
-            }
-            else if (hashAlgorithmName == HashAlgorithmName.SHA256)
-            {
-                return HMACSHA256.HashSizeInBytes;
-            }
-            else if (hashAlgorithmName == HashAlgorithmName.SHA384)
-            {
-                return HMACSHA384.HashSizeInBytes;
-            }
-            else if (hashAlgorithmName == HashAlgorithmName.SHA512)
-            {
-                return HMACSHA512.HashSizeInBytes;
-            }
-            else if (hashAlgorithmName == HashAlgorithmName.SHA3_256)
-            {
-                return HMACSHA3_256.HashSizeInBytes;
-            }
-            else if (hashAlgorithmName == HashAlgorithmName.SHA3_384)
-            {
-                return HMACSHA3_384.HashSizeInBytes;
-            }
-            else if (hashAlgorithmName == HashAlgorithmName.SHA3_512)
-            {
-                return HMACSHA3_512.HashSizeInBytes;
-            }
-            else if (hashAlgorithmName == HashAlgorithmName.MD5)
-            {
-                return HMACMD5.HashSizeInBytes;
-            }
-            else
-            {
-                throw new ArgumentOutOfRangeException(nameof(hashAlgorithmName));
-            }
         }
     }
 }
