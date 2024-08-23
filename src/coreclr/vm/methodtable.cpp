@@ -481,6 +481,22 @@ PTR_MethodTable InterfaceInfo_t::GetApproxMethodTable(Module * pContainingModule
     MethodTable *pServerMT = (*pServer)->GetMethodTable();
     PREFIX_ASSUME(pServerMT != NULL);
 
+#ifdef FEATURE_COMINTEROP
+    if (pServerMT->IsComObjectType() && !pItfMD->HasMethodInstantiation())
+    {
+        // interop needs an exact MethodDesc
+        pItfMD = MethodDesc::FindOrCreateAssociatedMethodDesc(
+            pItfMD,
+            ownerType.GetMethodTable(),
+            FALSE,              // forceBoxedEntryPoint
+            Instantiation(),    // methodInst
+            FALSE,              // allowInstParam
+            TRUE);              // forceRemotableMethod
+
+        RETURN(pServerMT->GetMethodDescForComInterfaceMethod(pItfMD, false));
+    }
+#endif // !FEATURE_COMINTEROP
+
     // For IDynamicInterfaceCastable, instead of trying to find method implementation in the real object type
     // we call GetInterfaceImplementation on the object and call GetMethodDescForInterfaceMethod
     // with whatever type it returns.
@@ -500,22 +516,6 @@ PTR_MethodTable InterfaceInfo_t::GetApproxMethodTable(Module * pContainingModule
 
         RETURN(implTypeHandle.GetMethodTable()->GetMethodDescForInterfaceMethod(ownerType, pItfMD, TRUE /* throwOnConflict */));
     }
-
-#ifdef FEATURE_COMINTEROP
-    if (pServerMT->IsComObjectType() && !pItfMD->HasMethodInstantiation())
-    {
-        // interop needs an exact MethodDesc
-        pItfMD = MethodDesc::FindOrCreateAssociatedMethodDesc(
-            pItfMD,
-            ownerType.GetMethodTable(),
-            FALSE,              // forceBoxedEntryPoint
-            Instantiation(),    // methodInst
-            FALSE,              // allowInstParam
-            TRUE);              // forceRemotableMethod
-
-        RETURN(pServerMT->GetMethodDescForComInterfaceMethod(pItfMD, false));
-    }
-#endif // !FEATURE_COMINTEROP
 
     // Handle pure COM+ types.
     RETURN (pServerMT->GetMethodDescForInterfaceMethod(ownerType, pItfMD, TRUE /* throwOnConflict */));
@@ -2710,7 +2710,7 @@ static bool HandleInlineArray(int elementTypeIndex, int nElements, FpStructInReg
     int nFlattenedFieldsPerElement = typeIndex - elementTypeIndex;
     if (nFlattenedFieldsPerElement == 0)
     {
-        assert(nElements == 1); // HasImpliedRepeatedFields must have returned a false positive
+        assert(nElements == 1); // HasImpliedRepeatedFields must have returned a false positive, it can't be an array
         LOG((LF_JIT, LL_EVERYTHING, "FpStructInRegistersInfo:%*s  * ignoring empty struct\n",
             nestingLevel * 4, ""));
         return true;
@@ -2819,6 +2819,17 @@ static bool FlattenFields(TypeHandle th, uint32_t offset, FpStructInRegistersInf
         {
             assert(nFields == 1);
             int nElements = pMT->GetNumInstanceFieldBytes() / fields[0].GetSize();
+
+            // Only InlineArrays can have element type of empty struct, fixed-size buffers take only primitives
+            if ((typeIndex - elementTypeIndex) == 0 && pMT->GetClass()->IsInlineArray())
+            {
+                assert(nElements > 0); // InlineArray length must be > 0
+                LOG((LF_JIT, LL_EVERYTHING, "FpStructInRegistersInfo:%*s "
+                    " * struct %s containing a %i-element array of empty structs %s is passed by integer calling convention\n",
+                    nestingLevel * 4, "", pMT->GetDebugClassName(), nElements, fields[0].GetDebugName()));
+                return false;
+            }
+
             if (!HandleInlineArray(elementTypeIndex, nElements, info, typeIndex DEBUG_ARG(nestingLevel + 1)))
                 return false;
         }

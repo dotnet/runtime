@@ -15607,7 +15607,7 @@ GenTree* Compiler::gtFoldExprConst(GenTree* tree)
 
                             case TYP_FLOAT:
                             {
-#if defined(TARGET_64BIT)
+#ifdef TARGET_64BIT
                                 if (tree->IsUnsigned() && (lval1 < 0))
                                 {
                                     f1 = FloatingPointUtils::convertUInt64ToFloat((uint64_t)lval1);
@@ -16599,6 +16599,7 @@ GenTree* Compiler::gtNewTempStore(
         valTyp      = lvaGetRealType(val->AsLclVar()->GetLclNum());
         val->gtType = valTyp;
     }
+
     var_types dstTyp = varDsc->TypeGet();
 
     /* If the variable's lvType is not yet set then set it here */
@@ -27007,6 +27008,13 @@ bool GenTreeHWIntrinsic::OperIsEmbBroadcastCompatible() const
 #if defined(TARGET_XARCH)
     NamedIntrinsic intrinsicId  = GetHWIntrinsicId();
     var_types      simdBaseType = GetSimdBaseType();
+
+    // MaybeImm intrinsics support embedded broadcasts only for their IMM variants (e.g. PSLLQ)
+    if (HWIntrinsicInfo::MaybeImm(intrinsicId) &&
+        !HWIntrinsicInfo::isImmOp(intrinsicId, GetOperandArray()[GetOperandCount() - 1]))
+    {
+        return false;
+    }
 
     switch (intrinsicId)
     {

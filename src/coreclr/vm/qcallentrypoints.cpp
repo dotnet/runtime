@@ -424,7 +424,18 @@ static const Entry s_QCall[] =
     DllImportEntry(StubHelpers_CreateCustomMarshaler)
     DllImportEntry(StubHelpers_SetStringTrailByte)
     DllImportEntry(StubHelpers_ThrowInteropParamException)
+    DllImportEntry(StubHelpers_MarshalToManagedVaList)
+    DllImportEntry(StubHelpers_MarshalToUnmanagedVaList)
+    DllImportEntry(StubHelpers_ValidateObject)
+    DllImportEntry(StubHelpers_ValidateByref)
+#ifdef PROFILING_SUPPORTED
+    DllImportEntry(StubHelpers_ProfilerBeginTransitionCallback)
+    DllImportEntry(StubHelpers_ProfilerEndTransitionCallback)
+#endif
+    DllImportEntry(StubHelpers_GetHRExceptionObject)
 #if defined(FEATURE_COMINTEROP)
+    DllImportEntry(StubHelpers_GetCOMHRExceptionObject)
+    DllImportEntry(StubHelpers_GetCOMIPFromRCWSlow)
     DllImportEntry(ObjectMarshaler_ConvertToNative)
     DllImportEntry(ObjectMarshaler_ConvertToManaged)
     DllImportEntry(InterfaceMarshaler_ConvertToNative)
