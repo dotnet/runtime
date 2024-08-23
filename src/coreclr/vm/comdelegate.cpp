@@ -360,23 +360,22 @@ BOOL AddNextShuffleEntryToArray(ArgLocDesc sArgSrc, ArgLocDesc sArgDst, SArray<S
             _ASSERTE(iteratorStack.GetNextOfs() == stackOfs + 1);
             _ASSERTE(!iteratorStack.HasNextOfs());
         }
-        if (stackOfs == 0)
+        if (isLowered)
         {
-            _ASSERTE(isLowered);
-            // First lowered argument must have an integer field, otherwise it couldn't use the freed integer register
-            _ASSERTE(fpInfo.flags & (FpStruct::FloatInt | FpStruct::IntFloat));
+            // First lowered argument takes advantage of the freed last integer register so must have an integer field.
+            static const int first = FpStruct::FloatInt | FpStruct::IntFloat;
+
+            // Second (last) lowered argument happens iff the delowering below freed two FP registers; one was taken
+            // by the first lowering so we have only one left.
+            static const int second = FpStruct::OnlyOne;
+
+            _ASSERTE(fpInfo.flags & (stackOfs == 0 ? first : second));
         }
         else
         {
             // The (only) delowered argument is placed after the first lowered argument (which took the last integer
             // register), so it must be all-floating.
-            static const FpStruct::Flags delowered = FpStruct::Flags(FpStruct::OnlyOne | FpStruct::BothFloat);
-
-            // Second (last) lowered argument can happen iff the delowering above freed two FP registers.
-            // One is taken by the first lowering so we have only one left.
-            static const FpStruct::Flags lowered2 = FpStruct::OnlyOne;
-
-            _ASSERTE(fpInfo.flags & (isLowered ? lowered2 : delowered));
+            _ASSERTE(fpInfo.flags & (FpStruct::OnlyOne | FpStruct::BothFloat));
         }
 
         int fieldCount = (fpInfo.flags & FpStruct::OnlyOne) ? 1 : 2;
