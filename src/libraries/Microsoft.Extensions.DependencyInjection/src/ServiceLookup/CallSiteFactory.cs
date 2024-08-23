@@ -594,7 +594,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
                     }
                 }
 
-                if (!isKeyedParameter)
+                if (!isKeyedParameter || ServiceProvider.s_allowNonKeyedServiceInject)
                 {
                     callSite ??= GetCallSite(ServiceIdentifier.FromServiceType(parameterType), callSiteChain);
                 }
