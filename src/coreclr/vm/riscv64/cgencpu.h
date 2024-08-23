@@ -417,6 +417,8 @@ public:
 
     void EmitProlog(unsigned short cIntRegArgs, unsigned short cFpRegArgs, unsigned short cbStackSpace = 0);
     void EmitEpilog();
+
+    void EmitShuffleThunkBody(ShuffleEntry *pShuffleEntryArray);
 };
 
 extern "C" void SinglecastDelegateInvokeStub();
