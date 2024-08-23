@@ -23,6 +23,7 @@ internal enum CorElementType
     // Values defined in ECMA-335 - II.23.1.16 Element types used in signatures
     // +
     Internal = 0x21, // Indicates that the next pointer sized number of bytes is the address of a TypeHandle. Signatures that contain the Internal CorElementType cannot exist in metadata that is saved into a serialized format.
+    CModInternal = 0x22, // Indicates that the next byte specifies if the modifier is required and the next pointer sized number of bytes after that is the address of a TypeHandle. Signatures that contain the CModInternal CorElementType cannot exist in metadata that is saved into a seralized format.
 }
 ```
 
