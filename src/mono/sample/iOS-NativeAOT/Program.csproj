@@ -18,6 +18,9 @@
     <NativeCompilationDuringPublish>false</NativeCompilationDuringPublish>
     <IlcGenerateMstatFile Condition="'$(GenerateStats)' == 'true'">true</IlcGenerateMstatFile>
     <IlcGenerateDgmlFile Condition="'$(GenerateStats)' == 'true'">true</IlcGenerateDgmlFile>
+
+    <!-- Disable event source by default - iOS and Android SDKs do this by default as well -->
+    <EventSourceSupport Condition="'$(EventSourceSupport)' == ''">false</EventSourceSupport>
   </PropertyGroup>
 
   <Import Project="$(MonoProjectRoot)\msbuild\apple\build\AppleBuild.props" />

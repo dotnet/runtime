@@ -24,6 +24,9 @@
     <BuildAppBundleAfterTargets Condition="'$(ArchiveTests)' != 'true'">CopyFilesToPublishDirectory</BuildAppBundleAfterTargets>
     <BuildAppBundleAfterTargets Condition="'$(ArchiveTests)' == 'true'">CopyFilesToPublishDirectory;Build</BuildAppBundleAfterTargets>
     <BuildAppBundleDependsOnTargets Condition="'$(ArchiveTests)' == 'true'">Publish</BuildAppBundleDependsOnTargets>
+
+    <!-- Disable event source by default - iOS and Android SDKs do this by default as well -->
+    <EventSourceSupport Condition="'$(EventSourceSupport)' == ''">false</EventSourceSupport>
   </PropertyGroup>
 
   <ItemGroup>
