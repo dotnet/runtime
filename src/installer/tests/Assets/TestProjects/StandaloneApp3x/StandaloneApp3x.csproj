@@ -5,6 +5,7 @@
     <OutputType>Exe</OutputType>
     <RuntimeIdentifier>$(TestTargetRid)</RuntimeIdentifier>
     <SelfContained>true</SelfContained>
+    <InvariantGlobalization>true</InvariantGlobalization>
   </PropertyGroup>
 
   <!--
