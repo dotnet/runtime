@@ -198,7 +198,7 @@
   <!-- For non-benchmark collections, we create one Helix work item for each sub-directory
        in the `InputArtifacts` directory.
   -->
-  <ItemGroup Condition="'$(CollectionName)' != 'benchmarks' and '$(CollectionName)' != 'realworld'">
+  <ItemGroup Condition="'$(CollectionName)' != 'benchmarks' and '$(CollectionName)' != 'realworld' and '$(CollectionName)' != 'aspnet'">
     <PartitionDirectories Include="$([System.IO.Directory]::GetDirectories($(InputArtifacts)))"/>
     <Partition Include="@(PartitionDirectories -> '%(Filename)')" CollectAssemblies="%(Filename)" PartitionId="%(Filename)" />
   </ItemGroup>
