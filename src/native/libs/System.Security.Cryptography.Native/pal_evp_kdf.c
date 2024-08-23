@@ -232,6 +232,7 @@ cleanup:
     }
 #else
     (void)kdf;
+    (void)operation;
     (void)key;
     (void)keyLength;
     (void)algorithm;
