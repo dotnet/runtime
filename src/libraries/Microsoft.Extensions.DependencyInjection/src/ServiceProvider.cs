@@ -34,6 +34,7 @@ namespace Microsoft.Extensions.DependencyInjection
 
         internal ServiceProviderEngineScope Root { get; }
 
+        [FeatureSwitchDefinition("Microsoft.Extensions.DependencyInjection.VerifyOpenGenericServiceTrimmability")]
         internal static bool VerifyOpenGenericServiceTrimmability { get; } =
             AppContext.TryGetSwitch("Microsoft.Extensions.DependencyInjection.VerifyOpenGenericServiceTrimmability", out bool verifyOpenGenerics) ? verifyOpenGenerics : false;
 
