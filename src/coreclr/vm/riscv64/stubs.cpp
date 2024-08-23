@@ -1566,9 +1566,21 @@ VOID StubLinkerCPU::EmitShuffleThunk(ShuffleEntry *pShuffleEntryArray)
     // Now that the FP register is free, the stashed floating field of the first lowered argument can finally go home.
     EmitMovReg(FloatReg(fpRegisterRange.first), floatTempReg);
 
-    for (bool found2ndLowered = false; entry->srcofs != ShuffleEntry::SENTINEL; ++entry)
+    for (bool was2ndLowered = false; entry->srcofs != ShuffleEntry::SENTINEL; ++entry)
     {
-        _ASSERTE(!(InRegister(entry->dstofs) && (entry->dstofs & ShuffleEntry::CALLCONVTRANSFERMASK))); // TODO
+        if (!was2ndLowered && InRegister(entry->dstofs) && (entry->dstofs & ShuffleEntry::CALLCONVTRANSFERMASK))
+        {
+            _ASSERTE(!(InRegister(entry[1].dstofs) && (entry[1].dstofs & ShuffleEntry::CALLCONVTRANSFERMASK)));
+            _ASSERTE(IsRegisterFloating(entry->dstofs));
+            int destReg = argRegBase + GetRegisterOffset(entry->dstofs);
+            TransferredField field = GetTransferredField(entry->dstofs);
+            int srcStackAddr = GetStackSlot(entry->srcofs) * sizeof(void*);
+            EmitAnyLoad(true, field.sizeShift, destReg, RegSp, srcStackAddr + field.offset);
+            stackSlotMove += ALIGN_UP(field.offset + (1u << field.sizeShift), sizeof(void*)) / sizeof(void*);
+            was2ndLowered = true;
+            continue;
+        }
+
         _ASSERTE(stackSlotMove != 0);
         unsigned dst = GetStackSlot(entry->dstofs);
         unsigned src = dst + stackSlotMove;
