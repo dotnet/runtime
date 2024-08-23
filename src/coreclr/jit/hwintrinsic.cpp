@@ -735,7 +735,17 @@ CorInfoType Compiler::getBaseJitTypeFromArgIfNeeded(NamedIntrinsic    intrinsic,
 
         if (HWIntrinsicInfo::BaseTypeFromSecondArg(intrinsic))
         {
-            arg = info.compCompHnd->getArgNext(arg);
+#ifdef TARGET_ARM64
+            // Quirk: For the ValueTuple variants of StoreSelectedScalar,
+            // avoid trying to get its underlying type here.
+            // getBaseJitTypeAndSizeOfSIMDType will return CORINFO_TYPE_UNDEF
+            // because ValueTuple is not an intrinsic type.
+            // Instead, use the first arg, which is a pointer to the base type.
+            if (intrinsic != NI_AdvSimd_StoreSelectedScalar)
+#endif // TARGET_ARM64
+            {
+                arg = info.compCompHnd->getArgNext(arg);
+            }
         }
 
         CORINFO_CLASS_HANDLE argClass = info.compCompHnd->getArgClass(sig, arg);
@@ -1239,6 +1249,18 @@ unsigned HWIntrinsicInfo::lookupSimdSize(Compiler* comp, NamedIntrinsic id, CORI
     }
 
     CorInfoType simdBaseJitType = comp->getBaseJitTypeAndSizeOfSIMDType(typeHnd, &simdSize);
+
+#ifdef TARGET_ARM64
+    // Quirk: getBaseJitTypeAndSizeOfSIMDType returns CORINFO_TYPE_UNDEF for the ValueTuple
+    // variant of StoreSelectedScalar, because ValueTuple is not an intrinsic type.
+    // We know for sure that the ValueTuple holds Vector64<T> elements, so return its size here.
+    if ((simdBaseJitType == CORINFO_TYPE_UNDEF) && (id == NI_AdvSimd_StoreSelectedScalar))
+    {
+        assert(HWIntrinsicInfo::BaseTypeFromSecondArg(id));
+        return 8;
+    }
+#endif // TARGET_ARM64
+
     assert((simdSize > 0) && (simdBaseJitType != CORINFO_TYPE_UNDEF));
     return simdSize;
 }
