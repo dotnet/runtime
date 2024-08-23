@@ -1,0 +1,7 @@
+<linker>
+
+  <type fullname="System.RuntimeType" feature="System.Reflection" featurevalue="false">
+    <method signature="System.Boolean get_IsReflectionDisabled()" body="stub" value="true" />
+  </type>
+
+</linker>
