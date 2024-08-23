@@ -12,6 +12,8 @@
     <EnableTargetingPackDownload>false</EnableTargetingPackDownload>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
     <EMSDK_PATH Condition="'$(EMSDK_PATH)' == '' and '$(MonoProjectRoot)' != ''">$([MSBuild]::NormalizeDirectory($(MonoProjectRoot), 'browser', 'emsdk'))</EMSDK_PATH>
+    <EmscriptenNodeToolsPath>$([MSBuild]::NormalizeDirectory( $([System.IO.Path]::Combine($(NuGetPackageRoot), 'runtime.$(_portableHostOS)-$(BuildArchitecture).microsoft.netcore.runtime.wasm.node.transport', '$(NodePackageVersion)', 'tools', '$(_portableHostOS)-$(BuildArchitecture)')) ))</EmscriptenNodeToolsPath>
+    <EmscriptenPythonToolsPath>$([MSBuild]::NormalizeDirectory( $([System.IO.Path]::Combine($(NuGetPackageRoot), 'Microsoft.NET.Runtime.Emscripten.$(EmsdkVersion).Python.win-$(BuildArchitecture)', '$(EmsdkPackageVersion)', 'tools')) ))</EmscriptenPythonToolsPath>
     <RunAOTCompilation Condition="'$(RunAOTCompilation)' == ''">false</RunAOTCompilation>
     <PublishTrimmed>true</PublishTrimmed>
     <RunAnalyzers>false</RunAnalyzers>
