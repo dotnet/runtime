@@ -1807,6 +1807,12 @@ MethodTableBuilder::BuildMethodTableThrowing(
         }
     }
 
+    if (IsValueClass())
+    {
+        if ((int)bmtFP->NumInstanceFieldBytes != (INT64)bmtFP->NumInstanceFieldBytes)
+            BuildMethodTableThrowException(IDS_CLASSLOAD_FIELDTOOLARGE);
+    }
+
     if (CheckIfSIMDAndUpdateSize())
     {
         totalDeclaredFieldSize = bmtFP->NumInstanceFieldBytes;
@@ -1998,13 +2004,6 @@ MethodTableBuilder::BuildMethodTableThrowing(
 
     if (!IsValueClass())
     {
-#ifdef FEATURE_ICASTABLE
-        if (g_pICastableInterface != NULL && pMT->CanCastToInterface(g_pICastableInterface))
-        {
-            pMT->SetICastable();
-        }
-#endif // FEATURE_ICASTABLE
-
         if (g_pIDynamicInterfaceCastableInterface != NULL && pMT->CanCastToInterface(g_pIDynamicInterfaceCastableInterface))
         {
             pMT->SetIDynamicInterfaceCastable();
