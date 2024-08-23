@@ -4,6 +4,11 @@
     <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
     <TestResultsName>testResults.xml</TestResultsName>
     <UseXunitExcludesTxtFile Condition="'$(TargetOS)' == 'android' or '$(TargetOS)' == 'ios' or '$(TargetOS)' == 'iossimulator' or '$(TargetOS)' == 'tvos' or '$(TargetOS)' == 'tvossimulator' or '$(TargetOS)' == 'maccatalyst'">true</UseXunitExcludesTxtFile>
+
+    <XunitConsolePath>$(XunitConsoleNetCore21AppPath)</XunitConsolePath>
+    <XunitConsolePath Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">$(XunitConsole472Path)</XunitConsolePath>
+
+    <BundleXunitRunner Condition="'$(TargetsMobile)' != 'true' and '$(ArchiveTests)' == 'true'">true</BundleXunitRunner>
   </PropertyGroup>
 
   <ItemGroup>
@@ -12,10 +17,15 @@
     <SetScriptCommands Condition="'$(TargetOS)' != 'windows'" Include="export XUNIT_HIDE_PASSING_OUTPUT_DIAGNOSTICS=1" />
   </ItemGroup>
 
+  <PropertyGroup Condition="'$(BundleXunitRunner)' == 'true'">
+    <XunitConsolePath>xunt.console.dll</XunitConsolePath>
+    <XunitConsolePath Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">xunit.console.exe</XunitConsolePath>
+  </PropertyGroup>
+
   <PropertyGroup Condition="'$(TargetsMobile)' != 'true' and '$(TestSingleFile)' != 'true'">
     <_depsFileArgument Condition="'$(GenerateDependencyFile)' == 'true'">--depsfile $(AssemblyName).deps.json</_depsFileArgument>
-    <RunScriptCommand Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">"$(RunScriptHost)" exec --runtimeconfig $(AssemblyName).runtimeconfig.json $(_depsFileArgument) xunit.console.dll</RunScriptCommand>
-    <RunScriptCommand Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">xunit.console.exe</RunScriptCommand>
+    <RunScriptCommand Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">"$(RunScriptHost)" exec --runtimeconfig $(AssemblyName).runtimeconfig.json $(_depsFileArgument) $(XunitConsolePath)</RunScriptCommand>
+    <RunScriptCommand Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">$(XunitConsolePath)</RunScriptCommand>
 
     <RunScriptCommand>$(RunScriptCommand) $(TargetFileName)</RunScriptCommand>
     <RunScriptCommand>$(RunScriptCommand) -xml $(TestResultsName)</RunScriptCommand>
@@ -74,9 +84,8 @@
   </Target>
 
   <!-- ResolveAssemblyReferences is the target that populates ReferenceCopyLocalPaths which is what is copied to output directory. -->
-  <Target Name="CopyRunnerToOutputDirectory" BeforeTargets="ResolveAssemblyReferences" Condition="'$(TargetsMobile)' != 'true' or '$(BundleXunitRunner)' == 'true'">
-    <ItemGroup Condition="'$(ArchiveTests)' == 'true' or '$(BundleXunitRunner)' == 'true'">
-      <!-- When ArchiveTests or BundleXunitRunner is set, copy xunit.runner.console to output directory -->
+  <Target Name="CopyRunnerToOutputDirectory" BeforeTargets="ResolveAssemblyReferences" Condition="'$(BundleXunitRunner)' == 'true'">
+    <ItemGroup>
       <None Include="$([System.IO.Path]::GetDirectoryName('$(XunitConsole472Path)'))\*"
             Exclude="$([System.IO.Path]::GetDirectoryName('$(XunitConsole472Path)'))\xunit.console.*exe.config;
                      $([System.IO.Path]::GetDirectoryName('$(XunitConsole472Path)'))\xunit.console.x86.exe;
