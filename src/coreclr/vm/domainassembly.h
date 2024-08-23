@@ -233,11 +233,6 @@ public:
     void EnumMemoryRegions(CLRDataEnumMemoryFlags flags);
 #endif
 
-#ifndef DACCESS_COMPILE
-    // light code gen. Keep the list of MethodTables needed for creating dynamic methods
-    DynamicMethodTable* GetDynamicMethodTable();
-#endif
-
     DomainAssembly* GetNextDomainAssemblyInSameALC()
     {
         return m_NextDomainAssemblyInSameALC;
@@ -389,12 +384,6 @@ private:
 
     BOOL                        m_bDisableActivationCheck;
     BOOL                        m_fHostAssemblyPublished;
-
-    // m_pDynamicMethodTable is used by the light code generation to allow method
-    // generation on the fly. They are lazily created when/if a dynamic method is requested
-    // for this specific module
-    DynamicMethodTable*         m_pDynamicMethodTable;
-
 
     DebuggerAssemblyControlFlags    m_debuggerFlags;
     DWORD                       m_notifyflags;

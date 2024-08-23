@@ -2891,8 +2891,6 @@ FCIMPL5(ReflectMethodObject*, ModuleHandle::GetDynamicMethod, ReflectMethodObjec
 
     HELPER_METHOD_FRAME_BEGIN_RET_PROTECT(gc);
 
-    DomainAssembly *pDomainModule = pModule->GetDomainAssembly();
-
     U1ARRAYREF dataArray = (U1ARRAYREF)sig;
     DWORD sigSize = dataArray->GetNumComponents();
     NewArrayHolder<BYTE> pSig(new BYTE[sigSize]);
@@ -2905,7 +2903,7 @@ FCIMPL5(ReflectMethodObject*, ModuleHandle::GetDynamicMethod, ReflectMethodObjec
     if (length)
         pName[length / sizeof(char)] = '\0';
 
-    DynamicMethodTable *pMTForDynamicMethods = pDomainModule->GetDynamicMethodTable();
+    DynamicMethodTable *pMTForDynamicMethods = pModule->GetDynamicMethodTable();
     pNewMD = pMTForDynamicMethods->GetDynamicMethod(pSig, sigSize, pName);
     _ASSERTE(pNewMD != NULL);
     // pNewMD now owns pSig and pName.

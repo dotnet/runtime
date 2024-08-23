@@ -36,7 +36,6 @@ DomainAssembly::DomainAssembly(PEAssembly* pPEAssembly, LoaderAllocator* pLoader
     m_pError(NULL),
     m_bDisableActivationCheck(FALSE),
     m_fHostAssemblyPublished(FALSE),
-    m_pDynamicMethodTable(NULL),
     m_debuggerFlags(DACF_NONE),
     m_notifyflags(NOT_NOTIFIED),
     m_fDebuggerUnloadStarted(FALSE)
@@ -68,8 +67,6 @@ DomainAssembly::~DomainAssembly()
     CONTRACTL_END;
 
     m_pPEAssembly->Release();
-    if (m_pDynamicMethodTable)
-        m_pDynamicMethodTable->Destroy();
 
     delete m_pError;
 
