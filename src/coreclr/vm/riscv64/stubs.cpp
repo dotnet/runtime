@@ -1395,12 +1395,12 @@ static bool IsRegisterIntegerCallConv(UINT16 ofs)
     return (ofs & (SE::REGMASK | SE::FPREGMASK | SE::CALLCONVTRANSFERMASK)) == SE::REGMASK;
 }
 
-static UINT16 GetRegisterOffset(UINT16 ofs)
+static int GetRegisterOffset(UINT16 ofs)
 {
     _ASSERTE(InRegister(ofs));
     return ofs & ShuffleEntry::OFSREGMASK;
 }
-static UINT16 GetStackSlot(UINT16 ofs)
+static unsigned GetStackSlot(UINT16 ofs)
 {
     _ASSERTE(OnStack(ofs));
     return ofs;
@@ -1481,9 +1481,9 @@ VOID StubLinkerCPU::EmitShuffleThunk(ShuffleEntry *pShuffleEntryArray)
             // to the last integer register and a floating register. Here the last integer register is taken by a stack
             // slot passed according to integer calling convention so all further shuffling is (stack) <- (stack+1).
             ++entry;
-            for (UINT16 dst = 0; entry->srcofs != SE::SENTINEL; ++entry, ++dst)
+            for (unsigned dst = 0; entry->srcofs != SE::SENTINEL; ++entry, ++dst)
             {
-                UINT16 src = dst + 1;
+                unsigned src = dst + 1;
                 _ASSERTE(src == GetStackSlot(entry->srcofs));
                 _ASSERTE(dst == GetStackSlot(entry->dstofs));
                 EmitLoad (intTempReg, RegSp, src * sizeof(void*));
@@ -1562,27 +1562,43 @@ VOID StubLinkerCPU::EmitShuffleThunk(ShuffleEntry *pShuffleEntryArray)
                         _ASSERTE(InRegister(entry->dstofs));
                         _ASSERTE(GetRegisterOffset(entry->srcofs) == fpRegisterRange.last);
                         _ASSERTE(GetRegisterOffset(entry->dstofs) == fpRegisterRange.last + 1);
-                        ++fpRegisterRange.last;
+                        fpRegisterRange.last++;
                     }
                 }
                 else
                 {
-                    UINT16 dst = GetStackSlot(entry->dstofs);
-                    UINT16 src = dst + stackSlotMove;
+                    unsigned dst = GetStackSlot(entry->dstofs);
+                    unsigned src = dst + stackSlotMove;
                     _ASSERTE(src == GetStackSlot(entry->srcofs));
                     EmitLoad (intTempReg, RegSp, src * sizeof(void*));
                     EmitStore(intTempReg, RegSp, dst * sizeof(void*));
                 }
             }
 
+            // Shuffle arguments passed in FP registers between the first lowered and the only delowered argument (if any)
             fpRegisterRange.first += argRegBase;
             fpRegisterRange.last += argRegBase;
-            for (; fpRegisterRange.last > fpRegisterRange.first; --fpRegisterRange.last)
-            {
-                EmitMovReg(FloatReg(fpRegisterRange.last + 1), FloatReg(fpRegisterRange.last));
-            }
+            for (; fpRegisterRange.last > fpRegisterRange.first; fpRegisterRange.last--)
+                EmitMovReg(FloatReg(fpRegisterRange.last), FloatReg(fpRegisterRange.last - 1));
+
             // The stashed floating field of the first lowered argument can finally go home.
             EmitMovReg(FloatReg(fpRegisterRange.first), floatTempReg);
+
+            _ASSERTE((entry->srcofs != SE::SENTINEL) == (stackSlotMove != 0));
+
+            for (; entry->srcofs != SE::SENTINEL; ++entry)
+            {
+                _ASSERTE(!(entry->dstofs & SE::CALLCONVTRANSFERMASK)); // TODO
+                unsigned dst = GetStackSlot(entry->dstofs);
+                unsigned src = dst + stackSlotMove;
+                if (src != GetStackSlot(entry->srcofs))
+                    LOG((LF_STUBS, LL_INFO1000000, "DUPA src=%i, dst=%i, stackSlotMove=%i\n",
+                        src, dst, stackSlotMove));
+                _ASSERTE(src == GetStackSlot(entry->srcofs));
+                _ASSERTE(dst == GetStackSlot(entry->dstofs));
+                EmitLoad (intTempReg, RegSp, src * sizeof(void*));
+                EmitStore(intTempReg, RegSp, dst * sizeof(void*));
+            }
         }
     }
     _ASSERTE(entry->srcofs == ShuffleEntry::SENTINEL);
