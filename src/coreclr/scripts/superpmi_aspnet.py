@@ -29,7 +29,7 @@ from subprocess import Popen, DEVNULL
 is_windows = platform.system() == "Windows"
 parser = argparse.ArgumentParser(description="description")
 
-parser.add_argument("-source_directory", help="path to source directory")
+parser.add_argument("-core_root_directory", required=True, help="Path to Core_Root directory")
 parser.add_argument("-output_mch_path", help="Absolute path to the mch file to produce")
 parser.add_argument("-arch", help="Architecture")
 parser.add_argument("-temp_location", required=False, help="Location to temporarily download ASPNET benchmarks and crank")
@@ -49,9 +49,9 @@ def setup_args(args):
                                     require_built_test_dir=False, default_build_type="Checked")
 
     coreclr_args.verify(args,
-                        "source_directory",
-                        lambda source_directory: os.path.isdir(source_directory),
-                        "source_directory doesn't exist")
+                        "core_root_directory",
+                        lambda core_root_directory: os.path.isdir(core_root_directory),
+                        "core_root_directory doesn't exist")
 
     coreclr_args.verify(args,
                         "output_mch_path",
@@ -131,12 +131,9 @@ def build_and_run(coreclr_args):
         coreclr_args (CoreClrArguments): Arguments use to drive
         output_mch_name (string): Name of output mch file name
     """
-    source_directory = coreclr_args.source_directory
+    core_root_directory = coreclr_args.core_root_directory
     target_arch = coreclr_args.arch
     target_os = coreclr_args.host_os
-
-    checked_root = path.join(source_directory, "artifacts", "bin", "coreclr", target_os + "." + coreclr_args.arch + ".Checked")
-   # release_root = path.join(source_directory, "artifacts", "bin", "coreclr", target_os + "." + coreclr_args.arch + ".Release")
 
     temp_location = coreclr_args.temp_location
 
@@ -148,8 +145,8 @@ def build_and_run(coreclr_args):
     print ("Executing in " + temp_location)
     os.chdir(temp_location)
 
-    dotnet_path = path.join(source_directory, ".dotnet")
-    dotnet_exe = path.join(dotnet_path, "dotnet.exe") if is_windows else path.join(dotnet_path, "dotnet")
+    dotnet_exe = "dotnet.exe" if is_windows else "dotnet"
+    run_command([dotnet_exe, "--info"], temp_location, _exit_on_fail=True)
 
     ## install crank as local tool
     run_command(
@@ -223,10 +220,10 @@ def build_and_run(coreclr_args):
     corelibname = "System.Private.CoreLib.dll"
 
     jitpath = path.join(".", jitname)
-    jitlib  = path.join(checked_root, jitname)
-    coreclr = path.join(checked_root, coreclrname)
-    corelib = path.join(checked_root, corelibname)
-    spmilib = path.join(checked_root, spminame)
+    jitlib  = path.join(core_root_directory, jitname)
+    coreclr = path.join(core_root_directory, coreclrname)
+    corelib = path.join(core_root_directory, corelibname)
+    spmilib = path.join(core_root_directory, spminame)
 
     crank_agent_p = None
     if coreclr_args.local:
@@ -302,8 +299,6 @@ def build_and_run(coreclr_args):
     print("Merged summary for " + mch_file)
     command = [mcs_path, "-jitflags", mch_file]
     run_command(command, temp_location)
-
-    os.chdir(source_directory )
 
     if not coreclr_args.temp_is_explicit:
         shutil.rmtree(temp_location, ignore_errors=True)

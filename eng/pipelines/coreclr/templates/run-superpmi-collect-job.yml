@@ -116,10 +116,7 @@ jobs:
       displayName: Enable python venv
       condition: always()
 
-    - ${{ if eq(parameters.collectionName, 'aspnet') }}:
-      - script: $(PythonScript) $(Build.SourcesDirectory)/src/coreclr/scripts/superpmi_aspnet.py -source_directory $(Build.SourcesDirectory) -output_mch_path $(MchFilesLocation) -arch $(archType) -temp_location $(PayloadLocation) --local
-        displayName: ${{ format('SuperPMI ASPNET setup ({0})', parameters.osGroup) }}
-    - ${{ else }}:
+    - ${{ if ne(parameters.collectionName, 'aspnet') }}:
       - script: $(PythonScript) $(Build.SourcesDirectory)/src/coreclr/scripts/superpmi_collect_setup.py -payload_directory $(PayloadLocation) -source_directory $(Build.SourcesDirectory) -core_root_directory $(Core_Root_Dir) -arch $(archType) -platform $(osGroup) -mch_file_tag $(MchFileTag) -input_directory $(InputDirectory) -collection_name $(CollectionName) -collection_type $(CollectionType) -max_size 25 # size in MB
         displayName: ${{ format('SuperPMI setup ({0})', parameters.osGroup) }}
 
