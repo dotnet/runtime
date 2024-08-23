@@ -1342,6 +1342,7 @@ namespace System.Threading.ThreadPools.Tests
         [ConditionalTheory(nameof(IsThreadingAndRemoteExecutorSupported), nameof(UsePortableThreadPool))]
         [MemberData(nameof(IOCompletionPortCountConfigVarTest_Args))]
         [PlatformSpecific(TestPlatforms.Windows)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/106371")]
         public static void IOCompletionPortCountConfigVarTest(int ioCompletionPortCount)
         {
             // Avoid contaminating the main process' environment
