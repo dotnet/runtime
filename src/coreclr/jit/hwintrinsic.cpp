@@ -1758,7 +1758,8 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
         }
     }
 
-    simdBaseJitType = getBaseJitTypeFromArgIfNeeded(intrinsic, sig, simdBaseJitType);
+    simdBaseJitType   = getBaseJitTypeFromArgIfNeeded(intrinsic, sig, simdBaseJitType);
+    unsigned simdSize = 0;
 
     if (simdBaseJitType == CORINFO_TYPE_UNDEF)
     {
@@ -1777,7 +1778,7 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
 
             simdBaseJitType = getBaseJitTypeAndSizeOfSIMDType(clsHnd, &sizeBytes);
 
-#if defined(TARGET_ARM64)
+#ifdef TARGET_ARM64
             if (simdBaseJitType == CORINFO_TYPE_UNDEF && HWIntrinsicInfo::HasScalarInputVariant(intrinsic))
             {
                 // Did not find a valid vector type. The intrinsic has alternate scalar version. Switch to that.
@@ -1793,12 +1794,40 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
                 assert(simdBaseJitType != CORINFO_TYPE_VALUECLASS);
             }
             else
-#endif
+#endif // TARGET_ARM64
             {
                 assert((category == HW_Category_Special) || (category == HW_Category_Helper) || (sizeBytes != 0));
             }
         }
     }
+#ifdef TARGET_ARM64
+    else if ((simdBaseJitType == CORINFO_TYPE_VALUECLASS) && (HWIntrinsicInfo::BaseTypeFromValueTupleArg(intrinsic)))
+    {
+        // If HW_Flag_BaseTypeFromValueTupleArg is set, one of the base type position flags must be set.
+        // There is no point to using this flag if the SIMD size is known at compile-time.
+        assert(HWIntrinsicInfo::BaseTypeFromFirstArg(intrinsic) || HWIntrinsicInfo::BaseTypeFromSecondArg(intrinsic));
+        assert(!HWIntrinsicInfo::tryLookupSimdSize(intrinsic, &simdSize));
+
+        CORINFO_ARG_LIST_HANDLE arg = sig->args;
+
+        if (HWIntrinsicInfo::BaseTypeFromSecondArg(intrinsic))
+        {
+            arg = info.compCompHnd->getArgNext(arg);
+        }
+
+        CORINFO_CLASS_HANDLE argClass = info.compCompHnd->getArgClass(sig, arg);
+        INDEBUG(unsigned fieldCount = info.compCompHnd->getClassNumInstanceFields(argClass));
+        assert(fieldCount > 1);
+
+        CORINFO_CLASS_HANDLE classHnd;
+        CORINFO_FIELD_HANDLE fieldHandle = info.compCompHnd->getFieldInClass(argClass, 0);
+        CorInfoType          fieldType   = info.compCompHnd->getFieldType(fieldHandle, &classHnd);
+        assert(isIntrinsicType(classHnd));
+
+        simdBaseJitType = getBaseJitTypeAndSizeOfSIMDType(classHnd, &simdSize);
+        assert(simdSize > 0);
+    }
+#endif // TARGET_ARM64
 
     // Immediately return if the category is other than scalar/special and this is not a supported base type.
     if ((category != HW_Category_Special) && (category != HW_Category_Scalar) && !HWIntrinsicInfo::isScalarIsa(isa) &&
@@ -1821,7 +1850,9 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
 #endif // TARGET_XARCH
     }
 
-    const unsigned simdSize = HWIntrinsicInfo::lookupSimdSize(this, intrinsic, sig);
+    // We may have already determined simdSize for intrinsics that require special handling.
+    // If so, skip the lookup.
+    simdSize = (simdSize == 0) ? HWIntrinsicInfo::lookupSimdSize(this, intrinsic, sig) : simdSize;
 
     HWIntrinsicSignatureReader sigReader;
     sigReader.Read(info.compCompHnd, sig);
