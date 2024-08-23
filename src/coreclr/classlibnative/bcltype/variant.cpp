@@ -286,39 +286,4 @@ int COMVariant::GetEnumFlags(TypeHandle th)
             return 0;
     }
 }
-
-extern "C" uint32_t QCALLTYPE Variant_ConvertSystemColorToOleColor(QCall::ObjectHandleOnStack obj)
-{
-    QCALL_CONTRACT;
-
-    uint32_t ret = 0;
-
-    BEGIN_QCALL;
-
-    GCX_COOP();
-    OBJECTREF srcObj = obj.Get();
-    ret = ConvertSystemColorToOleColor(&srcObj);
-
-    END_QCALL;
-
-    return ret;
-}
-
-extern "C" void QCALLTYPE Variant_ConvertOleColorToSystemColor(QCall::ObjectHandleOnStack objRet, uint32_t oleColor, MethodTable* pMT)
-{
-    QCALL_CONTRACT;
-
-    BEGIN_QCALL;
-
-    OBJECTREF obj = NULL;
-    GCX_COOP();
-    GCPROTECT_BEGIN(obj);
-
-    ConvertOleColorToSystemColor(oleColor, &obj);
-    objRet.Set(obj);
-
-    GCPROTECT_END();
-    END_QCALL;
-}
-
 #endif // FEATURE_COMINTEROP
