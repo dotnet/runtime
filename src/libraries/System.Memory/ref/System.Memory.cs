@@ -350,6 +350,10 @@ namespace System
         public static void Sort<TKey, TValue>(this System.Span<TKey> keys, System.Span<TValue> items, System.Comparison<TKey> comparison) { }
         public static void Sort<T, TComparer>(this System.Span<T> span, TComparer comparer) where TComparer : System.Collections.Generic.IComparer<T>? { }
         public static void Sort<TKey, TValue, TComparer>(this System.Span<TKey> keys, System.Span<TValue> items, TComparer comparer) where TComparer : System.Collections.Generic.IComparer<TKey>? { }
+        public static System.MemoryExtensions.SpanSplitEnumerator<T> Split<T>(this System.ReadOnlySpan<T> source, T separator) where T : IEquatable<T> { throw null; }
+        public static System.MemoryExtensions.SpanSplitEnumerator<T> Split<T>(this System.ReadOnlySpan<T> source, System.ReadOnlySpan<T> separator) where T : IEquatable<T> { throw null; }
+        public static System.MemoryExtensions.SpanSplitEnumerator<T> SplitAny<T>(this System.ReadOnlySpan<T> source, [System.Diagnostics.CodeAnalysis.UnscopedRef] params System.ReadOnlySpan<T> separators) where T : IEquatable<T> { throw null; }
+        public static System.MemoryExtensions.SpanSplitEnumerator<T> SplitAny<T>(this System.ReadOnlySpan<T> source, System.Buffers.SearchValues<T> separators) where T : IEquatable<T> { throw null; }
         public static int Split(this System.ReadOnlySpan<char> source, System.Span<System.Range> destination, char separator, System.StringSplitOptions options = System.StringSplitOptions.None) { throw null; }
         public static int Split(this System.ReadOnlySpan<char> source, System.Span<System.Range> destination, System.ReadOnlySpan<char> separator, System.StringSplitOptions options = System.StringSplitOptions.None) { throw null; }
         public static int SplitAny(this System.ReadOnlySpan<char> source, System.Span<System.Range> destination, System.ReadOnlySpan<char> separators, System.StringSplitOptions options = System.StringSplitOptions.None) { throw null; }
@@ -411,6 +415,14 @@ namespace System
         public static bool TryWrite<TArg0, TArg1, TArg2>(this System.Span<char> destination, System.IFormatProvider? provider, System.Text.CompositeFormat format, out int charsWritten, TArg0 arg0, TArg1 arg1, TArg2 arg2) { throw null; }
         public static bool TryWrite(this Span<char> destination, System.IFormatProvider? provider, System.Text.CompositeFormat format, out int charsWritten, params object?[] args) { throw null; }
         public static bool TryWrite(this Span<char> destination, System.IFormatProvider? provider, System.Text.CompositeFormat format, out int charsWritten, params System.ReadOnlySpan<object?> args) { throw null; }
+        public ref struct SpanSplitEnumerator<T> where T : System.IEquatable<T>
+        {
+            private object _dummy;
+            private int _dummyPrimitive;
+            public readonly System.Range Current { get { throw null; } }
+            public System.MemoryExtensions.SpanSplitEnumerator<T> GetEnumerator() { throw null; }
+            public bool MoveNext() { throw null; }
+        }
         [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
         [System.Runtime.CompilerServices.InterpolatedStringHandlerAttribute]
         public ref struct TryWriteInterpolatedStringHandler
@@ -686,39 +698,6 @@ namespace System.Buffers.Text
         public static bool TryParse(System.ReadOnlySpan<byte> source, out uint value, out int bytesConsumed, char standardFormat = '\0') { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static bool TryParse(System.ReadOnlySpan<byte> source, out ulong value, out int bytesConsumed, char standardFormat = '\0') { throw null; }
-    }
-}
-namespace System.Runtime.InteropServices
-{
-    public static partial class MemoryMarshal
-    {
-        public static System.ReadOnlySpan<byte> AsBytes<T>(System.ReadOnlySpan<T> span) where T : struct { throw null; }
-        public static System.Span<byte> AsBytes<T>(System.Span<T> span) where T : struct { throw null; }
-        public static System.Memory<T> AsMemory<T>(System.ReadOnlyMemory<T> memory) { throw null; }
-        public static ref readonly T AsRef<T>(System.ReadOnlySpan<byte> span) where T : struct { throw null; }
-        public static ref T AsRef<T>(System.Span<byte> span) where T : struct { throw null; }
-        public static System.ReadOnlySpan<TTo> Cast<TFrom, TTo>(System.ReadOnlySpan<TFrom> span) where TFrom : struct where TTo : struct { throw null; }
-        public static System.Span<TTo> Cast<TFrom, TTo>(System.Span<TFrom> span) where TFrom : struct where TTo : struct { throw null; }
-        public static System.Memory<T> CreateFromPinnedArray<T>(T[]? array, int start, int length) { throw null; }
-        public static System.ReadOnlySpan<T> CreateReadOnlySpan<T>(scoped ref readonly T reference, int length) { throw null; }
-        [System.CLSCompliant(false)]
-        public static unsafe ReadOnlySpan<byte> CreateReadOnlySpanFromNullTerminated(byte* value) { throw null; }
-        [System.CLSCompliant(false)]
-        public static unsafe ReadOnlySpan<char> CreateReadOnlySpanFromNullTerminated(char* value) { throw null; }
-        public static System.Span<T> CreateSpan<T>(scoped ref T reference, int length) { throw null; }
-        public static ref T GetArrayDataReference<T>(T[] array) { throw null; }
-        public static ref byte GetArrayDataReference(System.Array array) { throw null; }
-        public static ref T GetReference<T>(System.ReadOnlySpan<T> span) { throw null; }
-        public static ref T GetReference<T>(System.Span<T> span) { throw null; }
-        public static T Read<T>(System.ReadOnlySpan<byte> source) where T : struct { throw null; }
-        public static System.Collections.Generic.IEnumerable<T> ToEnumerable<T>(System.ReadOnlyMemory<T> memory) { throw null; }
-        public static bool TryGetArray<T>(System.ReadOnlyMemory<T> memory, out System.ArraySegment<T> segment) { throw null; }
-        public static bool TryGetMemoryManager<T, TManager>(System.ReadOnlyMemory<T> memory, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out TManager? manager) where TManager : System.Buffers.MemoryManager<T> { throw null; }
-        public static bool TryGetMemoryManager<T, TManager>(System.ReadOnlyMemory<T> memory, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out TManager? manager, out int start, out int length) where TManager : System.Buffers.MemoryManager<T> { throw null; }
-        public static bool TryGetString(System.ReadOnlyMemory<char> memory, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out string? text, out int start, out int length) { throw null; }
-        public static bool TryRead<T>(System.ReadOnlySpan<byte> source, out T value) where T : struct { throw null; }
-        public static bool TryWrite<T>(System.Span<byte> destination, in T value) where T : struct { throw null; }
-        public static void Write<T>(System.Span<byte> destination, in T value) where T : struct { }
     }
 }
 namespace System.Text

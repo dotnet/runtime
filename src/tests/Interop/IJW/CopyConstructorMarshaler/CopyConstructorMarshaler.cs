@@ -26,32 +26,32 @@ namespace CopyConstructorMarshaler
                 object testInstance = Activator.CreateInstance(testType);
                 MethodInfo testMethod = testType.GetMethod("PInvokeNumCopies");
 
-                // On x86, we have an additional copy on every P/Invoke from the "native" parameter to the actual location on the stack.
+                // On x86, we will copy in the IL stub to the final arg slot.
                 int platformExtra = 0;
                 if (RuntimeInformation.ProcessArchitecture == Architecture.X86)
                 {
                     platformExtra = 1;
                 }
-    
-                // PInvoke will copy twice. Once from argument to parameter, and once from the managed to native parameter.
-                Assert.Equal(2 + platformExtra, (int)testMethod.Invoke(testInstance, null));
+
+                // PInvoke will copy once. Once from the managed to native parameter.
+                Assert.Equal(1 + platformExtra, (int)testMethod.Invoke(testInstance, null));
 
                 testMethod = testType.GetMethod("ReversePInvokeNumCopies");
 
-                // Reverse PInvoke will copy 3 times. Two are from the same paths as the PInvoke,
-                // and the third is from the reverse P/Invoke call.
-                Assert.Equal(3 + platformExtra, (int)testMethod.Invoke(testInstance, null));
+                // Reverse PInvoke will copy 2 times. One from the same path as the PInvoke,
+                // and one from the reverse P/Invoke call.
+                Assert.Equal(2 + platformExtra, (int)testMethod.Invoke(testInstance, null));
 
                 testMethod = testType.GetMethod("PInvokeNumCopiesDerivedType");
 
-                // PInvoke will copy twice. Once from argument to parameter, and once from the managed to native parameter.
-                Assert.Equal(2 + platformExtra, (int)testMethod.Invoke(testInstance, null));
+                // PInvoke will copy once from the managed to native parameter.
+                Assert.Equal(1 + platformExtra, (int)testMethod.Invoke(testInstance, null));
 
                 testMethod = testType.GetMethod("ReversePInvokeNumCopiesDerivedType");
 
-                // Reverse PInvoke will copy 3 times. Two are from the same paths as the PInvoke,
-                // and the third is from the reverse P/Invoke call.
-                Assert.Equal(3 + platformExtra, (int)testMethod.Invoke(testInstance, null));
+                // Reverse PInvoke will copy 2 times. One from the same path as the PInvoke,
+                // and one from the reverse P/Invoke call.
+                Assert.Equal(2 + platformExtra, (int)testMethod.Invoke(testInstance, null));
             }
             catch (Exception ex)
             {
@@ -72,10 +72,15 @@ namespace CopyConstructorMarshaler
             Assert.Equal(0, (int)testMethod.Invoke(testInstance, null));
         }
 
-        [DllImport("kernel32.dll")]
-        static extern IntPtr LoadLibraryEx(string lpFileName, IntPtr hReservedNull, int dwFlags);
+        [Fact]
+        public static void CopyConstructorsInArgumentStackSlotsWithUnsafeValueType()
+        {
+            Assembly ijwNativeDll = Assembly.Load("IjwCopyConstructorMarshaler");
+            Type testType = ijwNativeDll.GetType("TestClass");
+            object testInstance = Activator.CreateInstance(testType);
+            MethodInfo testMethod = testType.GetMethod("ExposedThisUnsafeValueTypeCopyConstructorScenario");
 
-        [DllImport("kernel32.dll")]
-        static extern IntPtr GetModuleHandle(string lpModuleName);
+            Assert.Equal(0, (int)testMethod.Invoke(testInstance, null));
+        }
     }
 }

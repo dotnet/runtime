@@ -191,6 +191,7 @@ PAL_IsDebuggerPresent();
 #define PAL_INITIALIZE_ENSURE_STACK_SIZE            0x20
 #define PAL_INITIALIZE_REGISTER_SIGNALS             0x40
 #define PAL_INITIALIZE_REGISTER_ACTIVATION_SIGNAL   0x80
+#define PAL_INITIALIZE_FLUSH_PROCESS_WRITE_BUFFERS  0x100
 
 // PAL_Initialize() flags
 #define PAL_INITIALIZE                 (PAL_INITIALIZE_SYNC_THREAD | \
@@ -206,7 +207,8 @@ PAL_IsDebuggerPresent();
                                         PAL_INITIALIZE_DEBUGGER_EXCEPTIONS | \
                                         PAL_INITIALIZE_ENSURE_STACK_SIZE | \
                                         PAL_INITIALIZE_REGISTER_SIGNALS | \
-                                        PAL_INITIALIZE_REGISTER_ACTIVATION_SIGNAL)
+                                        PAL_INITIALIZE_REGISTER_ACTIVATION_SIGNAL  | \
+                                        PAL_INITIALIZE_FLUSH_PROCESS_WRITE_BUFFERS)
 
 typedef DWORD (PALAPI_NOEXPORT *PTHREAD_START_ROUTINE)(LPVOID lpThreadParameter);
 typedef PTHREAD_START_ROUTINE LPTHREAD_START_ROUTINE;
@@ -1844,11 +1846,11 @@ typedef struct _IMAGE_ARM_RUNTIME_FUNCTION_ENTRY {
 #define CONTEXT_EXCEPTION_REQUEST 0x40000000L
 #define CONTEXT_EXCEPTION_REPORTING 0x80000000L
 
-#define CONTEXT_XSTATE (CONTEXT_ARM64 | 0x40L)
+#define CONTEXT_ARM64_XSTATE (CONTEXT_ARM64 | 0x20L)
+#define CONTEXT_XSTATE CONTEXT_ARM64_XSTATE
 
-#define XSTATE_SVE (0)
-
-#define XSTATE_MASK_SVE (UI64(1) << (XSTATE_SVE))
+#define XSTATE_ARM64_SVE (2)
+#define XSTATE_MASK_ARM64_SVE (UI64(1) << (XSTATE_ARM64_SVE))
 
 //
 // This flag is set by the unwinder if it has unwound to a call

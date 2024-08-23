@@ -18,9 +18,12 @@ class DeadCodeElimination
         TestAbstractNeverDerivedWithDevirtualizedCall.Run();
         TestAbstractDerivedByUnrelatedTypeWithDevirtualizedCall.Run();
         TestUnusedDefaultInterfaceMethod.Run();
+        TestInlinedDeadBranchElimination.Run();
         TestArrayElementTypeOperations.Run();
         TestStaticVirtualMethodOptimizations.Run();
+        TestTypeIs.Run();
         TestTypeEquals.Run();
+        TestTypeEqualityDeadBranchScanRemoval.Run();
         TestTypeIsEnum.Run();
         TestTypeIsValueType.Run();
         TestBranchesInGenericCodeRemoval.Run();
@@ -250,6 +253,37 @@ class DeadCodeElimination
         }
     }
 
+    class TestInlinedDeadBranchElimination
+    {
+        static int GetIntConstant() => 42;
+        static int GetIntConstantWrapper() => GetIntConstant();
+
+        class NeverReferenced1 { }
+
+        enum MyEnum { One, Two }
+
+        static MyEnum GetEnumConstant() => MyEnum.Two;
+
+        class NeverReferenced2 { }
+
+        public static void Run()
+        {
+            if (GetIntConstantWrapper() == 1)
+            {
+                Activator.CreateInstance(typeof(NeverReferenced1));
+            }
+
+            ThrowIfPresent(typeof(TestInlinedDeadBranchElimination), nameof(NeverReferenced1));
+
+            if (GetEnumConstant() == MyEnum.One)
+            {
+                Activator.CreateInstance(typeof(NeverReferenced2));
+            }
+
+            ThrowIfPresent(typeof(TestInlinedDeadBranchElimination), nameof(NeverReferenced2));
+        }
+    }
+
     class TestArrayElementTypeOperations
     {
         public static void Run()
@@ -268,15 +302,7 @@ class DeadCodeElimination
                     throw new Exception();
             }
 
-            // ...but not nullable...
-            {
-                Array arr = new Nullable<NeverAllocated2>[1];
-                arr.GetValue(0);
-                ThrowIfPresent(typeof(TestArrayElementTypeOperations), nameof(Marker2));
-            }
-
-
-            // ...or reference type element types
+            // ...but not reference type element types
             {
                 Array arr = new NeverAllocated3[1];
                 arr.GetValue(0);
@@ -340,6 +366,53 @@ class DeadCodeElimination
         }
     }
 
+
+    class TestTypeIs
+    {
+        class Never1 { }
+        class Canary1 { }
+
+        class Maybe1<T, U> { }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static object GetTheObject() => new object();
+
+        static volatile object s_sink;
+
+        public static void Run()
+        {
+#if !DEBUG
+            {
+                RunCheck(GetTheObject());
+
+                static void RunCheck(object t)
+                {
+                    if (t is Never1)
+                    {
+                        s_sink = new Canary1();
+                    }
+                }
+
+                ThrowIfPresent(typeof(TestTypeIs), nameof(Canary1));
+            }
+
+            {
+                RunCheck<object>(new Maybe1<object, string>());
+
+                [MethodImpl(MethodImplOptions.NoInlining)]
+                static void RunCheck<T>(object t)
+                {
+                    if (t is Maybe1<T, string>)
+                    {
+                        return;
+                    }
+                    throw new Exception();
+                }
+            }
+#endif
+        }
+    }
+
     class TestTypeEquals
     {
         sealed class Gen<T> { }
@@ -389,7 +462,7 @@ class DeadCodeElimination
                     }
                 }
 
-                ThrowIfPresentWithUsableMethodTable(typeof(TestTypeEquals), nameof(Canary2));
+                ThrowIfPresent(typeof(TestTypeEquals), nameof(Canary2));
             }
 
             {
@@ -404,7 +477,7 @@ class DeadCodeElimination
                     }
                 }
 
-                ThrowIfPresentWithUsableMethodTable(typeof(TestTypeEquals), nameof(Canary3));
+                ThrowIfPresent(typeof(TestTypeEquals), nameof(Canary3));
             }
 
             {
@@ -419,7 +492,7 @@ class DeadCodeElimination
                     }
                 }
 
-                ThrowIfPresentWithUsableMethodTable(typeof(TestTypeEquals), nameof(Canary4));
+                ThrowIfPresent(typeof(TestTypeEquals), nameof(Canary4));
             }
 
             {
@@ -451,6 +524,42 @@ class DeadCodeElimination
 #endif
         }
     }
+
+    class TestTypeEqualityDeadBranchScanRemoval
+    {
+        class NeverAllocated1 { }
+        class NeverAllocated2 { }
+
+        class PossiblyAllocated1 { }
+        class PossiblyAllocated2 { }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static Type GetNeverObject() => null;
+
+        static volatile Type s_sink;
+
+        public static void Run()
+        {
+            if (GetNeverObject() == typeof(NeverAllocated1))
+            {
+                Console.WriteLine(new NeverAllocated1().ToString());
+                Console.WriteLine(new NeverAllocated2().ToString());
+            }
+#if !DEBUG
+            ThrowIfPresentWithUsableMethodTable(typeof(TestTypeEqualityDeadBranchScanRemoval), nameof(NeverAllocated1));
+            ThrowIfPresent(typeof(TestTypeEqualityDeadBranchScanRemoval), nameof(NeverAllocated2));
+#endif
+
+            if (GetNeverObject() == typeof(PossiblyAllocated1))
+            {
+                Console.WriteLine(new PossiblyAllocated1().ToString());
+                Console.WriteLine(new PossiblyAllocated2().ToString());
+            }
+            if (Environment.GetEnvironmentVariable("SURETHING") != null)
+                s_sink = typeof(PossiblyAllocated1);
+        }
+    }
+
 
     class TestTypeIsEnum
     {

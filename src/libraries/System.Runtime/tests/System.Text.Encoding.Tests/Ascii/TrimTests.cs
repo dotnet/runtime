@@ -22,6 +22,7 @@ namespace System.Text.Tests
         [InlineData("1")]
         [InlineData("abc")]
         [InlineData("a\tb c\rd\ne")]
+        [InlineData("\0abcde\0")]
         public static void NothingToTrimNonEmptyInput(string text)
         {
             ReadOnlySpan<byte> bytes = Encoding.ASCII.GetBytes(text);
@@ -112,6 +113,16 @@ namespace System.Text.Tests
             Assert.Equal(leadingWhitespaceCount..(text.Length - trailingWhitespaceCount), Ascii.Trim(text));
             Assert.Equal(0..(text.Length - trailingWhitespaceCount), Ascii.TrimEnd(bytes));
             Assert.Equal(0..(text.Length - trailingWhitespaceCount), Ascii.TrimEnd(text));
+        }
+
+        [Fact]
+        public static void OnlyAsciiWhitespaceCharactersAreTrimmed()
+        {
+            for (int i = 0; i <= char.MaxValue; i++)
+            {
+                bool trimmed = Ascii.Trim(((char)i).ToString()).Equals(1..1);
+                Assert.True(((char)i is '\t' or '\n' or '\v' or '\f' or '\r' or ' ') == trimmed, $"Failed at {i}");
+            }
         }
     }
 }

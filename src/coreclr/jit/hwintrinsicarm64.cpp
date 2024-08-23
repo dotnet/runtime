@@ -124,15 +124,19 @@ static CORINFO_InstructionSet lookupInstructionSet(const char* className)
 //
 // Arguments:
 //    className -- The name of the class associated with the InstructionSet to lookup
-//    enclosingClassName -- The name of the enclosing class or nullptr if one doesn't exist
+//    innerEnclosingClassName -- The name of the inner enclosing class or nullptr if one doesn't exist
+//    outerEnclosingClassName -- The name of the outer enclosing class or nullptr if one doesn't exist
 //
 // Return Value:
 //    The InstructionSet associated with className and enclosingClassName
-CORINFO_InstructionSet HWIntrinsicInfo::lookupIsa(const char* className, const char* enclosingClassName)
+//
+CORINFO_InstructionSet HWIntrinsicInfo::lookupIsa(const char* className,
+                                                  const char* innerEnclosingClassName,
+                                                  const char* outerEnclosingClassName)
 {
     assert(className != nullptr);
 
-    if (enclosingClassName == nullptr)
+    if (innerEnclosingClassName == nullptr)
     {
         // No nested class is the most common, so fast path it
         return lookupInstructionSet(className);
@@ -142,7 +146,7 @@ CORINFO_InstructionSet HWIntrinsicInfo::lookupIsa(const char* className, const c
     // or intrinsics in the platform specific namespace, we assume
     // that it will be one we can handle and don't try to early out.
 
-    CORINFO_InstructionSet enclosingIsa = lookupInstructionSet(enclosingClassName);
+    CORINFO_InstructionSet enclosingIsa = lookupIsa(innerEnclosingClassName, outerEnclosingClassName, nullptr);
 
     if (strcmp(className, "Arm64") == 0)
     {
@@ -504,6 +508,37 @@ void HWIntrinsicInfo::lookupImmBounds(
                 immUpperBound = (int)SVE_PRFOP_CONST15;
                 break;
 
+            case NI_Sve_AddRotateComplex:
+                immLowerBound = 0;
+                immUpperBound = 1;
+                break;
+
+            case NI_Sve_MultiplyAddRotateComplex:
+                immLowerBound = 0;
+                immUpperBound = 3;
+                break;
+
+            case NI_Sve_MultiplyAddRotateComplexBySelectedScalar:
+                // rotation comes after index in the intrinsic's signature,
+                // but flip the order here so we check the larger range first.
+                // This conforms to the existing logic in LinearScan::BuildHWIntrinsic
+                // when determining if we need an internal register for the jump table.
+                // This flipped ordering is reflected in HWIntrinsicInfo::GetImmOpsPositions.
+                if (immNumber == 1)
+                {
+                    // Bounds for rotation
+                    immLowerBound = 0;
+                    immUpperBound = 3;
+                }
+                else
+                {
+                    // Bounds for index
+                    assert(immNumber == 2);
+                    immLowerBound = 0;
+                    immUpperBound = 1;
+                }
+                break;
+
             case NI_Sve_TrigonometricMultiplyAddCoefficient:
                 immLowerBound = 0;
                 immUpperBound = 7;
@@ -533,7 +568,65 @@ void HWIntrinsicInfo::lookupImmBounds(
 //
 GenTree* Compiler::impNonConstFallback(NamedIntrinsic intrinsic, var_types simdType, CorInfoType simdBaseJitType)
 {
-    return nullptr;
+    bool isRightShift = true;
+
+    switch (intrinsic)
+    {
+        case NI_AdvSimd_ShiftLeftLogical:
+        case NI_AdvSimd_ShiftLeftLogicalScalar:
+            isRightShift = false;
+            FALLTHROUGH;
+
+        case NI_AdvSimd_ShiftRightLogical:
+        case NI_AdvSimd_ShiftRightLogicalScalar:
+        case NI_AdvSimd_ShiftRightArithmetic:
+        case NI_AdvSimd_ShiftRightArithmeticScalar:
+        {
+            // AdvSimd.ShiftLeft* and AdvSimd.ShiftRight* can be replaced with AdvSimd.Shift*, which takes op2 in a simd
+            // register
+
+            GenTree* op2 = impPopStack().val;
+            GenTree* op1 = impSIMDPopStack();
+
+            // AdvSimd.ShiftLogical does right-shifts with negative immediates, hence the negation
+            if (isRightShift)
+            {
+                op2 = gtNewOperNode(GT_NEG, genActualType(op2->TypeGet()), op2);
+            }
+
+            NamedIntrinsic fallbackIntrinsic;
+            switch (intrinsic)
+            {
+                case NI_AdvSimd_ShiftLeftLogical:
+                case NI_AdvSimd_ShiftRightLogical:
+                    fallbackIntrinsic = NI_AdvSimd_ShiftLogical;
+                    break;
+
+                case NI_AdvSimd_ShiftLeftLogicalScalar:
+                case NI_AdvSimd_ShiftRightLogicalScalar:
+                    fallbackIntrinsic = NI_AdvSimd_ShiftLogicalScalar;
+                    break;
+
+                case NI_AdvSimd_ShiftRightArithmetic:
+                    fallbackIntrinsic = NI_AdvSimd_ShiftArithmetic;
+                    break;
+
+                case NI_AdvSimd_ShiftRightArithmeticScalar:
+                    fallbackIntrinsic = NI_AdvSimd_ShiftArithmeticScalar;
+                    break;
+
+                default:
+                    unreached();
+            }
+
+            GenTree* tmpOp = gtNewSimdCreateBroadcastNode(simdType, op2, simdBaseJitType, genTypeSize(simdType));
+            return gtNewSimdHWIntrinsicNode(simdType, op1, tmpOp, fallbackIntrinsic, simdBaseJitType,
+                                            genTypeSize(simdType));
+        }
+
+        default:
+            return nullptr;
+    }
 }
 
 //------------------------------------------------------------------------
@@ -2991,6 +3084,51 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
             retNode->AsHWIntrinsic()->SetSimdBaseJitType(simdBaseJitType);
             retNode->AsHWIntrinsic()->SetAuxiliaryJitType(op2BaseJitType);
+            break;
+        }
+
+        case NI_Sve_MultiplyAddRotateComplexBySelectedScalar:
+        {
+            assert(sig->numArgs == 5);
+            assert(!isScalar);
+
+            CORINFO_ARG_LIST_HANDLE arg1     = sig->args;
+            CORINFO_ARG_LIST_HANDLE arg2     = info.compCompHnd->getArgNext(arg1);
+            CORINFO_ARG_LIST_HANDLE arg3     = info.compCompHnd->getArgNext(arg2);
+            CORINFO_ARG_LIST_HANDLE arg4     = info.compCompHnd->getArgNext(arg3);
+            CORINFO_ARG_LIST_HANDLE arg5     = info.compCompHnd->getArgNext(arg4);
+            var_types               argType  = TYP_UNKNOWN;
+            CORINFO_CLASS_HANDLE    argClass = NO_CLASS_HANDLE;
+
+            int imm1LowerBound, imm1UpperBound; // Range for rotation
+            int imm2LowerBound, imm2UpperBound; // Range for index
+            HWIntrinsicInfo::lookupImmBounds(intrinsic, simdSize, simdBaseType, 1, &imm1LowerBound, &imm1UpperBound);
+            HWIntrinsicInfo::lookupImmBounds(intrinsic, simdSize, simdBaseType, 2, &imm2LowerBound, &imm2UpperBound);
+
+            argType      = JITtype2varType(strip(info.compCompHnd->getArgType(sig, arg5, &argClass)));
+            GenTree* op5 = getArgForHWIntrinsic(argType, argClass);
+            assert(HWIntrinsicInfo::isImmOp(intrinsic, op5));
+            op5 = addRangeCheckIfNeeded(intrinsic, op5, mustExpand, imm1LowerBound, imm1UpperBound);
+
+            argType = JITtype2varType(strip(info.compCompHnd->getArgType(sig, arg4, &argClass)));
+            op4     = getArgForHWIntrinsic(argType, argClass);
+            assert(HWIntrinsicInfo::isImmOp(intrinsic, op4));
+            op4 = addRangeCheckIfNeeded(intrinsic, op4, mustExpand, imm2LowerBound, imm2UpperBound);
+
+            argType = JITtype2varType(strip(info.compCompHnd->getArgType(sig, arg3, &argClass)));
+            op3     = getArgForHWIntrinsic(argType, argClass);
+            argType = JITtype2varType(strip(info.compCompHnd->getArgType(sig, arg2, &argClass)));
+            op2     = getArgForHWIntrinsic(argType, argClass);
+            argType = JITtype2varType(strip(info.compCompHnd->getArgType(sig, arg1, &argClass)));
+            op1     = getArgForHWIntrinsic(argType, argClass);
+
+            SetOpLclRelatedToSIMDIntrinsic(op1);
+            SetOpLclRelatedToSIMDIntrinsic(op2);
+            SetOpLclRelatedToSIMDIntrinsic(op3);
+            SetOpLclRelatedToSIMDIntrinsic(op4);
+            SetOpLclRelatedToSIMDIntrinsic(op5);
+            retNode = new (this, GT_HWINTRINSIC) GenTreeHWIntrinsic(retType, getAllocator(CMK_ASTNode), intrinsic,
+                                                                    simdBaseJitType, simdSize, op1, op2, op3, op4, op5);
             break;
         }
 

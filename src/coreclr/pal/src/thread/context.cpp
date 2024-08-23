@@ -817,7 +817,7 @@ void CONTEXTToNativeContext(CONST CONTEXT *lpContext, native_context_t *native)
             //TODO-SVE: This only handles vector lengths of 128bits.
             if (CONTEXT_GetSveLengthFromOS() == 16)
             {
-                _ASSERT((lpContext->XStateFeaturesMask & XSTATE_MASK_SVE) == XSTATE_MASK_SVE);
+                _ASSERT((lpContext->XStateFeaturesMask & XSTATE_MASK_ARM64_SVE) == XSTATE_MASK_ARM64_SVE);
 
                 uint16_t vq = sve_vq_from_vl(lpContext->Vl);
 
@@ -1169,7 +1169,7 @@ void CONTEXTFromNativeContext(const native_context_t *native, LPCONTEXT lpContex
 
                 uint16_t vq = sve_vq_from_vl(sve->vl);
 
-                lpContext->XStateFeaturesMask |= XSTATE_MASK_SVE;
+                lpContext->XStateFeaturesMask |= XSTATE_MASK_ARM64_SVE;
 
                 //Note: Size of ffr register is SVE_SIG_FFR_SIZE(vq) bytes.
                 lpContext->Ffr = *(WORD*) (((uint8_t*)sve) + SVE_SIG_FFR_OFFSET(vq));
@@ -2068,12 +2068,12 @@ DBG_FlushInstructionCache(
     // As a workaround, we call __builtin___clear_cache on each page separately.
 
     const SIZE_T pageSize = GetVirtualPageSize();
-    INT_PTR begin = (INT_PTR)lpBaseAddress;
-    const INT_PTR end = begin + dwSize;
+    UINT_PTR begin = (UINT_PTR)lpBaseAddress;
+    const UINT_PTR end = begin + dwSize;
 
     while (begin < end)
     {
-        INT_PTR endOrNextPageBegin = ALIGN_UP(begin + 1, pageSize);
+        UINT_PTR endOrNextPageBegin = ALIGN_UP(begin + 1, pageSize);
         if (endOrNextPageBegin > end)
             endOrNextPageBegin = end;
 

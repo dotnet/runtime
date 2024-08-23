@@ -206,7 +206,6 @@ namespace Internal.Runtime.CompilerHelpers
                 nint blockAddr = MethodTable.SupportsRelativePointers ? (nint)ReadRelPtr32(pBlock) : *pBlock;
                 if ((blockAddr & GCStaticRegionConstants.Uninitialized) == GCStaticRegionConstants.Uninitialized)
                 {
-#pragma warning disable CS8500 // takes address of managed type
                     object? obj = null;
                     RuntimeImports.RhAllocateNewObject(
                         new IntPtr(blockAddr & ~GCStaticRegionConstants.Mask),
@@ -234,7 +233,6 @@ namespace Internal.Runtime.CompilerHelpers
 
                     // Update the base pointer to point to the pinned object
                     *pBlock = *(IntPtr*)&obj;
-#pragma warning restore CS8500
                 }
 
                 currentBase++;

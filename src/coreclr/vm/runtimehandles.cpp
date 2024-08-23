@@ -167,11 +167,8 @@ NOINLINE ReflectModuleBaseObject* GetRuntimeModuleHelper(LPVOID __me, Module *pM
     if (pModule == NULL)
         return NULL;
 
-    DomainAssembly * pDomainAssembly = pModule->GetDomainAssembly();
-
-    OBJECTREF refModule = (pDomainAssembly != NULL) ? pDomainAssembly->GetExposedModuleObjectIfExists() : NULL;
-
-    if(refModule != NULL)
+    OBJECTREF refModule = pModule->GetExposedObjectIfExists();
+    if (refModule != NULL)
         return (ReflectModuleBaseObject*)OBJECTREFToObject(refModule);
 
     HELPER_METHOD_FRAME_BEGIN_RET_ATTRIB_1(Frame::FRAME_ATTR_EXACT_DEPTH|Frame::FRAME_ATTR_CAPTURE_DEPTH_2, keepAlive);
@@ -412,17 +409,17 @@ FCIMPL1(ReflectClassBaseObject *, RuntimeTypeHandle::GetElementType, ReflectClas
     TypeHandle typeHandle = refType->GetType();
     TypeHandle typeReturn;
 
-    if (typeHandle.IsArray())
+    if (!typeHandle.IsTypeDesc())
     {
+        if (!typeHandle.AsMethodTable()->IsArray())
+            return NULL;
+
         typeReturn = typeHandle.GetArrayElementTypeHandle();
     }
     else
     {
-        if (!typeHandle.IsTypeDesc())
-            return 0;
-
         if (typeHandle.IsGenericVariable())
-            return 0;
+            return NULL;
 
         typeReturn = typeHandle.AsTypeDesc()->GetTypeParam();
     }
@@ -445,73 +442,58 @@ FCIMPL1(INT32, RuntimeTypeHandle::GetArrayRank, ReflectClassBaseObject *pTypeUNS
 }
 FCIMPLEND
 
-FCIMPL1(INT32, RuntimeTypeHandle::GetNumVirtuals, ReflectClassBaseObject *pTypeUNSAFE) {
+FCIMPL1(INT32, RuntimeTypeHandle::GetNumVirtuals, ReflectClassBaseObject* pTypeUNSAFE) {
     CONTRACTL {
         FCALL_CHECK;
     }
     CONTRACTL_END;
 
     REFLECTCLASSBASEREF refType = (REFLECTCLASSBASEREF)ObjectToOBJECTREF(pTypeUNSAFE);
-
-    if (refType == NULL)
-        FCThrowRes(kArgumentNullException, W("Arg_InvalidHandle"));
+    _ASSERTE(refType != NULL);
 
     TypeHandle typeHandle = refType->GetType();
-
-    if (typeHandle.IsGenericVariable())
-        FCThrowRes(kArgumentException, W("Arg_InvalidHandle"));
+    _ASSERTE(!typeHandle.IsGenericVariable());
 
     MethodTable *pMT = typeHandle.GetMethodTable();
-
-    if (pMT)
-        return (INT32)pMT->GetNumVirtuals();
-    else
+    if (pMT == NULL)
         return 0;
+    return (INT32)pMT->GetNumVirtuals();
 }
 FCIMPLEND
 
-FCIMPL1(INT32, RuntimeTypeHandle::GetNumVirtualsAndStaticVirtuals, ReflectClassBaseObject *pTypeUNSAFE) {
-    CONTRACTL {
-        FCALL_CHECK;
-    }
-    CONTRACTL_END;
-
-    REFLECTCLASSBASEREF refType = (REFLECTCLASSBASEREF)ObjectToOBJECTREF(pTypeUNSAFE);
-
-    if (refType == NULL)
-        FCThrowRes(kArgumentNullException, W("Arg_InvalidHandle"));
-
-    TypeHandle typeHandle = refType->GetType();
-
-    if (typeHandle.IsGenericVariable())
-        FCThrowRes(kArgumentException, W("Arg_InvalidHandle"));
+extern "C" INT32 QCALLTYPE RuntimeTypeHandle_GetNumVirtualsAndStaticVirtuals(QCall::TypeHandle pTypeHandle)
+{
+    QCALL_CONTRACT;
 
     INT32 numVirtuals = 0;
 
-    HELPER_METHOD_FRAME_BEGIN_RET_1(refType);
+    BEGIN_QCALL;
+
+    TypeHandle typeHandle = pTypeHandle.AsTypeHandle();
+    _ASSERTE(!typeHandle.IsGenericVariable());
+
     MethodTable *pMT = typeHandle.GetMethodTable();
-    if (pMT)
+    if (pMT != NULL)
     {
         numVirtuals = (INT32)pMT->GetNumVirtuals();
-
         if (pMT->HasVirtualStaticMethods())
         {
             for (MethodTable::MethodIterator it(pMT); it.IsValid(); it.Next())
             {
                 MethodDesc *pMD = it.GetMethodDesc();
-                if (pMD->IsVirtual() &&
-                    pMD->IsStatic())
+                if (pMD->IsVirtual()
+                    && pMD->IsStatic())
                 {
                     numVirtuals++;
                 }
             }
         }
     }
-    HELPER_METHOD_FRAME_END();
+
+    END_QCALL;
 
     return numVirtuals;
 }
-FCIMPLEND
 
 FCIMPL2(MethodDesc *, RuntimeTypeHandle::GetMethodAt, ReflectClassBaseObject *pTypeUNSAFE, INT32 slot) {
     CONTRACTL {
@@ -1833,7 +1815,7 @@ FCIMPLEND
 FCIMPL3(Object *, SignatureNative::GetCustomModifiersAtOffset,
     SignatureNative* pSignatureUNSAFE,
     INT32 offset,
-    CLR_BOOL fRequired)
+    FC_BOOL_ARG fRequired)
 {
     FCALL_CONTRACT;
 
@@ -1858,7 +1840,7 @@ FCIMPL3(Object *, SignatureNative::GetCustomModifiersAtOffset,
         INT32 cMods = 0;
         CorElementType cmodType;
 
-        CorElementType cmodTypeExpected = fRequired ? ELEMENT_TYPE_CMOD_REQD : ELEMENT_TYPE_CMOD_OPT;
+        CorElementType cmodTypeExpected = FC_ACCESS_BOOL(fRequired) ? ELEMENT_TYPE_CMOD_REQD : ELEMENT_TYPE_CMOD_OPT;
 
         // Discover the number of required and optional custom modifiers.
         while(TRUE)
@@ -1873,13 +1855,24 @@ FCIMPL3(Object *, SignatureNative::GetCustomModifiersAtOffset,
                 {
                     cMods ++;
                 }
+
+                IfFailThrow(sp.GetToken(NULL));
+            }
+            else if (cmodType == ELEMENT_TYPE_CMOD_INTERNAL)
+            {
+                BYTE required;
+                IfFailThrow(sp.GetByte(&required));
+                if (fRequired == (required != 0))
+                {
+                    cMods ++;
+                }
+
+                IfFailThrow(sp.GetPointer(NULL));
             }
             else if (cmodType != ELEMENT_TYPE_SENTINEL)
             {
                 break;
             }
-
-            IfFailThrow(sp.GetToken(NULL));
         }
 
         // Reset sp and populate the arrays for the required and optional custom
@@ -1897,18 +1890,35 @@ FCIMPL3(Object *, SignatureNative::GetCustomModifiersAtOffset,
             IfFailThrow(sp.GetByte(&data));
             cmodType = (CorElementType)data;
 
-            mdToken token;
-            IfFailThrow(sp.GetToken(&token));
-
-            if (cmodType == cmodTypeExpected)
+            if (cmodType == ELEMENT_TYPE_CMOD_INTERNAL)
             {
-                TypeHandle th = ClassLoader::LoadTypeDefOrRefOrSpecThrowing(pModule, token,
-                                                                            &typeContext,
-                                                                            ClassLoader::ThrowIfNotFound,
-                                                                            ClassLoader::FailIfUninstDefOrRef);
+                BYTE required;
+                IfFailThrow(sp.GetByte(&required));
 
-                OBJECTREF refType = th.GetManagedClassObject();
-                gc.retVal->SetAt(--cMods, refType);
+                TypeHandle th;
+                IfFailThrow(sp.GetPointer((void**)&th));
+
+                if (fRequired == (required != 0))
+                {
+                    OBJECTREF refType = th.GetManagedClassObject();
+                    gc.retVal->SetAt(--cMods, refType);
+                }
+            }
+            else
+            {
+                mdToken token;
+                IfFailThrow(sp.GetToken(&token));
+
+                if (cmodType == cmodTypeExpected)
+                {
+                    TypeHandle th = ClassLoader::LoadTypeDefOrRefOrSpecThrowing(pModule, token,
+                                                                                &typeContext,
+                                                                                ClassLoader::ThrowIfNotFound,
+                                                                                ClassLoader::FailIfUninstDefOrRef);
+
+                    OBJECTREF refType = th.GetManagedClassObject();
+                    gc.retVal->SetAt(--cMods, refType);
+                }
             }
         }
     }

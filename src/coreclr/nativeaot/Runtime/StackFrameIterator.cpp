@@ -516,6 +516,14 @@ void StackFrameIterator::InternalInit(Thread * pThreadToWalk, PTR_PAL_LIMITED_CO
     m_RegDisplay.pR13 = (PTR_uintptr_t)PTR_TO_MEMBER_TADDR(PAL_LIMITED_CONTEXT, pCtx, R13);
     m_RegDisplay.pR14 = (PTR_uintptr_t)PTR_TO_MEMBER_TADDR(PAL_LIMITED_CONTEXT, pCtx, R14);
     m_RegDisplay.pR15 = (PTR_uintptr_t)PTR_TO_MEMBER_TADDR(PAL_LIMITED_CONTEXT, pCtx, R15);
+
+#if defined(TARGET_WINDOWS)
+    //
+    // SSP, we only need the value
+    //
+    m_RegDisplay.SSP  = pCtx->SSP;
+#endif
+
     //
     // preserved xmm regs
     //
@@ -631,6 +639,13 @@ void StackFrameIterator::InternalInit(Thread * pThreadToWalk, NATIVE_CONTEXT* pC
     m_RegDisplay.pR13 = (PTR_uintptr_t)PTR_TO_REG(pCtx, R13);
     m_RegDisplay.pR14 = (PTR_uintptr_t)PTR_TO_REG(pCtx, R14);
     m_RegDisplay.pR15 = (PTR_uintptr_t)PTR_TO_REG(pCtx, R15);
+
+#if defined(TARGET_WINDOWS)
+    //
+    // SSP, not needed. Unwind from native context is never for EH.
+    //
+    m_RegDisplay.SSP  = 0;
+#endif
 
     //
     // scratch regs
@@ -795,11 +810,6 @@ PTR_VOID StackFrameIterator::HandleExCollide(PTR_ExInfo pExInfo)
 
         // Sync our 'current' ExInfo with the updated state (we may have skipped other dispatches)
         ResetNextExInfoForSP(m_RegDisplay.GetSP());
-
-        // In case m_ControlPC is pre-adjusted, counteract here, since the caller of this routine
-        // will apply the adjustment again once we return. If the m_ControlPC is not pre-adjusted,
-        // this is simply an no-op.
-        m_ControlPC = m_OriginalControlPC;
 
         m_dwFlags = curFlags;
 
@@ -1003,6 +1013,13 @@ void StackFrameIterator::UnwindFuncletInvokeThunk()
     m_RegDisplay.pR13 = SP++;
     m_RegDisplay.pR14 = SP++;
     m_RegDisplay.pR15 = SP++;
+
+#if defined(TARGET_WINDOWS)
+    if (m_RegDisplay.SSP)
+    {
+        m_RegDisplay.SSP += 8;
+    }
+#endif
 
 #elif defined(TARGET_X86)
     SP = (PTR_uintptr_t)(m_RegDisplay.SP + 0x4);   // skip the saved assembly-routine-EBP
@@ -1368,6 +1385,12 @@ void StackFrameIterator::UnwindUniversalTransitionThunk()
     m_RegDisplay.SetIP(PCODEToPINSTR(*addressOfPushedCallerIP));
     m_RegDisplay.SetSP((uintptr_t)dac_cast<TADDR>(stackFrame->get_CallerSP()));
     SetControlPC(dac_cast<PTR_VOID>(m_RegDisplay.GetIP()));
+#if defined(TARGET_AMD64) && defined(TARGET_WINDOWS)
+    if (m_RegDisplay.SSP)
+    {
+        m_RegDisplay.SSP += 8;
+    }
+#endif
 
     // All universal transition cases rely on conservative GC reporting being applied to the
     // full argument set that flowed into the call.  Report the lower bound of this range (the
@@ -1428,6 +1451,14 @@ void StackFrameIterator::UnwindThrowSiteThunk()
     m_RegDisplay.pR13 = (PTR_uintptr_t)PTR_TO_MEMBER_TADDR(PAL_LIMITED_CONTEXT, pContext, R13);
     m_RegDisplay.pR14 = (PTR_uintptr_t)PTR_TO_MEMBER_TADDR(PAL_LIMITED_CONTEXT, pContext, R14);
     m_RegDisplay.pR15 = (PTR_uintptr_t)PTR_TO_MEMBER_TADDR(PAL_LIMITED_CONTEXT, pContext, R15);
+
+#if defined(TARGET_WINDOWS)
+    if (m_RegDisplay.SSP)
+    {
+        m_RegDisplay.SSP += 8;
+    }
+#endif
+
 #elif defined(TARGET_ARM)
     m_RegDisplay.pR4  = (PTR_uintptr_t)PTR_TO_MEMBER_TADDR(PAL_LIMITED_CONTEXT, pContext, R4);
     m_RegDisplay.pR5  = (PTR_uintptr_t)PTR_TO_MEMBER_TADDR(PAL_LIMITED_CONTEXT, pContext, R5);
@@ -1794,7 +1825,9 @@ void StackFrameIterator::PrepareToYieldFrame()
     ASSERT(m_pInstance->IsManaged(m_ControlPC) ||
          ((m_dwFlags & SkipNativeFrames) == 0 && (m_dwFlags & UnwoundReversePInvoke) != 0));
 
-    if (m_dwFlags & ApplyReturnAddressAdjustment)
+    // Do not adjust the PC if ExCollide is set. In that case the m_ControlPC was copied from
+    // another stack frame iterator and it already has a correct value.
+    if ((m_dwFlags & (ApplyReturnAddressAdjustment | ExCollide)) == ApplyReturnAddressAdjustment)
     {
         m_ControlPC = AdjustReturnAddressBackward(m_ControlPC);
     }
@@ -2103,9 +2136,9 @@ bool StackFrameIterator::Next(uint32_t* puExCollideClauseIdx, bool* pfUnwoundRev
     return isValid;
 }
 
-FCIMPL4(FC_BOOL_RET, RhpSfiInit, StackFrameIterator* pThis, PAL_LIMITED_CONTEXT* pStackwalkCtx, CLR_BOOL instructionFault, CLR_BOOL* pfIsExceptionIntercepted)
+FCIMPL4(FC_BOOL_RET, RhpSfiInit, StackFrameIterator* pThis, PAL_LIMITED_CONTEXT* pStackwalkCtx, FC_BOOL_ARG instructionFault, CLR_BOOL* pfIsExceptionIntercepted)
 {
-    bool isValid = pThis->Init(pStackwalkCtx, instructionFault);
+    bool isValid = pThis->Init(pStackwalkCtx, FC_ACCESS_BOOL(instructionFault));
 
     if (pfIsExceptionIntercepted)
     {

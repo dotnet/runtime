@@ -157,13 +157,19 @@ int32_t CryptoNative_EvpCipherCtxSetPadding(EVP_CIPHER_CTX* x, int32_t padding)
 int32_t
 CryptoNative_EvpCipherUpdate(EVP_CIPHER_CTX* ctx, uint8_t* out, int32_t* outl, unsigned char* in, int32_t inl)
 {
+    assert(outl != NULL);
     ERR_clear_error();
 
-    int outLength;
+    int outLength = 0;
     int32_t ret = EVP_CipherUpdate(ctx, out, &outLength, in, inl);
+
     if (ret == SUCCESS)
     {
         *outl = outLength;
+    }
+    else
+    {
+        *outl = 0;
     }
 
     return ret;

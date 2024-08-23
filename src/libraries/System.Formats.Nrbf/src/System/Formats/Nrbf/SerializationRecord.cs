@@ -46,7 +46,7 @@ public abstract class SerializationRecord
     /// </summary>
     /// <remarks>
     /// <para>This method ignores assembly names.</para>
-    /// <para>This method does NOT take into account member names or their genericTypes.</para>
+    /// <para>This method does NOT take into account member names or their types.</para>
     /// </remarks>
     /// <param name="type">The type to compare against.</param>
     /// <returns><see langword="true" /> if the serialized type name match provided type; otherwise, <see langword="false" />.</returns>

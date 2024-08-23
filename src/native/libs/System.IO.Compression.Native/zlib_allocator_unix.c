@@ -73,10 +73,7 @@ static void WriteAllocCookieUnaligned(void* pDest, DOTNET_ALLOC_COOKIE vCookie)
 const size_t DOTNET_ALLOC_HEADER_COOKIE_SIZE_WITH_PADDING = (sizeof(DOTNET_ALLOC_COOKIE) + MEMORY_ALLOCATION_ALIGNMENT - 1) & ~((size_t)MEMORY_ALLOCATION_ALIGNMENT  - 1);
 const size_t DOTNET_ALLOC_TRAILER_COOKIE_SIZE = sizeof(DOTNET_ALLOC_COOKIE);
 
-voidpf z_custom_calloc(opaque, items, size)
-    voidpf opaque;
-    unsigned items;
-    unsigned size;
+voidpf z_custom_calloc(voidpf opaque, unsigned items, unsigned size)
 {
     (void)opaque; // unreferenced formal parameter
 
@@ -122,9 +119,7 @@ static void zcfree_trash_cookie(void* pCookie)
     memset(pCookie, 0, sizeof(DOTNET_ALLOC_COOKIE));
 }
 
-void z_custom_cfree(opaque, ptr)
-    voidpf opaque;
-    voidpf ptr;
+void z_custom_cfree(voidpf opaque, voidpf ptr)
 {
     (void)opaque; // unreferenced formal parameter
 

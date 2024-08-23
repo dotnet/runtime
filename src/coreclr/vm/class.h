@@ -1798,14 +1798,16 @@ protected:
     }
 #endif // !DACCESS_COMPILE
 
-    template<typename T> friend struct ::cdac_offsets;
+    template<typename T> friend struct ::cdac_data;
 };
 
-template<> struct cdac_offsets<EEClass>
+template<> struct cdac_data<EEClass>
 {
+    static constexpr size_t InternalCorElementType = offsetof(EEClass, m_NormType);
     static constexpr size_t MethodTable = offsetof(EEClass, m_pMethodTable);
     static constexpr size_t NumMethods = offsetof(EEClass, m_NumMethods);
     static constexpr size_t CorTypeAttr = offsetof(EEClass, m_dwAttrClass);
+    static constexpr size_t NumNonVirtualSlots = offsetof(EEClass, m_NumNonVirtualSlots);
 };
 
 // --------------------------------------------------------------------------------------------
@@ -1995,7 +1997,12 @@ public:
                                       BOOL fForStubAsIL
     );
 
+    template<typename T> friend struct ::cdac_data;
+};
 
+template<> struct cdac_data<ArrayClass>
+{
+    static constexpr size_t Rank = offsetof(ArrayClass, m_rank);
 };
 
 inline EEClassLayoutInfo *EEClass::GetLayoutInfo()

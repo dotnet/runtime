@@ -12942,7 +12942,7 @@ emit_unwind_info_sections_win32 (MonoAotCompile *acfg, const char *function_star
  * Returns: TRUE - extra method should be generated, otherwise FALSE
  */
 static gboolean
-should_emit_extra_method_for_generics (MonoMethod *method, gboolean reference_type)
+should_emit_extra_method_for_generics (MonoMethod *method, gboolean reference_type, MonoError *error)
 {
 	MonoGenericContainer *gen_container = NULL;
 	MonoGenericParam *gen_param = NULL;
@@ -12953,8 +12953,14 @@ should_emit_extra_method_for_generics (MonoMethod *method, gboolean reference_ty
 		// For now always generate extra methods.
 		return TRUE;
 	} else if (method->is_generic) {
+		MonoMethodSignature* sig = mono_method_signature_checked(method, error);
+
+		if (!is_ok (error)) {
+			return FALSE;
+		}
+
 		gen_container = mono_method_get_generic_container (method);
-		gen_param_count = mono_method_signature_internal (method)->generic_param_count;
+		gen_param_count = sig->generic_param_count;
 	} else if (mono_class_is_gtd (method->klass)) {
 		gen_container = mono_class_get_generic_container (method->klass);
 		gen_param_count = gen_container->type_argc;
@@ -12976,7 +12982,7 @@ should_emit_extra_method_for_generics (MonoMethod *method, gboolean reference_ty
 }
 
 static gboolean
-should_emit_gsharedvt_method (MonoAotCompile *acfg, MonoMethod *method)
+should_emit_gsharedvt_method (MonoAotCompile *acfg, MonoMethod *method, MonoError* error)
 {
 #ifdef TARGET_WASM
 	if (acfg->image == mono_get_corlib () && !strcmp (m_class_get_name (method->klass), "Vector`1"))
@@ -12986,7 +12992,7 @@ should_emit_gsharedvt_method (MonoAotCompile *acfg, MonoMethod *method)
 	if (acfg->image == mono_get_corlib () && !strcmp (m_class_get_name (method->klass), "Volatile"))
 		/* Read<T>/Write<T> are not needed and cause JIT failures */
 		return FALSE;
-	return should_emit_extra_method_for_generics (method, FALSE);
+	return should_emit_extra_method_for_generics (method, FALSE, error);
 }
 
 static gboolean
@@ -13047,15 +13053,25 @@ collect_methods (MonoAotCompile *acfg)
 		}
 		*/
 
-		if (should_emit_extra_method_for_generics (method, TRUE)) {
+		gboolean warn_and_skip = FALSE;
+		if (should_emit_extra_method_for_generics (method, TRUE, error)) {
 			/* Compile the ref shared version instead */
+			mono_error_assert_ok (error);
 			method = mini_get_shared_method_full (method, SHARE_MODE_NONE, error);
-			if (!method) {
-				aot_printerrf (acfg, "Failed to load method 0x%x from '%s' due to %s.\n", token, image->name, mono_error_get_message (error));
-				aot_printerrf (acfg, "Run with MONO_LOG_LEVEL=debug for more information.\n");
-				mono_error_cleanup (error);
-				return FALSE;
+
+			if (!method || !is_ok (error)) {
+				warn_and_skip = TRUE;
 			}
+		}
+		else if (!is_ok (error)) {
+			warn_and_skip = TRUE;
+		}
+
+		if (warn_and_skip) {
+			aot_printerrf (acfg, "Failed to load method 0x%x from '%s' due to %s.\n", token, image->name, mono_error_get_message (error));
+			aot_printerrf (acfg, "Run with MONO_LOG_LEVEL=debug for more information.\n");
+			mono_error_cleanup (error);
+			return FALSE;
 		}
 
 		/* Since we add the normal methods first, their index will be equal to their zero based token index */
@@ -13090,13 +13106,17 @@ collect_methods (MonoAotCompile *acfg)
 			}
 		}
 
-		if ((method->is_generic || mono_class_is_gtd (method->klass)) && should_emit_gsharedvt_method (acfg, method)) {
+		if ((method->is_generic || mono_class_is_gtd (method->klass)) && should_emit_gsharedvt_method (acfg, method, error)) {
 			MonoMethod *gshared;
 
 			gshared = mini_get_shared_method_full (method, SHARE_MODE_GSHAREDVT, error);
 			mono_error_assert_ok (error);
 
 			add_extra_method (acfg, gshared);
+		}
+		else if (!is_ok (error)) {
+			g_warning ("Failed to generate extra gsharedvt method for %s in '%s' due to %s.\n", method->name, image->name, mono_error_get_message (error));
+			mono_error_cleanup (error);
 		}
 	}
 
