@@ -32,6 +32,7 @@ parser.add_argument("-source_directory", help="path to source directory")
 parser.add_argument("-output_mch_path", help="Absolute path to the mch file to produce")
 parser.add_argument("-arch", help="Architecture")
 parser.add_argument("-temp_location", required=False, help="Location to temporarily download ASPNET benchmarks and crank")
+parser.add_argument("--local", action="store_true", default=False)
 
 def setup_args(args):
     """ Setup the args for SuperPMI to use.
@@ -67,6 +68,8 @@ def setup_args(args):
     else:
         coreclr_args.temp_location = tempfile.TemporaryDirectory().name
         coreclr_args.temp_is_explicit = False
+
+    coreclr_args.local = args.local
 
     return coreclr_args
 
@@ -142,6 +145,8 @@ def build_and_run(coreclr_args):
 
     if not coreclr_args.temp_is_explicit:
         os.mkdir(temp_location)
+    elif not path.isdir(temp_location):
+        os.mkdir(temp_location)
 
     print ("Executing in " + temp_location)
     os.chdir(temp_location)
@@ -153,11 +158,15 @@ def build_and_run(coreclr_args):
     dotnet_path = path.join(source_directory, ".dotnet")
     dotnet_exe = path.join(dotnet_path, "dotnet.exe") if is_windows else path.join(dotnet_path, "dotnet")
     # run_command([dotnet_exe, "--info"], temp_location, _exit_on_fail=True)
-    os.environ['DOTNET_ROOT'] = dotnet_path
+    #os.environ['DOTNET_ROOT'] = dotnet_path
 
     ## install crank as local tool
     run_command(
         [dotnet_exe, "tool", "install", "Microsoft.Crank.Controller", "--version", "0.2.0-*", "--tool-path", temp_location], _exit_on_fail=True)
+    
+    if coreclr_args.local:
+        run_command(
+            [dotnet_exe, "tool", "install", "Microsoft.Crank.Agent", "--version", "0.2.0-*", "--tool-path", temp_location], _exit_on_fail=True)
 
     ## ideally just do sparse clone, but this doesn't work locally
     ## git clone --filter=blob:none --no-checkout https://github.com/aspnet/benchmarks
@@ -172,6 +181,7 @@ def build_and_run(coreclr_args):
             ["git", "clone", "--quiet", "--depth", "1", "https://github.com/aspnet/benchmarks"], temp_location, _exit_on_fail=True)
 
     crank_app = path.join(temp_location, "crank")
+    crank_agent_app = path.join(temp_location, "crank-agent")
     mcs_path = determine_mcs_tool_path(coreclr_args)
     superpmi_path = determine_superpmi_tool_path(coreclr_args)
 
@@ -210,7 +220,11 @@ def build_and_run(coreclr_args):
     # runtime_options_list = [("Dummy=0", )]
 
     mch_file = path.join(coreclr_args.output_mch_path, "aspnet.run." + target_os + "." + target_arch + ".checked.mch")
-    benchmark_machine = determine_benchmark_machine(coreclr_args)
+
+    if coreclr_args.local:
+        benchmark_machine = "local"
+    else:
+        benchmark_machine = determine_benchmark_machine(coreclr_args)
 
     jitname = determine_native_name(coreclr_args, "clrjit", target_os)
     coreclrname = determine_native_name(coreclr_args, "coreclr", target_os)

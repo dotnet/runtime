@@ -103,6 +103,9 @@ jobs:
     - ${{ if eq(parameters.collectionName, 'smoke_tests') }}:
       - name: InputDirectory
         value: '$(Build.SourcesDirectory)/artifacts/tests/coreclr/obj/${{ parameters.osGroup }}.${{ parameters.archType }}.$(buildConfigUpper)/Managed/nativeaot/SmokeTests'
+    - ${{ if eq(parameters.collectionName, 'aspnet') }}:
+      - name: InputDirectory
+        value: '$(Core_Root_Dir)'
 
     workspace:
       clean: all
@@ -116,12 +119,8 @@ jobs:
       displayName: Enable python venv
       condition: always()
 
-    - ${{ if eq(parameters.collectionName, 'aspnet') }}:
-      - script: $(PythonScript) $(Build.SourcesDirectory)/src/coreclr/scripts/superpmi_aspnet.py -source_directory $(Build.SourcesDirectory) -output_mch_path $(MchFilesLocation) -arch $(archType) -temp_location $(PayloadLocation)
-        displayName: ${{ format('SuperPMI ASPNET setup ({0})', parameters.osGroup) }}
-    - ${{ else }}:
-      - script: $(PythonScript) $(Build.SourcesDirectory)/src/coreclr/scripts/superpmi_collect_setup.py -payload_directory $(PayloadLocation) -source_directory $(Build.SourcesDirectory) -core_root_directory $(Core_Root_Dir) -arch $(archType) -platform $(osGroup) -mch_file_tag $(MchFileTag) -input_directory $(InputDirectory) -collection_name $(CollectionName) -collection_type $(CollectionType) -max_size 25 # size in MB
-        displayName: ${{ format('SuperPMI setup ({0})', parameters.osGroup) }}
+    - script: $(PythonScript) $(Build.SourcesDirectory)/src/coreclr/scripts/superpmi_collect_setup.py -payload_directory $(PayloadLocation) -source_directory $(Build.SourcesDirectory) -core_root_directory $(Core_Root_Dir) -arch $(archType) -platform $(osGroup) -mch_file_tag $(MchFileTag) -input_directory $(InputDirectory) -collection_name $(CollectionName) -collection_type $(CollectionType) -max_size 25 # size in MB
+      displayName: ${{ format('SuperPMI setup ({0})', parameters.osGroup) }}
 
     # Create required directories for merged mch collection and superpmi logs
     - ${{ if ne(parameters.osGroup, 'windows') }}:

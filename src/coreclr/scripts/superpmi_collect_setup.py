@@ -405,7 +405,6 @@ def setup_benchmark(workitem_directory, arch):
             get_python_name() + [dotnet_install_script, "install", "--channels", "9.0", "--architecture", arch, "--install-dir",
                                  dotnet_directory, "--verbose"])
 
-
 def get_python_name():
     """Gets the python name
 
@@ -490,6 +489,8 @@ def main(main_args):
     if coreclr_args.collection_name == "benchmarks" or coreclr_args.collection_name == "realworld":
         # Setup benchmarks
         setup_benchmark(workitem_payload_directory, arch)
+    elif coreclr_args.collection_name == "aspnet":
+        ()
     else:
         # Setup for pmi/crossgen2/nativeaot runs
 
