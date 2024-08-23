@@ -3248,6 +3248,7 @@ void gc_heap::fire_committed_usage_event()
     // For segments, bookkeeping committed does not include mark array
 #endif //USE_REGIONS
     size_t total_bookkeeping_committed = committed_bookkeeping;
+
     GCEventFireCommittedUsage_V1 (
         (uint64_t)total_committed_in_use,
         (uint64_t)total_committed_in_global_decommit,
