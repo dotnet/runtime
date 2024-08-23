@@ -99,19 +99,6 @@ public:
         return m_pPEAssembly->GetMDImport();
     }
 
-    OBJECTREF GetExposedAssemblyObjectIfExists()
-    {
-        LIMITED_METHOD_CONTRACT;
-
-        OBJECTREF objRet = NULL;
-        GET_LOADERHANDLE_VALUE_FAST(GetLoaderAllocator(), m_hExposedAssemblyObject, &objRet);
-        return objRet;
-    }
-
-    // Returns managed representation of the assembly (Assembly or AssemblyBuilder).
-    // Returns NULL if the managed scout was already collected (see code:LoaderAllocator#AssemblyPhases).
-    OBJECTREF GetExposedAssemblyObject();
-
     BOOL IsSystem()
     {
         WRAPPER_NO_CONTRACT;
@@ -397,8 +384,6 @@ private:
 
     FileLoadLevel               m_level;
     BOOL                        m_loading;
-
-    LOADERHANDLE                m_hExposedAssemblyObject;
 
     ExInfo*                     m_pError;
 

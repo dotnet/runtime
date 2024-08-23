@@ -33,7 +33,6 @@ DomainAssembly::DomainAssembly(PEAssembly* pPEAssembly, LoaderAllocator* pLoader
     m_pLoaderAllocator(pLoaderAllocator),
     m_level(FILE_LOAD_CREATE),
     m_loading(TRUE),
-    m_hExposedAssemblyObject{},
     m_pError(NULL),
     m_bDisableActivationCheck(FALSE),
     m_fHostAssemblyPublished(FALSE),
@@ -499,88 +498,6 @@ void DomainAssembly::SetAssembly(Assembly* pAssembly)
     pAssembly->SetDomainAssembly(this);
 }
 
-
-//---------------------------------------------------------------------------------------
-//
-// Returns managed representation of the assembly (Assembly or AssemblyBuilder).
-// Returns NULL if the managed scout was already collected (see code:LoaderAllocator#AssemblyPhases).
-//
-OBJECTREF DomainAssembly::GetExposedAssemblyObject()
-{
-    CONTRACTL
-    {
-        INSTANCE_CHECK;
-        THROWS;
-        MODE_COOPERATIVE;
-        GC_TRIGGERS;
-    }
-    CONTRACTL_END;
-
-    LoaderAllocator * pLoaderAllocator = GetLoaderAllocator();
-
-    if (!pLoaderAllocator->IsManagedScoutAlive())
-    {   // We already collected the managed scout, so we cannot re-create any managed objects
-        // Note: This is an optimization, as the managed scout can be collected right after this check
-        return NULL;
-    }
-
-    if (m_hExposedAssemblyObject == (LOADERHANDLE)NULL)
-    {
-        // Atomically create a handle
-
-        LOADERHANDLE handle = pLoaderAllocator->AllocateHandle(NULL);
-
-        InterlockedCompareExchangeT(&m_hExposedAssemblyObject, handle, static_cast<LOADERHANDLE>(0));
-    }
-
-    if (pLoaderAllocator->GetHandleValue(m_hExposedAssemblyObject) == NULL)
-    {
-        ASSEMBLYREF   assemblyObj = NULL;
-        MethodTable * pMT;
-
-        pMT = CoreLibBinder::GetClass(CLASS__ASSEMBLY);
-
-        // Will be TRUE only if LoaderAllocator managed object was already collected and therefore we should
-        // return NULL
-        BOOL fIsLoaderAllocatorCollected = FALSE;
-
-        // Create the assembly object
-        GCPROTECT_BEGIN(assemblyObj);
-        assemblyObj = (ASSEMBLYREF)AllocateObject(pMT);
-
-        assemblyObj->SetAssembly(this);
-
-        // Attach the reference to the assembly to keep the LoaderAllocator for this collectible type
-        // alive as long as a reference to the assembly is kept alive.
-        // Currently we overload the sync root field of the assembly to do so, but the overload is not necessary.
-        if (GetAssembly() != NULL)
-        {
-            OBJECTREF refLA = GetAssembly()->GetLoaderAllocator()->GetExposedObject();
-            if ((refLA == NULL) && GetAssembly()->GetLoaderAllocator()->IsCollectible())
-            {   // The managed LoaderAllocator object was collected
-                fIsLoaderAllocatorCollected = TRUE;
-            }
-            assemblyObj->SetSyncRoot(refLA);
-        }
-
-        if (!fIsLoaderAllocatorCollected)
-        {   // We should not expose this value in case the LoaderAllocator managed object was already
-            // collected
-            pLoaderAllocator->CompareExchangeValueInHandle(m_hExposedAssemblyObject, (OBJECTREF)assemblyObj, NULL);
-        }
-        GCPROTECT_END();
-
-        if (fIsLoaderAllocatorCollected)
-        {   // The LoaderAllocator managed object was already collected, we cannot re-create it
-            // Note: We did not publish the allocated Assembly/AssmeblyBuilder object, it will get collected
-            // by GC
-            return NULL;
-        }
-    }
-
-    return pLoaderAllocator->GetHandleValue(m_hExposedAssemblyObject);
-}
-
 void DomainAssembly::Begin()
 {
     STANDARD_VM_CONTRACT;
@@ -670,7 +587,7 @@ void DomainAssembly::DeliverAsyncEvents()
     CONTRACTL_END;
 
     OVERRIDE_LOAD_LEVEL_LIMIT(FILE_ACTIVE);
-    AppDomain::GetCurrentDomain()->RaiseLoadingAssemblyEvent(this);
+    AppDomain::GetCurrentDomain()->RaiseLoadingAssemblyEvent(GetAssembly());
 }
 
 void DomainAssembly::DeliverSyncEvents()

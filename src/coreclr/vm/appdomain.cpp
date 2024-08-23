@@ -3558,7 +3558,7 @@ ULONG AppDomain::Release()
 
 
 
-void AppDomain::RaiseLoadingAssemblyEvent(DomainAssembly *pAssembly)
+void AppDomain::RaiseLoadingAssemblyEvent(Assembly *pAssembly)
 {
     CONTRACTL
     {
@@ -3590,7 +3590,7 @@ void AppDomain::RaiseLoadingAssemblyEvent(DomainAssembly *pAssembly)
             ARG_SLOT args[1];
             GCPROTECT_BEGIN(gc);
 
-            gc.orThis = pAssembly->GetExposedAssemblyObject();
+            gc.orThis = pAssembly->GetExposedObject();
 
             MethodDescCallSite onAssemblyLoad(METHOD__ASSEMBLYLOADCONTEXT__ON_ASSEMBLY_LOAD);
 
