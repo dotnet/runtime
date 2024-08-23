@@ -35,21 +35,6 @@ enum DefaultInterfaceType
     DefaultInterfaceType_BaseComClass   = 4
 };
 
-// System.Drawing.Color struct definition.
-
-struct SYSTEMCOLOR
-{
-#ifdef HOST_64BIT
-    STRINGREF name;
-    INT64     value;
-#else
-    INT64     value;
-    STRINGREF name;
-#endif
-    short     knownColor;
-    short     state;
-};
-
 struct ComMethodTable;
 struct IUnkEntry;
 interface IStream;
@@ -276,10 +261,8 @@ MethodTable *GetDefaultInterfaceMTForClass(MethodTable *pMT, BOOL *pbDispatch);
 void GetComSourceInterfacesForClass(MethodTable *pClassMT, CQuickArray<MethodTable *> &rItfList);
 
 //--------------------------------------------------------------------------------
-// These methods convert an OLE_COLOR to a System.Color and vice versa.
-void ConvertOleColorToSystemColor(OLE_COLOR SrcOleColor, SYSTEMCOLOR *pDestSysColor);
+// These methods convert an OLE_COLOR to a boxed Color object and vice versa.
 void ConvertOleColorToSystemColor(OLE_COLOR SrcOleColor, OBJECTREF *pDestSysColor);
-OLE_COLOR ConvertSystemColorToOleColor(SYSTEMCOLOR *pSrcSysColor);
 OLE_COLOR ConvertSystemColorToOleColor(OBJECTREF *pSrcObj);
 
 //--------------------------------------------------------------------------------

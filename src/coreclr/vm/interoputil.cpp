@@ -2188,27 +2188,7 @@ void GetComSourceInterfacesForClass(MethodTable *pMT, CQuickArray<MethodTable *>
 }
 
 //--------------------------------------------------------------------------------
-// This method converts an OLE_COLOR to a System.Color.
-void ConvertOleColorToSystemColor(OLE_COLOR SrcOleColor, SYSTEMCOLOR *pDestSysColor)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_COOPERATIVE;
-    }
-    CONTRACTL_END;
-
-    OBJECTREF boxedSysColor = NULL;
-
-    GCPROTECT_BEGIN(boxedSysColor);
-
-    ConvertOleColorToSystemColor(SrcOleColor, &boxedSysColor);
-
-    CopyValueClass(pDestSysColor, boxedSysColor->UnBox(), boxedSysColor->GetMethodTable());
-    GCPROTECT_END();
-}
-
+// This method converts an OLE_COLOR to a boxed Color object.
 void ConvertOleColorToSystemColor(OLE_COLOR SrcOleColor, OBJECTREF *pDestSysColor)
 {
     CONTRACTL

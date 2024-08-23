@@ -310,11 +310,14 @@ extern "C" void QCALLTYPE Variant_ConvertOleColorToSystemColor(QCall::ObjectHand
 
     BEGIN_QCALL;
 
+    OBJECTREF obj = NULL;
     GCX_COOP();
-    SYSTEMCOLOR systemColor{};
-    ConvertOleColorToSystemColor(oleColor, &systemColor);
-    objRet.Set(pMT->Box(&systemColor));
+    GCPROTECT_BEGIN(obj);
 
+    ConvertOleColorToSystemColor(oleColor, &obj);
+    objRet.Set(obj);
+
+    GCPROTECT_END();
     END_QCALL;
 }
 
