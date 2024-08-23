@@ -13,6 +13,19 @@ internal static partial class Interop
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EvpKdfFree")]
         internal static partial void EvpKdfFree(IntPtr kdf);
 
+        [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_HkdfDeriveKey", StringMarshalling = StringMarshalling.Utf8)]
+        private static partial int CryptoNative_HkdfDeriveKey(
+            SafeEvpKdfHandle kdf,
+            ReadOnlySpan<byte> ikm,
+            int ikmLength,
+            string algorithm,
+            ReadOnlySpan<byte> salt,
+            int saltLength,
+            ReadOnlySpan<byte> info,
+            int infoLength,
+            Span<byte> destination,
+            int destinationLength);
+
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_KbkdfHmacOneShot", StringMarshalling = StringMarshalling.Utf8)]
         private static unsafe partial int CryptoNative_KbkdfHmacOneShot(
             SafeEvpKdfHandle kdf,
@@ -25,6 +38,34 @@ internal static partial class Interop
             int contextLength,
             Span<byte> destination,
             int destinationLength);
+
+        internal static void HkdfDeriveKey(
+            SafeEvpKdfHandle kdf,
+            ReadOnlySpan<byte> ikm,
+            string algorithm,
+            ReadOnlySpan<byte> salt,
+            ReadOnlySpan<byte> info,
+            Span<byte> destination)
+        {
+            const int Success = 1;
+            int ret = CryptoNative_HkdfDeriveKey(
+                kdf,
+                ikm,
+                ikm.Length,
+                algorithm,
+                salt,
+                salt.Length,
+                info,
+                info.Length,
+                destination,
+                destination.Length);
+
+            if (ret != Success)
+            {
+                Debug.Assert(ret == 0);
+                throw CreateOpenSslCryptographicException();
+            }
+        }
 
         internal static void KbkdfHmacOneShot(
             SafeEvpKdfHandle kdf,

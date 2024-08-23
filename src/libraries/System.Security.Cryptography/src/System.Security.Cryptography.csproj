@@ -866,7 +866,7 @@
     <Compile Include="System\Security\Cryptography\ECDiffieHellmanWrapper.cs" />
     <Compile Include="System\Security\Cryptography\HashProviderDispenser.Unix.cs" />
     <Compile Include="System\Security\Cryptography\HashProviderDispenser.OpenSsl.cs" />
-    <Compile Include="System\Security\Cryptography\HKDF.Unix.cs" />
+    <Compile Include="System\Security\Cryptography\HKDF.OpenSsl.cs" />
     <Compile Include="System\Security\Cryptography\LiteHash.Unix.cs" />
     <Compile Include="System\Security\Cryptography\LiteHash.OpenSsl.cs" />
     <Compile Include="System\Security\Cryptography\OidLookup.OpenSsl.cs" />

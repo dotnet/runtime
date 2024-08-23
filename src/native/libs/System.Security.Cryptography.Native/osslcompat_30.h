@@ -17,6 +17,7 @@
 #define OSSL_KDF_PARAM_KEY    "key"
 #define OSSL_KDF_PARAM_SALT   "salt"
 #define OSSL_KDF_PARAM_INFO   "info"
+#define OSSL_KDF_PARAM_MODE   "mode"
 
 #define OSSL_MAC_PARAM_KEY    "key"
 #define OSSL_MAC_PARAM_CUSTOM "custom"
