@@ -1392,6 +1392,12 @@ namespace System.Threading
                 // Reset thread state after all user code for the work item has completed
                 currentThread.ResetThreadPoolThread();
             }
+
+            // Discount a work item here to avoid counting most of the queue processing work items
+            if (completedCount > 1)
+            {
+                ThreadInt64PersistentCounter.Add(tl.threadLocalCompletionCountObject!, completedCount - 1);
+            }
         }
     }
 
