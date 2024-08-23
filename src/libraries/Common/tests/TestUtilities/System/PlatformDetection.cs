@@ -136,8 +136,7 @@ namespace System
         public static bool IsWasmThreadingSupported => IsBrowser && IsEnvironmentVariableTrue("IsBrowserThreadingSupported");
         public static bool IsNotWasmThreadingSupported => !IsWasmThreadingSupported;
 
-        private static readonly Lazy<bool> s_isBinaryFormatterSupported = new Lazy<bool>(DetermineBinaryFormatterSupport);
-        public static bool IsBinaryFormatterSupported => s_isBinaryFormatterSupported.Value;
+        public static bool IsBinaryFormatterSupported => !(IsNativeAot || IsBrowser || IsMobile);
 
         public static bool IsStartingProcessesSupported => !IsiOS && !IstvOS;
 
@@ -723,35 +722,6 @@ namespace System
             }
 
             return false;
-        }
-
-        private static bool DetermineBinaryFormatterSupport()
-        {
-            if (IsNetFramework)
-            {
-                return true;
-            }
-            else if (IsNativeAot || IsBrowser || IsMobile)
-            {
-                return false;
-            }
-
-            Assembly assembly = typeof(System.Runtime.Serialization.Formatters.Binary.BinaryFormatter).Assembly;
-            AssemblyName name = assembly.GetName();
-            Version assemblyVersion = name.Version;
-
-            bool isSupported = true;
-
-            // Version 8.1 is the version in the shared runtime (.NET 9+) that has the type disabled with no config.
-            // Assembly versions beyond 8.1 are the fully functional version from NuGet.
-            // Assembly versions before 8.1 probably won't be encountered, since that's the past.
-
-            if (assemblyVersion.Major == 8 && assemblyVersion.Minor == 1)
-            {
-                isSupported = false;
-            }
-
-            return isSupported;
         }
     }
 }
