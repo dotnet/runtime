@@ -73,3 +73,23 @@ PALEXPORT int32_t CryptoNative_HkdfDeriveKey(
     int32_t infoLength,
     uint8_t* destination,
     int32_t destinationLength);
+
+PALEXPORT int32_t CryptoNative_HkdfExpand(
+    EVP_KDF* kdf,
+    uint8_t* prk,
+    int32_t prkLength,
+    char* algorithm,
+    uint8_t* info,
+    int32_t infoLength,
+    uint8_t* destination,
+    int32_t destinationLength);
+
+PALEXPORT int32_t CryptoNative_HkdfExtract(
+    EVP_KDF* kdf,
+    uint8_t* ikm,
+    int32_t ikmLength,
+    char* algorithm,
+    uint8_t* salt,
+    int32_t saltLength,
+    uint8_t* destination,
+    int32_t destinationLength);

@@ -26,6 +26,28 @@ internal static partial class Interop
             Span<byte> destination,
             int destinationLength);
 
+        [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_HkdfExpand", StringMarshalling = StringMarshalling.Utf8)]
+        private static partial int CryptoNative_HkdfExpand(
+            SafeEvpKdfHandle kdf,
+            ReadOnlySpan<byte> prk,
+            int prkLength,
+            string algorithm,
+            ReadOnlySpan<byte> info,
+            int infoLength,
+            Span<byte> destination,
+            int destinationLength);
+
+        [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_HkdfExtract", StringMarshalling = StringMarshalling.Utf8)]
+        private static partial int CryptoNative_HkdfExtract(
+            SafeEvpKdfHandle kdf,
+            ReadOnlySpan<byte> ikm,
+            int ikmLength,
+            string algorithm,
+            ReadOnlySpan<byte> salt,
+            int saltLength,
+            Span<byte> destination,
+            int destinationLength);
+
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_KbkdfHmacOneShot", StringMarshalling = StringMarshalling.Utf8)]
         private static unsafe partial int CryptoNative_KbkdfHmacOneShot(
             SafeEvpKdfHandle kdf,
@@ -57,6 +79,56 @@ internal static partial class Interop
                 salt.Length,
                 info,
                 info.Length,
+                destination,
+                destination.Length);
+
+            if (ret != Success)
+            {
+                Debug.Assert(ret == 0);
+                throw CreateOpenSslCryptographicException();
+            }
+        }
+
+        internal static void HkdfExpand(
+            SafeEvpKdfHandle kdf,
+            ReadOnlySpan<byte> prk,
+            string algorithm,
+            ReadOnlySpan<byte> info,
+            Span<byte> destination)
+        {
+            const int Success = 1;
+            int ret = CryptoNative_HkdfExpand(
+                kdf,
+                prk,
+                prk.Length,
+                algorithm,
+                info,
+                info.Length,
+                destination,
+                destination.Length);
+
+            if (ret != Success)
+            {
+                Debug.Assert(ret == 0);
+                throw CreateOpenSslCryptographicException();
+            }
+        }
+
+        internal static void HkdfExtract(
+            SafeEvpKdfHandle kdf,
+            ReadOnlySpan<byte> ikm,
+            string algorithm,
+            ReadOnlySpan<byte> salt,
+            Span<byte> destination)
+        {
+            const int Success = 1;
+            int ret = CryptoNative_HkdfExtract(
+                kdf,
+                ikm,
+                ikm.Length,
+                algorithm,
+                salt,
+                salt.Length,
                 destination,
                 destination.Length);
 

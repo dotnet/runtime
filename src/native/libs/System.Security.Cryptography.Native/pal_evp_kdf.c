@@ -158,10 +158,11 @@ cleanup:
     return 0;
 }
 
-int32_t CryptoNative_HkdfDeriveKey(
+static int32_t HkdfCore(
     EVP_KDF* kdf,
-    uint8_t* ikm,
-    int32_t ikmLength,
+    char* operation,
+    uint8_t* key,
+    int32_t keyLength,
     char* algorithm,
     uint8_t* salt,
     int32_t saltLength,
@@ -171,8 +172,9 @@ int32_t CryptoNative_HkdfDeriveKey(
     int32_t destinationLength)
 {
     assert(kdf);
-    assert(ikm != NULL || ikmLength == 0);
-    assert(ikmLength >= 0);
+    assert(operation);
+    assert(key != NULL || keyLength == 0);
+    assert(keyLength >= 0);
     assert(algorithm);
     assert(destination);
     assert(destinationLength > 0);
@@ -198,18 +200,18 @@ int32_t CryptoNative_HkdfDeriveKey(
             goto cleanup;
         }
 
-        size_t ikmLengthT = Int32ToSizeT(ikmLength);
+        size_t keyLengthT = Int32ToSizeT(keyLength);
         size_t destinationLengthT = Int32ToSizeT(destinationLength);
         size_t saltLengthT = Int32ToSizeT(saltLength);
         size_t infoLengthT = Int32ToSizeT(infoLength);
 
         OSSL_PARAM params[] =
         {
-            OSSL_PARAM_construct_octet_string(OSSL_KDF_PARAM_KEY, (void*)ikm, ikmLengthT),
+            OSSL_PARAM_construct_octet_string(OSSL_KDF_PARAM_KEY, (void*)key, keyLengthT),
             OSSL_PARAM_construct_utf8_string(OSSL_KDF_PARAM_DIGEST, algorithm, 0),
             OSSL_PARAM_construct_octet_string(OSSL_KDF_PARAM_SALT, (void*)salt, saltLengthT),
             OSSL_PARAM_construct_octet_string(OSSL_KDF_PARAM_INFO, (void*)info, infoLengthT),
-            OSSL_PARAM_construct_utf8_string(OSSL_KDF_PARAM_MODE, "EXTRACT_AND_EXPAND", 0),
+            OSSL_PARAM_construct_utf8_string(OSSL_KDF_PARAM_MODE, operation, 0),
             OSSL_PARAM_construct_end(),
         };
 
@@ -242,4 +244,78 @@ cleanup:
     assert(0 && "Inconsistent EVP_KDF API availability.");
 #endif
     return 0;
+}
+
+int32_t CryptoNative_HkdfDeriveKey(
+    EVP_KDF* kdf,
+    uint8_t* ikm,
+    int32_t ikmLength,
+    char* algorithm,
+    uint8_t* salt,
+    int32_t saltLength,
+    uint8_t* info,
+    int32_t infoLength,
+    uint8_t* destination,
+    int32_t destinationLength)
+{
+    return HkdfCore(
+        kdf,
+        "EXTRACT_AND_EXPAND",
+        ikm,
+        ikmLength,
+        algorithm,
+        salt,
+        saltLength,
+        info,
+        infoLength,
+        destination,
+        destinationLength);
+}
+
+int32_t CryptoNative_HkdfExpand(
+    EVP_KDF* kdf,
+    uint8_t* prk,
+    int32_t prkLength,
+    char* algorithm,
+    uint8_t* info,
+    int32_t infoLength,
+    uint8_t* destination,
+    int32_t destinationLength)
+{
+    return HkdfCore(
+        kdf,
+        "EXPAND_ONLY",
+        prk,
+        prkLength,
+        algorithm,
+        NULL /* salt */,
+        0 /* saltLength */,
+        info,
+        infoLength,
+        destination,
+        destinationLength);
+}
+
+int32_t CryptoNative_HkdfExtract(
+    EVP_KDF* kdf,
+    uint8_t* ikm,
+    int32_t ikmLength,
+    char* algorithm,
+    uint8_t* salt,
+    int32_t saltLength,
+    uint8_t* destination,
+    int32_t destinationLength)
+{
+    return HkdfCore(
+        kdf,
+        "EXTRACT_ONLY",
+        ikm,
+        ikmLength,
+        algorithm,
+        salt,
+        saltLength,
+        NULL /* info */,
+        0 /* infoLength */,
+        destination,
+        destinationLength);
 }
