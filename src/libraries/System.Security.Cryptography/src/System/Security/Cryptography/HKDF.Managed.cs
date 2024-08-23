@@ -89,17 +89,13 @@ namespace System.Security.Cryptography
 
             Extract(hashAlgorithmName, hashLength, ikm, salt, prk);
             Expand(hashAlgorithmName, hashLength, prk, output, info);
+            CryptographicOperations.ZeroMemory(prk);
         }
 
         private static void GetHashAndReset(IncrementalHash hmac, Span<byte> output)
         {
-            if (!hmac.TryGetHashAndReset(output, out int bytesWritten))
-            {
-                Debug.Fail("HMAC operation failed unexpectedly");
-                throw new CryptographicException(SR.Arg_CryptographyException);
-            }
-
-            Debug.Assert(bytesWritten == output.Length, $"Bytes written is {bytesWritten} bytes which does not match output length ({output.Length} bytes)");
+            int written = hmac.GetHashAndReset(output);
+            Debug.Assert(written == output.Length, $"Bytes written is {written} bytes which does not match output length ({output.Length} bytes)");
         }
     }
 }
