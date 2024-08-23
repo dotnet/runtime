@@ -136,7 +136,7 @@ def build_and_run(coreclr_args):
     target_os = coreclr_args.host_os
 
     checked_root = path.join(source_directory, "artifacts", "bin", "coreclr", target_os + "." + coreclr_args.arch + ".Checked")
-    release_root = path.join(source_directory, "artifacts", "bin", "coreclr", target_os + "." + coreclr_args.arch + ".Release")
+   # release_root = path.join(source_directory, "artifacts", "bin", "coreclr", target_os + "." + coreclr_args.arch + ".Release")
 
     temp_location = coreclr_args.temp_location
 
@@ -176,27 +176,23 @@ def build_and_run(coreclr_args):
     mcs_path = determine_mcs_tool_path(coreclr_args)
     superpmi_path = determine_superpmi_tool_path(coreclr_args)
 
-    crank_agent_p = None
-    if coreclr_args.local:
-        crank_agent_p = Popen(crank_agent_app, stdout=DEVNULL)
-
     # todo: add grpc/signalr, perhaps
 
     configname_scenario_list = [
                                 ("platform", "plaintext"),
-                                ("json", "json"),
-                                ("plaintext", "mvc"),
-                                ("database", "fortunes_dapper"),
-                                ("database", "fortunes_ef_mvc_https"),
-                                ("database", "updates"),
-                                ("proxy", "proxy-yarp"),
-                                ("staticfiles", "static"),
-                                ("websocket", "websocket"),
-                                ("orchard", "about-sqlite"),
-                                ("signalr", "signalr"),
-                                ("grpc", "grpcaspnetcoreserver-grpcnetclient"),
-                                ("efcore", "NavigationsQuery"),
-                                ("efcore", "Funcletization")
+                                # ("json", "json"),
+                                # ("plaintext", "mvc"),
+                                # ("database", "fortunes_dapper"),
+                                # ("database", "fortunes_ef_mvc_https"),
+                                # ("database", "updates"),
+                                # ("proxy", "proxy-yarp"),
+                                # ("staticfiles", "static"),
+                                # ("websocket", "websocket"),
+                                # ("orchard", "about-sqlite"),
+                                # ("signalr", "signalr"),
+                                # ("grpc", "grpcaspnetcoreserver-grpcnetclient"),
+                                # ("efcore", "NavigationsQuery"),
+                                # ("efcore", "Funcletization")
                                 ]
 
     # configname_scenario_list = [("quic", "read-write")]
@@ -205,11 +201,11 @@ def build_and_run(coreclr_args):
 
     runtime_options_list = [
         ("Dummy=0",),
-        ("TieredCompilation=0", ),
-        ("TieredPGO=0",),
-        ("TieredPGO=1", "ReadyToRun=0"),
-        ("ReadyToRun=0", "OSR_HitLimit=0", "TC_OnStackReplacement_InitialCounter=10"),
-        ("TC_PartialCompilation=1",)
+        # ("TieredCompilation=0", ),
+        # ("TieredPGO=0",),
+        # ("TieredPGO=1", "ReadyToRun=0"),
+        # ("ReadyToRun=0", "OSR_HitLimit=0", "TC_OnStackReplacement_InitialCounter=10"),
+        # ("TC_PartialCompilation=1",)
         ]
 
     # runtime_options_list = [("Dummy=0", )]
@@ -228,52 +224,57 @@ def build_and_run(coreclr_args):
 
     jitpath = path.join(".", jitname)
     jitlib  = path.join(checked_root, jitname)
-    coreclr = path.join(release_root, coreclrname)
-    corelib = path.join(release_root, corelibname)
+    coreclr = path.join(checked_root, coreclrname)
+    corelib = path.join(checked_root, corelibname)
     spmilib = path.join(checked_root, spminame)
 
-    for (configName, scenario) in configname_scenario_list:
-        configYml = configName + ".benchmarks.yml"
-        configFile = path.join(temp_location, "benchmarks", "scenarios", configYml)
+    crank_agent_p = None
+    if coreclr_args.local:
+        crank_agent_p = Popen(crank_agent_app, stdout=DEVNULL)
 
-        crank_arguments = ["--config", configFile,
-                            "--profile", benchmark_machine,
-                            "--scenario", scenario,
-                            "--application.framework", "net9.0",
-                            "--application.channel", "edge",
-                            "--application.sdkVersion", "latest",
-                            "--application.environmentVariables", "DOTNET_JitName=" + spminame,
-                            "--application.environmentVariables", "SuperPMIShimLogPath=.",
-                            "--application.environmentVariables", "SuperPMIShimPath=" + jitpath,
-                            "--application.environmentVariables", "DOTNET_EnableExtraSuperPmiQueries=1",
-                            "--application.options.downloadFiles", "*.mc",
-                            "--application.options.displayOutput", "true",
-#                               "--application.options.dumpType", "full",
-#                               "--application.options.fetch", "true",
-                            "--application.options.outputFiles", spmilib,
-                            "--application.options.outputFiles", jitlib,
-                            "--application.options.outputFiles", coreclr,
-                            "--application.options.outputFiles", corelib]
+    try:
+        for (configName, scenario) in configname_scenario_list:
+            configYml = configName + ".benchmarks.yml"
+            configFile = path.join(temp_location, "benchmarks", "scenarios", configYml)
 
-        for runtime_options in runtime_options_list:
-            runtime_arguments = []
-            for runtime_option in runtime_options:
-                runtime_arguments.append("--application.environmentVariables")
-                runtime_arguments.append("DOTNET_" + runtime_option)
+            crank_arguments = ["--config", configFile,
+                                "--profile", benchmark_machine,
+                                "--scenario", scenario,
+                                "--application.framework", "net9.0",
+                                "--application.channel", "edge",
+                                "--application.sdkVersion", "latest",
+                                "--application.environmentVariables", "DOTNET_JitName=" + spminame,
+                                "--application.environmentVariables", "SuperPMIShimLogPath=.",
+                                "--application.environmentVariables", "SuperPMIShimPath=" + jitpath,
+                                "--application.environmentVariables", "DOTNET_EnableExtraSuperPmiQueries=1",
+                                "--application.options.downloadFiles", "*.mc",
+                                "--application.options.displayOutput", "true",
+    #                               "--application.options.dumpType", "full",
+    #                               "--application.options.fetch", "true",
+                                "--application.options.outputFiles", spmilib,
+                                "--application.options.outputFiles", jitlib,
+                                "--application.options.outputFiles", coreclr,
+                                "--application.options.outputFiles", corelib]
 
-            print("")
-            print("================================")
-            print("Config: " + configName + " scenario: " + scenario + " options: " + " ".join(runtime_options))
-            print("================================")
-            print("")
+            for runtime_options in runtime_options_list:
+                runtime_arguments = []
+                for runtime_option in runtime_options:
+                    runtime_arguments.append("--application.environmentVariables")
+                    runtime_arguments.append("DOTNET_" + runtime_option)
 
-            description = ["--description", configName + "-" + scenario + "-" + "-".join(runtime_options)]
-            crank_app_args = [crank_app] + crank_arguments + description + runtime_arguments
-            print(' '.join(crank_app_args))
-            subprocess.run(crank_app_args, cwd=temp_location)
+                print("")
+                print("================================")
+                print("Config: " + configName + " scenario: " + scenario + " options: " + " ".join(runtime_options))
+                print("================================")
+                print("")
 
-    if crank_agent_p is not None:
-        crank_agent_p.terminate()
+                description = ["--description", configName + "-" + scenario + "-" + "-".join(runtime_options)]
+                crank_app_args = [crank_app] + crank_arguments + description + runtime_arguments
+                print(' '.join(crank_app_args))
+                subprocess.run(crank_app_args, cwd=temp_location)
+    finally:
+        if crank_agent_p is not None:
+            crank_agent_p.terminate()
 
     # merge
     command = [mcs_path, "-merge", "temp.mch", "*.mc", "-dedup", "-thin"]
