@@ -645,7 +645,8 @@
     <MSBuild
       Projects="Common\XUnitLogChecker\XUnitLogChecker.csproj"
       Targets="Publish"
-      Properties="_IsPublishing=true;Configuration=Release;PublishDir=$(XunitTestBinBase)/XUnitLogChecker;RuntimeIdentifier=$(RuntimeIdentifier)" />
+      Properties="_IsPublishing=true;Configuration=Release;PublishDir=$(XunitTestBinBase)/XUnitLogChecker;RuntimeIdentifier=$(RuntimeIdentifier)"
+      Condition="$(IsXUnitLogCheckerSupported)" />
   </Target>
 
   <Target Name="BuildTestWrappers"
