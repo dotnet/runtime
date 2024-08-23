@@ -176,8 +176,7 @@ NESTED_END ThePreStub, _TEXT
 
 LEAF_ENTRY ThePreStubPatch, _TEXT
     nop
-.globl C_FUNC(ThePreStubPatchLabel)
-C_FUNC(ThePreStubPatchLabel):
+PATCH_LABEL ThePreStubPatchLabel
     ret lr
 LEAF_END ThePreStubPatch, _TEXT
 
@@ -607,8 +606,12 @@ NESTED_END ResolveWorkerAsmStub, _TEXT
 #ifdef FEATURE_READYTORUN
 
 NESTED_ENTRY DelayLoad_MethodCall_FakeProlog, _TEXT, NoHandler
-C_FUNC(DelayLoad_MethodCall):
+#if defined(__APPLE__)
+    .alt_entry C_FUNC(DelayLoad_MethodCall)
+#endif
     .global C_FUNC(DelayLoad_MethodCall)
+C_FUNC(DelayLoad_MethodCall):
+
     PROLOG_WITH_TRANSITION_BLOCK
 
     add x0, sp, #__PWTB_TransitionBlock // pTransitionBlock
@@ -627,8 +630,11 @@ NESTED_END DelayLoad_MethodCall_FakeProlog, _TEXT
 
 .macro DynamicHelper frameFlags, suffix
 NESTED_ENTRY DelayLoad_Helper\suffix\()_FakeProlog, _TEXT, NoHandler
-C_FUNC(DelayLoad_Helper\suffix):
+#if defined(__APPLE__)
+    .alt_entry C_FUNC(DelayLoad_Helper\suffix)
+#endif
     .global C_FUNC(DelayLoad_Helper\suffix)
+C_FUNC(DelayLoad_Helper\suffix):
 
     PROLOG_WITH_TRANSITION_BLOCK
 
