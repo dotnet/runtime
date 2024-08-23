@@ -425,7 +425,7 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
             if (temporaryEntryPoint != TargetCodePointer.Null)
             {
                 Contracts.IPrecodeStubs precode = _target.Contracts.PrecodeStubs;
-                TargetPointer methodDesc = precode.MethodDescFromStubAddress(temporaryEntryPoint);
+                TargetPointer methodDesc = precode.GetMethodDescFromStubAddress(temporaryEntryPoint);
                 if (methodDesc != methodDescPointer)
                 {
                     return false;

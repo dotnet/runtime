@@ -19,7 +19,7 @@ internal interface IPrecodeStubs : IContract
         };
     }
 
-    TargetPointer MethodDescFromStubAddress(TargetCodePointer entryPoint) => throw new NotImplementedException();
+    TargetPointer GetMethodDescFromStubAddress(TargetCodePointer entryPoint) => throw new NotImplementedException();
 
 }
 

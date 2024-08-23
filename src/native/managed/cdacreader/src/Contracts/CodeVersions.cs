@@ -17,7 +17,7 @@ internal interface ICodeVersions : IContract
         };
     }
 
-    public virtual NativeCodeVersionHandle GetSpecificNativeCodeVersion(TargetCodePointer ip) => throw new NotImplementedException();
+    public virtual NativeCodeVersionHandle GetNativeCodeVersionForIP(TargetCodePointer ip) => throw new NotImplementedException();
     public virtual NativeCodeVersionHandle GetActiveNativeCodeVersion(TargetPointer methodDesc) => throw new NotImplementedException();
 
     public virtual bool CodeVersionManagerSupportsMethod(TargetPointer methodDesc) => throw new NotImplementedException();

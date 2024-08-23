@@ -27,15 +27,15 @@ internal struct NativeCodeVersionHandle
 
 ```csharp
     // Return a handle to the version of the native code that includes the given instruction pointer
-    public virtual NativeCodeVersionHandle GetSpecificNativeCodeVersion(TargetCodePointer ip) => throw new NotImplementedException();
+    public virtual NativeCodeVersionHandle GetNativeCodeVersionForIP(TargetCodePointer ip);
     // Return a handle to the active version of the native code for a given method descriptor
-    public virtual NativeCodeVersionHandle GetActiveNativeCodeVersion(TargetPointer methodDesc) => throw new NotImplementedException();
+    public virtual NativeCodeVersionHandle GetActiveNativeCodeVersion(TargetPointer methodDesc);
 
     // returns true if the given method descriptor supports multiple code versions
-    public virtual bool CodeVersionManagerSupportsMethod(TargetPointer methodDesc) => throw new NotImplementedException();
+    public virtual bool CodeVersionManagerSupportsMethod(TargetPointer methodDesc);
 
     // Return the instruction pointer corresponding to the start of the given native code version
-    public virtual TargetCodePointer GetNativeCode(NativeCodeVersionHandle codeVersionHandle) => throw new NotImplementedException();
+    public virtual TargetCodePointer GetNativeCode(NativeCodeVersionHandle codeVersionHandle);
 ```
 
 ## Version 1
@@ -62,7 +62,7 @@ Contracts used:
 ### Finding the start of a specific native code version
 
 ```csharp
-    NativeCodeVersionHandle GetSpecificNativeCodeVersion(TargetCodePointer ip)
+    NativeCodeVersionHandle GetNativeCodeVersionForIP(TargetCodePointer ip)
     {
         Contracts.IExecutionManager executionManager = _target.Contracts.ExecutionManager;
         EECodeInfoHandle? info = executionManager.GetEECodeInfoHandle(ip);

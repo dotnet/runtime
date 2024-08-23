@@ -249,15 +249,9 @@ private:
         } m_synthetic;
     };
 
+    // cDAC accesses fields via ILCodeVersioningState.m_activeVersion
     template<typename T> friend struct ::cdac_data;
 };
-
-template<>
-struct cdac_data<ILCodeVersion>
-{
-    // All fields are accessed via ILCodeVersioningState.m_activeVersion
-};
-
 
 class NativeCodeVersionNode
 {

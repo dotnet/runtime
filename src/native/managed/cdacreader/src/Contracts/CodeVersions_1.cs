@@ -15,7 +15,7 @@ internal readonly partial struct CodeVersions_1 : ICodeVersions
         _target = target;
     }
 
-    NativeCodeVersionHandle ICodeVersions.GetSpecificNativeCodeVersion(TargetCodePointer ip)
+    NativeCodeVersionHandle ICodeVersions.GetNativeCodeVersionForIP(TargetCodePointer ip)
     {
         // ExecutionManager::GetNativeCodeVersion(PCODE ip))
         // and EECodeInfo::GetNativeCodeVersion

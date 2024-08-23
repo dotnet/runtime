@@ -163,7 +163,7 @@ internal readonly struct PrecodeStubs_1 : IPrecodeStubs
         MachineDescriptor = precodeMachineDescriptor;
     }
 
-    TargetPointer IPrecodeStubs.MethodDescFromStubAddress(TargetCodePointer entryPoint)
+    TargetPointer IPrecodeStubs.GetMethodDescFromStubAddress(TargetCodePointer entryPoint)
     {
         ValidPrecode precode = GetPrecodeFromEntryPoint(entryPoint);
 

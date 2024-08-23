@@ -124,7 +124,7 @@ internal sealed partial class SOSDacImpl : ISOSDacInterface, ISOSDacInterface2, 
             NativeCodeVersionHandle? activeNativeCodeVersion = null;
             if (ip != 0)
             {
-                requestedNativeCodeVersion = nativeCodeContract.GetSpecificNativeCodeVersion(new TargetCodePointer(ip));
+                requestedNativeCodeVersion = nativeCodeContract.GetNativeCodeVersionForIP(new TargetCodePointer(ip));
             }
             else
             {
