@@ -718,6 +718,7 @@ uint8_t TernaryLogicInfo::GetTernaryControlByte(const TernaryLogicInfo& info, ui
 //
 // Arguments:
 //    intrinsic       -- id of the intrinsic function.
+//    method          -- method handle of the intrinsic function.
 //    sig             -- signature of the intrinsic call.
 //    simdBaseJitType -- Predetermined simdBaseJitType, could be CORINFO_TYPE_UNDEF
 //
@@ -1222,24 +1223,14 @@ unsigned HWIntrinsicInfo::lookupSimdSize(Compiler* comp, NamedIntrinsic id, CORI
 
     CORINFO_CLASS_HANDLE typeHnd = nullptr;
 
-    if (HWIntrinsicInfo::BaseTypeFromFirstArg(id) || HWIntrinsicInfo::BaseTypeFromSecondArg(id))
+    if (HWIntrinsicInfo::BaseTypeFromFirstArg(id))
     {
-        CORINFO_ARG_LIST_HANDLE arg = sig->args;
-
-        if (HWIntrinsicInfo::BaseTypeFromSecondArg(id))
-        {
-            arg = comp->info.compCompHnd->getArgNext(arg);
-        }
-
-        CorInfoType jitType = strip(comp->info.compCompHnd->getArgType(sig, arg, &typeHnd));
-
-        if (jitType == CORINFO_TYPE_PTR)
-        {
-            typeHnd = comp->info.compCompHnd->getArgClass(sig, arg);
-            jitType = comp->info.compCompHnd->getChildType(typeHnd, &typeHnd);
-            assert(jitType != CORINFO_TYPE_UNDEF);
-            return genTypeSize(JitType2PreciseVarType(jitType));
-        }
+        typeHnd = comp->info.compCompHnd->getArgClass(sig, sig->args);
+    }
+    else if (HWIntrinsicInfo::BaseTypeFromSecondArg(id))
+    {
+        CORINFO_ARG_LIST_HANDLE secondArg = comp->info.compCompHnd->getArgNext(sig->args);
+        typeHnd                           = comp->info.compCompHnd->getArgClass(sig, secondArg);
     }
     else
     {
