@@ -1452,15 +1452,14 @@ VOID StubLinkerCPU::EmitShuffleThunk(ShuffleEntry *pShuffleEntryArray)
     const ShuffleEntry* entry = pShuffleEntryArray;
 
     // First, shuffle plain integer registers
-    for (UINT16 dst = 0; entry->srcofs != SE::SENTINEL && InRegister(entry->dstofs) && InRegister(entry->srcofs);
-        ++entry, ++dst)
+    for (; entry->srcofs != SE::SENTINEL && InRegister(entry->dstofs) && InRegister(entry->srcofs); ++entry)
     {
         _ASSERTE(IsRegisterIntegerCallConv(entry->srcofs));
         _ASSERTE(IsRegisterIntegerCallConv(entry->dstofs));
-        UINT16 src = dst + 1; // arguments in plain integer registers are always shuffled by 1 to the left
-        _ASSERTE(src == GetRegisterOffset(entry->srcofs));
-        _ASSERTE(dst == GetRegisterOffset(entry->dstofs));
-        EmitMovReg(IntReg(argRegBase + dst), IntReg(argRegBase + src));
+        IntReg src = argRegBase + GetRegisterOffset(entry->srcofs);
+        IntReg dst = argRegBase + GetRegisterOffset(entry->dstofs);
+        _ASSERTE((src.reg - dst.reg) == 1 || (src.reg - dst.reg) == 2);
+        EmitMovReg(dst, src);
     }
 
     if (entry->srcofs != SE::SENTINEL && InRegister(entry->dstofs))
