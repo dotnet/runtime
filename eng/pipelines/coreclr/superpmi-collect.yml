@@ -244,6 +244,20 @@ extends:
           jobTemplate: /eng/pipelines/coreclr/templates/superpmi-collect-job.yml
           buildConfig: checked
           platforms:
+          - windows_x64
+          helixQueueGroup: ci
+          helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
+          jobParameters:
+            testGroup: outerloop
+            liveLibrariesBuildConfig: Release
+            collectionType: run
+            collectionName: aspnet
+
+      - template: /eng/pipelines/common/platform-matrix.yml
+        parameters:
+          jobTemplate: /eng/pipelines/coreclr/templates/superpmi-collect-job.yml
+          buildConfig: checked
+          platforms:
           - osx_arm64
           - linux_arm
           - linux_arm64
@@ -380,17 +394,3 @@ extends:
             unifiedArtifactsName: BuildArtifacts_$(osGroup)$(osSubgroup)_$(archType)_Checked
             helixArtifactsName: LibrariesTestArtifacts_$(osGroup)$(osSubgroup)_$(archType)_Checked
             unifiedBuildConfigOverride: checked
-
-      - template: /eng/pipelines/common/platform-matrix.yml
-        parameters:
-          jobTemplate: /eng/pipelines/coreclr/templates/superpmi-collect-job.yml
-          buildConfig: checked
-          platforms:
-          - windows_x64
-          helixQueueGroup: ci
-          helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
-          jobParameters:
-            testGroup: outerloop
-            liveLibrariesBuildConfig: Release
-            collectionType: run
-            collectionName: aspnet
