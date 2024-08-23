@@ -2050,6 +2050,13 @@ bool GenTreeCall::NeedsVzeroupper(Compiler* comp)
         }
     }
 
+    // Other special cases
+    //
+    if (!needsVzeroupper && IsHelperCall(comp, CORINFO_HELP_BULK_WRITEBARRIER))
+    {
+        needsVzeroupper = true;
+    }
+
     return needsVzeroupper;
 }
 #endif // TARGET_XARCH
