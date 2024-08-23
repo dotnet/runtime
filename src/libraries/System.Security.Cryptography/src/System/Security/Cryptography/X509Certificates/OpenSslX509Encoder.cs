@@ -280,8 +280,11 @@ namespace System.Security.Cryptography.X509Certificates
             DSAOpenSsl dsa = new DSAOpenSsl();
             try
             {
-                dsa.ImportSubjectPublicKeyInfo(writer.Encode(), out _);
-                return dsa;
+                return writer.Encode(dsa, static (dsa, encoded) =>
+                {
+                    dsa.ImportSubjectPublicKeyInfo(encoded, out _);
+                    return dsa;
+                });
             }
             catch (Exception)
             {

@@ -127,21 +127,6 @@ static BOOL INIT_SharedFilesPath(void);
 extern void PROCDumpThreadList(void);
 #endif
 
-#if defined(__APPLE__)
-static bool RunningNatively()
-{
-    int ret = 0;
-    size_t sz = sizeof(ret);
-    if (sysctlbyname("sysctl.proc_native", &ret, &sz, nullptr, 0) != 0)
-    {
-        // if the sysctl failed, we'll assume this OS does not support
-        // binary translation - so we must be running natively.
-        return true;
-    }
-    return ret != 0;
-}
-#endif // __APPLE__
-
 /*++
 Function:
   PAL_Initialize
@@ -328,14 +313,6 @@ Initialize(
     /*Firstly initiate a lastError */
     SetLastError(ERROR_GEN_FAILURE);
 
-#ifdef __APPLE__
-    if (!RunningNatively())
-    {
-        SetLastError(ERROR_BAD_FORMAT);
-        goto exit;
-    }
-#endif // __APPLE__
-
     CriticalSectionSubSysInitialize();
 
     if(nullptr == init_critsec)
@@ -380,6 +357,16 @@ Initialize(
         {
             palError = ERROR_PALINIT_DBG_CHANNELS;
             goto CLEANUP0a;
+        }
+
+        if (flags & PAL_INITIALIZE_FLUSH_PROCESS_WRITE_BUFFERS)
+        {
+            // Initialize before first thread is created for faster load on Linux
+            if (!InitializeFlushProcessWriteBuffers())
+            {
+                palError = ERROR_PALINIT_INITIALIZE_FLUSH_PROCESS_WRITE_BUFFERS;
+                goto CLEANUP0a;
+            }
         }
 
         // The gSharedFilesPath is allocated dynamically so its destructor does not get
@@ -730,9 +717,6 @@ done:
         ASSERT("returning failure, but last error not set\n");
     }
 
-#ifdef __APPLE__
-exit :
-#endif // __APPLE__
     LOGEXIT("PAL_Initialize returns int %d\n", retval);
     return retval;
 }
@@ -785,11 +769,6 @@ PAL_InitializeCoreCLR(const char *szExePath, BOOL runningInExe)
     {
         printf("PROCAbortInitialize FAILED %d (%s)\n", errno, strerror(errno));
         return ERROR_PALINIT_PROCABORT_INITIALIZE;
-    }
-
-    if (!InitializeFlushProcessWriteBuffers())
-    {
-        return ERROR_PALINIT_INITIALIZE_FLUSH_PROCESS_WRITE_BUFFERS;
     }
 
     return ERROR_SUCCESS;

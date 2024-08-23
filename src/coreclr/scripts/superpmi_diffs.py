@@ -13,6 +13,8 @@
 ################################################################################
 
 import argparse
+import json
+from pathlib import Path
 from os import walk, path
 import shutil
 from coreclr_arguments import *
@@ -20,14 +22,8 @@ from jitutil import run_command, TempDir, determine_jit_name
 
 parser = argparse.ArgumentParser(description="description")
 
-host_os_help = "OS (windows, osx, linux). Default: current OS."
-
-target_os_help = "Target OS, for use with cross-compilation JIT (windows, osx, linux). Default: current OS."
-
-parser.add_argument("-arch", help="Architecture")
 parser.add_argument("-type", help="Type of diff (asmdiffs, tpdiff, all)")
-parser.add_argument("-host_os", help=host_os_help)
-parser.add_argument("-target_os", help=target_os_help)
+parser.add_argument("-partition_info", help="Path to partition info file")
 parser.add_argument("-base_jit_directory", help="path to the directory containing base clrjit binaries")
 parser.add_argument("-diff_jit_directory", help="path to the directory containing diff clrjit binaries")
 parser.add_argument("-base_jit_options", help="Semicolon separated list of base jit options (in format A=B without DOTNET_ prefix)")
@@ -53,20 +49,14 @@ def setup_args(args):
                                     require_built_test_dir=False, default_build_type="Checked")
 
     coreclr_args.verify(args,
-                        "arch",
-                        lambda unused: True,
-                        "Unable to set arch")
-
-    coreclr_args.verify(args,
                         "type",
                         lambda type: type in ["asmdiffs", "tpdiff", "all"],
                         "Invalid type \"{}\"".format)
 
     coreclr_args.verify(args,
-                        "target_os",
-                        lambda target_os: check_target_os(coreclr_args, target_os),
-                        lambda target_os: "Unknown target_os {}\nSupported OS: {}".format(target_os, (", ".join(coreclr_args.valid_host_os))),
-                        modify_arg=lambda target_os: target_os if target_os is not None else coreclr_args.host_os)  # Default to `host_os`
+                        "partition_info",
+                        lambda unused: True,
+                        "Unable to set partition_info")
 
     coreclr_args.verify(args,
                         "base_jit_directory",
@@ -117,9 +107,15 @@ class Diff:
         self.spmi_location = os.path.join(self.script_dir, "artifacts", "spmi")
 
         self.log_directory = coreclr_args.log_directory
-        self.host_os = coreclr_args.host_os
-        self.target_os = coreclr_args.target_os
-        self.arch_name = coreclr_args.arch
+        self.host_os = "windows" if platform.system() == "Windows" else "linux"
+
+        with open(coreclr_args.partition_info, "r") as file:
+            partition_info = json.load(file)
+
+        self.target = Path(coreclr_args.partition_info).stem
+        self.target_os = partition_info["target_os"]
+        self.arch_name = partition_info["target_arch"]
+        self.col_name = partition_info["col_name"]
         self.host_arch_name = "x64" if self.arch_name.endswith("64") else "x86"
 
         # Core_Root is where the superpmi tools (superpmi.exe, mcs.exe) are expected to be found.
@@ -129,15 +125,15 @@ class Diff:
         # Assume everything succeeded. If any step fails, it will change this to True.
         self.failed = False
 
-        # List of summary MarkDown files
-        self.summary_md_files = []
+        # List of summary json files
+        self.summary_json_files = []
 
     def download_mch(self):
         """ Download MCH files for the diff
         """
         print("Running superpmi.py download to get MCH files")
 
-        log_file = os.path.join(self.log_directory, "superpmi_download_{}_{}.log".format(self.target_os, self.arch_name))
+        log_file = os.path.join(self.log_directory, "superpmi_download_{}.log".format(self.target))
         run_command([
             self.python_path,
             os.path.join(self.script_dir, "superpmi.py"),
@@ -148,7 +144,8 @@ class Diff:
             "-target_arch", self.arch_name,
             "-spmi_location", self.spmi_location,
             "-log_level", "debug",
-            "-log_file", log_file], _exit_on_fail=True)
+            "-log_file", log_file,
+            "-f", self.col_name], _exit_on_fail=True)
 
     def copy_dasm_files(self, upload_directory, tag_name):
         """ Copies .dasm files to a tempDirectory, zip it, and copy the compressed file to the upload directory.
@@ -237,22 +234,15 @@ class Diff:
         base_checked_jit_path = os.path.join(self.coreclr_args.base_jit_directory, "checked", jit_name)
         diff_checked_jit_path = os.path.join(self.coreclr_args.diff_jit_directory, "checked", jit_name)
 
-        log_file = os.path.join(self.log_directory, "superpmi_asmdiffs_{}_{}.log".format(self.target_os, self.arch_name))
+        log_file = os.path.join(self.log_directory, "superpmi_asmdiffs_{}.log".format(self.target))
 
         # This is the summary file name and location written by superpmi.py. If the file exists, remove it to ensure superpmi.py doesn't created a numbered version.
-        overall_md_asmdiffs_summary_file = os.path.join(self.spmi_location, "diff_summary.md")
-        if os.path.isfile(overall_md_asmdiffs_summary_file):
-            os.remove(overall_md_asmdiffs_summary_file)
+        overall_json_asmdiffs_summary_file = os.path.join(self.spmi_location, "diff_summary.json")
+        if os.path.isfile(overall_json_asmdiffs_summary_file):
+            os.remove(overall_json_asmdiffs_summary_file)
 
-        overall_md_asmdiffs_summary_file_target = os.path.join(self.log_directory, "superpmi_asmdiffs_summary_{}_{}.md".format(self.target_os, self.arch_name))
-        self.summary_md_files.append((overall_md_asmdiffs_summary_file, overall_md_asmdiffs_summary_file_target))
-
-        short_md_asmdiffs_summary_file = os.path.join(self.spmi_location, "diff_short_summary.md")
-        if os.path.isfile(short_md_asmdiffs_summary_file):
-            os.remove(short_md_asmdiffs_summary_file)
-
-        short_md_asmdiffs_summary_file_target = os.path.join(self.log_directory, "superpmi_asmdiffs_short_summary_{}_{}.md".format(self.target_os, self.arch_name))
-        self.summary_md_files.append((short_md_asmdiffs_summary_file, short_md_asmdiffs_summary_file_target))
+        overall_json_asmdiffs_summary_file_target = os.path.join(self.log_directory, "superpmi_asmdiffs_summary_{}.json".format(self.target))
+        self.summary_json_files.append((overall_json_asmdiffs_summary_file, overall_json_asmdiffs_summary_file_target))
 
         _, _, return_code = run_command([
             self.python_path,
@@ -267,6 +257,7 @@ class Diff:
             "-diff_jit_path", diff_checked_jit_path,
             "-spmi_location", self.spmi_location,
             "-error_limit", "100",
+            "--summary_as_json",
             "-log_level", "debug",
             "-log_file", log_file] + self.create_jit_options_args())
 
@@ -275,7 +266,7 @@ class Diff:
             self.failed = True
 
         # Prepare .dasm files to upload to AzDO
-        self.copy_dasm_files(self.log_directory, "{}_{}".format(self.target_os, self.arch_name))
+        self.copy_dasm_files(self.log_directory, self.target)
 
     def do_tpdiff(self):
         """ Run tpdiff
@@ -288,22 +279,15 @@ class Diff:
         base_release_jit_path = os.path.join(self.coreclr_args.base_jit_directory, "release", jit_name)
         diff_release_jit_path = os.path.join(self.coreclr_args.diff_jit_directory, "release", jit_name)
 
-        log_file = os.path.join(self.log_directory, "superpmi_tpdiff_{}_{}.log".format(self.target_os, self.arch_name))
+        log_file = os.path.join(self.log_directory, "superpmi_tpdiff_{}.log".format(self.target))
 
         # This is the summary file name and location written by superpmi.py. If the file exists, remove it to ensure superpmi.py doesn't created a numbered version.
-        overall_md_tpdiff_summary_file = os.path.join(self.spmi_location, "tpdiff_summary.md")
-        if os.path.isfile(overall_md_tpdiff_summary_file):
-            os.remove(overall_md_tpdiff_summary_file)
+        overall_json_tpdiff_summary_file = os.path.join(self.spmi_location, "tpdiff_summary.json")
+        if os.path.isfile(overall_json_tpdiff_summary_file):
+            os.remove(overall_json_tpdiff_summary_file)
 
-        overall_md_tpdiff_summary_file_target = os.path.join(self.log_directory, "superpmi_tpdiff_summary_{}_{}.md".format(self.target_os, self.arch_name))
-        self.summary_md_files.append((overall_md_tpdiff_summary_file, overall_md_tpdiff_summary_file_target))
-
-        short_md_tpdiff_summary_file = os.path.join(self.spmi_location, "tpdiff_short_summary.md")
-        if os.path.isfile(short_md_tpdiff_summary_file):
-            os.remove(short_md_tpdiff_summary_file)
-
-        short_md_tpdiff_summary_file_target = os.path.join(self.log_directory, "superpmi_tpdiff_short_summary_{}_{}.md".format(self.target_os, self.arch_name))
-        self.summary_md_files.append((short_md_tpdiff_summary_file, short_md_tpdiff_summary_file_target))
+        overall_json_tpdiff_summary_file_target = os.path.join(self.log_directory, "superpmi_tpdiff_summary_{}.json".format(self.target))
+        self.summary_json_files.append((overall_json_tpdiff_summary_file, overall_json_tpdiff_summary_file_target))
 
         _, _, return_code = run_command([
             self.python_path,
@@ -318,6 +302,7 @@ class Diff:
             "-diff_jit_path", diff_release_jit_path,
             "-spmi_location", self.spmi_location,
             "-error_limit", "100",
+            "--summary_as_json",
             "-log_level", "debug",
             "-log_file", log_file] + self.create_jit_options_args())
 
@@ -340,10 +325,10 @@ class Diff:
     def summarize(self):
         """ Summarize the diffs
         """
-        # If there are diffs, we'll get summary md files in the spmi_location directory.
+        # If there are diffs, we'll get summary JSON files in the spmi_location directory.
         # If there are no diffs, we still want to create this file and indicate there were no diffs.
 
-        for source, target in self.summary_md_files:
+        for source, target in self.summary_json_files:
             if os.path.isfile(source):
                 try:
                     print("Copying summary file {} -> {}".format(source, target))
@@ -355,7 +340,7 @@ class Diff:
                 # errors when the Helix work item fails to upload this specified file if it doesn't exist. We should change the
                 # upload to be conditional, or otherwise not error.
                 with open(target, "a") as f:
-                    f.write("<empty>")
+                    f.write("\"<empty>\"")
 
 
 def main(main_args):

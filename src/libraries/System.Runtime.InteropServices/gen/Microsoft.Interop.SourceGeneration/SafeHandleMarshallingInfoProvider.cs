@@ -59,11 +59,11 @@ namespace Microsoft.Interop
                 }
             }
 
-            // If we don't have the SafeHandleMarshaller<T> type, then we'll return a MissingSupportMarshallingInfo
+            // If we don't have the SafeHandleMarshaller<T> type, then we'll return NoMarshallingInfo,
             // indicating that we don't support marshalling SafeHandles with source-generated marshalling.
             if (_safeHandleMarshallerType is null)
             {
-                return new MissingSupportMarshallingInfo();
+                return NoMarshallingInfo.Instance;
             }
 
             INamedTypeSymbol entryPointType = _safeHandleMarshallerType.Construct(type);
