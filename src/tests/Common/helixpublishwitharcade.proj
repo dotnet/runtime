@@ -760,7 +760,7 @@
     <HelixCorrelationPayload Include="$(CoreRootDirectory)" />
 
     <!-- Browser-Wasm and iOS platforms follow a very different workflow, which is currently out of scope of the Log Checker. It's not useful on any platform that uses xharness. -->
-    <HelixCorrelationPayload Include="$(XUnitLogCheckerDirectory)" Condition="'$(TargetsBrowser)' != 'true' and '$(TargetsAppleMobile)' != 'true'" />
+    <HelixCorrelationPayload Include="$(XUnitLogCheckerDirectory)" Condition="'$(IsXunitLogCheckerSupported)' == 'true' and '$(TargetsBrowser)' != 'true' and '$(TargetsAppleMobile)' != 'true'" />
     <HelixCorrelationPayload Condition="'$(TestWrapperTargetsWindows)' == 'true'" Include="dotnet-sos">
       <Destination>sos</Destination>
       <Uri>https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-tools/nuget/v3/flat2/dotnet-sos/$(DotnetSosVersion)/dotnet-sos.$(DotnetSosVersion).nupkg</Uri>
