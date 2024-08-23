@@ -53,10 +53,6 @@ namespace Mono.Linker.Tests.Cases.Reflection
 
 			DataFlowUnusedGetType.Test ();
 
-			NullValue.Test ();
-			NoValue.Test ();
-			UnknownValue.Test ();
-
 			PrivateMembersOnBaseTypesAppliedToDerived.Test ();
 
 			IsInstOf.Test ();
@@ -1464,60 +1460,6 @@ namespace Mono.Linker.Tests.Cases.Reflection
 				if (GetBaseInstance ().GetType () is DerivedFromAnnotatedBase) {
 					Console.WriteLine ("Never get here");
 				}
-			}
-		}
-
-		[Kept]
-		class NullValue
-		{
-			[Kept]
-			class TestType
-			{
-			}
-
-			[Kept]
-			[ExpectedWarning ("IL2072", nameof (DataFlowTypeExtensions.RequiresAll) + "(Type)", nameof (Object.GetType) + "()")]
-			public static void Test ()
-			{
-				TestType nullInstance = null;
-				// Even though this throws at runtime, we warn about the return value of GetType
-				nullInstance.GetType ().RequiresAll ();
-			}
-		}
-
-		[Kept]
-		class NoValue
-		{
-			[Kept]
-			[ExpectedWarning ("IL2072", nameof (DataFlowTypeExtensions.RequiresAll) + "(Type)", nameof (Object.GetType) + "()")]
-			public static void Test ()
-			{
-				Type t = null;
-				Type noValue = Type.GetTypeFromHandle (t.TypeHandle);
-				// Even though the above throws at runtime, we warn about the return value of GetType
-				noValue.GetType ().RequiresAll ();
-			}
-		}
-
-		[Kept]
-		class UnknownValue
-		{
-			[Kept]
-			[KeptMember (".ctor()")]
-			class TestType
-			{
-			}
-
-			[Kept]
-			static TestType GetInstance () => new TestType ();
-
-			[Kept]
-			[ExpectedWarning ("IL2072", nameof (DataFlowTypeExtensions.RequiresAll) + "(Type)", nameof (Object.GetType) + "()")]
-			public static void Test ()
-			{
-				TestType unknownValue = GetInstance ();
-				// Should warn about the return value of GetType
-				unknownValue.GetType ().RequiresAll ();
 			}
 		}
 

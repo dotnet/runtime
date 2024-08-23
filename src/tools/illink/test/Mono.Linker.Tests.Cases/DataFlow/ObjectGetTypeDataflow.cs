@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
+using System.Reflection;
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
 using Mono.Linker.Tests.Cases.Expectations.Helpers;
 
@@ -21,6 +22,9 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			EnumConstraintSatisfiesPublicFields.Test ();
 			InstantiatedTypeParameterAsSource.Test ();
 			EnumerationOverInstances.Test ();
+			NullValue.Test ();
+			NoValue.Test ();
+			UnknownValue.Test ();
 		}
 
 		class SealedConstructorAsSource
@@ -410,6 +414,66 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 				foreach (var instance in GetInstances ()) {
 					instance.GetType ().GetMethod ("Method");
 				}
+			}
+		}
+
+		class NullValue
+		{
+			class TestType
+			{
+			}
+
+			[ExpectedWarning ("IL2072", nameof (DataFlowTypeExtensions.RequiresAll) + "(Type)", nameof (Object.GetType) + "()")]
+			public static void Test ()
+			{
+				TestType nullInstance = null;
+				// Even though this throws at runtime, we warn about the return value of GetType
+				nullInstance.GetType ().RequiresAll ();
+			}
+		}
+
+		class NoValue
+		{
+			[ExpectedWarning ("IL2072", nameof (DataFlowTypeExtensions.RequiresAll) + "(Type)", nameof (Object.GetType) + "()")]
+			static void TestGetTypeOfType ()
+			{
+				Type t = null;
+				Type noValue = Type.GetTypeFromHandle (t.TypeHandle);
+				// Even though the above throws at runtime, we warn about the return value of GetType.
+				// This doesn't go through the intrinsic handling because this goes to the newslot method Type.GetType,
+				// instead of the intrinsically handled object.GetType.
+				noValue.GetType ().RequiresAll ();
+			}
+
+			static void TestGetTypeOfMethod ()
+			{
+				Type t = null;
+				MethodInfo noValue = t.GetMethod ("Method");
+				noValue.GetType ().RequiresAll ();
+			}
+
+			public static void Test ()
+			{
+				TestGetTypeOfType ();
+				TestGetTypeOfMethod ();
+			}
+		}
+
+		class UnknownValue
+		{
+			[KeptMember (".ctor()")]
+			class TestType
+			{
+			}
+
+			static TestType GetInstance () => new TestType ();
+
+			[ExpectedWarning ("IL2072", nameof (DataFlowTypeExtensions.RequiresAll) + "(Type)", nameof (Object.GetType) + "()")]
+			public static void Test ()
+			{
+				TestType unknownValue = GetInstance ();
+				// Should warn about the return value of GetType
+				unknownValue.GetType ().RequiresAll ();
 			}
 		}
 	}
