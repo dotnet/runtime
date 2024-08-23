@@ -6,8 +6,10 @@ using System.Text;
 
 namespace Microsoft.Interop
 {
-    internal sealed record LinearCollectionElementMarshallingCodeContext : StubIdentifierContext
+    internal sealed record LinearCollectionElementIdentifierContext : StubIdentifierContext
     {
+        private readonly StubIdentifierContext _globalContext;
+        private readonly TypePositionInfo _elementInfo;
         private readonly string _managedSpanIdentifier;
         private readonly string _nativeSpanIdentifier;
         private readonly int _elementIndirectionLevel;
@@ -17,17 +19,20 @@ namespace Microsoft.Interop
         /// <summary>
         /// Create a <see cref="StubIdentifierContext"/> for marshalling elements of an collection.
         /// </summary>
-        /// <param name="currentStage">The current marshalling stage.</param>
-        /// <param name="indexerIdentifier">The indexer in the loop to get the element to marshal from the collection.</param>
+        /// <param name="elementInfo">The type information for elements in the collection. Used to determine which identifiers to provide.</param>
+        /// <param name="elementIndirectionLevel">The indirection level of the elements in the collection.</param>
+        /// <param name="managedSpanIdentifier">The identifier of the managed value storage cast to the target element type.</param>
         /// <param name="nativeSpanIdentifier">The identifier of the native value storage cast to the target element type.</param>
-        /// <param name="parentContext">The parent context.</param>
-        public LinearCollectionElementMarshallingCodeContext(
-            Stage currentStage,
+        /// <param name="globalContext">The context in which we are marshalling the collection that owns these elements.</param>
+        public LinearCollectionElementIdentifierContext(
+            StubIdentifierContext globalContext,
+            TypePositionInfo elementInfo,
             string managedSpanIdentifier,
             string nativeSpanIdentifier,
             int elementIndirectionLevel)
         {
-            CurrentStage = currentStage;
+            _globalContext = globalContext;
+            _elementInfo = elementInfo;
             _managedSpanIdentifier = managedSpanIdentifier;
             _nativeSpanIdentifier = nativeSpanIdentifier;
             _elementIndirectionLevel = elementIndirectionLevel;
@@ -40,10 +45,19 @@ namespace Microsoft.Interop
         /// <returns>Managed and native identifiers</returns>
         public override (string managed, string native) GetIdentifiers(TypePositionInfo info)
         {
-            return (
-                $"{_managedSpanIdentifier}[{IndexerIdentifier}]",
-                $"{_nativeSpanIdentifier}[{IndexerIdentifier}]"
-            );
+            // For this element info, index into the marshaller spans.
+            if (info == _elementInfo)
+            {
+                return (
+                    $"{_managedSpanIdentifier}[{IndexerIdentifier}]",
+                    $"{_nativeSpanIdentifier}[{IndexerIdentifier}]"
+                );
+            }
+            // For other element infos, return the names from the global context.
+            else
+            {
+                return _globalContext.GetIdentifiers(info);
+            }
         }
 
         public override string GetAdditionalIdentifier(TypePositionInfo info, string name)

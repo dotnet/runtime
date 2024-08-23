@@ -63,14 +63,14 @@ namespace Microsoft.Interop
             if (_marshallers.ManagedReturnMarshaller.UsesNativeIdentifier)
             {
                 // If we need a different native return identifier, then recreate the context with the correct identifier before we generate any code.
-                _context = new DefaultIdentifierContext(ReturnIdentifier, $"{ReturnIdentifier}{StubIdentifierContext.GeneratedNativeIdentifierSuffix}")
+                _context = new DefaultIdentifierContext(ReturnIdentifier, $"{ReturnIdentifier}{StubIdentifierContext.GeneratedNativeIdentifierSuffix}", MarshalDirection.ManagedToUnmanaged)
                 {
                     CodeEmitOptions = codeEmitOptions
                 };
             }
             else
             {
-                _context = new DefaultIdentifierContext(ReturnIdentifier, ReturnIdentifier)
+                _context = new DefaultIdentifierContext(ReturnIdentifier, ReturnIdentifier, MarshalDirection.ManagedToUnmanaged)
                 {
                     CodeEmitOptions = codeEmitOptions
                 };

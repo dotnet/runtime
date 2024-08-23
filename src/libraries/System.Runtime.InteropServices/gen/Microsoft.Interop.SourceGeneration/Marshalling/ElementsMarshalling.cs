@@ -287,7 +287,7 @@ namespace Microsoft.Interop
                         IdentifierName(MarshallerHelpers.GetManagedSpanIdentifier(CollectionSource.TypeInfo, context)),
                         IdentifierName("Length")),
                     elementMarshaller,
-                     StubIdentifierContext.Stage.Marshal));
+                    StubIdentifierContext.Stage.Marshal));
             return Block(statements);
         }
 
@@ -468,18 +468,20 @@ namespace Microsoft.Interop
         private List<StatementSyntax> GenerateElementStages(
             StubIdentifierContext context,
             IBoundMarshallingGenerator elementMarshaller,
-            out LinearCollectionElementMarshallingCodeContext elementSetupSubContext,
+            out LinearCollectionElementIdentifierContext elementSetupSubContext,
             params StubIdentifierContext.Stage[] stagesToGeneratePerElement)
         {
             string managedSpanIdentifier = MarshallerHelpers.GetManagedSpanIdentifier(CollectionSource.TypeInfo, context);
             string nativeSpanIdentifier = MarshallerHelpers.GetNativeSpanIdentifier(CollectionSource.TypeInfo, context);
             StubCodeContext elementCodeContext = StubCodeContext.CreateElementMarshallingContext(CollectionSource.CodeContext);
-            elementSetupSubContext = new LinearCollectionElementMarshallingCodeContext(
-                StubIdentifierContext.Stage.Setup,
+            elementSetupSubContext = new LinearCollectionElementIdentifierContext(
+                context,
+                elementMarshaller.TypeInfo,
                 managedSpanIdentifier,
                 nativeSpanIdentifier,
                 elementCodeContext.ElementIndirectionLevel)
             {
+                CurrentStage = StubIdentifierContext.Stage.Setup,
                 CodeEmitOptions = context.CodeEmitOptions
             };
 

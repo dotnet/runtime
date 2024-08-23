@@ -58,27 +58,7 @@ namespace Microsoft.Interop
         /// <returns><c>true</c> if the element is in the return position for this stub; otherwise, false.</returns>
         public bool IsInStubReturnPosition(TypePositionInfo info)
         {
-            return Direction switch
-            {
-                MarshalDirection.ManagedToUnmanaged => info.IsManagedReturnPosition,
-                MarshalDirection.UnmanagedToManaged => info.IsNativeReturnPosition,
-                _ => throw new InvalidOperationException("Stub contexts should not be bidirectional"),
-            };
-        }
-
-        /// <summary>
-        /// Compute if the provided element is the return element for the invocation in the stub.
-        /// </summary>
-        /// <param name="info">The element information</param>
-        /// <returns><c>true</c> if the element is in the return position for the invocation; otherwise, false.</returns>
-        public bool IsInInvocationReturnPosition(TypePositionInfo info)
-        {
-            return Direction switch
-            {
-                MarshalDirection.ManagedToUnmanaged => info.IsNativeReturnPosition,
-                MarshalDirection.UnmanagedToManaged => info.IsManagedReturnPosition,
-                _ => throw new InvalidOperationException("Stub contexts should not be bidirectional"),
-            };
+            return MarshallerHelpers.IsInStubReturnPosition(info, Direction);
         }
     };
 }

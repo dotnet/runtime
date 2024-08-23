@@ -37,14 +37,14 @@ namespace Microsoft.Interop.JavaScript
             if (_marshallers.ManagedReturnMarshaller.UsesNativeIdentifier)
             {
                 // If we need a different native return identifier, then recreate the context with the correct identifier before we generate any code.
-                _context = new DefaultIdentifierContext(ReturnIdentifier, ReturnNativeIdentifier)
+                _context = new DefaultIdentifierContext(ReturnIdentifier, ReturnNativeIdentifier, MarshalDirection.UnmanagedToManaged)
                 {
                     CodeEmitOptions = new(SkipInit: true),
                 };
             }
             else
             {
-                _context = new DefaultIdentifierContext(ReturnIdentifier, ReturnIdentifier)
+                _context = new DefaultIdentifierContext(ReturnIdentifier, ReturnIdentifier, MarshalDirection.UnmanagedToManaged)
                 {
                     CodeEmitOptions = new(SkipInit: true),
                 };

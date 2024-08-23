@@ -306,16 +306,21 @@ namespace Microsoft.Interop
 
         public IEnumerable<StatementSyntax> GenerateCleanupCallerAllocatedResourcesStatements(StubIdentifierContext context)
         {
+            // If we clean up in a different stage, we don't need to do anything here
             if (MarshallerHelpers.GetCleanupStage(TypeInfo, CodeContext) is not StubIdentifierContext.Stage.CleanupCallerAllocated)
                 yield break;
 
-            string numElementsIdentifier = MarshallerHelpers.GetNumElementsIdentifier(TypeInfo, context);
-            // <numElements> = <numElementsExpression>;
-            yield return ExpressionStatement(
-                AssignmentExpression(
-                    SyntaxKind.SimpleAssignmentExpression,
-                    IdentifierName(numElementsIdentifier),
-                    ElementsMarshalling.GenerateNumElementsExpression(countInfo, countInfoRequiresCast, CodeContext, context)));
+            if (MarshallerHelpers.GetMarshalDirection(TypeInfo, CodeContext) != MarshalDirection.ManagedToUnmanaged)
+            {
+                // If we are marshalling from unmanaged to managed, we need to get the number of elements again.
+                string numElementsIdentifier = MarshallerHelpers.GetNumElementsIdentifier(TypeInfo, context);
+                // <numElements> = <numElementsExpression>;
+                yield return ExpressionStatement(
+                    AssignmentExpression(
+                        SyntaxKind.SimpleAssignmentExpression,
+                        IdentifierName(numElementsIdentifier),
+                        ElementsMarshalling.GenerateNumElementsExpression(countInfo, countInfoRequiresCast, CodeContext, context)));
+            }
         }
 
         public IEnumerable<StatementSyntax> GenerateCleanupCalleeAllocatedResourcesStatements(StubIdentifierContext context)

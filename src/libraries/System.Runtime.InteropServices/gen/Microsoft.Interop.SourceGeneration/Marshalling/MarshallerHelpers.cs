@@ -462,5 +462,35 @@ namespace Microsoft.Interop
                 _ => throw new NotImplementedException($"Support for some RefKind: {typeInfo.RefKind}")
             };
         }
+
+        /// <summary>
+        /// Compute if the provided element is the return element for the stub that is being generated (not any inner call).
+        /// </summary>
+        /// <param name="info">The element information</param>
+        /// <returns><c>true</c> if the element is in the return position for this stub; otherwise, false.</returns>
+        public static bool IsInStubReturnPosition(TypePositionInfo info, MarshalDirection direction)
+        {
+            return direction switch
+            {
+                MarshalDirection.ManagedToUnmanaged => info.IsManagedReturnPosition,
+                MarshalDirection.UnmanagedToManaged => info.IsNativeReturnPosition,
+                _ => throw new ArgumentException("Cannot determine the return position of a bidirectional stub", nameof(direction)),
+            };
+        }
+
+        /// <summary>
+        /// Compute if the provided element is the return element for the invocation in the stub.
+        /// </summary>
+        /// <param name="info">The element information</param>
+        /// <returns><c>true</c> if the element is in the return position for the invocation; otherwise, false.</returns>
+        public static bool IsInInvocationReturnPosition(TypePositionInfo info, MarshalDirection direction)
+        {
+            return direction switch
+            {
+                MarshalDirection.ManagedToUnmanaged => info.IsNativeReturnPosition,
+                MarshalDirection.UnmanagedToManaged => info.IsManagedReturnPosition,
+                _ => throw new ArgumentException("Cannot determine the return position of a bidirectional stub", nameof(direction)),
+            };
+        }
     }
 }
