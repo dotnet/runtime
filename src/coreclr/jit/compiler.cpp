@@ -5057,10 +5057,10 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
         doBranchOpt               = doValueNum && (JitConfig.JitDoRedundantBranchOpts() != 0);
         doCse                     = doValueNum;
         doAssertionProp           = doValueNum && (JitConfig.JitDoAssertionProp() != 0);
-        doVNBasedIntrinExpansion  = doValueNum;
         doRangeAnalysis           = doAssertionProp && (JitConfig.JitDoRangeAnalysis() != 0);
         doOptimizeIVs             = doAssertionProp && (JitConfig.JitDoOptimizeIVs() != 0);
         doVNBasedDeadStoreRemoval = doValueNum && (JitConfig.JitDoVNBasedDeadStoreRemoval() != 0);
+        doVNBasedIntrinExpansion  = doValueNum;
 #endif // defined(OPT_CONFIG)
 
         if (opts.optRepeat)
@@ -5147,13 +5147,6 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
                 DoPhase(this, PHASE_ASSERTION_PROP_MAIN, &Compiler::optAssertionPropMain);
             }
 
-            if (doVNBasedIntrinExpansion)
-            {
-                // Expand some intrinsics based on VN data
-                //
-                DoPhase(this, PHASE_VN_BASED_INTRINSIC_EXPAND, &Compiler::fgVNBasedIntrinsicExpansion);
-            }
-
             if (doRangeAnalysis)
             {
                 // Bounds check elimination via range analysis
@@ -5173,6 +5166,13 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
                 // Note: this invalidates SSA and value numbers on tree nodes.
                 //
                 DoPhase(this, PHASE_VN_BASED_DEAD_STORE_REMOVAL, &Compiler::optVNBasedDeadStoreRemoval);
+            }
+
+            if (doVNBasedIntrinExpansion)
+            {
+                // Expand some intrinsics based on VN data
+                //
+                DoPhase(this, PHASE_VN_BASED_INTRINSIC_EXPAND, &Compiler::fgVNBasedIntrinsicExpansion);
             }
 
             // Conservatively mark all VNs as stale
