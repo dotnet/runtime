@@ -874,13 +874,23 @@ inflate_generic_type (MonoImage *image, MonoType *type, MonoGenericContext *cont
 		MonoMethodSignature *in_sig = type->data.method;
 		// quick bail out - if there are no type variables anywhere in the signature,
 		// there's nothing that could get inflated.
-		if (!in_sig->has_type_parameters)
-			return NULL;
+		if (!in_sig->has_type_parameters) {
+			if (!changed)
+				return NULL;
+			else
+				return type;
+		}
 		MonoMethodSignature *new_sig = mono_inflate_generic_signature (in_sig, context, error);
-		if (!new_sig || !is_ok (error))
+		if ((!new_sig && !changed) || !is_ok (error)) {
 			return NULL;
-		if (new_sig == in_sig)
+		} else if (!new_sig && changed)
 			return type;
+		if (new_sig == in_sig) {
+			if (!changed)
+				return NULL;
+			else
+				return type;
+		}
 		MonoType *nt = mono_metadata_type_dup (image, type);
 		nt->data.method = new_sig;
 		return nt;
