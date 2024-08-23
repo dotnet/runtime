@@ -236,6 +236,7 @@ elif [[ -z "$__IsXUnitLogCheckerSupported" ]]; then
 elif [[ "$__IsXUnitLogCheckerSupported" != "1" ]]; then
   echo "XUnitLogChecker not supported for this test case. Skipping."
 else
+  echo "XUnitLogChecker status: $__IsXUnitLogCheckerSupported"
   echo ----- start ===============  XUnitLogChecker Output =====================================================
 
   invoke_xunitlogchecker "$HELIX_DUMP_FOLDER"
