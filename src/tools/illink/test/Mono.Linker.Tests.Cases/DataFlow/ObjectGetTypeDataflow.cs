@@ -29,16 +29,12 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
 		class SealedConstructorAsSource
 		{
-			[KeptMember (".ctor()")]
 			public class Base
 			{
 			}
 
-			[KeptMember (".ctor()")]
-			[KeptBaseType (typeof (Base))]
 			public sealed class Derived : Base
 			{
-				[KeptAttributeAttribute (typeof (RequiresUnreferencedCodeAttribute))]
 				[RequiresUnreferencedCode (nameof (Method))]
 				public void Method () { }
 			}
@@ -50,48 +46,35 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			}
 		}
 
-		[Kept]
 		class InstantiatedGenericAsSource
 		{
-			[Kept]
-			[KeptAttributeAttribute (typeof (DynamicallyAccessedMembersAttribute))]
 			[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)]
 			class Generic<T> {
-				[Kept]
 				[ExpectedWarning ("IL2112")]
-				[KeptAttributeAttribute (typeof (RequiresUnreferencedCodeAttribute))]
 				[RequiresUnreferencedCode (nameof (KeptForMethodParameter))]
 				public void KeptForMethodParameter () {}
 
-				[Kept]
 				[ExpectedWarning ("IL2112")]
-				[KeptAttributeAttribute (typeof (RequiresUnreferencedCodeAttribute))]
 				[RequiresUnreferencedCode (nameof (KeptForField))]
 				public void KeptForField () {}
 
-				[Kept]
 				[ExpectedWarning ("IL2112")]
-				[KeptAttributeAttribute (typeof (RequiresUnreferencedCodeAttribute))]
 				[RequiresUnreferencedCode (nameof (KeptJustBecause))]
 				public void KeptJustBecause () {}
 			}
 
-			[Kept]
 			static void TestMethodParameter (Generic<int> instance)
 			{
 				instance.GetType ().GetMethod ("KeptForMethodParameter");
 			}
 
-			[Kept]
 			static Generic<int> field = null;
 
-			[Kept]
 			static void TestField ()
 			{
 				field.GetType ().GetMethod ("KeptForField");
 			}
 
-			[Kept]
 			public static void Test ()
 			{
 				TestMethodParameter (null);
@@ -99,57 +82,45 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			}
 		}
 
-		[Kept]
 		class EnumTypeSatisfiesPublicFields
 		{
-			[Kept]
 			static void ParameterType (Enum instance)
 			{
 				instance.GetType ().RequiresPublicFields ();
 			}
 
-			[Kept]
 			class FieldType
 			{
-				[Kept]
 				Enum field;
 
-				[Kept]
 				public FieldType (Enum instance) => field = instance;
 
-				[Kept]
 				public void Test ()
 				{
 					field.GetType ().RequiresPublicFields ();
 				}
 			}
 
-			[KeptMember ("value__")]
 			enum EnumType
 			{
-				[Kept]
 				Value
 			}
 
-			[Kept]
 			static Enum ReturnType ()
 			{
 				return EnumType.Value;
 			}
 
-			[Kept]
 			static void TestReturnType ()
 			{
 				ReturnType ().GetType ().RequiresPublicFields ();
 			}
 
-			[Kept]
 			static void OutParameter (out Enum value)
 			{
 				value = EnumType.Value;
 			}
 
-			[Kept]
 			// Analyzer doesn't assign a value to the out parameter after calling the OutParameter method,
 			// so when it looks up the value of the local 'value', it returns an empty value, and the
 			// GetType intrinsic handling can't see that the out param satisfies the public fields requirement.
@@ -161,7 +132,6 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 				value.GetType ().RequiresPublicFields ();
 			}
 
-			[Kept]
 			public static void Test ()
 			{
 				ParameterType (EnumType.Value);
@@ -171,22 +141,17 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			}
 		}
 
-		[Kept]
 		class EnumConstraintSatisfiesPublicFields
 		{
-			[Kept]
 			static void MethodGenericParameterAsParameter<T> (T instance) where T : Enum
 			{
 				instance.GetType ().RequiresPublicFields ();
 			}
 
-			[Kept]
 			class TypeGenericParameterAsField<T> where T : Enum
 			{
-				[Kept]
 				public static T field;
 
-				[Kept]
 				public static void TestAccessFromType ()
 				{
 					field.GetType ().RequiresPublicFields ();
@@ -198,32 +163,26 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 				TypeGenericParameterAsField<Enum>.field.GetType ().RequiresPublicFields ();
 			}
 
-			[Kept]
 			class TypeGenericParameterAsParameter<T> where T : Enum
 			{
-				[Kept]
 				public static void Method (T instance)
 				{
 					instance.GetType ().RequiresPublicFields ();
 				}
 
-				[Kept]
 				public static void Test ()
 				{
 					Method (default);
 				}
 			}
 
-			[Kept]
 			class TypeGenericParameterAsReturnType<T> where T : Enum
 			{
-				[Kept]
 				public static T Method ()
 				{
 					return default;
 				}
 
-				[Kept]
 				public static void TestAccessFromType ()
 				{
 					Method ().GetType ().RequiresPublicFields ();
@@ -235,16 +194,13 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 				TypeGenericParameterAsReturnType<Enum>.Method ().GetType ().RequiresPublicFields ();
 			}
 
-			[Kept]
 			class TypeGenericParameterAsOutParam<T> where T : Enum
 			{
-				[Kept]
 				public static void Method (out T instance)
 				{
 					instance = default;
 				}
 
-				[Kept]
 				[ExpectedWarning ("IL2072", Tool.Analyzer, "https://github.com/dotnet/runtime/issues/101734")]
 				public static void TestAccessFromType ()
 				{
@@ -260,26 +216,21 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 				instance.GetType ().RequiresPublicFields ();
 			}
 
-			[KeptMember ("value__")]
 			enum EnumType
 			{
-				[Kept]
 				Value
 			}
 
-			[Kept]
 			static T MethodGenericParameterAsReturnType<T> () where T : Enum
 			{
 				return default;
 			}
 
-			[Kept]
 			static void TestMethodGenericParameterAsReturnType ()
 			{
 				MethodGenericParameterAsReturnType<Enum> ().GetType ().RequiresPublicFields ();
 			}
 
-			[Kept]
 			public static void Test ()
 			{
 				TypeGenericParameterAsParameter<Enum>.Test ();
@@ -461,7 +412,6 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
 		class UnknownValue
 		{
-			[KeptMember (".ctor()")]
 			class TestType
 			{
 			}
