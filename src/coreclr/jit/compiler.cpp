@@ -31,7 +31,6 @@ unsigned Compiler::jitTotalMethodCompiled = 0;
 LONG Compiler::jitNestingLevel = 0;
 #endif // defined(DEBUG)
 
-// dummy change to trigger SPMI CI legs
 // static
 bool                Compiler::s_pAltJitExcludeAssembliesListInitialized = false;
 AssemblyNamesList2* Compiler::s_pAltJitExcludeAssembliesList            = nullptr;
