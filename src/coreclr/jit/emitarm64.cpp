@@ -5614,27 +5614,11 @@ void emitter::emitIns_R_R_I(instruction     ins,
             isLdSt     = true;
             break;
 
-        case INS_ldurb:
-        case INS_sturb:
-            // size is ignored
-            unscaledOp = true;
-            scale      = 0;
-            isLdSt     = true;
-            break;
-
         case INS_ldrh:
         case INS_strh:
             // size is ignored
             unscaledOp = false;
             scale      = 1;
-            isLdSt     = true;
-            break;
-
-        case INS_ldurh:
-        case INS_sturh:
-            // size is ignored
-            unscaledOp = true;
-            scale      = 0;
             isLdSt     = true;
             break;
 
@@ -5657,6 +5641,12 @@ void emitter::emitIns_R_R_I(instruction     ins,
             isLdrStr   = true;
             break;
 
+        case INS_ldurb:
+        case INS_ldurh:
+        case INS_ldur:
+        case INS_sturb:
+        case INS_sturh:
+        case INS_stur:
         case INS_ldapurb:
         case INS_ldapurh:
         case INS_ldapur:
@@ -5664,24 +5654,6 @@ void emitter::emitIns_R_R_I(instruction     ins,
         case INS_stlurh:
         case INS_stlur:
             fmt = IF_LS_2C;
-            break;
-
-        case INS_ldur:
-        case INS_stur:
-            // Is the target a vector register?
-            if (isVectorRegister(reg1))
-            {
-                assert(isValidVectorLSDatasize(size));
-                assert(isGeneralRegisterOrSP(reg2));
-                isSIMD = true;
-            }
-            else
-            {
-                assert(isValidGeneralDatasize(size));
-            }
-            unscaledOp = true;
-            scale      = 0;
-            isLdSt     = true;
             break;
 
         case INS_ld2:
