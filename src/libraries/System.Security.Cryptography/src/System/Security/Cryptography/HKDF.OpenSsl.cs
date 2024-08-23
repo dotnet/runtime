@@ -18,7 +18,10 @@ namespace System.Security.Cryptography
         {
             if (s_hasOpenSslImplementation)
             {
-                HKDFManagedImplementation.Extract(hashAlgorithmName, hashLength, ikm, salt, prk);
+                Debug.Assert(Interop.Crypto.EvpKdfAlgs.Hkdf is not null);
+                Debug.Assert(hashAlgorithmName.Name is not null);
+
+                Interop.Crypto.HkdfExtract(Interop.Crypto.EvpKdfAlgs.Hkdf, ikm, hashAlgorithmName.Name, salt, prk);
             }
             else
             {
@@ -35,7 +38,10 @@ namespace System.Security.Cryptography
         {
             if (s_hasOpenSslImplementation)
             {
-                HKDFManagedImplementation.Expand(hashAlgorithmName, hashLength, prk, output, info);
+                Debug.Assert(Interop.Crypto.EvpKdfAlgs.Hkdf is not null);
+                Debug.Assert(hashAlgorithmName.Name is not null);
+
+                Interop.Crypto.HkdfExpand(Interop.Crypto.EvpKdfAlgs.Hkdf, prk, hashAlgorithmName.Name, info, output);
             }
             else
             {
@@ -51,11 +57,11 @@ namespace System.Security.Cryptography
             ReadOnlySpan<byte> salt,
             ReadOnlySpan<byte> info)
         {
-            Debug.Assert(Interop.Crypto.EvpKdfAlgs.Hkdf is not null);
-            Debug.Assert(hashAlgorithmName.Name is not null);
-
             if (s_hasOpenSslImplementation)
             {
+                Debug.Assert(Interop.Crypto.EvpKdfAlgs.Hkdf is not null);
+                Debug.Assert(hashAlgorithmName.Name is not null);
+
                 Interop.Crypto.HkdfDeriveKey(
                     Interop.Crypto.EvpKdfAlgs.Hkdf,
                     ikm,
