@@ -349,7 +349,7 @@ namespace System.IO.Pipelines.Tests
                 Check(count);
                 base.Write(buffer, offset, count);
             }
-#if NETCOREAPP3_0_OR_GREATER
+#if NET
             public override void Write(ReadOnlySpan<byte> buffer)
             {
                 Check(buffer.Length);

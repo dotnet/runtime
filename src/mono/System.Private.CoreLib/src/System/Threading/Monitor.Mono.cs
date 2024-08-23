@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics.Tracing;
 using System.Runtime.CompilerServices;
 using System.Runtime.Versioning;
 
@@ -70,10 +71,15 @@ namespace System.Threading
             return ObjectHeader.IsEntered(obj);
         }
 
+#if !FEATURE_WASM_MANAGED_THREADS
         [UnsupportedOSPlatform("browser")]
+#endif
         public static bool Wait(object obj, int millisecondsTimeout)
         {
             ArgumentNullException.ThrowIfNull(obj);
+#if FEATURE_WASM_MANAGED_THREADS
+            Thread.AssureBlockingPossible();
+#endif
             return ObjWait(millisecondsTimeout, obj);
         }
 
@@ -121,7 +127,22 @@ namespace System.Threading
             if (!ObjectHeader.HasOwner(obj))
                 throw new SynchronizationLockException();
 
-            return Monitor_wait(obj, millisecondsTimeout, true);
+            bool sendWaitEvents =
+                millisecondsTimeout != 0 &&
+                NativeRuntimeEventSource.Log.IsEnabled(EventLevel.Verbose, NativeRuntimeEventSource.Keywords.WaitHandleKeyword);
+            if (sendWaitEvents)
+            {
+                NativeRuntimeEventSource.Log.WaitHandleWaitStart(NativeRuntimeEventSource.WaitHandleWaitSourceMap.MonitorWait, obj);
+            }
+
+            bool result = Monitor_wait(obj, millisecondsTimeout, true);
+
+            if (sendWaitEvents)
+            {
+                NativeRuntimeEventSource.Log.WaitHandleWaitStop();
+            }
+
+            return result;
         }
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
@@ -145,10 +166,9 @@ namespace System.Threading
             try_enter_with_atomic_var(obj, timeout, true, ref lockTaken);
         }
 
-        public static extern long LockContentionCount
-        {
-            [MethodImplAttribute(MethodImplOptions.InternalCall)]
-            get;
-        }
+        public static long LockContentionCount => Monitor_get_lock_contention_count() + Lock.ContentionCount;
+
+        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        private static extern long Monitor_get_lock_contention_count();
     }
 }

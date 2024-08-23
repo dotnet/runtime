@@ -92,12 +92,9 @@ typedef struct _pal_perf_program_info
     char    start_time[32]; /*  must be at least 26 characters */
 } pal_perf_program_info;
 
-typedef PAL_FILE PERF_FILE;
-#define PERF_FILEFN(x) PAL_ ## x
-
 static ULONGLONG PERFGetTicks();
 static double PERFComputeStandardDeviation(pal_perf_api_info *api);
-static void PERFPrintProgramHeaderInfo(PERF_FILE * hFile, BOOL completedExecution);
+static void PERFPrintProgramHeaderInfo(FILE * hFile, BOOL completedExecution);
 static BOOL PERFInitProgramInfo(LPWSTR command_line, LPWSTR exe_path);
 static BOOL PERFReadSetting( );
 static void PERFLogFileName(PathCharString * destFileString, const char *fileName, const char *suffix, int max_length);
@@ -212,7 +209,7 @@ PERFComputeStandardDeviation(pal_perf_api_info *api)
 
 static
 void
-PERFPrintProgramHeaderInfo(PERF_FILE * hFile, BOOL completedExecution)
+PERFPrintProgramHeaderInfo(FILE * hFile, BOOL completedExecution)
 {
     ULONGLONG etime = 0;
     ULONGLONG ttime = 0;
@@ -222,11 +219,11 @@ PERFPrintProgramHeaderInfo(PERF_FILE * hFile, BOOL completedExecution)
        ttime = program_info.total_duration;
        ptime = program_info.pal_duration;
     }
-    PERF_FILEFN(fprintf)(hFile,"#LOG\tversion=1.00\n");
+    fprintf(hFile,"#LOG\tversion=1.00\n");
 
-    PERF_FILEFN(fprintf)(hFile, "#MACHINE\thostname=%s\tcpu_clock_frequency=%g\n", program_info.hostname,
+    fprintf(hFile, "#MACHINE\thostname=%s\tcpu_clock_frequency=%g\n", program_info.hostname,
         program_info.cpu_clock_frequency);
-    PERF_FILEFN(fprintf)(hFile, "#PROCESS\tprocess_id=%d\ttotal_latency=" LLFORMAT "\tthread_times=" LLFORMAT "\tpal_time=" LLFORMAT "\texe_path=%s\tcommand_line=%s\tstart_time=%s",
+    fprintf(hFile, "#PROCESS\tprocess_id=%d\ttotal_latency=" LLFORMAT "\tthread_times=" LLFORMAT "\tpal_time=" LLFORMAT "\texe_path=%s\tcommand_line=%s\tstart_time=%s",
         program_info.process_id, etime, ttime, ptime,
         program_info.exe_path,program_info.command_line,program_info.start_time);
 }
@@ -324,7 +321,7 @@ PERFInitialize(LPWSTR command_line, LPWSTR exe_path)
 
     if( ret == TRUE )
     {
-        pal_function_map = (char*)PAL_malloc(PAL_API_NUMBER);
+        pal_function_map = (char*)malloc(PAL_API_NUMBER);
         if(pal_function_map != NULL)
         {
             bRead = PERFReadSetting( );  // we don't quit even we failed to read the file.
@@ -358,7 +355,7 @@ void PERFTerminate(  )
 
     PERFlushAllLogs();
     pthread_key_delete(PERF_tlsTableKey );
-    PAL_free(pal_function_map);
+    free(pal_function_map);
 }
 
 
@@ -379,21 +376,21 @@ BOOL PERFAllocThreadInfo(  )
         memory resources could be exhausted. If this ever becomes a problem, the memory allocated
         per thread should be freed when a thread exits. */
 
-    node = ( pal_thread_list_node * )PAL_malloc(sizeof(pal_thread_list_node));
+    node = ( pal_thread_list_node * )malloc(sizeof(pal_thread_list_node));
     if(node == NULL)
     {
         ret = FALSE;
         goto PERFAllocThreadInfoExit;
     }
 
-    local_info = (pal_perf_thread_info *)PAL_malloc(sizeof(pal_perf_thread_info));
+    local_info = (pal_perf_thread_info *)malloc(sizeof(pal_perf_thread_info));
     if (local_info == NULL)
     {
         ret = FALSE;
         goto PERFAllocThreadInfoExit;
     }
 
-    apiTable = (pal_perf_api_info *)PAL_malloc( PAL_API_NUMBER *  sizeof(pal_perf_api_info));
+    apiTable = (pal_perf_api_info *)malloc( PAL_API_NUMBER *  sizeof(pal_perf_api_info));
     if (apiTable == NULL)
     {
         ret = FALSE;
@@ -414,7 +411,7 @@ BOOL PERFAllocThreadInfo(  )
         apiTable[i].sum_of_square_duration = 0.0;
         if (pal_perf_histogram_size > 0)
         {
-            apiTable[i].histograms = (DWORD *)PAL_malloc(pal_perf_histogram_size*sizeof(DWORD));
+            apiTable[i].histograms = (DWORD *)malloc(pal_perf_histogram_size*sizeof(DWORD));
             if (apiTable[i].histograms == NULL)
             {
                 ret = FALSE;
@@ -428,7 +425,7 @@ BOOL PERFAllocThreadInfo(  )
         }
     }
 
-    log_buf = (char * )PAL_malloc( PAL_PERF_PROFILE_BUFFER_SIZE );
+    log_buf = (char * )malloc( PAL_PERF_PROFILE_BUFFER_SIZE );
 
     if(log_buf == NULL)
     {
@@ -457,11 +454,11 @@ PERFAllocThreadInfoExit:
     {
         if (node != NULL)
         {
-            PAL_free(node);
+            free(node);
         }
         if (local_info != NULL)
         {
-            PAL_free(local_info);
+            free(local_info);
         }
         if (apiTable != NULL)
         {
@@ -469,14 +466,14 @@ PERFAllocThreadInfoExit:
             {
                 if (apiTable[i].histograms != NULL)
                 {
-                    PAL_free(apiTable[i].histograms);
+                    free(apiTable[i].histograms);
                 }
             }
-            PAL_free(apiTable);
+            free(apiTable);
         }
         if (log_buf != NULL)
         {
-            PAL_free(log_buf);
+            free(log_buf);
         }
     }
     return ret;
@@ -557,26 +554,26 @@ PERFlushAllLogs( )
                 PERFUpdateProgramInfo(current->thread_info);
                 if (table1->histograms != NULL)
                 {
-                    PAL_free(table1->histograms);
+                    free(table1->histograms);
                 }
-                PAL_free(table1);
+                free(table1);
             }
             PERFFlushLog(current->thread_info, FALSE);
-            PAL_free(current->thread_info->pal_write_buf);
-            PAL_free(current->thread_info);
+            free(current->thread_info->pal_write_buf);
+            free(current->thread_info);
         }
-        PAL_free(current);
+        free(current);
     }
     PERFWriteCounters(table0);
     if (table0->histograms != NULL)
     {
-        PAL_free(table0->histograms);
+        free(table0->histograms);
     }
-    PAL_free(table0);
+    free(table0);
     PERFFlushLog(node->thread_info, FALSE);
-    PAL_free(node->thread_info->pal_write_buf);
-    PAL_free(node->thread_info);
-    PAL_free(node);
+    free(node->thread_info->pal_write_buf);
+    free(node->thread_info);
+    free(node);
 }
 
 static
@@ -619,11 +616,11 @@ PERFWriteCounters( pal_perf_api_info * table )
     off = table;
 
     PERFLogFileName(fileName, profile_summary_log_name, "_perf_summary.log");
-    hFile = PERF_FILEFN(fopen)(fileName, "a+");
+    hFile = fopen(fileName, "a+");
     if(hFile != NULL)
     {
         PERFPrintProgramHeaderInfo(hFile, TRUE);
-        PERF_FILEFN(fprintf)(hFile,"#api_name\tapi_id\tperf_entries\tperf_exits\tsum_of_latency\tmin_latency\tmax_latency\tstd_dev_latency\tsum_of_square_latency\n");
+        fprintf(hFile,"#api_name\tapi_id\tperf_entries\tperf_exits\tsum_of_latency\tmin_latency\tmax_latency\tstd_dev_latency\tsum_of_square_latency\n");
         for(i=0;i<PAL_API_NUMBER;i++)
         {
             double dev;
@@ -641,7 +638,7 @@ PERFWriteCounters( pal_perf_api_info * table )
 
             if (off->counter > 0 || !report_only_called_apis)
             {
-                PERF_FILEFN(fprintf)(hFile,"%s\t%d\t" LLFORMAT "\t" LLFORMAT "\t" LLFORMAT "\t" LLFORMAT "\t" LLFORMAT "\t%g\t%g\n",
+                fprintf(hFile,"%s\t%d\t" LLFORMAT "\t" LLFORMAT "\t" LLFORMAT "\t" LLFORMAT "\t" LLFORMAT "\t%g\t%g\n",
                     API_list[i], i, off->entries, off->counter,off->sum_duration,
                     min_duration, off->max_duration, dev, off->sum_of_square_duration);
             }
@@ -653,36 +650,36 @@ PERFWriteCounters( pal_perf_api_info * table )
     {
         return -1;
     }
-    PERF_FILEFN(fclose)(hFile);
+    fclose(hFile);
 
     if (pal_perf_histogram_size > 0)
     {
         off = table;
         PERFLogFileName(fileName, profile_summary_log_name, "_perf_summary.hist");
-        hFile = PERF_FILEFN(fopen)(fileName, "a+");
+        hFile = fopen(fileName, "a+");
 
         if (hFile != NULL)
         {
             DWORD j;
-            PERF_FILEFN(fprintf)(hFile,"#api_name\tapi_id");
+            fprintf(hFile,"#api_name\tapi_id");
             for (j = 0; j < pal_perf_histogram_size; j++)
             {
-                PERF_FILEFN(fprintf)(hFile, "\t%d", j*pal_perf_histogram_step);
+                fprintf(hFile, "\t%d", j*pal_perf_histogram_step);
             }
-            PERF_FILEFN(fprintf)(hFile, "\n");
+            fprintf(hFile, "\n");
 
             for(i = 0; i < PAL_API_NUMBER; i++)
             {
                 if (off->counter > 0)
                 {
-                    PERF_FILEFN(fprintf)(hFile,"%s\t%d", API_list[i], i);
+                    fprintf(hFile,"%s\t%d", API_list[i], i);
 
                     for (j = 0; j < pal_perf_histogram_size; j++)
                     {
-                        PERF_FILEFN(fprintf)(hFile, "\t%d", off->histograms[j]);
+                        fprintf(hFile, "\t%d", off->histograms[j]);
                     }
 
-                    PERF_FILEFN(fprintf)(hFile, "\n");
+                    fprintf(hFile, "\n");
                 }
 
                 off++;
@@ -692,7 +689,7 @@ PERFWriteCounters( pal_perf_api_info * table )
         {
             return -1;
         }
-        PERF_FILEFN(fclose)(hFile);
+        fclose(hFile);
     }
 
     return 0;
@@ -993,7 +990,7 @@ PERFFlushLog(pal_perf_thread_info * local_info, BOOL output_header)
 
     PERFLogFileName(fileName, profile_time_log_name, "_perf_time.log");
 
-    hFile = PERF_FILEFN(fopen)(fileName, "a+");
+    hFile = fopen(fileName, "a+");
 
     if(hFile)
     {
@@ -1003,7 +1000,7 @@ PERFFlushLog(pal_perf_thread_info * local_info, BOOL output_header)
         }
         if (local_info->buf_offset > 0)
         {
-            nWrittenBytes = PERF_FILEFN(fwrite)(local_info->pal_write_buf, local_info->buf_offset, 1, hFile);
+            nWrittenBytes = fwrite(local_info->pal_write_buf, local_info->buf_offset, 1, hFile);
             if (nWrittenBytes < 1)
             {
                 ERROR("fwrite() failed with errno == %d\n", errno);
@@ -1011,7 +1008,7 @@ PERFFlushLog(pal_perf_thread_info * local_info, BOOL output_header)
             }
             local_info->buf_offset = 0;
         }
-        PERF_FILEFN(fclose)(hFile);
+        fclose(hFile);
         ret = TRUE;
     }
 
@@ -1024,7 +1021,7 @@ PERFLogFunctionEntry(unsigned int pal_api_id, ULONGLONG *pal_perf_start_tick )
     pal_perf_thread_info * local_info=NULL;
     pal_perf_api_info * table;
     char * write_buf;
-    __int32  buf_off;
+    int32_t  buf_off;
     short bufused = 0;
 
 

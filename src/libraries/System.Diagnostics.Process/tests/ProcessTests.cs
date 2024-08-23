@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Diagnostics;
 using System.DirectoryServices.ActiveDirectory;
 using System.IO;
 using System.IO.Pipes;
@@ -563,6 +564,7 @@ namespace System.Diagnostics.Tests
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/105686", typeof(PlatformDetection), nameof(PlatformDetection.IsQemuLinux))]
         public void TestMaxWorkingSet()
         {
             CreateDefaultProcess();
@@ -618,6 +620,7 @@ namespace System.Diagnostics.Tests
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/105686", typeof(PlatformDetection), nameof(PlatformDetection.IsQemuLinux))]
         public void TestMinWorkingSet()
         {
             CreateDefaultProcess();
@@ -889,20 +892,19 @@ namespace System.Diagnostics.Tests
         {
             CreateDefaultProcess();
 
-            DateTime startTime = DateTime.UtcNow;
+            Stopwatch timer = Stopwatch.StartNew();
             TimeSpan processorTimeBeforeSpin = Process.GetCurrentProcess().TotalProcessorTime;
 
             // Perform loop to occupy cpu, takes less than a second.
-            int i = int.MaxValue / 16;
+            int i = int.MaxValue / 8;
             while (i > 0)
             {
                 i--;
             }
 
             TimeSpan processorTimeAfterSpin = Process.GetCurrentProcess().TotalProcessorTime;
-            DateTime endTime = DateTime.UtcNow;
 
-            double timeDiff = (endTime - startTime).TotalMilliseconds;
+            double timeDiff = timer.Elapsed.TotalMilliseconds;
             double cpuTimeDiff = (processorTimeAfterSpin - processorTimeBeforeSpin).TotalMilliseconds;
 
             double cpuUsage = cpuTimeDiff / (timeDiff * Environment.ProcessorCount);

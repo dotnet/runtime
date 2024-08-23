@@ -78,6 +78,20 @@
       <_CoreHostUnixTargetOS Condition="'$(TargetsLinuxBionic)' == 'true'">linux-bionic</_CoreHostUnixTargetOS>
       <BuildArgs>$(Configuration) $(TargetArchitecture) -commithash "$([MSBuild]::ValueOrDefault('$(SourceRevisionId)', 'N/A'))" -os $(_CoreHostUnixTargetOS)</BuildArgs>
       <BuildArgs>$(BuildArgs) -cmakeargs "-DVERSION_FILE_PATH=$(NativeVersionFile)"</BuildArgs>
+    </PropertyGroup>
+    <PropertyGroup Condition="'$(CxxStandardLibrary)' != ''">
+      <BuildArgs>$(BuildArgs) -cmakeargs -DCLR_CMAKE_CXX_STANDARD_LIBRARY=$(CxxStandardLibrary)</BuildArgs>
+    </PropertyGroup>
+
+    <PropertyGroup Condition="'$(CxxStandardLibraryStatic)' == 'true'">
+      <BuildArgs>$(BuildArgs) -cmakeargs -DCLR_CMAKE_CXX_STANDARD_LIBRARY_STATIC=ON</BuildArgs>
+    </PropertyGroup>
+
+    <PropertyGroup Condition="'$(CxxAbiLibrary)' != ''">
+      <BuildArgs>$(BuildArgs) -cmakeargs -DCLR_CMAKE_CXX_ABI_LIBRARY=$(CxxAbiLibrary)</BuildArgs>
+    </PropertyGroup>
+
+    <PropertyGroup>
       <BuildArgs Condition="'$(ConfigureOnly)' == 'true'">$(BuildArgs) -configureonly</BuildArgs>
       <BuildArgs Condition="'$(PortableBuild)' != 'true'">$(BuildArgs) -portablebuild=false</BuildArgs>
       <BuildArgs Condition="'$(KeepNativeSymbols)' != 'false'">$(BuildArgs) -keepnativesymbols</BuildArgs>

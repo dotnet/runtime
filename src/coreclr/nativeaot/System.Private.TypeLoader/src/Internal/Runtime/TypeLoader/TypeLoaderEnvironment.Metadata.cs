@@ -4,14 +4,12 @@
 
 using System;
 using System.Diagnostics;
-
 using System.Reflection.Runtime.General;
-
-using Internal.Runtime.Augments;
-using Internal.Runtime.CompilerServices;
 
 using Internal.Metadata.NativeFormat;
 using Internal.NativeFormat;
+using Internal.Runtime.Augments;
+using Internal.Runtime.CompilerServices;
 using Internal.TypeSystem;
 
 namespace Internal.Runtime.TypeLoader
@@ -201,7 +199,7 @@ namespace Internal.Runtime.TypeLoader
         /// </summary>
         public static unsafe bool TryGetArrayTypeForNonDynamicElementType(RuntimeTypeHandle elementTypeHandle, bool isMdArray, int rank, out RuntimeTypeHandle arrayTypeHandle)
         {
-            arrayTypeHandle = new RuntimeTypeHandle();
+            arrayTypeHandle = default(RuntimeTypeHandle);
 
             Debug.Assert(isMdArray || rank == -1);
             int arrayHashcode = TypeHashingAlgorithms.ComputeArrayTypeHashCode(elementTypeHandle.GetHashCode(), rank);
@@ -331,58 +329,54 @@ namespace Internal.Runtime.TypeLoader
         /// Locate the static constructor context given the runtime type handle (MethodTable) for the type in question.
         /// </summary>
         /// <param name="typeHandle">MethodTable of the type to look up</param>
-        public static unsafe IntPtr TryGetStaticClassConstructionContext(RuntimeTypeHandle typeHandle)
+        public static unsafe IntPtr GetStaticClassConstructionContext(RuntimeTypeHandle typeHandle)
         {
-            if (RuntimeAugments.HasCctor(typeHandle))
+            if (RuntimeAugments.IsDynamicType(typeHandle))
             {
-                if (RuntimeAugments.IsDynamicType(typeHandle))
+                if (!typeHandle.IsDynamicTypeWithCctor())
+                    return IntPtr.Zero;
+
+                // For dynamic types, its always possible to get the non-gc static data section directly.
+                byte* ptr = (byte*)Instance.TryGetNonGcStaticFieldData(typeHandle);
+
+                // what we have now is the base address of the non-gc statics of the type
+                // what we need is the cctor context, which is just before that
+                ptr -= sizeof(System.Runtime.CompilerServices.StaticClassConstructionContext);
+
+                return (IntPtr)ptr;
+            }
+            else
+            {
+                // Non-dynamic types do not provide a way to directly get at the non-gc static region.
+                // Use the CctorContextMap instead.
+
+                var moduleHandle = RuntimeAugments.GetModuleFromTypeHandle(typeHandle);
+                NativeFormatModuleInfo module = ModuleList.Instance.GetModuleInfoByHandle(moduleHandle);
+                Debug.Assert(!moduleHandle.IsNull);
+
+                NativeReader typeMapReader;
+                if (TryGetNativeReaderForBlob(module, ReflectionMapBlob.CCtorContextMap, out typeMapReader))
                 {
-                    // For dynamic types, its always possible to get the non-gc static data section directly.
-                    byte* ptr = (byte*)Instance.TryGetNonGcStaticFieldData(typeHandle);
+                    NativeParser typeMapParser = new NativeParser(typeMapReader, 0);
+                    NativeHashtable typeHashtable = new NativeHashtable(typeMapParser);
 
-                    // what we have now is the base address of the non-gc statics of the type
-                    // what we need is the cctor context, which is just before that
-                    ptr -= sizeof(System.Runtime.CompilerServices.StaticClassConstructionContext);
+                    ExternalReferencesTable externalReferences = default(ExternalReferencesTable);
+                    externalReferences.InitializeCommonFixupsTable(module);
 
-                    return (IntPtr)ptr;
-                }
-                else
-                {
-                    // Non-dynamic types do not provide a way to directly get at the non-gc static region.
-                    // Use the CctorContextMap instead.
-
-                    var moduleHandle = RuntimeAugments.GetModuleFromTypeHandle(typeHandle);
-                    NativeFormatModuleInfo module = ModuleList.Instance.GetModuleInfoByHandle(moduleHandle);
-                    Debug.Assert(!moduleHandle.IsNull);
-
-                    NativeReader typeMapReader;
-                    if (TryGetNativeReaderForBlob(module, ReflectionMapBlob.CCtorContextMap, out typeMapReader))
+                    var lookup = typeHashtable.Lookup(typeHandle.GetHashCode());
+                    NativeParser entryParser;
+                    while (!(entryParser = lookup.GetNext()).IsNull)
                     {
-                        NativeParser typeMapParser = new NativeParser(typeMapReader, 0);
-                        NativeHashtable typeHashtable = new NativeHashtable(typeMapParser);
-
-                        ExternalReferencesTable externalReferences = default(ExternalReferencesTable);
-                        externalReferences.InitializeCommonFixupsTable(module);
-
-                        var lookup = typeHashtable.Lookup(typeHandle.GetHashCode());
-                        NativeParser entryParser;
-                        while (!(entryParser = lookup.GetNext()).IsNull)
+                        RuntimeTypeHandle foundType = externalReferences.GetRuntimeTypeHandleFromIndex(entryParser.GetUnsigned());
+                        if (foundType.Equals(typeHandle))
                         {
-                            RuntimeTypeHandle foundType = externalReferences.GetRuntimeTypeHandleFromIndex(entryParser.GetUnsigned());
-                            if (foundType.Equals(typeHandle))
-                            {
-                                byte* pNonGcStaticBase = (byte*)externalReferences.GetIntPtrFromIndex(entryParser.GetUnsigned());
+                            byte* pNonGcStaticBase = (byte*)externalReferences.GetIntPtrFromIndex(entryParser.GetUnsigned());
 
-                                // cctor context is located before the non-GC static base
-                                return (IntPtr)(pNonGcStaticBase - sizeof(System.Runtime.CompilerServices.StaticClassConstructionContext));
-                            }
+                            // cctor context is located before the non-GC static base
+                            return (IntPtr)(pNonGcStaticBase - sizeof(System.Runtime.CompilerServices.StaticClassConstructionContext));
                         }
                     }
                 }
-
-                // If the type has a lazy/deferred Cctor, the compiler must have missed emitting
-                // a data structure if we reach this.
-                Debug.Assert(false);
             }
 
             return IntPtr.Zero;

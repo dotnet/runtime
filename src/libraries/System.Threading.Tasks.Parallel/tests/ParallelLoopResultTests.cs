@@ -373,7 +373,6 @@ Parallel.For(1L, 0L, delegate (long i, ParallelLoopState ps)
 
         // Perform tests on various combinations of Stop()/Break()
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/91579", typeof(PlatformDetection), nameof(PlatformDetection.IsWasmThreadingSupported))]
         public static void SimultaneousStopBreakTests()
         {
             //

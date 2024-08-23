@@ -52,7 +52,7 @@ namespace System.Text.RegularExpressions
                     // Default
                     _ => default
                 };
-                return equivalences != default;
+                return !equivalences.IsEmpty;
             }
             else
             {

@@ -1,7 +1,9 @@
 <Project Sdk="Microsoft.NET.Sdk">
+
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppCurrent);$(NetCoreAppPrevious);$(NetCoreAppMinimum);netstandard2.0;$(NetFrameworkMinimum)</TargetFrameworks>
     <StrongNameKeyId>Microsoft</StrongNameKeyId>
+    <UseCompilerGeneratedDocXmlFile>false</UseCompilerGeneratedDocXmlFile>
     <IsPackable>true</IsPackable>
     <PackageDescription>Provides common attributes used by System.Composition types.
 
@@ -9,10 +11,11 @@ Commonly Used Types:
 System.Composition.ExportAttribute
 System.Composition.ImportAttribute
 System.Composition.Convention.AttributedModelProvider</PackageDescription>
-
     <!-- TODO https://github.com/dotnet/runtime/issues/90400: Annotate for nullable reference types -->
     <Nullable>disable</Nullable>
     <NoWarn>$(NoWarn);nullable</NoWarn>
+    <!-- TODO: Add package README file: https://github.com/dotnet/runtime/issues/99358 -->
+    <EnableDefaultPackageReadmeFile>false</EnableDefaultPackageReadmeFile>
   </PropertyGroup>
 
   <ItemGroup>
@@ -30,4 +33,5 @@ System.Composition.Convention.AttributedModelProvider</PackageDescription>
     <Compile Include="System\Composition\SharedAttribute.cs" />
     <Compile Include="System\Composition\SharingBoundaryAttribute.cs" />
   </ItemGroup>
+
 </Project>

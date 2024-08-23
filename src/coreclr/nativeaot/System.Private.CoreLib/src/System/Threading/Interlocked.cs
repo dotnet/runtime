@@ -1,9 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime;
 using System.Runtime.CompilerServices;
-using System.Diagnostics.CodeAnalysis;
 
 namespace System.Threading
 {
@@ -14,27 +15,53 @@ namespace System.Threading
         [Intrinsic]
         public static int CompareExchange(ref int location1, int value, int comparand)
         {
+#if TARGET_X86 || TARGET_AMD64 || TARGET_ARM64 || TARGET_RISCV64
+            return CompareExchange(ref location1, value, comparand); // Must expand intrinsic
+#else
+            if (Unsafe.IsNullRef(ref location1))
+                ThrowHelper.ThrowNullReferenceException();
             return RuntimeImports.InterlockedCompareExchange(ref location1, value, comparand);
+#endif
+        }
+
+        // This is used internally by NativeAOT runtime in cases where having a managed
+        // ref to the location is unsafe (Ex: it is the syncblock of a pinned object).
+        // The intrinsic expansion for this overload is exactly the same as for the `ref int`
+        // variant and will go on the same path since expansion is triggered by the name and
+        // return type of the method.
+        // The important part is avoiding `ref *location` in the unexpanded scenario, like
+        // in a case when compiling the Debug flavor of the app.
+        [Intrinsic]
+        internal static unsafe int CompareExchange(int* location1, int value, int comparand)
+        {
+#if TARGET_X86 || TARGET_AMD64 || TARGET_ARM64 || TARGET_RISCV64
+            return CompareExchange(location1, value, comparand); // Must expand intrinsic
+#else
+            Debug.Assert(location1 != null);
+            return RuntimeImports.InterlockedCompareExchange(location1, value, comparand);
+#endif
         }
 
         [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static long CompareExchange(ref long location1, long value, long comparand)
         {
+#if TARGET_AMD64 || TARGET_ARM64 || TARGET_RISCV64
+            return CompareExchange(ref location1, value, comparand); // Must expand intrinsic
+#else
+            if (Unsafe.IsNullRef(ref location1))
+                ThrowHelper.ThrowNullReferenceException();
             return RuntimeImports.InterlockedCompareExchange(ref location1, value, comparand);
+#endif
         }
 
         [Intrinsic]
-        [return: NotNullIfNotNull(nameof(location1))]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static T CompareExchange<T>(ref T location1, T value, T comparand) where T : class?
-        {
-            return Unsafe.As<T>(RuntimeImports.InterlockedCompareExchange(ref Unsafe.As<T, object?>(ref location1), value, comparand));
-        }
-
-        [Intrinsic]
         [return: NotNullIfNotNull(nameof(location1))]
         public static object? CompareExchange(ref object? location1, object? value, object? comparand)
         {
+            if (Unsafe.IsNullRef(ref location1))
+                ThrowHelper.ThrowNullReferenceException();
             return RuntimeImports.InterlockedCompareExchange(ref location1, value, comparand);
         }
 
@@ -45,6 +72,9 @@ namespace System.Threading
         [Intrinsic]
         public static int Exchange(ref int location1, int value)
         {
+#if TARGET_X86 || TARGET_AMD64 || TARGET_ARM64 || TARGET_RISCV64
+            return Exchange(ref location1, value); // Must expand intrinsic
+#else
             int oldValue;
 
             do
@@ -53,11 +83,15 @@ namespace System.Threading
             } while (CompareExchange(ref location1, value, oldValue) != oldValue);
 
             return oldValue;
+#endif
         }
 
         [Intrinsic]
         public static long Exchange(ref long location1, long value)
         {
+#if TARGET_AMD64 || TARGET_ARM64 || TARGET_RISCV64
+            return Exchange(ref location1, value); // Must expand intrinsic
+#else
             long oldValue;
 
             do
@@ -66,20 +100,16 @@ namespace System.Threading
             } while (CompareExchange(ref location1, value, oldValue) != oldValue);
 
             return oldValue;
+#endif
         }
 
         [Intrinsic]
-        [return: NotNullIfNotNull(nameof(location1))]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static T Exchange<T>([NotNullIfNotNull(nameof(value))] ref T location1, T value) where T : class?
-        {
-            return Unsafe.As<T>(RuntimeImports.InterlockedExchange(ref Unsafe.As<T, object?>(ref location1), value));
-        }
-
-        [Intrinsic]
         [return: NotNullIfNotNull(nameof(location1))]
         public static object? Exchange([NotNullIfNotNull(nameof(value))] ref object? location1, object? value)
         {
+            if (Unsafe.IsNullRef(ref location1))
+                ThrowHelper.ThrowNullReferenceException();
             return RuntimeImports.InterlockedExchange(ref location1, value);
         }
 

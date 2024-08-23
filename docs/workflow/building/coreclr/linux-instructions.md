@@ -19,7 +19,7 @@ As mentioned in the [Linux requirements doc](/docs/workflow/requirements/linux-r
 
 Building using Docker will require that you choose the correct image for your environment.
 
-Note that the OS is strictly speaking not important. For example if you are on Ubuntu 20.04 and build using the Ubuntu 18.04 x64 image there should be no issues. You can even use Linux images on a Windows OS if you have [WSL](https://docs.microsoft.com/windows/wsl/about) enabled. However, note that you can't run multiple OS's on the same _Docker Daemon_, as it takes resources from the underlying kernel as needed. In other words, you can run either Linux on WSL, or Windows containers. You have to switch between them if you need both, and restart Docker.
+Note that the OS is strictly speaking not important. For example if you are on Ubuntu 20.04 and build using the Ubuntu 18.04 x64 image there should be no issues. You can even use Linux images on a Windows OS if you have [WSL](https://learn.microsoft.com/windows/wsl/about) enabled. However, note that you can't run multiple OS's on the same _Docker Daemon_, as it takes resources from the underlying kernel as needed. In other words, you can run either Linux on WSL, or Windows containers. You have to switch between them if you need both, and restart Docker.
 
 The target architecture is more important, as building arm32 using the x64 image will not work. There will be missing _rootfs_ components required by the build. See [Docker Images](#docker-images) below, for more information on choosing an image to build with.
 
@@ -50,25 +50,41 @@ To do cross-building using Docker, you need to use either specific images design
 
 ### Docker Images
 
-This table of images might often become stale as we change our images as our requirements change. The images used for our official builds can be found in [the pipeline resources](/eng/pipelines/common/templates/pipeline-with-resources.yml) of our Azure DevOps builds under the `container` key of the platform you plan to build. These image tags don't include version numbers, and our build infrastructure will automatically use the latest version of the image. You can ensure you are using the latest version by using `docker pull`, for example:
+The images used for our official builds can be found in [the pipeline resources](/eng/pipelines/common/templates/pipeline-with-resources.yml) of our Azure DevOps builds under the `container` key of the platform you plan to build. Our build infrastructure will automatically use the latest version of the image.
 
-```
-docker pull mcr.microsoft.com/dotnet-buildtools/prereqs:cbl-mariner-2.0-cross-arm64
-```
+| Host OS               | Target OS    | Target Arch     | Image                                                                                  | crossrootfs dir      |
+| --------------------- | ------------ | --------------- | -------------------------------------------------------------------------------------- | -------------------- |
+| Azure Linux (x64)     | Alpine 3.13  | x64             | `mcr.microsoft.com/dotnet-buildtools/prereqs:azurelinux-3.0-net9.0-cross-amd64-alpine` | `/crossrootfs/x64`   |
+| Azure Linux (x64)     | Ubuntu 16.04 | x64             | `mcr.microsoft.com/dotnet-buildtools/prereqs:azurelinux-3.0-net9.0-cross-amd64`        | `/crossrootfs/x64`   |
+| Azure Linux (x64)     | Alpine       | arm32 (armhf)   | `mcr.microsoft.com/dotnet-buildtools/prereqs:azurelinux-3.0-net9.0-cross-arm-alpine`   | `/crossrootfs/arm`   |
+| Azure Linux (x64)     | Ubuntu 16.04 | arm32 (armhf)   | `mcr.microsoft.com/dotnet-buildtools/prereqs:azurelinux-3.0-net9.0-cross-arm`          | `/crossrootfs/arm`   |
+| Azure Linux (x64)     | Alpine       | arm64 (arm64v8) | `mcr.microsoft.com/dotnet-buildtools/prereqs:azurelinux-3.0-net9.0-cross-arm64-alpine` | `/crossrootfs/arm64` |
+| Azure Linux (x64)     | Ubuntu 16.04 | arm64 (arm64v8) | `mcr.microsoft.com/dotnet-buildtools/prereqs:azurelinux-3.0-net9.0-cross-arm64`        | `/crossrootfs/arm64` |
+| Azure Linux (x64)     | Ubuntu 16.04 | x86             | `mcr.microsoft.com/dotnet-buildtools/prereqs:azurelinux-3.0-net9.0-cross-x86`          | `/crossrootfs/x86`   |
 
-All official builds are cross-builds with a rootfs for the target OS, and will use the clang version available on the container.
+Notes:
 
-| Host OS               | Target OS    | Target Arch     | Image location                                                                   | crossrootfs location |
-| --------------------- | ------------ | --------------- | -------------------------------------------------------------------------------- | -------------------- |
-| CBL-mariner 2.0 (x64) | Alpine 3.13  | x64             | `mcr.microsoft.com/dotnet-buildtools/prereqs:cbl-mariner-2.0-cross-amd64-alpine` | `/crossrootfs/x64`   |
-| CBL-mariner 2.0 (x64) | Ubuntu 16.04 | x64             | `mcr.microsoft.com/dotnet-buildtools/prereqs:cbl-mariner-2.0-cross-amd64`        | `/crossrootfs/x64`   |
-| CBL-mariner 2.0 (x64) | Alpine       | arm32 (armhf)   | `mcr.microsoft.com/dotnet-buildtools/prereqs:cbl-mariner-2.0-cross-arm-alpine`   | `/crossrootfs/arm`   |
-| CBL-mariner 2.0 (x64) | Ubuntu 16.04 | arm32 (armhf)   | `mcr.microsoft.com/dotnet-buildtools/prereqs:cbl-mariner-2.0-cross-arm`          | `/crossrootfs/arm`   |
-| CBL-mariner 2.0 (x64) | Alpine       | arm64 (arm64v8) | `mcr.microsoft.com/dotnet-buildtools/prereqs:cbl-mariner-2.0-cross-arm64-alpine` | `/crossrootfs/arm64` |
-| CBL-mariner 2.0 (x64) | Ubuntu 16.04 | arm64 (arm64v8) | `mcr.microsoft.com/dotnet-buildtools/prereqs:cbl-mariner-2.0-cross-arm64`        | `/crossrootfs/arm64` |
-| Ubuntu 18.04 (x64)    | FreeBSD      | x64             | `mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-18.04-cross-freebsd-12`      | `/crossrootfs/x64`   |
+- All official builds are cross-builds with a rootfs for the target OS, and use the clang version available on the container.
+- These images are built using Dockerfiles maintained in the [dotnet-buildtools-prereqs-docker repo](https://github.com/dotnet/dotnet-buildtools-prereqs-docker).
 
-These Docker images are built using the Dockerfiles maintained in the [dotnet-buildtools-prereqs-docker repo](https://github.com/dotnet/dotnet-buildtools-prereqs-docker).
+
+The following images are used for more extended scenarios, including for community-supported builds, and may require different patterns of use.
+
+| Host OS               | Target OS                  | Target Arch       | Image                                                                                  | crossrootfs dir        |
+| --------------------- | -------------------------- | ----------------- | -------------------------------------------------------------------------------------- | ---------------------- |
+| Azure Linux (x64)     | Android Bionic             | x64               | `mcr.microsoft.com/dotnet-buildtools/prereqs:azurelinux-3.0-net9.0-cross-android-amd64`|                        |
+| Azure Linux (x64)     | Android Bionic (w/OpenSSL) | x64               | `mcr.microsoft.com/dotnet-buildtools/prereqs:azurelinux-3.0-net9.0-android-openssl`    |                        |
+| Azure Linux (x64)     | Android Bionic (w/Docker)  | x64               | `mcr.microsoft.com/dotnet-buildtools/prereqs:azurelinux-3.0-net9.0-android-docker`     |                        |
+| Azure Linux (x64)     | Azure Linux 3.0            | x64               | `mcr.microsoft.com/dotnet-buildtools/prereqs:azurelinux-3.0-net9.0-fpm`                |                        |
+| Azure Linux (x64)     | FreeBSD 13                 | x64               | `mcr.microsoft.com/dotnet-buildtools/prereqs:azurelinux-3.0-net9.0-cross-freebsd-13`   | `/crossrootfs/x64`     |
+| Azure Linux (x64)     | Ubuntu 18.04               | PPC64le           | `mcr.microsoft.com/dotnet-buildtools/prereqs:azurelinux-3.0-net9.0-cross-ppc64le`      | `/crossrootfs/ppc64le` |
+| Azure Linux (x64)     | Ubuntu 24.04               | RISC-V            | `mcr.microsoft.com/dotnet-buildtools/prereqs:azurelinux-3.0-net9.0-cross-riscv64`      | `/crossrootfs/riscv64` |
+| Azure Linux (x64)     | Ubuntu 18.04               | S390x             | `mcr.microsoft.com/dotnet-buildtools/prereqs:azurelinux-3.0-net9.0-cross-s390x`        | `/crossrootfs/s390x`   |
+| Azure Linux (x64)     | Ubuntu 16.04 (Wasm)        | x64               | `mcr.microsoft.com/dotnet-buildtools/prereqs:azurelinux-3.0-net9.0-webassembly-amd64`  | `/crossrootfs/x64`     |
+| Debian (x64)          | Debian 12                  | x64               | `mcr.microsoft.com/dotnet-buildtools/prereqs:debian-12-gcc14-amd64`                    | `/crossrootfs/armv6`   |
+| Ubuntu (x64)          | Ubuntu 22.04               | x64               | `mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-22.04-debpkg`                      |                        |
+| Ubuntu (x64)          | Tizen 9.0                  | Arm32 (armel)     | `mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-22.04-cross-armel-tizen`           | `/crossrootfs/armel`   |
+| Ubuntu (x64)          | Ubuntu 20.04               | Arm32 (v6)        | `mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-20.04-cross-armv6-raspbian-10`     | `/crossrootfs/armv6`   |
 
 ## Build using your own Environment
 

@@ -5,13 +5,13 @@
 #include "AsmOffsets.inc"
 
 // GC type flags
-GC_ALLOC_FINALIZE               = 1
+#define GC_ALLOC_FINALIZE               1
 
 //
 // Rename fields of nested structs
 //
-OFFSETOF__Thread__m_alloc_context__alloc_ptr        = OFFSETOF__Thread__m_rgbAllocContextBuffer + OFFSETOF__gc_alloc_context__alloc_ptr
-OFFSETOF__Thread__m_alloc_context__alloc_limit      = OFFSETOF__Thread__m_rgbAllocContextBuffer + OFFSETOF__gc_alloc_context__alloc_limit
+#define OFFSETOF__Thread__m_alloc_context__alloc_ptr        (OFFSETOF__Thread__m_rgbAllocContextBuffer + OFFSETOF__gc_alloc_context__alloc_ptr)
+#define OFFSETOF__Thread__m_alloc_context__alloc_limit      (OFFSETOF__Thread__m_rgbAllocContextBuffer + OFFSETOF__gc_alloc_context__alloc_limit)
 
 
 
@@ -90,9 +90,11 @@ LOCAL_LABEL(RhpNewFast_RarePath):
         // Set the new objects MethodTable pointer on success.
         cbz         x0, LOCAL_LABEL(NewOutOfMemory)
 
+        .cfi_remember_state
         POP_COOP_PINVOKE_FRAME
         EPILOG_RETURN
 
+        .cfi_restore_state
 LOCAL_LABEL(NewOutOfMemory):
         // This is the OOM failure path. We are going to tail-call to a managed helper that will throw
         // an out of memory exception that the caller of this allocator understands.
@@ -262,9 +264,11 @@ LOCAL_LABEL(RhpNewArray_Rare):
         // Set the new objects MethodTable pointer and length on success.
         cbz         x0, LOCAL_LABEL(ArrayOutOfMemory)
 
+        .cfi_remember_state
         POP_COOP_PINVOKE_FRAME
         EPILOG_RETURN
 
+        .cfi_restore_state
 LOCAL_LABEL(ArrayOutOfMemory):
         // This is the OOM failure path. We are going to tail-call to a managed helper that will throw
         // an out of memory exception that the caller of this allocator understands.

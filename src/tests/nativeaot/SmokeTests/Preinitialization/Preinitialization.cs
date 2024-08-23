@@ -59,6 +59,7 @@ internal class Program
         TestIsValueType.Run();
         TestIndirectLoads.Run();
         TestInitBlock.Run();
+        TestDataflow.Run();
 #else
         Console.WriteLine("Preinitialization is disabled in multimodule builds for now. Skipping test.");
 #endif
@@ -403,7 +404,15 @@ class TestReferenceTypeAllocation
 
     public static void Run()
     {
-        Assert.IsPreinitialized(typeof(TestReferenceTypeAllocation));
+        if (RuntimeInformation.ProcessArchitecture is Architecture.Arm or Architecture.Wasm)
+        {
+            // Because of the double field, this is not preinitialized
+            Assert.IsLazyInitialized(typeof(TestReferenceTypeAllocation));
+        }
+        else
+        {
+            Assert.IsPreinitialized(typeof(TestReferenceTypeAllocation));
+        }
         Assert.AreEqual(12345, s_referenceType.IntValue);
         Assert.AreEqual(3.14159, s_referenceType.DoubleValue);
     }
@@ -657,6 +666,7 @@ class TestInitFromOtherClass
     static int s_intValue = OtherClass.IntValue;
     static string s_stringValue = OtherClass.StringValue;
     static object s_objectValue = OtherClass.ObjectValue;
+    static bool s_areStringsSame = Object.ReferenceEquals(OtherClass.StringValue, "Hello");
 
     public static void Run()
     {
@@ -664,6 +674,7 @@ class TestInitFromOtherClass
         Assert.AreEqual(OtherClass.IntValue, s_intValue);
         Assert.AreSame(OtherClass.StringValue, s_stringValue);
         Assert.AreSame(OtherClass.ObjectValue, s_objectValue);
+        Assert.True(s_areStringsSame);
     }
 }
 
@@ -1048,11 +1059,13 @@ class TestSharedCode
             int val = AccessCookie<C1>();
             Assert.AreEqual(42, val);
 
-            val = (int)typeof(ClassWithTemplate<>).MakeGenericType(typeof(C2)).GetField("Cookie").GetValue(null);
+            val = (int)typeof(ClassWithTemplate<>).MakeGenericType(GetC2()).GetField("Cookie").GetValue(null);
             Assert.AreEqual(42, val);
+            static Type GetC2() => typeof(C2);
 
-            val = (int)typeof(TestSharedCode).GetMethod(nameof(AccessCookie)).MakeGenericMethod(typeof(C3)).Invoke(null, Array.Empty<object>());
+            val = (int)typeof(TestSharedCode).GetMethod(nameof(AccessCookie)).MakeGenericMethod(GetC3()).Invoke(null, Array.Empty<object>());
             Assert.AreEqual(42, val);
+            static Type GetC3() => typeof(C3);
         }
 
         {
@@ -1060,13 +1073,15 @@ class TestSharedCode
             object val = AccessArray<C1>();
             Assert.AreEqual(int.MaxValue, GC.GetGeneration(val));
 
-            val = typeof(ClassWithTemplate<>).MakeGenericType(typeof(C4)).GetField("Array").GetValue(null);
+            val = typeof(ClassWithTemplate<>).MakeGenericType(GetC4()).GetField("Array").GetValue(null);
             Assert.AreEqual(0, GC.GetGeneration(val));
             Assert.AreEqual(nameof(C4), val.GetType().GetElementType().Name);
+            static Type GetC4() => typeof(C4);
 
-            val = typeof(TestSharedCode).GetMethod(nameof(AccessArray)).MakeGenericMethod(typeof(C5)).Invoke(null, Array.Empty<object>());
+            val = typeof(TestSharedCode).GetMethod(nameof(AccessArray)).MakeGenericMethod(GetC5()).Invoke(null, Array.Empty<object>());
             Assert.AreEqual(0, GC.GetGeneration(val));
             Assert.AreEqual(nameof(C5), val.GetType().GetElementType().Name);
+            static Type GetC5() => typeof(C5);
         }
     }
 }
@@ -1282,8 +1297,8 @@ class TestTypeHandles
         Assert.True(!Foo<bool>.IsChar);
         Assert.True(Foo<bool>.IsBool);
 
-        Assert.IsLazyInitialized(typeof(CharHolder));
-        Assert.IsLazyInitialized(typeof(IsChar));
+        Assert.IsPreinitialized(typeof(CharHolder));
+        Assert.IsPreinitialized(typeof(IsChar));
         Assert.True(IsChar.Is);
     }
 }
@@ -1308,15 +1323,17 @@ class TestIsValueType
 
 class TestIndirectLoads
 {
-    static unsafe U Read<T, U>(T val) where T : unmanaged where U : unmanaged
-        => *(U*)&val;
+    static unsafe sbyte Read(byte val) => *(sbyte*)&val;
+    static unsafe short Read(ushort val) => *(short*)&val;
+    static unsafe int Read(uint val) => *(int*)&val;
+    static unsafe long Read(ulong val) => *(long*)&val;
 
     class LdindTester
     {
-        public static sbyte SByte = Read<byte, sbyte>(byte.MaxValue);
-        public static short Short = Read<ushort, short>(ushort.MaxValue);
-        public static int Int = Read<uint, int>(uint.MaxValue);
-        public static long Long = Read<ulong, long>(ulong.MaxValue);
+        public static sbyte SByte = Read(byte.MaxValue);
+        public static short Short = Read(ushort.MaxValue);
+        public static int Int = Read(uint.MaxValue);
+        public static long Long = Read(ulong.MaxValue);
     }
 
     public static void Run()
@@ -1362,6 +1379,22 @@ class TestInitBlock
         Assert.IsLazyInitialized(typeof(Overrun));
         Assert.AreEqual(42, Overrun.Value);
         Assert.AreEqual(42, Overrun.Pad);
+    }
+}
+
+class TestDataflow
+{
+    [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)]
+    public static Type TheType = typeof(MyType);
+
+    class MyType
+    {
+        public static void TheMethod() => Console.WriteLine("Hello");
+    }
+
+    public static void Run()
+    {
+        TheType.GetMethod("TheMethod").Invoke(null, []);
     }
 }
 

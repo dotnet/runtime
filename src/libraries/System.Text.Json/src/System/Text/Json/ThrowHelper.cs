@@ -13,9 +13,33 @@ namespace System.Text.Json
         public const string ExceptionSourceValueToRethrowAsJsonException = "System.Text.Json.Rethrowable";
 
         [DoesNotReturn]
+        public static void ThrowArgumentOutOfRangeException_NewLine(string parameterName)
+        {
+            throw GetArgumentOutOfRangeException(parameterName, SR.InvalidNewLine);
+        }
+
+        [DoesNotReturn]
+        public static void ThrowArgumentOutOfRangeException_IndentCharacter(string parameterName)
+        {
+            throw GetArgumentOutOfRangeException(parameterName, SR.InvalidIndentCharacter);
+        }
+
+        [DoesNotReturn]
+        public static void ThrowArgumentOutOfRangeException_IndentSize(string parameterName, int minimumSize, int maximumSize)
+        {
+            throw GetArgumentOutOfRangeException(parameterName, SR.Format(SR.InvalidIndentSize, minimumSize, maximumSize));
+        }
+
+        [DoesNotReturn]
         public static void ThrowArgumentOutOfRangeException_MaxDepthMustBePositive(string parameterName)
         {
             throw GetArgumentOutOfRangeException(parameterName, SR.MaxDepthMustBePositive);
+        }
+
+        [DoesNotReturn]
+        public static void ThrowArgumentOutOfRangeException_JsonNumberExponentTooLarge(string parameterName)
+        {
+            throw GetArgumentOutOfRangeException(parameterName, SR.JsonNumberExponentTooLarge);
         }
 
         private static ArgumentOutOfRangeException GetArgumentOutOfRangeException(string parameterName, string message)
@@ -694,6 +718,12 @@ namespace System.Text.Json
         public static void ThrowObjectDisposedException_JsonDocument()
         {
             throw new ObjectDisposedException(nameof(JsonDocument));
+        }
+
+        [DoesNotReturn]
+        public static void ThrowInsufficientExecutionStackException_JsonElementDeepEqualsInsufficientExecutionStack()
+        {
+            throw new InsufficientExecutionStackException(SR.JsonElementDeepEqualsInsufficientExecutionStack);
         }
     }
 

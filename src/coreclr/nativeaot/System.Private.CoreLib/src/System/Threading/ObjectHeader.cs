@@ -1,9 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using Internal.Runtime;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
+
+using Internal.Runtime;
 
 namespace System.Threading
 {
@@ -151,7 +152,7 @@ namespace System.Threading
                 // there is nothing - try set hashcode inline
                 Debug.Assert((oldBits & BIT_SBLK_IS_HASH_OR_SYNCBLKINDEX) == 0);
                 int newBits = BIT_SBLK_IS_HASH_OR_SYNCBLKINDEX | BIT_SBLK_IS_HASHCODE | oldBits | newHash;
-                if (Interlocked.CompareExchange(ref *pHeader, newBits, oldBits) == oldBits)
+                if (Interlocked.CompareExchange(pHeader, newBits, oldBits) == oldBits)
                 {
                     return newHash;
                 }
@@ -217,7 +218,7 @@ namespace System.Threading
         {
             // Holding this lock implies there is at most one thread setting the sync entry index at
             // any given time.  We also require that the sync entry index has not been already set.
-            Debug.Assert(SyncTable.s_lock.IsAcquired);
+            Debug.Assert(SyncTable.s_lock.IsHeldByCurrentThread);
             int oldBits, newBits;
 
             do
@@ -239,14 +240,14 @@ namespace System.Threading
                     SyncTable.MoveThinLockToNewEntry(
                         syncIndex,
                         oldBits & SBLK_MASK_LOCK_THREADID,
-                        (oldBits & SBLK_MASK_LOCK_RECLEVEL) >> SBLK_RECLEVEL_SHIFT);
+                        (uint)((oldBits & SBLK_MASK_LOCK_RECLEVEL) >> SBLK_RECLEVEL_SHIFT));
                 }
 
                 // Store the sync entry index
                 newBits = oldBits & ~(BIT_SBLK_IS_HASHCODE | MASK_HASHCODE_INDEX);
                 newBits |= syncIndex | BIT_SBLK_IS_HASH_OR_SYNCBLKINDEX;
             }
-            while (Interlocked.CompareExchange(ref *pHeader, newBits, oldBits) != oldBits);
+            while (Interlocked.CompareExchange(pHeader, newBits, oldBits) != oldBits);
         }
 
         //
@@ -284,23 +285,18 @@ namespace System.Threading
         // 0 - failed
         // syncIndex - retry with the Lock
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static unsafe int Acquire(object obj)
+        public static unsafe int Acquire(object obj, int currentThreadID)
         {
-            return TryAcquire(obj, oneShot: false);
+            return TryAcquire(obj, currentThreadID, oneShot: false);
         }
 
         // -1 - success
         // 0 - failed
         // syncIndex - retry with the Lock
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static unsafe int TryAcquire(object obj, bool oneShot = true)
+        public static unsafe int TryAcquire(object obj, int currentThreadID, bool oneShot = true)
         {
             ArgumentNullException.ThrowIfNull(obj);
-
-            Debug.Assert(!(obj is Lock),
-                "Do not use Monitor.Enter or TryEnter on a Lock instance; use Lock methods directly instead.");
-
-            int currentThreadID = ManagedThreadId.CurrentManagedThreadIdUnchecked;
 
             // if thread ID is uninitialized or too big, we do "uncommon" part.
             if ((uint)(currentThreadID - 1) <= (uint)SBLK_MASK_LOCK_THREADID)
@@ -316,14 +312,14 @@ namespace System.Threading
                     // N.B. hashcode, thread ID and sync index are never 0, and hashcode is largest of all
                     if ((oldBits & MASK_HASHCODE_INDEX) == 0)
                     {
-                        if (Interlocked.CompareExchange(ref *pHeader, oldBits | currentThreadID, oldBits) == oldBits)
+                        if (Interlocked.CompareExchange(pHeader, oldBits | currentThreadID, oldBits) == oldBits)
                         {
                             return -1;
                         }
                     }
                     else if (GetSyncEntryIndex(oldBits, out int syncIndex))
                     {
-                        if (SyncTable.GetLockObject(syncIndex).TryAcquireOneShot(currentThreadID))
+                        if (SyncTable.GetLockObject(syncIndex).TryEnterOneShot(currentThreadID))
                         {
                             return -1;
                         }
@@ -334,23 +330,25 @@ namespace System.Threading
                 }
             }
 
-            return TryAcquireUncommon(obj, oneShot);
+            return TryAcquireUncommon(obj, currentThreadID, oneShot);
         }
 
         // handling uncommon cases here - recursive lock, contention, retries
         // -1 - success
         // 0 - failed
         // syncIndex - retry with the Lock
-        private static unsafe int TryAcquireUncommon(object obj, bool oneShot)
+        private static unsafe int TryAcquireUncommon(object obj, int currentThreadID, bool oneShot)
         {
+            if (currentThreadID == 0)
+                currentThreadID = Environment.CurrentManagedThreadId;
+
             // does thread ID fit?
-            int currentThreadID = Environment.CurrentManagedThreadId;
             if (currentThreadID > SBLK_MASK_LOCK_THREADID)
                 return GetSyncIndex(obj);
 
-            // Lock.s_processorCount is lazy-initialized at fist contended acquire
-            // untill then it is 0 and we assume we have multicore machine
-            int retries = oneShot || Lock.s_processorCount == 1 ? 0 : 16;
+            // Lock.IsSingleProcessor gets a value that is lazy-initialized at the first contended acquire.
+            // Until then it is false and we assume we have multicore machine.
+            int retries = oneShot || Lock.IsSingleProcessor ? 0 : 16;
 
             // retry when the lock is owned by somebody else.
             // this loop will spinwait between iterations.
@@ -371,7 +369,7 @@ namespace System.Threading
                         if ((oldBits & MASK_HASHCODE_INDEX) == 0)
                         {
                             int newBits = oldBits | currentThreadID;
-                            if (Interlocked.CompareExchange(ref *pHeader, newBits, oldBits) == oldBits)
+                            if (Interlocked.CompareExchange(pHeader, newBits, oldBits) == oldBits)
                             {
                                 return -1;
                             }
@@ -400,7 +398,7 @@ namespace System.Threading
                             int newBits = oldBits + SBLK_LOCK_RECLEVEL_INC;
                             if ((newBits & SBLK_MASK_LOCK_RECLEVEL) != 0)
                             {
-                                if (Interlocked.CompareExchange(ref *pHeader, newBits, oldBits) == oldBits)
+                                if (Interlocked.CompareExchange(pHeader, newBits, oldBits) == oldBits)
                                 {
                                     return -1;
                                 }
@@ -422,9 +420,12 @@ namespace System.Threading
                     }
                 }
 
-                // spin a bit before retrying (1 spinwait is roughly 35 nsec)
-                // the object is not pinned here
-                Thread.SpinWaitInternal(i);
+                if (retries != 0)
+                {
+                    // spin a bit before retrying (1 spinwait is roughly 35 nsec)
+                    // the object is not pinned here
+                    Thread.SpinWaitInternal(i);
+                }
             }
 
             // owned by somebody else
@@ -435,9 +436,6 @@ namespace System.Threading
         public static unsafe void Release(object obj)
         {
             ArgumentNullException.ThrowIfNull(obj);
-
-            Debug.Assert(!(obj is Lock),
-                "Do not use Monitor.Enter or TryEnter on a Lock instance; use Lock methods directly instead.");
 
             int currentThreadID = ManagedThreadId.CurrentManagedThreadIdUnchecked;
             // transform uninitialized ID into -1, so it will not match any possible lock owner
@@ -460,7 +458,7 @@ namespace System.Threading
                             oldBits - SBLK_LOCK_RECLEVEL_INC :
                             oldBits & ~SBLK_MASK_LOCK_THREADID;
 
-                        if (Interlocked.CompareExchange(ref *pHeader, newBits, oldBits) == oldBits)
+                        if (Interlocked.CompareExchange(pHeader, newBits, oldBits) == oldBits)
                         {
                             return;
                         }
@@ -481,16 +479,13 @@ namespace System.Threading
                 }
             }
 
-            fatLock.ReleaseByThread(currentThreadID);
+            fatLock.Exit(currentThreadID);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static unsafe bool IsAcquired(object obj)
         {
             ArgumentNullException.ThrowIfNull(obj);
-
-            Debug.Assert(!(obj is Lock),
-                "Do not use Monitor.Enter or TryEnter on a Lock instance; use Lock methods directly instead.");
 
             int currentThreadID = ManagedThreadId.CurrentManagedThreadIdUnchecked;
             // transform uninitialized ID into -1, so it will not match any possible lock owner
@@ -510,7 +505,7 @@ namespace System.Threading
 
                 if (GetSyncEntryIndex(oldBits, out int syncIndex))
                 {
-                    return SyncTable.GetLockObject(syncIndex).IsAcquiredByThread(currentThreadID);
+                    return SyncTable.GetLockObject(syncIndex).GetIsHeldByCurrentThread(currentThreadID);
                 }
 
                 // someone else owns or noone.

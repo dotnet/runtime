@@ -33,7 +33,9 @@ namespace System.Management
             if (IntPtr.Zero != pErrorInfo && new IntPtr(-1) != pErrorInfo)
             {
                 IntPtr pIWbemClassObject;
+#pragma warning disable CS9191 // The 'ref' modifier for argument 1 corresponding to 'in' parameter is equivalent to 'in'. Consider using 'in' instead.
                 Marshal.QueryInterface(pErrorInfo, ref IWbemClassObjectFreeThreaded.IID_IWbemClassObject, out pIWbemClassObject);
+#pragma warning restore CS9191
                 Marshal.Release(pErrorInfo);
 
                 // The IWbemClassObjectFreeThreaded instance will own reference count on pIWbemClassObject

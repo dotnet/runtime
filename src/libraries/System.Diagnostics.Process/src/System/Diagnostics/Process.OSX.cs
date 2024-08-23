@@ -22,6 +22,11 @@ namespace System.Diagnostics
         {
             get
             {
+                if (IsCurrentProcess)
+                {
+                    return Environment.CpuUsage.PrivilegedTime;
+                }
+
                 EnsureState(State.HaveNonExitedId);
                 Interop.libproc.rusage_info_v3 info = Interop.libproc.proc_pid_rusage(_processId);
                 return MapTime(info.ri_system_time);
@@ -64,6 +69,11 @@ namespace System.Diagnostics
         {
             get
             {
+                if (IsCurrentProcess)
+                {
+                    return Environment.CpuUsage.TotalTime;
+                }
+
                 EnsureState(State.HaveNonExitedId);
                 Interop.libproc.rusage_info_v3 info = Interop.libproc.proc_pid_rusage(_processId);
                 return MapTime(info.ri_system_time + info.ri_user_time);
@@ -81,6 +91,11 @@ namespace System.Diagnostics
         {
             get
             {
+                if (IsCurrentProcess)
+                {
+                    return Environment.CpuUsage.UserTime;
+                }
+
                 EnsureState(State.HaveNonExitedId);
                 Interop.libproc.rusage_info_v3 info = Interop.libproc.proc_pid_rusage(_processId);
                 return MapTime(info.ri_user_time);
@@ -117,8 +132,8 @@ namespace System.Diagnostics
             if (denom == default)
             {
                 Interop.libSystem.mach_timebase_info_data_t timeBase = GetTimeBase();
-                s_timeBase_denom = denom = timeBase.denom;
                 s_timeBase_numer = timeBase.numer;
+                s_timeBase_denom = denom = timeBase.denom;
             }
             uint numer = s_timeBase_numer;
 

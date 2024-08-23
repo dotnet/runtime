@@ -61,7 +61,7 @@ class ConditionalBranchInstructionFormat : public InstructionFormat
         // Encoding 0|1|0|1|0|1|0|0|imm19|0|cond
         // cond = Bits3-0(variation)
         // imm19 = bits19-0(fixedUpReference/4), will be SignExtended
-        virtual VOID EmitInstruction(UINT refSize, __int64 fixedUpReference, BYTE *pOutBufferRX, BYTE *pOutBufferRW, UINT variationCode, BYTE *pDataBuffer)
+        virtual VOID EmitInstruction(UINT refSize, int64_t fixedUpReference, BYTE *pOutBufferRX, BYTE *pOutBufferRW, UINT variationCode, BYTE *pDataBuffer)
         {
             _ASSERTE(!"LOONGARCH64: not implementation on loongarch64!!!");
             LIMITED_METHOD_CONTRACT;
@@ -152,7 +152,7 @@ class BranchInstructionFormat : public InstructionFormat
             }
         }
 
-        virtual VOID EmitInstruction(UINT refSize, __int64 fixedUpReference, BYTE *pOutBufferRX, BYTE *pOutBufferRW, UINT variationCode, BYTE *pDataBuffer)
+        virtual VOID EmitInstruction(UINT refSize, int64_t fixedUpReference, BYTE *pOutBufferRX, BYTE *pOutBufferRW, UINT variationCode, BYTE *pDataBuffer)
         {
             LIMITED_METHOD_CONTRACT;
 
@@ -160,7 +160,7 @@ class BranchInstructionFormat : public InstructionFormat
             {
                 _ASSERTE(((UINT_PTR)pDataBuffer & 7) == 0);
 
-                __int64 dataOffset = pDataBuffer - pOutBufferRW;
+                int64_t dataOffset = pDataBuffer - pOutBufferRW;
 
                 if ((dataOffset < -(0x80000000L)) || (dataOffset > 0x7fffffff))
                     COMPlusThrow(kNotSupportedException);
@@ -183,13 +183,13 @@ class BranchInstructionFormat : public InstructionFormat
                     *(DWORD*)(pOutBufferRW+12) = 0x4c0002a0;//jirl  $r0,$r21,0
                 }
 
-                *((__int64*)pDataBuffer) = fixedUpReference + (__int64)pOutBufferRX;
+                *((int64_t*)pDataBuffer) = fixedUpReference + (int64_t)pOutBufferRX;
             }
             else
             {
                 _ASSERTE(((UINT_PTR)pDataBuffer & 7) == 0);
 
-                __int64 dataOffset = pDataBuffer - pOutBufferRW;
+                int64_t dataOffset = pDataBuffer - pOutBufferRW;
 
                 if ((dataOffset < -(0x80000000L)) || (dataOffset > 0x7fffffff))
                     COMPlusThrow(kNotSupportedException);
@@ -210,9 +210,9 @@ class BranchInstructionFormat : public InstructionFormat
                     *((DWORD*)(pOutBufferRW+8)) = 0x4c0002a0;//jirl  $r0,$r21,0
                 }
 
-                if (!ClrSafeInt<__int64>::addition(fixedUpReference, (__int64)pOutBufferRX, fixedUpReference))
+                if (!ClrSafeInt<int64_t>::addition(fixedUpReference, (int64_t)pOutBufferRX, fixedUpReference))
                     COMPlusThrowArithmetic();
-                *((__int64*)pDataBuffer) = fixedUpReference;
+                *((int64_t*)pDataBuffer) = fixedUpReference;
             }
         }
 
@@ -248,7 +248,7 @@ class LoadFromLabelInstructionFormat : public InstructionFormat
             return fExternal;
         }
 
-        virtual VOID EmitInstruction(UINT refSize, __int64 fixedUpReference, BYTE *pOutBufferRX, BYTE *pOutBufferRW, UINT variationCode, BYTE *pDataBuffer)
+        virtual VOID EmitInstruction(UINT refSize, int64_t fixedUpReference, BYTE *pOutBufferRX, BYTE *pOutBufferRW, UINT variationCode, BYTE *pDataBuffer)
         {
             _ASSERTE(!"LOONGARCH64: not implementation on loongarch64!!!");
             LIMITED_METHOD_CONTRACT;
@@ -301,8 +301,7 @@ void ClearRegDisplayArgumentAndScratchRegisters(REGDISPLAY * pRD)
 void LazyMachState::unwindLazyState(LazyMachState* baseState,
                                     MachState* unwoundstate,
                                     DWORD threadId,
-                                    int funCallDepth,
-                                    HostCallPreference hostCallPreference)
+                                    int funCallDepth)
 {
     T_CONTEXT context;
     T_KNONVOLATILE_CONTEXT_POINTERS nonVolContextPtrs;
@@ -381,20 +380,7 @@ void LazyMachState::unwindLazyState(LazyMachState* baseState,
         {
             // Determine  whether given IP resides in JITted code. (It returns nonzero in that case.)
             // Use it now to see if we've unwound to managed code yet.
-            BOOL fFailedReaderLock = FALSE;
-            BOOL fIsManagedCode = ExecutionManager::IsManagedCode(pvControlPc, hostCallPreference, &fFailedReaderLock);
-            if (fFailedReaderLock)
-            {
-                // We don't know if we would have been able to find a JIT
-                // manager, because we couldn't enter the reader lock without
-                // yielding (and our caller doesn't want us to yield).  So abort
-                // now.
-
-                // Invalidate the lazyState we're returning, so the caller knows
-                // we aborted before we could fully unwind
-                unwoundstate->_isValid = false;
-                return;
-            }
+            BOOL fIsManagedCode = ExecutionManager::IsManagedCode(pvControlPc);
 
             if (fIsManagedCode)
                 break;
@@ -450,7 +436,7 @@ void LazyMachState::unwindLazyState(LazyMachState* baseState,
     unwoundstate->_isValid = TRUE;
 }
 
-void HelperMethodFrame::UpdateRegDisplay(const PREGDISPLAY pRD)
+void HelperMethodFrame::UpdateRegDisplay(const PREGDISPLAY pRD, bool updateFloats)
 {
     CONTRACTL
     {
@@ -460,6 +446,14 @@ void HelperMethodFrame::UpdateRegDisplay(const PREGDISPLAY pRD)
         SUPPORTS_DAC;
     }
     CONTRACTL_END;
+
+#ifndef DACCESS_COMPILE
+    if (updateFloats)
+    {
+        UpdateFloatingPointRegisters(pRD);
+        _ASSERTE(pRD->pCurrentContext->Pc == GetReturnAddress());
+    }
+#endif // DACCESS_COMPILE
 
     pRD->IsCallerContextValid = FALSE;
     pRD->IsCallerSPValid      = FALSE;        // Don't add usage of this field.  This is only temporary.
@@ -478,7 +472,7 @@ void HelperMethodFrame::UpdateRegDisplay(const PREGDISPLAY pRD)
         // This allocation throws on OOM.
         MachState* pUnwoundState = (MachState*)DacAllocHostOnlyInstance(sizeof(*pUnwoundState), true);
 
-        InsureInit(false, pUnwoundState);
+        InsureInit(pUnwoundState);
 
         pRD->pCurrentContext->Pc = pRD->ControlPC = pUnwoundState->_pc;
         pRD->pCurrentContext->Sp = pRD->SP        = pUnwoundState->_sp;
@@ -620,8 +614,16 @@ void UpdateRegDisplayFromCalleeSavedRegisters(REGDISPLAY * pRD, CalleeSavedRegis
     pContextPointers->Ra  = (PDWORD64)&pCalleeSaved->ra;
 }
 
-void TransitionFrame::UpdateRegDisplay(const PREGDISPLAY pRD)
+void TransitionFrame::UpdateRegDisplay(const PREGDISPLAY pRD, bool updateFloats)
 {
+#ifndef DACCESS_COMPILE
+    if (updateFloats)
+    {
+        UpdateFloatingPointRegisters(pRD);
+        _ASSERTE(pRD->pCurrentContext->Pc == GetReturnAddress());
+    }
+#endif // DACCESS_COMPILE
+
     pRD->IsCallerContextValid = FALSE;
     pRD->IsCallerSPValid      = FALSE;        // Don't add usage of this field.  This is only temporary.
 
@@ -643,7 +645,7 @@ void TransitionFrame::UpdateRegDisplay(const PREGDISPLAY pRD)
     LOG((LF_GCROOTS, LL_INFO100000, "STACKWALK    TransitionFrame::UpdateRegDisplay(pc:%p, sp:%p)\n", pRD->ControlPC, pRD->SP));
 }
 
-void FaultingExceptionFrame::UpdateRegDisplay(const PREGDISPLAY pRD)
+void FaultingExceptionFrame::UpdateRegDisplay(const PREGDISPLAY pRD, bool updateFloats)
 {
     LIMITED_METHOD_DAC_CONTRACT;
 
@@ -676,7 +678,7 @@ void FaultingExceptionFrame::UpdateRegDisplay(const PREGDISPLAY pRD)
     LOG((LF_GCROOTS, LL_INFO100000, "STACKWALK    FaultingExceptionFrame::UpdateRegDisplay(pc:%p, sp:%p)\n", pRD->ControlPC, pRD->SP));
 }
 
-void InlinedCallFrame::UpdateRegDisplay(const PREGDISPLAY pRD)
+void InlinedCallFrame::UpdateRegDisplay(const PREGDISPLAY pRD, bool updateFloats)
 {
     CONTRACT_VOID
     {
@@ -685,7 +687,6 @@ void InlinedCallFrame::UpdateRegDisplay(const PREGDISPLAY pRD)
 #ifdef PROFILING_SUPPORTED
         PRECONDITION(CORProfilerStackSnapshotEnabled() || InlinedCallFrame::FrameHasActiveCall(this));
 #endif
-        HOST_NOCALLS;
         MODE_ANY;
         SUPPORTS_DAC;
     }
@@ -696,6 +697,13 @@ void InlinedCallFrame::UpdateRegDisplay(const PREGDISPLAY pRD)
         LOG((LF_CORDB, LL_ERROR, "WARNING: InlinedCallFrame::UpdateRegDisplay called on inactive frame %p\n", this));
         return;
     }
+
+#ifndef DACCESS_COMPILE
+    if (updateFloats)
+    {
+        UpdateFloatingPointRegisters(pRD);
+    }
+#endif // DACCESS_COMPILE
 
     pRD->IsCallerContextValid = FALSE;
     pRD->IsCallerSPValid      = FALSE;
@@ -739,7 +747,7 @@ TADDR ResumableFrame::GetReturnAddressPtr(void)
     return dac_cast<TADDR>(m_Regs) + offsetof(T_CONTEXT, Pc);
 }
 
-void ResumableFrame::UpdateRegDisplay(const PREGDISPLAY pRD)
+void ResumableFrame::UpdateRegDisplay(const PREGDISPLAY pRD, bool updateFloats)
 {
     CONTRACT_VOID
     {
@@ -796,7 +804,7 @@ void ResumableFrame::UpdateRegDisplay(const PREGDISPLAY pRD)
     RETURN;
 }
 
-void HijackFrame::UpdateRegDisplay(const PREGDISPLAY pRD)
+void HijackFrame::UpdateRegDisplay(const PREGDISPLAY pRD, bool updateFloats)
 {
     LIMITED_METHOD_CONTRACT;
 
@@ -809,6 +817,8 @@ void HijackFrame::UpdateRegDisplay(const PREGDISPLAY pRD)
     // stack must be multiple of 16. So if s is not multiple of 16 then there must be padding of 8 bytes
     s = s + s%16;
     pRD->pCurrentContext->Sp = PTR_TO_TADDR(m_Args) + s ;
+
+    pRD->pCurrentContext->A0 = m_Args->A0;
 
     pRD->pCurrentContext->S0 = m_Args->S0;
     pRD->pCurrentContext->S1 = m_Args->S1;
@@ -922,6 +932,7 @@ void InitJITHelpers1()
             SetJitHelperFunction(CORINFO_HELP_NEWSFAST_ALIGN8, JIT_NewS_MP_FastPortable);
             SetJitHelperFunction(CORINFO_HELP_NEWARR_1_VC, JIT_NewArr1VC_MP_FastPortable);
             SetJitHelperFunction(CORINFO_HELP_NEWARR_1_OBJ, JIT_NewArr1OBJ_MP_FastPortable);
+            SetJitHelperFunction(CORINFO_HELP_BOX, JIT_Box_MP_FastPortable);
 
             ECall::DynamicallyAssignFCallImpl(GetEEFuncEntryPoint(AllocateString_MP_FastPortable), ECall::FastAllocateString);
         }
@@ -1456,6 +1467,8 @@ VOID StubLinkerCPU::EmitComputedInstantiatingMethodStub(MethodDesc* pSharedMD, s
 
 void StubLinkerCPU::EmitCallLabel(CodeLabel *target, BOOL fTailCall, BOOL fIndirect)
 {
+    STANDARD_VM_CONTRACT;
+
     BranchInstructionFormat::VariationCodes variationCode = BranchInstructionFormat::VariationCodes::BIF_VAR_JUMP;
     if (!fTailCall)
         variationCode = static_cast<BranchInstructionFormat::VariationCodes>(variationCode | BranchInstructionFormat::VariationCodes::BIF_VAR_CALL);
@@ -1468,10 +1481,14 @@ void StubLinkerCPU::EmitCallLabel(CodeLabel *target, BOOL fTailCall, BOOL fIndir
 
 void StubLinkerCPU::EmitCallManagedMethod(MethodDesc *pMD, BOOL fTailCall)
 {
+    STANDARD_VM_CONTRACT;
+
+    PCODE multiCallableAddr = pMD->TryGetMultiCallableAddrOfCode(CORINFO_ACCESS_PREFER_SLOT_OVER_TEMPORARY_ENTRYPOINT);
+
     // Use direct call if possible.
-    if (pMD->HasStableEntryPoint())
+    if (multiCallableAddr != (PCODE)NULL)
     {
-        EmitCallLabel(NewExternalCodeLabel((LPVOID)pMD->GetStableEntryPoint()), fTailCall, FALSE);
+        EmitCallLabel(NewExternalCodeLabel((LPVOID)multiCallableAddr), fTailCall, FALSE);
     }
     else
     {
@@ -1499,8 +1516,8 @@ void StubLinkerCPU::EmitCallManagedMethod(MethodDesc *pMD, BOOL fTailCall)
 #define END_DYNAMIC_HELPER_EMIT() \
     _ASSERTE(pStart + cb == p); \
     while (p < pStart + cbAligned) { *(DWORD*)p = 0xffffff0f/*badcode*/; p += 4; }\
-    ClrFlushInstructionCache(pStart, cbAligned); \
-    return (PCODE)pStart
+    ClrFlushInstructionCache(pStartRX, cbAligned); \
+    return (PCODE)pStartRX
 
 PCODE DynamicHelpers::CreateHelper(LoaderAllocator * pAllocator, TADDR arg, PCODE target)
 {
@@ -1651,7 +1668,7 @@ PCODE DynamicHelpers::CreateReturnConst(LoaderAllocator * pAllocator, TADDR arg)
 
     *(DWORD*)p = 0x18000015;// pcaddi  $r21,0
     p += 4;
-    *(DWORD*)p = 0x28c042a4;// ld.d  $v0,$r21,16
+    *(DWORD*)p = 0x28c042a4;// ld.d  $a0,$r21,16
     p += 4;
     *(DWORD*)p = 0x4c000020;// jirl  $r0,$ra,0
     p += 4;
@@ -1674,11 +1691,11 @@ PCODE DynamicHelpers::CreateReturnIndirConst(LoaderAllocator * pAllocator, TADDR
 
     *(DWORD*)p = 0x18000015;// pcaddi  $r21,0
     p += 4;
-    *(DWORD*)p = 0x28c062a4;// ld.d  $v0,$r21,24
+    *(DWORD*)p = 0x28c062a4;// ld.d  $a0,$r21,24
     p += 4;
-    *(DWORD*)p = 0x28c00084;// ld.d  $v0,$v0,0
+    *(DWORD*)p = 0x28c00084;// ld.d  $a0,$a0,0
     p += 4;
-    *(DWORD*)p = 0x02c00084 | ((offset & 0xfff)<<10);// addi.d  $v0,$v0,offset
+    *(DWORD*)p = 0x02c00084 | ((offset & 0xfff)<<10);// addi.d  $a0,$a0,offset
     p += 4;
     *(DWORD*)p = 0x4c000020;// jirl  $r0,$ra,0
     p += 4;
@@ -1793,11 +1810,13 @@ PCODE DynamicHelpers::CreateDictionaryLookupHelper(LoaderAllocator * pAllocator,
             _ASSERTE(pLookup->offsets[i] >= 0);
             if (i == pLookup->indirections - 1 && pLookup->sizeOffset != CORINFO_NO_SIZE_CHECK)
             {
-                codeSize += (pLookup->sizeOffset > 2047 ? 24 : 16);
+                // if( > 2047) (4*5 bytes) else 4*4 bytes for instructions.
+                codeSize += (pLookup->sizeOffset > 2047 ? 20 : 16);
                 indirectionsDataSize += (pLookup->sizeOffset > 2047 ? 4 : 0);
             }
 
-            codeSize += (pLookup->offsets[i] > 2047 ? 8 : 4); // if( > 2047) (8 bytes) else 4 bytes for instructions.
+            // if( > 2047) (8 bytes) else 4 bytes for instructions.
+            codeSize += (pLookup->offsets[i] > 2047 ? 8 : 4);
             indirectionsDataSize += (pLookup->offsets[i] > 2047 ? 4 : 0); // 4 bytes for storing indirection offset values
         }
 
@@ -1829,9 +1848,14 @@ PCODE DynamicHelpers::CreateDictionaryLookupHelper(LoaderAllocator * pAllocator,
 
         if (indirectionsDataSize)
         {
+            _ASSERTE(indirectionsDataSize < 2047);
+            _ASSERTE(dataOffset < 0x80000);
+
+            // get the first dataOffset's addr.
             // pcaddi  $r21,0
-            *(DWORD*)p = 0x18000015;
+            *(DWORD*)p = 0x18000015 | (dataOffset << 3); // dataOffset is 4byte aligned.
             p += 4;
+            dataOffset = 0;
         }
 
         if (pLookup->testForNull || pLookup->sizeOffset != CORINFO_NO_SIZE_CHECK)
@@ -1851,47 +1875,41 @@ PCODE DynamicHelpers::CreateDictionaryLookupHelper(LoaderAllocator * pAllocator,
 
                 if (pLookup->sizeOffset > 2047)
                 {
-                    // pcaddi  $r21,0
-                    *(DWORD*)p = 0x18000015; p += 4;
-                    // ld.d  $t4,$r21, #dataOffset
-                    *(DWORD*)p = 0x28c002b0 | (dataOffset << 10); p += 4;
+                    // ld.wu  $t4,$r21,0
+                    *(DWORD*)p = 0x2a8002b0 | (dataOffset << 10); p += 4;
                     // ldx.d  $t5,$a0,$t4
                     *(DWORD*)p = 0x380c4091; p += 4;
 
                     // move to next indirection offset data
-                    dataOffset = dataOffset - 12 + 4; // subtract 12 as we have moved PC by 12 and add 4 as next data is at 4 bytes from previous data
+                    dataOffset += 4;
                 }
                 else
                 {
                     // ld.d $t5, $a0, #(pLookup->sizeOffset)
                     *(DWORD*)p = 0x28c00091 | ((UINT32)pLookup->sizeOffset << 10); p += 4;
-                    dataOffset -= 4; // subtract 4 as we have moved PC by 4
                 }
 
                 // lu12i.w $t4, (slotOffset&0xfffff000)>>12
                 *(DWORD*)p = 0x14000010 | ((((UINT32)slotOffset & 0xfffff000) >> 12) << 5); p += 4;
                 // ori $t4, $t4, slotOffset&0xfff
                 *(DWORD*)p = 0x03800210 | (((UINT32)slotOffset & 0xfff) << 10); p += 4;
-                dataOffset -= 8;
 
                 // bge $t4,$t5, // CALL HELPER:
                 pBLECall = p;       // Offset filled later
                 *(DWORD*)p = 0x64000211; p += 4;
-                dataOffset -= 4;
             }
 
             if(pLookup->offsets[i] > 2047)
             {
-                _ASSERTE(dataOffset < 2047);
                 // ld.wu  $t4,$r21,0
-                *(DWORD*)p = 0x2a8002b0 | (dataOffset<<10);
+                *(DWORD*)p = 0x2a8002b0 | (dataOffset << 10);
                 p += 4;
                 // ldx.d  $a0,$a0,$t4
                 *(DWORD*)p = 0x380c4084;
                 p += 4;
 
                 // move to next indirection offset data
-                dataOffset = dataOffset - 8 + 4; // subtract 8 as we have moved PC by 8 and add 4 as next data is at 4 bytes from previous data
+                dataOffset += 4;
             }
             else
             {
@@ -1901,9 +1919,10 @@ PCODE DynamicHelpers::CreateDictionaryLookupHelper(LoaderAllocator * pAllocator,
                 // ld.d  $a0,$a0,pLookup->offsets[i]
                 *(DWORD*)p = 0x28c00084 | ((pLookup->offsets[i] & 0xfff)<<10);
                 p += 4;
-                dataOffset -= 4; // subtract 4 as we have moved PC by 4
             }
         }
+
+        _ASSERTE((indirectionsDataSize ? indirectionsDataSize : codeSize) == dataOffset);
 
         // No null test required
         if (!pLookup->testForNull)

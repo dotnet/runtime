@@ -5,6 +5,8 @@ using System;
 using System.Runtime.InteropServices;
 using Xunit;
 
+[SkipOnMono("needs triage")]
+[ActiveIssue("https://github.com/dotnet/runtime/issues/91388", typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.PlatformDoesNotSupportNativeTestAssets))]
 public class DecimalTest
 {
     private const int StartingIntValue = 42;
@@ -39,6 +41,7 @@ public class DecimalTest
     }
 
     [Fact]
+    [ActiveIssue("https://github.com/dotnet/runtimelab/issues/175", typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsNativeAot))]
     public static void RunLPDecimalTests()
     {
         Assert.Equal((decimal)StartingIntValue, DecimalTestNative.CreateLPDecimalFromInt(StartingIntValue));
@@ -57,6 +60,7 @@ public class DecimalTest
 
     [Fact]
     [PlatformSpecific(TestPlatforms.Windows)]
+    [ActiveIssue("https://github.com/dotnet/runtimelab/issues/175", typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsNativeAot))]
     public static void RunCurrencyTests()
     {
         Assert.Throws<MarshalDirectiveException>(() => DecimalTestNative.CreateCurrencyFromInt(StartingIntValue));

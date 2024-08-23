@@ -17,7 +17,7 @@ namespace System.Reflection
         }
 
         public TargetInvocationException(string? message, Exception? inner)
-            : base(message, inner)
+            : base(message ?? SR.Arg_TargetInvocationException, inner)
         {
             HResult = HResults.COR_E_TARGETINVOCATION;
         }

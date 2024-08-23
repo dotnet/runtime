@@ -35,6 +35,7 @@ Abstract:
 #include <sys/types.h>
 #include <sys/mman.h>
 #include <unistd.h>
+#include <fcntl.h>
 #include <errno.h>
 
 #include "rt/ntimage.h"
@@ -1128,7 +1129,7 @@ CorUnix::InternalMapViewOfFile(
         // the global list.
         //
 
-        PMAPPED_VIEW_LIST pNewView = (PMAPPED_VIEW_LIST)InternalMalloc(sizeof(*pNewView));
+        PMAPPED_VIEW_LIST pNewView = (PMAPPED_VIEW_LIST)malloc(sizeof(*pNewView));
         if (NULL != pNewView)
         {
             pNewView->lpAddress = pvBaseAddress;
@@ -1586,22 +1587,30 @@ static PAL_ERROR MAPGrowLocalFile( INT UnixFD, off_t NewSize )
         }
 
         memset( buf, 0, BUFFER_SIZE );
-
-        for ( x = 0; x < NewSize - OrigSize - BUFFER_SIZE; x += BUFFER_SIZE )
+        if (NewSize - OrigSize - BUFFER_SIZE >= 0 && BUFFER_SIZE > 0)
         {
-            if ( write( UnixFD, (LPVOID)buf, BUFFER_SIZE ) == -1 )
+            for ( x = 0; x < NewSize - OrigSize - BUFFER_SIZE; x += BUFFER_SIZE )
             {
-                ERROR( "Unable to grow the file. Reason=%s\n", strerror( errno ) );
-                if((errno == ENOSPC) || (errno == EDQUOT))
+                if ( write( UnixFD, (LPVOID)buf, BUFFER_SIZE ) == -1 )
                 {
-                    palError = ERROR_DISK_FULL;
+                    ERROR( "Unable to grow the file. Reason=%s\n", strerror( errno ) );
+                    if((errno == ENOSPC) || (errno == EDQUOT))
+                    {
+                        palError = ERROR_DISK_FULL;
+                    }
+                    else
+                    {
+                        palError = ERROR_INTERNAL_ERROR;
+                    }
+                    goto done;
                 }
-                else
-                {
-                    palError = ERROR_INTERNAL_ERROR;
-                }
-                goto done;
             }
+        }
+        else
+        {
+            //This will be an infinite loop because it did not pass the check.
+            palError = ERROR_INTERNAL_ERROR;
+            goto done;
         }
         /* Catch any left overs. */
         if ( x != NewSize )
@@ -1832,7 +1841,7 @@ static PMAPPED_VIEW_LIST FindSharedMappingReplacement(
                 /* The new desired mapping is fully contained in the
                    one just found: we can reuse this one */
 
-                pNewView = (PMAPPED_VIEW_LIST)InternalMalloc(sizeof(MAPPED_VIEW_LIST));
+                pNewView = (PMAPPED_VIEW_LIST)malloc(sizeof(MAPPED_VIEW_LIST));
                 if (pNewView)
                 {
                     memcpy(pNewView, pView, sizeof(*pNewView));
@@ -1867,7 +1876,7 @@ static NativeMapHolder * NewNativeMapHolder(CPalThread *pThread, LPVOID address,
     }
 
     pThisMapHolder =
-        (NativeMapHolder *)InternalMalloc(sizeof(NativeMapHolder));
+        (NativeMapHolder *)malloc(sizeof(NativeMapHolder));
 
     if (pThisMapHolder)
     {
@@ -1933,7 +1942,7 @@ MAPRecordMapping(
 
     PAL_ERROR palError = NO_ERROR;
     PMAPPED_VIEW_LIST pNewView;
-    pNewView = (PMAPPED_VIEW_LIST)InternalMalloc(sizeof(*pNewView));
+    pNewView = (PMAPPED_VIEW_LIST)malloc(sizeof(*pNewView));
     if (NULL != pNewView)
     {
         pNewView->lpAddress = addr;

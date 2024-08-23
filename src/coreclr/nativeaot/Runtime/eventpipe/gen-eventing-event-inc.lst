@@ -15,6 +15,7 @@ BGCOverflow_V1
 BGCPlanEnd
 BGCRevisit
 BGCSweepEnd
+BulkType
 Contention
 ContentionLockCreated
 ContentionStart_V2
@@ -45,6 +46,7 @@ GCBulkSurvivingObjectRanges
 GCCreateConcurrentThread_V1
 GCCreateSegment_V1
 GCDecision_V1
+GCDynamicEvent
 GCEnd_V1
 GCFinalizersBegin_V1
 GCFinalizersEnd_V1
@@ -109,3 +111,6 @@ ThreadPoolWorkerThreadStop
 ThreadPoolWorkerThreadWait
 ThreadPoolWorkingThreadCount
 ThreadRunning
+WaitHandleWaitStart
+WaitHandleWaitStop
+YieldProcessorMeasurement

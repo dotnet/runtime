@@ -75,7 +75,7 @@ namespace System
             int min = 0;
             for (; where < name.Length; where++)
             {
-                char c = name [where];
+                char c = name[where];
 
                 if (char.IsAsciiDigit(c))
                 {
@@ -105,11 +105,11 @@ namespace System
         {
             if (name == "GMT" || name == "UTC")
             {
-                return new TimeZoneInfo(id, TimeSpan.FromSeconds(0), id, name, name, null, disableDaylightSavingTime:true);
+                return new TimeZoneInfo(id, TimeSpan.FromSeconds(0), id, name, name, null, disableDaylightSavingTime: true);
             }
             if (name.Length >= 3 && name[0] == 'G' && name[1] == 'M' && name[2] == 'T')
             {
-                return new TimeZoneInfo(id, TimeSpan.FromSeconds(ParseGMTNumericZone(name)), id, name, name, null, disableDaylightSavingTime:true);
+                return new TimeZoneInfo(id, TimeSpan.FromSeconds(ParseGMTNumericZone(name)), id, name, name, null, disableDaylightSavingTime: true);
             }
 
             try
@@ -323,7 +323,7 @@ namespace System
                     }
                     return true;
                 }
-                catch {}
+                catch { }
 
                 return false;
             }
@@ -343,7 +343,7 @@ namespace System
                 ReadIndex(tzFileDir, fs, indexOffset, dataOffset);
             }
 
-            private static void LoadHeader(Span<byte> buffer, out int indexOffset, out int dataOffset)
+            private static void LoadHeader(ReadOnlySpan<byte> buffer, out int indexOffset, out int dataOffset)
             {
                 // tzdata files are expected to start with the form of "tzdata2012f\0" depending on the year of the tzdata used which is 2012 in this example
                 // since we're not differentiating on year, check for tzdata and the ending \0
@@ -382,7 +382,7 @@ namespace System
                 HashSet<string>? tzLookupIDs = FilterBackwardIDs(tzFileDir);
                 for (int i = 0; i < entryCount; ++i)
                 {
-                    LoadEntryAt(fs, indexOffset + (entrySize*i), out string id, out int byteOffset, out int length);
+                    LoadEntryAt(fs, indexOffset + (entrySize * i), out string id, out int byteOffset, out int length);
 
                     _byteOffsets[i] = byteOffset + dataOffset;
                     _ids[i] = id;

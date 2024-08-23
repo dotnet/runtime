@@ -12,10 +12,13 @@
     <NoWarn>$(NoWarn);NU5128;NU5131;PKV004</NoWarn>
     <!-- Place assemblies in the nuget ref folder -->
     <BuildOutputTargetFolder>ref</BuildOutputTargetFolder>
+    <!-- TODO: Add package README file: https://github.com/dotnet/runtime/issues/99358 -->
+    <EnableDefaultPackageReadmeFile>false</EnableDefaultPackageReadmeFile>
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="$(LibrariesProjectRoot)System.Threading.Thread.WebAssembly.Threading\ref\System.Threading.Thread.WebAssembly.Threading.csproj;
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Threading.WebAssembly.Threading\ref\System.Threading.WebAssembly.Threading.csproj;
+                               $(LibrariesProjectRoot)System.Threading.Thread.WebAssembly.Threading\ref\System.Threading.Thread.WebAssembly.Threading.csproj;
                                $(LibrariesProjectRoot)System.Threading.ThreadPool.WebAssembly.Threading\ref\System.Threading.ThreadPool.WebAssembly.Threading.csproj;
                                $(LibrariesProjectRoot)System.Diagnostics.Tracing.WebAssembly.PerfTracing\ref\System.Diagnostics.Tracing.WebAssembly.PerfTracing.csproj"
                       Pack="true"

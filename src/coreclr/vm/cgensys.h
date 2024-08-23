@@ -17,7 +17,7 @@ class CrawlFrame;
 struct EE_ILEXCEPTION_CLAUSE;
 struct TransitionBlock;
 struct VASigCookie;
-class ComPlusCallMethodDesc;
+class CLRToCOMCallMethodDesc;
 
 #include <cgencpu.h>
 
@@ -33,8 +33,8 @@ void CallJitEHFinally(CrawlFrame* pCf, BYTE* startPC, EE_ILEXCEPTION_CLAUSE *EHC
 #endif // TARGET_X86
 
 #ifdef FEATURE_COMINTEROP
-extern "C" UINT32 STDCALL CLRToCOMWorker(TransitionBlock * pTransitionBlock, ComPlusCallMethodDesc * pMD);
-extern "C" void GenericComPlusCallStub(void);
+extern "C" UINT32 STDCALL CLRToCOMWorker(TransitionBlock * pTransitionBlock, CLRToCOMCallMethodDesc * pMD);
+extern "C" void GenericCLRToCOMCallStub(void);
 
 extern "C" void GenericComCallStub(void);
 #endif // FEATURE_COMINTEROP
@@ -71,11 +71,6 @@ extern "C" void STDCALL DelayLoad_Helper_Obj();
 extern "C" void STDCALL DelayLoad_Helper_ObjObj();
 #endif
 
-#if (defined(TARGET_X86) || defined(TARGET_AMD64))
-extern "C" DWORD xmmYmmStateSupport();
-extern "C" DWORD avx512StateSupport();
-#endif
-
 #ifdef DACCESS_COMPILE
 
 // Used by dac/strike to make sense of non-jit/non-jit-helper call targets
@@ -83,8 +78,6 @@ extern "C" DWORD avx512StateSupport();
 BOOL GetAnyThunkTarget (T_CONTEXT *pctx, TADDR *pTarget, TADDR *pTargetMethodDesc);
 
 #endif // DACCESS_COMPILE
-
-
 
 //
 // ResetProcessorStateHolder saves/restores processor state around calls to

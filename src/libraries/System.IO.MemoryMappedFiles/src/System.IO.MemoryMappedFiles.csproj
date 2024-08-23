@@ -1,13 +1,17 @@
 <Project Sdk="Microsoft.NET.Sdk">
+
   <PropertyGroup>
-    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-unix;$(NetCoreAppCurrent)-browser;$(NetCoreAppCurrent)</TargetFrameworks>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <UseCompilerGeneratedDocXmlFile>false</UseCompilerGeneratedDocXmlFile>
   </PropertyGroup>
+
   <!-- DesignTimeBuild requires all the TargetFramework Derived Properties to not be present in the first property group. -->
   <PropertyGroup>
     <TargetPlatformIdentifier>$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)'))</TargetPlatformIdentifier>
     <GeneratePlatformNotSupportedAssemblyMessage Condition="'$(TargetPlatformIdentifier)' == ''">SR.PlatformNotSupported_MemoryMappedFiles</GeneratePlatformNotSupportedAssemblyMessage>
   </PropertyGroup>
+
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' != ''">
     <Compile Include="Microsoft\Win32\SafeMemoryMappedFileHandle.cs" />
     <Compile Include="Microsoft\Win32\SafeMemoryMappedViewHandle.cs" />
@@ -21,6 +25,7 @@
     <Compile Include="$(CommonPath)DisableRuntimeMarshalling.cs"
              Link="Common\DisableRuntimeMarshalling.cs" />
   </ItemGroup>
+
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'windows'">
     <Compile Include="System\IO\MemoryMappedFiles\Interop.Windows.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.CreateFileMapping.cs"
@@ -80,11 +85,14 @@
     <Compile Include="System\IO\MemoryMappedFiles\MemoryMappedFile.Windows.cs" />
     <Compile Include="System\IO\MemoryMappedFiles\MemoryMappedView.Windows.cs" />
   </ItemGroup>
+
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'unix' or '$(TargetPlatformIdentifier)' == 'browser' ">
     <Compile Include="$(CommonPath)Interop\Unix\Interop.Libraries.cs"
              Link="Common\Interop\Unix\Interop.Libraries.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\Interop.Errors.cs"
              Link="Common\Interop\Unix\Interop.Errors.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Close.cs"
+             Link="Common\Interop\Unix\System.Native\Interop.Close.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Fcntl.cs"
              Link="Common\Interop\Unix\Interop.Fcntl.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\Interop.IOErrors.cs"
@@ -113,9 +121,12 @@
              Link="Common\Interop\Unix\Interop.MAdvise.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.ShmOpen.cs"
              Link="Common\Interop\Unix\Interop.ShmOpen.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.MemfdCreate.cs"
+             Link="Common\Interop\Unix\Interop.MemfdCreate.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Unlink.cs"
              Link="Common\Interop\Unix\Interop.Unlink.cs" />
   </ItemGroup>
+
   <ItemGroup>
     <Reference Include="System.Memory" />
     <Reference Include="System.Runtime" />
@@ -123,4 +134,5 @@
     <Reference Include="System.Threading" />
     <Reference Include="System.Threading.Thread" />
   </ItemGroup>
+
 </Project>

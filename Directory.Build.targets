@@ -21,12 +21,14 @@
   When .NET gets built from source, make the SDK aware there are bootstrap packages
   for Microsoft.NETCore.App.Runtime.<rid> and Microsoft.NETCore.App.Crossgen2.<rid>.
   -->
-  <ItemGroup Condition="'$(DotNetBuildFromSource)' == 'true'">
-    <KnownFrameworkReference Update="@(KnownFrameworkReference->WithMetadataValue('Identity', 'Microsoft.NETCore.App')->WithMetadataValue('TargetFramework', '$(NetCoreAppCurrent)'))">
-      <RuntimePackRuntimeIdentifiers>$(PackageRID)</RuntimePackRuntimeIdentifiers>
+  <ItemGroup Condition="'$(DotNetBuildSourceOnly)' == 'true'">
+    <KnownFrameworkReference Update="Microsoft.NETCore.App">
+      <RuntimePackRuntimeIdentifiers
+        Condition="'%(TargetFramework)' == '$(NetCoreAppCurrent)'">%(RuntimePackRuntimeIdentifiers);$(PackageRID)</RuntimePackRuntimeIdentifiers>
     </KnownFrameworkReference>
-    <KnownCrossgen2Pack Update="@(KnownCrossgen2Pack->WithMetadataValue('Identity', 'Microsoft.NETCore.App.Crossgen2')->WithMetadataValue('TargetFramework', '$(NetCoreAppCurrent)'))">
-      <Crossgen2RuntimeIdentifiers>$(PackageRID)</Crossgen2RuntimeIdentifiers>
+    <KnownCrossgen2Pack Update="Microsoft.NETCore.App.Crossgen2">
+      <Crossgen2RuntimeIdentifiers
+        Condition="'%(TargetFramework)' == '$(NetCoreAppCurrent)'" >%(Crossgen2RuntimeIdentifiers);$(PackageRID)</Crossgen2RuntimeIdentifiers>
     </KnownCrossgen2Pack>
     <!-- Avoid references to Microsoft.AspNetCore.App.Runtime.<rid> -->
     <KnownFrameworkReference Remove="Microsoft.AspNetCore.App" />
@@ -83,23 +85,22 @@
     <GenerateRequiresPreviewFeaturesAttribute Condition="'$(TargetFrameworkMoniker)' == '$(NetCoreAppCurrentTargetFrameworkMoniker)'">true</GenerateRequiresPreviewFeaturesAttribute>
   </PropertyGroup>
 
+  <PropertyGroup>
+    <!-- when building from source we need to use the current version of various packages as the toolset version, but source-build imports
+         another props file which overrides the versions from Version.props so we can't set it there -->
+    <SystemReflectionMetadataLoadContextToolsetVersion Condition="'$(DotNetBuildSourceOnly)' == 'true'">$(SystemReflectionMetadataLoadContextVersion)</SystemReflectionMetadataLoadContextToolsetVersion>
+    <SystemTextJsonToolsetVersion Condition="'$(DotNetBuildSourceOnly)' == 'true'">$(SystemTextJsonVersion)</SystemTextJsonToolsetVersion>
+  </PropertyGroup>
+
   <Target Name="ValidateTargetOSLowercase"
           Condition="!$(TargetOS.Equals($(TargetOS.ToLower()), StringComparison.InvariantCulture))">
     <Error Text="The passed-in TargetOS property value '$(TargetOS)' must be lowercase." />
   </Target>
 
-  <ItemDefinitionGroup>
-    <TargetPathWithTargetPlatformMoniker>
-      <IsReferenceAssemblyProject>$(IsReferenceAssemblyProject)</IsReferenceAssemblyProject>
-    </TargetPathWithTargetPlatformMoniker>
-  </ItemDefinitionGroup>
-
-  <Target Name="ValidateReferenceAssemblyProjectReferencesAndTargetFramework"
-          AfterTargets="ResolveReferences"
+  <Target Name="ValidateReferenceAssemblyProjectTargetFramework"
+          BeforeTargets="CoreCompile"
           Condition="'$(IsReferenceAssemblyProject)' == 'true' and
                      '$(SkipValidateReferenceAssemblyProjectReferences)' != 'true'">
-    <Error Text="Reference assemblies must only reference other reference assemblies and '%(ReferencePath.ProjectReferenceOriginalItemSpec)' is not a reference assembly project and does not set 'ProduceReferenceAssembly'."
-           Condition="'%(ReferencePath.ReferenceSourceTarget)' == 'ProjectReference' and '%(ReferencePath.IsReferenceAssemblyProject)' != 'true' and '%(ReferencePath.ReferenceAssembly)' == ''" />
     <Error Text="Reference assemblies must be TargetPlatform agnostic. $(MSBuildProjectName) incorrectly targets $(TargetFramework), platform: $(TargetPlatformIdentifier)."
            Condition="'$(TargetPlatformIdentifier)' != ''" />
   </Target>
@@ -161,7 +162,7 @@
           AfterTargets="ResolveTargetingPackAssets">
     <ItemGroup>
       <_targetingPackReferenceExclusion Include="$(TargetName)" />
-      <_targetingPackReferenceExclusion Include="@(_ResolvedProjectReferencePaths->Metadata('Filename'))" />
+      <_targetingPackReferenceExclusionProjects Include="@(_ResolvedProjectReferencePaths->Metadata('Filename'))" />
       <_targetingPackReferenceExclusion Include="@(DefaultReferenceExclusion)" />
     </ItemGroup>
 
@@ -176,7 +177,7 @@
       <_targetingPackReferenceWithProjectName Include="@(Reference->WithMetadataValue('ExternallyResolved', 'true')->Metadata('Filename'))"
                                               OriginalIdentity="%(Identity)" />
       <_targetingPackIncludedReferenceWithProjectName Include="@(_targetingPackReferenceWithProjectName)"
-                                                      Exclude="@(_targetingPackReferenceExclusion)" />
+                                                      Exclude="@(_targetingPackReferenceExclusion);@(_targetingPackReferenceExclusionProjects->WithMetadataValue('ReferenceOutputAssembly', 'true'))" />
       <_targetingPackExcludedReferenceWithProjectName Include="@(_targetingPackReferenceWithProjectName)"
                                                       Exclude="@(_targetingPackIncludedReferenceWithProjectName)" />
       <Reference Remove="@(_targetingPackExcludedReferenceWithProjectName->Metadata('OriginalIdentity'))" />
@@ -186,7 +187,7 @@
       <_targetingPackAnalyzerReferenceWithProjectName Include="@(Analyzer->WithMetadataValue('ExternallyResolved', 'true')->Metadata('Filename'))"
                                                       OriginalIdentity="%(Identity)" />
       <_targetingPackIncludedAnalyzerReferenceWithProjectName Include="@(_targetingPackAnalyzerReferenceWithProjectName)"
-                                                              Exclude="@(_targetingPackReferenceExclusion)" />
+                                                              Exclude="@(_targetingPackReferenceExclusion);@(_targetingPackReferenceExclusionProjects->WithMetadataValue('OutputItemType', 'Analyzer'))" />
       <_targetingPackExcludedAnalyzerReferenceWithProjectName Include="@(_targetingPackAnalyzerReferenceWithProjectName)"
                                                               Exclude="@(_targetingPackIncludedAnalyzerReferenceWithProjectName)" />
       <Analyzer Remove="@(_targetingPackExcludedAnalyzerReferenceWithProjectName->Metadata('OriginalIdentity'))" />

@@ -5,7 +5,6 @@ parameters:
   archType: ''                    # required -- targeting CPU architecture
   osGroup: ''                     # required -- operating system for the job
   osSubgroup: ''                  # optional -- operating system subgroup
-  dependOnEvaluatePaths: false
 
 steps:
   - template: /eng/pipelines/common/templates/runtimes/send-to-helix-step.yml

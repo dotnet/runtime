@@ -14,13 +14,13 @@ public:
 
     void             Start();
     void             Stop();
-    unsigned __int64 GetCycles();
-    unsigned __int64 QueryOverhead();
+    uint64_t GetCycles();
+    uint64_t QueryOverhead();
 
 private:
     // Cycles
-    unsigned __int64 start;
-    unsigned __int64 stop;
-    unsigned __int64 overhead;
+    uint64_t start;
+    uint64_t stop;
+    uint64_t overhead;
 };
 #endif

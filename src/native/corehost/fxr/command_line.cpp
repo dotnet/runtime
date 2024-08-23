@@ -145,7 +145,7 @@ namespace
         if (mode == host_mode_t::apphost)
         {
             app_candidate = host_info.app_path;
-            doesAppExist = bundle::info_t::is_single_file_bundle() || pal::realpath(&app_candidate);
+            doesAppExist = bundle::info_t::is_single_file_bundle() || pal::fullpath(&app_candidate);
         }
         else
         {
@@ -158,7 +158,7 @@ namespace
 
             app_candidate = argv[*new_argoff];
 
-            bool is_app_managed = ends_with(app_candidate, _X(".dll"), false) || ends_with(app_candidate, _X(".exe"), false);
+            bool is_app_managed = utils::ends_with(app_candidate, _X(".dll"), false) || utils::ends_with(app_candidate, _X(".exe"), false);
             if (!is_app_managed)
             {
                 trace::verbose(_X("Application '%s' is not a managed executable."), app_candidate.c_str());
@@ -169,7 +169,7 @@ namespace
                 }
             }
 
-            doesAppExist = pal::realpath(&app_candidate);
+            doesAppExist = pal::fullpath(&app_candidate);
             if (!doesAppExist)
             {
                 trace::verbose(_X("Application '%s' does not exist."), app_candidate.c_str());

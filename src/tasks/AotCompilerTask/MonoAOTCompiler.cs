@@ -15,7 +15,6 @@ using System.Threading.Tasks;
 using Microsoft.Build.Framework;
 using Microsoft.Build.Utilities;
 using System.Reflection.PortableExecutable;
-using System.Text.Json.Serialization;
 
 public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
 {
@@ -294,8 +293,9 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
 
     private List<string> _fileWrites = new();
 
-    private IList<ITaskItem>? _assembliesToCompile;
+    private List<ITaskItem>? _assembliesToCompile;
     private ConcurrentDictionary<string, ITaskItem> compiledAssemblies = new();
+    private BuildPropertiesTable? _propertiesTable;
 
     private MonoAotMode parsedAotMode;
     private MonoAotOutputType parsedOutputType;
@@ -467,6 +467,7 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
         return !Log.HasLoggedErrors;
     }
 
+
     public override bool Execute()
     {
         try
@@ -490,6 +491,9 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
     {
         if (!ProcessAndValidateArguments())
             return false;
+
+        string propertiesTableFilePath = Path.Combine(IntermediateOutputPath, "monoAotPropertyValues.txt");
+        _propertiesTable = new BuildPropertiesTable(propertiesTableFilePath);
 
         IEnumerable<ITaskItem> managedAssemblies = FilterOutUnmanagedAssemblies(Assemblies);
         managedAssemblies = EnsureAllAssembliesInTheSameDir(managedAssemblies);
@@ -520,7 +524,8 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
         else
         {
             int allowedParallelism = DisableParallelAot ? 1 : Math.Min(_assembliesToCompile.Count, Environment.ProcessorCount);
-            if (BuildEngine is IBuildEngine9 be9)
+            IBuildEngine9? be9 = BuildEngine as IBuildEngine9;
+            if (be9 is not null)
                 allowedParallelism = be9.RequestCores(allowedParallelism);
 
             /*
@@ -549,24 +554,32 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
 
                 Instead, we want to use work-stealing so jobs can be run by any partition.
             */
-            ParallelLoopResult result = Parallel.ForEach(
+            try
+            {
+                ParallelLoopResult result = Parallel.ForEach(
                                             Partitioner.Create(argsList, EnumerablePartitionerOptions.NoBuffering),
                                             new ParallelOptions { MaxDegreeOfParallelism = allowedParallelism },
                                             PrecompileLibraryParallel);
-
-            if (result.IsCompleted)
-            {
-                int numUnchanged = _totalNumAssemblies - _numCompiled;
-                if (numUnchanged > 0 && numUnchanged != _totalNumAssemblies)
-                    Log.LogMessage(MessageImportance.High, $"[{numUnchanged}/{_totalNumAssemblies}] skipped unchanged assemblies.");
+                if (result.IsCompleted)
+                {
+                    int numUnchanged = _totalNumAssemblies - _numCompiled;
+                    if (numUnchanged > 0 && numUnchanged != _totalNumAssemblies)
+                        Log.LogMessage(MessageImportance.High, $"[{numUnchanged}/{_totalNumAssemblies}] skipped unchanged assemblies.");
+                }
+                else if (!Log.HasLoggedErrors)
+                {
+                    Log.LogError($"Precompiling failed due to unknown reasons. Check log for more info");
+                }
             }
-            else if (!Log.HasLoggedErrors)
+            finally
             {
-                Log.LogError($"Precompiling failed due to unknown reasons. Check log for more info");
+                be9?.ReleaseCores(allowedParallelism);
             }
         }
 
         CheckExportSymbolsFile(_assembliesToCompile);
+        _propertiesTable.Table[nameof(CollectTrimmingEligibleMethods)] = CollectTrimmingEligibleMethods.ToString();
+        _propertiesTable.Save(propertiesTableFilePath, Log);
         CompiledAssemblies = ConvertAssembliesDictToOrderedList(compiledAssemblies, _assembliesToCompile).ToArray();
         return !Log.HasLoggedErrors;
     }
@@ -654,7 +667,7 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
     {
         string assembly = assemblyItem.GetMetadata("FullPath");
         string assemblyDir = Path.GetDirectoryName(assembly)!;
-        var aotAssembly = new TaskItem(assembly);
+        var aotAssembly = new TaskItem(assembly, assemblyItem.CloneCustomMetadata());
         var aotArgs = new List<string>();
         var processArgs = new List<string>();
         bool isDedup = Path.GetFileName(assembly) == Path.GetFileName(DedupAssembly);
@@ -746,7 +759,7 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
 
         if (CollectTrimmingEligibleMethods)
         {
-            string assemblyName = assemblyFilename.Replace(".", "_");
+            string assemblyName = FixupSymbolName(assemblyFilename);
             string outputFileName = assemblyName + "_compiled_methods.txt";
             string outputFilePath;
             if (string.IsNullOrEmpty(TrimmingEligibleMethodsOutputDirectory))
@@ -951,7 +964,7 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
         if (isDedup)
         {
             foreach (var aItem in _assembliesToCompile!)
-                processArgs.Add(aItem.ItemSpec);
+                processArgs.Add($"\"{aItem.ItemSpec}\"");
         }
         else
         {
@@ -1095,8 +1108,8 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
 
         Directory.CreateDirectory(Path.GetDirectoryName(outputFile)!);
 
-        string tmpAotModulesTablePath = Path.GetTempFileName();
-        using (var writer = File.CreateText(tmpAotModulesTablePath))
+        using TempFileName tmpAotModulesTablePath = new();
+        using (var writer = File.CreateText(tmpAotModulesTablePath.Path))
         {
             if (parsedAotModulesTableLanguage == MonoAotModulesTableLanguage.C)
             {
@@ -1159,7 +1172,7 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
             }
         }
 
-        if (Utils.CopyIfDifferent(tmpAotModulesTablePath, outputFile, useHash: false))
+        if (Utils.CopyIfDifferent(tmpAotModulesTablePath.Path, outputFile, useHash: false))
         {
             _fileWrites.Add(outputFile);
             Log.LogMessage(MessageImportance.Low, $"Generated {outputFile}");
@@ -1194,7 +1207,7 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
         }
     }
 
-    private void CheckExportSymbolsFile(IList<ITaskItem> assemblies)
+    private void CheckExportSymbolsFile(List<ITaskItem> assemblies)
     {
         if (!EnableUnmanagedCallersOnlyMethodsExport)
             return;
@@ -1209,7 +1222,7 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
         }
     }
 
-    private static List<ITaskItem> ConvertAssembliesDictToOrderedList(ConcurrentDictionary<string, ITaskItem> dict, IList<ITaskItem> originalAssemblies)
+    private static List<ITaskItem> ConvertAssembliesDictToOrderedList(ConcurrentDictionary<string, ITaskItem> dict, List<ITaskItem> originalAssemblies)
     {
         List<ITaskItem> outItems = new(originalAssemblies.Count);
         foreach (ITaskItem item in originalAssemblies)
@@ -1231,26 +1244,7 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
         if (_symbolNameFixups.TryGetValue(name, out string? fixedName))
             return fixedName;
 
-        UTF8Encoding utf8 = new();
-        byte[] bytes = utf8.GetBytes(name);
-        StringBuilder sb = new();
-
-        foreach (byte b in bytes)
-        {
-            if ((b >= (byte)'0' && b <= (byte)'9') ||
-                (b >= (byte)'a' && b <= (byte)'z') ||
-                (b >= (byte)'A' && b <= (byte)'Z') ||
-                (b == (byte)'_'))
-            {
-                sb.Append((char)b);
-            }
-            else
-            {
-                sb.Append('_');
-            }
-        }
-
-        fixedName = sb.ToString();
+        fixedName = Utils.FixupSymbolName(name);
         _symbolNameFixups[name] = fixedName;
         return fixedName;
     }
@@ -1271,6 +1265,45 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
         public string                       WorkingDir           { get; private set; }
         public ITaskItem                    AOTAssembly          { get; private set; }
         public IList<ProxyFile>             ProxyFiles           { get; private set; }
+    }
+
+    private sealed class BuildPropertiesTable
+    {
+        public Dictionary<string, string> Table { get; private set; }
+
+        public BuildPropertiesTable(string propertiesFilePath)
+        {
+            Table = Read(propertiesFilePath) ?? new();
+        }
+
+        public bool GetBool(string propertyName, bool defaultValue)
+            => bool.TryParse(Table[propertyName], out bool outValue) ? outValue : defaultValue;
+
+        private static Dictionary<string, string>? Read(string propertiesFilePath)
+        {
+            if (!File.Exists(propertiesFilePath))
+                return null;
+
+            string text = File.ReadAllText(propertiesFilePath);
+            if (text.Length == 0)
+                return null;
+
+            try
+            {
+                return JsonSerializer.Deserialize<Dictionary<string, string>>(text);
+            }
+            catch (Exception e)
+            {
+                throw new LogAsErrorException($"Failed to parse properties table from {propertiesFilePath}: {e}");
+            }
+        }
+
+        public void Save(string filePath, TaskLoggingHelper log)
+        {
+            string jsonString = JsonSerializer.Serialize(Table);
+            File.WriteAllText(filePath, jsonString);
+            log.LogMessage(MessageImportance.Low, $"Logged Mono AOT Properties in {filePath}");
+        }
     }
 }
 

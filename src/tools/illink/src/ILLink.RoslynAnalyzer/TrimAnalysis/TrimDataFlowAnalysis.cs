@@ -13,25 +13,48 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Diagnostics;
 using Microsoft.CodeAnalysis.FlowAnalysis;
-using LocalStateValue = ILLink.RoslynAnalyzer.DataFlow.LocalState<
-	ILLink.Shared.DataFlow.ValueSet<ILLink.Shared.DataFlow.SingleValue>>;
+using LocalStateValue = ILLink.RoslynAnalyzer.DataFlow.LocalStateAndContext<
+	ILLink.Shared.DataFlow.ValueSet<ILLink.Shared.DataFlow.SingleValue>,
+	ILLink.RoslynAnalyzer.DataFlow.FeatureContext
+>;
 using MultiValue = ILLink.Shared.DataFlow.ValueSet<ILLink.Shared.DataFlow.SingleValue>;
 
 namespace ILLink.RoslynAnalyzer.TrimAnalysis
 {
-	public class TrimDataFlowAnalysis : LocalDataFlowAnalysis<MultiValue, ValueSetLattice<SingleValue>, TrimAnalysisVisitor>
+	internal sealed class TrimDataFlowAnalysis : LocalDataFlowAnalysis<
+		MultiValue,
+		FeatureContext,
+		ValueSetLattice<SingleValue>,
+		FeatureContextLattice,
+		TrimAnalysisVisitor,
+		FeatureChecksValue>
 	{
 		public TrimAnalysisPatternStore TrimAnalysisPatterns { get; }
 
-		public TrimDataFlowAnalysis (OperationBlockAnalysisContext context, IOperation operationBlock)
-			: base (context, operationBlock)
+		DataFlowAnalyzerContext _dataFlowAnalyzerContext;
+
+		// The initial state of the feature context is None, meaning that
+		// no features are enabled at the beginning of the entry block.
+		// This way, calls to all Requires-annotated APIs will warn unless
+		// guarded by a feature check.
+		public TrimDataFlowAnalysis (
+			OperationBlockAnalysisContext context,
+			DataFlowAnalyzerContext dataFlowAnalyzerContext,
+			IOperation operationBlock)
+			: base (
+				context,
+				operationBlock,
+				default (ValueSetLattice<SingleValue>),
+				new FeatureContextLattice (),
+				initialContext: FeatureContext.None)
 		{
-			TrimAnalysisPatterns = new TrimAnalysisPatternStore (Lattice.Lattice.ValueLattice);
+			TrimAnalysisPatterns = new TrimAnalysisPatternStore (lattice.LocalStateLattice.Lattice.ValueLattice, lattice.ContextLattice);
+			_dataFlowAnalyzerContext = dataFlowAnalyzerContext;
 		}
 
-		public IEnumerable<Diagnostic> CollectDiagnostics (DataFlowAnalyzerContext dataFlowAnalyzerContext)
+		public void ReportDiagnostics (Action<Diagnostic> reportDiagnostic)
 		{
-			return TrimAnalysisPatterns.CollectDiagnostics (dataFlowAnalyzerContext);
+			TrimAnalysisPatterns.ReportDiagnostics (_dataFlowAnalyzerContext, reportDiagnostic);
 		}
 
 		protected override TrimAnalysisVisitor GetVisitor (
@@ -39,7 +62,7 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 			ControlFlowGraph methodCFG,
 			ImmutableDictionary<CaptureId, FlowCaptureKind> lValueFlowCaptures,
 			InterproceduralState<MultiValue, ValueSetLattice<SingleValue>> interproceduralState)
-		 => new (Lattice, owningSymbol, methodCFG, lValueFlowCaptures, TrimAnalysisPatterns, interproceduralState);
+		 => new (Context.Compilation, lattice, owningSymbol, methodCFG, lValueFlowCaptures, TrimAnalysisPatterns, interproceduralState, _dataFlowAnalyzerContext);
 
 #if DEBUG
 #pragma warning disable CA1805 // Do not initialize unnecessarily
@@ -79,6 +102,8 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 
 			if (methodName?.Equals (traceMethod) == true)
 				trace = true;
+			if (trace)
+				TraceWriteLine("Tracing method " + methodName);
 		}
 
 		public override void TraceVisitBlock (BlockProxy block)
@@ -96,7 +121,7 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 			}
 			TraceWrite ("predecessors: ");
 			foreach (var predecessor in cfg.GetPredecessors (block)) {
-				var predProxy = predecessor.Block;
+				var predProxy = predecessor.Source;
 				TraceWrite (predProxy.Block.Ordinal + " ");
 			}
 			TraceWriteLine ("");
@@ -149,6 +174,18 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 						TraceWriteLine (line);
 					}
 				}
+			}
+		}
+
+		public override void TraceEdgeInput (
+			IControlFlowGraph<BlockProxy, RegionProxy>.ControlFlowBranch branch,
+			LocalStateValue state
+		) {
+			if (trace && showStates) {
+				var source = branch.Source.Block.Ordinal;
+				var target = branch.Destination?.Block.Ordinal;
+				WriteIndented ($"--- Edge from [{source}] to [{target}] ---", 1);
+				WriteIndented (state.ToString (), 2);
 			}
 		}
 

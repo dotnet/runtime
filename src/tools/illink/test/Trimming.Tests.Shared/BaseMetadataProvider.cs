@@ -34,6 +34,12 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			return defaultValue;
 		}
 
+		protected bool GetOptionAttribute (string attributeName)
+		{
+			var attribute = _testCaseTypeDefinition.CustomAttributes.FirstOrDefault (attr => attr.AttributeType.Name == attributeName);
+			return attribute != null;
+		}
+
 		protected NPath MakeSourceTreeFilePathAbsolute (string value)
 		{
 			return _testCase.SourceFile.Parent.Combine (value);

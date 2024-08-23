@@ -15,8 +15,7 @@ namespace
     bool coreclr_bind(const pal::string_t& libcoreclr_path)
     {
         assert(coreclr_contract.coreclr_initialize == nullptr);
-        coreclr_resolver_t::resolve_coreclr(libcoreclr_path, coreclr_contract);
-        return true;
+        return coreclr_resolver_t::resolve_coreclr(libcoreclr_path, coreclr_contract);
     }
 
     void log_error(const char* line)

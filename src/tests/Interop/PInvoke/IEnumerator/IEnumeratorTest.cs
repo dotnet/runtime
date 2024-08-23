@@ -6,7 +6,10 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.InteropServices;
+using TestLibrary;
 using Xunit;
+
+using IEnumVARIANT = System.Runtime.InteropServices.ComTypes.IEnumVARIANT;
 
 namespace PInvokeTests
 {
@@ -38,49 +41,54 @@ namespace PInvokeTests
         public static extern IEnumerator PassThroughEnumerator(IEnumerator enumerator);
     }
 
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsBuiltInComEnabled))]
+    [SkipOnMono("PInvoke IEnumerator/IEnumerable marshalling not supported on Mono")]
     public static class IEnumeratorTests
     {
-        private static void TestNativeToManaged()
+        [Fact]
+        public static void TestNativeToManaged()
         {
             AssertExtensions.CollectionEqual(Enumerable.Range(1, 10), EnumeratorAsEnumerable(IEnumeratorNative.GetIntegerEnumerator(1, 10)));
             AssertExtensions.CollectionEqual(Enumerable.Range(1, 10), IEnumeratorNative.GetIntegerEnumeration(1, 10).OfType<int>());
         }
 
-        private static void TestManagedToNative()
+        [Fact]
+        public static void TestManagedToNative()
         {
             IEnumeratorNative.VerifyIntegerEnumerator(Enumerable.Range(1, 10).GetEnumerator(), 1, 10);
             IEnumeratorNative.VerifyIntegerEnumeration(Enumerable.Range(1, 10), 1, 10);
         }
 
-        private static void TestNativeRoundTrip()
+        [Fact]
+        public static void TestNativeRoundTrip()
         {
             IEnumerator nativeEnumerator = IEnumeratorNative.GetIntegerEnumerator(1, 10);
             Assert.Equal(nativeEnumerator, IEnumeratorNative.PassThroughEnumerator(nativeEnumerator));
         }
 
-        private static void TestManagedRoundTrip()
+        [Fact]
+        public static void TestManagedRoundTrip()
         {
             IEnumerator managedEnumerator = Enumerable.Range(1, 10).GetEnumerator();
             Assert.Equal(managedEnumerator, IEnumeratorNative.PassThroughEnumerator(managedEnumerator));
         }
 
         [Fact]
-        public static int TestEntryPoint()
+        public static void TestSupportForICustomAdapter()
         {
-            try
             {
-                TestNativeToManaged();
-                TestManagedToNative();
-                TestNativeRoundTrip();
-                TestManagedRoundTrip();
+                IEnumerable nativeEnumerable = IEnumeratorNative.GetIntegerEnumeration(1, 10);
+                Assert.True(nativeEnumerable is ICustomAdapter);
+                Assert.True(Marshal.IsComObject(((ICustomAdapter)nativeEnumerable).GetUnderlyingObject()));
+                IEnumerator nativeEnumerator = nativeEnumerable.GetEnumerator();
+                Assert.True(nativeEnumerator is ICustomAdapter);
+                Assert.True(((ICustomAdapter)nativeEnumerator).GetUnderlyingObject() is IEnumVARIANT);
             }
-            catch (System.Exception e)
             {
-                Console.WriteLine(e.ToString());
-                return 101;
+                IEnumerator nativeEnumerator = IEnumeratorNative.GetIntegerEnumerator(1, 10);
+                Assert.True(nativeEnumerator is ICustomAdapter);
+                Assert.True(((ICustomAdapter)nativeEnumerator).GetUnderlyingObject() is IEnumVARIANT);
             }
-
-            return 100;
         }
 
         private static IEnumerable<int> EnumeratorAsEnumerable(IEnumerator enumerator)

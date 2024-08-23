@@ -20,8 +20,12 @@ using Xunit;
 namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
 {
     [ActiveIssue("https://github.com/dotnet/runtime/issues/52062", TestPlatforms.Browser)]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/105311", typeof(ConfigurationBindingGeneratorTests), nameof(IsBigEndian))]
     public partial class ConfigurationBindingGeneratorTests : ConfigurationBinderTestsBase
     {
+        // The source hash applied to the [Interceptable] attribute treats chars as bytes which fails baseline comparisons on big-endian.
+        public static bool IsBigEndian => !BitConverter.IsLittleEndian;
+
         [Theory]
         [InlineData(LanguageVersion.CSharp11)]
         [InlineData(LanguageVersion.CSharp10)]
@@ -32,6 +36,7 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
 
             Diagnostic diagnostic = Assert.Single(result.Diagnostics);
             Assert.True(diagnostic.Id == "SYSLIB1102");
+            Assert.Contains("C# 12", diagnostic.Descriptor.MessageFormat.ToString(CultureInfo.InvariantCulture));
             Assert.Contains("C# 12", diagnostic.Descriptor.Title.ToString(CultureInfo.InvariantCulture));
             Assert.Equal(DiagnosticSeverity.Error, diagnostic.Severity);
         }
@@ -43,7 +48,7 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
                 using System;
                 using System.Collections.Generic;
                 using Microsoft.Extensions.Configuration;
-                
+
                 public class Program
                 {
                 	public static void Main()
@@ -131,14 +136,14 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
                 using Microsoft.AspNetCore.Builder;
                 using Microsoft.Extensions.Configuration;
                 using Microsoft.Extensions.DependencyInjection;
-                
+
                 public class Program
                 {
                 	public static void Main()
                 	{
                 		ConfigurationBuilder configurationBuilder = new();
                 		IConfiguration config = configurationBuilder.Build();
-                
+
                 		PerformGenericBinderCalls<MyClass>(config);
                 	}
 
@@ -174,6 +179,33 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
                 Assert.Equal(DiagnosticSeverity.Warning, diagnostic.Severity);
                 Assert.NotNull(diagnostic.Location);
             }
+        }
+
+        [Fact]
+        public async Task SucceedWhenGivenConflictingTypeNames()
+        {
+            // Regression test for https://github.com/dotnet/runtime/issues/93498
+
+            string source = """
+                using Microsoft.Extensions.Configuration;
+
+                var c = new ConfigurationBuilder().Build();
+                c.Get<Foo.Bar.BType>();
+
+                namespace Microsoft.Foo
+                {
+                    internal class AType {}
+                }
+
+                namespace Foo.Bar
+                {
+                    internal class BType {}
+                }
+                """;
+
+            ConfigBindingGenRunResult result = await RunGeneratorAndUpdateCompilation(source);
+            Assert.NotNull(result.GeneratedSource);
+            Assert.Empty(result.Diagnostics);
         }
 
         [Fact]
@@ -236,7 +268,7 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
                 using Microsoft.AspNetCore.Builder;
                 using Microsoft.Extensions.Configuration;
                 using Microsoft.Extensions.DependencyInjection;
-                
+
                 public class Program
                 {
                 	public static void Main()

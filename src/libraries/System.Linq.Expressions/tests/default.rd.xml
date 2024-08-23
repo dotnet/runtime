@@ -17,10 +17,6 @@
       <Type Name="System.Text.StringBuilder" Dynamic="Required All" />
       <Type Name="System.Array" Dynamic="Required All" />
 
-      <Type Name="System.IEquatable`1[[System.Linq.Expressions.Tests.Number, System.Linq.Expressions.Tests]]">
-        <Method Name="Equals" Dynamic="Required All">
-        </Method>
-      </Type>
       <Type Name="System.Func`1[[System.Int32,System.Private.CoreLib]]" Dynamic="Required All" />
       <Type Name="System.Func`2[[System.Int32,System.Private.CoreLib],[System.Int32,System.Private.CoreLib]]" Dynamic="Required All" />
 
@@ -72,12 +68,6 @@
 
       <Type Name="System.Action" Dynamic="Required All" />
       <Type Name="System.Action`1[[System.Int32,System.Private.CoreLib]]" Dynamic="Required All" />
-
-      <Type Name="System.IEquatable`1[[System.Linq.Expressions.Tests.Scs, System.Linq.Expressions.Tests]]" Dynamic="Required All" />
-      <Type Name="System.IEquatable`1[[System.Linq.Expressions.Tests.Sp, System.Linq.Expressions.Tests]]" Dynamic="Required All" />
-      <Type Name="System.IEquatable`1[[System.Linq.Expressions.Tests.Ss, System.Linq.Expressions.Tests]]" Dynamic="Required All" />
-      <Type Name="System.IEquatable`1[[System.Linq.Expressions.Tests.S, System.Linq.Expressions.Tests]]" Dynamic="Required All" />
-      <Type Name="System.IEquatable`1[[System.Linq.Expressions.Tests.Sc, System.Linq.Expressions.Tests]]" Dynamic="Required All" />
 
     </Assembly>
     <Assembly Name="System.Linq">

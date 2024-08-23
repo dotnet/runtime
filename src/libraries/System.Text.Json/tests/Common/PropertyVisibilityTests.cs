@@ -245,7 +245,7 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
-        public async void Ignore_BasePublicPropertyIgnored_ConflictWithDerivedPublicPropertyIgnored()
+        public async Task Ignore_BasePublicPropertyIgnored_ConflictWithDerivedPublicPropertyIgnored()
         {
             var obj = new ClassWithIgnoredPublicPropertyAndNewSlotPublicAndIgnoredToo();
 
@@ -950,7 +950,7 @@ namespace System.Text.Json.Serialization.Tests
         public class DerivedClass_With_IgnoredOverride_And_ConflictingPropertyName : Class_With_VirtualProperty
         {
             [JsonPropertyName("MyProp")]
-            public string MyString { get; set; }
+            public string? MyString { get; set; }
 
             [JsonIgnore]
             public override bool MyProp { get; set; }
@@ -970,7 +970,7 @@ namespace System.Text.Json.Serialization.Tests
         public class DerivedClass_With_NewProperty_And_ConflictingPropertyName : Class_With_Property
         {
             [JsonPropertyName("MyProp")]
-            public string MyString { get; set; }
+            public string? MyString { get; set; }
 
             [JsonIgnore]
             public new bool MyProp { get; set; }
@@ -985,7 +985,7 @@ namespace System.Text.Json.Serialization.Tests
         public class DerivedClass_With_Ignored_NewProperty_Of_DifferentType_And_ConflictingPropertyName : Class_With_Property
         {
             [JsonPropertyName("MyProp")]
-            public string MyString { get; set; }
+            public string? MyString { get; set; }
 
             [JsonIgnore]
             public new int MyProp { get; set; }
@@ -1022,13 +1022,13 @@ namespace System.Text.Json.Serialization.Tests
         public class FurtherDerivedClass_With_ConflictingPropertyName : DerivedClass_WithIgnoredOverride
         {
             [JsonPropertyName("MyProp")]
-            public string MyString { get; set; }
+            public string? MyString { get; set; }
         }
 
         public class DerivedClass_WithConflictingPropertyName : Class_With_VirtualProperty
         {
             [JsonPropertyName("MyProp")]
-            public string MyString { get; set; }
+            public string? MyString { get; set; }
         }
 
         public class FurtherDerivedClass_With_IgnoredOverride : DerivedClass_WithConflictingPropertyName
@@ -1322,10 +1322,6 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
-#if BUILDING_SOURCE_GENERATOR_TESTS
-        // Needs support for more collections.
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/53393")]
-#endif
         public async Task JsonIgnoreAttribute_UnsupportedCollection()
         {
             string json =
@@ -1771,10 +1767,6 @@ namespace System.Text.Json.Serialization.Tests
         [Theory]
         [InlineData(typeof(ClassWithProperty_IgnoreConditionAlways))]
         [InlineData(typeof(ClassWithProperty_IgnoreConditionAlways_Ctor))]
-#if BUILDING_SOURCE_GENERATOR_TESTS
-        // Need support for parameterized ctors.
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/45448")]
-#endif
         public async Task JsonIgnoreConditionSetToAlwaysWorks(Type type)
         {
             string json = @"{""MyString"":""Random"",""MyDateTime"":""2020-03-23"",""MyInt"":4}";
@@ -1798,7 +1790,7 @@ namespace System.Text.Json.Serialization.Tests
             public int MyInt { get; set; }
         }
 
-        private class ClassWithProperty_IgnoreConditionAlways_Ctor
+        public class ClassWithProperty_IgnoreConditionAlways_Ctor
         {
             public string MyString { get; set; }
             [JsonIgnore(Condition = JsonIgnoreCondition.Always)]
@@ -1814,10 +1806,6 @@ namespace System.Text.Json.Serialization.Tests
 
         [Theory]
         [MemberData(nameof(JsonIgnoreConditionWhenWritingDefault_ClassProperty_TestData))]
-#if BUILDING_SOURCE_GENERATOR_TESTS
-        // Need support for parameterized ctors.
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/45448")]
-#endif
         public async Task JsonIgnoreConditionWhenWritingDefault_ClassProperty(Type type, JsonSerializerOptions options)
         {
             // Property shouldn't be ignored if it isn't null.
@@ -1864,18 +1852,18 @@ namespace System.Text.Json.Serialization.Tests
         {
             public int Int1 { get; set; }
             [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
-            public string MyString { get; set; } = "DefaultString";
+            public string? MyString { get; set; } = "DefaultString";
             public int Int2 { get; set; }
         }
 
-        private class ClassWithClassProperty_IgnoreConditionWhenWritingDefault_Ctor
+        public class ClassWithClassProperty_IgnoreConditionWhenWritingDefault_Ctor
         {
             public int Int1 { get; set; }
             [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
             public string MyString { get; set; } = "DefaultString";
             public int Int2 { get; set; }
 
-            public ClassWithClassProperty_IgnoreConditionWhenWritingDefault_Ctor(string myString)
+            public ClassWithClassProperty_IgnoreConditionWhenWritingDefault_Ctor(string? myString)
             {
                 if (myString != null)
                 {
@@ -1892,10 +1880,6 @@ namespace System.Text.Json.Serialization.Tests
 
         [Theory]
         [MemberData(nameof(JsonIgnoreConditionWhenWritingDefault_StructProperty_TestData))]
-#if BUILDING_SOURCE_GENERATOR_TESTS
-        // Need support for parameterized ctors.
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/45448")]
-#endif
         public async Task JsonIgnoreConditionWhenWritingDefault_StructProperty(Type type, JsonSerializerOptions options)
         {
             // Property shouldn't be ignored if it isn't null.
@@ -1924,7 +1908,7 @@ namespace System.Text.Json.Serialization.Tests
             public int Int2 { get; set; }
         }
 
-        private struct StructWithStructProperty_IgnoreConditionWhenWritingDefault_Ctor
+        public struct StructWithStructProperty_IgnoreConditionWhenWritingDefault_Ctor
         {
             public int Int1 { get; set; }
             [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
@@ -1948,10 +1932,6 @@ namespace System.Text.Json.Serialization.Tests
 
         [Theory]
         [MemberData(nameof(JsonIgnoreConditionNever_TestData))]
-#if BUILDING_SOURCE_GENERATOR_TESTS
-        // Need support for parameterized ctors.
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/45448")]
-#endif
         public async Task JsonIgnoreConditionNever(Type type)
         {
             // Property should always be (de)serialized, even when null.
@@ -1983,10 +1963,6 @@ namespace System.Text.Json.Serialization.Tests
 
         [Theory]
         [MemberData(nameof(JsonIgnoreConditionNever_TestData))]
-#if BUILDING_SOURCE_GENERATOR_TESTS
-        // Need support for parameterized ctors.
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/45448")]
-#endif
         public async Task JsonIgnoreConditionNever_IgnoreNullValues_True(Type type)
         {
             // Property should always be (de)serialized.
@@ -2021,7 +1997,7 @@ namespace System.Text.Json.Serialization.Tests
         {
             public int Int1 { get; set; }
             [JsonIgnore(Condition = JsonIgnoreCondition.Never)]
-            public string MyString { get; set; }
+            public string? MyString { get; set; }
             public int Int2 { get; set; }
         }
 
@@ -2029,10 +2005,10 @@ namespace System.Text.Json.Serialization.Tests
         {
             public int Int1 { get; set; }
             [JsonIgnore(Condition = JsonIgnoreCondition.Never)]
-            public string MyString { get; }
+            public string? MyString { get; }
             public int Int2 { get; set; }
 
-            public ClassWithStructProperty_IgnoreConditionNever_Ctor(string myString)
+            public ClassWithStructProperty_IgnoreConditionNever_Ctor(string? myString)
             {
                 MyString = myString;
             }
@@ -2060,9 +2036,6 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
-#if BUILDING_SOURCE_GENERATOR_TESTS
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/53393")]
-#endif
         public async Task ClassWithComplexObjectsUsingIgnoreWhenWritingDefaultAttribute()
         {
             string json = @"{""Class"":{""MyInt16"":18}, ""Dictionary"":null}";
@@ -2084,16 +2057,13 @@ namespace System.Text.Json.Serialization.Tests
         public class ClassUsingIgnoreWhenWritingDefaultAttribute
         {
             [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
-            public SimpleTestClass Class { get; set; }
+            public SimpleTestClass? Class { get; set; }
 
             [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
-            public Dictionary<string, string> Dictionary { get; set; } = new Dictionary<string, string> { ["Key"] = "Value" };
+            public Dictionary<string, string>? Dictionary { get; set; } = new Dictionary<string, string> { ["Key"] = "Value" };
         }
 
         [Fact]
-#if BUILDING_SOURCE_GENERATOR_TESTS
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/53393")]
-#endif
         public async Task ClassWithComplexObjectUsingIgnoreNeverAttribute()
         {
             string json = @"{""Class"":null, ""Dictionary"":null}";
@@ -2124,7 +2094,7 @@ namespace System.Text.Json.Serialization.Tests
             public SimpleTestClass Class { get; set; } = new SimpleTestClass { MyInt16 = 18 };
 
             [JsonIgnore(Condition = JsonIgnoreCondition.Never)]
-            public Dictionary<string, string> Dictionary { get; set; } = new Dictionary<string, string> { ["Key"] = "Value" };
+            public Dictionary<string, string>? Dictionary { get; set; } = new Dictionary<string, string> { ["Key"] = "Value" };
         }
 
         [Fact]
@@ -2205,7 +2175,7 @@ namespace System.Text.Json.Serialization.Tests
         public class ClassWithReadOnlyStringProperty_IgnoreNever
         {
             [JsonIgnore(Condition = JsonIgnoreCondition.Never)]
-            public string MyString { get; }
+            public string? MyString { get; }
 
             public ClassWithReadOnlyStringProperty_IgnoreNever(string myString) => MyString = myString;
         }
@@ -2228,7 +2198,7 @@ namespace System.Text.Json.Serialization.Tests
         public class ClassWithReadOnlyStringField_IgnoreNever
         {
             [JsonIgnore(Condition = JsonIgnoreCondition.Never)]
-            public string MyString { get; }
+            public string? MyString { get; }
 
             public ClassWithReadOnlyStringField_IgnoreNever(string myString) => MyString = myString;
         }
@@ -2279,7 +2249,7 @@ namespace System.Text.Json.Serialization.Tests
 
         public class ClassWithProps
         {
-            public string MyString { get; set; }
+            public string? MyString { get; set; }
             public int MyInt { get; set; }
             public Point_2D_Struct MyPoint { get; set; }
         }
@@ -2294,7 +2264,7 @@ namespace System.Text.Json.Serialization.Tests
         public class ClassWithPropsAndIgnoreAttributes
         {
             [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
-            public string MyString { get; set; }
+            public string? MyString { get; set; }
             public int MyInt { get; set; }
             [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
             public Point_2D_Struct MyPoint { get; set; }
@@ -2336,7 +2306,7 @@ namespace System.Text.Json.Serialization.Tests
 
         public class ClassWithInitializedProps
         {
-            public string MyString { get; set; } = "Default";
+            public string? MyString { get; set; } = "Default";
             public int MyInt { get; set; } = -1;
             public Point_2D_Struct MyPoint { get; set; } = new Point_2D_Struct(-1, -1);
         }
@@ -2375,10 +2345,6 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
-#if BUILDING_SOURCE_GENERATOR_TESTS
-        // Need support for parameterized ctors.
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/45448")]
-#endif
         public async Task ValueType_Properties_NotIgnoredWhen_IgnoreNullValues_Active_LargeStructTest()
         {
             var options = new JsonSerializerOptions { IgnoreNullValues = true };
@@ -2412,10 +2378,6 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
-#if BUILDING_SOURCE_GENERATOR_TESTS
-        // Need support for parameterized ctors.
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/45448")]
-#endif
         public async Task ValueType_Properties_NotIgnoredWhen_IgnoreNullValues_Active_SmallStructTest()
         {
             var options = new JsonSerializerOptions { IgnoreNullValues = true };
@@ -2478,7 +2440,7 @@ namespace System.Text.Json.Serialization.Tests
             }
         }
 
-        private struct SmallStructWithValueAndReferenceTypes
+        public struct SmallStructWithValueAndReferenceTypes
         {
             public string MyString { get; }
             public int MyInt { get; set; }
@@ -2502,10 +2464,6 @@ namespace System.Text.Json.Serialization.Tests
         public class PointClass { }
 
         [Fact]
-#if BUILDING_SOURCE_GENERATOR_TESTS
-        // Need support for parameterized ctors.
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/45448")]
-#endif
         public async Task Ignore_WhenWritingNull_Globally()
         {
             var options = new JsonSerializerOptions
@@ -2559,7 +2517,7 @@ namespace System.Text.Json.Serialization.Tests
         {
             public string MyString1_IgnoredWhenWritingNull { get; set; }
 
-            public string MyString2_IgnoredWhenWritingNull;
+            public string? MyString2_IgnoredWhenWritingNull;
 
             public int MyInt1;
 
@@ -2569,7 +2527,7 @@ namespace System.Text.Json.Serialization.Tests
 
             public bool? MyNullableBool2_IgnoredWhenWritingNull;
 
-            public PointClass MyPointClass1_IgnoredWhenWritingNull;
+            public PointClass? MyPointClass1_IgnoredWhenWritingNull;
 
             public PointClass MyPointClass2_IgnoredWhenWritingNull { get; set; }
 
@@ -2579,17 +2537,8 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
-#if BUILDING_SOURCE_GENERATOR_TESTS
-        // Need support for parameterized ctors.
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/45448")]
-#endif
         public async Task Ignore_WhenWritingNull_PerProperty()
         {
-            var options = new JsonSerializerOptions
-            {
-                IncludeFields = true
-            };
-
             string json = @"{
 ""MyPointClass2_IgnoredWhenWritingNull"":{},
 ""MyString1_IgnoredWhenWritingNull"":""Default"",
@@ -2604,7 +2553,7 @@ namespace System.Text.Json.Serialization.Tests
 }";
 
             // All members should correspond to JSON contents, as ignore doesn't apply to deserialization.
-            ClassWithThingsToIgnore_PerProperty obj = await Serializer.DeserializeWrapper<ClassWithThingsToIgnore_PerProperty>(json, options);
+            ClassWithThingsToIgnore_PerProperty obj = await Serializer.DeserializeWrapper<ClassWithThingsToIgnore_PerProperty>(json);
             Assert.NotNull(obj.MyPointClass2_IgnoredWhenWritingNull);
             Assert.Equal("Default", obj.MyString1_IgnoredWhenWritingNull);
             Assert.Null(obj.MyNullableBool1_IgnoredWhenWritingNull);
@@ -2628,7 +2577,7 @@ namespace System.Text.Json.Serialization.Tests
 ""MyNullableBool2_IgnoredWhenWritingNull"":true,
 ""MyPointStruct1"":{""X"":0,""Y"":0}
 }";
-            JsonTestHelper.AssertJsonEqual(expectedJson, await Serializer.SerializeWrapper(obj, options));
+            JsonTestHelper.AssertJsonEqual(expectedJson, await Serializer.SerializeWrapper(obj));
         }
 
         public class ClassWithThingsToIgnore_PerProperty
@@ -2637,8 +2586,9 @@ namespace System.Text.Json.Serialization.Tests
             public string MyString1_IgnoredWhenWritingNull { get; set; }
 
             [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
-            public string MyString2_IgnoredWhenWritingNull;
+            public string? MyString2_IgnoredWhenWritingNull;
 
+            [JsonInclude]
             public int MyInt1;
 
             public int MyInt2 { get; set; }
@@ -2646,15 +2596,16 @@ namespace System.Text.Json.Serialization.Tests
             [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
             public bool? MyNullableBool1_IgnoredWhenWritingNull { get; set; }
 
-            [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+            [JsonInclude, JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
             public bool? MyNullableBool2_IgnoredWhenWritingNull;
 
-            [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
-            public PointClass MyPointClass1_IgnoredWhenWritingNull;
+            [JsonInclude, JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+            public PointClass? MyPointClass1_IgnoredWhenWritingNull;
 
             [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
             public PointClass MyPointClass2_IgnoredWhenWritingNull { get; set; }
 
+            [JsonInclude]
             public Point_2D_Struct_WithAttribute MyPointStruct1;
 
             public Point_2D_Struct_WithAttribute MyPointStruct2 { get; set; }
@@ -2748,10 +2699,6 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
-#if BUILDING_SOURCE_GENERATOR_TESTS
-        // Needs bug fixes to custom converter handling.
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/45448")]
-#endif
         public async Task JsonIgnoreCondition_WhenWritingDefault_OnValueTypeWithCustomConverter()
         {
             var obj = new MyClassWithValueType();
@@ -2799,10 +2746,6 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
-#if BUILDING_SOURCE_GENERATOR_TESTS
-        // Needs bug fixes to custom converter handling.
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/45448")]
-#endif
         public async Task JsonIgnoreCondition_WhenWritingNull_OnValueTypeWithCustomConverter()
         {
             string json;
@@ -2885,7 +2828,7 @@ namespace System.Text.Json.Serialization.Tests
         public class MyClassWithValueTypeInterfaceProperty
         {
             [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
-            public IInterface MyProp { get; set; }
+            public IInterface? MyProp { get; set; }
 
             public interface IInterface { }
             public struct MyStruct : IInterface { }
@@ -3096,7 +3039,7 @@ namespace System.Text.Json.Serialization.Tests
 
         public class ClassWithCallbacks
         {
-            public Func<string, bool> Func { get; set; }
+            public Func<string, bool>? Func { get; set; }
 
             public Action<bool> Action { get; set; } = (val) => Console.WriteLine();
         }

@@ -10,7 +10,7 @@ using Debug = Internal.Runtime.CompilerHelpers.StartupDebug;
 
 namespace Internal.Runtime.CompilerHelpers
 {
-    public static partial class StartupCodeHelpers
+    internal static partial class StartupCodeHelpers
     {
         /// <summary>
         /// Table of logical modules. Only the first s_moduleCount elements of the array are in use.
@@ -27,7 +27,7 @@ namespace Internal.Runtime.CompilerHelpers
         /// </summary>
         private static IntPtr s_moduleGCStaticsSpines;
 
-        [UnmanagedCallersOnly(EntryPoint = "InitializeModules", CallConvs = new Type[] { typeof(CallConvCdecl) })]
+        [UnmanagedCallersOnly(EntryPoint = "InitializeModules")]
         internal static unsafe void InitializeModules(IntPtr osModule, IntPtr* pModuleHeaders, int count, IntPtr* pClasslibFunctions, int nClasslibFunctions)
         {
             RuntimeImports.RhpRegisterOsModule(osModule);
@@ -153,7 +153,7 @@ namespace Internal.Runtime.CompilerHelpers
 
         private static unsafe void InitializeModuleFrozenObjectSegment(IntPtr segmentStart, int length)
         {
-            if (RuntimeImports.RhpRegisterFrozenSegment(segmentStart, (IntPtr)length) == IntPtr.Zero)
+            if (RuntimeImports.RhRegisterFrozenSegment((void*)segmentStart, (nuint)length, (nuint)length, (nuint)length) == IntPtr.Zero)
             {
                 // This should only happen if we ran out of memory.
                 RuntimeExceptionHelpers.FailFast("Failed to register frozen object segment for the module.");
@@ -210,7 +210,7 @@ namespace Internal.Runtime.CompilerHelpers
                     RuntimeImports.RhAllocateNewObject(
                         new IntPtr(blockAddr & ~GCStaticRegionConstants.Mask),
                         (uint)GC_ALLOC_FLAGS.GC_ALLOC_PINNED_OBJECT_HEAP,
-                        Unsafe.AsPointer(ref obj));
+                        &obj);
                     if (obj == null)
                     {
                         RuntimeExceptionHelpers.FailFast("Failed allocating GC static bases");
@@ -224,7 +224,7 @@ namespace Internal.Runtime.CompilerHelpers
                         // It actually has all GC fields including non-preinitialized fields and we simply copy over the
                         // entire blob to this object, overwriting everything.
                         void* pPreInitDataAddr = MethodTable.SupportsRelativePointers ? ReadRelPtr32((int*)pBlock + 1) : (void*)*(pBlock + 1);
-                        RuntimeImports.RhBulkMoveWithWriteBarrier(ref obj.GetRawData(), ref *(byte *)pPreInitDataAddr, obj.GetRawObjectDataSize());
+                        RuntimeImports.RhBulkMoveWithWriteBarrier(ref obj.GetRawData(), ref *(byte*)pPreInitDataAddr, obj.GetRawObjectDataSize());
                     }
 
                     // Call write barrier directly. Assigning object reference does a type check.
@@ -232,7 +232,7 @@ namespace Internal.Runtime.CompilerHelpers
                     Unsafe.Add(ref rawSpineData, currentBase) = obj;
 
                     // Update the base pointer to point to the pinned object
-                    *pBlock = *(IntPtr*)Unsafe.AsPointer(ref obj);
+                    *pBlock = *(IntPtr*)&obj;
                 }
 
                 currentBase++;
@@ -290,12 +290,7 @@ namespace Internal.Runtime.CompilerHelpers
                         {
                             // At the time of writing this, 90% of DehydratedDataCommand.Copy cases
                             // would fall into the above specialized cases. 10% fall back to memmove.
-                            memmove(pDest, pCurrent, (nuint)payload);
-
-                            // Not a DllImport - we don't need a GC transition since this is early startup
-                            [MethodImplAttribute(MethodImplOptions.InternalCall)]
-                            [RuntimeImport("*", "memmove")]
-                            static extern unsafe void* memmove(byte* dmem, byte* smem, nuint size);
+                            Unsafe.CopyBlock(pDest, pCurrent, (uint)payload);
                         }
 
                         pDest += payload;

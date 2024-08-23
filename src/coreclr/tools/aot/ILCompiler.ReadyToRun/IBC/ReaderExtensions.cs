@@ -39,36 +39,6 @@ namespace ILCompiler.IBC
 
             return new string(characters, 0, length - 1);
         }
-
-        // BinaryReader.Read7BitEncodedInt is protected internal, so its
-        // implementation is duplicated here.
-        public static int Read7BitEncodedInt(this BinaryReader reader)
-        {
-            int result = 0;
-            int shift = 0;
-            byte current;
-            do
-            {
-                current = reader.ReadByte();
-
-                result |= (current & 0x7f) << shift;
-
-                shift += 7;
-            }
-            while ((shift <= 28) && ((current & 0x80) != 0));
-
-            if ((current & 0x80) != 0)
-            {
-                throw new InvalidDataException("Improperly encoded integer");
-            }
-
-            return result;
-        }
-
-        public static uint Read7BitEncodedUInt(this BinaryReader reader)
-        {
-            return (uint)reader.Read7BitEncodedInt();
-        }
     }
 
     public static class WriterExtensions
@@ -91,24 +61,6 @@ namespace ILCompiler.IBC
             }
 
             writer.Write((short)'\0');
-        }
-
-        // BinaryWriter.Write7BitEncodedInt is protected internal, so its
-        // implementation is duplicated here.
-        public static void Write7BitEncodedInt(this BinaryWriter writer, uint i)
-        {
-            while (i > 0x7f)
-            {
-                writer.Write((byte)(i | 0x80));
-                i >>= 7;
-            }
-
-            writer.Write((byte)i);
-        }
-
-        public static void Write7BitEncodedInt(this BinaryWriter writer, int i)
-        {
-            writer.Write7BitEncodedInt((uint)i);
         }
     }
 }

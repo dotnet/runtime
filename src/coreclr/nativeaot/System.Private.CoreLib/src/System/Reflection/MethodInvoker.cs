@@ -1,10 +1,12 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using Internal.Reflection.Core.Execution;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection.Runtime.MethodInfos;
+
+using Internal.Reflection.Core.Execution;
+
 using static System.Reflection.DynamicInvokeInfo;
 
 namespace System.Reflection
@@ -52,7 +54,7 @@ namespace System.Reflection
                 ThrowForArgCountMismatch();
             }
 
-            object? result = _methodBaseInvoker.InvokeDirectWithFewArgs(obj, new Span<object?>());
+            object? result = _methodBaseInvoker.InvokeDirectWithFewArgs(obj, default);
             DebugAnnotations.PreviousCallContainsDebuggerStepInCode();
             return result;
         }
@@ -79,10 +81,10 @@ namespace System.Reflection
             }
 
             StackAllocatedArguments argStorage = default;
-            argStorage._args.Set(0, arg1);
-            argStorage._args.Set(1, arg2);
+            argStorage._args[0] = arg1;
+            argStorage._args[1] = arg2;
 
-            object? result = _methodBaseInvoker.InvokeDirectWithFewArgs(obj, argStorage._args.AsSpan(_parameterCount));
+            object? result = _methodBaseInvoker.InvokeDirectWithFewArgs(obj, ((Span<object?>)argStorage._args).Slice(0, 2));
             DebugAnnotations.PreviousCallContainsDebuggerStepInCode();
             return result;
         }
@@ -96,11 +98,11 @@ namespace System.Reflection
             }
 
             StackAllocatedArguments argStorage = default;
-            argStorage._args.Set(0, arg1);
-            argStorage._args.Set(1, arg2);
-            argStorage._args.Set(2, arg3);
+            argStorage._args[0] = arg1;
+            argStorage._args[1] = arg2;
+            argStorage._args[2] = arg3;
 
-            object? result = _methodBaseInvoker.InvokeDirectWithFewArgs(obj, argStorage._args.AsSpan(_parameterCount));
+            object? result = _methodBaseInvoker.InvokeDirectWithFewArgs(obj, ((Span<object?>)argStorage._args).Slice(0, 3));
             DebugAnnotations.PreviousCallContainsDebuggerStepInCode();
             return result;
         }
@@ -114,12 +116,12 @@ namespace System.Reflection
             }
 
             StackAllocatedArguments argStorage = default;
-            argStorage._args.Set(0, arg1);
-            argStorage._args.Set(1, arg2);
-            argStorage._args.Set(2, arg3);
-            argStorage._args.Set(3, arg4);
+            argStorage._args[0] = arg1;
+            argStorage._args[1] = arg2;
+            argStorage._args[2] = arg3;
+            argStorage._args[3] = arg4;
 
-            object? result = _methodBaseInvoker.InvokeDirectWithFewArgs(obj, argStorage._args.AsSpan(_parameterCount));
+            object? result = _methodBaseInvoker.InvokeDirectWithFewArgs(obj, ((Span<object?>)argStorage._args).Slice(0, 4));
             DebugAnnotations.PreviousCallContainsDebuggerStepInCode();
             return result;
         }

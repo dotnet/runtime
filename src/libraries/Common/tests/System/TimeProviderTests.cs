@@ -104,14 +104,13 @@ namespace Tests.System
 
         public static IEnumerable<object[]> TimersProvidersData()
         {
-            yield return new object[] { TimeProvider.System, 6000 };
-            yield return new object[] { new FastClock(),     3000 };
+            yield return new object[] { TimeProvider.System, 1200 }; // At least 4-periods of of 300ms
+            yield return new object[] { new FastClock(),     600  }; // At least 4-periods of of 150ms. fast clock cut time by half
         }
 
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/91541", typeof(PlatformDetection), nameof(PlatformDetection.IsWasmThreadingSupported))]
         [MemberData(nameof(TimersProvidersData))]
-        public void TestProviderTimer(TimeProvider provider, int MaxMilliseconds)
+        public void TestProviderTimer(TimeProvider provider, int minMilliseconds)
         {
             TimerState state = new TimerState();
 
@@ -123,8 +122,6 @@ namespace Tests.System
                                     {
                                         s.Counter++;
 
-                                        s.TotalTicks += DateTimeOffset.UtcNow.Ticks - s.UtcNow.Ticks;
-
                                         switch (s.Counter)
                                         {
                                             case 2:
@@ -133,12 +130,11 @@ namespace Tests.System
                                                 break;
 
                                             case 4:
+                                                s.Stopwatch.Stop();
                                                 s.TokenSource.Cancel();
                                                 s.Timer.Dispose();
                                                 break;
                                         }
-
-                                        s.UtcNow = DateTimeOffset.UtcNow;
                                     }
                                 },
                             state,
@@ -149,7 +145,7 @@ namespace Tests.System
 
             Assert.Equal(4, state.Counter);
             Assert.Equal(400, state.Period);
-            Assert.True(MaxMilliseconds >= state.TotalTicks / TimeSpan.TicksPerMillisecond, $"The total fired periods {state.TotalTicks / TimeSpan.TicksPerMillisecond}ms expected not exceeding the expected max {MaxMilliseconds}");
+            Assert.True(minMilliseconds <= state.Stopwatch.ElapsedMilliseconds, $"The total fired periods {state.Stopwatch.ElapsedMilliseconds}ms expected to be greater then the expected min {minMilliseconds}ms");
         }
 
         [Fact]
@@ -216,7 +212,6 @@ namespace Tests.System
 #endif // NETFRAMEWORK
 
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/91541", typeof(PlatformDetection), nameof(PlatformDetection.IsWasmThreadingSupported))]
         [MemberData(nameof(TimersProvidersListData))]
         public static void CancellationTokenSourceWithTimer(TimeProvider provider)
         {
@@ -359,6 +354,12 @@ namespace Tests.System
             tcs4.SetResult(42);
             Assert.Equal(42, await task4);
 
+            var tcs5 = new TaskCompletionSource<bool>();
+            await Assert.ThrowsAsync<TimeoutException>(() => taskFactory.WaitAsync(tcs5.Task, TimeSpan.Zero, provider, cts.Token));
+
+            cts.Cancel();
+            await Assert.ThrowsAsync<TaskCanceledException>(() => taskFactory.WaitAsync(tcs5.Task, TimeSpan.FromMilliseconds(10), provider, cts.Token));
+
             using CancellationTokenSource cts1 = new CancellationTokenSource();
             Task task5 = Task.Run(() => { while (!cts1.Token.IsCancellationRequested) { Thread.Sleep(10); } });
             await Assert.ThrowsAsync<TimeoutException>(() => taskFactory.WaitAsync(task5, TimeSpan.FromMilliseconds(10), provider));
@@ -368,8 +369,8 @@ namespace Tests.System
             using CancellationTokenSource cts2 = new CancellationTokenSource();
             Task task6 = Task.Run(() => { while (!cts2.Token.IsCancellationRequested) { Thread.Sleep(10); } });
             await Assert.ThrowsAsync<TimeoutException>(() => taskFactory.WaitAsync(task6, TimeSpan.FromMilliseconds(10), provider, cts2.Token));
-            cts1.Cancel();
-            await task5;
+            cts2.Cancel();
+            await task6;
 
             using CancellationTokenSource cts3 = new CancellationTokenSource();
             Task<int> task7 = Task<int>.Run(() => { while (!cts3.Token.IsCancellationRequested) { Thread.Sleep(10); } return 100; });
@@ -455,17 +456,16 @@ namespace Tests.System
             {
                 Counter = 0;
                 Period = 300;
-                TotalTicks = 0;
-                UtcNow = DateTimeOffset.UtcNow;
                 TokenSource = new CancellationTokenSource();
+                Stopwatch = new Stopwatch ();
+                Stopwatch.Start();
             }
 
             public CancellationTokenSource TokenSource { get; set; }
             public int Counter { get; set; }
             public int Period { get; set; }
-            public DateTimeOffset UtcNow { get; set; }
             public ITimer Timer { get; set; }
-            public long TotalTicks { get; set; }
+            public Stopwatch Stopwatch { get; set; }
         };
 
         // Clock that speeds up the reported time

@@ -46,8 +46,7 @@ namespace ComInterfaceGenerator.Tests
             StrategyBasedComWrappers wrappers = new();
             nint ptr = wrappers.GetOrCreateComInterfaceForObject(obj, CreateComInterfaceFlags.None);
             Assert.NotEqual(0, ptr);
-            var iid = typeof(IGetAndSetInt).GUID;
-            Assert.Equal(0, Marshal.QueryInterface(ptr, in iid, out nint iComInterface));
+            Assert.Equal(0, Marshal.QueryInterface(ptr, typeof(IGetAndSetInt).GUID, out nint iComInterface));
             Assert.NotEqual(0, iComInterface);
             Marshal.Release(iComInterface);
             Marshal.Release(ptr);
@@ -60,8 +59,7 @@ namespace ComInterfaceGenerator.Tests
             StrategyBasedComWrappers wrappers = new();
             nint ptr = wrappers.GetOrCreateComInterfaceForObject(obj, CreateComInterfaceFlags.None);
             Assert.NotEqual(0, ptr);
-            var iid = typeof(IGetAndSetInt).GUID;
-            Assert.Equal(0, Marshal.QueryInterface(ptr, in iid, out nint iComInterface));
+            Assert.Equal(0, Marshal.QueryInterface(ptr, typeof(IGetAndSetInt).GUID, out nint iComInterface));
             Assert.NotEqual(0, iComInterface);
             Marshal.Release(iComInterface);
             Marshal.Release(ptr);

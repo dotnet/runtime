@@ -23,6 +23,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 		public bool StripDescriptors;
 		public bool StripSubstitutions;
 		public bool StripLinkAttributes;
+		public bool DumpDependencies;
 
 		public bool IlcFrameworkCompilation;
 

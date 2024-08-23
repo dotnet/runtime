@@ -19,6 +19,11 @@ namespace System.Linq
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.keySelector);
             }
 
+            if (IsEmptyArray(source))
+            {
+                return [];
+            }
+
             return CountByIterator(source, keySelector, keyComparer);
         }
 

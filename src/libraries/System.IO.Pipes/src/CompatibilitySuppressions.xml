@@ -1,7 +1,6 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<!-- https://learn.microsoft.com/en-us/dotnet/fundamentals/package-validation/diagnostic-ids -->
+<!-- https://learn.microsoft.com/dotnet/fundamentals/package-validation/diagnostic-ids -->
 <Suppressions xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
-  <!-- Exposed public in System.IO.Pipes.AccessControl but implemented in System.IO.Pipes. -->
   <Suppression>
     <DiagnosticId>CP0001</DiagnosticId>
     <Target>T:System.IO.Pipes.AnonymousPipeServerStreamAcl</Target>
@@ -11,12 +10,6 @@
   <Suppression>
     <DiagnosticId>CP0001</DiagnosticId>
     <Target>T:System.IO.Pipes.NamedPipeServerStreamAcl</Target>
-    <Left>ref/net9.0/System.IO.Pipes.dll</Left>
-    <Right>runtimes/win/lib/net9.0/System.IO.Pipes.dll</Right>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0001</DiagnosticId>
-    <Target>T:System.IO.Pipes.PipeAccessRights</Target>
     <Left>ref/net9.0/System.IO.Pipes.dll</Left>
     <Right>runtimes/win/lib/net9.0/System.IO.Pipes.dll</Right>
   </Suppression>

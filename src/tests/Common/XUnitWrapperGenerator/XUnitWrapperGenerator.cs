@@ -56,7 +56,7 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
                 string? testDisplayName = fileOptions.TestDisplayName();
                 if (assemblyPath is not null && testDisplayName is not null)
                 {
-                    return ImmutableArray.Create<ITestInfo>(new OutOfProcessTest(testDisplayName, assemblyPath));
+                    return ImmutableArray.Create<ITestInfo>(new OutOfProcessTest(testDisplayName, assemblyPath, fileOptions.TestBuildMode()));
                 }
             }
 
@@ -683,7 +683,7 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
                 case "Xunit.ConditionalClassAttribute":
                 case "Xunit.SkipOnPlatformAttribute":
                 case "Xunit.ActiveIssueAttribute":
-                case "Xunit.OuterloopAttribute":
+                case "Xunit.OuterLoopAttribute":
                 case "Xunit.PlatformSpecificAttribute":
                 case "Xunit.SkipOnMonoAttribute":
                 case "Xunit.SkipOnTargetFrameworkAttribute":
@@ -749,10 +749,15 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
                             false /* do not negate the condition, as this attribute indicates that a test will be run */);
                         break;
                     }
-                case "Xunit.OuterloopAttribute":
+                case "Xunit.OuterLoopAttribute":
                     if (options.GlobalOptions.Priority() == 0)
                     {
-                        // If we aren't building the outerloop/Pri 1 test suite, then this attribute acts like an
+                        if (filterAttribute.AttributeConstructor!.Parameters.Length < 2)
+                        {
+                            // If this test is always outerloop, then we can just skip it.
+                            return ImmutableArray<ITestInfo>.Empty;
+                        }
+                        // The remaining constructors for the attribute can share handling with the
                         // [ActiveIssue] attribute (it has the same shape).
                         goto case "Xunit.ActiveIssueAttribute";
                     }
@@ -801,6 +806,10 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
                         // If we're building tests not for Mono, we can skip handling the specifics of the SkipOnMonoAttribute.
                         continue;
                     }
+                    if (filterAttribute.ConstructorArguments.Length <= 1)
+                    {
+                        return ImmutableArray<ITestInfo>.Empty;
+                    }
                     testInfos = DecorateWithSkipOnPlatform(testInfos, (int)filterAttribute.ConstructorArguments[1].Value!, options);
                     break;
                 case "Xunit.SkipOnPlatformAttribute":
@@ -823,15 +832,15 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
                     Xunit.RuntimeConfiguration skippedConfigurations = 0;
                     Xunit.RuntimeTestModes skippedTestModes = 0;
 
-                    for (int i = 1; i < filterAttribute.AttributeConstructor!.Parameters.Length; i++)
+                    for (int i = 1; i < filterAttribute.ConstructorArguments.Length; i++)
                     {
-                        ReadSkippedInformationFromSkipOnCoreClrAttributeArgument(filterAttribute, i);
+                        ReadSkippedInformationFromSkipOnCoreClrAttributeArgument(filterAttribute.ConstructorArguments[i]);
                     }
 
-                    void ReadSkippedInformationFromSkipOnCoreClrAttributeArgument(AttributeData filterAttribute, int argumentIndex)
+                    void ReadSkippedInformationFromSkipOnCoreClrAttributeArgument(TypedConstant argument)
                     {
-                        int argumentValue = (int)filterAttribute.ConstructorArguments[argumentIndex].Value!;
-                        switch (filterAttribute.AttributeConstructor!.Parameters[argumentIndex].Type.ToDisplayString())
+                        int argumentValue = (int)argument.Value!;
+                        switch (argument.Type!.ToDisplayString())
                         {
                             case "Xunit.TestPlatforms":
                                 skippedTestPlatforms = (Xunit.TestPlatforms)argumentValue;
@@ -887,6 +896,10 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
         {
             conditions.Add($"{ConditionClass}.IsStressTest");
         }
+        if (skippedTestModes.HasFlag(Xunit.RuntimeTestModes.DisableR2R))
+        {
+            conditions.Add($"!{ConditionClass}.IsDisableR2R");
+        }
         if (skippedTestModes.HasFlag(Xunit.RuntimeTestModes.JitStress))
         {
             conditions.Add($"!{ConditionClass}.IsJitStress");
@@ -903,9 +916,13 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
         {
             conditions.Add($"!{ConditionClass}.IsTailcallStress");
         }
-        if (skippedTestModes.HasFlag(Xunit.RuntimeTestModes.ZapDisable))
+        if (skippedTestModes.HasFlag(Xunit.RuntimeTestModes.TieredCompilation))
         {
-            conditions.Add($"!{ConditionClass}.IsZapDisable");
+            conditions.Add($"!{ConditionClass}.IsTieredCompilation");
+        }
+        if (skippedTestModes.HasFlag(Xunit.RuntimeTestModes.HeapVerify))
+        {
+            conditions.Add($"!{ConditionClass}.IsHeapVerify");
         }
 
         if (skippedTestModes.HasFlag(Xunit.RuntimeTestModes.AnyGCStress))

@@ -3,9 +3,10 @@
 
 using System;
 using System.Collections.Generic;
-
+using System.Linq;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
 using static Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
 
 namespace Microsoft.Interop
@@ -62,7 +63,6 @@ namespace Microsoft.Interop
         public string InstanceIdentifier { get; init; } = string.Empty;
 
         public RefKind RefKind { get; init; } = RefKind.None;
-        public SyntaxKind RefKindSyntax { get; init; } = SyntaxKind.None;
 
         public bool IsByRef => RefKind != RefKind.None;
 
@@ -78,6 +78,7 @@ namespace Microsoft.Interop
 
         public int ManagedIndex { get; init; } = UnsetIndex;
         public int NativeIndex { get; init; } = UnsetIndex;
+        public bool IsExplicitThis { get; init; }
 
         public static TypePositionInfo CreateForParameter(IParameterSymbol paramSymbol, MarshallingInfo marshallingInfo, Compilation compilation)
         {
@@ -87,10 +88,10 @@ namespace Microsoft.Interop
             {
                 InstanceIdentifier = ParseToken(paramSymbol.Name).IsReservedKeyword() ? $"@{paramSymbol.Name}" : paramSymbol.Name,
                 RefKind = paramSymbol.RefKind,
-                RefKindSyntax = RefKindToSyntax(paramSymbol.RefKind),
                 ByValueContentsMarshalKind = byValueContentsMarshalKind,
                 ByValueMarshalAttributeLocations = (inLocation, outLocation),
-                ScopedKind = paramSymbol.ScopedKind
+                ScopedKind = paramSymbol.ScopedKind,
+                IsExplicitThis = ((ParameterSyntax)paramSymbol.DeclaringSyntaxReferences[0].GetSyntax()).Modifiers.Any(SyntaxKind.ThisKeyword)
             };
 
             return typeInfo;
@@ -131,18 +132,6 @@ namespace Microsoft.Interop
             }
 
             return (marshalKind, inAttributeLocation, outAttributeLocation);
-        }
-
-        private static SyntaxKind RefKindToSyntax(RefKind refKind)
-        {
-            return refKind switch
-            {
-                RefKind.In => SyntaxKind.InKeyword,
-                RefKind.Ref => SyntaxKind.RefKeyword,
-                RefKind.Out => SyntaxKind.OutKeyword,
-                RefKind.None => SyntaxKind.None,
-                _ => throw new NotImplementedException("Support for some RefKind"),
-            };
         }
     }
 }

@@ -157,7 +157,7 @@ namespace System.Reflection.Runtime.BindingFlagSupport
             }
             string name = member.Name;
             Type type = member.DeclaringType!;
-            for (;;)
+            for (; ; )
             {
                 Type? baseType = type.BaseType;
                 if (baseType == null)

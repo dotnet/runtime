@@ -7,7 +7,7 @@ If there is information you wish was here and it isn't, please add it :)
 EventPipe is a cross-platform eventing library written in C with significant inspiration from ETW
 on Windows. Previously when .NET primarily ran on Windows we relied solely on ETW, but now that
 we run on multiple platforms we wanted to have cross platform logging supported directly in the
-runtime. For more info see [the docs](https://docs.microsoft.com/en-us/dotnet/core/diagnostics/eventpipe).
+runtime. For more info see [the docs](https://learn.microsoft.com/dotnet/core/diagnostics/eventpipe).
 
 DiagnosticServer is a simple RPC mechanism that allows external tools to communicate with the
 runtime over named pipes and sockets. External tools send the runtime commands which the runtime

@@ -168,6 +168,7 @@ namespace System.Threading.Threads.Tests
         [InlineData("DefaultApartmentStateMain.exe", "GetApartmentStateTest")]
         [InlineData("DefaultApartmentStateMain.exe", "SetApartmentStateTest")]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/34543", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/86722", typeof(PlatformDetection), nameof(PlatformDetection.IsReadyToRunCompiled))]
         public static void ApartmentState_AttributePresent(string appName, string testName)
         {
             var psi = new ProcessStartInfo();

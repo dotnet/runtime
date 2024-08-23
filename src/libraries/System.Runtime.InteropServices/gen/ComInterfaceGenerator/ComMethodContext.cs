@@ -69,17 +69,19 @@ namespace Microsoft.Interop
 
         public bool IsInheritedMethod => OriginalDeclaringInterface != OwningInterface;
 
+        public bool IsHiddenOnDerivedInterface { get; set; }
+
         private GeneratedMethodContextBase? _managedToUnmanagedStub;
 
         public GeneratedMethodContextBase ManagedToUnmanagedStub => _managedToUnmanagedStub ??= CreateManagedToUnmanagedStub();
 
         private GeneratedMethodContextBase CreateManagedToUnmanagedStub()
         {
-            if (GenerationContext.VtableIndexData.Direction is not (MarshalDirection.ManagedToUnmanaged or MarshalDirection.Bidirectional))
+            if (GenerationContext.VtableIndexData.Direction is not (MarshalDirection.ManagedToUnmanaged or MarshalDirection.Bidirectional) || IsHiddenOnDerivedInterface)
             {
                 return new SkippedStubContext(OriginalDeclaringInterface.Info.Type);
             }
-            var (methodStub, diagnostics) = VirtualMethodPointerStubGenerator.GenerateManagedToNativeStub(GenerationContext, ComInterfaceGeneratorHelpers.GetGeneratorFactory);
+            var (methodStub, diagnostics) = VirtualMethodPointerStubGenerator.GenerateManagedToNativeStub(GenerationContext, ComInterfaceGeneratorHelpers.GetGeneratorResolver);
             return new GeneratedStubCodeContext(GenerationContext.TypeKeyOwner, GenerationContext.ContainingSyntaxContext, new(methodStub), new(diagnostics));
         }
 
@@ -89,11 +91,11 @@ namespace Microsoft.Interop
 
         private GeneratedMethodContextBase CreateUnmanagedToManagedStub()
         {
-            if (GenerationContext.VtableIndexData.Direction is not (MarshalDirection.UnmanagedToManaged or MarshalDirection.Bidirectional))
+            if (GenerationContext.VtableIndexData.Direction is not (MarshalDirection.UnmanagedToManaged or MarshalDirection.Bidirectional) || IsHiddenOnDerivedInterface)
             {
                 return new SkippedStubContext(GenerationContext.OriginalDefiningType);
             }
-            var (methodStub, diagnostics) = VirtualMethodPointerStubGenerator.GenerateNativeToManagedStub(GenerationContext, ComInterfaceGeneratorHelpers.GetGeneratorFactory);
+            var (methodStub, diagnostics) = VirtualMethodPointerStubGenerator.GenerateNativeToManagedStub(GenerationContext, ComInterfaceGeneratorHelpers.GetGeneratorResolver);
             return new GeneratedStubCodeContext(GenerationContext.OriginalDefiningType, GenerationContext.ContainingSyntaxContext, new(methodStub), new(diagnostics));
         }
 
@@ -140,7 +142,7 @@ namespace Microsoft.Interop
                                     CastExpression(OriginalDeclaringInterface.Info.Type.Syntax, IdentifierName("this"))),
                                 IdentifierName(MethodInfo.MethodName)),
                             ArgumentList(
-                                SeparatedList(GenerationContext.SignatureContext.ManagedParameters.Select(p => forwarder.AsArgument(p, new ManagedStubCodeContext())))))))
+                                SeparatedList(GenerationContext.SignatureContext.ManagedParameters.Select(p => forwarder.Bind(p).AsArgument(new ManagedStubCodeContext())))))))
                 .WithSemicolonToken(Token(SyntaxKind.SemicolonToken));
         }
 
@@ -192,6 +194,7 @@ namespace Microsoft.Interop
                     {
                         baseMethods = pair;
                     }
+
                     methods.AddRange(baseMethods);
                     startingIndex += baseMethods.Length;
                 }

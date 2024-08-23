@@ -6,7 +6,7 @@ using System.Diagnostics;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-#if NET7_0_OR_GREATER
+#if NET
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.Arm;
 using System.Runtime.Intrinsics.X86;
@@ -15,7 +15,7 @@ using System.Runtime.Intrinsics.X86;
 namespace System.IO.Hashing
 {
     /// <summary>Shared implementation of the XXH3 hash algorithm for 64-bit in <see cref="XxHash3"/> and <see cref="XxHash128"/> version.</summary>
-#if NET5_0_OR_GREATER
+#if NET
     [SkipLocalsInit]
 #endif
     internal static unsafe class XxHashShared
@@ -120,16 +120,16 @@ namespace System.IO.Hashing
             Debug.Assert(InternalBufferLengthBytes % StripeLengthBytes == 0);
 
             ReadOnlySpan<ulong> defaultSecretUInt64 = MemoryMarshal.Cast<byte, ulong>(DefaultSecret);
-            Debug.Assert(ReadLE64(defaultSecretUInt64[0])== DefaultSecretUInt64_0);
-            Debug.Assert(ReadLE64(defaultSecretUInt64[1])== DefaultSecretUInt64_1);
-            Debug.Assert(ReadLE64(defaultSecretUInt64[2])== DefaultSecretUInt64_2);
-            Debug.Assert(ReadLE64(defaultSecretUInt64[3])== DefaultSecretUInt64_3);
-            Debug.Assert(ReadLE64(defaultSecretUInt64[4])== DefaultSecretUInt64_4);
-            Debug.Assert(ReadLE64(defaultSecretUInt64[5])== DefaultSecretUInt64_5);
-            Debug.Assert(ReadLE64(defaultSecretUInt64[6])== DefaultSecretUInt64_6);
-            Debug.Assert(ReadLE64(defaultSecretUInt64[7])== DefaultSecretUInt64_7);
-            Debug.Assert(ReadLE64(defaultSecretUInt64[8])== DefaultSecretUInt64_8);
-            Debug.Assert(ReadLE64(defaultSecretUInt64[9])== DefaultSecretUInt64_9);
+            Debug.Assert(ReadLE64(defaultSecretUInt64[0]) == DefaultSecretUInt64_0);
+            Debug.Assert(ReadLE64(defaultSecretUInt64[1]) == DefaultSecretUInt64_1);
+            Debug.Assert(ReadLE64(defaultSecretUInt64[2]) == DefaultSecretUInt64_2);
+            Debug.Assert(ReadLE64(defaultSecretUInt64[3]) == DefaultSecretUInt64_3);
+            Debug.Assert(ReadLE64(defaultSecretUInt64[4]) == DefaultSecretUInt64_4);
+            Debug.Assert(ReadLE64(defaultSecretUInt64[5]) == DefaultSecretUInt64_5);
+            Debug.Assert(ReadLE64(defaultSecretUInt64[6]) == DefaultSecretUInt64_6);
+            Debug.Assert(ReadLE64(defaultSecretUInt64[7]) == DefaultSecretUInt64_7);
+            Debug.Assert(ReadLE64(defaultSecretUInt64[8]) == DefaultSecretUInt64_8);
+            Debug.Assert(ReadLE64(defaultSecretUInt64[9]) == DefaultSecretUInt64_9);
             Debug.Assert(ReadLE64(defaultSecretUInt64[10]) == DefaultSecretUInt64_10);
             Debug.Assert(ReadLE64(defaultSecretUInt64[11]) == DefaultSecretUInt64_11);
             Debug.Assert(ReadLE64(defaultSecretUInt64[12]) == DefaultSecretUInt64_12);
@@ -138,16 +138,16 @@ namespace System.IO.Hashing
             Debug.Assert(ReadLE64(defaultSecretUInt64[15]) == DefaultSecretUInt64_15);
 
             ReadOnlySpan<ulong> defaultSecret3UInt64 = MemoryMarshal.Cast<byte, ulong>(DefaultSecret.Slice(3));
-            Debug.Assert(ReadLE64(defaultSecret3UInt64[0])== DefaultSecret3UInt64_0);
-            Debug.Assert(ReadLE64(defaultSecret3UInt64[1])== DefaultSecret3UInt64_1);
-            Debug.Assert(ReadLE64(defaultSecret3UInt64[2])== DefaultSecret3UInt64_2);
-            Debug.Assert(ReadLE64(defaultSecret3UInt64[3])== DefaultSecret3UInt64_3);
-            Debug.Assert(ReadLE64(defaultSecret3UInt64[4])== DefaultSecret3UInt64_4);
-            Debug.Assert(ReadLE64(defaultSecret3UInt64[5])== DefaultSecret3UInt64_5);
-            Debug.Assert(ReadLE64(defaultSecret3UInt64[6])== DefaultSecret3UInt64_6);
-            Debug.Assert(ReadLE64(defaultSecret3UInt64[7])== DefaultSecret3UInt64_7);
-            Debug.Assert(ReadLE64(defaultSecret3UInt64[8])== DefaultSecret3UInt64_8);
-            Debug.Assert(ReadLE64(defaultSecret3UInt64[9])== DefaultSecret3UInt64_9);
+            Debug.Assert(ReadLE64(defaultSecret3UInt64[0]) == DefaultSecret3UInt64_0);
+            Debug.Assert(ReadLE64(defaultSecret3UInt64[1]) == DefaultSecret3UInt64_1);
+            Debug.Assert(ReadLE64(defaultSecret3UInt64[2]) == DefaultSecret3UInt64_2);
+            Debug.Assert(ReadLE64(defaultSecret3UInt64[3]) == DefaultSecret3UInt64_3);
+            Debug.Assert(ReadLE64(defaultSecret3UInt64[4]) == DefaultSecret3UInt64_4);
+            Debug.Assert(ReadLE64(defaultSecret3UInt64[5]) == DefaultSecret3UInt64_5);
+            Debug.Assert(ReadLE64(defaultSecret3UInt64[6]) == DefaultSecret3UInt64_6);
+            Debug.Assert(ReadLE64(defaultSecret3UInt64[7]) == DefaultSecret3UInt64_7);
+            Debug.Assert(ReadLE64(defaultSecret3UInt64[8]) == DefaultSecret3UInt64_8);
+            Debug.Assert(ReadLE64(defaultSecret3UInt64[9]) == DefaultSecret3UInt64_9);
             Debug.Assert(ReadLE64(defaultSecret3UInt64[10]) == DefaultSecret3UInt64_10);
             Debug.Assert(ReadLE64(defaultSecret3UInt64[11]) == DefaultSecret3UInt64_11);
             Debug.Assert(ReadLE64(defaultSecret3UInt64[12]) == DefaultSecret3UInt64_12);
@@ -333,7 +333,7 @@ namespace System.IO.Hashing
         {
             fixed (ulong* stateAccumulators = state.Accumulators)
             {
-#if NET7_0_OR_GREATER
+#if NET
                 if (Vector256.IsHardwareAccelerated)
                 {
                     Vector256.Store(Vector256.Load(stateAccumulators), accumulators);
@@ -390,7 +390,7 @@ namespace System.IO.Hashing
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void InitializeAccumulators(ulong* accumulators)
         {
-#if NET7_0_OR_GREATER
+#if NET
             if (Vector256.IsHardwareAccelerated)
             {
                 Vector256.Store(Vector256.Create(Prime32_3, Prime64_1, Prime64_2, Prime64_3), accumulators);
@@ -452,7 +452,7 @@ namespace System.IO.Hashing
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static ulong Multiply64To128(ulong left, ulong right, out ulong lower)
         {
-#if NET5_0_OR_GREATER
+#if NET
             return Math.BigMul(left, right, out lower);
 #else
             ulong lowerLow = Multiply32To64((uint)left, (uint)right);
@@ -479,7 +479,7 @@ namespace System.IO.Hashing
         {
             fixed (byte* defaultSecret = &MemoryMarshal.GetReference(DefaultSecret))
             {
-#if NET7_0_OR_GREATER
+#if NET
                 if (Vector256.IsHardwareAccelerated && BitConverter.IsLittleEndian)
                 {
                     Vector256<ulong> seedVec = Vector256.Create(seed, 0u - seed, seed, 0u - seed);
@@ -515,7 +515,7 @@ namespace System.IO.Hashing
             byte* secretForAccumulate = secret;
             byte* secretForScramble = secret + (SecretLengthBytes - StripeLengthBytes);
 
-#if NET7_0_OR_GREATER
+#if NET
             if (Vector256.IsHardwareAccelerated && BitConverter.IsLittleEndian)
             {
                 Vector256<ulong> acc1 = Vector256.Load(accumulators);
@@ -620,7 +620,7 @@ namespace System.IO.Hashing
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static void Accumulate512Inlined(ulong* accumulators, byte* source, byte* secret)
         {
-#if NET7_0_OR_GREATER
+#if NET
             if (Vector256.IsHardwareAccelerated && BitConverter.IsLittleEndian)
             {
                 for (int i = 0; i < AccumulatorCount / Vector256<ulong>.Count; i++)
@@ -659,7 +659,7 @@ namespace System.IO.Hashing
             }
         }
 
-#if NET7_0_OR_GREATER
+#if NET
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static Vector256<ulong> Accumulate256(Vector256<ulong> accVec, byte* source, Vector256<uint> secret)
         {
@@ -714,7 +714,7 @@ namespace System.IO.Hashing
 
         private static void ScrambleAccumulators(ulong* accumulators, byte* secret)
         {
-#if NET7_0_OR_GREATER
+#if NET
             if (Vector256.IsHardwareAccelerated && BitConverter.IsLittleEndian)
             {
                 for (int i = 0; i < AccumulatorCount / Vector256<ulong>.Count; i++)
@@ -752,7 +752,7 @@ namespace System.IO.Hashing
             }
         }
 
-#if NET7_0_OR_GREATER
+#if NET
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static Vector256<ulong> ScrambleAccumulator256(Vector256<ulong> accVec, Vector256<ulong> secret)
         {

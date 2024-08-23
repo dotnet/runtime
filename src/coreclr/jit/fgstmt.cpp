@@ -18,9 +18,9 @@ bool Compiler::fgBlockContainsStatementBounded(BasicBlock* block,
                                                Statement*  stmt,
                                                bool        answerOnBoundExceeded /*= true*/)
 {
-    const __int64 maxLinks = 100000000;
+    const int64_t maxLinks = 100000000;
 
-    __int64* numTraversed = &JitTls::GetCompiler()->compNumStatementLinksTraversed;
+    int64_t* numTraversed = &JitTls::GetCompiler()->compNumStatementLinksTraversed;
 
     if (*numTraversed > maxLinks)
     {
@@ -49,9 +49,9 @@ bool Compiler::fgBlockContainsStatementBounded(BasicBlock* block,
 //   stmt  - the statement to be inserted.
 //
 // Notes:
-//    We always insert phi statements at the beginning.
-//    In other cases, if there are any phi assignments and/or an assignment of
-//    the GT_CATCH_ARG, we insert after those.
+//    We always insert phi statements at the beginning. In other cases, if
+//    there are any phi stores and/or a store of the GT_CATCH_ARG, we insert
+//    after those.
 //
 void Compiler::fgInsertStmtAtBeg(BasicBlock* block, Statement* stmt)
 {
@@ -197,7 +197,7 @@ void Compiler::fgInsertStmtNearEnd(BasicBlock* block, Statement* stmt)
         }
         else if (block->KindIs(BBJ_RETURN))
         {
-            assert((lastStmt->GetRootNode()->OperIs(GT_RETURN, GT_JMP)) ||
+            assert((lastStmt->GetRootNode()->OperIs(GT_RETURN, GT_SWIFT_ERROR_RET, GT_JMP)) ||
                    // BBJ_RETURN blocks in functions returning void do not get a GT_RETURN node if they
                    // have a .tail prefix (even if canTailCall returns false for these calls)
                    // code:Compiler::impImportBlockCode (search for the RET: label)
@@ -538,9 +538,10 @@ inline bool OperIsControlFlow(genTreeOps oper)
 
         case GT_RETURN:
         case GT_RETFILT:
-#if !defined(FEATURE_EH_FUNCLETS)
+        case GT_SWIFT_ERROR_RET:
+#if defined(FEATURE_EH_WINDOWS_X86)
         case GT_END_LFIN:
-#endif // !FEATURE_EH_FUNCLETS
+#endif // FEATURE_EH_WINDOWS_X86
             return true;
 
         default:

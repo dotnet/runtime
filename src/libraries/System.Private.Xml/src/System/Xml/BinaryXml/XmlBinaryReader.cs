@@ -20,7 +20,7 @@ namespace System.Xml
 
         private static ReadOnlySpan<byte> XsdKatmaiTimeScaleToValueLengthMap => // 8
         [
-        // length scale
+            // length scale
             3, // 0
             3, // 1
             3, // 2

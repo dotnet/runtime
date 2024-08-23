@@ -175,6 +175,12 @@ public class MyClass : IMyInterface
    }
 #endif
 
+    public static void ThrowIOE()
+    {
+#if !V2
+        throw new InvalidOperationException();
+#endif
+    }
 }
 
 public class MyChildClass : MyClass

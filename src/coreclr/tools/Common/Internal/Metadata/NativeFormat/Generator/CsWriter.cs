@@ -4,12 +4,14 @@
 using System;
 using System.IO;
 
-class CsWriter : IDisposable
-{
-    TextWriter _writer;
+namespace NativeFormatGen;
 
-    int _indent;
-    bool _emptyLineAssumed;
+internal class CsWriter : IDisposable
+{
+    private StreamWriter _writer;
+
+    private int _indent;
+    private bool _emptyLineAssumed;
 
     public CsWriter(string filename)
     {

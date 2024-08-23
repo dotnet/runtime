@@ -14,10 +14,11 @@ public class Test
 
     static void ReportFailure(string describe, bool expect, bool actual)
     {
-        throw new Exception(" === Fail: " + describe + "\n\tExpected:" + expect + "\n\tActual:" + actual);        
+        throw new Exception(" === Fail: " + describe + "\n\tExpected:" + expect + "\n\tActual:" + actual);
     }
-    
+
     [Fact]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/91388", typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.PlatformDoesNotSupportNativeTestAssets))]
     public static void TestEntryPoint()
     {
         //Test Method1
@@ -86,7 +87,7 @@ public class Test
         if (boolValue6 != boolNative)
         {
             ReportFailure("Method Marshal_Out[Managed Side],The passed value is wrong", boolNative, boolValue6);
-        } 
+        }
 
         //Test Method7
         bool boolValue7 = boolManaged;
@@ -128,12 +129,12 @@ public class Test
 
     private static void TestVariantBool()
     {
-        
+
         if (!BoolNative.Marshal_ByValue_Variant(true, true))
         {
             ReportFailure("Method Marshal_ByValue_Variant[Managed Side], The return value is wrong", true, true);
         }
-        
+
         if (!BoolNative.Marshal_ByValue_Variant(false, false))
         {
             ReportFailure("Method Marshal_ByValue_Variant[Managed Side], The return value is wrong", false, false);
@@ -149,8 +150,8 @@ public class Test
         if (boolValue10 != boolNative)
         {
             ReportFailure("Method Marshal_Ref_Variant[Managed Side],The passed value is wrong", boolNative, boolValue10);
-        } 
-        
+        }
+
         var trueStruct = new BoolNative.ContainsVariantBool
         {
             value = true
@@ -160,12 +161,12 @@ public class Test
         {
             value = false
         };
-        
+
         if (!BoolNative.Marshal_ByValue_Struct_Variant(trueStruct, true))
         {
             ReportFailure("Method Marshal_ByValue_Variant[Managed Side], The return value is wrong", true, true);
         }
-        
+
         if (!BoolNative.Marshal_ByValue_Struct_Variant(falseStruct, false))
         {
             ReportFailure("Method Marshal_ByValue_Variant[Managed Side], The return value is wrong", false, false);
@@ -175,7 +176,7 @@ public class Test
         {
             value = boolManaged
         };
-        
+
         bool boolValueRet11 = BoolNative.Marshal_Ref_Struct_Variant(ref boolValue11);
 
         if (!boolValueRet11)

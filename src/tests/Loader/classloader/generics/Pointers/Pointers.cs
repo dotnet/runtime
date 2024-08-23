@@ -106,18 +106,20 @@ public unsafe class Pointers
     [MethodImpl(MethodImplOptions.NoInlining)]
     private static void PointerArrayImpl()
     {
-        int*[] intPtrArray = new int*[5];
-        Span<int> intSpan = stackalloc int[intPtrArray.Length];
-        int* intArray = (int*)Unsafe.AsPointer(ref intSpan.GetPinnableReference());
+        int intAllocationSize = 5;
+        int*[] intPtrArray = new int*[intAllocationSize];
+        int* intArray = stackalloc int[intAllocationSize];
+        Span<int> intSpan = new Span<int>(intArray, intAllocationSize);
         for (int i = 0; i < intPtrArray.Length; i++)
         {
             intArray[i] = i;
             intPtrArray[i] = &intArray[i];
         }
 
-        Struct*[] structPtrArray = new Struct*[5];
-        Span<Struct> structSpan = stackalloc Struct[structPtrArray.Length];
-        Struct* structArray = (Struct*)Unsafe.AsPointer(ref structSpan.GetPinnableReference());
+        int structAllocationSize = 5;
+        Struct*[] structPtrArray = new Struct*[structAllocationSize];
+        Struct* structArray = stackalloc Struct[structAllocationSize];
+        Span<Struct> structSpan = new Span<Struct>(structArray, structAllocationSize);
         for (int i = 0; i < structPtrArray.Length; i++)
         {
             structArray[i] = new Struct() { Num = i };

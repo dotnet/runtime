@@ -5,6 +5,8 @@ using System;
 using System.Runtime.InteropServices;
 using Xunit;
 
+namespace MarshalArrayAsParam.Default;
+
 public class ArrayMarshal
 {
     public struct TestStruct
@@ -334,7 +336,7 @@ public class ArrayMarshal
 
         Assert.True(CStyle_Array_Bool(InitBoolArray(ARRAY_SIZE), ARRAY_SIZE));
 
-        if (OperatingSystem.IsWindows())
+        if (TestLibrary.PlatformDetection.IsBuiltInComEnabled)
         {
             object[] oArr = InitArray<object>(ARRAY_SIZE);
             // Test nesting null value scenario
@@ -366,7 +368,7 @@ public class ArrayMarshal
         Assert.True(CStyle_Array_LPSTR_In(strArr, ARRAY_SIZE));
         Assert.True(CStyle_Array_Struct_In(InitStructArray(ARRAY_SIZE), ARRAY_SIZE));
         Assert.True(CStyle_Array_Bool_In(InitBoolArray(ARRAY_SIZE), ARRAY_SIZE));
-        if (OperatingSystem.IsWindows())
+        if (TestLibrary.PlatformDetection.IsBuiltInComEnabled)
         {
             object[] oArr = InitArray<object>(ARRAY_SIZE);
             // Test nesting null value scenario
@@ -461,7 +463,7 @@ public class ArrayMarshal
         Assert.True(CStyle_Array_Bool_InOut(boolArr, ARRAY_SIZE));
         Assert.True(Equals<bool>(boolArr, GetExpectedOutBoolArray(ARRAY_SIZE)));
 
-        if (OperatingSystem.IsWindows())
+        if (TestLibrary.PlatformDetection.IsBuiltInComEnabled)
         {
             Console.WriteLine("CStyle_Array_Object_InOut");
             object[] oArr = InitArray<object>(ARRAY_SIZE);
@@ -624,7 +626,7 @@ public class ArrayMarshal
         Assert.True(CStyle_Array_Bool_Out(boolArr, ARRAY_SIZE));
         Assert.True(Equals<bool>(boolArr, GetExpectedOutBoolArray(ARRAY_SIZE)));
 
-        if (OperatingSystem.IsWindows())
+        if (TestLibrary.PlatformDetection.IsBuiltInComEnabled)
         {
             Console.WriteLine("CStyle_Array_Object_Out");
             object[] oArr = new object[ARRAY_SIZE];
@@ -653,6 +655,9 @@ public class ArrayMarshal
     }
 
     [Fact]
+    [SkipOnMono("needs triage")]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/81674", typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsNativeAot))]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/91388", typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.PlatformDoesNotSupportNativeTestAssets))]
     public static int TestEntryPoint()
     {
         try

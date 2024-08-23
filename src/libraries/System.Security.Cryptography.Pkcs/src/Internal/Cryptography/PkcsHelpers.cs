@@ -36,7 +36,7 @@ namespace Internal.Cryptography
             }
         }
 
-#if !NETCOREAPP && !NETSTANDARD2_1
+#if !NET && !NETSTANDARD2_1
         // Compatibility API.
         internal static void AppendData(this IncrementalHash hasher, ReadOnlySpan<byte> data)
         {
@@ -364,7 +364,12 @@ namespace Internal.Cryptography
             return ToUpperHexString(serialBytes);
         }
 
-#if NETCOREAPP || NETSTANDARD2_1
+#if NET
+        private static string ToUpperHexString(ReadOnlySpan<byte> ba)
+        {
+            return Convert.ToHexString(ba);
+        }
+#elif NETSTANDARD2_1
         private static string ToUpperHexString(ReadOnlySpan<byte> ba)
         {
             return HexConverter.ToString(ba, HexConverter.Casing.Upper);
@@ -428,7 +433,7 @@ namespace Internal.Cryptography
                 Oids.SigningTime => new Pkcs9SigningTime(encodedAttribute),
                 Oids.ContentType => new Pkcs9ContentType(encodedAttribute),
                 Oids.MessageDigest => new Pkcs9MessageDigest(encodedAttribute),
-#if NETCOREAPP || NETSTANDARD2_1
+#if NET || NETSTANDARD2_1
                 Oids.LocalKeyId => new Pkcs9LocalKeyId() { RawData = encodedAttribute.ToArray() },
 #endif
                 _ => new Pkcs9AttributeObject(oid, encodedAttribute),

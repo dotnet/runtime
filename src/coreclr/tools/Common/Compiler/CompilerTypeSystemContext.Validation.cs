@@ -283,8 +283,11 @@ namespace ILCompiler
                         ThrowHelper.ThrowTypeLoadException(ExceptionStringID.ClassLoadGeneral, type);
                     }
 
-                    // It might seem reasonable to disallow array of void, but the CLR doesn't prevent that too hard.
-                    // E.g. "newarr void" will fail, but "newarr void[]" or "ldtoken void[]" will succeed.
+                    if (parameterType.IsVoid)
+                    {
+                        // Arrays of System.Void are not allowed
+                        ThrowHelper.ThrowTypeLoadException(ExceptionStringID.ClassLoadGeneral, type);
+                    }
                 }
             }
             else if (type.IsFunctionPointer)
@@ -323,6 +326,12 @@ namespace ILCompiler
                     return type;
                 }
 
+                // Make sure instantiation length matches the expectation
+                if (type.Instantiation.Length != type.GetTypeDefinition().Instantiation.Length)
+                {
+                    ThrowHelper.ThrowTypeLoadException(ExceptionStringID.ClassLoadGeneral, type);
+                }
+
                 // We need to be able to load interfaces
                 foreach (var intf in type.RuntimeInterfaces)
                 {
@@ -339,12 +348,6 @@ namespace ILCompiler
                 // Ensure we can compute the type layout
                 defType.ComputeInstanceLayout(InstanceLayoutKind.TypeAndFields);
                 defType.ComputeStaticFieldLayout(StaticLayoutKind.StaticRegionSizesAndFields);
-
-                // Make sure instantiation length matches the expectation
-                if (defType.Instantiation.Length != defType.GetTypeDefinition().Instantiation.Length)
-                {
-                    ThrowHelper.ThrowTypeLoadException(ExceptionStringID.ClassLoadGeneral, type);
-                }
 
                 foreach (TypeDesc typeArg in defType.Instantiation)
                 {

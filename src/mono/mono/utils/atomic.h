@@ -51,7 +51,7 @@ Apple targets have historically being problematic, xcode 4.6 would miscompile th
    * libclang sees the platform header, not the clang one.
    */
 #  define MONO_USE_EMULATED_ATOMIC 1
-#elif defined(_MSC_VER) || defined(HOST_WIN32)
+#elif defined(HOST_WIN32)
   /*
    * we need two things to switch to C11 atomics on Windows:
    *
@@ -61,7 +61,11 @@ Apple targets have historically being problematic, xcode 4.6 would miscompile th
    * stdatomic.h)
    *
    */
-#  define MONO_USE_WIN32_ATOMIC 1
+#  if defined(_MSC_VER)
+#    define MONO_USE_WIN32_ATOMIC 1
+#  else
+#    error FIXME: Implement atomics for MinGW and/or clang
+#  endif
 #elif defined(HOST_IOS) || defined(HOST_OSX) || defined(HOST_WATCHOS) || defined(HOST_TVOS)
 #  define MONO_USE_C11_ATOMIC 1
 #elif defined(HOST_ANDROID)
@@ -89,7 +93,7 @@ Apple targets have historically being problematic, xcode 4.6 would miscompile th
 
 #if defined(MONO_USE_C11_ATOMIC)
 
-#include<stdatomic.h>
+#include <stdatomic.h>
 
 static inline gint32
 mono_atomic_cas_i32 (volatile gint32 *dest, gint32 exch, gint32 comp)
@@ -111,7 +115,7 @@ mono_atomic_cas_i64 (volatile gint64 *dest, gint64 exch, gint64 comp)
 	(void)atomic_compare_exchange_strong ((volatile atomic_llong *)dest, (long long*)&comp, exch);
 	return comp;
 #else
-#error gint64 not same size atomic_llong or atomic_long, don't define MONO_USE_STDATOMIC
+#error "gint64 not same size atomic_llong or atomic_long, don't define MONO_USE_STDATOMIC"
 #endif
 }
 
@@ -184,7 +188,7 @@ mono_atomic_xchg_i64 (volatile gint64 *dest, gint64 exch)
 	g_static_assert (sizeof (atomic_llong) == sizeof (*dest) && ATOMIC_LLONG_LOCK_FREE == 2);
 	return atomic_exchange ((volatile atomic_llong *)dest, exch);
 #else
-#error gint64 not same size atomic_llong or atomic_long, don't define MONO_USE_STDATOMIC
+#error "gint64 not same size atomic_llong or atomic_long, don't define MONO_USE_STDATOMIC"
 #endif
 }
 
@@ -212,7 +216,7 @@ mono_atomic_fetch_add_i64 (volatile gint64 *dest, gint64 add)
 	g_static_assert (sizeof (atomic_llong) == sizeof (*dest) && ATOMIC_LLONG_LOCK_FREE == 2);
 	return atomic_fetch_add ((volatile atomic_llong *)dest, add);
 #else
-#error gint64 not same size atomic_llong or atomic_long, don't define MONO_USE_STDATOMIC
+#error "gint64 not same size atomic_llong or atomic_long, don't define MONO_USE_STDATOMIC"
 #endif
 }
 
@@ -246,7 +250,7 @@ mono_atomic_load_i64 (volatile gint64 *src)
 	g_static_assert (sizeof (atomic_llong) == sizeof (*src) && ATOMIC_LLONG_LOCK_FREE == 2);
 	return atomic_load ((volatile atomic_llong *)src);
 #else
-#error gint64 not same size atomic_llong or atomic_long, don't define MONO_USE_STDATOMIC
+#error "gint64 not same size atomic_llong or atomic_long, don't define MONO_USE_STDATOMIC"
 #endif
 }
 
@@ -288,7 +292,7 @@ mono_atomic_store_i64 (volatile gint64 *dst, gint64 val)
 	g_static_assert (sizeof (atomic_llong) == sizeof (*dst) && ATOMIC_LLONG_LOCK_FREE == 2);
 	atomic_store ((volatile atomic_llong *)dst, val);
 #else
-#error gint64 not same size atomic_llong or atomic_long, don't define MONO_USE_STDATOMIC
+#error "gint64 not same size atomic_llong or atomic_long, don't define MONO_USE_STDATOMIC"
 #endif
 }
 
@@ -305,11 +309,12 @@ mono_atomic_store_ptr (volatile gpointer *dst, gpointer val)
 #define WIN32_LEAN_AND_MEAN
 #endif
 #include <windows.h>
+#include <intrin.h>
 
 static inline gint32
 mono_atomic_cas_i32 (volatile gint32 *dest, gint32 exch, gint32 comp)
 {
-	return InterlockedCompareExchange ((LONG volatile *)dest, (LONG)exch, (LONG)comp);
+	return _InterlockedCompareExchange ((LONG volatile *)dest, (LONG)exch, (LONG)comp);
 }
 
 static inline gint64
@@ -363,7 +368,7 @@ mono_atomic_dec_i64 (volatile gint64 *dest)
 static inline gint32
 mono_atomic_xchg_i32 (volatile gint32 *dest, gint32 exch)
 {
-	return InterlockedExchange ((LONG volatile *)dest, (LONG)exch);
+	return _InterlockedExchange ((LONG volatile *)dest, (LONG)exch);
 }
 
 static inline gint64
@@ -387,7 +392,7 @@ mono_atomic_fetch_add_i32 (volatile gint32 *dest, gint32 add)
 static inline gint64
 mono_atomic_fetch_add_i64 (volatile gint64 *dest, gint64 add)
 {
-	return InterlockedExchangeAdd64 ((LONG64 volatile *)dest, (LONG)add);
+	return InterlockedExchangeAdd64 ((LONG64 volatile *)dest, (LONG64)add);
 }
 
 static inline gint8
@@ -441,29 +446,19 @@ mono_atomic_load_ptr (volatile gpointer *src)
 static inline void
 mono_atomic_store_i8 (volatile gint8 *dst, gint8 val)
 {
-#if (_MSC_VER >= 1600)
 	_InterlockedExchange8 ((CHAR volatile *)dst, (CHAR)val);
-#else
-	*dst = val;
-	mono_memory_barrier ();
-#endif
 }
 
 static inline void
 mono_atomic_store_i16 (volatile gint16 *dst, gint16 val)
 {
-#if (_MSC_VER >= 1600)
-	InterlockedExchange16 ((SHORT volatile *)dst, (SHORT)val);
-#else
-	*dst = val;
-	mono_memory_barrier ();
-#endif
+	_InterlockedExchange16 ((SHORT volatile *)dst, (SHORT)val);
 }
 
 static inline void
 mono_atomic_store_i32 (volatile gint32 *dst, gint32 val)
 {
-	InterlockedExchange ((LONG volatile *)dst, (LONG)val);
+	_InterlockedExchange ((LONG volatile *)dst, (LONG)val);
 }
 
 static inline void
@@ -477,7 +472,6 @@ mono_atomic_store_ptr (volatile gpointer *dst, gpointer val)
 {
 	InterlockedExchangePointer ((PVOID volatile *)dst, (PVOID)val);
 }
-
 
 #elif defined(MONO_USE_GCC_ATOMIC)
 
@@ -731,6 +725,7 @@ static inline void mono_atomic_store_i64(volatile gint64 *dst, gint64 val)
 
 #define WAPI_NO_ATOMIC_ASM
 
+/* Fallbacks seem to not be used anymore, they should be removed. */
 extern gint32 mono_atomic_cas_i32(volatile gint32 *dest, gint32 exch, gint32 comp);
 extern gint64 mono_atomic_cas_i64(volatile gint64 *dest, gint64 exch, gint64 comp);
 extern gpointer mono_atomic_cas_ptr(volatile gpointer *dest, gpointer exch, gpointer comp);

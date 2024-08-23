@@ -76,7 +76,6 @@ namespace System.Xml.XslTransformApiTests
         [InlineData("xslt_mutith_variable_global_forward_ref_deep.xsl", "xslt_mutith_variable_nodeset.xml")]
         //[Variation("Local and global variables", Params = new object[] { "xslt_mutith_variable_local_and_global.xsl", "xslt_mutith_variable_local_and_global.xsl" })]
         [InlineData("xslt_mutith_variable_local_and_global.xsl", "xslt_mutith_variable_local_and_global.xsl")]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/91538", typeof(PlatformDetection), nameof(PlatformDetection.IsWasmThreadingSupported))]
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public void Variations(object param0, object param1)
         {

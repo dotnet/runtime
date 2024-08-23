@@ -1,37 +1,27 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics.CodeAnalysis;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Serialization;
-using System.Collections.Generic;
-using System.Runtime.CompilerServices;
 
 namespace System.Reflection
 {
     internal sealed partial class RuntimeModule : Module
     {
-        internal RuntimeModule() { throw new NotSupportedException(); }
-
-        #region FCalls
-        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "RuntimeModule_GetType", StringMarshalling = StringMarshalling.Utf16)]
-        private static partial void GetType(QCallModule module, string className, [MarshalAs(UnmanagedType.Bool)] bool throwOnError, [MarshalAs(UnmanagedType.Bool)] bool ignoreCase, ObjectHandleOnStack type, ObjectHandleOnStack keepAlive);
-
-        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "RuntimeModule_GetScopeName")]
-        private static partial void GetScopeName(QCallModule module, StringHandleOnStack retString);
-
-        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "RuntimeModule_GetFullyQualifiedName")]
-        private static partial void GetFullyQualifiedName(QCallModule module, StringHandleOnStack retString);
-
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern RuntimeType[] GetTypes(RuntimeModule module);
-
-        internal RuntimeType[] GetDefinedTypes()
-        {
-            return GetTypes(this);
-        }
+        #region Data Members
+#pragma warning disable CA1823, 169
+        // If you add any data members, you need to update the native declaration ReflectModuleBaseObject.
+        private RuntimeType m_runtimeType;
+        private readonly RuntimeAssembly m_runtimeAssembly;
+        private readonly IntPtr m_pData;
+#pragma warning restore CA1823, 169
         #endregion
+
+        internal RuntimeModule() { throw new NotSupportedException(); }
 
         #region Module overrides
         private static RuntimeTypeHandle[]? ConvertToTypeHandleArray(Type[]? genericArguments)
@@ -43,14 +33,11 @@ namespace System.Reflection
             RuntimeTypeHandle[] typeHandleArgs = new RuntimeTypeHandle[size];
             for (int i = 0; i < size; i++)
             {
-                Type typeArg = genericArguments[i];
-                if (typeArg == null)
+                Type? typeArg = genericArguments[i]?.UnderlyingSystemType;
+
+                if (typeArg is not System.RuntimeType)
                     throw new ArgumentException(SR.Argument_InvalidGenericInstArray);
-                typeArg = typeArg.UnderlyingSystemType;
-                if (typeArg == null)
-                    throw new ArgumentException(SR.Argument_InvalidGenericInstArray);
-                if (!(typeArg is RuntimeType))
-                    throw new ArgumentException(SR.Argument_InvalidGenericInstArray);
+
                 typeHandleArgs[i] = typeArg.TypeHandle;
             }
             return typeHandleArgs;
@@ -212,7 +199,7 @@ namespace System.Reflection
 
                 if (declaringType.IsGenericType || declaringType.IsArray)
                 {
-                    int tkDeclaringType = ModuleHandle.GetMetadataImport(this).GetParentToken(metadataToken);
+                    int tkDeclaringType = MetadataImport.GetParentToken(metadataToken);
                     declaringType = (RuntimeType)ResolveType(tkDeclaringType, genericTypeArguments, genericMethodArguments);
                 }
 
@@ -317,12 +304,8 @@ namespace System.Reflection
                 throw new ArgumentOutOfRangeException(nameof(metadataToken),
                     SR.Format(SR.Argument_InvalidToken, tk, this));
 
-            string? str = MetadataImport.GetUserString(metadataToken);
-
-            if (str == null)
-                throw new ArgumentException(
-                    SR.Format(SR.Argument_ResolveString, metadataToken, this));
-
+            string str = MetadataImport.GetUserString(metadataToken) ??
+                throw new ArgumentException(SR.Format(SR.Argument_ResolveString, metadataToken, this));
             return str;
         }
 
@@ -332,18 +315,6 @@ namespace System.Reflection
         }
 
         public override int MDStreamVersion => ModuleHandle.GetMDStreamVersion(this);
-        #endregion
-
-        #region Data Members
-#pragma warning disable CA1823, 169
-        // If you add any data members, you need to update the native declaration ReflectModuleBaseObject.
-        private RuntimeType m_runtimeType;
-        private readonly RuntimeAssembly m_runtimeAssembly;
-        private readonly IntPtr m_pRefClass;
-        private readonly IntPtr m_pData;
-        private readonly IntPtr m_pGlobals;
-        private readonly IntPtr m_pFields;
-#pragma warning restore CA1823, 169
         #endregion
 
         #region Protected Virtuals
@@ -375,7 +346,7 @@ namespace System.Reflection
         #region Internal Members
         internal RuntimeType RuntimeType => m_runtimeType ??= ModuleHandle.GetModuleType(this);
 
-        internal MetadataImport MetadataImport => ModuleHandle.GetMetadataImport(this);
+        internal MetadataImport MetadataImport => new MetadataImport(this);
         #endregion
 
         #region ICustomAttributeProvider Members
@@ -425,9 +396,12 @@ namespace System.Reflection
         {
             ArgumentException.ThrowIfNullOrEmpty(className);
 
-            return TypeNameParser.GetType(className, topLevelAssembly: Assembly,
+            return TypeNameResolver.GetType(className, topLevelAssembly: Assembly,
                 throwOnError: throwOnError, ignoreCase: ignoreCase);
         }
+
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "RuntimeModule_GetFullyQualifiedName")]
+        private static partial void GetFullyQualifiedName(QCallModule module, StringHandleOnStack retString);
 
         [RequiresAssemblyFiles(UnknownStringMessageInRAF)]
         internal string GetFullyQualifiedName()
@@ -441,11 +415,19 @@ namespace System.Reflection
         [RequiresAssemblyFiles(UnknownStringMessageInRAF)]
         public override string FullyQualifiedName => GetFullyQualifiedName();
 
-        [RequiresUnreferencedCode("Types might be removed")]
-        public override Type[] GetTypes()
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "RuntimeModule_GetTypes")]
+        private static partial void GetTypes(QCallModule module, ObjectHandleOnStack retTypes);
+
+        internal RuntimeType[] GetDefinedTypes()
         {
-            return GetTypes(this);
+            RuntimeType[]? types = null;
+            RuntimeModule thisAsLocal = this;
+            GetTypes(new QCallModule(ref thisAsLocal), ObjectHandleOnStack.Create(ref types));
+            return types!;
         }
+
+        [RequiresUnreferencedCode("Types might be removed")]
+        public override Type[] GetTypes() => GetDefinedTypes();
 
         #endregion
 
@@ -493,6 +475,9 @@ namespace System.Reflection
 
             return RuntimeType.GetMethods(bindingFlags);
         }
+
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "RuntimeModule_GetScopeName")]
+        private static partial void GetScopeName(QCallModule module, StringHandleOnStack retString);
 
         public override string ScopeName
         {

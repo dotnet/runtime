@@ -8,7 +8,7 @@ using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
 using System.Runtime.CompilerServices;
 
-#if NETCOREAPP
+#if NET
 using System.Runtime.Loader;
 #endif
 
@@ -171,6 +171,96 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
         }
 
         [Fact]
+        public void CreateInstanceFailsWithAmbiguousConstructor()
+        {
+            var serviceCollection = new ServiceCollection();
+            serviceCollection.AddTransient<ClassWithA_And_B>();
+            serviceCollection.AddTransient<A>();
+            serviceCollection.AddTransient<B>();
+
+            var serviceProvider = serviceCollection.BuildServiceProvider();
+
+            // Neither ctor(A) nor ctor(B) have [ActivatorUtilitiesConstructor].
+            Assert.Throws<InvalidOperationException>(() => ActivatorUtilities.CreateInstance<ClassWithA_And_B>(serviceProvider));
+        }
+
+        [Fact]
+        public void CreateInstanceFailsWithAmbiguousConstructor_ReversedOrder()
+        {
+            var serviceCollection = new ServiceCollection();
+            serviceCollection.AddTransient<ClassWithB_And_A>();
+            serviceCollection.AddTransient<A>();
+            serviceCollection.AddTransient<B>();
+
+            var serviceProvider = serviceCollection.BuildServiceProvider();
+
+            // Neither ctor(A) nor ctor(B) have [ActivatorUtilitiesConstructor].
+            Assert.Throws<InvalidOperationException>(() => ActivatorUtilities.CreateInstance<ClassWithA_And_B>(serviceProvider));
+        }
+
+        [Fact]
+        public void CreateInstancePassesWithAmbiguousConstructor()
+        {
+            var serviceCollection = new ServiceCollection();
+            serviceCollection.AddTransient<ClassWithA_And_B_ActivatorUtilitiesConstructorAttribute>();
+            serviceCollection.AddTransient<A>();
+            serviceCollection.AddTransient<B>();
+
+            var serviceProvider = serviceCollection.BuildServiceProvider();
+            var service = ActivatorUtilities.CreateInstance<ClassWithA_And_B_ActivatorUtilitiesConstructorAttribute>(serviceProvider);
+
+            // Ensure ctor(A) was selected over ctor(B) since A has [ActivatorUtilitiesConstructor].
+            Assert.NotNull(service.A);
+        }
+
+        [Fact]
+        public void CreateInstancePassesWithAmbiguousConstructor_ReversedOrder()
+        {
+            var serviceCollection = new ServiceCollection();
+            serviceCollection.AddTransient<ClassWithB_And_A_ActivatorUtilitiesConstructorAttribute>();
+            serviceCollection.AddTransient<A>();
+            serviceCollection.AddTransient<B>();
+
+            var serviceProvider = serviceCollection.BuildServiceProvider();
+            var service = ActivatorUtilities.CreateInstance<ClassWithB_And_A_ActivatorUtilitiesConstructorAttribute>(serviceProvider);
+
+            // Ensure ctor(A) was selected over ctor(B) since A has [ActivatorUtilitiesConstructor].
+            Assert.NotNull(service.A);
+        }
+
+        [Fact]
+        public void CreateInstanceIgnoresActivatorUtilitiesConstructorAttribute()
+        {
+            var serviceCollection = new ServiceCollection();
+            serviceCollection.AddTransient<ClassWithA_And_AB_ActivatorUtilitiesConstructorAttribute>();
+            serviceCollection.AddTransient<A>();
+            serviceCollection.AddTransient<B>();
+
+            var serviceProvider = serviceCollection.BuildServiceProvider();
+            var service = ActivatorUtilities.CreateInstance<ClassWithA_And_AB_ActivatorUtilitiesConstructorAttribute>(serviceProvider);
+
+            // Ensure ctor(A) was selected since A has [ActivatorUtilitiesConstructor].
+            Assert.NotNull(service.A);
+            Assert.Null(service.B);
+        }
+
+        [Fact]
+        public void CreateInstanceIgnoresActivatorUtilitiesConstructorAttribute_ReversedOrder()
+        {
+            var serviceCollection = new ServiceCollection();
+            serviceCollection.AddTransient<ClassWithAB_And_A_ActivatorUtilitiesConstructorAttribute>();
+            serviceCollection.AddTransient<A>();
+            serviceCollection.AddTransient<B>();
+
+            var serviceProvider = serviceCollection.BuildServiceProvider();
+            var service = ActivatorUtilities.CreateInstance<ClassWithAB_And_A_ActivatorUtilitiesConstructorAttribute>(serviceProvider);
+
+            // Ensure ctor(A) was selected since it has [ActivatorUtilitiesConstructor].
+            Assert.NotNull(service.A);
+            Assert.Null(service.B);
+        }
+
+        [Fact]
         public void CreateInstance_ClassWithABC_MultipleCtorsWithSameLength_ThrowsAmbiguous()
         {
             string message = $"Multiple constructors for type '{typeof(ClassWithABC_MultipleCtorsWithSameLength)}' were found with length 1.";
@@ -242,7 +332,7 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
 
         [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [InlineData(true)]
-#if NETCOREAPP
+#if NET
         [InlineData(false)]
 #endif
         public void CreateFactory_CreatesFactoryMethod_KeyedParams(bool useDynamicCode)
@@ -273,7 +363,7 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
 
         [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [InlineData(true)]
-#if NETCOREAPP
+#if NET
         [InlineData(false)]
 #endif
         public void CreateFactory_CreatesFactoryMethod_KeyedParams_5Types(bool useDynamicCode)
@@ -301,6 +391,43 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
                 Assert.NotNull(item.A);
                 Assert.NotNull(item.B);
                 Assert.NotNull(item.C);
+            }, options);
+        }
+
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [InlineData(true)]
+#if NET
+        [InlineData(false)]
+#endif
+        public void CreateFactory_CreatesFactoryMethod_KeyedParams_ValueTypes(bool useDynamicCode)
+        {
+            var options = new RemoteInvokeOptions();
+            if (!useDynamicCode)
+            {
+                DisableDynamicCode(options);
+            }
+
+            using var remoteHandle = RemoteExecutor.Invoke(static () =>
+            {
+                var factory = ActivatorUtilities.CreateFactory<ClassWithAValueTypedKeyedBCSYZ>(Type.EmptyTypes);
+
+                var services = new ServiceCollection();
+                services.AddSingleton(new A());
+                services.AddKeyedSingleton(uint.MaxValue, new B());
+                services.AddKeyedSingleton(int.MaxValue, new C());
+                services.AddKeyedSingleton(ulong.MaxValue, new S());
+                services.AddKeyedSingleton(long.MaxValue, new Y());
+                services.AddKeyedSingleton(TestEnum.A, new Z());
+                using var provider = services.BuildServiceProvider();
+                ClassWithAValueTypedKeyedBCSYZ item = factory(provider, null);
+
+                Assert.IsType<ObjectFactory<ClassWithAValueTypedKeyedBCSYZ>>(factory);
+                Assert.NotNull(item.A);
+                Assert.NotNull(item.B);
+                Assert.NotNull(item.C);
+                Assert.NotNull(item.S);
+                Assert.NotNull(item.Y);
+                Assert.NotNull(item.Z);
             }, options);
         }
 
@@ -336,7 +463,7 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
 
         [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [InlineData(true)]
-#if NETCOREAPP
+#if NET
         [InlineData(false)]
 #endif
         public void CreateFactory_RemoteExecutor_CreatesFactoryMethod(bool useDynamicCode)
@@ -370,7 +497,7 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
 
         [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [InlineData(true)]
-#if NETCOREAPP
+#if NET
         [InlineData(false)]
 #endif
         public void CreateFactory_RemoteExecutor_NullArguments_Throws(bool useDynamicCode)
@@ -393,7 +520,7 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
 
         [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [InlineData(true)]
-#if NETCOREAPP
+#if NET
         [InlineData(false)]
 #endif
         public void CreateFactory_RemoteExecutor_NoArguments_UseNullDefaultValue(bool useDynamicCode)
@@ -417,7 +544,7 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
 
         [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [InlineData(true)]
-#if NETCOREAPP
+#if NET
         [InlineData(false)]
 #endif
         public void CreateFactory_RemoteExecutor_NoArguments_ThrowRequiredValue(bool useDynamicCode)
@@ -441,7 +568,7 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
 
         [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [InlineData(true)]
-#if NETCOREAPP
+#if NET
         [InlineData(false)]
 #endif
         public void CreateFactory_RemoteExecutor_NullArgument_UseDefaultValue(bool useDynamicCode)
@@ -465,7 +592,7 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
 
         [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [InlineData(true)]
-#if NETCOREAPP
+#if NET
         [InlineData(false)]
 #endif
         public void CreateFactory_RemoteExecutor_NoParameters_Success(bool useDynamicCode)
@@ -487,7 +614,7 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
             }, options);
         }
 
-#if NETCOREAPP
+#if NET
         [ActiveIssue("https://github.com/dotnet/runtime/issues/34072", TestRuntimes.Mono)]
         [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [InlineData(true)]
@@ -619,6 +746,7 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
     internal class B { }
     internal class C { }
     internal class S { }
+    internal class Y { }
     internal class Z { }
 
     internal class ClassWithAKeyedBKeyedC : ClassWithABC
@@ -648,6 +776,19 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
         { }
     }
 
+    internal class ClassWithAValueTypedKeyedBCSYZ : ClassWithABCSZ
+    {
+        public Y Y { get; }
+
+        public ClassWithAValueTypedKeyedBCSYZ(A a, [FromKeyedServices(uint.MaxValue)] B b, [FromKeyedServices(int.MaxValue)] C c, [FromKeyedServices(ulong.MaxValue)] S s, [FromKeyedServices(long.MaxValue)] Y y, [FromKeyedServices(TestEnum.A)] Z z)
+            : base(a, b, c, s, z) { Y = y; }
+    }
+
+    internal enum TestEnum
+    {
+        A
+    }
+
     internal class ClassWithABC_FirstConstructorWithAttribute : ClassWithABC
     {
         [ActivatorUtilitiesConstructor]
@@ -660,6 +801,108 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
         public ClassWithABC_LastConstructorWithAttribute(B b, C c) : this(null, b, c) { }
         [ActivatorUtilitiesConstructor]
         public ClassWithABC_LastConstructorWithAttribute(A a, B b, C c) : base(a, b, c) { }
+    }
+
+    internal class ClassWithA_And_B
+    {
+        public ClassWithA_And_B(A a)
+        {
+            A = a;
+        }
+
+        public ClassWithA_And_B(B b)
+        {
+            B = b;
+        }
+
+        public A A { get; }
+        public B B { get; }
+    }
+
+    internal class ClassWithB_And_A
+    {
+        public ClassWithB_And_A(A a)
+        {
+            A = a;
+        }
+
+        public ClassWithB_And_A(B b)
+        {
+            B = b;
+        }
+
+        public A A { get; }
+        public B B { get; }
+    }
+
+    internal class ClassWithA_And_B_ActivatorUtilitiesConstructorAttribute
+    {
+        [ActivatorUtilitiesConstructor]
+        public ClassWithA_And_B_ActivatorUtilitiesConstructorAttribute(A a)
+        {
+            A = a;
+        }
+
+        public ClassWithA_And_B_ActivatorUtilitiesConstructorAttribute(B b)
+        {
+            B = b;
+        }
+
+        public A A { get; }
+        public B B { get; }
+    }
+
+    internal class ClassWithB_And_A_ActivatorUtilitiesConstructorAttribute
+    {
+        public ClassWithB_And_A_ActivatorUtilitiesConstructorAttribute(B b)
+        {
+            B = b;
+        }
+
+        [ActivatorUtilitiesConstructor]
+        public ClassWithB_And_A_ActivatorUtilitiesConstructorAttribute(A a)
+        {
+            A = a;
+        }
+
+        public A A { get; }
+        public B B { get; }
+    }
+
+    internal class ClassWithA_And_AB_ActivatorUtilitiesConstructorAttribute
+    {
+        [ActivatorUtilitiesConstructor]
+        public ClassWithA_And_AB_ActivatorUtilitiesConstructorAttribute(A a)
+        {
+            A = a;
+        }
+
+        public ClassWithA_And_AB_ActivatorUtilitiesConstructorAttribute(A a, B b)
+        {
+            A = a;
+            B = b;
+        }
+
+        public A A { get; }
+        public B B { get; }
+    }
+
+    internal class ClassWithAB_And_A_ActivatorUtilitiesConstructorAttribute
+    {
+        public ClassWithAB_And_A_ActivatorUtilitiesConstructorAttribute(A a, B b)
+        {
+            A = a;
+            B = b;
+        }
+
+        [ActivatorUtilitiesConstructor]
+        public ClassWithAB_And_A_ActivatorUtilitiesConstructorAttribute(A a)
+        {
+            A = a;
+        }
+
+        public A A { get; }
+        public B B { get; }
     }
 
     internal class FakeServiceProvider : IServiceProvider
@@ -816,7 +1059,7 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
         }
     }
 
-#if NETCOREAPP
+#if NET
     internal class MyLoadContext : AssemblyLoadContext
     {
         private MyLoadContext() : base(isCollectible: true)

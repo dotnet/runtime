@@ -69,12 +69,12 @@
       </trans-unit>
       <trans-unit id="LoggingUnsupportedLanguageVersionMessageFormat">
         <source>The Logging source generator is not available in C# {0}. Please use language version {1} or greater.</source>
-        <target state="new">The Logging source generator is not available in C# {0}. Please use language version {1} or greater.</target>
+        <target state="translated">Generator źródła rejestrowania nie jest dostępny w języku C# {0}. Użyj wersji językowej {1} lub nowszej.</target>
         <note />
       </trans-unit>
       <trans-unit id="LoggingUnsupportedLanguageVersionTitle">
         <source>C# language version not supported by the source generator.</source>
-        <target state="new">C# language version not supported by the source generator.</target>
+        <target state="translated">Wersja języka C# nie jest obsługiwana przez generator źródła.</target>
         <note />
       </trans-unit>
       <trans-unit id="MalformedFormatStringsMessage">
@@ -130,6 +130,16 @@
       <trans-unit id="MultipleLoggerFieldsTitle">
         <source>Found multiple fields of type Microsoft.Extensions.Logging.ILogger</source>
         <target state="translated">Znaleziono wiele pól typu Microsoft.Extensions.Logging.ILogger</target>
+        <note>{Locked="Microsoft.Extensions.Logging.ILogger"}</note>
+      </trans-unit>
+      <trans-unit id="PrimaryConstructorParameterLoggerHiddenMessage">
+        <source>Class '{0}' has a primary constructor parameter of type Microsoft.Extensions.Logging.ILogger that is hidden by a field in the class or a base class, preventing its use</source>
+        <target state="new">Class '{0}' has a primary constructor parameter of type Microsoft.Extensions.Logging.ILogger that is hidden by a field in the class or a base class, preventing its use</target>
+        <note>{Locked="Microsoft.Extensions.Logging.ILogger"}</note>
+      </trans-unit>
+      <trans-unit id="PrimaryConstructorParameterLoggerHiddenTitle">
+        <source>Primary constructor parameter of type Microsoft.Extensions.Logging.ILogger is hidden by a field</source>
+        <target state="new">Primary constructor parameter of type Microsoft.Extensions.Logging.ILogger is hidden by a field</target>
         <note>{Locked="Microsoft.Extensions.Logging.ILogger"}</note>
       </trans-unit>
       <trans-unit id="RedundantQualifierInMessageMessage">

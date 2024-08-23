@@ -7,8 +7,6 @@ using System.Diagnostics;
 using System.Globalization;
 using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
-using System.Runtime.InteropServices;
-using System.Runtime.InteropServices.Marshalling;
 
 namespace System.Reflection.Emit
 {
@@ -17,75 +15,39 @@ namespace System.Reflection.Emit
         private readonly TypeBuilderImpl _typeBuilder;
         private readonly string _fieldName;
         private readonly Type _fieldType;
+        private readonly Type[]? _requiredCustomModifiers;
+        private readonly Type[]? _optionalCustomModifiers;
         private FieldAttributes _attributes;
 
         internal MarshallingData? _marshallingData;
         internal int _offset;
         internal List<CustomAttributeWrapper>? _customAttributes;
         internal object? _defaultValue = DBNull.Value;
+        internal FieldDefinitionHandle _handle;
+        internal byte[]? _rvaData;
 
-        internal FieldBuilderImpl(TypeBuilderImpl typeBuilder, string fieldName, Type type, FieldAttributes attributes)
+        internal FieldBuilderImpl(TypeBuilderImpl typeBuilder, string fieldName, Type type, FieldAttributes attributes, Type[]? requiredCustomModifiers, Type[]? optionalCustomModifiers)
         {
             _fieldName = fieldName;
             _typeBuilder = typeBuilder;
             _fieldType = type;
             _attributes = attributes & ~FieldAttributes.ReservedMask;
             _offset = -1;
+            _requiredCustomModifiers = requiredCustomModifiers;
+            _optionalCustomModifiers = optionalCustomModifiers;
         }
 
         protected override void SetConstantCore(object? defaultValue)
         {
-            if (defaultValue == null)
-            {
-                // nullable value types can hold null value.
-                if (_fieldType.IsValueType && !(_fieldType.IsGenericType && _fieldType.GetGenericTypeDefinition() == typeof(Nullable<>)))
-                    throw new ArgumentException(SR.Argument_ConstantNull);
-            }
-            else
-            {
-                Type type = defaultValue.GetType();
-                Type destType = _fieldType;
+            _typeBuilder.ThrowIfCreated();
+            _defaultValue = defaultValue;
+            _attributes |= FieldAttributes.HasDefault;
+        }
 
-                // We should allow setting a constant value on a ByRef parameter
-                if (destType.IsByRef)
-                    destType = destType.GetElementType()!;
-
-                // Convert nullable types to their underlying type.
-                destType = Nullable.GetUnderlyingType(destType) ?? destType;
-
-                if (destType.IsEnum)
-                {
-                    Type underlyingType;
-                    if (destType is EnumBuilderImpl enumBldr)
-                    {
-                        underlyingType = enumBldr.GetEnumUnderlyingType();
-
-                        if (type != enumBldr._typeBuilder.UnderlyingSystemType && type != underlyingType)
-                            throw new ArgumentException(SR.Argument_ConstantDoesntMatch);
-                    }
-                    else if (destType is TypeBuilderImpl typeBldr)
-                    {
-                        underlyingType = typeBldr.UnderlyingSystemType;
-
-                        if (underlyingType == null || (type != typeBldr.UnderlyingSystemType && type != underlyingType))
-                            throw new ArgumentException(SR.Argument_ConstantDoesntMatch);
-                    }
-                    else
-                    {
-                        underlyingType = Enum.GetUnderlyingType(destType);
-
-                        if (type != destType && type != underlyingType)
-                            throw new ArgumentException(SR.Argument_ConstantDoesntMatch);
-                    }
-                }
-                else
-                {
-                    if (!destType.IsAssignableFrom(type))
-                        throw new ArgumentException(SR.Argument_ConstantDoesntMatch);
-                }
-
-                _defaultValue = defaultValue;
-            }
+        internal void SetData(byte[] data)
+        {
+            _rvaData = data;
+            _attributes |= FieldAttributes.HasFieldRVA;
         }
 
         protected override void SetCustomAttributeCore(ConstructorInfo con, ReadOnlySpan<byte> binaryAttribute)
@@ -107,7 +69,7 @@ namespace System.Reflection.Emit
                     return;
                 case "System.Runtime.InteropServices.MarshalAsAttribute":
                     _attributes |= FieldAttributes.HasFieldMarshal;
-                    _marshallingData = MarshallingData.CreateMarshallingData(con, binaryAttribute, isField : true);
+                    _marshallingData = MarshallingData.CreateMarshallingData(con, binaryAttribute, isField: true);
                     return;
             }
 
@@ -124,15 +86,15 @@ namespace System.Reflection.Emit
 
         #region MemberInfo Overrides
 
-        public override int MetadataToken => throw new NotImplementedException();
+        public override int MetadataToken => _handle == default ? 0 : MetadataTokens.GetToken(_handle);
 
         public override Module Module => _typeBuilder.Module;
 
         public override string Name => _fieldName;
 
-        public override Type? DeclaringType => _typeBuilder;
+        public override Type? DeclaringType => _typeBuilder._isHiddenGlobalType ? null : _typeBuilder;
 
-        public override Type? ReflectedType => _typeBuilder;
+        public override Type? ReflectedType => DeclaringType;
 
         #endregion
 
@@ -146,6 +108,10 @@ namespace System.Reflection.Emit
         public override RuntimeFieldHandle FieldHandle => throw new NotSupportedException(SR.NotSupported_DynamicModule);
 
         public override FieldAttributes Attributes => _attributes;
+
+        public override Type[] GetRequiredCustomModifiers() => _requiredCustomModifiers ?? Type.EmptyTypes;
+
+        public override Type[] GetOptionalCustomModifiers() => _optionalCustomModifiers ?? Type.EmptyTypes;
 
         #endregion
 

@@ -1,5 +1,5 @@
 <Project>
-  <PropertyGroup Condition="'$(TargetOS)' == 'browser'">
+  <PropertyGroup Condition="'$(TargetOS)' == 'browser' or '$(TargetOS)' == 'wasi'">
     <_TargetFrameworkForXHarness>$(AspNetCoreAppCurrent)</_TargetFrameworkForXHarness>
     <HelixTargetsFile>$(MSBuildThisFileDirectory)LocalEchoServer.helix.targets</HelixTargetsFile>
 
@@ -19,7 +19,7 @@
     <WasmXHarnessArgs>$(WasmXHarnessArgs) --web-server-middleware=$(_TestEchoMiddleware)/NetCoreServer.dll,NetCoreServer.GenericHandler</WasmXHarnessArgs>
   </PropertyGroup>
 
-  <ItemGroup Condition="'$(TargetOS)' == 'browser'">
+  <ItemGroup Condition="'$(TargetOS)' == 'browser' or '$(TargetOS)' == 'wasi'">
     <!-- The middleware doesn't need to be built for browser-wasm, so remove the relevant properties.
          Also, due to https://github.com/dotnet/runtime/issues/77707 RunAOTCompilation needs to be removed
          as a workaround. -->

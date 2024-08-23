@@ -196,7 +196,7 @@ namespace System.Runtime.InteropServices
                     *data = ComVariant.Create(value);
                     break;
                 case VariantWrapper value:
-                    throw new ArgumentException();
+                    throw new ArgumentException(null, nameof(obj));
                 case DBNull value:
                     *data = ComVariant.Null;
                     break;
@@ -265,9 +265,9 @@ namespace System.Runtime.InteropServices
                     }
                     break;
                 case CriticalHandle:
-                    throw new ArgumentException();
+                    throw new ArgumentException(null, nameof(obj));
                 case SafeHandle:
-                    throw new ArgumentException();
+                    throw new ArgumentException(null, nameof(obj));
                 case Array:
                     // SAFEARRAY implementation goes here.
                     throw new NotSupportedException("VT_ARRAY");
@@ -373,12 +373,10 @@ namespace System.Runtime.InteropServices
             throw new NotSupportedException(SR.PlatformNotSupported_ComInterop);
         }
 
-#pragma warning disable IDE0060
         internal static Type? GetTypeFromCLSID(Guid clsid, string? server, bool throwOnError)
         {
             throw new NotSupportedException(SR.PlatformNotSupported_ComInterop);
         }
-#pragma warning restore
 
         [SupportedOSPlatform("windows")]
         public static string GetTypeInfoName(ITypeInfo typeInfo)

@@ -16,6 +16,8 @@ namespace System.Text.Json.SourceGeneration
 
         public required JsonSerializerDefaults? Defaults { get; init; }
 
+        public required bool? AllowOutOfOrderMetadataProperties { get; init; }
+
         public required bool? AllowTrailingCommas { get; init; }
 
         public required ImmutableEquatableArray<TypeRef>? Converters { get; init; }
@@ -26,6 +28,10 @@ namespace System.Text.Json.SourceGeneration
 
         public required JsonKnownNamingPolicy? DictionaryKeyPolicy { get; init; }
 
+        public required bool? RespectNullableAnnotations { get; init; }
+
+        public required bool? RespectRequiredConstructorParameters { get; init; }
+
         public required bool? IgnoreReadOnlyFields { get; init; }
 
         public required bool? IgnoreReadOnlyProperties { get; init; }
@@ -33,6 +39,8 @@ namespace System.Text.Json.SourceGeneration
         public required bool? IncludeFields { get; init; }
 
         public required int? MaxDepth { get; init; }
+
+        public required string? NewLine { get; init; }
 
         public required JsonNumberHandling? NumberHandling { get; init; }
 
@@ -51,6 +59,10 @@ namespace System.Text.Json.SourceGeneration
         public required bool? UseStringEnumConverter { get; init; }
 
         public required bool? WriteIndented { get; init; }
+
+        public required char? IndentCharacter { get; init; }
+
+        public required int? IndentSize { get; init; }
 
         public JsonKnownNamingPolicy? GetEffectivePropertyNamingPolicy()
             => PropertyNamingPolicy ?? (Defaults is JsonSerializerDefaults.Web ? JsonKnownNamingPolicy.CamelCase : null);

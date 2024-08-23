@@ -48,7 +48,7 @@ namespace System
         }
 
         // Bitmap covering the ASCII range. The bits is set for the characters [a-z], [A-Z], [0-9], '/', '-', and '_'.
-        private static byte[] asciiBitmap = new byte[] { 0x00, 0x00, 0x00, 0x00, 0x00, 0xA8, 0xFF, 0x03, 0xFE, 0xFF, 0xFF, 0x87, 0xFE, 0xFF, 0xFF, 0x07 };
+        private static ReadOnlySpan<byte> AsciiBitmap => [0x00, 0x00, 0x00, 0x00, 0x00, 0xA8, 0xFF, 0x03, 0xFE, 0xFF, 0xFF, 0x87, 0xFE, 0xFF, 0xFF, 0x07];
         private static bool IdContainsAnyDisallowedChars(string zoneId)
         {
             for (int i = 0; i < zoneId.Length; i++)
@@ -59,7 +59,7 @@ namespace System
                     return true;
                 }
                 int value = c >> 3;
-                if ((asciiBitmap[value] & (ulong)(1UL << (c - (value << 3)))) == 0)
+                if ((AsciiBitmap[value] & (1 << (c & 7))) == 0)
                 {
                     return true;
                 }
@@ -78,14 +78,14 @@ namespace System
                 return TimeZoneInfoResult.TimeZoneNotFoundException;
             }
 
-            byte[]? rawData=null;
+            byte[]? rawData = null;
             string timeZoneDirectory = GetTimeZoneDirectory();
             string timeZoneFilePath = Path.Combine(timeZoneDirectory, id);
 
 #if TARGET_WASI || TARGET_BROWSER
             if (UseEmbeddedTzDatabase)
             {
-                if(!TryLoadEmbeddedTzFile(timeZoneFilePath, out rawData))
+                if (!TryLoadEmbeddedTzFile(timeZoneFilePath, out rawData))
                 {
                     e = new FileNotFoundException(id, "Embedded TZ data not found");
                     return TimeZoneInfoResult.TimeZoneNotFoundException;
@@ -153,7 +153,7 @@ namespace System
 #if TARGET_WASI || TARGET_BROWSER
                 if (UseEmbeddedTzDatabase)
                 {
-                    if(!TryLoadEmbeddedTzFile(fileName, out var rawData))
+                    if (!TryLoadEmbeddedTzFile(fileName, out var rawData))
                     {
                         return Array.Empty<string>();
                     }
@@ -470,7 +470,7 @@ namespace System
         private static bool TryLoadEmbeddedTzFile(string name, [NotNullWhen(true)] out byte[]? rawData)
         {
             IntPtr bytes = Interop.Sys.GetTimeZoneData(name, out int length);
-            if(bytes == IntPtr.Zero)
+            if (bytes == IntPtr.Zero)
             {
                 rawData = null;
                 return false;
@@ -553,7 +553,7 @@ namespace System
                 {
                     return false;
                 }
-                if(!TryLoadEmbeddedTzFile(tzFilePath, out rawData))
+                if (!TryLoadEmbeddedTzFile(tzFilePath, out rawData))
                 {
                     return false;
                 }

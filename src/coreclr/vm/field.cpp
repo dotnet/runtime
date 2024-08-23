@@ -138,6 +138,7 @@ TypeHandle FieldDesc::LookupFieldTypeHandle(ClassLoadLevel level, BOOL dropGener
              type == ELEMENT_TYPE_STRING ||
              type == ELEMENT_TYPE_TYPEDBYREF ||
              type == ELEMENT_TYPE_SZARRAY ||
+             type == ELEMENT_TYPE_ARRAY ||
              type == ELEMENT_TYPE_VAR
              );
 
@@ -180,8 +181,8 @@ void* FieldDesc::GetStaticAddress(void *base)
 
     void* ret = GetStaticAddressHandle(base);       // Get the handle
 
-        // For value classes, the handle points at an OBJECTREF
-        // which holds the boxed value class, so dereference and unbox.
+    // For value classes, the handle points at an OBJECTREF
+    // which holds the boxed value class, so dereference and unbox.
     if (GetFieldType() == ELEMENT_TYPE_VALUETYPE && !IsRVA())
     {
         OBJECTREF obj = ObjectToOBJECTREF(*(Object**) ret);
@@ -211,11 +212,10 @@ MethodTable * FieldDesc::GetExactDeclaringType(MethodTable * ownerOrSubType)
 
 #endif // #ifndef DACCESS_COMPILE
 
-    // static value classes are actually stored in their boxed form.
-    // this means that their address moves.
+// Static value classes are actually stored in their boxed form.
+// This means that their address moves.
 PTR_VOID FieldDesc::GetStaticAddressHandle(PTR_VOID base)
 {
-
     CONTRACTL
     {
         INSTANCE_CHECK;
@@ -224,7 +224,6 @@ PTR_VOID FieldDesc::GetStaticAddressHandle(PTR_VOID base)
         MODE_ANY;
         FORBID_FAULT;
         PRECONDITION(IsStatic());
-        PRECONDITION(GetEnclosingMethodTable()->IsRestored());
     }
     CONTRACTL_END
 
@@ -256,13 +255,12 @@ PTR_VOID FieldDesc::GetStaticAddressHandle(PTR_VOID base)
     }
 #endif // FEATURE_METADATA_UPDATER
 
-
     if (IsRVA())
     {
         Module* pModule = GetModule();
         PTR_VOID ret = pModule->GetRvaField(GetOffset());
 
-        _ASSERTE(!pModule->IsPEFile() || !pModule->IsRvaFieldTls(GetOffset()));
+        _ASSERTE(pModule->IsReflectionEmit() || !pModule->IsRvaFieldTls(GetOffset()));
 
         return(ret);
     }
@@ -271,10 +269,8 @@ PTR_VOID FieldDesc::GetStaticAddressHandle(PTR_VOID base)
 
     PTR_VOID ret = PTR_VOID(dac_cast<PTR_BYTE>(base) + GetOffset());
 
-
     return ret;
 }
-
 
 
 // These routines encapsulate the operation of getting and setting
@@ -625,17 +621,17 @@ VOID    FieldDesc::SetValue8(OBJECTREF o, DWORD dwValue)
 }
 #endif // #ifndef DACCESS_COMPILE
 
-__int64 FieldDesc::GetValue64(OBJECTREF o)
+int64_t FieldDesc::GetValue64(OBJECTREF o)
 {
     WRAPPER_NO_CONTRACT;
-    __int64 val;
+    int64_t val;
     GetInstanceField(o, (LPVOID)&val);
     return val;
 
 }
 
 #ifndef DACCESS_COMPILE
-VOID    FieldDesc::SetValue64(OBJECTREF o, __int64 value)
+VOID    FieldDesc::SetValue64(OBJECTREF o, int64_t value)
 {
     CONTRACTL
     {

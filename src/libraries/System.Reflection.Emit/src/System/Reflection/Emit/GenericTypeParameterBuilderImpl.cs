@@ -22,20 +22,19 @@ namespace System.Reflection.Emit
         private MethodBuilderImpl? _methodBuilder;
         internal EntityHandle _parentHandle;
 
-        internal GenericTypeParameterBuilderImpl(string name, int genParamPosition, TypeBuilderImpl typeBuilder, EntityHandle parentHandle)
+        internal GenericTypeParameterBuilderImpl(string name, int genParamPosition, TypeBuilderImpl typeBuilder)
         {
             _name = name;
             _genParamPosition = genParamPosition;
             _type = typeBuilder;
-            _parentHandle = parentHandle;
         }
 
-        public GenericTypeParameterBuilderImpl(string name, int genParamPosition, MethodBuilderImpl methodBuilder)
+        public GenericTypeParameterBuilderImpl(string name, int genParamPosition, MethodBuilderImpl methodBuilder, TypeBuilderImpl typeBuilder)
         {
             _name = name;
             _genParamPosition = genParamPosition;
             _methodBuilder = methodBuilder;
-            _type = methodBuilder.DeclaringType;
+            _type = typeBuilder;
         }
 
         protected override void SetBaseTypeConstraintCore([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type? baseTypeConstraint)
@@ -84,8 +83,8 @@ namespace System.Reflection.Emit
         public override bool IsGenericType => false;
         public override bool IsGenericParameter => true;
         public override bool IsConstructedGenericType => false;
-        public override bool ContainsGenericParameters => _type.ContainsGenericParameters;
-        public override MethodBase? DeclaringMethod => throw new NotImplementedException();
+        public override bool ContainsGenericParameters => false;
+        public override MethodBase? DeclaringMethod => _type.DeclaringMethod;
         public override Type? BaseType => _parent;
         public override RuntimeTypeHandle TypeHandle => throw new NotSupportedException();
         public override Guid GUID => throw new NotSupportedException();
@@ -96,7 +95,7 @@ namespace System.Reflection.Emit
         protected override bool IsCOMObjectImpl() => false;
         protected override bool HasElementTypeImpl() => false;
         protected override TypeAttributes GetAttributeFlagsImpl() => TypeAttributes.Public;
-        public override Type GetElementType() => throw new NotSupportedException();
+        public override Type? GetElementType() => null;
         public override object[] GetCustomAttributes(bool inherit) => throw new NotSupportedException();
         public override object[] GetCustomAttributes(Type attributeType, bool inherit) => throw new NotSupportedException();
         public override bool IsDefined(Type attributeType, bool inherit) => throw new NotSupportedException();
@@ -138,5 +137,19 @@ namespace System.Reflection.Emit
         public override MemberInfo[] GetMembers(BindingFlags bindingAttr) => throw new NotSupportedException();
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
         public override object InvokeMember(string name, BindingFlags invokeAttr, Binder? binder, object? target, object?[]? args, ParameterModifier[]? modifiers, CultureInfo? culture, string[]? namedParameters) => throw new NotSupportedException();
+
+        public override Type MakePointerType() =>
+            SymbolType.FormCompoundType("*", this, 0)!;
+
+        public override Type MakeByRefType() =>
+            SymbolType.FormCompoundType("&", this, 0)!;
+
+        [RequiresDynamicCode("The code for an array of the specified type might not be available.")]
+        public override Type MakeArrayType() =>
+            SymbolType.FormCompoundType("[]", this, 0)!;
+
+        [RequiresDynamicCode("The code for an array of the specified type might not be available.")]
+        public override Type MakeArrayType(int rank) =>
+            SymbolType.FormCompoundType(SymbolType.FormatRank(rank), this, 0)!;
     }
 }

@@ -13,18 +13,13 @@
     <ProjectReference Include="oob-src.proj" OutputItemType="OOBAssembly" />
 
     <ProjectReference Include="apicompat\ApiCompat.proj"
-                      Condition="'$(DotNetBuildFromSource)' != 'true' and '$(ApiCompatValidateAssemblies)' != 'false'" />
+                      Condition="'$(DotNetBuildSourceOnly)' != 'true' and '$(ApiCompatValidateAssemblies)' != 'false'" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(BuildTargetFramework)' != '$(NetCoreAppCurrent)' or '$(BuildTargetFramework)' == ''">
     <ProjectReference Include="oob-all.proj" SkipGetTargetFrameworkProperties="true" />
-  </ItemGroup>
-
-  <!-- Support building reference projects only. -->
-  <ItemGroup Condition="'$(RefOnly)' == 'true'">
-    <ProjectReference Remove="@(ProjectReference)" />
-    <ProjectReference Include="sfx-ref.proj" OutputItemType="SharedFrameworkAssembly" />
-    <ProjectReference Include="oob-ref.proj" />
+    <!-- Skip building all source generators when building from source as that would bring new prebuilts in. -->
+    <ProjectReference Include="oob-gen.proj" Condition="'$(DotNetBuildSourceOnly)' != 'true'" />
   </ItemGroup>
 
   <Target Name="GetTrimOOBAssembliesInputs"
@@ -45,7 +40,7 @@
 
   <Target Name="TrimOOBAssemblies"
           AfterTargets="Build"
-          Condition="'$(RefOnly)' != 'true' and '@(OOBAssembly)' != ''"
+          Condition="'@(OOBAssembly)' != ''"
           DependsOnTargets="GetTrimOOBAssembliesInputs;PrepareForAssembliesTrim"
           Inputs="$(ILLinkTasksAssembly);@(OOBAssemblyToTrim);@(OOBAssemblyReference);@(OOBLibrarySuppressionsXml)"
           Outputs="$(OOBAssembliesTrimMarkerFile)">
@@ -55,7 +50,7 @@
       <OOBILLinkArgs>$(ILLinkArgs)</OOBILLinkArgs>
       <!-- Unnecessary suppressions - disable for now since we didn't clean the runtime yet -->
       <OOBILLinkArgs>$(ILLinkArgs) --nowarn IL2121</OOBILLinkArgs>
-      <OOBILLinkArgs Condition="'@(OOBLibrarySuppressionsXml)' != ''" >$(OOBILLinkArgs) --link-attributes &quot;@(OOBLibrarySuppressionsXml->'%(FullPath)', '&quot; --link-attributes &quot;')&quot;</OOBILLinkArgs>
+      <OOBILLinkArgs Condition="'@(OOBLibrarySuppressionsXml)' != ''" >$(OOBILLinkArgs) --link-attributes "@(OOBLibrarySuppressionsXml->'%(FullPath)', '" --link-attributes "')"</OOBILLinkArgs>
     </PropertyGroup>
 
     <MakeDir Directories="$(OOBAssembliesTrimDir)" />

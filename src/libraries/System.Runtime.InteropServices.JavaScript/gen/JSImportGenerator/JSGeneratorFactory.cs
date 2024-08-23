@@ -11,7 +11,7 @@ using System.Data;
 
 namespace Microsoft.Interop.JavaScript
 {
-    internal sealed class JSGeneratorFactory : IMarshallingGeneratorFactory
+    internal sealed class JSGeneratorResolver : IMarshallingGeneratorResolver
     {
         public ResolvedGenerator Create(TypePositionInfo info, StubCodeContext context)
         {
@@ -19,7 +19,7 @@ namespace Microsoft.Interop.JavaScript
             if (info.IsByRef || info.ByValueContentsMarshalKind != ByValueContentsMarshalKind.Default)
             {
                 // out of scope for Net7.0
-                return ResolvedGenerator.NotSupported(new(info, context)
+                return ResolvedGenerator.NotSupported(info, new(info, context)
                 {
                     NotSupportedDetails = SR.InOutRefNotSupported
                 });
@@ -28,29 +28,35 @@ namespace Microsoft.Interop.JavaScript
 
             ResolvedGenerator fail(string failReason)
             {
-                return ResolvedGenerator.NotSupported(new(info, context)
+                return ResolvedGenerator.NotSupported(info, new(info, context)
                 {
                     NotSupportedDetails = failReason
                 });
             }
-            bool isToJs = info.ManagedIndex != TypePositionInfo.ReturnIndex ^ context is JSExportCodeContext;
+            bool isToJs = info.ManagedIndex != TypePositionInfo.ReturnIndex ^ context.Direction == MarshalDirection.UnmanagedToManaged;
 
             switch (jsMarshalingInfo)
             {
                 // invalid
                 case { TypeInfo: JSInvalidTypeInfo }:
-                    return ResolvedGenerator.NotSupported(new(info, context));
+                    return ResolvedGenerator.NotSupported(info, new(info, context));
 
                 // void
+                case { TypeInfo: JSSimpleTypeInfo(KnownManagedType.Void), JSType: JSTypeFlags.DiscardNoWait }:
+                    return ResolvedGenerator.Resolved(new VoidGenerator(info, MarshalerType.DiscardNoWait));
                 case { TypeInfo: JSSimpleTypeInfo(KnownManagedType.Void), JSType: JSTypeFlags.Discard }:
                 case { TypeInfo: JSSimpleTypeInfo(KnownManagedType.Void), JSType: JSTypeFlags.Void }:
                 case { TypeInfo: JSSimpleTypeInfo(KnownManagedType.Void), JSType: JSTypeFlags.None }:
                 case { TypeInfo: JSSimpleTypeInfo(KnownManagedType.Void), JSType: JSTypeFlags.Missing }:
-                    return ResolvedGenerator.Resolved(new VoidGenerator(jsMarshalingInfo.JSType == JSTypeFlags.Void ? MarshalerType.Void : MarshalerType.Discard));
+                    return ResolvedGenerator.Resolved(new VoidGenerator(info, jsMarshalingInfo.JSType == JSTypeFlags.Void ? MarshalerType.Void : MarshalerType.Discard));
 
                 // discard no void
                 case { JSType: JSTypeFlags.Discard }:
                     return fail(SR.DiscardOnlyVoid);
+
+                // oneway no void
+                case { JSType: JSTypeFlags.DiscardNoWait }:
+                    return fail(SR.DiscardNoWaitOnlyVoid);
 
                 // primitive
                 case { TypeInfo: JSSimpleTypeInfo simple }:
@@ -83,7 +89,7 @@ namespace Microsoft.Interop.JavaScript
                     return Create(info, isToJs, function.KnownType, function.ArgsTypeInfo.Select(a => a.KnownType).ToArray(), jsMarshalingInfo.JSType, jsMarshalingInfo.JSTypeArguments, fail);
 
                 default:
-                    return ResolvedGenerator.NotSupported(new(info, context));
+                    return ResolvedGenerator.NotSupported(info, new(info, context));
             }
         }
 
@@ -92,35 +98,35 @@ namespace Microsoft.Interop.JavaScript
             switch (marshaledType)
             {
                 // primitive
-                case KnownManagedType.Boolean when jsType == JSTypeFlags.Boolean: return ResolvedGenerator.Resolved(new PrimitiveJSGenerator(MarshalerType.Boolean));
-                case KnownManagedType.Byte when jsType == JSTypeFlags.Number: return ResolvedGenerator.Resolved(new PrimitiveJSGenerator(MarshalerType.Byte));
-                case KnownManagedType.Char when jsType == JSTypeFlags.String: return ResolvedGenerator.Resolved(new PrimitiveJSGenerator(MarshalerType.Char));
-                case KnownManagedType.Int16 when jsType == JSTypeFlags.Number: return ResolvedGenerator.Resolved(new PrimitiveJSGenerator(MarshalerType.Int16));
-                case KnownManagedType.Int32 when jsType == JSTypeFlags.Number: return ResolvedGenerator.Resolved(new PrimitiveJSGenerator(MarshalerType.Int32));
-                case KnownManagedType.Int64 when jsType == JSTypeFlags.Number: return ResolvedGenerator.Resolved(new PrimitiveJSGenerator(MarshalerType.Int52));
-                case KnownManagedType.Int64 when jsType == JSTypeFlags.BigInt: return ResolvedGenerator.Resolved(new PrimitiveJSGenerator(MarshalerType.BigInt64));
-                case KnownManagedType.Single when jsType == JSTypeFlags.Number: return ResolvedGenerator.Resolved(new PrimitiveJSGenerator(MarshalerType.Single));
-                case KnownManagedType.Double when jsType == JSTypeFlags.Number: return ResolvedGenerator.Resolved(new PrimitiveJSGenerator(MarshalerType.Double));
-                case KnownManagedType.IntPtr when jsType == JSTypeFlags.Number: return ResolvedGenerator.Resolved(new PrimitiveJSGenerator(MarshalerType.IntPtr));
-                case KnownManagedType.DateTime when jsType == JSTypeFlags.Date: return ResolvedGenerator.Resolved(new PrimitiveJSGenerator(MarshalerType.DateTime));
-                case KnownManagedType.DateTimeOffset when jsType == JSTypeFlags.Date: return ResolvedGenerator.Resolved(new PrimitiveJSGenerator(MarshalerType.DateTimeOffset));
-                case KnownManagedType.Exception when jsType == JSTypeFlags.Error: return ResolvedGenerator.Resolved(new PrimitiveJSGenerator(MarshalerType.Exception));
-                case KnownManagedType.JSObject when jsType == JSTypeFlags.Object: return ResolvedGenerator.Resolved(new PrimitiveJSGenerator(MarshalerType.JSObject));
-                case KnownManagedType.String when jsType == JSTypeFlags.String: return ResolvedGenerator.Resolved(new PrimitiveJSGenerator(MarshalerType.String));
-                case KnownManagedType.Object when jsType == JSTypeFlags.Any: return ResolvedGenerator.Resolved(new PrimitiveJSGenerator(MarshalerType.Object));
+                case KnownManagedType.Boolean when jsType == JSTypeFlags.Boolean: return ResolvedGenerator.Resolved(new PrimitiveJSGenerator(info, MarshalerType.Boolean));
+                case KnownManagedType.Byte when jsType == JSTypeFlags.Number: return ResolvedGenerator.Resolved(new PrimitiveJSGenerator(info, MarshalerType.Byte));
+                case KnownManagedType.Char when jsType == JSTypeFlags.String: return ResolvedGenerator.Resolved(new PrimitiveJSGenerator(info, MarshalerType.Char));
+                case KnownManagedType.Int16 when jsType == JSTypeFlags.Number: return ResolvedGenerator.Resolved(new PrimitiveJSGenerator(info, MarshalerType.Int16));
+                case KnownManagedType.Int32 when jsType == JSTypeFlags.Number: return ResolvedGenerator.Resolved(new PrimitiveJSGenerator(info, MarshalerType.Int32));
+                case KnownManagedType.Int64 when jsType == JSTypeFlags.Number: return ResolvedGenerator.Resolved(new PrimitiveJSGenerator(info, MarshalerType.Int52));
+                case KnownManagedType.Int64 when jsType == JSTypeFlags.BigInt: return ResolvedGenerator.Resolved(new PrimitiveJSGenerator(info, MarshalerType.BigInt64));
+                case KnownManagedType.Single when jsType == JSTypeFlags.Number: return ResolvedGenerator.Resolved(new PrimitiveJSGenerator(info, MarshalerType.Single));
+                case KnownManagedType.Double when jsType == JSTypeFlags.Number: return ResolvedGenerator.Resolved(new PrimitiveJSGenerator(info, MarshalerType.Double));
+                case KnownManagedType.IntPtr when jsType == JSTypeFlags.Number: return ResolvedGenerator.Resolved(new PrimitiveJSGenerator(info, MarshalerType.IntPtr));
+                case KnownManagedType.DateTime when jsType == JSTypeFlags.Date: return ResolvedGenerator.Resolved(new PrimitiveJSGenerator(info, MarshalerType.DateTime));
+                case KnownManagedType.DateTimeOffset when jsType == JSTypeFlags.Date: return ResolvedGenerator.Resolved(new PrimitiveJSGenerator(info, MarshalerType.DateTimeOffset));
+                case KnownManagedType.Exception when jsType == JSTypeFlags.Error: return ResolvedGenerator.Resolved(new PrimitiveJSGenerator(info, MarshalerType.Exception));
+                case KnownManagedType.JSObject when jsType == JSTypeFlags.Object: return ResolvedGenerator.Resolved(new PrimitiveJSGenerator(info, MarshalerType.JSObject));
+                case KnownManagedType.String when jsType == JSTypeFlags.String: return ResolvedGenerator.Resolved(new PrimitiveJSGenerator(info, MarshalerType.String));
+                case KnownManagedType.Object when jsType == JSTypeFlags.Any: return ResolvedGenerator.Resolved(new PrimitiveJSGenerator(info, MarshalerType.Object));
 
                 // primitive missing
-                case KnownManagedType.Boolean when jsType == JSTypeFlags.Missing: return ResolvedGenerator.Resolved(new PrimitiveJSGenerator(MarshalerType.Boolean));
-                case KnownManagedType.Byte when jsType == JSTypeFlags.Missing: return ResolvedGenerator.Resolved(new PrimitiveJSGenerator(MarshalerType.Byte));
-                case KnownManagedType.Char when jsType == JSTypeFlags.Missing: return ResolvedGenerator.Resolved(new PrimitiveJSGenerator(MarshalerType.Char));
-                case KnownManagedType.Int16 when jsType == JSTypeFlags.Missing: return ResolvedGenerator.Resolved(new PrimitiveJSGenerator(MarshalerType.Int16));
-                case KnownManagedType.Int32 when jsType == JSTypeFlags.Missing: return ResolvedGenerator.Resolved(new PrimitiveJSGenerator(MarshalerType.Int32));
-                case KnownManagedType.Single when jsType == JSTypeFlags.Missing: return ResolvedGenerator.Resolved(new PrimitiveJSGenerator(MarshalerType.Single));
-                case KnownManagedType.Double when jsType == JSTypeFlags.Missing: return ResolvedGenerator.Resolved(new PrimitiveJSGenerator(MarshalerType.Double));
-                case KnownManagedType.IntPtr when jsType == JSTypeFlags.Missing: return ResolvedGenerator.Resolved(new PrimitiveJSGenerator(MarshalerType.IntPtr));
-                case KnownManagedType.Exception when jsType == JSTypeFlags.Missing: return ResolvedGenerator.Resolved(new PrimitiveJSGenerator(MarshalerType.Exception));
-                case KnownManagedType.JSObject when jsType == JSTypeFlags.Missing: return ResolvedGenerator.Resolved(new PrimitiveJSGenerator(MarshalerType.JSObject));
-                case KnownManagedType.String when jsType == JSTypeFlags.Missing: return ResolvedGenerator.Resolved(new PrimitiveJSGenerator(MarshalerType.String));
+                case KnownManagedType.Boolean when jsType == JSTypeFlags.Missing: return ResolvedGenerator.Resolved(new PrimitiveJSGenerator(info, MarshalerType.Boolean));
+                case KnownManagedType.Byte when jsType == JSTypeFlags.Missing: return ResolvedGenerator.Resolved(new PrimitiveJSGenerator(info, MarshalerType.Byte));
+                case KnownManagedType.Char when jsType == JSTypeFlags.Missing: return ResolvedGenerator.Resolved(new PrimitiveJSGenerator(info, MarshalerType.Char));
+                case KnownManagedType.Int16 when jsType == JSTypeFlags.Missing: return ResolvedGenerator.Resolved(new PrimitiveJSGenerator(info, MarshalerType.Int16));
+                case KnownManagedType.Int32 when jsType == JSTypeFlags.Missing: return ResolvedGenerator.Resolved(new PrimitiveJSGenerator(info, MarshalerType.Int32));
+                case KnownManagedType.Single when jsType == JSTypeFlags.Missing: return ResolvedGenerator.Resolved(new PrimitiveJSGenerator(info, MarshalerType.Single));
+                case KnownManagedType.Double when jsType == JSTypeFlags.Missing: return ResolvedGenerator.Resolved(new PrimitiveJSGenerator(info, MarshalerType.Double));
+                case KnownManagedType.IntPtr when jsType == JSTypeFlags.Missing: return ResolvedGenerator.Resolved(new PrimitiveJSGenerator(info, MarshalerType.IntPtr));
+                case KnownManagedType.Exception when jsType == JSTypeFlags.Missing: return ResolvedGenerator.Resolved(new PrimitiveJSGenerator(info, MarshalerType.Exception));
+                case KnownManagedType.JSObject when jsType == JSTypeFlags.Missing: return ResolvedGenerator.Resolved(new PrimitiveJSGenerator(info, MarshalerType.JSObject));
+                case KnownManagedType.String when jsType == JSTypeFlags.Missing: return ResolvedGenerator.Resolved(new PrimitiveJSGenerator(info, MarshalerType.String));
 
                 // primitive forced
                 case KnownManagedType.Int64 when jsType == JSTypeFlags.Missing:
@@ -130,28 +136,28 @@ namespace Microsoft.Interop.JavaScript
                     return failWithReason(SR.Format(SR.UseJSMarshalAsAttribute, info.ManagedType.FullTypeName));
 
                 // nullable
-                case KnownManagedType.Nullable when argumentTypes[0] == KnownManagedType.Boolean && jsType == JSTypeFlags.Boolean: return ResolvedGenerator.Resolved(new NullableJSGenerator(MarshalerType.Boolean));
-                case KnownManagedType.Nullable when argumentTypes[0] == KnownManagedType.Byte && jsType == JSTypeFlags.Number: return ResolvedGenerator.Resolved(new NullableJSGenerator(MarshalerType.Byte));
-                case KnownManagedType.Nullable when argumentTypes[0] == KnownManagedType.Char && jsType == JSTypeFlags.String: return ResolvedGenerator.Resolved(new NullableJSGenerator(MarshalerType.Byte));
-                case KnownManagedType.Nullable when argumentTypes[0] == KnownManagedType.Int16 && jsType == JSTypeFlags.Number: return ResolvedGenerator.Resolved(new NullableJSGenerator(MarshalerType.Int16));
-                case KnownManagedType.Nullable when argumentTypes[0] == KnownManagedType.Int32 && jsType == JSTypeFlags.Number: return ResolvedGenerator.Resolved(new NullableJSGenerator(MarshalerType.Int32));
-                case KnownManagedType.Nullable when argumentTypes[0] == KnownManagedType.Int64 && jsType == JSTypeFlags.Number: return ResolvedGenerator.Resolved(new NullableJSGenerator(MarshalerType.Int52));
-                case KnownManagedType.Nullable when argumentTypes[0] == KnownManagedType.Int64 && jsType == JSTypeFlags.BigInt: return ResolvedGenerator.Resolved(new NullableJSGenerator(MarshalerType.BigInt64));
-                case KnownManagedType.Nullable when argumentTypes[0] == KnownManagedType.Double && jsType == JSTypeFlags.Number: return ResolvedGenerator.Resolved(new NullableJSGenerator(MarshalerType.Double));
-                case KnownManagedType.Nullable when argumentTypes[0] == KnownManagedType.Single && jsType == JSTypeFlags.Number: return ResolvedGenerator.Resolved(new NullableJSGenerator(MarshalerType.Single));
-                case KnownManagedType.Nullable when argumentTypes[0] == KnownManagedType.IntPtr && jsType == JSTypeFlags.Number: return ResolvedGenerator.Resolved(new NullableJSGenerator(MarshalerType.IntPtr));
-                case KnownManagedType.Nullable when argumentTypes[0] == KnownManagedType.DateTime && jsType == JSTypeFlags.Date: return ResolvedGenerator.Resolved(new NullableJSGenerator(MarshalerType.DateTime));
-                case KnownManagedType.Nullable when argumentTypes[0] == KnownManagedType.DateTimeOffset && jsType == JSTypeFlags.Date: return ResolvedGenerator.Resolved(new NullableJSGenerator(MarshalerType.DateTimeOffset));
+                case KnownManagedType.Nullable when argumentTypes[0] == KnownManagedType.Boolean && jsType == JSTypeFlags.Boolean: return ResolvedGenerator.Resolved(new NullableJSGenerator(info, MarshalerType.Boolean));
+                case KnownManagedType.Nullable when argumentTypes[0] == KnownManagedType.Byte && jsType == JSTypeFlags.Number: return ResolvedGenerator.Resolved(new NullableJSGenerator(info, MarshalerType.Byte));
+                case KnownManagedType.Nullable when argumentTypes[0] == KnownManagedType.Char && jsType == JSTypeFlags.String: return ResolvedGenerator.Resolved(new NullableJSGenerator(info, MarshalerType.Byte));
+                case KnownManagedType.Nullable when argumentTypes[0] == KnownManagedType.Int16 && jsType == JSTypeFlags.Number: return ResolvedGenerator.Resolved(new NullableJSGenerator(info, MarshalerType.Int16));
+                case KnownManagedType.Nullable when argumentTypes[0] == KnownManagedType.Int32 && jsType == JSTypeFlags.Number: return ResolvedGenerator.Resolved(new NullableJSGenerator(info, MarshalerType.Int32));
+                case KnownManagedType.Nullable when argumentTypes[0] == KnownManagedType.Int64 && jsType == JSTypeFlags.Number: return ResolvedGenerator.Resolved(new NullableJSGenerator(info, MarshalerType.Int52));
+                case KnownManagedType.Nullable when argumentTypes[0] == KnownManagedType.Int64 && jsType == JSTypeFlags.BigInt: return ResolvedGenerator.Resolved(new NullableJSGenerator(info, MarshalerType.BigInt64));
+                case KnownManagedType.Nullable when argumentTypes[0] == KnownManagedType.Double && jsType == JSTypeFlags.Number: return ResolvedGenerator.Resolved(new NullableJSGenerator(info, MarshalerType.Double));
+                case KnownManagedType.Nullable when argumentTypes[0] == KnownManagedType.Single && jsType == JSTypeFlags.Number: return ResolvedGenerator.Resolved(new NullableJSGenerator(info, MarshalerType.Single));
+                case KnownManagedType.Nullable when argumentTypes[0] == KnownManagedType.IntPtr && jsType == JSTypeFlags.Number: return ResolvedGenerator.Resolved(new NullableJSGenerator(info, MarshalerType.IntPtr));
+                case KnownManagedType.Nullable when argumentTypes[0] == KnownManagedType.DateTime && jsType == JSTypeFlags.Date: return ResolvedGenerator.Resolved(new NullableJSGenerator(info, MarshalerType.DateTime));
+                case KnownManagedType.Nullable when argumentTypes[0] == KnownManagedType.DateTimeOffset && jsType == JSTypeFlags.Date: return ResolvedGenerator.Resolved(new NullableJSGenerator(info, MarshalerType.DateTimeOffset));
 
                 // nullable missing
-                case KnownManagedType.Nullable when argumentTypes[0] == KnownManagedType.Boolean && jsType == JSTypeFlags.Missing: return ResolvedGenerator.Resolved(new NullableJSGenerator(MarshalerType.Boolean));
-                case KnownManagedType.Nullable when argumentTypes[0] == KnownManagedType.Byte && jsType == JSTypeFlags.Missing: return ResolvedGenerator.Resolved(new NullableJSGenerator(MarshalerType.Byte));
-                case KnownManagedType.Nullable when argumentTypes[0] == KnownManagedType.Char && jsType == JSTypeFlags.Missing: return ResolvedGenerator.Resolved(new NullableJSGenerator(MarshalerType.Byte));
-                case KnownManagedType.Nullable when argumentTypes[0] == KnownManagedType.Int16 && jsType == JSTypeFlags.Missing: return ResolvedGenerator.Resolved(new NullableJSGenerator(MarshalerType.Int16));
-                case KnownManagedType.Nullable when argumentTypes[0] == KnownManagedType.Int32 && jsType == JSTypeFlags.Missing: return ResolvedGenerator.Resolved(new NullableJSGenerator(MarshalerType.Int32));
-                case KnownManagedType.Nullable when argumentTypes[0] == KnownManagedType.Single && jsType == JSTypeFlags.Missing: return ResolvedGenerator.Resolved(new NullableJSGenerator(MarshalerType.Single));
-                case KnownManagedType.Nullable when argumentTypes[0] == KnownManagedType.Double && jsType == JSTypeFlags.Missing: return ResolvedGenerator.Resolved(new NullableJSGenerator(MarshalerType.Double));
-                case KnownManagedType.Nullable when argumentTypes[0] == KnownManagedType.IntPtr && jsType == JSTypeFlags.Missing: return ResolvedGenerator.Resolved(new NullableJSGenerator(MarshalerType.IntPtr));
+                case KnownManagedType.Nullable when argumentTypes[0] == KnownManagedType.Boolean && jsType == JSTypeFlags.Missing: return ResolvedGenerator.Resolved(new NullableJSGenerator(info, MarshalerType.Boolean));
+                case KnownManagedType.Nullable when argumentTypes[0] == KnownManagedType.Byte && jsType == JSTypeFlags.Missing: return ResolvedGenerator.Resolved(new NullableJSGenerator(info, MarshalerType.Byte));
+                case KnownManagedType.Nullable when argumentTypes[0] == KnownManagedType.Char && jsType == JSTypeFlags.Missing: return ResolvedGenerator.Resolved(new NullableJSGenerator(info, MarshalerType.Byte));
+                case KnownManagedType.Nullable when argumentTypes[0] == KnownManagedType.Int16 && jsType == JSTypeFlags.Missing: return ResolvedGenerator.Resolved(new NullableJSGenerator(info, MarshalerType.Int16));
+                case KnownManagedType.Nullable when argumentTypes[0] == KnownManagedType.Int32 && jsType == JSTypeFlags.Missing: return ResolvedGenerator.Resolved(new NullableJSGenerator(info, MarshalerType.Int32));
+                case KnownManagedType.Nullable when argumentTypes[0] == KnownManagedType.Single && jsType == JSTypeFlags.Missing: return ResolvedGenerator.Resolved(new NullableJSGenerator(info, MarshalerType.Single));
+                case KnownManagedType.Nullable when argumentTypes[0] == KnownManagedType.Double && jsType == JSTypeFlags.Missing: return ResolvedGenerator.Resolved(new NullableJSGenerator(info, MarshalerType.Double));
+                case KnownManagedType.Nullable when argumentTypes[0] == KnownManagedType.IntPtr && jsType == JSTypeFlags.Missing: return ResolvedGenerator.Resolved(new NullableJSGenerator(info, MarshalerType.IntPtr));
 
                 // nullable forced
                 case KnownManagedType.Nullable when argumentTypes[0] == KnownManagedType.Int64 && jsType == JSTypeFlags.Missing:
@@ -163,37 +169,37 @@ namespace Microsoft.Interop.JavaScript
                     return failWithReason(SR.Format(SR.TypeNotSupportedName, info.ManagedType.FullTypeName));
 
                 // task
-                case KnownManagedType.Task when jsType == JSTypeFlags.Promise && jsTypeArguments.Length == 1 && argumentTypes.Length == 0 && jsTypeArguments[0] == JSTypeFlags.Void: return ResolvedGenerator.Resolved(new TaskJSGenerator(MarshalerType.Void));
-                case KnownManagedType.Task when jsType == JSTypeFlags.Promise && jsTypeArguments.Length == 1 && argumentTypes[0] == KnownManagedType.Byte && jsTypeArguments[0] == JSTypeFlags.Number: return ResolvedGenerator.Resolved(new TaskJSGenerator(MarshalerType.Byte));
-                case KnownManagedType.Task when jsType == JSTypeFlags.Promise && jsTypeArguments.Length == 1 && argumentTypes[0] == KnownManagedType.Boolean && jsTypeArguments[0] == JSTypeFlags.Boolean: return ResolvedGenerator.Resolved(new TaskJSGenerator(MarshalerType.Boolean));
-                case KnownManagedType.Task when jsType == JSTypeFlags.Promise && jsTypeArguments.Length == 1 && argumentTypes[0] == KnownManagedType.Char && jsTypeArguments[0] == JSTypeFlags.String: return ResolvedGenerator.Resolved(new TaskJSGenerator(MarshalerType.Char));
-                case KnownManagedType.Task when jsType == JSTypeFlags.Promise && jsTypeArguments.Length == 1 && argumentTypes[0] == KnownManagedType.Int16 && jsTypeArguments[0] == JSTypeFlags.Number: return ResolvedGenerator.Resolved(new TaskJSGenerator(MarshalerType.Int16));
-                case KnownManagedType.Task when jsType == JSTypeFlags.Promise && jsTypeArguments.Length == 1 && argumentTypes[0] == KnownManagedType.Int32 && jsTypeArguments[0] == JSTypeFlags.Number: return ResolvedGenerator.Resolved(new TaskJSGenerator(MarshalerType.Int32));
-                case KnownManagedType.Task when jsType == JSTypeFlags.Promise && jsTypeArguments.Length == 1 && argumentTypes[0] == KnownManagedType.Int64 && jsTypeArguments[0] == JSTypeFlags.Number: return ResolvedGenerator.Resolved(new TaskJSGenerator(MarshalerType.Int52));
-                case KnownManagedType.Task when jsType == JSTypeFlags.Promise && jsTypeArguments.Length == 1 && argumentTypes[0] == KnownManagedType.Int64 && jsTypeArguments[0] == JSTypeFlags.BigInt: return ResolvedGenerator.Resolved(new TaskJSGenerator(MarshalerType.BigInt64));
-                case KnownManagedType.Task when jsType == JSTypeFlags.Promise && jsTypeArguments.Length == 1 && argumentTypes[0] == KnownManagedType.IntPtr && jsTypeArguments[0] == JSTypeFlags.Number: return ResolvedGenerator.Resolved(new TaskJSGenerator(MarshalerType.IntPtr));
-                case KnownManagedType.Task when jsType == JSTypeFlags.Promise && jsTypeArguments.Length == 1 && argumentTypes[0] == KnownManagedType.Double && jsTypeArguments[0] == JSTypeFlags.Number: return ResolvedGenerator.Resolved(new TaskJSGenerator(MarshalerType.Double));
-                case KnownManagedType.Task when jsType == JSTypeFlags.Promise && jsTypeArguments.Length == 1 && argumentTypes[0] == KnownManagedType.Single && jsTypeArguments[0] == JSTypeFlags.Number: return ResolvedGenerator.Resolved(new TaskJSGenerator(MarshalerType.Single));
-                case KnownManagedType.Task when jsType == JSTypeFlags.Promise && jsTypeArguments.Length == 1 && argumentTypes[0] == KnownManagedType.JSObject && jsTypeArguments[0] == JSTypeFlags.Object: return ResolvedGenerator.Resolved(new TaskJSGenerator(MarshalerType.JSObject));
-                case KnownManagedType.Task when jsType == JSTypeFlags.Promise && jsTypeArguments.Length == 1 && argumentTypes[0] == KnownManagedType.String && jsTypeArguments[0] == JSTypeFlags.String: return ResolvedGenerator.Resolved(new TaskJSGenerator(MarshalerType.String));
-                case KnownManagedType.Task when jsType == JSTypeFlags.Promise && jsTypeArguments.Length == 1 && argumentTypes[0] == KnownManagedType.Exception && jsTypeArguments[0] == JSTypeFlags.Error: return ResolvedGenerator.Resolved(new TaskJSGenerator(MarshalerType.Exception));
-                case KnownManagedType.Task when jsType == JSTypeFlags.Promise && jsTypeArguments.Length == 1 && argumentTypes[0] == KnownManagedType.DateTime && jsTypeArguments[0] == JSTypeFlags.Date: return ResolvedGenerator.Resolved(new TaskJSGenerator(MarshalerType.DateTime));
-                case KnownManagedType.Task when jsType == JSTypeFlags.Promise && jsTypeArguments.Length == 1 && argumentTypes[0] == KnownManagedType.DateTimeOffset && jsTypeArguments[0] == JSTypeFlags.Date: return ResolvedGenerator.Resolved(new TaskJSGenerator(MarshalerType.DateTimeOffset));
-                case KnownManagedType.Task when jsType == JSTypeFlags.Promise && jsTypeArguments.Length == 1 && argumentTypes[0] == KnownManagedType.Object && jsTypeArguments[0] == JSTypeFlags.Any: return ResolvedGenerator.Resolved(new TaskJSGenerator(MarshalerType.Object));
+                case KnownManagedType.Task when jsType == JSTypeFlags.Promise && jsTypeArguments.Length == 1 && argumentTypes.Length == 0 && jsTypeArguments[0] == JSTypeFlags.Void: return ResolvedGenerator.Resolved(new TaskJSGenerator(info, MarshalerType.Void));
+                case KnownManagedType.Task when jsType == JSTypeFlags.Promise && jsTypeArguments.Length == 1 && argumentTypes[0] == KnownManagedType.Byte && jsTypeArguments[0] == JSTypeFlags.Number: return ResolvedGenerator.Resolved(new TaskJSGenerator(info, MarshalerType.Byte));
+                case KnownManagedType.Task when jsType == JSTypeFlags.Promise && jsTypeArguments.Length == 1 && argumentTypes[0] == KnownManagedType.Boolean && jsTypeArguments[0] == JSTypeFlags.Boolean: return ResolvedGenerator.Resolved(new TaskJSGenerator(info, MarshalerType.Boolean));
+                case KnownManagedType.Task when jsType == JSTypeFlags.Promise && jsTypeArguments.Length == 1 && argumentTypes[0] == KnownManagedType.Char && jsTypeArguments[0] == JSTypeFlags.String: return ResolvedGenerator.Resolved(new TaskJSGenerator(info, MarshalerType.Char));
+                case KnownManagedType.Task when jsType == JSTypeFlags.Promise && jsTypeArguments.Length == 1 && argumentTypes[0] == KnownManagedType.Int16 && jsTypeArguments[0] == JSTypeFlags.Number: return ResolvedGenerator.Resolved(new TaskJSGenerator(info, MarshalerType.Int16));
+                case KnownManagedType.Task when jsType == JSTypeFlags.Promise && jsTypeArguments.Length == 1 && argumentTypes[0] == KnownManagedType.Int32 && jsTypeArguments[0] == JSTypeFlags.Number: return ResolvedGenerator.Resolved(new TaskJSGenerator(info, MarshalerType.Int32));
+                case KnownManagedType.Task when jsType == JSTypeFlags.Promise && jsTypeArguments.Length == 1 && argumentTypes[0] == KnownManagedType.Int64 && jsTypeArguments[0] == JSTypeFlags.Number: return ResolvedGenerator.Resolved(new TaskJSGenerator(info, MarshalerType.Int52));
+                case KnownManagedType.Task when jsType == JSTypeFlags.Promise && jsTypeArguments.Length == 1 && argumentTypes[0] == KnownManagedType.Int64 && jsTypeArguments[0] == JSTypeFlags.BigInt: return ResolvedGenerator.Resolved(new TaskJSGenerator(info, MarshalerType.BigInt64));
+                case KnownManagedType.Task when jsType == JSTypeFlags.Promise && jsTypeArguments.Length == 1 && argumentTypes[0] == KnownManagedType.IntPtr && jsTypeArguments[0] == JSTypeFlags.Number: return ResolvedGenerator.Resolved(new TaskJSGenerator(info, MarshalerType.IntPtr));
+                case KnownManagedType.Task when jsType == JSTypeFlags.Promise && jsTypeArguments.Length == 1 && argumentTypes[0] == KnownManagedType.Double && jsTypeArguments[0] == JSTypeFlags.Number: return ResolvedGenerator.Resolved(new TaskJSGenerator(info, MarshalerType.Double));
+                case KnownManagedType.Task when jsType == JSTypeFlags.Promise && jsTypeArguments.Length == 1 && argumentTypes[0] == KnownManagedType.Single && jsTypeArguments[0] == JSTypeFlags.Number: return ResolvedGenerator.Resolved(new TaskJSGenerator(info, MarshalerType.Single));
+                case KnownManagedType.Task when jsType == JSTypeFlags.Promise && jsTypeArguments.Length == 1 && argumentTypes[0] == KnownManagedType.JSObject && jsTypeArguments[0] == JSTypeFlags.Object: return ResolvedGenerator.Resolved(new TaskJSGenerator(info, MarshalerType.JSObject));
+                case KnownManagedType.Task when jsType == JSTypeFlags.Promise && jsTypeArguments.Length == 1 && argumentTypes[0] == KnownManagedType.String && jsTypeArguments[0] == JSTypeFlags.String: return ResolvedGenerator.Resolved(new TaskJSGenerator(info, MarshalerType.String));
+                case KnownManagedType.Task when jsType == JSTypeFlags.Promise && jsTypeArguments.Length == 1 && argumentTypes[0] == KnownManagedType.Exception && jsTypeArguments[0] == JSTypeFlags.Error: return ResolvedGenerator.Resolved(new TaskJSGenerator(info, MarshalerType.Exception));
+                case KnownManagedType.Task when jsType == JSTypeFlags.Promise && jsTypeArguments.Length == 1 && argumentTypes[0] == KnownManagedType.DateTime && jsTypeArguments[0] == JSTypeFlags.Date: return ResolvedGenerator.Resolved(new TaskJSGenerator(info, MarshalerType.DateTime));
+                case KnownManagedType.Task when jsType == JSTypeFlags.Promise && jsTypeArguments.Length == 1 && argumentTypes[0] == KnownManagedType.DateTimeOffset && jsTypeArguments[0] == JSTypeFlags.Date: return ResolvedGenerator.Resolved(new TaskJSGenerator(info, MarshalerType.DateTimeOffset));
+                case KnownManagedType.Task when jsType == JSTypeFlags.Promise && jsTypeArguments.Length == 1 && argumentTypes[0] == KnownManagedType.Object && jsTypeArguments[0] == JSTypeFlags.Any: return ResolvedGenerator.Resolved(new TaskJSGenerator(info, MarshalerType.Object));
 
                 // task missing
-                case KnownManagedType.Task when jsType == JSTypeFlags.Missing && argumentTypes.Length == 0: return ResolvedGenerator.Resolved(new TaskJSGenerator(MarshalerType.Void));
-                case KnownManagedType.Task when argumentTypes[0] == KnownManagedType.Boolean && jsType == JSTypeFlags.Missing: return ResolvedGenerator.Resolved(new TaskJSGenerator(MarshalerType.Boolean));
-                case KnownManagedType.Task when argumentTypes[0] == KnownManagedType.Byte && jsType == JSTypeFlags.Missing: return ResolvedGenerator.Resolved(new TaskJSGenerator(MarshalerType.Byte));
-                case KnownManagedType.Task when argumentTypes[0] == KnownManagedType.Char && jsType == JSTypeFlags.Missing: return ResolvedGenerator.Resolved(new TaskJSGenerator(MarshalerType.Char));
-                case KnownManagedType.Task when argumentTypes[0] == KnownManagedType.Int16 && jsType == JSTypeFlags.Missing: return ResolvedGenerator.Resolved(new TaskJSGenerator(MarshalerType.Int16));
-                case KnownManagedType.Task when argumentTypes[0] == KnownManagedType.Int32 && jsType == JSTypeFlags.Missing: return ResolvedGenerator.Resolved(new TaskJSGenerator(MarshalerType.Int32));
-                case KnownManagedType.Task when argumentTypes[0] == KnownManagedType.Single && jsType == JSTypeFlags.Missing: return ResolvedGenerator.Resolved(new TaskJSGenerator(MarshalerType.Single));
-                case KnownManagedType.Task when argumentTypes[0] == KnownManagedType.Double && jsType == JSTypeFlags.Missing: return ResolvedGenerator.Resolved(new TaskJSGenerator(MarshalerType.Double));
-                case KnownManagedType.Task when argumentTypes[0] == KnownManagedType.IntPtr && jsType == JSTypeFlags.Missing: return ResolvedGenerator.Resolved(new TaskJSGenerator(MarshalerType.IntPtr));
-                case KnownManagedType.Task when argumentTypes[0] == KnownManagedType.JSObject && jsType == JSTypeFlags.Missing: return ResolvedGenerator.Resolved(new TaskJSGenerator(MarshalerType.JSObject));
-                case KnownManagedType.Task when argumentTypes[0] == KnownManagedType.String && jsType == JSTypeFlags.Missing: return ResolvedGenerator.Resolved(new TaskJSGenerator(MarshalerType.String));
-                case KnownManagedType.Task when argumentTypes[0] == KnownManagedType.Exception && jsType == JSTypeFlags.Missing: return ResolvedGenerator.Resolved(new TaskJSGenerator(MarshalerType.Exception));
+                case KnownManagedType.Task when jsType == JSTypeFlags.Missing && argumentTypes.Length == 0: return ResolvedGenerator.Resolved(new TaskJSGenerator(info, MarshalerType.Void));
+                case KnownManagedType.Task when argumentTypes[0] == KnownManagedType.Boolean && jsType == JSTypeFlags.Missing: return ResolvedGenerator.Resolved(new TaskJSGenerator(info, MarshalerType.Boolean));
+                case KnownManagedType.Task when argumentTypes[0] == KnownManagedType.Byte && jsType == JSTypeFlags.Missing: return ResolvedGenerator.Resolved(new TaskJSGenerator(info, MarshalerType.Byte));
+                case KnownManagedType.Task when argumentTypes[0] == KnownManagedType.Char && jsType == JSTypeFlags.Missing: return ResolvedGenerator.Resolved(new TaskJSGenerator(info, MarshalerType.Char));
+                case KnownManagedType.Task when argumentTypes[0] == KnownManagedType.Int16 && jsType == JSTypeFlags.Missing: return ResolvedGenerator.Resolved(new TaskJSGenerator(info, MarshalerType.Int16));
+                case KnownManagedType.Task when argumentTypes[0] == KnownManagedType.Int32 && jsType == JSTypeFlags.Missing: return ResolvedGenerator.Resolved(new TaskJSGenerator(info, MarshalerType.Int32));
+                case KnownManagedType.Task when argumentTypes[0] == KnownManagedType.Single && jsType == JSTypeFlags.Missing: return ResolvedGenerator.Resolved(new TaskJSGenerator(info, MarshalerType.Single));
+                case KnownManagedType.Task when argumentTypes[0] == KnownManagedType.Double && jsType == JSTypeFlags.Missing: return ResolvedGenerator.Resolved(new TaskJSGenerator(info, MarshalerType.Double));
+                case KnownManagedType.Task when argumentTypes[0] == KnownManagedType.IntPtr && jsType == JSTypeFlags.Missing: return ResolvedGenerator.Resolved(new TaskJSGenerator(info, MarshalerType.IntPtr));
+                case KnownManagedType.Task when argumentTypes[0] == KnownManagedType.JSObject && jsType == JSTypeFlags.Missing: return ResolvedGenerator.Resolved(new TaskJSGenerator(info, MarshalerType.JSObject));
+                case KnownManagedType.Task when argumentTypes[0] == KnownManagedType.String && jsType == JSTypeFlags.Missing: return ResolvedGenerator.Resolved(new TaskJSGenerator(info, MarshalerType.String));
+                case KnownManagedType.Task when argumentTypes[0] == KnownManagedType.Exception && jsType == JSTypeFlags.Missing: return ResolvedGenerator.Resolved(new TaskJSGenerator(info, MarshalerType.Exception));
 
                 // task forced
                 case KnownManagedType.Task when argumentTypes[0] == KnownManagedType.Int64 && jsType == JSTypeFlags.Missing:
@@ -206,19 +212,19 @@ namespace Microsoft.Interop.JavaScript
                     return failWithReason(SR.Format(SR.TypeNotSupportedName, info.ManagedType.FullTypeName));
 
                 // array
-                case KnownManagedType.Array when jsType == JSTypeFlags.Array && jsTypeArguments.Length == 1 && argumentTypes[0] == KnownManagedType.Byte && jsTypeArguments[0] == JSTypeFlags.Number: return ResolvedGenerator.Resolved(new ArrayJSGenerator(MarshalerType.Byte));
-                case KnownManagedType.Array when jsType == JSTypeFlags.Array && jsTypeArguments.Length == 1 && argumentTypes[0] == KnownManagedType.String && jsTypeArguments[0] == JSTypeFlags.String: return ResolvedGenerator.Resolved(new ArrayJSGenerator(MarshalerType.String));
-                case KnownManagedType.Array when jsType == JSTypeFlags.Array && jsTypeArguments.Length == 1 && argumentTypes[0] == KnownManagedType.Double && jsTypeArguments[0] == JSTypeFlags.Number: return ResolvedGenerator.Resolved(new ArrayJSGenerator(MarshalerType.Double));
-                case KnownManagedType.Array when jsType == JSTypeFlags.Array && jsTypeArguments.Length == 1 && argumentTypes[0] == KnownManagedType.Int32 && jsTypeArguments[0] == JSTypeFlags.Number: return ResolvedGenerator.Resolved(new ArrayJSGenerator(MarshalerType.Int32));
-                case KnownManagedType.Array when jsType == JSTypeFlags.Array && jsTypeArguments.Length == 1 && argumentTypes[0] == KnownManagedType.JSObject && jsTypeArguments[0] == JSTypeFlags.Object: return ResolvedGenerator.Resolved(new ArrayJSGenerator(MarshalerType.JSObject));
-                case KnownManagedType.Array when jsType == JSTypeFlags.Array && jsTypeArguments.Length == 1 && argumentTypes[0] == KnownManagedType.Object && jsTypeArguments[0] == JSTypeFlags.Any: return ResolvedGenerator.Resolved(new ArrayJSGenerator(MarshalerType.Object));
+                case KnownManagedType.Array when jsType == JSTypeFlags.Array && jsTypeArguments.Length == 1 && argumentTypes[0] == KnownManagedType.Byte && jsTypeArguments[0] == JSTypeFlags.Number: return ResolvedGenerator.Resolved(new ArrayJSGenerator(info, MarshalerType.Byte));
+                case KnownManagedType.Array when jsType == JSTypeFlags.Array && jsTypeArguments.Length == 1 && argumentTypes[0] == KnownManagedType.String && jsTypeArguments[0] == JSTypeFlags.String: return ResolvedGenerator.Resolved(new ArrayJSGenerator(info, MarshalerType.String));
+                case KnownManagedType.Array when jsType == JSTypeFlags.Array && jsTypeArguments.Length == 1 && argumentTypes[0] == KnownManagedType.Double && jsTypeArguments[0] == JSTypeFlags.Number: return ResolvedGenerator.Resolved(new ArrayJSGenerator(info, MarshalerType.Double));
+                case KnownManagedType.Array when jsType == JSTypeFlags.Array && jsTypeArguments.Length == 1 && argumentTypes[0] == KnownManagedType.Int32 && jsTypeArguments[0] == JSTypeFlags.Number: return ResolvedGenerator.Resolved(new ArrayJSGenerator(info, MarshalerType.Int32));
+                case KnownManagedType.Array when jsType == JSTypeFlags.Array && jsTypeArguments.Length == 1 && argumentTypes[0] == KnownManagedType.JSObject && jsTypeArguments[0] == JSTypeFlags.Object: return ResolvedGenerator.Resolved(new ArrayJSGenerator(info, MarshalerType.JSObject));
+                case KnownManagedType.Array when jsType == JSTypeFlags.Array && jsTypeArguments.Length == 1 && argumentTypes[0] == KnownManagedType.Object && jsTypeArguments[0] == JSTypeFlags.Any: return ResolvedGenerator.Resolved(new ArrayJSGenerator(info, MarshalerType.Object));
 
                 // array missing
-                case KnownManagedType.Array when argumentTypes[0] == KnownManagedType.Byte && jsType == JSTypeFlags.Missing: return ResolvedGenerator.Resolved(new ArrayJSGenerator(MarshalerType.Byte));
-                case KnownManagedType.Array when argumentTypes[0] == KnownManagedType.String && jsType == JSTypeFlags.Missing: return ResolvedGenerator.Resolved(new ArrayJSGenerator(MarshalerType.String));
-                case KnownManagedType.Array when argumentTypes[0] == KnownManagedType.Double && jsType == JSTypeFlags.Missing: return ResolvedGenerator.Resolved(new ArrayJSGenerator(MarshalerType.Double));
-                case KnownManagedType.Array when argumentTypes[0] == KnownManagedType.Int32 && jsType == JSTypeFlags.Missing: return ResolvedGenerator.Resolved(new ArrayJSGenerator(MarshalerType.Int32));
-                case KnownManagedType.Array when argumentTypes[0] == KnownManagedType.JSObject && jsType == JSTypeFlags.Missing: return ResolvedGenerator.Resolved(new ArrayJSGenerator(MarshalerType.JSObject));
+                case KnownManagedType.Array when argumentTypes[0] == KnownManagedType.Byte && jsType == JSTypeFlags.Missing: return ResolvedGenerator.Resolved(new ArrayJSGenerator(info, MarshalerType.Byte));
+                case KnownManagedType.Array when argumentTypes[0] == KnownManagedType.String && jsType == JSTypeFlags.Missing: return ResolvedGenerator.Resolved(new ArrayJSGenerator(info, MarshalerType.String));
+                case KnownManagedType.Array when argumentTypes[0] == KnownManagedType.Double && jsType == JSTypeFlags.Missing: return ResolvedGenerator.Resolved(new ArrayJSGenerator(info, MarshalerType.Double));
+                case KnownManagedType.Array when argumentTypes[0] == KnownManagedType.Int32 && jsType == JSTypeFlags.Missing: return ResolvedGenerator.Resolved(new ArrayJSGenerator(info, MarshalerType.Int32));
+                case KnownManagedType.Array when argumentTypes[0] == KnownManagedType.JSObject && jsType == JSTypeFlags.Missing: return ResolvedGenerator.Resolved(new ArrayJSGenerator(info, MarshalerType.JSObject));
                 case KnownManagedType.Array when jsType == JSTypeFlags.Array && jsTypeArguments.Length == 1:
                     return failWithReason(SR.Format(SR.TypeNotSupportedName, info.ManagedType.FullTypeName));
 
@@ -229,9 +235,9 @@ namespace Microsoft.Interop.JavaScript
                 // span view
                 case KnownManagedType.Span when jsType == JSTypeFlags.MemoryView && jsTypeArguments.Length != 0:
                     return failWithReason(null);
-                case KnownManagedType.Span when jsType == JSTypeFlags.MemoryView && argumentTypes[0] == KnownManagedType.Byte: return ResolvedGenerator.Resolved(new SpanJSGenerator(MarshalerType.Byte));
-                case KnownManagedType.Span when jsType == JSTypeFlags.MemoryView && argumentTypes[0] == KnownManagedType.Int32: return ResolvedGenerator.Resolved(new SpanJSGenerator(MarshalerType.Int32));
-                case KnownManagedType.Span when jsType == JSTypeFlags.MemoryView && argumentTypes[0] == KnownManagedType.Double: return ResolvedGenerator.Resolved(new SpanJSGenerator(MarshalerType.Double));
+                case KnownManagedType.Span when jsType == JSTypeFlags.MemoryView && argumentTypes[0] == KnownManagedType.Byte: return ResolvedGenerator.Resolved(new SpanJSGenerator(info, MarshalerType.Byte));
+                case KnownManagedType.Span when jsType == JSTypeFlags.MemoryView && argumentTypes[0] == KnownManagedType.Int32: return ResolvedGenerator.Resolved(new SpanJSGenerator(info, MarshalerType.Int32));
+                case KnownManagedType.Span when jsType == JSTypeFlags.MemoryView && argumentTypes[0] == KnownManagedType.Double: return ResolvedGenerator.Resolved(new SpanJSGenerator(info, MarshalerType.Double));
 
                 case KnownManagedType.Span when jsType == JSTypeFlags.MemoryView:
                     return failWithReason(SR.Format(SR.TypeNotSupportedName, info.ManagedType.FullTypeName));
@@ -245,9 +251,9 @@ namespace Microsoft.Interop.JavaScript
                 // segment view
                 case KnownManagedType.ArraySegment when jsType == JSTypeFlags.MemoryView && jsTypeArguments.Length != 0:
                     return failWithReason(null);
-                case KnownManagedType.ArraySegment when jsType == JSTypeFlags.MemoryView && argumentTypes[0] == KnownManagedType.Byte: return ResolvedGenerator.Resolved(new ArraySegmentJSGenerator(MarshalerType.Byte));
-                case KnownManagedType.ArraySegment when jsType == JSTypeFlags.MemoryView && argumentTypes[0] == KnownManagedType.Int32: return ResolvedGenerator.Resolved(new ArraySegmentJSGenerator(MarshalerType.Int32));
-                case KnownManagedType.ArraySegment when jsType == JSTypeFlags.MemoryView && argumentTypes[0] == KnownManagedType.Double: return ResolvedGenerator.Resolved(new ArraySegmentJSGenerator(MarshalerType.Double));
+                case KnownManagedType.ArraySegment when jsType == JSTypeFlags.MemoryView && argumentTypes[0] == KnownManagedType.Byte: return ResolvedGenerator.Resolved(new ArraySegmentJSGenerator(info, MarshalerType.Byte));
+                case KnownManagedType.ArraySegment when jsType == JSTypeFlags.MemoryView && argumentTypes[0] == KnownManagedType.Int32: return ResolvedGenerator.Resolved(new ArraySegmentJSGenerator(info, MarshalerType.Int32));
+                case KnownManagedType.ArraySegment when jsType == JSTypeFlags.MemoryView && argumentTypes[0] == KnownManagedType.Double: return ResolvedGenerator.Resolved(new ArraySegmentJSGenerator(info, MarshalerType.Double));
                 case KnownManagedType.ArraySegment when jsType == JSTypeFlags.MemoryView:
                     return failWithReason(SR.Format(SR.TypeNotSupportedName, info.ManagedType.FullTypeName));
 
@@ -284,7 +290,7 @@ namespace Microsoft.Interop.JavaScript
                     {
                         return failWithReason(SR.FuncTooManyArgs);
                     }
-                    return ResolvedGenerator.Resolved(new FuncJSGenerator(marshaledType == KnownManagedType.Action, argsMarshallerTypes));
+                    return ResolvedGenerator.Resolved(new FuncJSGenerator(info, marshaledType == KnownManagedType.Action, argsMarshallerTypes));
                 case KnownManagedType.Action when jsType == JSTypeFlags.Function:
                 case KnownManagedType.Function when jsType == JSTypeFlags.Function:
                     return failWithReason(SR.FuncWrongArgumentCount);

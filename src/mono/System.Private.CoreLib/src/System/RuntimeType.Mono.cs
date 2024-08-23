@@ -1,15 +1,15 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Reflection;
-using System.Globalization;
-using System.Threading;
 using System.Collections.Generic;
-using System.Runtime.Serialization;
-using System.Runtime.CompilerServices;
-using System.Diagnostics.CodeAnalysis;
-using System.Runtime.InteropServices;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
+using System.Globalization;
+using System.Reflection;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using System.Runtime.Serialization;
+using System.Threading;
 
 namespace System
 {
@@ -37,7 +37,7 @@ namespace System
                               FormatFullInst
     }
 
-    internal partial class RuntimeType
+    internal unsafe partial class RuntimeType
     {
         #region Definitions
 
@@ -47,6 +47,94 @@ namespace System
             CaseSensitive,
             CaseInsensitive,
             HandleToInfo
+        }
+
+        // Helper to build lists of MemberInfos. Special cased to avoid allocations for lists of one element.
+        private struct ListBuilder<T> where T : class?
+        {
+            private T[]? _items;
+            private T _item;
+            private int _count;
+            private int _capacity;
+
+            public ListBuilder(int capacity)
+            {
+                _items = null;
+                _item = null!;
+                _count = 0;
+                _capacity = capacity;
+            }
+
+            public T this[int index]
+            {
+                get
+                {
+                    Debug.Assert(index < Count);
+                    return (_items != null) ? _items[index] : _item;
+                }
+            }
+
+            public T[] ToArray()
+            {
+                if (_count == 0)
+                    return Array.Empty<T>();
+                if (_count == 1)
+                    return new T[1] { _item };
+
+                Array.Resize(ref _items, _count);
+                _capacity = _count;
+                return _items;
+            }
+
+            public void CopyTo(object?[] array, int index)
+            {
+                if (_count == 0)
+                    return;
+
+                if (_count == 1)
+                {
+                    array[index] = _item;
+                    return;
+                }
+
+                Array.Copy(_items!, 0, array, index, _count);
+            }
+
+            public int Count
+            {
+                get
+                {
+                    return _count;
+                }
+            }
+
+            public void Add(T item)
+            {
+                if (_count == 0)
+                {
+                    _item = item;
+                }
+                else
+                {
+                    if (_count == 1)
+                    {
+                        if (_capacity < 2)
+                            _capacity = 4;
+                        _items = new T[_capacity];
+                        _items[0] = _item;
+                    }
+                    else
+                    if (_capacity == _count)
+                    {
+                        int newCapacity = 2 * _capacity;
+                        Array.Resize(ref _items, newCapacity);
+                        _capacity = newCapacity;
+                    }
+
+                    _items![_count] = item;
+                }
+                _count++;
+            }
         }
 
         #endregion
@@ -710,7 +798,7 @@ namespace System
                     }
 
                     // All the methods have the exact same name and sig so return the most derived one.
-                    return System.DefaultBinder.FindMostDerivedNewSlotMeth(candidates.AsSpan());
+                    return System.DefaultBinder.FindMostDerivedNewSlotMeth(candidates.ToArray(), candidates.Count) as MethodInfo;
                 }
             }
 
@@ -739,7 +827,7 @@ namespace System
             }
 
             if ((bindingAttr & BindingFlags.ExactBinding) != 0)
-                return System.DefaultBinder.ExactBinding(candidates.AsSpan(), types);
+                return System.DefaultBinder.ExactBinding(candidates.ToArray(), types) as ConstructorInfo;
 
             binder ??= DefaultBinder;
 
@@ -1174,8 +1262,8 @@ namespace System
                 return cache.CorElementType;
 
             var type = this;
-            cache.CorElementType = RuntimeTypeHandle.GetCorElementType (new QCallTypeHandle(ref type));
-            Interlocked.MemoryBarrier ();
+            cache.CorElementType = RuntimeTypeHandle.GetCorElementType(new QCallTypeHandle(ref type));
+            Interlocked.MemoryBarrier();
             UpdateCached(TypeCacheEntries.CorElementType);
             return cache.CorElementType;
         }
@@ -1188,7 +1276,7 @@ namespace System
 
             var type = this;
             cache.TypeAttributes = RuntimeTypeHandle.GetAttributes(new QCallTypeHandle(ref type));
-            Interlocked.MemoryBarrier ();
+            Interlocked.MemoryBarrier();
             UpdateCached(TypeCacheEntries.TypeAttributes);
             return cache.TypeAttributes;
         }
@@ -1519,7 +1607,7 @@ namespace System
             return CreateInstanceMono(!publicOnly, wrapExceptions);
         }
 
-        // Specialized version of the above for Activator.CreateInstance<T>()
+        // Specialized version of CreateInstanceDefaultCtor() for Activator.CreateInstance<T>()
         [DebuggerStepThroughAttribute]
         [Diagnostics.DebuggerHidden]
         internal object? CreateInstanceOfT()
@@ -1527,6 +1615,43 @@ namespace System
             return CreateInstanceMono(false, true);
         }
 
+        // Specialized version of CreateInstanceDefaultCtor() for Activator.CreateInstance<T>()
+        [DebuggerStepThroughAttribute]
+        [Diagnostics.DebuggerHidden]
+        internal void CallDefaultStructConstructor(ref byte value)
+        {
+            Debug.Assert(IsValueType);
+
+            RuntimeConstructorInfo? ctor = GetDefaultConstructor();
+            if (ctor == null)
+            {
+                return;
+            }
+
+            if (!ctor.IsPublic)
+            {
+                throw new MissingMethodException(SR.Format(SR.Arg_NoDefCTor, this));
+            }
+
+            // Important: when using the interpreter, GetFunctionPointer is an intrinsic that
+            // returns a function descriptor suitable for casting to a managed function pointer.
+            // Other ways of obtaining a function pointer might not work.
+            IntPtr ptr = ctor.MethodHandle.GetFunctionPointer();
+            delegate*<ref byte, void> valueCtor = (delegate*<ref byte, void>)ptr;
+            if (valueCtor == null)
+            {
+                throw new ExecutionEngineException();
+            }
+
+            try
+            {
+                valueCtor(ref value);
+            }
+            catch (Exception e)
+            {
+                throw new TargetInvocationException(e);
+            }
+        }
         #endregion
 
         private TypeCache? cache;
@@ -1571,7 +1696,7 @@ namespace System
             TypeCache cache = Cache;
             int oldCached = cache.Cached;
             int newCached = oldCached | (int)entry;
-            // This CAS will ensure ordering with the the store into the cache
+            // This CAS will ensure ordering with the store into the cache
             // If this fails, we will just take the slowpath again
             Interlocked.CompareExchange(ref cache.Cached, newCached, oldCached);
         }
@@ -1606,7 +1731,7 @@ namespace System
 
             if (ctors.Count == 1)
                 cache.default_ctor = ctor = (RuntimeConstructorInfo)ctors[0];
-            Interlocked.MemoryBarrier ();
+            Interlocked.MemoryBarrier();
 
             // Note down even if we found no constructors
             UpdateCached(TypeCacheEntries.DefaultCtor);
@@ -2130,16 +2255,6 @@ namespace System
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private static extern object CreateInstanceInternal(QCallTypeHandle type);
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern void AllocateValueType(QCallTypeHandle type, object? value, ObjectHandleOnStack res);
-
-        internal static object AllocateValueType(RuntimeType type, object? value)
-        {
-            object? res = null;
-            AllocateValueType(new QCallTypeHandle(ref type), value, ObjectHandleOnStack.Create(ref res));
-            return res!;
-        }
-
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private static extern void GetDeclaringMethod(QCallTypeHandle type, ObjectHandleOnStack res);
 
@@ -2379,7 +2494,7 @@ namespace System
                     for (int i = 1; i < typeNum + 1; i++)
                     {
                         var typeHandle = new RuntimeTypeHandle(arrayOfTypeHandles[i]);
-                        fPtrReturnAndParameterTypes[i-1] = (RuntimeType)GetTypeFromHandle(typeHandle)!;
+                        fPtrReturnAndParameterTypes[i - 1] = (RuntimeType)GetTypeFromHandle(typeHandle)!;
                     }
                 }
                 return fPtrReturnAndParameterTypes;

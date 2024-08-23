@@ -10,7 +10,6 @@ namespace System.Threading.Tasks.Tests
     public static class RangePartitionerTests
     {
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/91541", typeof(PlatformDetection), nameof(PlatformDetection.IsWasmThreadingSupported))]
         public static void RunPartitionerStaticTest_SingleChunking()
         {
             CountdownEvent cde = new CountdownEvent(2);

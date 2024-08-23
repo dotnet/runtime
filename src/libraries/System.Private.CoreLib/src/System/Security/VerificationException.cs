@@ -18,13 +18,13 @@ namespace System.Security
         }
 
         public VerificationException(string? message)
-            : base(message)
+            : base(message ?? SR.Verification_Exception)
         {
             HResult = HResults.COR_E_VERIFICATION;
         }
 
         public VerificationException(string? message, Exception? innerException)
-            : base(message, innerException)
+            : base(message ?? SR.Verification_Exception, innerException)
         {
             HResult = HResults.COR_E_VERIFICATION;
         }

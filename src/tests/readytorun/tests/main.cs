@@ -70,6 +70,16 @@ public class Program
         }
     }
 
+    static void TestThrowHelpers()
+    {
+        try
+        {
+            MyClass.ThrowIOE();
+            // JIT is not allowed to assume Throw() will always be "no-return"
+        }
+        catch (InvalidOperationException) {}
+    }
+
     static void TestMovedVirtualMethods()
     {
         var o = new MyChildClass();
@@ -461,6 +471,9 @@ public class Program
         TestVirtualMethodCalls();
         Console.WriteLine("TestMovedVirtualMethod");
         TestMovedVirtualMethods();
+
+        Console.WriteLine("TestThrowHelpers");
+        TestThrowHelpers();
 
         Console.WriteLine("TestConstrainedMethodCalls");
         TestConstrainedMethodCalls();

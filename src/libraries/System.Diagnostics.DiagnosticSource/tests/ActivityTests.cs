@@ -1598,6 +1598,131 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
+        public void AddLinkTest()
+        {
+            ActivityContext c1 = new ActivityContext(ActivityTraceId.CreateRandom(), ActivitySpanId.CreateRandom(), ActivityTraceFlags.None);
+            ActivityContext c2 = new ActivityContext(ActivityTraceId.CreateRandom(), ActivitySpanId.CreateRandom(), ActivityTraceFlags.None);
+
+            ActivityLink l1 = new ActivityLink(c1);
+            ActivityLink l2 = new ActivityLink(c2, new ActivityTagsCollection()
+            {
+                new KeyValuePair<string, object?>("foo", 99)
+            });
+
+            Activity activity = new Activity("LinkTest");
+            Assert.True(ReferenceEquals(activity, activity.AddLink(l1)));
+            Assert.True(ReferenceEquals(activity, activity.AddLink(l2)));
+
+            // Add a duplicate of l1. The implementation doesn't check for duplicates.
+            Assert.True(ReferenceEquals(activity, activity.AddLink(l1)));
+
+            ActivityLink[] links = activity.Links.ToArray();
+            Assert.Equal(3, links.Length);
+            Assert.Equal(c1, links[0].Context);
+            Assert.Equal(c2, links[1].Context);
+            Assert.Equal(c1, links[2].Context);
+            KeyValuePair<string, object> tag = links[1].Tags.Single();
+            Assert.Equal("foo", tag.Key);
+            Assert.Equal(99, tag.Value);
+        }
+
+        [Fact]
+        public void AddExceptionTest()
+        {
+            using ActivitySource aSource = new ActivitySource("AddExceptionTest");
+
+            ActivityListener listener = new ActivityListener();
+            listener.ShouldListenTo = (activitySource) => object.ReferenceEquals(activitySource, aSource);
+            listener.Sample = (ref ActivityCreationOptions<ActivityContext> options) => ActivitySamplingResult.AllData;
+            ActivitySource.AddActivityListener(listener);
+
+            using Activity? activity = aSource.StartActivity("Activity1");
+            Assert.NotNull(activity);
+            Assert.Empty(activity.Events);
+
+            const string ExceptionEventName = "exception";
+            const string ExceptionMessageTag = "exception.message";
+            const string ExceptionStackTraceTag = "exception.stacktrace";
+            const string ExceptionTypeTag = "exception.type";
+
+            Exception exception = new ArgumentOutOfRangeException("Some message");
+            activity.AddException(exception);
+            List<ActivityEvent> events = activity.Events.ToList();
+            Assert.Equal(1, events.Count);
+            Assert.Equal(ExceptionEventName, events[0].Name);
+            Assert.Equal(new TagList { { ExceptionMessageTag, exception.Message}, { ExceptionStackTraceTag, exception.ToString()}, { ExceptionTypeTag, exception.GetType().ToString() } }, events[0].Tags);
+
+            try { throw new InvalidOperationException("Some other message"); } catch (Exception e) { exception = e; }
+            activity.AddException(exception);
+            events = activity.Events.ToList();
+            Assert.Equal(2, events.Count);
+            Assert.Equal(ExceptionEventName, events[1].Name);
+            Assert.Equal(new TagList { { ExceptionMessageTag, exception.Message}, { ExceptionStackTraceTag, exception.ToString()}, { ExceptionTypeTag, exception.GetType().ToString() } }, events[1].Tags);
+
+            listener.ExceptionRecorder = (Activity activity, Exception exception, ref TagList theTags) => theTags.Add("foo", "bar");
+            activity.AddException(exception, new TagList { { "hello", "world" } });
+            events = activity.Events.ToList();
+            Assert.Equal(3, events.Count);
+            Assert.Equal(ExceptionEventName, events[2].Name);
+            Assert.Equal(new TagList
+                            {
+                                { "hello", "world" },
+                                { "foo", "bar" },
+                                { ExceptionMessageTag, exception.Message },
+                                { ExceptionStackTraceTag, exception.ToString() },
+                                { ExceptionTypeTag, exception.GetType().ToString() }
+                            },
+                            events[2].Tags);
+
+            listener.ExceptionRecorder = (Activity activity, Exception exception, ref TagList theTags) =>
+                                            {
+                                                theTags.Add("exception.escaped", "true");
+                                                theTags.Add("exception.message", "Overridden message");
+                                                theTags.Add("exception.stacktrace", "Overridden stacktrace");
+                                                theTags.Add("exception.type", "Overridden type");
+                                            };
+            activity.AddException(exception, new TagList { { "hello", "world" } });
+            events = activity.Events.ToList();
+            Assert.Equal(4, events.Count);
+            Assert.Equal(ExceptionEventName, events[3].Name);
+            Assert.Equal(new TagList
+                            {
+                                { "hello", "world" },
+                                { "exception.escaped", "true" },
+                                { "exception.message", "Overridden message" },
+                                { "exception.stacktrace", "Overridden stacktrace" },
+                                { "exception.type", "Overridden type" }
+                            },
+                            events[3].Tags);
+
+            ActivityListener listener1 = new ActivityListener();
+            listener1.ShouldListenTo = (activitySource) => object.ReferenceEquals(activitySource, aSource);
+            listener1.Sample = (ref ActivityCreationOptions<ActivityContext> options) => ActivitySamplingResult.AllData;
+            ActivitySource.AddActivityListener(listener1);
+            listener1.ExceptionRecorder = (Activity activity, Exception exception, ref TagList theTags) =>
+                                            {
+                                                theTags.Remove(new KeyValuePair<string, object?>("exception.message", "Overridden message"));
+                                                theTags.Remove(new KeyValuePair<string, object?>("exception.stacktrace", "Overridden stacktrace"));
+                                                theTags.Remove(new KeyValuePair<string, object?>("exception.type", "Overridden type"));
+                                                theTags.Add("secondListener", "win");
+                                            };
+            activity.AddException(exception, new TagList { { "hello", "world" } });
+            events = activity.Events.ToList();
+            Assert.Equal(5, events.Count);
+            Assert.Equal(ExceptionEventName, events[4].Name);
+            Assert.Equal(new TagList
+                            {
+                                { "hello", "world" },
+                                { "exception.escaped", "true" },
+                                { "secondListener", "win" },
+                                { "exception.message", exception.Message },
+                                { "exception.stacktrace", exception.ToString() },
+                                { "exception.type", exception.GetType().ToString() },
+                            },
+                            events[4].Tags);
+        }
+
+        [Fact]
         public void TestIsAllDataRequested()
         {
             // Activity constructor always set IsAllDataRequested to true for compatibility.
@@ -2163,12 +2288,14 @@ namespace System.Diagnostics.Tests
 
             var context1 = new ActivityContext(ActivityTraceId.CreateRandom(), default, ActivityTraceFlags.None);
             var context2 = new ActivityContext(ActivityTraceId.CreateRandom(), default, ActivityTraceFlags.None);
+            var context3 = new ActivityContext(ActivityTraceId.CreateRandom(), default, ActivityTraceFlags.None);
 
             a = source.CreateActivity(
                 name: "Root",
                 kind: ActivityKind.Internal,
                 parentContext: default,
                 links: new[] { new ActivityLink(context1), new ActivityLink(context2) });
+            a.AddLink(new ActivityLink(context3));
 
             Assert.NotNull(a);
 
@@ -2181,6 +2308,9 @@ namespace System.Diagnostics.Tests
             values.Add(enumerator.Current);
             Assert.True(enumerator.MoveNext());
             Assert.Equal(context2.TraceId, enumerator.Current.Context.TraceId);
+            values.Add(enumerator.Current);
+            Assert.True(enumerator.MoveNext());
+            Assert.Equal(context3.TraceId, enumerator.Current.Context.TraceId);
             values.Add(enumerator.Current);
             Assert.False(enumerator.MoveNext());
 

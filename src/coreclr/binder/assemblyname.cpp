@@ -11,10 +11,10 @@
 //
 // ============================================================
 
+#include "common.h"
 #include "assemblyname.hpp"
 #include "assemblybindercommon.hpp"
 
-#include "common.h"
 #include "utils.hpp"
 
 #include "textualidentityparser.hpp"
@@ -25,7 +25,7 @@
 
 namespace
 {
-    // See https://docs.microsoft.com/dotnet/framework/reflection-and-codedom/specifying-fully-qualified-type-names#specifying-assembly-names
+    // See https://learn.microsoft.com/dotnet/framework/reflection-and-codedom/specifying-fully-qualified-type-names#specifying-assembly-names
     const WCHAR* s_neutralCulture = W("neutral");
 }
 

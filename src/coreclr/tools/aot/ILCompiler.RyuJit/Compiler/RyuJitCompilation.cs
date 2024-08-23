@@ -3,12 +3,14 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
 
 using ILCompiler.DependencyAnalysis;
 using ILCompiler.DependencyAnalysisFramework;
+using ILCompiler.ObjectWriter;
 using ILLink.Shared;
 
 using Internal.IL;
@@ -36,7 +38,6 @@ namespace ILCompiler
             ILProvider ilProvider,
             DebugInformationProvider debugInformationProvider,
             Logger logger,
-            DevirtualizationManager devirtualizationManager,
             IInliningPolicy inliningPolicy,
             InstructionSetSupport instructionSetSupport,
             ProfileDataManager profileDataManager,
@@ -44,7 +45,7 @@ namespace ILCompiler
             ReadOnlyFieldPolicy readOnlyFieldPolicy,
             RyuJitCompilationOptions options,
             int parallelism)
-            : base(dependencyGraph, nodeFactory, roots, ilProvider, debugInformationProvider, devirtualizationManager, inliningPolicy, logger)
+            : base(dependencyGraph, nodeFactory, roots, ilProvider, debugInformationProvider, inliningPolicy, logger)
         {
             _compilationOptions = options;
             InstructionSetSupport = instructionSetSupport;
@@ -71,12 +72,22 @@ namespace ILCompiler
             // information proving that it isn't, give RyuJIT the constructed symbol even
             // though we just need the unconstructed one.
             // https://github.com/dotnet/runtimelab/issues/1128
-            bool canPotentiallyConstruct = _devirtualizationManager == null
-                ? true : _devirtualizationManager.CanConstructType(type);
+            bool canPotentiallyConstruct = ConstructedEETypeNode.CreationAllowed(type)
+                && NodeFactory.DevirtualizationManager.CanReferenceConstructedMethodTable(type);
             if (canPotentiallyConstruct)
                 return _nodeFactory.MaximallyConstructableType(type);
 
             return _nodeFactory.NecessaryTypeSymbol(type);
+        }
+
+        public FrozenRuntimeTypeNode NecessaryRuntimeTypeIfPossible(TypeDesc type)
+        {
+            bool canPotentiallyConstruct = ConstructedEETypeNode.CreationAllowed(type)
+                && NodeFactory.DevirtualizationManager.CanReferenceConstructedMethodTable(type);
+            if (canPotentiallyConstruct)
+                return _nodeFactory.SerializedMaximallyConstructableRuntimeTypeObject(type);
+
+            return _nodeFactory.SerializedNecessaryRuntimeTypeObject(type);
         }
 
         protected override void CompileInternal(string outputFile, ObjectDumper dumper)
@@ -96,7 +107,7 @@ namespace ILCompiler
             if ((_compilationOptions & RyuJitCompilationOptions.ControlFlowGuardAnnotations) != 0)
                 options |= ObjectWritingOptions.ControlFlowGuard;
 
-            ObjectWriter.EmitObject(outputFile, nodes, NodeFactory, options, dumper, _logger);
+            ObjectWriter.ObjectWriter.EmitObject(outputFile, nodes, NodeFactory, options, dumper, _logger);
         }
 
         protected override void ComputeDependencyNodeDependencies(List<DependencyNodeCore<NodeFactory>> obj)
@@ -193,10 +204,6 @@ namespace ILCompiler
 
             if (exception != null)
             {
-                // Try to compile the method again, but with a throwing method body this time.
-                MethodIL throwingIL = TypeSystemThrowingILEmitter.EmitIL(method, exception);
-                corInfo.CompileMethod(methodCodeNodeNeedingCode, throwingIL);
-
                 if (exception is TypeSystemException.InvalidProgramException
                     && method.OwningType is MetadataType mdOwningType
                     && mdOwningType.HasCustomAttribute("System.Runtime.InteropServices", "ClassInterfaceAttribute"))
@@ -207,6 +214,10 @@ namespace ILCompiler
                     Logger.LogMessage($"Method '{method}' will always throw because: {exception.Message}");
                 else
                     Logger.LogError($"Method will always throw because: {exception.Message}", 1005, method, MessageSubCategory.AotAnalysis);
+
+                // Try to compile the method again, but with a throwing method body this time.
+                MethodIL throwingIL = TypeSystemThrowingILEmitter.EmitIL(method, exception);
+                corInfo.CompileMethod(methodCodeNodeNeedingCode, throwingIL);
             }
         }
     }
@@ -214,9 +225,8 @@ namespace ILCompiler
     [Flags]
     public enum RyuJitCompilationOptions
     {
-        MethodBodyFolding = 0x1,
-        ControlFlowGuardAnnotations = 0x2,
-        UseDwarf5 = 0x4,
-        UseResilience = 0x8,
+        ControlFlowGuardAnnotations = 0x1,
+        UseDwarf5 = 0x2,
+        UseResilience = 0x4,
     }
 }

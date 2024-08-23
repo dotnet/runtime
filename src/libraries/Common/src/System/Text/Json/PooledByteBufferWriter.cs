@@ -5,13 +5,14 @@ using System.Buffers;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
+using System.IO.Pipelines;
 using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
 
 namespace System.Text.Json
 {
-    internal sealed class PooledByteBufferWriter : IBufferWriter<byte>, IDisposable
+    internal sealed class PooledByteBufferWriter : PipeWriter, IDisposable
     {
         // This class allows two possible configurations: if rentedBuffer is not null then
         // it can be used as an IBufferWriter and holds a buffer that should eventually be
@@ -19,6 +20,7 @@ namespace System.Text.Json
         // cleared/disposed state and it must re-rent a buffer before it can be used again.
         private byte[]? _rentedBuffer;
         private int _index;
+        private readonly Stream? _stream;
 
         private const int MinimumBufferSize = 256;
 
@@ -27,7 +29,7 @@ namespace System.Text.Json
 
         private PooledByteBufferWriter()
         {
-#if NETCOREAPP
+#if NET
             // Ensure we are in sync with the Array.MaxLength implementation.
             Debug.Assert(MaximumBufferSize == Array.MaxLength);
 #endif
@@ -39,6 +41,11 @@ namespace System.Text.Json
 
             _rentedBuffer = ArrayPool<byte>.Shared.Rent(initialCapacity);
             _index = 0;
+        }
+
+        public PooledByteBufferWriter(int initialCapacity, Stream stream) : this(initialCapacity)
+        {
+            _stream = stream;
         }
 
         public ReadOnlyMemory<byte> WrittenMemory
@@ -127,7 +134,7 @@ namespace System.Text.Json
 
         public static PooledByteBufferWriter CreateEmptyInstanceForCaching() => new PooledByteBufferWriter();
 
-        public void Advance(int count)
+        public override void Advance(int count)
         {
             Debug.Assert(_rentedBuffer != null);
             Debug.Assert(count >= 0);
@@ -135,35 +142,24 @@ namespace System.Text.Json
             _index += count;
         }
 
-        public Memory<byte> GetMemory(int sizeHint = MinimumBufferSize)
+        public override Memory<byte> GetMemory(int sizeHint = MinimumBufferSize)
         {
             CheckAndResizeBuffer(sizeHint);
             return _rentedBuffer.AsMemory(_index);
         }
 
-        public Span<byte> GetSpan(int sizeHint = MinimumBufferSize)
+        public override Span<byte> GetSpan(int sizeHint = MinimumBufferSize)
         {
             CheckAndResizeBuffer(sizeHint);
             return _rentedBuffer.AsSpan(_index);
         }
 
-#if NETCOREAPP
-        internal ValueTask WriteToStreamAsync(Stream destination, CancellationToken cancellationToken)
-        {
-            return destination.WriteAsync(WrittenMemory, cancellationToken);
-        }
-
+#if NET
         internal void WriteToStream(Stream destination)
         {
             destination.Write(WrittenMemory.Span);
         }
 #else
-        internal Task WriteToStreamAsync(Stream destination, CancellationToken cancellationToken)
-        {
-            Debug.Assert(_rentedBuffer != null);
-            return destination.WriteAsync(_rentedBuffer, 0, _index, cancellationToken);
-        }
-
         internal void WriteToStream(Stream destination)
         {
             Debug.Assert(_rentedBuffer != null);
@@ -217,6 +213,28 @@ namespace System.Text.Json
             Debug.Assert(_rentedBuffer.Length - _index > 0);
             Debug.Assert(_rentedBuffer.Length - _index >= sizeHint);
         }
+
+        public override async ValueTask<FlushResult> FlushAsync(CancellationToken cancellationToken = default)
+        {
+            Debug.Assert(_stream is not null);
+#if NET
+            await _stream.WriteAsync(WrittenMemory, cancellationToken).ConfigureAwait(false);
+#else
+            Debug.Assert(_rentedBuffer != null);
+            await _stream.WriteAsync(_rentedBuffer, 0, _index, cancellationToken).ConfigureAwait(false);
+#endif
+            Clear();
+
+            return new FlushResult(isCanceled: false, isCompleted: false);
+        }
+
+        public override bool CanGetUnflushedBytes => true;
+        public override long UnflushedBytes => _index;
+
+        // This type is used internally in JsonSerializer to help buffer and flush bytes to the underlying Stream.
+        // It's only pretending to be a PipeWriter and doesn't need Complete or CancelPendingFlush for the internal usage.
+        public override void CancelPendingFlush() => throw new NotImplementedException();
+        public override void Complete(Exception? exception = null) => throw new NotImplementedException();
     }
 
     internal static partial class ThrowHelper

@@ -10,7 +10,7 @@ using System.Threading;
 
 namespace System.Runtime.CompilerServices
 {
-    public sealed class ConditionalWeakTable<TKey, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]TValue> : IEnumerable<KeyValuePair<TKey, TValue>>
+    public sealed class ConditionalWeakTable<TKey, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] TValue> : IEnumerable<KeyValuePair<TKey, TValue>>
         where TKey : class
         where TValue : class?
     {

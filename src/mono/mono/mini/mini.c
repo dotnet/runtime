@@ -44,6 +44,7 @@
 #include <mono/metadata/threads-types.h>
 #include <mono/metadata/verify.h>
 #include <mono/metadata/mempool-internals.h>
+#include <mono/metadata/reflection-internals.h>
 #include <mono/metadata/runtime.h>
 #include <mono/metadata/attrdefs.h>
 #include <mono/utils/mono-math.h>
@@ -419,6 +420,7 @@ mono_type_to_load_membase (MonoCompile *cfg, MonoType *type)
 	case MONO_TYPE_VALUETYPE:
 		if (mini_class_is_simd (cfg, mono_class_from_mono_type_internal (type)))
 			return OP_LOADX_MEMBASE;
+		return OP_LOADV_MEMBASE;
 	case MONO_TYPE_TYPEDBYREF:
 		return OP_LOADV_MEMBASE;
 	case MONO_TYPE_GENERICINST:
@@ -602,7 +604,7 @@ mono_decompose_op_imm (MonoCompile *cfg, MonoBasicBlock *bb, MonoInst *ins)
 	mono_bblock_insert_before_ins (bb, ins, temp);
 
 	if (opcode2 == -1)
-		g_error ("mono_op_imm_to_op failed for %s\n", mono_inst_name (ins->opcode));
+		g_error ("mono_op_imm_to_op failed for " M_PRI_INST "\n", mono_inst_name (ins->opcode));
 	ins->opcode = GINT_TO_OPCODE (opcode2);
 
 	if (ins->opcode == OP_LOCALLOC)
@@ -1756,7 +1758,7 @@ mono_empty_compile (MonoCompile *cfg)
 	cfg->headers_to_free = NULL;
 
 	if (cfg->mempool) {
-	//mono_mempool_stats (cfg->mempool);
+		//mono_mempool_stats (cfg->mempool);
 		mono_mempool_destroy (cfg->mempool);
 		cfg->mempool = NULL;
 	}
@@ -1787,6 +1789,10 @@ mono_destroy_compile (MonoCompile *cfg)
 	g_hash_table_destroy (cfg->abs_patches);
 
 	mono_debug_free_method (cfg);
+
+	g_free (cfg->asm_symbol);
+	g_free (cfg->asm_debug_symbol);
+	g_free (cfg->llvm_method_name);
 
 	g_free (cfg->varinfo);
 	g_free (cfg->vars);
@@ -2310,6 +2316,8 @@ create_jit_info (MonoCompile *cfg, MonoMethod *method_to_compile)
 
 	if (cfg->gshared)
 		flags |= JIT_INFO_HAS_GENERIC_JIT_INFO;
+	if (cfg->init_method_rgctx_elim)
+		flags |= JIT_INFO_NO_MRGCTX;
 
 	if (cfg->arch_eh_jit_info) {
 		MonoJitArgumentInfo *arg_info;
@@ -3021,9 +3029,6 @@ init_backend (MonoBackend *backend)
 #ifdef MONO_ARCH_EXPLICIT_NULL_CHECKS
 	backend->explicit_null_checks = 1;
 #endif
-#ifdef MONO_ARCH_HAVE_OPTIMIZED_DIV
-	backend->optimized_div = 1;
-#endif
 #ifdef MONO_ARCH_HAVE_INIT_MRGCTX
 	backend->have_init_mrgctx = 1;
 #endif
@@ -3034,6 +3039,9 @@ is_simd_supported (MonoCompile *cfg)
 {
 #ifdef DISABLE_SIMD
     return FALSE;
+#endif
+#ifndef MONO_ARCH_SIMD_INTRINSICS
+	return FALSE;
 #endif
 	// FIXME: Clean this up
 #ifdef TARGET_WASM
@@ -3550,8 +3558,6 @@ mini_method_compile (MonoMethod *method, guint32 opts, JitFlags flags, int parts
 		}
 
 		cfg->opt &= ~MONO_OPT_LINEARS;
-
-		cfg->opt &= ~MONO_OPT_BRANCH;
 	}
 
 	cfg->after_method_to_ir = TRUE;
@@ -3796,6 +3802,18 @@ mini_method_compile (MonoMethod *method, guint32 opts, JitFlags flags, int parts
 		cfg->init_method_rgctx_ins_arg->opcode = OP_PCONST;
 		cfg->init_method_rgctx_ins_arg->inst_p0 = NULL;
 		MONO_INST_NULLIFY_SREGS (cfg->init_method_rgctx_ins_arg);
+		if (cfg->init_method_rgctx_ins_load) {
+			cfg->init_method_rgctx_ins_load->opcode = OP_PCONST;
+			cfg->init_method_rgctx_ins_load->inst_p0 = GINT_TO_POINTER (0x1);
+			MONO_INST_NULLIFY_SREGS (cfg->init_method_rgctx_ins_load);
+		}
+
+		/*
+		 * Avoid creating rgctx trampolines when calling this method.
+		 * Static/vtype etc. methods still need an rgctx arg for EH.
+		 */
+		if (!mono_method_needs_mrgctx_arg_for_eh (cfg->method))
+			cfg->init_method_rgctx_elim = TRUE;
 	}
 
 	if (cfg->got_var) {
@@ -3964,7 +3982,7 @@ mini_method_compile (MonoMethod *method, guint32 opts, JitFlags flags, int parts
 	if (!cfg->compile_aot)
 		mono_lldb_save_method_info (cfg);
 
-	if (cfg->verbose_level >= 2) {
+	if (cfg->verbose_level >= 2 && !cfg->llvm_only) {
 		char *id =  mono_method_full_name (cfg->method, TRUE);
 		g_print ("\n*** ASM for %s ***\n", id);
 		mono_disassemble_code (cfg, cfg->native_code, cfg->code_len, id + 3);
@@ -4306,6 +4324,7 @@ mini_handle_call_res_devirt (MonoMethod *cmethod)
 
 		inst = mono_class_inflate_generic_class_checked (mono_class_get_iequatable_class (), &ctx, error);
 		mono_error_assert_ok (error);
+		g_assert (inst);
 
 		// EqualityComparer<T>.Default returns specific types depending on T
 		// FIXME: Special case more types: byte, string, nullable, enum ?
@@ -4580,6 +4599,10 @@ mini_get_simd_type_info (MonoClass *klass, guint32 *nelems)
 	} else if (!strcmp (klass_name, "Vector2")) {
 		*nelems = 2;
 		return MONO_TYPE_R4;
+	} else if (!strcmp (klass_name, "Vector3")) {
+		// For LLVM SIMD support, Vector3 is treated as a 4-element vector (three elements + zero).
+		*nelems = 4;
+		return MONO_TYPE_R4;
 	} else if (!strcmp (klass_name, "Vector`1") || !strcmp (klass_name, "Vector64`1") || !strcmp (klass_name, "Vector128`1") || !strcmp (klass_name, "Vector256`1") || !strcmp (klass_name, "Vector512`1")) {
 		MonoType *etype = mono_class_get_generic_class (klass)->context.class_inst->type_argv [0];
 		int size = mono_class_value_size (klass, NULL);
@@ -4590,4 +4613,63 @@ mini_get_simd_type_info (MonoClass *klass, guint32 *nelems)
 		NOT_IMPLEMENTED;
 		return MONO_TYPE_VOID;
 	}
+}
+
+MonoMethod*
+mini_inflate_unsafe_accessor_wrapper (MonoMethod *extern_decl, MonoGenericContext *ctx, MonoUnsafeAccessorKind accessor_kind, const char *member_name, MonoError *error)
+{
+	MonoMethod *generic_wrapper = mono_marshal_get_unsafe_accessor_wrapper (extern_decl, accessor_kind, member_name);
+	MonoMethod *inflated_wrapper = mono_class_inflate_generic_method_checked (generic_wrapper, ctx, error);
+	return inflated_wrapper;
+}
+
+
+static MonoMethod*
+inflate_unsafe_accessor_like_decl (MonoMethod *extern_method_inst, MonoUnsafeAccessorKind accessor_kind, const char *member_name, MonoError *error)
+{
+	g_assert (extern_method_inst->is_inflated);
+	MonoMethodInflated *infl = (MonoMethodInflated*)extern_method_inst;
+	MonoMethod *extern_decl = infl->declaring;
+	MonoGenericContext *ctx = &infl->context;
+	return mini_inflate_unsafe_accessor_wrapper (extern_decl, ctx, accessor_kind, member_name, error);
+}
+
+/**
+ * Replaces some extern \c method by a wrapper.
+ *
+ * Unsafe accessor methods are static extern methods with no header.  Calls to
+ * them are replaced by calls to a wrapper.  So during AOT compilation when we
+ * collect methods to AOT, we replace these methods by the wrappers, too.
+ *
+ * Returns the wrapper method, or \c NULL if it doesn't need to be replaced.
+ * On error returns NULL and sets \c error.
+ */
+MonoMethod*
+mini_replace_generated_method (MonoMethod *method, MonoError *error)
+{
+	if (G_LIKELY (mono_method_metadata_has_header (method)))
+		return NULL;
+
+	/* Unsafe accessors methods.  Replace attempts to compile the accessor method by
+	 * its wrapper.
+	 */
+	char *member_name = NULL;
+	int accessor_kind = -1;
+	if (mono_method_get_unsafe_accessor_attr_data (method, &accessor_kind, &member_name, error)) {
+		MonoMethod *wrapper = NULL;
+		if (method->is_inflated) {
+			wrapper = inflate_unsafe_accessor_like_decl (method, (MonoUnsafeAccessorKind)accessor_kind, member_name, error);
+		} else {
+			wrapper = mono_marshal_get_unsafe_accessor_wrapper (method, (MonoUnsafeAccessorKind)accessor_kind, member_name);
+		}
+		if (is_ok (error)) {
+			if (mono_trace_is_traced (G_LOG_LEVEL_INFO, MONO_TRACE_AOT)) {
+				char * method_name = mono_method_get_full_name (wrapper);
+				mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_AOT, "Replacing generated method by %s", method_name);
+				g_free (method_name);
+			}
+			return wrapper;
+		}
+	}
+	return NULL;
 }

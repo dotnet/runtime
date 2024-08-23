@@ -384,7 +384,7 @@ bool Lowering::IsSafeToMarkRegOptional(GenTree* parentNode, GenTree* childNode) 
     LclVarDsc* dsc = comp->lvaGetDesc(childNode->AsLclVarCommon());
     if (!dsc->IsAddressExposed())
     {
-        // Safe by IR invariants (no assignments occur between parent and node).
+        // Safe by IR invariants (no stores occur between parent and node).
         return true;
     }
 
@@ -414,8 +414,7 @@ GenTree* Lowering::LowerNode(GenTree* node)
         }
 
         case GT_STOREIND:
-            LowerStoreIndirCommon(node->AsStoreInd());
-            break;
+            return LowerStoreIndirCommon(node->AsStoreInd());
 
         case GT_ADD:
         {
@@ -480,6 +479,9 @@ GenTree* Lowering::LowerNode(GenTree* node)
             {
                 return newNode;
             }
+#ifdef TARGET_ARM64
+            m_ffrTrashed = true;
+#endif
         }
         break;
 
@@ -500,8 +502,8 @@ GenTree* Lowering::LowerNode(GenTree* node)
         case GT_NEG:
 #ifdef TARGET_ARM64
         {
-            GenTree* next = TryLowerNegToMulLongOp(node->AsOp());
-            if (next != nullptr)
+            GenTree* next;
+            if (TryLowerNegToMulLongOp(node->AsOp(), &next))
             {
                 return next;
             }
@@ -520,8 +522,9 @@ GenTree* Lowering::LowerNode(GenTree* node)
             LowerJmpMethod(node);
             break;
 
+        case GT_SWIFT_ERROR_RET:
         case GT_RETURN:
-            LowerRet(node->AsUnOp());
+            LowerRet(node->AsOp());
             break;
 
         case GT_RETURNTRAP:
@@ -529,8 +532,16 @@ GenTree* Lowering::LowerNode(GenTree* node)
             break;
 
         case GT_CAST:
-            LowerCast(node);
-            break;
+        {
+            GenTree* nextNode = LowerCast(node);
+#if defined(TARGET_XARCH)
+            if (nextNode != nullptr)
+            {
+                return nextNode;
+            }
+#endif // TARGET_XARCH
+        }
+        break;
 
         case GT_BITCAST:
             ContainCheckBitCast(node);
@@ -570,8 +581,6 @@ GenTree* Lowering::LowerNode(GenTree* node)
                 LowerStoreSingleRegCallStruct(node->AsBlk());
                 break;
             }
-            FALLTHROUGH;
-        case GT_STORE_DYN_BLK:
             LowerBlockStoreCommon(node->AsBlk());
             break;
 
@@ -626,8 +635,7 @@ GenTree* Lowering::LowerNode(GenTree* node)
             FALLTHROUGH;
 
         case GT_STORE_LCL_FLD:
-            LowerStoreLocCommon(node->AsLclVarCommon());
-            break;
+            return LowerStoreLocCommon(node->AsLclVarCommon());
 
 #if defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
         case GT_CMPXCHG:
@@ -640,8 +648,6 @@ GenTree* Lowering::LowerNode(GenTree* node)
             CheckImmedAndMakeContained(node, node->AsOp()->gtOp2);
             break;
 #elif defined(TARGET_XARCH)
-        case GT_XORR:
-        case GT_XAND:
         case GT_XADD:
             if (node->IsUnusedValue())
             {
@@ -829,10 +835,6 @@ GenTree* Lowering::LowerArrLength(GenTreeArrCommon* node)
 
 GenTree* Lowering::LowerSwitch(GenTree* node)
 {
-    unsigned     jumpCnt;
-    unsigned     targetCnt;
-    BasicBlock** jumpTab;
-
     assert(node->gtOper == GT_SWITCH);
 
     // The first step is to build the default case conditional construct that is
@@ -846,9 +848,9 @@ GenTree* Lowering::LowerSwitch(GenTree* node)
     // jumpCnt is the number of elements in the jump table array.
     // jumpTab is the actual pointer to the jump table array.
     // targetCnt is the number of unique targets in the jump table array.
-    jumpCnt   = originalSwitchBB->GetJumpSwt()->bbsCount;
-    jumpTab   = originalSwitchBB->GetJumpSwt()->bbsDstTab;
-    targetCnt = originalSwitchBB->NumSucc(comp);
+    const unsigned   jumpCnt   = originalSwitchBB->GetSwitchTargets()->bbsCount;
+    FlowEdge** const jumpTab   = originalSwitchBB->GetSwitchTargets()->bbsDstTab;
+    const unsigned   targetCnt = originalSwitchBB->NumSucc(comp);
 
 // GT_SWITCH must be a top-level node with no use.
 #ifdef DEBUG
@@ -867,18 +869,12 @@ GenTree* Lowering::LowerSwitch(GenTree* node)
     {
         JITDUMP("Lowering switch " FMT_BB ": single target; converting to BBJ_ALWAYS\n", originalSwitchBB->bbNum);
         noway_assert(comp->opts.OptimizationDisabled());
-        if (originalSwitchBB->NextIs(jumpTab[0]))
-        {
-            originalSwitchBB->SetJumpKindAndTarget(BBJ_NONE DEBUG_ARG(comp));
-        }
-        else
-        {
-            originalSwitchBB->SetJumpKindAndTarget(BBJ_ALWAYS, jumpTab[0] DEBUG_ARG(comp));
-        }
+        originalSwitchBB->SetKindAndTargetEdge(BBJ_ALWAYS, jumpTab[0]);
+
         // Remove extra predecessor links if there was more than one case.
         for (unsigned i = 1; i < jumpCnt; ++i)
         {
-            (void)comp->fgRemoveRefPred(jumpTab[i], originalSwitchBB);
+            comp->fgRemoveRefPred(jumpTab[i]);
         }
 
         // We have to get rid of the GT_SWITCH node but a child might have side effects so just assign
@@ -912,11 +908,11 @@ GenTree* Lowering::LowerSwitch(GenTree* node)
     unsigned  tempLclNum  = temp->AsLclVarCommon()->GetLclNum();
     var_types tempLclType = temp->TypeGet();
 
-    BasicBlock* defaultBB   = jumpTab[jumpCnt - 1];
+    BasicBlock* defaultBB   = jumpTab[jumpCnt - 1]->getDestinationBlock();
     BasicBlock* followingBB = originalSwitchBB->Next();
 
     /* Is the number of cases right for a test and jump switch? */
-    const bool fFirstCaseFollows = (followingBB == jumpTab[0]);
+    const bool fFirstCaseFollows = (followingBB == jumpTab[0]->getDestinationBlock());
     const bool fDefaultFollows   = (followingBB == defaultBB);
 
     unsigned minSwitchTabJumpCnt = 2; // table is better than just 2 cmp/jcc
@@ -955,24 +951,37 @@ GenTree* Lowering::LowerSwitch(GenTree* node)
     BasicBlock* afterDefaultCondBlock = comp->fgSplitBlockAfterNode(originalSwitchBB, condRange.LastNode());
 
     // afterDefaultCondBlock is now the switch, and all the switch targets have it as a predecessor.
-    // originalSwitchBB is now a BBJ_NONE, and there is a predecessor edge in afterDefaultCondBlock
+    // originalSwitchBB is now a BBJ_ALWAYS, and there is a predecessor edge in afterDefaultCondBlock
     // representing the fall-through flow from originalSwitchBB.
-    assert(originalSwitchBB->KindIs(BBJ_NONE));
-    assert(originalSwitchBB->NextIs(afterDefaultCondBlock));
+    assert(originalSwitchBB->KindIs(BBJ_ALWAYS));
+    assert(originalSwitchBB->TargetIs(afterDefaultCondBlock));
+    assert(originalSwitchBB->JumpsToNext());
     assert(afterDefaultCondBlock->KindIs(BBJ_SWITCH));
-    assert(afterDefaultCondBlock->GetJumpSwt()->bbsHasDefault);
+    assert(afterDefaultCondBlock->GetSwitchTargets()->bbsHasDefault);
     assert(afterDefaultCondBlock->isEmpty()); // Nothing here yet.
 
     // The GT_SWITCH code is still in originalSwitchBB (it will be removed later).
 
-    // Turn originalSwitchBB into a BBJ_COND.
-    originalSwitchBB->SetJumpKindAndTarget(BBJ_COND, jumpTab[jumpCnt - 1] DEBUG_ARG(comp));
-
     // Fix the pred for the default case: the default block target still has originalSwitchBB
     // as a predecessor, but the fgSplitBlockAfterStatement() moved all predecessors to point
     // to afterDefaultCondBlock.
-    FlowEdge* oldEdge = comp->fgRemoveRefPred(jumpTab[jumpCnt - 1], afterDefaultCondBlock);
-    comp->fgAddRefPred(jumpTab[jumpCnt - 1], originalSwitchBB, oldEdge);
+
+    // Note defaultEdge may also be the edge for some switch cases. We only probe edges,
+    // so assume each possibility is equally likely.
+    FlowEdge* const defaultEdge       = jumpTab[jumpCnt - 1];
+    weight_t const  defaultLikelihood = defaultEdge->getLikelihood() / defaultEdge->getDupCount();
+    comp->fgRemoveRefPred(defaultEdge);
+    FlowEdge* const trueEdge = comp->fgAddRefPred(defaultBB, originalSwitchBB);
+    trueEdge->setLikelihood(defaultLikelihood);
+    defaultEdge->setLikelihood(defaultEdge->getLikelihood() - defaultLikelihood);
+
+    // Turn originalSwitchBB into a BBJ_COND.
+    FlowEdge* const falseEdge        = originalSwitchBB->GetTargetEdge();
+    weight_t const  switchLikelihood = 1.0 - defaultLikelihood;
+    falseEdge->setLikelihood(switchLikelihood);
+    originalSwitchBB->SetCond(trueEdge, falseEdge);
+    afterDefaultCondBlock->inheritWeight(originalSwitchBB);
+    afterDefaultCondBlock->scaleBBWeight(switchLikelihood);
 
     bool useJumpSequence = jumpCnt < minSwitchTabJumpCnt;
 
@@ -992,7 +1001,7 @@ GenTree* Lowering::LowerSwitch(GenTree* node)
     // If we originally had 2 unique successors, check to see whether there is a unique
     // non-default case, in which case we can eliminate the switch altogether.
     // Note that the single unique successor case is handled above.
-    BasicBlock* uniqueSucc = nullptr;
+    FlowEdge* uniqueSucc = nullptr;
     if (targetCnt == 2)
     {
         uniqueSucc = jumpTab[0];
@@ -1011,23 +1020,17 @@ GenTree* Lowering::LowerSwitch(GenTree* node)
         // If the unique successor immediately follows this block, we have nothing to do -
         // it will simply fall-through after we remove the switch, below.
         // Otherwise, make this a BBJ_ALWAYS.
-        // Now, fixup the predecessor links to uniqueSucc.  In the original jumpTab:
+        // Now, fixup the predecessor links to uniqueSucc's target block.  In the original jumpTab:
         //   jumpTab[i-1] was the default target, which we handled above,
         //   jumpTab[0] is the first target, and we'll leave that predecessor link.
-        // Remove any additional predecessor links to uniqueSucc.
+        // Remove any additional predecessor links to uniqueSucc's target block.
         for (unsigned i = 1; i < jumpCnt - 1; ++i)
         {
             assert(jumpTab[i] == uniqueSucc);
-            (void)comp->fgRemoveRefPred(uniqueSucc, afterDefaultCondBlock);
+            comp->fgRemoveRefPred(uniqueSucc);
         }
-        if (afterDefaultCondBlock->NextIs(uniqueSucc))
-        {
-            afterDefaultCondBlock->SetJumpKindAndTarget(BBJ_NONE DEBUG_ARG(comp));
-        }
-        else
-        {
-            afterDefaultCondBlock->SetJumpKindAndTarget(BBJ_ALWAYS, uniqueSucc DEBUG_ARG(comp));
-        }
+
+        afterDefaultCondBlock->SetKindAndTargetEdge(BBJ_ALWAYS, uniqueSucc);
     }
     // If the number of possible destinations is small enough, we proceed to expand the switch
     // into a series of conditional branches, otherwise we follow the jump table based switch
@@ -1055,15 +1058,38 @@ GenTree* Lowering::LowerSwitch(GenTree* node)
         // If no case target follows, the last one doesn't need to be a compare/branch: it can be an
         // unconditional branch.
         bool fAnyTargetFollows = false;
+
+        // We need to track how much of the original switch's likelihood has already been
+        // tested for.  We'll use this to adjust the likelihood of the branches we're adding.
+        // So far we've tested for the default case, so we'll start with that.
+        weight_t totalTestLikelihood = defaultLikelihood;
         for (unsigned i = 0; i < jumpCnt - 1; ++i)
         {
             assert(currentBlock != nullptr);
+            BasicBlock* const targetBlock = jumpTab[i]->getDestinationBlock();
 
             // Remove the switch from the predecessor list of this case target's block.
             // We'll add the proper new predecessor edge later.
-            FlowEdge* oldEdge = comp->fgRemoveRefPred(jumpTab[i], afterDefaultCondBlock);
+            FlowEdge* const oldEdge = jumpTab[i];
 
-            if (jumpTab[i] == followingBB)
+            // Compute the likelihood that this test is successful.
+            // Divide by number of cases still sharing this edge (reduces likelihood)
+            // Divide by likelihood of reaching this test (increases likelihood).
+            // But if there is little chance of reaching this test, set the likelihood to 0.5
+            //
+            weight_t const edgeLikelihood          = oldEdge->getLikelihood();
+            weight_t const caseLikelihood          = edgeLikelihood / oldEdge->getDupCount();
+            bool const     unlikelyToReachThisCase = Compiler::fgProfileWeightsEqual(totalTestLikelihood, 1.0, 0.001);
+            weight_t const adjustedCaseLikelihood =
+                unlikelyToReachThisCase ? 0.5 : min(1.0, caseLikelihood / (1.0 - totalTestLikelihood));
+            comp->fgRemoveRefPred(oldEdge);
+
+            // Decrement the likelihood on the old edge, so if other cases are sharing it,
+            // they get the right values later.
+            //
+            oldEdge->setLikelihood(edgeLikelihood - caseLikelihood);
+
+            if (targetBlock == followingBB)
             {
                 // This case label follows the switch; let it fall through.
                 fAnyTargetFollows = true;
@@ -1072,21 +1098,54 @@ GenTree* Lowering::LowerSwitch(GenTree* node)
 
             // We need a block to put in the new compare and/or branch.
             // If we haven't used the afterDefaultCondBlock yet, then use that.
+            //
             if (fUsedAfterDefaultCondBlock)
             {
-                BasicBlock* newBlock = comp->fgNewBBafter(BBJ_NONE, currentBlock, true);
-                comp->fgAddRefPred(newBlock, currentBlock); // The fall-through predecessor.
+                BasicBlock*     newBlock  = comp->fgNewBBafter(BBJ_ALWAYS, currentBlock, true);
+                FlowEdge* const falseEdge = comp->fgAddRefPred(newBlock, currentBlock); // The fall-through predecessor.
+
+                // We set the true edge likelihood earlier, use that to figure out the false edge likelihood
+                // and the block weight.
+                //
+                FlowEdge* const trueEdge        = currentBlock->GetTrueEdge();
+                weight_t const  falseLikelihood = 1.0 - trueEdge->getLikelihood();
+                falseEdge->setLikelihood(falseLikelihood);
+                currentBlock->SetFalseEdge(falseEdge);
+                newBlock->inheritWeight(currentBlock);
+                newBlock->scaleBBWeight(falseLikelihood);
                 currentBlock   = newBlock;
                 currentBBRange = &LIR::AsRange(currentBlock);
             }
             else
             {
                 assert(currentBlock == afterDefaultCondBlock);
+
+                // If the first switch case we peel off has the same target as
+                // other cases (that is, it has nonzero dup count, it's simpler to
+                // just make a new here block, so that as we peel off cases,
+                // we're not sharing edges with the original switch.
+                //
+                // That is, the call to fgAddRefPred below always creates a new edge.
+                //
+                if (oldEdge->getDupCount() > 0)
+                {
+                    BasicBlock* const newBlock = comp->fgNewBBafter(BBJ_ALWAYS, currentBlock, true);
+                    FlowEdge* const   newEdge  = comp->fgAddRefPred(newBlock, currentBlock);
+                    currentBlock               = newBlock;
+                    currentBBRange             = &LIR::AsRange(currentBlock);
+                    afterDefaultCondBlock->SetKindAndTargetEdge(BBJ_ALWAYS, newEdge);
+                }
+
                 fUsedAfterDefaultCondBlock = true;
             }
 
+            // Update the total test case likelihood.
+            totalTestLikelihood += caseLikelihood;
+
             // Wire up the predecessor list for the "branch" case.
-            comp->fgAddRefPred(jumpTab[i], currentBlock, oldEdge);
+            FlowEdge* const newEdge = comp->fgAddRefPred(targetBlock, currentBlock, oldEdge);
+            // This should truly be a new edge.
+            assert(newEdge->getDupCount() == 1);
 
             if (!fAnyTargetFollows && (i == jumpCnt - 2))
             {
@@ -1095,13 +1154,15 @@ GenTree* Lowering::LowerSwitch(GenTree* node)
                 // case: there is no need to compare against the case index, since it's
                 // guaranteed to be taken (since the default case was handled first, above).
 
-                currentBlock->SetJumpKindAndTarget(BBJ_ALWAYS, jumpTab[i] DEBUG_ARG(comp));
+                currentBlock->SetKindAndTargetEdge(BBJ_ALWAYS, newEdge);
             }
             else
             {
                 // Otherwise, it's a conditional branch. Set the branch kind, then add the
                 // condition statement.
-                currentBlock->SetJumpKindAndTarget(BBJ_COND, jumpTab[i] DEBUG_ARG(comp));
+                // We will set the false edge in a later iteration of the loop, or after.
+                currentBlock->SetCond(newEdge);
+                newEdge->setLikelihood(adjustedCaseLikelihood);
 
                 // Now, build the conditional statement for the current case that is
                 // being evaluated:
@@ -1112,8 +1173,8 @@ GenTree* Lowering::LowerSwitch(GenTree* node)
                 //                 |____ (ICon)        (The actual case constant)
                 GenTree* gtCaseCond = comp->gtNewOperNode(GT_EQ, TYP_INT, comp->gtNewLclvNode(tempLclNum, tempLclType),
                                                           comp->gtNewIconNode(i, genActualType(tempLclType)));
-                GenTree*   gtCaseBranch = comp->gtNewOperNode(GT_JTRUE, TYP_VOID, gtCaseCond);
-                LIR::Range caseRange    = LIR::SeqTree(comp, gtCaseBranch);
+                GenTree* gtCaseBranch = comp->gtNewOperNode(GT_JTRUE, TYP_VOID, gtCaseCond);
+                LIR::Range caseRange  = LIR::SeqTree(comp, gtCaseBranch);
                 currentBBRange->InsertAtEnd(std::move(caseRange));
             }
         }
@@ -1123,19 +1184,27 @@ GenTree* Lowering::LowerSwitch(GenTree* node)
             // There is a fall-through to the following block. In the loop
             // above, we deleted all the predecessor edges from the switch.
             // In this case, we need to add one back.
-            comp->fgAddRefPred(currentBlock->Next(), currentBlock);
+            FlowEdge* const falseEdge = comp->fgAddRefPred(currentBlock->Next(), currentBlock);
+            currentBlock->SetFalseEdge(falseEdge);
+            FlowEdge* const trueEdge        = currentBlock->GetTrueEdge();
+            weight_t const  falseLikelihood = 1.0 - trueEdge->getLikelihood();
+            falseEdge->setLikelihood(falseLikelihood);
+
+            // The following block weight should remain unchanged. All we've done
+            // is alter the various paths that can reach it.
         }
 
         if (!fUsedAfterDefaultCondBlock)
         {
             // All the cases were fall-through! We don't need this block.
-            // Convert it from BBJ_SWITCH to BBJ_NONE and unset the BBF_DONT_REMOVE flag
+            // Convert it from BBJ_SWITCH to BBJ_ALWAYS and unset the BBF_DONT_REMOVE flag
             // so fgRemoveBlock() doesn't complain.
             JITDUMP("Lowering switch " FMT_BB ": all switch cases were fall-through\n", originalSwitchBB->bbNum);
             assert(currentBlock == afterDefaultCondBlock);
             assert(currentBlock->KindIs(BBJ_SWITCH));
-            currentBlock->SetJumpKindAndTarget(BBJ_NONE DEBUG_ARG(comp));
-            currentBlock->bbFlags &= ~BBF_DONT_REMOVE;
+            FlowEdge* const newEdge = comp->fgAddRefPred(currentBlock->Next(), currentBlock);
+            currentBlock->SetKindAndTargetEdge(BBJ_ALWAYS, newEdge);
+            currentBlock->RemoveFlags(BBF_DONT_REMOVE);
             comp->fgRemoveBlock(currentBlock, /* unreachable */ false); // It's an empty block.
         }
     }
@@ -1148,9 +1217,14 @@ GenTree* Lowering::LowerSwitch(GenTree* node)
         LIR::Range& switchBlockRange = LIR::AsRange(afterDefaultCondBlock);
         switchBlockRange.InsertAtEnd(switchValue);
 
+        // We are going to modify the switch, invalidate any desc map.
+        //
+        comp->fgInvalidateSwitchDescMapEntry(afterDefaultCondBlock);
+
         // Try generating a bit test based switch first,
         // if that's not possible a jump table based switch will be generated.
-        if (!TryLowerSwitchToBitTest(jumpTab, jumpCnt, targetCnt, afterDefaultCondBlock, switchValue))
+        if (!TryLowerSwitchToBitTest(jumpTab, jumpCnt, targetCnt, afterDefaultCondBlock, switchValue,
+                                     defaultLikelihood))
         {
             JITDUMP("Lowering switch " FMT_BB ": using jump table expansion\n", originalSwitchBB->bbNum);
 
@@ -1169,10 +1243,50 @@ GenTree* Lowering::LowerSwitch(GenTree* node)
             switchBlockRange.InsertAfter(switchValue, switchTable, switchJump);
 
             // this block no longer branches to the default block
-            afterDefaultCondBlock->GetJumpSwt()->removeDefault();
-        }
+            afterDefaultCondBlock->GetSwitchTargets()->removeDefault();
 
-        comp->fgInvalidateSwitchDescMapEntry(afterDefaultCondBlock);
+            // We need to scale up the likelihood of the remaining switch edges, now that we've peeled off
+            // the default case. But if the remaining likelihood is zero (default likelihood was 1.0),
+            // we don't know the case likelihoods. Instead, divide likelihood evenly among all cases.
+            //
+            // First, rebuild the unique succ set
+            //
+            Compiler::SwitchUniqueSuccSet successors = comp->GetDescriptorForSwitch(afterDefaultCondBlock);
+
+            // Then fix each successor edge
+            //
+            if (Compiler::fgProfileWeightsEqual(defaultLikelihood, 1.0, 0.001))
+            {
+                JITDUMP("Zero weight switch block " FMT_BB ", distributing likelihoods equally per case\n",
+                        afterDefaultCondBlock->bbNum);
+                // jumpCnt-1 here because we peeled the default after copying this value.
+                weight_t const newLikelihood = 1.0 / (jumpCnt - 1);
+                for (unsigned i = 0; i < successors.numDistinctSuccs; i++)
+                {
+                    FlowEdge* const edge = successors.nonDuplicates[i];
+                    edge->setLikelihood(newLikelihood * edge->getDupCount());
+                }
+            }
+            else
+            {
+                weight_t const scaleFactor = 1.0 / (1.0 - defaultLikelihood);
+                JITDUMP("Scaling switch block " FMT_BB " likelihoods by " FMT_WT "\n", afterDefaultCondBlock->bbNum,
+                        scaleFactor);
+                for (unsigned i = 0; i < successors.numDistinctSuccs; i++)
+                {
+                    FlowEdge* const edge          = successors.nonDuplicates[i];
+                    weight_t        newLikelihood = scaleFactor * edge->getLikelihood();
+
+                    if (newLikelihood > 1.0)
+                    {
+                        // tolerate small overflows
+                        assert(Compiler::fgProfileWeightsEqual(newLikelihood, 1.0, 0.001));
+                        newLikelihood = 1.0;
+                    }
+                    edge->setLikelihood(newLikelihood);
+                }
+            }
+        }
     }
 
     GenTree* next = node->gtNext;
@@ -1180,6 +1294,8 @@ GenTree* Lowering::LowerSwitch(GenTree* node)
     // Get rid of the GT_SWITCH(temp).
     switchBBRange.Remove(node->AsOp()->gtOp1);
     switchBBRange.Remove(node);
+
+    comp->fgInvalidateDfsTree();
 
     return next;
 }
@@ -1193,6 +1309,7 @@ GenTree* Lowering::LowerSwitch(GenTree* node)
 //    targetCount - The number of distinct blocks in the jump table
 //    bbSwitch - The switch block
 //    switchValue - A LclVar node that provides the switch value
+//    defaultLikelihood - likelihood control flow took the default case (already checked)
 //
 // Return value:
 //    true if the switch has been lowered to a bit test
@@ -1213,8 +1330,12 @@ GenTree* Lowering::LowerSwitch(GenTree* node)
 //    than the traditional jump table base code. And of course, it also avoids the need
 //    to emit the jump table itself that can reach up to 256 bytes (for 64 entries).
 //
-bool Lowering::TryLowerSwitchToBitTest(
-    BasicBlock* jumpTable[], unsigned jumpCount, unsigned targetCount, BasicBlock* bbSwitch, GenTree* switchValue)
+bool Lowering::TryLowerSwitchToBitTest(FlowEdge*   jumpTable[],
+                                       unsigned    jumpCount,
+                                       unsigned    targetCount,
+                                       BasicBlock* bbSwitch,
+                                       GenTree*    switchValue,
+                                       weight_t    defaultLikelihood)
 {
     assert(jumpCount >= 2);
     assert(targetCount >= 2);
@@ -1251,28 +1372,31 @@ bool Lowering::TryLowerSwitchToBitTest(
     // table and/or swap the blocks if it's beneficial.
     //
 
-    BasicBlock* bbCase0  = nullptr;
-    BasicBlock* bbCase1  = jumpTable[0];
-    size_t      bitTable = 1;
+    FlowEdge* case0Edge = nullptr;
+    FlowEdge* case1Edge = jumpTable[0];
+    size_t    bitTable  = 1;
 
     for (unsigned bitIndex = 1; bitIndex < bitCount; bitIndex++)
     {
-        if (jumpTable[bitIndex] == bbCase1)
+        if (jumpTable[bitIndex] == case1Edge)
         {
             bitTable |= (size_t(1) << bitIndex);
         }
-        else if (bbCase0 == nullptr)
+        else if (case0Edge == nullptr)
         {
-            bbCase0 = jumpTable[bitIndex];
+            case0Edge = jumpTable[bitIndex];
         }
-        else if (jumpTable[bitIndex] != bbCase0)
+        else if (jumpTable[bitIndex] != case0Edge)
         {
-            // If it's neither bbCase0 nor bbCase1 then it means we have 3 targets. There can't be more
+            // If it's neither case0Edge nor case`Edge then it means we have 3 targets. There can't be more
             // than 3 because of the check at the start of the function.
             assert(targetCount == 3);
             return false;
         }
     }
+
+    BasicBlock* bbCase0 = case0Edge->getDestinationBlock();
+    BasicBlock* bbCase1 = case1Edge->getDestinationBlock();
 
     //
     // One of the case blocks has to follow the switch block. This requirement could be avoided
@@ -1284,6 +1408,8 @@ bool Lowering::TryLowerSwitchToBitTest(
     {
         return false;
     }
+
+    JITDUMP("Lowering switch " FMT_BB " to bit test\n", bbSwitch->bbNum);
 
 #if defined(TARGET_64BIT) && defined(TARGET_XARCH)
     //
@@ -1309,14 +1435,33 @@ bool Lowering::TryLowerSwitchToBitTest(
     comp->fgRemoveAllRefPreds(bbCase1, bbSwitch);
     comp->fgRemoveAllRefPreds(bbCase0, bbSwitch);
 
+    case0Edge = comp->fgAddRefPred(bbCase0, bbSwitch, case0Edge);
+    case1Edge = comp->fgAddRefPred(bbCase1, bbSwitch, case1Edge);
+
+    // If defaultLikelihood is not ~ 1.0
+    //   up-scale case likelihoods by 1.0 / (1.0 - defaultLikelihood)
+    // else switch block weight should be zero
+    //   edge likelihoods are unknown, use 0.5
+    //
+    bool const likelyToReachSwitch = !Compiler::fgProfileWeightsEqual(defaultLikelihood, 1.0, 0.001);
+
+    if (likelyToReachSwitch)
+    {
+        weight_t const scaleFactor = 1.0 / (1.0 - defaultLikelihood);
+        case0Edge->setLikelihood(min(1.0, scaleFactor * case0Edge->getLikelihood()));
+        case1Edge->setLikelihood(min(1.0, scaleFactor * case1Edge->getLikelihood()));
+    }
+    else
+    {
+        case0Edge->setLikelihood(0.5);
+        case1Edge->setLikelihood(0.5);
+    }
+
     if (bbSwitch->NextIs(bbCase0))
     {
         // GenCondition::C generates JC so we jump to bbCase1 when the bit is set
         bbSwitchCondition = GenCondition::C;
-        bbSwitch->SetJumpKindAndTarget(BBJ_COND, bbCase1 DEBUG_ARG(comp));
-
-        comp->fgAddRefPred(bbCase0, bbSwitch);
-        comp->fgAddRefPred(bbCase1, bbSwitch);
+        bbSwitch->SetCond(case1Edge, case0Edge);
     }
     else
     {
@@ -1324,10 +1469,7 @@ bool Lowering::TryLowerSwitchToBitTest(
 
         // GenCondition::NC generates JNC so we jump to bbCase0 when the bit is not set
         bbSwitchCondition = GenCondition::NC;
-        bbSwitch->SetJumpKindAndTarget(BBJ_COND, bbCase0 DEBUG_ARG(comp));
-
-        comp->fgAddRefPred(bbCase0, bbSwitch);
-        comp->fgAddRefPred(bbCase1, bbSwitch);
+        bbSwitch->SetCond(case0Edge, case1Edge);
     }
 
     var_types bitTableType = (bitCount <= (genTypeSize(TYP_INT) * 8)) ? TYP_INT : TYP_LONG;
@@ -1357,6 +1499,14 @@ bool Lowering::TryLowerSwitchToBitTest(
     return true;
 }
 
+//------------------------------------------------------------------------
+// ReplaceArgWithPutArgOrBitcast: Insert a PUTARG_* node in the right location
+// and replace the call operand with that node.
+//
+// Arguments:
+//    argSlot         - slot in call of argument
+//    putArgOrBitcast - the node that is being inserted
+//
 void Lowering::ReplaceArgWithPutArgOrBitcast(GenTree** argSlot, GenTree* putArgOrBitcast)
 {
     assert(argSlot != nullptr);
@@ -1503,7 +1653,6 @@ GenTree* Lowering::NewPutArg(GenTreeCall* call, GenTree* arg, CallArg* callArg, 
             // Mark this one as tail call arg if it is a fast tail call.
             // This provides the info to put this argument in in-coming arg area slot
             // instead of in out-going arg area slot.
-            CLANG_FORMAT_COMMENT_ANCHOR;
 
 #ifdef DEBUG
             // Make sure state is correct. The PUTARG_STK has TYP_VOID, as it doesn't produce
@@ -1519,7 +1668,7 @@ GenTree* Lowering::NewPutArg(GenTreeCall* call, GenTree* arg, CallArg* callArg, 
 #if !defined(TARGET_64BIT)
                     assert(callArg->AbiInfo.ByteSize == 12);
 #else  // TARGET_64BIT
-                    if (compMacOsArm64Abi())
+                    if (compAppleArm64Abi())
                     {
                         assert(callArg->AbiInfo.ByteSize == 12);
                     }
@@ -1615,18 +1764,23 @@ void Lowering::LowerArg(GenTreeCall* call, CallArg* callArg, bool late)
         }
         else if (arg->OperIs(GT_HWINTRINSIC))
         {
-            GenTreeJitIntrinsic* jitIntrinsic = reinterpret_cast<GenTreeJitIntrinsic*>(arg);
+            GenTreeHWIntrinsic* hwintrinsic = arg->AsHWIntrinsic();
 
             // For HWIntrinsic, there are some intrinsics like ExtractVector128 which have
-            // a gtType of TYP_SIMD16 but a SimdSize of 32, so we need to include that in
-            // the assert below.
+            // a gtType of TYP_SIMD16 but a SimdSize of 32, so we can't necessarily assert
+            // the simd size
 
-            assert((jitIntrinsic->GetSimdSize() == 12) || (jitIntrinsic->GetSimdSize() == 16) ||
-                   (jitIntrinsic->GetSimdSize() == 32) || (jitIntrinsic->GetSimdSize() == 64));
-
-            if (jitIntrinsic->GetSimdSize() == 12)
+            if (hwintrinsic->GetSimdSize() == 12)
             {
-                type = TYP_SIMD12;
+                if (hwintrinsic->GetHWIntrinsicId() != NI_Vector128_AsVector128Unsafe)
+                {
+                    // Most nodes that have a simdSize of 12 are actually producing a TYP_SIMD12
+                    // and have been massaged to TYP_SIMD16 to match the actual product size. This
+                    // is not the case for NI_Vector128_AsVector128Unsafe which is explicitly taking
+                    // a TYP_SIMD12 and producing a TYP_SIMD16.
+
+                    type = TYP_SIMD12;
+                }
             }
         }
     }
@@ -1647,6 +1801,28 @@ void Lowering::LowerArg(GenTreeCall* call, CallArg* callArg, bool late)
     assert(!arg->OperIsPutArg());
 
 #if !defined(TARGET_64BIT)
+    if (comp->opts.compUseSoftFP && (type == TYP_DOUBLE))
+    {
+        // Unlike TYP_LONG we do no decomposition for doubles, yet we maintain
+        // it as a primitive type until lowering. So we need to get it into the
+        // right form here.
+
+        unsigned argLclNum = comp->lvaGrabTemp(false DEBUGARG("double arg on softFP"));
+        GenTree* store     = comp->gtNewTempStore(argLclNum, arg);
+        GenTree* low       = comp->gtNewLclFldNode(argLclNum, TYP_INT, 0);
+        GenTree* high      = comp->gtNewLclFldNode(argLclNum, TYP_INT, 4);
+        GenTree* longNode  = new (comp, GT_LONG) GenTreeOp(GT_LONG, TYP_LONG, low, high);
+        BlockRange().InsertAfter(arg, store, low, high, longNode);
+
+        *ppArg = arg = longNode;
+        type         = TYP_LONG;
+
+        comp->lvaSetVarDoNotEnregister(argLclNum DEBUGARG(DoNotEnregisterReason::LocalField));
+
+        JITDUMP("Created new nodes for double-typed arg on softFP:\n");
+        DISPRANGE(LIR::ReadOnlyRange(store, longNode));
+    }
+
     if (varTypeIsLong(type))
     {
         noway_assert(arg->OperIs(GT_LONG));
@@ -1682,10 +1858,10 @@ void Lowering::LowerArg(GenTreeCall* call, CallArg* callArg, bool late)
     {
 
 #if defined(TARGET_ARMARCH) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
-        if (call->IsVarargs() || comp->opts.compUseSoftFP)
+        if (call->IsVarargs() || comp->opts.compUseSoftFP || callArg->AbiInfo.IsMismatchedArgType())
         {
-            // For vararg call or on armel, reg args should be all integer.
-            // Insert copies as needed to move float value to integer register.
+            // Insert copies as needed to move float value to integer register
+            // if the ABI requires it.
             GenTree* newNode = LowerFloatArg(ppArg, callArg);
             if (newNode != nullptr)
             {
@@ -1715,7 +1891,7 @@ void Lowering::LowerArg(GenTreeCall* call, CallArg* callArg, bool late)
 
 #if defined(TARGET_ARMARCH) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
 //------------------------------------------------------------------------
-// LowerFloatArg: Lower float call arguments on the arm/LoongArch64 platform.
+// LowerFloatArg: Lower float call arguments on the arm/LoongArch64/RiscV64 platform.
 //
 // Arguments:
 //    arg  - The arg node
@@ -1799,18 +1975,6 @@ GenTree* Lowering::LowerFloatArgReg(GenTree* arg, regNumber regNum)
     GenTree*  intArg    = comp->gtNewBitCastNode(intType, arg);
     intArg->SetRegNum(regNum);
 
-#ifdef TARGET_ARM
-    if (floatType == TYP_DOUBLE)
-    {
-        // A special case when we introduce TYP_LONG
-        // during lowering for arm32 softFP to pass double
-        // in int registers.
-        assert(comp->opts.compUseSoftFP);
-
-        regNumber nextReg                  = REG_NEXT(regNum);
-        intArg->AsMultiRegOp()->gtOtherReg = nextReg;
-    }
-#endif
     return intArg;
 }
 #endif
@@ -1829,6 +1993,252 @@ void Lowering::LowerArgsForCall(GenTreeCall* call)
     {
         LowerArg(call, &arg, true);
     }
+
+#if defined(TARGET_X86) && defined(FEATURE_IJW)
+    LowerSpecialCopyArgs(call);
+#endif // defined(TARGET_X86) && defined(FEATURE_IJW)
+
+    LegalizeArgPlacement(call);
+}
+
+#if defined(TARGET_X86) && defined(FEATURE_IJW)
+//------------------------------------------------------------------------
+// LowerSpecialCopyArgs: Lower special copy arguments for P/Invoke IL stubs
+//
+// Arguments:
+//    call - the call node
+//
+// Notes:
+//    This method is used for P/Invoke IL stubs on x86 to handle arguments with special copy semantics.
+//    In particular, this method implements copy-constructor semantics for managed-to-unmanaged IL stubs
+//    for C++/CLI. In this case, the managed argument is passed by (managed or unmanaged) pointer in the
+//    P/Invoke signature with a speial modreq, but is passed to the unmanaged function by value.
+//    The value passed to the unmanaged function must be created through a copy-constructor call copying from
+//    the original source argument.
+//    We assume that the IL stub will be generated such that the following holds true:
+//       - If an argument to the IL stub has the special modreq, then its corresponding argument to the
+//         unmanaged function will be passed as the same argument index. Therefore, we can introduce the copy call
+//         from the original source argument to the argument slot in the unmanaged call.
+void Lowering::LowerSpecialCopyArgs(GenTreeCall* call)
+{
+    // We only need to use the special copy helper on P/Invoke IL stubs
+    // for the unmanaged call.
+    if (comp->opts.jitFlags->IsSet(JitFlags::JIT_FLAG_IL_STUB) && comp->compMethodRequiresPInvokeFrame() &&
+        call->IsUnmanaged() && comp->compHasSpecialCopyArgs())
+    {
+        // Unmanaged calling conventions on Windows x86 are passed in reverse order
+        // of managed args, so we need to count down the number of args.
+        // If the call is thiscall, we need to account for the this parameter,
+        // which will be first in the list.
+        // The this parameter is always passed in registers, so we can ignore it.
+        unsigned argIndex = call->gtArgs.CountUserArgs() - 1;
+        assert(call->gtArgs.CountUserArgs() == comp->info.compILargsCount);
+        for (CallArg& arg : call->gtArgs.Args())
+        {
+            if (!arg.IsUserArg())
+            {
+                continue;
+            }
+
+            if (call->GetUnmanagedCallConv() == CorInfoCallConvExtension::Thiscall &&
+                argIndex == call->gtArgs.CountUserArgs() - 1)
+            {
+                assert(arg.GetNode()->OperIs(GT_PUTARG_REG));
+                continue;
+            }
+
+            unsigned paramLclNum = comp->compMapILargNum(argIndex);
+            assert(paramLclNum < comp->info.compArgsCount);
+
+            // check if parameter at the same index as the IL argument is marked as requiring special copy, assuming
+            // that it is being passed 1:1 to the pinvoke
+            if (comp->argRequiresSpecialCopy(paramLclNum) && (arg.GetSignatureType() == TYP_STRUCT))
+            {
+                assert(arg.GetNode()->OperIs(GT_PUTARG_STK));
+                InsertSpecialCopyArg(arg.GetNode()->AsPutArgStk(), arg.GetSignatureClassHandle(), paramLclNum);
+            }
+
+            argIndex--;
+        }
+    }
+}
+
+//------------------------------------------------------------------------
+// InsertSpecialCopyArg: Insert a call to the special copy helper to copy from the (possibly value pointed-to by) local
+// lclnum to the argument slot represented by putArgStk
+//
+// Arguments:
+//    putArgStk - the PutArgStk node representing the stack slot of the argument
+//    argType - the struct type of the argument
+//    lclNum - the local to use as the source for the special copy helper
+//
+// Notes:
+//   This method assumes that lclNum is either a by-ref to a struct of type argType
+//   or a struct of type argType.
+//   We use this to preserve special copy semantics for interop calls where we pass in a byref to a struct into a
+//   P/Invoke with a special modreq and the native function expects to recieve the struct by value with the argument
+//   being passed in having been created by the special copy helper.
+//
+void Lowering::InsertSpecialCopyArg(GenTreePutArgStk* putArgStk, CORINFO_CLASS_HANDLE argType, unsigned lclNum)
+{
+    assert(putArgStk != nullptr);
+    GenTree* dest = comp->gtNewPhysRegNode(REG_SPBASE, TYP_I_IMPL);
+
+    GenTree*  src;
+    var_types lclType = comp->lvaGetRealType(lclNum);
+
+    if (lclType == TYP_BYREF || lclType == TYP_I_IMPL)
+    {
+        src = comp->gtNewLclVarNode(lclNum, lclType);
+    }
+    else
+    {
+        assert(lclType == TYP_STRUCT);
+        src = comp->gtNewLclAddrNode(lclNum, 0, TYP_I_IMPL);
+    }
+
+    GenTree* destPlaceholder = comp->gtNewZeroConNode(dest->TypeGet());
+    GenTree* srcPlaceholder  = comp->gtNewZeroConNode(src->TypeGet());
+
+    GenTreeCall* call =
+        comp->gtNewCallNode(CT_USER_FUNC, comp->info.compCompHnd->getSpecialCopyHelper(argType), TYP_VOID);
+
+    call->gtArgs.PushBack(comp, NewCallArg::Primitive(destPlaceholder));
+    call->gtArgs.PushBack(comp, NewCallArg::Primitive(srcPlaceholder));
+
+    comp->fgMorphArgs(call);
+
+    LIR::Range callRange      = LIR::SeqTree(comp, call);
+    GenTree*   callRangeStart = callRange.FirstNode();
+    GenTree*   callRangeEnd   = callRange.LastNode();
+
+    BlockRange().InsertAfter(putArgStk, std::move(callRange));
+    BlockRange().InsertAfter(putArgStk, dest);
+    BlockRange().InsertAfter(putArgStk, src);
+
+    LIR::Use destUse;
+    LIR::Use srcUse;
+    BlockRange().TryGetUse(destPlaceholder, &destUse);
+    BlockRange().TryGetUse(srcPlaceholder, &srcUse);
+    destUse.ReplaceWith(dest);
+    srcUse.ReplaceWith(src);
+    destPlaceholder->SetUnusedValue();
+    srcPlaceholder->SetUnusedValue();
+
+    LowerRange(callRangeStart, callRangeEnd);
+
+    // Finally move all GT_PUTARG_* nodes
+    // Re-use the existing logic for CFG call args here
+    MoveCFGCallArgs(call);
+
+    BlockRange().Remove(destPlaceholder);
+    BlockRange().Remove(srcPlaceholder);
+}
+#endif // defined(TARGET_X86) && defined(FEATURE_IJW)
+
+//------------------------------------------------------------------------
+// LegalizeArgPlacement: Move arg placement nodes (PUTARG_*) into a legal
+// ordering after they have been created.
+//
+// Arguments:
+//   call - GenTreeCall node that has had PUTARG_* nodes created for arguments.
+//
+// Remarks:
+//   PUTARG_* nodes are created and inserted right after the definitions of the
+//   argument values. However, there are constraints on how the PUTARG nodes
+//   can appear:
+//
+//   - No other GT_CALL nodes are allowed between a PUTARG_REG/PUTARG_SPLIT
+//   node and the call. For FEATURE_FIXED_OUT_ARGS this condition is also true
+//   for PUTARG_STK.
+//   - For !FEATURE_FIXED_OUT_ARGS, the PUTARG_STK nodes must come in push
+//   order.
+//
+//   Morph has mostly already solved this problem, but transformations on LIR
+//   can make the ordering we end up with here illegal. This function legalizes
+//   the placement while trying to minimize the distance between an argument
+//   definition and its corresponding placement node.
+//
+void Lowering::LegalizeArgPlacement(GenTreeCall* call)
+{
+    size_t numMarked = MarkCallPutArgAndFieldListNodes(call);
+
+    // We currently do not try to resort the PUTARG_STK nodes, but rather just
+    // assert here that they are ordered.
+#if defined(DEBUG) && !FEATURE_FIXED_OUT_ARGS
+    unsigned nextPushOffset = UINT_MAX;
+#endif
+
+    GenTree* cur = call->gtPrev;
+    while (numMarked > 0)
+    {
+        assert(cur != nullptr);
+
+        if ((cur->gtLIRFlags & LIR::Flags::Mark) != 0)
+        {
+            numMarked--;
+            cur->gtLIRFlags &= ~LIR::Flags::Mark;
+
+#if defined(DEBUG) && !FEATURE_FIXED_OUT_ARGS
+            if (cur->OperIs(GT_PUTARG_STK))
+            {
+                // For !FEATURE_FIXED_OUT_ARGS (only x86) byte offsets are
+                // subtracted from the top of the stack frame; so last pushed
+                // arg has highest offset.
+                assert(nextPushOffset > cur->AsPutArgStk()->getArgOffset());
+                nextPushOffset = cur->AsPutArgStk()->getArgOffset();
+            }
+#endif
+        }
+
+        if (cur->IsCall())
+        {
+            break;
+        }
+
+        cur = cur->gtPrev;
+    }
+
+    if (numMarked == 0)
+    {
+        // Already legal; common case
+        return;
+    }
+
+    JITDUMP("Call [%06u] has %zu PUTARG nodes that interfere with [%06u]; will move them after it\n",
+            Compiler::dspTreeID(call), numMarked, Compiler::dspTreeID(cur));
+
+    // We found interference; remaining PUTARG nodes need to be moved after
+    // this point.
+    GenTree* insertionPoint = cur;
+
+    while (numMarked > 0)
+    {
+        assert(cur != nullptr);
+
+        GenTree* prev = cur->gtPrev;
+        if ((cur->gtLIRFlags & LIR::Flags::Mark) != 0)
+        {
+            numMarked--;
+            cur->gtLIRFlags &= ~LIR::Flags::Mark;
+
+            // For FEATURE_FIXED_OUT_ARGS: all PUTARG nodes must be moved after the interfering call
+            // For !FEATURE_FIXED_OUT_ARGS: only PUTARG_REG nodes must be moved after the interfering call
+            if (FEATURE_FIXED_OUT_ARGS || cur->OperIs(GT_FIELD_LIST, GT_PUTARG_REG))
+            {
+                JITDUMP("Relocating [%06u] after [%06u]\n", Compiler::dspTreeID(cur),
+                        Compiler::dspTreeID(insertionPoint));
+
+                BlockRange().Remove(cur);
+                BlockRange().InsertAfter(insertionPoint, cur);
+            }
+        }
+
+        cur = prev;
+    }
+
+    JITDUMP("Final result after legalization:\n");
+    DISPTREERANGE(BlockRange(), call);
 }
 
 // helper that create a node representing a relocatable physical address computation
@@ -1846,7 +2256,160 @@ GenTree* Lowering::AddrGen(void* addr)
 }
 
 //------------------------------------------------------------------------
+// LowerCallMemset: Replaces the following memset-like special intrinsics:
+//
+//    SpanHelpers.Fill<T>(ref dstRef, CNS_SIZE, CNS_VALUE)
+//    CORINFO_HELP_MEMSET(ref dstRef, CNS_VALUE, CNS_SIZE)
+//    SpanHelpers.ClearWithoutReferences(ref dstRef, CNS_SIZE)
+//
+//  with a GT_STORE_BLK node:
+//
+//    *  STORE_BLK struct<CNS_SIZE> (init) (Unroll)
+//    +--*  LCL_VAR   byref  dstRef
+//    \--*  CNS_INT   int    0
+//
+// Arguments:
+//    tree - GenTreeCall node to replace with STORE_BLK
+//    next - [out] Next node to lower if this function returns true
+//
+// Return Value:
+//    false if no changes were made
+//
+bool Lowering::LowerCallMemset(GenTreeCall* call, GenTree** next)
+{
+    assert(call->IsSpecialIntrinsic(comp, NI_System_SpanHelpers_Fill) ||
+           call->IsSpecialIntrinsic(comp, NI_System_SpanHelpers_ClearWithoutReferences) ||
+           call->IsHelperCall(comp, CORINFO_HELP_MEMSET));
+
+    JITDUMP("Considering Memset-like call [%06d] for unrolling.. ", comp->dspTreeID(call))
+
+    if (comp->info.compHasNextCallRetAddr)
+    {
+        JITDUMP("compHasNextCallRetAddr=true so we won't be able to remove the call - bail out.\n");
+        return false;
+    }
+
+    GenTree* dstRefArg = call->gtArgs.GetUserArgByIndex(0)->GetNode();
+    GenTree* lengthArg;
+    GenTree* valueArg;
+
+    // Fill<T>'s length is not in bytes, so we need to scale it depending on the signature
+    unsigned lengthScale;
+
+    if (call->IsSpecialIntrinsic(comp, NI_System_SpanHelpers_Fill))
+    {
+        // void SpanHelpers::Fill<T>(ref T refData, nuint numElements, T value)
+        //
+        assert(call->gtArgs.CountUserArgs() == 3);
+        lengthArg             = call->gtArgs.GetUserArgByIndex(1)->GetNode();
+        CallArg* valueCallArg = call->gtArgs.GetUserArgByIndex(2);
+        valueArg              = valueCallArg->GetNode();
+
+        // Get that <T> from the signature
+        lengthScale = genTypeSize(valueCallArg->GetSignatureType());
+        // NOTE: structs and TYP_REF will be ignored by the "Value is not a constant" check
+        // Some of those cases can be enabled in future, e.g. s
+    }
+    else if (call->IsHelperCall(comp, CORINFO_HELP_MEMSET))
+    {
+        // void CORINFO_HELP_MEMSET(ref T refData, byte value, nuint numElements)
+        //
+        assert(call->gtArgs.CountUserArgs() == 3);
+        lengthArg   = call->gtArgs.GetUserArgByIndex(2)->GetNode();
+        valueArg    = call->gtArgs.GetUserArgByIndex(1)->GetNode();
+        lengthScale = 1; // it's always in bytes
+    }
+    else
+    {
+        // void SpanHelpers::ClearWithoutReferences(ref byte b, nuint byteLength)
+        //
+        assert(call->IsSpecialIntrinsic(comp, NI_System_SpanHelpers_ClearWithoutReferences));
+        assert(call->gtArgs.CountUserArgs() == 2);
+
+        // Simple zeroing
+        lengthArg   = call->gtArgs.GetUserArgByIndex(1)->GetNode();
+        valueArg    = comp->gtNewZeroConNode(TYP_INT);
+        lengthScale = 1; // it's always in bytes
+    }
+
+    if (!lengthArg->IsIntegralConst())
+    {
+        JITDUMP("Length is not a constant - bail out.\n");
+        return false;
+    }
+
+    if (!valueArg->IsCnsIntOrI() || !valueArg->TypeIs(TYP_INT))
+    {
+        JITDUMP("Value is not a constant - bail out.\n");
+        return false;
+    }
+
+    // If value is not zero, we can only unroll for single-byte values
+    if (!valueArg->IsIntegralConst(0) && (lengthScale != 1))
+    {
+        JITDUMP("Value is not unroll-friendly - bail out.\n");
+        return false;
+    }
+
+    // Convert lenCns to bytes
+    ssize_t lenCns = lengthArg->AsIntCon()->IconValue();
+    if (CheckedOps::MulOverflows((target_ssize_t)lenCns, (target_ssize_t)lengthScale, CheckedOps::Signed))
+    {
+        // lenCns overflows
+        JITDUMP("lenCns * lengthScale overflows - bail out.\n")
+        return false;
+    }
+    lenCns *= (ssize_t)lengthScale;
+
+    // TODO-CQ: drop the whole thing in case of lenCns = 0
+    if ((lenCns <= 0) || (lenCns > (ssize_t)comp->getUnrollThreshold(Compiler::UnrollKind::Memset)))
+    {
+        JITDUMP("Size is either 0 or too big to unroll - bail out.\n")
+        return false;
+    }
+
+    JITDUMP("Accepted for unrolling!\nOld tree:\n");
+    DISPTREERANGE(BlockRange(), call);
+
+    if (!valueArg->IsIntegralConst(0))
+    {
+        // Non-zero (byte) value, wrap value with GT_INIT_VAL
+        GenTree* initVal = valueArg;
+        valueArg         = comp->gtNewOperNode(GT_INIT_VAL, TYP_INT, initVal);
+        BlockRange().InsertAfter(initVal, valueArg);
+    }
+
+    GenTreeBlk* storeBlk =
+        comp->gtNewStoreBlkNode(comp->typGetBlkLayout((unsigned)lenCns), dstRefArg, valueArg, GTF_IND_UNALIGNED);
+    storeBlk->gtBlkOpKind = GenTreeBlk::BlkOpKindUnroll;
+
+    // Insert/Remove trees into LIR
+    BlockRange().InsertBefore(call, storeBlk);
+    if (call->IsSpecialIntrinsic(comp, NI_System_SpanHelpers_ClearWithoutReferences))
+    {
+        // Value didn't exist in LIR previously
+        BlockRange().InsertBefore(storeBlk, valueArg);
+    }
+
+    // Remove the call and mark everything as unused ...
+    BlockRange().Remove(call, true);
+    // ... except the args we're going to re-use
+    dstRefArg->ClearUnusedValue();
+    valueArg->ClearUnusedValue();
+    if (valueArg->OperIs(GT_INIT_VAL))
+    {
+        valueArg->gtGetOp1()->ClearUnusedValue();
+    }
+
+    JITDUMP("\nNew tree:\n");
+    DISPTREERANGE(BlockRange(), storeBlk);
+    *next = storeBlk;
+    return true;
+}
+
+//------------------------------------------------------------------------
 // LowerCallMemmove: Replace Buffer.Memmove(DST, SRC, CNS_SIZE) with a GT_STORE_BLK:
+//    Do the same for CORINFO_HELP_MEMCPY(DST, SRC, CNS_SIZE)
 //
 //    *  STORE_BLK struct<CNS_SIZE> (copy) (Unroll)
 //    +--*  LCL_VAR   byref  dst
@@ -1863,7 +2426,8 @@ GenTree* Lowering::AddrGen(void* addr)
 bool Lowering::LowerCallMemmove(GenTreeCall* call, GenTree** next)
 {
     JITDUMP("Considering Memmove [%06d] for unrolling.. ", comp->dspTreeID(call))
-    assert(comp->lookupNamedIntrinsic(call->gtCallMethHnd) == NI_System_Buffer_Memmove);
+    assert(call->IsHelperCall(comp, CORINFO_HELP_MEMCPY) ||
+           (comp->lookupNamedIntrinsic(call->gtCallMethHnd) == NI_System_SpanHelpers_Memmove));
 
     assert(call->gtArgs.CountUserArgs() == 3);
 
@@ -1897,7 +2461,8 @@ bool Lowering::LowerCallMemmove(GenTreeCall* call, GenTree** next)
 
             // TODO-CQ: Use GenTreeBlk::BlkOpKindUnroll here if srcAddr and dstAddr don't overlap, thus, we can
             // unroll this memmove as memcpy - it doesn't require lots of temp registers
-            storeBlk->gtBlkOpKind = GenTreeBlk::BlkOpKindUnrollMemmove;
+            storeBlk->gtBlkOpKind = call->IsHelperCall(comp, CORINFO_HELP_MEMCPY) ? GenTreeBlk::BlkOpKindUnroll
+                                                                                  : GenTreeBlk::BlkOpKindUnrollMemmove;
 
             BlockRange().InsertBefore(call, srcBlk);
             BlockRange().InsertBefore(call, storeBlk);
@@ -2042,7 +2607,7 @@ bool Lowering::LowerCallMemcmp(GenTreeCall* call, GenTree** next)
                         if (GenTree::OperIsCmpCompare(oper))
                         {
                             assert(type == TYP_INT);
-                            return comp->gtNewSimdCmpOpAllNode(oper, TYP_UBYTE, op1, op2, CORINFO_TYPE_NATIVEUINT,
+                            return comp->gtNewSimdCmpOpAllNode(oper, TYP_INT, op1, op2, CORINFO_TYPE_NATIVEUINT,
                                                                genTypeSize(op1));
                         }
                         return comp->gtNewSimdBinOpNode(oper, op1->TypeGet(), op1, op2, CORINFO_TYPE_NATIVEUINT,
@@ -2207,7 +2772,8 @@ GenTree* Lowering::LowerCall(GenTree* node)
     JITDUMP("\n");
 
     // All runtime lookups are expected to be expanded in fgExpandRuntimeLookups
-    assert(!call->IsExpRuntimeLookup());
+    assert(!call->IsRuntimeLookupHelperCall(comp) ||
+           (call->gtCallDebugFlags & GTF_CALL_MD_RUNTIME_LOOKUP_EXPANDED) != 0);
 
     // Also, always expand static cctor helper for NativeAOT, see
     // https://github.com/dotnet/runtime/issues/68278#issuecomment-1543322819
@@ -2217,15 +2783,48 @@ GenTree* Lowering::LowerCall(GenTree* node)
     }
 
 #if defined(TARGET_AMD64) || defined(TARGET_ARM64)
+    GenTree* nextNode = nullptr;
     if (call->gtCallMoreFlags & GTF_CALL_M_SPECIAL_INTRINSIC)
     {
-        GenTree*       nextNode = nullptr;
-        NamedIntrinsic ni       = comp->lookupNamedIntrinsic(call->gtCallMethHnd);
-        if (((ni == NI_System_Buffer_Memmove) && LowerCallMemmove(call, &nextNode)) ||
-            ((ni == NI_System_SpanHelpers_SequenceEqual) && LowerCallMemcmp(call, &nextNode)))
+        switch (comp->lookupNamedIntrinsic(call->gtCallMethHnd))
         {
-            return nextNode;
+            case NI_System_SpanHelpers_Memmove:
+                if (LowerCallMemmove(call, &nextNode))
+                {
+                    return nextNode;
+                }
+                break;
+
+            case NI_System_SpanHelpers_SequenceEqual:
+                if (LowerCallMemcmp(call, &nextNode))
+                {
+                    return nextNode;
+                }
+                break;
+
+            case NI_System_SpanHelpers_Fill:
+            case NI_System_SpanHelpers_ClearWithoutReferences:
+                if (LowerCallMemset(call, &nextNode))
+                {
+                    return nextNode;
+                }
+                break;
+
+            default:
+                break;
         }
+    }
+
+    // Try to lower CORINFO_HELP_MEMCPY to unrollable STORE_BLK
+    if (call->IsHelperCall(comp, CORINFO_HELP_MEMCPY) && LowerCallMemmove(call, &nextNode))
+    {
+        return nextNode;
+    }
+
+    // Try to lower CORINFO_HELP_MEMSET to unrollable STORE_BLK
+    if (call->IsHelperCall(comp, CORINFO_HELP_MEMSET) && LowerCallMemset(call, &nextNode))
+    {
+        return nextNode;
     }
 #endif
 
@@ -2440,19 +3039,7 @@ void Lowering::InsertProfTailCallHook(GenTreeCall* call, GenTree* insertionPoint
 //
 GenTree* Lowering::FindEarliestPutArg(GenTreeCall* call)
 {
-    size_t numMarkedNodes = 0;
-    for (CallArg& arg : call->gtArgs.Args())
-    {
-        if (arg.GetEarlyNode() != nullptr)
-        {
-            numMarkedNodes += MarkPutArgNodes(arg.GetEarlyNode());
-        }
-
-        if (arg.GetLateNode() != nullptr)
-        {
-            numMarkedNodes += MarkPutArgNodes(arg.GetLateNode());
-        }
-    }
+    size_t numMarkedNodes = MarkCallPutArgAndFieldListNodes(call);
 
     if (numMarkedNodes <= 0)
     {
@@ -2478,32 +3065,67 @@ GenTree* Lowering::FindEarliestPutArg(GenTreeCall* call)
 }
 
 //------------------------------------------------------------------------
-// MarkPutArgNodes: Mark all direct operand PUTARG nodes with a LIR mark.
+// MarkCallPutArgNodes: Mark all operand FIELD_LIST and PUTARG nodes
+// corresponding to a call.
 //
 // Arguments:
-//    node - the node (either a field list or PUTARG node)
+//   call - the call
 //
 // Returns:
-//    The number of marks added.
+//   The number of nodes marked.
 //
-size_t Lowering::MarkPutArgNodes(GenTree* node)
+// Remarks:
+//   FIELD_LIST operands are marked too, and their PUTARG operands are in turn
+//   marked as well.
+//
+size_t Lowering::MarkCallPutArgAndFieldListNodes(GenTreeCall* call)
+{
+    size_t numMarkedNodes = 0;
+    for (CallArg& arg : call->gtArgs.Args())
+    {
+        if (arg.GetEarlyNode() != nullptr)
+        {
+            numMarkedNodes += MarkPutArgAndFieldListNodes(arg.GetEarlyNode());
+        }
+
+        if (arg.GetLateNode() != nullptr)
+        {
+            numMarkedNodes += MarkPutArgAndFieldListNodes(arg.GetLateNode());
+        }
+    }
+
+    return numMarkedNodes;
+}
+
+//------------------------------------------------------------------------
+// MarkPutArgAndFieldListNodes: Mark all operand FIELD_LIST and PUTARG nodes
+// with a LIR mark.
+//
+// Arguments:
+//   node - the node (either a FIELD_LIST or PUTARG operand)
+//
+// Returns:
+//   The number of marks added.
+//
+// Remarks:
+//   FIELD_LIST operands are marked too, and their PUTARG operands are in turn
+//   marked as well.
+//
+size_t Lowering::MarkPutArgAndFieldListNodes(GenTree* node)
 {
     assert(node->OperIsPutArg() || node->OperIsFieldList());
 
-    size_t result = 0;
+    assert((node->gtLIRFlags & LIR::Flags::Mark) == 0);
+    node->gtLIRFlags |= LIR::Flags::Mark;
+
+    size_t result = 1;
     if (node->OperIsFieldList())
     {
         for (GenTreeFieldList::Use& operand : node->AsFieldList()->Uses())
         {
             assert(operand.GetNode()->OperIsPutArg());
-            result += MarkPutArgNodes(operand.GetNode());
+            result += MarkPutArgAndFieldListNodes(operand.GetNode());
         }
-    }
-    else
-    {
-        assert((node->gtLIRFlags & LIR::Flags::Mark) == 0);
-        node->gtLIRFlags |= LIR::Flags::Mark;
-        result++;
     }
 
     return result;
@@ -2560,7 +3182,7 @@ void Lowering::LowerFastTailCall(GenTreeCall* call)
     // The below condition cannot be asserted in lower because fgSimpleLowering()
     // can add a new basic block for range check failure which becomes
     // fgLastBB with block number > loop header block number.
-    // assert((comp->compCurBB->bbFlags & BBF_GC_SAFE_POINT) ||
+    // assert(comp->compCurBB->HasFlag(BBF_GC_SAFE_POINT) ||
     //         !comp->optReachWithoutCall(comp->fgFirstBB, comp->compCurBB) || comp->GetInterruptible());
 
     // If PInvokes are in-lined, we have to remember to execute PInvoke method epilog anywhere that
@@ -2579,52 +3201,22 @@ void Lowering::LowerFastTailCall(GenTreeCall* call)
     // call could over-write the stack arg that is setup earlier.
     ArrayStack<GenTree*> putargs(comp->getAllocator(CMK_ArrayStack));
 
-    for (CallArg& arg : call->gtArgs.EarlyArgs())
+    for (CallArg& arg : call->gtArgs.Args())
     {
-        if (arg.GetEarlyNode()->OperIs(GT_PUTARG_STK))
+        if (arg.GetNode()->OperIs(GT_PUTARG_STK))
         {
-            putargs.Push(arg.GetEarlyNode());
-        }
-    }
-
-    for (CallArg& arg : call->gtArgs.LateArgs())
-    {
-        if (arg.GetLateNode()->OperIs(GT_PUTARG_STK))
-        {
-            putargs.Push(arg.GetLateNode());
+            putargs.Push(arg.GetNode());
         }
     }
 
     GenTree* startNonGCNode = nullptr;
     if (!putargs.Empty())
     {
-        // Get the earliest operand of the first PUTARG_STK node. We will make
-        // the required copies of args before this node.
-        bool     unused;
-        GenTree* insertionPoint = BlockRange().GetTreeRange(putargs.Bottom(), &unused).FirstNode();
-        // Insert GT_START_NONGC node before we evaluate the PUTARG_STK args.
-        // Note that if there are no args to be setup on stack, no need to
-        // insert GT_START_NONGC node.
-        startNonGCNode = new (comp, GT_START_NONGC) GenTree(GT_START_NONGC, TYP_VOID);
-        BlockRange().InsertBefore(insertionPoint, startNonGCNode);
-
-        // Gc-interruptability in the following case:
-        //     foo(a, b, c, d, e) { bar(a, b, c, d, e); }
-        //     bar(a, b, c, d, e) { foo(a, b, d, d, e); }
-        //
-        // Since the instruction group starting from the instruction that sets up first
-        // stack arg to the end of the tail call is marked as non-gc interruptible,
-        // this will form a non-interruptible tight loop causing gc-starvation. To fix
-        // this we insert GT_NO_OP as embedded stmt before GT_START_NONGC, if the method
-        // has a single basic block and is not a GC-safe point.  The presence of a single
-        // nop outside non-gc interruptible region will prevent gc starvation.
-        if ((comp->fgBBcount == 1) && !(comp->compCurBB->bbFlags & BBF_GC_SAFE_POINT))
+        GenTree* firstPutargStk = putargs.Bottom(0);
+        for (int i = 1; i < putargs.Height(); i++)
         {
-            assert(comp->fgFirstBB == comp->compCurBB);
-            GenTree* noOp = new (comp, GT_NO_OP) GenTree(GT_NO_OP, TYP_VOID);
-            BlockRange().InsertBefore(startNonGCNode, noOp);
+            firstPutargStk = LIR::FirstNode(firstPutargStk, putargs.Bottom(i));
         }
-
         // Since this is a fast tailcall each PUTARG_STK will place the argument in the
         // _incoming_ arg space area. This will effectively overwrite our already existing
         // incoming args that live in that area. If we have later uses of those args, this
@@ -2694,10 +3286,10 @@ void Lowering::LowerFastTailCall(GenTreeCall* call)
                 GenTree* lookForUsesFrom = put->gtNext;
                 if (overwrittenStart != argStart)
                 {
-                    lookForUsesFrom = insertionPoint;
+                    lookForUsesFrom = firstPutargStk;
                 }
 
-                RehomeArgForFastTailCall(callerArgLclNum, insertionPoint, lookForUsesFrom, call);
+                RehomeArgForFastTailCall(callerArgLclNum, firstPutargStk, lookForUsesFrom, call);
                 // The above call can introduce temps and invalidate the pointer.
                 callerArgDsc = comp->lvaGetDesc(callerArgLclNum);
 
@@ -2711,9 +3303,32 @@ void Lowering::LowerFastTailCall(GenTreeCall* call)
                 unsigned int fieldsEnd   = fieldsFirst + callerArgDsc->lvFieldCnt;
                 for (unsigned int j = fieldsFirst; j < fieldsEnd; j++)
                 {
-                    RehomeArgForFastTailCall(j, insertionPoint, lookForUsesFrom, call);
+                    RehomeArgForFastTailCall(j, firstPutargStk, lookForUsesFrom, call);
                 }
             }
+        }
+
+        // Now insert GT_START_NONGC node before we evaluate the first PUTARG_STK.
+        // Note that if there are no args to be setup on stack, no need to
+        // insert GT_START_NONGC node.
+        startNonGCNode = new (comp, GT_START_NONGC) GenTree(GT_START_NONGC, TYP_VOID);
+        BlockRange().InsertBefore(firstPutargStk, startNonGCNode);
+
+        // Gc-interruptability in the following case:
+        //     foo(a, b, c, d, e) { bar(a, b, c, d, e); }
+        //     bar(a, b, c, d, e) { foo(a, b, d, d, e); }
+        //
+        // Since the instruction group starting from the instruction that sets up first
+        // stack arg to the end of the tail call is marked as non-gc interruptible,
+        // this will form a non-interruptible tight loop causing gc-starvation. To fix
+        // this we insert GT_NO_OP as embedded stmt before GT_START_NONGC, if the method
+        // has a single basic block and is not a GC-safe point.  The presence of a single
+        // nop outside non-gc interruptible region will prevent gc starvation.
+        if ((comp->fgBBcount == 1) && !comp->compCurBB->HasFlag(BBF_GC_SAFE_POINT))
+        {
+            assert(comp->fgFirstBB == comp->compCurBB);
+            GenTree* noOp = new (comp, GT_NO_OP) GenTree(GT_NO_OP, TYP_VOID);
+            BlockRange().InsertBefore(startNonGCNode, noOp);
         }
     }
 
@@ -2856,7 +3471,7 @@ GenTree* Lowering::LowerTailCallViaJitHelper(GenTreeCall* call, GenTree* callTar
     // Therefore the block containing the tail call should be a GC safe point to avoid
     // GC starvation. It is legal for the block to be unmarked iff the entry block is a
     // GC safe point, as the entry block trivially dominates every reachable block.
-    assert((comp->compCurBB->bbFlags & BBF_GC_SAFE_POINT) || (comp->fgFirstBB->bbFlags & BBF_GC_SAFE_POINT));
+    assert(comp->compCurBB->HasFlag(BBF_GC_SAFE_POINT) || comp->fgFirstBB->HasFlag(BBF_GC_SAFE_POINT));
 
     // If PInvokes are in-lined, we have to remember to execute PInvoke method epilog anywhere that
     // a method returns.  This is a case of caller method has both PInvokes and tail calls.
@@ -3101,23 +3716,7 @@ void Lowering::LowerCFGCall(GenTreeCall* call)
             LowerNode(regNode);
 
             // Finally move all GT_PUTARG_* nodes
-            for (CallArg& arg : call->gtArgs.EarlyArgs())
-            {
-                GenTree* node = arg.GetEarlyNode();
-                // Non-value nodes in early args are setup nodes for late args.
-                if (node->IsValue())
-                {
-                    assert(node->OperIsPutArg() || node->OperIsFieldList());
-                    MoveCFGCallArg(call, node);
-                }
-            }
-
-            for (CallArg& arg : call->gtArgs.LateArgs())
-            {
-                GenTree* node = arg.GetLateNode();
-                assert(node->OperIsPutArg() || node->OperIsFieldList());
-                MoveCFGCallArg(call, node);
-            }
+            MoveCFGCallArgs(call);
             break;
         }
         case CFGCallKind::Dispatch:
@@ -3133,10 +3732,13 @@ void Lowering::LowerCFGCall(GenTreeCall* call)
             call->gtArgs.PushLateBack(targetArg);
 
             // Set up ABI information for this arg.
+            targetArg->NewAbiInfo =
+                ABIPassingInformation::FromSegment(comp, ABIPassingSegment::InRegister(REG_DISPATCH_INDIRECT_CALL_ADDR,
+                                                                                       0, TARGET_POINTER_SIZE));
             targetArg->AbiInfo.ArgType = callTarget->TypeGet();
             targetArg->AbiInfo.SetRegNum(0, REG_DISPATCH_INDIRECT_CALL_ADDR);
-            targetArg->AbiInfo.NumRegs = 1;
-            targetArg->AbiInfo.SetByteSize(TARGET_POINTER_SIZE, TARGET_POINTER_SIZE, false, false);
+            targetArg->AbiInfo.NumRegs  = 1;
+            targetArg->AbiInfo.ByteSize = TARGET_POINTER_SIZE;
 
             // Lower the newly added args now that call is updated
             LowerArg(call, targetArg, true /* late */);
@@ -3262,6 +3864,34 @@ void Lowering::MoveCFGCallArg(GenTreeCall* call, GenTree* node)
     JITDUMP("\n");
     BlockRange().Remove(node);
     BlockRange().InsertBefore(call, node);
+}
+
+//------------------------------------------------------------------------
+// MoveCFGCallArgs: Given a call that will be CFG transformed using the
+// validate+call scheme, move all GT_PUTARG_* or GT_FIELD_LIST nodes right before the call.
+//
+// Arguments:
+//    call - The call that is being CFG transformed
+//
+// Remarks:
+//    See comments in MoveCFGCallArg for more details.
+//
+void Lowering::MoveCFGCallArgs(GenTreeCall* call)
+{
+    // Finally move all GT_PUTARG_* nodes
+    for (CallArg& arg : call->gtArgs.EarlyArgs())
+    {
+        GenTree* node = arg.GetEarlyNode();
+        assert(node->OperIsPutArg() || node->OperIsFieldList());
+        MoveCFGCallArg(call, node);
+    }
+
+    for (CallArg& arg : call->gtArgs.LateArgs())
+    {
+        GenTree* node = arg.GetLateNode();
+        assert(node->OperIsPutArg() || node->OperIsFieldList());
+        MoveCFGCallArg(call, node);
+    }
 }
 
 #ifndef TARGET_64BIT
@@ -3552,7 +4182,7 @@ GenTree* Lowering::OptimizeConstCompare(GenTree* cmp)
 #ifdef TARGET_XARCH
                  || IsContainableMemoryOp(castOp)
 #endif
-                     );
+                );
 
             if (removeCast)
             {
@@ -4189,7 +4819,7 @@ void Lowering::LowerJmpMethod(GenTree* jmp)
 
     JITDUMP("lowering GT_JMP\n");
     DISPNODE(jmp);
-    JITDUMP("============");
+    JITDUMP("============\n");
 
     // If PInvokes are in-lined, we have to remember to execute PInvoke method epilog anywhere that
     // a method returns.
@@ -4199,22 +4829,22 @@ void Lowering::LowerJmpMethod(GenTree* jmp)
     }
 }
 
-// Lower GT_RETURN node to insert PInvoke method epilog if required.
-void Lowering::LowerRet(GenTreeUnOp* ret)
+// Lower GT_RETURN/GT_SWIFT_ERROR_RET node to insert PInvoke method epilog if required.
+void Lowering::LowerRet(GenTreeOp* ret)
 {
-    assert(ret->OperGet() == GT_RETURN);
+    assert(ret->OperIs(GT_RETURN, GT_SWIFT_ERROR_RET));
 
-    JITDUMP("lowering GT_RETURN\n");
+    JITDUMP("lowering return node\n");
     DISPNODE(ret);
-    JITDUMP("============");
+    JITDUMP("============\n");
 
-    GenTree* retVal = ret->gtGetOp1();
+    GenTree* retVal = ret->GetReturnValue();
     // There are two kinds of retyping:
     // - A simple bitcast can be inserted when:
     //   - We're returning a floating type as an integral type or vice-versa, or
     // - If we're returning a struct as a primitive type, we change the type of
     // 'retval' in 'LowerRetStructLclVar()'
-    bool needBitcast        = (ret->TypeGet() != TYP_VOID) && !varTypeUsesSameRegType(ret, ret->gtGetOp1());
+    bool needBitcast        = (ret->TypeGet() != TYP_VOID) && !varTypeUsesSameRegType(ret, retVal);
     bool doPrimitiveBitcast = false;
     if (needBitcast)
     {
@@ -4230,7 +4860,7 @@ void Lowering::LowerRet(GenTreeUnOp* ret)
 #endif
 
         GenTree* bitcast = comp->gtNewBitCastNode(ret->TypeGet(), retVal);
-        ret->gtOp1       = bitcast;
+        ret->SetReturnValue(bitcast);
         BlockRange().InsertBefore(ret, bitcast);
         ContainCheckBitCast(bitcast);
     }
@@ -4276,7 +4906,7 @@ void Lowering::LowerRet(GenTreeUnOp* ret)
     }
 
     // Method doing PInvokes has exactly one return block unless it has tail calls.
-    if (comp->compMethodRequiresPInvokeFrame() && (comp->compCurBB == comp->genReturnBB))
+    if (comp->compMethodRequiresPInvokeFrame())
     {
         InsertPInvokeMethodEpilog(comp->compCurBB DEBUGARG(ret));
     }
@@ -4284,12 +4914,15 @@ void Lowering::LowerRet(GenTreeUnOp* ret)
 }
 
 //----------------------------------------------------------------------------------------------
-// LowerStoreLocCommon: platform idependent part of local var or field store lowering.
+// LowerStoreLocCommon: platform independent part of local var or field store lowering.
 //
 // Arguments:
 //     lclStore - The store lcl node to lower.
 //
-void Lowering::LowerStoreLocCommon(GenTreeLclVarCommon* lclStore)
+// Returns:
+//   Next node to lower.
+//
+GenTree* Lowering::LowerStoreLocCommon(GenTreeLclVarCommon* lclStore)
 {
     assert(lclStore->OperIs(GT_STORE_LCL_FLD, GT_STORE_LCL_VAR));
     JITDUMP("lowering store lcl var/field (before):\n");
@@ -4348,12 +4981,14 @@ void Lowering::LowerStoreLocCommon(GenTreeLclVarCommon* lclStore)
             // x86 uses it only for long return type, not for structs.
             assert(slotCount == 1);
             assert(lclRegType != TYP_UNDEF);
-#else  // !TARGET_XARCH || UNIX_AMD64_ABI
+#else // !TARGET_XARCH || UNIX_AMD64_ABI
             if (!comp->IsHfa(layout->GetClassHandle()))
             {
                 if (slotCount > 1)
                 {
+#if !defined(TARGET_RISCV64) && !defined(TARGET_LOONGARCH64)
                     assert(call->HasMultiRegRetVal());
+#endif
                 }
                 else
                 {
@@ -4376,8 +5011,7 @@ void Lowering::LowerStoreLocCommon(GenTreeLclVarCommon* lclStore)
                 lclStore->gtOp1            = spilledCall;
                 src                        = lclStore->gtOp1;
                 JITDUMP("lowering store lcl var/field has to spill call src.\n");
-                LowerStoreLocCommon(lclStore);
-                return;
+                return LowerStoreLocCommon(lclStore);
             }
 #endif // !WINDOWS_AMD64_ABI
             convertToStoreObj = false;
@@ -4436,10 +5070,10 @@ void Lowering::LowerStoreLocCommon(GenTreeLclVarCommon* lclStore)
             }
             convertToStoreObj = false;
 #else  // TARGET_ARM64
-            // This optimization on arm64 allows more SIMD16 vars to be enregistered but it could cause
-            // regressions when there are many calls and before/after each one we have to store/save the upper
-            // half of these registers. So enable this for arm64 only when LSRA is taught not to allocate registers when
-            // it would have to spilled too many times.
+       // This optimization on arm64 allows more SIMD16 vars to be enregistered but it could cause
+       // regressions when there are many calls and before/after each one we have to store/save the upper
+       // half of these registers. So enable this for arm64 only when LSRA is taught not to allocate registers when
+       // it would have to spilled too many times.
             convertToStoreObj = true;
 #endif // TARGET_ARM64
         }
@@ -4458,7 +5092,6 @@ void Lowering::LowerStoreLocCommon(GenTreeLclVarCommon* lclStore)
 
             addr->gtFlags |= lclStore->gtFlags & (GTF_VAR_DEF | GTF_VAR_USEASG);
 
-            // Create the assignment node.
             lclStore->ChangeOper(GT_STORE_BLK);
             GenTreeBlk* objStore = lclStore->AsBlk();
             objStore->gtFlags    = GTF_ASG | GTF_IND_NONFAULTING | GTF_IND_TGT_NOT_HEAP;
@@ -4473,7 +5106,7 @@ void Lowering::LowerStoreLocCommon(GenTreeLclVarCommon* lclStore)
             DISPTREERANGE(BlockRange(), objStore);
             JITDUMP("\n");
 
-            return;
+            return objStore->gtNext;
         }
     }
 
@@ -4491,11 +5124,13 @@ void Lowering::LowerStoreLocCommon(GenTreeLclVarCommon* lclStore)
         ContainCheckBitCast(bitcast);
     }
 
-    LowerStoreLoc(lclStore);
+    GenTree* next = LowerStoreLoc(lclStore);
 
     JITDUMP("lowering store lcl var/field (after):\n");
     DISPTREERANGE(BlockRange(), lclStore);
     JITDUMP("\n");
+
+    return next;
 }
 
 //----------------------------------------------------------------------------------------------
@@ -4530,7 +5165,7 @@ void Lowering::LowerRetStruct(GenTreeUnOp* ret)
         return;
     }
 
-    assert(ret->OperIs(GT_RETURN));
+    assert(ret->OperIs(GT_RETURN, GT_SWIFT_ERROR_RET));
     assert(varTypeIsStruct(ret));
 
     GenTree*  retVal           = ret->gtGetOp1();
@@ -4622,8 +5257,8 @@ void Lowering::LowerRetStruct(GenTreeUnOp* ret)
 void Lowering::LowerRetSingleRegStructLclVar(GenTreeUnOp* ret)
 {
     assert(!comp->compMethodReturnsMultiRegRetType());
-    assert(ret->OperIs(GT_RETURN));
-    GenTreeLclVarCommon* lclVar = ret->gtGetOp1()->AsLclVar();
+    assert(ret->OperIs(GT_RETURN, GT_SWIFT_ERROR_RET));
+    GenTreeLclVarCommon* lclVar = ret->AsOp()->GetReturnValue()->AsLclVar();
     assert(lclVar->OperIs(GT_LCL_VAR));
     unsigned   lclNum = lclVar->GetLclNum();
     LclVarDsc* varDsc = comp->lvaGetDesc(lclNum);
@@ -4659,6 +5294,7 @@ void Lowering::LowerRetSingleRegStructLclVar(GenTreeUnOp* ret)
             // Otherwise we don't mind that we leave the upper bits undefined.
             lclVar->ChangeType(ret->TypeGet());
         }
+        lclVar->AsLclFld()->SetLclOffs(comp->compRetTypeDesc.GetSingleReturnFieldOffset());
     }
     else
     {
@@ -4671,7 +5307,7 @@ void Lowering::LowerRetSingleRegStructLclVar(GenTreeUnOp* ret)
         if (!varTypeUsesSameRegType(ret, lclVarType))
         {
             GenTree* bitcast = comp->gtNewBitCastNode(ret->TypeGet(), ret->gtOp1);
-            ret->gtOp1       = bitcast;
+            ret->AsOp()->SetReturnValue(bitcast);
             BlockRange().InsertBefore(ret, bitcast);
             ContainCheckBitCast(bitcast);
         }
@@ -4756,8 +5392,8 @@ void Lowering::LowerCallStruct(GenTreeCall* call)
                     break;
                 }
 #endif // FEATURE_SIMD
-                // importer has a separate mechanism to retype calls to helpers,
-                // keep it for now.
+       // importer has a separate mechanism to retype calls to helpers,
+       // keep it for now.
                 assert(user->TypeIs(TYP_REF) || (user->TypeIs(TYP_I_IMPL) && comp->IsTargetAbi(CORINFO_NATIVEAOT_ABI)));
                 assert(call->IsHelperCall());
                 assert(returnType == user->TypeGet());
@@ -4847,7 +5483,8 @@ GenTreeLclVar* Lowering::SpillStructCallResult(GenTreeCall* call) const
     comp->lvaSetVarDoNotEnregister(spillNum DEBUGARG(DoNotEnregisterReason::LocalField));
     CORINFO_CLASS_HANDLE retClsHnd = call->gtRetClsHnd;
     comp->lvaSetStruct(spillNum, retClsHnd, false);
-    GenTreeLclFld* spill = comp->gtNewStoreLclFldNode(spillNum, call->TypeGet(), 0, call);
+    unsigned       offset = call->GetReturnTypeDesc()->GetSingleReturnFieldOffset();
+    GenTreeLclFld* spill  = comp->gtNewStoreLclFldNode(spillNum, call->TypeGet(), offset, call);
 
     BlockRange().InsertAfter(call, spill);
     ContainCheckStoreLoc(spill);
@@ -4859,7 +5496,7 @@ GenTreeLclVar* Lowering::SpillStructCallResult(GenTreeCall* call) const
 
 GenTree* Lowering::LowerDirectCall(GenTreeCall* call)
 {
-    noway_assert(call->gtCallType == CT_USER_FUNC || call->gtCallType == CT_HELPER);
+    noway_assert(call->gtCallType == CT_USER_FUNC || call->IsHelperCall());
 
     // Non-virtual direct/indirect calls: Work out if the address of the
     // call is known at JIT time.  If not it is either an indirect call
@@ -4877,7 +5514,7 @@ GenTree* Lowering::LowerDirectCall(GenTreeCall* call)
     }
     else
 #endif
-        if (call->gtCallType == CT_HELPER)
+        if (call->IsHelperCall())
     {
         noway_assert(helperNum != CORINFO_HELP_UNDEF);
 
@@ -5173,7 +5810,7 @@ GenTree* Lowering::CreateFrameLinkUpdate(FrameLinkAction action)
     const CORINFO_EE_INFO*                       pInfo         = comp->eeGetEEInfo();
     const CORINFO_EE_INFO::InlinedCallFrameInfo& callFrameInfo = pInfo->inlinedCallFrameInfo;
 
-    GenTree* TCB = new (comp, GT_LCL_VAR) GenTreeLclVar(GT_LCL_VAR, TYP_I_IMPL, comp->info.compLvFrameListRoot);
+    GenTree* TCB = comp->gtNewLclVarNode(comp->info.compLvFrameListRoot, TYP_I_IMPL);
 
     // Thread->m_pFrame
     GenTree* addr = new (comp, GT_LEA) GenTreeAddrMode(TYP_I_IMPL, TCB, nullptr, 1, pInfo->offsetOfThreadFrame);
@@ -5183,18 +5820,17 @@ GenTree* Lowering::CreateFrameLinkUpdate(FrameLinkAction action)
     if (action == PushFrame)
     {
         // Thread->m_pFrame = &inlinedCallFrame;
-        data = new (comp, GT_LCL_ADDR)
-            GenTreeLclFld(GT_LCL_ADDR, TYP_BYREF, comp->lvaInlinedPInvokeFrameVar, callFrameInfo.offsetOfFrameVptr);
+        data = comp->gtNewLclAddrNode(comp->lvaInlinedPInvokeFrameVar, callFrameInfo.offsetOfFrameVptr);
     }
     else
     {
         assert(action == PopFrame);
         // Thread->m_pFrame = inlinedCallFrame.m_pNext;
 
-        data = new (comp, GT_LCL_FLD) GenTreeLclFld(GT_LCL_FLD, TYP_BYREF, comp->lvaInlinedPInvokeFrameVar,
-                                                    pInfo->inlinedCallFrameInfo.offsetOfFrameLink);
+        data = comp->gtNewLclFldNode(comp->lvaInlinedPInvokeFrameVar, TYP_I_IMPL,
+                                     pInfo->inlinedCallFrameInfo.offsetOfFrameLink);
     }
-    GenTree* storeInd = new (comp, GT_STOREIND) GenTreeStoreInd(TYP_I_IMPL, addr, data);
+    GenTree* storeInd = comp->gtNewStoreIndNode(TYP_I_IMPL, addr, data);
     return storeInd;
 }
 
@@ -5216,27 +5852,21 @@ GenTree* Lowering::CreateFrameLinkUpdate(FrameLinkAction action)
 //  +08h    +04h    vptr for class InlinedCallFrame   offsetOfFrameVptr       method prolog
 //  +10h    +08h    m_Next                            offsetOfFrameLink       method prolog
 //  +18h    +0Ch    m_Datum                           offsetOfCallTarget      call site
-//  +20h    n/a     m_StubSecretArg                                           not set by JIT
-//  +28h    +10h    m_pCallSiteSP                     offsetOfCallSiteSP      x86: call site, and zeroed in method
+//  +20h    +10h    m_pCallSiteSP                     offsetOfCallSiteSP      x86: call site, and zeroed in method
 //                                                                              prolog;
 //                                                                            non-x86: method prolog (SP remains
 //                                                                              constant in function, after prolog: no
 //                                                                              localloc and PInvoke in same function)
-//  +30h    +14h    m_pCallerReturnAddress            offsetOfReturnAddress   call site
-//  +38h    +18h    m_pCalleeSavedFP                  offsetOfCalleeSavedFP   not set by JIT
-//          +1Ch    m_pThread
+//  +28h    +14h    m_pCallerReturnAddress            offsetOfReturnAddress   call site
+//  +30h    +18h    m_pCalleeSavedFP                  offsetOfCalleeSavedFP   not set by JIT
+//  +38h    +1Ch    m_pThread
 //          +20h    m_pSPAfterProlog                  offsetOfSPAfterProlog   arm only
-//          +20/24h JIT retval spill area (int)                               before call_gc    ???
-//          +24/28h JIT retval spill area (long)                              before call_gc    ???
-//          +28/2Ch Saved value of EBP                                        method prolog     ???
+//  +40h    +20/24h m_StubSecretArg                   offsetOfSecretStubArg   method prolog of IL stubs with secret arg
 //
 // Note that in the VM, InlinedCallFrame is a C++ class whose objects have a 'this' pointer that points
 // to the InlinedCallFrame vptr (the 2nd field listed above), and the GS cookie is stored *before*
 // the object. When we link the InlinedCallFrame onto the Frame chain, we must point at this location,
 // and not at the beginning of the InlinedCallFrame local, which is actually the GS cookie.
-//
-// Return Value:
-//    none
 //
 // See the usages for USE_PER_FRAME_PINVOKE_INIT for more information.
 void Lowering::InsertPInvokeMethodProlog()
@@ -5259,26 +5889,30 @@ void Lowering::InsertPInvokeMethodProlog()
     const CORINFO_EE_INFO*                       pInfo         = comp->eeGetEEInfo();
     const CORINFO_EE_INFO::InlinedCallFrameInfo& callFrameInfo = pInfo->inlinedCallFrameInfo;
 
-// First arg:  &compiler->lvaInlinedPInvokeFrameVar + callFrameInfo.offsetOfFrameVptr
-#if defined(DEBUG)
-    const LclVarDsc* inlinedPInvokeDsc = comp->lvaGetDesc(comp->lvaInlinedPInvokeFrameVar);
-    assert(inlinedPInvokeDsc->IsAddressExposed());
-#endif // DEBUG
-    GenTree* frameAddr = new (comp, GT_LCL_ADDR)
-        GenTreeLclFld(GT_LCL_ADDR, TYP_BYREF, comp->lvaInlinedPInvokeFrameVar, callFrameInfo.offsetOfFrameVptr);
+    assert(comp->lvaGetDesc(comp->lvaInlinedPInvokeFrameVar)->IsAddressExposed());
+
+    GenTree* const insertionPoint = firstBlockRange.FirstNonCatchArgNode();
+
+    // Store the stub secret arg if necessary. This has to be done before the
+    // call to the init helper below, which links the frame into the thread
+    // list on 32-bit platforms.
+    // InlinedCallFrame.m_StubSecretArg = stubSecretArg;
+    if (comp->info.compPublishStubParam)
+    {
+        GenTree* value = comp->gtNewLclvNode(comp->lvaStubArgumentVar, TYP_I_IMPL);
+        GenTree* store = comp->gtNewStoreLclFldNode(comp->lvaInlinedPInvokeFrameVar, TYP_I_IMPL,
+                                                    callFrameInfo.offsetOfSecretStubArg, value);
+        firstBlockRange.InsertBefore(insertionPoint, LIR::SeqTree(comp, store));
+        DISPTREERANGE(firstBlockRange, store);
+    }
 
     // Call runtime helper to fill in our InlinedCallFrame and push it on the Frame list:
-    //     TCB = CORINFO_HELP_INIT_PINVOKE_FRAME(&symFrameStart, secretArg);
-    GenTreeCall* call = comp->gtNewHelperCallNode(CORINFO_HELP_INIT_PINVOKE_FRAME, TYP_I_IMPL);
-
+    //     TCB = CORINFO_HELP_INIT_PINVOKE_FRAME(&symFrameStart);
+    GenTree*   frameAddr    = comp->gtNewLclAddrNode(comp->lvaInlinedPInvokeFrameVar, callFrameInfo.offsetOfFrameVptr);
     NewCallArg frameAddrArg = NewCallArg::Primitive(frameAddr).WellKnown(WellKnownArg::PInvokeFrame);
+
+    GenTreeCall* call = comp->gtNewHelperCallNode(CORINFO_HELP_INIT_PINVOKE_FRAME, TYP_I_IMPL);
     call->gtArgs.PushBack(comp, frameAddrArg);
-// for x86/arm32 don't pass the secretArg.
-#if !defined(TARGET_X86) && !defined(TARGET_ARM)
-    NewCallArg stubParamArg =
-        NewCallArg::Primitive(PhysReg(REG_SECRET_STUB_PARAM)).WellKnown(WellKnownArg::SecretStubParam);
-    call->gtArgs.PushBack(comp, stubParamArg);
-#endif
 
     // some sanity checks on the frame list root vardsc
     const unsigned   lclNum = comp->info.compLvFrameListRoot;
@@ -5286,12 +5920,7 @@ void Lowering::InsertPInvokeMethodProlog()
     noway_assert(!varDsc->lvIsParam);
     noway_assert(varDsc->lvType == TYP_I_IMPL);
 
-    GenTree* store       = new (comp, GT_STORE_LCL_VAR) GenTreeLclVar(GT_STORE_LCL_VAR, TYP_I_IMPL, lclNum);
-    store->AsOp()->gtOp1 = call;
-    store->gtFlags |= GTF_VAR_DEF;
-
-    GenTree* const insertionPoint = firstBlockRange.FirstNonCatchArgNode();
-
+    GenTree* store = comp->gtNewStoreLclVarNode(lclNum, call);
     comp->fgMorphTree(store);
     firstBlockRange.InsertBefore(insertionPoint, LIR::SeqTree(comp, store));
     DISPTREERANGE(firstBlockRange, store);
@@ -5306,7 +5935,6 @@ void Lowering::InsertPInvokeMethodProlog()
     GenTree*       spValue = PhysReg(REG_SPBASE);
     GenTreeLclFld* storeSP = comp->gtNewStoreLclFldNode(comp->lvaInlinedPInvokeFrameVar, TYP_I_IMPL,
                                                         callFrameInfo.offsetOfCallSiteSP, spValue);
-    assert(inlinedPInvokeDsc->lvDoNotEnregister);
 
     firstBlockRange.InsertBefore(insertionPoint, LIR::SeqTree(comp, storeSP));
     DISPTREERANGE(firstBlockRange, storeSP);
@@ -5322,7 +5950,6 @@ void Lowering::InsertPInvokeMethodProlog()
     GenTree*       fpValue = PhysReg(REG_FPBASE);
     GenTreeLclFld* storeFP = comp->gtNewStoreLclFldNode(comp->lvaInlinedPInvokeFrameVar, TYP_I_IMPL,
                                                         callFrameInfo.offsetOfCalleeSavedFP, fpValue);
-    assert(inlinedPInvokeDsc->lvDoNotEnregister);
 
     firstBlockRange.InsertBefore(insertionPoint, LIR::SeqTree(comp, storeFP));
     DISPTREERANGE(firstBlockRange, storeFP);
@@ -5332,7 +5959,6 @@ void Lowering::InsertPInvokeMethodProlog()
     // On 32-bit targets, CORINFO_HELP_INIT_PINVOKE_FRAME initializes the PInvoke frame and then pushes it onto
     // the current thread's Frame stack. On 64-bit targets, it only initializes the PInvoke frame.
     // As a result, don't push the frame onto the frame stack here for any 64-bit targets
-    CLANG_FORMAT_COMMENT_ANCHOR;
 
 #ifdef TARGET_64BIT
 #ifdef USE_PER_FRAME_PINVOKE_INIT
@@ -5374,7 +6000,7 @@ void Lowering::InsertPInvokeMethodEpilog(BasicBlock* returnBB DEBUGARG(GenTree* 
     JITDUMP("======= Inserting PInvoke method epilog\n");
 
     // Method doing PInvoke calls has exactly one return block unless it has "jmp" or tail calls.
-    assert(((returnBB == comp->genReturnBB) && returnBB->KindIs(BBJ_RETURN)) || returnBB->endsWithTailCallOrJmp(comp));
+    assert(returnBB->KindIs(BBJ_RETURN) || returnBB->endsWithTailCallOrJmp(comp));
 
     LIR::Range& returnBlockRange = LIR::AsRange(returnBB);
 
@@ -5397,7 +6023,6 @@ void Lowering::InsertPInvokeMethodEpilog(BasicBlock* returnBB DEBUGARG(GenTree* 
 
     // Pop the frame if necessary. This always happens in the epilog on 32-bit targets. For 64-bit targets, we only do
     // this in the epilog for IL stubs; for non-IL stubs the frame is popped after every PInvoke call.
-    CLANG_FORMAT_COMMENT_ANCHOR;
 
 #ifdef USE_PER_FRAME_PINVOKE_INIT
     // For IL stubs, we push the frame once even when we're doing per-pinvoke init
@@ -5547,7 +6172,6 @@ void Lowering::InsertPInvokeCallProlog(GenTreeCall* call)
 
     // Push the PInvoke frame if necessary. On 32-bit targets this only happens in the method prolog if a method
     // contains PInvokes; on 64-bit targets this is necessary in non-stubs.
-    CLANG_FORMAT_COMMENT_ANCHOR;
 
 #ifdef USE_PER_FRAME_PINVOKE_INIT
     if (!comp->opts.jitFlags->IsSet(JitFlags::JIT_FLAG_IL_STUB))
@@ -5625,7 +6249,6 @@ void Lowering::InsertPInvokeCallEpilog(GenTreeCall* call)
 
     // Pop the frame if necessary. On 32-bit targets this only happens in the method epilog; on 64-bit targets
     // this happens after every PInvoke call in non-stubs. 32-bit targets instead mark the frame as inactive.
-    CLANG_FORMAT_COMMENT_ANCHOR;
 
 #ifdef USE_PER_FRAME_PINVOKE_INIT
     if (!comp->opts.jitFlags->IsSet(JitFlags::JIT_FLAG_IL_STUB))
@@ -5795,6 +6418,26 @@ GenTree* Lowering::LowerNonvirtPinvokeCall(GenTreeCall* call)
     {
         InsertPInvokeCallEpilog(call);
     }
+
+#ifdef SWIFT_SUPPORT
+    // For Swift calls that require error handling, ensure the GT_SWIFT_ERROR node
+    // that consumes the error register is the call node's successor.
+    // This is to simplify logic for marking the error register as busy in LSRA.
+    if (call->HasSwiftErrorHandling())
+    {
+        GenTree* swiftErrorNode = call->gtNext;
+        assert(swiftErrorNode != nullptr);
+
+        while (!swiftErrorNode->OperIs(GT_SWIFT_ERROR))
+        {
+            swiftErrorNode = swiftErrorNode->gtNext;
+            assert(swiftErrorNode != nullptr);
+        }
+
+        BlockRange().Remove(swiftErrorNode);
+        BlockRange().InsertAfter(call, swiftErrorNode);
+    }
+#endif // SWIFT_SUPPORT
 
     return result;
 }
@@ -6008,7 +6651,7 @@ GenTree* Lowering::LowerVirtualStubCall(GenTreeCall* call)
         else
         {
             bool shouldOptimizeVirtualStubCall = false;
-#if defined(TARGET_ARMARCH) || defined(TARGET_AMD64)
+#if defined(TARGET_ARMARCH) || defined(TARGET_AMD64) || defined(TARGET_LOONGARCH64)
             // Skip inserting the indirection node to load the address that is already
             // computed in the VSD stub arg register as a hidden parameter. Instead during the
             // codegen, just load the call target from there.
@@ -6139,14 +6782,28 @@ bool Lowering::TryCreateAddrMode(GenTree* addr, bool isContainable, GenTree* par
     ssize_t  offset = 0;
     bool     rev    = false;
 
+    var_types targetType = parent->OperIsIndir() ? parent->TypeGet() : TYP_UNDEF;
+
+    unsigned naturalMul = 0;
+#ifdef TARGET_ARM64
+    // Multiplier should be a "natural-scale" power of two number which is equal to target's width.
+    //
+    //   *(ulong*)(data + index * 8); - can be optimized
+    //   *(ulong*)(data + index * 7); - can not be optimized
+    //     *(int*)(data + index * 2); - can not be optimized
+    //
+    naturalMul = genTypeSize(targetType);
+#endif
+
     // Find out if an addressing mode can be constructed
-    bool doAddrMode = comp->codeGen->genCreateAddrMode(addr,     // address
-                                                       true,     // fold
-                                                       &rev,     // reverse ops
-                                                       &base,    // base addr
-                                                       &index,   // index val
-                                                       &scale,   // scaling
-                                                       &offset); // displacement
+    bool doAddrMode = comp->codeGen->genCreateAddrMode(addr,       // address
+                                                       true,       // fold
+                                                       naturalMul, // natural multiplier
+                                                       &rev,       // reverse ops
+                                                       &base,      // base addr
+                                                       &index,     // index val
+                                                       &scale,     // scaling
+                                                       &offset);   // displacement
 
 #ifdef TARGET_ARM64
     if (parent->OperIsIndir() && parent->AsIndir()->IsVolatile())
@@ -6159,21 +6816,6 @@ bool Lowering::TryCreateAddrMode(GenTree* addr, bool isContainable, GenTree* par
         {
             return false;
         }
-    }
-#endif
-
-    var_types targetType = parent->OperIsIndir() ? parent->TypeGet() : TYP_UNDEF;
-
-#ifdef TARGET_ARMARCH
-    // Multiplier should be a "natural-scale" power of two number which is equal to target's width.
-    //
-    //   *(ulong*)(data + index * 8); - can be optimized
-    //   *(ulong*)(data + index * 7); - can not be optimized
-    //     *(int*)(data + index * 2); - can not be optimized
-    //
-    if ((scale > 0) && (genTypeSize(targetType) != scale))
-    {
-        return false;
     }
 #endif
 
@@ -6389,14 +7031,13 @@ GenTree* Lowering::LowerAdd(GenTreeOp* node)
 #ifdef TARGET_ARM64
     if (node->OperIs(GT_ADD))
     {
-        GenTree* next = LowerAddForPossibleContainment(node);
-        if (next != nullptr)
+        GenTree* next;
+        if (TryLowerAddForPossibleContainment(node, &next))
         {
             return next;
         }
 
-        next = TryLowerAddSubToMulLongOp(node);
-        if (next != nullptr)
+        if (TryLowerAddSubToMulLongOp(node, &next))
         {
             return next;
         }
@@ -6498,7 +7139,7 @@ bool Lowering::LowerUnsignedDivOrMod(GenTreeOp* divMod)
             divisorValue -= 1;
         }
 
-        divMod->SetOper(newOper);
+        divMod->ChangeOper(newOper);
         divisor->AsIntCon()->SetIconValue(divisorValue);
         ContainCheckNode(divMod);
         return true;
@@ -6510,7 +7151,7 @@ bool Lowering::LowerUnsignedDivOrMod(GenTreeOp* divMod)
         if (((type == TYP_INT) && (divisorValue > (UINT32_MAX / 2))) ||
             ((type == TYP_LONG) && (divisorValue > (UINT64_MAX / 2))))
         {
-            divMod->SetOper(GT_GE);
+            divMod->ChangeOper(GT_GE);
             divMod->gtFlags |= GTF_UNSIGNED;
             ContainCheckNode(divMod);
             return true;
@@ -6584,7 +7225,6 @@ bool Lowering::LowerUnsignedDivOrMod(GenTreeOp* divMod)
             unreached();
 #endif
         }
-        assert(divMod->MarkedDivideByConstOptimized());
 
         const bool     requiresDividendMultiuse = !isDiv;
         const weight_t curBBWeight              = m_block->getBBWeight(comp);
@@ -6602,7 +7242,6 @@ bool Lowering::LowerUnsignedDivOrMod(GenTreeOp* divMod)
         // On ARM64 we will use a 32x32->64 bit multiply instead of a 64x64->64 one.
         bool widenToNativeIntForMul = (type != TYP_I_IMPL) && !simpleMul;
 #else
-        CLANG_FORMAT_COMMENT_ANCHOR;
         bool widenToNativeIntForMul = (type != TYP_I_IMPL);
 #endif
 
@@ -6646,7 +7285,7 @@ bool Lowering::LowerUnsignedDivOrMod(GenTreeOp* divMod)
 
         if (isDiv && !postShift && (type == TYP_I_IMPL))
         {
-            divMod->SetOper(GT_MULHI);
+            divMod->ChangeOper(GT_MULHI);
             divMod->gtOp1 = adjustedDividend;
             divMod->SetUnsigned();
         }
@@ -6678,7 +7317,7 @@ bool Lowering::LowerUnsignedDivOrMod(GenTreeOp* divMod)
 
                 if (isDiv && (type == TYP_I_IMPL))
                 {
-                    divMod->SetOper(GT_RSZ);
+                    divMod->ChangeOper(GT_RSZ);
                     divMod->gtOp1 = mulhi;
                     divMod->gtOp2 = shiftBy;
                 }
@@ -6696,7 +7335,7 @@ bool Lowering::LowerUnsignedDivOrMod(GenTreeOp* divMod)
                 GenTree* mul     = comp->gtNewOperNode(GT_MUL, type, mulhi, divisor);
                 dividend         = comp->gtNewLclvNode(dividend->AsLclVar()->GetLclNum(), dividend->TypeGet());
 
-                divMod->SetOper(GT_SUB);
+                divMod->ChangeOper(GT_SUB);
                 divMod->gtOp1 = dividend;
                 divMod->gtOp2 = mul;
 
@@ -6704,7 +7343,7 @@ bool Lowering::LowerUnsignedDivOrMod(GenTreeOp* divMod)
             }
             else if (type != TYP_I_IMPL)
             {
-                divMod->SetOper(GT_CAST);
+                divMod->ChangeOper(GT_CAST);
                 divMod->AsCast()->gtCastType = TYP_INT;
                 divMod->gtOp1                = mulhi;
                 divMod->gtOp2                = nullptr;
@@ -6794,14 +7433,14 @@ bool Lowering::TryLowerConstIntDivOrMod(GenTree* node, GenTree** nextNode)
         {
             // If the divisor is the minimum representable integer value then we can use a compare,
             // the result is 1 iff the dividend equals divisor.
-            divMod->SetOper(GT_EQ);
+            divMod->ChangeOper(GT_EQ);
             *nextNode = node;
             return true;
         }
     }
 
     size_t absDivisorValue =
-        (divisorValue == SSIZE_T_MIN) ? static_cast<size_t>(divisorValue) : static_cast<size_t>(abs(divisorValue));
+        (divisorValue == SSIZE_T_MIN) ? static_cast<size_t>(divisorValue) : static_cast<size_t>(std::abs(divisorValue));
 
     if (!isPow2(absDivisorValue))
     {
@@ -6889,7 +7528,7 @@ bool Lowering::TryLowerConstIntDivOrMod(GenTree* node, GenTree** nextNode)
 
         if (isDiv)
         {
-            divMod->SetOperRaw(GT_ADD);
+            divMod->ChangeOper(GT_ADD);
             divMod->AsOp()->gtOp1 = adjusted;
             divMod->AsOp()->gtOp2 = signBit;
         }
@@ -6904,7 +7543,7 @@ bool Lowering::TryLowerConstIntDivOrMod(GenTree* node, GenTree** nextNode)
             GenTree* mul     = comp->gtNewOperNode(GT_MUL, type, div, divisor);
             BlockRange().InsertBefore(divMod, dividend, div, divisor, mul);
 
-            divMod->SetOperRaw(GT_SUB);
+            divMod->ChangeOper(GT_SUB);
             divMod->AsOp()->gtOp1 = dividend;
             divMod->AsOp()->gtOp2 = mul;
         }
@@ -6913,9 +7552,6 @@ bool Lowering::TryLowerConstIntDivOrMod(GenTree* node, GenTree** nextNode)
         return true;
 #elif defined(TARGET_ARM)
         // Currently there's no GT_MULHI for ARM32
-        return false;
-#elif defined(TARGET_RISCV64)
-        NYI_RISCV64("-----unimplemented on RISCV64 yet----");
         return false;
 #else
 #error Unsupported or unset target architecture
@@ -7139,7 +7775,7 @@ void Lowering::WidenSIMD12IfNecessary(GenTreeLclVarCommon* node)
         {
             JITDUMP("Mapping TYP_SIMD12 lclvar node to TYP_SIMD16:\n");
             DISPNODE(node);
-            JITDUMP("============");
+            JITDUMP("============\n");
 
             node->gtType = TYP_SIMD16;
         }
@@ -7198,37 +7834,48 @@ PhaseStatus Lowering::DoPhase()
     }
 #endif
 
-    FinalizeOutgoingArgSpace();
-
     // Recompute local var ref counts before potentially sorting for liveness.
     // Note this does minimal work in cases where we are not going to sort.
     const bool isRecompute    = true;
     const bool setSlotNumbers = false;
     comp->lvaComputeRefCounts(isRecompute, setSlotNumbers);
 
-    comp->fgLocalVarLiveness();
-    // local var liveness can delete code, which may create empty blocks
-    if (comp->opts.OptimizationEnabled())
+    if (comp->m_dfsTree == nullptr)
     {
-        bool modified = comp->fgUpdateFlowGraph();
-        modified |= comp->fgRemoveDeadBlocks();
+        // Compute DFS tree. We want to remove dead blocks even in MinOpts, so we
+        // do this everywhere. The dead blocks are removed below, however, some of
+        // lowering may use the DFS tree, so we compute that here.
+        comp->m_dfsTree = comp->fgComputeDfs();
+    }
+
+    // Remove dead blocks. We want to remove unreachable blocks even in
+    // MinOpts.
+    comp->fgRemoveBlocksOutsideDfsTree();
+
+    if (comp->backendRequiresLocalVarLifetimes())
+    {
+        assert(comp->opts.OptimizationEnabled());
+
+        comp->fgLocalVarLiveness();
+        // local var liveness can delete code, which may create empty blocks
+        // Don't churn the flowgraph with aggressive compaction since we've already run block layout
+        bool modified = comp->fgUpdateFlowGraph(/* doTailDuplication */ false, /* isPhase */ false,
+                                                /* doAggressiveCompaction */ false);
 
         if (modified)
         {
+            comp->fgDfsBlocksAndRemove();
             JITDUMP("had to run another liveness pass:\n");
             comp->fgLocalVarLiveness();
         }
-    }
-    else
-    {
-        // If we are not optimizing, remove the dead blocks regardless.
-        comp->fgRemoveDeadBlocks();
+
+        // Recompute local var ref counts again after liveness to reflect
+        // impact of any dead code removal. Note this may leave us with
+        // tracked vars that have zero refs.
+        comp->lvaComputeRefCounts(isRecompute, setSlotNumbers);
     }
 
-    // Recompute local var ref counts again after liveness to reflect
-    // impact of any dead code removal. Note this may leave us with
-    // tracked vars that have zero refs.
-    comp->lvaComputeRefCounts(isRecompute, setSlotNumbers);
+    comp->fgInvalidateDfsTree();
 
     return PhaseStatus::MODIFIED_EVERYTHING;
 }
@@ -7407,6 +8054,7 @@ void Lowering::LowerBlock(BasicBlock* block)
     m_block = block;
 #ifdef TARGET_ARM64
     m_blockIndirs.Reset();
+    m_ffrTrashed = true;
 #endif
 
     // NOTE: some of the lowering methods insert calls before the node being
@@ -7554,8 +8202,6 @@ bool Lowering::NodesAreEquivalentLeaves(GenTree* tree1, GenTree* tree2)
             FALLTHROUGH;
         case GT_LCL_VAR:
             return tree1->AsLclVarCommon()->GetLclNum() == tree2->AsLclVarCommon()->GetLclNum();
-        case GT_CLS_VAR_ADDR:
-            return tree1->AsClsVar()->gtClsVarHnd == tree2->AsClsVar()->gtClsVarHnd;
         default:
             return false;
     }
@@ -7739,7 +8385,7 @@ void Lowering::ContainCheckNode(GenTree* node)
 #if FEATURE_ARG_SPLIT
         case GT_PUTARG_SPLIT:
 #endif // FEATURE_ARG_SPLIT
-            // The regNum must have been set by the lowering of the call.
+       // The regNum must have been set by the lowering of the call.
             assert(node->GetRegNum() != REG_NA);
             break;
 #ifdef TARGET_XARCH
@@ -7799,12 +8445,12 @@ void Lowering::ContainCheckLclHeap(GenTreeOp* node)
 //
 void Lowering::ContainCheckRet(GenTreeUnOp* ret)
 {
-    assert(ret->OperIs(GT_RETURN));
+    assert(ret->OperIs(GT_RETURN, GT_SWIFT_ERROR_RET));
 
 #if !defined(TARGET_64BIT)
     if (ret->TypeGet() == TYP_LONG)
     {
-        GenTree* op1 = ret->gtGetOp1();
+        GenTree* op1 = ret->AsOp()->GetReturnValue();
         noway_assert(op1->OperGet() == GT_LONG);
         MakeSrcContained(ret, op1);
     }
@@ -7812,7 +8458,7 @@ void Lowering::ContainCheckRet(GenTreeUnOp* ret)
 #if FEATURE_MULTIREG_RET
     if (ret->TypeIs(TYP_STRUCT))
     {
-        GenTree* op1 = ret->gtGetOp1();
+        GenTree* op1 = ret->AsOp()->GetReturnValue();
         // op1 must be either a lclvar or a multi-reg returning call
         if (op1->OperGet() == GT_LCL_VAR)
         {
@@ -7855,54 +8501,303 @@ void Lowering::ContainCheckBitCast(GenTree* node)
     }
 }
 
-struct StoreCoalescingData
+//------------------------------------------------------------------------
+// TryLowerBlockStoreAsGcBulkCopyCall: Lower a block store node as a CORINFO_HELP_BULK_WRITEBARRIER call
+//
+// Arguments:
+//    blkNode - The block store node to lower
+//
+bool Lowering::TryLowerBlockStoreAsGcBulkCopyCall(GenTreeBlk* blk)
 {
-    var_types targetType;
-    GenTree*  baseAddr;
-    GenTree*  index;
-    GenTree*  value;
-    uint32_t  scale;
-    int       offset;
-};
+    if (comp->opts.OptimizationDisabled())
+    {
+        return false;
+    }
+
+    // Replace STORE_BLK (struct copy) with CORINFO_HELP_BULK_WRITEBARRIER which performs
+    // bulk copy for byrefs.
+    const unsigned bulkCopyThreshold = 4;
+    if (!blk->OperIs(GT_STORE_BLK) || blk->OperIsInitBlkOp() || blk->IsVolatile() ||
+        (blk->GetLayout()->GetGCPtrCount() < bulkCopyThreshold))
+    {
+        return false;
+    }
+
+    GenTree* dest = blk->Addr();
+    GenTree* data = blk->Data();
+
+    if (data->OperIs(GT_IND))
+    {
+        if (data->AsIndir()->IsVolatile())
+        {
+            return false;
+        }
+
+        // Drop GT_IND nodes
+        BlockRange().Remove(data);
+        data = data->AsIndir()->Addr();
+    }
+    else
+    {
+        assert(data->OperIs(GT_LCL_VAR, GT_LCL_FLD));
+
+        // Convert local to LCL_ADDR
+        unsigned lclOffset = data->AsLclVarCommon()->GetLclOffs();
+        data->ChangeOper(GT_LCL_ADDR);
+        data->ChangeType(TYP_I_IMPL);
+        data->AsLclFld()->SetLclOffs(lclOffset);
+        data->ClearContained();
+    }
+
+    // Size is a constant
+    GenTreeIntCon* size = comp->gtNewIconNode((ssize_t)blk->GetLayout()->GetSize(), TYP_I_IMPL);
+    BlockRange().InsertBefore(data, size);
+
+    // A hacky way to safely call fgMorphTree in Lower
+    GenTree* destPlaceholder = comp->gtNewZeroConNode(dest->TypeGet());
+    GenTree* dataPlaceholder = comp->gtNewZeroConNode(genActualType(data));
+    GenTree* sizePlaceholder = comp->gtNewZeroConNode(genActualType(size));
+
+    GenTreeCall* call = comp->gtNewHelperCallNode(CORINFO_HELP_BULK_WRITEBARRIER, TYP_VOID, destPlaceholder,
+                                                  dataPlaceholder, sizePlaceholder);
+    comp->fgMorphArgs(call);
+
+    LIR::Range range      = LIR::SeqTree(comp, call);
+    GenTree*   rangeStart = range.FirstNode();
+    GenTree*   rangeEnd   = range.LastNode();
+
+    BlockRange().InsertBefore(blk, std::move(range));
+    blk->gtBashToNOP();
+
+    LIR::Use destUse;
+    LIR::Use sizeUse;
+    BlockRange().TryGetUse(destPlaceholder, &destUse);
+    BlockRange().TryGetUse(sizePlaceholder, &sizeUse);
+    destUse.ReplaceWith(dest);
+    sizeUse.ReplaceWith(size);
+    destPlaceholder->SetUnusedValue();
+    sizePlaceholder->SetUnusedValue();
+
+    LIR::Use dataUse;
+    BlockRange().TryGetUse(dataPlaceholder, &dataUse);
+    dataUse.ReplaceWith(data);
+    dataPlaceholder->SetUnusedValue();
+
+    LowerRange(rangeStart, rangeEnd);
+
+    // Finally move all GT_PUTARG_* nodes
+    // Re-use the existing logic for CFG call args here
+    MoveCFGCallArgs(call);
+
+    BlockRange().Remove(destPlaceholder);
+    BlockRange().Remove(sizePlaceholder);
+    BlockRange().Remove(dataPlaceholder);
+
+    // Add implicit nullchecks for dest and data if needed:
+    //
+    auto wrapWithNullcheck = [&](GenTree* node) {
+        if (comp->fgAddrCouldBeNull(node))
+        {
+            LIR::Use nodeUse;
+            BlockRange().TryGetUse(node, &nodeUse);
+            GenTree* nodeClone = comp->gtNewLclvNode(nodeUse.ReplaceWithLclVar(comp), genActualType(node));
+            GenTree* nullcheck = comp->gtNewNullCheck(nodeClone, comp->compCurBB);
+            BlockRange().InsertAfter(nodeUse.Def(), nodeClone, nullcheck);
+            LowerNode(nullcheck);
+        }
+    };
+    wrapWithNullcheck(dest);
+    wrapWithNullcheck(data);
+
+    return true;
+}
 
 //------------------------------------------------------------------------
-// GetStoreCoalescingData: given a STOREIND node, get the data needed to perform
-//    store coalescing including pointer to the previous node.
+// LowerBlockStoreAsHelperCall: Lower a block store node as a memset/memcpy call
+//
+// Arguments:
+//    blkNode - The block store node to lower
+//
+void Lowering::LowerBlockStoreAsHelperCall(GenTreeBlk* blkNode)
+{
+    // We shouldn't be using helper calls for blocks on heap containing GC pointers.
+    // due to atomicity guarantees.
+    assert(!blkNode->IsZeroingGcPointersOnHeap());
+
+    LIR::Use use;
+    assert(!BlockRange().TryGetUse(blkNode, &use));
+
+    const bool isVolatile = blkNode->IsVolatile();
+
+    GenTree* dest = blkNode->Addr();
+    GenTree* data = blkNode->Data();
+    GenTree* size;
+
+    CorInfoHelpFunc helper;
+
+    // Is it Memset ...
+    if (blkNode->OperIsInitBlkOp())
+    {
+        helper = CORINFO_HELP_MEMSET;
+
+        // Drop GT_INIT_VAL nodes
+        if (data->OperIsInitVal())
+        {
+            BlockRange().Remove(data);
+            data = data->gtGetOp1();
+        }
+    }
+    else
+    {
+        // ... or Memcpy?
+        helper = CORINFO_HELP_MEMCPY;
+
+        if (data->OperIs(GT_IND))
+        {
+            // Drop GT_IND nodes
+            BlockRange().Remove(data);
+            data = data->AsIndir()->Addr();
+        }
+        else
+        {
+            assert(data->OperIs(GT_LCL_VAR, GT_LCL_FLD));
+
+            // Convert local to LCL_ADDR
+            unsigned lclOffset = data->AsLclVarCommon()->GetLclOffs();
+
+            data->ChangeOper(GT_LCL_ADDR);
+            data->ChangeType(TYP_I_IMPL);
+            data->AsLclFld()->SetLclOffs(lclOffset);
+            data->ClearContained();
+        }
+    }
+
+    // Size is a constant
+    size = comp->gtNewIconNode(blkNode->Size(), TYP_I_IMPL);
+    BlockRange().InsertBefore(data, size);
+
+    // A hacky way to safely call fgMorphTree in Lower
+    GenTree* destPlaceholder = comp->gtNewZeroConNode(dest->TypeGet());
+    GenTree* dataPlaceholder = comp->gtNewZeroConNode(genActualType(data));
+    GenTree* sizePlaceholder = comp->gtNewZeroConNode(genActualType(size));
+
+    const bool isMemzero = helper == CORINFO_HELP_MEMSET ? data->IsIntegralConst(0) : false;
+
+    GenTreeCall* call;
+    if (isMemzero)
+    {
+        BlockRange().Remove(data);
+        call = comp->gtNewHelperCallNode(CORINFO_HELP_MEMZERO, TYP_VOID, destPlaceholder, sizePlaceholder);
+    }
+    else
+    {
+        call = comp->gtNewHelperCallNode(helper, TYP_VOID, destPlaceholder, dataPlaceholder, sizePlaceholder);
+    }
+    comp->fgMorphArgs(call);
+
+    LIR::Range range      = LIR::SeqTree(comp, call);
+    GenTree*   rangeStart = range.FirstNode();
+    GenTree*   rangeEnd   = range.LastNode();
+
+    BlockRange().InsertBefore(blkNode, std::move(range));
+    blkNode->gtBashToNOP();
+
+    LIR::Use destUse;
+    LIR::Use sizeUse;
+    BlockRange().TryGetUse(destPlaceholder, &destUse);
+    BlockRange().TryGetUse(sizePlaceholder, &sizeUse);
+    destUse.ReplaceWith(dest);
+    sizeUse.ReplaceWith(size);
+    destPlaceholder->SetUnusedValue();
+    sizePlaceholder->SetUnusedValue();
+
+    if (!isMemzero)
+    {
+        LIR::Use dataUse;
+        BlockRange().TryGetUse(dataPlaceholder, &dataUse);
+        dataUse.ReplaceWith(data);
+        dataPlaceholder->SetUnusedValue();
+    }
+
+    LowerRange(rangeStart, rangeEnd);
+
+    // Finally move all GT_PUTARG_* nodes
+    // Re-use the existing logic for CFG call args here
+    MoveCFGCallArgs(call);
+
+    BlockRange().Remove(destPlaceholder);
+    BlockRange().Remove(sizePlaceholder);
+    if (!isMemzero)
+    {
+        BlockRange().Remove(dataPlaceholder);
+    }
+
+// Wrap with memory barriers on weak memory models
+// if the block store was volatile
+#ifndef TARGET_XARCH
+    if (isVolatile)
+    {
+        GenTree* firstBarrier  = comp->gtNewMemoryBarrier();
+        GenTree* secondBarrier = comp->gtNewMemoryBarrier(/*loadOnly*/ true);
+        BlockRange().InsertBefore(call, firstBarrier);
+        BlockRange().InsertAfter(call, secondBarrier);
+        LowerNode(firstBarrier);
+        LowerNode(secondBarrier);
+    }
+#endif
+}
+
+//------------------------------------------------------------------------
+// GetLoadStoreCoalescingData: given a STOREIND/IND node, get the data needed to perform
+//    store/load coalescing including pointer to the previous node.
 //
 // Arguments:
 //    comp     - the compiler instance
-//    ind      - the STOREIND node
-//    data     - [OUT] the data needed for store coalescing
+//    ind      - the STOREIND/IND node
+//    data     - [OUT] the data needed for store/load coalescing
 //
 // Return Value:
 //    true if the data was successfully retrieved, false otherwise.
-//    Basically, false means that we definitely can't do store coalescing.
 //
-static bool GetStoreCoalescingData(Compiler* comp, GenTreeStoreInd* ind, StoreCoalescingData* data)
+bool Lowering::GetLoadStoreCoalescingData(GenTreeIndir* ind, LoadStoreCoalescingData* data) const
 {
-    // Don't merge volatile stores.
+    // Don't merge volatile load/stores.
     if (ind->IsVolatile())
     {
         return false;
     }
 
-    // Data has to be INT_CNS, can be also VEC_CNS in future.
-    if (!ind->Data()->IsCnsIntOrI() && !ind->Data()->IsVectorConst())
-    {
-        return false;
-    }
+    const bool isStore = ind->OperIs(GT_STOREIND, GT_STORE_BLK);
+    const bool isLoad  = ind->OperIs(GT_IND);
 
     auto isNodeInvariant = [](Compiler* comp, GenTree* node, bool allowNull) {
         if (node == nullptr)
         {
             return allowNull;
         }
+        if (node->OperIsConst())
+        {
+            return true;
+        }
         // We can allow bigger trees here, but it's not clear if it's worth it.
         return node->OperIs(GT_LCL_VAR) && !comp->lvaVarAddrExposed(node->AsLclVar()->GetLclNum());
     };
 
+    if (isStore)
+    {
+        // For stores, Data() is expected to be an invariant node
+        if (!isNodeInvariant(comp, ind->Data(), false))
+        {
+            return false;
+        }
+    }
+    else if (!isLoad)
+    {
+        return false;
+    }
+
     data->targetType = ind->TypeGet();
-    data->value      = ind->Data();
+    data->value      = isStore ? ind->Data() : nullptr;
     if (ind->Addr()->OperIs(GT_LEA))
     {
         GenTree* base  = ind->Addr()->AsAddrMode()->Base();
@@ -7938,12 +8833,24 @@ static bool GetStoreCoalescingData(Compiler* comp, GenTreeStoreInd* ind, StoreCo
         // Address is not LEA or local.
         return false;
     }
+
+    bool isClosedRange = false;
+    // Make sure there are no other unexpected nodes in-between.
+    LIR::ReadOnlyRange range = BlockRange().GetTreeRange(ind, &isClosedRange);
+    if (!isClosedRange)
+    {
+        return false;
+    }
+
+    data->rangeStart = range.FirstNode();
+    data->rangeEnd   = range.LastNode();
+
     return true;
 }
 
 //------------------------------------------------------------------------
-// LowerStoreIndirCoalescing: If the given STOREIND node is followed by a similar
-//    STOREIND node, try to merge them into a single store of a twice wider type. Example:
+// LowerStoreIndirCoalescing: If the given IND/STOREIND node is followed by a similar
+//    IND/STOREIND node, try to merge them into a single store of a twice wider type. Example:
 //
 //    *  STOREIND  int
 //    +--*  LCL_VAR   byref  V00
@@ -7967,7 +8874,7 @@ static bool GetStoreCoalescingData(Compiler* comp, GenTreeStoreInd* ind, StoreCo
 // Arguments:
 //    ind - the current STOREIND node
 //
-void Lowering::LowerStoreIndirCoalescing(GenTreeStoreInd* ind)
+void Lowering::LowerStoreIndirCoalescing(GenTreeIndir* ind)
 {
 // LA, RISC-V and ARM32 more likely to recieve a terrible performance hit from
 // unaligned accesses making this optimization questionable.
@@ -7977,12 +8884,9 @@ void Lowering::LowerStoreIndirCoalescing(GenTreeStoreInd* ind)
         return;
     }
 
-    // TODO-ARM64-CQ: enable TYP_REF if we find a case where it's beneficial.
-    // The algorithm does support TYP_REF (with null value), but it seems to be not worth
-    // it on ARM64 where it's pretty efficient to do "stp xzr, xzr, [addr]" to clear two
-    // items at once. Although, it may be profitable to do "stp q0, q0, [addr]".
-    if (!varTypeIsIntegral(ind) && !varTypeIsSIMD(ind))
+    if (!ind->OperIs(GT_STOREIND, GT_STORE_BLK))
     {
+        // Load coalescing is not yet supported
         return;
     }
 
@@ -8000,24 +8904,16 @@ void Lowering::LowerStoreIndirCoalescing(GenTreeStoreInd* ind)
     // to get a single store of 8 bytes.
     do
     {
-        StoreCoalescingData currData;
-        StoreCoalescingData prevData;
+        LoadStoreCoalescingData currData;
+        LoadStoreCoalescingData prevData;
 
         // Get coalescing data for the current STOREIND
-        if (!GetStoreCoalescingData(comp, ind, &currData))
+        if (!GetLoadStoreCoalescingData(ind, &currData))
         {
             return;
         }
 
-        bool isClosedRange = false;
-        // Now we need to find the very first LIR node representing the current STOREIND
-        // and make sure that there are no other unexpected nodes in-between.
-        LIR::ReadOnlyRange currIndRange = BlockRange().GetTreeRange(ind, &isClosedRange);
-        if (!isClosedRange)
-        {
-            return;
-        }
-        GenTree* prevTree = currIndRange.FirstNode()->gtPrev;
+        GenTree* prevTree = currData.rangeStart->gtPrev;
         // Now we need to find the previous STOREIND,
         // we can ignore any NOPs or IL_OFFSETs in-between
         while ((prevTree != nullptr) && prevTree->OperIs(GT_NOP, GT_IL_OFFSET))
@@ -8025,47 +8921,51 @@ void Lowering::LowerStoreIndirCoalescing(GenTreeStoreInd* ind)
             prevTree = prevTree->gtPrev;
         }
 
-        // It's not a STOREIND - bail out.
-        if ((prevTree == nullptr) || !prevTree->OperIs(GT_STOREIND))
+        // It's not a store - bail out.
+        if ((prevTree == nullptr) || !prevTree->OperIs(GT_STOREIND, GT_STORE_BLK))
         {
             return;
         }
 
         // Get coalescing data for the previous STOREIND
-        GenTreeStoreInd* prevInd = prevTree->AsStoreInd();
-        if (!GetStoreCoalescingData(comp, prevInd->AsStoreInd(), &prevData))
+        GenTreeIndir* prevInd = prevTree->AsIndir();
+        if (!GetLoadStoreCoalescingData(prevInd, &prevData))
         {
             return;
         }
 
-        // Same for the previous STOREIND, make sure there are no unexpected nodes around.
-        LIR::ReadOnlyRange prevIndRange = BlockRange().GetTreeRange(prevInd, &isClosedRange);
-        if (!isClosedRange)
+        if (!currData.IsAddressEqual(prevData, /*ignoreOffset*/ true))
         {
+            // Non-offset part of the address is not the same - bail out.
             return;
         }
-
-        // STOREIND aren't value nodes.
-        LIR::Use use;
-        assert(!BlockRange().TryGetUse(prevInd, &use) && !BlockRange().TryGetUse(ind, &use));
-
-        // BaseAddr, Index, Scale and Type all have to match.
-        if ((prevData.scale != currData.scale) || (prevData.targetType != currData.targetType) ||
-            !GenTree::Compare(prevData.baseAddr, currData.baseAddr) ||
-            !GenTree::Compare(prevData.index, currData.index))
-        {
-            return;
-        }
-
-        // At this point we know that we have two consecutive STOREINDs with the same base address,
-        // index and scale, the only variable thing is the offset (constant)
 
         // The same offset means that we're storing to the same location of the same width.
         // Just remove the previous store then.
         if (prevData.offset == currData.offset)
         {
-            BlockRange().Remove(std::move(prevIndRange));
+            BlockRange().Remove(prevData.rangeStart, prevData.rangeEnd);
             continue;
+        }
+
+        // TODO-ARM64-CQ: enable TYP_REF if we find a case where it's beneficial.
+        // The algorithm does support TYP_REF (with null value), but it seems to be not worth
+        // it on ARM64 where it's pretty efficient to do "stp xzr, xzr, [addr]" to clear two
+        // items at once. Although, it may be profitable to do "stp q0, q0, [addr]".
+        if (!varTypeIsIntegral(ind) && !varTypeIsSIMD(ind))
+        {
+            return;
+        }
+
+        assert(ind->OperIs(GT_STOREIND));
+        assert(prevInd->OperIs(GT_STOREIND));
+        assert(prevData.IsStore());
+        assert(currData.IsStore());
+
+        // For now, only constants are supported for data.
+        if (!prevData.value->OperIsConst() || !currData.value->OperIsConst())
+        {
+            return;
         }
 
         // Otherwise, the difference between two offsets has to match the size of the type.
@@ -8210,11 +9110,11 @@ void Lowering::LowerStoreIndirCoalescing(GenTreeStoreInd* ind)
         }
 
         // We should not be here for stores requiring write barriers.
-        assert(!comp->codeGen->gcInfo.gcIsWriteBarrierStoreIndNode(ind));
-        assert(!comp->codeGen->gcInfo.gcIsWriteBarrierStoreIndNode(prevInd));
+        assert(!comp->codeGen->gcInfo.gcIsWriteBarrierStoreIndNode(ind->AsStoreInd()));
+        assert(!comp->codeGen->gcInfo.gcIsWriteBarrierStoreIndNode(prevInd->AsStoreInd()));
 
         // Delete previous STOREIND entirely
-        BlockRange().Remove(std::move(prevIndRange));
+        BlockRange().Remove(prevData.rangeStart, prevData.rangeEnd);
 
         // It's not expected to be contained yet, but just in case...
         ind->Data()->ClearContained();
@@ -8282,11 +9182,11 @@ void Lowering::LowerStoreIndirCoalescing(GenTreeStoreInd* ind)
 
         // Trim the constants to the size of the type, e.g. for TYP_SHORT and TYP_USHORT
         // the mask will be 0xFFFF, for TYP_INT - 0xFFFFFFFF.
-        size_t mask = ~(size_t(0)) >> (sizeof(size_t) - genTypeSize(oldType)) * BITS_IN_BYTE;
+        size_t mask = ~(size_t(0)) >> (sizeof(size_t) - genTypeSize(oldType)) * BITS_PER_BYTE;
         lowerCns &= mask;
         upperCns &= mask;
 
-        size_t val = (lowerCns | (upperCns << (genTypeSize(oldType) * BITS_IN_BYTE)));
+        size_t val = (lowerCns | (upperCns << (genTypeSize(oldType) * BITS_PER_BYTE)));
         JITDUMP("Coalesced two stores into a single store with value %lld\n", (int64_t)val);
 
         ind->Data()->AsIntCon()->gtIconVal = (ssize_t)val;
@@ -8306,7 +9206,10 @@ void Lowering::LowerStoreIndirCoalescing(GenTreeStoreInd* ind)
 // Arguments:
 //    ind - the store indirection node we are lowering.
 //
-void Lowering::LowerStoreIndirCommon(GenTreeStoreInd* ind)
+// Return Value:
+//    Next node to lower.
+//
+GenTree* Lowering::LowerStoreIndirCommon(GenTreeStoreInd* ind)
 {
     assert(ind->TypeGet() != TYP_STRUCT);
 
@@ -8317,32 +9220,34 @@ void Lowering::LowerStoreIndirCommon(GenTreeStoreInd* ind)
     //
     const bool isContainable = IsInvariantInRange(ind->Addr(), ind);
 #else
-    const bool     isContainable         = true;
+    const bool isContainable = true;
 #endif
     TryCreateAddrMode(ind->Addr(), isContainable, ind);
 
-    if (!comp->codeGen->gcInfo.gcIsWriteBarrierStoreIndNode(ind))
+    if (comp->codeGen->gcInfo.gcIsWriteBarrierStoreIndNode(ind))
     {
-#ifndef TARGET_XARCH
-        if (ind->Data()->IsIconHandle(GTF_ICON_OBJ_HDL))
-        {
-            const ssize_t handle = ind->Data()->AsIntCon()->IconValue();
-            if (!comp->info.compCompHnd->isObjectImmutable(reinterpret_cast<CORINFO_OBJECT_HANDLE>(handle)))
-            {
-                // On platforms with weaker memory model we need to make sure we use a store with the release semantic
-                // when we publish a potentially mutable object
-                // See relevant discussions https://github.com/dotnet/runtime/pull/76135#issuecomment-1257258310 and
-                // https://github.com/dotnet/runtime/pull/76112#discussion_r980639782
+        return ind->gtNext;
+    }
 
-                // This can be relaxed to "just make sure to use stlr/memory barrier" if needed
-                ind->gtFlags |= GTF_IND_VOLATILE;
-            }
+#ifndef TARGET_XARCH
+    if (ind->Data()->IsIconHandle(GTF_ICON_OBJ_HDL))
+    {
+        const ssize_t handle = ind->Data()->AsIntCon()->IconValue();
+        if (!comp->info.compCompHnd->isObjectImmutable(reinterpret_cast<CORINFO_OBJECT_HANDLE>(handle)))
+        {
+            // On platforms with weaker memory model we need to make sure we use a store with the release semantic
+            // when we publish a potentially mutable object
+            // See relevant discussions https://github.com/dotnet/runtime/pull/76135#issuecomment-1257258310 and
+            // https://github.com/dotnet/runtime/pull/76112#discussion_r980639782
+
+            // This can be relaxed to "just make sure to use stlr/memory barrier" if needed
+            ind->gtFlags |= GTF_IND_VOLATILE;
         }
+    }
 #endif
 
-        LowerStoreIndirCoalescing(ind);
-        LowerStoreIndir(ind);
-    }
+    LowerStoreIndirCoalescing(ind);
+    return LowerStoreIndir(ind);
 }
 
 //------------------------------------------------------------------------
@@ -8371,17 +9276,37 @@ GenTree* Lowering::LowerIndir(GenTreeIndir* ind)
         }
 #endif
 
+#ifdef TARGET_ARM64
+        LIR::Use use;
+        if (ind->OperIs(GT_IND) && ind->IsVolatile() && varTypeIsFloating(ind) && BlockRange().TryGetUse(ind, &use))
+        {
+            // Convert "IND<float>(addr)" to "BitCast<float>(IND<int>(addr))"
+            // for volatile loads since there is no ldar for SIMD regs
+            var_types targetType = ind->TypeGet();
+            ind->ChangeType(ind->TypeIs(TYP_DOUBLE) ? TYP_LONG : TYP_INT);
+
+            // Now it might be eligible for some addressing modes with LDAPUR:
+            const bool isContainable = IsInvariantInRange(ind->Addr(), ind);
+            TryCreateAddrMode(ind->Addr(), isContainable, ind);
+
+            // Wrap the resulting IND into BITCAST:
+            GenTree* castOp = comp->gtNewBitCastNode(targetType, ind);
+            BlockRange().InsertAfter(ind, castOp);
+            use.ReplaceWith(castOp);
+            return castOp;
+        }
+#endif
+
         // TODO-Cleanup: We're passing isContainable = true but ContainCheckIndir rejects
         // address containment in some cases so we end up creating trivial (reg + offfset)
         // or (reg + reg) LEAs that are not necessary.
-        CLANG_FORMAT_COMMENT_ANCHOR;
 
 #if defined(TARGET_ARM64)
         // Verify containment safety before creating an LEA that must be contained.
         //
         const bool isContainable = IsInvariantInRange(ind->Addr(), ind);
 #else
-        const bool isContainable         = true;
+        const bool isContainable = true;
 #endif
 
         TryCreateAddrMode(ind->Addr(), isContainable, ind);
@@ -8405,7 +9330,7 @@ GenTree* Lowering::LowerIndir(GenTreeIndir* ind)
 #ifdef TARGET_ARM64
     if (comp->opts.OptimizationEnabled() && ind->OperIs(GT_IND))
     {
-        OptimizeForLdp(ind);
+        OptimizeForLdpStp(ind);
     }
 #endif
 
@@ -8420,7 +9345,7 @@ GenTree* Lowering::LowerIndir(GenTreeIndir* ind)
 // cases passing the distance check, but 82 out of these 112 extra cases were
 // then rejected due to interference. So 16 seems like a good number to balance
 // the throughput costs.
-const int LDP_REORDERING_MAX_DISTANCE = 16;
+const int LDP_STP_REORDERING_MAX_DISTANCE = 16;
 
 //------------------------------------------------------------------------
 // OptimizeForLdp: Record information about an indirection, and try to optimize
@@ -8433,7 +9358,7 @@ const int LDP_REORDERING_MAX_DISTANCE = 16;
 // Returns:
 //    True if the optimization was successful.
 //
-bool Lowering::OptimizeForLdp(GenTreeIndir* ind)
+bool Lowering::OptimizeForLdpStp(GenTreeIndir* ind)
 {
     if (!ind->TypeIs(TYP_INT, TYP_LONG, TYP_FLOAT, TYP_DOUBLE, TYP_SIMD8, TYP_SIMD16) || ind->IsVolatile())
     {
@@ -8451,7 +9376,7 @@ bool Lowering::OptimizeForLdp(GenTreeIndir* ind)
 
     // Every indirection takes an expected 2+ nodes, so we only expect at most
     // half the reordering distance to be candidates for the optimization.
-    int maxCount = min(m_blockIndirs.Height(), LDP_REORDERING_MAX_DISTANCE / 2);
+    int maxCount = min(m_blockIndirs.Height(), LDP_STP_REORDERING_MAX_DISTANCE / 2);
     for (int i = 0; i < maxCount; i++)
     {
         SavedIndir& prev = m_blockIndirs.TopRef(i);
@@ -8466,11 +9391,22 @@ bool Lowering::OptimizeForLdp(GenTreeIndir* ind)
             continue;
         }
 
+        if (prevIndir->gtNext == nullptr)
+        {
+            // Deleted by other optimization
+            continue;
+        }
+
+        if (prevIndir->OperIsStore() != ind->OperIsStore())
+        {
+            continue;
+        }
+
         JITDUMP("[%06u] and [%06u] are indirs off the same base with offsets +%03u and +%03u\n",
                 Compiler::dspTreeID(ind), Compiler::dspTreeID(prevIndir), (unsigned)offs, (unsigned)prev.Offset);
-        if (abs(offs - prev.Offset) == genTypeSize(ind))
+        if (std::abs(offs - prev.Offset) == genTypeSize(ind))
         {
-            JITDUMP("  ..and they are amenable to ldp optimization\n");
+            JITDUMP("  ..and they are amenable to ldp/stp optimization\n");
             if (TryMakeIndirsAdjacent(prevIndir, ind))
             {
                 // Do not let the previous one participate in
@@ -8506,15 +9442,18 @@ bool Lowering::OptimizeForLdp(GenTreeIndir* ind)
 bool Lowering::TryMakeIndirsAdjacent(GenTreeIndir* prevIndir, GenTreeIndir* indir)
 {
     GenTree* cur = prevIndir;
-    for (int i = 0; i < LDP_REORDERING_MAX_DISTANCE; i++)
+    for (int i = 0; i < LDP_STP_REORDERING_MAX_DISTANCE; i++)
     {
+        // No nodes should be marked yet
+        assert((cur->gtLIRFlags & LIR::Flags::Mark) == 0);
+
         cur = cur->gtNext;
         if (cur == indir)
             break;
 
         // We can reorder indirs with some calls, but introducing a LIR edge
         // that spans a call can introduce spills (or callee-saves).
-        if (cur->IsCall() || (cur->OperIsStoreBlk() && (cur->AsBlk()->gtBlkOpKind == GenTreeBlk::BlkOpKindHelper)))
+        if (cur->IsCall())
         {
             JITDUMP("  ..but they are separated by node [%06u] that kills registers\n", Compiler::dspTreeID(cur));
             return false;
@@ -8558,13 +9497,26 @@ bool Lowering::TryMakeIndirsAdjacent(GenTreeIndir* prevIndir, GenTreeIndir* indi
 
 #endif
 
+    // Unmark tree when we exit the current scope
+    auto code = [this, indir] {
+        UnmarkTree(indir);
+    };
+    jitstd::utility::scoped_code<decltype(code)> finally(code);
+
     MarkTree(indir);
 
     INDEBUG(dumpWithMarks());
     JITDUMP("\n");
 
+    if ((prevIndir->gtLIRFlags & LIR::Flags::Mark) != 0)
+    {
+        JITDUMP("Previous indir is part of the data flow of current indir\n");
+        return false;
+    }
+
     m_scratchSideEffects.Clear();
 
+    bool sawData = false;
     for (GenTree* cur = prevIndir->gtNext; cur != indir; cur = cur->gtNext)
     {
         if ((cur->gtLIRFlags & LIR::Flags::Mark) != 0)
@@ -8574,8 +9526,12 @@ bool Lowering::TryMakeIndirsAdjacent(GenTreeIndir* prevIndir, GenTreeIndir* indi
             if (m_scratchSideEffects.InterferesWith(comp, cur, true))
             {
                 JITDUMP("Giving up due to interference with [%06u]\n", Compiler::dspTreeID(cur));
-                UnmarkTree(indir);
                 return false;
+            }
+
+            if (indir->OperIsStore())
+            {
+                sawData |= cur == indir->Data();
             }
         }
         else
@@ -8588,6 +9544,12 @@ bool Lowering::TryMakeIndirsAdjacent(GenTreeIndir* prevIndir, GenTreeIndir* indi
 
     if (m_scratchSideEffects.InterferesWith(comp, indir, true))
     {
+        if (!indir->OperIsLoad())
+        {
+            JITDUMP("Have conservative interference with last store. Giving up.\n");
+            return false;
+        }
+
         // Try a bit harder, making use of the following facts:
         //
         // 1. We know the indir is non-faulting, so we do not need to worry
@@ -8678,14 +9640,54 @@ bool Lowering::TryMakeIndirsAdjacent(GenTreeIndir* prevIndir, GenTreeIndir* indi
             if (interferes(cur))
             {
                 JITDUMP("Indir [%06u] interferes with [%06u]\n", Compiler::dspTreeID(indir), Compiler::dspTreeID(cur));
-                UnmarkTree(indir);
                 return false;
             }
         }
     }
 
-    JITDUMP("Interference checks passed. Moving nodes that are not part of data flow of [%06u]\n\n",
-            Compiler::dspTreeID(indir));
+    JITDUMP("Interference checks passed: can move unrelated nodes past second indir.\n");
+
+    if (sawData)
+    {
+        // If the data node of 'indir' is between 'prevIndir' and 'indir' then
+        // try to move the previous indir up to happen after the data
+        // computation. We will be moving all nodes unrelated to the data flow
+        // past 'indir', so we only need to check interference between
+        // 'prevIndir' and all nodes that are part of 'indir's dataflow.
+        m_scratchSideEffects.Clear();
+        m_scratchSideEffects.AddNode(comp, prevIndir);
+
+        for (GenTree* cur = prevIndir->gtNext;; cur = cur->gtNext)
+        {
+            if ((cur->gtLIRFlags & LIR::Flags::Mark) != 0)
+            {
+                if (m_scratchSideEffects.InterferesWith(comp, cur, true))
+                {
+                    JITDUMP("Cannot move prev indir [%06u] up past [%06u] to get it past the data computation\n",
+                            Compiler::dspTreeID(prevIndir), Compiler::dspTreeID(cur));
+                    return false;
+                }
+            }
+
+            if (cur == indir->Data())
+            {
+                break;
+            }
+        }
+    }
+
+    // For some hardware the ldr -> ldp transformation can result in missed
+    // store-to-load forwarding opportunities, which can seriously harm
+    // performance. Here we do a best effort check to see if one of the loads
+    // we are combining may be loading from a store that reaches the load
+    // without redefining the address.
+    if (prevIndir->OperIsLoad() && indir->OperIsLoad() && IsStoreToLoadForwardingCandidateInLoop(prevIndir, indir))
+    {
+        JITDUMP("Avoiding making indirs adjacent; this may be the target of a store-to-load forwarding candidate\n");
+        return false;
+    }
+
+    JITDUMP("Moving nodes that are not part of data flow of [%06u]\n\n", Compiler::dspTreeID(indir));
 
     GenTree* previous = prevIndir;
     for (GenTree* node = prevIndir->gtNext;;)
@@ -8708,11 +9710,203 @@ bool Lowering::TryMakeIndirsAdjacent(GenTreeIndir* prevIndir, GenTreeIndir* indi
         node = next;
     }
 
+    if (sawData)
+    {
+        // For some reason LSRA is not able to reuse a constant if both LIR
+        // temps are live simultaneously, so skip moving in those cases and
+        // expect LSRA to reuse the constant instead.
+        if (indir->Data()->OperIs(GT_CNS_INT, GT_CNS_DBL) && GenTree::Compare(indir->Data(), prevIndir->Data()))
+        {
+            JITDUMP("Not moving previous indir since we are expecting constant reuse for the data\n");
+        }
+        else
+        {
+            BlockRange().Remove(prevIndir);
+            BlockRange().InsertAfter(indir->Data(), prevIndir);
+        }
+    }
+
     JITDUMP("Result:\n\n");
     INDEBUG(dumpWithMarks());
     JITDUMP("\n");
-    UnmarkTree(indir);
     return true;
+}
+
+//------------------------------------------------------------------------
+// IsStoreToLoadForwardingCandidateInLoop: Check if one of the specified
+// indirections may be the target of store-to-load forwarding from an indirect
+// store that reaches one of the loads and that happens within the same loop.
+// In those cases the transformation to 'ldp' can break this hardware
+// optimization for some hardware.
+//
+// Arguments:
+//   prevIndir - First indirection
+//   indir     - Second indirection
+//
+// Returns:
+//   True if so.
+//
+bool Lowering::IsStoreToLoadForwardingCandidateInLoop(GenTreeIndir* prevIndir, GenTreeIndir* indir)
+{
+    if (comp->m_dfsTree == nullptr)
+    {
+        comp->m_dfsTree = comp->fgComputeDfs();
+    }
+
+    if (!comp->m_dfsTree->HasCycle())
+    {
+        return false;
+    }
+
+    if (comp->m_loops == nullptr)
+    {
+        comp->m_loops       = FlowGraphNaturalLoops::Find(comp->m_dfsTree);
+        comp->m_blockToLoop = BlockToNaturalLoopMap::Build(comp->m_loops);
+    }
+
+    FlowGraphNaturalLoop* loop = comp->m_blockToLoop->GetLoop(m_block);
+    if (loop == nullptr)
+    {
+        return false;
+    }
+
+    GenTree*       addr1 = prevIndir->Addr();
+    target_ssize_t offs1;
+    comp->gtPeelOffsets(&addr1, &offs1);
+    unsigned lcl1 = addr1->OperIs(GT_LCL_VAR) ? addr1->AsLclVarCommon()->GetLclNum() : BAD_VAR_NUM;
+
+    GenTree*       addr2 = indir->Addr();
+    target_ssize_t offs2;
+    comp->gtPeelOffsets(&addr2, &offs2);
+    unsigned lcl2 = addr1->OperIs(GT_LCL_VAR) ? addr2->AsLclVarCommon()->GetLclNum() : BAD_VAR_NUM;
+
+    unsigned budget = 100;
+
+    // Starting at an end node, go backwards until the specified first node and look for
+    // 1) Definitions of the base address local, which invalidates future store-to-load forwarding
+    // 2) Stores to the same address as is being loaded later, which allows store-to-load forwarding
+    auto checkNodes = [=, &budget](GenTree* lastNode, GenTree* firstNode, bool* hasStore, bool* hasDef) {
+        *hasStore = false;
+        *hasDef   = false;
+
+        for (GenTree* curNode = lastNode;; curNode = curNode->gtPrev)
+        {
+            if (curNode->OperIs(GT_STORE_LCL_VAR))
+            {
+                unsigned lclNum = curNode->AsLclVarCommon()->GetLclNum();
+                if ((lclNum == lcl1) || (lclNum == lcl2))
+                {
+                    *hasDef = true;
+                    return true;
+                }
+            }
+            else if (curNode->OperIs(GT_STOREIND))
+            {
+                GenTreeIndir*  storeInd       = curNode->AsIndir();
+                GenTree*       storeIndirAddr = storeInd->Addr();
+                target_ssize_t storeIndirOffs;
+                comp->gtPeelOffsets(&storeIndirAddr, &storeIndirOffs);
+
+                if (storeIndirAddr->OperIs(GT_LCL_VAR) && ((storeIndirOffs == offs1) || (storeIndirOffs == offs2)))
+                {
+                    unsigned storeIndirAddrLcl = storeIndirAddr->AsLclVarCommon()->GetLclNum();
+                    if ((storeIndirAddrLcl == lcl1) || (storeIndirAddrLcl == lcl2))
+                    {
+                        JITDUMP("Store at [%06u] may allow store-to-load forwarding of indir [%06u]\n",
+                                Compiler::dspTreeID(curNode),
+                                Compiler::dspTreeID(storeIndirAddrLcl == lcl1 ? prevIndir : indir));
+
+                        *hasStore = true;
+                        return true;
+                    }
+                }
+            }
+
+            if (curNode == firstNode)
+            {
+                break;
+            }
+
+            if (--budget == 0)
+            {
+                return false;
+            }
+        }
+
+        return true;
+    };
+
+    bool hasStore;
+    bool hasDef;
+    if (!checkNodes(prevIndir, LIR::AsRange(m_block).FirstNode(), &hasStore, &hasDef))
+    {
+        // Out of budget
+        return false;
+    }
+
+    if (hasStore)
+    {
+        // Have a store before the indir; it could be store-to-load forwarded.
+        return true;
+    }
+
+    if (hasDef)
+    {
+        // Have a def before the indir; it would break store-to-load
+        // forwarding. No preds to push then, so we are done.
+        return false;
+    }
+
+    // Now we've checked range before the indirs; continue with its preds
+    // inside the loop. We will check the range after the indirs once we get to
+    // it.
+    BitVecTraits traits = comp->m_dfsTree->PostOrderTraits();
+    BitVec       visited(BitVecOps::MakeEmpty(&traits));
+
+    ArrayStack<BasicBlock*> stack(comp->getAllocator(CMK_ArrayStack));
+
+    auto pushPreds = [=, &traits, &visited, &stack](BasicBlock* block) {
+        for (BasicBlock* pred : block->PredBlocks())
+        {
+            if (loop->ContainsBlock(pred) && BitVecOps::TryAddElemD(&traits, visited, pred->bbPostorderNum))
+            {
+                stack.Push(pred);
+            }
+        }
+    };
+
+    pushPreds(m_block);
+
+    while (stack.Height() > 0)
+    {
+        BasicBlock* block = stack.Pop();
+
+        LIR::Range& range = LIR::AsRange(block);
+
+        GenTree* firstNode = block == m_block ? prevIndir : range.FirstNode();
+
+        if ((firstNode != nullptr) && !checkNodes(range.LastNode(), firstNode, &hasStore, &hasDef))
+        {
+            // Out of budget
+            return false;
+        }
+
+        if (hasStore)
+        {
+            // This would be store-to-load forwardable.
+            return true;
+        }
+
+        if (hasDef)
+        {
+            // Redefinition of base local; skip pushing preds
+            continue;
+        }
+
+        pushPreds(block);
+    }
+
+    return false;
 }
 
 //------------------------------------------------------------------------
@@ -8746,6 +9940,36 @@ void Lowering::UnmarkTree(GenTree* node)
 }
 
 #endif // TARGET_ARM64
+
+//------------------------------------------------------------------------
+// IsContainableLclAddr: Can a given local address be contained?
+//
+// Most local addresses can be contained, however, there are two edge cases
+// where this is not true:
+// 1. When the resulting memory access will go beyond the local's location.
+// 2. When the resulting access may go past a UINT16_MAX.
+// Both of these requirements are imposed by the emitter.
+//
+// Arguments:
+//    lclAddr    - The local address node
+//    accessSize - The access size (of an indirection)
+//
+// Return Value:
+//    Whether an indirection of "accessSize" may contain "lclAddr".
+//
+bool Lowering::IsContainableLclAddr(GenTreeLclFld* lclAddr, unsigned accessSize) const
+{
+    if (CheckedOps::AddOverflows<int32_t>(lclAddr->GetLclOffs(), accessSize, CheckedOps::Unsigned) ||
+        !comp->IsValidLclAddr(lclAddr->GetLclNum(), lclAddr->GetLclOffs() + accessSize - 1))
+    {
+        // We depend on containment for correctness of liveness updates in codegen. Therefore, all
+        // locals that may "return false" here MUST be address-exposed. Local morph ensures this.
+        assert(comp->lvaGetDesc(lclAddr)->IsAddressExposed());
+        return false;
+    }
+
+    return true;
+}
 
 //------------------------------------------------------------------------
 // TransformUnusedIndirection: change the opcode and the type of the unused indirection.
@@ -8782,7 +10006,7 @@ void Lowering::TransformUnusedIndirection(GenTreeIndir* ind, Compiler* comp, Bas
 #if defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
     bool useNullCheck = true;
 #elif defined(TARGET_ARM)
-    bool           useNullCheck          = false;
+    bool useNullCheck = false;
 #else  // TARGET_XARCH
     bool useNullCheck = !ind->Addr()->isContained();
     ind->ClearDontExtend();
@@ -8851,7 +10075,6 @@ void Lowering::LowerLclHeap(GenTree* node)
                     GenTreeBlk(GT_STORE_BLK, TYP_STRUCT, heapLcl, zero, comp->typGetBlkLayout((unsigned)alignedSize));
                 storeBlk->gtFlags |= (GTF_IND_UNALIGNED | GTF_ASG | GTF_EXCEPT | GTF_GLOB_REF);
                 BlockRange().InsertAfter(use.Def(), heapLcl, zero, storeBlk);
-                LowerNode(storeBlk);
             }
             else
             {
@@ -8872,7 +10095,13 @@ void Lowering::LowerLclHeap(GenTree* node)
 //
 void Lowering::LowerBlockStoreCommon(GenTreeBlk* blkNode)
 {
-    assert(blkNode->OperIs(GT_STORE_BLK, GT_STORE_DYN_BLK));
+    assert(blkNode->OperIs(GT_STORE_BLK));
+
+    if (blkNode->ContainsReferences() && !blkNode->OperIsCopyBlkOp())
+    {
+        // and we only zero it (and that zero is better to be not hoisted/CSE'd)
+        assert(blkNode->Data()->IsIntegralConst(0));
+    }
 
     // Lose the type information stored in the source - we no longer need it.
     if (blkNode->Data()->OperIs(GT_BLK))
@@ -8887,6 +10116,7 @@ void Lowering::LowerBlockStoreCommon(GenTreeBlk* blkNode)
     }
 
     LowerBlockStore(blkNode);
+    LowerStoreIndirCoalescing(blkNode);
 }
 
 //------------------------------------------------------------------------
@@ -8905,13 +10135,8 @@ void Lowering::LowerBlockStoreCommon(GenTreeBlk* blkNode)
 //
 bool Lowering::TryTransformStoreObjAsStoreInd(GenTreeBlk* blkNode)
 {
-    assert(blkNode->OperIs(GT_STORE_BLK, GT_STORE_DYN_BLK));
+    assert(blkNode->OperIs(GT_STORE_BLK));
     if (!comp->opts.OptimizationEnabled())
-    {
-        return false;
-    }
-
-    if (blkNode->OperIs(GT_STORE_DYN_BLK))
     {
         return false;
     }
@@ -8994,6 +10219,21 @@ void Lowering::TryRetypingFloatingPointStoreToIntegerStore(GenTree* store)
         return;
     }
 
+    // Convert "STOREIND<float>(addr, floatVal)" to "STORIND<int>(addr, BitCast<int>(floatVal))"
+    // for volatile stores since there is no stlr for SIMD regs
+#ifdef TARGET_ARM64
+    if (store->OperIs(GT_STOREIND) && store->AsStoreInd()->IsVolatile())
+    {
+        GenTreeStoreInd* ind = store->AsStoreInd();
+        ind->ChangeType(ind->TypeIs(TYP_DOUBLE) ? TYP_LONG : TYP_INT);
+        GenTree* castOp = comp->gtNewBitCastNode(ind->TypeGet(), ind->Data());
+        BlockRange().InsertAfter(ind->Data(), castOp);
+        ind->Data() = castOp;
+        LowerNode(castOp);
+        return;
+    }
+#endif
+
     // We only want to transform memory stores, not definitions of candidate locals.
     //
     if (store->OperIs(GT_STORE_LCL_VAR) && !comp->lvaGetDesc(store->AsLclVar())->lvDoNotEnregister)
@@ -9001,14 +10241,14 @@ void Lowering::TryRetypingFloatingPointStoreToIntegerStore(GenTree* store)
         return;
     }
 
-    GenTree* data = store->Data();
-    assert(store->TypeGet() == data->TypeGet());
+    GenTree* value = store->Data();
+    assert(store->TypeGet() == value->TypeGet());
 
     // Optimize *x = DCON to *x = ICON which can be slightly faster and/or smaller.
     //
-    if (data->IsCnsFltOrDbl())
+    if (value->IsCnsFltOrDbl())
     {
-        double    dblCns = data->AsDblCon()->DconValue();
+        double    dblCns = value->AsDblCon()->DconValue();
         ssize_t   intCns = 0;
         var_types type   = TYP_UNKNOWN;
         // XARCH: we can always contain the immediates.
@@ -9016,12 +10256,11 @@ void Lowering::TryRetypingFloatingPointStoreToIntegerStore(GenTree* store)
         //        section and it is not a clear win to switch them to inline integers.
         // ARM:   FP constants are assembled from integral ones, so it is always profitable
         //        to directly use the integers as it avoids the int -> float conversion.
-        CLANG_FORMAT_COMMENT_ANCHOR;
 
 #if defined(TARGET_XARCH) || defined(TARGET_ARM)
         bool shouldSwitchToInteger = true;
 #else // TARGET_ARM64 || TARGET_LOONGARCH64 || TARGET_RISCV64
-        bool       shouldSwitchToInteger = FloatingPointUtils::isPositiveZero(dblCns);
+        bool shouldSwitchToInteger = FloatingPointUtils::isPositiveZero(dblCns);
 #endif
 
         if (shouldSwitchToInteger)
@@ -9044,7 +10283,7 @@ void Lowering::TryRetypingFloatingPointStoreToIntegerStore(GenTree* store)
 
         if (type != TYP_UNKNOWN)
         {
-            data->BashToConst(intCns, type);
+            value->BashToConst(intCns, type);
 
             assert(!store->OperIsLocalStore() || comp->lvaGetDesc(store->AsLclVarCommon())->lvDoNotEnregister);
             if (store->OperIs(GT_STORE_LCL_VAR))
@@ -9135,7 +10374,7 @@ GenTree* Lowering::InsertNewSimdCreateScalarUnsafeNode(var_types   simdType,
     GenTree* result = comp->gtNewSimdCreateScalarUnsafeNode(simdType, op1, simdBaseJitType, simdSize);
     BlockRange().InsertAfter(op1, result);
 
-    if (result->IsVectorConst())
+    if (result->IsCnsVec())
     {
         BlockRange().Remove(op1);
     }

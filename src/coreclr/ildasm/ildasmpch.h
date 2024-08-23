@@ -12,6 +12,10 @@
 #include <stdlib.h>
 #include <string.h>
 #include <limits.h>
+#include <algorithm>
+
+using std::min;
+using std::max;
 
 #ifndef Debug_ReportError
 #define Debug_ReportError(strMessage)

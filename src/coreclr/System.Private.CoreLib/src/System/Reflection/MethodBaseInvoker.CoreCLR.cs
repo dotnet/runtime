@@ -33,6 +33,6 @@ namespace System.Reflection
             RuntimeMethodHandle.InvokeMethod(obj, (void**)args, _signature!, isConstructor: obj is null);
 
         private unsafe object? InterpretedInvoke_Method(object? obj, IntPtr* args) =>
-            RuntimeMethodHandle.InvokeMethod(obj, (void**)args, _signature!, isConstructor : false);
+            RuntimeMethodHandle.InvokeMethod(obj, (void**)args, _signature!, isConstructor: false);
     }
 }

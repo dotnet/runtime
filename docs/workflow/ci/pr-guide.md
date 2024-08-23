@@ -15,7 +15,7 @@ To merge pull requests, you must have write permissions in the repository. If yo
 
 ## Pull Request Ownership
 
-Every pull request will have automatically a single `area-*` label assigned. The label not only indicates the code segment which the change touches but also the owner. We maintain a list of [areas owners](area-owners.md) for all dotnet/runtime labels. They are responsible for landing pull requests in their area in a timely manner and for helping contributors with their submitted pull request. You can ask them for assistance if you need help with landing your changes.
+Every pull request will have automatically a single `area-*` label assigned. The label not only indicates the code segment which the change touches but also the owner. We maintain a list of [areas owners](../../area-owners.md) for all dotnet/runtime labels. They are responsible for landing pull requests in their area in a timely manner and for helping contributors with their submitted pull request. You can ask them for assistance if you need help with landing your changes.
 
 If during the code review process a merge conflict occurs the area owner is responsible for its resolution. Pull requests should not be on hold due to the author's unwillingness to resolve code conflicts. GitHub makes this easier by allowing simple conflict resolution using the [conflict-editor](https://help.github.com/en/github/collaborating-with-issues-and-pull-requests/resolving-a-merge-conflict-on-github).
 
@@ -30,6 +30,7 @@ Anyone with write access can merge a pull request manually when the following co
 * The PR has been approved by at least one reviewer and any other objections are addressed.
     * You can request another review from the original reviewer.
 * The PR successfully builds and passes all tests in the Continuous Integration (CI) system. In case of failures, refer to the [analyzing build failures](failure-analysis.md) doc.
+* The CI results are no more than 1 week old.
 
 Typically, PRs are merged as one commit (squash merges). It creates a simpler history than a Merge Commit. "Special circumstances" are rare, and typically mean that there are a series of cleanly separated changes that will be too hard to understand if squashed together, or for some reason we want to preserve the ability to disect them.
 

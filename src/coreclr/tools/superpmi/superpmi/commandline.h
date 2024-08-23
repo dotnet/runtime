@@ -25,6 +25,7 @@ public:
         bool  ignoreStoredConfig = false;
         bool  applyDiff = false;
         bool  parallel = false;        // User specified to use /parallel mode.
+        char* streamFile = nullptr;
 #if !defined(USE_MSVCDIS) && defined(USE_COREDISTOOLS)
         bool  useCoreDisTools = true; // Use CoreDisTools library instead of Msvcdis
 #else
@@ -34,6 +35,7 @@ public:
         int   workerCount = -1; // Number of workers to use for /parallel mode. -1 (or 1) means don't use parallel mode.
         int   indexCount = -1;  // If indexCount is -1 and hash points to nullptr it means compile all.
         int   failureLimit = -1; // Number of failures after which bail out the replay/asmdiffs.
+        int   repeatCount = 1;   // Number of times given methods should be compiled.
         int*  indexes = nullptr;
         char* hash = nullptr;
         char* methodStatsTypes = nullptr;
@@ -56,6 +58,8 @@ public:
                              char* argv[],
                              LightWeightMap<DWORD, DWORD>** pJitOptions,
                              LightWeightMap<DWORD, DWORD>** pForceJitOptions);
+
+    static bool ParseJitOption(const char* optionString, WCHAR** key, WCHAR** value);
 
 private:
     static void DumpHelp(const char* program);

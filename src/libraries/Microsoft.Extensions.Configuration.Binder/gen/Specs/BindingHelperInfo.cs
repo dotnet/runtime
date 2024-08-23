@@ -131,6 +131,9 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                             }
                         case DictionarySpec dictionarySpec:
                             {
+                                // Base case to avoid stack overflow for recursive object graphs.
+                                _seenTransitiveTypes.Add(typeRef, true);
+
                                 bool shouldRegister = _typeIndex.CanBindTo(typeRef) &&
                                     TryRegisterTransitiveTypesForMethodGen(dictionarySpec.KeyTypeRef) &&
                                     TryRegisterTransitiveTypesForMethodGen(dictionarySpec.ElementTypeRef) &&
@@ -145,6 +148,14 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                             }
                         case CollectionSpec collectionSpec:
                             {
+                                // Base case to avoid stack overflow for recursive object graphs.
+                                _seenTransitiveTypes.Add(typeRef, true);
+
+                                if (_typeIndex.GetTypeSpec(collectionSpec.ElementTypeRef) is ComplexTypeSpec)
+                                {
+                                    _namespaces.Add("System.Linq");
+                                }
+
                                 return TryRegisterTransitiveTypesForMethodGen(collectionSpec.ElementTypeRef) &&
                                     TryRegisterTypeForBindCoreGen(collectionSpec);
                             }
@@ -152,8 +163,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                             {
                                 // Base case to avoid stack overflow for recursive object graphs.
                                 // Register all object types for gen; we need to throw runtime exceptions in some cases.
-                                bool shouldRegister = true;
-                                _seenTransitiveTypes.Add(typeRef, shouldRegister);
+                                _seenTransitiveTypes.Add(typeRef, true);
 
                                 // List<string> is used in generated code as a temp holder for formatting
                                 // an error for config properties that don't map to object properties.
@@ -214,11 +224,6 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 if (types.Add(type))
                 {
                     _methodsToGen |= method;
-
-                    if (type is { Namespace: string @namespace })
-                    {
-                        _namespaces.Add(@namespace);
-                    }
                 }
             }
 

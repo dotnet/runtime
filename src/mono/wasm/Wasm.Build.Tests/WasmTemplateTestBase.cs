@@ -22,7 +22,7 @@ public abstract class WasmTemplateTestBase : BuildTestBase
         _provider.BundleDirName = "AppBundle";
     }
 
-    public string CreateWasmTemplateProject(string id, string template = "wasmbrowser", string extraArgs = "", bool runAnalyzers = true, bool addFrameworkArg = false)
+    public string CreateWasmTemplateProject(string id, string template = "wasmbrowser", string extraArgs = "", bool runAnalyzers = true, bool addFrameworkArg = false, string? extraProperties = null)
     {
         InitPaths(id);
         InitProjectDir(_projectDir, addNuGetSourceForLocalPackages: true);
@@ -49,7 +49,10 @@ public abstract class WasmTemplateTestBase : BuildTestBase
                 .EnsureSuccessful();
 
         string projectfile = Path.Combine(_projectDir!, $"{id}.csproj");
-        string extraProperties = string.Empty;
+
+        if (extraProperties == null)
+            extraProperties = string.Empty;
+
         extraProperties += "<TreatWarningsAsErrors>true</TreatWarningsAsErrors>";
         if (runAnalyzers)
             extraProperties += "<RunAnalyzers>true</RunAnalyzers>";
@@ -136,5 +139,17 @@ public abstract class WasmTemplateTestBase : BuildTestBase
             projectProvider.AssertBundle(assertAppBundleOptions);
         else
             projectProvider.AssertBundle(buildArgs, buildProjectOptions);
+    }
+
+    protected const string DefaultRuntimeAssetsRelativePath = "./_framework/";
+
+    protected void UpdateBrowserMainJs(Func<string, string> transform, string targetFramework, string runtimeAssetsRelativePath = DefaultRuntimeAssetsRelativePath)
+    {
+        string mainJsPath = Path.Combine(_projectDir!, "wwwroot", "main.js");
+        string mainJsContent = File.ReadAllText(mainJsPath);
+
+        mainJsContent = transform(mainJsContent);
+
+        File.WriteAllText(mainJsPath, mainJsContent);
     }
 }

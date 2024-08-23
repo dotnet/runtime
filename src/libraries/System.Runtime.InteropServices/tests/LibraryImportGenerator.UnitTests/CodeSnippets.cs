@@ -374,6 +374,54 @@ namespace LibraryImportGenerator.UnitTests
             }
             """;
 
+        public static string LibraryImportInRefStruct = """
+            using System;
+            using System.Runtime.InteropServices;
+
+            public static partial class MyClass
+            {
+                public ref partial struct RSPublic
+                {
+                    [LibraryImport("DoesNotExist")]
+                    public static partial int Method();
+                }
+
+                internal ref partial struct RSInternal
+                {
+                    [LibraryImport("DoesNotExist")]
+                    public static partial int Method();
+                }
+
+                private ref partial struct RSPrivate
+                {
+                    [LibraryImport("DoesNotExist")]
+                    public static partial int Method();
+                }
+            }
+
+            public ref partial struct RSContainer
+            {
+                public ref partial struct RSPublic
+                {
+                    [LibraryImport("DoesNotExist")]
+                    public static partial int Method();
+                }
+
+                internal ref partial struct RSInternal
+                {
+                    [LibraryImport("DoesNotExist")]
+                    public static partial int Method();
+                }
+
+                private ref partial struct RSPrivate
+                {
+                    [LibraryImport("DoesNotExist")]
+                    public static partial int Method();
+                }
+            }
+
+        """;
+
         public static readonly string DisableRuntimeMarshalling = "[assembly:System.Runtime.CompilerServices.DisableRuntimeMarshalling]";
 
         public static readonly string UsingSystemRuntimeInteropServicesMarshalling = "using System.Runtime.InteropServices.Marshalling;";
@@ -481,6 +529,15 @@ namespace LibraryImportGenerator.UnitTests
                     in {{typeName}} {|#2:pIn|},
                     ref {{typeName}} {|#3:pRef|},
                     out {{typeName}} {|#4:pOut|});
+            }
+            """;
+
+        public static string ExplicitThis => $$"""
+            using System.Runtime.InteropServices;
+            static partial class StringNativeExtensions
+            {
+                [LibraryImport("DoesNotExist")]
+                public static partial void Method(this int t);
             }
             """;
 
@@ -756,13 +813,16 @@ namespace LibraryImportGenerator.UnitTests
             }
             """;
 
-        public static string BasicReturnAndParameterByValue(string returnType, string parameterType, string preDeclaration = "") => $$"""
+        /// <summary>
+        /// Declaration with a non-blittable parameter that is always supported for marshalling
+        /// </summary>
+        public static string BasicReturnAndParameterWithAlwaysSupportedParameter(string returnType, string parameterType, string preDeclaration = "") => $$"""
             using System.Runtime.InteropServices;
             {{preDeclaration}}
             partial class Test
             {
                 [LibraryImport("DoesNotExist")]
-                public static partial {{returnType}} Method({{parameterType}} p);
+                public static partial {{returnType}} Method({{parameterType}} p, out int i);
             }
             """;
 

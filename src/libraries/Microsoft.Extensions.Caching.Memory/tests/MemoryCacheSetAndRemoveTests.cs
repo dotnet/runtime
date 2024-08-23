@@ -794,6 +794,62 @@ namespace Microsoft.Extensions.Caching.Memory
             await Assert.ThrowsAsync<ArgumentNullException>(async () => await cache.GetOrCreateAsync<object>(null, null));
         }
 
+        [Fact]
+        public void GetOrCreateWithCacheEntryOptions()
+        {
+            var cacheKey = "test";
+            var cache = CreateCache();
+            ManualResetEvent mre = new ManualResetEvent(false);
+
+            var options = new MemoryCacheEntryOptions();
+            options.PostEvictionCallbacks.Add(new PostEvictionCallbackRegistration()
+            {
+                EvictionCallback = (key, value, reason, state) =>
+                {
+                    Assert.Equal(cacheKey, key);
+                    Assert.Equal(cacheKey, value);
+                    Assert.Equal(EvictionReason.Removed, reason);
+                    mre.Set();
+                }
+            });
+
+            var value = cache.GetOrCreate<string>(cacheKey, _ => cacheKey, options);
+            Assert.Equal(cacheKey, value);
+            Assert.True(cache.TryGetValue(cacheKey, out _));
+
+            cache.Remove(cacheKey);
+            Assert.True(mre.WaitOne(TimeSpan.FromSeconds(30)));
+            Assert.False(cache.TryGetValue(cacheKey, out _));
+        }
+
+        [Fact]
+        public async Task GetOrCreateAsyncWithCacheEntryOptions()
+        {
+            var cacheKey = "test";
+            var cache = CreateCache();
+            ManualResetEvent mre = new ManualResetEvent(false);
+
+            var options = new MemoryCacheEntryOptions();
+            options.PostEvictionCallbacks.Add(new PostEvictionCallbackRegistration()
+            {
+                EvictionCallback = (key, value, reason, state) =>
+                {
+                    Assert.Equal(cacheKey, key);
+                    Assert.Equal(cacheKey, value);
+                    Assert.Equal(EvictionReason.Removed, reason);
+                    mre.Set();
+                }
+            });
+
+            var value = await cache.GetOrCreateAsync<string>(cacheKey, _ => Task.FromResult(cacheKey), options);
+            Assert.Equal(cacheKey, value);
+            Assert.True(cache.TryGetValue(cacheKey, out _));
+
+            cache.Remove(cacheKey);
+            Assert.True(mre.WaitOne(TimeSpan.FromSeconds(30)));
+            Assert.False(cache.TryGetValue(cacheKey, out _));
+        }
+
         private class TestKey
         {
             public override bool Equals(object obj) => true;

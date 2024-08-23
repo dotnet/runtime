@@ -1,8 +1,8 @@
 function(clr_unknown_arch)
     if (WIN32)
-        message(FATAL_ERROR "Only AMD64, ARM64, ARM and I386 are supported. Found: ${CMAKE_SYSTEM_PROCESSOR}")
+        message(FATAL_ERROR "Only AMD64, ARM64, ARM and I386 hosts are supported. Found: ${CMAKE_SYSTEM_PROCESSOR}")
     elseif(CLR_CROSS_COMPONENTS_BUILD)
-        message(FATAL_ERROR "Only AMD64, I386 host are supported for linux cross-architecture component. Found: ${CMAKE_SYSTEM_PROCESSOR}")
+        message(FATAL_ERROR "Only AMD64, ARM64 and I386 hosts are supported for linux cross-architecture component. Found: ${CMAKE_SYSTEM_PROCESSOR}")
     else()
         message(FATAL_ERROR "'${CMAKE_SYSTEM_PROCESSOR}' is an unsupported architecture.")
     endif()
@@ -220,6 +220,12 @@ endfunction(convert_to_absolute_path)
 function(preprocess_file inputFilename outputFilename)
   get_compile_definitions(PREPROCESS_DEFINITIONS)
   get_include_directories(PREPROCESS_INCLUDE_DIRECTORIES)
+  get_source_file_property(SOURCE_FILE_DEFINITIONS ${inputFilename} COMPILE_DEFINITIONS)
+
+  foreach(DEFINITION IN LISTS SOURCE_FILE_DEFINITIONS)
+    list(APPEND PREPROCESS_DEFINITIONS -D${DEFINITION})
+  endforeach()
+
   if (MSVC)
     add_custom_command(
         OUTPUT ${outputFilename}
@@ -228,9 +234,12 @@ function(preprocess_file inputFilename outputFilename)
         COMMENT "Preprocessing ${inputFilename}. Outputting to ${outputFilename}"
     )
   else()
+    if (CMAKE_CXX_COMPILER_TARGET AND CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+      set(_LOCAL_CROSS_TARGET "--target=${CMAKE_CXX_COMPILER_TARGET}")
+    endif()
     add_custom_command(
         OUTPUT ${outputFilename}
-        COMMAND ${CMAKE_CXX_COMPILER} -E -P ${PREPROCESS_DEFINITIONS} ${PREPROCESS_INCLUDE_DIRECTORIES} -o ${outputFilename} -x c ${inputFilename}
+        COMMAND ${CMAKE_CXX_COMPILER} ${_LOCAL_CROSS_TARGET} -E -P ${PREPROCESS_DEFINITIONS} ${PREPROCESS_INCLUDE_DIRECTORIES} -o ${outputFilename} -x c ${inputFilename}
         DEPENDS ${inputFilename}
         COMMENT "Preprocessing ${inputFilename}. Outputting to ${outputFilename}"
     )
@@ -369,7 +378,11 @@ endfunction()
 function (get_symbol_file_name targetName outputSymbolFilename)
   if (CLR_CMAKE_HOST_UNIX)
     if (CLR_CMAKE_TARGET_APPLE)
-      set(strip_destination_file $<TARGET_FILE:${targetName}>.dwarf)
+      if (CLR_CMAKE_APPLE_DSYM)
+        set(strip_destination_file $<TARGET_FILE:${targetName}>.dSYM)
+      else ()
+        set(strip_destination_file $<TARGET_FILE:${targetName}>.dwarf)
+      endif ()
     else ()
       set(strip_destination_file $<TARGET_FILE:${targetName}>.dbg)
     endif ()
@@ -416,7 +429,9 @@ function(strip_symbols targetName outputFilename)
         OUTPUT_VARIABLE DSYMUTIL_HELP_OUTPUT
       )
 
-      set(DSYMUTIL_OPTS "--flat")
+      if (NOT CLR_CMAKE_APPLE_DSYM)
+        set(DSYMUTIL_OPTS "--flat")
+      endif ()
       if ("${DSYMUTIL_HELP_OUTPUT}" MATCHES "--minimize")
         list(APPEND DSYMUTIL_OPTS "--minimize")
       endif ()
@@ -493,7 +508,7 @@ function(install_static_library targetName destination component)
   if (WIN32)
     set_target_properties(${targetName} PROPERTIES
         COMPILE_PDB_NAME "${targetName}"
-        COMPILE_PDB_OUTPUT_DIRECTORY "${PROJECT_BINARY_DIR}"
+        COMPILE_PDB_OUTPUT_DIRECTORY "$<TARGET_FILE_DIR:${targetName}>"
     )
     install (FILES "$<TARGET_FILE_DIR:${targetName}>/${targetName}.pdb" DESTINATION ${destination} COMPONENT ${component})
   endif()

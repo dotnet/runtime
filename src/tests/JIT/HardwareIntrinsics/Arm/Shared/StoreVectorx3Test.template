@@ -1,0 +1,331 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
+/******************************************************************************
+ * This file is auto-generated from a template file by the GenerateTests.csx  *
+ * script in src\tests\JIT\HardwareIntrinsics\Arm\Shared. In order to make    *
+ * changes, please update the corresponding template and run according to the *
+ * directions listed in the file.                                             *
+ ******************************************************************************/
+using System;
+using System.Reflection;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using System.Runtime.Intrinsics;
+using System.Runtime.Intrinsics.Arm;
+using Xunit;
+
+namespace JIT.HardwareIntrinsics.Arm
+{
+    public static partial class Program
+    {
+        [Fact]
+        public static void {TestName}()
+        {
+            var test = new {TestName}Test();
+            if (test.IsSupported)
+            {
+                // Validates basic functionality works, using Unsafe.Read
+                test.RunBasicScenario_UnsafeRead();
+
+                if (AdvSimd.IsSupported)
+                {
+                    // Validates basic functionality works, using Load
+                    test.RunBasicScenario_Load();
+                }
+
+                // Validates calling via reflection works, using Unsafe.Read
+                test.RunReflectionScenario_UnsafeRead();
+
+                // Validates passing a local works, using Unsafe.Read
+                test.RunLclVarScenario_UnsafeRead();
+
+                // Validates passing an instance member of a class works
+                test.RunClassFldScenario();
+
+                // Validates passing the field of a local struct works
+                test.RunStructLclFldScenario();
+
+                // Validates passing an instance member of a struct works
+                test.RunStructFldScenario();
+            }
+            else
+            {
+                // Validates we throw on unsupported hardware
+                test.RunUnsupportedScenario();
+            }
+
+            if (!test.Succeeded)
+            {
+                throw new Exception("One or more scenarios did not complete as expected.");
+            }
+        }
+    }
+
+    public sealed unsafe class {TestName}Test
+    {
+        private struct DataTable
+        {
+            private byte[] inArray1;
+            private byte[] inArray2;
+            private byte[] inArray3;
+            private byte[] outArray;
+
+            private GCHandle inHandle1;
+            private GCHandle inHandle2;
+            private GCHandle inHandle3;
+            private GCHandle outHandle;
+
+            private ulong alignment;
+
+            public DataTable({Op2BaseType}[] inArray1, {Op2BaseType}[] inArray2, {Op2BaseType}[] inArray3, {Op1BaseType}[] outArray, int alignment)
+            {
+                int sizeOfinArray1 = inArray1.Length * Unsafe.SizeOf<{Op2BaseType}>();
+                int sizeOfinArray2 = inArray2.Length * Unsafe.SizeOf<{Op2BaseType}>();
+                int sizeOfinArray3 = inArray3.Length * Unsafe.SizeOf<{Op2BaseType}>();
+                int sizeOfoutArray = outArray.Length * Unsafe.SizeOf<{Op1BaseType}>();
+                if ((alignment != 16 && alignment != 8) || (alignment * 2) < sizeOfinArray1 || (alignment * 4) < sizeOfoutArray)
+                {
+                    throw new ArgumentException("Invalid value of alignment");
+                }
+
+                this.inArray1 = new byte[alignment * 2];
+                this.inArray2 = new byte[alignment * 2];
+                this.inArray3 = new byte[alignment * 2];
+                this.outArray = new byte[alignment * 4];
+
+                this.inHandle1 = GCHandle.Alloc(this.inArray1, GCHandleType.Pinned);
+                this.inHandle2 = GCHandle.Alloc(this.inArray2, GCHandleType.Pinned);
+                this.inHandle3 = GCHandle.Alloc(this.inArray3, GCHandleType.Pinned);
+                this.outHandle = GCHandle.Alloc(this.outArray, GCHandleType.Pinned);
+
+                this.alignment = (ulong)alignment;
+
+                Unsafe.CopyBlockUnaligned(ref Unsafe.AsRef<byte>(inArray1Ptr), ref Unsafe.As<{Op2BaseType}, byte>(ref inArray1[0]), (uint)sizeOfinArray1);
+                Unsafe.CopyBlockUnaligned(ref Unsafe.AsRef<byte>(inArray2Ptr), ref Unsafe.As<{Op2BaseType}, byte>(ref inArray2[0]), (uint)sizeOfinArray2);
+                Unsafe.CopyBlockUnaligned(ref Unsafe.AsRef<byte>(inArray3Ptr), ref Unsafe.As<{Op2BaseType}, byte>(ref inArray3[0]), (uint)sizeOfinArray3);
+            }
+
+            public void* inArray1Ptr => Align((byte*)(inHandle1.AddrOfPinnedObject().ToPointer()), alignment);
+            public void* inArray2Ptr => Align((byte*)(inHandle2.AddrOfPinnedObject().ToPointer()), alignment);
+            public void* inArray3Ptr => Align((byte*)(inHandle3.AddrOfPinnedObject().ToPointer()), alignment);
+            public void* outArrayPtr => Align((byte*)(outHandle.AddrOfPinnedObject().ToPointer()), alignment);
+
+            public void Dispose()
+            {
+                inHandle1.Free();
+                inHandle2.Free();
+                inHandle3.Free();
+                outHandle.Free();
+            }
+
+            private static unsafe void* Align(byte* buffer, ulong expectedAlignment)
+            {
+                return (void*)(((ulong)buffer + expectedAlignment - 1) & ~(expectedAlignment - 1));
+            }
+        }
+
+        private struct TestStruct
+        {
+            public {Op2VectorType}<{Op2BaseType}> _fld1;
+            public {Op2VectorType}<{Op2BaseType}> _fld2;
+            public {Op2VectorType}<{Op2BaseType}> _fld3;
+
+            public static TestStruct Create()
+            {
+                var testStruct = new TestStruct();
+
+                for (var i = 0; i < OpElementCount; i++) { _data1[i] = {NextValueOp2}; _data2[i] = {NextValueOp2}; _data3[i] = {NextValueOp2}; }
+                Unsafe.CopyBlockUnaligned(ref Unsafe.As<{Op2VectorType}<{Op2BaseType}>, byte>(ref testStruct._fld1), ref Unsafe.As<{Op2BaseType}, byte>(ref _data1[0]), (uint)Unsafe.SizeOf<{Op2VectorType}<{Op2BaseType}>>());
+                Unsafe.CopyBlockUnaligned(ref Unsafe.As<{Op2VectorType}<{Op2BaseType}>, byte>(ref testStruct._fld2), ref Unsafe.As<{Op2BaseType}, byte>(ref _data2[0]), (uint)Unsafe.SizeOf<{Op2VectorType}<{Op2BaseType}>>());
+                Unsafe.CopyBlockUnaligned(ref Unsafe.As<{Op2VectorType}<{Op2BaseType}>, byte>(ref testStruct._fld3), ref Unsafe.As<{Op2BaseType}, byte>(ref _data3[0]), (uint)Unsafe.SizeOf<{Op2VectorType}<{Op2BaseType}>>());
+
+                return testStruct;
+            }
+
+            public void RunStructFldScenario({TestName}Test testClass)
+            {
+                {Isa}.{Method}(({Op1BaseType}*)testClass._dataTable.outArrayPtr, (_fld1, _fld2, _fld3));
+
+                testClass.ValidateResult(_fld1, _fld2, _fld3, testClass._dataTable.outArrayPtr);
+            }
+        }
+
+        private static readonly int LargestVectorSize = {LargestVectorSize};
+
+        private static readonly int OpElementCount = Unsafe.SizeOf<{Op2VectorType}<{Op2BaseType}>>() / sizeof({Op2BaseType});
+        private static readonly int DestElementCount = OpElementCount * 3;
+
+        private static {Op2BaseType}[] _data1 = new {Op2BaseType}[OpElementCount];
+        private static {Op2BaseType}[] _data2 = new {Op2BaseType}[OpElementCount];
+        private static {Op2BaseType}[] _data3 = new {Op2BaseType}[OpElementCount];
+
+        private {Op2VectorType}<{Op2BaseType}> _fld1;
+        private {Op2VectorType}<{Op2BaseType}> _fld2;
+        private {Op2VectorType}<{Op2BaseType}> _fld3;
+
+        private DataTable _dataTable;
+
+        public {TestName}Test()
+        {
+            Succeeded = true;
+            for (var i = 0; i < OpElementCount; i++) { _data1[i] = {NextValueOp2}; _data2[i] = {NextValueOp2}; _data3[i] = {NextValueOp2}; }
+            Unsafe.CopyBlockUnaligned(ref Unsafe.As<{Op2VectorType}<{Op2BaseType}>, byte>(ref _fld1), ref Unsafe.As<{Op2BaseType}, byte>(ref _data1[0]), (uint)Unsafe.SizeOf<{Op2VectorType}<{Op2BaseType}>>());
+            Unsafe.CopyBlockUnaligned(ref Unsafe.As<{Op2VectorType}<{Op2BaseType}>, byte>(ref _fld2), ref Unsafe.As<{Op2BaseType}, byte>(ref _data2[0]), (uint)Unsafe.SizeOf<{Op2VectorType}<{Op2BaseType}>>());
+            Unsafe.CopyBlockUnaligned(ref Unsafe.As<{Op2VectorType}<{Op2BaseType}>, byte>(ref _fld3), ref Unsafe.As<{Op2BaseType}, byte>(ref _data3[0]), (uint)Unsafe.SizeOf<{Op2VectorType}<{Op2BaseType}>>());
+
+            for (var i = 0; i < OpElementCount; i++) { _data1[i] = {NextValueOp2}; _data2[i] = {NextValueOp2}; _data3[i] = {NextValueOp2}; }
+            _dataTable = new DataTable(_data1, _data2, _data3, new {Op1BaseType}[DestElementCount], LargestVectorSize);
+        }
+
+        public bool IsSupported => {Isa}.IsSupported;
+
+        public bool Succeeded { get; set; }
+
+        public void RunBasicScenario_UnsafeRead()
+        {
+            TestLibrary.TestFramework.BeginScenario(nameof(RunBasicScenario_UnsafeRead));
+
+            {Isa}.{Method}(({Op1BaseType}*)_dataTable.outArrayPtr, (Unsafe.Read<{Op2VectorType}<{Op2BaseType}>>(_dataTable.inArray1Ptr), Unsafe.Read<{Op2VectorType}<{Op2BaseType}>>(_dataTable.inArray2Ptr), Unsafe.Read<{Op2VectorType}<{Op2BaseType}>>(_dataTable.inArray3Ptr)));
+
+            ValidateResult(_dataTable.inArray1Ptr, _dataTable.inArray2Ptr, _dataTable.inArray3Ptr, _dataTable.outArrayPtr);
+        }
+
+        public void RunBasicScenario_Load()
+        {
+            TestLibrary.TestFramework.BeginScenario(nameof(RunBasicScenario_Load));
+
+            {Isa}.{Method}(({Op1BaseType}*)_dataTable.outArrayPtr, ({LoadIsa}.Load{Op2VectorType}(({Op2BaseType}*)(_dataTable.inArray1Ptr)), {LoadIsa}.Load{Op2VectorType}(({Op2BaseType}*)(_dataTable.inArray2Ptr)), {LoadIsa}.Load{Op2VectorType}(({Op2BaseType}*)(_dataTable.inArray3Ptr))));
+
+            ValidateResult(_dataTable.inArray1Ptr, _dataTable.inArray2Ptr, _dataTable.inArray3Ptr, _dataTable.outArrayPtr);
+        }
+
+        public void RunReflectionScenario_UnsafeRead()
+        {
+            TestLibrary.TestFramework.BeginScenario(nameof(RunReflectionScenario_UnsafeRead));
+
+            typeof({Isa}).GetMethod(nameof({Isa}.{Method}), new Type[] { typeof({Op1BaseType}*), typeof(({Op2VectorType}<{Op2BaseType}>, {Op2VectorType}<{Op2BaseType}>, {Op2VectorType}<{Op2BaseType}>))}).
+            Invoke(null, new object[] {
+                                 Pointer.Box(_dataTable.outArrayPtr, typeof({Op1BaseType}*)),
+                                 (Unsafe.Read<{Op2VectorType}<{Op2BaseType}>>(_dataTable.inArray1Ptr), Unsafe.Read<{Op2VectorType}<{Op2BaseType}>>(_dataTable.inArray2Ptr), Unsafe.Read<{Op2VectorType}<{Op2BaseType}>>(_dataTable.inArray3Ptr)) });
+
+            ValidateResult(_dataTable.inArray1Ptr, _dataTable.inArray2Ptr, _dataTable.inArray3Ptr, _dataTable.outArrayPtr);
+        }
+
+        public void RunLclVarScenario_UnsafeRead()
+        {
+            TestLibrary.TestFramework.BeginScenario(nameof(RunLclVarScenario_UnsafeRead));
+
+            var op1 = Unsafe.Read<{Op2VectorType}<{Op2BaseType}>>(_dataTable.inArray1Ptr);
+            var op2 = Unsafe.Read<{Op2VectorType}<{Op2BaseType}>>(_dataTable.inArray2Ptr);
+            var op3 = Unsafe.Read<{Op2VectorType}<{Op2BaseType}>>(_dataTable.inArray3Ptr);
+            {Isa}.{Method}(({Op1BaseType}*)_dataTable.outArrayPtr, (op1, op2, op3));
+
+            ValidateResult(op1, op2, op3, _dataTable.outArrayPtr);
+        }
+
+        public void RunClassFldScenario()
+        {
+            TestLibrary.TestFramework.BeginScenario(nameof(RunClassFldScenario));
+
+            {Isa}.{Method}(({Op1BaseType}*)_dataTable.outArrayPtr, (_fld1, _fld2, _fld3));
+
+            ValidateResult(_fld1, _fld2, _fld3, _dataTable.outArrayPtr);
+        }
+
+        public void RunStructLclFldScenario()
+        {
+            TestLibrary.TestFramework.BeginScenario(nameof(RunStructLclFldScenario));
+
+            var test = TestStruct.Create();
+            {Isa}.{Method}(({Op1BaseType}*)_dataTable.outArrayPtr, (test._fld1, test._fld2, test._fld3));
+
+            ValidateResult(test._fld1, test._fld2, test._fld3, _dataTable.outArrayPtr);
+        }
+
+        public void RunStructFldScenario()
+        {
+            TestLibrary.TestFramework.BeginScenario(nameof(RunStructFldScenario));
+
+            var test = TestStruct.Create();
+            test.RunStructFldScenario(this);
+        }
+
+        public void RunUnsupportedScenario()
+        {
+            TestLibrary.TestFramework.BeginScenario(nameof(RunUnsupportedScenario));
+
+            bool succeeded = false;
+
+            try
+            {
+                RunBasicScenario_UnsafeRead();
+            }
+            catch (PlatformNotSupportedException)
+            {
+                succeeded = true;
+            }
+
+            if (!succeeded)
+            {
+                Succeeded = false;
+            }
+        }
+
+        private void ValidateResult(void* op1, void* op2, void* op3, void* result, [CallerMemberName] string method = "")
+        {
+            {Op2BaseType}[] inArray1 = new {Op2BaseType}[OpElementCount];
+            {Op2BaseType}[] inArray2 = new {Op2BaseType}[OpElementCount];
+            {Op2BaseType}[] inArray3 = new {Op2BaseType}[OpElementCount];
+            {Op1BaseType}[] outArray = new {Op1BaseType}[DestElementCount];
+
+            Unsafe.CopyBlockUnaligned(ref Unsafe.As<{Op2BaseType}, byte>(ref inArray1[0]), ref Unsafe.AsRef<byte>(op1), (uint)Unsafe.SizeOf<{Op2VectorType}<{Op2BaseType}>>());
+            Unsafe.CopyBlockUnaligned(ref Unsafe.As<{Op2BaseType}, byte>(ref inArray2[0]), ref Unsafe.AsRef<byte>(op2), (uint)Unsafe.SizeOf<{Op2VectorType}<{Op2BaseType}>>());
+            Unsafe.CopyBlockUnaligned(ref Unsafe.As<{Op2BaseType}, byte>(ref inArray3[0]), ref Unsafe.AsRef<byte>(op3), (uint)Unsafe.SizeOf<{Op2VectorType}<{Op2BaseType}>>());
+            Unsafe.CopyBlockUnaligned(ref Unsafe.As<{Op1BaseType}, byte>(ref outArray[0]), ref Unsafe.AsRef<byte>(result), (uint)Unsafe.SizeOf<{Op2VectorType}<{Op2BaseType}>>() * 3);
+
+            ValidateResult(inArray1, inArray2, inArray3, outArray, method);
+        }
+
+        private void ValidateResult({Op2VectorType}<{Op2BaseType}> op1, {Op2VectorType}<{Op2BaseType}> op2, {Op2VectorType}<{Op2BaseType}> op3, void* result, [CallerMemberName] string method = "")
+        {
+            {Op2BaseType}[] inArray1 = new {Op2BaseType}[OpElementCount];
+            {Op2BaseType}[] inArray2 = new {Op2BaseType}[OpElementCount];
+            {Op2BaseType}[] inArray3 = new {Op2BaseType}[OpElementCount];
+            {Op1BaseType}[] outArray = new {Op1BaseType}[DestElementCount];
+
+            Unsafe.WriteUnaligned(ref Unsafe.As<{Op2BaseType}, byte>(ref inArray1[0]), op1);
+            Unsafe.WriteUnaligned(ref Unsafe.As<{Op2BaseType}, byte>(ref inArray2[0]), op2);
+            Unsafe.WriteUnaligned(ref Unsafe.As<{Op2BaseType}, byte>(ref inArray3[0]), op3);
+            Unsafe.CopyBlockUnaligned(ref Unsafe.As<{Op1BaseType}, byte>(ref outArray[0]), ref Unsafe.AsRef<byte>(result), (uint)Unsafe.SizeOf<{Op2VectorType}<{Op2BaseType}>>() * 3);
+
+            ValidateResult(inArray1, inArray2, inArray3, outArray, method);
+        }
+
+        private void ValidateResult({Op2BaseType}[] input1, {Op2BaseType}[] input2, {Op2BaseType}[] input3, {Op1BaseType}[] result, [CallerMemberName] string method = "")
+        {
+            bool succeeded = true;
+
+            for (int i = 0; i < OpElementCount; i++)
+            {
+                if ({ValidateIterResult})
+                {
+                    succeeded = false;
+                    break;
+                }
+            }
+
+            if (!succeeded)
+            {
+                TestLibrary.TestFramework.LogInformation($"{nameof({Isa})}.{nameof({Isa}.{Method})}<void>({Op2BaseType} *, {Op2VectorType}<{Op2BaseType}>, {Op2VectorType}<{Op2BaseType}>, {Op2VectorType}<{Op2BaseType}>): {Method} failed:");
+                TestLibrary.TestFramework.LogInformation($" input1: ({string.Join(", ", input1)})");
+                TestLibrary.TestFramework.LogInformation($" input2: ({string.Join(", ", input2)})");
+                TestLibrary.TestFramework.LogInformation($" input3: ({string.Join(", ", input3)})");
+                TestLibrary.TestFramework.LogInformation($" result: ({string.Join(", ", result)})");
+                TestLibrary.TestFramework.LogInformation(string.Empty);
+
+                Succeeded = false;
+            }
+        }
+    }
+}

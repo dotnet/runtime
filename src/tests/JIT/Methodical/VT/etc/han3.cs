@@ -67,6 +67,7 @@ namespace JitTest_han3_cs
         }
 
         [Fact]
+        [OuterLoop]
         public static void TestEntryPoint()
         {
             int NUM = 17;

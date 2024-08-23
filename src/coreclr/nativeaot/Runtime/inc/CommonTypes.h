@@ -44,6 +44,7 @@ typedef void* LPVOID;
 typedef uint32_t UINT;
 typedef void* PVOID;
 typedef uint64_t ULONGLONG;
+typedef uintptr_t ULONG_PTR;
 #ifdef _MSC_VER
 typedef unsigned long ULONG;
 #else
@@ -59,5 +60,9 @@ typedef struct _GUID {
     uint8_t Data4[8];
 } GUID;
 #endif // FEATURE_EVENT_TRACE && !_INC_WINDOWS
+
+// Hijack funcs are not called, they are "returned to". And when done, they return to the actual caller.
+// Thus they cannot have any parameters or return anything.
+typedef void HijackFunc();
 
 #endif // __COMMON_TYPES_H__

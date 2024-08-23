@@ -50,12 +50,12 @@
 
     <GenerateFileFromTemplate
       TemplateFile="WorkloadManifest.json.in"
-      Properties="@(_WorkloadManifestValues)"
+      Properties="@(_WorkloadManifestValues->'%(Identity)=%(Value)')"
       OutputPath="$(WorkloadManifestPath)" />
 
     <GenerateFileFromTemplate
       TemplateFile="WorkloadManifest.targets.in"
-      Properties="@(_WorkloadManifestValues)"
+      Properties="@(_WorkloadManifestValues->'%(Identity)=%(Value)')"
       OutputPath="$(WorkloadManifestTargetsPath)" />
   </Target>
 

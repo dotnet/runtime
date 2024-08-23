@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.Arm;
@@ -14,11 +15,13 @@ namespace System.Buffers
 {
     internal static class StringSearchValues
     {
+        private const int TeddyBucketCount = 8;
+
         private static readonly SearchValues<char> s_asciiLetters =
             SearchValues.Create("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz");
 
         private static readonly SearchValues<char> s_allAsciiExceptLowercase =
-            SearchValues.Create("\0\u0001\u0002\u0003\u0004\u0005\u0006\a\b\t\n\v\f\r\u000E\u000F\u0010\u0011\u0012\u0013\u0014\u0015\u0016\u0017\u0018\u0019\u001A\u001B\u001C\u001D\u001E\u001F !\"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`{|}~\u007F");
+            SearchValues.Create("\0\u0001\u0002\u0003\u0004\u0005\u0006\a\b\t\n\v\f\r\u000E\u000F\u0010\u0011\u0012\u0013\u0014\u0015\u0016\u0017\u0018\u0019\u001A\e\u001C\u001D\u001E\u001F !\"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`{|}~\u007F");
 
         public static SearchValues<string> Create(ReadOnlySpan<string> values, bool ignoreCase)
         {
@@ -248,6 +251,18 @@ namespace System.Buffers
 
             Debug.Assert(!(asciiStartLettersOnly && asciiStartUnaffectedByCaseConversion));
 
+            // If we still have empty buckets we could use and we're ignoring case, we may be able to
+            // generate all possible permutations of the first N characters and switch to case-sensitive searching.
+            // E.g. ["ab", "c!"] => ["ab", "Ab" "aB", "AB", "c!", "C!"].
+            // This won't apply to inputs with many letters (e.g. "abc" => 8 permutations on its own).
+            if (!asciiStartUnaffectedByCaseConversion &&
+                values.Length < TeddyBucketCount &&
+                TryGenerateAllCasePermutationsForPrefixes(values, n, TeddyBucketCount, out string[]? newValues))
+            {
+                asciiStartUnaffectedByCaseConversion = true;
+                values = newValues;
+            }
+
             if (asciiStartUnaffectedByCaseConversion)
             {
                 return nonAsciiAffectedByCaseConversion
@@ -278,9 +293,9 @@ namespace System.Buffers
             Debug.Assert(values.Length > 1);
             Debug.Assert(n is 2 or 3);
 
-            if (values.Length > 8)
+            if (values.Length > TeddyBucketCount)
             {
-                string[][] buckets = TeddyBucketizer.Bucketize(values, bucketCount: 8, n);
+                string[][] buckets = TeddyBucketizer.Bucketize(values, TeddyBucketCount, n);
 
                 // Potential optimization: We don't have to pick the first N characters for the fingerprint.
                 // Different offset selection can noticeably improve throughput (e.g. 2x).
@@ -297,6 +312,68 @@ namespace System.Buffers
             }
         }
 
+        private static bool TryGenerateAllCasePermutationsForPrefixes(ReadOnlySpan<string> values, int n, int maxValues, [NotNullWhen(true)] out string[]? newValues)
+        {
+            Debug.Assert(n is 2 or 3);
+            Debug.Assert(values.Length < maxValues);
+
+            // Count how many possible permutations there are.
+            int newValuesCount = 0;
+
+            foreach (string value in values)
+            {
+                int permutations = 1;
+
+                foreach (char c in value.AsSpan(0, n))
+                {
+                    Debug.Assert(char.IsAscii(c));
+
+                    if (char.IsAsciiLetter(c))
+                    {
+                        permutations *= 2;
+                    }
+                }
+
+                newValuesCount += permutations;
+            }
+
+            Debug.Assert(newValuesCount > values.Length, "Shouldn't have been called if there were no letters present");
+
+            if (newValuesCount > maxValues)
+            {
+                newValues = null;
+                return false;
+            }
+
+            // Generate the permutations.
+            newValues = new string[newValuesCount];
+            newValuesCount = 0;
+
+            foreach (string value in values)
+            {
+                int start = newValuesCount;
+
+                newValues[newValuesCount++] = value;
+
+                for (int i = 0; i < n; i++)
+                {
+                    char c = value[i];
+
+                    if (char.IsAsciiLetter(c))
+                    {
+                        // Copy all the previous permutations of this value but change the casing of the i-th character.
+                        foreach (string previous in newValues.AsSpan(start, newValuesCount - start))
+                        {
+                            newValues[newValuesCount++] = $"{previous.AsSpan(0, i)}{(char)(c ^ 0x20)}{previous.AsSpan(i + 1)}";
+                        }
+                    }
+                }
+            }
+
+            Debug.Assert(newValuesCount == newValues.Length);
+            return true;
+        }
+
         private static SearchValues<string> CreateForSingleValue(
             string value,
             HashSet<string>? uniqueValues,
@@ -309,25 +386,16 @@ namespace System.Buffers
 
             if (Vector128.IsHardwareAccelerated && value.Length > 1 && value.Length <= maxLength)
             {
-                if (!ignoreCase)
+                SearchValues<string>? searchValues = value.Length switch
                 {
-                    return new SingleStringSearchValuesThreeChars<CaseSensitive>(uniqueValues, value);
-                }
+                    < 4 => TryCreateSingleValuesThreeChars<ValueLengthLessThan4>(value, uniqueValues, ignoreCase, allAscii, asciiLettersOnly),
+                    < 8 => TryCreateSingleValuesThreeChars<ValueLength4To7>(value, uniqueValues, ignoreCase, allAscii, asciiLettersOnly),
+                    _ => TryCreateSingleValuesThreeChars<ValueLength8OrLongerOrUnknown>(value, uniqueValues, ignoreCase, allAscii, asciiLettersOnly),
+                };
 
-                if (asciiLettersOnly)
+                if (searchValues is not null)
                 {
-                    return new SingleStringSearchValuesThreeChars<CaseInsensitiveAsciiLetters>(uniqueValues, value);
-                }
-
-                if (allAscii)
-                {
-                    return new SingleStringSearchValuesThreeChars<CaseInsensitiveAscii>(uniqueValues, value);
-                }
-
-                // When ignoring casing, all anchor chars we search for must be ASCII.
-                if (char.IsAscii(value[0]) && value.AsSpan().LastIndexOfAnyInRange((char)0, (char)127) > 0)
-                {
-                    return new SingleStringSearchValuesThreeChars<CaseInsensitiveUnicode>(uniqueValues, value);
+                    return searchValues;
                 }
             }
 
@@ -336,6 +404,39 @@ namespace System.Buffers
             return ignoreCase
                 ? new SingleStringSearchValuesFallback<SearchValues.TrueConst>(value, uniqueValues)
                 : new SingleStringSearchValuesFallback<SearchValues.FalseConst>(value, uniqueValues);
+        }
+
+        private static SearchValues<string>? TryCreateSingleValuesThreeChars<TValueLength>(
+            string value,
+            HashSet<string>? uniqueValues,
+            bool ignoreCase,
+            bool allAscii,
+            bool asciiLettersOnly)
+            where TValueLength : struct, IValueLength
+        {
+            if (!ignoreCase)
+            {
+                return new SingleStringSearchValuesThreeChars<TValueLength, CaseSensitive>(uniqueValues, value);
+            }
+
+            if (asciiLettersOnly)
+            {
+                return new SingleStringSearchValuesThreeChars<TValueLength, CaseInsensitiveAsciiLetters>(uniqueValues, value);
+            }
+
+            if (allAscii)
+            {
+                return new SingleStringSearchValuesThreeChars<TValueLength, CaseInsensitiveAscii>(uniqueValues, value);
+            }
+
+            // SingleStringSearchValuesThreeChars doesn't have logic to handle non-ASCII case conversion, so we require that anchor characters are ASCII.
+            // Right now we're always selecting the first character as one of the anchors, and we need at least two.
+            if (char.IsAscii(value[0]) && value.AsSpan(1).ContainsAnyInRange((char)0, (char)127))
+            {
+                return new SingleStringSearchValuesThreeChars<TValueLength, CaseInsensitiveUnicode>(uniqueValues, value);
+            }
+
+            return null;
         }
 
         private static void AnalyzeValues(

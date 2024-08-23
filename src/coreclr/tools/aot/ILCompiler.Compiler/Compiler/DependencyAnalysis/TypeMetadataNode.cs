@@ -45,6 +45,10 @@ namespace ILCompiler.DependencyAnalysis
             else
                 dependencies.Add(factory.ModuleMetadata(_type.Module), "Containing module of a reflectable type");
 
+            MetadataType baseType = _type.MetadataBaseType;
+            if (baseType != null)
+                GetMetadataDependencies(ref dependencies, factory, baseType, "Base type of a reflectable type");
+
             var mdManager = (UsageBasedMetadataManager)factory.MetadataManager;
 
             if (_type.IsEnum)
@@ -73,9 +77,11 @@ namespace ILCompiler.DependencyAnalysis
                     {
                         try
                         {
-                            // Make sure we're not adding a method to the dependency graph that is going to
-                            // cause trouble down the line. This entire type would not actually load on CoreCLR anyway.
-                            LibraryRootProvider.CheckCanGenerateMethod(method);
+                            // Spot check by parsing signature.
+                            // Previously we had LibraryRootProvider.CheckCanGenerateMethod(method) here, but that one
+                            // expects fully instantiated types and methods. We operate on definitions here.
+                            // This is not as thorough as it could be. This option is unsupported anyway.
+                            _ = method.Signature;
                         }
                         catch (TypeSystemException)
                         {

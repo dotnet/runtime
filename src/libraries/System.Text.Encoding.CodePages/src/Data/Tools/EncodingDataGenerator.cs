@@ -40,35 +40,35 @@ namespace EncodingDataGenerator
 
             while (paramIndex < args.Length - 1)
             {
-                if (args[paramIndex] ==  "--IanaMapping" || args[paramIndex] ==  "-i" )
+                if (args[paramIndex] == "--IanaMapping" || args[paramIndex] == "-i")
                 {
                     IanaMappings = args[paramIndex + 1];
                     paramIndex += 2;
                     continue;
                 }
 
-                if (args[paramIndex] ==  "--PreferredIANANames" || args[paramIndex] ==  "-p" )
+                if (args[paramIndex] == "--PreferredIANANames" || args[paramIndex] == "-p")
                 {
                     PreferredIANANames = args[paramIndex + 1];
                     paramIndex += 2;
                     continue;
                 }
 
-                if (args[paramIndex] ==  "--Output" || args[paramIndex] ==  "-o" )
+                if (args[paramIndex] == "--Output" || args[paramIndex] == "-o")
                 {
                     OutputDataTable = args[paramIndex + 1];
                     paramIndex += 2;
                     continue;
                 }
 
-                if (args[paramIndex] ==  "--Namespace" || args[paramIndex] ==  "-n" )
+                if (args[paramIndex] == "--Namespace" || args[paramIndex] == "-n")
                 {
                     Namespace = args[paramIndex + 1];
                     paramIndex += 2;
                     continue;
                 }
 
-                if (args[paramIndex] ==  "--ClassName" || args[paramIndex] ==  "-c" )
+                if (args[paramIndex] == "--ClassName" || args[paramIndex] == "-c")
                 {
                     ClassName = args[paramIndex + 1];
                     paramIndex += 2;

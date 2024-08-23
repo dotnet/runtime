@@ -15,10 +15,9 @@ namespace System.Buffers
     {
         private IndexOfAnyAsciiSearcher.AsciiState _asciiState;
         private IndexOfAnyAsciiSearcher.AsciiState _inverseAsciiState;
-        private ProbabilisticMap _map;
-        private readonly string _values;
+        private ProbabilisticMapState _map;
 
-        public ProbabilisticWithAsciiCharSearchValues(scoped ReadOnlySpan<char> values)
+        public ProbabilisticWithAsciiCharSearchValues(ReadOnlySpan<char> values, int maxInclusive)
         {
             Debug.Assert(IndexOfAnyAsciiSearcher.IsVectorizationSupported);
             Debug.Assert(values.ContainsAnyInRange((char)0, (char)127));
@@ -26,15 +25,15 @@ namespace System.Buffers
             IndexOfAnyAsciiSearcher.ComputeAsciiState(values, out _asciiState);
             _inverseAsciiState = _asciiState.CreateInverse();
 
-            _values = new string(values);
-            _map = new ProbabilisticMap(_values);
+            _map = new ProbabilisticMapState(values, maxInclusive);
         }
 
-        internal override char[] GetValues() => _values.ToCharArray();
+        internal override char[] GetValues() =>
+            _map.GetValues();
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal override bool ContainsCore(char value) =>
-            ProbabilisticMap.Contains(ref Unsafe.As<ProbabilisticMap, uint>(ref _map), _values, value);
+            _map.FastContains(value);
 
         internal override int IndexOfAny(ReadOnlySpan<char> span)
         {
@@ -57,7 +56,7 @@ namespace System.Buffers
                 {
                     Debug.Assert(_inverseAsciiState.Lookup.Contains(0), "The inverse bitmap did not contain a 0.");
 
-                    offset = IndexOfAnyAsciiSearcher.IndexOfAnyVectorized<IndexOfAnyAsciiSearcher.Negate, IndexOfAnyAsciiSearcher.Ssse3AndWasmHandleZeroInNeedle>(
+                    offset = IndexOfAnyAsciiSearcher.IndexOfAny<IndexOfAnyAsciiSearcher.Negate, IndexOfAnyAsciiSearcher.Ssse3AndWasmHandleZeroInNeedle>(
                         ref Unsafe.As<char, short>(ref MemoryMarshal.GetReference(span)),
                         span.Length,
                         ref _inverseAsciiState);
@@ -67,7 +66,7 @@ namespace System.Buffers
                     Debug.Assert(!(Ssse3.IsSupported || PackedSimd.IsSupported) || !_inverseAsciiState.Lookup.Contains(0),
                         "The inverse bitmap contained a 0, but we're not using Ssse3AndWasmHandleZeroInNeedle.");
 
-                    offset = IndexOfAnyAsciiSearcher.IndexOfAnyVectorized<IndexOfAnyAsciiSearcher.Negate, IndexOfAnyAsciiSearcher.Default>(
+                    offset = IndexOfAnyAsciiSearcher.IndexOfAny<IndexOfAnyAsciiSearcher.Negate, IndexOfAnyAsciiSearcher.Default>(
                         ref Unsafe.As<char, short>(ref MemoryMarshal.GetReference(span)),
                         span.Length,
                         ref _inverseAsciiState);
@@ -83,11 +82,10 @@ namespace System.Buffers
                 span = span.Slice(offset);
             }
 
-            int index = ProbabilisticMap.IndexOfAny(
-                ref Unsafe.As<ProbabilisticMap, uint>(ref _map),
+            int index = ProbabilisticMap.IndexOfAny<SearchValues.TrueConst>(
                 ref MemoryMarshal.GetReference(span),
                 span.Length,
-                _values);
+                ref _map);
 
             if (index >= 0)
             {
@@ -107,7 +105,7 @@ namespace System.Buffers
             if (IndexOfAnyAsciiSearcher.IsVectorizationSupported && span.Length >= Vector128<short>.Count && char.IsAscii(span[0]))
             {
                 // Do a regular IndexOfAnyExcept for the ASCII characters. The search will stop if we encounter a non-ASCII char.
-                offset = IndexOfAnyAsciiSearcher.IndexOfAnyVectorized<IndexOfAnyAsciiSearcher.Negate, TOptimizations>(
+                offset = IndexOfAnyAsciiSearcher.IndexOfAny<IndexOfAnyAsciiSearcher.Negate, TOptimizations>(
                     ref Unsafe.As<char, short>(ref MemoryMarshal.GetReference(span)),
                     span.Length,
                     ref _asciiState);
@@ -122,10 +120,10 @@ namespace System.Buffers
                 span = span.Slice(offset);
             }
 
-            int index = ProbabilisticMap.IndexOfAnySimpleLoop<IndexOfAnyAsciiSearcher.Negate>(
+            int index = ProbabilisticMapState.IndexOfAnySimpleLoop<SearchValues.TrueConst, IndexOfAnyAsciiSearcher.Negate>(
                 ref MemoryMarshal.GetReference(span),
                 span.Length,
-                _values);
+                ref _map);
 
             if (index >= 0)
             {
@@ -157,17 +155,17 @@ namespace System.Buffers
                 {
                     Debug.Assert(_inverseAsciiState.Lookup.Contains(0), "The inverse bitmap did not contain a 0.");
 
-                    offset = IndexOfAnyAsciiSearcher.LastIndexOfAnyVectorized<IndexOfAnyAsciiSearcher.Negate, IndexOfAnyAsciiSearcher.Ssse3AndWasmHandleZeroInNeedle>(
+                    offset = IndexOfAnyAsciiSearcher.LastIndexOfAny<IndexOfAnyAsciiSearcher.Negate, IndexOfAnyAsciiSearcher.Ssse3AndWasmHandleZeroInNeedle>(
                         ref Unsafe.As<char, short>(ref MemoryMarshal.GetReference(span)),
                         span.Length,
                         ref _inverseAsciiState);
                 }
                 else
                 {
-                    Debug.Assert(!(Ssse3.IsSupported || PackedSimd.IsSupported) ||!_inverseAsciiState.Lookup.Contains(0),
+                    Debug.Assert(!(Ssse3.IsSupported || PackedSimd.IsSupported) || !_inverseAsciiState.Lookup.Contains(0),
                         "The inverse bitmap contained a 0, but we're not using Ssse3AndWasmHandleZeroInNeedle.");
 
-                    offset = IndexOfAnyAsciiSearcher.LastIndexOfAnyVectorized<IndexOfAnyAsciiSearcher.Negate, IndexOfAnyAsciiSearcher.Default>(
+                    offset = IndexOfAnyAsciiSearcher.LastIndexOfAny<IndexOfAnyAsciiSearcher.Negate, IndexOfAnyAsciiSearcher.Default>(
                         ref Unsafe.As<char, short>(ref MemoryMarshal.GetReference(span)),
                         span.Length,
                         ref _inverseAsciiState);
@@ -183,11 +181,10 @@ namespace System.Buffers
                 span = span.Slice(0, offset + 1);
             }
 
-            return ProbabilisticMap.LastIndexOfAny(
-                ref Unsafe.As<ProbabilisticMap, uint>(ref _map),
+            return ProbabilisticMap.LastIndexOfAny<SearchValues.TrueConst>(
                 ref MemoryMarshal.GetReference(span),
                 span.Length,
-                _values);
+                ref _map);
         }
 
         internal override int LastIndexOfAnyExcept(ReadOnlySpan<char> span)
@@ -197,7 +194,7 @@ namespace System.Buffers
             if (IndexOfAnyAsciiSearcher.IsVectorizationSupported && span.Length >= Vector128<short>.Count && char.IsAscii(span[^1]))
             {
                 // Do a regular LastIndexOfAnyExcept for the ASCII characters. The search will stop if we encounter a non-ASCII char.
-                int offset = IndexOfAnyAsciiSearcher.LastIndexOfAnyVectorized<IndexOfAnyAsciiSearcher.Negate, TOptimizations>(
+                int offset = IndexOfAnyAsciiSearcher.LastIndexOfAny<IndexOfAnyAsciiSearcher.Negate, TOptimizations>(
                     ref Unsafe.As<char, short>(ref MemoryMarshal.GetReference(span)),
                     span.Length,
                     ref _asciiState);
@@ -212,10 +209,10 @@ namespace System.Buffers
                 span = span.Slice(0, offset + 1);
             }
 
-            return ProbabilisticMap.LastIndexOfAnySimpleLoop<IndexOfAnyAsciiSearcher.Negate>(
+            return ProbabilisticMapState.LastIndexOfAnySimpleLoop<SearchValues.TrueConst, IndexOfAnyAsciiSearcher.Negate>(
                 ref MemoryMarshal.GetReference(span),
                 span.Length,
-                _values);
+                ref _map);
         }
     }
 }

@@ -15,17 +15,24 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="FluentAssertions" Version="6.0.0-alpha0002" />
-
     <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="$(MicrosoftCodeAnalysisCSharpVersion)" />
-
     <PackageReference Include="Microsoft.DotNet.Cecil" Version="$(MicrosoftDotNetCecilVersion)" />
-    <PackageReference Include="System.Reflection.MetadataLoadContext" Version="5.0.1" />
+
     <ProjectReference Include="$(ToolsProjectRoot)illink/test/Mono.Linker.Tests.Cases/**/*.csproj" />
     <ProjectReference Include="$(ToolsProjectRoot)illink/test/Mono.Linker.Tests.Cases.Expectations/Mono.Linker.Tests.Cases.Expectations.csproj" />
     <ProjectReference Include="../ILCompiler.Compiler/ILCompiler.Compiler.csproj" />
     <ProjectReference Include="../ILCompiler.RyuJit/ILCompiler.RyuJit.csproj" />
+  </ItemGroup>
 
+  <ItemGroup>
+    <Compile Include="$(ToolsProjectRoot)illink/src/linker/Linker/TypeNameResolver.cs" />
+    <Compile Include="$(ToolsProjectRoot)illink/src/linker/Linker/ITryResolve.cs" />
+    <Compile Include="$(ToolsProjectRoot)illink/src/linker/Linker/ModuleDefinitionExtensions.cs" />
+    <Compile Include="$(LibrariesProjectRoot)/Common/src/System/Reflection/Metadata/TypeNameHelpers.cs" />
+    <Compile Include="$(LibrariesProjectRoot)/Common/src/System/Text/ValueStringBuilder.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
     <RuntimeHostConfigurationOption Include="Mono.Linker.Tests.RuntimeBinDirectory">
       <Value>$(RuntimeBinDir)</Value>
     </RuntimeHostConfigurationOption>
@@ -35,14 +42,14 @@
     <RuntimeHostConfigurationOption Include="Mono.Linker.Tests.Configuration">
       <Value>$(Configuration)</Value>
     </RuntimeHostConfigurationOption>
-    <RuntimeHostConfigurationOption Include="Mono.Linker.Tests.ArtifactsDir">
-      <Value>$(ArtifactsDir)</Value>
-    </RuntimeHostConfigurationOption>
     <RuntimeHostConfigurationOption Include="Mono.Linker.Tests.ILToolsDir">
       <Value>$(CoreCLRArtifactsPath)</Value>
     </RuntimeHostConfigurationOption>
     <RuntimeHostConfigurationOption Include="Mono.Linker.Tests.ArtifactsBinDir">
       <Value>$(ArtifactsBinDir)</Value>
+    </RuntimeHostConfigurationOption>
+    <RuntimeHostConfigurationOption Include="Mono.Linker.Tests.TargetFramework">
+      <Value>$(TargetFramework)</Value>
     </RuntimeHostConfigurationOption>
     <RuntimeHostConfigurationOption Include="Mono.Linker.Tests.LinkerTestDir">
       <Value>$(ToolsProjectRoot)illink/test/</Value>

@@ -39,6 +39,7 @@
   <PropertyGroup>
     <Platform Condition=" '$(Platform)' == '' ">$(TargetArchitecture)</Platform>
     <Platform Condition=" '$(Platform)' == 'armel' ">arm</Platform>
+    <PlatformTarget>AnyCPU</PlatformTarget>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <!-- This prevents the default MsBuild targets from referencing System.Core.dll -->
     <AddAdditionalExplicitAssemblyReferences>false</AddAdditionalExplicitAssemblyReferences>
@@ -46,8 +47,7 @@
     <!-- Override InformationalVersion during servicing as it's returned via public api. -->
     <InformationalVersion Condition="'$(PreReleaseVersionLabel)' == 'servicing'">$(ProductVersion)</InformationalVersion>
     <InformationalVersion Condition="'$(StabilizePackageVersion)' == 'true'">$(ProductVersion)</InformationalVersion>
-    <!-- AD0001 : https://github.com/dotnet/runtime/issues/90356 -->
-    <NoWarn>$(NoWarn),0419,0649,CA2249,CA1830;AD0001</NoWarn>
+    <NoWarn>$(NoWarn),0419,0649</NoWarn>
     <Nullable>enable</Nullable>
 
     <!-- Ignore all previous constants since SPCL is sensitive to what is defined and the Sdk adds some by default -->
@@ -56,33 +56,25 @@
 
     <SkipCommonResourcesIncludes>true</SkipCommonResourcesIncludes>
     <DocumentationFile>$(OutputPath)$(MSBuildProjectName).xml</DocumentationFile>
-    <SlnGenSolutionFolder>src</SlnGenSolutionFolder>
   </PropertyGroup>
 
   <!-- Platform specific properties -->
   <PropertyGroup Condition="'$(Platform)' == 'x64'">
-    <PlatformTarget>x64</PlatformTarget>
-    <Prefer32Bit>false</Prefer32Bit>
     <DefineConstants>$(DefineConstants);TARGET_AMD64</DefineConstants>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Platform)' == 'x86'">
-    <PlatformTarget>x86</PlatformTarget>
     <DefineConstants>$(DefineConstants);TARGET_X86</DefineConstants>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Platform)' == 'arm'">
-    <PlatformTarget>arm</PlatformTarget>
     <DefineConstants>$(DefineConstants);TARGET_ARM</DefineConstants>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Platform)' == 'arm64'">
-    <PlatformTarget>AnyCPU</PlatformTarget>
     <DefineConstants>$(DefineConstants);TARGET_ARM64</DefineConstants>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Platform)' == 'loongarch64'">
-    <PlatformTarget>AnyCPU</PlatformTarget>
     <DefineConstants>$(DefineConstants);TARGET_LOONGARCH64</DefineConstants>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Platform)' == 'riscv64'">
-    <PlatformTarget>AnyCPU</PlatformTarget>
     <DefineConstants>$(DefineConstants);TARGET_RISCV64</DefineConstants>
   </PropertyGroup>
 
@@ -119,6 +111,7 @@
 
   <!-- Sources -->
   <ItemGroup>
+    <Compile Include="$(BclSourcesRoot)\Internal\Runtime\CompilerHelpers\ThrowHelpers.cs" />
     <Compile Include="$(BclSourcesRoot)\Internal\Runtime\InteropServices\ComActivationContextInternal.cs" />
     <Compile Include="$(BclSourcesRoot)\Internal\Runtime\InteropServices\ComponentActivator.CoreCLR.cs" />
     <Compile Include="$(BclSourcesRoot)\System\__Canon.cs" />
@@ -138,8 +131,6 @@
     <Compile Include="$(BclSourcesRoot)\System\Delegate.CoreCLR.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Diagnostics\Debugger.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Diagnostics\EditAndContinueHelper.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Diagnostics\Eventing\EventPipe.CoreCLR.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Diagnostics\Eventing\NativeRuntimeEventSource.Threading.NativeSinks.CoreCLR.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Diagnostics\ICustomDebuggerNotification.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Diagnostics\StackFrame.CoreCLR.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Diagnostics\StackFrameHelper.cs" />
@@ -152,7 +143,7 @@
     <Compile Include="$(BclSourcesRoot)\System\IO\FileNotFoundException.CoreCLR.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Math.CoreCLR.cs" />
     <Compile Include="$(BclSourcesRoot)\System\MathF.CoreCLR.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\MulticastDelegate.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\MulticastDelegate.CoreCLR.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Object.CoreCLR.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Reflection\Assembly.CoreCLR.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Reflection\AssemblyName.CoreCLR.cs" />
@@ -202,24 +193,20 @@
     <Compile Include="$(BclSourcesRoot)\System\Reflection\RuntimeModule.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Reflection\RuntimeParameterInfo.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Reflection\RuntimePropertyInfo.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Reflection\TypeNameParser.CoreCLR.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Reflection\TypeNameResolver.CoreCLR.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Reflection\Metadata\RuntimeTypeMetadataUpdateHandler.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Resources\ManifestBasedResourceGroveler.CoreCLR.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\CastHelpers.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\ICastableHelpers.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\RuntimeHelpers.CoreCLR.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Runtime\ControlledExecution.CoreCLR.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Runtime\DependentHandle.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)..\nativeaot\Common\src\System\Runtime\RhFailFastReason.cs" Condition="('$(Platform)' != 'x86' or '$(TargetsWindows)' != 'true')"/>
-    <Compile Include="$(MSBuildThisFileDirectory)..\nativeaot\Runtime.Base\src\System\Runtime\ExceptionHandling.cs" Condition="('$(Platform)' != 'x86' or '$(TargetsWindows)' != 'true')"/>
-    <Compile Include="$(MSBuildThisFileDirectory)..\nativeaot\Runtime.Base\src\System\Runtime\ExceptionIDs.cs" Condition="('$(Platform)' != 'x86' or '$(TargetsWindows)' != 'true')"/>
-    <Compile Include="$(MSBuildThisFileDirectory)..\nativeaot\Runtime.Base\src\System\Runtime\StackFrameIterator.cs" Condition="('$(Platform)' != 'x86' or '$(TargetsWindows)' != 'true')"/>
-    <Compile Include="$(BclSourcesRoot)\System\Runtime\ExceptionServices\AsmOffsets.cs" Condition="('$(Platform)' != 'x86' or '$(TargetsWindows)' != 'true')"/>
-    <Compile Include="$(BclSourcesRoot)\System\Runtime\ExceptionServices\InternalCalls.cs" Condition="('$(Platform)' != 'x86' or '$(TargetsWindows)' != 'true')"/>
+    <Compile Include="$(MSBuildThisFileDirectory)..\nativeaot\Common\src\System\Runtime\RhFailFastReason.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)..\nativeaot\Runtime.Base\src\System\Runtime\ExceptionHandling.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)..\nativeaot\Runtime.Base\src\System\Runtime\ExceptionIDs.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)..\nativeaot\Runtime.Base\src\System\Runtime\StackFrameIterator.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\ExceptionServices\AsmOffsets.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\ExceptionServices\InternalCalls.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Runtime\GCSettings.CoreCLR.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Runtime\JitInfo.CoreCLR.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\ComTypes\IEnumerable.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\ComTypes\IEnumerator.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\DynamicInterfaceCastableHelpers.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\GCHandle.CoreCLR.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\Marshal.CoreCLR.cs" />
@@ -227,12 +214,10 @@
     <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\NativeLibrary.CoreCLR.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Runtime\Intrinsics\X86\X86Base.CoreCLR.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Runtime\Loader\AssemblyLoadContext.CoreCLR.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Runtime\Versioning\CompatibilitySwitch.cs" />
     <Compile Include="$(BclSourcesRoot)\System\RuntimeArgumentHandle.cs" />
     <Compile Include="$(BclSourcesRoot)\System\RuntimeHandles.cs" />
     <Compile Include="$(BclSourcesRoot)\System\RuntimeType.ActivatorCache.cs" />
     <Compile Include="$(BclSourcesRoot)\System\RuntimeType.CoreCLR.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Security\DynamicSecurityMethodAttribute.cs" />
     <Compile Include="$(BclSourcesRoot)\System\StartupHookProvider.CoreCLR.cs" />
     <Compile Include="$(BclSourcesRoot)\System\String.CoreCLR.cs" />
     <Compile Include="$(BclSourcesRoot)\System\StubHelpers.cs" />
@@ -249,7 +234,13 @@
     <Compile Include="$(BclSourcesRoot)\System\ValueType.cs" />
     <Compile Include="$(CommonPath)System\Collections\Generic\ArrayBuilder.cs">
       <Link>Common\System\Collections\Generic\ArrayBuilder.cs</Link>
-    </Compile>    
+    </Compile>
+    <Compile Include="$(CommonPath)System\Experimentals.cs">
+      <Link>Common\System\Experimentals.cs</Link>
+    </Compile>
+    <Compile Include="src\System\RuntimeType.BoxCache.cs" />
+    <Compile Include="src\System\RuntimeType.CreateUninitializedCache.CoreCLR.cs" />
+    <Compile Include="src\System\RuntimeType.GenericCache.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(FeatureComWrappers)' == 'true'">
     <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\ComWrappers.cs" />
@@ -275,8 +266,6 @@
     <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\ComEventsInfo.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\CustomMarshalers\ComDataHelpers.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\CustomMarshalers\EnumVariantViewOfEnumerator.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\CustomMarshalers\EnumerableToDispatchMarshaler.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\CustomMarshalers\EnumerableViewOfDispatch.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\CustomMarshalers\EnumeratorToEnumVariantMarshaler.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\CustomMarshalers\EnumeratorViewOfEnumVariant.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\CustomMarshalers\ExpandoToDispatchExMarshaler.cs" />
@@ -308,11 +297,6 @@
     <ProjectReference Include="$(LibrariesProjectRoot)\System.Private.CoreLib\gen\System.Private.CoreLib.Generators.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
   </ItemGroup>
 
-  <ItemGroup>
-    <!-- This is the T4 template service and is added by VS anytime you modify a T4 template. Required for .tt files. -->
-    <Service Include="{508349b6-6b84-4df5-91f0-309beebad82d}" />
-  </ItemGroup>
-
   <Import Project="CreateRuntimeRootILLinkDescriptorFile.targets" />
 
   <Target Name="CreateRuntimeRootIlLinkDescFile" BeforeTargets="CoreCompile" DependsOnTargets="_CreateILLinkRuntimeRootDescriptorFile" />
@@ -323,19 +307,15 @@
   <ItemGroup>
     <EventingGenerationScript Include="$(CoreClrProjectRoot)scripts/genRuntimeEventSources.py" />
     <EventManifestFile Include="$(CoreClrProjectRoot)vm/ClrEtwAll.man" />
-    <EventingSourceFile Include="$(IntermediateOutputPath)..\..\..\Eventing\$(TargetArchitecture)\$(Configuration)\NativeRuntimeEventSource.CoreCLR.cs" Condition="'$(FeaturePerfTracing)' == 'true' ">
-      <Link>src\System\Diagnostics\Eventing\Generated\NativeRuntimeEventSource.CoreCLR.cs</Link>
+    <EventingSourceFile Include="$(IntermediateOutputPath)NativeRuntimeEventSource.Generated.cs" Condition="'$(FeaturePerfTracing)' == 'true' ">
+      <Link>src\System\Diagnostics\Eventing\NativeRuntimeEventSource.Generated.cs</Link>
     </EventingSourceFile>
     <Compile Include="@(EventingSourceFile)" />
   </ItemGroup>
 
-  <Target Name="GenerateEventingFiles"
-          Inputs="@(EventingGenerationScript);@(EventManifestFile)"
-		  Outputs="@(EventingSourceFile)"
-		  DependsOnTargets="FindPython"
-		  BeforeTargets="BeforeCompile">
+  <Target Name="GenerateEventingFiles" Inputs="@(EventingGenerationScript);@(EventManifestFile)" Outputs="@(EventingSourceFile)" DependsOnTargets="FindPython" BeforeTargets="BeforeCompile">
 
-    <Error Condition="'$(PYTHON)' == ''" Text="Unable to locate Python. NativeRuntimeEventSource.CoreCLR.cs cannot be generated without Python installed on the machine. Either install Python in your path or point to it with the PYTHON environment variable." />
+    <Error Condition="'$(PYTHON)' == ''" Text="Unable to locate Python. NativeRuntimeEventSource.Generated.cs cannot be generated without Python installed on the machine. Either install Python in your path or point to it with the PYTHON environment variable." />
     <PropertyGroup>
       <_PythonWarningParameter>-Wall</_PythonWarningParameter>
       <_PythonWarningParameter Condition="'$(MSBuildTreatWarningsAsErrors)' == 'true'">$(_PythonWarningParameter) -Werror</_PythonWarningParameter>

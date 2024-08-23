@@ -206,7 +206,7 @@ public partial class ApkBuilder
                 // also, aapt is not happy about zip files
                 return false;
             }
-            if (fileName.StartsWith("."))
+            if (fileName.StartsWith('.'))
             {
                 // aapt complains on such files
                 return false;

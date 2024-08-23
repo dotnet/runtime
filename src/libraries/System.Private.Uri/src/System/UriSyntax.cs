@@ -6,8 +6,8 @@
 
 using System.Collections;
 using System.Diagnostics;
-using System.Threading;
 using System.Runtime.CompilerServices;
+using System.Threading;
 
 namespace System
 {
@@ -38,8 +38,6 @@ namespace System
 
         V1_UnknownUri = 0x10000, // a Compatibility with V1 parser for an unknown scheme
         SimpleUserSyntax = 0x20000, // It is safe to not call virtual UriParser methods
-        BuiltInSyntax = 0x40000, // This is a simple Uri plus it is hardcoded in the product
-        ParserSchemeOnly = 0x80000, // This is a Parser that does only Uri scheme parsing
 
         AllowDOSPath = 0x100000,  // will check for "x:\"
         PathIsRooted = 0x200000,  // For an authority based Uri the first path char is '/'
@@ -50,8 +48,6 @@ namespace System
         AllowIdn = 0x4000000,    // IDN host conversion allowed
         AllowIriParsing = 0x10000000,   // Iri parsing. String is normalized, bidi control
                                         // characters are removed, unicode char limits are checked etc.
-
-        //      KeepTailLWS             = 0x8000000,
     }
 
     //
@@ -114,7 +110,7 @@ namespace System
             // All BuiltIn parsers use that ctor. They are marked with "simple" and "built-in" flags
             //
             internal BuiltInUriParser(string lwrCaseScheme, int defaultPort, UriSyntaxFlags syntaxFlags)
-                : base((syntaxFlags | UriSyntaxFlags.SimpleUserSyntax | UriSyntaxFlags.BuiltInSyntax))
+                : base(syntaxFlags | UriSyntaxFlags.SimpleUserSyntax)
             {
                 _scheme = lwrCaseScheme;
                 _port = defaultPort;
@@ -418,8 +414,6 @@ namespace System
                                         UriSyntaxFlags.PathIsRooted |
                                         UriSyntaxFlags.AllowIdn |
                                         UriSyntaxFlags.AllowIriParsing;
-
-        //                                        UriSyntaxFlags.KeepTailLWS |
 
         //Note that NNTP and NEWS are quite different in syntax
         private const UriSyntaxFlags NewsSyntaxFlags =

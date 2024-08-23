@@ -26,6 +26,7 @@
     <Compile Include="FirstTests.cs" />
     <Compile Include="GroupByTests.cs" />
     <Compile Include="GroupJoinTests.cs" />
+    <Compile Include="IndexTests.cs" />
     <Compile Include="IntersectTests.cs" />
     <Compile Include="JoinTests.cs" />
     <Compile Include="LastOrDefaultTests.cs" />

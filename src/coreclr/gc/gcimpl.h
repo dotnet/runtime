@@ -204,6 +204,7 @@ public:
     enable_no_gc_region_callback_status EnableNoGCRegionCallback(NoGCRegionCallbackFinalizerWorkItem* callback, uint64_t callback_threshold);
     FinalizerWorkItem* GetExtraWorkForFinalization();
     uint64_t GetGenerationBudget(int generation);
+    size_t GetLOHThreshold();
 
     unsigned GetGcCount();
 
@@ -315,6 +316,8 @@ protected:
     virtual void DiagGetGCSettings(EtwGCSettingsInfo* etw_settings);
 
     virtual unsigned int GetGenerationWithRange(Object* object, uint8_t** ppStart, uint8_t** ppAllocated, uint8_t** ppReserved);
+
+    virtual void DiagWalkHeapWithACHandling(walk_fn fn, void* context, int gen_number, bool walk_large_object_heap_p);
 public:
     Object * NextObj (Object * object);
 

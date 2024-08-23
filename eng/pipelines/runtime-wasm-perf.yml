@@ -16,7 +16,7 @@ pr:
     - eng/pipelines/coreclr/templates/run-perf*
     - eng/pipelines/coreclr/templates/run-scenarios-job.yml
     - eng/testing/performance/*
-    - eng/testing/ChromeVersions.props
+    - eng/testing/BrowserVersions.props
 
 variables:
   - template: /eng/pipelines/common/variables.yml
@@ -27,19 +27,12 @@ extends:
     stages:
     - stage: Build
       jobs:
-
-      #
-      # Evaluate paths
-      #
-      #- ${{ if eq(variables.dependOnEvaluatePaths, true) }}:
-        #- template: /eng/pipelines/common/evaluate-default-paths.yml
-
       - template: /eng/pipelines/coreclr/perf-wasm-jobs.yml
         parameters:
           runProfile: 'v8'
           collectHelixLogsScript: ${{ variables._wasmCollectHelixLogsScript }}
           onlySanityCheck: true
-          #perfForkToUse: - dummy change
+          #perfForkToUse: # dummy change
             #url: https://github.com/radical/performance
             #branch: fix-build
           #downloadSpecificBuild:

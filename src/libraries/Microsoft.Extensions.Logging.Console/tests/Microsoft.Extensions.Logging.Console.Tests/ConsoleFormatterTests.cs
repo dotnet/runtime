@@ -16,7 +16,7 @@ using Xunit;
 
 namespace Microsoft.Extensions.Logging.Console.Test
 {
-    public class ConsoleFormatterTests
+    public class ConsoleFormatterTests : ConsoleTestsBase
     {
         protected const string _loggerName = "test";
         protected const string _state = "This is a test, and {curly braces} are just fine!";
@@ -27,7 +27,7 @@ namespace Microsoft.Extensions.Logging.Console.Test
             return string.Join("", contexts.Select(c => c.Message));
         }
 
-        internal static (ConsoleLogger Logger, ConsoleSink Sink, ConsoleSink ErrorSink, Func<LogLevel, string> GetLevelPrefix, int WritesPerMsg) SetUp(
+        internal static SetupDisposeHelper SetUp(
             ConsoleLoggerOptions options = null,
             SimpleConsoleFormatterOptions simpleOptions = null,
             ConsoleFormatterOptions systemdOptions = null,
@@ -70,16 +70,15 @@ namespace Microsoft.Extensions.Logging.Console.Test
             }
             var logger = new ConsoleLogger(_loggerName, consoleLoggerProcessor, formatter, new LoggerExternalScopeProvider(), loggerOptions);
 
-            return (logger, sink, errorSink, levelAsString, writesPerMsg);
+            return new SetupDisposeHelper(logger, sink, errorSink, levelAsString, writesPerMsg, consoleLoggerProcessor);
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/91538", typeof(PlatformDetection), nameof(PlatformDetection.IsWasmThreadingSupported))]
         public void ConsoleLoggerOptions_TimeStampFormat_IsReloaded()
         {
             // Arrange
             var monitor = new TestOptionsMonitor(new ConsoleLoggerOptions() { FormatterName = "NonExistentFormatter" });
-            var loggerProvider = new ConsoleLoggerProvider(monitor, ConsoleLoggerTest.GetFormatters());
+            using var loggerProvider = new ConsoleLoggerProvider(monitor, ConsoleLoggerTest.GetFormatters());
             var logger = (ConsoleLogger)loggerProvider.CreateLogger("Name");
 
             // Act & Assert
@@ -88,12 +87,11 @@ namespace Microsoft.Extensions.Logging.Console.Test
         }
 
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/91538", typeof(PlatformDetection), nameof(PlatformDetection.IsWasmThreadingSupported))]
         [MemberData(nameof(FormatterNames))]
         public void InvalidLogLevel_Throws(string formatterName)
         {
             // Arrange
-            var t = SetUp(
+            using var t = SetUp(
                 new ConsoleLoggerOptions { FormatterName = formatterName }
             );
             var logger = (ILogger)t.Logger;
@@ -103,12 +101,11 @@ namespace Microsoft.Extensions.Logging.Console.Test
         }
 
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/91538", typeof(PlatformDetection), nameof(PlatformDetection.IsWasmThreadingSupported))]
         [MemberData(nameof(FormatterNamesAndLevels))]
         public void NoMessageOrException_Noop(string formatterName, LogLevel level)
         {
             // Arrange
-            var t = SetUp(new ConsoleLoggerOptions { FormatterName = formatterName });
+            using var t = SetUp(new ConsoleLoggerOptions { FormatterName = formatterName });
             var levelPrefix = t.GetLevelPrefix(level);
             var logger = t.Logger;
             var sink = t.Sink;
@@ -123,12 +120,11 @@ namespace Microsoft.Extensions.Logging.Console.Test
         }
 
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/91538", typeof(PlatformDetection), nameof(PlatformDetection.IsWasmThreadingSupported))]
         [MemberData(nameof(FormatterNamesAndLevels))]
         public void Log_LogsCorrectTimestamp(string formatterName, LogLevel level)
         {
             // Arrange
-            var t = SetUp(
+            using var t = SetUp(
                 new ConsoleLoggerOptions { FormatterName = formatterName },
                 new SimpleConsoleFormatterOptions { TimestampFormat = "yyyy-MM-ddTHH:mm:sszz ", UseUtcTimestamp = false, ColorBehavior = LoggerColorBehavior.Enabled },
                 new ConsoleFormatterOptions { TimestampFormat = "yyyy-MM-ddTHH:mm:sszz ", UseUtcTimestamp = false },

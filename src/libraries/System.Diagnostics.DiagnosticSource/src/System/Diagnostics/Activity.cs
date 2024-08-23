@@ -4,8 +4,8 @@
 using System.Buffers.Binary;
 using System.Buffers.Text;
 using System.Collections;
-using System.Collections.Generic;
 using System.Collections.Concurrent;
+using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -62,6 +62,7 @@ namespace System.Diagnostics
         private static readonly IEnumerable<ActivityEvent> s_emptyEvents = new ActivityEvent[0];
 #pragma warning restore CA1825
         private static readonly ActivitySource s_defaultSource = new ActivitySource(string.Empty);
+        private static readonly AsyncLocal<Activity?> s_current = new AsyncLocal<Activity?>();
 
         private const byte ActivityTraceFlagsIsSet = 0b_1_0000000; // Internal flag to indicate if flags have been set
         private const int RequestIdMaxLength = 1024;
@@ -129,6 +130,22 @@ namespace System.Diagnostics
         /// Gets whether the parent context was created from remote propagation.
         /// </summary>
         public bool HasRemoteParent { get; private set; }
+
+        /// <summary>
+        /// Gets or sets the current operation (Activity) for the current thread. This flows
+        /// across async calls.
+        /// </summary>
+        public static Activity? Current
+        {
+            get { return s_current.Value; }
+            set
+            {
+                if (ValidateSetCurrent(value))
+                {
+                    SetCurrent(value);
+                }
+            }
+        }
 
         /// <summary>
         /// Sets the status code and description on the current activity object.
@@ -226,7 +243,7 @@ namespace System.Diagnostics
                     Span<char> flagsChars = stackalloc char[2];
                     HexConverter.ToCharsBuffer((byte)((~ActivityTraceFlagsIsSet) & _w3CIdFlags), flagsChars, 0, HexConverter.Casing.Lower);
                     string id =
-#if NET6_0_OR_GREATER
+#if NET
                         string.Create(null, stackalloc char[128], $"00-{_traceId}-{_spanId}-{flagsChars}");
 #else
                         "00-" + _traceId + "-" + _spanId + "-" + flagsChars.ToString();
@@ -258,7 +275,7 @@ namespace System.Diagnostics
                         Span<char> flagsChars = stackalloc char[2];
                         HexConverter.ToCharsBuffer((byte)((~ActivityTraceFlagsIsSet) & _parentTraceFlags), flagsChars, 0, HexConverter.Casing.Lower);
                         string parentId =
-#if NET6_0_OR_GREATER
+#if NET
                             string.Create(null, stackalloc char[128], $"00-{_traceId}-{_parentSpanId}-{flagsChars}");
 #else
                             "00-" + _traceId + "-" + _parentSpanId + "-" + flagsChars.ToString();
@@ -456,7 +473,7 @@ namespace System.Diagnostics
         /// <returns><see langword="this" /> for convenient chaining.</returns>
         /// <param name="key">The tag key name</param>
         /// <param name="value">The tag value mapped to the input key</param>
-        public Activity AddTag(string key, string? value) => AddTag(key, (object?) value);
+        public Activity AddTag(string key, string? value) => AddTag(key, (object?)value);
 
         /// <summary>
         /// Update the Activity to have a tag with an additional 'key' and value 'value'.
@@ -512,6 +529,94 @@ namespace System.Diagnostics
             if (_events != null || Interlocked.CompareExchange(ref _events, new DiagLinkedList<ActivityEvent>(e), null) != null)
             {
                 _events.Add(e);
+            }
+
+            return this;
+        }
+
+        /// <summary>
+        /// Add an <see cref="ActivityEvent" /> object containing the exception information to the <see cref="Events" /> list.
+        /// </summary>
+        /// <param name="exception">The exception to add to the attached events list.</param>
+        /// <param name="tags">The tags to add to the exception event.</param>
+        /// <param name="timestamp">The timestamp to add to the exception event.</param>
+        /// <returns><see langword="this" /> for convenient chaining.</returns>
+        /// <remarks>
+        /// <para>- The name of the event will be "exception", and it will include the tags "exception.message", "exception.stacktrace", and "exception.type",
+        /// in addition to the tags provided in the <paramref name="tags"/> parameter.</para>
+        /// <para>- Any registered <see cref="ActivityListener"/> with the <see cref="ActivityListener.ExceptionRecorder"/> callback will be notified about this exception addition
+        /// before the <see cref="ActivityEvent" /> object is added to the <see cref="Events" /> list.</para>
+        /// <para>- Any registered <see cref="ActivityListener"/> with the <see cref="ActivityListener.ExceptionRecorder"/> callback that adds "exception.message", "exception.stacktrace", or "exception.type" tags
+        /// will not have these tags overwritten, except by any subsequent <see cref="ActivityListener"/> that explicitly overwrites them.</para>
+        /// </remarks>
+        public Activity AddException(Exception exception, in TagList tags = default, DateTimeOffset timestamp = default)
+        {
+            if (exception == null)
+            {
+                throw new ArgumentNullException(nameof(exception));
+            }
+
+            TagList exceptionTags = tags;
+
+            Source.NotifyActivityAddException(this, exception, ref exceptionTags);
+
+            const string ExceptionEventName = "exception";
+            const string ExceptionMessageTag = "exception.message";
+            const string ExceptionStackTraceTag = "exception.stacktrace";
+            const string ExceptionTypeTag = "exception.type";
+
+            bool hasMessage = false;
+            bool hasStackTrace = false;
+            bool hasType = false;
+
+            for (int i = 0; i < exceptionTags.Count; i++)
+            {
+                if (exceptionTags[i].Key == ExceptionMessageTag)
+                {
+                    hasMessage = true;
+                }
+                else if (exceptionTags[i].Key == ExceptionStackTraceTag)
+                {
+                    hasStackTrace = true;
+                }
+                else if (exceptionTags[i].Key == ExceptionTypeTag)
+                {
+                    hasType = true;
+                }
+            }
+
+            if (!hasMessage)
+            {
+                exceptionTags.Add(new KeyValuePair<string, object?>(ExceptionMessageTag, exception.Message));
+            }
+
+            if (!hasStackTrace)
+            {
+                exceptionTags.Add(new KeyValuePair<string, object?>(ExceptionStackTraceTag, exception.ToString()));
+            }
+
+            if (!hasType)
+            {
+                exceptionTags.Add(new KeyValuePair<string, object?>(ExceptionTypeTag, exception.GetType().ToString()));
+            }
+
+            return AddEvent(new ActivityEvent(ExceptionEventName, timestamp, ref exceptionTags));
+        }
+
+        /// <summary>
+        /// Add an <see cref="ActivityLink"/> to the <see cref="Links"/> list.
+        /// </summary>
+        /// <param name="link">The <see cref="ActivityLink"/> to add.</param>
+        /// <returns><see langword="this" /> for convenient chaining.</returns>
+        /// <remarks>
+        /// For contexts that are available during span creation, adding links at span creation is preferred to calling <see cref="AddLink(ActivityLink)" /> later,
+        /// because head sampling decisions can only consider information present during span creation.
+        /// </remarks>
+        public Activity AddLink(ActivityLink link)
+        {
+            if (_links != null || Interlocked.CompareExchange(ref _links, new DiagLinkedList<ActivityLink>(link), null) != null)
+            {
+                _links.Add(link);
             }
 
             return this;
@@ -621,7 +726,7 @@ namespace System.Diagnostics
                 _traceId = traceId.ToHexString();     // The child will share the parent's traceId.
                 _parentSpanId = spanId.ToHexString();
                 ActivityTraceFlags = activityTraceFlags;
-                _parentTraceFlags = (byte) activityTraceFlags;
+                _parentTraceFlags = (byte)activityTraceFlags;
             }
             return this;
         }
@@ -843,7 +948,7 @@ namespace System.Diagnostics
         /// Indicate if the this Activity object should be populated with all the propagation info and also all other
         /// properties such as Links, Tags, and Events.
         /// </summary>
-        public bool IsAllDataRequested { get; set;}
+        public bool IsAllDataRequested { get; set; }
 
         /// <summary>
         /// Return the flags (defined by the W3C ID specification) associated with the activity.
@@ -983,8 +1088,8 @@ namespace System.Diagnostics
                 return false;
             }
 
-            ReadOnlySpan<char> traceIdSpan = traceParent.AsSpan(3,  32);
-            ReadOnlySpan<char> spanIdSpan  = traceParent.AsSpan(36, 16);
+            ReadOnlySpan<char> traceIdSpan = traceParent.AsSpan(3, 32);
+            ReadOnlySpan<char> spanIdSpan = traceParent.AsSpan(36, 16);
 
             if (!ActivityTraceId.IsLowerCaseHexAndNotAllZeros(traceIdSpan) || !ActivityTraceId.IsLowerCaseHexAndNotAllZeros(spanIdSpan) ||
                 !HexConverter.IsHexLowerChar(traceParent[53]) || !HexConverter.IsHexLowerChar(traceParent[54]))
@@ -995,7 +1100,7 @@ namespace System.Diagnostics
             context = new ActivityContext(
                             new ActivityTraceId(traceIdSpan.ToString()),
                             new ActivitySpanId(spanIdSpan.ToString()),
-                            (ActivityTraceFlags) ActivityTraceId.HexByteFromChars(traceParent[53], traceParent[54]),
+                            (ActivityTraceFlags)ActivityTraceId.HexByteFromChars(traceParent[53], traceParent[54]),
                             traceState,
                             isRemote);
 
@@ -1129,7 +1234,7 @@ namespace System.Diagnostics
                 }
 
                 activity.ActivityTraceFlags = parentContext.TraceFlags;
-                activity._parentTraceFlags = (byte) parentContext.TraceFlags;
+                activity._parentTraceFlags = (byte)parentContext.TraceFlags;
                 activity.HasRemoteParent = parentContext.IsRemote;
             }
 
@@ -1151,6 +1256,21 @@ namespace System.Diagnostics
             }
 
             return activity;
+        }
+
+        private static void SetCurrent(Activity? activity)
+        {
+            EventHandler<ActivityChangedEventArgs>? handler = CurrentChanged;
+            if (handler is null)
+            {
+                s_current.Value = activity;
+            }
+            else
+            {
+                Activity? previous = s_current.Value;
+                s_current.Value = activity;
+                handler.Invoke(null, new ActivityChangedEventArgs(previous, activity));
+            }
         }
 
         /// <summary>
@@ -1782,7 +1902,11 @@ namespace System.Diagnostics
             if (idData.Length != 16)
                 throw new ArgumentOutOfRangeException(nameof(idData));
 
+#if NET9_0_OR_GREATER
+            return new ActivityTraceId(Convert.ToHexStringLower(idData));
+#else
             return new ActivityTraceId(HexConverter.ToString(idData, HexConverter.Casing.Lower));
+#endif
         }
         public static ActivityTraceId CreateFromUtf8String(ReadOnlySpan<byte> idData) => new ActivityTraceId(idData);
 
@@ -1861,7 +1985,11 @@ namespace System.Diagnostics
                 span[1] = BinaryPrimitives.ReverseEndianness(span[1]);
             }
 
+#if NET9_0_OR_GREATER
+            _hexString = Convert.ToHexStringLower(MemoryMarshal.AsBytes(span));
+#else
             _hexString = HexConverter.ToString(MemoryMarshal.AsBytes(span), HexConverter.Casing.Lower);
+#endif
         }
 
         /// <summary>
@@ -1881,11 +2009,11 @@ namespace System.Diagnostics
             Debug.Assert(outBytes.Length == 16 || outBytes.Length == 8);
             RandomNumberGenerator r = RandomNumberGenerator.Current;
 
-            Unsafe.WriteUnaligned(ref outBytes[0],  r.Next());
+            Unsafe.WriteUnaligned(ref outBytes[0], r.Next());
 
             if (outBytes.Length == 16)
             {
-                Unsafe.WriteUnaligned(ref outBytes[8],  r.Next());
+                Unsafe.WriteUnaligned(ref outBytes[8], r.Next());
             }
         }
 
@@ -1956,14 +2084,22 @@ namespace System.Diagnostics
         {
             ulong id;
             ActivityTraceId.SetToRandomBytes(new Span<byte>(&id, sizeof(ulong)));
+#if NET9_0_OR_GREATER
+            return new ActivitySpanId(Convert.ToHexStringLower(new ReadOnlySpan<byte>(&id, sizeof(ulong))));
+#else
             return new ActivitySpanId(HexConverter.ToString(new ReadOnlySpan<byte>(&id, sizeof(ulong)), HexConverter.Casing.Lower));
+#endif
         }
         public static ActivitySpanId CreateFromBytes(ReadOnlySpan<byte> idData)
         {
             if (idData.Length != 8)
                 throw new ArgumentOutOfRangeException(nameof(idData));
 
+#if NET9_0_OR_GREATER
+            return new ActivitySpanId(Convert.ToHexStringLower(idData));
+#else
             return new ActivitySpanId(HexConverter.ToString(idData, HexConverter.Casing.Lower));
+#endif
         }
         public static ActivitySpanId CreateFromUtf8String(ReadOnlySpan<byte> idData) => new ActivitySpanId(idData);
 
@@ -2031,7 +2167,11 @@ namespace System.Diagnostics
                 id = BinaryPrimitives.ReverseEndianness(id);
             }
 
+#if NET9_0_OR_GREATER
+            _hexString = Convert.ToHexStringLower(new ReadOnlySpan<byte>(&id, sizeof(ulong)));
+#else
             _hexString = HexConverter.ToString(new ReadOnlySpan<byte>(&id, sizeof(ulong)), HexConverter.Casing.Lower);
+#endif
         }
 
         /// <summary>

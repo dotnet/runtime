@@ -65,7 +65,7 @@ namespace Wasm.Build.Tests
         {
             string printFileTypeTarget = @"
                 <Target Name=""PrintIntermediateFileType"" AfterTargets=""WasmNestedPublishApp"">
-                    <Exec Command=""wasm-dis $(_WasmIntermediateOutputPath)System.Private.CoreLib.dll.o -o $(_WasmIntermediateOutputPath)wasm-dis-out.txt""
+                    <Exec Command=""wasm-dis &quot;$(_WasmIntermediateOutputPath)System.Private.CoreLib.dll.o&quot; -o &quot;$(_WasmIntermediateOutputPath)wasm-dis-out.txt&quot;""
                           EnvironmentVariables=""@(EmscriptenEnvVars)""
                           IgnoreExitCode=""true"">
 
@@ -93,5 +93,24 @@ namespace Wasm.Build.Tests
                                             + " It might fail if it was incorrectly compiled to a bitcode file, instead of wasm.");
         }
 
+        [Theory]
+        [BuildAndRun(host: RunHost.None, aot: true)]
+        public void NativeBuildIsRequired(BuildArgs buildArgs, string id)
+        {
+            string projectName = $"native_build_{buildArgs.Config}_{buildArgs.AOT}";
+
+            buildArgs = buildArgs with { ProjectName = projectName, ExtraBuildArgs = "-p:WasmBuildNative=false -p:WasmSingleFileBundle=true" };
+            buildArgs = ExpandBuildArgs(buildArgs);
+
+            (_, string output) = BuildProject(
+                                    buildArgs,
+                                    id: id,
+                                    new BuildProjectOptions(
+                                        InitProject: () => File.WriteAllText(Path.Combine(_projectDir!, "Program.cs"), s_mainReturns42),
+                                        DotnetWasmFromRuntimePack: false,
+                                        ExpectSuccess: false));
+
+            Assert.Contains("WasmBuildNative is required", output);
+        }
     }
 }

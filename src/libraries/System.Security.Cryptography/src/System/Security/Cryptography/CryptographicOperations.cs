@@ -756,7 +756,7 @@ namespace System.Security.Cryptography
             return LiteHashProvider.HmacStreamAsync(hashAlgorithm.Name, key.Span, source, cancellationToken);
         }
 
-        private static void CheckStream([NotNull]Stream source)
+        private static void CheckStream([NotNull] Stream source)
         {
             ArgumentNullException.ThrowIfNull(source);
 

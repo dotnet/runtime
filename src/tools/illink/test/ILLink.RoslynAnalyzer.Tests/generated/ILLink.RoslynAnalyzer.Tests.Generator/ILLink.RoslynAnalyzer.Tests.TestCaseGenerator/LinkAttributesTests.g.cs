@@ -26,6 +26,12 @@ namespace ILLink.RoslynAnalyzer.Tests
 		}
 
 		[Fact]
+		public Task FeatureAttributeRemovalInCopyAssembly ()
+		{
+			return RunTest (allowMissingWarnings: true);
+		}
+
+		[Fact]
 		public Task LinkAttributeErrorCases ()
 		{
 			return RunTest (allowMissingWarnings: true);

@@ -76,7 +76,6 @@ namespace Microsoft.Extensions.Logging.Console.Test
         }
 
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/91538", typeof(PlatformDetection), nameof(PlatformDetection.IsWasmThreadingSupported))]
         [MemberData(nameof(FormatterNames))]
         public void AddConsole_ConsoleLoggerOptionsFromConfigFile_IsReadFromLoggingConfiguration(string formatterName)
         {
@@ -156,7 +155,6 @@ namespace Microsoft.Extensions.Logging.Console.Test
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/91538", typeof(PlatformDetection), nameof(PlatformDetection.IsWasmThreadingSupported))]
         public void AddSimpleConsole_ChangeProperties_IsReadFromLoggingConfiguration()
         {
             var configuration = new ConfigurationBuilder().AddInMemoryCollection(new[] {
@@ -187,7 +185,6 @@ namespace Microsoft.Extensions.Logging.Console.Test
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/91538", typeof(PlatformDetection), nameof(PlatformDetection.IsWasmThreadingSupported))]
         public void AddSimpleConsole_OutsideConfig_TakesProperty()
         {
             var configuration = new ConfigurationBuilder().AddInMemoryCollection(new[] {
@@ -218,7 +215,6 @@ namespace Microsoft.Extensions.Logging.Console.Test
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/91538", typeof(PlatformDetection), nameof(PlatformDetection.IsWasmThreadingSupported))]
         public void AddSystemdConsole_ChangeProperties_IsReadFromLoggingConfiguration()
         {
             var configuration = new ConfigurationBuilder().AddInMemoryCollection(new[] {
@@ -245,7 +241,6 @@ namespace Microsoft.Extensions.Logging.Console.Test
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/91538", typeof(PlatformDetection), nameof(PlatformDetection.IsWasmThreadingSupported))]
         public void AddSystemdConsole_OutsideConfig_TakesProperty()
         {
             var configuration = new ConfigurationBuilder().AddInMemoryCollection(new[] {
@@ -276,14 +271,15 @@ namespace Microsoft.Extensions.Logging.Console.Test
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/91538", typeof(PlatformDetection), nameof(PlatformDetection.IsWasmThreadingSupported))]
         public void AddJsonConsole_ChangeProperties_IsReadFromLoggingConfiguration()
         {
+            var newLine = Environment.NewLine.Length is 2 ? "\n" : "\r\n";
             var configuration = new ConfigurationBuilder().AddInMemoryCollection(new[] {
                 new KeyValuePair<string, string>("Console:FormatterOptions:TimestampFormat", "HH:mm "),
                 new KeyValuePair<string, string>("Console:FormatterOptions:UseUtcTimestamp", "true"),
                 new KeyValuePair<string, string>("Console:FormatterOptions:IncludeScopes", "true"),
                 new KeyValuePair<string, string>("Console:FormatterOptions:JsonWriterOptions:Indented", "true"),
+                new KeyValuePair<string, string>("Console:FormatterOptions:JsonWriterOptions:NewLine", newLine),
             }).Build();
 
             var loggerProvider = new ServiceCollection()
@@ -302,12 +298,13 @@ namespace Microsoft.Extensions.Logging.Console.Test
             Assert.True(formatter.FormatterOptions.UseUtcTimestamp);
             Assert.True(formatter.FormatterOptions.IncludeScopes);
             Assert.True(formatter.FormatterOptions.JsonWriterOptions.Indented);
+            Assert.Equal(newLine, formatter.FormatterOptions.JsonWriterOptions.NewLine);
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/91538", typeof(PlatformDetection), nameof(PlatformDetection.IsWasmThreadingSupported))]
         public void AddJsonConsole_OutsideConfig_TakesProperty()
         {
+            var newLine = Environment.NewLine.Length is 2 ? "\n" : "\r\n";
             var configuration = new ConfigurationBuilder().AddInMemoryCollection(new[] {
                 new KeyValuePair<string, string>("Console:FormatterOptions:TimestampFormat", "HH:mm "),
                 new KeyValuePair<string, string>("Console:FormatterOptions:UseUtcTimestamp", "true"),
@@ -321,7 +318,8 @@ namespace Microsoft.Extensions.Logging.Console.Test
                         o.JsonWriterOptions = new JsonWriterOptions()
                         {
                             Indented = false,
-                            Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping
+                            Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
+                            NewLine = newLine
                         };
                     })
                 )
@@ -336,11 +334,11 @@ namespace Microsoft.Extensions.Logging.Console.Test
             Assert.True(formatter.FormatterOptions.UseUtcTimestamp);
             Assert.True(formatter.FormatterOptions.IncludeScopes);
             Assert.False(formatter.FormatterOptions.JsonWriterOptions.Indented);
+            Assert.Equal(newLine, formatter.FormatterOptions.JsonWriterOptions.NewLine);
             Assert.Equal(JavaScriptEncoder.UnsafeRelaxedJsonEscaping, formatter.FormatterOptions.JsonWriterOptions.Encoder);
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/91538", typeof(PlatformDetection), nameof(PlatformDetection.IsWasmThreadingSupported))]
         public void AddConsole_NullFormatterNameUsingSystemdFormat_AnyDeprecatedPropertiesOverwriteFormatterOptions()
         {
             var configs = new[] {
@@ -386,7 +384,6 @@ namespace Microsoft.Extensions.Logging.Console.Test
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/91538", typeof(PlatformDetection), nameof(PlatformDetection.IsWasmThreadingSupported))]
         public void AddConsole_MaxQueueLengthLargerThanZero_ConfiguredProperly()
         {
             var configs = new[] {
@@ -408,7 +405,6 @@ namespace Microsoft.Extensions.Logging.Console.Test
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/91538", typeof(PlatformDetection), nameof(PlatformDetection.IsWasmThreadingSupported))]
         public void AddConsole_NullFormatterName_UsingSystemdFormat_IgnoreFormatterOptionsAndUseDeprecatedInstead()
         {
             var configuration = new ConfigurationBuilder().AddInMemoryCollection(new[] {
@@ -441,7 +437,6 @@ namespace Microsoft.Extensions.Logging.Console.Test
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/91538", typeof(PlatformDetection), nameof(PlatformDetection.IsWasmThreadingSupported))]
         public void AddConsole_NullFormatterName_UsingDefaultFormat_IgnoreFormatterOptionsAndUseDeprecatedInstead()
         {
             var configuration = new ConfigurationBuilder().AddInMemoryCollection(new[] {
@@ -481,7 +476,6 @@ namespace Microsoft.Extensions.Logging.Console.Test
         }
 
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/91538", typeof(PlatformDetection), nameof(PlatformDetection.IsWasmThreadingSupported))]
         [InlineData("missingFormatter")]
         [InlineData("simple")]
         [InlineData("Simple")]
@@ -525,7 +519,6 @@ namespace Microsoft.Extensions.Logging.Console.Test
         }
 
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/91538", typeof(PlatformDetection), nameof(PlatformDetection.IsWasmThreadingSupported))]
         [InlineData("missingFormatter")]
         [InlineData("systemd")]
         [InlineData("Systemd")]
@@ -610,6 +603,7 @@ namespace Microsoft.Extensions.Logging.Console.Test
                 // or else NativeAOT would break
                 Assert.True(prop.PropertyType == typeof(string) ||
                     prop.PropertyType == typeof(bool) ||
+                    prop.PropertyType == typeof(char) ||
                     prop.PropertyType == typeof(int) ||
                     prop.PropertyType.IsEnum, $"ConsoleOptions property '{type.Name}.{prop.Name}' must be a simple type in order for NativeAOT to work");
             }

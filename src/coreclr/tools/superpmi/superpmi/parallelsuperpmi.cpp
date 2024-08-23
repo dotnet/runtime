@@ -196,7 +196,7 @@ void ProcessChildStdErr(char* stderrFilename)
         if (buff[buffLen - 1] == '\n')
             buff[buffLen - 1] = 0;
 
-        LogPassThroughStderr(buff);
+        LogPassThroughStderr("%s", buff);
     }
 
 Cleanup:
@@ -234,7 +234,7 @@ void ProcessChildStdOut(const CommandLine::Options& o,
         if (strncmp(buff, g_SuperPMIUsageFirstLine, strlen(g_SuperPMIUsageFirstLine)) == 0)
         {
             *usageError = true; // Signals that we had a SuperPMI command line usage error
-            LogPassThroughStdout(buff);
+            LogPassThroughStdout("%s", buff);
         }
         else if (strncmp(buff, g_AllFormatStringFixedPrefix, strlen(g_AllFormatStringFixedPrefix)) == 0)
         {
@@ -272,7 +272,7 @@ void ProcessChildStdOut(const CommandLine::Options& o,
         {
             // Do output pass-through.
             // Note that the same logging verbosity level is passed to the child processes.
-            LogPassThroughStdout(buff);
+            LogPassThroughStdout("%s", buff);
         }
     }
 
@@ -308,6 +308,7 @@ struct PerWorkerData
     char* detailsPath = nullptr;
     char* stdOutputPath = nullptr;
     char* stdErrorPath = nullptr;
+    SpmiResult resultCode = SpmiResult::GeneralFailure;
 };
 
 static void MergeWorkerMCLs(char* mclFilename, PerWorkerData* workerData, int workerCount, char* PerWorkerData::*mclPath)
@@ -354,6 +355,19 @@ static void MergeWorkerCsvs(char* csvFilename, PerWorkerData* workerData, int wo
     bool hasHeader = false;
     for (int i = 0; i < workerCount; i++)
     {
+        switch (workerData[i].resultCode)
+        {
+            case SpmiResult::Success:
+            case SpmiResult::Diffs:
+            case SpmiResult::Misses:
+            case SpmiResult::Error:
+                break;
+
+            default:
+                LogWarning("Skipping merging CSV from child %d due to result code %d", i, (int)workerData[i].resultCode);
+                continue;
+        }
+
         FileLineReader reader;
         if (!FileLineReader::Open(workerData[i].*csvPath, &reader))
         {
@@ -426,6 +440,14 @@ char* ConstructChildProcessArgs(const CommandLine::Options& o)
         bytesWritten += sprintf_s(spmiArgs + bytesWritten, MAX_CMDLINE_SIZE - bytesWritten, " %s %s", arg, s);         \
     }
 
+    // Only pass through an integer argument if it is not the same as the default (which must be specified here).
+    // (This is a proxy for "did the command-line parser actually parse something for this argument".)
+#define ADDARG_INT(i, arg, defaultValue)                                                                               \
+    if (i != defaultValue)                                                                                             \
+    {                                                                                                                  \
+        bytesWritten += sprintf_s(spmiArgs + bytesWritten, MAX_CMDLINE_SIZE - bytesWritten, " %s %d", arg, i);         \
+    }
+
     // We don't pass through:
     //
     //    -parallel
@@ -438,7 +460,6 @@ char* ConstructChildProcessArgs(const CommandLine::Options& o)
     //    -diffMetricsSummary
     //    -failingMCList
     //    -diffMCList
-    //    -failureLimit
     //
     // Everything else we need to reconstruct and pass through.
     //
@@ -457,6 +478,8 @@ char* ConstructChildProcessArgs(const CommandLine::Options& o)
     ADDARG_STRING(o.hash, "-matchHash");
     ADDARG_STRING(o.targetArchitecture, "-target");
     ADDARG_STRING(o.compileList, "-compile");
+    ADDARG_INT(o.failureLimit, "-failureLimit", -1);
+    ADDARG_INT(o.repeatCount, "-repeatCount", 1);
 
     addJitOptionArgument(o.forceJitOptions, bytesWritten, spmiArgs, "jitoption force");
     addJitOptionArgument(o.forceJit2Options, bytesWritten, spmiArgs, "jit2option force");
@@ -471,6 +494,7 @@ char* ConstructChildProcessArgs(const CommandLine::Options& o)
 #undef ADDSTRING
 #undef ADDARG_BOOL
 #undef ADDARG_STRING
+#undef ADDARG_INT
 
     return spmiArgs;
 }
@@ -584,12 +608,6 @@ int doParallelSuperPMI(CommandLine::Options& o)
                                       wd.detailsPath);
         }
 
-        if (o.failureLimit > 0)
-        {
-            bytesWritten += sprintf_s(cmdLine + bytesWritten, MAX_CMDLINE_SIZE - bytesWritten, " -failureLimit %d",
-                                      o.failureLimit);
-        }
-
         bytesWritten += sprintf_s(cmdLine + bytesWritten, MAX_CMDLINE_SIZE - bytesWritten, " -v ewmin %s", spmiArgs);
 
         SECURITY_ATTRIBUTES sa;
@@ -641,29 +659,58 @@ int doParallelSuperPMI(CommandLine::Options& o)
         {
             DWORD      exitCodeTmp;
             BOOL       ok          = GetExitCodeProcess(hProcesses[i], &exitCodeTmp);
-            SpmiResult childResult = (SpmiResult)exitCodeTmp;
-            if (ok && (childResult != result))
+            if (ok)
             {
-                if (result == SpmiResult::Error || childResult == SpmiResult::Error)
+                SpmiResult childResult = (SpmiResult)exitCodeTmp;
+
+                switch (childResult)
                 {
-                    result = SpmiResult::Error;
+                case SpmiResult::Success:
+                case SpmiResult::Diffs:
+                case SpmiResult::Misses:
+                case SpmiResult::Error:
+                case SpmiResult::JitFailedToInit:
+                    break;
+
+                default:
+                    // We may get here for OOM-killed, for example.
+                    LogError("Child process %d exited with code %u", i, exitCodeTmp);
+                    childResult = SpmiResult::GeneralFailure;
+                    break;
                 }
-                else if (result == SpmiResult::Diffs || childResult == SpmiResult::Diffs)
+
+                perWorkerData[i].resultCode = childResult;
+
+                if (childResult != result)
                 {
-                    result = SpmiResult::Diffs;
+                    // In priority: first failures are more important to propagate
+                    if (result == SpmiResult::GeneralFailure || childResult == SpmiResult::GeneralFailure)
+                    {
+                        result = SpmiResult::GeneralFailure;
+                    }
+                    else if (result == SpmiResult::JitFailedToInit || childResult == SpmiResult::JitFailedToInit)
+                    {
+                        result = SpmiResult::JitFailedToInit;
+                    }
+                    else if (result == SpmiResult::Error || childResult == SpmiResult::Error)
+                    {
+                        result = SpmiResult::Error;
+                    }
+                    else if (result == SpmiResult::Diffs || childResult == SpmiResult::Diffs)
+                    {
+                        result = SpmiResult::Diffs;
+                    }
+                    else if (result == SpmiResult::Misses || childResult == SpmiResult::Misses)
+                    {
+                        result = SpmiResult::Misses;
+                    }
+                    // Keep success result
                 }
-                else if (result == SpmiResult::Misses || childResult == SpmiResult::Misses)
-                {
-                    result = SpmiResult::Misses;
-                }
-                else if (result == SpmiResult::JitFailedToInit || childResult == SpmiResult::JitFailedToInit)
-                {
-                    result = SpmiResult::JitFailedToInit;
-                }
-                else
-                {
-                    result = SpmiResult::GeneralFailure;
-                }
+            }
+            else
+            {
+                LogError("Could not get exit code for child process %d\n", i);
+                result = SpmiResult::GeneralFailure;
             }
         }
 

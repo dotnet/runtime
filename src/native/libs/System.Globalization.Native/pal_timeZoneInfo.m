@@ -11,8 +11,7 @@
 #error This file relies on ARC for memory management, but ARC is not enabled.
 #endif
 
-#if defined(TARGET_MACCATALYST) || defined(TARGET_IOS) || defined(TARGET_TVOS)
-
+#if defined(APPLE_HYBRID_GLOBALIZATION)
 /*
 Gets the localized display name that is currently in effect for the specified time zone.
 */
@@ -21,7 +20,7 @@ int32_t GlobalizationNative_GetTimeZoneDisplayNameNative(const uint16_t* localeN
 {
     @autoreleasepool
     {
-        NSString* tzName = [NSString stringWithCharacters: timeZoneId length: timeZoneIdLength];
+        NSString* tzName = [NSString stringWithCharacters: timeZoneId length: (NSUInteger)timeZoneIdLength];
         NSTimeZone* timeZone = [NSTimeZone timeZoneWithName:tzName];
         if (timeZone == NULL)
         {
@@ -40,7 +39,7 @@ int32_t GlobalizationNative_GetTimeZoneDisplayNameNative(const uint16_t* localeN
             }
             else
             {
-                NSString *locName = [NSString stringWithCharacters: localeName length: lNameLength];
+                NSString *locName = [NSString stringWithCharacters: localeName length: (NSUInteger)lNameLength];
                 currentLocale = [NSLocale localeWithLocaleIdentifier:locName];
             }
             NSTimeZoneNameStyle style;
@@ -69,9 +68,9 @@ int32_t GlobalizationNative_GetTimeZoneDisplayNameNative(const uint16_t* localeN
 
         int32_t index = 0, dstIdx = 0, resultCode = Success;
         uint16_t dstCodepoint;
-        while (index < timeZoneName.length)
+        while ((NSUInteger)index < timeZoneName.length)
         {
-            dstCodepoint = [timeZoneName characterAtIndex: index];
+            dstCodepoint = [timeZoneName characterAtIndex: (NSUInteger)index];
             Append(result, dstIdx, resultLength, dstCodepoint, resultCode);
             if (resultCode != Success)
                 return resultCode;

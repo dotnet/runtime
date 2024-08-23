@@ -1107,7 +1107,7 @@ namespace Microsoft.VisualBasic.CompilerServices.Tests
             yield return new object[] { new object(), new char[] { '8' } };
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotHybridGlobalizationOnBrowser))]
         [MemberData(nameof(Compare_Primitives_TestData))]
         public void CompareObjectEqual_Invoke_ReturnsExpected(object left, object right, bool greater, bool equal, bool less)
         {
@@ -1171,7 +1171,7 @@ namespace Microsoft.VisualBasic.CompilerServices.Tests
              public static string op_Equality(OperatorsTests left, CompareObjectEqual right) => "tcejbomotsuc";
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotHybridGlobalizationOnBrowser))]
         [MemberData(nameof(Compare_Primitives_TestData))]
         public void CompareObjectGreater_Invoke_ReturnsExpected(object left, object right, bool greater, bool equal, bool less)
         {
@@ -1235,7 +1235,7 @@ namespace Microsoft.VisualBasic.CompilerServices.Tests
              public static string op_GreaterThan(OperatorsTests left, CompareObjectGreater right) => "tcejbomotsuc";
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotHybridGlobalizationOnBrowser))]
         [MemberData(nameof(Compare_Primitives_TestData))]
         public void CompareObjectGreaterEqual_Invoke_ReturnsExpected(object left, object right, bool greater, bool equal, bool less)
         {
@@ -1298,7 +1298,7 @@ namespace Microsoft.VisualBasic.CompilerServices.Tests
              public static string op_GreaterThanOrEqual(OperatorsTests left, CompareObjectGreaterEqual right) => "tcejbomotsuc";
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotHybridGlobalizationOnBrowser))]
         [MemberData(nameof(Compare_Primitives_TestData))]
         public void CompareObjectLess_Invoke_ReturnsExpected(object left, object right, bool greater, bool equal, bool less)
         {
@@ -1362,7 +1362,7 @@ namespace Microsoft.VisualBasic.CompilerServices.Tests
              public static string op_LessThan(OperatorsTests left, CompareObjectLess right) => "tcejbomotsuc";
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotHybridGlobalizationOnBrowser))]
         [MemberData(nameof(Compare_Primitives_TestData))]
         public void CompareObjectLessEqual_Invoke_ReturnsExpected(object left, object right, bool greater, bool equal, bool less)
         {
@@ -1425,7 +1425,7 @@ namespace Microsoft.VisualBasic.CompilerServices.Tests
              public static string op_LessThanOrEqual(OperatorsTests left, CompareObjectLessEqual right) => "tcejbomotsuc";
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotHybridGlobalizationOnBrowser))]
         [MemberData(nameof(Compare_Primitives_TestData))]
         public void CompareObjectNotEqual_Invoke_ReturnsExpected(object left, object right, bool greater, bool equal, bool less)
         {
@@ -1490,7 +1490,7 @@ namespace Microsoft.VisualBasic.CompilerServices.Tests
         }
 
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotHybridGlobalizationOnBrowser))]
         [MemberData(nameof(Compare_Primitives_TestData))]
         public void ConditionalCompareObjectEqual_Invoke_ReturnsExpected(object left, object right, bool greater, bool equal, bool less)
         {
@@ -1554,7 +1554,7 @@ namespace Microsoft.VisualBasic.CompilerServices.Tests
              public static bool op_Equality(OperatorsTests left, ConditionalCompareObjectEqual right) => true;
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotHybridGlobalizationOnBrowser))]
         [MemberData(nameof(Compare_Primitives_TestData))]
         public void ConditionalCompareObjectGreater_Invoke_ReturnsExpected(object left, object right, bool greater, bool equal, bool less)
         {
@@ -1618,7 +1618,7 @@ namespace Microsoft.VisualBasic.CompilerServices.Tests
              public static bool op_GreaterThan(OperatorsTests left, ConditionalCompareObjectGreater right) => true;
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotHybridGlobalizationOnBrowser))]
         [MemberData(nameof(Compare_Primitives_TestData))]
         public void ConditionalCompareObjectGreaterEqual_Invoke_ReturnsExpected(object left, object right, bool greater, bool equal, bool less)
         {
@@ -1681,7 +1681,7 @@ namespace Microsoft.VisualBasic.CompilerServices.Tests
              public static bool op_GreaterThanOrEqual(OperatorsTests left, ConditionalCompareObjectGreaterEqual right) => true;
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotHybridGlobalizationOnBrowser))]
         [MemberData(nameof(Compare_Primitives_TestData))]
         public void ConditionalCompareObjectLess_Invoke_ReturnsExpected(object left, object right, bool greater, bool equal, bool less)
         {
@@ -1745,7 +1745,7 @@ namespace Microsoft.VisualBasic.CompilerServices.Tests
              public static bool op_LessThan(OperatorsTests left, ConditionalCompareObjectLess right) => true;
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotHybridGlobalizationOnBrowser))]
         [MemberData(nameof(Compare_Primitives_TestData))]
         public void ConditionalCompareObjectLessEqual_Invoke_ReturnsExpected(object left, object right, bool greater, bool equal, bool less)
         {
@@ -1808,7 +1808,7 @@ namespace Microsoft.VisualBasic.CompilerServices.Tests
              public static bool op_LessThanOrEqual(OperatorsTests left, ConditionalCompareObjectLessEqual right) => true;
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotHybridGlobalizationOnBrowser))]
         [MemberData(nameof(Compare_Primitives_TestData))]
         public void ConditionalCompareObjectNotEqual_Invoke_ReturnsExpected(object left, object right, bool greater, bool equal, bool less)
         {

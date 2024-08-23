@@ -1,7 +1,6 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.DotnetRuntime.Extensions;
 
@@ -38,10 +37,10 @@ namespace System.Text.RegularExpressions.Generator
             isEnabledByDefault: true,
             customTags: WellKnownDiagnosticTags.NotConfigurable);
 
-        public static DiagnosticDescriptor RegexMethodMustHaveValidSignature { get; } = DiagnosticDescriptorHelper.Create(
+        public static DiagnosticDescriptor RegexMemberMustHaveValidSignature { get; } = DiagnosticDescriptorHelper.Create(
             id: "SYSLIB1043",
             title: new LocalizableResourceString(nameof(SR.InvalidGeneratedRegexAttributeTitle), SR.ResourceManager, typeof(FxResources.System.Text.RegularExpressions.Generator.SR)),
-            messageFormat: new LocalizableResourceString(nameof(SR.RegexMethodMustHaveValidSignatureMessage), SR.ResourceManager, typeof(FxResources.System.Text.RegularExpressions.Generator.SR)),
+            messageFormat: new LocalizableResourceString(nameof(SR.RegexMemberMustHaveValidSignatureMessage), SR.ResourceManager, typeof(FxResources.System.Text.RegularExpressions.Generator.SR)),
             category: Category,
             DiagnosticSeverity.Error,
             isEnabledByDefault: true,

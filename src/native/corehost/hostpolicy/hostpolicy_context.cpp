@@ -204,7 +204,7 @@ int hostpolicy_context_t::initialize(const hostpolicy_init_t &hostpolicy_init, c
     }
 
     clr_path = probe_paths.coreclr;
-    if (clr_path.empty() || !pal::realpath(&clr_path))
+    if (clr_path.empty() || !pal::fullpath(&clr_path))
     {
         // in a single-file case we may not need coreclr,
         // otherwise fail early.
@@ -340,9 +340,9 @@ int hostpolicy_context_t::initialize(const hostpolicy_init_t &hostpolicy_init, c
         }
 
         host_contract.get_runtime_property = &get_runtime_property;
-        pal::stringstream_t ptr_stream;
-        ptr_stream << "0x" << std::hex << (size_t)(&host_contract);
-        if (!coreclr_properties.add(_STRINGIFY(HOST_PROPERTY_RUNTIME_CONTRACT), ptr_stream.str().c_str()))
+        pal::char_t buffer[STRING_LENGTH("0xffffffffffffffff")];
+        pal::snwprintf(buffer, ARRAY_SIZE(buffer), _X("0x%zx"), (size_t)(&host_contract));
+        if (!coreclr_properties.add(_STRINGIFY(HOST_PROPERTY_RUNTIME_CONTRACT), buffer))
         {
             log_duplicate_property_error(_STRINGIFY(HOST_PROPERTY_RUNTIME_CONTRACT));
             return StatusCode::LibHostDuplicateProperty;

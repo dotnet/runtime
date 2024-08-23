@@ -104,19 +104,13 @@ namespace System.Threading
             startHelper.Run();
         }
 
-        // Invoked by VM. Helper method to get a logical thread ID for StringBuilder (for
-        // correctness) and for FileStream's async code path (for perf, to avoid creating
-        // a Thread instance).
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern IntPtr InternalGetCurrentThread();
-
         /// <summary>
         /// Suspends the current thread for timeout milliseconds. If timeout == 0,
         /// forces the thread to give up the remainder of its timeslice.  If timeout
         /// == Timeout.Infinite, no timeout will occur.
         /// </summary>
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern void SleepInternal(int millisecondsTimeout);
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ThreadNative_Sleep")]
+        private static partial void SleepInternal(int millisecondsTimeout);
 
         // Max iterations to be done in SpinWait without switching GC modes.
         private const int SpinWaitCoopThreshold = 1024;
@@ -171,6 +165,7 @@ namespace System.Threading
         partial void ThreadNameChanged(string? value)
         {
             InformThreadNameChange(GetNativeHandle(), value, value?.Length ?? 0);
+            GC.KeepAlive(this);
         }
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ThreadNative_InformThreadNameChange", StringMarshalling = StringMarshalling.Utf16)]
@@ -189,10 +184,11 @@ namespace System.Threading
         /// </summary>
         public bool IsBackground
         {
-            get => IsBackgroundNative();
+            get => GetIsBackground();
             set
             {
-                SetBackgroundNative(value);
+                SetIsBackground(GetNativeHandle(), value ? Interop.BOOL.TRUE : Interop.BOOL.FALSE);
+                GC.KeepAlive(this);
                 if (!value)
                 {
                     _mayNeedResetForThreadPool = true;
@@ -201,10 +197,10 @@ namespace System.Threading
         }
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        private extern bool IsBackgroundNative();
+        private extern bool GetIsBackground();
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        private extern void SetBackgroundNative(bool isBackground);
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ThreadNative_SetIsBackground")]
+        private static partial void SetIsBackground(ThreadHandle t, Interop.BOOL value);
 
         /// <summary>Returns true if the thread is a threadpool thread.</summary>
         public extern bool IsThreadPoolThread
@@ -309,12 +305,16 @@ namespace System.Threading
 #endif // FEATURE_COMINTEROP_APARTMENT_SUPPORT
 
 #if FEATURE_COMINTEROP
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        public extern void DisableComObjectEagerCleanup();
-#else // !FEATURE_COMINTEROP
         public void DisableComObjectEagerCleanup()
         {
+            DisableComObjectEagerCleanup(GetNativeHandle());
+            GC.KeepAlive(this);
         }
+
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ThreadNative_DisableComObjectEagerCleanup")]
+        private static partial void DisableComObjectEagerCleanup(ThreadHandle t);
+#else // !FEATURE_COMINTEROP
+        public void DisableComObjectEagerCleanup() { }
 #endif // FEATURE_COMINTEROP
 
         /// <summary>
@@ -322,8 +322,14 @@ namespace System.Threading
         /// thread is not currently blocked in that manner, it will be interrupted
         /// when it next begins to block.
         /// </summary>
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        public extern void Interrupt();
+        public void Interrupt()
+        {
+            Interrupt(GetNativeHandle());
+            GC.KeepAlive(this);
+        }
+
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ThreadNative_Interrupt")]
+        private static partial void Interrupt(ThreadHandle t);
 
         /// <summary>
         /// Waits for the thread to die or for timeout milliseconds to elapse.
@@ -349,14 +355,39 @@ namespace System.Threading
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal void ResetThreadPoolThread()
+        internal void ResetFinalizerThread()
         {
             Debug.Assert(this == CurrentThread);
-            Debug.Assert(IsThreadPoolThread);
 
             if (_mayNeedResetForThreadPool)
             {
-                ResetThreadPoolThreadSlow();
+                ResetFinalizerThreadSlow();
+            }
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private void ResetFinalizerThreadSlow()
+        {
+            Debug.Assert(this == CurrentThread);
+            Debug.Assert(_mayNeedResetForThreadPool);
+
+            _mayNeedResetForThreadPool = false;
+
+            const string FinalizerThreadName = ".NET Finalizer";
+
+            if (Name != FinalizerThreadName)
+            {
+                Name = FinalizerThreadName;
+            }
+
+            if (!IsBackground)
+            {
+                IsBackground = true;
+            }
+
+            if (Priority != ThreadPriority.Highest)
+            {
+                Priority = ThreadPriority.Highest;
             }
         }
     }

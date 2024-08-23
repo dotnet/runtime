@@ -1,13 +1,15 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+namespace NativeFormatGen;
+
 //
 // Generates the C# MdBinaryWriter class. This classes is responsible for correctly decoding
-// data members in the .metadata file. See NativeFormatWriterGen.cs for how the MetadataWriter 
+// data members in the .metadata file. See NativeFormatWriterGen.cs for how the MetadataWriter
 // use this class.
 //
 
-class MdBinaryWriterGen : CsWriter
+internal sealed class MdBinaryWriterGen : CsWriter
 {
     public MdBinaryWriterGen(string fileName)
         : base(fileName)
@@ -20,8 +22,8 @@ class MdBinaryWriterGen : CsWriter
         WriteLine();
 
         WriteLine("using System;");
-        WriteLine("using System.IO;");
         WriteLine("using System.Collections.Generic;");
+        WriteLine("using System.IO;");
         WriteLine("using System.Reflection;");
         WriteLine("using Internal.LowLevelLinq;");
         WriteLine("using Internal.NativeFormat;");

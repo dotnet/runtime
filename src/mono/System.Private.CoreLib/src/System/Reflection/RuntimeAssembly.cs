@@ -24,10 +24,10 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
-using System.IO;
-using System.Globalization;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
+using System.Globalization;
+using System.IO;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Loader;
@@ -135,28 +135,6 @@ namespace System.Reflection
 
         // TODO: consider a dedicated icall instead
         public override bool IsCollectible => AssemblyLoadContext.GetLoadContext((Assembly)this)!.IsCollectible;
-
-        internal static AssemblyName? CreateAssemblyName(string assemblyString, out RuntimeAssembly? assemblyFromResolveEvent)
-        {
-            ArgumentNullException.ThrowIfNull(assemblyString);
-
-            if ((assemblyString.Length == 0) ||
-                (assemblyString[0] == '\0'))
-                throw new ArgumentException(SR.Format_StringZeroLength);
-
-            assemblyFromResolveEvent = null;
-            try
-            {
-                return new AssemblyName(assemblyString);
-            }
-            catch (Exception)
-            {
-                assemblyFromResolveEvent = (RuntimeAssembly?)AssemblyLoadContext.DoAssemblyResolve(assemblyString);
-                if (assemblyFromResolveEvent == null)
-                    throw new FileLoadException(assemblyString);
-                return null;
-            }
-        }
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private static extern void GetManifestResourceNames(QCallAssembly assembly_h, ObjectHandleOnStack res);
@@ -389,7 +367,7 @@ namespace System.Reflection
         }
 
         [RequiresUnreferencedCode("Assembly references might be removed")]
-        public override AssemblyName[] GetReferencedAssemblies() => RuntimeAssembly.GetReferencedAssemblies (this);
+        public override AssemblyName[] GetReferencedAssemblies() => RuntimeAssembly.GetReferencedAssemblies(this);
 
         public override Assembly GetSatelliteAssembly(CultureInfo culture)
         {

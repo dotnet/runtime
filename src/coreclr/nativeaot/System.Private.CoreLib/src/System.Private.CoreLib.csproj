@@ -1,9 +1,11 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
-    <!-- AD0001 : https://github.com/dotnet/runtime/issues/90356 -->
-    <NoWarn>$(NoWarn);AD0001</NoWarn>
   </PropertyGroup>
+
+  <ItemGroup>
+    <ApiCompatSuppressionFile Include="$(MSBuildProjectDirectory)\CompatibilitySuppressions.xml" />
+  </ItemGroup>
 
   <ItemGroup>
     <ILLinkSubstitutionsXmls Include="ILLink\ILLink.Substitutions.xml" />
@@ -94,6 +96,10 @@
     <Compile Include="$(AotCommonPath)\Internal\Runtime\TypeLoader\ExternalReferencesTable.cs">
       <Link>Common\src\Internal\Runtime\TypeLoader\ExternalReferencesTable.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)System\Experimentals.cs">
+      <Link>Common\Experimentals.cs</Link>
+    </Compile>
+    <Compile Include="Internal\Runtime\FrozenObjectHeapManager.cs" />
     <Compile Include="Internal\Runtime\ThreadStatics.cs" />
     <Compile Include="Internal\Runtime\CompilerHelpers\StartupCode\StartupCodeHelpers.Extensions.cs" />
     <Compile Include="Internal\Runtime\CompilerHelpers\ArrayHelpers.cs" />
@@ -120,16 +126,15 @@
     <Compile Include="Internal\Runtime\TypeLoaderExceptionHelper.cs" />
     <Compile Include="Internal\DeveloperExperience\DeveloperExperience.cs" />
     <Compile Include="Internal\Runtime\Augments\RuntimeAugments.cs" />
-    <Compile Include="Internal\Runtime\Augments\ReflectionExecutionDomainCallbacks.cs" />
     <Compile Include="Internal\Runtime\Augments\TypeLoaderCallbacks.cs" />
     <Compile Include="Internal\Runtime\Augments\StackTraceMetadataCallbacks.cs" />
     <Compile Include="Internal\Runtime\Augments\DynamicDelegateAugments.cs" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Internal\Reflection\Core\NonPortable\RuntimeTypeUnifier.cs" />
     <Compile Include="Internal\Reflection\Extensions\NonPortable\CustomAttributeInheritanceRules.cs" />
     <Compile Include="Internal\Reflection\Extensions\NonPortable\CustomAttributeInstantiator.cs" />
     <Compile Include="Internal\Reflection\Extensions\NonPortable\CustomAttributeSearcher.cs" />
+    <Compile Include="System\Diagnostics\DiagnosticMethodInfo.NativeAot.cs" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="System\Reflection\RuntimeAssembly.cs" />
@@ -177,21 +182,16 @@
     <Compile Include="System\Diagnostics\StackFrame.NativeAot.cs" />
     <Compile Include="System\Diagnostics\StackFrameExtensions.cs" />
     <Compile Include="System\Diagnostics\StackTrace.NativeAot.cs" />
-    <Compile Include="System\Diagnostics\Eventing\EventPipe.NativeAot.cs" />
-    <Compile Include="System\Diagnostics\Eventing\NativeRuntimeEventSource.Threading.NativeSinks.NativeAot.cs" />
     <Compile Include="System\Enum.NativeAot.cs" />
     <Compile Include="System\Environment.NativeAot.cs" />
     <Compile Include="System\GC.NativeAot.cs" />
     <Compile Include="System\Math.NativeAot.cs" />
     <Compile Include="System\MathF.NativeAot.cs" />
-    <Compile Include="System\MulticastDelegate.cs" />
     <Compile Include="System\Object.NativeAot.cs" />
-    <Compile Include="System\Resources\ManifestBasedResourceGroveler.NativeAot.cs" />
     <Compile Include="System\RuntimeArgumentHandle.cs" />
     <Compile Include="System\RuntimeType.cs" />
     <Compile Include="System\Runtime\ControlledExecution.NativeAot.cs" />
     <Compile Include="System\Runtime\DependentHandle.cs" />
-    <Compile Include="System\Runtime\CompilerServices\ForceLazyDictionaryAttribute.cs" />
     <Compile Include="System\Runtime\CompilerServices\EagerStaticClassConstructionAttribute.cs" />
     <Compile Include="System\Runtime\CompilerServices\ForceDictionaryLookupsAttribute.cs" />
     <Compile Include="System\Runtime\CompilerServices\RuntimeFeature.NativeAot.cs" />
@@ -204,7 +204,6 @@
     <Compile Include="System\Runtime\InteropServices\ComEventsHelper.NativeAot.cs" Condition="'$(FeatureCominterop)' == 'true'" />
     <Compile Include="System\Runtime\InteropServices\ComWrappers.NativeAot.cs" Condition="'$(FeatureComWrappers)' == 'true'" />
     <Compile Include="System\Runtime\InteropServices\GCHandle.NativeAot.cs" />
-    <Compile Include="System\Runtime\InteropServices\InteropExtensions.cs" />
     <Compile Include="System\Runtime\InteropServices\NativeFunctionPointerWrapper.cs" />
     <Compile Include="System\Runtime\InteropServices\NativeLibrary.NativeAot.cs" />
     <Compile Include="System\Runtime\InteropServices\PInvokeMarshal.cs" />
@@ -221,6 +220,7 @@
     <Compile Include="System\String.Intern.cs" />
     <Compile Include="System\Array.NativeAot.cs" />
     <Compile Include="System\Delegate.cs" />
+    <Compile Include="System\StartupHookProvider.NativeAot.cs" />
     <Compile Include="System\RuntimeTypeHandle.cs" />
     <Compile Include="System\Exception.NativeAot.cs" />
     <Compile Include="System\RuntimeExceptionHelpers.cs" />
@@ -230,10 +230,9 @@
     <Compile Include="System\RuntimeFieldHandle.cs" />
     <Compile Include="System\Text\StringBuilder.NativeAot.cs" />
     <Compile Include="System\Threading\ManagedThreadId.cs" />
-    <Compile Include="System\Threading\Lock.cs" />
+    <Compile Include="System\Threading\Lock.NativeAot.cs" />
     <Compile Include="System\Threading\Condition.cs" />
     <Compile Include="System\Threading\Interlocked.cs" />
-    <Compile Include="System\Threading\LockHolder.cs" />
     <Compile Include="System\Threading\Monitor.NativeAot.cs" />
     <Compile Include="System\Threading\ObjectHeader.cs" />
     <Compile Include="System\Threading\SyncTable.cs" />
@@ -254,10 +253,21 @@
     </Compile>
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsWindows)'=='true'">
+    <Compile Include="System\EventReporter.cs" />
+    <Compile Include="Internal\Runtime\FrozenObjectHeapManager.Windows.cs" />
     <Compile Include="System\Runtime\InteropServices\NativeLibrary.NativeAot.Windows.cs" />
     <Compile Include="System\Runtime\InteropServices\PInvokeMarshal.Windows.cs" />
     <Compile Include="$(CommonPath)\System\Runtime\InteropServices\BuiltInVariantExtensions.cs">
       <Link>System\Runtime\InteropServices\BuiltInVariantExtensions.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.RegisterEventSource_IntPtr.cs">
+      <Link>Interop\Windows\Advapi32\Interop.RegisterEventSource_IntPtr.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.DeregisterEventSource.cs">
+      <Link>Interop\Windows\Advapi32\Interop.DeregisterEventSource.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.ReportEvent_IntPtr.cs">
+      <Link>Common\Interop\Windows\Advapi32\Interop.ReportEvent_IntPtr.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\Kernel32\Interop.IsDebuggerPresent.cs">
       <Link>Interop\Windows\Kernel32\Interop.IsDebuggerPresent.cs</Link>
@@ -293,6 +303,7 @@
     <Compile Include="System\Threading\ThreadPoolCallbackWrapper.NativeAot.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsUnix)'=='true'">
+    <Compile Include="Internal\Runtime\FrozenObjectHeapManager.Unix.cs" />
     <Compile Include="System\Environment.NativeAot.Unix.cs" />
     <Compile Include="System\Runtime\InteropServices\NativeLibrary.NativeAot.Unix.cs" />
     <Compile Include="System\Runtime\InteropServices\PInvokeMarshal.Unix.cs" />
@@ -304,8 +315,14 @@
     <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.Exit.cs">
       <Link>Interop\Unix\System.Native\Interop.Exit.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.Threading.cs">
-      <Link>Interop\Unix\System.Native\Interop.Threading.cs</Link>
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.MMap.cs">
+      <Link>Interop\Unix\System.Native\Interop.MMap.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.MProtect.cs">
+      <Link>Interop\Unix\System.Native\Interop.MProtect.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.MUnmap.cs">
+      <Link>Interop\Unix\System.Native\Interop.MUnmap.cs</Link>
     </Compile>
   </ItemGroup>
   <ItemGroup>
@@ -314,9 +331,6 @@
     </Compile>
     <Compile Include="$(CompilerCommonPath)\TypeSystem\Common\Utilities\LockFreeReaderHashtable.cs">
       <Link>Utilities\LockFreeReaderHashtable.cs</Link>
-    </Compile>
-    <Compile Include="$(AotCommonPath)\System\Collections\Generic\EnumerableExtensions.cs">
-      <Link>System\Collections\Generic\EnumerableExtensions.cs</Link>
     </Compile>
     <Compile Include="$(AotCommonPath)\System\Collections\Generic\LowLevelList.cs">
       <Link>System\Collections\Generic\LowLevelList.cs</Link>
@@ -415,11 +429,11 @@
     <Compile Include="System\Reflection\Runtime\General\Helpers.cs" />
     <Compile Include="System\Reflection\Runtime\General\IRuntimeMemberInfoWithNoMetadataDefinition.cs" />
     <Compile Include="System\Reflection\Runtime\General\LegacyCustomAttributeApis.cs" />
+    <Compile Include="System\Reflection\Runtime\General\ListBuilder.cs" />
     <Compile Include="System\Reflection\Runtime\General\MetadataReaderExtensions.cs" />
     <Compile Include="System\Reflection\Runtime\General\MetadataReaderExtensions.NativeFormat.cs" />
     <Compile Include="System\Reflection\Runtime\General\NamespaceChain.cs" />
     <Compile Include="System\Reflection\Runtime\General\NativeFormat\DefaultValueParser.cs" />
-    <Compile Include="System\Reflection\Runtime\General\RuntimeTypeHandleKey.cs" />
     <Compile Include="System\Reflection\Runtime\General\ThunkedApis.cs" />
     <Compile Include="System\Reflection\Runtime\General\TypeContext.cs" />
     <Compile Include="System\Reflection\Runtime\General\TypeForwardInfo.cs" />
@@ -486,11 +500,10 @@
     <Compile Include="System\Reflection\Runtime\TypeInfos\RuntimeTypeInfo.CoreGetDeclared.cs" />
     <Compile Include="System\Reflection\Runtime\TypeInfos\RuntimeTypeInfo.InvokeMember.cs" />
     <Compile Include="System\Reflection\Runtime\TypeInfos\RuntimeTypeInfo.TypeComponentsCache.cs" />
-    <Compile Include="System\Reflection\TypeNameParser.NativeAot.cs" />
+    <Compile Include="System\Reflection\TypeNameResolver.NativeAot.cs" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Internal\Reflection\Core\AssemblyBinder.cs" />
-    <Compile Include="Internal\Reflection\Core\ReflectionDomainSetup.cs" />
     <Compile Include="Internal\Reflection\Core\Execution\ExecutionDomain.cs" />
     <Compile Include="Internal\Reflection\Core\Execution\ExecutionEnvironment.cs" />
     <Compile Include="Internal\Reflection\Core\Execution\FieldAccessor.cs" />
@@ -558,8 +571,35 @@
     <ProjectReference Include="$(LibrariesProjectRoot)\System.Private.CoreLib\gen\System.Private.CoreLib.Generators.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
   </ItemGroup>
 
+  <!-- Setup eventing file generation -->
   <ItemGroup>
-    <!-- This is the T4 template service and is added by VS anytime you modify a T4 template. Required for .tt files. -->
-    <Service Include="{508349b6-6b84-4df5-91f0-309beebad82d}" />
+    <EventingGenerationScript Include="$(CoreClrProjectRoot)scripts/genRuntimeEventSources.py" />
+    <EventManifestFile Include="$(CoreClrProjectRoot)vm/ClrEtwAll.man" />
+    <EventingInclusionList Include="$(CoreClrProjectRoot)nativeaot/Runtime/eventpipe/gen-eventing-event-inc.lst" />
+    <EventingSourceFile Include="$(IntermediateOutputPath)NativeRuntimeEventSource.Generated.cs" Condition="'$(FeaturePerfTracing)' == 'true' ">
+      <Link>src\System\Diagnostics\Eventing\NativeRuntimeEventSource.Generated.cs</Link>
+    </EventingSourceFile>
+    <Compile Include="@(EventingSourceFile)" />
   </ItemGroup>
+
+  <Target Name="GenerateEventingFiles"
+          Inputs="@(EventingGenerationScript);@(EventManifestFile);@(EventingInclusionList)"
+          Outputs="@(EventingSourceFile)"
+          DependsOnTargets="FindPython"
+          BeforeTargets="BeforeCompile">
+
+    <Error Condition="'$(PYTHON)' == ''" Text="Unable to locate Python. NativeRuntimeEventSource.Generared.cs cannot be generated without Python installed on the machine. Either install Python in your path or point to it with the PYTHON environment variable." />
+    <PropertyGroup>
+      <_PythonWarningParameter>-Wall</_PythonWarningParameter>
+      <_PythonWarningParameter Condition="'$(MSBuildTreatWarningsAsErrors)' == 'true'">$(_PythonWarningParameter) -Werror</_PythonWarningParameter>
+      <_EventingSourceFileDirectory>%(EventingSourceFile.RootDir)%(EventingSourceFile.Directory)</_EventingSourceFileDirectory>
+      <_EventingSourceFileDirectory Condition="HasTrailingSlash('$(_EventingSourceFileDirectory)')">$(_EventingSourceFileDirectory.TrimEnd('\'))</_EventingSourceFileDirectory>
+    </PropertyGroup>
+
+    <Exec Command="&quot;$(PYTHON)&quot; -B $(_PythonWarningParameter) &quot;@(EventingGenerationScript)&quot; --man &quot;@(EventManifestFile)&quot; --intermediate &quot;$(_EventingSourceFileDirectory)&quot; --inc &quot;@(EventingInclusionList)&quot;" />
+
+    <ItemGroup>
+      <FileWrites Include="@(EventingSourceFile)" />
+    </ItemGroup>
+  </Target>
 </Project>

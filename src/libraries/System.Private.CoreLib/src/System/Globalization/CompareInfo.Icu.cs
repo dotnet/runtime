@@ -198,10 +198,13 @@ namespace System.Globalization
 #if TARGET_BROWSER
                 if (GlobalizationMode.Hybrid)
                 {
-                    int result = Interop.JsGlobalization.IndexOf(m_name, b, target.Length, a, source.Length, options, fromBeginning, out int exception, out object ex_result);
-                    if (exception != 0)
-                        throw new Exception((string)ex_result);
-                    return result;
+                    ReadOnlySpan<char> cultureNameSpan = m_name.AsSpan();
+                    fixed (char* pCultureName = &MemoryMarshal.GetReference(cultureNameSpan))
+                    {
+                        nint exceptionPtr = Interop.JsGlobalization.IndexOf(pCultureName, cultureNameSpan.Length, b, target.Length, a, source.Length, options, fromBeginning, out int result);
+                        Helper.MarshalAndThrowIfException(exceptionPtr);
+                        return result;
+                    }
                 }
 #elif TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS
                 if (GlobalizationMode.Hybrid)
@@ -300,10 +303,13 @@ namespace System.Globalization
 #if TARGET_BROWSER
                 if (GlobalizationMode.Hybrid)
                 {
-                    int result = Interop.JsGlobalization.IndexOf(m_name, b, target.Length, a, source.Length, options, fromBeginning, out int exception, out object ex_result);
-                    if (exception != 0)
-                        throw new Exception((string)ex_result);
-                    return result;
+                    ReadOnlySpan<char> cultureNameSpan = m_name.AsSpan();
+                    fixed (char* pCultureName = &MemoryMarshal.GetReference(cultureNameSpan))
+                    {
+                        nint exceptionPtr = Interop.JsGlobalization.IndexOf(pCultureName, cultureNameSpan.Length, b, target.Length, a, source.Length, options, fromBeginning, out int result);
+                        Helper.MarshalAndThrowIfException(exceptionPtr);
+                        return result;
+                    }
                 }
 #elif TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS
                 if (GlobalizationMode.Hybrid)
@@ -692,6 +698,16 @@ namespace System.Globalization
             Debug.Assert(!GlobalizationMode.Invariant);
             Debug.Assert(!GlobalizationMode.UseNls);
 
+#if TARGET_BROWSER
+            // JS cannot create locale-sensitive sort key, use invaraint functions instead.
+            if (GlobalizationMode.Hybrid)
+            {
+                if (!_isInvariantCulture)
+                    throw new PlatformNotSupportedException(GetPNSEWithReason("CreateSortKey", "non-invariant culture"));
+                return InvariantCreateSortKey(source, options);
+            }
+#endif
+
             if ((options & ValidCompareMaskOffFlags) != 0)
             {
                 throw new ArgumentException(SR.Argument_InvalidFlag, nameof(options));
@@ -700,14 +716,36 @@ namespace System.Globalization
             byte[] keyData;
             fixed (char* pSource = source)
             {
-                int sortKeyLength = Interop.Globalization.GetSortKey(_sortHandle, pSource, source.Length, null, 0, options);
+                int sortKeyLength;
+#if TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS
+                if (GlobalizationMode.Hybrid)
+                {
+                    sortKeyLength = Interop.Globalization.GetSortKeyNative(m_name, m_name.Length, pSource, source.Length, null, 0, options);
+                }
+                else
+#endif
+                {
+                    sortKeyLength = Interop.Globalization.GetSortKey(_sortHandle, pSource, source.Length, null, 0, options);
+                }
                 keyData = new byte[sortKeyLength];
 
                 fixed (byte* pSortKey = keyData)
                 {
-                    if (Interop.Globalization.GetSortKey(_sortHandle, pSource, source.Length, pSortKey, sortKeyLength, options) != sortKeyLength)
+#if TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS
+                    if (GlobalizationMode.Hybrid)
                     {
-                        throw new ArgumentException(SR.Arg_ExternalException);
+                        if (Interop.Globalization.GetSortKeyNative(m_name, m_name.Length, pSource, source.Length, pSortKey, sortKeyLength, options) != sortKeyLength)
+                        {
+                            throw new ArgumentException(SR.Arg_ExternalException);
+                        }
+                    }
+                    else
+#endif
+                    {
+                        if (Interop.Globalization.GetSortKey(_sortHandle, pSource, source.Length, pSortKey, sortKeyLength, options) != sortKeyLength)
+                        {
+                            throw new ArgumentException(SR.Arg_ExternalException);
+                        }
                     }
                 }
             }
@@ -721,6 +759,15 @@ namespace System.Globalization
             Debug.Assert(!GlobalizationMode.UseNls);
             Debug.Assert((options & ValidCompareMaskOffFlags) == 0);
 
+#if TARGET_BROWSER
+            if (GlobalizationMode.Hybrid)
+            {
+                if (!_isInvariantCulture)
+                    throw new PlatformNotSupportedException(GetPNSEWithReason("GetSortKey", "non-invariant culture"));
+                return InvariantGetSortKey(source, destination, options);
+            }
+#endif
+
             // It's ok to pass nullptr (for empty buffers) to ICU's sort key routines.
 
             int actualSortKeyLength;
@@ -728,7 +775,16 @@ namespace System.Globalization
             fixed (char* pSource = &MemoryMarshal.GetReference(source))
             fixed (byte* pDest = &MemoryMarshal.GetReference(destination))
             {
-                actualSortKeyLength = Interop.Globalization.GetSortKey(_sortHandle, pSource, source.Length, pDest, destination.Length, options);
+#if TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS
+                if (GlobalizationMode.Hybrid)
+                {
+                    actualSortKeyLength = Interop.Globalization.GetSortKeyNative(m_name, m_name.Length, pSource, source.Length, pDest, destination.Length, options);
+                }
+                else
+#endif
+                {
+                    actualSortKeyLength = Interop.Globalization.GetSortKey(_sortHandle, pSource, source.Length, pDest, destination.Length, options);
+                }
             }
 
             // The check below also handles errors due to negative values / overflow being returned.
@@ -754,11 +810,29 @@ namespace System.Globalization
             Debug.Assert(!GlobalizationMode.UseNls);
             Debug.Assert((options & ValidCompareMaskOffFlags) == 0);
 
+#if TARGET_BROWSER
+            if (GlobalizationMode.Hybrid)
+            {
+                if (!_isInvariantCulture)
+                    throw new PlatformNotSupportedException(GetPNSEWithReason("GetSortKeyLength", "non-invariant culture"));
+                return InvariantGetSortKeyLength(source, options);
+            }
+#endif
+
             // It's ok to pass nullptr (for empty buffers) to ICU's sort key routines.
 
             fixed (char* pSource = &MemoryMarshal.GetReference(source))
             {
-                return Interop.Globalization.GetSortKey(_sortHandle, pSource, source.Length, null, 0, options);
+#if TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS
+                if (GlobalizationMode.Hybrid)
+                {
+                    return Interop.Globalization.GetSortKeyNative(m_name, m_name.Length, pSource, source.Length, null, 0, options);
+                }
+                else
+#endif
+                {
+                    return Interop.Globalization.GetSortKey(_sortHandle, pSource, source.Length, null, 0, options);
+                }
             }
         }
 
@@ -793,6 +867,20 @@ namespace System.Globalization
             Debug.Assert(!GlobalizationMode.UseNls);
             Debug.Assert((options & (CompareOptions.Ordinal | CompareOptions.OrdinalIgnoreCase)) == 0);
 
+#if TARGET_BROWSER
+            if (GlobalizationMode.Hybrid)
+            {
+                if (!_isInvariantCulture && !LocalizedHashCodeSupportsCompareOptions(options))
+                {
+                    throw new PlatformNotSupportedException(GetPNSEWithReason("GetHashCode", "non-invariant culture with CompareOptions different than None or IgnoreCase"));
+                }
+
+                // JS cannot create locale-sensitive HashCode, use invaraint functions instead
+                ReadOnlySpan<char> sanitizedSource = SanitizeForInvariantHash(source, options);
+                return InvariantGetHashCode(sanitizedSource, options);
+            }
+#endif
+
             // according to ICU User Guide the performance of ucol_getSortKey is worse when it is called with null output buffer
             // the solution is to try to fill the sort key in a temporary buffer of size equal 4 x string length
             // (The ArrayPool used to have a limit on the length of buffers it would cache; this code was avoiding
@@ -809,7 +897,16 @@ namespace System.Globalization
             {
                 fixed (byte* pSortKey = &MemoryMarshal.GetReference(sortKey))
                 {
-                    sortKeyLength = Interop.Globalization.GetSortKey(_sortHandle, pSource, source.Length, pSortKey, sortKey.Length, options);
+#if TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS
+                    if (GlobalizationMode.Hybrid)
+                    {
+                        sortKeyLength = Interop.Globalization.GetSortKeyNative(m_name, m_name.Length, pSource, source.Length, pSortKey, sortKey.Length, options);
+                    }
+                    else
+#endif
+                    {
+                        sortKeyLength = Interop.Globalization.GetSortKey(_sortHandle, pSource, source.Length, pSortKey, sortKey.Length, options);
+                    }
                 }
 
                 if (sortKeyLength > sortKey.Length) // slow path for big strings
@@ -823,7 +920,16 @@ namespace System.Globalization
 
                     fixed (byte* pSortKey = &MemoryMarshal.GetReference(sortKey))
                     {
-                        sortKeyLength = Interop.Globalization.GetSortKey(_sortHandle, pSource, source.Length, pSortKey, sortKey.Length, options);
+#if TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS
+                        if (GlobalizationMode.Hybrid)
+                        {
+                            sortKeyLength = Interop.Globalization.GetSortKeyNative(m_name, m_name.Length, pSource, source.Length, pSortKey, sortKey.Length, options);
+                        }
+                        else
+#endif
+                        {
+                            sortKeyLength = Interop.Globalization.GetSortKey(_sortHandle, pSource, source.Length, pSortKey, sortKey.Length, options);
+                        }
                     }
                 }
             }

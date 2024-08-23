@@ -3,6 +3,12 @@
     <!-- Needed for GCStressIncompatible -->
     <RequiresProcessIsolation>true</RequiresProcessIsolation>
     <GCStressIncompatible>true</GCStressIncompatible>
+    <!--
+        Test unsupported outside of windows
+        On platform other than Windows, this test could get killed by the OOM killer
+        instead of having a proper OutOfMemoryException.
+    -->
+    <CLRTestTargetUnsupported Condition="'$(TargetsWindows)' != 'true'">true</CLRTestTargetUnsupported>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="largearraytest.cs" />

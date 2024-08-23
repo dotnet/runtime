@@ -6,8 +6,8 @@
 #pragma warning disable 649, SA1121, IDE0036, SA1129
 
 using System;
-using System.IO;
 using System.Collections.Generic;
+using System.IO;
 using System.Reflection;
 using Internal.NativeFormat;
 using Debug = System.Diagnostics.Debug;
@@ -300,15 +300,6 @@ namespace Internal.Metadata.NativeFormat
             return offset;
         } // Read
 
-        public static uint Read(this NativeReader reader, uint offset, out ConstantBoxedEnumValueHandle handle)
-        {
-            uint value;
-            offset = reader.DecodeUnsigned(offset, out value);
-            handle = new ConstantBoxedEnumValueHandle((int)value);
-            handle._Validate();
-            return offset;
-        } // Read
-
         public static uint Read(this NativeReader reader, uint offset, out ConstantByteArrayHandle handle)
         {
             uint value;
@@ -368,6 +359,15 @@ namespace Internal.Metadata.NativeFormat
             uint value;
             offset = reader.DecodeUnsigned(offset, out value);
             handle = new ConstantEnumArrayHandle((int)value);
+            handle._Validate();
+            return offset;
+        } // Read
+
+        public static uint Read(this NativeReader reader, uint offset, out ConstantEnumValueHandle handle)
+        {
+            uint value;
+            offset = reader.DecodeUnsigned(offset, out value);
+            handle = new ConstantEnumValueHandle((int)value);
             handle._Validate();
             return offset;
         } // Read

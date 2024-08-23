@@ -1,8 +1,8 @@
 <Project>
   <!-- Property overrides -->
   <PropertyGroup>
-    <_TasksDir Condition="'$(MSBuildRuntimeType)' == 'Core'">$(MSBuildThisFileDirectory)..\tasks\${TargetFrameworkForNETCoreTasks}\</_TasksDir>
-    <_TasksDir Condition="'$(MSBuildRuntimeType)' != 'Core'">$(MSBuildThisFileDirectory)..\tasks\${TargetFrameworkForNETFrameworkTasks}\</_TasksDir>
+    <_TasksDir Condition="'$(MSBuildRuntimeType)' == 'Core'">$(MSBuildThisFileDirectory)..\tasks\${NetCoreAppToolCurrent}\</_TasksDir>
+    <_TasksDir Condition="'$(MSBuildRuntimeType)' != 'Core'">$(MSBuildThisFileDirectory)..\tasks\${NetFrameworkToolCurrent}\</_TasksDir>
 
     <WasmAppBuilderTasksAssemblyPath>$(_TasksDir)WasmAppBuilder.dll</WasmAppBuilderTasksAssemblyPath>
     <WasmBuildTasksAssemblyPath>$(_TasksDir)WasmBuildTasks.dll</WasmBuildTasksAssemblyPath>
@@ -12,6 +12,6 @@
     <WasmEmitSymbolMap Condition="'$(UsingMicrosoftNETSdkBlazorWebAssembly)' != 'true' and '$(UsingMicrosoftNETSdkWebAssembly)' != 'true' and '$(WasmEmitSymbolMap)' == '' and '$(RunAOTCompilation)' != 'true'">true</WasmEmitSymbolMap>
   </PropertyGroup>
 
-  <Import Project="$(MSBuildThisFileDirectory)\WasmApp.props" />
-  <Import Project="$(MSBuildThisFileDirectory)\WasmApp.targets" />
+  <Import Project="$(MSBuildThisFileDirectory)\BrowserWasmApp.props" />
+  <Import Project="$(MSBuildThisFileDirectory)\BrowserWasmApp.targets" />
 </Project>

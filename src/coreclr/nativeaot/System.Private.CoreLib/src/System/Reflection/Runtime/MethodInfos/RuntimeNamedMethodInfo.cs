@@ -2,15 +2,15 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Reflection;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
-using System.Collections.Generic;
-using System.Runtime.InteropServices;
-using System.Reflection.Runtime.General;
-using System.Reflection.Runtime.TypeInfos;
-using System.Reflection.Runtime.ParameterInfos;
+using System.Reflection;
 using System.Reflection.Runtime.CustomAttributes;
+using System.Reflection.Runtime.General;
+using System.Reflection.Runtime.ParameterInfos;
+using System.Reflection.Runtime.TypeInfos;
+using System.Runtime.InteropServices;
 
 using Internal.Reflection.Core.Execution;
 
@@ -133,13 +133,13 @@ namespace System.Reflection.Runtime.MethodInfos
                 if (typeArgument == null)
                     throw new ArgumentNullException();
 
-                if (typeArgument is not RuntimeType)
+                if (typeArgument is not RuntimeType typeArgumentAsRuntimeType)
                     throw new PlatformNotSupportedException(SR.Format(SR.Reflection_CustomReflectionObjectsNotSupported, typeArguments[i]));
 
-                if (typeArgument.IsByRefLike)
+                if (typeArgumentAsRuntimeType.IsByRefLike)
                     throw new BadImageFormatException(SR.CannotUseByRefLikeTypeInInstantiation);
 
-                genericTypeArguments[i] = typeArgument.CastToRuntimeTypeInfo();
+                genericTypeArguments[i] = typeArgumentAsRuntimeType.GetRuntimeTypeInfo();
             }
             if (typeArguments.Length != GenericTypeParameters.Length)
                 throw new ArgumentException(SR.Format(SR.Argument_NotEnoughGenArguments, typeArguments.Length, GenericTypeParameters.Length));
@@ -148,7 +148,7 @@ namespace System.Reflection.Runtime.MethodInfos
             return methodInfo;
         }
 
-        public sealed override MethodBase MetadataDefinitionMethod
+        internal sealed override MethodBase MetadataDefinitionMethod
         {
             get
             {
@@ -176,7 +176,7 @@ namespace System.Reflection.Runtime.MethodInfos
         {
             get
             {
-                return _reflectedType;
+                return _reflectedType.ToType();
             }
         }
 
@@ -309,7 +309,7 @@ namespace System.Reflection.Runtime.MethodInfos
                 if (invoker != null)
                     return invoker;
 
-                return GetUncachedMethodInvoker(Array.Empty<RuntimeTypeInfo>(), this);
+                return GetUncachedMethodInvoker(GenericTypeParameters, this);
             }
         }
 

@@ -13,7 +13,6 @@ namespace System.Threading.Tests
     public class SpinLockTests
     {
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/91538", typeof(PlatformDetection), nameof(PlatformDetection.IsWasmThreadingSupported))]
         public static void EnterExit()
         {
             var sl = new SpinLock();

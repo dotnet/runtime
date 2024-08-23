@@ -1,45 +1,61 @@
 // Copyright (c) .NET Foundation and contributors. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System.Collections.Generic;
+using System;
+using System.Diagnostics;
 using ILLink.Shared.TrimAnalysis;
+using ILLink.RoslynAnalyzer.DataFlow;
 using Microsoft.CodeAnalysis;
 
 namespace ILLink.RoslynAnalyzer.TrimAnalysis
 {
-	public readonly record struct TrimAnalysisReflectionAccessPattern
+	internal readonly record struct TrimAnalysisReflectionAccessPattern
 	{
-		public IMethodSymbol ReferencedMethod { init; get; }
-		public IOperation Operation { init; get; }
-		public ISymbol OwningSymbol { init; get; }
+		public IMethodSymbol ReferencedMethod { get; init; }
+		public IOperation Operation { get; init; }
+		public ISymbol OwningSymbol { get; init; }
+		public FeatureContext FeatureContext { get; init; }
 
 		public TrimAnalysisReflectionAccessPattern (
 			IMethodSymbol referencedMethod,
 			IOperation operation,
-			ISymbol owningSymbol)
+			ISymbol owningSymbol,
+			FeatureContext feature)
 		{
 			ReferencedMethod = referencedMethod;
 			Operation = operation;
 			OwningSymbol = owningSymbol;
+			FeatureContext = feature.DeepCopy ();
 		}
 
-		// No Merge - there's nothing to merge since this pattern is uniquely identified by both the origin and the entity
-		// and there's only one way to access the referenced method.
-
-		public IEnumerable<Diagnostic> CollectDiagnostics (DataFlowAnalyzerContext context)
+		public TrimAnalysisReflectionAccessPattern Merge (
+			FeatureContextLattice featureContextLattice,
+			TrimAnalysisReflectionAccessPattern other)
 		{
-			DiagnosticContext diagnosticContext = new (Operation.Syntax.GetLocation ());
-			if (context.EnableTrimAnalyzer && !OwningSymbol.IsInRequiresUnreferencedCodeAttributeScope (out _)) {
-				foreach (var diagnostic in ReflectionAccessAnalyzer.GetDiagnosticsForReflectionAccessToDAMOnMethod (diagnosticContext, ReferencedMethod))
-					diagnosticContext.AddDiagnostic (diagnostic);
+			Debug.Assert (SymbolEqualityComparer.Default.Equals (ReferencedMethod, other.ReferencedMethod));
+			Debug.Assert (Operation == other.Operation);
+			Debug.Assert (SymbolEqualityComparer.Default.Equals (OwningSymbol, other.OwningSymbol));
+
+			return new TrimAnalysisReflectionAccessPattern (
+				ReferencedMethod,
+				Operation,
+				OwningSymbol,
+				featureContextLattice.Meet (FeatureContext, other.FeatureContext));
+		}
+
+		public void ReportDiagnostics (DataFlowAnalyzerContext context, Action<Diagnostic> reportDiagnostic)
+		{
+			var location = Operation.Syntax.GetLocation ();
+			var reflectionAccessAnalyzer = new ReflectionAccessAnalyzer (reportDiagnostic, typeHierarchyType: null);
+			if (context.EnableTrimAnalyzer &&
+				!OwningSymbol.IsInRequiresUnreferencedCodeAttributeScope (out _) &&
+				!FeatureContext.IsEnabled (RequiresUnreferencedCodeAnalyzer.FullyQualifiedRequiresUnreferencedCodeAttribute)) {
+				reflectionAccessAnalyzer.GetDiagnosticsForReflectionAccessToDAMOnMethod (location, ReferencedMethod);
 			}
 
-			foreach (var requiresAnalyzer in context.EnabledRequiresAnalyzers) {
-				if (requiresAnalyzer.CheckAndCreateRequiresDiagnostic (Operation, ReferencedMethod, OwningSymbol, context, out Diagnostic? diag))
-					diagnosticContext.AddDiagnostic (diag);
-			}
-
-			return diagnosticContext.Diagnostics;
+			DiagnosticContext diagnosticContext = new (location, reportDiagnostic);
+			foreach (var requiresAnalyzer in context.EnabledRequiresAnalyzers)
+				requiresAnalyzer.CheckAndCreateRequiresDiagnostic (Operation, ReferencedMethod, OwningSymbol, context, FeatureContext, diagnosticContext);
 		}
 	}
 }

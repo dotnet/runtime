@@ -35,7 +35,7 @@ namespace System
 #endif
         }
 
-        private static unsafe bool TryConvertWindowsIdToIanaId(string windowsId, string? region, bool allocate,  out string? ianaId)
+        private static unsafe bool TryConvertWindowsIdToIanaId(string windowsId, string? region, bool allocate, out string? ianaId)
         {
 #if TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS
             ianaId = null;
@@ -64,7 +64,7 @@ namespace System
             // regionPtr will point at the region name encoded as ASCII.
             IntPtr regionPtr = IntPtr.Zero;
 
-             // Regions usually are 2 or 3 characters length.
+            // Regions usually are 2 or 3 characters length.
             const int MaxRegionNameLength = 11;
 
             // Ensure uppercasing the region as ICU require the region names be uppercased, otherwise ICU will assume default region and return unexpected result.

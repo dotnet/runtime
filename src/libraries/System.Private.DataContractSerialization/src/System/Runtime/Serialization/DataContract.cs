@@ -1482,7 +1482,7 @@ namespace System.Runtime.Serialization.DataContracts
                 int iParam = typeName.IndexOf('[');
                 if (iParam >= 0)
                     typeName = typeName.Substring(0, iParam);
-                IList<int> nestedParamCounts = GetDataContractNameForGenericName(typeName, localName);
+                List<int> nestedParamCounts = GetDataContractNameForGenericName(typeName, localName);
                 bool isTypeOpenGeneric = type.IsGenericTypeDefinition;
                 Type[] genParams = type.GetGenericArguments();
                 for (int i = 0; i < genParams.Length; i++)
@@ -1516,8 +1516,8 @@ namespace System.Runtime.Serialization.DataContracts
         {
             string? clrNs = type.Namespace ?? string.Empty;
             string? ns =
-                GetGlobalDataContractNamespace(clrNs, type.Module.GetCustomAttributes(typeof(ContractNamespaceAttribute)).ToArray()) ??
-                GetGlobalDataContractNamespace(clrNs, type.Assembly.GetCustomAttributes(typeof(ContractNamespaceAttribute)).ToArray());
+                GetGlobalDataContractNamespace(clrNs, type.Module.GetCustomAttributes<ContractNamespaceAttribute>().ToArray()) ??
+                GetGlobalDataContractNamespace(clrNs, type.Assembly.GetCustomAttributes<ContractNamespaceAttribute>().ToArray());
 
             if (ns == null)
             {
@@ -2228,7 +2228,7 @@ namespace System.Runtime.Serialization.DataContracts
         /// </SecurityNote>
         internal static bool IsAssemblyFriendOfSerialization(Assembly assembly)
         {
-            InternalsVisibleToAttribute[] internalsVisibleAttributes = (InternalsVisibleToAttribute[])assembly.GetCustomAttributes(typeof(InternalsVisibleToAttribute));
+            InternalsVisibleToAttribute[] internalsVisibleAttributes = (InternalsVisibleToAttribute[])assembly.GetCustomAttributes<InternalsVisibleToAttribute>();
             foreach (InternalsVisibleToAttribute internalsVisibleAttribute in internalsVisibleAttributes)
             {
                 string internalsVisibleAttributeAssemblyName = internalsVisibleAttribute.AssemblyName;

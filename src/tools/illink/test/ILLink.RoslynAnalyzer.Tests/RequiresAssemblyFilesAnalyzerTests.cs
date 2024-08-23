@@ -45,8 +45,7 @@ namespace ILLink.RoslynAnalyzer.Tests
 		{
 			var test = new VerifyCS.Test {
 				TestCode = source,
-				FixedCode = fixedSource,
-				ReferenceAssemblies = TestCaseUtils.NetCoreAppReferencessemblies
+				FixedCode = fixedSource
 			};
 			test.ExpectedDiagnostics.AddRange (baselineExpected);
 			test.TestState.AnalyzerConfigFiles.Add (
@@ -183,16 +182,16 @@ build_property.{MSBuildPropertyOptionNames.EnableSingleFileAnalyzer} = true")));
 
 			class C
 			{
-				bool field;
+				bool @field;
 
 				[RequiresAssemblyFiles]
 				bool P {
 					get {
-						return field;
+						return @field;
 					}
 					set {
 						CallDangerousMethod ();
-						field = value;
+						@field = value;
 					}
 				}
 

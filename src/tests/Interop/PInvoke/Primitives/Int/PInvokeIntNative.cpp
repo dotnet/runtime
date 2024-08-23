@@ -30,7 +30,7 @@ extern "C" DLL_EXPORT int STDMETHODCALLTYPE Marshal_In(/*[in]*/int intValue)
     return intReturn;
 }
 
-extern "C" DLL_EXPORT int STDMETHODCALLTYPE Marshal_InMany(/*[in]*/short i1, short i2, short i3, short i4, short i5, short i6, short i7, short i8, short i9, short i10, short i11, unsigned char i12, unsigned char i13, int i14, short i15)
+extern "C" DLL_EXPORT int STDMETHODCALLTYPE Marshal_InMany(/*[in]*/int16_t i1, int16_t i2, int16_t i3, int16_t i4, int16_t i5, int16_t i6, int16_t i7, int16_t i8, int16_t i9, int16_t i10, int16_t i11, uint8_t i12, uint8_t i13, int i14, int16_t i15)
 {
     //Check the input
     if(i1 != 1 || i2 != 2 || i3 != 3 || i4 != 4 || i5 != 5 || i6 != 6 || i7 != 7 || i8 != 8 || i9 != 9 || i10 != 10 || i11 != 11 || i12 != 12 || i13 != 13 || i14 != 14 || i15 != 15)
@@ -50,7 +50,7 @@ extern "C" DLL_EXPORT int STDMETHODCALLTYPE Marshal_InMany(/*[in]*/short i1, sho
     return i1 + i2 + i3 + i4 + i5 + i6 + i7 + i8 + i9 + i10 + i11 + i12 + i13 + i14 + i15;
 }
 
-extern "C" DLL_EXPORT int STDMETHODCALLTYPE Marshal_InMany_InOutPointer(/*[in]*/short i1, short i2, short i3, short i4, short i5, short i6, short i7, short i8, short i9, short i10, short i11, unsigned char i12, unsigned char i13, int i14, short i15, /*[in,out]*/int *pintValue)
+extern "C" DLL_EXPORT int STDMETHODCALLTYPE Marshal_InMany_InOutPointer(/*[in]*/int16_t i1, int16_t i2, int16_t i3, int16_t i4, int16_t i5, int16_t i6, int16_t i7, int16_t i8, int16_t i9, int16_t i10, int16_t i11, uint8_t i12, uint8_t i13, int i14, int16_t i15, /*[in,out]*/int *pintValue)
 {
     //Check the input
     if(i1 != 1 || i2 != 2 || i3 != 3 || i4 != 4 || i5 != 5 || i6 != 6 || i7 != 7 || i8 != 8 || i9 != 9 || i10 != 10 || i11 != 11 || i12 != 12 || i13 != 13 || i14 != 14 || i15 != 15 || (*pintValue != 1000))
@@ -66,7 +66,7 @@ extern "C" DLL_EXPORT int STDMETHODCALLTYPE Marshal_InMany_InOutPointer(/*[in]*/
         //Return the error value instead if verification failed
         return intErrReturn;
     }
-    
+
     *pintValue = 2000;
 
     return i1 + i2 + i3 + i4 + i5 + i6 + i7 + i8 + i9 + i10 + i11 + i12 + i13 + i14 + i15;
@@ -120,7 +120,7 @@ extern "C" DLL_EXPORT int STDMETHODCALLTYPE MarshalPointer_In(/*[in]*/int *pintV
         //Return the error value instead if verification failed
         return intErrReturn;
     }
-    
+
     return intReturn;
 }
 

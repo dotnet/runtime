@@ -27,9 +27,14 @@ namespace ILLink.Shared.TrimAnalysis
 			_hierarchyInfo = new TypeHierarchyCache (context);
 		}
 
-		public bool RequiresDataFlowAnalysis (MethodDefinition method) =>
-			GetAnnotations (method.DeclaringType).TryGetAnnotation (method, out var methodAnnotations)
+		public bool RequiresDataFlowAnalysis (MethodReference methodRef)
+		{
+			if (_context.TryResolve (methodRef) is not MethodDefinition method)
+				return false;
+
+			return GetAnnotations (method.DeclaringType).TryGetAnnotation (method, out var methodAnnotations)
 				&& (methodAnnotations.ReturnParameterAnnotation != DynamicallyAccessedMemberTypes.None || methodAnnotations.ParameterAnnotations != null);
+		}
 
 		public bool RequiresVirtualMethodDataFlowAnalysis (MethodDefinition method) =>
 			GetAnnotations (method.DeclaringType).TryGetAnnotation (method, out _);
@@ -42,23 +47,32 @@ namespace ILLink.Shared.TrimAnalysis
 
 		internal DynamicallyAccessedMemberTypes GetParameterAnnotation (ParameterProxy param)
 		{
-			if (GetAnnotations (param.Method.Method.DeclaringType).TryGetAnnotation (param.Method.Method, out var annotation) &&
+			if (_context.TryResolve (param.Method.Method) is not MethodDefinition methodDef)
+				return DynamicallyAccessedMemberTypes.None;
+
+			if (GetAnnotations (methodDef.DeclaringType).TryGetAnnotation (methodDef, out var annotation) &&
 				annotation.ParameterAnnotations != null)
 				return annotation.ParameterAnnotations[(int) param.Index];
 
 			return DynamicallyAccessedMemberTypes.None;
 		}
 
-		public DynamicallyAccessedMemberTypes GetReturnParameterAnnotation (MethodDefinition method)
+		public DynamicallyAccessedMemberTypes GetReturnParameterAnnotation (MethodReference methodRef)
 		{
+			if (_context.TryResolve (methodRef) is not MethodDefinition method)
+				return DynamicallyAccessedMemberTypes.None;
+
 			if (GetAnnotations (method.DeclaringType).TryGetAnnotation (method, out var annotation))
 				return annotation.ReturnParameterAnnotation;
 
 			return DynamicallyAccessedMemberTypes.None;
 		}
 
-		public DynamicallyAccessedMemberTypes GetFieldAnnotation (FieldDefinition field)
+		public DynamicallyAccessedMemberTypes GetFieldAnnotation (FieldReference fieldRef)
 		{
+			if (_context.TryResolve (fieldRef) is not FieldDefinition field)
+				return DynamicallyAccessedMemberTypes.None;
+
 			if (GetAnnotations (field.DeclaringType).TryGetAnnotation (field, out var annotation))
 				return annotation.Annotation;
 
@@ -130,7 +144,7 @@ namespace ILLink.Shared.TrimAnalysis
 			//       public override Type GetTypeWithFields() { return typeof(TestType); }
 			//   }
 			//
-			// If TestType from above is trimmed, it may note have all its fields, and there would be no warnings generated.
+			// If TestType from above is trimmed, it may not have all its fields, and there would be no warnings generated.
 			// But there has to be code like this somewhere in the app, in order to generate the override:
 			//   class RuntimeTypeGenerator
 			//   {
@@ -151,7 +165,14 @@ namespace ILLink.Shared.TrimAnalysis
 			if (typeReference.MetadataType == MetadataType.String)
 				return true;
 
-			TypeDefinition? type = _context.TryResolve (typeReference);
+			// ByRef over an interesting type is itself interesting
+			if (typeReference.IsByReference)
+				typeReference = ((ByReferenceType) typeReference).ElementType;
+
+			if (!typeReference.IsNamedType ())
+				return false;
+
+			TypeDefinition? type = typeReference.ResolveToTypeDefinition (_context);
 			return type != null && (
 				_hierarchyInfo.IsSystemType (type) ||
 				_hierarchyInfo.IsSystemReflectionIReflect (type));
@@ -461,19 +482,21 @@ namespace ILLink.Shared.TrimAnalysis
 			return true;
 		}
 
-		internal void ValidateMethodAnnotationsAreSame (MethodDefinition method, MethodDefinition baseMethod)
+		internal void ValidateMethodAnnotationsAreSame (OverrideInformation ov)
 		{
+			var method = ov.Override;
+			var baseMethod = ov.Base;
 			GetAnnotations (method.DeclaringType).TryGetAnnotation (method, out var methodAnnotations);
 			GetAnnotations (baseMethod.DeclaringType).TryGetAnnotation (baseMethod, out var baseMethodAnnotations);
 
 			if (methodAnnotations.ReturnParameterAnnotation != baseMethodAnnotations.ReturnParameterAnnotation)
-				LogValidationWarning (method.MethodReturnType, baseMethod.MethodReturnType, method);
+				LogValidationWarning (method.MethodReturnType, baseMethod.MethodReturnType, ov);
 
 			if (methodAnnotations.ParameterAnnotations != null || baseMethodAnnotations.ParameterAnnotations != null) {
 				if (methodAnnotations.ParameterAnnotations == null)
-					ValidateMethodParametersHaveNoAnnotations (baseMethodAnnotations.ParameterAnnotations!, method, baseMethod, method);
+					ValidateMethodParametersHaveNoAnnotations (baseMethodAnnotations.ParameterAnnotations!, ov);
 				else if (baseMethodAnnotations.ParameterAnnotations == null)
-					ValidateMethodParametersHaveNoAnnotations (methodAnnotations.ParameterAnnotations, method, baseMethod, method);
+					ValidateMethodParametersHaveNoAnnotations (methodAnnotations.ParameterAnnotations, ov);
 				else {
 					if (methodAnnotations.ParameterAnnotations.Length != baseMethodAnnotations.ParameterAnnotations.Length)
 						return;
@@ -483,16 +506,16 @@ namespace ILLink.Shared.TrimAnalysis
 							LogValidationWarning (
 								method.TryGetParameter ((ParameterIndex) parameterIndex)?.GetCustomAttributeProvider ()!,
 								baseMethod.TryGetParameter ((ParameterIndex) parameterIndex)?.GetCustomAttributeProvider ()!,
-								method);
+								ov);
 					}
 				}
 			}
 
 			if (methodAnnotations.GenericParameterAnnotations != null || baseMethodAnnotations.GenericParameterAnnotations != null) {
 				if (methodAnnotations.GenericParameterAnnotations == null)
-					ValidateMethodGenericParametersHaveNoAnnotations (baseMethodAnnotations.GenericParameterAnnotations!, method, baseMethod, method);
+					ValidateMethodGenericParametersHaveNoAnnotations (baseMethodAnnotations.GenericParameterAnnotations!, ov);
 				else if (baseMethodAnnotations.GenericParameterAnnotations == null)
-					ValidateMethodGenericParametersHaveNoAnnotations (methodAnnotations.GenericParameterAnnotations, method, baseMethod, method);
+					ValidateMethodGenericParametersHaveNoAnnotations (methodAnnotations.GenericParameterAnnotations, ov);
 				else {
 					if (methodAnnotations.GenericParameterAnnotations.Length != baseMethodAnnotations.GenericParameterAnnotations.Length)
 						return;
@@ -502,39 +525,42 @@ namespace ILLink.Shared.TrimAnalysis
 							LogValidationWarning (
 								method.GenericParameters[genericParameterIndex],
 								baseMethod.GenericParameters[genericParameterIndex],
-								method);
+								ov);
 						}
 					}
 				}
 			}
 		}
 
-		void ValidateMethodParametersHaveNoAnnotations (DynamicallyAccessedMemberTypes[] parameterAnnotations, MethodDefinition method, MethodDefinition baseMethod, IMemberDefinition origin)
+		void ValidateMethodParametersHaveNoAnnotations (DynamicallyAccessedMemberTypes[] parameterAnnotations, OverrideInformation ov)
 		{
 			for (int parameterIndex = 0; parameterIndex < parameterAnnotations.Length; parameterIndex++) {
 				var annotation = parameterAnnotations[parameterIndex];
 				if (annotation != DynamicallyAccessedMemberTypes.None)
 					LogValidationWarning (
-						method.GetParameter ((ParameterIndex) parameterIndex).GetCustomAttributeProvider ()!,
-						baseMethod.GetParameter ((ParameterIndex) parameterIndex).GetCustomAttributeProvider ()!,
-						origin);
+						ov.Override.GetParameter ((ParameterIndex) parameterIndex).GetCustomAttributeProvider ()!,
+						ov.Base.GetParameter ((ParameterIndex) parameterIndex).GetCustomAttributeProvider ()!,
+						ov);
 			}
 		}
 
-		void ValidateMethodGenericParametersHaveNoAnnotations (DynamicallyAccessedMemberTypes[] genericParameterAnnotations, MethodDefinition method, MethodDefinition baseMethod, IMemberDefinition origin)
+		void ValidateMethodGenericParametersHaveNoAnnotations (DynamicallyAccessedMemberTypes[] genericParameterAnnotations, OverrideInformation ov)
 		{
 			for (int genericParameterIndex = 0; genericParameterIndex < genericParameterAnnotations.Length; genericParameterIndex++) {
 				if (genericParameterAnnotations[genericParameterIndex] != DynamicallyAccessedMemberTypes.None) {
 					LogValidationWarning (
-						method.GenericParameters[genericParameterIndex],
-						baseMethod.GenericParameters[genericParameterIndex],
-						origin);
+						ov.Override.GenericParameters[genericParameterIndex],
+						ov.Base.GenericParameters[genericParameterIndex],
+						ov);
 				}
 			}
 		}
 
-		void LogValidationWarning (IMetadataTokenProvider provider, IMetadataTokenProvider baseProvider, IMemberDefinition origin)
+		void LogValidationWarning (IMetadataTokenProvider provider, IMetadataTokenProvider baseProvider, OverrideInformation ov)
 		{
+			IMemberDefinition origin = (ov.IsOverrideOfInterfaceMember && ov.InterfaceImplementor.Implementor != ov.Override.DeclaringType)
+				? ov.InterfaceImplementor.Implementor
+				: ov.Override;
 			Debug.Assert (provider.GetType () == baseProvider.GetType ());
 			Debug.Assert (!(provider is GenericParameter genericParameter) || genericParameter.DeclaringMethod != null);
 			switch (provider) {
@@ -682,33 +708,38 @@ namespace ILLink.Shared.TrimAnalysis
 		internal partial bool MethodRequiresDataFlowAnalysis (MethodProxy method)
 			=> RequiresDataFlowAnalysis (method.Method);
 
-		internal partial MethodReturnValue GetMethodReturnValue (MethodProxy method, DynamicallyAccessedMemberTypes dynamicallyAccessedMemberTypes)
-			=> new MethodReturnValue (method.Method.ReturnType.ResolveToTypeDefinition (_context), method.Method, dynamicallyAccessedMemberTypes);
+#pragma warning disable CA1822 // Mark members as static - Should be an instance method for consistency
+		internal partial MethodReturnValue GetMethodReturnValue (MethodProxy method, bool isNewObj, DynamicallyAccessedMemberTypes dynamicallyAccessedMemberTypes)
+			=> MethodReturnValue.Create (method, isNewObj, dynamicallyAccessedMemberTypes);
+#pragma warning restore CA1822 // Mark members as static
 
-		internal partial MethodReturnValue GetMethodReturnValue (MethodProxy method)
-			=> GetMethodReturnValue (method, GetReturnParameterAnnotation (method.Method));
+		internal partial MethodReturnValue GetMethodReturnValue (MethodProxy method, bool isNewObj)
+			=> GetMethodReturnValue (method, isNewObj, GetReturnParameterAnnotation (method.Method));
+
+#pragma warning disable CA1822 // Mark members as static - Should be an instance method for consistency
+		internal partial GenericParameterValue GetGenericParameterValue (GenericParameterProxy genericParameter, DynamicallyAccessedMemberTypes dynamicallyAccessedMemberTypes)
+			=> new GenericParameterValue (genericParameter.GenericParameter, dynamicallyAccessedMemberTypes);
+#pragma warning restore CA1822 // Mark members as static
 
 		internal partial GenericParameterValue GetGenericParameterValue (GenericParameterProxy genericParameter)
 			=> new GenericParameterValue (genericParameter.GenericParameter, GetGenericParameterAnnotation (genericParameter.GenericParameter));
 
+#pragma warning disable CA1822 // Mark members as static - Should be an instance method for consistency
 		internal partial MethodParameterValue GetMethodParameterValue (ParameterProxy param, DynamicallyAccessedMemberTypes dynamicallyAccessedMemberTypes)
-			=> new (param.ParameterType.ResolveToTypeDefinition (_context), param, dynamicallyAccessedMemberTypes);
+			=> new (param.ParameterType, param, dynamicallyAccessedMemberTypes);
+#pragma warning restore CA1822 // Mark members as static
 
 		internal partial MethodParameterValue GetMethodParameterValue (ParameterProxy param)
 			=> GetMethodParameterValue (param, GetParameterAnnotation (param));
 
 #pragma warning disable CA1822 // Mark members as static - Should be an instance method for consistency
-		// overrideIsThis is needed for backwards compatibility with MakeGenericType/Method https://github.com/dotnet/linker/issues/2428
-		internal MethodParameterValue GetMethodThisParameterValue (MethodProxy method, DynamicallyAccessedMemberTypes dynamicallyAccessedMemberTypes, bool overrideIsThis = false)
+		internal partial MethodParameterValue GetMethodThisParameterValue (MethodProxy method, DynamicallyAccessedMemberTypes dynamicallyAccessedMemberTypes)
 		{
-			if (!method.HasImplicitThis () && !overrideIsThis)
+			if (!method.HasImplicitThis ())
 				throw new InvalidOperationException ($"Cannot get 'this' parameter of method {method.GetDisplayName ()} with no 'this' parameter.");
-			return new MethodParameterValue (method.Method.DeclaringType, new ParameterProxy (method, (ParameterIndex) 0), dynamicallyAccessedMemberTypes, overrideIsThis);
+			return new MethodParameterValue (method.Method.DeclaringType, new ParameterProxy (method, (ParameterIndex) 0), dynamicallyAccessedMemberTypes);
 		}
 #pragma warning restore CA1822 // Mark members as static
-
-		internal partial MethodParameterValue GetMethodThisParameterValue (MethodProxy method, DynamicallyAccessedMemberTypes dynamicallyAccessedMemberTypes)
-			=> GetMethodThisParameterValue (method, dynamicallyAccessedMemberTypes, false);
 
 		internal partial MethodParameterValue GetMethodThisParameterValue (MethodProxy method)
 		{
@@ -720,11 +751,11 @@ namespace ILLink.Shared.TrimAnalysis
 		}
 
 		// Trimming dataflow value creation. Eventually more of these should be shared.
-		internal SingleValue GetFieldValue (FieldDefinition field)
+		internal SingleValue GetFieldValue (FieldReference field)
 			=> field.Name switch {
 				"EmptyTypes" when field.DeclaringType.IsTypeOf (WellKnownType.System_Type) => ArrayValue.Create (0, field.DeclaringType),
 				"Empty" when field.DeclaringType.IsTypeOf (WellKnownType.System_String) => new KnownStringValue (string.Empty),
-				_ => new FieldValue (field.FieldType.ResolveToTypeDefinition (_context), field, GetFieldAnnotation (field))
+				_ => new FieldValue (field, GetFieldAnnotation (field))
 			};
 
 		internal SingleValue GetTypeValueFromGenericArgument (TypeReference genericArgument)

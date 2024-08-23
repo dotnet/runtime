@@ -1,6 +1,6 @@
 project(PortableRuntime)
 
-# Portable version of the runtime is designed to be used with CppCodeGen or WASM.
+# Portable version of the runtime is designed to be used with WASM.
 # It should be written in pure C/C++, with no assembly code.
 
 add_definitions(-DUSE_PORTABLE_HELPERS)

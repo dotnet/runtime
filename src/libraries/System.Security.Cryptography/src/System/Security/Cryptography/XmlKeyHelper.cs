@@ -288,7 +288,7 @@ namespace System.Security.Cryptography
                     s_elementNameProperty = xElement.GetProperty("Name")!;
                     s_elementValueProperty = xElement.GetProperty("Value")!;
 
-                    Type xName= Type.GetType("System.Xml.Linq.XName" + XmlLinqAssemblyString)!;
+                    Type xName = Type.GetType("System.Xml.Linq.XName" + XmlLinqAssemblyString)!;
                     s_nameNameProperty = xName.GetProperty("LocalName")!;
                 }
 #pragma warning restore CA1810

@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
@@ -334,9 +335,20 @@ namespace IDynamicInterfaceCastableTests
         }
     }
 
+    public struct ValueTypeDynamicInterfaceCastable : IDynamicInterfaceCastable
+    {
+        public bool IsInterfaceImplemented(RuntimeTypeHandle interfaceType, bool throwIfNotImplemented)
+            => throw new UnreachableException("ValueType implementations are ignored");
+
+        public RuntimeTypeHandle GetInterfaceImplementation(RuntimeTypeHandle interfaceType)
+            => throw new UnreachableException("ValueType implementations are ignored");
+    }
+
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/55742", TestRuntimes.Mono)]
     public class Program
     {
-        private static void ValidateBasicInterface()
+        [Fact]
+        public static void ValidateBasicInterface()
         {
             Console.WriteLine($"Running {nameof(ValidateBasicInterface)}");
 
@@ -367,7 +379,9 @@ namespace IDynamicInterfaceCastableTests
             Assert.Same(castableObj, func());
         }
 
-        private static void ValidateGenericInterface()
+        [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtimelab/issues/1442", typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsNativeAot))]
+        public static void ValidateGenericInterface()
         {
             Console.WriteLine($"Running {nameof(ValidateGenericInterface)}");
 
@@ -426,7 +440,8 @@ namespace IDynamicInterfaceCastableTests
             Assert.Equal(expectedStr, funcVar(expectedStr));
         }
 
-        private static void ValidateOverriddenInterface()
+        [Fact]
+        public static void ValidateOverriddenInterface()
         {
             Console.WriteLine($"Running {nameof(ValidateOverriddenInterface)}");
 
@@ -459,7 +474,8 @@ namespace IDynamicInterfaceCastableTests
             Assert.Equal(IOverrideTestImpl.GetMyTypeReturnValue, funcGetType());
         }
 
-        private static void ValidateNotImplemented()
+        [Fact]
+        public static void ValidateNotImplemented()
         {
             Console.WriteLine($"Running {nameof(ValidateNotImplemented)}");
 
@@ -473,7 +489,8 @@ namespace IDynamicInterfaceCastableTests
             Assert.Equal(string.Format(DynamicInterfaceCastableException.ErrorFormat, typeof(INotImplemented)), ex.Message);
         }
 
-        private static void ValidateDirectlyImplemented()
+        [Fact]
+        public static void ValidateDirectlyImplemented()
         {
             Console.WriteLine($"Running {nameof(ValidateDirectlyImplemented)}");
 
@@ -495,7 +512,8 @@ namespace IDynamicInterfaceCastableTests
             Assert.Equal(DynamicInterfaceCastable.ImplementedMethodReturnValue, func());
         }
 
-        private static void ValidateErrorHandling()
+        [Fact]
+        public static void ValidateErrorHandling()
         {
             Console.WriteLine($"Running {nameof(ValidateErrorHandling)}");
 
@@ -559,26 +577,24 @@ namespace IDynamicInterfaceCastableTests
         }
 
         [Fact]
-        public static int TestEntryPoint()
+        public static void ValidateValueTypeImplementationIgnored()
         {
-            try
-            {
-                ValidateBasicInterface();
-                ValidateGenericInterface();
-                ValidateOverriddenInterface();
+            Console.WriteLine($"Running {nameof(ValidateValueTypeImplementationIgnored)}");
 
-                ValidateDirectlyImplemented();
-                ValidateNotImplemented();
+            Console.WriteLine(" -- Validate casting is ignored");
+            object notCastableVC = Create();
 
-                ValidateErrorHandling();
-            }
-            catch (Exception e)
-            {
-                Console.WriteLine($"Test Failure: {e}");
-                return 101;
-            }
+            // Confirm the ValueType implements IDynamicInterfaceCastable
+            Assert.True(notCastableVC.GetType().IsValueType);
+            Assert.True(notCastableVC is IDynamicInterfaceCastable);
 
-            return 100;
+            // Confirm the IDynamicInterfaceCastable implementation isn't called.
+            Assert.False(notCastableVC is ITest);
+            Assert.Null(notCastableVC as ITest);
+            Assert.Throws<InvalidCastException>(() => { var testObj = (ITest)notCastableVC; });
+
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            static object Create() => (object)new ValueTypeDynamicInterfaceCastable();
         }
     }
 }

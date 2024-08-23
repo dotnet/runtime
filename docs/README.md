@@ -12,7 +12,7 @@ Getting Started
 ===============
 
 - [Installing the .NET SDK](https://dotnet.microsoft.com/download)
-- [Official .NET Docs](https://docs.microsoft.com/dotnet/core/)
+- [Official .NET Docs](https://learn.microsoft.com/dotnet/core/)
 
 Workflow (Building, testing, benchmarking, profiling, etc.)
 ===============
@@ -24,9 +24,8 @@ If you want to contribute a code change to this repo, start here.
 Design Docs
 =================
 
-- [.NET Globalization Invariant Mode](design/features/globalization-invariant-mode.md)
-- [WASM Globalization Icu](design/features/globalization-icu-wasm.md)
-- Many more under [design/features](design/features/)
+- Runtime feature designs under [design/features](design/features/)
+- Some runtime design can be found at [dotnet/designs](https://github.com/dotnet/designs)
 
 The Book of the Runtime is a set of chapters that go in depth into various
 interesting aspects of the design of the .NET Framework.
@@ -69,8 +68,8 @@ Other Information
 
 - [.NET Glossary](project/glossary.md)
 - [.NET Filename Encyclopedia](project/dotnet-filenames.md)
-- [Porting to .NET Core](https://docs.microsoft.com/en-us/dotnet/standard/analyzers/portability-analyzer)
+- [Porting to .NET Core](https://learn.microsoft.com/dotnet/standard/analyzers/portability-analyzer)
 - [.NET Standards (Ecma)](project/dotnet-standards.md)
 - [CLR Configuration Knobs](../src/coreclr/inc/clrconfigvalues.h)
-- [CLR overview](https://docs.microsoft.com/dotnet/standard/clr)
+- [CLR overview](https://learn.microsoft.com/dotnet/standard/clr)
 - [Wikipedia Entry for the CLR](https://en.wikipedia.org/wiki/Common_Language_Runtime)

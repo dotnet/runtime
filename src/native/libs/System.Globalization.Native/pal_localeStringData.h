@@ -43,14 +43,12 @@ typedef enum
     LocaleString_PercentSymbol = 0x00000076,
     LocaleString_PerMilleSymbol = 0x00000077
 } LocaleStringData;
-
 PALEXPORT int32_t GlobalizationNative_GetLocaleInfoString(const UChar* localeName,
                                                           LocaleStringData localeStringData,
                                                           UChar* value,
                                                           int32_t valueLength,
                                                           const UChar* uiLocaleName);
-
-#ifdef __APPLE__
-PALEXPORT const char* GlobalizationNative_GetLocaleInfoStringNative(const char* localeName, LocaleStringData localeStringData);
+#if defined(APPLE_HYBRID_GLOBALIZATION)
+PALEXPORT const char* GlobalizationNative_GetLocaleInfoStringNative(const char* localeName, LocaleStringData localeStringData, const char* currentUILocaleName);
 #endif  
 

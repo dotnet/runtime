@@ -93,6 +93,9 @@ namespace System.Security.Cryptography.X509Certificates
             {
                 lock (s_recheckStopwatch)
                 {
+                    ret = s_nativeCollections;
+                    elapsed = s_recheckStopwatch.Elapsed;
+
                     if (ret == null ||
                         elapsed > s_assumeInvalidInterval ||
                         LastWriteTimesHaveChanged())
@@ -114,7 +117,7 @@ namespace System.Security.Cryptography.X509Certificates
 
             if (s_rootStoreFile != null)
             {
-                _ = TryStatFile(s_rootStoreFile, out DateTime lastModified);
+                _ = TryStatFile(s_rootStoreFile, out DateTime lastModified, out _);
                 if (lastModified != s_fileLastWrite)
                 {
                     return true;
@@ -149,6 +152,7 @@ namespace System.Security.Cryptography.X509Certificates
 
             var uniqueRootCerts = new HashSet<X509Certificate2>();
             var uniqueIntermediateCerts = new HashSet<X509Certificate2>();
+            var processedFiles = new HashSet<(long Ino, long Dev)>();
             bool firstLoad = (s_nativeCollections == null);
 
             if (firstLoad)
@@ -197,23 +201,23 @@ namespace System.Security.Cryptography.X509Certificates
 
                 foreach (string file in Directory.EnumerateFiles(dir))
                 {
-                    hasStoreData |= ProcessFile(file, out _, skipStat: true);
+                    hasStoreData |= ProcessFile(file, out _);
                 }
 
                 return hasStoreData;
             }
 
-            bool ProcessFile(string file, out DateTime lastModified, bool skipStat = false)
+            bool ProcessFile(string file, out DateTime lastModified)
             {
                 bool readData = false;
-
-                if (skipStat)
-                {
-                    lastModified = default;
-                }
-                else if (!TryStatFile(file, out lastModified))
+                if (!TryStatFile(file, out lastModified, out (long, long) fileId))
                 {
                     return false;
+                }
+
+                if (processedFiles.Contains(fileId))
+                {
+                    return true;
                 }
 
                 using (SafeBioHandle fileBio = Interop.Crypto.BioNewFile(file, "rb"))
@@ -232,8 +236,7 @@ namespace System.Security.Cryptography.X509Certificates
                     // Because we don't validate for a specific usage, derived certificates are rejected.
                     // For now, we skip the certificates with AUX data and use the regular certificates.
                     ICertificatePal? pal;
-                    while (OpenSslX509CertificateReader.TryReadX509PemNoAux(fileBio, out pal) ||
-                        OpenSslX509CertificateReader.TryReadX509Der(fileBio, out pal))
+                    while (OpenSslX509CertificateReader.TryReadX509PemNoAux(fileBio, out pal))
                     {
                         readData = true;
                         X509Certificate2 cert = new X509Certificate2(pal);
@@ -282,6 +285,11 @@ namespace System.Security.Cryptography.X509Certificates
                     }
                 }
 
+                if (readData)
+                {
+                    processedFiles.Add(fileId);
+                }
+
                 return readData;
             }
 
@@ -308,7 +316,6 @@ namespace System.Security.Cryptography.X509Certificates
             // In order to maintain "finalization-free" the GetNativeCollections method would need to
             // DangerousAddRef, and the callers would need to DangerousRelease, adding more interlocked operations
             // on every call.
-
             Volatile.Write(ref s_nativeCollections, newCollections);
             s_recheckStopwatch.Restart();
             return newCollections;
@@ -362,24 +369,24 @@ namespace System.Security.Cryptography.X509Certificates
             return directories;
         }
 
-        private static bool TryStatFile(string path, out DateTime lastModified)
-            => TryStat(path, Interop.Sys.FileTypes.S_IFREG, out lastModified);
-
         private static bool TryStatDirectory(string path, out DateTime lastModified)
-            => TryStat(path, Interop.Sys.FileTypes.S_IFDIR, out lastModified);
+            => TryStat(path, Interop.Sys.FileTypes.S_IFDIR, out lastModified, out _);
 
-        private static bool TryStat(string path, int fileType, out DateTime lastModified)
+        private static bool TryStatFile(string path, out DateTime lastModified, out (long, long) fileId)
+            => TryStat(path, Interop.Sys.FileTypes.S_IFREG, out lastModified, out fileId);
+
+        private static bool TryStat(string path, int fileType, out DateTime lastModified, out (long, long) fileId)
         {
             lastModified = default;
-
-            Interop.Sys.FileStatus status;
+            fileId = default;
             // Use Stat to follow links.
-            if (Interop.Sys.Stat(path, out status) < 0 ||
+            if (Interop.Sys.Stat(path, out Interop.Sys.FileStatus status) < 0 ||
                 (status.Mode & Interop.Sys.FileTypes.S_IFMT) != fileType)
             {
                 return false;
             }
 
+            fileId = (status.Ino, status.Dev);
             lastModified = DateTime.UnixEpoch + TimeSpan.FromTicks(status.MTime * TimeSpan.TicksPerSecond + status.MTimeNsec / TimeSpan.NanosecondsPerTick);
             return true;
         }

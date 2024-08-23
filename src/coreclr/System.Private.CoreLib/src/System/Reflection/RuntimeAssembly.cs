@@ -1,20 +1,20 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.ComponentModel;
 using System.Collections.Generic;
+using System.ComponentModel;
+using System.Configuration.Assemblies;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
-using CultureInfo = System.Globalization.CultureInfo;
 using System.IO;
-using System.Configuration.Assemblies;
-using StackCrawlMark = System.Threading.StackCrawlMark;
-using System.Runtime.Loader;
-using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using System.Runtime.Loader;
 using System.Runtime.Serialization;
-using System.Threading;
 using System.Security;
+using System.Threading;
+using CultureInfo = System.Globalization.CultureInfo;
+using StackCrawlMark = System.Threading.StackCrawlMark;
 
 namespace System.Reflection
 {
@@ -103,12 +103,7 @@ namespace System.Reflection
                     throw new NotSupportedException(SR.NotSupported_DynamicAssembly);
                 }
 
-                string? codeBase = GetCodeBase();
-                if (codeBase is null)
-                {
-                    // Not supported if the assembly was loaded from single-file bundle.
-                    throw new NotSupportedException(SR.NotSupported_CodeBase);
-                }
+                string? codeBase = GetCodeBase() ?? throw new NotSupportedException(SR.NotSupported_CodeBase);
                 if (codeBase.Length == 0)
                 {
                     // For backward compatibility, return CoreLib codebase for assemblies loaded from memory.
@@ -249,7 +244,7 @@ namespace System.Reflection
         {
             ArgumentException.ThrowIfNullOrEmpty(name);
 
-            return TypeNameParser.GetType(name, topLevelAssembly: this,
+            return TypeNameResolver.GetType(name, topLevelAssembly: this,
                 throwOnError: throwOnError, ignoreCase: ignoreCase);
         }
 
@@ -268,23 +263,7 @@ namespace System.Reflection
         public override IEnumerable<TypeInfo> DefinedTypes
         {
             [RequiresUnreferencedCode("Types might be removed")]
-            get
-            {
-                RuntimeModule[] modules = GetModulesInternal(true, false);
-                if (modules.Length == 1)
-                {
-                    return modules[0].GetDefinedTypes();
-                }
-
-                List<RuntimeType> rtTypes = new List<RuntimeType>();
-
-                for (int i = 0; i < modules.Length; i++)
-                {
-                    rtTypes.AddRange(modules[i].GetDefinedTypes());
-                }
-
-                return rtTypes.ToArray();
-            }
+            get => GetManifestModule(GetNativeHandle()).GetDefinedTypes();
         }
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "AssemblyNative_GetIsCollectible")]
@@ -494,23 +473,29 @@ namespace System.Reflection
         }
 
         // Returns the names of all the resources
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern string[] GetManifestResourceNames(RuntimeAssembly assembly);
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "AssemblyNative_GetManifestResourceNames")]
+        private static partial void GetManifestResourceNames(QCallAssembly assembly, ObjectHandleOnStack retResourceNames);
 
         // Returns the names of all the resources
         public override string[] GetManifestResourceNames()
         {
-            return GetManifestResourceNames(GetNativeHandle());
+            string[]? resourceNames = null;
+            RuntimeAssembly runtimeAssembly = this;
+            GetManifestResourceNames(new QCallAssembly(ref runtimeAssembly), ObjectHandleOnStack.Create(ref resourceNames));
+            return resourceNames!;
         }
 
         // Returns the names of all the resources
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern AssemblyName[] GetReferencedAssemblies(RuntimeAssembly assembly);
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "AssemblyNative_GetReferencedAssemblies")]
+        private static partial void GetReferencedAssemblies(QCallAssembly assembly, ObjectHandleOnStack retReferencedAssemblies);
 
         [RequiresUnreferencedCode("Assembly references might be removed")]
         public override AssemblyName[] GetReferencedAssemblies()
         {
-            return GetReferencedAssemblies(GetNativeHandle());
+            AssemblyName[]? referencedAssemblies = null;
+            RuntimeAssembly runtimeAssembly = this;
+            GetReferencedAssemblies(new QCallAssembly(ref runtimeAssembly), ObjectHandleOnStack.Create(ref referencedAssemblies));
+            return referencedAssemblies!;
         }
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "AssemblyNative_GetManifestResourceInfo", StringMarshalling = StringMarshalling.Utf16)]
@@ -608,12 +593,12 @@ namespace System.Reflection
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "AssemblyNative_GetSimpleName")]
         private static partial void GetSimpleName(QCallAssembly assembly, StringHandleOnStack retSimpleName);
 
-        internal string? GetSimpleName()
+        internal string GetSimpleName()
         {
             RuntimeAssembly runtimeAssembly = this;
             string? name = null;
             GetSimpleName(new QCallAssembly(ref runtimeAssembly), new StringHandleOnStack(ref name));
-            return name;
+            return name!;
         }
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "AssemblyNative_GetHashAlgorithm")]
@@ -655,27 +640,29 @@ namespace System.Reflection
         {
             ArgumentNullException.ThrowIfNull(culture);
 
-            return InternalGetSatelliteAssembly(culture, version, throwOnFileNotFound: true)!;
+            return InternalGetSatelliteAssembly(this, culture, version, throwOnFileNotFound: true)!;
         }
 
         [DynamicSecurityMethod] // Methods containing StackCrawlMark local var has to be marked DynamicSecurityMethod
-        internal Assembly? InternalGetSatelliteAssembly(CultureInfo culture,
+        internal static Assembly? InternalGetSatelliteAssembly(Assembly assembly,
+                                                       CultureInfo culture,
                                                        Version? version,
                                                        bool throwOnFileNotFound)
         {
             var an = new AssemblyName();
-            an.SetPublicKey(GetPublicKey());
-            an.Flags = GetFlags() | AssemblyNameFlags.PublicKey;
-            an.Version = version ?? GetVersion();
+            RuntimeAssembly runtimeAssembly = (RuntimeAssembly)assembly;
+            an.SetPublicKey(runtimeAssembly.GetPublicKey());
+            an.Flags = runtimeAssembly.GetFlags() | AssemblyNameFlags.PublicKey;
+            an.Version = version ?? runtimeAssembly.GetVersion();
             an.CultureInfo = culture;
-            an.Name = GetSimpleName() + ".resources";
+            an.Name = runtimeAssembly.GetSimpleName() + ".resources";
 
             // This stack crawl mark is never used because the requesting assembly is explicitly specified,
             // so the value could be anything.
             StackCrawlMark unused = default;
-            RuntimeAssembly? retAssembly = InternalLoad(an, ref unused, requestingAssembly: this, throwOnFileNotFound: throwOnFileNotFound);
+            RuntimeAssembly? retAssembly = InternalLoad(an, ref unused, requestingAssembly: runtimeAssembly, throwOnFileNotFound: throwOnFileNotFound);
 
-            if (retAssembly == this)
+            if (retAssembly == runtimeAssembly)
             {
                 retAssembly = null;
             }

@@ -54,7 +54,7 @@ namespace System.Net.Sockets
             _protocolType = protocolType;
         }
 
-        private static T CreateDelegate<T>(Func<IntPtr, T> functionPointerWrapper, [NotNull] ref T? cache, SafeSocketHandle socketHandle, string guidString) where T: Delegate
+        private static T CreateDelegate<T>(Func<IntPtr, T> functionPointerWrapper, [NotNull] ref T? cache, SafeSocketHandle socketHandle, string guidString) where T : Delegate
         {
             Guid guid = new Guid(guidString);
             IntPtr ptr;
@@ -265,7 +265,7 @@ namespace System.Net.Sockets
                     __socketHandle_gen_native = socketHandle.DangerousGetHandle();
                     fixed (int* __bytesTransferred_gen_native = &bytesTransferred)
                     {
-                        __retVal = ((delegate* unmanaged<IntPtr, IntPtr, int *, NativeOverlapped*, IntPtr, SocketError>)_target)(__socketHandle_gen_native, msg, __bytesTransferred_gen_native, overlapped, completionRoutine);
+                        __retVal = ((delegate* unmanaged<IntPtr, IntPtr, int*, NativeOverlapped*, IntPtr, SocketError>)_target)(__socketHandle_gen_native, msg, __bytesTransferred_gen_native, overlapped, completionRoutine);
                     }
                     Marshal.SetLastPInvokeError(Marshal.GetLastSystemError());
                 }

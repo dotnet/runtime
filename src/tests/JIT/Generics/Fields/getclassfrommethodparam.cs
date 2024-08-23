@@ -11,8 +11,7 @@ namespace Sandbox3
     {
         public static string Value;
 
-        // [MethodImpl(MethodImplOptions.Synchronized | MethodImplOptions.NoInlining)]
-        [MethodImpl(MethodImplOptions.NoInlining)]
+        [MethodImpl(MethodImplOptions.Synchronized | MethodImplOptions.NoInlining)]
         public static void Action<T>(T value)
         {
             Value = value.ToString();

@@ -26,17 +26,19 @@ set(NATIVECRYPTO_SOURCES
     pal_bignum.c
     pal_bio.c
     pal_dsa.c
-    pal_ecdsa.c
     pal_ecc_import_export.c
     pal_eckey.c
     pal_err.c
     pal_evp.c
+    pal_evp_cipher.c
+    pal_evp_kdf.c
+    pal_evp_mac.c
     pal_evp_pkey.c
     pal_evp_pkey_dsa.c
     pal_evp_pkey_ecdh.c
+    pal_evp_pkey_ecdsa.c
     pal_evp_pkey_eckey.c
     pal_evp_pkey_rsa.c
-    pal_evp_cipher.c
     pal_hmac.c
     pal_ocsp.c
     pal_pkcs7.c

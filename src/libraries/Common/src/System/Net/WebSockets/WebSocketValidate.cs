@@ -23,37 +23,41 @@ namespace System.Net.WebSockets
         internal const int MaxDeflateWindowBits = 15;
 
         internal const int MaxControlFramePayloadLength = 123;
+#if TARGET_BROWSER
+        private const int ValidCloseStatusCodesFrom = 3000;
+        private const int ValidCloseStatusCodesTo = 4999;
+#else
         private const int CloseStatusCodeAbort = 1006;
         private const int CloseStatusCodeFailedTLSHandshake = 1015;
         private const int InvalidCloseStatusCodesFrom = 0;
         private const int InvalidCloseStatusCodesTo = 999;
+#endif
 
         // [0x21, 0x7E] except separators "()<>@,;:\\\"/[]?={} ".
         private static readonly SearchValues<char> s_validSubprotocolChars =
             SearchValues.Create("!#$%&'*+-.0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ^_`abcdefghijklmnopqrstuvwxyz|~");
 
         internal static void ThrowIfInvalidState(WebSocketState currentState, bool isDisposed, WebSocketState[] validStates)
+            => ThrowIfInvalidState(currentState, isDisposed, innerException: null, validStates ?? []);
+
+        internal static void ThrowIfInvalidState(WebSocketState currentState, bool isDisposed, Exception? innerException, WebSocketState[]? validStates = null)
         {
-            string validStatesText = string.Empty;
-
-            if (validStates != null && validStates.Length > 0)
+            if (validStates is not null && Array.IndexOf(validStates, currentState) == -1)
             {
-                foreach (WebSocketState validState in validStates)
-                {
-                    if (currentState == validState)
-                    {
-                        // Ordering is important to maintain .NET 4.5 WebSocket implementation exception behavior.
-                        ObjectDisposedException.ThrowIf(isDisposed, typeof(WebSocket));
-                        return;
-                    }
-                }
+                string invalidStateMessage = SR.Format(
+                    SR.net_WebSockets_InvalidState, currentState, string.Join(", ", validStates));
 
-                validStatesText = string.Join(", ", validStates);
+                throw new WebSocketException(WebSocketError.InvalidState, invalidStateMessage, innerException);
             }
 
-            throw new WebSocketException(
-                WebSocketError.InvalidState,
-                SR.Format(SR.net_WebSockets_InvalidState, currentState, validStatesText));
+            if (innerException is not null)
+            {
+                Debug.Assert(currentState == WebSocketState.Aborted);
+                throw new OperationCanceledException(nameof(WebSocketState.Aborted), innerException);
+            }
+
+            // Ordering is important to maintain .NET 4.5 WebSocket implementation exception behavior.
+            ObjectDisposedException.ThrowIf(isDisposed, typeof(WebSocket));
         }
 
         internal static void ValidateSubprotocol(string subProtocol)
@@ -84,11 +88,15 @@ namespace System.Net.WebSockets
             }
 
             int closeStatusCode = (int)closeStatus;
-
+#if TARGET_BROWSER
+            // as defined in https://developer.mozilla.org/en-US/docs/Web/API/WebSocket/close#code
+            if (closeStatus != WebSocketCloseStatus.NormalClosure && (closeStatusCode < ValidCloseStatusCodesFrom || closeStatusCode > ValidCloseStatusCodesTo))
+#else
             if ((closeStatusCode >= InvalidCloseStatusCodesFrom &&
                 closeStatusCode <= InvalidCloseStatusCodesTo) ||
                 closeStatusCode == CloseStatusCodeAbort ||
                 closeStatusCode == CloseStatusCodeFailedTLSHandshake)
+#endif
             {
                 // CloseStatus 1006 means Aborted - this will never appear on the wire and is reflected by calling WebSocket.Abort
                 throw new ArgumentException(SR.Format(SR.net_WebSockets_InvalidCloseStatusCode,

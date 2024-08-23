@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
@@ -129,7 +130,7 @@ namespace Microsoft.Extensions
             public StringComparison? NSC { get; }
             public char? NC { get; }
 
-            public ClassWhereParametersHaveDefaultValue(string? name, string address, 
+            public ClassWhereParametersHaveDefaultValue(string? name = "John Doe", string address = "1 Microsoft Way",
                 int age = 42, float f = 42.0f, double d = 3.14159, decimal m = 3.1415926535897932384626433M, StringComparison sc = StringComparison.Ordinal, char c = 'q',
                 int? nage = 42, float? nf = 42.0f, double? nd = 3.14159, decimal? nm = 3.1415926535897932384626433M, StringComparison? nsc = StringComparison.Ordinal, char? nc = 'q')
             {
@@ -150,13 +151,19 @@ namespace Microsoft.Extensions
             }
         }
 
-
         public class ClassWithPrimaryCtor(string color, int length)
         {
             public string Color { get; } = color;
             public int Length { get; } = length;
         }
 
+        public class ClassWithPrimaryCtorDefaultValues(string color = "blue", int length = 15, decimal height = 5.946238490567943927384M, EditorBrowsableState eb = EditorBrowsableState.Never)
+        {
+            public string Color { get; } = color;
+            public int Length { get; } = length;
+            public decimal Height { get; } = height;
+            public EditorBrowsableState EB { get; } = eb;
+        }
         public record RecordTypeOptions(string Color, int Length);
 
         public record Line(string Color, int Length, int Thickness);
@@ -168,17 +175,30 @@ namespace Microsoft.Extensions
             public ClassWithMatchingParametersAndProperties(string Color, int Length)
             {
                 _color = Color;
+                this.ColorFromCtor = Color;
                 this.Length = Length;
             }
 
             public int Length { get; set; }
 
+            public string ColorFromCtor { get; }
             public string Color
             {
                 get => _color;
                 init => _color = "the color is " + value;
             }
         }
+
+        public sealed class TreeElement : Dictionary<string, TreeElement>;
+
+        public record TypeWithRecursionThroughCollections
+        {
+            public TreeElement? Tree { get; set; }
+            public TreeElement?[]? Flat { get; set; }
+            public List<TreeElement>? List { get; set; }
+        }
+
+        public record RecordWithArrayParameter(string[] Array);
 
         public readonly record struct ReadonlyRecordStructTypeOptions(string Color, int Length);
 
@@ -335,6 +355,10 @@ namespace Microsoft.Extensions
             public string Color { get; }
             public int Length { get; }
             public decimal Thickness { get; init; }
+            public bool WasInitOnlyCalled { get; private set; }
+            public decimal InitOnly { init => WasInitOnlyCalled = true; }
+            public bool WasPrivateGetInitOnlyCalled { get; private set; }
+            public decimal PrivateGetInitOnly { private get => 3.14m; init => WasPrivateGetInitOnlyCalled = true; }
         }
 
         public struct ValueTypeOptions
@@ -470,9 +494,18 @@ namespace Microsoft.Extensions
             private int _otherCode;
             private int _otherCodeNullable;
             private string _otherCodeString = "default";
+            private bool _wasOtherCodeStringSet;
             private object _otherCodeNull;
             private Uri _otherCodeUri;
             private ICollection<string> blacklist = new HashSet<string>();
+            private string? _StringWithNullDefault;
+            private bool _wasStringWithNullDefaultSet;
+            private int _IntWithDefault = 123;
+            private bool _WasIntWithDefaultSet;
+            private SimplePocoWithOnlyDefaults _PocoWithDefault = new SimplePocoWithOnlyDefaults();
+            private bool _WasPocoWithDefaultSet;
+            private List<SimplePocoWithOnlyDefaults> _PocoListWithDefault = new List<SimplePocoWithOnlyDefaults> { new SimplePocoWithOnlyDefaults() };
+            private bool _WasPocoListWithDefaultSet;
 
             public ICollection<string> Blacklist
             {
@@ -506,8 +539,14 @@ namespace Microsoft.Extensions
             public string OtherCodeString
             {
                 get => _otherCodeString;
-                set => _otherCodeString = value;
+                set
+                {
+                    _otherCodeString = value;
+                    _wasOtherCodeStringSet = true;
+                }
             }
+
+            public bool WasOtherCodeStringSet => _wasOtherCodeStringSet;
 
             public object? OtherCodeNull
             {
@@ -520,6 +559,68 @@ namespace Microsoft.Extensions
                 get => _otherCodeUri;
                 set => _otherCodeUri = value is null ? new Uri("hello") : value;
             }
+
+            public string? StringWithNullDefault
+            {
+                get => _StringWithNullDefault;
+                set
+                {
+                    _StringWithNullDefault = value;
+                    _wasStringWithNullDefaultSet = true;
+                }
+            }
+
+            public bool WasStringWithNullDefaultSet => _wasStringWithNullDefaultSet;
+
+            public int IntWithDefault
+            {
+                get => _IntWithDefault;
+                set
+                {
+                    _IntWithDefault = value;
+                    _WasIntWithDefaultSet = true;
+                }
+            }
+
+            public bool WasIntWithDefaultSet => _WasIntWithDefaultSet;
+
+            public SimplePocoWithOnlyDefaults PocoWithDefault
+            {
+                get => _PocoWithDefault;
+                set
+                {
+                    _PocoWithDefault = value;
+                    _WasPocoWithDefaultSet = true;
+                }
+            }
+
+            public bool WasPocoWithDefaultSet => _WasPocoWithDefaultSet;
+
+            public List<SimplePocoWithOnlyDefaults> PocoListWithDefault
+            {
+                get => _PocoListWithDefault;
+                set
+                {
+                    _PocoListWithDefault = value;
+                    _WasPocoListWithDefaultSet = true;
+                }
+            }
+
+            public bool WasPocoListWithDefaultSet => _WasPocoListWithDefaultSet;
+        }
+
+        public class SimplePocoWithOnlyDefaults
+        {
+            public string Example { get; set; } = "default";
+        }
+
+        public class SetOnlyPoco
+        {
+            private bool _AnyCalled;
+            public bool AnyCalled => _AnyCalled;
+            public string SetOnly { set => _AnyCalled |= true; }
+            public string PrivateGetter { private get => "foo"; set => _AnyCalled |= true; }
+            public string InitOnly { init => _AnyCalled |= true; }
         }
 
         public interface ISomeInterface
@@ -737,7 +838,7 @@ namespace Microsoft.Extensions
             public Uri Prop25 { get; set; }
             public Version Prop26 { get; set; }
             public DayOfWeek Prop27 { get; set; }
-#if NETCOREAPP
+#if NET
             public Int128 Prop7 { get; set; }
             public Half Prop11 { get; set; }
             public UInt128 Prop12 { get; set; }
@@ -867,7 +968,7 @@ namespace Microsoft.Extensions
         {
             public int Value2 { get; set; }
         }
-        
+
         internal class ClassWithAbstractProp
         {
             public AbstractBase AbstractProp { get; set; }
@@ -904,16 +1005,9 @@ namespace Microsoft.Extensions
 
         public class ClassThatThrowsOnSetters
         {
-            private int _myIntProperty;
-
-            public ClassThatThrowsOnSetters()
+            public int? MyIntProperty
             {
-                _myIntProperty = 42;
-            }
-
-            public int MyIntProperty
-            {
-                get => _myIntProperty;
+                get => null;
                 set => throw new InvalidOperationException("Not expected");
             }
         }
@@ -922,6 +1016,85 @@ namespace Microsoft.Extensions
         {
             public string A { get; set; }
             public string B { get; set; }
+        }
+
+        public class BaseForHiddenMembers
+        {
+            public string A { get; set; }
+            public string B { get; set; }
+            public TestSettingsEnum E { get; set; }
+
+            public virtual string C { get => CBase; set => CBase = value; }
+
+            public string CBase;
+
+            public virtual string D { get; }
+
+            public virtual string F { get => FBase; set => FBase = value; }
+            public string FBase;
+
+
+            public virtual int X { get => XBase; set => XBase = value; }
+            public int XBase;
+        }
+
+        public enum TestSettingsEnum2
+        {
+            // Note - the reflection binder will try to bind to every member
+            Option1 = TestSettingsEnum.Option1,
+            Option2 = TestSettingsEnum.Option2,
+        }
+
+        public class IntermediateDerivedClass : BaseForHiddenMembers
+        {
+            public new virtual string D { get => DBase; set => DBase = value; }
+            public string DBase;
+
+            public override string F { get => "IF"; }
+
+        }
+
+        public class DerivedClassWithHiddenMembers : IntermediateDerivedClass
+        {
+            public new string A { get; } = "ADerived";
+            public new int B { get; set; }
+            public new TestSettingsEnum2 E
+            {
+                get => (TestSettingsEnum2)base.E;
+                set => base.E = (TestSettingsEnum)value;
+            }
+
+            // only override get
+            public override string C { get => "DC"; }
+
+            // override new only get
+            public override string D { get => "DD"; }
+
+            // two overrides of only get
+            public override string F { get => "DF"; }
+
+            // override only set
+            public override int X { set => base.X = value + 1; }
+        }
+
+        public class EnumerableNotCollection : IEnumerable<KeyValuePair<string, string>>
+        {
+            public string Names { get; set; }
+
+            public string[] Keywords { get; set; }
+
+            public bool Enabled { get; set; }
+
+            private IEnumerable<KeyValuePair<string, string>> enumerate()
+            {
+                yield return new KeyValuePair<string, string>(nameof(Names), Names);
+                yield return new KeyValuePair<string, string>(nameof(Keywords), string.Join(",", Keywords));
+                yield return new KeyValuePair<string, string>(nameof(Enabled), Enabled.ToString());
+            }
+
+            public IEnumerator<KeyValuePair<string, string>> GetEnumerator() => enumerate().GetEnumerator();
+
+            IEnumerator IEnumerable.GetEnumerator() => enumerate().GetEnumerator();
         }
 
     }

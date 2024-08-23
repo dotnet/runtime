@@ -16,13 +16,17 @@ PALEXPORT int32_t GlobalizationNative_IsPredefinedLocale(const UChar* localeName
 PALEXPORT int32_t GlobalizationNative_GetLocaleTimeFormat(const UChar* localeName,
                                                           int shortFormat, UChar* value,
                                                           int32_t valueLength);
+#if defined(APPLE_HYBRID_GLOBALIZATION)
 
-#ifdef __APPLE__
+PALEXPORT const char* GlobalizationNative_GetDefaultLocaleNameNative(void);
+
 PALEXPORT const char* GlobalizationNative_GetLocaleNameNative(const char* localeName);
 
 PALEXPORT const char* GlobalizationNative_GetLocaleTimeFormatNative(const char* localeName, int shortFormat);
 
 PALEXPORT int32_t GlobalizationNative_GetLocalesNative(UChar* locales, int32_t length);
+
+PALEXPORT int32_t GlobalizationNative_IsPredefinedLocaleNative(const char* localeName);
 
 /* ### Data tables **************************************************/
 

@@ -18,7 +18,6 @@ namespace Microsoft.Extensions.Logging.Console.Test
     public class JsonConsoleFormatterTests : ConsoleFormatterTests
     {
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/91538", typeof(PlatformDetection), nameof(PlatformDetection.IsWasmThreadingSupported))]
         public void NoLogScope_DoesNotWriteAnyScopeContentToOutput_Json()
         {
             // Arrange
@@ -56,7 +55,7 @@ namespace Microsoft.Extensions.Logging.Console.Test
         public void Log_TimestampFormatSet_ContainsTimestamp()
         {
             // Arrange
-            var t = SetUp(
+            using var t = SetUp(
                 new ConsoleLoggerOptions { FormatterName = ConsoleFormatterNames.Json },
                 simpleOptions: null,
                 systemdOptions: null,
@@ -80,11 +79,10 @@ namespace Microsoft.Extensions.Logging.Console.Test
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/91538", typeof(PlatformDetection), nameof(PlatformDetection.IsWasmThreadingSupported))]
         public void Log_NullMessage_LogsWhenMessageIsNotProvided()
         {
             // Arrange
-            var t = SetUp(
+            using var t = SetUp(
                 new ConsoleLoggerOptions { FormatterName = ConsoleFormatterNames.Json },
                 simpleOptions: null,
                 systemdOptions: null,
@@ -125,11 +123,10 @@ namespace Microsoft.Extensions.Logging.Console.Test
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/91538", typeof(PlatformDetection), nameof(PlatformDetection.IsWasmThreadingSupported))]
         public void Log_ExceptionWithMessage_ExtractsInfo()
         {
             // Arrange
-            var t = SetUp(
+            using var t = SetUp(
                 new ConsoleLoggerOptions { FormatterName = ConsoleFormatterNames.Json },
                 simpleOptions: null,
                 systemdOptions: null,
@@ -180,11 +177,10 @@ namespace Microsoft.Extensions.Logging.Console.Test
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/91538", typeof(PlatformDetection), nameof(PlatformDetection.IsWasmThreadingSupported))]
         public void Log_IncludeScopes_ContainsDuplicateNamedPropertiesInScope_AcceptableJson()
         {
             // Arrange
-            var t = SetUp(
+            using var t = SetUp(
                 new ConsoleLoggerOptions { FormatterName = ConsoleFormatterNames.Json },
                 simpleOptions: null,
                 systemdOptions: null,
@@ -214,11 +210,10 @@ namespace Microsoft.Extensions.Logging.Console.Test
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/91538", typeof(PlatformDetection), nameof(PlatformDetection.IsWasmThreadingSupported))]
         public void Log_StateAndScopeAreCollections_IncludesMessageAndCollectionValues()
         {
             // Arrange
-            var t = SetUp(
+            using var t = SetUp(
                 new ConsoleLoggerOptions { FormatterName = ConsoleFormatterNames.Json },
                 simpleOptions: null,
                 systemdOptions: null,
@@ -250,12 +245,11 @@ namespace Microsoft.Extensions.Logging.Console.Test
         }
 
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/91538", typeof(PlatformDetection), nameof(PlatformDetection.IsWasmThreadingSupported))]
         [MemberData(nameof(SpecialCaseValues))]
         public void Log_StateAndScopeContainsSpecialCaseValue_SerializesValueAsExpected(object value, string expectedJsonValue)
         {
             // Arrange
-            var t = SetUp(
+            using var t = SetUp(
                 new ConsoleLoggerOptions { FormatterName = ConsoleFormatterNames.Json },
                 simpleOptions: null,
                 systemdOptions: null,
@@ -281,12 +275,11 @@ namespace Microsoft.Extensions.Logging.Console.Test
         }
 
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/91538", typeof(PlatformDetection), nameof(PlatformDetection.IsWasmThreadingSupported))]
         [MemberData(nameof(FloatingPointValues))]
         public void Log_StateAndScopeContainsFloatingPointType_SerializesValue(object value)
         {
             // Arrange
-            var t = SetUp(
+            using var t = SetUp(
                 new ConsoleLoggerOptions { FormatterName = ConsoleFormatterNames.Json },
                 simpleOptions: null,
                 systemdOptions: null,
@@ -321,11 +314,10 @@ namespace Microsoft.Extensions.Logging.Console.Test
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/91538", typeof(PlatformDetection), nameof(PlatformDetection.IsWasmThreadingSupported))]
         public void Log_StateAndScopeContainsNullValue_SerializesNull()
         {
             // Arrange
-            var t = SetUp(
+            using var t = SetUp(
                 new ConsoleLoggerOptions { FormatterName = ConsoleFormatterNames.Json },
                 simpleOptions: null,
                 systemdOptions: null,
@@ -351,11 +343,10 @@ namespace Microsoft.Extensions.Logging.Console.Test
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/91538", typeof(PlatformDetection), nameof(PlatformDetection.IsWasmThreadingSupported))]
         public void Log_ScopeIsIEnumerable_SerializesKeyValuePair()
         {
             // Arrange
-            var t = SetUp(
+            using var t = SetUp(
                 new ConsoleLoggerOptions { FormatterName = ConsoleFormatterNames.Json },
                 simpleOptions: null,
                 systemdOptions: null,

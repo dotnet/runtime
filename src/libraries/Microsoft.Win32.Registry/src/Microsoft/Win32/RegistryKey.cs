@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using Microsoft.Win32.SafeHandles;
 using System;
 using System.Buffers;
 using System.Collections.Generic;
@@ -12,6 +11,7 @@ using System.Runtime.InteropServices;
 using System.Security;
 using System.Security.AccessControl;
 using System.Text;
+using Microsoft.Win32.SafeHandles;
 
 /*
   Note on ACL support:
@@ -66,8 +66,8 @@ namespace Microsoft.Win32
         private const int MaxKeyLength = 255;
         private const int MaxValueLength = 16383;
 
-        private volatile SafeRegistryHandle _hkey;
-        private volatile string _keyName;
+        private SafeRegistryHandle _hkey;
+        private string _keyName;
         private readonly bool _remoteKey;
         private volatile StateFlags _state;
         private volatile RegistryKeyPermissionCheck _checkMode;

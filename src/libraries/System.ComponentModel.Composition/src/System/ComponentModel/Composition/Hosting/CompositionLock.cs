@@ -22,7 +22,7 @@ namespace System.ComponentModel.Composition.Hosting
     internal sealed class CompositionLock : IDisposable
     {
         // narrow lock
-        private readonly Lock? _stateLock;
+        private readonly ReadWriteLock? _stateLock;
         // wide lock
         private static readonly object _compositionLock = new object();
 
@@ -36,7 +36,7 @@ namespace System.ComponentModel.Composition.Hosting
             _isThreadSafe = isThreadSafe;
             if (isThreadSafe)
             {
-                _stateLock = new Lock();
+                _stateLock = new ReadWriteLock();
             }
         }
 

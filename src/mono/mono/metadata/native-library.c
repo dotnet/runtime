@@ -47,10 +47,6 @@ static GHashTable *native_library_module_map;
  */
 static GHashTable *native_library_module_blocklist;
 
-#ifndef NO_GLOBALIZATION_SHIM
-extern const void *GlobalizationResolveDllImport (const char *name);
-#endif
-
 static GHashTable *global_module_map; // should only be accessed with the global loader data lock
 
 static MonoDl *internal_module; // used when pinvoking `__Internal`
@@ -368,7 +364,7 @@ netcore_probe_for_module (MonoImage *image, const char *file_name, int flags, Mo
 			mono_error_move (bad_image_error, error);
 	}
 
-	// TODO: Pass remaining flags on to LoadLibraryEx on Windows where appropriate, see https://docs.microsoft.com/en-us/dotnet/api/system.runtime.interopservices.dllimportsearchpath?view=netcore-3.1
+	// TODO: Pass remaining flags on to LoadLibraryEx on Windows where appropriate, see https://learn.microsoft.com/dotnet/api/system.runtime.interopservices.dllimportsearchpath?view=netcore-3.1
 
 	if (!module && !is_ok (bad_image_error)) {
 		mono_error_cleanup (error);
@@ -786,26 +782,6 @@ get_dllimportsearchpath_flags (MonoCustomAttrInfo *cinfo)
 	return flags;
 }
 
-#ifndef NO_GLOBALIZATION_SHIM
-#ifdef HOST_WIN32
-#define GLOBALIZATION_DLL_NAME "System.Globalization.Native"
-#else
-#define GLOBALIZATION_DLL_NAME "libSystem.Globalization.Native"
-#endif
-
-static gpointer
-default_resolve_dllimport (const char *dll, const char *func)
-{
-	if (strcmp (dll, GLOBALIZATION_DLL_NAME) == 0) {
-		const void *method_impl = GlobalizationResolveDllImport (func);
-		if (method_impl)
-			return (gpointer)method_impl;
-	}
-
-	return NULL;
-}
-#endif // NO_GLOBALIZATION_SHIM
-
 gpointer
 lookup_pinvoke_call_impl (MonoMethod *method, MonoLookupPInvokeStatus *status_out)
 {
@@ -879,12 +855,6 @@ lookup_pinvoke_call_impl (MonoMethod *method, MonoLookupPInvokeStatus *status_ou
 		}
 		return piinfo->addr;
 	}
-#endif
-
-#ifndef NO_GLOBALIZATION_SHIM
-	addr = default_resolve_dllimport (new_scope, new_import);
-	if (addr)
-		goto exit;
 #endif
 
 	if (pinvoke_override) {
@@ -1251,4 +1221,64 @@ void
 mono_loader_install_pinvoke_override (PInvokeOverrideFn override_fn)
 {
 	pinvoke_override = override_fn;
+}
+
+static gboolean
+is_symbol_char_verbatim (unsigned char b)
+{
+	return ((b >= '0' && b <= '9') || (b >= 'a' && b <= 'z') || (b >= 'A' && b <= 'Z'));
+}
+
+static gboolean
+is_symbol_char_underscore (unsigned char c)
+{
+	switch (c) {
+	case '_':
+	case '.':
+	case '-':
+	case '+':
+	case '<':
+	case '>':
+		return TRUE;
+	default:
+		return FALSE;
+	}
+}
+
+static size_t mono_precompute_size (const char *key)
+{
+	size_t size = 1; // Null terminator
+	size_t len = (int)strlen (key);
+	for (size_t i = 0; i < len; ++i) {
+		unsigned char b = key[i];
+		if (is_symbol_char_verbatim (b) || is_symbol_char_underscore (b)) {
+			size++;
+		}
+		else {
+			size += 4;
+		}
+	}
+	return size;
+}
+
+// Keep synced with FixupSymbolName from src/tasks/Common/Utils.cs
+char* mono_fixup_symbol_name (const char *prefix, const char *key, const char *suffix) {
+	size_t size = mono_precompute_size (key) + strlen (prefix) + strlen (suffix);
+	GString *str = g_string_sized_new (size);
+	size_t len = (int)strlen (key);
+	g_string_append_printf (str, "%s", prefix);
+
+	for (size_t i = 0; i < len; ++i) {
+		unsigned char b = key[i];
+		if (is_symbol_char_verbatim (b)) {
+			g_string_append_c (str, b);
+		} else if (is_symbol_char_underscore (b)) {
+			g_string_append_c (str, '_');
+		} else {
+			// Append the hex representation of b between underscores
+			g_string_append_printf (str, "_%X_", b);
+		}
+	}
+	g_string_append_printf (str, "%s", suffix);
+	return g_string_free (str, FALSE);
 }

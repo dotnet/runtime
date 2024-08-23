@@ -6,6 +6,7 @@
     <IgnoreForCI Condition="'$(TargetOS)' == 'browser'">true</IgnoreForCI>
     <EnablePreviewFeatures>true</EnablePreviewFeatures>
     <EventSourceSupport Condition="'$(TestNativeAot)' == 'true'">true</EventSourceSupport>
+    <NoWarn>$(NoWarn);SYSLIB0057</NoWarn>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="AssemblyInfo.cs" />
@@ -32,6 +33,7 @@
     <Compile Include="SslStreamConformanceTests.cs" />
     <Compile Include="SslStreamStreamToStreamTest.cs" />
     <Compile Include="SslStreamNetworkStreamTest.cs" />
+    <Compile Include="SslStreamFramingTest.cs" />
     <Compile Include="SslStreamMutualAuthenticationTest.cs" />
     <Compile Include="TransportContextTest.cs" />
     <!-- NegotiateAuthentication Tests -->
@@ -53,6 +55,8 @@
              Link="Common\System\IO\DelegateStream.cs" />
     <Compile Include="$(CommonTestPath)System\IO\DelegateDelegatingStream.cs"
              Link="CommonTest\System\IO\DelegateDelegatingStream.cs" />
+    <Compile Include="$(CommonTestPath)System\Net\ActivityRecorder.cs"
+             Link="Common\System\Net\ActivityRecorder.cs" />
     <Compile Include="$(CommonTestPath)System\Net\Capability.Security.cs"
              Link="Common\System\Net\Capability.Security.cs" />
     <Compile Include="$(CommonTestPath)System\Net\SslStreamCertificatePolicy.cs"
@@ -67,6 +71,8 @@
              Link="Common\System\Net\Configuration.Security.cs" />
     <Compile Include="$(CommonTestPath)System\Net\Configuration.Certificates.cs"
              Link="Common\System\Net\Configuration.Certificates.cs" />
+    <Compile Include="$(CommonTestPath)System\Net\Configuration.Certificates.Dynamic.cs"
+             Link="TestCommon\System\Net\Configuration.Certificates.Dynamic.cs" />
     <Compile Include="$(CommonTestPath)System\Net\Configuration.Http.cs"
              Link="Common\System\Net\Configuration.Http.cs" />
     <Compile Include="$(CommonTestPath)System\Net\HttpsTestClient.cs"
@@ -83,8 +89,8 @@
              Link="Common\System\Net\VerboseTestLogging.cs" />
     <Compile Include="$(CommonTestPath)System\Net\EventSourceTestLogging.cs"
              Link="Common\System\Net\EventSourceTestLogging.cs" />
-    <Compile Include="$(CommonTestPath)System\Security\Cryptography\PlatformSupport.cs"
-             Link="CommonTest\System\Security\Cryptography\PlatformSupport.cs" />
+    <Compile Include="$(CommonTestPath)System\Net\RemoteExecutorExtensions.cs"
+             Link="Common\System\Net\RemoteExecutorExtensions.cs" />
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\X509Certificates\CertificateAuthority.cs"
              Link="CommonTest\System\Security\Cryptography\X509Certificates\CertificateAuthority.cs" />
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\X509Certificates\RevocationResponder.cs"
@@ -116,6 +122,7 @@
     <Compile Include="SslStreamNegotiatedCipherSuiteTest.cs" />
     <Compile Include="SslStreamCredentialCacheTest.cs" />
     <Compile Include="SslStreamSystemDefaultsTest.cs" />
+    <Compile Include="SslStreamRemoteExecutorTests.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' != 'browser'">
     <Compile Include="TelemetryTest.cs" />

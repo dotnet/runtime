@@ -683,7 +683,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
 
             public SharedTestState()
             {
-                var dotNet = new DotNetBuilder(BaseDirectory, Path.Combine(TestArtifact.TestArtifactsPath, "sharedFrameworkPublish"), "mockRuntime")
+                var dotNet = new DotNetBuilder(BaseDirectory, TestContext.BuiltDotNet.BinPath, "mockRuntime")
                     .AddMicrosoftNETCoreAppFrameworkMockCoreClr(NetCoreAppVersion)
                     .Build();
                 DotNetRoot = dotNet.BinPath;

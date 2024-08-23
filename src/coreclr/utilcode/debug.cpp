@@ -20,9 +20,8 @@
 
 #include "log.h"
 
-extern "C" _CRTIMP int __cdecl _flushall(void);
-
 #ifdef HOST_WINDOWS
+extern "C" _CRTIMP int __cdecl _flushall(void);
 void CreateCrashDumpIfEnabled(bool stackoverflow = false);
 #endif
 
@@ -51,7 +50,11 @@ static void DECLSPEC_NORETURN FailFastOnAssert()
     WRAPPER_NO_CONTRACT; // If we're calling this, we're well past caring about contract consistency!
 
     FlushLogging(); // make certain we get the last part of the log
+#ifdef HOST_WINDOWS
     _flushall();
+#else
+    fflush(NULL);
+#endif
 
     ShutdownLogging();
 #ifdef HOST_WINDOWS
@@ -153,7 +156,7 @@ VOID LogAssert(
 
     // Log asserts to the stress log. Note that we can't include the szExpr b/c that
     // may not be a string literal (particularly for formatt-able asserts).
-    STRESS_LOG2(LF_ASSERT, LL_ALWAYS, "ASSERT:%s, line:%d\n", szFile, iLine);
+    STRESS_LOG2(LF_ASSERT, LL_ALWAYS, "ASSERT:%s:%d\n", szFile, iLine);
 
     SYSTEMTIME st;
 #ifndef TARGET_UNIX
@@ -236,7 +239,7 @@ bool _DbgBreakCheck(
 
             sprintf_s(formatBuffer, sizeof(formatBuffer),
                 "\nAssert failure(PID %d [0x%08x], Thread: %d [0x%04x]): %s\n"
-                "    File: %s Line: %d\n"
+                "    File: %s:%d\n"
                 "    Image: %s\n\n",
                 GetCurrentProcessId(), GetCurrentProcessId(),
                 GetCurrentThreadId(), GetCurrentThreadId(),
@@ -254,7 +257,7 @@ bool _DbgBreakCheck(
     if (formattedMessages)
     {
         OutputDebugStringUtf8(formatBuffer);
-        fprintf(stderr, formatBuffer);
+        fprintf(stderr, "%s", formatBuffer);
     }
     else
     {
@@ -319,33 +322,6 @@ bool _DbgBreakCheckNoThrow(
     return result;
 }
 
-#ifndef TARGET_UNIX
-// Get the timestamp from the PE file header.  This is useful
-unsigned DbgGetEXETimeStamp()
-{
-    STATIC_CONTRACT_NOTHROW;
-    STATIC_CONTRACT_GC_NOTRIGGER;
-    STATIC_CONTRACT_DEBUG_ONLY;
-
-    static ULONG cache = 0;
-    if (cache == 0) {
-        // Use GetModuleHandleA to avoid contracts - this results in a recursive loop initializing the
-        // debug allocator.
-        BYTE* imageBase = (BYTE*) GetModuleHandleA(NULL);
-        if (imageBase == 0)
-            return(0);
-        IMAGE_DOS_HEADER *pDOS = (IMAGE_DOS_HEADER*) imageBase;
-        if ((pDOS->e_magic != VAL16(IMAGE_DOS_SIGNATURE)) || (pDOS->e_lfanew == 0))
-            return(0);
-
-        IMAGE_NT_HEADERS *pNT = (IMAGE_NT_HEADERS*) (VAL32(pDOS->e_lfanew) + imageBase);
-        cache = VAL32(pNT->FileHeader.TimeDateStamp);
-    }
-
-    return cache;
-}
-#endif // TARGET_UNIX
-
 VOID DebBreakHr(HRESULT hr)
 {
   STATIC_CONTRACT_LEAF;
@@ -407,12 +383,6 @@ VOID DbgAssertDialog(const char *szFile, int iLine, const char *szExpr)
         DebugBreak();
 
     SUPPRESS_ALLOCATION_ASSERTS_IN_THIS_SCOPE;
-
-    // Raising the assert dialog can cause us to re-enter the host when allocating
-    // memory for the string.  Since this is debug-only code, we can safely skip
-    // violation asserts here, particularly since they can also cause infinite
-    // recursion.
-    PERMANENT_CONTRACT_VIOLATION(HostViolation, ReasonDebugOnly);
 
     dbgForceToMemory = &szFile;     //make certain these args are available in the debugger
     dbgForceToMemory = &iLine;
@@ -517,7 +487,7 @@ void DECLSPEC_NORETURN __FreeBuildAssertFail(const char *szFile, int iLine, cons
 
     SString buffer;
     buffer.Printf("CLR: Assert failure(PID %d [0x%08x], Thread: %d [0x%x]): %s\n"
-                "    File: %s, Line: %d Image:\n%s\n",
+                "    File: %s:%d Image:\n%s\n",
                 GetCurrentProcessId(), GetCurrentProcessId(),
                 GetCurrentThreadId(), GetCurrentThreadId(),
                 szExpr, szFile, iLine, modulePath.GetUTF8());
@@ -528,7 +498,7 @@ void DECLSPEC_NORETURN __FreeBuildAssertFail(const char *szFile, int iLine, cons
 
     // Log to the stress log. Note that we can't include the szExpr b/c that
     // may not be a string literal (particularly for formatt-able asserts).
-    STRESS_LOG2(LF_ASSERT, LL_ALWAYS, "ASSERT:%s, line:%d\n", szFile, iLine);
+    STRESS_LOG2(LF_ASSERT, LL_ALWAYS, "ASSERT:%s:%d\n", szFile, iLine);
 
     FailFastOnAssert();
     UNREACHABLE();

@@ -14,7 +14,7 @@ namespace ILLink.Shared.TrimAnalysis
 		public static MultiValue Create (MultiValue size)
 		{
 			MultiValue result = MultiValueLattice.Top;
-			foreach (var sizeValue in size) {
+			foreach (var sizeValue in size.AsEnumerable ()) {
 				result = MultiValueLattice.Meet (result, new MultiValue (new ArrayValue (sizeValue)));
 			}
 
@@ -73,7 +73,7 @@ namespace ILLink.Shared.TrimAnalysis
 				// Since it's possible to store a reference to array as one of its own elements
 				// simple deep copy could lead to endless recursion.
 				// So instead we simply disallow arrays as element values completely - and treat that case as "too complex to analyze".
-				foreach (SingleValue v in kvp.Value) {
+				foreach (SingleValue v in kvp.Value.AsEnumerable ()) {
 					System.Diagnostics.Debug.Assert (v is not ArrayValue);
 				}
 #endif

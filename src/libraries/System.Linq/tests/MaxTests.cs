@@ -28,6 +28,9 @@ namespace System.Linq.Tests
                 yield return new object[] { Shuffler.Shuffle(Enumerable.Range(length, length).Select(i => (short)i)), (short)(length + length - 1) };
                 yield return new object[] { Shuffler.Shuffle(Enumerable.Range(length, length).Select(i => (short)i).ToArray()), (short)(length + length - 1) };
 
+                yield return new object[] { Shuffler.Shuffle(Enumerable.Range(length, length).Select(i => (char)i)), (char)(length + length - 1) };
+                yield return new object[] { Shuffler.Shuffle(Enumerable.Range(length, length).Select(i => (char)i).ToArray()), (char)(length + length - 1) };
+
                 yield return new object[] { Shuffler.Shuffle(Enumerable.Range(length, length).Select(i => (uint)i)), (uint)(length + length - 1) };
                 yield return new object[] { Shuffler.Shuffle(Enumerable.Range(length, length).Select(i => (uint)i).ToArray()), (uint)(length + length - 1) };
 
@@ -54,6 +57,12 @@ namespace System.Linq.Tests
 
                 yield return new object[] { Shuffler.Shuffle(Enumerable.Range(length, length).Select(i => (nint)i)), (nint)(length + length - 1) };
                 yield return new object[] { Shuffler.Shuffle(Enumerable.Range(length, length).Select(i => (nint)i).ToArray()), (nint)(length + length - 1) };
+
+                yield return new object[] { Shuffler.Shuffle(Enumerable.Range(length, length).Select(i => (Int128)i)), (Int128)(length + length - 1) };
+                yield return new object[] { Shuffler.Shuffle(Enumerable.Range(length, length).Select(i => (Int128)i).ToArray()), (Int128)(length + length - 1) };
+
+                yield return new object[] { Shuffler.Shuffle(Enumerable.Range(length, length).Select(i => (UInt128)i)), (UInt128)(length + length - 1) };
+                yield return new object[] { Shuffler.Shuffle(Enumerable.Range(length, length).Select(i => (UInt128)i).ToArray()), (UInt128)(length + length - 1) };
             }
         }
 
@@ -242,6 +251,8 @@ namespace System.Linq.Tests
         {
             Assert.Throws<InvalidOperationException>(() => Enumerable.Empty<float>().Max());
             Assert.Throws<InvalidOperationException>(() => Enumerable.Empty<float>().Max(x => x));
+            Assert.Throws<InvalidOperationException>(() => ForceNotCollection(Enumerable.Empty<float>()).Max());
+            Assert.Throws<InvalidOperationException>(() => ForceNotCollection(Enumerable.Empty<float>()).Max(x => x));
             Assert.Throws<InvalidOperationException>(() => Array.Empty<float>().Max());
             Assert.Throws<InvalidOperationException>(() => new List<float>().Max());
         }
@@ -322,6 +333,8 @@ namespace System.Linq.Tests
         {
             Assert.Throws<InvalidOperationException>(() => Enumerable.Empty<double>().Max());
             Assert.Throws<InvalidOperationException>(() => Enumerable.Empty<double>().Max(x => x));
+            Assert.Throws<InvalidOperationException>(() => ForceNotCollection(Enumerable.Empty<double>()).Max());
+            Assert.Throws<InvalidOperationException>(() => ForceNotCollection(Enumerable.Empty<double>()).Max(x => x));
             Assert.Throws<InvalidOperationException>(() => Array.Empty<double>().Max());
             Assert.Throws<InvalidOperationException>(() => new List<double>().Max());
         }
@@ -388,6 +401,8 @@ namespace System.Linq.Tests
         {
             Assert.Throws<InvalidOperationException>(() => Enumerable.Empty<decimal>().Max());
             Assert.Throws<InvalidOperationException>(() => Enumerable.Empty<decimal>().Max(x => x));
+            Assert.Throws<InvalidOperationException>(() => ForceNotCollection(Enumerable.Empty<decimal>()).Max());
+            Assert.Throws<InvalidOperationException>(() => ForceNotCollection(Enumerable.Empty<decimal>()).Max(x => x));
             Assert.Throws<InvalidOperationException>(() => Array.Empty<decimal>().Max());
             Assert.Throws<InvalidOperationException>(() => new List<decimal>().Max(x => x));
         }
@@ -613,6 +628,8 @@ namespace System.Linq.Tests
         {
             Assert.Throws<InvalidOperationException>(() => Enumerable.Empty<DateTime>().Max());
             Assert.Throws<InvalidOperationException>(() => Enumerable.Empty<DateTime>().Max(i => i));
+            Assert.Throws<InvalidOperationException>(() => ForceNotCollection(Enumerable.Empty<DateTime>()).Max());
+            Assert.Throws<InvalidOperationException>(() => ForceNotCollection(Enumerable.Empty<DateTime>()).Max(i => i));
         }
 
         public static IEnumerable<object[]> Max_String_TestData()
@@ -879,6 +896,7 @@ namespace System.Linq.Tests
         public void Max_Boolean_EmptySource_ThrowsInvalidOperationException()
         {
             Assert.Throws<InvalidOperationException>(() => Enumerable.Empty<bool>().Max());
+            Assert.Throws<InvalidOperationException>(() => ForceNotCollection(Enumerable.Empty<bool>()).Max());
         }
 
         [Fact]

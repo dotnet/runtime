@@ -149,7 +149,7 @@ initDistroRid()
 
 showSubsetHelp()
 {
-  "$scriptroot/common/build.sh" "-restore" "-build" "/p:Subset=help" "/clp:nosummary"
+  "$scriptroot/common/build.sh" "-restore" "-build" "/p:Subset=help" "/clp:nosummary /tl:false"
 }
 
 arguments=''
@@ -158,7 +158,7 @@ extraargs=''
 crossBuild=0
 portableBuild=1
 
-source $scriptroot/native/init-os-and-arch.sh
+source $scriptroot/common/native/init-os-and-arch.sh
 
 hostArch=$arch
 
@@ -550,8 +550,11 @@ if [[ "$os" == "wasi" ]]; then
 fi
 
 if [[ "${TreatWarningsAsErrors:-}" == "false" ]]; then
-    arguments="$arguments -warnAsError 0"
+    arguments="$arguments -warnAsError false"
 fi
+
+# disable terminal logger for now: https://github.com/dotnet/runtime/issues/97211
+arguments="$arguments -tl:false"
 
 initDistroRid "$os" "$arch" "$crossBuild"
 

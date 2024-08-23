@@ -10,10 +10,11 @@ namespace System.Net.Http
         {
             if (!HttpEnvironmentProxy.TryCreate(out IWebProxy? proxy))
             {
-                HttpWindowsProxy.TryCreate(out proxy);
+                // We create instance even if there is currently no proxy as that can change during application run.
+                proxy = new HttpWindowsProxy();
             }
 
-            return proxy ?? new HttpNoProxy();
+            return proxy;
         }
     }
 }

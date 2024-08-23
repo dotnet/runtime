@@ -32,13 +32,13 @@ namespace System
 
         // This is called from within the runtime.  I believe this is necessary
         // for Interop only, though it's not particularly useful.
-        internal TypeInitializationException(string? message) : base(message)
+        internal TypeInitializationException(string? message) : base(message ?? SR.TypeInitialization_Default)
         {
             HResult = HResults.COR_E_TYPEINITIALIZATION;
         }
 
         internal TypeInitializationException(string? fullTypeName, string? message, Exception? innerException)
-            : base(message, innerException)
+            : base(message ?? SR.TypeInitialization_Default, innerException)
         {
             _typeName = fullTypeName;
             HResult = HResults.COR_E_TYPEINITIALIZATION;

@@ -33,9 +33,7 @@ namespace Internal.Cryptography.Pal.Windows
             return new RecipientInfoCollection(recipientInfos);
         }
 
-#pragma warning disable CA1859 // Use concrete types when possible for improved performance https://github.com/dotnet/roslyn-analyzers/issues/6751
         private static IEnumerable<RecipientInfo> ToRecipientInfosForThisIndex(SafeHandle pCmsgCmsRecipientInfoMemory, int index)
-#pragma warning restore CA1859
         {
             bool mustRelease = false;
             pCmsgCmsRecipientInfoMemory.DangerousAddRef(ref mustRelease);

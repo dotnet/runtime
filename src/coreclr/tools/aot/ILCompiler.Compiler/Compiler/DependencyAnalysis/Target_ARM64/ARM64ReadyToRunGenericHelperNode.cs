@@ -42,7 +42,7 @@ namespace ILCompiler.DependencyAnalysis
 
             // If there's any invalid entries, we need to test for them
             //
-            // Only do this in relocsOnly to make it easier to weed out bugs - the _hasInvalidEntries
+            // Skip this in relocsOnly to make it easier to weed out bugs - the _hasInvalidEntries
             // flag can change over the course of compilation and the bad slot helper dependency
             // should be reported by someone else - the system should not rely on it coming from here.
             if (!relocsOnly && _hasInvalidEntries)
@@ -75,7 +75,7 @@ namespace ILCompiler.DependencyAnalysis
                         {
                             // We need to trigger the cctor before returning the base. It is stored at the beginning of the non-GC statics region.
                             encoder.EmitSUB(encoder.TargetRegister.Arg3, encoder.TargetRegister.Arg0, NonGCStaticsNode.GetClassConstructorContextSize(factory.Target));
-                            encoder.EmitLDR(encoder.TargetRegister.Arg2, encoder.TargetRegister.Arg3);
+                            encoder.EmitLDAR(encoder.TargetRegister.Arg2, encoder.TargetRegister.Arg3);
                             encoder.EmitCMP(encoder.TargetRegister.Arg2, 0);
                             encoder.EmitRETIfEqual();
 
@@ -107,7 +107,7 @@ namespace ILCompiler.DependencyAnalysis
                             EmitDictionaryLookup(factory, ref encoder, encoder.TargetRegister.Arg1, encoder.TargetRegister.Arg2, nonGcRegionLookup, relocsOnly);
 
                             encoder.EmitSUB(encoder.TargetRegister.Arg2, NonGCStaticsNode.GetClassConstructorContextSize(factory.Target));
-                            encoder.EmitLDR(encoder.TargetRegister.Arg3, encoder.TargetRegister.Arg2);
+                            encoder.EmitLDAR(encoder.TargetRegister.Arg3, encoder.TargetRegister.Arg2);
                             encoder.EmitCMP(encoder.TargetRegister.Arg3, 0);
                             encoder.EmitRETIfEqual();
 

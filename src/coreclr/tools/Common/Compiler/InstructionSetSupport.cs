@@ -10,6 +10,12 @@ using Internal.JitInterface;
 
 namespace ILCompiler
 {
+    [Flags]
+    public enum InstructionSetSupportFlags
+    {
+        Vector512Throttling = 0x1,
+    }
+
     public class InstructionSetSupport
     {
         private readonly TargetArchitecture _targetArchitecture;
@@ -17,19 +23,21 @@ namespace ILCompiler
         private readonly InstructionSetFlags _supportedInstructionSets;
         private readonly InstructionSetFlags _unsupportedInstructionSets;
         private readonly InstructionSetFlags _nonSpecifiableInstructionSets;
+        private readonly InstructionSetSupportFlags _flags;
 
         public InstructionSetSupport(InstructionSetFlags supportedInstructionSets, InstructionSetFlags unsupportedInstructionSets, TargetArchitecture architecture) :
             this(supportedInstructionSets, unsupportedInstructionSets, supportedInstructionSets, default(InstructionSetFlags), architecture)
         {
         }
 
-        public InstructionSetSupport(InstructionSetFlags supportedInstructionSets, InstructionSetFlags unsupportedInstructionSets, InstructionSetFlags optimisticInstructionSets, InstructionSetFlags nonSpecifiableInstructionSets, TargetArchitecture architecture)
+        public InstructionSetSupport(InstructionSetFlags supportedInstructionSets, InstructionSetFlags unsupportedInstructionSets, InstructionSetFlags optimisticInstructionSets, InstructionSetFlags nonSpecifiableInstructionSets, TargetArchitecture architecture, InstructionSetSupportFlags flags = 0)
         {
             _supportedInstructionSets = supportedInstructionSets;
             _unsupportedInstructionSets = unsupportedInstructionSets;
             _optimisticInstructionSets = optimisticInstructionSets;
             _targetArchitecture = architecture;
             _nonSpecifiableInstructionSets = nonSpecifiableInstructionSets;
+            _flags = flags;
         }
 
         public bool IsInstructionSetSupported(InstructionSet instructionSet)
@@ -54,26 +62,38 @@ namespace ILCompiler
 
         public TargetArchitecture Architecture => _targetArchitecture;
 
+        public InstructionSetSupportFlags Flags => _flags;
+
         public static string GetHardwareIntrinsicId(TargetArchitecture architecture, TypeDesc potentialTypeDesc)
         {
             if (!potentialTypeDesc.IsIntrinsic || !(potentialTypeDesc is MetadataType potentialType))
                 return "";
 
+            string suffix = "";
             if (architecture == TargetArchitecture.X64)
             {
                 if (potentialType.Name == "X64")
                     potentialType = (MetadataType)potentialType.ContainingType;
                 if (potentialType.Name == "VL")
                     potentialType = (MetadataType)potentialType.ContainingType;
+                if (potentialType.Name == "V512")
+                {
+                    suffix = "_V512";
+                    potentialType = (MetadataType)potentialType.ContainingType;
+                }
+
                 if (potentialType.Namespace != "System.Runtime.Intrinsics.X86")
                     return "";
             }
             else if (architecture == TargetArchitecture.X86)
             {
-                if (potentialType.Name == "X64")
-                    potentialType = (MetadataType)potentialType.ContainingType;
                 if (potentialType.Name == "VL")
                     potentialType = (MetadataType)potentialType.ContainingType;
+                if (potentialType.Name == "V512")
+                {
+                    suffix = "_V512";
+                    potentialType = (MetadataType)potentialType.ContainingType;
+                }
                 if (potentialType.Namespace != "System.Runtime.Intrinsics.X86")
                     return "";
             }
@@ -89,12 +109,20 @@ namespace ILCompiler
                 if (potentialType.Namespace != "System.Runtime.Intrinsics.Arm")
                     return "";
             }
+            else if (architecture == TargetArchitecture.LoongArch64)
+            {
+                return "";
+            }
+            else if (architecture == TargetArchitecture.RiscV64)
+            {
+                return "";
+            }
             else
             {
-                throw new InternalCompilerErrorException("Unknown architecture");
+                throw new InternalCompilerErrorException($"Unknown architecture '{architecture}'");
             }
 
-            return potentialType.Name;
+            return potentialType.Name + suffix;
         }
 
         public SimdVectorLength GetVectorTSimdVector()
@@ -141,6 +169,10 @@ namespace ILCompiler
             {
                 return SimdVectorLength.None;
             }
+            else if (_targetArchitecture == TargetArchitecture.RiscV64)
+            {
+                return SimdVectorLength.None;
+            }
             else
             {
                 Debug.Assert(false); // Unknown architecture
@@ -157,7 +189,7 @@ namespace ILCompiler
         private static Dictionary<TargetArchitecture, Dictionary<string, InstructionSet>> ComputeInstructionSetSupport()
         {
             var supportMatrix = new Dictionary<TargetArchitecture, Dictionary<string, InstructionSet>>();
-            foreach (TargetArchitecture arch in Enum.GetValues(typeof(TargetArchitecture)))
+            foreach (TargetArchitecture arch in Enum.GetValues<TargetArchitecture>())
             {
                 supportMatrix[arch] = ComputeInstructSetSupportForArch(arch);
             }
@@ -168,7 +200,7 @@ namespace ILCompiler
         private static Dictionary<TargetArchitecture, InstructionSetFlags> ComputeNonSpecifiableInstructionSetSupport()
         {
             var matrix = new Dictionary<TargetArchitecture, InstructionSetFlags>();
-            foreach (TargetArchitecture arch in Enum.GetValues(typeof(TargetArchitecture)))
+            foreach (TargetArchitecture arch in Enum.GetValues<TargetArchitecture>())
             {
                 matrix[arch] = ComputeNonSpecifiableInstructionSetSupportForArch(arch);
             }
@@ -181,7 +213,7 @@ namespace ILCompiler
             var support = new Dictionary<string, InstructionSet>();
             foreach (var instructionSet in InstructionSetFlags.ArchitectureToValidInstructionSets(architecture))
             {
-                // Only instruction sets with associated R2R enum values are are specifiable
+                // Only instruction sets with associated R2R enum values are specifiable
                 if (instructionSet.Specifiable)
                     support.Add(instructionSet.Name, instructionSet.InstructionSet);
             }
@@ -194,7 +226,7 @@ namespace ILCompiler
             var support = new InstructionSetFlags();
             foreach (var instructionSet in InstructionSetFlags.ArchitectureToValidInstructionSets(architecture))
             {
-                // Only instruction sets with associated R2R enum values are are specifiable
+                // Only instruction sets with associated R2R enum values are specifiable
                 if (!instructionSet.Specifiable)
                     support.AddInstructionSet(instructionSet.InstructionSet);
             }

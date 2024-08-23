@@ -9,7 +9,7 @@ using System.CommandLine.Invocation;
 using System.CommandLine.Parsing;
 using System.Diagnostics;
 using System.IO;
-using System.Reflection;
+using System.Reflection.Metadata;
 
 namespace Microsoft.Diagnostics.Tools.Pgo
 {
@@ -61,7 +61,7 @@ namespace Microsoft.Diagnostics.Tools.Pgo
             new("--dump-worst-overlap-graphs-to") { Description = "Number of graphs to dump to .dot format in dump-worst-overlap-graphs-to directory" };
         public CliOption<bool> AutomaticReferences { get; } =
             new("--automatic-references") { DefaultValueFactory = _ => true, Description = "Attempt to find references by using paths embedded in the trace file. Defaults to true" };
-        public CliOption<AssemblyName[]> IncludedAssemblies { get; } =
+        public CliOption<AssemblyNameInfo[]> IncludedAssemblies { get; } =
             new("--include-reference") { CustomParser = MakeAssemblyNameArray, DefaultValueFactory = MakeAssemblyNameArray, Description = "If specified, include in Mibc file only references to the specified assemblies. Assemblies are specified as assembly names, not filenames. For instance, `System.Private.CoreLib` not `System.Private.CoreLib.dll`. Multiple --include-reference options may be specified." };
 
         private CliOption<bool> _includeReadyToRun { get; } =
@@ -260,9 +260,9 @@ namespace Microsoft.Diagnostics.Tools.Pgo
             }
         }
 
-        public static IEnumerable<Action<HelpContext>> GetExtendedHelp(HelpContext context)
+        public static IEnumerable<Func<HelpContext, bool>> GetExtendedHelp(HelpContext context)
         {
-            foreach (Action<HelpContext> sectionDelegate in HelpBuilder.Default.GetLayout())
+            foreach (Func<HelpContext, bool> sectionDelegate in HelpBuilder.Default.GetLayout())
                 yield return sectionDelegate;
 
             if (context.Command.Name == "create-mibc" || context.Command.Name == "create-jittrace")
@@ -280,20 +280,21 @@ namespace Microsoft.Diagnostics.Tools.Pgo
 ""perfview collect -LogFile:logOfCollection.txt -DataFile:jittrace.etl -Zip:false -merge:false -providers:Microsoft-Windows-DotNETRuntime:0x1E000080018:4""
 - Capture Jit and R2R events via perfview of all processes running using ETW tracing
 ");
+                    return true;
                 };
             }
         }
 
-        private static AssemblyName[] MakeAssemblyNameArray(ArgumentResult result)
+        private static AssemblyNameInfo[] MakeAssemblyNameArray(ArgumentResult result)
         {
             if (result.Tokens.Count > 0)
             {
-                var includedAssemblies = new List<AssemblyName>();
+                var includedAssemblies = new List<AssemblyNameInfo>();
                 foreach (CliToken token in result.Tokens)
                 {
                     try
                     {
-                        includedAssemblies.Add(new AssemblyName(token.Value));
+                        includedAssemblies.Add(new AssemblyNameInfo(token.Value));
                     }
                     catch
                     {
@@ -303,7 +304,7 @@ namespace Microsoft.Diagnostics.Tools.Pgo
                 return includedAssemblies.ToArray();
             }
 
-            return Array.Empty<AssemblyName>();
+            return Array.Empty<AssemblyNameInfo>();
         }
     }
 }

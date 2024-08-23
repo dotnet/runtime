@@ -130,12 +130,10 @@ INVALIDGCVALUE  EQU 0xCCCCCCCD
 2
         ;; We can skip the card table write if the reference is to
         ;; an object not on the epehemeral segment.
-        PREPARE_EXTERNAL_VAR_INDIRECT g_ephemeral_low, x12
+        PREPARE_EXTERNAL_VAR_INDIRECT g_ephemeral_low,  x12
+        PREPARE_EXTERNAL_VAR_INDIRECT g_ephemeral_high, x17
         cmp     $refReg, x12
-        blo     %ft0
-
-        PREPARE_EXTERNAL_VAR_INDIRECT g_ephemeral_high, x12
-        cmp     $refReg, x12
+        ccmp    $refReg, x17, #0x2, hs
         bhs     %ft0
 
         ;; Set this object's card, if it hasn't already been set.
@@ -179,14 +177,10 @@ INVALIDGCVALUE  EQU 0xCCCCCCCD
 
         ;; The "check" of this checked write barrier - is $destReg
         ;; within the heap? if no, early out.
-        PREPARE_EXTERNAL_VAR_INDIRECT g_lowest_address, x12
+        PREPARE_EXTERNAL_VAR_INDIRECT g_lowest_address,  x12
+        PREPARE_EXTERNAL_VAR_INDIRECT g_highest_address, x17
         cmp     $destReg, x12
-
-        PREPARE_EXTERNAL_VAR_INDIRECT g_highest_address, x12
-
-        ;; If $destReg >= g_lowest_address, compare $destReg to g_highest_address.
-        ;; Otherwise, set the C flag (0x2) to take the next branch.
-        ccmp    $destReg, x12, #0x2, hs
+        ccmp    $destReg, x17, #0x2, hs
         bhs     %ft0
 
         INSERT_UNCHECKED_WRITE_BARRIER_CORE $destReg, $refReg
@@ -205,6 +199,9 @@ INVALIDGCVALUE  EQU 0xCCCCCCCD
 ;;   x14 : incremented by 8
 ;;   x15  : trashed
 ;;   x12, x17  : trashed
+;;
+;;   NOTE: Keep in sync with RBM_CALLEE_TRASH_WRITEBARRIER_BYREF and RBM_CALLEE_GCTRASH_WRITEBARRIER_BYREF
+;;         if you add more trashed registers.
 ;;
 ;; WARNING: Code in EHHelpers.cpp makes assumptions about write barrier code, in particular:
 ;; - Function "InWriteBarrierHelper" assumes an AV due to passed in null pointer will happen at RhpByRefAssignRefAVLocation1
@@ -234,11 +231,10 @@ INVALIDGCVALUE  EQU 0xCCCCCCCD
     LEAF_ENTRY RhpCheckedAssignRefArm64
 
         ;; is destReg within the heap?
-        PREPARE_EXTERNAL_VAR_INDIRECT g_lowest_address, x12
+        PREPARE_EXTERNAL_VAR_INDIRECT g_lowest_address,  x12
+        PREPARE_EXTERNAL_VAR_INDIRECT g_highest_address, x17
         cmp     x14, x12
-
-        PREPARE_EXTERNAL_VAR_INDIRECT g_highest_address, x12
-        ccmp    x14, x12, #0x2, hs
+        ccmp    x14, x17, #0x2, hs
         blo     RhpAssignRefArm64
 
 NotInHeap
@@ -283,10 +279,6 @@ NotInHeap
 ;; Interlocked operation helpers where the location is an objectref, thus requiring a GC write barrier upon
 ;; successful updates.
 
-;; WARNING: Code in EHHelpers.cpp makes assumptions about write barrier code, in particular:
-;; - Function "InWriteBarrierHelper" assumes an AV due to passed in null pointer will happen at RhpCheckedLockCmpXchgAVLocation
-;; - Function "UnwindSimpleHelperToCaller" assumes no registers were pushed and LR contains the return address
-
 ;; RhpCheckedLockCmpXchg(Object** dest, Object* value, Object* comparand)
 ;;
 ;; Interlocked compare exchange on objectref.
@@ -308,7 +300,6 @@ NotInHeap
 #endif
 
         mov    x10, x2
-    ALTERNATE_ENTRY RhpCheckedLockCmpXchgAVLocation
         casal  x10, x1, [x0]                  ;; exchange
         cmp    x2, x10
         bne    CmpXchgNoUpdate
@@ -317,7 +308,6 @@ NotInHeap
         b      DoCardsCmpXchg
 CmpXchgRetry
         ;; Check location value is what we expect.
-    ALTERNATE_ENTRY  RhpCheckedLockCmpXchgAVLocation2
         ldaxr   x10, [x0]
         cmp     x10, x2
         bne     CmpXchgNoUpdate
@@ -347,10 +337,6 @@ NoBarrierCmpXchg
 
     LEAF_END RhpCheckedLockCmpXchg
 
-;; WARNING: Code in EHHelpers.cpp makes assumptions about write barrier code, in particular:
-;; - Function "InWriteBarrierHelper" assumes an AV due to passed in null pointer will happen within at RhpCheckedXchgAVLocation
-;; - Function "UnwindSimpleHelperToCaller" assumes no registers were pushed and LR contains the return address
-
 ;; RhpCheckedXchg(Object** destination, Object* value)
 ;;
 ;; Interlocked exchange on objectref.
@@ -371,14 +357,12 @@ NoBarrierCmpXchg
         tbz    x16, #ARM64_ATOMICS_FEATURE_FLAG_BIT, ExchangeRetry
 #endif
 
-    ALTERNATE_ENTRY  RhpCheckedXchgAVLocation
         swpal  x1, x10, [x0]                   ;; exchange
 
 #ifndef LSE_INSTRUCTIONS_ENABLED_BY_DEFAULT
         b      DoCardsXchg
 ExchangeRetry
         ;; Read the existing memory location.
-    ALTERNATE_ENTRY  RhpCheckedXchgAVLocation2
         ldaxr   x10,  [x0]
 
         ;; Attempt to update with the new value.

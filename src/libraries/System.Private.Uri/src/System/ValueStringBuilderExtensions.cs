@@ -35,8 +35,15 @@ namespace System.Text
         [MethodImpl(MethodImplOptions.NoInlining)]
         private void GrowAndAppend(Rune rune)
         {
-            Grow(2);
-            Append(rune);
+            if (rune.Value <= 0xFFFF)
+            {
+                Append((char)rune.Value);
+            }
+            else
+            {
+                Grow(2);
+                Append(rune);
+            }
         }
     }
 }

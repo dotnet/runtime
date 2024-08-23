@@ -4,11 +4,11 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Runtime.Versioning;
 using System.Xml;
 using System.Xml.Linq;
-using System.Runtime.Versioning;
-using System.Diagnostics;
 
 namespace System.Xml.Schema
 {

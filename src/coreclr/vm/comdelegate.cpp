@@ -172,7 +172,7 @@ public:
         if (m_currentFloatRegIndex < m_argLocDesc->m_cFloatReg)
         {
 #if defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
-            if ((m_argLocDesc->m_structFields & STRUCT_FLOAT_FIELD_SECOND) && (m_currentGenRegIndex < m_argLocDesc->m_cGenReg))
+            if ((m_argLocDesc->m_structFields.flags & FpStruct::IntFloat) && (m_currentGenRegIndex < m_argLocDesc->m_cGenReg))
             {
                 // the first field is integer so just skip this.
             }
@@ -728,9 +728,6 @@ VOID GenerateShuffleArray(MethodDesc* pInvoke, MethodDesc *pTargetMeth, SArray<S
 
 
 ShuffleThunkCache *COMDelegate::m_pShuffleThunkCache = NULL;
-#ifndef FEATURE_MULTICASTSTUB_AS_IL
-MulticastStubCache *COMDelegate::m_pMulticastStubCache = NULL;
-#endif
 
 CrstStatic   COMDelegate::s_DelegateToFPtrHashCrst;
 PtrHashMap*  COMDelegate::s_pDelegateToFPtrHash = NULL;
@@ -755,13 +752,10 @@ void COMDelegate::Init()
     s_pDelegateToFPtrHash->Init(TRUE, &lock);
 
     m_pShuffleThunkCache = new ShuffleThunkCache(SystemDomain::GetGlobalLoaderAllocator()->GetStubHeap());
-#ifndef FEATURE_MULTICASTSTUB_AS_IL
-    m_pMulticastStubCache = new MulticastStubCache();
-#endif
 }
 
 #ifdef FEATURE_COMINTEROP
-ComPlusCallInfo * COMDelegate::PopulateComPlusCallInfo(MethodTable * pDelMT)
+CLRToCOMCallInfo * COMDelegate::PopulateCLRToCOMCallInfo(MethodTable * pDelMT)
 {
     CONTRACTL
     {
@@ -773,21 +767,21 @@ ComPlusCallInfo * COMDelegate::PopulateComPlusCallInfo(MethodTable * pDelMT)
 
     DelegateEEClass * pClass = (DelegateEEClass *)pDelMT->GetClass();
 
-    // set up the ComPlusCallInfo if it does not exist already
-    if (pClass->m_pComPlusCallInfo == NULL)
+    // set up the CLRToCOMCallInfo if it does not exist already
+    if (pClass->m_pCLRToCOMCallInfo == NULL)
     {
         LoaderHeap *pHeap = pDelMT->GetLoaderAllocator()->GetHighFrequencyHeap();
-        ComPlusCallInfo *pTemp = (ComPlusCallInfo *)(void *)pHeap->AllocMem(S_SIZE_T(sizeof(ComPlusCallInfo)));
+        CLRToCOMCallInfo *pTemp = (CLRToCOMCallInfo *)(void *)pHeap->AllocMem(S_SIZE_T(sizeof(CLRToCOMCallInfo)));
 
         pTemp->m_cachedComSlot = ComMethodTable::GetNumExtraSlots(ifVtable);
         pTemp->InitStackArgumentSize();
 
-        InterlockedCompareExchangeT(&pClass->m_pComPlusCallInfo, pTemp, NULL);
+        InterlockedCompareExchangeT(&pClass->m_pCLRToCOMCallInfo, pTemp, NULL);
     }
 
-    pClass->m_pComPlusCallInfo->m_pInterfaceMT = pDelMT;
+    pClass->m_pCLRToCOMCallInfo->m_pInterfaceMT = pDelMT;
 
-    return pClass->m_pComPlusCallInfo;
+    return pClass->m_pCLRToCOMCallInfo;
 }
 #endif // FEATURE_COMINTEROP
 
@@ -881,37 +875,29 @@ static PCODE GetVirtualCallStub(MethodDesc *method, TypeHandle scopeType)
     return pTargetCall;
 }
 
-FCIMPL5(FC_BOOL_RET, COMDelegate::BindToMethodName,
-                        Object *refThisUNSAFE,
-                        Object *targetUNSAFE,
-                        ReflectClassBaseObject *pMethodTypeUNSAFE,
-                        StringObject* methodNameUNSAFE,
-                        int flags)
+extern "C" BOOL QCALLTYPE Delegate_BindToMethodName(QCall::ObjectHandleOnStack d, QCall::ObjectHandleOnStack target,
+    QCall::TypeHandle pMethodType, LPCUTF8 pszMethodName, DelegateBindingFlags flags)
 {
-    FCALL_CONTRACT;
-
-    struct _gc
-    {
-        DELEGATEREF refThis;
-        OBJECTREF target;
-        STRINGREF methodName;
-        REFLECTCLASSBASEREF refMethodType;
-    } gc;
-
-    gc.refThis    = (DELEGATEREF) ObjectToOBJECTREF(refThisUNSAFE);
-    gc.target     = (OBJECTREF) targetUNSAFE;
-    gc.methodName = (STRINGREF) methodNameUNSAFE;
-    gc.refMethodType = (REFLECTCLASSBASEREF) ObjectToOBJECTREF(pMethodTypeUNSAFE);
-
-    TypeHandle methodType = gc.refMethodType->GetType();
+    QCALL_CONTRACT;
 
     MethodDesc *pMatchingMethod = NULL;
 
-    HELPER_METHOD_FRAME_BEGIN_RET_PROTECT(gc);
+    BEGIN_QCALL;
 
-    // Caching of MethodDescs (impl and decl) for MethodTable slots provided significant
-    // performance gain in some reflection emit scenarios.
-    MethodTable::AllowMethodDataCaching();
+    GCX_COOP();
+
+    struct
+    {
+        DELEGATEREF refThis;
+        OBJECTREF target;
+    } gc;
+
+    gc.refThis    = (DELEGATEREF) d.Get();
+    gc.target     = target.Get();
+
+    GCPROTECT_BEGIN(gc);
+
+    TypeHandle methodType = pMethodType.AsTypeHandle();
 
     TypeHandle targetType((gc.target != NULL) ? gc.target->GetMethodTable() : NULL);
     // get the invoke of the delegate
@@ -922,11 +908,6 @@ FCIMPL5(FC_BOOL_RET, COMDelegate::BindToMethodName,
     //
     // now loop through the methods looking for a match
     //
-
-    // get the name in UTF8 format
-    StackSString szName;
-    szName.SetAndConvertToUTF8(gc.methodName->GetBuffer());
-    LPCUTF8 szNameStr = szName.GetUTF8();
 
     // pick a proper compare function
     typedef int (__cdecl *UTF8StringCompareFuncPtr)(const char *, const char *);
@@ -946,7 +927,7 @@ FCIMPL5(FC_BOOL_RET, COMDelegate::BindToMethodName,
             if (pCurMethod->IsGenericMethodDefinition())
                 continue;
 
-            if ((pCurMethod != NULL) && (StrCompFunc(szNameStr, pCurMethod->GetName()) == 0))
+            if ((pCurMethod != NULL) && (StrCompFunc(pszMethodName, pCurMethod->GetName()) == 0))
             {
                 // found a matching string, get an associated method desc if needed
                 // Use unboxing stubs for instance and virtual methods on value types.
@@ -987,7 +968,7 @@ FCIMPL5(FC_BOOL_RET, COMDelegate::BindToMethodName,
 
                 // Found the target that matches the signature and satisfies security transparency rules
                 // Initialize the delegate to point to the target method.
-                BindToMethod(&gc.refThis,
+                COMDelegate::BindToMethod(&gc.refThis,
                              &gc.target,
                              pCurMethod,
                              methodType.GetMethodTable(),
@@ -1000,36 +981,37 @@ FCIMPL5(FC_BOOL_RET, COMDelegate::BindToMethodName,
     }
     done:
         ;
-    HELPER_METHOD_FRAME_END();
 
-    FC_RETURN_BOOL(pMatchingMethod != NULL);
+    GCPROTECT_END();
+
+    END_QCALL;
+
+    return (pMatchingMethod != NULL);
 }
-FCIMPLEND
 
-
-FCIMPL5(FC_BOOL_RET, COMDelegate::BindToMethodInfo, Object* refThisUNSAFE, Object* targetUNSAFE, ReflectMethodObject *pMethodUNSAFE, ReflectClassBaseObject *pMethodTypeUNSAFE, int flags)
+extern "C" BOOL QCALLTYPE Delegate_BindToMethodInfo(QCall::ObjectHandleOnStack d, QCall::ObjectHandleOnStack target,
+    MethodDesc * method, QCall::TypeHandle pMethodType, DelegateBindingFlags flags)
 {
-    FCALL_CONTRACT;
+    QCALL_CONTRACT;
 
     BOOL result = TRUE;
 
-    struct _gc
+    BEGIN_QCALL;
+
+    GCX_COOP();
+
+    struct
     {
         DELEGATEREF refThis;
         OBJECTREF refFirstArg;
-        REFLECTCLASSBASEREF refMethodType;
-        REFLECTMETHODREF refMethod;
     } gc;
 
-    gc.refThis          = (DELEGATEREF) ObjectToOBJECTREF(refThisUNSAFE);
-    gc.refFirstArg      = ObjectToOBJECTREF(targetUNSAFE);
-    gc.refMethodType    = (REFLECTCLASSBASEREF) ObjectToOBJECTREF(pMethodTypeUNSAFE);
-    gc.refMethod        = (REFLECTMETHODREF) ObjectToOBJECTREF(pMethodUNSAFE);
+    gc.refThis          = (DELEGATEREF) d.Get();
+    gc.refFirstArg      = target.Get();
 
-    MethodTable *pMethMT = gc.refMethodType->GetType().GetMethodTable();
-    MethodDesc *method = gc.refMethod->GetMethod();
+    GCPROTECT_BEGIN(gc);
 
-    HELPER_METHOD_FRAME_BEGIN_RET_PROTECT(gc);
+    MethodTable *pMethMT = pMethodType.AsTypeHandle().GetMethodTable();
 
     // Assert to track down VS#458689.
     _ASSERTE(gc.refThis != gc.refFirstArg);
@@ -1062,7 +1044,7 @@ FCIMPL5(FC_BOOL_RET, COMDelegate::BindToMethodInfo, Object* refThisUNSAFE, Objec
                                             &fIsOpenDelegate))
     {
         // Initialize the delegate to point to the target method.
-        BindToMethod(&gc.refThis,
+        COMDelegate::BindToMethod(&gc.refThis,
                      &gc.refFirstArg,
                      method,
                      pMethMT,
@@ -1071,11 +1053,12 @@ FCIMPL5(FC_BOOL_RET, COMDelegate::BindToMethodInfo, Object* refThisUNSAFE, Objec
     else
         result = FALSE;
 
-    HELPER_METHOD_FRAME_END();
+    GCPROTECT_END();
 
-    FC_RETURN_BOOL(result);
+    END_QCALL;
+
+    return result;
 }
-FCIMPLEND
 
 // This method is called (in the late bound case only) once a target method has been decided on. All the consistency checks
 // (signature matching etc.) have been done at this point, this method will simply initialize the delegate, with any required
@@ -1183,7 +1166,7 @@ void COMDelegate::BindToMethod(DELEGATEREF   *pRefThis,
     }
     else
     {
-        PCODE pTargetCode = NULL;
+        PCODE pTargetCode = (PCODE)NULL;
 
         // For virtual methods we can (and should) virtualize the call now (so we don't have to insert a thunk to do so at runtime).
         // <TODO>
@@ -1294,7 +1277,7 @@ LPVOID COMDelegate::ConvertToCallback(OBJECTREF pDelegateObj)
             _ASSERTE(objhnd != NULL);
 
             // This target should not ever be used. We are storing it in the thunk for better diagnostics of "call on collected delegate" crashes.
-            PCODE pManagedTargetForDiagnostics = (pDelegate->GetMethodPtrAux() != NULL) ? pDelegate->GetMethodPtrAux() : pDelegate->GetMethodPtr();
+            PCODE pManagedTargetForDiagnostics = (pDelegate->GetMethodPtrAux() != (PCODE)NULL) ? pDelegate->GetMethodPtrAux() : pDelegate->GetMethodPtr();
 
             ExecutableWriterHolder<UMEntryThunk> uMEntryThunkWriterHolder(pUMEntryThunk, sizeof(UMEntryThunk));
 
@@ -1391,14 +1374,14 @@ OBJECTREF COMDelegate::ConvertToDelegate(LPVOID pCallback, MethodTable* pMT)
     //
 
     PCODE pMarshalStub = pClass->m_pMarshalStub;
-    if (pMarshalStub == NULL)
+    if (pMarshalStub == (PCODE)NULL)
     {
         GCX_PREEMP();
 
         pMarshalStub = GetStubForInteropMethod(pMD);
 
         // Save this new stub on the DelegateEEClass.
-        InterlockedCompareExchangeT<PCODE>(&pClass->m_pMarshalStub, pMarshalStub, NULL);
+        InterlockedCompareExchangeT<PCODE>(&pClass->m_pMarshalStub, pMarshalStub, (PCODE)NULL);
 
         pMarshalStub = pClass->m_pMarshalStub;
     }
@@ -1406,7 +1389,7 @@ OBJECTREF COMDelegate::ConvertToDelegate(LPVOID pCallback, MethodTable* pMT)
     // The IL marshaling stub performs the function of the shuffle thunk - it simply omits 'this' in
     // the call to unmanaged code. The stub recovers the unmanaged target from the delegate instance.
 
-    _ASSERTE(pMarshalStub != NULL);
+    _ASSERTE(pMarshalStub != (PCODE)NULL);
 
     //////////////////////////////////////////////////////////////////////////////////////////////////////////
     // Wire up the stubs to the new delegate instance.
@@ -1497,47 +1480,43 @@ void COMDelegate::RemoveEntryFromFPtrHash(UPTR key)
     COMDelegate::s_pDelegateToFPtrHash->DeleteValue(key, NULL);
 }
 
-FCIMPL2(PCODE, COMDelegate::GetCallStub, Object* refThisUNSAFE, PCODE method)
+extern "C" void QCALLTYPE Delegate_InitializeVirtualCallStub(QCall::ObjectHandleOnStack d, PCODE method)
 {
-    FCALL_CONTRACT;
+    QCALL_CONTRACT;
 
-    PCODE target = NULL;
+    BEGIN_QCALL;
 
-    DELEGATEREF refThis = (DELEGATEREF)ObjectToOBJECTREF(refThisUNSAFE);
-    HELPER_METHOD_FRAME_BEGIN_RET_1(refThis);
+    GCX_COOP();
+
     MethodDesc *pMeth = MethodTable::GetMethodDescForSlotAddress((PCODE)method);
     _ASSERTE(pMeth);
     _ASSERTE(!pMeth->IsStatic() && pMeth->IsVirtual());
-    target = GetVirtualCallStub(pMeth, TypeHandle(pMeth->GetMethodTable()));
+    PCODE target = GetVirtualCallStub(pMeth, TypeHandle(pMeth->GetMethodTable()));
+
+    DELEGATEREF refThis = (DELEGATEREF)d.Get();
+    refThis->SetMethodPtrAux(target);
     refThis->SetInvocationCount((INT_PTR)(void*)pMeth);
-    HELPER_METHOD_FRAME_END();
-    return target;
+
+    END_QCALL;
 }
-FCIMPLEND
 
-FCIMPL3(PCODE, COMDelegate::AdjustTarget, Object* refThisUNSAFE, Object* targetUNSAFE, PCODE method)
+extern "C" PCODE QCALLTYPE Delegate_AdjustTarget(QCall::ObjectHandleOnStack target, PCODE method)
 {
-    FCALL_CONTRACT;
+    QCALL_CONTRACT;
 
-    if (targetUNSAFE == NULL)
-        FCThrow(kArgumentNullException);
+    BEGIN_QCALL;
 
-    OBJECTREF refThis = ObjectToOBJECTREF(refThisUNSAFE);
-    OBJECTREF target  = ObjectToOBJECTREF(targetUNSAFE);
+    GCX_COOP();
 
-    HELPER_METHOD_FRAME_BEGIN_RET_2(refThis, target);
-
-    _ASSERTE(refThis);
     _ASSERTE(method);
 
-    MethodTable *pMT = target->GetMethodTable();
+    MethodTable* pMTTarg = target.Get()->GetMethodTable();
 
-    MethodDesc *pMeth = Entry2MethodDesc(method, pMT);
+    MethodDesc *pMeth = Entry2MethodDesc(method, pMTTarg);
     _ASSERTE(pMeth);
     _ASSERTE(!pMeth->IsStatic());
 
     // close delegates
-    MethodTable* pMTTarg = target->GetMethodTable();
     MethodTable* pMTMeth = pMeth->GetMethodTable();
 
     MethodDesc *pCorrectedMethod = pMeth;
@@ -1557,11 +1536,11 @@ FCIMPL3(PCODE, COMDelegate::AdjustTarget, Object* refThisUNSAFE, Object* targetU
     {
         method = pCorrectedMethod->GetMultiCallableAddrOfCode();
     }
-    HELPER_METHOD_FRAME_END();
+
+    END_QCALL;
 
     return method;
 }
-FCIMPLEND
 
 #if defined(_MSC_VER) && !defined(TARGET_UNIX)
 // VC++ Compiler intrinsic.
@@ -1610,7 +1589,7 @@ FCIMPL3(void, COMDelegate::DelegateConstruct, Object* refThisUNSAFE, Object* tar
 
     // via reflection you can pass in just about any value for the method.
     // we can do some basic verification up front to prevent EE exceptions.
-    if (method == NULL)
+    if (method == (PCODE)NULL)
         COMPlusThrowArgumentNull(W("method"));
 
     _ASSERTE(gc.refThis);
@@ -1813,7 +1792,7 @@ MethodDesc *COMDelegate::GetMethodDesc(OBJECTREF orDelegate)
         // Next, check for an open delegate
         PCODE code = thisDel->GetMethodPtrAux();
 
-        if (code != NULL)
+        if (code != (PCODE)NULL)
         {
             // Note that MethodTable::GetMethodDescForSlotAddress is significantly faster than Entry2MethodDesc
             pMethodHandle = MethodTable::GetMethodDescForSlotAddress(code);
@@ -1951,7 +1930,7 @@ PCODE COMDelegate::GetInvokeMethodStub(EEImplMethodDesc* pMD)
     }
     CONTRACT_END;
 
-    PCODE               ret = NULL;
+    PCODE               ret = (PCODE)NULL;
     MethodTable *       pDelMT = pMD->GetMethodTable();
     DelegateEEClass*    pClass = (DelegateEEClass*) pDelMT->GetClass();
 
@@ -1984,39 +1963,35 @@ PCODE COMDelegate::GetInvokeMethodStub(EEImplMethodDesc* pMD)
     RETURN ret;
 }
 
-FCIMPL1(Object*, COMDelegate::InternalAlloc, ReflectClassBaseObject * pTargetUNSAFE)
+extern "C" void QCALLTYPE Delegate_InternalAlloc(QCall::TypeHandle pType, QCall::ObjectHandleOnStack d)
 {
-    FCALL_CONTRACT;
+    QCALL_CONTRACT;
 
-    REFLECTCLASSBASEREF refTarget = (REFLECTCLASSBASEREF)ObjectToOBJECTREF(pTargetUNSAFE);
-    OBJECTREF refRetVal = NULL;
-    TypeHandle targetTH = refTarget->GetType();
-    HELPER_METHOD_FRAME_BEGIN_RET_1(refTarget);
+    BEGIN_QCALL;
 
-    _ASSERTE(targetTH.GetMethodTable() != NULL && targetTH.GetMethodTable()->IsDelegate());
+    GCX_COOP();
 
-    refRetVal = targetTH.GetMethodTable()->Allocate();
+    _ASSERTE(pType.AsTypeHandle().AsMethodTable()->IsDelegate());
 
-    HELPER_METHOD_FRAME_END();
-    return OBJECTREFToObject(refRetVal);
+    d.Set(pType.AsTypeHandle().AsMethodTable()->Allocate());
+
+    END_QCALL;
 }
-FCIMPLEND
 
-FCIMPL1(Object*, COMDelegate::InternalAllocLike, Object* pThis)
+extern "C" void QCALLTYPE Delegate_InternalAllocLike(QCall::ObjectHandleOnStack d)
 {
-    FCALL_CONTRACT;
+    QCALL_CONTRACT;
 
-    OBJECTREF refRetVal = NULL;
-    HELPER_METHOD_FRAME_BEGIN_RET_NOPOLL();
+    BEGIN_QCALL;
 
-    _ASSERTE(pThis->GetMethodTable() != NULL && pThis->GetMethodTable()->IsDelegate());
+    GCX_COOP();
 
-    refRetVal = pThis->GetMethodTable()->AllocateNoChecks();
+    _ASSERTE(d.Get()->GetMethodTable()->IsDelegate());
 
-    HELPER_METHOD_FRAME_END();
-    return OBJECTREFToObject(refRetVal);
+    d.Set(d.Get()->GetMethodTable()->AllocateNoChecks());
+
+    END_QCALL;
 }
-FCIMPLEND
 
 void COMDelegate::ThrowIfInvalidUnmanagedCallersOnlyUsage(MethodDesc* pMD)
 {
@@ -2038,7 +2013,7 @@ void COMDelegate::ThrowIfInvalidUnmanagedCallersOnlyUsage(MethodDesc* pMD)
 
     // Arguments - Scenarios involving UnmanagedCallersOnly are handled during the jit.
     bool unmanagedCallersOnlyRequiresMarshalling = false;
-    if (NDirect::MarshalingRequired(pMD, NULL, NULL, unmanagedCallersOnlyRequiresMarshalling))
+    if (NDirect::MarshalingRequired(pMD, NULL, NULL, NULL, unmanagedCallersOnlyRequiresMarshalling))
         EX_THROW(EEResourceException, (kInvalidProgramException, W("InvalidProgram_NonBlittableTypes")));
 }
 
@@ -2110,77 +2085,77 @@ DELEGATEREF COMDelegate::CreateWrapperDelegate(DELEGATEREF delegate, MethodDesc*
     return gc.innerDel;
 }
 
-// InternalGetMethodInfo
 // This method will get the MethodInfo for a delegate
-FCIMPL1(ReflectMethodObject *, COMDelegate::FindMethodHandle, Object* refThisIn)
+extern "C" void QCALLTYPE Delegate_FindMethodHandle(QCall::ObjectHandleOnStack d, QCall::ObjectHandleOnStack retMethodInfo)
 {
-    FCALL_CONTRACT;
+    QCALL_CONTRACT;
 
-    MethodDesc* pMD = NULL;
-    REFLECTMETHODREF pRet = NULL;
-    OBJECTREF refThis = ObjectToOBJECTREF(refThisIn);
+    BEGIN_QCALL;
 
-    HELPER_METHOD_FRAME_BEGIN_RET_1(refThis);
+    GCX_COOP();
 
-    pMD = GetMethodDesc(refThis);
+    MethodDesc* pMD = COMDelegate::GetMethodDesc(d.Get());
     pMD = MethodDesc::FindOrCreateAssociatedMethodDescForReflection(pMD, TypeHandle(pMD->GetMethodTable()), pMD->GetMethodInstantiation());
-    pRet = pMD->GetStubMethodInfo();
-    HELPER_METHOD_FRAME_END();
+    retMethodInfo.Set(pMD->GetStubMethodInfo());
 
-    return (ReflectMethodObject*)OBJECTREFToObject(pRet);
+    END_QCALL;
 }
-FCIMPLEND
 
-FCIMPL2(FC_BOOL_RET, COMDelegate::InternalEqualMethodHandles, Object *refLeftIn, Object *refRightIn)
+extern "C" BOOL QCALLTYPE Delegate_InternalEqualMethodHandles(QCall::ObjectHandleOnStack left, QCall::ObjectHandleOnStack right)
 {
-    FCALL_CONTRACT;
+    QCALL_CONTRACT;
 
-    OBJECTREF refLeft = ObjectToOBJECTREF(refLeftIn);
-    OBJECTREF refRight = ObjectToOBJECTREF(refRightIn);
     BOOL fRet = FALSE;
 
-    HELPER_METHOD_FRAME_BEGIN_RET_2(refLeft, refRight);
+    BEGIN_QCALL;
 
-    MethodDesc* pMDLeft = GetMethodDesc(refLeft);
-    MethodDesc* pMDRight = GetMethodDesc(refRight);
+    GCX_COOP();
+
+    MethodDesc* pMDLeft = COMDelegate::GetMethodDesc(left.Get());
+    MethodDesc* pMDRight = COMDelegate::GetMethodDesc(right.Get());
     fRet = pMDLeft == pMDRight;
 
-    HELPER_METHOD_FRAME_END();
+    END_QCALL;
 
-    FC_RETURN_BOOL(fRet);
+    return fRet;
 }
-FCIMPLEND
 
-FCIMPL1(MethodDesc*, COMDelegate::GetInvokeMethod, Object* refThisIn)
+FCIMPL1(MethodDesc*, COMDelegate::GetInvokeMethod, MethodTable* pDelegateMT)
 {
     FCALL_CONTRACT;
+    _ASSERTE(pDelegateMT != NULL);
 
-    OBJECTREF refThis = ObjectToOBJECTREF(refThisIn);
-    MethodTable * pDelMT = refThis->GetMethodTable();
-
-    MethodDesc* pMD = ((DelegateEEClass*)(pDelMT->GetClass()))->GetInvokeMethod();
-    _ASSERTE(pMD);
+    MethodDesc* pMD = ((DelegateEEClass*)(pDelegateMT->GetClass()))->GetInvokeMethod();
+    _ASSERTE(pMD != NULL);
     return pMD;
 }
 FCIMPLEND
 
-#ifdef FEATURE_MULTICASTSTUB_AS_IL
-FCIMPL1(PCODE, COMDelegate::GetMulticastInvoke, Object* refThisIn)
+FCIMPL1(PCODE, COMDelegate::GetMulticastInvoke, MethodTable* pDelegateMT)
 {
     FCALL_CONTRACT;
+    _ASSERTE(pDelegateMT != NULL);
 
-    OBJECTREF refThis = ObjectToOBJECTREF(refThisIn);
-    MethodTable *pDelegateMT = refThis->GetMethodTable();
+    DelegateEEClass* delegateEEClass = (DelegateEEClass*)pDelegateMT->GetClass();
+    Stub *pStub = delegateEEClass->m_pMultiCastInvokeStub;
+    return (pStub != NULL) ? pStub->GetEntryPoint() : (PCODE)NULL;
+}
+FCIMPLEND
 
-    DelegateEEClass *delegateEEClass = ((DelegateEEClass*)(pDelegateMT->GetClass()));
+extern "C" PCODE QCALLTYPE Delegate_GetMulticastInvokeSlow(MethodTable* pDelegateMT)
+{
+    QCALL_CONTRACT;
+    _ASSERTE(pDelegateMT != NULL);
+
+    PCODE fptr = (PCODE)NULL;
+
+    BEGIN_QCALL;
+
+    DelegateEEClass *delegateEEClass = (DelegateEEClass*)pDelegateMT->GetClass();
     Stub *pStub = delegateEEClass->m_pMultiCastInvokeStub;
     if (pStub == NULL)
     {
         MethodDesc* pMD = delegateEEClass->GetInvokeMethod();
-
-        HELPER_METHOD_FRAME_BEGIN_RET_0();
-
-        GCX_PREEMP();
 
         MetaSig sig(pMD);
 
@@ -2191,38 +2166,24 @@ FCIMPL1(PCODE, COMDelegate::GetMulticastInvoke, Object* refThisIn)
 
         ILCodeStream *pCode = sl.NewCodeStream(ILStubLinker::kDispatch);
 
-        DWORD dwInvocationCountNum = pCode->NewLocal(ELEMENT_TYPE_I4);
         DWORD dwLoopCounterNum = pCode->NewLocal(ELEMENT_TYPE_I4);
 
         DWORD dwReturnValNum = -1;
-        if(fReturnVal)
+        if (fReturnVal)
             dwReturnValNum = pCode->NewLocal(sig.GetRetTypeHandleNT());
 
         ILCodeLabel *nextDelegate = pCode->NewCodeLabel();
-        ILCodeLabel *endOfMethod = pCode->NewCodeLabel();
-
-        // Get count of delegates
-        pCode->EmitLoadThis();
-        pCode->EmitLDFLD(pCode->GetToken(CoreLibBinder::GetField(FIELD__MULTICAST_DELEGATE__INVOCATION_COUNT)));
-        pCode->EmitSTLOC(dwInvocationCountNum);
+        ILCodeLabel *checkCount = pCode->NewCodeLabel();
 
         // initialize counter
         pCode->EmitLDC(0);
         pCode->EmitSTLOC(dwLoopCounterNum);
 
+        // Make the shape of the loop similar to what C# compiler emits
+        pCode->EmitBR(checkCount);
+
         //Label_nextDelegate:
         pCode->EmitLabel(nextDelegate);
-
-#ifdef DEBUGGING_SUPPORTED
-        pCode->EmitLoadThis();
-        pCode->EmitLDLOC(dwLoopCounterNum);
-        pCode->EmitCALL(METHOD__STUBHELPERS__MULTICAST_DEBUGGER_TRACE_HELPER, 2, 0);
-#endif // DEBUGGING_SUPPORTED
-
-        // compare LoopCounter with InvocationCount. If equal then branch to Label_endOfMethod
-        pCode->EmitLDLOC(dwLoopCounterNum);
-        pCode->EmitLDLOC(dwInvocationCountNum);
-        pCode->EmitBEQ(endOfMethod);
 
         // Load next delegate from array using LoopCounter as index
         pCode->EmitLoadThis();
@@ -2231,15 +2192,14 @@ FCIMPL1(PCODE, COMDelegate::GetMulticastInvoke, Object* refThisIn)
         pCode->EmitLDELEM_REF();
 
         // Load the arguments
-        UINT paramCount = 0;
-        while(paramCount < sig.NumFixedArgs())
-            pCode->EmitLDARG(paramCount++);
+        for (UINT paramCount = 0; paramCount < sig.NumFixedArgs(); paramCount++)
+            pCode->EmitLDARG(paramCount);
 
         // call the delegate
         pCode->EmitCALL(pCode->GetToken(pMD), sig.NumFixedArgs(), fReturnVal);
 
         // Save return value.
-        if(fReturnVal)
+        if (fReturnVal)
             pCode->EmitSTLOC(dwReturnValNum);
 
         // increment counter
@@ -2248,23 +2208,53 @@ FCIMPL1(PCODE, COMDelegate::GetMulticastInvoke, Object* refThisIn)
         pCode->EmitADD();
         pCode->EmitSTLOC(dwLoopCounterNum);
 
-        // branch to next delegate
-        pCode->EmitBR(nextDelegate);
+        //Label_checkCount
+        pCode->EmitLabel(checkCount);
 
-        //Label_endOfMethod
-        pCode->EmitLabel(endOfMethod);
+#ifdef DEBUGGING_SUPPORTED
+        ILCodeLabel *invokeTraceHelper = pCode->NewCodeLabel();
+        ILCodeLabel *debuggerCheckEnd = pCode->NewCodeLabel();
+
+        // Call MulticastDebuggerTraceHelper only if any debugger is attached
+        pCode->EmitLDC((DWORD_PTR)&g_CORDebuggerControlFlags);
+        pCode->EmitCONV_I();
+        pCode->EmitLDIND_I4();
+
+        // (g_CORDebuggerControlFlags & DBCF_ATTACHED) != 0
+        pCode->EmitLDC(DBCF_ATTACHED);
+        pCode->EmitAND();
+        pCode->EmitBRTRUE(invokeTraceHelper);
+
+        pCode->EmitLabel(debuggerCheckEnd);
+#endif // DEBUGGING_SUPPORTED
+
+        // compare LoopCounter with InvocationCount. If less then branch to nextDelegate
+        pCode->EmitLDLOC(dwLoopCounterNum);
+        pCode->EmitLoadThis();
+        pCode->EmitLDFLD(pCode->GetToken(CoreLibBinder::GetField(FIELD__MULTICAST_DELEGATE__INVOCATION_COUNT)));
+        pCode->EmitBLT(nextDelegate);
 
         // load the return value. return value from the last delegate call is returned
-        if(fReturnVal)
+        if (fReturnVal)
             pCode->EmitLDLOC(dwReturnValNum);
 
         // return
         pCode->EmitRET();
 
+#ifdef DEBUGGING_SUPPORTED
+        // Emit debugging support at the end of the method for better perf
+        pCode->EmitLabel(invokeTraceHelper);
+
+        pCode->EmitLoadThis();
+        pCode->EmitLDLOC(dwLoopCounterNum);
+        pCode->EmitCALL(METHOD__STUBHELPERS__MULTICAST_DEBUGGER_TRACE_HELPER, 2, 0);
+
+        pCode->EmitBR(debuggerCheckEnd);
+#endif // DEBUGGING_SUPPORTED
+
         PCCOR_SIGNATURE pSig;
         DWORD cbSig;
-
-        pMD->GetSig(&pSig,&cbSig);
+        pMD->GetSig(&pSig, &cbSig);
 
         MethodDesc* pStubMD = ILStubCache::CreateAndLinkNewILStubMethodDesc(pMD->GetLoaderAllocator(),
                                                                pMD->GetMethodTable(),
@@ -2273,77 +2263,18 @@ FCIMPL1(PCODE, COMDelegate::GetMulticastInvoke, Object* refThisIn)
                                                                pSig, cbSig,
                                                                NULL,
                                                                &sl);
-
         pStub = Stub::NewStub(JitILStub(pStubMD));
 
         InterlockedCompareExchangeT<PTR_Stub>(&delegateEEClass->m_pMultiCastInvokeStub, pStub, NULL);
-
-        HELPER_METHOD_FRAME_END();
+        pStub = delegateEEClass->m_pMultiCastInvokeStub;
     }
 
-    return pStub->GetEntryPoint();
+    fptr = pStub->GetEntryPoint();
+
+    END_QCALL;
+
+    return fptr;
 }
-FCIMPLEND
-
-#else // FEATURE_MULTICASTSTUB_AS_IL
-
-FCIMPL1(PCODE, COMDelegate::GetMulticastInvoke, Object* refThisIn)
-{
-    FCALL_CONTRACT;
-
-    OBJECTREF refThis = ObjectToOBJECTREF(refThisIn);
-    MethodTable *pDelegateMT = refThis->GetMethodTable();
-
-    DelegateEEClass *delegateEEClass = ((DelegateEEClass*)(pDelegateMT->GetClass()));
-    Stub *pStub = delegateEEClass->m_pMultiCastInvokeStub;
-    if (pStub == NULL)
-    {
-        MethodDesc* pMD = delegateEEClass->GetInvokeMethod();
-
-        HELPER_METHOD_FRAME_BEGIN_RET_0();
-
-        GCX_PREEMP();
-
-        MetaSig sig(pMD);
-
-        UINT_PTR hash = CPUSTUBLINKER::HashMulticastInvoke(&sig);
-
-        pStub = m_pMulticastStubCache->GetStub(hash);
-        if (!pStub)
-        {
-            CPUSTUBLINKER sl;
-
-            LOG((LF_CORDB,LL_INFO10000, "COMD::GIMS making a multicast delegate\n"));
-
-            sl.EmitMulticastInvoke(hash);
-
-            // The cache is process-wide, based on signature.  It never unloads
-            Stub *pCandidate = sl.Link(SystemDomain::GetGlobalLoaderAllocator()->GetStubHeap(), NEWSTUB_FL_MULTICAST);
-
-            Stub *pWinner = m_pMulticastStubCache->AttemptToSetStub(hash,pCandidate);
-            ExecutableWriterHolder<Stub> candidateWriterHolder(pCandidate, sizeof(Stub));
-            candidateWriterHolder.GetRW()->DecRef();
-
-            if (!pWinner)
-                COMPlusThrowOM();
-
-            LOG((LF_CORDB,LL_INFO10000, "Putting a MC stub at 0x%p (code:0x%p)\n",
-                pWinner, (BYTE*)pWinner+sizeof(Stub)));
-
-            pStub = pWinner;
-        }
-
-        // we don't need to do an InterlockedCompareExchange here - the m_pMulticastStubCache->AttemptToSetStub
-        // will make sure all threads racing here will get the same stub, so they'll all store the same value
-        delegateEEClass->m_pMultiCastInvokeStub = pStub;
-
-        HELPER_METHOD_FRAME_END();
-    }
-
-    return pStub->GetEntryPoint();
-}
-FCIMPLEND
-#endif // FEATURE_MULTICASTSTUB_AS_IL
 
 PCODE COMDelegate::GetWrapperInvoke(MethodDesc* pMD)
 {

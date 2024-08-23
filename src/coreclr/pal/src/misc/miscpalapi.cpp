@@ -29,6 +29,7 @@ Revision History:
 
 #include <errno.h>
 #include <unistd.h>
+#include <fcntl.h>
 #include <time.h>
 #include <pthread.h>
 #include <dlfcn.h>

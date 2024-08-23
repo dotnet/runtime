@@ -140,7 +140,12 @@ namespace System.Globalization
         /// </summary>
         public char ToLower(char c)
         {
+#if TARGET_BROWSER
+            // for invariant culture _cultureName is empty - HybridGlobalization does not have to call JS
+            if (GlobalizationMode.Invariant || (GlobalizationMode.Hybrid && HasEmptyCultureName))
+#else
             if (GlobalizationMode.Invariant)
+#endif
             {
                 return InvariantModeCasing.ToLower(c);
             }
@@ -173,7 +178,12 @@ namespace System.Globalization
         {
             ArgumentNullException.ThrowIfNull(str);
 
+#if TARGET_BROWSER
+            // for invariant culture _cultureName is empty - HybridGlobalization does not have to call JS
+            if (GlobalizationMode.Invariant || (GlobalizationMode.Hybrid && HasEmptyCultureName))
+#else
             if (GlobalizationMode.Invariant)
+#endif
             {
                 return InvariantModeCasing.ToLower(str);
             }
@@ -184,7 +194,9 @@ namespace System.Globalization
         private unsafe char ChangeCase(char c, bool toUpper)
         {
             Debug.Assert(!GlobalizationMode.Invariant);
-
+#if TARGET_BROWSER
+            Debug.Assert(!(GlobalizationMode.Hybrid && HasEmptyCultureName));
+#endif
             char dst = default;
             ChangeCaseCore(&c, 1, &dst, 1, toUpper);
             return dst;
@@ -227,6 +239,9 @@ namespace System.Globalization
         {
             Debug.Assert(!GlobalizationMode.Invariant);
             Debug.Assert(typeof(TConversion) == typeof(ToUpperConversion) || typeof(TConversion) == typeof(ToLowerConversion));
+#if TARGET_BROWSER
+            Debug.Assert(!(GlobalizationMode.Hybrid && HasEmptyCultureName));
+#endif
 
             if (source.IsEmpty)
             {
@@ -263,6 +278,9 @@ namespace System.Globalization
 
             Debug.Assert(!GlobalizationMode.Invariant);
             Debug.Assert(source != null);
+#if TARGET_BROWSER
+            Debug.Assert(!(GlobalizationMode.Hybrid && HasEmptyCultureName));
+#endif
 
             // If the string is empty, we're done.
             if (source.Length == 0)
@@ -412,7 +430,12 @@ namespace System.Globalization
         /// </summary>
         public char ToUpper(char c)
         {
+#if TARGET_BROWSER
+            // for invariant culture _cultureName is empty - HybridGlobalization does not have to call JS
+            if (GlobalizationMode.Invariant || (GlobalizationMode.Hybrid && HasEmptyCultureName))
+#else
             if (GlobalizationMode.Invariant)
+#endif
             {
                 return InvariantModeCasing.ToUpper(c);
             }
@@ -445,7 +468,12 @@ namespace System.Globalization
         {
             ArgumentNullException.ThrowIfNull(str);
 
+#if TARGET_BROWSER
+            // for invariant culture _cultureName is empty - HybridGlobalization does not have to call JS
+            if (GlobalizationMode.Invariant || (GlobalizationMode.Hybrid && HasEmptyCultureName))
+#else
             if (GlobalizationMode.Invariant)
+#endif
             {
                 return InvariantModeCasing.ToUpper(str);
             }

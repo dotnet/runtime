@@ -1,7 +1,6 @@
 <Project Sdk="Microsoft.Build.NoTargets">
 
   <PropertyGroup>
-    <NativeBuildPartitionPropertiesToRemove>ClrFullNativeBuild;ClrRuntimeSubset;ClrJitSubset;ClrPalTestsSubset;ClrAllJitsSubset;ClrILToolsSubset;ClrNativeAotSubset;ClrSpmiSubset;ClrCrossComponentsSubset;ClrDebugSubset;HostArchitecture;PgoInstrument;NativeOptimizationDataSupported;CMakeArgs</NativeBuildPartitionPropertiesToRemove>
     <_IcuDir Condition="'$(PkgMicrosoft_NETCore_Runtime_ICU_Transport)' != ''">$(PkgMicrosoft_NETCore_Runtime_ICU_Transport)/runtimes/$(TargetOS)-$(TargetArchitecture)$(_RuntimeVariant)/native</_IcuDir>
 
     <_BuildNativeTargetOS>$(TargetOS)</_BuildNativeTargetOS>
@@ -51,6 +50,20 @@
       <_CoreClrBuildArg Condition="'$(HostCrossOS)' != ''" Include="-hostos $(HostCrossOS)" />
       <_CoreClrBuildArg Include="-outputrid $(OutputRID)" />
       <_CoreClrBuildArg Condition="'$(BuildSubdirectory)' != ''" Include="-subdir $(BuildSubdirectory)" />
+      <_CoreClrBuildArg Include="-cmakeargs &quot;-DCLR_DOTNET_HOST_PATH=$(DOTNET_HOST_PATH)&quot;" />
+      <_CoreClrBuildArg Include="-cmakeargs &quot;-DCDAC_BUILD_TOOL_BINARY_PATH=$(RuntimeBinDir)cdac-build-tool\cdac-build-tool.dll&quot;" />
+    </ItemGroup>
+
+    <ItemGroup Condition="'$(CxxStandardLibrary)' != ''">
+      <_CoreClrBuildArg Include="-cmakeargs -DCLR_CMAKE_CXX_STANDARD_LIBRARY=$(CxxStandardLibrary)" />
+    </ItemGroup>
+
+    <ItemGroup Condition="'$(CxxStandardLibraryStatic)' == 'true'">
+      <_CoreClrBuildArg Include="-cmakeargs -DCLR_CMAKE_CXX_STANDARD_LIBRARY_STATIC=ON" />
+    </ItemGroup>
+
+    <ItemGroup Condition="'$(CxxAbiLibrary)' != ''">
+      <_CoreClrBuildArg Include="-cmakeargs -DCLR_CMAKE_CXX_ABI_LIBRARY=$(CxxAbiLibrary)" />
     </ItemGroup>
 
     <ItemGroup Condition="'$(ClrFullNativeBuild)' != 'true'">

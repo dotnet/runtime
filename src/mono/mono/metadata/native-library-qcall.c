@@ -3,7 +3,7 @@
 
 static Entry mono_qcalls[] =
 {
-	DllImportEntry(NULL) // This NULL entry can be removed when a QCall is added to Mono (and added to this array)
+	{"NULL", NULL}, // This NULL entry can be removed when a QCall is added to Mono (and added to this array)
 };
 
 gpointer

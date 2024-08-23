@@ -33,7 +33,7 @@ namespace System.Diagnostics
             }
             set
             {
-                if (!Enum.IsDefined(typeof(PerformanceCounterType), value))
+                if (!Enum.IsDefined(value))
                     throw new InvalidEnumArgumentException(nameof(PerformanceCounterType), (int)value, typeof(PerformanceCounterType));
 
                 _counterType = value;

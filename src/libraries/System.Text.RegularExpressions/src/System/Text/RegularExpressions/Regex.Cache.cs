@@ -255,6 +255,12 @@ namespace System.Text.RegularExpressions
 
                 // Finally add the regex.
                 var node = new Node(key, regex);
+
+                if (s_lastAccessed is { } lastAccessed)
+                {
+                    node.LastAccessStamp = Volatile.Read(ref lastAccessed.LastAccessStamp) + 1;
+                }
+
                 s_lastAccessed = node;
                 s_cacheList.Add(node);
                 s_cacheDictionary.TryAdd(key, node);
@@ -299,20 +305,14 @@ namespace System.Text.RegularExpressions
         }
 
         /// <summary>Node for a cached Regex instance.</summary>
-        private sealed class Node
+        private sealed class Node(Key key, Regex regex)
         {
             /// <summary>The key associated with this cached instance.</summary>
-            public readonly Key Key;
+            public readonly Key Key = key;
             /// <summary>The cached Regex instance.</summary>
-            public readonly Regex Regex;
+            public readonly Regex Regex = regex;
             /// <summary>A "time" stamp representing the approximate last access time for this Regex.</summary>
             public long LastAccessStamp;
-
-            public Node(Key key, Regex regex)
-            {
-                Key = key;
-                Regex = regex;
-            }
         }
     }
 }

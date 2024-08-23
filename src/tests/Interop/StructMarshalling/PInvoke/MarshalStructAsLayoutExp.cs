@@ -24,6 +24,7 @@ public class Managed
 
     [SecuritySafeCritical]
     [Fact]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/91388", typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.PlatformDoesNotSupportNativeTestAssets))]
     public static int TestEntryPoint()
     {
         RunMarshalStructAsParamAsExpByVal();
@@ -174,7 +175,7 @@ public class Managed
     static extern bool MarshalStructAsParam_AsExpByValInOutShortStructPack4Explicit([In, Out] ShortStructPack4Explicit str1);
     [DllImport("MarshalStructAsParam", EntryPoint = "MarshalStructAsParam_AsExpByRefShortStructPack4Explicit")]
     static extern bool MarshalStructAsParam_AsExpByRefInOutShortStructPack4Explicit([In, Out] ref ShortStructPack4Explicit str1);
-    #endregion    
+    #endregion
     #region Struct(IntStructPack8Explicit) with Layout Explicit scenario8
     [DllImport("MarshalStructAsParam")]
     static extern bool MarshalStructAsParam_AsExpByValIntStructPack8Explicit(IntStructPack8Explicit str1);
@@ -220,7 +221,7 @@ public class Managed
     static extern bool MarshalStructAsParam_AsExpByValOverlappingLongFloat(OverlappingLongFloat str, long expected);
     [DllImport("MarshalStructAsParam")]
     static extern bool MarshalStructAsParam_AsExpByValOverlappingLongFloat(OverlappingLongFloat2 str, long expected);
-    
+
     [DllImport("MarshalStructAsParam")]
     static extern bool MarshalStructAsParam_AsExpByValOverlappingMultipleEightByte(OverlappingMultipleEightbyte str, float i1, float i2, float i3);
 
@@ -253,7 +254,7 @@ public class Managed
                     {
                         failures++;
                     }
-                    break;    
+                    break;
                 case StructID.InnerExplicitId:
                     InnerExplicit sourceInnerExplicit = new InnerExplicit();
                     sourceInnerExplicit.f1 = 1;
@@ -332,7 +333,7 @@ public class Managed
                         failures++;
                     }
                     break;
-                case StructID.ShortStructPack4ExplicitId:    
+                case StructID.ShortStructPack4ExplicitId:
                     ShortStructPack4Explicit source_sspe = Helper.NewShortStructPack4Explicit(32, 32);
                     ShortStructPack4Explicit clone_sspe = Helper.NewShortStructPack4Explicit(32, 32);
                     Console.WriteLine("\tCalling MarshalStructAsParam_AsExpByValShortStructPack4Explicit...");
@@ -486,7 +487,7 @@ public class Managed
                     {
                         failures++;
                     }
-                    break;    
+                    break;
                 case StructID.InnerExplicitId:
                     InnerExplicit sourceInnerExplicit = new InnerExplicit();
                     sourceInnerExplicit.f1 = 1;
@@ -505,7 +506,7 @@ public class Managed
                     {
                         failures++;
                     }
-                    break;   
+                    break;
                 case StructID.InnerArrayExplicitId:
                     InnerArrayExplicit sourceInnerArrayExplicit = Helper.NewInnerArrayExplicit(1, 1.0F, "some string1", "some string2");
                     InnerArrayExplicit changeInnerArrayExplicit = Helper.NewInnerArrayExplicit(77, 77.0F, "change string1", "change string2");
@@ -520,7 +521,7 @@ public class Managed
                     {
                         failures++;
                     }
-                    break;    
+                    break;
                 case StructID.OUTER3Id:
                     OUTER3 sourceOUTER3 = Helper.NewOUTER3(1, 1.0F, "some string", "some string");
                     OUTER3 changeOUTER3 = Helper.NewOUTER3(77, 77.0F, "changed string", "changed string");
@@ -535,7 +536,7 @@ public class Managed
                     {
                         failures++;
                     }
-                    break;    
+                    break;
                 case StructID.UId:
                     U sourceU = Helper.NewU(Int32.MinValue, UInt32.MaxValue, new IntPtr(-32), new UIntPtr(32), short.MinValue, ushort.MaxValue, byte.MinValue, sbyte.MaxValue, long.MinValue, ulong.MaxValue, 32.0F, 3.2);
                     U changeU = Helper.NewU(Int32.MaxValue, UInt32.MinValue, new IntPtr(-64), new UIntPtr(64), short.MaxValue, ushort.MinValue, byte.MaxValue, sbyte.MinValue, long.MaxValue, ulong.MinValue, 64.0F, 6.4);
@@ -550,7 +551,7 @@ public class Managed
                     {
                         failures++;
                     }
-                    break;    
+                    break;
                 case StructID.ByteStructPack2ExplicitId:
                     ByteStructPack2Explicit source_bspe = Helper.NewByteStructPack2Explicit(32, 32);
                     ByteStructPack2Explicit change_bspe = Helper.NewByteStructPack2Explicit(64, 64);
@@ -564,7 +565,7 @@ public class Managed
                     {
                         failures++;
                     }
-                    break;    
+                    break;
                 case StructID.ShortStructPack4ExplicitId:
                     ShortStructPack4Explicit source_sspe = Helper.NewShortStructPack4Explicit(32, 32);
                     ShortStructPack4Explicit change_sspe = Helper.NewShortStructPack4Explicit(64, 64);
@@ -606,7 +607,7 @@ public class Managed
                     {
                         failures++;
                     }
-                    break;    
+                    break;
                 default:
                     Console.WriteLine("\tThere is not the struct id");
                     failures++;
@@ -641,7 +642,7 @@ public class Managed
                     {
                         failures++;
                     }
-                    break;    
+                    break;
                 case StructID.InnerExplicitId:
                     InnerExplicit sourceInnerExplicit = new InnerExplicit();
                     sourceInnerExplicit.f1 = 1;
@@ -660,7 +661,7 @@ public class Managed
                     {
                         failures++;
                     }
-                    break;    
+                    break;
                 case StructID.InnerArrayExplicitId:
                     InnerArrayExplicit sourceInnerArrayExplicit = Helper.NewInnerArrayExplicit(1, 1.0F, "some string1", "some string2");
                     InnerArrayExplicit cloneInnerArrayExplicit = Helper.NewInnerArrayExplicit(1, 1.0F, "some string1", "some string2");
@@ -675,7 +676,7 @@ public class Managed
                     {
                         failures++;
                     }
-                    break;    
+                    break;
                 case StructID.OUTER3Id:
                     OUTER3 sourceOUTER3 = Helper.NewOUTER3(1, 1.0F, "some string", "some string");
                     OUTER3 cloneOUTER3 = Helper.NewOUTER3(1, 1.0F, "some string", "some string");
@@ -690,7 +691,7 @@ public class Managed
                     {
                         failures++;
                     }
-                    break;    
+                    break;
                 case StructID.UId:
                     U sourceU = Helper.NewU(Int32.MinValue, UInt32.MaxValue, new IntPtr(-32), new UIntPtr(32), short.MinValue, ushort.MaxValue, byte.MinValue, sbyte.MaxValue, long.MinValue, ulong.MaxValue, 32.0F, 3.2);
                     U cloneU = Helper.NewU(Int32.MinValue, UInt32.MaxValue, new IntPtr(-32), new UIntPtr(32), short.MinValue, ushort.MaxValue, byte.MinValue, sbyte.MaxValue, long.MinValue, ulong.MaxValue, 32.0F, 3.2);
@@ -705,7 +706,7 @@ public class Managed
                     {
                         failures++;
                     }
-                    break;    
+                    break;
                 case StructID.ByteStructPack2ExplicitId:
                     ByteStructPack2Explicit source_bspe = Helper.NewByteStructPack2Explicit(32, 32);
                     ByteStructPack2Explicit clone_bspe = Helper.NewByteStructPack2Explicit(32, 32);
@@ -719,7 +720,7 @@ public class Managed
                     {
                         failures++;
                     }
-                    break;   
+                    break;
                 case StructID.ShortStructPack4ExplicitId:
                     ShortStructPack4Explicit source_sspe = Helper.NewShortStructPack4Explicit(32, 32);
                     ShortStructPack4Explicit clone_sspe = Helper.NewShortStructPack4Explicit(32, 32);
@@ -733,7 +734,7 @@ public class Managed
                     {
                         failures++;
                     }
-                    break; 
+                    break;
                 case StructID.IntStructPack8ExplicitId:
                     IntStructPack8Explicit source_ispe = Helper.NewIntStructPack8Explicit(32, 32);
                     IntStructPack8Explicit clone_ispe = Helper.NewIntStructPack8Explicit(32, 32);
@@ -761,7 +762,7 @@ public class Managed
                     {
                         failures++;
                     }
-                    break;    
+                    break;
                 default:
                     Console.WriteLine("\tThere is not the struct id");
                     failures++;
@@ -796,7 +797,7 @@ public class Managed
                     {
                         failures++;
                     }
-                    break;    
+                    break;
                 case StructID.InnerExplicitId:
                     InnerExplicit sourceInnerExplicit = new InnerExplicit();
                     sourceInnerExplicit.f1 = 1;
@@ -815,7 +816,7 @@ public class Managed
                     {
                         failures++;
                     }
-                    break;    
+                    break;
                 case StructID.InnerArrayExplicitId:
                     InnerArrayExplicit sourceInnerArrayExplicit = Helper.NewInnerArrayExplicit(1, 1.0F, "some string1", "some string2");
                     InnerArrayExplicit changeInnerArrayExplicit = Helper.NewInnerArrayExplicit(1, 1.0F, "some string1", "some string2");
@@ -830,7 +831,7 @@ public class Managed
                     {
                         failures++;
                     }
-                    break;    
+                    break;
                 case StructID.OUTER3Id:
                     OUTER3 sourceOUTER3 = Helper.NewOUTER3(1, 1.0F, "some string", "some string");
                     OUTER3 changeOUTER3 = Helper.NewOUTER3(1, 1.0F, "some string", "some string");
@@ -845,7 +846,7 @@ public class Managed
                     {
                         failures++;
                     }
-                    break;    
+                    break;
                 case StructID.UId:
                     U sourceU = Helper.NewU(Int32.MinValue, UInt32.MaxValue, new IntPtr(-32), new UIntPtr(32), short.MinValue, ushort.MaxValue, byte.MinValue, sbyte.MaxValue, long.MinValue, ulong.MaxValue, 32.0F, 3.2);
                     U changeU = Helper.NewU(Int32.MaxValue, UInt32.MinValue, new IntPtr(-64), new UIntPtr(64), short.MaxValue, ushort.MinValue, byte.MaxValue, sbyte.MinValue, long.MaxValue, ulong.MinValue, 64.0F, 6.4);
@@ -860,7 +861,7 @@ public class Managed
                     {
                         failures++;
                     }
-                    break;    
+                    break;
                 case StructID.ByteStructPack2ExplicitId:
                     ByteStructPack2Explicit source_bspe = Helper.NewByteStructPack2Explicit(32, 32);
                     ByteStructPack2Explicit change_bspe = Helper.NewByteStructPack2Explicit(64, 64);
@@ -874,7 +875,7 @@ public class Managed
                     {
                         failures++;
                     }
-                    break;    
+                    break;
                 case StructID.ShortStructPack4ExplicitId:
                     ShortStructPack4Explicit source_sspe = Helper.NewShortStructPack4Explicit(32, 32);
                     ShortStructPack4Explicit change_sspe = Helper.NewShortStructPack4Explicit(64, 64);
@@ -888,7 +889,7 @@ public class Managed
                     {
                         failures++;
                     }
-                    break; 
+                    break;
                 case StructID.IntStructPack8ExplicitId:
                     IntStructPack8Explicit source_ispe = Helper.NewIntStructPack8Explicit(32, 32);
                     IntStructPack8Explicit change_ispe = Helper.NewIntStructPack8Explicit(64, 64);
@@ -916,7 +917,7 @@ public class Managed
                     {
                         failures++;
                     }
-                    break;    
+                    break;
                 default:
                     Console.WriteLine("\tThere is not the struct id");
                     failures++;
@@ -951,7 +952,7 @@ public class Managed
                     {
                         failures++;
                     }
-                    break;    
+                    break;
                 case StructID.InnerExplicitId:
                     InnerExplicit sourceInnerExplicit = new InnerExplicit();
                     sourceInnerExplicit.f1 = 1;
@@ -970,7 +971,7 @@ public class Managed
                     {
                         failures++;
                     }
-                    break;    
+                    break;
                 case StructID.InnerArrayExplicitId:
                     InnerArrayExplicit sourceInnerArrayExplicit = Helper.NewInnerArrayExplicit(1, 1.0F, "some string1", "some string2");
                     InnerArrayExplicit cloneInnerArrayExplicit = Helper.NewInnerArrayExplicit(1, 1.0F, "some string1", "some string2");
@@ -985,7 +986,7 @@ public class Managed
                     {
                         failures++;
                     }
-                    break;    
+                    break;
                 case StructID.OUTER3Id:
                     OUTER3 sourceOUTER3 = Helper.NewOUTER3(1, 1.0F, "some string", "some string");
                     OUTER3 cloneOUTER3 = Helper.NewOUTER3(1, 1.0F, "some string", "some string");
@@ -1000,7 +1001,7 @@ public class Managed
                     {
                         failures++;
                     }
-                    break;    
+                    break;
                 case StructID.UId:
                     U sourceU = Helper.NewU(Int32.MinValue, UInt32.MaxValue, new IntPtr(-32), new UIntPtr(32), short.MinValue, ushort.MaxValue, byte.MinValue, sbyte.MaxValue, long.MinValue, ulong.MaxValue, 32.0F, 3.2);
                     U cloneU = Helper.NewU(Int32.MinValue, UInt32.MaxValue, new IntPtr(-32), new UIntPtr(32), short.MinValue, ushort.MaxValue, byte.MinValue, sbyte.MaxValue, long.MinValue, ulong.MaxValue, 32.0F, 3.2);
@@ -1015,7 +1016,7 @@ public class Managed
                     {
                         failures++;
                     }
-                    break;    
+                    break;
                 case StructID.ByteStructPack2ExplicitId:
                     ByteStructPack2Explicit source_bspe = Helper.NewByteStructPack2Explicit(32, 32);
                     ByteStructPack2Explicit clone_bspe = Helper.NewByteStructPack2Explicit(32, 32);
@@ -1029,7 +1030,7 @@ public class Managed
                     {
                         failures++;
                     }
-                    break;    
+                    break;
                 case StructID.ShortStructPack4ExplicitId:
                     ShortStructPack4Explicit source_sspe = Helper.NewShortStructPack4Explicit(32, 32);
                     ShortStructPack4Explicit clone_sspe = Helper.NewShortStructPack4Explicit(32, 32);
@@ -1043,7 +1044,7 @@ public class Managed
                     {
                         failures++;
                     }
-                    break; 
+                    break;
                 case StructID.IntStructPack8ExplicitId:
                     IntStructPack8Explicit source_ispe = Helper.NewIntStructPack8Explicit(32, 32);
                     IntStructPack8Explicit clone_ispe = Helper.NewIntStructPack8Explicit(32, 32);
@@ -1071,7 +1072,7 @@ public class Managed
                     {
                         failures++;
                     }
-                    break;    
+                    break;
                 default:
                     Console.WriteLine("\tThere is not the struct id");
                     failures++;
@@ -1106,7 +1107,7 @@ public class Managed
                     {
                         failures++;
                     }
-                    break;    
+                    break;
                 case StructID.InnerExplicitId:
                     InnerExplicit sourceInnerExplicit = new InnerExplicit();
                     sourceInnerExplicit.f1 = 1;
@@ -1125,7 +1126,7 @@ public class Managed
                     {
                         failures++;
                     }
-                    break;    
+                    break;
                 case StructID.InnerArrayExplicitId:
                     InnerArrayExplicit sourceInnerArrayExplicit = Helper.NewInnerArrayExplicit(1, 1.0F, "some string1", "some string2");
                     InnerArrayExplicit changeInnerArrayExplicit = Helper.NewInnerArrayExplicit(77, 77.0F, "change string1", "change string2");
@@ -1140,7 +1141,7 @@ public class Managed
                     {
                         failures++;
                     }
-                    break;    
+                    break;
                 case StructID.OUTER3Id:
                     OUTER3 sourceOUTER3 = Helper.NewOUTER3(1, 1.0F, "some string", "some string");
                     OUTER3 changeOUTER3 = Helper.NewOUTER3(77, 77.0F, "changed string", "changed string");
@@ -1155,7 +1156,7 @@ public class Managed
                     {
                         failures++;
                     }
-                    break;    
+                    break;
                 case StructID.UId:
                     U sourceU = Helper.NewU(Int32.MinValue, UInt32.MaxValue, new IntPtr(-32), new UIntPtr(32), short.MinValue, ushort.MaxValue, byte.MinValue, sbyte.MaxValue, long.MinValue, ulong.MaxValue, 32.0F, 3.2);
                     U changeU = Helper.NewU(Int32.MaxValue, UInt32.MinValue, new IntPtr(-64), new UIntPtr(64), short.MaxValue, ushort.MinValue, byte.MaxValue, sbyte.MinValue, long.MaxValue, ulong.MinValue, 64.0F, 6.4);
@@ -1170,7 +1171,7 @@ public class Managed
                     {
                         failures++;
                     }
-                    break;   
+                    break;
                 case StructID.ByteStructPack2ExplicitId:
                     ByteStructPack2Explicit source_bspe = Helper.NewByteStructPack2Explicit(32, 32);
                     ByteStructPack2Explicit change_bspe = Helper.NewByteStructPack2Explicit(64, 64);
@@ -1184,7 +1185,7 @@ public class Managed
                     {
                         failures++;
                     }
-                    break; 
+                    break;
                 case StructID.ShortStructPack4ExplicitId:
                     ShortStructPack4Explicit source_sspe = Helper.NewShortStructPack4Explicit(32, 32);
                     ShortStructPack4Explicit change_sspe = Helper.NewShortStructPack4Explicit(64, 64);
@@ -1226,7 +1227,7 @@ public class Managed
                     {
                         failures++;
                     }
-                    break;   
+                    break;
                 default:
                     Console.WriteLine("\tThere is not the struct id");
                     failures++;
@@ -1261,7 +1262,7 @@ public class Managed
                     {
                         failures++;
                     }
-                    break;    
+                    break;
                 case StructID.InnerExplicitId:
                     InnerExplicit sourceInnerExplicit = new InnerExplicit();
                     sourceInnerExplicit.f1 = 1;
@@ -1280,7 +1281,7 @@ public class Managed
                     {
                         failures++;
                     }
-                    break;    
+                    break;
                 case StructID.InnerArrayExplicitId:
                     InnerArrayExplicit sourceInnerArrayExplicit = Helper.NewInnerArrayExplicit(1, 1.0F, "some string1", "some string2");
                     InnerArrayExplicit cloneInnerArrayExplicit = Helper.NewInnerArrayExplicit(1, 1.0F, "some string1", "some string2");
@@ -1295,7 +1296,7 @@ public class Managed
                     {
                         failures++;
                     }
-                    break;    
+                    break;
                 case StructID.OUTER3Id:
                     OUTER3 sourceOUTER3 = Helper.NewOUTER3(1, 1.0F, "some string", "some string");
                     OUTER3 cloneOUTER3 = Helper.NewOUTER3(1, 1.0F, "some string", "some string");
@@ -1310,7 +1311,7 @@ public class Managed
                     {
                         failures++;
                     }
-                    break;    
+                    break;
                 case StructID.UId:
                     U sourceU = Helper.NewU(Int32.MinValue, UInt32.MaxValue, new IntPtr(-32), new UIntPtr(32), short.MinValue, ushort.MaxValue, byte.MinValue, sbyte.MaxValue, long.MinValue, ulong.MaxValue, 32.0F, 3.2);
                     U cloneU = Helper.NewU(Int32.MinValue, UInt32.MaxValue, new IntPtr(-32), new UIntPtr(32), short.MinValue, ushort.MaxValue, byte.MinValue, sbyte.MaxValue, long.MinValue, ulong.MaxValue, 32.0F, 3.2);
@@ -1325,7 +1326,7 @@ public class Managed
                     {
                         failures++;
                     }
-                    break;    
+                    break;
                 case StructID.ByteStructPack2ExplicitId:
                     ByteStructPack2Explicit source_bspe = Helper.NewByteStructPack2Explicit(32, 32);
                     ByteStructPack2Explicit clone_bspe = Helper.NewByteStructPack2Explicit(32, 32);
@@ -1339,7 +1340,7 @@ public class Managed
                     {
                         failures++;
                     }
-                    break;    
+                    break;
                 case StructID.ShortStructPack4ExplicitId:
                     ShortStructPack4Explicit source_sspe = Helper.NewShortStructPack4Explicit(32, 32);
                     ShortStructPack4Explicit clone_sspe = Helper.NewShortStructPack4Explicit(32, 32);
@@ -1381,7 +1382,7 @@ public class Managed
                     {
                         failures++;
                     }
-                    break;   
+                    break;
                 default:
                     Console.WriteLine("\tThere is not the struct id");
                     failures++;
@@ -1416,7 +1417,7 @@ public class Managed
                     {
                         failures++;
                     }
-                    break;    
+                    break;
                 case StructID.InnerExplicitId:
                     InnerExplicit sourceInnerExplicit = new InnerExplicit();
                     sourceInnerExplicit.f1 = 1;
@@ -1435,7 +1436,7 @@ public class Managed
                     {
                         failures++;
                     }
-                    break;    
+                    break;
                 case StructID.InnerArrayExplicitId:
                     InnerArrayExplicit sourceInnerArrayExplicit = Helper.NewInnerArrayExplicit(1, 1.0F, "some string1", "some string2");
                     InnerArrayExplicit changeInnerArrayExplicit = Helper.NewInnerArrayExplicit(77, 77.0F, "change string1", "change string2");
@@ -1450,7 +1451,7 @@ public class Managed
                     {
                         failures++;
                     }
-                    break;    
+                    break;
                 case StructID.OUTER3Id:
                     OUTER3 sourceOUTER3 = Helper.NewOUTER3(1, 1.0F, "some string", "some string");
                     OUTER3 changeOUTER3 = Helper.NewOUTER3(77, 77.0F, "changed string", "changed string");
@@ -1465,7 +1466,7 @@ public class Managed
                     {
                         failures++;
                     }
-                    break;    
+                    break;
                 case StructID.UId:
                     U sourceU = Helper.NewU(Int32.MinValue, UInt32.MaxValue, new IntPtr(-32), new UIntPtr(32), short.MinValue, ushort.MaxValue, byte.MinValue, sbyte.MaxValue, long.MinValue, ulong.MaxValue, 32.0F, 3.2);
                     U changeU = Helper.NewU(Int32.MaxValue, UInt32.MinValue, new IntPtr(-64), new UIntPtr(64), short.MaxValue, ushort.MinValue, byte.MaxValue, sbyte.MinValue, long.MaxValue, ulong.MinValue, 64.0F, 6.4);
@@ -1480,7 +1481,7 @@ public class Managed
                     {
                         failures++;
                     }
-                    break;    
+                    break;
                 case StructID.ByteStructPack2ExplicitId:
                     ByteStructPack2Explicit source_bspe = Helper.NewByteStructPack2Explicit(32, 32);
                     ByteStructPack2Explicit change_bspe = Helper.NewByteStructPack2Explicit(64, 64);
@@ -1494,7 +1495,7 @@ public class Managed
                     {
                         failures++;
                     }
-                    break;    
+                    break;
                 case StructID.ShortStructPack4ExplicitId:
                     ShortStructPack4Explicit source_sspe = Helper.NewShortStructPack4Explicit(32, 32);
                     ShortStructPack4Explicit change_sspe = Helper.NewShortStructPack4Explicit(64, 64);
@@ -1536,7 +1537,7 @@ public class Managed
                     {
                         failures++;
                     }
-                    break;   
+                    break;
                 default:
                     Console.WriteLine("\tThere is not the struct id");
                     failures++;

@@ -140,7 +140,7 @@ namespace System.Net
             {
                 tokenString = Quoted ?
                     _tokenStream.Substring(_start, _tokenLength) :
-                    _tokenStream.SubstringTrim(_start, _tokenLength);
+                    _tokenStream.AsSpan(_start, _tokenLength).Trim().ToString();
             }
             return tokenString;
         }
@@ -665,7 +665,7 @@ namespace System.Net
                                         expiresSet = true;
                                         if (int.TryParse(CheckQuoted(_tokenizer.Value), out int parsed))
                                         {
-                                            cookie!.Expires = DateTime.Now.AddSeconds(parsed);
+                                            cookie!.Expires = DateTime.UtcNow.AddSeconds(parsed);
                                         }
                                         else
                                         {

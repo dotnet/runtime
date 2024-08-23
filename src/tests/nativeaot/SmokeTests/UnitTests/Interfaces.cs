@@ -6,6 +6,7 @@ using System.Text;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Diagnostics.CodeAnalysis;
 
 public class Interfaces
 {
@@ -689,6 +690,8 @@ public class Interfaces
         static IInterface<object> s_c3a = new C3<object>();
         static IInterface s_c3b = new C3<object>();
 
+        // Works around https://github.com/dotnet/runtime/issues/94399
+        [MethodImpl(MethodImplOptions.NoOptimization)]
         public static void Run()
         {
             if (s_c1.Method(null) != "Method(object)")
@@ -1223,6 +1226,7 @@ public class Interfaces
 
         static Type s_fooType = typeof(Foo);
 
+        [UnconditionalSuppressMessage("AOT", "IL3050", Justification = "MakeGenericType - Intentional")]
         public static void Run()
         {
             Type t = typeof(FrobCaller<>).MakeGenericType(s_fooType);
@@ -1287,6 +1291,7 @@ public class Interfaces
 
         static Type s_atomType = typeof(Atom);
 
+        [UnconditionalSuppressMessage("AOT", "IL3050", Justification = "MakeGenericType - Intentional")]
         public static void Run()
         {
             Type t = typeof(Wrapper<>).MakeGenericType(s_atomType);
@@ -1352,6 +1357,7 @@ public class Interfaces
         static Type s_atomType = typeof(Atom);
         static Type s_atomBaseType = typeof(AtomBase);
 
+        [UnconditionalSuppressMessage("AOT", "IL3050", Justification = "MakeGenericType - Intentional")]
         public static void Run()
         {
             Type t = typeof(FrobCaller<,>).MakeGenericType(typeof(AbjectFail<AtomBase>), s_atomType);
@@ -1574,13 +1580,16 @@ public class Interfaces
             public static string GrabCookie() => T.ImHungryGiveMeCookie();
         }
 
+        [UnconditionalSuppressMessage("AOT", "IL3050", Justification = "MakeGenericType - Intentional")]
         public static void Run()
         {
-            var r = (string)typeof(Gen<>).MakeGenericType(typeof(Baz)).GetMethod("GrabCookie").Invoke(null, Array.Empty<object>());
+            var r = (string)typeof(Gen<>).MakeGenericType(GetBaz()).GetMethod("GrabCookie").Invoke(null, Array.Empty<object>());
+            static Type GetBaz() => typeof(Baz);
             if (r != "IBar")
                 throw new Exception(r);
 
-            r = (string)typeof(Gen<>).MakeGenericType(typeof(IBar)).GetMethod("GrabCookie").Invoke(null, Array.Empty<object>());
+            r = (string)typeof(Gen<>).MakeGenericType(GetIBar()).GetMethod("GrabCookie").Invoke(null, Array.Empty<object>());
+            static Type GetIBar() => typeof(IBar);
             if (r != "IBar")
                 throw new Exception(r);
         }
@@ -1610,17 +1619,21 @@ public class Interfaces
             public static string GrabCookie() => T.ImHungryGiveMeCookie();
         }
 
+        [UnconditionalSuppressMessage("AOT", "IL3050", Justification = "MakeGenericType - Intentional")]
         public static void Run()
         {
-            Activator.CreateInstance(typeof(Baz<>).MakeGenericType(typeof(Atom1)));
+            Activator.CreateInstance(typeof(Baz<>).MakeGenericType(GetAtom1()));
 
-            var r = (string)typeof(Gen<>).MakeGenericType(typeof(Baz<>).MakeGenericType(typeof(Atom1))).GetMethod("GrabCookie").Invoke(null, Array.Empty<object>());
+            var r = (string)typeof(Gen<>).MakeGenericType(typeof(Baz<>).MakeGenericType(GetAtom1())).GetMethod("GrabCookie").Invoke(null, Array.Empty<object>());
             if (r != "IBar<Atom1>")
                 throw new Exception(r);
 
-            r = (string)typeof(Gen<>).MakeGenericType(typeof(IBar<>).MakeGenericType(typeof(Atom2))).GetMethod("GrabCookie").Invoke(null, Array.Empty<object>());
+            r = (string)typeof(Gen<>).MakeGenericType(typeof(IBar<>).MakeGenericType(GetAtom2())).GetMethod("GrabCookie").Invoke(null, Array.Empty<object>());
             if (r != "IBar<Atom2>")
                 throw new Exception(r);
+
+            static Type GetAtom1() => typeof(Atom1);
+            static Type GetAtom2() => typeof(Atom2);
         }
     }
 

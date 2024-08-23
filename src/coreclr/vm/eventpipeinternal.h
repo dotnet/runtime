@@ -61,7 +61,7 @@ extern "C" INT_PTR QCALLTYPE EventPipeInternal_CreateProvider(
 extern "C" INT_PTR QCALLTYPE EventPipeInternal_DefineEvent(
     INT_PTR provHandle,
     UINT32 eventID,
-    __int64 keywords,
+    int64_t keywords,
     UINT32 eventVersion,
     UINT32 level,
     void *pMetadata,

@@ -56,7 +56,11 @@
 #include <llvm/IR/MDBuilder.h>
 
 #include <llvm/IR/InstrTypes.h> // CallBase
+#if LLVM_API_VERSION < 1900
 #include <llvm/Support/Host.h> // llvm::sys::getHostCPUFeatures
+#else
+#include <llvm/TargetParser/Host.h> // llvm::sys::getHostCPUFeatures
+#endif
 #include <llvm/Analysis/TargetTransformInfo.h> // Intrinsic::ID
 #include <llvm/IR/IntrinsicsX86.h>
 #include <llvm/IR/IntrinsicsAArch64.h>
@@ -726,7 +730,7 @@ mono_llvm_register_intrinsic (LLVMModuleRef module, IntrinsicId id, LLVMTypeRef 
 }
 
 /*
- * mono_llvm_register_intrinsic:
+ * mono_llvm_register_overloaded_intrinsic:
  *
  *   Register an overloaded LLVM intrinsic identified by ID using the supplied types.
  */

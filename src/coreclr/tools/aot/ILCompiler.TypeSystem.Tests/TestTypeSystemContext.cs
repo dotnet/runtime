@@ -8,6 +8,7 @@ using System.Diagnostics;
 using ILCompiler;
 using Internal.TypeSystem;
 using System.Reflection;
+using System.Reflection.Metadata;
 using System.Reflection.PortableExecutable;
 using System.IO;
 
@@ -61,7 +62,7 @@ namespace TypeSystemTests
             return module;
         }
 
-        public override ModuleDesc ResolveAssembly(System.Reflection.AssemblyName name, bool throwIfNotFound)
+        public override ModuleDesc ResolveAssembly(AssemblyNameInfo name, bool throwIfNotFound)
         {
             return GetModuleForSimpleName(name.Name);
         }

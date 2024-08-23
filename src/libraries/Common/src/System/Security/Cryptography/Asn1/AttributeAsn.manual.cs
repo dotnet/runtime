@@ -7,7 +7,7 @@ namespace System.Security.Cryptography.Asn1
     {
         public AttributeAsn(AsnEncodedData attribute)
         {
-#if NET5_0_OR_GREATER
+#if NET
             ArgumentNullException.ThrowIfNull(attribute);
 #else
             if (attribute is null)

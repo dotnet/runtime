@@ -689,7 +689,7 @@ void ComMTMemberInfoMap::GetMethodPropsForMeth(
     rProps[ix].bFunction2Getter = FALSE;
 
     // See if there is property information for this member.
-    hr = pMeth->GetModule()->GetPropertyInfoForMethodDef(pMeth->GetMemberDef(), &pd, &pPropName, &uSemantic);
+    hr = pMeth->GetMDImport()->GetPropertyInfoForMethodDef(pMeth->GetMemberDef(), &pd, &pPropName, &uSemantic);
     IfFailThrow(hr);
 
     if (hr == S_OK)
@@ -714,13 +714,13 @@ void ComMTMemberInfoMap::GetMethodPropsForMeth(
         if (i < 0)
         {
             // Save the name.  Have to convert from UTF8.
-            int iLen = WszMultiByteToWideChar(CP_UTF8, 0, pPropName, -1, 0, 0);
+            int iLen = MultiByteToWideChar(CP_UTF8, 0, pPropName, -1, 0, 0);
             rProps[ix].pName = reinterpret_cast<WCHAR*>(sNames.Alloc(iLen*sizeof(WCHAR)));
             if (rProps[ix].pName == NULL)
             {
                 ThrowHR(E_OUTOFMEMORY);
             }
-            WszMultiByteToWideChar(CP_UTF8, 0, pPropName, -1, rProps[ix].pName, iLen);
+            MultiByteToWideChar(CP_UTF8, 0, pPropName, -1, rProps[ix].pName, iLen);
 
             // Check whether the property has a dispid attribute.
             hr = pMeth->GetMDImport()->GetDispIdOfMemberDef(pd, &dispid);

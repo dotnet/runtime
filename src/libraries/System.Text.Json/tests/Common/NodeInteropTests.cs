@@ -30,7 +30,7 @@ namespace System.Text.Json.Serialization.Tests
 
         public class Poco
         {
-            public string MyString { get; set; }
+            public string? MyString { get; set; }
             public JsonNode Node { get; set; }
             public JsonArray Array { get; set; }
             public JsonValue Value { get; set; }

@@ -93,7 +93,7 @@ namespace Wasm.Build.Tests
         {
             _testIdx = Interlocked.Increment(ref s_testCounter);
             _buildContext = buildContext;
-            _testOutput = output;
+            _testOutput = new TestOutputWrapper(output);
             _logPath = s_buildEnv.LogRootPath; // FIXME:
         }
 
@@ -160,9 +160,8 @@ namespace Wasm.Build.Tests
             @$"<Project Sdk=""Microsoft.NET.Sdk"">
               <PropertyGroup>
                 <TargetFramework>{DefaultTargetFramework}</TargetFramework>
+                <RuntimeIdentifier>wasi-wasm</RuntimeIdentifier>
                 <OutputType>Exe</OutputType>
-                <WasmGenerateRunV8Script>true</WasmGenerateRunV8Script>
-                <WasmMainJSPath>test-main.js</WasmMainJSPath>
                 ##EXTRA_PROPERTIES##
               </PropertyGroup>
               <ItemGroup>
@@ -176,7 +175,6 @@ namespace Wasm.Build.Tests
             if (buildArgs.AOT)
             {
                 extraProperties = $"{extraProperties}\n<RunAOTCompilation>true</RunAOTCompilation>";
-                extraProperties += $"\n<EmccVerbose>{RuntimeInformation.IsOSPlatform(OSPlatform.Windows)}</EmccVerbose>\n";
             }
 
             string projectContents = projectTemplate
@@ -264,8 +262,6 @@ namespace Wasm.Build.Tests
                     AssertBasicAppBundle(bundleDir,
                                          buildArgs.ProjectName,
                                          buildArgs.Config,
-                                         options.MainJS ?? "test-main.js",
-                                         options.HasV8Script,
                                          options.TargetFramework ?? DefaultTargetFramework,
                                          options.HasIcudt,
                                          options.DotnetWasmFromRuntimePack ?? !buildArgs.AOT);
@@ -361,8 +357,6 @@ namespace Wasm.Build.Tests
         protected static void AssertBasicAppBundle(string bundleDir,
                                                    string projectName,
                                                    string config,
-                                                   string mainJS,
-                                                   bool hasV8Script,
                                                    string targetFramework,
                                                    bool hasIcudt = true,
                                                    bool dotnetWasmFromRuntimePack = true)
@@ -370,14 +364,11 @@ namespace Wasm.Build.Tests
 #if false
             AssertFilesExist(bundleDir, new []
             {
-                "index.html",
-                mainJS,
                 "dotnet.wasm",
                 "_framework/blazor.boot.json",
                 "dotnet.js"
             });
 
-            AssertFilesExist(bundleDir, new[] { "run-v8.sh" }, expectToExist: hasV8Script);
             AssertFilesExist(bundleDir, new[] { "icudt.dat" }, expectToExist: hasIcudt);
 
             string managedDir = Path.Combine(bundleDir, "managed");
@@ -573,7 +564,7 @@ namespace Wasm.Build.Tests
 
                 // this will ensure that all the async event handling has completed
                 // and should be called after process.WaitForExit(int)
-                // https://docs.microsoft.com/en-us/dotnet/api/system.diagnostics.process.waitforexit?view=net-5.0#System_Diagnostics_Process_WaitForExit_System_Int32_
+                // https://learn.microsoft.com/dotnet/api/system.diagnostics.process.waitforexit?view=net-5.0#System_Diagnostics_Process_WaitForExit_System_Int32_
                 process.WaitForExit();
 
                 process.ErrorDataReceived -= logStdErr;
@@ -603,8 +594,6 @@ namespace Wasm.Build.Tests
                     }
                     outputBuilder.AppendLine($"{label} {message}");
                 }
-                if (EnvironmentVariables.ShowBuildOutput)
-                    Console.WriteLine($"{label} {message}");
             }
         }
 
@@ -692,6 +681,39 @@ namespace Wasm.Build.Tests
                     return 42;
                 }
             }";
+
+        public static IEnumerable<object?[]> TestDataForConsolePublishAndRun() =>
+            new IEnumerable<object?>[]
+            {
+                new object?[] { "Debug" },
+                new object?[] { "Release" }
+            }
+            .AsEnumerable()
+            .MultiplyWithSingleArgs(true, false) /*propertyValue*/
+            .MultiplyWithSingleArgs(true, false) /*aot*/
+            .UnwrapItemsAsArrays();
+
+        protected CommandResult RunWithoutBuild(string config, string id, bool enableHttp = false)
+        {
+            // wasmtime --wasi http is necessary because the default dotnet.wasm (without native rebuild depends on wasi:http world)
+            string runArgs = $"run --no-build -c {config} --forward-exit-code";
+            if (enableHttp)
+            {
+                runArgs += " --extra-host-arg=--wasi --extra-host-arg=http";
+            }
+            runArgs += " x y z";
+            int expectedExitCode = 42;
+            CommandResult res = new RunCommand(s_buildEnv, _testOutput, label: id)
+                            .WithWorkingDirectory(_projectDir!)
+                            .ExecuteWithCapturedOutput(runArgs)
+                            .EnsureExitCode(expectedExitCode);
+
+            Assert.Contains("Hello, Wasi Console!", res.Output);
+            Assert.Contains("args[0] = x", res.Output);
+            Assert.Contains("args[1] = y", res.Output);
+            Assert.Contains("args[2] = z", res.Output);
+            return res;
+        }
     }
 
     public record BuildArgs(string ProjectName,
@@ -712,11 +734,9 @@ namespace Wasm.Build.Tests
         bool    CreateProject             = true,
         bool    Publish                   = true,
         bool    BuildOnlyAfterPublish     = true,
-        bool    HasV8Script               = true,
         string? Verbosity                 = null,
         string? Label                     = null,
         string? TargetFramework           = null,
-        string? MainJS                    = null,
         IDictionary<string, string>? ExtraBuildEnvironmentVariables = null
     );
 

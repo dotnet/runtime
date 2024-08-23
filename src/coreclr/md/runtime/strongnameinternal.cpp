@@ -6,233 +6,317 @@
 
 #include "stdafx.h"
 #include "strongnameinternal.h"
-#include "thekey.h"
-#include "ecmakey.h"
 #include "sha1.h"
 
-//---------------------------------------------------------------------------------------
-//
-// Check to see if a public key blob is the ECMA public key blob
-//
-// Arguments:
-//   pbKey - public key blob to check
-//   cbKey - size in bytes of pbKey
-//
+// Common keys used by libraries we ship are included here.
 
-bool StrongNameIsEcmaKey(_In_reads_(cbKey) const BYTE *pbKey, DWORD cbKey)
+namespace
 {
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-    }
-    CONTRACTL_END;
+    // The byte values of the real public keys and their corresponding tokens
+    // for assemblies we ship.
+    // These blobs allow us to skip the token calculation for our assemblies.
+    // Each of these keys corresponds to the public key in a file in the Arcade SDK.
 
-    // The key should be the same size as the ECMA key
-    if (cbKey != sizeof(g_rbNeutralPublicKey))
+    // The byte values of the ECMA pseudo public key and its token.
+    // Arcade SDK StrongNameKeyId: ECMA
+    const BYTE NeutralPublicKey[] = { 0, 0, 0, 0, 0, 0, 0, 0, 4, 0, 0, 0, 0, 0, 0, 0 };
+    const StrongNameToken NeutralPublicKeyToken = {{ 0xb7, 0x7a, 0x5c, 0x56, 0x19, 0x34, 0xe0, 0x89 }};
+
+    // Arcade SDK StrongNameKeyId: Microsoft
+    static const BYTE MicrosoftKey[] =
     {
+        0x00,0x24,0x00,0x00,0x04,0x80,0x00,0x00,0x94,0x00,0x00,0x00,0x06,0x02,0x00,0x00,
+        0x00,0x24,0x00,0x00,0x52,0x53,0x41,0x31,0x00,0x04,0x00,0x00,0x01,0x00,0x01,0x00,
+        0x07,0xd1,0xfa,0x57,0xc4,0xae,0xd9,0xf0,0xa3,0x2e,0x84,0xaa,0x0f,0xae,0xfd,0x0d,
+        0xe9,0xe8,0xfd,0x6a,0xec,0x8f,0x87,0xfb,0x03,0x76,0x6c,0x83,0x4c,0x99,0x92,0x1e,
+        0xb2,0x3b,0xe7,0x9a,0xd9,0xd5,0xdc,0xc1,0xdd,0x9a,0xd2,0x36,0x13,0x21,0x02,0x90,
+        0x0b,0x72,0x3c,0xf9,0x80,0x95,0x7f,0xc4,0xe1,0x77,0x10,0x8f,0xc6,0x07,0x77,0x4f,
+        0x29,0xe8,0x32,0x0e,0x92,0xea,0x05,0xec,0xe4,0xe8,0x21,0xc0,0xa5,0xef,0xe8,0xf1,
+        0x64,0x5c,0x4c,0x0c,0x93,0xc1,0xab,0x99,0x28,0x5d,0x62,0x2c,0xaa,0x65,0x2c,0x1d,
+        0xfa,0xd6,0x3d,0x74,0x5d,0x6f,0x2d,0xe5,0xf1,0x7e,0x5e,0xaf,0x0f,0xc4,0x96,0x3d,
+        0x26,0x1c,0x8a,0x12,0x43,0x65,0x18,0x20,0x6d,0xc0,0x93,0x34,0x4d,0x5a,0xd2,0x93
+    };
+
+    static const StrongNameToken MicrosoftKeyToken = {{0xb0,0x3f,0x5f,0x7f,0x11,0xd5,0x0a,0x3a}};
+
+    // Arcade SDK StrongNameKeyId: SilverlightPlatform
+    static const BYTE SilverlightPlatformKey[] =
+    {
+        0x00,0x24,0x00,0x00,0x04,0x80,0x00,0x00,0x94,0x00,0x00,0x00,0x06,0x02,0x00,0x00,
+        0x00,0x24,0x00,0x00,0x52,0x53,0x41,0x31,0x00,0x04,0x00,0x00,0x01,0x00,0x01,0x00,
+        0x8d,0x56,0xc7,0x6f,0x9e,0x86,0x49,0x38,0x30,0x49,0xf3,0x83,0xc4,0x4b,0xe0,0xec,
+        0x20,0x41,0x81,0x82,0x2a,0x6c,0x31,0xcf,0x5e,0xb7,0xef,0x48,0x69,0x44,0xd0,0x32,
+        0x18,0x8e,0xa1,0xd3,0x92,0x07,0x63,0x71,0x2c,0xcb,0x12,0xd7,0x5f,0xb7,0x7e,0x98,
+        0x11,0x14,0x9e,0x61,0x48,0xe5,0xd3,0x2f,0xba,0xab,0x37,0x61,0x1c,0x18,0x78,0xdd,
+        0xc1,0x9e,0x20,0xef,0x13,0x5d,0x0c,0xb2,0xcf,0xf2,0xbf,0xec,0x3d,0x11,0x58,0x10,
+        0xc3,0xd9,0x06,0x96,0x38,0xfe,0x4b,0xe2,0x15,0xdb,0xf7,0x95,0x86,0x19,0x20,0xe5,
+        0xab,0x6f,0x7d,0xb2,0xe2,0xce,0xef,0x13,0x6a,0xc2,0x3d,0x5d,0xd2,0xbf,0x03,0x17,
+        0x00,0xae,0xc2,0x32,0xf6,0xc6,0xb1,0xc7,0x85,0xb4,0x30,0x5c,0x12,0x3b,0x37,0xab
+    };
+
+    static const StrongNameToken SilverlightPlatformKeyToken = {{0x7c,0xec,0x85,0xd7,0xbe,0xa7,0x79,0x8e}};
+
+    // Arcade SDK StrongNameKeyId: MicrosoftShared
+    static const BYTE SilverlightKey[] =
+    {
+        0x00,0x24,0x00,0x00,0x04,0x80,0x00,0x00,0x94,0x00,0x00,0x00,0x06,0x02,0x00,0x00,
+        0x00,0x24,0x00,0x00,0x52,0x53,0x41,0x31,0x00,0x04,0x00,0x00,0x01,0x00,0x01,0x00,
+        0xb5,0xfc,0x90,0xe7,0x02,0x7f,0x67,0x87,0x1e,0x77,0x3a,0x8f,0xde,0x89,0x38,0xc8,
+        0x1d,0xd4,0x02,0xba,0x65,0xb9,0x20,0x1d,0x60,0x59,0x3e,0x96,0xc4,0x92,0x65,0x1e,
+        0x88,0x9c,0xc1,0x3f,0x14,0x15,0xeb,0xb5,0x3f,0xac,0x11,0x31,0xae,0x0b,0xd3,0x33,
+        0xc5,0xee,0x60,0x21,0x67,0x2d,0x97,0x18,0xea,0x31,0xa8,0xae,0xbd,0x0d,0xa0,0x07,
+        0x2f,0x25,0xd8,0x7d,0xba,0x6f,0xc9,0x0f,0xfd,0x59,0x8e,0xd4,0xda,0x35,0xe4,0x4c,
+        0x39,0x8c,0x45,0x43,0x07,0xe8,0xe3,0x3b,0x84,0x26,0x14,0x3d,0xae,0xc9,0xf5,0x96,
+        0x83,0x6f,0x97,0xc8,0xf7,0x47,0x50,0xe5,0x97,0x5c,0x64,0xe2,0x18,0x9f,0x45,0xde,
+        0xf4,0x6b,0x2a,0x2b,0x12,0x47,0xad,0xc3,0x65,0x2b,0xf5,0xc3,0x08,0x05,0x5d,0xa9
+    };
+
+    static const StrongNameToken SilverlightKeyToken = {{0x31,0xBF,0x38,0x56,0xAD,0x36,0x4E,0x35}};
+
+    // Arcade SDK StrongNameKeyId: MicrosoftAspNetCore
+    static const BYTE AspNetCoreKey[] =
+    {
+        0x00,0x24,0x00,0x00,0x04,0x80,0x00,0x00,0x94,0x00,0x00,0x00,0x06,0x02,0x00,0x00,
+        0x00,0x24,0x00,0x00,0x52,0x53,0x41,0x31,0x00,0x04,0x00,0x00,0x01,0x00,0x01,0x00,
+        0xF3,0x3A,0x29,0x04,0x4F,0xA9,0xD7,0x40,0xC9,0xB3,0x21,0x3A,0x93,0xE5,0x7C,0x84,
+        0xB4,0x72,0xC8,0x4E,0x0B,0x8A,0x0E,0x1A,0xE4,0x8E,0x67,0xA9,0xF8,0xF6,0xDE,0x9D,
+        0x5F,0x7F,0x3D,0x52,0xAC,0x23,0xE4,0x8A,0xC5,0x18,0x01,0xF1,0xDC,0x95,0x0A,0xBE,
+        0x90,0x1D,0xA3,0x4D,0x2A,0x9E,0x3B,0xAA,0xDB,0x14,0x1A,0x17,0xC7,0x7E,0xF3,0xC5,
+        0x65,0xDD,0x5E,0xE5,0x05,0x4B,0x91,0xCF,0x63,0xBB,0x3C,0x6A,0xB8,0x3F,0x72,0xAB,
+        0x3A,0xAF,0xE9,0x3D,0x0F,0xC3,0xC2,0x34,0x8B,0x76,0x4F,0xAF,0xB0,0xB1,0xC0,0x73,
+        0x3D,0xE5,0x14,0x59,0xAE,0xAB,0x46,0x58,0x03,0x84,0xBF,0x9D,0x74,0xC4,0xE2,0x81,
+        0x64,0xB7,0xCD,0xE2,0x47,0xF8,0x91,0xBA,0x07,0x89,0x1C,0x9D,0x87,0x2A,0xD2,0xBB
+    };
+
+    static const StrongNameToken AspNetCoreKeyToken =
+    {
+        {0xad, 0xb9, 0x79, 0x38, 0x29, 0xdd, 0xae, 0x60}
+    };
+
+    // Arcade SDK StrongNameKeyId: Open
+    static const BYTE OpenKey[] =
+    {
+        0x00,0x24,0x00,0x00,0x04,0x80,0x00,0x00,0x94,0x00,0x00,0x00,0x06,0x02,0x00,0x00,
+        0x00,0x24,0x00,0x00,0x52,0x53,0x41,0x31,0x00,0x04,0x00,0x00,0x01,0x00,0x01,0x00,
+        0x4B,0x86,0xC4,0xCB,0x78,0x54,0x9B,0x34,0xBA,0xB6,0x1A,0x3B,0x18,0x00,0xE2,0x3B,
+        0xFE,0xB5,0xB3,0xEC,0x39,0x00,0x74,0x04,0x15,0x36,0xA7,0xE3,0xCB,0xD9,0x7F,0x5F,
+        0x04,0xCF,0x0F,0x85,0x71,0x55,0xA8,0x92,0x8E,0xAA,0x29,0xEB,0xFD,0x11,0xCF,0xBB,
+        0xAD,0x3B,0xA7,0x0E,0xFE,0xA7,0xBD,0xA3,0x22,0x6C,0x6A,0x8D,0x37,0x0A,0x4C,0xD3,
+        0x03,0xF7,0x14,0x48,0x6B,0x6E,0xBC,0x22,0x59,0x85,0xA6,0x38,0x47,0x1E,0x6E,0xF5,
+        0x71,0xCC,0x92,0xA4,0x61,0x3C,0x00,0xB8,0xFA,0x65,0xD6,0x1C,0xCE,0xE0,0xCB,0xE5,
+        0xF3,0x63,0x30,0xC9,0xA0,0x1F,0x41,0x83,0x55,0x9F,0x1B,0xEF,0x24,0xCC,0x29,0x17,
+        0xC6,0xD9,0x13,0xE3,0xA5,0x41,0x33,0x3A,0x1D,0x05,0xD9,0xBE,0xD2,0x2B,0x38,0xCB
+    };
+
+    static const StrongNameToken OpenKeyToken =
+    {
+        {0xcc, 0x7b, 0x13, 0xff, 0xcd, 0x2d, 0xdd, 0x51}
+    };
+
+    struct WellKnownKey
+    {
+        BYTE const* const PublicKey;
+        const ULONG PublicKeyLen;
+        StrongNameToken const* const Token;
+    };
+
+    static const WellKnownKey WellKnownKeys[] =
+    {
+        { NeutralPublicKey, sizeof(NeutralPublicKey), &NeutralPublicKeyToken },
+        { MicrosoftKey, sizeof(MicrosoftKey), &MicrosoftKeyToken },
+        { SilverlightPlatformKey, sizeof(SilverlightPlatformKey), &SilverlightPlatformKeyToken },
+        { SilverlightKey, sizeof(SilverlightKey), &SilverlightKeyToken },
+        { AspNetCoreKey, sizeof(AspNetCoreKey), &AspNetCoreKeyToken },
+        { OpenKey, sizeof(OpenKey), &OpenKeyToken },
+    };
+
+    bool GetTokenForWellKnownKey(BYTE* key, ULONG keyLength, StrongNameToken* token)
+    {
+        for (size_t i = 0; i < ARRAY_SIZE(WellKnownKeys); i++)
+        {
+            if (keyLength == WellKnownKeys[i].PublicKeyLen &&
+                memcmp(key, WellKnownKeys[i].PublicKey, keyLength) == 0)
+            {
+                *token = *WellKnownKeys[i].Token;
+                return true;
+            }
+        }
+
         return false;
     }
 
-    const PublicKeyBlob *pKeyBlob = reinterpret_cast<const PublicKeyBlob *>(pbKey);
-    return StrongNameIsEcmaKey(*pKeyBlob);
-}
+    //---------------------------------------------------------------------------------------
+    //
+    // Determine the number of bytes that a public key blob occupies, including the key portion
+    //
+    // Arguments:
+    //   keyPublicKey - key blob to calculate the size of
+    //
 
-//---------------------------------------------------------------------------------------
-//
-// Check to see if a public key blob is the ECMA public key blob
-//
-// Arguments:
-//   keyPublicKey - Key to check to see if it matches the ECMA key
-//
-
-bool StrongNameIsEcmaKey(const PublicKeyBlob &keyPublicKey)
-{
-    CONTRACTL
+    DWORD StrongNameSizeOfPublicKey(const PublicKeyBlob &keyPublicKey)
     {
-        NOTHROW;
-        GC_NOTRIGGER;
-    }
-    CONTRACTL_END;
+        CONTRACTL
+        {
+            NOTHROW;
+            GC_NOTRIGGER;
+        }
+        CONTRACTL_END;
 
-    return StrongNameSizeOfPublicKey(keyPublicKey) == sizeof(g_rbNeutralPublicKey) &&
-           memcmp(reinterpret_cast<const BYTE *>(&keyPublicKey), g_rbNeutralPublicKey, sizeof(g_rbNeutralPublicKey)) == 0;
-}
-
-//---------------------------------------------------------------------------------------
-//
-// Verify that a public key blob looks like a reasonable public key
-//
-// Arguments:
-//   pbBuffer     - buffer to verify the format of
-//   cbBuffer     - size of pbBuffer
-//
-
-bool StrongNameIsValidPublicKey(_In_reads_(cbBuffer) const BYTE *pbBuffer, DWORD cbBuffer)
-{
-    CONTRACTL
-    {
-        PRECONDITION(CheckPointer(pbBuffer));
-        NOTHROW;
-        GC_NOTRIGGER;
-    }
-    CONTRACTL_END;
-
-    // The buffer must be at least as large as the public key structure
-    if (cbBuffer < sizeof(PublicKeyBlob))
-    {
-        return false;
+        return offsetof(PublicKeyBlob, PublicKey) +     // Size of the blob header plus
+            GET_UNALIGNED_VAL32(&keyPublicKey.cbPublicKey);  // the number of bytes in the key
     }
 
-    // The buffer must be the same size as the structure header plus the trailing key data
-    const PublicKeyBlob *pkeyPublicKey = reinterpret_cast<const PublicKeyBlob *>(pbBuffer);
-    if (GET_UNALIGNED_VAL32(&pkeyPublicKey->cbPublicKey) != cbBuffer - offsetof(PublicKeyBlob, PublicKey))
+    //---------------------------------------------------------------------------------------
+    //
+    // Check to see if a public key blob is the ECMA public key blob
+    //
+    // Arguments:
+    //   keyPublicKey - Key to check to see if it matches the ECMA key
+    //
+
+    bool StrongNameIsEcmaKey(const PublicKeyBlob &keyPublicKey)
     {
-        return false;
+        CONTRACTL
+        {
+            NOTHROW;
+            GC_NOTRIGGER;
+        }
+        CONTRACTL_END;
+
+        return StrongNameSizeOfPublicKey(keyPublicKey) == sizeof(NeutralPublicKey) &&
+            memcmp(reinterpret_cast<const BYTE *>(&keyPublicKey), NeutralPublicKey, sizeof(NeutralPublicKey)) == 0;
     }
 
-    // The buffer itself looks reasonable, but the public key structure needs to be validated as well
-    return StrongNameIsValidPublicKey(*pkeyPublicKey);
-}
+    //---------------------------------------------------------------------------------------
+    //
+    // Check to see if a public key blob is the ECMA public key blob
+    //
+    // Arguments:
+    //   pbKey - public key blob to check
+    //   cbKey - size in bytes of pbKey
+    //
 
-//---------------------------------------------------------------------------------------
-//
-// Verify that a public key blob looks like a reasonable public key.
-//
-// Arguments:
-//   keyPublicKey - key blob to verify
-//
-// Notes:
-//    This can be a very expensive operation, since it involves importing keys.
-//
-
-bool StrongNameIsValidPublicKey(const PublicKeyBlob &keyPublicKey)
-{
-    CONTRACTL
+    bool StrongNameIsEcmaKey(_In_reads_(cbKey) const BYTE *pbKey, DWORD cbKey)
     {
-        NOTHROW;
-        GC_NOTRIGGER;
+        CONTRACTL
+        {
+            NOTHROW;
+            GC_NOTRIGGER;
+        }
+        CONTRACTL_END;
+
+        // The key should be the same size as the ECMA key
+        if (cbKey != sizeof(NeutralPublicKey))
+        {
+            return false;
+        }
+
+        const PublicKeyBlob *pKeyBlob = reinterpret_cast<const PublicKeyBlob *>(pbKey);
+        return StrongNameIsEcmaKey(*pKeyBlob);
     }
-    CONTRACTL_END;
 
-    // The ECMA key doesn't look like a valid key so it will fail the below checks. If we were passed that
-    // key, then we can skip them
-    if (StrongNameIsEcmaKey(keyPublicKey))
+    //---------------------------------------------------------------------------------------
+    //
+    // Verify that a public key blob looks like a reasonable public key.
+    //
+    // Arguments:
+    //   keyPublicKey - key blob to verify
+    //
+    // Notes:
+    //    This can be a very expensive operation, since it involves importing keys.
+    //
+
+    bool StrongNameIsValidPublicKey(const PublicKeyBlob &keyPublicKey)
     {
+        CONTRACTL
+        {
+            NOTHROW;
+            GC_NOTRIGGER;
+        }
+        CONTRACTL_END;
+
+        // The ECMA key doesn't look like a valid key so it will fail the below checks. If we were passed that
+        // key, then we can skip them
+        if (StrongNameIsEcmaKey(keyPublicKey))
+        {
+            return true;
+        }
+
+        // If a hash algorithm is specified, it must be a sensible value
+        bool fHashAlgorithmValid = GET_ALG_CLASS(GET_UNALIGNED_VAL32(&keyPublicKey.HashAlgID)) == ALG_CLASS_HASH &&
+                                GET_ALG_SID(GET_UNALIGNED_VAL32(&keyPublicKey.HashAlgID)) >= ALG_SID_SHA1;
+        if (keyPublicKey.HashAlgID != 0 && !fHashAlgorithmValid)
+        {
+            return false;
+        }
+
+        // If a signature algorithm is specified, it must be a sensible value
+        bool fSignatureAlgorithmValid = GET_ALG_CLASS(GET_UNALIGNED_VAL32(&keyPublicKey.SigAlgID)) == ALG_CLASS_SIGNATURE;
+        if (keyPublicKey.SigAlgID != 0 && !fSignatureAlgorithmValid)
+        {
+            return false;
+        }
+
+        // The key blob must indicate that it is a PUBLICKEYBLOB
+        if (keyPublicKey.PublicKey[0] != PUBLICKEYBLOB)
+        {
+            return false;
+        }
+
         return true;
     }
 
-    // If a hash algorithm is specified, it must be a sensible value
-    bool fHashAlgorithmValid = GET_ALG_CLASS(GET_UNALIGNED_VAL32(&keyPublicKey.HashAlgID)) == ALG_CLASS_HASH &&
-                               GET_ALG_SID(GET_UNALIGNED_VAL32(&keyPublicKey.HashAlgID)) >= ALG_SID_SHA1;
-    if (keyPublicKey.HashAlgID != 0 && !fHashAlgorithmValid)
-    {
-        return false;
-    }
+    //---------------------------------------------------------------------------------------
+    //
+    // Verify that a public key blob looks like a reasonable public key
+    //
+    // Arguments:
+    //   pbBuffer     - buffer to verify the format of
+    //   cbBuffer     - size of pbBuffer
+    //
 
-    // If a signature algorithm is specified, it must be a sensible value
-    bool fSignatureAlgorithmValid = GET_ALG_CLASS(GET_UNALIGNED_VAL32(&keyPublicKey.SigAlgID)) == ALG_CLASS_SIGNATURE;
-    if (keyPublicKey.SigAlgID != 0 && !fSignatureAlgorithmValid)
+    bool StrongNameIsValidPublicKey(_In_reads_(cbBuffer) const BYTE *pbBuffer, DWORD cbBuffer)
     {
-        return false;
-    }
+        CONTRACTL
+        {
+            PRECONDITION(CheckPointer(pbBuffer));
+            NOTHROW;
+            GC_NOTRIGGER;
+        }
+        CONTRACTL_END;
 
-    // The key blob must indicate that it is a PUBLICKEYBLOB
-    if (keyPublicKey.PublicKey[0] != PUBLICKEYBLOB)
-    {
-        return false;
-    }
+        // The buffer must be at least as large as the public key structure
+        if (cbBuffer < sizeof(PublicKeyBlob))
+        {
+            return false;
+        }
 
-    return true;
+        // The buffer must be the same size as the structure header plus the trailing key data
+        const PublicKeyBlob *pkeyPublicKey = reinterpret_cast<const PublicKeyBlob *>(pbBuffer);
+        if (GET_UNALIGNED_VAL32(&pkeyPublicKey->cbPublicKey) != cbBuffer - offsetof(PublicKeyBlob, PublicKey))
+        {
+            return false;
+        }
+
+        // The buffer itself looks reasonable, but the public key structure needs to be validated as well
+        return StrongNameIsValidPublicKey(*pkeyPublicKey);
+    }
 }
 
-
-//---------------------------------------------------------------------------------------
-//
-// Determine the number of bytes that a public key blob occupies, including the key portion
-//
-// Arguments:
-//   keyPublicKey - key blob to calculate the size of
-//
-
-DWORD StrongNameSizeOfPublicKey(const PublicKeyBlob &keyPublicKey)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-    }
-    CONTRACTL_END;
-
-    return offsetof(PublicKeyBlob, PublicKey) +     // Size of the blob header plus
-           GET_UNALIGNED_VAL32(&keyPublicKey.cbPublicKey);  // the number of bytes in the key
-}
-
-
-
-
-// Size in bytes of strong name token.
-#define SN_SIZEOF_TOKEN     8
-
-// Determine the size of a PublicKeyBlob structure given the size of the key
-// portion.
-#define SN_SIZEOF_KEY(_pKeyBlob) (offsetof(PublicKeyBlob, PublicKey) + GET_UNALIGNED_VAL32(&(_pKeyBlob)->cbPublicKey))
-
-// We allow a special abbreviated form of the Microsoft public key (16 bytes
-// long: 0 for both alg ids, 4 for key length and 4 bytes of 0 for the key
-// itself). This allows us to build references to system libraries that are
-// platform neutral (so a 3rd party can build SPCL replacements). The
-// special zero PK is just shorthand for the local runtime's real system PK,
-// which is always used to perform the signature verification, so no security
-// hole is opened by this. Therefore we need to store a copy of the real PK (for
-// this platform) here.
-
-// the actual definition of the microsoft key is in separate file to allow custom keys
-#include "thekey.h"
-
-
-#define SN_THE_KEY() ((PublicKeyBlob*)g_rbTheKey)
-#define SN_SIZEOF_THE_KEY() sizeof(g_rbTheKey)
-
-#define SN_THE_KEYTOKEN() ((PublicKeyBlob*)g_rbTheKeyToken)
-
-// Determine if the given public key blob is the neutral key.
-#define SN_IS_NEUTRAL_KEY(_pk) (SN_SIZEOF_KEY((PublicKeyBlob*)(_pk)) == sizeof(g_rbNeutralPublicKey) && \
-                                memcmp((_pk), g_rbNeutralPublicKey, sizeof(g_rbNeutralPublicKey)) == 0)
-
-#define SN_IS_THE_KEY(_pk) (SN_SIZEOF_KEY((PublicKeyBlob*)(_pk)) == sizeof(g_rbTheKey) && \
-                                memcmp((_pk), g_rbTheKey, sizeof(g_rbTheKey)) == 0)
-
-
-// Silverlight platform key
-#define SN_THE_SILVERLIGHT_PLATFORM_KEYTOKEN() ((PublicKeyBlob*)g_rbTheSilverlightPlatformKeyToken)
-#define SN_IS_THE_SILVERLIGHT_PLATFORM_KEY(_pk) (SN_SIZEOF_KEY((PublicKeyBlob*)(_pk)) == sizeof(g_rbTheSilverlightPlatformKey) && \
-                                memcmp((_pk), g_rbTheSilverlightPlatformKey, sizeof(g_rbTheSilverlightPlatformKey)) == 0)
-
-// Silverlight key
-#define SN_IS_THE_SILVERLIGHT_KEY(_pk) (SN_SIZEOF_KEY((PublicKeyBlob*)(_pk)) == sizeof(g_rbTheSilverlightKey) && \
-                                memcmp((_pk), g_rbTheSilverlightKey, sizeof(g_rbTheSilverlightKey)) == 0)
-
-#define SN_THE_SILVERLIGHT_KEYTOKEN() ((PublicKeyBlob*)g_rbTheSilverlightKeyToken)
-
-
-// Free buffer allocated by routines below.
-VOID StrongNameFreeBuffer(BYTE *pbMemory)            // [in] address of memory to free
-{
-    if (pbMemory != (BYTE*)SN_THE_KEY() && pbMemory != g_rbNeutralPublicKey)
-        delete [] pbMemory;
-}
-
+BYTE const* const g_coreLibPublicKey = SilverlightPlatformKey;
+const ULONG g_coreLibPublicKeyLen = ARRAY_SIZE(SilverlightPlatformKey);
 
 // Create a strong name token from a public key blob.
 HRESULT StrongNameTokenFromPublicKey(BYTE    *pbPublicKeyBlob,        // [in] public key blob
                                    ULONG    cbPublicKeyBlob,
-                                   BYTE   **ppbStrongNameToken,     // [out] strong name token
-                                   ULONG   *pcbStrongNameToken)
+                                   StrongNameToken* pToken     // [out] strong name token
+)
 {
+#ifdef DACCESS_COMPILE
+    DacNotImpl();
+    return S_OK;
+#endif
     HRESULT         hr = S_OK;
-
-#ifndef DACCESS_COMPILE
 
     SHA1Hash        sha1;
     BYTE            *pHash = NULL;
@@ -242,92 +326,28 @@ HRESULT StrongNameTokenFromPublicKey(BYTE    *pbPublicKeyBlob,        // [in] pu
 
     if (!StrongNameIsValidPublicKey(pbPublicKeyBlob, cbPublicKeyBlob))
     {
-        hr = CORSEC_E_INVALID_PUBLICKEY;
-        goto Exit;
+        return CORSEC_E_INVALID_PUBLICKEY;
     }
-
-    // Allocate a buffer for the output token.
-    *ppbStrongNameToken = new (nothrow) BYTE[SN_SIZEOF_TOKEN];
-    if (*ppbStrongNameToken == NULL) {
-        hr = E_OUTOFMEMORY;
-        goto Exit;
-    }
-    *pcbStrongNameToken = SN_SIZEOF_TOKEN;
 
     // We cache a couple of common cases.
-    if (SN_IS_NEUTRAL_KEY(pbPublicKeyBlob)) {
-        memcpy_s(*ppbStrongNameToken, *pcbStrongNameToken, g_rbNeutralPublicKeyToken, SN_SIZEOF_TOKEN);
-        goto Exit;
-    }
-    if (cbPublicKeyBlob == SN_SIZEOF_THE_KEY() &&
-        memcmp(pbPublicKeyBlob, SN_THE_KEY(), cbPublicKeyBlob) == 0) {
-        memcpy_s(*ppbStrongNameToken, *pcbStrongNameToken, SN_THE_KEYTOKEN(), SN_SIZEOF_TOKEN);
-        goto Exit;
-    }
-
-    if (SN_IS_THE_SILVERLIGHT_PLATFORM_KEY(pbPublicKeyBlob))
+    // This allows us to speed up assembly loading for assemblies we ship in the .NET SDK
+    // and member resolution from other assemblies into those assemblies.
+    if (GetTokenForWellKnownKey(pbPublicKeyBlob, cbPublicKeyBlob, pToken))
     {
-        memcpy_s(*ppbStrongNameToken, *pcbStrongNameToken, SN_THE_SILVERLIGHT_PLATFORM_KEYTOKEN(), SN_SIZEOF_TOKEN);
-        goto Exit;
-    }
-
-    if (SN_IS_THE_SILVERLIGHT_KEY(pbPublicKeyBlob))
-    {
-        memcpy_s(*ppbStrongNameToken, *pcbStrongNameToken, SN_THE_SILVERLIGHT_KEYTOKEN(), SN_SIZEOF_TOKEN);
-        goto Exit;
-    }
-
-    // To compute the correct public key token, we need to make sure the public key blob
-    // was not padded with extra bytes that CAPI CryptImportKey would've ignored.
-    // Without this round trip, we would blindly compute the hash over the padded bytes
-    // which could make finding a public key token collision a significantly easier task
-    // since an attacker wouldn't need to work hard on generating valid key pairs before hashing.
-    if (cbPublicKeyBlob <= sizeof(PublicKeyBlob)) {
-        hr = CORSEC_E_INVALID_PUBLICKEY;
-        goto Error;
-    }
-
-    // Check that the blob type is PUBLICKEYBLOB.
-    pPublicKey = (PublicKeyBlob*) pbPublicKeyBlob;
-
-    if (GET_UNALIGNED_VAL32(&pPublicKey->cbPublicKey) > cbPublicKeyBlob) {
-        hr = CORSEC_E_INVALID_PUBLICKEY;
-        goto Error;
-    }
-
-    if (cbPublicKeyBlob < SN_SIZEOF_KEY(pPublicKey)) {
-        hr = CORSEC_E_INVALID_PUBLICKEY;
-        goto Error;
-    }
-
-    if (*(BYTE*) pPublicKey->PublicKey /* PUBLICKEYSTRUC->bType */ != PUBLICKEYBLOB) {
-        hr = CORSEC_E_INVALID_PUBLICKEY;
-        goto Error;
+        return S_OK;
     }
 
     // Compute a hash over the public key.
     sha1.AddData(pbPublicKeyBlob, cbPublicKeyBlob);
     pHash = sha1.GetHash();
-    static_assert(SHA1_HASH_SIZE >= SN_SIZEOF_TOKEN, "SN_SIZEOF_TOKEN must be smaller or equal to the SHA1_HASH_SIZE");
-    dwHashLenMinusTokenSize = SHA1_HASH_SIZE - SN_SIZEOF_TOKEN;
+    static_assert(SHA1_HASH_SIZE >= StrongNameToken::SIZEOF_TOKEN, "StrongNameToken::SIZEOF_TOKEN must be smaller or equal to the SHA1_HASH_SIZE");
+    dwHashLenMinusTokenSize = SHA1_HASH_SIZE - StrongNameToken::SIZEOF_TOKEN;
 
     // Take the last few bytes of the hash value for our token. (These are the
     // low order bytes from a network byte order point of view). Reverse the
     // order of these bytes in the output buffer to get host byte order.
-    for (i = 0; i < SN_SIZEOF_TOKEN; i++)
-        (*ppbStrongNameToken)[SN_SIZEOF_TOKEN - (i + 1)] = pHash[i + dwHashLenMinusTokenSize];
-
-    goto Exit;
-
- Error:
-    if (*ppbStrongNameToken) {
-        delete [] *ppbStrongNameToken;
-        *ppbStrongNameToken = NULL;
-    }
-Exit:
-#else
-    DacNotImpl();
-#endif // #ifndef DACCESS_COMPILE
+    for (i = 0; i < StrongNameToken::SIZEOF_TOKEN; i++)
+        pToken->m_token[StrongNameToken::SIZEOF_TOKEN - (i + 1)] = pHash[i + dwHashLenMinusTokenSize];
 
     return hr;
 }

@@ -9,7 +9,6 @@
 #include "rhassert.h"
 #include "slist.h"
 #include "holder.h"
-#include "SpinLock.h"
 #include "rhbinder.h"
 #include "CachedInterfaceDispatch.h"
 

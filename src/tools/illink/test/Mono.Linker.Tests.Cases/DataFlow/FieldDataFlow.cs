@@ -39,6 +39,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
 			TestStringEmpty ();
 
+			AnnotationOnUnsupportedField.Test ();
 			WriteArrayField.Test ();
 			AccessReturnedInstanceField.Test ();
 		}
@@ -229,24 +230,21 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
 			static AccessReturnedInstanceField GetInstance ([DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.All)] Type unused) => null;
 
-			[ExpectedWarning ("IL2072", nameof (GetUnknownType), nameof (GetInstance),
-				ProducedBy = Tool.Trimmer | Tool.NativeAot)] // https://github.com/dotnet/linker/issues/2832
+			[ExpectedWarning ("IL2072", nameof (GetUnknownType), nameof (GetInstance), Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/linker/issues/2832")]
 			[ExpectedWarning ("IL2077", nameof (field), nameof (DataFlowTypeExtensions.RequiresAll))]
 			static void TestRead ()
 			{
 				GetInstance (GetUnknownType ()).field.RequiresAll ();
 			}
 
-			[ExpectedWarning ("IL2072", nameof (GetUnknownType), nameof (GetInstance),
-				ProducedBy = Tool.Trimmer | Tool.NativeAot)] // https://github.com/dotnet/linker/issues/2832
+			[ExpectedWarning ("IL2072", nameof (GetUnknownType), nameof (GetInstance), Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/linker/issues/2832")]
 			[ExpectedWarning ("IL2074", nameof (GetUnknownType), nameof (field))]
 			static void TestWrite ()
 			{
 				GetInstance (GetUnknownType ()).field = GetUnknownType ();
 			}
 
-			[ExpectedWarning ("IL2072", nameof (GetUnknownType), nameof (GetInstance),
-				ProducedBy = Tool.Trimmer | Tool.NativeAot)] // https://github.com/dotnet/linker/issues/2832
+			[ExpectedWarning ("IL2072", nameof (GetUnknownType), nameof (GetInstance), Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/linker/issues/2832")]
 			[ExpectedWarning ("IL2074", nameof (GetUnknownType), nameof (field))]
 			static void TestNullCoalescingAssignment ()
 			{
@@ -319,6 +317,80 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
 			[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]
 			public static Type _staticTypeWithPublicParameterlessConstructor;
+		}
+
+		class AnnotationOnUnsupportedField
+		{
+			class UnsupportedType
+			{
+			}
+
+			static UnsupportedType GetUnsupportedTypeInstance () => null;
+
+			[ExpectedWarning ("IL2097")]
+			[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)]
+			static UnsupportedType unsupportedTypeInstance;
+
+			[ExpectedWarning ("IL2098")]
+			static void RequirePublicFields (
+				[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicFields)]
+				UnsupportedType unsupportedTypeInstance)
+			{
+			}
+
+			[UnexpectedWarning ("IL2077", Tool.Analyzer, "https://github.com/dotnet/runtime/issues/101211")]
+			static void TestFlowOutOfField ()
+			{
+				RequirePublicFields (unsupportedTypeInstance);
+			}
+
+			[UnexpectedWarning ("IL2074", Tool.Analyzer, "https://github.com/dotnet/runtime/issues/101211")]
+			static void TestUnsupportedType () {
+				var t = GetUnsupportedTypeInstance ();
+				unsupportedTypeInstance = t;
+				TestFlowOutOfField ();
+			}
+
+			ref struct StringRef
+			{
+				[ExpectedWarning ("IL2097")]
+				[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)]
+				public ref string stringRef;
+
+				[UnexpectedWarning ("IL2069", Tool.Analyzer, "https://github.com/dotnet/runtime/issues/101211")]
+				public StringRef (ref string s)
+				{
+					stringRef = ref s;
+				}
+
+				static string GetString () => null;
+
+				[ExpectedWarning ("IL2098")]
+				static void RequirePublicFields (
+					[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicFields)]
+					ref string s)
+				{
+				}
+
+				[UnexpectedWarning ("IL2077", Tool.Analyzer, "https://github.com/dotnet/runtime/issues/101211")]
+				void TestFlowOutOfField ()
+				{
+					RequirePublicFields (ref stringRef);
+				}
+
+				public static void Test ()
+				{
+					string s = GetString ();
+					var stringRef = new StringRef (ref s);
+					stringRef.TestFlowOutOfField ();
+				}
+			}
+
+			public static void Test ()
+			{
+				TestUnsupportedType ();
+				StringRef.Test ();
+			}
 		}
 
 		class WriteArrayField

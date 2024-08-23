@@ -44,14 +44,14 @@ namespace System.Linq
         /// </remarks>
         public static IOrderedEnumerable<T> Order<T>(this IEnumerable<T> source, IComparer<T>? comparer) =>
             TypeIsImplicitlyStable<T>() && (comparer is null || comparer == Comparer<T>.Default) ?
-                new OrderedImplicitlyStableEnumerable<T>(source, descending: false) :
+                new ImplicitlyStableOrderedIterator<T>(source, descending: false) :
                 OrderBy(source, EnumerableSorter<T>.IdentityFunc, comparer);
 
         public static IOrderedEnumerable<TSource> OrderBy<TSource, TKey>(this IEnumerable<TSource> source, Func<TSource, TKey> keySelector)
-            => new OrderedEnumerable<TSource, TKey>(source, keySelector, null, false, null);
+            => new OrderedIterator<TSource, TKey>(source, keySelector, null, false, null);
 
         public static IOrderedEnumerable<TSource> OrderBy<TSource, TKey>(this IEnumerable<TSource> source, Func<TSource, TKey> keySelector, IComparer<TKey>? comparer)
-            => new OrderedEnumerable<TSource, TKey>(source, keySelector, comparer, false, null);
+            => new OrderedIterator<TSource, TKey>(source, keySelector, comparer, false, null);
 
         /// <summary>
         /// Sorts the elements of a sequence in descending order.
@@ -89,18 +89,18 @@ namespace System.Linq
         /// </remarks>
         public static IOrderedEnumerable<T> OrderDescending<T>(this IEnumerable<T> source, IComparer<T>? comparer) =>
             TypeIsImplicitlyStable<T>() && (comparer is null || comparer == Comparer<T>.Default) ?
-                new OrderedImplicitlyStableEnumerable<T>(source, descending: true) :
+                new ImplicitlyStableOrderedIterator<T>(source, descending: true) :
                 OrderByDescending(source, EnumerableSorter<T>.IdentityFunc, comparer);
 
         public static IOrderedEnumerable<TSource> OrderByDescending<TSource, TKey>(this IEnumerable<TSource> source, Func<TSource, TKey> keySelector) =>
-            new OrderedEnumerable<TSource, TKey>(source, keySelector, null, true, null);
+            new OrderedIterator<TSource, TKey>(source, keySelector, null, true, null);
 
         public static IOrderedEnumerable<TSource> OrderByDescending<TSource, TKey>(this IEnumerable<TSource> source, Func<TSource, TKey> keySelector, IComparer<TKey>? comparer) =>
-            new OrderedEnumerable<TSource, TKey>(source, keySelector, comparer, true, null);
+            new OrderedIterator<TSource, TKey>(source, keySelector, comparer, true, null);
 
         public static IOrderedEnumerable<TSource> ThenBy<TSource, TKey>(this IOrderedEnumerable<TSource> source, Func<TSource, TKey> keySelector)
         {
-            if (source == null)
+            if (source is null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
             }
@@ -110,7 +110,7 @@ namespace System.Linq
 
         public static IOrderedEnumerable<TSource> ThenBy<TSource, TKey>(this IOrderedEnumerable<TSource> source, Func<TSource, TKey> keySelector, IComparer<TKey>? comparer)
         {
-            if (source == null)
+            if (source is null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
             }
@@ -120,7 +120,7 @@ namespace System.Linq
 
         public static IOrderedEnumerable<TSource> ThenByDescending<TSource, TKey>(this IOrderedEnumerable<TSource> source, Func<TSource, TKey> keySelector)
         {
-            if (source == null)
+            if (source is null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
             }
@@ -130,7 +130,7 @@ namespace System.Linq
 
         public static IOrderedEnumerable<TSource> ThenByDescending<TSource, TKey>(this IOrderedEnumerable<TSource> source, Func<TSource, TKey> keySelector, IComparer<TKey>? comparer)
         {
-            if (source == null)
+            if (source is null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
             }
@@ -140,14 +140,27 @@ namespace System.Linq
 
         /// <summary>Gets whether the results of an unstable sort will be observably the same as a stable sort.</summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static bool TypeIsImplicitlyStable<T>() =>
-            typeof(T) == typeof(sbyte) || typeof(T) == typeof(byte) ||
-            typeof(T) == typeof(int) || typeof(T) == typeof(uint) ||
-            typeof(T) == typeof(short) || typeof(T) == typeof(ushort) ||
-            typeof(T) == typeof(long) || typeof(T) == typeof(ulong) ||
-            typeof(T) == typeof(Int128) || typeof(T) == typeof(UInt128) ||
-            typeof(T) == typeof(nint) || typeof(T) == typeof(nuint) ||
-            typeof(T) == typeof(bool) || typeof(T) == typeof(char);
+        internal static bool TypeIsImplicitlyStable<T>()
+        {
+            Type t = typeof(T);
+            if (typeof(T).IsEnum)
+            {
+                t = typeof(T).GetEnumUnderlyingType();
+            }
+
+            // Check for integral primitive types that compare equally iff they have the same bit pattern.
+            // bool is included because, even though technically it can have 256 different values, anything
+            // other than 0/1 is only producible using unsafe code. It's tempting to include a type like string
+            // here, as it's so commonly used with ordering, but two different string objects can compare equally,
+            // and their reference identity can be observable in a stable vs unstable sort.
+            return
+                t == typeof(sbyte) || t == typeof(byte) || t == typeof(bool) ||
+                t == typeof(short) || t == typeof(ushort) || t == typeof(char) ||
+                t == typeof(int) || t == typeof(uint) ||
+                t == typeof(long) || t == typeof(ulong) ||
+                t == typeof(Int128) || t == typeof(UInt128) ||
+                t == typeof(nint) || t == typeof(nuint);
+        }
     }
 
     public interface IOrderedEnumerable<out TElement> : IEnumerable<TElement>

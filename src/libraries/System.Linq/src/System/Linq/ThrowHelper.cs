@@ -59,6 +59,7 @@ namespace System.Linq
                 case ExceptionArgument.source: return nameof(ExceptionArgument.source);
                 case ExceptionArgument.third: return nameof(ExceptionArgument.third);
                 case ExceptionArgument.size: return nameof(ExceptionArgument.size);
+                case ExceptionArgument.other: return nameof(ExceptionArgument.other);
                 default:
                     Debug.Fail("The ExceptionArgument value is not defined.");
                     return string.Empty;
@@ -87,6 +88,7 @@ namespace System.Linq
         selector,
         source,
         third,
-        size
+        size,
+        other,
     }
 }

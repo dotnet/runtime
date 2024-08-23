@@ -4,8 +4,8 @@
 using System;
 using System.Buffers;
 using System.Diagnostics;
-using System.Security.Principal;
 using System.Net.Security;
+using System.Security.Principal;
 
 namespace System.Net
 {

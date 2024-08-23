@@ -5,6 +5,7 @@ using System.Collections;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.Collections.ObjectModel;
 using System.Reflection;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.DotnetRuntime.Extensions;
@@ -116,6 +117,9 @@ namespace System.Text.Json.SourceGeneration
 
         public INamedTypeSymbol? IImmutableDictionaryType => GetOrResolveType(typeof(IImmutableDictionary<,>), ref _IImmutableDictionaryType);
         private Option<INamedTypeSymbol?> _IImmutableDictionaryType;
+
+        public INamedTypeSymbol? KeyedCollectionType => GetOrResolveType(typeof(KeyedCollection<,>), ref _KeyedCollectionType);
+        private Option<INamedTypeSymbol?> _KeyedCollectionType;
 
         public INamedTypeSymbol ObjectType => _ObjectType ??= Compilation.GetSpecialType(SpecialType.System_Object);
         private INamedTypeSymbol? _ObjectType;

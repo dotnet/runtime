@@ -88,8 +88,8 @@ namespace System.Reflection.Emit
             }
             else if ((attributes & MethodAttributes.Virtual) != 0)
             {
-                // On an interface, the rule is slighlty different
-                if (((attributes & MethodAttributes.Abstract) == 0))
+                // On an interface, the rule is slightly different
+                if ((attributes & MethodAttributes.Abstract) == 0)
                     throw new ArgumentException(SR.Arg_NoStaticVirtual);
             }
 
@@ -122,7 +122,7 @@ namespace System.Reflection.Emit
             m_ubBody = null;
             m_ilGenerator = null;
 
-            // Default is managed IL. Manged IL has bit flag 0x0020 set off
+            // Default is managed IL. Managed IL has bit flag 0x0020 set off
             m_dwMethodImplFlags = MethodImplAttributes.IL;
         }
 
@@ -881,20 +881,12 @@ namespace System.Reflection.Emit
             m_exceptionClass = exceptionTypeToken;
         }
 
-        private static bool IsValidKind(ExceptionHandlingClauseOptions kind)
-        {
-            switch (kind)
-            {
-                case ExceptionHandlingClauseOptions.Clause:
-                case ExceptionHandlingClauseOptions.Filter:
-                case ExceptionHandlingClauseOptions.Finally:
-                case ExceptionHandlingClauseOptions.Fault:
-                    return true;
-
-                default:
-                    return false;
-            }
-        }
+        private static bool IsValidKind(ExceptionHandlingClauseOptions kind) =>
+            kind is
+                ExceptionHandlingClauseOptions.Clause or
+                ExceptionHandlingClauseOptions.Filter or
+                ExceptionHandlingClauseOptions.Finally or
+                ExceptionHandlingClauseOptions.Fault;
 
         #endregion
 

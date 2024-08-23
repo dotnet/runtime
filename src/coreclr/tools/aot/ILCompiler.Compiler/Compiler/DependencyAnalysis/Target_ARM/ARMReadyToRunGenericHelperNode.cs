@@ -39,6 +39,18 @@ namespace ILCompiler.DependencyAnalysis
 
             // Load the generic dictionary cell
             encoder.EmitLDR(result, context, dictionarySlot * factory.Target.PointerSize);
+
+            // If there's any invalid entries, we need to test for them
+            //
+            // Skip this in relocsOnly to make it easier to weed out bugs - the _hasInvalidEntries
+            // flag can change over the course of compilation and the bad slot helper dependency
+            // should be reported by someone else - the system should not rely on it coming from here.
+            if (!relocsOnly && _hasInvalidEntries)
+            {
+                encoder.EmitCMP(result, 0);
+                encoder.EmitRETIfNotEqual();
+                encoder.EmitJMP(GetBadSlotHelper(factory));
+            }
         }
 
         protected sealed override void EmitCode(NodeFactory factory, ref ARMEmitter encoder, bool relocsOnly)
@@ -65,6 +77,7 @@ namespace ILCompiler.DependencyAnalysis
                             // We need to trigger the cctor before returning the base. It is stored at the beginning of the non-GC statics region.
                             int cctorContextSize = NonGCStaticsNode.GetClassConstructorContextSize(factory.Target);
                             encoder.EmitLDR(encoder.TargetRegister.Arg1, encoder.TargetRegister.Arg0, (short)-cctorContextSize);
+                            encoder.EmitDMB();
                             encoder.EmitCMP(encoder.TargetRegister.Arg1, 0);
                             encoder.EmitRETIfEqual();
 
@@ -95,8 +108,9 @@ namespace ILCompiler.DependencyAnalysis
                             EmitDictionaryLookup(factory, ref encoder, encoder.TargetRegister.Arg1, encoder.TargetRegister.Arg2, nonGcRegionLookup, relocsOnly);
 
                             int cctorContextSize = NonGCStaticsNode.GetClassConstructorContextSize(factory.Target);
-                            encoder.EmitLDR(encoder.TargetRegister.Arg3, encoder.TargetRegister.Arg2, ((short)(factory.Target.PointerSize - cctorContextSize)));
-                            encoder.EmitCMP(encoder.TargetRegister.Arg3, 1);
+                            encoder.EmitLDR(encoder.TargetRegister.Arg3, encoder.TargetRegister.Arg2, (short)-cctorContextSize);
+                            encoder.EmitDMB();
+                            encoder.EmitCMP(encoder.TargetRegister.Arg3, 0);
                             encoder.EmitRETIfEqual();
 
                             encoder.EmitMOV(encoder.TargetRegister.Arg1, encoder.TargetRegister.Result);

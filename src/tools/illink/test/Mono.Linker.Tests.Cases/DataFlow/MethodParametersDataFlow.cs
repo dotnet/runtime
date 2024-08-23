@@ -13,6 +13,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 	//   - so the main validation is done by the ExpectedWarning attributes.
 	[SkipKeptItemsValidation]
 	[ExpectedNoWarnings]
+	[SetupCompileArgument ("/unsafe")]
 	[SetupLinkerArgument ("--keep-metadata", "parametername")]
 	public class MethodParametersDataFlow
 	{
@@ -35,7 +36,6 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			instance.UnknownValueToUnAnnotatedParameterOnInterestingMethod ();
 			instance.WriteToParameterOnInstanceMethod (null);
 			instance.LongWriteToParameterOnInstanceMethod (0, 0, 0, 0, null);
-			instance.UnsupportedParameterType (null);
 
 			ParametersPassedToInstanceCtor (typeof (TestType), typeof (TestType));
 
@@ -44,7 +44,8 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 #if !NATIVEAOT
 			TestVarargsMethod (typeof (TestType), __arglist (0, 1, 2));
 #endif
-
+			AnnotationOnUnsupportedParameter.Test ();
+			AnnotationOnByRefParameter.Test ();
 			WriteCapturedParameter.Test ();
 		}
 
@@ -143,8 +144,6 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			type2.RequiresPublicConstructors ();
 		}
 
-		// TODO: https://github.com/dotnet/linker/issues/2273
-		// (Dataflow analysis is not supported by the analyzer yet)
 		[ExpectedWarning ("IL2067",
 			nameof (DataFlowTypeExtensions) + "." + nameof (DataFlowTypeExtensions.RequiresPublicConstructors) + "(Type)",
 			"'type'")]
@@ -199,11 +198,6 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			RequirePublicParameterlessConstructorAndNothing (typeof (TestType), this.GetType ());
 		}
 
-		[ExpectedWarning ("IL2098", "p1", nameof (UnsupportedParameterType))]
-		private void UnsupportedParameterType ([DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicFields)] object p1)
-		{
-		}
-
 		private class InstanceCtor
 		{
 			[ExpectedWarning ("IL2067", nameof (DataFlowTypeExtensions.RequiresPublicConstructors))]
@@ -241,6 +235,179 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
 		static void TestVarargsMethod ([DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)] Type type, __arglist)
 		{
+		}
+
+		class AnnotationOnUnsupportedParameter
+		{
+			class UnsupportedType
+			{
+			}
+
+			static UnsupportedType GetUnsupportedTypeInstance () => null;
+
+			[ExpectedWarning ("IL2098", nameof (UnsupportedType))]
+			[UnexpectedWarning ("IL2067", Tool.Analyzer, "https://github.com/dotnet/runtime/issues/101211")]
+			static void RequirePublicMethods (
+				[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)]
+				UnsupportedType unsupportedTypeInstance)
+			{
+				RequirePublicFields (unsupportedTypeInstance);
+			}
+
+			[ExpectedWarning ("IL2098", nameof (UnsupportedType))]
+			static void RequirePublicFields (
+				[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicFields)]
+				UnsupportedType unsupportedTypeInstance)
+			{
+			}
+
+			[UnexpectedWarning ("IL2072", Tool.Analyzer, "https://github.com/dotnet/runtime/issues/101211")]
+			static void TestUnsupportedType ()
+			{
+				var t = GetUnsupportedTypeInstance ();
+				RequirePublicMethods (t);
+			}
+
+			static Type[] GetTypeArray () => null;
+
+			[ExpectedWarning ("IL2098")]
+			[UnexpectedWarning ("IL2067", Tool.Analyzer, "https://github.com/dotnet/runtime/issues/101211")]
+			static void RequirePublicMethods (
+				[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)]
+				Type[] types)
+			{
+				RequirePublicFields (types);
+			}
+
+			[ExpectedWarning ("IL2098")]
+			static void RequirePublicFields (
+				[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicFields)]
+				Type[] types)
+			{
+			}
+
+			[UnexpectedWarning ("IL2072", Tool.Analyzer, "https://github.com/dotnet/runtime/issues/101211")]
+			static void TestTypeArray ()
+			{
+				var types = GetTypeArray ();
+				RequirePublicMethods (types);
+			}
+
+			static unsafe Type* GetTypePtr () => throw null;
+
+			[ExpectedWarning ("IL2098")]
+			[UnexpectedWarning ("IL2067", Tool.Analyzer, "https://github.com/dotnet/runtime/issues/101211")]
+			static unsafe void RequirePublicMethods (
+				[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)]
+				Type* typePtr)
+			{
+				RequirePublicFields (typePtr);
+			}
+
+			[ExpectedWarning ("IL2098")]
+			static unsafe void RequirePublicFields (
+				[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicFields)]
+				Type* typePtr)
+			{
+			}
+
+			[UnexpectedWarning ("IL2072", Tool.Analyzer, "https://github.com/dotnet/runtime/issues/101211")]
+			static unsafe void TestTypePointer ()
+			{
+				var typePtr = GetTypePtr ();
+				RequirePublicMethods (typePtr);
+			}
+
+			static T GetTConstrainedToType<T> () where T : Type => throw null;
+
+			[ExpectedWarning ("IL2098")]
+			[UnexpectedWarning ("IL2067", Tool.Analyzer, "https://github.com/dotnet/runtime/issues/101211")]
+			static void RequirePublicMethods<T> (
+				[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)]
+				T t) where T : Type
+			{
+				RequirePublicFields (t);
+			}
+
+			[ExpectedWarning ("IL2098")]
+			static void RequirePublicFields<T> (
+				[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicFields)]
+				T t) where T : Type
+			{
+			}
+
+			[UnexpectedWarning ("IL2072", Tool.Analyzer, "https://github.com/dotnet/runtime/issues/101211")]
+			static void TestTypeGenericParameter ()
+			{
+				var t = GetTConstrainedToType<Type> ();
+				RequirePublicMethods<Type> (t);
+			}
+
+			static ref string GetStringRef () => throw null;
+
+			[ExpectedWarning ("IL2098")]
+			[UnexpectedWarning ("IL2067", Tool.Analyzer, "https://github.com/dotnet/runtime/issues/101211")]
+			static void RequirePublicMethods (
+				[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)]
+				ref string stringRef)
+			{
+				RequirePublicFields (ref stringRef);
+			}
+
+			[ExpectedWarning ("IL2098")]
+			static void RequirePublicFields (
+				[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicFields)]
+				ref string stringRef)
+			{
+			}
+
+			[UnexpectedWarning ("IL2072", Tool.Analyzer, "https://github.com/dotnet/runtime/issues/101211")]
+			static void TestStringRef ()
+			{
+				var stringRef = GetStringRef ();
+				RequirePublicMethods (ref stringRef);
+			}
+
+			public static void Test () {
+				TestUnsupportedType ();
+				TestTypeArray ();
+				TestTypePointer ();
+				TestTypeGenericParameter ();
+				TestStringRef ();
+			}
+		}
+
+		class AnnotationOnByRefParameter
+		{
+			static ref Type GetTypeRef () => throw null;
+
+			[ExpectedWarning ("IL2067")]
+			[ExpectedWarning ("IL2067", Tool.NativeAot | Tool.Trimmer, "https://github.com/dotnet/runtime/issues/101734")]
+			static void RequirePublicMethods (
+				[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)]
+				ref Type typeRef)
+			{
+				RequirePublicFields (ref typeRef);
+			}
+
+			static void RequirePublicFields (
+				[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicFields)]
+				ref Type typeRef)
+			{
+			}
+
+			[ExpectedWarning ("IL2062", Tool.NativeAot | Tool.Trimmer, "https://github.com/dotnet/runtime/issues/101734")]
+			[UnexpectedWarning ("IL2072", Tool.Analyzer, "https://github.com/dotnet/runtime/issues/101734")]
+			static void TestTypeRef ()
+			{
+				var typeRef = GetTypeRef ();
+				RequirePublicMethods (ref typeRef);
+			}
+
+			public static void Test ()
+			{
+				TestTypeRef ();
+			}
 		}
 
 		class WriteCapturedParameter

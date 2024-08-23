@@ -1034,9 +1034,12 @@ namespace System.Net.Sockets.Tests
             // .NET uses connect(AF_UNSPEC) to abort on-going operations on Linux.
             // Linux 6.4+ introduced a change (4faeee0cf8a5d88d63cdbc3bab124fb0e6aed08c) which disallows
             // this operation while operations are on-going.
+            // Some distros backported the change to earlier kernel versions.
             // When the connect fails, .NET falls back to use shutdown(SHUT_RDWR).
             // This causes the receive on socket2 to succeed instead of failing with ConnectionReset.
-            bool mayShutdownGraceful = UsesSync && PlatformDetection.IsLinux && receiveOrSend;
+            // The original behavior was restored in Linux 6.6 (419ce133ab928ab5efd7b50b2ef36ddfd4eadbd2).
+            bool mayShutdownGraceful = UsesSync && receiveOrSend &&
+                                       PlatformDetection.IsLinux && Environment.OSVersion.Version < new Version(6, 6);
 
             // We try this a couple of times to deal with a timing race: if the Dispose happens
             // before the operation is started, the peer won't see a ConnectionReset SocketException and we won't
@@ -1106,7 +1109,7 @@ namespace System.Net.Sockets.Tests
 
                     // On OSX, we're unable to unblock the on-going socket operations and
                     // perform an abortive close.
-                    if (!(UsesSync && PlatformDetection.IsOSXLike))
+                    if (!(UsesSync && PlatformDetection.IsApplePlatform))
                     {
                         SocketError? peerSocketError = null;
                         var receiveBuffer = new ArraySegment<byte>(new byte[4096]);
@@ -1184,9 +1187,9 @@ namespace System.Net.Sockets.Tests
 
         [OuterLoop]
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        public void BlockingRead_DoesntRequireAnotherThreadPoolThread()
+        public async Task BlockingRead_DoesntRequireAnotherThreadPoolThread()
         {
-            RemoteExecutor.Invoke(() =>
+            await RemoteExecutor.Invoke(() =>
             {
                 // Set the max number of worker threads to a low value.
                 ThreadPool.GetMaxThreads(out int workerThreads, out int completionPortThreads);
@@ -1229,7 +1232,7 @@ namespace System.Net.Sockets.Tests
                         pair.Item2.Dispose();
                     }
                 }
-            }).Dispose();
+            }).DisposeAsync();
         }
     }
 

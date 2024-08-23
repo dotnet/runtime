@@ -17,7 +17,7 @@ namespace Microsoft.DotNet.CoreSetup.Test
 
         public static Command EnableHostTracingToFile(this Command command, out string filePath)
         {
-            filePath = Path.Combine(TestArtifact.TestArtifactsPath, "trace" + Guid.NewGuid().ToString() + ".log");
+            filePath = Path.Combine(TestContext.TestArtifactsPath, "trace" + Guid.NewGuid().ToString() + ".log");
             if (File.Exists(filePath))
             {
                 File.Delete(filePath);

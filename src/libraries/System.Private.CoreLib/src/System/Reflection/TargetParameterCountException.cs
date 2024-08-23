@@ -17,13 +17,13 @@ namespace System.Reflection
         }
 
         public TargetParameterCountException(string? message)
-            : base(message)
+            : base(message ?? SR.Arg_TargetParameterCountException)
         {
             HResult = HResults.COR_E_TARGETPARAMCOUNT;
         }
 
         public TargetParameterCountException(string? message, Exception? inner)
-            : base(message, inner)
+            : base(message ?? SR.Arg_TargetParameterCountException, inner)
         {
             HResult = HResults.COR_E_TARGETPARAMCOUNT;
         }

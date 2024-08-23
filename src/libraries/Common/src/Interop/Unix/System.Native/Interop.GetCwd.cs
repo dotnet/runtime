@@ -62,7 +62,7 @@ internal static partial class Interop
             ErrorInfo errorInfo = Interop.Sys.GetLastErrorInfo();
             if (errorInfo.Error == Interop.Error.ERANGE)
             {
-               return null;
+                return null;
             }
             throw Interop.GetExceptionForIoErrno(errorInfo);
         }

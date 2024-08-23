@@ -114,7 +114,7 @@
       </trans-unit>
       <trans-unit id="JsonUnsupportedLanguageVersionMessageFormat">
         <source>The System.Text.Json source generator is not available in C# {0}. Please use language version {1} or greater.</source>
-        <target state="needs-review-translation">System.Text.Json 源生成器在 C#“{0}”中不可用。请使用{1}或更高版本的语言版本。</target>
+        <target state="translated">System.Text.Json 源生成器在 C# {0} 中不可用。请使用{1}或更高版本的语言版本。</target>
         <note />
       </trans-unit>
       <trans-unit id="JsonUnsupportedLanguageVersionTitle">
@@ -140,6 +140,16 @@
       <trans-unit id="MultipleJsonExtensionDataAttributeTitle">
         <source>Type has multiple members annotated with JsonExtensionDataAttribute.</source>
         <target state="translated">类型具有多个带有 JsonExtensionDataAttribute 注释的成员。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="TypeContainsRefLikeMemberFormat">
+        <source>The type '{0}' includes the ref like property, field or constructor parameter '{1}'. No source code will be generated for the property, field or constructor.</source>
+        <target state="new">The type '{0}' includes the ref like property, field or constructor parameter '{1}'. No source code will be generated for the property, field or constructor.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="TypeContainsRefLikeMemberTitle">
+        <source>Type includes ref like property, field or constructor parameter.</source>
+        <target state="new">Type includes ref like property, field or constructor parameter.</target>
         <note />
       </trans-unit>
       <trans-unit id="TypeNotSupportedMessageFormat">

@@ -487,6 +487,8 @@ namespace System.Runtime.InteropServices.Tests
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.Is64BitProcess))]
         public void Raw_Int_WrongSize(VarEnum vt)
         {
+            // Validate that we follow the spec and map VT_INT and VT_UINT to 4-byte integers
+            // and that we don't allow pointer-sized integers (as built-in interop does in some cases). 
             Assert.Throws<ArgumentException>(() => ComVariant.CreateRaw(vt, (nint)42));
         }
     }

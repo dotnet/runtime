@@ -76,7 +76,7 @@ namespace TestClasses.OptionsValidation
 
     public class RangeAttributeModelDate
     {
-#if NETCOREAPP3_1_OR_GREATER
+#if NET
         [Range(typeof(DateTime), "1/2/2004", "3/4/2004", ParseLimitsInInvariantCulture = true)]
 #else
         [Range(typeof(DateTime), "1/2/2004", "3/4/2004")]
@@ -179,6 +179,21 @@ namespace TestClasses.OptionsValidation
         public TypeWithoutOptionsValidator? ValWithoutOptionsValidator { get; set; }
     }
 
+    public class OptionsUsingRangeWithTimeSpan
+    {
+        [Range(typeof(TimeSpan), "00:00:00", "00:00:10")]
+        public TimeSpan P1 { get; set; }
+
+        [Range(typeof(TimeSpan), "00:00:00", "00:00:10")]
+        public TimeSpan? P2 { get; set; }
+
+        [Range(typeof(TimeSpan), "00:00:00", "00:00:10")]
+        public string P3 { get; set; }
+
+        [Range(typeof(TimeSpan), "00:00:00", "00:00:10")]
+        public string? P4 { get; set; }
+    }
+
     [OptionsValidator]
     public partial class RequiredAttributeModelValidator : IValidateOptions<RequiredAttributeModel>
     {
@@ -246,6 +261,11 @@ namespace TestClasses.OptionsValidation
 
     [OptionsValidator]
     internal sealed partial class ComplexModelValidator : IValidateOptions<ComplexModel>
+    {
+    }
+
+    [OptionsValidator]
+    internal sealed partial class OptionsUsingRangeWithTimeSpanValidator : IValidateOptions<OptionsUsingRangeWithTimeSpan>
     {
     }
 }

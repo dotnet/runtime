@@ -22,13 +22,13 @@ namespace System
         }
 
         public MulticastNotSupportedException(string? message)
-            : base(message)
+            : base(message ?? SR.Arg_MulticastNotSupportedException)
         {
             HResult = HResults.COR_E_MULTICASTNOTSUPPORTED;
         }
 
         public MulticastNotSupportedException(string? message, Exception? inner)
-            : base(message, inner)
+            : base(message ?? SR.Arg_MulticastNotSupportedException, inner)
         {
             HResult = HResults.COR_E_MULTICASTNOTSUPPORTED;
         }

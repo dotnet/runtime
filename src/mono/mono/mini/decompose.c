@@ -41,7 +41,7 @@ decompose_long_opcode (MonoCompile *cfg, MonoInst *ins, MonoInst **repl_ins)
 		if (TARGET_SIZEOF_VOID_P == 4)
 			;
 		else
-			ins->opcode = OP_SEXT_I4;
+			ins->opcode = OP_MOVE;
 		break;
 	case OP_LCONV_TO_I8:
 	case OP_LCONV_TO_U8:
@@ -216,9 +216,8 @@ decompose_long_opcode (MonoCompile *cfg, MonoInst *ins, MonoInst **repl_ins)
 #endif
 		MONO_EMIT_NEW_LCOMPARE_IMM (cfg, ins->sreg1, 0x7fffffff);
 		MONO_EMIT_NEW_COND_EXC (cfg, GT, "OverflowException");
-		/* The int cast is needed for the VS compiler.  See Compiler Warning (level 2) C4146. */
 #if SIZEOF_REGISTER == 8
-		MONO_EMIT_NEW_LCOMPARE_IMM (cfg, ins->sreg1, (-(int)2147483648));
+		MONO_EMIT_NEW_LCOMPARE_IMM (cfg, ins->sreg1, INT_MIN);
 #else
 		g_assert (COMPILE_LLVM (cfg));
 		MONO_EMIT_NEW_LCOMPARE_IMM (cfg, ins->sreg1, -2147483648LL);
@@ -1337,7 +1336,10 @@ mono_decompose_vtype_opts (MonoCompile *cfg)
 				}
 				case OP_VCALL:
 				case OP_VCALL_REG:
-				case OP_VCALL_MEMBASE: {
+				case OP_VCALL_MEMBASE:
+				case OP_XCALL:
+				case OP_XCALL_REG:
+				case OP_XCALL_MEMBASE: {
 					MonoCallInst *call = (MonoCallInst*)ins;
 					int size;
 
@@ -1360,6 +1362,9 @@ mono_decompose_vtype_opts (MonoCompile *cfg)
 							break;
 						case OP_VCALL_MEMBASE:
 							call2->inst.opcode = call->vret_in_reg_fp ? OP_FCALL_MEMBASE : OP_CALL_MEMBASE;
+							break;
+						default:
+							g_assert_not_reached ();
 							break;
 						}
 						call2->inst.dreg = alloc_preg (cfg);
@@ -1436,6 +1441,18 @@ mono_decompose_vtype_opts (MonoCompile *cfg)
 							break;
 						case OP_VCALL_MEMBASE:
 							ins->opcode = OP_VCALL2_MEMBASE;
+							break;
+						case OP_XCALL:
+							ins->opcode = OP_VCALL2;
+							break;
+						case OP_XCALL_REG:
+							ins->opcode = OP_VCALL2_REG;
+							break;
+						case OP_XCALL_MEMBASE:
+							ins->opcode = OP_VCALL2_MEMBASE;
+							break;
+						default:
+							g_assert_not_reached ();
 							break;
 						}
 						ins->dreg = -1;

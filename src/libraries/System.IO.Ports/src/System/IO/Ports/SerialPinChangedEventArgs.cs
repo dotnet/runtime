@@ -10,6 +10,6 @@ namespace System.IO.Ports
             EventType = eventCode;
         }
 
-        public SerialPinChange EventType { get; private set; }
+        public SerialPinChange EventType { get; }
     }
 }

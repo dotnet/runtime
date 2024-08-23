@@ -23,6 +23,8 @@
   </PropertyGroup>
   <Import Project="../tools/Sign.props" Sdk="Microsoft.DotNet.Arcade.Sdk" />
 
+  <Import Project="$(RepositoryEngineeringDir)Publishing.props" Condition="Exists('$(RepositoryEngineeringDir)Publishing.props')" />
+
   <UsingTask TaskName="GenerateChecksums" AssemblyFile="$(InstallerTasksAssemblyPath)" />
 
   <PropertyGroup>
@@ -55,6 +57,16 @@
     <ManifestBuildData Include="AzureDevOpsRepository=$(BUILD_REPOSITORY_URI)" />
     <ManifestBuildData Include="AzureDevOpsBranch=$(BUILD_SOURCEBRANCH)" />
   </ItemGroup>
+
+  <!--
+    Set metadata for assets that are not marked as NonShipping.
+    This is used to determine if the asset should be shipped as part of .NET release.
+  -->
+  <ItemDefinitionGroup>
+    <ItemsToPush>
+      <ManifestArtifactData Condition="'$(ProducesDotNetReleaseShippingAssets)' == 'true'">DotNetReleaseShipping=true</ManifestArtifactData>
+    </ItemsToPush>
+  </ItemDefinitionGroup>
 
   <!--
     Run Arcade's signing project directly. The 'eng/Signing.props' extensibility props file checks
@@ -133,14 +145,10 @@
         <RelativeBlobPath>$(InstallersRelativePath)workloads/%(Filename)%(Extension)</RelativeBlobPath>
         <PublishFlatContainer>true</PublishFlatContainer>
       </ItemsToPush>
-
-      <!-- Source build intermediated packages will be pushed and signed by the sourcebuild leg. -->
-      <ItemsToPush Remove="@(ItemsToPush)" Condition="$([System.String]::new('%(Identity)').Contains('Microsoft.SourceBuild.Intermediate'))" />
-      <ItemsToSignPostBuild Remove="@(ItemsToSignPostBuild)" Condition="$([System.String]::new('%(Identity)').Contains('Microsoft.SourceBuild.Intermediate'))" />
     </ItemGroup>
 
     <!-- Push items to AzDO as build artifacts, generating the asset manifest as a side effect. -->
-    <PushToAzureDevOpsArtifacts
+    <PushToBuildStorage
       AzureDevOpsCollectionUri="$(SYSTEM_TEAMFOUNDATIONCOLLECTIONURI)"
       AzureDevOpsProject="$(SYSTEM_TEAMPROJECT)"
       AzureDevOpsBuildId="$(BUILD_BUILDID)"

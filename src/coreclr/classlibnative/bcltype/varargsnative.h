@@ -14,19 +14,10 @@
 
 #include "clrvarargs.h"
 
-class VarArgsNative
-{
-public:
-    static FCDECL3(void, Init2, VARARGS* _this, LPVOID cookie, LPVOID firstArg);
-    static FCDECL2(void, Init, VARARGS* _this, LPVOID cookie);
-    static FCDECL1(int, GetRemainingCount, VARARGS* _this);
-    static FCDECL1(void*, GetNextArgType, VARARGS* _this);
-    //TypedByRef can not be passed by ref, so has to pass it as void pointer
-    static FCDECL2(void, DoGetNextArg, VARARGS* _this, void * value);
-    //TypedByRef can not be passed by ref, so has to pass it as void pointer
-    static FCDECL3(void, GetNextArg2, VARARGS* _this, void * value, ReflectClassBaseObject *pTypeUNSAFE);
-
-    static void GetNextArgHelper(VARARGS *data, TypedByRef *value, BOOL fData);
-};
+extern "C" void QCALLTYPE ArgIterator_Init(VARARGS* thisPtr, PVOID cookie);
+extern "C" void QCALLTYPE ArgIterator_Init2(VARARGS* thisPtr, PVOID cookie, PVOID firstArg);
+extern "C" void* QCALLTYPE ArgIterator_GetNextArgType(VARARGS* thisPtr);
+extern "C" void QCALLTYPE ArgIterator_GetNextArg(VARARGS* thisPtr, TypedByRef* pResult);
+extern "C" void QCALLTYPE ArgIterator_GetNextArg2(VARARGS* thisPtr, QCall::TypeHandle pType, TypedByRef* pResult);
 
 #endif // _VARARGSNATIVE_H_

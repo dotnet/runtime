@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 #import <Foundation/Foundation.h>
+#if !USE_NATIVE_AOT
 #include <mono/utils/mono-publib.h>
 #include <mono/utils/mono-logger.h>
 #include <mono/metadata/assembly.h>
@@ -13,6 +14,7 @@
 #include <mono/metadata/object.h>
 #include <mono/jit/jit.h>
 #include <mono/jit/mono-private-unstable.h>
+#endif
 #include <TargetConditionals.h>
 #import <os/log.h>
 #include <sys/stat.h>
@@ -49,7 +51,7 @@ get_bundle_path (void)
 }
 
 void
-mono_ios_runtime_init (void)
+library_mode_init (void)
 {
 #if INVARIANT_GLOBALIZATION
     setenv ("DOTNET_SYSTEM_GLOBALIZATION_INVARIANT", "1", TRUE);
@@ -59,17 +61,19 @@ mono_ios_runtime_init (void)
     setenv ("DOTNET_SYSTEM_GLOBALIZATION_HYBRID", "1", TRUE);
 #endif
 
-#if ENABLE_RUNTIME_LOGGING
+#if ENABLE_RUNTIME_LOGGING && !USE_NATIVE_AOT
     setenv ("MONO_LOG_LEVEL", "debug", TRUE);
     setenv ("MONO_LOG_MASK", "all", TRUE);
 #endif
 
+#if !USE_NATIVE_AOT
     // build using DiagnosticPorts property in AppleAppBuilder
     // or set DOTNET_DiagnosticPorts env via mlaunch, xharness when undefined.
     // NOTE, using DOTNET_DiagnosticPorts requires app build using AppleAppBuilder and RuntimeComponents to include 'diagnostics_tracing' component
 #ifdef DIAGNOSTIC_PORTS
     setenv ("DOTNET_DiagnosticPorts", DIAGNOSTIC_PORTS, true);
 #endif
+#endif // !USE_NATIVE_AOT
 
     // When not bundling, this will make sure the runtime can access all the assemblies
     const char* bundle = get_bundle_path ();

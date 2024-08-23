@@ -9,7 +9,7 @@ namespace Microsoft.VisualBasic.CompilerServices.Tests
 {
     public class LikeOperatorTests
     {
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotHybridGlobalizationOnBrowser))]
         [MemberData(nameof(LikeObject_TestData))]
         [MemberData(nameof(LikeString_TestData))]
         public void LikeObject(object source, object pattern, object expectedBinaryCompare, object expectedTextCompare)
@@ -18,7 +18,7 @@ namespace Microsoft.VisualBasic.CompilerServices.Tests
             Assert.Equal(expectedTextCompare, LikeOperator.LikeObject(source, pattern, CompareMethod.Text));
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotHybridGlobalizationOnBrowser))]
         [MemberData(nameof(LikeString_TestData))]
         public void LikeString(string source, string pattern, bool expectedBinaryCompare, bool expectedTextCompare)
         {

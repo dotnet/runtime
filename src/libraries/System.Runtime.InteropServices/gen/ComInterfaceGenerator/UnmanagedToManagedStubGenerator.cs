@@ -22,14 +22,14 @@ namespace Microsoft.Interop
         public UnmanagedToManagedStubGenerator(
             ImmutableArray<TypePositionInfo> argTypes,
             GeneratorDiagnosticsBag diagnosticsBag,
-            IMarshallingGeneratorFactory generatorFactory)
+            IMarshallingGeneratorResolver generatorResolver)
         {
             _context = new NativeToManagedStubCodeContext(ReturnIdentifier, ReturnIdentifier);
-            _marshallers = BoundGenerators.Create(argTypes, generatorFactory, _context, new Forwarder(), out var bindingDiagnostics);
+            _marshallers = BoundGenerators.Create(argTypes, generatorResolver, _context, new Forwarder(), out var bindingDiagnostics);
 
             diagnosticsBag.ReportGeneratorDiagnostics(bindingDiagnostics);
 
-            if (_marshallers.NativeReturnMarshaller.Generator.UsesNativeIdentifier(_marshallers.NativeReturnMarshaller.TypeInfo, _context))
+            if (_marshallers.NativeReturnMarshaller.UsesNativeIdentifier(_context))
             {
                 // If we need a different native return identifier, then recreate the context with the correct identifier before we generate any code.
                 _context = new NativeToManagedStubCodeContext(ReturnIdentifier, $"{ReturnIdentifier}{StubCodeContext.GeneratedNativeIdentifierSuffix}");

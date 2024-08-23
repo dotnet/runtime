@@ -1,4 +1,5 @@
 #include "libunwind.h"
+#include "compiler.h"
 #include <sys/types.h>
 #include <unistd.h>
 #include <string.h>
@@ -8,6 +9,14 @@
 #include <signal.h>
 #include <stdio.h>
 #include <assert.h>
+
+static const int max_steps = 10;
+
+#if defined __FreeBSD__
+#define	TRAMPOLINE_DEPTH	4
+#else
+#define	TRAMPOLINE_DEPTH	2
+#endif
 
 int stepper(unw_cursor_t* c) {
   int steps = 0;
@@ -19,6 +28,7 @@ int stepper(unw_cursor_t* c) {
       break;
     }
     steps++;
+    if (steps > max_steps) break;
   }
   return steps;
 }
@@ -26,7 +36,7 @@ int stepper(unw_cursor_t* c) {
 /* Verify that we can step from both ucontext, and from getcontext()
  * roughly the same.  This tests that the IP from ucontext is used
  * correctly (see impl of unw_init_local2) */
-void handler(int num, siginfo_t* info, void* ucontext) {
+void handler(int num UNUSED, siginfo_t* info UNUSED, void* ucontext) {
   unw_cursor_t c;
   unw_context_t context;
   unw_getcontext(&context);
@@ -38,11 +48,11 @@ void handler(int num, siginfo_t* info, void* ucontext) {
   (void)ret;
   assert(!ret);
   int getcontext_steps = stepper(&c);
-  if (ucontext_steps == getcontext_steps - 2) {
+  if (ucontext_steps == getcontext_steps - TRAMPOLINE_DEPTH) {
     exit(0);
   }
   printf("unw_getcontext steps was %i, ucontext steps was %i, should be %i\n",
-	 getcontext_steps, ucontext_steps, getcontext_steps - 2);
+    getcontext_steps, ucontext_steps, getcontext_steps - TRAMPOLINE_DEPTH);
   exit(-1);
 }
 

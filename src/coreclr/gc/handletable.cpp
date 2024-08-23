@@ -24,6 +24,14 @@
 DWORD g_dwHandles = 0;
 #endif // ENABLE_PERF_COUNTERS || FEATURE_EVENT_TRACE
 
+#ifndef DACCESS_COMPILE
+int GetConvertedGeneration(_UNCHECKED_OBJECTREF obj)
+{
+    int generation = g_theGCHeap->WhichGeneration(obj);
+    return generation == INT_MAX ? max_generation : generation;
+}
+#endif //DACCESS_COMPILE
+
 /****************************************************************************
  *
  * FORWARD DECLARATIONS
@@ -577,7 +585,7 @@ void HndWriteBarrierWorker(OBJECTHANDLE handle, _UNCHECKED_OBJECTREF value)
     if (*pClumpAge != 0) // Perf optimization: if clumpAge is 0, nothing more to do
     {
         // find out generation
-        int generation = g_theGCHeap->WhichGeneration(value);
+        int generation = GetConvertedGeneration(value);
         uint32_t uType = HandleFetchType(handle);
 
 #ifdef FEATURE_ASYNC_PINNED_HANDLES
@@ -905,9 +913,6 @@ void HndNotifyGcCycleComplete(HHANDLETABLE hTable, uint32_t condemned, uint32_t 
     UNREFERENCED_PARAMETER(maxgen);
 #endif
 }
-
-extern int getNumberOfSlots();
-
 
 /*
  * HndCountHandles

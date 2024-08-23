@@ -4,6 +4,7 @@
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+
 #if NATIVEAOT
 using Internal.Runtime;
 #else
@@ -65,6 +66,14 @@ namespace System.Runtime
         {
             [FieldOffset(0)]
             private IntPtr _dummy; // For alignment
+        }
+
+        internal struct MethodRegionInfo
+        {
+            internal byte* _hotStartAddress;
+            internal nuint _hotSize;
+            internal byte* _coldStartAddress;
+            internal nuint _coldSize;
         }
 
 #pragma warning disable IDE0060
@@ -149,9 +158,9 @@ namespace System.Runtime
 #endif
         }
 
+#if NATIVEAOT
         private static void OnFirstChanceExceptionViaClassLib(object exception)
         {
-#if NATIVEAOT
             IntPtr pOnFirstChanceFunction =
                 (IntPtr)InternalCalls.RhpGetClasslibFunctionFromEEType(exception.GetMethodTable(), ClassLibFunctionId.OnFirstChance);
 
@@ -168,17 +177,8 @@ namespace System.Runtime
             {
                 // disallow all exceptions leaking out of callbacks
             }
-#else
-            try
-            {
-                AppContext.OnFirstChanceException(exception);
-            }
-            catch when (true)
-            {
-                // disallow all exceptions leaking out of callbacks
-            }
-#endif
         }
+#endif // NATIVEAOT
 
         private static void OnUnhandledExceptionViaClassLib(object exception)
         {
@@ -200,7 +200,7 @@ namespace System.Runtime
                 // disallow all exceptions leaking out of callbacks
             }
 #else
-            Debug.Assert(false, "Unhandled exceptions should be processed by the native runtime only");
+            Debug.Fail("Unhandled exceptions should be processed by the native runtime only");
 #endif
         }
 
@@ -279,12 +279,11 @@ namespace System.Runtime
                 isFirstFrame = false;
             }
 #else
-#pragma warning disable CS8500
             fixed (EH.ExInfo* pExInfo = &exInfo)
             {
                 InternalCalls.RhpAppendExceptionStackFrame(ObjectHandleOnStack.Create(ref exception), ip, sp, flags, pExInfo);
             }
-#pragma warning restore CS8500
+
             // Clear flags only if we called the function
             isFirstRethrowFrame = false;
             isFirstFrame = false;
@@ -375,6 +374,7 @@ namespace System.Runtime
         // RhExceptionHandling_ functions are used to throw exceptions out of our asm helpers. We tail-call from
         // the asm helpers to these functions, which performs the throw. The tail-call is important: it ensures that
         // the stack is crawlable from within these functions.
+        [StackTraceHidden]
         [RuntimeExport("RhExceptionHandling_ThrowClasslibOverflowException")]
         public static void ThrowClasslibOverflowException(IntPtr address)
         {
@@ -384,6 +384,7 @@ namespace System.Runtime
             throw GetClasslibException(ExceptionIDs.Overflow, address);
         }
 
+        [StackTraceHidden]
         [RuntimeExport("RhExceptionHandling_ThrowClasslibDivideByZeroException")]
         public static void ThrowClasslibDivideByZeroException(IntPtr address)
         {
@@ -393,19 +394,20 @@ namespace System.Runtime
             throw GetClasslibException(ExceptionIDs.DivideByZero, address);
         }
 
+        [StackTraceHidden]
         [RuntimeExport("RhExceptionHandling_FailedAllocation")]
-        public static void FailedAllocation(EETypePtr pEEType, bool fIsOverflow)
+        public static void FailedAllocation(MethodTable* pEEType, bool fIsOverflow)
         {
             ExceptionIDs exID = fIsOverflow ? ExceptionIDs.Overflow : ExceptionIDs.OutOfMemory;
 
             // Throw the out of memory exception defined by the classlib, using the input MethodTable*
             // to find the correct classlib.
 
-            throw pEEType.ToPointer()->GetClasslibException(exID);
+            throw pEEType->GetClasslibException(exID);
         }
 
 #if !INPLACE_RUNTIME
-        private static OutOfMemoryException s_theOOMException = new OutOfMemoryException();
+        private static readonly OutOfMemoryException s_theOOMException = new OutOfMemoryException();
 
         // MRT exports GetRuntimeException for the few cases where we have a helper that throws an exception
         // and may be called by either MRT or other classlibs and that helper needs to throw an exception.
@@ -427,7 +429,7 @@ namespace System.Runtime
                     return new InvalidCastException();
 
                 default:
-                    Debug.Assert(false, "unexpected ExceptionID");
+                    Debug.Fail("unexpected ExceptionID");
                     FallbackFailFast(RhFailFastReason.InternalError, null);
                     return null;
             }
@@ -458,7 +460,7 @@ namespace System.Runtime
             // the rest of the struct is left unspecified.
         }
 
-        // N.B. -- These values are burned into the throw helper assembly code and are also known the the
+        // N.B. -- These values are burned into the throw helper assembly code and are also known to the
         //         StackFrameIterator code.
         [Flags]
         internal enum ExKind : byte
@@ -641,6 +643,64 @@ namespace System.Runtime
             DispatchEx(ref exInfo._frameIter, ref exInfo);
             FallbackFailFast(RhFailFastReason.InternalError, null);
         }
+#if !NATIVEAOT
+        public static void RhUnwindAndIntercept(ref ExInfo exInfo, UIntPtr interceptStackFrameSP)
+        {
+            exInfo._passNumber = 2;
+            exInfo._idxCurClause = MaxTryRegionIdx;
+            uint startIdx = MaxTryRegionIdx;
+            bool unwoundReversePInvoke = false;
+            bool isExceptionIntercepted = false;
+            bool isValid = exInfo._frameIter.Init(exInfo._pExContext, (exInfo._kind & ExKind.InstructionFaultFlag) != 0, &isExceptionIntercepted);
+            for (; isValid && !isExceptionIntercepted && ((byte*)exInfo._frameIter.SP <= (byte*)interceptStackFrameSP); isValid = exInfo._frameIter.Next(&startIdx, &unwoundReversePInvoke, &isExceptionIntercepted))
+            {
+                Debug.Assert(isValid, "Unwind and intercept failed unexpectedly");
+                DebugScanCallFrame(exInfo._passNumber, exInfo._frameIter.ControlPC, exInfo._frameIter.SP);
+
+                if (unwoundReversePInvoke)
+                {
+                    // Found the native frame that called the reverse P/invoke.
+                    // It is not possible to run managed second pass handlers on a native frame.
+                    break;
+                }
+
+                if (exInfo._frameIter.SP == interceptStackFrameSP)
+                {
+                    break;
+                }
+
+                InvokeSecondPass(ref exInfo, startIdx);
+                if (isExceptionIntercepted)
+                {
+                    Debug.Assert(false);
+                    break;
+                }
+            }
+
+            // ------------------------------------------------
+            //
+            // Call the interception code
+            //
+            // ------------------------------------------------
+            if (unwoundReversePInvoke)
+            {
+                object exceptionObj = exInfo.ThrownException;
+                fixed (EH.ExInfo* pExInfo = &exInfo)
+                {
+                    InternalCalls.RhpCallCatchFunclet(
+                        ObjectHandleOnStack.Create(ref exceptionObj), null, exInfo._frameIter.RegisterSet, pExInfo);
+                }
+            }
+            else
+            {
+                InternalCalls.ResumeAtInterceptionLocation(exInfo._frameIter.RegisterSet);
+            }
+
+            Debug.Fail("unreachable");
+            FallbackFailFast(RhFailFastReason.InternalError, null);
+        }
+#endif // !NATIVEAOT
+
 
 #if NATIVEAOT
         [RuntimeExport("RhRethrow")]
@@ -678,6 +738,7 @@ namespace System.Runtime
 
             bool isFirstRethrowFrame = (exInfo._kind & ExKind.RethrowFlag) != 0;
             bool isFirstFrame = true;
+            bool isExceptionIntercepted = false;
 
             byte* prevControlPC = null;
             byte* prevOriginalPC = null;
@@ -686,25 +747,37 @@ namespace System.Runtime
             IntPtr pReversePInvokePropagationCallback = IntPtr.Zero;
             IntPtr pReversePInvokePropagationContext = IntPtr.Zero;
 
-            bool isValid = frameIter.Init(exInfo._pExContext, (exInfo._kind & ExKind.InstructionFaultFlag) != 0);
+            bool isValid = frameIter.Init(exInfo._pExContext, (exInfo._kind & ExKind.InstructionFaultFlag) != 0, &isExceptionIntercepted);
             Debug.Assert(isValid, "RhThrowEx called with an unexpected context");
 
+#if NATIVEAOT
             OnFirstChanceExceptionViaClassLib(exceptionObj);
-
+#endif
             uint startIdx = MaxTryRegionIdx;
-            for (; isValid; isValid = frameIter.Next(&startIdx, &unwoundReversePInvoke))
+            for (; isValid; isValid = frameIter.Next(&startIdx, &unwoundReversePInvoke, &isExceptionIntercepted))
             {
                 // For GC stackwalking, we'll happily walk across native code blocks, but for EH dispatch, we
                 // disallow dispatching exceptions across native code.
                 if (unwoundReversePInvoke)
                     break;
 
+                if (isExceptionIntercepted)
+                {
+                    break;
+                }
+
                 prevControlPC = frameIter.ControlPC;
                 prevOriginalPC = frameIter.OriginalControlPC;
 
                 DebugScanCallFrame(exInfo._passNumber, frameIter.ControlPC, frameIter.SP);
 
-                UpdateStackTrace(exceptionObj, exInfo._frameIter.FramePointer, (IntPtr)frameIter.OriginalControlPC, frameIter.SP, ref isFirstRethrowFrame, ref prevFramePtr, ref isFirstFrame, ref exInfo);
+#if !NATIVEAOT
+                // Don't add frames at collided unwind
+                if (startIdx == MaxTryRegionIdx)
+#endif
+                {
+                    UpdateStackTrace(exceptionObj, exInfo._frameIter.FramePointer, (IntPtr)frameIter.OriginalControlPC, frameIter.SP, ref isFirstRethrowFrame, ref prevFramePtr, ref isFirstFrame, ref exInfo);
+                }
 
                 byte* pHandler;
                 if (FindFirstPassHandler(exceptionObj, startIdx, ref frameIter,
@@ -745,7 +818,7 @@ namespace System.Runtime
 #endif // !NATIVEAOT
             }
 
-            if (pCatchHandler == null && pReversePInvokePropagationCallback == IntPtr.Zero
+            if (pCatchHandler == null && pReversePInvokePropagationCallback == IntPtr.Zero && !isExceptionIntercepted
 #if !NATIVEAOT
                 && !unwoundReversePInvoke
 #endif
@@ -762,7 +835,8 @@ namespace System.Runtime
 
             // We FailFast above if the exception goes unhandled.  Therefore, we cannot run the second pass
             // without a catch handler or propagation callback.
-            Debug.Assert(pCatchHandler != null || pReversePInvokePropagationCallback != IntPtr.Zero || unwoundReversePInvoke, "We should have a handler if we're starting the second pass");
+            Debug.Assert(pCatchHandler != null || pReversePInvokePropagationCallback != IntPtr.Zero || unwoundReversePInvoke || isExceptionIntercepted, "We should have a handler if we're starting the second pass");
+            Debug.Assert(!isExceptionIntercepted || (pCatchHandler == null), "No catch handler should be returned for intercepted exceptions in the first pass");
 
             // ------------------------------------------------
             //
@@ -782,11 +856,18 @@ namespace System.Runtime
             exInfo._idxCurClause = catchingTryRegionIdx;
             startIdx = MaxTryRegionIdx;
             unwoundReversePInvoke = false;
-            isValid = frameIter.Init(exInfo._pExContext, (exInfo._kind & ExKind.InstructionFaultFlag) != 0);
-            for (; isValid && ((byte*)frameIter.SP <= (byte*)handlingFrameSP); isValid = frameIter.Next(&startIdx, &unwoundReversePInvoke))
+            isExceptionIntercepted = false;
+            isValid = frameIter.Init(exInfo._pExContext, (exInfo._kind & ExKind.InstructionFaultFlag) != 0, &isExceptionIntercepted);
+            for (; isValid && ((byte*)frameIter.SP <= (byte*)handlingFrameSP); isValid = frameIter.Next(&startIdx, &unwoundReversePInvoke, &isExceptionIntercepted))
             {
                 Debug.Assert(isValid, "second-pass EH unwind failed unexpectedly");
                 DebugScanCallFrame(exInfo._passNumber, frameIter.ControlPC, frameIter.SP);
+
+                if (isExceptionIntercepted)
+                {
+                    pCatchHandler = null;
+                    break;
+                }
 
                 if (unwoundReversePInvoke)
                 {
@@ -822,7 +903,7 @@ namespace System.Runtime
                     pReversePInvokePropagationContext, pReversePInvokePropagationCallback, frameIter.RegisterSet, ref exInfo, frameIter.PreviousTransitionFrame);
                 // the helper should jump to propagation handler and not return
 #endif
-                Debug.Assert(false, "unreachable");
+                Debug.Fail("unreachable");
                 FallbackFailFast(RhFailFastReason.InternalError, null);
             }
 #endif // FEATURE_OBJCMARSHAL
@@ -838,16 +919,14 @@ namespace System.Runtime
             InternalCalls.RhpCallCatchFunclet(
                 exceptionObj, pCatchHandler, frameIter.RegisterSet, ref exInfo);
 #else // NATIVEAOT
-#pragma warning disable CS8500
             fixed (EH.ExInfo* pExInfo = &exInfo)
             {
                 InternalCalls.RhpCallCatchFunclet(
                     ObjectHandleOnStack.Create(ref exceptionObj), pCatchHandler, frameIter.RegisterSet, pExInfo);
             }
-#pragma warning restore CS8500
 #endif // NATIVEAOT
             // currently, RhpCallCatchFunclet will resume after the catch
-            Debug.Assert(false, "unreachable");
+            Debug.Fail("unreachable");
             FallbackFailFast(RhFailFastReason.InternalError, null);
         }
 
@@ -863,6 +942,20 @@ namespace System.Runtime
             Debug.Assert(handlingFrameSP != MaxSP, "Handling frame must have an SP value");
             Debug.Assert(((UIntPtr*)handlingFrameSP) > &handlingFrameSP,
                 "Handling frame must have a valid stack frame pointer");
+        }
+
+        // Caclulate the code offset from the start of the method as if the hot and cold regions were
+        // stored sequentially in memory.
+        private static uint CalculateCodeOffset(byte* pbControlPC, in MethodRegionInfo methodRegionInfo)
+        {
+            uint codeOffset = (uint)(pbControlPC - methodRegionInfo._hotStartAddress);
+            // If the PC is in the cold region, adjust the offset to be relative to the start of the method.
+            if ((methodRegionInfo._coldSize != 0) && (codeOffset >= methodRegionInfo._hotSize))
+            {
+                codeOffset = (uint)(methodRegionInfo._hotSize + (nuint)(pbControlPC - methodRegionInfo._coldStartAddress));
+            }
+
+            return codeOffset;
         }
 
         private static void UpdateStackTrace(object exceptionObj, UIntPtr curFramePtr, IntPtr ip, UIntPtr sp,
@@ -891,13 +984,13 @@ namespace System.Runtime
             tryRegionIdx = MaxTryRegionIdx;
 
             EHEnum ehEnum;
-            byte* pbMethodStartAddress;
-            if (!InternalCalls.RhpEHEnumInitFromStackFrameIterator(ref frameIter, &pbMethodStartAddress, &ehEnum))
+            MethodRegionInfo methodRegionInfo;
+            if (!InternalCalls.RhpEHEnumInitFromStackFrameIterator(ref frameIter, out methodRegionInfo, &ehEnum))
                 return false;
 
             byte* pbControlPC = frameIter.ControlPC;
 
-            uint codeOffset = (uint)(pbControlPC - pbMethodStartAddress);
+            uint codeOffset = CalculateCodeOffset(pbControlPC, in methodRegionInfo);
 
             uint lastTryStart = 0, lastTryEnd = 0;
 
@@ -956,19 +1049,20 @@ namespace System.Runtime
                     byte* pFilterFunclet = ehClause._filterAddress;
 
                     bool shouldInvokeHandler = false;
+#if NATIVEAOT
                     try
                     {
                         shouldInvokeHandler =
-#if NATIVEAOT
                             InternalCalls.RhpCallFilterFunclet(exception, pFilterFunclet, frameIter.RegisterSet);
-#else
-                            InternalCalls.RhpCallFilterFunclet(ObjectHandleOnStack.Create(ref exception), pFilterFunclet, frameIter.RegisterSet);
-#endif
                     }
                     catch when (true)
                     {
                         // Prevent leaking any exception from the filter funclet
                     }
+#else // NATIVEAOT
+                    shouldInvokeHandler =
+                        InternalCalls.RhpCallFilterFunclet(ObjectHandleOnStack.Create(ref exception), pFilterFunclet, frameIter.RegisterSet);
+#endif // NATIVEAOT
 
                     if (shouldInvokeHandler)
                     {
@@ -1016,27 +1110,21 @@ namespace System.Runtime
 
             return TypeCast.IsInstanceOfException(pClauseType, exception);
 #else
-            bool retry = false;
-            do
+            if (tryUnwrapException && exception is RuntimeWrappedException ex)
             {
-                MethodTable* mt = RuntimeHelpers.GetMethodTable(exception);
-                while (mt != null)
-                {
-                    if (pClauseType == mt)
-                    {
-                        return true;
-                    }
-
-                    mt = mt->ParentMethodTable;
-                }
-
-                if (tryUnwrapException && exception is RuntimeWrappedException ex)
-                {
-                    exception = ex.WrappedException;
-                    retry = true;
-                }
+                exception = ex.WrappedException;
             }
-            while (retry);
+
+            MethodTable* mt = RuntimeHelpers.GetMethodTable(exception);
+            while (mt != null)
+            {
+                if (pClauseType == mt)
+                {
+                    return true;
+                }
+
+                mt = mt->ParentMethodTable;
+            }
 
             return false;
 #endif
@@ -1049,13 +1137,14 @@ namespace System.Runtime
         private static void InvokeSecondPass(ref ExInfo exInfo, uint idxStart, uint idxLimit)
         {
             EHEnum ehEnum;
-            byte* pbMethodStartAddress;
-            if (!InternalCalls.RhpEHEnumInitFromStackFrameIterator(ref exInfo._frameIter, &pbMethodStartAddress, &ehEnum))
+            MethodRegionInfo methodRegionInfo;
+
+            if (!InternalCalls.RhpEHEnumInitFromStackFrameIterator(ref exInfo._frameIter, out methodRegionInfo, &ehEnum))
                 return;
 
             byte* pbControlPC = exInfo._frameIter.ControlPC;
 
-            uint codeOffset = (uint)(pbControlPC - pbMethodStartAddress);
+            uint codeOffset = CalculateCodeOffset(pbControlPC, in methodRegionInfo);
 
             uint lastTryStart = 0, lastTryEnd = 0;
 
@@ -1077,7 +1166,7 @@ namespace System.Runtime
 
                     // Now, we continue skipping while the try region is identical to the one that invoked the
                     // previous dispatch.
-if ((ehClause._tryStartOffset == lastTryStart) && (ehClause._tryEndOffset == lastTryEnd)
+                    if ((ehClause._tryStartOffset == lastTryStart) && (ehClause._tryEndOffset == lastTryEnd)
 #if !NATIVEAOT
                         && (ehClause._isSameTry)
 #endif
@@ -1115,12 +1204,10 @@ if ((ehClause._tryStartOffset == lastTryStart) && (ehClause._tryEndOffset == las
 #if NATIVEAOT
                 InternalCalls.RhpCallFinallyFunclet(pFinallyHandler, exInfo._frameIter.RegisterSet);
 #else // NATIVEAOT
-#pragma warning disable CS8500
                 fixed (EH.ExInfo* pExInfo = &exInfo)
                 {
                     InternalCalls.RhpCallFinallyFunclet(pFinallyHandler, exInfo._frameIter.RegisterSet, pExInfo);
                 }
-#pragma warning restore CS8500
 #endif // NATIVEAOT
                 exInfo._idxCurClause = MaxTryRegionIdx;
             }
@@ -1128,7 +1215,7 @@ if ((ehClause._tryStartOffset == lastTryStart) && (ehClause._tryEndOffset == las
 
 #if NATIVEAOT
 #pragma warning disable IDE0060
-        [UnmanagedCallersOnly(EntryPoint = "RhpFailFastForPInvokeExceptionPreemp", CallConvs = new Type[] { typeof(CallConvCdecl) })]
+        [UnmanagedCallersOnly(EntryPoint = "RhpFailFastForPInvokeExceptionPreemp")]
         public static void RhpFailFastForPInvokeExceptionPreemp(IntPtr PInvokeCallsiteReturnAddr, void* pExceptionRecord, void* pContextRecord)
         {
             FailFastViaClasslib(RhFailFastReason.UnhandledExceptionFromPInvoke, null, PInvokeCallsiteReturnAddr);

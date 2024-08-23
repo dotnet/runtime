@@ -9,7 +9,6 @@
 #include "gcheaputilities.h"
 
 #include "slist.h"
-#include "gcrhinterface.h"
 #include "RuntimeInstance.h"
 #include "shash.h"
 
@@ -28,7 +27,9 @@ GPTR_DECL(Thread, g_pFinalizerThread);
 CLREventStatic g_FinalizerEvent;
 CLREventStatic g_FinalizerDoneEvent;
 
-extern "C" void __cdecl ProcessFinalizers();
+static HANDLE g_lowMemoryNotification = NULL;
+
+EXTERN_C void QCALLTYPE ProcessFinalizers();
 
 // Unmanaged front-end to the finalizer thread. We require this because at the point the GC creates the
 // finalizer thread we can't run managed code. Instead this method waits
@@ -46,9 +47,6 @@ uint32_t WINAPI FinalizerStart(void* pContext)
     pThread->SetSuppressGcStress();
 
     g_pFinalizerThread = PTR_Thread(pThread);
-
-    // We have some time until the first finalization request - use the time to calibrate normalized waits.
-    EnsureYieldProcessorNormalizedInitialized();
 
     // Wait for a finalization request.
     uint32_t uResult = PalWaitForSingleObjectEx(hFinalizerEvent, INFINITE, FALSE);
@@ -77,6 +75,7 @@ bool RhInitializeFinalization()
         return false;
     if (!g_FinalizerDoneEvent.CreateManualEventNoThrow(false))
         return false;
+    g_lowMemoryNotification = PalCreateLowMemoryResourceNotification();
 
     // Create the finalizer thread itself.
     if (!PalStartFinalizerThread(FinalizerStart, (void*)g_FinalizerEvent.GetOSEvent()))
@@ -90,12 +89,28 @@ void RhEnableFinalization()
     g_FinalizerEvent.Set();
 }
 
-EXTERN_C NATIVEAOT_API void __cdecl RhInitializeFinalizerThread()
+EXTERN_C void QCALLTYPE RhInitializeFinalizerThread()
 {
     g_FinalizerEvent.Set();
 }
 
-EXTERN_C NATIVEAOT_API void __cdecl RhWaitForPendingFinalizers(UInt32_BOOL allowReentrantWait)
+static int32_t g_fullGcCountSeenByFinalization;
+
+// Indicate that the current round of finalizations is complete.
+EXTERN_C void QCALLTYPE RhpSignalFinalizationComplete(uint32_t fcount, int32_t observedFullGcCount)
+{
+    FireEtwGCFinalizersEnd_V1(fcount, GetClrInstanceId());
+
+    g_fullGcCountSeenByFinalization = observedFullGcCount;
+    g_FinalizerDoneEvent.Set();
+
+    if (YieldProcessorNormalization::IsMeasurementScheduled())
+    {
+        YieldProcessorNormalization::PerformMeasurement();
+    }
+}
+
+EXTERN_C void QCALLTYPE RhWaitForPendingFinalizers(UInt32_BOOL allowReentrantWait)
 {
     // This must be called via p/invoke rather than RuntimeImport since it blocks and could starve the GC if
     // called in cooperative mode.
@@ -104,6 +119,14 @@ EXTERN_C NATIVEAOT_API void __cdecl RhWaitForPendingFinalizers(UInt32_BOOL allow
     // Can't call this from the finalizer thread itself.
     if (ThreadStore::GetCurrentThread() != g_pFinalizerThread)
     {
+        // We may see a completion of finalization cycle that might not see objects that became
+        // F-reachable in recent GCs. In such case we want to wait for a completion of another cycle.
+        // However, since an object cannot be prevented from promoting, one can only rely on Full GCs
+        // to collect unreferenced objects deterministically. Thus we only care about Full GCs here.
+        int desiredFullGcCount =
+            GCHeapUtilities::GetGCHeap()->CollectionCount(GCHeapUtilities::GetGCHeap()->GetMaxGeneration());
+
+    tryAgain:
         // Clear any current indication that a finalization pass is finished and wake the finalizer thread up
         // (if there's no work to do it'll set the done event immediately).
         g_FinalizerDoneEvent.Reset();
@@ -111,12 +134,23 @@ EXTERN_C NATIVEAOT_API void __cdecl RhWaitForPendingFinalizers(UInt32_BOOL allow
 
         // Wait for the finalizer thread to get back to us.
         g_FinalizerDoneEvent.Wait(INFINITE, false, allowReentrantWait);
+
+        // we use unsigned math here as the collection counts, which are size_t internally,
+        // can in theory overflow an int and wrap around.
+        // unsigned math would have more defined/portable behavior in such case
+        if ((int)((unsigned int)desiredFullGcCount - (unsigned int)g_fullGcCountSeenByFinalization) > 0)
+        {
+            // There were some Full GCs happening before we started waiting and possibly not seen by the
+            // last finalization cycle. This is rare, but we need to be sure we have seen those,
+            // so we try one more time.
+            goto tryAgain;
+        }
     }
 }
 
 // Block the current thread until at least one object needs to be finalized (returns true) or memory is low
 // (returns false and the finalizer thread should initiate a garbage collection).
-EXTERN_C NATIVEAOT_API UInt32_BOOL __cdecl RhpWaitForFinalizerRequest()
+EXTERN_C UInt32_BOOL QCALLTYPE RhpWaitForFinalizerRequest()
 {
     // We can wait for two events; finalization queue has been populated and low memory resource notification.
     // But if the latter is signalled we shouldn't wait on it again immediately -- if the garbage collection
@@ -133,17 +167,12 @@ EXTERN_C NATIVEAOT_API UInt32_BOOL __cdecl RhpWaitForFinalizerRequest()
     // two second timeout expires.
     do
     {
-        HANDLE  lowMemEvent = NULL;
-#if 0 // TODO: hook up low memory notification
-        lowMemEvent = pHeap->GetLowMemoryNotificationEvent();
+        HANDLE  lowMemEvent = g_lowMemoryNotification;
         HANDLE  rgWaitHandles[] = { g_FinalizerEvent.GetOSEvent(), lowMemEvent };
         uint32_t  cWaitHandles = (fLastEventWasLowMemory || (lowMemEvent == NULL)) ? 1 : 2;
         uint32_t  uTimeout = fLastEventWasLowMemory ? 2000 : INFINITE;
 
-        uint32_t uResult = PalWaitForMultipleObjectsEx(cWaitHandles, rgWaitHandles, FALSE, uTimeout, FALSE);
-#else
-        uint32_t uResult = PalWaitForSingleObjectEx(g_FinalizerEvent.GetOSEvent(), INFINITE, FALSE);
-#endif
+        uint32_t uResult = PalCompatibleWaitAny(/*alertable=*/ FALSE, uTimeout, cWaitHandles, rgWaitHandles, /*allowReentrantWait=*/ FALSE);
 
         switch (uResult)
         {
@@ -182,20 +211,13 @@ EXTERN_C NATIVEAOT_API UInt32_BOOL __cdecl RhpWaitForFinalizerRequest()
     } while (true);
 }
 
-// Indicate that the current round of finalizations is complete.
-EXTERN_C NATIVEAOT_API void __cdecl RhpSignalFinalizationComplete(uint32_t fcount)
-{
-    FireEtwGCFinalizersEnd_V1(fcount, GetClrInstanceId());
-    g_FinalizerDoneEvent.Set();
-}
-
 //
 // The following helpers are special in that they interact with internal GC state or directly manipulate
 // managed references so they're called with a special co-operative p/invoke.
 //
 
 // Fetch next object which needs finalization or return null if we've reached the end of the list.
-COOP_PINVOKE_HELPER(OBJECTREF, RhpGetNextFinalizableObject, ())
+FCIMPL0(OBJECTREF, RhpGetNextFinalizableObject)
 {
     while (true)
     {
@@ -217,3 +239,4 @@ COOP_PINVOKE_HELPER(OBJECTREF, RhpGetNextFinalizableObject, ())
         return refNext;
     }
 }
+FCIMPLEND

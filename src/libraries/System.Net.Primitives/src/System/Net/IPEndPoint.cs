@@ -156,7 +156,7 @@ namespace System.Net
             ArgumentNullException.ThrowIfNull(socketAddress);
 
             if (socketAddress.Family is not (AddressFamily.InterNetwork or AddressFamily.InterNetworkV6))
-                {
+            {
                 throw new ArgumentException(SR.Format(SR.net_InvalidAddressFamily, socketAddress.Family.ToString(), GetType().FullName), nameof(socketAddress));
             }
 

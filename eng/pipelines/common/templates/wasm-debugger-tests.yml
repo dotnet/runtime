@@ -28,9 +28,9 @@ jobs:
         value: $[
           or(
             eq(variables['wasmDarcDependenciesChanged'], true),
-            eq(dependencies.evaluate_paths.outputs['SetPathVars_tools_illink.containsChange'], true),
-            eq(dependencies.evaluate_paths_outputs['DarcDependenciesChanged.Microsoft_DotNet_HotReload_Utils_Generator_BuildTool'], true),
-            eq(dependencies.evaluate_paths.outputs['SetPathVars_wasmdebuggertests.containsChange'], true))
+            eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_tools_illink.containsChange'], true),
+            eq(stageDependencies.EvaluatePaths.evaluate_paths_outputs['DarcDependenciesChanged.Microsoft_DotNet_HotReload_Utils_Generator_BuildTool'], true),
+            eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_wasmdebuggertests.containsChange'], true))
           ]
     jobParameters:
       testGroup: innerloop

@@ -865,7 +865,7 @@ typedef struct ucontext MonoContext;
 
 typedef struct {
 	host_mgreg_t gregs [RISCV_N_GREGS]; // [0] contains pc since x0 is hard-wired to zero anyway.
-	double fregs [RISCV_N_FREGS * 2 + 2]; // [32] contains fcsr (32 bits), the rest is for quad-precision values (currently unused).
+	double fregs [RISCV_N_FREGS + 2]; // [32] contains fcsr (32 bits), the rest is for quad-precision values (currently unused).
 } MonoContext;
 
 #define MONO_CONTEXT_SET_IP(ctx, ip) do { (ctx)->gregs [RISCV_ZERO] = (host_mgreg_t) (ip); } while (0)

@@ -3,7 +3,7 @@
 
 namespace System.Runtime.InteropServices.JavaScript
 {
-    // please keep in sync with src\mono\wasm\runtime\marshal.ts
+    // please keep in sync with src\mono\browser\runtime\marshal.ts
     [Flags]
     internal enum JSTypeFlags : int
     {
@@ -22,6 +22,7 @@ namespace System.Runtime.InteropServices.JavaScript
         MemoryView = 0x800,
         Any = 0x1000,
         Discard = 0x2000,
+        DiscardNoWait = 0x4000,
         Missing = 0x4000_0000,
     }
 }

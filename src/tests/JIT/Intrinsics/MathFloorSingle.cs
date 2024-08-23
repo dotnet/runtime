@@ -3,10 +3,11 @@
 //
 
 using System;
+using Xunit;
 
 namespace MathFloorSingleTest
 {
-    class Program
+    public class Program
     {
         public const int Pass = 100;
         public const int Fail = 0;
@@ -31,7 +32,8 @@ namespace MathFloorSingleTest
             8.8f
         };
 
-        unsafe static int Main()
+        [Fact]
+        public unsafe static int TestEntryPoint()
         {
             float localValue = 9.9f;
 

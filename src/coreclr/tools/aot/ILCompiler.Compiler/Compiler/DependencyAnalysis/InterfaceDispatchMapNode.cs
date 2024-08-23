@@ -31,7 +31,7 @@ namespace ILCompiler.DependencyAnalysis
 
         public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
-            sb.Append(nameMangler.CompilationUnitPrefix).Append("__InterfaceDispatchMap_").Append(nameMangler.SanitizeName(nameMangler.GetMangledTypeName(_type)));
+            sb.Append(nameMangler.CompilationUnitPrefix).Append("__InterfaceDispatchMap_"u8).Append(nameMangler.SanitizeName(nameMangler.GetMangledTypeName(_type)));
         }
 
         public int Offset => 0;
@@ -96,18 +96,8 @@ namespace ILCompiler.DependencyAnalysis
                     null :
                     (InstantiatedType)declType.GetTypeDefinition().RuntimeInterfaces[interfaceIndex];
 
-                IEnumerable<MethodDesc> slots;
-
-                // If the vtable has fixed slots, we can query it directly.
-                // If it's a lazily built vtable, we might not be able to query slots
-                // just yet, so approximate by looking at all methods.
                 VTableSliceNode vtableSlice = factory.VTable(interfaceType);
-                if (vtableSlice.HasFixedSlots)
-                    slots = vtableSlice.Slots;
-                else
-                    slots = interfaceType.GetAllVirtualMethods();
-
-                foreach (MethodDesc slotMethod in slots)
+                foreach (MethodDesc slotMethod in vtableSlice.Slots)
                 {
                     MethodDesc declMethod = slotMethod;
 
@@ -164,6 +154,8 @@ namespace ILCompiler.DependencyAnalysis
             bool needsEntriesForInstanceInterfaceMethodImpls = !isInterface
                     || ((MetadataType)declType).IsDynamicInterfaceCastableImplementation();
 
+            int entryIndex = 0;
+
             // Resolve all the interfaces, but only emit non-static and non-default implementations
             for (int interfaceIndex = 0; interfaceIndex < declTypeRuntimeInterfaces.Length; interfaceIndex++)
             {
@@ -171,11 +163,18 @@ namespace ILCompiler.DependencyAnalysis
                 var definitionInterfaceType = declTypeDefinitionRuntimeInterfaces[interfaceIndex];
                 Debug.Assert(interfaceType.IsInterface);
 
-                IReadOnlyList<MethodDesc> virtualSlots = factory.VTable(interfaceType).Slots;
+                if (!factory.InterfaceUse(interfaceType.GetTypeDefinition()).Marked)
+                    continue;
+
+                VTableSliceNode interfaceVTable = factory.VTable(interfaceType);
+                IReadOnlyList<MethodDesc> virtualSlots = interfaceVTable.Slots;
 
                 for (int interfaceMethodSlot = 0; interfaceMethodSlot < virtualSlots.Count; interfaceMethodSlot++)
                 {
                     MethodDesc declMethod = virtualSlots[interfaceMethodSlot];
+
+                    if (!interfaceVTable.IsSlotUsed(declMethod))
+                        continue;
 
                     if (!declMethod.Signature.IsStatic && !needsEntriesForInstanceInterfaceMethodImpls)
                         continue;
@@ -210,11 +209,11 @@ namespace ILCompiler.DependencyAnalysis
                             int genericContext = targetMethod.GetCanonMethodTarget(CanonicalFormKind.Specific).RequiresInstArg()
                                 ? StaticVirtualMethodContextSource.ContextFromThisClass
                                 : StaticVirtualMethodContextSource.None;
-                            staticImplementations.Add((interfaceIndex, emittedInterfaceSlot, emittedImplSlot, genericContext));
+                            staticImplementations.Add((entryIndex, emittedInterfaceSlot, emittedImplSlot, genericContext));
                         }
                         else
                         {
-                            builder.EmitShort((short)checked((ushort)interfaceIndex));
+                            builder.EmitShort((short)checked((ushort)entryIndex));
                             builder.EmitShort((short)checked((ushort)emittedInterfaceSlot));
                             builder.EmitShort((short)checked((ushort)emittedImplSlot));
                             entryCount++;
@@ -271,7 +270,7 @@ namespace ILCompiler.DependencyAnalysis
                                     }
                                 }
                                 staticDefaultImplementations.Add((
-                                    interfaceIndex,
+                                    entryIndex,
                                     emittedInterfaceSlot,
                                     implSlot.Value,
                                     genericContext));
@@ -279,13 +278,15 @@ namespace ILCompiler.DependencyAnalysis
                             else
                             {
                                 defaultImplementations.Add((
-                                    interfaceIndex,
+                                    entryIndex,
                                     emittedInterfaceSlot,
                                     implSlot.Value));
                             }
                         }
                     }
                 }
+
+                entryIndex++;
             }
 
             // Now emit the default implementations

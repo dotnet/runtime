@@ -12,12 +12,6 @@
     <NoWarn>$(NoWarn);NU5131;NU5128</NoWarn>
   </PropertyGroup>
 
-  <!-- Always generate this package during servicing to flow the dependency to WindowsDesktop. -->
-  <PropertyGroup Condition="'$(PreReleaseVersionLabel)' == 'servicing'">
-    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
-    <ServicingVersion>$(PatchVersion)</ServicingVersion>
-  </PropertyGroup>
-
   <ItemGroup>
     <!-- Requires Private=true to calculate ReferenceCopyLocalPaths items.
          ReferringTargetFramework is set to $(NetCoreAppCurrent)-windows so that we pack the Windows specific implementation assemblies -->

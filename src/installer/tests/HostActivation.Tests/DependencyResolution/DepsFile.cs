@@ -9,7 +9,7 @@ using Xunit;
 
 namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
 {
-    public class DepsFile : DependencyResolutionBase, IClassFixture<DepsFile.SharedTestState>
+    public class DepsFile : IClassFixture<DepsFile.SharedTestState>
     {
         private readonly SharedTestState sharedState;
 
@@ -47,7 +47,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
                 .And.HaveResolvedAssembly(dependencyPath);
         }
 
-        public class SharedTestState : DependencyResolutionBase.SharedTestStateBase
+        public class SharedTestState : SharedTestStateBase
         {
             public DotNetCli DotNetWithNetCoreApp { get; }
 
@@ -60,10 +60,10 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
             public SharedTestState()
             {
                 DotNetWithNetCoreApp = DotNet("WithNetCoreApp")
-                    .AddMicrosoftNETCoreAppFrameworkMockCoreClr(RepoDirectoriesProvider.Default.MicrosoftNETCoreAppVersion)
+                    .AddMicrosoftNETCoreAppFrameworkMockCoreClr(TestContext.MicrosoftNETCoreAppVersion)
                     .Build();
 
-                FrameworkReferenceApp = CreateFrameworkReferenceApp(MicrosoftNETCoreApp, RepoDirectoriesProvider.Default.MicrosoftNETCoreAppVersion, b => b
+                FrameworkReferenceApp = CreateFrameworkReferenceApp(Constants.MicrosoftNETCoreApp, TestContext.MicrosoftNETCoreAppVersion, b => b
                     .WithProject(DependencyName, "1.0.0", p => p
                         .WithAssemblyGroup(null, g => g.WithAsset($"{DependencyName}.dll"))));
 

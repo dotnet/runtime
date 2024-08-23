@@ -17,6 +17,30 @@
 #define USE_REDIRECT_FOR_GCSTRESS
 #endif // TARGET_UNIX
 
+#define ENUM_CALLEE_SAVED_REGISTERS() \
+    CALLEE_SAVED_REGISTER(Fp) \
+    CALLEE_SAVED_REGISTER(Lr) \
+    CALLEE_SAVED_REGISTER(X19) \
+    CALLEE_SAVED_REGISTER(X20) \
+    CALLEE_SAVED_REGISTER(X21) \
+    CALLEE_SAVED_REGISTER(X22) \
+    CALLEE_SAVED_REGISTER(X23) \
+    CALLEE_SAVED_REGISTER(X24) \
+    CALLEE_SAVED_REGISTER(X25) \
+    CALLEE_SAVED_REGISTER(X26) \
+    CALLEE_SAVED_REGISTER(X27) \
+    CALLEE_SAVED_REGISTER(X28)
+
+#define ENUM_FP_CALLEE_SAVED_REGISTERS() \
+    CALLEE_SAVED_REGISTER(V[8].Low) \
+    CALLEE_SAVED_REGISTER(V[9].Low) \
+    CALLEE_SAVED_REGISTER(V[10].Low) \
+    CALLEE_SAVED_REGISTER(V[11].Low) \
+    CALLEE_SAVED_REGISTER(V[12].Low) \
+    CALLEE_SAVED_REGISTER(V[13].Low) \
+    CALLEE_SAVED_REGISTER(V[14].Low) \
+    CALLEE_SAVED_REGISTER(V[15].Low)
+
 EXTERN_C void getFPReturn(int fpSize, INT64 *pRetVal);
 EXTERN_C void setFPReturn(int fpSize, INT64 retVal);
 
@@ -37,8 +61,6 @@ extern PCODE GetPreStubEntryPoint();
 #define BACK_TO_BACK_JUMP_ALLOCATE_SIZE         16  // # bytes to allocate for a back to back jump instruction
 
 #define HAS_NDIRECT_IMPORT_PRECODE              1
-
-#define USE_INDIRECT_CODEHEADER
 
 #define HAS_FIXUP_PRECODE                       1
 
@@ -109,10 +131,8 @@ inline unsigned StackElemSize(unsigned parmSize, bool isValueType, bool isFloatH
 //
 // Create alias for optimized implementations of helpers provided on this platform
 //
-#define JIT_GetSharedGCStaticBase           JIT_GetSharedGCStaticBase_SingleAppDomain
-#define JIT_GetSharedNonGCStaticBase        JIT_GetSharedNonGCStaticBase_SingleAppDomain
-#define JIT_GetSharedGCStaticBaseNoCtor     JIT_GetSharedGCStaticBaseNoCtor_SingleAppDomain
-#define JIT_GetSharedNonGCStaticBaseNoCtor  JIT_GetSharedNonGCStaticBaseNoCtor_SingleAppDomain
+#define JIT_GetDynamicGCStaticBase           JIT_GetDynamicGCStaticBase_SingleAppDomain
+#define JIT_GetDynamicNonGCStaticBase        JIT_GetDynamicNonGCStaticBase_SingleAppDomain
 
 //**********************************************************************
 // Frames
@@ -282,7 +302,7 @@ inline TADDR GetMem(PCODE address, SIZE_T size, bool signExtend)
     }
     EX_CATCH
     {
-        mem = NULL;
+        mem = 0;
         _ASSERTE(!"Memory read within jitted Code Failed, this should not happen!!!!");
     }
     EX_END_CATCH(SwallowAllExceptions);

@@ -6,11 +6,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-#if USE_MDT_EVENTSOURCE
-using Microsoft.Diagnostics.Tracing;
-#else
 using System.Diagnostics.Tracing;
-#endif
 using Xunit;
 
 namespace BasicEventSourceTests
@@ -21,7 +17,8 @@ namespace BasicEventSourceTests
         /// Tests the EventSource.Write[T] method (can only use the self-describing mechanism).
         ///
         /// </summary>
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))] // ActiveIssue: https://github.com/dotnet/runtime/issues/26197
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/88305")]
         public void Test_Write_Fuzzy()
         {
             using (var logger = new EventSource("EventSourceName"))

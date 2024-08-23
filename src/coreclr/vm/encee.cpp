@@ -231,7 +231,7 @@ HRESULT EditAndContinueModule::ApplyEditAndContinue(
                     IfFailGo(E_INVALIDARG);
                 }
 
-                SetDynamicIL(token, (TADDR)(pLocalILMemory + dwMethodRVA), FALSE);
+                SetDynamicIL(token, (TADDR)(pLocalILMemory + dwMethodRVA));
 
                 // use module to resolve to method
                 MethodDesc *pMethod;
@@ -336,11 +336,10 @@ HRESULT EditAndContinueModule::UpdateMethod(MethodDesc *pMethod)
     {
         // Generics are involved so we need to search for all related MethodDescs.
         Module* module = pMethod->GetLoaderModule();
-        AppDomain* appDomain = module->GetDomain()->AsAppDomain();
         mdMethodDef tkMethod = pMethod->GetMemberDef();
 
         LoadedMethodDescIterator it(
-            appDomain,
+            AppDomain::GetCurrentDomain(),
             module,
             tkMethod,
             AssemblyIterationFlags(kIncludeLoaded | kIncludeExecution));
@@ -536,7 +535,7 @@ PCODE EditAndContinueModule::JitUpdatedFunction( MethodDesc *pMD,
     LOG((LF_ENC, LL_INFO100, "EnCModule::JitUpdatedFunction for %s::%s\n",
         pMD->m_pszDebugClassName, pMD->m_pszDebugMethodName));
 
-    PCODE jittedCode = NULL;
+    PCODE jittedCode = (PCODE)NULL;
 
     GCX_COOP();
 
@@ -649,7 +648,7 @@ HRESULT EditAndContinueModule::ResumeInUpdatedFunction(
 
     // JIT-compile the updated version of the method
     PCODE jittedCode = JitUpdatedFunction(pMD, pOrigContext);
-    if ( jittedCode == NULL )
+    if ( jittedCode == (PCODE)NULL )
         return CORDBG_E_ENC_JIT_CANT_UPDATE;
 
     GCX_COOP();
@@ -1153,7 +1152,7 @@ EnCAddedField *EnCAddedField::Allocate(OBJECTREF thisPointer, EnCFieldDesc *pFD)
     EnCAddedField *pEntry = new EnCAddedField;
     pEntry->m_pFieldDesc = pFD;
 
-    AppDomain *pDomain = (AppDomain*) pFD->GetApproxEnclosingMethodTable()->GetDomain();
+    AppDomain *pDomain = AppDomain::GetCurrentDomain();
 
     // We need to associate the contents of the new field with the object it is attached to
     // in a way that mimics the lifetime behavior of a normal field reference.  Specifically,
@@ -1461,7 +1460,7 @@ EnCAddedStaticField *EnCAddedStaticField::Allocate(EnCFieldDesc *pFD)
     }
     CONTRACTL_END;
 
-    AppDomain *pDomain = (AppDomain*) pFD->GetApproxEnclosingMethodTable()->GetDomain();
+    AppDomain *pDomain = AppDomain::GetCurrentDomain();
 
     // Compute the size of the fieldData entry
     size_t fieldSize;

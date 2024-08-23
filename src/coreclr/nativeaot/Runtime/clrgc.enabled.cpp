@@ -32,6 +32,20 @@ GC_LOAD_STATUS g_gc_load_status = GC_LOAD_STATUS_BEFORE_START;
 // The version of the GC that we have loaded.
 VersionInfo g_gc_version_info;
 
+CrstStatic g_eventStashLock;
+
+GCEventLevel g_stashedLevel = GCEventLevel_None;
+GCEventKeyword g_stashedKeyword = GCEventKeyword_None;
+GCEventLevel g_stashedPrivateLevel = GCEventLevel_None;
+GCEventKeyword g_stashedPrivateKeyword = GCEventKeyword_None;
+
+BOOL g_gcEventTracingInitialized = FALSE;
+
+void InitializeGCEventLock()
+{
+    g_eventStashLock.InitNoThrow(CrstGcEvent);
+}
+
 HRESULT InitializeStandaloneGC();
 
 HRESULT InitializeGCSelector()
@@ -44,52 +58,120 @@ HRESULT InitializeStandaloneGC()
     return GCHeapUtilities::InitializeStandaloneGC();
 }
 
+//  Validate that the name used to load the GC is just a simple file name
+//  and does not contain something that could be used in a non-qualified path.
+//  For example, using the string "..\..\..\clrgc.dll" we might attempt to
+//  load a GC from the root of the drive.
+//
+//  The minimal set of characters that we must check for and exclude are:
+//  On all platforms:
+//     '/'  - (forward slash)
+//  On Windows:
+//     '\\' - (backslash)
+//     ':'  - (colon)
+//
+//  Returns false if we find any of these characters in 'pwzModuleName'
+//  Returns true if we reach the null terminator without encountering
+//  any of these characters.
+//
+bool ValidateModuleName(const char* pwzModuleName)
+{
+    const char* pCurChar = pwzModuleName;
+    char curChar;
+    do {
+        curChar = *pCurChar;
+        if (curChar == '/'
+#ifdef TARGET_WINDOWS
+            || (curChar == '\\') || (curChar == ':')
+#endif
+        )
+        {
+            //  Return false if we find any of these character in 'pwzJitName'
+            return false;
+        }
+        pCurChar++;
+    } while (curChar != 0);
+
+    //  Return true; we have reached the null terminator
+    //
+    return true;
+}
+
 HRESULT GCHeapUtilities::InitializeStandaloneGC()
 {
     char* moduleName;
+    char* modulePath;
+
+    if (!RhConfig::Environment::TryGetStringValue("GCPath", &modulePath))
+    {
+        modulePath = nullptr;
+    }
 
     if (!RhConfig::Environment::TryGetStringValue("GCName", &moduleName))
+    {
+        moduleName = nullptr;
+    }
+
+    if (!(moduleName || modulePath))
     {
         return GCHeapUtilities::InitializeDefaultGC();
     }
 
     NewArrayHolder<char> moduleNameHolder(moduleName);
-    HANDLE executableModule = PalGetModuleHandleFromPointer((void*)&PalGetModuleHandleFromPointer);
-    const TCHAR * executableModulePath = NULL;
-    PalGetModuleFileName(&executableModulePath, executableModule);
-    char* convertedExecutableModulePath = PalCopyTCharAsChar(executableModulePath);
-    if (!convertedExecutableModulePath)
+    if (!modulePath)
     {
-        return E_OUTOFMEMORY;
-    }
-    NewArrayHolder<char> convertedExecutableModulePathHolder(convertedExecutableModulePath);
-    {
-        char* p = convertedExecutableModulePath;
-        char* q = nullptr;
-        while (*p != '\0')
+        //
+        // This is not a security feature.
+        // The libFileName originates either from an environment variable or from the runtimeconfig.json
+        // These are trusted locations, and therefore even if it is a relative path, there is no security risk.
+        //
+        // However, users often don't know the absolute path to their coreclr module, especially on production. 
+        // Therefore we allow referencing it from an arbitrary location through libFilePath instead. Users, however
+        // are warned that they should keep the file in a secure location such that it cannot be tampered. 
+        //
+        if (!ValidateModuleName(moduleName))
         {
-            if (*p == DIRECTORY_SEPARATOR_CHAR)
-            {
-                q = p;
-            }
-            p++;
+            LOG((LF_GC, LL_FATALERROR, "GC initialization failed to load the Standalone GC library.\n"));
+            return E_FAIL;
         }
-        assert(q != nullptr);
-        q++;
-        *q = '\0';
-    }
-    size_t folderLength = strlen(convertedExecutableModulePath);
-    size_t nameLength = strlen(moduleName);
-    char* moduleFullPath = new (nothrow) char[folderLength + nameLength + 1];
-    if (!moduleFullPath)
-    {
-        return E_OUTOFMEMORY;
-    }
-    NewArrayHolder<char> moduleFullPathHolder(moduleFullPath);
-    strcpy(moduleFullPath, convertedExecutableModulePath);
-    strcpy(moduleFullPath + folderLength, moduleName);
 
-    HANDLE hMod = PalLoadLibrary(moduleFullPath);
+        HANDLE executableModule = PalGetModuleHandleFromPointer((void*)&PalGetModuleHandleFromPointer);
+        const TCHAR * executableModulePath = NULL;
+        PalGetModuleFileName(&executableModulePath, executableModule);
+        char* convertedExecutableModulePath = PalCopyTCharAsChar(executableModulePath);
+        if (!convertedExecutableModulePath)
+        {
+            return E_OUTOFMEMORY;
+        }
+        NewArrayHolder<char> convertedExecutableModulePathHolder(convertedExecutableModulePath);
+        {
+            char* p = convertedExecutableModulePath;
+            char* q = nullptr;
+            while (*p != '\0')
+            {
+                if (*p == DIRECTORY_SEPARATOR_CHAR)
+                {
+                    q = p;
+                }
+                p++;
+            }
+            assert(q != nullptr);
+            q++;
+            *q = '\0';
+        }
+        size_t folderLength = strlen(convertedExecutableModulePath);
+        size_t nameLength = strlen(moduleName);
+        modulePath = new (nothrow) char[folderLength + nameLength + 1];
+        if (!modulePath)
+        {
+            return E_OUTOFMEMORY;
+        }
+        strcpy(modulePath, convertedExecutableModulePath);
+        strcpy(modulePath + folderLength, moduleName);
+    }
+
+    NewArrayHolder<char> modulePathHolder(modulePath);
+    HANDLE hMod = PalLoadLibrary(modulePath);
 
     if (!hMod)
     {
@@ -137,6 +219,12 @@ HRESULT GCHeapUtilities::InitializeStandaloneGC()
     if (initResult == S_OK)
     {
         g_pGCHeap = heap;
+        {
+            CrstHolder lh(&g_eventStashLock);
+            g_pGCHeap->ControlEvents(g_stashedKeyword, g_stashedLevel);
+            g_pGCHeap->ControlPrivateEvents(g_stashedPrivateKeyword, g_stashedPrivateLevel);
+            g_gcEventTracingInitialized = TRUE;
+        }
         g_pGCHandleManager = manager;
         g_gcDacGlobals = &g_gc_dac_vars;
         LOG((LF_GC, LL_INFO100, "GC load successful\n"));
@@ -147,4 +235,33 @@ HRESULT GCHeapUtilities::InitializeStandaloneGC()
     }
 
     return initResult;
+}
+
+void GCHeapUtilities::RecordEventStateChange(bool isPublicProvider, GCEventKeyword keywords, GCEventLevel level)
+{
+    CrstHolder lh(&g_eventStashLock);
+    if (g_gcEventTracingInitialized)
+    {
+        if (isPublicProvider)
+        {
+            g_pGCHeap->ControlEvents(keywords, level);
+        }
+        else
+        {
+            g_pGCHeap->ControlPrivateEvents(keywords, level);
+        }
+    }
+    else
+    {
+        if (isPublicProvider)
+        {
+            g_stashedKeyword = keywords;
+            g_stashedLevel = level;
+        }
+        else
+        {
+            g_stashedPrivateKeyword = keywords;
+            g_stashedPrivateLevel = level;
+        }
+    }
 }

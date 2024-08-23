@@ -17,7 +17,9 @@ namespace System.Threading
 
         private const short MaxPossibleThreadCount = short.MaxValue;
 
-#if TARGET_64BIT
+#if TARGET_BROWSER
+        private const short DefaultMaxWorkerThreadCount = 10;
+#elif TARGET_64BIT
         private const short DefaultMaxWorkerThreadCount = MaxPossibleThreadCount;
 #elif TARGET_32BIT
         private const short DefaultMaxWorkerThreadCount = 1023;
@@ -38,6 +40,19 @@ namespace System.Threading
             AppContextConfigHelper.GetInt16Config("System.Threading.ThreadPool.MinThreads", 0, false);
         private static readonly short ForcedMaxWorkerThreads =
             AppContextConfigHelper.GetInt16Config("System.Threading.ThreadPool.MaxThreads", 0, false);
+
+#if TARGET_WINDOWS
+        // Continuations of IO completions are dispatched to the ThreadPool from IO completion poller threads. This avoids
+        // continuations blocking/stalling the IO completion poller threads. Setting UnsafeInlineIOCompletionCallbacks allows
+        // continuations to run directly on the IO completion poller thread, but is inherently unsafe due to the potential for
+        // those threads to become stalled due to blocking. Sometimes, setting this config value may yield better latency. The
+        // config value is named for consistency with SocketAsyncEngine.Unix.cs.
+        private static readonly bool UnsafeInlineIOCompletionCallbacks =
+            Environment.GetEnvironmentVariable("DOTNET_SYSTEM_NET_SOCKETS_INLINE_COMPLETIONS") == "1";
+
+        private static readonly short IOCompletionPortCount = DetermineIOCompletionPortCount();
+        private static readonly int IOCompletionPollerCount = DetermineIOCompletionPollerCount();
+#endif
 
         private static readonly int ThreadPoolThreadTimeoutMs = DetermineThreadPoolThreadTimeoutMs();
 
@@ -70,6 +85,7 @@ namespace System.Threading
         private short _maxThreads;
         private short _legacy_minIOCompletionThreads;
         private short _legacy_maxIOCompletionThreads;
+        private int _numThreadsBeingKeptAlive;
 
         [StructLayout(LayoutKind.Explicit, Size = Internal.PaddingHelpers.CACHE_LINE_SIZE * 6)]
         private struct CacheLineSeparated
@@ -103,11 +119,6 @@ namespace System.Threading
 
         private long _memoryUsageBytes;
         private long _memoryLimitBytes;
-
-#if TARGET_WINDOWS
-        private readonly nint _ioPort;
-        private IOCompletionPoller[]? _ioCompletionPollers;
-#endif
 
         private readonly LowLevelLock _threadAdjustmentLock = new LowLevelLock();
 
@@ -146,7 +157,7 @@ namespace System.Threading
             _separated.counts.NumThreadsGoal = _minThreads;
 
 #if TARGET_WINDOWS
-            _ioPort = CreateIOCompletionPort();
+            InitializeIOOnWindows();
 #endif
         }
 

@@ -9,6 +9,6 @@ internal static partial class Interop
     internal static unsafe partial class JsGlobalization
     {
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal static extern unsafe int GetCalendarInfo(in string culture, CalendarId calendarId, char* buffer, int bufferLength, out int exceptionalResult, out object result);
+        internal static extern unsafe nint GetCalendarInfo(char* culture, int cultureLength, CalendarId calendarId, char* buffer, int bufferMaxLength, out int bufferLength);
     }
 }
