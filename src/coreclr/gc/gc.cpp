@@ -6999,8 +6999,21 @@ void gc_heap::gc_thread_function ()
 
     while (1)
     {
-        // inactive GC threads may observe gc_t_join.joined() being true here
-        assert ((n_heaps <= heap_number) || !gc_t_join.joined());
+#ifdef DYNAMIC_HEAP_COUNT
+        if (gc_heap::dynamic_adaptation_mode == dynamic_adaptation_to_application_sizes)
+        {
+            // Inactive GC threads may observe gc_t_join.joined() being true here.
+            // Before the 1st GC happens, h0's GC thread can also observe gc_t_join.joined() being true because it's
+            // also inactive as the main thread (that inits the GC) will act as h0 (to call change_heap_count).
+            assert (((heap_number == 0) && (VolatileLoadWithoutBarrier (&settings.gc_index) == 0)) ||
+                    (n_heaps <= heap_number) ||
+                    !gc_t_join.joined());
+        }
+        else
+#endif //DYNAMIC_HEAP_COUNT
+        {
+            assert (!gc_t_join.joined());
+        }
 
         if (heap_number == 0)
         {
@@ -9594,6 +9607,7 @@ int gc_heap::grow_brick_card_tables (uint8_t* start,
 #endif //CARD_BUNDLE
 
         size_t alloc_size = card_table_element_layout[total_bookkeeping_elements];
+        size_t commit_size = 0;
         uint8_t* mem = (uint8_t*)GCToOSInterface::VirtualReserve (alloc_size, 0, virtual_reserve_flags);
 
         if (!mem)
@@ -9607,14 +9621,16 @@ int gc_heap::grow_brick_card_tables (uint8_t* start,
 
         {
             // in case of background gc, the mark array will be committed separately (per segment).
-            size_t commit_size = card_table_element_layout[seg_mapping_table_element + 1];
+            commit_size = card_table_element_layout[seg_mapping_table_element + 1];
 
             if (!virtual_commit (mem, commit_size, recorded_committed_bookkeeping_bucket))
             {
+                commit_size = 0;
                 dprintf (GC_TABLE_LOG, ("Table commit failed"));
                 set_fgm_result (fgm_commit_table, commit_size, uoh_p);
                 goto fail;
             }
+
         }
 
         ct = (uint32_t*)(mem + card_table_element_layout[card_table_element]);
@@ -9786,6 +9802,7 @@ fail:
                 dprintf (GC_TABLE_LOG, ("GCToOSInterface::VirtualRelease failed"));
                 assert (!"release failed");
             }
+            reduce_committed_bytes (mem, commit_size, recorded_committed_bookkeeping_bucket, -1, true);
         }
 
         return -1;
@@ -47756,10 +47773,6 @@ void gc_heap::verify_committed_bytes_per_heap()
 
 void gc_heap::verify_committed_bytes()
 {
-#ifndef USE_REGIONS
-    // TODO, https://github.com/dotnet/runtime/issues/102706, re-enable the testing after fixing this bug
-    return;
-#endif //!USE_REGIONS
     size_t total_committed = 0;
     size_t committed_decommit; // unused
     size_t committed_free; // unused
