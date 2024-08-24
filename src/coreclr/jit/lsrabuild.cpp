@@ -2841,10 +2841,7 @@ void LinearScan::buildIntervals()
 #ifdef HAS_MORE_THAN_64_REGISTERS
     else if (availableRegCount < (sizeof(regMaskTP) * 8))
     {
-        // Mask out the bits that are between (8 * regMaskTP) ~ availableRegCount
-        // Subtract one extra for stack.
-        unsigned topRegCount = availableRegCount - sizeof(regMaskSmall) * 8 - 1;
-        actualRegistersMask  = regMaskTP(~RBM_NONE, (1ULL << topRegCount) - 1);
+        actualRegistersMask = regMaskTP(~RBM_NONE, availableMaskRegs);
     }
 #endif
     else
@@ -3682,12 +3679,17 @@ int LinearScan::BuildOperandUses(GenTree* node, SingleTypeRegSet candidates)
     {
         GenTreeHWIntrinsic* hwintrinsic = node->AsHWIntrinsic();
 
+        size_t numArgs = hwintrinsic->GetOperandCount();
         if (hwintrinsic->OperIsMemoryLoad())
         {
+#ifdef TARGET_ARM64
+            if (numArgs == 2)
+            {
+                return BuildAddrUses(hwintrinsic->Op(1)) + BuildOperandUses(hwintrinsic->Op(2), candidates);
+            }
+#endif
             return BuildAddrUses(hwintrinsic->Op(1));
         }
-
-        size_t numArgs = hwintrinsic->GetOperandCount();
 
         if (numArgs != 1)
         {

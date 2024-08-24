@@ -414,10 +414,10 @@ namespace System.Runtime
         [RuntimeExport("RhTypeCast_CheckCastClassSpecial")]
         private static unsafe object CheckCastClassSpecial(MethodTable* pTargetType, object obj)
         {
-            Debug.Assert(!pTargetType->IsParameterizedType, "CheckCastClass called with parameterized MethodTable");
-            Debug.Assert(!pTargetType->IsFunctionPointer, "CheckCastClass called with function pointer MethodTable");
-            Debug.Assert(!pTargetType->IsInterface, "CheckCastClass called with interface MethodTable");
-            Debug.Assert(!pTargetType->HasGenericVariance, "CheckCastClass with variant MethodTable");
+            Debug.Assert(!pTargetType->IsParameterizedType, "CheckCastClassSpecial called with parameterized MethodTable");
+            Debug.Assert(!pTargetType->IsFunctionPointer, "CheckCastClassSpecial called with function pointer MethodTable");
+            Debug.Assert(!pTargetType->IsInterface, "CheckCastClassSpecial called with interface MethodTable");
+            Debug.Assert(!pTargetType->HasGenericVariance, "CheckCastClassSpecial with variant MethodTable");
 
             MethodTable* mt = obj.GetMethodTable();
             Debug.Assert(mt != pTargetType, "The check for the trivial cases should be inlined by the JIT");
@@ -711,7 +711,7 @@ namespace System.Runtime
                         break;
 
                     default:
-                        Debug.Assert(false, "unknown generic variance type");
+                        Debug.Fail("unknown generic variance type");
                         break;
                 }
             }

@@ -561,17 +561,9 @@ public:
     unsigned char lvIsLastUseCopyOmissionCandidate : 1;
 #endif // FEATURE_IMPLICIT_BYREFS
 
-#if defined(TARGET_LOONGARCH64)
-    unsigned char lvIs4Field1 : 1; // Set if the 1st field is int or float within struct for LA-ABI64.
-    unsigned char lvIs4Field2 : 1; // Set if the 2nd field is int or float within struct for LA-ABI64.
-    unsigned char lvIsSplit   : 1; // Set if the argument is splited.
-#endif                             // defined(TARGET_LOONGARCH64)
-
-#if defined(TARGET_RISCV64)
-    unsigned char lvIs4Field1 : 1; // Set if the 1st field is int or float within struct for RISCV64.
-    unsigned char lvIs4Field2 : 1; // Set if the 2nd field is int or float within struct for RISCV64.
-    unsigned char lvIsSplit   : 1; // Set if the argument is splited.
-#endif                             // defined(TARGET_RISCV64)
+#if defined(TARGET_RISCV64) || defined(TARGET_LOONGARCH64)
+    unsigned char lvIsSplit : 1; // Set if the argument is split across last integer register and stack.
+#endif                           // defined(TARGET_RISCV64) || defined(TARGET_LOONGARCH64)
 
     unsigned char lvSingleDef : 1; // variable has a single def. Used to identify ref type locals that can get type
                                    // updates
@@ -3655,6 +3647,7 @@ public:
     bool gtMarkAddrMode(GenTree* addr, int* costEx, int* costSz, var_types type);
 
     unsigned gtSetEvalOrder(GenTree* tree);
+    unsigned gtSetEvalOrderMinOpts(GenTree* tree);
     bool gtMayHaveStoreInterference(GenTree* treeWithStores, GenTree* tree);
     bool gtTreeHasLocalRead(GenTree* tree, unsigned lclNum);
 
@@ -4344,6 +4337,10 @@ public:
 #endif // defined(FEATURE_SIMD)
 
     unsigned lvaGSSecurityCookie; // LclVar number
+#ifdef TARGET_ARM64
+    unsigned lvaFfrRegister; // LclVar number
+    unsigned getFFRegisterVarNum();
+#endif
     bool     lvaTempsHaveLargerOffsetThanVars();
 
     // Returns "true" iff local variable "lclNum" is in SSA form.
@@ -5333,6 +5330,7 @@ public:
     bool fgHasSwitch; // any BBJ_SWITCH jumps?
 
     bool fgRemoveRestOfBlock; // true if we know that we will throw
+    bool fgHasNoReturnCall;   // true if statement we morphed had a no-return call
     bool fgStmtRemoved;       // true if we remove statements -> need new DFA
 
     enum FlowGraphOrder
@@ -5466,6 +5464,8 @@ public:
     bool fgMorphBlockStmt(BasicBlock* block, Statement* stmt DEBUGARG(const char* msg));
     void fgMorphStmtBlockOps(BasicBlock* block, Statement* stmt);
 
+    bool gtRemoveTreesAfterNoReturnCall(BasicBlock* block, Statement* stmt);
+
     //------------------------------------------------------------------------------------------------------------
     // MorphMDArrayTempCache: a simple cache of compiler temporaries in the local variable table, used to minimize
     // the number of locals allocated when doing early multi-dimensional array operation expansion. Two types of
@@ -5594,7 +5594,7 @@ public:
 
     void fgLiveVarAnalysis();
 
-    void fgComputeLifeCall(VARSET_TP& life, VARSET_VALARG_TP keepAliveVars, GenTreeCall* call);
+    GenTreeLclVarCommon* fgComputeLifeCall(VARSET_TP& life, VARSET_VALARG_TP keepAliveVars, GenTreeCall* call);
 
     void fgComputeLifeTrackedLocalUse(VARSET_TP& life, LclVarDsc& varDsc, GenTreeLclVarCommon* node);
     bool fgComputeLifeTrackedLocalDef(VARSET_TP&           life,
@@ -5701,6 +5701,36 @@ public:
     typedef JitHashTable<CORINFO_CLASS_HANDLE, JitPtrKeyFuncs<struct CORINFO_CLASS_STRUCT_>, CORINFO_SWIFT_LOWERING*> SwiftLoweringMap;
     SwiftLoweringMap* m_swiftLoweringCache;
     const CORINFO_SWIFT_LOWERING* GetSwiftLowering(CORINFO_CLASS_HANDLE clsHnd);
+#endif
+
+#if defined(TARGET_X86) && defined(FEATURE_IJW)
+    bool* m_specialCopyArgs;
+    bool recordArgRequiresSpecialCopy(unsigned argNum)
+    {
+        if (argNum >= info.compArgsCount)
+        {
+            return false;
+        }
+
+        if (m_specialCopyArgs == nullptr)
+        {
+            m_specialCopyArgs = new (getAllocator()) bool[info.compArgsCount];
+            memset(m_specialCopyArgs, 0, info.compArgsCount * sizeof(bool));
+        }
+
+        m_specialCopyArgs[argNum] = true;
+        return true;
+    }
+
+    bool argRequiresSpecialCopy(unsigned argNum)
+    {
+        return argNum < info.compArgsCount && m_specialCopyArgs != nullptr && m_specialCopyArgs[argNum];
+    }
+
+    bool compHasSpecialCopyArgs()
+    {
+        return m_specialCopyArgs != nullptr;
+    }
 #endif
 
     void optRecordLoopMemoryDependence(GenTree* tree, BasicBlock* block, ValueNum memoryVN);
@@ -6241,6 +6271,7 @@ public:
     PhaseStatus fgUpdateFlowGraphPhase();
 
     PhaseStatus fgDfsBlocksAndRemove();
+    bool fgRemoveBlocksOutsideDfsTree();
 
     PhaseStatus fgFindOperOrder();
 
@@ -9533,10 +9564,6 @@ public:
 #endif // FEATURE_SIMD
     }
 
-#ifdef FEATURE_HW_INTRINSICS
-    static bool vnEncodesResultTypeForHWIntrinsic(NamedIntrinsic hwIntrinsicID);
-#endif // FEATURE_HW_INTRINSICS
-
 private:
     // Returns true if the TYP_SIMD locals on stack are aligned at their
     // preferred byte boundary specified by getSIMDTypeAlignment().
@@ -9985,6 +10012,8 @@ public:
 // Maximum number of locals before turning off the inlining
 #define MAX_LV_NUM_COUNT_FOR_INLINING 512
 
+        bool canUseTier0Opts;
+        bool canUseAllOpts;
         bool compMinOpts;
         bool compMinOptsIsSet;
 #ifdef DEBUG
@@ -10011,13 +10040,22 @@ public:
         }
 #endif // !DEBUG
 
+        // TODO: we should convert these into a single OptimizationLevel
+
         bool OptimizationDisabled() const
         {
-            return MinOpts() || compDbgCode;
+            assert(compMinOptsIsSet);
+            return !canUseAllOpts;
         }
         bool OptimizationEnabled() const
         {
-            return !OptimizationDisabled();
+            assert(compMinOptsIsSet);
+            return canUseAllOpts;
+        }
+        bool Tier0OptimizationEnabled() const
+        {
+            assert(compMinOptsIsSet);
+            return canUseTier0Opts;
         }
 
         void SetMinOpts(bool val)
@@ -10026,6 +10064,9 @@ public:
             assert(!compMinOptsIsSet || (compMinOpts == val));
             compMinOpts      = val;
             compMinOptsIsSet = true;
+
+            canUseTier0Opts = !compDbgCode && !jitFlags->IsSet(JitFlags::JIT_FLAG_MIN_OPT);
+            canUseAllOpts   = canUseTier0Opts && !val;
         }
 
         // true if the CLFLG_* for an optimization is set.
@@ -11477,6 +11518,11 @@ public:
     void GetStructTypeOffset(
         CORINFO_CLASS_HANDLE typeHnd, var_types* type0, var_types* type1, uint8_t* offset0, uint8_t* offset1);
 
+#elif defined(TARGET_RISCV64) || defined(TARGET_LOONGARCH64)
+    typedef JitHashTable<CORINFO_CLASS_HANDLE, JitPtrKeyFuncs<struct CORINFO_CLASS_STRUCT_>, CORINFO_FPSTRUCT_LOWERING*>
+                                     FpStructLoweringMap;
+    FpStructLoweringMap*             m_fpStructLoweringCache;
+    const CORINFO_FPSTRUCT_LOWERING* GetFpStructLowering(CORINFO_CLASS_HANDLE structHandle);
 #endif // defined(UNIX_AMD64_ABI)
 
     void     fgMorphMultiregStructArgs(GenTreeCall* call);

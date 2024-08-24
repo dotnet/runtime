@@ -3432,14 +3432,23 @@ void Compiler::fgDebugCheckFlags(GenTree* tree, BasicBlock* block)
 
 #if defined(TARGET_ARM64)
                     case NI_ArmBase_Yield:
-                    case NI_Sve_PrefetchBytes:
-                    case NI_Sve_PrefetchInt16:
-                    case NI_Sve_PrefetchInt32:
-                    case NI_Sve_PrefetchInt64:
                     case NI_Sve_GatherPrefetch16Bit:
                     case NI_Sve_GatherPrefetch32Bit:
                     case NI_Sve_GatherPrefetch64Bit:
                     case NI_Sve_GatherPrefetch8Bit:
+                    case NI_Sve_PrefetchBytes:
+                    case NI_Sve_PrefetchInt16:
+                    case NI_Sve_PrefetchInt32:
+                    case NI_Sve_PrefetchInt64:
+                    case NI_Sve_GetFfrByte:
+                    case NI_Sve_GetFfrInt16:
+                    case NI_Sve_GetFfrInt32:
+                    case NI_Sve_GetFfrInt64:
+                    case NI_Sve_GetFfrSByte:
+                    case NI_Sve_GetFfrUInt16:
+                    case NI_Sve_GetFfrUInt32:
+                    case NI_Sve_GetFfrUInt64:
+                    case NI_Sve_SetFfr:
                     {
                         assert(tree->OperRequiresCallFlag(this));
                         expectedFlags |= GTF_GLOB_REF;

@@ -83,6 +83,9 @@ namespace System.Formats.Tar
             // We know the exact location where the data starts depending on the format
             long dataStartPosition = headerStartPosition + dataLocation;
 
+            // Before writing, update the offset field now that the entry belongs to an archive
+            _dataOffset = dataStartPosition;
+
             // Move to the data start location and write the data
             destinationStream.Seek(dataLocation, SeekOrigin.Current);
             _dataStream.CopyTo(destinationStream); // The data gets copied from the current position
@@ -131,6 +134,9 @@ namespace System.Formats.Tar
 
             // We know the exact location where the data starts depending on the format
             long dataStartPosition = headerStartPosition + dataLocation;
+
+            // Before writing, update the offset field now that the entry belongs to an archive
+            _dataOffset = dataStartPosition;
 
             // Move to the data start location and write the data
             destinationStream.Seek(dataLocation, SeekOrigin.Current);
@@ -623,7 +629,7 @@ namespace System.Formats.Tar
                 checksum += FormatNumeric(_gid, buffer.Slice(FieldLocations.Gid, FieldLengths.Gid));
             }
 
-            if (_size > 0)
+            if (_dataStream != null && _size >= 0)
             {
                 checksum += FormatNumeric(_size, buffer.Slice(FieldLocations.Size, FieldLengths.Size));
             }
@@ -758,6 +764,9 @@ namespace System.Formats.Tar
         // Writes the current header's data stream into the archive stream.
         private void WriteData(Stream archiveStream, Stream dataStream)
         {
+            // Before writing, update the offset field now that the entry belongs to an archive
+            SetDataOffset(this, archiveStream);
+
             dataStream.CopyTo(archiveStream); // The data gets copied from the current position
             WriteEmptyPadding(archiveStream);
         }
@@ -797,6 +806,9 @@ namespace System.Formats.Tar
         private async Task WriteDataAsync(Stream archiveStream, Stream dataStream, CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
+
+            // Before writing, update the offset field now that the entry belongs to an archive
+            SetDataOffset(this, archiveStream);
 
             await dataStream.CopyToAsync(archiveStream, cancellationToken).ConfigureAwait(false); // The data gets copied from the current position
 

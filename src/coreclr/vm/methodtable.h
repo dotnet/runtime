@@ -293,12 +293,12 @@ struct GenericsDictInfo
 
     // Number of type parameters (NOT including those of superclasses).
     WORD   m_wNumTyPars;
-    template<typename T> friend struct ::cdac_offsets;
+    template<typename T> friend struct ::cdac_data;
 };  // struct GenericsDictInfo
 typedef DPTR(GenericsDictInfo) PTR_GenericsDictInfo;
 
 template<>
-struct cdac_offsets<GenericsDictInfo>
+struct cdac_data<GenericsDictInfo>
 {
     static constexpr size_t NumTypeArgs = offsetof(GenericsDictInfo, m_wNumTyPars);
 };
@@ -737,6 +737,7 @@ SystemVClassificationType CorInfoType2UnixAmd64Classification(CorElementType eeT
         SystemVClassificationTypeUnknown,               // ELEMENT_TYPE_CMOD_REQD
         SystemVClassificationTypeUnknown,               // ELEMENT_TYPE_CMOD_OPT
         SystemVClassificationTypeUnknown,               // ELEMENT_TYPE_INTERNAL
+        SystemVClassificationTypeUnknown,               // ELEMENT_TYPE_CMOD_INTERNAL
     };
 
     _ASSERTE(sizeof(toSystemVAmd64ClassificationTypeMap) == ELEMENT_TYPE_MAX);
@@ -800,6 +801,62 @@ struct SystemVStructRegisterPassingHelper
 typedef DPTR(SystemVStructRegisterPassingHelper) SystemVStructRegisterPassingHelperPtr;
 
 #endif // UNIX_AMD64_ABI_ITF
+
+#if defined(TARGET_RISCV64) || defined(TARGET_LOONGARCH64)
+// Bitfields for FpStructInRegistersInfo::flags
+namespace FpStruct
+{
+    enum Flags
+    {
+        // Positions of flags and bitfields
+        PosOnlyOne      = 0,
+        PosBothFloat    = 1,
+        PosFloatInt     = 2,
+        PosIntFloat     = 3,
+        PosSizeShift1st = 4, // 2 bits
+        PosSizeShift2nd = 6, // 2 bits
+
+        UseIntCallConv = 0, // struct is passed according to integer calling convention
+
+        // The flags and bitfields
+        OnlyOne          =    1 << PosOnlyOne,      // has only one field, which is floating-point
+        BothFloat        =    1 << PosBothFloat,    // has two fields, both are floating-point
+        FloatInt         =    1 << PosFloatInt,     // has two fields, 1st is floating and 2nd is integer
+        IntFloat         =    1 << PosIntFloat,     // has two fields, 2nd is floating and 1st is integer
+        SizeShift1stMask = 0b11 << PosSizeShift1st, // log2(size) of 1st field
+        SizeShift2ndMask = 0b11 << PosSizeShift2nd, // log2(size) of 2nd field
+        // Note: flags OnlyOne, BothFloat, FloatInt, and IntFloat are mutually exclusive
+    };
+}
+
+// On RISC-V and LoongArch a struct with up to two non-empty fields, at least one of them floating-point,
+// can be passed in registers according to hardware FP calling convention. FpStructInRegistersInfo represents
+// passing information for such parameters.
+struct FpStructInRegistersInfo
+{
+    FpStruct::Flags flags;
+    uint32_t offset1st;
+    uint32_t offset2nd;
+
+    unsigned SizeShift1st() const { return (flags >> FpStruct::PosSizeShift1st) & 0b11; }
+    unsigned SizeShift2nd() const { return (flags >> FpStruct::PosSizeShift2nd) & 0b11; }
+
+    unsigned Size1st() const { return 1u << SizeShift1st(); }
+    unsigned Size2nd() const { return 1u << SizeShift2nd(); }
+
+    const char* FlagName() const
+    {
+        switch (flags & (FpStruct::OnlyOne | FpStruct::BothFloat | FpStruct::FloatInt | FpStruct::IntFloat))
+        {
+            case FpStruct::OnlyOne: return "OnlyOne";
+            case FpStruct::BothFloat: return "BothFloat";
+            case FpStruct::FloatInt: return "FloatInt";
+            case FpStruct::IntFloat: return "IntFloat";
+            default: return "?";
+        }
+    }
+};
+#endif // defined(TARGET_RISCV64) || defined(TARGET_LOONGARCH64)
 
 //===============================================================================================
 //
@@ -975,12 +1032,6 @@ public:
     // mark the class type as COM object class
     void SetComObjectType();
 
-#ifdef FEATURE_ICASTABLE
-    void SetICastable();
-#endif
-
-    BOOL IsICastable(); // This type implements ICastable interface
-
     void SetIDynamicInterfaceCastable();
     BOOL IsIDynamicInterfaceCastable();
 
@@ -1058,10 +1109,8 @@ public:
     // during object construction.
     void CheckRunClassInitAsIfConstructingThrowing();
 
-#if defined(TARGET_LOONGARCH64)
-    static int GetLoongArch64PassStructInRegisterFlags(TypeHandle th);
-#elif defined(TARGET_RISCV64)
-    static int GetRiscV64PassStructInRegisterFlags(TypeHandle th);
+#if defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
+    static FpStructInRegistersInfo GetFpStructInRegistersInfo(TypeHandle th);
 #endif
 
 #if defined(UNIX_AMD64_ABI_ITF)
@@ -2513,10 +2562,10 @@ public:
     inline PTR_BYTE GetNonGCThreadStaticsBasePointer(PTR_Thread pThread);
     inline PTR_BYTE GetGCThreadStaticsBasePointer(PTR_Thread pThread);
 
-    inline DWORD IsDynamicStatics()
+    inline BOOL IsDynamicStatics()
     {
         LIMITED_METHOD_DAC_CONTRACT;
-        return GetFlag(enum_flag_DynamicStatics);
+        return GetFlag(enum_flag_DynamicStatics) == enum_flag_DynamicStatics;
     }
 
     inline void SetDynamicStatics()
@@ -3643,7 +3692,7 @@ private:
 
         enum_flag_HasFinalizer                = 0x00100000, // instances require finalization. GC depends on this bit.
         enum_flag_Collectible                 = 0x00200000, // GC depends on this bit.
-        enum_flag_ICastable                   = 0x00400000, // class implements ICastable interface
+        // enum_flag_unused                   = 0x00400000,
 
 #ifdef FEATURE_64BIT_ALIGNMENT
         enum_flag_RequiresAlign8              = 0x00800000, // Type requires 8-byte alignment (only set on platforms that require this and don't get it implicitly)
@@ -3663,7 +3712,6 @@ private:
         // Types that require non-trivial interface cast have this bit set in the category
         enum_flag_NonTrivialInterfaceCast   =  enum_flag_Category_Array
                                              | enum_flag_ComObject
-                                             | enum_flag_ICastable
                                              | enum_flag_IDynamicInterfaceCastable
                                              | enum_flag_Category_ValueType
 
@@ -3935,10 +3983,10 @@ public:
 
     static void GetStaticsOffsets(StaticsOffsetType staticsOffsetType, bool fGenericsStatics, uint32_t *dwGCOffset, uint32_t *dwNonGCOffset);
 
-    template<typename T> friend struct ::cdac_offsets;
+    template<typename T> friend struct ::cdac_data;
 };  // class MethodTable
 
-template<> struct cdac_offsets<MethodTable>
+template<> struct cdac_data<MethodTable>
 {
     static constexpr size_t MTFlags = offsetof(MethodTable, m_dwFlags);
     static constexpr size_t BaseSize = offsetof(MethodTable, m_BaseSize);
@@ -3962,5 +4010,15 @@ WORD GetEquivalentMethodSlot(MethodTable * pOldMT, MethodTable * pNewMT, WORD wM
 MethodTable* CreateMinimalMethodTable(Module* pContainingModule,
                                       LoaderAllocator* pLoaderAllocator,
                                       AllocMemTracker* pamTracker);
+
+void ThrowEntryPointNotFoundException(
+    MethodTable* pTargetClass,
+    MethodTable* pInterfaceMT,
+    MethodDesc* pInterfaceMD);
+
+void ThrowAmbiguousResolutionException(
+    MethodTable* pTargetClass,
+    MethodTable* pInterfaceMT,
+    MethodDesc* pInterfaceMD);
 
 #endif // !_METHODTABLE_H_

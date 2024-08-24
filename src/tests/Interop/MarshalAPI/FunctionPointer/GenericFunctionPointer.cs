@@ -8,7 +8,6 @@ using Xunit;
 
 public partial class FunctionPtr
 {
-    public static bool CanRunGenericFunctionPointerTest => !TestLibrary.Utilities.IsMonoRuntime;
     public static bool CanRunInvalidGenericFunctionPointerTest => !TestLibrary.Utilities.IsNativeAot && !TestLibrary.Utilities.IsMonoRuntime;
 
     [UnmanagedCallersOnly]
@@ -51,6 +50,11 @@ public partial class FunctionPtr
         {
             ((delegate* unmanaged<ref int, float, void>)fnptr)(ref val, arg);
         }
+
+        internal static unsafe int NonGenericCalliInNonGenericMethod(void* fnptr, float arg)
+        {
+            return ((delegate* unmanaged<float, int>)fnptr)(arg);
+        }
     }
 
     struct BlittableGeneric<T>
@@ -58,7 +62,7 @@ public partial class FunctionPtr
         public int X;
     }
 
-    [ConditionalTheory(nameof(CanRunGenericFunctionPointerTest))]
+    [Theory]
     [InlineData(0f)]
     [InlineData(1f)]
     [InlineData(-1f)]
@@ -98,6 +102,12 @@ public partial class FunctionPtr
         unsafe
         {
             GenericCaller<string>.NonGenericCalli<string>((delegate* unmanaged<int*, float, void>)&UnmanagedExportedFunctionRefInt, ref outVar, inVal);
+        }
+        Assert.Equal(expectedValue, outVar);
+
+        unsafe
+        {
+            outVar = GenericCaller<string>.NonGenericCalliInNonGenericMethod((delegate* unmanaged<float, int>)&UnmanagedExportedFunction, inVal);
         }
         Assert.Equal(expectedValue, outVar);
     }

@@ -13,7 +13,9 @@ using System.Runtime.Versioning;
 namespace System.Security.Cryptography.X509Certificates
 {
     [UnsupportedOSPlatform("browser")]
+#pragma warning disable 1591 // TODO: Document this API. https://github.com/dotnet/runtime/issues/105974
     public static partial class X509CertificateLoader
+#pragma warning restore 1591
     {
         private const int MemoryMappedFileCutoff = 1_048_576;
 

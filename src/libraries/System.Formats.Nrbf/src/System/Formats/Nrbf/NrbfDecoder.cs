@@ -107,8 +107,15 @@ public static class NrbfDecoder
     /// <exception cref="ArgumentNullException"><paramref name="payload"/> is <see langword="null" />.</exception>
     /// <exception cref="ArgumentException"><paramref name="payload"/> does not support reading or is already closed.</exception>
     /// <exception cref="SerializationException">Reading from <paramref name="payload"/> encounters invalid NRBF data.</exception>
+    /// <exception cref="NotSupportedException">
+    /// Reading from <paramref name="payload"/> encounters not supported records.
+    /// For example, arrays with non-zero offset or not supported record types
+    /// (<see cref="SerializationRecordType.ClassWithMembers"/>, <see cref="SerializationRecordType.SystemClassWithMembers"/>,
+    /// <see cref="SerializationRecordType.MethodCall"/> or <see cref="SerializationRecordType.MethodReturn"/>).
+    /// </exception>
     /// <exception cref="DecoderFallbackException">Reading from <paramref name="payload"/>
     /// encounters an invalid UTF8 sequence.</exception>
+    /// <exception cref="EndOfStreamException">The end of the stream is reached before reading <see cref="SerializationRecordType.MessageEnd"/> record.</exception>
     public static SerializationRecord Decode(Stream payload, PayloadOptions? options = default, bool leaveOpen = false)
         => Decode(payload, out _, options, leaveOpen);
 
@@ -219,7 +226,7 @@ public static class NrbfDecoder
             SerializationRecordType.ArraySinglePrimitive => DecodeArraySinglePrimitiveRecord(reader),
             SerializationRecordType.ArraySingleString => ArraySingleStringRecord.Decode(reader),
             SerializationRecordType.BinaryArray => BinaryArrayRecord.Decode(reader, recordMap, options),
-            SerializationRecordType.BinaryLibrary => BinaryLibraryRecord.Decode(reader),
+            SerializationRecordType.BinaryLibrary => BinaryLibraryRecord.Decode(reader, options),
             SerializationRecordType.BinaryObjectString => BinaryObjectStringRecord.Decode(reader),
             SerializationRecordType.ClassWithId => ClassWithIdRecord.Decode(reader, recordMap),
             SerializationRecordType.ClassWithMembersAndTypes => ClassWithMembersAndTypesRecord.Decode(reader, recordMap, options),
@@ -257,7 +264,7 @@ public static class NrbfDecoder
             PrimitiveType.Single => new MemberPrimitiveTypedRecord<float>(reader.ReadSingle()),
             PrimitiveType.Double => new MemberPrimitiveTypedRecord<double>(reader.ReadDouble()),
             PrimitiveType.Decimal => new MemberPrimitiveTypedRecord<decimal>(decimal.Parse(reader.ReadString(), CultureInfo.InvariantCulture)),
-            PrimitiveType.DateTime => new MemberPrimitiveTypedRecord<DateTime>(Utils.BinaryReaderExtensions.CreateDateTimeFromData(reader.ReadInt64())),
+            PrimitiveType.DateTime => new MemberPrimitiveTypedRecord<DateTime>(Utils.BinaryReaderExtensions.CreateDateTimeFromData(reader.ReadUInt64())),
             // String is handled with a record, never on it's own
             _ => new MemberPrimitiveTypedRecord<TimeSpan>(new TimeSpan(reader.ReadInt64())),
         };

@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Net.Http;
 using System.Threading;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Http.Logging;
 
 namespace Microsoft.Extensions.Http
 {
@@ -72,7 +73,7 @@ namespace Microsoft.Extensions.Http
         /// <summary>
         /// The <see cref="Func{T, R}"/> which determines whether to redact the HTTP header value before logging.
         /// </summary>
-        public Func<string, bool> ShouldRedactHeaderValue { get; set; } = (header) => false;
+        public Func<string, bool> ShouldRedactHeaderValue { get; set; } = LogHelper.ShouldRedactHeaderValue;
 
         /// <summary>
         /// <para>

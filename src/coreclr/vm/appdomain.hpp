@@ -41,7 +41,6 @@ class AppDomain;
 class GlobalStringLiteralMap;
 class StringLiteralMap;
 class FrozenObjectHeapManager;
-class MngStdInterfacesInfo;
 class DomainAssembly;
 class TypeEquivalenceHashTable;
 
@@ -479,42 +478,6 @@ public:
         return NULL;
     }
 
-#ifdef FEATURE_COMINTEROP
-    MngStdInterfacesInfo * GetMngStdInterfacesInfo()
-    {
-        LIMITED_METHOD_CONTRACT;
-
-        return m_pMngStdInterfacesInfo;
-    }
-#endif // FEATURE_COMINTEROP
-    //****************************************************************************************
-    // Get the class init lock. The method is limited to friends because inappropriate use
-    // will cause deadlocks in the system
-    ListLock*  GetClassInitLock()
-    {
-        LIMITED_METHOD_CONTRACT;
-
-        return &m_ClassInitLock;
-    }
-
-    JitListLock* GetJitLock()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return &m_JITLock;
-    }
-
-    ListLock* GetILStubGenLock()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return &m_ILStubGenLock;
-    }
-
-    ListLock* GetNativeTypeLoadLock()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return &m_NativeTypeLoadLock;
-    }
-
     STRINGREF *IsStringInterned(STRINGREF *pString);
     STRINGREF *GetOrInternString(STRINGREF *pString);
 
@@ -625,21 +588,10 @@ public:
         return &m_crstLoaderAllocatorReferences;
     }
 
-    CrstExplicitInit* GetGenericDictionaryExpansionLock()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return &m_crstGenericDictionaryExpansionLock;
-    }
-
     static CrstStatic* GetMethodTableExposedClassObjectLock()
     {
         LIMITED_METHOD_CONTRACT;
         return &m_MethodTableExposedClassObjectCrst;
-    }
-
-    void AssertLoadLockHeld()
-    {
-        _ASSERTE(m_FileLoadLock.HasLock());
     }
 
 protected:
@@ -648,22 +600,8 @@ protected:
     // Helper method to initialize the large heap handle table.
     void InitPinnedHeapHandleTable();
 
-    // Critical sections & locks
-    PEFileListLock   m_FileLoadLock;            // Protects the list of assemblies in the domain
-    CrstExplicitInit m_DomainCrst;              // General Protection for the Domain
-    CrstExplicitInit m_DomainCacheCrst;         // Protects the Assembly and Unmanaged caches
     // Used to protect the reference lists in the collectible loader allocators attached to this appdomain
     CrstExplicitInit m_crstLoaderAllocatorReferences;
-    CrstExplicitInit m_crstGenericDictionaryExpansionLock;
-
-    //#AssemblyListLock
-    // Used to protect the assembly list. Taken also by GC or debugger thread, therefore we have to avoid
-    // triggering GC while holding this lock (by switching the thread to GC_NOTRIGGER while it is held).
-    CrstExplicitInit m_crstAssemblyList;
-    ListLock         m_ClassInitLock;
-    JitListLock      m_JITLock;
-    ListLock         m_ILStubGenLock;
-    ListLock         m_NativeTypeLoadLock;
 
     DefaultAssemblyBinder *m_pDefaultBinder; // Reference to the binding context that holds TPA list details
 
@@ -671,11 +609,6 @@ protected:
 
     // The pinned heap handle table.
     PinnedHeapHandleTable       *m_pPinnedHeapHandleTable;
-
-#ifdef FEATURE_COMINTEROP
-    // Information regarding the managed standard interfaces.
-    MngStdInterfacesInfo        *m_pMngStdInterfacesInfo;
-#endif // FEATURE_COMINTEROP
 
     // Protects allocation of slot IDs for thread statics
     static CrstStatic m_MethodTableExposedClassObjectCrst;
@@ -685,62 +618,6 @@ public:
     // loads in progress.
     void ClearBinderContext();
 
-    //****************************************************************************************
-    // Synchronization holders.
-
-    class LockHolder : public CrstHolder
-    {
-    public:
-        LockHolder(BaseDomain *pD)
-            : CrstHolder(&pD->m_DomainCrst)
-        {
-            WRAPPER_NO_CONTRACT;
-        }
-    };
-    friend class LockHolder;
-
-    // To be used when the thread will remain in preemptive GC mode while holding the lock
-    class DomainCacheCrstHolderForGCPreemp : private CrstHolder
-    {
-    public:
-        DomainCacheCrstHolderForGCPreemp(BaseDomain *pD)
-            : CrstHolder(&pD->m_DomainCacheCrst)
-        {
-            WRAPPER_NO_CONTRACT;
-        }
-    };
-
-    // To be used when the thread may enter cooperative GC mode while holding the lock. The thread enters a
-    // forbid-suspend-for-debugger region along with acquiring the lock, such that it would not suspend for the debugger while
-    // holding the lock, as that may otherwise cause a FuncEval to deadlock when trying to acquire the lock.
-    class DomainCacheCrstHolderForGCCoop : private CrstAndForbidSuspendForDebuggerHolder
-    {
-    public:
-        DomainCacheCrstHolderForGCCoop(BaseDomain *pD)
-            : CrstAndForbidSuspendForDebuggerHolder(&pD->m_DomainCacheCrst)
-        {
-            WRAPPER_NO_CONTRACT;
-        }
-    };
-
-    class LoadLockHolder :  public PEFileListLockHolder
-    {
-    public:
-        LoadLockHolder(BaseDomain *pD, BOOL Take = TRUE)
-          : PEFileListLockHolder(&pD->m_FileLoadLock, Take)
-        {
-            CONTRACTL
-            {
-                NOTHROW;
-                GC_NOTRIGGER;
-                MODE_ANY;
-                CAN_TAKE_LOCK;
-            }
-            CONTRACTL_END;
-        }
-    };
-    friend class LoadLockHolder;
-public:
     void InitVSD();
 
 private:
@@ -1062,7 +939,43 @@ public:
     PTR_NativeImage SetNativeImage(LPCUTF8 compositeFileName, PTR_NativeImage pNativeImage);
 #endif // DACCESS_COMPILE
 
-    //****************************************************************************************
+    JitListLock* GetJitLock()
+    {
+        LIMITED_METHOD_CONTRACT;
+        return &m_JITLock;
+    }
+
+    ListLock*  GetClassInitLock()
+    {
+        LIMITED_METHOD_CONTRACT;
+
+        return &m_ClassInitLock;
+    }
+
+    ListLock* GetILStubGenLock()
+    {
+        LIMITED_METHOD_CONTRACT;
+        return &m_ILStubGenLock;
+    }
+
+    ListLock* GetNativeTypeLoadLock()
+    {
+        LIMITED_METHOD_CONTRACT;
+        return &m_NativeTypeLoadLock;
+    }
+
+    CrstExplicitInit* GetGenericDictionaryExpansionLock()
+    {
+        LIMITED_METHOD_CONTRACT;
+        return &m_crstGenericDictionaryExpansionLock;
+    }
+
+private:
+    JitListLock      m_JITLock;
+    ListLock         m_ClassInitLock;
+    ListLock         m_ILStubGenLock;
+    ListLock         m_NativeTypeLoadLock;
+    CrstExplicitInit m_crstGenericDictionaryExpansionLock;
 
 protected:
     // Multi-thread safe access to the list of assemblies
@@ -1238,6 +1151,11 @@ public:
         LIMITED_METHOD_CONTRACT;
         return &m_crstAssemblyList;
     }
+
+private:
+    // Used to protect the assembly list. Taken also by GC or debugger thread, therefore we have to avoid
+    // triggering GC while holding this lock (by switching the thread to GC_NOTRIGGER while it is held).
+    CrstExplicitInit m_crstAssemblyList;
 
 public:
     class AssemblyIterator
@@ -1675,6 +1593,11 @@ public:
     }
 #endif
 
+    void AssertLoadLockHeld()
+    {
+        _ASSERTE(m_FileLoadLock.HasLock());
+    }
+
     // The one and only AppDomain
     SPTR_DECL(AppDomain, m_pTheAppDomain);
 
@@ -1749,6 +1672,53 @@ private:
         WRAPPER_NO_CONTRACT;
         return FailedAssemblyIterator::Create(this);
     }
+
+private:
+    PEFileListLock   m_FileLoadLock;            // Protects the list of assemblies in the domain
+    CrstExplicitInit m_DomainCacheCrst;         // Protects the Assembly and Unmanaged caches
+
+public:
+    // To be used when the thread will remain in preemptive GC mode while holding the lock
+    class DomainCacheCrstHolderForGCPreemp : private CrstHolder
+    {
+    public:
+        DomainCacheCrstHolderForGCPreemp(AppDomain *pD)
+            : CrstHolder(&pD->m_DomainCacheCrst)
+        {
+            WRAPPER_NO_CONTRACT;
+        }
+    };
+
+    // To be used when the thread may enter cooperative GC mode while holding the lock. The thread enters a
+    // forbid-suspend-for-debugger region along with acquiring the lock, such that it would not suspend for the debugger while
+    // holding the lock, as that may otherwise cause a FuncEval to deadlock when trying to acquire the lock.
+    class DomainCacheCrstHolderForGCCoop : private CrstAndForbidSuspendForDebuggerHolder
+    {
+    public:
+        DomainCacheCrstHolderForGCCoop(AppDomain *pD)
+            : CrstAndForbidSuspendForDebuggerHolder(&pD->m_DomainCacheCrst)
+        {
+            WRAPPER_NO_CONTRACT;
+        }
+    };
+
+    class LoadLockHolder :  public PEFileListLockHolder
+    {
+    public:
+        LoadLockHolder(AppDomain *pD, BOOL Take = TRUE)
+          : PEFileListLockHolder(&pD->m_FileLoadLock, Take)
+        {
+            CONTRACTL
+            {
+                NOTHROW;
+                GC_TRIGGERS;
+                MODE_ANY;
+                CAN_TAKE_LOCK;
+            }
+            CONTRACTL_END;
+        }
+    };
+    friend class LoadLockHolder;
 
     //---------------------------------------------------------
     // Stub caches for Method stubs

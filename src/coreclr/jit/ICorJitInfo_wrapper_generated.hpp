@@ -1202,10 +1202,11 @@ const char* WrapICorJitInfo::getMethodNameFromMetadata(
           CORINFO_METHOD_HANDLE ftn,
           const char** className,
           const char** namespaceName,
-          const char** enclosingClassName)
+          const char** enclosingClassNames,
+          size_t maxEnclosingClassNames)
 {
     API_ENTER(getMethodNameFromMetadata);
-    const char* temp = wrapHnd->getMethodNameFromMetadata(ftn, className, namespaceName, enclosingClassName);
+    const char* temp = wrapHnd->getMethodNameFromMetadata(ftn, className, namespaceName, enclosingClassNames, maxEnclosingClassNames);
     API_LEAVE(getMethodNameFromMetadata);
     return temp;
 }
@@ -1238,22 +1239,13 @@ void WrapICorJitInfo::getSwiftLowering(
     API_LEAVE(getSwiftLowering);
 }
 
-uint32_t WrapICorJitInfo::getLoongArch64PassStructInRegisterFlags(
-          CORINFO_CLASS_HANDLE structHnd)
+void WrapICorJitInfo::getFpStructLowering(
+          CORINFO_CLASS_HANDLE structHnd,
+          CORINFO_FPSTRUCT_LOWERING* pLowering)
 {
-    API_ENTER(getLoongArch64PassStructInRegisterFlags);
-    uint32_t temp = wrapHnd->getLoongArch64PassStructInRegisterFlags(structHnd);
-    API_LEAVE(getLoongArch64PassStructInRegisterFlags);
-    return temp;
-}
-
-uint32_t WrapICorJitInfo::getRISCV64PassStructInRegisterFlags(
-          CORINFO_CLASS_HANDLE structHnd)
-{
-    API_ENTER(getRISCV64PassStructInRegisterFlags);
-    uint32_t temp = wrapHnd->getRISCV64PassStructInRegisterFlags(structHnd);
-    API_LEAVE(getRISCV64PassStructInRegisterFlags);
-    return temp;
+    API_ENTER(getFpStructLowering);
+    wrapHnd->getFpStructLowering(structHnd, pLowering);
+    API_LEAVE(getFpStructLowering);
 }
 
 uint32_t WrapICorJitInfo::getThreadTLSIndex(
@@ -1747,6 +1739,15 @@ uint32_t WrapICorJitInfo::getJitFlags(
     API_ENTER(getJitFlags);
     uint32_t temp = wrapHnd->getJitFlags(flags, sizeInBytes);
     API_LEAVE(getJitFlags);
+    return temp;
+}
+
+CORINFO_METHOD_HANDLE WrapICorJitInfo::getSpecialCopyHelper(
+          CORINFO_CLASS_HANDLE type)
+{
+    API_ENTER(getSpecialCopyHelper);
+    CORINFO_METHOD_HANDLE temp = wrapHnd->getSpecialCopyHelper(type);
+    API_LEAVE(getSpecialCopyHelper);
     return temp;
 }
 
