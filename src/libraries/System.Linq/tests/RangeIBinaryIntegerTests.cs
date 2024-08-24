@@ -746,6 +746,90 @@ namespace System.Linq.Tests
         };
     }
 
+    public class RangeCharTests : RangeIBinaryIntegerTests<char>
+    {
+        public static TheoryData<char, int> StartCountCorrectData { get; } = new TheoryData<char, int>()
+        {
+            { (char)0, 15 },
+            { (char)0, 1 },
+            { (char)0, 0 },
+
+            { (char)(ushort.MaxValue / 2), 15 },
+            { (char)(ushort.MaxValue / 2), 1 },
+            { (char)(ushort.MaxValue / 2), 0 },
+
+            { (char)(ushort.MaxValue - 14), 15 },
+            { (char)ushort.MaxValue, 1 },
+            { (char)ushort.MaxValue, 0 },
+        };
+
+        public static TheoryData<char, int> StartCountIncorrectData { get; } = new TheoryData<char, int>()
+        {
+            { (char)0, ushort.MaxValue + 2 },
+            { (char)0, ushort.MaxValue + ushort.MaxValue / 4 },
+            { (char)0, ushort.MaxValue + ushort.MaxValue / 4 },
+            { (char)0, ushort.MaxValue + ushort.MaxValue * 3 / 4 },
+            { (char)0, ushort.MaxValue + ushort.MaxValue },
+            { (char)0, int.MaxValue },
+            { (char)0, -1 },
+            { (char)0, int.MinValue },
+
+            { (char)1, ushort.MaxValue + 1},
+            { (char)1, ushort.MaxValue + ushort.MaxValue / 4 },
+            { (char)1, ushort.MaxValue + ushort.MaxValue / 4 },
+            { (char)1, ushort.MaxValue + ushort.MaxValue * 3 / 4 },
+            { (char)1, ushort.MaxValue + ushort.MaxValue },
+            { (char)1, int.MaxValue },
+            { (char)1, -1 },
+            { (char)1, int.MinValue },
+
+            { (char)(ushort.MaxValue / 2), ushort.MaxValue - ushort.MaxValue / 2 + 2 },
+            { (char)(ushort.MaxValue / 2), ushort.MaxValue + ushort.MaxValue / 4 },
+            { (char)(ushort.MaxValue / 2), ushort.MaxValue + ushort.MaxValue / 2 },
+            { (char)(ushort.MaxValue / 2), ushort.MaxValue + ushort.MaxValue * 3 / 4 },
+            { (char)(ushort.MaxValue / 2), ushort.MaxValue + ushort.MaxValue },
+            { (char)(ushort.MaxValue / 2), int.MaxValue },
+            { (char)(ushort.MaxValue / 2), -1 },
+            { (char)(ushort.MaxValue / 2), int.MinValue },
+
+            { (char)(ushort.MaxValue / 2 + 1), ushort.MaxValue - ushort.MaxValue / 2 + 1 },
+            { (char)(ushort.MaxValue / 2 + 1), ushort.MaxValue + ushort.MaxValue / 4 },
+            { (char)(ushort.MaxValue / 2 + 1), ushort.MaxValue + ushort.MaxValue / 2 },
+            { (char)(ushort.MaxValue / 2 + 1), ushort.MaxValue + ushort.MaxValue * 3 / 4 },
+            { (char)(ushort.MaxValue / 2 + 1), ushort.MaxValue + ushort.MaxValue },
+            { (char)(ushort.MaxValue / 2 + 1), int.MaxValue },
+            { (char)(ushort.MaxValue / 2 + 1), -1 },
+            { (char)(ushort.MaxValue / 2 + 1), int.MinValue },
+
+            { (char)(ushort.MaxValue / 2 + 2), ushort.MaxValue - ushort.MaxValue / 2 },
+            { (char)(ushort.MaxValue / 2 + 2), ushort.MaxValue + ushort.MaxValue / 4 },
+            { (char)(ushort.MaxValue / 2 + 2), ushort.MaxValue + ushort.MaxValue / 2 },
+            { (char)(ushort.MaxValue / 2 + 2), ushort.MaxValue + ushort.MaxValue * 3 / 4 },
+            { (char)(ushort.MaxValue / 2 + 2), ushort.MaxValue + ushort.MaxValue },
+            { (char)(ushort.MaxValue / 2 + 2), int.MaxValue },
+            { (char)(ushort.MaxValue / 2 + 2), -1 },
+            { (char)(ushort.MaxValue / 2 + 2), int.MinValue },
+
+            { (char)(ushort.MaxValue - 1), 3 },
+            { (char)(ushort.MaxValue - 1), ushort.MaxValue + ushort.MaxValue / 4 },
+            { (char)(ushort.MaxValue - 1), ushort.MaxValue + ushort.MaxValue / 2 },
+            { (char)(ushort.MaxValue - 1), ushort.MaxValue + ushort.MaxValue * 3 / 4 },
+            { (char)(ushort.MaxValue - 1), ushort.MaxValue + ushort.MaxValue },
+            { (char)(ushort.MaxValue - 1), int.MaxValue },
+            { (char)(ushort.MaxValue - 1), -1 },
+            { (char)(ushort.MaxValue - 1), int.MinValue },
+
+            { (char)ushort.MaxValue, 2 },
+            { (char)ushort.MaxValue, ushort.MaxValue + ushort.MaxValue / 4 },
+            { (char)ushort.MaxValue, ushort.MaxValue + ushort.MaxValue / 2 },
+            { (char)ushort.MaxValue, ushort.MaxValue + ushort.MaxValue * 3 / 4 },
+            { (char)ushort.MaxValue, ushort.MaxValue + ushort.MaxValue },
+            { (char)ushort.MaxValue, int.MaxValue },
+            { (char)ushort.MaxValue, -1 },
+            { (char)ushort.MaxValue, int.MinValue },
+        };
+    }
+
     public class RangeUintTests : RangeIBinaryIntegerTests<uint>
     {
         public static TheoryData<uint, int> StartCountCorrectData { get; } = new TheoryData<uint, int>()
