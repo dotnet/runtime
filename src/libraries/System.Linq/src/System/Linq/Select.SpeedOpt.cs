@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using static System.Linq.Utilities;
@@ -233,46 +234,50 @@ namespace System.Linq
             }
         }
 
-        private sealed partial class RangeSelectIterator<TResult> : Iterator<TResult>
+        private sealed partial class RangeSelectIterator<T, TResult> : Iterator<TResult> where T : IBinaryInteger<T>
         {
-            private readonly int _start;
-            private readonly int _end;
-            private readonly Func<int, TResult> _selector;
+            // _start can be equal to _end
+            // _start <= _end - T.One
+            private readonly T _start;
+            private readonly T _end;
+            private readonly int _count;
+            private readonly Func<T, TResult> _selector;
 
-            public RangeSelectIterator(int start, int end, Func<int, TResult> selector)
+            public RangeSelectIterator(T start, T end, Func<T, TResult> selector)
             {
-                Debug.Assert(start < end);
-                Debug.Assert((uint)(end - start) <= (uint)int.MaxValue);
+                Debug.Assert(start <= end - T.One); // _start can be equal to _end
+                Debug.Assert(CreateTruncatingWithoutSign<uint, T>(end - T.One - start) + 1 <= (uint)int.MaxValue);
                 Debug.Assert(selector is not null);
 
                 _start = start;
                 _end = end;
+                _count = CreateTruncatingWithoutSign<int, T>(end - T.One - start) + 1;
                 _selector = selector;
             }
 
             private protected override Iterator<TResult> Clone() =>
-                new RangeSelectIterator<TResult>(_start, _end, _selector);
+                new RangeSelectIterator<T, TResult>(_start, _end, _selector);
 
             public override bool MoveNext()
             {
-                if (_state < 1 || _state == (_end - _start + 1))
+                if (_state < 1 || _state == _count + 1)
                 {
                     Dispose();
                     return false;
                 }
 
                 int index = _state++ - 1;
-                Debug.Assert(_start < _end - index);
-                _current = _selector(_start + index);
+                Debug.Assert(index < _count);
+                _current = _selector(_start + T.CreateTruncating(index));
                 return true;
             }
 
             public override IEnumerable<TResult2> Select<TResult2>(Func<TResult, TResult2> selector) =>
-                new RangeSelectIterator<TResult2>(_start, _end, CombineSelectors(_selector, selector));
+                new RangeSelectIterator<T, TResult2>(_start, _end, CombineSelectors(_selector, selector));
 
             public override TResult[] ToArray()
             {
-                var results = new TResult[_end - _start];
+                var results = new TResult[_count];
                 Fill(results, _start, _selector);
 
                 return results;
@@ -280,13 +285,13 @@ namespace System.Linq
 
             public override List<TResult> ToList()
             {
-                var results = new List<TResult>(_end - _start);
-                Fill(SetCountAndGetSpan(results, _end - _start), _start, _selector);
+                var results = new List<TResult>(_count);
+                Fill(SetCountAndGetSpan(results, _count), _start, _selector);
 
                 return results;
             }
 
-            private static void Fill(Span<TResult> results, int start, Func<int, TResult> func)
+            private static void Fill(Span<TResult> results, T start, Func<T, TResult> func)
             {
                 for (int i = 0; i < results.Length; i++, start++)
                 {
@@ -300,45 +305,47 @@ namespace System.Linq
                 // run it provided `onlyIfCheap` is false.
                 if (!onlyIfCheap)
                 {
-                    for (int i = _start; i != _end; i++)
+                    T i = _start; // for (T i = _start; i != _end; i++) can not be used because _start can be equal to _end
+                    do
                     {
                         _selector(i);
                     }
+                    while (++i != _end);
                 }
 
-                return _end - _start;
+                return _count;
             }
 
             public override Iterator<TResult>? Skip(int count)
             {
                 Debug.Assert(count > 0);
 
-                if (count >= (_end - _start))
+                if (count >= _count)
                 {
                     return null;
                 }
 
-                return new RangeSelectIterator<TResult>(_start + count, _end, _selector);
+                return new RangeSelectIterator<T, TResult>(_start + T.CreateTruncating(count), _end, _selector);
             }
 
             public override Iterator<TResult> Take(int count)
             {
                 Debug.Assert(count > 0);
 
-                if (count >= (_end - _start))
+                if (count >= _count)
                 {
                     return this;
                 }
 
-                return new RangeSelectIterator<TResult>(_start, _start + count, _selector);
+                return new RangeSelectIterator<T, TResult>(_start, _start + T.CreateTruncating(count), _selector);
             }
 
             public override TResult? TryGetElementAt(int index, out bool found)
             {
-                if ((uint)index < (uint)(_end - _start))
+                if ((uint)index < (uint)(_count))
                 {
                     found = true;
-                    return _selector(_start + index);
+                    return _selector(_start + T.CreateTruncating(index));
                 }
 
                 found = false;
@@ -347,16 +354,16 @@ namespace System.Linq
 
             public override TResult TryGetFirst(out bool found)
             {
-                Debug.Assert(_end > _start);
+                Debug.Assert(_end - T.One >= _start); // _start can be equal to _end
                 found = true;
                 return _selector(_start);
             }
 
             public override TResult TryGetLast(out bool found)
             {
-                Debug.Assert(_end > _start);
+                Debug.Assert(_end - T.One >= _start); // _start can be equal to _end
                 found = true;
-                return _selector(_end - 1);
+                return _selector(_end - T.One);
             }
         }
 

@@ -24,35 +24,61 @@ namespace System.Linq
                 return [];
             }
 
-            return new RangeIterator(start, count);
+            return new RangeIterator<int>(start, count);
+        }
+
+        public static IEnumerable<T> Range<T>(T start, int count) where T : IBinaryInteger<T>
+        {
+            if (count < 0)
+            {
+                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.count);
+            }
+
+            if (count == 0)
+            {
+                return [];
+            }
+
+            T tCountMinusOne = T.CreateTruncating(count - 1);
+            if (start > start + tCountMinusOne || CreateTruncatingWithoutSign<int, T>(tCountMinusOne) + 1 != count)
+            {
+                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.count);
+            }
+
+            return new RangeIterator<T>(start, count);
         }
 
         /// <summary>
         /// An iterator that yields a range of consecutive integers.
         /// </summary>
         [DebuggerDisplay("Count = {CountForDebugger}")]
-        private sealed partial class RangeIterator : Iterator<int>
+        private sealed partial class RangeIterator<T> : Iterator<T> where T : IBinaryInteger<T>
         {
-            private readonly int _start;
-            private readonly int _end;
+            // _start can be equal to _end
+            // _start <= _end - T.One
+            private readonly T _start;
+            private readonly T _end;
+            private readonly int _count;
 
-            public RangeIterator(int start, int count)
+            public RangeIterator(T start, int count)
             {
                 Debug.Assert(count > 0);
+                Debug.Assert(CreateTruncatingWithoutSign<int, T>(T.CreateTruncating(count - 1)) + 1 == count);
                 _start = start;
-                _end = start + count;
+                _end = start + T.CreateTruncating(count);
+                _count = count;
             }
 
-            private int CountForDebugger => _end - _start;
+            private int CountForDebugger => _count; // CreateTruncatingWithoutSign<int, T>(_end - T.One - _start) + 1;
 
-            private protected override Iterator<int> Clone() => new RangeIterator(_start, _end - _start);
+            private protected override Iterator<T> Clone() => new RangeIterator<T>(_start, _count);
 
             public override bool MoveNext()
             {
                 switch (_state)
                 {
                     case 1:
-                        Debug.Assert(_start != _end);
+                        Debug.Assert(_start <= _end - T.One); // _start can be equal to _end
                         _current = _start;
                         _state = 2;
                         return true;
@@ -76,24 +102,22 @@ namespace System.Linq
         }
 
         /// <summary>Fills the <paramref name="destination"/> with incrementing numbers, starting from <paramref name="value"/>.</summary>
-        private static void FillIncrementing(Span<int> destination, int value)
+        private static void FillIncrementing<T>(Span<T> destination, T value) where T : IBinaryInteger<T>
         {
-            ref int pos = ref MemoryMarshal.GetReference(destination);
-            ref int end = ref Unsafe.Add(ref pos, destination.Length);
+            ref T pos = ref MemoryMarshal.GetReference(destination);
+            ref T end = ref Unsafe.Add(ref pos, destination.Length);
 
-            if (Vector.IsHardwareAccelerated &&
-                destination.Length >= Vector<int>.Count)
+            if (Vector.IsHardwareAccelerated && Vector<T>.IsSupported && destination.Length >= Vector<T>.Count)
             {
-                Vector<int> init = Vector<int>.Indices;
-                Vector<int> current = new Vector<int>(value) + init;
-                Vector<int> increment = new Vector<int>(Vector<int>.Count);
+                Vector<T> current = new Vector<T>(value) + Vector<T>.Indices;
+                Vector<T> increment = new Vector<T>(T.CreateTruncating(Vector<T>.Count));
 
-                ref int oneVectorFromEnd = ref Unsafe.Subtract(ref end, Vector<int>.Count);
+                ref T oneVectorFromEnd = ref Unsafe.Subtract(ref end, Vector<T>.Count);
                 do
                 {
                     current.StoreUnsafe(ref pos);
                     current += increment;
-                    pos = ref Unsafe.Add(ref pos, Vector<int>.Count);
+                    pos = ref Unsafe.Add(ref pos, Vector<T>.Count);
                 }
                 while (!Unsafe.IsAddressGreaterThan(ref pos, ref oneVectorFromEnd));
 
@@ -104,6 +128,21 @@ namespace System.Linq
             {
                 pos = value++;
                 pos = ref Unsafe.Add(ref pos, 1);
+            }
+        }
+
+        private static TTo CreateTruncatingWithoutSign<TTo, TFrom>(TFrom From) where TTo : IBinaryInteger<TTo> where TFrom : IBinaryInteger<TFrom>
+        {
+            Span<byte> bytes = stackalloc byte[From.GetByteCount()];
+            if (BitConverter.IsLittleEndian)
+            {
+                From.WriteLittleEndian(bytes);
+                return TTo.ReadLittleEndian(bytes, true);
+            }
+            else
+            {
+                From.WriteBigEndian(bytes);
+                return TTo.ReadBigEndian(bytes, true);
             }
         }
     }

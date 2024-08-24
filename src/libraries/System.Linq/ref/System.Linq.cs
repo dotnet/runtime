@@ -157,6 +157,7 @@ namespace System.Linq
         public static System.Linq.IOrderedEnumerable<T> Order<T>(this System.Collections.Generic.IEnumerable<T> source, System.Collections.Generic.IComparer<T>? comparer) { throw null; }
         public static System.Collections.Generic.IEnumerable<TSource> Prepend<TSource>(this System.Collections.Generic.IEnumerable<TSource> source, TSource element) { throw null; }
         public static System.Collections.Generic.IEnumerable<int> Range(int start, int count) { throw null; }
+        public static System.Collections.Generic.IEnumerable<T> Range<T>(T start, int count) where T : System.Numerics.IBinaryInteger<T> { throw null; }
         public static System.Collections.Generic.IEnumerable<TResult> Repeat<TResult>(TResult element, int count) { throw null; }
         public static System.Collections.Generic.IEnumerable<TSource> Reverse<TSource>(this System.Collections.Generic.IEnumerable<TSource> source) { throw null; }
         public static System.Collections.Generic.IEnumerable<TResult> SelectMany<TSource, TResult>(this System.Collections.Generic.IEnumerable<TSource> source, System.Func<TSource, System.Collections.Generic.IEnumerable<TResult>> selector) { throw null; }
