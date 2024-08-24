@@ -608,23 +608,6 @@ protected:
     // Protects allocation of slot IDs for thread statics
     static CrstStatic m_MethodTableExposedClassObjectCrst;
 
-public:
-
-    void InitVSD();
-
-private:
-    TypeIDMap m_typeIDMap;
-
-public:
-
-
-    UINT32 GetTypeID(PTR_MethodTable pMT);
-    UINT32 LookupTypeID(PTR_MethodTable pMT);
-    PTR_MethodTable LookupType(UINT32 id);
-#ifndef DACCESS_COMPILE
-    void RemoveTypesFromTypeIDMap(LoaderAllocator* pLoaderAllocator);
-#endif // DACCESS_COMPILE
-
 private:
     // I have yet to figure out an efficient way to get the number of handles
     // of a particular type that's currently used by the process without
@@ -1438,6 +1421,18 @@ private:
     DispIDCache *m_pRefDispIDCache;
     OBJECTHANDLE  m_hndMissing;     //Handle points to Missing.Value Object which is used for [Optional] arg scenario during IDispatch CCW Call
 #endif // FEATURE_COMINTEROP
+
+public:
+    void InitVSD();
+    UINT32 GetTypeID(PTR_MethodTable pMT);
+    UINT32 LookupTypeID(PTR_MethodTable pMT);
+    PTR_MethodTable LookupType(UINT32 id);
+#ifndef DACCESS_COMPILE
+    void RemoveTypesFromTypeIDMap(LoaderAllocator* pLoaderAllocator);
+#endif // DACCESS_COMPILE
+
+private:
+    TypeIDMap m_typeIDMap;
 
 public:
 
