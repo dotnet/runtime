@@ -37,6 +37,7 @@
   <Import Project="$(RepositoryEngineeringDir)codeOptimization.targets" />
 
   <PropertyGroup Condition="'$(UseNativeAotForComponents)' == 'true'">
+    <PublishAot>true</PublishAot>
     <IlcToolsPath>$(CoreCLRILCompilerDir)</IlcToolsPath>
     <IlcToolsPath Condition="'$(CrossBuild)' == 'true' or '$(BuildArchitecture)' != '$(TargetArchitecture)' or '$(EnableNativeSanitizers)' != ''">$(CoreCLRCrossILCompilerDir)</IlcToolsPath>
     <SysRoot Condition="('$(CrossBuild)' == 'true' or '$(BuildArchitecture)' != '$(TargetArchitecture)') and '$(HostOS)' != 'windows'">$(ROOTFS_DIR)</SysRoot>

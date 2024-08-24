@@ -104,12 +104,6 @@ namespace System.Threading
             startHelper.Run();
         }
 
-        // Invoked by VM. Helper method to get a logical thread ID for StringBuilder (for
-        // correctness) and for FileStream's async code path (for perf, to avoid creating
-        // a Thread instance).
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern IntPtr InternalGetCurrentThread();
-
         /// <summary>
         /// Suspends the current thread for timeout milliseconds. If timeout == 0,
         /// forces the thread to give up the remainder of its timeslice.  If timeout

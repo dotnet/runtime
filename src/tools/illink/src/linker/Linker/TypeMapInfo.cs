@@ -155,7 +155,7 @@ namespace Mono.Linker
 					return;
 				// Get all explicit interfaces of this type
 				foreach (var iface in type.Interfaces) {
-					var interfaceType = iface.InterfaceType.InflateFrom (typeRef);
+					var interfaceType = iface.InterfaceType.InflateFrom (typeRef as IGenericInstance);
 					if (!firstImplementationChain.Any (i => TypeReferenceEqualityComparer.AreEqual (i.Item1, interfaceType, Context))) {
 						firstImplementationChain.Add ((interfaceType, pathToType.Append (iface).ToList ()));
 					}
@@ -163,7 +163,7 @@ namespace Mono.Linker
 
 				// Recursive interfaces after all direct interfaces to preserve Inherit/Implement tree order
 				foreach (var iface in type.Interfaces) {
-					var ifaceDirectlyOnType = iface.InterfaceType.InflateFrom (typeRef);
+					var ifaceDirectlyOnType = iface.InterfaceType.InflateFrom (typeRef as IGenericInstance);
 					AddRecursiveInterfaces (ifaceDirectlyOnType, pathToType.Append (iface), firstImplementationChain, Context);
 				}
 			}
