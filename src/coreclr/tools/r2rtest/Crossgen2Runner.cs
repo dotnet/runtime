@@ -24,12 +24,15 @@ namespace R2RTest
     class Crossgen2Runner : CompilerRunner
     {
         private Crossgen2RunnerOptions Crossgen2RunnerOptions;
+        private bool IsAssembly => _options.Crossgen2Path != null && _options.Crossgen2Path.FullName.EndsWith(".dll");
 
         // Crossgen2 runs as a standalone binary
         protected override string CompilerRelativePath => "";
         protected override string CompilerFileName => "";
 
-        protected override string CompilerPath => _options.Crossgen2Path != null ? _options.Crossgen2Path.FullName : Path.Combine(_options.CoreRootDirectory.FullName, "crossgen2", RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? "crossgen2.exe" : "crossgen2");
+        protected override string CompilerPath => IsAssembly ? _options.DotNetCli : _options.Crossgen2Path?.FullName
+            ?? Path.Combine(_options.CoreRootDirectory.FullName, "crossgen2", RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? "crossgen2.exe" : "crossgen2");
+
         public override CompilerIndex Index => CompilerIndex.CPAOT;
 
         protected readonly List<string> _referenceFiles = new();
@@ -65,6 +68,8 @@ namespace R2RTest
         public override ProcessParameters CompilationProcess(string outputFileName, IEnumerable<string> inputAssemblyFileNames)
         {
             ProcessParameters processParameters = base.CompilationProcess(outputFileName, inputAssemblyFileNames);
+            if (IsAssembly)
+                processParameters.Arguments = $"{_options.Crossgen2Path.FullName} {processParameters.Arguments}";
 
             // DOTNET_ variables
             processParameters.EnvironmentOverrides["DOTNET_GCStress"] = "";
