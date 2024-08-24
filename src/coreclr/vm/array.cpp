@@ -658,7 +658,7 @@ public:
         }
 #endif
         CorElementType sigElementType = pMT->GetArrayElementType();
-        if(sigElementType == ELEMENT_TYPE_CLASS || sigElementType == ELEMENT_TYPE_ARRAY)
+        if (CorTypeInfo::IsObjRef(sigElementType))
         {
             // Type Check
             if(m_pMD->GetArrayFuncIndex() == ArrayMethodDesc::ARRAY_FUNC_SET)
