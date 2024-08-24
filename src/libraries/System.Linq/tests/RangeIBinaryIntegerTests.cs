@@ -3,7 +3,6 @@
 
 using System.Collections.Generic;
 using System.Numerics;
-using System.Runtime.InteropServices.JavaScript;
 using Xunit;
 
 namespace System.Linq.Tests
@@ -11,6 +10,7 @@ namespace System.Linq.Tests
     public abstract class RangeIBinaryIntegerTests<T> : EnumerableTests where T : IBinaryInteger<T>
     {
 #pragma warning disable xUnit1015
+
         //public static TheoryData<T, int> StartCountCorrectData;
         //public static TheoryData<T, int> StartCountIncorrectData;
 
@@ -392,6 +392,7 @@ namespace System.Linq.Tests
             AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => select.ElementAt(int.MaxValue));
 
         }
+
 #pragma warning restore xUnit1015
     }
 
