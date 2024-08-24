@@ -651,14 +651,6 @@ public:
         return m_dwSizedRefHandles;
     }
 
-#ifdef FEATURE_CODE_VERSIONING
-private:
-    CodeVersionManager m_codeVersionManager;
-
-public:
-    CodeVersionManager* GetCodeVersionManager() { return &m_codeVersionManager; }
-#endif //FEATURE_CODE_VERSIONING
-
 #ifdef DACCESS_COMPILE
 public:
     virtual void EnumMemoryRegions(CLRDataEnumMemoryFlags flags, bool enumThis) = 0;
@@ -1754,6 +1746,14 @@ private:
     };
 
     SHash<UnmanagedImageCacheTraits> m_unmanagedCache;
+
+#ifdef FEATURE_CODE_VERSIONING
+private:
+    CodeVersionManager m_codeVersionManager;
+
+public:
+    CodeVersionManager* GetCodeVersionManager() { return &m_codeVersionManager; }
+#endif //FEATURE_CODE_VERSIONING
 
 #ifdef FEATURE_TYPEEQUIVALENCE
 private:
