@@ -133,7 +133,7 @@ namespace System.IO
         {
             if (buffer != null)
             {
-                Write(buffer, 0, buffer.Length);
+                Write(new ReadOnlySpan<char>(buffer));
             }
         }
 
@@ -152,23 +152,16 @@ namespace System.IO
                 throw new ArgumentException(SR.Argument_InvalidOffLen);
             }
 
-            for (int i = 0; i < count; i++) Write(buffer[index + i]);
+            Write(new ReadOnlySpan<char>(buffer, index, count));
         }
 
         // Writes a span of characters to the text stream.
         //
         public virtual void Write(ReadOnlySpan<char> buffer)
         {
-            char[] array = ArrayPool<char>.Shared.Rent(buffer.Length);
-
-            try
+            for (int i = 0; i < buffer.Length; i++)
             {
-                buffer.CopyTo(new Span<char>(array));
-                Write(array, 0, buffer.Length);
-            }
-            finally
-            {
-                ArrayPool<char>.Shared.Return(array);
+                Write(buffer[i]);
             }
         }
 
@@ -363,17 +356,8 @@ namespace System.IO
 
         public virtual void WriteLine(ReadOnlySpan<char> buffer)
         {
-            char[] array = ArrayPool<char>.Shared.Rent(buffer.Length);
-
-            try
-            {
-                buffer.CopyTo(new Span<char>(array));
-                WriteLine(array, 0, buffer.Length);
-            }
-            finally
-            {
-                ArrayPool<char>.Shared.Return(array);
-            }
+            Write(buffer);
+            WriteLine();
         }
 
         // Writes the text representation of a boolean followed by a line
