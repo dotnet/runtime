@@ -13,18 +13,22 @@ using System.Reflection;
 //
 // It works best if FirstMarkLogStrategy is used. It might hit cycles if full
 // marking strategy is used, so better not try that. That's untested.
-// 
+//
 // Given the name of the DGML file and a name of the node in the DGML graph,
 // it prints the path from the node to the roots.
 
-class Program
+namespace WhyDgml;
+
+public class Program
 {
-    static void Main(string[] args)
+    public static void Main(string[] args)
     {
         if (args.Length != 2)
         {
             Console.WriteLine("Usage:");
+#pragma warning disable IL3002 // Avoid calling members marked with 'RequiresAssemblyFilesAttribute' when publishing as a single-file
             Console.Write(Assembly.GetExecutingAssembly().ManifestModule.Name);
+#pragma warning restore IL3002 // Avoid calling members marked with 'RequiresAssemblyFilesAttribute' when publishing as a single-file
             Console.WriteLine(" dgmlfile.xml node_name");
             return;
         }
@@ -56,31 +60,39 @@ class Program
         }
 
         string goal = args[1];
-        if (!nameToNode.ContainsKey(goal))
+        if (!nameToNode.TryGetValue(goal, out Node value))
             Console.WriteLine($"No such node: '{goal}'.");
         else
-            Dump(nameToNode[goal]);
+            Dump(value);
     }
 
-    static void Dump(Node current, int indent = 0, string reason = "")
+    private static void Dump(Node current, int indent = 0, string reason = "", HashSet<Node> visited = null)
     {
+        visited ??= new HashSet<Node>();
+
+        if (!visited.Add(current))
+        {
+            Console.WriteLine($"{new string(' ', indent)}({reason}) {current.Name} (cycle)");
+            return;
+        }
+
         Console.WriteLine($"{new string(' ', indent)}({reason}) {current.Name}");
 
         foreach (var edge in current.Edges)
         {
-            Dump(edge.Node, indent + 2, edge.Label);
+            Dump(edge.Node, indent + 2, edge.Label, visited);
         }
     }
-}
 
-class Node
-{
-    public readonly string Name;
-    public readonly List<(Node Node, string Label)> Edges;
-
-    public Node(string name)
+    private sealed class Node
     {
-        Name = name;
-        Edges = new List<(Node, string)>();
+        public readonly string Name;
+        public readonly List<(Node Node, string Label)> Edges;
+
+        public Node(string name)
+        {
+            Name = name;
+            Edges = new List<(Node, string)>();
+        }
     }
 }
