@@ -160,7 +160,7 @@ cleanup:
 
 static int32_t HkdfCore(
     EVP_KDF* kdf,
-    char* operation,
+    int operation,
     uint8_t* key,
     int32_t keyLength,
     char* algorithm,
@@ -172,7 +172,6 @@ static int32_t HkdfCore(
     int32_t destinationLength)
 {
     assert(kdf);
-    assert(operation);
     assert(key != NULL || keyLength == 0);
     assert(keyLength >= 0);
     assert(algorithm);
@@ -211,7 +210,7 @@ static int32_t HkdfCore(
             OSSL_PARAM_construct_utf8_string(OSSL_KDF_PARAM_DIGEST, algorithm, 0),
             OSSL_PARAM_construct_octet_string(OSSL_KDF_PARAM_SALT, (void*)salt, saltLengthT),
             OSSL_PARAM_construct_octet_string(OSSL_KDF_PARAM_INFO, (void*)info, infoLengthT),
-            OSSL_PARAM_construct_utf8_string(OSSL_KDF_PARAM_MODE, operation, 0),
+            OSSL_PARAM_construct_int(OSSL_KDF_PARAM_MODE, &operation),
             OSSL_PARAM_construct_end(),
         };
 
@@ -261,7 +260,7 @@ int32_t CryptoNative_HkdfDeriveKey(
 {
     return HkdfCore(
         kdf,
-        "EXTRACT_AND_EXPAND",
+        EVP_KDF_HKDF_MODE_EXTRACT_AND_EXPAND,
         ikm,
         ikmLength,
         algorithm,
@@ -285,7 +284,7 @@ int32_t CryptoNative_HkdfExpand(
 {
     return HkdfCore(
         kdf,
-        "EXPAND_ONLY",
+        EVP_KDF_HKDF_MODE_EXPAND_ONLY,
         prk,
         prkLength,
         algorithm,
@@ -309,7 +308,7 @@ int32_t CryptoNative_HkdfExtract(
 {
     return HkdfCore(
         kdf,
-        "EXTRACT_ONLY",
+        EVP_KDF_HKDF_MODE_EXTRACT_ONLY,
         ikm,
         ikmLength,
         algorithm,
