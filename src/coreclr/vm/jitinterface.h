@@ -390,6 +390,15 @@ extern "C"
 #endif // TARGET_ARM64
 };
 
+#if defined(TARGET_ARM64) && defined(TARGET_UNIX)
+extern "C"
+{
+    void JIT_WriteBarrier_SVR64();
+    void JIT_CheckedWriteBarrier_SVR64();
+    void JIT_ByRefWriteBarrier_SVR64();
+}
+#endif
+
 /*********************************************************************/
 /*********************************************************************/
 

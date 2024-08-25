@@ -6020,6 +6020,12 @@ EXTERN_C void JIT_CheckedWriteBarrier_End();
 EXTERN_C void JIT_ByRefWriteBarrier_End();
 #endif // TARGET_X86
 
+#if defined(TARGET_ARM64) && defined(TARGET_UNIX)
+EXTERN_C void JIT_WriteBarrier_SVR64_End();
+EXTERN_C void JIT_CheckedWriteBarrier_SVR64_End();
+EXTERN_C void JIT_ByRefWriteBarrier_SVR64_End();
+#endif
+
 #if defined(TARGET_AMD64) && defined(_DEBUG)
 EXTERN_C void JIT_WriteBarrier_Debug();
 EXTERN_C void JIT_WriteBarrier_Debug_End();
@@ -6068,6 +6074,11 @@ bool IsIPInMarkedJitHelper(UINT_PTR uControlPc)
     CHECK_RANGE(JIT_WriteBarrier)
     CHECK_RANGE(JIT_CheckedWriteBarrier)
     CHECK_RANGE(JIT_ByRefWriteBarrier)
+#if defined(TARGET_ARM64) && defined(TARGET_UNIX)
+    CHECK_RANGE(JIT_WriteBarrier_SVR64)
+    CHECK_RANGE(JIT_CheckedWriteBarrier_SVR64)
+    CHECK_RANGE(JIT_ByRefWriteBarrier_SVR64)
+#endif
 #if !defined(TARGET_ARM64) && !defined(TARGET_LOONGARCH64) && !defined(TARGET_RISCV64)
     CHECK_RANGE(JIT_StackProbe)
 #endif // !TARGET_ARM64 && !TARGET_LOONGARCH64 && !TARGET_RISCV64
