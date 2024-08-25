@@ -1997,9 +1997,14 @@ void CallArgs::Remove(CallArg* arg)
 //
 bool GenTreeCall::NeedsVzeroupper(Compiler* comp)
 {
+    if (!comp->canUseVexEncoding())
+    {
+        return false;
+    }
+
     bool needsVzeroupper = false;
 
-    if (IsPInvoke() && comp->canUseVexEncoding())
+    if (IsPInvoke())
     {
         // The Intel optimization manual guidance in `3.11.5.3 Fixing Instruction Slowdowns` states:
         //   Insert a VZEROUPPER to tell the hardware that the state of the higher registers is clean
@@ -2028,6 +2033,7 @@ bool GenTreeCall::NeedsVzeroupper(Compiler* comp)
                 if (varTypeUsesFloatReg(this))
                 {
                     needsVzeroupper = true;
+                    break;
                 }
                 else
                 {
@@ -2048,6 +2054,13 @@ bool GenTreeCall::NeedsVzeroupper(Compiler* comp)
                 unreached();
             }
         }
+    }
+
+    // Other special cases
+    //
+    if (!needsVzeroupper && IsHelperCall(comp, CORINFO_HELP_BULK_WRITEBARRIER))
+    {
+        needsVzeroupper = true;
     }
 
     return needsVzeroupper;
