@@ -4,7 +4,6 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Numerics;
-using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using static System.Linq.Utilities;
 
@@ -246,12 +245,12 @@ namespace System.Linq
             public RangeSelectIterator(T start, T end, Func<T, TResult> selector)
             {
                 Debug.Assert(start <= end - T.One); // _start can be equal to _end
-                Debug.Assert(CreateTruncatingWithoutSign<uint, T>(end - T.One - start) + 1 <= (uint)int.MaxValue);
+                Debug.Assert((uint)RangeIterator<T>.StartMaxCount(start, end - T.One) + 1 <= (uint)int.MaxValue);
                 Debug.Assert(selector is not null);
 
                 _start = start;
                 _end = end;
-                _count = CreateTruncatingWithoutSign<int, T>(end - T.One - start) + 1;
+                _count = RangeIterator<T>.StartMaxCount(start, end - T.One) + 1;
                 _selector = selector;
             }
 

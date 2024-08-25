@@ -39,8 +39,8 @@ namespace System.Linq
                 return [];
             }
 
-            T tCountMinusOne = T.CreateTruncating(count - 1);
-            if (start > start + tCountMinusOne || CreateTruncatingWithoutSign<int, T>(tCountMinusOne) + 1 != count)
+            T max = start + T.CreateTruncating(count - 1);
+            if (start > max || RangeIterator<T>.StartMaxCount(start, max) + 1 != count)
             {
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.count);
             }
@@ -63,13 +63,15 @@ namespace System.Linq
             public RangeIterator(T start, int count)
             {
                 Debug.Assert(count > 0);
-                Debug.Assert(CreateTruncatingWithoutSign<int, T>(T.CreateTruncating(count - 1)) + 1 == count);
+                Debug.Assert(start <= start + T.CreateTruncating(count - 1));
+                Debug.Assert(StartMaxCount(start, start + T.CreateTruncating(count - 1)) + 1 == count);
+
                 _start = start;
                 _end = start + T.CreateTruncating(count);
                 _count = count;
             }
 
-            private int CountForDebugger => _count; // CreateTruncatingWithoutSign<int, T>(_end - T.One - _start) + 1;
+            private int CountForDebugger => _count; // Count(_start, _end - T.One) + 1;
 
             private protected override Iterator<T> Clone() => new RangeIterator<T>(_start, _count);
 
@@ -98,6 +100,14 @@ namespace System.Linq
             public override void Dispose()
             {
                 _state = -1; // Don't reset current
+            }
+
+            internal static int StartMaxCount(T start, T max)
+            {
+                int count = int.CreateTruncating(max - start);
+                if (count < 0)
+                    count = int.CreateTruncating(max) - int.CreateTruncating(start);
+                return count;
             }
         }
 
@@ -128,21 +138,6 @@ namespace System.Linq
             {
                 pos = value++;
                 pos = ref Unsafe.Add(ref pos, 1);
-            }
-        }
-
-        private static TTo CreateTruncatingWithoutSign<TTo, TFrom>(TFrom From) where TTo : IBinaryInteger<TTo> where TFrom : IBinaryInteger<TFrom>
-        {
-            Span<byte> bytes = stackalloc byte[From.GetByteCount()];
-            if (BitConverter.IsLittleEndian)
-            {
-                From.WriteLittleEndian(bytes);
-                return TTo.ReadLittleEndian(bytes, true);
-            }
-            else
-            {
-                From.WriteBigEndian(bytes);
-                return TTo.ReadBigEndian(bytes, true);
             }
         }
     }

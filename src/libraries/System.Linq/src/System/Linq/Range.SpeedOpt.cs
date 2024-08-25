@@ -88,7 +88,7 @@ namespace System.Linq
                 _start <= item && item <= _end - T.One; // _start can be equal to _end
 
             public int IndexOf(T item) =>
-                Contains(item) ? CreateTruncatingWithoutSign<int, T>(item - _start) : -1;
+                Contains(item) ? StartMaxCount(_start, item) : -1;
 
             public T this[int index]
             {
