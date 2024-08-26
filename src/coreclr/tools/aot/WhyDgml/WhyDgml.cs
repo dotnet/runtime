@@ -26,9 +26,7 @@ public class Program
         if (args.Length != 2)
         {
             Console.WriteLine("Usage:");
-#pragma warning disable IL3002 // Avoid calling members marked with 'RequiresAssemblyFilesAttribute' when publishing as a single-file
-            Console.Write(Assembly.GetExecutingAssembly().ManifestModule.Name);
-#pragma warning restore IL3002 // Avoid calling members marked with 'RequiresAssemblyFilesAttribute' when publishing as a single-file
+            Console.Write(Assembly.GetExecutingAssembly().GetName().Name);
             Console.WriteLine(" dgmlfile.xml node_name");
             return;
         }
