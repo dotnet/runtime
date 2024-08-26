@@ -3446,7 +3446,6 @@ public:
     GenTreeHWIntrinsic* gtNewScalarHWIntrinsicNode(
         var_types type, GenTree* op1, GenTree* op2, GenTree* op3, NamedIntrinsic hwIntrinsicID);
     CorInfoType getBaseJitTypeFromArgIfNeeded(NamedIntrinsic       intrinsic,
-                                              CORINFO_CLASS_HANDLE clsHnd,
                                               CORINFO_SIG_INFO*    sig,
                                               CorInfoType          simdBaseJitType);
 
@@ -4718,7 +4717,7 @@ protected:
     GenTree* getArgForHWIntrinsic(var_types argType, CORINFO_CLASS_HANDLE argClass);
     GenTree* impNonConstFallback(NamedIntrinsic intrinsic, var_types simdType, CorInfoType simdBaseJitType);
     GenTree* addRangeCheckIfNeeded(
-        NamedIntrinsic intrinsic, GenTree* immOp, bool mustExpand, int immLowerBound, int immUpperBound);
+        NamedIntrinsic intrinsic, GenTree* immOp, int immLowerBound, int immUpperBound);
     GenTree* addRangeCheckForHWIntrinsic(GenTree* immOp, int immLowerBound, int immUpperBound);
 
     void getHWIntrinsicImmOps(NamedIntrinsic    intrinsic,
