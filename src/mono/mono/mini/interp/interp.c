@@ -1140,6 +1140,13 @@ interp_throw_ex_general (
 		}									\
 	} while (0)
 
+#ifdef HOST_WASM
+#define ALIGN_CHECK_(cond,file,lineno) (G_LIKELY ((cond)) ? 1 : (mono_assertion_message (file, lineno, #cond), 0))
+#define ALIGN_CHECK(dest,amt) ALIGN_CHECK_(((uintptr_t)dest) % amt == 0, __FILE__, __LINE__)
+#else
+#define ALIGN_CHECK(dest,amt) /*empty*/
+#endif
+
 // Reduce duplicate code in mono_interp_exec_method
 static MONO_NEVER_INLINE void
 do_safepoint (InterpFrame *frame, ThreadContext *context, const guint16 *ip)
@@ -7208,6 +7215,7 @@ MINT_IN_CASE(MINT_BRTRUE_I8_SP) ZEROP_SP(gint64, !=); MINT_IN_BREAK;
 			guint16 *dest = LOCAL_VAR (ip [2], guint16*);
 			guint16 exch = LOCAL_VAR (ip[3], guint16);
 			NULL_CHECK(dest);
+			ALIGN_CHECK(dest,2);
 			LOCAL_VAR(ip[1], guint32) = (guint32)mono_atomic_xchg_u16(dest, exch);
 			ip += 4;
 			MINT_IN_BREAK;
@@ -7216,6 +7224,7 @@ MINT_IN_CASE(MINT_BRTRUE_I8_SP) ZEROP_SP(gint64, !=); MINT_IN_BREAK;
 			gint16 *dest = LOCAL_VAR (ip [2], gint16*);
 			gint16 exch = LOCAL_VAR (ip[3], gint16);
 			NULL_CHECK(dest);
+			ALIGN_CHECK(dest,2);
 			LOCAL_VAR(ip[1], gint32) = (gint32)(gint16)mono_atomic_xchg_u16((guint16*)dest, exch);
 			ip += 4;
 			MINT_IN_BREAK;
@@ -7224,6 +7233,7 @@ MINT_IN_CASE(MINT_BRTRUE_I8_SP) ZEROP_SP(gint64, !=); MINT_IN_BREAK;
 			gint32 *dest = LOCAL_VAR (ip [2], gint32*);
 			gint32 exch = LOCAL_VAR (ip[3], gint32);
 			NULL_CHECK(dest);
+			ALIGN_CHECK(dest,4);
 			LOCAL_VAR(ip[1], gint32) = mono_atomic_xchg_i32(dest, exch);
 			ip += 4;
 			MINT_IN_BREAK;
@@ -7233,6 +7243,7 @@ MINT_IN_CASE(MINT_BRTRUE_I8_SP) ZEROP_SP(gint64, !=); MINT_IN_BREAK;
 			gint64 *dest = LOCAL_VAR (ip [2], gint64*);
 			gint64 exch = LOCAL_VAR (ip [3], gint64);
 			NULL_CHECK(dest);
+			ALIGN_CHECK(dest,8);
 #if SIZEOF_VOID_P == 4
 			if (G_UNLIKELY (((size_t)dest) & 0x7)) {
 				gint64 result;
@@ -7274,6 +7285,7 @@ MINT_IN_CASE(MINT_BRTRUE_I8_SP) ZEROP_SP(gint64, !=); MINT_IN_BREAK;
 			guint16 value = LOCAL_VAR(ip[3], guint16);
 			guint16 comparand = LOCAL_VAR(ip[4], guint16);
 			NULL_CHECK(dest);
+			ALIGN_CHECK(dest,2);
 
 			LOCAL_VAR(ip[1], guint32) = (guint32)mono_atomic_cas_u16(dest, value, comparand);
 			ip += 5;
@@ -7284,6 +7296,7 @@ MINT_IN_CASE(MINT_BRTRUE_I8_SP) ZEROP_SP(gint64, !=); MINT_IN_BREAK;
 			gint16 value = LOCAL_VAR(ip[3], gint16);
 			gint16 comparand = LOCAL_VAR(ip[4], gint16);
 			NULL_CHECK(dest);
+			ALIGN_CHECK(dest,2);
 
 			LOCAL_VAR(ip[1], gint32) = (gint32)(gint16)mono_atomic_cas_u16((guint16*)dest, value, comparand);
 			ip += 5;
@@ -7294,6 +7307,7 @@ MINT_IN_CASE(MINT_BRTRUE_I8_SP) ZEROP_SP(gint64, !=); MINT_IN_BREAK;
 			gint32 value = LOCAL_VAR(ip[3], gint32);
 			gint32 comparand = LOCAL_VAR(ip[4], gint32);
 			NULL_CHECK(dest);
+			ALIGN_CHECK(dest,4);
 
 			LOCAL_VAR(ip[1], gint32) = mono_atomic_cas_i32(dest, value, comparand);
 			ip += 5;
@@ -7305,6 +7319,8 @@ MINT_IN_CASE(MINT_BRTRUE_I8_SP) ZEROP_SP(gint64, !=); MINT_IN_BREAK;
 			gint64 value = LOCAL_VAR(ip[3], gint64);
 			gint64 comparand = LOCAL_VAR(ip[4], gint64);
 			NULL_CHECK(dest);
+
+			ALIGN_CHECK(dest,8);
 
 #if SIZEOF_VOID_P == 4
 			if (G_UNLIKELY ((size_t)dest & 0x7)) {
