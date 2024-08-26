@@ -819,7 +819,6 @@ LEAF_END setFPReturn, _TEXT
 LEAF_ENTRY JIT_GetDynamicNonGCStaticBase_SingleAppDomain, _TEXT
     // If class is not initialized, bail to C++ helper
     ld a1, OFFSETOF__DynamicStaticsInfo__m_pNonGCStatics(a0)
-    nop
     bnez a1, LOCAL_LABEL(JIT_GetDynamicNonGCStaticBase_SingleAppDomain_CallHelper)
     mv  a0, a1
     ret
