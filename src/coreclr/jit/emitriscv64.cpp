@@ -3946,7 +3946,14 @@ void emitter::emitDispInsName(
             }
             if (rd == REG_ZERO)
             {
-                printf("j              %d", offset);
+                printf("j              ");
+
+                if (id->idIsBound())
+                {
+                    emitPrintLabel(id->idAddr()->iiaIGlabel);
+                } else {
+                    printf("pc%+d instructions", offset >> 2);
+                }
             }
             else
             {
