@@ -2,7 +2,7 @@
 
 <!-- A description of the package and where one can find more documentation -->
 
-`System.Composition.Runtime` is part of the Managed Extensibility Framework (MEF) 2.0, a composition library for .NET that enables dependency injection through attributes.
+`System.Composition.Runtime` is part of the Managed Extensibility Framework (MEF) 2.0, a composition library for .NET that enables dependency injection through attributes or conventions.
 
 This package enables the discovery and composition of parts in applications using MEF 2.0.
 It offers the runtime implementation needed for managing composable parts, resolving dependencies, and dynamically wiring components together.
@@ -66,13 +66,14 @@ The main type provided by this library is:
 
 <!-- Links to further documentation. Remove conceptual documentation if not available for the library. -->
 
-* [API documentation](https://learn.microsoft.com/dotnet/api/system.composition.runtime)
+* [API documentation](https://learn.microsoft.com/dotnet/api/system.composition.compositioncontext)
 * [Managed Extensibility Framework (MEF)](https://learn.microsoft.com/dotnet/framework/mef/)
 
 ## Related Packages
 
 <!-- The related packages associated with this package -->
 
+* [System.Composition](https://www.nuget.org/packages/System.Composition)
 * [System.Composition.AttributedModel](https://www.nuget.org/packages/System.Composition.AttributedModel)
 * [System.Composition.Convention](https://www.nuget.org/packages/System.Composition.Convention)
 * [System.Composition.Hosting](https://www.nuget.org/packages/System.Composition.Hosting)
