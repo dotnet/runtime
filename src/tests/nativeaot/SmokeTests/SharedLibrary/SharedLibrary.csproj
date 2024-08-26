@@ -11,6 +11,8 @@
     <!-- Regression test for https://github.com/dotnet/runtime/issues/105330: make sure the UnmanagedCallersOnly are completely unreferenced,
          not even from stack trace mapping data -->
     <StackTraceSupport>false</StackTraceSupport>
+    <RequiresProcessIsolation>true</RequiresProcessIsolation>
+    <ReferenceXUnitWrapperGenerator>false</ReferenceXUnitWrapperGenerator>
   </PropertyGroup>
 
   <PropertyGroup>

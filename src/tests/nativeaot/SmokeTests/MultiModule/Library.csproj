@@ -2,6 +2,8 @@
   <PropertyGroup>
     <OutputType>Library</OutputType>
     <IlcMultiModule>true</IlcMultiModule>
+    <RequiresProcessIsolation>true</RequiresProcessIsolation>
+    <ReferenceXUnitWrapperGenerator>false</ReferenceXUnitWrapperGenerator>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="Library.cs" />
