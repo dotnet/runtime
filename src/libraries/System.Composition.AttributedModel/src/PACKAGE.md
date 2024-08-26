@@ -2,7 +2,7 @@
 
 <!-- A description of the package and where one can find more documentation -->
 
-`System.Composition.AttributedModel` is part of the Managed Extensibility Framework (MEF) 2.0, a composition library for .NET that enables dependency injection through attributes.
+`System.Composition.AttributedModel` is part of the Managed Extensibility Framework (MEF) 2.0, a composition library for .NET that enables dependency injection through attributes or conventions.
 
 This package provides the foundational attributes that allow you to declare parts for composition, such as imports, exports, and metadata.
 It is used to mark classes, properties, methods, and constructors for MEF's discovery and composition process.
@@ -119,13 +119,14 @@ The main types provided by this library are:
 
 <!-- Links to further documentation. Remove conceptual documentation if not available for the library. -->
 
-* [API documentation](https://learn.microsoft.com/dotnet/api/system.composition.attributedmodel)
+* [API documentation](https://learn.microsoft.com/dotnet/api/system.composition)
 * [Managed Extensibility Framework (MEF)](https://learn.microsoft.com/dotnet/framework/mef/)
 
 ## Related Packages
 
 <!-- The related packages associated with this package -->
 
+* [System.Composition](https://www.nuget.org/packages/System.Composition)
 * [System.Composition.Convention](https://www.nuget.org/packages/System.Composition.Convention)
 * [System.Composition.Hosting](https://www.nuget.org/packages/System.Composition.Hosting)
 * [System.Composition.Runtime](https://www.nuget.org/packages/System.Composition.Runtime)
