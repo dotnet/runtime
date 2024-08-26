@@ -1441,6 +1441,7 @@ namespace System.Threading.ThreadPools.Tests
 
 
         [ConditionalFact(nameof(IsThreadingAndRemoteExecutorSupported))]
+        [PlatformSpecific(TestPlatforms.Windows)]
         public static unsafe void ThreadPoolCompletedWorkItemCountTest()
         {
             // Run in a separate process to test in a clean thread pool environment such that we don't count external work items
