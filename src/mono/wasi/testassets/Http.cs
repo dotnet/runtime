@@ -18,6 +18,7 @@ public static class WasiMainWrapper
             Console.WriteLine($"args[{i}] = {args[i]}");
 
         await Task.Delay(100);
+        GC.Collect(); // test that Pollable->Task is not collected until resolved
 
         using HttpClient client = new();
         client.DefaultRequestHeaders.Accept.Clear();
@@ -30,6 +31,8 @@ public static class WasiMainWrapper
         Console.WriteLine("GET "+query);
         Console.WriteLine();
         Console.WriteLine(json);
+
+        GC.Collect();
 
         return 42;
     }
