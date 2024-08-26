@@ -2660,7 +2660,7 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
             // We have an exclusion list. See if this method is in an assembly that is on the list.
             // Note that we check this for every method, since we might inline across modules, and
             // if the inlinee module is on the list, we don't want to use the altjit for it.
-            const char* methodAssemblyName = info.compCompHnd->getClassAssemblyName(info.compClassHnd);
+            const char* methodAssemblyName = eeGetClassAssemblyName(info.compClassHnd);
             if (methodAssemblyName != nullptr && s_pAltJitExcludeAssembliesList->IsInList(methodAssemblyName))
             {
                 opts.altJit = false;
@@ -2687,8 +2687,8 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
     bool assemblyInIncludeList = true; // assume we'll dump, if there's not an include list (or it's empty).
     if (s_pJitDisasmIncludeAssembliesList != nullptr && !s_pJitDisasmIncludeAssembliesList->IsEmpty())
     {
-        const char* assemblyName = info.compCompHnd->getClassAssemblyName(info.compClassHnd);
-        if (assemblyName != nullptr && !s_pJitDisasmIncludeAssembliesList->IsInList(assemblyName))
+        const char* assemblyName = eeGetClassAssemblyName(info.compClassHnd);
+        if (!s_pJitDisasmIncludeAssembliesList->IsInList(assemblyName))
         {
             // We have a list, and the current assembly is not in it, so we won't dump.
             assemblyInIncludeList = false;
@@ -6460,7 +6460,7 @@ int Compiler::compCompile(CORINFO_MODULE_HANDLE classPtr,
     if (JitConfig.EnableExtraSuperPmiQueries())
     {
         // Get the assembly name, to aid finding any particular SuperPMI method context function
-        (void)info.compCompHnd->getClassAssemblyName(info.compClassHnd);
+        (void)eeGetClassAssemblyName(info.compClassHnd);
 
         // Fetch class names for the method's generic parameters.
         //
@@ -9371,8 +9371,8 @@ void JitTimer::PrintCsvMethodStats(Compiler* comp)
     }
     else
     {
-        const char* methodAssemblyName = comp->info.compCompHnd->getClassAssemblyName(comp->info.compClassHnd);
-        fprintf(s_csvFile, "\"%s\",", methodAssemblyName == nullptr ? "" : methodAssemblyName);
+        const char* methodAssemblyName = comp->eeGetClassAssemblyName(comp->info.compClassHnd);
+        fprintf(s_csvFile, "\"%s\",", methodAssemblyName);
     }
     fprintf(s_csvFile, "%u,", comp->info.compILCodeSize);
     fprintf(s_csvFile, "%u,", comp->fgBBcount);

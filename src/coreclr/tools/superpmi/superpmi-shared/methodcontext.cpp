@@ -844,19 +844,16 @@ void MethodContext::dmpGetClassAssemblyName(DWORDLONG key, DWORD value)
 const char* MethodContext::repGetClassAssemblyName(CORINFO_CLASS_HANDLE cls)
 {
     DWORDLONG key = CastHandle(cls);
-    const char* result = "hackishAssemblyName";
-    DWORD value = (DWORD)-1;
-    int itemIndex = -1;
-    if (GetClassAssemblyName != nullptr)
+    DWORD value = LookupByKeyOrMiss(GetClassAssemblyName, key, ": key %016" PRIX64 "", key);
+    const char* result = nullptr;
+
+    DEBUG_REP(dmpGetClassAssemblyName(key, value));
+
+    if (value != -1)
     {
-        itemIndex = GetClassAssemblyName->GetIndex(key);
-    }
-    if (itemIndex >= 0)
-    {
-        value  = GetClassAssemblyName->Get(key);
         result = (const char*)GetClassAssemblyName->GetBuffer(value);
     }
-    DEBUG_REP(dmpGetClassAssemblyName(key, value));
+
     return result;
 }
 

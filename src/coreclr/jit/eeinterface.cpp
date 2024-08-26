@@ -596,6 +596,39 @@ const char* Compiler::eeGetShortClassName(CORINFO_CLASS_HANDLE clsHnd)
     return printer.GetBuffer();
 }
 
+//------------------------------------------------------------------------
+// eeGetClassAssemblyName:
+//   Get the assembly name of a type.
+//   If missing information (in SPMI), then return a placeholder string.
+//
+// Parameters:
+//   clsHnd - the handle of the class
+//   buffer - a buffer to use for scratch space, or null pointer to allocate a new string.
+//   bufferSize - the size of buffer. If the final class name is longer a new string will be allocated.
+//
+// Return value:
+//   The name string.
+//
+const char* Compiler::eeGetClassAssemblyName(CORINFO_CLASS_HANDLE clsHnd, char* buffer, size_t bufferSize)
+{
+    StringPrinter printer(getAllocator(CMK_DebugOnly), buffer, bufferSize);
+    bool          hasAssembly = true;
+    if (!eeRunFunctorWithSPMIErrorTrap([&]() {
+        const char* assemblyName = this->info.compCompHnd->getClassAssemblyName(clsHnd);
+        if (assemblyName == nullptr)
+        {
+            hasAssembly = false;
+            return;
+        }
+    }))
+    {
+        printer.Truncate(0);
+        printer.Append("<unknown assembly>");
+    }
+
+    return hasAssembly ? printer.GetBuffer() : "<no assembly>";
+}
+
 void Compiler::eePrintObjectDescription(const char* prefix, CORINFO_OBJECT_HANDLE handle)
 {
     const size_t maxStrSize = 64;
