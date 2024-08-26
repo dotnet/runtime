@@ -6482,9 +6482,6 @@ Compiler::fgWalkResult Compiler::optVNBasedFoldCurStmt(BasicBlock* block,
         return WALK_CONTINUE;
     }
 
-    // TODO https://github.com/dotnet/runtime/issues/10450:
-    // at that moment stmt could be already removed from the stmt list.
-
     optAssertionProp_Update(newTree, tree, stmt);
 
     JITDUMP("After VN-based fold of [%06u]:\n", tree->gtTreeID);
