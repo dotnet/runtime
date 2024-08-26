@@ -934,7 +934,6 @@ struct PatchpointInfo;
 // Cookie types consumed by the code generator (these are opaque values
 // not inspected by the code generator):
 
-typedef struct CORINFO_ASSEMBLY_STRUCT_*    CORINFO_ASSEMBLY_HANDLE;
 typedef struct CORINFO_MODULE_STRUCT_*      CORINFO_MODULE_HANDLE;
 typedef struct CORINFO_DEPENDENCY_STRUCT_*  CORINFO_DEPENDENCY_HANDLE;
 typedef struct CORINFO_CLASS_STRUCT_*       CORINFO_CLASS_HANDLE;
