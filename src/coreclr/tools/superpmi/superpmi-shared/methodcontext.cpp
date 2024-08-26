@@ -816,93 +816,47 @@ DWORD MethodContext::repGetMethodAttribs(CORINFO_METHOD_HANDLE methodHandle)
     return value;
 }
 
-void MethodContext::recGetClassModule(CORINFO_CLASS_HANDLE cls, CORINFO_MODULE_HANDLE mod)
+void MethodContext::recGetClassAssemblyName(CORINFO_CLASS_HANDLE cls, const char* assemblyName)
 {
-    if (GetClassModule == nullptr)
-        GetClassModule = new LightWeightMap<DWORDLONG, DWORDLONG>();
-
-    DWORDLONG key = CastHandle(cls);
-    DWORDLONG value = CastHandle(mod);
-    GetClassModule->Add(key, value);
-    DEBUG_REC(dmpGetClassModule(key, value));
-}
-void MethodContext::dmpGetClassModule(DWORDLONG key, DWORDLONG value)
-{
-    printf("GetClassModule cls-%016" PRIX64 ", mod-%016" PRIX64 "", key, value);
-}
-CORINFO_MODULE_HANDLE MethodContext::repGetClassModule(CORINFO_CLASS_HANDLE cls)
-{
-    DWORDLONG key = CastHandle(cls);
-    DWORDLONG value = LookupByKeyOrMiss(GetClassModule, key, ": key %016" PRIX64 "", key);
-    DEBUG_REP(dmpGetClassModule(key, value));
-    CORINFO_MODULE_HANDLE result = (CORINFO_MODULE_HANDLE)value;
-    return result;
-}
-
-void MethodContext::recGetModuleAssembly(CORINFO_MODULE_HANDLE mod, CORINFO_ASSEMBLY_HANDLE assem)
-{
-    if (GetModuleAssembly == nullptr)
-        GetModuleAssembly = new LightWeightMap<DWORDLONG, DWORDLONG>();
-
-    DWORDLONG key = CastHandle(mod);
-    DWORDLONG value = CastHandle(assem);
-    GetModuleAssembly->Add(key, value);
-    DEBUG_REC(dmpGetModuleAssembly(key, value));
-}
-void MethodContext::dmpGetModuleAssembly(DWORDLONG key, DWORDLONG value)
-{
-    printf("GetModuleAssembly mod-%016" PRIX64 ", assem-%016" PRIX64 "", key, value);
-}
-CORINFO_ASSEMBLY_HANDLE MethodContext::repGetModuleAssembly(CORINFO_MODULE_HANDLE mod)
-{
-    DWORDLONG key = CastHandle(mod);
-    DWORDLONG value = LookupByKeyOrMiss(GetModuleAssembly, key, ": key %016" PRIX64 "", key);
-    DEBUG_REP(dmpGetModuleAssembly(key, value));
-    CORINFO_ASSEMBLY_HANDLE result = (CORINFO_ASSEMBLY_HANDLE)value;
-    return result;
-}
-
-void MethodContext::recGetAssemblyName(CORINFO_ASSEMBLY_HANDLE assem, const char* assemblyName)
-{
-    if (GetAssemblyName == nullptr)
-        GetAssemblyName = new LightWeightMap<DWORDLONG, DWORD>();
+    if (GetClassAssemblyName == nullptr)
+        GetClassAssemblyName = new LightWeightMap<DWORDLONG, DWORD>();
 
     DWORD value;
     if (assemblyName != nullptr)
     {
-        value = GetAssemblyName->AddBuffer((const unsigned char*)assemblyName, (DWORD)strlen(assemblyName) + 1);
+        value = GetClassAssemblyName->AddBuffer((const unsigned char*)assemblyName, (DWORD)strlen(assemblyName) + 1);
     }
     else
     {
         value = (DWORD)-1;
     }
 
-    DWORDLONG key = CastHandle(assem);
-    GetAssemblyName->Add(key, value);
-    DEBUG_REC(dmpGetAssemblyName(key, value));
+    DWORDLONG key = CastHandle(cls);
+    GetClassAssemblyName->Add(key, value);
+    DEBUG_REC(dmpGetClassAssemblyName(key, value));
 }
-void MethodContext::dmpGetAssemblyName(DWORDLONG key, DWORD value)
+void MethodContext::dmpGetClassAssemblyName(DWORDLONG key, DWORD value)
 {
-    const char* assemblyName = (const char*)GetAssemblyName->GetBuffer(value);
-    printf("GetAssemblyName assem-%016" PRIX64 ", value-%u '%s'", key, value, assemblyName);
-    GetAssemblyName->Unlock();
+    const char* assemblyName = (const char*)GetClassAssemblyName->GetBuffer(value);
+    printf("GetClassAssemblyName cls-%016" PRIX64 ", value-%u '%s'", key, value, assemblyName);
+    GetClassAssemblyName->Unlock();
 }
-const char* MethodContext::repGetAssemblyName(CORINFO_ASSEMBLY_HANDLE assem)
+const char* MethodContext::repGetClassAssemblyName(CORINFO_CLASS_HANDLE cls)
 {
-    DWORDLONG key = CastHandle(assem);
+    DWORDLONG key = CastHandle(cls);
     const char* result = "hackishAssemblyName";
     DWORD value = (DWORD)-1;
     int itemIndex = -1;
-    if (GetAssemblyName != nullptr)
+    if (GetClassAssemblyName != nullptr)
     {
-        itemIndex = GetAssemblyName->GetIndex(key);
+        itemIndex = GetClassAssemblyName->GetIndex(key);
     }
     if (itemIndex >= 0)
     {
-        value = GetAssemblyName->Get(key);
-        result = (const char*)GetAssemblyName->GetBuffer(value);
+        value  = GetClassAssemblyName->Get(key);
+        result = (const char*)GetClassAssemblyName->GetBuffer(value);
     }
-    DEBUG_REP(dmpGetAssemblyName(key, value));
+    DEBUG_REP(dmpGetClassAssemblyName(key, value));
     return result;
 }
 

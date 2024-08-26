@@ -52,9 +52,7 @@ struct JitInterfaceCallbacks
     size_t (* printClassName)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_CLASS_HANDLE cls, char* buffer, size_t bufferSize, size_t* pRequiredBufferSize);
     bool (* isValueClass)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_CLASS_HANDLE cls);
     uint32_t (* getClassAttribs)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_CLASS_HANDLE cls);
-    CORINFO_MODULE_HANDLE (* getClassModule)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_CLASS_HANDLE cls);
-    CORINFO_ASSEMBLY_HANDLE (* getModuleAssembly)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_MODULE_HANDLE mod);
-    const char* (* getAssemblyName)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_ASSEMBLY_HANDLE assem);
+    const char* (* getClassAssemblyName)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_CLASS_HANDLE cls);
     void* (* LongLifetimeMalloc)(void * thisHandle, CorInfoExceptionClass** ppException, size_t sz);
     void (* LongLifetimeFree)(void * thisHandle, CorInfoExceptionClass** ppException, void* obj);
     bool (* getIsClassInitedFlagAddress)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_CLASS_HANDLE cls, CORINFO_CONST_LOOKUP* addr, int* offset);
@@ -607,29 +605,11 @@ public:
     return temp;
 }
 
-    virtual CORINFO_MODULE_HANDLE getClassModule(
+    virtual const char* getClassAssemblyName(
           CORINFO_CLASS_HANDLE cls)
 {
     CorInfoExceptionClass* pException = nullptr;
-    CORINFO_MODULE_HANDLE temp = _callbacks->getClassModule(_thisHandle, &pException, cls);
-    if (pException != nullptr) throw pException;
-    return temp;
-}
-
-    virtual CORINFO_ASSEMBLY_HANDLE getModuleAssembly(
-          CORINFO_MODULE_HANDLE mod)
-{
-    CorInfoExceptionClass* pException = nullptr;
-    CORINFO_ASSEMBLY_HANDLE temp = _callbacks->getModuleAssembly(_thisHandle, &pException, mod);
-    if (pException != nullptr) throw pException;
-    return temp;
-}
-
-    virtual const char* getAssemblyName(
-          CORINFO_ASSEMBLY_HANDLE assem)
-{
-    CorInfoExceptionClass* pException = nullptr;
-    const char* temp = _callbacks->getAssemblyName(_thisHandle, &pException, assem);
+    const char* temp = _callbacks->getClassAssemblyName(_thisHandle, &pException, cls);
     if (pException != nullptr) throw pException;
     return temp;
 }

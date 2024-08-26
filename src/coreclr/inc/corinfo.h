@@ -2325,18 +2325,9 @@ public:
             CORINFO_CLASS_HANDLE    cls
             ) = 0;
 
-    virtual CORINFO_MODULE_HANDLE getClassModule (
-            CORINFO_CLASS_HANDLE    cls
-            ) = 0;
-
-    // Returns the assembly that contains the module "mod".
-    virtual CORINFO_ASSEMBLY_HANDLE getModuleAssembly (
-            CORINFO_MODULE_HANDLE   mod
-            ) = 0;
-
-    // Returns the name of the assembly "assem".
-    virtual const char* getAssemblyName (
-            CORINFO_ASSEMBLY_HANDLE assem
+    // Returns the assembly name of the class "cls".
+    virtual const char* getClassAssemblyName (
+            CORINFO_CLASS_HANDLE cls
             ) = 0;
 
     // Allocate and delete process-lifetime objects.  Should only be

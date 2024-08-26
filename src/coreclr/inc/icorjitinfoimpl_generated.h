@@ -193,14 +193,8 @@ bool isValueClass(
 uint32_t getClassAttribs(
           CORINFO_CLASS_HANDLE cls) override;
 
-CORINFO_MODULE_HANDLE getClassModule(
+const char* getClassAssemblyName(
           CORINFO_CLASS_HANDLE cls) override;
-
-CORINFO_ASSEMBLY_HANDLE getModuleAssembly(
-          CORINFO_MODULE_HANDLE mod) override;
-
-const char* getAssemblyName(
-          CORINFO_ASSEMBLY_HANDLE assem) override;
 
 void* LongLifetimeMalloc(
           size_t sz) override;
