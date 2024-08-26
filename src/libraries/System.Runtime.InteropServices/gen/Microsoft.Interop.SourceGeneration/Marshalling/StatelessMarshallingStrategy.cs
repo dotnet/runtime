@@ -564,8 +564,11 @@ namespace Microsoft.Interop
 
             if (!elementCleanup.IsKind(SyntaxKind.EmptyStatement))
             {
-                // If we don't have the numElements variable still available from unmarshal or marshal stage, we need to reassign that again
-                if (!CodeContext.AdditionalTemporaryStateLivesAcrossStages)
+                // If we don't have the numElements variable still available from unmarshal or marshal stage, we need to reassign that again.
+                // When marshalling from managed to unmanaged, we don't have a numElements variable because we can determine length
+                // from the managed value.
+                if (!CodeContext.AdditionalTemporaryStateLivesAcrossStages
+                    && MarshallerHelpers.GetMarshalDirection(TypeInfo, CodeContext) != MarshalDirection.ManagedToUnmanaged)
                 {
                     // <numElements> = <numElementsExpression>;
                     string numElementsIdentifier = MarshallerHelpers.GetNumElementsIdentifier(TypeInfo, context);
