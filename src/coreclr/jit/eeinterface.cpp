@@ -611,22 +611,12 @@ const char* Compiler::eeGetShortClassName(CORINFO_CLASS_HANDLE clsHnd)
 //
 const char* Compiler::eeGetClassAssemblyName(CORINFO_CLASS_HANDLE clsHnd, char* buffer, size_t bufferSize)
 {
-    StringPrinter printer(getAllocator(CMK_DebugOnly), buffer, bufferSize);
-    bool          hasAssembly = true;
-    if (!eeRunFunctorWithSPMIErrorTrap([&]() {
-        const char* assemblyName = this->info.compCompHnd->getClassAssemblyName(clsHnd);
-        if (assemblyName == nullptr)
-        {
-            hasAssembly = false;
-            return;
-        }
-    }))
-    {
-        printer.Truncate(0);
-        printer.Append("<unknown assembly>");
-    }
+    const char* assemblyName = "<unknown assembly>";
+    eeRunFunctorWithSPMIErrorTrap([&]() {
+        assemblyName = info.compCompHnd->getClassAssemblyName(clsHnd);
+    });
 
-    return hasAssembly ? printer.GetBuffer() : "<no assembly>";
+    return assemblyName != nullptr ? assemblyName : "<no assembly>";
 }
 
 void Compiler::eePrintObjectDescription(const char* prefix, CORINFO_OBJECT_HANDLE handle)
