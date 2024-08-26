@@ -1342,6 +1342,7 @@ namespace System.Threading.ThreadPools.Tests
         [ConditionalTheory(nameof(IsThreadingAndRemoteExecutorSupported), nameof(UsePortableThreadPool))]
         [MemberData(nameof(IOCompletionPortCountConfigVarTest_Args))]
         [PlatformSpecific(TestPlatforms.Windows)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/106371")]
         public static void IOCompletionPortCountConfigVarTest(int ioCompletionPortCount)
         {
             // Avoid contaminating the main process' environment
@@ -1394,22 +1395,26 @@ namespace System.Threading.ThreadPools.Tests
                         var done = new AutoResetEvent(false);
 
                         // Receiver
+                        bool stop = false;
                         var receiveBuffer = new byte[1];
-                        using var listener = new TcpListener(IPAddress.Loopback, 0);
+                        var listener = new TcpListener(IPAddress.Loopback, 0);
                         listener.Start();
                         var t = ThreadTestHelpers.CreateGuardedThread(
                             out Action checkForThreadErrors,
                             out Action waitForThread,
                             async () =>
                             {
-                                while (true)
+                                using (listener)
                                 {
-                                    // Accept a connection, receive a byte
-                                    using var socket = await listener.AcceptSocketAsync();
-                                    int bytesRead =
-                                        await socket.ReceiveAsync(new ArraySegment<byte>(receiveBuffer), SocketFlags.None);
-                                    Assert.Equal(1, bytesRead);
-                                    done.Set(); // indicate byte received
+                                    while (!stop)
+                                    {
+                                        // Accept a connection, receive a byte
+                                        using var socket = await listener.AcceptSocketAsync();
+                                        int bytesRead =
+                                            await socket.ReceiveAsync(new ArraySegment<byte>(receiveBuffer), SocketFlags.None);
+                                        Assert.Equal(1, bytesRead);
+                                        done.Set(); // indicate byte received
+                                    }
                                 }
                             });
                         t.IsBackground = true;
@@ -1427,6 +1432,9 @@ namespace System.Threading.ThreadPools.Tests
                             Assert.Equal(1, bytesSent);
                             done.CheckedWait(); // wait for byte to the received
                         }
+
+                        stop = true;
+                        waitForThread();
                     }
                 }).Dispose();
             }, ioCompletionPortCount.ToString()).Dispose();
