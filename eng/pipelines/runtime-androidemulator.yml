@@ -3,7 +3,22 @@
 # point the pipeline in azdo UI to this, and thus avoid any scheduled
 # triggers
 
-trigger: none
+trigger: 
+  branches:
+    include:
+    - release/*.*
+  paths:
+    include:
+    - '*'
+
+pr:
+  branches:
+    include:
+    - main
+    - release/*.*
+  paths:
+    include:
+    - '*'
 
 variables:
   - template: /eng/pipelines/common/variables.yml
