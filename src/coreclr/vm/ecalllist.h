@@ -70,7 +70,6 @@ FCFuncEnd()
 FCFuncStart(gDiagnosticsDebugger)
     FCFuncElement("get_IsAttached", DebugDebugger::IsDebuggerAttached)
     FCFuncElement("IsLogging", DebugDebugger::IsLogging)
-    FCFuncElement("CustomNotification", DebugDebugger::CustomNotification)
 FCFuncEnd()
 
 FCFuncStart(gDiagnosticsStackTrace)

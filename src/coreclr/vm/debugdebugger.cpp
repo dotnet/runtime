@@ -766,48 +766,35 @@ typedef Wrapper<OBJECTHANDLE, DoNothing<OBJECTHANDLE>, HolderDestroyStrongHandle
 // receives a custom notification object from the target and sends it to the RS via
 // code:Debugger::SendCustomDebuggerNotification
 // Argument: dataUNSAFE - a pointer the custom notification object being sent
-FCIMPL1(void, DebugDebugger::CustomNotification, Object * dataUNSAFE)
+extern "C" void QCALLTYPE DebugDebugger_CustomNotification(QCall::ObjectHandleOnStack data)
 {
-    CONTRACTL
-    {
-        FCALL_CHECK;
-    }
-    CONTRACTL_END;
-
-    OBJECTREF pData = ObjectToOBJECTREF(dataUNSAFE);
+    QCALL_CONTRACT;
 
 #ifdef DEBUGGING_SUPPORTED
     // Send notification only if the debugger is attached
-    if (CORDebuggerAttached() )
+    _ASSERTE(CORDebuggerAttached());
+
+    GCX_COOP();
+
+    Thread * pThread = GetThread();
+    AppDomain * pAppDomain = AppDomain::GetCurrentDomain();
+
+    StrongHandleHolder objHandle = pAppDomain->CreateStrongHandle(data.Get());
+    MethodTable* pMT = data.Get()->GetGCSafeMethodTable();
+    Module* pModule = pMT->GetModule();
+    DomainAssembly* pDomainAssembly = pModule->GetDomainAssembly();
+    mdTypeDef classToken = pMT->GetCl();
+
+    pThread->SetThreadCurrNotification(objHandle);
+    g_pDebugInterface->SendCustomDebuggerNotification(pThread, pDomainAssembly, classToken);
+    pThread->ClearThreadCurrNotification();
+
+    if (pThread->IsAbortRequested())
     {
-        HELPER_METHOD_FRAME_BEGIN_PROTECT(pData);
-
-        Thread * pThread = GetThread();
-        AppDomain * pAppDomain = AppDomain::GetCurrentDomain();
-
-        StrongHandleHolder objHandle = pAppDomain->CreateStrongHandle(pData);
-        MethodTable * pMT = pData->GetGCSafeMethodTable();
-        Module * pModule = pMT->GetModule();
-        DomainAssembly * pDomainAssembly = pModule->GetDomainAssembly();
-        mdTypeDef classToken = pMT->GetCl();
-
-        pThread->SetThreadCurrNotification(objHandle);
-        g_pDebugInterface->SendCustomDebuggerNotification(pThread, pDomainAssembly, classToken);
-        pThread->ClearThreadCurrNotification();
-
-        if (pThread->IsAbortRequested())
-        {
-            pThread->HandleThreadAbort();
-        }
-
-        HELPER_METHOD_FRAME_END();
+        pThread->HandleThreadAbort();
     }
-
 #endif // DEBUGGING_SUPPORTED
-
 }
-FCIMPLEND
-
 
 void DebugStackTrace::GetStackFramesHelper(Frame *pStartFrame,
                                            void* pStopStack,

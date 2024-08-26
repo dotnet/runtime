@@ -30,11 +30,6 @@ namespace System.Diagnostics
         // See code:NotifyOfCrossThreadDependency for more details.
         private sealed class CrossThreadDependencyNotification : ICustomDebuggerNotification { }
 
-        // Do not inline the slow path
-        [MethodImpl(MethodImplOptions.NoInlining)]
-        private static void NotifyOfCrossThreadDependencySlow() =>
-            CustomNotification(new CrossThreadDependencyNotification());
-
         // Sends a notification to the debugger to indicate that execution is about to enter a path
         // involving a cross thread dependency. A debugger that has opted into this type of notification
         // can take appropriate action on receipt. For example, performing a funceval normally requires
@@ -48,6 +43,14 @@ namespace System.Diagnostics
             if (IsAttached)
             {
                 NotifyOfCrossThreadDependencySlow();
+            }
+
+            // Do not inline the slow path
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            static void NotifyOfCrossThreadDependencySlow()
+            {
+                var notify = new CrossThreadDependencyNotification();
+                CustomNotification(ObjectHandleOnStack.Create(ref notify));
             }
         }
 
@@ -89,7 +92,7 @@ namespace System.Diagnostics
         // Posts a custom notification for the attached debugger.  If there is no
         // debugger attached, has no effect.  The debugger may or may not
         // report the notification depending on its settings.
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern void CustomNotification(ICustomDebuggerNotification data);
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "DebugDebugger_CustomNotification")]
+        private static partial void CustomNotification(ObjectHandleOnStack data);
     }
 }
