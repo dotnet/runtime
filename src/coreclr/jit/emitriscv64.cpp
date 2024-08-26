@@ -3914,8 +3914,8 @@ void emitter::emitDispInsName(
         }
         case 0x67:
         {
-            const regNumber rs1    = (code >> 15) & 0x1f;
-            const regNumber rd     = (code >> 7) & 0x1f;
+            const unsigned rs1    = (code >> 15) & 0x1f;
+            const unsigned rd     = (code >> 7) & 0x1f;
             int         offset = ((code >> 20) & 0xfff);
             if (offset & 0x800)
             {
