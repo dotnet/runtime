@@ -849,7 +849,7 @@ const char* MethodContext::repGetClassAssemblyName(CORINFO_CLASS_HANDLE cls)
 
     DEBUG_REP(dmpGetClassAssemblyName(key, value));
 
-    if (value != -1)
+    if (value != (DWORD)-1)
     {
         result = (const char*)GetClassAssemblyName->GetBuffer(value);
     }
