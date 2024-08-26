@@ -1,30 +1,9 @@
 # This job definition automates the SuperPMI collection process.
 
-# Trigger this job if the JIT-EE GUID changes, which invalidates previous SuperPMI
-# collections.
-trigger:
-  batch: false
-  branches:
-    include:
-    - main
-  paths:
-    include:
-    - src/coreclr/inc/jiteeversionguid.h
-
-# This pipeline is supposed to be run only on merged changes
-# and should not be triggerable from a PR.
-pr: none
+trigger: none
 
 variables:
   - template: /eng/pipelines/common/variables.yml
-
-schedules:
-- cron: "0 17 * * 0"
-  displayName: Sun at 9:00 AM (UTC-8:00)
-  branches:
-    include:
-    - main
-  always: true
 
 extends:
   template:  /eng/pipelines/common/templates/pipeline-with-resources.yml
@@ -178,6 +157,7 @@ extends:
             liveLibrariesBuildConfig: Release
             collectionType: pmi
             collectionName: libraries
+            collectionUpload: false
 
       - template: /eng/pipelines/common/platform-matrix.yml
         parameters:
@@ -198,6 +178,7 @@ extends:
             liveLibrariesBuildConfig: Release
             collectionType: crossgen2
             collectionName: libraries
+            collectionUpload: false
 
       - template: /eng/pipelines/common/platform-matrix.yml
         parameters:
@@ -218,6 +199,7 @@ extends:
             liveLibrariesBuildConfig: Release
             collectionType: run
             collectionName: realworld
+            collectionUpload: false
 
       - template: /eng/pipelines/common/platform-matrix.yml
         parameters:
@@ -238,6 +220,7 @@ extends:
             liveLibrariesBuildConfig: Release
             collectionType: run
             collectionName: benchmarks
+            collectionUpload: false
 
       - template: /eng/pipelines/common/platform-matrix.yml
         parameters:
@@ -258,6 +241,7 @@ extends:
             liveLibrariesBuildConfig: Release
             collectionType: run_tiered
             collectionName: benchmarks
+            collectionUpload: false
 
       - template: /eng/pipelines/common/platform-matrix.yml
         parameters:
@@ -278,6 +262,7 @@ extends:
             liveLibrariesBuildConfig: Release
             collectionType: run_pgo
             collectionName: benchmarks
+            collectionUpload: false
 
       #
       # Collection of coreclr test run
@@ -300,6 +285,7 @@ extends:
             testGroup: outerloop
             liveLibrariesBuildConfig: Release
             SuperPmiCollect: true
+            SuperPmiCollectionUpload: false
             unifiedArtifactsName: BuildArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)
 
       - template: /eng/pipelines/common/platform-matrix.yml
@@ -318,6 +304,7 @@ extends:
             liveLibrariesBuildConfig: Release
             collectionType: nativeaot
             collectionName: smoke_tests
+            collectionUpload: false
 
       #
       # Collection of libraries test run: normal
@@ -346,6 +333,7 @@ extends:
             - normal
             SuperPmiCollect: true
             SuperPmiCollectionName: libraries_tests
+            SuperPmiCollectionUpload: false
             unifiedArtifactsName: BuildArtifacts_$(osGroup)$(osSubgroup)_$(archType)_Checked
             helixArtifactsName: LibrariesTestArtifacts_$(osGroup)$(osSubgroup)_$(archType)_Checked
             unifiedBuildConfigOverride: checked
@@ -377,7 +365,7 @@ extends:
             - no_tiered_compilation
             SuperPmiCollect: true
             SuperPmiCollectionName: libraries_tests_no_tiered_compilation
-            SuperPmiCollectionUpload: true
+            SuperPmiCollectionUpload: false
             unifiedArtifactsName: BuildArtifacts_$(osGroup)$(osSubgroup)_$(archType)_Checked
             helixArtifactsName: LibrariesTestArtifacts_$(osGroup)$(osSubgroup)_$(archType)_Checked
             unifiedBuildConfigOverride: checked

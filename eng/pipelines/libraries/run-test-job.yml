@@ -21,6 +21,7 @@ parameters:
   SuperPmiCollect: false
   SuperPmiCollectionType: 'run'
   SuperPmiCollectionName: 'libraries_tests'
+  SuperPmiCollectionUpload: true
   dependsOn: []
   unifiedArtifactsName: ''
   helixArtifactsName: ''
@@ -162,6 +163,7 @@ jobs:
             archType: ${{ parameters.archType }}
             SuperPmiCollectionType: ${{ parameters.SuperPmiCollectionType }}
             SuperPmiCollectionName: ${{ parameters.SuperPmiCollectionName }}
+            SuperPmiCollectionUpload: ${{ parameters.SuperPmiCollectionUpload }}
             MergedMchFileLocation: $(MergedMchFileLocation)
             MchFilesLocation: $(MchFilesLocation)
             SpmiLogsLocation: $(SpmiLogsLocation)

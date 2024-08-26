@@ -9,6 +9,7 @@ parameters:
   runJobTemplate: '/eng/pipelines/coreclr/templates/run-superpmi-collect-job.yml'
   collectionType: ''
   collectionName: ''
+  collectionUpload: true
 
 ### SuperPMI job
 ### Each collection job depends on a corresponding build job with the same buildConfig and archType.
@@ -27,6 +28,7 @@ jobs:
     liveLibrariesBuildConfig: ${{ parameters.liveLibrariesBuildConfig }}
     collectionType: ${{ parameters.collectionType }}
     collectionName: ${{ parameters.collectionName }}
+    collectionUpload: ${{ parameters.collectionUpload }}
     # Test job depends on the corresponding build job
     dependsOn:
      - 'build_${{ parameters.osGroup }}${{ parameters.osSubgroup }}_${{ parameters.archType }}_${{ parameters.buildConfig }}_'

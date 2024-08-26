@@ -16,6 +16,7 @@ parameters:
   liveLibrariesBuildConfig: ''    # optional -- live-live libraries configuration to use for the run
   collectionType: ''
   collectionName: ''
+  collectionUpload: true
 
 jobs:
 - template: /eng/pipelines/common/templates/runtimes/xplat-job.yml
@@ -181,14 +182,15 @@ jobs:
     - script: $(PipScript) install --upgrade pip && $(PipScript) install azure.storage.blob==12.5.0 --force-reinstall && $(PipScript) install azure.identity==1.16.1 --force-reinstall
       displayName: Upgrade Pip to latest and install azure-storage-blob and azure-identity Python packages
 
-    - task: AzureCLI@2
-      displayName: ${{ format('Upload SuperPMI {0}-{1} collection to Azure Storage', parameters.collectionName, parameters.collectionType) }}
-      inputs:
-        azureSubscription: 'superpmi-collect-rw'
-        scriptType: 'pscore'
-        scriptLocation: 'inlineScript'
-        inlineScript: |
-          $(PythonScript) $(Build.SourcesDirectory)/src/coreclr/scripts/superpmi.py upload -log_level DEBUG -arch $(archType) -build_type $(buildConfig) -mch_files $(MergedMchFileLocation)$(CollectionName).$(CollectionType).$(MchFileTag).mch -core_root $(Build.SourcesDirectory)/artifacts/bin/coreclr/$(osGroup).x64.$(buildConfigUpper)
+    - ${{ if eq(parameters.collectionUpload, true) }}:
+      - task: AzureCLI@2
+        displayName: ${{ format('Upload SuperPMI {0}-{1} collection to Azure Storage', parameters.collectionName, parameters.collectionType) }}
+        inputs:
+          azureSubscription: 'superpmi-collect-rw'
+          scriptType: 'pscore'
+          scriptLocation: 'inlineScript'
+          inlineScript: |
+            $(PythonScript) $(Build.SourcesDirectory)/src/coreclr/scripts/superpmi.py upload -log_level DEBUG -arch $(archType) -build_type $(buildConfig) -mch_files $(MergedMchFileLocation)$(CollectionName).$(CollectionType).$(MchFileTag).mch -core_root $(Build.SourcesDirectory)/artifacts/bin/coreclr/$(osGroup).x64.$(buildConfigUpper)
 
     # Always upload the available logs for diagnostics
     - task: CopyFiles@2

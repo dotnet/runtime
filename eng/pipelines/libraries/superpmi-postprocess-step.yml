@@ -14,6 +14,7 @@ parameters:
   archType: ''
   SuperPmiCollectionType: 'run'
   SuperPmiCollectionName: 'libraries_tests'
+  SuperPmiCollectionUpload: true
   MergedMchFileLocation: ''
   MchFilesLocation: ''
   SpmiLogsLocation: ''
@@ -70,15 +71,16 @@ steps:
     displayName: Upgrade Pip to latest and install azure-storage-blob and azure-identity Python packages
     condition: always()
 
-  - task: AzureCLI@2
-    displayName: 'Upload SuperPMI ${{ parameters.SuperPmiCollectionName }}-${{ parameters.SuperPmiCollectionType }} collection to Azure Storage'
-    inputs:
-      azureSubscription: 'superpmi-collect-rw'
-      scriptType: 'pscore'
-      scriptLocation: 'inlineScript'
-      inlineScript: |
-        ${{ parameters.PythonScript }} $(Build.SourcesDirectory)/src/coreclr/scripts/superpmi.py upload -log_level DEBUG -arch ${{ parameters.archType }} -build_type ${{ parameters.buildConfig }} -mch_files ${{ parameters.MergedMchFileLocation }}${{ parameters.SuperPmiCollectionName }}.${{ parameters.SuperPmiCollectionType }}.${{ parameters.osGroup }}.${{ parameters.archType }}.${{ parameters.buildConfig }}.mch -core_root $(Build.SourcesDirectory)/artifacts/bin/coreclr/${{ parameters.osGroup }}.x64.${{ parameters.buildConfigUpper }}
-    condition: always()
+  - ${{ if eq(parameters.SuperPmiCollectionUpload, true) }}:
+    - task: AzureCLI@2
+      displayName: 'Upload SuperPMI ${{ parameters.SuperPmiCollectionName }}-${{ parameters.SuperPmiCollectionType }} collection to Azure Storage'
+      inputs:
+        azureSubscription: 'superpmi-collect-rw'
+        scriptType: 'pscore'
+        scriptLocation: 'inlineScript'
+        inlineScript: |
+          ${{ parameters.PythonScript }} $(Build.SourcesDirectory)/src/coreclr/scripts/superpmi.py upload -log_level DEBUG -arch ${{ parameters.archType }} -build_type ${{ parameters.buildConfig }} -mch_files ${{ parameters.MergedMchFileLocation }}${{ parameters.SuperPmiCollectionName }}.${{ parameters.SuperPmiCollectionType }}.${{ parameters.osGroup }}.${{ parameters.archType }}.${{ parameters.buildConfig }}.mch -core_root $(Build.SourcesDirectory)/artifacts/bin/coreclr/${{ parameters.osGroup }}.x64.${{ parameters.buildConfigUpper }}
+      condition: always()
 
   - task: CopyFiles@2
     displayName: Copying superpmi.log of all partitions
