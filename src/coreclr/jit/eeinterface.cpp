@@ -603,13 +603,11 @@ const char* Compiler::eeGetShortClassName(CORINFO_CLASS_HANDLE clsHnd)
 //
 // Parameters:
 //   clsHnd - the handle of the class
-//   buffer - a buffer to use for scratch space, or null pointer to allocate a new string.
-//   bufferSize - the size of buffer. If the final class name is longer a new string will be allocated.
 //
 // Return value:
 //   The name string.
 //
-const char* Compiler::eeGetClassAssemblyName(CORINFO_CLASS_HANDLE clsHnd, char* buffer, size_t bufferSize)
+const char* Compiler::eeGetClassAssemblyName(CORINFO_CLASS_HANDLE clsHnd)
 {
     const char* assemblyName = "<unknown assembly>";
     eeRunFunctorWithSPMIErrorTrap([&]() {

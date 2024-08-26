@@ -2661,7 +2661,7 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
             // Note that we check this for every method, since we might inline across modules, and
             // if the inlinee module is on the list, we don't want to use the altjit for it.
             const char* methodAssemblyName = eeGetClassAssemblyName(info.compClassHnd);
-            if (methodAssemblyName != nullptr && s_pAltJitExcludeAssembliesList->IsInList(methodAssemblyName))
+            if (s_pAltJitExcludeAssembliesList->IsInList(methodAssemblyName))
             {
                 opts.altJit = false;
             }
