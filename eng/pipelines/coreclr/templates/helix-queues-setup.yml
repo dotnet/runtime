@@ -105,7 +105,10 @@ jobs:
     # OSX arm64
     - ${{ if eq(parameters.platform, 'osx_arm64') }}:
       - ${{ if eq(variables['System.TeamProject'], 'public') }}:
-        - OSX.1200.ARM64.Open
+        - ${{ if and(eq(parameters.runtimeflavor, 'mono'), eq(parameters.jobParameters.runtimeVariant, 'llvmaot')) }}:
+          - macos.arm64.appletv.open # Trying out the new MacOS queue
+        - ${{ else }}:
+          - OSX.1200.ARM64.Open
       - ${{ if eq(variables['System.TeamProject'], 'internal') }}:
         - OSX.1200.ARM64
 
