@@ -1,6 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <ItemGroup>
     <MergedWrapperProjectReference Include="*/**/GCSimulator*.??proj" />
+    <IsGCSimulatorTest>true</IsGCSimulatorTest>
   </ItemGroup>
 
   <Import Project="$(TestSourceDir)MergedTestRunner.targets" />
