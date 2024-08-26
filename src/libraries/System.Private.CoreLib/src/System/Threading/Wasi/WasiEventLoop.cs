@@ -10,7 +10,10 @@ namespace System.Threading
 {
     internal static class WasiEventLoop
     {
-        private static readonly List<WeakReference<PollableHolder>> s_weakRefHolders = new();
+        // TODO: if the Pollable never resolves and and the Task is abandoned
+        // it will be leaked and stay in this list forever.
+        // it will also keep the Pollable handle alive and prevent it from being disposed
+        private static readonly List<PollableHolder> s_pollables = new();
 
         internal static Task RegisterWasiPollableHandle(int handle, CancellationToken cancellationToken)
         {
@@ -24,7 +27,7 @@ namespace System.Threading
         {
             // this will register the pollable holder into s_pollables
             var holder = new PollableHolder(pollable, cancellationToken);
-            s_weakRefHolders.Add(holder.selfWeakRef);
+            s_pollables.Add(holder);
             return holder.taskCompletionSource.Task;
         }
 
@@ -33,22 +36,19 @@ namespace System.Threading
         {
             ThreadPoolWorkQueue.Dispatch();
 
-            var holders = new List<PollableHolder>(s_weakRefHolders.Count);
-            var pending = new List<Pollable>(s_weakRefHolders.Count);
-            for (int i = 0; i < s_weakRefHolders.Count; i++)
+            var holders = new List<PollableHolder>(s_pollables.Count);
+            var pending = new List<Pollable>(s_pollables.Count);
+            for (int i = 0; i < s_pollables.Count; i++)
             {
-                var weakRef = s_weakRefHolders[i];
-                if (weakRef.TryGetTarget(out var holder))
+                var holder = s_pollables[i];
+                if (!holder.isDisposed)
                 {
-                    if (!holder.isDisposed)
-                    {
-                        holders.Add(holder);
-                        pending.Add(holder.pollable);
-                    }
+                    holders.Add(holder);
+                    pending.Add(holder.pollable);
                 }
             }
 
-            s_weakRefHolders.Clear();
+            s_pollables.Clear();
 
             if (pending.Count > 0)
             {
@@ -64,7 +64,7 @@ namespace System.Threading
                     PollableHolder holder = holders[i];
                     if (!holder.isDisposed)
                     {
-                        s_weakRefHolders.Add(holder.selfWeakRef);
+                        s_pollables.Add(holder);
                     }
                 }
             }
@@ -75,7 +75,6 @@ namespace System.Threading
             public bool isDisposed;
             public readonly Pollable pollable;
             public readonly TaskCompletionSource taskCompletionSource;
-            public readonly WeakReference<PollableHolder> selfWeakRef;
             public readonly CancellationTokenRegistration cancellationTokenRegistration;
 
             public PollableHolder(Pollable pollable, CancellationToken cancellationToken)
@@ -88,9 +87,6 @@ namespace System.Threading
 
                 // static method is used to avoid allocating a delegate
                 cancellationTokenRegistration = cancellationToken.Register(CancelAndDispose, this);
-
-                // don't allocate it for each re-registration
-                selfWeakRef = new WeakReference<PollableHolder>(this);
             }
 
             public void ResolveAndDispose()
@@ -105,7 +101,6 @@ namespace System.Threading
                 taskCompletionSource.TrySetResult();
                 pollable.Dispose();
                 cancellationTokenRegistration.Dispose();
-                GC.SuppressFinalize(this);
             }
 
             // for GC of abandoned Tasks or for cancellation
@@ -122,12 +117,6 @@ namespace System.Threading
                 self.taskCompletionSource.TrySetCanceled();
                 self.pollable.Dispose();
                 self.cancellationTokenRegistration.Dispose();
-                GC.SuppressFinalize(self);
-            }
-
-            ~PollableHolder()
-            {
-                CancelAndDispose(this);
             }
         }
     }
