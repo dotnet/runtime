@@ -12,6 +12,7 @@ namespace CopyConstructorMarshaler
     public class CopyConstructorMarshaler
     {
         [Fact]
+        [SkipOnCoreClr("Exact copy constructor counts may differ in JIT stress modes.", RuntimeTestModes.JitStress)]
         public static int TestEntryPoint()
         {
             if(Environment.OSVersion.Platform != PlatformID.Win32NT || TestLibrary.Utilities.IsWindows7)
