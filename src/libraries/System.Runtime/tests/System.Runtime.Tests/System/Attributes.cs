@@ -242,14 +242,12 @@ namespace System.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/56887", TestRuntimes.Mono)]
         public static void GetCustomAttributesWorksWithOpenAndClosedGenericTypesForType()
         {
             GenericAttributesTestHelper<string>(t => Attribute.GetCustomAttributes(typeof(HasGenericAttribute), t));
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/56887", TestRuntimes.Mono)]
         public static void GetCustomAttributesWorksWithOpenAndClosedGenericTypesForField()
         {
             FieldInfo field = typeof(HasGenericAttribute).GetField(nameof(HasGenericAttribute.Field), BindingFlags.NonPublic | BindingFlags.Instance);
@@ -257,7 +255,6 @@ namespace System.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/56887", TestRuntimes.Mono)]
         public static void GetCustomAttributesWorksWithOpenAndClosedGenericTypesForConstructor()
         {
             ConstructorInfo method = typeof(HasGenericAttribute).GetConstructor(Type.EmptyTypes);
@@ -265,7 +262,6 @@ namespace System.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/56887", TestRuntimes.Mono)]
         public static void GetCustomAttributesWorksWithOpenAndClosedGenericTypesForMethod()
         {
             MethodInfo method = typeof(HasGenericAttribute).GetMethod(nameof(HasGenericAttribute.Method));
@@ -273,7 +269,6 @@ namespace System.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/56887", TestRuntimes.Mono)]
         public static void GetCustomAttributesWorksWithOpenAndClosedGenericTypesForParameter()
         {
             ParameterInfo parameter = typeof(HasGenericAttribute).GetMethod(nameof(HasGenericAttribute.Method)).GetParameters()[0];
@@ -281,7 +276,6 @@ namespace System.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/56887", TestRuntimes.Mono)]
         public static void GetCustomAttributesWorksWithOpenAndClosedGenericTypesForProperty()
         {
             PropertyInfo property = typeof(HasGenericAttribute).GetProperty(nameof(HasGenericAttribute.Property));
@@ -289,7 +283,6 @@ namespace System.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/56887", TestRuntimes.Mono)]
         public static void GetCustomAttributesWorksWithOpenAndClosedGenericTypesForEvent()
         {
             EventInfo @event = typeof(HasGenericAttribute).GetEvent(nameof(HasGenericAttribute.Event));
@@ -297,7 +290,6 @@ namespace System.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/56887", TestRuntimes.Mono)]
         public static void GetCustomAttributesOnOpenGenericBaseTypeRetrievesDerivedAttributes()
         {
             Attribute[] attributes = Attribute.GetCustomAttributes(typeof(HasGenericAttribute), typeof(GenericAttribute<>));
@@ -305,7 +297,6 @@ namespace System.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/56887", TestRuntimes.Mono)]
         public static void GetCustomAttributesOnClosedGenericBaseTypeRetrievesDerivedAttributes()
         {
             Attribute[] attributes = Attribute.GetCustomAttributes(typeof(HasGenericAttribute), typeof(GenericAttribute<bool>));
