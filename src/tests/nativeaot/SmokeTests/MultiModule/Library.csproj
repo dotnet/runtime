@@ -2,8 +2,7 @@
   <PropertyGroup>
     <OutputType>Library</OutputType>
     <IlcMultiModule>true</IlcMultiModule>
-    <RequiresProcessIsolation>true</RequiresProcessIsolation>
-    <ReferenceXUnitWrapperGenerator>false</ReferenceXUnitWrapperGenerator>
+    <CLRTestKind>SharedLibrary</CLRTestKind>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="Library.cs" />
