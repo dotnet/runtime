@@ -136,7 +136,8 @@ namespace System
         public static bool IsWasmThreadingSupported => IsBrowser && IsEnvironmentVariableTrue("IsBrowserThreadingSupported");
         public static bool IsNotWasmThreadingSupported => !IsWasmThreadingSupported;
 
-        public static bool IsBinaryFormatterSupported => !(IsNativeAot || IsBrowser || IsMobile);
+        private static readonly Lazy<bool> s_isBinaryFormatterSupported = new Lazy<bool>(DetermineBinaryFormatterSupport);
+        public static bool IsBinaryFormatterSupported => s_isBinaryFormatterSupported.Value;
 
         public static bool IsStartingProcessesSupported => !IsiOS && !IstvOS;
 
@@ -722,6 +723,21 @@ namespace System
             }
 
             return false;
+        }
+
+        private static bool DetermineBinaryFormatterSupport()
+        {
+            if (IsNetFramework)
+            {
+                return true;
+            }
+            else if (IsNativeAot || IsBrowser || IsMobile)
+            {
+                return false;
+            }
+
+            return AppContext.TryGetSwitch("System.Runtime.Serialization.EnableUnsafeBinaryFormatterSerialization", out bool isBinaryFormatterEnabled)
+                && isBinaryFormatterEnabled;
         }
     }
 }
