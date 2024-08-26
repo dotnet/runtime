@@ -1,2 +1,4 @@
-1.0.9
-https://github.com/google/brotli/releases/tag/v1.0.9
+1.1.0
+https://github.com/google/brotli/releases/tag/v1.1.0
+
+Copy the c/dec, c/enc, c/common, and c/include folders into the root and remove all other files.
