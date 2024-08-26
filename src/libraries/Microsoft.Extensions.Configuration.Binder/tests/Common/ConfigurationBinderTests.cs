@@ -1544,6 +1544,87 @@ if (!System.Diagnostics.Debugger.IsAttached) { System.Diagnostics.Debugger.Launc
             Assert.Equal(new string[] { "a", "b", "c" }, options.Array);
         }
 
+        /// <summary>
+        /// Test binding to recursive types using Dictionary or Collections.
+        /// This ensure no stack overflow will occur during the compilation through the source gen or at runtime.
+        /// </summary>
+        [Fact]
+        public void BindToRecursiveTypesTest()
+        {
+            string jsonConfig = @"{
+                ""Tree"": {
+                    ""Branch1"": {
+                        ""Leaf1"": {},
+                        ""Leaf2"": {}
+                    },
+                    ""Branch2"": {
+                        ""Leaf3"": {}
+                    }
+                },
+                ""Flat"": [
+                    {
+                        ""Element1"": {
+                            ""SubElement1"": {}
+                        }
+                    },
+                    {
+                        ""Element2"": {
+                            ""SubElement2"": {}
+                        }
+                    },
+                    {
+                        ""Element3"": {}
+                    }
+                ],
+                ""List"": [
+                    {
+                        ""Item1"": {
+                            ""NestedItem1"": {}
+                        }
+                    },
+                    {
+                        ""Item2"": {}
+                    },
+                ]
+            }";
+
+            var configuration = new ConfigurationBuilder()
+                        .AddJsonStream(new System.IO.MemoryStream(System.Text.Encoding.UTF8.GetBytes(jsonConfig)))
+                        .Build();
+
+            var instance = new TypeWithRecursionThroughCollections();
+            configuration.Bind(instance);
+
+            // Validate the dictionary
+            Assert.NotNull(instance.Tree);
+            Assert.Equal(2, instance.Tree.Count);
+            Assert.NotNull(instance.Tree["Branch1"]);
+            Assert.Equal(2, instance.Tree["Branch1"].Count);
+            Assert.Equal(["Leaf1", "Leaf2"], instance.Tree["Branch1"].Keys);
+            Assert.Equal(["Leaf3"], instance.Tree["Branch2"].Keys);
+
+            // Validate the array
+            Assert.NotNull(instance.Flat);
+            Assert.Equal(3, instance.Flat.Length);
+            Assert.Equal(["Element1"], instance.Flat[0].Keys);
+            Assert.Equal(["Element2"], instance.Flat[1].Keys);
+            Assert.Equal(["Element3"], instance.Flat[2].Keys);
+            Assert.Equal(1, instance.Flat[0].Values.Count);
+            Assert.Equal(["SubElement1"], instance.Flat[0].Values.ToArray()[0].Keys);
+            Assert.Equal(1, instance.Flat[1].Values.Count);
+            Assert.Equal(["SubElement2"], instance.Flat[1].Values.ToArray()[0].Keys);
+            Assert.Equal(1, instance.Flat[2].Values.Count);
+
+            // Validate the List
+            Assert.NotNull(instance.Flat);
+            Assert.Equal(2, instance.List.Count);
+            Assert.Equal(["Item1"], instance.List[0].Keys);
+            Assert.Equal(["Item2"], instance.List[1].Keys);
+            Assert.Equal(1, instance.List[0].Values.Count);
+            Assert.Equal(["NestedItem1"], instance.List[0].Values.ToArray()[0].Keys);
+            Assert.Equal(1, instance.List[1].Values.Count);
+        }
+
         [Fact]
         public void CanBindReadonlyRecordStructOptions()
         {
@@ -2601,6 +2682,28 @@ if (!System.Diagnostics.Debugger.IsAttached) { System.Diagnostics.Debugger.Launc
 
             Assert.Equal(53, obj.X);
             Assert.Equal(53, obj.XBase);
+        }
+
+        [Fact]
+        public void CanGetEnumerableNotCollection()
+        {
+            var builder = new ConfigurationBuilder();
+            builder.AddInMemoryCollection(new KeyValuePair<string, string?>[]
+            {
+                new("Names", "John,Jane,Stephen"),
+                new("Enabled", "true"),
+                new("Keywords:1", "new"),
+                new("Keywords:2", "class"),
+                new("Keywords:3", "rosebud")
+            });
+
+            var config = builder.Build();
+
+            var result = config.Get<EnumerableNotCollection>();
+
+            Assert.Equal("John,Jane,Stephen", result.Names);
+            Assert.True(result.Enabled);
+            Assert.Equal(new [] { "new", "class", "rosebud"}, result.Keywords);
         }
     }
 }

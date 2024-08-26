@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime;
 using System.Runtime.CompilerServices;
@@ -20,6 +21,24 @@ namespace System.Threading
             if (Unsafe.IsNullRef(ref location1))
                 ThrowHelper.ThrowNullReferenceException();
             return RuntimeImports.InterlockedCompareExchange(ref location1, value, comparand);
+#endif
+        }
+
+        // This is used internally by NativeAOT runtime in cases where having a managed
+        // ref to the location is unsafe (Ex: it is the syncblock of a pinned object).
+        // The intrinsic expansion for this overload is exactly the same as for the `ref int`
+        // variant and will go on the same path since expansion is triggered by the name and
+        // return type of the method.
+        // The important part is avoiding `ref *location` in the unexpanded scenario, like
+        // in a case when compiling the Debug flavor of the app.
+        [Intrinsic]
+        internal static unsafe int CompareExchange(int* location1, int value, int comparand)
+        {
+#if TARGET_X86 || TARGET_AMD64 || TARGET_ARM64 || TARGET_RISCV64
+            return CompareExchange(location1, value, comparand); // Must expand intrinsic
+#else
+            Debug.Assert(location1 != null);
+            return RuntimeImports.InterlockedCompareExchange(location1, value, comparand);
 #endif
         }
 
