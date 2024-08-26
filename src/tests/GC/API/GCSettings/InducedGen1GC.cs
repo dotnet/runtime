@@ -7,7 +7,7 @@ using Xunit;
 
 namespace GCLatencyTest
 {
-    public class InducedGen0GC
+    public class InducedGen1GC
     {
         [Fact]
         public static void Test()
