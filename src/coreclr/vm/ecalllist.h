@@ -68,7 +68,6 @@ FCFuncStart(gStringFuncs)
 FCFuncEnd()
 
 FCFuncStart(gDiagnosticsDebugger)
-    FCFuncElement("BreakInternal", DebugDebugger::Break)
     FCFuncElement("get_IsAttached", DebugDebugger::IsDebuggerAttached)
     FCFuncElement("IsLogging", DebugDebugger::IsLogging)
     FCFuncElement("CustomNotification", DebugDebugger::CustomNotification)

@@ -11,14 +11,14 @@ namespace System.Diagnostics
 {
     public static partial class Debugger
     {
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "DebugDebugger_Break")]
+        private static partial void BreakInternal();
+
         // Break causes a breakpoint to be signalled to an attached debugger.  If no debugger
         // is attached, the user is asked if they want to attach a debugger. If yes, then the
         // debugger is launched.
         [MethodImpl(MethodImplOptions.NoInlining)]
         public static void Break() => BreakInternal();
-
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern void BreakInternal();
 
         // Launch launches & attaches a debugger to the process. If a debugger is already attached,
         // nothing happens.

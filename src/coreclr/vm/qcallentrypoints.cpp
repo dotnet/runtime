@@ -83,6 +83,7 @@ static const Entry s_QCall[] =
     DllImportEntry(CustomAttribute_CreateCustomAttributeInstance)
     DllImportEntry(CustomAttribute_CreatePropertyOrFieldData)
     DllImportEntry(Enum_GetValuesAndNames)
+    DllImportEntry(DebugDebugger_Break)
     DllImportEntry(DebugDebugger_Launch)
     DllImportEntry(DebugDebugger_Log)
     DllImportEntry(Delegate_BindToMethodName)

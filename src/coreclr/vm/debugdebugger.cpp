@@ -40,12 +40,12 @@
 //    Else if a native debugger is attached, this should send a native break event (kernel32!DebugBreak)
 //    Else, this should invoke Watson.
 //
-FCIMPL0(void, DebugDebugger::Break)
+extern "C" void QCALLTYPE DebugDebugger_Break()
 {
-    FCALL_CONTRACT;
+    QCALL_CONTRACT;
 
 #ifdef DEBUGGING_SUPPORTED
-    HELPER_METHOD_FRAME_BEGIN_0();
+    BEGIN_QCALL;
 
 #ifdef _DEBUG
     {
@@ -73,21 +73,17 @@ FCIMPL0(void, DebugDebugger::Break)
         // No managed debugger, but a native debug is attached. Explicitly fire a native user breakpoint.
         // Don't rely on Watson support since that may have a different policy.
 
-        // Toggle to preemptive before firing the debug event. This allows the debugger to suspend this
+        // Confirm we're in preemptive before firing the debug event. This allows the debugger to suspend this
         // thread at the debug event.
-        GCX_PREEMP();
+        _ASSERTE(!GetThread()->PreemptiveGCDisabled());
 
         // This becomes an unmanaged breakpoint, such as int 3.
         DebugBreak();
     }
-    else
-    {
-    }
 
-    HELPER_METHOD_FRAME_END();
+    END_QCALL;
 #endif // DEBUGGING_SUPPORTED
 }
-FCIMPLEND
 
 extern "C" BOOL QCALLTYPE DebugDebugger_Launch()
 {
