@@ -2,7 +2,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
-using System.Collections.Generic;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using ILLink.RoslynAnalyzer.DataFlow;
@@ -15,8 +15,13 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 	readonly struct ReflectionAccessAnalyzer
 	{
 		readonly Action<Diagnostic>? _reportDiagnostic;
+		readonly INamedTypeSymbol? _typeHierarchyType;
 
-		public ReflectionAccessAnalyzer (Action<Diagnostic>? reportDiagnostic) => _reportDiagnostic = reportDiagnostic;
+		public ReflectionAccessAnalyzer (Action<Diagnostic>? reportDiagnostic, INamedTypeSymbol? typeHierarchyType)
+		{
+			_reportDiagnostic = reportDiagnostic;
+			_typeHierarchyType = typeHierarchyType;
+		}
 
 #pragma warning disable CA1822 // Mark members as static - the other partial implementations might need to be instance methods
 		internal void GetReflectionAccessDiagnostics (Location location, ITypeSymbol typeSymbol, DynamicallyAccessedMemberTypes requiredMemberTypes, bool declaredOnly = false)
@@ -88,10 +93,58 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 
 		internal void GetReflectionAccessDiagnosticsForMethod (Location location, IMethodSymbol methodSymbol)
 		{
+			if (_typeHierarchyType is not null) {
+				GetTypeHierarchyReflectionAccessDiagnostics (location, methodSymbol);
+				return;
+			}
+
 			if (methodSymbol.IsInRequiresUnreferencedCodeAttributeScope (out var requiresUnreferencedCodeAttributeData)) {
 				ReportRequiresUnreferencedCodeDiagnostic (location, requiresUnreferencedCodeAttributeData, methodSymbol);
 			} else {
 				GetDiagnosticsForReflectionAccessToDAMOnMethod (location, methodSymbol);
+			}
+		}
+
+		internal void GetTypeHierarchyReflectionAccessDiagnostics (Location location, ISymbol member)
+		{
+			Debug.Assert (member is IMethodSymbol or IFieldSymbol);
+
+			// Don't check whether the current scope is a RUC type or RUC method because these warnings
+			// are not suppressed in RUC scopes. Here the scope represents the DynamicallyAccessedMembers
+			// annotation on a type, not a callsite which uses the annotation. We always want to warn about
+			// possible reflection access indicated by these annotations.
+
+			Debug.Assert (_typeHierarchyType is not null);
+
+			static bool IsDeclaredWithinType (ISymbol member, INamedTypeSymbol type)
+			{
+				INamedTypeSymbol containingType = member.ContainingType;
+				while (containingType is not null) {
+					if (SymbolEqualityComparer.Default.Equals (containingType, type))
+						return true;
+
+					containingType = containingType.ContainingType;
+				}
+				return false;
+			}
+
+			var reportOnMember = IsDeclaredWithinType (member, _typeHierarchyType!);
+			if (reportOnMember)
+				location = DynamicallyAccessedMembersAnalyzer.GetPrimaryLocation (member.Locations);
+
+			var diagnosticContext = new DiagnosticContext (location, _reportDiagnostic);
+
+			if (member.IsInRequiresUnreferencedCodeAttributeScope (out AttributeData? requiresUnreferencedCodeAttribute)) {
+				var id = reportOnMember ? DiagnosticId.DynamicallyAccessedMembersOnTypeReferencesMemberWithRequiresUnreferencedCode : DiagnosticId.DynamicallyAccessedMembersOnTypeReferencesMemberOnBaseWithRequiresUnreferencedCode;
+				diagnosticContext.AddDiagnostic (id, _typeHierarchyType!.GetDisplayName (),
+					member.GetDisplayName (),
+					MessageFormat.FormatRequiresAttributeMessageArg (RequiresUnreferencedCodeUtils.GetMessageFromAttribute (requiresUnreferencedCodeAttribute)),
+					MessageFormat.FormatRequiresAttributeMessageArg(RequiresAnalyzerBase.GetUrlFromAttribute (requiresUnreferencedCodeAttribute)));
+			}
+
+			if (FlowAnnotations.ShouldWarnWhenAccessedForReflection (member)) {
+				var id = reportOnMember ? DiagnosticId.DynamicallyAccessedMembersOnTypeReferencesMemberWithDynamicallyAccessedMembers : DiagnosticId.DynamicallyAccessedMembersOnTypeReferencesMemberOnBaseWithDynamicallyAccessedMembers;
+				diagnosticContext.AddDiagnostic (id, _typeHierarchyType!.GetDisplayName (), member.GetDisplayName ());
 			}
 		}
 
@@ -130,10 +183,15 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 
 		void GetDiagnosticsForField (Location location, IFieldSymbol fieldSymbol)
 		{
+			if (_typeHierarchyType is not null) {
+				GetTypeHierarchyReflectionAccessDiagnostics (location, fieldSymbol);
+				return;
+			}
+
 			if (fieldSymbol.TryGetRequiresUnreferencedCodeAttribute (out var requiresUnreferencedCodeAttributeData))
 				ReportRequiresUnreferencedCodeDiagnostic (location, requiresUnreferencedCodeAttributeData, fieldSymbol);
 
-			if (fieldSymbol.GetDynamicallyAccessedMemberTypes () != DynamicallyAccessedMemberTypes.None) {
+			if (FlowAnnotations.GetFieldAnnotation (fieldSymbol) != DynamicallyAccessedMemberTypes.None) {
 				var diagnosticContext = new DiagnosticContext (location, _reportDiagnostic);
 				diagnosticContext.AddDiagnostic (DiagnosticId.DynamicallyAccessedMembersFieldAccessedViaReflection, fieldSymbol.GetDisplayName ());
 			}

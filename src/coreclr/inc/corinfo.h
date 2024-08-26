@@ -644,6 +644,7 @@ enum CorInfoTypeWithMod
 {
     CORINFO_TYPE_MASK            = 0x3F,        // lower 6 bits are type mask
     CORINFO_TYPE_MOD_PINNED      = 0x40,        // can be applied to CLASS, or BYREF to indicate pinned
+    CORINFO_TYPE_MOD_COPY_WITH_HELPER = 0x80    // can be applied to VALUECLASS to indicate 'needs helper to copy'
 };
 
 inline CorInfoType strip(CorInfoTypeWithMod val) {
@@ -3325,6 +3326,8 @@ public:
     // but for tailcalls, the contract is that JIT leaves the indirection cell in
     // a register during tailcall.
     virtual void updateEntryPointForTailCall(CORINFO_CONST_LOOKUP* entryPoint) = 0;
+
+    virtual CORINFO_METHOD_HANDLE getSpecialCopyHelper(CORINFO_CLASS_HANDLE type) = 0;
 };
 
 /**********************************************************************************/

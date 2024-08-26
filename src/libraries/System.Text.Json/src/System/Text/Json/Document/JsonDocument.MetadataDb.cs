@@ -68,7 +68,7 @@ namespace System.Text.Json
         //   * 31 bits for token offset
         // * Second int
         //   * Top bit is unassigned / always clear
-        //   * 31 bits for the token length (always 1, effectively unassigned)
+        //   * 31 bits for the number of properties in this object
         // * Third int
         //   * 4 bits JsonTokenType
         //   * 28 bits for the number of rows until the next value (never 0)

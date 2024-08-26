@@ -1818,6 +1818,13 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
     if (simdBaseJitType != CORINFO_TYPE_UNDEF)
     {
         simdBaseType = JitType2PreciseVarType(simdBaseJitType);
+#ifdef TARGET_XARCH
+        if (HWIntrinsicInfo::NeedsNormalizeSmallTypeToInt(intrinsic) && varTypeIsSmall(simdBaseType))
+        {
+            simdBaseJitType = varTypeIsUnsigned(simdBaseType) ? CORINFO_TYPE_UINT : CORINFO_TYPE_INT;
+            simdBaseType    = JitType2PreciseVarType(simdBaseJitType);
+        }
+#endif // TARGET_XARCH
     }
 
     const unsigned simdSize = HWIntrinsicInfo::lookupSimdSize(this, intrinsic, sig);
@@ -2254,13 +2261,6 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
     }
 
 #if defined(FEATURE_MASKED_HW_INTRINSICS) && defined(TARGET_ARM64)
-    auto convertToMaskIfNeeded = [&](GenTree*& op) {
-        if (!varTypeIsMask(op))
-        {
-            op = gtNewSimdCvtVectorToMaskNode(TYP_MASK, op, simdBaseJitType, simdSize);
-        }
-    };
-
     if (HWIntrinsicInfo::IsExplicitMaskedOperation(intrinsic))
     {
         assert(numArgs > 0);
@@ -2271,7 +2271,8 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
             case NI_Sve_CreateBreakBeforePropagateMask:
             {
                 // HWInstrinsic requires a mask for op3
-                convertToMaskIfNeeded(retNode->AsHWIntrinsic()->Op(3));
+                GenTree*& op = retNode->AsHWIntrinsic()->Op(3);
+                op           = gtNewSimdCvtVectorToMaskNode(TYP_MASK, op, simdBaseJitType, simdSize);
                 FALLTHROUGH;
             }
             case NI_Sve_CreateBreakAfterMask:
@@ -2284,13 +2285,15 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
             case NI_Sve_TestLastTrue:
             {
                 // HWInstrinsic requires a mask for op2
-                convertToMaskIfNeeded(retNode->AsHWIntrinsic()->Op(2));
+                GenTree*& op = retNode->AsHWIntrinsic()->Op(2);
+                op           = gtNewSimdCvtVectorToMaskNode(TYP_MASK, op, simdBaseJitType, simdSize);
                 FALLTHROUGH;
             }
             default:
             {
                 // HWInstrinsic requires a mask for op1
-                convertToMaskIfNeeded(retNode->AsHWIntrinsic()->Op(1));
+                GenTree*& op = retNode->AsHWIntrinsic()->Op(1);
+                op           = gtNewSimdCvtVectorToMaskNode(TYP_MASK, op, simdBaseJitType, simdSize);
                 break;
             }
         }
@@ -2310,8 +2313,10 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
         {
             case NI_Sve_CreateBreakPropagateMask:
             {
-                convertToMaskIfNeeded(retNode->AsHWIntrinsic()->Op(1));
-                convertToMaskIfNeeded(retNode->AsHWIntrinsic()->Op(2));
+                GenTree*& op1 = retNode->AsHWIntrinsic()->Op(1);
+                GenTree*& op2 = retNode->AsHWIntrinsic()->Op(2);
+                op1           = gtNewSimdCvtVectorToMaskNode(TYP_MASK, op1, simdBaseJitType, simdSize);
+                op2           = gtNewSimdCvtVectorToMaskNode(TYP_MASK, op2, simdBaseJitType, simdSize);
                 break;
             }
 

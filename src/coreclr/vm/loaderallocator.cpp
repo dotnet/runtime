@@ -17,7 +17,7 @@
 
 UINT64 LoaderAllocator::cLoaderAllocatorsCreated = 1;
 
-LoaderAllocator::LoaderAllocator(bool collectible) : 
+LoaderAllocator::LoaderAllocator(bool collectible) :
     m_stubPrecodeRangeList(STUB_CODE_BLOCK_STUBPRECODE, collectible),
     m_fixupPrecodeRangeList(STUB_CODE_BLOCK_FIXUPPRECODE, collectible)
 {
@@ -2061,7 +2061,7 @@ void LoaderAllocator::CleanupFailedTypeInit()
     // This method doesn't take a lock around loader allocator state access, because
     // it's supposed to be called only during cleanup. However, the domain-level state
     // might be accessed by multiple threads.
-    ListLock *pLock = GetDomain()->GetClassInitLock();
+    ListLock *pLock = ((AppDomain*)GetDomain())->GetClassInitLock();
 
     while (!m_failedTypeInitCleanupList.IsEmpty())
     {

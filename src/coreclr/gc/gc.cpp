@@ -6999,8 +6999,21 @@ void gc_heap::gc_thread_function ()
 
     while (1)
     {
-        // inactive GC threads may observe gc_t_join.joined() being true here
-        assert ((n_heaps <= heap_number) || !gc_t_join.joined());
+#ifdef DYNAMIC_HEAP_COUNT
+        if (gc_heap::dynamic_adaptation_mode == dynamic_adaptation_to_application_sizes)
+        {
+            // Inactive GC threads may observe gc_t_join.joined() being true here.
+            // Before the 1st GC happens, h0's GC thread can also observe gc_t_join.joined() being true because it's
+            // also inactive as the main thread (that inits the GC) will act as h0 (to call change_heap_count).
+            assert (((heap_number == 0) && (VolatileLoadWithoutBarrier (&settings.gc_index) == 0)) ||
+                    (n_heaps <= heap_number) ||
+                    !gc_t_join.joined());
+        }
+        else
+#endif //DYNAMIC_HEAP_COUNT
+        {
+            assert (!gc_t_join.joined());
+        }
 
         if (heap_number == 0)
         {
@@ -9594,6 +9607,7 @@ int gc_heap::grow_brick_card_tables (uint8_t* start,
 #endif //CARD_BUNDLE
 
         size_t alloc_size = card_table_element_layout[total_bookkeeping_elements];
+        size_t commit_size = 0;
         uint8_t* mem = (uint8_t*)GCToOSInterface::VirtualReserve (alloc_size, 0, virtual_reserve_flags);
 
         if (!mem)
@@ -9607,14 +9621,16 @@ int gc_heap::grow_brick_card_tables (uint8_t* start,
 
         {
             // in case of background gc, the mark array will be committed separately (per segment).
-            size_t commit_size = card_table_element_layout[seg_mapping_table_element + 1];
+            commit_size = card_table_element_layout[seg_mapping_table_element + 1];
 
             if (!virtual_commit (mem, commit_size, recorded_committed_bookkeeping_bucket))
             {
+                commit_size = 0;
                 dprintf (GC_TABLE_LOG, ("Table commit failed"));
                 set_fgm_result (fgm_commit_table, commit_size, uoh_p);
                 goto fail;
             }
+
         }
 
         ct = (uint32_t*)(mem + card_table_element_layout[card_table_element]);
@@ -9786,6 +9802,7 @@ fail:
                 dprintf (GC_TABLE_LOG, ("GCToOSInterface::VirtualRelease failed"));
                 assert (!"release failed");
             }
+            reduce_committed_bytes (mem, commit_size, recorded_committed_bookkeeping_bucket, -1, true);
         }
 
         return -1;
@@ -13465,86 +13482,25 @@ void gc_heap::distribute_free_regions()
             num_young_huge_region_units_to_consider[kind]));
 
         // check if the free regions exceed the budget
-        // if so, put the highest free regions on the decommit list
+        // if so, consider putting the highest free regions on the decommit list
         total_num_free_regions[kind] += num_regions_to_decommit[kind];
 
         ptrdiff_t balance = total_num_free_regions[kind] + num_huge_region_units_to_consider[kind] - total_budget_in_region_units[kind];
 
-        // Ignore young huge regions if they are contributing to a surplus.
-        if (balance > 0)
-        {
-            if (balance > static_cast<ptrdiff_t>(num_young_huge_region_units_to_consider[kind]))
-            {
-                balance -= num_young_huge_region_units_to_consider[kind];
-            }
-            else
-            {
-                balance = 0;
-            }
-        }
-
-        if (
+        // first check if we should decommit any regions
+        if ((balance > 0)
 #ifdef BACKGROUND_GC
-            (background_running_p() && (settings.condemned_generation != max_generation)) ||
+            && (!background_running_p() || (settings.condemned_generation == max_generation))
 #endif
-            (balance < 0))
+            )
         {
-            dprintf (REGIONS_LOG, ("distributing the %zd %s region units deficit", -balance, kind_name[kind]));
+            // ignore young huge regions when determining how much to decommit
+            num_regions_to_decommit[kind] =
+                max(static_cast<ptrdiff_t>(0),
+                    (balance - static_cast<ptrdiff_t>(num_young_huge_region_units_to_consider[kind])));
 
-#ifdef MULTIPLE_HEAPS
-            // we may have a deficit or  - if background GC is going on - a surplus.
-            // adjust the budget per heap accordingly
-            if (balance != 0)
-            {
-                ptrdiff_t curr_balance = 0;
-                ptrdiff_t rem_balance = 0;
-                for (int i = 0; i < n_heaps; i++)
-                {
-                    curr_balance += balance;
-                    ptrdiff_t adjustment_per_heap = curr_balance / n_heaps;
-                    curr_balance -= adjustment_per_heap * n_heaps;
-                    ptrdiff_t new_budget = (ptrdiff_t)heap_budget_in_region_units[i][kind] + adjustment_per_heap;
-                    ptrdiff_t min_budget = (kind == basic_free_region) ? (ptrdiff_t)min_heap_budget_in_region_units[i] : 0;
-                    dprintf (REGIONS_LOG, ("adjusting the budget for heap %d from %zd %s regions by %zd to %zd",
-                        i,
-                        heap_budget_in_region_units[i][kind],
-                        kind_name[kind],
-                        adjustment_per_heap,
-                        max (min_budget, new_budget)));
-                    heap_budget_in_region_units[i][kind] = max (min_budget, new_budget);
-                    rem_balance += new_budget - heap_budget_in_region_units[i][kind];
-                }
-                assert (rem_balance <= 0);
-                dprintf (REGIONS_LOG, ("remaining balance: %zd %s region units", rem_balance, kind_name[kind]));
+            balance -= num_regions_to_decommit[kind];
 
-                // if we have a left over deficit, distribute that to the heaps that still have more than the minimum
-                while (rem_balance < 0)
-                {
-                    for (int i = 0; i < n_heaps; i++)
-                    {
-                        size_t min_budget = (kind == basic_free_region) ? min_heap_budget_in_region_units[i] : 0;
-                        if (heap_budget_in_region_units[i][kind] > min_budget)
-                        {
-                            dprintf (REGIONS_LOG, ("adjusting the budget for heap %d from %zd %s region units by %d to %zd",
-                                i,
-                                heap_budget_in_region_units[i][kind],
-                                kind_name[kind],
-                                -1,
-                                heap_budget_in_region_units[i][kind] - 1));
-
-                            heap_budget_in_region_units[i][kind] -= 1;
-                            rem_balance += 1;
-                            if (rem_balance == 0)
-                                break;
-                        }
-                    }
-                }
-            }
-#endif //MULTIPLE_HEAPS
-        }
-        else
-        {
-            num_regions_to_decommit[kind] = balance;
             dprintf(REGIONS_LOG, ("distributing the %zd %s region units, removing %zd region units",
                 total_budget_in_region_units[kind],
                 kind_name[kind],
@@ -13579,6 +13535,60 @@ void gc_heap::distribute_free_regions()
                 }
             }
         }
+
+#ifdef MULTIPLE_HEAPS
+        if (balance != 0)
+        {
+            dprintf (REGIONS_LOG, ("distributing the %zd %s region units deficit", -balance, kind_name[kind]));
+
+            // we may have a deficit or  - if background GC is going on - a surplus.
+            // adjust the budget per heap accordingly
+
+            ptrdiff_t curr_balance = 0;
+            ptrdiff_t rem_balance = 0;
+            for (int i = 0; i < n_heaps; i++)
+            {
+                curr_balance += balance;
+                ptrdiff_t adjustment_per_heap = curr_balance / n_heaps;
+                curr_balance -= adjustment_per_heap * n_heaps;
+                ptrdiff_t new_budget = (ptrdiff_t)heap_budget_in_region_units[i][kind] + adjustment_per_heap;
+                ptrdiff_t min_budget = (kind == basic_free_region) ? (ptrdiff_t)min_heap_budget_in_region_units[i] : 0;
+                dprintf (REGIONS_LOG, ("adjusting the budget for heap %d from %zd %s regions by %zd to %zd",
+                    i,
+                    heap_budget_in_region_units[i][kind],
+                    kind_name[kind],
+                    adjustment_per_heap,
+                    max (min_budget, new_budget)));
+                heap_budget_in_region_units[i][kind] = max (min_budget, new_budget);
+                rem_balance += new_budget - heap_budget_in_region_units[i][kind];
+            }
+            assert (rem_balance <= 0);
+            dprintf (REGIONS_LOG, ("remaining balance: %zd %s region units", rem_balance, kind_name[kind]));
+
+            // if we have a left over deficit, distribute that to the heaps that still have more than the minimum
+            while (rem_balance < 0)
+            {
+                for (int i = 0; i < n_heaps; i++)
+                {
+                    size_t min_budget = (kind == basic_free_region) ? min_heap_budget_in_region_units[i] : 0;
+                    if (heap_budget_in_region_units[i][kind] > min_budget)
+                    {
+                        dprintf (REGIONS_LOG, ("adjusting the budget for heap %d from %zd %s region units by %d to %zd",
+                            i,
+                            heap_budget_in_region_units[i][kind],
+                            kind_name[kind],
+                            -1,
+                            heap_budget_in_region_units[i][kind] - 1));
+
+                        heap_budget_in_region_units[i][kind] -= 1;
+                        rem_balance += 1;
+                        if (rem_balance == 0)
+                            break;
+                    }
+                }
+            }
+        }
+#endif
     }
 
     for (int kind = basic_free_region; kind < kind_count; kind++)
@@ -47753,10 +47763,6 @@ void gc_heap::verify_committed_bytes_per_heap()
 
 void gc_heap::verify_committed_bytes()
 {
-#ifndef USE_REGIONS
-    // TODO, https://github.com/dotnet/runtime/issues/102706, re-enable the testing after fixing this bug
-    return;
-#endif //!USE_REGIONS
     size_t total_committed = 0;
     size_t committed_decommit; // unused
     size_t committed_free; // unused
