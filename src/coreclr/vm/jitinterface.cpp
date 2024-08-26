@@ -3492,11 +3492,11 @@ const char* CEEInfo::getClassAssemblyName(CORINFO_CLASS_HANDLE clsHnd)
         MODE_PREEMPTIVE;
     } CONTRACTL_END;
 
-    const char*  result = NULL;
+    const char* result = NULL;
 
     JIT_TO_EE_TRANSITION();
-    TypeHandle     VMClsHnd(clsHnd);
-    result = VMClsHnd.GetAssembly()->GetSimpleName();
+    TypeHandle th(clsHnd);
+    result = th.GetAssembly()->GetSimpleName();
     EE_TO_JIT_TRANSITION();
 
     return result;
