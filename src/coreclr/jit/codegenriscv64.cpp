@@ -6227,17 +6227,19 @@ void CodeGen::genJmpPlaceVarArgs()
 //
 void CodeGen::genIntCastOverflowCheck(GenTreeCast* cast, const GenIntCastDesc& desc, regNumber reg)
 {
+    const regNumber tempReg = internalRegisters.GetSingle(cast);
+
     switch (desc.CheckKind())
     {
         case GenIntCastDesc::CHECK_POSITIVE:
         {
-            genJumpToThrowHlpBlk_la(SCK_OVERFLOW, INS_blt, reg, nullptr, REG_R0);
+            GetEmitter()->emitIns_R_R(INS_sext_w, EA_8BYTE, tempReg, reg);
+            genJumpToThrowHlpBlk_la(SCK_OVERFLOW, INS_blt, tempReg, nullptr, REG_R0);
         }
         break;
 
         case GenIntCastDesc::CHECK_UINT_RANGE:
         {
-            regNumber tempReg = internalRegisters.GetSingle(cast);
             // We need to check if the value is not greater than 0xFFFFFFFF
             // if the upper 32 bits are zero.
             ssize_t imm = -1;
@@ -6251,7 +6253,6 @@ void CodeGen::genIntCastOverflowCheck(GenTreeCast* cast, const GenIntCastDesc& d
 
         case GenIntCastDesc::CHECK_POSITIVE_INT_RANGE:
         {
-            regNumber tempReg = internalRegisters.GetSingle(cast);
             // We need to check if the value is not greater than 0x7FFFFFFF
             // if the upper 33 bits are zero.
             // instGen_Set_Reg_To_Imm(EA_8BYTE, tempReg, 0xFFFFFFFF80000000LL);
@@ -6267,7 +6268,6 @@ void CodeGen::genIntCastOverflowCheck(GenTreeCast* cast, const GenIntCastDesc& d
 
         case GenIntCastDesc::CHECK_INT_RANGE:
         {
-            const regNumber tempReg = internalRegisters.GetSingle(cast);
             assert(tempReg != reg);
             GetEmitter()->emitLoadImmediate(EA_8BYTE, tempReg, INT32_MAX);
             genJumpToThrowHlpBlk_la(SCK_OVERFLOW, INS_blt, tempReg, nullptr, reg);
@@ -6282,7 +6282,6 @@ void CodeGen::genIntCastOverflowCheck(GenTreeCast* cast, const GenIntCastDesc& d
             assert(desc.CheckKind() == GenIntCastDesc::CHECK_SMALL_INT_RANGE);
             const int       castMaxValue = desc.CheckSmallIntMax();
             const int       castMinValue = desc.CheckSmallIntMin();
-            const regNumber tempReg      = internalRegisters.GetSingle(cast);
             instruction     ins;
 
             if (castMaxValue > 2047)
