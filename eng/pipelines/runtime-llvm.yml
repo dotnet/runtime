@@ -116,7 +116,7 @@ extends:
           buildConfig: Release
           runtimeFlavor: mono
           platforms:
-             - osx_x64
+             #- osx_x64
              - osx_arm64
           variables:
             - name: timeoutPerTestInMinutes
@@ -141,7 +141,6 @@ extends:
                   creator: dotnet-bot
                   llvmAotStepContainer: linux_x64_llvmaot
                   testRunNamePrefixSuffix: Mono_Release
-                  compileOnHelix: true
             extraVariablesTemplates:
               - template: /eng/pipelines/common/templates/runtimes/test-variables.yml
 
