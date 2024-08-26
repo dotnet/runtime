@@ -2277,30 +2277,28 @@ void NDirectStubLinker::EmitValidateLocal(ILCodeStream* pcsEmit, DWORD dwLocalNu
 
     if (SF_IsDelegateStub(dwStubFlags))
     {
-        pcsEmit->EmitLoadNullPtr();
         pcsEmit->EmitLoadThis();
+        pcsEmit->EmitCALL(METHOD__DELEGATE__GET_INVOKE_METHOD, 1, 1);
     }
     else if (SF_IsCALLIStub(dwStubFlags))
     {
         pcsEmit->EmitLoadNullPtr();
-        pcsEmit->EmitLDNULL();
     }
     else
     {
         // P/Invoke, CLR->COM
         EmitLoadStubContext(pcsEmit, dwStubFlags);
-        pcsEmit->EmitLDNULL();
     }
 
     if (fIsByref)
     {
-        // StubHelpers.ValidateByref(byref, pMD, pThis)
-        pcsEmit->EmitCALL(METHOD__STUBHELPERS__VALIDATE_BYREF, 3, 0);
+        // StubHelpers.ValidateByref(byref, pMD)
+        pcsEmit->EmitCALL(METHOD__STUBHELPERS__VALIDATE_BYREF, 2, 0);
     }
     else
     {
-        // StubHelpers.ValidateObject(obj, pMD, pThis)
-        pcsEmit->EmitCALL(METHOD__STUBHELPERS__VALIDATE_OBJECT, 3, 0);
+        // StubHelpers.ValidateObject(obj, pMD)
+        pcsEmit->EmitCALL(METHOD__STUBHELPERS__VALIDATE_OBJECT, 2, 0);
     }
 }
 

@@ -28,12 +28,15 @@
                       LastGenOutput="TestResources.Designer.cs" />
     <EmbeddedResource Include="TestResources.resx" LogicalName="TestResources.resources" />
   </ItemGroup>
-  
+
   <ItemGroup>
     <PackageReference Include="System.Drawing.Common.TestData" Version="$(SystemDrawingCommonTestDataVersion)" />
     <ProjectReference Include="..\..\src\System.Resources.Extensions.csproj" />
     <PackageReference Include="System.Drawing.Common" Version="$(SystemDrawingCommonVersion)" />
-    <PackageReference Include="System.Runtime.Serialization.Formatters" Version="$(SystemRuntimeSerializationFormattersVersion)" />
+    <!-- Reference the `NetCoreAppMinimum` build which has a functional BinaryFormatter and force a private copy to ensure it's not excluded -->
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime.Serialization.Formatters\src\System.Runtime.Serialization.Formatters.csproj"
+                      Private="true"
+                      SetTargetFramework="TargetFramework=$(NetCoreAppMinimum)" />
   </ItemGroup>
 
   <ItemGroup>
