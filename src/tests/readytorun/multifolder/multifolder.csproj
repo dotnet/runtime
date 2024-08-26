@@ -56,7 +56,13 @@ $(CLRTestBatchPreCommands)
     set DOTNET_GCName=
 
     set __Command=%_DebuggerFullPath%
-    set __Command=%__Command% "%CORE_ROOT%\crossgen2\crossgen2.exe"
+    REM Tests run locally need __TestDotNetCmd (set by runtest.py) or a compatible 5.0 dotnet runtime in the path
+    if defined __TestDotNetCmd (
+        set __Command=!__Command! "!__TestDotNetCmd!"
+    ) else (
+        set __Command=!__Command! "dotnet"
+    )
+    set __Command=%__Command% "%CORE_ROOT%\crossgen2\crossgen2.dll"
     set __Command=%__Command% @"%__ResponseFile%"
 
     REM work around problems in 6.0 OSR
@@ -99,7 +105,14 @@ $(CLRTestBashPreCommands)
     # Suppress some DOTNET variables for the duration of Crossgen2 execution
     export -n DOTNET_GCName DOTNET_GCStress DOTNET_HeapVerify DOTNET_ReadyToRun DOTNET_TC_OnStackReplacement DOTNET_TC_PartialCompilation
 
-    __Command="$_DebuggerFullPath $CORE_ROOT/crossgen2/crossgen2"
+    __Command=$_DebuggerFullPath
+    # Tests run locally need __TestDotNetCmd (set by runtest.py) or a compatible 5.0 dotnet runtime in the path
+    if [ ! -z ${__TestDotNetCmd+x} ] %3B then
+        __Command+=" $__TestDotNetCmd"
+    else
+        __Command+=" dotnet"
+    fi
+    __Command+=" $CORE_ROOT/crossgen2/crossgen2.dll"
     __Command+=" @$__ResponseFile"
 
     echo Response file: $__ResponseFile
