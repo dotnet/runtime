@@ -2,7 +2,7 @@
 
 <!-- A description of the package and where one can find more documentation -->
 
-`System.Composition.Hosting` is part of the Managed Extensibility Framework (MEF) 2.0, a composition library for .NET that enables dependency injection through attributes.
+`System.Composition.Hosting` is part of the Managed Extensibility Framework (MEF) 2.0, a composition library for .NET that enables dependency injection through attributes or conventions.
 
 This package provides core services for creating composition containers.
 It offers tools to configure and manage the composition of parts within your application, facilitating dependency injection and enabling modular architectures.
@@ -66,6 +66,7 @@ The main type provided by this library is:
 
 <!-- The related packages associated with this package -->
 
+* [System.Composition](https://www.nuget.org/packages/System.Composition)
 * [System.Composition.AttributedModel](https://www.nuget.org/packages/System.Composition.AttributedModel)
 * [System.Composition.Convention](https://www.nuget.org/packages/System.Composition.Convention)
 * [System.Composition.Runtime](https://www.nuget.org/packages/System.Composition.Runtime)
