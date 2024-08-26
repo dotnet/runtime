@@ -21,6 +21,7 @@ namespace Mono.Linker.Tests.Cases.Reflection
 			TestPublicConstructorDataFlowType ();
 			TestIfElseUsingRuntimeTypeHandle (1);
 			TestIfElseUsingType (1);
+			TestNullableValueType ();
 		}
 
 		[Kept]
@@ -123,6 +124,12 @@ namespace Mono.Linker.Tests.Cases.Reflection
 				myType = typeof (ElseClass2);
 			}
 			RuntimeHelpers.RunClassConstructor (myType.TypeHandle);
+		}
+
+		[Kept]
+		static void TestNullableValueType ()
+		{
+			RuntimeHelpers.RunClassConstructor (typeof (int?).TypeHandle);
 		}
 
 		[Kept]
