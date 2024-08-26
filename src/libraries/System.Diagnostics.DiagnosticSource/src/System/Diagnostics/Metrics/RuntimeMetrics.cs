@@ -49,14 +49,7 @@ namespace System.Diagnostics.Metrics
 
             s_meter.CreateObservableUpDownCounter(
                 "dotnet.gc.last_collection.memory.committed_size",
-                () =>
-                {
-                    GCMemoryInfo gcInfo = GC.GetGCMemoryInfo();
-
-                    return gcInfo.Index == 0
-                        ? Array.Empty<Measurement<long>>()
-                        : [new(gcInfo.TotalCommittedBytes)];
-                },
+                () => GC.GetGCMemoryInfo().TotalCommittedBytes,
                 unit: "By",
                 description: "The amount of committed virtual memory in use by the .NET GC, as observed during the latest garbage collection.");
 
@@ -193,9 +186,6 @@ namespace System.Diagnostics.Metrics
         {
             GCMemoryInfo gcInfo = GC.GetGCMemoryInfo();
 
-            if (gcInfo.Index == 0)
-                yield break;
-
             for (int i = 0; i < s_maxGenerations; ++i)
             {
                 yield return new(gcInfo.GenerationInfo[i].SizeAfterBytes, new KeyValuePair<string, object?>("gc.heap.generation", s_genNames[i]));
@@ -205,9 +195,6 @@ namespace System.Diagnostics.Metrics
         private static IEnumerable<Measurement<long>> GetHeapFragmentation()
         {
             GCMemoryInfo gcInfo = GC.GetGCMemoryInfo();
-
-            if (gcInfo.Index == 0)
-                yield break;
 
             for (int i = 0; i < s_maxGenerations; ++i)
             {
