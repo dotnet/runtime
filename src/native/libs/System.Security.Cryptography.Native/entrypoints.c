@@ -14,6 +14,7 @@
 #include "pal_err.h"
 #include "pal_evp.h"
 #include "pal_evp_cipher.h"
+#include "pal_evp_kdf.h"
 #include "pal_evp_mac.h"
 #include "pal_evp_pkey.h"
 #include "pal_evp_pkey_dsa.h"
@@ -144,6 +145,9 @@ static const Entry s_cryptoNative[] =
     DllImportEntry(CryptoNative_EvpDigestSqueeze)
     DllImportEntry(CryptoNative_EvpDigestUpdate)
     DllImportEntry(CryptoNative_EvpDigestXOFOneShot)
+    DllImportEntry(CryptoNative_KbkdfHmacOneShot)
+    DllImportEntry(CryptoNative_EvpKdfFetch)
+    DllImportEntry(CryptoNative_EvpKdfFree)
     DllImportEntry(CryptoNative_EvpMacCtxDup)
     DllImportEntry(CryptoNative_EvpMacCtxNew)
     DllImportEntry(CryptoNative_EvpMacCtxFree)
