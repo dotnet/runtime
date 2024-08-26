@@ -3914,14 +3914,20 @@ void emitter::emitDispInsName(
         }
         case 0x67:
         {
-            const char* rs1    = RegNames[(code >> 15) & 0x1f];
-            const char* rd     = RegNames[(code >> 7) & 0x1f];
+            const regNumber rs1    = (code >> 15) & 0x1f;
+            const regNumber rd     = (code >> 7) & 0x1f;
             int         offset = ((code >> 20) & 0xfff);
             if (offset & 0x800)
             {
                 offset |= 0xfffff000;
             }
-            printf("jalr           %s, %d(%s)", rd, offset, rs1);
+
+            if ((rs1 == REG_RA) && (rd == REG_ZERO)) {
+                printf("ret");
+                return;
+            }
+
+            printf("jalr           %s, %d(%s)", RegNames[rd], offset, RegNames[rs1]);
             CORINFO_METHOD_HANDLE handle = (CORINFO_METHOD_HANDLE)id->idDebugOnlyInfo()->idMemCookie;
             // Target for ret call is unclear, e.g.:
             //   jalr zero, 0(ra)
