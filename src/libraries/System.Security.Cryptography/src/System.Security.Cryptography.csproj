@@ -418,6 +418,7 @@
     <Compile Include="System\Security\Cryptography\HashProvider.cs" />
     <Compile Include="System\Security\Cryptography\Helpers.cs" />
     <Compile Include="System\Security\Cryptography\HKDF.cs" />
+    <Compile Include="System\Security\Cryptography\HKDFManagedImplementation.cs" />
     <Compile Include="System\Security\Cryptography\HMAC.cs" />
     <Compile Include="System\Security\Cryptography\HMACCommon.cs" />
     <Compile Include="System\Security\Cryptography\HMACMD5.cs" />
@@ -668,6 +669,7 @@
     <Compile Include="System\Security\Cryptography\ECDiffieHellman.Create.NotSupported.cs" />
     <Compile Include="System\Security\Cryptography\ECDsa.Create.NotSupported.cs" />
     <Compile Include="System\Security\Cryptography\HashProviderDispenser.Browser.cs" />
+    <Compile Include="System\Security\Cryptography\HKDF.Managed.cs" />
     <Compile Include="System\Security\Cryptography\HMACHashProvider.Browser.Managed.cs" />
     <Compile Include="System\Security\Cryptography\LiteHash.Browser.cs" />
     <Compile Include="System\Security\Cryptography\LiteHash.Kmac.Unsupported.cs" />
@@ -864,6 +866,7 @@
     <Compile Include="System\Security\Cryptography\ECDiffieHellmanWrapper.cs" />
     <Compile Include="System\Security\Cryptography\HashProviderDispenser.Unix.cs" />
     <Compile Include="System\Security\Cryptography\HashProviderDispenser.OpenSsl.cs" />
+    <Compile Include="System\Security\Cryptography\HKDF.OpenSsl.cs" />
     <Compile Include="System\Security\Cryptography\LiteHash.Unix.cs" />
     <Compile Include="System\Security\Cryptography\LiteHash.OpenSsl.cs" />
     <Compile Include="System\Security\Cryptography\OidLookup.OpenSsl.cs" />
@@ -1024,6 +1027,7 @@
     <Compile Include="System\Security\Cryptography\ECDsa.Create.Android.cs" />
     <Compile Include="System\Security\Cryptography\HashProviderDispenser.Unix.cs" />
     <Compile Include="System\Security\Cryptography\HashProviderDispenser.Android.cs" />
+    <Compile Include="System\Security\Cryptography\HKDF.Managed.cs" />
     <Compile Include="System\Security\Cryptography\LiteHash.Unix.cs" />
     <Compile Include="System\Security\Cryptography\LiteHash.Kmac.Unsupported.cs" />
     <Compile Include="System\Security\Cryptography\OidLookup.NoFallback.cs" />
@@ -1154,6 +1158,7 @@
     <Compile Include="System\Security\Cryptography\ECDsa.Create.SecurityTransforms.cs" />
     <Compile Include="System\Security\Cryptography\HashAlgorithmNames.Apple.cs" />
     <Compile Include="System\Security\Cryptography\HashProviderDispenser.Apple.cs" />
+    <Compile Include="System\Security\Cryptography\HKDF.Managed.cs" />
     <Compile Include="System\Security\Cryptography\LiteHash.Apple.cs" />
     <Compile Include="System\Security\Cryptography\LiteHash.Kmac.Unsupported.cs" />
     <Compile Include="System\Security\Cryptography\OidLookup.NoFallback.cs" />
@@ -1745,6 +1750,7 @@
     <Compile Include="System\Security\Cryptography\ECDiffieHellmanWrapper.cs" />
     <Compile Include="System\Security\Cryptography\HashProviderCng.cs" />
     <Compile Include="System\Security\Cryptography\HashProviderDispenser.Windows.cs" />
+    <Compile Include="System\Security\Cryptography\HKDF.Managed.cs" />
     <Compile Include="System\Security\Cryptography\ICngSymmetricAlgorithm.cs" />
     <Compile Include="System\Security\Cryptography\KeyPropertyName.cs" />
     <Compile Include="System\Security\Cryptography\LiteHash.Windows.cs" />

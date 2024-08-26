@@ -104,6 +104,24 @@ void ERR_put_error(int32_t lib, int32_t func, int32_t reason, const char* file, 
 c_static_assert(ERR_R_UNSUPPORTED == 0x8010C);
 #endif
 
+#ifndef EVP_KDF_HKDF_MODE_EXTRACT_AND_EXPAND
+#define EVP_KDF_HKDF_MODE_EXTRACT_AND_EXPAND 0
+#else
+c_static_assert(EVP_KDF_HKDF_MODE_EXTRACT_AND_EXPAND == 0);
+#endif
+
+#ifndef EVP_KDF_HKDF_MODE_EXTRACT_ONLY
+#define EVP_KDF_HKDF_MODE_EXTRACT_ONLY 1
+#else
+c_static_assert(EVP_KDF_HKDF_MODE_EXTRACT_ONLY == 1);
+#endif
+
+#ifndef EVP_KDF_HKDF_MODE_EXPAND_ONLY
+#define EVP_KDF_HKDF_MODE_EXPAND_ONLY 2
+#else
+c_static_assert(EVP_KDF_HKDF_MODE_EXPAND_ONLY == 2);
+#endif
+
 #if defined FEATURE_DISTRO_AGNOSTIC_SSL || OPENSSL_VERSION_NUMBER >= OPENSSL_VERSION_3_0_RTM
 #include "apibridge_30_rev.h"
 #endif
@@ -552,6 +570,7 @@ extern bool g_libSslUses32BitTime;
     LIGHTUP_FUNCTION(OSSL_STORE_open_ex) \
     LIGHTUP_FUNCTION(OSSL_PARAM_construct_octet_string) \
     LIGHTUP_FUNCTION(OSSL_PARAM_construct_utf8_string) \
+    LIGHTUP_FUNCTION(OSSL_PARAM_construct_int) \
     LIGHTUP_FUNCTION(OSSL_PARAM_construct_int32) \
     LIGHTUP_FUNCTION(OSSL_PARAM_construct_end) \
     REQUIRED_FUNCTION(PKCS8_PRIV_KEY_INFO_free) \
@@ -1104,6 +1123,7 @@ extern TYPEOF(OPENSSL_gmtime)* OPENSSL_gmtime_ptr;
 #define OSSL_STORE_open_ex OSSL_STORE_open_ex_ptr
 #define OSSL_PARAM_construct_octet_string OSSL_PARAM_construct_octet_string_ptr
 #define OSSL_PARAM_construct_utf8_string OSSL_PARAM_construct_utf8_string_ptr
+#define OSSL_PARAM_construct_int OSSL_PARAM_construct_int_ptr
 #define OSSL_PARAM_construct_int32 OSSL_PARAM_construct_int32_ptr
 #define OSSL_PARAM_construct_end OSSL_PARAM_construct_end_ptr
 #define PKCS8_PRIV_KEY_INFO_free PKCS8_PRIV_KEY_INFO_free_ptr

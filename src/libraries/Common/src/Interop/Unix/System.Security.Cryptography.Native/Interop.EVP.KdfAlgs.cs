@@ -13,8 +13,10 @@ internal static partial class Interop
         internal static partial class EvpKdfAlgs
         {
             private const string KbkdfAlgorithmName = "KBKDF";
+            private const string HkdfAlgorithmName = "HKDF";
 
             internal static SafeEvpKdfHandle? Kbkdf { get; }
+            internal static SafeEvpKdfHandle? Hkdf { get; }
 
             static EvpKdfAlgs()
             {
@@ -24,6 +26,7 @@ internal static partial class Interop
                 // is called first. Property initializers happen before cctors, so instead set the property after the
                 // initializer is run.
                 Kbkdf = EvpKdfFetch(KbkdfAlgorithmName);
+                Hkdf = EvpKdfFetch(HkdfAlgorithmName);
             }
 
             [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EvpKdfFetch", StringMarshalling = StringMarshalling.Utf8)]
