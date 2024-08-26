@@ -2661,7 +2661,7 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
             // Note that we check this for every method, since we might inline across modules, and
             // if the inlinee module is on the list, we don't want to use the altjit for it.
             const char* methodAssemblyName = info.compCompHnd->getClassAssemblyName(info.compClassHnd);
-            if (s_pAltJitExcludeAssembliesList->IsInList(methodAssemblyName))
+            if (methodAssemblyName != nullptr && s_pAltJitExcludeAssembliesList->IsInList(methodAssemblyName))
             {
                 opts.altJit = false;
             }
@@ -2688,7 +2688,7 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
     if (s_pJitDisasmIncludeAssembliesList != nullptr && !s_pJitDisasmIncludeAssembliesList->IsEmpty())
     {
         const char* assemblyName = info.compCompHnd->getClassAssemblyName(info.compClassHnd);
-        if (!s_pJitDisasmIncludeAssembliesList->IsInList(assemblyName))
+        if (assemblyName != nullptr && !s_pJitDisasmIncludeAssembliesList->IsInList(assemblyName))
         {
             // We have a list, and the current assembly is not in it, so we won't dump.
             assemblyInIncludeList = false;
@@ -9372,7 +9372,7 @@ void JitTimer::PrintCsvMethodStats(Compiler* comp)
     else
     {
         const char* methodAssemblyName = comp->info.compCompHnd->getClassAssemblyName(comp->info.compClassHnd);
-        fprintf(s_csvFile, "\"%s\",", methodAssemblyName);
+        fprintf(s_csvFile, "\"%s\",", methodAssemblyName == nullptr ? "" : methodAssemblyName);
     }
     fprintf(s_csvFile, "%u,", comp->info.compILCodeSize);
     fprintf(s_csvFile, "%u,", comp->fgBBcount);
