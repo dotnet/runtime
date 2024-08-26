@@ -111,7 +111,7 @@ namespace System.Threading
 
                 if (_unregistered)
                 {
-                    SignalUserWaitHandle();
+                    // SignalUserWaitHandle();
                     return true;
                 }
 
