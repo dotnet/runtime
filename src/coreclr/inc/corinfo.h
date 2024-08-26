@@ -2324,7 +2324,7 @@ public:
             CORINFO_CLASS_HANDLE    cls
             ) = 0;
 
-    // Returns the assembly name of the class "cls".
+    // Returns the assembly name of the class "cls", or nullptr if there is none.    
     virtual const char* getClassAssemblyName (
             CORINFO_CLASS_HANDLE cls
             ) = 0;
