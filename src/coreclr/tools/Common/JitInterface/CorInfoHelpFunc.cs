@@ -185,8 +185,6 @@ namespace Internal.JitInterface
 
         /* Miscellaneous */
 
-        CORINFO_HELP_BBT_FCN_ENTER,         // record the entry to a method for collecting Tuning data
-
         CORINFO_HELP_PINVOKE_CALLI,         // Indirect pinvoke call
         CORINFO_HELP_TAILCALL,              // Perform a tail call
 
@@ -201,9 +199,7 @@ namespace Internal.JitInterface
                                             // not safe for unbounded size, does not trigger GC)
 
         CORINFO_HELP_RUNTIMEHANDLE_METHOD,  // determine a type/field/method handle at run-time
-        CORINFO_HELP_RUNTIMEHANDLE_METHOD_LOG, // determine a type/field/method handle at run-time, with IBC logging
         CORINFO_HELP_RUNTIMEHANDLE_CLASS,    // determine a type/field/method handle at run-time
-        CORINFO_HELP_RUNTIMEHANDLE_CLASS_LOG, // determine a type/field/method handle at run-time, with IBC logging
 
         CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPE, // Convert from a TypeHandle (native structure pointer) to RuntimeType at run-time
         CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPE_MAYBENULL, // Convert from a TypeHandle (native structure pointer) to RuntimeType at run-time, the type may be null

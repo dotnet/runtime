@@ -344,9 +344,6 @@ public:
     virtual void Instrument(BasicBlock* block, Schema& schema, uint8_t* profileMemory)
     {
     }
-    virtual void InstrumentMethodEntry(Schema& schema, uint8_t* profileMemory)
-    {
-    }
     unsigned SchemaCount() const
     {
         return m_schemaCount;
@@ -402,7 +399,6 @@ public:
     void Prepare(bool isPreImport) override;
     void BuildSchemaElements(BasicBlock* block, Schema& schema) override;
     void Instrument(BasicBlock* block, Schema& schema, uint8_t* profileMemory) override;
-    void InstrumentMethodEntry(Schema& schema, uint8_t* profileMemory) override;
 
     static GenTree* CreateCounterIncrement(Compiler* comp, uint8_t* counterAddr, var_types countType);
 };
@@ -670,89 +666,6 @@ void BlockCountInstrumentor::Instrument(BasicBlock* block, Schema& schema, uint8
     }
 
     m_instrCount++;
-}
-
-//------------------------------------------------------------------------
-// BlockCountInstrumentor::InstrumentMethodEntry: add any special method entry instrumentation
-//
-// Arguments:
-//   schema -- instrumentation schema
-//   profileMemory -- profile data slab
-//
-// Notes:
-//   When prejitting, add the method entry callback node
-//
-void BlockCountInstrumentor::InstrumentMethodEntry(Schema& schema, uint8_t* profileMemory)
-{
-    Compiler::Options& opts = m_comp->opts;
-    Compiler::Info&    info = m_comp->info;
-
-    // Nothing to do, if not prejitting.
-    //
-    if (!opts.jitFlags->IsSet(JitFlags::JIT_FLAG_PREJIT))
-    {
-        return;
-    }
-
-    // Find the address of the entry block's counter.
-    //
-    assert(m_entryBlock != nullptr);
-    assert(m_entryBlock->bbCodeOffs == 0);
-
-    const ICorJitInfo::PgoInstrumentationSchema& entry = schema[m_entryBlock->bbCountSchemaIndex];
-    assert((IL_OFFSET)entry.ILOffset == 0);
-    assert((entry.InstrumentationKind == ICorJitInfo::PgoInstrumentationKind::BasicBlockIntCount) ||
-           (entry.InstrumentationKind == ICorJitInfo::PgoInstrumentationKind::BasicBlockLongCount));
-
-    const size_t addrOfFirstExecutionCount = (size_t)(entry.Offset + profileMemory);
-
-    GenTree* arg;
-
-#ifdef FEATURE_READYTORUN
-    if (opts.IsReadyToRun())
-    {
-        mdMethodDef currentMethodToken = info.compCompHnd->getMethodDefFromMethod(info.compMethodHnd);
-
-        CORINFO_RESOLVED_TOKEN resolvedToken;
-        resolvedToken.tokenContext = MAKE_METHODCONTEXT(info.compMethodHnd);
-        resolvedToken.tokenScope   = info.compScopeHnd;
-        resolvedToken.token        = currentMethodToken;
-        resolvedToken.tokenType    = CORINFO_TOKENKIND_Method;
-
-        info.compCompHnd->resolveToken(&resolvedToken);
-
-        arg = m_comp->impTokenToHandle(&resolvedToken);
-    }
-    else
-#endif
-    {
-        arg = m_comp->gtNewIconEmbMethHndNode(info.compMethodHnd);
-    }
-
-    // We want to call CORINFO_HELP_BBT_FCN_ENTER just one time,
-    // the first time this method is called. So make the call conditional
-    // on the entry block's profile count.
-    //
-    GenTreeCall* call = m_comp->gtNewHelperCallNode(CORINFO_HELP_BBT_FCN_ENTER, TYP_VOID, arg);
-
-    var_types typ =
-        entry.InstrumentationKind == ICorJitInfo::PgoInstrumentationKind::BasicBlockIntCount ? TYP_INT : TYP_LONG;
-    // Read Basic-Block count value
-    //
-    GenTree* valueNode = m_comp->gtNewIndOfIconHandleNode(typ, addrOfFirstExecutionCount, GTF_ICON_BBC_PTR, false);
-
-    // Compare Basic-Block count value against zero
-    //
-    GenTree*      relop = m_comp->gtNewOperNode(GT_NE, typ, valueNode, m_comp->gtNewIconNode(0, typ));
-    GenTreeColon* colon = new (m_comp, GT_COLON) GenTreeColon(TYP_VOID, m_comp->gtNewNothingNode(), call);
-    GenTreeQmark* cond  = m_comp->gtNewQmarkNode(TYP_VOID, relop, colon);
-    Statement*    stmt  = m_comp->gtNewStmt(cond);
-
-    // Add this check into the scratch block entry so we only do the check once per call.
-    // If we put it in block we may be putting it inside a loop.
-    //
-    m_comp->fgEnsureFirstBBisScratch();
-    m_comp->fgInsertStmtAtEnd(m_comp->fgFirstBB, stmt);
 }
 
 //------------------------------------------------------------------------
@@ -2826,13 +2739,6 @@ PhaseStatus Compiler::fgInstrumentMethod()
     // Verify we instrumented for each probe
     //
     assert(fgHistogramInstrumentor->InstrCount() == info.compHandleHistogramProbeCount);
-
-    // Add any special entry instrumentation. This does not
-    // use the schema mechanism.
-    //
-    fgCountInstrumentor->InstrumentMethodEntry(schema, profileMemory);
-    fgHistogramInstrumentor->InstrumentMethodEntry(schema, profileMemory);
-    fgValueInstrumentor->InstrumentMethodEntry(schema, profileMemory);
 
     return PhaseStatus::MODIFIED_EVERYTHING;
 }
