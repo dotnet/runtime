@@ -2,9 +2,9 @@
 
 <!-- A description of the package and where one can find more documentation -->
 
-`System.Composition.TypedParts` is part of the Managed Extensibility Framework (MEF) 2.0, a composition library for .NET that enables dependency injection through attributes.
+`System.Composition.TypedParts` is part of the Managed Extensibility Framework (MEF) 2.0, a composition library for .NET that enables dependency injection through attributes or conventions.
 
-Provides `ContainerConfiguration` and some extension methods for the Managed Extensibility Framework (MEF).by MEF.
+Provides `ContainerConfiguration` and some extension methods for the Managed Extensibility Framework (MEF).
 
 ## Key Features
 
@@ -74,6 +74,7 @@ The main types provided by this library are:
 
 <!-- The related packages associated with this package -->
 
+* [System.Composition](https://www.nuget.org/packages/System.Composition)
 * [System.Composition.AttributedModel](https://www.nuget.org/packages/System.Composition.AttributedModel)
 * [System.Composition.Convention](https://www.nuget.org/packages/System.Composition.Convention)
 * [System.Composition.Hosting](https://www.nuget.org/packages/System.Composition.Hosting)
