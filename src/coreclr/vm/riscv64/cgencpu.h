@@ -360,15 +360,6 @@ struct FloatReg
     WORD Mask() const { return 1 << reg; }
 };
 
-struct CondCode
-{
-    int cond;
-    CondCode(int cond):cond(cond)
-    {
-        _ASSERTE(0 <= cond && cond < 16);
-    }
-};
-
 const IntReg RegSp  = IntReg(2);
 const IntReg RegFp  = IntReg(8);
 const IntReg RegRa  = IntReg(1);
