@@ -8,7 +8,7 @@ namespace Mono.Linker.Tests.Cases.Reflection
 {
 	[SetupCSharpCompilerToUse ("csc")]
 	[ExpectedNoWarnings]
-	public class RunClassConstructorUsedViaReflection
+	public class RunClassConstructor
 	{
 		public static void Main ()
 		{
