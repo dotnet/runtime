@@ -107,7 +107,7 @@ extends:
               - template: /eng/pipelines/common/templates/runtimes/test-variables.yml
 
       #
-      # Build the whole product using Mono and Runtime tests in LLVMAOT mode
+      # Build the whole product using Mono and Runtime tests in AOT-llvm mode
       #
       - template: /eng/pipelines/common/platform-matrix.yml
         parameters:
@@ -143,6 +143,44 @@ extends:
                   testRunNamePrefixSuffix: Mono_Release
             extraVariablesTemplates:
               - template: /eng/pipelines/common/templates/runtimes/test-variables.yml
+
+      #
+      # Build the whole product using Mono and Runtime tests in FullAOT-llvm mode
+      #
+      - template: /eng/pipelines/common/platform-matrix.yml
+        parameters:
+          jobTemplate: /eng/pipelines/common/global-build-job.yml
+          helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
+          buildConfig: Release
+          runtimeFlavor: mono
+          platforms:
+             #- osx_x64
+             - osx_arm64
+          variables:
+            - name: timeoutPerTestInMinutes
+              value: 60
+            - name: timeoutPerTestCollectionInMinutes
+              value: 180
+          jobParameters:
+            testGroup: innerloop
+            nameSuffix: AllSubsets_Mono_LLVMFULLAOT_RuntimeTests
+            runtimeVariant: llvmfullaot
+            buildArgs: -s mono+libs+clr.hosts+clr.iltools -c $(_BuildConfig) /p:MonoEnableLLVM=true /p:MonoAOTEnableLLVM=true
+            timeoutInMinutes: 360
+            condition: >-
+              or(
+                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
+                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_mono_excluding_wasm.containsChange'], true),
+                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_installer.containsChange'], true),
+                eq(variables['isRollingBuild'], true))
+            postBuildSteps:
+              - template: /eng/pipelines/common/templates/runtimes/build-runtime-tests-and-send-to-helix.yml
+                parameters:
+                  creator: dotnet-bot
+                  llvmAotStepContainer: linux_x64_llvmaot
+                  testRunNamePrefixSuffix: Mono_Release
+            extraVariablesTemplates:
+              - template: /eng/pipelines/common/templates/runtimes/test-variables.yml        
 
       #
       # Mono CoreCLR runtime Test executions using live libraries and LLVM Full AOT
