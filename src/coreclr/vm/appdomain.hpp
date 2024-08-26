@@ -1423,7 +1423,6 @@ private:
 #endif // FEATURE_COMINTEROP
 
 public:
-    void InitVSD();
     UINT32 GetTypeID(PTR_MethodTable pMT);
     UINT32 LookupTypeID(PTR_MethodTable pMT);
     PTR_MethodTable LookupType(UINT32 id);

@@ -492,15 +492,6 @@ void BaseDomain::Init()
 
 #undef LOADERHEAP_PROFILE_COUNTER
 
-void AppDomain::InitVSD()
-{
-    STANDARD_VM_CONTRACT;
-
-    m_typeIDMap.Init();
-
-    GetLoaderAllocator()->InitVirtualCallStubManager(this);
-}
-
 void AppDomain::ClearBinderContext()
 {
     CONTRACTL
@@ -1583,9 +1574,6 @@ void AppDomain::Create()
 
     pDomain->Init();
 
-    // allocate a Virtual Call Stub Manager for the default domain
-    pDomain->InitVSD();
-
     pDomain->SetStage(AppDomain::STAGE_OPEN);
     pDomain->CreateDefaultBinder();
 
@@ -1821,7 +1809,6 @@ void AppDomain::Init()
         COMPlusThrowOM();
     }
 
-
 #ifdef FEATURE_TYPEEQUIVALENCE
     m_TypeEquivalenceCrst.Init(CrstTypeEquivalenceMap);
 #endif
@@ -1831,12 +1818,14 @@ void AppDomain::Init()
 
     SetStage(STAGE_READYFORMANAGEDCODE);
 
-
 #ifdef FEATURE_TIERED_COMPILATION
     m_tieredCompilationManager.Init();
 #endif
 
     m_nativeImageLoadCrst.Init(CrstNativeImageLoad);
+
+    m_typeIDMap.Init();
+    GetLoaderAllocator()->InitVirtualCallStubManager();
 } // AppDomain::Init
 
 void AppDomain::Stop()
