@@ -2,7 +2,7 @@
 
 <!-- A description of the package and where one can find more documentation -->
 
-`System.Composition.Convention` is part of the Managed Extensibility Framework (MEF) 2.0, a composition library for .NET that enables dependency injection through attributes.
+`System.Composition.Convention` is part of the Managed Extensibility Framework (MEF) 2.0, a composition library for .NET that enables dependency injection through attributes or conventions.
 
 This package simplifies the process of applying consistent patterns for part exports, imports, and metadata by using convention-based configurations.
 It is useful for scenarios where you want to avoid repetitive attribute-based decoration and instead define conventions for registering types in your composition container.
@@ -83,6 +83,7 @@ The main types provided by this library are:
 
 <!-- The related packages associated with this package -->
 
+* [System.Composition](https://www.nuget.org/packages/System.Composition)
 * [System.Composition.AttributedModel](https://www.nuget.org/packages/System.Composition.AttributedModel)
 * [System.Composition.Hosting](https://www.nuget.org/packages/System.Composition.Hosting)
 * [System.Composition.Runtime](https://www.nuget.org/packages/System.Composition.Runtime)
