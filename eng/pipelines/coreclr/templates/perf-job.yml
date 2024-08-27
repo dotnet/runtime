@@ -273,7 +273,7 @@ jobs:
           checkDownloadedFiles: true
 
     # Create Core_Root
-    - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) $(buildConfig) $(archType) generatelayoutonly $(librariesOverrideArg) $(_crossBuildPropertyArg)
+    - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) $(buildConfig) $(archType) generatelayoutonly $(librariesOverrideArg) $(_crossBuildPropertyArg) -p:Crossgen2Supported=false
       displayName: Create Core_Root
       condition: and(succeeded(), ne(variables.runtimeFlavorName, 'Mono'), not(in('${{ parameters.runtimeType }}', 'wasm', 'AndroidMono', 'iOSMono', 'iOSNativeAOT')))
 
