@@ -161,7 +161,7 @@ namespace Microsoft.Interop.Analyzers
                     new NativeMarshallingAttributeParser(env.Compilation, diagnostics),
                     new ComInterfaceMarshallingInfoProvider(env.Compilation)),
                 ImmutableArray.Create<ITypeBasedMarshallingInfoProvider>(
-                    new SafeHandleMarshallingInfoProvider(env.Compilation, method.ContainingType),
+                    new SafeHandleMarshallingInfoProvider(env.Compilation),
                     new ExplicitlyUnsupportedMarshallingInfoProvider(), // We don't support arrays, so we don't include the array marshalling info provider. Instead, we include our "explicitly unsupported" provider.
                     new CharMarshallingInfoProvider(defaultInfo),
                     new TrackingStringMarshallingInfoProvider(new StringMarshallingInfoProvider(env.Compilation, diagnostics, unparsedAttributeData, defaultInfo)), // We need to mark when we see string types to ensure we offer a code-fix that adds the string marshalling info.
