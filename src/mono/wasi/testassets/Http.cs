@@ -32,11 +32,11 @@ public static class WasiMainWrapper
             Console.WriteLine("impatient delay was canceled as expected");
         }
 
-        using HttpClient impatientClient = new();
-        impatientClient.DefaultRequestHeaders.Add("User-Agent", "dotnet WASI unit test");
-        impatientClient.Timeout = TimeSpan.FromMilliseconds(10);
+        using HttpClient impatientClient1 = new();
+        impatientClient1.DefaultRequestHeaders.Add("User-Agent", "dotnet WASI unit test");
+        impatientClient1.Timeout = TimeSpan.FromMilliseconds(10);
         try {
-            await impatientClient.GetAsync("https://corefx-net-http11.azurewebsites.net/Echo.ashx?delay10sec");
+            await impatientClient1.GetAsync("https://corefx-net-http11.azurewebsites.net/Echo.ashx?delay10sec");
             throw new Exception("request should have timed out");
         } catch (TaskCanceledException) {
             Console.WriteLine("1st impatientClient was canceled as expected");
@@ -44,12 +44,14 @@ public static class WasiMainWrapper
 
         GC.Collect();
 
+        using HttpClient impatientClient2 = new();
+        impatientClient2.DefaultRequestHeaders.Add("User-Agent", "dotnet WASI unit test");
         var cts = new CancellationTokenSource(10);
         try {
             // in reality server side doesn't delay because it doesn't implement it. So 10ms is bit fragile.
             // TODO: remove this once we have real WASI HTTP library unit tests with local server loop in Xharness.
             // https://github.com/dotnet/xharness/pull/1244
-            await impatientClient.GetAsync("https://corefx-net-http11.azurewebsites.net/Echo.ashx?delay10sec", cts.Token);
+            await impatientClient2.GetAsync("https://corefx-net-http11.azurewebsites.net/Echo.ashx?delay10sec", cts.Token);
             throw new Exception("request should have timed out");
         } catch (TaskCanceledException tce) {
             if (cts.Token != tce.CancellationToken)

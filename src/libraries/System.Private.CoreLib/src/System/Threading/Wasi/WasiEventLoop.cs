@@ -76,10 +76,12 @@ namespace System.Threading
             public readonly Pollable pollable;
             public readonly TaskCompletionSource taskCompletionSource;
             public readonly CancellationTokenRegistration cancellationTokenRegistration;
+            public readonly CancellationToken cancellationToken;
 
             public PollableHolder(Pollable pollable, CancellationToken cancellationToken)
             {
                 this.pollable = pollable;
+                this.cancellationToken = cancellationToken;
 
                 // this means that taskCompletionSource.Task.AsyncState -> this;
                 // which means PollableHolder will be alive until the Task alive
@@ -114,7 +116,7 @@ namespace System.Threading
 
                 // it will be removed from s_pollables on the next run
                 self.isDisposed = true;
-                self.taskCompletionSource.TrySetCanceled();
+                self.taskCompletionSource.TrySetCanceled(self.cancellationToken);
                 self.pollable.Dispose();
                 self.cancellationTokenRegistration.Dispose();
             }
