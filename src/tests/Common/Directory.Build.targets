@@ -68,7 +68,7 @@
     <MSBuild Condition="'$(Crossgen2Supported)' == 'true'"
       Targets="Restore"
       BuildInParallel="true"
-      Properties="NativeAotSupported=$(NativeAotSupported);UseNativeAotForComponents=$(UseNativeAotForComponents);ToolsConfiguration=$(_toolsConfiguration);MSBuildRestoreSessionId=$([System.Guid]::NewGuid());"
+      Properties="NativeAotSupported=$(NativeAotSupported);UseNativeAotForComponents=$(UseNativeAotForComponents);ToolsConfiguration=$(_toolsConfiguration);MSBuildRestoreSessionId=$([System.Guid]::NewGuid());LibrariesConfiguration=$(LibrariesConfiguration)"
       Projects="$(InstallerProjectRoot)pkg\sfx\Microsoft.NETCore.App\Microsoft.NETCore.App.Crossgen2.sfxproj" />
 
     <MSBuild Condition="'$(Crossgen2Supported)' == 'true'"
