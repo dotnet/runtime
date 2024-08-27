@@ -4042,6 +4042,9 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
 //     node - The hardware intrinsic node of the form
 //            ConditionalSelect(mask, trueValue, falseValue)
 //
+//  Returns:
+//    Next node to lower.
+//
 GenTree* Lowering::LowerHWIntrinsicCndSel(GenTreeHWIntrinsic* cndSelNode)
 {
     assert(cndSelNode->OperIsHWIntrinsic(NI_Sve_ConditionalSelect));
@@ -4134,13 +4137,15 @@ GenTree* Lowering::LowerHWIntrinsicCndSel(GenTreeHWIntrinsic* cndSelNode)
                 op3->SetUnusedValue();
             }
             op1->SetUnusedValue();
+
+            GenTree* next = cndSelNode->gtNext;
             BlockRange().Remove(cndSelNode);
 
             JITDUMP("lowering ConditionalSelect HWIntrinisic (after):\n");
             DISPTREERANGE(BlockRange(), op2);
             JITDUMP("\n");
 
-            return op2;
+            return next;
         }
     }
 
