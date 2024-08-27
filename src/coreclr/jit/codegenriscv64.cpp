@@ -6233,12 +6233,17 @@ void CodeGen::genIntCastOverflowCheck(GenTreeCast* cast, const GenIntCastDesc& d
     {
         // int -> uint/ulong
         // uint -> int
+        // long -> ulong
+        // ulong -> long
         case GenIntCastDesc::CHECK_POSITIVE:
         {
             // Check if int is smaller than zero
-            // If uint is bigger than INT32_MIN that it will be treated as a signed
-            // number so overflow will also be triggered
-            GetEmitter()->emitIns_R_R(INS_sext_w, EA_4BYTE, tempReg, reg);
+            if (desc.CheckSrcSize() == 4) // is int or uint
+            {
+                // If uint is bigger than INT32_MIN that it will be treated as a signed
+                // number so overflow will also be triggered
+                GetEmitter()->emitIns_R_R(INS_sext_w, EA_4BYTE, tempReg, reg);
+            }
             genJumpToThrowHlpBlk_la(SCK_OVERFLOW, INS_blt, tempReg, nullptr, REG_R0);
         }
         break;
