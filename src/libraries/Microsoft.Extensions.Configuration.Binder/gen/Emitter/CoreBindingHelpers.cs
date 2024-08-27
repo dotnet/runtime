@@ -969,12 +969,12 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 }
 
                 Action<string, string?>? writeOnSuccess = !canSet
-                     ? null
-                     : (bindedValueIdentifier, tempIdentifierStoringExpr) =>
-                     {
-                         if (memberAccessExpr != bindedValueIdentifier)
-                         {
-                             _writer.WriteLine($"{memberAccessExpr} = {bindedValueIdentifier};");
+                    ? null
+                    : (bindedValueIdentifier, tempIdentifierStoringExpr) =>
+                    {
+                        if (memberAccessExpr != bindedValueIdentifier)
+                        {
+                            _writer.WriteLine($"{memberAccessExpr} = {bindedValueIdentifier};");
 
                             if (tempIdentifierStoringExpr is not null)
                             {
@@ -987,8 +987,12 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                                 EmitStartBlock("else");
                                 _writer.WriteLine($"{memberAccessExpr} = {memberAccessExpr};");
                             }
-                         }
-                     };
+                        }
+                        else
+                        {
+                            _writer.WriteLine($"{tempIdentifierStoringExpr}");
+                        }
+                    };
 
                 EmitBindingLogic(
                     effectiveMemberType,
