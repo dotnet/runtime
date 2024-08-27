@@ -6281,11 +6281,6 @@ void CodeGen::genIntCastOverflowCheck(GenTreeCast* cast, const GenIntCastDesc& d
             const bool     isUnsigned   = castMinValue == 0;
             const unsigned castSize     = genTypeSize(cast->gtCastType);
 
-            // if ((desc.CheckSrcSize() < 8) && !isUnsigned) {
-            //     // Ensure that the register is correctly extended
-            //     GetEmitter()->emitIns_R_R(INS_sext_w, EA_4BYTE, tempReg, reg);
-            // }
-
             if (isUnsigned)
             {
                 const auto type_size = castSize * 8;
