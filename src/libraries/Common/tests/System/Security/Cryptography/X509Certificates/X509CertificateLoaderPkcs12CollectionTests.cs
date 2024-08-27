@@ -786,6 +786,28 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             }
         }
 
+        [Theory]
+        [InlineData(false, false)]
+        [InlineData(false, true)]
+        [InlineData(true, false)]
+        [InlineData(true, true)]
+        public void LoadWithLegacyProvider(bool preserveStorageProvider, bool ephemeralIfPossible)
+        {
+            Pkcs12LoaderLimits limits = new Pkcs12LoaderLimits { PreserveStorageProvider = preserveStorageProvider };
+            X509KeyStorageFlags flags = ephemeralIfPossible ? EphemeralIfPossible : X509KeyStorageFlags.DefaultKeySet;
+            bool expectLegacy = ((int)flags & 0x20) == 0 && preserveStorageProvider;
+
+            X509Certificate2Collection coll = LoadPfxNoFile(TestData.SChannelPfx, TestData.PlaceholderPw, flags, limits);
+
+            using (new CollectionDisposer(coll))
+            {
+                foreach (X509Certificate2 cert in coll)
+                {
+                    X509CertificateLoaderPkcs12Tests.VerifySChannelProvider(cert, expectLegacy);
+                }
+            }
+        }
+
         private sealed class CollectionDisposer : IDisposable
         {
             private readonly X509Certificate2Collection _coll;
