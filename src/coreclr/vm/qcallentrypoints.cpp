@@ -43,7 +43,6 @@
 
 #ifdef FEATURE_COMINTEROP
 #include "variant.h"
-#include "mngstdinterfaces.h"
 #endif // FEATURE_COMINTEROP
 
 #include "interoplibinterface.h"
@@ -337,6 +336,8 @@ static const Entry s_QCall[] =
     DllImportEntry(GetFileLoadExceptionMessage)
     DllImportEntry(FileLoadException_GetMessageForHR)
     DllImportEntry(Interlocked_MemoryBarrierProcessWide)
+    DllImportEntry(ObjectNative_GetHashCodeSlow)
+    DllImportEntry(ObjectNative_GetTypeSlow)
     DllImportEntry(ObjectNative_AllocateUninitializedClone)
     DllImportEntry(Monitor_Wait)
     DllImportEntry(Monitor_Pulse)
@@ -424,7 +425,18 @@ static const Entry s_QCall[] =
     DllImportEntry(StubHelpers_CreateCustomMarshalerHelper)
     DllImportEntry(StubHelpers_SetStringTrailByte)
     DllImportEntry(StubHelpers_ThrowInteropParamException)
+    DllImportEntry(StubHelpers_MarshalToManagedVaList)
+    DllImportEntry(StubHelpers_MarshalToUnmanagedVaList)
+    DllImportEntry(StubHelpers_ValidateObject)
+    DllImportEntry(StubHelpers_ValidateByref)
+#ifdef PROFILING_SUPPORTED
+    DllImportEntry(StubHelpers_ProfilerBeginTransitionCallback)
+    DllImportEntry(StubHelpers_ProfilerEndTransitionCallback)
+#endif
+    DllImportEntry(StubHelpers_GetHRExceptionObject)
 #if defined(FEATURE_COMINTEROP)
+    DllImportEntry(StubHelpers_GetCOMHRExceptionObject)
+    DllImportEntry(StubHelpers_GetCOMIPFromRCWSlow)
     DllImportEntry(ObjectMarshaler_ConvertToNative)
     DllImportEntry(ObjectMarshaler_ConvertToManaged)
     DllImportEntry(InterfaceMarshaler_ConvertToNative)
