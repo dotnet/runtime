@@ -4845,7 +4845,7 @@ GenTree* Lowering::LowerHWIntrinsicCreate(GenTreeHWIntrinsic* node)
         case TYP_INT:
         case TYP_UINT:
         {
-            unsigned       N            = 0;
+            size_t         N;
             GenTree*       opN          = nullptr;
             NamedIntrinsic insIntrinsic = NI_Illegal;
 
@@ -4958,9 +4958,9 @@ GenTree* Lowering::LowerHWIntrinsicCreate(GenTreeHWIntrinsic* node)
                     //   tmp3 = Sse2.UnpackLow(tmp1, tmp2);
                     //   ...
 
-                    unsigned O = N + 1;
-                    unsigned P = N + 2;
-                    unsigned Q = N + 3;
+                    size_t O = N + 1;
+                    size_t P = N + 2;
+                    size_t Q = N + 3;
 
                     tmp1 = comp->gtNewSimdHWIntrinsicNode(simdType, op[N], op[O], NI_SSE2_UnpackLow, CORINFO_TYPE_UBYTE,
                                                           simdSize);
