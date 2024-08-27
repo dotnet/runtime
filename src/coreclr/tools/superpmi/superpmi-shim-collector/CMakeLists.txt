@@ -54,6 +54,15 @@ else()
     set(SPMI_COLLECTOR_EXPORTS_LINKER_OPTION ${EXPORTS_LINKER_OPTION})
 endif (CLR_CMAKE_TARGET_WIN32)
 
+add_library(crashprotection STATIC)
+target_sources(crashprotection PUBLIC pipechannel.hpp crashprotection.hpp)
+target_include_directories(crashprotection PUBLIC .)
+target_sources(crashprotection PRIVATE
+  pipechannel.cpp
+  crashprotection.cpp
+)
+
+
 add_library_clr(superpmi-shim-collector
     SHARED
     ${SUPERPMI_SHIM_COLLECTOR_SOURCES}
@@ -74,6 +83,7 @@ if(CLR_CMAKE_HOST_UNIX)
         coreclrpal
         palrt
         coreclrminipal
+        crashprotection
     )
 else()
     target_link_libraries(superpmi-shim-collector
