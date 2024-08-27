@@ -6231,41 +6231,35 @@ void CodeGen::genIntCastOverflowCheck(GenTreeCast* cast, const GenIntCastDesc& d
 
     switch (desc.CheckKind())
     {
+        // int -> uint/ulong
+        // uint -> int
         case GenIntCastDesc::CHECK_POSITIVE:
         {
+            // Check if int is smaller than zero
             GetEmitter()->emitIns_R_R(INS_sext_w, EA_4BYTE, tempReg, reg);
             genJumpToThrowHlpBlk_la(SCK_OVERFLOW, INS_blt, tempReg, nullptr, REG_R0);
         }
         break;
 
+        // ulong/long -> uint
         case GenIntCastDesc::CHECK_UINT_RANGE:
         {
-            // We need to check if the value is not greater than 0xFFFFFFFF
-            // if the upper 32 bits are zero.
-            ssize_t imm = -1;
-            GetEmitter()->emitIns_R_R_I(INS_addi, EA_8BYTE, tempReg, REG_R0, imm);
-
-            GetEmitter()->emitIns_R_R_I(INS_slli, EA_8BYTE, tempReg, tempReg, 32);
-            GetEmitter()->emitIns_R_R_R(INS_and, EA_8BYTE, tempReg, reg, tempReg);
-            genJumpToThrowHlpBlk_la(SCK_OVERFLOW, INS_bne, tempReg);
+            // Check if upper 32-bits are zeros
+            GetEmitter()->emitIns_R_R_I(INS_slli, EA_8BYTE, tempReg, reg, 32);
+            genJumpToThrowHlpBlk_la(SCK_OVERFLOW, INS_bne, tempReg, nullptr, REG_R0);
         }
         break;
 
+        // ulong -> int
         case GenIntCastDesc::CHECK_POSITIVE_INT_RANGE:
         {
-            // We need to check if the value is not greater than 0x7FFFFFFF
-            // if the upper 33 bits are zero.
-            // instGen_Set_Reg_To_Imm(EA_8BYTE, tempReg, 0xFFFFFFFF80000000LL);
-            ssize_t imm = -1;
-            GetEmitter()->emitIns_R_R_I(INS_addi, EA_8BYTE, tempReg, REG_R0, imm);
-
-            GetEmitter()->emitIns_R_R_I(INS_slli, EA_8BYTE, tempReg, tempReg, 31);
-
-            GetEmitter()->emitIns_R_R_R(INS_and, EA_8BYTE, tempReg, reg, tempReg);
-            genJumpToThrowHlpBlk_la(SCK_OVERFLOW, INS_bne, tempReg);
+            // Check if upper 33-bits are zeros (biggest allowed value is 0x7FFFFFFF)
+            GetEmitter()->emitIns_R_R_I(INS_slli, EA_8BYTE, tempReg, reg, 33);
+            genJumpToThrowHlpBlk_la(SCK_OVERFLOW, INS_bne, tempReg, nullptr, REG_R0);
         }
         break;
 
+        // long -> int
         case GenIntCastDesc::CHECK_INT_RANGE:
         {
             assert(tempReg != reg);
@@ -6277,7 +6271,8 @@ void CodeGen::genIntCastOverflowCheck(GenTreeCast* cast, const GenIntCastDesc& d
         }
         break;
 
-        default:
+        // * -> short/ushort/byte/ubyte
+        default: // CHECK_SMALL_INT_RANGE
         {
             assert(desc.CheckKind() == GenIntCastDesc::CHECK_SMALL_INT_RANGE);
             const int   castMaxValue = desc.CheckSmallIntMax();
