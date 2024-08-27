@@ -72,10 +72,6 @@ FCFuncStart(gDiagnosticsDebugger)
     FCFuncElement("IsLogging", DebugDebugger::IsLogging)
 FCFuncEnd()
 
-FCFuncStart(gDiagnosticsStackTrace)
-    FCFuncElement("GetStackFramesInternal", DebugStackTrace::GetStackFramesInternal)
-FCFuncEnd()
-
 FCFuncStart(gEnvironmentFuncs)
     FCFuncElement("get_CurrentManagedThreadId", JIT_GetCurrentManagedThreadId)
     FCFuncElement("get_TickCount", SystemNative::GetTickCount)
@@ -513,7 +509,6 @@ FCClassElement("RuntimeType", "System", gSystem_RuntimeType)
 FCClassElement("RuntimeTypeHandle", "System", gCOMTypeHandleFuncs)
 
 FCClassElement("Signature", "System", gSignatureNative)
-FCClassElement("StackTrace", "System.Diagnostics", gDiagnosticsStackTrace)
 FCClassElement("Stream", "System.IO", gStreamFuncs)
 FCClassElement("String", "System", gStringFuncs)
 FCClassElement("StubHelpers", "System.StubHelpers", gStubHelperFuncs)

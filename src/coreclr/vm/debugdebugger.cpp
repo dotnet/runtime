@@ -226,43 +226,221 @@ FCIMPL0(FC_BOOL_RET, DebugDebugger::IsLogging)
 }
 FCIMPLEND
 
-FCIMPL4(void, DebugStackTrace::GetStackFramesInternal,
-        StackFrameHelper* pStackFrameHelperUNSAFE,
-        INT32 iSkip,
-        FC_BOOL_ARG fNeedFileInfo,
-        Object* pExceptionUNSAFE
-       )
+static StackWalkAction GetStackFramesCallback(CrawlFrame* pCf, VOID* data)
 {
     CONTRACTL
     {
-        FCALL_CHECK;
-        PRECONDITION(CheckPointer(pStackFrameHelperUNSAFE));
-        PRECONDITION(CheckPointer(pExceptionUNSAFE, NULL_OK));
+        THROWS;
+        GC_TRIGGERS;
+        MODE_COOPERATIVE;
     }
     CONTRACTL_END;
 
-    STACKFRAMEHELPERREF pStackFrameHelper   = (STACKFRAMEHELPERREF)ObjectToOBJECTREF(pStackFrameHelperUNSAFE);
-    OBJECTREF           pException          = ObjectToOBJECTREF(pExceptionUNSAFE);
-    PTRARRAYREF         dynamicMethodArrayOrig = NULL;
+    DebugStackTrace::GetStackFramesData* pData = (DebugStackTrace::GetStackFramesData*)data;
 
-    HELPER_METHOD_FRAME_BEGIN_2(pStackFrameHelper, pException);
+    if (pData->skip > 0)
+    {
+        pData->skip--;
+        return SWA_CONTINUE;
+    }
 
-    GCPROTECT_BEGIN(dynamicMethodArrayOrig);
+    // <REVISIT_TODO>@todo: How do we know what kind of frame we have?</REVISIT_TODO>
+    //        Can we always assume FramedMethodFrame?
+    //        NOT AT ALL!!!, but we can assume it's a function
+    //                       because we asked the stackwalker for it!
+    MethodDesc* pFunc = pCf->GetFunction();
+
+    if (pData->cElements >= pData->cElementsAllocated)
+    {
+
+        DebugStackTrace::Element* pTemp = new (nothrow) DebugStackTrace::Element[2*pData->cElementsAllocated];
+
+        if (!pTemp)
+        {
+            return SWA_ABORT;
+        }
+
+        memcpy(pTemp, pData->pElements, pData->cElementsAllocated * sizeof(DebugStackTrace::Element));
+
+        delete [] pData->pElements;
+
+        pData->pElements = pTemp;
+        pData->cElementsAllocated *= 2;
+    }
+
+    PCODE ip;
+    DWORD dwNativeOffset;
+
+    if (pCf->IsFrameless())
+    {
+        // Real method with jitted code.
+        dwNativeOffset = pCf->GetRelOffset();
+        ip = GetControlPC(pCf->GetRegisterSet());
+    }
+    else
+    {
+        ip = (PCODE)NULL;
+        dwNativeOffset = 0;
+    }
+
+    // Pass on to InitPass2 that the IP has already been adjusted (decremented by 1)
+    INT flags = pCf->IsIPadjusted() ? STEF_IP_ADJUSTED : 0;
+
+    pData->pElements[pData->cElements].InitPass1(
+            dwNativeOffset,
+            pFunc,
+            ip,
+            flags);
+
+    // We'll init the IL offsets outside the TSL lock.
+
+    ++pData->cElements;
+
+    // Since we may be asynchronously walking another thread's stack,
+    // check (frequently) for stack-buffer-overrun corruptions after
+    // any long operation
+    pCf->CheckGSCookies();
+
+    // check if we already have the number of frames that the user had asked for
+    if ((pData->NumFramesRequested != 0) && (pData->NumFramesRequested <= pData->cElements))
+    {
+        return SWA_ABORT;
+    }
+
+    return SWA_CONTINUE;
+}
+
+static void GetStackFrames(
+    Frame *pStartFrame,
+    void* pStopStack,
+    DebugStackTrace::GetStackFramesData *pData)
+{
+    CONTRACTL
+    {
+        MODE_COOPERATIVE;
+        GC_TRIGGERS;
+        THROWS;
+    }
+    CONTRACTL_END;
+
+    ASSERT (pData != NULL);
+
+    pData->cElements = 0;
+
+    // if the caller specified (< 20) frames are required, then allocate
+    // only that many
+    if ((pData->NumFramesRequested > 0) && (pData->NumFramesRequested < 20))
+    {
+        pData->cElementsAllocated = pData->NumFramesRequested;
+    }
+    else
+    {
+        pData->cElementsAllocated = 20;
+    }
+
+    // Allocate memory for the initial 'n' frames
+    pData->pElements = new DebugStackTrace::Element[pData->cElementsAllocated];
+
+    if (pData->TargetThread == NULL ||
+        pData->TargetThread->GetInternal() == GetThread())
+    {
+        // Null target thread specifies current thread.
+        GetThread()->StackWalkFrames(GetStackFramesCallback, pData, FUNCTIONSONLY | QUICKUNWIND, pStartFrame);
+    }
+    else
+    {
+        Thread *pThread = pData->TargetThread->GetInternal();
+        _ASSERTE (pThread != NULL);
+
+        // Here's the timeline for the TS_SyncSuspended bit.
+        // 0) TS_SyncSuspended is not set.
+        // 1) The suspending thread grabs the thread store lock
+        //    then puts in place trip wires for the suspendee (if it is in managed code)
+        //    and releases the thread store lock.
+        // 2) The suspending thread waits for the "SafeEvent".
+        // 3) The suspendee continues execution until it tries to enter preemptive mode.
+        //    If it trips over the wires put in place by the suspending thread,
+        //    it will try to enter preemptive mode.
+        // 4) The suspendee sets TS_SyncSuspended and the "SafeEvent".
+        // 5) AT THIS POINT, IT IS SAFE TO WALK THE SUSPENDEE'S STACK.
+        // 6) The suspendee clears the TS_SyncSuspended flag.
+        //
+        // In other words, it is safe to trace the thread's stack IF we're holding the
+        // thread store lock AND TS_SyncSuspended is set.
+        //
+        // This is because:
+        // - If we were not holding the thread store lock, the thread could be resumed
+        //   underneath us.
+        // - When TS_SyncSuspended is set, we race against it resuming execution.
+
+        ThreadStoreLockHolder tsl;
+
+        // We erect a barrier so that if the thread tries to disable preemptive GC,
+        // it could resume execution of managed code during our stack walk.
+        TSSuspendHolder shTrap;
+
+        Thread::ThreadState state = pThread->GetSnapshotState();
+        if (state & (Thread::TS_Unstarted|Thread::TS_Dead|Thread::TS_Detached))
+        {
+            goto LSafeToTrace;
+        }
+
+        COMPlusThrow(kThreadStateException, IDS_EE_THREAD_BAD_STATE);
+
+    LSafeToTrace:
+        pThread->StackWalkFrames(GetStackFramesCallback,
+                                 pData,
+                                 FUNCTIONSONLY|ALLOW_ASYNC_STACK_WALK,
+                                 pStartFrame);
+    }
+
+    // Do a 2nd pass outside of any locks.
+    // This will compute IL offsets.
+    for (INT32 i = 0; i < pData->cElements; i++)
+    {
+        pData->pElements[i].InitPass2();
+    }
+}
+
+extern "C" void QCALLTYPE StackTrace_GetStackFramesInternal(
+    QCall::ObjectHandleOnStack stackFrameHelper,
+    INT32 iSkip,
+    BOOL fNeedFileInfo,
+    QCall::ObjectHandleOnStack exception)
+{
+    QCALL_CONTRACT;
 
     ASSERT(iSkip >= 0);
 
-    GetStackFramesData data;
+    BEGIN_QCALL;
+
+    GCX_COOP();
+
+    struct
+    {
+        STACKFRAMEHELPERREF pStackFrameHelper;
+        OBJECTREF pException;
+        PTRARRAYREF dynamicMethodArrayOrig;
+    } gc{};
+    gc.pStackFrameHelper = NULL;
+    gc.pException = NULL;
+    gc.dynamicMethodArrayOrig = NULL;
+    GCPROTECT_BEGIN(gc);
+    gc.pStackFrameHelper = (STACKFRAMEHELPERREF)stackFrameHelper.Get();
+    gc.pException = exception.Get();
+
+    DebugStackTrace::GetStackFramesData data;
 
     data.pDomain = GetAppDomain();
 
     data.skip = iSkip;
 
-    data.NumFramesRequested = pStackFrameHelper->iFrameCount;
+    data.NumFramesRequested = gc.pStackFrameHelper->iFrameCount;
 
-    if (pException == NULL)
+    if (gc.pException == NULL)
     {
         // Thread is NULL if it's the current thread.
-        data.TargetThread = pStackFrameHelper->targetThread;
+        data.TargetThread = gc.pStackFrameHelper->targetThread;
         GetStackFrames(NULL, (void*)-1, &data);
     }
     else
@@ -272,13 +450,17 @@ FCIMPL4(void, DebugStackTrace::GetStackFramesInternal,
         // is thrown again (resetting the dynamic method array reference in the object)
         // that may result in resolver objects getting collected before they can be reachable again
         // (from the code below).
-        GetStackFramesFromException(&pException, &data, &dynamicMethodArrayOrig);
+        DebugStackTrace::GetStackFramesFromException(&gc.pException, &data, &gc.dynamicMethodArrayOrig);
     }
 
-    if (data.cElements != 0)
+    if (data.cElements == 0)
+    {
+        gc.pStackFrameHelper->iFrameCount = 0;
+    }
+    else
     {
 #if defined(FEATURE_ISYM_READER) && defined(FEATURE_COMINTEROP)
-        if (FC_ACCESS_BOOL(fNeedFileInfo))
+        if (fNeedFileInfo)
         {
              // Calls to COM up ahead.
             EnsureComStarted();
@@ -287,59 +469,59 @@ FCIMPL4(void, DebugStackTrace::GetStackFramesInternal,
 
         // Allocate memory for the MethodInfo objects
         BASEARRAYREF methodInfoArray = (BASEARRAYREF) AllocatePrimitiveArray(ELEMENT_TYPE_I, data.cElements);
-        SetObjectReference( (OBJECTREF *)&(pStackFrameHelper->rgMethodHandle), (OBJECTREF)methodInfoArray);
+        SetObjectReference( (OBJECTREF *)&(gc.pStackFrameHelper->rgMethodHandle), (OBJECTREF)methodInfoArray);
 
         // Allocate memory for the Offsets
         OBJECTREF offsets = AllocatePrimitiveArray(ELEMENT_TYPE_I4, data.cElements);
-        SetObjectReference( (OBJECTREF *)&(pStackFrameHelper->rgiOffset), (OBJECTREF)offsets);
+        SetObjectReference( (OBJECTREF *)&(gc.pStackFrameHelper->rgiOffset), (OBJECTREF)offsets);
 
         // Allocate memory for the ILOffsets
         OBJECTREF ilOffsets = AllocatePrimitiveArray(ELEMENT_TYPE_I4, data.cElements);
-        SetObjectReference( (OBJECTREF *)&(pStackFrameHelper->rgiILOffset), (OBJECTREF)ilOffsets);
+        SetObjectReference( (OBJECTREF *)&(gc.pStackFrameHelper->rgiILOffset), (OBJECTREF)ilOffsets);
 
         // Allocate memory for the array of assembly file names
         PTRARRAYREF assemblyPathArray = (PTRARRAYREF) AllocateObjectArray(data.cElements, g_pStringClass);
-        SetObjectReference( (OBJECTREF *)&(pStackFrameHelper->rgAssemblyPath), (OBJECTREF)assemblyPathArray);
+        SetObjectReference( (OBJECTREF *)&(gc.pStackFrameHelper->rgAssemblyPath), (OBJECTREF)assemblyPathArray);
 
         // Allocate memory for the array of assemblies
         PTRARRAYREF assemblyArray = (PTRARRAYREF) AllocateObjectArray(data.cElements, g_pObjectClass);
-        SetObjectReference( (OBJECTREF *)&(pStackFrameHelper->rgAssembly), (OBJECTREF)assemblyArray);
+        SetObjectReference( (OBJECTREF *)&(gc.pStackFrameHelper->rgAssembly), (OBJECTREF)assemblyArray);
 
         // Allocate memory for the LoadedPeAddress
         BASEARRAYREF loadedPeAddressArray = (BASEARRAYREF) AllocatePrimitiveArray(ELEMENT_TYPE_I, data.cElements);
-        SetObjectReference( (OBJECTREF *)&(pStackFrameHelper->rgLoadedPeAddress), (OBJECTREF)loadedPeAddressArray);
+        SetObjectReference( (OBJECTREF *)&(gc.pStackFrameHelper->rgLoadedPeAddress), (OBJECTREF)loadedPeAddressArray);
 
         // Allocate memory for the LoadedPeSize
         OBJECTREF loadedPeSizeArray = AllocatePrimitiveArray(ELEMENT_TYPE_I4, data.cElements);
-        SetObjectReference( (OBJECTREF *)&(pStackFrameHelper->rgiLoadedPeSize), (OBJECTREF)loadedPeSizeArray);
+        SetObjectReference( (OBJECTREF *)&(gc.pStackFrameHelper->rgiLoadedPeSize), (OBJECTREF)loadedPeSizeArray);
 
         // Allocate memory for the IsFileLayout flags
         OBJECTREF isFileLayouts = AllocatePrimitiveArray(ELEMENT_TYPE_BOOLEAN, data.cElements);
-        SetObjectReference( (OBJECTREF *)&(pStackFrameHelper->rgiIsFileLayout), (OBJECTREF)isFileLayouts);
+        SetObjectReference( (OBJECTREF *)&(gc.pStackFrameHelper->rgiIsFileLayout), (OBJECTREF)isFileLayouts);
 
         // Allocate memory for the InMemoryPdbAddress
         BASEARRAYREF inMemoryPdbAddressArray = (BASEARRAYREF) AllocatePrimitiveArray(ELEMENT_TYPE_I, data.cElements);
-        SetObjectReference( (OBJECTREF *)&(pStackFrameHelper->rgInMemoryPdbAddress), (OBJECTREF)inMemoryPdbAddressArray);
+        SetObjectReference( (OBJECTREF *)&(gc.pStackFrameHelper->rgInMemoryPdbAddress), (OBJECTREF)inMemoryPdbAddressArray);
 
         // Allocate memory for the InMemoryPdbSize
         OBJECTREF inMemoryPdbSizeArray = AllocatePrimitiveArray(ELEMENT_TYPE_I4, data.cElements);
-        SetObjectReference( (OBJECTREF *)&(pStackFrameHelper->rgiInMemoryPdbSize), (OBJECTREF)inMemoryPdbSizeArray);
+        SetObjectReference( (OBJECTREF *)&(gc.pStackFrameHelper->rgiInMemoryPdbSize), (OBJECTREF)inMemoryPdbSizeArray);
 
         // Allocate memory for the MethodTokens
         OBJECTREF methodTokens = AllocatePrimitiveArray(ELEMENT_TYPE_I4, data.cElements);
-        SetObjectReference( (OBJECTREF *)&(pStackFrameHelper->rgiMethodToken), (OBJECTREF)methodTokens);
+        SetObjectReference( (OBJECTREF *)&(gc.pStackFrameHelper->rgiMethodToken), (OBJECTREF)methodTokens);
 
         // Allocate memory for the Filename string objects
         PTRARRAYREF filenameArray = (PTRARRAYREF) AllocateObjectArray(data.cElements, g_pStringClass);
-        SetObjectReference( (OBJECTREF *)&(pStackFrameHelper->rgFilename), (OBJECTREF)filenameArray);
+        SetObjectReference( (OBJECTREF *)&(gc.pStackFrameHelper->rgFilename), (OBJECTREF)filenameArray);
 
         // Allocate memory for the LineNumbers
         OBJECTREF lineNumbers = AllocatePrimitiveArray(ELEMENT_TYPE_I4, data.cElements);
-        SetObjectReference( (OBJECTREF *)&(pStackFrameHelper->rgiLineNumber), (OBJECTREF)lineNumbers);
+        SetObjectReference( (OBJECTREF *)&(gc.pStackFrameHelper->rgiLineNumber), (OBJECTREF)lineNumbers);
 
         // Allocate memory for the ColumnNumbers
         OBJECTREF columnNumbers = AllocatePrimitiveArray(ELEMENT_TYPE_I4, data.cElements);
-        SetObjectReference( (OBJECTREF *)&(pStackFrameHelper->rgiColumnNumber), (OBJECTREF)columnNumbers);
+        SetObjectReference( (OBJECTREF *)&(gc.pStackFrameHelper->rgiColumnNumber), (OBJECTREF)columnNumbers);
 
         // Allocate memory for the flag indicating if this frame represents the last one from a foreign
         // exception stack trace provided we have any such frames. Otherwise, set it to null.
@@ -353,11 +535,11 @@ FCIMPL4(void, DebugStackTrace::GetStackFramesInternal,
         {
             IsLastFrameFromForeignStackTraceFlags = AllocatePrimitiveArray(ELEMENT_TYPE_BOOLEAN, data.cElements);
 
-            SetObjectReference( (OBJECTREF *)&(pStackFrameHelper->rgiLastFrameFromForeignExceptionStackTrace), (OBJECTREF)IsLastFrameFromForeignStackTraceFlags);
+            SetObjectReference( (OBJECTREF *)&(gc.pStackFrameHelper->rgiLastFrameFromForeignExceptionStackTrace), (OBJECTREF)IsLastFrameFromForeignStackTraceFlags);
         }
         else
         {
-            SetObjectReference( (OBJECTREF *)&(pStackFrameHelper->rgiLastFrameFromForeignExceptionStackTrace), NULL);
+            SetObjectReference( (OBJECTREF *)&(gc.pStackFrameHelper->rgiLastFrameFromForeignExceptionStackTrace), NULL);
         }
 
         // Determine if there are any dynamic methods in the stack trace.  If there are,
@@ -381,7 +563,7 @@ FCIMPL4(void, DebugStackTrace::GetStackFramesInternal,
         if (iNumDynamics)
         {
             PTRARRAYREF dynamicDataArray = (PTRARRAYREF) AllocateObjectArray(iNumDynamics, g_pObjectClass);
-            SetObjectReference( (OBJECTREF *)&(pStackFrameHelper->dynamicMethods), (OBJECTREF)dynamicDataArray);
+            SetObjectReference( (OBJECTREF *)&(gc.pStackFrameHelper->dynamicMethods), (OBJECTREF)dynamicDataArray);
         }
 
         int iNumValidFrames = 0;
@@ -397,25 +579,25 @@ FCIMPL4(void, DebugStackTrace::GetStackFramesInternal,
             _ASSERTE(pFunc->IsRuntimeMethodHandle());
 
             // Method handle
-            size_t *pElem = (size_t*)pStackFrameHelper->rgMethodHandle->GetDataPtr();
+            size_t *pElem = (size_t*)gc.pStackFrameHelper->rgMethodHandle->GetDataPtr();
             pElem[iNumValidFrames] = (size_t)pFunc;
 
             // Native offset
-            CLR_I4 *pI4 = (CLR_I4 *)((I4ARRAYREF)pStackFrameHelper->rgiOffset)->GetDirectPointerToNonObjectElements();
+            CLR_I4 *pI4 = (CLR_I4 *)((I4ARRAYREF)gc.pStackFrameHelper->rgiOffset)->GetDirectPointerToNonObjectElements();
             pI4[iNumValidFrames] = data.pElements[i].dwOffset;
 
             // IL offset
-            CLR_I4 *pILI4 = (CLR_I4 *)((I4ARRAYREF)pStackFrameHelper->rgiILOffset)->GetDirectPointerToNonObjectElements();
+            CLR_I4 *pILI4 = (CLR_I4 *)((I4ARRAYREF)gc.pStackFrameHelper->rgiILOffset)->GetDirectPointerToNonObjectElements();
             pILI4[iNumValidFrames] = data.pElements[i].dwILOffset;
 
             // Assembly
             OBJECTREF pAssembly = pFunc->GetAssembly()->GetExposedObject();
-            pStackFrameHelper->rgAssembly->SetAt(iNumValidFrames, pAssembly);
+            gc.pStackFrameHelper->rgAssembly->SetAt(iNumValidFrames, pAssembly);
 
             if (data.fDoWeHaveAnyFramesFromForeignStackTrace)
             {
                 // Set the BOOL indicating if the frame represents the last frame from a foreign exception stack trace.
-                CLR_U1 *pIsLastFrameFromForeignExceptionStackTraceU1 = (CLR_U1 *)((BOOLARRAYREF)pStackFrameHelper->rgiLastFrameFromForeignExceptionStackTrace)
+                CLR_U1 *pIsLastFrameFromForeignExceptionStackTraceU1 = (CLR_U1 *)((BOOLARRAYREF)gc.pStackFrameHelper->rgiLastFrameFromForeignExceptionStackTrace)
                                             ->GetDirectPointerToNonObjectElements();
                 pIsLastFrameFromForeignExceptionStackTraceU1 [iNumValidFrames] = (CLR_U1)(data.pElements[i].flags & STEF_LAST_FRAME_FROM_FOREIGN_STACK_TRACE);
             }
@@ -432,13 +614,13 @@ FCIMPL4(void, DebugStackTrace::GetStackFramesInternal,
                     OBJECTREF pResolver = pDMD->GetLCGMethodResolver()->GetManagedResolver();
                     _ASSERTE(pResolver != NULL);
 
-                    ((PTRARRAYREF)pStackFrameHelper->dynamicMethods)->SetAt(iCurDynamic++, pResolver);
+                    ((PTRARRAYREF)gc.pStackFrameHelper->dynamicMethods)->SetAt(iCurDynamic++, pResolver);
                 }
                 else if (pMethod->GetMethodTable()->Collectible())
                 {
                     OBJECTREF pLoaderAllocator = pMethod->GetMethodTable()->GetLoaderAllocator()->GetExposedObject();
                     _ASSERTE(pLoaderAllocator != NULL);
-                    ((PTRARRAYREF)pStackFrameHelper->dynamicMethods)->SetAt(iCurDynamic++, pLoaderAllocator);
+                    ((PTRARRAYREF)gc.pStackFrameHelper->dynamicMethods)->SetAt(iCurDynamic++, pLoaderAllocator);
                 }
             }
 
@@ -463,7 +645,7 @@ FCIMPL4(void, DebugStackTrace::GetStackFramesInternal,
             }
 #endif
             // Check if the user wants the filenumber, linenumber info and that it is possible.
-            if (!fIsEnc && FC_ACCESS_BOOL(fNeedFileInfo))
+            if (!fIsEnc && fNeedFileInfo)
             {
 #ifdef FEATURE_ISYM_READER
                 BOOL fPortablePDB = FALSE;
@@ -654,15 +836,15 @@ FCIMPL4(void, DebugStackTrace::GetStackFramesInternal,
                     if (fFileInfoSet)
                     {
                         // Set the line and column numbers
-                        CLR_I4 *pI4Line = (CLR_I4 *)((I4ARRAYREF)pStackFrameHelper->rgiLineNumber)->GetDirectPointerToNonObjectElements();
+                        CLR_I4 *pI4Line = (CLR_I4 *)((I4ARRAYREF)gc.pStackFrameHelper->rgiLineNumber)->GetDirectPointerToNonObjectElements();
                         pI4Line[iNumValidFrames] = sourceLine;
 
-                        CLR_I4 *pI4Column = (CLR_I4 *)((I4ARRAYREF)pStackFrameHelper->rgiColumnNumber)->GetDirectPointerToNonObjectElements();
+                        CLR_I4 *pI4Column = (CLR_I4 *)((I4ARRAYREF)gc.pStackFrameHelper->rgiColumnNumber)->GetDirectPointerToNonObjectElements();
                         pI4Column[iNumValidFrames] = sourceColumn;
 
                         // Set the file name
                         OBJECTREF obj = (OBJECTREF) StringObject::NewString(wszFileName);
-                        pStackFrameHelper->rgFilename->SetAt(iNumValidFrames, obj);
+                        gc.pStackFrameHelper->rgFilename->SetAt(iNumValidFrames, obj);
                     }
                 }
 
@@ -672,7 +854,7 @@ FCIMPL4(void, DebugStackTrace::GetStackFramesInternal,
 #endif // FEATURE_ISYM_READER
                 {
                     // Save MethodToken for the function
-                    CLR_I4 *pMethodToken = (CLR_I4 *)((I4ARRAYREF)pStackFrameHelper->rgiMethodToken)->GetDirectPointerToNonObjectElements();
+                    CLR_I4 *pMethodToken = (CLR_I4 *)((I4ARRAYREF)gc.pStackFrameHelper->rgiMethodToken)->GetDirectPointerToNonObjectElements();
                     pMethodToken[iNumValidFrames] = pMethod->GetMemberDef();
 
                     PEAssembly *pPEAssembly = pModule->GetPEAssembly();
@@ -682,17 +864,17 @@ FCIMPL4(void, DebugStackTrace::GetStackFramesInternal,
                     PTR_CVOID peAddress = pPEAssembly->GetLoadedImageContents(&peSize);
 
                     // Save the PE address and size
-                    PTR_CVOID *pLoadedPeAddress = (PTR_CVOID *)pStackFrameHelper->rgLoadedPeAddress->GetDataPtr();
+                    PTR_CVOID *pLoadedPeAddress = (PTR_CVOID *)gc.pStackFrameHelper->rgLoadedPeAddress->GetDataPtr();
                     pLoadedPeAddress[iNumValidFrames] = peAddress;
 
-                    CLR_I4 *pLoadedPeSize = (CLR_I4 *)((I4ARRAYREF)pStackFrameHelper->rgiLoadedPeSize)->GetDirectPointerToNonObjectElements();
+                    CLR_I4 *pLoadedPeSize = (CLR_I4 *)((I4ARRAYREF)gc.pStackFrameHelper->rgiLoadedPeSize)->GetDirectPointerToNonObjectElements();
                     pLoadedPeSize[iNumValidFrames] = (CLR_I4)peSize;
 
                     // Set flag indicating PE file in memory has the on disk layout
                     if (!pPEAssembly->IsReflectionEmit())
                     {
                         // This flag is only available for non-dynamic assemblies.
-                        CLR_U1 *pIsFileLayout = (CLR_U1 *)((BOOLARRAYREF)pStackFrameHelper->rgiIsFileLayout)->GetDirectPointerToNonObjectElements();
+                        CLR_U1 *pIsFileLayout = (CLR_U1 *)((BOOLARRAYREF)gc.pStackFrameHelper->rgiIsFileLayout)->GetDirectPointerToNonObjectElements();
                         pIsFileLayout[iNumValidFrames] = (CLR_U1) pPEAssembly->GetLoadedLayout()->IsFlat();
                     }
 
@@ -703,10 +885,10 @@ FCIMPL4(void, DebugStackTrace::GetStackFramesInternal,
                         MemoryRange range = stream->GetRawBuffer();
 
                         // Save the in-memory PDB address and size
-                        PTR_VOID *pInMemoryPdbAddress = (PTR_VOID *)pStackFrameHelper->rgInMemoryPdbAddress->GetDataPtr();
+                        PTR_VOID *pInMemoryPdbAddress = (PTR_VOID *)gc.pStackFrameHelper->rgInMemoryPdbAddress->GetDataPtr();
                         pInMemoryPdbAddress[iNumValidFrames] = range.StartAddress();
 
-                        CLR_I4 *pInMemoryPdbSize = (CLR_I4 *)((I4ARRAYREF)pStackFrameHelper->rgiInMemoryPdbSize)->GetDirectPointerToNonObjectElements();
+                        CLR_I4 *pInMemoryPdbSize = (CLR_I4 *)((I4ARRAYREF)gc.pStackFrameHelper->rgiInMemoryPdbSize)->GetDirectPointerToNonObjectElements();
                         pInMemoryPdbSize[iNumValidFrames] = (CLR_I4)range.Size();
                     }
                     else
@@ -716,7 +898,7 @@ FCIMPL4(void, DebugStackTrace::GetStackFramesInternal,
                         if (!assemblyPath.IsEmpty())
                         {
                             OBJECTREF obj = (OBJECTREF)StringObject::NewString(assemblyPath.GetUnicode());
-                            pStackFrameHelper->rgAssemblyPath->SetAt(iNumValidFrames, obj);
+                            gc.pStackFrameHelper->rgAssemblyPath->SetAt(iNumValidFrames, obj);
                         }
                     }
                 }
@@ -725,20 +907,15 @@ FCIMPL4(void, DebugStackTrace::GetStackFramesInternal,
             iNumValidFrames++;
         }
 
-        pStackFrameHelper->iFrameCount = iNumValidFrames;
-    }
-    else
-    {
-        pStackFrameHelper->iFrameCount = 0;
+        gc.pStackFrameHelper->iFrameCount = iNumValidFrames;
     }
 
     GCPROTECT_END();
 
-    HELPER_METHOD_FRAME_END();
+    END_QCALL;
 }
-FCIMPLEND
 
-extern MethodDesc* QCALLTYPE StackFrame_GetMethodDescFromNativeIP(LPVOID ip)
+extern "C" MethodDesc* QCALLTYPE StackFrame_GetMethodDescFromNativeIP(LPVOID ip)
 {
     QCALL_CONTRACT;
 
@@ -795,201 +972,6 @@ extern "C" void QCALLTYPE DebugDebugger_CustomNotification(QCall::ObjectHandleOn
     }
 #endif // DEBUGGING_SUPPORTED
 }
-
-void DebugStackTrace::GetStackFramesHelper(Frame *pStartFrame,
-                                           void* pStopStack,
-                                           GetStackFramesData *pData
-                                          )
-{
-    CONTRACTL
-    {
-        MODE_COOPERATIVE;
-        GC_TRIGGERS;
-        THROWS;
-    }
-    CONTRACTL_END;
-
-    ASSERT (pData != NULL);
-
-    pData->cElements = 0;
-
-    // if the caller specified (< 20) frames are required, then allocate
-    // only that many
-    if ((pData->NumFramesRequested > 0) && (pData->NumFramesRequested < 20))
-    {
-        pData->cElementsAllocated = pData->NumFramesRequested;
-    }
-    else
-    {
-        pData->cElementsAllocated = 20;
-    }
-
-    // Allocate memory for the initial 'n' frames
-    pData->pElements = new DebugStackTraceElement[pData->cElementsAllocated];
-
-    if (pData->TargetThread == NULL ||
-        pData->TargetThread->GetInternal() == GetThread())
-    {
-        // Null target thread specifies current thread.
-        GetThread()->StackWalkFrames(GetStackFramesCallback, pData, FUNCTIONSONLY | QUICKUNWIND, pStartFrame);
-    }
-    else
-    {
-        Thread *pThread = pData->TargetThread->GetInternal();
-        _ASSERTE (pThread != NULL);
-
-        // Here's the timeline for the TS_SyncSuspended bit.
-        // 0) TS_SyncSuspended is not set.
-        // 1) The suspending thread grabs the thread store lock
-        //    then puts in place trip wires for the suspendee (if it is in managed code)
-        //    and releases the thread store lock.
-        // 2) The suspending thread waits for the "SafeEvent".
-        // 3) The suspendee continues execution until it tries to enter preemptive mode.
-        //    If it trips over the wires put in place by the suspending thread,
-        //    it will try to enter preemptive mode.
-        // 4) The suspendee sets TS_SyncSuspended and the "SafeEvent".
-        // 5) AT THIS POINT, IT IS SAFE TO WALK THE SUSPENDEE'S STACK.
-        // 6) The suspendee clears the TS_SyncSuspended flag.
-        //
-        // In other words, it is safe to trace the thread's stack IF we're holding the
-        // thread store lock AND TS_SyncSuspended is set.
-        //
-        // This is because:
-        // - If we were not holding the thread store lock, the thread could be resumed
-        //   underneath us.
-        // - When TS_SyncSuspended is set, we race against it resuming execution.
-
-        ThreadStoreLockHolder tsl;
-
-        // We erect a barrier so that if the thread tries to disable preemptive GC,
-        // it could resume execution of managed code during our stack walk.
-        TSSuspendHolder shTrap;
-
-        Thread::ThreadState state = pThread->GetSnapshotState();
-        if (state & (Thread::TS_Unstarted|Thread::TS_Dead|Thread::TS_Detached))
-        {
-            goto LSafeToTrace;
-        }
-
-        COMPlusThrow(kThreadStateException, IDS_EE_THREAD_BAD_STATE);
-
-    LSafeToTrace:
-        pThread->StackWalkFrames(GetStackFramesCallback,
-                                 pData,
-                                 FUNCTIONSONLY|ALLOW_ASYNC_STACK_WALK,
-                                 pStartFrame);
-    }
-
-    // Do a 2nd pass outside of any locks.
-    // This will compute IL offsets.
-    for (INT32 i = 0; i < pData->cElements; i++)
-    {
-        pData->pElements[i].InitPass2();
-    }
-
-}
-
-
-void DebugStackTrace::GetStackFrames(Frame *pStartFrame,
-                                     void* pStopStack,
-                                     GetStackFramesData *pData
-                                    )
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_COOPERATIVE;
-    }
-    CONTRACTL_END;
-
-    GetStackFramesHelper(pStartFrame, pStopStack, pData);
-}
-
-
-StackWalkAction DebugStackTrace::GetStackFramesCallback(CrawlFrame* pCf, VOID* data)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_COOPERATIVE;
-    }
-    CONTRACTL_END;
-
-    GetStackFramesData* pData = (GetStackFramesData*)data;
-
-    if (pData->skip > 0)
-    {
-        pData->skip--;
-        return SWA_CONTINUE;
-    }
-
-    // <REVISIT_TODO>@todo: How do we know what kind of frame we have?</REVISIT_TODO>
-    //        Can we always assume FramedMethodFrame?
-    //        NOT AT ALL!!!, but we can assume it's a function
-    //                       because we asked the stackwalker for it!
-    MethodDesc* pFunc = pCf->GetFunction();
-
-    if (pData->cElements >= pData->cElementsAllocated)
-    {
-
-        DebugStackTraceElement* pTemp = new (nothrow) DebugStackTraceElement[2*pData->cElementsAllocated];
-
-        if (!pTemp)
-        {
-            return SWA_ABORT;
-        }
-
-        memcpy(pTemp, pData->pElements, pData->cElementsAllocated * sizeof(DebugStackTraceElement));
-
-        delete [] pData->pElements;
-
-        pData->pElements = pTemp;
-        pData->cElementsAllocated *= 2;
-    }
-
-    PCODE ip;
-    DWORD dwNativeOffset;
-
-    if (pCf->IsFrameless())
-    {
-        // Real method with jitted code.
-        dwNativeOffset = pCf->GetRelOffset();
-        ip = GetControlPC(pCf->GetRegisterSet());
-    }
-    else
-    {
-        ip = (PCODE)NULL;
-        dwNativeOffset = 0;
-    }
-
-    // Pass on to InitPass2 that the IP has already been adjusted (decremented by 1)
-    INT flags = pCf->IsIPadjusted() ? STEF_IP_ADJUSTED : 0;
-
-    pData->pElements[pData->cElements].InitPass1(
-            dwNativeOffset,
-            pFunc,
-            ip,
-            flags);
-
-    // We'll init the IL offsets outside the TSL lock.
-
-    ++pData->cElements;
-
-    // Since we may be asynchronously walking another thread's stack,
-    // check (frequently) for stack-buffer-overrun corruptions after
-    // any long operation
-    pCf->CheckGSCookies();
-
-    // check if we already have the number of frames that the user had asked for
-    if ((pData->NumFramesRequested != 0) && (pData->NumFramesRequested <= pData->cElements))
-    {
-        return SWA_ABORT;
-    }
-
-    return SWA_CONTINUE;
-}
 #endif // !DACCESS_COMPILE
 
 void DebugStackTrace::GetStackFramesFromException(OBJECTREF * e,
@@ -1040,7 +1022,7 @@ void DebugStackTrace::GetStackFramesFromException(OBJECTREF * e,
         if (pData->cElements != 0)
         {
             // Allocate the memory to contain the data
-            pData->pElements = new DebugStackTraceElement[pData->cElements];
+            pData->pElements = new Element[pData->cElements];
 
             // Fill in the data
             for (unsigned i = 0; i < (unsigned)pData->cElements; i++)
@@ -1106,7 +1088,7 @@ void DebugStackTrace::GetStackFramesFromException(OBJECTREF * e,
 
 // Init a stack-trace element.
 // Initialization done potentially under the TSL.
-void DebugStackTrace::DebugStackTraceElement::InitPass1(
+void DebugStackTrace::Element::InitPass1(
     DWORD dwNativeOffset,
     MethodDesc *pFunc,
     PCODE ip,
@@ -1129,7 +1111,7 @@ void DebugStackTrace::DebugStackTraceElement::InitPass1(
 
 // Initialization done outside the TSL.
 // This may need to call locking operations that aren't safe under the TSL.
-void DebugStackTrace::DebugStackTraceElement::InitPass2()
+void DebugStackTrace::Element::InitPass2()
 {
     CONTRACTL
     {

@@ -3720,7 +3720,7 @@ void DacDbiInterfaceImpl::GetStackFramesFromException(VMPTR_Object vmObject, Dac
 
         for (INT32 index = 0; index < dacStackFramesLength; ++index)
         {
-            DebugStackTrace::DebugStackTraceElement const& currentElement = stackFramesData.pElements[index];
+            DebugStackTrace::Element const& currentElement = stackFramesData.pElements[index];
             DacExceptionCallStackData& currentFrame = dacStackFrames[index];
 
             AppDomain* pDomain = AppDomain::GetCurrentDomain();

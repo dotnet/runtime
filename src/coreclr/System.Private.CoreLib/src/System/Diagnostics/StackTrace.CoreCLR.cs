@@ -3,13 +3,17 @@
 
 using System.Reflection;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 
 namespace System.Diagnostics
 {
     public partial class StackTrace
     {
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern void GetStackFramesInternal(StackFrameHelper sfh, int iSkip, bool fNeedFileInfo, Exception? e);
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "StackTrace_GetStackFramesInternal")]
+        private static partial void GetStackFramesInternal(ObjectHandleOnStack sfh, int iSkip, [MarshalAs(UnmanagedType.Bool)] bool fNeedFileInfo, ObjectHandleOnStack e);
+
+        internal static void GetStackFramesInternal(StackFrameHelper sfh, int iSkip, bool fNeedFileInfo, Exception? e)
+            => GetStackFramesInternal(ObjectHandleOnStack.Create(ref sfh), iSkip, fNeedFileInfo, ObjectHandleOnStack.Create(ref e));
 
         internal static int CalculateFramesToSkip(StackFrameHelper StackF, int iNumFrames)
         {

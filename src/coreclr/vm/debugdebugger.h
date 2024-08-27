@@ -84,12 +84,7 @@ typedef StackFrameHelper* STACKFRAMEHELPERREF;
 class DebugStackTrace
 {
 public:
-
-#ifndef DACCESS_COMPILE
-// the DAC directly uses the GetStackFramesData and DebugStackTraceElement types
-private:
-#endif // DACCESS_COMPILE
-    struct DebugStackTraceElement {
+    struct Element {
         DWORD dwOffset;     // native offset
         DWORD dwILOffset;
         MethodDesc *pFunc;
@@ -120,7 +115,7 @@ public:
         INT32   NumFramesRequested;
         INT32   cElementsAllocated;
         INT32   cElements;
-        DebugStackTraceElement* pElements;
+        Element* pElements;
         THREADBASEREF   TargetThread;
         AppDomain *pDomain;
         BOOL fDoWeHaveAnyFramesFromForeignStackTrace;
@@ -144,28 +139,14 @@ public:
         }
     };
 
-    static FCDECL4(void,
-                   GetStackFramesInternal,
-                   StackFrameHelper* pStackFrameHelper,
-                   INT32 iSkip,
-                   FC_BOOL_ARG fNeedFileInfo,
-                   Object* pException
-                  );
-
     static void GetStackFramesFromException(OBJECTREF * e, GetStackFramesData *pData, PTRARRAYREF * pDynamicMethodArray = NULL);
-
-#ifndef DACCESS_COMPILE
-// the DAC directly calls GetStackFramesFromException
-private:
-#endif
-
-    static void GetStackFramesHelper(Frame *pStartFrame, void* pStopStack, GetStackFramesData *pData);
-
-    static void GetStackFrames(Frame *pStartFrame, void* pStopStack, GetStackFramesData *pData);
-
-    static StackWalkAction GetStackFramesCallback(CrawlFrame* pCf, VOID* data);
-
 };
+
+extern "C" void QCALLTYPE StackTrace_GetStackFramesInternal(
+    QCall::ObjectHandleOnStack stackFrameHelper,
+    INT32 iSkip,
+    BOOL fNeedFileInfo,
+    QCall::ObjectHandleOnStack exception);
 
 extern "C" MethodDesc* QCALLTYPE StackFrame_GetMethodDescFromNativeIP(LPVOID ip);
 
