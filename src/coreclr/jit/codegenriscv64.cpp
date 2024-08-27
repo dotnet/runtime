@@ -6247,7 +6247,7 @@ void CodeGen::genIntCastOverflowCheck(GenTreeCast* cast, const GenIntCastDesc& d
         case GenIntCastDesc::CHECK_UINT_RANGE:
         {
             // Check if upper 32-bits are zeros
-            GetEmitter()->emitIns_R_R_I(INS_slli, EA_8BYTE, tempReg, reg, 32);
+            GetEmitter()->emitIns_R_R_I(INS_srli, EA_8BYTE, tempReg, reg, 32);
             genJumpToThrowHlpBlk_la(SCK_OVERFLOW, INS_bne, tempReg, nullptr, REG_R0);
         }
         break;
@@ -6256,7 +6256,7 @@ void CodeGen::genIntCastOverflowCheck(GenTreeCast* cast, const GenIntCastDesc& d
         case GenIntCastDesc::CHECK_POSITIVE_INT_RANGE:
         {
             // Check if upper 33-bits are zeros (biggest allowed value is 0x7FFFFFFF)
-            GetEmitter()->emitIns_R_R_I(INS_slli, EA_8BYTE, tempReg, reg, 33);
+            GetEmitter()->emitIns_R_R_I(INS_srli, EA_8BYTE, tempReg, reg, 31);
             genJumpToThrowHlpBlk_la(SCK_OVERFLOW, INS_bne, tempReg, nullptr, REG_R0);
         }
         break;
@@ -6276,11 +6276,10 @@ void CodeGen::genIntCastOverflowCheck(GenTreeCast* cast, const GenIntCastDesc& d
         default: // CHECK_SMALL_INT_RANGE
         {
             assert(desc.CheckKind() == GenIntCastDesc::CHECK_SMALL_INT_RANGE);
-            const int      castMaxValue   = desc.CheckSmallIntMax();
-            const int      castMinValue   = desc.CheckSmallIntMin();
-            const bool     isUnsigned     = castMinValue == 0;
-            const unsigned castSize       = genTypeSize(cast->gtCastType);
-            const auto     extension_size = (8 - castSize) * 8;
+            const int      castMaxValue = desc.CheckSmallIntMax();
+            const int      castMinValue = desc.CheckSmallIntMin();
+            const bool     isUnsigned   = castMinValue == 0;
+            const unsigned castSize     = genTypeSize(cast->gtCastType);
 
             // if ((desc.CheckSrcSize() < 8) && !isUnsigned) {
             //     // Ensure that the register is correctly extended
@@ -6289,11 +6288,13 @@ void CodeGen::genIntCastOverflowCheck(GenTreeCast* cast, const GenIntCastDesc& d
 
             if (isUnsigned)
             {
-                GetEmitter()->emitIns_R_R_I(INS_slli, EA_4BYTE, tempReg, reg, extension_size);
+                const auto type_size = castSize * 8;
+                GetEmitter()->emitIns_R_R_I(INS_srli, EA_4BYTE, tempReg, reg, type_size);
                 genJumpToThrowHlpBlk_la(SCK_OVERFLOW, INS_bne, tempReg, nullptr, REG_R0);
             }
             else
             {
+                const auto extension_size = (8 - castSize) * 8;
                 GetEmitter()->emitIns_R_R_I(INS_slli, EA_4BYTE, tempReg, reg, extension_size);
                 GetEmitter()->emitIns_R_R_I(INS_srai, EA_4BYTE, tempReg, tempReg, extension_size);
                 genJumpToThrowHlpBlk_la(SCK_OVERFLOW, INS_bne, tempReg, nullptr, reg);
