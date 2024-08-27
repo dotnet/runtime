@@ -523,8 +523,8 @@ static BROTLI_INLINE void FindCompoundDictionaryMatch(
   const uint64_t hash_mask = (~((uint64_t)0U)) >> (64 - hash_bits);
 
   const uint32_t* slot_offsets = (uint32_t*)(&self[1]);
-  const uint16_t* heads = (uint16_t*)(&slot_offsets[1u << slot_bits]);
-  const uint32_t* items = (uint32_t*)(&heads[1u << bucket_bits]);
+  const uint16_t* heads = (uint16_t*)(&slot_offsets[(size_t)1u << slot_bits]);
+  const uint32_t* items = (uint32_t*)(&heads[(size_t)1u << bucket_bits]);
   const uint8_t* source = NULL;
 
   const size_t cur_ix_masked = cur_ix & ring_buffer_mask;
@@ -627,8 +627,8 @@ static BROTLI_INLINE size_t FindAllCompoundDictionaryMatches(
   const uint64_t hash_mask = (~((uint64_t)0U)) >> (64 - hash_bits);
 
   const uint32_t* slot_offsets = (uint32_t*)(&self[1]);
-  const uint16_t* heads = (uint16_t*)(&slot_offsets[1u << slot_bits]);
-  const uint32_t* items = (uint32_t*)(&heads[1u << bucket_bits]);
+  const uint16_t* heads = (uint16_t*)(&slot_offsets[(size_t)1u << slot_bits]);
+  const uint32_t* items = (uint32_t*)(&heads[(size_t)1u << bucket_bits]);
   const uint8_t* source = NULL;
 
   const size_t cur_ix_masked = cur_ix & ring_buffer_mask;
