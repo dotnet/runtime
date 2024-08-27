@@ -1108,6 +1108,7 @@ DEFINE_FIELD_U(_condition,          ContractExceptionObject,    _Condition)
 DEFINE_CLASS(MODULEBASE,        Reflection,         Module)
 
 DEFINE_CLASS(STACKALLOCATEDBOX,   CompilerServices,     StackAllocatedBox`1)
+DEFINE_FIELD(STACKALLOCATEDBOX,   VALUE,                _value)
 
 DEFINE_CLASS(UTF8STRINGMARSHALLER, Marshalling, Utf8StringMarshaller)
 DEFINE_METHOD(UTF8STRINGMARSHALLER, CONVERT_TO_MANAGED, ConvertToManaged, SM_PtrByte_RetStr)
