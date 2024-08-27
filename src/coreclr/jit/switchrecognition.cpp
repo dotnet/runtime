@@ -345,7 +345,7 @@ bool Compiler::optSwitchConvert(
     firstBlock->lastStmt()->GetRootNode()->ChangeOper(GT_SWITCH);
 
     // The root node is now SUB(nodeToTest, minValue) if minValue != 0
-    GenTree* switchValue = gtCloneExpr(nodeToTest);
+    GenTree* switchValue = nodeToTest;
     if (minValue != 0)
     {
         switchValue =
