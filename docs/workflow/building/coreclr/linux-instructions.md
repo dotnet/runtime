@@ -60,13 +60,13 @@ All official builds are cross-builds with a rootfs for the target OS, and will u
 
 | Host OS               | Target OS    | Target Arch     | Image location                                                                   | crossrootfs location |
 | --------------------- | ------------ | --------------- | -------------------------------------------------------------------------------- | -------------------- |
-| Azure Linux (x64)     | Alpine 3.13  | x64             | `mcr.microsoft.com/dotnet-buildtools/prereqs:azurelinux-3.0-cross-amd64-alpine-net8.0` | `/crossrootfs/x64`   |
-| Azure Linux (x64)     | Ubuntu 16.04 | x64             | `mcr.microsoft.com/dotnet-buildtools/prereqs:azurelinux-3.0-cross-amd64-net8.0`        | `/crossrootfs/x64`   |
-| Azure Linux (x64)     | Alpine       | arm32 (armhf)   | `mcr.microsoft.com/dotnet-buildtools/prereqs:azurelinux-3.0-cross-arm-alpine-net8.0`   | `/crossrootfs/arm`   |
-| Azure Linux (x64)     | Ubuntu 16.04 | arm32 (armhf)   | `mcr.microsoft.com/dotnet-buildtools/prereqs:azurelinux-3.0-cross-arm-net8.0`          | `/crossrootfs/arm`   |
-| Azure Linux (x64)     | Alpine       | arm64 (arm64v8) | `mcr.microsoft.com/dotnet-buildtools/prereqs:azurelinux-3.0-cross-arm64-alpine-net8.0` | `/crossrootfs/arm64` |
-| Azure Linux (x64)     | Ubuntu 16.04 | arm64 (arm64v8) | `mcr.microsoft.com/dotnet-buildtools/prereqs:azurelinux-3.0-cross-arm64-net8.0`        | `/crossrootfs/arm64` |
-| Azure Linux (x64)     | Ubuntu 16.04 | x86             | `mcr.microsoft.com/dotnet-buildtools/prereqs:azurelinux-3.0-cross-x86-net8.0`          | `/crossrootfs/x86` |
+| Azure Linux (x64)     | Alpine 3.13  | x64             | `mcr.microsoft.com/dotnet-buildtools/prereqs:azurelinux-3.0-net8.0-cross-amd64-alpine` | `/crossrootfs/x64`   |
+| Azure Linux (x64)     | Ubuntu 16.04 | x64             | `mcr.microsoft.com/dotnet-buildtools/prereqs:azurelinux-3.0-net8.0-cross-amd64`        | `/crossrootfs/x64`   |
+| Azure Linux (x64)     | Alpine       | arm32 (armhf)   | `mcr.microsoft.com/dotnet-buildtools/prereqs:azurelinux-3.0-net8.0-cross-arm-alpine`   | `/crossrootfs/arm`   |
+| Azure Linux (x64)     | Ubuntu 16.04 | arm32 (armhf)   | `mcr.microsoft.com/dotnet-buildtools/prereqs:azurelinux-3.0-net8.0-cross-arm`          | `/crossrootfs/arm`   |
+| Azure Linux (x64)     | Alpine       | arm64 (arm64v8) | `mcr.microsoft.com/dotnet-buildtools/prereqs:azurelinux-3.0-net8.0-cross-arm64-alpine` | `/crossrootfs/arm64` |
+| Azure Linux (x64)     | Ubuntu 16.04 | arm64 (arm64v8) | `mcr.microsoft.com/dotnet-buildtools/prereqs:azurelinux-3.0-net8.0-cross-arm64`        | `/crossrootfs/arm64` |
+| Azure Linux (x64)     | Ubuntu 16.04 | x86             | `mcr.microsoft.com/dotnet-buildtools/prereqs:azurelinux-3.0-net8.0-cross-x86`          | `/crossrootfs/x86` |
 | Ubuntu 18.04 (x64)    | FreeBSD      | x64             | `mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-18.04-cross-freebsd-12`      | `/crossrootfs/x64`   |
 
 These Docker images are built using the Dockerfiles maintained in the [dotnet-buildtools-prereqs-docker repo](https://github.com/dotnet/dotnet-buildtools-prereqs-docker).
