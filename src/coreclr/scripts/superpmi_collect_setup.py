@@ -465,7 +465,7 @@ def main(main_args):
             if arch == "arm":
                 helix_queue = "(Debian.12.Arm32.Open)Ubuntu.2004.ArmArch.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:debian-12-helix-arm32v7"
             elif arch == "arm64":
-                helix_queue = "(Ubuntu.1804.Arm64.Open)Ubuntu.2004.ArmArch@mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-18.04-helix-arm64v8"
+                helix_queue = "(Ubuntu.2004.Arm64.Open)Ubuntu.2004.Armarch.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-20.04-helix-arm64v8"
             else:
                 helix_queue = "Ubuntu.2204.Amd64.Open"
         elif platform_name == "osx":
