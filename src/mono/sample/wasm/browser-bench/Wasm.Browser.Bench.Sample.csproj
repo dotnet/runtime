@@ -23,7 +23,7 @@
   <Target Name="RunSample" DependsOnTargets="RunSampleWithBrowserAndSimpleServer" />
   <UsingTask TaskName="GetNugetConfigTask" AssemblyFile="$(OutputPath)Wasm.Browser.Bench.Sample.dll" />
 
-  <Target Name="SetNugetConfigContent" BeforeTargets="PrepareBlazorTemplate;BuildBlazorFrame">
+  <Target Name="SetNugetConfigContent">
     <GetNugetConfigTask 
       InputFile="$(MonoProjectRoot)wasm/Wasm.Build.Tests/data/nuget9.config" 
       ArtifactsDir="$(ArtifactsDir)" 
@@ -48,7 +48,7 @@
     <MakeDir Directories="$(NugetPackagesPath)" />
   </Target>
 
-  <Target Name="PrepareBlazorTemplate" Condition="!Exists('$(MonoProjectRoot)sample/wasm/blazor-frame/blazor')">
+  <Target Name="PrepareBlazorTemplate" Condition="!Exists('$(MonoProjectRoot)sample/wasm/blazor-frame/blazor')" DependsOnTargets="SetNugetConfigContent">
     <ItemGroup>
         <OverrideFiles Include="$(MonoProjectRoot)wasm/Wasm.Build.Tests/data/WasmOverridePacks.targets" />
         <OverrideFiles Include="$(MonoProjectRoot)wasm/Wasm.Build.Tests/data/Blazor.Directory.Build.targets" />
@@ -80,7 +80,7 @@
         DestinationFolder="$(MSBuildThisFileDirectory)/bin/$(Configuration)/AppBundle/blazor-template/%(RecursiveDir)" />
   </Target>
 
-  <Target Name="PrepareBrowserTemplate" Condition="!Exists('$(MonoProjectRoot)sample/wasm/browser-frame/browser-frame')">
+  <Target Name="PrepareBrowserTemplate" Condition="!Exists('$(MonoProjectRoot)sample/wasm/browser-frame/browser-frame')" DependsOnTargets="SetNugetConfigContent">
     <ItemGroup>
         <OverrideFiles Include="$(MonoProjectRoot)wasm/Wasm.Build.Tests/data/WasmOverridePacks.targets" />
         <OverrideFiles Include="$(MonoProjectRoot)wasm/Wasm.Build.Tests/data/Blazor.Directory.Build.targets" />
