@@ -68,13 +68,13 @@
     <MSBuild Condition="'$(Crossgen2Supported)' == 'true'"
       Targets="Restore"
       BuildInParallel="true"
-      Properties="NativeAotSupported=$(NativeAotSupported);UseNativeAotForComponents=$(UseNativeAotForComponents);ToolsConfiguration=$(_toolsConfiguration);MSBuildRestoreSessionId=$([System.Guid]::NewGuid());LibrariesConfiguration=$(LibrariesConfiguration)"
+      Properties="NativeAotSupported=$(NativeAotSupported);UseNativeAotForComponents=$(UseNativeAotForComponents);ToolsConfiguration=$(_toolsConfiguration);MSBuildRestoreSessionId=$([System.Guid]::NewGuid())"
       Projects="$(InstallerProjectRoot)pkg\sfx\Microsoft.NETCore.App\Microsoft.NETCore.App.Crossgen2.sfxproj" />
 
     <MSBuild Condition="'$(Crossgen2Supported)' == 'true'"
       Targets="PublishToDisk"
       BuildInParallel="true"
-      Properties="NativeAotSupported=$(NativeAotSupported);UseNativeAotForComponents=$(UseNativeAotForComponents);ToolsConfiguration=$(_toolsConfiguration);OutputPath=$(CORE_ROOT)\crossgen2;"
+      Properties="NativeAotSupported=$(NativeAotSupported);UseNativeAotForComponents=$(UseNativeAotForComponents);ToolsConfiguration=$(_toolsConfiguration);OutputPath=$(CORE_ROOT)\crossgen2;LibrariesConfiguration=$(LibrariesConfiguration)"
       Projects="$(InstallerProjectRoot)pkg\sfx\Microsoft.NETCore.App\Microsoft.NETCore.App.Crossgen2.sfxproj" />
 
     <ItemGroup>
@@ -120,6 +120,11 @@
 
       <!-- Used by the Crossgen comparison job -->
       <RunTimeArtifactsIncludeFolders Include="IL/" TargetDir="IL/" />
+
+      <!-- Used for Crossgen2 R2R tests -->
+      <RunTimeArtifactsIncludeFolders Include="crossgen2/" TargetDir="crossgen2/" Condition="'$(Crossgen2Supported)' != 'true'">
+        <IncludeSubFolders>True</IncludeSubFolders>
+      </RunTimeArtifactsIncludeFolders>
 
       <!-- Used for NativeAOT tests -->
       <RunTimeArtifactsIncludeFolders Include="ilc-published/" TargetDir="ilc-published/">
