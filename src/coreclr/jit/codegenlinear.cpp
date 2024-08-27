@@ -848,7 +848,7 @@ void CodeGen::genCodeForBBlist()
         }
         compiler->compCurBB = nullptr;
 #endif // DEBUG
-    } //------------------ END-FOR each block of the method -------------------
+    }  //------------------ END-FOR each block of the method -------------------
 
 #if defined(FEATURE_EH_WINDOWS_X86)
     // If this is a synchronized method on x86, and we generated all the code without
