@@ -16,6 +16,34 @@ public static class WasiMainWrapper
         await Task.Delay(100);
         GC.Collect(); // test that Pollable->Task is not collected until resolved
 
+        using HttpClient impatientClient = new();
+        impatientClient.DefaultRequestHeaders.Add("User-Agent", "dotnet WASI unit test");
+        impatientClient.Timeout = TimeSpan.FromMilliseconds(10);
+        try {
+            await impatientClient.GetAsync("https://corefx-net-http11.azurewebsites.net/Echo.ashx?delay10sec");
+            throw new Exception("request should have timed out");
+        } catch (TaskCanceledException) {
+            Console.WriteLine("1st impatientClient was canceled as expected");
+            // The /slow-hello endpoint takes 10 seconds to return a
+            // response, whereas we've set a 100ms timeout, so this is
+            // expected.
+        }
+
+        var cts = new CancellationTokenSource(10);
+        try {
+            await impatientClient.GetAsync("https://corefx-net-http11.azurewebsites.net/Echo.ashx?delay10sec", cts.Token);
+            throw new Exception("request should have timed out");
+        } catch (TaskCanceledException tce) {
+            if (cts.Token != tce.CancellationToken)
+            {
+                throw new Exception("Different CancellationToken");
+            }
+            Console.WriteLine("2nd impatientClient was canceled as expected");
+            // The /slow-hello endpoint takes 10 seconds to return a
+            // response, whereas we've set a 100ms timeout, so this is
+            // expected.
+        }
+
         using HttpClient client = new();
         client.DefaultRequestHeaders.Accept.Clear();
         client.DefaultRequestHeaders.Add("User-Agent", "dotnet WASI unit test");
