@@ -1,7 +1,0 @@
-<linker>
-  <assembly fullname="System.Linq.Expressions">
-    <type fullname="System.Dynamic.Utils.DelegateHelpers">
-      <method signature="System.Boolean get_CanEmitObjectArrayDelegate()" feature="System.Linq.Expressions.CanEmitObjectArrayDelegate" featurevalue="false" body="stub" value="false" />
-    </type>
-  </assembly>
-</linker>
