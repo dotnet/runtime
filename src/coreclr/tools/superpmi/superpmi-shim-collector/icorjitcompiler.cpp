@@ -123,6 +123,7 @@ CorJitResult interceptor_ICJC::compileMethod(ICorJitInfo*                comp,  
 
     auto doCompile = [mc, our_ICorJitInfo, this, &compileParams]()
     {
+        // TODO: replace this with a crash handler
         PAL_TRY(CompileParams*, pParam, &compileParams)
         {
             pParam->result = pParam->origComp->compileMethod(
