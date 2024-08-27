@@ -991,7 +991,7 @@
     <value>Assembly produced trim warnings.</value>
   </data>
   <data name="AssemblyProducedTrimWarningsMessage" xml:space="preserve">
-    <value>Assembly '{0}' produced trim warnings. For more information see https://aka.ms/dotnet-illink/libraries</value>
+    <value>Assembly '{0}' produced trim warnings. For more information see https://aka.ms/il2104</value>
   </data>
   <data name="TypeWasNotFoundInAssemblyNorBaseLibraryTitle" xml:space="preserve">
     <value>Type was not found in the caller assembly nor in the base library. Type name strings used for dynamically accessing a type should be assembly qualified.</value>
