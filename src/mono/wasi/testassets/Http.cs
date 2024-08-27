@@ -35,6 +35,9 @@ public static class WasiMainWrapper
 
         var cts = new CancellationTokenSource(10);
         try {
+            // in reality server side doesn't delay because it doesn't implement it. So 10ms is bit fragile.
+            // TODO: remove this once we have real WASI HTTP library unit tests with local server loop in Xharness.
+            // https://github.com/dotnet/xharness/pull/1244
             await impatientClient.GetAsync("https://corefx-net-http11.azurewebsites.net/Echo.ashx?delay10sec", cts.Token);
             throw new Exception("request should have timed out");
         } catch (TaskCanceledException tce) {
