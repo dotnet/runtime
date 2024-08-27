@@ -20,6 +20,6 @@ public class Runtime_106372
     public static void TestEntryPoint()
     {
         Vector128<long> result = Vector128.CreateSequence(s_long_11, -2);
-        Assert(Vector128.Create(+1L, -1L), result);
+        Assert.Equal(Vector128.Create(+1L, -1L), result);
     }
 }
