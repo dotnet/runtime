@@ -795,7 +795,10 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         {
             Pkcs12LoaderLimits limits = new Pkcs12LoaderLimits { PreserveStorageProvider = preserveStorageProvider };
             X509KeyStorageFlags flags = ephemeralIfPossible ? EphemeralIfPossible : X509KeyStorageFlags.DefaultKeySet;
-            bool expectLegacy = ((int)flags & 0x20) == 0 && preserveStorageProvider;
+
+            // EphemeralKeySet is not available by name in the netfx build.
+            const X509KeyStorageFlags EphemeralKeySet = (X509KeyStorageFlags)0x20;
+            bool expectLegacy = (flags & EphemeralKeySet) == 0 && preserveStorageProvider;
 
             X509Certificate2Collection coll = LoadPfxNoFile(TestData.SChannelPfx, TestData.PlaceholderPw, flags, limits);
 
