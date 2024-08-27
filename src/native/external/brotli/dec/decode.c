@@ -217,7 +217,7 @@ static BROTLI_NOINLINE BrotliDecoderErrorCode DecodeVarLenUint8(
         s->substate_decode_uint8 = BROTLI_STATE_DECODE_UINT8_LONG;
         return BROTLI_DECODER_NEEDS_MORE_INPUT;
       }
-      *value = (1U << *value) + bits;
+      *value = ((brotli_reg_t)1U << *value) + bits;
       s->substate_decode_uint8 = BROTLI_STATE_DECODE_UINT8_NONE;
       return BROTLI_DECODER_SUCCESS;
 
@@ -1089,7 +1089,7 @@ static BrotliDecoderErrorCode DecodeContextMap(brotli_reg_t context_map_size,
             h->context_index = context_index;
             return BROTLI_DECODER_NEEDS_MORE_INPUT;
           }
-          reps += 1U << code;
+          reps += (brotli_reg_t)1U << code;
           BROTLI_LOG_UINT(reps);
           if (context_index + reps > context_map_size) {
             return
@@ -1753,7 +1753,7 @@ static void CalculateDistanceLut(BrotliDecoderState* s) {
   brotli_reg_t npostfix = s->distance_postfix_bits;
   brotli_reg_t ndirect = s->num_direct_distance_codes;
   brotli_reg_t alphabet_size_limit = s->distance_hgroup.alphabet_size_limit;
-  brotli_reg_t postfix = 1u << npostfix;
+  brotli_reg_t postfix = (brotli_reg_t)1u << npostfix;
   brotli_reg_t j;
   brotli_reg_t bits = 1;
   brotli_reg_t half = 0;

@@ -2,3 +2,5 @@
 https://github.com/google/brotli/releases/tag/v1.1.0
 
 Copy the c/dec, c/enc, c/common, and c/include folders into the root and remove all other files.
+
+Apply https://github.com/google/brotli/commit/85d88cbfc2b742e0742286ec277b73bdbf7be433.patch

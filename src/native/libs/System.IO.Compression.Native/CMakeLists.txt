@@ -98,10 +98,6 @@ if (CLR_CMAKE_TARGET_UNIX OR CLR_CMAKE_TARGET_BROWSER OR CLR_CMAKE_TARGET_WASI)
 
     set_target_properties(System.IO.Compression.Native-Static PROPERTIES OUTPUT_NAME System.IO.Compression.Native CLEAN_DIRECT_OUTPUT 1)
 else ()
-
-    # Disable C4334 warning for Zlib and Brotli
-    add_compile_options($<$<COMPILE_LANG_AND_ID:C,MSVC>:/wd4334>)
-
     if (GEN_SHARED_LIB)
         include (GenerateExportHeader)
     endif ()
