@@ -316,12 +316,26 @@ namespace Tests.System
             Assert.True(task1.Status == TaskStatus.RanToCompletion, "    > FAILED.  Expected Delay(TimeSpan(0), timeProvider) to run to completion");
             Assert.True(task2.Status == TaskStatus.RanToCompletion, "    > FAILED.  Expected Delay(TimeSpan(0), timeProvider, uncanceledToken) to run to completion");
 
-            // This should take some time
-            Task task3 = taskFactory.Delay(provider, TimeSpan.FromMilliseconds(20000));
+            // This should complete quickly with a CANCELED status.
+            Task task3 = taskFactory.Delay(provider, new TimeSpan(0), new CancellationToken(true));
+            try
+            {
+                var e = Assert.Throws<AggregateException>(task3.Wait);
+                Assert.IsAssignableFrom<OperationCanceledException>(e.InnerException);
+            }
+            catch (Exception e)
+            {
+                Assert.Fail(string.Format("RunDelayTests:    > FAILED.  Unexpected exception on canceled task Wait(): {0}", e));
+            }
 
-            Assert.False(task3.IsCompleted, "RunDelayTests:    > FAILED.  Delay(20000) appears to have completed too soon(1).");
+            Assert.True(task3.Status == TaskStatus.Canceled, "    > FAILED.  Expected Delay(timeProvider, TimeSpan(0), canceledToken) to be canceled");
+
+            // This should take some time
+            Task task4 = taskFactory.Delay(provider, TimeSpan.FromMilliseconds(20000));
+
+            Assert.False(task4.IsCompleted, "RunDelayTests:    > FAILED.  Delay(20000) appears to have completed too soon(1).");
             Task t2 = Task.Delay(TimeSpan.FromMilliseconds(10));
-            Assert.False(task3.IsCompleted, "RunDelayTests:    > FAILED.  Delay(10000) appears to have completed too soon(2).");
+            Assert.False(task4.IsCompleted, "RunDelayTests:    > FAILED.  Delay(10000) appears to have completed too soon(2).");
         }
 
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
@@ -359,6 +373,7 @@ namespace Tests.System
 
             cts.Cancel();
             await Assert.ThrowsAsync<TaskCanceledException>(() => taskFactory.WaitAsync(tcs5.Task, TimeSpan.FromMilliseconds(10), provider, cts.Token));
+            await Assert.ThrowsAsync<TaskCanceledException>(() => taskFactory.WaitAsync(tcs5.Task, TimeSpan.Zero, provider, cts.Token));
 
             using CancellationTokenSource cts1 = new CancellationTokenSource();
             Task task5 = Task.Run(() => { while (!cts1.Token.IsCancellationRequested) { Thread.Sleep(10); } });
