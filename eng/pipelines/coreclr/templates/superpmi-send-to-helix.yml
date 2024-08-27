@@ -56,5 +56,5 @@ steps:
       DotNetCliVersion: ${{ parameters.DotNetCliVersion }}
       EnableXUnitReporter: ${{ parameters.EnableXUnitReporter }}
       WaitForWorkItemCompletion: ${{ parameters.WaitForWorkItemCompletion }}
-      Creator: ${{ parameters.Creator }}
+      _Creator: ${{ parameters.Creator }}
       SYSTEM_ACCESSTOKEN: $(System.AccessToken)
