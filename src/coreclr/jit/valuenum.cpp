@@ -10300,7 +10300,8 @@ void ValueNumStore::vnDumpSimdType(Compiler* comp, VNFuncApp* simdType)
     CorInfoType baseJitType = (CorInfoType)ConstantValue<int>(simdType->m_args[1]);
 
     printf("%s(simd%d, %s)", VNFuncName(simdType->m_func), simdSize,
-           baseJitType == TYP_UNDEF ? varTypeName(TYP_UNDEF) : varTypeName(JitType2PreciseVarType(baseJitType)));
+           baseJitType == CORINFO_TYPE_UNDEF ? varTypeName(TYP_UNDEF)
+                                             : varTypeName(JitType2PreciseVarType(baseJitType)));
 }
 #endif // FEATURE_SIMD
 
