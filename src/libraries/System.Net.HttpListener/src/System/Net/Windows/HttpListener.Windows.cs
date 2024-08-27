@@ -70,7 +70,9 @@ namespace System.Net
                 {
                     return;
                 }
-                lock ((DisconnectResults as ICollection).SyncRoot)
+
+                var disconnectResults = DisconnectResults;
+                lock ((disconnectResults as ICollection).SyncRoot)
                 {
                     if (_unsafeConnectionNtlmAuthentication == value)
                     {
@@ -79,7 +81,7 @@ namespace System.Net
                     _unsafeConnectionNtlmAuthentication = value;
                     if (!value)
                     {
-                        foreach (DisconnectAsyncResult result in DisconnectResults.Values)
+                        foreach (DisconnectAsyncResult result in disconnectResults.Values)
                         {
                             result.AuthenticatedConnection = null;
                         }
@@ -694,7 +696,13 @@ namespace System.Net
             // assurance that we do this only for NTLM/Negotiate is not here, but in the
             // code that caches WindowsIdentity instances in the Dictionary.
             DisconnectAsyncResult? disconnectResult;
-            DisconnectResults.TryGetValue(connectionId, out disconnectResult);
+
+            var disconnectResults = DisconnectResults;
+            lock ((disconnectResults as ICollection).SyncRoot)
+            {
+                disconnectResults.TryGetValue(connectionId, out disconnectResult);
+            }
+
             if (UnsafeConnectionNtlmAuthentication)
             {
                 if (authorizationHeader == null)
@@ -1327,7 +1335,12 @@ namespace System.Net
                     // Need to make sure it's going to get returned before adding it to the hash.  That way it'll be handled
                     // correctly in HandleAuthentication's finally.
                     disconnectResult = result;
-                    session.Listener.DisconnectResults[connectionId] = disconnectResult;
+
+                    var disconnectResults = session.Listener.DisconnectResults;
+                    lock ((disconnectResults as ICollection).SyncRoot)
+                    {
+                        disconnectResults[connectionId] = disconnectResult;
+                    }
                 }
 
                 if (statusCode == Interop.HttpApi.ERROR_SUCCESS && HttpListener.SkipIOCPCallbackOnSuccess)
@@ -1638,8 +1651,21 @@ namespace System.Net
             {
                 HttpListener listener = _listenerSession.Listener;
 
-                if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"DisconnectResults {listener.DisconnectResults} removing for _connectionId: {_connectionId}");
-                listener.DisconnectResults.Remove(_connectionId);
+                var disconnectResults = listener.DisconnectResults;
+                if (NetEventSource.Log.IsEnabled())
+                {
+                    string? results;
+                    lock  ((disconnectResults as ICollection).SyncRoot)
+                    {
+                        results = disconnectResults.ToString();
+                    }
+                    NetEventSource.Info(this, $"DisconnectResults {results} removing for _connectionId: {_connectionId}");
+                }
+
+                lock ((disconnectResults as ICollection).SyncRoot)
+                {
+                    disconnectResults.Remove(_connectionId);
+                }
 
                 // Cached identity is disposed with the session context
                 Session?.Dispose();
