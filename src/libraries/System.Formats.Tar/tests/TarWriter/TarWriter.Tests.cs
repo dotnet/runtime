@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.IO;
+using System.Linq;
 using Xunit;
 
 namespace System.Formats.Tar.Tests
@@ -349,6 +350,21 @@ namespace System.Formats.Tar.Tests
             // Pax BlockDevice: 655 + 1004 + 686 = 2345
             // Gnu BlockDevice: 623 + 1004 + 686 + 1142 = 3455
             return checksum;
+        }
+
+        [Fact]
+        void Verify_Size_RegularFile_Empty()
+        {
+            using MemoryStream emptyData = new(0);
+            using MemoryStream output = new();
+            using TarWriter archive = new(output, TarEntryFormat.Pax);
+            PaxTarEntry te = new(TarEntryType.RegularFile, "zero_size")
+            { DataStream = emptyData };
+            archive.WriteEntry(te);
+            var sizeBuffer = output.GetBuffer()[1148..(1148 + 12)];
+            // we expect ocal zeros
+            byte[] expected = [0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0];
+            Assert.True(sizeBuffer.SequenceEqual(expected));
         }
     }
 }
