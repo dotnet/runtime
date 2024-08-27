@@ -776,7 +776,7 @@ public:
     STRINGREF *GetOrInternString(STRINGREF *pString);
     void CleanupStringLiteralMap();
 
-    void InitVirtualCallStubManager(BaseDomain *pDomain);
+    void InitVirtualCallStubManager();
     void UninitVirtualCallStubManager();
 
     inline PTR_VirtualCallStubManager GetVirtualCallStubManager()
