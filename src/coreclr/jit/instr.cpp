@@ -1861,9 +1861,12 @@ instruction CodeGenInterface::ins_Load(var_types srcType, bool aligned /*=false*
             else
                 ins = INS_lh;
         }
-        else if (TYP_INT == srcType)
+        else if (varTypeIsInt(srcType))
         {
-            ins = INS_lw;
+            if (varTypeIsUnsigned(srcType))
+                ins = INS_lwu;
+            else
+                ins = INS_lw;
         }
         else
         {
