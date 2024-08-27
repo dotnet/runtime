@@ -124,7 +124,7 @@ namespace System.Buffers
         /// For performance reasons, the input length argument and the returned offset value aren't validated against negative values.
         /// Also, the returned offset might be greater than the input length.
         /// It is expected <see cref="NIndex"/> will be used with collections that always have a non-negative length/count. If the returned offset is negative and
-        /// then used to <see cref="NIndex"/> a collection, an <see cref="OutOfRangeException" /> is thrown, which has the same effect as the validation.
+        /// then used to <see cref="NIndex"/> a collection, an <see cref="ArgumentOutOfRangeException" /> is thrown, which has the same effect as the validation.
         /// </remarks>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public nint GetOffset(nint length)
