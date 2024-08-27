@@ -2445,8 +2445,6 @@ bool GenTreeCall::IsRuntimeLookupHelperCall(Compiler* compiler) const
     {
         case CORINFO_HELP_RUNTIMEHANDLE_METHOD:
         case CORINFO_HELP_RUNTIMEHANDLE_CLASS:
-        case CORINFO_HELP_RUNTIMEHANDLE_METHOD_LOG:
-        case CORINFO_HELP_RUNTIMEHANDLE_CLASS_LOG:
             return true;
         default:
             return false;
