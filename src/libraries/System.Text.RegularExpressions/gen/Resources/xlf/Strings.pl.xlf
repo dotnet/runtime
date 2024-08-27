@@ -194,7 +194,7 @@
       </trans-unit>
       <trans-unit id="RegexMethodMustHaveValidSignatureMessage">
         <source>GeneratedRegexAttribute method must be partial, parameterless, non-generic, non-abstract, and return Regex.</source>
-        <target state="translated">Metoda GeneratedRegexAttribute musi być częściowa, bez parametrów, niestanowa, nieabstrakcyjna i zwracać wyrażenia regularne.</target>
+        <target state="new">GeneratedRegexAttribute method must be partial, parameterless, non-generic, non-abstract, and return Regex.</target>
         <note />
       </trans-unit>
       <trans-unit id="ReversedCharacterRange">

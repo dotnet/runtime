@@ -9,7 +9,7 @@
       </trans-unit>
       <trans-unit id="AddGeneratedComClassAttributeDescription">
         <source>This type implements at least one type with the 'GeneratedComInterfaceAttribute' attribute. Add the 'GeneratedComClassAttribute' to enable passing this type to COM and exposing the COM interfaces for the types with the 'GeneratedComInterfaceAttribute' from objects of this type.</source>
-        <target state="translated">Dieser Typ implementiert mindestens einen Typ mit dem GeneratedComInterfaceAttribute-Attribut. Fügen Sie "GeneratedComClassAttribute" hinzu, um die Übergabe dieses Typs an COM zu ermöglichen und die COM-Schnittstellen für die Typen mit dem GeneratedComInterfaceAttribute aus Objekten dieses Typs verfügbar zu machen.</target>
+        <target state="new">This type implements at least one type with the 'GeneratedComInterfaceAttribute' attribute. Add the 'GeneratedComClassAttribute' to enable passing this type to COM and exposing the COM interfaces for the types with the 'GeneratedComInterfaceAttribute' from objects of this type.</target>
         <note />
       </trans-unit>
       <trans-unit id="AddGeneratedComClassAttributeMessage">
@@ -1024,7 +1024,7 @@
       </trans-unit>
       <trans-unit id="SafeHandleByRefMustBeConcrete">
         <source>An abstract type derived from 'SafeHandle' cannot be marshalled by reference. The provided type must be concrete.</source>
-        <target state="translated">Ein abstrakter Typ, der von \"SafeHandle\" abgeleitet wird, kann nicht als Verweis gemarshallt werden. Der angegebene Typ muss ein konkretes Element sein.</target>
+        <target state="new">An abstract type derived from 'SafeHandle' cannot be marshalled by reference. The provided type must be concrete.</target>
         <note />
       </trans-unit>
       <trans-unit id="SizeOfCollectionMustBeKnownAtMarshalTimeMessageOutParam">
