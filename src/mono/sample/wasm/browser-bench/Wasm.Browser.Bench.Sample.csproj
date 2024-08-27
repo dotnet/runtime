@@ -17,29 +17,22 @@
     <WasmExtraFilesToDeploy Include="frame-main.js" />
     <WasmExtraFilesToDeploy Include="style.css" />
     <Compile Remove="Console/Console.cs" />
+    <PackageReference Include="Microsoft.Build.Utilities.Core" Version="$(MicrosoftBuildUtilitiesCoreVersion)" ExcludeAssets="runtime" />
   </ItemGroup>
 
   <Target Name="RunSample" DependsOnTargets="RunSampleWithBrowserAndSimpleServer" />
+  <UsingTask TaskName="GetNugetConfigTask" AssemblyFile="$(OutputPath)Wasm.Browser.Bench.Sample.dll" />
+
+  <Target Name="SetNugetConfigContent" BeforeTargets="PrepareBlazorTemplate;BuildBlazorFrame">
+    <GetNugetConfigTask 
+      InputFile="$(MonoProjectRoot)wasm/Wasm.Build.Tests/data/nuget9.config" 
+      ArtifactsDir="$(ArtifactsDir)" 
+      Configuration="$(Configuration)">
+      <Output TaskParameter="NugetConfigContent" PropertyName="NugetConfigContent"/>
+    </GetNugetConfigTask>
+  </Target>
 
   <PropertyGroup>
-    <NugetConfigContent>&lt;?xml version=&quot;1.0&quot; encoding=&quot;utf-8&quot;?&gt;
-&lt;configuration&gt;
-  &lt;!-- Don't use any higher level config files. --&gt;
-  &lt;fallbackPackageFolders&gt;
-    &lt;clear /&gt;
-  &lt;/fallbackPackageFolders&gt;
-  &lt;packageSources&gt;
-    &lt;clear /&gt;
-    &lt;add key=&quot;nuget-local&quot; value=&quot;$(ArtifactsDir)packages/$(Configuration)/Shipping/&quot; /&gt;
-    &lt;add key=&quot;dotnet8&quot; value=&quot;https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet8/nuget/v3/index.json&quot; /&gt;
-    &lt;add key=&quot;dotnet9&quot; value=&quot;https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet9/nuget/v3/index.json&quot; /&gt;
-    &lt;add key=&quot;nuget.org&quot;  value=&quot;https://api.nuget.org/v3/index.json&quot; protocolVersion=&quot;3&quot; /&gt;
-  &lt;/packageSources&gt;
-    &lt;disabledPackageSources&gt;
-    &lt;clear /&gt;
-  &lt;/disabledPackageSources&gt;
-&lt;/configuration&gt;
-    </NugetConfigContent>
     <NugetPackagesPath>$(MSBuildThisFileDirectory)nugetPackages</NugetPackagesPath>
   </PropertyGroup>
 
