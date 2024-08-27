@@ -1989,7 +1989,7 @@ const int max_snoop_level = 128;
 #define DECOMMIT_TIME_STEP_MILLISECONDS (100)
 
 // arbitrary - 4 GCs worth of decommitting
-#define MAX_DECOMMIT_SIZE (4 * DECOMMIT_SIZE_PER_MILLISECOND * DECOMMIT_TIME_STEP_MILLISECONDS)
+#define MAX_DECOMMIT_SIZE (10 * DECOMMIT_SIZE_PER_MILLISECOND * DECOMMIT_TIME_STEP_MILLISECONDS)
 
 inline
 size_t align_on_page (size_t add)
