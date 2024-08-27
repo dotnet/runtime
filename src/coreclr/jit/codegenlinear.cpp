@@ -2526,7 +2526,7 @@ CodeGen::GenIntCastDesc::GenIntCastDesc(GenTreeCast* cast)
                 break;
 
 #ifdef TARGET_64BIT
-            case ZERO_EXTEND_INT: // ubyte/ushort/uint -> long.
+            case ZERO_EXTEND_INT: // ubyte/ushort/int -> long.
                 assert(varTypeIsUnsigned(srcLoadType) || (srcLoadType == TYP_INT));
                 m_extendKind    = varTypeIsSmall(srcLoadType) ? LOAD_ZERO_EXTEND_SMALL_INT : LOAD_ZERO_EXTEND_INT;
                 m_extendSrcSize = genTypeSize(srcLoadType);
