@@ -119,13 +119,13 @@ jobs:
         - name: LogNamePrefix
           value: TestRunLogs_R2R_CG2_HotColdSplitting
 
-      - name: testFilterArg
-        value: ''
+    - name: testFilterArg
+      value: ''
 
-      # Only build GCSimulator tests when the gc-simulator group is specified.
-      - ${{ if eq(parameters.testGroup, 'gc-simulator') }}:
-          - name: testFilterArg
-            value: 'test GC/Scenarios/GC-simulator.csproj'
+    # Only build GCSimulator tests when the gc-simulator group is specified.
+    - ${{ if eq(parameters.testGroup, 'gc-simulator') }}:
+        - name: testFilterArg
+          value: 'test GC/Scenarios/GC-simulator.csproj'
 
     - template: /eng/pipelines/common/templates/runtimes/native-test-assets-variables.yml
       parameters:
