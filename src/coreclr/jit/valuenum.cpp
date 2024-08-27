@@ -13952,7 +13952,6 @@ VNFunc Compiler::fgValueNumberJitHelperMethodVNFunc(CorInfoHelpFunc helpFunc)
             break;
 
         case CORINFO_HELP_RUNTIMEHANDLE_METHOD:
-        case CORINFO_HELP_RUNTIMEHANDLE_METHOD_LOG:
             vnf = VNF_RuntimeHandleMethod;
             break;
 
@@ -13961,7 +13960,6 @@ VNFunc Compiler::fgValueNumberJitHelperMethodVNFunc(CorInfoHelpFunc helpFunc)
             break;
 
         case CORINFO_HELP_RUNTIMEHANDLE_CLASS:
-        case CORINFO_HELP_RUNTIMEHANDLE_CLASS_LOG:
             vnf = VNF_RuntimeHandleClass;
             break;
 
