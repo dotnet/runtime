@@ -176,18 +176,18 @@ jobs:
         artifactName: 'SuperPMI_Collection_$(CollectionName)_$(CollectionType)_$(osGroup)$(osSubgroup)_$(archType)_$(buildConfig)'
         displayName: ${{ format('Upload artifacts SuperPMI {0}-{1} collection', parameters.collectionName, parameters.collectionType) }}
 
-    # Add authenticated pip feed
-    - task: PipAuthenticate@1
-      displayName: 'Pip Authenticate'
-      inputs:
-        artifactFeeds: public/dotnet-public-pypi
-        onlyAddExtraIndex: false
-
-    # Ensure the Python azure-storage-blob package is installed before doing the upload.
-    - script: $(PipScript) install --upgrade pip && $(PipScript) install azure.storage.blob==12.5.0 --force-reinstall && $(PipScript) install azure.identity==1.16.1 --force-reinstall
-      displayName: Upgrade Pip to latest and install azure-storage-blob and azure-identity Python packages
-
     - ${{ if eq(variables['System.TeamProject'], 'internal') }}:
+      # Add authenticated pip feed
+      - task: PipAuthenticate@1
+        displayName: 'Pip Authenticate'
+        inputs:
+          artifactFeeds: public/dotnet-public-pypi
+          onlyAddExtraIndex: false
+
+      # Ensure the Python azure-storage-blob package is installed before doing the upload.
+      - script: $(PipScript) install --upgrade pip && $(PipScript) install azure.storage.blob==12.5.0 --force-reinstall && $(PipScript) install azure.identity==1.16.1 --force-reinstall
+        displayName: Upgrade Pip to latest and install azure-storage-blob and azure-identity Python packages
+
       - task: AzureCLI@2
         displayName: ${{ format('Upload SuperPMI {0}-{1} collection to Azure Storage', parameters.collectionName, parameters.collectionType) }}
         inputs:

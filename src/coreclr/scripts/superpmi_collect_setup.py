@@ -456,7 +456,6 @@ def main(main_args):
     arch = coreclr_args.arch
     platform_name = coreclr_args.platform.lower()
     helix_source_prefix = "official"
-    creator = ""
 
     # Determine the Helix queue name to use when running jobs.
     if coreclr_args.public_queues:
@@ -624,7 +623,6 @@ def main(main_args):
     set_pipeline_variable("InputArtifacts", input_artifacts)
     set_pipeline_variable("Python", ' '.join(get_python_name()))
     set_pipeline_variable("Architecture", arch)
-    set_pipeline_variable("Creator", creator)
     set_pipeline_variable("Queue", helix_queue)
     set_pipeline_variable("HelixSourcePrefix", helix_source_prefix)
     set_pipeline_variable("MchFileTag", coreclr_args.mch_file_tag)
