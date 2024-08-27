@@ -976,10 +976,10 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                          {
                              _writer.WriteLine($"{memberAccessExpr} = {bindedValueIdentifier};");
 
-                             if (tempIdentifierStoringExpr is not null)
-                             {
-                                 _writer.WriteLine($"{tempIdentifierStoringExpr}");
-                             }
+                            if (tempIdentifierStoringExpr is not null)
+                            {
+                                _writer.WriteLine($"{tempIdentifierStoringExpr}");
+                            }
 
                             if (member.CanGet && _typeIndex.CanInstantiate(effectiveMemberType))
                             {
