@@ -123,8 +123,8 @@ namespace System.Buffers
         /// <remarks>
         /// For performance reasons, the input length argument and the returned offset value aren't validated against negative values.
         /// Also, the returned offset might be greater than the input length.
-        /// It is expected NIndex will be used with collections that always have a non-negative length/count. If the returned offset is negative and
-        /// then used to NIndex a collection, an OutOfRangeException is thrown, which has the same effect as the validation.
+        /// It is expected <see cref="NIndex"/> will be used with collections that always have a non-negative length/count. If the returned offset is negative and
+        /// then used to <see cref="NIndex"/> a collection, an <see cref="OutOfRangeException" /> is thrown, which has the same effect as the validation.
         /// </remarks>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public nint GetOffset(nint length)
@@ -145,7 +145,7 @@ namespace System.Buffers
         /// <param name="value">An object to compare with this object.</param>
         public override bool Equals([NotNullWhen(true)] object? value) => value is NIndex other && _value == other._value;
 
-        /// <summary>Compares the current NIndex object to another NIndex object for equality.</summary>
+        /// <summary>Compares the current <see cref="NIndex"/> object to another <see cref="NIndex"/> object for equality.</summary>
         /// <param name="other">An object to compare with this object.</param>
         public bool Equals(NIndex other) => _value == other._value;
 

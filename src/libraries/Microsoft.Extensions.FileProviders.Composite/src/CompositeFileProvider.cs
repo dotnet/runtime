@@ -40,7 +40,7 @@ namespace Microsoft.Extensions.FileProviders
         /// Locates a file at the given path.
         /// </summary>
         /// <param name="subpath">The path that identifies the file. </param>
-        /// <returns>The file information. Caller must check Exists property. This will be the first existing <see cref="IFileInfo"/> returned by the provided <see cref="IFileProvider"/> or a not found <see cref="IFileInfo"/> if no existing files are found.</returns>
+        /// <returns>The file information. The caller must check the <see cref="Exists" /> property. This is the first existing <see cref="IFileInfo"/> returned by the provided <see cref="IFileProvider"/> or a not found <see cref="IFileInfo"/> if no existing files are found.</returns>
         public IFileInfo GetFileInfo(string subpath)
         {
             foreach (IFileProvider fileProvider in _fileProviders)

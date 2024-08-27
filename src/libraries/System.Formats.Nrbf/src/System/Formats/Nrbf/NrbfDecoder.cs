@@ -46,7 +46,7 @@ public static class NrbfDecoder
     /// <exception cref="ArgumentNullException"><paramref name="stream" /> is <see langword="null" />.</exception>
     /// <exception cref="NotSupportedException">The stream does not support reading or seeking.</exception>
     /// <exception cref="ObjectDisposedException">The stream was closed.</exception>
-    /// <remarks><para>When this method returns, <paramref name="stream" /> is restored to its original position.</para></remarks>
+    /// <remarks>When this method returns, <paramref name="stream" /> is restored to its original position.</remarks>
     public static bool StartsWithPayloadHeader(Stream stream)
     {
 #if NET

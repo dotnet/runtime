@@ -50,7 +50,7 @@ namespace System.Buffers
             r.Start.Equals(Start) &&
             r.End.Equals(End);
 
-        /// <summary>Compares the current NRange object to another NRange object for equality.</summary>
+        /// <summary>Compares the current <see cref="NRange"/> object to another <see cref="NRange"/> object for equality.</summary>
         /// <param name="other">An object to compare with this object.</param>
         public bool Equals(NRange other) => other.Start.Equals(Start) && other.End.Equals(End);
 
@@ -89,21 +89,21 @@ namespace System.Buffers
             return new string(span.Slice(0, pos));
         }
 
-        /// <summary>Creates an NRange object starting from start NIndex to the end of the collection.</summary>
+        /// <summary>Creates an <see cref="NRange"/> object starting from start <see cref="NIndex"/> to the end of the collection.</summary>
         public static NRange StartAt(NIndex start) => new NRange(start, NIndex.End);
 
-        /// <summary>Creates an NRange object starting from first element in the collection to the end NIndex.</summary>
+        /// <summary>Creates an <see cref="NRange"/> object starting from first element in the collection to the end <see cref="NIndex"/>.</summary>
         public static NRange EndAt(NIndex end) => new NRange(NIndex.Start, end);
 
         /// <summary>Creates an NRange object starting from first element to the end.</summary>
         public static NRange All => new NRange(NIndex.Start, NIndex.End);
 
-        /// <summary>Calculates the start offset and length of the NRange object using a collection length.</summary>
-        /// <param name="length">The length of the collection that the NRange will be used with. Must be a positive value.</param>
+        /// <summary>Calculates the start offset and length of the <see cref="NRange"/> object using a collection length.</summary>
+        /// <param name="length">The length of the collection that the <see cref="NRange"/> will be used with. Must be a positive value.</param>
         /// <remarks>
         /// For performance reasons, the input length parameter isn't validated against negative values.
         /// It's expected NRange will be used with collections that always have a non-negative length/count.
-        /// The NRange is validated to be inside the length scope, however.
+        /// The <see cref="NRange"/> is validated to be inside the length scope, however.
         /// </remarks>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public (nint Offset, nint Length) GetOffsetAndLength(nint length)

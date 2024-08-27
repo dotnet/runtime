@@ -652,7 +652,7 @@ namespace System.Numerics.Tensors
         /// <param name="indexes">The indexes for the slice.</param>
         /// <returns></returns>
         /// <exception cref="IndexOutOfRangeException">
-        /// Any index is less than 0 or greater than or equal to FlattenedLength.
+        /// Any index is less than 0 or greater than or equal to <c>FlattenedLength</c>.
         /// </exception>
         public TensorSpan<T> Slice(params scoped ReadOnlySpan<NIndex> indexes)
         {

@@ -346,7 +346,7 @@ namespace Microsoft.Extensions.DependencyInjection
         /// <typeparam name="T">The type to activate.</typeparam>
         /// <param name="provider">The service provider used to resolve dependencies.</param>
         /// <param name="parameters">Constructor arguments not provided by <paramref name="provider"/>.</param>
-        /// <returns>An activated object of type T.</returns>
+        /// <returns>An activated object of type <typeparamref name="T" />.</returns>
         public static T CreateInstance<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] T>(IServiceProvider provider, params object[] parameters)
         {
             return (T)CreateInstance(provider, typeof(T), parameters);

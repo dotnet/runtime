@@ -128,7 +128,7 @@ namespace System.Threading.Tasks
         /// <param name="timeProvider">The <see cref="TimeProvider"/> with which to interpret <paramref name="timeout"/>.</param>
         /// <param name="cancellationToken">The <see cref="CancellationToken"/> to monitor for a cancellation request.</param>
         /// <returns>The <see cref="Task"/> representing the asynchronous wait.  It may or may not be the same instance as the current instance.</returns>
-        /// <exception cref="System.ArgumentNullException"><paramref name="task"/> or <paramref name="timeProvider"/> is null.</exception>
+        /// <exception cref="System.ArgumentNullException"><paramref name="task"/> or <paramref name="timeProvider"/> is <see langword="null" />.</exception>
         /// <exception cref="System.ArgumentOutOfRangeException"><paramref name="timeout"/> represents a negative time interval other than <see cref="Timeout.InfiniteTimeSpan"/>.</exception>
         public static Task WaitAsync(this Task task, TimeSpan timeout, TimeProvider timeProvider, CancellationToken cancellationToken = default)
         {
@@ -224,7 +224,7 @@ namespace System.Threading.Tasks
         /// <param name="timeProvider">The <see cref="TimeProvider"/> with which to interpret <paramref name="timeout"/>.</param>
         /// <param name="cancellationToken">The <see cref="CancellationToken"/> to monitor for a cancellation request.</param>
         /// <returns>The <see cref="Task"/> representing the asynchronous wait. It may or may not be the same instance as the current instance.</returns>
-        /// <exception cref="System.ArgumentNullException"><paramref name="task"/> or <paramref name="timeProvider"/> is null.</exception>
+        /// <exception cref="System.ArgumentNullException"><paramref name="task"/> or <paramref name="timeProvider"/> is <see langword="null" />.</exception>
         /// <exception cref="System.ArgumentOutOfRangeException"><paramref name="timeout"/> represents a negative time interval other than <see cref="Timeout.InfiniteTimeSpan"/>.</exception>
 #if NET8_0_OR_GREATER
         public static Task<TResult> WaitAsync<TResult>(this Task<TResult> task, TimeSpan timeout, TimeProvider timeProvider, CancellationToken cancellationToken = default)

@@ -563,7 +563,7 @@ namespace System.Numerics.Tensors
         /// <remarks>
         /// If the source and destinations overlap, this method behaves as if
         /// the original values are in a temporary location before the destination is overwritten.
-        /// </remarks
+        /// </remarks>
         public bool TryCopyTo(scoped TensorSpan<T> destination)
         {
             bool retVal = false;
