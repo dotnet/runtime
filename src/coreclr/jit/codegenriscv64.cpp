@@ -6233,7 +6233,7 @@ void CodeGen::genIntCastOverflowCheck(GenTreeCast* cast, const GenIntCastDesc& d
     {
         case GenIntCastDesc::CHECK_POSITIVE:
         {
-            GetEmitter()->emitIns_R_R(INS_sext_w, EA_8BYTE, tempReg, reg);
+            GetEmitter()->emitIns_R_R(INS_sext_w, EA_4BYTE, tempReg, reg);
             genJumpToThrowHlpBlk_la(SCK_OVERFLOW, INS_blt, tempReg, nullptr, REG_R0);
         }
         break;
