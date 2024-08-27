@@ -968,13 +968,25 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                     initKind = InitializationKind.SimpleAssignment;
                 }
 
-                Action<string>? writeOnSuccess = !canSet
+                Action<string, string?>? writeOnSuccess = !canSet
                      ? null
-                     : bindedValueIdentifier =>
+                     : (bindedValueIdentifier, tempIdentifierStoringExpr) =>
                      {
                          if (memberAccessExpr != bindedValueIdentifier)
                          {
                              _writer.WriteLine($"{memberAccessExpr} = {bindedValueIdentifier};");
+
+                             if (tempIdentifierStoringExpr is not null)
+                             {
+                                 _writer.WriteLine($"{tempIdentifierStoringExpr}");
+                             }
+
+                            if (member.CanGet && _typeIndex.CanInstantiate(effectiveMemberType))
+                            {
+                                EmitEndBlock();
+                                EmitStartBlock("else");
+                                _writer.WriteLine($"{memberAccessExpr} = {memberAccessExpr};");
+                            }
                          }
                      };
 
@@ -994,7 +1006,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 string configArgExpr,
                 InitializationKind initKind,
                 ValueDefaulting valueDefaulting,
-                Action<string>? writeOnSuccess = null)
+                Action<string, string?>? writeOnSuccess = null)
             {
                 if (!_typeIndex.HasBindableMembers(type))
                 {
@@ -1022,15 +1034,14 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 }
                 else if (initKind is InitializationKind.None && type.IsValueType)
                 {
-                    EmitBindingLogic(tempIdentifier, InitializationKind.Declaration);
-                    _writer.WriteLine($"{memberAccessExpr} = {tempIdentifier};");
+                    EmitBindingLogic(tempIdentifier, InitializationKind.Declaration, $"{memberAccessExpr} = {tempIdentifier};");
                 }
                 else
                 {
                     EmitBindingLogic(memberAccessExpr, initKind);
                 }
 
-                void EmitBindingLogic(string instanceToBindExpr, InitializationKind initKind)
+                void EmitBindingLogic(string instanceToBindExpr, InitializationKind initKind, string? tempIdentifierStoringExpr = null)
                 {
                     string bindCoreCall = $@"{nameof(MethodsToGen_CoreBindingHelper.BindCore)}({configArgExpr}, ref {instanceToBindExpr}, defaultValueIfNotFound: {FormatDefaultValueIfNotFound()}, {Identifier.binderOptions});";
 
@@ -1060,7 +1071,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                     void EmitBindCoreCall()
                     {
                         _writer.WriteLine(bindCoreCall);
-                        writeOnSuccess?.Invoke(instanceToBindExpr);
+                        writeOnSuccess?.Invoke(instanceToBindExpr, tempIdentifierStoringExpr);
                     }
 
                     string FormatDefaultValueIfNotFound() => valueDefaulting == ValueDefaulting.CallSetter ? "true" : "false";
