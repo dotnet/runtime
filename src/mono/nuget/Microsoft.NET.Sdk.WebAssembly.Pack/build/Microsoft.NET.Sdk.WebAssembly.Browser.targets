@@ -469,7 +469,7 @@ Copyright (c) .NET Foundation. All rights reserved.
       <_WasmResolvedFilesToPublish RelativePath="%(FileName)%(Extension)" Condition="'%(_WasmResolvedFilesToPublish.RelativePath)' == ''" />
 
       <!-- remove the original assemblies -->
-      <ResolvedFileToPublish Remove="@(WasmAssembliesToBundle)" Condition="'%(WasmAssembliesToBundle.DestinationSubDirectory)' == '' or '%(WasmAssembliesToBundle.ResolvedFrom)' != '{RawFileName}'" />
+      <ResolvedFileToPublish Remove="@(WasmAssembliesToBundle)" Condition="'%(WasmAssembliesToBundle.DestinationSubDirectory)' == ''" />
       <_WasmResolvedFilesToPublish Include="@(ResolvedFileToPublish)" />
     </ItemGroup>
 
