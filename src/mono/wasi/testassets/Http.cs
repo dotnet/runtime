@@ -20,6 +20,18 @@ public static class WasiMainWrapper
         await Task.Delay(100);
         GC.Collect(); // test that Pollable->Task is not collected until resolved
 
+        var ctsDelay = new CancellationTokenSource(10);
+        try {
+            await Task.Delay(1000, ctsDelay.Token);
+            throw new Exception("delay should have timed out");
+        } catch (TaskCanceledException tce) {
+            if (ctsDelay.Token != tce.CancellationToken)
+            {
+                throw new Exception("Different CancellationToken for delay");
+            }
+            Console.WriteLine("impatient delay was canceled as expected");
+        }
+
         using HttpClient impatientClient = new();
         impatientClient.DefaultRequestHeaders.Add("User-Agent", "dotnet WASI unit test");
         impatientClient.Timeout = TimeSpan.FromMilliseconds(10);
@@ -28,10 +40,9 @@ public static class WasiMainWrapper
             throw new Exception("request should have timed out");
         } catch (TaskCanceledException) {
             Console.WriteLine("1st impatientClient was canceled as expected");
-            // The /slow-hello endpoint takes 10 seconds to return a
-            // response, whereas we've set a 100ms timeout, so this is
-            // expected.
         }
+
+        GC.Collect();
 
         var cts = new CancellationTokenSource(10);
         try {
@@ -46,9 +57,6 @@ public static class WasiMainWrapper
                 throw new Exception("Different CancellationToken");
             }
             Console.WriteLine("2nd impatientClient was canceled as expected");
-            // The /slow-hello endpoint takes 10 seconds to return a
-            // response, whereas we've set a 100ms timeout, so this is
-            // expected.
         }
 
         using HttpClient client = new();
