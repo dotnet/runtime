@@ -7504,7 +7504,7 @@ VOID DECLSPEC_NORETURN UnwindAndContinueRethrowHelperAfterCatch(Frame* pEntryFra
         }
         else
         {
-            DispatchManagedException(orThrowable, /* preserveStackTrace */ false);
+            DispatchManagedException(orThrowable);
         }
     }
     else

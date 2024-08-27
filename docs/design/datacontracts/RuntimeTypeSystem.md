@@ -23,6 +23,7 @@ internal enum CorElementType
     // Values defined in ECMA-335 - II.23.1.16 Element types used in signatures
     // +
     Internal = 0x21, // Indicates that the next pointer sized number of bytes is the address of a TypeHandle. Signatures that contain the Internal CorElementType cannot exist in metadata that is saved into a serialized format.
+    CModInternal = 0x22, // Indicates that the next byte specifies if the modifier is required and the next pointer sized number of bytes after that is the address of a TypeHandle. Signatures that contain the CModInternal CorElementType cannot exist in metadata that is saved into a seralized format.
 }
 ```
 
@@ -332,6 +333,7 @@ The contract additionally depends on these data descriptors
 | `FnPtrTypeDesc` | `NumArgs` | Number of arguments to the function described by the `TypeDesc` |
 | `FnPtrTypeDesc` | `CallConv` | Lower 8 bits is the calling convention bit as extracted by the signature that defines this `TypeDesc` |
 | `FnPtrTypeDesc` | `RetAndArgTypes` | Pointer to an array of TypeHandle addresses. This length of this is 1 more than `NumArgs` |
+| `GenericsDictInfo` | `NumDicts` | Number of instantiation dictionaries, including inherited ones, in this `GenericsDictInfo` |
 | `GenericsDictInfo` | `NumTypeArgs` | Number of type arguments in the type or method instantiation described by this `GenericsDictInfo` |
 
 
