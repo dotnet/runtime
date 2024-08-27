@@ -6275,36 +6275,27 @@ void CodeGen::genIntCastOverflowCheck(GenTreeCast* cast, const GenIntCastDesc& d
         default: // CHECK_SMALL_INT_RANGE
         {
             assert(desc.CheckKind() == GenIntCastDesc::CHECK_SMALL_INT_RANGE);
-            const int   castMaxValue = desc.CheckSmallIntMax();
-            const int   castMinValue = desc.CheckSmallIntMin();
-            instruction ins;
+            const int       castMaxValue   = desc.CheckSmallIntMax();
+            const int       castMinValue   = desc.CheckSmallIntMin();
+            const bool      isUnsigned     = castMinValue == 0;
+            const unsigned  castSize       = genTypeSize(cast->gtCastType);
+            const auto      extension_size = (8 - castSize) * 8;
 
-            if (castMaxValue > 2047)
+            // if ((desc.CheckSrcSize() < 8) && !isUnsigned) {
+            //     // Ensure that the register is correctly extended
+            //     GetEmitter()->emitIns_R_R(INS_sext_w, EA_4BYTE, tempReg, reg);
+            // }
+
+            if (isUnsigned)
             {
-                assert((castMaxValue == 32767) || (castMaxValue == 65535));
-                GetEmitter()->emitLoadImmediate(EA_ATTR(desc.CheckSrcSize()), tempReg, castMaxValue + 1);
-                ins = castMinValue == 0 ? INS_bgeu : INS_bge;
-                genJumpToThrowHlpBlk_la(SCK_OVERFLOW, ins, reg, nullptr, tempReg);
+                GetEmitter()->emitIns_R_R_I(INS_slli, EA_4BYTE, tempReg, reg, extension_size);
+                genJumpToThrowHlpBlk_la(SCK_OVERFLOW, INS_bne, tempReg, nullptr, REG_R0);
             }
             else
             {
-                GetEmitter()->emitIns_R_R_I(INS_addiw, EA_ATTR(desc.CheckSrcSize()), tempReg, REG_R0, castMaxValue);
-                ins = castMinValue == 0 ? INS_bltu : INS_blt;
-                genJumpToThrowHlpBlk_la(SCK_OVERFLOW, ins, tempReg, nullptr, reg);
-            }
-
-            if (castMinValue != 0)
-            {
-                if (emitter::isValidSimm12(castMinValue))
-                {
-                    GetEmitter()->emitIns_R_R_I(INS_slti, EA_ATTR(desc.CheckSrcSize()), tempReg, reg, castMinValue);
-                }
-                else
-                {
-                    GetEmitter()->emitLoadImmediate(EA_8BYTE, tempReg, castMinValue);
-                    GetEmitter()->emitIns_R_R_R(INS_slt, EA_ATTR(desc.CheckSrcSize()), tempReg, reg, tempReg);
-                }
-                genJumpToThrowHlpBlk_la(SCK_OVERFLOW, INS_bne, tempReg);
+                GetEmitter()->emitIns_R_R_I(INS_slli, EA_4BYTE, tempReg, reg, extension_size);
+                GetEmitter()->emitIns_R_R_I(INS_srai, EA_4BYTE, tempReg, tempReg, extension_size);
+                genJumpToThrowHlpBlk_la(SCK_OVERFLOW, INS_bne, tempReg, nullptr, reg);
             }
         }
         break;
