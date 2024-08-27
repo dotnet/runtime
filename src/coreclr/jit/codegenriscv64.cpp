@@ -6280,9 +6280,9 @@ void CodeGen::genIntCastOverflowCheck(GenTreeCast* cast, const GenIntCastDesc& d
         default:
         {
             assert(desc.CheckKind() == GenIntCastDesc::CHECK_SMALL_INT_RANGE);
-            const int       castMaxValue = desc.CheckSmallIntMax();
-            const int       castMinValue = desc.CheckSmallIntMin();
-            instruction     ins;
+            const int   castMaxValue = desc.CheckSmallIntMax();
+            const int   castMinValue = desc.CheckSmallIntMin();
+            instruction ins;
 
             if (castMaxValue > 2047)
             {

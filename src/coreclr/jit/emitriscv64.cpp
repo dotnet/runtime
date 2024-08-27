@@ -3916,13 +3916,14 @@ void emitter::emitDispInsName(
         {
             const unsigned rs1    = (code >> 15) & 0x1f;
             const unsigned rd     = (code >> 7) & 0x1f;
-            int         offset = ((code >> 20) & 0xfff);
+            int            offset = ((code >> 20) & 0xfff);
             if (offset & 0x800)
             {
                 offset |= 0xfffff000;
             }
 
-            if ((rs1 == REG_RA) && (rd == REG_ZERO)) {
+            if ((rs1 == REG_RA) && (rd == REG_ZERO))
+            {
                 printf("ret");
                 return;
             }
@@ -3957,7 +3958,9 @@ void emitter::emitDispInsName(
                 if (id->idIsBound())
                 {
                     emitPrintLabel(id->idAddr()->iiaIGlabel);
-                } else {
+                }
+                else
+                {
                     printf("pc%+d instructions", offset >> 2);
                 }
             }
