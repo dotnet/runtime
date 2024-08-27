@@ -6288,12 +6288,14 @@ void CodeGen::genIntCastOverflowCheck(GenTreeCast* cast, const GenIntCastDesc& d
 
             if (isUnsigned)
             {
+                // Check if all bits above the small int are zeros
                 const auto type_size = castSize * 8;
                 GetEmitter()->emitIns_R_R_I(INS_srli, EA_4BYTE, tempReg, reg, type_size);
                 genJumpToThrowHlpBlk_la(SCK_OVERFLOW, INS_bne, tempReg, nullptr, REG_R0);
             }
             else
             {
+                // Extend sign of a small int on all of the bits above it and check whether the original type was same
                 const auto extension_size = (8 - castSize) * 8;
                 GetEmitter()->emitIns_R_R_I(INS_slli, EA_4BYTE, tempReg, reg, extension_size);
                 GetEmitter()->emitIns_R_R_I(INS_srai, EA_4BYTE, tempReg, tempReg, extension_size);
