@@ -169,7 +169,9 @@ void ObjectAllocator::MarkEscapingVarsAndBuildConnGraph()
 {
     class BuildConnGraphVisitor final : public GenTreeVisitor<BuildConnGraphVisitor>
     {
-        ObjectAllocator* m_allocator;
+        ObjectAllocator*   m_allocator;
+        bool               m_hasBackwardJump;
+        BitSetShortLongRep m_lclsInPreds;
 
     public:
         enum
@@ -179,9 +181,11 @@ void ObjectAllocator::MarkEscapingVarsAndBuildConnGraph()
             ComputeStack  = true,
         };
 
-        BuildConnGraphVisitor(ObjectAllocator* allocator)
+        BuildConnGraphVisitor(ObjectAllocator* allocator, bool hasBackwardJump, BitSetShortLongRep lclsInPreds)
             : GenTreeVisitor<BuildConnGraphVisitor>(allocator->comp)
             , m_allocator(allocator)
+            , m_hasBackwardJump(hasBackwardJump)
+            , m_lclsInPreds(lclsInPreds)
         {
         }
 
@@ -207,7 +211,12 @@ void ObjectAllocator::MarkEscapingVarsAndBuildConnGraph()
             {
                 assert(tree == m_ancestors.Top());
 
-                if (!m_allocator->CanLclVarEscapeViaParentStack(&m_ancestors, lclNum))
+                if (m_hasBackwardJump)
+                {
+                    BitVecOps::AddElemD(&m_allocator->m_bitVecTraits, m_lclsInPreds, lclNum);
+                }
+
+                if (!m_allocator->CanLclVarEscapeViaParentStack(&m_ancestors, lclNum, m_hasBackwardJump, m_lclsInPreds))
                 {
                     lclEscapes = false;
                 }
@@ -249,9 +258,30 @@ void ObjectAllocator::MarkEscapingVarsAndBuildConnGraph()
 
     for (BasicBlock* const block : comp->Blocks())
     {
+        const bool         basicBlockHasBackwardJump = block->HasFlag(BBF_BACKWARD_JUMP);
+        BitSetShortLongRep lclsInPreds               = BitVecOps::UninitVal();
+
+        if (basicBlockHasBackwardJump)
+        {
+            lclsInPreds = BitVecOps::MakeEmpty(&m_bitVecTraits);
+            for (BasicBlock* const predBlock : block->PredBlocks())
+            {
+                for (Statement* const stmt : predBlock->Statements())
+                {
+                    GenTree* stmtExpr = stmt->GetRootNode();
+                    if (stmtExpr->OperIsLocalStore())
+                    {
+                        GenTreeLclVarCommon* lclVar = stmtExpr->AsLclVarCommon();
+                        unsigned int         lclNum = lclVar->GetLclNum();
+                        BitVecOps::AddElemD(&m_bitVecTraits, lclsInPreds, lclNum);
+                    }
+                }
+            }
+        }
+
         for (Statement* const stmt : block->Statements())
         {
-            BuildConnGraphVisitor buildConnGraphVisitor(this);
+            BuildConnGraphVisitor buildConnGraphVisitor(this, basicBlockHasBackwardJump, lclsInPreds);
             buildConnGraphVisitor.WalkTree(stmt->GetRootNodePointer(), nullptr);
         }
     }
@@ -627,6 +657,8 @@ unsigned int ObjectAllocator::MorphAllocObjNodeIntoStackAlloc(
 // Arguments:
 //    parentStack     - Parent stack of the current visit
 //    lclNum          - Local variable number
+//    hasBackwardJump - Indicates if the block containing the parent stack has a backward jump
+//    lclsInPreds     - Local variables stored in the predecessors
 //
 // Return Value:
 //    true if the local can escape via the parent stack; false otherwise
@@ -635,7 +667,10 @@ unsigned int ObjectAllocator::MorphAllocObjNodeIntoStackAlloc(
 //    The method currently treats all locals assigned to a field as escaping.
 //    The can potentially be tracked by special field edges in the connection graph.
 //
-bool ObjectAllocator::CanLclVarEscapeViaParentStack(ArrayStack<GenTree*>* parentStack, unsigned int lclNum)
+bool ObjectAllocator::CanLclVarEscapeViaParentStack(ArrayStack<GenTree*>* parentStack,
+                                                    unsigned int          lclNum,
+                                                    bool                  hasBackwardJump,
+                                                    BitSetShortLongRep    lclsInPreds)
 {
     assert(parentStack != nullptr);
     int parentIndex = 1;
@@ -669,7 +704,10 @@ bool ObjectAllocator::CanLclVarEscapeViaParentStack(ArrayStack<GenTree*>* parent
                 const unsigned int srcLclNum = lclNum;
 
                 AddConnGraphEdge(dstLclNum, srcLclNum);
-                canLclVarEscapeViaParentStack = false;
+
+                canLclVarEscapeViaParentStack = hasBackwardJump &&
+                                                parent->AsLclVar()->TypeIs(TYP_REF, TYP_BYREF, TYP_I_IMPL) &&
+                                                !BitVecOps::IsMember(&m_bitVecTraits, lclsInPreds, dstLclNum);
             }
             break;
 

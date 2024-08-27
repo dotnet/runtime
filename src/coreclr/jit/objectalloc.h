@@ -65,7 +65,10 @@ private:
     unsigned int MorphAllocObjNodeIntoStackAlloc(
         GenTreeAllocObj* allocObj, CORINFO_CLASS_HANDLE clsHnd, bool isValueClass, BasicBlock* block, Statement* stmt);
     struct BuildConnGraphVisitorCallbackData;
-    bool CanLclVarEscapeViaParentStack(ArrayStack<GenTree*>* parentStack, unsigned int lclNum);
+    bool CanLclVarEscapeViaParentStack(ArrayStack<GenTree*>* parentStack,
+                                       unsigned int          lclNum,
+                                       bool                  hasBackwardJump,
+                                       BitSetShortLongRep    lclsInPreds);
     void UpdateAncestorTypes(GenTree* tree, ArrayStack<GenTree*>* parentStack, var_types newType);
 
     static const unsigned int s_StackAllocMaxSize = 0x2000U;
