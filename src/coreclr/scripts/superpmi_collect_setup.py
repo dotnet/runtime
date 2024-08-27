@@ -459,7 +459,6 @@ def main(main_args):
     creator = ""
 
     # Determine the Helix queue name to use when running jobs.
-    # Note that we run in the 'internal', not 'public', instance, so we must use 'internal' queues defined in helix-queues-setup.yml.
     if coreclr_args.public_queues:
         if platform_name == "windows":
             helix_queue = "Windows.11.Arm64.Open" if arch == "arm64" else "Windows.10.Amd64.Open"
