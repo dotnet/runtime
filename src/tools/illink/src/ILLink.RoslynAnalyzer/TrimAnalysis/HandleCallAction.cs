@@ -66,6 +66,11 @@ namespace ILLink.Shared.TrimAnalysis
 				break;
 
 			case IntrinsicId.Object_GetType: {
+					if (instanceValue.IsEmpty ()) {
+						AddReturnValue (MultiValueLattice.Top);
+						break;
+					}
+
 					foreach (var valueNode in instanceValue.AsEnumerable ()) {
 						// Note that valueNode can be statically typed as some generic argument type.
 						// For example:
