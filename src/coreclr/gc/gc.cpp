@@ -13498,21 +13498,35 @@ void gc_heap::distribute_free_regions()
 #endif
             )
         {
-            // ignore young huge regions when determining how much to decommit
-            num_regions_to_decommit[kind] =
-                max(static_cast<ptrdiff_t>(0),
-                    (balance - static_cast<ptrdiff_t>(num_young_huge_region_units_to_consider[kind])));
-
-            // also limit to budget
-            num_regions_to_decommit[kind] = min(num_regions_to_decommit[kind], static_cast<ptrdiff_t>(decommit_budget / region_size[kind]));
-
-            decommit_budget -= num_regions_to_decommit[kind] * region_size[kind];
-            balance -= num_regions_to_decommit[kind];
+            num_regions_to_decommit[kind] = balance;
 
             dprintf(REGIONS_LOG, ("distributing the %zd %s regions, removing %zd regions",
                 total_budget_in_region_units[kind],
                 kind_name[kind],
                 num_regions_to_decommit[kind]));
+
+            // ignore young huge regions when determining how much to decommit
+            if (num_young_huge_region_units_to_consider[kind] > 0)
+            {
+                num_regions_to_decommit[kind] =
+                    max(static_cast<ptrdiff_t>(0),
+                        (num_regions_to_decommit[kind] - static_cast<ptrdiff_t>(num_young_huge_region_units_to_consider[kind])));
+                dprintf(REGIONS_LOG, ("ignoring %zd young huge region units, removing %zd region units",
+                    num_young_huge_region_units_to_consider[kind],
+                    num_regions_to_decommit[kind]));
+            }
+
+            // also limit to budget
+            ptrdiff_t decommit_budget_units = decommit_budget / region_size[kind];
+            if (num_regions_to_decommit[kind] > decommit_budget_units)
+            {
+                num_regions_to_decommit[kind] = decommit_budget_units;
+                dprintf(REGIONS_LOG, ("limiting removal to %zd region units due to budget",
+                    num_regions_to_decommit[kind]));
+            }
+
+            decommit_budget -= num_regions_to_decommit[kind] * region_size[kind];
+            balance -= num_regions_to_decommit[kind];
 
             if (num_regions_to_decommit[kind] > 0)
             {
