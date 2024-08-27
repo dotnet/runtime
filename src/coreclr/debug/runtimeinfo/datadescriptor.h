@@ -266,7 +266,8 @@ CDAC_TYPE_END(ArrayClass)
 
 CDAC_TYPE_BEGIN(GenericsDictInfo)
 CDAC_TYPE_INDETERMINATE(GenericsDictInfo)
-CDAC_TYPE_FIELD(GenericsDictInfo, /*uint16*/, NumTypeArgs, cdac_data<GenericsDictInfo>::NumTypeArgs)
+CDAC_TYPE_FIELD(GenericsDictInfo, /*uint16*/, NumDicts, offsetof(GenericsDictInfo, m_wNumDicts))
+CDAC_TYPE_FIELD(GenericsDictInfo, /*uint16*/, NumTypeArgs, offsetof(GenericsDictInfo, m_wNumTyPars))
 CDAC_TYPE_END(GenericsDictInfo)
 
 CDAC_TYPE_BEGIN(TypeDesc)
