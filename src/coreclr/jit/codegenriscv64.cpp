@@ -6236,6 +6236,8 @@ void CodeGen::genIntCastOverflowCheck(GenTreeCast* cast, const GenIntCastDesc& d
         case GenIntCastDesc::CHECK_POSITIVE:
         {
             // Check if int is smaller than zero
+            // If uint is bigger than INT32_MIN that it will be treated as a signed
+            // number so overflow will also be triggered
             GetEmitter()->emitIns_R_R(INS_sext_w, EA_4BYTE, tempReg, reg);
             genJumpToThrowHlpBlk_la(SCK_OVERFLOW, INS_blt, tempReg, nullptr, REG_R0);
         }
@@ -6262,12 +6264,11 @@ void CodeGen::genIntCastOverflowCheck(GenTreeCast* cast, const GenIntCastDesc& d
         // long -> int
         case GenIntCastDesc::CHECK_INT_RANGE:
         {
-            assert(tempReg != reg);
-            GetEmitter()->emitLoadImmediate(EA_8BYTE, tempReg, INT32_MAX);
-            genJumpToThrowHlpBlk_la(SCK_OVERFLOW, INS_blt, tempReg, nullptr, reg);
-
-            GetEmitter()->emitLoadImmediate(EA_8BYTE, tempReg, INT32_MIN);
-            genJumpToThrowHlpBlk_la(SCK_OVERFLOW, INS_blt, reg, nullptr, tempReg);
+            // Extend sign of lower half of long so that it overrides its upper half
+            // If a new value differs from the original then the upper half was not
+            // a pure sign extension so there is an overflow
+            GetEmitter()->emitIns_R_R(INS_sext_w, EA_4BYTE, tempReg, reg);
+            genJumpToThrowHlpBlk_la(SCK_OVERFLOW, INS_bne, tempReg, nullptr, reg);
         }
         break;
 
@@ -6275,11 +6276,11 @@ void CodeGen::genIntCastOverflowCheck(GenTreeCast* cast, const GenIntCastDesc& d
         default: // CHECK_SMALL_INT_RANGE
         {
             assert(desc.CheckKind() == GenIntCastDesc::CHECK_SMALL_INT_RANGE);
-            const int       castMaxValue   = desc.CheckSmallIntMax();
-            const int       castMinValue   = desc.CheckSmallIntMin();
-            const bool      isUnsigned     = castMinValue == 0;
-            const unsigned  castSize       = genTypeSize(cast->gtCastType);
-            const auto      extension_size = (8 - castSize) * 8;
+            const int      castMaxValue   = desc.CheckSmallIntMax();
+            const int      castMinValue   = desc.CheckSmallIntMin();
+            const bool     isUnsigned     = castMinValue == 0;
+            const unsigned castSize       = genTypeSize(cast->gtCastType);
+            const auto     extension_size = (8 - castSize) * 8;
 
             // if ((desc.CheckSrcSize() < 8) && !isUnsigned) {
             //     // Ensure that the register is correctly extended
