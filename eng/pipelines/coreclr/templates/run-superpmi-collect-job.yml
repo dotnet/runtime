@@ -16,7 +16,6 @@ parameters:
   liveLibrariesBuildConfig: ''    # optional -- live-live libraries configuration to use for the run
   collectionType: ''
   collectionName: ''
-  collectionUpload: true
 
 jobs:
 - template: /eng/pipelines/common/templates/runtimes/xplat-job.yml
@@ -105,6 +104,12 @@ jobs:
       - name: InputDirectory
         value: '$(Build.SourcesDirectory)/artifacts/tests/coreclr/obj/${{ parameters.osGroup }}.${{ parameters.archType }}.$(buildConfigUpper)/Managed/nativeaot/SmokeTests'
 
+    - name: PublicQueuesCLIArg
+      ${{ if ne(variables['System.TeamProject'], 'internal') }}:
+        value: '-public_queues'
+      ${{ else }}:
+        value: ''
+
     workspace:
       clean: all
     pool:
@@ -117,7 +122,7 @@ jobs:
       displayName: Enable python venv
       condition: always()
 
-    - script: $(PythonScript) $(Build.SourcesDirectory)/src/coreclr/scripts/superpmi_collect_setup.py -payload_directory $(PayloadLocation) -source_directory $(Build.SourcesDirectory) -core_root_directory $(Core_Root_Dir) -arch $(archType) -platform $(osGroup) -mch_file_tag $(MchFileTag) -input_directory $(InputDirectory) -collection_name $(CollectionName) -collection_type $(CollectionType) -max_size 25 # size in MB
+    - script: $(PythonScript) $(Build.SourcesDirectory)/src/coreclr/scripts/superpmi_collect_setup.py -payload_directory $(PayloadLocation) -source_directory $(Build.SourcesDirectory) -core_root_directory $(Core_Root_Dir) -arch $(archType) -platform $(osGroup) -mch_file_tag $(MchFileTag) -input_directory $(InputDirectory) -collection_name $(CollectionName) -collection_type $(CollectionType) $(PublicQueuesCLIArg) -max_size 25 # size in MB
       displayName: ${{ format('SuperPMI setup ({0})', parameters.osGroup) }}
 
     # Create required directories for merged mch collection and superpmi logs
@@ -182,7 +187,7 @@ jobs:
     - script: $(PipScript) install --upgrade pip && $(PipScript) install azure.storage.blob==12.5.0 --force-reinstall && $(PipScript) install azure.identity==1.16.1 --force-reinstall
       displayName: Upgrade Pip to latest and install azure-storage-blob and azure-identity Python packages
 
-    - ${{ if eq(parameters.collectionUpload, true) }}:
+    - ${{ if eq(variables['System.TeamProject'], 'internal') }}:
       - task: AzureCLI@2
         displayName: ${{ format('Upload SuperPMI {0}-{1} collection to Azure Storage', parameters.collectionName, parameters.collectionType) }}
         inputs:

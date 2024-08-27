@@ -23,7 +23,6 @@ parameters:
   shouldContinueOnError: false
   dependsOn: []
   SuperPmiCollect: false
-  SuperPmiCollectionUpload: true
   unifiedArtifactsName: ''
   unifiedBuildNameSuffix: ''
   unifiedBuildConfigOverride: ''
@@ -623,7 +622,7 @@ jobs:
         displayName: Upgrade Pip to latest and install azure-storage-blob and azure-identity Python packages
         condition: always()
 
-      - ${{ if eq(parameters.SuperPmiCollectionUpload, true) }}:
+      - ${{ if eq(variables['System.TeamProject'], 'internal') }}:
         - task: AzureCLI@2
           displayName: 'Upload SuperPMI $(CollectionName)-$(CollectionType) collection to Azure Storage'
           inputs:

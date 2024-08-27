@@ -14,7 +14,6 @@ parameters:
   archType: ''
   SuperPmiCollectionType: 'run'
   SuperPmiCollectionName: 'libraries_tests'
-  SuperPmiCollectionUpload: true
   MergedMchFileLocation: ''
   MchFilesLocation: ''
   SpmiLogsLocation: ''
@@ -71,7 +70,7 @@ steps:
     displayName: Upgrade Pip to latest and install azure-storage-blob and azure-identity Python packages
     condition: always()
 
-  - ${{ if eq(parameters.SuperPmiCollectionUpload, true) }}:
+  - ${{ if eq(variables['System.TeamProject'], 'internal') }}:
     - task: AzureCLI@2
       displayName: 'Upload SuperPMI ${{ parameters.SuperPmiCollectionName }}-${{ parameters.SuperPmiCollectionType }} collection to Azure Storage'
       inputs:

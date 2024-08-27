@@ -377,7 +377,6 @@ extends:
             - no_tiered_compilation
             SuperPmiCollect: true
             SuperPmiCollectionName: libraries_tests_no_tiered_compilation
-            SuperPmiCollectionUpload: true
             unifiedArtifactsName: BuildArtifacts_$(osGroup)$(osSubgroup)_$(archType)_Checked
             helixArtifactsName: LibrariesTestArtifacts_$(osGroup)$(osSubgroup)_$(archType)_Checked
             unifiedBuildConfigOverride: checked
