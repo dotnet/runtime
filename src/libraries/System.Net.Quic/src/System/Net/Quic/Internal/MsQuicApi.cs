@@ -83,8 +83,23 @@ internal sealed unsafe partial class MsQuicApi
 
         if (OperatingSystem.IsWindows())
         {
-            // Windows ships msquic in the assembly directory.
-            loaded = NativeLibrary.TryLoad(Interop.Libraries.MsQuic, typeof(MsQuicApi).Assembly, DllImportSearchPath.AssemblyDirectory, out msQuicHandle);
+#pragma warning disable IL3000 // Avoid accessing Assembly file path when publishing as a single file
+            // Windows ships msquic in the assembly directory next to System.Net.Quic, so load that
+            // for single-file deployments, the assembly location is an empty string so we fall back
+            // to AppContext.BaseDirectory which is the directory containing the single-file executable
+            string path = typeof(MsQuicApi).Assembly.Location is string assemblyLocation && !string.IsNullOrEmpty(assemblyLocation)
+                ? System.IO.Path.GetDirectoryName(assemblyLocation)!
+                : AppContext.BaseDirectory;
+#pragma warning restore IL3000
+
+            path = System.IO.Path.Combine(path, Interop.Libraries.MsQuic);
+
+            if (NetEventSource.Log.IsEnabled())
+            {
+                NetEventSource.Info(null, $"Attempting to load MsQuic from {path}");
+            }
+
+            loaded = NativeLibrary.TryLoad(path, typeof(MsQuicApi).Assembly, DllImportSearchPath.LegacyBehavior, out msQuicHandle);
         }
         else
         {
