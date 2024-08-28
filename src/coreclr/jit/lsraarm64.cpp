@@ -2041,7 +2041,7 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
             }
 
             // The embedded op may be prefixed by a MOVPFRX instruction. If so, then the embedded
-            // op can't use the reuse a source register as the destination. Ensure all the inputs
+            // op can't reuse a source register as the destination. Ensure all the inputs
             // are marked as delay free.
 
             for (size_t argNum = 1; argNum <= numArgs; argNum++)
