@@ -51,7 +51,7 @@ namespace System.Net.Http
 
                 requestComplete = SendRequest(cancellationToken);
 
-                var incomingResponse = await requestComplete.ConfigureAwait(false);
+                using var incomingResponse = await requestComplete.ConfigureAwait(false);
 
                 ObjectDisposedException.ThrowIf(isDisposed, this);
                 cancellationToken.ThrowIfCancellationRequested();
@@ -64,10 +64,8 @@ namespace System.Net.Http
                 // we will leave scope of this method
                 // we need to pass the ownership of the request and this wrapper to the response (via response content stream)
                 // unless we know that we are not streaming anymore
-                incomingStream = new WasiInputStream(this, incomingResponse);// passing self ownership, passing incomingResponse ownership
+                incomingStream = new WasiInputStream(this, incomingResponse.Consume());// passing self ownership, passing body ownership
                 response.Content = new StreamContent(incomingStream); // passing incomingStream ownership to SendAsync() caller
-
-                incomingResponse.Dispose();
 
                 return response;
             }

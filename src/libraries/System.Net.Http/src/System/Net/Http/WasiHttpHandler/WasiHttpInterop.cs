@@ -140,7 +140,7 @@ namespace System.Net.Http
 
         public static void ConvertResponseHeaders(IncomingResponse incomingResponse, HttpResponseMessage response)
         {
-            var headers = incomingResponse.Headers();
+            using var headers = incomingResponse.Headers();
             foreach ((var key, var value) in headers.Entries())
             {
                 var valueString = Encoding.UTF8.GetString(value);
@@ -153,7 +153,6 @@ namespace System.Net.Http
                     response.Headers.Add(key, valueString);
                 }
             }
-            headers.Dispose();
         }
 
         private static bool IsContentHeader(string headerName)

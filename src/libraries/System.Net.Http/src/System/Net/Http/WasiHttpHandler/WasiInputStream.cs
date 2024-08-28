@@ -28,11 +28,10 @@ namespace System.Net.Http
         public override bool CanWrite => false;
         public override bool CanSeek => false;
 
-        public WasiInputStream(WasiRequestWrapper wrapper, IncomingResponse incomingResponse)
+        public WasiInputStream(WasiRequestWrapper wrapper, IncomingBody body)
         {
             this.wrapper = wrapper;
-            this.body = incomingResponse.Consume();
-            incomingResponse.Dispose();
+            this.body = body;
             this.stream = body.Stream();
         }
 
