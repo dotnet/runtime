@@ -93,8 +93,7 @@
 
     <ItemGroup Condition="'$(DebuggerSupport)' == 'true'">
       <!-- Add any pdb files, if available -->
-      <_BundlePdbFiles Include="$([System.IO.Path]::ChangeExtension('%(AppleAssembliesToBundle.Identity)', '.pdb'))" />
-      <BundleFiles Include="@(_BundlePdbFiles)" TargetDir="publish" Condition="Exists(%(_BundlePdbFiles.Identity))" />
+      <BundleFiles Include="@(ApplePdbsToBundle)" TargetDir="publish" Condition="Exists(%(ApplePdbsToBundle.Identity))" />
     </ItemGroup>
 
     <Copy SourceFiles="@(BundleFiles)"         DestinationFolder="$(BundleDir)%(TargetDir)" />
@@ -213,7 +212,10 @@
         <_IsNative>false</_IsNative>
       </AppleAssembliesToBundle>
 
-      <AppleNativeFilesToBundle Include="$(PublishDir)\**\*.*" Exclude="$(PublishDir)\*.dll" />
+      <ApplePdbsToBundle Include="$([System.IO.Path]::ChangeExtension('%(AppleAssembliesToBundle.Identity)', '.pdb'))" />
+      <AppleXmlsToBundle Include="$([System.IO.Path]::ChangeExtension('%(AppleAssembliesToBundle.Identity)', '.xml'))" />
+
+      <AppleNativeFilesToBundle Include="$(PublishDir)\**\*.*" Exclude="@(AppleAssembliesToBundle);@(ApplePdbsToBundle);@(AppleXmlsToBundle);@(_SatelliteAssemblies)" />
     </ItemGroup>
   </Target>
 
