@@ -4845,8 +4845,6 @@ GenTree* Lowering::LowerHWIntrinsicCreate(GenTreeHWIntrinsic* node)
         case TYP_INT:
         case TYP_UINT:
         {
-            unsigned       N            = 0;
-            GenTree*       opN          = nullptr;
             NamedIntrinsic insIntrinsic = NI_Illegal;
 
             if ((simdBaseType == TYP_SHORT) || (simdBaseType == TYP_USHORT))
@@ -4861,7 +4859,7 @@ GenTree* Lowering::LowerHWIntrinsicCreate(GenTreeHWIntrinsic* node)
 
             if (insIntrinsic != NI_Illegal)
             {
-                for (N = 1; N < argCnt - 1; N++)
+                for (size_t N = 1; N < argCnt - 1; N++)
                 {
                     // We will be constructing the following parts:
                     //   ...
@@ -4877,7 +4875,7 @@ GenTree* Lowering::LowerHWIntrinsicCreate(GenTreeHWIntrinsic* node)
                     //   tmp1 = Sse?.Insert(tmp1, opN, N);
                     //   ...
 
-                    opN = node->Op(N + 1);
+                    GenTree* opN = node->Op(N + 1);
 
                     idx = comp->gtNewIconNode(N, TYP_INT);
                     // Place the insert as early as possible to avoid creating a lot of long lifetimes.
@@ -4889,26 +4887,24 @@ GenTree* Lowering::LowerHWIntrinsicCreate(GenTreeHWIntrinsic* node)
                     LowerNode(tmp1);
                 }
 
-                assert(N == (argCnt - 1));
-
                 // We will be constructing the following parts:
-                //   idx  =    CNS_INT       int    N
-                //          /--*  tmp1 simd16
-                //          +--*  opN  T
-                //          +--*  idx  int
+                //   idx  =    CNS_INT       int    (argCnt - 1)
+                //          /--*  tmp1   simd16
+                //          +--*  lastOp T
+                //          +--*  idx    int
                 //   node = *  HWINTRINSIC   simd16 T Insert
 
                 // This is roughly the following managed code:
                 //   ...
-                //   tmp1 = Sse?.Insert(tmp1, opN, N);
+                //   tmp1 = Sse?.Insert(tmp1, lastOp, (argCnt - 1));
                 //   ...
 
-                opN = node->Op(argCnt);
+                GenTree* lastOp = node->Op(argCnt);
 
-                idx = comp->gtNewIconNode(N, TYP_INT);
-                BlockRange().InsertAfter(opN, idx);
+                idx = comp->gtNewIconNode((argCnt - 1), TYP_INT);
+                BlockRange().InsertAfter(lastOp, idx);
 
-                node->ResetHWIntrinsicId(insIntrinsic, comp, tmp1, opN, idx);
+                node->ResetHWIntrinsicId(insIntrinsic, comp, tmp1, lastOp, idx);
                 break;
             }
 
@@ -4918,9 +4914,9 @@ GenTree* Lowering::LowerHWIntrinsicCreate(GenTreeHWIntrinsic* node)
             GenTree* op[16];
             op[0] = tmp1;
 
-            for (N = 1; N < argCnt; N++)
+            for (size_t N = 1; N < argCnt; N++)
             {
-                opN = node->Op(N + 1);
+                GenTree* opN = node->Op(N + 1);
 
                 op[N] = InsertNewSimdCreateScalarUnsafeNode(TYP_SIMD16, opN, simdBaseJitType, 16);
                 LowerNode(op[N]);
@@ -4928,7 +4924,7 @@ GenTree* Lowering::LowerHWIntrinsicCreate(GenTreeHWIntrinsic* node)
 
             if ((simdBaseType == TYP_BYTE) || (simdBaseType == TYP_UBYTE))
             {
-                for (N = 0; N < argCnt; N += 4)
+                for (size_t N = 0; N < argCnt; N += 4)
                 {
                     // We will be constructing the following parts:
                     //   ...
@@ -4958,9 +4954,9 @@ GenTree* Lowering::LowerHWIntrinsicCreate(GenTreeHWIntrinsic* node)
                     //   tmp3 = Sse2.UnpackLow(tmp1, tmp2);
                     //   ...
 
-                    unsigned O = N + 1;
-                    unsigned P = N + 2;
-                    unsigned Q = N + 3;
+                    size_t O = N + 1;
+                    size_t P = N + 2;
+                    size_t Q = N + 3;
 
                     tmp1 = comp->gtNewSimdHWIntrinsicNode(simdType, op[N], op[O], NI_SSE2_UnpackLow, CORINFO_TYPE_UBYTE,
                                                           simdSize);
