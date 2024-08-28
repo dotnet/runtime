@@ -3451,9 +3451,11 @@ private:
 
 #ifdef MULTIPLE_HEAPS
 #ifdef USE_REGIONS
+#ifdef DYNAMIC_HEAP_COUNT
     PER_HEAP_FIELD_SINGLE_GC min_fl_list_info* min_fl_list;
     PER_HEAP_FIELD_SINGLE_GC size_t num_fl_items_rethreaded_stage2;
     PER_HEAP_FIELD_SINGLE_GC size_t* free_list_space_per_heap;
+#endif //DYNAMIC_HEAP_COUNT
 #else //USE_REGIONS
     PER_HEAP_FIELD_SINGLE_GC heap_segment* new_heap_segment;
 #endif //USE_REGIONS

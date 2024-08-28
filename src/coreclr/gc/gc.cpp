@@ -15248,9 +15248,11 @@ gc_heap::init_gc_heap (int h_number)
 
 #ifdef USE_REGIONS
 #ifdef MULTIPLE_HEAPS
+#ifdef DYNAMIC_HEAP_COUNT
     min_fl_list = 0;
     num_fl_items_rethreaded_stage2 = 0;
     free_list_space_per_heap = nullptr;
+#endif //DYNAMIC_HEAP_COUNT
 #endif //MULTIPLE_HEAPS
 #else //USE_REGIONS
     max_free_space_items = MAX_NUM_FREE_SPACES;
@@ -48403,15 +48405,14 @@ void gc_heap::verify_heap (BOOL begin_gc_p)
     {
         GCToEEInterface::VerifySyncTableEntry();
 #ifdef MULTIPLE_HEAPS
-#ifdef USE_REGIONS
+#if defined(USE_REGIONS) && defined(DYNAMIC_HEAP_COUNT)
         // check that the heaps not in use have not been inadvertently written to
         for (int hn = n_heaps; hn < n_max_heaps; hn++)
         {
             gc_heap* hp = g_heaps[hn];
             hp->check_decommissioned_heap();
         }
-#endif //USE_REGIONS
-
+#endif //USE_REGIONS && DYNAMIC_HEAP_COUNT
         current_join->restart();
 #endif //MULTIPLE_HEAPS
     }
