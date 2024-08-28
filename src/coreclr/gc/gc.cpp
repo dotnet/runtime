@@ -53194,6 +53194,7 @@ bool GCHeap::IsConcurrentGCEnabled()
 void PopulateDacVars(GcDacVars *gcDacVars)
 {
     bool v2 = gcDacVars->minor_version_number >= 2;
+    bool v4 = gcDacVars->minor_version_number >= 4;
 
 #define DEFINE_FIELD(field_name, field_type) offsetof(CLASS_NAME, field_name),
 #define DEFINE_DPTR_FIELD(field_name, field_type) offsetof(CLASS_NAME, field_name),
@@ -53244,6 +53245,9 @@ void PopulateDacVars(GcDacVars *gcDacVars)
 #ifndef BACKGROUND_GC
     gcDacVars->minor_version_number |= 2;
 #endif //!BACKGROUND_GC
+#ifdef DYNAMIC_HEAP_COUNT
+    gcDacVars->minor_version_number |= 4;
+#endif //DYNAMIC_HEAP_COUNT
     gcDacVars->built_with_svr = &g_built_with_svr_gc;
     gcDacVars->build_variant = &g_build_variant;
     gcDacVars->gc_structures_invalid_cnt = const_cast<int32_t*>(&GCScan::m_GcStructuresInvalidCnt);
@@ -53318,6 +53322,14 @@ void PopulateDacVars(GcDacVars *gcDacVars)
     if (v2)
     {
         gcDacVars->bookkeeping_start = &gc_heap::bookkeeping_start;
+    }
+    if (v4)
+    {
+#ifdef DYNAMIC_HEAP_COUNT
+        gcDacVars->dynamic_adaptation_mode = &gc_heap::dynamic_adaptation_mode;
+#else
+        gcDacVars->dynamic_adaptation_mode = nullptr;
+#endif //DYNAMIC_HEAP_COUNT
     }
 }
 
