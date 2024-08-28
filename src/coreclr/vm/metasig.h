@@ -31,8 +31,6 @@
 //   r  -- Ref  -- a byref
 //         Ret  -- indicates function return type
 //
-//         Var  -- Variant
-//
 //   b  -- Byte -- (unsigned) byte
 //   u  -- Char -- character (2 byte unsigned unicode)
 //   d  -- Dbl  -- double
@@ -363,9 +361,9 @@ DEFINE_METASIG(SM(Obj_Bool_RetArrByte, j F, a(b)))
 DEFINE_METASIG(SM(Obj_Obj_RefArrByte_RetArrByte, j j r(a(b)), a(b)))
 
 #ifdef FEATURE_COMINTEROP
-DEFINE_METASIG_T(SM(Obj_Int_RefVariant_RetVoid, j i r(g(VARIANT)), v))
-DEFINE_METASIG_T(SM(Obj_RefVariant_RetVoid, j r(g(VARIANT)), v))
-DEFINE_METASIG_T(SM(RefVariant_RetObject, r(g(VARIANT)), j))
+DEFINE_METASIG_T(SM(Obj_Int_RefComVariant_RetVoid, j i r(g(COMVARIANT)), v))
+DEFINE_METASIG_T(SM(Obj_RefComVariant_RetVoid, j r(g(COMVARIANT)), v))
+DEFINE_METASIG_T(SM(RefComVariant_RetObject, r(g(COMVARIANT)), j))
 DEFINE_METASIG_T(IM(RuntimeTypeHandle_RefBool_RefIntPtr_RetVoid, g(RT_TYPE_HANDLE) r(F) r(I), v))
 
 #endif
