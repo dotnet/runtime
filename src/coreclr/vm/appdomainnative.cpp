@@ -77,7 +77,7 @@ extern "C" void QCALLTYPE AssemblyNative_GetLoadedAssemblies(QCall::ObjectHandle
             // Do not change this code.  This is done this way to
             //  prevent a GC hole in the SetObjectReference() call.  The compiler
             //  is free to pick the order of evaluation.
-            OBJECTREF o = (OBJECTREF)pDomainAssembly->GetExposedAssemblyObject();
+            OBJECTREF o = (OBJECTREF)pDomainAssembly->GetAssembly()->GetExposedObject();
             if (o == NULL)
             {   // The assembly was collected and is not reachable from managed code anymore
                 continue;

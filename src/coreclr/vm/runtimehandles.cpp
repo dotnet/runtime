@@ -179,19 +179,19 @@ NOINLINE ReflectModuleBaseObject* GetRuntimeModuleHelper(LPVOID __me, Module *pM
     return (ReflectModuleBaseObject*)OBJECTREFToObject(refModule);
 }
 
-NOINLINE AssemblyBaseObject* GetRuntimeAssemblyHelper(LPVOID __me, DomainAssembly *pAssembly, OBJECTREF keepAlive)
+NOINLINE AssemblyBaseObject* GetRuntimeAssemblyHelper(LPVOID __me, Assembly *pAssembly, OBJECTREF keepAlive)
 {
     FC_INNER_PROLOG_NO_ME_SETUP();
     if (pAssembly == NULL)
         return NULL;
 
-    OBJECTREF refAssembly = (pAssembly != NULL) ? pAssembly->GetExposedAssemblyObjectIfExists() : NULL;
+    OBJECTREF refAssembly = (pAssembly != NULL) ? pAssembly->GetExposedObjectIfExists() : NULL;
 
     if(refAssembly != NULL)
         return (AssemblyBaseObject*)OBJECTREFToObject(refAssembly);
 
     HELPER_METHOD_FRAME_BEGIN_RET_ATTRIB_1(Frame::FRAME_ATTR_EXACT_DEPTH|Frame::FRAME_ATTR_CAPTURE_DEPTH_2, keepAlive);
-    refAssembly = pAssembly->GetExposedAssemblyObject();
+    refAssembly = pAssembly->GetExposedObject();
     HELPER_METHOD_FRAME_END();
 
     FC_INNER_EPILOG();
@@ -309,10 +309,9 @@ FCIMPL1(AssemblyBaseObject*, RuntimeTypeHandle::GetAssembly, ReflectClassBaseObj
     if (refType == NULL)
         FCThrowRes(kArgumentNullException, W("Arg_InvalidHandle"));
 
-    Module *pModule = refType->GetType().GetAssembly()->GetModule();
-    DomainAssembly *pDomainAssembly = pModule->GetDomainAssembly();
+    Assembly* pAssembly = refType->GetType().GetAssembly();
 
-    FC_RETURN_ASSEMBLY_OBJECT(pDomainAssembly, refType);
+    FC_RETURN_ASSEMBLY_OBJECT(pAssembly, refType);
 }
 FCIMPLEND
 
@@ -2849,13 +2848,13 @@ extern "C" void QCALLTYPE ModuleHandle_GetAssembly(QCall::ModuleHandle pModule, 
 {
     QCALL_CONTRACT;
 
-    DomainAssembly *pAssembly = NULL;
+    Assembly *pAssembly = NULL;
 
     BEGIN_QCALL;
-    pAssembly = pModule->GetDomainAssembly();
+    pAssembly = pModule->GetAssembly();
 
     GCX_COOP();
-    retAssembly.Set(pAssembly->GetExposedAssemblyObject());
+    retAssembly.Set(pAssembly->GetExposedObject());
     END_QCALL;
 
     return;
@@ -2892,8 +2891,6 @@ FCIMPL5(ReflectMethodObject*, ModuleHandle::GetDynamicMethod, ReflectMethodObjec
 
     HELPER_METHOD_FRAME_BEGIN_RET_PROTECT(gc);
 
-    DomainAssembly *pDomainModule = pModule->GetDomainAssembly();
-
     U1ARRAYREF dataArray = (U1ARRAYREF)sig;
     DWORD sigSize = dataArray->GetNumComponents();
     NewArrayHolder<BYTE> pSig(new BYTE[sigSize]);
@@ -2906,7 +2903,7 @@ FCIMPL5(ReflectMethodObject*, ModuleHandle::GetDynamicMethod, ReflectMethodObjec
     if (length)
         pName[length / sizeof(char)] = '\0';
 
-    DynamicMethodTable *pMTForDynamicMethods = pDomainModule->GetDynamicMethodTable();
+    DynamicMethodTable *pMTForDynamicMethods = pModule->GetDynamicMethodTable();
     pNewMD = pMTForDynamicMethods->GetDynamicMethod(pSig, sigSize, pName);
     _ASSERTE(pNewMD != NULL);
     // pNewMD now owns pSig and pName.

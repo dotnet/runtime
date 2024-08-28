@@ -1132,16 +1132,13 @@ extern "C" void QCALLTYPE AssemblyNative_GetExecutingAssembly(QCall::StackCrawlM
 {
     QCALL_CONTRACT;
 
-    DomainAssembly * pExecutingAssembly = NULL;
-
     BEGIN_QCALL;
 
     Assembly* pAssembly = SystemDomain::GetCallersAssembly(stackMark);
     if(pAssembly)
     {
-        pExecutingAssembly = pAssembly->GetDomainAssembly();
         GCX_COOP();
-        retAssembly.Set(pExecutingAssembly->GetExposedAssemblyObject());
+        retAssembly.Set(pAssembly->GetExposedObject());
     }
 
     END_QCALL;
@@ -1153,14 +1150,11 @@ extern "C" void QCALLTYPE AssemblyNative_GetEntryAssembly(QCall::ObjectHandleOnS
 
     BEGIN_QCALL;
 
-    DomainAssembly * pRootAssembly = NULL;
     Assembly * pAssembly = GetAppDomain()->GetRootAssembly();
-
     if (pAssembly)
     {
-        pRootAssembly = pAssembly->GetDomainAssembly();
         GCX_COOP();
-        retAssembly.Set(pRootAssembly->GetExposedAssemblyObject());
+        retAssembly.Set(pAssembly->GetExposedObject());
     }
 
     END_QCALL;
