@@ -17,7 +17,7 @@ namespace System.Memory.Tests
         {
             public override ReadOnlySequence<char> CreateOfSize(int size)
             {
-                IEnumerable<int> ascii = Enumerable.Range(' ', (char)0x7f - ' ');
+                IEnumerable<int> ascii = Enumerable.Range((int)' ', (char)0x7f - ' ');
                 IEnumerable<int> items = ascii;
                 for (int i = (size + 20) / ascii.Count(); i > 0; i--)
                     items = items.Concat(ascii);
