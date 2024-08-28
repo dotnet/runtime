@@ -1106,7 +1106,6 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                     }
                     else if (isRMW)
                     {
-                        assert((targetReg == op1Reg) || (targetReg != op2Reg));
                         GetEmitter()->emitIns_Mov(INS_mov, emitTypeSize(node), targetReg, op1Reg,
                                                   /* canSkip */ true);
                         GetEmitter()->emitIns_R_R(ins, emitSize, targetReg, op2Reg, opt);
@@ -1124,18 +1123,12 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                     {
                         if (HWIntrinsicInfo::IsExplicitMaskedOperation(intrin.id))
                         {
-                            assert((targetReg == op1Reg) || (targetReg != op1Reg));
-                            assert((targetReg == op1Reg) || (targetReg != op3Reg));
-
                             GetEmitter()->emitIns_Mov(INS_mov, emitTypeSize(node), targetReg, op2Reg,
                                                       /* canSkip */ true);
                             GetEmitter()->emitIns_R_R_R(ins, emitSize, targetReg, op1Reg, op3Reg, opt);
                         }
                         else
                         {
-                            assert((targetReg == op1Reg) || (targetReg != op2Reg));
-                            assert((targetReg == op1Reg) || (targetReg != op3Reg));
-
                             GetEmitter()->emitIns_Mov(INS_mov, emitTypeSize(node), targetReg, op1Reg,
                                                       /* canSkip */ true);
                             GetEmitter()->emitIns_R_R_R(ins, emitSize, targetReg, op2Reg, op3Reg, opt);
