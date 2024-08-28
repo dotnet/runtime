@@ -6,7 +6,7 @@ using System.Reflection;
 
 using Xunit;
 
-[ConditionalClass(typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.IsMonoInterpreter))]
+[ActiveIssue("https://github.com/dotnet/runtime/issues/107110", typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.IsMonoInterpreter))]
 public class Arrays
 {
     private class TestClass { }
