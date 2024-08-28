@@ -117,7 +117,7 @@ jobs:
 
     # tvOS devices
     - ${{ if in(parameters.platform, 'tvos_arm64') }}:
-      - osx.amd64.appletv.scouting.open
+      - macos.arm64.appletv.open
 
     # windows x64
     - ${{ if eq(parameters.platform, 'windows_x64') }}:
