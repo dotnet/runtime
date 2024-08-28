@@ -174,9 +174,7 @@ CustomMarshalerInfo* CustomMarshalerInfo::CreateIEnumeratorMarshalerInfo(LoaderH
 {
     CONTRACTL
     {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
+        STANDARD_VM_CHECK;
         PRECONDITION(CheckPointer(pHeap));
         PRECONDITION(CheckPointer(pLoaderAllocator));
     }
