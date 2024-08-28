@@ -59,9 +59,7 @@ namespace
     {
         CONTRACT (CustomMarshalerInfo*)
         {
-            THROWS;
-            GC_TRIGGERS;
-            MODE_ANY;
+            STANDARD_VM_CHECK;
             PRECONDITION(CheckPointer(pAssembly));
             POSTCONDITION(CheckPointer(RETVAL));
         }
@@ -493,9 +491,7 @@ CustomMarshalerInfo *EEMarshalingData::GetCustomMarshalerInfo(Assembly *pAssembl
 {
     CONTRACT (CustomMarshalerInfo*)
     {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
+        STANDARD_VM_CHECK;
         INJECT_FAULT(COMPlusThrowOM());
         PRECONDITION(CheckPointer(pAssembly));
         POSTCONDITION(CheckPointer(RETVAL));
@@ -562,9 +558,7 @@ CustomMarshalerInfo *EEMarshalingData::GetIEnumeratorMarshalerInfo()
 {
     CONTRACT (CustomMarshalerInfo*)
     {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
+        STANDARD_VM_CHECK;
         INJECT_FAULT(COMPlusThrowOM());
         POSTCONDITION(CheckPointer(RETVAL));
     }

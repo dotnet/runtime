@@ -47,7 +47,7 @@ namespace
         {
             pMD = MethodDesc::FindOrCreateAssociatedMethodDesc(
                 pMD,
-                hndCustomMarshalerType.GetMethodTable(),
+                pMT,
                 FALSE,           // forceBoxedEntryPoint
                 Instantiation(), // methodInst
                 FALSE,           // allowInstParam
