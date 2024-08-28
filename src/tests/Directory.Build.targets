@@ -464,7 +464,7 @@
 
     <!-- We don't want the out-of-process test marker file to be included in referencing projects, so we don't include it as content. -->
     <WriteLinesToFile
-        Condition="'$(RequiresProcessIsolation)' == 'true' and '$(BuildAsStandalone)' != 'true'"
+        Condition="'$(RequiresProcessIsolation)' == 'true' and '$(BuildAllTestsAsStandalone)' != 'true'"
         File="$(OutputPath)\$(AssemblyName).OutOfProcessTest"
         Lines="OutOfProcessTest"
         Overwrite="true"
