@@ -14750,7 +14750,7 @@ gc_heap::wait_for_gc_done(int32_t timeOut)
     while (gc_heap::gc_started)
     {
 #ifdef MULTIPLE_HEAPS
-        wait_heap = GCHeap::GetHeap(heap_select::select_heap(NULL))->pGenGCHeap;
+        wait_heap = g_heaps[heap_select::select_heap(NULL)];
         dprintf(2, ("waiting for the gc_done_event on heap %d", wait_heap->heap_number));
 #endif // MULTIPLE_HEAPS
 
