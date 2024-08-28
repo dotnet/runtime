@@ -10,8 +10,10 @@ internal class GenericsDictInfo : IData<GenericsDictInfo>
     {
         Target.TypeInfo type = target.GetTypeInfo(DataType.GenericsDictInfo);
 
+        NumDicts = target.Read<ushort>(address + (ulong)type.Fields[nameof(NumDicts)].Offset);
         NumTypeArgs = target.Read<ushort>(address + (ulong)type.Fields[nameof(NumTypeArgs)].Offset);
     }
 
+    public ushort NumDicts { get; init; }
     public ushort NumTypeArgs { get; init; }
 }

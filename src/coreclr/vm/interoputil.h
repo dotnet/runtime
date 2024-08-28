@@ -8,8 +8,6 @@
 #include "debugmacros.h"
 #include "interopconverter.h"
 
-struct VariantData;
-
 // Out of memory helper.
 #define IfNullThrow(EXPR) \
 do {if ((EXPR) == 0) {ThrowOutOfMemory();} } while (0)
@@ -274,10 +272,6 @@ MethodTable *GetDefaultInterfaceMTForClass(MethodTable *pMT, BOOL *pbDispatch);
 //---------------------------------------------------------------------------
 // This method retrieves the list of source interfaces for a given class.
 void GetComSourceInterfacesForClass(MethodTable *pClassMT, CQuickArray<MethodTable *> &rItfList);
-
-//--------------------------------------------------------------------------------
-// This methods converts an IEnumVARIANT to a managed IEnumerator.
-OBJECTREF ConvertEnumVariantToMngEnum(IEnumVARIANT *pNativeEnum);
 
 //--------------------------------------------------------------------------------
 // These methods convert an OLE_COLOR to a System.Color and vice versa.

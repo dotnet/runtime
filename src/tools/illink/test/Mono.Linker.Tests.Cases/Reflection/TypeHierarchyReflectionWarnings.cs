@@ -266,6 +266,7 @@ namespace Mono.Linker.Tests.Cases.Reflection
 		{
 			// Removed, because keeping the interface on its own
 			// doesn't apply its type annotations
+			[ExpectedWarning ("IL2112", nameof (RequiredInterface), nameof (RUCMethod), Tool.Analyzer, "Analyzer warns about DAM on type access to members even without call to object.GetType().")]
 			[RequiresUnreferencedCode ("--RUC on RequiredInterface.UnusedMethod--")]
 			void RUCMethod ();
 		}
@@ -313,7 +314,7 @@ namespace Mono.Linker.Tests.Cases.Reflection
 			[Kept]
 			[KeptAttributeAttribute (typeof (RequiresUnreferencedCodeAttribute))]
 			[ExpectedWarning ("IL2112", "--RUC on DerivedFromAnnotatedPublicParameterlessConstructor()--")]
-			[ExpectedWarning ("IL2112", "--RUC on DerivedFromAnnotatedPublicParameterlessConstructor()--", Tool.Trimmer | Tool.NativeAot, "")]
+			[ExpectedWarning ("IL2112", "--RUC on DerivedFromAnnotatedPublicParameterlessConstructor()--")]
 			[RequiresUnreferencedCode ("--RUC on DerivedFromAnnotatedPublicParameterlessConstructor()--")]
 			public DerivedFromAnnotatedPublicParameterlessConstructor () { }
 
@@ -701,7 +702,7 @@ namespace Mono.Linker.Tests.Cases.Reflection
 				[Kept]
 				[KeptAttributeAttribute (typeof (RequiresUnreferencedCodeAttribute))]
 				[RequiresUnreferencedCode ("--RUCOnVirtualMethodDerivedAnnotated.Base.RUCVirtualMethod--")]
-				[ExpectedWarning ("IL2112", "--RUCOnVirtualMethodDerivedAnnotated.Base.RUCVirtualMethod--", Tool.Trimmer, "https://github.com/dotnet/runtime/issues/104740")]
+				[ExpectedWarning ("IL2112", "--RUCOnVirtualMethodDerivedAnnotated.Base.RUCVirtualMethod--", Tool.Trimmer | Tool.Analyzer, "https://github.com/dotnet/runtime/issues/104740")]
 				public virtual void RUCVirtualMethod () { }
 			}
 
@@ -739,7 +740,7 @@ namespace Mono.Linker.Tests.Cases.Reflection
 				[Kept]
 				[KeptAttributeAttribute (typeof (RequiresUnreferencedCodeAttribute))]
 				[RequiresUnreferencedCode ("--RUCOnVirtualOnAnnotatedInterface.Interface.RUCVirtualMethod--")]
-				[ExpectedWarning ("IL2112", "--RUCOnVirtualOnAnnotatedInterface.Interface.RUCVirtualMethod--", Tool.Trimmer, "https://github.com/dotnet/runtime/issues/104740")]
+				[ExpectedWarning ("IL2112", "--RUCOnVirtualOnAnnotatedInterface.Interface.RUCVirtualMethod--", Tool.Trimmer | Tool.Analyzer, "https://github.com/dotnet/runtime/issues/104740")]
 				void RUCVirtualMethod () { }
 			}
 
@@ -777,7 +778,7 @@ namespace Mono.Linker.Tests.Cases.Reflection
 				[Kept]
 				[KeptAttributeAttribute (typeof (RequiresUnreferencedCodeAttribute))]
 				[RequiresUnreferencedCode ("--RucOnVirtualOnAnnotatedInterfaceUsedByImplementation.Interface.RUCVirtualMethod--")]
-				[ExpectedWarning ("IL2112", "--RucOnVirtualOnAnnotatedInterfaceUsedByImplementation.Interface.RUCVirtualMethod--", Tool.Trimmer, "https://github.com/dotnet/runtime/issues/104740")]
+				[ExpectedWarning ("IL2112", "--RucOnVirtualOnAnnotatedInterfaceUsedByImplementation.Interface.RUCVirtualMethod--", Tool.Trimmer | Tool.Analyzer, "https://github.com/dotnet/runtime/issues/104740")]
 				void RUCVirtualMethod () { }
 			}
 
@@ -820,7 +821,7 @@ namespace Mono.Linker.Tests.Cases.Reflection
 				[RequiresUnreferencedCode ("--AnnotatedBase.VirtualMethodWithRequires--")]
 				[RequiresDynamicCode ("--AnnotatedBase.VirtualMethodWithRequires--")]
 				[RequiresAssemblyFiles ("--AnnotatedBase.VirtualMethodWithRequires--")]
-				[ExpectedWarning ("IL2112", "--AnnotatedBase.VirtualMethodWithRequires--", Tool.Trimmer, "https://github.com/dotnet/runtime/issues/104740")]
+				[ExpectedWarning ("IL2112", "--AnnotatedBase.VirtualMethodWithRequires--", Tool.Trimmer | Tool.Analyzer, "https://github.com/dotnet/runtime/issues/104740")]
 				public virtual void VirtualMethodWithRequires () { }
 			}
 
@@ -910,7 +911,8 @@ namespace Mono.Linker.Tests.Cases.Reflection
 			[KeptAttributeAttribute (typeof (DynamicallyAccessedMembersAttribute))]
 			[KeptBaseType (typeof (BaseWithField))]
 			[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.NonPublicFields)]
-			[ExpectedWarning ("IL2115", nameof (BaseWithField), nameof (BaseWithField.CompilerGeneratedProperty))]
+			[ExpectedWarning ("IL2115", nameof (BaseWithField), nameof (BaseWithField.CompilerGeneratedProperty),
+				Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/linker/issues/2628")]
 			public class DerivedWithAnnotation : BaseWithField
 			{
 			}

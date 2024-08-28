@@ -3,12 +3,10 @@
 
 using System;
 using System.Collections.Generic;
-using System.Reflection.Metadata.Ecma335;
-using Microsoft.Diagnostics.DataContractReader.Data;
-using Microsoft.Diagnostics.DataContractReader.Contracts.RuntimeTypeSystem_1_NS;
 using System.Diagnostics;
-using System.Text;
-using System.Reflection;
+using System.Reflection.Metadata.Ecma335;
+using Microsoft.Diagnostics.DataContractReader.Contracts.RuntimeTypeSystem_1_NS;
+using Microsoft.Diagnostics.DataContractReader.Data;
 
 namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 
@@ -195,34 +193,16 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
         private DynamicMethodDesc(Target target, TargetPointer methodDescPointer)
         {
             _address = methodDescPointer;
-            List<byte> nameBytes = new();
             _desc = target.ProcessedData.GetOrAdd<Data.DynamicMethodDesc>(methodDescPointer);
 
-            if (_desc.MethodName != TargetPointer.Null)
-            {
-                TargetPointer currentNameAddress = _desc.MethodName;
-                do
-                {
-                    byte nameByte = target.Read<byte>(currentNameAddress);
-
-                    if (nameByte == 0)
-                        break;
-
-                    nameBytes.Add(nameByte);
-                    currentNameAddress++;
-                } while (true);
-
-                MethodName = nameBytes.ToArray();
-            }
-            else
-            {
-                MethodName = System.Array.Empty<byte>();
-            }
+            MethodName = _desc.MethodName != TargetPointer.Null
+                ? target.ReadUtf8String(_desc.MethodName)
+                : string.Empty;
 
             _storedSigDesc = target.ProcessedData.GetOrAdd<Data.StoredSigMethodDesc>(methodDescPointer);
         }
 
-        public byte[] MethodName { get; }
+        public string MethodName { get; }
         public DynamicMethodDescExtendedFlags ExtendedFlags => (DynamicMethodDescExtendedFlags)_storedSigDesc.ExtendedFlags;
 
         public bool IsDynamicMethod => ExtendedFlags.HasFlag(DynamicMethodDescExtendedFlags.IsLCGMethod);
@@ -414,13 +394,14 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
             Debug.Assert(methodTable.Flags.HasInstantiation);
 
             TargetPointer perInstInfo = methodTable.PerInstInfo;
-            TargetPointer genericsDictInfo = perInstInfo - (ulong)target.PointerSize;
+            TargetPointer genericsDictInfoAddr = perInstInfo - (ulong)target.PointerSize;
+            GenericsDictInfo genericsDictInfo = target.ProcessedData.GetOrAdd<GenericsDictInfo>(genericsDictInfoAddr);
 
-            TargetPointer dictionaryPointer = target.ReadPointer(perInstInfo);
+            // Use the last dictionary. This corresponds to the specific type - any previous ones are for superclasses
+            // See PerInstInfo in methodtable.h for details in coreclr
+            TargetPointer dictionaryPointer = target.ReadPointer(perInstInfo + (ulong)target.PointerSize * (ulong)(genericsDictInfo.NumDicts - 1));
 
-
-            int numberOfGenericArgs = target.ProcessedData.GetOrAdd<GenericsDictInfo>(genericsDictInfo).NumTypeArgs;
-
+            int numberOfGenericArgs = genericsDictInfo.NumTypeArgs;
             TypeHandles = new TypeHandle[numberOfGenericArgs];
             for (int i = 0; i < numberOfGenericArgs; i++)
             {
@@ -698,27 +679,37 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
             return false;
         }
 
-        int arrayMethodIndex = methodDesc.Slot - GetNumVtableSlots(GetTypeHandle(methodDesc.MethodTable));
-
+        // To get the array function index, subtract the number of virtuals from the method's slot
+        // The array vtable looks like:
+        //    System.Object vtable
+        //    System.Array vtable
+        //    type[] vtable
+        //    Get
+        //    Set
+        //    Address
+        //    .ctor        // possibly more
+        // See ArrayMethodDesc for details in coreclr
+        MethodTable methodTable = GetOrCreateMethodTable(methodDesc);
+        int arrayMethodIndex = methodDesc.Slot - methodTable.NumVirtuals;
         functionType = arrayMethodIndex switch
         {
             0 => ArrayFunctionType.Get,
             1 => ArrayFunctionType.Set,
             2 => ArrayFunctionType.Address,
-            > 3 => ArrayFunctionType.Constructor,
+            >= 3 => ArrayFunctionType.Constructor,
             _ => throw new InvalidOperationException()
         };
 
         return true;
     }
 
-    public bool IsNoMetadataMethod(MethodDescHandle methodDescHandle, out ReadOnlySpan<byte> methodName)
+    public bool IsNoMetadataMethod(MethodDescHandle methodDescHandle, out string methodName)
     {
         MethodDesc methodDesc = _methodDescs[methodDescHandle.Address];
 
         if (methodDesc.Classification != MethodClassification.Dynamic)
         {
-            methodName = default;
+            methodName = string.Empty;
             return false;
         }
 
@@ -768,5 +759,12 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
         }
 
         return AsDynamicMethodDesc(methodDesc).IsILStub;
+    }
+
+    private MethodTable GetOrCreateMethodTable(MethodDesc methodDesc)
+    {
+        // Ensures that the method table is valid, created, and cached
+        _ = GetTypeHandle(methodDesc.MethodTable);
+        return _methodTables[methodDesc.MethodTable];
     }
 }

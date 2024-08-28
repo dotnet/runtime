@@ -24,7 +24,6 @@ namespace ILLink.Shared.TrimAnalysis
 		readonly MarkStep _markStep;
 		readonly ReflectionMarker _reflectionMarker;
 		readonly MethodDefinition _callingMethodDefinition;
-		readonly MethodReference _calledMethodReference;
 
 		public HandleCallAction (
 			LinkContext context,
@@ -32,8 +31,7 @@ namespace ILLink.Shared.TrimAnalysis
 			MarkStep markStep,
 			ReflectionMarker reflectionMarker,
 			in DiagnosticContext diagnosticContext,
-			MethodDefinition callingMethodDefinition,
-			MethodReference calledMethodReference)
+			MethodDefinition callingMethodDefinition)
 		{
 			_context = context;
 			_operation = operation;
@@ -44,7 +42,6 @@ namespace ILLink.Shared.TrimAnalysis
 			_callingMethodDefinition = callingMethodDefinition;
 			_annotations = context.Annotations.FlowAnnotations;
 			_requireDynamicallyAccessedMembersAction = new (reflectionMarker, diagnosticContext);
-			_calledMethodReference = calledMethodReference;
 		}
 
 		private partial bool TryHandleIntrinsic (
@@ -55,15 +52,14 @@ namespace ILLink.Shared.TrimAnalysis
 			out MultiValue? methodReturnValue)
 		{
 			MultiValue? maybeMethodReturnValue = methodReturnValue = null;
-			Debug.Assert (calledMethod.Method == _context.Resolve (_calledMethodReference));
 
 			switch (intrinsicId) {
 			case IntrinsicId.None: {
-					if (ReflectionMethodBodyScanner.IsPInvokeDangerous (calledMethod.Method, _context, out bool comDangerousMethod)) {
+					if (ReflectionMethodBodyScanner.IsPInvokeDangerous (calledMethod.Definition, _context, out bool comDangerousMethod)) {
 						Debug.Assert (comDangerousMethod); // Currently COM dangerous is the only one we detect
 						_diagnosticContext.AddDiagnostic (DiagnosticId.CorrectnessOfCOMCannotBeGuaranteed, calledMethod.GetDisplayName ());
 					}
-					if (_context.Annotations.DoesMethodRequireUnreferencedCode (calledMethod.Method, out RequiresUnreferencedCodeAttribute? requiresUnreferencedCode))
+					if (_context.Annotations.DoesMethodRequireUnreferencedCode (calledMethod.Definition, out RequiresUnreferencedCodeAttribute? requiresUnreferencedCode))
 						MarkStep.ReportRequiresUnreferencedCode (calledMethod.GetDisplayName (), requiresUnreferencedCode, _diagnosticContext);
 
 					return TryHandleSharedIntrinsic (calledMethod, instanceValue, argumentValues, intrinsicId, out methodReturnValue);
@@ -77,7 +73,7 @@ namespace ILLink.Shared.TrimAnalysis
 				break;
 
 			case IntrinsicId.Array_Empty: {
-					AddReturnValue (ArrayValue.Create (0, ((GenericInstanceMethod) _calledMethodReference).GenericArguments[0]));
+					AddReturnValue (ArrayValue.Create (0, ((GenericInstanceMethod) calledMethod.Method).GenericArguments[0]));
 				}
 				break;
 
@@ -104,6 +100,11 @@ namespace ILLink.Shared.TrimAnalysis
 			// GetType()
 			//
 			case IntrinsicId.Object_GetType: {
+					if (instanceValue.IsEmpty ()) {
+						AddReturnValue (MultiValueLattice.Top);
+						break;
+					}
+
 					foreach (var valueNode in instanceValue.AsEnumerable ()) {
 						// Note that valueNode can be statically typed in IL as some generic argument type.
 						// For example:
@@ -197,9 +198,9 @@ namespace ILLink.Shared.TrimAnalysis
 
 		private partial bool MethodIsTypeConstructor (MethodProxy method)
 		{
-			if (!method.Method.IsConstructor)
+			if (!method.Definition.IsConstructor)
 				return false;
-			TypeDefinition? type = method.Method.DeclaringType;
+			TypeDefinition? type = method.Definition.DeclaringType;
 			while (type is not null) {
 				if (type.IsTypeOf (WellKnownType.System_Type))
 					return true;
@@ -210,8 +211,10 @@ namespace ILLink.Shared.TrimAnalysis
 
 		private partial IEnumerable<SystemReflectionMethodBaseValue> GetMethodsOnTypeHierarchy (TypeProxy type, string name, BindingFlags? bindingFlags)
 		{
-			foreach (var method in type.Type.GetMethodsOnTypeHierarchy (_context, m => m.Name == name, bindingFlags))
-				yield return new SystemReflectionMethodBaseValue (new MethodProxy (method));
+			foreach (var method in type.Type.GetMethodsOnTypeHierarchy (_context, m => m.Name == name, bindingFlags)) {
+				if (MethodProxy.TryCreate (method, _context, out MethodProxy? methodProxy))
+					yield return new SystemReflectionMethodBaseValue (methodProxy.Value);
+			}
 		}
 
 		private partial IEnumerable<SystemTypeValue> GetNestedTypesOnType (TypeProxy type, string name, BindingFlags? bindingFlags)
@@ -282,7 +285,7 @@ namespace ILLink.Shared.TrimAnalysis
 
 		private partial bool MarkAssociatedProperty (MethodProxy method)
 		{
-			if (method.Method.TryGetProperty (out PropertyDefinition? propertyDefinition)) {
+			if (method.Definition.TryGetProperty (out PropertyDefinition? propertyDefinition)) {
 				_reflectionMarker.MarkProperty (_diagnosticContext.Origin, propertyDefinition);
 				return true;
 			}
