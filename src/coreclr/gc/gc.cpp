@@ -1988,7 +1988,7 @@ const int max_snoop_level = 128;
 // time in milliseconds between decommit steps
 #define DECOMMIT_TIME_STEP_MILLISECONDS (100)
 
-// arbitrary - 4 GCs worth of decommitting
+// arbitrary - 10 GCs worth of decommitting
 #define MAX_DECOMMIT_SIZE (10 * DECOMMIT_SIZE_PER_MILLISECOND * DECOMMIT_TIME_STEP_MILLISECONDS)
 
 inline
