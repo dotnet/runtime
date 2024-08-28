@@ -1762,12 +1762,12 @@ bool OptBoolsDsc::optOptimizeCompareChainReturnBlock(BasicBlock* b3)
 
     GenTree* block3ReturnTree = m_b3->firstStmt()->GetRootNode()->AsOp()->GetReturnValue();
 
-    if (block3ReturnTree == nullptr || !block3ReturnTree->OperIs(GT_CNS_INT))
+    if (block3ReturnTree == nullptr || !block3ReturnTree->OperIs(GT_CNS_INT) || !block3ReturnTree->TypeIs(TYP_INT))
     {
         return false;
     }
 
-    ssize_t block3RetVal = m_b3->firstStmt()->GetRootNode()->AsOp()->GetReturnValue()->AsIntCon()->IconValue();
+    ssize_t block3RetVal = block3ReturnTree->AsIntCon()->IconValue();
 
     if (!cond1->OperIs(GT_NE) || !cond2->OperIs(GT_EQ, GT_NE) || (block3RetVal != 0 && cond2->OperIs(GT_EQ)) ||
         (block3RetVal != 1 && cond2->OperIs(GT_NE)))
