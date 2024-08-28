@@ -1471,6 +1471,9 @@ bool emitter::TakesLegacyPromotedEvexPrefix(const instrDesc* id) const
         return true;
     }
 
+    // TODO-XArch-apx:
+    // better keep a table there to confirm the instruction should be emitted with NDD form.
+
     return false;
 }
 
@@ -1510,6 +1513,7 @@ bool emitter::TakesLegacyPromotedEvexPrefix(const instrDesc* id) const
 
 #define MAP4_IN_BYTE_EVEX_PREFIX 0x4000000000000ULL
 #define NDBIT_IN_BYTE_EVEX_PREFIX 0x1000000000ULL
+#define PPBITS_FOR_SHORT_INPUT 0x10000000000ULL
 //------------------------------------------------------------------------
 // AddEvexPrefix: Add default EVEX prefix with only LL' bits set.
 //
@@ -1540,6 +1544,12 @@ emitter::code_t emitter::AddEvexPrefix(const instrDesc* id, code_t code, emitAtt
         //Handle EVEX prefix for NDD first.
         code |= MAP4_IN_BYTE_EVEX_PREFIX;
         code |= NDBIT_IN_BYTE_EVEX_PREFIX;
+
+        if (attr == EA_2BYTE)
+        {
+            code |= PPBITS_FOR_SHORT_INPUT;
+        }
+
         return code;
     }
 
@@ -15637,12 +15647,10 @@ BYTE* emitter::emitOutputRR(BYTE* dst, instrDesc* id)
 #endif // FEATURE_HW_INTRINSICS
     else
     {
-        assert(!TakesSimdPrefix(id));
+        // some instructions with NDD form might go into this path with EVEX prefix.
+        assert(!TakesSimdPrefix(id) || IsApxNDDEncodableInstruction(ins));
         code = insCodeMR(ins);
-        if (TakesRex2Prefix(id))
-        {
-            code = AddRex2Prefix(ins, code);
-        }
+        code = AddX86PrefixIfNeeded(id, code, size);
         code = insEncodeMRreg(id, code);
 
         if (ins != INS_test)
