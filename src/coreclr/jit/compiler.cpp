@@ -8007,106 +8007,109 @@ START:
 #endif
     param.result = result;
 
-    setErrorTrap(compHnd, Param*, pParamOuter, &param){setErrorTrap(nullptr, Param*, pParam, pParamOuter){
-        if (pParam->inlineInfo){// Lazily create the inlinee compiler object
-                                if (pParam->inlineInfo->InlinerCompiler->InlineeCompiler == nullptr){
-                                    pParam->inlineInfo->InlinerCompiler->InlineeCompiler =
-                                        (Compiler*)pParam->pAlloc->allocateMemory(roundUp(sizeof(*pParam->pComp)));
-}
+    setErrorTrap(compHnd, Param*, pParamOuter, &param)
+    {
+        setErrorTrap(nullptr, Param*, pParam, pParamOuter)
+        {
+            if (pParam->inlineInfo)
+            {
+                // Lazily create the inlinee compiler object
+                if (pParam->inlineInfo->InlinerCompiler->InlineeCompiler == nullptr)
+                {
+                    pParam->inlineInfo->InlinerCompiler->InlineeCompiler =
+                        (Compiler*)pParam->pAlloc->allocateMemory(roundUp(sizeof(*pParam->pComp)));
+                }
 
-// Use the inlinee compiler object
-pParam->pComp = pParam->inlineInfo->InlinerCompiler->InlineeCompiler;
-#ifdef DEBUG
-// memset(pParam->pComp, 0xEE, sizeof(Compiler));
-#endif
-}
-else
-{
-    // Allocate create the inliner compiler object
-    pParam->pComp = (Compiler*)pParam->pAlloc->allocateMemory(roundUp(sizeof(*pParam->pComp)));
-}
+                // Use the inlinee compiler object
+                pParam->pComp = pParam->inlineInfo->InlinerCompiler->InlineeCompiler;
+            }
+            else
+            {
+                // Allocate create the inliner compiler object
+                pParam->pComp = (Compiler*)pParam->pAlloc->allocateMemory(roundUp(sizeof(*pParam->pComp)));
+            }
 
 #if MEASURE_CLRAPI_CALLS
-pParam->wrapCLR = WrapICorJitInfo::makeOne(pParam->pAlloc, pParam->pComp, pParam->compHnd);
+            pParam->wrapCLR = WrapICorJitInfo::makeOne(pParam->pAlloc, pParam->pComp, pParam->compHnd);
 #endif
 
-// push this compiler on the stack (TLS)
-pParam->pComp->prevCompiler = JitTls::GetCompiler();
-JitTls::SetCompiler(pParam->pComp);
+            // push this compiler on the stack (TLS)
+            pParam->pComp->prevCompiler = JitTls::GetCompiler();
+            JitTls::SetCompiler(pParam->pComp);
 
-// PREFIX_ASSUME gets turned into ASSERT_CHECK and we cannot have it here
+            // PREFIX_ASSUME gets turned into ASSERT_CHECK and we cannot have it here
 #if defined(_PREFAST_) || defined(_PREFIX_)
-PREFIX_ASSUME(pParam->pComp != NULL);
+            PREFIX_ASSUME(pParam->pComp != NULL);
 #else
-assert(pParam->pComp != nullptr);
+            assert(pParam->pComp != nullptr);
 #endif
 
-pParam->pComp->compInit(pParam->pAlloc, pParam->methodHnd, pParam->compHnd, pParam->methodInfo, pParam->inlineInfo);
+            pParam->pComp->compInit(pParam->pAlloc, pParam->methodHnd, pParam->compHnd, pParam->methodInfo, pParam->inlineInfo);
 
 #ifdef DEBUG
-pParam->pComp->jitFallbackCompile = pParam->jitFallbackCompile;
+            pParam->pComp->jitFallbackCompile = pParam->jitFallbackCompile;
 #endif
 
-// Now generate the code
-pParam->result =
-    pParam->pComp->compCompile(pParam->classPtr, pParam->methodCodePtr, pParam->methodCodeSize, pParam->compileFlags);
-}
-finallyErrorTrap()
-{
-    Compiler* pCompiler = pParamOuter->pComp;
+            // Now generate the code
+            pParam->result =
+                pParam->pComp->compCompile(pParam->classPtr, pParam->methodCodePtr, pParam->methodCodeSize, pParam->compileFlags);
+        }
+        finallyErrorTrap()
+        {
+            Compiler* pCompiler = pParamOuter->pComp;
 
-    // If OOM is thrown when allocating memory for a pComp, we will end up here.
-    // For this case, pComp and also pCompiler will be a nullptr
-    //
-    if (pCompiler != nullptr)
-    {
-        pCompiler->info.compCode = nullptr;
+            // If OOM is thrown when allocating memory for a pComp, we will end up here.
+            // For this case, pComp and also pCompiler will be a nullptr
+            //
+            if (pCompiler != nullptr)
+            {
+                pCompiler->info.compCode = nullptr;
 
-        // pop the compiler off the TLS stack only if it was linked above
-        assert(JitTls::GetCompiler() == pCompiler);
-        JitTls::SetCompiler(pCompiler->prevCompiler);
-    }
+                // pop the compiler off the TLS stack only if it was linked above
+                assert(JitTls::GetCompiler() == pCompiler);
+                JitTls::SetCompiler(pCompiler->prevCompiler);
+            }
 
-    if (pParamOuter->inlineInfo == nullptr)
-    {
-        // Free up the allocator we were using
-        pParamOuter->pAlloc->destroy();
+            if (pParamOuter->inlineInfo == nullptr)
+            {
+                // Free up the allocator we were using
+                pParamOuter->pAlloc->destroy();
+            }
+        }
+        endErrorTrap()
     }
-}
-endErrorTrap()
-}
-impJitErrorTrap()
-{
-    // If we were looking at an inlinee....
-    if (inlineInfo != nullptr)
+    impJitErrorTrap()
     {
-        // Note that we failed to compile the inlinee, and that
-        // there's no point trying to inline it again anywhere else.
-        inlineInfo->inlineResult->NoteFatal(InlineObservation::CALLEE_COMPILATION_ERROR);
+        // If we were looking at an inlinee....
+        if (inlineInfo != nullptr)
+        {
+            // Note that we failed to compile the inlinee, and that
+            // there's no point trying to inline it again anywhere else.
+            inlineInfo->inlineResult->NoteFatal(InlineObservation::CALLEE_COMPILATION_ERROR);
+        }
+        param.result = __errc;
     }
-    param.result = __errc;
-}
-endErrorTrap()
+    endErrorTrap()
 
     result = param.result;
 
-if (!inlineInfo &&
-    (result == CORJIT_INTERNALERROR || result == CORJIT_RECOVERABLEERROR || result == CORJIT_IMPLLIMITATION) &&
-    !jitFallbackCompile)
-{
-    // If we failed the JIT, reattempt with debuggable code.
-    jitFallbackCompile = true;
+    if (!inlineInfo &&
+        (result == CORJIT_INTERNALERROR || result == CORJIT_RECOVERABLEERROR || result == CORJIT_IMPLLIMITATION) &&
+        !jitFallbackCompile)
+    {
+        // If we failed the JIT, reattempt with debuggable code.
+        jitFallbackCompile = true;
 
-    // Update the flags for 'safer' code generation.
-    compileFlags->Set(JitFlags::JIT_FLAG_MIN_OPT);
-    compileFlags->Clear(JitFlags::JIT_FLAG_SIZE_OPT);
-    compileFlags->Clear(JitFlags::JIT_FLAG_SPEED_OPT);
-    compileFlags->Clear(JitFlags::JIT_FLAG_BBOPT);
+        // Update the flags for 'safer' code generation.
+        compileFlags->Set(JitFlags::JIT_FLAG_MIN_OPT);
+        compileFlags->Clear(JitFlags::JIT_FLAG_SIZE_OPT);
+        compileFlags->Clear(JitFlags::JIT_FLAG_SPEED_OPT);
+        compileFlags->Clear(JitFlags::JIT_FLAG_BBOPT);
 
-    goto START;
-}
+        goto START;
+    }
 
-return result;
+    return result;
 }
 
 #if defined(UNIX_AMD64_ABI)
