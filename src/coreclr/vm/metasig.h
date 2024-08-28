@@ -31,8 +31,6 @@
 //   r  -- Ref  -- a byref
 //         Ret  -- indicates function return type
 //
-//         Var  -- Variant
-//
 //   b  -- Byte -- (unsigned) byte
 //   u  -- Char -- character (2 byte unsigned unicode)
 //   d  -- Dbl  -- double
@@ -204,7 +202,6 @@ DEFINE_METASIG(SM(Int_Int_RetVoid, i i, v))
 DEFINE_METASIG(SM(Str_RetIntPtr, s, I))
 DEFINE_METASIG(SM(Str_RetBool, s, F))
 DEFINE_METASIG(SM(IntPtr_IntPtr_RetVoid, I I, v))
-DEFINE_METASIG(SM(IntPtr_IntPtr_Obj_RetIntPtr, I I j, I))
 DEFINE_METASIG(SM(IntPtr_IntPtr_Int_Obj_RetIntPtr, I I i j, I))
 DEFINE_METASIG(SM(IntPtr_IntPtr_IntPtr_RetVoid, I I I, v))
 DEFINE_METASIG(SM(IntPtr_IntPtr_IntPtr_UShrt_IntPtr_RetVoid, I I I H I, v))
@@ -351,6 +348,7 @@ DEFINE_METASIG(SM(PtrChar_RetInt, P(u), i))
 DEFINE_METASIG(SM(PtrChar_RetVoid, P(u), v))
 DEFINE_METASIG(SM(IntPtr_IntPtr_RetIntPtr, I I, I))
 DEFINE_METASIG(SM(IntPtr_IntPtr_Int_RetIntPtr, I I i, I))
+DEFINE_METASIG(SM(PtrVoid_RetVoid, P(v), v))
 DEFINE_METASIG(SM(PtrVoid_PtrVoid_RetVoid, P(v) P(v), v))
 DEFINE_METASIG(SM(PtrVoid_PtrVoid_UInt_RetVoid, P(v) P(v) K, v))
 DEFINE_METASIG(IM(Obj_RetBool, j, F))
@@ -363,9 +361,9 @@ DEFINE_METASIG(SM(Obj_Bool_RetArrByte, j F, a(b)))
 DEFINE_METASIG(SM(Obj_Obj_RefArrByte_RetArrByte, j j r(a(b)), a(b)))
 
 #ifdef FEATURE_COMINTEROP
-DEFINE_METASIG_T(SM(Obj_Int_RefVariant_RetVoid, j i r(g(VARIANT)), v))
-DEFINE_METASIG_T(SM(Obj_RefVariant_RetVoid, j r(g(VARIANT)), v))
-DEFINE_METASIG_T(SM(RefVariant_RetObject, r(g(VARIANT)), j))
+DEFINE_METASIG_T(SM(Obj_Int_RefComVariant_RetVoid, j i r(g(COMVARIANT)), v))
+DEFINE_METASIG_T(SM(Obj_RefComVariant_RetVoid, j r(g(COMVARIANT)), v))
+DEFINE_METASIG_T(SM(RefComVariant_RetObject, r(g(COMVARIANT)), j))
 DEFINE_METASIG_T(IM(RuntimeTypeHandle_RefBool_RefIntPtr_RetVoid, g(RT_TYPE_HANDLE) r(F) r(I), v))
 
 #endif
@@ -573,9 +571,6 @@ DEFINE_METASIG_T(SM(RefCleanupWorkListElement_Obj_RetVoid, r(C(CLEANUP_WORK_LIST
 DEFINE_METASIG(SM(PtrVoid_RetPtrVoid, P(v), P(v)))
 DEFINE_METASIG(SM(PtrVoid_PtrVoid_PtrVoid_RetVoid, P(v) P(v) P(v), v))
 DEFINE_METASIG(IM(PtrVoid_RetVoid, P(v), v))
-#if defined(TARGET_X86) && defined(TARGET_WINDOWS)
-DEFINE_METASIG_T(IM(PtrCopyConstructorCookie_RetVoid, P(g(COPY_CONSTRUCTOR_COOKIE)), v))
-#endif // defined(TARGET_X86) && defined(TARGET_WINDOWS)
 
 DEFINE_METASIG_T(SM(IDynamicInterfaceCastable_RuntimeType_Bool_RetBool, C(IDYNAMICINTERFACECASTABLE) C(CLASS) F, F))
 DEFINE_METASIG_T(SM(IDynamicInterfaceCastable_RuntimeType_RetRtType, C(IDYNAMICINTERFACECASTABLE) C(CLASS), C(CLASS)))
