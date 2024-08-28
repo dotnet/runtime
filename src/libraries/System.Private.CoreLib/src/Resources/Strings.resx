@@ -4340,4 +4340,19 @@
   <data name="Argument_BadArrayForInitializeArray" xml:space="preserve">
     <value>Only array or span of primitive or enum types can be initialized from static data.</value>
   </data>
+  <data name="ComVariant_CriticalHandle_In_Variant" xml:space="preserve">
+    <value>CriticalHandle derived types cannot be stored in Variants.</value>
+  </data>
+  <data name="ComVariant_SafeHandle_In_Variant" xml:space="preserve">
+    <value>SafeHandle derived types cannot be stored in Variants.</value>
+  </data>
+  <data name="ComVariant_UnsupportedSignature" xml:space="preserve">
+    <value>Method's type signature is not Interop compatible.</value>
+  </data>
+  <data name="ComVariant_UnsupportedType" xml:space="preserve">
+    <value>The method returned a COM Variant type that is not Interop compatible.</value>
+  </data>
+  <data name="ComVariant_VariantWrapper_In_Variant" xml:space="preserve">
+    <value>VariantWrappers cannot be stored in Variants.</value>
+  </data>
 </root>
