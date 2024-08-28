@@ -25,7 +25,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 		[KeepsPublicMethods ("Mono.Linker.Tests.Cases.DataFlow.AttributeConstructorDataflow+ClassWithKeptPublicMethods, test")]
 		[KeepsPublicFields (null, null)]
 		[TypeArray (new Type[] { typeof (AttributeConstructorDataflow) })]
-		[ExpectedWarning ("IL2026", "--ClassWithKeptPublicMethods--")]
+		[ExpectedWarning ("IL2026", "--ClassWithKeptPublicMethods--", Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/linker/issues/2273")]
 		public static void Main ()
 		{
 			typeof (AttributeConstructorDataflow).GetMethod ("Main").GetCustomAttribute (typeof (KeepsPublicConstructorAttribute));
@@ -170,7 +170,6 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			{
 				[Kept]
 				[ExpectedWarning ("IL2098")]
-				[UnexpectedWarning ("IL2067", Tool.Analyzer, "https://github.com/dotnet/runtime/issues/101211")]
 				public AttributeRequiresTypeArrayAttribute (
 					[KeptAttributeAttribute (typeof (DynamicallyAccessedMembersAttribute))]
 					[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)]
@@ -191,7 +190,6 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
 			[Kept]
 			[KeptAttributeAttribute (typeof (AttributeRequiresTypeArrayAttribute))]
-			[UnexpectedWarning ("IL2062", Tool.Analyzer, "https://github.com/dotnet/runtime/issues/101211")]
 			[AttributeRequiresTypeArray (new Type[] { typeof (int) })]
 			public static void Test () {
 				typeof (AnnotationOnTypeArray).GetMethod ("Test").GetCustomAttribute (typeof (AttributeRequiresTypeArrayAttribute));

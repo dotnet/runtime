@@ -2187,43 +2187,6 @@ void GetComSourceInterfacesForClass(MethodTable *pMT, CQuickArray<MethodTable *>
     }
 }
 
-
-//--------------------------------------------------------------------------------
-// These methods convert a native IEnumVARIANT to a managed IEnumerator.
-OBJECTREF ConvertEnumVariantToMngEnum(IEnumVARIANT *pNativeEnum)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_COOPERATIVE;
-    }
-    CONTRACTL_END;
-
-    OBJECTREF MngEnum = NULL;
-    OBJECTREF EnumeratorToEnumVariantMarshaler = NULL;
-    GCPROTECT_BEGIN(EnumeratorToEnumVariantMarshaler)
-    {
-        // Retrieve the custom marshaler and the MD to use to convert the IEnumVARIANT.
-        StdMngIEnumerator *pStdMngIEnumInfo = SystemDomain::GetCurrentDomain()->GetMngStdInterfacesInfo()->GetStdMngIEnumerator();
-        MethodDesc *pEnumNativeToManagedMD = pStdMngIEnumInfo->GetCustomMarshalerMD(CustomMarshalerMethods_MarshalNativeToManaged);
-        EnumeratorToEnumVariantMarshaler = pStdMngIEnumInfo->GetCustomMarshaler();
-        MethodDescCallSite enumNativeToManaged(pEnumNativeToManagedMD, &EnumeratorToEnumVariantMarshaler);
-
-        // Prepare the arguments that will be passed to MarshalNativeToManaged.
-        ARG_SLOT MarshalNativeToManagedArgs[] = {
-            ObjToArgSlot(EnumeratorToEnumVariantMarshaler),
-            (ARG_SLOT)pNativeEnum
-        };
-
-        // Retrieve the managed view for the current native interface pointer.
-        MngEnum = enumNativeToManaged.Call_RetOBJECTREF(MarshalNativeToManagedArgs);
-    }
-    GCPROTECT_END();
-
-    return MngEnum;
-}
-
 //--------------------------------------------------------------------------------
 // This method converts an OLE_COLOR to a System.Color.
 void ConvertOleColorToSystemColor(OLE_COLOR SrcOleColor, SYSTEMCOLOR *pDestSysColor)
@@ -3042,7 +3005,27 @@ public:
     }
 };
 
+//--------------------------------------------------------------------------------
+// This methods converts an IEnumVARIANT to a managed IEnumerator.
+static OBJECTREF ConvertEnumVariantToMngEnum(IEnumVARIANT* pNativeEnum)
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_COOPERATIVE;
+    }
+    CONTRACTL_END;
 
+    OBJECTREF retObjRef;
+
+    PREPARE_NONVIRTUAL_CALLSITE(METHOD__ENUMERATORTOENUMVARIANTMARSHALER__INTERNALMARSHALNATIVETOMANAGED);
+    DECLARE_ARGHOLDER_ARRAY(args, 1);
+    args[ARGNUM_0]  = PTR_TO_ARGHOLDER(pNativeEnum);
+    CALL_MANAGED_METHOD_RETREF(retObjRef, OBJECTREF, args);
+
+    return retObjRef;
+}
 
 //--------------------------------------------------------------------------------
 // InvokeDispMethod will convert a set of managed objects and call IDispatch.  The

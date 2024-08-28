@@ -46,8 +46,7 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 		public void ReportDiagnostics (DataFlowAnalyzerContext context, Action<Diagnostic> reportDiagnostic)
 		{
 			var location = Operation.Syntax.GetLocation ();
-			var typeNameResolver = new TypeNameResolver (context.Compilation);
-			var reflectionAccessAnalyzer = new ReflectionAccessAnalyzer (reportDiagnostic, typeNameResolver);
+			var reflectionAccessAnalyzer = new ReflectionAccessAnalyzer (reportDiagnostic, typeHierarchyType: null);
 			if (context.EnableTrimAnalyzer &&
 				!OwningSymbol.IsInRequiresUnreferencedCodeAttributeScope (out _) &&
 				!FeatureContext.IsEnabled (RequiresUnreferencedCodeAnalyzer.FullyQualifiedRequiresUnreferencedCodeAttribute)) {

@@ -338,13 +338,11 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			{
 			}
 
-			[UnexpectedWarning ("IL2077", Tool.Analyzer, "https://github.com/dotnet/runtime/issues/101211")]
 			static void TestFlowOutOfField ()
 			{
 				RequirePublicFields (unsupportedTypeInstance);
 			}
 
-			[UnexpectedWarning ("IL2074", Tool.Analyzer, "https://github.com/dotnet/runtime/issues/101211")]
 			static void TestUnsupportedType () {
 				var t = GetUnsupportedTypeInstance ();
 				unsupportedTypeInstance = t;
@@ -357,7 +355,6 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 				[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)]
 				public ref string stringRef;
 
-				[UnexpectedWarning ("IL2069", Tool.Analyzer, "https://github.com/dotnet/runtime/issues/101211")]
 				public StringRef (ref string s)
 				{
 					stringRef = ref s;
@@ -372,7 +369,6 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 				{
 				}
 
-				[UnexpectedWarning ("IL2077", Tool.Analyzer, "https://github.com/dotnet/runtime/issues/101211")]
 				void TestFlowOutOfField ()
 				{
 					RequirePublicFields (ref stringRef);
@@ -386,10 +382,23 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 				}
 			}
 
+			class GenericField<T>
+			{
+				[ExpectedWarning ("IL2097")]
+				[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)]
+				public static T field;
+			}
+
+			static void TestTypeGenericParameter ()
+			{
+				GenericField<Type>.field = GetUnknownType ();
+			}
+
 			public static void Test ()
 			{
 				TestUnsupportedType ();
 				StringRef.Test ();
+				TestTypeGenericParameter ();
 			}
 		}
 

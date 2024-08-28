@@ -39,7 +39,6 @@
 #ifdef FEATURE_COMINTEROP
 #include "comtoclrcall.h"
 #include "runtimecallablewrapper.h"
-#include "mngstdinterfaces.h"
 #include "olevariant.h"
 #include "olecontexthelpers.h"
 #endif // FEATURE_COMINTEROP
@@ -460,22 +459,11 @@ BaseDomain::BaseDomain()
     }
     CONTRACTL_END;
 
-    m_pDefaultBinder = NULL;
-
     // Make sure the container is set to NULL so that it gets loaded when it is used.
     m_pPinnedHeapHandleTable = NULL;
 
     // Note that m_handleStore is overridden by app domains
     m_handleStore = GCHandleUtilities::GetGCHandleManager()->GetGlobalHandleStore();
-
-#ifdef FEATURE_COMINTEROP
-    m_pMngStdInterfacesInfo = NULL;
-#endif
-    m_FileLoadLock.PreInit();
-    m_JITLock.PreInit();
-    m_ClassInitLock.PreInit();
-    m_ILStubGenLock.PreInit();
-    m_NativeTypeLoadLock.PreInit();
 } //BaseDomain::BaseDomain
 
 //*****************************************************************************
@@ -493,46 +481,7 @@ void BaseDomain::Init()
     //
     // Initialize the domain locks
     //
-
-    if (this == reinterpret_cast<BaseDomain*>(&g_pSystemDomainMemory[0]))
-        m_DomainCrst.Init(CrstSystemBaseDomain);
-    else
-        m_DomainCrst.Init(CrstBaseDomain);
-
-    m_DomainCacheCrst.Init(CrstAppDomainCache);
-    m_crstGenericDictionaryExpansionLock.Init(CrstGenericDictionaryExpansion);
-
-    // NOTE: CRST_UNSAFE_COOPGC prevents a GC mode switch to preemptive when entering this crst.
-    // If you remove this flag, we will switch to preemptive mode when entering
-    // m_FileLoadLock, which means all functions that enter it will become
-    // GC_TRIGGERS.  (This includes all uses of PEFileListLockHolder, LoadLockHolder, etc.)  So be sure
-    // to update the contracts if you remove this flag.
-    m_FileLoadLock.Init(CrstAssemblyLoader,
-                        CrstFlags(CRST_HOST_BREAKABLE), TRUE);
-
-    //
-    //   The JIT lock and the CCtor locks are at the same level (and marked as
-    //   UNSAFE_SAME_LEVEL) because they are all part of the same deadlock detection mechanism. We
-    //   see through cycles of JITting and .cctor execution and then explicitly allow the cycle to
-    //   be broken by giving access to uninitialized classes.  If there is no cycle or if the cycle
-    //   involves other locks that arent part of this special deadlock-breaking semantics, then
-    //   we continue to block.
-    //
-    m_JITLock.Init(CrstJit, CrstFlags(CRST_REENTRANCY | CRST_UNSAFE_SAMELEVEL), TRUE);
-    m_ClassInitLock.Init(CrstClassInit, CrstFlags(CRST_REENTRANCY | CRST_UNSAFE_SAMELEVEL), TRUE);
-
-    m_ILStubGenLock.Init(CrstILStubGen, CrstFlags(CRST_REENTRANCY), TRUE);
-    m_NativeTypeLoadLock.Init(CrstInteropData, CrstFlags(CRST_REENTRANCY), TRUE);
-
     m_crstLoaderAllocatorReferences.Init(CrstLoaderAllocatorReferences);
-    // Has to switch thread to GC_NOTRIGGER while being held (see code:BaseDomain#AssemblyListLock)
-    m_crstAssemblyList.Init(CrstAssemblyList, CrstFlags(
-        CRST_GC_NOTRIGGER_WHEN_TAKEN | CRST_DEBUGGER_THREAD | CRST_TAKEN_DURING_SHUTDOWN));
-
-#ifdef FEATURE_COMINTEROP
-    // Allocate the managed standard interfaces information.
-    m_pMngStdInterfacesInfo = new MngStdInterfacesInfo();
-#endif // FEATURE_COMINTEROP
 
     m_dwSizedRefHandles = 0;
     // For server GC this value indicates the number of GC heaps used in circular order to allocate sized
@@ -543,16 +492,7 @@ void BaseDomain::Init()
 
 #undef LOADERHEAP_PROFILE_COUNTER
 
-void BaseDomain::InitVSD()
-{
-    STANDARD_VM_CONTRACT;
-
-    m_typeIDMap.Init();
-
-    GetLoaderAllocator()->InitVirtualCallStubManager(this);
-}
-
-void BaseDomain::ClearBinderContext()
+void AppDomain::ClearBinderContext()
 {
     CONTRACTL
     {
@@ -911,7 +851,6 @@ void SystemDomain::DetachEnd()
     if(m_pSystemDomain)
     {
         GCX_PREEMP();
-        m_pSystemDomain->ClearBinderContext();
         AppDomain* pAppDomain = GetAppDomain();
         if (pAppDomain)
             pAppDomain->ClearBinderContext();
@@ -1264,6 +1203,8 @@ void SystemDomain::LoadBaseSystemClasses()
 
         g_pCastHelpers = CoreLibBinder::GetClass(CLASS__CASTHELPERS);
 
+        g_pIDynamicInterfaceCastableInterface = CoreLibBinder::GetClass(CLASS__IDYNAMICINTERFACECASTABLE);
+
     #ifdef FEATURE_COMINTEROP
         if (g_pConfig->IsBuiltInCOMSupported())
         {
@@ -1274,12 +1215,6 @@ void SystemDomain::LoadBaseSystemClasses()
             g_pBaseCOMObject = NULL;
         }
     #endif
-
-        g_pIDynamicInterfaceCastableInterface = CoreLibBinder::GetClass(CLASS__IDYNAMICINTERFACECASTABLE);
-
-    #ifdef FEATURE_ICASTABLE
-        g_pICastableInterface = CoreLibBinder::GetClass(CLASS__ICASTABLE);
-    #endif // FEATURE_ICASTABLE
 
 #ifdef FEATURE_EH_FUNCLETS
         g_pEHClass = CoreLibBinder::GetClass(CLASS__EH);
@@ -1639,9 +1574,6 @@ void AppDomain::Create()
 
     pDomain->Init();
 
-    // allocate a Virtual Call Stub Manager for the default domain
-    pDomain->InitVSD();
-
     pDomain->SetStage(AppDomain::STAGE_OPEN);
     pDomain->CreateDefaultBinder();
 
@@ -1774,6 +1706,13 @@ AppDomain::AppDomain()
 
     m_cRef=1;
 
+    m_JITLock.PreInit();
+    m_ClassInitLock.PreInit();
+    m_ILStubGenLock.PreInit();
+    m_NativeTypeLoadLock.PreInit();
+    m_FileLoadLock.PreInit();
+
+    m_pDefaultBinder = NULL;
     m_pRootAssembly = NULL;
 
     m_dwFlags = 0;
@@ -1834,6 +1773,26 @@ void AppDomain::Init()
 
     SetStage( STAGE_CREATING);
 
+    //
+    //   The JIT lock and the CCtor locks are at the same level (and marked as
+    //   UNSAFE_SAME_LEVEL) because they are all part of the same deadlock detection mechanism. We
+    //   see through cycles of JITting and .cctor execution and then explicitly allow the cycle to
+    //   be broken by giving access to uninitialized classes.  If there is no cycle or if the cycle
+    //   involves other locks that arent part of this special deadlock-breaking semantics, then
+    //   we continue to block.
+    //
+    m_JITLock.Init(CrstJit, CrstFlags(CRST_REENTRANCY | CRST_UNSAFE_SAMELEVEL), TRUE);
+    m_ClassInitLock.Init(CrstClassInit, CrstFlags(CRST_REENTRANCY | CRST_UNSAFE_SAMELEVEL), TRUE);
+    m_ILStubGenLock.Init(CrstILStubGen, CrstFlags(CRST_REENTRANCY), TRUE);
+    m_NativeTypeLoadLock.Init(CrstInteropData, CrstFlags(CRST_REENTRANCY), TRUE);
+    m_crstGenericDictionaryExpansionLock.Init(CrstGenericDictionaryExpansion);
+    m_FileLoadLock.Init(CrstAssemblyLoader, CrstFlags(CRST_HOST_BREAKABLE), TRUE);
+    m_DomainCacheCrst.Init(CrstAppDomainCache);
+
+    // Has to switch thread to GC_NOTRIGGER while being held
+    m_crstAssemblyList.Init(CrstAssemblyList, CrstFlags(
+        CRST_GC_NOTRIGGER_WHEN_TAKEN | CRST_DEBUGGER_THREAD | CRST_TAKEN_DURING_SHUTDOWN));
+
     BaseDomain::Init();
 
     // Set up the binding caches
@@ -1850,7 +1809,6 @@ void AppDomain::Init()
         COMPlusThrowOM();
     }
 
-
 #ifdef FEATURE_TYPEEQUIVALENCE
     m_TypeEquivalenceCrst.Init(CrstTypeEquivalenceMap);
 #endif
@@ -1860,12 +1818,14 @@ void AppDomain::Init()
 
     SetStage(STAGE_READYFORMANAGEDCODE);
 
-
 #ifdef FEATURE_TIERED_COMPILATION
     m_tieredCompilationManager.Init();
 #endif
 
     m_nativeImageLoadCrst.Init(CrstNativeImageLoad);
+
+    m_typeIDMap.Init();
+    GetLoaderAllocator()->InitVirtualCallStubManager();
 } // AppDomain::Init
 
 void AppDomain::Stop()
@@ -3865,11 +3825,13 @@ RCWCache *AppDomain::CreateRCWCache()
     }
     _ASSERTE(g_pRCWCleanupList);
 
+    if (!m_pRCWCache)
     {
-        BaseDomain::LockHolder lh(this);
-
-        if (!m_pRCWCache)
-            m_pRCWCache = new RCWCache(this);
+        NewHolder<RCWCache> pRCWCache = new RCWCache(this);
+        if (InterlockedCompareExchangeT(&m_pRCWCache, (RCWCache *)pRCWCache, NULL) == NULL)
+        {
+            pRCWCache.SuppressRelease();
+        }
     }
 
     RETURN m_pRCWCache;
@@ -4173,7 +4135,7 @@ PTR_LoaderAllocator BaseDomain::GetLoaderAllocator()
 }
 
 //------------------------------------------------------------------------
-UINT32 BaseDomain::GetTypeID(PTR_MethodTable pMT) {
+UINT32 AppDomain::GetTypeID(PTR_MethodTable pMT) {
     CONTRACTL {
         THROWS;
         GC_TRIGGERS;
@@ -4184,7 +4146,7 @@ UINT32 BaseDomain::GetTypeID(PTR_MethodTable pMT) {
 
 //------------------------------------------------------------------------
 // Returns the ID of the type if found. If not found, returns INVALID_TYPE_ID
-UINT32 BaseDomain::LookupTypeID(PTR_MethodTable pMT)
+UINT32 AppDomain::LookupTypeID(PTR_MethodTable pMT)
 {
     CONTRACTL {
         NOTHROW;
@@ -4195,7 +4157,7 @@ UINT32 BaseDomain::LookupTypeID(PTR_MethodTable pMT)
 }
 
 //------------------------------------------------------------------------
-PTR_MethodTable BaseDomain::LookupType(UINT32 id) {
+PTR_MethodTable AppDomain::LookupType(UINT32 id) {
     CONTRACTL {
         NOTHROW;
         WRAPPER(GC_TRIGGERS);
@@ -4211,7 +4173,7 @@ PTR_MethodTable BaseDomain::LookupType(UINT32 id) {
 
 #ifndef DACCESS_COMPILE
 //---------------------------------------------------------------------------------------
-void BaseDomain::RemoveTypesFromTypeIDMap(LoaderAllocator* pLoaderAllocator)
+void AppDomain::RemoveTypesFromTypeIDMap(LoaderAllocator* pLoaderAllocator)
 {
     CONTRACTL {
         NOTHROW;

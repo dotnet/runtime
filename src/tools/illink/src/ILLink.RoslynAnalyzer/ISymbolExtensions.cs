@@ -47,6 +47,12 @@ namespace ILLink.RoslynAnalyzer
 			}
 		}
 
+		/// <summary>
+		/// Gets DynamicallyAccessedMemberTypes for any DynamicallyAccessedMembers annotation on the symbol.
+		/// This doesn't validate whether the annotation is valid based on the type of the annotated symbol.
+		/// Use FlowAnnotations.Get*Annotation when getting annotations that are valid and should participate
+		/// in dataflow analysis.
+		/// </summary>
 		internal static DynamicallyAccessedMemberTypes GetDynamicallyAccessedMemberTypes (this ISymbol symbol)
 		{
 			if (!TryGetAttribute (symbol, DynamicallyAccessedMembersAnalyzer.DynamicallyAccessedMembersAttribute, out var dynamicallyAccessedMembers))

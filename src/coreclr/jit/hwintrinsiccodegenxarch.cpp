@@ -186,6 +186,7 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
     // We need to validate that other phases of the compiler haven't introduced unsupported intrinsics
     assert(compiler->compIsaSupportedDebugOnly(isa));
     assert(HWIntrinsicInfo::RequiresCodegen(intrinsicId));
+    assert(!HWIntrinsicInfo::NeedsNormalizeSmallTypeToInt(intrinsicId) || !varTypeIsSmall(node->GetSimdBaseType()));
 
     bool    isTableDriven = genIsTableDrivenHWIntrinsic(intrinsicId, category);
     insOpts instOptions   = INS_OPTS_NONE;

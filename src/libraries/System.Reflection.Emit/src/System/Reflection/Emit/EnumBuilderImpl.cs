@@ -71,7 +71,7 @@ namespace System.Reflection.Emit
 
         public override Type? ReflectedType => _typeBuilder.ReflectedType;
 
-        public override Type UnderlyingSystemType => GetEnumUnderlyingType();
+        public override Type UnderlyingSystemType => this;
 
         public override Type GetEnumUnderlyingType() => _underlyingField.FieldType;
 
