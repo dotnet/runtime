@@ -6,6 +6,7 @@ using System.Reflection;
 
 using Xunit;
 
+[ConditionalClass(typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.IsMonoInterpreter))]
 public class Arrays
 {
     private class TestClass { }
