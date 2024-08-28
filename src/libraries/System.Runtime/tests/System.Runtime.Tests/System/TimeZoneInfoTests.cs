@@ -3169,7 +3169,7 @@ namespace System.Tests
             Assert.Equal(new TimeSpan(2, 0, 0), customTimeZone.GetUtcOffset(new DateTime(2021, 3, 10, 2, 0, 0)));
         }
 
-        [Fact]
+        [ConditionalFact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/64111", TestPlatforms.Linux)]
         public static void NoBackwardTimeZones()
         {
