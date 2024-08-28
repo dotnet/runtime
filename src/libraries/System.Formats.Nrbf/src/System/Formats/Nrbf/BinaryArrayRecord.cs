@@ -217,10 +217,10 @@ internal sealed class BinaryArrayRecord : ArrayRecord
                         else
                         {
                             Debug.Assert(nestedArrayRecord is not BinaryArrayRecord, "Ensure lack of recursive call");
-                            // In theory somebody could create a payload that would represent
-                            // a very nested array with total elements count > long.MaxValue.
                             checked
                             {
+                                // In theory somebody could create a payload that would represent
+                                // a very nested array with total elements count > long.MaxValue.
                                 result += nestedArrayRecord.FlattenedLength;
                             }
                         }
@@ -228,10 +228,11 @@ internal sealed class BinaryArrayRecord : ArrayRecord
                     case SerializationRecordType.ObjectNull:
                     case SerializationRecordType.ObjectNullMultiple256:
                     case SerializationRecordType.ObjectNullMultiple:
-                        // Null Records that represent null arrays (not null elements in the most inner array)
-                        // nested inside jagged array do not increase flat length count.
-                        // Example: "string[][] input = [["1", "2", "3"], null]" is 3 elements in total.
-                        // Example: "string[][] input = [["1", "2", "3"], ["4", "5", null]]" is 6 elements in total.
+                        // All nulls need to be included, as it's another form of possible attack.
+                        checked
+                        {
+                            result += ((NullsRecord)item).NullCount;
+                        }
                         break;
                     default:
                         result++;

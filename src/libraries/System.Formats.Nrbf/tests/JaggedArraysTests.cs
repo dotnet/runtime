@@ -23,16 +23,19 @@ public class JaggedArraysTests : ReadTests
         Assert.Equal(input.Length * 3, arrayRecord.FlattenedLength);
     }
 
-    [Fact]
-    public void FlattenedLengthDoesNotIncludeNullArrays()
+    [Theory]
+    [InlineData(1)] // SerializationRecordType.ObjectNull
+    [InlineData(200)] // SerializationRecordType.ObjectNullMultiple256
+    [InlineData(10_000)] // SerializationRecordType.ObjectNullMultiple
+    public void FlattenedLengthIncludesNullArrays(int nullCount)
     {
-        int[][] input = [[1, 2, 3], null];
+        int[][] input = new int[nullCount][];
 
         var arrayRecord = (ArrayRecord)NrbfDecoder.Decode(Serialize(input));
 
         Verify(input, arrayRecord);
         Assert.Equal(input, arrayRecord.GetArray(input.GetType()));
-        Assert.Equal(3, arrayRecord.FlattenedLength);
+        Assert.Equal(nullCount, arrayRecord.FlattenedLength);
     }
 
     [Fact]
