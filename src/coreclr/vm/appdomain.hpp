@@ -591,13 +591,6 @@ protected:
     // Protects allocation of slot IDs for thread statics
     static CrstStatic m_MethodTableExposedClassObjectCrst;
 
-
-public:
-    DWORD GetNumSizedRefHandles()
-    {
-        return 0;
-    }
-
 #ifdef DACCESS_COMPILE
 public:
     virtual void EnumMemoryRegions(CLRDataEnumMemoryFlags flags, bool enumThis) = 0;
@@ -2090,10 +2083,7 @@ inline static BOOL IsUnderDomainLock() { LIMITED_METHOD_CONTRACT; return m_Syste
             WRAPPER_NO_CONTRACT;
         }
     };
-#endif // DACCESS_COMPILE
-
-public:
-    DWORD GetTotalNumSizedRefHandles();
+#endif // !DACCESS_COMPILE
 
 #ifdef DACCESS_COMPILE
 public:
