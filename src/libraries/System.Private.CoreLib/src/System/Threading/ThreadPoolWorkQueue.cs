@@ -1393,7 +1393,11 @@ namespace System.Threading
                 currentThread.ResetThreadPoolThread();
             }
 
-            ThreadInt64PersistentCounter.Add(tl.threadLocalCompletionCountObject!, completedCount);
+            // Discount a work item here to avoid counting most of the queue processing work items
+            if (completedCount > 1)
+            {
+                ThreadInt64PersistentCounter.Add(tl.threadLocalCompletionCountObject!, completedCount - 1);
+            }
         }
     }
 
