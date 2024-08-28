@@ -198,7 +198,7 @@ int g_rgCrstLevelMap[] =
     3,          // CrstModuleLookupTable
     0,          // CrstMulticoreJitHash
     14,         // CrstMulticoreJitManager
-    0,          // CrstNativeImageEagerFixups
+    7,          // CrstNativeImageEagerFixups
     0,          // CrstNativeImageLoad
     0,          // CrstNotifyGdb
     4,          // CrstPEImage
