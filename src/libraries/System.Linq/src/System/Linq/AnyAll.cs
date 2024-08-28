@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections;
-using System.Collections.Generic;
 
 namespace System.Linq
 {
@@ -41,6 +40,23 @@ namespace System.Linq
 
             using IEnumerator<TSource> e = source.GetEnumerator();
             return e.MoveNext();
+        }
+        public static bool AnyAndNotNull<TSource>(this IEnumerable<TSource> source, Func<TSource, bool> predicate)
+        {
+            if (source is null)
+            {
+                return false;
+            }
+            return source.Any(predicate);
+        }
+
+        public static bool AnyAndNotNull<TSource>(this IEnumerable<TSource> source)
+        {
+            if (source is null)
+            {
+                return false;
+            }
+            return source.Any();
         }
 
         public static bool Any<TSource>(this IEnumerable<TSource> source, Func<TSource, bool> predicate)
