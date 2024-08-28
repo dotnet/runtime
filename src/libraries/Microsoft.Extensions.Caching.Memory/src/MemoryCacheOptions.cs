@@ -40,7 +40,7 @@ namespace Microsoft.Extensions.Caching.Memory
         /// they add to the cache. If no size is specified, the entry has 
         /// no size and the size limit is ignored for that entry.
         /// For more information, see
-        /// <see href="https://learn.microsoft.com/aspnet/core/performance/caching/memory#use-setsize-size-and-sizelimit-to-limit-cache-size-1">Use SetSize, Size, and SizeLimit to limit cache size</see>.
+        /// <see href="https://learn.microsoft.com/aspnet/core/performance/caching/memory#use-setsize-size-and-sizelimit-to-limit-cache-size">Use SetSize, Size, and SizeLimit to limit cache size</see>.
         /// </remarks>
         public long? SizeLimit
         {
