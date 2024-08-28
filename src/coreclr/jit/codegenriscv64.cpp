@@ -6243,8 +6243,9 @@ void CodeGen::genIntCastOverflowCheck(GenTreeCast* cast, const GenIntCastDesc& d
                 // If uint is bigger than INT32_MIN that it will be treated as a signed
                 // number so overflow will also be triggered
                 GetEmitter()->emitIns_R_R(INS_sext_w, EA_4BYTE, tempReg, reg);
+                reg = tempReg;
             }
-            genJumpToThrowHlpBlk_la(SCK_OVERFLOW, INS_blt, tempReg, nullptr, REG_R0);
+            genJumpToThrowHlpBlk_la(SCK_OVERFLOW, INS_blt, reg, nullptr, REG_R0);
         }
         break;
 
@@ -6282,21 +6283,27 @@ void CodeGen::genIntCastOverflowCheck(GenTreeCast* cast, const GenIntCastDesc& d
         {
             assert(desc.CheckKind() == GenIntCastDesc::CHECK_SMALL_INT_RANGE);
             const bool     isSrcUnsigned = cast->IsUnsigned();
-            const bool     isDstUnsigned = desc.CheckSmallIntMin() == 0;
+            const bool     isDstUnsigned = varTypeIsUnsigned(cast->gtCastType);
             const unsigned castSize      = genTypeSize(cast->gtCastType);
 
-            if (isSrcUnsigned != isDstUnsigned)
-            {
+            if (isSrcUnsigned && !isDstUnsigned) {
                 // Check the MSB of a small int
                 const auto type_size = castSize * 8 - 1;
-                GetEmitter()->emitIns_R_R_I(INS_slli, EA_4BYTE, tempReg, reg, type_size);
-                genJumpToThrowHlpBlk_la(SCK_OVERFLOW, INS_blt, REG_R0, nullptr, tempReg);
+                GetEmitter()->emitIns_R_R_I(INS_srli, EA_8BYTE, tempReg, reg, type_size);
+                genJumpToThrowHlpBlk_la(SCK_OVERFLOW, INS_bne, REG_R0, nullptr, tempReg);
+            }
+            else if (!isSrcUnsigned && isDstUnsigned)
+            {
+                // Check the MSB of a small int
+                const auto type_size = castSize * 8;
+                GetEmitter()->emitIns_R_R_I(INS_srli, EA_8BYTE, tempReg, reg, type_size);
+                genJumpToThrowHlpBlk_la(SCK_OVERFLOW, INS_bne, REG_R0, nullptr, tempReg);
             }
             else if (isSrcUnsigned && isDstUnsigned)
             {
                 // Check if upper extension_size-bits are zeros
-                const auto extension_size = (8 - castSize) * 8;
-                GetEmitter()->emitIns_R_R_I(INS_srli, EA_8BYTE, tempReg, reg, extension_size);
+                const auto type_size = castSize * 8;
+                GetEmitter()->emitIns_R_R_I(INS_srli, EA_8BYTE, tempReg, reg, type_size);
                 genJumpToThrowHlpBlk_la(SCK_OVERFLOW, INS_bne, tempReg, nullptr, REG_R0);
             }
             else  // !isSrcUnsigned && !isDstUnsigned
