@@ -128,8 +128,10 @@ namespace System.Diagnostics.CodeAnalysis
         public string? AssemblyName { get; }
 
         /// <summary>
-        /// Gets or sets the condition in which the dependency is applicable, e.g. "DEBUG".
-        /// </summary>
+        /// Gets or sets the condition in which the dependency is applicable
+        /// </summary <summary>
+        [System.Obsolete("This property is no longer supported.")]
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
         public string? Condition { get; set; }
     }
 }

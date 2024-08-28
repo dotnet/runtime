@@ -8855,6 +8855,8 @@ namespace System.Diagnostics.CodeAnalysis
         public DynamicDependencyAttribute(string memberSignature, string typeName, string assemblyName) { }
         public DynamicDependencyAttribute(string memberSignature, System.Type type) { }
         public string? AssemblyName { get { throw null; } }
+        [System.Obsolete("This property is no longer supported.")]
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
         public string? Condition { get { throw null; } set { } }
         public string? MemberSignature { get { throw null; } }
         public System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes MemberTypes { get { throw null; } }
