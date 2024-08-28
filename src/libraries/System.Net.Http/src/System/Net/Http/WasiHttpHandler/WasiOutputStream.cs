@@ -36,35 +36,24 @@ namespace System.Net.Http
 
         public override void Close()
         {
-            Console.WriteLine("WasiOutputStream.Close " + isClosed);
             if (!isClosed)
             {
-                Console.WriteLine("WasiOutputStream.Close A");
                 isClosed = true;
-                Console.WriteLine("WasiOutputStream.Close B");
                 stream.Dispose();
-                Console.WriteLine("WasiOutputStream.Close C");
                 OutgoingBody.Finish(body, null);
-                Console.WriteLine("WasiOutputStream.Close D");
             }
             base.Close();
-            Console.WriteLine("WasiOutputStream.Close E");
         }
 
         protected override void Dispose(bool disposing)
         {
-            Console.WriteLine("WasiOutputStream.Dispose" + isClosed);
             if (!isClosed)
             {
-                Console.WriteLine("WasiOutputStream.Dispose A");
                 isClosed = true;
                 stream.Dispose();
-                Console.WriteLine("WasiOutputStream.Dispose B");
                 body.Dispose();
-                Console.WriteLine("WasiOutputStream.Dispose C");
             }
             base.Dispose(disposing);
-            Console.WriteLine("WasiOutputStream.Dispose E");
         }
 
         public override async Task WriteAsync(

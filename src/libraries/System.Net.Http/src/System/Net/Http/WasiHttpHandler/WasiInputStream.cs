@@ -28,10 +28,11 @@ namespace System.Net.Http
         public override bool CanWrite => false;
         public override bool CanSeek => false;
 
-        public WasiInputStream(WasiRequestWrapper wrapper)
+        public WasiInputStream(WasiRequestWrapper wrapper, IncomingResponse incomingResponse)
         {
             this.wrapper = wrapper;
-            this.body = wrapper.incomingResponse!.Consume();
+            this.body = incomingResponse.Consume();
+            incomingResponse.Dispose();
             this.stream = body.Stream();
         }
 
@@ -42,32 +43,30 @@ namespace System.Net.Http
 
         public override void Close()
         {
-            Console.WriteLine("WasiInputStream.Close " + isClosed);
             if (!isClosed)
             {
                 isClosed = true;
                 stream.Dispose();
                 var futureTrailers = IncomingBody.Finish(body); // we just passed body ownership to Finish
                 futureTrailers.Dispose();
-                if (wrapper.requestBodyComplete != null && wrapper.requestBodyComplete.IsCompleted)
-                {
-                    Console.WriteLine("WasiInputStream.Close WRAPPER");
-                    wrapper.Dispose();
-                }
             }
             base.Close();
         }
 
         protected override void Dispose(bool disposing)
         {
-            Console.WriteLine("WasiInputStream.Dispose" + isClosed);
             if (!isClosed)
             {
                 isClosed = true;
                 stream.Dispose();
                 body.Dispose();
             }
-            wrapper.Dispose();
+
+            if (disposing)
+            {
+                // this helps with disposing WIT resources at the Close() time of this stream, instead of waiting for the GC
+                wrapper.Dispose();
+            }
 
             base.Dispose(disposing);
         }

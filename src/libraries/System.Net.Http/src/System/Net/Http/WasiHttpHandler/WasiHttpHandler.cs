@@ -23,38 +23,35 @@ namespace System.Net.Http
     {
         private FutureIncomingResponse? future; // owned by this instance
         private WasiOutputStream? wasiOutputStream; // owned by this instance
-        public IncomingResponse? incomingResponse; // owned by this instance
-        private readonly OutgoingRequest outgoingRequest; // owned by this instance
-        private readonly HttpRequestMessage request;
-        private readonly CancellationToken cancellationToken;
+        private WasiInputStream? incomingStream; // owned by this instance
+
         public Task? requestBodyComplete;
+        public Task<IncomingResponse>? requestComplete;
         private bool isDisposed;
 
-        public WasiRequestWrapper(HttpRequestMessage request, CancellationToken cancellationToken)
+        public async Task<HttpResponseMessage> SendRequestAsync(HttpRequestMessage request, CancellationToken cancellationToken)
         {
             if (request.RequestUri is null)
             {
                 throw new ArgumentException();
             }
 
-            var requestHeaders = WasiHttpInterop.ConvertRequestHeaders(request);
-            outgoingRequest = new OutgoingRequest(requestHeaders); // we just passed the Fields ownership to OutgoingRequest
-            outgoingRequest.SetMethod(WasiHttpInterop.ConvertMethod(request.Method));
-            outgoingRequest.SetScheme(WasiHttpInterop.ConvertScheme(request.RequestUri));
-            outgoingRequest.SetAuthority(WasiHttpInterop.ConvertAuthority(request.RequestUri));
-            outgoingRequest.SetPathWithQuery(request.RequestUri.PathAndQuery);
-
-            this.request = request;
-            this.cancellationToken = cancellationToken;
-        }
-
-
-        public async Task<HttpResponseMessage> SendRequestAsync()
-        {
             try
             {
-                requestBodyComplete = SendContent();
-                incomingResponse = await SendRequest().ConfigureAwait(false);
+                var requestHeaders = WasiHttpInterop.ConvertRequestHeaders(request);
+                var outgoingRequest = new OutgoingRequest(requestHeaders); // passing requestHeaders ownership
+                outgoingRequest.SetMethod(WasiHttpInterop.ConvertMethod(request.Method));
+                outgoingRequest.SetScheme(WasiHttpInterop.ConvertScheme(request.RequestUri));
+                outgoingRequest.SetAuthority(WasiHttpInterop.ConvertAuthority(request.RequestUri));
+                outgoingRequest.SetPathWithQuery(request.RequestUri.PathAndQuery);
+
+                requestBodyComplete = SendContent(request.Content, outgoingRequest, cancellationToken);
+
+                future = OutgoingHandlerInterop.Handle(outgoingRequest, null);
+
+                requestComplete = SendRequest(cancellationToken);
+
+                var incomingResponse = await requestComplete.ConfigureAwait(false);
 
                 ObjectDisposedException.ThrowIf(isDisposed, this);
                 cancellationToken.ThrowIfCancellationRequested();
@@ -67,35 +64,38 @@ namespace System.Net.Http
                 // we will leave scope of this method
                 // we need to pass the ownership of the request and this wrapper to the response (via response content stream)
                 // unless we know that we are not streaming anymore
-                WasiInputStream incomingStream = new WasiInputStream(this);// passing self ownership
+                incomingStream = new WasiInputStream(this, incomingResponse);// passing self ownership, passing incomingResponse ownership
                 response.Content = new StreamContent(incomingStream); // passing incomingStream ownership to SendAsync() caller
+
+                incomingResponse.Dispose();
 
                 return response;
             }
-            catch
+            catch (WitException e)
+            {
+                Dispose();
+                throw new HttpRequestException(WasiHttpInterop.ErrorCodeToString((ErrorCode)e.Value), e);
+            }
+            catch (Exception)
             {
                 Dispose();
                 throw;
             }
         }
 
-        private async Task<IncomingResponse> SendRequest()
+        private async Task<IncomingResponse> SendRequest(CancellationToken cancellationToken)
         {
-            Console.WriteLine("SendRequestAsync A");
             try
             {
-                future = OutgoingHandlerInterop.Handle(outgoingRequest, null);
-
                 while (true)
                 {
-                    var response = (Result<Result<IncomingResponse, ErrorCode>, None>?)future.Get();
+                    var response = (Result<Result<IncomingResponse, ErrorCode>, None>?)future!.Get();
                     if (response.HasValue)
                     {
                         var result = response.Value.AsOk;
 
                         if (result.IsOk)
                         {
-                            Console.WriteLine("SendRequestAsync: response is OK");
                             return result.AsOk;
                         }
                         else
@@ -105,7 +105,6 @@ namespace System.Net.Http
                     }
                     else
                     {
-                        Console.WriteLine("SendRequestAsync B");
                         await WasiHttpInterop.RegisterWasiPollable(future.Subscribe(), cancellationToken).ConfigureAwait(false);
                     }
                 }
@@ -118,15 +117,10 @@ namespace System.Net.Http
                 }
                 throw;
             }
-            catch (WitException e)
-            {
-                throw new HttpRequestException(WasiHttpInterop.ErrorCodeToString((ErrorCode)e.Value), e);
-            }
         }
 
-        public async Task SendContent()
+        public async Task SendContent(HttpContent? content, OutgoingRequest outgoingRequest, CancellationToken cancellationToken)
         {
-            var content = request.Content;
             if (content is not null)
             {
                 wasiOutputStream = new WasiOutputStream(outgoingRequest.Body()); // passing body ownership
@@ -135,20 +129,22 @@ namespace System.Net.Http
             }
         }
 
+        ~WasiRequestWrapper()
+        {
+            Dispose();
+            GC.SuppressFinalize(this);
+        }
+
         public void Dispose()
         {
             if (!isDisposed)
             {
                 isDisposed = true;
-                Console.WriteLine("WasiRequestWrapper.Dispose A");
                 wasiOutputStream?.Dispose();
-                Console.WriteLine("WasiRequestWrapper.Dispose B");
-                incomingResponse?.Dispose();
-                Console.WriteLine("WasiRequestWrapper.Dispose C");
-                outgoingRequest.Dispose();
-                Console.WriteLine("WasiRequestWrapper.Dispose D");
-                future?.Dispose();
-                Console.WriteLine("WasiRequestWrapper.Dispose E");
+                incomingStream?.Dispose();
+
+                // TODO why this fails ?
+                // future?.Dispose();
             }
         }
     }
@@ -164,10 +160,10 @@ namespace System.Net.Http
 
         protected internal override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
         {
-            var wasiRequest = new WasiRequestWrapper(request, cancellationToken);
+            var wasiRequest = new WasiRequestWrapper();
             try
             {
-                return await wasiRequest.SendRequestAsync().ConfigureAwait(false);
+                return await wasiRequest.SendRequestAsync(request, cancellationToken).ConfigureAwait(false);
             }
             catch
             {
