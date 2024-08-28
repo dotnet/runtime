@@ -71,7 +71,8 @@ extern "C" void             RedirectedHandledJITCaseForGCStress_Stub(void);
 #define IS_VALID_WRITE_PTR(addr, size)      _ASSERTE((addr) != NULL)
 #define IS_VALID_CODE_PTR(addr)             _ASSERTE((addr) != NULL)
 
-#if defined(TARGET_AMD64)
+#if defined(TARGET_AMD64) || defined(TARGET_X86)
+// Although APX is only for X64, we can still define it under x86 to keep the original code structure.
 #define XSTATE_MASK_APX (0x80000)
 #endif  // TARGET_AMD64
 

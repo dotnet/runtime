@@ -1232,7 +1232,7 @@ void CONTEXTFromNativeContext(const native_context_t *native, LPCONTEXT lpContex
 
                 lpContext->XStateFeaturesMask |= XSTATE_MASK_AVX512;
             }
-            
+#if !defined(TARGET_OSX)
             if (FPREG_HasApxRegisters(native))
             {
                 src = FPREG_Xstate_Egpr(native, &size);
@@ -1241,6 +1241,7 @@ void CONTEXTFromNativeContext(const native_context_t *native, LPCONTEXT lpContex
 
                 lpContext->XStateFeaturesMask |= XSTATE_MASK_APX;
             }
+#endif // TARGET_OSX
         }
 #elif defined(HOST_ARM64)
         if (sve && sve->head.size >= SVE_SIG_CONTEXT_SIZE(sve_vq_from_vl(sve->vl)))
