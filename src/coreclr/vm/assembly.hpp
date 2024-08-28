@@ -221,6 +221,7 @@ public:
     }
 
     OBJECTREF GetExposedObject();
+    OBJECTREF GetExposedObjectIfExists();
 
     DebuggerAssemblyControlFlags GetDebuggerInfoBits(void)
     {
@@ -362,7 +363,6 @@ public:
 
     static void AddDiagnosticStartupHookPath(LPCWSTR wszPath);
 
-
 protected:
 #ifdef FEATURE_COMINTEROP
 
@@ -431,6 +431,8 @@ private:
     DebuggerAssemblyControlFlags m_debuggerFlags;
 
     BOOL                  m_fTerminated;
+
+    LOADERHANDLE          m_hExposedObject;
 };
 
 #ifndef DACCESS_COMPILE

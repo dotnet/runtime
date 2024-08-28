@@ -333,6 +333,7 @@ The contract additionally depends on these data descriptors
 | `FnPtrTypeDesc` | `NumArgs` | Number of arguments to the function described by the `TypeDesc` |
 | `FnPtrTypeDesc` | `CallConv` | Lower 8 bits is the calling convention bit as extracted by the signature that defines this `TypeDesc` |
 | `FnPtrTypeDesc` | `RetAndArgTypes` | Pointer to an array of TypeHandle addresses. This length of this is 1 more than `NumArgs` |
+| `GenericsDictInfo` | `NumDicts` | Number of instantiation dictionaries, including inherited ones, in this `GenericsDictInfo` |
 | `GenericsDictInfo` | `NumTypeArgs` | Number of type arguments in the type or method instantiation described by this `GenericsDictInfo` |
 
 

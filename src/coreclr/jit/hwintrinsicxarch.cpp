@@ -4800,7 +4800,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             int immUpperBound = HWIntrinsicInfo::lookupImmUpperBound(intrinsic);
 
             op3 = impPopStack().val;
-            op3 = addRangeCheckIfNeeded(intrinsic, op3, mustExpand, immLowerBound, immUpperBound);
+            op3 = addRangeCheckIfNeeded(intrinsic, op3, immLowerBound, immUpperBound);
             op2 = impSIMDPopStack();
             op1 = impSIMDPopStack();
 
