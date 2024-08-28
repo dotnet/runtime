@@ -56,7 +56,7 @@ namespace Mono.Linker.Dataflow
 				TypeDefinition? referencedType = ((TypeReference) argument.Value).ResolveToTypeDefinition (_context);
 				return referencedType == null
 					? UnknownValue.Instance
-					: new SystemTypeValue (new (referencedType, _context), _context);
+					: new SystemTypeValue (new (referencedType, _context));
 			}
 
 			if (argument.Type.MetadataType == MetadataType.String)

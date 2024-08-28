@@ -12,8 +12,13 @@ namespace ILLink.Shared.TrimAnalysis
 	/// <summary>
 	/// This is a known System.Type value. TypeRepresented is the 'value' of the System.Type.
 	/// </summary>
-	internal sealed partial record SystemTypeValue : SingleValue
+	internal sealed record SystemTypeValue : SingleValue
 	{
+		public SystemTypeValue (in TypeProxy representedType)
+		{
+			RepresentedType = representedType;
+		}
+
 		public readonly TypeProxy RepresentedType;
 
 		public override SingleValue DeepCopy () => this; // This value is immutable

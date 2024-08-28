@@ -796,7 +796,7 @@ namespace Mono.Linker.Dataflow
 						currentStack.Push (new StackSlot (nullableDam));
 						return;
 					case TypeReference underlyingTypeReference when ResolveToTypeDefinition (underlyingTypeReference) is TypeDefinition underlyingType:
-						var nullableType = new RuntimeTypeHandleForNullableSystemTypeValue (new TypeProxy (resolvedDefinition, _context), new SystemTypeValue (new (underlyingType, _context), _context));
+						var nullableType = new RuntimeTypeHandleForNullableSystemTypeValue (new TypeProxy (resolvedDefinition, _context), new SystemTypeValue (new (underlyingType, _context)));
 						currentStack.Push (new StackSlot (nullableType));
 						return;
 					default:
