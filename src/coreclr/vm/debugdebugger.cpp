@@ -236,26 +236,17 @@ static StackWalkAction GetStackFramesCallback(CrawlFrame* pCf, VOID* data)
     }
     CONTRACTL_END;
 
-    DebugStackTrace::GetStackFramesData* pData = (DebugStackTrace::GetStackFramesData*)data;
-
-    if (pData->skip > 0)
-    {
-        pData->skip--;
-        return SWA_CONTINUE;
-    }
-
     // <REVISIT_TODO>@todo: How do we know what kind of frame we have?</REVISIT_TODO>
     //        Can we always assume FramedMethodFrame?
     //        NOT AT ALL!!!, but we can assume it's a function
     //                       because we asked the stackwalker for it!
     MethodDesc* pFunc = pCf->GetFunction();
 
+    DebugStackTrace::GetStackFramesData* pData = (DebugStackTrace::GetStackFramesData*)data;
     if (pData->cElements >= pData->cElementsAllocated)
     {
-
         DebugStackTrace::Element* pTemp = new (nothrow) DebugStackTrace::Element[2*pData->cElementsAllocated];
-
-        if (!pTemp)
+        if (pTemp == NULL)
         {
             return SWA_ABORT;
         }
@@ -296,11 +287,6 @@ static StackWalkAction GetStackFramesCallback(CrawlFrame* pCf, VOID* data)
 
     ++pData->cElements;
 
-    // Since we may be asynchronously walking another thread's stack,
-    // check (frequently) for stack-buffer-overrun corruptions after
-    // any long operation
-    pCf->CheckGSCookies();
-
     // check if we already have the number of frames that the user had asked for
     if ((pData->NumFramesRequested != 0) && (pData->NumFramesRequested <= pData->cElements))
     {
@@ -310,10 +296,7 @@ static StackWalkAction GetStackFramesCallback(CrawlFrame* pCf, VOID* data)
     return SWA_CONTINUE;
 }
 
-static void GetStackFrames(
-    Frame *pStartFrame,
-    void* pStopStack,
-    DebugStackTrace::GetStackFramesData *pData)
+static void GetStackFrames(DebugStackTrace::GetStackFramesData *pData)
 {
     CONTRACTL
     {
@@ -340,59 +323,7 @@ static void GetStackFrames(
 
     // Allocate memory for the initial 'n' frames
     pData->pElements = new DebugStackTrace::Element[pData->cElementsAllocated];
-
-    if (pData->TargetThread == NULL ||
-        pData->TargetThread->GetInternal() == GetThread())
-    {
-        // Null target thread specifies current thread.
-        GetThread()->StackWalkFrames(GetStackFramesCallback, pData, FUNCTIONSONLY | QUICKUNWIND, pStartFrame);
-    }
-    else
-    {
-        Thread *pThread = pData->TargetThread->GetInternal();
-        _ASSERTE (pThread != NULL);
-
-        // Here's the timeline for the TS_SyncSuspended bit.
-        // 0) TS_SyncSuspended is not set.
-        // 1) The suspending thread grabs the thread store lock
-        //    then puts in place trip wires for the suspendee (if it is in managed code)
-        //    and releases the thread store lock.
-        // 2) The suspending thread waits for the "SafeEvent".
-        // 3) The suspendee continues execution until it tries to enter preemptive mode.
-        //    If it trips over the wires put in place by the suspending thread,
-        //    it will try to enter preemptive mode.
-        // 4) The suspendee sets TS_SyncSuspended and the "SafeEvent".
-        // 5) AT THIS POINT, IT IS SAFE TO WALK THE SUSPENDEE'S STACK.
-        // 6) The suspendee clears the TS_SyncSuspended flag.
-        //
-        // In other words, it is safe to trace the thread's stack IF we're holding the
-        // thread store lock AND TS_SyncSuspended is set.
-        //
-        // This is because:
-        // - If we were not holding the thread store lock, the thread could be resumed
-        //   underneath us.
-        // - When TS_SyncSuspended is set, we race against it resuming execution.
-
-        ThreadStoreLockHolder tsl;
-
-        // We erect a barrier so that if the thread tries to disable preemptive GC,
-        // it could resume execution of managed code during our stack walk.
-        TSSuspendHolder shTrap;
-
-        Thread::ThreadState state = pThread->GetSnapshotState();
-        if (state & (Thread::TS_Unstarted|Thread::TS_Dead|Thread::TS_Detached))
-        {
-            goto LSafeToTrace;
-        }
-
-        COMPlusThrow(kThreadStateException, IDS_EE_THREAD_BAD_STATE);
-
-    LSafeToTrace:
-        pThread->StackWalkFrames(GetStackFramesCallback,
-                                 pData,
-                                 FUNCTIONSONLY|ALLOW_ASYNC_STACK_WALK,
-                                 pStartFrame);
-    }
+    GetThread()->StackWalkFrames(GetStackFramesCallback, pData, FUNCTIONSONLY | QUICKUNWIND, NULL);
 
     // Do a 2nd pass outside of any locks.
     // This will compute IL offsets.
@@ -404,13 +335,10 @@ static void GetStackFrames(
 
 extern "C" void QCALLTYPE StackTrace_GetStackFramesInternal(
     QCall::ObjectHandleOnStack stackFrameHelper,
-    INT32 iSkip,
     BOOL fNeedFileInfo,
     QCall::ObjectHandleOnStack exception)
 {
     QCALL_CONTRACT;
-
-    ASSERT(iSkip >= 0);
 
     BEGIN_QCALL;
 
@@ -433,15 +361,11 @@ extern "C" void QCALLTYPE StackTrace_GetStackFramesInternal(
 
     data.pDomain = GetAppDomain();
 
-    data.skip = iSkip;
-
     data.NumFramesRequested = gc.pStackFrameHelper->iFrameCount;
 
     if (gc.pException == NULL)
     {
-        // Thread is NULL if it's the current thread.
-        data.TargetThread = gc.pStackFrameHelper->targetThread;
-        GetStackFrames(NULL, (void*)-1, &data);
+        GetStackFrames(&data);
     }
     else
     {
@@ -949,7 +873,10 @@ extern "C" void QCALLTYPE DebugDebugger_CustomNotification(QCall::ObjectHandleOn
 
 #ifdef DEBUGGING_SUPPORTED
     // Send notification only if the debugger is attached
-    _ASSERTE(CORDebuggerAttached());
+    if (!CORDebuggerAttached())
+        return;
+
+    BEGIN_QCALL;
 
     GCX_COOP();
 
@@ -970,6 +897,8 @@ extern "C" void QCALLTYPE DebugDebugger_CustomNotification(QCall::ObjectHandleOn
     {
         pThread->HandleThreadAbort();
     }
+
+    END_QCALL;
 #endif // DEBUGGING_SUPPORTED
 }
 #endif // !DACCESS_COMPILE

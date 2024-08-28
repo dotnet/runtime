@@ -10,10 +10,10 @@ namespace System.Diagnostics
     public partial class StackTrace
     {
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "StackTrace_GetStackFramesInternal")]
-        private static partial void GetStackFramesInternal(ObjectHandleOnStack sfh, int iSkip, [MarshalAs(UnmanagedType.Bool)] bool fNeedFileInfo, ObjectHandleOnStack e);
+        private static partial void GetStackFramesInternal(ObjectHandleOnStack sfh, [MarshalAs(UnmanagedType.Bool)] bool fNeedFileInfo, ObjectHandleOnStack e);
 
-        internal static void GetStackFramesInternal(StackFrameHelper sfh, int iSkip, bool fNeedFileInfo, Exception? e)
-            => GetStackFramesInternal(ObjectHandleOnStack.Create(ref sfh), iSkip, fNeedFileInfo, ObjectHandleOnStack.Create(ref e));
+        internal static void GetStackFramesInternal(StackFrameHelper sfh, bool fNeedFileInfo, Exception? e)
+            => GetStackFramesInternal(ObjectHandleOnStack.Create(ref sfh), fNeedFileInfo, ObjectHandleOnStack.Create(ref e));
 
         internal static int CalculateFramesToSkip(StackFrameHelper StackF, int iNumFrames)
         {
@@ -61,9 +61,9 @@ namespace System.Diagnostics
         {
             _methodsToSkip = skipFrames;
 
-            StackFrameHelper StackF = new StackFrameHelper(null);
+            StackFrameHelper StackF = new StackFrameHelper();
 
-            StackF.InitializeSourceInfo(0, fNeedFileInfo, e);
+            StackF.InitializeSourceInfo(fNeedFileInfo, e);
 
             _numOfFrames = StackF.GetNumberOfFrames();
 

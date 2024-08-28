@@ -3707,7 +3707,6 @@ void DacDbiInterfaceImpl::GetStackFramesFromException(VMPTR_Object vmObject, Dac
     DebugStackTrace::GetStackFramesData stackFramesData;
 
     stackFramesData.pDomain = NULL;
-    stackFramesData.skip = 0;
     stackFramesData.NumFramesRequested = 0;
 
     DebugStackTrace::GetStackFramesFromException(&objRef, &stackFramesData);

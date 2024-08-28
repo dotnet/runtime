@@ -35,7 +35,6 @@ class StackFrameHelper : public Object
     // Modifying the order or fields of this object may require other changes to the
     // classlib definition of the StackFrameHelper class.
 public:
-    THREADBASEREF targetThread;
     I4ARRAYREF rgiOffset;
     I4ARRAYREF rgiILOffset;
     PTRARRAYREF dynamicMethods;
@@ -108,10 +107,8 @@ public:
 
 public:
 
-    struct GetStackFramesData {
-
-        // Used for the integer-skip version
-        INT32   skip;
+    struct GetStackFramesData
+    {
         INT32   NumFramesRequested;
         INT32   cElementsAllocated;
         INT32   cElements;
@@ -120,17 +117,15 @@ public:
         AppDomain *pDomain;
         BOOL fDoWeHaveAnyFramesFromForeignStackTrace;
 
-
-        GetStackFramesData() :  skip(0),
-                                NumFramesRequested (0),
-                                cElementsAllocated(0),
-                                cElements(0),
-                                pElements(NULL),
-                                TargetThread((THREADBASEREF)(TADDR)NULL)
+        GetStackFramesData()
+            : NumFramesRequested (0)
+            , cElementsAllocated(0)
+            , cElements(0)
+            , pElements(NULL)
+            , TargetThread((THREADBASEREF)(TADDR)NULL)
+            , fDoWeHaveAnyFramesFromForeignStackTrace(FALSE)
         {
             LIMITED_METHOD_CONTRACT;
-            fDoWeHaveAnyFramesFromForeignStackTrace = FALSE;
-
         }
 
         ~GetStackFramesData()
@@ -144,7 +139,6 @@ public:
 
 extern "C" void QCALLTYPE StackTrace_GetStackFramesInternal(
     QCall::ObjectHandleOnStack stackFrameHelper,
-    INT32 iSkip,
     BOOL fNeedFileInfo,
     QCall::ObjectHandleOnStack exception);
 
