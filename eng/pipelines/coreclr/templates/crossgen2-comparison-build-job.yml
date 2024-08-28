@@ -98,7 +98,7 @@ jobs:
         displayName: 'product build'
 
     # Populate Core_Root
-    - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) $(buildConfig) $(archType) $(crossArg) generatelayoutonly -p:Crossgen2Supported=false
+    - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) $(buildConfig) $(archType) $(crossArg) generatelayoutonly /p:UsePublishedCrossgen2=false
       displayName: Populate Core_Root
 
     # Create work item directory and populate with assemblies
