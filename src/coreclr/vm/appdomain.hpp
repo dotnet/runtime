@@ -466,7 +466,6 @@ public:
     BaseDomain();
     virtual ~BaseDomain() {}
     void Init();
-    void Stop();
 
     virtual BOOL IsAppDomain()    { LIMITED_METHOD_DAC_CONTRACT; return FALSE; }
 
@@ -580,8 +579,6 @@ public:
 
 #endif // DACCESS_COMPILE
 
-    DefaultAssemblyBinder *GetDefaultBinder() {LIMITED_METHOD_CONTRACT;  return m_pDefaultBinder; }
-
     CrstExplicitInit * GetLoaderAllocatorReferencesLock()
     {
         LIMITED_METHOD_CONTRACT;
@@ -603,8 +600,6 @@ protected:
     // Used to protect the reference lists in the collectible loader allocators attached to this appdomain
     CrstExplicitInit m_crstLoaderAllocatorReferences;
 
-    DefaultAssemblyBinder *m_pDefaultBinder; // Reference to the binding context that holds TPA list details
-
     IGCHandleStore* m_handleStore;
 
     // The pinned heap handle table.
@@ -612,26 +607,6 @@ protected:
 
     // Protects allocation of slot IDs for thread statics
     static CrstStatic m_MethodTableExposedClassObjectCrst;
-
-public:
-    // Only call this routine when you can guarantee there are no
-    // loads in progress.
-    void ClearBinderContext();
-
-    void InitVSD();
-
-private:
-    TypeIDMap m_typeIDMap;
-
-public:
-
-
-    UINT32 GetTypeID(PTR_MethodTable pMT);
-    UINT32 LookupTypeID(PTR_MethodTable pMT);
-    PTR_MethodTable LookupType(UINT32 id);
-#ifndef DACCESS_COMPILE
-    void RemoveTypesFromTypeIDMap(LoaderAllocator* pLoaderAllocator);
-#endif // DACCESS_COMPILE
 
 private:
     // I have yet to figure out an efficient way to get the number of handles
@@ -658,14 +633,6 @@ public:
     {
         return m_dwSizedRefHandles;
     }
-
-#ifdef FEATURE_CODE_VERSIONING
-private:
-    CodeVersionManager m_codeVersionManager;
-
-public:
-    CodeVersionManager* GetCodeVersionManager() { return &m_codeVersionManager; }
-#endif //FEATURE_CODE_VERSIONING
 
 #ifdef DACCESS_COMPILE
 public:
@@ -1397,6 +1364,10 @@ public:
 #endif // FEATURE_COMWRAPPERS
 
     DefaultAssemblyBinder *CreateDefaultBinder();
+    DefaultAssemblyBinder *GetDefaultBinder() {LIMITED_METHOD_CONTRACT;  return m_pDefaultBinder; }
+
+    // Only call this routine when you can guarantee there are no loads in progress.
+    void ClearBinderContext();
 
     void SetIgnoreUnhandledExceptions()
     {
@@ -1440,15 +1411,27 @@ public:
     Assembly* RaiseAssemblyResolveEvent(AssemblySpec *pSpec);
 
 private:
+    DefaultAssemblyBinder *m_pDefaultBinder; // Reference to the binding context that holds TPA list details
+
     CrstExplicitInit    m_ReflectionCrst;
     CrstExplicitInit    m_RefClassFactCrst;
-
 
     EEClassFactoryInfoHashTable *m_pRefClassFactHash;   // Hash table that maps a class factory info to a COM comp.
 #ifdef FEATURE_COMINTEROP
     DispIDCache *m_pRefDispIDCache;
     OBJECTHANDLE  m_hndMissing;     //Handle points to Missing.Value Object which is used for [Optional] arg scenario during IDispatch CCW Call
 #endif // FEATURE_COMINTEROP
+
+public:
+    UINT32 GetTypeID(PTR_MethodTable pMT);
+    UINT32 LookupTypeID(PTR_MethodTable pMT);
+    PTR_MethodTable LookupType(UINT32 id);
+#ifndef DACCESS_COMPILE
+    void RemoveTypesFromTypeIDMap(LoaderAllocator* pLoaderAllocator);
+#endif // DACCESS_COMPILE
+
+private:
+    TypeIDMap m_typeIDMap;
 
 public:
 
@@ -1515,7 +1498,7 @@ public:
 #endif // FEATURE_COMINTEROP
 
 private:
-    void RaiseLoadingAssemblyEvent(DomainAssembly* pAssembly);
+    void RaiseLoadingAssemblyEvent(Assembly* pAssembly);
 
     friend class DomainAssembly;
 
@@ -1757,6 +1740,14 @@ private:
     };
 
     SHash<UnmanagedImageCacheTraits> m_unmanagedCache;
+
+#ifdef FEATURE_CODE_VERSIONING
+private:
+    CodeVersionManager m_codeVersionManager;
+
+public:
+    CodeVersionManager* GetCodeVersionManager() { return &m_codeVersionManager; }
+#endif //FEATURE_CODE_VERSIONING
 
 #ifdef FEATURE_TYPEEQUIVALENCE
 private:

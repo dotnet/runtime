@@ -4335,7 +4335,7 @@ extern "C" void QCALLTYPE MngdNativeArrayMarshaler_ConvertContentsToNative(MngdN
             if ( (!ClrSafeInt<SIZE_T>::multiply(cElements, OleVariant::GetElementSizeForVarType(pThis->m_vt, pThis->m_pElementMT), cElements)) || cElements > MAX_SIZE_FOR_INTEROP)
                 COMPlusThrow(kArgumentException, IDS_EE_STRUCTARRAYTOOLARGE);
 
-            _ASSERTE(!GetTypeHandleForCVType(OleVariant::GetCVTypeForVarType(pThis->m_vt)).GetMethodTable()->ContainsGCPointers());
+            _ASSERTE(!OleVariant::GetTypeHandleForVarType(pThis->m_vt).GetMethodTable()->ContainsGCPointers());
             memcpyNoGCRefs(*pNativeHome, arrayRef->GetDataPtr(), cElements);
         }
         else
@@ -4404,7 +4404,7 @@ extern "C" void QCALLTYPE MngdNativeArrayMarshaler_ConvertContentsToManaged(Mngd
                 COMPlusThrow(kArgumentException, IDS_EE_STRUCTARRAYTOOLARGE);
 
                 // If we are copying variants, strings, etc, we need to use write barrier
-            _ASSERTE(!GetTypeHandleForCVType(OleVariant::GetCVTypeForVarType(pThis->m_vt)).GetMethodTable()->ContainsGCPointers());
+            _ASSERTE(!OleVariant::GetTypeHandleForVarType(pThis->m_vt).GetMethodTable()->ContainsGCPointers());
             memcpyNoGCRefs(arrayRef->GetDataPtr(), *pNativeHome, cElements);
         }
         else
@@ -4519,7 +4519,7 @@ extern "C" void QCALLTYPE MngdFixedArrayMarshaler_ConvertContentsToNative(MngdFi
             SIZE_T cElements = arrayRef->GetNumComponents();
             if (pMarshaler == NULL || pMarshaler->ComToOleArray == NULL)
             {
-                _ASSERTE(!GetTypeHandleForCVType(OleVariant::GetCVTypeForVarType(pThis->m_vt)).GetMethodTable()->ContainsGCPointers());
+                _ASSERTE(!OleVariant::GetTypeHandleForVarType(pThis->m_vt).GetMethodTable()->ContainsGCPointers());
                 memcpyNoGCRefs(pNativeHome, arrayRef->GetDataPtr(), nativeSize);
             }
             else
@@ -4593,7 +4593,7 @@ extern "C" void QCALLTYPE MngdFixedArrayMarshaler_ConvertContentsToManaged(MngdF
         if (pMarshaler == NULL || pMarshaler->OleToComArray == NULL)
         {
             // If we are copying variants, strings, etc, we need to use write barrier
-            _ASSERTE(!GetTypeHandleForCVType(OleVariant::GetCVTypeForVarType(pThis->m_vt)).GetMethodTable()->ContainsGCPointers());
+            _ASSERTE(!OleVariant::GetTypeHandleForVarType(pThis->m_vt).GetMethodTable()->ContainsGCPointers());
             memcpyNoGCRefs(arrayRef->GetDataPtr(), pNativeHome, nativeSize);
         }
         else

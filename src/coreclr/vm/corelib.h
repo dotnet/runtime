@@ -371,14 +371,10 @@ DEFINE_CLASS(GUID,                  System,                 Guid)
 BEGIN_ILLINK_FEATURE_SWITCH(System.Runtime.InteropServices.BuiltInComInterop.IsSupported, true, true)
 #ifdef FEATURE_COMINTEROP
 DEFINE_CLASS(VARIANT,               System,                 Variant)
-DEFINE_METHOD(VARIANT,              CONVERT_OBJECT_TO_VARIANT,MarshalHelperConvertObjectToVariant,SM_Obj_RefVariant_RetVoid)
-DEFINE_METHOD(VARIANT,              CAST_VARIANT,           MarshalHelperCastVariant,   SM_Obj_Int_RefVariant_RetVoid)
-DEFINE_METHOD(VARIANT,              CONVERT_VARIANT_TO_OBJECT,MarshalHelperConvertVariantToObject,SM_RefVariant_RetObject)
+DEFINE_METHOD(VARIANT,              CONVERT_OBJECT_TO_VARIANT,MarshalHelperConvertObjectToVariant,SM_Obj_RefComVariant_RetVoid)
+DEFINE_METHOD(VARIANT,              CAST_VARIANT,           MarshalHelperCastVariant,   SM_Obj_Int_RefComVariant_RetVoid)
+DEFINE_METHOD(VARIANT,              CONVERT_VARIANT_TO_OBJECT,MarshalHelperConvertVariantToObject,SM_RefComVariant_RetObject)
 
-DEFINE_CLASS_U(System,              Variant,                VariantData)
-DEFINE_FIELD_U(_objref,             VariantData,            m_objref)
-DEFINE_FIELD_U(_data,               VariantData,            m_data)
-DEFINE_FIELD_U(_flags,              VariantData,            m_flags)
 #endif // FEATURE_COMINTEROP
 END_ILLINK_FEATURE_SWITCH()
 
@@ -1110,6 +1106,7 @@ DEFINE_FIELD_U(_condition,          ContractExceptionObject,    _Condition)
 DEFINE_CLASS(MODULEBASE,        Reflection,         Module)
 
 DEFINE_CLASS(STACKALLOCATEDBOX,   CompilerServices,     StackAllocatedBox`1)
+DEFINE_FIELD(STACKALLOCATEDBOX,   VALUE,                _value)
 
 DEFINE_CLASS(UTF8STRINGMARSHALLER, Marshalling, Utf8StringMarshaller)
 DEFINE_METHOD(UTF8STRINGMARSHALLER, CONVERT_TO_MANAGED, ConvertToManaged, SM_PtrByte_RetStr)

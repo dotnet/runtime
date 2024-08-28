@@ -347,7 +347,7 @@ void DispParamArrayMarshaler::MarshalManagedToNativeRef(OBJECTREF *pSrcObj, VARI
     }
 
     // Copy the converted variant back into the byref variant.
-    OleVariant::InsertContentsIntoByrefVariant(&vtmp, pRefVar);
+    OleVariant::InsertContentsIntoByRefVariant(&vtmp, pRefVar);
 }
 
 void DispParamRecordMarshaler::MarshalNativeToManaged(VARIANT *pSrcVar, OBJECTREF *pDestObj)
@@ -678,7 +678,7 @@ void DispParamCustomMarshaler::MarshalManagedToNativeRef(OBJECTREF *pSrcObj, VAR
     }
 
     // Copy the converted variant back into the byref variant.
-    OleVariant::InsertContentsIntoByrefVariant(&vtmp, pRefVar);
+    OleVariant::InsertContentsIntoByRefVariant(&vtmp, pRefVar);
 }
 
 void DispParamCustomMarshaler::CleanUpManaged(OBJECTREF *pObj)

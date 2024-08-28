@@ -324,6 +324,7 @@ static const Entry s_QCall[] =
     DllImportEntry(MngdSafeArrayMarshaler_ConvertSpaceToManaged)
     DllImportEntry(MngdSafeArrayMarshaler_ConvertContentsToManaged)
     DllImportEntry(MngdSafeArrayMarshaler_ClearNative)
+    DllImportEntry(Variant_ConvertValueTypeToRecord)
 #endif // FEATURE_COMINTEROP
     DllImportEntry(NativeLibrary_LoadFromPath)
     DllImportEntry(NativeLibrary_LoadByName)
