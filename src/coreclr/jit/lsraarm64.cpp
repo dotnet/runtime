@@ -2040,16 +2040,26 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                 buildInternalIntRegisterDefForNode(embOp2Node);
             }
 
-            // The embedded op may be prefixed by a MOVPFRX instruction. If so, then the embedded
-            // op can't reuse a source register as the destination. Ensure all the inputs
-            // are marked as delay free.
-
+            size_t prefUseOpNum = 1;
+            if (intrinEmb.id == NI_Sve_CreateBreakPropagateMask)
+            {
+                prefUseOpNum = 2;
+            }
+            GenTree* prefUseNode = embOp2Node->Op(prefUseOpNum);
             for (size_t argNum = 1; argNum <= numArgs; argNum++)
             {
-                srcCount += BuildDelayFreeUses(embOp2Node->Op(argNum));
+                if (argNum == prefUseOpNum)
+                {
+                    tgtPrefUse = BuildUse(prefUseNode);
+                    srcCount += 1;
+                }
+                else
+                {
+                    srcCount += BuildDelayFreeUses(embOp2Node->Op(argNum));
+                }
             }
 
-            srcCount += BuildDelayFreeUses(intrin.op3);
+            srcCount += BuildDelayFreeUses(intrin.op3, prefUseNode);
         }
     }
     else if (intrin.op2 != nullptr)
