@@ -1787,8 +1787,8 @@ public static class Program
 		public static FloatFloat Get()
 			=> new FloatFloat { Float0 = 2.71828f, Float1 = 1.61803f };
 
-		public bool Equals(FloatFloat other)
-			=> Float0 == other.Float0 && Float1 == other.Float1;
+		public override bool Equals(object other)
+			=> other is FloatFloat o && Float0 == o.Float0 && Float1 == o.Float1;
 
 		public override string ToString()
 			=> $"{{Float0:{Float0}, Float1:{Float1}}}";
@@ -1841,8 +1841,8 @@ public static class Program
 		public static PackedEmptyUintEmptyFloat Get()
 			=> new PackedEmptyUintEmptyFloat { Uint0 = 0xB1ed0c1e, Float0 = 2.71828f };
 
-		public bool Equals(PackedEmptyUintEmptyFloat other)
-			=> Uint0 == other.Uint0 && Float0 == other.Float0;
+		public override bool Equals(object other)
+			=> other is PackedEmptyUintEmptyFloat o && Uint0 == o.Uint0 && Float0 == o.Float0;
 
 		public override string ToString()
 			=> $"{{Uint0:{Uint0}, Float0:{Float0}}}";
@@ -1857,8 +1857,8 @@ public static class Program
 		public static PackedEmptyDouble Get()
 			=> new PackedEmptyDouble { Double0 = 1.61803 };
 
-		public bool Equals(PackedEmptyDouble other)
-			=> Double0 == other.Double0;
+		public override bool Equals(object other)
+			=> other is PackedEmptyDouble o && Double0 == o.Double0;
 
 		public override string ToString()
 			=> $"{{Double0:{Double0}}}";
