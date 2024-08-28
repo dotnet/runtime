@@ -1694,6 +1694,52 @@ public static class Program
 
 
 	[MethodImpl(MethodImplOptions.NoInlining)]
+	private static void ShufflingThunk_FloatEmptyShort_DoubleFloatNestedEmpty_Float_RiscV(
+		int a1_to_a0, int a2_to_a1, int a3_to_a2, int a4_to_a3, int a5_to_a4, int a6_to_a5, int a7_to_a6,
+		float fa0, float fa1, float fa2, float fa3, float fa4, float fa5,
+		FloatEmptyShort stack0_to_fa6_a7, // frees 1 stack slot
+		int stack1_to_stack0,
+		DoubleFloatNestedEmpty fa6_fa7_to_stack1_stack2, // takes 2 stack slots
+		int stack2_to_stack3, // shuffle stack slots to the right
+		int stack3_to_stack4,
+		Empty8Float stack4_stack5_to_fa7, // frees 2 stack slots
+		int stack6_to_stack5, // shuffle stack slots to the left
+		int stack7_to_stack6)
+	{
+		Assert.Equal(0, a1_to_a0);
+		Assert.Equal(1, a2_to_a1);
+		Assert.Equal(2, a3_to_a2);
+		Assert.Equal(3, a4_to_a3);
+		Assert.Equal(4, a5_to_a4);
+		Assert.Equal(5, a6_to_a5);
+		Assert.Equal(6, a7_to_a6);
+		Assert.Equal(0f, fa0);
+		Assert.Equal(1f, fa1);
+		Assert.Equal(2f, fa2);
+		Assert.Equal(3f, fa3);
+		Assert.Equal(4f, fa4);
+		Assert.Equal(5f, fa5);
+		Assert.Equal(FloatEmptyShort.Get(), stack0_to_fa6_a7);
+		Assert.Equal(7, stack1_to_stack0);
+		Assert.Equal(DoubleFloatNestedEmpty.Get(), fa6_fa7_to_stack1_stack2);
+		Assert.Equal(8, stack2_to_stack3);
+		Assert.Equal(9, stack3_to_stack4);
+		Assert.Equal(Empty8Float.Get(), stack4_stack5_to_fa7);
+		Assert.Equal(10, stack6_to_stack5);
+		Assert.Equal(11, stack7_to_stack6);
+	}
+
+	[Fact]
+	public static void Test_ShufflingThunk_FloatEmptyShort_DoubleFloatNestedEmpty_Float_RiscV()
+	{
+		var getDelegate = [MethodImpl(MethodImplOptions.NoOptimization)] ()
+			=> ShufflingThunk_FloatEmptyShort_DoubleFloatNestedEmpty_Float_RiscV;
+		getDelegate()(0, 1, 2, 3, 4, 5, 6, 0f, 1f, 2f, 3f, 4f, 5f,
+			FloatEmptyShort.Get(), 7, DoubleFloatNestedEmpty.Get(), 8, 9, Empty8Float.Get(), 10, 11);
+	}
+
+
+	[MethodImpl(MethodImplOptions.NoInlining)]
 	private static void ShufflingThunk_FloatEmptyShort_DoubleFloatNestedEmpty_RiscV(
 		int a1_to_a0, int a2_to_a1, int a3_to_a2, int a4_to_a3, int a5_to_a4, int a6_to_a5, int a7_to_a6,
 		float fa0, float fa1, float fa2, float fa3, float fa4, float fa5,

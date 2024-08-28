@@ -400,8 +400,8 @@ BOOL AddNextShuffleEntryToArray(ArgLocDesc sArgSrc, ArgLocDesc sArgDst, SArray<S
             _ASSERTE((fieldRegOfs & (ShuffleEntry::FIELDSIZESHIFTMASK | ShuffleEntry::FIELDOFFSETMASK)) == 0);
             fieldRegOfs |= ShuffleEntry::CALLCONVTRANSFERMASK | sizeShift | offset;
             ShuffleEntry entry = isLowered
-                ? ShuffleEntry{stackOfs , {fieldRegOfs}}
-                : ShuffleEntry{fieldRegOfs , {stackOfs}};
+                ? ShuffleEntry{stackOfs, {fieldRegOfs}}
+                : ShuffleEntry{fieldRegOfs, {stackOfs}};
             pShuffleEntryArray->Append(entry);
         }
         _ASSERTE(!iteratorFpStruct.HasNextOfs());
