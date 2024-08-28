@@ -1743,9 +1743,11 @@ public static class Program
 	private static void ShufflingThunk_FloatEmptyShort_DoubleFloatNestedEmpty_RiscV(
 		int a1_to_a0, int a2_to_a1, int a3_to_a2, int a4_to_a3, int a5_to_a4, int a6_to_a5, int a7_to_a6,
 		float fa0, float fa1, float fa2, float fa3, float fa4, float fa5,
-		FloatEmptyShort stack0_to_fa6_a7,
+		FloatEmptyShort stack0_to_fa6_a7, // frees 1 stack slot
 		int stack1_to_stack0,
-		DoubleFloatNestedEmpty fa6_fa7_to_stack1_stack2) // shuffling thunk must grow stack
+		DoubleFloatNestedEmpty fa6_fa7_to_stack1_stack2, // takes 2 stack slots
+		int stack2_to_stack3, // shuffle stack slots to the right
+		int stack3_to_stack4) // shuffling thunk must grow stack
 	{
 		Assert.Equal(0, a1_to_a0);
 		Assert.Equal(1, a2_to_a1);
@@ -1763,6 +1765,8 @@ public static class Program
 		Assert.Equal(FloatEmptyShort.Get(), stack0_to_fa6_a7);
 		Assert.Equal(7, stack1_to_stack0);
 		Assert.Equal(DoubleFloatNestedEmpty.Get(), fa6_fa7_to_stack1_stack2);
+		Assert.Equal(8, stack2_to_stack3);
+		Assert.Equal(9, stack3_to_stack4);
 	}
 
 	[Fact]
@@ -1771,7 +1775,7 @@ public static class Program
 		var getDelegate = [MethodImpl(MethodImplOptions.NoOptimization)] ()
 			=> ShufflingThunk_FloatEmptyShort_DoubleFloatNestedEmpty_RiscV;
 		getDelegate()(0, 1, 2, 3, 4, 5, 6, 0f, 1f, 2f, 3f, 4f, 5f,
-			FloatEmptyShort.Get(), 7, DoubleFloatNestedEmpty.Get());
+			FloatEmptyShort.Get(), 7, DoubleFloatNestedEmpty.Get(), 8, 9);
 	}
 
 
