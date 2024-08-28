@@ -209,14 +209,26 @@ get_native_to_interp (MonoMethod *method, void *extra_arg)
 	const char *name = mono_assembly_name_get_name (aname);
 	const char *class_name = mono_class_get_name (klass);
 	const char *method_name = mono_method_get_name (method);
-	char key [128];
+	char buf [128];
+	char *key = &buf[0];
 	int len;
+	name = name ? name : "";
 
-	assert (strlen (name) < 100);
-	snprintf (key, sizeof(key), "%s_%s_%s", name, class_name, method_name);
+	len = snprintf (key, sizeof(buf), "%s_%s_%s", name, class_name, method_name);
+
+	if (len >= sizeof (buf)) {
+		// The key is too long, try again with a larger buffer
+		key = g_new (char, len + 1);
+	    snprintf (key, len + 1, "%s_%s_%s", name, class_name, method_name);
+	}
+
 	char *fixedName = mono_fixup_symbol_name ("", key, "");
 	addr = wasm_dl_get_native_to_interp (fixedName, extra_arg);
 	free (fixedName);
+
+	if (len >= sizeof (buf))
+		free (key);
+
 	MONO_EXIT_GC_UNSAFE;
 	return addr;
 }

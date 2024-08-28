@@ -952,6 +952,7 @@ namespace Wasm.Build.Tests
 
             var runOutput = RunAndTestWasmApp(buildArgs, buildDir: _projectDir, expectedExitCode: 42, host: host, id: id);
             Assert.Contains("ManagedFunc returned 42", runOutput);
+            Assert.Contains("caught PlatformNotSupportedException", runOutput);
         }
     }
 }
