@@ -56,11 +56,11 @@ To work with the runtime repo, there are three supported configurations (one is 
 
 ## Building the Repo
 
-The main script that will be in charge of most of the building you might want to do is the `build.sh`, or `build.cmd` on Windows, located at the root of the repo. This script receives as arguments the subset(s) you might want to build, as well as multiple parameters to configure your build, such as the build configuration, target operating system, target architecture, and so on.
+The main script that will be in charge of most of the building you might want to do is the `build.sh`, or `build.cmd` on Windows, located at the root of the repo. This script receives as arguments the subset(s) you might want to build, as well as multiple parameters to configure your build, such as the configuration, target operating system, target architecture, and so on.
 
 ### General Overview
 
-Running the script as is will build all the components in *Debug* configuration. But you probably will be working with only one or two at a time, so it is more efficient to just build those. This is done by means of the `-subset` flag. For example, for CoreCLR, it would be:
+Running the script as is with no arguments whatsoever, will build the whole repo in *Debug* configuration, for the OS and architecture of your machine. But you probably will be working with only one or two components at a time, so it is more efficient to just build those. This is done by means of the `-subset` flag. For example, for CoreCLR, it would be:
 
 ```bash
 ./build.sh -subset clr
@@ -88,7 +88,7 @@ It is also possible to build more than one subset under the same command-line. I
 ./build.sh -subset clr+libs -configuration Release
 ```
 
-As a final note here, if your first argument to the build script are the subsets, you can omit the `-subset` flag altogether. Additionally, several of the supported flags also include a shorthand version (e.g. `-c` for `-configuration`). Run the script with `-h` or `-help` to get an extensive overview on all the supported flags to customize your build, including their shorthand forms, as well as a wider variety of examples.
+As an extra note here, if your first argument to the build script are the subsets, you can omit the `-subset` flag altogether. Additionally, several of the supported flags also include a shorthand version (e.g. `-c` for `-configuration`). Run the script with `-h` or `-help` to get an extensive overview on all the supported flags to customize your build, including their shorthand forms, as well as a wider variety of examples.
 
 **NOTE:** On non-Windows systems, the longhand versions of the flags can be passed with either single `-` or double `--` dashes.
 
@@ -103,9 +103,9 @@ Now that you've got the general idea on how to get started, it is important to m
 
 **Component Specifics:**
 
-- _[CoreCLR](/docs/workflow/building/building-coreclr.md)_
-- _Libraries_
-- _Mono_
+- [CoreCLR](/docs/workflow/building/building-coreclr.md)
+- Libraries
+- Mono
 
 ### General Recommendations
 

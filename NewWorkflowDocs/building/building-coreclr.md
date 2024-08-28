@@ -25,7 +25,7 @@ By default, the script builds the _clr_ in *Debug* configuration, which doesn't 
 
 ### Build Results
 
-Once the `clr` build completes, the main generated artifacts are placed in `artifacts/bin/coreclr/<OS>.<Architecture>.<Configuration>`. For example, for a Linux x64 Release build, the output path would be `artifacts/bin/coreclr/linux.x64.Release`. In this path, you will find a number of different binaries, of which the most important are the following:
+Once the `clr` build completes, the main generated artifacts are placed in `artifacts/bin/coreclr/<OS>.<Architecture>.<Configuration>`. For example, for a Linux x64 Release build, the output path would be `artifacts/bin/coreclr/linux.x64.Release`. Here, you will find a number of different binaries, of which the most important are the following:
 
 - `corerun`: The command-line host executable. This program loads and starts the CoreCLR runtime and receives the managed program you want to run as argument (e.g. `./corerun program.dll`). On Windows, it is called `corerun.exe`.
 - `coreclr`: The CoreCLR runtime itself. On Windows, it's called `coreclr.dll`, on macOS it is `libcoreclr.dylib`, and on Linux it is `libcoreclr.so`.
@@ -53,7 +53,7 @@ To use Visual Studio's *MSBuild* instead of *Ninja* on Windows:
 ./build.cmd -subset clr -msbuild
 ```
 
-It is recommended to use *Ninja* for building the project on Windows, since it uses the build machine's resources more efficiently in comparison to Visual Studio's *MSBuild*.
+It is recommended to use *Ninja* on Windows, as it uses the build machine's resources more efficiently in comparison to Visual Studio's *MSBuild*.
 
 To use *Ninja* instead of *Make* on non-Windows:
 
@@ -63,11 +63,11 @@ To use *Ninja* instead of *Make* on non-Windows:
 
 ### Extra Flags
 
-You can pass some extra compiler/linker flags to the CoreCLR build. Set the `EXTRA_CFLAGS`, `EXTRA_CXXFLAGS`, and `EXTRA_LDFLAGS` as you see fit. The build script will consume them and then set the environment variables that will ultimately affect your build (i.e. those same ones without the `EXTRA_` prefix). Don't set the final ones directly yourself, as that is known to lead to potential failures in configure-time tests.
+You can also pass some extra compiler/linker flags to the CoreCLR build. Set the `EXTRA_CFLAGS`, `EXTRA_CXXFLAGS`, and `EXTRA_LDFLAGS` as you see fit for this purpose. The build script will consume them and then set the environment variables that will ultimately affect your build (i.e. those same ones without the `EXTRA_` prefix). Don't set the final ones directly yourself, as that is known to lead to potential failures in configure-time tests.
 
 ### Native ARM64 Building on Windows
 
-Currently, the runtime repo supports build CoreCLR directly on Windows ARM64 without the need to cross-compile, albeit it is still in an experimental phase. To do this, you need to install all the requirements outlined in the [Windows Requirements doc](/docs/workflow/requirements/windows-requirements.md), as well ass the ARM64 build tools and Windows SDK for Visual Studio.
+Currently, the runtime repo supports building CoreCLR directly on Windows ARM64 without the need to cross-compile, albeit it is still in an experimental phase. To do this, you need to the ARM64 build tools and Windows SDK for Visual Studio, in addition to all the requirements outlined in the [Windows Requirements doc](/docs/workflow/requirements/windows-requirements.md).
 
 Once those requirements are fulfilled, you have to tell the build script to compile for Arm64 using *MSBuild*. *Ninja* is not yet supported on Arm64 platforms:
 
@@ -79,7 +79,7 @@ While this is functional at the time of writing this doc, it is still recommende
 
 ### Debugging Information for macOS
 
-When building on macOS, the build process puts native component symbol and debugging information into `.dwarf` files, one for each built binary. This is not the native format used by macOS, and debuggers like LLDB can't automatically find them. The native format used by macOS is `.dSYM` bundles. To generate them and get a better inner-loop developer experience (e.g. have the LLDB debugger automatically find program symbols and display source code lines, etc.), make sure to enable the `DLCR_CMAKE_APPLE_DYSM` flag when calling the build script:
+When building on macOS, the build process puts native component symbol and debugging information into `.dwarf` files, one for each built binary. This is not the native format used by macOS, and debuggers like LLDB can't automatically find them. The format macOS uses is `.dSYM` bundles. To generate them and get a better inner-loop developer experience (e.g. have the LLDB debugger automatically find program symbols and display source code lines, etc.), make sure to enable the `DLCR_CMAKE_APPLE_DYSM` flag when calling the build script:
 
 ```bash
 ./build.sh -subset clr -cmakeargs "-DLCR_CMAKE_APPLE_DYSM=TRUE"
@@ -92,6 +92,7 @@ When building on macOS, the build process puts native component symbol and debug
 CoreCLR is also in the process of supporting the use of native sanitizers during the build to help catch memory safety issues. To apply them, add the `-fsanitize` flag followed by the name of the sanitizer as argument. As of now, these are the supported sanitizers with plans of adding more in the future:
 
 - Sanitizer Name: `AddressSanitizer`
+
   Argument to `-fsanitize`: `address`
 
 | Platform | Minimum VS Version | Support Status          |
