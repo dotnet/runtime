@@ -183,6 +183,29 @@ LOCAL_LABEL(Done_Restore_CONTEXT_FLOATING_POINT):
     kmovq k6, qword ptr [rdi + (CONTEXT_KMask0 + 6 * 8)]
     kmovq k7, qword ptr [rdi + (CONTEXT_KMask0 + 7 * 8)]
 
+    // TODO-xarch-apx: the definition of XSTATE mask value for APX is now missing on the OS level, 
+    //                 we are currently using bare value to hack it through the build process, and test the implementation through CI.
+    //                 those changes will be removed when we have the OS support for APX.
+    test    BYTE PTR [rdi + CONTEXT_XStateFeaturesMask], 524288
+    je      LOCAL_LABEL(Done_Restore_CONTEXT_XSTATE)
+
+    mov r16, qword ptr [rdi + CONTEXT_Egpr + 0 * 8]
+    mov r17, qword ptr [rdi + CONTEXT_Egpr + 1 * 8]
+    mov r18, qword ptr [rdi + CONTEXT_Egpr + 2 * 8]
+    mov r19, qword ptr [rdi + CONTEXT_Egpr + 3 * 8]
+    mov r20, qword ptr [rdi + CONTEXT_Egpr + 4 * 8]
+    mov r21, qword ptr [rdi + CONTEXT_Egpr + 5 * 8]
+    mov r22, qword ptr [rdi + CONTEXT_Egpr + 6 * 8]
+    mov r23, qword ptr [rdi + CONTEXT_Egpr + 7 * 8]
+    mov r24, qword ptr [rdi + CONTEXT_Egpr + 8 * 8]
+    mov r25, qword ptr [rdi + CONTEXT_Egpr + 9 * 8]
+    mov r26, qword ptr [rdi + CONTEXT_Egpr + 10 * 8]
+    mov r27, qword ptr [rdi + CONTEXT_Egpr + 11 * 8]
+    mov r28, qword ptr [rdi + CONTEXT_Egpr + 12 * 8]
+    mov r29, qword ptr [rdi + CONTEXT_Egpr + 13 * 8]
+    mov r30, qword ptr [rdi + CONTEXT_Egpr + 14 * 8]
+    mov r31, qword ptr [rdi + CONTEXT_Egpr + 15 * 8]
+
 LOCAL_LABEL(Done_Restore_CONTEXT_XSTATE):
 
     test    BYTE PTR [rdi + CONTEXT_ContextFlags], CONTEXT_CONTROL

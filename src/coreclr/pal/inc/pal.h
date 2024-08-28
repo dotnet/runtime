@@ -1626,6 +1626,27 @@ typedef struct DECLSPEC_ALIGN(16) _CONTEXT {
         M512 Zmm30;
         M512 Zmm31;
     };
+    
+    struct
+    {
+        DWORD64 Egpr16;
+        DWORD64 Egpr17;
+        DWORD64 Egpr18;
+        DWORD64 Egpr19;
+        DWORD64 Egpr20;
+        DWORD64 Egpr21;
+        DWORD64 Egpr22;
+        DWORD64 Egpr23;
+        DWORD64 Egpr24;
+        DWORD64 Egpr25;
+        DWORD64 Egpr26;
+        DWORD64 Egpr27;
+        DWORD64 Egpr28;
+        DWORD64 Egpr29;
+        DWORD64 Egpr30;
+        DWORD64 Egpr31;
+    };
+    
 } CONTEXT, *PCONTEXT, *LPCONTEXT;
 
 //

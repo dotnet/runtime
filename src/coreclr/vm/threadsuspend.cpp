@@ -71,6 +71,9 @@ extern "C" void             RedirectedHandledJITCaseForGCStress_Stub(void);
 #define IS_VALID_WRITE_PTR(addr, size)      _ASSERTE((addr) != NULL)
 #define IS_VALID_CODE_PTR(addr)             _ASSERTE((addr) != NULL)
 
+#if defined(TARGET_AMD64)
+#define XSTATE_MASK_APX (0x80000)
+#endif  // TARGET_AMD64
 
 void ThreadSuspend::SetSuspendRuntimeInProgress()
 {
@@ -1960,7 +1963,7 @@ CONTEXT* AllocateOSContextHelper(BYTE** contextBuffer)
     DWORD context = CONTEXT_COMPLETE;
 
 #if defined(TARGET_X86) || defined(TARGET_AMD64)
-    const DWORD64 xStateFeatureMask = XSTATE_MASK_AVX | XSTATE_MASK_AVX512;
+    const DWORD64 xStateFeatureMask = XSTATE_MASK_AVX | XSTATE_MASK_AVX512 | XSTATE_MASK_APX;
     const ULONG64 xStateCompactionMask = XSTATE_MASK_LEGACY | XSTATE_MASK_MPX | xStateFeatureMask;
 #elif defined(TARGET_ARM64)
     const DWORD64 xStateFeatureMask = XSTATE_MASK_ARM64_SVE;
@@ -2918,7 +2921,7 @@ BOOL Thread::RedirectThreadAtHandledJITCase(PFN_REDIRECTTARGET pTgt)
     // The system silently ignores any feature specified in the FeatureMask
     // which is not enabled on the processor.
 #if defined(TARGET_X86) || defined(TARGET_AMD64)
-    SetXStateFeaturesMask(pCtx, XSTATE_MASK_AVX | XSTATE_MASK_AVX512);
+    SetXStateFeaturesMask(pCtx, XSTATE_MASK_AVX | XSTATE_MASK_AVX512 | XSTATE_MASK_APX);
 #elif defined(TARGET_ARM64)
     if (g_pfnSetXStateFeaturesMask != NULL)
     {
@@ -3069,7 +3072,7 @@ BOOL Thread::RedirectCurrentThreadAtHandledJITCase(PFN_REDIRECTTARGET pTgt, CONT
     if (srcFeatures != 0)
     {
 #if defined(TARGET_X86) || defined(TARGET_AMD64)
-        const DWORD64 xStateFeatureMask = XSTATE_MASK_AVX | XSTATE_MASK_AVX512;
+        const DWORD64 xStateFeatureMask = XSTATE_MASK_AVX | XSTATE_MASK_AVX512 | XSTATE_MASK_APX;
 #elif defined(TARGET_ARM64)
         const DWORD64 xStateFeatureMask = XSTATE_MASK_ARM64_SVE;
 #endif

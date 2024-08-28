@@ -8,12 +8,14 @@
 #define XSTATE_AVX512_KMASK (5)
 #define XSTATE_AVX512_ZMM_H (6)
 #define XSTATE_AVX512_ZMM (7)
+#define XSTATE_APX (19)
 
 #define XSTATE_MASK_GSSE (1 << (XSTATE_GSSE))
 #define XSTATE_MASK_AVX (XSTATE_MASK_GSSE)
 #define XSTATE_MASK_AVX512 ((1 << (XSTATE_AVX512_KMASK)) | \
                             (1 << (XSTATE_AVX512_ZMM_H)) | \
                             (1 << (XSTATE_AVX512_ZMM)))
+#define XSTATE_MASK_APX (1 << (XSTATE_APX))
 
 // The arch bit is normally set in the flag constants below. Since this is already arch-specific code and the arch bit is not
 // relevant, the arch bit is excluded from the flag constants below for simpler tests.
@@ -91,7 +93,8 @@
 #define CONTEXT_KMask0 CONTEXT_Ymm0H+(16*16)
 #define CONTEXT_Zmm0H CONTEXT_KMask0+(8*8)
 #define CONTEXT_Zmm16 CONTEXT_Zmm0H+(32*16)
-#define CONTEXT_Size CONTEXT_Zmm16+(64*16)
+#define CONTEXT_Egpr  CONTEXT_Zmm16+(16*8)
+#define CONTEXT_Size CONTEXT_Egpr+(64*16)
 
 #else // HOST_64BIT
 
