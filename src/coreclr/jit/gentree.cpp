@@ -19185,8 +19185,9 @@ CORINFO_CLASS_HANDLE Compiler::gtGetClassHandle(GenTree* tree, bool* pIsExact, b
                                     CORINFO_CLASS_HANDLE fieldExactCls = NO_CLASS_HANDLE;
                                     info.compCompHnd->getFieldType(fieldHnd, &fieldExactCls, fieldOwnerObj);
 
-                                    if ((fieldExactCls != NO_CLASS_HANDLE) && ((objClass == NO_CLASS_HANDLE) ||
-                                        info.compCompHnd->isMoreSpecificType(objClass, fieldExactCls)))
+                                    if ((fieldExactCls != NO_CLASS_HANDLE) &&
+                                        ((objClass == NO_CLASS_HANDLE) ||
+                                         info.compCompHnd->isMoreSpecificType(objClass, fieldExactCls)))
                                     {
                                         objClass = fieldExactCls;
                                     }
