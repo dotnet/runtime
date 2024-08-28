@@ -18,9 +18,6 @@ namespace System
     {
         internal static bool IsSystemDrawingColor(Type type) => type.FullName == "System.Drawing.Color"; // Matches the behavior of IsTypeRefOrDef
 
-        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "Variant_ConvertSystemColorToOleColor")]
-        internal static partial uint ConvertSystemColorToOleColor(ObjectHandleOnStack obj);
-
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "Variant_ConvertValueTypeToRecord")]
         private static partial void ConvertValueTypeToRecord(ObjectHandleOnStack obj, out ComVariant pOle);
 
@@ -161,7 +158,7 @@ namespace System
 
                 case { } when IsSystemDrawingColor(o.GetType()):
                     // System.Drawing.Color is converted to UInt32
-                    pOle = ComVariant.Create(ColorMarshaler.ConvertToNative(o));
+                    pOle = ComVariant.Create((uint)ColorMarshaler.ConvertToNative(o));
                     break;
 
                 // DateTime, decimal handled by IConvertible case
