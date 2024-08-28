@@ -242,7 +242,7 @@ namespace System.Net.Http
                 await Task.WhenAll(
                         new Task<ITypes.IncomingResponse?>[]
                         {
-                            SendRequestAsync(outgoingRequest),
+                            SendRequestAsync(outgoingRequest, cancellationToken),
                             sendContent()
                         }
                     )
@@ -279,7 +279,8 @@ namespace System.Net.Http
         }
 
         private static async Task<ITypes.IncomingResponse?> SendRequestAsync(
-            ITypes.OutgoingRequest request
+            ITypes.OutgoingRequest request,
+            CancellationToken cancellationToken
         )
         {
             ITypes.FutureIncomingResponse future;
@@ -314,7 +315,7 @@ namespace System.Net.Http
                 }
                 else
                 {
-                    await RegisterWasiPollable(future.Subscribe()).ConfigureAwait(false);
+                    await RegisterWasiPollable(future.Subscribe(), cancellationToken).ConfigureAwait(false);
                 }
             }
         }
@@ -461,7 +462,7 @@ namespace System.Net.Http
             }
         }
 
-        private static Task RegisterWasiPollable(IPoll.Pollable pollable)
+        private static Task RegisterWasiPollable(IPoll.Pollable pollable, CancellationToken cancellationToken)
         {
             var handle = pollable.Handle;
 
@@ -470,12 +471,12 @@ namespace System.Net.Http
             pollable.Handle = 0;
             GC.SuppressFinalize(pollable);
 
-            return CallRegisterWasiPollableHandle((Thread)null!, handle);
+            return CallRegisterWasiPollableHandle((Thread)null!, handle, cancellationToken);
 
         }
 
         [UnsafeAccessor(UnsafeAccessorKind.StaticMethod, Name = "RegisterWasiPollableHandle")]
-        private static extern Task CallRegisterWasiPollableHandle(Thread t, int handle);
+        private static extern Task CallRegisterWasiPollableHandle(Thread t, int handle, CancellationToken cancellationToken);
 
         private sealed class InputStream : Stream
         {
@@ -562,7 +563,7 @@ namespace System.Net.Http
                             var buffer = result;
                             if (buffer.Length == 0)
                             {
-                                await RegisterWasiPollable(stream.Subscribe())
+                                await RegisterWasiPollable(stream.Subscribe(), cancellationToken)
                                     .ConfigureAwait(false);
                             }
                             else
@@ -699,7 +700,7 @@ namespace System.Net.Http
                     var count = (int)stream.CheckWrite();
                     if (count == 0)
                     {
-                        await RegisterWasiPollable(stream.Subscribe()).ConfigureAwait(false);
+                        await RegisterWasiPollable(stream.Subscribe(), cancellationToken).ConfigureAwait(false);
                     }
                     else if (offset == limit)
                     {

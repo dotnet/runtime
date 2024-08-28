@@ -1,0 +1,10 @@
+{
+  "type": "module",
+  "devDependencies": {
+    "@bytecodealliance/jco": "1.4.4"
+  },
+  "scripts": {
+    "transpile": "npx jco transpile --no-typescript bin/wasi-wasm/AppBundle/Wasi.Jco.Http.Sample.wasm -o bin/wasi-wasm/JCOBundle/ && powershell cp ./main.mjs ./bin/wasi-wasm/JCOBundle/main.mjs",
+    "run": "node bin/wasi-wasm/JCOBundle/main.mjs"
+  }
+}

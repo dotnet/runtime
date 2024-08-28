@@ -81,7 +81,7 @@ namespace System.Threading
 
                 // `SubscribeDuration` expects nanoseconds:
                 var pollable = MonotonicClockInterop.SubscribeDuration(shortestWaitMs * 1000 * 1000);
-                Task task = WasiEventLoop.RegisterWasiPollable(pollable);
+                Task task = WasiEventLoop.RegisterWasiPollable(pollable, CancellationToken.None);
                 task.ContinueWith(TimerHandler, TaskScheduler.Default);
             }
         }
