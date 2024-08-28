@@ -145,7 +145,10 @@ jobs:
         HelixAccessToken: $(HelixApiAccessToken)
         HelixTargetQueues: $(Queue)
         HelixPreCommands: $(HelixPreCommand)
-        Creator: $(Build.DefinitionName)
+
+        ${{ if ne(variables['System.TeamProject'], 'internal') }}:
+          Creator: $(Build.DefinitionName)
+
         WorkItemTimeout: 4:00 # 4 hours
         WorkItemDirectory: '$(WorkItemDirectory)'
         CorrelationPayloadDirectory: '$(CorrelationPayloadDirectory)'
