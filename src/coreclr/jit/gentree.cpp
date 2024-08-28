@@ -19174,10 +19174,13 @@ CORINFO_CLASS_HANDLE Compiler::gtGetClassHandle(GenTree* tree, bool* pIsExact, b
                         if (fieldType == TYP_REF)
                         {
                             objClass = fieldClass;
-                            if (!info.compCompHnd->isFieldStatic(fieldHnd))
+
+                            // See if we can make objClass more specific, e.g. objClass is _Canon[]
+                            // but we can extract the real field type from field's owner:
+                            if (op1->TypeIs(TYP_REF))
                             {
-                                // See if we can make objClass more specific, e.g. objClass is _Canon[]
-                                // but we can extract the real field type from field's owner:
+                                assert(!info.compCompHnd->isFieldStatic(fieldHnd));
+
                                 bool                 objIsExact, objIsNonNull;
                                 CORINFO_CLASS_HANDLE fieldOwnerObj = gtGetClassHandle(op1, &objIsExact, &objIsNonNull);
                                 if (fieldOwnerObj != NO_CLASS_HANDLE)
