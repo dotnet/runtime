@@ -46,7 +46,7 @@ namespace Microsoft.Interop
         public override (string managed, string native) GetIdentifiers(TypePositionInfo info)
         {
             // For this element info, index into the marshaller spans.
-            if (info == _elementInfo)
+            if (_elementInfo.PositionsEqual(info))
             {
                 return (
                     $"{_managedSpanIdentifier}[{IndexerIdentifier}]",
