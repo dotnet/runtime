@@ -120,7 +120,7 @@ class AsmOffsets
 
 #if TARGET_AMD64
 #if TARGET_UNIX
-    public const int SIZEOF__PAL_LIMITED_CONTEXT = 0xc20;
+    public const int SIZEOF__PAL_LIMITED_CONTEXT = 0xca0;
 #else // TARGET_UNIX
     public const int SIZEOF__PAL_LIMITED_CONTEXT = 0x4d0;
 #endif // TARGET_UNIX

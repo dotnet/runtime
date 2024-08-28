@@ -303,7 +303,7 @@ int minipal_getcpufeatures(void)
 
                                     if (IsApxEnabled() && apxStateSupport())
                                     {
-                                        if ((cpuidInfo[CPUID_EDX] & (1 << 19)) != 0)                            // Apx
+                                        if ((cpuidInfo[CPUID_EDX] & (1 << 21)) != 0)                            // Apx
                                         {
                                             result |= XArchIntrinsicConstants_Apx;
                                         }
