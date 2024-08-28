@@ -6281,19 +6281,25 @@ void CodeGen::genIntCastOverflowCheck(GenTreeCast* cast, const GenIntCastDesc& d
         default: // CHECK_SMALL_INT_RANGE
         {
             assert(desc.CheckKind() == GenIntCastDesc::CHECK_SMALL_INT_RANGE);
-            const int      castMaxValue = desc.CheckSmallIntMax();
-            const int      castMinValue = desc.CheckSmallIntMin();
-            const bool     isUnsigned   = castMinValue == 0;
-            const unsigned castSize     = genTypeSize(cast->gtCastType);
+            const bool     isSrcUnsigned = cast->IsUnsigned();
+            const bool     isDstUnsigned = desc.CheckSmallIntMin() == 0;
+            const unsigned castSize      = genTypeSize(cast->gtCastType);
 
-            if (isUnsigned)
+            if (isSrcUnsigned != isDstUnsigned)
             {
-                // Check if all bits above the small int are zeros
-                const auto type_size = castSize * 8;
-                GetEmitter()->emitIns_R_R_I(INS_srli, EA_4BYTE, tempReg, reg, type_size);
+                // Check the MSB of a small int
+                const auto type_size = castSize * 8 - 1;
+                GetEmitter()->emitIns_R_R_I(INS_slli, EA_4BYTE, tempReg, reg, type_size);
+                genJumpToThrowHlpBlk_la(SCK_OVERFLOW, INS_blt, REG_R0, nullptr, tempReg);
+            }
+            else if (isSrcUnsigned && isDstUnsigned)
+            {
+                // Check if upper extension_size-bits are zeros
+                const auto extension_size = (8 - castSize) * 8;
+                GetEmitter()->emitIns_R_R_I(INS_srli, EA_8BYTE, tempReg, reg, extension_size);
                 genJumpToThrowHlpBlk_la(SCK_OVERFLOW, INS_bne, tempReg, nullptr, REG_R0);
             }
-            else
+            else  // !isSrcUnsigned && !isDstUnsigned
             {
                 // Extend sign of a small int on all of the bits above it and check whether the original type was same
                 const auto extension_size = (8 - castSize) * 8;
