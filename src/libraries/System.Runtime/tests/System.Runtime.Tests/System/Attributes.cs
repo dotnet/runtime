@@ -290,7 +290,7 @@ namespace System.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/56887", TestRuntimes.Mono)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/107095", TestRuntimes.Mono)]
         public static void GetCustomAttributesOnOpenGenericBaseTypeRetrievesDerivedAttributes()
         {
             Attribute[] attributes = Attribute.GetCustomAttributes(typeof(HasGenericAttribute), typeof(GenericAttribute<>));
