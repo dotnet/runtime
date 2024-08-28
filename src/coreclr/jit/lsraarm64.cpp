@@ -1994,7 +1994,7 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                 }
                 else if (op == emitOp2 || op == emitOp3)
                 {
-                    srcCount += BuildDelayFreeUses(op, emitOp1);
+                    srcCount += BuildDelayFreeUses(op);
                 }
             }
 
