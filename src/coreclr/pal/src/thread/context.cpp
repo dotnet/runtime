@@ -317,7 +317,6 @@ typedef int __ptrace_request;
 #ifndef XSTATE_APX
 #define XSTATE_APX (19)
 #endif  // XSTATE_APX
-#endif  // HOST_AMD64
 
 #ifndef XSTATE_MASK_APX
 #define XSTATE_MASK_APX (1 << XSTATE_APX)
@@ -1240,7 +1239,7 @@ void CONTEXTFromNativeContext(const native_context_t *native, LPCONTEXT lpContex
                 _ASSERT(size == (sizeof(DWORD64) * 16));
                 memcpy_s(&lpContext->Egpr16, sizeof(DWORD64) * 16, src, sizeof(DWORD64) * 16);
 
-                lpContext->XStateFeaturesMask |= XSATE_MASK_APX;
+                lpContext->XStateFeaturesMask |= XSTATE_MASK_APX;
             }
         }
 #elif defined(HOST_ARM64)
