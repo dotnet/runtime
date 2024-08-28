@@ -267,6 +267,7 @@ namespace ILLink.Shared.TrimAnalysis
 
 					DynamicallyAccessedMemberTypes returnAnnotation = GetMemberTypesForDynamicallyAccessedMembersAttribute (method, providerIfNotMember: method.MethodReturnType);
 					if (returnAnnotation != DynamicallyAccessedMemberTypes.None && !IsTypeInterestingForDataflow (method.ReturnType)) {
+						returnAnnotation = DynamicallyAccessedMemberTypes.None;
 						_context.LogWarning (method, DiagnosticId.DynamicallyAccessedMembersOnMethodReturnValueCanOnlyApplyToTypesOrStrings, method.GetDisplayName ());
 					}
 
@@ -710,7 +711,7 @@ namespace ILLink.Shared.TrimAnalysis
 
 #pragma warning disable CA1822 // Mark members as static - Should be an instance method for consistency
 		internal partial MethodReturnValue GetMethodReturnValue (MethodProxy method, bool isNewObj, DynamicallyAccessedMemberTypes dynamicallyAccessedMemberTypes)
-			=> MethodReturnValue.Create (method, isNewObj, dynamicallyAccessedMemberTypes);
+			=> MethodReturnValue.Create (method, isNewObj, dynamicallyAccessedMemberTypes, _context);
 #pragma warning restore CA1822 // Mark members as static
 
 		internal partial MethodReturnValue GetMethodReturnValue (MethodProxy method, bool isNewObj)
@@ -726,7 +727,7 @@ namespace ILLink.Shared.TrimAnalysis
 
 #pragma warning disable CA1822 // Mark members as static - Should be an instance method for consistency
 		internal partial MethodParameterValue GetMethodParameterValue (ParameterProxy param, DynamicallyAccessedMemberTypes dynamicallyAccessedMemberTypes)
-			=> new (param.ParameterType, param, dynamicallyAccessedMemberTypes);
+			=> new (param.ParameterType, param, dynamicallyAccessedMemberTypes, _context);
 #pragma warning restore CA1822 // Mark members as static
 
 		internal partial MethodParameterValue GetMethodParameterValue (ParameterProxy param)
@@ -737,7 +738,7 @@ namespace ILLink.Shared.TrimAnalysis
 		{
 			if (!method.HasImplicitThis ())
 				throw new InvalidOperationException ($"Cannot get 'this' parameter of method {method.GetDisplayName ()} with no 'this' parameter.");
-			return new MethodParameterValue (method.Method.DeclaringType, new ParameterProxy (method, (ParameterIndex) 0), dynamicallyAccessedMemberTypes);
+			return new MethodParameterValue (method.Method.DeclaringType, new ParameterProxy (method, (ParameterIndex) 0), dynamicallyAccessedMemberTypes, _context);
 		}
 #pragma warning restore CA1822 // Mark members as static
 
@@ -755,7 +756,7 @@ namespace ILLink.Shared.TrimAnalysis
 			=> field.Name switch {
 				"EmptyTypes" when field.DeclaringType.IsTypeOf (WellKnownType.System_Type) => ArrayValue.Create (0, field.DeclaringType),
 				"Empty" when field.DeclaringType.IsTypeOf (WellKnownType.System_String) => new KnownStringValue (string.Empty),
-				_ => new FieldValue (field, GetFieldAnnotation (field))
+				_ => new FieldValue (field, GetFieldAnnotation (field), _context)
 			};
 
 		internal SingleValue GetTypeValueFromGenericArgument (TypeReference genericArgument)
@@ -769,18 +770,18 @@ namespace ILLink.Shared.TrimAnalysis
 					var innerGenericArgument = (genericArgument as IGenericInstance)?.GenericArguments.FirstOrDefault ();
 					switch (innerGenericArgument) {
 					case GenericParameter gp:
-						return new NullableValueWithDynamicallyAccessedMembers (genericArgumentType,
+						return new NullableValueWithDynamicallyAccessedMembers (new (genericArgumentType, _context),
 							new GenericParameterValue (gp, _context.Annotations.FlowAnnotations.GetGenericParameterAnnotation (gp)));
 
 					case TypeReference underlyingType:
 						if (underlyingType.ResolveToTypeDefinition (_context) is TypeDefinition underlyingTypeDefinition)
-							return new NullableSystemTypeValue (genericArgumentType, new SystemTypeValue (underlyingTypeDefinition));
+							return new NullableSystemTypeValue (new (genericArgumentType, _context), new SystemTypeValue (new (underlyingTypeDefinition, _context)));
 						else
 							return UnknownValue.Instance;
 					}
 				}
 				// All values except for Nullable<T>, including Nullable<> (with no type arguments)
-				return new SystemTypeValue (genericArgumentType);
+				return new SystemTypeValue (new (genericArgumentType, _context));
 			} else {
 				return UnknownValue.Instance;
 			}
