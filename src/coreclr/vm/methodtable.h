@@ -293,15 +293,8 @@ struct GenericsDictInfo
 
     // Number of type parameters (NOT including those of superclasses).
     WORD   m_wNumTyPars;
-    template<typename T> friend struct ::cdac_data;
 };  // struct GenericsDictInfo
 typedef DPTR(GenericsDictInfo) PTR_GenericsDictInfo;
-
-template<>
-struct cdac_data<GenericsDictInfo>
-{
-    static constexpr size_t NumTypeArgs = offsetof(GenericsDictInfo, m_wNumTyPars);
-};
 
 // These various statics structures exist directly before the MethodTableAuxiliaryData
 
