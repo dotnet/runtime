@@ -84,9 +84,9 @@ internal sealed unsafe partial class MsQuicApi
         if (OperatingSystem.IsWindows())
         {
 #pragma warning disable IL3000 // Avoid accessing Assembly file path when publishing as a single file
-            // Windows ships msquic in the assembly directory next to System.Net.Quic, so load that
-            // for single-file deployments, the assembly location is an empty string so we fall back
-            // to AppContext.BaseDirectory which is the directory containing the single-file executable
+            // Windows ships msquic in the assembly directory next to System.Net.Quic, so load that.
+            // For single-file deployments, the assembly location is an empty string so we fall back
+            // to AppContext.BaseDirectory which is the directory containing the single-file executable.
             string path = typeof(MsQuicApi).Assembly.Location is string assemblyLocation && !string.IsNullOrEmpty(assemblyLocation)
                 ? System.IO.Path.GetDirectoryName(assemblyLocation)!
                 : AppContext.BaseDirectory;
