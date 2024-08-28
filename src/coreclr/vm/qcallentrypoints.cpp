@@ -327,6 +327,7 @@ static const Entry s_QCall[] =
     DllImportEntry(MngdSafeArrayMarshaler_ClearNative)
     DllImportEntry(Variant_ConvertSystemColorToOleColor)
     DllImportEntry(Variant_ConvertOleColorToSystemColor)
+    DllImportEntry(Variant_ConvertValueTypeToRecord)
 #endif // FEATURE_COMINTEROP
     DllImportEntry(NativeLibrary_LoadFromPath)
     DllImportEntry(NativeLibrary_LoadByName)
@@ -425,11 +426,18 @@ static const Entry s_QCall[] =
     DllImportEntry(StubHelpers_CreateCustomMarshalerHelper)
     DllImportEntry(StubHelpers_SetStringTrailByte)
     DllImportEntry(StubHelpers_ThrowInteropParamException)
+    DllImportEntry(StubHelpers_MarshalToManagedVaList)
+    DllImportEntry(StubHelpers_MarshalToUnmanagedVaList)
+    DllImportEntry(StubHelpers_ValidateObject)
+    DllImportEntry(StubHelpers_ValidateByref)
 #ifdef PROFILING_SUPPORTED
     DllImportEntry(StubHelpers_ProfilerBeginTransitionCallback)
     DllImportEntry(StubHelpers_ProfilerEndTransitionCallback)
 #endif
+    DllImportEntry(StubHelpers_GetHRExceptionObject)
 #if defined(FEATURE_COMINTEROP)
+    DllImportEntry(StubHelpers_GetCOMHRExceptionObject)
+    DllImportEntry(StubHelpers_GetCOMIPFromRCWSlow)
     DllImportEntry(ObjectMarshaler_ConvertToNative)
     DllImportEntry(ObjectMarshaler_ConvertToManaged)
     DllImportEntry(InterfaceMarshaler_ConvertToNative)

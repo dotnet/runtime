@@ -56,7 +56,7 @@ namespace Mono.Linker.Dataflow
 				TypeDefinition? referencedType = ((TypeReference) argument.Value).ResolveToTypeDefinition (_context);
 				return referencedType == null
 					? UnknownValue.Instance
-					: new SystemTypeValue (referencedType, _context);
+					: new SystemTypeValue (new (referencedType, _context), _context);
 			}
 
 			if (argument.Type.MetadataType == MetadataType.String)
@@ -69,7 +69,7 @@ namespace Mono.Linker.Dataflow
 		void RequireDynamicallyAccessedMembers (in DiagnosticContext diagnosticContext, in MultiValue value, ValueWithDynamicallyAccessedMembers targetValue)
 		{
 			var reflectionMarker = new ReflectionMarker (_context, _markStep, enabled: true);
-			var requireDynamicallyAccessedMembersAction = new RequireDynamicallyAccessedMembersAction (reflectionMarker, diagnosticContext);
+			var requireDynamicallyAccessedMembersAction = new RequireDynamicallyAccessedMembersAction (_context, reflectionMarker, diagnosticContext);
 			requireDynamicallyAccessedMembersAction.Invoke (value, targetValue);
 		}
 	}

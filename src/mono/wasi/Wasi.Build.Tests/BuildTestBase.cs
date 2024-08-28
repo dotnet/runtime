@@ -693,6 +693,16 @@ namespace Wasm.Build.Tests
             .MultiplyWithSingleArgs(true, false) /*aot*/
             .UnwrapItemsAsArrays();
 
+        public static IEnumerable<object?[]> TestDataForConsolePublishAndRunRelease() =>
+            new IEnumerable<object?>[]
+            {
+                new object?[] { true },
+                new object?[] { false }
+            }
+            .AsEnumerable()
+            .MultiplyWithSingleArgs(true, false) /*aot*/
+            .UnwrapItemsAsArrays();
+
         protected CommandResult RunWithoutBuild(string config, string id, bool enableHttp = false)
         {
             // wasmtime --wasi http is necessary because the default dotnet.wasm (without native rebuild depends on wasi:http world)

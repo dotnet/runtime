@@ -41,7 +41,7 @@ namespace ILLink.Shared.TrimAnalysis
 			_diagnosticContext = diagnosticContext;
 			_callingMethodDefinition = callingMethodDefinition;
 			_annotations = context.Annotations.FlowAnnotations;
-			_requireDynamicallyAccessedMembersAction = new (reflectionMarker, diagnosticContext);
+			_requireDynamicallyAccessedMembersAction = new (context, reflectionMarker, diagnosticContext);
 		}
 
 		private partial bool TryHandleIntrinsic (
@@ -100,6 +100,11 @@ namespace ILLink.Shared.TrimAnalysis
 			// GetType()
 			//
 			case IntrinsicId.Object_GetType: {
+					if (instanceValue.IsEmpty ()) {
+						AddReturnValue (MultiValueLattice.Top);
+						break;
+					}
+
 					foreach (var valueNode in instanceValue.AsEnumerable ()) {
 						// Note that valueNode can be statically typed in IL as some generic argument type.
 						// For example:
@@ -150,7 +155,7 @@ namespace ILLink.Shared.TrimAnalysis
 							// This can be seen a little bit as a violation of the annotation, but we already have similar cases
 							// where a parameter is annotated and if something in the method sets a specific known type to it
 							// we will also make it just work, even if the annotation doesn't match the usage.
-							AddReturnValue (GetSystemTypeValue (staticType));
+							AddReturnValue (new SystemTypeValue (new (staticType, _context), _context));
 						} else if (staticTypeDef.IsTypeOf ("System", "Enum")) {
 							AddReturnValue (_context.Annotations.FlowAnnotations.GetMethodReturnValue (calledMethod, _isNewObj, DynamicallyAccessedMemberTypes.PublicFields));
 						} else {
@@ -215,13 +220,13 @@ namespace ILLink.Shared.TrimAnalysis
 		private partial IEnumerable<SystemTypeValue> GetNestedTypesOnType (TypeProxy type, string name, BindingFlags? bindingFlags)
 		{
 			foreach (var nestedType in type.Type.GetNestedTypesOnType (_context, t => t.Name == name, bindingFlags))
-				yield return GetSystemTypeValue (new TypeProxy (nestedType));
+				yield return new SystemTypeValue (new TypeProxy (nestedType, _context), _context);
 		}
 
 		private partial bool TryGetBaseType (TypeProxy type, out TypeProxy? baseType)
 		{
 			if (type.Type.ResolveToTypeDefinition (_context)?.BaseType is TypeReference baseTypeRef && _context.TryResolve (baseTypeRef) is TypeDefinition baseTypeDefinition) {
-				baseType = new TypeProxy (baseTypeDefinition);
+				baseType = new TypeProxy (baseTypeDefinition, _context);
 				return true;
 			}
 
@@ -250,7 +255,7 @@ namespace ILLink.Shared.TrimAnalysis
 				return false;
 			}
 
-			resolvedType = new TypeProxy (foundType);
+			resolvedType = new TypeProxy (foundType, _context);
 			return true;
 		}
 

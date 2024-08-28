@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
+using System.Reflection;
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
 using Mono.Linker.Tests.Cases.Expectations.Helpers;
 
@@ -21,20 +22,19 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			EnumConstraintSatisfiesPublicFields.Test ();
 			InstantiatedTypeParameterAsSource.Test ();
 			EnumerationOverInstances.Test ();
+			NullValue.Test ();
+			NoValue.Test ();
+			UnknownValue.Test ();
 		}
 
 		class SealedConstructorAsSource
 		{
-			[KeptMember (".ctor()")]
 			public class Base
 			{
 			}
 
-			[KeptMember (".ctor()")]
-			[KeptBaseType (typeof (Base))]
 			public sealed class Derived : Base
 			{
-				[KeptAttributeAttribute (typeof (RequiresUnreferencedCodeAttribute))]
 				[RequiresUnreferencedCode (nameof (Method))]
 				public void Method () { }
 			}
@@ -46,48 +46,35 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			}
 		}
 
-		[Kept]
 		class InstantiatedGenericAsSource
 		{
-			[Kept]
-			[KeptAttributeAttribute (typeof (DynamicallyAccessedMembersAttribute))]
 			[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)]
 			class Generic<T> {
-				[Kept]
 				[ExpectedWarning ("IL2112")]
-				[KeptAttributeAttribute (typeof (RequiresUnreferencedCodeAttribute))]
 				[RequiresUnreferencedCode (nameof (KeptForMethodParameter))]
 				public void KeptForMethodParameter () {}
 
-				[Kept]
 				[ExpectedWarning ("IL2112")]
-				[KeptAttributeAttribute (typeof (RequiresUnreferencedCodeAttribute))]
 				[RequiresUnreferencedCode (nameof (KeptForField))]
 				public void KeptForField () {}
 
-				[Kept]
 				[ExpectedWarning ("IL2112")]
-				[KeptAttributeAttribute (typeof (RequiresUnreferencedCodeAttribute))]
 				[RequiresUnreferencedCode (nameof (KeptJustBecause))]
 				public void KeptJustBecause () {}
 			}
 
-			[Kept]
 			static void TestMethodParameter (Generic<int> instance)
 			{
 				instance.GetType ().GetMethod ("KeptForMethodParameter");
 			}
 
-			[Kept]
 			static Generic<int> field = null;
 
-			[Kept]
 			static void TestField ()
 			{
 				field.GetType ().GetMethod ("KeptForField");
 			}
 
-			[Kept]
 			public static void Test ()
 			{
 				TestMethodParameter (null);
@@ -95,69 +82,51 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			}
 		}
 
-		[Kept]
 		class EnumTypeSatisfiesPublicFields
 		{
-			[Kept]
 			static void ParameterType (Enum instance)
 			{
 				instance.GetType ().RequiresPublicFields ();
 			}
 
-			[Kept]
 			class FieldType
 			{
-				[Kept]
 				Enum field;
 
-				[Kept]
 				public FieldType (Enum instance) => field = instance;
 
-				[Kept]
 				public void Test ()
 				{
 					field.GetType ().RequiresPublicFields ();
 				}
 			}
 
-			[KeptMember ("value__")]
 			enum EnumType
 			{
-				[Kept]
 				Value
 			}
 
-			[Kept]
 			static Enum ReturnType ()
 			{
 				return EnumType.Value;
 			}
 
-			[Kept]
 			static void TestReturnType ()
 			{
 				ReturnType ().GetType ().RequiresPublicFields ();
 			}
 
-			[Kept]
 			static void OutParameter (out Enum value)
 			{
 				value = EnumType.Value;
 			}
 
-			[Kept]
-			// Analyzer doesn't assign a value to the out parameter after calling the OutParameter method,
-			// so when it looks up the value of the local 'value', it returns an empty value, and the
-			// GetType intrinsic handling can't see that the out param satisfies the public fields requirement.
-			// Similar for the other cases below.
-			[ExpectedWarning ("IL2072", Tool.Analyzer, "https://github.com/dotnet/runtime/issues/101734")]
 			static void TestOutParameter ()
 			{
 				OutParameter (out var value);
 				value.GetType ().RequiresPublicFields ();
 			}
 
-			[Kept]
 			public static void Test ()
 			{
 				ParameterType (EnumType.Value);
@@ -167,22 +136,17 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			}
 		}
 
-		[Kept]
 		class EnumConstraintSatisfiesPublicFields
 		{
-			[Kept]
 			static void MethodGenericParameterAsParameter<T> (T instance) where T : Enum
 			{
 				instance.GetType ().RequiresPublicFields ();
 			}
 
-			[Kept]
 			class TypeGenericParameterAsField<T> where T : Enum
 			{
-				[Kept]
 				public static T field;
 
-				[Kept]
 				public static void TestAccessFromType ()
 				{
 					field.GetType ().RequiresPublicFields ();
@@ -194,32 +158,26 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 				TypeGenericParameterAsField<Enum>.field.GetType ().RequiresPublicFields ();
 			}
 
-			[Kept]
 			class TypeGenericParameterAsParameter<T> where T : Enum
 			{
-				[Kept]
 				public static void Method (T instance)
 				{
 					instance.GetType ().RequiresPublicFields ();
 				}
 
-				[Kept]
 				public static void Test ()
 				{
 					Method (default);
 				}
 			}
 
-			[Kept]
 			class TypeGenericParameterAsReturnType<T> where T : Enum
 			{
-				[Kept]
 				public static T Method ()
 				{
 					return default;
 				}
 
-				[Kept]
 				public static void TestAccessFromType ()
 				{
 					Method ().GetType ().RequiresPublicFields ();
@@ -231,17 +189,13 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 				TypeGenericParameterAsReturnType<Enum>.Method ().GetType ().RequiresPublicFields ();
 			}
 
-			[Kept]
 			class TypeGenericParameterAsOutParam<T> where T : Enum
 			{
-				[Kept]
 				public static void Method (out T instance)
 				{
 					instance = default;
 				}
 
-				[Kept]
-				[ExpectedWarning ("IL2072", Tool.Analyzer, "https://github.com/dotnet/runtime/issues/101734")]
 				public static void TestAccessFromType ()
 				{
 					Method (out var instance);
@@ -249,33 +203,27 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 				}
 			}
 
-			[ExpectedWarning ("IL2072", Tool.Analyzer, "https://github.com/dotnet/runtime/issues/101734")]
 			static void TestAccessTypeGenericParameterAsOutParam ()
 			{
 				TypeGenericParameterAsOutParam<Enum>.Method (out var instance);
 				instance.GetType ().RequiresPublicFields ();
 			}
 
-			[KeptMember ("value__")]
 			enum EnumType
 			{
-				[Kept]
 				Value
 			}
 
-			[Kept]
 			static T MethodGenericParameterAsReturnType<T> () where T : Enum
 			{
 				return default;
 			}
 
-			[Kept]
 			static void TestMethodGenericParameterAsReturnType ()
 			{
 				MethodGenericParameterAsReturnType<Enum> ().GetType ().RequiresPublicFields ();
 			}
 
-			[Kept]
 			public static void Test ()
 			{
 				TypeGenericParameterAsParameter<Enum>.Test ();
@@ -293,22 +241,33 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 		class InstantiatedTypeParameterAsSource
 		{
 			[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicFields)]
-			class Annotated {}
+			class AnnotatedPublicFields {}
 
 			static T GenericReturnType<T> () => default;
 
 			static void TestGenericMethodReturnType ()
 			{
-				GenericReturnType<Annotated> ().GetType ().RequiresPublicFields ();
+				GenericReturnType<AnnotatedPublicFields> ().GetType ().RequiresPublicFields ();
 			}
 
 			static void GenericOutParameter<T> (out T value) => value = default;
 
-			[UnexpectedWarning ("IL2072", Tool.Analyzer, "https://github.com/dotnet/runtime/issues/101734")]
 			static void TestGenericMethodOutParameter ()
 			{
-				GenericOutParameter (out Annotated value);
+				GenericOutParameter (out AnnotatedPublicFields value);
 				value.GetType ().RequiresPublicFields ();
+			}
+
+			// Analyzer doesn't assign a value to the out parameter after calling the OutParameter method,
+			// so when it looks up the value of the local 'value', it returns an empty value, and the
+			// GetType intrinsic handling propagates the empty value so the analyzer
+			// can't see that the out parameter violates the public methods requirement.
+			// Similar for the other cases below.
+			[ExpectedWarning ("IL2072", Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/runtime/issues/101734")]
+			static void TestGenericMethodOutParameterMismatch ()
+			{
+				GenericOutParameter (out AnnotatedPublicFields value);
+				value.GetType ().RequiresPublicMethods ();
 			}
 
 			class Generic<T>
@@ -334,58 +293,73 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
 			static void TestGenericClassReturnType ()
 			{
-				Generic<Annotated>.ReturnType ().GetType ().RequiresPublicFields ();
+				Generic<AnnotatedPublicFields>.ReturnType ().GetType ().RequiresPublicFields ();
 			}
 
-			[UnexpectedWarning ("IL2072", Tool.Analyzer, "https://github.com/dotnet/runtime/issues/101734")]
 			static void TestGenericClassOutParameter ()
 			{
-				Generic<Annotated>.OutParameter (out var value);
+				Generic<AnnotatedPublicFields>.OutParameter (out var value);
 				value.GetType ().RequiresPublicFields ();
+			}
+
+			[ExpectedWarning ("IL2072", Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/runtime/issues/101734")]
+			static void TestGenericClassOutParameterMismatch ()
+			{
+				Generic<AnnotatedPublicFields>.OutParameter (out var value);
+				value.GetType ().RequiresPublicMethods ();
 			}
 
 			static void TestGenericClassField ()
 			{
-				Generic<Annotated>.field.GetType ().RequiresPublicFields ();
+				Generic<AnnotatedPublicFields>.field.GetType ().RequiresPublicFields ();
 			}
 
 			static void TestGenericClassProperty ()
 			{
-				Generic<Annotated>.Property.GetType ().RequiresPublicFields ();
+				Generic<AnnotatedPublicFields>.Property.GetType ().RequiresPublicFields ();
 			}
 
 			static void TestNestedGenericClassReturnType ()
 			{
-				Generic<Annotated>.Nested.ReturnType ().GetType ().RequiresPublicFields ();
+				Generic<AnnotatedPublicFields>.Nested.ReturnType ().GetType ().RequiresPublicFields ();
 			}
 
-			[UnexpectedWarning ("IL2072", Tool.Analyzer, "https://github.com/dotnet/runtime/issues/101734")]
 			static void TestNestedGenericClassOutParameter ()
 			{
-				Generic<Annotated>.Nested.OutParameter (out var value);
+				Generic<AnnotatedPublicFields>.Nested.OutParameter (out var value);
 				value.GetType ().RequiresPublicFields ();
+			}
+
+			[ExpectedWarning ("IL2072", Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/runtime/issues/101734")]
+			static void TestNestedGenericClassOutParameterMismatch ()
+			{
+				Generic<AnnotatedPublicFields>.Nested.OutParameter (out var value);
+				value.GetType ().RequiresPublicMethods ();
 			}
 
 			static void TestNestedGenericClassField ()
 			{
-				Generic<Annotated>.Nested.field.GetType ().RequiresPublicFields ();
+				Generic<AnnotatedPublicFields>.Nested.field.GetType ().RequiresPublicFields ();
 			}
 
 			static void TestNestedGenericClassProperty ()
 			{
-				Generic<Annotated>.Nested.Property.GetType ().RequiresPublicFields ();
+				Generic<AnnotatedPublicFields>.Nested.Property.GetType ().RequiresPublicFields ();
 			}
 
 			public static void Test ()
 			{
 				TestGenericMethodReturnType ();
 				TestGenericMethodOutParameter ();
+				TestGenericMethodOutParameterMismatch ();
 				TestGenericClassReturnType ();
 				TestGenericClassOutParameter ();
+				TestGenericClassOutParameterMismatch ();
 				TestGenericClassField ();
 				TestGenericClassProperty ();
 				TestNestedGenericClassReturnType ();
 				TestNestedGenericClassOutParameter ();
+				TestNestedGenericClassOutParameterMismatch ();
 				TestNestedGenericClassField ();
 				TestNestedGenericClassProperty ();
 			}
@@ -410,6 +384,65 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 				foreach (var instance in GetInstances ()) {
 					instance.GetType ().GetMethod ("Method");
 				}
+			}
+		}
+
+		class NullValue
+		{
+			class TestType
+			{
+			}
+
+			[ExpectedWarning ("IL2072", nameof (DataFlowTypeExtensions.RequiresAll) + "(Type)", nameof (Object.GetType) + "()")]
+			public static void Test ()
+			{
+				TestType nullInstance = null;
+				// Even though this throws at runtime, we warn about the return value of GetType
+				nullInstance.GetType ().RequiresAll ();
+			}
+		}
+
+		class NoValue
+		{
+			[ExpectedWarning ("IL2072", nameof (DataFlowTypeExtensions.RequiresAll) + "(Type)", nameof (Object.GetType) + "()")]
+			static void TestGetTypeOfType ()
+			{
+				Type t = null;
+				Type noValue = Type.GetTypeFromHandle (t.TypeHandle);
+				// Even though the above throws at runtime, we warn about the return value of GetType.
+				// This doesn't go through the intrinsic handling because this goes to the newslot method Type.GetType,
+				// instead of the intrinsically handled object.GetType.
+				noValue.GetType ().RequiresAll ();
+			}
+
+			static void TestGetTypeOfMethod ()
+			{
+				Type t = null;
+				MethodInfo noValue = t.GetMethod ("Method");
+				noValue.GetType ().RequiresAll ();
+			}
+
+			public static void Test ()
+			{
+				TestGetTypeOfType ();
+				TestGetTypeOfMethod ();
+			}
+		}
+
+		class UnknownValue
+		{
+			class TestType
+			{
+			}
+
+			static TestType GetInstance () => new TestType ();
+
+			[ExpectedWarning ("IL2072", nameof (DataFlowTypeExtensions.RequiresAll) + "(Type)", nameof (Object.GetType) + "()")]
+			public static void Test ()
+			{
+				TestType unknownValue = GetInstance ();
+				// Should warn about the return value of GetType
+				unknownValue.GetType ().RequiresAll ();
 			}
 		}
 	}

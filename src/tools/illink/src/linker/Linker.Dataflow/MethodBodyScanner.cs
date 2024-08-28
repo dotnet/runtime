@@ -791,12 +791,12 @@ namespace Mono.Linker.Dataflow
 				if (typeReference is IGenericInstance instance && resolvedDefinition.IsTypeOf (WellKnownType.System_Nullable_T)) {
 					switch (instance.GenericArguments[0]) {
 					case GenericParameter genericParam:
-						var nullableDam = new RuntimeTypeHandleForNullableValueWithDynamicallyAccessedMembers (new TypeProxy (resolvedDefinition),
+						var nullableDam = new RuntimeTypeHandleForNullableValueWithDynamicallyAccessedMembers (new TypeProxy (resolvedDefinition, _context),
 							new RuntimeTypeHandleForGenericParameterValue (genericParam));
 						currentStack.Push (new StackSlot (nullableDam));
 						return;
 					case TypeReference underlyingTypeReference when ResolveToTypeDefinition (underlyingTypeReference) is TypeDefinition underlyingType:
-						var nullableType = new RuntimeTypeHandleForNullableSystemTypeValue (new TypeProxy (resolvedDefinition), new SystemTypeValue (underlyingType, _context));
+						var nullableType = new RuntimeTypeHandleForNullableSystemTypeValue (new TypeProxy (resolvedDefinition, _context), new SystemTypeValue (new (underlyingType, _context), _context));
 						currentStack.Push (new StackSlot (nullableType));
 						return;
 					default:
@@ -804,7 +804,7 @@ namespace Mono.Linker.Dataflow
 						return;
 					}
 				} else {
-					var typeHandle = new RuntimeTypeHandleValue (new TypeProxy (resolvedDefinition));
+					var typeHandle = new RuntimeTypeHandleValue (new TypeProxy (resolvedDefinition, _context));
 					currentStack.Push (new StackSlot (typeHandle));
 					return;
 				}
