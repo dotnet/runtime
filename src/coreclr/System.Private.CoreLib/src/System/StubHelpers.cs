@@ -1594,10 +1594,10 @@ namespace System.StubHelpers
 #if FEATURE_COMINTEROP
     internal static class ColorMarshaler
     {
-        private static readonly MethodInvoker OleColorToDrawingColorMethod;
-        private static readonly MethodInvoker DrawingColorToOleColorMethod;
+        private static readonly MethodInvoker s_oleColorToDrawingColorMethod;
+        private static readonly MethodInvoker s_drawingColorToOleColorMethod;
 
-        internal static readonly IntPtr ColorType;
+        internal static readonly IntPtr s_colorType;
 
 #pragma warning disable CA1810 // explicit static cctor
         static ColorMarshaler()
@@ -1605,21 +1605,21 @@ namespace System.StubHelpers
             Type colorTranslatorType = Type.GetType("System.Drawing.ColorTranslator, System.Drawing.Primitives", throwOnError: true)!;
             Type colorType = Type.GetType("System.Drawing.Color, System.Drawing.Primitives", throwOnError: true)!;
 
-            ColorType = colorType.TypeHandle.Value;
+            s_colorType = colorType.TypeHandle.Value;
 
-            OleColorToDrawingColorMethod = MethodInvoker.Create(colorTranslatorType.GetMethod("FromOle", [typeof(int)])!);
-            DrawingColorToOleColorMethod = MethodInvoker.Create(colorTranslatorType.GetMethod("ToOle", [colorType])!);
+            s_oleColorToDrawingColorMethod = MethodInvoker.Create(colorTranslatorType.GetMethod("FromOle", [typeof(int)])!);
+            s_drawingColorToOleColorMethod = MethodInvoker.Create(colorTranslatorType.GetMethod("ToOle", [colorType])!);
         }
 #pragma warning restore CA1810 // explicit static cctor
 
         internal static object ConvertToManaged(int managedColor)
         {
-            return OleColorToDrawingColorMethod.Invoke(null, managedColor)!;
+            return s_oleColorToDrawingColorMethod.Invoke(null, managedColor)!;
         }
 
         internal static int ConvertToNative(object? managedColor)
         {
-            return (int)DrawingColorToOleColorMethod.Invoke(null, managedColor)!;
+            return (int)s_drawingColorToOleColorMethod.Invoke(null, managedColor)!;
         }
     }
 #endif
