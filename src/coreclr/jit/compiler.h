@@ -8008,9 +8008,9 @@ protected:
 #endif
     AssertionIndex*            optComplementaryAssertionMap;
     JitExpandArray<ASSERT_TP>* optAssertionDep = nullptr; // table that holds dependent assertions (assertions
-                                                // using the value of a local var) for each local var
-    AssertionDsc*  optAssertionTabPrivate;      // table that holds info about assertions
-    AssertionIndex optAssertionCount = 0;           // total number of assertions in the assertion table
+                                                          // using the value of a local var) for each local var
+    AssertionDsc*  optAssertionTabPrivate;                // table that holds info about assertions
+    AssertionIndex optAssertionCount = 0;                 // total number of assertions in the assertion table
     AssertionIndex optMaxAssertionCount;
     bool           optCrossBlockLocalAssertionProp;
     unsigned       optAssertionOverflow;
@@ -8667,11 +8667,11 @@ public:
     CallSiteDebugInfoTable*                                            genCallSite2DebugInfoMap;
 
     unsigned    genReturnLocal = BAD_VAR_NUM; // Local number for the return value when applicable.
-    BasicBlock* genReturnBB = nullptr;    // jumped to when not optimizing for speed.
+    BasicBlock* genReturnBB    = nullptr;     // jumped to when not optimizing for speed.
 
 #ifdef SWIFT_SUPPORT
     unsigned genReturnErrorLocal = BAD_VAR_NUM; // Local number for the Swift error value when applicable.
-#endif                            // SWIFT_SUPPORT
+#endif                                          // SWIFT_SUPPORT
 
     // The following properties are part of CodeGenContext.  Getters are provided here for
     // convenience and backward compatibility, but the properties can only be set by invoking
@@ -9894,22 +9894,22 @@ public:
 
     InlineResult* compInlineResult; // The result of importing the inlinee method.
 
-    bool compDoAggressiveInlining = false;     // If true, mark every method as CORINFO_FLG_FORCEINLINE
-    bool compJmpOpUsed = false;                // Does the method do a JMP
-    bool compLongUsed = false;                 // Does the method use TYP_LONG
-    bool compFloatingPointUsed = false;        // Does the method use TYP_FLOAT or TYP_DOUBLE
-    bool compTailCallUsed = false;             // Does the method do a tailcall
-    bool compTailPrefixSeen = false;           // Does the method IL have tail. prefix
-    bool compLocallocSeen = false;             // Does the method IL have localloc opcode
-    bool compLocallocUsed = false;             // Does the method use localloc.
-    bool compLocallocOptimized = false;        // Does the method have an optimized localloc
-    bool compQmarkUsed = false;                // Does the method use GT_QMARK/GT_COLON
-    bool compQmarkRationalized = false;        // Is it allowed to use a GT_QMARK/GT_COLON node.
-    bool compHasBackwardJump = false;          // Does the method (or some inlinee) have a lexically backwards jump?
+    bool compDoAggressiveInlining     = false; // If true, mark every method as CORINFO_FLG_FORCEINLINE
+    bool compJmpOpUsed                = false; // Does the method do a JMP
+    bool compLongUsed                 = false; // Does the method use TYP_LONG
+    bool compFloatingPointUsed        = false; // Does the method use TYP_FLOAT or TYP_DOUBLE
+    bool compTailCallUsed             = false; // Does the method do a tailcall
+    bool compTailPrefixSeen           = false; // Does the method IL have tail. prefix
+    bool compLocallocSeen             = false; // Does the method IL have localloc opcode
+    bool compLocallocUsed             = false; // Does the method use localloc.
+    bool compLocallocOptimized        = false; // Does the method have an optimized localloc
+    bool compQmarkUsed                = false; // Does the method use GT_QMARK/GT_COLON
+    bool compQmarkRationalized        = false; // Is it allowed to use a GT_QMARK/GT_COLON node.
+    bool compHasBackwardJump          = false; // Does the method (or some inlinee) have a lexically backwards jump?
     bool compHasBackwardJumpInHandler = false; // Does the method have a lexically backwards jump in a handler?
-    bool compSwitchedToOptimized = false;      // Codegen initially was Tier0 but jit switched to FullOpts
-    bool compSwitchedToMinOpts = false;        // Codegen initially was Tier1/FullOpts but jit switched to MinOpts
-    bool compSuppressedZeroInit = false;       // There are vars with lvSuppressedZeroInit set
+    bool compSwitchedToOptimized      = false; // Codegen initially was Tier0 but jit switched to FullOpts
+    bool compSwitchedToMinOpts        = false; // Codegen initially was Tier1/FullOpts but jit switched to MinOpts
+    bool compSuppressedZeroInit       = false; // There are vars with lvSuppressedZeroInit set
 
     // NOTE: These values are only reliable after
     //       the importing is completely finished.
@@ -9918,33 +9918,33 @@ public:
     // State information - which phases have completed?
     // These are kept together for easy discoverability
 
-    bool    compAllowStress = true;
-    bool    compCodeGenDone = false;
-    int64_t compNumStatementLinksTraversed = 0; // # of links traversed while doing debug checks
-    bool    fgNormalizeEHDone = false;              // Has the flowgraph EH normalization phase been done?
-    size_t  compSizeEstimate;               // The estimated size of the method as per `gtSetEvalOrder`.
-    size_t  compCycleEstimate;              // The estimated cycle count of the method as per `gtSetEvalOrder`
+    bool    compAllowStress                = true;
+    bool    compCodeGenDone                = false;
+    int64_t compNumStatementLinksTraversed = 0;     // # of links traversed while doing debug checks
+    bool    fgNormalizeEHDone              = false; // Has the flowgraph EH normalization phase been done?
+    size_t  compSizeEstimate;                       // The estimated size of the method as per `gtSetEvalOrder`.
+    size_t  compCycleEstimate;                      // The estimated cycle count of the method as per `gtSetEvalOrder`
     bool    compPoisoningAnyImplicitByrefs = false; // Importer inserted IR before returns to poison implicit byrefs
 
 #endif // DEBUG
 
     bool fgLocalVarLivenessDone = false; // Note that this one is used outside of debug.
     bool fgLocalVarLivenessChanged;
-    bool fgIsDoingEarlyLiveness = false;
-    bool fgDidEarlyLiveness = false;
+    bool fgIsDoingEarlyLiveness         = false;
+    bool fgDidEarlyLiveness             = false;
     bool compPostImportationCleanupDone = false;
-    bool compLSRADone = false;
-    bool compRationalIRForm = false;
+    bool compLSRADone                   = false;
+    bool compRationalIRForm             = false;
 
     bool compUsesThrowHelper = false; // There is a call to a THROW_HELPER for the compiled method.
 
-    bool compGeneratingProlog = false;
-    bool compGeneratingEpilog = false;
+    bool compGeneratingProlog       = false;
+    bool compGeneratingEpilog       = false;
     bool compGeneratingUnwindProlog = false;
     bool compGeneratingUnwindEpilog = false;
-    bool compNeedsGSSecurityCookie = false; // There is an unsafe buffer (or localloc) on the stack.
-                                    // Insert cookie on frame and code to check the cookie, like VC++ -GS.
-    bool compGSReorderStackLayout = false;  // There is an unsafe buffer on the stack, reorder locals and make local
+    bool compNeedsGSSecurityCookie  = false; // There is an unsafe buffer (or localloc) on the stack.
+                                             // Insert cookie on frame and code to check the cookie, like VC++ -GS.
+    bool compGSReorderStackLayout = false;   // There is an unsafe buffer on the stack, reorder locals and make local
     // copies of susceptible parameters to avoid buffer overrun attacks through locals/params
     bool getNeedsGSSecurityCookie() const
     {
@@ -9955,9 +9955,9 @@ public:
         compNeedsGSSecurityCookie = true;
     }
 
-    FrameLayoutState lvaDoneFrameLayout = NO_FRAME_LAYOUT; // The highest frame layout state that we've completed. During
-                                         // frame layout calculations, this is the level we are currently
-                                         // computing.
+    FrameLayoutState lvaDoneFrameLayout = NO_FRAME_LAYOUT; // The highest frame layout state that we've completed.
+                                                           // During frame layout calculations, this is the level we are
+                                                           // currently computing.
 
     //---------------------------- JITing options -----------------------------
 
@@ -10592,9 +10592,9 @@ public:
 
 #if defined(DEBUG) || defined(LATE_DISASM) || DUMP_FLOWGRAPHS || DUMP_GC_TABLES
 
-        const char* compMethodName = nullptr;
-        const char* compClassName = nullptr;
-        const char* compFullName = nullptr;
+        const char* compMethodName          = nullptr;
+        const char* compClassName           = nullptr;
+        const char* compFullName            = nullptr;
         int         compMethodSuperPMIIndex = -1; // useful when debugging under SuperPMI
 
 #endif // defined(DEBUG) || defined(LATE_DISASM) || DUMP_FLOWGRAPHS
@@ -10619,10 +10619,10 @@ public:
         unsigned compClassAttr;
 
         const BYTE*     compCode;
-        IL_OFFSET       compILCodeSize;     // The IL code size
-        IL_OFFSET       compILImportSize;   // Estimated amount of IL actually imported
-        IL_OFFSET       compILEntry;        // The IL entry point (normally 0)
-        PatchpointInfo* compPatchpointInfo; // Patchpoint data for OSR (normally nullptr)
+        IL_OFFSET       compILCodeSize;         // The IL code size
+        IL_OFFSET       compILImportSize;       // Estimated amount of IL actually imported
+        IL_OFFSET       compILEntry;            // The IL entry point (normally 0)
+        PatchpointInfo* compPatchpointInfo;     // Patchpoint data for OSR (normally nullptr)
         UNATIVE_OFFSET  compNativeCodeSize = 0; // The native code size, after instructions are issued. This
         // is less than (compTotalHotCodeSize + compTotalColdCodeSize) only if:
         // (1) the code is not hot/cold split, and we issued less code than we expected, or
@@ -10652,7 +10652,7 @@ public:
         unsigned       compILlocalsCount; // Number of vars : args + locals (incl. implicit but not hidden)
         unsigned       compLocalsCount;   // Number of vars : args + locals (incl. implicit and     hidden)
         unsigned       compMaxStack;
-        UNATIVE_OFFSET compTotalHotCodeSize = 0;  // Total number of bytes of Hot Code in the method
+        UNATIVE_OFFSET compTotalHotCodeSize  = 0; // Total number of bytes of Hot Code in the method
         UNATIVE_OFFSET compTotalColdCodeSize = 0; // Total number of bytes of Cold Code in the method
 
         unsigned compUnmanagedCallCountWithGCTransition = 0; // count of unmanaged calls with GC transition.
@@ -10660,16 +10660,16 @@ public:
         CorInfoCallConvExtension compCallConv; // The entry-point calling convention for this method.
 
         unsigned compLvFrameListRoot = BAD_VAR_NUM; // lclNum for the Frame root
-        unsigned compXcptnsCount;     // Number of exception-handling clauses read in the method's IL.
-                                      // You should generally use compHndBBtabCount instead: it is the
-                                      // current number of EH clauses (after additions like synchronized
+        unsigned compXcptnsCount;                   // Number of exception-handling clauses read in the method's IL.
+                                                    // You should generally use compHndBBtabCount instead: it is the
+                                                    // current number of EH clauses (after additions like synchronized
         // methods and funclets, and removals like unreachable code deletion).
 
         Target::ArgOrder compArgOrder;
 
         bool compMatchedVM = true; // true if the VM is "matched": either the JIT is a cross-compiler
-                            // and the VM expects that, or the JIT is a "self-host" compiler
-                            // (e.g., x86 hosted targeting x86) and the VM expects that.
+                                   // and the VM expects that, or the JIT is a "self-host" compiler
+                                   // (e.g., x86 hosted targeting x86) and the VM expects that.
 
         /*  The following holds IL scope information about local variables.
          */
@@ -10848,23 +10848,23 @@ private:
 
 public:
 #ifdef DEBUG
-    unsigned compGenTreeID = 0;
-    unsigned compStatementID = 0;
+    unsigned compGenTreeID    = 0;
+    unsigned compStatementID  = 0;
     unsigned compBasicBlockID = 0;
 #endif
     LONG compMethodID = 0;
 
-    BasicBlock* compCurBB = nullptr;   // the current basic block in process
-    Statement*  compCurStmt; // the current statement in process
-    GenTree*    compCurTree; // the current tree in process
+    BasicBlock* compCurBB = nullptr; // the current basic block in process
+    Statement*  compCurStmt;         // the current statement in process
+    GenTree*    compCurTree;         // the current tree in process
 
     //  The following is used to create the 'method JIT info' block.
     size_t compInfoBlkSize;
     BYTE*  compInfoBlkAddr;
 
-    EHblkDsc* compHndBBtab = nullptr;           // array of EH data
-    unsigned  compHndBBtabCount = 0;      // element count of used elements in EH data array
-    unsigned  compHndBBtabAllocCount = 0; // element count of allocated elements in EH data array
+    EHblkDsc* compHndBBtab           = nullptr; // array of EH data
+    unsigned  compHndBBtabCount      = 0;       // element count of used elements in EH data array
+    unsigned  compHndBBtabAllocCount = 0;       // element count of allocated elements in EH data array
 
 #if defined(FEATURE_EH_WINDOWS_X86)
 
@@ -10875,9 +10875,9 @@ public:
 
 #endif // FEATURE_EH_WINDOWS_X86
 
-    Phases      mostRecentlyActivePhase = PHASE_PRE_IMPORT; // the most recently active phase
-    PhaseChecks activePhaseChecks = PhaseChecks::CHECK_NONE;       // the currently active phase checks
-    PhaseDumps  activePhaseDumps = PhaseDumps::DUMP_ALL;        // the currently active phase dumps
+    Phases      mostRecentlyActivePhase = PHASE_PRE_IMPORT;        // the most recently active phase
+    PhaseChecks activePhaseChecks       = PhaseChecks::CHECK_NONE; // the currently active phase checks
+    PhaseDumps  activePhaseDumps        = PhaseDumps::DUMP_ALL;    // the currently active phase dumps
 
     //-------------------------------------------------------------------------
     //  The following keeps track of how many bytes of local frame space we've
@@ -10979,10 +10979,10 @@ public:
 #endif                         // MEASURE_MEM_ALLOC
 
 #if LOOP_HOIST_STATS
-    unsigned m_loopsConsidered = 0;
+    unsigned m_loopsConsidered             = 0;
     bool     m_curLoopHasHoistedExpression = false;
     unsigned m_loopsWithHoistedExpressions = 0;
-    unsigned m_totalHoistedExpressions = 0;
+    unsigned m_totalHoistedExpressions     = 0;
 
     void AddLoopHoistStats();
     void PrintPerMethodLoopHoistStats();
@@ -11318,7 +11318,7 @@ public:
 
     GSCookie*           gsGlobalSecurityCookieAddr; // Address of global cookie for unsafe buffer checks
     GSCookie            gsGlobalSecurityCookieVal;  // Value of global cookie if addr is NULL
-    ShadowParamVarInfo* gsShadowVarInfo = nullptr;            // Table used by shadow param analysis code
+    ShadowParamVarInfo* gsShadowVarInfo = nullptr;  // Table used by shadow param analysis code
 
     PhaseStatus gsPhase();
     void        gsGSChecksInitCookie();   // Grabs cookie variable
@@ -11341,8 +11341,8 @@ public:
 
 private:
 #ifdef FEATURE_JIT_METHOD_PERF
-    JitTimer*                  pCompJitTimer = nullptr;         // Timer data structure (by phases) for current compilation.
-    static CompTimeSummaryInfo s_compJitTimerSummary; // Summary of the Timer information for the whole run.
+    JitTimer*                  pCompJitTimer = nullptr; // Timer data structure (by phases) for current compilation.
+    static CompTimeSummaryInfo s_compJitTimerSummary;   // Summary of the Timer information for the whole run.
 
     static LPCWSTR JitTimeLogCsv();        // Retrieve the file name for CSV from ConfigDWORD.
     static LPCWSTR compJitTimeLogFilename; // If a log file for JIT time is desired, filename to write it to.
@@ -11397,9 +11397,9 @@ private:
     NodeToTestDataMap* m_nodeTestData = nullptr;
 
     static const unsigned FIRST_LOOP_HOIST_CSE_CLASS = 1000;
-    unsigned              m_loopHoistCSEClass = FIRST_LOOP_HOIST_CSE_CLASS; // LoopHoist test annotations turn into CSE requirements; we
-                                               // label them with CSE Class #'s starting at FIRST_LOOP_HOIST_CSE_CLASS.
-                                               // Current kept in this.
+    unsigned m_loopHoistCSEClass = FIRST_LOOP_HOIST_CSE_CLASS; // LoopHoist test annotations turn into CSE requirements;
+                                                               // we label them with CSE Class #'s starting at
+                                                               // FIRST_LOOP_HOIST_CSE_CLASS. Current kept in this.
 public:
     NodeToTestDataMap* GetNodeTestData()
     {

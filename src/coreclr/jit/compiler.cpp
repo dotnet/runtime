@@ -326,7 +326,11 @@ Histogram loopExitCountTable(loopExitCountBuckets);
 
 #endif // COUNT_LOOPS
 
-Compiler::Compiler(ArenaAllocator* arena, CORINFO_METHOD_HANDLE methodHnd, COMP_HANDLE compHnd, CORINFO_METHOD_INFO* methodInfo, InlineInfo* inlineInfo)
+Compiler::Compiler(ArenaAllocator*       arena,
+                   CORINFO_METHOD_HANDLE methodHnd,
+                   COMP_HANDLE           compHnd,
+                   CORINFO_METHOD_INFO*  methodInfo,
+                   InlineInfo*           inlineInfo)
     : compArenaAllocator(arena)
     , impInlineInfo(inlineInfo)
     , impPendingBlockMembers(CompAllocator(arena, CMK_Generic))
@@ -335,10 +339,10 @@ Compiler::Compiler(ArenaAllocator* arena, CORINFO_METHOD_HANDLE methodHnd, COMP_
     , genIPmappings(CompAllocator(arena, CMK_DebugInfo))
     , genRichIPmappings(CompAllocator(arena, CMK_DebugInfo))
 {
-    info.compCompHnd = compHnd;
-    info.compMethodHnd = methodHnd;
+    info.compCompHnd    = compHnd;
+    info.compMethodHnd  = methodHnd;
     info.compMethodInfo = methodInfo;
-    info.compClassHnd = compHnd->getMethodClass(methodHnd);
+    info.compClassHnd   = compHnd->getMethodClass(methodHnd);
 
 #ifdef DEBUG
     verbose = !compIsForInlining() || impInlineInfo->InlinerCompiler->verbose;
@@ -486,7 +490,7 @@ Compiler::Compiler(ArenaAllocator* arena, CORINFO_METHOD_HANDLE methodHnd, COMP_
     info.compILImportSize = 0;
 
     info.compHasNextCallRetAddr = false;
-    info.compIsVarArgs = false;
+    info.compIsVarArgs          = false;
 }
 
 //------------------------------------------------------------------------
@@ -6923,9 +6927,9 @@ int Compiler::compCompileHelper(CORINFO_MODULE_HANDLE classPtr,
 
     /* Initialize set a bunch of global values */
 
-    info.compScopeHnd      = classPtr;
-    info.compXcptnsCount   = methodInfo->EHcount;
-    info.compMaxStack      = methodInfo->maxStack;
+    info.compScopeHnd    = classPtr;
+    info.compXcptnsCount = methodInfo->EHcount;
+    info.compMaxStack    = methodInfo->maxStack;
 
     /* Initialize emitter */
 
@@ -7807,7 +7811,7 @@ START:
     struct Param
     {
         Compiler*       pComp;
-        Compiler* pPrevComp;
+        Compiler*       pPrevComp;
         ArenaAllocator* pAlloc;
         bool            jitFallbackCompile;
 
@@ -7931,23 +7935,23 @@ START:
 
     result = param.result;
 
-    if (!inlineInfo &&
-        (result == CORJIT_INTERNALERROR || result == CORJIT_RECOVERABLEERROR || result == CORJIT_IMPLLIMITATION) &&
-        !jitFallbackCompile)
-    {
-        // If we failed the JIT, reattempt with debuggable code.
-        jitFallbackCompile = true;
+if (!inlineInfo &&
+    (result == CORJIT_INTERNALERROR || result == CORJIT_RECOVERABLEERROR || result == CORJIT_IMPLLIMITATION) &&
+    !jitFallbackCompile)
+{
+    // If we failed the JIT, reattempt with debuggable code.
+    jitFallbackCompile = true;
 
-        // Update the flags for 'safer' code generation.
-        compileFlags->Set(JitFlags::JIT_FLAG_MIN_OPT);
-        compileFlags->Clear(JitFlags::JIT_FLAG_SIZE_OPT);
-        compileFlags->Clear(JitFlags::JIT_FLAG_SPEED_OPT);
-        compileFlags->Clear(JitFlags::JIT_FLAG_BBOPT);
+    // Update the flags for 'safer' code generation.
+    compileFlags->Set(JitFlags::JIT_FLAG_MIN_OPT);
+    compileFlags->Clear(JitFlags::JIT_FLAG_SIZE_OPT);
+    compileFlags->Clear(JitFlags::JIT_FLAG_SPEED_OPT);
+    compileFlags->Clear(JitFlags::JIT_FLAG_BBOPT);
 
-        goto START;
-    }
+    goto START;
+}
 
-    return result;
+return result;
 }
 
 #if defined(UNIX_AMD64_ABI)
