@@ -15,7 +15,7 @@
 The runtime repo can be worked with on Windows, Linux, macOS, and FreeBSD. Each platform has its own specific requirements to work properly, and not all architectures are supported for dev work. The following table shows the matrix of compatibility, as well as links to each OS's requirements doc.
 
 | Chip  | Windows  | Linux    | macOS    | FreeBSD  |
-| :---- | :------: | :------: | :------: | :------: |
+| :---: | :------: | :------: | :------: | :------: |
 | x64   | &#x2714; | &#x2714; | &#x2714; | &#x2714; |
 | x86   | &#x2714; |          |          |          |
 | Arm32 |          | &#x2714; |          |          |
@@ -66,7 +66,11 @@ Running the script as is will build all the components in *Debug* configuration.
 ./build.sh -subset clr
 ```
 
-<!-- We might need to point to a doc or briefly explain here what the packs subset actually means. -->
+<!--
+    We might need to point to a doc or briefly explain here what the packs subset
+    actually means. Also, might be good to point out some subsets have dependencies
+    on others.
+-->
 
 The main subset values you can use are:
 
@@ -86,23 +90,34 @@ It is also possible to build more than one subset under the same command-line. I
 
 As a final note here, if your first argument to the build script are the subsets, you can omit the `-subset` flag altogether. Additionally, several of the supported flags also include a shorthand version (e.g. `-c` for `-configuration`). Run the script with `-h` or `-help` to get an extensive overview on all the supported flags to customize your build, including their shorthand forms, as well as a wider variety of examples.
 
+**NOTE:** On non-Windows systems, the longhand versions of the flags can be passed with either single `-` or double `--` dashes.
+
+<!--
+    TODO: Fill the sections under construction, and add links to the editing,
+    debugging, and Codespaces docs.
+-->
+
 ### Get Started on your Platform and Components
 
-Now that you've got the general idea on how to get started, it is important to mention that, while the procedure is very similar among platforms and subsets, each component has its own technicalities and details, and each platform has its own way of setting the environment to run all these commands. The following links will show you to the appropriate docs depending on what you're looking to work on:
-
-**Platform Specifics:**
-
-- _Windows_
-- _macOS_
-- _Linux_
+Now that you've got the general idea on how to get started, it is important to mention that, while the procedure is very similar among platforms and subsets, each component has its own technicalities and details, as explained in their own specific docs:
 
 **Component Specifics:**
 
-- _CoreCLR_
+- _[CoreCLR](/docs/workflow/building/building-coreclr.md)_
 - _Libraries_
 - _Mono_
 
-a
+### General Recommendations
+
+General Recommendations Under Construction!
+
+## Testing the Repo
+
+Testing the Repo Under Construction!
+
+## Performance Analysis
+
+Performance Analysis Under Construction!
 
 ## Warnings as Errors
 

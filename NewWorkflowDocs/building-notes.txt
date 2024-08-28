@@ -1,9 +1,37 @@
 - All
 
-* All docs refer to the build.sh script with the subset and configuration.
+* ~~All docs refer to the build.sh script with the subset and configuration.~~
 * All docs include the libs subset in their instructions.
-* All docs mention the possibility to omit explicitly typing -subset for the first
-  argument to the script.
+* ~~All docs mention the possibility to omit explicitly typing -subset for the first
+  argument to the script.~~
 * Only Mono talks about generating the Nuget packages, but this actually applies
   to all of them.
 * CoreCLR and Libraries talk about working with VS. Mono doesn't.
+
+- Windows
+
+* ~~Ensure you have prepared your full environment.~~
+* ~~Build the clr subset and explain the main components.~~
+* ~~Link to cross-compilation doc.~~
+* ~~Generate the Core_Root.~~
+* ~~Talk about native sanitizers.~~
+* ~~Talk about native ARM64 building.~~
+* ~~Talk about a custom compiler environment.~~
+
+- MacOS:
+
+* ~~Ensure you have prepared your full environment.~~
+* ~~Build the clr subset and explain the main components.~~
+* ~~Link to cross-compilation doc.~~
+* ~~Generate the Core_Root.~~
+* ~~Talk about native sanitizers.~~
+* ~~Explain about the extra debugging information required for Apple binaries.~~
+
+- Linux:
+
+* ~~Ensure you have prepared your full environment.~~
+* ~~Build the clr subset and explain the main components.~~
+* ~~Link to cross-compilation doc.~~
+* ~~Generate the Core_Root.~~
+* ~~Talk about native sanitizers.~~
+* Include a big tutorial on using Docker for building for Linux.
