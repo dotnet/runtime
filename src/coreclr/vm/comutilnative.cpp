@@ -1898,46 +1898,36 @@ static bool HasOverriddenStreamMethod(MethodTable * pMT, WORD slot)
     return true;
 }
 
-FCIMPL1(FC_BOOL_RET, StreamNative::HasOverriddenBeginEndRead, Object *stream)
+extern "C" BOOL QCALLTYPE StreamNative_HasOverriddenSlow(MethodTable* pMT, BOOL isRead)
 {
-    FCALL_CONTRACT;
+    QCALL_CONTRACT;
+    _ASSERTE(pMT != NULL);
 
-    if (stream == NULL)
-        FC_RETURN_BOOL(TRUE);
+    BOOL readOverride = FALSE;
+    BOOL writeOverride = FALSE;
 
-    if (g_pStreamMT == NULL || g_slotBeginRead == 0 || g_slotEndRead == 0)
+    BEGIN_QCALL;
+
+    // Check for needed details
+    if (g_pStreamMT == NULL
+        || g_slotBeginRead == 0
+        || g_slotEndRead == 0
+        || g_slotBeginWrite == 0
+        || g_slotEndWrite == 0)
     {
-        HELPER_METHOD_FRAME_BEGIN_RET_1(stream);
         g_pStreamMT = CoreLibBinder::GetClass(CLASS__STREAM);
         g_slotBeginRead = CoreLibBinder::GetMethod(METHOD__STREAM__BEGIN_READ)->GetSlot();
         g_slotEndRead = CoreLibBinder::GetMethod(METHOD__STREAM__END_READ)->GetSlot();
-        HELPER_METHOD_FRAME_END();
-    }
-
-    MethodTable * pMT = stream->GetMethodTable();
-
-    FC_RETURN_BOOL(HasOverriddenStreamMethod(pMT, g_slotBeginRead) || HasOverriddenStreamMethod(pMT, g_slotEndRead));
-}
-FCIMPLEND
-
-FCIMPL1(FC_BOOL_RET, StreamNative::HasOverriddenBeginEndWrite, Object *stream)
-{
-    FCALL_CONTRACT;
-
-    if (stream == NULL)
-        FC_RETURN_BOOL(TRUE);
-
-    if (g_pStreamMT == NULL || g_slotBeginWrite == 0 || g_slotEndWrite == 0)
-    {
-        HELPER_METHOD_FRAME_BEGIN_RET_1(stream);
-        g_pStreamMT = CoreLibBinder::GetClass(CLASS__STREAM);
         g_slotBeginWrite = CoreLibBinder::GetMethod(METHOD__STREAM__BEGIN_WRITE)->GetSlot();
         g_slotEndWrite = CoreLibBinder::GetMethod(METHOD__STREAM__END_WRITE)->GetSlot();
-        HELPER_METHOD_FRAME_END();
     }
 
-    MethodTable * pMT = stream->GetMethodTable();
+    // Check the current type and update state.
+    readOverride = HasOverriddenStreamMethod(pMT, g_slotBeginRead) || HasOverriddenStreamMethod(pMT, g_slotEndRead);
+    writeOverride = HasOverriddenStreamMethod(pMT, g_slotBeginWrite) || HasOverriddenStreamMethod(pMT, g_slotEndWrite);
+    pMT->GetAuxiliaryDataForWrite()->SetStreamOverrideState(readOverride, writeOverride);
 
-    FC_RETURN_BOOL(HasOverriddenStreamMethod(pMT, g_slotBeginWrite) || HasOverriddenStreamMethod(pMT, g_slotEndWrite));
+    END_QCALL;
+
+    return isRead ? readOverride : writeOverride;
 }
-FCIMPLEND
