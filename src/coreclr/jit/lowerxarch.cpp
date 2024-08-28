@@ -318,6 +318,17 @@ GenTree* Lowering::LowerBinaryArithmetic(GenTreeOp* binOp)
     }
 #endif
 
+#ifdef TARGET_XARCH
+    if (binOp->OperIs(GT_OR, GT_AND))
+    {
+        GenTree* next;
+        if (TryLowerAndOrToCCMP(binOp, &next))
+        {
+            return next;
+        }
+    }
+#endif
+
     ContainCheckBinary(binOp);
 
     return binOp->gtNext;
@@ -8640,6 +8651,77 @@ void Lowering::ContainCheckCast(GenTreeCast* node)
         castOp->SetContained();
     }
 #endif // !defined(TARGET_64BIT)
+}
+
+//------------------------------------------------------------------------
+// TryLowerAndOrToCCMP : Lower AND/OR of two conditions into test + CCMP + SETCC nodes.
+//
+// Arguments:
+//    tree - pointer to the node
+//    next - [out] Next node to lower if this function returns true
+//
+// Return Value:
+//    false if no changes were made
+//
+bool Lowering::TryLowerAndOrToCCMP(GenTreeOp* tree, GenTree** next)
+{
+    assert(tree->OperIs(GT_OR, GT_AND));
+
+    if (!comp->opts.OptimizationEnabled())
+    {
+        return false;
+    }
+
+    GenTree* lastNode = BlockRange().LastNode();
+
+    if (!lastNode->OperIs(GT_JTRUE, GT_RETURN))
+    {
+        return false;
+    }
+
+    GenTree* op1 = tree->gtGetOp1();
+    GenTree* op2 = tree->gtGetOp2();
+
+    if ((lastNode->OperIs(GT_JTRUE) && ((tree->OperIs(GT_OR) && (!op1->OperIs(GT_NE) || !op2->OperIs(GT_NE))) ||
+                                        (tree->OperIs(GT_AND) && (!op1->OperIs(GT_EQ) || !op2->OperIs(GT_EQ))))) ||
+        (lastNode->OperIs(GT_RETURN) && ((tree->OperIs(GT_OR) && (!op1->OperIs(GT_EQ) || !op2->OperIs(GT_EQ))) ||
+                                         (tree->OperIs(GT_AND) && (!op1->OperIs(GT_NE) || !op2->OperIs(GT_NE))))))
+    {
+        return false;
+    }
+
+    GenTree* op11 = op1->gtGetOp1();
+    GenTree* op12 = op1->gtGetOp2();
+    GenTree* op21 = op2->gtGetOp1();
+    GenTree* op22 = op2->gtGetOp2();
+
+    if (!varTypeIsIntegralOrI(op11) || !op11->OperIs(GT_LCL_VAR, GT_CNS_INT) || !varTypeIsIntegralOrI(op12) ||
+        !op12->OperIs(GT_LCL_VAR, GT_CNS_INT) || !varTypeIsIntegralOrI(op21) || !op21->OperIs(GT_LCL_VAR, GT_CNS_INT) ||
+        !varTypeIsIntegralOrI(op22) || !op22->OperIs(GT_LCL_VAR, GT_CNS_INT))
+    {
+        return false;
+    }
+
+    op1->gtGetOp1()->ClearContained();
+    op1->gtGetOp2()->ClearContained();
+    op2->gtGetOp1()->ClearContained();
+    op2->gtGetOp2()->ClearContained();
+
+    op1->SetOper(GT_XOR);
+    op2->SetOper(GT_XOR);
+
+    if (lastNode->OperIs(GT_JTRUE) && tree->OperIs(GT_AND))
+    {
+        tree->SetOper(GT_OR);
+        tree->gtNext->gtNext->SetOper(GT_EQ);
+    }
+
+    JITDUMP("Conversion was legal. Result:\n");
+    DISPTREERANGE(BlockRange(), tree);
+    JITDUMP("\n");
+
+    *next = tree->gtNext;
+    return true;
 }
 
 //------------------------------------------------------------------------
