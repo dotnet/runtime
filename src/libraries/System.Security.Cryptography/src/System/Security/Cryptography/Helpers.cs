@@ -347,5 +347,45 @@ namespace Internal.Cryptography
 
             return arg;
         }
+
+        internal static int HashLength(HashAlgorithmName hashAlgorithmName)
+        {
+            if (hashAlgorithmName == HashAlgorithmName.SHA1)
+            {
+                return HMACSHA1.HashSizeInBytes;
+            }
+            else if (hashAlgorithmName == HashAlgorithmName.SHA256)
+            {
+                return HMACSHA256.HashSizeInBytes;
+            }
+            else if (hashAlgorithmName == HashAlgorithmName.SHA384)
+            {
+                return HMACSHA384.HashSizeInBytes;
+            }
+            else if (hashAlgorithmName == HashAlgorithmName.SHA512)
+            {
+                return HMACSHA512.HashSizeInBytes;
+            }
+            else if (hashAlgorithmName == HashAlgorithmName.SHA3_256)
+            {
+                return HMACSHA3_256.HashSizeInBytes;
+            }
+            else if (hashAlgorithmName == HashAlgorithmName.SHA3_384)
+            {
+                return HMACSHA3_384.HashSizeInBytes;
+            }
+            else if (hashAlgorithmName == HashAlgorithmName.SHA3_512)
+            {
+                return HMACSHA3_512.HashSizeInBytes;
+            }
+            else if (hashAlgorithmName == HashAlgorithmName.MD5)
+            {
+                return HMACMD5.HashSizeInBytes;
+            }
+            else
+            {
+                throw new ArgumentOutOfRangeException(nameof(hashAlgorithmName));
+            }
+        }
     }
 }
