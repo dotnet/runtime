@@ -12,12 +12,6 @@ namespace System.IO
         [return: MarshalAs(UnmanagedType.Bool)]
         private static partial bool HasOverriddenSlow(MethodTable* pMT, [MarshalAs(UnmanagedType.Bool)] bool isRead);
 
-        [MethodImpl(MethodImplOptions.NoInlining)]
-        private static bool HasOverriddenReadSlow(MethodTable* pMT) => HasOverriddenSlow(pMT, isRead: true);
-
-        [MethodImpl(MethodImplOptions.NoInlining)]
-        private static bool HasOverriddenWriteSlow(MethodTable* pMT) => HasOverriddenSlow(pMT, isRead: false);
-
         private bool HasOverriddenBeginEndRead()
         {
             MethodTable* pMT = RuntimeHelpers.GetMethodTable(this);
@@ -26,6 +20,10 @@ namespace System.IO
                 : HasOverriddenReadSlow(pMT);
             GC.KeepAlive(this);
             return res;
+
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            static bool HasOverriddenReadSlow(MethodTable* pMT)
+                => HasOverriddenSlow(pMT, isRead: true);
         }
 
         private bool HasOverriddenBeginEndWrite()
@@ -36,6 +34,10 @@ namespace System.IO
                 : HasOverriddenWriteSlow(pMT);
             GC.KeepAlive(this);
             return res;
+
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            static bool HasOverriddenWriteSlow(MethodTable* pMT)
+                => HasOverriddenSlow(pMT, isRead: false);
         }
     }
 }

@@ -369,7 +369,6 @@ struct MethodTableAuxiliaryData
         enum_flagDebug_IsPublished                    = 0x2000,
         enum_flagDebug_ParentMethodTablePointerValid  = 0x4000,
         enum_flagDebug_HasInjectedInterfaceDuplicates = 0x8000,
-
     };
     DWORD m_dwFlagsDebug;
 

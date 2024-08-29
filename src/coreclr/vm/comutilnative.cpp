@@ -1873,29 +1873,25 @@ extern "C" BOOL QCALLTYPE TypeHandle_CanCastTo_NoCacheLookup(void* fromTypeHnd, 
     return ret;
 }
 
-static MethodTable * g_pStreamMT;
-static WORD g_slotBeginRead, g_slotEndRead;
-static WORD g_slotBeginWrite, g_slotEndWrite;
-
-static bool HasOverriddenStreamMethod(MethodTable * pMT, WORD slot)
+static bool HasOverriddenStreamMethod(MethodTable* streamMT, MethodTable* pMT, WORD slot)
 {
-    CONTRACTL{
-        THROWS;
-        GC_NOTRIGGER;
-        MODE_ANY;
+    CONTRACTL
+    {
+        STANDARD_VM_CHECK;
+        PRECONDITION(streamMT != NULL);
+        PRECONDITION(pMT != NULL);
     } CONTRACTL_END;
 
     PCODE actual = pMT->GetRestoredSlot(slot);
-    PCODE base = g_pStreamMT->GetRestoredSlot(slot);
+    PCODE base = streamMT->GetRestoredSlot(slot);
+
+    // If the PCODEs match, then there is no override.
     if (actual == base)
         return false;
 
-    // If CoreLib is JITed, the slots can be patched and thus we need to compare the actual MethodDescs
-    // to detect match reliably
-    if (MethodTable::GetMethodDescForSlotAddress(actual) == MethodTable::GetMethodDescForSlotAddress(base))
-        return false;
-
-    return true;
+    // If CoreLib is JITed, the slots can be patched and thus we need to compare
+    // the actual MethodDescs to detect match reliably.
+    return MethodTable::GetMethodDescForSlotAddress(actual) != MethodTable::GetMethodDescForSlotAddress(base);
 }
 
 extern "C" BOOL QCALLTYPE StreamNative_HasOverriddenSlow(MethodTable* pMT, BOOL isRead)
@@ -1908,23 +1904,15 @@ extern "C" BOOL QCALLTYPE StreamNative_HasOverriddenSlow(MethodTable* pMT, BOOL 
 
     BEGIN_QCALL;
 
-    // Check for needed details
-    if (g_pStreamMT == NULL
-        || g_slotBeginRead == 0
-        || g_slotEndRead == 0
-        || g_slotBeginWrite == 0
-        || g_slotEndWrite == 0)
-    {
-        g_pStreamMT = CoreLibBinder::GetClass(CLASS__STREAM);
-        g_slotBeginRead = CoreLibBinder::GetMethod(METHOD__STREAM__BEGIN_READ)->GetSlot();
-        g_slotEndRead = CoreLibBinder::GetMethod(METHOD__STREAM__END_READ)->GetSlot();
-        g_slotBeginWrite = CoreLibBinder::GetMethod(METHOD__STREAM__BEGIN_WRITE)->GetSlot();
-        g_slotEndWrite = CoreLibBinder::GetMethod(METHOD__STREAM__END_WRITE)->GetSlot();
-    }
+    MethodTable* pStreamMT = CoreLibBinder::GetClass(CLASS__STREAM);
+    WORD slotBeginRead = CoreLibBinder::GetMethod(METHOD__STREAM__BEGIN_READ)->GetSlot();
+    WORD slotEndRead = CoreLibBinder::GetMethod(METHOD__STREAM__END_READ)->GetSlot();
+    WORD slotBeginWrite = CoreLibBinder::GetMethod(METHOD__STREAM__BEGIN_WRITE)->GetSlot();
+    WORD slotEndWrite = CoreLibBinder::GetMethod(METHOD__STREAM__END_WRITE)->GetSlot();
 
-    // Check the current type and update state.
-    readOverride = HasOverriddenStreamMethod(pMT, g_slotBeginRead) || HasOverriddenStreamMethod(pMT, g_slotEndRead);
-    writeOverride = HasOverriddenStreamMethod(pMT, g_slotBeginWrite) || HasOverriddenStreamMethod(pMT, g_slotEndWrite);
+    // Check the current MethodTable for Stream overrides and set state on the MethodTable.
+    readOverride = HasOverriddenStreamMethod(pStreamMT, pMT, slotBeginRead) || HasOverriddenStreamMethod(pStreamMT, pMT, slotEndRead);
+    writeOverride = HasOverriddenStreamMethod(pStreamMT, pMT, slotBeginWrite) || HasOverriddenStreamMethod(pStreamMT, pMT, slotEndWrite);
     pMT->GetAuxiliaryDataForWrite()->SetStreamOverrideState(readOverride, writeOverride);
 
     END_QCALL;
