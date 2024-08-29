@@ -526,6 +526,7 @@ Crst MethodDescBackpatchInfoTracker
 End
 
 Crst NativeImageEagerFixups
+    AcquiredBefore UnresolvedClassLock
 End
 
 Crst NativeImageLoad

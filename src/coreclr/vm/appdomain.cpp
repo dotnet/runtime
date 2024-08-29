@@ -93,8 +93,6 @@ SPTR_IMPL(SystemDomain, SystemDomain, m_pSystemDomain);
 // Base Domain Statics
 CrstStatic          BaseDomain::m_MethodTableExposedClassObjectCrst;
 
-int                 BaseDomain::m_iNumberOfProcessors = 0;
-
 // System Domain Statics
 GlobalStringLiteralMap*  SystemDomain::m_pGlobalStringLiteralMap = NULL;
 FrozenObjectHeapManager* SystemDomain::m_FrozenObjectHeapManager = NULL;
@@ -482,12 +480,6 @@ void BaseDomain::Init()
     // Initialize the domain locks
     //
     m_crstLoaderAllocatorReferences.Init(CrstLoaderAllocatorReferences);
-
-    m_dwSizedRefHandles = 0;
-    // For server GC this value indicates the number of GC heaps used in circular order to allocate sized
-    // ref handles. It must not exceed the array size allocated by the handle table (see getNumberOfSlots
-    // in objecthandle.cpp). We might want to use GetNumberOfHeaps if it were accessible here.
-    m_iNumberOfProcessors = min(GetCurrentProcessCpuCount(), GetTotalProcessorCount());
 }
 
 #undef LOADERHEAP_PROFILE_COUNTER
@@ -1064,31 +1056,6 @@ void SystemDomain::LazyInitFrozenObjectsHeap()
     }
 
     RETURN;
-}
-
-// Only called when EE is suspended.
-DWORD SystemDomain::GetTotalNumSizedRefHandles()
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-
-    SystemDomain* sysDomain = SystemDomain::System();
-    DWORD dwTotalNumSizedRefHandles = 0;
-    if (sysDomain)
-    {
-        AppDomain* pAppDomain = ::GetAppDomain();
-        if (pAppDomain && pAppDomain->IsActive())
-        {
-            dwTotalNumSizedRefHandles += pAppDomain->GetNumSizedRefHandles();
-        }
-    }
-
-    return dwTotalNumSizedRefHandles;
 }
 
 void SystemDomain::LoadBaseSystemClasses()
@@ -3545,7 +3512,7 @@ ULONG AppDomain::Release()
 
 
 
-void AppDomain::RaiseLoadingAssemblyEvent(DomainAssembly *pAssembly)
+void AppDomain::RaiseLoadingAssemblyEvent(Assembly *pAssembly)
 {
     CONTRACTL
     {
@@ -3577,7 +3544,7 @@ void AppDomain::RaiseLoadingAssemblyEvent(DomainAssembly *pAssembly)
             ARG_SLOT args[1];
             GCPROTECT_BEGIN(gc);
 
-            gc.orThis = pAssembly->GetExposedAssemblyObject();
+            gc.orThis = pAssembly->GetExposedObject();
 
             MethodDescCallSite onAssemblyLoad(METHOD__ASSEMBLYLOADCONTEXT__ON_ASSEMBLY_LOAD);
 

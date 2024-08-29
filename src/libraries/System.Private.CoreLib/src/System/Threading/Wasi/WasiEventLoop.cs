@@ -4,71 +4,121 @@
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using WasiPollWorld.wit.imports.wasi.io.v0_2_1;
+using Pollable = WasiPollWorld.wit.imports.wasi.io.v0_2_1.IPoll.Pollable;
 
 namespace System.Threading
 {
     internal static class WasiEventLoop
     {
-        private static List<WeakReference<TaskCompletionSource>> s_pollables = new();
+        // TODO: if the Pollable never resolves and and the Task is abandoned
+        // it will be leaked and stay in this list forever.
+        // it will also keep the Pollable handle alive and prevent it from being disposed
+        private static readonly List<PollableHolder> s_pollables = new();
 
-        internal static Task RegisterWasiPollableHandle(int handle)
+        internal static Task RegisterWasiPollableHandle(int handle, CancellationToken cancellationToken)
         {
             // note that this is duplicate of the original Pollable
-            // the original should be neutralized without disposing the handle
-            var pollableCpy = new IPoll.Pollable(new IPoll.Pollable.THandle(handle));
-            return RegisterWasiPollable(pollableCpy);
+            // the original should have been neutralized without disposing the handle
+            var pollableCpy = new Pollable(new Pollable.THandle(handle));
+            return RegisterWasiPollable(pollableCpy, cancellationToken);
         }
 
-        internal static Task RegisterWasiPollable(IPoll.Pollable pollable)
+        internal static Task RegisterWasiPollable(Pollable pollable, CancellationToken cancellationToken)
         {
-            var tcs = new TaskCompletionSource(pollable);
-            var weakRef = new WeakReference<TaskCompletionSource>(tcs);
-            s_pollables.Add(weakRef);
-            return tcs.Task;
+            // this will register the pollable holder into s_pollables
+            var holder = new PollableHolder(pollable, cancellationToken);
+            s_pollables.Add(holder);
+            return holder.taskCompletionSource.Task;
         }
 
+        // this is not thread safe
         internal static void DispatchWasiEventLoop()
         {
             ThreadPoolWorkQueue.Dispatch();
 
-            if (s_pollables.Count > 0)
+            var holders = new List<PollableHolder>(s_pollables.Count);
+            var pending = new List<Pollable>(s_pollables.Count);
+            for (int i = 0; i < s_pollables.Count; i++)
             {
-                var pollables = s_pollables;
-                s_pollables = new List<WeakReference<TaskCompletionSource>>(pollables.Count);
-                var arguments = new List<IPoll.Pollable>(pollables.Count);
-                var indexes = new List<int>(pollables.Count);
-                for (var i = 0; i < pollables.Count; i++)
+                var holder = s_pollables[i];
+                if (!holder.isDisposed)
                 {
-                    var weakRef = pollables[i];
-                    if (weakRef.TryGetTarget(out TaskCompletionSource? tcs))
+                    holders.Add(holder);
+                    pending.Add(holder.pollable);
+                }
+            }
+
+            s_pollables.Clear();
+
+            if (pending.Count > 0)
+            {
+                var readyIndexes = PollInterop.Poll(pending);
+                for (int i = 0; i < readyIndexes.Length; i++)
+                {
+                    uint readyIndex = readyIndexes[i];
+                    var holder = holders[(int)readyIndex];
+                    holder.ResolveAndDispose();
+                }
+                for (int i = 0; i < holders.Count; i++)
+                {
+                    PollableHolder holder = holders[i];
+                    if (!holder.isDisposed)
                     {
-                        var pollable = (IPoll.Pollable)tcs!.Task.AsyncState!;
-                        arguments.Add(pollable);
-                        indexes.Add(i);
+                        s_pollables.Add(holder);
                     }
+                }
+            }
+        }
+
+        private sealed class PollableHolder
+        {
+            public bool isDisposed;
+            public readonly Pollable pollable;
+            public readonly TaskCompletionSource taskCompletionSource;
+            public readonly CancellationTokenRegistration cancellationTokenRegistration;
+            public readonly CancellationToken cancellationToken;
+
+            public PollableHolder(Pollable pollable, CancellationToken cancellationToken)
+            {
+                this.pollable = pollable;
+                this.cancellationToken = cancellationToken;
+
+                // this means that taskCompletionSource.Task.AsyncState -> this;
+                // which means PollableHolder will be alive until the Task alive
+                taskCompletionSource = new TaskCompletionSource(this);
+
+                // static method is used to avoid allocating a delegate
+                cancellationTokenRegistration = cancellationToken.Register(CancelAndDispose, this);
+            }
+
+            public void ResolveAndDispose()
+            {
+                if (isDisposed)
+                {
+                    return;
                 }
 
-                // this is blocking until at least one pollable resolves
-                var readyIndexes = PollInterop.Poll(arguments);
+                // no need to unregister the holder from s_pollables, when this is called
+                isDisposed = true;
+                pollable.Dispose();
+                cancellationTokenRegistration.Dispose();
+                taskCompletionSource.TrySetResult();
+            }
 
-                var ready = new bool[arguments.Count];
-                foreach (int readyIndex in readyIndexes)
+            // for GC of abandoned Tasks or for cancellation
+            private static void CancelAndDispose(object? s)
+            {
+                PollableHolder self = (PollableHolder)s!;
+                if (self.isDisposed)
                 {
-                    ready[readyIndex] = true;
-                    arguments[readyIndex].Dispose();
-                    var weakRef = pollables[indexes[readyIndex]];
-                    if (weakRef.TryGetTarget(out TaskCompletionSource? tcs))
-                    {
-                        tcs!.SetResult();
-                    }
+                    return;
                 }
-                for (var i = 0; i < arguments.Count; ++i)
-                {
-                    if (!ready[i])
-                    {
-                        s_pollables.Add(pollables[indexes[i]]);
-                    }
-                }
+
+                // it will be removed from s_pollables on the next run
+                self.isDisposed = true;
+                self.pollable.Dispose();
+                self.cancellationTokenRegistration.Dispose();
+                self.taskCompletionSource.TrySetCanceled(self.cancellationToken);
             }
         }
     }
