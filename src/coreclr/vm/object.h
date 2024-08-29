@@ -1436,7 +1436,7 @@ class AssemblyBaseObject : public Object
         SetObjectReference(&m_pSyncRoot, pSyncRoot);
     }
 };
-NOINLINE AssemblyBaseObject* GetRuntimeAssemblyHelper(LPVOID __me, DomainAssembly *pAssembly, OBJECTREF keepAlive);
+NOINLINE AssemblyBaseObject* GetRuntimeAssemblyHelper(LPVOID __me, Assembly *pAssembly, OBJECTREF keepAlive);
 #define FC_RETURN_ASSEMBLY_OBJECT(pAssembly, refKeepAlive) FC_INNER_RETURN(AssemblyBaseObject*, GetRuntimeAssemblyHelper(__me, pAssembly, refKeepAlive))
 
 // AssemblyLoadContextBaseObject
