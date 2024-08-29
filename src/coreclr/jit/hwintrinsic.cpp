@@ -1804,9 +1804,7 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
     else if ((simdBaseJitType == CORINFO_TYPE_VALUECLASS) && (HWIntrinsicInfo::BaseTypeFromValueTupleArg(intrinsic)))
     {
         // If HW_Flag_BaseTypeFromValueTupleArg is set, one of the base type position flags must be set.
-        // There is no point to using this flag if the SIMD size is known at compile-time.
         assert(HWIntrinsicInfo::BaseTypeFromFirstArg(intrinsic) || HWIntrinsicInfo::BaseTypeFromSecondArg(intrinsic));
-        assert(!HWIntrinsicInfo::tryLookupSimdSize(intrinsic, &simdSize));
 
         CORINFO_ARG_LIST_HANDLE arg = sig->args;
 
