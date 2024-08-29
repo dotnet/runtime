@@ -2547,6 +2547,7 @@ namespace System.Collections.Concurrent
             /// When this method returns, contains the value associated with the specified key, if the key is found;
             /// otherwise, the default value for the type of the value parameter.
             /// </param>
+            /// <returns><see langword="true"/> if an entry was found; otherwise, <see langword="false"/>.</returns>
             /// <exception cref="ArgumentNullException"><paramref name="key"/> is <see langword="null"/>.</exception>
             public bool TryGetValue(TAlternateKey key, [MaybeNullWhen(false)] out TValue value) =>
                 TryGetValue(key, out _, out value);
@@ -2561,6 +2562,7 @@ namespace System.Collections.Concurrent
             /// When this method returns, contains the value associated with the specified key, if the key is found;
             /// otherwise, the default value for the type of the value parameter.
             /// </param>
+            /// <returns><see langword="true"/> if an entry was found; otherwise, <see langword="false"/>.</returns>
             /// <exception cref="ArgumentNullException"><paramref name="key"/> is <see langword="null"/>.</exception>
             public bool TryGetValue(TAlternateKey key, [MaybeNullWhen(false)] out TKey actualKey, [MaybeNullWhen(false)] out TValue value)
             {
