@@ -540,7 +540,7 @@ StatusCode fx_resolver_t::resolve_frameworks_for_app(
                 _X("Architecture: %s"),
                 app_display_name,
                 get_current_arch_name());
-            display_missing_framework_error(resolution_failure.missing.get_fx_name(), resolution_failure.missing.get_fx_version(), pal::string_t(), dotnet_root, app_config.get_is_multilevel_lookup_disabled());
+            display_missing_framework_error(resolution_failure.missing.get_fx_name(), resolution_failure.missing.get_fx_version(), dotnet_root, app_config.get_is_multilevel_lookup_disabled());
             break;
         case StatusCode::FrameworkCompatFailure:
             display_incompatible_framework_error(resolution_failure.incompatible_higher.get_fx_version(), resolution_failure.incompatible_lower);
