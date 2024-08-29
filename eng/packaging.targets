@@ -318,12 +318,47 @@
     </ItemGroup>
   </Target>
 
-  <Target Name="ValidateServicingVersionIsProperlySet"
+  <ItemDefinitionGroup>
+    <TargetPathWithTargetPlatformMoniker>
+      <GeneratePackageOnBuild>$(GeneratePackageOnBuild)</GeneratePackageOnBuild>
+    </TargetPathWithTargetPlatformMoniker>
+  </ItemDefinitionGroup>
+
+  <!-- Flows the list of ProjectReferences that are enabled for packaging when building a multi-targeting project -->
+  <Target Name="_AddTransitiveServicedPackagesToOutput"
+          AfterTargets="GetTargetPathWithTargetPlatformMoniker"
+          Condition="'$(IsInnerBuild)' == 'true'">
+    <PropertyGroup>
+      <_TransitiveServicedPackages
+          Condition="'%(ReferencePath.ReferenceSourceTarget)' == 'ProjectReference' and
+                     '%(ReferencePath.GeneratePackageOnBuild)' == 'true'"
+                     >@(ReferencePath->'%(OriginalProjectReferenceItemSpec)')</_TransitiveServicedPackages>
+    </PropertyGroup>
+    <ItemGroup>
+      <TargetPathWithTargetPlatformMoniker TransitiveServicedPackages="$(_TransitiveServicedPackages)" />
+    </ItemGroup>
+  </Target>
+
+  <!-- Validate that ServicingVersion is set and packing is enabled.  Runs once in the outer build (or only build if no outer build exists). -->
+  <Target Name="ValidateServicingProperties"
           Condition="'$(PreReleaseVersionLabel)' == 'servicing' and
                      '$(PackageUseIncrementalServicingVersion)' == 'true' and
-                     '$(DotNetBuildFromSource)' != 'true'"
-          AfterTargets="GenerateNuspec">
-    <Error Condition="'$(ServicingVersion)' == '0'" Text="ServicingVersion is set to 0 and it should be an increment of the patch version from the last released package." />
+                     '$(DotNetBuildFromSource)' != 'true' and
+                     '$(IsInnerBuild)' != 'true'"
+          AfterTargets="Build">
+    <ItemGroup>
+      <TransitiveServicedPackages Include="%(InnerOutput.TransitiveServicedPackages)" Condition="'$(IsCrossTargetingBuild)' == 'true'" />
+      <TransitiveServicedPackages Include="'%(ReferencePath.OriginalProjectReferenceItemSpec)"
+                                  Condition="'%(ReferencePath.ReferenceSourceTarget)' == 'ProjectReference' and
+                                             '%(ReferencePath.GeneratePackageOnBuild)' == 'true'" />
+    </ItemGroup>
+    <Error Condition="'$(ServicingVersion)' == '0' and '$(GeneratePackageOnBuild)' == 'true'"
+           Text="ServicingVersion is set to 0 and it should be an increment of the patch version from the last released package." />
+
+    <Error Condition="'$(ServiceTransitiveDependencies)' == 'true' and
+                  '$(GeneratePackageOnBuild)' != 'true' and
+                  '@(TransitiveServicedPackages)' != ''"
+        Text="This project did not set GeneratePackageOnBuild, but dependencies '@(TransitiveServicedPackages)' did.  Please ship this project by setting GeneratePackageOnBuild to true and incrementing ServicingVersion." />
   </Target>
 
 </Project>

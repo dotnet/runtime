@@ -16,6 +16,10 @@ If a library is packable (check for the `<IsPackable>true</IsPackable>` property
 
 When you make a change to a library & ship it during the servicing release, the `ServicingVersion` must be bumped. This property is found in the library's source project. It's also possible that the property is not in that file, in which case you'll need to add it to the library's source project and set it to 1. If the property is already present in your library's source project, just increment the servicing version by 1.
 
+## Optionally ensure all up-stack packages are also produced
+
+If you with to ensure that every package that references a serviced package is also serviced itself, you can enable validation by setting `ServiceTransitiveDependencies` to true.  When doing this then building the repo, eg: `build libs -allConfigurations` you'll see errors from any project that didn't enable servicing.
+
 ## Test your changes
 
 All that's left is to ensure that your changes have worked as expected. To do so, execute the following steps:
