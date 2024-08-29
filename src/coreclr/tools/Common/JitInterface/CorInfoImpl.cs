@@ -2906,11 +2906,10 @@ namespace Internal.JitInterface
             // consider the unshared type as more specific.
             bool isType1CanonSubtype = type1.IsCanonicalSubtype(CanonicalFormKind.Any);
             bool isType2CanonSubtype = type2.IsCanonicalSubtype(CanonicalFormKind.Any);
-            if (isType1CanonSubtype != isType2CanonSubtype)
+
+            if (type1.HasSameTypeDefinition(type2))
             {
-                // Only one of type1 and type2 is shared.
-                // type2 is more specific if type1 is the shared type.
-                return isType1CanonSubtype;
+                return isType1CanonSubtype && !isType2CanonSubtype;
             }
 
             // Otherwise both types are either shared or not shared.
