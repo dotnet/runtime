@@ -100,9 +100,9 @@ namespace System.Threading
 
                 // no need to unregister the holder from s_pollables, when this is called
                 isDisposed = true;
-                taskCompletionSource.TrySetResult();
                 pollable.Dispose();
                 cancellationTokenRegistration.Dispose();
+                taskCompletionSource.TrySetResult();
             }
 
             // for GC of abandoned Tasks or for cancellation
@@ -116,9 +116,9 @@ namespace System.Threading
 
                 // it will be removed from s_pollables on the next run
                 self.isDisposed = true;
-                self.taskCompletionSource.TrySetCanceled(self.cancellationToken);
                 self.pollable.Dispose();
                 self.cancellationTokenRegistration.Dispose();
+                self.taskCompletionSource.TrySetCanceled(self.cancellationToken);
             }
         }
     }
