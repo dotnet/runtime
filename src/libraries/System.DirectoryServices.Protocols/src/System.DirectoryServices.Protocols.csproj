@@ -16,8 +16,7 @@
     <Nullable>disable</Nullable>
 
     <!-- CS3016: Arrays as attribute arguments is not CLS-compliant -->
-    <!-- CA2020: Prevent behavioral change caused by built-in operators of IntPtr/UIntPtr -->
-    <NoWarn>$(NoWarn);nullable;CS3016;CA2020</NoWarn>
+    <NoWarn>$(NoWarn);nullable;CS3016</NoWarn>
   </PropertyGroup>
 
   <!-- DesignTimeBuild requires all the TargetFramework Derived Properties to not be present in the first property group. -->

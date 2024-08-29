@@ -183,18 +183,18 @@ namespace System.DirectoryServices.Protocols
     internal sealed class BerVal
     {
 #if TARGET_UNIX
-        public IntPtr bv_len;
+        public nint bv_len;
 #else
         public int bv_len;
 #endif
-        public IntPtr bv_val = IntPtr.Zero;
+        public nint bv_val = nint.Zero;
 
 #if NET
         [CustomMarshaller(typeof(BerVal), MarshalMode.ManagedToUnmanagedIn, typeof(PinningMarshaller))]
         internal static unsafe class PinningMarshaller
         {
 #if TARGET_UNIX
-            public static ref IntPtr GetPinnableReference(BerVal managed) => ref (managed is null ? ref Unsafe.NullRef<IntPtr>() : ref managed.bv_len);
+            public static ref nint GetPinnableReference(BerVal managed) => ref (managed is null ? ref Unsafe.NullRef<nint>() : ref managed.bv_len);
 #else
             public static ref int GetPinnableReference(BerVal managed) => ref (managed is null ? ref Unsafe.NullRef<int>() : ref managed.bv_len);
 #endif
