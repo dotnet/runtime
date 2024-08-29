@@ -52,6 +52,7 @@ DYNAMIC_EVENT(CommittedUsage, GCEventLevel_Information, GCEventKeyword_GC, 1)
 DYNAMIC_EVENT(SizeAdaptationTuning, GCEventLevel_Information, GCEventKeyword_GC, 1)
 DYNAMIC_EVENT(SizeAdaptationFullGCTuning, GCEventLevel_Information, GCEventKeyword_GC, 1)
 DYNAMIC_EVENT(SizeAdaptationSample, GCEventLevel_Information, GCEventKeyword_GC, 1)
+DYNAMIC_EVENT(FragmentationMeasurement, GCEventLevel_Information, GCEventKeyword_GC, 1)
 
 #undef KNOWN_EVENT
 #undef DYNAMIC_EVENT
