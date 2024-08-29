@@ -71,6 +71,7 @@
       <BundleFiles Condition="'%(AppleAssembliesToBundle._IsNative)' != 'true'"
                    Include="@(AppleAssembliesToBundle)"         TargetDir="publish\%(AppleAssembliesToBundle.RecursiveDir)" />
       <BundleFiles Include="@(AppleNativeFilesToBundle)"        TargetDir="publish\%(AppleNativeFilesToBundle.RecursiveDir)" />
+      <BundleFiles Include="@(_SatelliteAssemblies)"            TargetDir="publish\%(_SatelliteAssemblies.RecursiveDir)" />
       <BundleFiles Include="$(RuntimeConfigFilePath)"           TargetDir="publish" />
 
       <BundleFiles Include="$(MonoProjectRoot)\msbuild\apple\data\*" TargetDir="publish" />
