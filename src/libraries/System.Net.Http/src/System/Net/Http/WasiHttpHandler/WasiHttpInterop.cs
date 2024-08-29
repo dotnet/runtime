@@ -135,7 +135,30 @@ namespace System.Net.Http
                     }
                 }
             }
-            return Fields.FromList(headers);
+            try
+            {
+                return Fields.FromList(headers);
+            }
+            catch (WitException e)
+            {
+                var error = HeaderErrorToString((HeaderError)e.Value);
+                throw new HttpRequestException($"Header validation error: {error}");
+            }
+        }
+
+        private static string HeaderErrorToString(HeaderError error)
+        {
+            switch (error.Tag)
+            {
+                case ITypes.HeaderError.INVALID_SYNTAX:
+                    return "INVALID_SYNTAX";
+                case ITypes.HeaderError.FORBIDDEN:
+                    return "FORBIDDEN";
+                case ITypes.HeaderError.IMMUTABLE:
+                    return "IMMUTABLE";
+                default:
+                    return $"{error.Tag}";
+            }
         }
 
         public static void ConvertResponseHeaders(IncomingResponse incomingResponse, HttpResponseMessage response)

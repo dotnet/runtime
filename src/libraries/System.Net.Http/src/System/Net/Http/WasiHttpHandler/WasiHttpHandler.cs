@@ -21,12 +21,9 @@ namespace System.Net.Http
     // on top of https://github.com/WebAssembly/wasi-http/blob/main/wit/types.wit
     internal sealed class WasiRequestWrapper : IDisposable
     {
+        private WasiOutputStream? wasiOutputStream; // disposal could be made earlier from this instance's Dispose
+        private WasiInputStream? incomingStream; // disposal could be made earlier from this instance's Dispose
         private FutureIncomingResponse? future; // owned by this instance
-        private WasiOutputStream? wasiOutputStream; // owned by this instance
-        private WasiInputStream? incomingStream; // owned by this instance
-
-        public Task? requestBodyComplete;
-        public Task<IncomingResponse>? requestComplete;
         private bool isDisposed;
 
         public async Task<HttpResponseMessage> SendRequestAsync(HttpRequestMessage request, CancellationToken cancellationToken)
@@ -45,13 +42,13 @@ namespace System.Net.Http
                 outgoingRequest.SetAuthority(WasiHttpInterop.ConvertAuthority(request.RequestUri));
                 outgoingRequest.SetPathWithQuery(request.RequestUri.PathAndQuery);
 
-                requestBodyComplete = SendContent(request.Content, outgoingRequest, cancellationToken);
+#pragma warning disable CS4014 // intentionaly not awaited
+                SendContent(request.Content, outgoingRequest, cancellationToken);
+#pragma warning restore CS4014
 
                 future = OutgoingHandlerInterop.Handle(outgoingRequest, null);
 
-                requestComplete = SendRequest(cancellationToken);
-
-                using var incomingResponse = await requestComplete.ConfigureAwait(false);
+                using var incomingResponse = await SendRequest(cancellationToken).ConfigureAwait(false);
 
                 ObjectDisposedException.ThrowIf(isDisposed, this);
                 cancellationToken.ThrowIfCancellationRequested();
@@ -71,12 +68,10 @@ namespace System.Net.Http
             }
             catch (WitException e)
             {
-                Dispose();
                 throw new HttpRequestException(WasiHttpInterop.ErrorCodeToString((ErrorCode)e.Value), e);
             }
             catch (Exception)
             {
-                Dispose();
                 throw;
             }
         }
