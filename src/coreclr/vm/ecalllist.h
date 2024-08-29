@@ -68,14 +68,8 @@ FCFuncStart(gStringFuncs)
 FCFuncEnd()
 
 FCFuncStart(gDiagnosticsDebugger)
-    FCFuncElement("BreakInternal", DebugDebugger::Break)
     FCFuncElement("get_IsAttached", DebugDebugger::IsDebuggerAttached)
     FCFuncElement("IsLogging", DebugDebugger::IsLogging)
-    FCFuncElement("CustomNotification", DebugDebugger::CustomNotification)
-FCFuncEnd()
-
-FCFuncStart(gDiagnosticsStackTrace)
-    FCFuncElement("GetStackFramesInternal", DebugStackTrace::GetStackFramesInternal)
 FCFuncEnd()
 
 FCFuncStart(gEnvironmentFuncs)
@@ -508,7 +502,6 @@ FCClassElement("RuntimeType", "System", gSystem_RuntimeType)
 FCClassElement("RuntimeTypeHandle", "System", gCOMTypeHandleFuncs)
 
 FCClassElement("Signature", "System", gSignatureNative)
-FCClassElement("StackTrace", "System.Diagnostics", gDiagnosticsStackTrace)
 FCClassElement("Stream", "System.IO", gStreamFuncs)
 FCClassElement("String", "System", gStringFuncs)
 FCClassElement("StubHelpers", "System.StubHelpers", gStubHelperFuncs)

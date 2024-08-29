@@ -7,6 +7,7 @@ set (BROTLI_SOURCES_BASE
     common/context.c
     common/dictionary.c
     common/platform.c
+    common/shared_dictionary.c
     common/transform.c
     dec/bit_reader.c
     dec/decode.c
@@ -19,6 +20,7 @@ set (BROTLI_SOURCES_BASE
     enc/brotli_bit_stream.c
     enc/cluster.c
     enc/command.c
+    enc/compound_dictionary.c
     enc/compress_fragment.c
     enc/compress_fragment_two_pass.c
     enc/dictionary_hash.c
