@@ -50,7 +50,9 @@
          built during official builds, however we wish to include them
          in our runtime.json to enable others to provide them.  -->
     <UnofficialBuildRID Include="freebsd-x64" />
-    <UnofficialBuildRID Include="freebsd-arm64" />
+    <UnofficialBuildRID Include="freebsd-arm64">
+      <Platform>arm64</Platform>
+    </UnofficialBuildRID>
     <UnofficialBuildRID Include="tizen.4.0.0-armel">
       <Platform>armel</Platform>
     </UnofficialBuildRID>

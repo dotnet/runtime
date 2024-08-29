@@ -2,10 +2,7 @@
   <PropertyGroup>
     <OutputPath>$(RuntimeBinDir)ilc/</OutputPath>
     <RuntimeIdentifier>$(OutputRID)</RuntimeIdentifier>
-  </PropertyGroup>
-
-  <PropertyGroup Condition="'$(UseNativeAotForComponents)' != 'true' and '$(CrossBuild)' == 'true'">
-    <UseLocalTargetingRuntimePack>true</UseLocalTargetingRuntimePack>
+    <UseLocalTargetingRuntimePack Condition="'$(UseNativeAotForComponents)' != 'true' and '$(CrossBuild)' == 'true' and '$(TargetOS)' != '$(HostOS)'">true</UseLocalTargetingRuntimePack>
   </PropertyGroup>
 
   <Import Project="$(RepositoryEngineeringDir)targetingpacks.targets" Condition="'$(UseLocalTargetingRuntimePack)' == 'true'" />
