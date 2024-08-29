@@ -25,6 +25,8 @@ The .NET Foundation licenses this file to you under the MIT license.
     <LinkerFlavor Condition="'$(LinkerFlavor)' == '' and '$(_targetOS)' == 'linux'">bfd</LinkerFlavor>
     <IlcDefaultStackSize Condition="'$(IlcDefaultStackSize)' == '' and '$(_linuxLibcFlavor)' == 'musl'">1572864</IlcDefaultStackSize>
     <UseSystemZlib Condition="'$(UseSystemZlib)' == '' and !Exists('$(IlcSdkPath)libz.a')">true</UseSystemZlib>
+    <!-- Use libbrotlicommon.a as the sentinel for the three brotli libs. -->
+    <UseSystemBrotli Condition="'$(UseSystemBrotli)' == '' and !Exists('$(IlcSdkPath)libbrotlicommon.a')">true</UseSystemBrotli>
   </PropertyGroup>
 
   <Target Name="SetupOSSpecificProps" DependsOnTargets="$(IlcDynamicBuildPropertyDependencies)">
@@ -155,6 +157,14 @@ The .NET Foundation licenses this file to you under the MIT license.
       <NativeLibrary Condition="'$(UseSystemZlib)' != 'true'" Include="$(IlcSdkPath)libz.a" />
     </ItemGroup>
 
+    <!-- brotli must be added after System.IO.Compression.Native and brotlicommon must be added last, order matters. -->
+    <ItemGroup Condition="'$(UseSystemBrotli)' != 'true'">
+      <NativeLibrary Include="$(IlcSdkPath)libbrotlienc.a" />
+      <NativeLibrary Include="$(IlcSdkPath)libbrotlidec.a" />
+      <NativeLibrary Include="$(IlcSdkPath)libbrotlicommon.a" />
+    </ItemGroup>
+
+
     <ItemGroup Condition="'$(StaticICULinking)' == 'true' and '$(NativeLib)' != 'Static' and '$(InvariantGlobalization)' != 'true'">
       <NativeLibrary Include="$(IntermediateOutputPath)libs/System.Globalization.Native/build/libSystem.Globalization.Native.a" />
       <DirectPInvoke Include="libSystem.Globalization.Native" />
@@ -192,6 +202,7 @@ The .NET Foundation licenses this file to you under the MIT license.
       <NativeSystemLibrary Include="swiftCore" Condition="'$(_IsApplePlatform)' == 'true'" />
       <NativeSystemLibrary Include="swiftFoundation" Condition="'$(_IsApplePlatform)' == 'true'" />
       <NativeSystemLibrary Include="z" Condition="'$(UseSystemZlib)' == 'true'" />
+      <NativeSystemLibrary Include="brotlienc;brotlidec;brotlicommon" Condition="'$(UseSystemBrotli)' == 'true'" />
       <NativeSystemLibrary Include="rt" Condition="'$(_IsApplePlatform)' != 'true' and '$(_linuxLibcFlavor)' != 'bionic'" />
       <NativeSystemLibrary Include="log" Condition="'$(_linuxLibcFlavor)' == 'bionic'" />
       <NativeSystemLibrary Include="icucore" Condition="'$(_IsApplePlatform)' == 'true'" />
