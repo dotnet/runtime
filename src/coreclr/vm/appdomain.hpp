@@ -1498,7 +1498,7 @@ public:
 #endif // FEATURE_COMINTEROP
 
 private:
-    void RaiseLoadingAssemblyEvent(DomainAssembly* pAssembly);
+    void RaiseLoadingAssemblyEvent(Assembly* pAssembly);
 
     friend class DomainAssembly;
 
