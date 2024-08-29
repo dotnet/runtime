@@ -10771,6 +10771,7 @@ GCX_COOP_THREAD_EXISTS(GET_THREAD());
 HCIMPL_PROLOG(ProfileEnter)
 {
     FCALL_CONTRACT;
+    FC_GC_POLL_NOT_NEEDED();            // we pulse GC mode, so we are doing a poll
 
     if (GetThreadNULLOk() == NULL)
     {
@@ -10810,13 +10811,10 @@ HCIMPL_PROLOG(ProfileEnter)
     _ASSERTE(GetThread()->PreemptiveGCDisabled());
     _ASSERTE(platformSpecificHandle != NULL);
 
-    // Set up a frame
-    HELPER_METHOD_FRAME_BEGIN_ATTRIB_NOPOLL(Frame::FRAME_ATTR_CAPTURE_DEPTH_2);
-
-    // Our contract is FCALL_CONTRACT, which is considered triggers if you set up a
-    // frame, like we're about to do.
+    // This callback is called from the prolog of a method, without a valid ability to suspend the runtime/take a GC.
+    // This means that we cannot trigger a GC.
     SetCallbackStateFlagsHolder csf(
-        COR_PRF_CALLBACKSTATE_INCALLBACK | COR_PRF_CALLBACKSTATE_IN_TRIGGERS_SCOPE);
+        COR_PRF_CALLBACKSTATE_INCALLBACK);
 
     COR_PRF_ELT_INFO_INTERNAL eltInfo;
     eltInfo.platformSpecificHandle = platformSpecificHandle;
@@ -10943,8 +10941,6 @@ HCIMPL_PROLOG(ProfileEnter)
 LExit:
     ;
 
-    HELPER_METHOD_FRAME_END();      // Un-link the frame
-
 #endif // PROFILING_SUPPORTED
 }
 HCIMPLEND
@@ -10984,13 +10980,10 @@ HCIMPL_PROLOG(ProfileLeave)
     _ASSERTE(GetThread()->PreemptiveGCDisabled());
     _ASSERTE(platformSpecificHandle != NULL);
 
-    // Set up a frame
-    HELPER_METHOD_FRAME_BEGIN_ATTRIB_NOPOLL(Frame::FRAME_ATTR_CAPTURE_DEPTH_2);
-
-    // Our contract is FCALL_CONTRACT, which is considered triggers if you set up a
-    // frame, like we're about to do.
+    // This callback is called from the epilog of a method, without a valid ability to suspend the runtime/take a GC.
+    // This means that we cannot trigger a GC.
     SetCallbackStateFlagsHolder csf(
-        COR_PRF_CALLBACKSTATE_INCALLBACK | COR_PRF_CALLBACKSTATE_IN_TRIGGERS_SCOPE);
+        COR_PRF_CALLBACKSTATE_INCALLBACK);
 
     COR_PRF_ELT_INFO_INTERNAL eltInfo;
     eltInfo.platformSpecificHandle = platformSpecificHandle;
@@ -11077,8 +11070,6 @@ LExit:
 
     ;
 
-    HELPER_METHOD_FRAME_END();      // Un-link the frame
-
 #endif // PROFILING_SUPPORTED
 }
 HCIMPLEND
@@ -11116,13 +11107,10 @@ HCIMPL2(EXTERN_C void, ProfileTailcall, UINT_PTR clientData, void * platformSpec
     _ASSERTE(GetThread()->PreemptiveGCDisabled());
     _ASSERTE(platformSpecificHandle != NULL);
 
-    // Set up a frame
-    HELPER_METHOD_FRAME_BEGIN_ATTRIB_NOPOLL(Frame::FRAME_ATTR_CAPTURE_DEPTH_2);
-
-    // Our contract is FCALL_CONTRACT, which is considered triggers if you set up a
-    // frame, like we're about to do.
+    // This callback is called from the epilog of a method, without a valid ability to suspend the runtime/take a GC.
+    // This means that we cannot trigger a GC.
     SetCallbackStateFlagsHolder csf(
-        COR_PRF_CALLBACKSTATE_INCALLBACK | COR_PRF_CALLBACKSTATE_IN_TRIGGERS_SCOPE);
+        COR_PRF_CALLBACKSTATE_INCALLBACK);
 
     COR_PRF_ELT_INFO_INTERNAL eltInfo;
     eltInfo.platformSpecificHandle = platformSpecificHandle;
@@ -11204,8 +11192,6 @@ HCIMPL2(EXTERN_C void, ProfileTailcall, UINT_PTR clientData, void * platformSpec
 LExit:
 
     ;
-
-    HELPER_METHOD_FRAME_END();      // Un-link the frame
 
 #endif // PROFILING_SUPPORTED
 }
