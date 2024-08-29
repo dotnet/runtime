@@ -757,7 +757,7 @@ namespace System.DirectoryServices.Protocols
                 if (value != null)
                 {
                     _directoryControlValue = new byte[value.bv_len];
-                    Marshal.Copy(value.bv_val, _directoryControlValue, 0, value.bv_len);
+                    Marshal.Copy(value.bv_val, _directoryControlValue, 0, (int)value.bv_len);
                 }
             }
             finally

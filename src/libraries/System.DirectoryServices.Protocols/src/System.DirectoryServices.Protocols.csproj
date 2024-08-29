@@ -10,19 +10,21 @@
     <AddNETFrameworkPlaceholderFileToPackage>true</AddNETFrameworkPlaceholderFileToPackage>
     <AddNETFrameworkAssemblyReferenceToPackage>true</AddNETFrameworkAssemblyReferenceToPackage>
     <PackageDescription>Provides the methods defined in the Lightweight Directory Access Protocol (LDAP) version 3 (V3) and Directory Services Markup Language (DSML) version 2.0 (V2) standards.</PackageDescription>
-    <!-- CS3016: Arrays as attribute arguments is not CLS-compliant -->
-    <NoWarn>$(NoWarn);CS3016</NoWarn>
     <EnableAOTAnalyzer>false</EnableAOTAnalyzer>
 
     <!-- TODO https://github.com/dotnet/runtime/issues/90400: Annotate for nullable reference types -->
     <Nullable>disable</Nullable>
-    <NoWarn>$(NoWarn);nullable</NoWarn>
+
+    <!-- CS3016: Arrays as attribute arguments is not CLS-compliant -->
+    <!-- CA2020: Prevent behavioral change caused by built-in operators of IntPtr/UIntPtr -->
+    <NoWarn>$(NoWarn);nullable;CS3016;CA2020</NoWarn>
   </PropertyGroup>
 
   <!-- DesignTimeBuild requires all the TargetFramework Derived Properties to not be present in the first property group. -->
   <PropertyGroup>
     <TargetPlatformIdentifier>$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)'))</TargetPlatformIdentifier>
     <GeneratePlatformNotSupportedAssemblyMessage Condition="'$(TargetPlatformIdentifier)' == ''">SR.DirectoryServicesProtocols_PlatformNotSupported</GeneratePlatformNotSupportedAssemblyMessage>
+    <DefineConstants Condition="'$(TargetPlatformIdentifier)' == 'linux' or '$(TargetPlatformIdentifier)' == 'osx'">$(DefineConstants);TARGET_UNIX</DefineConstants>
   </PropertyGroup>
 
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' != ''">

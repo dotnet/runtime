@@ -277,7 +277,7 @@ namespace System.DirectoryServices.Protocols
                 {
                     encodingResult = new byte[binaryValue.bv_len];
 
-                    Marshal.Copy(binaryValue.bv_val, encodingResult, 0, binaryValue.bv_len);
+                    Marshal.Copy(binaryValue.bv_val, encodingResult, 0, (int)binaryValue.bv_len);
                 }
             }
             finally
@@ -500,7 +500,7 @@ namespace System.DirectoryServices.Protocols
                         Marshal.PtrToStructure(result, binaryValue);
 
                         byteArray = new byte[binaryValue.bv_len];
-                        Marshal.Copy(binaryValue.bv_val, byteArray, 0, binaryValue.bv_len);
+                        Marshal.Copy(binaryValue.bv_val, byteArray, 0, (int)binaryValue.bv_len);
                     }
                 }
                 else
@@ -608,7 +608,7 @@ namespace System.DirectoryServices.Protocols
                             Marshal.PtrToStructure(tempPtr, ber);
 
                             byte[] berArray = new byte[ber.bv_len];
-                            Marshal.Copy(ber.bv_val, berArray, 0, ber.bv_len);
+                            Marshal.Copy(ber.bv_val, berArray, 0, (int)ber.bv_len);
 
                             binaryList.Add(berArray);
 
