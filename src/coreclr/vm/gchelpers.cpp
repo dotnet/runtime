@@ -402,7 +402,7 @@ OBJECTREF AllocateSzArray(MethodTable* pArrayMT, INT32 cElements, GC_ALLOC_FLAGS
 #endif
 
 #ifdef FEATURE_DOUBLE_ALIGNMENT_HINT
-    if ((pArrayMT->GetArrayElementType() == ELEMENT_TYPE_R8) &&
+    if ((pArrayMT->GetArrayElementTypeHandle() == CoreLibBinder::GetElementType(ELEMENT_TYPE_R8)) &&
         ((DWORD)cElements >= g_pConfig->GetDoubleArrayToLargeObjectHeapThreshold()))
     {
         STRESS_LOG2(LF_GC, LL_INFO10, "Allocating double MD array of size %d and length %d to large object heap\n", totalSize, cElements);
@@ -425,7 +425,7 @@ OBJECTREF AllocateSzArray(MethodTable* pArrayMT, INT32 cElements, GC_ALLOC_FLAGS
     else
     {
 #ifdef FEATURE_DOUBLE_ALIGNMENT_HINT
-        if (pArrayMT->GetArrayElementType() == ELEMENT_TYPE_R8)
+        if (pArrayMT->GetArrayElementTypeHandle() == CoreLibBinder::GetElementType(ELEMENT_TYPE_R8))
         {
             flags |= GC_ALLOC_ALIGN8;
         }
@@ -497,7 +497,7 @@ OBJECTREF TryAllocateFrozenSzArray(MethodTable* pArrayMT, INT32 cElements)
 
     // FrozenObjectHeapManager doesn't yet support objects with a custom alignment,
     // so we give up on arrays of value types requiring 8 byte alignment on 32bit platforms.
-    if ((DATA_ALIGNMENT < sizeof(double)) && (pArrayMT->GetArrayElementType() == ELEMENT_TYPE_R8))
+    if ((DATA_ALIGNMENT < sizeof(double)) && (pArrayMT->GetArrayElementTypeHandle() == CoreLibBinder::GetElementType(ELEMENT_TYPE_R8)))
     {
         return NULL;
     }
@@ -665,7 +665,7 @@ OBJECTREF AllocateArrayEx(MethodTable *pArrayMT, INT32 *pArgs, DWORD dwNumArgs, 
 #endif
 
 #ifdef FEATURE_DOUBLE_ALIGNMENT_HINT
-    if ((pArrayMT->GetArrayElementType() == ELEMENT_TYPE_R8) &&
+    if ((pArrayMT->GetArrayElementTypeHandle() == CoreLibBinder::GetElementType(ELEMENT_TYPE_R8)) &&
         (cElements >= g_pConfig->GetDoubleArrayToLargeObjectHeapThreshold()))
     {
         STRESS_LOG2(LF_GC, LL_INFO10, "Allocating double MD array of size %d and length %d to large object heap\n", totalSize, cElements);
