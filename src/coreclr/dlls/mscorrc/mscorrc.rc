@@ -468,7 +468,6 @@ BEGIN
     IDS_EE_INVALID_CA                       "Invalid custom attribute provided."
 
     IDS_EE_THREAD_CANNOT_GET                "Unable to retrieve thread information."
-    IDS_EE_THREAD_BAD_STATE                 "Thread in invalid state."
     IDS_EE_THREAD_ABORT_WHILE_SUSPEND       "Thread is suspended; attempting to abort."
     IDS_EE_NOVARIANTRETURN                  "PInvoke restriction: cannot return variants."
 

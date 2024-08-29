@@ -8849,7 +8849,7 @@ void Debugger::SendUserBreakpoint(Thread * thread)
     {
         THROWS;
         GC_TRIGGERS;
-        MODE_ANY;
+        MODE_PREEMPTIVE;
 
         PRECONDITION(thread != NULL);
         PRECONDITION(thread == ::GetThreadNULLOk());
