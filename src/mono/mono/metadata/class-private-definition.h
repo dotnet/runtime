@@ -80,7 +80,7 @@ struct _MonoClass {
 	/* next byte */
 	guint8 min_align;
 #ifdef HOST_BROWSER
-	char heapshot_scratch_byte;
+	guint8 heapshot_scratch_byte;
 #endif
 
 	MonoClass  *parent;
