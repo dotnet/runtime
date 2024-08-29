@@ -72,9 +72,15 @@ extern "C" void             RedirectedHandledJITCaseForGCStress_Stub(void);
 #define IS_VALID_CODE_PTR(addr)             _ASSERTE((addr) != NULL)
 
 #if defined(TARGET_AMD64) || defined(TARGET_X86)
-// Although APX is only for X64, we can still define it under x86 to keep the original code structure.
-#define XSTATE_MASK_APX (0x80000)
-#endif  // TARGET_AMD64
+// These values should be picked up from winrt.h, defining them in case they are missing there.
+#ifndef XSTATE_APX
+#define XSTATE_APX (19)
+#endif // XSTATE_APX
+
+#ifndef XSTATE_MASK_APX
+#define XSTATE_MASK_APX (1 << XSTATE_APX)
+#endif // XSTATE_MASK_APX
+#endif  // TARGET_AMD64 || TARGET_X86
 
 void ThreadSuspend::SetSuspendRuntimeInProgress()
 {

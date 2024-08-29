@@ -877,7 +877,7 @@ void CONTEXTToNativeContext(CONST CONTEXT *lpContext, native_context_t *native)
                 // TODO-xarch-apx: I suppose OSX will not support APX.
                 if (FPREG_HasApxRegisters(native))
                 {
-                    _ASSERT((lpContext->XStateFeaturesMask & XSATE_MASK_APX) == XSATE_MASK_APX);
+                    _ASSERT((lpContext->XStateFeaturesMask & XSTATE_MASK_APX) == XSTATE_MASK_APX);
 
                     dest = FPREG_Xstate_Egpr(native, &size);
                     _ASSERT(size == (sizeof(DWORD64) * 16));
