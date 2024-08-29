@@ -8,6 +8,7 @@ using System.Linq;
 using Microsoft.DotNet.Cli.Build;
 using Microsoft.DotNet.Cli.Build.Framework;
 using Xunit;
+using static Microsoft.DotNet.CoreSetup.Test.Constants;
 
 namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.FrameworkResolution
 {
@@ -215,6 +216,50 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.FrameworkResolution
                 .And.HaveStdErrContaining(expectedOutput)
                 .And.HaveStdErrContaining("https://aka.ms/dotnet/app-launch-failed")
                 .And.HaveStdErrContaining("Ignoring FX version [9999.9.9] without .deps.json");
+        }
+
+        [Fact]
+        public void FrameworkResolutionError_ListOtherArchitectures()
+        {
+            using (var registeredInstallLocationOverride = new RegisteredInstallLocationOverride(SharedState.DotNetMainHive.GreatestVersionHostFxrFilePath))
+            using (var otherArchArtifact = TestArtifact.Create("otherArch"))
+            {
+                string requestedVersion = "9999.9.9";
+                string[] otherArchs = ["arm64", "x64", "x86"];
+                var installLocations = new (string, string)[otherArchs.Length];
+                for (int i = 0; i < otherArchs.Length; i++)
+                {
+                    string arch = otherArchs[i];
+
+                    // Create a .NET install with Microsoft.NETCoreApp at the registered location
+                    var dotnet = new DotNetBuilder(otherArchArtifact.Location, TestContext.BuiltDotNet.BinPath, arch)
+                        .AddMicrosoftNETCoreAppFrameworkMockHostPolicy(requestedVersion)
+                        .Build();
+                    installLocations[i] = (arch, dotnet.BinPath);
+                }
+
+                registeredInstallLocationOverride.SetInstallLocation(installLocations);
+
+                CommandResult result = RunTest(
+                    new TestSettings()
+                        .WithRuntimeConfigCustomizer(c => c.WithFramework(MicrosoftNETCoreApp, requestedVersion))
+                        .WithEnvironment(TestOnlyEnvironmentVariables.RegisteredConfigLocation, registeredInstallLocationOverride.PathValueOverride),
+                    multiLevelLookup: null);
+
+                result.ShouldFailToFindCompatibleFrameworkVersion(MicrosoftNETCoreApp, requestedVersion)
+                    .And.HaveStdErrContaining("The following frameworks for other architectures were found:");
+
+                // Error message should list framework found for other architectures
+                foreach ((string arch, string path) in installLocations)
+                {
+                    if (arch == TestContext.BuildArchitecture)
+                        continue;
+
+                    string expectedPath = System.Text.RegularExpressions.Regex.Escape(Path.Combine(path, "shared", MicrosoftNETCoreApp));
+                    result.Should()
+                        .HaveStdErrMatching($@"{arch}\s*{requestedVersion} at \[{expectedPath}\]", System.Text.RegularExpressions.RegexOptions.Multiline);
+                }
+            }
         }
 
         private CommandResult RunTest(Func<RuntimeConfig, RuntimeConfig> runtimeConfig, bool? multiLevelLookup = true)
