@@ -565,18 +565,32 @@ namespace Microsoft.Interop
             if (!elementCleanup.IsKind(SyntaxKind.EmptyStatement))
             {
                 // If we don't have the numElements variable still available from unmarshal or marshal stage, we need to reassign that again.
-                // When marshalling from managed to unmanaged, we don't have a numElements variable because we can determine length
-                // from the managed value.
-                if (!CodeContext.AdditionalTemporaryStateLivesAcrossStages
-                    && MarshallerHelpers.GetMarshalDirection(TypeInfo, CodeContext) != MarshalDirection.ManagedToUnmanaged)
+
+                if (!CodeContext.AdditionalTemporaryStateLivesAcrossStages)
                 {
-                    // <numElements> = <numElementsExpression>;
                     string numElementsIdentifier = MarshallerHelpers.GetNumElementsIdentifier(TypeInfo, context);
-                    yield return ExpressionStatement(
-                        AssignmentExpression(
-                            SyntaxKind.SimpleAssignmentExpression,
-                            IdentifierName(numElementsIdentifier),
-                            ElementsMarshalling.GenerateNumElementsExpression(countInfo, castCountInfo, CodeContext, context)));
+                    if (countInfo is NoCountInfo && MarshallerHelpers.GetMarshalDirection(TypeInfo, CodeContext) == MarshalDirection.ManagedToUnmanaged)
+                    {
+                        // When marshalling from managed to unmanaged, we may not have count info.
+                        // For now, just set <numElements> to 0.
+                        // See https://github.com/dotnet/runtime/issues/93423 for a tracking issue.
+
+                        // <numElements> = 0;
+                        yield return ExpressionStatement(
+                            AssignmentExpression(
+                                SyntaxKind.SimpleAssignmentExpression,
+                                IdentifierName(numElementsIdentifier),
+                                LiteralExpression(SyntaxKind.NumericLiteralExpression, Literal(0))));
+                    }
+                    else
+                    {
+                        // <numElements> = <numElementsExpression>;
+                        yield return ExpressionStatement(
+                            AssignmentExpression(
+                                SyntaxKind.SimpleAssignmentExpression,
+                                IdentifierName(numElementsIdentifier),
+                                ElementsMarshalling.GenerateNumElementsExpression(countInfo, castCountInfo, CodeContext, context)));
+                    }
                 }
                 yield return elementCleanup;
             }
