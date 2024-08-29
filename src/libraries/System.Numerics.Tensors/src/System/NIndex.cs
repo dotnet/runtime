@@ -7,7 +7,7 @@ using System.Runtime.CompilerServices;
 
 namespace System.Buffers
 {
-    /// <summary>Represent a type can be used to index a collection either from the start or the end.</summary>
+    /// <summary>Represents a type that can be used to index a collection either from the start or the end.</summary>
     /// <remarks>
     /// <code>
     /// int[] someArray = new int[5] { 1, 2, 3, 4, 5 } ;
@@ -19,11 +19,11 @@ namespace System.Buffers
     {
         private readonly nint _value;
 
-        /// <summary>Construct an <see cref="NIndex"/> using a value and indicating if the <see cref="NIndex"/> is from the start or from the end.</summary>
-        /// <param name="value">The index value. it has to be zero or positive number.</param>
-        /// <param name="fromEnd">Indicating if the index is from the start or from the end.</param>
+        /// <summary>Constructs an <see cref="NIndex"/> using an index value and a Boolean that indicates if the <see cref="NIndex"/> is from the start or from the end.</summary>
+        /// <param name="value">The index value. It must be greater than or equal to zero.</param>
+        /// <param name="fromEnd"><see langword="true"/> if the index is from the start; <see langword="false"/> if it's from the end.</param>
         /// <remarks>
-        /// If the NIndex constructed from the end, index value 1 means pointing at the last element and index value 0 means pointing at beyond last element.
+        /// If the NIndex constructed from the end, an index value of 1 points at the last element and an index value of 0 points beyond the last element.
         /// </remarks>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public NIndex(nint value, bool fromEnd = false)
@@ -39,10 +39,10 @@ namespace System.Buffers
                 _value = value;
         }
 
-        /// <summary>Construct a <see cref="NIndex"/> from a <see cref="Index"/></summary>
+        /// <summary>Constructs an <see cref="NIndex"/> from an <see cref="Index"/>.</summary>
         /// <param name="index">The <see cref="Index"/> to create the <see cref="NIndex"/> from.</param>
         /// <remarks>
-        /// If the NIndex constructed from the end, index value 1 means pointing at the last element and index value 0 means pointing at beyond last element.
+        /// If the NIndex constructed from the end, an index value of 1 points at the last element and an index value of 0 points beyond the last element.
         /// </remarks>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public NIndex(Index index)
@@ -59,13 +59,13 @@ namespace System.Buffers
             _value = value;
         }
 
-        /// <summary>Create an <see cref="NIndex"/> pointing at first element.</summary>
+        /// <summary>Creates an <see cref="NIndex"/> that points at the first element.</summary>
         public static NIndex Start => new NIndex((nint)0);
 
-        /// <summary>Create an <see cref="NIndex"/> pointing at beyond last element.</summary>
+        /// <summary>Creates an <see cref="NIndex"/> that points beyond the last element.</summary>
         public static NIndex End => new NIndex((nint)~0);
 
-        /// <summary>Create an <see cref="NIndex"/> from the start at the position indicated by the value.</summary>
+        /// <summary>Creates an <see cref="NIndex"/> from the start at the specified position.</summary>
         /// <param name="value">The index value from the start.</param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static NIndex FromStart(nint value)
@@ -78,7 +78,7 @@ namespace System.Buffers
             return new NIndex(value);
         }
 
-        /// <summary>Create an NIndex from the end at the position indicated by the value.</summary>
+        /// <summary>Creates an NIndex from the end at the specified position.</summary>
         /// <param name="value">The index value from the end.</param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static NIndex FromEnd(nint value)
@@ -103,7 +103,7 @@ namespace System.Buffers
         /// <returns>The converted Index.</returns>
         public Index ToIndexUnchecked() => (Index)this;
 
-        /// <summary>Returns the <see cref="NIndex"/> value.</summary>
+        /// <summary>Gets the <see cref="NIndex"/> value.</summary>
         public nint Value
         {
             get
@@ -118,13 +118,13 @@ namespace System.Buffers
         /// <summary>Indicates whether the <see cref="NIndex"/> is from the start or the end.</summary>
         public bool IsFromEnd => _value < 0;
 
-        /// <summary>Calculate the offset from the start using the giving collection length.</summary>
-        /// <param name="length">The length of the collection that the NIndex will be used with. length has to be a positive value</param>
+        /// <summary>Calculates the offset from the start using the given collection length.</summary>
+        /// <param name="length">The length of the collection that the NIndex will be used with. Must be a positive value.</param>
         /// <remarks>
-        /// For performance reason, we don't validate the input length parameter and the returned offset value against negative values.
-        /// we don't validate either the returned offset is greater than the input length.
-        /// It is expected NIndex will be used with collections which always have non negative length/count. If the returned offset is negative and
-        /// then used to NIndex a collection will get out of range exception which will be same affect as the validation.
+        /// For performance reasons, the input length argument and the returned offset value aren't validated against negative values.
+        /// Also, the returned offset might be greater than the input length.
+        /// It is expected <see cref="NIndex"/> will be used with collections that always have a non-negative length/count. If the returned offset is negative and
+        /// then used to <see cref="NIndex"/> a collection, an <see cref="ArgumentOutOfRangeException" /> is thrown, which has the same effect as the validation.
         /// </remarks>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public nint GetOffset(nint length)
@@ -141,27 +141,27 @@ namespace System.Buffers
             return offset;
         }
 
-        /// <summary>Indicates whether the current NIndex object is equal to another object of the same type.</summary>
-        /// <param name="value">An object to compare with this object</param>
+        /// <summary>Compares the current NIndex object to another object of the same type for equality.</summary>
+        /// <param name="value">An object to compare with this object.</param>
         public override bool Equals([NotNullWhen(true)] object? value) => value is NIndex other && _value == other._value;
 
-        /// <summary>Indicates whether the current NIndex object is equal to another NIndex object.</summary>
-        /// <param name="other">An object to compare with this object</param>
+        /// <summary>Compares the current <see cref="NIndex"/> object to another <see cref="NIndex"/> object for equality.</summary>
+        /// <param name="other">An object to compare with this object.</param>
         public bool Equals(NIndex other) => _value == other._value;
 
         /// <summary>Returns the hash code for this instance.</summary>
         public override int GetHashCode() => _value.GetHashCode();
 
-        /// <summary>Converts integer number to an NIndex.</summary>
+        /// <summary>Converts an integer number to an NIndex.</summary>
         public static implicit operator NIndex(nint value) => FromStart(value);
 
-        /// <summary>Converts native integer number to an NIndex.</summary>
+        /// <summary>Converts a native integer number to an NIndex.</summary>
         public static implicit operator NIndex(Index value) => new NIndex(value);
 
-        /// <summary>Converts a <see cref="NIndex"/> to an <see cref="Index"/>."/></summary>
+        /// <summary>Converts an <see cref="NIndex"/> to an <see cref="Index"/>.</summary>
         public static explicit operator Index(NIndex value) => new Index((int)value.Value, value.IsFromEnd);
 
-        /// <summary>Converts a <see cref="NIndex"/> to an <see cref="Index"/>."/></summary>
+        /// <summary>Converts an <see cref="NIndex"/> to an <see cref="Index"/>.</summary>
         public static explicit operator checked Index(NIndex value) => new Index(checked((int)value.Value), value.IsFromEnd);
 
         /// <summary>Converts the value of the current NIndex object to its equivalent string representation.</summary>

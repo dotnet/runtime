@@ -9,7 +9,7 @@ using Microsoft.Extensions.Primitives;
 namespace Microsoft.Extensions.Options
 {
     /// <summary>
-    /// Implementation of <see cref="IOptionsMonitor{TOptions}"/>.
+    /// Implements <see cref="IOptionsMonitor{TOptions}"/>.
     /// </summary>
     /// <typeparam name="TOptions">Options type.</typeparam>
     public class OptionsMonitor<[DynamicallyAccessedMembers(Options.DynamicallyAccessedMembers)] TOptions> :
@@ -23,7 +23,7 @@ namespace Microsoft.Extensions.Options
         internal event Action<TOptions, string>? _onChange;
 
         /// <summary>
-        /// Constructor.
+        /// Initializes a new instance of <see cref="OptionsMonitor{TOptions}"/> with the specified factory, sources, and cache.
         /// </summary>
         /// <param name="factory">The factory to use to create options.</param>
         /// <param name="sources">The sources used to listen for changes to the options instance.</param>
@@ -82,7 +82,7 @@ namespace Microsoft.Extensions.Options
         /// <summary>
         /// Returns a configured <typeparamref name="TOptions"/> instance with the given <paramref name="name"/>.
         /// </summary>
-        /// <param name="name">The name of the <typeparamref name="TOptions"/> instance, if <see langword="null"/> <see cref="Options.DefaultName"/> is used.</param>
+        /// <param name="name">The name of the <typeparamref name="TOptions"/> instance. If <see langword="null"/>, <see cref="Options.DefaultName"/>, which is the empty string, is used.</param>
         /// <returns>The <typeparamref name="TOptions"/> instance that matches the given <paramref name="name"/>.</returns>
         /// <exception cref="OptionsValidationException">One or more <see cref="IValidateOptions{TOptions}"/> return failed <see cref="ValidateOptionsResult"/> when validating the <typeparamref name="TOptions"/> instance been created.</exception>
         /// <exception cref="MissingMethodException">The <typeparamref name="TOptions"/> does not have a public parameterless constructor or <typeparamref name="TOptions"/> is <see langword="abstract"/>.</exception>
@@ -105,7 +105,7 @@ namespace Microsoft.Extensions.Options
         /// Registers a listener to be called whenever <typeparamref name="TOptions"/> changes.
         /// </summary>
         /// <param name="listener">The action to be invoked when <typeparamref name="TOptions"/> has changed.</param>
-        /// <returns>An <see cref="IDisposable"/> which should be disposed to stop listening for changes.</returns>
+        /// <returns>An <see cref="IDisposable"/> that should be disposed to stop listening for changes.</returns>
         public IDisposable OnChange(Action<TOptions, string> listener)
         {
             var disposable = new ChangeTrackerDisposable(this, listener);

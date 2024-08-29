@@ -37,7 +37,7 @@ namespace Microsoft.Extensions.Caching.Distributed
         }
 
         /// <summary>
-        /// Sets how long the cache entry can be inactive (e.g. not accessed) before it will be removed.
+        /// Sets how long the cache entry can be inactive (for example, not accessed) before it will be removed.
         /// This will not extend the entry lifetime beyond the absolute expiration (if set).
         /// </summary>
         /// <param name="options">The options to be operated on.</param>
