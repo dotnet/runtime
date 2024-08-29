@@ -1944,7 +1944,7 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
         GenTreeHWIntrinsic* embOp2Node = intrin.op2->AsHWIntrinsic();
         size_t              numArgs    = embOp2Node->GetOperandCount();
         const HWIntrinsic   intrinEmb(embOp2Node);
-        numArgs = embOp2Node->GetOperandCount();
+        numArgs              = embOp2Node->GetOperandCount();
         GenTree* prefUseNode = nullptr;
 
         if (HWIntrinsicInfo::IsFmaIntrinsic(intrinEmb.id))
@@ -2054,7 +2054,8 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                 // Ensure that if this node and the RMW node refer to the same local variable, then this
                 // node must be marked as delay free.
                 if (isCandidateLocalRef(node) && isCandidateLocalRef(prefUseNode) &&
-                   (getIntervalForLocalVarNode(node->AsLclVar()) == getIntervalForLocalVarNode(prefUseNode->AsLclVar())))
+                    (getIntervalForLocalVarNode(node->AsLclVar()) ==
+                     getIntervalForLocalVarNode(prefUseNode->AsLclVar())))
                 {
                     assert(useRefPosition->delayRegFree);
                 }
