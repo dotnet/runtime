@@ -29,7 +29,7 @@ namespace System.Globalization.Tests
             // Lunar month 8 of 2057 has 30 days
             Assert.AreEqual(Calendar.GetDaysInMonth(2057, 8), 30);
 
-            // Lunar month 9 of 2057 has 29 days and starts on 29 Sep 2057
+            // Lunar month 9 of 2057 has 29 days and starts on 28 Sep 2057
             Assert.AreEqual(Calendar.GetDaysInMonth(2057, 9), 29);
             Assert.AreEqual(new DateOnly(2057, 9, 1, Calendar), new DateOnly(2057, 9, 28));
 
