@@ -1994,7 +1994,19 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                 }
                 else if (op == emitOp2 || op == emitOp3)
                 {
-                    srcCount += BuildDelayFreeUses(op);
+                    RefPosition* useRefPosition = nullptr;
+
+                    srcCount += BuildDelayFreeUses(op, nullptr, RBM_NONE, &useRefPosition);
+
+#if defined(DEBUG)
+                    // Ensure that if this node and the RMW node refer to the same local variable, then this
+                    // node must be marked as delay free.
+                    if (isCandidateLocalRef(op) && isCandidateLocalRef(emitOp1) &&
+                       (getIntervalForLocalVarNode(op->AsLclVar()) == getIntervalForLocalVarNode(emitOp1->AsLclVar())))
+                    {
+                        assert(useRefPosition->delayRegFree);
+                    }
+#endif // defined(DEBUG)
                 }
             }
 
@@ -2055,7 +2067,19 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                 }
                 else
                 {
-                    srcCount += BuildDelayFreeUses(embOp2Node->Op(argNum));
+                    RefPosition* useRefPosition = nullptr;
+
+                    srcCount += BuildDelayFreeUses(embOp2Node->Op(argNum), nullptr, RBM_NONE, &useRefPosition);
+
+#if defined(DEBUG)
+                    // Ensure that if this node and the RMW node refer to the same local variable, then this
+                    // node must be marked as delay free.
+                    if (isCandidateLocalRef(embOp2Node->Op(argNum)) && isCandidateLocalRef(prefUseNode) &&
+                       (getIntervalForLocalVarNode(embOp2Node->Op(argNum)->AsLclVar()) == getIntervalForLocalVarNode(prefUseNode->AsLclVar())))
+                    {
+                        assert(useRefPosition->delayRegFree);
+                    }
+#endif // defined(DEBUG)
                 }
             }
 
