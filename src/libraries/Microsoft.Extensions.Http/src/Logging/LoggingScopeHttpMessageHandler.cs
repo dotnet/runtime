@@ -75,13 +75,7 @@ namespace Microsoft.Extensions.Http.Logging
                     }
                     catch (HttpRequestException ex)
                     {
-                        var statusCode =
-#if NET_8_OR_GREATER
-                        (int)ex.StatusCode;
-#else
-                        500;
-#endif
-                        _logger.LogRequestPipelineFailed(statusCode, stopwatch.GetElapsedTime(), ex.Message);
+                        _logger.LogRequestPipelineFailed(stopwatch.GetElapsedTime(), ex);
                         throw;
                     }
                 }
