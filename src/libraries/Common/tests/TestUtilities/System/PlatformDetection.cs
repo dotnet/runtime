@@ -70,6 +70,7 @@ namespace System
         public static bool IsRiscV64Process => (int)RuntimeInformation.ProcessArchitecture == 9; // Architecture.RiscV64;
         public static bool IsX64Process => RuntimeInformation.ProcessArchitecture == Architecture.X64;
         public static bool IsX86Process => RuntimeInformation.ProcessArchitecture == Architecture.X86;
+        public static bool IsLoongArch64Process => RuntimeInformation.ProcessArchitecture == Architecture.LoongArch64;
         public static bool IsNotX86Process => !IsX86Process;
         public static bool IsArgIteratorSupported => IsMonoRuntime || (IsWindows && IsNotArmProcess && !IsNativeAot);
         public static bool IsArgIteratorNotSupported => !IsArgIteratorSupported;
