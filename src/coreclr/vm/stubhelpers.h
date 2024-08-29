@@ -44,7 +44,7 @@ public:
     static FCDECL0(void*,           NextCallReturnAddress);
 };
 
-extern "C" void* QCALLTYPE StubHelpers_CreateCustomMarshalerHelper(MethodDesc* pMD, mdToken paramToken, TypeHandle hndManagedType);
+extern "C" void QCALLTYPE StubHelpers_CreateCustomMarshaler(MethodDesc* pMD, mdToken paramToken, TypeHandle hndManagedType, QCall::ObjectHandleOnStack retObject);
 
 #ifdef PROFILING_SUPPORTED
 extern "C" void* QCALLTYPE StubHelpers_ProfilerBeginTransitionCallback(MethodDesc* pTargetMD);

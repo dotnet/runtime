@@ -2,9 +2,14 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+#if FEATURE_COMINTEROP
+using System.Runtime.InteropServices.CustomMarshalers;
+#endif
 using System.Runtime.InteropServices.Marshalling;
+using System.Runtime.Versioning;
 using System.Text;
 
 namespace System.StubHelpers
@@ -792,16 +797,6 @@ namespace System.StubHelpers
 
     internal static unsafe partial class MngdRefCustomMarshaler
     {
-        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "CustomMarshaler_GetMarshalerObject")]
-        private static partial void GetMarshaler(IntPtr pCMHelper, ObjectHandleOnStack retMarshaler);
-
-        internal static ICustomMarshaler GetMarshaler(IntPtr pCMHelper)
-        {
-            ICustomMarshaler? marshaler = null;
-            GetMarshaler(pCMHelper, ObjectHandleOnStack.Create(ref marshaler));
-            return marshaler!;
-        }
-
         internal static unsafe void ConvertContentsToNative(ICustomMarshaler marshaler, in object pManagedHome, IntPtr* pNativeHome)
         {
             // COMPAT: We never pass null to MarshalManagedToNative.
@@ -1395,8 +1390,28 @@ namespace System.StubHelpers
             s_pendingExceptionObject = exception;
         }
 
-        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "StubHelpers_CreateCustomMarshalerHelper")]
-        internal static partial IntPtr CreateCustomMarshalerHelper(IntPtr pMD, int paramToken, IntPtr hndManagedType);
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "StubHelpers_CreateCustomMarshaler")]
+        internal static partial void CreateCustomMarshaler(IntPtr pMD, int paramToken, IntPtr hndManagedType, ObjectHandleOnStack customMarshaler);
+
+#if FEATURE_COMINTEROP
+        [SupportedOSPlatform("windows")]
+        internal static object GetIEnumeratorToEnumVariantMarshaler() => EnumeratorToEnumVariantMarshaler.GetInstance(string.Empty);
+#endif
+
+        internal static object CreateCustomMarshaler(IntPtr pMD, int paramToken, IntPtr hndManagedType)
+        {
+#if FEATURE_COMINTEROP
+            if (OperatingSystem.IsWindows()
+                && hndManagedType == typeof(System.Collections.IEnumerator).TypeHandle.Value)
+            {
+                return GetIEnumeratorToEnumVariantMarshaler();
+            }
+#endif
+
+            object? retVal = null;
+            CreateCustomMarshaler(pMD, paramToken, hndManagedType, ObjectHandleOnStack.Create(ref retVal));
+            return retVal!;
+        }
 
         //-------------------------------------------------------
         // SafeHandle Helpers
@@ -1575,4 +1590,37 @@ namespace System.StubHelpers
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern IntPtr NextCallReturnAddress();
     }  // class StubHelpers
+
+#if FEATURE_COMINTEROP
+    internal static class ColorMarshaler
+    {
+        private static readonly MethodInvoker s_oleColorToDrawingColorMethod;
+        private static readonly MethodInvoker s_drawingColorToOleColorMethod;
+
+        internal static readonly IntPtr s_colorType;
+
+#pragma warning disable CA1810 // explicit static cctor
+        static ColorMarshaler()
+        {
+            Type colorTranslatorType = Type.GetType("System.Drawing.ColorTranslator, System.Drawing.Primitives", throwOnError: true)!;
+            Type colorType = Type.GetType("System.Drawing.Color, System.Drawing.Primitives", throwOnError: true)!;
+
+            s_colorType = colorType.TypeHandle.Value;
+
+            s_oleColorToDrawingColorMethod = MethodInvoker.Create(colorTranslatorType.GetMethod("FromOle", [typeof(int)])!);
+            s_drawingColorToOleColorMethod = MethodInvoker.Create(colorTranslatorType.GetMethod("ToOle", [colorType])!);
+        }
+#pragma warning restore CA1810 // explicit static cctor
+
+        internal static object ConvertToManaged(int managedColor)
+        {
+            return s_oleColorToDrawingColorMethod.Invoke(null, managedColor)!;
+        }
+
+        internal static int ConvertToNative(object? managedColor)
+        {
+            return (int)s_drawingColorToOleColorMethod.Invoke(null, managedColor)!;
+        }
+    }
+#endif
 }

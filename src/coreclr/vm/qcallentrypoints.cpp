@@ -229,7 +229,6 @@ static const Entry s_QCall[] =
     DllImportEntry(MultiCoreJIT_InternalStartProfile)
 #endif
     DllImportEntry(LoaderAllocator_Destroy)
-    DllImportEntry(CustomMarshaler_GetMarshalerObject)
     DllImportEntry(String_Intern)
     DllImportEntry(String_IsInterned)
     DllImportEntry(AppDomain_CreateDynamicAssembly)
@@ -329,8 +328,6 @@ static const Entry s_QCall[] =
     DllImportEntry(MngdSafeArrayMarshaler_ConvertSpaceToManaged)
     DllImportEntry(MngdSafeArrayMarshaler_ConvertContentsToManaged)
     DllImportEntry(MngdSafeArrayMarshaler_ClearNative)
-    DllImportEntry(Variant_ConvertSystemColorToOleColor)
-    DllImportEntry(Variant_ConvertOleColorToSystemColor)
     DllImportEntry(Variant_ConvertValueTypeToRecord)
 #endif // FEATURE_COMINTEROP
     DllImportEntry(NativeLibrary_LoadFromPath)
@@ -427,7 +424,7 @@ static const Entry s_QCall[] =
 #if defined(TARGET_X86) || defined(TARGET_AMD64)
     DllImportEntry(X86BaseCpuId)
 #endif
-    DllImportEntry(StubHelpers_CreateCustomMarshalerHelper)
+    DllImportEntry(StubHelpers_CreateCustomMarshaler)
     DllImportEntry(StubHelpers_SetStringTrailByte)
     DllImportEntry(StubHelpers_ThrowInteropParamException)
     DllImportEntry(StubHelpers_MarshalToManagedVaList)

@@ -7,6 +7,7 @@ using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.Marshalling;
+using System.StubHelpers;
 
 #pragma warning disable CA1416 // COM interop is only supported on Windows
 
@@ -16,12 +17,6 @@ namespace System
     internal static partial class Variant
     {
         internal static bool IsSystemDrawingColor(Type type) => type.FullName == "System.Drawing.Color"; // Matches the behavior of IsTypeRefOrDef
-
-        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "Variant_ConvertSystemColorToOleColor")]
-        internal static partial uint ConvertSystemColorToOleColor(ObjectHandleOnStack obj);
-
-        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "Variant_ConvertOleColorToSystemColor")]
-        internal static partial void ConvertOleColorToSystemColor(ObjectHandleOnStack objret, uint value, IntPtr pMT);
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "Variant_ConvertValueTypeToRecord")]
         private static partial void ConvertValueTypeToRecord(ObjectHandleOnStack obj, out ComVariant pOle);
@@ -163,7 +158,7 @@ namespace System
 
                 case { } when IsSystemDrawingColor(o.GetType()):
                     // System.Drawing.Color is converted to UInt32
-                    pOle = ComVariant.Create(ConvertSystemColorToOleColor(ObjectHandleOnStack.Create(ref o)));
+                    pOle = ComVariant.Create((uint)ColorMarshaler.ConvertToNative(o));
                     break;
 
                 // DateTime, decimal handled by IConvertible case
