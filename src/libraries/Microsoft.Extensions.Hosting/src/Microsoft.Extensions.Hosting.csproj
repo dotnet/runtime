@@ -5,6 +5,8 @@
     <EnableDefaultItems>true</EnableDefaultItems>
     <PackageDescription>Hosting and startup infrastructures for applications.</PackageDescription>
     <IsPackable>true</IsPackable>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+    <ServicingVersion>1</ServicingVersion>
   </PropertyGroup>
 
   <ItemGroup>

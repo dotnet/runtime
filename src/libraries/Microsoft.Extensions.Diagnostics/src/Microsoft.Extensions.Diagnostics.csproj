@@ -8,6 +8,8 @@
        should be removed in order to re-enable validation. -->
     <DisablePackageBaselineValidation>true</DisablePackageBaselineValidation>
     <IsPackable>true</IsPackable>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+    <ServicingVersion>1</ServicingVersion>
     <PackageDescription>This package includes the default implementation of IMeterFactory and additional extension methods to easily register it with the Dependency Injection framework.</PackageDescription>
   </PropertyGroup>
 

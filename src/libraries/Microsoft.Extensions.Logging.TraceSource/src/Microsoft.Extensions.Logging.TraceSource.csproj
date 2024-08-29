@@ -4,6 +4,8 @@
     <TargetFrameworks>$(NetCoreAppCurrent);$(NetCoreAppPrevious);$(NetCoreAppMinimum);netstandard2.0;$(NetFrameworkMinimum)</TargetFrameworks>
     <EnableDefaultItems>true</EnableDefaultItems>
     <IsPackable>true</IsPackable>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+    <ServicingVersion>1</ServicingVersion>
     <PackageDescription>TraceSource logger provider implementation for Microsoft.Extensions.Logging. This logger logs messages to a trace listener by writing messages with System.Diagnostics.TraceSource.TraceEvent().</PackageDescription>
   </PropertyGroup>
 
