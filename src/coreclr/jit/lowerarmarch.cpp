@@ -3771,18 +3771,6 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                 if (intrin.op2->IsCnsIntOrI())
                 {
                     MakeSrcContained(node, intrin.op2);
-
-                    if ((intrin.op2->AsIntCon()->gtIconVal == 0) && intrin.op3->IsCnsFltOrDbl())
-                    {
-                        assert(varTypeIsFloating(intrin.baseType));
-
-                        const double dataValue = intrin.op3->AsDblCon()->DconValue();
-
-                        if (comp->GetEmitter()->emitIns_valid_imm_for_fmov(dataValue))
-                        {
-                            MakeSrcContained(node, intrin.op3);
-                        }
-                    }
                 }
                 break;
 
@@ -4042,6 +4030,9 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
 //     node - The hardware intrinsic node of the form
 //            ConditionalSelect(mask, trueValue, falseValue)
 //
+//  Returns:
+//    Next node to lower.
+//
 GenTree* Lowering::LowerHWIntrinsicCndSel(GenTreeHWIntrinsic* cndSelNode)
 {
     assert(cndSelNode->OperIsHWIntrinsic(NI_Sve_ConditionalSelect));
@@ -4134,13 +4125,15 @@ GenTree* Lowering::LowerHWIntrinsicCndSel(GenTreeHWIntrinsic* cndSelNode)
                 op3->SetUnusedValue();
             }
             op1->SetUnusedValue();
+
+            GenTree* next = cndSelNode->gtNext;
             BlockRange().Remove(cndSelNode);
 
             JITDUMP("lowering ConditionalSelect HWIntrinisic (after):\n");
             DISPTREERANGE(BlockRange(), op2);
             JITDUMP("\n");
 
-            return op2;
+            return next;
         }
     }
 

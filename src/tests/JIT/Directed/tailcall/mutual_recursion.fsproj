@@ -5,6 +5,9 @@
 
     <!-- Not even printf is AOT compatible in F# -->
     <NativeAotIncompatible>true</NativeAotIncompatible>
+
+    <!-- Test is slow enough to time out under GC stress -->
+    <GCStressIncompatible>true</GCStressIncompatible>
   </PropertyGroup>
   <PropertyGroup>
     <Optimize>True</Optimize>

@@ -1238,10 +1238,6 @@ namespace Internal.JitInterface
                     id = ReadyToRunHelper.PInvokeEnd;
                     break;
 
-                case CorInfoHelpFunc.CORINFO_HELP_BBT_FCN_ENTER:
-                    id = ReadyToRunHelper.LogMethodEnter;
-                    break;
-
                 case CorInfoHelpFunc.CORINFO_HELP_STACK_PROBE:
                     id = ReadyToRunHelper.StackProbe;
                     break;
