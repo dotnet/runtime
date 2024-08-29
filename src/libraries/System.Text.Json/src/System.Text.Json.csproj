@@ -8,8 +8,8 @@
     <NoWarn>CS8969</NoWarn>
     <IncludeInternalObsoleteAttribute>true</IncludeInternalObsoleteAttribute>
     <IsPackable>true</IsPackable>
-    <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
-    <ServicingVersion>4</ServicingVersion>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+    <ServicingVersion>5</ServicingVersion>
     <PackageDescription>Provides high-performance and low-allocating types that serialize objects to JavaScript Object Notation (JSON) text and deserialize JSON text to objects, with UTF-8 support built-in. Also provides types to read and write JSON text encoded as UTF-8, and to create an in-memory document object model (DOM), that is read-only, for random access of the JSON elements within a structured view of the data.
 
 The System.Text.Json library is built-in as part of the shared framework in .NET Runtime. The package can be installed when you need to use it in other target frameworks.</PackageDescription>
@@ -122,6 +122,7 @@ The System.Text.Json library is built-in as part of the shared framework in .NET
     <Compile Include="System\Text\Json\Serialization\Converters\Collection\MemoryConverterFactory.cs" />
     <Compile Include="System\Text\Json\Serialization\Converters\Collection\StackOrQueueConverterWithReflection.cs" />
     <Compile Include="System\Text\Json\Serialization\Converters\JsonMetadataServicesConverter.cs" />
+    <Compile Include="System\Text\Json\Serialization\Converters\Node\LargeJsonObjectExtensionDataSerializationState.cs" />
     <Compile Include="System\Text\Json\Serialization\Converters\Object\ObjectWithParameterizedConstructorConverter.Large.Reflection.cs" />
     <Compile Include="System\Text\Json\Serialization\Converters\Collection\MemoryConverter.cs" />
     <Compile Include="System\Text\Json\Serialization\Converters\Value\ReadOnlyMemoryByteConverter.cs" />

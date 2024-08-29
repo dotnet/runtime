@@ -267,6 +267,9 @@ namespace System.Text.Json.Serialization.Converters
                 state.Current.JsonTypeInfo.UpdateSortedParameterCache(ref state.Current);
             }
 
+            // Complete any JsonObject extension data deserializations.
+            state.Current.LargeJsonObjectExtensionDataSerializationState?.Complete();
+
             return true;
         }
 
