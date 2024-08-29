@@ -16,9 +16,9 @@ namespace ILLink.Shared.TrimAnalysis
 	/// </summary>
 	internal sealed partial record FieldValue
 	{
-		public FieldValue (FieldReference fieldToLoad, DynamicallyAccessedMemberTypes dynamicallyAccessedMemberTypes)
+		public FieldValue (FieldReference fieldToLoad, DynamicallyAccessedMemberTypes dynamicallyAccessedMemberTypes, ITryResolveMetadata resolver)
 		{
-			StaticType = fieldToLoad.FieldType.InflateFrom (fieldToLoad.DeclaringType as IGenericInstance);
+			StaticType = new (fieldToLoad.FieldType.InflateFrom (fieldToLoad.DeclaringType as IGenericInstance), resolver);
 			Field = fieldToLoad;
 			DynamicallyAccessedMemberTypes = dynamicallyAccessedMemberTypes;
 		}
