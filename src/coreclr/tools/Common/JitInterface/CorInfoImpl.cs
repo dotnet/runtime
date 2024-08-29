@@ -2907,6 +2907,8 @@ namespace Internal.JitInterface
             bool isType1CanonSubtype = type1.IsCanonicalSubtype(CanonicalFormKind.Any);
             bool isType2CanonSubtype = type2.IsCanonicalSubtype(CanonicalFormKind.Any);
 
+            // If both types have the same type definition while
+            // hnd1 is shared and hnd2 is not - consider hnd2 more specific.
             if (type1.HasSameTypeDefinition(type2))
             {
                 return isType1CanonSubtype && !isType2CanonSubtype;
