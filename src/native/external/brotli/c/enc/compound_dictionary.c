@@ -191,8 +191,8 @@ BROTLI_BOOL AttachPreparedDictionary(
   compound->chunk_offsets[index + 1] = compound->total_size;
   {
     uint32_t* slot_offsets = (uint32_t*)(&dictionary[1]);
-    uint16_t* heads = (uint16_t*)(&slot_offsets[1u << dictionary->slot_bits]);
-    uint32_t* items = (uint32_t*)(&heads[1u << dictionary->bucket_bits]);
+    uint16_t* heads = (uint16_t*)(&slot_offsets[(size_t)1u << dictionary->slot_bits]);
+    uint32_t* items = (uint32_t*)(&heads[(size_t)1u << dictionary->bucket_bits]);
     const void* tail = (void*)&items[dictionary->num_items];
     if (dictionary->magic == kPreparedDictionaryMagic) {
       compound->chunk_source[index] = (const uint8_t*)tail;
