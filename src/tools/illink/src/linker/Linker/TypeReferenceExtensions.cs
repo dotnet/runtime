@@ -432,13 +432,18 @@ namespace Mono.Linker
 			return true;
 		}
 
-		// Array types that are dynamically accessed should resolve to System.Array instead of its element type - which is what Cecil resolves to.
-		// Any data flow annotations placed on a type parameter which receives an array type apply to the array itself. None of the members in its
-		// element type should be marked.
+		/// <summary>
+		/// Resolves a TypeReference to a TypeDefinition if possible. Non-named types other than arrays (pointers, byrefs, function pointers) return null.
+		/// Array types that are dynamically accessed resolve to System.Array instead of its element type - which is what Cecil resolves to.
+		/// Any data flow annotations placed on a type parameter which receives an array type apply to the array itself. None of the members in its
+		/// element type should be marked.
+		/// </summary>
 		public static TypeDefinition? ResolveToTypeDefinition (this TypeReference typeReference, LinkContext context)
 			=> typeReference is ArrayType
 				? BCL.FindPredefinedType (WellKnownType.System_Array, context)
-				: context.TryResolve (typeReference);
+				: typeReference.IsNamedType ()
+					? context.TryResolve (typeReference)
+					: null;
 
 		public static bool IsByRefOrPointer (this TypeReference typeReference)
 		{
