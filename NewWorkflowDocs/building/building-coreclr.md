@@ -3,6 +3,8 @@
 - [The Basics](#the-basics)
   - [Build Results](#build-results)
   - [What to do with the Build](#what-to-do-with-the-build)
+    - [The Core_Root for Testing Your Build](#the-core-root-for-testing-your-build)
+    - [The Dev Shipping Packs](#the-dev-shipping-packs)
   - [Cross Compilation](#cross-compilation)
 - [Other Features](#other-features)
   - [Build Drivers](#build-drivers)
@@ -35,11 +37,48 @@ All the generated logs are placed in under `artifacts/log`, and all the intermed
 
 ### What to do with the Build
 
-What to do with the Build Under Construction!
+CoreCLR is one of the most important components of the runtime repo, as it is one of the main engines of the .NET product. That said, while you can test and use it on its own, it becomes easiest to do this when used in conjuction with the libraries subset. When you build both subsets, you can get access to the *Core_Root*, which is one of the most reliable ways of testing changes to the runtime, running external apps with your build, and it is the way clr tests are run in the CI pipelines.
+
+#### The Core Root for Testing Your Build
+
+As described in the [workflow README](/docs/workflow/README.md#building-the-repo), you can build multiple subsets by concatenating them with a `+` sign in the `-subset` argument. So, in this case, it would be `clr+libs`. Usually, the recommended workflow is to build the clr in *Debug* configuration and the libraries in *Release*:
+
+```bash
+./build.sh -subset clr+libs -runtimeConfiguration Debug -librariesConfiguration Release
+```
+
+Once you have both subsets built, you can generate the *Core_Root*, which as mentioned above, is the most flexible way of testing your changes. You can generate the *Core_Root* by running the following command, assuming a *Checked* clr build on an x64 machine:
+
+```bash
+./src/tests/build.sh -x64 -checked -generatelayoutonly
+```
+
+Since this is more related to testing, you can find the full details and instructions in the CoreCLR testing doc [over here](/docs/workflow/testing/coreclr/testing.md).
+
+#### The Dev Shipping Packs
+
+It is also possible to generate the full runtime NuGet packages and installer that you can use to test in a more production-esque scenario. To generate these shipping artifacts, you have to build the `clr`, `libs`, `host`, and `packs` subsets:
+
+```bash
+./build.sh -subset clr+libs+host+packs -configuration Release
+```
+
+<!-- TODO: Describe the artifacts generated in the Shipping directory. -->
 
 ### Cross Compilation
 
-Cross Compilation Under Construction!
+Using an x64 machine, it is possible to generate builds for other architectures. Not all architectures are supported for cross-compilation however, and it's also dependant on the OS you are using to build and target. Refer to the table below for the compatibility matrix.
+
+| Operating System | To x86   | To Arm32 | To Arm64 |
+| :--------------: | :------: | :------: | :------: |
+| Windows          | &#x2714; | &#x2714; | &#x2714; |
+| macOS            | &#x2718; | &#x2718; | &#x2714; |
+| Linux            | &#x2718; | &#x2714; | &#x2714; |
+
+**NOTE:** On macOS, it is also possible to cross-compile from ARM64 to x64 using an Apple Silicon Mac.
+
+<!-- TODO: Review the Cross-Building doc -->
+Detailed instructions on how to do cross-compilation can be found in the cross-building doc [over here](/docs/workflow/building/cross-building.md).
 
 ## Other Features
 
@@ -67,7 +106,7 @@ You can also pass some extra compiler/linker flags to the CoreCLR build. Set the
 
 ### Native ARM64 Building on Windows
 
-Currently, the runtime repo supports building CoreCLR directly on Windows ARM64 without the need to cross-compile, albeit it is still in an experimental phase. To do this, you need to the ARM64 build tools and Windows SDK for Visual Studio, in addition to all the requirements outlined in the [Windows Requirements doc](/docs/workflow/requirements/windows-requirements.md).
+Currently, the runtime repo supports building CoreCLR directly on Windows ARM64 without the need to cross-compile, albeit it is still in an experimental phase. To do this, you need to install the ARM64 build tools and Windows SDK for Visual Studio, in addition to all the requirements outlined in the [Windows Requirements doc](/docs/workflow/requirements/windows-requirements.md).
 
 Once those requirements are fulfilled, you have to tell the build script to compile for Arm64 using *MSBuild*. *Ninja* is not yet supported on Arm64 platforms:
 

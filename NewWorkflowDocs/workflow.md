@@ -6,20 +6,24 @@
 - [Building the Repo](#building-the-repo)
   - [General Overview](#general-overview)
   - [Get Started on your Platform and Components](#get-started-on-your-platform-and-components)
+  - [General Recommendations](#general-recommendations)
+- [Testing the Repo](#testing-the-repo)
+  - [Performance Analysis](#performance-analysis)
 - [Warnings as Errors](#warnings-as-errors)
 - [Submitting a PR](#submitting-a-pr)
 - [Triaging Errors in CI](#triaging-errors-in-ci)
 
 ## Introduction
 
-The runtime repo can be worked with on Windows, Linux, macOS, and FreeBSD. Each platform has its own specific requirements to work properly, and not all architectures are supported for dev work. The following table shows the matrix of compatibility, as well as links to each OS's requirements doc.
+<!-- TODO: Review all the requirements docs. -->
+The runtime repo can be worked with on Windows, Linux, macOS, and FreeBSD. Each platform has its own specific requirements to work properly, and not all architectures are supported for dev work. The following table shows the matrix of compatibility, as well as links to each OS's requirements doc. If you are using WSL directly (i.e. not Docker), then follow the Linux requirements doc.
 
 | Chip  | Windows  | Linux    | macOS    | FreeBSD  |
 | :---: | :------: | :------: | :------: | :------: |
 | x64   | &#x2714; | &#x2714; | &#x2714; | &#x2714; |
-| x86   | &#x2714; |          |          |          |
-| Arm32 |          | &#x2714; |          |          |
-| Arm64 | &#x2714; | &#x2714; | &#x2714; |          |
+| x86   | &#x2714; | &#x2718; | &#x2718; | &#x2718; |
+| Arm32 | &#x2718; | &#x2714; | &#x2718; | &#x2718; |
+| Arm64 | &#x2714; | &#x2714; | &#x2714; | &#x2718; |
 |       | [Requirements](requirements/windows-requirements.md) | [Requirements](requirements/linux-requirements.md) | [Requirements](requirements/macos-requirements.md) | [Requirements](requirements/freebsd-requirements.md)
 
 Additionally, keep in mind that cloning the full history of this repo takes roughly 400-500 MB of network transfer, inflating to a repository that can consume somewhere between 1 to 1.5 GB. A build of the repo can take somewhere between 10 and 20 GB of space for a single OS and Platform configuration depending on the portions of the product built. This might increase over time, so consider this to be a minimum bar for working with this codebase.
@@ -31,6 +35,11 @@ The runtime repo consists of three major components:
 - The Installer
 
 You can run your builds from a regular terminal, from the root of the repository. Sudo and administrator privileges are not needed for this.
+
+<!-- MAYBE TODO: Review the docs linked in the following list. -->
+- For instructions on how to edit code and make changes, see [Editing and Debugging](/docs/workflow/editing-and-debugging.md).
+- For instructions on how to debug CoreCLR, see [Debugging CoreCLR](/docs/workflow/debugging/coreclr/debugging-runtime.md).
+- For instructions on using GitHub Codespaces, see [Codespaces](/docs/workflow/Codespaces.md).
 
 ## Important Concepts to Understand
 
@@ -66,12 +75,6 @@ Running the script as is with no arguments whatsoever, will build the whole repo
 ./build.sh -subset clr
 ```
 
-<!--
-    We might need to point to a doc or briefly explain here what the packs subset
-    actually means. Also, might be good to point out some subsets have dependencies
-    on others.
--->
-
 The main subset values you can use are:
 
 - `Clr`: The full CoreCLR runtime
@@ -88,14 +91,23 @@ It is also possible to build more than one subset under the same command-line. I
 ./build.sh -subset clr+libs -configuration Release
 ```
 
+If you require to use different configurations for different subsets, there are some specific flags you can use:
+
+- `-runtimeConfiguration (-rc)`: The CoreCLR build configuration
+- `-librariesConfiguration (-lc)`: The Libraries build configuration
+- `-hostConfiguration (-hc)`: The Host build configuration
+
+The behavior of the script is that the general configuration flag `-c` affects all subsets that have not been qualified with a more specific flag, as well as the subsets that don't have a specific flag supported, like `packs`. For example, the following command-line would build the libraries in *Release* mode and the runtime in *Debug* mode:
+
+```bash
+./build.sh -subset clr+libs -configuration Release -runtimeConfiguration Debug
+```
+
+In this example, the `-lc` flag was not specified, so `-c` qualifies `libs`. And in the first example, only `-c` was passed, so it qualifies both, `clr` and `libs`.
+
 As an extra note here, if your first argument to the build script are the subsets, you can omit the `-subset` flag altogether. Additionally, several of the supported flags also include a shorthand version (e.g. `-c` for `-configuration`). Run the script with `-h` or `-help` to get an extensive overview on all the supported flags to customize your build, including their shorthand forms, as well as a wider variety of examples.
 
 **NOTE:** On non-Windows systems, the longhand versions of the flags can be passed with either single `-` or double `--` dashes.
-
-<!--
-    TODO: Fill the sections under construction, and add links to the editing,
-    debugging, and Codespaces docs.
--->
 
 ### Get Started on your Platform and Components
 
@@ -109,15 +121,24 @@ Now that you've got the general idea on how to get started, it is important to m
 
 ### General Recommendations
 
-General Recommendations Under Construction!
+- If you're working with the runtimes, then the usual recommendation is to build everything in *Debug* mode. That said, if you know you won't be debugging the libraries source code but will need them (e.g. for a *Core_Root* build), then building the libraries on *Release* instead will provide a more productive experience.
+- The counterpart to the previous point: When you are working in libraries. In this case, it is recommended to build the runtime on *Release* and the libraries on *Debug*.
+- If you're working on *CoreLib*, then you probably want to try to get the job done with a *Release* runtime, and fall back to *Debug* if you need to.
 
 ## Testing the Repo
 
-Testing the Repo Under Construction!
+Building the components of the repo is just part of the experience. The runtime repo also includes vast test suites you can run to ensure your changes work properly as expected and don't inadvertently break something else. Each component has its own methodologies to run their tests, which are explained in their own specific docs:
 
-## Performance Analysis
+- CoreCLR
+- Libraries
+- Mono
 
-Performance Analysis Under Construction!
+### Performance Analysis
+
+Fixing bugs and adding new features aren't the only things to work on in the runtime repo. We also have to ensure performance is kept as optimal as can be, and that is done through benchmarking and profiling. If you're interested in conducting these kinds of analysis, the following links will show you the usual workflow you can follow:
+
+* [Benchmarking Workflow for dotnet/runtime repository](https://github.com/dotnet/performance/blob/master/docs/benchmarking-workflow-dotnet-runtime.md)
+* [Profiling Workflow for dotnet/runtime repository](https://github.com/dotnet/performance/blob/master/docs/profiling-workflow-dotnet-runtime.md)
 
 ## Warnings as Errors
 
@@ -125,8 +146,8 @@ The repo build treats warnings as errors. Dealing with warnings when you're in t
 
 ## Submitting a PR
 
-Before submitting a PR, make sure to review the [contribution guidelines](/CONTRIBUTING.md). After you get familiarized with them, please read the [PR guide](ci/pr-guide.md) to find more information about tips and conventions around creating a PR, getting it reviewed, and understanding the CI results.
+Before submitting a PR, make sure to review the [contribution guidelines](/CONTRIBUTING.md). After you get familiarized with them, please read the [PR guide](/docs/workflow/ci/pr-guide.md) to find more information about tips and conventions around creating a PR, getting it reviewed, and understanding the CI results.
 
 ## Triaging Errors in CI
 
-Given the size of the runtime repository, flaky tests are expected to some degree. There are a few mechanisms we use to help with the discoverability of widely impacting issues. We also have a regular procedure that ensures issues get properly tracked and prioritized. You can find more information on [triaging failures in CI](ci/failure-analysis.md).
+Given the size of the runtime repository, flaky tests are expected to some degree. There are a few mechanisms we use to help with the discoverability of widely impacting issues. We also have a regular procedure that ensures issues get properly tracked and prioritized. You can find more information on [triaging failures in CI](/docs/workflow/ci/failure-analysis.md).
