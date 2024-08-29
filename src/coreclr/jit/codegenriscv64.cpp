@@ -6237,14 +6237,14 @@ void CodeGen::genIntCastOverflowCheck(GenTreeCast* cast, const GenIntCastDesc& d
         // ulong -> long
         case GenIntCastDesc::CHECK_POSITIVE:
         {
-            // Check if int is smaller than zero
             if (desc.CheckSrcSize() == 4) // is int or uint
             {
-                // If uint is bigger than INT32_MIN that it will be treated as a signed
+                // If uint is bigger than INT32_MAX then it will be treated as a signed
                 // number so overflow will also be triggered
                 GetEmitter()->emitIns_R_R(INS_sext_w, EA_4BYTE, tempReg, reg);
                 reg = tempReg;
             }
+            // Check if integral is smaller than zero
             genJumpToThrowHlpBlk_la(SCK_OVERFLOW, INS_blt, reg, nullptr, REG_R0);
         }
         break;
@@ -6282,36 +6282,25 @@ void CodeGen::genIntCastOverflowCheck(GenTreeCast* cast, const GenIntCastDesc& d
         default: // CHECK_SMALL_INT_RANGE
         {
             assert(desc.CheckKind() == GenIntCastDesc::CHECK_SMALL_INT_RANGE);
-            const bool     isSrcUnsigned = cast->IsUnsigned();
-            const bool     isDstUnsigned = varTypeIsUnsigned(cast->gtCastType);
-            const unsigned castSize      = genTypeSize(cast->gtCastType);
+            const unsigned castSize           = genTypeSize(cast->gtCastType);
+            const bool     isSrcOrDstUnsigned = desc.CheckSmallIntMin() == 0;
 
-            if (isSrcUnsigned && !isDstUnsigned) {
-                // Check the MSB of a small int
-                const auto type_size = castSize * 8 - 1;
-                GetEmitter()->emitIns_R_R_I(INS_srli, EA_8BYTE, tempReg, reg, type_size);
-                genJumpToThrowHlpBlk_la(SCK_OVERFLOW, INS_bne, REG_R0, nullptr, tempReg);
-            }
-            else if (!isSrcUnsigned && isDstUnsigned)
+            if (isSrcOrDstUnsigned)
             {
-                // Check the MSB of a small int
-                const auto type_size = castSize * 8;
-                GetEmitter()->emitIns_R_R_I(INS_srli, EA_8BYTE, tempReg, reg, type_size);
-                genJumpToThrowHlpBlk_la(SCK_OVERFLOW, INS_bne, REG_R0, nullptr, tempReg);
-            }
-            else if (isSrcUnsigned && isDstUnsigned)
-            {
-                // Check if upper extension_size-bits are zeros
-                const auto type_size = castSize * 8;
-                GetEmitter()->emitIns_R_R_I(INS_srli, EA_8BYTE, tempReg, reg, type_size);
+                // Check if bits leading the actual small int are all zeros
+                // If destination type is signed then also check if MSB of it is zero
+                const bool     isDstSigned = !varTypeIsUnsigned(cast->gtCastType);
+                const unsigned excludeMsb  = isDstSigned ? 1 : 0;
+                const unsigned typeSize    = 8 * castSize - excludeMsb;
+                GetEmitter()->emitIns_R_R_I(INS_srli, EA_8BYTE, tempReg, reg, typeSize);
                 genJumpToThrowHlpBlk_la(SCK_OVERFLOW, INS_bne, tempReg, nullptr, REG_R0);
             }
-            else  // !isSrcUnsigned && !isDstUnsigned
+            else // Signed to Signed convertion
             {
                 // Extend sign of a small int on all of the bits above it and check whether the original type was same
-                const auto extension_size = (8 - castSize) * 8;
-                GetEmitter()->emitIns_R_R_I(INS_slli, EA_4BYTE, tempReg, reg, extension_size);
-                GetEmitter()->emitIns_R_R_I(INS_srai, EA_4BYTE, tempReg, tempReg, extension_size);
+                const auto extensionSize = (8 - castSize) * 8;
+                GetEmitter()->emitIns_R_R_I(INS_slli, EA_8BYTE, tempReg, reg, extensionSize);
+                GetEmitter()->emitIns_R_R_I(INS_srai, EA_8BYTE, tempReg, tempReg, extensionSize);
                 genJumpToThrowHlpBlk_la(SCK_OVERFLOW, INS_bne, tempReg, nullptr, reg);
             }
         }
