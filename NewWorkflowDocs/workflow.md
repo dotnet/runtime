@@ -65,6 +65,7 @@ To work with the runtime repo, there are three supported configurations (one is 
 
 ## Building the Repo
 
+<!-- TODO: Add the Docker instructions somewhere. -->
 The main script that will be in charge of most of the building you might want to do is the `build.sh`, or `build.cmd` on Windows, located at the root of the repo. This script receives as arguments the subset(s) you might want to build, as well as multiple parameters to configure your build, such as the configuration, target operating system, target architecture, and so on.
 
 ### General Overview

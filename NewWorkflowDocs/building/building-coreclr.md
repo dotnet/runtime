@@ -37,7 +37,7 @@ All the generated logs are placed in under `artifacts/log`, and all the intermed
 
 ### What to do with the Build
 
-CoreCLR is one of the most important components of the runtime repo, as it is one of the main engines of the .NET product. That said, while you can test and use it on its own, it becomes easiest to do this when used in conjuction with the libraries subset. When you build both subsets, you can get access to the *Core_Root*, which is one of the most reliable ways of testing changes to the runtime, running external apps with your build, and it is the way clr tests are run in the CI pipelines.
+CoreCLR is one of the most important components of the runtime repo, as it is one of the main engines of the .NET product. That said, while you can test and use it on its own, it becomes easiest to do this when used in conjuction with the libraries subset. When you build both subsets, you can get access to the *Core_Root*. This includes all the libraries, as well as the clr alongside other tools like *Crossgen2*, *R2RDump*, and the *ILC* compiler, and the main command-line host executable `corerun`. The *Core_Root* is one of the most reliable ways of testing changes to the runtime, running external apps with your build, and it is the way clr tests are run in the CI pipelines.
 
 #### The Core Root for Testing Your Build
 
@@ -63,7 +63,15 @@ It is also possible to generate the full runtime NuGet packages and installer th
 ./build.sh -subset clr+libs+host+packs -configuration Release
 ```
 
-<!-- TODO: Describe the artifacts generated in the Shipping directory. -->
+The shipping artifacts are placed in the `artifacts/packages/<Configuration>/Shipping` directory. Here, you will find several NuGet packages, as well as their respective symbols packages, generated from your build. More importantly, you will find a zipped archive with the full contents of the runtime, organized in the same layout as they are in the official dotnet installations. This archive includes the following files:
+
+- `host/fxr/<net-version>-dev/hostfxr` (`hostfxr` is named differently depending on the platform: `hostfxr.dll` on Windows, `libhostfxr.dylib` on macOS, and `libhostfxr.so` on Linux)
+- `shared/Microsoft.NETCore.App/<net-version>-dev/*` (The `*` here refers to all the libraries dll's, as well as all the binaries necessary for the runtime to function)
+- `dotnet (dotnet.exe on Windows)` (The main `dotnet` executable you usually use to run your apps)
+
+Note that this package only includes the runtime, therefore you will only be able to run apps but not build them. For that, you would need the full SDK.
+
+**NOTE:** On Windows, this will also include `.exe` and `.msi` installers, which you can use in case you want to test your build machine-wide. This is the closest you can get to an official build installation.
 
 ### Cross Compilation
 
