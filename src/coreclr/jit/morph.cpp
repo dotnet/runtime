@@ -7095,7 +7095,7 @@ GenTree* Compiler::fgMorphCall(GenTreeCall* call)
         GenTree* index = call->gtArgs.GetArgByIndex(1)->GetNode();
         GenTree* value = call->gtArgs.GetArgByIndex(2)->GetNode();
 
-        if (impCanSkipCovariantStoreCheck(value, arr))
+        if (gtCanSkipCovariantStoreCheck(value, arr))
         {
             // Either or both of the array and index arguments may have been spilled to temps by `fgMorphArgs`. Copy
             // the spill trees as well if necessary.

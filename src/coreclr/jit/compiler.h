@@ -3692,6 +3692,8 @@ public:
         return callMethodHandle == info.compMethodHnd;
     }
 
+    bool gtCanSkipCovariantStoreCheck(GenTree* value, GenTree* array);
+
     //-------------------------------------------------------------------------
 
     GenTree* gtFoldExpr(GenTree* tree);
@@ -5149,8 +5151,6 @@ private:
 
     bool impIsImplicitTailCallCandidate(
         OPCODE curOpcode, const BYTE* codeAddrOfNextOpcode, const BYTE* codeEnd, int prefixFlags, bool isRecursive);
-
-    bool impCanSkipCovariantStoreCheck(GenTree* value, GenTree* array);
 
     methodPointerInfo* impAllocateMethodPointerInfo(const CORINFO_RESOLVED_TOKEN& token, mdToken tokenConstrained);
 

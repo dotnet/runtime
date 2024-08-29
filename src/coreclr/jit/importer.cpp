@@ -7079,7 +7079,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 lclTyp       = JITtype2varType(info.compCompHnd->asCorInfoType(ldelemClsHnd));
 
                 // If it's a value class / pointer array, or a readonly access, we don't need a type check.
-                // TODO-CQ: adapt "impCanSkipCovariantStoreCheck" to handle "ldelema"s and call it here to
+                // TODO-CQ: adapt "gtCanSkipCovariantStoreCheck" to handle "ldelema"s and call it here to
                 // skip using the helper in more cases.
                 if ((lclTyp != TYP_REF) || ((prefixFlags & PREFIX_READONLY) != 0))
                 {
@@ -7218,7 +7218,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 if (opts.OptimizationEnabled())
                 {
                     // Is this a case where we can skip the covariant store check?
-                    if (impCanSkipCovariantStoreCheck(value, array))
+                    if (gtCanSkipCovariantStoreCheck(value, array))
                     {
                         lclTyp = TYP_REF;
                         goto ARR_ST;
@@ -13907,117 +13907,4 @@ methodPointerInfo* Compiler::impAllocateMethodPointerInfo(const CORINFO_RESOLVED
     memory->m_token           = token;
     memory->m_tokenConstraint = tokenConstrained;
     return memory;
-}
-
-//------------------------------------------------------------------------
-// impCanSkipCovariantStoreCheck: see if storing a ref type value to an array
-//    can skip the array store covariance check.
-//
-// Arguments:
-//    value -- tree producing the value to store
-//    array -- tree representing the array to store to
-//
-// Returns:
-//    true if the store does not require a covariance check.
-//
-bool Compiler::impCanSkipCovariantStoreCheck(GenTree* value, GenTree* array)
-{
-    // We should only call this when optimizing.
-    assert(opts.OptimizationEnabled());
-
-    // Check for store to same array, ie. arrLcl[i] = arrLcl[j]
-    if (value->OperIs(GT_IND) && value->AsIndir()->Addr()->OperIs(GT_INDEX_ADDR) && array->OperIs(GT_LCL_VAR))
-    {
-        GenTree* valueArray = value->AsIndir()->Addr()->AsIndexAddr()->Arr();
-        if (valueArray->OperIs(GT_LCL_VAR))
-        {
-            unsigned valueArrayLcl = valueArray->AsLclVar()->GetLclNum();
-            unsigned arrayLcl      = array->AsLclVar()->GetLclNum();
-            if ((valueArrayLcl == arrayLcl) && !lvaGetDesc(arrayLcl)->IsAddressExposed())
-            {
-                JITDUMP("\nstelem of ref from same array: skipping covariant store check\n");
-                return true;
-            }
-        }
-    }
-
-    // Check for store of NULL.
-    if (value->OperIs(GT_CNS_INT))
-    {
-        assert(value->gtType == TYP_REF);
-        if (value->AsIntCon()->gtIconVal == 0)
-        {
-            JITDUMP("\nstelem of null: skipping covariant store check\n");
-            return true;
-        }
-        // Non-0 const refs can only occur with frozen objects
-        assert(value->IsIconHandle(GTF_ICON_OBJ_HDL));
-        assert(doesMethodHaveFrozenObjects() ||
-               (compIsForInlining() && impInlineInfo->InlinerCompiler->doesMethodHaveFrozenObjects()));
-    }
-
-    // Try and get a class handle for the array
-    if (value->gtType != TYP_REF)
-    {
-        return false;
-    }
-
-    bool                 arrayIsExact   = false;
-    bool                 arrayIsNonNull = false;
-    CORINFO_CLASS_HANDLE arrayHandle    = gtGetClassHandle(array, &arrayIsExact, &arrayIsNonNull);
-
-    if (arrayHandle == NO_CLASS_HANDLE)
-    {
-        return false;
-    }
-
-    // There are some methods in corelib where we're storing to an array but the IL
-    // doesn't reflect this (see SZArrayHelper). Avoid.
-    DWORD attribs = info.compCompHnd->getClassAttribs(arrayHandle);
-    if ((attribs & CORINFO_FLG_ARRAY) == 0)
-    {
-        return false;
-    }
-
-    CORINFO_CLASS_HANDLE arrayElementHandle = nullptr;
-    CorInfoType          arrayElemType      = info.compCompHnd->getChildType(arrayHandle, &arrayElementHandle);
-
-    // Verify array type handle is really an array of ref type
-    assert(arrayElemType == CORINFO_TYPE_CLASS);
-
-    // Check for exactly object[]
-    if (arrayIsExact && (arrayElementHandle == impGetObjectClass()))
-    {
-        JITDUMP("\nstelem to (exact) object[]: skipping covariant store check\n");
-        return true;
-    }
-
-    const bool arrayTypeIsSealed = info.compCompHnd->isExactType(arrayElementHandle);
-
-    if ((!arrayIsExact && !arrayTypeIsSealed) || (arrayElementHandle == NO_CLASS_HANDLE))
-    {
-        // Bail out if we don't know array's exact type
-        return false;
-    }
-
-    bool                 valueIsExact   = false;
-    bool                 valueIsNonNull = false;
-    CORINFO_CLASS_HANDLE valueHandle    = gtGetClassHandle(value, &valueIsExact, &valueIsNonNull);
-
-    // Array's type is sealed and equals to value's type
-    if (arrayTypeIsSealed && (valueHandle == arrayElementHandle))
-    {
-        JITDUMP("\nstelem to T[] with T exact: skipping covariant store check\n");
-        return true;
-    }
-
-    // Array's type is not sealed but we know its exact type
-    if (arrayIsExact && (valueHandle != NO_CLASS_HANDLE) &&
-        (info.compCompHnd->compareTypesForCast(valueHandle, arrayElementHandle) == TypeCompareState::Must))
-    {
-        JITDUMP("\nstelem to T[] with T exact: skipping covariant store check\n");
-        return true;
-    }
-
-    return false;
 }
