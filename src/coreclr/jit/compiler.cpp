@@ -345,7 +345,7 @@ Compiler::Compiler(ArenaAllocator*       arena,
     info.compClassHnd   = compHnd->getMethodClass(methodHnd);
 
 #ifdef DEBUG
-    verbose = !compIsForInlining() || impInlineInfo->InlinerCompiler->verbose;
+    verbose = compIsForInlining() ? impInlineInfo->InlinerCompiler->verbose : false;
 #endif
 
 #if defined(DEBUG) || defined(LATE_DISASM) || DUMP_FLOWGRAPHS || DUMP_GC_TABLES
