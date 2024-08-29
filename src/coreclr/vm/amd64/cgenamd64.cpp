@@ -642,7 +642,7 @@ INT32 rel32UsingJumpStub(INT32 UNALIGNED * pRel32, PCODE target, MethodDesc *pMe
 
     INT_PTR offset = target - baseAddr;
 
-    if (!FitsInI4(offset) INDEBUG(|| PEDecoder::GetForceRelocs()))
+    if (!FitsInI4(offset) || !g_pConfig->JitEnableOptionalRelocs() INDEBUG(|| PEDecoder::GetForceRelocs()))
     {
         TADDR loAddr = baseAddr + INT32_MIN;
         if (loAddr > baseAddr) loAddr = UINT64_MIN; // overflow

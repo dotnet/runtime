@@ -11450,7 +11450,7 @@ void CEEJitInfo::recordRelocation(void * location,
             // Do we need to insert a jump stub to make the source reach the target?
             //
             //
-            if (!FitsInRel28(delta))
+            if (!FitsInRel28(delta) || !g_pConfig->JitEnableOptionalRelocs())
             {
                 // Use jump stub.
                 //
