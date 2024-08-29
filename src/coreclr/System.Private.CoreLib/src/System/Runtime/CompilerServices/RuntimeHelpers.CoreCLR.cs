@@ -813,6 +813,10 @@ namespace System.Runtime.CompilerServices
         private const uint enum_flag_HasCheckedCanCompareBitsOrUseFastGetHashCode = 0x0002;  // Whether we have checked the overridden Equals or GetHashCode
         private const uint enum_flag_CanCompareBitsOrUseFastGetHashCode = 0x0004;     // Is any field type or sub field type overridden Equals or GetHashCode
 
+        private const uint enum_flag_HasCheckedStreamOverride   = 0x0400;
+        private const uint enum_flag_StreamOverriddenRead       = 0x0800;
+        private const uint enum_flag_StreamOverriddenWrite      = 0x1000;
+
         public bool HasCheckedCanCompareBitsOrUseFastGetHashCode => (Flags & enum_flag_HasCheckedCanCompareBitsOrUseFastGetHashCode) != 0;
 
         public bool CanCompareBitsOrUseFastGetHashCode
@@ -821,6 +825,26 @@ namespace System.Runtime.CompilerServices
             {
                 Debug.Assert(HasCheckedCanCompareBitsOrUseFastGetHashCode);
                 return (Flags & enum_flag_CanCompareBitsOrUseFastGetHashCode) != 0;
+            }
+        }
+
+        public bool HasCheckedStreamOverride => (Flags & enum_flag_HasCheckedStreamOverride) != 0;
+
+        public bool IsStreamOverriddenRead
+        {
+            get
+            {
+                Debug.Assert(HasCheckedStreamOverride);
+                return (Flags & enum_flag_StreamOverriddenRead) != 0;
+            }
+        }
+
+        public bool IsStreamOverriddenWrite
+        {
+            get
+            {
+                Debug.Assert(HasCheckedStreamOverride);
+                return (Flags & enum_flag_StreamOverriddenWrite) != 0;
             }
         }
 
