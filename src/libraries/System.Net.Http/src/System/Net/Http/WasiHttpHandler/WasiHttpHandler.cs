@@ -140,9 +140,7 @@ namespace System.Net.Http
                 isDisposed = true;
                 wasiOutputStream?.Dispose();
                 incomingStream?.Dispose();
-
-                // TODO why this fails ?
-                // future?.Dispose();
+                future?.Dispose();
             }
         }
     }
