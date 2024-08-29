@@ -1945,6 +1945,7 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
         size_t              numArgs    = embOp2Node->GetOperandCount();
         const HWIntrinsic   intrinEmb(embOp2Node);
         numArgs = embOp2Node->GetOperandCount();
+        GenTree* prefUseNode = nullptr;
 
         if (HWIntrinsicInfo::IsFmaIntrinsic(intrinEmb.id))
         {
@@ -1984,33 +1985,7 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                 // Nothing needs to be done
             }
 
-            GenTree* ops[] = {intrinEmb.op1, intrinEmb.op2, intrinEmb.op3};
-            for (GenTree* op : ops)
-            {
-                if (op == emitOp1)
-                {
-                    tgtPrefUse = BuildUse(op);
-                    srcCount++;
-                }
-                else if (op == emitOp2 || op == emitOp3)
-                {
-                    RefPosition* useRefPosition = nullptr;
-
-                    srcCount += BuildDelayFreeUses(op, nullptr, RBM_NONE, &useRefPosition);
-
-#if defined(DEBUG)
-                    // Ensure that if this node and the RMW node refer to the same local variable, then this
-                    // node must be marked as delay free.
-                    if (isCandidateLocalRef(op) && isCandidateLocalRef(emitOp1) &&
-                       (getIntervalForLocalVarNode(op->AsLclVar()) == getIntervalForLocalVarNode(emitOp1->AsLclVar())))
-                    {
-                        assert(useRefPosition->delayRegFree);
-                    }
-#endif // defined(DEBUG)
-                }
-            }
-
-            srcCount += BuildDelayFreeUses(intrin.op3, emitOp1);
+            prefUseNode = emitOp1;
         }
         else
         {
@@ -2057,34 +2032,37 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
             {
                 prefUseOpNum = 2;
             }
-            GenTree* prefUseNode = embOp2Node->Op(prefUseOpNum);
-            for (size_t argNum = 1; argNum <= numArgs; argNum++)
-            {
-                if (argNum == prefUseOpNum)
-                {
-                    tgtPrefUse = BuildUse(prefUseNode);
-                    srcCount += 1;
-                }
-                else
-                {
-                    RefPosition* useRefPosition = nullptr;
+            prefUseNode = embOp2Node->Op(prefUseOpNum);
+        }
 
-                    srcCount += BuildDelayFreeUses(embOp2Node->Op(argNum), nullptr, RBM_NONE, &useRefPosition);
+        for (size_t argNum = 1; argNum <= numArgs; argNum++)
+        {
+            GenTree* node = embOp2Node->Op(argNum);
+
+            if (node == prefUseNode)
+            {
+                tgtPrefUse = BuildUse(node);
+                srcCount++;
+            }
+            else
+            {
+                RefPosition* useRefPosition = nullptr;
+
+                srcCount += BuildDelayFreeUses(node, nullptr, RBM_NONE, &useRefPosition);
 
 #if defined(DEBUG)
-                    // Ensure that if this node and the RMW node refer to the same local variable, then this
-                    // node must be marked as delay free.
-                    if (isCandidateLocalRef(embOp2Node->Op(argNum)) && isCandidateLocalRef(prefUseNode) &&
-                       (getIntervalForLocalVarNode(embOp2Node->Op(argNum)->AsLclVar()) == getIntervalForLocalVarNode(prefUseNode->AsLclVar())))
-                    {
-                        assert(useRefPosition->delayRegFree);
-                    }
-#endif // defined(DEBUG)
+                // Ensure that if this node and the RMW node refer to the same local variable, then this
+                // node must be marked as delay free.
+                if (isCandidateLocalRef(node) && isCandidateLocalRef(prefUseNode) &&
+                   (getIntervalForLocalVarNode(node->AsLclVar()) == getIntervalForLocalVarNode(prefUseNode->AsLclVar())))
+                {
+                    assert(useRefPosition->delayRegFree);
                 }
+#endif // defined(DEBUG)
             }
-
-            srcCount += BuildDelayFreeUses(intrin.op3, prefUseNode);
         }
+
+        srcCount += BuildDelayFreeUses(intrin.op3, prefUseNode);
     }
     else if (intrin.op2 != nullptr)
     {
