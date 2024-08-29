@@ -368,13 +368,9 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
             {
                 if (isRMW)
                 {
-                    if (targetReg != op1Reg)
-                    {
-                        assert(targetReg != op2Reg);
-                        assert(targetReg != op3Reg);
-
-                        GetEmitter()->emitIns_Mov(INS_mov, emitTypeSize(node), targetReg, op1Reg, /* canSkip */ true);
-                    }
+                    assert((targetReg == op1Reg) || (targetReg != op2Reg));
+                    assert((targetReg == op1Reg) || (targetReg != op3Reg));
+                    GetEmitter()->emitIns_Mov(INS_mov, emitTypeSize(node), targetReg, op1Reg, /* canSkip */ true);
 
                     HWIntrinsicImmOpHelper helper(this, intrin.op4, node);
 
@@ -416,14 +412,9 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
             {
                 if (isRMW)
                 {
-                    if (targetReg != op1Reg)
-                    {
-                        assert(targetReg != op2Reg);
-                        assert(targetReg != op3Reg);
-
-                        GetEmitter()->emitIns_Mov(INS_mov, emitTypeSize(node), targetReg, op1Reg, /* canSkip */ true);
-                    }
-
+                    assert((targetReg == op1Reg) || (targetReg != op2Reg));
+                    assert((targetReg == op1Reg) || (targetReg != op3Reg));
+                    GetEmitter()->emitIns_Mov(INS_mov, emitTypeSize(node), targetReg, op1Reg, /* canSkip */ true);
                     GetEmitter()->emitIns_R_R_R_I(ins, emitSize, targetReg, op2Reg, op3Reg, 0, opt);
                 }
                 else
@@ -686,10 +677,47 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                 {
                     if (!instrIsRMW)
                     {
-                        // Perform the actual "predicated" operation so that `embMaskOp1Reg` is the first operand
-                        // and `embMaskOp2Reg` is the second operand.
-                        GetEmitter()->emitIns_R_R_R_R(insEmbMask, emitSize, targetReg, maskReg, embMaskOp1Reg,
-                                                      embMaskOp2Reg, opt);
+                        // Perform the actual "predicated" operation so that `embMaskOp1Reg` is the first operand..
+                        switch (intrinEmbMask.id)
+                        {
+                            case NI_Sve_LoadVectorByteNonFaultingZeroExtendToInt16:
+                            case NI_Sve_LoadVectorByteNonFaultingZeroExtendToInt32:
+                            case NI_Sve_LoadVectorByteNonFaultingZeroExtendToInt64:
+                            case NI_Sve_LoadVectorByteNonFaultingZeroExtendToUInt16:
+                            case NI_Sve_LoadVectorByteNonFaultingZeroExtendToUInt32:
+                            case NI_Sve_LoadVectorByteNonFaultingZeroExtendToUInt64:
+                            case NI_Sve_LoadVectorInt16NonFaultingSignExtendToInt32:
+                            case NI_Sve_LoadVectorInt16NonFaultingSignExtendToInt64:
+                            case NI_Sve_LoadVectorInt16NonFaultingSignExtendToUInt32:
+                            case NI_Sve_LoadVectorInt16NonFaultingSignExtendToUInt64:
+                            case NI_Sve_LoadVectorInt32NonFaultingSignExtendToInt64:
+                            case NI_Sve_LoadVectorInt32NonFaultingSignExtendToUInt64:
+                            case NI_Sve_LoadVectorNonFaulting:
+                            case NI_Sve_LoadVectorSByteNonFaultingSignExtendToInt16:
+                            case NI_Sve_LoadVectorSByteNonFaultingSignExtendToInt32:
+                            case NI_Sve_LoadVectorSByteNonFaultingSignExtendToInt64:
+                            case NI_Sve_LoadVectorSByteNonFaultingSignExtendToUInt16:
+                            case NI_Sve_LoadVectorSByteNonFaultingSignExtendToUInt32:
+                            case NI_Sve_LoadVectorSByteNonFaultingSignExtendToUInt64:
+                            case NI_Sve_LoadVectorUInt16NonFaultingZeroExtendToInt32:
+                            case NI_Sve_LoadVectorUInt16NonFaultingZeroExtendToInt64:
+                            case NI_Sve_LoadVectorUInt16NonFaultingZeroExtendToUInt32:
+                            case NI_Sve_LoadVectorUInt16NonFaultingZeroExtendToUInt64:
+                            case NI_Sve_LoadVectorUInt32NonFaultingZeroExtendToInt64:
+                            case NI_Sve_LoadVectorUInt32NonFaultingZeroExtendToUInt64:
+                            {
+
+                                GetEmitter()->emitIns_R_R_R(insEmbMask, emitSize, targetReg, maskReg, embMaskOp1Reg,
+                                                            opt);
+                                break;
+                            }
+
+                            default:
+                            {
+                                GetEmitter()->emitIns_R_R_R_R(insEmbMask, emitSize, targetReg, maskReg, embMaskOp1Reg,
+                                                              embMaskOp2Reg, opt);
+                            }
+                        }
                         break;
                     }
 
@@ -773,21 +801,16 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                         switch (intrinEmbMask.id)
                         {
                             case NI_Sve_CreateBreakPropagateMask:
-                                if (targetReg != embMaskOp1Reg)
-                                {
-                                    GetEmitter()->emitIns_Mov(INS_sve_mov, emitSize, targetReg, embMaskOp2Reg,
-                                                              /* canSkip */ true);
-                                }
+                                assert((targetReg == embMaskOp2Reg) || (targetReg != embMaskOp1Reg));
+                                GetEmitter()->emitIns_Mov(INS_sve_mov, emitSize, targetReg, embMaskOp2Reg,
+                                                          /* canSkip */ true);
                                 emitInsHelper(targetReg, maskReg, embMaskOp1Reg);
                                 break;
 
                             case NI_Sve_AddSequentialAcross:
-                                assert(targetReg != embMaskOp2Reg);
-                                if (targetReg != embMaskOp1Reg)
-                                {
-                                    GetEmitter()->emitIns_Mov(INS_fmov, GetEmitter()->optGetSveElemsize(embOpt),
-                                                              targetReg, embMaskOp1Reg, /* canSkip */ true);
-                                }
+                                assert((targetReg == op1Reg) || (targetReg != embMaskOp2Reg));
+                                GetEmitter()->emitIns_Mov(INS_fmov, GetEmitter()->optGetSveElemsize(embOpt), targetReg,
+                                                          embMaskOp1Reg, /* canSkip */ true);
                                 emitInsHelper(targetReg, maskReg, embMaskOp2Reg);
                                 break;
 
@@ -1063,15 +1086,10 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                         {
                             if (isRMW)
                             {
-                                if (targetReg != op2Reg)
-                                {
-                                    assert(targetReg != op1Reg);
-
-                                    GetEmitter()->emitIns_Mov(ins_Move_Extend(intrin.op2->TypeGet(), false),
-                                                              emitTypeSize(node), targetReg, op2Reg,
-                                                              /* canSkip */ true);
-                                }
-
+                                assert((targetReg == op2Reg) || (targetReg != op1Reg));
+                                GetEmitter()->emitIns_Mov(ins_Move_Extend(intrin.op2->TypeGet(), false),
+                                                          emitTypeSize(node), targetReg, op2Reg,
+                                                          /* canSkip */ true);
                                 GetEmitter()->emitIns_R_R(ins, emitSize, targetReg, op1Reg, opt);
                             }
                             else
@@ -1088,13 +1106,9 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                     }
                     else if (isRMW)
                     {
-                        if (targetReg != op1Reg)
-                        {
-                            assert(targetReg != op2Reg);
-
-                            GetEmitter()->emitIns_Mov(INS_mov, emitTypeSize(node), targetReg, op1Reg,
-                                                      /* canSkip */ true);
-                        }
+                        assert((targetReg == op1Reg) || (targetReg != op2Reg));
+                        GetEmitter()->emitIns_Mov(INS_mov, emitTypeSize(node), targetReg, op1Reg,
+                                                  /* canSkip */ true);
                         GetEmitter()->emitIns_R_R(ins, emitSize, targetReg, op2Reg, opt);
                     }
                     else
@@ -1110,27 +1124,20 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                     {
                         if (HWIntrinsicInfo::IsExplicitMaskedOperation(intrin.id))
                         {
-                            if (targetReg != op2Reg)
-                            {
-                                assert(targetReg != op1Reg);
-                                assert(targetReg != op3Reg);
+                            assert((targetReg == op1Reg) || (targetReg != op1Reg));
+                            assert((targetReg == op1Reg) || (targetReg != op3Reg));
 
-                                GetEmitter()->emitIns_Mov(INS_mov, emitTypeSize(node), targetReg, op2Reg,
-                                                          /* canSkip */ true);
-                            }
-
+                            GetEmitter()->emitIns_Mov(INS_mov, emitTypeSize(node), targetReg, op2Reg,
+                                                      /* canSkip */ true);
                             GetEmitter()->emitIns_R_R_R(ins, emitSize, targetReg, op1Reg, op3Reg, opt);
                         }
                         else
                         {
-                            if (targetReg != op1Reg)
-                            {
-                                assert(targetReg != op2Reg);
-                                assert(targetReg != op3Reg);
+                            assert((targetReg == op1Reg) || (targetReg != op2Reg));
+                            assert((targetReg == op1Reg) || (targetReg != op3Reg));
 
-                                GetEmitter()->emitIns_Mov(INS_mov, emitTypeSize(node), targetReg, op1Reg,
-                                                          /* canSkip */ true);
-                            }
+                            GetEmitter()->emitIns_Mov(INS_mov, emitTypeSize(node), targetReg, op1Reg,
+                                                      /* canSkip */ true);
                             GetEmitter()->emitIns_R_R_R(ins, emitSize, targetReg, op2Reg, op3Reg, opt);
                         }
                     }
@@ -1342,54 +1349,44 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
             break;
 
             case NI_AdvSimd_Insert:
+            {
                 assert(isRMW);
 
                 GetEmitter()->emitIns_Mov(INS_mov, emitTypeSize(node), targetReg, op1Reg, /* canSkip */ true);
 
-                if (intrin.op3->isContainedFltOrDblImmed())
-                {
-                    assert(intrin.op2->isContainedIntOrIImmed());
-                    assert(intrin.op2->AsIntCon()->gtIconVal == 0);
+                // fmov (scalar) zeros the upper bits and is not safe to use
+                assert(!intrin.op3->isContainedFltOrDblImmed());
 
-                    const double dataValue = intrin.op3->AsDblCon()->DconValue();
-                    GetEmitter()->emitIns_R_F(INS_fmov, emitSize, targetReg, dataValue, opt);
+                assert(targetReg != op3Reg);
+
+                HWIntrinsicImmOpHelper helper(this, intrin.op2, node);
+
+                if (varTypeIsFloating(intrin.baseType))
+                {
+                    for (helper.EmitBegin(); !helper.Done(); helper.EmitCaseEnd())
+                    {
+                        const int elementIndex = helper.ImmValue();
+
+                        GetEmitter()->emitIns_R_R_I_I(ins, emitSize, targetReg, op3Reg, elementIndex, 0, opt);
+                    }
                 }
                 else
                 {
-                    assert(targetReg != op3Reg);
-
-                    HWIntrinsicImmOpHelper helper(this, intrin.op2, node);
-
-                    if (varTypeIsFloating(intrin.baseType))
+                    for (helper.EmitBegin(); !helper.Done(); helper.EmitCaseEnd())
                     {
-                        for (helper.EmitBegin(); !helper.Done(); helper.EmitCaseEnd())
-                        {
-                            const int elementIndex = helper.ImmValue();
+                        const int elementIndex = helper.ImmValue();
 
-                            GetEmitter()->emitIns_R_R_I_I(ins, emitSize, targetReg, op3Reg, elementIndex, 0, opt);
-                        }
-                    }
-                    else
-                    {
-                        for (helper.EmitBegin(); !helper.Done(); helper.EmitCaseEnd())
-                        {
-                            const int elementIndex = helper.ImmValue();
-
-                            GetEmitter()->emitIns_R_R_I(ins, emitSize, targetReg, op3Reg, elementIndex, opt);
-                        }
+                        GetEmitter()->emitIns_R_R_I(ins, emitSize, targetReg, op3Reg, elementIndex, opt);
                     }
                 }
                 break;
+            }
 
             case NI_AdvSimd_InsertScalar:
             {
                 assert(isRMW);
-                if (targetReg != op1Reg)
-                {
-                    assert(targetReg != op3Reg);
-
-                    GetEmitter()->emitIns_Mov(INS_mov, emitTypeSize(node), targetReg, op1Reg, /* canSkip */ true);
-                }
+                assert((targetReg == op1Reg) || (targetReg != op3Reg));
+                GetEmitter()->emitIns_Mov(INS_mov, emitTypeSize(node), targetReg, op1Reg, /* canSkip */ true);
 
                 HWIntrinsicImmOpHelper helper(this, intrin.op2, node);
 
@@ -1405,12 +1402,8 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
             case NI_AdvSimd_Arm64_InsertSelectedScalar:
             {
                 assert(isRMW);
-                if (targetReg != op1Reg)
-                {
-                    assert(targetReg != op3Reg);
-
-                    GetEmitter()->emitIns_Mov(INS_mov, emitTypeSize(node), targetReg, op1Reg, /* canSkip */ true);
-                }
+                assert((targetReg == op1Reg) || (targetReg != op3Reg));
+                GetEmitter()->emitIns_Mov(INS_mov, emitTypeSize(node), targetReg, op1Reg, /* canSkip */ true);
 
                 const int resultIndex = (int)intrin.op2->AsIntCon()->gtIconVal;
                 const int valueIndex  = (int)intrin.op4->AsIntCon()->gtIconVal;
@@ -1421,12 +1414,8 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
             case NI_AdvSimd_LoadAndInsertScalar:
             {
                 assert(isRMW);
-                if (targetReg != op1Reg)
-                {
-                    assert(targetReg != op3Reg);
-
-                    GetEmitter()->emitIns_Mov(INS_mov, emitTypeSize(node), targetReg, op1Reg, /* canSkip */ true);
-                }
+                assert((targetReg == op1Reg) || (targetReg != op3Reg));
+                GetEmitter()->emitIns_Mov(INS_mov, emitTypeSize(node), targetReg, op1Reg, /* canSkip */ true);
 
                 HWIntrinsicImmOpHelper helper(this, intrin.op2, node);
 
@@ -1466,11 +1455,8 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                     targetFieldReg = node->GetRegByIndex(fieldIdx);
                     op1FieldReg    = fieldNode->GetRegNum();
 
-                    if (targetFieldReg != op1FieldReg)
-                    {
-                        GetEmitter()->emitIns_Mov(INS_mov, emitTypeSize(fieldNode), targetFieldReg, op1FieldReg,
-                                                  /* canSkip */ true);
-                    }
+                    GetEmitter()->emitIns_Mov(INS_mov, emitTypeSize(fieldNode), targetFieldReg, op1FieldReg,
+                                              /* canSkip */ true);
                     fieldIdx++;
                 }
 
@@ -2000,11 +1986,8 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                         break;
                 }
 
-                if (targetReg != op1Reg)
-                {
-                    assert(targetReg != op3Reg);
-                    GetEmitter()->emitIns_Mov(INS_mov, emitTypeSize(node), targetReg, op1Reg, /* canSkip */ true);
-                }
+                assert((targetReg == op1Reg) || (targetReg != op3Reg));
+                GetEmitter()->emitIns_Mov(INS_mov, emitTypeSize(node), targetReg, op1Reg, /* canSkip */ true);
                 GetEmitter()->emitIns_R_R_R(ins, emitSize, targetReg, op2Reg, op3Reg, opt);
                 break;
             }
@@ -2134,6 +2117,43 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                     }
                 }
 
+                break;
+            }
+
+            case NI_Sve_LoadVectorByteNonFaultingZeroExtendToInt16:
+            case NI_Sve_LoadVectorByteNonFaultingZeroExtendToInt32:
+            case NI_Sve_LoadVectorByteNonFaultingZeroExtendToInt64:
+            case NI_Sve_LoadVectorByteNonFaultingZeroExtendToUInt16:
+            case NI_Sve_LoadVectorByteNonFaultingZeroExtendToUInt32:
+            case NI_Sve_LoadVectorByteNonFaultingZeroExtendToUInt64:
+            case NI_Sve_LoadVectorInt16NonFaultingSignExtendToInt32:
+            case NI_Sve_LoadVectorInt16NonFaultingSignExtendToInt64:
+            case NI_Sve_LoadVectorInt16NonFaultingSignExtendToUInt32:
+            case NI_Sve_LoadVectorInt16NonFaultingSignExtendToUInt64:
+            case NI_Sve_LoadVectorInt32NonFaultingSignExtendToInt64:
+            case NI_Sve_LoadVectorInt32NonFaultingSignExtendToUInt64:
+            case NI_Sve_LoadVectorNonFaulting:
+            case NI_Sve_LoadVectorSByteNonFaultingSignExtendToInt16:
+            case NI_Sve_LoadVectorSByteNonFaultingSignExtendToInt32:
+            case NI_Sve_LoadVectorSByteNonFaultingSignExtendToInt64:
+            case NI_Sve_LoadVectorSByteNonFaultingSignExtendToUInt16:
+            case NI_Sve_LoadVectorSByteNonFaultingSignExtendToUInt32:
+            case NI_Sve_LoadVectorSByteNonFaultingSignExtendToUInt64:
+            case NI_Sve_LoadVectorUInt16NonFaultingZeroExtendToInt32:
+            case NI_Sve_LoadVectorUInt16NonFaultingZeroExtendToInt64:
+            case NI_Sve_LoadVectorUInt16NonFaultingZeroExtendToUInt32:
+            case NI_Sve_LoadVectorUInt16NonFaultingZeroExtendToUInt64:
+            case NI_Sve_LoadVectorUInt32NonFaultingZeroExtendToInt64:
+            case NI_Sve_LoadVectorUInt32NonFaultingZeroExtendToUInt64:
+            {
+                if (intrin.numOperands == 2)
+                {
+                    // We have extra argument which means there is a "use" of FFR here. Restore it back in FFR
+                    // register.
+                    assert(op2Reg != REG_NA);
+                    GetEmitter()->emitIns_R(INS_sve_wrffr, emitSize, op2Reg, opt);
+                }
+                GetEmitter()->emitIns_R_R(ins, emitSize, targetReg, op1Reg);
                 break;
             }
 
@@ -2330,12 +2350,9 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
             case NI_Sve_SaturatingIncrementBy8BitElementCount:
             {
                 assert(isRMW);
-                if (targetReg != op1Reg)
-                {
-                    assert(targetReg != op2Reg);
-                    assert(targetReg != op3Reg);
-                    GetEmitter()->emitIns_Mov(INS_mov, emitTypeSize(node), targetReg, op1Reg, /* canSkip */ true);
-                }
+                assert((targetReg == op1Reg) || (targetReg != op2Reg));
+                assert((targetReg == op1Reg) || (targetReg != op3Reg));
+                GetEmitter()->emitIns_Mov(INS_mov, emitTypeSize(node), targetReg, op1Reg, /* canSkip */ true);
 
                 if (intrin.op2->IsCnsIntOrI() && intrin.op3->IsCnsIntOrI())
                 {
@@ -2387,11 +2404,8 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
             case NI_Sve_SaturatingIncrementByActiveElementCount:
             {
                 // RMW semantics
-                if (targetReg != op1Reg)
-                {
-                    assert(targetReg != op2Reg);
-                    GetEmitter()->emitIns_Mov(INS_mov, emitTypeSize(node), targetReg, op1Reg, /* canSkip */ true);
-                }
+                assert((targetReg == op1Reg) || (targetReg != op2Reg));
+                GetEmitter()->emitIns_Mov(INS_mov, emitTypeSize(node), targetReg, op1Reg, /* canSkip */ true);
 
                 // Switch instruction if arg1 is unsigned.
                 if (varTypeIsUnsigned(node->GetAuxiliaryType()))
@@ -2430,13 +2444,8 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
             case NI_Sve_ExtractVector:
             {
                 assert(isRMW);
-
-                if (targetReg != op1Reg)
-                {
-                    assert(targetReg != op2Reg);
-
-                    GetEmitter()->emitIns_Mov(INS_mov, emitTypeSize(node), targetReg, op1Reg, /* canSkip */ true);
-                }
+                assert((targetReg == op1Reg) || (targetReg != op2Reg));
+                GetEmitter()->emitIns_Mov(INS_mov, emitTypeSize(node), targetReg, op1Reg, /* canSkip */ true);
 
                 HWIntrinsicImmOpHelper helper(this, intrin.op3, node);
 
@@ -2454,13 +2463,9 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
             {
                 assert(isRMW);
                 assert(emitter::isFloatReg(op2Reg) == varTypeIsFloating(intrin.baseType));
-                if (targetReg != op1Reg)
-                {
-                    assert(targetReg != op2Reg);
-                    GetEmitter()->emitIns_Mov(INS_mov, emitTypeSize(node), targetReg, op1Reg,
-                                              /* canSkip */ true);
-                }
-
+                assert((targetReg == op1Reg) || (targetReg != op2Reg));
+                GetEmitter()->emitIns_Mov(INS_mov, emitTypeSize(node), targetReg, op1Reg,
+                                          /* canSkip */ true);
                 GetEmitter()->emitInsSve_R_R(ins, emitSize, targetReg, op2Reg, opt);
                 break;
             }
@@ -2483,13 +2488,8 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
             {
                 assert(isRMW);
                 assert(HWIntrinsicInfo::IsExplicitMaskedOperation(intrin.id));
-
-                if (targetReg != op2Reg)
-                {
-                    assert(targetReg != op1Reg);
-                    GetEmitter()->emitIns_Mov(INS_sve_mov, emitTypeSize(node), targetReg, op2Reg, /* canSkip */ true);
-                }
-
+                assert((targetReg == op2Reg) || (targetReg != op1Reg));
+                GetEmitter()->emitIns_Mov(INS_sve_mov, emitTypeSize(node), targetReg, op2Reg, /* canSkip */ true);
                 GetEmitter()->emitIns_R_R(ins, emitSize, targetReg, op1Reg, INS_OPTS_SCALABLE_B);
                 break;
             }
@@ -2543,14 +2543,10 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
 
                     emitSize = emitTypeSize(node);
 
-                    if (targetReg != op2Reg)
-                    {
-                        assert(targetReg != op1Reg);
-                        assert(targetReg != op3Reg);
-                        GetEmitter()->emitIns_Mov(INS_mov, emitSize, targetReg, op2Reg,
-                                                  /* canSkip */ true);
-                    }
-
+                    assert((targetReg == op2Reg) || (targetReg != op1Reg));
+                    assert((targetReg == op2Reg) || (targetReg != op3Reg));
+                    GetEmitter()->emitIns_Mov(INS_mov, emitSize, targetReg, op2Reg,
+                                              /* canSkip */ true);
                     GetEmitter()->emitInsSve_R_R_R(ins, emitSize, targetReg, op1Reg, op3Reg, opt,
                                                    INS_SCALABLE_OPTS_NONE);
                     break;
@@ -2564,14 +2560,10 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
             {
                 assert(emitter::isFloatReg(targetReg));
                 assert(varTypeIsFloating(node->gtType) || varTypeIsSIMD(node->gtType));
-
-                if (targetReg != op2Reg)
-                {
-                    assert(targetReg != op1Reg);
-                    assert(targetReg != op3Reg);
-                    GetEmitter()->emitIns_Mov(INS_mov, emitTypeSize(node), targetReg, op2Reg,
-                                              /* canSkip */ true);
-                }
+                assert((targetReg == op2Reg) || (targetReg != op1Reg));
+                assert((targetReg == op2Reg) || (targetReg != op3Reg));
+                GetEmitter()->emitIns_Mov(INS_mov, emitTypeSize(node), targetReg, op2Reg,
+                                          /* canSkip */ true);
                 GetEmitter()->emitInsSve_R_R_R(ins, EA_SCALABLE, targetReg, op1Reg, op3Reg, opt,
                                                INS_SCALABLE_OPTS_WITH_SIMD_SCALAR);
                 break;

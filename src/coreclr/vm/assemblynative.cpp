@@ -1132,16 +1132,13 @@ extern "C" void QCALLTYPE AssemblyNative_GetExecutingAssembly(QCall::StackCrawlM
 {
     QCALL_CONTRACT;
 
-    DomainAssembly * pExecutingAssembly = NULL;
-
     BEGIN_QCALL;
 
     Assembly* pAssembly = SystemDomain::GetCallersAssembly(stackMark);
     if(pAssembly)
     {
-        pExecutingAssembly = pAssembly->GetDomainAssembly();
         GCX_COOP();
-        retAssembly.Set(pExecutingAssembly->GetExposedAssemblyObject());
+        retAssembly.Set(pAssembly->GetExposedObject());
     }
 
     END_QCALL;
@@ -1153,14 +1150,11 @@ extern "C" void QCALLTYPE AssemblyNative_GetEntryAssembly(QCall::ObjectHandleOnS
 
     BEGIN_QCALL;
 
-    DomainAssembly * pRootAssembly = NULL;
     Assembly * pAssembly = GetAppDomain()->GetRootAssembly();
-
     if (pAssembly)
     {
-        pRootAssembly = pAssembly->GetDomainAssembly();
         GCX_COOP();
-        retAssembly.Set(pRootAssembly->GetExposedAssemblyObject());
+        retAssembly.Set(pAssembly->GetExposedObject());
     }
 
     END_QCALL;
@@ -1225,7 +1219,7 @@ extern "C" INT_PTR QCALLTYPE AssemblyNative_InitializeAssemblyLoadContext(INT_PT
                 // Some of the initialization functions are not virtual. Call through the derived class
                 // to prevent calling the base class version.
                 loaderAllocator->Init(pCurDomain);
-                loaderAllocator->InitVirtualCallStubManager(pCurDomain);
+                loaderAllocator->InitVirtualCallStubManager();
 
                 // Setup the managed proxy now, but do not actually transfer ownership to it.
                 // Once everything is setup and nothing can fail anymore, the ownership will be

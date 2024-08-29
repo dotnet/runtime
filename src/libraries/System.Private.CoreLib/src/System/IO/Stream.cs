@@ -11,7 +11,7 @@ using System.Threading.Tasks;
 
 namespace System.IO
 {
-    public abstract class Stream : MarshalByRefObject, IDisposable, IAsyncDisposable
+    public abstract partial class Stream : MarshalByRefObject, IDisposable, IAsyncDisposable
     {
         public static readonly Stream Null = new NullStream();
 
@@ -446,14 +446,6 @@ namespace System.IO
 
             return totalRead;
         }
-
-        [Intrinsic]
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        private extern bool HasOverriddenBeginEndRead();
-
-        [Intrinsic]
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        private extern bool HasOverriddenBeginEndWrite();
 
         private Task<int> BeginEndReadAsync(byte[] buffer, int offset, int count)
         {
