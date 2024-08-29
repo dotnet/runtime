@@ -266,6 +266,6 @@ extern "C" INT32 QCALLTYPE ValueType_GetHashCodeStrategy(MethodTable* mt, QCall:
 
 BOOL CanCompareBitsOrUseFastGetHashCode(MethodTable* mt);
 
-extern "C" BOOL QCALLTYPE StreamNative_HasOverriddenSlow(MethodTable* pMT, BOOL isRead);
+extern "C" BOOL QCALLTYPE Stream_HasOverriddenSlow(MethodTable* pMT, BOOL isRead);
 
 #endif // _COMUTILNATIVE_H_

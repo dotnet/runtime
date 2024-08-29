@@ -110,7 +110,7 @@ static const Entry s_QCall[] =
     DllImportEntry(MethodTable_CanCompareBitsOrUseFastGetHashCode)
     DllImportEntry(TypeHandle_CanCastTo_NoCacheLookup)
     DllImportEntry(ValueType_GetHashCodeStrategy)
-    DllImportEntry(StreamNative_HasOverriddenSlow)
+    DllImportEntry(Stream_HasOverriddenSlow)
     DllImportEntry(RuntimeTypeHandle_MakePointer)
     DllImportEntry(RuntimeTypeHandle_MakeByRef)
     DllImportEntry(RuntimeTypeHandle_MakeSZArray)

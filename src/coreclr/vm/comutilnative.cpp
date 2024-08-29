@@ -1894,7 +1894,7 @@ static bool HasOverriddenStreamMethod(MethodTable* streamMT, MethodTable* pMT, W
     return MethodTable::GetMethodDescForSlotAddress(actual) != MethodTable::GetMethodDescForSlotAddress(base);
 }
 
-extern "C" BOOL QCALLTYPE StreamNative_HasOverriddenSlow(MethodTable* pMT, BOOL isRead)
+extern "C" BOOL QCALLTYPE Stream_HasOverriddenSlow(MethodTable* pMT, BOOL isRead)
 {
     QCALL_CONTRACT;
     _ASSERTE(pMT != NULL);
