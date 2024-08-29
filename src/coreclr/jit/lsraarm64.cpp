@@ -1962,30 +1962,15 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
             unsigned resultOpNum =
                 embOp2Node->GetResultOpNumForRmwIntrinsic(user, intrinEmb.op1, intrinEmb.op2, intrinEmb.op3);
 
-            GenTree* emitOp1 = intrinEmb.op1;
-            GenTree* emitOp2 = intrinEmb.op2;
-            GenTree* emitOp3 = intrinEmb.op3;
-
-            if (resultOpNum == 2)
+            if (resultOpNum == 0)
             {
-                // op2 = op1 + (op2 * op3)
-                std::swap(emitOp1, emitOp3);
-                std::swap(emitOp1, emitOp2);
-                // op1 = (op1 * op2) + op3
-            }
-            else if (resultOpNum == 3)
-            {
-                // op3 = op1 + (op2 * op3)
-                std::swap(emitOp1, emitOp3);
-                // op1 = (op1 * op2) + op3
+                prefUseNode = embOp2Node->Op(1);
             }
             else
             {
-                // op1 = op1 + (op2 * op3)
-                // Nothing needs to be done
+                assert(resultOpNum >= 1 && resultOpNum <= 3);
+                prefUseNode = embOp2Node->Op(resultOpNum);
             }
-
-            prefUseNode = emitOp1;
         }
         else
         {
