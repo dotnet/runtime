@@ -82,29 +82,13 @@ var_types Compiler::eeGetFieldType(CORINFO_FIELD_HANDLE  fldHnd,
                                    CORINFO_CLASS_HANDLE* pStructHnd,
                                    CORINFO_CLASS_HANDLE  memberParent)
 {
-
     // memberParent is an opportunistic hint to get a more exact field type
-    if (memberParent != NO_CLASS_HANDLE)
+    if ((memberParent != NO_CLASS_HANDLE) &&
+        !info.compCompHnd->isMoreSpecificType(info.compCompHnd->getFieldClass(fldHnd), memberParent))
     {
-        bool hasTheField = false;
-        if (info.compCompHnd->isMoreSpecificType(info.compCompHnd->getFieldClass(fldHnd), memberParent))
-        {
-            // Make sure the hinted class actually has our field
-            unsigned fields = info.compCompHnd->getClassNumInstanceFields(memberParent);
-            for (unsigned i = 0; i < fields; i++)
-            {
-                if (info.compCompHnd->getFieldInClass(memberParent, i) == fldHnd)
-                {
-                    hasTheField = true;
-                    break;
-                }
-            }
-        }
-
         // Ignore it if it doesn't help (e.g. the input hint was just System.Object)
-        memberParent = hasTheField ? memberParent : NO_CLASS_HANDLE;
+        memberParent = NO_CLASS_HANDLE;
     }
-
     return JITtype2varType(info.compCompHnd->getFieldType(fldHnd, pStructHnd, memberParent));
 }
 
