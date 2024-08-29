@@ -2048,18 +2048,12 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
             {
                 RefPosition* useRefPosition = nullptr;
 
-                srcCount += BuildDelayFreeUses(node, nullptr, RBM_NONE, &useRefPosition);
+                int uses = BuildDelayFreeUses(node, nullptr, RBM_NONE, &useRefPosition);
+                srcCount += uses;
 
-#if defined(DEBUG)
-                // Ensure that if this node and the RMW node refer to the same local variable, then this
-                // node must be marked as delay free.
-                if (isCandidateLocalRef(node) && isCandidateLocalRef(prefUseNode) &&
-                    (getIntervalForLocalVarNode(node->AsLclVar()) ==
-                     getIntervalForLocalVarNode(prefUseNode->AsLclVar())))
-                {
-                    assert(useRefPosition->delayRegFree);
-                }
-#endif // defined(DEBUG)
+                // It is a hard requirement that these are not allocated to the same register as the destination,
+                // so verify no optimizations kicked in to skip setting the delay-free.
+                assert((useRefPosition != nullptr && useRefPosition->delayRegFree) || (uses == 0));
             }
         }
 
