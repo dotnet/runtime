@@ -19168,34 +19168,20 @@ CORINFO_CLASS_HANDLE Compiler::gtGetClassHandle(GenTree* tree, bool* pIsExact, b
                         // No benefit to calling gtGetFieldClassHandle here, as
                         // the exact field being accessed can vary.
                         CORINFO_FIELD_HANDLE fieldHnd   = fieldSeq->GetFieldHandle();
+                        CORINFO_CLASS_HANDLE fieldOwner = NO_CLASS_HANDLE;
                         CORINFO_CLASS_HANDLE fieldClass = NO_CLASS_HANDLE;
-                        var_types            fieldType  = eeGetFieldType(fieldHnd, &fieldClass);
 
-                        if (fieldType == TYP_REF)
+                        // fieldOwner helps us to get a more exact field class
+                        // for instance fields
+                        if (op1->TypeIs(TYP_REF) && !eeIsFieldStatic(fieldHnd))
+                        {
+                            bool objIsExact, objIsNonNull;
+                            fieldOwner = gtGetClassHandle(op1, &objIsExact, &objIsNonNull);
+                        }
+
+                        if (eeGetFieldType(fieldHnd, &fieldClass, fieldOwner) == TYP_REF)
                         {
                             objClass = fieldClass;
-
-                            // See if we can make objClass more specific, e.g. objClass is _Canon[]
-                            // but we can extract the real field type from field's owner:
-                            if (op1->TypeIs(TYP_REF))
-                            {
-                                assert(!info.compCompHnd->isFieldStatic(fieldHnd));
-
-                                bool                 objIsExact, objIsNonNull;
-                                CORINFO_CLASS_HANDLE fieldOwnerObj = gtGetClassHandle(op1, &objIsExact, &objIsNonNull);
-                                if (fieldOwnerObj != NO_CLASS_HANDLE)
-                                {
-                                    CORINFO_CLASS_HANDLE fieldExactCls = NO_CLASS_HANDLE;
-                                    info.compCompHnd->getFieldType(fieldHnd, &fieldExactCls, fieldOwnerObj);
-
-                                    if ((fieldExactCls != NO_CLASS_HANDLE) &&
-                                        ((objClass == NO_CLASS_HANDLE) ||
-                                         info.compCompHnd->isMoreSpecificType(objClass, fieldExactCls)))
-                                    {
-                                        objClass = fieldExactCls;
-                                    }
-                                }
-                            }
                         }
                     }
                 }

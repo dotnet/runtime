@@ -8295,7 +8295,9 @@ public:
     bool eeIsIntrinsic(CORINFO_METHOD_HANDLE ftn);
     bool eeIsFieldStatic(CORINFO_FIELD_HANDLE fldHnd);
 
-    var_types eeGetFieldType(CORINFO_FIELD_HANDLE fldHnd, CORINFO_CLASS_HANDLE* pStructHnd = nullptr);
+    var_types eeGetFieldType(CORINFO_FIELD_HANDLE  fldHnd,
+                             CORINFO_CLASS_HANDLE* pStructHnd   = nullptr,
+                             CORINFO_CLASS_HANDLE  memberParent = NO_CLASS_HANDLE);
 
     template <typename TPrint>
     void eeAppendPrint(class StringPrinter* printer, TPrint print);
