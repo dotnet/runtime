@@ -114,7 +114,7 @@ set XUNITLOGCHECKER_COMMAND=%XUNITLOGCHECKER_EXE% --dumps-path %HELIX_DUMP_FOLDE
 set XUNITLOGCHECKER_EXIT_CODE=1
 
 if NOT EXIST %XUNITLOGCHECKER_EXE% (
-  echo XUnitLogChecker.dll does not exist in the expected location: %XUNITLOGCHECKER_EXE%
+  echo XUnitLogChecker does not exist in the expected location: %XUNITLOGCHECKER_EXE%
   GOTO XUNITLOGCHECKER_END
 )
 
