@@ -7,6 +7,8 @@
     <!-- Type 'Microsoft.Extensions.DependencyInjection.ServiceCollection' has been forwarded down.-->
     <NoWarn>$(NoWarn);CP0001</NoWarn>
     <IsPackable>true</IsPackable>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+    <ServicingVersion>1</ServicingVersion>
     <PackageDescription>Default implementation of dependency injection for Microsoft.Extensions.DependencyInjection.</PackageDescription>
   </PropertyGroup>
 
