@@ -11387,9 +11387,9 @@ void CEEJitInfo::recordRelocation(void * location,
             // Note that we cannot stress insertion of jump stub by inserting it unconditionally. JIT records the relocations
             // for intra-module jumps and calls. It does not expect the register used by the jump stub to be trashed.
             //
-            if (!FitsInI4(delta))
+            if (!FitsInI4(delta) || !g_pConfig->JitEnableOptionalRelocs())
             {
-                if (m_fAllowRel32)
+                if (m_fAllowRel32 && g_pConfig->JitEnableOptionalRelocs())
                 {
                     //
                     // When m_fAllowRel32 == TRUE, the JIT will use REL32s for both data addresses and direct code targets.
