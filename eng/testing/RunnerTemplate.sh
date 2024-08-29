@@ -85,7 +85,7 @@ function invoke_xunitlogchecker {
     xunitlogchecker_file_name="$HELIX_CORRELATION_PAYLOAD/XUnitLogChecker"
 
     if [[ ! -f $xunitlogchecker_file_name ]]; then
-      echo "'$xunitlogchecker_file_name' was not found. Unable to print dump file contents."
+      echo "XUnitLogChecker does not exist in the expected location: $xunitlogchecker_file_name"
       xunitlogchecker_exit_code=2
     elif [[ ! -d $dump_folder ]]; then
       echo "The dump directory '$dump_folder' does not exist."
