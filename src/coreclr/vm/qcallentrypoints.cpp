@@ -99,6 +99,7 @@ static const Entry s_QCall[] =
     DllImportEntry(Environment_Exit)
     DllImportEntry(Environment_FailFast)
     DllImportEntry(Environment_GetProcessorCount)
+    DllImportEntry(ExceptionNative_GetFrozenStackTrace)
     DllImportEntry(ExceptionNative_GetMessageFromNativeResources)
     DllImportEntry(ExceptionNative_GetMethodFromStackTrace)
     DllImportEntry(ExceptionNative_ThrowAmbiguousResolutionException)

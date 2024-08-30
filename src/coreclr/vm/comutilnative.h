@@ -41,7 +41,6 @@ public:
     static FCDECL1(FC_BOOL_RET, IsImmutableAgileException, Object* pExceptionUNSAFE);
     static FCDECL1(FC_BOOL_RET, IsTransient, INT32 hresult);
     static FCDECL0(VOID, PrepareForForeignExceptionRaise);
-    static FCDECL1(Object *, GetFrozenStackTrace, Object* pExceptionObjectUnsafe);
 
 #ifdef FEATURE_COMINTEROP
     // NOTE: caller cleans up any partially initialized BSTRs in pED
@@ -53,6 +52,8 @@ public:
     static FCDECL0(INT32, GetExceptionCode);
     static FCDECL0(UINT32, GetExceptionCount);
 };
+
+extern "C" void QCALLTYPE ExceptionNative_GetFrozenStackTrace(QCall::ObjectHandleOnStack exception, QCall::ObjectHandleOnStack ret);
 
 enum class ExceptionMessageKind {
     ThreadAbort = 1,

@@ -78,29 +78,26 @@ FCIMPLEND
 
 // Given an exception object, this method will mark its stack trace as frozen and return it to the caller.
 // Frozen stack traces are immutable, when a thread attempts to add a frame to it, the stack trace is cloned first.
-FCIMPL1(Object *, ExceptionNative::GetFrozenStackTrace, Object* pExceptionObjectUnsafe);
+extern "C" void QCALLTYPE ExceptionNative_GetFrozenStackTrace(QCall::ObjectHandleOnStack exception, QCall::ObjectHandleOnStack ret)
 {
-    CONTRACTL
-    {
-        FCALL_CHECK;
-    }
-    CONTRACTL_END;
+    QCALL_CONTRACT;
 
-    ASSERT(pExceptionObjectUnsafe != NULL);
+    BEGIN_QCALL;
+
+    GCX_COOP();
+
+    _ASSERTE(exception.Get() != NULL);
 
     struct
     {
         StackTraceArray stackTrace;
         EXCEPTIONREF refException = NULL;
         PTRARRAYREF keepAliveArray = NULL; // Object array of Managed Resolvers / AssemblyLoadContexts
-        OBJECTREF result = NULL;
     } gc;
-
-    // GC protect the array reference
-    HELPER_METHOD_FRAME_BEGIN_RET_PROTECT(gc);
+    GCPROTECT_BEGIN(gc);
 
     // Get the exception object reference
-    gc.refException = (EXCEPTIONREF)(ObjectToOBJECTREF(pExceptionObjectUnsafe));
+    gc.refException = (EXCEPTIONREF)exception.Get();
 
     gc.refException->GetStackTrace(gc.stackTrace, &gc.keepAliveArray);
 
@@ -108,22 +105,20 @@ FCIMPL1(Object *, ExceptionNative::GetFrozenStackTrace, Object* pExceptionObject
 
     if (gc.keepAliveArray != NULL)
     {
-        gc.result = gc.keepAliveArray;
+        ret.Set(gc.keepAliveArray);
     }
     else
     {
-        gc.result = gc.stackTrace.Get();
+        ret.Set(gc.stackTrace.Get());
     }
+    GCPROTECT_END();
 
-    HELPER_METHOD_FRAME_END();
-
-    return OBJECTREFToObject(gc.result);
+    END_QCALL;
 }
-FCIMPLEND
 
 #ifdef FEATURE_COMINTEROP
 
-BSTR BStrFromString(STRINGREF s)
+static BSTR BStrFromString(STRINGREF s)
 {
     CONTRACTL
     {
