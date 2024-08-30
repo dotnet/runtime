@@ -213,10 +213,11 @@ enum insFlags : uint64_t
     Encoding_EVEX  = 1ULL << 40,
 
     KInstruction = 1ULL << 41,
+    KInstructionWithLBit = 1ULL << 42,
 
     // EVEX feature: embedded broadcast
-    INS_Flags_EmbeddedBroadcastSupported = 1ULL << 42,
-
+    INS_Flags_EmbeddedBroadcastSupported = 1ULL << 43,
+    
     //  TODO-Cleanup:  Remove this flag and its usage from TARGET_XARCH
     INS_FLAGS_DONT_CARE = 0x00ULL,
 };
