@@ -2133,10 +2133,8 @@ bool ReplaceVisitor::ReplaceCallArgWithFieldList(GenTreeCall* call, GenTreeLclVa
     assert(layout != nullptr);
     StructDeaths      deaths    = m_liveness->GetDeathsForStructLocal(argNode);
     GenTreeFieldList* fieldList = new (m_compiler, GT_FIELD_LIST) GenTreeFieldList;
-    for (unsigned i = 0; i < callArg->NewAbiInfo.NumSegments; i++)
+    for (const ABIPassingSegment& seg : callArg->NewAbiInfo.Segments())
     {
-        const ABIPassingSegment& seg = callArg->NewAbiInfo.Segment(i);
-
         Replacement* rep = nullptr;
         if (agg->OverlappingReplacements(argNode->GetLclOffs() + seg.Offset, seg.Size, &rep, nullptr) &&
             rep->NeedsWriteBack)
@@ -2228,9 +2226,8 @@ bool ReplaceVisitor::CanReplaceCallArgWithFieldListOfReplacements(GenTreeCall*  
     assert(agg != nullptr);
 
     bool anyReplacements = false;
-    for (unsigned i = 0; i < callArg->NewAbiInfo.NumSegments; i++)
+    for (const ABIPassingSegment& seg : callArg->NewAbiInfo.Segments())
     {
-        const ABIPassingSegment& seg = callArg->NewAbiInfo.Segment(i);
         assert(seg.IsPassedInRegister());
 
         auto callback = [=, &anyReplacements, &seg](Replacement& rep) {
