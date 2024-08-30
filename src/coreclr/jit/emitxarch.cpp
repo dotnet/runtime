@@ -1538,7 +1538,6 @@ emitter::code_t emitter::AddEvexPrefix(const instrDesc* id, code_t code, emitAtt
 
     assert((code & DEFAULT_BYTE_EVEX_PREFIX_MASK) == 0);
 
-
     code |= DEFAULT_BYTE_EVEX_PREFIX;
 
     if (IsApxNDDEncodableInstruction(ins))
@@ -1560,6 +1559,9 @@ emitter::code_t emitter::AddEvexPrefix(const instrDesc* id, code_t code, emitAtt
 
         return code;
     }
+
+    // No APX-NDD instructions should reach code below.
+    assert(!IsApxNDDEncodableInstruction(ins));
 
     if (attr == EA_32BYTE)
     {
@@ -2159,6 +2161,12 @@ emitter::code_t emitter::AddRexRPrefix(const instrDesc* id, code_t code)
             return code & 0xFF7FFFFFFFFFFFULL;
         }
     }
+    else if (TakesLegacyPromotedEvexPrefix(id))
+    {
+        assert(IsApxNDDEncodableInstruction(ins));
+        // R-bit is added in bit-inverted form.
+        return code & 0xFF7FFFFFFFFFFFFFULL;
+    }
     else if (TakesRex2Prefix(id))
     {
         assert(IsRex2EncodableInstruction(ins));
@@ -2193,6 +2201,12 @@ emitter::code_t emitter::AddRexXPrefix(const instrDesc* id, code_t code)
             return code & 0xFFBFFFFFFFFFFFULL;
         }
     }
+    else if (TakesLegacyPromotedEvexPrefix(id))
+    {
+        assert(IsApxNDDEncodableInstruction(ins));
+        // X-bit is added in bit-inverted form.
+        return code & 0xFFBFFFFFFFFFFFFFULL;
+    }
     else if (TakesRex2Prefix(id))
     {
         assert(IsRex2EncodableInstruction(ins));
@@ -2226,6 +2240,12 @@ emitter::code_t emitter::AddRexBPrefix(const instrDesc* id, code_t code)
             // B-bit is added in bit-inverted form.
             return code & 0xFFDFFFFFFFFFFFULL;
         }
+    }
+    else if (TakesLegacyPromotedEvexPrefix(id))
+    {
+        assert(IsApxNDDEncodableInstruction(ins));
+        // R-bit is added in bit-inverted form.
+        return code & 0xFFDFFFFFFFFFFFFFULL;
     }
     else if (TakesRex2Prefix(id))
     {
