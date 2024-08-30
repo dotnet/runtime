@@ -183,8 +183,6 @@ public:
     static FCDECL0(INT64,    GetAllocatedBytesForCurrentThread);
     static FCDECL0(INT64,    GetTotalAllocatedBytesApproximate);
 
-    static FCDECL3(Object*, AllocateNewArray, void* elementTypeHandle, INT32 length, INT32 flags);
-
     NOINLINE static void SendEtwRemoveMemoryPressureEvent(UINT64 bytesAllocated);
     static void SendEtwAddMemoryPressureEvent(UINT64 bytesAllocated);
 
@@ -203,6 +201,8 @@ private:
 };
 
 extern "C" INT64 QCALLTYPE GCInterface_GetTotalAllocatedBytesPrecise();
+
+extern "C" void QCALLTYPE GCInterface_AllocateNewArray(MethodTable* pMT, INT32 length, INT32 flags, QCall::ObjectHandleOnStack ret);
 
 extern "C" INT64 QCALLTYPE GCInterface_GetTotalMemory();
 

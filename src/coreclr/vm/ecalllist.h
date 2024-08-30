@@ -363,8 +363,6 @@ FCFuncStart(gGCInterfaceFuncs)
 
     FCFuncElement("GetAllocatedBytesForCurrentThread", GCInterface::GetAllocatedBytesForCurrentThread)
     FCFuncElement("GetTotalAllocatedBytesApproximate", GCInterface::GetTotalAllocatedBytesApproximate)
-
-    FCFuncElement("AllocateNewArray", GCInterface::AllocateNewArray)
 FCFuncEnd()
 
 FCFuncStart(gGCSettingsFuncs)
