@@ -84,6 +84,101 @@ namespace System.Runtime.Intrinsics
         [Intrinsic]
         public static Vector128<T> Add<T>(Vector128<T> left, Vector128<T> right) => left + right;
 
+        /// <summary>Performs saturating addition on two vectors.</summary>
+        /// <param name="left">The vector to add with <paramref name="right" />.</param>
+        /// <param name="right">The vector to add with <paramref name="left" />.</param>
+        /// <typeparam name="T">The type of the elements in the vector.</typeparam>
+        /// <returns>The saturated sum of <paramref name="left" /> and <paramref name="right" />.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector128<T> AddSaturate<T>(Vector128<T> left, Vector128<T> right)
+        {
+            if (AdvSimd.IsSupported)
+            {
+                if (typeof(T) == typeof(byte))
+                {
+                    return AdvSimd.AddSaturate(left.AsByte(), right.AsByte()).As<byte, T>();
+                }
+                if (typeof(T) == typeof(sbyte))
+                {
+                    return AdvSimd.AddSaturate(left.AsSByte(), right.AsSByte()).As<sbyte, T>();
+                }
+                if (typeof(T) == typeof(short))
+                {
+                    return AdvSimd.AddSaturate(left.AsInt16(), right.AsInt16()).As<short, T>();
+                }
+                if (typeof(T) == typeof(ushort))
+                {
+                    return AdvSimd.AddSaturate(left.AsUInt16(), right.AsUInt16()).As<ushort, T>();
+                }
+                if (typeof(T) == typeof(int))
+                {
+                    return AdvSimd.AddSaturate(left.AsInt32(), right.AsInt32()).As<int, T>();
+                }
+                if (typeof(T) == typeof(uint))
+                {
+                    return AdvSimd.AddSaturate(left.AsUInt32(), right.AsUInt32()).As<uint, T>();
+                }
+                if (typeof(T) == typeof(long))
+                {
+                    return AdvSimd.AddSaturate(left.AsInt64(), right.AsInt64()).As<long, T>();
+                }
+                if (typeof(T) == typeof(ulong))
+                {
+                    return AdvSimd.AddSaturate(left.AsUInt64(), right.AsUInt64()).As<ulong, T>();
+                }
+            }
+
+            if (Sse2.IsSupported)
+            {
+                if (typeof(T) == typeof(byte))
+                {
+                    return Sse2.AddSaturate(left.AsByte(), right.AsByte()).As<byte, T>();
+                }
+                if (typeof(T) == typeof(sbyte))
+                {
+                    return Sse2.AddSaturate(left.AsSByte(), right.AsSByte()).As<sbyte, T>();
+                }
+                if (typeof(T) == typeof(short))
+                {
+                    return Sse2.AddSaturate(left.AsInt16(), right.AsInt16()).As<short, T>();
+                }
+                if (typeof(T) == typeof(ushort))
+                {
+                    return Sse2.AddSaturate(left.AsUInt16(), right.AsUInt16()).As<ushort, T>();
+                }
+            }
+
+            if (PackedSimd.IsSupported)
+            {
+                if (typeof(T) == typeof(byte))
+                {
+                    return PackedSimd.AddSaturate(left.AsByte(), right.AsByte()).As<byte, T>();
+                }
+                if (typeof(T) == typeof(sbyte))
+                {
+                    return PackedSimd.AddSaturate(left.AsSByte(), right.AsSByte()).As<sbyte, T>();
+                }
+                if (typeof(T) == typeof(short))
+                {
+                    return PackedSimd.AddSaturate(left.AsInt16(), right.AsInt16()).As<short, T>();
+                }
+                if (typeof(T) == typeof(ushort))
+                {
+                    return PackedSimd.AddSaturate(left.AsUInt16(), right.AsUInt16()).As<ushort, T>();
+                }
+            }
+
+            if (IsHardwareAccelerated)
+            {
+                return VectorMath.AddSaturate<Vector128<T>, T>(left, right);
+            }
+
+            return Create(
+                Vector64.AddSaturate(left._lower, right._lower),
+                Vector64.AddSaturate(left._upper, right._upper)
+            );
+        }
+
         /// <summary>Computes the bitwise-and of a given vector and the ones complement of another vector.</summary>
         /// <typeparam name="T">The type of the elements in the vector.</typeparam>
         /// <param name="left">The vector to bitwise-and with <paramref name="right" />.</param>
@@ -3396,6 +3491,101 @@ namespace System.Runtime.Intrinsics
         [Intrinsic]
         public static Vector128<T> Subtract<T>(Vector128<T> left, Vector128<T> right) => left - right;
 
+        /// <summary>Performs saturating subtraction on two vectors.</summary>
+        /// <param name="left">The vector from which <paramref name="right" /> will be subtracted.</param>
+        /// <param name="right">The vector to subtract from <paramref name="left" />.</param>
+        /// <typeparam name="T">The type of the elements in the vector.</typeparam>
+        /// <returns>The saturated difference of <paramref name="left" /> and <paramref name="right" />.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector128<T> SubtractSaturate<T>(Vector128<T> left, Vector128<T> right)
+        {
+            if (AdvSimd.IsSupported)
+            {
+                if (typeof(T) == typeof(byte))
+                {
+                    return AdvSimd.SubtractSaturate(left.AsByte(), right.AsByte()).As<byte, T>();
+                }
+                if (typeof(T) == typeof(sbyte))
+                {
+                    return AdvSimd.SubtractSaturate(left.AsSByte(), right.AsSByte()).As<sbyte, T>();
+                }
+                if (typeof(T) == typeof(short))
+                {
+                    return AdvSimd.SubtractSaturate(left.AsInt16(), right.AsInt16()).As<short, T>();
+                }
+                if (typeof(T) == typeof(ushort))
+                {
+                    return AdvSimd.SubtractSaturate(left.AsUInt16(), right.AsUInt16()).As<ushort, T>();
+                }
+                if (typeof(T) == typeof(int))
+                {
+                    return AdvSimd.SubtractSaturate(left.AsInt32(), right.AsInt32()).As<int, T>();
+                }
+                if (typeof(T) == typeof(uint))
+                {
+                    return AdvSimd.SubtractSaturate(left.AsUInt32(), right.AsUInt32()).As<uint, T>();
+                }
+                if (typeof(T) == typeof(long))
+                {
+                    return AdvSimd.SubtractSaturate(left.AsInt64(), right.AsInt64()).As<long, T>();
+                }
+                if (typeof(T) == typeof(ulong))
+                {
+                    return AdvSimd.SubtractSaturate(left.AsUInt64(), right.AsUInt64()).As<ulong, T>();
+                }
+            }
+
+            if (Sse2.IsSupported)
+            {
+                if (typeof(T) == typeof(byte))
+                {
+                    return Sse2.SubtractSaturate(left.AsByte(), right.AsByte()).As<byte, T>();
+                }
+                if (typeof(T) == typeof(sbyte))
+                {
+                    return Sse2.SubtractSaturate(left.AsSByte(), right.AsSByte()).As<sbyte, T>();
+                }
+                if (typeof(T) == typeof(short))
+                {
+                    return Sse2.SubtractSaturate(left.AsInt16(), right.AsInt16()).As<short, T>();
+                }
+                if (typeof(T) == typeof(ushort))
+                {
+                    return Sse2.SubtractSaturate(left.AsUInt16(), right.AsUInt16()).As<ushort, T>();
+                }
+            }
+
+            if (PackedSimd.IsSupported)
+            {
+                if (typeof(T) == typeof(byte))
+                {
+                    return PackedSimd.SubtractSaturate(left.AsByte(), right.AsByte()).As<byte, T>();
+                }
+                if (typeof(T) == typeof(sbyte))
+                {
+                    return PackedSimd.SubtractSaturate(left.AsSByte(), right.AsSByte()).As<sbyte, T>();
+                }
+                if (typeof(T) == typeof(short))
+                {
+                    return PackedSimd.SubtractSaturate(left.AsInt16(), right.AsInt16()).As<short, T>();
+                }
+                if (typeof(T) == typeof(ushort))
+                {
+                    return PackedSimd.SubtractSaturate(left.AsUInt16(), right.AsUInt16()).As<ushort, T>();
+                }
+            }
+
+            if (IsHardwareAccelerated)
+            {
+                return VectorMath.SubtractSaturate<Vector128<T>, T>(left, right);
+            }
+
+            return Create(
+                Vector64.SubtractSaturate(left._lower, right._lower),
+                Vector64.SubtractSaturate(left._upper, right._upper)
+            );
+        }
+
         /// <summary>Computes the sum of all elements in a vector.</summary>
         /// <typeparam name="T">The type of the elements in the vector.</typeparam>
         /// <param name="vector">The vector whose elements will be summed.</param>
@@ -3894,56 +4084,6 @@ namespace System.Runtime.Intrinsics
                 ThrowHelper.ThrowNotSupportedException();
             }
             return AdvSimd.Arm64.ZipHigh(left, right);
-        }
-
-        // TODO: Make generic versions of these public, see https://github.com/dotnet/runtime/issues/82559
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        [CompExactlyDependsOn(typeof(AdvSimd.Arm64))]
-        [CompExactlyDependsOn(typeof(Sse2))]
-        internal static Vector128<byte> AddSaturate(Vector128<byte> left, Vector128<byte> right)
-        {
-            if (Sse2.IsSupported)
-            {
-                return Sse2.AddSaturate(left, right);
-            }
-            else if (!AdvSimd.Arm64.IsSupported)
-            {
-                ThrowHelper.ThrowNotSupportedException();
-            }
-            return AdvSimd.AddSaturate(left, right);
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        [CompExactlyDependsOn(typeof(AdvSimd.Arm64))]
-        [CompExactlyDependsOn(typeof(Sse2))]
-        internal static Vector128<byte> SubtractSaturate(Vector128<byte> left, Vector128<byte> right)
-        {
-            if (Sse2.IsSupported)
-            {
-                return Sse2.SubtractSaturate(left, right);
-            }
-            else if (!AdvSimd.Arm64.IsSupported)
-            {
-                ThrowHelper.ThrowNotSupportedException();
-            }
-            return AdvSimd.SubtractSaturate(left, right);
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        [CompExactlyDependsOn(typeof(AdvSimd.Arm64))]
-        [CompExactlyDependsOn(typeof(Sse2))]
-        internal static Vector128<ushort> AddSaturate(Vector128<ushort> left, Vector128<ushort> right)
-        {
-            if (Sse2.IsSupported)
-            {
-                return Sse2.AddSaturate(left, right);
-            }
-            else if (!AdvSimd.Arm64.IsSupported)
-            {
-                ThrowHelper.ThrowNotSupportedException();
-            }
-            return AdvSimd.AddSaturate(left, right);
         }
     }
 }

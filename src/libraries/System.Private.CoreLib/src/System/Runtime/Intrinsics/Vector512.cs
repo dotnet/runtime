@@ -88,6 +88,45 @@ namespace System.Runtime.Intrinsics
         [Intrinsic]
         public static Vector512<T> Add<T>(Vector512<T> left, Vector512<T> right) => left + right;
 
+        /// <summary>Performs saturating addition on two vectors.</summary>
+        /// <param name="left">The vector to add with <paramref name="right" />.</param>
+        /// <param name="right">The vector to add with <paramref name="left" />.</param>
+        /// <typeparam name="T">The type of the elements in the vector.</typeparam>
+        /// <returns>The saturated sum of <paramref name="left" /> and <paramref name="right" />.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector512<T> AddSaturate<T>(Vector512<T> left, Vector512<T> right)
+        {
+            if (Avx512BW.IsSupported)
+            {
+                if (typeof(T) == typeof(byte))
+                {
+                    return Avx512BW.AddSaturate(left.AsByte(), right.AsByte()).As<byte, T>();
+                }
+                if (typeof(T) == typeof(sbyte))
+                {
+                    return Avx512BW.AddSaturate(left.AsSByte(), right.AsSByte()).As<sbyte, T>();
+                }
+                if (typeof(T) == typeof(short))
+                {
+                    return Avx512BW.AddSaturate(left.AsInt16(), right.AsInt16()).As<short, T>();
+                }
+                if (typeof(T) == typeof(ushort))
+                {
+                    return Avx512BW.AddSaturate(left.AsUInt16(), right.AsUInt16()).As<ushort, T>();
+                }
+            }
+
+            if (IsHardwareAccelerated)
+            {
+                return VectorMath.AddSaturate<Vector512<T>, T>(left, right);
+            }
+
+            return Create(
+                Vector256.AddSaturate(left._lower, right._upper),
+                Vector256.AddSaturate(left._upper, right._upper)
+            );
+        }
+
         /// <summary>Computes the bitwise-and of a given vector and the ones complement of another vector.</summary>
         /// <typeparam name="T">The type of the elements in the vector.</typeparam>
         /// <param name="left">The vector to bitwise-and with <paramref name="right" />.</param>
@@ -3289,6 +3328,45 @@ namespace System.Runtime.Intrinsics
         /// <exception cref="NotSupportedException">The type of <paramref name="left" /> and <paramref name="right" /> (<typeparamref name="T" />) is not supported.</exception>
         [Intrinsic]
         public static Vector512<T> Subtract<T>(Vector512<T> left, Vector512<T> right) => left - right;
+
+        /// <summary>Performs saturating subtraction on two vectors.</summary>
+        /// <param name="left">The vector from which <paramref name="right" /> will be subtracted.</param>
+        /// <param name="right">The vector to subtract from <paramref name="left" />.</param>
+        /// <typeparam name="T">The type of the elements in the vector.</typeparam>
+        /// <returns>The saturated difference of <paramref name="left" /> and <paramref name="right" />.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector512<T> SubtractSaturate<T>(Vector512<T> left, Vector512<T> right)
+        {
+            if (Avx512BW.IsSupported)
+            {
+                if (typeof(T) == typeof(byte))
+                {
+                    return Avx512BW.SubtractSaturate(left.AsByte(), right.AsByte()).As<byte, T>();
+                }
+                if (typeof(T) == typeof(sbyte))
+                {
+                    return Avx512BW.SubtractSaturate(left.AsSByte(), right.AsSByte()).As<sbyte, T>();
+                }
+                if (typeof(T) == typeof(short))
+                {
+                    return Avx512BW.SubtractSaturate(left.AsInt16(), right.AsInt16()).As<short, T>();
+                }
+                if (typeof(T) == typeof(ushort))
+                {
+                    return Avx512BW.SubtractSaturate(left.AsUInt16(), right.AsUInt16()).As<ushort, T>();
+                }
+            }
+
+            if (IsHardwareAccelerated)
+            {
+                return VectorMath.SubtractSaturate<Vector512<T>, T>(left, right);
+            }
+
+            return Create(
+                Vector256.SubtractSaturate(left._lower, right._upper),
+                Vector256.SubtractSaturate(left._upper, right._upper)
+            );
+        }
 
         /// <summary>Computes the sum of all elements in a vector.</summary>
         /// <param name="vector">The vector whose elements will be summed.</param>

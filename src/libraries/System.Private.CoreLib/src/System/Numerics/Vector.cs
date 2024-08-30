@@ -5,6 +5,7 @@ using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
+using System.Runtime.Intrinsics.Arm;
 using System.Runtime.Intrinsics.X86;
 
 namespace System.Numerics
@@ -61,6 +62,17 @@ namespace System.Numerics
         /// <returns>The sum of <paramref name="left" /> and <paramref name="right" />.</returns>
         [Intrinsic]
         public static Vector<T> Add<T>(Vector<T> left, Vector<T> right) => left + right;
+
+        /// <summary>Performs saturating addition on two vectors.</summary>
+        /// <param name="left">The vector to add with <paramref name="right" />.</param>
+        /// <param name="right">The vector to add with <paramref name="left" />.</param>
+        /// <typeparam name="T">The type of the elements in the vector.</typeparam>
+        /// <returns>The saturated sum of <paramref name="left" /> and <paramref name="right" />.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector<T> AddSaturate<T>(Vector<T> left, Vector<T> right)
+        {
+            return VectorMath.AddSaturate<Vector<T>, T>(left, right);
+        }
 
         /// <summary>Computes the bitwise-and of a given vector and the ones complement of another vector.</summary>
         /// <param name="left">The vector to bitwise-and with <paramref name="right" />.</param>
@@ -2646,6 +2658,17 @@ namespace System.Numerics
         /// <returns>The difference of <paramref name="left" /> and <paramref name="right" />.</returns>
         [Intrinsic]
         public static Vector<T> Subtract<T>(Vector<T> left, Vector<T> right) => left - right;
+
+        /// <summary>Performs saturating subtraction on two vectors.</summary>
+        /// <param name="left">The vector from which <paramref name="right" /> will be subtracted.</param>
+        /// <param name="right">The vector to subtract from <paramref name="left" />.</param>
+        /// <typeparam name="T">The type of the elements in the vector.</typeparam>
+        /// <returns>The saturated difference of <paramref name="left" /> and <paramref name="right" />.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector<T> SubtractSaturate<T>(Vector<T> left, Vector<T> right)
+        {
+            return VectorMath.SubtractSaturate<Vector<T>, T>(left, right);
+        }
 
         /// <summary>
         /// Returns the sum of all elements inside the vector.
