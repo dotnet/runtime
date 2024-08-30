@@ -54,6 +54,7 @@ namespace System.Net.Http
                 cancellationToken.ThrowIfCancellationRequested();
 
                 var response = new HttpResponseMessage((HttpStatusCode)incomingResponse.Status());
+                response.RequestMessage = request;
 
                 // request body could be still streaming after response headers are received and started streaming response
                 // we will leave scope of this method
