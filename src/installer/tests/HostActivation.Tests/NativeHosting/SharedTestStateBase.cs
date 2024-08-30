@@ -32,9 +32,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
             // user-friendly way of linking against nethost (instead of dlopen/LoadLibrary and dlsym/GetProcAddress).
             // On Windows, we can delay load through a linker option, but on other platforms load is required on start.
             NethostPath = Path.Combine(Path.GetDirectoryName(NativeHostPath), Binaries.NetHost.FileName);
-            File.Copy(
-                Binaries.NetHost.FilePath,
-                NethostPath);
+            File.Copy(Binaries.NetHost.FilePath, NethostPath);
 
             // Enable test-only behaviour for nethost. We always do this - even for tests that don't need the behaviour.
             // On macOS with system integrity protection enabled, if a code-signed binary is loaded, modified (test-only
