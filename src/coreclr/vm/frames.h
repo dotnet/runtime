@@ -1793,7 +1793,7 @@ public:
     static BYTE GetOffsetOfArgs()
     {
         LIMITED_METHOD_DAC_CONTRACT;
-#if defined(TARGET_ARM) || defined(TARGET_ARM64)
+#if defined(TARGET_ARM) || defined(TARGET_ARM64) || defined(TARGET_RISCV64)
         size_t ofs = offsetof(UnmanagedToManagedFrame, m_argumentRegisters);
 #else
         size_t ofs = sizeof(UnmanagedToManagedFrame);

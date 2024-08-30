@@ -647,6 +647,7 @@ Return Value:
     ULONG UnwindIndex;
     ULONG UnwindWords;
 
+    assert(!"---------------RISCV64 ShouldNotReachHere");
     //
     // Unless a special frame is encountered, assume that any unwinding
     // will return us to the return address of a call and set the flag
@@ -857,7 +858,7 @@ ExecuteCodes:
         // alloc_m (11000xxx|xxxxxxxx): allocate large stack with size < 32k (2^11 * 16).
         //
 
-        else if (CurCode <= 0xc7) {
+        else if ((CurCode & 0xf8) == 0xc0) {
             if (AccumulatedSaveNexts != 0) {
                 return STATUS_UNWIND_INVALID_SEQUENCE;
             }
@@ -890,7 +891,7 @@ ExecuteCodes:
         // save_freg (1101110x|xxxxzzzz|zzzzzzzz): save reg f(8+#X) at [sp+#Z*8], offset <= 32767
         //
 
-        else if ((CurCode & 0xdc) == 0xdc) {
+        else if ((CurCode & 0xfe) == 0xdc) {
             if (AccumulatedSaveNexts != 0) {
                 return STATUS_UNWIND_INVALID_SEQUENCE;
             }

@@ -170,7 +170,6 @@ void Compiler::unwindSaveReg(regNumber reg, int offset)
     }
 #endif // FEATURE_CFI_SUPPORT
     int z = offset / 8;
-    // assert(0 <= z && z <= 0xFF);
 
     UnwindInfo* pu = &funCurrentFunc()->uwi;
 
@@ -183,6 +182,7 @@ void Compiler::unwindSaveReg(regNumber reg, int offset)
 
         BYTE x = (BYTE)(reg - REG_RA);
         assert(0 <= x && x <= 0x1B);
+        assert(0 <= z && z <= 0xFF);
 
         pu->AddCode(0xD0, (BYTE)x, (BYTE)z);
     }
@@ -194,6 +194,7 @@ void Compiler::unwindSaveReg(regNumber reg, int offset)
 
         BYTE x = (BYTE)(reg - REG_F8);
         assert(0 <= x && x <= 0x13);
+        assert(0 <= z && z <= 0xFFF);
 
         pu->AddCode(0xDC | (BYTE)(x >> 4), (BYTE)(x << 4) | (BYTE)(z >> 8), (BYTE)z);
     }
@@ -584,7 +585,7 @@ void DumpUnwindInfo(Compiler*         comp,
                    getRegName(REG_F24 + x, true), getRegName(REG_F24 + x + 1, true), (z + 1) * 8);
         }
 #endif
-        else if ((b1 & 0xDC) == 0xDC)
+        else if ((b1 & 0xFE) == 0xDC)
         {
             // save_freg: 1101110x | xxxxzzzz | zzzzzzzz : save reg f(8 + #X) at [sp + #Z * 8], offset <= 2047
             assert(i + 1 < countOfUnwindCodes);
@@ -593,7 +594,7 @@ void DumpUnwindInfo(Compiler*         comp,
             i += 2;
 
             x = (DWORD)((b1 & 0x1) << 4) | (DWORD)(b2 >> 4);
-            z = ((DWORD)(2 & 0xF) << 8) | (DWORD)b3;
+            z = ((DWORD)(b2 & 0xF) << 8) | (DWORD)b3;
 
             printf("    %02X %02X %02X      save_freg X#%u Z#%u (0x%02X); fsd %s, [sp, #%u]\n", b1, b2, b3, x, z, z,
                    getRegName(REG_F8 + x), z * 8);

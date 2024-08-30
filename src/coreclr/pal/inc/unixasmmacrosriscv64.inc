@@ -222,8 +222,12 @@ C_FUNC(\Name\()_End):
 //            GPR_a1
 //            GPR_a0
 //
-// General Registers:
+// Callee Saved Registers:
+//            GPR_gp
 //            GPR_tp
+//            GPR_s11
+//            GPR_s10
+//            GPR_s9
 //            GPR_s8
 //            GPR_s7
 //            GPR_s6
@@ -232,7 +236,6 @@ C_FUNC(\Name\()_End):
 //            GPR_s3
 //            GPR_s2
 //            GPR_s1
-//            GPR_s0
 //            GPR_ra
 //            GPR_fp
 //
@@ -256,11 +259,8 @@ C_FUNC(\Name\()_End):
 
     __PWTB_FloatArgumentRegisters = \extraLocals
 
-    // Note, stack (see __PWTB_StackAlloc variable) must be 16 byte aligned,
-    // SIZEOF__FloatArgumentRegisters (0x40) is 16 byte aligned, that mean initial
-    // __PWTB_FloatArgumentRegisters value must be not 16 byte aligned and
-    // after add (120 + 64) provide 16 byte aligned result.
-    .if ((__PWTB_FloatArgumentRegisters % 16) == 0)
+    // Note, stack (see __PWTB_StackAlloc variable) must be 16 byte aligned.
+    .if ((__PWTB_FloatArgumentRegisters % 16) != 0)
         __PWTB_FloatArgumentRegisters = __PWTB_FloatArgumentRegisters + 8
     .endif
 
@@ -272,10 +272,10 @@ C_FUNC(\Name\()_End):
 
 
     __PWTB_CalleeSavedRegisters = __PWTB_TransitionBlock
-    __PWTB_ArgumentRegisters = __PWTB_TransitionBlock + 120
+    __PWTB_ArgumentRegisters = __PWTB_TransitionBlock + 120 + 8
 
-    // Including fp, ra, s1-s11, tp, gp, and (a0-a7)arguments. (1+1+11+1+1)*8 + 8*8.
-    __PWTB_StackAlloc = __PWTB_TransitionBlock + 120 + 64
+    // Including fp, ra, s1-s11, tp, gp, padding and (a0-a7)arguments. (1+1+11+1+1)*8 + 8 + 8*8.
+    __PWTB_StackAlloc = __PWTB_TransitionBlock + 120 + 8 + 64
     PROLOG_STACK_ALLOC __PWTB_StackAlloc
     PROLOG_SAVE_REG_PAIR  fp, ra, __PWTB_CalleeSavedRegisters, 1
 
