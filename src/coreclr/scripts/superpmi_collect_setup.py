@@ -428,6 +428,21 @@ def setup_aspnet(workitem_directory, arch):
     except Exception as ex:
         print("Warning: failed to remove directory \"%s\": %s", os.path.join(aspnet_directory, ".git"), ex)
 
+    with ChangeDir(aspnet_directory):
+        dotnet_directory = os.path.join(aspnet_directory, "tools", "dotnet", arch)
+        dotnet_install_script = os.path.join(aspnet_directory, "scripts", "dotnet.py")
+
+        if not os.path.isfile(dotnet_install_script):
+            print("Missing " + dotnet_install_script)
+            return
+
+        # Sometimes the dotnet version installed by the script is latest and expect certain versions of SDK that
+        # have not published yet. As a result, we hit errors of "dotnet restore". As a workaround, hard code the
+        # working version until we move to ".NET 8" in the script.
+        run_command(
+            get_python_name() + [dotnet_install_script, "install", "--channels", "9.0", "--architecture", arch, "--install-dir",
+                                 dotnet_directory, "--verbose"])
+
 def get_python_name():
     """Gets the python name
 

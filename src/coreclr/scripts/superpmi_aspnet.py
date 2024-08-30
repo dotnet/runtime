@@ -146,6 +146,9 @@ def build_and_run(coreclr_args):
     os.chdir(temp_location)
 
     dotnet_exe = "dotnet.exe" if is_windows else "dotnet"
+    dotnet_directory = os.path.join(temp_location, "tools", "dotnet", target_arch)
+    if os.path.isdir(dotnet_directory):
+        dotnet_exe = os.path.join(dotnet_directory, "dotnet")
     run_command([dotnet_exe, "--info"], temp_location, _exit_on_fail=True)
 
     ## install crank as local tool
