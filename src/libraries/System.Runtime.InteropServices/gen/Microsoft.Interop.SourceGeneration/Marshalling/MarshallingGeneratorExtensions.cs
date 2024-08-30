@@ -56,7 +56,7 @@ namespace Microsoft.Interop
         /// </summary>
         /// <param name="generator">The marshalling generator for this <paramref name="info"/></param>
         /// <param name="context">The stub marshalling context</param>
-        public static ParameterSyntax AsParameter(this IBoundMarshallingGenerator generator, StubCodeContext context)
+        public static ParameterSyntax AsParameter(this IBoundMarshallingGenerator generator, StubIdentifierContext context)
         {
             SignatureBehavior behavior = generator.NativeSignatureBehavior;
             if (behavior == SignatureBehavior.ManagedTypeAndAttributes)
@@ -64,13 +64,13 @@ namespace Microsoft.Interop
                 return GenerateForwardingParameter(generator.TypeInfo, context.GetIdentifiers(generator.TypeInfo).managed);
             }
             string identifierName;
-            if (context.Direction == MarshalDirection.ManagedToUnmanaged)
+            if (generator.CodeContext.Direction == MarshalDirection.ManagedToUnmanaged)
             {
                 // This name doesn't get introduced into the stub's scope, so we can make it pretty
                 // and reuse the native identifier
                 identifierName = context.GetIdentifiers(generator.TypeInfo).native;
             }
-            else if (context.Direction == MarshalDirection.UnmanagedToManaged)
+            else if (generator.CodeContext.Direction == MarshalDirection.UnmanagedToManaged)
             {
                 // This name is introduced into the stub's scope.
                 // When we are passing the managed identifier as-is, we can just use that name everywhere.
@@ -80,7 +80,7 @@ namespace Microsoft.Interop
                 // before we assign it to the managed value.
                 (string managed, string native) = context.GetIdentifiers(generator.TypeInfo);
                 string param = context.GetAdditionalIdentifier(generator.TypeInfo, ParameterIdentifierSuffix);
-                identifierName = generator.GetValueBoundaryBehavior(context) switch
+                identifierName = generator.ValueBoundaryBehavior switch
                 {
                     ValueBoundaryBehavior.ManagedIdentifier => generator.TypeInfo.IsByRef ? param : managed,
                     ValueBoundaryBehavior.NativeIdentifier or ValueBoundaryBehavior.CastNativeIdentifier => native,
@@ -136,11 +136,11 @@ namespace Microsoft.Interop
         /// <param name="generator">The marshalling generator for this <paramref name="info"/></param>
         /// <param name="info">Object to marshal</param>
         /// <param name="context">Marshalling context</param>
-        public static ArgumentSyntax AsArgument(this IBoundMarshallingGenerator generator, StubCodeContext context)
+        public static ArgumentSyntax AsArgument(this IBoundMarshallingGenerator generator, StubIdentifierContext context)
         {
             TypePositionInfo info = generator.TypeInfo;
             (string managedIdentifier, string nativeIdentifier) = context.GetIdentifiers(info);
-            return generator.GetValueBoundaryBehavior(context) switch
+            return generator.ValueBoundaryBehavior switch
             {
                 ValueBoundaryBehavior.ManagedIdentifier when !info.IsByRef => Argument(IdentifierName(managedIdentifier)),
                 ValueBoundaryBehavior.ManagedIdentifier when info.IsByRef => Argument(IdentifierName(managedIdentifier)).WithRefKindKeyword(MarshallerHelpers.GetManagedArgumentRefKindKeyword(info)),
@@ -151,7 +151,7 @@ namespace Microsoft.Interop
             };
         }
 
-        public static ArgumentSyntax AsManagedArgument(this IBoundMarshallingGenerator generator, StubCodeContext context)
+        public static ArgumentSyntax AsManagedArgument(this IBoundMarshallingGenerator generator, StubIdentifierContext context)
         {
             TypePositionInfo info = generator.TypeInfo;
             var (managedIdentifier, _) = context.GetIdentifiers(info);
@@ -162,7 +162,7 @@ namespace Microsoft.Interop
             return Argument(IdentifierName(managedIdentifier));
         }
 
-        public static ExpressionSyntax GenerateNativeByRefInitialization(this IBoundMarshallingGenerator generator, StubCodeContext context)
+        public static ExpressionSyntax GenerateNativeByRefInitialization(this IBoundMarshallingGenerator generator, StubIdentifierContext context)
         {
             TypePositionInfo info = generator.TypeInfo;
             string paramIdentifier = context.GetAdditionalIdentifier(info, ParameterIdentifierSuffix);

@@ -3,35 +3,31 @@
 
 using System;
 using System.Diagnostics;
-using Microsoft.CodeAnalysis.CSharp.Syntax;
-
 namespace Microsoft.Interop
 {
-    public sealed record NativeToManagedStubCodeContext : StubCodeContext
+    public sealed record DefaultIdentifierContext : StubIdentifierContext
     {
-        public override bool SingleFrameSpansNativeContext => false;
-
-        public override bool AdditionalTemporaryStateLivesAcrossStages => true;
-
         private const string InvokeReturnIdentifier = "__invokeRetVal";
         private const string InvokeReturnIdentifierNative = "__invokeRetValUnmanaged";
         private readonly string _returnIdentifier;
         private readonly string _nativeReturnIdentifier;
+        private readonly MarshalDirection _direction;
 
-        public NativeToManagedStubCodeContext(
+        public DefaultIdentifierContext(
             string returnIdentifier,
-            string nativeReturnIdentifier)
+            string nativeReturnIdentifier,
+            MarshalDirection direction)
         {
             _returnIdentifier = returnIdentifier;
             _nativeReturnIdentifier = nativeReturnIdentifier;
-            Direction = MarshalDirection.UnmanagedToManaged;
+            _direction = direction;
         }
 
         public override (string managed, string native) GetIdentifiers(TypePositionInfo info)
         {
-            // If the info is in the native return position, then we need to generate a name to use
+            // If the info is in the stub return position, then we need to generate a name to use
             // for both the managed and native values since there is no name in the signature for the return value.
-            if (info.IsNativeReturnPosition)
+            if (MarshallerHelpers.IsInStubReturnPosition(info, _direction))
             {
                 // If the info is in the native exception position,
                 // then we're going to return using name of the native return identifier.
@@ -43,21 +39,20 @@ namespace Microsoft.Interop
                 }
                 return (_returnIdentifier, _nativeReturnIdentifier);
             }
-            // If the info is in the managed return position but is not in the native return position,
+            // If the info is in the invocation return position but is not in the stub return position,
             // then that means that the stub is introducing an additional info for the return position.
-            // This element can be in any position in the native signature,
-            // but since it isn't in the managed signature, there is no name in source for this info, so we must provide one here.
-            // We can't use ReturnIdentifier or ReturnNativeIdentifier since that will be used by the return value of the stub itself.
-            // As a result, we generate another name for the native return value.
-            if (info.IsManagedReturnPosition)
+            // This means that there is no name in source for this info, so we must provide one here.
+            else if (MarshallerHelpers.IsInInvocationReturnPosition(info, _direction))
             {
                 return (InvokeReturnIdentifier, InvokeReturnIdentifierNative);
             }
-
-            // If the info isn't in either the managed or native return position,
-            // then we can use the base implementation since we have an identifier name provided
-            // in the original metadata.
-            return base.GetIdentifiers(info);
+            else
+            {
+                // If the info isn't in either the managed or native return position,
+                // then we can use the base implementation since we have an identifier name provided
+                // in the original metadata.
+                return base.GetIdentifiers(info);
+            }
         }
     }
 }

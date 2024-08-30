@@ -9,27 +9,26 @@ namespace Microsoft.Interop
 {
     public record struct ByValueMarshalKindSupportInfo(ByValueMarshalKindSupport Support, string? details)
     {
-        public ByValueMarshalKindSupport GetSupport(TypePositionInfo info, StubCodeContext context, out GeneratorDiagnostic? diagnostic)
+        public ByValueMarshalKindSupport GetSupport(TypePositionInfo info, out GeneratorDiagnostic? diagnostic)
         {
             diagnostic = Support switch
             {
                 ByValueMarshalKindSupport.Supported => null,
                 ByValueMarshalKindSupport.NotRecommended =>
-                    new GeneratorDiagnostic.NotRecommended(info, context)
+                    new GeneratorDiagnostic.NotRecommended(info)
                     {
                         Details = details
                     },
                 ByValueMarshalKindSupport.Unnecessary =>
                     new GeneratorDiagnostic.UnnecessaryData(
                            info,
-                           context,
                            ImmutableArray.Create(info.ByValueMarshalAttributeLocations.OutLocation))
                     {
                         UnnecessaryDataName = SR.InOutAttributes,
                         UnnecessaryDataDetails = details
                     },
                 ByValueMarshalKindSupport.NotSupported =>
-                    new GeneratorDiagnostic.NotSupported(info, context)
+                    new GeneratorDiagnostic.NotSupported(info)
                     {
                         NotSupportedDetails = details
                     },
@@ -40,7 +39,7 @@ namespace Microsoft.Interop
     }
 
     /// <summary>
-    /// Provides an implementation of <see cref="IUnboundMarshallingGenerator.SupportsByValueMarshalKind(ByValueContentsMarshalKind, TypePositionInfo, StubCodeContext, out GeneratorDiagnostic?)"/> through <see cref="GetSupport(ByValueContentsMarshalKind, TypePositionInfo, StubCodeContext, out GeneratorDiagnostic?)"/>
+    /// Provides an implementation of <see cref="IUnboundMarshallingGenerator.SupportsByValueMarshalKind(ByValueContentsMarshalKind, TypePositionInfo, out GeneratorDiagnostic?)"/> through <see cref="GetSupport(ByValueContentsMarshalKind, TypePositionInfo, out GeneratorDiagnostic?)"/>
     /// </summary>
     public record ByValueMarshalKindSupportDescriptor(
         ByValueMarshalKindSupportInfo DefaultSupport,
@@ -69,14 +68,14 @@ namespace Microsoft.Interop
         /// <summary>
         /// Returns the support for the ByValueContentsMarshalKind, and if it is not <see cref="ByValueMarshalKindSupport.Supported"/>, diagnostic is not null
         /// </summary>
-        public ByValueMarshalKindSupport GetSupport(ByValueContentsMarshalKind marshalKind, TypePositionInfo info, StubCodeContext context, out GeneratorDiagnostic? diagnostic)
+        public ByValueMarshalKindSupport GetSupport(ByValueContentsMarshalKind marshalKind, TypePositionInfo info, out GeneratorDiagnostic? diagnostic)
         {
             if (info.IsByRef)
             {
                 // ByRef with ByValue attributes is not allowed
                 if (marshalKind != ByValueContentsMarshalKind.Default)
                 {
-                    diagnostic = new GeneratorDiagnostic.NotSupported(info, context)
+                    diagnostic = new GeneratorDiagnostic.NotSupported(info)
                     {
                         NotSupportedDetails = SR.InOutAttributeByRefNotSupported
                     };
@@ -96,10 +95,10 @@ namespace Microsoft.Interop
 
             return marshalKind switch
             {
-                ByValueContentsMarshalKind.Default => DefaultSupport.GetSupport(info, context, out diagnostic),
-                ByValueContentsMarshalKind.In => InSupport.GetSupport(info, context, out diagnostic),
-                ByValueContentsMarshalKind.Out => OutSupport.GetSupport(info, context, out diagnostic),
-                ByValueContentsMarshalKind.InOut => InOutSupport.GetSupport(info, context, out diagnostic),
+                ByValueContentsMarshalKind.Default => DefaultSupport.GetSupport(info, out diagnostic),
+                ByValueContentsMarshalKind.In => InSupport.GetSupport(info, out diagnostic),
+                ByValueContentsMarshalKind.Out => OutSupport.GetSupport(info, out diagnostic),
+                ByValueContentsMarshalKind.InOut => InOutSupport.GetSupport(info, out diagnostic),
                 _ => throw new UnreachableException()
             };
         }
