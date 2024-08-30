@@ -101,7 +101,7 @@ CrstStatic          SystemDomain::m_SystemDomainCrst;
 CrstStatic          SystemDomain::m_DelayedUnloadCrst;
 
 // Constructor for the PinnedHeapHandleBucket class.
-PinnedHeapHandleBucket::PinnedHeapHandleBucket(PinnedHeapHandleBucket *pNext, PTRARRAYREF pinnedHandleArrayObj, DWORD size, BaseDomain *pDomain)
+PinnedHeapHandleBucket::PinnedHeapHandleBucket(PinnedHeapHandleBucket *pNext, PTRARRAYREF pinnedHandleArrayObj, DWORD size)
 : m_pNext(pNext)
 , m_ArraySize(size)
 , m_CurrentPos(0)
@@ -112,7 +112,6 @@ PinnedHeapHandleBucket::PinnedHeapHandleBucket(PinnedHeapHandleBucket *pNext, PT
         THROWS;
         GC_NOTRIGGER;
         MODE_COOPERATIVE;
-        PRECONDITION(CheckPointer(pDomain));
         INJECT_FAULT(COMPlusThrowOM(););
     }
     CONTRACTL_END;
@@ -212,9 +211,8 @@ void PinnedHeapHandleBucket::EnumStaticGCRefs(promote_func* fn, ScanContext* sc)
 #define MAX_BUCKETSIZE (16384 - 4)
 
 // Constructor for the PinnedHeapHandleTable class.
-PinnedHeapHandleTable::PinnedHeapHandleTable(BaseDomain *pDomain, DWORD InitialBucketSize)
+PinnedHeapHandleTable::PinnedHeapHandleTable(DWORD InitialBucketSize)
 : m_pHead(NULL)
-, m_pDomain(pDomain)
 , m_NextBucketSize(InitialBucketSize)
 , m_pFreeSearchHint(NULL)
 , m_cEmbeddedFree(0)
@@ -224,7 +222,6 @@ PinnedHeapHandleTable::PinnedHeapHandleTable(BaseDomain *pDomain, DWORD InitialB
         THROWS;
         GC_TRIGGERS;
         MODE_COOPERATIVE;
-        PRECONDITION(CheckPointer(pDomain));
         INJECT_FAULT(COMPlusThrowOM(););
     }
     CONTRACTL_END;
@@ -356,7 +353,7 @@ OBJECTREF* PinnedHeapHandleTable::AllocateHandles(DWORD nRequested)
                 m_pHead->ConsumeRemaining();
             }
 
-            m_pHead = new PinnedHeapHandleBucket(m_pHead, pinnedHandleArrayObj, newBucketSize, m_pDomain);
+            m_pHead = new PinnedHeapHandleBucket(m_pHead, pinnedHandleArrayObj, newBucketSize);
 
             // we already computed nextBucketSize to be double the previous size above, but it is possible that
             // other threads increased m_NextBucketSize while the lock was unheld. We want to ensure
@@ -705,7 +702,7 @@ void BaseDomain::InitPinnedHeapHandleTable()
     }
     CONTRACTL_END;
 
-    PinnedHeapHandleTable* pTable = new PinnedHeapHandleTable(this, STATIC_OBJECT_TABLE_BUCKET_SIZE);
+    PinnedHeapHandleTable* pTable = new PinnedHeapHandleTable(STATIC_OBJECT_TABLE_BUCKET_SIZE);
     if(InterlockedCompareExchangeT<PinnedHeapHandleTable*>(&m_pPinnedHeapHandleTable, pTable, NULL) != NULL)
     {
         // another thread beat us to initializing the field, delete our copy

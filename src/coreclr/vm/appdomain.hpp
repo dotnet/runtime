@@ -68,7 +68,7 @@ class PinnedHeapHandleBucket
 {
 public:
     // Constructor and desctructor.
-    PinnedHeapHandleBucket(PinnedHeapHandleBucket *pNext, PTRARRAYREF pinnedHandleArrayObj, DWORD size, BaseDomain *pDomain);
+    PinnedHeapHandleBucket(PinnedHeapHandleBucket *pNext, PTRARRAYREF pinnedHandleArrayObj, DWORD size);
     ~PinnedHeapHandleBucket();
 
     // This returns the next bucket.
@@ -123,7 +123,7 @@ class PinnedHeapHandleTable
 {
 public:
     // Constructor and desctructor.
-    PinnedHeapHandleTable(BaseDomain *pDomain, DWORD InitialBucketSize);
+    PinnedHeapHandleTable(DWORD InitialBucketSize);
     ~PinnedHeapHandleTable();
 
     // Allocate handles from the pinned heap handle table.
@@ -140,9 +140,6 @@ private:
     // The buckets of object handles.
     // synchronized by m_Crst
     PinnedHeapHandleBucket *m_pHead;
-
-    // We need to know the containing domain so we know where to allocate handles
-    BaseDomain *m_pDomain;
 
     // The size of the PinnedHeapHandleBucket.
     // synchronized by m_Crst
