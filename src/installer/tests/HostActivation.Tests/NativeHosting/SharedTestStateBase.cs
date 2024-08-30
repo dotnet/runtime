@@ -35,6 +35,12 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
             File.Copy(
                 Binaries.NetHost.FilePath,
                 NethostPath);
+
+            // Enable test-only behaviour for nethost. We always do this - even for tests that don't need the behaviour.
+            // On macOS with system integrity protection enabled, if a code-signed binary is loaded, modified (test-only
+            // behaviour rewrites part of the binary), and loaded again, the process will crash (Code Signature Invalid).
+            // We don't bother disabling it later, as we just delete the containing folder after tests run.
+            _ = TestOnlyProductBehavior.Enable(NethostPath);
         }
 
         public Command CreateNativeHostCommand(IEnumerable<string> args, string dotNetRoot)
