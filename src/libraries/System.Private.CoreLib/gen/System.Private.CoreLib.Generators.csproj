@@ -2,9 +2,17 @@
   <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>
     <NoWarn>$(NoWarn);CS3001</NoWarn>
+    <EnableDefaultEmbeddedResourceItems>false</EnableDefaultEmbeddedResourceItems>
+    <UsingToolXliff>true</UsingToolXliff>
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Include="EventSourceEventGenerator.cs" />
+    <Compile Include="EventSourceEventGenerator.DiagnosticDescriptors.cs" />
+    <Compile Include="EventSourceEventGenerator.Emitter.cs" />
+    <Compile Include="EventSourceEventGenerator.Parser.cs" />
+    <Compile Include="KnowsAttributeNames.cs" />
+    <Compile Include="Models\EventMethodsParsedResult.cs" />
     <Compile Include="ProductVersionInfoGenerator.cs" />
     <Compile Include="EventSourceGenerator.cs" />
     <Compile Include="EventSourceGenerator.Emitter.cs" />
@@ -14,12 +22,16 @@
   </ItemGroup>
 
   <ItemGroup>
+    <!-- Common generator support -->
+    <Compile Include="$(CommonPath)Roslyn\DiagnosticDescriptorHelper.cs" Link="Common\Roslyn\DiagnosticDescriptorHelper.cs" />
+    <Compile Include="$(CommonPath)Roslyn\GetBestTypeByMetadataName.cs" Link="Common\Roslyn\GetBestTypeByMetadataName.cs" />
+
     <Compile Include="$(CoreLibSharedDir)System\Collections\Generic\ValueListBuilder.cs" Link="Production\ValueListBuilder.cs" />
     <Compile Include="$(CoreLibSharedDir)System\Collections\Generic\ValueListBuilder.Pop.cs" Link="Production\ValueListBuilder.Pop.cs" />
   </ItemGroup>
-  
+
   <ItemGroup>
     <PackageReference Include="Microsoft.CodeAnalysis.CSharp" PrivateAssets="all" Version="$(MicrosoftCodeAnalysisVersion_LatestVS)" />
   </ItemGroup>
-
+  
 </Project>
