@@ -65,6 +65,7 @@ namespace System
         public static bool IsArmOrArm64Process => IsArmProcess || IsArm64Process;
         public static bool IsNotArmNorArm64Process => !IsArmOrArm64Process;
         public static bool IsS390xProcess => (int)RuntimeInformation.ProcessArchitecture == 5; // Architecture.S390x
+        public static bool IsLoongArch64Process => (int)RuntimeInformation.ProcessArchitecture == 6; // Architecture.LoongArch64;
         public static bool IsArmv6Process => (int)RuntimeInformation.ProcessArchitecture == 7; // Architecture.Armv6
         public static bool IsPpc64leProcess => (int)RuntimeInformation.ProcessArchitecture == 8; // Architecture.Ppc64le
         public static bool IsRiscV64Process => (int)RuntimeInformation.ProcessArchitecture == 9; // Architecture.RiscV64;
