@@ -14,6 +14,7 @@ namespace System.Threading
         // it will be leaked and stay in this list forever.
         // it will also keep the Pollable handle alive and prevent it from being disposed
         private static readonly List<PollableHolder> s_pollables = new();
+        private static bool s_tasksCanceled;
 
         internal static Task RegisterWasiPollableHandle(int handle, CancellationToken cancellationToken)
         {
@@ -35,6 +36,11 @@ namespace System.Threading
         internal static void DispatchWasiEventLoop()
         {
             ThreadPoolWorkQueue.Dispatch();
+            if (s_tasksCanceled)
+            {
+                s_tasksCanceled = false;
+                return;
+            }
 
             var holders = new List<PollableHolder>(s_pollables.Count);
             var pending = new List<Pollable>(s_pollables.Count);
@@ -113,6 +119,11 @@ namespace System.Threading
                 {
                     return;
                 }
+
+                // Tell event loop to exit early, giving the application a
+                // chance to quit if the task(s) it is interested in have
+                // completed.
+                s_tasksCanceled = true;
 
                 // it will be removed from s_pollables on the next run
                 self.isDisposed = true;
