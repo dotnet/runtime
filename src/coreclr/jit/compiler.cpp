@@ -4115,16 +4115,6 @@ _SetMinOpts:
         opts.jitFlags->Clear(JitFlags::JIT_FLAG_TIER1);
         opts.jitFlags->Clear(JitFlags::JIT_FLAG_BBOPT);
         compSwitchedToMinOpts = true;
-
-        // We may have read PGO data. Clear it out because we won't be using it.
-        //
-        fgPgoFailReason  = "method switched to min-opts";
-        fgPgoQueryResult = E_FAIL;
-        fgPgoHaveWeights = false;
-        fgPgoData        = nullptr;
-        fgPgoSchema      = nullptr;
-        fgPgoDisabled    = true;
-        fgPgoDynamic     = false;
     }
 
 #ifdef DEBUG
@@ -4143,6 +4133,10 @@ _SetMinOpts:
 
         lvaEnregEHVars &= compEnregLocals();
         lvaEnregMultiRegVars &= compEnregLocals();
+
+        // Scrub any profile data we might have fetched
+        //
+        fgRemoveProfileData("compiling with minopt");
     }
 
     if (!compIsForInlining())

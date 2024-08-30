@@ -6521,6 +6521,8 @@ public:
         return fgIsUsingProfileWeights() ? fgNumProfileRuns : BB_UNITY_WEIGHT_UNSIGNED;
     }
 
+    void fgRemoveProfileData(const char* reason);
+
 //-------- Insert a statement at the start or end of a basic block --------
 
 #ifdef DEBUG
