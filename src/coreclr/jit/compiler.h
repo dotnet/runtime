@@ -6113,8 +6113,6 @@ public:
 
     BasicBlock* fgFirstBlockOfHandler(BasicBlock* block);
 
-    bool fgIsFirstBlockOfFilterOrHandler(BasicBlock* block);
-
     FlowEdge* fgGetPredForBlock(BasicBlock* block, BasicBlock* blockPred);
 
     FlowEdge* fgGetPredForBlock(BasicBlock* block, BasicBlock* blockPred, FlowEdge*** ptrToPred);
