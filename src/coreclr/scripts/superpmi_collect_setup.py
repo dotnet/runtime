@@ -428,9 +428,15 @@ def setup_aspnet(workitem_directory, arch):
     except Exception as ex:
         print("Warning: failed to remove directory \"%s\": %s", os.path.join(aspnet_directory, ".git"), ex)
 
-    with ChangeDir(aspnet_directory):
+    # We use the performance repo to get access to the dotnet install script.
+    performance_directory = os.path.join(workitem_directory, "performance")
+
+    run_command(
+        ["git", "clone", "--quiet", "--depth", "1", "https://github.com/dotnet/performance", performance_directory])
+
+    with ChangeDir(performance_directory):
         dotnet_directory = os.path.join(aspnet_directory, "tools", "dotnet", arch)
-        dotnet_install_script = os.path.join(aspnet_directory, "scripts", "dotnet.py")
+        dotnet_install_script = os.path.join(performance_directory, "scripts", "dotnet.py")
 
         if not os.path.isfile(dotnet_install_script):
             print("Missing " + dotnet_install_script)
@@ -442,6 +448,8 @@ def setup_aspnet(workitem_directory, arch):
         run_command(
             get_python_name() + [dotnet_install_script, "install", "--channels", "9.0", "--architecture", arch, "--install-dir",
                                  dotnet_directory, "--verbose"])
+        
+        shutil.rmtree(performance_directory, ignore_errors=True)
 
 def get_python_name():
     """Gets the python name
