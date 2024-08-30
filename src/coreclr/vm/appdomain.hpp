@@ -546,23 +546,6 @@ public:
         return ::CreateWeakInteriorHandle(m_handleStore, object, pInteriorPointerLocation);
     }
 
-    OBJECTHANDLE CreateSizedRefHandle(OBJECTREF object)
-    {
-        WRAPPER_NO_CONTRACT;
-        OBJECTHANDLE h;
-        if (GCHeapUtilities::IsServerHeap())
-        {
-            h = ::CreateSizedRefHandle(m_handleStore, object, m_dwSizedRefHandles % m_iNumberOfProcessors);
-        }
-        else
-        {
-            h = ::CreateSizedRefHandle(m_handleStore, object);
-        }
-
-        InterlockedIncrement((LONG*)&m_dwSizedRefHandles);
-        return h;
-    }
-
 #if defined(FEATURE_COMINTEROP) || defined(FEATURE_COMWRAPPERS)
     OBJECTHANDLE CreateRefcountedHandle(OBJECTREF object)
     {
@@ -607,32 +590,6 @@ protected:
 
     // Protects allocation of slot IDs for thread statics
     static CrstStatic m_MethodTableExposedClassObjectCrst;
-
-private:
-    // I have yet to figure out an efficient way to get the number of handles
-    // of a particular type that's currently used by the process without
-    // spending more time looking at the handle table code. We know that
-    // our only customer (asp.net) in Dev10 is not going to create many of
-    // these handles so I am taking a shortcut for now and keep the sizedref
-    // handle count on the AD itself.
-    DWORD m_dwSizedRefHandles;
-
-    static int m_iNumberOfProcessors;
-
-public:
-    // Called by DestroySizedRefHandle
-    void DecNumSizedRefHandles()
-    {
-        WRAPPER_NO_CONTRACT;
-        LONG result;
-        result = InterlockedDecrement((LONG*)&m_dwSizedRefHandles);
-        _ASSERTE(result >= 0);
-    }
-
-    DWORD GetNumSizedRefHandles()
-    {
-        return m_dwSizedRefHandles;
-    }
 
 #ifdef DACCESS_COMPILE
 public:
@@ -2126,10 +2083,7 @@ inline static BOOL IsUnderDomainLock() { LIMITED_METHOD_CONTRACT; return m_Syste
             WRAPPER_NO_CONTRACT;
         }
     };
-#endif // DACCESS_COMPILE
-
-public:
-    DWORD GetTotalNumSizedRefHandles();
+#endif // !DACCESS_COMPILE
 
 #ifdef DACCESS_COMPILE
 public:
