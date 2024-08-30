@@ -338,6 +338,10 @@ namespace System.Threading
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ThreadNative_Interrupt")]
         private static partial void Interrupt(ThreadHandle t);
 
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ThreadNative_Join")]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        private static partial bool Join(ThreadHandle t, int millisecondsTimeout);
+
         /// <summary>
         /// Waits for the thread to die or for timeout milliseconds to elapse.
         /// </summary>
@@ -345,11 +349,21 @@ namespace System.Threading
         /// Returns true if the thread died, or false if the wait timed out. If
         /// -1 is given as the parameter, no timeout will occur.
         /// </returns>
-        /// <exception cref="ArgumentException">if timeout &lt; -1 (Timeout.Infinite)</exception>
+        /// <exception cref="ArgumentOutOfRangeException">if timeout &lt; -1 (Timeout.Infinite)</exception>
         /// <exception cref="ThreadInterruptedException">if the thread is interrupted while waiting</exception>
         /// <exception cref="ThreadStateException">if the thread has not been started yet</exception>
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        public extern bool Join(int millisecondsTimeout);
+        public bool Join(int millisecondsTimeout)
+        {
+            // Validate the timeout
+            if (millisecondsTimeout < 0 && millisecondsTimeout != Timeout.Infinite)
+            {
+                throw new ArgumentOutOfRangeException(nameof(millisecondsTimeout), SR.ArgumentOutOfRange_NeedNonNegOrNegative1);
+            }
+
+            bool res = Join(GetNativeHandle(), millisecondsTimeout);
+            GC.KeepAlive(this);
+            return res;
+        }
 
         /// <summary>
         /// Max value to be passed into <see cref="SpinWait(int)"/> for optimal delaying. This value is normalized to be

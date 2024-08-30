@@ -308,7 +308,6 @@ FCFuncStart(gThreadFuncs)
     FCFuncElement("GetPriorityNative", ThreadNative::GetPriority)
     FCFuncElement("SetPriorityNative", ThreadNative::SetPriority)
     FCFuncElement("GetThreadStateNative", ThreadNative::GetThreadState)
-    FCFuncElement("Join", ThreadNative::Join)
     FCFuncElement("get_OptimalMaxSpinWaitsPerSpinIteration", ThreadNative::GetOptimalMaxSpinWaitsPerSpinIteration)
 FCFuncEnd()
 

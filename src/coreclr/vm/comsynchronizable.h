@@ -55,7 +55,6 @@ public:
     static FCDECL1(INT32,   GetPriority,       ThreadBaseObject* pThisUNSAFE);
     static FCDECL2(void,    SetPriority,       ThreadBaseObject* pThisUNSAFE, INT32 iPriority);
     static FCDECL1(FC_BOOL_RET, IsAlive,       ThreadBaseObject* pThisUNSAFE);
-    static FCDECL2(FC_BOOL_RET, Join,          ThreadBaseObject* pThisUNSAFE, INT32 Timeout);
     static FCDECL1(void,    Initialize,        ThreadBaseObject* pThisUNSAFE);
     static FCDECL1(FC_BOOL_RET, GetIsBackground,  ThreadBaseObject* pThisUNSAFE);
     static FCDECL1(INT32,   GetThreadState,    ThreadBaseObject* pThisUNSAFE);
@@ -78,7 +77,6 @@ private:
 
     static void KickOffThread_Worker(LPVOID /* KickOffThread_Args* */);
     static ULONG WINAPI KickOffThread(void *pass);
-    static BOOL DoJoin(THREADBASEREF DyingThread, INT32 timeout);
 };
 
 extern "C" void QCALLTYPE ThreadNative_Start(QCall::ThreadHandle thread, int threadStackSize, int priority, PCWSTR pThreadName);
@@ -92,6 +90,7 @@ extern "C" INT32 QCALLTYPE ThreadNative_GetApartmentState(QCall::ThreadHandle th
 extern "C" INT32 QCALLTYPE ThreadNative_SetApartmentState(QCall::ThreadHandle thread, INT32 iState);
 #endif // FEATURE_COMINTEROP_APARTMENT_SUPPORT
 
+extern "C" BOOL QCALLTYPE ThreadNative_Join(QCall::ThreadHandle thread, INT32 Timeout);
 extern "C" void QCALLTYPE ThreadNative_Abort(QCall::ThreadHandle thread);
 extern "C" void QCALLTYPE ThreadNative_ResetAbort();
 extern "C" void QCALLTYPE ThreadNative_SpinWait(INT32 iterations);

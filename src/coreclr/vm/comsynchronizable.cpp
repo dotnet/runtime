@@ -417,30 +417,6 @@ FCIMPL1(FC_BOOL_RET, ThreadNative::IsAlive, ThreadBaseObject* pThisUNSAFE)
 }
 FCIMPLEND
 
-FCIMPL2(FC_BOOL_RET, ThreadNative::Join, ThreadBaseObject* pThisUNSAFE, INT32 Timeout)
-{
-    FCALL_CONTRACT;
-
-    BOOL            retVal = FALSE;
-    THREADBASEREF   pThis   = (THREADBASEREF) pThisUNSAFE;
-
-    HELPER_METHOD_FRAME_BEGIN_RET_1(pThis);
-
-    if (pThis==NULL)
-        COMPlusThrow(kNullReferenceException, W("NullReference_This"));
-
-    // validate the timeout
-    if ((Timeout < 0) && (Timeout != INFINITE_TIMEOUT))
-        COMPlusThrowArgumentOutOfRange(W("millisecondsTimeout"), W("ArgumentOutOfRange_NeedNonNegOrNegative1"));
-
-    retVal = DoJoin(pThis, Timeout);
-
-    HELPER_METHOD_FRAME_END();
-
-    FC_RETURN_BOOL(retVal);
-}
-FCIMPLEND
-
 NOINLINE static Object* GetCurrentThreadHelper()
 {
     FCALL_CONTRACT;
@@ -670,23 +646,22 @@ void ReleaseThreadExternalCount(Thread * pThread)
 typedef Holder<Thread *, DoNothing, ReleaseThreadExternalCount> ThreadExternalCountHolder;
 
 // Wait for the thread to die
-BOOL ThreadNative::DoJoin(THREADBASEREF DyingThread, INT32 timeout)
+static BOOL DoJoin(QCall::ThreadHandle dyingThreadHandle, INT32 timeout)
 {
     CONTRACTL
     {
         THROWS;
         GC_TRIGGERS;
-        MODE_COOPERATIVE;
-        PRECONDITION(DyingThread != NULL);
+        MODE_PREEMPTIVE;
         PRECONDITION((timeout >= 0) || (timeout == INFINITE_TIMEOUT));
     }
     CONTRACTL_END;
 
-    Thread * DyingInternal = DyingThread->GetInternal();
+    Thread * DyingInternal = dyingThreadHandle;
 
     // Validate the handle.  It's valid to Join a thread that's not running -- so
     // long as it was once started.
-    if (DyingInternal == 0 ||
+    if (DyingInternal == NULL ||
         !(DyingInternal->m_State & Thread::TS_LegalToJoin))
     {
         COMPlusThrow(kThreadStateException, W("ThreadState_NotStarted"));
@@ -697,12 +672,8 @@ BOOL ThreadNative::DoJoin(THREADBASEREF DyingThread, INT32 timeout)
     if (ThreadIsDead(DyingInternal) || !DyingInternal->HasValidThreadHandle())
         return TRUE;
 
-    DWORD dwTimeOut32 = (timeout == INFINITE_TIMEOUT
-                   ? INFINITE
-                   : (DWORD) timeout);
-
-    // There is a race here.  DyingThread is going to close its thread handle.
-    // If we grab the handle and then DyingThread closes it, we will wait forever
+    // There is a race here. The Thread is going to close its thread handle.
+    // If we grab the handle and then the Thread closes it, we will wait forever
     // in DoAppropriateWait.
     int RefCount = DyingInternal->IncExternalCount();
     if (RefCount == 1)
@@ -722,9 +693,11 @@ BOOL ThreadNative::DoJoin(THREADBASEREF DyingThread, INT32 timeout)
         return TRUE;
     }
 
-    GCX_PREEMP();
-    DWORD rv = DyingInternal->JoinEx(dwTimeOut32, (WaitMode)(WaitMode_Alertable/*alertable*/|WaitMode_InDeadlock));
+    DWORD dwTimeOut32 = (timeout == INFINITE_TIMEOUT
+                   ? INFINITE
+                   : (DWORD) timeout);
 
+    DWORD rv = DyingInternal->JoinEx(dwTimeOut32, (WaitMode)(WaitMode_Alertable/*alertable*/|WaitMode_InDeadlock));
     switch(rv)
     {
         case WAIT_OBJECT_0:
@@ -744,6 +717,21 @@ BOOL ThreadNative::DoJoin(THREADBASEREF DyingThread, INT32 timeout)
     }
 
     return FALSE;
+}
+
+extern "C" BOOL QCALLTYPE ThreadNative_Join(QCall::ThreadHandle thread, INT32 Timeout)
+{
+    QCALL_CONTRACT;
+
+    BOOL retVal = FALSE;
+
+    BEGIN_QCALL;
+
+    retVal = DoJoin(thread, Timeout);
+
+    END_QCALL;
+
+    return retVal;
 }
 
 // If the exposed object is created after-the-fact, for an existing thread, we call
