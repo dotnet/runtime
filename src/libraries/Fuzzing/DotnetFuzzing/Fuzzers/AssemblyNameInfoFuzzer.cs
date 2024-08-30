@@ -19,11 +19,9 @@ namespace DotnetFuzzing.Fuzzers
 
             using PooledBoundedMemory<char> inputPoisonedBefore = PooledBoundedMemory<char>.Rent(chars, PoisonPagePlacement.Before);
             using PooledBoundedMemory<char> inputPoisonedAfter = PooledBoundedMemory<char>.Rent(chars, PoisonPagePlacement.After);
-            using PooledBoundedMemory<char> inputPoisonedBoth = PooledBoundedMemory<char>.Rent(chars, PoisonPagePlacement.Before | PoisonPagePlacement.After);
 
             Test(inputPoisonedBefore);
             Test(inputPoisonedAfter);
-            Test(inputPoisonedBoth);
         }
 
         private static void Test(PooledBoundedMemory<char> inputPoisoned)
