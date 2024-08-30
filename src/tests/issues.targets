@@ -1687,21 +1687,6 @@
         <ExcludeList Include="$(XunitTestBinBase)/Loader/ContextualReflection/ContextualReflection/**">
             <Issue>https://github.com/dotnet/runtime/issues/34072</Issue>
         </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/profiler/**">
-            <Issue>needs triage</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/profiler/elt/slowpatheltenter/*">
-            <Issue>needs triage</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/profiler/elt/slowpatheltleave/*">
-            <Issue>needs triage</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/profiler/unittest/metadatagetdispenser/**">
-            <Issue>needs triage</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/profiler/rejit/rejit/rejit.sh">
-            <Issue>needs triage</Issue>
-        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/readytorun/**">
             <Issue>These tests are not supposed to be run with mono.</Issue>
         </ExcludeList>
