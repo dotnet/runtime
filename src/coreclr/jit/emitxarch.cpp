@@ -49,6 +49,23 @@ bool emitter::IsKInstruction(instruction ins)
     return (flags & KInstruction) != 0;
 }
 
+//------------------------------------------------------------------------
+// IsKInstruction: Does this instruction require K register and
+//    LBIT_IN_3BYTE_VEX_PREFIX bit.
+//
+// Arguments:
+//    ins - The instruction to check.
+//
+// Returns:
+//    `true` if this instruction requires K register and
+//    LBIT_IN_3BYTE_VEX_PREFIX bit.
+//
+bool emitter::IsKInstructionWithLBit(instruction ins)
+{
+    insFlags flags = CodeGenInterface::instInfo[ins];
+    return (flags & KInstructionWithLBit) != 0;
+}
+
 bool emitter::IsAVXOnlyInstruction(instruction ins)
 {
     return (ins >= INS_FIRST_AVX_INSTRUCTION) && (ins <= INS_LAST_AVX_INSTRUCTION);
@@ -1495,7 +1512,7 @@ emitter::code_t emitter::AddVexPrefix(instruction ins, code_t code, emitAttr att
 
     code |= DEFAULT_3BYTE_VEX_PREFIX;
 
-    if (attr == EA_32BYTE)
+    if ((attr == EA_32BYTE) || IsKInstructionWithLBit(ins))
     {
         // Set L bit to 1 in case of instructions that operate on 256-bits.
         code |= LBIT_IN_3BYTE_VEX_PREFIX;
