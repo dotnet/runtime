@@ -4,6 +4,8 @@
 using System.Buffers;
 using System.Reflection.Metadata;
 using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.Marshalling;
+using System.Text;
 
 namespace DotnetFuzzing.Fuzzers
 {
@@ -15,8 +17,10 @@ namespace DotnetFuzzing.Fuzzers
 
         public void FuzzTarget(ReadOnlySpan<byte> bytes)
         {
-            using var poisonAfter = PooledBoundedMemory<char>.Rent(MemoryMarshal.Cast<byte, char>(bytes), PoisonPagePlacement.After);
-            using var poisonBefore = PooledBoundedMemory<char>.Rent(MemoryMarshal.Cast<byte, char>(bytes), PoisonPagePlacement.Before);
+            Span<char> charSpan = new char[Encoding.UTF8.GetCharCount(bytes)];
+            Encoding.UTF8.GetChars(bytes, charSpan);
+            using var poisonAfter = PooledBoundedMemory<char>.Rent(charSpan, PoisonPagePlacement.After);
+            using var poisonBefore = PooledBoundedMemory<char>.Rent(charSpan, PoisonPagePlacement.Before);
 
             Test(poisonAfter.Span);
             Test(poisonBefore.Span);
