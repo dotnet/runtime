@@ -468,13 +468,13 @@ namespace Microsoft.Interop
         private List<StatementSyntax> GenerateElementStages(
             StubIdentifierContext context,
             IBoundMarshallingGenerator elementMarshaller,
-            out LinearCollectionElementIdentifierContext elementSetupSubContext,
+            out string indexer,
             params StubIdentifierContext.Stage[] stagesToGeneratePerElement)
         {
             string managedSpanIdentifier = MarshallerHelpers.GetManagedSpanIdentifier(CollectionSource.TypeInfo, context);
             string nativeSpanIdentifier = MarshallerHelpers.GetNativeSpanIdentifier(CollectionSource.TypeInfo, context);
             StubCodeContext elementCodeContext = StubCodeContext.CreateElementMarshallingContext(CollectionSource.CodeContext);
-            elementSetupSubContext = new LinearCollectionElementIdentifierContext(
+            LinearCollectionElementIdentifierContext elementSetupSubContext = new(
                 context,
                 elementMarshaller.TypeInfo,
                 managedSpanIdentifier,
@@ -485,13 +485,71 @@ namespace Microsoft.Interop
                 CodeEmitOptions = context.CodeEmitOptions
             };
 
+            indexer = elementSetupSubContext.IndexerIdentifier;
+
+            StubIdentifierContext identifierContext = elementSetupSubContext;
+
+            if (elementMarshaller.NativeType is PointerTypeInfo)
+            {
+                identifierContext = new GenericFriendlyPointerIdentifierContext(elementSetupSubContext, elementMarshaller.TypeInfo, $"{nativeSpanIdentifier}__{indexer}");
+            }
+
             List<StatementSyntax> elementStatements = [];
             foreach (StubIdentifierContext.Stage stage in stagesToGeneratePerElement)
             {
-                var elementSubContext = elementSetupSubContext with { CurrentStage = stage };
-                elementStatements.AddRange(elementMarshaller.Generate(elementSubContext));
+                var elementIdentifierContext = identifierContext with { CurrentStage = stage };
+                elementStatements.AddRange(elementMarshaller.Generate(elementIdentifierContext));
             }
-            return elementStatements;
+
+            if (elementStatements.Count == 0)
+            {
+                return [];
+            }
+
+            // Only add the setup stage if we generated code for other stages.
+            elementStatements.InsertRange(0, elementMarshaller.Generate(identifierContext with { CurrentStage = StubIdentifierContext.Stage.Setup }));
+
+            if (identifierContext is not GenericFriendlyPointerIdentifierContext)
+            {
+                // If we didn't need to account for pointer types, we have the statements we need.
+                return elementStatements;
+            }
+
+            // If we have the generic friendly pointer context, we need to declare the special identifier and assign to/from it.
+
+            // <native_type> <native_exactType> = (<native_type>)<native_collection>[i];
+            StatementSyntax exactTypeDeclaration =
+                LocalDeclarationStatement(
+                    VariableDeclaration(
+                        elementMarshaller.NativeType.Syntax,
+                        SingletonSeparatedList(
+                            VariableDeclarator(
+                                Identifier(identifierContext.GetIdentifiers(elementMarshaller.TypeInfo).native))
+                            .WithInitializer(
+                                EqualsValueClause(
+                                    CastExpression(elementMarshaller.NativeType.Syntax,
+                                        ParseExpression(elementSetupSubContext.GetIdentifiers(elementMarshaller.TypeInfo).native)))))));
+
+            if (stagesToGeneratePerElement.Any(stage => stage is StubIdentifierContext.Stage.Marshal or StubIdentifierContext.Stage.PinnedMarshal))
+            {
+                // <native_collection>[i] = (<generic_compatible_native_type>)<native_exactType>;
+                StatementSyntax propagateResult = AssignmentStatement(
+                    ParseExpression(elementSetupSubContext.GetIdentifiers(elementMarshaller.TypeInfo).native),
+                    CastExpression(TypeSyntaxes.System_IntPtr,
+                        IdentifierName(identifierContext.GetIdentifiers(elementMarshaller.TypeInfo).native)));
+
+                return
+                    [
+                        exactTypeDeclaration,
+                            ..elementStatements,
+                            propagateResult
+                    ];
+            }
+
+            return [
+                exactTypeDeclaration,
+                    ..elementStatements
+                ];
         }
 
         private StatementSyntax GenerateContentsMarshallingStatement(
@@ -500,22 +558,14 @@ namespace Microsoft.Interop
             IBoundMarshallingGenerator elementMarshaller,
             params StubIdentifierContext.Stage[] stagesToGeneratePerElement)
         {
-            var elementStatements = GenerateElementStages(context, elementMarshaller, out var elementSetupSubContext, stagesToGeneratePerElement);
+            var elementStatements = GenerateElementStages(context, elementMarshaller, out string indexer, stagesToGeneratePerElement);
 
             if (elementStatements.Count != 0)
             {
-                StatementSyntax marshallingStatement = Block(
-                    List(elementMarshaller.Generate(elementSetupSubContext)
-                        .Concat(elementStatements)));
-
-                if (elementMarshaller.NativeType is PointerTypeInfo nativeTypeInfo)
-                {
-                    PointerNativeTypeAssignmentRewriter rewriter = new(elementSetupSubContext.GetIdentifiers(elementMarshaller.TypeInfo).native, (PointerTypeSyntax)nativeTypeInfo.Syntax);
-                    marshallingStatement = (StatementSyntax)rewriter.Visit(marshallingStatement);
-                }
+                StatementSyntax marshallingStatement = Block(elementStatements);
 
                 // Iterate through the elements of the native collection to marshal them
-                var forLoop = ForLoop(elementSetupSubContext.IndexerIdentifier, lengthExpression)
+                var forLoop = ForLoop(indexer, lengthExpression)
                     .WithStatement(marshallingStatement);
                 // If we're tracking LastIndexMarshalled, increment that each iteration as well.
                 if (UsesLastIndexMarshalled(CollectionSource.TypeInfo, CollectionSource.CodeContext) && stagesToGeneratePerElement.Contains(StubIdentifierContext.Stage.Marshal))

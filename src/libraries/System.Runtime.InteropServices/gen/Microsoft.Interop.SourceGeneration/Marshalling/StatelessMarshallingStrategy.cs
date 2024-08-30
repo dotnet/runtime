@@ -77,12 +77,6 @@ namespace Microsoft.Interop
                     IdentifierName(nativeIdentifier),
                     convertToUnmanaged);
 
-
-            if (unmanagedType is PointerTypeInfo pointer)
-            {
-                var rewriter = new PointerNativeTypeAssignmentRewriter(assignment.Right.ToString(), (PointerTypeSyntax)pointer.Syntax);
-                assignment = (AssignmentExpressionSyntax)rewriter.Visit(assignment);
-            }
             yield return ExpressionStatement(assignment);
         }
 
