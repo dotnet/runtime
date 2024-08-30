@@ -464,24 +464,6 @@ BaseDomain::BaseDomain()
     m_handleStore = GCHandleUtilities::GetGCHandleManager()->GetGlobalHandleStore();
 } //BaseDomain::BaseDomain
 
-//*****************************************************************************
-void BaseDomain::Init()
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
-        INJECT_FAULT(COMPlusThrowOM(););
-    }
-    CONTRACTL_END;
-
-    //
-    // Initialize the domain locks
-    //
-    m_crstLoaderAllocatorReferences.Init(CrstLoaderAllocatorReferences);
-}
-
 #undef LOADERHEAP_PROFILE_COUNTER
 
 void AppDomain::ClearBinderContext()
@@ -797,9 +779,6 @@ void SystemDomain::Attach()
          "Created system domain at %p\n",
          m_pSystemDomain));
 
-    // We need to initialize the memory pools etc. for the system domain.
-    m_pSystemDomain->BaseDomain::Init(); // Setup the memory heaps
-
     // Create the one and only app domain
     AppDomain::Create();
 
@@ -926,10 +905,6 @@ void SystemDomain::Init()
         sizeof(Module)
         ));
 #endif // _DEBUG
-
-    // The base domain is initialized in SystemDomain::Attach()
-    // to allow stub caches to use the memory pool. Do not
-    // initialize it here!
 
     m_pSystemPEAssembly = NULL;
     m_pSystemAssembly = NULL;
@@ -1760,7 +1735,7 @@ void AppDomain::Init()
     m_crstAssemblyList.Init(CrstAssemblyList, CrstFlags(
         CRST_GC_NOTRIGGER_WHEN_TAKEN | CRST_DEBUGGER_THREAD | CRST_TAKEN_DURING_SHUTDOWN));
 
-    BaseDomain::Init();
+    m_crstLoaderAllocatorReferences.Init(CrstLoaderAllocatorReferences);
 
     // Set up the binding caches
     m_AssemblyCache.Init(&m_DomainCacheCrst, GetHighFrequencyHeap());

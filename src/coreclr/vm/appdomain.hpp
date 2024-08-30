@@ -562,12 +562,6 @@ public:
 
 #endif // DACCESS_COMPILE
 
-    CrstExplicitInit * GetLoaderAllocatorReferencesLock()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return &m_crstLoaderAllocatorReferences;
-    }
-
     static CrstStatic* GetMethodTableExposedClassObjectLock()
     {
         LIMITED_METHOD_CONTRACT;
@@ -579,9 +573,6 @@ protected:
     //****************************************************************************************
     // Helper method to initialize the large heap handle table.
     void InitPinnedHeapHandleTable();
-
-    // Used to protect the reference lists in the collectible loader allocators attached to this appdomain
-    CrstExplicitInit m_crstLoaderAllocatorReferences;
 
     IGCHandleStore* m_handleStore;
 
@@ -894,12 +885,21 @@ public:
         return &m_crstGenericDictionaryExpansionLock;
     }
 
+    CrstExplicitInit * GetLoaderAllocatorReferencesLock()
+    {
+        LIMITED_METHOD_CONTRACT;
+        return &m_crstLoaderAllocatorReferences;
+    }
+
 private:
     JitListLock      m_JITLock;
     ListLock         m_ClassInitLock;
     ListLock         m_ILStubGenLock;
     ListLock         m_NativeTypeLoadLock;
     CrstExplicitInit m_crstGenericDictionaryExpansionLock;
+
+    // Used to protect the reference lists in the collectible loader allocators attached to the app domain
+    CrstExplicitInit m_crstLoaderAllocatorReferences;
 
 protected:
     // Multi-thread safe access to the list of assemblies
