@@ -193,7 +193,7 @@ namespace System.Reflection.Metadata
         public static bool TryParse(ReadOnlySpan<char> assemblyName, [NotNullWhen(true)] out AssemblyNameInfo? result)
         {
             AssemblyNameParser.AssemblyNameParts parts = default;
-            if (AssemblyNameParser.TryParse(assemblyName, ref parts))
+            if (!assemblyName.IsEmpty && AssemblyNameParser.TryParse(assemblyName, ref parts))
             {
                 result = new(parts);
                 return true;
