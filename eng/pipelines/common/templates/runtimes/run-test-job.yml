@@ -593,6 +593,7 @@ jobs:
 
       - script: $(PythonSetupScript)
         displayName: Enable python venv
+        condition: always()
 
       - script: $(PythonScript) $(Build.SourcesDirectory)/src/coreclr/scripts/superpmi.py merge-mch -log_level DEBUG -pattern $(MchFilesLocation)$(CollectionName).$(CollectionType)*.mch -output_mch_path $(MergedMchFileLocation)$(CollectionName).$(CollectionType).$(MchFileTag).mch
         displayName: 'Merge $(CollectionName)-$(CollectionType) SuperPMI collections'
