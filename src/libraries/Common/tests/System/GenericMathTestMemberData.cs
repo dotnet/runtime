@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Numerics;
 using Xunit;
 
 namespace System.Tests
@@ -1925,6 +1926,221 @@ namespace System.Tests
                 yield return new object[] {  0.12345f,   0.0f };
                 yield return new object[] {  3.14159f,   3.0f };
                 yield return new object[] { -3.14159f,  -3.0f };
+            }
+        }
+
+        public static IEnumerable<object[]> AddSaturateSByte => AddSaturateSignedInteger<sbyte>();
+        public static IEnumerable<object[]> AddSaturateInt16 => AddSaturateSignedInteger<short>();
+        public static IEnumerable<object[]> AddSaturateInt32 => AddSaturateSignedInteger<int>();
+        public static IEnumerable<object[]> AddSaturateInt64 => AddSaturateSignedInteger<long>();
+
+        private static IEnumerable<object[]> AddSaturateSignedInteger<T>() where T : INumber<T>, IMinMaxValue<T>
+        {
+            yield return new object[] { T.Zero, T.Zero, T.Zero };
+            yield return new object[] { T.Zero, T.CreateChecked(10), T.CreateChecked(10) };
+            yield return new object[] { T.Zero, T.CreateChecked(-10), T.CreateChecked(-10) };
+            yield return new object[] { T.Zero, T.MinValue, T.MinValue };
+            yield return new object[] { T.Zero, T.MaxValue, T.MaxValue };
+
+            yield return new object[] { T.CreateChecked(10), T.Zero, T.CreateChecked(10) };
+            yield return new object[] { T.CreateChecked(10), T.CreateChecked(5), T.CreateChecked(15) };
+            yield return new object[] { T.CreateChecked(10), T.CreateChecked(-5), T.CreateChecked(5) };
+            yield return new object[] { T.CreateChecked(10), T.MinValue, T.MinValue + T.CreateChecked(10) };
+            yield return new object[] { T.CreateChecked(10), T.MaxValue, T.MaxValue };
+            yield return new object[] { T.CreateChecked(10), T.MaxValue - T.CreateChecked(5), T.MaxValue };
+
+            yield return new object[] { T.CreateChecked(-10), T.Zero, T.CreateChecked(-10) };
+            yield return new object[] { T.CreateChecked(-10), T.CreateChecked(5), T.CreateChecked(-5) };
+            yield return new object[] { T.CreateChecked(-10), T.CreateChecked(-5), T.CreateChecked(-15) };
+            yield return new object[] { T.CreateChecked(-10), T.MinValue, T.MinValue };
+            yield return new object[] { T.CreateChecked(-10), T.MaxValue, T.MaxValue - T.CreateChecked(10) };
+
+            yield return new object[] { T.MinValue, T.Zero, T.MinValue };
+            yield return new object[] { T.MinValue, T.CreateChecked(10), T.MinValue + T.CreateChecked(10) };
+            yield return new object[] { T.MinValue, T.CreateChecked(-10), T.MinValue };
+            yield return new object[] { T.MinValue, T.MinValue, T.MinValue };
+            yield return new object[] { T.MinValue, T.MaxValue, -T.One };
+
+            yield return new object[] { T.MaxValue, T.Zero, T.MaxValue };
+            yield return new object[] { T.MaxValue, T.CreateChecked(10), T.MaxValue };
+            yield return new object[] { T.MaxValue, T.CreateChecked(-10), T.MaxValue - T.CreateChecked(10) };
+            yield return new object[] { T.MaxValue, T.MinValue, -T.One };
+            yield return new object[] { T.MaxValue, T.MaxValue, T.MaxValue };
+
+            yield return new object[] { T.MaxValue - T.CreateChecked(5), T.CreateChecked(10), T.MaxValue };
+        }
+
+        public static IEnumerable<object[]> AddSaturateByte => AddSaturateUnsignedInteger<byte>();
+        public static IEnumerable<object[]> AddSaturateUInt16 => AddSaturateUnsignedInteger<ushort>();
+        public static IEnumerable<object[]> AddSaturateUInt32 => AddSaturateUnsignedInteger<uint>();
+        public static IEnumerable<object[]> AddSaturateUInt64 => AddSaturateUnsignedInteger<ulong>();
+
+        private static IEnumerable<object[]> AddSaturateUnsignedInteger<T>() where T : INumber<T>, IMinMaxValue<T>
+        {
+            yield return new object[] { T.Zero, T.Zero, T.Zero };
+            yield return new object[] { T.Zero, T.CreateChecked(10), T.CreateChecked(10) };
+            yield return new object[] { T.Zero, T.MaxValue, T.MaxValue };
+
+            yield return new object[] { T.CreateChecked(10), T.Zero, T.CreateChecked(10) };
+            yield return new object[] { T.CreateChecked(10), T.CreateChecked(5), T.CreateChecked(15) };
+            yield return new object[] { T.CreateChecked(10), T.MaxValue - T.CreateChecked(5), T.MaxValue };
+            yield return new object[] { T.CreateChecked(10), T.MaxValue, T.MaxValue };
+
+            yield return new object[] { T.MaxValue, T.Zero, T.MaxValue };
+            yield return new object[] { T.MaxValue, T.CreateChecked(10), T.MaxValue };
+            yield return new object[] { T.MaxValue, T.MaxValue, T.MaxValue };
+
+            yield return new object[] { T.MaxValue - T.CreateChecked(5), T.CreateChecked(10), T.MaxValue };
+        }
+
+        public static IEnumerable<object[]> AddSaturateDouble
+        {
+            get
+            {
+                yield return new object[] { double.NegativeInfinity, 1.0, double.NegativeInfinity };
+                yield return new object[] { double.MinValue, 1.0, double.MinValue };
+                yield return new object[] { -1.0, 1.0, 0.0 };
+                yield return new object[] { -MinNormalDouble, 1.0, 1.0 };
+                yield return new object[] { -MaxSubnormalDouble, 1.0, 1.0 };
+                yield return new object[] { -double.Epsilon, 1.0, 1.0 };
+                yield return new object[] { -0.0, 1.0, 1.0 };
+                yield return new object[] { double.NaN, 1.0, double.NaN };
+                yield return new object[] { 0.0, 1.0, 1.0 };
+                yield return new object[] { double.Epsilon, 1.0, 1.0 };
+                yield return new object[] { MaxSubnormalDouble, 1.0, 1.0 };
+                yield return new object[] { MinNormalDouble, 1.0, 1.0 };
+                yield return new object[] { 1.0, 1.0, 2.0 };
+                yield return new object[] { double.MaxValue, 1.0, double.MaxValue };
+                yield return new object[] { double.PositiveInfinity, 1.0, double.PositiveInfinity };
+            }
+        }
+
+        public static IEnumerable<object[]> AddSaturateSingle
+        {
+            get
+            {
+                yield return new object[] { float.NegativeInfinity, 1.0f, float.NegativeInfinity };
+                yield return new object[] { float.MinValue, 1.0f, float.MinValue };
+                yield return new object[] { -1.0f, 1.0f, 0.0f };
+                yield return new object[] { -MinNormalDouble, 1.0f, 1.0f };
+                yield return new object[] { -MaxSubnormalDouble, 1.0f, 1.0f };
+                yield return new object[] { -float.Epsilon, 1.0f, 1.0f };
+                yield return new object[] { -0.0f, 1.0f, 1.0f };
+                yield return new object[] { float.NaN, 1.0f, float.NaN };
+                yield return new object[] { 0.0f, 1.0f, 1.0f };
+                yield return new object[] { float.Epsilon, 1.0f, 1.0f };
+                yield return new object[] { MaxSubnormalDouble, 1.0f, 1.0f };
+                yield return new object[] { MinNormalDouble, 1.0f, 1.0f };
+                yield return new object[] { 1.0f, 1.0f, 2.0f };
+                yield return new object[] { float.MaxValue, 1.0f, float.MaxValue };
+                yield return new object[] { float.PositiveInfinity, 1.0f, float.PositiveInfinity };
+            }
+        }
+
+        public static IEnumerable<object[]> SubtractSaturateByte => SubtractSaturateUnsignedInteger<byte>();
+        public static IEnumerable<object[]> SubtractSaturateUInt16 => SubtractSaturateUnsignedInteger<ushort>();
+        public static IEnumerable<object[]> SubtractSaturateUInt32 => SubtractSaturateUnsignedInteger<uint>();
+        public static IEnumerable<object[]> SubtractSaturateUInt64 => SubtractSaturateUnsignedInteger<ulong>();
+
+        private static IEnumerable<object[]> SubtractSaturateUnsignedInteger<T>() where T : INumber<T>, IMinMaxValue<T>
+        {
+            yield return new object[] { T.Zero, T.Zero, T.Zero };
+            yield return new object[] { T.Zero, T.CreateChecked(10), T.Zero };
+            yield return new object[] { T.Zero, T.MaxValue, T.Zero };
+
+            yield return new object[] { T.CreateChecked(10), T.Zero, T.CreateChecked(10) };
+            yield return new object[] { T.CreateChecked(10), T.CreateChecked(5), T.CreateChecked(5) };
+            yield return new object[] { T.CreateChecked(10), T.MaxValue, T.Zero };
+
+            yield return new object[] { T.MaxValue, T.Zero, T.MaxValue };
+            yield return new object[] { T.MaxValue, T.CreateChecked(10), T.MaxValue - T.CreateChecked(10) };
+            yield return new object[] { T.MaxValue, T.MaxValue, T.Zero };
+
+            yield return new object[] { T.MaxValue - T.CreateChecked(5), T.CreateChecked(10), T.MaxValue - T.CreateChecked(15) };
+        }
+
+        public static IEnumerable<object[]> SubtractSaturateSByte => SubtractSaturateSignedInteger<sbyte>();
+        public static IEnumerable<object[]> SubtractSaturateInt16 => SubtractSaturateSignedInteger<short>();
+        public static IEnumerable<object[]> SubtractSaturateInt32 => SubtractSaturateSignedInteger<int>();
+        public static IEnumerable<object[]> SubtractSaturateInt64 => SubtractSaturateSignedInteger<long>();
+
+        private static IEnumerable<object[]> SubtractSaturateSignedInteger<T>() where T : INumber<T>, IMinMaxValue<T>
+        {
+            yield return new object[] { T.Zero, T.Zero, T.Zero };
+            yield return new object[] { T.Zero, T.CreateChecked(10), T.CreateChecked(-10) };
+            yield return new object[] { T.Zero, T.CreateChecked(-10), T.CreateChecked(10) };
+            yield return new object[] { T.Zero, T.MinValue, T.MaxValue };
+            yield return new object[] { T.Zero, T.MaxValue, -T.MaxValue };
+
+            yield return new object[] { T.CreateChecked(10), T.Zero, T.CreateChecked(10) };
+            yield return new object[] { T.CreateChecked(10), T.CreateChecked(5), T.CreateChecked(5) };
+            yield return new object[] { T.CreateChecked(10), T.CreateChecked(-5), T.CreateChecked(15) };
+            yield return new object[] { T.CreateChecked(10), T.MinValue, T.MaxValue };
+            yield return new object[] { T.CreateChecked(10), T.MaxValue, T.MinValue + T.CreateChecked(11) };
+            yield return new object[] { T.CreateChecked(10), T.MinValue + T.CreateChecked(5), T.MaxValue };
+
+            yield return new object[] { T.CreateChecked(-10), T.Zero, T.CreateChecked(-10) };
+            yield return new object[] { T.CreateChecked(-10), T.CreateChecked(5), T.CreateChecked(-15) };
+            yield return new object[] { T.CreateChecked(-10), T.CreateChecked(-5), T.CreateChecked(-5) };
+            yield return new object[] { T.CreateChecked(-10), T.MinValue, T.MaxValue - T.CreateChecked(9) };
+            yield return new object[] { T.CreateChecked(-10), T.MaxValue, T.MinValue };
+
+            yield return new object[] { T.MinValue, T.Zero, T.MinValue };
+            yield return new object[] { T.MinValue, T.CreateChecked(10), T.MinValue };
+            yield return new object[] { T.MinValue, T.CreateChecked(-10), T.MinValue + T.CreateChecked(10) };
+            yield return new object[] { T.MinValue, T.MinValue, T.Zero };
+            yield return new object[] { T.MinValue, T.MaxValue, T.MinValue };
+
+            yield return new object[] { T.MaxValue, T.Zero, T.MaxValue };
+            yield return new object[] { T.MaxValue, T.CreateChecked(10), T.MaxValue - T.CreateChecked(10) };
+            yield return new object[] { T.MaxValue, T.CreateChecked(-10), T.MaxValue };
+            yield return new object[] { T.MaxValue, T.MinValue, T.MaxValue };
+            yield return new object[] { T.MaxValue, T.MaxValue, T.Zero };
+
+            yield return new object[] { T.MinValue + T.CreateChecked(5), T.CreateChecked(-10), T.MinValue + T.CreateChecked(15) };
+        }
+
+        public static IEnumerable<object[]> SubtractSaturateDouble
+        {
+            get
+            {
+                yield return new object[] { double.NegativeInfinity, 1.0, double.NegativeInfinity };
+                yield return new object[] { double.MinValue, 1.0, double.MinValue };
+                yield return new object[] { -1.0, 1.0, -2.0 };
+                yield return new object[] { -MinNormalDouble, 1.0, -1.0 };
+                yield return new object[] { -MaxSubnormalDouble, 1.0, -1.0 };
+                yield return new object[] { -double.Epsilon, 1.0, -1.0 };
+                yield return new object[] { -0.0, 1.0, -1.0 };
+                yield return new object[] { double.NaN, 1.0, double.NaN };
+                yield return new object[] { 0.0, 1.0, -1.0 };
+                yield return new object[] { double.Epsilon, 1.0, -1.0 };
+                yield return new object[] { MaxSubnormalDouble, 1.0, -1.0 };
+                yield return new object[] { MinNormalDouble, 1.0, -1.0 };
+                yield return new object[] { 1.0, 1.0, 0.0 };
+                yield return new object[] { double.MaxValue, 1.0, double.MaxValue };
+                yield return new object[] { double.PositiveInfinity, 1.0, double.PositiveInfinity };
+            }
+        }
+
+        public static IEnumerable<object[]> SubtractSaturateSingle
+        {
+            get
+            {
+                yield return new object[] { float.NegativeInfinity, 1.0f, float.NegativeInfinity };
+                yield return new object[] { float.MinValue, 1.0f, float.MinValue };
+                yield return new object[] { -1.0f, 1.0f, -2.0f };
+                yield return new object[] { -MinNormalDouble, 1.0f, -1.0f };
+                yield return new object[] { -MaxSubnormalDouble, 1.0f, -1.0f };
+                yield return new object[] { -float.Epsilon, 1.0f, -1.0f };
+                yield return new object[] { -0.0f, 1.0f, -1.0f };
+                yield return new object[] { float.NaN, 1.0, float.NaN };
+                yield return new object[] { 0.0f, 1.0f, -1.0f };
+                yield return new object[] { float.Epsilon, 1.0f, -1.0f };
+                yield return new object[] { MaxSubnormalDouble, 1.0f, -1.0f };
+                yield return new object[] { MinNormalDouble, 1.0f, -1.0f };
+                yield return new object[] { 1.0f, 1.0f, 0.0f };
+                yield return new object[] { float.MaxValue, 1.0f, float.MaxValue };
+                yield return new object[] { float.PositiveInfinity, 1.0f, float.PositiveInfinity };
             }
         }
     }
