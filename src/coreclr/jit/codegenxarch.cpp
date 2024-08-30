@@ -1189,7 +1189,7 @@ void CodeGen::genCodeForBinary(GenTreeOp* treeNode)
     // reg3 = reg3 op reg2
     else
     {
-        if (emit->IsApxNDDEncodableInstruction(ins) && !varTypeIsFloating(treeNode))
+        if (emit->IsApxNDDEncodableInstruction(ins) && !varTypeIsFloating(treeNode) && op1->isUsedFromReg() && op2->isUsedFromReg())
         {
             // TODO-xarch-apx:
             // APX can provide optimal code gen in this case using NDD feature:
@@ -1197,29 +1197,16 @@ void CodeGen::genCodeForBinary(GenTreeOp* treeNode)
             
             // Ruihan: we will have the following cases: (might not have full coverage)
             // reg3 = reg1 op reg2 -> emitIns_R_R_R
+
+            // the register case above is specially handled in this branch,
+            // for more general cases, they are handled in emitInsBinary
             // reg3 = reg1 op (contained)op2 -> emitIns_R_R_? may depend on the contained operand types
 
             // Handle emit_R_R_R first
-            if (op1->isUsedFromReg() && op2->isUsedFromReg())
-            {
-                emit->emitIns_R_R_R(ins, emitTypeSize(treeNode), targetReg, op1reg, op2reg);
-                genProduceReg(treeNode);
-                return;
-            }
-            // else if (op2->isContained())
-            // {
-            //     // TODO-Xarch-apx:
-            //     // Ruihan: not sure if all contained memeory operand can be properly handled here.
-            // }
-            else {
-                // For the unhandled case use the original implementation
-                var_types op1Type = op1->TypeGet();
-                inst_Mov(op1Type, targetReg, op1reg, /* canSkip */ false);
-                regSet.verifyRegUsed(targetReg);
-                gcInfo.gcMarkRegPtrVal(targetReg, op1Type);
-                dst = treeNode;
-                src = op2;
-            }
+            // emit with NDD insOpt.
+            emit->emitIns_R_R_R(ins, emitTypeSize(treeNode), targetReg, op1reg, op2reg, INS_OPTS_EVEX_nd);
+            genProduceReg(treeNode);
+            return;
         }
         else {
             var_types op1Type = op1->TypeGet();
@@ -1247,6 +1234,9 @@ void CodeGen::genCodeForBinary(GenTreeOp* treeNode)
             return;
         }
     }
+
+    // TODO-XArch-apx:
+    // NDD form need to be handled in emitInsBinary
     regNumber r = emit->emitInsBinary(ins, emitTypeSize(treeNode), dst, src);
     noway_assert(r == targetReg);
 

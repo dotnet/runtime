@@ -794,7 +794,10 @@ protected:
         // For normal and embedded broadcast intrinsics, EVEX.L'L has the same semantic, vector length.
         // For embedded rounding, EVEX.L'L semantic changes to indicate the rounding mode.
         // Multiple bits in _idEvexbContext are used to inform emitter to specially handle the EVEX.L'L bits.
-        unsigned _idEvexbContext : 2;
+        unsigned _idCustom5 : 2;
+
+#define _idEvexbContext   _idCustom5 /* Evex.b: embedded broadcast, embedded rounding, embedded SAE */
+#define _idEvexNdContext  _idCustom5 /* bits used for the APX-EVEX.nd context for promoted legacy instructions */
 #endif //  TARGET_XARCH
 
 #ifdef TARGET_ARM64
@@ -1728,6 +1731,17 @@ protected:
         {
             assert(!idIsEvexZContextSet());
             _idEvexZContext = 1;
+        }
+
+        bool idIsEvexNdContextSet() const
+        {
+            return _idEvexNdContext != 0;
+        }
+
+        void idSetEvexNdContext()
+        {
+            assert(!idIsEvexNdContextSet());
+            _idEvexNdContext = 1;
         }
 #endif
 

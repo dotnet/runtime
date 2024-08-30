@@ -532,6 +532,26 @@ void SetEvexEmbMaskIfNeeded(instrDesc* id, insOpts instOptions)
 }
 
 //------------------------------------------------------------------------
+// SetEvexNdIfNeeded: set NDD form - new data destination if needed.
+//
+// Arguments:
+//    id          - instruction descriptor
+//    instOptions - emit options
+//
+void SetEvexNdIfNeeded(instrDesc* id, insOpts instOptions)
+{
+    if ((instOptions & INS_OPTS_EVEX_nd_MASK) != 0)
+    {
+        assert(UsePromotedEVEXEncoding());
+        id->idSetEvexNdContext();
+    }
+    else
+    {
+        assert((instOptions & INS_OPTS_EVEX_nd_MASK) == 0);
+    }
+}
+
+//------------------------------------------------------------------------
 // AddSimdPrefixIfNeeded: Add the correct SIMD prefix.
 // Check if the prefix already exists befpre adding.
 //

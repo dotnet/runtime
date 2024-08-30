@@ -300,6 +300,7 @@ bool emitter::IsRex2EncodableInstruction(instruction ins) const
 //
 bool emitter::IsApxNDDEncodableInstruction(instruction ins) const
 {
+    // TODO-Ruihan: assert if it is legacy instructions.
     if(!UsePromotedEVEXEncoding())
     {
         return false;
@@ -1466,7 +1467,7 @@ bool emitter::TakesLegacyPromotedEvexPrefix(const instrDesc* id) const
     // extend the checks below when we have memeory operands,
     // now we only take care of R_R_R form, so once we have the 3rd operands
     // we confirm it needs NDD form.
-    if (id->idHasReg3())
+    if (id->idIsEvexNdContextSet())
     {
         return true;
     }
@@ -1528,6 +1529,7 @@ bool emitter::TakesLegacyPromotedEvexPrefix(const instrDesc* id) const
 emitter::code_t emitter::AddEvexPrefix(const instrDesc* id, code_t code, emitAttr attr)
 {
     // Only AVX512 instructions require EVEX prefix
+    // After APX, some instructions in legacy or vex space will be promoted to EVEX.
     instruction ins = id->idIns();
     assert(IsEvexEncodableInstruction(ins) || IsApxNDDEncodableInstruction(ins));
 
@@ -1543,7 +1545,13 @@ emitter::code_t emitter::AddEvexPrefix(const instrDesc* id, code_t code, emitAtt
     {
         //Handle EVEX prefix for NDD first.
         code |= MAP4_IN_BYTE_EVEX_PREFIX;
-        code |= NDBIT_IN_BYTE_EVEX_PREFIX;
+
+        // TODO-XArch-apx:
+        // verify if it is actually safe to reuse the Evex.nd with Evex.b on instrDesc.
+        if (id->idIsEvexNdContextSet())
+        {
+            code |= NDBIT_IN_BYTE_EVEX_PREFIX;
+        }
 
         if (attr == EA_2BYTE)
         {
@@ -7547,6 +7555,7 @@ void emitter::emitIns_R_R_R(
         id->idSetEvexbContext(instOptions);
     }
     SetEvexEmbMaskIfNeeded(id, instOptions);
+    SetEvexNdIfNeeded(id, instOptions);
 
     UNATIVE_OFFSET sz = emitInsSizeRR(id, insCodeRM(ins));
     id->idCodeSize(sz);
@@ -11523,6 +11532,13 @@ void emitter::emitDispEmbRounding(instrDesc* id) const
 {
     if (!id->idIsEvexbContextSet())
     {
+        return;
+    }
+
+    if (IsApxNDDEncodableInstruction(id->idIns()))
+    {
+        // Apx-Evex.nd shared the same bit(s) with Evex.b,
+        // for ndd case, we don't need to display any thing special.
         return;
     }
     assert(!id->idHasMem());
@@ -15647,7 +15663,16 @@ BYTE* emitter::emitOutputRR(BYTE* dst, instrDesc* id)
 #endif // FEATURE_HW_INTRINSICS
     else
     {
+        // TODO-XArch-APX:
+        // Ruihan:
         // some instructions with NDD form might go into this path with EVEX prefix.
+        // might consider having a seperate path with checks like: TakesLegacyPromotedEvexPrefix
+        // essentially, we need to make it clear on the priority and necessity of REX2 and EVEX:
+        // REX2 is needed iff EGPRs are involved.
+        // EVEX is needed when NDD, NF or other features are involved.
+        // So the logic should be:
+        // checking if those new features are used, then check if EGPRs are involved.
+        // EGPRs will be supported by EVEX anyway, so don't need to check in the first place.
         assert(!TakesSimdPrefix(id) || IsApxNDDEncodableInstruction(ins));
         code = insCodeMR(ins);
         code = AddX86PrefixIfNeeded(id, code, size);

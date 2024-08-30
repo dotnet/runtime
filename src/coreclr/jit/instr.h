@@ -262,6 +262,13 @@ enum insOpts: unsigned
     INS_OPTS_EVEX_z_MASK = 0x20,    // mask for EVEX.z related features
 
     INS_OPTS_EVEX_em_zero = 1 << 5, // Embedded mask merges with zero
+
+    // One-bit:  0b0100_0000
+    // TODO-Ruihan: may consider define it only under x64
+    INS_OPTS_EVEX_nd_MASK = 0x40,   // mask for APX-EVEX.nd related features
+
+    INS_OPTS_EVEX_nd = 1 << 6,      // NDD form for legacy instructions
+
 };
 
 #elif defined(TARGET_ARM) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
