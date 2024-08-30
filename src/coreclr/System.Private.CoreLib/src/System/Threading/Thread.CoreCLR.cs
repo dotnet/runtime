@@ -243,21 +243,31 @@ namespace System.Threading
         [MethodImpl(MethodImplOptions.InternalCall)]
         private extern int GetThreadStateNative();
 
-        public ApartmentState GetApartmentState() =>
-#if FEATURE_COMINTEROP_APARTMENT_SUPPORT
-            (ApartmentState)GetApartmentStateNative();
-#else // !FEATURE_COMINTEROP_APARTMENT_SUPPORT
-            ApartmentState.Unknown;
-#endif // FEATURE_COMINTEROP_APARTMENT_SUPPORT
-
         /// <summary>
         /// An unstarted thread can be marked to indicate that it will host a
         /// single-threaded or multi-threaded apartment.
         /// </summary>
 #if FEATURE_COMINTEROP_APARTMENT_SUPPORT
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ThreadNative_GetApartmentState")]
+        private static partial int GetApartmentState(ThreadHandle t);
+
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ThreadNative_SetApartmentState")]
+        private static partial int SetApartmentState(ThreadHandle t, int state);
+
+        public ApartmentState GetApartmentState()
+        {
+            var state = (ApartmentState)GetApartmentState(GetNativeHandle());
+            GC.KeepAlive(this);
+            return state;
+        }
+
         private bool SetApartmentStateUnchecked(ApartmentState state, bool throwOnError)
         {
-            ApartmentState retState = (ApartmentState)SetApartmentStateNative((int)state);
+            ApartmentState retState;
+            lock (this) // This is also satisfying a GC.KeepAlive().
+            {
+                retState = (ApartmentState)SetApartmentState(GetNativeHandle(), (int)state);
+            }
 
             // Special case where we pass in Unknown and get back MTA.
             //  Once we CoUninitialize the thread, the OS will still
@@ -282,12 +292,9 @@ namespace System.Threading
             return true;
         }
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal extern int GetApartmentStateNative();
-
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal extern int SetApartmentStateNative(int state);
 #else // FEATURE_COMINTEROP_APARTMENT_SUPPORT
+        public ApartmentState GetApartmentState() => ApartmentState.Unknown;
+
         private static bool SetApartmentStateUnchecked(ApartmentState state, bool throwOnError)
         {
             if (state != ApartmentState.Unknown)

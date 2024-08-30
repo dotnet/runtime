@@ -308,10 +308,6 @@ FCFuncStart(gThreadFuncs)
     FCFuncElement("GetPriorityNative", ThreadNative::GetPriority)
     FCFuncElement("SetPriorityNative", ThreadNative::SetPriority)
     FCFuncElement("GetThreadStateNative", ThreadNative::GetThreadState)
-#ifdef FEATURE_COMINTEROP_APARTMENT_SUPPORT
-    FCFuncElement("GetApartmentStateNative", ThreadNative::GetApartmentState)
-    FCFuncElement("SetApartmentStateNative", ThreadNative::SetApartmentState)
-#endif // FEATURE_COMINTEROP_APARTMENT_SUPPORT
     FCFuncElement("Join", ThreadNative::Join)
     FCFuncElement("get_OptimalMaxSpinWaitsPerSpinIteration", ThreadNative::GetOptimalMaxSpinWaitsPerSpinIteration)
 FCFuncEnd()

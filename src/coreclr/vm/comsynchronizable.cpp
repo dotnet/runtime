@@ -591,84 +591,23 @@ FCIMPLEND
 
 #ifdef FEATURE_COMINTEROP_APARTMENT_SUPPORT
 
-// Indicate whether the thread will host an STA (this may fail if the thread has
-// already been made part of the MTA, use GetApartmentState or the return state
-// from this routine to check for this).
-FCIMPL2(INT32, ThreadNative::SetApartmentState, ThreadBaseObject* pThisUNSAFE, INT32 iState)
-{
-    FCALL_CONTRACT;
-
-    if (pThisUNSAFE==NULL)
-        FCThrowRes(kNullReferenceException, W("NullReference_This"));
-
-    BOOL    ok = TRUE;
-    THREADBASEREF   pThis   = (THREADBASEREF) pThisUNSAFE;
-
-    HELPER_METHOD_FRAME_BEGIN_RET_1(pThis);
-
-    Thread  *thread = pThis->GetInternal();
-    if (!thread)
-        COMPlusThrow(kThreadStateException, IDS_EE_THREAD_CANNOT_GET);
-
-    {
-        pThis->EnterObjMonitor();
-
-        // We can only change the apartment if the thread is unstarted or
-        // running, and if it's running we have to be in the thread's
-        // context.
-        if ((!ThreadNotStarted(thread) && !ThreadIsRunning(thread)) ||
-            (!ThreadNotStarted(thread) && (GetThread() != thread)))
-            ok = FALSE;
-        else
-        {
-            EX_TRY
-            {
-                iState = thread->SetApartment((Thread::ApartmentState)iState);
-            }
-            EX_CATCH
-            {
-                pThis->LeaveObjMonitor();
-                EX_RETHROW;
-            }
-            EX_END_CATCH_UNREACHABLE;
-        }
-
-        pThis->LeaveObjMonitor();
-    }
-
-    // Now it's safe to throw exceptions again.
-    if (!ok)
-        COMPlusThrow(kThreadStateException);
-
-    HELPER_METHOD_FRAME_END();
-
-    return iState;
-}
-FCIMPLEND
-
 // Return whether the thread hosts an STA, is a member of the MTA or is not
 // currently initialized for COM.
-FCIMPL1(INT32, ThreadNative::GetApartmentState, ThreadBaseObject* pThisUNSAFE)
+extern "C" INT32 QCALLTYPE ThreadNative_GetApartmentState(QCall::ThreadHandle thread)
 {
-    FCALL_CONTRACT;
+    CONTRACTL
+    {
+        QCALL_CHECK;
+        PRECONDITION(thread != NULL);
+    }
+    CONTRACTL_END;
 
     INT32 retVal = 0;
 
-    THREADBASEREF refThis = (THREADBASEREF) ObjectToOBJECTREF(pThisUNSAFE);
-
-    HELPER_METHOD_FRAME_BEGIN_RET_1(refThis);
-
-    if (refThis == NULL)
-    {
-        COMPlusThrow(kNullReferenceException, W("NullReference_This"));
-    }
-
-    Thread* thread = refThis->GetInternal();
+    BEGIN_QCALL;
 
     if (ThreadIsDead(thread))
-    {
         COMPlusThrow(kThreadStateException, W("ThreadState_Dead_State"));
-    }
 
     retVal = thread->GetApartment();
 
@@ -686,12 +625,40 @@ FCIMPL1(INT32, ThreadNative::GetApartmentState, ThreadBaseObject* pThisUNSAFE)
     }
 #endif // FEATURE_COMINTEROP
 
-    HELPER_METHOD_FRAME_END();
-
+    END_QCALL;
     return retVal;
 }
-FCIMPLEND
 
+// Indicate whether the thread will host an STA (this may fail if the thread has
+// already been made part of the MTA, use GetApartmentState or the return state
+// from this routine to check for this).
+extern "C" INT32 QCALLTYPE ThreadNative_SetApartmentState(QCall::ThreadHandle thread, INT32 iState)
+{
+    CONTRACTL
+    {
+        QCALL_CHECK;
+        PRECONDITION(thread != NULL);
+    }
+    CONTRACTL_END;
+
+    INT32 retVal = 0;
+
+    BEGIN_QCALL;
+
+    // We can only change the apartment if the thread is unstarted or
+    // running, and if it's running we have to be in the thread's
+    // context.
+    if ((!ThreadNotStarted(thread) && !ThreadIsRunning(thread))
+        || (!ThreadNotStarted(thread) && (GetThread() != thread)))
+    {
+        COMPlusThrow(kThreadStateException);
+    }
+
+    retVal = thread->SetApartment((Thread::ApartmentState)iState);
+
+    END_QCALL;
+    return retVal;
+}
 #endif // FEATURE_COMINTEROP_APARTMENT_SUPPORT
 
 void ReleaseThreadExternalCount(Thread * pThread)

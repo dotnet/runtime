@@ -238,6 +238,10 @@ static const Entry s_QCall[] =
     DllImportEntry(ThreadNative_InformThreadNameChange)
     DllImportEntry(ThreadNative_YieldThread)
     DllImportEntry(ThreadNative_GetCurrentOSThreadId)
+#ifdef FEATURE_COMINTEROP_APARTMENT_SUPPORT
+    DllImportEntry(ThreadNative_GetApartmentState)
+    DllImportEntry(ThreadNative_SetApartmentState)
+#endif // FEATURE_COMINTEROP_APARTMENT_SUPPORT
     DllImportEntry(ThreadNative_Abort)
     DllImportEntry(ThreadNative_ResetAbort)
     DllImportEntry(ThreadNative_SpinWait)

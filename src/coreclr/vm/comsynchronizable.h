@@ -60,12 +60,6 @@ public:
     static FCDECL1(FC_BOOL_RET, GetIsBackground,  ThreadBaseObject* pThisUNSAFE);
     static FCDECL1(INT32,   GetThreadState,    ThreadBaseObject* pThisUNSAFE);
 
-#ifdef FEATURE_COMINTEROP_APARTMENT_SUPPORT
-    static FCDECL1(INT32,   GetApartmentState, ThreadBaseObject* pThis);
-    static FCDECL2(INT32,   SetApartmentState, ThreadBaseObject* pThisUNSAFE, INT32 iState);
-#endif // FEATURE_COMINTEROP_APARTMENT_SUPPORT
-
-
     static FCDECL0(INT32,   GetOptimalMaxSpinWaitsPerSpinIteration);
     static FCDECL0(Object*, GetCurrentThread);
     static FCDECL1(void,    Finalize,                       ThreadBaseObject* pThis);
@@ -92,6 +86,12 @@ extern "C" void QCALLTYPE ThreadNative_SetIsBackground(QCall::ThreadHandle threa
 extern "C" void QCALLTYPE ThreadNative_InformThreadNameChange(QCall::ThreadHandle thread, LPCWSTR name, INT32 len);
 extern "C" BOOL QCALLTYPE ThreadNative_YieldThread();
 extern "C" UINT64 QCALLTYPE ThreadNative_GetCurrentOSThreadId();
+
+#ifdef FEATURE_COMINTEROP_APARTMENT_SUPPORT
+extern "C" INT32 QCALLTYPE ThreadNative_GetApartmentState(QCall::ThreadHandle thread);
+extern "C" INT32 QCALLTYPE ThreadNative_SetApartmentState(QCall::ThreadHandle thread, INT32 iState);
+#endif // FEATURE_COMINTEROP_APARTMENT_SUPPORT
+
 extern "C" void QCALLTYPE ThreadNative_Abort(QCall::ThreadHandle thread);
 extern "C" void QCALLTYPE ThreadNative_ResetAbort();
 extern "C" void QCALLTYPE ThreadNative_SpinWait(INT32 iterations);
