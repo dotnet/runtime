@@ -8361,7 +8361,7 @@ void emitter::emitDispDataSec(dataSecDsc* section, BYTE* dst)
             bool      isRelative = (data->dsType == dataSection::blockRelative32);
             size_t    blockCount = data->dsSize / (isRelative ? 4 : TARGET_POINTER_SIZE);
 
-            for (unsigned i = 0; i < blockCount; i++)
+            for (size_t i = 0; i < blockCount; i++)
             {
                 if (i > 0)
                 {

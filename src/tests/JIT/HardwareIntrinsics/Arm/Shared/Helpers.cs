@@ -8958,7 +8958,7 @@ namespace JIT.HardwareIntrinsics.Arm
             return CheckFirstFaultingBehaviorCore(result, faultResult, i => GetGatherVectorBasesResultByIndex<T, AddressT, ExtendedElementT>(i, mask, data) == result[i]);
         }
         
-        public static bool CheckGatherVectorWithByteOffsetFirstFaultingBehavior<T, ExtendedElementT, Offset, TFault>(T[] mask, ExtendedElementT[] data, Offset[] offsets, T[] result, Vector<TFault> faultResult)
+        public static bool CheckGatherVectorWithByteOffsetFirstFaultingBehavior<T, ExtendedElementT, Offset, TFault>(T[] mask, byte[] data, Offset[] offsets, T[] result, Vector<TFault> faultResult)
                 where T : INumberBase<T>
                 where ExtendedElementT : INumberBase<ExtendedElementT>
                 where Offset : IBinaryInteger<Offset>
@@ -8971,6 +8971,7 @@ namespace JIT.HardwareIntrinsics.Arm
                 return false;
             }
 
+            var elemSize = Unsafe.SizeOf<ExtendedElementT>();
             var hasFaulted = false;
             var expectedFaultResult =
                 InitVector<TFault>(i =>
@@ -8986,8 +8987,7 @@ namespace JIT.HardwareIntrinsics.Arm
                     }
 
                     var offset = int.CreateChecked(offsets[i]);
-                    var endOffset = data.Length * Unsafe.SizeOf<ExtendedElementT>();
-                    if (offset < 0 || offset >= endOffset)
+                    if (offset < 0 || (offset + elemSize) > data.Length)
                     {
                         hasFaulted = true;
                         return TFault.Zero;
@@ -9000,9 +9000,7 @@ namespace JIT.HardwareIntrinsics.Arm
                 return false;
             }
 
-            byte[] bytes = new byte[data.Length * Unsafe.SizeOf<ExtendedElementT>()];
-            Buffer.BlockCopy(data, 0, bytes, 0, bytes.Length);
-            return CheckFirstFaultingBehaviorCore(result, faultResult, i => GetGatherVectorResultByByteOffset<T, ExtendedElementT, Offset>(i, mask, bytes, offsets, result[i]));
+            return CheckFirstFaultingBehaviorCore(result, faultResult, i => GetGatherVectorResultByByteOffset<T, ExtendedElementT, Offset>(i, mask, data, offsets, result[i]));
         }
 
         public static T[] CreateBreakPropagateMask<T>(T[] op1, T[] op2) where T : IBinaryInteger<T>
