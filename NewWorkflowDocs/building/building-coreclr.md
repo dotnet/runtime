@@ -57,6 +57,7 @@ Since this is more related to testing, you can find the full details and instruc
 
 #### The Dev Shipping Packs
 
+<!-- TODO: Link to the "using your build with the sdk" and "using your build with the shipping packages" docs, and rephrase accordingly, if needed. -->
 It is also possible to generate the full runtime NuGet packages and installer that you can use to test in a more production-esque scenario. To generate these shipping artifacts, you have to build the `clr`, `libs`, `host`, and `packs` subsets:
 
 ```bash
