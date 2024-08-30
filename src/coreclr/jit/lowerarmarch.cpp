@@ -4062,46 +4062,48 @@ GenTree* Lowering::LowerHWIntrinsicCndSel(GenTreeHWIntrinsic* cndSelNode)
         GenTree*            nestedOp1    = nestedCndSel->Op(1);
         GenTree*            nestedOp2    = nestedCndSel->Op(2);
         assert(varTypeIsMask(nestedOp1));
-        assert(nestedOp2->OperIsHWIntrinsic());
 
-        NamedIntrinsic nestedOp2Id = nestedOp2->AsHWIntrinsic()->GetHWIntrinsicId();
-
-        // If the nested op uses Pg/Z, then inactive lanes will result in zeros, so can only transform if
-        // op3 is all zeros.
-
-        if (nestedOp1->IsMaskAllBitsSet() &&
-            (!HWIntrinsicInfo::IsZeroingMaskedOperation(nestedOp2Id) || op3->IsVectorZero()))
+        if (nestedOp2->OperIsHWIntrinsic())
         {
-            GenTree* nestedOp2 = nestedCndSel->Op(2);
-            GenTree* nestedOp3 = nestedCndSel->Op(3);
+            NamedIntrinsic nestedOp2Id = nestedOp2->AsHWIntrinsic()->GetHWIntrinsicId();
 
-            JITDUMP("lowering nested ConditionalSelect HWIntrinisic (before):\n");
-            DISPTREERANGE(BlockRange(), cndSelNode);
-            JITDUMP("\n");
+            // If the nested op uses Pg/Z, then inactive lanes will result in zeros, so can only transform if
+            // op3 is all zeros.
 
-            // Transform:
-            //
-            // CndSel(mask, CndSel(AllTrue, embeddedMask(trueValOp2), trueValOp3), op3) to
-            // CndSel(mask, embedded(trueValOp2), op3)
-            //
-            cndSelNode->Op(2) = nestedCndSel->Op(2);
-            if (nestedOp3->IsMaskZero())
+            if (nestedOp1->IsMaskAllBitsSet() &&
+                (!HWIntrinsicInfo::IsZeroingMaskedOperation(nestedOp2Id) || op3->IsVectorZero()))
             {
-                BlockRange().Remove(nestedOp3);
+                GenTree* nestedOp2 = nestedCndSel->Op(2);
+                GenTree* nestedOp3 = nestedCndSel->Op(3);
+
+                JITDUMP("lowering nested ConditionalSelect HWIntrinisic (before):\n");
+                DISPTREERANGE(BlockRange(), cndSelNode);
+                JITDUMP("\n");
+
+                // Transform:
+                //
+                // CndSel(mask, CndSel(AllTrue, embeddedMask(trueValOp2), trueValOp3), op3) to
+                // CndSel(mask, embedded(trueValOp2), op3)
+                //
+                cndSelNode->Op(2) = nestedCndSel->Op(2);
+                if (nestedOp3->IsMaskZero())
+                {
+                    BlockRange().Remove(nestedOp3);
+                }
+                else
+                {
+                    nestedOp3->SetUnusedValue();
+                }
+
+                BlockRange().Remove(nestedOp1);
+                BlockRange().Remove(nestedCndSel);
+
+                JITDUMP("lowering nested ConditionalSelect HWIntrinisic (after):\n");
+                DISPTREERANGE(BlockRange(), cndSelNode);
+                JITDUMP("\n");
+
+                return cndSelNode;
             }
-            else
-            {
-                nestedOp3->SetUnusedValue();
-            }
-
-            BlockRange().Remove(nestedOp1);
-            BlockRange().Remove(nestedCndSel);
-
-            JITDUMP("lowering nested ConditionalSelect HWIntrinisic (after):\n");
-            DISPTREERANGE(BlockRange(), cndSelNode);
-            JITDUMP("\n");
-
-            return cndSelNode;
         }
     }
     else if (op1->IsMaskAllBitsSet())
