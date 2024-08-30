@@ -45,7 +45,7 @@ def setup_args(args):
         args (CoreclrArguments)
 
     """
-    coreclr_args = CoreclrArguments(args, require_built_core_root=True, require_built_product_dir=True,
+    coreclr_args = CoreclrArguments(args, require_built_core_root=False, require_built_product_dir=False,
                                     require_built_test_dir=False, default_build_type="Checked")
 
     coreclr_args.verify(args,
