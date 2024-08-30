@@ -473,7 +473,6 @@ public:
         MDCALLDEF_VOID(     CallWithValueTypes, TRUE)
         MDCALLDEF_ARGSLOT(  CallWithValueTypes, _RetArgSlot)
         MDCALLDEF_REFTYPE(  CallWithValueTypes, TRUE,   _RetOBJECTREF,  Object*,    OBJECTREF)
-        MDCALLDEF(          CallWithValueTypes, TRUE,   _RetOleColor,   OLE_COLOR,  OTHER_ELEMENT_TYPE)
 #undef OTHER_ELEMENT_TYPE
 #undef MDCALL_ARG_SIG_STD_RETTYPES
 #undef MDCALLDEF

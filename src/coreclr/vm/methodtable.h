@@ -293,15 +293,8 @@ struct GenericsDictInfo
 
     // Number of type parameters (NOT including those of superclasses).
     WORD   m_wNumTyPars;
-    template<typename T> friend struct ::cdac_data;
 };  // struct GenericsDictInfo
 typedef DPTR(GenericsDictInfo) PTR_GenericsDictInfo;
-
-template<>
-struct cdac_data<GenericsDictInfo>
-{
-    static constexpr size_t NumTypeArgs = offsetof(GenericsDictInfo, m_wNumTyPars);
-};
 
 // These various statics structures exist directly before the MethodTableAuxiliaryData
 
@@ -333,30 +326,23 @@ struct MethodTableAuxiliaryData
         // TO BE UPDATED IN ORDER TO ENSURE THAT METHODTABLES DUPLICATED FOR GENERIC INSTANTIATIONS
         // CARRY THE CORRECT INITIAL FLAGS.
 
-        enum_flag_Initialized             = 0x0001,
-        enum_flag_HasCheckedCanCompareBitsOrUseFastGetHashCode   = 0x0002,  // Whether we have checked the overridden Equals or GetHashCode
-        enum_flag_CanCompareBitsOrUseFastGetHashCode       = 0x0004,     // Is any field type or sub field type overridden Equals or GetHashCode
-
+        enum_flag_Initialized               = 0x0001,
+        enum_flag_HasCheckedCanCompareBitsOrUseFastGetHashCode  = 0x0002,  // Whether we have checked the overridden Equals or GetHashCode
+        enum_flag_CanCompareBitsOrUseFastGetHashCode    = 0x0004,     // Is any field type or sub field type overridden Equals or GetHashCode
+        enum_flag_IsTlsIndexAllocated       = 0x0008,
         enum_flag_HasApproxParent           = 0x0010,
-#ifdef _DEBUG
-        // The MethodTable is in the right state to be published, and will be inevitably.
-        // Currently DEBUG only as it does not affect behavior in any way in a release build
-        enum_flag_IsPublished               = 0x0020,
-#endif
+        enum_flag_MayHaveOpenInterfaceInInterfaceMap    = 0x0020,
         enum_flag_IsNotFullyLoaded          = 0x0040,
         enum_flag_DependenciesLoaded        = 0x0080,     // class and all dependencies loaded up to CLASS_LOADED_BUT_NOT_VERIFIED
 
         enum_flag_IsInitError               = 0x0100,
         enum_flag_IsStaticDataAllocated     = 0x0200,     // When this is set, if the class can be marked as initialized without any further code execution it will be.
-        // unum_unused                      = 0x0400,
-        enum_flag_IsTlsIndexAllocated       = 0x0800,
-        enum_flag_MayHaveOpenInterfaceInInterfaceMap = 0x1000,
-        // enum_unused                      = 0x2000,
-
-#ifdef _DEBUG
-        enum_flag_ParentMethodTablePointerValid =  0x4000,
-        enum_flag_HasInjectedInterfaceDuplicates = 0x8000,
-#endif
+        enum_flag_HasCheckedStreamOverride  = 0x0400,
+        enum_flag_StreamOverriddenRead      = 0x0800,
+        enum_flag_StreamOverriddenWrite     = 0x1000,
+        // unused enum                      = 0x2000,
+        // unused enum                      = 0x4000,
+        // unused enum                      = 0x8000,
     };
     union
     {
@@ -376,6 +362,16 @@ struct MethodTableAuxiliaryData
     RUNTIMETYPEHANDLE m_hExposedClassObject;
 
 #ifdef _DEBUG
+    enum
+    {
+        // The MethodTable is in the right state to be published, and will be inevitably.
+        // Currently DEBUG only as it does not affect behavior in any way in a release build
+        enum_flagDebug_IsPublished                    = 0x2000,
+        enum_flagDebug_ParentMethodTablePointerValid  = 0x4000,
+        enum_flagDebug_HasInjectedInterfaceDuplicates = 0x8000,
+    };
+    DWORD m_dwFlagsDebug;
+
     // to avoid verify same method table too many times when it's not changing, we cache the GC count
     // on which the method table is verified. When fast GC STRESS is turned on, we only verify the MT if
     // current GC count is bigger than the number. Note most thing which will invalidate a MT will require a
@@ -410,13 +406,13 @@ public:
     {
         LIMITED_METHOD_DAC_CONTRACT;
 
-        return (m_dwFlags & enum_flag_ParentMethodTablePointerValid);
+        return (m_dwFlagsDebug & enum_flagDebug_ParentMethodTablePointerValid);
     }
     inline void SetParentMethodTablePointerValid()
     {
         LIMITED_METHOD_CONTRACT;
 
-        m_dwFlags |= enum_flag_ParentMethodTablePointerValid;
+        m_dwFlagsDebug |= enum_flagDebug_ParentMethodTablePointerValid;
     }
 #endif
 
@@ -492,6 +488,15 @@ public:
     }
 #endif
 
+    inline void SetStreamOverrideState(BOOL read, BOOL write)
+    {
+        LONG streamOverride =
+            enum_flag_HasCheckedStreamOverride
+            | (read ? enum_flag_StreamOverriddenRead : 0)
+            | (write ? enum_flag_StreamOverriddenWrite : 0);
+        InterlockedOr((LONG*)&m_dwFlags, streamOverride);
+    }
+
     inline RUNTIMETYPEHANDLE GetExposedClassObjectHandle() const
     {
         LIMITED_METHOD_CONTRACT;
@@ -522,7 +527,7 @@ public:
     void SetIsPublished()
     {
         LIMITED_METHOD_CONTRACT;
-        m_dwFlags |= (MethodTableAuxiliaryData::enum_flag_IsPublished);
+        m_dwFlagsDebug |= (MethodTableAuxiliaryData::enum_flagDebug_IsPublished);
     }
 #endif
 
@@ -531,7 +536,7 @@ public:
     bool IsPublished() const
     {
         LIMITED_METHOD_CONTRACT;
-        return (VolatileLoad(&m_dwFlags) & enum_flag_IsPublished);
+        return (VolatileLoad(&m_dwFlagsDebug) & enum_flagDebug_IsPublished);
     }
 #endif // _DEBUG
 
@@ -737,6 +742,7 @@ SystemVClassificationType CorInfoType2UnixAmd64Classification(CorElementType eeT
         SystemVClassificationTypeUnknown,               // ELEMENT_TYPE_CMOD_REQD
         SystemVClassificationTypeUnknown,               // ELEMENT_TYPE_CMOD_OPT
         SystemVClassificationTypeUnknown,               // ELEMENT_TYPE_INTERNAL
+        SystemVClassificationTypeUnknown,               // ELEMENT_TYPE_CMOD_INTERNAL
     };
 
     _ASSERTE(sizeof(toSystemVAmd64ClassificationTypeMap) == ELEMENT_TYPE_MAX);
@@ -1030,12 +1036,6 @@ public:
 
     // mark the class type as COM object class
     void SetComObjectType();
-
-#ifdef FEATURE_ICASTABLE
-    void SetICastable();
-#endif
-
-    BOOL IsICastable(); // This type implements ICastable interface
 
     void SetIDynamicInterfaceCastable();
     BOOL IsIDynamicInterfaceCastable();
@@ -2567,10 +2567,10 @@ public:
     inline PTR_BYTE GetNonGCThreadStaticsBasePointer(PTR_Thread pThread);
     inline PTR_BYTE GetGCThreadStaticsBasePointer(PTR_Thread pThread);
 
-    inline DWORD IsDynamicStatics()
+    inline BOOL IsDynamicStatics()
     {
         LIMITED_METHOD_DAC_CONTRACT;
-        return GetFlag(enum_flag_DynamicStatics);
+        return GetFlag(enum_flag_DynamicStatics) == enum_flag_DynamicStatics;
     }
 
     inline void SetDynamicStatics()
@@ -2789,7 +2789,11 @@ public:
     }
 
     // The following methods are only valid for the method tables for array types.
-    CorElementType GetArrayElementType();
+    CorElementType GetArrayElementType()
+    {
+        return GetArrayElementTypeHandle().GetSignatureCorElementType();
+    }
+
     DWORD GetRank();
 
     TypeHandle GetArrayElementTypeHandle()
@@ -3060,12 +3064,12 @@ public :
     inline BOOL Debug_HasInjectedInterfaceDuplicates() const
     {
         LIMITED_METHOD_CONTRACT;
-        return (GetAuxiliaryData()->m_dwFlags & MethodTableAuxiliaryData::enum_flag_HasInjectedInterfaceDuplicates) != 0;
+        return (GetAuxiliaryData()->m_dwFlagsDebug & MethodTableAuxiliaryData::enum_flagDebug_HasInjectedInterfaceDuplicates) != 0;
     }
     inline void Debug_SetHasInjectedInterfaceDuplicates()
     {
         LIMITED_METHOD_CONTRACT;
-        GetAuxiliaryDataForWrite()->m_dwFlags |= MethodTableAuxiliaryData::enum_flag_HasInjectedInterfaceDuplicates;
+        GetAuxiliaryDataForWrite()->m_dwFlagsDebug |= MethodTableAuxiliaryData::enum_flagDebug_HasInjectedInterfaceDuplicates;
     }
 #endif // _DEBUG
 
@@ -3697,7 +3701,7 @@ private:
 
         enum_flag_HasFinalizer                = 0x00100000, // instances require finalization. GC depends on this bit.
         enum_flag_Collectible                 = 0x00200000, // GC depends on this bit.
-        enum_flag_ICastable                   = 0x00400000, // class implements ICastable interface
+        // enum_flag_unused                   = 0x00400000,
 
 #ifdef FEATURE_64BIT_ALIGNMENT
         enum_flag_RequiresAlign8              = 0x00800000, // Type requires 8-byte alignment (only set on platforms that require this and don't get it implicitly)
@@ -3717,7 +3721,6 @@ private:
         // Types that require non-trivial interface cast have this bit set in the category
         enum_flag_NonTrivialInterfaceCast   =  enum_flag_Category_Array
                                              | enum_flag_ComObject
-                                             | enum_flag_ICastable
                                              | enum_flag_IDynamicInterfaceCastable
                                              | enum_flag_Category_ValueType
 

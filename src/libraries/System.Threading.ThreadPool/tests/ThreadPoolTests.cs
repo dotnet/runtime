@@ -1342,6 +1342,7 @@ namespace System.Threading.ThreadPools.Tests
         [ConditionalTheory(nameof(IsThreadingAndRemoteExecutorSupported), nameof(UsePortableThreadPool))]
         [MemberData(nameof(IOCompletionPortCountConfigVarTest_Args))]
         [PlatformSpecific(TestPlatforms.Windows)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/106371")]
         public static void IOCompletionPortCountConfigVarTest(int ioCompletionPortCount)
         {
             // Avoid contaminating the main process' environment
@@ -1394,28 +1395,30 @@ namespace System.Threading.ThreadPools.Tests
                         var done = new AutoResetEvent(false);
 
                         // Receiver
+                        bool stop = false;
+                        var receiveBuffer = new byte[1];
+                        var listener = new TcpListener(IPAddress.Loopback, 0);
+                        listener.Start();
                         var t = ThreadTestHelpers.CreateGuardedThread(
                             out Action checkForThreadErrors,
                             out Action waitForThread,
                             async () =>
                             {
-                                using var listener = new TcpListener(IPAddress.Loopback, 55555);
-                                var receiveBuffer = new byte[1];
-                                listener.Start();
-                                done.Set(); // indicate listener started
-                                while (true)
+                                using (listener)
                                 {
-                                    // Accept a connection, receive a byte
-                                    using var socket = await listener.AcceptSocketAsync();
-                                    int bytesRead =
-                                        await socket.ReceiveAsync(new ArraySegment<byte>(receiveBuffer), SocketFlags.None);
-                                    Assert.Equal(1, bytesRead);
-                                    done.Set(); // indicate byte received
+                                    while (!stop)
+                                    {
+                                        // Accept a connection, receive a byte
+                                        using var socket = await listener.AcceptSocketAsync();
+                                        int bytesRead =
+                                            await socket.ReceiveAsync(new ArraySegment<byte>(receiveBuffer), SocketFlags.None);
+                                        Assert.Equal(1, bytesRead);
+                                        done.Set(); // indicate byte received
+                                    }
                                 }
                             });
                         t.IsBackground = true;
                         t.Start();
-                        done.CheckedWait(); // wait for listener to start
 
                         // Sender
                         var sendBuffer = new byte[1];
@@ -1423,15 +1426,45 @@ namespace System.Threading.ThreadPools.Tests
                         {
                             // Connect, send a byte
                             using var client = new TcpClient();
-                            await client.ConnectAsync(IPAddress.Loopback, 55555);
+                            await client.ConnectAsync((IPEndPoint)listener.LocalEndpoint);
                             int bytesSent =
                                 await client.Client.SendAsync(new ArraySegment<byte>(sendBuffer), SocketFlags.None);
                             Assert.Equal(1, bytesSent);
                             done.CheckedWait(); // wait for byte to the received
                         }
+
+                        stop = true;
+                        waitForThread();
                     }
                 }).Dispose();
             }, ioCompletionPortCount.ToString()).Dispose();
+        }
+
+
+        [ConditionalFact(nameof(IsThreadingAndRemoteExecutorSupported))]
+        [PlatformSpecific(TestPlatforms.Windows)]
+        public static unsafe void ThreadPoolCompletedWorkItemCountTest()
+        {
+            // Run in a separate process to test in a clean thread pool environment such that we don't count external work items
+            RemoteExecutor.Invoke(() =>
+            {
+                using var manualResetEvent = new ManualResetEventSlim(false);
+
+                var overlapped = new Overlapped();
+                NativeOverlapped* nativeOverlapped = overlapped.Pack((errorCode, numBytes, innerNativeOverlapped) =>
+                {
+                    Overlapped.Free(innerNativeOverlapped);
+                    manualResetEvent.Set();
+                }, null);
+
+                ThreadPool.UnsafeQueueNativeOverlapped(nativeOverlapped);
+                manualResetEvent.Wait();
+
+                // Allow work item(s) to be marked as completed during this time, should be only one
+                ThreadTestHelpers.WaitForCondition(() => ThreadPool.CompletedWorkItemCount == 1);
+                Thread.Sleep(50);
+                Assert.Equal(1, ThreadPool.CompletedWorkItemCount);
+            }).Dispose();
         }
 
         public static bool IsThreadingAndRemoteExecutorSupported =>

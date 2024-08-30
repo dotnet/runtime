@@ -495,8 +495,6 @@ enum CorInfoHelpFunc
 
     /* Miscellaneous */
 
-    CORINFO_HELP_BBT_FCN_ENTER,         // record the entry to a method for collecting Tuning data
-
     CORINFO_HELP_PINVOKE_CALLI,         // Indirect pinvoke call
     CORINFO_HELP_TAILCALL,              // Perform a tail call
 
@@ -511,9 +509,7 @@ enum CorInfoHelpFunc
                                         // not safe for unbounded size, does not trigger GC)
 
     CORINFO_HELP_RUNTIMEHANDLE_METHOD,          // determine a type/field/method handle at run-time
-    CORINFO_HELP_RUNTIMEHANDLE_METHOD_LOG,      // determine a type/field/method handle at run-time, with IBC logging
     CORINFO_HELP_RUNTIMEHANDLE_CLASS,           // determine a type/field/method handle at run-time
-    CORINFO_HELP_RUNTIMEHANDLE_CLASS_LOG,       // determine a type/field/method handle at run-time, with IBC logging
 
     CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPE, // Convert from a TypeHandle (native structure pointer) to RuntimeType at run-time
     CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPE_MAYBENULL, // Convert from a TypeHandle (native structure pointer) to RuntimeType at run-time, the type may be null
@@ -644,6 +640,7 @@ enum CorInfoTypeWithMod
 {
     CORINFO_TYPE_MASK            = 0x3F,        // lower 6 bits are type mask
     CORINFO_TYPE_MOD_PINNED      = 0x40,        // can be applied to CLASS, or BYREF to indicate pinned
+    CORINFO_TYPE_MOD_COPY_WITH_HELPER = 0x80    // can be applied to VALUECLASS to indicate 'needs helper to copy'
 };
 
 inline CorInfoType strip(CorInfoTypeWithMod val) {
@@ -3325,6 +3322,8 @@ public:
     // but for tailcalls, the contract is that JIT leaves the indirection cell in
     // a register during tailcall.
     virtual void updateEntryPointForTailCall(CORINFO_CONST_LOOKUP* entryPoint) = 0;
+
+    virtual CORINFO_METHOD_HANDLE getSpecialCopyHelper(CORINFO_CLASS_HANDLE type) = 0;
 };
 
 /**********************************************************************************/
