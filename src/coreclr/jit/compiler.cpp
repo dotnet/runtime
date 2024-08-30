@@ -377,7 +377,6 @@ Compiler::Compiler(ArenaAllocator*       arena,
 #endif // DEBUG
 
 #if defined(FEATURE_EH_WINDOWS_X86)
-    // Cache Native AOT ABI check. This must happen *after* eeInfoInitialized is initialized, above.
     eeIsNativeAotAbi = IsTargetAbi(CORINFO_NATIVEAOT_ABI);
 #endif
 
