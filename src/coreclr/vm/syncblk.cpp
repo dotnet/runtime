@@ -1816,7 +1816,7 @@ BOOL ObjHeader::GetThreadOwningMonitorLock(DWORD *pThreadId, DWORD *pAcquisition
 
             _ASSERTE(psb->GetMonitor() != NULL);
             Thread* pThread = psb->GetMonitor()->GetHoldingThread();
-            if(pThread == NULL)
+            if(pThread == NULL || pThread == (Thread*) -1) // -1 means the lock is orphaned
             {
                 *pThreadId = 0;
                 *pAcquisitionCount = 0;
