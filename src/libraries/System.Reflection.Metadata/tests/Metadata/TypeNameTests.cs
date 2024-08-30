@@ -278,31 +278,31 @@ namespace System.Reflection.Metadata.Tests
         [InlineData("System.Int32[]*", 3)] // a pointer to an array of a simple type
         [InlineData("System.Declaring+Nested", 2)] // a nested and declaring types
         [InlineData("System.Declaring+Nested*", 3)] // a pointer to a nested type, which has the declaring type
-        // "Namespace.Declaring+NestedGeneric`2[A, B]" requires 6 TypeName instances:
+        // "Namespace.Declaring+NestedGeneric`2[A, B]" requires 5 TypeName instances:
         // - constructed generic type: Namespace.Declaring+NestedGeneric`2[A, B] (+1)
         //   - declaring type: Namespace.Declaring (+1)
         //   - generic type definition: Namespace.Declaring+NestedGeneric`2 (+1)
-        //      - declaring type: Namespace.Declaring (+1)
+        //      - declaring type is the same as of the constructed generic type (+0)
         //   - generic arguments:
         //   - generic arguments:
         //     - simple: A (+1)
         //     - simple: B (+1)
-        [InlineData("Namespace.Declaring+NestedGeneric`2[A, B]", 6)]
+        [InlineData("Namespace.Declaring+NestedGeneric`2[A, B]", 5)]
         // A pointer to the above
-        [InlineData("Namespace.Declaring+NestedGeneric`2[A, B]*", 7)]
+        [InlineData("Namespace.Declaring+NestedGeneric`2[A, B]*", 6)]
         // A pointer to the array of the above
-        [InlineData("Namespace.Declaring+NestedGeneric`2[A, B][,]*", 8)]
-        // "Namespace.Declaring+NestedGeneric`1[AnotherGeneric`1[A]]" requires 7 TypeName instances:
+        [InlineData("Namespace.Declaring+NestedGeneric`2[A, B][,]*", 7)]
+        // "Namespace.Declaring+NestedGeneric`1[AnotherGeneric`1[A]]" requires 6 TypeName instances:
         // - constructed generic type: Namespace.Declaring+NestedGeneric`1[AnotherGeneric`1[A]] (+1)
         //   - declaring type: Namespace.Declaring (+1)
         //   - generic type definition: Namespace.Declaring+NestedGeneric`1 (+1)
-        //      - declaring type: Namespace.Declaring (+1)
+        //      - declaring type is the same as of the constructed generic type (+0)
         //   - generic arguments:
         //     - constructed generic type: AnotherGeneric`1[A] (+1)
         //       - generic type definition: AnotherGeneric`1 (+1)
         //         - generic arguments:
         //           - simple: A (+1)
-        [InlineData("Namespace.Declaring+NestedGeneric`1[AnotherGeneric`1[A]]", 7)]
+        [InlineData("Namespace.Declaring+NestedGeneric`1[AnotherGeneric`1[A]]", 6)]
         public void MaxNodesIsRespected(string typeName, int expectedNodeCount)
         {
             TypeNameParseOptions tooMany = new()
@@ -559,10 +559,10 @@ namespace System.Reflection.Metadata.Tests
         [InlineData(typeof(int[,][]), 3)]
         [InlineData(typeof(Nullable<>), 1)] // open generic type treated as elemental
         [InlineData(typeof(NestedNonGeneric_0), 2)] // declaring and nested
-        [InlineData(typeof(NestedGeneric_0<int>), 5)] // declaring, nested, generic arg and generic type definition and its declaring type
+        [InlineData(typeof(NestedGeneric_0<int>), 4)] // declaring, nested, generic arg and generic type definition
         [InlineData(typeof(NestedNonGeneric_0.NestedNonGeneric_1), 3)] // declaring, nested 0 and nested 1
         // TypeNameTests+NestedGeneric_0`1+NestedGeneric_1`2[[Int32],[String],[Boolean]] (simplified for brevity)
-        [InlineData(typeof(NestedGeneric_0<int>.NestedGeneric_1<string, bool>), 9)] // declaring, nested 0 and nested 1 and 3 generic args and generic type definition and its declaring types
+        [InlineData(typeof(NestedGeneric_0<int>.NestedGeneric_1<string, bool>), 7)] // declaring, nested 0 and nested 1 and 3 generic args and generic type definition
         [MemberData(nameof(GetAdditionalConstructedTypeData))]
         public void GetNodeCountReturnsExpectedValue(Type type, int expected)
         {

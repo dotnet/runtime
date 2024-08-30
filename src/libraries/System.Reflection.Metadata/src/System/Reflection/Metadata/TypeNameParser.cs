@@ -61,6 +61,8 @@ namespace System.Reflection.Metadata
                 return null;
             }
 
+            Debug.Assert(parsedName.GetNodeCount() == recursiveDepth, $"Node count mismatch for '{typeName.ToString()}'");
+
             return parsedName;
         }
 
@@ -154,22 +156,8 @@ namespace System.Reflection.Metadata
                 {
                     return null;
                 }
-                // If that generic type is a nested type, this needs to be taken into account. Example:
-                // "Namespace.Declaring+NestedGeneric`1[GenericArg]" requires 5 TypeName instances:
-                // - constructed generic type: Namespace.Declaring+NestedGeneric`2[GenericArg] (+1, handled by ParseNextTypeName)
-                //   - declaring type: Namespace.Declaring (+1, handled by TryGetTypeNameInfo)
-                //   - generic type definition: Namespace.Declaring+NestedGeneric`1 (+1, handled by the TryDive above)
-                //      - declaring type: Namespace.Declaring (+1, handled by the if below)
-                //   - generic arguments:
-                //     - simple: GenericArg (+1, handled by ParseNextTypeName)
-                if (nestedNameLengths is not null)
-                {
-                    recursiveDepth += nestedNameLengths.Count;
-                    if (IsMaxDepthExceeded(_parseOptions, recursiveDepth))
-                    {
-                        return null;
-                    }
-                }
+                // If that generic type is a nested type, we don't increase the recursiveDepth any further,
+                // as generic type definition uses exactly the same declaring type as the constructed generic type.
             }
 
             int previousDecorator = default;
