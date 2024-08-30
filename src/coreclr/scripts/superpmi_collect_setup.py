@@ -506,7 +506,7 @@ def main(main_args):
         # Setup benchmarks
         setup_benchmark(workitem_payload_directory, arch)
     elif coreclr_args.collection_name == "aspnet":
-        setup_benchmark(workitem_payload_directory, arch)
+        ()
     else:
         # Setup for pmi/crossgen2/nativeaot runs
 
