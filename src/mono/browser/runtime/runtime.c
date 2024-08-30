@@ -221,7 +221,7 @@ get_native_to_interp (MonoMethod *method, void *extra_arg)
 	if (len >= sizeof (buf)) {
 		// The key is too long, try again with a larger buffer
 		key = g_new (char, len + 1);
-	    snprintf (key, len + 1, "%s_%s_%s", name, class_name, method_name);
+	    snprintf (key, len + 1, "%s_%s_%s_%s", name, namespace, class_name, method_name);
 	}
 
 	char *fixedName = mono_fixup_symbol_name ("", key, "");

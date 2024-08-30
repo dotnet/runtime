@@ -387,19 +387,17 @@ internal sealed class PInvokeTableGenerator
             if (!is_void)
                 sb.Append($"  {MapType(method.ReturnType)} res;\n");
 
+
             // In case when null force interpreter to initialize the pointers
             sb.Append($"  if (!(WasmInterpEntrySig_{cb_index})wasm_native_to_interp_ftndescs [{cb_index}].func) {{\n");
             if (_isLibraryMode && HasAttribute(method, "System.Runtime.InteropServices.UnmanagedCallersOnlyAttribute"))
             {
                 sb.Append($"    initialize_runtime(); \n");
             }
-            var assemblyFullName = cb.Method.DeclaringType == null ? "" : cb.Method.DeclaringType.Assembly.FullName;
-            var assemblyName = assemblyFullName != null && assemblyFullName.Split(',').Length > 0 ? assemblyFullName.Split(',')[0].Trim() : "";
-            var namespaceName = cb.Method.DeclaringType == null ? "" : cb.Method.DeclaringType.Namespace;
-            var typeName = cb.Method.DeclaringType == null  || cb.Method.DeclaringType.Name == null ? "" : cb.Method.DeclaringType.Name;
-            var methodName = cb.Method.Name;
+
+            var type = cb.Method.DeclaringType!;
             int numParams = method.GetParameters().Length;
-            sb.Append($"    mono_wasm_marshal_get_managed_wrapper (\"{assemblyName}\",\"{namespaceName}\", \"{typeName}\", \"{methodName}\", {numParams});\n");
+            sb.Append($"    mono_wasm_marshal_get_managed_wrapper (\"{type!.Module!.Assembly!.GetName()!.Name!}\",\"{type.Namespace}\", \"{type.Name}\", \"{cb.Method.Name}\", {numParams});\n");
             sb.Append($"  }}\n");
 
             sb.Append($"  ((WasmInterpEntrySig_{cb_index})wasm_native_to_interp_ftndescs [{cb_index}].func) (");
