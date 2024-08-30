@@ -207,6 +207,7 @@ get_native_to_interp (MonoMethod *method, void *extra_arg)
 	MonoAssembly *assembly = mono_image_get_assembly (image);
 	MonoAssemblyName *aname = mono_assembly_get_name (assembly);
 	const char *name = mono_assembly_name_get_name (aname);
+	const char *namespace = mono_class_get_namespace (klass);
 	const char *class_name = mono_class_get_name (klass);
 	const char *method_name = mono_method_get_name (method);
 	char buf [128];
@@ -215,7 +216,7 @@ get_native_to_interp (MonoMethod *method, void *extra_arg)
 	if (name == NULL)
 		return NULL;
 
-	len = snprintf (key, sizeof(buf), "%s_%s_%s", name, class_name, method_name);
+	len = snprintf (key, sizeof(buf), "%s_%s_%s_%s", name, namespace, class_name, method_name);
 
 	if (len >= sizeof (buf)) {
 		// The key is too long, try again with a larger buffer
