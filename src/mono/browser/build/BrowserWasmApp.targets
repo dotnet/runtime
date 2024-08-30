@@ -478,6 +478,7 @@
       <_EmccLinkStepArgs Include="$(EmccExtraLDFlags)" />
 
       <_WasmLinkStepArgs Include="@(_EmccLinkStepArgs)" />
+      <_WasmLinkStepArgs Include="@(LinkerArg)" />
     </ItemGroup>
   </Target>
 
