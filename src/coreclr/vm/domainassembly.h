@@ -35,15 +35,13 @@ enum FileLoadLevel
 
     FILE_LOAD_CREATE,
     FILE_LOAD_BEGIN,
-    FILE_LOAD_ALLOCATE,
-    FILE_LOAD_POST_ALLOCATE,
+    FILE_LOAD_BEFORE_TYPE_LOAD,
     FILE_LOAD_EAGER_FIXUPS,
     FILE_LOAD_DELIVER_EVENTS,
     FILE_LOAD_VTABLE_FIXUPS,
     FILE_LOADED,                    // Loaded by not yet active
     FILE_ACTIVE                     // Fully active (constructors run & security checked)
 };
-
 
 enum NotificationStatus
 {
@@ -186,13 +184,6 @@ public:
         return EnsureLoadLevel(FILE_ACTIVE);
     }
 
-    // Ensure that an assembly has reached at least the Allocated state.  Throw if not.
-    void EnsureAllocated()
-    {
-        WRAPPER_NO_CONTRACT;
-        return EnsureLoadLevel(FILE_LOAD_ALLOCATE);
-    }
-
     // EnsureLoadLevel is a generic routine used to ensure that the file is not in a delay loaded
     // state (unless it needs to be.)  This should be used when a particular level of loading
     // is required for an operation.  Note that deadlocks are tolerated so the level may be one
@@ -268,8 +259,7 @@ public:
 
 #ifndef DACCESS_COMPILE
     void Begin();
-    void Allocate();
-    void PostAllocate();
+    void BeforeTypeLoad();
     void EagerFixups();
     void VtableFixups();
     void DeliverSyncEvents();

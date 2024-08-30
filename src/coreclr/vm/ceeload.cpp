@@ -4473,24 +4473,6 @@ VOID Module::EnsureActive()
 
 #include <optdefault.h>
 
-
-#ifndef DACCESS_COMPILE
-
-VOID Module::EnsureAllocated()
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-
-    GetDomainAssembly()->EnsureAllocated();
-}
-
-#endif // !DACCESS_COMPILE
-
 CHECK Module::CheckActivated()
 {
     CONTRACTL

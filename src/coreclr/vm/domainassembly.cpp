@@ -53,6 +53,26 @@ DomainAssembly::DomainAssembly(PEAssembly* pPEAssembly, LoaderAllocator* pLoader
     pPEAssembly->ValidateForExecution();
 
     SetupDebuggingConfig();
+
+    // Create the Assembly
+    AllocMemTracker   amTracker;
+    AllocMemTracker * pamTracker = &amTracker;
+    Assembly * pAssembly;
+    {
+        // Order is important here - in the case of an exception, the Assembly holder must destruct before the AllocMemTracker declared above.
+        NewHolder<Assembly> assemblyHolder(NULL);
+
+        assemblyHolder = pAssembly = Assembly::Create(GetPEAssembly(), GetDebuggerInfoBits(), this->IsCollectible(), pamTracker, this->IsCollectible() ? this->GetLoaderAllocator() : NULL);
+        assemblyHolder->SetIsTenured();
+
+        pamTracker->SuppressRelease();
+        assemblyHolder.SuppressRelease();
+    }
+
+    SetAssembly(pAssembly);
+
+    // Creating the Assembly should have ensured the PEAssembly is loaded
+    _ASSERT(GetPEAssembly()->IsLoaded());
 }
 
 DomainAssembly::~DomainAssembly()
@@ -319,12 +339,8 @@ BOOL DomainAssembly::DoIncrementalLoad(FileLoadLevel level)
         Begin();
         break;
 
-    case FILE_LOAD_ALLOCATE:
-        Allocate();
-        break;
-
-    case FILE_LOAD_POST_ALLOCATE:
-        PostAllocate();
+    case FILE_LOAD_BEFORE_TYPE_LOAD:
+        BeforeTypeLoad();
         break;
 
     case FILE_LOAD_EAGER_FIXUPS:
@@ -365,7 +381,7 @@ BOOL DomainAssembly::DoIncrementalLoad(FileLoadLevel level)
     return TRUE;
 }
 
-void DomainAssembly::PostAllocate()
+void DomainAssembly::BeforeTypeLoad()
 {
     CONTRACTL
     {
@@ -538,38 +554,6 @@ void DomainAssembly::UnregisterFromHostAssembly()
     {
         GetPEAssembly()->GetHostAssembly()->SetDomainAssembly(nullptr);
     }
-}
-
-void DomainAssembly::Allocate()
-{
-    CONTRACTL
-    {
-        INSTANCE_CHECK;
-        STANDARD_VM_CHECK;
-        INJECT_FAULT(COMPlusThrowOM(););
-        PRECONDITION(m_pAssembly == NULL);
-    }
-    CONTRACTL_END;
-
-    AllocMemTracker   amTracker;
-    AllocMemTracker * pamTracker = &amTracker;
-
-    Assembly * pAssembly;
-    {
-        // Order is important here - in the case of an exception, the Assembly holder must destruct before the AllocMemTracker declared above.
-        NewHolder<Assembly> assemblyHolder(NULL);
-
-        assemblyHolder = pAssembly = Assembly::Create(GetPEAssembly(), GetDebuggerInfoBits(), this->IsCollectible(), pamTracker, this->IsCollectible() ? this->GetLoaderAllocator() : NULL);
-        assemblyHolder->SetIsTenured();
-
-        pamTracker->SuppressRelease();
-        assemblyHolder.SuppressRelease();
-    }
-
-    SetAssembly(pAssembly);
-
-    // Creating the Assembly should have ensured the PEAssembly is loaded
-    _ASSERT(GetPEAssembly()->IsLoaded());
 }
 
 void DomainAssembly::DeliverAsyncEvents()
