@@ -5,15 +5,20 @@
     <TargetFramework>$(NetCoreAppToolCurrent)</TargetFramework>
     <GenerateRuntimeConfigurationFiles>true</GenerateRuntimeConfigurationFiles>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <PublishAot>true</PublishAot>
+    <SuppressTrimAnalysisWarnings>false</SuppressTrimAnalysisWarnings>
+    <LinkerFlavor Condition="'$(CrossBuild)' == 'true' and '$(TargetsLinux)' == 'true'">lld</LinkerFlavor>
+    <SysRoot Condition="'$(CrossBuild)' == 'true' and '$(HostOS)' != 'windows'">$(ROOTFS_DIR)</SysRoot>
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Include="XUnitLogChecker.cs" />
+    <CustomLinkerArg Condition="'$(CrossBuild)' == 'true' and '$(_hostArchitecture)' == '$(_targetArchitecture)' and '$(_hostOS)' != 'windows'" Include="--gcc-toolchain=$(ROOTFS_DIR)/usr" />
+    <Compile Include="$(MSBuildThisFileDirectory)XUnitLogChecker.cs" />
   </ItemGroup>
 
   <ItemGroup>
-    <Compile Include="../Coreclr.TestWrapper/CoreclrTestWrapperLib.cs" Link="CoreclrTestWrapperLib.cs" />
-    <Compile Include="../Coreclr.TestWrapper/MobileAppHandler.cs" Link="MobileAppHandler.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)../Coreclr.TestWrapper/CoreclrTestWrapperLib.cs" Link="CoreclrTestWrapperLib.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)../Coreclr.TestWrapper/MobileAppHandler.cs" Link="MobileAppHandler.cs" />
   </ItemGroup>
 
 </Project>
