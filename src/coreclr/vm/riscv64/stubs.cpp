@@ -1378,15 +1378,15 @@ static bool InRegister(UINT16 ofs)
     _ASSERTE(ofs != ShuffleEntry::SENTINEL);
     return (ofs & ShuffleEntry::REGMASK);
 }
-static bool OnStack(UINT16 ofs)
-{
-    _ASSERTE(ofs != ShuffleEntry::SENTINEL);
-    return !(ofs & ShuffleEntry::REGMASK);
-}
 static bool IsRegisterFloating(UINT16 ofs)
 {
     _ASSERTE(InRegister(ofs));
     return (ofs & ShuffleEntry::FPREGMASK);
+}
+static bool IsCallingConventionTransfer(UINT16 ofs)
+{
+    _ASSERTE(InRegister(ofs));
+    return (ofs & ShuffleEntry::CALLCONVTRANSFERMASK);
 }
 static bool IsRegisterIntegerCallConv(UINT16 ofs)
 {
@@ -1395,27 +1395,38 @@ static bool IsRegisterIntegerCallConv(UINT16 ofs)
     return (ofs & regMasks) == ShuffleEntry::REGMASK;
 }
 
+static const int argRegBase = 10;  // first argument register: a0, fa0
+static const IntReg lastIntArgReg = argRegBase + NUM_ARGUMENT_REGISTERS - 1; // a7
+static const IntReg intTempReg = 29; // t4
+
 static int GetRegisterOffset(UINT16 ofs)
 {
     _ASSERTE(InRegister(ofs));
     return ofs & ShuffleEntry::OFSREGMASK;
 }
+static int GetRegister(UINT16 ofs)
+{
+    return GetRegisterOffset(ofs) + argRegBase;
+}
 static unsigned GetStackSlot(UINT16 ofs)
 {
-    _ASSERTE(OnStack(ofs));
+    _ASSERTE(!InRegister(ofs));
     return ofs;
 }
 
 struct TransferredField
 {
-    unsigned sizeShift, offset;
+    unsigned char reg;
+    unsigned char sizeShift;
+    unsigned offset;
 };
 static TransferredField GetTransferredField(UINT16 ofs)
 {
     _ASSERTE(InRegister(ofs));
     _ASSERTE(ofs & ShuffleEntry::CALLCONVTRANSFERMASK);
     return {
-        unsigned((ofs & ShuffleEntry::FIELDSIZESHIFTMASK) >> ShuffleEntry::FIELDSIZESHIFTPOS),
+        (unsigned char)((ofs & ShuffleEntry::OFSREGMASK) + argRegBase),
+        (unsigned char)((ofs & ShuffleEntry::FIELDSIZESHIFTMASK) >> ShuffleEntry::FIELDSIZESHIFTPOS),
         unsigned((ofs & ShuffleEntry::FIELDOFFSETMASK) >> ShuffleEntry::FIELDOFFSETPOS)
     };
 }
@@ -1424,37 +1435,12 @@ static TransferredField GetTransferredField(UINT16 ofs)
 VOID StubLinkerCPU::EmitShuffleThunk(ShuffleEntry *pShuffleEntryArray)
 {
     LOG((LF_STUBS, LL_INFO1000000, "StubLinkerCPU::EmitShuffleThunk\n"));
-    static const int argRegBase = 10;  // first argument register: a0, fa0
     static const IntReg t6 = 31, t5 = 30, a0 = argRegBase + 0;
-    static const IntReg intTempReg = 29; // t4
-    static const FloatReg floatTempReg = 0, floatTempReg2 = 1; // ft0, ft1
     // On entry a0 holds the delegate instance. Look up the real target address stored in the MethodPtrAux
     // field and saved in t6. Tailcall to the target method after re-arranging the arguments
     EmitLoad(t6, a0, DelegateObject::GetOffsetOfMethodPtrAux());
     // load the indirection cell into t5 used by ResolveWorkerAsmStub
     EmitAddImm(t5, a0, DelegateObject::GetOffsetOfMethodPtrAux());
-
-    bool was2ndLowered = false;
-    FloatReg destReg2ndLowered = floatTempReg;
-    auto lower2nd = [this, &was2ndLowered](const ShuffleEntry* entry, FloatReg* outDestReg = nullptr) -> int
-    {
-        _ASSERTE(!(entry[1].srcofs != ShuffleEntry::SENTINEL && InRegister(entry[1].dstofs) && (entry[1].dstofs & ShuffleEntry::CALLCONVTRANSFERMASK)));
-        _ASSERTE(IsRegisterFloating(entry->dstofs));
-        int destReg = argRegBase + GetRegisterOffset(entry->dstofs);
-        if (outDestReg)
-        {
-            *outDestReg = destReg;
-            destReg = floatTempReg2;
-        }
-        TransferredField field = GetTransferredField(entry->dstofs);
-        int srcStackAddr = GetStackSlot(entry->srcofs) * sizeof(void*);
-
-        EmitAnyLoad(true, field.sizeShift, destReg, RegSp, srcStackAddr + field.offset);
-
-        _ASSERTE(!was2ndLowered);
-        was2ndLowered = true;
-        return ALIGN_UP(field.offset + (1u << field.sizeShift), sizeof(void*)) / sizeof(void*);
-    };
 
     const ShuffleEntry* entry = pShuffleEntryArray;
 
@@ -1463,192 +1449,262 @@ VOID StubLinkerCPU::EmitShuffleThunk(ShuffleEntry *pShuffleEntryArray)
     {
         _ASSERTE(IsRegisterIntegerCallConv(entry->srcofs));
         _ASSERTE(IsRegisterIntegerCallConv(entry->dstofs));
-        IntReg src = argRegBase + GetRegisterOffset(entry->srcofs);
-        IntReg dst = argRegBase + GetRegisterOffset(entry->dstofs);
-        _ASSERTE((src.reg - dst.reg) == 1 || (src.reg - dst.reg) == 2);
+        IntReg src = GetRegister(entry->srcofs);
+        IntReg dst = GetRegister(entry->dstofs);
+        _ASSERTE((src - dst) == 1 || (src - dst) == 2);
         EmitMovReg(dst, src);
     }
 
-    if (entry->srcofs == ShuffleEntry::SENTINEL)
-        goto Tailcall;
-
-    static const IntReg lastIntReg = argRegBase + NUM_ARGUMENT_REGISTERS - 1; // a7
-
-    // Shuffle an argument from beginning of the stack to register(s)
-    _ASSERTE(GetRegisterOffset(entry->dstofs) < NUM_ARGUMENT_REGISTERS);
-    _ASSERTE(GetStackSlot(entry->srcofs) == 0);
-
-    if (IsRegisterIntegerCallConv(entry->dstofs))
+    if (entry->srcofs != ShuffleEntry::SENTINEL)
     {
-        _ASSERTE(lastIntReg.reg == argRegBase + GetRegisterOffset(entry->dstofs));
-        EmitLoad(lastIntReg, RegSp, 0);
-
-        // All transfers between integer and floating-point calling conventions are caused by an FP struct lowered to
-        // the last integer register and a floating register. Here the last integer register is taken by a stack slot
-        // passed according to integer calling convention so all further shuffling is (stack) <- (stack+1).
-        ++entry;
-        for (unsigned dst = 0; entry->srcofs != ShuffleEntry::SENTINEL; ++entry, ++dst)
+        if (IsRegisterIntegerCallConv(entry->dstofs))
         {
-            unsigned src = dst + 1;
-            _ASSERTE(src == GetStackSlot(entry->srcofs));
-            _ASSERTE(dst == GetStackSlot(entry->dstofs));
-            EmitLoad (intTempReg, RegSp, src * sizeof(void*));
-            EmitStore(intTempReg, RegSp, dst * sizeof(void*));
-        }
-        goto Tailcall;
-    }
+            _ASSERTE(GetStackSlot(entry->srcofs) == 0);
+            _ASSERTE(lastIntArgReg == GetRegister(entry->dstofs));
+            EmitLoad(lastIntArgReg, RegSp, 0);
+            ++entry;
 
-    // Transfer an argument on the stack from integer to floating-point calling convention (i.e. lower)
-    _ASSERTE(entry[0].dstofs & ShuffleEntry::CALLCONVTRANSFERMASK);
-    _ASSERTE(entry[1].srcofs != ShuffleEntry::SENTINEL);
-    _ASSERTE(InRegister(entry[1].dstofs));
-    _ASSERTE(entry[1].dstofs & ShuffleEntry::CALLCONVTRANSFERMASK);
-    _ASSERTE(IsRegisterFloating(entry[0].dstofs) != IsRegisterFloating(entry[1].dstofs));
-
-    // The floating field of the lowered FP struct displaces subsequent arguments passed in FP registers. Since we're
-    // shuffling one to the right, find the end and iterate in reverse order.
-
-    // But first, vacate the front of the stack to unblock the shuffling of stack slots in-between FP arguments
-    struct { int first, last; } fpRegisterRange, stackSlotRange;
-    int stackSlotMove;
-    for (int i = 0; i < 2; ++i)
-    {
-        _ASSERTE(GetStackSlot(entry[i].srcofs) == 0);
-        bool isFloating = IsRegisterFloating(entry[i].dstofs);
-        int destReg;
-        if (isFloating)
-        {
-            fpRegisterRange.first = GetRegisterOffset(entry[i].dstofs);
-            fpRegisterRange.last = fpRegisterRange.first;
-            destReg = floatTempReg.reg; // the floating field destination is occupied, so stash it
+            // All transfers between integer and floating-point calling conventions are caused by an FP struct lowered
+            // to the last integer register and a floating register. Here the last integer register is taken by a stack
+            // slot passed according to integer calling convention so all further shuffling is (stack) <- (stack+1).
+            for (unsigned dst = 0; entry->srcofs != ShuffleEntry::SENTINEL; ++entry, ++dst)
+            {
+                unsigned src = dst + 1;
+                _ASSERTE(src == GetStackSlot(entry->srcofs));
+                _ASSERTE(dst == GetStackSlot(entry->dstofs));
+                EmitLoad (intTempReg, RegSp, src * sizeof(void*));
+                EmitStore(intTempReg, RegSp, dst * sizeof(void*));
+            }
         }
         else
         {
-            _ASSERTE(argRegBase + GetRegisterOffset(entry[i].dstofs) == lastIntReg);
-            destReg = lastIntReg.reg; // the integer field destination was freed so it can go straight home
+            EmitShufflingWithCallingConventionTransfers(entry);
         }
-        TransferredField field = GetTransferredField(entry[i].dstofs);
-        EmitAnyLoad(isFloating, field.sizeShift, destReg, RegSp, 0 + field.offset);
-        stackSlotMove = ALIGN_UP(field.offset + (1u << field.sizeShift), sizeof(void*)) / sizeof(void*);
     }
-    _ASSERTE(stackSlotMove == 1 || stackSlotMove == 2);
 
+    EmitJumpRegister(t6); // Tailcall to target
+}
+
+/* Emit the shuffling from the first lowered FP struct onwards
+
+The floating field of the first lowered FP struct displaces all subsequent arguments passed in FP registers which sets
+off the shuffling merry-go-round. An outline of the most involved shuffling goes like this:
+
+1. First lowered argument. An FP struct is transferred from the stack to the last integer register and some
+    floating-point register.
+2a. Shuffle chain of stack slots, to the left because 1. vacates stack slot(s).
+2a. Shuffle chain of FP registers, by one register to the right because 1. takes an FP register.
+3. Delowered argument. An all-floating FP struct or standalone argument is transferred from the last FP register(s)
+    onto the stack, because 1. and by consequence 2a. steals an FP register.
+4. Shuffle chain of stack slots, either to the left or right depending on the difference in stack slots vacated in
+    1. and taken in 3.
+5. Second lowered argument. A single-field FP struct or standalone argument is transferred from the stack to the
+    last FP register, because the delowered argument in 3. vacated two FP registers (one was taken by 1.).
+6. Shuffle chain of stack slots, either to the left or right depending on the difference in stack slots vacated in
+    1. and 5. and taken in 3.
+
+Notes:
+* All chains (in 2a, 2b, 4, and 6.) shuffle by a constant offset.
+* The shuffle chains in 2a. and 2b. can be executed independently even though ShuffleEntries may come interleaved.
+    TODO: deinterleave entries in GenerateShuffleArray to increase thunk reuse.
+* If the delowered argument in 3. takes more stack slots than the lowered arguments in 1. and 5. vacate combined,
+    the thunk must grow the stack. (Currently, because FP structs > 16 bytes are not supported, can only happen when
+    the second lowered argument in 5. does not exist).
+*/
+void StubLinkerCPU::EmitShufflingWithCallingConventionTransfers(const ShuffleEntry *entry)
+{
+    struct ShuffleChain
+    {
+        int count = 0, firstSrc = 0, offset = 0;
+
+        void AppendStackSlot(ShuffleEntry e) { Append(GetStackSlot(e.srcofs), GetStackSlot(e.dstofs)); }
+        void AppendRegister (ShuffleEntry e) { Append(GetRegisterOffset(e.srcofs), GetRegisterOffset(e.dstofs)); }
+
+    private:
+        void Append(int src, int dst)
+        {
+            if (count == 0)
+            {
+                firstSrc = src;
+                offset = dst - src;
+            }
+            ++count;
+            _ASSERTE(dst - src == offset);
+            _ASSERTE(src == firstSrc + (count - 1));
+        }
+    };
+
+    // We should be at the first lowered FP struct
+    const ShuffleEntry *lowered0 = entry;
+    _ASSERTE(IsCallingConventionTransfer(lowered0[0].dstofs)); // has two fields
+    _ASSERTE(IsCallingConventionTransfer(lowered0[1].dstofs));
+    _ASSERTE(IsRegisterFloating(lowered0[0].dstofs) != IsRegisterFloating(lowered0[1].dstofs)); // has integer
     entry += 2;
+
+    // Recognize other key points in the shuffling sequence
+    const ShuffleEntry *delowered = nullptr, *deloweredEnd = nullptr, *lowered1 = nullptr;
+    ShuffleChain stackSlots0, fpRegisters, stackSlots1, stackSlots2;
+
     for (; entry->srcofs != ShuffleEntry::SENTINEL; ++entry)
     {
         if (InRegister(entry->srcofs))
         {
-            _ASSERTE(IsRegisterFloating(entry->srcofs)); // all integer registers have been processed by now
-            if (entry->srcofs & ShuffleEntry::CALLCONVTRANSFERMASK)
-                break; // the delowered argument (handled below) marks the end of FP arguments shuffling
+            _ASSERTE(IsRegisterFloating(entry->srcofs));
+            if (IsCallingConventionTransfer(entry->srcofs))
+            {
+                delowered = entry;
+                UINT16 next = entry[1].srcofs;
+                bool isTwo = (next != ShuffleEntry::SENTINEL) && InRegister(next) && IsCallingConventionTransfer(next);
+                entry += isTwo ? 2 : 1;
+                deloweredEnd = entry;
+                break;
+            }
 
-            // Shuffle plain floating register, push the register range and skip
-            _ASSERTE(GetRegisterOffset(entry->srcofs) == fpRegisterRange.last);
-            _ASSERTE(GetRegisterOffset(entry->dstofs) == fpRegisterRange.last + 1);
-            fpRegisterRange.last++;
+            _ASSERTE(IsRegisterFloating(entry->dstofs));
+            fpRegisters.AppendRegister(*entry);
         }
-        else // Shuffling of stack slots in-between FP arguments can happen now, we've vacated the first stack slot
+        else
         {
-            unsigned dst = GetStackSlot(entry->dstofs);
-            unsigned src = dst + stackSlotMove;
-            _ASSERTE(src == GetStackSlot(entry->srcofs));
+            stackSlots0.AppendStackSlot(*entry);
+        }
+    }
+    fpRegisters.firstSrc += argRegBase;
+
+    for (; entry->srcofs != ShuffleEntry::SENTINEL; ++entry)
+    {
+        if (InRegister(entry->dstofs))
+        {
+            lowered1 = entry++;
+            _ASSERTE(IsRegisterFloating(lowered1->dstofs));
+            break;
+        }
+        stackSlots1.AppendStackSlot(*entry);
+    }
+
+    for (; entry->srcofs != ShuffleEntry::SENTINEL; ++entry)
+    {
+        stackSlots2.AppendStackSlot(*entry);
+    }
+
+    // Now that the key points in the shuffling are recognized, do some sanity checks
+    _ASSERTE(entry->srcofs == ShuffleEntry::SENTINEL);
+    _ASSERTE(entry->stacksizedelta == 0); // TODO
+
+    if (delowered)
+    {
+        _ASSERTE(GetRegisterOffset((deloweredEnd - 1)->srcofs) == NUM_FLOAT_ARGUMENT_REGISTERS - 1);
+        if (fpRegisters.count > 0)
+        {
+            _ASSERTE(fpRegisters.offset == 1);
+            FloatReg deloweredSrc = GetRegister(delowered->srcofs);
+            FloatReg lastChainDest = fpRegisters.firstSrc + (fpRegisters.count - 1) + 1;
+            _ASSERTE(deloweredSrc == lastChainDest);
+        }
+        if (deloweredEnd - delowered > 1)
+        {
+            _ASSERTE(deloweredEnd - delowered == 2);
+            _ASSERTE(GetStackSlot(delowered[0].dstofs) == GetStackSlot(delowered[1].dstofs));
+            _ASSERTE(GetRegisterOffset(delowered[0].srcofs) + 1 == GetRegisterOffset(delowered[1].srcofs));
+        }
+    }
+    if (lowered1) _ASSERTE(delowered);
+    if (stackSlots1.count > 0) _ASSERTE(delowered);
+    if (stackSlots2.count > 0) _ASSERTE(lowered1);
+    if (stackSlots2.offset > 0) _ASSERTE(entry->stacksizedelta == stackSlots2.offset);
+
+    // Some helper methods
+    FloatReg stashedFloatRegs[] = {0, 0}; // registers stashed in ft0 and ft1 (zero means empty)
+    auto stashFloatReg = [&stashedFloatRegs](FloatReg reg) -> FloatReg
+    {
+        int i = (stashedFloatRegs[0].reg != 0) ? 1 : 0;
+        _ASSERTE(stashedFloatRegs[i].reg == 0);
+        stashedFloatRegs[i] = reg;
+        return i;
+    };
+
+    auto shuffleStackSlotLeftChain = [this](ShuffleChain c) -> void
+    {
+        _ASSERTE(c.offset <= 0); // shuffles to the left
+        for (int src = c.firstSrc, dst = src + c.offset;  src < c.firstSrc + c.count;  ++src, ++dst)
+        {
+            EmitLoad (intTempReg, RegSp, src * sizeof(void*));
+            EmitStore(intTempReg, RegSp, dst * sizeof(void*));
+        }
+    };
+
+    // Let's start shuffling, a7 is empty so we can shuffle the integer field of lowered0 and any following stackSlots0
+    for (int i = 0; i < 2; ++i)
+    {
+        _ASSERTE(GetStackSlot(lowered0[i].srcofs) == 0);
+        bool isFloating = IsRegisterFloating(lowered0[i].dstofs);
+        TransferredField field = GetTransferredField(lowered0[i].dstofs);
+        if (isFloating)
+        {
+            if (fpRegisters.count > 0 || delowered) // the floating field destination is occupied, so stash it
+            {
+                _ASSERTE(field.reg ==
+                    (fpRegisters.count > 0 ? fpRegisters.firstSrc : GetRegister(delowered->srcofs)));
+                field.reg = stashFloatReg(field.reg);
+            }
+        }
+        else
+        {
+            _ASSERTE(field.reg == lastIntArgReg);
+        }
+        EmitAnyLoad(isFloating, field.sizeShift, field.reg, RegSp, 0 + field.offset);
+    }
+
+    _ASSERTE(stackSlots0.firstSrc + stackSlots0.offset == 0);
+    shuffleStackSlotLeftChain(stackSlots0);
+
+    if (stackSlots1.offset > 0) // Stack slots after the delowered argument are shuffled to the right
+    {
+        // Do the second lowering first to unblock stack slot shuffling
+        _ASSERTE(lowered1);
+        TransferredField f = GetTransferredField(lowered1->dstofs);
+        int slotOffset = GetStackSlot(lowered1->srcofs) * sizeof(void*);
+        EmitAnyLoad(true, f.sizeShift, stashFloatReg(f.reg), RegSp, slotOffset + f.offset);
+
+        for (int src = stackSlots1.firstSrc + stackSlots1.count - 1, dst = src + stackSlots1.offset;
+            src >= stackSlots1.firstSrc; --src, --dst)
+        {
             EmitLoad (intTempReg, RegSp, src * sizeof(void*));
             EmitStore(intTempReg, RegSp, dst * sizeof(void*));
         }
     }
 
-    // Transfer argument from floating-point to integer calling convention (i.e. delower)
-    if (entry->srcofs != ShuffleEntry::SENTINEL && InRegister(entry->srcofs) && (entry->srcofs & ShuffleEntry::CALLCONVTRANSFERMASK))
+    for (; delowered < deloweredEnd; ++delowered)
     {
-        const ShuffleEntry* delowered = entry;
-        int destSlot = GetStackSlot(delowered[0].dstofs);
-        int fieldCount = (delowered[1].srcofs != ShuffleEntry::SENTINEL && InRegister(delowered[1].srcofs)
-            && (delowered[1].srcofs & ShuffleEntry::CALLCONVTRANSFERMASK)) ? 2 : 1;
+        _ASSERTE(IsRegisterFloating(delowered->srcofs));
+        FloatReg src = GetRegister(delowered->srcofs);
+        TransferredField f = GetTransferredField(delowered->srcofs);
+        int slotOffset = GetStackSlot(delowered->dstofs) * sizeof(void*);
+        EmitAnyStore(true, f.sizeShift, src, RegSp, slotOffset + f.offset);
+    }
 
-        TransferredField lastField = GetTransferredField(delowered[fieldCount - 1].srcofs);
-        int deloweredStackSlotCount = ALIGN_UP(lastField.offset + (1u << lastField.sizeShift), sizeof(void*)) / sizeof(void*);
-        stackSlotMove -= deloweredStackSlotCount;
+    for (FloatReg src = fpRegisters.firstSrc + fpRegisters.count - 1;  src >= fpRegisters.firstSrc;  src.reg--)
+    {
+        EmitMovReg(src + 1, src);
+    }
 
-        entry += fieldCount;
-        if (stackSlotMove < 0)
+    if (stackSlots1.offset <= 0)
+    {
+        shuffleStackSlotLeftChain(stackSlots1);
+        if (lowered1)
         {
-            // The delowered argument needs more stack slots than the first lowered argument freed. All subseqent stack
-            // slots must be shuffled to the right, find the end and iterate in reverse order.
-            _ASSERTE(stackSlotMove == -1);
-
-            int firstStackSlot = destSlot + deloweredStackSlotCount - 1;
-            struct { int first, last; } stackSlotRange = { firstStackSlot, firstStackSlot };
-            for (; entry->srcofs != ShuffleEntry::SENTINEL && OnStack(entry->dstofs); ++entry)
-            {
-                _ASSERTE(GetStackSlot(entry->srcofs) == stackSlotRange.last);
-                _ASSERTE(GetStackSlot(entry->dstofs) == stackSlotRange.last + 1);
-                stackSlotRange.last++;
-            }
-
-            // Do the second lowering to unblock the stack slot shuffling to the right
-            _ASSERTE(entry->srcofs != ShuffleEntry::SENTINEL);
-            _ASSERTE(InRegister(entry->dstofs));
-            _ASSERTE(entry->dstofs & ShuffleEntry::CALLCONVTRANSFERMASK);
-
-            stackSlotMove += lower2nd(entry++, &destReg2ndLowered);
-
-            for (; stackSlotRange.last > stackSlotRange.first; stackSlotRange.last--)
-            {
-                EmitLoad (intTempReg, RegSp, (stackSlotRange.last - 1) * sizeof(void*));
-                EmitStore(intTempReg, RegSp, (stackSlotRange.last) * sizeof(void*));
-            }
-        }
-
-        // Now that there's room on the stack for it, the delowered argument can go home.
-        for (int i = 0; i < fieldCount; ++i)
-        {
-            _ASSERTE(IsRegisterFloating(delowered[i].srcofs));
-            _ASSERTE(GetStackSlot(delowered[i].dstofs) == destSlot);
-            int srcRegOffset = GetRegisterOffset(delowered[i].srcofs);
-            _ASSERTE(srcRegOffset == fpRegisterRange.last + i);
-            TransferredField field = GetTransferredField(delowered[i].srcofs);
-            int stackOffset = destSlot * sizeof(void*) + field.offset;
-            EmitAnyStore(true, field.sizeShift, argRegBase + srcRegOffset, RegSp, stackOffset);
+            TransferredField f = GetTransferredField(lowered1->dstofs);
+            int slotOffset = GetStackSlot(lowered1->srcofs) * sizeof(void*);
+            EmitAnyLoad(true, f.sizeShift, f.reg, RegSp, slotOffset + f.offset);
         }
     }
 
-    // Shuffle arguments passed in FP registers between the first lowered and the only delowered argument (if any)
-    fpRegisterRange.first += argRegBase;
-    fpRegisterRange.last += argRegBase;
-    for (; fpRegisterRange.last > fpRegisterRange.first; fpRegisterRange.last--)
+    shuffleStackSlotLeftChain(stackSlots2);
+
+    for (int ft = 0; ft < sizeof(stashedFloatRegs) / sizeof(stashedFloatRegs[0]); ++ft)
     {
-        EmitMovReg(FloatReg(fpRegisterRange.last), FloatReg(fpRegisterRange.last - 1));
+        FloatReg dst = stashedFloatRegs[ft];
+        if (dst) EmitMovReg(dst, ft);
     }
-
-    if (was2ndLowered)
-    {
-        _ASSERTE(destReg2ndLowered >= argRegBase);
-        EmitMovReg(destReg2ndLowered, floatTempReg2);
-    }
-
-    // Now that the FP register is free, the stashed floating field of the first lowered argument can finally go home.
-    EmitMovReg(FloatReg(fpRegisterRange.first), floatTempReg);
-
-    // Shuffle remaining arguments on the stack (and 2nd lowering if it wasn't already handled)
-    for (; entry->srcofs != ShuffleEntry::SENTINEL; ++entry)
-    {
-        if (!was2ndLowered && InRegister(entry->dstofs) && (entry->dstofs & ShuffleEntry::CALLCONVTRANSFERMASK))
-        {
-            stackSlotMove += lower2nd(entry);
-            continue;
-        }
-
-        _ASSERTE(stackSlotMove != 0);
-        unsigned dst = GetStackSlot(entry->dstofs);
-        unsigned src = dst + stackSlotMove;
-        _ASSERTE(src == GetStackSlot(entry->srcofs));
-        EmitLoad (intTempReg, RegSp, src * sizeof(void*));
-        EmitStore(intTempReg, RegSp, dst * sizeof(void*));
-    }
-
-Tailcall:
-    _ASSERTE(entry->srcofs == ShuffleEntry::SENTINEL);
-    EmitJumpRegister(t6); // Tailcall to target
 }
 
 // Emits code to adjust arguments for static delegate target.

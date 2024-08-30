@@ -383,6 +383,7 @@ public:
     void EmitCallLabel(CodeLabel *target, BOOL fTailCall, BOOL fIndirect);
 
     void EmitShuffleThunk(struct ShuffleEntry *pShuffleEntryArray);
+    void EmitShufflingWithCallingConventionTransfers(const struct ShuffleEntry *pShuffleEntryArray);
 
 #if defined(FEATURE_SHARE_GENERIC_CODE)
     void EmitComputedInstantiatingMethodStub(MethodDesc* pSharedMD, struct ShuffleEntry *pShuffleEntryArray, void* extraArg);

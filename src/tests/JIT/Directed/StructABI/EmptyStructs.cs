@@ -1619,6 +1619,7 @@ public static class Program
 	}
 
 
+
 	[MethodImpl(MethodImplOptions.NoInlining)]
 	private static void ShufflingThunk_EmptyFloatEmpty5Sbyte_Empty8Float_RiscV(
 		int a1_to_a0, int a2_to_a1, int a3_to_a2, int a4_to_a3, int a5_to_a4, int a6_to_a5, int a7_to_a6,
@@ -1654,6 +1655,8 @@ public static class Program
 		getDelegate()(0, 1, 2, 3, 4, 5, 6, 0f, 1f, 2f, 3f, 4f, 5f, 6f,
 			EmptyFloatEmpty5Sbyte.Get(), 7, Empty8Float.Get());
 	}
+
+
 
 	[MethodImpl(MethodImplOptions.NoInlining)]
 	private static void ShufflingThunk_EmptyUshortAndDouble_FloatEmpty8Float_Empty8Float_RiscV(
@@ -1691,6 +1694,7 @@ public static class Program
 		getDelegate()(0, 1, 2, 3, 4, 5, 6, 0f, 1f, 2f, 3f, 4f, 5f,
 			EmptyUshortAndDouble.Get(), FloatEmpty8Float.Get(), Empty8Float.Get(), 7);
 	}
+
 
 
 	[MethodImpl(MethodImplOptions.NoInlining)]
@@ -1739,6 +1743,85 @@ public static class Program
 	}
 
 
+
+	public struct FloatFloatEmpty
+	{
+		public float Float0;
+		public float Float1;
+		public Empty Empty0;
+
+		public static FloatFloatEmpty Get()
+			=> new FloatFloatEmpty {Float0 = 2.71828f, Float1 = 3.14159f };
+
+		public override bool Equals(object other)
+			=> other is FloatFloatEmpty o && Float0 == o.Float0 && Float1 == o.Float1;
+
+		public override string ToString()
+			=> $"{{Float0:{Float0}, Float0:{Float0}}}";
+	}
+
+	public struct FloatEmpty8
+	{
+		public float Float0;
+		public Eight<Empty> EightEmpty0;
+
+		public static FloatEmpty8 Get()
+			=> new FloatEmpty8 { Float0 = 2.71828f };
+
+		public override bool Equals(object other)
+			=> other is FloatEmpty8 o && Float0 == o.Float0;
+
+		public override string ToString()
+			=> $"{{Float0:{Float0}}}";
+	}
+
+	[MethodImpl(MethodImplOptions.NoInlining)]
+	private static void ShufflingThunk_FloatEmptyShort_FloatFloatEmpty_FloatEmpty8(
+		int a1_to_a0, int a2_to_a1, int a3_to_a2, int a4_to_a3, int a5_to_a4, int a6_to_a5, int a7_to_a6,
+		float fa0, float fa1, float fa2, float fa3, float fa4, float fa5,
+		FloatEmptyShort stack0_to_fa6_a7, // frees 1 stack slot
+		int stack1_to_stack0,
+		FloatFloatEmpty fa6_fa7_to_stack1_stack2, // takes 2 stack slots
+		int stack2_to_stack3, // shuffle stack slots to the right
+		int stack3_to_stack4,
+		FloatEmpty8 stack4_stack5_to_fa7, // frees 2 stack slots
+		int stack6_to_stack5, // shuffle stack slots to the left
+		int stack7_to_stack6)
+	{
+		Assert.Equal(0, a1_to_a0);
+		Assert.Equal(1, a2_to_a1);
+		Assert.Equal(2, a3_to_a2);
+		Assert.Equal(3, a4_to_a3);
+		Assert.Equal(4, a5_to_a4);
+		Assert.Equal(5, a6_to_a5);
+		Assert.Equal(6, a7_to_a6);
+		Assert.Equal(0f, fa0);
+		Assert.Equal(1f, fa1);
+		Assert.Equal(2f, fa2);
+		Assert.Equal(3f, fa3);
+		Assert.Equal(4f, fa4);
+		Assert.Equal(5f, fa5);
+		Assert.Equal(FloatEmptyShort.Get(), stack0_to_fa6_a7);
+		Assert.Equal(7, stack1_to_stack0);
+		Assert.Equal(FloatFloatEmpty.Get(), fa6_fa7_to_stack1_stack2);
+		Assert.Equal(8, stack2_to_stack3);
+		Assert.Equal(9, stack3_to_stack4);
+		Assert.Equal(FloatEmpty8.Get(), stack4_stack5_to_fa7);
+		Assert.Equal(10, stack6_to_stack5);
+		Assert.Equal(11, stack7_to_stack6);
+	}
+
+	[Fact]
+	public static void Test_ShufflingThunk_FloatEmptyShort_FloatFloatEmpty_FloatEmpty8()
+	{
+		var getDelegate = [MethodImpl(MethodImplOptions.NoOptimization)] ()
+			=> ShufflingThunk_FloatEmptyShort_FloatFloatEmpty_FloatEmpty8;
+		getDelegate()(0, 1, 2, 3, 4, 5, 6, 0f, 1f, 2f, 3f, 4f, 5f,
+			FloatEmptyShort.Get(), 7, FloatFloatEmpty.Get(), 8, 9, FloatEmpty8.Get(), 10, 11);
+	}
+
+
+
 	[MethodImpl(MethodImplOptions.NoInlining)]
 	private static void ShufflingThunk_FloatEmptyShort_DoubleFloatNestedEmpty_RiscV(
 		int a1_to_a0, int a2_to_a1, int a3_to_a2, int a4_to_a3, int a5_to_a4, int a6_to_a5, int a7_to_a6,
@@ -1777,6 +1860,7 @@ public static class Program
 		getDelegate()(0, 1, 2, 3, 4, 5, 6, 0f, 1f, 2f, 3f, 4f, 5f,
 			FloatEmptyShort.Get(), 7, DoubleFloatNestedEmpty.Get(), 8, 9);
 	}
+
 
 
 	public struct FloatFloat
@@ -1828,6 +1912,7 @@ public static class Program
 		getDelegate()(0, 1, 2, 3, 4, 5, 6, 0f, 1f, 2f, 3f, 4f, 5f,
 			PackedEmptyFloatLong.Get(), 7, FloatFloat.Get());
 	}
+
 
 
 	[StructLayout(LayoutKind.Sequential, Pack=1)]
