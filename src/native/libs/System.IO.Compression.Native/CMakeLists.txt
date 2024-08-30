@@ -57,6 +57,9 @@ if (CLR_CMAKE_TARGET_UNIX OR CLR_CMAKE_TARGET_BROWSER OR CLR_CMAKE_TARGET_WASI)
             ${NATIVE_LIBS_EXTRA}
         )
 
+        target_include_directories(System.IO.Compression.Native PRIVATE ${BROTLI_INCLUDE_DIRS})
+        target_link_libraries(System.IO.Compression.Native PRIVATE ${BROTLI_LIBRARIES})
+
         if (NOT CLR_CMAKE_TARGET_MACCATALYST AND NOT CLR_CMAKE_TARGET_IOS AND NOT CLR_CMAKE_TARGET_TVOS AND NOT CLR_CMAKE_TARGET_ANDROID AND NOT CLR_CMAKE_USE_SYSTEM_BROTLI)
             set(DEF_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/System.IO.Compression.Native_unixexports.src)
             set(EXPORTS_FILE ${CMAKE_CURRENT_BINARY_DIR}/System.IO.Compression.Native.exports)
@@ -96,6 +99,9 @@ if (CLR_CMAKE_TARGET_UNIX OR CLR_CMAKE_TARGET_BROWSER OR CLR_CMAKE_TARGET_WASI)
         PUBLIC
         ${NATIVE_LIBS_EXTRA}
     )
+    
+    target_include_directories(System.IO.Compression.Native-Static PUBLIC ${BROTLI_INCLUDE_DIRS})
+    target_link_libraries(System.IO.Compression.Native-Static PUBLIC ${BROTLI_LIBRARIES})
 else ()
     set(NATIVE_LIBS_EXTRA)
     append_extra_compression_libs(NATIVE_LIBS_EXTRA)
@@ -193,7 +199,12 @@ endif()
 
 if((NOT CLR_CMAKE_USE_SYSTEM_BROTLI) AND STATIC_LIBS_ONLY)
     foreach(BROTLI_LIB ${BROTLI_LIBRARIES})
-        install_static_library(${BROTLI_LIB} aotsdk nativeaot)
+        # Brotli's build scripts can add some system dependencies like libm
+        # to BROTLI_LIBRARIES. Only install the libraries that are actually
+        # defined as CMake targets.
+        if (TARGET "${BROTLI_LIB}")
+            install_static_library(${BROTLI_LIB} aotsdk nativeaot)
+        endif()
     endforeach(BROTLI_LIB ${BROTLI_LIBRARIES})
 endif()
 
