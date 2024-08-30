@@ -1536,8 +1536,8 @@ void StubLinkerCPU::EmitShufflingWithCallingConventionTransfers(const ShuffleEnt
 
     // We should be at the first lowered FP struct
     const ShuffleEntry *lowered0 = entry;
-    _ASSERTE(IsCallingConventionTransfer(lowered0[0].dstofs)); // has two fields
-    _ASSERTE(IsCallingConventionTransfer(lowered0[1].dstofs));
+    _ASSERTE(IsCallingConventionTransfer(lowered0[0].dstofs));
+    _ASSERTE(IsCallingConventionTransfer(lowered0[1].dstofs)); // has two fields
     _ASSERTE(IsRegisterFloating(lowered0[0].dstofs) != IsRegisterFloating(lowered0[1].dstofs)); // has integer
     entry += 2;
 
@@ -1613,7 +1613,7 @@ void StubLinkerCPU::EmitShufflingWithCallingConventionTransfers(const ShuffleEnt
     if (stackSlots2.offset > 0) _ASSERTE(entry->stacksizedelta == stackSlots2.offset);
 
     // Some helper methods
-    FloatReg stashedFloatRegs[] = {0, 0}; // registers stashed in ft0 and ft1 (zero means empty)
+    FloatReg stashedFloatRegs[] = {0, 0}; // argument registers stashed in ft0 and ft1 (zero means empty)
     auto stashFloatReg = [&stashedFloatRegs](FloatReg reg) -> FloatReg
     {
         int i = (stashedFloatRegs[0].reg != 0) ? 1 : 0;
@@ -1714,26 +1714,24 @@ VOID StubLinkerCPU::EmitComputedInstantiatingMethodStub(MethodDesc* pSharedMD, s
 
     for (ShuffleEntry* pEntry = pShuffleEntryArray; pEntry->srcofs != ShuffleEntry::SENTINEL; pEntry++)
     {
-        _ASSERTE(pEntry->dstofs & ShuffleEntry::REGMASK);
-        _ASSERTE(pEntry->srcofs & ShuffleEntry::REGMASK);
-        _ASSERTE(!(pEntry->dstofs & ShuffleEntry::FPREGMASK));
-        _ASSERTE(!(pEntry->srcofs & ShuffleEntry::FPREGMASK));
+        _ASSERTE(IsRegisterIntegerCallConv(pEntry->srcofs));
+        _ASSERTE(IsRegisterIntegerCallConv(pEntry->dstofs));
         _ASSERTE(pEntry->dstofs != ShuffleEntry::HELPERREG);
         _ASSERTE(pEntry->srcofs != ShuffleEntry::HELPERREG);
-
-        EmitMovReg(IntReg((pEntry->dstofs & ShuffleEntry::OFSREGMASK) + 10), IntReg((pEntry->srcofs & ShuffleEntry::OFSREGMASK) + 10));
+        EmitMovReg(IntReg(GetRegister(pEntry->dstofs)), IntReg(GetRegister(pEntry->srcofs)));
     }
 
     MetaSig msig(pSharedMD);
     ArgIterator argit(&msig);
 
+    static const IntReg a0 = argRegBase + 0;
     if (argit.HasParamType())
     {
         ArgLocDesc sInstArgLoc;
         argit.GetParamTypeLoc(&sInstArgLoc);
         int regHidden = sInstArgLoc.m_idxGenReg;
         _ASSERTE(regHidden != -1);
-        regHidden += 10;//NOTE: RISCV64 should start at a0=10;
+        regHidden += argRegBase;//NOTE: RISCV64 should start at a0=10;
 
         if (extraArg == NULL)
         {
@@ -1741,8 +1739,7 @@ VOID StubLinkerCPU::EmitComputedInstantiatingMethodStub(MethodDesc* pSharedMD, s
             {
                 // Unboxing stub case
                 // Fill param arg with methodtable of this pointer
-                // ld regHidden, a0, 0
-                EmitLoad(IntReg(regHidden), IntReg(10));
+                EmitLoad(IntReg(regHidden), a0);
             }
         }
         else
@@ -1755,8 +1752,7 @@ VOID StubLinkerCPU::EmitComputedInstantiatingMethodStub(MethodDesc* pSharedMD, s
     {
         // Unboxing stub case
         // Address of the value type is address of the boxed instance plus sizeof(MethodDesc*).
-        //  addi a0, a0, sizeof(MethodDesc*)
-        EmitAddImm(IntReg(10), IntReg(10), sizeof(MethodDesc*));
+        EmitAddImm(a0, a0, sizeof(MethodDesc*));
     }
 
     // Tail call the real target.
