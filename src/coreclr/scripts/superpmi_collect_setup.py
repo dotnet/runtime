@@ -420,13 +420,15 @@ def setup_aspnet(workitem_directory, arch):
     """
     aspnet_directory = os.path.join(workitem_directory, "aspnet")
 
+    aspnet_benchmarks_directory = os.path.join(aspnet_directory, "benchmarks")
+
     run_command(
-        ["git", "clone", "--quiet", "--depth", "1", "https://github.com/aspnet/benchmarks", aspnet_directory])
+        ["git", "clone", "--quiet", "--depth", "1", "https://github.com/aspnet/benchmarks", aspnet_benchmarks_directory])
 
     try:
-        shutil.rmtree(os.path.join(aspnet_directory, ".git"))
+        shutil.rmtree(os.path.join(aspnet_benchmarks_directory, ".git"))
     except Exception as ex:
-        print("Warning: failed to remove directory \"%s\": %s", os.path.join(aspnet_directory, ".git"), ex)
+        print("Warning: failed to remove directory \"%s\": %s", os.path.join(aspnet_benchmarks_directory, ".git"), ex)
 
     # We use the performance repo to get access to the dotnet install script.
     performance_directory = os.path.join(workitem_directory, "performance")
