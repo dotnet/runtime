@@ -5,6 +5,8 @@
     <EnableDefaultItems>true</EnableDefaultItems>
     <IsPackable>true</IsPackable>
     <PackageDescription>Provides a base class for file-based configuration providers used with Microsoft.Extensions.Configuration and extension methods for configuring them.</PackageDescription>
+    <!-- TODO remove with https://github.com/dotnet/runtime/pull/107185 -->
+    <UnsupportedOSPlatforms>wasi</UnsupportedOSPlatforms>
   </PropertyGroup>
 
   <ItemGroup>

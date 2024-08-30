@@ -17,6 +17,7 @@ namespace System.Net.Http
     public sealed class SocketsHttpHandler : HttpMessageHandler
     {
         [UnsupportedOSPlatformGuard("browser")]
+        [UnsupportedOSPlatformGuard("wasi")]
         public static bool IsSupported => false;
 
         public bool UseCookies
