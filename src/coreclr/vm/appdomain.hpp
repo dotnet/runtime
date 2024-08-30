@@ -462,7 +462,6 @@ public:
 
     BaseDomain();
     virtual ~BaseDomain() {}
-    void Init();
 
     virtual BOOL IsAppDomain()    { LIMITED_METHOD_DAC_CONTRACT; return FALSE; }
 
@@ -483,89 +482,11 @@ public:
     // will be properly serialized)
     OBJECTREF *AllocateObjRefPtrsInLargeTable(int nRequested, DynamicStaticsInfo* pStaticsInfo = NULL, MethodTable *pMTToFillWithStaticBoxes = NULL, bool isClassInitdeByUpdatingStaticPointer = false);
 
-    //****************************************************************************************
-    // Handles
-
-#if !defined(DACCESS_COMPILE)
-    IGCHandleStore* GetHandleStore()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return m_handleStore;
-    }
-
-    OBJECTHANDLE CreateTypedHandle(OBJECTREF object, HandleType type)
-    {
-        WRAPPER_NO_CONTRACT;
-        return ::CreateHandleCommon(m_handleStore, object, type);
-    }
-
-    OBJECTHANDLE CreateHandle(OBJECTREF object)
-    {
-        WRAPPER_NO_CONTRACT;
-        CONDITIONAL_CONTRACT_VIOLATION(ModeViolation, object == NULL)
-        return ::CreateHandle(m_handleStore, object);
-    }
-
-    OBJECTHANDLE CreateWeakHandle(OBJECTREF object)
-    {
-        WRAPPER_NO_CONTRACT;
-        return ::CreateWeakHandle(m_handleStore, object);
-    }
-
-    OBJECTHANDLE CreateShortWeakHandle(OBJECTREF object)
-    {
-        WRAPPER_NO_CONTRACT;
-        return ::CreateShortWeakHandle(m_handleStore, object);
-    }
-
-    OBJECTHANDLE CreateLongWeakHandle(OBJECTREF object)
-    {
-        WRAPPER_NO_CONTRACT;
-        CONDITIONAL_CONTRACT_VIOLATION(ModeViolation, object == NULL)
-        return ::CreateLongWeakHandle(m_handleStore, object);
-    }
-
-    OBJECTHANDLE CreateStrongHandle(OBJECTREF object)
-    {
-        WRAPPER_NO_CONTRACT;
-        return ::CreateStrongHandle(m_handleStore, object);
-    }
-
-    OBJECTHANDLE CreatePinningHandle(OBJECTREF object)
-    {
-        WRAPPER_NO_CONTRACT;
-        return ::CreatePinningHandle(m_handleStore, object);
-    }
-
-    OBJECTHANDLE CreateWeakInteriorHandle(OBJECTREF object, void* pInteriorPointerLocation)
-    {
-        WRAPPER_NO_CONTRACT;
-        return ::CreateWeakInteriorHandle(m_handleStore, object, pInteriorPointerLocation);
-    }
-
-#if defined(FEATURE_COMINTEROP) || defined(FEATURE_COMWRAPPERS)
-    OBJECTHANDLE CreateRefcountedHandle(OBJECTREF object)
-    {
-        WRAPPER_NO_CONTRACT;
-        return ::CreateRefcountedHandle(m_handleStore, object);
-    }
-#endif // FEATURE_COMINTEROP || FEATURE_COMWRAPPERS
-
-    OBJECTHANDLE CreateDependentHandle(OBJECTREF primary, OBJECTREF secondary)
-    {
-        WRAPPER_NO_CONTRACT;
-        return ::CreateDependentHandle(m_handleStore, primary, secondary);
-    }
-
-#endif // DACCESS_COMPILE
-
 protected:
 
     //****************************************************************************************
     // Helper method to initialize the large heap handle table.
     void InitPinnedHeapHandleTable();
-
-    IGCHandleStore* m_handleStore;
 
     // The pinned heap handle table.
     PinnedHeapHandleTable       *m_pPinnedHeapHandleTable;
@@ -897,6 +818,70 @@ private:
 
     // Protects allocation of slot IDs for thread statics
     CrstExplicitInit m_MethodTableExposedClassObjectCrst;
+
+#if !defined(DACCESS_COMPILE)
+public: // Handles
+    IGCHandleStore* GetHandleStore()
+    {
+        LIMITED_METHOD_CONTRACT;
+        return m_handleStore;
+    }
+
+    OBJECTHANDLE CreateTypedHandle(OBJECTREF object, HandleType type)
+    {
+        WRAPPER_NO_CONTRACT;
+        return ::CreateHandleCommon(m_handleStore, object, type);
+    }
+
+    OBJECTHANDLE CreateHandle(OBJECTREF object)
+    {
+        WRAPPER_NO_CONTRACT;
+        CONDITIONAL_CONTRACT_VIOLATION(ModeViolation, object == NULL)
+        return ::CreateHandle(m_handleStore, object);
+    }
+
+    OBJECTHANDLE CreateLongWeakHandle(OBJECTREF object)
+    {
+        WRAPPER_NO_CONTRACT;
+        CONDITIONAL_CONTRACT_VIOLATION(ModeViolation, object == NULL)
+        return ::CreateLongWeakHandle(m_handleStore, object);
+    }
+
+    OBJECTHANDLE CreateStrongHandle(OBJECTREF object)
+    {
+        WRAPPER_NO_CONTRACT;
+        return ::CreateStrongHandle(m_handleStore, object);
+    }
+
+    OBJECTHANDLE CreatePinningHandle(OBJECTREF object)
+    {
+        WRAPPER_NO_CONTRACT;
+        return ::CreatePinningHandle(m_handleStore, object);
+    }
+
+    OBJECTHANDLE CreateWeakInteriorHandle(OBJECTREF object, void* pInteriorPointerLocation)
+    {
+        WRAPPER_NO_CONTRACT;
+        return ::CreateWeakInteriorHandle(m_handleStore, object, pInteriorPointerLocation);
+    }
+
+#if defined(FEATURE_COMINTEROP) || defined(FEATURE_COMWRAPPERS)
+    OBJECTHANDLE CreateRefcountedHandle(OBJECTREF object)
+    {
+        WRAPPER_NO_CONTRACT;
+        return ::CreateRefcountedHandle(m_handleStore, object);
+    }
+#endif // FEATURE_COMINTEROP || FEATURE_COMWRAPPERS
+
+    OBJECTHANDLE CreateDependentHandle(OBJECTREF primary, OBJECTREF secondary)
+    {
+        WRAPPER_NO_CONTRACT;
+        return ::CreateDependentHandle(m_handleStore, primary, secondary);
+    }
+#endif // DACCESS_COMPILE
+
+private:
+    IGCHandleStore* m_handleStore;
 
 protected:
     // Multi-thread safe access to the list of assemblies

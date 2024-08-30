@@ -122,7 +122,7 @@ PinnedHeapHandleBucket::PinnedHeapHandleBucket(PinnedHeapHandleBucket *pNext, PT
     m_pArrayDataPtr = (OBJECTREF *)pinnedHandleArrayObj->GetDataPtr();
 
     // Store the array in a strong handle to keep it alive.
-    m_hndHandleArray = pDomain->CreateStrongHandle((OBJECTREF)pinnedHandleArrayObj);
+    m_hndHandleArray = AppDomain::GetCurrentDomain()->CreateStrongHandle((OBJECTREF)pinnedHandleArrayObj);
 }
 
 
@@ -452,9 +452,6 @@ BaseDomain::BaseDomain()
 
     // Make sure the container is set to NULL so that it gets loaded when it is used.
     m_pPinnedHeapHandleTable = NULL;
-
-    // Note that m_handleStore is overridden by app domains
-    m_handleStore = GCHandleUtilities::GetGCHandleManager()->GetGlobalHandleStore();
 } //BaseDomain::BaseDomain
 
 #undef LOADERHEAP_PROFILE_COUNTER
@@ -841,7 +838,7 @@ void SystemDomain::PreallocateSpecialObjects()
     _ASSERTE(g_pPreallocatedSentinelObject == NULL);
 
     OBJECTREF pPreallocatedSentinelObject = AllocateObject(g_pObjectClass);
-    g_pPreallocatedSentinelObject = CreatePinningHandle( pPreallocatedSentinelObject );
+    g_pPreallocatedSentinelObject = AppDomain::GetCurrentDomain()->CreatePinningHandle( pPreallocatedSentinelObject );
 }
 
 void SystemDomain::CreatePreallocatedExceptions()
@@ -859,26 +856,29 @@ void SystemDomain::CreatePreallocatedExceptions()
     pOutOfMemory->SetHResult(COR_E_OUTOFMEMORY);
     pOutOfMemory->SetXCode(EXCEPTION_COMPLUS);
     _ASSERTE(g_pPreallocatedOutOfMemoryException == NULL);
-    g_pPreallocatedOutOfMemoryException = CreateHandle(pOutOfMemory);
+    g_pPreallocatedOutOfMemoryException = AppDomain::GetCurrentDomain()->CreateHandle(pOutOfMemory);
 
 
     EXCEPTIONREF pStackOverflow = (EXCEPTIONREF)AllocateObject(g_pStackOverflowExceptionClass);
     pStackOverflow->SetHResult(COR_E_STACKOVERFLOW);
     pStackOverflow->SetXCode(EXCEPTION_COMPLUS);
     _ASSERTE(g_pPreallocatedStackOverflowException == NULL);
-    g_pPreallocatedStackOverflowException = CreateHandle(pStackOverflow);
+    g_pPreallocatedStackOverflowException = AppDomain::GetCurrentDomain()->CreateHandle(pStackOverflow);
 
 
     EXCEPTIONREF pExecutionEngine = (EXCEPTIONREF)AllocateObject(g_pExecutionEngineExceptionClass);
     pExecutionEngine->SetHResult(COR_E_EXECUTIONENGINE);
     pExecutionEngine->SetXCode(EXCEPTION_COMPLUS);
     _ASSERTE(g_pPreallocatedExecutionEngineException == NULL);
-    g_pPreallocatedExecutionEngineException = CreateHandle(pExecutionEngine);
+    g_pPreallocatedExecutionEngineException = AppDomain::GetCurrentDomain()->CreateHandle(pExecutionEngine);
 }
 
 void SystemDomain::Init()
 {
     STANDARD_VM_CONTRACT;
+
+    // The AppDomain should have already been created
+    _ASSERTE(AppDomain::GetCurrentDomain() != NULL);
 
     HRESULT hr = S_OK;
 
@@ -1505,16 +1505,14 @@ void AppDomain::Create()
 {
     STANDARD_VM_CONTRACT;
 
+    _ASSERTE(m_pTheAppDomain == NULL);
+
     AppDomainRefHolder pDomain(new AppDomain());
-
     pDomain->Init();
-
     pDomain->SetStage(AppDomain::STAGE_OPEN);
     pDomain->CreateDefaultBinder();
 
-    pDomain.SuppressRelease();
-
-    m_pTheAppDomain = pDomain;
+    m_pTheAppDomain = pDomain.Extract();
 
     LOG((LF_CLASSLOADER | LF_CORDB,
          LL_INFO10,
@@ -1736,10 +1734,7 @@ void AppDomain::Init()
 
     m_MemoryPressure = 0;
 
-
-    // Default domain reuses the handletablemap that was created during EEStartup
     m_handleStore = GCHandleUtilities::GetGCHandleManager()->GetGlobalHandleStore();
-
     if (!m_handleStore)
     {
         COMPlusThrowOM();
