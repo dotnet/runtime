@@ -12,7 +12,7 @@
     <Compile Include="EventSourceEventGenerator.Emitter.cs" />
     <Compile Include="EventSourceEventGenerator.Parser.cs" />
     <Compile Include="KnowsAttributeNames.cs" />
-    <Compile Include="Models\EventMethodsParsedResult.cs" />
+    <Compile Include="Models\*.cs" />
     <Compile Include="ProductVersionInfoGenerator.cs" />
     <Compile Include="EventSourceGenerator.cs" />
     <Compile Include="EventSourceGenerator.Emitter.cs" />

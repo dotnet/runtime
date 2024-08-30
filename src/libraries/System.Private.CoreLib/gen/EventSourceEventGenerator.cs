@@ -66,8 +66,7 @@ namespace Generators
             context.RegisterSourceOutput(eventSourceClasses, (ctx, source) =>
             {
                 var code = new StringBuilder();
-                var emitter = new Emiitter();
-                emitter.Emit(source, code);
+                Emiitter.Emit(source, code);
                 if (code.Length != 0)
                 {
                     ctx.AddSource($"{source.ClassName}.Events.g.cs", code.ToString());
