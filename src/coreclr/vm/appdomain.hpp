@@ -456,9 +456,6 @@ public:
     class AssemblyIterator;
     friend class AssemblyIterator;
 
-    // Static initialization.
-    static void Attach();
-
     //****************************************************************************************
     //
     // Initialization/shutdown routines for every instance of an BaseDomain.
@@ -562,12 +559,6 @@ public:
 
 #endif // DACCESS_COMPILE
 
-    static CrstStatic* GetMethodTableExposedClassObjectLock()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return &m_MethodTableExposedClassObjectCrst;
-    }
-
 protected:
 
     //****************************************************************************************
@@ -578,9 +569,6 @@ protected:
 
     // The pinned heap handle table.
     PinnedHeapHandleTable       *m_pPinnedHeapHandleTable;
-
-    // Protects allocation of slot IDs for thread statics
-    static CrstStatic m_MethodTableExposedClassObjectCrst;
 
 #ifdef DACCESS_COMPILE
 public:
@@ -885,10 +873,16 @@ public:
         return &m_crstGenericDictionaryExpansionLock;
     }
 
-    CrstExplicitInit * GetLoaderAllocatorReferencesLock()
+    CrstExplicitInit* GetLoaderAllocatorReferencesLock()
     {
         LIMITED_METHOD_CONTRACT;
         return &m_crstLoaderAllocatorReferences;
+    }
+
+    CrstExplicitInit* GetMethodTableExposedClassObjectLock()
+    {
+        LIMITED_METHOD_CONTRACT;
+        return &m_MethodTableExposedClassObjectCrst;
     }
 
 private:
@@ -900,6 +894,9 @@ private:
 
     // Used to protect the reference lists in the collectible loader allocators attached to the app domain
     CrstExplicitInit m_crstLoaderAllocatorReferences;
+
+    // Protects allocation of slot IDs for thread statics
+    CrstExplicitInit m_MethodTableExposedClassObjectCrst;
 
 protected:
     // Multi-thread safe access to the list of assemblies

@@ -90,9 +90,6 @@ SPTR_IMPL(SystemDomain, SystemDomain, m_pSystemDomain);
 
 #ifndef DACCESS_COMPILE
 
-// Base Domain Statics
-CrstStatic          BaseDomain::m_MethodTableExposedClassObjectCrst;
-
 // System Domain Statics
 GlobalStringLiteralMap*  SystemDomain::m_pGlobalStringLiteralMap = NULL;
 FrozenObjectHeapManager* SystemDomain::m_FrozenObjectHeapManager = NULL;
@@ -439,10 +436,6 @@ void PinnedHeapHandleTable::EnumStaticGCRefs(promote_func* fn, ScanContext* sc)
 //*****************************************************************************
 // BaseDomain
 //*****************************************************************************
-void BaseDomain::Attach()
-{
-    m_MethodTableExposedClassObjectCrst.Init(CrstMethodTableExposedObject);
-}
 
 BaseDomain::BaseDomain()
 {
@@ -1736,6 +1729,7 @@ void AppDomain::Init()
         CRST_GC_NOTRIGGER_WHEN_TAKEN | CRST_DEBUGGER_THREAD | CRST_TAKEN_DURING_SHUTDOWN));
 
     m_crstLoaderAllocatorReferences.Init(CrstLoaderAllocatorReferences);
+    m_MethodTableExposedClassObjectCrst.Init(CrstMethodTableExposedObject);
 
     // Set up the binding caches
     m_AssemblyCache.Init(&m_DomainCacheCrst, GetHighFrequencyHeap());
