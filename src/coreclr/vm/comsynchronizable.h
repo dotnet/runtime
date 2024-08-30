@@ -52,8 +52,6 @@ public:
         ThreadAbortRequested = 128,
     };
 
-    static FCDECL1(INT32,   GetPriority,       ThreadBaseObject* pThisUNSAFE);
-    static FCDECL2(void,    SetPriority,       ThreadBaseObject* pThisUNSAFE, INT32 iPriority);
     static FCDECL1(FC_BOOL_RET, IsAlive,       ThreadBaseObject* pThisUNSAFE);
     static FCDECL1(void,    Initialize,        ThreadBaseObject* pThisUNSAFE);
     static FCDECL1(FC_BOOL_RET, GetIsBackground,  ThreadBaseObject* pThisUNSAFE);
@@ -80,6 +78,8 @@ private:
 };
 
 extern "C" void QCALLTYPE ThreadNative_Start(QCall::ThreadHandle thread, int threadStackSize, int priority, PCWSTR pThreadName);
+extern "C" BOOL QCALLTYPE ThreadNative_ThreadIsDead(QCall::ThreadHandle thread);
+extern "C" BOOL QCALLTYPE ThreadNative_TrySetPriority(QCall::ThreadHandle thread, INT32 iPriority);
 extern "C" void QCALLTYPE ThreadNative_SetIsBackground(QCall::ThreadHandle thread, BOOL value);
 extern "C" void QCALLTYPE ThreadNative_InformThreadNameChange(QCall::ThreadHandle thread, LPCWSTR name, INT32 len);
 extern "C" BOOL QCALLTYPE ThreadNative_YieldThread();

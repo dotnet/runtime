@@ -211,25 +211,49 @@ namespace System.Threading
             internal set;
         }
 
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ThreadNative_ThreadIsDead")]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        private static partial bool ThreadIsDead(ThreadHandle t);
+
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ThreadNative_TrySetPriority")]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        private static partial bool TrySetPriority(ThreadHandle t, int priority);
+
         /// <summary>Returns the priority of the thread.</summary>
         public ThreadPriority Priority
         {
-            get => (ThreadPriority)GetPriorityNative();
+            get
+            {
+                if (ThreadIsDead(GetNativeHandle())) // GC.KeepAlive() not needed since member fields are touched below.
+                {
+                    throw new ThreadStateException(SR.ThreadState_Dead_Priority);
+                }
+                return (ThreadPriority)_priority;
+            }
             set
             {
-                SetPriorityNative((int)value);
+                ThreadHandle handle = GetNativeHandle();
+                if (ThreadIsDead(handle)) // GC.KeepAlive() not needed since member fields are touched below.
+                {
+                    // Note that you can manipulate the priority of a thread that hasn't started yet,
+                    // or one that is running. But you get an exception if you manipulate the priority
+                    // of a thread that has died.
+                    throw new ThreadStateException(SR.ThreadState_Dead_Priority);
+                }
+
+                int prev = _priority;
+                _priority = (int)value;
+                if (!TrySetPriority(handle, _priority)) // GC.KeepAlive() not needed since member fields are touched below.
+                {
+                    _priority = prev;
+                    throw new ThreadStateException(SR.ThreadState_SetPriorityFailed);
+                }
                 if (value != ThreadPriority.Normal)
                 {
                     _mayNeedResetForThreadPool = true;
                 }
             }
         }
-
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        private extern int GetPriorityNative();
-
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        private extern void SetPriorityNative(int priority);
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ThreadNative_GetCurrentOSThreadId")]
         private static partial ulong GetCurrentOSThreadId();
