@@ -15,7 +15,7 @@
 
 ## Introduction
 
-<!-- TODO: Review all the requirements docs. -->
+<!-- TODO: Review all the requirements docs: Windows and macOS first pass is done. -->
 The runtime repo can be worked with on Windows, Linux, macOS, and FreeBSD. Each platform has its own specific requirements to work properly, and not all architectures are supported for dev work. The following table shows the matrix of compatibility, as well as links to each OS's requirements doc. If you are using WSL directly (i.e. not Docker), then follow the Linux requirements doc.
 
 | Chip  | Windows  | Linux    | macOS    | FreeBSD  |
