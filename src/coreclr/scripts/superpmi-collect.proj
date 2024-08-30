@@ -84,6 +84,15 @@
     <PerformanceDirectory>$HELIX_WORKITEM_PAYLOAD/performance</PerformanceDirectory>
   </PropertyGroup>
 
+  <!-- OS-specific settings for aspnet collections -->
+
+  <PropertyGroup Condition=" ('$(CollectionName)' == 'aspnet') and '$(AGENT_OS)' == 'Windows_NT' ">
+    <AspNetDirectory>%HELIX_WORKITEM_PAYLOAD%\aspnet</AspNetDirectory>
+  </PropertyGroup>
+  <PropertyGroup Condition=" ('$(CollectionName)' == 'aspnet') and '$(AGENT_OS)' != 'Windows_NT' ">
+    <AspNetDirectory>$HELIX_WORKITEM_PAYLOAD/aspnet</AspNetDirectory>
+  </PropertyGroup>
+
   <!-- Common non-OS-specific settings -->
 
   <PropertyGroup>
@@ -146,7 +155,7 @@
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(CollectionName)' == 'aspnet'">
-    <WorkItemCommand>$(Python) $(SuperPMIDirectory)$(FileSeparatorChar)superpmi_aspnet.py -core_root_directory $(SuperPMIDirectory) -arch $(Architecture) -temp_location $(SuperPMIDirectory)$(FileSeparatorChar)tmp --local</WorkItemCommand>
+    <WorkItemCommand>$(Python) $(SuperPMIDirectory)$(FileSeparatorChar)superpmi_aspnet.py -core_root_directory $(SuperPMIDirectory) -arch $(Architecture) -temp_location $(AspNetDirectory) --local</WorkItemCommand>
     <WorkItemTimeout>3:00</WorkItemTimeout>
   </PropertyGroup>
 
@@ -266,7 +275,20 @@
     <BDN_Partition Include="Partition4" BenchmarkPath="src/benchmarks/real-world/Microsoft.ML.Benchmarks/Microsoft.ML.Benchmarks.csproj" BenchmarkBinary="Microsoft.ML.Benchmarks.dll" />
     <BDN_Partition Include="Partition5" BenchmarkPath="src/benchmarks/real-world/Roslyn/CompilerBenchmarks.csproj" BenchmarkBinary="CompilerBenchmarks.dll" />
     <BDN_Partition Include="Partition6" BenchmarkPath="src/benchmarks/real-world/PowerShell.Benchmarks/PowerShell.Benchmarks.csproj" BenchmarkBinary="PowerShell.Benchmarks.dll" />
-  </ItemGroup>  
+  </ItemGroup>
+  <PropertyGroup Condition="'$(CollectionName)' == 'aspnet' and '$(AGENT_OS)' == 'Windows_NT'">
+    <PartitionCount>1</PartitionCount>
+    <BenchmarkPath>src\Benchmarks\Benchmarks.csproj</BenchmarkPath>
+    <BenchmarkBinary>Benchmarks.dll</BenchmarkBinary>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(CollectionName)' == 'aspnet' and '$(AGENT_OS)' != 'Windows_NT'">
+    <PartitionCount>1</PartitionCount>
+    <BenchmarkPath>src/Benchmarks/Benchmarks.csproj</BenchmarkPath>
+    <BenchmarkBinary>Benchmarks.dll</BenchmarkBinary>
+  </PropertyGroup>
+  <ItemGroup Condition="'$(CollectionName)' == 'aspnet'">
+    <BDN_Partition Include="Partition0" Index="0" />
+  </ItemGroup>
 
   <ItemGroup Condition="'$(CollectionName)' != 'benchmarks' and '$(CollectionName)' != 'realworld'">
     <HelixWorkItem Include="@(Partition)">
@@ -288,16 +310,6 @@
     </HelixWorkItem>
   </ItemGroup>
 
-  <ItemGroup Condition="'$(CollectionName)' == 'aspnet'">
-    <HelixWorkItem Include="@(BDN_Partition)">
-      <OutputFileName>$(CollectionName).$(CollectionType).%(HelixWorkItem.Index).$(MchFileTag)</OutputFileName>
-      <PayloadDirectory>$(WorkItemDirectory)</PayloadDirectory>
-      <Command>$(WorkItemCommand) -output_mch_path $(OutputMchPath)$(FileSeparatorChar)%(OutputFileName).mch</Command>
-      <Timeout>$(WorkItemTimeout)</Timeout>
-      <DownloadFilesFromResults>%(OutputFileName).mch;%(OutputFileName).mch.mct;%(OutputFileName).log</DownloadFilesFromResults>
-    </HelixWorkItem>
-  </ItemGroup>
-
   <ItemGroup Condition="'$(CollectionName)' == 'realworld'">
     <HelixWorkItem Include="@(BDN_Partition)">
       <OutputFileName>$(CollectionName).$(CollectionType).%(HelixWorkItem.Index).$(MchFileTag)</OutputFileName>
@@ -307,4 +319,14 @@
       <DownloadFilesFromResults>%(OutputFileName).mch;%(OutputFileName).mch.mct;%(OutputFileName).log</DownloadFilesFromResults>
     </HelixWorkItem>
   </ItemGroup>  
+
+  <ItemGroup Condition="'$(CollectionName)' == 'aspnet'">
+    <HelixWorkItem Include="@(BDN_Partition)">
+      <OutputFileName>$(CollectionName).$(CollectionType).%(HelixWorkItem.Index).$(MchFileTag)</OutputFileName>
+      <PayloadDirectory>$(WorkItemDirectory)</PayloadDirectory>
+      <Command>$(WorkItemCommand) -output_mch_path $(OutputMchPath)$(FileSeparatorChar)%(OutputFileName).mch</Command>
+      <Timeout>$(WorkItemTimeout)</Timeout>
+      <DownloadFilesFromResults>%(OutputFileName).mch;%(OutputFileName).mch.mct;%(OutputFileName).log</DownloadFilesFromResults>
+    </HelixWorkItem>
+  </ItemGroup>
 </Project>
