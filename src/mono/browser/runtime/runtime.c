@@ -210,9 +210,10 @@ get_native_to_interp (MonoMethod *method, void *extra_arg)
 	const char *class_name = mono_class_get_name (klass);
 	const char *method_name = mono_method_get_name (method);
 	char buf [128];
-	char *key = &buf[0];
+	char *key = buf;
 	int len;
-	name = name ? name : "";
+	if (name == NULL)
+		return NULL;
 
 	len = snprintf (key, sizeof(buf), "%s_%s_%s", name, class_name, method_name);
 
