@@ -16,7 +16,7 @@ bool MCList::processArgAsMCL(char* input, int* count, int** list)
 
     size_t len = strlen(input);
 
-    for (unsigned int i = 0; (i < len) && isRangeList; i++)
+    for (size_t i = 0; (i < len) && isRangeList; i++)
     {
         if ((input[i] != '-') && (input[i] != ',') && (!isdigit((unsigned char)input[i])))
             isRangeList = false;

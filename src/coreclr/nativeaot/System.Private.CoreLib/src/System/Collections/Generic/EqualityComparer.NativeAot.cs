@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 #nullable enable
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Threading;
 
@@ -12,7 +13,7 @@ namespace System.Collections.Generic
 {
     public abstract partial class EqualityComparer<T> : IEqualityComparer, IEqualityComparer<T>
     {
-        // The AOT compiler can flip this to false under certain circumstances.
+        [FeatureSwitchDefinition("System.Collections.Generic.DefaultComparers")]
         private static bool SupportsGenericIEquatableInterfaces => true;
 
         [Intrinsic]
