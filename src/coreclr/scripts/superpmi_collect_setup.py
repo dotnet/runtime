@@ -505,9 +505,6 @@ def main(main_args):
     if coreclr_args.collection_name == "benchmarks" or coreclr_args.collection_name == "realworld":
         # Setup benchmarks
         setup_benchmark(workitem_payload_directory, arch)
-    elif coreclr_args.collection_name == "aspnet":
-        # TODO: Don't do this.
-        setup_benchmark(workitem_payload_directory, arch)
     else:
         # Setup for pmi/crossgen2/nativeaot runs
 
@@ -554,7 +551,7 @@ def main(main_args):
 
         # We need the PMI tool if we're doing a PMI collection. We could download a cached copy from Azure DevOps JIT blob
         # storage, but instead we clone and build jitutils to build pmi.dll.
-        if coreclr_args.collection_type == "pmi":
+        if coreclr_args.collection_type == "pmi" or coreclr_args.collection_type == "aspnet":
             try:
                 with TempDir() as jitutils_directory:
                     run_command(
