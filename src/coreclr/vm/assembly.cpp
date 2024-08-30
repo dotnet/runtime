@@ -1590,7 +1590,7 @@ OBJECTREF Assembly::GetExposedObject()
         // Create the assembly object
         GCPROTECT_BEGIN(assemblyObj);
         assemblyObj = (ASSEMBLYREF)AllocateObject(pMT);
-        assemblyObj->SetAssembly(GetDomainAssembly());
+        assemblyObj->SetAssembly(this);
 
         // Attach the reference to the assembly to keep the LoaderAllocator for this collectible type
         // alive as long as a reference to the assembly is kept alive.

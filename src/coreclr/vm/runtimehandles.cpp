@@ -2687,8 +2687,7 @@ FCIMPL1(ReflectModuleBaseObject*, AssemblyHandle::GetManifestModule, AssemblyBas
     if (refAssembly == NULL)
         FCThrowRes(kArgumentNullException, W("Arg_InvalidHandle"));
 
-    DomainAssembly *pAssembly = refAssembly->GetDomainAssembly();
-    Assembly* currentAssembly = pAssembly->GetAssembly();
+    Assembly* currentAssembly = refAssembly->GetAssembly();
 
     FC_RETURN_MODULE_OBJECT(currentAssembly->GetModule(), refAssembly);
 }
@@ -2702,10 +2701,8 @@ FCIMPL1(INT32, AssemblyHandle::GetToken, AssemblyBaseObject* pAssemblyUNSAFE) {
     if (refAssembly == NULL)
         FCThrowRes(kArgumentNullException, W("Arg_InvalidHandle"));
 
-    DomainAssembly *pAssembly = refAssembly->GetDomainAssembly();
     mdAssembly token = mdAssemblyNil;
-
-    IMDInternalImport *mdImport = pAssembly->GetAssembly()->GetMDImport();
+    IMDInternalImport *mdImport = refAssembly->GetAssembly()->GetMDImport();
 
     if (mdImport != 0)
     {
