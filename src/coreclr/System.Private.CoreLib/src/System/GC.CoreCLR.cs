@@ -104,7 +104,7 @@ namespace System
         };
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "GCInterface_AllocateNewArray")]
-        private static unsafe partial void AllocateNewArray(MethodTable* pMT, int length, GC_ALLOC_FLAGS flags, ObjectHandleOnStack ret);
+        private static partial void AllocateNewArray(IntPtr typeHandlePtr, int length, GC_ALLOC_FLAGS flags, ObjectHandleOnStack ret);
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "GCInterface_GetTotalMemory")]
         private static partial long GetTotalMemory();
@@ -775,7 +775,7 @@ namespace System
         /// <param name="length">Specifies the length of the array.</param>
         /// <param name="pinned">Specifies whether the allocated array must be pinned.</param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)] // forced to ensure no perf drop for small memory buffers (hot path)
-        public static unsafe T[] AllocateUninitializedArray<T>(int length, bool pinned = false) // T[] rather than T?[] to match `new T[length]` behavior
+        public static T[] AllocateUninitializedArray<T>(int length, bool pinned = false) // T[] rather than T?[] to match `new T[length]` behavior
         {
             if (!pinned)
             {
@@ -801,7 +801,7 @@ namespace System
                 flags |= GC_ALLOC_FLAGS.GC_ALLOC_PINNED_OBJECT_HEAP;
 
             T[]? result = null;
-            AllocateNewArray(TypeHandle.TypeHandleOf<T[]>().AsMethodTable(), length, flags, ObjectHandleOnStack.Create(ref result));
+            AllocateNewArray(RuntimeTypeHandle.ToIntPtr(typeof(T[]).TypeHandle), length, flags, ObjectHandleOnStack.Create(ref result));
             return result!;
         }
 
@@ -811,7 +811,7 @@ namespace System
         /// <typeparam name="T">Specifies the type of the array element.</typeparam>
         /// <param name="length">Specifies the length of the array.</param>
         /// <param name="pinned">Specifies whether the allocated array must be pinned.</param>
-        public static unsafe T[] AllocateArray<T>(int length, bool pinned = false) // T[] rather than T?[] to match `new T[length]` behavior
+        public static T[] AllocateArray<T>(int length, bool pinned = false) // T[] rather than T?[] to match `new T[length]` behavior
         {
             GC_ALLOC_FLAGS flags = GC_ALLOC_FLAGS.GC_ALLOC_NO_FLAGS;
 
@@ -821,7 +821,7 @@ namespace System
             }
 
             T[]? result = null;
-            AllocateNewArray(TypeHandle.TypeHandleOf<T[]>().AsMethodTable(), length, flags, ObjectHandleOnStack.Create(ref result));
+            AllocateNewArray(RuntimeTypeHandle.ToIntPtr(typeof(T[]).TypeHandle), length, flags, ObjectHandleOnStack.Create(ref result));
             return result!;
         }
 

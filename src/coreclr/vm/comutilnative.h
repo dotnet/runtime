@@ -202,7 +202,7 @@ private:
 
 extern "C" INT64 QCALLTYPE GCInterface_GetTotalAllocatedBytesPrecise();
 
-extern "C" void QCALLTYPE GCInterface_AllocateNewArray(MethodTable* pMT, INT32 length, INT32 flags, QCall::ObjectHandleOnStack ret);
+extern "C" void QCALLTYPE GCInterface_AllocateNewArray(void* typeHandlePtr, INT32 length, INT32 flags, QCall::ObjectHandleOnStack ret);
 
 extern "C" INT64 QCALLTYPE GCInterface_GetTotalMemory();
 

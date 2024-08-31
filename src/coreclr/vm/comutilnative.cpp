@@ -921,25 +921,27 @@ FCIMPLEND
 
 /*===============================AllocateNewArray===============================
 **Action: Allocates a new array object. Allows passing extra flags
-**Returns: The allocated array.
-**Arguments: elementTypeHandle -> type of the element,
-**           length -> number of elements,
-**           zeroingOptional -> whether caller prefers to skip clearing the content of the array, if possible.
+**Arguments: typeHandlePtr -> TypeHandle pointer of array,
+**           length -> Number of elements,
+**           flags -> Flags that impact allocated memory,
+**           ret -> The allocated array.
 **Exceptions: IDS_EE_ARRAY_DIMENSIONS_EXCEEDED when size is too large. OOM if can't allocate.
 ==============================================================================*/
-extern "C" void QCALLTYPE GCInterface_AllocateNewArray(MethodTable* pMT, INT32 length, INT32 flags, QCall::ObjectHandleOnStack ret)
+extern "C" void QCALLTYPE GCInterface_AllocateNewArray(void* typeHandlePtr, INT32 length, INT32 flags, QCall::ObjectHandleOnStack ret)
 {
     QCALL_CONTRACT;
-
-    _ASSERTE(pMT != NULL);
+    _ASSERTE(typeHandlePtr != NULL);
 
     BEGIN_QCALL;
 
     GCX_COOP();
 
+    TypeHandle typeHandle = TypeHandle::FromPtr(typeHandlePtr);
+    _ASSERTE(typeHandle.IsArray());
+
     //Only the following flags are used by GC.cs, so we'll just assert it here.
     _ASSERTE((flags & ~(GC_ALLOC_ZEROING_OPTIONAL | GC_ALLOC_PINNED_OBJECT_HEAP)) == 0);
-    ret.Set(AllocateSzArray(pMT, length, (GC_ALLOC_FLAGS)flags));
+    ret.Set(AllocateSzArray(typeHandle, length, (GC_ALLOC_FLAGS)flags));
 
     END_QCALL;
 }
