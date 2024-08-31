@@ -10401,7 +10401,7 @@ MONO_RESTORE_WARNING
 				int stride_len = 32 / cn;
 				int stride_len_2 = stride_len >> 1;
 				int n_strides = 16 / stride_len;
-				LLVMValueRef swizzle_mask = LLVMConstNull (LLVMVectorType (i8_t, 16));
+				LLVMValueRef swizzle_mask = LLVMConstNull (LLVMVectorType (i1_t, 16));
 				for (int i = 0; i < n_strides; i++)
 					for (int j = 0; j < stride_len; j++)
 						swizzle_mask = LLVMBuildInsertElement (builder, swizzle_mask, const_int8(i * stride_len + ((stride_len_2 + j) % stride_len)), const_int32 (i * stride_len + j), "");
