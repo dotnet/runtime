@@ -231,7 +231,7 @@ def build_and_run(coreclr_args):
 
     crank_agent_p = None
     if coreclr_args.local:
-        crank_agent_p = Popen(crank_agent_app, stdout=DEVNULL)
+        crank_agent_p = Popen(crank_agent_app)
 
     try:
         for (configName, scenario) in configname_scenario_list:
