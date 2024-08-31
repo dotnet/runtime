@@ -19,6 +19,8 @@ import zipfile
 import stat
 import tempfile
 import time
+import threading
+import multiprocessing
 
 from os import path
 from coreclr_arguments import *
@@ -232,7 +234,9 @@ def build_and_run(coreclr_args):
     crank_agent_p = None
     if coreclr_args.local:
         print(f"Launching crank agent: {crank_agent_app}")
-        crank_agent_p = subprocess.Popen(crank_agent_app)
+        crank_agent_p = subprocess.Popen(crank_agent_app,
+                                stdout=subprocess.PIPE,
+                                stderr=subprocess.STDOUT)
         time.sleep(2)
 
     try:
@@ -278,6 +282,10 @@ def build_and_run(coreclr_args):
                 print("Crank finished...")
     finally:
         if crank_agent_p is not None:
+            for line in iter(crank_agent_p.stdout.readline, ""):
+                if not line:
+                    break
+                print(line)
             crank_agent_p.terminate()
 
     # merge
