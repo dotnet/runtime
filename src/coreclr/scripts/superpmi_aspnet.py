@@ -131,6 +131,7 @@ def build_and_run(coreclr_args):
         coreclr_args (CoreClrArguments): Arguments use to drive
         output_mch_name (string): Name of output mch file name
     """
+    coreclr_args.core_root = coreclr_args.core_root_directory
     core_root_directory = coreclr_args.core_root_directory
     target_arch = coreclr_args.arch
     target_os = coreclr_args.host_os
