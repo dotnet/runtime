@@ -1765,7 +1765,7 @@ bool OptBoolsDsc::optOptimizeCompareChainReturnBlock(BasicBlock* b3)
         return false;
     }
 
-    ssize_t block3RetVal = block3ReturnTree->AsIntCon()->IconValue();
+    INT64 block3RetVal = block3ReturnTree->AsIntConCommon()->IntegralValue();
 
     if (!cond1->OperIs(GT_NE) || !cond2->OperIs(GT_EQ, GT_NE) || (block3RetVal != 0 && cond2->OperIs(GT_EQ)) ||
         (block3RetVal != 1 && cond2->OperIs(GT_NE)))
