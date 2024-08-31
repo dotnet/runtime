@@ -18,6 +18,7 @@ import sys
 import zipfile
 import stat
 import tempfile
+import time
 
 from os import path
 from coreclr_arguments import *
@@ -231,7 +232,9 @@ def build_and_run(coreclr_args):
 
     crank_agent_p = None
     if coreclr_args.local:
+        print(f"Launching crank agent: {crank_agent_app}")
         crank_agent_p = Popen(crank_agent_app)
+        time.sleep(10)
 
     try:
         for (configName, scenario) in configname_scenario_list:
