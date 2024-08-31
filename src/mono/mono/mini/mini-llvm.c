@@ -5636,8 +5636,11 @@ emit_llvmonly_handler_start (EmitContext *ctx, MonoBasicBlock *bb, LLVMBasicBloc
 		}
 	}
 
-	LLVMBuilderRef handler_builder = create_builder (ctx);
 	LLVMBasicBlockRef target_bb = ctx->bblocks [bb->block_num].call_handler_target_bb;
+	if (!target_bb)
+		return;
+
+	LLVMBuilderRef handler_builder = create_builder (ctx);
 	LLVMPositionBuilderAtEnd (handler_builder, target_bb);
 
 	// Make the handler code end with a jump to cbb
