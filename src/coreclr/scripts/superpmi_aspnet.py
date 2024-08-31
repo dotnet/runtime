@@ -233,7 +233,7 @@ def build_and_run(coreclr_args):
     crank_agent_p = None
     if coreclr_args.local:
         print(f"Launching crank agent: {crank_agent_app}")
-        crank_agent_p = Popen(crank_agent_app)
+        crank_agent_p = Popen(crank_agent_app, stdout=subprocess.STDOUT, stderr=subprocess.STDOUT)
         time.sleep(10)
 
     try:
@@ -275,7 +275,7 @@ def build_and_run(coreclr_args):
                 description = ["--description", configName + "-" + scenario + "-" + "-".join(runtime_options)]
                 crank_app_args = [crank_app] + crank_arguments + description + runtime_arguments
                 print(' '.join(crank_app_args))
-                subprocess.run(crank_app_args, cwd=temp_location)
+                subprocess.run(crank_app_args, cwd=temp_location, stdout=subprocess.STDOUT, stderr=subprocess.STDOUT)
     finally:
         if crank_agent_p is not None:
             crank_agent_p.terminate()
