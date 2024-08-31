@@ -179,19 +179,19 @@ NOINLINE ReflectModuleBaseObject* GetRuntimeModuleHelper(LPVOID __me, Module *pM
     return (ReflectModuleBaseObject*)OBJECTREFToObject(refModule);
 }
 
-NOINLINE AssemblyBaseObject* GetRuntimeAssemblyHelper(LPVOID __me, DomainAssembly *pAssembly, OBJECTREF keepAlive)
+NOINLINE AssemblyBaseObject* GetRuntimeAssemblyHelper(LPVOID __me, Assembly *pAssembly, OBJECTREF keepAlive)
 {
     FC_INNER_PROLOG_NO_ME_SETUP();
     if (pAssembly == NULL)
         return NULL;
 
-    OBJECTREF refAssembly = (pAssembly != NULL) ? pAssembly->GetExposedAssemblyObjectIfExists() : NULL;
+    OBJECTREF refAssembly = (pAssembly != NULL) ? pAssembly->GetExposedObjectIfExists() : NULL;
 
     if(refAssembly != NULL)
         return (AssemblyBaseObject*)OBJECTREFToObject(refAssembly);
 
     HELPER_METHOD_FRAME_BEGIN_RET_ATTRIB_1(Frame::FRAME_ATTR_EXACT_DEPTH|Frame::FRAME_ATTR_CAPTURE_DEPTH_2, keepAlive);
-    refAssembly = pAssembly->GetExposedAssemblyObject();
+    refAssembly = pAssembly->GetExposedObject();
     HELPER_METHOD_FRAME_END();
 
     FC_INNER_EPILOG();
@@ -309,10 +309,9 @@ FCIMPL1(AssemblyBaseObject*, RuntimeTypeHandle::GetAssembly, ReflectClassBaseObj
     if (refType == NULL)
         FCThrowRes(kArgumentNullException, W("Arg_InvalidHandle"));
 
-    Module *pModule = refType->GetType().GetAssembly()->GetModule();
-    DomainAssembly *pDomainAssembly = pModule->GetDomainAssembly();
+    Assembly* pAssembly = refType->GetType().GetAssembly();
 
-    FC_RETURN_ASSEMBLY_OBJECT(pDomainAssembly, refType);
+    FC_RETURN_ASSEMBLY_OBJECT(pAssembly, refType);
 }
 FCIMPLEND
 
@@ -409,17 +408,17 @@ FCIMPL1(ReflectClassBaseObject *, RuntimeTypeHandle::GetElementType, ReflectClas
     TypeHandle typeHandle = refType->GetType();
     TypeHandle typeReturn;
 
-    if (typeHandle.IsArray())
+    if (!typeHandle.IsTypeDesc())
     {
+        if (!typeHandle.AsMethodTable()->IsArray())
+            return NULL;
+
         typeReturn = typeHandle.GetArrayElementTypeHandle();
     }
     else
     {
-        if (!typeHandle.IsTypeDesc())
-            return 0;
-
         if (typeHandle.IsGenericVariable())
-            return 0;
+            return NULL;
 
         typeReturn = typeHandle.AsTypeDesc()->GetTypeParam();
     }
@@ -1855,13 +1854,24 @@ FCIMPL3(Object *, SignatureNative::GetCustomModifiersAtOffset,
                 {
                     cMods ++;
                 }
+
+                IfFailThrow(sp.GetToken(NULL));
+            }
+            else if (cmodType == ELEMENT_TYPE_CMOD_INTERNAL)
+            {
+                BYTE required;
+                IfFailThrow(sp.GetByte(&required));
+                if (fRequired == (required != 0))
+                {
+                    cMods ++;
+                }
+
+                IfFailThrow(sp.GetPointer(NULL));
             }
             else if (cmodType != ELEMENT_TYPE_SENTINEL)
             {
                 break;
             }
-
-            IfFailThrow(sp.GetToken(NULL));
         }
 
         // Reset sp and populate the arrays for the required and optional custom
@@ -1879,18 +1889,35 @@ FCIMPL3(Object *, SignatureNative::GetCustomModifiersAtOffset,
             IfFailThrow(sp.GetByte(&data));
             cmodType = (CorElementType)data;
 
-            mdToken token;
-            IfFailThrow(sp.GetToken(&token));
-
-            if (cmodType == cmodTypeExpected)
+            if (cmodType == ELEMENT_TYPE_CMOD_INTERNAL)
             {
-                TypeHandle th = ClassLoader::LoadTypeDefOrRefOrSpecThrowing(pModule, token,
-                                                                            &typeContext,
-                                                                            ClassLoader::ThrowIfNotFound,
-                                                                            ClassLoader::FailIfUninstDefOrRef);
+                BYTE required;
+                IfFailThrow(sp.GetByte(&required));
 
-                OBJECTREF refType = th.GetManagedClassObject();
-                gc.retVal->SetAt(--cMods, refType);
+                TypeHandle th;
+                IfFailThrow(sp.GetPointer((void**)&th));
+
+                if (fRequired == (required != 0))
+                {
+                    OBJECTREF refType = th.GetManagedClassObject();
+                    gc.retVal->SetAt(--cMods, refType);
+                }
+            }
+            else
+            {
+                mdToken token;
+                IfFailThrow(sp.GetToken(&token));
+
+                if (cmodType == cmodTypeExpected)
+                {
+                    TypeHandle th = ClassLoader::LoadTypeDefOrRefOrSpecThrowing(pModule, token,
+                                                                                &typeContext,
+                                                                                ClassLoader::ThrowIfNotFound,
+                                                                                ClassLoader::FailIfUninstDefOrRef);
+
+                    OBJECTREF refType = th.GetManagedClassObject();
+                    gc.retVal->SetAt(--cMods, refType);
+                }
             }
         }
     }
@@ -2660,8 +2687,7 @@ FCIMPL1(ReflectModuleBaseObject*, AssemblyHandle::GetManifestModule, AssemblyBas
     if (refAssembly == NULL)
         FCThrowRes(kArgumentNullException, W("Arg_InvalidHandle"));
 
-    DomainAssembly *pAssembly = refAssembly->GetDomainAssembly();
-    Assembly* currentAssembly = pAssembly->GetAssembly();
+    Assembly* currentAssembly = refAssembly->GetAssembly();
 
     FC_RETURN_MODULE_OBJECT(currentAssembly->GetModule(), refAssembly);
 }
@@ -2675,10 +2701,8 @@ FCIMPL1(INT32, AssemblyHandle::GetToken, AssemblyBaseObject* pAssemblyUNSAFE) {
     if (refAssembly == NULL)
         FCThrowRes(kArgumentNullException, W("Arg_InvalidHandle"));
 
-    DomainAssembly *pAssembly = refAssembly->GetDomainAssembly();
     mdAssembly token = mdAssemblyNil;
-
-    IMDInternalImport *mdImport = pAssembly->GetAssembly()->GetMDImport();
+    IMDInternalImport *mdImport = refAssembly->GetAssembly()->GetMDImport();
 
     if (mdImport != 0)
     {
@@ -2821,13 +2845,13 @@ extern "C" void QCALLTYPE ModuleHandle_GetAssembly(QCall::ModuleHandle pModule, 
 {
     QCALL_CONTRACT;
 
-    DomainAssembly *pAssembly = NULL;
+    Assembly *pAssembly = NULL;
 
     BEGIN_QCALL;
-    pAssembly = pModule->GetDomainAssembly();
+    pAssembly = pModule->GetAssembly();
 
     GCX_COOP();
-    retAssembly.Set(pAssembly->GetExposedAssemblyObject());
+    retAssembly.Set(pAssembly->GetExposedObject());
     END_QCALL;
 
     return;
@@ -2864,8 +2888,6 @@ FCIMPL5(ReflectMethodObject*, ModuleHandle::GetDynamicMethod, ReflectMethodObjec
 
     HELPER_METHOD_FRAME_BEGIN_RET_PROTECT(gc);
 
-    DomainAssembly *pDomainModule = pModule->GetDomainAssembly();
-
     U1ARRAYREF dataArray = (U1ARRAYREF)sig;
     DWORD sigSize = dataArray->GetNumComponents();
     NewArrayHolder<BYTE> pSig(new BYTE[sigSize]);
@@ -2878,7 +2900,7 @@ FCIMPL5(ReflectMethodObject*, ModuleHandle::GetDynamicMethod, ReflectMethodObjec
     if (length)
         pName[length / sizeof(char)] = '\0';
 
-    DynamicMethodTable *pMTForDynamicMethods = pDomainModule->GetDynamicMethodTable();
+    DynamicMethodTable *pMTForDynamicMethods = pModule->GetDynamicMethodTable();
     pNewMD = pMTForDynamicMethods->GetDynamicMethod(pSig, sigSize, pName);
     _ASSERTE(pNewMD != NULL);
     // pNewMD now owns pSig and pName.

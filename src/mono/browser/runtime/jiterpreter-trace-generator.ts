@@ -54,6 +54,7 @@ import {
     bitmaskTable, createScalarTable,
     simdExtractTable, simdReplaceTable,
     simdLoadTable, simdStoreTable,
+    xchgTable, cmpxchgTable,
 } from "./jiterpreter-tables";
 import { mono_log_error, mono_log_info } from "./logging";
 import { mono_assert, runtimeHelpers } from "./globals";
@@ -244,7 +245,6 @@ export function generateWasmBody (
 ): number {
     const abort = <MintOpcodePtr><any>0;
     let isFirstInstruction = true, isConditionallyExecuted = false,
-        containsSimd = false,
         pruneOpcodes = false, hasEmittedUnreachable = false;
     let result = 0,
         prologueOpcodeCounter = 0,
@@ -1465,26 +1465,6 @@ export function generateWasmBody (
                 break;
             }
 
-            case MintOpcode.MINT_MONO_CMPXCHG_I4:
-                builder.local("pLocals");
-                append_ldloc(builder, getArgU16(ip, 2), WasmOpcode.i32_load); // dest
-                append_ldloc(builder, getArgU16(ip, 3), WasmOpcode.i32_load); // newVal
-                append_ldloc(builder, getArgU16(ip, 4), WasmOpcode.i32_load); // expected
-                builder.callImport("cmpxchg_i32");
-                append_stloc_tail(builder, getArgU16(ip, 1), WasmOpcode.i32_store);
-                break;
-            case MintOpcode.MINT_MONO_CMPXCHG_I8:
-                // because i64 values can't pass through JS cleanly (c.f getRawCwrap and
-                // EMSCRIPTEN_KEEPALIVE), we pass addresses of newVal, expected and the return value
-                // to the helper function.  The "dest" for the compare-exchange is already a
-                // pointer, so load it normally
-                append_ldloc(builder, getArgU16(ip, 2), WasmOpcode.i32_load); // dest
-                append_ldloca(builder, getArgU16(ip, 3), 0); // newVal
-                append_ldloca(builder, getArgU16(ip, 4), 0); // expected
-                append_ldloca(builder, getArgU16(ip, 1), 8); // oldVal
-                builder.callImport("cmpxchg_i64");
-                break;
-
             case MintOpcode.MINT_LOG2_I4:
             case MintOpcode.MINT_LOG2_I8: {
                 const isI64 = (opcode === MintOpcode.MINT_LOG2_I8);
@@ -1647,13 +1627,19 @@ export function generateWasmBody (
                     (opcode >= MintOpcode.MINT_SIMD_V128_LDC) &&
                     (opcode <= MintOpcode.MINT_SIMD_INTRINS_P_PPP)
                 ) {
+                    builder.containsSimd = true;
                     if (!emit_simd(builder, ip, opcode, opname, simdIntrinsArgCount, simdIntrinsIndex))
                         ip = abort;
-                    else {
-                        containsSimd = true;
+                    else
                         // We need to do dreg invalidation differently for simd, especially to handle ldc
                         skipDregInvalidation = true;
-                    }
+                } else if (
+                    (opcode >= MintOpcode.MINT_MONO_MEMORY_BARRIER) &&
+                    (opcode <= MintOpcode.MINT_MONO_CMPXCHG_I8)
+                ) {
+                    builder.containsAtomics = true;
+                    if (!emit_atomics(builder, ip, opcode))
+                        ip = abort;
                 } else if (opcodeValue === 0) {
                     // This means it was explicitly marked as no-value in the opcode value table
                     //  so we can just skip over it. This is done for things like nops.
@@ -1740,7 +1726,7 @@ export function generateWasmBody (
     // HACK: Traces containing simd will be *much* shorter than non-simd traces,
     //  which will cause both the heuristic and our length requirement outside
     //  to reject them. For now, just add a big constant to the length
-    if (containsSimd)
+    if (builder.containsSimd)
         result += 10240;
     return result;
 }
@@ -3963,3 +3949,53 @@ function emit_simd_4 (builder: WasmBuilder, ip: MintOpcodePtr, index: SimdIntrin
             return false;
     }
 }
+
+function emit_atomics (
+    builder: WasmBuilder, ip: MintOpcodePtr, opcode: number
+) {
+    if (!builder.options.enableAtomics)
+        return false;
+
+    // FIXME: memory barrier might be worthwhile to implement
+    // FIXME: We could probably unify most of the xchg/cmpxchg implementation into one implementation
+
+    const xchg = xchgTable[opcode];
+    if (xchg) {
+        const is64 = xchg[2] > 2;
+        // TODO: Generate alignment check to produce a better runtime error when address is not aligned?
+        builder.local("pLocals"); // stloc head
+        append_ldloc_cknull(builder, getArgU16(ip, 2), ip, true); // address
+        append_ldloc(builder, getArgU16(ip, 3), is64 ? WasmOpcode.i64_load : WasmOpcode.i32_load); // replacement
+        builder.appendAtomic(xchg[0], false);
+        builder.appendMemarg(0, xchg[2]);
+        // Fixup the result if necessary
+        if (xchg[1] !== WasmOpcode.unreachable)
+            builder.appendU8(xchg[1]);
+        // store old value
+        append_stloc_tail(builder, getArgU16(ip, 1), is64 ? WasmOpcode.i64_store : WasmOpcode.i32_store);
+        return true;
+    }
+
+    const cmpxchg = cmpxchgTable[opcode];
+    if (cmpxchg) {
+        const is64 = cmpxchg[2] > 2;
+        // TODO: Generate alignment check to produce a better runtime error when address is not aligned?
+        builder.local("pLocals"); // stloc head
+        append_ldloc_cknull(builder, getArgU16(ip, 2), ip, true); // address
+        // FIXME: Do these loads need to be sized? I think it's well-defined even if there are garbage bytes in the i32,
+        //  based on language from the spec that looks like this: 'expected wrapped from i32 to i8, 8-bit compare equal'
+        append_ldloc(builder, getArgU16(ip, 4), is64 ? WasmOpcode.i64_load : WasmOpcode.i32_load); // expected
+        append_ldloc(builder, getArgU16(ip, 3), is64 ? WasmOpcode.i64_load : WasmOpcode.i32_load); // replacement
+        builder.appendAtomic(cmpxchg[0], false);
+        builder.appendMemarg(0, cmpxchg[2]);
+        // Fixup the result if necessary
+        if (cmpxchg[1] !== WasmOpcode.unreachable)
+            builder.appendU8(cmpxchg[1]);
+        // store old value
+        append_stloc_tail(builder, getArgU16(ip, 1), is64 ? WasmOpcode.i64_store : WasmOpcode.i32_store);
+        return true;
+    }
+
+    return false;
+}
+

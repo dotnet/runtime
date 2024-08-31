@@ -104,6 +104,12 @@ jobs:
       - name: InputDirectory
         value: '$(Build.SourcesDirectory)/artifacts/tests/coreclr/obj/${{ parameters.osGroup }}.${{ parameters.archType }}.$(buildConfigUpper)/Managed/nativeaot/SmokeTests'
 
+    - name: PublicQueuesCLIArg
+      ${{ if ne(variables['System.TeamProject'], 'internal') }}:
+        value: '-public_queues'
+      ${{ else }}:
+        value: ''
+
     workspace:
       clean: all
     pool:
@@ -116,7 +122,7 @@ jobs:
       displayName: Enable python venv
       condition: always()
 
-    - script: $(PythonScript) $(Build.SourcesDirectory)/src/coreclr/scripts/superpmi_collect_setup.py -payload_directory $(PayloadLocation) -source_directory $(Build.SourcesDirectory) -core_root_directory $(Core_Root_Dir) -arch $(archType) -platform $(osGroup) -mch_file_tag $(MchFileTag) -input_directory $(InputDirectory) -collection_name $(CollectionName) -collection_type $(CollectionType) -max_size 25 # size in MB
+    - script: $(PythonScript) $(Build.SourcesDirectory)/src/coreclr/scripts/superpmi_collect_setup.py -payload_directory $(PayloadLocation) -source_directory $(Build.SourcesDirectory) -core_root_directory $(Core_Root_Dir) -arch $(archType) -platform $(osGroup) -mch_file_tag $(MchFileTag) -input_directory $(InputDirectory) -collection_name $(CollectionName) -collection_type $(CollectionType) $(PublicQueuesCLIArg) -max_size 25 # size in MB
       displayName: ${{ format('SuperPMI setup ({0})', parameters.osGroup) }}
 
     # Create required directories for merged mch collection and superpmi logs
@@ -139,7 +145,10 @@ jobs:
         HelixAccessToken: $(HelixApiAccessToken)
         HelixTargetQueues: $(Queue)
         HelixPreCommands: $(HelixPreCommand)
-        Creator: $(Creator)
+
+        ${{ if ne(variables['System.TeamProject'], 'internal') }}:
+          Creator: $(Build.DefinitionName)
+
         WorkItemTimeout: 4:00 # 4 hours
         WorkItemDirectory: '$(WorkItemDirectory)'
         CorrelationPayloadDirectory: '$(CorrelationPayloadDirectory)'
@@ -170,25 +179,26 @@ jobs:
         artifactName: 'SuperPMI_Collection_$(CollectionName)_$(CollectionType)_$(osGroup)$(osSubgroup)_$(archType)_$(buildConfig)'
         displayName: ${{ format('Upload artifacts SuperPMI {0}-{1} collection', parameters.collectionName, parameters.collectionType) }}
 
-    # Add authenticated pip feed
-    - task: PipAuthenticate@1
-      displayName: 'Pip Authenticate'
-      inputs:
-        artifactFeeds: public/dotnet-public-pypi
-        onlyAddExtraIndex: false
+    - ${{ if eq(variables['System.TeamProject'], 'internal') }}:
+      # Add authenticated pip feed
+      - task: PipAuthenticate@1
+        displayName: 'Pip Authenticate'
+        inputs:
+          artifactFeeds: public/dotnet-public-pypi
+          onlyAddExtraIndex: false
 
-    # Ensure the Python azure-storage-blob package is installed before doing the upload.
-    - script: $(PipScript) install --upgrade pip && $(PipScript) install azure.storage.blob==12.5.0 --force-reinstall && $(PipScript) install azure.identity==1.16.1 --force-reinstall
-      displayName: Upgrade Pip to latest and install azure-storage-blob and azure-identity Python packages
+      # Ensure the Python azure-storage-blob package is installed before doing the upload.
+      - script: $(PipScript) install --upgrade pip && $(PipScript) install azure.storage.blob==12.5.0 --force-reinstall && $(PipScript) install azure.identity==1.16.1 --force-reinstall
+        displayName: Upgrade Pip to latest and install azure-storage-blob and azure-identity Python packages
 
-    - task: AzureCLI@2
-      displayName: ${{ format('Upload SuperPMI {0}-{1} collection to Azure Storage', parameters.collectionName, parameters.collectionType) }}
-      inputs:
-        azureSubscription: 'superpmi-collect-rw'
-        scriptType: 'pscore'
-        scriptLocation: 'inlineScript'
-        inlineScript: |
-          $(PythonScript) $(Build.SourcesDirectory)/src/coreclr/scripts/superpmi.py upload -log_level DEBUG -arch $(archType) -build_type $(buildConfig) -mch_files $(MergedMchFileLocation)$(CollectionName).$(CollectionType).$(MchFileTag).mch -core_root $(Build.SourcesDirectory)/artifacts/bin/coreclr/$(osGroup).x64.$(buildConfigUpper)
+      - task: AzureCLI@2
+        displayName: ${{ format('Upload SuperPMI {0}-{1} collection to Azure Storage', parameters.collectionName, parameters.collectionType) }}
+        inputs:
+          azureSubscription: 'superpmi-collect-rw'
+          scriptType: 'pscore'
+          scriptLocation: 'inlineScript'
+          inlineScript: |
+            $(PythonScript) $(Build.SourcesDirectory)/src/coreclr/scripts/superpmi.py upload -log_level DEBUG -arch $(archType) -build_type $(buildConfig) -mch_files $(MergedMchFileLocation)$(CollectionName).$(CollectionType).$(MchFileTag).mch -core_root $(Build.SourcesDirectory)/artifacts/bin/coreclr/$(osGroup).x64.$(buildConfigUpper)
 
     # Always upload the available logs for diagnostics
     - task: CopyFiles@2
