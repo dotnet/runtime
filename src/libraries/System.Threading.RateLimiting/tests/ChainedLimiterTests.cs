@@ -35,6 +35,7 @@ namespace System.Threading.RateLimiting.Tests
             chainedLimiter.Dispose();
 
             Assert.Throws<ObjectDisposedException>(() => chainedLimiter.GetStatistics());
+            Assert.Throws<ObjectDisposedException>(() => chainedLimiter.IdleDuration);
             Assert.Throws<ObjectDisposedException>(() => chainedLimiter.AttemptAcquire());
             await Assert.ThrowsAsync<ObjectDisposedException>(async () => await chainedLimiter.AcquireAsync());
         }
@@ -49,6 +50,7 @@ namespace System.Threading.RateLimiting.Tests
             await chainedLimiter.DisposeAsync();
 
             Assert.Throws<ObjectDisposedException>(() => chainedLimiter.GetStatistics());
+            Assert.Throws<ObjectDisposedException>(() => chainedLimiter.IdleDuration);
             Assert.Throws<ObjectDisposedException>(() => chainedLimiter.AttemptAcquire());
             await Assert.ThrowsAsync<ObjectDisposedException>(async () => await chainedLimiter.AcquireAsync());
         }
@@ -192,6 +194,19 @@ namespace System.Threading.RateLimiting.Tests
             Assert.Equal(0, stats.CurrentQueuedCount);
             Assert.Equal(2, stats.TotalSuccessfulLeases);
             Assert.Equal(1, stats.TotalFailedLeases);
+        }
+
+        [Fact]
+        public void IdleDurationReturnsLowestValue()
+        {
+            using var limiter1 = new CustomizableLimiter();
+            using var limiter2 = new CustomizableLimiter { IdleDurationImpl = () => TimeSpan.FromMilliseconds(2) };
+            using var limiter3 = new CustomizableLimiter { IdleDurationImpl = () => TimeSpan.FromMilliseconds(3) };
+
+            using var chainedLimiter = RateLimiter.CreateChained(limiter1, limiter2, limiter3);
+
+            var idleDuration = chainedLimiter.IdleDuration;
+            Assert.Equal(2, idleDuration.Value.TotalMilliseconds);
         }
 
         [Fact]

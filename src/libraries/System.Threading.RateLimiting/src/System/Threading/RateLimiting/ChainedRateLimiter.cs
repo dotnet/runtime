@@ -57,18 +57,18 @@ namespace System.Threading.RateLimiting
             get
             {
                 ThrowIfDisposed();
-                TimeSpan? highestIdleDuration = null;
+                TimeSpan? lowestIdleDuration = null;
                 foreach (RateLimiter limiter in _limiters)
                 {
                     if (limiter.IdleDuration is { } idleDuration)
                     {
-                        if (highestIdleDuration is null || idleDuration > highestIdleDuration)
+                        if (lowestIdleDuration is null || idleDuration < lowestIdleDuration)
                         {
-                            highestIdleDuration = idleDuration;
+                            lowestIdleDuration = idleDuration;
                         }
                     }
                 }
-                return highestIdleDuration;
+                return lowestIdleDuration;
             }
         }
 
