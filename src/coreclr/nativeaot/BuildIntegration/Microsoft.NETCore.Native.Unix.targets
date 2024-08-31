@@ -164,6 +164,10 @@ The .NET Foundation licenses this file to you under the MIT license.
       <NativeSystemLibrary Include="crypto" />
     </ItemGroup>
 
+    <ItemGroup Condition="'$(UseSystemBrotli)' != 'false' and Exists('$(IlcSdkPath)nonportable.txt')">
+      <NativeSystemLibrary Include="brotlienc;brotlidec;brotlicommon" />
+    </ItemGroup>
+
     <ItemGroup Condition="'$(StaticOpenSslLinking)' == 'true' and '$(NativeLib)' != 'Static'">
       <NativeLibrary Include="$(IntermediateOutputPath)libs/System.Security.Cryptography.Native/build/libSystem.Security.Cryptography.Native.OpenSsl.a" />
       <DirectPInvoke Include="libSystem.Security.Cryptography.Native.OpenSsl" />
