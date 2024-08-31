@@ -24,7 +24,6 @@ from os import path
 from coreclr_arguments import *
 from superpmi import TempDir, determine_mcs_tool_path, determine_superpmi_tool_path, is_nonzero_length_file
 from jitutil import run_command
-from subprocess import Popen, DEVNULL
 
 # Start of parser object creation.
 is_windows = platform.system() == "Windows"
@@ -233,8 +232,8 @@ def build_and_run(coreclr_args):
     crank_agent_p = None
     if coreclr_args.local:
         print(f"Launching crank agent: {crank_agent_app}")
-        crank_agent_p = Popen(crank_agent_app, stdout=subprocess.STDOUT, stderr=subprocess.STDOUT)
-        time.sleep(10)
+        crank_agent_p = subprocess.Popen(crank_agent_app)
+        time.sleep(2)
 
     try:
         for (configName, scenario) in configname_scenario_list:
@@ -275,7 +274,8 @@ def build_and_run(coreclr_args):
                 description = ["--description", configName + "-" + scenario + "-" + "-".join(runtime_options)]
                 crank_app_args = [crank_app] + crank_arguments + description + runtime_arguments
                 print(' '.join(crank_app_args))
-                subprocess.run(crank_app_args, cwd=temp_location, stdout=subprocess.STDOUT, stderr=subprocess.STDOUT)
+                run_command(crank_app_args, temp_location)
+                print("Crank finished...")
     finally:
         if crank_agent_p is not None:
             crank_agent_p.terminate()

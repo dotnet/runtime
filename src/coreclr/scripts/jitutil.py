@@ -179,7 +179,6 @@ def run_command(command_to_run, _cwd=None, _exit_on_fail=False, _output_file=Non
             sys.exit(1)
     return command_stdout, command_stderr, return_code
 
-
 def copy_directory(src_path, dst_path, verbose_output=False, verbose_copy=False, verbose_skip=False, match_func=lambda path: True):
     """Copies directory in 'src_path' to 'dst_path' maintaining the directory
     structure. https://docs.python.org/3.5/library/shutil.html#shutil.copytree can't
