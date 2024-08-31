@@ -48,11 +48,19 @@ namespace System.DirectoryServices.Protocols.Tests
             yield return new object[] { new byte[] { 0x30, 0x05,
                 0x0A, 0x01, 0x40,
                 0x04, 0x00
+#if NET
+            }, (ResultCode)0x40, RuntimeInformation.IsOSPlatform(OSPlatform.Windows) && Environment.OSVersion.Version.Major < 10 ? null : string.Empty };
+#else
             }, (ResultCode)0x40, string.Empty };
+#endif
             yield return new object[] { new byte[] { 0x30, 0x05,
                 0x0A, 0x01, 0x7F,
                 0x04, 0x00
+#if NET
+            }, (ResultCode)0x7F, RuntimeInformation.IsOSPlatform(OSPlatform.Windows) && Environment.OSVersion.Version.Major < 10 ? null : string.Empty };
+#else
             }, (ResultCode)0x7F, string.Empty };
+#endif
 
             // {ea}, four-byte length
             yield return new object[] { new byte[] { 0x30, 0x84, 0x00, 0x00, 0x00, 0x0E,
@@ -66,21 +74,29 @@ namespace System.DirectoryServices.Protocols.Tests
             yield return new object[] { new byte[] { 0x30, 0x84, 0x00, 0x00, 0x00, 0x09,
                 0x0A, 0x01, 0x40,
                 0x04, 0x84, 0x00, 0x00, 0x00, 0x00
+#if NET
+            }, (ResultCode)0x40, RuntimeInformation.IsOSPlatform(OSPlatform.Windows) && Environment.OSVersion.Version.Major < 10 ? null : string.Empty };
+#else
             }, (ResultCode)0x40, string.Empty };
+#endif
             yield return new object[] { new byte[] { 0x30, 0x84, 0x00, 0x00, 0x00, 0x09,
                 0x0A, 0x01, 0x7F,
                 0x04, 0x84, 0x00, 0x00, 0x00, 0x00
+#if NET
+            }, (ResultCode)0x7F, RuntimeInformation.IsOSPlatform(OSPlatform.Windows) && Environment.OSVersion.Version.Major < 10 ? null : string.Empty };
+#else
             }, (ResultCode)0x7F, string.Empty };
+#endif
         }
 
         public static IEnumerable<object[]> NonconformantControlValues()
         {
-            // {i}, single-byte length. ASN.1 type of INTEGER rather than ENUMERATED.
+            // {i}, single-byte length. ASN.1 type of INTEGER rather than ENUMERATED
             yield return new object[] { new byte[] { 0x30, 0x03,
                 0x02, 0x01, 0x40
             }, (ResultCode)0x40, null };
 
-            // {i}, four-byte length. ASN.1 type of INTEGER rather than ENUMERATED.
+            // {i}, four-byte length. ASN.1 type of INTEGER rather than ENUMERATED
             yield return new object[] { new byte[] { 0x30, 0x84, 0x00, 0x00, 0x00, 0x03,
                 0x02, 0x01, 0x40
             }, (ResultCode)0x40, null };
@@ -91,35 +107,52 @@ namespace System.DirectoryServices.Protocols.Tests
             // with a length of 0x80. A length of 0x80 has bit 7 set (indicating a long-form encoding) but indicates to the
             // parser that the next zero (!) bytes contain the actual length of the value. Windows <10 appears to treat this
             // as a zero-length value, OpenLDAP and Windows >10 appears to treat this as a BER element which is lacking a length.
+            // This behavior is unique to .NET
             yield return new object[] { new byte[] { 0x30, 0x03,
                 0x0A, 0x01, 0x40,
                 0x80, 0x80, 0x80, 0x80
+#if NET
             }, (ResultCode)0x40, RuntimeInformation.IsOSPlatform(OSPlatform.Windows) && Environment.OSVersion.Version.Major < 10 ? string.Empty : null };
+#else
+            }, (ResultCode)0x40, null };
+#endif
 
             // {e}, four-byte length. Trailing data after the end of the sequence
-            // The comment on the test case above also applies here.
+            // The comment on the test case above also applies here
             yield return new object[] { new byte[] { 0x30, 0x84, 0x00, 0x00, 0x00, 0x03,
                 0x0A, 0x01, 0x40,
                 0x80, 0x80, 0x80, 0x80
+#if NET
             }, (ResultCode)0x40, RuntimeInformation.IsOSPlatform(OSPlatform.Windows) && Environment.OSVersion.Version.Major < 10 ? string.Empty : null };
+#else
+            }, (ResultCode)0x40, null };
+#endif
 
-            // {e}, single-byte length. Trailing data within the sequence is interpreted as an empty string
+            // {e}, single-byte length. Trailing data within the sequence is interpreted as null
             yield return new object[] { new byte[] { 0x30, 0x07,
                 0x0A, 0x01, 0x40,
                 0x80, 0x80, 0x80, 0x80
-            }, (ResultCode)0x40, string.Empty };
+#if NET
+            }, (ResultCode)0x40, RuntimeInformation.IsOSPlatform(OSPlatform.Windows) && Environment.OSVersion.Version.Major >= 10 ? string.Empty : null };
+#else
+            }, (ResultCode)0x40, null };
+#endif
 
-            // {e}, four-byte length. Trailing data within the sequence is interpreted as an empty string
+            // {e}, four-byte length. Trailing data within the sequence is interpreted as null
             yield return new object[] { new byte[] { 0x30, 0x84, 0x00, 0x00, 0x00, 0x07,
                 0x0A, 0x01, 0x40,
                 0x80, 0x80, 0x80, 0x80
-            }, (ResultCode)0x40, string.Empty };
+#if NET
+            }, (ResultCode)0x40, RuntimeInformation.IsOSPlatform(OSPlatform.Windows) && Environment.OSVersion.Version.Major >= 10 ? string.Empty : null };
+#else
+            }, (ResultCode)0x40, null };
+#endif
 
             // {ea}, single-byte length. Octet string length extending beyond the end of the sequence (but within the buffer.)
             // The result of the "a" format specifier is null on Windows, but any OS platform which uses OpenLDAP will return
             // the out-of-sequence contents. This is also why the first trailing data byte is 0x31 rather than 0x80 - 0x80 is
             // not a valid Unicode character, so we change it to 0x31 to avoid encountering a DecoderFallbackException before
-            // we can verify the results.
+            // we can verify the results
             yield return new object[] { new byte[] { 0x30, 0x0A,
                 0x0A, 0x01, 0x40,
                 0x04, 0x06, 0x6E, 0x61, 0x6D, 0x65, 0x31, 0x31,
@@ -127,7 +160,7 @@ namespace System.DirectoryServices.Protocols.Tests
             }, (ResultCode)0x40, RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? null : "name11" };
 
             // {ea}, four-byte length. Octet string length extending beyond the end of the sequence (but within the buffer.) Result of the "a" format specifier is null
-            // The comment on the test case above also applies here.
+            // The comment on the test case above also applies here
             yield return new object[] { new byte[] { 0x30, 0x84, 0x00, 0x00, 0x00, 0x0A,
                 0x0A, 0x01, 0x40,
                 0x04, 0x84, 0x00, 0x00, 0x00, 0x06, 0x6E, 0x61, 0x6D, 0x65, 0x31, 0x31,
@@ -177,13 +210,13 @@ namespace System.DirectoryServices.Protocols.Tests
 
         public static IEnumerable<object[]> InvalidUnicodeText()
         {
-            // {ea}, single-byte length. Octet string contains a trailing 0x80 (which is invalid Unicode.)
+            // {ea}, single-byte length. Octet string contains a trailing 0x80 (which is invalid Unicode)
             yield return new object[] { new byte[] { 0x30, 0x0B,
                 0x0A, 0x01, 0x40,
                 0x04, 0x06, 0x6E, 0x61, 0x6D, 0x65, 0x31, 0x80
             } };
 
-            // {ea}, four-byte length. Octet string contains a trailing 0x80 (which is invalid Unicode.)
+            // {ea}, four-byte length. Octet string contains a trailing 0x80 (which is invalid Unicode)
             yield return new object[] { new byte[] { 0x30, 0x84, 0x00, 0x00, 0x00, 0x0F,
                 0x0A, 0x01, 0x40,
                 0x04, 0x84, 0x00, 0x00, 0x00, 0x06, 0x6E, 0x61, 0x6D, 0x65, 0x31, 0x80
