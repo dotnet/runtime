@@ -448,7 +448,7 @@ namespace Wasm.Build.Tests
 
                     public class Test
                     {
-                        public static int Main()
+                        public unsafe static int Main()
                         {
                             ((delegate* unmanaged<void>)&A.Conflict.C)();
                             ((delegate* unmanaged<void>)&B.Conflict.C)();
@@ -458,7 +458,7 @@ namespace Wasm.Build.Tests
 
                     namespace A {
                         public class Conflict {
-                            [UnmanagedCallersOnly(EntryPoint = "A.Conflict.C")]
+                            [UnmanagedCallersOnly(EntryPoint = "A_Conflict_C")]
                             public static void C() {
                                 Console.WriteLine("A.Conflict.C");
                             }
@@ -467,7 +467,7 @@ namespace Wasm.Build.Tests
 
                     namespace B {
                         public class Conflict {
-                            [UnmanagedCallersOnly(EntryPoint = "B.Conflict.C")]
+                            [UnmanagedCallersOnly(EntryPoint = "B_Conflict_C")]
                             public static void C() {
                                 Console.WriteLine("B.Conflict.C");
                             }
