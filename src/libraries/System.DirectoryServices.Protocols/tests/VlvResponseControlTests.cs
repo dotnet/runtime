@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.Reflection;
+using System.Runtime.InteropServices;
 using Xunit;
 
 namespace System.DirectoryServices.Protocols.Tests
@@ -129,6 +130,9 @@ namespace System.DirectoryServices.Protocols.Tests
             }, 0x00, 0x20, (ResultCode)0x40, new byte[] { 0xC0, 0xC1, 0xC2, 0xC3, 0xC4 } };
 
             // These cases would normally fail, but TransformControls will fall back to ignore the octet string.
+            // This behavior is inconsistent with other tests which cover the parsing of octet strings (which would
+            // throw an exception rather than return an empty array.) It is also inconsistent between Windows and
+            // non-Windows platforms.
             // {iieO}, single-byte length. Octet string length extending beyond the end of the sequence (but within the buffer)
             yield return new object[] { new byte[] { 0x30, 0x10,
                 0x02, 0x01, 0x00,
@@ -136,7 +140,7 @@ namespace System.DirectoryServices.Protocols.Tests
                 0x0A, 0x01, 0x40,
                 0x04, 0x06, 0xC0, 0xC1, 0xC2, 0xC3, 0xC4, 0x80,
                 0x80, 0x80, 0x80
-            }, 0x00, 0x20, (ResultCode)0x40, Array.Empty<byte>() };
+            }, 0x00, 0x20, (ResultCode)0x40, RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? Array.Empty<byte>() : new byte[] { 0xC0, 0xC1, 0xC2, 0xC3, 0xC4, 0x80 } };
 
             // {iieO}, four-byte length. Octet string length extending beyond the end of the sequence (but within the buffer)
             yield return new object[] { new byte[] { 0x30, 0x84, 0x00, 0x00, 0x00, 0x14,
@@ -145,7 +149,7 @@ namespace System.DirectoryServices.Protocols.Tests
                 0x0A, 0x01, 0x40,
                 0x04, 0x84, 0x00, 0x00, 0x00, 0x06, 0xC0, 0xC1, 0xC2, 0xC3, 0xC4, 0x80,
                 0x80, 0x80, 0x80
-            }, 0x00, 0x20, (ResultCode)0x40, Array.Empty<byte>() };
+            }, 0x00, 0x20, (ResultCode)0x40, RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? Array.Empty<byte>() : new byte[] { 0xC0, 0xC1, 0xC2, 0xC3, 0xC4, 0x80 } };
 
             // {iieO}, single-byte length. Octet string length extending beyond the end of the buffer
             yield return new object[] { new byte[] { 0x30, 0x10,

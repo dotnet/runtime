@@ -3,6 +3,9 @@
 
 using System.Collections.Generic;
 using System.Reflection;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using System.Text;
 using Xunit;
 
 namespace System.DirectoryServices.Protocols.Tests
@@ -83,16 +86,22 @@ namespace System.DirectoryServices.Protocols.Tests
             }, (ResultCode)0x40, null };
 
             // {e}, single-byte length. Trailing data after the end of the sequence
+            // In this scenario, OpenLDAP and Windows 10 or above will return null. Anything before Windows 10 will return
+            // an empty string. This is likely because the trailing [0x80, 0x80, 0x80, 0x80] is being interpreted as a TLV
+            // with a length of 0x80. A length of 0x80 has bit 7 set (indicating a long-form encoding) but indicates to the
+            // parser that the next zero (!) bytes contain the actual length of the value. Windows <10 appears to treat this
+            // as a zero-length value, OpenLDAP and Windows >10 appears to treat this as a BER element which is lacking a length.
             yield return new object[] { new byte[] { 0x30, 0x03,
                 0x0A, 0x01, 0x40,
                 0x80, 0x80, 0x80, 0x80
-            }, (ResultCode)0x40, null };
+            }, (ResultCode)0x40, RuntimeInformation.IsOSPlatform(OSPlatform.Windows) && Environment.OSVersion.Version.Major < 10 ? string.Empty : null };
 
             // {e}, four-byte length. Trailing data after the end of the sequence
+            // The comment on the test case above also applies here.
             yield return new object[] { new byte[] { 0x30, 0x84, 0x00, 0x00, 0x00, 0x03,
                 0x0A, 0x01, 0x40,
                 0x80, 0x80, 0x80, 0x80
-            }, (ResultCode)0x40, null };
+            }, (ResultCode)0x40, RuntimeInformation.IsOSPlatform(OSPlatform.Windows) && Environment.OSVersion.Version.Major < 10 ? string.Empty : null };
 
             // {e}, single-byte length. Trailing data within the sequence is interpreted as an empty string
             yield return new object[] { new byte[] { 0x30, 0x07,
@@ -106,19 +115,24 @@ namespace System.DirectoryServices.Protocols.Tests
                 0x80, 0x80, 0x80, 0x80
             }, (ResultCode)0x40, string.Empty };
 
-            // {ea}, single-byte length. Octet string length extending beyond the end of the sequence (but within the buffer.) Result of the "a" format specifier is null
+            // {ea}, single-byte length. Octet string length extending beyond the end of the sequence (but within the buffer.)
+            // The result of the "a" format specifier is null on Windows, but any OS platform which uses OpenLDAP will return
+            // the out-of-sequence contents. This is also why the first trailing data byte is 0x31 rather than 0x80 - 0x80 is
+            // not a valid Unicode character, so we change it to 0x31 to avoid encountering a DecoderFallbackException before
+            // we can verify the results.
             yield return new object[] { new byte[] { 0x30, 0x0A,
                 0x0A, 0x01, 0x40,
-                0x04, 0x06, 0x6E, 0x61, 0x6D, 0x65, 0x31, 0x80,
+                0x04, 0x06, 0x6E, 0x61, 0x6D, 0x65, 0x31, 0x31,
                 0x80, 0x80, 0x80
-            }, (ResultCode)0x40, null };
+            }, (ResultCode)0x40, RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? null : "name11" };
 
             // {ea}, four-byte length. Octet string length extending beyond the end of the sequence (but within the buffer.) Result of the "a" format specifier is null
+            // The comment on the test case above also applies here.
             yield return new object[] { new byte[] { 0x30, 0x84, 0x00, 0x00, 0x00, 0x0A,
                 0x0A, 0x01, 0x40,
-                0x04, 0x84, 0x00, 0x00, 0x00, 0x06, 0x6E, 0x61, 0x6D, 0x65, 0x31, 0x80,
+                0x04, 0x84, 0x00, 0x00, 0x00, 0x06, 0x6E, 0x61, 0x6D, 0x65, 0x31, 0x31,
                 0x80, 0x80, 0x80
-            }, (ResultCode)0x40, null };
+            }, (ResultCode)0x40, RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? null : "name11" };
 
             // {ea}, single-byte length. Octet string length extending beyond the end of the buffer. Result of the "a" format specifier is null
             yield return new object[] { new byte[] { 0x30, 0x0A,
@@ -161,6 +175,21 @@ namespace System.DirectoryServices.Protocols.Tests
                 0x0A, 0x01, 0x40 } };
         }
 
+        public static IEnumerable<object[]> InvalidUnicodeText()
+        {
+            // {ea}, single-byte length. Octet string contains a trailing 0x80 (which is invalid Unicode.)
+            yield return new object[] { new byte[] { 0x30, 0x0B,
+                0x0A, 0x01, 0x40,
+                0x04, 0x06, 0x6E, 0x61, 0x6D, 0x65, 0x31, 0x80
+            } };
+
+            // {ea}, four-byte length. Octet string contains a trailing 0x80 (which is invalid Unicode.)
+            yield return new object[] { new byte[] { 0x30, 0x84, 0x00, 0x00, 0x00, 0x0F,
+                0x0A, 0x01, 0x40,
+                0x04, 0x84, 0x00, 0x00, 0x00, 0x06, 0x6E, 0x61, 0x6D, 0x65, 0x31, 0x80
+            } };
+        }
+
         [Theory]
         [MemberData(nameof(ConformantControlValues))]
         public void ConformantResponseControlParsedSuccessfully(byte[] value, ResultCode expectedResultCode, string expectedAttribute)
@@ -178,6 +207,15 @@ namespace System.DirectoryServices.Protocols.Tests
             DirectoryControl control = new(ControlOid, value, true, true);
 
             Assert.Throws<BerConversionException>(() => TransformResponseControl(control, false));
+        }
+
+        [Theory]
+        [MemberData(nameof(InvalidUnicodeText))]
+        public void InvalidUnicodeTextThrowsException(byte[] value)
+        {
+            DirectoryControl control = new(ControlOid, value, true, true);
+
+            Assert.Throws<DecoderFallbackException>(() => TransformResponseControl(control, false));
         }
 
         private static void VerifyResponseControl(byte[] value, ResultCode expectedResultCode, string expectedAttribute)

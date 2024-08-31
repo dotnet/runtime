@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.Reflection;
+using System.Runtime.InteropServices;
 using Xunit;
 
 namespace System.DirectoryServices.Protocols.Tests
@@ -97,6 +98,24 @@ namespace System.DirectoryServices.Protocols.Tests
                 0x04, 0x84, 0x00, 0x00, 0x00, 0x05, 0xC0, 0xC1, 0xC2, 0xC3, 0xC4,
                 0x80, 0x80, 0x80, 0x80
             }, 0x40, new byte[] { 0xC0, 0xC1, 0xC2, 0xC3, 0xC4 } };
+
+            // Windows will treat these values as invalid. OpenLDAP has slightly looser parsing rules around octet string lengths.
+            if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            {
+                // {iO}, single-byte length. Octet string length extending beyond the end of the sequence (but within the buffer)
+                yield return new object[] { new byte[] { 0x30, 0x0A,
+                    0x02, 0x01, 0x40,
+                    0x04, 0x06, 0xC0, 0xC1, 0xC2, 0xC3, 0xC4, 0x80,
+                    0x80, 0x80, 0x80
+                }, 0x40, new byte[] { 0xC0, 0xC1, 0xC2, 0xC3, 0xC4, 0x80 } };
+
+                // {iO}, four-byte length. Octet string length extending beyond the end of the sequence (but within the buffer)
+                yield return new object[] { new byte[] { 0x30, 0x84, 0x00, 0x00, 0x00, 0x0E,
+                    0x02, 0x01, 0x40,
+                    0x04, 0x84, 0x00, 0x00, 0x00, 0x06, 0xC0, 0xC1, 0xC2, 0xC3, 0xC4, 0x80,
+                    0x80, 0x80, 0x80
+                }, 0x40, new byte[] { 0xC0, 0xC1, 0xC2, 0xC3, 0xC4, 0x80 } };
+            }
         }
 
         public static IEnumerable<object[]> InvalidControlValues()
@@ -122,17 +141,22 @@ namespace System.DirectoryServices.Protocols.Tests
                 0x02, 0x01, 0x40,
                 0x04, 0x84, 0x00, 0x00, 0x00, 0x00} };
 
-            // {iO}, single-byte length. Octet string length extending beyond the end of the sequence (but within the buffer)
-            yield return new object[] { new byte[] { 0x30, 0x0A,
-                0x02, 0x01, 0x40,
-                0x04, 0x06, 0xC0, 0xC1, 0xC2, 0xC3, 0xC4, 0x80,
-                0x80, 0x80, 0x80 } };
+            // Only Windows treats these values as invalid. These values are present in NonconformantControlValues to prove
+            // the OpenLDAP behavior.
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            {
+                // {iO}, single-byte length. Octet string length extending beyond the end of the sequence (but within the buffer)
+                yield return new object[] { new byte[] { 0x30, 0x0A,
+                    0x02, 0x01, 0x40,
+                    0x04, 0x06, 0xC0, 0xC1, 0xC2, 0xC3, 0xC4, 0x80,
+                    0x80, 0x80, 0x80 } };
 
-            // {iO}, four-byte length. Octet string length extending beyond the end of the sequence (but within the buffer)
-            yield return new object[] { new byte[] { 0x30, 0x84, 0x00, 0x00, 0x00, 0x0E,
-                0x02, 0x01, 0x40,
-                0x04, 0x84, 0x00, 0x00, 0x00, 0x06, 0xC0, 0xC1, 0xC2, 0xC3, 0xC4, 0x80,
-                0x80, 0x80, 0x80 } };
+                // {iO}, four-byte length. Octet string length extending beyond the end of the sequence (but within the buffer)
+                yield return new object[] { new byte[] { 0x30, 0x84, 0x00, 0x00, 0x00, 0x0E,
+                    0x02, 0x01, 0x40,
+                    0x04, 0x84, 0x00, 0x00, 0x00, 0x06, 0xC0, 0xC1, 0xC2, 0xC3, 0xC4, 0x80,
+                    0x80, 0x80, 0x80 } };
+            }
 
             // {iO}, single-byte length. Octet string length extending beyond the end of the buffer
             yield return new object[] { new byte[] { 0x30, 0x0A,
