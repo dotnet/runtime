@@ -10,12 +10,6 @@ public unsafe partial class Test
         Console.WriteLine($"main: {args.Length}");
         Interop.UnmanagedFunc();
 
-        try {
-            nint fptr = Marshal.GetFunctionPointerForDelegate(new Action(() => Console.WriteLine("Managed method callee")));
-            ((delegate* unmanaged<void>)fptr)();
-        } catch (PlatformNotSupportedException) {
-            Console.WriteLine("caught PlatformNotSupportedException");
-        }
         return 42;
     }
 }

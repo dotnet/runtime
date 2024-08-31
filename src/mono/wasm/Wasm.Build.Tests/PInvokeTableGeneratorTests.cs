@@ -438,6 +438,57 @@ namespace Wasm.Build.Tests
         }
 
         [Theory]
+        [BuildAndRun(host: RunHost.Chrome)]
+        public void UnmanagedCallersOnly_Namespaced(BuildArgs buildArgs, RunHost host, string id)
+        {
+            string code =
+                """
+                    using System;
+                    using System.Runtime.InteropServices;
+
+                    public class Test
+                    {
+                        public static int Main()
+                        {
+                            ((delegate* unmanaged<void>)&A.Conflict.C)();
+                            ((delegate* unmanaged<void>)&B.Conflict.C)();
+                            return 42;
+                        }
+                    }
+
+                    namespace A {
+                        public class Conflict {
+                            [UnmanagedCallersOnly(EntryPoint = "A.Conflict.C")]
+                            public static void C() {
+                                Console.WriteLine("A.Conflict.C");
+                            }
+                        }
+                    }
+
+                    namespace B {
+                        public class Conflict {
+                            [UnmanagedCallersOnly(EntryPoint = "B.Conflict.C")]
+                            public static void C() {
+                                Console.WriteLine("B.Conflict.C");
+                            }
+                        }
+                    }
+                """;
+
+            (buildArgs, string output) = BuildForVariadicFunctionTests(
+                code,
+                buildArgs with { ProjectName = $"cb_namespace_{buildArgs.Config}" },
+                id
+            );
+
+            Assert.DoesNotMatch(".*(warning|error).*>[A-Z0-9]+__Foo", output);
+
+            output = RunAndTestWasmApp(buildArgs, buildDir: _projectDir, expectedExitCode: 42, host: host, id: id);
+            Assert.Contains("A.Conflict.C", output);
+            Assert.Contains("B.Conflict.C", output);
+        }
+
+        [Theory]
         [BuildAndRun(host: RunHost.None)]
         public void IcallWithOverloadedParametersAndEnum(BuildArgs buildArgs, string id)
         {
@@ -952,7 +1003,6 @@ namespace Wasm.Build.Tests
 
             var runOutput = RunAndTestWasmApp(buildArgs, buildDir: _projectDir, expectedExitCode: 42, host: host, id: id);
             Assert.Contains("ManagedFunc returned 42", runOutput);
-            Assert.Contains("caught PlatformNotSupportedException", runOutput);
         }
     }
 }
