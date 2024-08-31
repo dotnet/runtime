@@ -165,7 +165,8 @@ The .NET Foundation licenses this file to you under the MIT license.
     </ItemGroup>
 
     <ItemGroup Condition="'$(UseSystemBrotli)' != 'false' and Exists('$(IlcSdkPath)nonportable.txt')">
-      <NativeSystemLibrary Include="brotlienc;brotlidec;brotlicommon" />
+      <NativeSystemLibrary Include="brotlienc" />
+      <NativeSystemLibrary Include="brotlidec" />
     </ItemGroup>
 
     <ItemGroup Condition="'$(StaticOpenSslLinking)' == 'true' and '$(NativeLib)' != 'Static'">
