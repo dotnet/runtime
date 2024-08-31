@@ -102,51 +102,28 @@ namespace System.DirectoryServices.Protocols.Tests
             }, (ResultCode)0x40, null };
 
             // {e}, single-byte length. Trailing data after the end of the sequence
-            // In this scenario, OpenLDAP and Windows 10 or above will return null. Anything before Windows 10 will return
-            // an empty string. This is likely because the trailing [0x80, 0x80, 0x80, 0x80] is being interpreted as a TLV
-            // with a length of 0x80. A length of 0x80 has bit 7 set (indicating a long-form encoding) but indicates to the
-            // parser that the next zero (!) bytes contain the actual length of the value. Windows <10 appears to treat this
-            // as a zero-length value, OpenLDAP and Windows >10 appears to treat this as a BER element which is lacking a length.
-            // This behavior is unique to .NET
             yield return new object[] { new byte[] { 0x30, 0x03,
                 0x0A, 0x01, 0x40,
                 0x80, 0x80, 0x80, 0x80
-#if NET
-            }, (ResultCode)0x40, RuntimeInformation.IsOSPlatform(OSPlatform.Windows) && Environment.OSVersion.Version.Major < 10 ? string.Empty : null };
-#else
             }, (ResultCode)0x40, null };
-#endif
 
             // {e}, four-byte length. Trailing data after the end of the sequence
-            // The comment on the test case above also applies here
             yield return new object[] { new byte[] { 0x30, 0x84, 0x00, 0x00, 0x00, 0x03,
                 0x0A, 0x01, 0x40,
                 0x80, 0x80, 0x80, 0x80
-#if NET
-            }, (ResultCode)0x40, RuntimeInformation.IsOSPlatform(OSPlatform.Windows) && Environment.OSVersion.Version.Major < 10 ? string.Empty : null };
-#else
             }, (ResultCode)0x40, null };
-#endif
 
-            // {e}, single-byte length. Trailing data within the sequence is interpreted as null
+            // {e}, single-byte length. Trailing data within the sequence is interpreted as an empty string by Windows, null by OpenLDAP
             yield return new object[] { new byte[] { 0x30, 0x07,
                 0x0A, 0x01, 0x40,
                 0x80, 0x80, 0x80, 0x80
-#if NET
-            }, (ResultCode)0x40, RuntimeInformation.IsOSPlatform(OSPlatform.Windows) && Environment.OSVersion.Version.Major >= 10 ? string.Empty : null };
-#else
-            }, (ResultCode)0x40, null };
-#endif
+            }, (ResultCode)0x40, RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? string.Empty : null };
 
-            // {e}, four-byte length. Trailing data within the sequence is interpreted as null
+            // {e}, four-byte length. Trailing data within the sequence is interpreted as an empty string by Windows, null by OpenLDAP
             yield return new object[] { new byte[] { 0x30, 0x84, 0x00, 0x00, 0x00, 0x07,
                 0x0A, 0x01, 0x40,
                 0x80, 0x80, 0x80, 0x80
-#if NET
-            }, (ResultCode)0x40, RuntimeInformation.IsOSPlatform(OSPlatform.Windows) && Environment.OSVersion.Version.Major >= 10 ? string.Empty : null };
-#else
-            }, (ResultCode)0x40, null };
-#endif
+            }, (ResultCode)0x40, RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? string.Empty : null };
 
             // {ea}, single-byte length. Octet string length extending beyond the end of the sequence (but within the buffer.)
             // The result of the "a" format specifier is null on Windows, but any OS platform which uses OpenLDAP will return
