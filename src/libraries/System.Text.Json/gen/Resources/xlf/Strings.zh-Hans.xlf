@@ -22,14 +22,34 @@
         <target state="translated">数据扩展属性类型无效。</target>
         <note />
       </trans-unit>
+      <trans-unit id="DerivedJsonConverterAttributesNotSupportedMessageFormat">
+        <source>The custom attribute '{0}' deriving from JsonConverterAttribute is not supported by the source generator.</source>
+        <target state="translated">源生成器不支持从 JsonConverterAttribute 派生的自定义属性“{0}”。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="DerivedJsonConverterAttributesNotSupportedTitle">
+        <source>Attributes deriving from JsonConverterAttribute are not supported by the source generator.</source>
+        <target state="translated">源生成器不支持从 JsonConverterAttribute 派生的属性。</target>
+        <note />
+      </trans-unit>
       <trans-unit id="DuplicateTypeNameMessageFormat">
-        <source>There are multiple types named {0}. Source was generated for the first one detected. Use 'JsonSerializableAttribute.TypeInfoPropertyName' to resolve this collision.</source>
-        <target state="new">There are multiple types named {0}. Source was generated for the first one detected. Use 'JsonSerializableAttribute.TypeInfoPropertyName' to resolve this collision.</target>
+        <source>There are multiple types named '{0}'. Source was generated for the first one detected. Use 'JsonSerializableAttribute.TypeInfoPropertyName' to resolve this collision.</source>
+        <target state="translated">有多个名为 {0} 的类型。已为第一个检测到类型的生成源。请使用“JsonSerializableAttribute.TypeInfoPropertyName”以解决此冲突。</target>
         <note />
       </trans-unit>
       <trans-unit id="DuplicateTypeNameTitle">
         <source>Duplicate type name.</source>
         <target state="translated">重复的类型名称。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="FastPathPolymorphismNotSupportedMessageFormat">
+        <source>Type '{0}' is annotated with 'JsonDerivedTypeAttribute' which is not supported in 'JsonSourceGenerationMode.Serialization'.</source>
+        <target state="translated">类型 \"{0}\" 使用 \"JsonSourceGenerationMode.Serialization\" 中不支持的 \"JsonDerivedTypeAttribute\" 进行了批注。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="FastPathPolymorphismNotSupportedTitle">
+        <source>'JsonDerivedTypeAttribute' is not supported in 'JsonSourceGenerationMode.Serialization'.</source>
+        <target state="translated">\"JsonSourceGenerationMode.Serialization\" 中不支持 \"JsonDerivedTypeAttribute\"。</target>
         <note />
       </trans-unit>
       <trans-unit id="InaccessibleJsonIncludePropertiesNotSupportedFormat">
@@ -50,6 +70,56 @@
       <trans-unit id="InitOnlyPropertyDeserializationNotSupportedTitle">
         <source>Deserialization of init-only properties is currently not supported in source generation mode.</source>
         <target state="translated">源生成模式当前不支持仅初始化属性的反序列化。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="JsonConstructorInaccessibleMessageFormat">
+        <source>The constructor on type '{0}' has been annotated with JsonConstructorAttribute but is not accessible by the source generator.</source>
+        <target state="translated">类型“{0}”上的构造函数已使用 JsonConstructorAttribute 进行批注，但源生成器无法访问该构造函数。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="JsonConstructorInaccessibleTitle">
+        <source>Constructor annotated with JsonConstructorAttribute is inaccessible.</source>
+        <target state="translated">无法访问使用 JsonConstructorAttribute 批注的构造函数。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="JsonConverterAttributeInvalidTypeMessageFormat">
+        <source>The 'JsonConverterAttribute' type '{0}' specified on member '{1}' is not a converter type or does not contain an accessible parameterless constructor.</source>
+        <target state="translated">在成员 "{1}" 上指定的 "JsonConverterAttribute" 类型 "{0}" 不是转换器类型或不包含可访问的无参数构造函数。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="JsonConverterAttributeInvalidTypeTitle">
+        <source>The 'JsonConverterAttribute.Type' contains an invalid or inaccessible argument.</source>
+        <target state="translated">"JsonConverterAttribute.Type" 包含无效或不可访问的参数。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="JsonSerializableAttributeOnNonContextTypeMessageFormat">
+        <source>The type '{0}' has been annotated with JsonSerializableAttribute but does not derive from JsonSerializerContext. No source code will be generated.</source>
+        <target state="translated">类型“{0}”已使用 JsonSerializableAttribute 进行批注，但不是从 JsonSerializerContext 派生的。不会生成源代码。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="JsonSerializableAttributeOnNonContextTypeTitle">
+        <source>Types annotated with JsonSerializableAttribute must be classes deriving from JsonSerializerContext.</source>
+        <target state="translated">使用 JsonSerializableAttribute 批注的类型必须是派生自 JsonSerializerContext 的类。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="JsonStringEnumConverterNotSupportedMessageFormat">
+        <source>The member '{0}' has been annotated with 'JsonStringEnumConverter' which is not supported in native AOT. Consider using the generic 'JsonStringEnumConverter&lt;TEnum&gt;' instead.</source>
+        <target state="translated">成员“{0}”已使用本机 AOT 中不支持的 "JsonStringEnumConverter" 进行批注。请改为考虑使用泛型 "JsonStringEnumConverter&lt;TEnum&gt;"。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="JsonStringEnumConverterNotSupportedTitle">
+        <source>The non-generic 'JsonStringEnumConverter' requires dynamic code.</source>
+        <target state="translated">非泛型 "JsonStringEnumConverter" 需要动态代码。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="JsonUnsupportedLanguageVersionMessageFormat">
+        <source>The System.Text.Json source generator is not available in C# {0}. Please use language version {1} or greater.</source>
+        <target state="translated">System.Text.Json 源生成器在 C# {0} 中不可用。请使用{1}或更高版本的语言版本。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="JsonUnsupportedLanguageVersionTitle">
+        <source>C# language version not supported by the source generator.</source>
+        <target state="translated">源生成器不支持 C# 语言版本。</target>
         <note />
       </trans-unit>
       <trans-unit id="MultipleJsonConstructorAttributeFormat">
