@@ -273,7 +273,6 @@ public:
 
     // This should be used to permanently set the load to fail. Do not use with transient conditions
     void SetError(Exception *ex);
-    void SetAssembly(Assembly* pAssembly);
 
     void SetProfilerNotified() { LIMITED_METHOD_CONTRACT; m_notifyflags|= PROFILER_NOTIFIED; }
     void SetDebuggerNotified() { LIMITED_METHOD_CONTRACT; m_notifyflags|=DEBUGGER_NOTIFIED; }

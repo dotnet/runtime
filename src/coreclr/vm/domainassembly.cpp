@@ -69,7 +69,10 @@ DomainAssembly::DomainAssembly(PEAssembly* pPEAssembly, LoaderAllocator* pLoader
         assemblyHolder.SuppressRelease();
     }
 
-    SetAssembly(pAssembly);
+    m_pAssembly = pAssembly;
+    m_pModule = pAssembly->GetModule();
+
+    pAssembly->SetDomainAssembly(this);
 
     // Creating the Assembly should have ensured the PEAssembly is loaded
     _ASSERT(GetPEAssembly()->IsLoaded());
@@ -496,19 +499,6 @@ void DomainAssembly::Activate()
 #endif
 
     RETURN;
-}
-
-void DomainAssembly::SetAssembly(Assembly* pAssembly)
-{
-    STANDARD_VM_CONTRACT;
-
-    _ASSERTE(pAssembly->GetModule()->GetPEAssembly()==m_pPEAssembly);
-    _ASSERTE(m_pAssembly == NULL);
-
-    m_pAssembly = pAssembly;
-    m_pModule = pAssembly->GetModule();
-
-    pAssembly->SetDomainAssembly(this);
 }
 
 void DomainAssembly::Begin()
