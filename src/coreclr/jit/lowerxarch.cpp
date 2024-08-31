@@ -8678,7 +8678,8 @@ bool Lowering::TryLowerAndOrToCCMP(GenTreeOp* tree, GenTree** next)
     GenTree* op1 = tree->gtGetOp1();
     GenTree* op2 = tree->gtGetOp2();
 
-    if ((lastNode->OperIs(GT_JTRUE) && ((tree->OperIs(GT_OR) && (!op1->OperIs(GT_NE) || !op2->OperIs(GT_NE))) ||
+    if (!op1->OperIs(GT_NE, GT_EQ) || !op2->OperIs(GT_NE, GT_EQ) ||
+        (lastNode->OperIs(GT_JTRUE) && ((tree->OperIs(GT_OR) && (!op1->OperIs(GT_NE) || !op2->OperIs(GT_NE))) ||
                                         (tree->OperIs(GT_AND) && (!op1->OperIs(GT_EQ) || !op2->OperIs(GT_EQ))))) ||
         (lastNode->OperIs(GT_RETURN) && ((tree->OperIs(GT_OR) && (!op1->OperIs(GT_EQ) || !op2->OperIs(GT_EQ))) ||
                                          (tree->OperIs(GT_AND) && (!op1->OperIs(GT_NE) || !op2->OperIs(GT_NE))))))
@@ -8691,9 +8692,9 @@ bool Lowering::TryLowerAndOrToCCMP(GenTreeOp* tree, GenTree** next)
     GenTree* op21 = op2->gtGetOp1();
     GenTree* op22 = op2->gtGetOp2();
 
-    if (!varTypeIsIntegralOrI(op11) || !op11->OperIs(GT_LCL_VAR, GT_CNS_INT) || !varTypeIsIntegralOrI(op12) ||
-        !op12->OperIs(GT_LCL_VAR, GT_CNS_INT) || !varTypeIsIntegralOrI(op21) || !op21->OperIs(GT_LCL_VAR, GT_CNS_INT) ||
-        !varTypeIsIntegralOrI(op22) || !op22->OperIs(GT_LCL_VAR, GT_CNS_INT))
+    if (!op11->TypeIs(TYP_INT) || !op11->OperIs(GT_LCL_VAR, GT_CNS_INT) || !op12->TypeIs(TYP_INT) ||
+        !op12->OperIs(GT_LCL_VAR, GT_CNS_INT) || !op21->TypeIs(TYP_INT) || !op21->OperIs(GT_LCL_VAR, GT_CNS_INT) ||
+        !op22->TypeIs(TYP_INT) || !op22->OperIs(GT_LCL_VAR, GT_CNS_INT))
     {
         return false;
     }

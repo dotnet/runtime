@@ -400,7 +400,6 @@ bool OptBoolsDsc::FindCompareChain(GenTree* condition, bool* isTestCondition)
 
     *isTestCondition = false;
 
-#if defined(TARGET_ARM64) || defined(TARGET_XARCH)
     if (condition->OperIs(GT_EQ, GT_NE) && condOp2->IsIntegralConst())
     {
         ssize_t condOp2Value = condOp2->AsIntCon()->IconValue();
@@ -430,7 +429,6 @@ bool OptBoolsDsc::FindCompareChain(GenTree* condition, bool* isTestCondition)
             *isTestCondition = true;
         }
     }
-#endif
 
     return false;
 }
