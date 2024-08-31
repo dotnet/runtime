@@ -4058,7 +4058,7 @@ GenTree* Lowering::LowerHWIntrinsicCndSel(GenTreeHWIntrinsic* cndSelNode)
         // op3 is all zeros. Such a Csel operation is absorbed into the instruction when emitted. Skip this optimisation
         // when the nestedOp is a reduce operation.
 
-        if (nestedOp1->IsMaskAllBitsSet() && (!HWIntrinsicInfo::IsReduceOperation(nestedOp2Id)) &&
+        if (nestedOp1->IsMaskAllBitsSet() && !HWIntrinsicInfo::IsReduceOperation(nestedOp2Id) &&
             (!HWIntrinsicInfo::IsZeroingMaskedOperation(nestedOp2Id) || op3->IsVectorZero()))
         {
             GenTree* nestedOp2 = nestedCndSel->Op(2);

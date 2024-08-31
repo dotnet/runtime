@@ -29,11 +29,14 @@ public class Runtime_106872
     [Fact]
     public static void TestEntryPoint()
     {
-        var vr4 = Vector128.CreateScalar(728.8837854670671d).AsVector();
-        var vr5 = Vector128.CreateScalar(1103.750484880559d).AsVector();
-        var vr6 = Vector128.CreateScalar(-1881.6772519539704d).AsVector();
-        var vr7 = s_1[0].F3;
-        s_1[0].F3 = Sve.ConditionalSelect(vr4, Sve.AddSequentialAcross(vr6, vr7), vr5);
+        if (Sve.IsSupported)
+        {
+            var vr4 = Vector128.CreateScalar(728.8837854670671d).AsVector();
+            var vr5 = Vector128.CreateScalar(1103.750484880559d).AsVector();
+            var vr6 = Vector128.CreateScalar(-1881.6772519539704d).AsVector();
+            var vr7 = s_1[0].F3;
+            s_1[0].F3 = Sve.ConditionalSelect(vr4, Sve.AddSequentialAcross(vr6, vr7), vr5);
+        }
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
