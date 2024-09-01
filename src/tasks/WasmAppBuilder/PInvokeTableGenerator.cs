@@ -362,7 +362,7 @@ internal sealed class PInvokeTableGenerator
             var interpArgs = new List<string>();
             if (!is_void)
             {
-                interpArgs.Add("(int*)&res");
+                interpArgs.Add("(int*)&result");
             }
             interpArgs.AddRange(unmanagedRange.Select(i => $"(int*)&arg{i}"));
             interpArgs.Add($"wasm_native_to_interp_ftndescs [{cb_index}].arg");
@@ -370,20 +370,19 @@ internal sealed class PInvokeTableGenerator
             w.Write(
                 $$"""
 
-                typedef void (*WasmInterpEntrySig_{{cb_index}}) ({{string.Join(", ", interpArgs.Select(_ => "int*"))}});
+                {{(attr ? $"__attribute__((export_name(\"{EscapeLiteral(cb.EntryPoint!)}\")))" : "// no export name defined")}}
+                {{MapType(method.ReturnType)}}
+                {{cb.EntryName}} ({{string.Join(", ", unmanagedRange.Select(i => $"{MapType(parameters[i].ParameterType)} arg{i}"))}}) {
+                  typedef void (*InterpEntry_T{{cb_index}}) ({{string.Join(", ", interpArgs.Select(_ => "int*"))}});
+                  {{(!is_void ? $"{MapType(method.ReturnType)} result;" : "// void result")}}
 
-                {{(attr ? $"__attribute__((export_name(\"{EscapeLiteral(cb.EntryPoint!)}\")" : "// no export name defined")}}
-                {{MapType(method.ReturnType)}} {{cb.EntryName}} ({{string.Join(", ", unmanagedRange.Select(i => $"{MapType(parameters[i].ParameterType)} arg{i}"))}}) {
-                  {{(!is_void ? $"{MapType(method.ReturnType)} res;" : "")}}
-
-                  // In case when null force interpreter to initialize the pointers
-                  if (!(WasmInterpEntrySig_{{cb_index}})wasm_native_to_interp_ftndescs [{{cb_index}}].func) {
-                    {{(attr ? "initialize_runtime();" : "// no defined entrypoint so no need to initialize runtime")}}
-                    mono_wasm_marshal_get_managed_wrapper ("{{type!.Module!.Assembly!.GetName()!.Name!}}","{{type.Namespace}}", "{{type.Name}}", "{{cb.Method.Name}}", {{numParams}});
+                  if (!(InterpEntry_T{{cb_index}})wasm_native_to_interp_ftndescs [{{cb_index}}].func) {
+                    {{(attr ? "initialize_runtime();" : "")}} // ensure the ftndescs and runtime are initialized when required
+                    mono_wasm_marshal_get_managed_wrapper ("{{type!.Module!.Assembly!.GetName()!.Name!}}", "{{type.Namespace}}", "{{type.Name}}", "{{cb.Method.Name}}", {{numParams}});
                   }
 
-                  ((WasmInterpEntrySig_{{cb_index}})wasm_native_to_interp_ftndescs [{{cb_index}}].func) ({{string.Join(", ", interpArgs)}});
-                  {{(!is_void ?  "return res;" : "")}}
+                  ((InterpEntry_T{{cb_index}})wasm_native_to_interp_ftndescs [{{cb_index}}].func) ({{string.Join(", ", interpArgs)}});
+                  {{(!is_void ?  "return result;" : "// void result")}}
                 }
 
                 """);
@@ -394,12 +393,12 @@ internal sealed class PInvokeTableGenerator
             $$"""
 
             static void *wasm_native_to_interp_funcs[] = {
-                {{string.Join(", ", callbacks.Select(cb => cb.EntryName))}}
+                {{string.Join($",{Environment.NewLine}    ", callbacks.Select(cb => cb.EntryName))}}
             };
 
             // these strings need to match the keys generated in get_native_to_interp
             static const char *wasm_native_to_interp_map[] = {
-                {{string.Join(", ", callbacks.Select(DelegateKey))}}
+                {{string.Join($",{Environment.NewLine}    ", callbacks.Select(DelegateKey))}}
             };
 
             """);
