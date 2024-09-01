@@ -331,6 +331,82 @@ namespace System
         }
 
         /// <summary>
+        /// Creates a <see cref="BinaryData"/> instance from the specified file.
+        /// </summary>
+        /// <param name="path">The path to the file.</param>
+        /// <returns>A value representing all of the data from the file.</returns>
+        public static BinaryData FromFile(string path)
+        {
+            if (path is null)
+            {
+                throw new ArgumentNullException(nameof(path));
+            }
+
+            return FromFileAsync(path, async: false).GetAwaiter().GetResult();
+        }
+
+        /// <summary>
+        /// Creates a <see cref="BinaryData"/> instance from the specified file
+        /// and sets <see cref="MediaType"/> to <see pref="mediaType"/> value.
+        /// </summary>
+        /// <param name="path">The path to the file.</param>
+        /// <param name="mediaType">MIME type of this data, e.g. <see cref="MediaTypeNames.Application.Octet"/>.</param>
+        /// <returns>A value representing all of the data from the file.</returns>
+        /// <seealso cref="MediaTypeNames"/>
+        public static BinaryData FromFile(string path, string? mediaType)
+        {
+            if (path is null)
+            {
+                throw new ArgumentNullException(nameof(path));
+            }
+
+            return FromFileAsync(path, async: false, mediaType).GetAwaiter().GetResult();
+        }
+
+        /// <summary>
+        /// Creates a <see cref="BinaryData"/> instance from the specified file.
+        /// </summary>
+        /// <param name="path">The path to the file.</param>
+        /// <param name="cancellationToken">A token that may be used to cancel the operation.</param>
+        /// <returns>A value representing all of the data from the file.</returns>
+        public static Task<BinaryData> FromFileAsync(string path, CancellationToken cancellationToken = default)
+        {
+            if (path is null)
+            {
+                throw new ArgumentNullException(nameof(path));
+            }
+
+            return FromFileAsync(path, async: true, cancellationToken: cancellationToken);
+        }
+
+        /// <summary>
+        /// Creates a <see cref="BinaryData"/> instance from the specified file
+        /// and sets <see cref="MediaType"/> to <see pref="mediaType"/> value.
+        /// </summary>
+        /// <param name="path">The path to the file.</param>
+        /// <param name="mediaType">MIME type of this data, e.g. <see cref="MediaTypeNames.Application.Octet"/>.</param>
+        /// <param name="cancellationToken">A token that may be used to cancel the operation.</param>
+        /// <returns>A value representing all of the data from the file.</returns>
+        /// <seealso cref="MediaTypeNames"/>
+        public static Task<BinaryData> FromFileAsync(string path, string? mediaType,
+            CancellationToken cancellationToken = default)
+        {
+            if (path is null)
+            {
+                throw new ArgumentNullException(nameof(path));
+            }
+
+            return FromFileAsync(path, async: true, mediaType, cancellationToken);
+        }
+
+        private static async Task<BinaryData> FromFileAsync(string path, bool async,
+            string? mediaType = default, CancellationToken cancellationToken = default)
+        {
+            using FileStream fileStream = File.OpenRead(path);
+            return await FromStreamAsync(fileStream, async, mediaType, cancellationToken).ConfigureAwait(false);
+        }
+
+        /// <summary>
         /// Creates a <see cref="BinaryData"/> instance by serializing the provided object using
         /// the <see cref="JsonSerializer"/>
         /// and sets <see cref="MediaType"/> to "application/json".
