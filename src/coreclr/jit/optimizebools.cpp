@@ -402,7 +402,8 @@ bool OptBoolsDsc::FindCompareChain(GenTree* condition, bool* isTestCondition)
 
     if (condition->OperIs(GT_EQ, GT_NE) && condOp2->IsIntegralConst())
     {
-        ssize_t condOp2Value = condOp2->AsIntCon()->IconValue();
+        INT64 condOp2Value =
+            condOp2->gtOper == GT_CNS_INT ? condOp2->AsIntCon()->gtIconVal : condOp2->AsLngCon()->gtLconVal;
 
         if (condOp2Value == 0)
         {
@@ -423,7 +424,10 @@ bool OptBoolsDsc::FindCompareChain(GenTree* condition, bool* isTestCondition)
             *isTestCondition = true;
         }
         else if (condOp1->OperIs(GT_AND) && isPow2(static_cast<target_size_t>(condOp2Value)) &&
-                 condOp1->gtGetOp2()->IsIntegralConst(condOp2Value))
+                 ((condOp1->gtGetOp2()->gtOper == GT_CNS_INT &&
+                   condOp1->gtGetOp2()->AsIntCon()->gtIconVal == condOp2Value) ||
+                  (condOp1->gtGetOp2()->gtOper == GT_CNS_LNG &&
+                   condOp1->gtGetOp2()->AsLngCon()->gtLconVal == condOp2Value)))
         {
             // Found a EQ/NE(AND(...,n),n) which will be optimized to tbz/tbnz during lowering.
             *isTestCondition = true;
@@ -1760,7 +1764,7 @@ bool OptBoolsDsc::optOptimizeCompareChainReturnBlock(BasicBlock* b3)
 
     GenTree* block3ReturnTree = m_b3->firstStmt()->GetRootNode()->AsOp()->GetReturnValue();
 
-    if (block3ReturnTree == nullptr || !block3ReturnTree->OperIs(GT_CNS_INT) || !block3ReturnTree->TypeIs(TYP_INT))
+    if (block3ReturnTree == nullptr || !block3ReturnTree->IsIntegralConst() || !block3ReturnTree->TypeIs(TYP_INT))
     {
         return false;
     }
