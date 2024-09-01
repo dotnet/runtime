@@ -10,7 +10,6 @@
 #include <ShlObj.h>
 #include <ctime>
 
-
 void pal::file_vprintf(FILE* f, const pal::char_t* format, va_list vl)
 {
     // String functions like vfwprintf convert wide to multi-byte characters as if wcrtomb were called - that is, using the current C locale (LC_TYPE).
@@ -21,7 +20,8 @@ void pal::file_vprintf(FILE* f, const pal::char_t* format, va_list vl)
     _free_locale(loc);
 }
 
-namespace {
+namespace
+{
     void print_line_to_handle(const pal::char_t* message, HANDLE handle, FILE* fallbackFileHandle) {
         // String functions like vfwprintf convert wide to multi-byte characters as if wcrtomb were called - that is, using the current C locale (LC_TYPE).
         // In order to properly print UTF-8 and GB18030 characters to the console without requiring the user to use chcp to a compatible locale, we use WriteConsoleW.
@@ -42,12 +42,14 @@ namespace {
     }
 }
 
-void pal::err_print_line(const pal::char_t* message) {
+void pal::err_print_line(const pal::char_t* message)
+{
     // Forward to helper to handle UTF-8 formatting and redirection
     print_line_to_handle(message, ::GetStdHandle(STD_ERROR_HANDLE), stderr);
 }
 
-void pal::out_vprint_line(const pal::char_t* format, va_list vl) {
+void pal::out_vprint_line(const pal::char_t* format, va_list vl)
+{
     va_list vl_copy;
     va_copy(vl_copy, vl);
     // Get the length of the formatted string + 1 for null terminator
@@ -96,35 +98,35 @@ namespace
 
         return s_get_temp_path_func(buffer_len, buffer);
     }
-}
 
-bool GetModuleFileNameWrapper(HMODULE hModule, pal::string_t* recv)
-{
-    pal::string_t path;
-    size_t dwModuleFileName = MAX_PATH / 2;
-
-    do
+    bool GetModuleFileNameWrapper(HMODULE hModule, pal::string_t* recv)
     {
-        path.resize(dwModuleFileName * 2);
-        dwModuleFileName = GetModuleFileNameW(hModule, (LPWSTR)path.data(), static_cast<DWORD>(path.size()));
-    } while (dwModuleFileName == path.size());
+        pal::string_t path;
+        size_t dwModuleFileName = MAX_PATH / 2;
 
-    if (dwModuleFileName == 0)
-        return false;
+        do
+        {
+            path.resize(dwModuleFileName * 2);
+            dwModuleFileName = GetModuleFileNameW(hModule, (LPWSTR)path.data(), static_cast<DWORD>(path.size()));
+        } while (dwModuleFileName == path.size());
 
-    path.resize(dwModuleFileName);
-    recv->assign(path);
-    return true;
-}
+        if (dwModuleFileName == 0)
+            return false;
 
-bool GetModuleHandleFromAddress(void *addr, HMODULE *hModule)
-{
-    BOOL res = ::GetModuleHandleExW(
-        GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS | GET_MODULE_HANDLE_EX_FLAG_UNCHANGED_REFCOUNT,
-        reinterpret_cast<LPCWSTR>(addr),
-        hModule);
+        path.resize(dwModuleFileName);
+        recv->assign(path);
+        return true;
+    }
 
-    return (res != FALSE);
+    bool GetModuleHandleFromAddress(void *addr, HMODULE *hModule)
+    {
+        BOOL res = ::GetModuleHandleExW(
+            GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS | GET_MODULE_HANDLE_EX_FLAG_UNCHANGED_REFCOUNT,
+            reinterpret_cast<LPCWSTR>(addr),
+            hModule);
+
+        return (res != FALSE);
+    }
 }
 
 pal::string_t pal::get_timestamp()
@@ -263,7 +265,7 @@ bool pal::load_library(const string_t* in_path, dll_t* dll)
     {
         if (!pal::fullpath(&path))
         {
-            trace::error(_X("Failed to load the dll from [%s], HRESULT: 0x%X"), path.c_str(), HRESULT_FROM_WIN32(GetLastError()));
+            trace::error(_X("Failed to load [%s], HRESULT: 0x%X"), path.c_str(), HRESULT_FROM_WIN32(GetLastError()));
             return false;
         }
     }
@@ -274,7 +276,13 @@ bool pal::load_library(const string_t* in_path, dll_t* dll)
     *dll = ::LoadLibraryExW(path.c_str(), NULL, LOAD_LIBRARY_SEARCH_DLL_LOAD_DIR | LOAD_LIBRARY_SEARCH_DEFAULT_DIRS);
     if (*dll == nullptr)
     {
-        trace::error(_X("Failed to load the dll from [%s], HRESULT: 0x%X"), path.c_str(), HRESULT_FROM_WIN32(GetLastError()));
+        int error_code = ::GetLastError();
+        trace::error(_X("Failed to load [%s], HRESULT: 0x%X"), path.c_str(), HRESULT_FROM_WIN32(error_code));
+        if (error_code == ERROR_BAD_EXE_FORMAT)
+        {
+            trace::error(_X("  - Ensure the library matches the current process architecture: ") _STRINGIFY(CURRENT_ARCH_NAME));
+        }
+
         return false;
     }
 
@@ -661,8 +669,8 @@ bool pal::getenv(const char_t* name, string_t* recv)
         }
         return false;
     }
-    auto buf = new char_t[length];
-    if (::GetEnvironmentVariableW(name, buf, length) == 0)
+    std::vector<pal::char_t> buffer(length);
+    if (::GetEnvironmentVariableW(name, &buffer[0], length) == 0)
     {
         auto err = GetLastError();
         if (err != ERROR_ENVVAR_NOT_FOUND)
@@ -672,9 +680,7 @@ bool pal::getenv(const char_t* name, string_t* recv)
         return false;
     }
 
-    recv->assign(buf);
-    delete[] buf;
-
+    recv->assign(buffer.data());
     return true;
 }
 

@@ -1700,6 +1700,12 @@ CONTEXT_GetThreadContextFromThreadState(
 
                 // AMD64's FLOATING_POINT includes the xmm registers.
                 memcpy(&lpContext->Xmm0, &pState->__fpu_xmm0, 16 * 16);
+
+                if (threadStateFlavor == x86_FLOAT_STATE64)
+                {
+                     // There was just a floating point state, so make sure the CONTEXT_XSTATE is not set
+                     lpContext->ContextFlags &= ~(CONTEXT_XSTATE & CONTEXT_AREA_MASK);
+                }
             }
             break;
         }
