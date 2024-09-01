@@ -6060,9 +6060,17 @@ void Compiler::lvaAssignVirtualFrameOffsetsToLocals()
 
     if (opts.compJitSaveFpLrWithCalleeSavedRegisters == 0)
     {
-        // Default configuration
-        codeGen->SetSaveFpLrWithAllCalleeSavedRegisters((getNeedsGSSecurityCookie() && compLocallocUsed) ||
-                                                        opts.compDbgEnC || compStressCompile(STRESS_GENERIC_VARN, 20));
+        if (IsTargetAbi(CORINFO_NATIVEAOT_ABI) && TargetOS::IsApplePlatform)
+        {
+            codeGen->SetSaveFpLrWithAllCalleeSavedRegisters(true);
+            codeGen->SetReverseAndPairCalleeSavedRegisters(true);
+        }
+        else
+        {
+            // Default configuration
+            codeGen->SetSaveFpLrWithAllCalleeSavedRegisters((getNeedsGSSecurityCookie() && compLocallocUsed) ||
+                                                            opts.compDbgEnC || compStressCompile(STRESS_GENERIC_VARN, 20));
+        }
     }
     else if (opts.compJitSaveFpLrWithCalleeSavedRegisters == 1)
     {

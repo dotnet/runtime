@@ -317,6 +317,7 @@ public:
     bool PromotionCheck(CSE_Candidate* candidate);
     void AdjustHeuristic(CSE_Candidate* candidate);
     bool ConsiderTree(GenTree* tree, bool isReturn);
+    bool IsLargeFrame() { return largeFrame; }
 
     const char* Name() const
     {

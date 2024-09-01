@@ -654,8 +654,10 @@ protected:
 #ifdef TARGET_ARM64
     virtual void SetSaveFpLrWithAllCalleeSavedRegisters(bool value);
     virtual bool IsSaveFpLrWithAllCalleeSavedRegisters() const;
+    virtual void SetReverseAndPairCalleeSavedRegisters(bool value);
     bool         genSaveFpLrWithAllCalleeSavedRegisters;
     bool         genForceFuncletFrameType5;
+    bool         genReverseAndPairCalleeSavedRegisters;
 #endif // TARGET_ARM64
 
     //-------------------------------------------------------------------------
