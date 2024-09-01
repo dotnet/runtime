@@ -210,23 +210,24 @@ get_native_to_interp (MonoMethod *method, void *extra_arg)
 	const char *namespace = mono_class_get_namespace (klass);
 	const char *class_name = mono_class_get_name (klass);
 	const char *method_name = mono_method_get_name (method);
+	MonoMethodSignature *sig = mono_method_signature (method);
+	int param_count = mono_signature_get_param_count (sig);
 	char buf [128];
 	char *key = buf;
 	int len;
 	if (name == NULL)
 		return NULL;
 
-	len = snprintf (key, sizeof(buf), "%s_%s_%s_%s", name, namespace, class_name, method_name);
+	// the key must match the one used in PInvokeTableGenerator
+	len = snprintf (key, sizeof(buf), "%s::%s::%s::%s\U0001F412%d", name, namespace, class_name, method_name, param_count);
 
 	if (len >= sizeof (buf)) {
 		// The key is too long, try again with a larger buffer
 		key = g_new (char, len + 1);
-	    snprintf (key, len + 1, "%s_%s_%s_%s", name, namespace, class_name, method_name);
+	    snprintf (key, len + 1, "%s::%s::%s::%s\U0001F412%d", name, namespace, class_name, method_name, param_count);
 	}
 
-	char *fixedName = mono_fixup_symbol_name ("", key, "");
-	addr = wasm_dl_get_native_to_interp (fixedName, extra_arg);
-	free (fixedName);
+	addr = wasm_dl_get_native_to_interp (key, extra_arg);
 
 	if (len >= sizeof (buf))
 		free (key);

@@ -87,7 +87,7 @@ internal sealed class PInvokeTableGenerator
 
         w.WriteLine(
             $"""
-            // GENERATED FILE, DO NOT MODIFY");
+            // GENERATED FILE, DO NOT MODIFY (PInvokeTableGenerator.cs)
             #include <mono/utils/details/mono-error-types.h>
             #include <mono/metadata/assembly.h>
             #include <mono/utils/mono-error.h>
@@ -260,13 +260,6 @@ internal sealed class PInvokeTableGenerator
     {
         var method = pinvoke.Method;
 
-        if (method.Name == "EnumCalendarInfo")
-        {
-            // FIXME: System.Reflection.MetadataLoadContext can't decode function pointer types
-            // https://github.com/dotnet/runtime/issues/43791
-            return $"int {_fixupSymbolName(pinvoke.EntryPoint)} (int, int, int, int, int);";
-        }
-
         if (TryIsMethodGetParametersUnsupported(pinvoke.Method, out string? reason))
         {
             // Don't use method.ToString() or any of it's parameters, or return type
@@ -295,34 +288,63 @@ internal sealed class PInvokeTableGenerator
 
     private string CEntryPoint(PInvokeCallback export)
     {
-        if (export.EntryPoint is not null)
+        if (export.IsExport)
         {
-            return _fixupSymbolName(export.EntryPoint);
+            return _fixupSymbolName(export.EntryPoint!);
         }
 
-        var method = export.Method;
-        string namespaceName = method.DeclaringType?.Namespace ?? string.Empty;
-        string assemblyName = method.DeclaringType?.Module?.Assembly?.GetName()?.Name ?? string.Empty;
-        string declaringTypeName = method.DeclaringType?.Name ?? string.Empty;
-
-        string entryPoint = $"wasm_native_to_interp_{namespaceName}_{assemblyName}_{declaringTypeName}_{method.Name}";
-
-        return _fixupSymbolName(entryPoint);
+        return _fixupSymbolName($"wasm_native_to_interp_{export.AssemblyName}_{export.Namespace}_{export.TypeName}_{export.MethodName}");
     }
 
-    private string DelegateKey(PInvokeCallback export)
+    private static string EscapeLiteral(string input)
     {
-        // FIXME: this is a hack, we need to encode this better
-        // and allow reflection in the interp case but either way
-        // it needs to match the key generated in get_native_to_interp
-        var method = export.Method;
-        string module_symbol = method.DeclaringType!.Module!.Assembly!.GetName()!.Name!;
-        return $"\"{_fixupSymbolName($"{module_symbol}_{method.DeclaringType.Namespace}_{method.DeclaringType.Name}_{method.Name}")}\"";
-    }
+        StringBuilder sb = new StringBuilder();
 
-#pragma warning disable SYSLIB1045 // framework doesn't support GeneratedRegexAttribute
-    private static string EscapeLiteral(string s) => Regex.Replace(s, @"(\\|\"")", @"\$1");
-#pragma warning restore SYSLIB1045
+        for (int i = 0; i < input.Length; i++)
+        {
+            char c = input[i];
+
+            if (char.IsHighSurrogate(c) && i + 1 < input.Length && char.IsLowSurrogate(input[i + 1]))
+            {
+                int codepoint = char.ConvertToUtf32(c, input[i + 1]);
+                sb.AppendFormat("\\U{0:X8}", codepoint);
+                i++; // Skip the low surrogate
+            }
+            else
+            {
+                switch (c)
+                {
+                    case '\\':
+                        sb.Append("\\\\");
+                        break;
+                    case '\"':
+                        sb.Append("\\\"");
+                        break;
+                    case '\n':
+                        sb.Append("\\n");
+                        break;
+                    case '\r':
+                        sb.Append("\\r");
+                        break;
+                    case '\t':
+                        sb.Append("\\t");
+                        break;
+                    default:
+                        if (char.IsControl(c) || c > 127)
+                        {
+                            sb.AppendFormat("\\u{0:X4}", (int)c);
+                        }
+                        else
+                        {
+                            sb.Append(c);
+                        }
+                        break;
+                }
+            }
+        }
+
+        return sb.ToString();
+    }
 
     private void EmitNativeToInterp(StreamWriter w, List<PInvokeCallback> callbacks)
     {
@@ -332,57 +354,63 @@ internal sealed class PInvokeTableGenerator
         // They also need to have a signature matching what the
         // native code expects, which is the native signature
         // of the delegate invoke in the [MonoPInvokeCallback]
-        // attribute.
+        // or [UnamanagedCallersOnly] attribute.
         // Only blittable parameter/return types are supposed.
         int cb_index = 0;
 
         // Arguments to interp entry functions in the runtime
-        w.WriteLine($"InterpFtnDesc wasm_native_to_interp_ftndescs[{callbacks.Count}] = {{}};");
+        w.Write($$"""
+
+                InterpFtnDesc wasm_native_to_interp_ftndescs[{{callbacks.Count}}] = {};
+
+                """);
 
         var callbackNames = new HashSet<string>();
+        var keys = new HashSet<string>();
         foreach (var cb in callbacks)
         {
-            var method = cb.Method;
-            bool is_void = method.ReturnType.Name == "Void";
-            bool attr = cb.EntryPoint is not null;
-            var parameters = method.GetParameters();
-            var numParams = parameters.Length;
-            var type = cb.Method.DeclaringType!;
-
-            cb.EntryName = CEntryPoint(cb);
-            if (callbackNames.Contains(cb.EntryName))
+            cb.EntrySymbol = CEntryPoint(cb);
+            if (callbackNames.Contains(cb.EntrySymbol))
             {
-                Error($"Two callbacks with the same name '{cb.EntryName}' are not supported.");
+                Error($"Two callbacks with the same symbol '{cb.EntrySymbol}' are not supported.");
             }
-            callbackNames.Add(cb.EntryName);
+            callbackNames.Add(cb.EntrySymbol);
+            var key = cb.Key;
+            if (keys.Contains(key))
+            {
+                Error($"Two callbacks with the same key '{key}' are not supported.");
+            }
+            keys.Add(key);
 
             // The signature of the interp entry function
             // This is a gsharedvt_in signature
+            var parameters = cb.Method.GetParameters();
+            var numParams = parameters.Length;
             var unmanagedRange = Enumerable.Range(0, numParams);
-            var interpArgs = new List<string>();
-            if (!is_void)
+            var interpEntryArgs = new List<string>();
+            if (!cb.IsVoid)
             {
-                interpArgs.Add("(int*)&result");
+                interpEntryArgs.Add("(int*)&result");
             }
-            interpArgs.AddRange(unmanagedRange.Select(i => $"(int*)&arg{i}"));
-            interpArgs.Add($"wasm_native_to_interp_ftndescs [{cb_index}].arg");
+            interpEntryArgs.AddRange(unmanagedRange.Select(i => $"(int*)&arg{i}"));
+            interpEntryArgs.Add($"wasm_native_to_interp_ftndescs [{cb_index}].arg");
 
             w.Write(
                 $$"""
 
-                {{(attr ? $"__attribute__((export_name(\"{EscapeLiteral(cb.EntryPoint!)}\")))" : "// no export name defined")}}
-                {{MapType(method.ReturnType)}}
-                {{cb.EntryName}} ({{string.Join(", ", unmanagedRange.Select(i => $"{MapType(parameters[i].ParameterType)} arg{i}"))}}) {
-                  typedef void (*InterpEntry_T{{cb_index}}) ({{string.Join(", ", interpArgs.Select(_ => "int*"))}});
-                  {{(!is_void ? $"{MapType(method.ReturnType)} result;" : "// void result")}}
+                {{(cb.IsExport ? $"__attribute__((export_name(\"{EscapeLiteral(cb.EntryPoint!)}\")))" : "// no export name defined")}}
+                {{MapType(cb.ReturnType)}}
+                {{cb.EntrySymbol}} ({{string.Join(", ", unmanagedRange.Select(i => $"{MapType(parameters[i].ParameterType)} arg{i}"))}}) {
+                    typedef void (*InterpEntry_T{{cb_index}}) ({{string.Join(", ", interpEntryArgs.Select(_ => "int*"))}});
+                    {{(!cb.IsVoid ? $"{MapType(cb.ReturnType)} result;" : "// void result")}}
 
-                  if (!(InterpEntry_T{{cb_index}})wasm_native_to_interp_ftndescs [{{cb_index}}].func) {
-                    {{(attr ? "initialize_runtime();" : "")}} // ensure the ftndescs and runtime are initialized when required
-                    mono_wasm_marshal_get_managed_wrapper ("{{type!.Module!.Assembly!.GetName()!.Name!}}", "{{type.Namespace}}", "{{type.Name}}", "{{cb.Method.Name}}", {{numParams}});
-                  }
+                    if (!(InterpEntry_T{{cb_index}})wasm_native_to_interp_ftndescs [{{cb_index}}].func) {
+                        {{(cb.IsExport ? "initialize_runtime(); " : "")}}// ensure the ftndescs and runtime are initialized when required
+                        mono_wasm_marshal_get_managed_wrapper ("{{cb.AssemblyName}}", "{{cb.Namespace}}", "{{cb.TypeName}}", "{{cb.MethodName}}", {{numParams}});
+                    }
 
-                  ((InterpEntry_T{{cb_index}})wasm_native_to_interp_ftndescs [{{cb_index}}].func) ({{string.Join(", ", interpArgs)}});
-                  {{(!is_void ?  "return result;" : "// void result")}}
+                    ((InterpEntry_T{{cb_index}})wasm_native_to_interp_ftndescs [{{cb_index}}].func) ({{string.Join(", ", interpEntryArgs)}});
+                    {{(!cb.IsVoid ?  "return result;" : "// void result")}}
                 }
 
                 """);
@@ -392,13 +420,9 @@ internal sealed class PInvokeTableGenerator
         w.Write(
             $$"""
 
-            static void *wasm_native_to_interp_funcs[] = {
-                {{string.Join($",{Environment.NewLine}    ", callbacks.Select(cb => cb.EntryName))}}
-            };
-
-            // these strings need to match the keys generated in get_native_to_interp
-            static const char *wasm_native_to_interp_map[] = {
-                {{string.Join($",{Environment.NewLine}    ", callbacks.Select(DelegateKey))}}
+            static PinvokeImport wasm_native_to_interp_table[] = {
+                {{string.Join($"{Environment.NewLine}    ", callbacks.Select(cb => $"{{\"{EscapeLiteral(cb.Key)}\", {cb.EntrySymbol}}}, // {cb.AssemblyName}::{cb.Method.DeclaringType!.FullName}::{cb.Method.Name}")
+                    .Append("{NULL, NULL}"))}}
             };
 
             """);

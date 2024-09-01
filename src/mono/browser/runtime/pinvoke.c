@@ -48,9 +48,9 @@ void*
 wasm_dl_get_native_to_interp (const char *key, void *extra_arg)
 {
 #ifdef GEN_PINVOKE
-	for (int i = 0; i < sizeof (wasm_native_to_interp_map) / sizeof (void*); ++i) {
-		if (!strcmp (wasm_native_to_interp_map [i], key)) {
-			void *addr = wasm_native_to_interp_funcs [i];
+	for (int i = 0; wasm_native_to_interp_table [i].name != NULL; ++i) {
+		if (!strcmp (wasm_native_to_interp_table [i].name, key)) {
+			void *addr = wasm_native_to_interp_table [i].func;
 			wasm_native_to_interp_ftndescs [i] = *(InterpFtnDesc*)extra_arg;
 			return addr;
 		}
