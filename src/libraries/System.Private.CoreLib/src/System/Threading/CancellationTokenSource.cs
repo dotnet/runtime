@@ -1,6 +1,3 @@
-// Licensed to the .NET Foundation under one or more agreements.
-// The .NET Foundation licenses this file to you under the MIT license.
-
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
@@ -22,6 +19,7 @@ namespace System.Threading
     /// concurrently from multiple threads.
     /// </para>
     /// </remarks>
+    [DebuggerDisplay("IsCancellationRequested = {IsCancellationRequested}, Disposed = {_disposed}")]
     public class CancellationTokenSource : IDisposable
     {
         /// <summary>A <see cref="CancellationTokenSource"/> that's already canceled.</summary>

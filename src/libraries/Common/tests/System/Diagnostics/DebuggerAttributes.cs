@@ -1,6 +1,3 @@
-// Licensed to the .NET Foundation under one or more agreements.
-// The .NET Foundation licenses this file to you under the MIT license.
-
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
@@ -276,6 +273,21 @@ namespace System.Diagnostics
                 }
             }
             return null;
+        }
+
+        internal static void ValidateDebuggerDisplayAttribute_CancellationTokenSource()
+        {
+            var cts = new CancellationTokenSource();
+            string display = ValidateDebuggerDisplayReferences(cts);
+            Debug.Assert(display == "IsCancellationRequested = False, IsDisposed = False");
+
+            cts.Cancel();
+            display = ValidateDebuggerDisplayReferences(cts);
+            Debug.Assert(display == "IsCancellationRequested = True, IsDisposed = False");
+
+            cts.Dispose();
+            display = ValidateDebuggerDisplayReferences(cts);
+            Debug.Assert(display == "IsCancellationRequested = True, IsDisposed = True");
         }
     }
 }
