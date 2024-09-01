@@ -250,6 +250,8 @@ internal sealed class PInvokeCallback
         }
     }
 
+
+    public ParameterInfo[] Parameters => Method.GetParameters();
     public string? EntryPoint { get; }
     public MethodInfo Method { get; }
     public string? EntrySymbol { get; set; }

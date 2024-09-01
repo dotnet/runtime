@@ -304,43 +304,19 @@ internal sealed class PInvokeTableGenerator
         {
             char c = input[i];
 
-            if (char.IsHighSurrogate(c) && i + 1 < input.Length && char.IsLowSurrogate(input[i + 1]))
+            sb.Append(c switch
             {
-                int codepoint = char.ConvertToUtf32(c, input[i + 1]);
-                sb.AppendFormat("\\U{0:X8}", codepoint);
-                i++; // Skip the low surrogate
-            }
-            else
-            {
-                switch (c)
-                {
-                    case '\\':
-                        sb.Append("\\\\");
-                        break;
-                    case '\"':
-                        sb.Append("\\\"");
-                        break;
-                    case '\n':
-                        sb.Append("\\n");
-                        break;
-                    case '\r':
-                        sb.Append("\\r");
-                        break;
-                    case '\t':
-                        sb.Append("\\t");
-                        break;
-                    default:
-                        if (char.IsControl(c) || c > 127)
-                        {
-                            sb.AppendFormat("\\u{0:X4}", (int)c);
-                        }
-                        else
-                        {
-                            sb.Append(c);
-                        }
-                        break;
-                }
-            }
+                '\\' => "\\\\",
+                '\"' => "\\\"",
+                '\n' => "\\n",
+                '\r' => "\\r",
+                '\t' => "\\t",
+                _ when char.IsHighSurrogate(c) && i + 1 < input.Length && char.IsLowSurrogate(input[i + 1])
+                    => $"\\U{char.ConvertToUtf32(c, input[++i]):X8}",
+                _ when char.IsControl(c) || c > 127
+                    => $"\\u{(int)c:X4}",
+                _ => c.ToString()
+            });
         }
 
         return sb.ToString();
@@ -356,9 +332,7 @@ internal sealed class PInvokeTableGenerator
         // of the delegate invoke in the [MonoPInvokeCallback]
         // or [UnamanagedCallersOnly] attribute.
         // Only blittable parameter/return types are supposed.
-        int cb_index = 0;
 
-        // Arguments to interp entry functions in the runtime
         w.Write($$"""
 
                 InterpFtnDesc wasm_native_to_interp_ftndescs[{{callbacks.Count}}] = {};
@@ -367,6 +341,7 @@ internal sealed class PInvokeTableGenerator
 
         var callbackNames = new HashSet<string>();
         var keys = new HashSet<string>();
+        int cb_index = 0;
         foreach (var cb in callbacks)
         {
             cb.EntrySymbol = CEntryPoint(cb);
@@ -375,24 +350,21 @@ internal sealed class PInvokeTableGenerator
                 Error($"Two callbacks with the same symbol '{cb.EntrySymbol}' are not supported.");
             }
             callbackNames.Add(cb.EntrySymbol);
-            var key = cb.Key;
-            if (keys.Contains(key))
+            if (keys.Contains(cb.Key))
             {
-                Error($"Two callbacks with the same key '{key}' are not supported.");
+
+                Error($"Two callbacks with the same Name and number of arguments '{cb.Key}' are not supported.");
             }
-            keys.Add(key);
+            keys.Add(cb.Key);
 
             // The signature of the interp entry function
             // This is a gsharedvt_in signature
-            var parameters = cb.Method.GetParameters();
-            var numParams = parameters.Length;
-            var unmanagedRange = Enumerable.Range(0, numParams);
             var interpEntryArgs = new List<string>();
             if (!cb.IsVoid)
             {
                 interpEntryArgs.Add("(int*)&result");
             }
-            interpEntryArgs.AddRange(unmanagedRange.Select(i => $"(int*)&arg{i}"));
+            interpEntryArgs.AddRange(cb.Parameters.Select((_, i) => $"(int*)&arg{i}"));
             interpEntryArgs.Add($"wasm_native_to_interp_ftndescs [{cb_index}].arg");
 
             w.Write(
@@ -400,13 +372,13 @@ internal sealed class PInvokeTableGenerator
 
                 {{(cb.IsExport ? $"__attribute__((export_name(\"{EscapeLiteral(cb.EntryPoint!)}\")))" : "// no export name defined")}}
                 {{MapType(cb.ReturnType)}}
-                {{cb.EntrySymbol}} ({{string.Join(", ", unmanagedRange.Select(i => $"{MapType(parameters[i].ParameterType)} arg{i}"))}}) {
+                {{cb.EntrySymbol}} ({{string.Join(", ", cb.Parameters.Select((info, i) => $"{MapType(info.ParameterType)} arg{i}"))}}) {
                     typedef void (*InterpEntry_T{{cb_index}}) ({{string.Join(", ", interpEntryArgs.Select(_ => "int*"))}});
                     {{(!cb.IsVoid ? $"{MapType(cb.ReturnType)} result;" : "// void result")}}
 
                     if (!(InterpEntry_T{{cb_index}})wasm_native_to_interp_ftndescs [{{cb_index}}].func) {
-                        {{(cb.IsExport ? "initialize_runtime(); " : "")}}// ensure the ftndescs and runtime are initialized when required
-                        mono_wasm_marshal_get_managed_wrapper ("{{cb.AssemblyName}}", "{{cb.Namespace}}", "{{cb.TypeName}}", "{{cb.MethodName}}", {{numParams}});
+                        {{(cb.IsExport && _isLibraryMode ? "initialize_runtime(); " : "")}}// ensure the ftndescs and runtime are initialized when required
+                        mono_wasm_marshal_get_managed_wrapper ("{{cb.AssemblyName}}", "{{cb.Namespace}}", "{{cb.TypeName}}", "{{cb.MethodName}}", {{cb.Parameters.Length}});
                     }
 
                     ((InterpEntry_T{{cb_index}})wasm_native_to_interp_ftndescs [{{cb_index}}].func) ({{string.Join(", ", interpEntryArgs)}});
