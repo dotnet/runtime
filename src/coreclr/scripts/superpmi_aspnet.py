@@ -236,7 +236,7 @@ def build_and_run(coreclr_args):
         print(f"Launching crank agent: {crank_agent_app}")
         crank_agent_p = subprocess.Popen(crank_agent_app,
                                 stdout=subprocess.PIPE,
-                                stderr=subprocess.STDOUT)
+                                stderr=subprocess.PIPE)
         time.sleep(2)
 
     try:
@@ -283,6 +283,10 @@ def build_and_run(coreclr_args):
     finally:
         if crank_agent_p is not None:
             for line in iter(crank_agent_p.stdout.readline, ""):
+                if not line:
+                    break
+                print(line)
+            for line in iter(crank_agent_p.stderr.readline, ""):
                 if not line:
                     break
                 print(line)
