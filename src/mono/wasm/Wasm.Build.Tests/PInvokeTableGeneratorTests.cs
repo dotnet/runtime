@@ -1002,6 +1002,8 @@ namespace Wasm.Build.Tests
                                             DotnetWasmFromRuntimePack: false));
 
             var runOutput = RunAndTestWasmApp(buildArgs, buildDir: _projectDir, expectedExitCode: 42, host: host, id: id);
+            Assert.Contains("Conflict.A.Managed8\u4F60Func(33) -> 33", runOutput);
+            Assert.DoesNotContain("Conflict.A.Managed8\u4F60Func(123) -> 123", runOutput);
             Assert.Contains("ManagedFunc returned 42", runOutput);
         }
     }

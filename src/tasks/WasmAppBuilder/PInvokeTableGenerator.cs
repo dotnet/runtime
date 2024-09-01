@@ -88,7 +88,12 @@ internal sealed class PInvokeTableGenerator
         w.WriteLine(
             $"""
             // GENERATED FILE, DO NOT MODIFY");
-
+            #include <mono/utils/details/mono-error-types.h>
+            #include <mono/metadata/assembly.h>
+            #include <mono/utils/mono-error.h>
+            #include <mono/metadata/object.h>
+            #include <mono/utils/details/mono-logger-types.h>
+            #include "runtime.h"
             """);
 
         var pinvokesGroupedByEntryPoint = pinvokes
@@ -331,38 +336,18 @@ internal sealed class PInvokeTableGenerator
         // Only blittable parameter/return types are supposed.
         int cb_index = 0;
 
-        w.Write(@"#include <mono/utils/details/mono-error-types.h>
-                #include <mono/metadata/assembly.h>
-                #include <mono/utils/mono-error.h>
-                #include <mono/metadata/object.h>
-                #include <mono/utils/details/mono-logger-types.h>
-                #include ""runtime.h""
-                ");
-
         // Arguments to interp entry functions in the runtime
         w.WriteLine($"InterpFtnDesc wasm_native_to_interp_ftndescs[{callbacks.Count}] = {{}};");
 
         var callbackNames = new HashSet<string>();
         foreach (var cb in callbacks)
         {
-            var sb = new StringBuilder();
             var method = cb.Method;
             bool is_void = method.ReturnType.Name == "Void";
-
-            // The signature of the interp entry function
-            // This is a gsharedvt_in signature
-            sb.Append($"typedef void (*WasmInterpEntrySig_{cb_index}) (");
-
-            if (!is_void)
-            {
-                sb.Append("int*, ");
-            }
-            foreach (var p in method.GetParameters())
-            {
-                sb.Append("int*, ");
-            }
-            // Extra arg
-            sb.Append("int*);\n");
+            bool attr = cb.EntryPoint is not null;
+            var parameters = method.GetParameters();
+            var numParams = parameters.Length;
+            var type = cb.Method.DeclaringType!;
 
             cb.EntryName = CEntryPoint(cb);
             if (callbackNames.Contains(cb.EntryName))
@@ -370,55 +355,38 @@ internal sealed class PInvokeTableGenerator
                 Error($"Two callbacks with the same name '{cb.EntryName}' are not supported.");
             }
             callbackNames.Add(cb.EntryName);
-            if (cb.EntryPoint is not null)
-            {
-                sb.Append($"__attribute__((export_name(\"{EscapeLiteral(cb.EntryPoint)}\")))\n");
-            }
-            sb.Append($"{MapType(method.ReturnType)} {cb.EntryName} (");
-            int pindex = 0;
-            foreach (var p in method.GetParameters())
-            {
-                if (pindex > 0)
-                    sb.Append(", ");
-                sb.Append($"{MapType(p.ParameterType)} arg{pindex}");
-                pindex++;
-            }
-            sb.Append(") { \n");
-            if (!is_void)
-                sb.Append($"  {MapType(method.ReturnType)} res;\n");
 
-
-            // In case when null force interpreter to initialize the pointers
-            sb.Append($"  if (!(WasmInterpEntrySig_{cb_index})wasm_native_to_interp_ftndescs [{cb_index}].func) {{\n");
-            if (_isLibraryMode && HasAttribute(method, "System.Runtime.InteropServices.UnmanagedCallersOnlyAttribute"))
-            {
-                sb.Append($"    initialize_runtime(); \n");
-            }
-
-            var type = cb.Method.DeclaringType!;
-            int numParams = method.GetParameters().Length;
-            sb.Append($"    mono_wasm_marshal_get_managed_wrapper (\"{type!.Module!.Assembly!.GetName()!.Name!}\",\"{type.Namespace}\", \"{type.Name}\", \"{cb.Method.Name}\", {numParams});\n");
-            sb.Append($"  }}\n");
-
-            sb.Append($"  ((WasmInterpEntrySig_{cb_index})wasm_native_to_interp_ftndescs [{cb_index}].func) (");
+            // The signature of the interp entry function
+            // This is a gsharedvt_in signature
+            var unmanagedRange = Enumerable.Range(0, numParams);
+            var interpArgs = new List<string>();
             if (!is_void)
             {
-                sb.Append("(int*)&res, ");
-                pindex++;
+                interpArgs.Add("(int*)&res");
             }
-            int aindex = 0;
-            foreach (var p in method.GetParameters())
-            {
-                sb.Append($"(int*)&arg{aindex}, ");
-                aindex++;
-            }
+            interpArgs.AddRange(unmanagedRange.Select(i => $"(int*)&arg{i}"));
+            interpArgs.Add($"wasm_native_to_interp_ftndescs [{cb_index}].arg");
 
-            sb.Append($"wasm_native_to_interp_ftndescs [{cb_index}].arg);\n");
+            w.Write(
+                $$"""
 
-            if (!is_void)
-                sb.Append("  return res;\n");
-            sb.Append("}\n");
-            w.WriteLine(sb);
+                typedef void (*WasmInterpEntrySig_{{cb_index}}) ({{string.Join(", ", interpArgs.Select(_ => "int*"))}});
+
+                {{(attr ? $"__attribute__((export_name(\"{EscapeLiteral(cb.EntryPoint!)}\")" : "// no export name defined")}}
+                {{MapType(method.ReturnType)}} {{cb.EntryName}} ({{string.Join(", ", unmanagedRange.Select(i => $"{MapType(parameters[i].ParameterType)} arg{i}"))}}) {
+                  {{(!is_void ? $"{MapType(method.ReturnType)} res;" : "")}}
+
+                  // In case when null force interpreter to initialize the pointers
+                  if (!(WasmInterpEntrySig_{{cb_index}})wasm_native_to_interp_ftndescs [{{cb_index}}].func) {
+                    {{(attr ? "initialize_runtime();" : "// no defined entrypoint so no need to initialize runtime")}}
+                    mono_wasm_marshal_get_managed_wrapper ("{{type!.Module!.Assembly!.GetName()!.Name!}}","{{type.Namespace}}", "{{type.Name}}", "{{cb.Method.Name}}", {{numParams}});
+                  }
+
+                  ((WasmInterpEntrySig_{{cb_index}})wasm_native_to_interp_ftndescs [{{cb_index}}].func) ({{string.Join(", ", interpArgs)}});
+                  {{(!is_void ?  "return res;" : "")}}
+                }
+
+                """);
             cb_index++;
         }
 
