@@ -299,16 +299,16 @@ namespace Microsoft.Extensions.DependencyInjection
         }
 
         /// <summary>
-        /// Create a delegate that will instantiate a type with constructor arguments provided directly
+        /// Creates a delegate that will instantiate a type with constructor arguments provided directly
         /// and/or from an <see cref="IServiceProvider"/>.
         /// </summary>
-        /// <typeparam name="T">The type to activate</typeparam>
+        /// <typeparam name="T">The type to activate.</typeparam>
         /// <param name="argumentTypes">
-        /// The types of objects, in order, that will be passed to the returned function as its second parameter
+        /// The types of objects, in order, that will be passed to the returned function as its second parameter.
         /// </param>
         /// <returns>
-        /// A factory that will instantiate type T using an <see cref="IServiceProvider"/>
-        /// and an argument array containing objects matching the types defined in argumentTypes
+        /// A factory that will instantiate type <typeparamref name="T" /> using an <see cref="IServiceProvider"/>
+        /// and an argument array containing objects matching the types defined in <paramref name="argumentTypes" />.
         /// </returns>
         public static ObjectFactory<T>
             CreateFactory<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] T>(
@@ -341,12 +341,12 @@ namespace Microsoft.Extensions.DependencyInjection
         }
 
         /// <summary>
-        /// Instantiate a type with constructor arguments provided directly and/or from an <see cref="IServiceProvider"/>.
+        /// Instantiates a type with constructor arguments provided directly and/or from an <see cref="IServiceProvider"/>.
         /// </summary>
-        /// <typeparam name="T">The type to activate</typeparam>
-        /// <param name="provider">The service provider used to resolve dependencies</param>
-        /// <param name="parameters">Constructor arguments not provided by the <paramref name="provider"/>.</param>
-        /// <returns>An activated object of type T</returns>
+        /// <typeparam name="T">The type to activate.</typeparam>
+        /// <param name="provider">The service provider used to resolve dependencies.</param>
+        /// <param name="parameters">Constructor arguments not provided by <paramref name="provider"/>.</param>
+        /// <returns>An activated object of type <typeparamref name="T" />.</returns>
         public static T CreateInstance<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] T>(IServiceProvider provider, params object[] parameters)
         {
             return (T)CreateInstance(provider, typeof(T), parameters);

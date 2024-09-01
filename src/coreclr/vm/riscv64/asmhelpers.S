@@ -813,6 +813,38 @@ LEAF_END setFPReturn, _TEXT
 
 #endif // FEATURE_COMINTEROP
 
+// ------------------------------------------------------------------
+// void* JIT_GetDynamicNonGCStaticBase(DynamicStaticsInfo* pStaticsInfo)
+
+LEAF_ENTRY JIT_GetDynamicNonGCStaticBase_SingleAppDomain, _TEXT
+    // If class is not initialized, bail to C++ helper
+    ld a1, OFFSETOF__DynamicStaticsInfo__m_pNonGCStatics(a0)
+    bnez a1, LOCAL_LABEL(JIT_GetDynamicNonGCStaticBase_SingleAppDomain_CallHelper)
+    mv  a0, a1
+    ret
+
+LOCAL_LABEL(JIT_GetDynamicNonGCStaticBase_SingleAppDomain_CallHelper):
+    // Tail call JIT_GetDynamicNonGCStaticBase_Portable
+    la a1, JIT_GetDynamicNonGCStaticBase_Portable
+    jr a1
+LEAF_END JIT_GetDynamicNonGCStaticBase_SingleAppDomain, _TEXT
+
+// ------------------------------------------------------------------
+// void* JIT_GetDynamicGCStaticBase(DynamicStaticsInfo* pStaticsInfo)
+
+LEAF_ENTRY JIT_GetDynamicGCStaticBase_SingleAppDomain, _TEXT
+    // If class is not initialized, bail to C++ helper
+    ld a1, OFFSETOF__DynamicStaticsInfo__m_pGCStatics(a0)
+    bnez a1, LOCAL_LABEL(JIT_GetDynamicGCStaticBase_SingleAppDomain_CallHelper)
+    mv  a0, a1
+    ret
+
+LOCAL_LABEL(JIT_GetDynamicGCStaticBase_SingleAppDomain_CallHelper):
+    // Tail call JIT_GetDynamicGCStaticBase_Portable
+    la a1, JIT_GetDynamicGCStaticBase_Portable
+    jr a1
+LEAF_END JIT_GetDynamicGCStaticBase_SingleAppDomain, _TEXT
+
 #ifdef FEATURE_READYTORUN
 
 NESTED_ENTRY DelayLoad_MethodCall_FakeProlog, _TEXT, NoHandler

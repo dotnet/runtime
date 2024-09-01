@@ -68,14 +68,8 @@ FCFuncStart(gStringFuncs)
 FCFuncEnd()
 
 FCFuncStart(gDiagnosticsDebugger)
-    FCFuncElement("BreakInternal", DebugDebugger::Break)
     FCFuncElement("get_IsAttached", DebugDebugger::IsDebuggerAttached)
     FCFuncElement("IsLogging", DebugDebugger::IsLogging)
-    FCFuncElement("CustomNotification", DebugDebugger::CustomNotification)
-FCFuncEnd()
-
-FCFuncStart(gDiagnosticsStackTrace)
-    FCFuncElement("GetStackFramesInternal", DebugStackTrace::GetStackFramesInternal)
 FCFuncEnd()
 
 FCFuncStart(gEnvironmentFuncs)
@@ -333,13 +327,6 @@ FCFuncStart(gWaitHandleFuncs)
     FCFuncElement("SignalAndWaitNative", WaitHandleNative::CorSignalAndWaitOneNative)
 FCFuncEnd()
 
-#ifdef FEATURE_COMINTEROP
-FCFuncStart(gVariantFuncs)
-    FCFuncElement("SetFieldsObject", COMVariant::SetFieldsObject)
-    FCFuncElement("BoxEnum", COMVariant::BoxEnum)
-FCFuncEnd()
-#endif // FEATURE_COMINTEROP
-
 FCFuncStart(gCastHelpers)
     FCFuncElement("IsInstanceOfAny_NoCacheLookup", ::IsInstanceOfAny_NoCacheLookup)
     FCFuncElement("ChkCastAny_NoCacheLookup", ::ChkCastAny_NoCacheLookup)
@@ -465,11 +452,6 @@ FCFuncStart(gGCHandleFuncs)
     FCFuncElement("InternalCompareExchange", MarshalNative::GCHandleInternalCompareExchange)
 FCFuncEnd()
 
-FCFuncStart(gStreamFuncs)
-    FCFuncElement("HasOverriddenBeginEndRead", StreamNative::HasOverriddenBeginEndRead)
-    FCFuncElement("HasOverriddenBeginEndWrite", StreamNative::HasOverriddenBeginEndWrite)
-FCFuncEnd()
-
 FCFuncStart(gComAwareWeakReferenceFuncs)
     FCFuncElement("HasInteropInfo", ComAwareWeakReferenceNative::HasInteropInfo)
 FCFuncEnd()
@@ -515,17 +497,12 @@ FCClassElement("RuntimeType", "System", gSystem_RuntimeType)
 FCClassElement("RuntimeTypeHandle", "System", gCOMTypeHandleFuncs)
 
 FCClassElement("Signature", "System", gSignatureNative)
-FCClassElement("StackTrace", "System.Diagnostics", gDiagnosticsStackTrace)
-FCClassElement("Stream", "System.IO", gStreamFuncs)
 FCClassElement("String", "System", gStringFuncs)
 FCClassElement("StubHelpers", "System.StubHelpers", gStubHelperFuncs)
 FCClassElement("Thread", "System.Threading", gThreadFuncs)
 FCClassElement("ThreadPool", "System.Threading", gThreadPoolFuncs)
 FCClassElement("Type", "System", gSystem_Type)
 FCClassElement("TypedReference", "System", gTypedReferenceFuncs)
-#ifdef FEATURE_COMINTEROP
-FCClassElement("Variant", "System", gVariantFuncs)
-#endif
 FCClassElement("WaitHandle", "System.Threading", gWaitHandleFuncs)
 
 #undef FCFuncElement
