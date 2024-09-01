@@ -16,7 +16,7 @@ macro(append_extra_compression_libs NativeLibsExtra)
     # 'zlib' represents our in-tree zlib, and is used in all other platforms
     # that don't meet any of the previous special requirements, like most
     # regular Unix and Windows builds.
-    list(APPEND ZLIB_LIBRARIES $<IF:$<BOOL:CLR_CMAKE_USE_SYSTEM_ZLIB>,z,zlib>)
+    list(APPEND ZLIB_LIBRARIES $<IF:$<BOOL:${CLR_CMAKE_USE_SYSTEM_ZLIB}>,z,zlib>)
   endif ()
   list(APPEND ${NativeLibsExtra} ${ZLIB_LIBRARIES})
 

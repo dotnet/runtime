@@ -19,16 +19,6 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 
 #include "corexcep.h"
 
-/*****************************************************************************/
-
-void Compiler::impInit()
-{
-    impStmtList = impLastStmt = nullptr;
-#ifdef DEBUG
-    impInlinedCodeSize = 0;
-#endif // DEBUG
-}
-
 /*****************************************************************************
  *
  *  Pushes the given tree on the stack.
@@ -3011,6 +3001,12 @@ GenTree* Compiler::impStoreNullableFields(CORINFO_CLASS_HANDLE nullableCls, GenT
     GenTree*     hasValueStore = gtNewStoreLclFldNode(resultTmp, TYP_UBYTE, hasValOffset, gtNewIconNode(1));
     ClassLayout* layout        = valueType == TYP_STRUCT ? typGetObjLayout(valueStructCls) : nullptr;
     GenTree*     valueStore    = gtNewStoreLclFldNode(resultTmp, valueType, layout, valueOffset, value);
+
+    // ABI handling for struct values
+    if (varTypeIsStruct(valueStore))
+    {
+        valueStore = impStoreStruct(valueStore, CHECK_SPILL_ALL);
+    }
 
     impAppendTree(hasValueStore, CHECK_SPILL_ALL, impCurStmtDI);
     impAppendTree(valueStore, CHECK_SPILL_ALL, impCurStmtDI);

@@ -82,7 +82,7 @@ namespace System.Buffers.ArrayPool.Tests
             AssertExtensions.Throws<ArgumentOutOfRangeException>("minimumLength", () => pool.Rent(-1));
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
         public static void RentingGiganticArraySucceedsOrOOMs()
         {
             try

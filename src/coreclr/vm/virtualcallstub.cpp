@@ -478,17 +478,14 @@ void VirtualCallStubManager::ResetCache()
 
 }
 
-void VirtualCallStubManager::Init(BaseDomain *pDomain, LoaderAllocator *pLoaderAllocator)
+void VirtualCallStubManager::Init(LoaderAllocator *pLoaderAllocator)
 {
     CONTRACTL {
         THROWS;
         GC_TRIGGERS;
-        PRECONDITION(CheckPointer(pDomain));
         INJECT_FAULT(COMPlusThrowOM(););
     } CONTRACTL_END;
 
-    // Record the parent domain
-    parentDomain        = pDomain;
     m_loaderAllocator   = pLoaderAllocator;
 
     //
@@ -1570,7 +1567,6 @@ PCODE VirtualCallStubManager::ResolveWorker(StubCallSite* pCallSite,
 
 #if defined(_DEBUG)
         if (!objectType->IsComObjectType()
-            && !objectType->IsICastable()
             && !objectType->IsIDynamicInterfaceCastable())
         {
             CONSISTENCY_CHECK(!MethodTable::GetMethodDescForSlotAddress(target)->IsGenericMethodDefinition());
@@ -1975,9 +1971,13 @@ VirtualCallStubManager::Resolver(
         }
     }
 #ifdef FEATURE_COMINTEROP
-    else if (pMT->IsComObjectType() && IsInterfaceToken(token))
+    else if (pMT->IsComObjectType()
+        && IsInterfaceToken(token)
+        && GetTypeFromToken(token) != CoreLibBinder::GetClass(CLASS__IENUMERABLE)   // Interfaces handled by IDIC on __ComObject.
+        && GetTypeFromToken(token) != CoreLibBinder::GetClass(CLASS__IENUMERATOR)
+        && GetTypeFromToken(token) != CoreLibBinder::GetClass(CLASS__ICUSTOMADAPTER))
     {
-        MethodTable * pItfMT = GetTypeFromToken(token);
+        MethodTable* pItfMT = GetTypeFromToken(token);
         implSlot = pItfMT->FindDispatchSlot(TYPE_ID_THIS_CLASS, token.GetSlotNumber(), throwOnConflict);
 
         _ASSERTE(!pItfMT->HasInstantiation());
@@ -1985,41 +1985,6 @@ VirtualCallStubManager::Resolver(
         fShouldPatch = TRUE;
     }
 #endif // FEATURE_COMINTEROP
-#ifdef FEATURE_ICASTABLE
-    else if (pMT->IsICastable() && protectedObj != NULL && *protectedObj != NULL)
-    {
-        GCStress<cfg_any>::MaybeTrigger();
-
-        // In case of ICastable, instead of trying to find method implementation in the real object type
-        // we call Resolver() again with whatever type it returns.
-        // It allows objects that implement ICastable to mimic behavior of other types.
-        MethodTable * pTokenMT = GetTypeFromToken(token);
-
-        // Make call to ICastableHelpers.GetImplType(this, interfaceTypeObj)
-        PREPARE_NONVIRTUAL_CALLSITE(METHOD__ICASTABLEHELPERS__GETIMPLTYPE);
-
-        OBJECTREF tokenManagedType = pTokenMT->GetManagedClassObject(); //GC triggers
-
-        DECLARE_ARGHOLDER_ARRAY(args, 2);
-        args[ARGNUM_0] = OBJECTREF_TO_ARGHOLDER(*protectedObj);
-        args[ARGNUM_1] = OBJECTREF_TO_ARGHOLDER(tokenManagedType);
-
-        OBJECTREF impTypeObj = NULL;
-        CALL_MANAGED_METHOD_RETREF(impTypeObj, OBJECTREF, args);
-
-        INDEBUG(tokenManagedType = NULL); //tokenManagedType wasn't protected during the call
-        if (impTypeObj == NULL) // GetImplType returns default(RuntimeTypeHandle)
-        {
-            COMPlusThrow(kEntryPointNotFoundException);
-        }
-
-        ReflectClassBaseObject* resultTypeObj = ((ReflectClassBaseObject*)OBJECTREFToObject(impTypeObj));
-        TypeHandle resultTypeHnd = resultTypeObj->GetType();
-        MethodTable *pResultMT = resultTypeHnd.GetMethodTable();
-
-        return Resolver(pResultMT, token, protectedObj, ppTarget, throwOnConflict);
-    }
-#endif // FEATURE_ICASTABLE
     else if (pMT->IsIDynamicInterfaceCastable()
         && protectedObj != NULL
         && *protectedObj != NULL
@@ -2230,8 +2195,7 @@ VirtualCallStubManager::GetTarget(
     // No match, now do full resolve
     BOOL fPatch;
 
-    // TODO: passing NULL as protectedObj here can lead to incorrect behavior for ICastable objects
-    // We need to review if this is the case and refactor this code if we want ICastable to become officially supported
+    // TODO: passing NULL as protectedObj here can lead to incorrect behavior for IDynamicInterfaceCastable objects
     fPatch = Resolver(pMT, token, NULL, &target, throwOnConflict);
     _ASSERTE(!throwOnConflict || target != (PCODE)NULL);
 
@@ -3810,8 +3774,7 @@ MethodDesc *VirtualCallStubManagerManager::Entry2MethodDesc(
     DispatchToken token(VirtualCallStubManager::GetTokenFromStubQuick(pMgr, stubStartAddress, sk));
 
     PCODE target = (PCODE)NULL;
-    // TODO: passing NULL as protectedObj here can lead to incorrect behavior for ICastable objects
-    // We need to review if this is the case and refactor this code if we want ICastable to become officially supported
+    // TODO: passing NULL as protectedObj here can lead to incorrect behavior for IDynamicInterfaceCastable objects
     VirtualCallStubManager::Resolver(pMT, token, NULL, &target, TRUE /* throwOnConflict */);
 
     return pMT->GetMethodDescForSlotAddress(target);

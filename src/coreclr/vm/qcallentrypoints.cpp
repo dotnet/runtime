@@ -43,7 +43,6 @@
 
 #ifdef FEATURE_COMINTEROP
 #include "variant.h"
-#include "mngstdinterfaces.h"
 #endif // FEATURE_COMINTEROP
 
 #include "interoplibinterface.h"
@@ -84,11 +83,14 @@ static const Entry s_QCall[] =
     DllImportEntry(CustomAttribute_CreateCustomAttributeInstance)
     DllImportEntry(CustomAttribute_CreatePropertyOrFieldData)
     DllImportEntry(Enum_GetValuesAndNames)
+    DllImportEntry(DebugDebugger_Break)
     DllImportEntry(DebugDebugger_Launch)
     DllImportEntry(DebugDebugger_Log)
+    DllImportEntry(DebugDebugger_CustomNotification)
     DllImportEntry(Delegate_BindToMethodName)
     DllImportEntry(Delegate_BindToMethodInfo)
     DllImportEntry(Delegate_InitializeVirtualCallStub)
+    DllImportEntry(Delegate_GetMulticastInvokeSlow)
     DllImportEntry(Delegate_AdjustTarget)
     DllImportEntry(Delegate_InternalAlloc)
     DllImportEntry(Delegate_InternalAllocLike)
@@ -99,6 +101,8 @@ static const Entry s_QCall[] =
     DllImportEntry(Environment_GetProcessorCount)
     DllImportEntry(ExceptionNative_GetMessageFromNativeResources)
     DllImportEntry(ExceptionNative_GetMethodFromStackTrace)
+    DllImportEntry(ExceptionNative_ThrowAmbiguousResolutionException)
+    DllImportEntry(ExceptionNative_ThrowEntryPointNotFoundException)
     DllImportEntry(RuntimeTypeHandle_CreateInstanceForAnotherGenericParameter)
     DllImportEntry(QCall_GetGCHandleForTypeHandle)
     DllImportEntry(QCall_FreeGCHandleForTypeHandle)
@@ -106,12 +110,14 @@ static const Entry s_QCall[] =
     DllImportEntry(MethodTable_CanCompareBitsOrUseFastGetHashCode)
     DllImportEntry(TypeHandle_CanCastTo_NoCacheLookup)
     DllImportEntry(ValueType_GetHashCodeStrategy)
+    DllImportEntry(Stream_HasOverriddenSlow)
     DllImportEntry(RuntimeTypeHandle_MakePointer)
     DllImportEntry(RuntimeTypeHandle_MakeByRef)
     DllImportEntry(RuntimeTypeHandle_MakeSZArray)
     DllImportEntry(RuntimeTypeHandle_MakeArray)
     DllImportEntry(RuntimeTypeHandle_IsCollectible)
     DllImportEntry(RuntimeTypeHandle_GetConstraints)
+    DllImportEntry(RuntimeTypeHandle_GetNumVirtualsAndStaticVirtuals)
     DllImportEntry(RuntimeTypeHandle_VerifyInterfaceIsImplemented)
     DllImportEntry(RuntimeTypeHandle_GetInterfaceMethodImplementation)
     DllImportEntry(RuntimeTypeHandle_IsVisible)
@@ -135,6 +141,7 @@ static const Entry s_QCall[] =
     DllImportEntry(RuntimeModule_GetFullyQualifiedName)
     DllImportEntry(RuntimeModule_GetTypes)
     DllImportEntry(RuntimeFieldHandle_GetRVAFieldInfo)
+    DllImportEntry(StackTrace_GetStackFramesInternal)
     DllImportEntry(StackFrame_GetMethodDescFromNativeIP)
     DllImportEntry(ModuleBuilder_GetStringConstant)
     DllImportEntry(ModuleBuilder_GetTypeRef)
@@ -222,7 +229,6 @@ static const Entry s_QCall[] =
     DllImportEntry(MultiCoreJIT_InternalStartProfile)
 #endif
     DllImportEntry(LoaderAllocator_Destroy)
-    DllImportEntry(CustomMarshaler_GetMarshalerObject)
     DllImportEntry(String_Intern)
     DllImportEntry(String_IsInterned)
     DllImportEntry(AppDomain_CreateDynamicAssembly)
@@ -322,8 +328,7 @@ static const Entry s_QCall[] =
     DllImportEntry(MngdSafeArrayMarshaler_ConvertSpaceToManaged)
     DllImportEntry(MngdSafeArrayMarshaler_ConvertContentsToManaged)
     DllImportEntry(MngdSafeArrayMarshaler_ClearNative)
-    DllImportEntry(Variant_ConvertSystemColorToOleColor)
-    DllImportEntry(Variant_ConvertOleColorToSystemColor)
+    DllImportEntry(Variant_ConvertValueTypeToRecord)
 #endif // FEATURE_COMINTEROP
     DllImportEntry(NativeLibrary_LoadFromPath)
     DllImportEntry(NativeLibrary_LoadByName)
@@ -333,6 +338,8 @@ static const Entry s_QCall[] =
     DllImportEntry(GetFileLoadExceptionMessage)
     DllImportEntry(FileLoadException_GetMessageForHR)
     DllImportEntry(Interlocked_MemoryBarrierProcessWide)
+    DllImportEntry(ObjectNative_GetHashCodeSlow)
+    DllImportEntry(ObjectNative_GetTypeSlow)
     DllImportEntry(ObjectNative_AllocateUninitializedClone)
     DllImportEntry(Monitor_Wait)
     DllImportEntry(Monitor_Pulse)
@@ -417,10 +424,21 @@ static const Entry s_QCall[] =
 #if defined(TARGET_X86) || defined(TARGET_AMD64)
     DllImportEntry(X86BaseCpuId)
 #endif
-    DllImportEntry(StubHelpers_CreateCustomMarshalerHelper)
+    DllImportEntry(StubHelpers_CreateCustomMarshaler)
     DllImportEntry(StubHelpers_SetStringTrailByte)
     DllImportEntry(StubHelpers_ThrowInteropParamException)
+    DllImportEntry(StubHelpers_MarshalToManagedVaList)
+    DllImportEntry(StubHelpers_MarshalToUnmanagedVaList)
+    DllImportEntry(StubHelpers_ValidateObject)
+    DllImportEntry(StubHelpers_ValidateByref)
+#ifdef PROFILING_SUPPORTED
+    DllImportEntry(StubHelpers_ProfilerBeginTransitionCallback)
+    DllImportEntry(StubHelpers_ProfilerEndTransitionCallback)
+#endif
+    DllImportEntry(StubHelpers_GetHRExceptionObject)
 #if defined(FEATURE_COMINTEROP)
+    DllImportEntry(StubHelpers_GetCOMHRExceptionObject)
+    DllImportEntry(StubHelpers_GetCOMIPFromRCWSlow)
     DllImportEntry(ObjectMarshaler_ConvertToNative)
     DllImportEntry(ObjectMarshaler_ConvertToManaged)
     DllImportEntry(InterfaceMarshaler_ConvertToNative)

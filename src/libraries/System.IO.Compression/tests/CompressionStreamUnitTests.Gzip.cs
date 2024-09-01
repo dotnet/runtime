@@ -18,6 +18,7 @@ namespace System.IO.Compression
         public override Stream CreateStream(Stream stream, CompressionMode mode, bool leaveOpen) => new GZipStream(stream, mode, leaveOpen);
         public override Stream CreateStream(Stream stream, CompressionLevel level) => new GZipStream(stream, level);
         public override Stream CreateStream(Stream stream, CompressionLevel level, bool leaveOpen) => new GZipStream(stream, level, leaveOpen);
+        public override Stream CreateStream(Stream stream, ZLibCompressionOptions options, bool leaveOpen) => new GZipStream(stream, options, leaveOpen);
         public override Stream BaseStream(Stream stream) => ((GZipStream)stream).BaseStream;
         protected override string CompressedTestFile(string uncompressedPath) => Path.Combine("GZipTestData", Path.GetFileName(uncompressedPath) + ".gz");
 
@@ -439,6 +440,13 @@ namespace System.IO.Compression
                 WriteArrayInvoked = true;
                 return base.WriteAsync(buffer, offset, count, cancellationToken);
             }
+        }
+
+        [Theory]
+        [MemberData(nameof(UncompressedTestFilesZLib))]
+        public async Task ZLibCompressionLevel_SizeInOrder(string testFile)
+        {
+            await CompressionLevel_SizeInOrderBase(testFile);
         }
     }
 }

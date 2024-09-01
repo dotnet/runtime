@@ -2102,15 +2102,13 @@ load_aot_module (MonoAssemblyLoadContext *alc, MonoAssembly *assembly, gpointer 
 		find_symbol (sofile, globals, "mono_aot_file_info", (gpointer*)&info);
 	}
 
-	// Copy aotid to MonoImage
-	memcpy(&assembly->image->aotid, info->aotid, 16);
-
 	if (version_symbol) {
 		/* Old file format */
 		version = atoi (version_symbol);
-	} else {
-		g_assert (info);
+	} else if (info) {
 		version = info->version;
+	} else {
+		version = -1;
 	}
 
 	if (version != MONO_AOT_FILE_VERSION) {
@@ -2120,6 +2118,11 @@ load_aot_module (MonoAssemblyLoadContext *alc, MonoAssembly *assembly, gpointer 
 		guint8 *blob;
 		void *handle;
 
+		g_assert (info);
+		
+		// Copy aotid to MonoImage
+		memcpy(&assembly->image->aotid, info->aotid, 16);
+		
 		if (info->flags & MONO_AOT_FILE_FLAG_SEPARATE_DATA) {
 			aot_data = open_aot_data (assembly, info, &handle);
 

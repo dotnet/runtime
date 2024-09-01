@@ -1398,8 +1398,8 @@ bool Compiler::optJumpThreadPhi(BasicBlock* block, GenTree* tree, ValueNum treeN
     for (int i = 0; i < 2; i++)
     {
         const ValueNum phiDefVN = treeNormVNFuncApp.m_args[i];
-        VNFuncApp      phiDefFuncApp;
-        if (!vnStore->GetVNFunc(phiDefVN, &phiDefFuncApp) || (phiDefFuncApp.m_func != VNF_PhiDef))
+        VNPhiDef       phiDef;
+        if (!vnStore->GetPhiDef(phiDefVN, &phiDef))
         {
             // This input is not a phi def. If it's a func app it might depend on
             // transitively on a phi def; consider a general search utility.
@@ -1409,12 +1409,10 @@ bool Compiler::optJumpThreadPhi(BasicBlock* block, GenTree* tree, ValueNum treeN
 
         // The PhiDef args tell us which local and which SSA def of that local.
         //
-        assert(phiDefFuncApp.m_arity == 3);
-        const unsigned lclNum    = unsigned(phiDefFuncApp.m_args[0]);
-        const unsigned ssaDefNum = unsigned(phiDefFuncApp.m_args[1]);
-        const ValueNum phiVN     = ValueNum(phiDefFuncApp.m_args[2]);
-        JITDUMP("... JT-PHI [interestingVN] in " FMT_BB " relop %s operand VN is PhiDef for V%02u:%u " FMT_VN "\n",
-                block->bbNum, i == 0 ? "first" : "second", lclNum, ssaDefNum, phiVN);
+        const unsigned lclNum    = phiDef.LclNum;
+        const unsigned ssaDefNum = phiDef.SsaDef;
+        JITDUMP("... JT-PHI [interestingVN] in " FMT_BB " relop %s operand VN is PhiDef for V%02u\n", block->bbNum,
+                i == 0 ? "first" : "second", lclNum, ssaDefNum);
         if (!foundPhiDef)
         {
             DISPTREE(tree);

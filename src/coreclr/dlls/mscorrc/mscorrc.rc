@@ -431,7 +431,6 @@ BEGIN
     IDS_EE_RCW_INVALIDCAST_ITF              "Unable to cast COM object of type '%2' to interface type '%3'. This operation failed because the QueryInterface call on the COM component for the interface with IID '%4' failed due to the following error: %1."
     IDS_EE_RCW_INVALIDCAST_EVENTITF         "Unable to cast COM object of type '%2' to event interface type '%3'. This operation failed because the QueryInterface call on the COM component for the interface with IID '%4' failed due to the following error: '%1' and the COM component does not support the source interface with IID '%5'."
     IDS_EE_RCW_INVALIDCAST_IENUMERABLE      "Unable to cast COM object of type '%2' to interface type '%3'. This operation failed because the QueryInterface call on the COM component for the interface with IID '%4' failed due to the following error: '%1' and the COM component does not support IDispatch::Invoke calls for DISPID_NEWENUM."
-    IDS_EE_RCW_INVALIDCAST_MNGSTDITF        "Unable to cast COM object of type '%2' to standard managed interface type '%3'. This operation failed because the QueryInterface call on the COM component for the managed interface with IID '%4' failed due to the following error: '%1' and the QueryInterface call for the native interface with IID '%5' that corresponds to this managed interface failed due to the following error: %6."
     IDS_EE_RCW_INVALIDCAST_COMOBJ_TO_MD     "Unable to cast COM object of type '%1' to class type '%2'. COM components that enter the CLR and do not support IProvideClassInfo or that do not have any interop assembly registered will be wrapped in the __ComObject type. Instances of this type cannot be cast to any other class; however they can be cast to interfaces as long as the underlying COM component supports QueryInterface calls for the IID of the interface."
     IDS_EE_RCW_INVALIDCAST_TO_NON_COMOBJTYPE "Unable to cast COM object of type '%1' to class type '%2'. Instances of types that represent COM components cannot be cast to types that do not represent COM components; however they can be cast to interfaces as long as the underlying COM component supports QueryInterface calls for the IID of the interface."
     IDS_EE_RCW_INVALIDCAST_MD_TO_MD         "Unable to cast COM object of type '%1' to class type '%2'. Instances of types that represent COM components cannot be cast to different types that represent COM components; however they can be cast to interfaces as long as the underlying COM component supports QueryInterface calls for the IID of the interface."
@@ -469,7 +468,6 @@ BEGIN
     IDS_EE_INVALID_CA                       "Invalid custom attribute provided."
 
     IDS_EE_THREAD_CANNOT_GET                "Unable to retrieve thread information."
-    IDS_EE_THREAD_BAD_STATE                 "Thread in invalid state."
     IDS_EE_THREAD_ABORT_WHILE_SUSPEND       "Thread is suspended; attempting to abort."
     IDS_EE_NOVARIANTRETURN                  "PInvoke restriction: cannot return variants."
 
@@ -488,11 +486,6 @@ BEGIN
     IDS_EE_CLASS_TO_VARIANT_TLB_NOT_REG     "Type '%1' cannot be marshalled to a Variant. Type library is not registered."
     IDS_EE_CANNOT_MAP_TO_MANAGED_VC         "The specified record cannot be mapped to a managed value class."
 
-    IDS_EE_SH_IN_VARIANT_NOT_SUPPORTED      "SafeHandle derived types cannot be stored in Variants."
-
-    IDS_EE_CH_IN_VARIANT_NOT_SUPPORTED      "CriticalHandle derived types cannot be stored in Variants."
-
-    IDS_EE_VAR_WRAP_IN_VAR_NOT_SUPPORTED    "VariantWrappers cannot be stored in Variants."
     IDS_EE_RECORD_NON_SUPPORTED_FIELDS      "The structure contains fields that are not supported in unmanaged records."
 
     IDS_CLASSLOAD_NSTRUCT_NEGATIVE_OFFSET   "Could not load type '%1' from assembly '%2' because field '%3' was given a negative offset."
@@ -702,7 +695,7 @@ END
 STRINGTABLE DISCARDABLE
 BEGIN
     IDS_HOST_ASSEMBLY_RESOLVER_ASSEMBLY_ALREADY_LOADED_IN_CONTEXT "Assembly with same name is already loaded"
-    IDS_HOST_ASSEMBLY_RESOLVER_DYNAMICALLY_EMITTED_ASSEMBLIES_UNSUPPORTED "Dynamically emitted assemblies are unsupported during host-based resolution."
+    IDS_HOST_ASSEMBLY_RESOLVER_DYNAMICALLY_EMITTED_ASSEMBLIES_UNSUPPORTED "Dynamically emitted assemblies are unsupported for AssemblyLoadContext resolution."
 END
 
 STRINGTABLE DISCARDABLE

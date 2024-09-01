@@ -29,6 +29,7 @@ namespace Internal.Runtime.InteropServices
         // To indicate the specific error when IsSupported is false
         private const int HostFeatureDisabled = unchecked((int)0x800080a7);
 
+        [FeatureSwitchDefinition("System.Runtime.InteropServices.EnableConsumingManagedCodeFromNativeHosting")]
         private static bool IsSupported { get; } = InitializeIsSupported();
 
         private static bool InitializeIsSupported() => AppContext.TryGetSwitch("System.Runtime.InteropServices.EnableConsumingManagedCodeFromNativeHosting", out bool isSupported) ? isSupported : true;
@@ -329,9 +330,8 @@ namespace Internal.Runtime.InteropServices
             if (delegateType == null)
             {
                 // Match search semantics of the CreateDelegate() function below.
-                BindingFlags bindingFlags = BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic;
-                MethodInfo? methodInfo = type.GetMethod(methodName, bindingFlags);
-                if (methodInfo == null)
+                const BindingFlags bindingFlags = BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic;
+                MethodInfo methodInfo = type.GetMethod(methodName, bindingFlags) ??
                     throw new MissingMethodException(typeName, methodName);
 
                 // Verify the function is properly marked.

@@ -906,7 +906,10 @@ namespace System.Threading
             // thread because it sees a Determining or Scheduled stage, and the current thread is the last thread processing
             // work items, the current thread must either see the work item queued by the enqueuer, or it must see a stage of
             // Scheduled, and try to dequeue again or request another thread.
+#if !TARGET_WASI
+            // TODO https://github.com/dotnet/runtime/issues/104803
             Debug.Assert(workQueue._separated.queueProcessingStage == QueueProcessingStage.Scheduled);
+#endif
             workQueue._separated.queueProcessingStage = QueueProcessingStage.Determining;
             Interlocked.MemoryBarrier();
 
@@ -1390,7 +1393,11 @@ namespace System.Threading
                 currentThread.ResetThreadPoolThread();
             }
 
-            ThreadInt64PersistentCounter.Add(tl.threadLocalCompletionCountObject!, completedCount);
+            // Discount a work item here to avoid counting most of the queue processing work items
+            if (completedCount > 1)
+            {
+                ThreadInt64PersistentCounter.Add(tl.threadLocalCompletionCountObject!, completedCount - 1);
+            }
         }
     }
 
@@ -1793,7 +1800,7 @@ namespace System.Threading
             // internally we call UnsafeQueueUserWorkItemInternal directly for Tasks.
             if (ReferenceEquals(callBack, s_invokeAsyncStateMachineBox))
             {
-                if (!(state is IAsyncStateMachineBox))
+                if (state is not IAsyncStateMachineBox)
                 {
                     // The provided state must be the internal IAsyncStateMachineBox (Task) type
                     ThrowHelper.ThrowUnexpectedStateForKnownCallback(state);

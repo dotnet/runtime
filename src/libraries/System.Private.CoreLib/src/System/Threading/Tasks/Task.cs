@@ -819,6 +819,7 @@ namespace System.Threading.Tasks
 
         /// <summary>Gets whether the task's debugger notification for wait completion bit is set.</summary>
         /// <returns>true if the bit is set; false if it's not set.</returns>
+        [FeatureSwitchDefinition("System.Diagnostics.Debugger.IsSupported")]
         internal bool IsWaitNotificationEnabled => // internal only to enable unit tests; would otherwise be private
             (m_stateFlags & (int)TaskStateFlags.WaitCompletionNotification) != 0;
 
@@ -3516,7 +3517,7 @@ namespace System.Threading.Tasks
                             stc.Run(this, canInlineContinuationTask: false);
                         }
                     }
-                    else if (!(currentContinuation is ITaskCompletionAction))
+                    else if (currentContinuation is not ITaskCompletionAction)
                     {
                         if (forceContinuationsAsync)
                         {
@@ -4483,7 +4484,7 @@ namespace System.Threading.Tasks
                 //    activity, we ensure we at least create a correlation from the current activity to
                 //    the continuation that runs when the promise completes.
                 if ((this.Options & (TaskCreationOptions)InternalTaskOptions.PromiseTask) != 0 &&
-                    !(this is ITaskCompletionAction))
+                    this is not ITaskCompletionAction)
                 {
                     TplEventSource log = TplEventSource.Log;
                     if (log.IsEnabled())

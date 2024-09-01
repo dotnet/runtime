@@ -1,7 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+#ifndef SOS_INCLUDE
 #include "common.h"
+#endif
 
 #include "gcinfodecoder.h"
 
@@ -367,7 +369,11 @@ GcInfoDecoder::GcInfoDecoder(
     {
         if(m_NumSafePoints)
         {
-            m_SafePointIndex = FindSafePoint(m_InstructionOffset);
+            // Safepoints are encoded with a -1 adjustment
+            // DECODE_GC_LIFETIMES adjusts the offset accordingly, but DECODE_INTERRUPTIBILITY does not
+            // adjust here
+            UINT32 offset = flags & DECODE_INTERRUPTIBILITY ? m_InstructionOffset - 1 : m_InstructionOffset;
+            m_SafePointIndex = FindSafePoint(offset);
         }
     }
     else if(flags & DECODE_FOR_RANGES_CALLBACK)
@@ -453,6 +459,10 @@ bool GcInfoDecoder::IsSafePoint(UINT32 codeOffset)
     if(m_NumSafePoints == 0)
         return false;
 
+#if defined(TARGET_AMD64) || defined(TARGET_ARM) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
+    // Safepoints are encoded with a -1 adjustment
+    codeOffset--;
+#endif
     size_t savedPos = m_Reader.GetCurrentPos();
     UINT32 safePointIndex = FindSafePoint(codeOffset);
     m_Reader.SetCurrentPos(savedPos);
@@ -499,26 +509,32 @@ UINT32 GcInfoDecoder::FindSafePoint(UINT32 breakOffset)
     const size_t savedPos = m_Reader.GetCurrentPos();
     const UINT32 numBitsPerOffset = CeilOfLog2(NORMALIZE_CODE_OFFSET(m_CodeLength));
 
-    const UINT32 normBreakOffset = NORMALIZE_CODE_OFFSET(breakOffset);
-    UINT32 linearSearchStart = 0;
-    UINT32 linearSearchEnd = m_NumSafePoints;
-    if (linearSearchEnd - linearSearchStart > MAX_LINEAR_SEARCH)
+#if defined(TARGET_ARM) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
+    // Safepoints are encoded with a -1 adjustment
+    if ((breakOffset & 1) != 0)
+#endif
     {
-        linearSearchStart = NarrowSafePointSearch(savedPos, normBreakOffset, &linearSearchEnd);
-    }
-
-    for (UINT32 i = linearSearchStart; i < linearSearchEnd; i++)
-    {
-        UINT32 spOffset = (UINT32)m_Reader.Read(numBitsPerOffset);
-        if (spOffset == normBreakOffset)
+        const UINT32 normBreakOffset = NORMALIZE_CODE_OFFSET(breakOffset);
+        UINT32 linearSearchStart = 0;
+        UINT32 linearSearchEnd = m_NumSafePoints;
+        if (linearSearchEnd - linearSearchStart > MAX_LINEAR_SEARCH)
         {
-            result = i;
-            break;
+            linearSearchStart = NarrowSafePointSearch(savedPos, normBreakOffset, &linearSearchEnd);
         }
 
-        if (spOffset > normBreakOffset)
+        for (UINT32 i = linearSearchStart; i < linearSearchEnd; i++)
         {
-            break;
+            UINT32 spOffset = (UINT32)m_Reader.Read(numBitsPerOffset);
+            if (spOffset == normBreakOffset)
+            {
+                result = i;
+                break;
+            }
+
+            if (spOffset > normBreakOffset)
+            {
+                break;
+            }
         }
     }
 
@@ -539,7 +555,13 @@ void GcInfoDecoder::EnumerateSafePoints(EnumerateSafePointsCallback *pCallback, 
     for(UINT32 i = 0; i < m_NumSafePoints; i++)
     {
         UINT32 normOffset = (UINT32)m_Reader.Read(numBitsPerOffset);
-        UINT32 offset = DENORMALIZE_CODE_OFFSET(normOffset);
+        UINT32 offset = DENORMALIZE_CODE_OFFSET(normOffset) + 2;
+
+#if defined(TARGET_AMD64) || defined(TARGET_ARM) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
+        // Safepoints are encoded with a -1 adjustment
+        offset--;
+#endif
+
         pCallback(this, offset, hCallback);
     }
 }
@@ -708,6 +730,15 @@ bool GcInfoDecoder::EnumerateLiveSlots(
         LOG((LF_GCROOTS, LL_INFO100000, "Not reporting this frame because it was already reported via another funclet.\n"));
         return true;
     }
+
+    //
+    // If this is a non-leaf frame and we are executing a call, the unwinder has given us the PC
+    //  of the call instruction. We should adjust it to the PC of the instruction after the call in order to
+    //  obtain transition information for scratch slots. However, we always assume scratch slots to be
+    //  dead for non-leaf frames (except for ResumableFrames), so we don't need to adjust the PC.
+    // If this is a non-leaf frame and we are not executing a call (i.e.: a fault occurred in the function),
+    //  then it would be incorrect to adjust the PC
+    //
 
     _ASSERTE(GC_SLOT_INTERIOR == GC_CALL_INTERIOR);
     _ASSERTE(GC_SLOT_PINNED == GC_CALL_PINNED);
@@ -1773,7 +1804,7 @@ void GcInfoDecoder::ReportRegisterToGC( // ARM64
     LOG((LF_GCROOTS, LL_INFO1000, "Reporting " FMT_REG, regNum ));
 
     OBJECTREF* pObjRef = GetRegisterSlot( regNum, pRD );
-#if defined(TARGET_UNIX) && !defined(FEATURE_NATIVEAOT) && !defined(SOS_TARGET_AMD64)
+#if defined(TARGET_UNIX) && !defined(FEATURE_NATIVEAOT) && !defined(SOS_TARGET_ARM64)
     // On PAL, we don't always have the context pointers available due to
     // a limitation of an unwinding library. In such case, the context
     // pointers for some nonvolatile registers are NULL.
@@ -1926,7 +1957,7 @@ void GcInfoDecoder::ReportRegisterToGC(
     LOG((LF_GCROOTS, LL_INFO1000, "Reporting " FMT_REG, regNum ));
 
     OBJECTREF* pObjRef = GetRegisterSlot( regNum, pRD );
-#if defined(TARGET_UNIX) && !defined(FEATURE_NATIVEAOT) && !defined(SOS_TARGET_AMD64)
+#if defined(TARGET_UNIX) && !defined(FEATURE_NATIVEAOT) && !defined(SOS_TARGET_LOONGARCH64)
 
     // On PAL, we don't always have the context pointers available due to
     // a limitation of an unwinding library. In such case, the context
@@ -1947,7 +1978,7 @@ void GcInfoDecoder::ReportRegisterToGC(
 
         gcFlags |= GC_CALL_PINNED;
     }
-#endif // TARGET_UNIX && !SOS_TARGET_ARM64
+#endif // TARGET_UNIX && !SOS_TARGET_LOONGARCH64
 
 #ifdef _DEBUG
     if(IsScratchRegister(regNum, pRD))
@@ -2064,7 +2095,7 @@ void GcInfoDecoder::ReportRegisterToGC(
     LOG((LF_GCROOTS, LL_INFO1000, "Reporting " FMT_REG, regNum ));
 
     OBJECTREF* pObjRef = GetRegisterSlot( regNum, pRD );
-#if defined(TARGET_UNIX) && !defined(FEATURE_NATIVEAOT) && !defined(SOS_TARGET_AMD64)
+#if defined(TARGET_UNIX) && !defined(FEATURE_NATIVEAOT) && !defined(SOS_TARGET_RISCV64)
 
     // On PAL, we don't always have the context pointers available due to
     // a limitation of an unwinding library. In such case, the context
@@ -2085,7 +2116,7 @@ void GcInfoDecoder::ReportRegisterToGC(
 
         gcFlags |= GC_CALL_PINNED;
     }
-#endif // TARGET_UNIX && !SOS_TARGET_ARM64
+#endif // TARGET_UNIX && !SOS_TARGET_RISCV64
 
 #ifdef _DEBUG
     if(IsScratchRegister(regNum, pRD))

@@ -127,7 +127,7 @@ namespace System
                 // An object of type Attribute will cause a stack overflow.
                 // However, this should never happen because custom attributes cannot contain values other than
                 // constants, single-dimensional arrays and typeof expressions.
-                Debug.Assert(!(thisValue is Attribute));
+                Debug.Assert(thisValue is not Attribute);
                 if (!thisValue.Equals(thatValue))
                     return false;
             }

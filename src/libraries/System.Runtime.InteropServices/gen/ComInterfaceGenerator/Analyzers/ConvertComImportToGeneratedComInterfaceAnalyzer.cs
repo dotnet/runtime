@@ -87,9 +87,6 @@ namespace Microsoft.Interop.Analyzers
                         mayRequireAdditionalWork = diagnostics.Diagnostics.Any();
                         bool anyExplicitlyUnsupportedInfo = false;
 
-                        var managedToNativeStubCodeContext = new ManagedToNativeStubCodeContext("return", "nativeReturn");
-                        var nativeToManagedStubCodeContext = new NativeToManagedStubCodeContext("return", "nativeReturn");
-
                         var forwarder = new Forwarder();
                         // We don't actually need the bound generators. We just need them to be attempted to be bound to determine if the generator will be able to bind them.
                         BoundGenerators generators = BoundGenerators.Create(targetSignatureContext.ElementTypeInformation, new CallbackGeneratorResolver((info, context) =>
@@ -97,17 +94,17 @@ namespace Microsoft.Interop.Analyzers
                             if (s_unsupportedTypeNames.Contains(info.ManagedType.FullTypeName))
                             {
                                 anyExplicitlyUnsupportedInfo = true;
-                                return ResolvedGenerator.Resolved(forwarder);
+                                return ResolvedGenerator.Resolved(forwarder.Bind(info, context));
                             }
                             if (HasUnsupportedMarshalAsInfo(info))
                             {
                                 anyExplicitlyUnsupportedInfo = true;
-                                return ResolvedGenerator.Resolved(forwarder);
+                                return ResolvedGenerator.Resolved(forwarder.Bind(info, context));
                             }
                             if (info.MarshallingAttributeInfo is TrackedMarshallingInfo(TrackedMarshallingInfoAnnotation.ExplicitlyUnsupported, _))
                             {
                                 anyExplicitlyUnsupportedInfo = true;
-                                return ResolvedGenerator.Resolved(forwarder);
+                                return ResolvedGenerator.Resolved(forwarder.Bind(info, context));
                             }
                             if (info.MarshallingAttributeInfo is TrackedMarshallingInfo(TrackedMarshallingInfoAnnotation annotation, var inner))
                             {
@@ -118,13 +115,13 @@ namespace Microsoft.Interop.Analyzers
                                 info = info with { MarshallingAttributeInfo = inner };
                             }
                             // Run both factories and collect any binding failures.
-                            ResolvedGenerator unmanagedToManagedGenerator = unmanagedToManagedFactory.Create(info, nativeToManagedStubCodeContext);
-                            ResolvedGenerator managedToUnmanagedGenerator = managedToUnmanagedFactory.Create(info, managedToNativeStubCodeContext);
+                            ResolvedGenerator unmanagedToManagedGenerator = unmanagedToManagedFactory.Create(info, StubCodeContext.DefaultNativeToManagedStub);
+                            ResolvedGenerator managedToUnmanagedGenerator = managedToUnmanagedFactory.Create(info, StubCodeContext.DefaultManagedToNativeStub);
                             return managedToUnmanagedGenerator with
                             {
                                 Diagnostics = managedToUnmanagedGenerator.Diagnostics.AddRange(unmanagedToManagedGenerator.Diagnostics)
                             };
-                        }), managedToNativeStubCodeContext, forwarder, out var generatorDiagnostics);
+                        }), StubCodeContext.DefaultManagedToNativeStub, forwarder, out var generatorDiagnostics);
 
                         mayRequireAdditionalWork |= generatorDiagnostics.Any(diag => diag.IsFatal);
 
@@ -164,7 +161,7 @@ namespace Microsoft.Interop.Analyzers
                     new NativeMarshallingAttributeParser(env.Compilation, diagnostics),
                     new ComInterfaceMarshallingInfoProvider(env.Compilation)),
                 ImmutableArray.Create<ITypeBasedMarshallingInfoProvider>(
-                    new SafeHandleMarshallingInfoProvider(env.Compilation, method.ContainingType),
+                    new SafeHandleMarshallingInfoProvider(env.Compilation),
                     new ExplicitlyUnsupportedMarshallingInfoProvider(), // We don't support arrays, so we don't include the array marshalling info provider. Instead, we include our "explicitly unsupported" provider.
                     new CharMarshallingInfoProvider(defaultInfo),
                     new TrackingStringMarshallingInfoProvider(new StringMarshallingInfoProvider(env.Compilation, diagnostics, unparsedAttributeData, defaultInfo)), // We need to mark when we see string types to ensure we offer a code-fix that adds the string marshalling info.

@@ -7095,8 +7095,28 @@ unsigned emitter::emitEndCodeGen(Compiler*         comp,
     *instrCount                                       = 0;
     jitstd::list<RichIPMapping>::iterator nextMapping = emitComp->genRichIPmappings.begin();
 #endif
+#if defined(DEBUG) && defined(TARGET_ARM64)
+    instrDesc* prevId = nullptr;
+#endif // defined(DEBUG) && defined(TARGET_ARM64)
+
     for (insGroup* ig = emitIGlist; ig != nullptr; ig = ig->igNext)
     {
+
+#if defined(DEBUG) && defined(TARGET_ARM64)
+        instrDesc* currId = emitFirstInstrDesc(ig->igData);
+        for (unsigned cnt = ig->igInsCnt; cnt > 0; cnt--)
+        {
+            emitInsPairSanityCheck(prevId, currId);
+            prevId = currId;
+            emitAdvanceInstrDesc(&currId, emitSizeOfInsDsc(currId));
+        }
+        // Final instruction can't be a movprfx
+        if (ig->igNext == nullptr)
+        {
+            assert(prevId->idIns() != INS_sve_movprfx);
+        }
+#endif // defined(DEBUG) && defined(TARGET_ARM64)
+
         assert(!(ig->igFlags & IGF_PLACEHOLDER)); // There better not be any placeholder groups left
 
         /* Is this the first cold block? */
@@ -8341,7 +8361,7 @@ void emitter::emitDispDataSec(dataSecDsc* section, BYTE* dst)
             bool      isRelative = (data->dsType == dataSection::blockRelative32);
             size_t    blockCount = data->dsSize / (isRelative ? 4 : TARGET_POINTER_SIZE);
 
-            for (unsigned i = 0; i < blockCount; i++)
+            for (size_t i = 0; i < blockCount; i++)
             {
                 if (i > 0)
                 {
@@ -10457,6 +10477,11 @@ void emitter::emitDisableGC()
         JITDUMP("Disable GC: %u no-gc requests\n", emitNoGCRequestCount);
         assert(emitNoGCIG);
     }
+}
+
+bool emitter::emitGCDisabled()
+{
+    return emitNoGCIG == true;
 }
 
 //------------------------------------------------------------------------
