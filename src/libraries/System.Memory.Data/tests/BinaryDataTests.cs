@@ -431,6 +431,59 @@ namespace System.Tests
             var data = BinaryData.FromStream(new OverFlowStream(offset: int.MaxValue - 1000));
         }
 
+        [Fact]
+        public async Task CanCreateBinaryDataFromFile()
+        {
+            byte[] buffer = "some data"u8.ToArray();
+            string path = Path.GetTempFileName();
+            File.WriteAllBytes(path, buffer);
+            BinaryData data = BinaryData.FromFile(path);
+            Assert.Equal(buffer, data.ToArray());
+
+            byte[] output = new byte[buffer.Length];
+            var outputStream = data.ToStream();
+            outputStream.Read(output, 0, (int)outputStream.Length);
+            Assert.Equal(buffer, output);
+
+            data = await BinaryData.FromFileAsync(path);
+            Assert.Equal(buffer, data.ToArray());
+
+            outputStream = data.ToStream();
+            outputStream.Read(output, 0, (int)outputStream.Length);
+            Assert.Equal(buffer, output);
+        }
+
+        [Theory]
+        [InlineData(null)]
+        [InlineData("")]
+        [InlineData(MediaTypeNames.Application.Soap)]
+        public async Task CanCreateBinaryDataFromFileWithMediaType(string? mediaType)
+        {
+            byte[] buffer = "some data"u8.ToArray();
+            string path = Path.GetTempFileName();
+            File.WriteAllBytes(path, buffer);
+            BinaryData data = BinaryData.FromFile(path, mediaType);
+            Assert.Equal(buffer, data.ToArray());
+            Assert.Equal(mediaType, data.MediaType);
+
+            byte[] output = new byte[buffer.Length];
+            var outputStream = data.ToStream();
+            outputStream.Read(output, 0, (int)outputStream.Length);
+            Assert.Equal(buffer, output);
+
+            data = await BinaryData.FromFileAsync(path, mediaType);
+            Assert.Equal(buffer, data.ToArray());
+            Assert.Equal(mediaType, data.MediaType);
+
+            outputStream = data.ToStream();
+            outputStream.Read(output, 0, (int)outputStream.Length);
+            Assert.Equal(buffer, output);
+
+            //changing the backing buffer should not affect the BD instance
+            buffer[3] = (byte)'z';
+            Assert.NotEqual(buffer, data.ToMemory().ToArray());
+        }
+
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBuiltWithAggressiveTrimming))]
         public void CanCreateBinaryDataFromCustomType()
         {
@@ -508,6 +561,22 @@ namespace System.Tests
 
             ex = await Assert.ThrowsAsync<ArgumentNullException>(() => BinaryData.FromStreamAsync(null, null));
             Assert.Contains("stream", ex.Message);
+        }
+
+        [Fact]
+        public async Task CreateFromFileThrowsOnNullPath()
+        {
+            var ex = Assert.Throws<ArgumentNullException>(() => BinaryData.FromFile(null));
+            Assert.Contains("path", ex.Message);
+
+            ex = Assert.Throws<ArgumentNullException>(() => BinaryData.FromFile(null, null));
+            Assert.Contains("path", ex.Message);
+
+            ex = await Assert.ThrowsAsync<ArgumentNullException>(() => BinaryData.FromFileAsync(null));
+            Assert.Contains("path", ex.Message);
+
+            ex = await Assert.ThrowsAsync<ArgumentNullException>(() => BinaryData.FromFileAsync(null, null));
+            Assert.Contains("path", ex.Message);
         }
 
         [Fact]
