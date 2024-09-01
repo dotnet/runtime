@@ -50,7 +50,7 @@ bool emitter::IsKInstruction(instruction ins)
 }
 
 //------------------------------------------------------------------------
-// IsKInstruction: Does this instruction require K register and
+// IsKInstructionWithLBit: Does this instruction require K register and
 //    LBIT_IN_3BYTE_VEX_PREFIX bit.
 //
 // Arguments:
