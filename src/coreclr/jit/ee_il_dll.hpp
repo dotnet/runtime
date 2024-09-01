@@ -85,15 +85,15 @@ var_types Compiler::eeGetFieldType(CORINFO_FIELD_HANDLE  fldHnd,
     // memberParent is an opportunistic hint to get a more exact field type
     if (memberParent != NO_CLASS_HANDLE)
     {
-        bool                 useHint = false;
-        CORINFO_FIELD_HANDLE fld     = info.compCompHnd->getFieldClass(fldHnd);
-        if (info.compCompHnd->isMoreSpecificType(fld, memberParent))
+        bool                 useHint    = false;
+        CORINFO_CLASS_HANDLE fieldOwner = info.compCompHnd->getFieldClass(fldHnd);
+        if (info.compCompHnd->isMoreSpecificType(fieldOwner, memberParent))
         {
             // Now validate that the more specific class actually contains the field:
             unsigned fields = info.compCompHnd->getClassNumInstanceFields(memberParent);
             for (unsigned i = 0; i < fields; i++)
             {
-                if (info.compCompHnd->getFieldInClass(memberParent, i) == fld)
+                if (info.compCompHnd->getFieldInClass(memberParent, i) == fldHnd)
                 {
                     useHint = true;
                     break;
