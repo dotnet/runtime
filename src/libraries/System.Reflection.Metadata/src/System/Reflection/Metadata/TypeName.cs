@@ -307,23 +307,22 @@ namespace System.Reflection.Metadata
             // to create such names with the Make* APIs.
             int result = 1;
 
-            if (IsNested)
-            {
-                result = checked(result + DeclaringType.GetNodeCount());
-            }
-
             if (IsArray || IsPointer || IsByRef)
             {
                 result = checked(result + GetElementType().GetNodeCount());
             }
             else if (IsConstructedGenericType)
             {
-                checked { result++; } // the generic type definition
+                result = checked(result + GetGenericTypeDefinition().GetNodeCount());
 
                 foreach (TypeName genericArgument in GetGenericArguments())
                 {
                     result = checked(result + genericArgument.GetNodeCount());
                 }
+            }
+            else if (IsNested)
+            {
+                result = checked(result + DeclaringType.GetNodeCount());
             }
 
             return result;
