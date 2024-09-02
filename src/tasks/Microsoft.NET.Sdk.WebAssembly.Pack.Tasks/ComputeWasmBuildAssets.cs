@@ -112,7 +112,7 @@ public class ComputeWasmBuildAssets : Task
                     assetCandidate.SetMetadata("RelativePath", $"_framework/{inferredCulture}/{satelliteAssembly.GetMetadata("FileName")}{satelliteAssembly.GetMetadata("Extension")}");
 
                     var resolvedFrom = assetCandidate.GetMetadata("ResolvedFrom");
-                    if (resolvedFrom == "{RawFileName}")
+                    if (resolvedFrom == "{RawFileName}") // Satellite assembly found from `<Reference />` element
                         resolvedFrom = candidate.GetMetadata("OriginalItemSpec");
 
                     assetCandidate.SetMetadata("RelatedAsset", Path.GetFullPath(Path.Combine(OutputPath, "wwwroot", "_framework", Path.GetFileName(resolvedFrom))));
