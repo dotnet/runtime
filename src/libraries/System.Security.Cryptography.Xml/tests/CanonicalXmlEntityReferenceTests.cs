@@ -8,7 +8,7 @@ namespace System.Security.Cryptography.Xml.Tests
     public static class CanonicalXmlEntityReferenceTests
     {
         [Fact]
-        public void Write_WritesExpectedOutput()
+        public static void Write_WritesExpectedOutput()
         {
             var xmlDocument = new XmlDocument();
             var entityReference = new CanonicalXmlEntityReference("entity", xmlDocument, true);
@@ -21,7 +21,7 @@ namespace System.Security.Cryptography.Xml.Tests
         }
 
         [Fact]
-        public void WriteHash_WritesExpectedHash()
+        public static void WriteHash_WritesExpectedHash()
         {
             XmlDocument xmlDocument = new XmlDocument();
             CanonicalXmlEntityReference entityReference = new CanonicalXmlEntityReference("entity", xmlDocument, true);
@@ -35,7 +35,7 @@ namespace System.Security.Cryptography.Xml.Tests
         }
 
         [Fact]
-        public void IsInNodeSet_GetSet_ReturnsExpected()
+        public static void IsInNodeSet_GetSet_ReturnsExpected()
         {
             var xmlDocument = new XmlDocument();
             var entityReference = new CanonicalXmlEntityReference("entity", xmlDocument, true);
