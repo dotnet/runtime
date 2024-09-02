@@ -12,12 +12,7 @@ namespace System.Net.NetworkInformation
 
         public static string GetDomainName()
         {
-            string domainName = Interop.Sys.GetDomainName();
-            if (domainName == "(none)")
-            {
-                return string.Empty;
-            }
-            return domainName;
+            return Interop.Sys.GetDomainName();
         }
     }
 }
