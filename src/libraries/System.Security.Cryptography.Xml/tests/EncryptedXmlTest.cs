@@ -6,8 +6,9 @@
 // Author:
 //  Atsushi Enomoto  <atsushi@ximian.com>
 //
-// Copyright (C) 2006 Novell, Inc (http://www.novell.com)using System.Collections;
+// Copyright (C) 2006 Novell, Inc (http://www.novell.com)
 
+using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Security.Cryptography.X509Certificates;
