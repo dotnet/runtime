@@ -1352,10 +1352,9 @@ void StubLinkerCPU::EmitMovReg(FloatReg dest, FloatReg source)
     Emit32(RTypeInstr(0x53, 0, 0x11, dest, source, source));  // fsgnj.d
 }
 
-void StubLinkerCPU::EmitSubImm(IntReg Xd, IntReg Xn, unsigned int value)
+void StubLinkerCPU::EmitSubImm(IntReg Xd, IntReg Xn, int value)
 {
-    _ASSERTE(value <= 0x800);
-    EmitAddImm(Xd, Xn, ~value + 0x1);
+    EmitAddImm(Xd, Xn, -value);
 }
 void StubLinkerCPU::EmitAddImm(IntReg Xd, IntReg Xn, int value)
 {

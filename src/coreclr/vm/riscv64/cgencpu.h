@@ -395,7 +395,7 @@ public:
     void EmitMovReg(IntReg dest, IntReg source);
     void EmitMovReg(FloatReg dest, FloatReg source);
 
-    void EmitSubImm(IntReg Xd, IntReg Xn, unsigned int value);
+    void EmitSubImm(IntReg Xd, IntReg Xn, int value);
     void EmitAddImm(IntReg Xd, IntReg Xn, int value);
     void EmitSllImm(IntReg Xd, IntReg Xn, unsigned int value);
     void EmitLuImm(IntReg Xd, unsigned int value);
