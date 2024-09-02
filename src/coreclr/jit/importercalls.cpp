@@ -3194,73 +3194,47 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
     }
 
 #ifdef FEATURE_HW_INTRINSICS
-    if ((ni > NI_HW_INTRINSIC_START) && (ni < NI_SIMD_AS_HWINTRINSIC_END))
+    if ((ni > NI_HW_INTRINSIC_START) && (ni < NI_HW_INTRINSIC_END))
     {
         static_assert_no_msg(NI_HW_INTRINSIC_START < NI_HW_INTRINSIC_END);
-        static_assert_no_msg(NI_SIMD_AS_HWINTRINSIC_START < NI_SIMD_AS_HWINTRINSIC_END);
 
-        static_assert_no_msg((NI_HW_INTRINSIC_END + 1) == NI_SIMD_AS_HWINTRINSIC_START);
-
-        if (ni < NI_HW_INTRINSIC_END)
+        if (!isIntrinsic)
         {
-            assert(ni > NI_HW_INTRINSIC_START);
-
-            if (!isIntrinsic)
-            {
 #if defined(TARGET_XARCH)
-                // We can't guarantee that all overloads for the xplat intrinsics can be
-                // handled by the AltJit, so limit only the platform specific intrinsics
-                assert((LAST_NI_Vector512 + 1) == FIRST_NI_X86Base);
+            // We can't guarantee that all overloads for the xplat intrinsics can be
+            // handled by the AltJit, so limit only the platform specific intrinsics
+            assert((LAST_NI_Vector512 + 1) == FIRST_NI_X86Base);
 
-                if (ni < LAST_NI_Vector512)
+            if (ni < LAST_NI_Vector512)
 #elif defined(TARGET_ARM64)
-                // We can't guarantee that all overloads for the xplat intrinsics can be
-                // handled by the AltJit, so limit only the platform specific intrinsics
-                assert((LAST_NI_Vector128 + 1) == FIRST_NI_AdvSimd);
+            // We can't guarantee that all overloads for the xplat intrinsics can be
+            // handled by the AltJit, so limit only the platform specific intrinsics
+            assert((LAST_NI_Vector128 + 1) == FIRST_NI_AdvSimd);
 
-                if (ni < LAST_NI_Vector128)
+            if (ni < LAST_NI_Vector128)
 #else
 #error Unsupported platform
 #endif
-                {
-                    // Several of the NI_Vector64/128/256 APIs do not have
-                    // all overloads as intrinsic today so they will assert
-                    return nullptr;
-                }
-            }
-
-            GenTree* hwintrinsic = impHWIntrinsic(ni, clsHnd, method, sig R2RARG(entryPoint), mustExpand);
-
-            if (hwintrinsic == nullptr)
             {
-                if (mustExpand)
-                {
-                    return impUnsupportedNamedIntrinsic(CORINFO_HELP_THROW_NOT_IMPLEMENTED, method, sig, mustExpand);
-                }
+                // Several of the NI_Vector64/128/256 APIs do not have
+                // all overloads as intrinsic today so they will assert
                 return nullptr;
             }
-
-            // Fold result, if possible
-            return gtFoldExpr(hwintrinsic);
         }
-        else
+
+        GenTree* hwintrinsic = impHWIntrinsic(ni, clsHnd, method, sig R2RARG(entryPoint), mustExpand);
+
+        if (hwintrinsic == nullptr)
         {
-            assert((ni > NI_SIMD_AS_HWINTRINSIC_START) && (ni < NI_SIMD_AS_HWINTRINSIC_END));
-
-            if (isIntrinsic)
+            if (mustExpand)
             {
-                GenTree* hwintrinsic = impSimdAsHWIntrinsic(ni, clsHnd, method, sig, mustExpand);
-
-                if (hwintrinsic == nullptr)
-                {
-                    assert(!mustExpand);
-                    return nullptr;
-                }
-
-                // Fold result, if possible
-                return gtFoldExpr(hwintrinsic);
+                return impUnsupportedNamedIntrinsic(CORINFO_HELP_THROW_NOT_IMPLEMENTED, method, sig, mustExpand);
             }
+            return nullptr;
         }
+
+        // Fold result, if possible
+        return gtFoldExpr(hwintrinsic);
     }
 #endif // FEATURE_HW_INTRINSICS
 
@@ -10335,24 +10309,129 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
                     else
                     {
 #ifdef FEATURE_HW_INTRINSICS
-                        if (strncmp(methodName,
-                                    "System.Runtime.Intrinsics.ISimdVector<System.Runtime.Intrinsics.Vector", 70) == 0)
-                        {
-                            // We want explicitly implemented ISimdVector<TSelf, T> APIs to still be expanded where
-                            // possible but, they all prefix the qualified name of the interface first, so we'll check
-                            // for that and skip the prefix before trying to resolve the method.
+                        bool isVectorT = strcmp(className, "Vector`1") == 0;
 
-                            if (strncmp(methodName + 70, "<T>,T>.", 7) == 0)
+                        if (isVectorT || (strcmp(className, "Vector") == 0))
+                        {
+                            if (strncmp(methodName,
+                                        "System.Runtime.Intrinsics.ISimdVector<System.Runtime.Intrinsics.Vector",
+                                        70) == 0)
                             {
-                                methodName += 77;
+                                // We want explicitly implemented ISimdVector<TSelf, T> APIs to still be expanded where
+                                // possible but, they all prefix the qualified name of the interface first, so we'll
+                                // check for that and skip the prefix before trying to resolve the method.
+
+                                if (strncmp(methodName + 70, "<T>,T>.", 7) == 0)
+                                {
+                                    methodName += 77;
+                                }
+                            }
+
+                            uint32_t size = getVectorTByteLength();
+                            assert((size == 16) || (size == 32) || (size == 64));
+
+                            const char* lookupClassName = className;
+
+                            switch (size)
+                            {
+                                case 16:
+                                {
+                                    lookupClassName = isVectorT ? "Vector128`1" : "Vector128";
+                                    break;
+                                }
+
+                                case 32:
+                                {
+                                    lookupClassName = isVectorT ? "Vector256`1" : "Vector256";
+                                    break;
+                                }
+
+                                case 64:
+                                {
+                                    lookupClassName = isVectorT ? "Vector512`1" : "Vector512";
+                                    break;
+                                }
+
+                                default:
+                                {
+                                    unreached();
+                                }
+                            }
+
+                            const char* lookupMethodName = methodName;
+
+                            if ((strncmp(methodName, "As", 2) == 0) && (methodName[2] != '\0'))
+                            {
+                                if (strncmp(methodName + 2, "Vector", 6) == 0)
+                                {
+                                    if (strcmp(methodName + 8, "Byte") == 0)
+                                    {
+                                        lookupMethodName = "AsByte";
+                                    }
+                                    else if (strcmp(methodName + 8, "Double") == 0)
+                                    {
+                                        lookupMethodName = "AsDouble";
+                                    }
+                                    else if (strcmp(methodName + 8, "Int16") == 0)
+                                    {
+                                        lookupMethodName = "AsInt16";
+                                    }
+                                    else if (strcmp(methodName + 8, "Int32") == 0)
+                                    {
+                                        lookupMethodName = "AsInt32";
+                                    }
+                                    else if (strcmp(methodName + 8, "Int64") == 0)
+                                    {
+                                        lookupMethodName = "AsInt64";
+                                    }
+                                    else if (strcmp(methodName + 8, "NInt") == 0)
+                                    {
+                                        lookupMethodName = "AsNInt";
+                                    }
+                                    else if (strcmp(methodName + 8, "NUInt") == 0)
+                                    {
+                                        lookupMethodName = "AsNUInt";
+                                    }
+                                    else if (strcmp(methodName + 8, "SByte") == 0)
+                                    {
+                                        lookupMethodName = "AsSByte";
+                                    }
+                                    else if (strcmp(methodName + 8, "Single") == 0)
+                                    {
+                                        lookupMethodName = "AsSingle";
+                                    }
+                                    else if (strcmp(methodName + 8, "UInt16") == 0)
+                                    {
+                                        lookupMethodName = "AsUInt16";
+                                    }
+                                    else if (strcmp(methodName + 8, "UInt32") == 0)
+                                    {
+                                        lookupMethodName = "AsUInt32";
+                                    }
+                                    else if (strcmp(methodName + 8, "UInt64") == 0)
+                                    {
+                                        lookupMethodName = "AsUInt64";
+                                    }
+                                }
+
+                                if (lookupMethodName == methodName)
+                                {
+                                    // There are several other As prefixed APIs
+                                    // which represent extension methods for
+                                    // Vector2/3/4 Matrix4x4, Quaternion, or Plane
+                                    lookupMethodName = nullptr;
+                                }
+                            }
+
+                            if (lookupMethodName != nullptr)
+                            {
+                                CORINFO_SIG_INFO sig;
+                                info.compCompHnd->getMethodSig(method, &sig);
+
+                                result = HWIntrinsicInfo::lookupId(this, &sig, lookupClassName, lookupMethodName,
+                                                                   enclosingClassNames[0], enclosingClassNames[1]);
                             }
                         }
-
-                        CORINFO_SIG_INFO sig;
-                        info.compCompHnd->getMethodSig(method, &sig);
-
-                        result =
-                            SimdAsHWIntrinsicInfo::lookupId(this, &sig, className, methodName, enclosingClassNames[0]);
 #endif // FEATURE_HW_INTRINSICS
 
                         if (result == NI_Illegal)
@@ -10386,7 +10465,7 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
                             {
                                 // Otherwise mark this as a general intrinsic in the namespace
                                 // so we can still get the inlining profitability boost.
-                                result = NI_System_Runtime_Intrinsics_Intrinsic;
+                                result = NI_System_Numerics_Intrinsic;
                             }
                         }
                     }
@@ -10645,7 +10724,7 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
                             {
                                 // Otherwise mark this as a general intrinsic in the namespace
                                 // so we can still get the inlining profitability boost.
-                                result = NI_System_Numerics_Intrinsic;
+                                result = NI_System_Runtime_Intrinsics_Intrinsic;
                             }
                         }
                     }
