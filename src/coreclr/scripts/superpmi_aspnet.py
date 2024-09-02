@@ -176,10 +176,10 @@ def build_and_run(coreclr_args):
 
     crank_app = path.join(temp_location, "crank")
     crank_agent_app = path.join(temp_location, "crank-agent")
-    crank_env = os.environ.copy()
     if os.path.isdir(dotnet_directory):
-        crank_env['DOTNET_ROOT'] = dotnet_directory
-        crank_env['DOTNET_MULTILEVEL_LOOKUP'] = '1'
+        os.environ['DOTNET_ROOT'] = dotnet_directory
+        os.environ['DOTNET_MULTILEVEL_LOOKUP'] = '1'
+    crank_env = os.environ.copy()
     mcs_path = determine_mcs_tool_path(coreclr_args)
     superpmi_path = determine_superpmi_tool_path(coreclr_args)
 
