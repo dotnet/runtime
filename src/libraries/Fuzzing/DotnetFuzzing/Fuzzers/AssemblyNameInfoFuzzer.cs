@@ -42,7 +42,6 @@ namespace DotnetFuzzing.Fuzzers
                 Assert.SequenceEqual(fromTryParse.PublicKeyOrToken.AsSpan(), fromParse.PublicKeyOrToken.AsSpan());
 
                 Assert.Equal(fromTryParse.ToAssemblyName().Name, fromParse.ToAssemblyName().Name);
-                Assert.Equal(fromTryParse.ToAssemblyName().FullName, fromParse.ToAssemblyName().FullName);
                 Assert.Equal(fromTryParse.ToAssemblyName().Version, fromParse.ToAssemblyName().Version);
                 Assert.Equal(fromTryParse.ToAssemblyName().ContentType, fromParse.ToAssemblyName().ContentType);
                 Assert.Equal(fromTryParse.ToAssemblyName().CultureName, fromParse.ToAssemblyName().CultureName);
@@ -50,7 +49,18 @@ namespace DotnetFuzzing.Fuzzers
                 Assert.Equal(fromTryParse.Name, fromParse.ToAssemblyName().Name);
                 Assert.Equal(fromTryParse.CultureName, fromParse.ToAssemblyName().CultureName);
                 Assert.Equal(fromTryParse.Version, fromParse.ToAssemblyName().Version);
-                // FullName can be different (AssemblyNameInfo includes public key, AssemblyName only its Token)
+
+                // AssemblyNameInfo.FullName can be different than AssemblyName.FullName:
+                // AssemblyNameInfo includes public key, AssemblyName only its Token.
+
+                try
+                {
+                    Assert.Equal(fromTryParse.ToAssemblyName().FullName, fromParse.ToAssemblyName().FullName);
+                }
+                catch (System.Security.SecurityException)
+                {
+                    // AssemblyName.FullName performs public key validation, AssemblyNameInfo does not (on purpose).
+                }
             }
             else
             {
