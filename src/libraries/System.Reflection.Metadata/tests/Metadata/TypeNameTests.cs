@@ -582,13 +582,13 @@ namespace System.Reflection.Metadata.Tests
         }
 
         [OuterLoop("It takes a lot of time")]
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.Is64BitProcess))] // 32 is likely to OOM
+        [Fact]
         public void GetNodeCountThrowsForInt32Overflow()
         {
             TypeName genericType = TypeName.Parse("Generic".AsSpan());
             TypeName genericArg = TypeName.Parse("Arg".AsSpan());
             // Don't allocate Array.MaxLength array as it may make this test flaky (frequent OOMs).
-            ImmutableArray<TypeName>.Builder genericArgs = ImmutableArray.CreateBuilder<TypeName>(initialCapacity: int.MaxValue / 64);
+            ImmutableArray<TypeName>.Builder genericArgs = ImmutableArray.CreateBuilder<TypeName>(initialCapacity: (int)Math.Sqrt(int.MaxValue));
             for (int i = 0; i < genericArgs.Capacity; ++i)
             {
                 genericArgs.Add(genericArg);
@@ -596,7 +596,7 @@ namespace System.Reflection.Metadata.Tests
             TypeName constructedGenericType = genericType.MakeGenericTypeName(genericArgs.MoveToImmutable());
             // Just repeat the same reference to a large closed generic type multiple times.
             // It's going to give us large node count without allocating too much.
-            TypeName largeNodeCount = genericType.MakeGenericTypeName(Enumerable.Repeat(constructedGenericType, 64 + 1).ToImmutableArray());
+            TypeName largeNodeCount = genericType.MakeGenericTypeName(Enumerable.Repeat(constructedGenericType, (int)Math.Sqrt(int.MaxValue)).ToImmutableArray());
 
             Assert.Throws<OverflowException>(() => largeNodeCount.GetNodeCount());
         }
