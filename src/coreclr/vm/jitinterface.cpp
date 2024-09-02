@@ -9179,10 +9179,52 @@ CorInfoType CEEInfo::getFieldTypeInternal (CORINFO_FIELD_HANDLE fieldHnd,
 
         SigPointer ptr(sig, sigCount);
 
+        // Actual field's owner
+        MethodTable* actualFieldsOwner = field->GetApproxEnclosingMethodTable();
+
+        // Potentially, a more specific field's owner (hint)
+        TypeHandle hintedFieldOwner = TypeHandle(owner);
+
+        // Validate the hint:
+        if (!hintedFieldOwner.IsNull())
+        {
+            bool isValidParent = false;
+            if (!hintedFieldOwner.IsTypeDesc())
+            {
+                // Now we need to check whether hinted ownerTh is an actual
+                // subclass of fieldsOwner.
+
+                MethodTable* hintedFieldOwnerParent = hintedFieldOwner.AsMethodTable();
+                while (hintedFieldOwnerParent != nullptr)
+                {
+                    if (hintedFieldOwnerParent->HasSameTypeDefAs(actualFieldsOwner))
+                    {
+                        // If the hinted owner has the same definition as the actualFieldsOwner
+                        // we'll use the hinted handle only in case if it's more specific:
+                        if (hintedFieldOwnerParent == hintedFieldOwner.AsMethodTable())
+                        {
+                            // actual is shared and hinted is not -> hinted is more specific
+                            isValidParent =
+                                TypeHandle(actualFieldsOwner).IsCanonicalSubtype() &&
+                                !hintedFieldOwner.IsCanonicalSubtype();
+                            break;
+                        }
+                        
+                        // It's a valid subclass!
+                        isValidParent = true;
+                        break;
+                    }
+                    hintedFieldOwnerParent = hintedFieldOwnerParent->GetParentMethodTable();
+                }
+            }
+            // Ignore invalid hints
+            hintedFieldOwner = isValidParent ? hintedFieldOwner : TypeHandle();
+        }
+
         // For verifying code involving generics, use the class instantiation
         // of the optional owner (to provide exact, not representative,
         // type information)
-        SigTypeContext typeContext(field, (TypeHandle)owner);
+        SigTypeContext typeContext(field, hintedFieldOwner);
 
         clsHnd = ptr.GetTypeHandleThrowing(field->GetModule(), &typeContext);
         _ASSERTE(!clsHnd.IsNull());
