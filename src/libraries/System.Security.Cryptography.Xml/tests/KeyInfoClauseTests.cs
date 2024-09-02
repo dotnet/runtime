@@ -1,4 +1,3 @@
-using System;
 using System.Xml;
 using Xunit;
 
@@ -9,9 +8,9 @@ namespace System.Security.Cryptography.Xml.Tests
         [Fact]
         public void LoadXml_WithValidKeyNameXml_SetsKeyNameValue()
         {
-            XmlDocument xmlDocument = new XmlDocument();
+            var xmlDocument = new XmlDocument();
             xmlDocument.LoadXml("<KeyInfo><KeyName>MyKey</KeyName></KeyInfo>");
-            KeyInfoName keyInfoName = new KeyInfoName();
+            var keyInfoName = new KeyInfoName();
             keyInfoName.LoadXml(xmlDocument.DocumentElement);
 
             Assert.Equal("MyKey", keyInfoName.Value);
@@ -30,7 +29,7 @@ namespace System.Security.Cryptography.Xml.Tests
         public void GetXml_ReturnsExpectedXml()
         {
             var keyInfoClause = new TestKeyInfoClause { KeyName = "Test" };
-            var xmlElement = keyInfoClause.GetXml();
+            XmlElement xmlElement = keyInfoClause.GetXml();
             Assert.Equal("<KeyInfo><KeyName>Test</KeyName></KeyInfo>", xmlElement.OuterXml);
         }
 
@@ -41,8 +40,8 @@ namespace System.Security.Cryptography.Xml.Tests
             public override XmlElement GetXml()
             {
                 var xmlDocument = new XmlDocument();
-                var keyInfoElement = xmlDocument.CreateElement("KeyInfo");
-                var keyNameElement = xmlDocument.CreateElement("KeyName");
+                XmlElement keyInfoElement = xmlDocument.CreateElement("KeyInfo");
+                XmlElement keyNameElement = xmlDocument.CreateElement("KeyName");
                 keyNameElement.InnerText = KeyName;
                 keyInfoElement.AppendChild(keyNameElement);
                 return keyInfoElement;
@@ -55,7 +54,7 @@ namespace System.Security.Cryptography.Xml.Tests
                     throw new XmlException("Invalid XML element");
                 }
 
-                var keyNameElement = element["KeyName"];
+                XmlElement keyNameElement = element["KeyName"];
                 if (keyNameElement == null)
                 {
                     throw new XmlException("Missing KeyName element");

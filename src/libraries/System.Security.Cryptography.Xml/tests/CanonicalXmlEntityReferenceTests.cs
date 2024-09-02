@@ -1,4 +1,3 @@
-using System.Security.Cryptography;
 using System.Text;
 using System.Xml;
 using Xunit;
@@ -23,8 +22,8 @@ namespace System.Security.Cryptography.Xml.Tests
         [Fact]
         public static void WriteHash_WritesExpectedHash()
         {
-            XmlDocument xmlDocument = new XmlDocument();
-            CanonicalXmlEntityReference entityReference = new CanonicalXmlEntityReference("entity", xmlDocument, true);
+            var xmlDocument = new XmlDocument();
+            var entityReference = new CanonicalXmlEntityReference("entity", xmlDocument, true);
             using SHA256 hashAlgorithm = SHA256.Create();
             var anc = new AncestralNamespaceContextManager();
 
