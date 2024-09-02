@@ -19,7 +19,8 @@ $COMPOSE_FILE = "$PSScriptRoot/docker-compose.yml"
 # This is a workaround for an issue with 1es-windows-2022-open, which should be eventually removed.
 # See comments in <repo>/eng/pipelines/libraries/stress/ssl.yml for more info.
 $dockerComposeCmd = $env:DOCKER_COMPOSE_CMD
-if (!(Test-Path $dockerComposeCmd)) {
+if (!(Test-Path $dockerComposeCmd))
+{
     $dockerComposeCmd = "docker-compose"
 }
 

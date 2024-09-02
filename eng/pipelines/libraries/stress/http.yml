@@ -120,6 +120,11 @@ extends:
             # Workaround for https://github.com/microsoft/azure-pipelines-agent/issues/4554. Undo when the image bug is fixed.
             Remove-Item -Path "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Auxiliary\Build\Microsoft.VCToolsVersion.v143.default.txt"
 
+            # When building the image, lack of *_DUMPS_SHARE env variables would
+            # result in invalid mapping to DUMPS_SHARE_MOUNT_ROOT. Remove the
+            # env variable to avoid this.
+            $ENV:DUMPS_SHARE_MOUNT_ROOT = ""
+
             $(dockerfilesFolder)/build-docker-sdk.ps1 -w -t $(sdkBaseImage) -c $(BUILD_CONFIGURATION)
             echo "##vso[task.setvariable variable=succeeded;isOutput=true]true"
           name: buildRuntime
@@ -146,7 +151,7 @@ extends:
             New-Item -Force $env:SERVER_DUMPS_SHARE -ItemType Directory
             $env:HTTPSTRESS_CLIENT_ARGS = "$env:HTTPSTRESS_CLIENT_ARGS -http 3.0"
             $env:HTTPSTRESS_SERVER_ARGS = "$env:HTTPSTRESS_SERVER_ARGS -http 3.0"
-            & $env:DOCKER_COMPOSE_CMD up --abort-on-container-exit --no-color
+            & $env:DOCKER_COMPOSE_CMD up --abort-on-cont/iner-exit --no-color
           displayName: Run HttpStress - HTTP 3.0
           condition: and(eq(variables['buildRuntime.succeeded'], 'true'), eq(variables['buildStress.succeeded'], 'true'))
 
