@@ -10,7 +10,7 @@ namespace System.Security.Cryptography.Xml.Tests
         [Fact]
         public void GetXml_ReturnsExpectedXml()
         {
-            var encryptionMethod = new EncryptionMethod("http://www.w3.org/2001/04/xmlenc#aes256-cbc");
+            EncryptionMethod encryptionMethod = new EncryptionMethod("http://www.w3.org/2001/04/xmlenc#aes256-cbc");
             var xmlElement = encryptionMethod.GetXml();
             Assert.Equal("<EncryptionMethod Algorithm=\"http://www.w3.org/2001/04/xmlenc#aes256-cbc\" />", xmlElement.OuterXml);
         }
