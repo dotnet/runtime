@@ -640,12 +640,12 @@ public:
 
     void recGetFieldType(CORINFO_FIELD_HANDLE  field,
                          CORINFO_CLASS_HANDLE* structType,
-                         CORINFO_CLASS_HANDLE  memberParent,
+                         CORINFO_CLASS_HANDLE  fieldOwnerHint,
                          CorInfoType           result);
     void dmpGetFieldType(DLDL key, DLD value);
     CorInfoType repGetFieldType(CORINFO_FIELD_HANDLE  field,
                                 CORINFO_CLASS_HANDLE* structType,
-                                CORINFO_CLASS_HANDLE  memberParent);
+                                CORINFO_CLASS_HANDLE  fieldOwnerHint);
 
     void recSatisfiesMethodConstraints(CORINFO_CLASS_HANDLE parent, CORINFO_METHOD_HANDLE method, bool result);
     void dmpSatisfiesMethodConstraints(DLDL key, DWORD value);

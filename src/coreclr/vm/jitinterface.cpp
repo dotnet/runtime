@@ -9128,11 +9128,11 @@ CORINFO_CLASS_HANDLE CEEInfo::getFieldClass (CORINFO_FIELD_HANDLE fieldHnd)
 //
 // pTypeHnd - Optional. If not null then on return, for reference and value types,
 //            *pTypeHnd will contain the normalized type of the field.
-// owner - Optional. For resolving in a generic context
+// fieldOwnerHint - Optional. For resolving in a generic context
 
 CorInfoType CEEInfo::getFieldType (CORINFO_FIELD_HANDLE fieldHnd,
                                    CORINFO_CLASS_HANDLE* pTypeHnd,
-                                   CORINFO_CLASS_HANDLE owner)
+                                   CORINFO_CLASS_HANDLE fieldOwnerHint)
 {
     CONTRACTL {
         THROWS;
@@ -9144,7 +9144,7 @@ CorInfoType CEEInfo::getFieldType (CORINFO_FIELD_HANDLE fieldHnd,
 
     JIT_TO_EE_TRANSITION();
 
-    result = getFieldTypeInternal(fieldHnd, pTypeHnd, owner);
+    result = getFieldTypeInternal(fieldHnd, pTypeHnd, fieldOwnerHint);
 
     EE_TO_JIT_TRANSITION();
 
@@ -9154,7 +9154,7 @@ CorInfoType CEEInfo::getFieldType (CORINFO_FIELD_HANDLE fieldHnd,
 /*********************************************************************/
 CorInfoType CEEInfo::getFieldTypeInternal (CORINFO_FIELD_HANDLE fieldHnd,
                                            CORINFO_CLASS_HANDLE* pTypeHnd,
-                                           CORINFO_CLASS_HANDLE owner)
+                                           CORINFO_CLASS_HANDLE fieldOwnerHint)
 {
     STANDARD_VM_CONTRACT;
 
@@ -9183,43 +9183,28 @@ CorInfoType CEEInfo::getFieldTypeInternal (CORINFO_FIELD_HANDLE fieldHnd,
         MethodTable* actualFieldsOwner = field->GetApproxEnclosingMethodTable();
 
         // Potentially, a more specific field's owner (hint)
-        TypeHandle hintedFieldOwner = TypeHandle(owner);
+        TypeHandle hintedFieldOwner = TypeHandle(fieldOwnerHint);
 
         // Validate the hint:
-        if (!hintedFieldOwner.IsNull())
+        bool isHintValid = false;
+        if (!hintedFieldOwner.IsNull() && !hintedFieldOwner.IsTypeDesc())
         {
-            bool isValidParent = false;
-            if (!hintedFieldOwner.IsTypeDesc())
+            MethodTable* hintedFieldOwnerParent = hintedFieldOwner.AsMethodTable();
+            if (hintedFieldOwnerParent->HasSameTypeDefAs(actualFieldsOwner))
             {
-                // Now we need to check whether hinted ownerTh is an actual
-                // subclass of fieldsOwner.
-
-                MethodTable* hintedFieldOwnerParent = hintedFieldOwner.AsMethodTable();
-                while (hintedFieldOwnerParent != nullptr)
-                {
-                    if (hintedFieldOwnerParent->HasSameTypeDefAs(actualFieldsOwner))
-                    {
-                        // If the hinted owner has the same definition as the actualFieldsOwner
-                        // we'll use the hinted handle only in case if it's more specific:
-                        if (hintedFieldOwnerParent == hintedFieldOwner.AsMethodTable())
-                        {
-                            // actual is shared and hinted is not -> hinted is more specific
-                            isValidParent =
-                                TypeHandle(actualFieldsOwner).IsCanonicalSubtype() &&
-                                !hintedFieldOwner.IsCanonicalSubtype();
-                            break;
-                        }
-                        
-                        // It's a valid subclass!
-                        isValidParent = true;
-                        break;
-                    }
-                    hintedFieldOwnerParent = hintedFieldOwnerParent->GetParentMethodTable();
-                }
+                // if actualFieldsOwner has the same definition as hintedFieldOwner, we
+                // take hintedFieldOwner only if actualFieldsOwner is shared and hintedFieldOwner
+                // is not, hence, it's definitely more exact.
+                isHintValid = TypeHandle(actualFieldsOwner).IsCanonicalSubtype() &&
+                    !hintedFieldOwner.IsCanonicalSubtype();
             }
-            // Ignore invalid hints
-            hintedFieldOwner = isValidParent ? hintedFieldOwner : TypeHandle();
+            else if (hintedFieldOwnerParent->GetMethodTableMatchingParentClass(actualFieldsOwner) != nullptr)
+            {
+                // Otherwise, use hintedFieldOwner only if it's a subclass of actualFieldsOwner
+                isHintValid = true;
+            }
         }
+        hintedFieldOwner = isHintValid ? hintedFieldOwner : TypeHandle();
 
         // For verifying code involving generics, use the class instantiation
         // of the optional owner (to provide exact, not representative,

@@ -3101,7 +3101,7 @@ namespace Internal.JitInterface
             return ObjectToHandle(fieldDesc.OwningType);
         }
 
-        private CorInfoType getFieldType(CORINFO_FIELD_STRUCT_* field, CORINFO_CLASS_STRUCT_** structType, CORINFO_CLASS_STRUCT_* memberParent)
+        private CorInfoType getFieldType(CORINFO_FIELD_STRUCT_* field, CORINFO_CLASS_STRUCT_** structType, CORINFO_CLASS_STRUCT_* fieldOwnerHint)
         {
             FieldDesc fieldDesc = HandleToObject(field);
             TypeDesc fieldType = fieldDesc.FieldType;
