@@ -11157,15 +11157,28 @@ void CordbProcess::HandleSetThreadContextNeeded(DWORD dwThreadId)
     LOG((LF_CORDB, LL_INFO10000, "RS HandleSetThreadContextNeeded\n"));
 
 #if defined(TARGET_WINDOWS) && defined(TARGET_AMD64)
-    HandleHolder hThread = OpenThread(
-        THREAD_GET_CONTEXT | THREAD_SET_CONTEXT | THREAD_QUERY_INFORMATION | THREAD_SUSPEND_RESUME,
-        FALSE, // thread handle is not inheritable.
-        dwThreadId);
+    CordbThread * pThread = TryLookupOrCreateThreadByVolatileOSId(dwThreadId);
 
-    if (hThread == NULL)
+    IDacDbiInterface* pDAC = GetDAC();
+    if (pDAC == NULL)
     {
-        LOG((LF_CORDB, LL_INFO10000, "RS HandleSetThreadContextNeeded - Unexpected result from OpenThread\n"));
+        LOG((LF_CORDB, LL_INFO10000, "RS HandleSetThreadContextNeeded - DAC not initialized\n"));
         ThrowHR(E_UNEXPECTED);
+    }
+
+    HANDLE hOutOfProcThread = pDAC->GetThreadHandle(pThread->m_vmThreadToken);
+    if (hOutOfProcThread == NULL)
+    {
+        LOG((LF_CORDB, LL_INFO10000, "RS HandleSetThreadContextNeeded - Failed to get thread handle\n"));
+        ThrowHR(E_UNEXPECTED);
+    }
+
+    HandleHolder hThread;
+    BOOL fSuccess = DuplicateHandle(UnsafeGetProcessHandle(), hOutOfProcThread, ::GetCurrentProcess(), &hThread, 0, FALSE, DUPLICATE_SAME_ACCESS);
+    if (!fSuccess)
+    {
+        LOG((LF_CORDB, LL_INFO10000, "RS HandleSetThreadContextNeeded - Unexpected result from DuplicateHandle\n"));
+        ThrowHR(HRESULT_FROM_GetLastError());
     }
 
     DWORD previousSuspendCount = ::SuspendThread(hThread);
@@ -11178,8 +11191,12 @@ void CordbProcess::HandleSetThreadContextNeeded(DWORD dwThreadId)
     DT_CONTEXT context = { 0 };
     context.ContextFlags = CONTEXT_FULL;
 
-    HRESULT hr = GetDataTarget()->GetThreadContext(dwThreadId, CONTEXT_FULL, sizeof(DT_CONTEXT), reinterpret_cast<BYTE*> (&context));
-    IfFailThrow(hr);
+    BOOL success = ::GetThreadContext(hThread, (CONTEXT*)(&context));
+    if (!success)
+    {
+        LOG((LF_CORDB, LL_INFO10000, "RS HandleSetThreadContextNeeded - Unexpected result from GetThreadContext\n"));
+        ThrowHR(HRESULT_FROM_GetLastError());
+    }
 
     TADDR lsContextAddr = (TADDR)context.Rcx;
     DWORD contextSize = (DWORD)context.Rdx;
@@ -11198,7 +11215,7 @@ void CordbProcess::HandleSetThreadContextNeeded(DWORD dwThreadId)
 
     PCONTEXT pContext = (PCONTEXT)_alloca(contextSize);
     ULONG32 cbRead;
-    hr = GetDataTarget()->ReadVirtual(lsContextAddr, reinterpret_cast<BYTE*>(pContext), contextSize, &cbRead);
+    HRESULT hr = GetDataTarget()->ReadVirtual(lsContextAddr, reinterpret_cast<BYTE*>(pContext), contextSize, &cbRead);
     if (FAILED(hr))
     {
         _ASSERTE(!"ReadVirtual failed");
@@ -11232,7 +11249,7 @@ void CordbProcess::HandleSetThreadContextNeeded(DWORD dwThreadId)
     // The initialize call should fail but return contextSize
     contextSize = 0;
     DWORD contextFlags = pContext->ContextFlags;
-    BOOL success = InitializeContext(NULL, contextFlags, NULL, &contextSize);
+    success = InitializeContext(NULL, contextFlags, NULL, &contextSize);
 
     if(success || GetLastError() != ERROR_INSUFFICIENT_BUFFER)
     {
