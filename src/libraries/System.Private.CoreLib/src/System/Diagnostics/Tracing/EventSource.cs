@@ -185,6 +185,13 @@ namespace System.Diagnostics.Tracing
     }
 
     /// <summary>
+    /// The attribute indicates that events will be automatically generated
+    /// </summary>
+    [AttributeUsage(AttributeTargets.Class)]
+    public sealed class EventSourceEventGenerateAttribute : Attribute
+    {
+    }
+    /// <summary>
     /// This class is meant to be inherited by a user-defined event source in order to define a managed
     /// ETW provider.   Please See DESIGN NOTES above for the internal architecture.
     /// The minimal definition of an EventSource simply specifies a number of ETW event methods that

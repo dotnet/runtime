@@ -9,6 +9,8 @@ namespace System.Private.CoreLib.Generators.Models
     {
         public string Name { get; set; }
 
+        public string MethodHeader { get; set; }
+
         public int EventId { get; set; }
 
         public List<EventMethodArgument> Arguments { get; set; }

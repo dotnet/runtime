@@ -46,14 +46,14 @@ namespace Generators
 
                 foreach (string _ in result.ContextClassDeclarations)
                 {
-                    writer.WriteLine('}');
                     writer.Indent--;
+                    writer.WriteLine('}');
                 }
 
                 if (!string.IsNullOrEmpty(result.Namespace))
                 {
-                    writer.WriteLine('}');
                     writer.Indent--;
+                    writer.WriteLine('}');
                 }
             }
 
@@ -82,7 +82,7 @@ namespace Generators
                 Debug.Assert(method.Arguments != null);
 
                 //Write method header
-                writer.WriteLine("");
+                writer.WriteLine(method.MethodHeader);
                 writer.WriteLine('{');
                 writer.Indent++;
 
@@ -103,9 +103,9 @@ namespace Generators
                 }
 
                 writer.WriteLine($"On{method.Name}({string.Join(", ", method.Arguments.Select(x => x.Name))});");
-
                 writer.Indent--;
                 writer.WriteLine('}');
+
                 writer.WriteLine();
                 writer.WriteLine($"[{NonEventAttribute}]");
                 writer.WriteLine($"partial void On{method.Name}({string.Join(", ", method.Arguments.Select(x => $"{x.TypeName} {x.Name}"))});");

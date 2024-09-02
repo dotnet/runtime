@@ -14,6 +14,11 @@ namespace System.Diagnostics.Tracing
         Recursive = 4,
         Detachable = 8,
     }
+    [AttributeUsage(System.AttributeTargets.Class)]
+    public sealed class EventSourceEventGenerateAttribute : Attribute
+    {
+    }
+
     [System.AttributeUsageAttribute(System.AttributeTargets.Method)]
     public sealed partial class EventAttribute : System.Attribute
     {

@@ -2,12 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.CodeDom.Compiler;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.Collections.Specialized;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
-using System.IO;
 using System.Linq;
 using System.Private.CoreLib.Generators.Models;
 using System.Text;
@@ -25,7 +24,7 @@ namespace Generators
             private const string EventAttribute = "System.Diagnostics.Tracing.EventAttribute";
 
             //https://learn.microsoft.com/en-us/dotnet/core/diagnostics/eventsource-instrumentation#supported-parameter-types
-            private static readonly ImmutableHashSet<SpecialType> s_supportTypes = ImmutableHashSet.Create<SpecialType>(
+            private static readonly ImmutableHashSet<SpecialType> s_supportTypes = ImmutableHashSet.Create(
 
                  SpecialType.System_Boolean,
                  SpecialType.System_Byte,
@@ -82,10 +81,10 @@ namespace Generators
             /// <param name="methodSyntax">The method declaration syntax</param>
             /// <param name="diagnostics">The dianositic list</param>
             /// <returns>If parse fail, return <see langword="null"/>, otherwise return the parsed result</returns>
-            private static EventMethod? ParseEventMethod(MethodDeclarationSyntax methodSyntax, SemanticModel semanticModel, ImmutableArray<Diagnostic> diagnostics, CancellationToken cancellationToken)
+            private static EventMethod? ParseEventMethod(MethodDeclarationSyntax methodSyntax, SemanticModel semanticModel, ref ImmutableArray<Diagnostic> diagnostics, CancellationToken cancellationToken)
             {
-                var methodSymbol = semanticModel.GetDeclaredSymbol(methodSyntax, cancellationToken);
-                var eventAttributeSymbol = semanticModel.Compilation.GetTypeByMetadataName(EventAttribute);
+                IMethodSymbol? methodSymbol = semanticModel.GetDeclaredSymbol(methodSyntax, cancellationToken);
+                INamedTypeSymbol? eventAttributeSymbol = semanticModel.Compilation.GetTypeByMetadataName(EventAttribute);
 
                 if (eventAttributeSymbol == null)
                 {
@@ -101,7 +100,7 @@ namespace Generators
                     {
                         if (!IsSupportType(parameter.Type, semanticModel))
                         {
-                            diagnostics.Add(Diagnostic.Create(EventSourceNoSupportType, parameter.Locations[0], parameter.Type.ToString()));
+                            diagnostics = diagnostics.Add(Diagnostic.Create(EventSourceNoSupportType, parameter.Locations[0], parameter.Type.ToString()));
                             return null;
                         }
                     }
@@ -118,11 +117,13 @@ namespace Generators
                 }
 
 
-                var eventAttribute = methodSymbol.GetAttributes().First(x => SymbolEqualityComparer.Default.Equals(x.AttributeClass, eventAttributeSymbol));
+                AttributeData eventAttribute = methodSymbol.GetAttributes().First(x => SymbolEqualityComparer.Default.Equals(x.AttributeClass, eventAttributeSymbol));
 
-                var eventId = (int)eventAttribute.ConstructorArguments[0].Value;//The construct first argument is eventId
+                int eventId = (int)eventAttribute.ConstructorArguments[0].Value;//The first argument of construct is eventId
 
-                return new EventMethod { Name = methodSymbol.Name, Arguments = args, EventId = eventId };
+                string methodHeader = $"{string.Join(" ", methodSyntax.Modifiers.Select(x => x.Text))} {methodSymbol.ReturnType.ToDisplayString()} {methodSymbol.Name}({string.Join(", ", methodSymbol.Parameters.Select(x => x.ToDisplayString()))})";
+
+                return new EventMethod { Name = methodSymbol.Name, Arguments = args, EventId = eventId, MethodHeader = methodHeader };
             }
 
 
@@ -184,36 +185,37 @@ namespace Generators
                     string typeName = typeSymbol.ToDisplayString(SymbolDisplayFormat.MinimallyQualifiedFormat);
                     stringBuilder.Append(typeName);
 
-                    (typeDeclarations ??= new()).Add(stringBuilder.ToString());
+                    (typeDeclarations ??= []).Add(stringBuilder.ToString());
                 }
 
                 Debug.Assert(typeDeclarations?.Count > 0);
                 return true;
             }
 
-            public EventMethodsParsedResult Parse(ClassDeclarationSyntax contextClassDeclaration, SemanticModel semanticModel, CancellationToken cancellationToken)
+            public static EventMethodsParsedResult Parse(ClassDeclarationSyntax contextClassDeclaration, SemanticModel semanticModel, CancellationToken cancellationToken)
             {
-                SyntaxToken paritialKeyWordToken = SyntaxFactory.Token(SyntaxKind.PartialKeyword);
-
                 if (!TryGetNestedTypeDeclarations(contextClassDeclaration, semanticModel, cancellationToken, out List<string>? typeDeclarations))
                 {
                     return new EventMethodsParsedResult(null,
                         contextClassDeclaration.Identifier.ValueText,
                         ImmutableArray<EventMethod>.Empty,
-                        ImmutableArray.Create<Diagnostic>(Diagnostic.Create(ContextClassesMustBePartial, contextClassDeclaration.GetLocation(),
+                        ImmutableArray.Create(Diagnostic.Create(ContextClassesMustBePartial, contextClassDeclaration.GetLocation(),
                         contextClassDeclaration.Identifier.ValueText)));
                 }
 
                 //Get all partial method
-                IEnumerable<MethodDeclarationSyntax> allEventMethods = contextClassDeclaration.Members.OfType<MethodDeclarationSyntax>().Where(IsAcceptMethod);
+                IEnumerable<MethodDeclarationSyntax> allEventMethods = contextClassDeclaration.Members.OfType<MethodDeclarationSyntax>().Where(methodSyntax => IsAcceptMethod(methodSyntax, semanticModel, cancellationToken));
 
                 ImmutableArray<EventMethod> eventMethods = ImmutableArray.Create<EventMethod>();
                 ImmutableArray<Diagnostic> diagnostics = ImmutableArray.Create<Diagnostic>();
 
                 foreach (MethodDeclarationSyntax? method in allEventMethods)
                 {
-                    EventMethod? eventMethod = ParseEventMethod(method, semanticModel, diagnostics, cancellationToken);
-                    eventMethods.Add(eventMethod);
+                    EventMethod? eventMethod = ParseEventMethod(method, semanticModel, ref diagnostics, cancellationToken);
+                    if (eventMethod != null)
+                    {
+                        eventMethods = eventMethods.Add(eventMethod);
+                    }
                 }
 
                 INamespaceOrTypeSymbol contextTypeSymbol = semanticModel.GetDeclaredSymbol(contextClassDeclaration, cancellationToken);
@@ -232,21 +234,23 @@ namespace Generators
                 };
 
                 //Check the method syntax has partial and has [Event] attribute
-                bool IsAcceptMethod(MethodDeclarationSyntax methodSyntax)
+                static bool IsAcceptMethod(MethodDeclarationSyntax methodSyntax, SemanticModel semanticModel, CancellationToken cancellationToken)
                 {
-                    if (!methodSyntax.Modifiers.Contains(paritialKeyWordToken))//Must has partial keyword
+                    bool hasParitialKeyWord = methodSyntax.Modifiers.Any(x => x.IsKind(SyntaxKind.PartialKeyword));
+
+                    if (!hasParitialKeyWord)
                     {
                         return false;
                     }
 
-                    foreach (AttributeListSyntax attributeList in methodSyntax.AttributeLists)
+                    IMethodSymbol attributeSymbol = semanticModel.GetDeclaredSymbol(methodSyntax, cancellationToken);
+                    INamedTypeSymbol eventSymbol = semanticModel.Compilation.GetTypeByMetadataName(EventAttribute);
+
+                    foreach (AttributeData attributeList in attributeSymbol.GetAttributes())
                     {
-                        foreach (AttributeSyntax attribute in attributeList.Attributes)
+                        if (SymbolEqualityComparer.Default.Equals(attributeList.AttributeClass, eventSymbol))
                         {
-                            if (attribute.Name.ToString() == EventAttribute)//Any event attribute
-                            {
-                                return true;
-                            }
+                            return true;
                         }
                     }
                     return false;

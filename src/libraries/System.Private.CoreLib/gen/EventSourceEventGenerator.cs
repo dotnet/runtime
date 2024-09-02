@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Private.CoreLib.Generators.Models;
 using System.Text;
 using Microsoft.CodeAnalysis;
@@ -18,7 +19,7 @@ namespace Generators
 
         //Writing code...
 
-        [EventSourceAutoGenerate]//I think the `EventSourceAutoGenerate` is already represents the need for this source generator
+        [EventSourceEventGenerate]
         internal sealed unsafe /*It's mandatory or in method write unsafe*/ partial class RuntimeEventSource : EventSource
         {
             [Event(1)]
@@ -42,11 +43,11 @@ namespace Generators
                 Size = sizeof(double)
             };
             WriteEventWithRelatedActivityIdCore(1, null, 2, datas);
-            OnRaise(i, address);
+            OnGoHome(i, address);
         }
 
         [global::System.Diagnostics.Tracing.NonEventAttribute]
-        partial void OnRaise(int i, string address);
+        partial void OnGoHome(string address,double usedTime);
 
 #endif
 
@@ -54,12 +55,11 @@ namespace Generators
         {
             IncrementalValuesProvider<EventMethodsParsedResult> eventSourceClasses =
                 context.SyntaxProvider.ForAttributeWithMetadataName(
-                    KnowsAttributeNames.EventSourceAutoGenerateAttribute,
+                    KnowsAttributeNames.EventSourceEventGenerateAttribute,
                     (node, _) => node is ClassDeclarationSyntax,
                     (context, token) =>
                     {
-                        var parser = new Parser();
-                        return parser.Parse((ClassDeclarationSyntax)context.TargetNode, context.SemanticModel, token);
+                        return Parser.Parse((ClassDeclarationSyntax)context.TargetNode, context.SemanticModel, token);
                     })
                 .Where(x => x is not null);
 
