@@ -1857,13 +1857,6 @@ void StubLinkerCPU::EmitCallManagedMethod(MethodDesc *pMD, BOOL fTailCall)
     while (p < pStart + cbAligned) { *(DWORD*)p = 0xffffff0f/*badcode*/; p += 4; }\
     ClrFlushInstructionCache(pStart, cbAligned); \
     return (PCODE)pStart
-// Uses x8 as scratch register to store address of data label
-// After load x8 is increment to point to next data
-// only accepts positive offsets
-static void LoadRegPair(BYTE* p, int reg1, int reg2, UINT32 offset)
-{
-    _ASSERTE(!"RISCV64: not implementation on riscv64!!!");
-}
 
 PCODE DynamicHelpers::CreateHelper(LoaderAllocator * pAllocator, TADDR arg, PCODE target)
 {
