@@ -55,6 +55,8 @@
     <Compile Include="XmlDsigXsltTransformTest.cs" />
     <Compile Include="XmlLicenseEncryptedRef.cs" />
     <Compile Include="XmlLicenseTransformTest.cs" />
+    <Compile Include="CanonicalXmlEntityReferenceTests.cs" />
+    <Compile Include="KeyInfoClauseTests.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">
     <Compile Include="KeyInfo_ArbitraryElements.cs" />
