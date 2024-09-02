@@ -26,19 +26,41 @@ namespace DotnetFuzzing.Fuzzers
 
         private static void Test(PooledBoundedMemory<char> inputPoisoned)
         {
-            bool shouldSucceed = AssemblyNameInfo.TryParse(inputPoisoned.Span, out _);
-
-            try
+            if (AssemblyNameInfo.TryParse(inputPoisoned.Span, out AssemblyNameInfo? fromTryParse))
             {
-                AssemblyNameInfo.Parse(inputPoisoned.Span);
-            }
-            catch (ArgumentException)
-            {
-                Assert.Equal(false, shouldSucceed);
-                return;
-            }
+                AssemblyNameInfo fromParse = AssemblyNameInfo.Parse(inputPoisoned.Span);
 
-            Assert.Equal(true, shouldSucceed);
+                Assert.Equal(fromTryParse.Name, fromParse.Name);
+                Assert.Equal(fromTryParse.FullName, fromParse.FullName);
+                Assert.Equal(fromTryParse.CultureName, fromParse.CultureName);
+                Assert.Equal(fromTryParse.Flags, fromParse.Flags);
+                Assert.Equal(fromTryParse.Version, fromParse.Version);
+                Assert.SequenceEqual(fromTryParse.PublicKeyOrToken.AsSpan(), fromParse.PublicKeyOrToken.AsSpan());
+
+                Assert.Equal(fromTryParse.ToAssemblyName().Name, fromParse.ToAssemblyName().Name);
+                Assert.Equal(fromTryParse.ToAssemblyName().FullName, fromParse.ToAssemblyName().FullName);
+                Assert.Equal(fromTryParse.ToAssemblyName().Version, fromParse.ToAssemblyName().Version);
+                Assert.Equal(fromTryParse.ToAssemblyName().ContentType, fromParse.ToAssemblyName().ContentType);
+                Assert.Equal(fromTryParse.ToAssemblyName().CultureName, fromParse.ToAssemblyName().CultureName);
+
+                Assert.Equal(fromTryParse.Name, fromParse.ToAssemblyName().Name);
+                Assert.Equal(fromTryParse.CultureName, fromParse.ToAssemblyName().CultureName);
+                Assert.Equal(fromTryParse.Version, fromParse.ToAssemblyName().Version);
+                // FullName can be different (AssemblyNameInfo includes public key, AssemblyName only its Token)
+            }
+            else
+            {
+                try
+                {
+                    _ = AssemblyNameInfo.Parse(inputPoisoned.Span);
+                }
+                catch (ArgumentException)
+                {
+                    return;
+                }
+
+                throw new Exception("Parsing was supposed to fail!");
+            }
         }
     }
 }
