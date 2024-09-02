@@ -52,8 +52,8 @@ extends:
           buildConfig: Release
           runtimeFlavor: mono
           platforms:
-          - linux_x64
-          - linux_arm64
+          #- linux_x64
+          #- linux_arm64
           jobParameters:
             testGroup: innerloop
             nameSuffix: AllSubsets_Mono_LLVMAOT
@@ -71,7 +71,7 @@ extends:
           buildConfig: ${{ variables.debugOnPrReleaseOnRolling }}
           runtimeFlavor: mono
           platforms:
-          - osx_x64
+          #- osx_x64
           jobParameters:
             testGroup: innerloop
             nameSuffix: AllSubsets_Mono_LLVMAOT
@@ -90,9 +90,9 @@ extends:
           buildConfig: Release
           runtimeFlavor: mono
           platforms:
-            - linux_x64
+            #- linux_x64
             # Tracking issue: https://github.com/dotnet/runtime/issues/90427
-            #- linux_arm64
+            - linux_arm64
           variables:
             - name: timeoutPerTestInMinutes
               value: 60
@@ -114,7 +114,6 @@ extends:
               - template: /eng/pipelines/common/templates/runtimes/build-runtime-tests-and-send-to-helix.yml
                 parameters:
                   creator: dotnet-bot
-                  llvmAotStepContainer: linux_x64_llvmaot
                   testRunNamePrefixSuffix: Mono_Release
             extraVariablesTemplates:
               - template: /eng/pipelines/common/templates/runtimes/test-variables.yml
@@ -131,7 +130,7 @@ extends:
           buildConfig: Release
           runtimeFlavor: mono
           platforms:
-            - linux_x64
+            #- linux_x64
             # Tracking issue: https://github.com/dotnet/runtime/issues/90427
             # - linux_arm64
           variables:
@@ -178,7 +177,7 @@ extends:
           buildConfig: Release
           runtimeFlavor: mono
           platforms:
-            - linux_x64
+            #- linux_x64
             # Tracking issue: https://github.com/dotnet/runtime/issues/90427
             # - linux_arm64
           variables:

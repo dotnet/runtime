@@ -153,12 +153,16 @@
       <MonoAotOption Condition="'$(RuntimeVariant)' == 'llvmaot' or '$(RuntimeVariant)' == 'llvmfullaot'" Include="llvm-path=$(MonoLlvmPath)" />
       <MonoAotOption Condition="'$(__MonoToolPrefix)' != ''" Include="tool-prefix=$(__MonoToolPrefix)" />
     </ItemGroup>
-    <ItemGroup Condition="'$(MonoFullAot)' == 'true' and '$(TargetOS)' == 'linux'">
+    <PropertyGroup Condition="'$(TargetOS)' == 'linux' and '$(TargetArchitecture)' == 'arm64'">
+      <ClangTarget>-target aarch64-unknown-linux-gnu</ClangTarget>
+      <ClangSysroot>--sysroot $(ROOTFS_DIR)</ClangSysroot>
+    </PropertyGroup>
+    <ItemGroup Condition="'$(TargetOS)' == 'linux'">
       <MonoAotOption Include="as-name=clang" />
-      <MonoAotOption Include="as-options='-c -x assembler'" />
+      <MonoAotOption Include="as-options='-c -x assembler $(ClangTarget)'"/>
       <MonoAotOption Include="tool-prefix=''" />
       <MonoAotOption Include="ld-name=clang" />
-      <MonoAotOption Include="ld-options='-fuse-ld=lld'" />
+      <MonoAotOption Include="ld-options='-fuse-ld=lld $(ClangTarget) $(ClangSysroot)'" />
     </ItemGroup>
     <ItemGroup Condition="'$(TargetArchitecture)' == 'arm64'">
       <MonoAotOption Include="mattr=crc" />

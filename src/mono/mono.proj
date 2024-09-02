@@ -944,7 +944,7 @@ JS_ENGINES = [NODE_JS]
     The runtime is built using the 'ROOTFS_DIR' which points to '/crossrootfs/arm64'.
     The 'mono-aot-cross' is built using the 'ROOTFS_HOST_DIR' which points to '/crossrootfs/x64'.
     -->
-    <PropertyGroup Condition="'$(CrossBuild)' == 'true' and '$(ROOTFS_HOST_DIR)' != '' and $(ROOTFS_HOST_DIR.Contains('$(AotHostArchitecture)'))">
+    <PropertyGroup Condition="'$(CrossBuild)' == 'true' and '$(ROOTFS_HOST_DIR)' != ''">
         <MonoCrossDir>$(ROOTFS_HOST_DIR)</MonoCrossDir>
     </PropertyGroup>
 

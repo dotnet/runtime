@@ -57,7 +57,7 @@ steps:
                   -arch ${{ parameters.archType }}
                   /p:BuildMonoAotCrossCompiler=true
                   /p:BuildMonoAotCrossCompilerOnly=true
-                  /p:MonoLibClang="/usr/local/lib/libclang.so.16"
+                  /p:MonoLibClang="/usr/local/lib/libclang.so"
                   /p:MonoAOTEnableLLVM=true
                   /p:CrossBuild=true
           displayName: "Build Mono LLVM AOT cross compiler"
@@ -73,15 +73,11 @@ steps:
           target: ${{ coalesce(parameters.llvmAotStepContainer, parameters.container) }}
     - ${{ if eq(parameters.archType, 'arm64') }}:
       - ${{ if eq(parameters.runtimeVariant, 'llvmaot') }}:
-        - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) $(logRootNameArg)MonoAot mono_aot ${{ parameters.buildConfig }} ${{ parameters.archType }} cross /p:RuntimeVariant=${{ parameters.runtimeVariant }} -maxcpucount:2
+        - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) $(logRootNameArg)MonoAot mono_aot ${{ parameters.buildConfig }} ${{ parameters.archType }} cross /p:RuntimeVariant=${{ parameters.runtimeVariant }} -maxcpucount:1
           displayName: "AOT cross-compile CoreCLR tests"
-          env:
-            __MonoToolPrefix: aarch64-linux-gnu-
       - ${{ if in(parameters.runtimeVariant, 'llvmfullaot', 'minifullaot') }}:
-        - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) $(logRootNameArg)MonoAot mono_fullaot ${{ parameters.buildConfig }} ${{ parameters.archType }} cross /p:RuntimeVariant=${{ parameters.runtimeVariant }} -maxcpucount:2
+        - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) $(logRootNameArg)MonoAot mono_fullaot ${{ parameters.buildConfig }} ${{ parameters.archType }} cross /p:RuntimeVariant=${{ parameters.runtimeVariant }} -maxcpucount:1
           displayName: "AOT cross-compile CoreCLR tests"
-          env:
-            __MonoToolPrefix: aarch64-linux-gnu-
 
   # Checks the value of the compileOnHelix parameter
   # and if set invokes libraries pipeline for AOT on Helix
