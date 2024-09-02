@@ -12248,7 +12248,7 @@ SKIP_GC_UPDATE:
                 }
                 else
                 {
-                    assert(id->idReg3() == REG_ZR); // REG_SP
+                    assert(encodingZRtoSP(id->idReg3()) == REG_SP);
                 }
                 assert(varNum2 != -1);
 #endif // DEBUG
