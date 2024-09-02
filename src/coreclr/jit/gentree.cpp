@@ -19178,7 +19178,8 @@ CORINFO_CLASS_HANDLE Compiler::gtGetClassHandle(GenTree* tree, bool* pIsExact, b
                             fieldOwner = gtGetClassHandle(op1, &objIsExact, &objIsNonNull);
                         }
 
-                        if (eeGetFieldType(fieldHnd, &fieldClass, fieldOwner) == TYP_REF)
+                        // TODO: implement for NAOT in this PR..
+                        if (!opts.IsReadyToRun() && eeGetFieldType(fieldHnd, &fieldClass, fieldOwner) == TYP_REF)
                         {
                             objClass = fieldClass;
                         }
