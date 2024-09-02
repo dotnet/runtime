@@ -85,8 +85,6 @@ namespace System.Numerics.Tensors
                 this = default;
                 return; // returns default
             }
-            if (!typeof(T).IsValueType && array.GetType() != typeof(T[]))
-                ThrowHelper.ThrowArrayTypeMismatchException();
 
             strides = strides.IsEmpty ? (ReadOnlySpan<nint>)TensorSpanHelpers.CalculateStrides(lengths, linearLength) : strides;
             TensorSpanHelpers.ValidateStrides(strides, lengths);
@@ -169,7 +167,7 @@ namespace System.Numerics.Tensors
                 this = default;
                 return; // returns default
             }
-            if (!typeof(T).IsValueType && array.GetType() != typeof(T[]))
+            if (array.GetType().GetElementType() != typeof(T))
                 ThrowHelper.ThrowArrayTypeMismatchException();
 
             strides = strides.IsEmpty ? (ReadOnlySpan<nint>)TensorSpanHelpers.CalculateStrides(lengths, linearLength) : strides;
@@ -216,7 +214,7 @@ namespace System.Numerics.Tensors
                 this = default;
                 return; // returns default
             }
-            if (!typeof(T).IsValueType && array.GetType() != typeof(T[]))
+            if (array.GetType().GetElementType() != typeof(T))
                 ThrowHelper.ThrowArrayTypeMismatchException();
 
             nint startOffset = TensorSpanHelpers.ComputeStartOffsetSystemArray(array, startIndex);
