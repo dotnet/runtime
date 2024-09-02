@@ -653,7 +653,6 @@ static void sigsegv_handler(int code, siginfo_t *siginfo, void *context)
             else
             {
                 (void)!write(STDERR_FILENO, StackOverflowMessage, sizeof(StackOverflowMessage) - 1);
-                PROCAbort(SIGSEGV, siginfo);
             }
         }
         else
