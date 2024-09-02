@@ -138,7 +138,7 @@
              Link="Common\Interop\Unix\System.Native\Interop.SocketAddress.cs" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'unix'">
+  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'unix' or '$(TargetPlatformIdentifier)' == 'wasi'">
     <Compile Include="$(CommonPath)System\Net\NetworkInformation\HostInformationPal.Unix.cs"
              Link="Common\System\Net\NetworkInformation\HostInformationPal.Unix.cs" />
     <Compile Include="$(CommonPath)System\Net\NetworkInformation\InterfaceInfoPal.Unix.cs"
@@ -155,7 +155,7 @@
              Link="Common\Interop\Unix\System.Native\Interop.InterfaceNameToIndex.cs" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'browser' or '$(TargetPlatformIdentifier)' == 'wasi'">
+  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'browser'">
     <Compile Include="$(CommonPath)System\Net\NetworkInformation\HostInformationPal.Browser.cs"
              Link="Common\System\Net\NetworkInformation\HostInformationPal.Browser.cs" />
     <Compile Include="$(CommonPath)System\Net\NetworkInformation\InterfaceInfoPal.Browser.cs"
