@@ -1,6 +1,3 @@
-// Licensed to the .NET Foundation under one or more agreements.
-// The .NET Foundation licenses this file to you under the MIT license.
-
 using System.Collections.Generic;
 using System.Net.Sockets;
 using System.Threading.Tasks;
@@ -206,6 +203,13 @@ namespace System.Net.NetworkInformation.Tests
             Assert.NotEmpty(props.GetUnicastAddresses());
             Assert.NotEmpty(await props.GetUnicastAddressesAsync());
             Assert.NotEmpty(await Task.Factory.FromAsync(props.BeginGetUnicastAddresses, props.EndGetUnicastAddresses, null));
+        }
+
+        [Fact]
+        public void IPGlobalProperties_DomainName_ReturnsEmptyStringWhenNotSet()
+        {
+            IPGlobalProperties gp = IPGlobalProperties.GetIPGlobalProperties();
+            Assert.Equal(string.Empty, gp.DomainName);
         }
     }
 }
