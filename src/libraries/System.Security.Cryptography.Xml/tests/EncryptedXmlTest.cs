@@ -1020,5 +1020,103 @@ namespace System.Security.Cryptography.Xml.Tests
             Assert.Equal(uri, kiEncKey.EncryptedKey.EncryptionMethod.KeyAlgorithm);
             Assert.NotNull(edata.CipherData.CipherValue);
         }
+
+        [Fact]
+        public void CheckSignature_X509Certificate2_VerifySignatureOnly()
+        {
+            XmlDocument doc = new XmlDocument();
+            doc.LoadXml("<root><child>sample</child></root>");
+
+            using (X509Certificate2 certificate = TestHelpers.GetSampleX509Certificate())
+            {
+                SignedXml signedXml = new SignedXml(doc);
+                signedXml.SigningKey = certificate.GetRSAPrivateKey();
+
+                Reference reference = new Reference();
+                reference.Uri = "";
+                signedXml.AddReference(reference);
+
+                signedXml.ComputeSignature();
+                XmlElement xmlDigitalSignature = signedXml.GetXml();
+                doc.DocumentElement.AppendChild(doc.ImportNode(xmlDigitalSignature, true));
+
+                SignedXml signedXmlCheck = new SignedXml(doc);
+                XmlNodeList nodeList = doc.GetElementsByTagName("Signature");
+                signedXmlCheck.LoadXml((XmlElement)nodeList[0]);
+
+                bool result = signedXmlCheck.CheckSignature(certificate, true);
+                Assert.True(result);
+            }
+        }
+
+        [Fact]
+        public void KeyInfoClause_GetXml()
+        {
+            XmlDocument doc = new XmlDocument();
+            doc.LoadXml("<root><child>sample</child></root>");
+
+            KeyInfoClause keyInfoClause = new KeyInfoName("TestKeyName");
+            XmlElement xmlElement = keyInfoClause.GetXml();
+
+            Assert.Equal("KeyName", xmlElement.LocalName);
+            Assert.Equal("TestKeyName", xmlElement.InnerText);
+        }
+
+        [Fact]
+        public void KeyInfoClause_LoadXml()
+        {
+            XmlDocument doc = new XmlDocument();
+            doc.LoadXml("<KeyName>TestKeyName</KeyName>");
+
+            KeyInfoClause keyInfoClause = new KeyInfoName();
+            keyInfoClause.LoadXml(doc.DocumentElement);
+
+            Assert.Equal("TestKeyName", ((KeyInfoName)keyInfoClause).Value);
+        }
+
+        [Fact]
+        public void CanonicalXmlEntityReference_Write()
+        {
+            XmlDocument doc = new XmlDocument();
+            doc.LoadXml("<!DOCTYPE root [<!ENTITY entity SYSTEM \"entity\">]><root>&entity;</root>");
+
+            CanonicalXmlEntityReference entityReference = new CanonicalXmlEntityReference("entity", doc, true);
+            StringBuilder stringBuilder = new StringBuilder();
+            AncestralNamespaceContextManager anc = new AncestralNamespaceContextManager();
+
+            entityReference.Write(stringBuilder, DocPosition.InsideRootElement, anc);
+
+            Assert.Equal("<!ENTITY entity SYSTEM \"entity\">", stringBuilder.ToString());
+        }
+
+        [Fact]
+        public void CanonicalXmlEntityReference_WriteHash()
+        {
+            XmlDocument doc = new XmlDocument();
+            doc.LoadXml("<!DOCTYPE root [<!ENTITY entity SYSTEM \"entity\">]><root>&entity;</root>");
+
+            CanonicalXmlEntityReference entityReference = new CanonicalXmlEntityReference("entity", doc, true);
+            using (SHA256 hashAlgorithm = SHA256.Create())
+            {
+                AncestralNamespaceContextManager anc = new AncestralNamespaceContextManager();
+                entityReference.WriteHash(hashAlgorithm, DocPosition.InsideRootElement, anc);
+
+                byte[] expectedHash = hashAlgorithm.ComputeHash(Encoding.UTF8.GetBytes("<!ENTITY entity SYSTEM \"entity\">"));
+                Assert.Equal(expectedHash, hashAlgorithm.Hash);
+            }
+        }
+
+        [Fact]
+        public void CanonicalXmlEntityReference_IsInNodeSet()
+        {
+            XmlDocument doc = new XmlDocument();
+            doc.LoadXml("<!DOCTYPE root [<!ENTITY entity SYSTEM \"entity\">]><root>&entity;</root>");
+
+            CanonicalXmlEntityReference entityReference = new CanonicalXmlEntityReference("entity", doc, true);
+            Assert.True(entityReference.IsInNodeSet);
+
+            entityReference.IsInNodeSet = false;
+            Assert.False(entityReference.IsInNodeSet);
+        }
     }
 }
