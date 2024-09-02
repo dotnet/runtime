@@ -1112,9 +1112,16 @@ void StubLinkerCPU::EmitMovConstant(IntReg reg, UINT64 imm)
 
 void StubLinkerCPU::EmitJumpRegister(IntReg regTarget)
 {
-    LOG((LF_STUBS, LL_INFO1000000, "jalr zero, 0(x%u)\n", regTarget));
-    Emit32(0x00000067 | (regTarget << 15));
+    static const IntReg zero = 0;
+    EmitJumpAndLinkRegister(zero, regTarget);
 }
+
+void StubLinkerCPU::EmitJumpAndLinkRegister(IntReg regLink, IntReg regTarget)
+{
+    LOG((LF_STUBS, LL_INFO1000000, "jalr x%i, 0(x%i)\n", regLink, regTarget));
+    Emit32(0x00000067 | (regLink << 7) | (regTarget << 15));
+}
+
 
 void StubLinkerCPU::EmitProlog(unsigned short cIntRegArgs, unsigned short cFpRegArgs, unsigned short cbStackSpace)
 {
@@ -1187,8 +1194,9 @@ void StubLinkerCPU::EmitProlog(unsigned short cIntRegArgs, unsigned short cFpReg
     EmitStore(RegFp, RegSp, cbStackSpace);
     EmitStore(RegRa, RegSp, cbStackSpace + sizeof(void*));
 
-    // 3. Set the frame pointer
-    EmitMovReg(RegFp, RegSp);
+    // 3. Set the frame pointer to the Canonical Frame Address or CFA, which is the stack pointer value on entry to the
+    // current procedure
+    EmitAddImm(RegFp, RegSp, totalPaddedFrameSize);
 
     // 4. Store floating point argument registers
     _ASSERTE(cFpRegArgs <= 8);
@@ -1295,42 +1303,42 @@ enum : unsigned
 void StubLinkerCPU::EmitLoad(IntReg dest, IntReg srcAddr, int offset)
 {
     LOG((LF_STUBS, LL_INFO1000000, "ld x%u, %u(x%u)\n", dest, offset, srcAddr));
-    Emit32(ITypeInstr(0x3, 0x3, dest, srcAddr, offset));  // ld
+    Emit32(ITypeInstr(OPCODE_LOAD, 0x3, dest, srcAddr, offset));  // ld
 }
 void StubLinkerCPU::EmitLoad(FloatReg dest, IntReg srcAddr, int offset)
 {
     LOG((LF_STUBS, LL_INFO1000000, "fld f%u, %u(x%u)\n", dest, offset, srcAddr));
-    Emit32(ITypeInstr(0x7, 0x3, dest, srcAddr, offset));  // fld
+    Emit32(ITypeInstr(OPCODE_LOAD_FP, 0x3, dest, srcAddr, offset));  // fld
 }
 void StubLinkerCPU::EmitAnyLoad(bool isFloat, unsigned int sizeShift, int destReg, IntReg srcAddr, int offset)
 {
      // The funct3 field of instructions lb, lh, (f)lw, (f)ld is exactly log2 of the load size
     _ASSERTE(sizeShift <= 3);
     _ASSERTE(!isFloat || sizeShift >= 2);
+    LOG((LF_STUBS, LL_INFO1000000, "%sl%c %c%u, %u(x%u)\n",
+        (isFloat ? "f" : ""), "bhwd"[sizeShift], (isFloat ? 'f' : 'x'), destReg, offset, srcAddr));
     unsigned opcode = isFloat ? OPCODE_LOAD_FP : OPCODE_LOAD;
-    LOG((LF_STUBS, LL_INFO1000000, "%08x    %sl%c %c%u, %u(x%u)\n",
-        ITypeInstr(opcode, sizeShift, destReg, srcAddr, offset), (isFloat ? "f" : ""), "bhwd"[sizeShift], (isFloat ? 'f' : 'x'), destReg, offset, srcAddr));
     Emit32(ITypeInstr(opcode, sizeShift, destReg, srcAddr, offset));
 }
 
 void StubLinkerCPU:: EmitStore(IntReg src, IntReg destAddr, int offset)
 {
     LOG((LF_STUBS, LL_INFO1000000, "sd x%u, %u(x%u)\n", src, offset, destAddr));
-    Emit32(STypeInstr(0x23, 0x3, destAddr, src, offset));  // sd
+    Emit32(STypeInstr(OPCODE_STORE, 0x3, destAddr, src, offset));  // sd
 }
 void StubLinkerCPU::EmitStore(FloatReg src, IntReg destAddr, int offset)
 {
     LOG((LF_STUBS, LL_INFO1000000, "fsd f%u, %u(x%u)\n", src, offset, destAddr));
-    Emit32(STypeInstr(0x27, 0x3, destAddr, src, offset));  // fsd
+    Emit32(STypeInstr(OPCODE_STORE_FP, 0x3, destAddr, src, offset));  // fsd
 }
 void StubLinkerCPU::EmitAnyStore(bool isFloat, unsigned int sizeShift, int srcReg, IntReg destAddr, int offset)
 {
-     // The funct3 field of instructions lb, lh, (f)lw, (f)ld is exactly log2 of the store size
+     // The funct3 field of instructions sb, sh, (f)sw, (f)sd is exactly log2 of the store size
     _ASSERTE(sizeShift <= 3);
     _ASSERTE(!isFloat || sizeShift >= 2);
+    LOG((LF_STUBS, LL_INFO1000000, "%ss%c %c%u, %u(x%u)\n",
+        (isFloat ? "f" : ""), "bhwd"[sizeShift], (isFloat ? 'f' : 'x'), srcReg, offset, destAddr));
     unsigned opcode = isFloat ? OPCODE_STORE_FP : OPCODE_STORE;
-    LOG((LF_STUBS, LL_INFO1000000, "%08x    %ss%c %c%u, %u(x%u)\n",
-        STypeInstr(opcode, sizeShift, destAddr, srcReg, offset), (isFloat ? "f" : ""), "bhwd"[sizeShift], (isFloat ? 'f' : 'x'), srcReg, offset, destAddr));
     Emit32(STypeInstr(opcode, sizeShift, destAddr, srcReg, offset));
 }
 
@@ -1349,10 +1357,10 @@ void StubLinkerCPU::EmitSubImm(IntReg Xd, IntReg Xn, unsigned int value)
     _ASSERTE(value <= 0x800);
     EmitAddImm(Xd, Xn, ~value + 0x1);
 }
-void StubLinkerCPU::EmitAddImm(IntReg Xd, IntReg Xn, unsigned int value)
+void StubLinkerCPU::EmitAddImm(IntReg Xd, IntReg Xn, int value)
 {
     if (value)
-        LOG((LF_STUBS, LL_INFO1000000, "addi x%u, x%u, %u\n", Xd, Xn, value));
+        LOG((LF_STUBS, LL_INFO1000000, "addi x%u, x%u, %i\n", Xd, Xn, value));
     else
         LOG((LF_STUBS, LL_INFO1000000, "mv x%u, x%u\n", Xd, Xn));
     Emit32(ITypeInstr(0x13, 0, Xd, Xn, value));  // addi
@@ -1482,7 +1490,15 @@ VOID StubLinkerCPU::EmitShuffleThunk(ShuffleEntry *pShuffleEntryArray)
         }
     }
 
-    EmitJumpRegister(t6); // Tailcall to target
+    if (m_fProlog) // calling convention transfers caused the stack to grow
+    {
+        EmitJumpAndLinkRegister(RegRa, t6);
+        EmitEpilog();
+    }
+    else
+    {
+        EmitJumpRegister(t6); // Tailcall to target
+    }
 }
 
 /* Emit the shuffling from the first lowered FP struct onwards
@@ -1535,14 +1551,15 @@ void StubLinkerCPU::EmitShufflingWithCallingConventionTransfers(const ShuffleEnt
     };
 
     // We should be at the first lowered FP struct
-    const ShuffleEntry *lowered0 = entry;
+    ShuffleEntry lowered0[2] = { entry[0], entry[1] };
     _ASSERTE(IsCallingConventionTransfer(lowered0[0].dstofs));
     _ASSERTE(IsCallingConventionTransfer(lowered0[1].dstofs)); // has two fields
     _ASSERTE(IsRegisterFloating(lowered0[0].dstofs) != IsRegisterFloating(lowered0[1].dstofs)); // has integer
     entry += 2;
 
     // Recognize other key points in the shuffling sequence
-    const ShuffleEntry *delowered = nullptr, *deloweredEnd = nullptr, *lowered1 = nullptr;
+    ShuffleEntry delowered[2] = { {ShuffleEntry::SENTINEL}, {ShuffleEntry::SENTINEL} };
+    ShuffleEntry lowered1 = {ShuffleEntry::SENTINEL};
     ShuffleChain stackSlots0, fpRegisters, stackSlots1, stackSlots2;
 
     for (; entry->srcofs != ShuffleEntry::SENTINEL; ++entry)
@@ -1552,11 +1569,10 @@ void StubLinkerCPU::EmitShufflingWithCallingConventionTransfers(const ShuffleEnt
             _ASSERTE(IsRegisterFloating(entry->srcofs));
             if (IsCallingConventionTransfer(entry->srcofs))
             {
-                delowered = entry;
-                UINT16 next = entry[1].srcofs;
-                bool isTwo = (next != ShuffleEntry::SENTINEL) && InRegister(next) && IsCallingConventionTransfer(next);
-                entry += isTwo ? 2 : 1;
-                deloweredEnd = entry;
+                delowered[0] = *entry++;
+                UINT16 next = entry->srcofs;
+                if (next != ShuffleEntry::SENTINEL && InRegister(next) && IsCallingConventionTransfer(next))
+                    delowered[1] = *entry++;
                 break;
             }
 
@@ -1574,8 +1590,8 @@ void StubLinkerCPU::EmitShufflingWithCallingConventionTransfers(const ShuffleEnt
     {
         if (InRegister(entry->dstofs))
         {
-            lowered1 = entry++;
-            _ASSERTE(IsRegisterFloating(lowered1->dstofs));
+            lowered1 = *entry++;
+            _ASSERTE(IsRegisterFloating(lowered1.dstofs));
             break;
         }
         stackSlots1.AppendStackSlot(*entry);
@@ -1586,33 +1602,41 @@ void StubLinkerCPU::EmitShufflingWithCallingConventionTransfers(const ShuffleEnt
         stackSlots2.AppendStackSlot(*entry);
     }
 
-    // Now that the key points in the shuffling are recognized, do some sanity checks
     _ASSERTE(entry->srcofs == ShuffleEntry::SENTINEL);
-    _ASSERTE(entry->stacksizedelta == 0); // TODO
-
-    if (delowered)
+    IntReg srcSp = RegSp;
+    if (entry->stacksizedelta != 0)
     {
-        _ASSERTE(GetRegisterOffset((deloweredEnd - 1)->srcofs) == NUM_FLOAT_ARGUMENT_REGISTERS - 1);
+        _ASSERTE(delowered[0].srcofs != ShuffleEntry::SENTINEL);
+        _ASSERTE(lowered1.srcofs == ShuffleEntry::SENTINEL);
+        _ASSERTE(stackSlots2.count == 0);
+        EmitProlog(0, 0, entry->stacksizedelta); // grow the stack
+        srcSp = RegFp; // fp is the sp before the prolog which is handy because we can use stack srcofs verbatim
+        // TODO: optimize by growing stack only by the (destination - source) delta and shuffling in place.
+    }
+
+    // The key points in the shuffling are recognized, do some sanity checks
+    if (fpRegisters.count > 0) _ASSERTE(fpRegisters.offset == 1);
+    if (delowered[0].srcofs != ShuffleEntry::SENTINEL)
+    {
+        int lastIndex = (delowered[1].srcofs != ShuffleEntry::SENTINEL) ? 1 : 0;
+        _ASSERTE(GetRegisterOffset(delowered[lastIndex].srcofs) == NUM_FLOAT_ARGUMENT_REGISTERS - 1);
         if (fpRegisters.count > 0)
         {
-            _ASSERTE(fpRegisters.offset == 1);
-            FloatReg deloweredSrc = GetRegister(delowered->srcofs);
+            FloatReg deloweredSrc = GetRegister(delowered[0].srcofs);
             FloatReg lastChainDest = fpRegisters.firstSrc + (fpRegisters.count - 1) + 1;
             _ASSERTE(deloweredSrc == lastChainDest);
         }
-        if (deloweredEnd - delowered > 1)
+        if (lastIndex == 1)
         {
-            _ASSERTE(deloweredEnd - delowered == 2);
             _ASSERTE(GetStackSlot(delowered[0].dstofs) == GetStackSlot(delowered[1].dstofs));
             _ASSERTE(GetRegisterOffset(delowered[0].srcofs) + 1 == GetRegisterOffset(delowered[1].srcofs));
         }
     }
-    if (lowered1) _ASSERTE(delowered);
-    if (stackSlots1.count > 0) _ASSERTE(delowered);
-    if (stackSlots2.count > 0) _ASSERTE(lowered1);
-    if (stackSlots2.offset > 0) _ASSERTE(entry->stacksizedelta == stackSlots2.offset);
+    if (lowered1.srcofs != ShuffleEntry::SENTINEL) _ASSERTE(delowered[0].srcofs != ShuffleEntry::SENTINEL);
+    if (stackSlots1.count > 0) _ASSERTE(delowered[0].srcofs != ShuffleEntry::SENTINEL);
+    if (stackSlots2.count > 0) _ASSERTE(lowered1.srcofs != ShuffleEntry::SENTINEL);
 
-    // Some helper methods
+    // Some helper functions
     FloatReg stashedFloatRegs[] = {0, 0}; // argument registers stashed in ft0 and ft1 (zero means empty)
     auto stashFloatReg = [&stashedFloatRegs](FloatReg reg) -> FloatReg
     {
@@ -1622,48 +1646,48 @@ void StubLinkerCPU::EmitShufflingWithCallingConventionTransfers(const ShuffleEnt
         return i;
     };
 
-    auto shuffleStackSlotLeftChain = [this](ShuffleChain c) -> void
+    auto shuffleStackSlotLeftChain = [this, srcSp](ShuffleChain c) -> void
     {
-        _ASSERTE(c.offset <= 0); // shuffles to the left
+        _ASSERTE(c.offset <= 0 || srcSp == RegFp); // shuffles to the left
         for (int src = c.firstSrc, dst = src + c.offset;  src < c.firstSrc + c.count;  ++src, ++dst)
         {
-            EmitLoad (intTempReg, RegSp, src * sizeof(void*));
+            EmitLoad (intTempReg, srcSp, src * sizeof(void*));
             EmitStore(intTempReg, RegSp, dst * sizeof(void*));
         }
     };
 
-    // Let's start shuffling, a7 is empty so we can shuffle the integer field of lowered0 and any following stackSlots0
-    for (int i = 0; i < 2; ++i)
+    // Let's start shuffling
+    for (int i = 0; i < ARRAY_SIZE(lowered0); ++i)
     {
         _ASSERTE(GetStackSlot(lowered0[i].srcofs) == 0);
         bool isFloating = IsRegisterFloating(lowered0[i].dstofs);
         TransferredField field = GetTransferredField(lowered0[i].dstofs);
         if (isFloating)
         {
-            if (fpRegisters.count > 0 || delowered) // the floating field destination is occupied, so stash it
-            {
-                _ASSERTE(field.reg ==
-                    (fpRegisters.count > 0 ? fpRegisters.firstSrc : GetRegister(delowered->srcofs)));
-                field.reg = stashFloatReg(field.reg);
-            }
+            if (fpRegisters.count > 0 || delowered[0].srcofs != ShuffleEntry::SENTINEL)
+                field.reg = stashFloatReg(field.reg); // the floating field destination is occupied, so stash it
         }
         else
         {
-            _ASSERTE(field.reg == lastIntArgReg);
+            _ASSERTE(field.reg == lastIntArgReg); // a7 is empty so the integer field of lowered0 can go straight home
         }
-        EmitAnyLoad(isFloating, field.sizeShift, field.reg, RegSp, 0 + field.offset);
+        EmitAnyLoad(isFloating, field.sizeShift, field.reg, srcSp, 0 + field.offset);
     }
 
+    // Now that lowered0 is out of the way, we can shuffle subsequent stackSlots0
     _ASSERTE(stackSlots0.firstSrc + stackSlots0.offset == 0);
     shuffleStackSlotLeftChain(stackSlots0);
 
-    if (stackSlots1.offset > 0) // Stack slots after the delowered argument are shuffled to the right
+    bool shuffleStackSlots1Right = (srcSp == RegSp && stackSlots1.offset > 0);
+    if (shuffleStackSlots1Right)
     {
-        // Do the second lowering first to unblock stack slot shuffling
-        _ASSERTE(lowered1);
-        TransferredField f = GetTransferredField(lowered1->dstofs);
-        int slotOffset = GetStackSlot(lowered1->srcofs) * sizeof(void*);
-        EmitAnyLoad(true, f.sizeShift, stashFloatReg(f.reg), RegSp, slotOffset + f.offset);
+        // The delowered argument is bigger than lowered0, which displaces subsequent stackSlots1 to the right.
+        // Do the second lowering first to unblock shuffling of stack slots after the delowered argument
+        _ASSERTE(lowered1.srcofs != ShuffleEntry::SENTINEL);
+        TransferredField f = GetTransferredField(lowered1.dstofs);
+        int slotOffset = GetStackSlot(lowered1.srcofs) * sizeof(void*);
+        f.reg = stashFloatReg(f.reg); // destination is occupied, we haven't delowered yet
+        EmitAnyLoad(true, f.sizeShift, f.reg, RegSp, slotOffset + f.offset);
 
         for (int src = stackSlots1.firstSrc + stackSlots1.count - 1, dst = src + stackSlots1.offset;
             src >= stackSlots1.firstSrc; --src, --dst)
@@ -1673,34 +1697,38 @@ void StubLinkerCPU::EmitShufflingWithCallingConventionTransfers(const ShuffleEnt
         }
     }
 
-    for (; delowered < deloweredEnd; ++delowered)
+    // Now that there's enough room on the stack, delower the argument
+    for (int i = 0; i < ARRAY_SIZE(delowered); ++i)
     {
-        _ASSERTE(IsRegisterFloating(delowered->srcofs));
-        FloatReg src = GetRegister(delowered->srcofs);
-        TransferredField f = GetTransferredField(delowered->srcofs);
-        int slotOffset = GetStackSlot(delowered->dstofs) * sizeof(void*);
+        if (delowered[i].srcofs == ShuffleEntry::SENTINEL)
+            break;
+        _ASSERTE(IsRegisterFloating(delowered[i].srcofs));
+        FloatReg src = GetRegister(delowered[i].srcofs);
+        TransferredField f = GetTransferredField(delowered[i].srcofs);
+        int slotOffset = GetStackSlot(delowered[i].dstofs) * sizeof(void*);
         EmitAnyStore(true, f.sizeShift, src, RegSp, slotOffset + f.offset);
     }
 
+    // Last FP regs occupied by the delowered argument have been freed, we can shuffle FP registers to the right
     for (FloatReg src = fpRegisters.firstSrc + fpRegisters.count - 1;  src >= fpRegisters.firstSrc;  src.reg--)
     {
         EmitMovReg(src + 1, src);
     }
 
-    if (stackSlots1.offset <= 0)
+    if (!shuffleStackSlots1Right)
     {
         shuffleStackSlotLeftChain(stackSlots1);
-        if (lowered1)
+        if (lowered1.srcofs != ShuffleEntry::SENTINEL)
         {
-            TransferredField f = GetTransferredField(lowered1->dstofs);
-            int slotOffset = GetStackSlot(lowered1->srcofs) * sizeof(void*);
-            EmitAnyLoad(true, f.sizeShift, f.reg, RegSp, slotOffset + f.offset);
+            TransferredField f = GetTransferredField(lowered1.dstofs);
+            int slotOffset = GetStackSlot(lowered1.srcofs) * sizeof(void*);
+            EmitAnyLoad(true, f.sizeShift, f.reg, srcSp, slotOffset + f.offset);
         }
     }
 
     shuffleStackSlotLeftChain(stackSlots2);
 
-    for (int ft = 0; ft < sizeof(stashedFloatRegs) / sizeof(stashedFloatRegs[0]); ++ft)
+    for (int ft = 0; ft < ARRAY_SIZE(stashedFloatRegs); ++ft)
     {
         FloatReg dst = stashedFloatRegs[ft];
         if (dst) EmitMovReg(dst, ft);

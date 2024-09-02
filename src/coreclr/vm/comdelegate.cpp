@@ -482,8 +482,14 @@ BOOL GenerateShuffleArrayPortable(MethodDesc* pMethodSrc, MethodDesc *pMethodDst
     }
 
     UINT stackSizeDelta = 0;
-
-#if defined(TARGET_X86) && !defined(UNIX_X86_ABI)
+#if defined(TARGET_RISCV64)
+    {
+        UINT stackSizeSrc = sArgPlacerSrc.SizeOfArgStack();
+        UINT stackSizeDst = sArgPlacerDst.SizeOfArgStack();
+        if (stackSizeDst > stackSizeSrc)
+            stackSizeDelta = stackSizeDst; // stack growth
+    }
+#elif defined(TARGET_X86) && !defined(UNIX_X86_ABI)
     {
         UINT stackSizeSrc = sArgPlacerSrc.SizeOfArgStack();
         UINT stackSizeDst = sArgPlacerDst.SizeOfArgStack();
@@ -712,7 +718,11 @@ BOOL GenerateShuffleArrayPortable(MethodDesc* pMethodSrc, MethodDesc *pMethodDst
     }
 
     entry.srcofs = ShuffleEntry::SENTINEL;
-    entry.dstofs = 0;
+#if defined(TARGET_RISCV64)
+    entry.stacksizedelta = stackSizeDelta;
+#else
+    entry.stacksizedelta = 0;
+#endif
     pShuffleEntryArray->Append(entry);
 
     return TRUE;
