@@ -813,6 +813,18 @@ namespace System.Reflection.Metadata.Tests
             Assert.Equal("bool", parsed.GetGenericArguments()[1].Name);
         }
 
+        [Fact]
+        public void ArrayRank_SByteOverflow()
+        {
+            const string Input = "WeDontEnforceAnyMaxArrayRank[,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,]";
+
+            TypeName typeName = TypeName.Parse(Input.AsSpan());
+
+            Assert.Equal(Input, typeName.FullName);
+            Assert.True(typeName.IsArray);
+            Assert.Equal(128, typeName.GetArrayRank());
+        }
+
         [Theory]
         [InlineData(typeof(int))]
         [InlineData(typeof(int?))]

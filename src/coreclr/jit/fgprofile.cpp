@@ -45,6 +45,27 @@ bool Compiler::fgHaveProfileWeights()
 }
 
 //------------------------------------------------------------------------
+// fgRemoveProfileData: Remove all traces of profile info
+//
+// Notes:
+//   Needed if the jit initially thought it was going to optimize
+//   the method, but then decided not to.
+//
+//   Does not modify any block fields, so should be called before
+//   we start to incorporate profile data.
+//
+void Compiler::fgRemoveProfileData(const char* reason)
+{
+    fgPgoFailReason  = reason;
+    fgPgoQueryResult = E_FAIL;
+    fgPgoHaveWeights = false;
+    fgPgoData        = nullptr;
+    fgPgoSchema      = nullptr;
+    fgPgoDisabled    = true;
+    fgPgoDynamic     = false;
+}
+
+//------------------------------------------------------------------------
 // fgHaveSufficientProfileWeights: check if profile data is available
 //   and is sufficient enough to be trustful.
 //
@@ -3468,15 +3489,6 @@ void EfficientEdgeCountReconstructor::Prepare()
 //
 void EfficientEdgeCountReconstructor::Solve()
 {
-    // If we have dynamic PGO data, we don't expect to see any mismatches,
-    // since the schema we got from the runtime should have come from the
-    // exact same JIT and IL, created in an earlier tier.
-    //
-    if (m_comp->fgPgoSource == ICorJitInfo::PgoSource::Dynamic)
-    {
-        assert(!m_mismatch);
-    }
-
     // If issues arose earlier, then don't try solving.
     //
     if (m_badcode || m_mismatch || m_allWeightsZero)
