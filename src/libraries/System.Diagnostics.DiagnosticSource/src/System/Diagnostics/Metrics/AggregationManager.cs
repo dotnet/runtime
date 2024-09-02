@@ -138,7 +138,7 @@ namespace System.Diagnostics.Metrics
         {
             InstrumentState? state = GetInstrumentState(instrument);
             _instrumentPublished(instrument, state);
-            if (state != null)
+            if (state?.MeasurementEnabled is true)
             {
                 _beginInstrumentMeasurements(instrument, state);
 #pragma warning disable CA1864 // Prefer the 'IDictionary.TryAdd(TKey, TValue)' method. IDictionary.TryAdd() is not available in one of the builds
@@ -268,20 +268,25 @@ namespace System.Diagnostics.Metrics
             {
                 lock (this) // protect _instrumentConfigFuncs list
                 {
-                    foreach (Predicate<Instrument> filter in _instrumentConfigFuncs)
+                    instrumentState = BuildInstrumentState(instrument);
+                    if (instrumentState != null)
                     {
-                        if (filter(instrument))
+                        _instrumentStates.TryAdd(instrument, instrumentState);
+                        // I don't think it is possible for the instrument to be removed immediately
+                        // and instrumentState = _instrumentStates[instrument] should work, but writing
+                        // this defensively.
+                        _instrumentStates.TryGetValue(instrument, out instrumentState);
+
+                        foreach (Predicate<Instrument> filter in _instrumentConfigFuncs)
                         {
-                            instrumentState = BuildInstrumentState(instrument);
-                            if (instrumentState != null)
+                            if (filter(instrument))
                             {
-                                _instrumentStates.TryAdd(instrument, instrumentState);
-                                // I don't think it is possible for the instrument to be removed immediately
-                                // and instrumentState = _instrumentStates[instrument] should work, but writing
-                                // this defensively.
-                                _instrumentStates.TryGetValue(instrument, out instrumentState);
+                                if (instrumentState is not null)
+                                {
+                                    instrumentState.MeasurementEnabled = true;
+                                }
+                                break;
                             }
-                            break;
                         }
                     }
                 }

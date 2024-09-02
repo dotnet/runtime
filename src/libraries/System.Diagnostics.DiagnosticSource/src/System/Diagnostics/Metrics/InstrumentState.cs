@@ -17,6 +17,8 @@ namespace System.Diagnostics.Metrics
         public abstract void Collect(Instrument instrument, Action<LabeledAggregationStatistics> aggregationVisitFunc);
 
         public abstract int ID { get; }
+
+        public abstract bool MeasurementEnabled { get; set; }
     }
 
     internal sealed class InstrumentState<TAggregator> : InstrumentState
@@ -44,5 +46,7 @@ namespace System.Diagnostics.Metrics
         }
 
         public override int ID { get; }
+
+        public override bool MeasurementEnabled { get; set; }
     }
 }
