@@ -11,9 +11,9 @@ namespace System.Reflection.Metadata
 {
     internal static class TypeNameParserHelpers
     {
-        internal const sbyte SZArray = -1;
-        internal const sbyte Pointer = -2;
-        internal const sbyte ByRef = -3;
+        internal const int SZArray = -1;
+        internal const int Pointer = -2;
+        internal const int ByRef = -3;
         private const char EscapeCharacter = '\\';
 #if NET8_0_OR_GREATER
         private static readonly SearchValues<char> s_endOfFullTypeNameDelimitersSearchValues = SearchValues.Create("[]&*,+\\");
