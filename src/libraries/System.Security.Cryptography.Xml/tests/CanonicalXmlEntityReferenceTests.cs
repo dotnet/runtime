@@ -5,7 +5,7 @@ using Xunit;
 
 namespace System.Security.Cryptography.Xml.Tests
 {
-    public class CanonicalXmlEntityReferenceTests
+    public static class CanonicalXmlEntityReferenceTests
     {
         [Fact]
         public void Write_WritesExpectedOutput()
@@ -23,14 +23,14 @@ namespace System.Security.Cryptography.Xml.Tests
         [Fact]
         public void WriteHash_WritesExpectedHash()
         {
-            var xmlDocument = new XmlDocument();
-            var entityReference = new CanonicalXmlEntityReference("entity", xmlDocument, true);
-            var hashAlgorithm = SHA256.Create();
+            XmlDocument xmlDocument = new XmlDocument();
+            CanonicalXmlEntityReference entityReference = new CanonicalXmlEntityReference("entity", xmlDocument, true);
+            using SHA256 hashAlgorithm = SHA256.Create();
             var anc = new AncestralNamespaceContextManager();
 
             entityReference.WriteHash(hashAlgorithm, DocPosition.InsideRootElement, anc);
 
-            var expectedHash = hashAlgorithm.ComputeHash(Encoding.UTF8.GetBytes("<!ENTITY entity SYSTEM \"entity\">"));
+            byte[] expectedHash = hashAlgorithm.ComputeHash(Encoding.UTF8.GetBytes("<!ENTITY entity SYSTEM \"entity\">"));
             Assert.Equal(expectedHash, hashAlgorithm.Hash);
         }
 

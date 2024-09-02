@@ -7,13 +7,14 @@ namespace System.Security.Cryptography.Xml.Tests
     public class KeyInfoClauseTests
     {
         [Fact]
-        public void LoadXml_ValidXml_Success()
+        public void LoadXml_WithValidKeyNameXml_SetsKeyNameValue()
         {
-            var xmlDocument = new XmlDocument();
-            xmlDocument.LoadXml("<KeyInfo><KeyName>Test</KeyName></KeyInfo>");
-            var keyInfoClause = new TestKeyInfoClause();
-            keyInfoClause.LoadXml(xmlDocument.DocumentElement);
-            Assert.Equal("Test", keyInfoClause.KeyName);
+            XmlDocument xmlDocument = new XmlDocument();
+            xmlDocument.LoadXml("<KeyInfo><KeyName>MyKey</KeyName></KeyInfo>");
+            KeyInfoName keyInfoName = new KeyInfoName();
+            keyInfoName.LoadXml(xmlDocument.DocumentElement);
+
+            Assert.Equal("MyKey", keyInfoName.Value);
         }
 
         [Fact]
