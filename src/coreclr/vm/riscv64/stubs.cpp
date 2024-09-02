@@ -1110,18 +1110,6 @@ void StubLinkerCPU::EmitMovConstant(IntReg reg, UINT64 imm)
     }
 }
 
-void StubLinkerCPU::EmitJumpRegister(IntReg regTarget)
-{
-    static const IntReg zero = 0;
-    EmitJumpAndLinkRegister(zero, regTarget);
-}
-
-void StubLinkerCPU::EmitJumpAndLinkRegister(IntReg regLink, IntReg regTarget)
-{
-    LOG((LF_STUBS, LL_INFO1000000, "jalr x%i, 0(x%i)\n", regLink, regTarget));
-    Emit32(0x00000067 | (regLink << 7) | (regTarget << 15));
-}
-
 
 void StubLinkerCPU::EmitProlog(unsigned short cIntRegArgs, unsigned short cFpRegArgs, unsigned short cbStackSpace)
 {
@@ -1300,46 +1288,77 @@ enum : unsigned
     OPCODE_STORE_FP = 0x27,
 };
 
+static const char* intRegAbiNames[] = {
+    "zero", "ra", "sp", "gp", "tp",
+    "t0", "t1", "t2",
+    "fp", "s1",
+    "a0", "a1", "a2", "a3", "a4", "a5", "a6", "a7",
+    "s2", "s3", "s4", "s5", "s6", "s7", "s8", "s9", "s10", "s11",
+    "t3", "t4", "t5", "t6"
+};
+
+static const char* fpRegAbiNames[] = {
+    "ft0", "ft1", "ft2", "ft3", "ft4", "ft5", "ft6", "ft7",
+    "fs0", "fs1",
+    "fa0", "fa1", "fa2", "fa3", "fa4", "fa5", "fa6", "fa7",
+    "fs2", "fs3", "fs4", "fs5", "fs6", "fs7", "fs8", "fs9", "fs10", "fs11",
+    "ft8", "ft9", "ft10", "ft11"
+};
+
+void StubLinkerCPU::EmitJumpRegister(IntReg regTarget)
+{
+    static const IntReg zero = 0;
+    EmitJumpAndLinkRegister(zero, regTarget);
+}
+
+void StubLinkerCPU::EmitJumpAndLinkRegister(IntReg regLink, IntReg regTarget)
+{
+    Emit32(0x00000067 | (regLink << 7) | (regTarget << 15));
+    LOG((LF_STUBS, LL_EVERYTHING, "jalr %s, 0(%s)\n", intRegAbiNames[regLink], intRegAbiNames[regTarget]));
+}
+
 void StubLinkerCPU::EmitLoad(IntReg dest, IntReg srcAddr, int offset)
 {
-    LOG((LF_STUBS, LL_INFO1000000, "ld x%u, %u(x%u)\n", dest, offset, srcAddr));
     Emit32(ITypeInstr(OPCODE_LOAD, 0x3, dest, srcAddr, offset));  // ld
+    LOG((LF_STUBS, LL_EVERYTHING, "ld %s, %i(%s)\n", intRegAbiNames[dest], offset, intRegAbiNames[srcAddr]));
 }
 void StubLinkerCPU::EmitLoad(FloatReg dest, IntReg srcAddr, int offset)
 {
-    LOG((LF_STUBS, LL_INFO1000000, "fld f%u, %u(x%u)\n", dest, offset, srcAddr));
     Emit32(ITypeInstr(OPCODE_LOAD_FP, 0x3, dest, srcAddr, offset));  // fld
+    LOG((LF_STUBS, LL_EVERYTHING, "fld %s, %i(%s)\n", fpRegAbiNames[dest], offset, intRegAbiNames[srcAddr]));
 }
 void StubLinkerCPU::EmitAnyLoad(bool isFloat, unsigned int sizeShift, int destReg, IntReg srcAddr, int offset)
 {
      // The funct3 field of instructions lb, lh, (f)lw, (f)ld is exactly log2 of the load size
     _ASSERTE(sizeShift <= 3);
     _ASSERTE(!isFloat || sizeShift >= 2);
-    LOG((LF_STUBS, LL_INFO1000000, "%sl%c %c%u, %u(x%u)\n",
-        (isFloat ? "f" : ""), "bhwd"[sizeShift], (isFloat ? 'f' : 'x'), destReg, offset, srcAddr));
     unsigned opcode = isFloat ? OPCODE_LOAD_FP : OPCODE_LOAD;
     Emit32(ITypeInstr(opcode, sizeShift, destReg, srcAddr, offset));
+    LOG((LF_STUBS, LL_EVERYTHING, "%sl%c %s, %i(%s)\n",
+        (isFloat ? "f" : ""), "bhwd"[sizeShift], (isFloat ? fpRegAbiNames : intRegAbiNames)[destReg], offset,
+        intRegAbiNames[srcAddr]));
 }
 
 void StubLinkerCPU:: EmitStore(IntReg src, IntReg destAddr, int offset)
 {
-    LOG((LF_STUBS, LL_INFO1000000, "sd x%u, %u(x%u)\n", src, offset, destAddr));
     Emit32(STypeInstr(OPCODE_STORE, 0x3, destAddr, src, offset));  // sd
+    LOG((LF_STUBS, LL_EVERYTHING, "sd %s, %i(%s)\n", intRegAbiNames[src], offset, intRegAbiNames[destAddr]));
 }
 void StubLinkerCPU::EmitStore(FloatReg src, IntReg destAddr, int offset)
 {
-    LOG((LF_STUBS, LL_INFO1000000, "fsd f%u, %u(x%u)\n", src, offset, destAddr));
     Emit32(STypeInstr(OPCODE_STORE_FP, 0x3, destAddr, src, offset));  // fsd
+    LOG((LF_STUBS, LL_EVERYTHING, "fsd %s, %i(%s)\n", fpRegAbiNames[src], offset, intRegAbiNames[destAddr]));
 }
 void StubLinkerCPU::EmitAnyStore(bool isFloat, unsigned int sizeShift, int srcReg, IntReg destAddr, int offset)
 {
      // The funct3 field of instructions sb, sh, (f)sw, (f)sd is exactly log2 of the store size
     _ASSERTE(sizeShift <= 3);
     _ASSERTE(!isFloat || sizeShift >= 2);
-    LOG((LF_STUBS, LL_INFO1000000, "%ss%c %c%u, %u(x%u)\n",
-        (isFloat ? "f" : ""), "bhwd"[sizeShift], (isFloat ? 'f' : 'x'), srcReg, offset, destAddr));
     unsigned opcode = isFloat ? OPCODE_STORE_FP : OPCODE_STORE;
     Emit32(STypeInstr(opcode, sizeShift, destAddr, srcReg, offset));
+    LOG((LF_STUBS, LL_EVERYTHING, "%ss%c %s, %i(%s)\n",
+        (isFloat ? "f" : ""), "bhwd"[sizeShift], (isFloat ? fpRegAbiNames : intRegAbiNames)[srcReg], offset,
+        intRegAbiNames[destAddr]));
 }
 
 void StubLinkerCPU::EmitMovReg(IntReg Xd, IntReg Xm)
@@ -1348,8 +1367,8 @@ void StubLinkerCPU::EmitMovReg(IntReg Xd, IntReg Xm)
 }
 void StubLinkerCPU::EmitMovReg(FloatReg dest, FloatReg source)
 {
-    LOG((LF_STUBS, LL_INFO1000000, "fmv f%u, f%u\n", dest, source));
     Emit32(RTypeInstr(0x53, 0, 0x11, dest, source, source));  // fsgnj.d
+    LOG((LF_STUBS, LL_EVERYTHING, "fmv %s, %s\n", fpRegAbiNames[dest], fpRegAbiNames[source]));
 }
 
 void StubLinkerCPU::EmitSubImm(IntReg Xd, IntReg Xn, int value)
@@ -1358,11 +1377,11 @@ void StubLinkerCPU::EmitSubImm(IntReg Xd, IntReg Xn, int value)
 }
 void StubLinkerCPU::EmitAddImm(IntReg Xd, IntReg Xn, int value)
 {
-    if (value)
-        LOG((LF_STUBS, LL_INFO1000000, "addi x%u, x%u, %i\n", Xd, Xn, value));
-    else
-        LOG((LF_STUBS, LL_INFO1000000, "mv x%u, x%u\n", Xd, Xn));
     Emit32(ITypeInstr(0x13, 0, Xd, Xn, value));  // addi
+    if (value)
+        LOG((LF_STUBS, LL_EVERYTHING, "addi %s, %s, %i\n", intRegAbiNames[Xd], intRegAbiNames[Xn], value));
+    else
+        LOG((LF_STUBS, LL_EVERYTHING, "mv %s, %s\n", intRegAbiNames[Xd], intRegAbiNames[Xn]));
 }
 void StubLinkerCPU::EmitSllImm(IntReg Xd, IntReg Xn, unsigned int value)
 {
@@ -1441,7 +1460,6 @@ static TransferredField GetTransferredField(UINT16 ofs)
 // Emits code to adjust arguments for static delegate target.
 VOID StubLinkerCPU::EmitShuffleThunk(ShuffleEntry *pShuffleEntryArray)
 {
-    LOG((LF_STUBS, LL_INFO1000000, "StubLinkerCPU::EmitShuffleThunk\n"));
     static const IntReg t6 = 31, t5 = 30, a0 = argRegBase + 0;
     // On entry a0 holds the delegate instance. Look up the real target address stored in the MethodPtrAux
     // field and saved in t6. Tailcall to the target method after re-arranging the arguments
