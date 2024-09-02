@@ -380,7 +380,6 @@ BasicBlock* Compiler::fgCreateGCPoll(GCPollType pollType, BasicBlock* block)
 
             case BBJ_COND:
                 // replace predecessor in true/false successors.
-                noway_assert(!bottom->IsLast());
                 fgReplacePred(top->GetFalseEdge(), bottom);
                 fgReplacePred(top->GetTrueEdge(), bottom);
                 break;

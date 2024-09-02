@@ -85,16 +85,17 @@ if [ ! -z ${RunCrossGen2+x} ]%3B then
         __ResponseFile="$__OutputFile.rsp"
         rm $__ResponseFile 2>/dev/null
 
-        __Command=$_DebuggerFullPath
+        __R2RDumpCommand=$_DebuggerFullPath
         # Tests run locally need __TestDotNetCmd (set by runtest.py) or a compatible 5.0 dotnet runtime in the path
         if [ ! -z ${__TestDotNetCmd+x} ] %3B then
-            __Command+=" $__TestDotNetCmd"
+            __R2RDumpCommand+=" $__TestDotNetCmd"
         else
-            __Command+=" dotnet"
+            __R2RDumpCommand+=" dotnet"
         fi
-        __R2RDumpCommand=$__Command" $CORE_ROOT/R2RDump/R2RDump.dll"
+        __R2RDumpCommand+=" $CORE_ROOT/R2RDump/R2RDump.dll"
         __R2RDumpCommand+=" --header --sc --in $__OutputFile --out $__OutputFile.r2rdump --val"
-        __Command+=" $CORE_ROOT/crossgen2/crossgen2.dll"
+
+        __Command="$_DebuggerFullPath $CORE_ROOT/crossgen2/crossgen2"
         __Command+=" @$__ResponseFile"
         __Command+=" $ExtraCrossGen2Args"
 
@@ -247,11 +248,10 @@ if defined RunCrossGen2 (
     ) else (
         set __DotNet="dotnet"
     )
-    set __Command=!_DebuggerFullPath!
-    set __Command=!__Command! !__DotNet!
-    set __R2RDumpCommand=!__Command! "!CORE_ROOT!\r2rdump\r2rdump.dll"
+    set __R2RDumpCommand=!_DebuggerFullPath! !__DotNet! "!CORE_ROOT!\r2rdump\r2rdump.dll"
     set __R2RDumpCommand=!__R2RDumpCommand! --header --sc --in !__OutputFile! --out !__OutputFile!.r2rdump --val
-    set __Command=!__Command! "!CORE_ROOT!\crossgen2\crossgen2.dll"
+
+    set __Command=!_DebuggerFullPath! "!CORE_ROOT!\crossgen2\crossgen2.exe"
     set __Command=!__Command! @"!__ResponseFile!"
     set __Command=!__Command! !ExtraCrossGen2Args!
     echo !__InputFile!>>!__ResponseFile!
