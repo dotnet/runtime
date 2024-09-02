@@ -304,7 +304,7 @@ public class ReliabilityFramework
 
         try
         {
-            _logger.WriteToInstrumentationLog(_curTestSet, LoggingLevels.Tests, "Getting configuration...");
+            // _logger.WriteToInstrumentationLog(_curTestSet, LoggingLevels.Tests, "Getting configuration...");
             _reliabilityConfig = new ReliabilityConfig(testConfig);
         }
         catch (ArgumentException e)
@@ -364,13 +364,13 @@ public class ReliabilityFramework
 
             if (_curTestSet.ReportResults)
             {
-                _logger.WriteToInstrumentationLog(_curTestSet, LoggingLevels.SmartDotNet, "Reporting results...");
+                // _logger.WriteToInstrumentationLog(_curTestSet, LoggingLevels.SmartDotNet, "Reporting results...");
                 try
                 {
                 }
                 catch (Exception e)
                 {
-                    _logger.WriteToInstrumentationLog(_curTestSet, LoggingLevels.SmartDotNet, String.Format("Exception while communicating w/ smart.net server: {0}", e));
+                    // _logger.WriteToInstrumentationLog(_curTestSet, LoggingLevels.SmartDotNet, String.Format("Exception while communicating w/ smart.net server: {0}", e));
                     AddFailure("Failed to initialize result reporting", null, -1);
                 }
             }
@@ -378,7 +378,7 @@ public class ReliabilityFramework
             // we don't log while we're replaying a log file.
             if (!doReplay)
             {
-                _logger.WriteToInstrumentationLog(_curTestSet, LoggingLevels.Logging, "Opening log file...");
+                // _logger.WriteToInstrumentationLog(_curTestSet, LoggingLevels.Logging, "Opening log file...");
                 if (!_curTestSet.DisableLogging)
                 {
                     _logger.OpenLog(_curTestSet.FriendlyName);
@@ -388,14 +388,14 @@ public class ReliabilityFramework
 
             if (testSet.Tests == null)
             {
-                _logger.WriteToInstrumentationLog(_curTestSet, LoggingLevels.Tests, "No tests to run in test set");
+                // _logger.WriteToInstrumentationLog(_curTestSet, LoggingLevels.Tests, "No tests to run in test set");
                 Console.WriteLine("No tests to run, skipping..\r\n");
                 // no tests in this test set, skip it.
                 continue;
             }
 
             // step 1: preload all the tests, this does NOT start them.
-            _logger.WriteToInstrumentationLog(_curTestSet, LoggingLevels.Tests, "Preloading tests...");
+            // _logger.WriteToInstrumentationLog(_curTestSet, LoggingLevels.Tests, "Preloading tests...");
             Console.Write("Loading all tests: ");
             bool haveAtLeastOneTest = false;
             for (int i = 0; i < testSet.Tests.Length; i++)
@@ -449,10 +449,10 @@ public class ReliabilityFramework
                 Console.Write(".");
             }
 
-            _logger.WriteToInstrumentationLog(_curTestSet, LoggingLevels.Tests, "Finished Preloading tests...");
+            // _logger.WriteToInstrumentationLog(_curTestSet, LoggingLevels.Tests, "Finished Preloading tests...");
             if (!haveAtLeastOneTest)
             {
-                _logger.WriteToInstrumentationLog(_curTestSet, LoggingLevels.Tests, "No tests to execute");
+                // _logger.WriteToInstrumentationLog(_curTestSet, LoggingLevels.Tests, "No tests to execute");
                 AddFailure("No tests exist!", null, -1);
                 Console.WriteLine("I have no tests to run!");
                 continue;
@@ -465,7 +465,7 @@ public class ReliabilityFramework
                 Thread.Sleep(1000);
             }
 
-            _logger.WriteToInstrumentationLog(_curTestSet, LoggingLevels.Tests, "All tests loaded...");
+            // _logger.WriteToInstrumentationLog(_curTestSet, LoggingLevels.Tests, "All tests loaded...");
             Console.WriteLine("");
 
             // update the startTime
@@ -481,7 +481,7 @@ public class ReliabilityFramework
             }
             else
             {
-                _logger.WriteToInstrumentationLog(_curTestSet, LoggingLevels.Tests, "Beginning test run...");
+                // _logger.WriteToInstrumentationLog(_curTestSet, LoggingLevels.Tests, "Beginning test run...");
                 TestStarter();
                 _logger.CloseLog();
             }
@@ -669,7 +669,7 @@ public class ReliabilityFramework
 
                         if (!startTest)
                         {
-                            _logger.WriteToInstrumentationLog(_curTestSet, LoggingLevels.TestStarter, String.Format("Cannot start test (perf): TestsRunning: {0} Mem: {1} Cpu: {2} MemAdj: {3} CpuAdj: {4}", _testsRunningCount, memVal, cpuVal, memAdjust, cpuAdjust));
+                            // _logger.WriteToInstrumentationLog(_curTestSet, LoggingLevels.TestStarter, String.Format("Cannot start test (perf): TestsRunning: {0} Mem: {1} Cpu: {2} MemAdj: {3} CpuAdj: {4}", _testsRunningCount, memVal, cpuVal, memAdjust, cpuAdjust));
                         }
 
                         // We disable tests if we're paging too much.  TODO: Tune these numbers to be good.
@@ -682,9 +682,9 @@ public class ReliabilityFramework
                 }
                 else if (_curTestSet.MaxTestsRunning != -1)
                 {
-                    _logger.WriteToInstrumentationLog(_curTestSet, LoggingLevels.TestStarter, String.Format("Blocking until test is finished"));
+                    // _logger.WriteToInstrumentationLog(_curTestSet, LoggingLevels.TestStarter, String.Format("Blocking until test is finished"));
                     _testDone.WaitOne();
-                    _logger.WriteToInstrumentationLog(_curTestSet, LoggingLevels.TestStarter, String.Format("Test has finished, stopping blocking"));
+                    // _logger.WriteToInstrumentationLog(_curTestSet, LoggingLevels.TestStarter, String.Format("Test has finished, stopping blocking"));
                 }
 
                 if (startTest)
@@ -761,7 +761,7 @@ public class ReliabilityFramework
                                 if (!reachedMaximumRuns && !maximumCopiesRunning && !testTooLong && !otherGroupTestRunning)
                                 {
                                     _logger.WriteTestStart(curTest);
-                                    _logger.WriteToInstrumentationLog(_curTestSet, LoggingLevels.TestStarter, String.Format("RUN {0} Test Started: {1}{2} {3}", DateTime.Now, curTest.RefOrID, Environment.NewLine, curTest.Index));
+                                    // _logger.WriteToInstrumentationLog(_curTestSet, LoggingLevels.TestStarter, String.Format("RUN {0} Test Started: {1}{2} {3}", DateTime.Now, curTest.RefOrID, Environment.NewLine, curTest.Index));
                                     StartTest(_curTestSet.Tests[startingTest]);
                                     lastStart = DateTime.Now;
                                     break;
@@ -790,7 +790,7 @@ public class ReliabilityFramework
             else
             {
                 Thread.Sleep(1000);
-                _logger.WriteToInstrumentationLog(_curTestSet, LoggingLevels.TestStarter, String.Format("Ran all tests"));
+                // _logger.WriteToInstrumentationLog(_curTestSet, LoggingLevels.TestStarter, String.Format("Ran all tests"));
             }
         } while ((_curTestSet.MaximumTime == 0 || // no time limit
             (DateTime.Now.Subtract(_startTime).Ticks / TimeSpan.TicksPerMinute) < _curTestSet.MaximumTime) &&		// or time limit reached
@@ -819,27 +819,27 @@ public class ReliabilityFramework
         if (_curTestSet.MaximumTime != 0 && (DateTime.Now.Subtract(_startTime).Ticks / TimeSpan.TicksPerMinute) >= _curTestSet.MaximumTime)
         {
             string msg = String.Format("Reached time limit, exiting: ran {0} tests out of {1}", _testsRanCount, totalTestsToRun);
-            _logger.WriteToInstrumentationLog(_curTestSet, LoggingLevels.StartupShutdown, msg);
+            // _logger.WriteToInstrumentationLog(_curTestSet, LoggingLevels.StartupShutdown, msg);
             Console.WriteLine(msg);
         }
         else if (_testsRanCount >= totalTestsToRun)
         {
             string msg = String.Format("Ran all tests, exiting...");
-            _logger.WriteToInstrumentationLog(_curTestSet, LoggingLevels.StartupShutdown, msg);
+            // _logger.WriteToInstrumentationLog(_curTestSet, LoggingLevels.StartupShutdown, msg);
             Console.WriteLine(msg);
         }
 
         if (_testsRunningCount > 0)
         {
             string msg = String.Format("Waiting for tests to finish running: {0,4}", _testsRunningCount);
-            _logger.WriteToInstrumentationLog(_curTestSet, LoggingLevels.StartupShutdown, msg);
+            // _logger.WriteToInstrumentationLog(_curTestSet, LoggingLevels.StartupShutdown, msg);
             Console.WriteLine(msg);
 
             int secondsIter = 5;
             int waitCnt = 0;
             int waitCntTotal = _curTestSet.MaximumWaitTime * 60 / secondsIter;
             msg = String.Format("START WAITING for {0}s", _curTestSet.MaximumWaitTime * 60);
-            _logger.WriteToInstrumentationLog(_curTestSet, LoggingLevels.StartupShutdown, msg);
+            // _logger.WriteToInstrumentationLog(_curTestSet, LoggingLevels.StartupShutdown, msg);
             long lastAllocatedBytes = GC.GetTotalAllocatedBytes(false);
             while (_testsRunningCount > 0 && waitCnt < waitCntTotal)
             {
@@ -855,14 +855,14 @@ public class ReliabilityFramework
                     PrivateCollectionCount(2),
                     (waitCnt * secondsIter));
                 lastAllocatedBytes = currentAllocatedBytes;
-                _logger.WriteToInstrumentationLog(_curTestSet, LoggingLevels.StartupShutdown, msg);
+                // _logger.WriteToInstrumentationLog(_curTestSet, LoggingLevels.StartupShutdown, msg);
 
                 for (int i = 0; i < _curTestSet.Tests.Length; i++)
                 {
                     if (_curTestSet.Tests[i].RunningCount != 0)
                     {
                         msg = String.Format("Still running: {0}", _curTestSet.Tests[i].RefOrID);
-                        _logger.WriteToInstrumentationLog(_curTestSet, LoggingLevels.StartupShutdown, msg);
+                        // _logger.WriteToInstrumentationLog(_curTestSet, LoggingLevels.StartupShutdown, msg);
                     }
                 }
                 waitCnt++;
@@ -943,7 +943,7 @@ public class ReliabilityFramework
 
             Interlocked.Increment(ref _testsRunningCount);
             test.TestStarted();
-            _logger.WriteToInstrumentationLog(_curTestSet, LoggingLevels.TestStarter, String.Format("RF.StartTest, RTs({0}) - Instances of this test: {1} - New Test:{2}, {3} threads",
+            // _logger.WriteToInstrumentationLog(_curTestSet, LoggingLevels.TestStarter, String.Format("RF.StartTest, RTs({0}) - Instances of this test: {1} - New Test:{2}, {3} threads",
                 _testsRunningCount, test.RunningCount, test.RefOrID, Process.GetCurrentProcess().Threads.Count));
 
             newThread.Start(test);
@@ -988,7 +988,7 @@ public class ReliabilityFramework
                         string msg = String.Format("==============================[tid: {0, 4}, running test: {1} STATUS: START, {2} tests running {3} threads ==============================",
                                     Thread.CurrentThread.ManagedThreadId, daTest.Assembly, _testsRunningCount,
                                     Process.GetCurrentProcess().Threads.Count);
-                        _logger.WriteToInstrumentationLog(_curTestSet, LoggingLevels.StartupShutdown, msg);
+                        // _logger.WriteToInstrumentationLog(_curTestSet, LoggingLevels.StartupShutdown, msg);
 
                         try
                         {
@@ -1010,7 +1010,7 @@ public class ReliabilityFramework
                         msg = String.Format("==============================[tid: {0, 4}, running test: {1} STATUS: DONE, {2} tests running {3} threads ==============================",
                                     Thread.CurrentThread.ManagedThreadId, daTest.Assembly, _testsRunningCount,
                                     Process.GetCurrentProcess().Threads.Count);
-                        _logger.WriteToInstrumentationLog(_curTestSet, LoggingLevels.StartupShutdown, msg);
+                        // _logger.WriteToInstrumentationLog(_curTestSet, LoggingLevels.StartupShutdown, msg);
                         Interlocked.Increment(ref _testsRanCount);
                         SignalTestFinished(daTest);
                     });
@@ -1161,7 +1161,7 @@ public class ReliabilityFramework
                                 {
                                     TestPreLoader(daTest, _curTestSet.DiscoveryPaths);  // need to reload assembly & AssemblyLoadContext
                                 }
-                                _logger.WriteToInstrumentationLog(_curTestSet, LoggingLevels.AssemblyLoadContext, String.Format("Unloading complete (freeing lock): {0}", daTest.RefOrID));
+                                // _logger.WriteToInstrumentationLog(_curTestSet, LoggingLevels.AssemblyLoadContext, String.Format("Unloading complete (freeing lock): {0}", daTest.RefOrID));
                             }
                         }
                         else if ((daTest.RunCount >= (_curTestSet.MaximumLoops * daTest.ConcurrentCopies) ||
@@ -1365,7 +1365,7 @@ public class ReliabilityFramework
                 return;
             }
         }
-        _logger.WriteToInstrumentationLog(_curTestSet, LoggingLevels.AssemblyLoadContext, "SUCCEED unloading AssemblyLoadContext for " + test.Index.ToString());
+        // _logger.WriteToInstrumentationLog(_curTestSet, LoggingLevels.AssemblyLoadContext, "SUCCEED unloading AssemblyLoadContext for " + test.Index.ToString());
     }
 
     /// <summary>
@@ -1387,7 +1387,7 @@ public class ReliabilityFramework
             {
                 // TODO: can there be a parent ALC whose name we would like to prepend?
                 string assemblyLoadContextName = "TestContext_" + test.Assembly + "_" + Guid.NewGuid().ToString();
-                _logger.WriteToInstrumentationLog(_curTestSet, LoggingLevels.AssemblyLoadContext, "Creating AssemblyLoadContext: " + assemblyLoadContextName + " for " + test.Index.ToString());
+                // _logger.WriteToInstrumentationLog(_curTestSet, LoggingLevels.AssemblyLoadContext, "Creating AssemblyLoadContext: " + assemblyLoadContextName + " for " + test.Index.ToString());
 
                 alc = new TestAssemblyLoadContext(assemblyLoadContextName, test.BasePath, paths);
             }
