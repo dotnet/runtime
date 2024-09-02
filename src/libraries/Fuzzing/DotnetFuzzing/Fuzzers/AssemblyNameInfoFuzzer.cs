@@ -4,6 +4,7 @@
 using System.Buffers;
 using System.Reflection.Metadata;
 using System.Runtime.InteropServices;
+using System.Text;
 
 namespace DotnetFuzzing.Fuzzers
 {
@@ -13,9 +14,12 @@ namespace DotnetFuzzing.Fuzzers
 
         public string[] TargetCoreLibPrefixes => [];
 
+        public string Dictionary => "assemblynameinfo.dict";
+
         public void FuzzTarget(ReadOnlySpan<byte> bytes)
         {
-            ReadOnlySpan<char> chars = MemoryMarshal.Cast<byte, char>(bytes);
+            Span<char> chars = new char[Encoding.UTF8.GetCharCount(bytes)];
+            Encoding.UTF8.GetChars(bytes, chars);
 
             using PooledBoundedMemory<char> inputPoisonedBefore = PooledBoundedMemory<char>.Rent(chars, PoisonPagePlacement.Before);
             using PooledBoundedMemory<char> inputPoisonedAfter = PooledBoundedMemory<char>.Rent(chars, PoisonPagePlacement.After);
