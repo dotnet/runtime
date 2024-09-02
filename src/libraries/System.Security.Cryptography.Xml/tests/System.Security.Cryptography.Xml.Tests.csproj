@@ -10,6 +10,7 @@
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\CngKeyWrapper.cs"
              Link="TestCommon\System\Security\Cryptography\CngKeyWrapper.cs" />
     <Compile Include="AssertCrypto.cs" />
+    <Compile Include="CanonicalXmlEntityReferenceTests.cs" />
     <Compile Include="CipherDataTests.cs" />
     <Compile Include="DataObjectTest.cs" />
     <Compile Include="DataObjectTests.cs" />
@@ -22,6 +23,7 @@
     <Compile Include="EncryptionPropertyCollectionTest.cs" />
     <Compile Include="EncryptionPropertyTest.cs" />
     <Compile Include="SignedXml_Helpers.cs" />
+    <Compile Include="KeyInfoClauseTests.cs" />
     <Compile Include="KeyInfoNameTest.cs" />
     <Compile Include="KeyInfoNodeTest.cs" />
     <Compile Include="KeyInfoRetrievalMethodTest.cs" />
@@ -55,8 +57,6 @@
     <Compile Include="XmlDsigXsltTransformTest.cs" />
     <Compile Include="XmlLicenseEncryptedRef.cs" />
     <Compile Include="XmlLicenseTransformTest.cs" />
-    <Compile Include="CanonicalXmlEntityReferenceTests.cs" />
-    <Compile Include="KeyInfoClauseTests.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">
     <Compile Include="KeyInfo_ArbitraryElements.cs" />
