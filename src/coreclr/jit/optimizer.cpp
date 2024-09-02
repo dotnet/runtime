@@ -17,26 +17,6 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 
 /*****************************************************************************/
 
-void Compiler::optInit()
-{
-    fgHasLoops = false;
-
-    optLoopsCanonical = false;
-
-    /* Keep track of the number of calls and indirect calls made by this method */
-    optCallCount         = 0;
-    optIndirectCallCount = 0;
-    optNativeCallCount   = 0;
-    optAssertionCount    = 0;
-    optAssertionDep      = nullptr;
-    optCSEstart          = BAD_VAR_NUM;
-    optCSEcount          = 0;
-    optCSECandidateCount = 0;
-    optCSEattempt        = 0;
-    optCSEheuristic      = nullptr;
-    optCSEunmarks        = 0;
-}
-
 DataFlow::DataFlow(Compiler* pCompiler)
     : m_pCompiler(pCompiler)
 {
@@ -4322,16 +4302,22 @@ void Compiler::optRecordLoopMemoryDependence(GenTree* tree, BasicBlock* block, V
         return;
     }
 
-    // If the update block is not the header of a loop containing
-    // block, we can also ignore the update.
+    // If the memory definition is part of an ancestor loop then 'tree' depends
+    // on memory defined in that ancestor loop. Otherwise we can also ignore
+    // the update.
     //
-    if (!updateLoop->ContainsBlock(block))
+    while ((updateLoop != nullptr) && !updateLoop->ContainsBlock(block))
+    {
+        updateLoop = updateLoop->GetParent();
+    }
+
+    if (updateLoop == nullptr)
     {
 #ifdef DEBUG
         FlowGraphNaturalLoop* blockLoop = m_blockToLoop->GetLoop(block);
 
-        JITDUMP("      ==> Not updating loop memory dependence of [%06u]/" FMT_LP ", memory " FMT_VN "/" FMT_LP
-                " is not defined in a contained block\n",
+        JITDUMP("      ==> Not updating loop memory dependence of [%06u]/" FMT_LP ", memory definition " FMT_VN
+                "/" FMT_LP " is not dependent on an ancestor loop\n",
                 dspTreeID(tree), blockLoop->GetIndex(), memoryVN, updateLoop->GetIndex());
 #endif
         return;
@@ -4355,7 +4341,7 @@ void Compiler::optRecordLoopMemoryDependence(GenTree* tree, BasicBlock* block, V
 #ifdef DEBUG
             FlowGraphNaturalLoop* mapLoop = m_blockToLoop->GetLoop(mapBlock);
 
-            JITDUMP("      ==> Not updating loop memory dependence of [%06u]; alrady constrained to " FMT_LP
+            JITDUMP("      ==> Not updating loop memory dependence of [%06u]; already constrained to " FMT_LP
                     " nested in " FMT_LP "\n",
                     dspTreeID(tree), mapLoop->GetIndex(), updateLoop->GetIndex());
 #endif

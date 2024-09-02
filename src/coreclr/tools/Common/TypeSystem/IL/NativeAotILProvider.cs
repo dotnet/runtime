@@ -330,7 +330,15 @@ namespace Internal.IL
                         return methodIL;
                 }
 
-                var methodDefinitionIL = GetMethodIL(method.GetTypicalMethodDefinition());
+                MethodDesc typicalMethod = method.GetTypicalMethodDefinition();
+                if (typicalMethod is SpecializableILStubMethod specializableMethod)
+                {
+                    MethodIL methodIL = specializableMethod.EmitIL(method);
+                    if (methodIL != null)
+                        return methodIL;
+                }
+
+                var methodDefinitionIL = GetMethodIL(typicalMethod);
                 if (methodDefinitionIL == null)
                     return null;
                 return new InstantiatedMethodIL(method, methodDefinitionIL);

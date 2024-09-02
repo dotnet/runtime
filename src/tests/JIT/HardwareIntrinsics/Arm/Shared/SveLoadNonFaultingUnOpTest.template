@@ -9,6 +9,7 @@
  ******************************************************************************/
 
 using System;
+using System.Buffers;
 using System.Numerics;
 using System.Reflection;
 using System.Runtime.CompilerServices;
@@ -31,7 +32,7 @@ namespace JIT.HardwareIntrinsics.Arm
                 // Validates basic functionality works
                 test.RunBasicScenario_Load();
 
-                // Validates basic functionality 
+                // Validates basic functionality
                 test.RunBasicScenario_LoadNonFaulting();
 
                 // Validates calling via reflection works
@@ -47,17 +48,7 @@ namespace JIT.HardwareIntrinsics.Arm
                 test.RunStructFldScenario();
 
                 // Validates using inside ConditionalSelect with value falseValue
-                // Currently, using this operation in ConditionalSelect() gives incorrect result
-                // when falseReg == targetReg because this instruction uses Pg/Z to update the targetReg
-                // instead of Pg/M to merge it. As such, the value of falseReg is lost. Ideally, such
-                // instructions should be marked similar to RMW (a different flag name) to make sure that
-                // we do not assign falseReg/targetReg same. Then, we would do something like this:
-                //
-                // ldnf1sh target, pg/z, [x0]
-                // sel mask, target, target, falseReg
-                //
-                // This needs more careful thinking, so disabling it for now.
-                // test.ConditionalSelect_FalseOp();
+                test.ConditionalSelect_FalseOp();
 
                 // Validates using inside ConditionalSelect with zero falseValue
                 test.ConditionalSelect_ZeroOp();
@@ -91,6 +82,9 @@ namespace JIT.HardwareIntrinsics.Arm
             {
                 int sizeOfinArray1 = inArray1.Length * Unsafe.SizeOf<{Op1BaseType}>();
                 int sizeOfoutArray = outArray.Length * Unsafe.SizeOf<{RetBaseType}>();
+                // Choose size of bounded memory such that half of the vector would fall in accessible memory while the rest would in non-accessible one.
+                int sizeOfInBounded = {RetVectorType}<{RetBaseType}>.Count / 2;
+
                 if ((alignment != 64 && alignment != 16 && alignment != 8) || (alignment * 2) < sizeOfinArray1 || (alignment * 2) < sizeOfoutArray)
                 {
                     throw new ArgumentException($"Invalid value of alignment: {alignment}, sizeOfinArray1: {sizeOfinArray1}, sizeOfoutArray: {sizeOfoutArray}");
@@ -103,10 +97,13 @@ namespace JIT.HardwareIntrinsics.Arm
                 this.outHandle = GCHandle.Alloc(this.outArray, GCHandleType.Pinned);
 
                 this.alignment = (ulong)alignment;
+                this.inBounded = BoundedMemory.Allocate<byte>(sizeOfInBounded, PoisonPagePlacement.After);
 
                 Unsafe.CopyBlockUnaligned(ref Unsafe.AsRef<byte>(inArray1Ptr), ref Unsafe.As<{Op1BaseType}, byte>(ref inArray1[0]), (uint)sizeOfinArray1);
-
+                Unsafe.CopyBlockUnaligned(ref inBounded.Span.GetPinnableReference(), ref Unsafe.As<{Op1BaseType}, byte>(ref inArray1[0]), (uint)sizeOfInBounded);
             }
+
+            public BoundedMemory<byte> inBounded;
 
             public void* inArray1Ptr => Align((byte*)(inHandle1.AddrOfPinnedObject().ToPointer()), alignment);
             public void* outArrayPtr => Align((byte*)(outHandle.AddrOfPinnedObject().ToPointer()), alignment);
@@ -144,7 +141,7 @@ namespace JIT.HardwareIntrinsics.Arm
                 Unsafe.Write(testClass._dataTable.outArrayPtr, result);
                 testClass.ValidateResult(testClass._dataTable.inArray1Ptr, testClass._dataTable.outArrayPtr);
             }
-        }        
+        }
 
         private static readonly int LargestVectorSize = {LargestVectorSize};
 
@@ -195,10 +192,14 @@ namespace JIT.HardwareIntrinsics.Arm
         {
             TestLibrary.TestFramework.BeginScenario(nameof(RunBasicScenario_LoadNonFaulting));
 
-            var result = {Isa}.{Method}({Cast}default);
+            ref var op1Ref = ref _dataTable.inBounded.Span.GetPinnableReference();
+
+            Sve.SetFfr(Sve.CreateTrueMaskByte(SveMaskPattern.All));
+            var result = {Isa}.{Method}(({Op1BaseType}*)(Unsafe.AsPointer(ref op1Ref)));
+            var faultResult = Sve.GetFfr{GetFfrType}();
 
             Unsafe.Write(_dataTable.outArrayPtr, result);
-            ValidateZeroResult(_dataTable.inArray1Ptr, _dataTable.outArrayPtr);
+            ValidateNonFaultingResult(Unsafe.AsPointer(ref op1Ref), _dataTable.outArrayPtr, faultResult);
         }
 
         public void RunReflectionScenario_Load()
@@ -247,19 +248,19 @@ namespace JIT.HardwareIntrinsics.Arm
         {
             TestLibrary.TestFramework.BeginScenario("ConditionalSelect_FalseOp_mask - operation in TrueValue");
             ConditionalSelectScenario_TrueValue(_mask, _dataTable.inArray1Ptr, _falseFld);
-            
+
             TestLibrary.TestFramework.BeginScenario("ConditionalSelect_FalseOp_zero - operation in TrueValue");
             ConditionalSelectScenario_TrueValue({Op1VectorType}<{RetBaseType}>.Zero, _dataTable.inArray1Ptr, _falseFld);
-            
+
             TestLibrary.TestFramework.BeginScenario("ConditionalSelect_FalseOp_all - operation in TrueValue");
             ConditionalSelectScenario_TrueValue({Op1VectorType}<{RetBaseType}>.AllBitsSet, _dataTable.inArray1Ptr, _falseFld);
 
             TestLibrary.TestFramework.BeginScenario("ConditionalSelect_FalseOp_mask - operation in FalseValue");
             ConditionalSelectScenario_FalseValue(_mask, _dataTable.inArray1Ptr, _falseFld);
-            
+
             TestLibrary.TestFramework.BeginScenario("ConditionalSelect_FalseOp_zero - operation in FalseValue");
             ConditionalSelectScenario_FalseValue({Op1VectorType}<{RetBaseType}>.Zero, _dataTable.inArray1Ptr, _falseFld);
-            
+
             TestLibrary.TestFramework.BeginScenario("ConditionalSelect_FalseOp_all - operation in FalseValue");
             ConditionalSelectScenario_FalseValue({Op1VectorType}<{RetBaseType}>.AllBitsSet, _dataTable.inArray1Ptr, _falseFld);
         }
@@ -268,19 +269,19 @@ namespace JIT.HardwareIntrinsics.Arm
         {
             TestLibrary.TestFramework.BeginScenario("ConditionalSelect_ZeroOp_mask - operation in TrueValue");
             ConditionalSelectScenario_TrueValue(_mask, _dataTable.inArray1Ptr, {Op1VectorType}<{RetBaseType}>.Zero);
-            
+
             TestLibrary.TestFramework.BeginScenario("ConditionalSelect_ZeroOp_zero - operation in TrueValue");
             ConditionalSelectScenario_TrueValue({Op1VectorType}<{RetBaseType}>.Zero, _dataTable.inArray1Ptr, {Op1VectorType}<{RetBaseType}>.Zero);
-            
+
             TestLibrary.TestFramework.BeginScenario("ConditionalSelect_ZeroOp_all - operation in TrueValue");
             ConditionalSelectScenario_TrueValue({Op1VectorType}<{RetBaseType}>.AllBitsSet, _dataTable.inArray1Ptr, {Op1VectorType}<{RetBaseType}>.Zero);
 
             TestLibrary.TestFramework.BeginScenario("ConditionalSelect_ZeroOp_mask - operation in FalseValue");
             ConditionalSelectScenario_FalseValue(_mask, _dataTable.inArray1Ptr, {Op1VectorType}<{RetBaseType}>.Zero);
-            
+
             TestLibrary.TestFramework.BeginScenario("ConditionalSelect_ZeroOp_zero - operation in FalseValue");
             ConditionalSelectScenario_FalseValue({Op1VectorType}<{RetBaseType}>.Zero, _dataTable.inArray1Ptr, {Op1VectorType}<{RetBaseType}>.Zero);
-            
+
             TestLibrary.TestFramework.BeginScenario("ConditionalSelect_ZeroOp_all - operation in FalseValue");
             ConditionalSelectScenario_FalseValue({Op1VectorType}<{RetBaseType}>.AllBitsSet, _dataTable.inArray1Ptr, {Op1VectorType}<{RetBaseType}>.Zero);
         }
@@ -302,7 +303,7 @@ namespace JIT.HardwareIntrinsics.Arm
             Unsafe.Write(_dataTable.outArrayPtr, result);
             ValidateConditionalSelectResult_FalseValue(mask, address, trueOp, _dataTable.outArrayPtr);
         }
-        
+
         public void RunUnsupportedScenario()
         {
             TestLibrary.TestFramework.BeginScenario(nameof(RunUnsupportedScenario));
@@ -451,6 +452,46 @@ namespace JIT.HardwareIntrinsics.Arm
             Unsafe.CopyBlockUnaligned(ref Unsafe.As<{RetBaseType}, byte>(ref outArray[0]), ref Unsafe.AsRef<byte>(result), (uint)Unsafe.SizeOf<{RetVectorType}<{RetBaseType}>>());
 
             ValidateZeroResult(inArray, outArray, method);
+        }
+
+        private void ValidateNonFaultingResult(void* firstOp, void* result,  Vector<{GetFfrType}> faultResult, [CallerMemberName] string method = "")
+        {
+            {Op1BaseType}[] inArray = new {Op1BaseType}[Op1ElementCount];
+            {RetBaseType}[] outArray = new {RetBaseType}[RetElementCount];
+            {GetFfrType}[] faultArray = new {GetFfrType}[RetElementCount];
+
+            // Only read bytes mapping to half of the destination vector. The remaining elements are in the poison page.
+            // It would make inArray to contain elements that could read without a fault followed by zeros.
+            Unsafe.CopyBlockUnaligned(ref Unsafe.As<{Op1BaseType}, byte>(ref inArray[0]), ref Unsafe.AsRef<byte>(firstOp), ((uint){RetVectorType}<{RetBaseType}>.Count / 2) );
+            Unsafe.CopyBlockUnaligned(ref Unsafe.As<{RetBaseType}, byte>(ref outArray[0]), ref Unsafe.AsRef<byte>(result), (uint)Unsafe.SizeOf<{RetVectorType}<{RetBaseType}>>());
+
+            fixed({GetFfrType}* faultArrayPtr = &faultArray[0])
+            {
+                Unsafe.Write(faultArrayPtr, faultResult);
+            }
+
+            bool succeeded = true;
+
+            for (var i = 0; i < RetElementCount; i++)
+            {
+                var expectedOut = ({RetBaseType})((i < (RetElementCount / 2)) ? inArray[i] : 0);
+                var expectedFault = ({GetFfrType}) ((i < (RetElementCount / 2)) ? 1 : 0);
+
+                if ((outArray[i] != expectedOut) && (faultArray[i] != expectedFault) )
+                {
+                    succeeded = false;
+                    break;
+                }
+            }
+
+            if (!succeeded)
+            {
+                TestLibrary.TestFramework.LogInformation($"{nameof({Isa})}.{nameof({Isa}.{Method})}<{RetBaseType}>({Op1BaseType}): {method} failed:");
+                TestLibrary.TestFramework.LogInformation($"  firstOp: ({string.Join(", ", inArray)})");
+                TestLibrary.TestFramework.LogInformation($"   result: ({string.Join(", ", outArray)})");
+                TestLibrary.TestFramework.LogInformation(string.Empty);
+                Succeeded = false;
+            }
         }
 
         private void ValidateZeroResult({Op1BaseType}[] firstOp, {RetBaseType}[] result, [CallerMemberName] string method = "")

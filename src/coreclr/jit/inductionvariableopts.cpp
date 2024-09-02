@@ -2405,6 +2405,12 @@ PhaseStatus Compiler::optInductionVariables()
         return PhaseStatus::MODIFIED_NOTHING;
     }
 
+    if (JitConfig.JitEnableInductionVariableOpts() == 0)
+    {
+        JITDUMP("  Skipping since it is disabled due to JitEnableInductionVariableOpts\n");
+        return PhaseStatus::MODIFIED_NOTHING;
+    }
+
     bool changed = false;
 
     optReachableBitVecTraits = nullptr;

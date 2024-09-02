@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Runtime.CompilerServices;
+using static System.Buffers.Text.Base64Helper;
 
 namespace System.Buffers.Text
 {
@@ -60,6 +61,7 @@ namespace System.Buffers.Text
 
             public int IndexOfAnyExcept(ReadOnlySpan<char> span) => span.IndexOfAnyExcept(s_validBase64UrlChars);
 #else
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public int DecodeValue(char value)
             {
                 if (value > byte.MaxValue)
@@ -74,8 +76,8 @@ namespace System.Buffers.Text
             public bool IsWhiteSpace(char value) => Base64Helper.IsWhiteSpace(value);
             public bool IsEncodingPad(char value) => value == Base64Helper.EncodingPad || value == UrlEncodingPad;
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public bool ValidateAndDecodeLength(int length, int paddingCount, out int decodedLength) =>
-                default(Base64UrlByteValidatable).ValidateAndDecodeLength(length, paddingCount, out decodedLength);
+            public bool ValidateAndDecodeLength(char lastChar, int length, int paddingCount, out int decodedLength) =>
+                default(Base64UrlByteValidatable).ValidateAndDecodeLength((byte)lastChar, length, paddingCount, out decodedLength);
         }
 
         private readonly struct Base64UrlByteValidatable : Base64Helper.IBase64Validatable<byte>
@@ -90,7 +92,7 @@ namespace System.Buffers.Text
             public bool IsWhiteSpace(byte value) => Base64Helper.IsWhiteSpace(value);
             public bool IsEncodingPad(byte value) => value == Base64Helper.EncodingPad || value == UrlEncodingPad;
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public bool ValidateAndDecodeLength(int length, int paddingCount, out int decodedLength)
+            public bool ValidateAndDecodeLength(byte lastChar, int length, int paddingCount, out int decodedLength)
             {
                 // Padding is optional for Base64Url, so need to account remainder. If remainder is 1, then it's invalid.
 #if NET
@@ -112,6 +114,15 @@ namespace System.Buffers.Text
 
                 decodedLength = (length >> 2) * 3 + (remainder > 0 ? remainder - 1 : 0) - paddingCount;
 #endif
+                int decoded = default(Base64DecoderByte).DecodingMap[lastChar];
+                if (((remainder == 3 || paddingCount == 1) && (decoded & 0x03) != 0) ||
+                    ((remainder == 2 || paddingCount == 2) && (decoded & 0x0F) != 0))
+                {
+                    // unused lower bits are not 0, reject input
+                    decodedLength = 0;
+                    return false;
+                }
+
                 return true;
             }
         }

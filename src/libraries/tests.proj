@@ -433,7 +433,7 @@
     <ProjectExclusions Remove="$(MSBuildThisFileDirectory)System.Collections\tests\System.Collections.Tests.csproj" />
     <ProjectExclusions Remove="$(MSBuildThisFileDirectory)System.IO.IsolatedStorage\tests\System.IO.IsolatedStorage.Tests.csproj" />
   </ItemGroup>
-  
+
   <ItemGroup Condition="'$(TestNativeAot)' == 'true' or '$(TargetsMobile)' == 'true'">
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Resources.Extensions\tests\BinaryFormatTests\System.Resources.Extensions.BinaryFormat.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Resources.Extensions\tests\CompatTests\System.Resources.Extensions.Compat.Tests.csproj" />
@@ -581,6 +581,7 @@
     <SmokeTestProject Include="$(MSBuildThisFileDirectory)System.Runtime\tests\System.Buffers.Tests\System.Buffers.Tests.csproj" />
     <SmokeTestProject Include="$(MSBuildThisFileDirectory)System.Runtime\tests\System.Globalization.Tests\Invariant\Invariant.Tests.csproj" />
     <SmokeTestProject Include="$(MSBuildThisFileDirectory)System.Runtime\tests\System.Globalization.Tests\System.Globalization.Tests.csproj" />
+    <SmokeTestProject Include="$(MSBuildThisFileDirectory)System.Runtime\tests\System.Threading.Timer.Tests\System.Threading.Timer.Tests.csproj" />
   </ItemGroup>
 
   <!-- wasi/aot smoke tests -->
@@ -766,7 +767,8 @@
   <ItemGroup Condition="'$(ArchiveTests)' == 'true' and '$(TargetFrameworkIdentifier)' == '.NETCoreApp' and '$(IsXUnitLogCheckerSupported)' == 'true'">
     <ProjectReference
       Include="$(RepoRoot)src\tests\Common\XUnitLogChecker\XUnitLogChecker.csproj"
-      AdditionalProperties="%(AdditionalProperties);Configuration=Release;OutDir=$(XUnitLogCheckerLibrariesOutDir)" />
+      Targets="Publish"
+      AdditionalProperties="%(AdditionalProperties);_IsPublishing=true;Configuration=Release;PublishDir=$(XUnitLogCheckerLibrariesOutDir);ROOTFS_DIR=$(ROOTFS_DIR);RuntimeIdentifier=$(OutputRID)" />
   </ItemGroup>
 
   <Target Name="GenerateMergedCoverageReport"

@@ -35,13 +35,8 @@ enum FileLoadLevel
 
     FILE_LOAD_CREATE,
     FILE_LOAD_BEGIN,
-    FILE_LOAD_FIND_NATIVE_IMAGE,
-    FILE_LOAD_VERIFY_NATIVE_IMAGE_DEPENDENCIES,
     FILE_LOAD_ALLOCATE,
-    FILE_LOAD_ADD_DEPENDENCIES,
-    FILE_LOAD_PRE_LOADLIBRARY,
-    FILE_LOAD_LOADLIBRARY,
-    FILE_LOAD_POST_LOADLIBRARY,
+    FILE_LOAD_POST_ALLOCATE,
     FILE_LOAD_EAGER_FIXUPS,
     FILE_LOAD_DELIVER_EVENTS,
     FILE_LOAD_VTABLE_FIXUPS,
@@ -103,30 +98,6 @@ public:
         WRAPPER_NO_CONTRACT;
         return m_pPEAssembly->GetMDImport();
     }
-
-    OBJECTREF GetExposedAssemblyObjectIfExists()
-    {
-        LIMITED_METHOD_CONTRACT;
-
-        OBJECTREF objRet = NULL;
-        GET_LOADERHANDLE_VALUE_FAST(GetLoaderAllocator(), m_hExposedAssemblyObject, &objRet);
-        return objRet;
-    }
-
-    // Returns managed representation of the assembly (Assembly or AssemblyBuilder).
-    // Returns NULL if the managed scout was already collected (see code:LoaderAllocator#AssemblyPhases).
-    OBJECTREF GetExposedAssemblyObject();
-
-    OBJECTREF GetExposedModuleObjectIfExists()
-    {
-        LIMITED_METHOD_CONTRACT;
-
-        OBJECTREF objRet = NULL;
-        GET_LOADERHANDLE_VALUE_FAST(GetLoaderAllocator(), m_hExposedModuleObject, &objRet);
-        return objRet;
-    }
-
-    OBJECTREF GetExposedModuleObject();
 
     BOOL IsSystem()
     {
@@ -222,12 +193,6 @@ public:
         return EnsureLoadLevel(FILE_LOAD_ALLOCATE);
     }
 
-    void EnsureLibraryLoaded()
-    {
-        WRAPPER_NO_CONTRACT;
-        return EnsureLoadLevel(FILE_LOAD_LOADLIBRARY);
-    }
-
     // EnsureLoadLevel is a generic routine used to ensure that the file is not in a delay loaded
     // state (unless it needs to be.)  This should be used when a particular level of loading
     // is required for an operation.  Note that deadlocks are tolerated so the level may be one
@@ -268,11 +233,6 @@ public:
     void EnumMemoryRegions(CLRDataEnumMemoryFlags flags);
 #endif
 
-#ifndef DACCESS_COMPILE
-    // light code gen. Keep the list of MethodTables needed for creating dynamic methods
-    DynamicMethodTable* GetDynamicMethodTable();
-#endif
-
     DomainAssembly* GetNextDomainAssemblyInSameALC()
     {
         return m_NextDomainAssemblyInSameALC;
@@ -309,10 +269,7 @@ public:
 #ifndef DACCESS_COMPILE
     void Begin();
     void Allocate();
-    void AddDependencies();
-    void PreLoadLibrary();
-    void LoadLibrary();
-    void PostLoadLibrary();
+    void PostAllocate();
     void EagerFixups();
     void VtableFixups();
     void DeliverSyncEvents();
@@ -423,19 +380,10 @@ private:
     FileLoadLevel               m_level;
     BOOL                        m_loading;
 
-    LOADERHANDLE                m_hExposedModuleObject;
-    LOADERHANDLE                m_hExposedAssemblyObject;
-
     ExInfo*                     m_pError;
 
     BOOL                        m_bDisableActivationCheck;
     BOOL                        m_fHostAssemblyPublished;
-
-    // m_pDynamicMethodTable is used by the light code generation to allow method
-    // generation on the fly. They are lazily created when/if a dynamic method is requested
-    // for this specific module
-    DynamicMethodTable*         m_pDynamicMethodTable;
-
 
     DebuggerAssemblyControlFlags    m_debuggerFlags;
     DWORD                       m_notifyflags;

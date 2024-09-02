@@ -8005,6 +8005,25 @@ namespace JIT.HardwareIntrinsics.Arm
             return result;
         }
 
+        public static int LoadInt16FromByteArray(byte[] array, int offset)
+        {
+            int ret = 0;
+            for (int i = 1; i >= 0; i--)
+            {
+                ret = (ret << 8) + (int)array[offset+i];
+            }
+            return ret;
+        }
+
+        public static int LoadInt16FromByteArray(byte[] array, uint offset)
+        {
+            int ret = 0;
+            for (int i = 1; i >= 0; i--)
+            {
+                ret = (ret << 8) + (int)array[offset+i];
+            }
+            return ret;
+        }
         public static int LoadInt32FromByteArray(byte[] array, int offset)
         {
             int ret = 0;
@@ -8041,6 +8060,26 @@ namespace JIT.HardwareIntrinsics.Arm
             for (long i = 7; i >= 0; i--)
             {
                 ret = (ret << 8) + (long)array[offset+(ulong)i];
+            }
+            return ret;
+        }
+
+        public static uint LoadUInt16FromByteArray(byte[] array, int offset)
+        {
+            uint ret = 0;
+            for (int i = 1; i >= 0; i--)
+            {
+                ret = (ret << 8) + (uint)array[offset+i];
+            }
+            return ret;
+        }
+
+        public static uint LoadUInt16FromByteArray(byte[] array, uint offset)
+        {
+            uint ret = 0;
+            for (int i = 1; i >= 0; i--)
+            {
+                ret = (ret << 8) + (uint)array[offset+i];
             }
             return ret;
         }
@@ -8505,6 +8544,463 @@ namespace JIT.HardwareIntrinsics.Arm
                 }
             }
             return result;
+        }
+
+        private static T ConditionalSelectResult<T>(T maskResult, T result, T falseResult) where T : INumberBase<T>
+        {
+            return (maskResult != T.Zero) ? result : falseResult;
+        }
+
+        private static T ConditionalSelectTrueResult<T>(T maskResult, T result, T trueResult) where T : INumberBase<T>
+        {
+            return (maskResult != T.Zero) ? trueResult : result;
+        }
+
+
+        private static TElem GetLoadVectorExpectedResultByIndex<TMem, TElem>(int index, TElem[] mask, TMem[] data, TElem[] result)
+            where TMem  : INumberBase<TMem>
+            where TElem : INumberBase<TElem>
+        {
+            return (mask[index] == TElem.Zero) ? TElem.Zero : TElem.CreateTruncating(data[index]);
+        }
+
+        private static TElem GetLoadVectorExpectedResultByIndex<TMem, TElem>(int index, TMem[] data, TElem[] result)
+            where TMem  : INumberBase<TMem>
+            where TElem : INumberBase<TElem>
+        {
+            TElem[] mask = new TElem[result.Length];
+            Array.Fill(mask, TElem.One);
+
+            return GetLoadVectorExpectedResultByIndex(index, mask, data, result);
+        }
+
+        private static bool CheckLoadVectorBehaviorCore<TMem, TElem>(TElem[] mask, TMem[] data, TElem[] result, Func<int, TElem, TElem> map)
+            where TMem  : INumberBase<TMem>
+            where TElem : INumberBase<TElem>
+        {
+            for (var i = 0; i < data.Length; i++)
+            {
+                TElem expectedResult = GetLoadVectorExpectedResultByIndex(i, mask, data, result);
+                expectedResult = map(i, expectedResult);
+                if (result[i] != expectedResult)
+                {
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        private static bool CheckLoadVectorBehaviorCore<TMem, TElem>(TMem[] data, TElem[] result, Func<int, TElem, TElem> map)
+            where TMem  : INumberBase<TMem>
+            where TElem : INumberBase<TElem>
+        {
+            for (var i = 0; i < data.Length; i++)
+            {
+                TElem expectedResult = GetLoadVectorExpectedResultByIndex(i, data, result);
+                expectedResult = map(i, expectedResult);
+                if (result[i] != expectedResult)
+                {
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        public static bool CheckLoadVectorBehavior<TMem, TElem>(TElem[] mask, TMem[] data, TElem[] result)
+            where TMem  : INumberBase<TMem>, IConvertible
+            where TElem : INumberBase<TElem>
+        {
+            return CheckLoadVectorBehaviorCore(mask, data, result, (_, loadResult) => loadResult);
+        }
+
+        public static bool CheckLoadVectorBehavior<TMem, TElem>(TMem[] data, TElem[] result)
+            where TMem  : INumberBase<TMem>, IConvertible
+            where TElem : INumberBase<TElem>
+        {
+            return CheckLoadVectorBehaviorCore(data, result, (_, loadResult) => loadResult);
+        }
+
+        public static bool CheckLoadVectorBehavior<TMem, TElem>(TElem[] maskOp, TMem[] data, TElem[] result, TElem[] falseOp)
+            where TMem  : INumberBase<TMem>, IConvertible
+            where TElem : INumberBase<TElem>
+        {
+            return CheckLoadVectorBehaviorCore(data, result, (i, loadResult) => ConditionalSelectResult(maskOp[i], loadResult, falseOp[i]));
+        }
+
+        private static T GetGatherVectorResultByIndex<T, ExtendedElementT, Index>(int index, T[] mask, ExtendedElementT[] data, Index[] indices)
+                where T : INumberBase<T> 
+                where ExtendedElementT : INumberBase<ExtendedElementT> 
+                where Index : IBinaryInteger<Index>
+        {
+            return (mask[index] == T.Zero) ? T.Zero : T.CreateTruncating(data[int.CreateChecked(indices[index])]);
+        }
+
+        private static unsafe T GetGatherVectorBasesResultByIndex<T, AddressT, ExtendedElementT>(int index, T[] mask, AddressT[] data)
+                where T : INumberBase<T> 
+                where AddressT : unmanaged, INumberBase<AddressT>
+                where ExtendedElementT : unmanaged, INumberBase<ExtendedElementT>
+        {
+            return (mask[index] == T.Zero) ? T.Zero : T.CreateTruncating(*(ExtendedElementT*)Unsafe.BitCast<AddressT, nint>(data[index]));
+        }
+
+        private static bool GetGatherVectorResultByByteOffset<T, ExtendedElementT, Offset>(int index, T[] mask, byte[] data, Offset[] offsets, T result)
+                where T : INumberBase<T>
+                where ExtendedElementT : INumberBase<ExtendedElementT>
+                where Offset : IBinaryInteger<Offset>
+        {
+            if (mask[index] == T.Zero)
+            {
+                return result == T.Zero;
+            }
+
+            int offset = int.CreateChecked(offsets[index]);
+
+            if (typeof(ExtendedElementT) == typeof(Int16))
+            {
+                return ExtendedElementT.CreateTruncating(result) == ExtendedElementT.CreateTruncating(LoadInt16FromByteArray(data, offset));
+            }
+            else if (typeof(ExtendedElementT) == typeof(UInt16))
+            {
+                return ExtendedElementT.CreateTruncating(result) == ExtendedElementT.CreateTruncating(LoadUInt16FromByteArray(data, offset));
+            }
+            else if (typeof(ExtendedElementT) == typeof(int))
+            {
+                return ExtendedElementT.CreateTruncating(result) == ExtendedElementT.CreateTruncating(LoadInt32FromByteArray(data, offset));
+            }
+            else if (typeof(ExtendedElementT) == typeof(uint))
+            {
+                return ExtendedElementT.CreateTruncating(result) == ExtendedElementT.CreateTruncating(LoadUInt32FromByteArray(data, offset));
+            }
+            else if (typeof(ExtendedElementT) == typeof(long))
+            {
+                return ExtendedElementT.CreateTruncating(result) == ExtendedElementT.CreateTruncating(LoadInt64FromByteArray(data, offset));
+            }
+            else if (typeof(ExtendedElementT) == typeof(ulong))
+            {
+                return ExtendedElementT.CreateTruncating(result) == ExtendedElementT.CreateTruncating(LoadUInt64FromByteArray(data, offset));
+            }
+            else if (typeof(ExtendedElementT) == typeof(float))
+            {
+                return BitConverter.SingleToInt32Bits((float)(object)result) == LoadInt32FromByteArray(data, offset);
+            }
+            else if (typeof(ExtendedElementT) == typeof(double))
+            {
+                return BitConverter.DoubleToInt64Bits((double)(object)result) == LoadInt64FromByteArray(data, offset);
+            }
+            else
+            {
+                return false;
+            }
+        }
+
+        private static bool CheckGatherVectorBehaviorCore<T, ExtendedElementT, Index>(T[] mask, ExtendedElementT[] data, Index[] indices, T[] result, Func<int, T, T> map) 
+                where T : INumberBase<T>
+                where ExtendedElementT : INumberBase<ExtendedElementT> 
+                where Index : IBinaryInteger<Index>
+        {
+            for (var i = 0; i < mask.Length; i++)
+            {
+                T gatherResult = GetGatherVectorResultByIndex(i, mask, data, indices);
+                gatherResult = map(i, gatherResult);
+                if (result[i] != gatherResult)
+                {
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        private static bool CheckGatherVectorBasesBehaviorCore<T, AddressT, ExtendedElementT>(T[] mask, AddressT[] data, T[] result, Func<int, T, T> map) 
+                where T : INumberBase<T> 
+                where AddressT : unmanaged, INumberBase<AddressT>
+                where ExtendedElementT : unmanaged, INumberBase<ExtendedElementT>
+        {
+            for (var i = 0; i < mask.Length; i++)
+            {
+                T gatherResult = GetGatherVectorBasesResultByIndex<T, AddressT, ExtendedElementT>(i, mask, data);
+                gatherResult = map(i, gatherResult);
+                if (result[i] != gatherResult)
+                {
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        public static bool CheckGatherVectorBehavior<T, ExtendedElementT, Index>(T[] mask, ExtendedElementT[] data, Index[] indices, T[] result) 
+                where T : INumberBase<T> 
+                where ExtendedElementT : INumberBase<ExtendedElementT> 
+                where Index : IBinaryInteger<Index>
+        {
+            return CheckGatherVectorBehaviorCore(mask, data, indices, result, (_, gatherResult) => gatherResult);
+        }
+
+        public static bool CheckGatherVectorConditionalSelectBehavior<T, ExtendedElementT, Index>(T[] cndSelMask, T[] mask, ExtendedElementT[] data, Index[] indices, T[] cndSelFalse, T[] result) 
+                where T : INumberBase<T> 
+                where ExtendedElementT : INumberBase<ExtendedElementT> 
+                where Index : IBinaryInteger<Index>
+        {
+            return CheckGatherVectorBehaviorCore(mask, data, indices, result, (i, gatherResult) => ConditionalSelectResult(cndSelMask[i], gatherResult, cndSelFalse[i]));
+        }
+
+        public static bool CheckGatherVectorConditionalSelectTrueBehavior<T, ExtendedElementT, Index>(T[] cndSelMask, T[] mask, ExtendedElementT[] data, Index[] indices, T[] cndSelTrue, T[] result) 
+                where T : INumberBase<T> 
+                where ExtendedElementT : INumberBase<ExtendedElementT> 
+                where Index : IBinaryInteger<Index>
+        {
+            return CheckGatherVectorBehaviorCore(mask, data, indices, result, (i, gatherResult) => ConditionalSelectTrueResult(cndSelMask[i], gatherResult, cndSelTrue[i]));
+        }
+
+
+        public static bool CheckGatherVectorBasesBehavior<T, AddressT, ExtendedElementT>(T[] mask, AddressT[] data, T[] result) 
+                where T : INumberBase<T> 
+                where AddressT : unmanaged, INumberBase<AddressT>
+                where ExtendedElementT : unmanaged, INumberBase<ExtendedElementT> 
+        {
+            return CheckGatherVectorBasesBehaviorCore<T, AddressT, ExtendedElementT>(mask, data, result, (_, gatherResult) => gatherResult);
+        }
+
+        public static bool CheckGatherVectorBasesConditionalSelectBehavior<T, AddressT, ExtendedElementT>(T[] cndSelMask, T[] mask, AddressT[] data, T[] cndSelFalse, T[] result) 
+                where T : INumberBase<T> 
+                where AddressT : unmanaged, INumberBase<AddressT>
+                where ExtendedElementT : unmanaged, INumberBase<ExtendedElementT>
+        {
+            return CheckGatherVectorBasesBehaviorCore<T, AddressT, ExtendedElementT>(mask, data, result, (i, gatherResult) => ConditionalSelectResult(cndSelMask[i], gatherResult, cndSelFalse[i]));
+        }
+
+        public static bool CheckGatherVectorBasesConditionalSelectTrueBehavior<T, AddressT, ExtendedElementT>(T[] cndSelMask, T[] mask, AddressT[] data, T[] cndSelTrue, T[] result) 
+                where T : INumberBase<T> 
+                where AddressT : unmanaged, INumberBase<AddressT>
+                where ExtendedElementT : unmanaged, INumberBase<ExtendedElementT>
+        {
+            return CheckGatherVectorBasesBehaviorCore<T, AddressT, ExtendedElementT>(mask, data, result, (i, gatherResult) => ConditionalSelectTrueResult(cndSelMask[i], gatherResult, cndSelTrue[i]));
+        }
+
+        private static bool CheckFirstFaultingBehaviorCore<T, TFault>(T[] result, Vector<TFault> faultResult, Func<int, bool> checkIter) 
+                where T : INumberBase<T>
+                where TFault : INumberBase<TFault>
+        {
+            bool hitFault = false;
+
+            for (var i = 0; i < result.Length; i++)
+            {
+                if (hitFault)
+                {
+                    if (faultResult[i] != TFault.Zero)
+                    {
+                        return false;
+                    }
+                }
+                else
+                {
+                    if (faultResult[i] == TFault.Zero)
+                    {
+                        // There has to be a valid value for the first element, so check it.
+                        if (i == 0)
+                        {
+                            return false;
+                        }
+                        hitFault = true;
+                    }
+                    else
+                    {
+                        if (!checkIter(i))
+                        {
+                            return false;
+                        }
+                    }
+                }
+            }
+
+            return true;
+        }
+
+        private static bool CheckFaultResultHasAtLeastOneZero<T>(Vector<T> faultResult) where T : INumberBase<T>
+        {
+            for (var i = 0; i < Vector<T>.Count; i++)
+            {
+                if (faultResult[i] == T.Zero)
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        public static bool CheckLoadVectorFirstFaultingBehavior<TMem, TElem, TFault>(TElem[] mask, TMem[] data, TElem[] result, Vector<TFault> faultResult)
+                where TMem  : INumberBase<TMem>, IConvertible
+                where TElem : INumberBase<TElem>
+                where TFault : INumberBase<TFault>
+        {
+            // Checking first faulting behavior requires at least one zero to ensure we are testing the behavior.
+            if (!CheckFaultResultHasAtLeastOneZero(faultResult))
+            {
+                TestLibrary.TestFramework.LogInformation("Fault result requires at least one zero.");
+                return false;
+            }
+
+            var validElementCount = data.Length;
+            var hasFaulted = false;
+            var expectedFaultResult = 
+                InitVector<TFault>(i =>
+                {
+                    if (hasFaulted)
+                    {
+                        return TFault.Zero;
+                    }
+
+                    if (mask[i] == TElem.Zero)
+                    {
+                        return TFault.One;
+                    }
+
+                    if (i < validElementCount)
+                    {
+                        return TFault.One;
+                    }
+
+                    hasFaulted = true;
+                    return TFault.Zero;
+                });
+            if (expectedFaultResult != faultResult)
+            {
+                TestLibrary.TestFramework.LogInformation($"Expected fault result: {expectedFaultResult}\nActual fault result: {faultResult}");
+                return false;
+            }
+
+            return CheckFirstFaultingBehaviorCore(result, faultResult, i => GetLoadVectorExpectedResultByIndex(i, mask, data, result) == result[i]);
+        }
+
+        public static bool CheckGatherVectorFirstFaultingBehavior<T, ExtendedElementT, Index, TFault>(T[] mask, ExtendedElementT[] data, Index[] indices, T[] result, Vector<TFault> faultResult)
+                where T : INumberBase<T> 
+                where ExtendedElementT : INumberBase<ExtendedElementT> 
+                where Index : IBinaryInteger<Index>
+                where TFault : INumberBase<TFault>
+        {
+            // Checking first faulting behavior requires at least one zero to ensure we are testing the behavior.
+            if (!CheckFaultResultHasAtLeastOneZero(faultResult))
+            {
+                TestLibrary.TestFramework.LogInformation("Fault result requires at least one zero.");
+                return false;
+            }
+
+            var hasFaulted = false;
+            var expectedFaultResult = 
+                InitVector<TFault>(i =>
+                {
+                    if (hasFaulted)
+                    {
+                        return TFault.Zero;
+                    }
+
+                    if (mask[i] == T.Zero)
+                    {
+                        return TFault.One;
+                    }
+
+                    var index = int.CreateChecked(indices[i]);
+                    if (index < 0 || index >= data.Length)
+                    {
+                        hasFaulted = true;
+                        return TFault.Zero;
+                    }
+                    return TFault.One;
+                });
+            if (expectedFaultResult != faultResult)
+            {
+                TestLibrary.TestFramework.LogInformation($"Expected fault result: {expectedFaultResult}\nActual fault result: {faultResult}");
+                return false;
+            }
+
+            return CheckFirstFaultingBehaviorCore(result, faultResult, i => GetGatherVectorResultByIndex(i, mask, data, indices) == result[i]);
+        }
+
+        public static bool CheckGatherVectorBasesFirstFaultingBehavior<T, AddressT, ExtendedElementT, TFault>(T[] mask, AddressT[] data, T[] result, Vector<TFault> faultResult)
+                where T : INumberBase<T> 
+                where AddressT : unmanaged, INumberBase<AddressT>
+                where ExtendedElementT : unmanaged, INumberBase<ExtendedElementT> 
+                where TFault : INumberBase<TFault>
+        {
+            // Checking first faulting behavior requires at least one zero to ensure we are testing the behavior.
+            if (!CheckFaultResultHasAtLeastOneZero(faultResult))
+            {
+                TestLibrary.TestFramework.LogInformation("Fault result requires at least one zero.");
+                return false;
+            }
+
+            var hasFaulted = false;
+            var expectedFaultResult = 
+                InitVector<TFault>(i =>
+                {
+                    if (hasFaulted)
+                    {
+                        return TFault.Zero;
+                    }
+                    
+                    if (mask[i] == T.Zero)
+                    {
+                        return TFault.One;
+                    }
+
+                    if (data[i] == AddressT.Zero)
+                    {
+                        hasFaulted = true;
+                        return TFault.Zero;
+                    }
+                    return TFault.One;
+                });
+            if (expectedFaultResult != faultResult)
+            {
+                TestLibrary.TestFramework.LogInformation($"Expected fault result: {expectedFaultResult}\nActual fault result: {faultResult}");
+                return false;
+            }
+
+            return CheckFirstFaultingBehaviorCore(result, faultResult, i => GetGatherVectorBasesResultByIndex<T, AddressT, ExtendedElementT>(i, mask, data) == result[i]);
+        }
+        
+        public static bool CheckGatherVectorWithByteOffsetFirstFaultingBehavior<T, ExtendedElementT, Offset, TFault>(T[] mask, byte[] data, Offset[] offsets, T[] result, Vector<TFault> faultResult)
+                where T : INumberBase<T>
+                where ExtendedElementT : INumberBase<ExtendedElementT>
+                where Offset : IBinaryInteger<Offset>
+                where TFault : INumberBase<TFault>
+        {
+            // Checking first faulting behavior requires at least one zero to ensure we are testing the behavior.
+            if (!CheckFaultResultHasAtLeastOneZero(faultResult))
+            {
+                TestLibrary.TestFramework.LogInformation("Fault result requires at least one zero.");
+                return false;
+            }
+
+            var elemSize = Unsafe.SizeOf<ExtendedElementT>();
+            var hasFaulted = false;
+            var expectedFaultResult =
+                InitVector<TFault>(i =>
+                {
+                    if (hasFaulted)
+                    {
+                        return TFault.Zero;
+                    }
+
+                    if (mask[i] == T.Zero)
+                    {
+                        return TFault.One;
+                    }
+
+                    var offset = int.CreateChecked(offsets[i]);
+                    if (offset < 0 || (offset + elemSize) > data.Length)
+                    {
+                        hasFaulted = true;
+                        return TFault.Zero;
+                    }
+                    return TFault.One;
+                });
+            if (expectedFaultResult != faultResult)
+            {
+                TestLibrary.TestFramework.LogInformation($"Expected fault result: {expectedFaultResult}\nActual fault result: {faultResult}");
+                return false;
+            }
+
+            return CheckFirstFaultingBehaviorCore(result, faultResult, i => GetGatherVectorResultByByteOffset<T, ExtendedElementT, Offset>(i, mask, data, offsets, result[i]));
         }
 
         public static T[] CreateBreakPropagateMask<T>(T[] op1, T[] op2) where T : IBinaryInteger<T>

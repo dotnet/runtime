@@ -46,16 +46,6 @@ if (CLR_CMAKE_TARGET_UNIX OR CLR_CMAKE_TARGET_BROWSER OR CLR_CMAKE_TARGET_WASI)
     # Disable implicit fallthrough warning for Zlib and Brotli
     set(FLAGS -Wno-implicit-fallthrough)
 
-    # Disable no strict prototypes warning for Zlib
-    # https://github.com/madler/zlib/issues/633
-    set(FLAGS "${FLAGS} -Wno-strict-prototypes")
-
-    # Delete this suppression once brotli is upgraded to vNext (current latest v1.0.9
-    # does not contain upstream fix: https://github.com/google/brotli/commit/0a3944c)
-    if (NOT CLR_CMAKE_TARGET_WASI)
-        set(FLAGS "${FLAGS} -Wno-vla-parameter")
-    endif ()
-
     set_source_files_properties(${NATIVECOMPRESSION_SOURCES} PROPERTIES COMPILE_FLAGS ${FLAGS})
 
     if (GEN_SHARED_LIB)
@@ -184,12 +174,7 @@ else ()
 endif ()
 
 if((NOT CLR_CMAKE_USE_SYSTEM_ZLIB) AND STATIC_LIBS_ONLY)
-    if (CLR_CMAKE_TARGET_UNIX)
-        # zlib on Unix needs to be installed in the same location as System.IO.Compression.Native so that we can then treat is as a 'z' native library.
-        install_static_library(zlib ${STATIC_LIB_DESTINATION} nativeaot)
-    else()
-        install_static_library(zlib aotsdk nativeaot)
-    endif()
+    install_static_library(zlib aotsdk nativeaot)
 endif()
 
 install (TARGETS System.IO.Compression.Native-Static DESTINATION ${STATIC_LIB_DESTINATION} COMPONENT libs)
