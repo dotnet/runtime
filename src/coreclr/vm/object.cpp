@@ -278,7 +278,7 @@ TypeHandle Object::GetGCSafeTypeHandleIfPossible() const
 Assembly *AssemblyBaseObject::GetAssembly()
 {
     WRAPPER_NO_CONTRACT;
-    return m_pAssembly->GetAssembly();
+    return m_pAssembly;
 }
 
 STRINGREF AllocateString(SString sstr)
@@ -1489,7 +1489,7 @@ void StackTraceArray::Allocate(size_t size)
     {
         EX_THROW(EEMessageException, (kOverflowException, IDS_EE_ARRAY_DIMENSIONS_EXCEEDED));
     }
-   
+
     SetArray(I1ARRAYREF(AllocatePrimitiveArray(ELEMENT_TYPE_I1, static_cast<DWORD>(raw_size.Value()))));
     SetSize(0);
     SetKeepAliveItemsCount(0);
@@ -1915,7 +1915,7 @@ void ExceptionObject::SetStackTrace(OBJECTREF stackTrace)
 // - if the stack trace was created by the current thread, the arrays are returned as is.
 // - if it was created by another thread, deep copies of the arrays are returned. It is ensured
 //   that both of these arrays are consistent. That means that the stack trace doesn't contain
-//   frames that need keep alive objects and that are not protected by entries in the keep alive 
+//   frames that need keep alive objects and that are not protected by entries in the keep alive
 //   array.
 void ExceptionObject::GetStackTrace(StackTraceArray & stackTrace, PTRARRAYREF * outKeepAliveArray /*= NULL*/) const
 {
@@ -1956,7 +1956,7 @@ void ExceptionObject::GetStackTrace(StackTraceArray & stackTrace, PTRARRAYREF * 
 
         uint32_t keepAliveArrayCapacity = ((*outKeepAliveArray) == NULL) ? 0 : (*outKeepAliveArray)->GetNumComponents();
 
-        // It is possible that another thread was modifying the stack trace array and keep alive array while we were making the copies. 
+        // It is possible that another thread was modifying the stack trace array and keep alive array while we were making the copies.
         // The following sequence of events could have happened:
         // Case 1:
         // * The current thread gets the stack trace array and the keep alive array references using the ExceptionObject::GetStackTraceParts above
@@ -2014,10 +2014,10 @@ void ExceptionObject::GetStackTrace(StackTraceArray & stackTrace, PTRARRAYREF * 
         }
         GCPROTECT_END();
     }
-#endif // DACCESS_COMPILE            
+#endif // DACCESS_COMPILE
 }
 
-// Get the stack trace and the dynamic method array from the stack trace object. 
+// Get the stack trace and the dynamic method array from the stack trace object.
 // If the stack trace was created by another thread, it returns clones of both arrays.
 /* static */
 void ExceptionObject::GetStackTraceParts(OBJECTREF stackTraceObj, StackTraceArray & stackTrace, PTRARRAYREF * outKeepAliveArray /*= NULL*/)

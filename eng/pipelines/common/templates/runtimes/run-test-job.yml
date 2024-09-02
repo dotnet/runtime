@@ -593,6 +593,7 @@ jobs:
 
       - script: $(PythonSetupScript)
         displayName: Enable python venv
+        condition: always()
 
       - script: $(PythonScript) $(Build.SourcesDirectory)/src/coreclr/scripts/superpmi.py merge-mch -log_level DEBUG -pattern $(MchFilesLocation)$(CollectionName).$(CollectionType)*.mch -output_mch_path $(MergedMchFileLocation)$(CollectionName).$(CollectionType).$(MchFileTag).mch
         displayName: 'Merge $(CollectionName)-$(CollectionType) SuperPMI collections'
@@ -609,28 +610,29 @@ jobs:
           displayName: 'Upload artifacts SuperPMI $(CollectionName)-$(CollectionType) collection'
           condition: always()
 
-      # Add authenticated pip feed
-      - task: PipAuthenticate@1
-        displayName: 'Pip Authenticate'
-        inputs:
-          artifactFeeds: public/dotnet-public-pypi
-          onlyAddExtraIndex: false
-        condition: always()
+      - ${{ if eq(variables['System.TeamProject'], 'internal') }}:
+        # Add authenticated pip feed
+        - task: PipAuthenticate@1
+          displayName: 'Pip Authenticate'
+          inputs:
+            artifactFeeds: public/dotnet-public-pypi
+            onlyAddExtraIndex: false
+          condition: always()
 
-      # Ensure the Python azure-storage-blob package is installed before doing the upload.
-      - script: $(PipScript) install --upgrade pip && $(PipScript) install azure.storage.blob==12.5.0 --force-reinstall && $(PipScript) install azure.identity==1.16.1 --force-reinstall
-        displayName: Upgrade Pip to latest and install azure-storage-blob and azure-identity Python packages
-        condition: always()
+        # Ensure the Python azure-storage-blob package is installed before doing the upload.
+        - script: $(PipScript) install --upgrade pip && $(PipScript) install azure.storage.blob==12.5.0 --force-reinstall && $(PipScript) install azure.identity==1.16.1 --force-reinstall
+          displayName: Upgrade Pip to latest and install azure-storage-blob and azure-identity Python packages
+          condition: always()
 
-      - task: AzureCLI@2
-        displayName: 'Upload SuperPMI $(CollectionName)-$(CollectionType) collection to Azure Storage'
-        inputs:
-          azureSubscription: 'superpmi-collect-rw'
-          scriptType: 'pscore'
-          scriptLocation: 'inlineScript'
-          inlineScript: |
-            $(PythonScript) $(Build.SourcesDirectory)/src/coreclr/scripts/superpmi.py upload -log_level DEBUG -arch $(archType) -build_type $(buildConfig) -mch_files $(MergedMchFileLocation)$(CollectionName).$(CollectionType).$(MchFileTag).mch -core_root $(Build.SourcesDirectory)/artifacts/bin/coreclr/$(osGroup).x64.$(buildConfigUpper)
-        condition: always()
+        - task: AzureCLI@2
+          displayName: 'Upload SuperPMI $(CollectionName)-$(CollectionType) collection to Azure Storage'
+          inputs:
+            azureSubscription: 'superpmi-collect-rw'
+            scriptType: 'pscore'
+            scriptLocation: 'inlineScript'
+            inlineScript: |
+              $(PythonScript) $(Build.SourcesDirectory)/src/coreclr/scripts/superpmi.py upload -log_level DEBUG -arch $(archType) -build_type $(buildConfig) -mch_files $(MergedMchFileLocation)$(CollectionName).$(CollectionType).$(MchFileTag).mch -core_root $(Build.SourcesDirectory)/artifacts/bin/coreclr/$(osGroup).x64.$(buildConfigUpper)
+          condition: always()
 
       - task: CopyFiles@2
         displayName: Copying superpmi.log of all partitions
