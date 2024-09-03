@@ -6547,6 +6547,10 @@ struct GenTreeHWIntrinsic : public GenTreeJitIntrinsic
 
     unsigned GetResultOpNumForRmwIntrinsic(GenTree* use, GenTree* op1, GenTree* op2, GenTree* op3);
 
+#if defined(TARGET_ARM64)
+    GenTree* GetDelayFreeOp(Compiler* compiler, bool* isRMW, bool* delayFreeMultiple);
+#endif // defined(TARGET_ARM64)
+
     ClassLayout* GetLayout(Compiler* compiler) const;
 
     NamedIntrinsic GetHWIntrinsicId() const;

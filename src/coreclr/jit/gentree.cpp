@@ -30297,7 +30297,107 @@ unsigned GenTreeHWIntrinsic::GetResultOpNumForRmwIntrinsic(GenTree* use, GenTree
 
     return 0;
 }
-#endif // TARGET_XARCH && FEATURE_HW_INTRINSICS
+
+#if defined(TARGET_ARM64)
+//------------------------------------------------------------------------
+// GetDelayFreeOp: Get the delay free characteristics of the HWIntrinsic
+//
+// For a RMW intrinsic preference the RMW operand to the target.
+// For a simple move semantic between two SIMD registers, then preference the source operand.
+//
+// Arguments:
+//    compiler - the compiler instance
+//    isRMW - Set to true if is a RMW node
+//    delayFreeMultiple - Set to true if there are multiple values in the delay free operand
+//
+// Return Value:
+//    The operand that needs to be delay freed
+//
+GenTree* GenTreeHWIntrinsic::GetDelayFreeOp(Compiler* compiler, bool* isRMW, bool* delayFreeMultiple)
+{
+    *isRMW             = isRMWHWIntrinsic(compiler);
+    *delayFreeMultiple = false;
+
+    const NamedIntrinsic intrinsicId = GetHWIntrinsicId();
+    GenTree*             delayFreeOp = nullptr;
+
+    switch (intrinsicId)
+    {
+        case NI_Vector64_CreateScalarUnsafe:
+        case NI_Vector128_CreateScalarUnsafe:
+            if (varTypeIsFloating(Op(1)))
+            {
+                delayFreeOp = Op(1);
+            }
+            break;
+
+        case NI_AdvSimd_Arm64_DuplicateToVector64:
+            if (Op(1)->TypeGet() == TYP_DOUBLE)
+            {
+                delayFreeOp = Op(1);
+            }
+            break;
+
+        case NI_Vector64_ToScalar:
+        case NI_Vector128_ToScalar:
+            if (varTypeIsFloating(this))
+            {
+                delayFreeOp = Op(1);
+            }
+            break;
+
+        case NI_Vector64_ToVector128Unsafe:
+        case NI_Vector128_AsVector128Unsafe:
+        case NI_Vector128_AsVector3:
+        case NI_Vector128_GetLower:
+            delayFreeOp = Op(1);
+            break;
+
+        case NI_AdvSimd_LoadAndInsertScalarVector64x2:
+        case NI_AdvSimd_LoadAndInsertScalarVector64x3:
+        case NI_AdvSimd_LoadAndInsertScalarVector64x4:
+        case NI_AdvSimd_Arm64_LoadAndInsertScalarVector128x2:
+        case NI_AdvSimd_Arm64_LoadAndInsertScalarVector128x3:
+        case NI_AdvSimd_Arm64_LoadAndInsertScalarVector128x4:
+            assert(*isRMW);
+            delayFreeOp        = Op(1);
+            *delayFreeMultiple = true;
+            break;
+
+        case NI_Sve_CreateBreakPropagateMask:
+            // RMW operates on the second op.
+            assert(*isRMW);
+            assert(GetOperandCount() >= 2);
+            delayFreeOp = Op(2);
+            break;
+
+        default:
+            if (*isRMW)
+            {
+                if (HWIntrinsicInfo::IsExplicitMaskedOperation(intrinsicId))
+                {
+                    // First operand contains the mask, RMW op is the second one.
+                    delayFreeOp = Op(2);
+                }
+                else
+                {
+                    delayFreeOp = Op(1);
+                }
+            }
+            break;
+    }
+
+    if (delayFreeOp != nullptr)
+    {
+        // Only preference the delay op if it is not contained.
+        delayFreeOp = delayFreeOp->isContained() ? nullptr : delayFreeOp;
+    }
+
+    return delayFreeOp;
+}
+#endif // TARGET_ARM64
+
+#endif // (TARGET_XARCH || TARGET_ARM64) && FEATURE_HW_INTRINSICS
 
 unsigned GenTreeLclFld::GetSize() const
 {

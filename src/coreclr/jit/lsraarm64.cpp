@@ -1782,84 +1782,16 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
         return BuildConditionalSelectWithEmbeddedOp(intrinsicTree, intrin, pDstCount);
     }
 
-    // Determine whether this is an RMW operation where op2+ must be marked delayFree so that it
+    // Determine whether this is an operation where an op must be marked delayFree so that it
     // is not allocated the same register as the target.
-    const bool isRMW = intrinsicTree->isRMWHWIntrinsic(compiler);
+    bool     delayFreeMultiple = false;
+    bool     isRMW             = false;
+    GenTree* delayFreeOp       = intrinsicTree->GetDelayFreeOp(compiler, &isRMW, &delayFreeMultiple);
 
-    bool tgtPrefOp1        = false;
-    bool tgtPrefOp2        = false;
-    bool delayFreeMultiple = false;
     if (intrin.op1 != nullptr)
     {
-        bool simdRegToSimdRegMove = false;
-
-        switch (intrin.id)
-        {
-            case NI_Vector64_CreateScalarUnsafe:
-            case NI_Vector128_CreateScalarUnsafe:
-            {
-                simdRegToSimdRegMove = varTypeIsFloating(intrin.op1);
-                break;
-            }
-
-            case NI_AdvSimd_Arm64_DuplicateToVector64:
-            {
-                simdRegToSimdRegMove = (intrin.op1->TypeGet() == TYP_DOUBLE);
-                break;
-            }
-
-            case NI_Vector64_ToScalar:
-            case NI_Vector128_ToScalar:
-            {
-                simdRegToSimdRegMove = varTypeIsFloating(intrinsicTree);
-                break;
-            }
-
-            case NI_Vector64_ToVector128Unsafe:
-            case NI_Vector128_AsVector128Unsafe:
-            case NI_Vector128_AsVector3:
-            case NI_Vector128_GetLower:
-            {
-                simdRegToSimdRegMove = true;
-                break;
-            }
-            case NI_AdvSimd_LoadAndInsertScalarVector64x2:
-            case NI_AdvSimd_LoadAndInsertScalarVector64x3:
-            case NI_AdvSimd_LoadAndInsertScalarVector64x4:
-            case NI_AdvSimd_Arm64_LoadAndInsertScalarVector128x2:
-            case NI_AdvSimd_Arm64_LoadAndInsertScalarVector128x3:
-            case NI_AdvSimd_Arm64_LoadAndInsertScalarVector128x4:
-            {
-                delayFreeMultiple = true;
-                break;
-            }
-
-            default:
-            {
-                break;
-            }
-        }
-
-        // If we have an RMW intrinsic or an intrinsic with simple move semantic between two SIMD registers,
-        // we want to preference op1Reg to the target if op1 is not contained.
-
-        if ((isRMW || simdRegToSimdRegMove))
-        {
-            if (HWIntrinsicInfo::IsExplicitMaskedOperation(intrin.id))
-            {
-                assert(!simdRegToSimdRegMove);
-                // Prefer op2Reg for the masked operation as mask would be the op1Reg
-                tgtPrefOp2 = !intrin.op1->isContained();
-            }
-            else
-            {
-                tgtPrefOp1 = !intrin.op1->isContained();
-            }
-        }
-
         if (delayFreeMultiple)
         {
-            assert(isRMW);
             assert(intrin.op1->OperIs(GT_FIELD_LIST));
             GenTreeFieldList* op1 = intrin.op1->AsFieldList();
             assert(compiler->info.compNeedsConsecutiveRegisters);
@@ -1885,9 +1817,8 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                     predMask = RBM_LOWMASK.GetPredicateRegSet();
                 }
 
-                if (tgtPrefOp2)
+                if ((delayFreeOp == intrin.op2) && (intrin.op2 != nullptr))
                 {
-                    assert(!tgtPrefOp1);
                     srcCount += BuildDelayFreeUses(intrin.op1, nullptr, predMask);
                 }
                 else
@@ -1900,7 +1831,7 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
         {
             srcCount += BuildAddrUses(intrin.op1);
         }
-        else if (tgtPrefOp1)
+        else if (delayFreeOp == intrin.op1)
         {
             tgtPrefUse = BuildUse(intrin.op1);
             srcCount++;
@@ -1989,7 +1920,7 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                 assert(intrin.op3 != nullptr);
                 assert(isRMW);
                 srcCount += BuildConsecutiveRegistersForUse(intrin.op2, intrin.op1);
-                srcCount += BuildDelayFreeUses(intrin.op3, intrin.op1);
+                srcCount += BuildDelayFreeUses(intrin.op3, delayFreeOp);
                 assert(dstCount == 1);
                 buildInternalRegisterUses();
                 BuildDef(intrinsicTree);
@@ -2121,7 +2052,7 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
             getLowVectorOperandAndCandidates(intrin, &lowVectorOperandNum, &lowVectorCandidates);
         }
 
-        if (tgtPrefOp2)
+        if (delayFreeOp == intrin.op2)
         {
             if (!intrin.op2->isContained())
             {
@@ -2186,6 +2117,7 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
 
                 default:
                 {
+                    assert(delayFreeOp != intrin.op2);
                     SingleTypeRegSet candidates = lowVectorOperandNum == 2 ? lowVectorCandidates : RBM_NONE;
 
                     if (intrin.op2->OperIsHWIntrinsic(NI_Sve_ConvertVectorToMask))
@@ -2194,7 +2126,7 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                         candidates = RBM_ALLMASK.GetPredicateRegSet();
                     }
 
-                    srcCount += isRMW ? BuildDelayFreeUses(intrin.op2, intrin.op1, candidates)
+                    srcCount += isRMW ? BuildDelayFreeUses(intrin.op2, delayFreeOp, candidates)
                                       : BuildOperandUses(intrin.op2, candidates);
                 }
                 break;
@@ -2203,11 +2135,12 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
 
         if (intrin.op3 != nullptr)
         {
+            assert(delayFreeOp != intrin.op3);
             SingleTypeRegSet candidates = lowVectorOperandNum == 3 ? lowVectorCandidates : RBM_NONE;
 
             if (isRMW)
             {
-                srcCount += BuildDelayFreeUses(intrin.op3, (tgtPrefOp2 ? intrin.op2 : intrin.op1), candidates);
+                srcCount += BuildDelayFreeUses(intrin.op3, delayFreeOp, candidates);
             }
             else
             {
@@ -2217,13 +2150,15 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
             if (intrin.op4 != nullptr)
             {
                 assert(lowVectorOperandNum != 4);
-                assert(!tgtPrefOp2);
-                srcCount += isRMW ? BuildDelayFreeUses(intrin.op4, intrin.op1) : BuildOperandUses(intrin.op4);
+                assert(delayFreeOp != intrin.op4);
+
+                srcCount += isRMW ? BuildDelayFreeUses(intrin.op4, delayFreeOp) : BuildOperandUses(intrin.op4);
 
                 if (intrin.op5 != nullptr)
                 {
                     assert(isRMW);
-                    srcCount += BuildDelayFreeUses(intrin.op5, intrin.op1);
+                    assert(delayFreeOp != intrin.op5);
+                    srcCount += BuildDelayFreeUses(intrin.op5, delayFreeOp);
                 }
             }
         }
