@@ -1992,8 +1992,22 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 		return NULL;
 #endif
 
-	MonoClass* klass = fsig->param_count > 0 ? args[0]->klass : cmethod->klass;
-	MonoTypeEnum arg0_type = fsig->param_count > 0 ? get_underlying_type (fsig->params [0]) : MONO_TYPE_VOID;
+	MonoClass* klass = NULL;
+	MonoTypeEnum arg0_type;
+	if (fsig->param_count > 0) {
+		if (type_is_simd_vector (fsig->params [0])) {
+			klass = args [0]->klass;
+			arg0_type = get_underlying_type (fsig->params [0]);
+		} else if (fsig->param_count > 1 && type_is_simd_vector (fsig->params [1])) {
+			klass = args [1]->klass;
+			arg0_type = get_underlying_type (fsig->params [1]);
+		}
+	} 
+
+	if (!klass) {
+		klass = cmethod->klass;
+		arg0_type = MONO_TYPE_VOID;
+	}
 
 	if (cfg->verbose_level > 1) {
 		char *name = mono_method_full_name (cmethod, TRUE);
@@ -2065,7 +2079,9 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 	case SN_Multiply:
 	case SN_Subtract:
 	case SN_Xor:
-		if (!is_element_type_primitive (fsig->params [0]))
+		if (type_is_simd_vector (fsig->params [0]) && !is_element_type_primitive (fsig->params [0]))
+			return NULL;
+		if (type_is_simd_vector (fsig->params [1]) && !is_element_type_primitive (fsig->params [1]))
 			return NULL;
 #ifndef TARGET_ARM64
 		if (((id == SN_Max) || (id == SN_Min)) && type_enum_is_float(arg0_type))
