@@ -690,17 +690,30 @@ namespace System.Numerics.Tensors
             if (ranges.Length != Lengths.Length)
                 ThrowHelper.ThrowIndexOutOfRangeException();
 
+            TensorSpan<T> toReturn;
             scoped Span<nint> lengths;
             scoped Span<nint> offsets;
+            nint[]? lengthsArray;
+            nint[]? offsetsArray;
             if (Rank > TensorShape.MaxInlineRank)
             {
-                lengths = stackalloc nint[Rank];
-                offsets = stackalloc nint[Rank];
+                lengthsArray = ArrayPool<nint>.Shared.Rent(Rank);
+                lengths = lengthsArray;
+                lengths = lengths.Slice(0, Rank);
+                lengthsArray = null;
+
+                offsetsArray = ArrayPool<nint>.Shared.Rent(Rank);
+                offsets = offsetsArray;
+                offsets = offsets.Slice(0, Rank);
+                offsetsArray = null;
             }
             else
             {
-                lengths = new nint[Rank];
-                offsets = new nint[Rank];
+                lengths = stackalloc nint[Rank];
+                offsets = stackalloc nint[Rank];
+
+                lengthsArray = null;
+                offsetsArray = null;
             }
 
             for (int i = 0; i < ranges.Length; i++)
@@ -708,19 +721,39 @@ namespace System.Numerics.Tensors
                 (offsets[i], lengths[i]) = ranges[i].GetOffsetAndLength(Lengths[i]);
             }
 
-            nint index = 0;
-            for (int i = 0; i < offsets.Length; i++)
+            // When we have an empty Tensor and someone wants to slice all of it, we should return an empty Tensor.
+            if (TensorSpanHelpers.CalculateTotalLength(Lengths) == 0)
             {
-                if (offsets[i] < 0 || offsets[i] >= Lengths[i])
+                for (int i = 0; i < offsets.Length; i++)
+                {
+                    if (offsets[i] != 0 || lengths[i] != 0)
+                        ThrowHelper.ThrowIndexOutOfRangeException();
+                }
+                toReturn = new TensorSpan<T>(ref _reference, lengths, _shape.Strides, _shape._memoryLength);
+            }
+            else
+            {
+                nint index = 0;
+                for (int i = 0; i < offsets.Length; i++)
+                {
+                    if (offsets[i] < 0 || offsets[i] >= Lengths[i])
+                        ThrowHelper.ThrowIndexOutOfRangeException();
+
+                    index += Strides[i] * (offsets[i]);
+                }
+
+                if (index >= _shape._memoryLength || index < 0)
                     ThrowHelper.ThrowIndexOutOfRangeException();
 
-                index += Strides[i] * (offsets[i]);
+                toReturn = new TensorSpan<T>(ref Unsafe.Add(ref _reference, index), lengths, _shape.Strides, _shape._memoryLength - index);
             }
 
-            if (index >= _shape._memoryLength || index < 0)
-                ThrowHelper.ThrowIndexOutOfRangeException();
+            if (offsetsArray != null)
+                ArrayPool<nint>.Shared.Return(offsetsArray);
+            if (lengthsArray != null)
+                ArrayPool<nint>.Shared.Return(lengthsArray);
 
-            return new TensorSpan<T>(ref Unsafe.Add(ref _reference, index), lengths, _shape.Strides, _shape._memoryLength - index);
+            return toReturn;
         }
 
         /// <summary>
