@@ -13,6 +13,7 @@
 
   <ItemGroup>
     <PackageReference Include="SharpFuzz" Version="2.1.1" />
+    <PackageReference Include="System.Formats.Nrbf" Version="9.0.0-preview.7.24405.7" />
   </ItemGroup>
 
   <ItemGroup>
