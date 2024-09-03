@@ -5,6 +5,7 @@ using System;
 using System.Diagnostics.Tracing;
 using System.Threading;
 using System.Threading.Tasks;
+using Xunit;
 
 namespace Tracing.Tests
 {
@@ -60,9 +61,10 @@ namespace Tracing.Tests
         }
     }
 
-    class EventListenerThreadPool
+    public class EventListenerThreadPool
     {
-        static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             using (RuntimeEventListener listener = new RuntimeEventListener())
             {

@@ -30,6 +30,7 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Net.Security;
@@ -55,7 +56,6 @@ namespace System.Net
         private ListenerPrefix? _prefix;
         private HttpRequestStream? _requestStream;
         private HttpResponseStream? _responseStream;
-        private bool _chunked;
         private int _reuses;
         private bool _contextBound;
         private readonly bool _secure;
@@ -91,7 +91,7 @@ namespace System.Net
                         return true;
                     }
 
-                    _clientCert = c as X509Certificate2 ?? new X509Certificate2(c.GetRawCertData());
+                    _clientCert = c as X509Certificate2 ?? X509CertificateLoader.LoadCertificate(c.GetRawCertData());
                     _clientCertErrors = new int[] { (int)e };
                     return true;
                 });
@@ -101,7 +101,11 @@ namespace System.Net
             }
 
             _timer = new Timer(OnTimeout, null, Timeout.Infinite, Timeout.Infinite);
+
+#pragma warning disable SYSLIB0014 // ServicePointManager is obsolete
             _sslStream?.AuthenticateAsServer(_cert, true, (SslProtocols)ServicePointManager.SecurityProtocol, false);
+#pragma warning restore SYSLIB0014
+
             Init();
         }
 
@@ -128,7 +132,6 @@ namespace System.Net
             _requestStream = null;
             _responseStream = null;
             _prefix = null;
-            _chunked = false;
             _memoryStream = new MemoryStream();
             _position = 0;
             _inputState = InputState.RequestLine;
@@ -209,7 +212,6 @@ namespace System.Net
                 _memoryStream = null;
                 if (chunked)
                 {
-                    _chunked = true;
                     _context.Response.SendChunked = true;
                     _requestStream = new ChunkedInputStream(_context, _stream, buffer, _position, length - _position);
                 }
@@ -237,8 +239,17 @@ namespace System.Net
 
         private static void OnRead(IAsyncResult ares)
         {
-            HttpConnection cnc = (HttpConnection)ares.AsyncState!;
-            cnc.OnReadInternal(ares);
+            HttpConnection? cnc = null;
+            try
+            {
+                cnc = (HttpConnection)ares.AsyncState!;
+                cnc.OnReadInternal(ares);
+            }
+            catch
+            {
+                cnc?.Close(true);
+                return;
+            }
         }
 
         private void OnReadInternal(IAsyncResult ares)
@@ -507,16 +518,6 @@ namespace System.Net
 
                 if (!force && _context.Request.FlushInput())
                 {
-                    if (_chunked && _context.Response.ForceCloseChunked == false)
-                    {
-                        // Don't close. Keep working.
-                        _reuses++;
-                        Unbind();
-                        Init();
-                        BeginReadRequest();
-                        return;
-                    }
-
                     _reuses++;
                     Unbind();
                     Init();

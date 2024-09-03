@@ -34,6 +34,9 @@ namespace ILCompiler
         private readonly HashSet<string> _trimWarnedAssemblies = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         private readonly HashSet<string> _aotWarnedAssemblies = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
+        private readonly bool _treatWarningsAsErrors;
+        private readonly Dictionary<int, bool> _warningsAsErrors;
+
         public static Logger Null = new Logger(new TextLogWriter(TextWriter.Null), null, false);
 
         public bool IsVerbose { get; }
@@ -46,7 +49,9 @@ namespace ILCompiler
             bool singleWarn,
             IEnumerable<string> singleWarnEnabledModules,
             IEnumerable<string> singleWarnDisabledModules,
-            IEnumerable<string> suppressedCategories)
+            IEnumerable<string> suppressedCategories,
+            bool treatWarningsAsErrors,
+            IDictionary<int, bool> warningsAsErrors)
         {
             _logWriter = writer;
             IsVerbose = isVerbose;
@@ -55,17 +60,19 @@ namespace ILCompiler
             _singleWarnEnabledAssemblies = new HashSet<string>(singleWarnEnabledModules, StringComparer.OrdinalIgnoreCase);
             _singleWarnDisabledAssemblies = new HashSet<string>(singleWarnDisabledModules, StringComparer.OrdinalIgnoreCase);
             _suppressedCategories = new HashSet<string>(suppressedCategories, StringComparer.Ordinal);
+            _treatWarningsAsErrors = treatWarningsAsErrors;
+            _warningsAsErrors = new Dictionary<int, bool>(warningsAsErrors);
             _compilerGeneratedState = ilProvider == null ? null : new CompilerGeneratedState(ilProvider, this);
             _unconditionalSuppressMessageAttributeState = new UnconditionalSuppressMessageAttributeState(_compilerGeneratedState, this);
         }
 
-        public Logger(TextWriter writer, ILProvider ilProvider, bool isVerbose, IEnumerable<int> suppressedWarnings, bool singleWarn, IEnumerable<string> singleWarnEnabledModules, IEnumerable<string> singleWarnDisabledModules, IEnumerable<string> suppressedCategories)
-            : this(new TextLogWriter(writer), ilProvider, isVerbose, suppressedWarnings, singleWarn, singleWarnEnabledModules, singleWarnDisabledModules, suppressedCategories)
+        public Logger(TextWriter writer, ILProvider ilProvider, bool isVerbose, IEnumerable<int> suppressedWarnings, bool singleWarn, IEnumerable<string> singleWarnEnabledModules, IEnumerable<string> singleWarnDisabledModules, IEnumerable<string> suppressedCategories, bool treatWarningsAsErrors, IDictionary<int, bool> warningsAsErrors)
+            : this(new TextLogWriter(writer), ilProvider, isVerbose, suppressedWarnings, singleWarn, singleWarnEnabledModules, singleWarnDisabledModules, suppressedCategories, treatWarningsAsErrors, warningsAsErrors)
         {
         }
 
         public Logger(ILogWriter writer, ILProvider ilProvider, bool isVerbose)
-            : this(writer, ilProvider, isVerbose, Array.Empty<int>(), singleWarn: false, Array.Empty<string>(), Array.Empty<string>(), Array.Empty<string>())
+            : this(writer, ilProvider, isVerbose, Array.Empty<int>(), singleWarn: false, Array.Empty<string>(), Array.Empty<string>(), Array.Empty<string>(), false, new Dictionary<int, bool>())
         {
         }
 
@@ -155,10 +162,13 @@ namespace ILCompiler
             return _unconditionalSuppressMessageAttributeState.IsSuppressed(code, origin);
         }
 
-        internal static bool IsWarningAsError(int _/*code*/)
+        internal bool IsWarningAsError(int warningCode)
         {
-            // TODO: warnaserror
-            return false;
+            bool value;
+            if (_treatWarningsAsErrors)
+                return !_warningsAsErrors.TryGetValue(warningCode, out value) || value;
+
+            return _warningsAsErrors.TryGetValue(warningCode, out value) && value;
         }
 
         internal bool IsSingleWarn(ModuleDesc owningModule, string messageSubcategory)

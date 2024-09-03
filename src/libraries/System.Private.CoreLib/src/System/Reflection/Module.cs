@@ -79,11 +79,11 @@ namespace System.Reflection
         [RequiresUnreferencedCode("Types might be removed")]
         public virtual Type[] GetTypes() { throw NotImplemented.ByDesign; }
 
-        [RequiresUnreferencedCode("Types might be removed")]
+        [RequiresUnreferencedCode("Types might be removed by trimming. If the type name is a string literal, consider using Type.GetType instead.")]
         public virtual Type? GetType(string className) => GetType(className, throwOnError: false, ignoreCase: false);
-        [RequiresUnreferencedCode("Types might be removed")]
+        [RequiresUnreferencedCode("Types might be removed by trimming. If the type name is a string literal, consider using Type.GetType instead.")]
         public virtual Type? GetType(string className, bool ignoreCase) => GetType(className, throwOnError: false, ignoreCase: ignoreCase);
-        [RequiresUnreferencedCode("Types might be removed")]
+        [RequiresUnreferencedCode("Types might be removed by trimming. If the type name is a string literal, consider using Type.GetType instead.")]
         public virtual Type? GetType(string className, bool throwOnError, bool ignoreCase) { throw NotImplemented.ByDesign; }
 
         [RequiresUnreferencedCode("Types might be removed")]
@@ -179,7 +179,7 @@ namespace System.Reflection
         private static bool FilterTypeNameImpl(Type cls, object filterCriteria, StringComparison comparison)
         {
             // Check that the criteria object is a String object
-            if (!(filterCriteria is string str))
+            if (filterCriteria is not string str)
             {
                 throw new InvalidFilterCriteriaException(SR.InvalidFilterCriteriaException_CritString);
             }

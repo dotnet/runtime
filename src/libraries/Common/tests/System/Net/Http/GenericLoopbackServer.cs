@@ -94,6 +94,9 @@ namespace System.Net.Test.Common
             CloseWebSocket();
         }
 
+        public EndPoint? LocalEndPoint => _socket?.LocalEndPoint;
+        public EndPoint? RemoteEndPoint => _socket?.RemoteEndPoint;
+
         public async Task WaitForCloseAsync(CancellationToken cancellationToken)
         {
             while (_websocket != null

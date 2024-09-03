@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using Xunit;
 
 public struct Data
 {
@@ -81,7 +82,8 @@ public class Program
         return 0;
     }
         
-    static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         int numFailures = 0;
         var foo = new StructAPITest<string>(); foo._id = "ABC";

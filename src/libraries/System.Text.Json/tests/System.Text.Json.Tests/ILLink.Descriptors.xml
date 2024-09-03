@@ -1,0 +1,9 @@
+<linker>
+  <assembly fullname="System" />
+  <assembly fullname="System.Private.CoreLib" />
+  <assembly fullname="System.Reflection" />
+  <assembly fullname="System.Collections" />
+  <assembly fullname="System.Runtime.Serialization" />
+  <assembly fullname="System.Runtime.Serialization.Json" />
+  <assembly fullname="System.Text.Json" />
+</linker>

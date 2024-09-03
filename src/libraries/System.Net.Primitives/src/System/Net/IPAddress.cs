@@ -21,18 +21,18 @@ namespace System.Net
     /// </devdoc>
     public class IPAddress : ISpanFormattable, ISpanParsable<IPAddress>, IUtf8SpanFormattable
     {
-        public static readonly IPAddress Any = new ReadOnlyIPAddress(new byte[] { 0, 0, 0, 0 });
-        public static readonly IPAddress Loopback = new ReadOnlyIPAddress(new byte[] { 127, 0, 0, 1 });
-        public static readonly IPAddress Broadcast = new ReadOnlyIPAddress(new byte[] { 255, 255, 255, 255 });
+        public static readonly IPAddress Any = new ReadOnlyIPAddress([0, 0, 0, 0]);
+        public static readonly IPAddress Loopback = new ReadOnlyIPAddress([127, 0, 0, 1]);
+        public static readonly IPAddress Broadcast = new ReadOnlyIPAddress([255, 255, 255, 255]);
         public static readonly IPAddress None = Broadcast;
 
         internal const uint LoopbackMaskHostOrder = 0xFF000000;
 
-        public static readonly IPAddress IPv6Any = new IPAddress((ReadOnlySpan<byte>)new byte[] { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 }, 0);
-        public static readonly IPAddress IPv6Loopback = new IPAddress((ReadOnlySpan<byte>)new byte[] { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1 }, 0);
+        public static readonly IPAddress IPv6Any = new IPAddress((ReadOnlySpan<byte>)[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], 0);
+        public static readonly IPAddress IPv6Loopback = new IPAddress((ReadOnlySpan<byte>)[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1], 0);
         public static readonly IPAddress IPv6None = IPv6Any;
 
-        private static readonly IPAddress s_loopbackMappedToIPv6 = new IPAddress((ReadOnlySpan<byte>)new byte[] { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 255, 255, 127, 0, 0, 1 }, 0);
+        private static readonly IPAddress s_loopbackMappedToIPv6 = new IPAddress((ReadOnlySpan<byte>)[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 255, 255, 127, 0, 0, 1], 0);
 
         /// <summary>
         /// For IPv4 addresses, this field stores the Address.
@@ -83,6 +83,20 @@ namespace System.Net
                 _toString = null;
                 _hashCode = 0;
                 _addressOrScopeId = value;
+            }
+        }
+
+        internal uint PrivateIPv4Address
+        {
+            get
+            {
+                Debug.Assert(IsIPv4 || IsIPv4MappedToIPv6);
+                if (IsIPv4)
+                {
+                    return _addressOrScopeId;
+                }
+                uint address = (uint)_numbers[6] << 16 | (uint)_numbers[7];
+                return (uint)HostToNetworkOrder(unchecked((int)address));
             }
         }
 
@@ -142,7 +156,6 @@ namespace System.Net
 
         internal IPAddress(ReadOnlySpan<ushort> numbers, uint scopeid)
         {
-            Debug.Assert(numbers != null);
             Debug.Assert(numbers.Length == NumberOfLabels);
 
             _numbers = numbers.ToArray();

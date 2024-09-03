@@ -46,8 +46,8 @@
     IMPORT $g_GCShadowEnd
 #endif // WRITE_BARRIER_CHECK
 
-    IMPORT JIT_GetSharedNonGCStaticBase_Helper
-    IMPORT JIT_GetSharedGCStaticBase_Helper
+    IMPORT JIT_GetDynamicNonGCStaticBase_Portable
+    IMPORT JIT_GetDynamicGCStaticBase_Portable
 
 #ifdef FEATURE_COMINTEROP
     IMPORT CLRToCOMWorker
@@ -75,6 +75,12 @@
     LEAF_ENTRY GetDataCacheZeroIDReg
         mrs     x0, dczid_el0
         and     x0, x0, 31
+        ret     lr
+    LEAF_END
+
+;; uint64_t GetSveLengthFromOS(void);
+    LEAF_ENTRY GetSveLengthFromOS
+        rdvl    x0, 1
         ret     lr
     LEAF_END
 
@@ -234,36 +240,6 @@ ThePreStubPatchLabel
         LEAF_END
 
 ;-----------------------------------------------------------------------------
-; The following Macros help in WRITE_BARRIER Implementations
-    ; WRITE_BARRIER_ENTRY
-    ;
-    ; Declare the start of a write barrier function. Use similarly to NESTED_ENTRY. This is the only legal way
-    ; to declare a write barrier function.
-    ;
-    MACRO
-      WRITE_BARRIER_ENTRY $name
-
-      LEAF_ENTRY $name
-    MEND
-
-    ; WRITE_BARRIER_END
-    ;
-    ; The partner to WRITE_BARRIER_ENTRY, used like NESTED_END.
-    ;
-    MACRO
-      WRITE_BARRIER_END $__write_barrier_name
-
-      LEAF_END_MARKED $__write_barrier_name
-
-    MEND
-
-; ------------------------------------------------------------------
-; Start of the writeable code region
-    LEAF_ENTRY JIT_PatchedCodeStart
-        ret      lr
-    LEAF_END
-
-;-----------------------------------------------------------------------------
 ; void JIT_UpdateWriteBarrierState(bool skipEphemeralCheck, size_t writeableOffset)
 ;
 ; Update shadow copies of the various state info required for barrier
@@ -275,10 +251,10 @@ ThePreStubPatchLabel
 ; Align and group state info together so it fits in a single cache line
 ; and each entry can be written atomically
 ;
-    WRITE_BARRIER_ENTRY JIT_UpdateWriteBarrierState
+    LEAF_ENTRY JIT_UpdateWriteBarrierState
         PROLOG_SAVE_REG_PAIR   fp, lr, #-16!
 
-        ; x0-x7 will contain intended new state
+        ; x0-x7, x10 will contain intended new state
         ; x8 will preserve skipEphemeralCheck
         ; x12 will be used for pointers
 
@@ -293,33 +269,36 @@ ThePreStubPatchLabel
         ldr      x1, [x12, g_card_bundle_table]
 #endif
 
-#ifdef WRITE_BARRIER_CHECK
-        adrp     x12, $g_GCShadow
-        ldr      x2, [x12, $g_GCShadow]
-#endif
-
 #ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
         adrp     x12, g_sw_ww_table
-        ldr      x3, [x12, g_sw_ww_table]
+        ldr      x2, [x12, g_sw_ww_table]
 #endif
 
         adrp     x12, g_ephemeral_low
-        ldr      x4, [x12, g_ephemeral_low]
+        ldr      x3, [x12, g_ephemeral_low]
 
         adrp     x12, g_ephemeral_high
-        ldr      x5, [x12, g_ephemeral_high]
+        ldr      x4, [x12, g_ephemeral_high]
 
         ; Check skipEphemeralCheck
         cbz      x8, EphemeralCheckEnabled
-        movz     x4, #0
-        movn     x5, #0
+        movz     x3, #0
+        movn     x4, #0
 
 EphemeralCheckEnabled
         adrp     x12, g_lowest_address
-        ldr      x6, [x12, g_lowest_address]
+        ldr      x5, [x12, g_lowest_address]
 
         adrp     x12, g_highest_address
-        ldr      x7, [x12, g_highest_address]
+        ldr      x6, [x12, g_highest_address]
+
+#ifdef WRITE_BARRIER_CHECK
+        adrp     x12, $g_GCShadow
+        ldr      x7, [x12, $g_GCShadow]
+
+        adrp     x12, $g_GCShadowEnd
+        ldr      x10, [x12, $g_GCShadowEnd]
+#endif
 
         ; Update wbs state
         adrp     x12, JIT_WriteBarrier_Table_Loc
@@ -328,206 +307,15 @@ EphemeralCheckEnabled
         stp      x0, x1, [x12], 16
         stp      x2, x3, [x12], 16
         stp      x4, x5, [x12], 16
-        stp      x6, x7, [x12], 16
+        str      x6, [x12], 8
+#ifdef WRITE_BARRIER_CHECK
+        stp     x7, x10, [x12], 16
+#endif
 
         EPILOG_RESTORE_REG_PAIR fp, lr, #16!
         EPILOG_RETURN
 
-    WRITE_BARRIER_END JIT_UpdateWriteBarrierState
-
-        ; Begin patchable literal pool
-        ALIGN 64  ; Align to power of two at least as big as patchable literal pool so that it fits optimally in cache line
-    WRITE_BARRIER_ENTRY JIT_WriteBarrier_Table
-wbs_begin
-wbs_card_table
-        DCQ 0
-wbs_card_bundle_table
-        DCQ 0
-wbs_GCShadow
-        DCQ 0
-wbs_sw_ww_table
-        DCQ 0
-wbs_ephemeral_low
-        DCQ 0
-wbs_ephemeral_high
-        DCQ 0
-wbs_lowest_address
-        DCQ 0
-wbs_highest_address
-        DCQ 0
-    WRITE_BARRIER_END JIT_WriteBarrier_Table
-
-; void JIT_ByRefWriteBarrier
-; On entry:
-;   x13  : the source address (points to object reference to write)
-;   x14  : the destination address (object reference written here)
-;
-; On exit:
-;   x12  : trashed
-;   x13  : incremented by 8
-;   x14  : incremented by 8
-;   x15  : trashed
-;   x17  : trashed (ip1) if FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
-;
-    WRITE_BARRIER_ENTRY JIT_ByRefWriteBarrier
-
-        ldr      x15, [x13], 8
-        b        JIT_CheckedWriteBarrier
-
-    WRITE_BARRIER_END JIT_ByRefWriteBarrier
-
-;-----------------------------------------------------------------------------
-; Simple WriteBarriers
-; void JIT_CheckedWriteBarrier(Object** dst, Object* src)
-; On entry:
-;   x14  : the destination address (LHS of the assignment)
-;   x15  : the object reference (RHS of the assignment)
-;
-; On exit:
-;   x12  : trashed
-;   x14  : incremented by 8
-;   x15  : trashed
-;   x17  : trashed (ip1) if FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
-;
-    WRITE_BARRIER_ENTRY JIT_CheckedWriteBarrier
-        ldr      x12,  wbs_lowest_address
-        cmp      x14,  x12
-
-        ldr      x12,  wbs_highest_address
-        ccmphs   x14,  x12, #0x2
-        blo      JIT_WriteBarrier
-
-NotInHeap
-        str      x15, [x14], 8
-        ret      lr
-    WRITE_BARRIER_END JIT_CheckedWriteBarrier
-
-; void JIT_WriteBarrier(Object** dst, Object* src)
-; On entry:
-;   x14  : the destination address (LHS of the assignment)
-;   x15  : the object reference (RHS of the assignment)
-;
-; On exit:
-;   x12  : trashed
-;   x14  : incremented by 8
-;   x15  : trashed
-;   x17  : trashed (ip1) if FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
-;
-    WRITE_BARRIER_ENTRY JIT_WriteBarrier
-        stlr     x15, [x14]
-
-#ifdef WRITE_BARRIER_CHECK
-        ; Update GC Shadow Heap
-
-        ; Do not perform the work if g_GCShadow is 0
-        ldr      x12, wbs_GCShadow
-        cbz      x12, ShadowUpdateDisabled
-
-        ; need temporary register. Save before using.
-        str      x13, [sp, #-16]!
-
-        ; Compute address of shadow heap location:
-        ;   pShadow = $g_GCShadow + (x14 - g_lowest_address)
-        ldr      x13, wbs_lowest_address
-        sub      x13, x14, x13
-        add      x12, x13, x12
-
-        ; if (pShadow >= $g_GCShadowEnd) goto end
-        adrp     x13, $g_GCShadowEnd
-        ldr      x13, [x13, $g_GCShadowEnd]
-        cmp      x12, x13
-        bhs      ShadowUpdateEnd
-
-        ; *pShadow = x15
-        str      x15, [x12]
-
-        ; Ensure that the write to the shadow heap occurs before the read from the GC heap so that race
-        ; conditions are caught by INVALIDGCVALUE.
-        dmb      ish
-
-        ; if ([x14] == x15) goto end
-        ldr      x13, [x14]
-        cmp      x13, x15
-        beq ShadowUpdateEnd
-
-        ; *pShadow = INVALIDGCVALUE (0xcccccccd)
-        movz     x13, #0xcccd
-        movk     x13, #0xcccc, LSL #16
-        str      x13, [x12]
-
-ShadowUpdateEnd
-        ldr      x13, [sp], #16
-ShadowUpdateDisabled
-#endif
-
-#ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
-        ; Update the write watch table if necessary
-        ldr      x12,  wbs_sw_ww_table
-        cbz      x12,  CheckCardTable
-        add      x12,  x12, x14, LSR #0xC  // SoftwareWriteWatch::AddressToTableByteIndexShift
-        ldrb     w17,  [x12]
-        cbnz     x17,  CheckCardTable
-        mov      w17,  0xFF
-        strb     w17,  [x12]
-#endif
-
-CheckCardTable
-        ; Branch to Exit if the reference is not in the Gen0 heap
-        ;
-        ldr      x12,  wbs_ephemeral_low
-        cbz      x12,  SkipEphemeralCheck
-        cmp      x15,  x12
-
-        ldr      x12,  wbs_ephemeral_high
-
-        ; Compare against the upper bound if the previous comparison indicated
-        ; that the destination address is greater than or equal to the lower
-        ; bound. Otherwise, set the C flag (specified by the 0x2) so that the
-        ; branch to exit is taken.
-        ccmp     x15,  x12, #0x2, hs
-
-        bhs      Exit
-
-SkipEphemeralCheck
-        ; Check if we need to update the card table
-        ldr      x12, wbs_card_table
-
-        ; x15 := pointer into card table
-        add      x15, x12, x14, lsr #11
-
-        ldrb     w12, [x15]
-        cmp      x12, 0xFF
-        beq      Exit
-
-UpdateCardTable
-        mov      x12, 0xFF
-        strb     w12, [x15]
-
-#ifdef FEATURE_MANUALLY_MANAGED_CARD_BUNDLES
-        ; Check if we need to update the card bundle table
-        ldr      x12, wbs_card_bundle_table
-
-        ; x15 := pointer into card bundle table
-        add      x15, x12, x14, lsr #21
-
-        ldrb     w12, [x15]
-        cmp      x12, 0xFF
-        beq      Exit
-
-        mov      x12, 0xFF
-        strb     w12, [x15]
-#endif
-
-Exit
-        add      x14, x14, 8
-        ret      lr
-    WRITE_BARRIER_END JIT_WriteBarrier
-
-; ------------------------------------------------------------------
-; End of the writeable code region
-    LEAF_ENTRY JIT_PatchedCodeLast
-        ret      lr
-    LEAF_END
+    LEAF_END JIT_UpdateWriteBarrierState
 
 ; void SinglecastDelegateInvokeStub(Delegate *pThis)
     LEAF_ENTRY SinglecastDelegateInvokeStub
@@ -605,7 +393,7 @@ NoFloatingPointRetVal
     LEAF_END
 
 ; ------------------------------------------------------------------
-; GenericComPlusCallStub that erects a ComPlusMethodFrame and calls into the runtime
+; GenericCLRToCOMCallStub that erects a CLRToCOMMethodFrame and calls into the runtime
 ; (CLRToCOMWorker) to dispatch rare cases of the interface call.
 ;
 ; On entry:
@@ -616,14 +404,14 @@ NoFloatingPointRetVal
 ; On exit:
 ;   x0/x1/s0-s3/d0-d3 set to return value of the call as appropriate
 ;
-    NESTED_ENTRY GenericComPlusCallStub
+    NESTED_ENTRY GenericCLRToCOMCallStub
 
         PROLOG_WITH_TRANSITION_BLOCK ASM_ENREGISTERED_RETURNTYPE_MAXSIZE
 
         add         x0, sp, #__PWTB_TransitionBlock ; pTransitionBlock
         mov         x1, x12                         ; pMethodDesc
 
-        ; Call CLRToCOMWorker(TransitionBlock *, ComPlusCallMethodDesc *).
+        ; Call CLRToCOMWorker(TransitionBlock *, CLRToCOMCallMethodDesc *).
         ; This call will set up the rest of the frame (including the vfptr, the GS cookie and
         ; linking to the thread), make the client call and return with correct registers set
         ; (x0/x1/s0-s3/d0-d3 as appropriate).
@@ -1236,58 +1024,34 @@ Fail
 ;
 
 ; ------------------------------------------------------------------
-; void* JIT_GetSharedNonGCStaticBase(SIZE_T moduleDomainID, DWORD dwClassDomainID)
 
-    LEAF_ENTRY JIT_GetSharedNonGCStaticBase_SingleAppDomain
+; void* JIT_GetDynamicNonGCStaticBase(DynamicStaticsInfo *dynamicInfo)
+
+    LEAF_ENTRY JIT_GetDynamicNonGCStaticBase_SingleAppDomain
     ; If class is not initialized, bail to C++ helper
-    add x2, x0, #DomainLocalModule__m_pDataBlob
-    ldrb w2, [x2, w1]
-    tst w2, #1
-    beq CallHelper1
-
+    ldr x1, [x0, #OFFSETOF__DynamicStaticsInfo__m_pNonGCStatics]
+    tbnz x1, #0, CallHelper1
+    mov x0, x1
     ret lr
 
 CallHelper1
-    ; Tail call JIT_GetSharedNonGCStaticBase_Helper
-    b JIT_GetSharedNonGCStaticBase_Helper
+    ; Tail call JIT_GetDynamicNonGCStaticBase_Portable
+    b JIT_GetDynamicNonGCStaticBase_Portable
     LEAF_END
 
+; void* JIT_GetDynamicGCStaticBase(DynamicStaticsInfo *dynamicInfo)
 
-; ------------------------------------------------------------------
-; void* JIT_GetSharedNonGCStaticBaseNoCtor(SIZE_T moduleDomainID, DWORD dwClassDomainID)
-
-    LEAF_ENTRY JIT_GetSharedNonGCStaticBaseNoCtor_SingleAppDomain
-    ret lr
-    LEAF_END
-
-
-; ------------------------------------------------------------------
-; void* JIT_GetSharedGCStaticBase(SIZE_T moduleDomainID, DWORD dwClassDomainID)
-
-    LEAF_ENTRY JIT_GetSharedGCStaticBase_SingleAppDomain
+    LEAF_ENTRY JIT_GetDynamicGCStaticBase_SingleAppDomain
     ; If class is not initialized, bail to C++ helper
-    add x2, x0, #DomainLocalModule__m_pDataBlob
-    ldrb w2, [x2, w1]
-    tst w2, #1
-    beq CallHelper2
-
-    ldr x0, [x0, #DomainLocalModule__m_pGCStatics]
+    ldr x1, [x0, #OFFSETOF__DynamicStaticsInfo__m_pGCStatics]
+    tbnz x1, #0, CallHelper2
+    mov x0, x1
     ret lr
 
 CallHelper2
-    ; Tail call Jit_GetSharedGCStaticBase_Helper
-    b JIT_GetSharedGCStaticBase_Helper
+    ; Tail call JIT_GetDynamicGCStaticBase_Portable
+    b JIT_GetDynamicGCStaticBase_Portable
     LEAF_END
-
-
-; ------------------------------------------------------------------
-; void* JIT_GetSharedGCStaticBaseNoCtor(SIZE_T moduleDomainID, DWORD dwClassDomainID)
-
-    LEAF_ENTRY JIT_GetSharedGCStaticBaseNoCtor_SingleAppDomain
-    ldr x0, [x0, #DomainLocalModule__m_pGCStatics]
-    ret lr
-    LEAF_END
-
 
 ; ------------------------------------------------------------------
 ; __declspec(naked) void F_CALL_CONV JIT_WriteBarrier_Callable(Object **dst, Object* val)
@@ -1391,6 +1155,40 @@ __HelperNakedFuncName SETS "$helper":CC:"Naked"
     LEAF_ENTRY  JIT_DispatchIndirectCall
         br x9
     LEAF_END
+
+#ifdef FEATURE_SPECIAL_USER_MODE_APC
+
+    IMPORT |?ApcActivationCallback@Thread@@CAX_K@Z|
+
+    ; extern "C" void NTAPI ApcActivationCallbackStub(ULONG_PTR Parameter);
+    NESTED_ENTRY ApcActivationCallbackStub
+
+        PROLOG_SAVE_REG_PAIR    fp, lr, #-16!
+        PROLOG_STACK_ALLOC      16                ; stack slot for CONTEXT* and padding
+
+        ;REDIRECTSTUB_SP_OFFSET_CONTEXT is defined in asmconstants.h and is used in GetCONTEXTFromRedirectedStubStackFrame
+        ;If CONTEXT is not saved at 0 offset from SP it must be changed as well.
+        ASSERT REDIRECTSTUB_SP_OFFSET_CONTEXT == 0
+
+        ; Save a copy of the redirect CONTEXT*.
+        ; This is needed for the debugger to unwind the stack.
+        ldr x17, [x0, OFFSETOF__APC_CALLBACK_DATA__ContextRecord]
+        str x17, [sp]
+
+        bl |?ApcActivationCallback@Thread@@CAX_K@Z|
+
+        EPILOG_STACK_FREE       16                ; undo stack slot for CONTEXT* and padding
+        EPILOG_RESTORE_REG_PAIR fp, lr, #16!
+        EPILOG_RETURN
+
+; Put a label here to tell the debugger where the end of this function is.
+    PATCH_LABEL ApcActivationCallbackStubEnd
+    EXPORT ApcActivationCallbackStubEnd
+
+    NESTED_END
+
+#endif ; FEATURE_SPECIAL_USER_MODE_APC
+
 
 ; Must be at very end of file
     END

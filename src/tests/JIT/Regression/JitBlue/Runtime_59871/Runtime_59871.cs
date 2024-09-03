@@ -8,10 +8,9 @@ public class Runtime_59871
     Union _field;
 
     [Fact]
-    public static int TestEntryPoint()
+    public static void TestEntryPoint()
     {
         Foo(new Runtime_59871());
-        return 100;
     }
 
     static DateTime Foo(Runtime_59871 p)

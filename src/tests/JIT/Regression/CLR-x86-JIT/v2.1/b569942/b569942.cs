@@ -5,10 +5,9 @@ using Xunit;
 public class TEST
 {
     [Fact]
-    public static int TestEntryPoint()
+    public static void TestEntryPoint()
     {
         Test();
-        return 100;
     }
     internal static void Test()
     {

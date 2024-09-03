@@ -61,12 +61,6 @@ internal sealed class BrowserHost
                 envVars[kvp.Key] = kvp.Value;
         }
 
-        foreach (DictionaryEntry de in Environment.GetEnvironmentVariables())
-        {
-            if (de.Key is not null && de.Value is not null)
-                envVars[(string)de.Key] = (string)de.Value;
-        }
-
         var runArgsJson = new RunArgumentsJson(applicationArguments: _args.AppArgs,
                                                runtimeArguments: _args.CommonConfig.RuntimeArguments,
                                                environmentVariables: envVars,
@@ -74,7 +68,7 @@ internal sealed class BrowserHost
                                                debugging: _args.CommonConfig.Debugging);
         runArgsJson.Save(Path.Combine(_args.CommonConfig.AppPath, "runArgs.json"));
 
-        string[] urls = envVars.TryGetValue("ASPNETCORE_URLS", out string? aspnetUrls)
+        string[] urls = (envVars.TryGetValue("ASPNETCORE_URLS", out string? aspnetUrls) && aspnetUrls.Length > 0)
                             ? aspnetUrls.Split(';', StringSplitOptions.RemoveEmptyEntries)
                             : new string[] { $"http://127.0.0.1:{_args.CommonConfig.HostProperties.WebServerPort}", "https://127.0.0.1:0" };
 
@@ -141,20 +135,21 @@ internal sealed class BrowserHost
             // If we have main assembly name, try to find static web assets manifest by precise name.
 
             var mainAssemblyPath = Path.Combine(appPath, args.CommonConfig.HostProperties.MainAssembly);
+            var endpointsManifest = Path.ChangeExtension(mainAssemblyPath, ".staticwebassets.endpoints.json");
             var staticWebAssetsPath = Path.ChangeExtension(mainAssemblyPath, staticWebAssetsV2Extension);
             if (File.Exists(staticWebAssetsPath))
             {
-                devServerOptions = CreateDevServerOptions(urls, staticWebAssetsPath, onConsoleConnected);
+                devServerOptions = CreateDevServerOptions(urls, staticWebAssetsPath, endpointsManifest, onConsoleConnected);
             }
             else
             {
                 staticWebAssetsPath = Path.ChangeExtension(mainAssemblyPath, staticWebAssetsV1Extension);
                 if (File.Exists(staticWebAssetsPath))
-                    devServerOptions = CreateDevServerOptions(urls, staticWebAssetsPath, onConsoleConnected);
+                    devServerOptions = CreateDevServerOptions(urls, staticWebAssetsPath, endpointsManifest, onConsoleConnected);
             }
 
             if (devServerOptions == null)
-                devServerOptions = CreateDevServerOptions(urls, mainAssemblyPath, onConsoleConnected);
+                devServerOptions = CreateDevServerOptions(urls, mainAssemblyPath, endpointsManifest, onConsoleConnected);
         }
         else
         {
@@ -163,27 +158,30 @@ internal sealed class BrowserHost
             var staticWebAssetsPath = FindFirstFileWithExtension(appPath, staticWebAssetsV2Extension)
                 ?? FindFirstFileWithExtension(appPath, staticWebAssetsV1Extension);
 
+            var endpointsManifest = FindFirstFileWithExtension(appPath, ".staticwebassets.endpoints.json");
+
             if (staticWebAssetsPath != null)
-                devServerOptions = CreateDevServerOptions(urls, staticWebAssetsPath, onConsoleConnected);
+                devServerOptions = CreateDevServerOptions(urls, staticWebAssetsPath, endpointsManifest, onConsoleConnected);
 
             if (devServerOptions == null)
-                throw new CommandLineException("Please, provide mainAssembly in hostProperties of runtimeconfig");
+                throw new CommandLineException($"Please, provide mainAssembly in hostProperties of runtimeconfig. Alternatively leave the static web assets manifest ('*{staticWebAssetsV2Extension}') in the build output directory '{appPath}' .");
         }
 
         return devServerOptions;
     }
 
-    private static DevServerOptions CreateDevServerOptions(string[] urls, string staticWebAssetsPath, Func<WebSocket, Task>? onConsoleConnected) => new
+    private static DevServerOptions CreateDevServerOptions(string[] urls, string staticWebAssetsPath, string? endpointsManifest, Func<WebSocket, Task>? onConsoleConnected) => new
     (
         OnConsoleConnected: onConsoleConnected,
         StaticWebAssetsPath: staticWebAssetsPath,
+        StaticWebAssetsEndpointsPath: endpointsManifest,
         WebServerUseCors: true,
         WebServerUseCrossOriginPolicy: true,
         Urls: urls
     );
 
     private static string? FindFirstFileWithExtension(string directory, string extension)
-        => Directory.EnumerateFiles(directory, "*" + extension).First();
+        => Directory.EnumerateFiles(directory, "*" + extension).FirstOrDefault();
 
     private async Task RunConsoleMessagesPump(WebSocket socket, WasmTestMessagesProcessor messagesProcessor, CancellationToken token)
     {

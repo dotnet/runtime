@@ -9,10 +9,9 @@ namespace VectorMathTests
     public class Program
     {
         [Fact]
-        public static int TestEntryPoint()
+        public static void TestEntryPoint()
         {
             int Count = System.Numerics.Vector<int>.Count;
-            return 100;
         }
     }
 }

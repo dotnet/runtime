@@ -18,13 +18,14 @@ namespace System.Reflection
         {
             if (LocalAppContextSwitches.ForceInterpretedInvoke && !LocalAppContextSwitches.ForceEmitInvoke)
             {
-                // Always use the native invoke; useful for testing.
-                strategy = InvokerStrategy.StrategyDetermined_Obj4Args | InvokerStrategy.StrategyDetermined_ObjSpanArgs | InvokerStrategy.StrategyDetermined_RefArgs;
+                // Always use the native interpreted invoke.
+                // Useful for testing, to avoid startup overhead of emit, or for calling a ctor on already initialized object.
+                strategy = GetStrategyForUsingInterpreted();
             }
             else if (LocalAppContextSwitches.ForceEmitInvoke && !LocalAppContextSwitches.ForceInterpretedInvoke)
             {
                 // Always use emit invoke (if IsDynamicCodeSupported == true); useful for testing.
-                strategy = InvokerStrategy.HasBeenInvoked_Obj4Args | InvokerStrategy.HasBeenInvoked_ObjSpanArgs | InvokerStrategy.HasBeenInvoked_RefArgs;
+                strategy = GetStrategyForUsingEmit();
             }
             else
             {
@@ -57,7 +58,7 @@ namespace System.Reflection
                 {
                     invokerFlags[i] |= InvokerArgFlags.IsValueType;
                 }
-                else if (RuntimeTypeHandle.IsValueType(type))
+                else if (type.IsActualValueType)
                 {
                     invokerFlags[i] |= InvokerArgFlags.IsValueType | InvokerArgFlags.IsValueType_ByRef_Or_Pointer;
 
@@ -67,6 +68,18 @@ namespace System.Reflection
                     }
                 }
             }
+        }
+
+        internal static InvokerStrategy GetStrategyForUsingInterpreted()
+        {
+            // This causes the default strategy, which is interpreted, to always be used.
+            return InvokerStrategy.StrategyDetermined_Obj4Args | InvokerStrategy.StrategyDetermined_ObjSpanArgs | InvokerStrategy.StrategyDetermined_RefArgs;
+        }
+
+        private static InvokerStrategy GetStrategyForUsingEmit()
+        {
+            // This causes the emit strategy, if supported, to be used on the first call as well as subsequent calls.
+            return InvokerStrategy.HasBeenInvoked_Obj4Args | InvokerStrategy.HasBeenInvoked_ObjSpanArgs | InvokerStrategy.HasBeenInvoked_RefArgs;
         }
 
         /// <summary>
@@ -83,7 +96,7 @@ namespace System.Reflection
 
             if (!method.DeclaringType!.IsInstanceOfType(target))
             {
-                throw new TargetException(SR.RFLCT_Targ_ITargMismatch);
+                throw new TargetException(SR.Format(SR.RFLCT_Targ_ITargMismatch_WithType, method.DeclaringType, target.GetType()));
             }
         }
 
@@ -100,9 +113,10 @@ namespace System.Reflection
                 // If ByRefs are used, we can't use this strategy.
                 strategy |= InvokerStrategy.StrategyDetermined_ObjSpanArgs;
             }
-            else if ((strategy & InvokerStrategy.HasBeenInvoked_ObjSpanArgs) == 0)
+            else if (((strategy & InvokerStrategy.HasBeenInvoked_ObjSpanArgs) == 0) && !Debugger.IsAttached)
             {
-                // The first time, ignoring race conditions, use the slow path.
+                // The first time, ignoring race conditions, use the slow path, except for the case when running under a debugger.
+                // This is a workaround for the debugger issues with understanding exceptions propagation over the slow path.
                 strategy |= InvokerStrategy.HasBeenInvoked_ObjSpanArgs;
             }
             else
@@ -128,9 +142,10 @@ namespace System.Reflection
                 // If ByRefs are used, we can't use this strategy.
                 strategy |= InvokerStrategy.StrategyDetermined_Obj4Args;
             }
-            else if ((strategy & InvokerStrategy.HasBeenInvoked_Obj4Args) == 0)
+            else if (((strategy & InvokerStrategy.HasBeenInvoked_Obj4Args) == 0) && !Debugger.IsAttached)
             {
-                // The first time, ignoring race conditions, use the slow path.
+                // The first time, ignoring race conditions, use the slow path, except for the case when running under a debugger.
+                // This is a workaround for the debugger issues with understanding exceptions propagation over the slow path.
                 strategy |= InvokerStrategy.HasBeenInvoked_Obj4Args;
             }
             else
@@ -150,9 +165,10 @@ namespace System.Reflection
             MethodBase method,
             bool backwardsCompat)
         {
-            if ((strategy & InvokerStrategy.HasBeenInvoked_RefArgs) == 0)
+            if (((strategy & InvokerStrategy.HasBeenInvoked_RefArgs) == 0) && !Debugger.IsAttached)
             {
-                // The first time, ignoring race conditions, use the slow path.
+                // The first time, ignoring race conditions, use the slow path, except for the case when running under a debugger.
+                // This is a workaround for the debugger issues with understanding exceptions propagation over the slow path.
                 strategy |= InvokerStrategy.HasBeenInvoked_RefArgs;
             }
             else

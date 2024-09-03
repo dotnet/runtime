@@ -527,7 +527,7 @@ namespace System.Text.Json.Serialization.Tests
             InvalidOperationException ex = await Assert.ThrowsAsync<InvalidOperationException>(async () =>
                 await Serializer.DeserializeWrapper<ClassWithExtensionData<JsonObject>>(@"{""TestKey"":""TestValue""}", options));
 
-            Assert.Contains("JsonObject", ex.ToString());
+            Assert.Contains("JsonObject", ex.Message);
         }
 
         [Theory]
@@ -1111,7 +1111,7 @@ namespace System.Text.Json.Serialization.Tests
             [JsonExtensionData]
             public Dictionary<string, object> MyOverflow { get; set; }
 
-            public Dictionary<string, object> ActualDictionary { get; set; }
+            public Dictionary<string, object>? ActualDictionary { get; set; }
         }
 
         [Fact]
@@ -1303,7 +1303,7 @@ namespace System.Text.Json.Serialization.Tests
             InvalidOperationException ex = await Assert.ThrowsAsync<InvalidOperationException>(async () =>
                 await Serializer.DeserializeWrapper<ClassWithExtensionPropertyAsJsonObject>(Json, options));
 
-            Assert.Contains("JsonObject", ex.ToString());
+            Assert.Contains("JsonObject", ex.Message);
         }
 
         public class JsonObjectConverter : JsonConverter<JsonObject>

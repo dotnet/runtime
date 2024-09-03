@@ -3,7 +3,9 @@
 
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
+using System.Text;
 #if BUILDING_SOURCE_GENERATOR_TESTS
 using Microsoft.Extensions.Configuration;
 #endif
@@ -286,7 +288,7 @@ namespace Microsoft.Extensions
             var config = configurationBuilder.Build();
 
             var options = new Dictionary<T, string>();
-#pragma warning disable SYSLIB1104 
+#pragma warning disable SYSLIB1104
             config.GetSection("IntegerKeyDictionary").Bind(options);
 #pragma warning restore SYSLIB1104
 
@@ -721,6 +723,40 @@ namespace Microsoft.Extensions
             Assert.Equal(1, options.ObjectDictionary["abc"].Integer);
             Assert.Equal(2, options.ObjectDictionary["def"].Integer);
             Assert.Equal(3, options.ObjectDictionary["ghi"].Integer);
+        }
+
+        [Fact]
+        public void ObjectDictionaryWithHardcodedElements()
+        {
+            var input = new Dictionary<string, string>
+            {
+                {"ObjectDictionary:abc:Integer", "1"},
+                {"ObjectDictionary:def", null },
+                {"ObjectDictionary:ghi", null }
+            };
+
+            var configurationBuilder = new ConfigurationBuilder();
+            configurationBuilder.AddInMemoryCollection(input);
+            var config = configurationBuilder.Build();
+
+            var options = new OptionsWithDictionary();
+            options.ObjectDictionary = new()
+            {
+                {"abc", new(){ Integer = 42}},
+                {"def", new(){ Integer = 42}},
+            };
+
+            Assert.Equal(2, options.ObjectDictionary.Count);
+            Assert.Equal(42, options.ObjectDictionary["abc"].Integer);
+            Assert.Equal(42, options.ObjectDictionary["def"].Integer);
+
+            config.Bind(options);
+
+            Assert.Equal(3, options.ObjectDictionary.Count);
+
+            Assert.Equal(1, options.ObjectDictionary["abc"].Integer);
+            Assert.Equal(42, options.ObjectDictionary["def"].Integer);
+            Assert.Equal(0, options.ObjectDictionary["ghi"].Integer);
         }
 
         [Fact]
@@ -1496,7 +1532,7 @@ namespace Microsoft.Extensions
             Assert.Equal("Yo2", options.ISetNoSetter.ElementAt(1));
         }
 
-#if NETCOREAPP
+#if NET
         [Fact]
         public void CanBindInstantiatedIReadOnlySet()
         {
@@ -2255,7 +2291,7 @@ namespace Microsoft.Extensions
             Assert.True(3 == options.UnInstantiatedISet.Count(), $"UnInstantiatedISet count is {options.UnInstantiatedISet.Count()} .. {options.UnInstantiatedISet.ElementAt(options.UnInstantiatedISet.Count() - 1)}");
             Assert.Equal(new string[] { "a", "A", "B" }, options.UnInstantiatedISet);
 
-#if NETCOREAPP
+#if NET
             Assert.True(3 == options.InstantiatedIReadOnlySet.Count(), $"InstantiatedIReadOnlySet count is {options.InstantiatedIReadOnlySet.Count()} .. {options.InstantiatedIReadOnlySet.ElementAt(options.InstantiatedIReadOnlySet.Count() - 1)}");
             Assert.Equal(new string[] { "a", "b", "Z" }, options.InstantiatedIReadOnlySet);
             Assert.False(options.IsSameInstantiatedIReadOnlySet());
@@ -2296,6 +2332,117 @@ namespace Microsoft.Extensions
             Assert.Equal(2, dict["Key"].Length);
             Assert.Equal("InitialValue", dict["Key"][0]);
             Assert.Equal("NewValue", dict["Key"][1]);
+        }
+
+        [Fact]
+        public void TestCollectionWithNullOrEmptyItems()
+        {
+            string json = @"
+                {
+                    ""CollectionContainer"": [
+                    {
+                        ""Elements"":
+                        {
+                            ""Typdde"": ""UserCredentials"",
+                            ""foo"": ""00"",
+                            ""111"": """",
+                            ""BaseUrl"": ""cccccc"",
+                            ""Valid"": {
+                                ""Type"": ""System.Boolean""
+                            },
+                        }
+                    }
+                    ]
+                }
+            ";
+
+            var builder = new ConfigurationBuilder();
+            Stream stream = new MemoryStream(Encoding.UTF8.GetBytes(json));
+            builder.AddJsonStream(stream);
+            IConfigurationRoot config = builder.Build();
+
+            List<CollectionContainer> result = config.GetSection("CollectionContainer").Get<List<CollectionContainer>>();
+            Assert.Equal(1, result.Count);
+            Assert.Equal(2, result[0].Elements.Count);
+            Assert.Null(result[0].Elements[0].Type);
+            Assert.Equal("System.Boolean", result[0].Elements[1].Type);
+        }
+
+        [Fact]
+        public void TestStringValues()
+        {
+            // StringValues is a struct that implements IList<string> -- though it doesn't actually support Add
+
+            var dic = new Dictionary<string, string>
+            {
+                {"StringValues:0", "Yo1"},
+                {"StringValues:1", "Yo2"},
+            };
+            var configurationBuilder = new ConfigurationBuilder();
+            configurationBuilder.AddInMemoryCollection(dic);
+
+            var config = configurationBuilder.Build();
+
+            var options = new OptionsWithStructs();
+
+#if BUILDING_SOURCE_GENERATOR_TESTS
+            Assert.Throws<NotSupportedException>(() => config.Bind(options));
+#else
+            Assert.Throws<InvalidOperationException>(() => config.Bind(options, (bo) => bo.ErrorOnUnknownConfiguration = true));
+#endif
+        }
+
+        [Fact]
+        public void TestOptionsWithStructs()
+        {
+            var dic = new Dictionary<string, string>
+            {
+                {"CollectionStructExplicit:0", "cs1"},
+                {"CollectionStructExplicit:1", "cs2"},
+                {"DictionaryStructExplicit:k0", "ds1"},
+                {"DictionaryStructExplicit:k1", "ds2"},
+            };
+            var configurationBuilder = new ConfigurationBuilder();
+            configurationBuilder.AddInMemoryCollection(dic);
+
+            var config = configurationBuilder.Build();
+
+            var options = new OptionsWithStructs();
+            config.Bind(options);
+
+            ICollection<string> collection = options.CollectionStructExplicit;
+            Assert.Equal(2, collection.Count);
+            Assert.Equal(collection, ["cs1", "cs2"]);
+
+            IDictionary<string, string> dictionary = options.DictionaryStructExplicit;
+            Assert.Equal(2, dictionary.Count);
+            Assert.Equal("ds1", dictionary["k0"]);
+            Assert.Equal("ds2", dictionary["k1"]);
+        }
+
+        [Fact]
+        public void TestOptionsWithUnsupportedStructs()
+        {
+            var dic = new Dictionary<string, string>
+            {
+                {"ReadOnlyCollectionStructExplicit:0", "cs1"},
+                {"ReadOnlyCollectionStructExplicit:1", "cs2"},
+                {"ReadOnlyDictionaryStructExplicit:k0", "ds1"},
+                {"ReadOnlyDictionaryStructExplicit:k1", "ds2"},
+            };
+            var configurationBuilder = new ConfigurationBuilder();
+            configurationBuilder.AddInMemoryCollection(dic);
+
+            var config = configurationBuilder.Build();
+
+            var options = new OptionsWithUnsupportedStructs();
+            config.Bind(options);
+
+            IReadOnlyCollection<string> collection = options.ReadOnlyCollectionStructExplicit;
+            Assert.Equal(0, collection.Count);
+
+            IReadOnlyDictionary<string, string> dictionary = options.ReadOnlyDictionaryStructExplicit;
+            Assert.Equal(0, dictionary.Count);
         }
 
         // Test behavior for root level arrays.

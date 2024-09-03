@@ -40,7 +40,7 @@ namespace System.Reflection.Runtime.BindingFlagSupport
             #endregion
 
             #region ArgumentTypes
-            ParameterInfo[] parameterInfos = methodBase.GetParametersNoCopy();
+            ReadOnlySpan<ParameterInfo> parameterInfos = methodBase.GetParametersAsSpan();
 
             if (argumentTypes.Length != parameterInfos.Length)
             {
@@ -157,7 +157,7 @@ namespace System.Reflection.Runtime.BindingFlagSupport
             }
             string name = member.Name;
             Type type = member.DeclaringType!;
-            for (;;)
+            for (; ; )
             {
                 Type? baseType = type.BaseType;
                 if (baseType == null)

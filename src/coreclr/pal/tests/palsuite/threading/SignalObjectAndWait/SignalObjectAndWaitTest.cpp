@@ -399,8 +399,8 @@ PALTEST(threading_SignalObjectAndWait_paltest_signalobjectandwaittest, "threadin
         printf(
             "SignalObjectAndWaitTest - Assertion failure (line %d, signalable object type %d, waitable object type %d, wait result 0x%x, error code %u): '%s'\n",
             ex.lineNumber,
-            ex.signalableObjectType,
-            ex.waitableObjectType,
+            (int)ex.signalableObjectType,
+            (int)ex.waitableObjectType,
             ex.waitResult,
             ex.errorCode,
             ex.expression);

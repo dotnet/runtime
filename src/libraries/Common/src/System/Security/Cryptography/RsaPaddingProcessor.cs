@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Buffers;
 using System.Buffers.Binary;
 using System.Collections.Concurrent;
 using System.Diagnostics;
@@ -10,62 +11,62 @@ namespace System.Security.Cryptography
     internal static class RsaPaddingProcessor
     {
         // DigestInfo header values taken from https://tools.ietf.org/html/rfc3447#section-9.2, Note 1.
-        private static ReadOnlySpan<byte> DigestInfoMD5 => new byte[]
-            {
+        private static ReadOnlySpan<byte> DigestInfoMD5 =>
+            [
                 0x30, 0x20, 0x30, 0x0C, 0x06, 0x08, 0x2A, 0x86,
                 0x48, 0x86, 0xF7, 0x0D, 0x02, 0x05, 0x05, 0x00,
                 0x04, 0x10,
-            };
+            ];
 
-        private static ReadOnlySpan<byte> DigestInfoSha1 => new byte[]
-            {
+        private static ReadOnlySpan<byte> DigestInfoSha1 =>
+            [
                 0x30, 0x21, 0x30, 0x09, 0x06, 0x05, 0x2B, 0x0E, 0x03,
                 0x02, 0x1A, 0x05, 0x00, 0x04, 0x14,
-            };
+            ];
 
-        private static ReadOnlySpan<byte> DigestInfoSha256 => new byte[]
-            {
+        private static ReadOnlySpan<byte> DigestInfoSha256 =>
+            [
                 0x30, 0x31, 0x30, 0x0D, 0x06, 0x09, 0x60, 0x86, 0x48,
                 0x01, 0x65, 0x03, 0x04, 0x02, 0x01, 0x05, 0x00, 0x04,
                 0x20,
-            };
+            ];
 
-        private static ReadOnlySpan<byte> DigestInfoSha384 => new byte[]
-            {
+        private static ReadOnlySpan<byte> DigestInfoSha384 =>
+            [
                 0x30, 0x41, 0x30, 0x0D, 0x06, 0x09, 0x60, 0x86, 0x48,
                 0x01, 0x65, 0x03, 0x04, 0x02, 0x02, 0x05, 0x00, 0x04,
                 0x30,
-            };
+            ];
 
-        private static ReadOnlySpan<byte> DigestInfoSha512 => new byte[]
-            {
+        private static ReadOnlySpan<byte> DigestInfoSha512 =>
+            [
                 0x30, 0x51, 0x30, 0x0D, 0x06, 0x09, 0x60, 0x86, 0x48,
                 0x01, 0x65, 0x03, 0x04, 0x02, 0x03, 0x05, 0x00, 0x04,
                 0x40,
-            };
+            ];
 
-        private static ReadOnlySpan<byte> DigestInfoSha3_256 => new byte[]
-            {
+        private static ReadOnlySpan<byte> DigestInfoSha3_256 =>
+            [
                 0x30, 0x31, 0x30, 0x0D, 0x06, 0x09, 0x60, 0x86, 0x48,
                 0x01, 0x65, 0x03, 0x04, 0x02, 0x08, 0x05, 0x00, 0x04,
                 0x20,
-            };
+            ];
 
-        private static ReadOnlySpan<byte> DigestInfoSha3_384 => new byte[]
-            {
+        private static ReadOnlySpan<byte> DigestInfoSha3_384 =>
+            [
                 0x30, 0x41, 0x30, 0x0D, 0x06, 0x09, 0x60, 0x86, 0x48,
                 0x01, 0x65, 0x03, 0x04, 0x02, 0x09, 0x05, 0x00, 0x04,
                 0x30,
-            };
+            ];
 
-        private static ReadOnlySpan<byte> DigestInfoSha3_512 => new byte[]
-            {
+        private static ReadOnlySpan<byte> DigestInfoSha3_512 =>
+            [
                 0x30, 0x51, 0x30, 0x0D, 0x06, 0x09, 0x60, 0x86, 0x48,
                 0x01, 0x65, 0x03, 0x04, 0x02, 0x0A, 0x05, 0x00, 0x04,
                 0x40,
-            };
+            ];
 
-        private static ReadOnlySpan<byte> EightZeros => new byte[8];
+        private static ReadOnlySpan<byte> EightZeros => [0, 0, 0, 0, 0, 0, 0, 0];
 
         private static ReadOnlySpan<byte> GetDigestInfoForAlgorithm(
             HashAlgorithmName hashAlgorithmName,
@@ -140,6 +141,109 @@ namespace System.Security.Cryptography
             RandomNumberGeneratorImplementation.FillNonZeroBytes(ps);
 
             source.CopyTo(mInEM);
+        }
+
+        internal static OperationStatus DepadPkcs1Encryption(
+            ReadOnlySpan<byte> source,
+            Span<byte> destination,
+            out int bytesWritten)
+        {
+            int primitive = DepadPkcs1Encryption(source);
+            int primitiveSign = SignStretch(primitive);
+
+            // Primitive is a positive length, or ~length to indicate
+            // an error, so flip ~length to length if the high bit is set.
+            int len = Choose(primitiveSign, ~primitive, primitive);
+            int spaceRemain = destination.Length - len;
+            int spaceRemainSign = SignStretch(spaceRemain);
+
+            // len = clampHigh(len, destination.Length);
+            len = Choose(spaceRemainSign, destination.Length, len);
+
+            // ret = spaceRemain < 0 ? DestinationTooSmall : Done
+            int ret = Choose(
+                spaceRemainSign,
+                (int)OperationStatus.DestinationTooSmall,
+                (int)OperationStatus.Done);
+
+            // ret = primitive < 0 ? InvalidData : ret;
+            ret = Choose(primitiveSign, (int)OperationStatus.InvalidData, ret);
+
+            // Write some number of bytes, regardless of the final return.
+            source[^len..].CopyTo(destination);
+
+            // bytesWritten = ret == Done ? len : 0;
+            bytesWritten = Choose(CheckZero(ret), len, 0);
+            return (OperationStatus)ret;
+        }
+
+        private static int DepadPkcs1Encryption(ReadOnlySpan<byte> source)
+        {
+            Debug.Assert(source.Length > 11);
+            ReadOnlySpan<byte> afterPadding = source.Slice(10);
+            ReadOnlySpan<byte> noZeros = source.Slice(2, 8);
+
+            // Find the first zero in noZeros, or -1 for no zeros.
+            int zeroPos = BlindFindFirstZero(noZeros);
+
+            // If zeroPos is negative, valid is -1, otherwise 0.
+            int valid = SignStretch(zeroPos);
+
+            // If there are no zeros in afterPadding then zeroPos is negative,
+            // so negating the sign stretch is 0, which makes hasPos 0.
+            // If there -was- a zero, sign stretching is 0, so negating it makes hasPos -1.
+            zeroPos = BlindFindFirstZero(afterPadding);
+            int hasLen = ~SignStretch(zeroPos);
+            valid &= hasLen;
+
+            // Check that the first two bytes are { 00 02 }
+            valid &= CheckZero(source[0] | (source[1] ^ 0x02));
+
+            int lenIfGood = afterPadding.Length - zeroPos - 1;
+            // If there were no zeros, use the full after-min-padding segment.
+            int lenIfBad = ~Choose(hasLen, lenIfGood, source.Length - 11);
+
+            Debug.Assert(lenIfBad < 0);
+            return Choose(valid, lenIfGood, lenIfBad);
+        }
+
+        private static int BlindFindFirstZero(ReadOnlySpan<byte> source)
+        {
+            // Any vectorization of this routine needs to use non-early termination,
+            // and instructions that do not vary their completion time on the input.
+
+            int pos = -1;
+
+            for (int i = source.Length - 1; i >= 0; i--)
+            {
+                // pos = source[i] == 0 ? i : pos;
+                int local = CheckZero(source[i]);
+                pos = Choose(local, i, pos);
+            }
+
+            return pos;
+        }
+
+        private static int SignStretch(int value)
+        {
+            return value >> 31;
+        }
+
+        private static int Choose(int selector, int yes, int no)
+        {
+            Debug.Assert((selector | (selector - 1)) == -1);
+            return (selector & yes) | (~selector & no);
+        }
+
+        private static int CheckZero(int value)
+        {
+            // For zero, ~value and value-1 are both all bits set (negative).
+            // For positive values, ~value is negative and value-1 is positive.
+            // For negative values except MinValue, ~value is positive and value-1 is negative.
+            // For MinValue, ~value is positive and value-1 is also positive.
+            // All together, the only thing that has negative & negative is 0, so stretch the sign bit.
+            int mask = ~value & (value - 1);
+            return SignStretch(mask);
         }
 
         internal static void PadPkcs1Signature(

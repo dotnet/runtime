@@ -7,6 +7,7 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using ILLink.Shared;
+using ILLink.Shared.DataFlow;
 using Mono.Cecil;
 using Mono.Cecil.Cil;
 
@@ -53,7 +54,7 @@ namespace Mono.Linker.Dataflow
 			}
 		}
 
-		public static bool IsHoistedLocal (FieldDefinition field)
+		public static bool IsHoistedLocal (FieldReference field)
 		{
 			if (CompilerGeneratedNames.IsLambdaDisplayClass (field.DeclaringType.Name))
 				return true;
@@ -180,7 +181,8 @@ namespace Mono.Linker.Dataflow
 
 						case OperandType.InlineField: {
 								// Same as above, but stsfld instead of a call to the constructor
-								if (instruction.OpCode.Code is not Code.Stsfld)
+								// Ldsfld may also trigger a cctor that creates a closure environment
+								if (instruction.OpCode.Code is not (Code.Stsfld or Code.Ldsfld))
 									continue;
 
 								FieldDefinition? field = _context.TryResolve ((FieldReference) instruction.Operand);
@@ -390,7 +392,8 @@ namespace Mono.Linker.Dataflow
 							handled = true;
 						}
 						break;
-					case Code.Stsfld: {
+					case Code.Stsfld:
+					case Code.Ldsfld: {
 							if (instr.Operand is FieldReference { DeclaringType: GenericInstanceType typeRef }
 								&& compilerGeneratedType == context.TryResolve (typeRef)) {
 								return typeRef;

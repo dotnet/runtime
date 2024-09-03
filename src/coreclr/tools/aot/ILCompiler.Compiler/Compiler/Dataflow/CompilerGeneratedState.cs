@@ -9,6 +9,7 @@ using System.Linq;
 using System.Reflection.Metadata;
 using ILCompiler.Logging;
 using ILLink.Shared;
+using ILLink.Shared.DataFlow;
 using Internal.IL;
 using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
@@ -158,8 +159,10 @@ namespace ILCompiler.Dataflow
                                     break;
 
                                 case ILOpcode.stsfld:
+                                case ILOpcode.ldsfld:
                                     {
                                         // Same as above, but stsfld instead of a call to the constructor
+                                        // Ldsfld may also trigger a cctor that creates a closure environment
                                         FieldDesc? field = methodBody.GetObject(reader.ReadILToken()) as FieldDesc;
                                         if (field == null)
                                             continue;
@@ -375,7 +378,7 @@ namespace ILCompiler.Dataflow
                                     }
                                     else
                                     {
-                                        Debug.Assert(false, "This should be impossible in valid code");
+                                        Debug.Fail("This should be impossible in valid code");
                                     }
                                 }
                             }
@@ -417,6 +420,7 @@ namespace ILCompiler.Dataflow
                                 break;
 
                             case ILOpcode.stsfld:
+                            case ILOpcode.ldsfld:
                                 {
                                     if (body.GetObject(reader.ReadILToken()) is FieldDesc { OwningType: MetadataType owningType }
                                         && compilerGeneratedType == owningType.GetTypeDefinition())

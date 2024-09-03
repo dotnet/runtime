@@ -7,8 +7,9 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
+using Xunit;
 
-internal class Program
+public class Program
 {
     public static int CompareDLLs(string folder1, string folder2)
     {
@@ -93,7 +94,7 @@ internal class Program
             Directory.Delete(outDir, true);
         }
         Directory.CreateDirectory(outDir);
-        ProcessStartInfo processStartInfo = new ProcessStartInfo(coreRunPath, $"{superIlcPath} compile-directory -cr {coreRootPath} -in {compilationInputFolder} --nojit --noexe --large-bubble --release --nocleanup -out {outDir}");
+        ProcessStartInfo processStartInfo = new ProcessStartInfo(coreRunPath, $"{superIlcPath} compile-directory -cr {coreRootPath} -in {compilationInputFolder} --nojit --noexe --large-bubble --release --nocleanup -ct 30 -out {outDir}");
         var process = Process.Start(processStartInfo);
         process.WaitForExit();
         if (process.ExitCode != 0)
@@ -103,7 +104,8 @@ internal class Program
         return 0 == process.ExitCode;
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         string coreRootPath = Environment.GetEnvironmentVariable("CORE_ROOT");
         string compilationInputFolder = "TestAssemblies";

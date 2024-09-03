@@ -34,7 +34,7 @@ namespace ILCompiler.DependencyAnalysis
 
         public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
-            sb.Append(nameMangler.CompilationUnitPrefix).Append("_stacktrace_methodRVA_to_token_mapping");
+            sb.Append(nameMangler.CompilationUnitPrefix).Append("_stacktrace_methodRVA_to_token_mapping"u8);
         }
 
         protected override string GetName(NodeFactory factory) => this.GetMangledName(factory.NameMangler);
@@ -121,6 +121,12 @@ namespace ILCompiler.DependencyAnalysis
                         command |= StackTraceDataCommand.UpdateSignature;
                     }
                 }
+
+                if (entry.IsHidden)
+                {
+                    command |= StackTraceDataCommand.IsStackTraceHidden;
+                }
+
                 objData.EmitByte(commandReservation, command);
                 objData.EmitReloc(factory.MethodEntrypoint(entry.Method), RelocType.IMAGE_REL_BASED_RELPTR32);
             }

@@ -15,6 +15,30 @@
 #define USE_REDIRECT_FOR_GCSTRESS
 #endif // TARGET_UNIX
 
+#define ENUM_CALLEE_SAVED_REGISTERS() \
+    CALLEE_SAVED_REGISTER(Fp) \
+    CALLEE_SAVED_REGISTER(Ra) \
+    CALLEE_SAVED_REGISTER(S0) \
+    CALLEE_SAVED_REGISTER(S1) \
+    CALLEE_SAVED_REGISTER(S2) \
+    CALLEE_SAVED_REGISTER(S3) \
+    CALLEE_SAVED_REGISTER(S4) \
+    CALLEE_SAVED_REGISTER(S5) \
+    CALLEE_SAVED_REGISTER(S6) \
+    CALLEE_SAVED_REGISTER(S7) \
+    CALLEE_SAVED_REGISTER(S8) \
+    CALLEE_SAVED_REGISTER(Tp)
+
+#define ENUM_FP_CALLEE_SAVED_REGISTERS() \
+    CALLEE_SAVED_REGISTER(F[24]) \
+    CALLEE_SAVED_REGISTER(F[25]) \
+    CALLEE_SAVED_REGISTER(F[26]) \
+    CALLEE_SAVED_REGISTER(F[27]) \
+    CALLEE_SAVED_REGISTER(F[28]) \
+    CALLEE_SAVED_REGISTER(F[29]) \
+    CALLEE_SAVED_REGISTER(F[30]) \
+    CALLEE_SAVED_REGISTER(F[31])
+
 EXTERN_C void getFPReturn(int fpSize, INT64 *pRetVal);
 EXTERN_C void setFPReturn(int fpSize, INT64 retVal);
 
@@ -35,8 +59,6 @@ extern PCODE GetPreStubEntryPoint();
 #define BACK_TO_BACK_JUMP_ALLOCATE_SIZE         40  // # bytes to allocate for a back to back jump instruction
 
 #define HAS_NDIRECT_IMPORT_PRECODE              1
-
-#define USE_INDIRECT_CODEHEADER
 
 #define HAS_FIXUP_PRECODE                       1
 #define HAS_FIXUP_PRECODE_CHUNKS                1
@@ -59,7 +81,7 @@ extern PCODE GetPreStubEntryPoint();
 
 // Given a return address retrieved during stackwalk,
 // this is the offset by which it should be decremented to arrive at the callsite.
-#define STACKWALK_CONTROLPC_ADJUST_OFFSET 8
+#define STACKWALK_CONTROLPC_ADJUST_OFFSET 4
 
 //**********************************************************************
 // Parameter size
@@ -76,11 +98,8 @@ inline unsigned StackElemSize(unsigned parmSize, bool isValueType, bool isFloatH
 //
 // Create alias for optimized implementations of helpers provided on this platform
 //
-#define JIT_GetSharedGCStaticBase           JIT_GetSharedGCStaticBase_SingleAppDomain
-#define JIT_GetSharedNonGCStaticBase        JIT_GetSharedNonGCStaticBase_SingleAppDomain
-#define JIT_GetSharedGCStaticBaseNoCtor     JIT_GetSharedGCStaticBaseNoCtor_SingleAppDomain
-#define JIT_GetSharedNonGCStaticBaseNoCtor  JIT_GetSharedNonGCStaticBaseNoCtor_SingleAppDomain
-
+#define JIT_GetDynamicGCStaticBase           JIT_GetDynamicGCStaticBase_SingleAppDomain
+#define JIT_GetDynamicNonGCStaticBase        JIT_GetDynamicNonGCStaticBase_SingleAppDomain
 
 //**********************************************************************
 // Frames
@@ -114,14 +133,13 @@ struct CalleeSavedRegisters {
 // will probably have to communicate this back to the PromoteCallerStack
 // routine to avoid a double promotion.
 //--------------------------------------------------------------------
+#define NUM_ARGUMENT_REGISTERS 8
 typedef DPTR(struct ArgumentRegisters) PTR_ArgumentRegisters;
 struct ArgumentRegisters {
-    INT64 a[8]; // a0 ....a7
+    INT64 a[NUM_ARGUMENT_REGISTERS]; // a0 ....a7
 };
-#define NUM_ARGUMENT_REGISTERS 8
 
 #define ARGUMENTREGISTERS_SIZE sizeof(ArgumentRegisters)
-
 
 //--------------------------------------------------------------------
 // This represents the floating point argument registers which are saved
@@ -130,13 +148,34 @@ struct ArgumentRegisters {
 // C++ helpers will need to preserve the values in these volatile
 // registers.
 //--------------------------------------------------------------------
+#define NUM_FLOAT_ARGUMENT_REGISTERS 8
 typedef DPTR(struct FloatArgumentRegisters) PTR_FloatArgumentRegisters;
 struct FloatArgumentRegisters {
-    //TODO: not supports LOONGARCH-SIMD.
-    double  f[8];  // f0-f7
+    double f[NUM_FLOAT_ARGUMENT_REGISTERS]; // fa0-fa7
 };
-#define NUM_FLOAT_ARGUMENT_REGISTERS 8
 
+#ifdef PROFILING_SUPPORTED
+//**********************************************************************
+// Profiling
+//**********************************************************************
+
+typedef struct _PROFILE_PLATFORM_SPECIFIC_DATA
+{
+    void*                  Fp;
+    void*                  Pc;
+    void*                  probeSp;
+    void*                  profiledSp;
+    void*                  hiddenArg;
+    FunctionID             functionId;
+    UINT32                 flags;
+    ArgumentRegisters      argumentRegisters;
+    FloatArgumentRegisters floatArgumentRegisters;
+    // Scratch space to reconstruct struct passed two registers:
+    // one float register and one general register. Including the return args.
+    BYTE buffer[sizeof(ArgumentRegisters) + sizeof(FloatArgumentRegisters)];
+} PROFILE_PLATFORM_SPECIFIC_DATA, *PPROFILE_PLATFORM_SPECIFIC_DATA;
+
+#endif  // PROFILING_SUPPORTED
 
 //**********************************************************************
 // Exception handling
@@ -428,11 +467,18 @@ struct DECLSPEC_ALIGN(16) UMEntryThunkCode
 
 struct HijackArgs
 {
+    DWORD64 Fp; // frame pointer
+    union
+    {
+        DWORD64 Ra;
+        size_t ReturnAddress;
+    };
+    DWORD64 S0, S1, S2, S3, S4, S5, S6, S7, S8, Tp;
     union
     {
         struct {
-             DWORD64 V0;
-             DWORD64 V1;
+             DWORD64 A0;
+             DWORD64 A1;
          };
         size_t ReturnValue[2];
     };
@@ -443,13 +489,6 @@ struct HijackArgs
              DWORD64 F1;
          };
         size_t FPReturnValue[2];
-    };
-    DWORD64 S0, S1, S2, S3, S4, S5, S6, S7, S8, Tp;
-    DWORD64 Fp; // frame pointer
-    union
-    {
-        DWORD64 Ra;
-        size_t ReturnAddress;
     };
 };
 

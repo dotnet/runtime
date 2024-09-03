@@ -31,8 +31,8 @@ namespace System.Security.Cryptography
 
         public abstract int TransformFinal(ReadOnlySpan<byte> input, Span<byte> output);
 
-        public int BlockSizeInBytes { get; private set; }
-        public int PaddingSizeInBytes { get; private set; }
+        public int BlockSizeInBytes { get; }
+        public int PaddingSizeInBytes { get; }
 
         public void Dispose()
         {

@@ -10,7 +10,7 @@ namespace System.Text.Json.Serialization.Tests
 {
     public abstract partial class ReferenceHandlerTests : SerializerTests
     {
-        private static readonly JsonSerializerOptions s_deserializerOptionsPreserve = new JsonSerializerOptions { ReferenceHandler = ReferenceHandler.Preserve };
+        private static readonly JsonSerializerOptions s_deserializerOptionsPreserve = new() { ReferenceHandler = ReferenceHandler.Preserve };
 
         public class EmployeeWithContacts
         {
@@ -1514,12 +1514,12 @@ namespace System.Text.Json.Serialization.Tests
                 ""\u0024test"": ""test""
             }";
 
-            // \u0024.* Valid (i.e: \u0024test)
-            EmployeeExtensionData employee = await Serializer.DeserializeWrapper<EmployeeExtensionData>(json, s_deserializerOptionsPreserve);
-            Assert.Equal("test", ((JsonElement)employee.ExtensionData["$test"]).GetString());
+            // Escaped JSON properties still not valid
+            ex = await Assert.ThrowsAsync<JsonException>(async () => await Serializer.DeserializeWrapper<EmployeeExtensionData>(json, s_deserializerOptionsPreserve));
+            Assert.Equal("$.$test", ex.Path);
 
-            Dictionary<string, string> dictionary = await Serializer.DeserializeWrapper<Dictionary<string, string>>(json, s_deserializerOptionsPreserve);
-            Assert.Equal("test", dictionary["$test"]);
+            ex = await Assert.ThrowsAsync<JsonException>(async () => await Serializer.DeserializeWrapper<Dictionary<string, string>>(json, s_deserializerOptionsPreserve));
+            Assert.Equal("$.$test", ex.Path);
         }
         #endregion
 

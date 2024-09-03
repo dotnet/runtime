@@ -1194,6 +1194,11 @@ typedef union {
 #define amd64_sse_phaddw_reg_reg(inst, dreg, sreg) emit_sse_reg_reg_op4((inst), (dreg), (sreg), 0x66, 0x0f, 0x38, 0x01)
 #define amd64_sse_phaddd_reg_reg(inst, dreg, sreg) emit_sse_reg_reg_op4((inst), (dreg), (sreg), 0x66, 0x0f, 0x38, 0x02)
 #define amd64_sse_blendpd_reg_reg(inst,dreg,sreg,imm) emit_sse_reg_reg_op4_imm((inst), (dreg), (sreg), 0x66, 0x0f, 0x3a, 0x0d, (imm))
+
+#define amd64_ssse3_pabsb_reg_reg(inst, dreg, reg) emit_sse_reg_reg_op4((inst), (dreg), (reg), 0x66, 0x0f, 0x38, 0x1c)
+#define amd64_ssse3_pabsw_reg_reg(inst, dreg, reg) emit_sse_reg_reg_op4((inst), (dreg), (reg), 0x66, 0x0f, 0x38, 0x1d)
+#define amd64_ssse3_pabsd_reg_reg(inst, dreg, reg) emit_sse_reg_reg_op4((inst), (dreg), (reg), 0x66, 0x0f, 0x38, 0x1e)
+
 #define amd64_movq_reg_reg(inst,dreg,sreg) emit_sse_reg_reg ((inst), (dreg), (sreg), 0xf3, 0x0f, 0x7e)
 
 /* Generated from x86-codegen.h */
@@ -1206,14 +1211,47 @@ typedef union {
 #define amd64_movsb_size(inst,size) do { amd64_codegen_pre(inst); amd64_emit_rex ((inst),(size),0,0,0); x86_movsb(inst); amd64_codegen_post(inst); } while (0)
 #define amd64_movsl_size(inst,size) do { amd64_codegen_pre(inst); amd64_emit_rex ((inst),(size),0,0,0); x86_movsl(inst); amd64_codegen_post(inst); } while (0)
 #define amd64_movsd_size(inst,size) do { amd64_codegen_pre(inst); amd64_emit_rex ((inst),(size),0,0,0); x86_movsd(inst); amd64_codegen_post(inst); } while (0)
+#define amd64_bsf_size(inst,dreg,reg,size) do { amd64_codegen_pre(inst); amd64_emit_rex ((inst),(size),(dreg),0,(reg)); x86_bsf ((inst),(dreg)&0x7,(reg)&0x7); amd64_codegen_post (inst); } while (0)
+#define amd64_bsr_size(inst,dreg,reg,size) do { amd64_codegen_pre(inst); amd64_emit_rex ((inst),(size),(dreg),0,(reg)); x86_bsr ((inst),(dreg)&0x7,(reg)&0x7); amd64_codegen_post (inst); } while (0)
+
 #define amd64_prefix_size(inst,p,size) do { x86_prefix((inst), p); } while (0)
 #define amd64_rdtsc_size(inst,size) do { amd64_codegen_pre(inst); amd64_emit_rex ((inst),(size),0,0,0); x86_rdtsc(inst); amd64_codegen_post(inst); } while (0)
+// FIXME: wrong for size == 1 or 2
 #define amd64_cmpxchg_reg_reg_size(inst,dreg,reg,size) do { amd64_codegen_pre(inst); amd64_emit_rex ((inst),(size),(dreg),0,(reg)); x86_cmpxchg_reg_reg((inst),((dreg)&0x7),((reg)&0x7)); amd64_codegen_post(inst); } while (0)
+// FIXME: wrong for size == 1 or 2
 #define amd64_cmpxchg_mem_reg_size(inst,mem,reg,size) do { amd64_codegen_pre(inst); amd64_emit_rex ((inst),(size),0,0,(reg)); x86_cmpxchg_mem_reg((inst),(mem),((reg)&0x7)); amd64_codegen_post(inst); } while (0)
-#define amd64_cmpxchg_membase_reg_size(inst,basereg,disp,reg,size) do { amd64_codegen_pre(inst); amd64_emit_rex ((inst),(size),(reg),0,(basereg)); x86_cmpxchg_membase_reg((inst),((basereg)&0x7),(disp),((reg)&0x7)); amd64_codegen_post(inst); } while (0)
+
+#define amd64_cmpxchg_membase_reg_size(inst,basereg,disp,reg,size) \
+	do { \
+		amd64_codegen_pre(inst); \
+		if ((size) == 2) \
+			x86_prefix((inst), X86_OPERAND_PREFIX); \
+		amd64_emit_rex ((inst),(size),(reg),0,(basereg)); \
+		switch ((size)) { \
+		case 1: x86_byte((inst), 0x0f); x86_byte((inst), 0xb0); break; \
+		case 2: case 4: case 8: x86_byte((inst), 0x0f); x86_byte((inst), 0xb1); break; \
+		default: assert (0); \
+		}\
+		x86_membase_emit((inst),((reg)&0x7),((basereg)&0x7),(disp)); \
+		amd64_codegen_post(inst); \
+	} while (0)
 #define amd64_xchg_reg_reg_size(inst,dreg,reg,size) do { amd64_codegen_pre(inst); amd64_emit_rex ((inst),(size),(dreg),0,(reg)); x86_xchg_reg_reg((inst),((dreg)&0x7),((reg)&0x7),(size) == 8 ? 4 : (size)); amd64_codegen_post(inst); } while (0)
 #define amd64_xchg_mem_reg_size(inst,mem,reg,size) do { amd64_codegen_pre(inst); amd64_emit_rex ((inst),(size),0,0,(reg)); x86_xchg_mem_reg((inst),(mem),((reg)&0x7),(size) == 8 ? 4 : (size)); amd64_codegen_post(inst); } while (0)
-#define amd64_xchg_membase_reg_size(inst,basereg,disp,reg,size) do { amd64_codegen_pre(inst); amd64_emit_rex ((inst),(size),(reg),0,(basereg)); x86_xchg_membase_reg((inst),((basereg)&0x7),(disp),((reg)&0x7),(size) == 8 ? 4 : (size)); amd64_codegen_post(inst); } while (0)
+#define amd64_xchg_membase_reg_size(inst,basereg,disp,reg,size) \
+	do { \
+		amd64_codegen_pre(inst); \
+		if ((size) == 2) \
+			x86_prefix((inst), X86_OPERAND_PREFIX); \
+		amd64_emit_rex ((inst),(size),(reg),0,(basereg)); \
+		switch ((size)) { \
+		case 1: x86_byte ((inst), 0x86); break; \
+		case 2: case 4: case 8: x86_byte ((inst), 0x87); break; \
+		default: assert (0); \
+		} \
+		x86_membase_emit ((inst), ((reg)&0x7), ((basereg)&0x7), (disp));	\
+		amd64_codegen_post(inst); \
+	} while (0) 
+
 #define amd64_inc_mem_size(inst,mem,size) do { amd64_codegen_pre(inst); amd64_emit_rex ((inst),(size),0,0,0); x86_inc_mem((inst),(mem)); amd64_codegen_post(inst); } while (0)
 #define amd64_inc_membase_size(inst,basereg,disp,size) do { amd64_codegen_pre(inst); amd64_emit_rex ((inst),(size),0,0,(basereg)); x86_inc_membase((inst),((basereg)&0x7),(disp)); amd64_codegen_post(inst); } while (0)
 //#define amd64_inc_reg_size(inst,reg,size) do { amd64_codegen_pre(inst); amd64_emit_rex ((inst),(size),0,0,(reg)); x86_inc_reg((inst),((reg)&0x7)); amd64_codegen_post(inst); } while (0)
@@ -1577,5 +1615,7 @@ typedef union {
 #define amd64_padding(inst,size) amd64_padding_size(inst,size)
 #define amd64_prolog(inst,frame,reg_mask) amd64_prolog_size(inst,frame,reg_mask,8)
 #define amd64_epilog(inst,reg_mask) amd64_epilog_size(inst,reg_mask,8)
+
+#define amd64_pause(inst) do { x86_pause ((inst)); } while (0)
 
 #endif // AMD64_H

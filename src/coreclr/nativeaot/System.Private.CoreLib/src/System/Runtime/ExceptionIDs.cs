@@ -3,7 +3,7 @@
 
 namespace System.Runtime
 {
-    public enum ExceptionIDs
+    internal enum ExceptionIDs
     {
         OutOfMemory = 1,
         Arithmetic = 2,

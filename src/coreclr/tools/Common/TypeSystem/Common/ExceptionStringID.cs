@@ -34,8 +34,6 @@ namespace Internal.TypeSystem
         InvalidProgramSpecific,
         InvalidProgramVararg,
         InvalidProgramCallVirtFinalize,
-        InvalidProgramCallAbstractMethod,
-        InvalidProgramCallVirtStatic,
         InvalidProgramNonStaticMethod,
         InvalidProgramGenericMethod,
         InvalidProgramNonBlittableTypes,
@@ -43,7 +41,6 @@ namespace Internal.TypeSystem
 
         // BadImageFormatException
         BadImageFormatGeneric,
-        BadImageFormatSpecific,
 
         // MarshalDirectiveException
         MarshalDirectiveGeneric,

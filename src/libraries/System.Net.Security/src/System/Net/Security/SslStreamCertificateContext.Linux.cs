@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using Microsoft.Win32.SafeHandles;
 using System.Buffers;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -11,14 +10,37 @@ using System.Security.Authentication;
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
+using System.Net;
+using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.Win32.SafeHandles;
 
 namespace System.Net.Security
 {
     public partial class SslStreamCertificateContext
     {
+        internal static TimeSpan DefaultOcspRefreshInterval => TimeSpan.FromHours(24);
+        internal static TimeSpan MinRefreshBeforeExpirationInterval => TimeSpan.FromMinutes(5);
+        internal static TimeSpan RefreshAfterFailureBackOffInterval => TimeSpan.FromSeconds(5);
+
         private const bool TrimRootCertificate = true;
-        internal readonly ConcurrentDictionary<SslProtocols, SafeSslContextHandle> SslContexts;
+        private const bool ChainBuildNeedsTrustedRoot = false;
+        internal ConcurrentDictionary<SslProtocols, SafeSslContextHandle> SslContexts
+        {
+            get
+            {
+                ConcurrentDictionary<SslProtocols, SafeSslContextHandle>? sslContexts = _sslContexts;
+                if (sslContexts is null)
+                {
+                    Interlocked.CompareExchange(ref _sslContexts, new(), null);
+                    sslContexts = _sslContexts;
+                }
+
+                return sslContexts;
+            }
+        }
+
+        private ConcurrentDictionary<SslProtocols, SafeSslContextHandle>? _sslContexts;
         internal readonly SafeX509Handle CertificateHandle;
         internal readonly SafeEvpPKeyHandle KeyHandle;
 
@@ -26,16 +48,32 @@ namespace System.Net.Security
         private byte[]? _ocspResponse;
         private DateTimeOffset _ocspExpiration;
         private DateTimeOffset _nextDownload;
+        // Private copy of the intermediate certificates, in case the user decides to dispose the
+        // instances reachable through IntermediateCertificates property.
+        private X509Certificate2[] _privateIntermediateCertificates;
+        private X509Certificate2? _rootCertificate;
         private Task<byte[]?>? _pendingDownload;
         private List<string>? _ocspUrls;
-        private X509Certificate2? _ca;
 
         private SslStreamCertificateContext(X509Certificate2 target, ReadOnlyCollection<X509Certificate2> intermediates, SslCertificateTrust? trust)
         {
             IntermediateCertificates = intermediates;
+            if (intermediates.Count > 0)
+            {
+                _privateIntermediateCertificates = new X509Certificate2[intermediates.Count];
+
+                for (int i = 0; i < intermediates.Count; i++)
+                {
+                    _privateIntermediateCertificates[i] = new X509Certificate2(intermediates[i]);
+                }
+            }
+            else
+            {
+                _privateIntermediateCertificates = Array.Empty<X509Certificate2>();
+            }
+
             TargetCertificate = target;
             Trust = trust;
-            SslContexts = new ConcurrentDictionary<SslProtocols, SafeSslContextHandle>();
 
             using (RSAOpenSsl? rsa = (RSAOpenSsl?)target.GetRSAPrivateKey())
             {
@@ -76,15 +114,8 @@ namespace System.Net.Security
 
         partial void AddRootCertificate(X509Certificate2? rootCertificate, ref bool transferredOwnership)
         {
-            if (IntermediateCertificates.Count == 0)
-            {
-                _ca = rootCertificate;
-                transferredOwnership = true;
-            }
-            else
-            {
-                _ca = IntermediateCertificates[0];
-            }
+            _rootCertificate = rootCertificate;
+            transferredOwnership = rootCertificate != null;
 
             if (!_staplingForbidden)
             {
@@ -101,6 +132,10 @@ namespace System.Net.Security
 
                 if (task.IsCompletedSuccessfully)
                 {
+                    if (NetEventSource.Log.IsEnabled())
+                    {
+                        NetEventSource.Info(this, $"Got OCSP response.");
+                    }
                     return task.Result;
                 }
             }
@@ -108,6 +143,10 @@ namespace System.Net.Security
             {
             }
 
+            if (NetEventSource.Log.IsEnabled())
+            {
+                NetEventSource.Info(this, "No OCSP response available.");
+            }
             return null;
         }
 
@@ -122,11 +161,19 @@ namespace System.Net.Security
 
             if (now > _ocspExpiration)
             {
+                if (NetEventSource.Log.IsEnabled())
+                {
+                    NetEventSource.Info(this, "Cached OCSP response expired, fetching fresh staple.");
+                }
                 return DownloadOcspAsync();
             }
 
             if (now > _nextDownload)
             {
+                if (NetEventSource.Log.IsEnabled())
+                {
+                    NetEventSource.Info(this, "Starting async refresh of OCSP staple");
+                }
                 // Calling DownloadOcsp will activate a Task to initiate
                 // in the background.  Further calls will attach to the
                 // same Task if it's still running.
@@ -140,16 +187,31 @@ namespace System.Net.Security
             return ValueTask.FromResult(_ocspResponse);
         }
 
+        internal ValueTask<byte[]?> WaitForPendingOcspFetchAsync()
+        {
+            Task<byte[]?>? pending = _pendingDownload;
+            if (pending is not null && !pending.IsFaulted)
+            {
+                return new ValueTask<byte[]?>(pending);
+            }
+
+            return ValueTask.FromResult(DateTimeOffset.UtcNow <= _ocspExpiration ? _ocspResponse : null);
+        }
+
         private ValueTask<byte[]?> DownloadOcspAsync()
         {
             Task<byte[]?>? pending = _pendingDownload;
 
             if (pending is not null && !pending.IsFaulted)
             {
+                if (NetEventSource.Log.IsEnabled())
+                {
+                    NetEventSource.Info(this, $"Pending download task exists.");
+                }
                 return new ValueTask<byte[]?>(pending);
             }
 
-            if (_ocspUrls is null && _ca is not null)
+            if (_ocspUrls is null && _rootCertificate is not null)
             {
                 foreach (X509Extension ext in TargetCertificate.Extensions)
                 {
@@ -183,16 +245,22 @@ namespace System.Net.Security
 
                 if (pending is null || pending.IsFaulted)
                 {
-                    _pendingDownload = pending = FetchOcspAsync();
+                    if (NetEventSource.Log.IsEnabled())
+                    {
+                        NetEventSource.Info(this, $"Starting new OCSP download task.");
+                    }
+                    pending = FetchOcspAsync();
                 }
             }
 
             return new ValueTask<byte[]?>(pending);
         }
 
-        private async Task<byte[]?> FetchOcspAsync()
+        private Task<byte[]?> FetchOcspAsync()
         {
-            X509Certificate2? caCert = _ca;
+            Debug.Assert(_rootCertificate != null);
+            X509Certificate2? caCert = _privateIntermediateCertificates.Length > 0 ? _privateIntermediateCertificates[0] : _rootCertificate;
+
             Debug.Assert(_ocspUrls is not null);
             Debug.Assert(_ocspUrls.Count > 0);
             Debug.Assert(caCert is not null);
@@ -208,55 +276,101 @@ namespace System.Net.Security
             if (subject == 0 || issuer == 0)
             {
                 _staplingForbidden = true;
-                return null;
+                return Task.FromResult<byte[]?>(null);
             }
 
-            using (SafeOcspRequestHandle ocspRequest = Interop.Crypto.X509BuildOcspRequest(subject, issuer))
+            IntPtr[] issuerHandles = ArrayPool<IntPtr>.Shared.Rent(_privateIntermediateCertificates.Length + 1);
+            for (int i = 0; i < _privateIntermediateCertificates.Length; i++)
             {
-                byte[] rentedBytes = ArrayPool<byte>.Shared.Rent(Interop.Crypto.GetOcspRequestDerSize(ocspRequest));
-                int encodingSize = Interop.Crypto.EncodeOcspRequest(ocspRequest, rentedBytes);
-                ArraySegment<byte> encoded = new ArraySegment<byte>(rentedBytes, 0, encodingSize);
+                issuerHandles[i] = _privateIntermediateCertificates[i].Handle;
+            }
+            issuerHandles[_privateIntermediateCertificates.Length] = _rootCertificate.Handle;
 
-                ArraySegment<char> rentedChars = UrlBase64Encoding.RentEncode(encoded);
-                byte[]? ret = null;
+            TaskCompletionSource<byte[]?> completionSource = new TaskCompletionSource<byte[]?>();
 
-                for (int i = 0; i < _ocspUrls.Count; i++)
+            _pendingDownload = completionSource.Task;
+            FetchOcspAsyncCore(completionSource);
+            return completionSource.Task;
+
+            async void FetchOcspAsyncCore(TaskCompletionSource<byte[]?> completionSource)
+            {
+                try
                 {
-                    string url = MakeUrl(_ocspUrls[i], rentedChars);
-                    ret = await System.Net.Http.X509ResourceClient.DownloadAssetAsync(url, TimeSpan.MaxValue).ConfigureAwait(false);
+                    using SafeOcspRequestHandle ocspRequest = Interop.Crypto.X509BuildOcspRequest(subject, issuer);
+                    byte[] rentedBytes = ArrayPool<byte>.Shared.Rent(Interop.Crypto.GetOcspRequestDerSize(ocspRequest));
+                    int encodingSize = Interop.Crypto.EncodeOcspRequest(ocspRequest, rentedBytes);
+                    ArraySegment<byte> encoded = new ArraySegment<byte>(rentedBytes, 0, encodingSize);
 
-                    if (ret is not null)
+                    ArraySegment<char> rentedChars = UrlBase64Encoding.RentEncode(encoded);
+                    byte[]? ret = null;
+
+                    for (int i = 0; i < _ocspUrls.Count; i++)
                     {
-                        if (!Interop.Crypto.X509DecodeOcspToExpiration(ret, ocspRequest, subject, issuer, out DateTimeOffset expiration))
+                        string url = MakeUrl(_ocspUrls[i], rentedChars);
+                        ret = await System.Net.Http.X509ResourceClient.DownloadAssetAsync(url, TimeSpan.MaxValue).ConfigureAwait(false);
+
+                        if (ret is not null)
                         {
-                            ret = null;
-                            continue;
+                            if (!Interop.Crypto.X509DecodeOcspToExpiration(ret, ocspRequest, subject, issuerHandles.AsSpan(0, _privateIntermediateCertificates.Length + 1), out DateTimeOffset expiration))
+                            {
+                                ret = null;
+                                continue;
+                            }
+
+                            // Swap the working URL in as the first one we'll try next time.
+                            if (i != 0)
+                            {
+                                string tmp = _ocspUrls[0];
+                                _ocspUrls[0] = _ocspUrls[i];
+                                _ocspUrls[i] = tmp;
+                            }
+
+                            DateTimeOffset nextCheckA = DateTimeOffset.UtcNow.Add(DefaultOcspRefreshInterval);
+                            DateTimeOffset nextCheckB = expiration.Subtract(MinRefreshBeforeExpirationInterval);
+
+                            _ocspResponse = ret;
+                            _ocspExpiration = expiration;
+                            _nextDownload = nextCheckA < nextCheckB ? nextCheckA : nextCheckB;
+                            if (NetEventSource.Log.IsEnabled())
+                            {
+                                NetEventSource.Info(this, $"Received {ret.Length} B OCSP response, Expiration: {_ocspExpiration}, Next refresh: {_nextDownload}");
+                            }
+                            break;
                         }
-
-                        // Swap the working URL in as the first one we'll try next time.
-                        if (i != 0)
-                        {
-                            string tmp = _ocspUrls[0];
-                            _ocspUrls[0] = _ocspUrls[i];
-                            _ocspUrls[i] = tmp;
-                        }
-
-                        DateTimeOffset nextCheckA = DateTimeOffset.UtcNow.AddDays(1);
-                        DateTimeOffset nextCheckB = expiration.AddMinutes(-5);
-
-                        _ocspResponse = ret;
-                        _ocspExpiration = expiration;
-                        _nextDownload = nextCheckA < nextCheckB ? nextCheckA : nextCheckB;
-                        _pendingDownload = null;
-                        break;
                     }
-                }
 
-                ArrayPool<byte>.Shared.Return(rentedBytes);
-                ArrayPool<char>.Shared.Return(rentedChars.Array!);
-                GC.KeepAlive(TargetCertificate);
-                GC.KeepAlive(caCert);
-                return ret;
+                    issuerHandles.AsSpan().Clear();
+                    ArrayPool<IntPtr>.Shared.Return(issuerHandles);
+                    ArrayPool<byte>.Shared.Return(rentedBytes);
+                    ArrayPool<char>.Shared.Return(rentedChars.Array!);
+                    GC.KeepAlive(TargetCertificate);
+                    GC.KeepAlive(_privateIntermediateCertificates);
+                    GC.KeepAlive(_rootCertificate);
+                    GC.KeepAlive(caCert);
+
+                    if (ret == null)
+                    {
+                        // All download attempts failed, don't try again for 5 seconds.
+                        // This backoff will be applied only if the OCSP staple is not expired.
+                        // If it is expired, we will force-refresh it during next GetOcspResponseAsync call.
+                        _nextDownload = DateTimeOffset.UtcNow.Add(RefreshAfterFailureBackOffInterval);
+                        if (NetEventSource.Log.IsEnabled())
+                        {
+                            NetEventSource.Info(this, $"OCSP response fetch failed, backing off, Next refresh = {_nextDownload}");
+                        }
+                    }
+
+                    _pendingDownload = null;
+                    completionSource.SetResult(ret);
+                }
+                catch (Exception ex)
+                {
+                    if (NetEventSource.Log.IsEnabled())
+                    {
+                        NetEventSource.Error(this, $"OCSP refresh failed: {ex}");
+                    }
+                    completionSource.SetException(ex);
+                }
             }
         }
 

@@ -15,3 +15,12 @@
  * On failure, returns a negative value.
  */
 PALEXPORT int32_t SystemNative_SNPrintF(char* string, int32_t size, const char* format, ...);
+
+/**
+ * Two specialized overloads for use from Interop.Sys, because these two signatures are not equivalent
+ * on some architectures (like 64-bit WebAssembly)
+*/
+
+PALEXPORT int32_t SystemNative_SNPrintF_1S(char* string, int32_t size, const char* format, char* str);
+
+PALEXPORT int32_t SystemNative_SNPrintF_1I(char* string, int32_t size, const char* format, int arg);

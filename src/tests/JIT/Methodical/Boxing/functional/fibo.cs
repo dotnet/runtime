@@ -37,12 +37,12 @@ namespace BoxTest_fibo_cs
         }
 
         [Fact]
-        public static int TestEntryPoint()
+        [OuterLoop]
+        public static void TestEntryPoint()
         {
             new Test().Fibonacci(20, true);
             Console.WriteLine();
             Console.WriteLine("*** PASSED ***");
-            return 100;
         }
     }
 }

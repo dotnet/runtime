@@ -113,11 +113,17 @@ DEFINE_DACVAR(DWORD, dac__g_debuggerWordTLSIndex, g_debuggerWordTLSIndex)
 #endif
 DEFINE_DACVAR(DWORD, dac__g_TlsIndex, g_TlsIndex)
 
+#ifdef FEATURE_EH_FUNCLETS
+DEFINE_DACVAR(UNKNOWN_POINTER_TYPE, dac__g_pEHClass, ::g_pEHClass)
+DEFINE_DACVAR(UNKNOWN_POINTER_TYPE, dac__g_pExceptionServicesInternalCallsClass, ::g_pExceptionServicesInternalCallsClass)
+DEFINE_DACVAR(UNKNOWN_POINTER_TYPE, dac__g_pStackFrameIteratorClass, ::g_pStackFrameIteratorClass)
+DEFINE_DACVAR(BOOL, dac__g_isNewExceptionHandlingEnabled, ::g_isNewExceptionHandlingEnabled)
+#endif
+
 DEFINE_DACVAR(PTR_SString, SString__s_Empty, SString::s_Empty)
 
 DEFINE_DACVAR(INT32, ArrayBase__s_arrayBoundsZero, ArrayBase::s_arrayBoundsZero)
-
-DEFINE_DACVAR(BOOL, StackwalkCache__s_Enabled, StackwalkCache::s_Enabled)
+DEFINE_DACVAR(BOOL, CodeVersionManager__s_HasNonDefaultILVersions, CodeVersionManager::s_HasNonDefaultILVersions)
 
 DEFINE_DACVAR(PTR_JITNotification, dac__g_pNotificationTable, ::g_pNotificationTable)
 DEFINE_DACVAR(ULONG32, dac__g_dacNotificationFlags, ::g_dacNotificationFlags)
@@ -139,7 +145,6 @@ DEFINE_DACVAR(gc_alloc_context, dac__g_global_alloc_context, ::g_global_alloc_co
 DEFINE_DACVAR(IGCHeap, dac__g_pGCHeap, ::g_pGCHeap)
 
 DEFINE_DACVAR(UNKNOWN_POINTER_TYPE, dac__g_pThinLockThreadIdDispenser, ::g_pThinLockThreadIdDispenser)
-DEFINE_DACVAR(UNKNOWN_POINTER_TYPE, dac__g_pModuleIndexDispenser, ::g_pModuleIndexDispenser)
 DEFINE_DACVAR(UNKNOWN_POINTER_TYPE, dac__g_pObjectClass, ::g_pObjectClass)
 DEFINE_DACVAR(UNKNOWN_POINTER_TYPE, dac__g_pRuntimeTypeClass, ::g_pRuntimeTypeClass)
 DEFINE_DACVAR(UNKNOWN_POINTER_TYPE, dac__g_pCanonMethodTableClass, ::g_pCanonMethodTableClass)
@@ -169,10 +174,6 @@ DEFINE_DACVAR(UNKNOWN_POINTER_TYPE, dac__g_pBaseCOMObject, ::g_pBaseCOMObject)
 #endif
 
 DEFINE_DACVAR(UNKNOWN_POINTER_TYPE, dac__g_pIDynamicInterfaceCastableInterface, ::g_pIDynamicInterfaceCastableInterface)
-
-#ifdef FEATURE_ICASTABLE
-DEFINE_DACVAR(UNKNOWN_POINTER_TYPE, dac__g_pICastableInterface, ::g_pICastableInterface)
-#endif // FEATURE_ICASTABLE
 
 DEFINE_DACVAR(UNKNOWN_POINTER_TYPE, dac__g_pObjectFinalizerMD, ::g_pObjectFinalizerMD)
 
@@ -227,9 +228,11 @@ DEFINE_DACVAR(TADDR, dac__g_MiniMetaDataBuffAddress, ::g_MiniMetaDataBuffAddress
 
 DEFINE_DACVAR(SIZE_T, dac__g_clrNotificationArguments, ::g_clrNotificationArguments)
 
-#ifdef EnC_SUPPORTED
+#ifdef FEATURE_METADATA_UPDATER
 DEFINE_DACVAR(bool, dac__g_metadataUpdatesApplied, ::g_metadataUpdatesApplied)
 #endif
+
+DEFINE_DACVAR(PTR_WSTR, dac__g_EntryAssemblyPath, ::g_EntryAssemblyPath)
 
 #undef DEFINE_DACVAR
 #undef DEFINE_DACVAR_NO_DUMP

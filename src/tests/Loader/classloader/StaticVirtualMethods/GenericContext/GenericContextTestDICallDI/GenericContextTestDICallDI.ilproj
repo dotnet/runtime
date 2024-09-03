@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk.IL">
+  <PropertyGroup>
+    <!-- Needed for GCStressIncompatible -->
+    <RequiresProcessIsolation>true</RequiresProcessIsolation>
+    <GCStressIncompatible>true</GCStressIncompatible>
+  </PropertyGroup>
+  <PropertyGroup>
+    <DebugType>Full</DebugType>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="GenericContextCommonAndImplementationDICallDI.ilproj" />
+    <ProjectReference Include="../GenericContextCommonCs.csproj" />
+    <Compile Include="GenericContextTestDICallDI.il" />
+  </ItemGroup>
+</Project>

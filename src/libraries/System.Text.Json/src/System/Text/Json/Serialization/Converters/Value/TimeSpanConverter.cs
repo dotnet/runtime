@@ -3,12 +3,14 @@
 
 using System.Buffers.Text;
 using System.Diagnostics;
+using System.Text.Json.Nodes;
+using System.Text.Json.Schema;
 
 namespace System.Text.Json.Serialization.Converters
 {
     internal sealed class TimeSpanConverter : JsonPrimitiveConverter<TimeSpan>
     {
-        private const int MinimumTimeSpanFormatLength = 8; // hh:mm:ss
+        private const int MinimumTimeSpanFormatLength = 1; // d
         private const int MaximumTimeSpanFormatLength = 26; // -dddddddd.hh:mm:ss.fffffff
         private const int MaximumEscapedTimeSpanFormatLength = JsonConstants.MaxExpansionFactorWhileEscaping * MaximumTimeSpanFormatLength;
 
@@ -91,5 +93,12 @@ namespace System.Text.Json.Serialization.Converters
 
             writer.WritePropertyName(output.Slice(0, bytesWritten));
         }
+
+        internal override JsonSchema? GetSchema(JsonNumberHandling _) => new()
+        {
+            Type = JsonSchemaType.String,
+            Comment = "Represents a System.TimeSpan value.",
+            Pattern = @"^-?(\d+\.)?\d{2}:\d{2}:\d{2}(\.\d{1,7})?$"
+        };
     }
 }

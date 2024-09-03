@@ -45,7 +45,6 @@ Abstract:
 #endif
 
 #define CGROUP2_SUPER_MAGIC 0x63677270
-#define TMPFS_MAGIC 0x01021994
 
 #define PROC_MOUNTINFO_FILENAME "/proc/self/mountinfo"
 #define PROC_CGROUP_FILENAME "/proc/self/cgroup"
@@ -219,10 +218,13 @@ findCGroupVersion(void)
 	if (result != 0)
 		return 0;
 
-	switch (stats.f_type) {
-	case TMPFS_MAGIC: return 1;
-	case CGROUP2_SUPER_MAGIC: return 2;
-	default: return 0;
+	if (stats.f_type == CGROUP2_SUPER_MAGIC) {
+		return 2;
+	} else {
+		// Assume that if /sys/fs/cgroup exists and the file system type is not cgroup2fs,
+		// it is cgroup v1. Typically the file system type is tmpfs, but other values have
+		// been seen in the wild.
+		return 1;
 	}
 }
 

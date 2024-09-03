@@ -36,14 +36,14 @@ namespace
 
         // Look up the root package instead of the "runtime" package because we can't do a full rid resolution.
         // i.e., look for "Microsoft.NETCore.DotNetHostPolicy/" followed by version.
-        pal::string_t prefix = _X("Microsoft.NETCore.DotNetHostPolicy/");
+        const pal::char_t prefix[] = _X("Microsoft.NETCore.DotNetHostPolicy/");
         for (const auto& library : json.document()[_X("libraries")].GetObject())
         {
             pal::string_t lib_name{library.name.GetString()};
-            if (starts_with(lib_name, prefix, false))
+            if (utils::starts_with(lib_name, prefix, false))
             {
                 // Extract the version information that occurs after '/'
-                retval = lib_name.substr(prefix.size());
+                retval = lib_name.substr(utils::strlen(prefix));
                 break;
             }
         }
@@ -76,7 +76,7 @@ namespace
         append_path(&path, rel_dir.c_str());                  // relative dir containing hostpolicy library
 
                                                             // Check if "path" contains the required library.
-        if (!library_exists_in_dir(path, LIBHOSTPOLICY_NAME, nullptr))
+        if (!file_exists_in_dir(path, LIBHOSTPOLICY_NAME, nullptr))
         {
             trace::verbose(_X("Did not find %s in directory %s"), LIBHOSTPOLICY_NAME, path.c_str());
             return false;
@@ -110,15 +110,15 @@ namespace
     * Given a version and probing paths, find if package layout
     *    directory containing hostpolicy exists.
     */
-    bool resolve_hostpolicy_dir_from_probe_paths(const pal::string_t& version, const std::vector<pal::string_t>& probe_realpaths, pal::string_t* candidate)
+    bool resolve_hostpolicy_dir_from_probe_paths(const pal::string_t& version, const std::vector<pal::string_t>& probe_fullpaths, pal::string_t* candidate)
     {
-        if (probe_realpaths.empty() || version.empty())
+        if (probe_fullpaths.empty() || version.empty())
         {
             return false;
         }
 
         // Check if the package relative directory containing hostpolicy exists.
-        for (const auto& probe_path : probe_realpaths)
+        for (const auto& probe_path : probe_fullpaths)
         {
             trace::verbose(_X("Considering %s to probe for %s"), probe_path.c_str(), LIBHOSTPOLICY_NAME);
             if (to_hostpolicy_package_dir(probe_path, version, candidate))
@@ -129,8 +129,8 @@ namespace
 
         // Print detailed message about the file not found in the probe paths.
         trace::error(_X("Could not find required library %s in %d probing paths:"),
-            LIBHOSTPOLICY_NAME, probe_realpaths.size());
-        for (const auto& path : probe_realpaths)
+            LIBHOSTPOLICY_NAME, probe_fullpaths.size());
+        for (const auto& path : probe_fullpaths)
         {
             trace::error(_X("  %s"), path.c_str());
         }
@@ -175,7 +175,7 @@ int hostpolicy_resolver::load(
     if (g_hostpolicy == nullptr)
     {
         pal::string_t host_path;
-        if (!library_exists_in_dir(lib_dir, LIBHOSTPOLICY_NAME, &host_path))
+        if (!file_exists_in_dir(lib_dir, LIBHOSTPOLICY_NAME, &host_path))
         {
             return StatusCode::CoreHostLibMissingFailure;
         }
@@ -233,7 +233,7 @@ bool hostpolicy_resolver::try_get_dir(
     const fx_definition_vector_t& fx_definitions,
     const pal::string_t& app_candidate,
     const pal::string_t& specified_deps_file,
-    const std::vector<pal::string_t>& probe_realpaths,
+    const std::vector<pal::string_t>& probe_fullpaths,
     pal::string_t* impl_dir)
 {
     bool is_framework_dependent = get_app(fx_definitions).get_runtime_config().get_is_framework_dependent();
@@ -289,7 +289,7 @@ bool hostpolicy_resolver::try_get_dir(
 
     // Check if hostpolicy exists in "expected" directory.
     trace::verbose(_X("The expected %s directory is [%s]"), LIBHOSTPOLICY_NAME, expected.c_str());
-    if (library_exists_in_dir(expected, LIBHOSTPOLICY_NAME, nullptr))
+    if (file_exists_in_dir(expected, LIBHOSTPOLICY_NAME, nullptr))
     {
         impl_dir->assign(expected);
         return true;
@@ -299,7 +299,7 @@ bool hostpolicy_resolver::try_get_dir(
 
     // Start probing for hostpolicy in the specified probe paths.
     pal::string_t candidate;
-    if (resolve_hostpolicy_dir_from_probe_paths(version, probe_realpaths, &candidate))
+    if (resolve_hostpolicy_dir_from_probe_paths(version, probe_fullpaths, &candidate))
     {
         impl_dir->assign(candidate);
         return true;

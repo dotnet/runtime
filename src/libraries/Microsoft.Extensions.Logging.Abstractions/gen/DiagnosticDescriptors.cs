@@ -201,12 +201,20 @@ namespace Microsoft.Extensions.Logging.Generators
             DiagnosticSeverity.Warning,
             isEnabledByDefault: true);
 
-        public static DiagnosticDescriptor LoggingUnsupportedLanguageVersion { get; } = new DiagnosticDescriptor(
+        public static DiagnosticDescriptor LoggingUnsupportedLanguageVersion { get; } = DiagnosticDescriptorHelper.Create(
             id: "SYSLIB1026",
             title: new LocalizableResourceString(nameof(SR.LoggingUnsupportedLanguageVersionTitle), SR.ResourceManager, typeof(FxResources.Microsoft.Extensions.Logging.Generators.SR)),
             messageFormat: new LocalizableResourceString(nameof(SR.LoggingUnsupportedLanguageVersionMessageFormat), SR.ResourceManager, typeof(FxResources.Microsoft.Extensions.Logging.Generators.SR)),
             category: "LoggingGenerator",
             defaultSeverity: DiagnosticSeverity.Error,
+            isEnabledByDefault: true);
+
+        public static DiagnosticDescriptor PrimaryConstructorParameterLoggerHidden { get; } = DiagnosticDescriptorHelper.Create(
+            id: "SYSLIB1027",
+            title: new LocalizableResourceString(nameof(SR.PrimaryConstructorParameterLoggerHiddenTitle), SR.ResourceManager, typeof(FxResources.Microsoft.Extensions.Logging.Generators.SR)),
+            messageFormat: new LocalizableResourceString(nameof(SR.PrimaryConstructorParameterLoggerHiddenMessage), SR.ResourceManager, typeof(FxResources.Microsoft.Extensions.Logging.Generators.SR)),
+            category: "LoggingGenerator",
+            DiagnosticSeverity.Info,
             isEnabledByDefault: true);
     }
 }

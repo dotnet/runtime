@@ -20,12 +20,41 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
 		class DeconstructedVariable
 		{
-			// https://github.com/dotnet/linker/issues/3158
-			[ExpectedWarning ("IL2077", ProducedBy = Tool.Trimmer | Tool.NativeAot)]
+			[ExpectedWarning ("IL2077", Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/linker/issues/3158")]
 			static void DeconstructVariableNoAnnotation ((Type type, object instance) input)
 			{
 				var (type, instance) = input;
 				type.RequiresPublicMethods ();
+			}
+
+			static (Type type, object instance) GetInput (int unused) => (typeof (string), null);
+
+			[ExpectedWarning ("IL2077", Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/linker/issues/3158")]
+			static void DeconstructVariableFlowCapture (bool b = true)
+			{
+				// This creates a control-flow graph where the tuple elements assigned to
+				// are flow capture references. This is only the case when the variable types
+				// are declared before the deconstruction assignment, and the assignment creates
+				// a branch in the control-flow graph.
+				Type type;
+				object instance;
+				(type, instance) = GetInput (b ? 0 : 1);
+				type.RequiresPublicMethods ();
+			}
+
+			[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)]
+			static Type annotatedfield;
+
+			[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)]
+			static ref Type AnnotatedProperty => ref annotatedfield;
+
+			[ExpectedWarning ("IL2062", Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/linker/issues/3158")]
+			[ExpectedWarning ("IL2078", Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/linker/issues/3158")]
+			static void DeconstructVariablePropertyReference ((Type type, object instance) input)
+			{
+				object instance;
+				(AnnotatedProperty, instance) = input;
+				AnnotatedProperty.RequiresPublicMethods ();
 			}
 
 			record TypeAndInstance (
@@ -40,7 +69,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			// For analyzer, this is currently
 			// https://github.com/dotnet/linker/issues/3158
 			//   But it's possible that with that fixed there won't be a warning from the analyzer anyway (depends on the implementation)
-			[ExpectedWarning ("IL2067", ProducedBy = Tool.Trimmer | Tool.NativeAot)]
+			[ExpectedWarning ("IL2067", Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/linker/issues/3158")]
 			static void DeconstructRecordWithAnnotation (TypeAndInstance value)
 			{
 				var (type, instance) = value;
@@ -86,8 +115,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 				type.RequiresPublicMethods ();
 			}
 
-			// https://github.com/dotnet/linker/issues/3158
-			[ExpectedWarning ("IL2067", ProducedBy = Tool.Trimmer | Tool.NativeAot)]
+			[ExpectedWarning ("IL2067", Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/linker/issues/3158")]
 			static void DeconstructRecordManualWithMismatchAnnotation (TypeAndInstanceRecordManual value)
 			{
 				var (type, instance) = value;
@@ -97,6 +125,8 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			public static void Test ()
 			{
 				DeconstructVariableNoAnnotation ((typeof (string), null));
+				DeconstructVariableFlowCapture ();
+				DeconstructVariablePropertyReference ((typeof (string), null));
 				DeconstructRecordWithAnnotation (new (typeof (string), null));
 				DeconstructClassWithAnnotation (new (typeof (string), null));
 				DeconstructRecordManualWithAnnotation (new (typeof (string), null));

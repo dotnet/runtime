@@ -26,5 +26,7 @@ namespace ILCompiler
         public abstract string ThreadStaticsIndex(TypeDesc type);
         public abstract string TypeGenericDictionary(TypeDesc type);
         public abstract string MethodGenericDictionary(MethodDesc method);
+        public abstract string ExternMethod(string unmangledName, MethodDesc method);
+        public abstract string ExternVariable(string unmangledName);
     }
 }

@@ -67,7 +67,7 @@ async function main() {
     btn.onclick = () => doWork(exports.Sample.Test.StartAsyncWork, exports.Sample.Test.StopWork, exports.Sample.Test.GetIterationsDone);
 
     if (INTERNAL.diagnosticServerThread === undefined) {
-        console.warn("please recompile runtime with /p:MonoWasmBuildVariant=multithread /p:MonoDiagnosticsMock=true" + event.type)
+        console.warn("please recompile runtime with /p:WasmEnableThreads=true /p:MonoDiagnosticsMock=true" + event.type)
         return;
     }
 

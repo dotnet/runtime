@@ -42,7 +42,7 @@ namespace Microsoft.Interop.JavaScript
                 useSiteAttributeParsers,
                 ImmutableArray.Create<IMarshallingInfoAttributeParser>(new JSMarshalAsAttributeParser(env.Compilation)),
                 ImmutableArray.Create<ITypeBasedMarshallingInfoProvider>(new FallbackJSMarshallingInfoProvider()));
-            SignatureContext sigContext = SignatureContext.Create(method, jsMarshallingAttributeParser, env, typeof(JSImportGenerator).Assembly);
+            SignatureContext sigContext = SignatureContext.Create(method, jsMarshallingAttributeParser, env, new CodeEmitOptions(SkipInit: true), typeof(JSImportGenerator).Assembly);
 
             string stubTypeFullName = method.ContainingType.ToDisplayString(TypeContainingTypesAndNamespacesStyle);
 
@@ -52,7 +52,10 @@ namespace Microsoft.Interop.JavaScript
             {
                 foreach (var param in sigContext.ElementTypeInformation)
                 {
-                    hash = hash * 31 + (uint)param.ManagedType.FullTypeName.GetHashCode();
+                    // Manually hash the managed type names character by character as
+                    // string hashes are not stable across runs.
+                    foreach (char c in param.ManagedType.FullTypeName)
+                        hash = hash * 31 + c;
                 }
             };
             int typesHash = Math.Abs((int)hash);

@@ -2,13 +2,19 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq.Expressions;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.ExceptionServices;
+using System.Runtime.InteropServices;
 using Microsoft.Extensions.Internal;
+
+#if NET
+[assembly: System.Reflection.Metadata.MetadataUpdateHandler(typeof(Microsoft.Extensions.DependencyInjection.ActivatorUtilities.ActivatorUtilitiesUpdateHandler))]
+#endif
 
 namespace Microsoft.Extensions.DependencyInjection
 {
@@ -17,13 +23,19 @@ namespace Microsoft.Extensions.DependencyInjection
     /// </summary>
     public static class ActivatorUtilities
     {
-#if NET8_0_OR_GREATER
+#if NET
+        // Support caching of constructor metadata for the common case of types in non-collectible assemblies.
+        private static readonly ConcurrentDictionary<Type, ConstructorInfoEx[]> s_constructorInfos = new();
+
+        // Support caching of constructor metadata for types in collectible assemblies.
+        private static readonly Lazy<ConditionalWeakTable<Type, ConstructorInfoEx[]>> s_collectibleConstructorInfos = new();
+
         // Maximum number of fixed arguments for ConstructorInvoker.Invoke(arg1, etc).
         private const int FixedArgumentThreshold = 4;
 #endif
 
         private static readonly MethodInfo GetServiceInfo =
-            GetMethodInfo<Func<IServiceProvider, Type, Type, bool, object?>>((sp, t, r, c) => GetService(sp, t, r, c));
+            new Func<IServiceProvider, Type, Type, bool, object?, object?>(GetService).Method;
 
         /// <summary>
         /// Instantiate a type with constructor arguments provided directly and/or from an <see cref="IServiceProvider"/>.
@@ -47,6 +59,30 @@ namespace Microsoft.Extensions.DependencyInjection
                 throw new InvalidOperationException(SR.CannotCreateAbstractClasses);
             }
 
+            ConstructorInfoEx[]? constructors;
+#if NET
+            if (!s_constructorInfos.TryGetValue(instanceType, out constructors))
+            {
+                constructors = GetOrAddConstructors(instanceType);
+            }
+
+            // Attempt to use the stack allocated arg values if <= 4 ctor args.
+            StackAllocatedObjects stackValues = default;
+            int maxArgs = GetMaxArgCount();
+            Span<object?> values = maxArgs <= StackAllocatedObjects.MaxStackAllocArgCount / 2 ?
+                stackValues :
+                new object?[maxArgs * 2];
+
+            Span<object?> ctorArgs = values.Slice(0, maxArgs);
+            Span<object?> bestCtorArgs = values.Slice(maxArgs, maxArgs);
+#else
+            constructors = CreateConstructorInfoExs(instanceType);
+            object?[]? ctorArgs = null;
+            object?[]? bestCtorArgs = null;
+#endif
+
+            scoped ConstructorMatcher matcher = default;
+            ConstructorInfoEx? constructor;
             IServiceProviderIsService? serviceProviderIsService = provider.GetService<IServiceProviderIsService>();
             // if container supports using IServiceProviderIsService, we try to find the longest ctor that
             // (a) matches all parameters given to CreateInstance
@@ -55,43 +91,71 @@ namespace Microsoft.Extensions.DependencyInjection
             // instance if all parameters given to CreateInstance only match with a single ctor
             if (serviceProviderIsService != null)
             {
-                int bestLength = -1;
-                bool seenPreferred = false;
-
-                ConstructorMatcher bestMatcher = default;
-                bool multipleBestLengthFound = false;
-
-                foreach (ConstructorInfo? constructor in instanceType.GetConstructors())
+                // Handle the case where the attribute is used.
+                for (int i = 0; i < constructors.Length; i++)
                 {
-                    var matcher = new ConstructorMatcher(constructor);
-                    bool isPreferred = constructor.IsDefined(typeof(ActivatorUtilitiesConstructorAttribute), false);
-                    int length = matcher.Match(parameters, serviceProviderIsService);
+                    constructor = constructors[i];
 
-                    if (isPreferred)
+                    if (constructor.IsPreferred)
                     {
-                        if (seenPreferred)
+                        for (int j = i + 1; j < constructors.Length; j++)
                         {
-                            ThrowMultipleCtorsMarkedWithAttributeException();
+                            if (constructors[j].IsPreferred)
+                            {
+                                ThrowMultipleCtorsMarkedWithAttributeException();
+                            }
                         }
 
-                        if (length == -1)
+                        InitializeCtorArgValues(ref ctorArgs, constructor.Parameters.Length);
+                        matcher = new ConstructorMatcher(constructor, ctorArgs);
+                        if (matcher.Match(parameters, serviceProviderIsService) == -1)
                         {
                             ThrowMarkedCtorDoesNotTakeAllProvidedArguments();
                         }
-                    }
 
-                    if (isPreferred || bestLength < length)
+                        return matcher.CreateInstance(provider);
+                    }
+                }
+
+                int bestLength = -1;
+                scoped ConstructorMatcher bestMatcher = default;
+                bool multipleBestLengthFound = false;
+
+                // Find the constructor with the most matches.
+                for (int i = 0; i < constructors.Length; i++)
+                {
+                    constructor = constructors[i];
+
+                    InitializeCtorArgValues(ref ctorArgs, constructor.Parameters.Length);
+                    matcher = new ConstructorMatcher(constructor, ctorArgs);
+                    int length = matcher.Match(parameters, serviceProviderIsService);
+
+                    Debug.Assert(!constructor.IsPreferred);
+
+                    if (bestLength < length)
                     {
                         bestLength = length;
-                        bestMatcher = matcher;
+#if NET
+                        ctorArgs.CopyTo(bestCtorArgs);
+#else
+                        if (i == constructors.Length - 1)
+                        {
+                            // We can prevent an alloc for the last case.
+                            bestCtorArgs = ctorArgs;
+                        }
+                        else
+                        {
+                            bestCtorArgs = new object?[length];
+                            ctorArgs.CopyTo(bestCtorArgs, 0);
+                        }
+#endif
+                        bestMatcher = new ConstructorMatcher(matcher.ConstructorInfo, bestCtorArgs);
                         multipleBestLengthFound = false;
                     }
                     else if (bestLength == length)
                     {
                         multipleBestLengthFound = true;
                     }
-
-                    seenPreferred |= isPreferred;
                 }
 
                 if (bestLength != -1)
@@ -105,16 +169,96 @@ namespace Microsoft.Extensions.DependencyInjection
                 }
             }
 
-            Type?[] argumentTypes = new Type[parameters.Length];
-            for (int i = 0; i < argumentTypes.Length; i++)
+            Type?[] argumentTypes;
+            if (parameters.Length == 0)
             {
-                argumentTypes[i] = parameters[i]?.GetType();
+                argumentTypes = Type.EmptyTypes;
+            }
+            else
+            {
+                argumentTypes = new Type[parameters.Length];
+                for (int i = 0; i < argumentTypes.Length; i++)
+                {
+                    argumentTypes[i] = parameters[i]?.GetType();
+                }
             }
 
-            FindApplicableConstructor(instanceType, argumentTypes, out ConstructorInfo constructorInfo, out int?[] parameterMap);
-            var constructorMatcher = new ConstructorMatcher(constructorInfo);
-            constructorMatcher.MapParameters(parameterMap, parameters);
-            return constructorMatcher.CreateInstance(provider);
+            FindApplicableConstructor(instanceType, argumentTypes, constructors, out ConstructorInfo constructorInfo, out int?[] parameterMap);
+            constructor = FindConstructorEx(constructorInfo, constructors);
+
+            InitializeCtorArgValues(ref ctorArgs, constructor.Parameters.Length);
+            matcher = new ConstructorMatcher(constructor, ctorArgs);
+            matcher.MapParameters(parameterMap, parameters);
+            return matcher.CreateInstance(provider);
+
+#if NET
+            int GetMaxArgCount()
+            {
+                int max = 0;
+                for (int i = 0; i < constructors.Length; i++)
+                {
+                    max = int.Max(max, constructors[i].Parameters.Length);
+                }
+
+                return max;
+            }
+
+            static void InitializeCtorArgValues(ref Span<object?> ctorArgs, int _)
+            {
+                ctorArgs.Clear();
+            }
+#else
+            static void InitializeCtorArgValues(ref object[] ctorArgs, int length)
+            {
+                if (ctorArgs is not null && ctorArgs.Length == length)
+                {
+                    Array.Clear(ctorArgs, 0, length);
+                }
+                else
+                {
+                    ctorArgs = new object?[length];
+                }
+            }
+#endif
+        }
+
+#if NET
+        private static ConstructorInfoEx[] GetOrAddConstructors(
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] Type type)
+        {
+            // Not found. Do the slower work of checking for the value in the correct cache.
+            // Null and non-collectible load contexts use the default cache.
+            if (!type.Assembly.IsCollectible)
+            {
+                return s_constructorInfos.GetOrAdd(type, CreateConstructorInfoExs(type));
+            }
+
+            // Collectible load contexts should use the ConditionalWeakTable so they can be unloaded.
+            if (s_collectibleConstructorInfos.Value.TryGetValue(type, out ConstructorInfoEx[]? value))
+            {
+                return value;
+            }
+
+            value = CreateConstructorInfoExs(type);
+
+            // ConditionalWeakTable doesn't support GetOrAdd() so use AddOrUpdate(). This means threads
+            // can have different instances for the same type, but that is OK since they are equivalent.
+            s_collectibleConstructorInfos.Value.AddOrUpdate(type, value);
+            return value;
+        }
+#endif // NET
+
+        private static ConstructorInfoEx[] CreateConstructorInfoExs(
+                [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] Type type)
+        {
+            ConstructorInfo[] constructors = type.GetConstructors();
+            ConstructorInfoEx[]? value = new ConstructorInfoEx[constructors.Length];
+            for (int i = 0; i < constructors.Length; i++)
+            {
+                value[i] = new ConstructorInfoEx(constructors[i]);
+            }
+
+            return value;
         }
 
         /// <summary>
@@ -133,7 +277,7 @@ namespace Microsoft.Extensions.DependencyInjection
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] Type instanceType,
             Type[] argumentTypes)
         {
-#if NETSTANDARD2_1_OR_GREATER || NETCOREAPP
+#if NETSTANDARD2_1_OR_GREATER || NET
             if (!RuntimeFeature.IsDynamicCodeCompiled)
             {
                 // Create a reflection-based factory when dynamic code is not compiled\jitted as would be the case with
@@ -147,30 +291,30 @@ namespace Microsoft.Extensions.DependencyInjection
 #endif
             CreateFactoryInternal(instanceType, argumentTypes, out ParameterExpression provider, out ParameterExpression argumentArray, out Expression factoryExpressionBody);
 
-            var factoryLambda = Expression.Lambda<Func<IServiceProvider, object?[]?, object>>(
+            var factoryLambda = Expression.Lambda<ObjectFactory>(
                 factoryExpressionBody, provider, argumentArray);
 
-            Func<IServiceProvider, object?[]?, object>? result = factoryLambda.Compile();
-            return result.Invoke;
+            ObjectFactory? result = factoryLambda.Compile();
+            return result;
         }
 
         /// <summary>
-        /// Create a delegate that will instantiate a type with constructor arguments provided directly
+        /// Creates a delegate that will instantiate a type with constructor arguments provided directly
         /// and/or from an <see cref="IServiceProvider"/>.
         /// </summary>
-        /// <typeparam name="T">The type to activate</typeparam>
+        /// <typeparam name="T">The type to activate.</typeparam>
         /// <param name="argumentTypes">
-        /// The types of objects, in order, that will be passed to the returned function as its second parameter
+        /// The types of objects, in order, that will be passed to the returned function as its second parameter.
         /// </param>
         /// <returns>
-        /// A factory that will instantiate type T using an <see cref="IServiceProvider"/>
-        /// and an argument array containing objects matching the types defined in argumentTypes
+        /// A factory that will instantiate type <typeparamref name="T" /> using an <see cref="IServiceProvider"/>
+        /// and an argument array containing objects matching the types defined in <paramref name="argumentTypes" />.
         /// </returns>
         public static ObjectFactory<T>
             CreateFactory<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] T>(
                 Type[] argumentTypes)
         {
-#if NETSTANDARD2_1_OR_GREATER || NETCOREAPP
+#if NETSTANDARD2_1_OR_GREATER || NET
             if (!RuntimeFeature.IsDynamicCodeCompiled)
             {
                 // See the comment above in the non-generic CreateFactory() for why we use 'IsDynamicCodeCompiled' here.
@@ -180,16 +324,16 @@ namespace Microsoft.Extensions.DependencyInjection
 #endif
             CreateFactoryInternal(typeof(T), argumentTypes, out ParameterExpression provider, out ParameterExpression argumentArray, out Expression factoryExpressionBody);
 
-            var factoryLambda = Expression.Lambda<Func<IServiceProvider, object?[]?, T>>(
+            var factoryLambda = Expression.Lambda<ObjectFactory<T>>(
                 factoryExpressionBody, provider, argumentArray);
 
-            Func<IServiceProvider, object?[]?, T>? result = factoryLambda.Compile();
-            return result.Invoke;
+            ObjectFactory<T>? result = factoryLambda.Compile();
+            return result;
         }
 
         private static void CreateFactoryInternal([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] Type instanceType, Type[] argumentTypes, out ParameterExpression provider, out ParameterExpression argumentArray, out Expression factoryExpressionBody)
         {
-            FindApplicableConstructor(instanceType, argumentTypes, out ConstructorInfo constructor, out int?[] parameterMap);
+            FindApplicableConstructor(instanceType, argumentTypes, constructors: null, out ConstructorInfo constructor, out int?[] parameterMap);
 
             provider = Expression.Parameter(typeof(IServiceProvider), "provider");
             argumentArray = Expression.Parameter(typeof(object[]), "argumentArray");
@@ -197,12 +341,12 @@ namespace Microsoft.Extensions.DependencyInjection
         }
 
         /// <summary>
-        /// Instantiate a type with constructor arguments provided directly and/or from an <see cref="IServiceProvider"/>.
+        /// Instantiates a type with constructor arguments provided directly and/or from an <see cref="IServiceProvider"/>.
         /// </summary>
-        /// <typeparam name="T">The type to activate</typeparam>
-        /// <param name="provider">The service provider used to resolve dependencies</param>
-        /// <param name="parameters">Constructor arguments not provided by the <paramref name="provider"/>.</param>
-        /// <returns>An activated object of type T</returns>
+        /// <typeparam name="T">The type to activate.</typeparam>
+        /// <param name="provider">The service provider used to resolve dependencies.</param>
+        /// <param name="parameters">Constructor arguments not provided by <paramref name="provider"/>.</param>
+        /// <returns>An activated object of type <typeparamref name="T" />.</returns>
         public static T CreateInstance<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] T>(IServiceProvider provider, params object[] parameters)
         {
             return (T)CreateInstance(provider, typeof(T), parameters);
@@ -232,15 +376,9 @@ namespace Microsoft.Extensions.DependencyInjection
             return provider.GetService(type) ?? CreateInstance(provider, type);
         }
 
-        private static MethodInfo GetMethodInfo<T>(Expression<T> expr)
+        private static object? GetService(IServiceProvider sp, Type type, Type requiredBy, bool hasDefaultValue, object? key)
         {
-            var mc = (MethodCallExpression)expr.Body;
-            return mc.Method;
-        }
-
-        private static object? GetService(IServiceProvider sp, Type type, Type requiredBy, bool hasDefaultValue)
-        {
-            object? service = sp.GetService(type);
+            object? service = key == null ? sp.GetService(type) : GetKeyedService(sp, type, key);
             if (service is null && !hasDefaultValue)
             {
                 ThrowHelperUnableToResolveService(type, requiredBy);
@@ -275,10 +413,12 @@ namespace Microsoft.Extensions.DependencyInjection
                 }
                 else
                 {
+                    var keyAttribute = (FromKeyedServicesAttribute?)Attribute.GetCustomAttribute(constructorParameter, typeof(FromKeyedServicesAttribute), inherit: false);
                     var parameterTypeExpression = new Expression[] { serviceProvider,
                         Expression.Constant(parameterType, typeof(Type)),
                         Expression.Constant(constructor.DeclaringType, typeof(Type)),
-                        Expression.Constant(hasDefaultValue) };
+                        Expression.Constant(hasDefaultValue),
+                        Expression.Constant(keyAttribute?.Key, typeof(object)) };
                     constructorArguments[i] = Expression.Call(GetServiceInfo, parameterTypeExpression);
                 }
 
@@ -297,7 +437,7 @@ namespace Microsoft.Extensions.DependencyInjection
                 Expression.New(constructor, constructorArguments));
         }
 
-#if NETSTANDARD2_1_OR_GREATER || NETCOREAPP
+#if NETSTANDARD2_1_OR_GREATER || NET
         [DoesNotReturn]
         private static void ThrowHelperArgumentNullExceptionServiceProvider()
         {
@@ -308,10 +448,10 @@ namespace Microsoft.Extensions.DependencyInjection
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] Type instanceType,
             Type?[] argumentTypes)
         {
-            FindApplicableConstructor(instanceType, argumentTypes, out ConstructorInfo constructor, out int?[] parameterMap);
+            FindApplicableConstructor(instanceType, argumentTypes, constructors: null, out ConstructorInfo constructor, out int?[] parameterMap);
             Type declaringType = constructor.DeclaringType!;
 
-#if NET8_0_OR_GREATER
+#if NET
             ConstructorInvoker invoker = ConstructorInvoker.Create(constructor);
 
             ParameterInfo[] constructorParameters = constructor.GetParameters();
@@ -349,10 +489,10 @@ namespace Microsoft.Extensions.DependencyInjection
             if (matchedArgCount == 0)
             {
                 // All injected; use a fast path.
-                Type[] types = GetParameterTypes();
+                FactoryParameterContext[] parameters = GetFactoryParameterContext();
                 return useFixedValues ?
-                    (serviceProvider, arguments) => ReflectionFactoryServiceOnlyFixed(invoker, types, declaringType, serviceProvider) :
-                    (serviceProvider, arguments) => ReflectionFactoryServiceOnlySpan(invoker, types, declaringType, serviceProvider);
+                    (serviceProvider, arguments) => ReflectionFactoryServiceOnlyFixed(invoker, parameters, declaringType, serviceProvider) :
+                    (serviceProvider, arguments) => ReflectionFactoryServiceOnlySpan(invoker, parameters, declaringType, serviceProvider);
             }
 
             if (matchedArgCount == constructorParameters.Length)
@@ -370,16 +510,6 @@ namespace Microsoft.Extensions.DependencyInjection
                     (serviceProvider, arguments) => ReflectionFactoryCanonicalFixed(invoker, parameters, declaringType, serviceProvider, arguments) :
                     (serviceProvider, arguments) => ReflectionFactoryCanonicalSpan(invoker, parameters, declaringType, serviceProvider, arguments);
             }
-
-            Type[] GetParameterTypes()
-            {
-                Type[] types = new Type[constructorParameters.Length];
-                for (int i = 0; i < constructorParameters.Length; i++)
-                {
-                    types[i] = constructorParameters[i].ParameterType;
-                }
-                return types;
-            }
 #else
             ParameterInfo[] constructorParameters = constructor.GetParameters();
             if (constructorParameters.Length == 0)
@@ -390,7 +520,7 @@ namespace Microsoft.Extensions.DependencyInjection
 
             FactoryParameterContext[] parameters = GetFactoryParameterContext();
             return (serviceProvider, arguments) => ReflectionFactoryCanonical(constructor, parameters, declaringType, serviceProvider, arguments);
-#endif // NET8_0_OR_GREATER
+#endif // NET
 
             FactoryParameterContext[] GetFactoryParameterContext()
             {
@@ -398,41 +528,51 @@ namespace Microsoft.Extensions.DependencyInjection
                 for (int i = 0; i < constructorParameters.Length; i++)
                 {
                     ParameterInfo constructorParameter = constructorParameters[i];
+                    FromKeyedServicesAttribute? attr = (FromKeyedServicesAttribute?)
+                        Attribute.GetCustomAttribute(constructorParameter, typeof(FromKeyedServicesAttribute), inherit: false);
                     bool hasDefaultValue = ParameterDefaultValue.TryGetDefaultValue(constructorParameter, out object? defaultValue);
-                    parameters[i] = new FactoryParameterContext(constructorParameter.ParameterType, hasDefaultValue, defaultValue, parameterMap[i] ?? -1);
+                    parameters[i] = new FactoryParameterContext(
+                        constructorParameter.ParameterType,
+                        hasDefaultValue,
+                        defaultValue,
+                        parameterMap[i] ?? -1,
+                        attr?.Key);
                 }
 
                 return parameters;
             }
         }
-#endif // NETSTANDARD2_1_OR_GREATER || NETCOREAPP
+#endif // NETSTANDARD2_1_OR_GREATER || NET
 
         private readonly struct FactoryParameterContext
         {
-            public FactoryParameterContext(Type parameterType, bool hasDefaultValue, object? defaultValue, int argumentIndex)
+            public FactoryParameterContext(Type parameterType, bool hasDefaultValue, object? defaultValue, int argumentIndex, object? serviceKey)
             {
                 ParameterType = parameterType;
                 HasDefaultValue = hasDefaultValue;
                 DefaultValue = defaultValue;
                 ArgumentIndex = argumentIndex;
+                ServiceKey = serviceKey;
             }
 
             public Type ParameterType { get; }
             public bool HasDefaultValue { get; }
             public object? DefaultValue { get; }
             public int ArgumentIndex { get; }
+            public object? ServiceKey { get; }
         }
 
         private static void FindApplicableConstructor(
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] Type instanceType,
             Type?[] argumentTypes,
+            ConstructorInfoEx[]? constructors,
             out ConstructorInfo matchingConstructor,
             out int?[] matchingParameterMap)
         {
             ConstructorInfo? constructorInfo;
             int?[]? parameterMap;
 
-            if (!TryFindPreferredConstructor(instanceType, argumentTypes, out constructorInfo, out parameterMap) &&
+            if (!TryFindPreferredConstructor(instanceType, argumentTypes, constructors, out constructorInfo, out parameterMap) &&
                 !TryFindMatchingConstructor(instanceType, argumentTypes, out constructorInfo, out parameterMap))
             {
                 throw new InvalidOperationException(SR.Format(SR.CtorNotLocated, instanceType));
@@ -440,6 +580,21 @@ namespace Microsoft.Extensions.DependencyInjection
 
             matchingConstructor = constructorInfo;
             matchingParameterMap = parameterMap;
+        }
+
+        // Find the ConstructorInfoEx from the given constructorInfo.
+        private static ConstructorInfoEx FindConstructorEx(ConstructorInfo constructorInfo, ConstructorInfoEx[] constructorExs)
+        {
+            for (int i = 0; i < constructorExs.Length; i++)
+            {
+                if (ReferenceEquals(constructorExs[i].Info, constructorInfo))
+                {
+                    return constructorExs[i];
+                }
+            }
+
+            Debug.Assert(false);
+            return null!;
         }
 
         // Tries to find constructor based on provided argument types
@@ -479,6 +634,7 @@ namespace Microsoft.Extensions.DependencyInjection
         private static bool TryFindPreferredConstructor(
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] Type instanceType,
             Type?[] argumentTypes,
+            ConstructorInfoEx[]? constructors,
             [NotNullWhen(true)] out ConstructorInfo? matchingConstructor,
             [NotNullWhen(true)] out int?[]? parameterMap)
         {
@@ -486,21 +642,33 @@ namespace Microsoft.Extensions.DependencyInjection
             matchingConstructor = null;
             parameterMap = null;
 
-            foreach (ConstructorInfo? constructor in instanceType.GetConstructors())
+            if (constructors is null)
             {
-                if (constructor.IsDefined(typeof(ActivatorUtilitiesConstructorAttribute), false))
+#if NET
+                if (!s_constructorInfos.TryGetValue(instanceType, out constructors))
+                {
+                    constructors = GetOrAddConstructors(instanceType);
+                }
+#else
+                constructors = CreateConstructorInfoExs(instanceType);
+#endif
+            }
+
+            foreach (ConstructorInfoEx constructor in constructors)
+            {
+                if (constructor.IsPreferred)
                 {
                     if (seenPreferred)
                     {
                         ThrowMultipleCtorsMarkedWithAttributeException();
                     }
 
-                    if (!TryCreateParameterMap(constructor.GetParameters(), argumentTypes, out int?[] tempParameterMap))
+                    if (!TryCreateParameterMap(constructor.Info.GetParameters(), argumentTypes, out int?[] tempParameterMap))
                     {
                         ThrowMarkedCtorDoesNotTakeAllProvidedArguments();
                     }
 
-                    matchingConstructor = constructor;
+                    matchingConstructor = constructor.Info;
                     parameterMap = tempParameterMap;
                     seenPreferred = true;
                 }
@@ -551,59 +719,101 @@ namespace Microsoft.Extensions.DependencyInjection
             return true;
         }
 
-        private static object? GetService(IServiceProvider serviceProvider, ParameterInfo parameterInfo)
+        private sealed class ConstructorInfoEx
         {
-            // Handle keyed service
-            if (TryGetServiceKey(parameterInfo, out object? key))
+            public readonly ConstructorInfo Info;
+            public readonly ParameterInfo[] Parameters;
+            public readonly bool IsPreferred;
+            private readonly object?[]? _parameterKeys;
+#if NET
+            public ConstructorInvoker? _invoker;
+            public ConstructorInvoker Invoker
             {
-                if (serviceProvider is IKeyedServiceProvider keyedServiceProvider)
+                get
                 {
-                    return keyedServiceProvider.GetKeyedService(parameterInfo.ParameterType, key);
+                    _invoker ??= ConstructorInvoker.Create(Info);
+                    return _invoker;
                 }
-                throw new InvalidOperationException(SR.KeyedServicesNotSupported);
             }
-            // Try non keyed service
-            return serviceProvider.GetService(parameterInfo.ParameterType);
-        }
+#endif
 
-        private static bool IsService(IServiceProviderIsService serviceProviderIsService, ParameterInfo parameterInfo)
-        {
-            // Handle keyed service
-            if (TryGetServiceKey(parameterInfo, out object? key))
+            public ConstructorInfoEx(ConstructorInfo constructor)
             {
-                if (serviceProviderIsService is IServiceProviderIsKeyedService serviceProviderIsKeyedService)
+                Info = constructor;
+                Parameters = constructor.GetParameters();
+                IsPreferred = constructor.IsDefined(typeof(ActivatorUtilitiesConstructorAttribute), inherit: false);
+
+                for (int i = 0; i < Parameters.Length; i++)
                 {
-                    return serviceProviderIsKeyedService.IsKeyedService(parameterInfo.ParameterType, key);
+                    FromKeyedServicesAttribute? attr = (FromKeyedServicesAttribute?)
+                        Attribute.GetCustomAttribute(Parameters[i], typeof(FromKeyedServicesAttribute), inherit: false);
+
+                    if (attr is not null)
+                    {
+                        _parameterKeys ??= new object?[Parameters.Length];
+                        _parameterKeys[i] = attr.Key;
+                    }
                 }
-                throw new InvalidOperationException(SR.KeyedServicesNotSupported);
             }
-            // Try non keyed service
-            return serviceProviderIsService.IsService(parameterInfo.ParameterType);
-        }
 
-        private static bool TryGetServiceKey(ParameterInfo parameterInfo, out object? key)
-        {
-            foreach (var attribute in parameterInfo.GetCustomAttributes<FromKeyedServicesAttribute>(false))
+            public bool IsService(IServiceProviderIsService serviceProviderIsService, int parameterIndex)
             {
-                key = attribute.Key;
-                return true;
+                ParameterInfo parameterInfo = Parameters[parameterIndex];
+
+                // Handle keyed service
+                object? key = _parameterKeys?[parameterIndex];
+                if (key is not null)
+                {
+                    if (serviceProviderIsService is IServiceProviderIsKeyedService serviceProviderIsKeyedService)
+                    {
+                        return serviceProviderIsKeyedService.IsKeyedService(parameterInfo.ParameterType, key);
+                    }
+
+                    throw new InvalidOperationException(SR.KeyedServicesNotSupported);
+                }
+
+                // Use non-keyed service
+                return serviceProviderIsService.IsService(parameterInfo.ParameterType);
             }
-            key = null;
-            return false;
+
+            public object? GetService(IServiceProvider serviceProvider, int parameterIndex)
+            {
+                ParameterInfo parameterInfo = Parameters[parameterIndex];
+
+                // Handle keyed service
+                object? key = _parameterKeys?[parameterIndex];
+                if (key is not null)
+                {
+                    if (serviceProvider is IKeyedServiceProvider keyedServiceProvider)
+                    {
+                        return keyedServiceProvider.GetKeyedService(parameterInfo.ParameterType, key);
+                    }
+
+                    throw new InvalidOperationException(SR.KeyedServicesNotSupported);
+                }
+
+                // Use non-keyed service
+                return serviceProvider.GetService(parameterInfo.ParameterType);
+            }
         }
 
-        private readonly struct ConstructorMatcher
+        private readonly ref struct ConstructorMatcher
         {
-            private readonly ConstructorInfo _constructor;
-            private readonly ParameterInfo[] _parameters;
+            private readonly ConstructorInfoEx _constructor;
+
+#if NET
+            private readonly Span<object?> _parameterValues;
+            public ConstructorMatcher(ConstructorInfoEx constructor, Span<object?> parameterValues)
+#else
             private readonly object?[] _parameterValues;
-
-            public ConstructorMatcher(ConstructorInfo constructor)
+            public ConstructorMatcher(ConstructorInfoEx constructor, object?[] parameterValues)
+#endif
             {
                 _constructor = constructor;
-                _parameters = _constructor.GetParameters();
-                _parameterValues = new object?[_parameters.Length];
+                _parameterValues = parameterValues;
             }
+
+            public ConstructorInfoEx ConstructorInfo => _constructor;
 
             public int Match(object[] givenParameters, IServiceProviderIsService serviceProviderIsService)
             {
@@ -612,10 +822,10 @@ namespace Microsoft.Extensions.DependencyInjection
                     Type? givenType = givenParameters[givenIndex]?.GetType();
                     bool givenMatched = false;
 
-                    for (int applyIndex = 0; applyIndex < _parameters.Length; applyIndex++)
+                    for (int applyIndex = 0; applyIndex < _constructor.Parameters.Length; applyIndex++)
                     {
                         if (_parameterValues[applyIndex] == null &&
-                            _parameters[applyIndex].ParameterType.IsAssignableFrom(givenType))
+                            _constructor.Parameters[applyIndex].ParameterType.IsAssignableFrom(givenType))
                         {
                             givenMatched = true;
                             _parameterValues[applyIndex] = givenParameters[givenIndex];
@@ -630,12 +840,12 @@ namespace Microsoft.Extensions.DependencyInjection
                 }
 
                 // confirms the rest of ctor arguments match either as a parameter with a default value or as a service registered
-                for (int i = 0; i < _parameters.Length; i++)
+                for (int i = 0; i < _constructor.Parameters.Length; i++)
                 {
                     if (_parameterValues[i] == null &&
-                        !IsService(serviceProviderIsService, _parameters[i]))
+                        !_constructor.IsService(serviceProviderIsService, i))
                     {
-                        if (ParameterDefaultValue.TryGetDefaultValue(_parameters[i], out object? defaultValue))
+                        if (ParameterDefaultValue.TryGetDefaultValue(_constructor.Parameters[i], out object? defaultValue))
                         {
                             _parameterValues[i] = defaultValue;
                         }
@@ -646,21 +856,21 @@ namespace Microsoft.Extensions.DependencyInjection
                     }
                 }
 
-                return _parameters.Length;
+                return _constructor.Parameters.Length;
             }
 
             public object CreateInstance(IServiceProvider provider)
             {
-                for (int index = 0; index < _parameters.Length; index++)
+                for (int index = 0; index < _constructor.Parameters.Length; index++)
                 {
                     if (_parameterValues[index] == null)
                     {
-                        object? value = GetService(provider, _parameters[index]);
+                        object? value = _constructor.GetService(provider, index);
                         if (value == null)
                         {
-                            if (!ParameterDefaultValue.TryGetDefaultValue(_parameters[index], out object? defaultValue))
+                            if (!ParameterDefaultValue.TryGetDefaultValue(_constructor.Parameters[index], out object? defaultValue))
                             {
-                                throw new InvalidOperationException(SR.Format(SR.UnableToResolveService, _parameters[index].ParameterType, _constructor.DeclaringType));
+                                throw new InvalidOperationException(SR.Format(SR.UnableToResolveService, _constructor.Parameters[index].ParameterType, _constructor.Info.DeclaringType));
                             }
                             else
                             {
@@ -674,10 +884,12 @@ namespace Microsoft.Extensions.DependencyInjection
                     }
                 }
 
-#if NETFRAMEWORK || NETSTANDARD2_0
+#if NET
+                return _constructor.Invoker.Invoke(_parameterValues.Slice(0, _constructor.Parameters.Length));
+#else
                 try
                 {
-                    return _constructor.Invoke(_parameterValues);
+                    return _constructor.Info.Invoke(_parameterValues);
                 }
                 catch (TargetInvocationException ex) when (ex.InnerException != null)
                 {
@@ -685,14 +897,12 @@ namespace Microsoft.Extensions.DependencyInjection
                     // The above line will always throw, but the compiler requires we throw explicitly.
                     throw;
                 }
-#else
-                return _constructor.Invoke(BindingFlags.DoNotWrapExceptions, binder: null, parameters: _parameterValues, culture: null);
 #endif
             }
 
             public void MapParameters(int?[] parameterMap, object[] givenParameters)
             {
-                for (int i = 0; i < _parameters.Length; i++)
+                for (int i = 0; i < _constructor.Parameters.Length; i++)
                 {
                     if (parameterMap[i] != null)
                     {
@@ -712,42 +922,42 @@ namespace Microsoft.Extensions.DependencyInjection
             throw new InvalidOperationException(SR.Format(SR.MarkedCtorMissingArgumentTypes, nameof(ActivatorUtilitiesConstructorAttribute)));
         }
 
-#if NET8_0_OR_GREATER // Use the faster ConstructorInvoker which also has alloc-free APIs when <= 4 parameters.
+#if NET // Use the faster ConstructorInvoker which also has alloc-free APIs when <= 4 parameters.
         private static object ReflectionFactoryServiceOnlyFixed(
             ConstructorInvoker invoker,
-            Type[] parameterTypes,
+            FactoryParameterContext[] parameters,
             Type declaringType,
             IServiceProvider serviceProvider)
         {
-            Debug.Assert(parameterTypes.Length >= 1 && parameterTypes.Length <= FixedArgumentThreshold);
+            Debug.Assert(parameters.Length >= 1 && parameters.Length <= FixedArgumentThreshold);
             Debug.Assert(FixedArgumentThreshold == 4);
 
             if (serviceProvider is null)
                 ThrowHelperArgumentNullExceptionServiceProvider();
 
-            switch (parameterTypes.Length)
+            switch (parameters.Length)
             {
                 case 1:
                     return invoker.Invoke(
-                        GetService(serviceProvider, parameterTypes[0], declaringType, false));
+                        GetService(serviceProvider, parameters[0].ParameterType, declaringType, false, parameters[0].ServiceKey));
 
                 case 2:
                     return invoker.Invoke(
-                        GetService(serviceProvider, parameterTypes[0], declaringType, false),
-                        GetService(serviceProvider, parameterTypes[1], declaringType, false));
+                        GetService(serviceProvider, parameters[0].ParameterType, declaringType, false, parameters[0].ServiceKey),
+                        GetService(serviceProvider, parameters[1].ParameterType, declaringType, false, parameters[1].ServiceKey));
 
                 case 3:
                     return invoker.Invoke(
-                        GetService(serviceProvider, parameterTypes[0], declaringType, false),
-                        GetService(serviceProvider, parameterTypes[1], declaringType, false),
-                        GetService(serviceProvider, parameterTypes[2], declaringType, false));
+                        GetService(serviceProvider, parameters[0].ParameterType, declaringType, false, parameters[0].ServiceKey),
+                        GetService(serviceProvider, parameters[1].ParameterType, declaringType, false, parameters[1].ServiceKey),
+                        GetService(serviceProvider, parameters[2].ParameterType, declaringType, false, parameters[2].ServiceKey));
 
                 case 4:
                     return invoker.Invoke(
-                        GetService(serviceProvider, parameterTypes[0], declaringType, false),
-                        GetService(serviceProvider, parameterTypes[1], declaringType, false),
-                        GetService(serviceProvider, parameterTypes[2], declaringType, false),
-                        GetService(serviceProvider, parameterTypes[3], declaringType, false));
+                        GetService(serviceProvider, parameters[0].ParameterType, declaringType, false, parameters[0].ServiceKey),
+                        GetService(serviceProvider, parameters[1].ParameterType, declaringType, false, parameters[1].ServiceKey),
+                        GetService(serviceProvider, parameters[2].ParameterType, declaringType, false, parameters[2].ServiceKey),
+                        GetService(serviceProvider, parameters[3].ParameterType, declaringType, false, parameters[3].ServiceKey));
             }
 
             return null!;
@@ -755,17 +965,17 @@ namespace Microsoft.Extensions.DependencyInjection
 
         private static object ReflectionFactoryServiceOnlySpan(
             ConstructorInvoker invoker,
-            Type[] parameterTypes,
+            FactoryParameterContext[] parameters,
             Type declaringType,
             IServiceProvider serviceProvider)
         {
             if (serviceProvider is null)
                 ThrowHelperArgumentNullExceptionServiceProvider();
 
-            object?[] arguments = new object?[parameterTypes.Length];
-            for (int i = 0; i < parameterTypes.Length; i++)
+            object?[] arguments = new object?[parameters.Length];
+            for (int i = 0; i < parameters.Length; i++)
             {
-                arguments[i] = GetService(serviceProvider, parameterTypes[i], declaringType, false);
+                arguments[i] = GetService(serviceProvider, parameters[i].ParameterType, declaringType, false, parameters[i].ServiceKey);
             }
 
             return invoker.Invoke(arguments.AsSpan());
@@ -797,7 +1007,8 @@ namespace Microsoft.Extensions.DependencyInjection
                                 serviceProvider,
                                 parameter1.ParameterType,
                                 declaringType,
-                                parameter1.HasDefaultValue)) ?? parameter1.DefaultValue);
+                                parameter1.HasDefaultValue,
+                                parameter1.ServiceKey)) ?? parameter1.DefaultValue);
                 case 2:
                     {
                         ref FactoryParameterContext parameter2 = ref parameters[1];
@@ -810,7 +1021,8 @@ namespace Microsoft.Extensions.DependencyInjection
                                     serviceProvider,
                                     parameter1.ParameterType,
                                     declaringType,
-                                    parameter1.HasDefaultValue)) ?? parameter1.DefaultValue,
+                                    parameter1.HasDefaultValue,
+                                    parameter1.ServiceKey)) ?? parameter1.DefaultValue,
                              ((parameter2.ArgumentIndex != -1)
                                 // Throws a NullReferenceException if arguments is null. Consistent with expression-based factory.
                                 ? arguments![parameter2.ArgumentIndex]
@@ -818,7 +1030,8 @@ namespace Microsoft.Extensions.DependencyInjection
                                     serviceProvider,
                                     parameter2.ParameterType,
                                     declaringType,
-                                    parameter2.HasDefaultValue)) ?? parameter2.DefaultValue);
+                                    parameter2.HasDefaultValue,
+                                    parameter2.ServiceKey)) ?? parameter2.DefaultValue);
                     }
                 case 3:
                     {
@@ -833,7 +1046,8 @@ namespace Microsoft.Extensions.DependencyInjection
                                     serviceProvider,
                                     parameter1.ParameterType,
                                     declaringType,
-                                    parameter1.HasDefaultValue)) ?? parameter1.DefaultValue,
+                                    parameter1.HasDefaultValue,
+                                    parameter1.ServiceKey)) ?? parameter1.DefaultValue,
                              ((parameter2.ArgumentIndex != -1)
                                 // Throws a NullReferenceException if arguments is null. Consistent with expression-based factory.
                                 ? arguments![parameter2.ArgumentIndex]
@@ -841,7 +1055,8 @@ namespace Microsoft.Extensions.DependencyInjection
                                     serviceProvider,
                                     parameter2.ParameterType,
                                     declaringType,
-                                    parameter2.HasDefaultValue)) ?? parameter2.DefaultValue,
+                                    parameter2.HasDefaultValue,
+                                    parameter2.ServiceKey)) ?? parameter2.DefaultValue,
                              ((parameter3.ArgumentIndex != -1)
                                 // Throws a NullReferenceException if arguments is null. Consistent with expression-based factory.
                                 ? arguments![parameter3.ArgumentIndex]
@@ -849,7 +1064,8 @@ namespace Microsoft.Extensions.DependencyInjection
                                     serviceProvider,
                                     parameter3.ParameterType,
                                     declaringType,
-                                    parameter3.HasDefaultValue)) ?? parameter3.DefaultValue);
+                                    parameter3.HasDefaultValue,
+                                    parameter3.ServiceKey)) ?? parameter3.DefaultValue);
                     }
                 case 4:
                     {
@@ -865,7 +1081,8 @@ namespace Microsoft.Extensions.DependencyInjection
                                     serviceProvider,
                                     parameter1.ParameterType,
                                     declaringType,
-                                    parameter1.HasDefaultValue)) ?? parameter1.DefaultValue,
+                                    parameter1.HasDefaultValue,
+                                    parameter1.ServiceKey)) ?? parameter1.DefaultValue,
                              ((parameter2.ArgumentIndex != -1)
                                 // Throws a NullReferenceException if arguments is null. Consistent with expression-based factory.
                                 ? arguments![parameter2.ArgumentIndex]
@@ -873,7 +1090,8 @@ namespace Microsoft.Extensions.DependencyInjection
                                     serviceProvider,
                                     parameter2.ParameterType,
                                     declaringType,
-                                    parameter2.HasDefaultValue)) ?? parameter2.DefaultValue,
+                                    parameter2.HasDefaultValue,
+                                    parameter2.ServiceKey)) ?? parameter2.DefaultValue,
                              ((parameter3.ArgumentIndex != -1)
                                 // Throws a NullReferenceException if arguments is null. Consistent with expression-based factory.
                                 ? arguments![parameter3.ArgumentIndex]
@@ -881,7 +1099,8 @@ namespace Microsoft.Extensions.DependencyInjection
                                     serviceProvider,
                                     parameter3.ParameterType,
                                     declaringType,
-                                    parameter3.HasDefaultValue)) ?? parameter3.DefaultValue,
+                                    parameter3.HasDefaultValue,
+                                    parameter3.ServiceKey)) ?? parameter3.DefaultValue,
                              ((parameter4.ArgumentIndex != -1)
                                 // Throws a NullReferenceException if arguments is null. Consistent with expression-based factory.
                                 ? arguments![parameter4.ArgumentIndex]
@@ -889,7 +1108,8 @@ namespace Microsoft.Extensions.DependencyInjection
                                     serviceProvider,
                                     parameter4.ParameterType,
                                     declaringType,
-                                    parameter4.HasDefaultValue)) ?? parameter4.DefaultValue);
+                                    parameter4.HasDefaultValue,
+                                    parameter4.ServiceKey)) ?? parameter4.DefaultValue);
                     }
 
             }
@@ -918,7 +1138,8 @@ namespace Microsoft.Extensions.DependencyInjection
                         serviceProvider,
                         parameter.ParameterType,
                         declaringType,
-                        parameter.HasDefaultValue)) ?? parameter.DefaultValue;
+                        parameter.HasDefaultValue,
+                        parameter.ServiceKey)) ?? parameter.DefaultValue;
             }
 
             return invoker.Invoke(constructorArguments.AsSpan());
@@ -946,7 +1167,7 @@ namespace Microsoft.Extensions.DependencyInjection
         {
             throw new NullReferenceException();
         }
-#elif NETSTANDARD2_1_OR_GREATER || NETCOREAPP
+#elif NETSTANDARD2_1_OR_GREATER || NET
         private static object ReflectionFactoryCanonical(
             ConstructorInfo constructor,
             FactoryParameterContext[] parameters,
@@ -968,11 +1189,46 @@ namespace Microsoft.Extensions.DependencyInjection
                         serviceProvider,
                         parameter.ParameterType,
                         declaringType,
-                        parameter.HasDefaultValue)) ?? parameter.DefaultValue;
+                        parameter.HasDefaultValue,
+                        parameter.ServiceKey)) ?? parameter.DefaultValue;
             }
 
             return constructor.Invoke(BindingFlags.DoNotWrapExceptions, binder: null, constructorArguments, culture: null);
         }
-#endif // NET8_0_OR_GREATER
+#endif
+
+#if NET
+        internal static class ActivatorUtilitiesUpdateHandler
+        {
+            public static void ClearCache(Type[]? _)
+            {
+                // Ignore the Type[] argument; just clear the caches.
+                s_constructorInfos.Clear();
+                if (s_collectibleConstructorInfos.IsValueCreated)
+                {
+                    s_collectibleConstructorInfos.Value.Clear();
+                }
+            }
+        }
+
+        [InlineArray(MaxStackAllocArgCount)]
+        private struct StackAllocatedObjects
+        {
+            internal const int MaxStackAllocArgCount = 8;
+            private object? _arg0;
+        }
+#endif
+
+        private static object? GetKeyedService(IServiceProvider provider, Type type, object? serviceKey)
+        {
+            ThrowHelper.ThrowIfNull(provider);
+
+            if (provider is IKeyedServiceProvider keyedServiceProvider)
+            {
+                return keyedServiceProvider.GetKeyedService(type, serviceKey);
+            }
+
+            throw new InvalidOperationException(SR.KeyedServicesNotSupported);
+        }
     }
 }

@@ -11,7 +11,7 @@
   <ItemGroup>
     <Compile Include="StructABI.cs" />
     <Compile Include="StructABI.Windows.cs" Condition="'$(TargetOS)' == 'windows'" />
-    <Compile Include="StructABI.Unix.cs" Condition="'$(TargetOS)' == 'linux' Or '$(TargetOS)' == 'freebsd' Or '$(TargetOS)' == 'netbsd' Or '$(TargetOS)' == 'illumos' Or '$(TargetOS)' == 'solaris'" />
+    <Compile Include="StructABI.Unix.cs" Condition="'$(TargetOS)' == 'linux' Or '$(TargetOS)' == 'freebsd' Or '$(TargetOS)' == 'netbsd' Or '$(TargetOS)' == 'illumos' Or '$(TargetOS)' == 'solaris' Or '$(TargetOS)' == 'haiku'" />
     <Compile Include="StructABI.OSX.cs" Condition="'$(TargetOS)' == 'osx'" />
   </ItemGroup>
   <ItemGroup>

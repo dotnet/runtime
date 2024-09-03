@@ -421,6 +421,23 @@ ds_ipc_message_try_parse_uint64_t (
 }
 
 bool
+ds_ipc_message_try_parse_bool (
+	uint8_t **buffer,
+	uint32_t *buffer_len,
+	bool *value)
+{
+    EP_ASSERT (buffer != NULL);
+    EP_ASSERT (buffer_len != NULL);
+    EP_ASSERT (value != NULL);
+
+    uint8_t temp_value;
+    bool result = ds_ipc_message_try_parse_value (buffer, buffer_len, (uint8_t *)&temp_value, 1);
+    if (result)
+        *value = temp_value == 0 ? false : true;
+    return result;
+}
+
+bool
 ds_ipc_message_try_parse_uint32_t (
 	uint8_t **buffer,
 	uint32_t *buffer_len,

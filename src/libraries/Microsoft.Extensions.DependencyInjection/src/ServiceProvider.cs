@@ -34,8 +34,13 @@ namespace Microsoft.Extensions.DependencyInjection
 
         internal ServiceProviderEngineScope Root { get; }
 
+        [FeatureSwitchDefinition("Microsoft.Extensions.DependencyInjection.VerifyOpenGenericServiceTrimmability")]
         internal static bool VerifyOpenGenericServiceTrimmability { get; } =
             AppContext.TryGetSwitch("Microsoft.Extensions.DependencyInjection.VerifyOpenGenericServiceTrimmability", out bool verifyOpenGenerics) ? verifyOpenGenerics : false;
+
+        [FeatureSwitchDefinition("Microsoft.Extensions.DependencyInjection.DisableDynamicEngine")]
+        internal static bool DisableDynamicEngine { get; } =
+            AppContext.TryGetSwitch("Microsoft.Extensions.DependencyInjection.DisableDynamicEngine", out bool disableDynamicEngine) ? disableDynamicEngine : false;
 
         internal static bool VerifyAotCompatibility =>
 #if NETFRAMEWORK || NETSTANDARD2_0
@@ -246,7 +251,7 @@ namespace Microsoft.Extensions.DependencyInjection
 #if NETFRAMEWORK || NETSTANDARD2_0
             engine = CreateDynamicEngine();
 #else
-            if (RuntimeFeature.IsDynamicCodeCompiled)
+            if (RuntimeFeature.IsDynamicCodeCompiled && !DisableDynamicEngine)
             {
                 engine = CreateDynamicEngine();
             }

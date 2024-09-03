@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
@@ -10,8 +11,15 @@ namespace System.Threading
 {
     public static partial class ThreadPool
     {
+        [FeatureSwitchDefinition("System.Threading.ThreadPool.UseWindowsThreadPool")]
         internal static bool UseWindowsThreadPool { get; } =
             AppContextConfigHelper.GetBooleanConfig("System.Threading.ThreadPool.UseWindowsThreadPool", "DOTNET_ThreadPool_UseWindowsThreadPool");
+
+#pragma warning disable CA1823
+        // The field should reflect what the property returns because the property can be stubbed by trimming,
+        // such that sos reflects the actual state of what thread pool is being used and not just the config value.
+        private static readonly bool s_useWindowsThreadPool = UseWindowsThreadPool; // Name relied on by sos
+#pragma warning restore CA1823
 
 #if NATIVEAOT
         private const bool IsWorkerTrackingEnabledInConfig = false;

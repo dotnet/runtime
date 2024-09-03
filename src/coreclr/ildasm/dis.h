@@ -78,8 +78,7 @@ void DumpVtable(void* GUICookie);
 char* DumpUnicodeString(void* GUICookie,
                         __inout __nullterminated char* szString,
                         _In_reads_(cbString) WCHAR* pszString,
-                        ULONG cbString,
-                        bool SwapString = false);
+                        ULONG cbString);
 
 void TokenSigInit(IMDInternalImport *pImport);
 void TokenSigDelete();

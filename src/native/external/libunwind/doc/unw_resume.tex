@@ -5,7 +5,7 @@
 
 \begin{document}
 
-\begin{Name}{3}{unw\_resume}{David Mosberger-Tang}{Programming Library}{unw\_resume}unw\_resume -- resume execution in a particular stack frame
+\begin{Name}{3libunwind}{unw\_resume}{David Mosberger-Tang}{Programming Library}{unw\_resume}unw\_resume -- resume execution in a particular stack frame
 \end{Name}
 
 \section{Synopsis}
@@ -55,7 +55,7 @@ handlers (aka, ``personality routines'').  If a program needs this, it
 will have to do so on its own by obtaining the \Type{unw\_proc\_info\_t}
 of each unwound frame and appropriately processing its unwind handler
 and language-specific data area (lsda).  These steps are generally
-dependent on the target-platform and are regulated by the
+dependent on the target platform and are regulated by the
 processor-specific ABI (application-binary interface).
 
 \section{Return Value}
@@ -84,9 +84,9 @@ handler.
 
 \section{See Also}
 
-\SeeAlso{libunwind(3)},
-\SeeAlso{unw\_set\_reg(3)},
-sigprocmask(2)
+\SeeAlso{libunwind}(3libunwind),
+\SeeAlso{unw\_set\_reg}(3libunwind),
+\SeeAlso{sigprocmask}(2)
 
 \section{Author}
 

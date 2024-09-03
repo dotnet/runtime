@@ -1275,19 +1275,19 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             }
         }
 
-        private static readonly PredefinedType[] s_rgptIntOp =
-        {
+        private static ReadOnlySpan<PredefinedType> RgptIntOp =>
+        [
             PredefinedType.PT_INT,
             PredefinedType.PT_UINT,
             PredefinedType.PT_LONG,
             PredefinedType.PT_ULONG
-        };
+        ];
 
         [RequiresUnreferencedCode(Binder.TrimmerWarning)]
         internal CType ChooseArrayIndexType(Expr args)
         {
             // first, select the allowable types
-            foreach (PredefinedType predef in s_rgptIntOp)
+            foreach (PredefinedType predef in RgptIntOp)
             {
                 CType type = GetPredefindType(predef);
                 foreach (Expr arg in args.ToEnumerable())
@@ -1572,8 +1572,8 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             return false;
         }
 
-        private static readonly PredefinedName[] s_EK2NAME =
-        {
+        private static ReadOnlySpan<PredefinedName> EK2NAME =>
+        [
             PredefinedName.PN_OPEQUALS,
             PredefinedName.PN_OPCOMPARE,
             PredefinedName.PN_OPTRUE,
@@ -1600,12 +1600,12 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             PredefinedName.PN_OPCOMPLEMENT,
             PredefinedName.PN_OPLEFTSHIFT,
             PredefinedName.PN_OPRIGHTSHIFT,
-        };
+        ];
 
         private static Name ExpressionKindName(ExpressionKind ek)
         {
-            Debug.Assert(ek >= ExpressionKind.FirstOp && (ek - ExpressionKind.FirstOp) < (int)s_EK2NAME.Length);
-            return NameManager.GetPredefinedName(s_EK2NAME[ek - ExpressionKind.FirstOp]);
+            Debug.Assert(ek >= ExpressionKind.FirstOp && (ek - ExpressionKind.FirstOp) < (int)EK2NAME.Length);
+            return NameManager.GetPredefinedName(EK2NAME[ek - ExpressionKind.FirstOp]);
         }
 
         private static void CheckUnsafe(CType type)

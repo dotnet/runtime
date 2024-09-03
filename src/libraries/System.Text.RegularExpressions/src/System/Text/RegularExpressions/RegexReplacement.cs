@@ -4,9 +4,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Runtime.InteropServices;
-
-#pragma warning disable CS8500 // takes address of managed type
+using System.Runtime.CompilerServices;
 
 namespace System.Text.RegularExpressions
 {
@@ -39,7 +37,7 @@ namespace System.Text.RegularExpressions
 
             var vsb = new ValueStringBuilder(stackalloc char[256]);
             FourStackStrings stackStrings = default;
-            var strings = new ValueListBuilder<string>(MemoryMarshal.CreateSpan(ref stackStrings.Item1!, 4));
+            var strings = new ValueListBuilder<string>(stackStrings);
             var rules = new ValueListBuilder<int>(stackalloc int[64]);
 
             int childCount = concat.ChildCount();
@@ -96,13 +94,10 @@ namespace System.Text.RegularExpressions
         }
 
         /// <summary>Simple struct of four strings.</summary>
-        [StructLayout(LayoutKind.Sequential)]
+        [InlineArray(4)]
         private struct FourStackStrings // used to do the equivalent of: Span<string> strings = stackalloc string[4];
         {
-            public string Item1;
-            public string Item2;
-            public string Item3;
-            public string Item4;
+            private string _item1;
         }
 
         /// <summary>
@@ -276,7 +271,7 @@ namespace System.Text.RegularExpressions
                 ReadOnlySpan<int> tmpSpan = span; // avoid address exposing the span and impacting the other code in the method that uses it
                 result = string.Create(length, ((IntPtr)(&tmpSpan), input, replacement), static (dest, state) =>
                 {
-                    Span<int> span = *(Span<int>*)state.Item1;
+                    ReadOnlySpan<int> span = *(ReadOnlySpan<int>*)state.Item1;
                     for (int i = 0; i < span.Length; i += 2)
                     {
                         if (i != 0)

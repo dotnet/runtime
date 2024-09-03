@@ -476,10 +476,33 @@ namespace System.Net.Http
         public Task LoadIntoBufferAsync(long maxBufferSize) =>
             LoadIntoBufferAsync(maxBufferSize, CancellationToken.None);
 
-        internal Task LoadIntoBufferAsync(CancellationToken cancellationToken) =>
+        /// <summary>
+        /// Serialize the HTTP content to a memory buffer as an asynchronous operation.
+        /// </summary>
+        /// <param name="cancellationToken">The cancellation token to cancel the operation.</param>
+        /// <returns>The task object representing the asynchronous operation.</returns>
+        /// <remarks>
+        /// This operation will not block. The returned <see cref="Task"/> object will complete after all of the content has been serialized to the memory buffer.
+        /// After content is serialized to a memory buffer, calls to one of the <see cref="CopyToAsync(Stream)"/> methods will copy the content of the memory buffer to the target stream.
+        /// </remarks>
+        /// <exception cref="OperationCanceledException">The cancellation token was canceled. This exception is stored into the returned task.</exception>
+        /// <exception cref="ObjectDisposedException">The object has already been disposed.</exception>
+        public Task LoadIntoBufferAsync(CancellationToken cancellationToken) =>
             LoadIntoBufferAsync(MaxBufferSize, cancellationToken);
 
-        internal Task LoadIntoBufferAsync(long maxBufferSize, CancellationToken cancellationToken)
+        /// <summary>
+        /// Serialize the HTTP content to a memory buffer as an asynchronous operation.
+        /// </summary>
+        /// <param name="maxBufferSize">The maximum size, in bytes, of the buffer to use.</param>
+        /// <param name="cancellationToken">The cancellation token to cancel the operation.</param>
+        /// <returns>The task object representing the asynchronous operation.</returns>
+        /// <remarks>
+        /// This operation will not block. The returned <see cref="Task"/> object will complete after all of the content has been serialized to the memory buffer.
+        /// After content is serialized to a memory buffer, calls to one of the <see cref="CopyToAsync(Stream)"/> methods will copy the content of the memory buffer to the target stream.
+        /// </remarks>
+        /// <exception cref="OperationCanceledException">The cancellation token was canceled. This exception is stored into the returned task.</exception>
+        /// <exception cref="ObjectDisposedException">The object has already been disposed.</exception>
+        public Task LoadIntoBufferAsync(long maxBufferSize, CancellationToken cancellationToken)
         {
             CheckDisposed();
 

@@ -1,16 +1,13 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#if USE_MDT_EVENTSOURCE
-using Microsoft.Diagnostics.Tracing;
-#else
-using System.Diagnostics.Tracing;
-#endif
 using System;
+using System.Diagnostics;
+using System.Diagnostics.Tracing;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
-using System.Diagnostics;
+using Xunit;
 
 namespace gh53564Tests
 {
@@ -80,7 +77,8 @@ namespace gh53564Tests
 
     public partial class TestRuntimeEventCounter
     {
-        public static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             // Create an EventListener.
             using (RuntimeCounterListener myListener = new RuntimeCounterListener())

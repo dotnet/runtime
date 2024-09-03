@@ -1,32 +1,33 @@
 // Copyright (c) .NET Foundation and contributors. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System.Collections.Generic;
+using System;
 using System.Collections.Immutable;
 using System.Diagnostics;
+using ILLink.RoslynAnalyzer.DataFlow;
 using ILLink.Shared.DataFlow;
 using ILLink.Shared.TrimAnalysis;
-using ILLink.Shared.TypeSystemProxy;
 using Microsoft.CodeAnalysis;
-
 using MultiValue = ILLink.Shared.DataFlow.ValueSet<ILLink.Shared.DataFlow.SingleValue>;
 
 namespace ILLink.RoslynAnalyzer.TrimAnalysis
 {
-	public readonly record struct TrimAnalysisMethodCallPattern
+	internal readonly record struct TrimAnalysisMethodCallPattern
 	{
-		public IMethodSymbol CalledMethod { init; get; }
-		public MultiValue Instance { init; get; }
-		public ImmutableArray<MultiValue> Arguments { init; get; }
-		public IOperation Operation { init; get; }
-		public ISymbol OwningSymbol { init; get; }
+		public IMethodSymbol CalledMethod { get; init; }
+		public MultiValue Instance { get; init; }
+		public ImmutableArray<MultiValue> Arguments { get; init; }
+		public IOperation Operation { get; init; }
+		public ISymbol OwningSymbol { get; init; }
+		public FeatureContext FeatureContext { get; init; }
 
 		public TrimAnalysisMethodCallPattern (
 			IMethodSymbol calledMethod,
 			MultiValue instance,
 			ImmutableArray<MultiValue> arguments,
 			IOperation operation,
-			ISymbol owningSymbol)
+			ISymbol owningSymbol,
+			FeatureContext featureContext)
 		{
 			CalledMethod = calledMethod;
 			Instance = instance.DeepCopy ();
@@ -41,12 +42,17 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 			}
 			Operation = operation;
 			OwningSymbol = owningSymbol;
+			FeatureContext = featureContext.DeepCopy ();
 		}
 
-		public TrimAnalysisMethodCallPattern Merge (ValueSetLattice<SingleValue> lattice, TrimAnalysisMethodCallPattern other)
+		public TrimAnalysisMethodCallPattern Merge (
+			ValueSetLattice<SingleValue> lattice,
+			FeatureContextLattice featureContextLattice,
+			TrimAnalysisMethodCallPattern other)
 		{
 			Debug.Assert (Operation == other.Operation);
 			Debug.Assert (SymbolEqualityComparer.Default.Equals (CalledMethod, other.CalledMethod));
+			Debug.Assert (SymbolEqualityComparer.Default.Equals (OwningSymbol, other.OwningSymbol));
 			Debug.Assert (Arguments.Length == other.Arguments.Length);
 
 			var argumentsBuilder = ImmutableArray.CreateBuilder<MultiValue> ();
@@ -59,24 +65,26 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 				lattice.Meet (Instance, other.Instance),
 				argumentsBuilder.ToImmutable (),
 				Operation,
-				OwningSymbol);
+				OwningSymbol,
+				featureContextLattice.Meet (FeatureContext, other.FeatureContext));
 		}
 
-		public IEnumerable<Diagnostic> CollectDiagnostics ()
+		public void ReportDiagnostics (DataFlowAnalyzerContext context, Action<Diagnostic> reportDiagnostic)
 		{
-			DiagnosticContext diagnosticContext = new (Operation.Syntax.GetLocation ());
-			HandleCallAction handleCallAction = new (diagnosticContext, OwningSymbol, Operation);
-			MethodProxy method = new (CalledMethod);
-			IntrinsicId intrinsicId = Intrinsics.GetIntrinsicIdForMethod (method);
-			if (!handleCallAction.Invoke (method, Instance, Arguments, intrinsicId, out _)) {
-				// If this returns false it means the intrinsic needs special handling:
-				// case IntrinsicId.TypeDelegator_Ctor:
-				//    No diagnostics to report - this is an "identity" operation for data flow, can't produce diagnostics on its own
-				// case IntrinsicId.Array_Empty:
-				//    No diagnostics to report - constant value
+			var location = Operation.Syntax.GetLocation ();
+			if (context.EnableTrimAnalyzer &&
+				!OwningSymbol.IsInRequiresUnreferencedCodeAttributeScope(out _) &&
+				!FeatureContext.IsEnabled (RequiresUnreferencedCodeAnalyzer.FullyQualifiedRequiresUnreferencedCodeAttribute))
+			{
+				TrimAnalysisVisitor.HandleCall(Operation, OwningSymbol, CalledMethod, Instance, Arguments, location, reportDiagnostic, default, out var _);
 			}
 
-			return diagnosticContext.Diagnostics;
+			var diagnosticContext = new DiagnosticContext (location, reportDiagnostic);
+			foreach (var requiresAnalyzer in context.EnabledRequiresAnalyzers)
+			{
+				if (!requiresAnalyzer.IsIntrinsicallyHandled (CalledMethod, Instance, Arguments))
+					requiresAnalyzer.CheckAndCreateRequiresDiagnostic (Operation, CalledMethod, OwningSymbol, context, FeatureContext, in diagnosticContext);
+			}
 		}
 	}
 }

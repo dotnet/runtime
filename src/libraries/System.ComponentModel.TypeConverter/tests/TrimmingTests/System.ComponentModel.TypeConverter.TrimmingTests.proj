@@ -3,9 +3,20 @@
 
   <ItemGroup>
     <TestConsoleAppSourceFiles Include="ComObjectTypeTest.cs" />
+    <TestConsoleAppSourceFiles Include="DefaultValueAttributeTests.cs">
+      <DisabledFeatureSwitches>System.ComponentModel.DefaultValueAttribute.IsSupported</DisabledFeatureSwitches>
+    </TestConsoleAppSourceFiles>
     <TestConsoleAppSourceFiles Include="InterfaceTypeTest.cs" />
     <TestConsoleAppSourceFiles Include="TypeConverterIsReadOnly.cs" />
     <TestConsoleAppSourceFiles Include="TypeConverterTest.cs" />
+    <TestConsoleAppSourceFiles Include="TypeDescriptorTest_FeatureSwitch_Registered.cs">
+      <EnabledFeatureSwitches>System.ComponentModel.TypeDescriptor.RequireRegisteredTypes</EnabledFeatureSwitches>
+    </TestConsoleAppSourceFiles>
+    <TestConsoleAppSourceFiles Include="TypeDescriptorTest_FeatureSwitch_Unregistered.cs">
+      <EnabledFeatureSwitches>System.ComponentModel.TypeDescriptor.RequireRegisteredTypes</EnabledFeatureSwitches>
+    </TestConsoleAppSourceFiles>
+    <TestConsoleAppSourceFiles Include="TypeDescriptorTest_Registered.cs" />
+    <TestConsoleAppSourceFiles Include="TypeDescriptorTest_Unregistered.cs" />
   </ItemGroup>
 
   <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.targets))" />

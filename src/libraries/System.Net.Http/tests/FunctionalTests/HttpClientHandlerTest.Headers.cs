@@ -24,6 +24,7 @@ namespace System.Net.Http.Functional.Tests
         private sealed class DerivedHttpHeaders : HttpHeaders { }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/101115", typeof(PlatformDetection), nameof(PlatformDetection.IsFirefox))]
         public async Task SendAsync_RequestWithSimpleHeader_ResponseReferencesUnmodifiedRequestHeaders()
         {
             const string HeaderKey = "some-header-123", HeaderValue = "this is the expected header value";
@@ -71,6 +72,7 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/101115", typeof(PlatformDetection), nameof(PlatformDetection.IsFirefox))]
         public async Task SendAsync_LargeHeaders_CorrectlyWritten()
         {
             if (UseVersion == HttpVersion.Version30)
@@ -106,6 +108,7 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/101115", typeof(PlatformDetection), nameof(PlatformDetection.IsFirefox))]
         public async Task SendAsync_DefaultHeaders_CorrectlyWritten()
         {
             const string Version = "2017-04-17";
@@ -167,6 +170,7 @@ namespace System.Net.Http.Functional.Tests
         [InlineData("Accept-CharSet", "text/plain, text/json", false)] // invalid format for header but added with TryAddWithoutValidation
         [InlineData("Content-Location", "", false)] // invalid format for header but added with TryAddWithoutValidation
         [InlineData("Max-Forwards", "NotAnInteger", false)] // invalid format for header but added with TryAddWithoutValidation
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/101115", typeof(PlatformDetection), nameof(PlatformDetection.IsFirefox))]
         public async Task SendAsync_SpecialHeaderKeyOrValue_Success(string key, string value, bool parsable)
         {
             if (PlatformDetection.IsBrowser && (key == "Content-Location" || key == "Date" || key == "Accept-CharSet"))
@@ -349,6 +353,7 @@ namespace System.Net.Http.Functional.Tests
         [Theory]
         [InlineData(false)]
         [InlineData(true)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/101115", typeof(PlatformDetection), nameof(PlatformDetection.IsFirefox))]
         public async Task SendAsync_GetWithValidHostHeader_Success(bool withPort)
         {
             if (UseVersion == HttpVersion.Version30)
@@ -441,7 +446,8 @@ namespace System.Net.Http.Functional.Tests
             ("Cookie",          Encoding.UTF8,      "; ", new[] { "Cookies", "\uD83C\uDF6A", "everywhere" }),
             ("Set-Cookie",      Encoding.UTF8,      ", ", new[] { "\uD83C\uDDF8\uD83C\uDDEE" }),
             ("header-5",        Encoding.UTF8,      ", ", new[] { "\uD83D\uDE48\uD83D\uDE49\uD83D\uDE4A", "foo", "\uD83D\uDE03", "bar" }),
-            ("bar",             Encoding.UTF8,      ", ", new[] { "foo" })
+            ("bar",             Encoding.UTF8,      ", ", new[] { "foo" }),
+            ("Location",        Encoding.Latin1,    ", ", new[] { "\u00D0\u00A4" })
         };
 
         [Fact]
@@ -538,7 +544,7 @@ namespace System.Net.Http.Functional.Tests
                     foreach ((string name, Encoding valueEncoding, string separator, string[] values) in s_nonAsciiHeaders)
                     {
                         Assert.Contains(name, seenHeaderNames);
-                        IEnumerable<string> receivedValues = Assert.Single(response.Headers, h => h.Key.Equals(name, StringComparison.OrdinalIgnoreCase)).Value;
+                        IEnumerable<string> receivedValues = Assert.Single(response.Headers.NonValidated, h => h.Key.Equals(name, StringComparison.OrdinalIgnoreCase)).Value;
                         string value = Assert.Single(receivedValues);
 
                         string expected = valueEncoding.GetString(valueEncoding.GetBytes(string.Join(separator, values)));

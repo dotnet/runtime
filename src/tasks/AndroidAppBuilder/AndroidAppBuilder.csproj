@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFramework>$(TargetFrameworkForNETCoreTasks)</TargetFramework>
+    <TargetFramework>$(NetCoreAppToolCurrent)</TargetFramework>
     <OutputType>Library</OutputType>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
@@ -36,7 +36,7 @@
     <ItemGroup>
       <!-- non-net4* -->
       <FilesToPackage Include="$(OutputPath)$(MSBuildProjectName)*"
-                      TargetPath="tasks\$(TargetFrameworkForNETCoreTasks)" />
+                      TargetPath="tasks\$(NetCoreAppToolCurrent)" />
     </ItemGroup>
   </Target>
 

@@ -23,6 +23,7 @@ SET_DEFAULT_DEBUG_CHANNEL(SYNC); // some headers have code with asserts, so do t
 #include "pal/mutex.hpp"
 #include "pal/file.hpp"
 #include "pal/thread.hpp"
+#include "pal/utils.h"
 
 #include "../synchmgr/synchmanager.hpp"
 
@@ -92,13 +93,7 @@ static CAllowedObjectTypes aotAnyMutex(anyMutexTypeIds, ARRAY_SIZE(anyMutexTypeI
 Function:
   CreateMutexW
 
-Note:
-  lpMutexAttributes currently ignored:
-  -- Win32 object security not supported
-  -- handles to mutex objects are not inheritable
-
-Parameters:
-  See MSDN doc.
+  See doc for PAL_CreateMutexW.
 --*/
 
 HANDLE
@@ -108,16 +103,60 @@ CreateMutexW(
     IN BOOL bInitialOwner,
     IN LPCWSTR lpName)
 {
+    return PAL_CreateMutexW(bInitialOwner, lpName, nullptr, 0);
+}
+
+/*++
+Function:
+  PAL_CreateMutexW
+
+Note:
+  lpMutexAttributes currently ignored:
+  -- Win32 object security not supported
+  -- handles to mutex objects are not inheritable
+
+Parameters:
+  lpSystemCallErrors -- An optional buffer into which system call errors are written, for more detailed error information.
+  dwSystemCallErrorsBufferSize -- Size of the buffer pointed to by lpSystemCallErrors in bytes.
+
+  See MSDN docs on CreateMutexW for all other parameters.
+--*/
+
+HANDLE
+PALAPI
+PAL_CreateMutexW(
+    IN BOOL bInitialOwner,
+    IN LPCWSTR lpName,
+    IN LPSTR lpSystemCallErrors,
+    IN DWORD dwSystemCallErrorsBufferSize)
+{
     HANDLE hMutex = NULL;
     PAL_ERROR palError;
     CPalThread *pthr = NULL;
     char utf8Name[SHARED_MEMORY_MAX_NAME_CHAR_COUNT + 1];
 
-    PERF_ENTRY(CreateMutexW);
-    ENTRY("CreateMutexW(lpMutexAttr=%p, bInitialOwner=%d, lpName=%p (%S)\n",
-          lpMutexAttributes, bInitialOwner, lpName, lpName?lpName:W16_NULLSTRING);
+    PERF_ENTRY(PAL_CreateMutexW);
+    ENTRY("PAL_CreateMutexW(bInitialOwner=%d, lpName=%p (%S), lpSystemCallErrors=%p, dwSystemCallErrorsBufferSize=%d\n",
+          bInitialOwner,
+          lpName,
+          lpName?lpName:W16_NULLSTRING,
+          lpSystemCallErrors,
+          dwSystemCallErrorsBufferSize);
 
     pthr = InternalGetCurrentThread();
+
+    /* validate parameters */
+    if ((int)dwSystemCallErrorsBufferSize < 0 || (lpSystemCallErrors == nullptr) != (dwSystemCallErrorsBufferSize == 0))
+    {
+        ERROR("One or more parameters are invalid\n");
+        palError = ERROR_INVALID_PARAMETER;
+        goto CreateMutexWExit;
+    }
+
+    if (lpSystemCallErrors != nullptr)
+    {
+        lpSystemCallErrors[0] = '\0';
+    }
 
     if (lpName != nullptr)
     {
@@ -138,13 +177,17 @@ CreateMutexW(
         }
     }
 
-    palError = InternalCreateMutex(
-        pthr,
-        lpMutexAttributes,
-        bInitialOwner,
-        lpName == nullptr ? nullptr : utf8Name,
-        &hMutex
-        );
+    {
+        SharedMemorySystemCallErrors errors(lpSystemCallErrors, (int)dwSystemCallErrorsBufferSize);
+        palError = InternalCreateMutex(
+            &errors,
+            pthr,
+            nullptr,
+            bInitialOwner,
+            lpName == nullptr ? nullptr : utf8Name,
+            &hMutex
+            );
+    }
 
 CreateMutexWExit:
     //
@@ -156,14 +199,14 @@ CreateMutexWExit:
 
     pthr->SetLastError(palError);
 
-    LOGEXIT("CreateMutexW returns HANDLE %p\n", hMutex);
-    PERF_EXIT(CreateMutexW);
+    LOGEXIT("PAL_CreateMutexW returns HANDLE %p\n", hMutex);
+    PERF_EXIT(PAL_CreateMutexW);
     return hMutex;
 }
 
 /*++
 Function:
-CreateMutexW
+CreateMutexExW
 
 Note:
 lpMutexAttributes currently ignored:
@@ -195,14 +238,16 @@ Note:
   -- handles to mutex objects are not inheritable
 
 Parameters:
+  errors -- An optional wrapper for system call errors, for more detailed error information.
   pthr -- thread data for calling thread
   phEvent -- on success, receives the allocated mutex handle
 
-  See MSDN docs on CreateMutex for all other parameters
+  See MSDN docs on CreateMutex for all other parameters.
 --*/
 
 PAL_ERROR
 CorUnix::InternalCreateMutex(
+    SharedMemorySystemCallErrors *errors,
     CPalThread *pthr,
     LPSECURITY_ATTRIBUTES lpMutexAttributes,
     BOOL bInitialOwner,
@@ -286,7 +331,7 @@ CorUnix::InternalCreateMutex(
         SharedMemoryProcessDataHeader *processDataHeader;
         try
         {
-            processDataHeader = NamedMutexProcessData::CreateOrOpen(lpName, !!bInitialOwner, &createdNamedMutex);
+            processDataHeader = NamedMutexProcessData::CreateOrOpen(errors, lpName, !!bInitialOwner, &createdNamedMutex);
         }
         catch (SharedMemoryException ex)
         {
@@ -512,7 +557,7 @@ OpenMutexA (
         goto OpenMutexAExit;
     }
 
-    palError = InternalOpenMutex(pthr, lpName, &hMutex);
+    palError = InternalOpenMutex(nullptr, pthr, lpName, &hMutex);
 
 OpenMutexAExit:
     if (NO_ERROR != palError)
@@ -529,11 +574,8 @@ OpenMutexAExit:
 Function:
   OpenMutexW
 
-Note:
-  dwDesiredAccess is currently ignored (no Win32 object security support)
-  bInheritHandle is currently ignored (handles to mutexes are not inheritable)
-
-See MSDN doc.
+Parameters:
+  See doc for PAL_OpenMutexW.
 --*/
 
 HANDLE
@@ -543,23 +585,58 @@ OpenMutexW(
        IN BOOL bInheritHandle,
        IN LPCWSTR lpName)
 {
+    return PAL_OpenMutexW(lpName, nullptr, 0);
+}
+
+/*++
+Function:
+  PAL_OpenMutexW
+
+Note:
+  dwDesiredAccess is currently ignored (no Win32 object security support)
+  bInheritHandle is currently ignored (handles to mutexes are not inheritable)
+
+Parameters:
+  lpSystemCallErrors -- An optional buffer into which system call errors are written, for more detailed error information.
+  dwSystemCallErrorsBufferSize -- Size of the buffer pointed to by lpSystemCallErrors in bytes.
+
+  See MSDN docs on OpenMutexW for all other parameters.
+--*/
+
+HANDLE
+PALAPI
+PAL_OpenMutexW(
+       IN LPCWSTR lpName,
+       IN LPSTR lpSystemCallErrors,
+       IN DWORD dwSystemCallErrorsBufferSize)
+{
     HANDLE hMutex = NULL;
     PAL_ERROR palError = NO_ERROR;
     CPalThread *pthr = NULL;
     char utf8Name[SHARED_MEMORY_MAX_NAME_CHAR_COUNT + 1];
 
-    PERF_ENTRY(OpenMutexW);
-    ENTRY("OpenMutexW(dwDesiredAccess=%#x, bInheritHandle=%d, lpName=%p (%S))\n",
-          dwDesiredAccess, bInheritHandle, lpName, lpName?lpName:W16_NULLSTRING);
+    PERF_ENTRY(PAL_OpenMutexW);
+    ENTRY("PAL_OpenMutexW(lpName=%p (%S), lpSystemCallErrors=%p, dwSystemCallErrorsBufferSize=%d)\n",
+          lpName,
+          lpName?lpName:W16_NULLSTRING,
+          lpSystemCallErrors,
+          dwSystemCallErrorsBufferSize);
 
     pthr = InternalGetCurrentThread();
 
     /* validate parameters */
-    if (lpName == nullptr)
+    if (lpName == nullptr ||
+        (int)dwSystemCallErrorsBufferSize < 0 ||
+        (lpSystemCallErrors == nullptr) != (dwSystemCallErrorsBufferSize == 0))
     {
-        ERROR("name is NULL\n");
+        ERROR("name is NULL or other parameters are invalid\n");
         palError = ERROR_INVALID_PARAMETER;
         goto OpenMutexWExit;
+    }
+
+    if (lpSystemCallErrors != nullptr)
+    {
+        lpSystemCallErrors[0] = '\0';
     }
 
     {
@@ -578,9 +655,10 @@ OpenMutexW(
             }
             goto OpenMutexWExit;
         }
-    }
 
-    palError = InternalOpenMutex(pthr, lpName == nullptr ? nullptr : utf8Name, &hMutex);
+        SharedMemorySystemCallErrors errors(lpSystemCallErrors, (int)dwSystemCallErrorsBufferSize);
+        palError = InternalOpenMutex(&errors, pthr, lpName == nullptr ? nullptr : utf8Name, &hMutex);
+    }
 
 OpenMutexWExit:
     if (NO_ERROR != palError)
@@ -588,8 +666,8 @@ OpenMutexWExit:
         pthr->SetLastError(palError);
     }
 
-    LOGEXIT("OpenMutexW returns HANDLE %p\n", hMutex);
-    PERF_EXIT(OpenMutexW);
+    LOGEXIT("PAL_OpenMutexW returns HANDLE %p\n", hMutex);
+    PERF_EXIT(PAL_OpenMutexW);
 
     return hMutex;
 }
@@ -599,6 +677,7 @@ Function:
   InternalOpenMutex
 
 Parameters:
+  errors -- An optional wrapper for system call errors, for more detailed error information.
   pthr -- thread data for calling thread
   phEvent -- on success, receives the allocated mutex handle
 
@@ -607,6 +686,7 @@ Parameters:
 
 PAL_ERROR
 CorUnix::InternalOpenMutex(
+    SharedMemorySystemCallErrors *errors,
     CPalThread *pthr,
     LPCSTR lpName,
     HANDLE *phMutex
@@ -645,7 +725,7 @@ CorUnix::InternalOpenMutex(
         SharedMemoryProcessDataHeader *processDataHeader;
         try
         {
-            processDataHeader = NamedMutexProcessData::Open(lpName);
+            processDataHeader = NamedMutexProcessData::Open(errors, lpName);
         }
         catch (SharedMemoryException ex)
         {
@@ -746,7 +826,7 @@ DWORD SPINLOCKTryAcquire (LONG * lock)
 // MutexHelpers
 
 #if NAMED_MUTEX_USE_PTHREAD_MUTEX
-void MutexHelpers::InitializeProcessSharedRobustRecursiveMutex(pthread_mutex_t *mutex)
+void MutexHelpers::InitializeProcessSharedRobustRecursiveMutex(SharedMemorySystemCallErrors *errors, pthread_mutex_t *mutex)
 {
     _ASSERTE(mutex != nullptr);
 
@@ -772,6 +852,11 @@ void MutexHelpers::InitializeProcessSharedRobustRecursiveMutex(pthread_mutex_t *
     int error = pthread_mutexattr_init(&mutexAttributes);
     if (error != 0)
     {
+        if (errors != nullptr)
+        {
+            errors->Append("pthread_mutexattr_init(...) == %s;", GetFriendlyErrorCodeString(error));
+        }
+
         throw SharedMemoryException(static_cast<DWORD>(SharedMemoryError::OutOfMemory));
     }
     autoCleanup.m_mutexAttributes = &mutexAttributes;
@@ -788,6 +873,11 @@ void MutexHelpers::InitializeProcessSharedRobustRecursiveMutex(pthread_mutex_t *
     error = pthread_mutex_init(mutex, &mutexAttributes);
     if (error != 0)
     {
+        if (errors != nullptr)
+        {
+            errors->Append("pthread_mutex_init(...) == %s;", GetFriendlyErrorCodeString(error));
+        }
+
         throw SharedMemoryException(static_cast<DWORD>(error == EPERM ? SharedMemoryError::IO : SharedMemoryError::OutOfMemory));
     }
 }
@@ -800,7 +890,10 @@ void MutexHelpers::DestroyMutex(pthread_mutex_t *mutex)
     _ASSERTE(error == 0 || error == EBUSY); // the error will be EBUSY if the mutex is locked
 }
 
-MutexTryAcquireLockResult MutexHelpers::TryAcquireLock(pthread_mutex_t *mutex, DWORD timeoutMilliseconds)
+MutexTryAcquireLockResult MutexHelpers::TryAcquireLock(
+    SharedMemorySystemCallErrors *errors,
+    pthread_mutex_t *mutex,
+    DWORD timeoutMilliseconds)
 {
     _ASSERTE(mutex != nullptr);
 
@@ -850,7 +943,19 @@ MutexTryAcquireLockResult MutexHelpers::TryAcquireLock(pthread_mutex_t *mutex, D
             throw SharedMemoryException(static_cast<DWORD>(NamedMutexError::MaximumRecursiveLocksReached));
 
         default:
+        {
+            if (errors != nullptr)
+            {
+                errors->Append(
+                    "%s(...) == %s;",
+                    timeoutMilliseconds == (DWORD)-1 ? "pthread_mutex_lock"
+                        : timeoutMilliseconds == 0 ? "pthread_mutex_trylock"
+                        : "pthread_mutex_timedlock",
+                    GetFriendlyErrorCodeString(lockResult));
+            }
+
             throw SharedMemoryException(static_cast<DWORD>(NamedMutexError::Unknown));
+        }
     }
 }
 
@@ -866,7 +971,7 @@ void MutexHelpers::ReleaseLock(pthread_mutex_t *mutex)
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // NamedMutexSharedData
 
-NamedMutexSharedData::NamedMutexSharedData()
+NamedMutexSharedData::NamedMutexSharedData(SharedMemorySystemCallErrors *errors)
     :
 #if !NAMED_MUTEX_USE_PTHREAD_MUTEX
     m_timedWaiterCount(0),
@@ -883,7 +988,7 @@ NamedMutexSharedData::NamedMutexSharedData()
     _ASSERTE(SharedMemoryManager::IsCreationDeletionFileLockAcquired());
 
 #if NAMED_MUTEX_USE_PTHREAD_MUTEX
-    MutexHelpers::InitializeProcessSharedRobustRecursiveMutex(&m_lock);
+    MutexHelpers::InitializeProcessSharedRobustRecursiveMutex(errors, &m_lock);
 #endif // NAMED_MUTEX_USE_PTHREAD_MUTEX
 }
 
@@ -917,6 +1022,7 @@ void NamedMutexSharedData::IncTimedWaiterCount()
     ULONG newValue = InterlockedIncrement(reinterpret_cast<LONG *>(&m_timedWaiterCount));
     if (newValue == 0)
     {
+        InterlockedDecrement(reinterpret_cast<LONG *>(&m_timedWaiterCount));
         throw SharedMemoryException(static_cast<DWORD>(SharedMemoryError::OutOfMemory));
     }
 }
@@ -979,17 +1085,22 @@ const UINT8 NamedMutexProcessData::SyncSystemVersion = 1;
 
 const DWORD NamedMutexProcessData::PollLoopMaximumSleepMilliseconds = 100;
 
-SharedMemoryProcessDataHeader *NamedMutexProcessData::CreateOrOpen(LPCSTR name, bool acquireLockIfCreated, bool *createdRef)
+SharedMemoryProcessDataHeader *NamedMutexProcessData::CreateOrOpen(
+    SharedMemorySystemCallErrors *errors,
+    LPCSTR name,
+    bool acquireLockIfCreated,
+    bool *createdRef)
 {
-    return CreateOrOpen(name, true /* createIfNotExist */, acquireLockIfCreated, createdRef);
+    return CreateOrOpen(errors, name, true /* createIfNotExist */, acquireLockIfCreated, createdRef);
 }
 
-SharedMemoryProcessDataHeader *NamedMutexProcessData::Open(LPCSTR name)
+SharedMemoryProcessDataHeader *NamedMutexProcessData::Open(SharedMemorySystemCallErrors *errors, LPCSTR name)
 {
-    return CreateOrOpen(name, false /* createIfNotExist */, false /* acquireLockIfCreated */, nullptr /* createdRef */);
+    return CreateOrOpen(errors, name, false /* createIfNotExist */, false /* acquireLockIfCreated */, nullptr /* createdRef */);
 }
 
 SharedMemoryProcessDataHeader *NamedMutexProcessData::CreateOrOpen(
+    SharedMemorySystemCallErrors *errors,
     LPCSTR name,
     bool createIfNotExist,
     bool acquireLockIfCreated,
@@ -1079,6 +1190,7 @@ SharedMemoryProcessDataHeader *NamedMutexProcessData::CreateOrOpen(
     bool created;
     SharedMemoryProcessDataHeader *processDataHeader =
         SharedMemoryProcessDataHeader::CreateOrOpen(
+            errors,
             name,
             SharedMemorySharedDataHeader(SharedMemoryType::Mutex, SyncSystemVersion),
             sizeof(NamedMutexSharedData),
@@ -1105,7 +1217,7 @@ SharedMemoryProcessDataHeader *NamedMutexProcessData::CreateOrOpen(
     if (created)
     {
         // Initialize the shared data
-        new(processDataHeader->GetSharedDataHeader()->GetData()) NamedMutexSharedData;
+        new(processDataHeader->GetSharedDataHeader()->GetData()) NamedMutexSharedData(errors);
     }
 
     if (processDataHeader->GetData() == nullptr)
@@ -1115,7 +1227,7 @@ SharedMemoryProcessDataHeader *NamedMutexProcessData::CreateOrOpen(
         SharedMemoryHelpers::BuildSharedFilesPath(lockFilePath, SHARED_MEMORY_LOCK_FILES_DIRECTORY_NAME);
         if (created)
         {
-            SharedMemoryHelpers::EnsureDirectoryExists(lockFilePath, true /* isGlobalLockAcquired */);
+            SharedMemoryHelpers::EnsureDirectoryExists(errors, lockFilePath, true /* isGlobalLockAcquired */);
         }
 
         // Create the session directory
@@ -1124,7 +1236,7 @@ SharedMemoryProcessDataHeader *NamedMutexProcessData::CreateOrOpen(
         SharedMemoryHelpers::VerifyStringOperation(id->AppendSessionDirectoryName(lockFilePath));
         if (created)
         {
-            SharedMemoryHelpers::EnsureDirectoryExists(lockFilePath, true /* isGlobalLockAcquired */);
+            SharedMemoryHelpers::EnsureDirectoryExists(errors, lockFilePath, true /* isGlobalLockAcquired */);
             autoCleanup.m_lockFilePath = &lockFilePath;
             autoCleanup.m_sessionDirectoryPathCharCount = lockFilePath.GetCount();
         }
@@ -1132,14 +1244,22 @@ SharedMemoryProcessDataHeader *NamedMutexProcessData::CreateOrOpen(
         // Create or open the lock file
         SharedMemoryHelpers::VerifyStringOperation(lockFilePath.Append('/'));
         SharedMemoryHelpers::VerifyStringOperation(lockFilePath.Append(id->GetName(), id->GetNameCharCount()));
-        int lockFileDescriptor = SharedMemoryHelpers::CreateOrOpenFile(lockFilePath, created);
+        int lockFileDescriptor = SharedMemoryHelpers::CreateOrOpenFile(errors, lockFilePath, created);
         if (lockFileDescriptor == -1)
         {
             _ASSERTE(!created);
             if (createIfNotExist)
             {
+                if (errors != nullptr)
+                {
+                    errors->Append(
+                        "open(\"%s\", O_RDWR | O_CREAT | O_EXCL | O_CLOEXEC, 0) == -1; errno == ENOENT;",
+                        (const char *)lockFilePath);
+                }
+
                 throw SharedMemoryException(static_cast<DWORD>(SharedMemoryError::IO));
             }
+
             return nullptr;
         }
         autoCleanup.m_createdLockFile = created;
@@ -1164,7 +1284,7 @@ SharedMemoryProcessDataHeader *NamedMutexProcessData::CreateOrOpen(
         // If the mutex was created and if requested, acquire the lock initially while holding the creation/deletion locks
         if (created && acquireLockIfCreated)
         {
-            MutexTryAcquireLockResult tryAcquireLockResult = processData->TryAcquireLock(0);
+            MutexTryAcquireLockResult tryAcquireLockResult = processData->TryAcquireLock(errors, 0);
             _ASSERTE(tryAcquireLockResult == MutexTryAcquireLockResult::AcquiredLock);
         }
     }
@@ -1331,12 +1451,12 @@ void NamedMutexProcessData::SetNextInThreadOwnedNamedMutexList(NamedMutexProcess
     m_nextInThreadOwnedNamedMutexList = next;
 }
 
-MutexTryAcquireLockResult NamedMutexProcessData::TryAcquireLock(DWORD timeoutMilliseconds)
+MutexTryAcquireLockResult NamedMutexProcessData::TryAcquireLock(SharedMemorySystemCallErrors *errors, DWORD timeoutMilliseconds)
 {
     NamedMutexSharedData *sharedData = GetSharedData();
 
 #if NAMED_MUTEX_USE_PTHREAD_MUTEX
-    MutexTryAcquireLockResult result = MutexHelpers::TryAcquireLock(sharedData->GetLock(), timeoutMilliseconds);
+    MutexTryAcquireLockResult result = MutexHelpers::TryAcquireLock(errors, sharedData->GetLock(), timeoutMilliseconds);
     if (result == MutexTryAcquireLockResult::TimedOut)
     {
         return result;
@@ -1445,7 +1565,7 @@ MutexTryAcquireLockResult NamedMutexProcessData::TryAcquireLock(DWORD timeoutMil
             bool acquiredFileLock = false;
             while (sharedData->HasAnyTimedWaiters())
             {
-                if (SharedMemoryHelpers::TryAcquireFileLock(m_sharedLockFileDescriptor, LOCK_EX | LOCK_NB))
+                if (SharedMemoryHelpers::TryAcquireFileLock(errors, m_sharedLockFileDescriptor, LOCK_EX | LOCK_NB))
                 {
                     acquiredFileLock = true;
                     break;
@@ -1457,13 +1577,13 @@ MutexTryAcquireLockResult NamedMutexProcessData::TryAcquireLock(DWORD timeoutMil
                 break;
             }
 
-            acquiredFileLock = SharedMemoryHelpers::TryAcquireFileLock(m_sharedLockFileDescriptor, LOCK_EX);
+            acquiredFileLock = SharedMemoryHelpers::TryAcquireFileLock(errors, m_sharedLockFileDescriptor, LOCK_EX);
             _ASSERTE(acquiredFileLock);
             break;
         }
 
         case 0:
-            if (!SharedMemoryHelpers::TryAcquireFileLock(m_sharedLockFileDescriptor, LOCK_EX | LOCK_NB))
+            if (!SharedMemoryHelpers::TryAcquireFileLock(errors, m_sharedLockFileDescriptor, LOCK_EX | LOCK_NB))
             {
                 return MutexTryAcquireLockResult::TimedOut;
             }
@@ -1472,7 +1592,7 @@ MutexTryAcquireLockResult NamedMutexProcessData::TryAcquireLock(DWORD timeoutMil
         default:
         {
             // Try to acquire the file lock without waiting
-            if (SharedMemoryHelpers::TryAcquireFileLock(m_sharedLockFileDescriptor, LOCK_EX | LOCK_NB))
+            if (SharedMemoryHelpers::TryAcquireFileLock(errors, m_sharedLockFileDescriptor, LOCK_EX | LOCK_NB))
             {
                 break;
             }
@@ -1511,7 +1631,7 @@ MutexTryAcquireLockResult NamedMutexProcessData::TryAcquireLock(DWORD timeoutMil
                         ? remainingMilliseconds
                         : PollLoopMaximumSleepMilliseconds;
                 Sleep(sleepMilliseconds);
-            } while (!SharedMemoryHelpers::TryAcquireFileLock(m_sharedLockFileDescriptor, LOCK_EX | LOCK_NB));
+            } while (!SharedMemoryHelpers::TryAcquireFileLock(errors, m_sharedLockFileDescriptor, LOCK_EX | LOCK_NB));
             break;
         }
     }

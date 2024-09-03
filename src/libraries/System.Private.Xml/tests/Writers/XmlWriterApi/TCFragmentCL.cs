@@ -108,7 +108,7 @@ namespace System.Xml.XmlWriterApiTests
                 }
             }
             CError.WriteLine("Did not throw exception");
-            Assert.True(false);
+            Assert.Fail();
         }
 
         // WriteStartDocument() should error when CL=fragment
@@ -130,7 +130,7 @@ namespace System.Xml.XmlWriterApiTests
                 }
             }
             CError.WriteLine("Did not throw exception");
-            Assert.True(false);
+            Assert.Fail();
         }
     }
 }

@@ -2,10 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Threading;
-using System.Diagnostics;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Runtime.InteropServices;
+using System.Threading;
 
 using Internal.Runtime;
 using Internal.Runtime.CompilerHelpers;
@@ -45,7 +45,8 @@ namespace System.Runtime.CompilerServices
         private static unsafe object CheckStaticClassConstructionReturnThreadStaticBase(TypeManagerSlot* pModuleData, int typeTlsIndex, StaticClassConstructionContext* context)
         {
             object threadStaticBase = ThreadStatics.GetThreadStaticBaseForType(pModuleData, typeTlsIndex);
-            EnsureClassConstructorRun(context);
+            if (context->cctorMethodAddress != 0)
+                EnsureClassConstructorRun(context);
             return threadStaticBase;
         }
 
@@ -54,7 +55,7 @@ namespace System.Runtime.CompilerServices
             IntPtr pfnCctor = pContext->cctorMethodAddress;
             NoisyLog("EnsureClassConstructorRun, context={0}, thread={1}", pContext, CurrentManagedThreadId);
 
-            // If we were called from MRT, this check is redundant but harmless. This is in case someone within classlib
+            // If we were called from JIT helper, this check is redundant but harmless. This is in case someone within classlib
             // (cough, Reflection) needs to call this explicitly.
             if (pfnCctor == 0)
             {
@@ -87,13 +88,6 @@ namespace System.Runtime.CompilerServices
 
                                 ((delegate*<void>)pfnCctor)();
 
-                                // Insert a memory barrier here to order any writes executed as part of static class
-                                // construction above with respect to the initialized flag update we're about to make
-                                // below. This is important since the fast path for checking the cctor uses a normal read
-                                // and doesn't come here so without the barrier it could observe initialized == 1 but
-                                // still see uninitialized static fields on the class.
-                                Interlocked.MemoryBarrier();
-
                                 NoisyLog("Set type inited, context={0}, thread={1}", pContext, currentManagedThreadId);
 
                                 pContext->cctorMethodAddress = 0;
@@ -111,7 +105,7 @@ namespace System.Runtime.CompilerServices
                         cctors[cctorIndex].HoldingThread = ManagedThreadIdNone;
                         NoisyLog("Releasing cctor lock, context={0}, thread={1}", pContext, currentManagedThreadId);
 
-                        cctorLock.Release();
+                        cctorLock.Exit();
                     }
                 }
                 else
@@ -142,10 +136,10 @@ namespace System.Runtime.CompilerServices
             int cctorIndex = cctor.Index;
             Cctor[] cctors = cctor.Array;
             Lock lck = cctors[cctorIndex].Lock;
-            if (lck.IsAcquired)
+            if (lck.IsHeldByCurrentThread)
                 return false;     // Thread recursively triggered the same cctor.
 
-            if (lck.TryAcquire(waitIntervalInMS))
+            if (lck.TryEnter(waitIntervalInMS))
                 return true;
 
             // We couldn't acquire the lock. See if this .cctor is involved in a cross-thread deadlock.  If so, break
@@ -162,9 +156,9 @@ namespace System.Runtime.CompilerServices
                 // If the threads are deadlocked for any reason other a class constructor cycling, this loop will never
                 // terminate - this is by design. If the user code inside the class constructors were to
                 // deadlock themselves, then that's a bug in user code.
-                for (;;)
+                for (; ; )
                 {
-                    using (LockHolder.Hold(s_cctorGlobalLock))
+                    using (s_cctorGlobalLock.EnterScope())
                     {
                         // Ask the guy who holds the cctor lock we're trying to acquire who he's waiting for. Keep
                         // walking down that chain until we either discover a cycle or reach a non-blocking state. Note
@@ -233,7 +227,7 @@ namespace System.Runtime.CompilerServices
                         waitIntervalInMS *= 2;
 
                     // We didn't find a cycle yet, try to take the lock again.
-                    if (lck.TryAcquire(waitIntervalInMS))
+                    if (lck.TryEnter(waitIntervalInMS))
                         return true;
                 } // infinite loop
             }
@@ -275,7 +269,7 @@ namespace System.Runtime.CompilerServices
 #if TARGET_WASM
                 if (s_cctorGlobalLock == null)
                 {
-                    Interlocked.CompareExchange(ref s_cctorGlobalLock, new Lock(), null);
+                    Interlocked.CompareExchange(ref s_cctorGlobalLock, new Lock(useTrivialWaits: true), null);
                 }
                 if (s_cctorArrays == null)
                 {
@@ -283,7 +277,7 @@ namespace System.Runtime.CompilerServices
                 }
 #endif // TARGET_WASM
 
-                using (LockHolder.Hold(s_cctorGlobalLock))
+                using (s_cctorGlobalLock.EnterScope())
                 {
                     Cctor[]? resultArray = null;
                     int resultIndex = -1;
@@ -342,7 +336,7 @@ namespace System.Runtime.CompilerServices
 
                         Debug.Assert(resultArray[resultIndex]._pContext == default(StaticClassConstructionContext*));
                         resultArray[resultIndex]._pContext = pContext;
-                        resultArray[resultIndex].Lock = new Lock();
+                        resultArray[resultIndex].Lock = new Lock(useTrivialWaits: true);
                         s_count++;
                     }
 
@@ -355,14 +349,14 @@ namespace System.Runtime.CompilerServices
             {
                 get
                 {
-                    Debug.Assert(s_cctorGlobalLock.IsAcquired);
+                    Debug.Assert(s_cctorGlobalLock.IsHeldByCurrentThread);
                     return s_count;
                 }
             }
 
             public static void Release(CctorHandle cctor)
             {
-                using (LockHolder.Hold(s_cctorGlobalLock))
+                using (s_cctorGlobalLock.EnterScope())
                 {
                     Cctor[] cctors = cctor.Array;
                     int cctorIndex = cctor.Index;
@@ -419,7 +413,7 @@ namespace System.Runtime.CompilerServices
 #else
                 const int Grow = 10;
 #endif
-                using (LockHolder.Hold(s_cctorGlobalLock))
+                using (s_cctorGlobalLock.EnterScope())
                 {
                     s_blockingRecords ??= new BlockingRecord[Grow];
                     int found;
@@ -450,14 +444,14 @@ namespace System.Runtime.CompilerServices
             public static void UnmarkThreadAsBlocked(int blockRecordIndex)
             {
                 // This method must never throw
-                s_cctorGlobalLock.Acquire();
+                s_cctorGlobalLock.Enter();
                 s_blockingRecords[blockRecordIndex].BlockedOn = new CctorHandle(null, 0);
-                s_cctorGlobalLock.Release();
+                s_cctorGlobalLock.Exit();
             }
 
             public static CctorHandle GetCctorThatThreadIsBlockedOn(int managedThreadId)
             {
-                Debug.Assert(s_cctorGlobalLock.IsAcquired);
+                Debug.Assert(s_cctorGlobalLock.IsHeldByCurrentThread);
                 for (int i = 0; i < s_nextBlockingRecordIndex; i++)
                 {
                     if (s_blockingRecords[i].ManagedThreadId == managedThreadId)
@@ -489,7 +483,7 @@ namespace System.Runtime.CompilerServices
         internal static void Initialize()
         {
             s_cctorArrays = new Cctor[10][];
-            s_cctorGlobalLock = new Lock();
+            s_cctorGlobalLock = new Lock(useTrivialWaits: true);
         }
 
         [Conditional("ENABLE_NOISY_CCTOR_LOG")]

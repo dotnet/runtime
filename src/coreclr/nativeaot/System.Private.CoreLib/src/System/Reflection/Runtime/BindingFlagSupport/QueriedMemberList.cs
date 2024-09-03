@@ -2,9 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
-using System.Runtime.CompilerServices;
 using System.Reflection.Runtime.General;
 using System.Reflection.Runtime.TypeInfos;
+using System.Runtime.CompilerServices;
 
 using Internal.Reflection.Core.Execution;
 
@@ -145,7 +145,7 @@ namespace System.Reflection.Runtime.BindingFlagSupport
                     inBaseClass = true;
                 }
 
-                type = type.BaseType.CastToRuntimeTypeInfo();
+                type = type.BaseType?.ToRuntimeTypeInfo()!;
             }
 
             return queriedMembers;

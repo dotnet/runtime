@@ -23,7 +23,7 @@ namespace JIT.HardwareIntrinsics.Arm
         [Fact]
         public static void {TestName}()
         {
-            var test = new LoadAndInsertTest__{TestName}();
+            var test = new {TestName}Test();
 
             if (test.IsSupported)
             {
@@ -64,7 +64,7 @@ namespace JIT.HardwareIntrinsics.Arm
         }
     }
 
-    public sealed unsafe class LoadAndInsertTest__{TestName}
+    public sealed unsafe class {TestName}Test
     {
         private struct DataTable
         {
@@ -128,7 +128,7 @@ namespace JIT.HardwareIntrinsics.Arm
                 return testStruct;
             }
 
-            public void RunStructFldScenario(LoadAndInsertTest__{TestName} testClass)
+            public void RunStructFldScenario({TestName}Test testClass)
             {
                 fixed ({Op1BaseType}* pFld3 = &_fld3)
                 {
@@ -154,7 +154,7 @@ namespace JIT.HardwareIntrinsics.Arm
 
         private DataTable _dataTable;
 
-        public LoadAndInsertTest__{TestName}()
+        public {TestName}Test()
         {
             Succeeded = true;
 

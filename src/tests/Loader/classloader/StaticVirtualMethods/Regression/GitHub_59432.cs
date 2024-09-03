@@ -2,16 +2,17 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using Xunit;
 
-class Program
+public class Program
 {
-    static int Main()
+    [Fact]
+    public static void TestEntryPoint()
     {
         Console.WriteLine("Start");
         SomeClass someInstance = new();
         CalledMethod();
         Console.WriteLine("Done");
-        return 100;
     }
 
     static void CalledMethod()

@@ -21,7 +21,6 @@ namespace System.Net.Security.Tests
     {
         [Theory]
         [MemberData(nameof(HostNameData))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/68206", TestPlatforms.Android)]
         public async Task SslStream_ClientSendsSNIServerReceives_Ok(string hostName)
         {
             using X509Certificate serverCert = Configuration.Certificates.GetSelfSignedServerCertificate();
@@ -66,7 +65,7 @@ namespace System.Net.Security.Tests
 
             var selectionCallback = new LocalCertificateSelectionCallback((object sender, string targetHost, X509CertificateCollection localCertificates, X509Certificate remoteCertificate, string[] issuers) =>
             {
-                Assert.True(false, "LocalCertificateSelectionCallback called when AuthenticateAsServerAsync was expected to fail.");
+                Assert.Fail("LocalCertificateSelectionCallback called when AuthenticateAsServerAsync was expected to fail.");
                 return null;
             });
 
@@ -82,7 +81,7 @@ namespace System.Net.Security.Tests
             {
                 Task clientJob = Task.Run(() => {
                     client.AuthenticateAsClient(hostName);
-                    Assert.True(false, "RemoteCertificateValidationCallback called when AuthenticateAsServerAsync was expected to fail.");
+                    Assert.Fail("RemoteCertificateValidationCallback called when AuthenticateAsServerAsync was expected to fail.");
                 });
 
                 SslServerAuthenticationOptions options = DefaultServerOptions();
@@ -237,13 +236,12 @@ namespace System.Net.Security.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/68206", TestPlatforms.Android)]
         public async Task UnencodedHostName_ValidatesCertificate()
         {
             string rawHostname = "räksmörgås.josefsson.org";
             string punycodeHostname = "xn--rksmrgs-5wao1o.josefsson.org";
 
-            var (serverCert, serverChain) = TestHelper.GenerateCertificates(punycodeHostname);
+            var (serverCert, serverChain) = Configuration.Certificates.GenerateCertificates(punycodeHostname);
             try
             {
                 SslServerAuthenticationOptions serverOptions = new SslServerAuthenticationOptions()
@@ -284,7 +282,7 @@ namespace System.Net.Security.Tests
         [InlineData("www-.volal.cz")]
         [InlineData("www-.colorhexa.com")]
         [InlineData("xn--www-7m0a.thegratuit.com")]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/68206", TestPlatforms.Android)]
+        [SkipOnPlatform(TestPlatforms.Android, "Safe invalid IDN hostnames are not supported on Android")]
         public async Task SslStream_SafeInvalidIdn_Success(string name)
         {
             (SslStream client, SslStream server) = TestHelper.GetConnectedSslStreams();
@@ -369,6 +367,16 @@ namespace System.Net.Security.Tests
 
         public static IEnumerable<object[]> HostNameData()
         {
+            if (OperatingSystem.IsAndroid())
+            {
+                yield return new object[] { "localhost" };
+                yield return new object[] { "dot.net" };
+                // max allowed hostname length is 63
+                yield return new object[] { $"{new string('a', 59)}.net" };
+                yield return new object[] { "\u017C\u00F3\u0142\u0107g\u0119\u015Bl\u0105ja\u017A\u0144.\u7EA2\u70E7.\u7167\u308A\u713C\u304D" };
+                yield break;
+            }
+
             yield return new object[] { "a" };
             yield return new object[] { "test" };
             // max allowed hostname length is 63

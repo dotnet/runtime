@@ -182,43 +182,68 @@ namespace ILCompiler
 
         public static bool? CompareTypesForEquality(TypeDesc type1, TypeDesc type2)
         {
-            bool? result = null;
-
             // If neither type is a canonical subtype, type handle comparison suffices
             if (!type1.IsCanonicalSubtype(CanonicalFormKind.Any) && !type2.IsCanonicalSubtype(CanonicalFormKind.Any))
             {
-                result = type1 == type2;
-            }
-            // If either or both types are canonical subtypes, we can sometimes prove inequality.
-            else
-            {
-                // If either is a value type then the types cannot
-                // be equal unless the type defs are the same.
-                if (type1.IsValueType || type2.IsValueType)
-                {
-                    if (!type1.IsCanonicalDefinitionType(CanonicalFormKind.Universal) && !type2.IsCanonicalDefinitionType(CanonicalFormKind.Universal))
-                    {
-                        if (!type1.HasSameTypeDefinition(type2))
-                        {
-                            result = false;
-                        }
-                    }
-                }
-                // If we have two ref types that are not __Canon, then the
-                // types cannot be equal unless the type defs are the same.
-                else
-                {
-                    if (!type1.IsCanonicalDefinitionType(CanonicalFormKind.Any) && !type2.IsCanonicalDefinitionType(CanonicalFormKind.Any))
-                    {
-                        if (!type1.HasSameTypeDefinition(type2))
-                        {
-                            result = false;
-                        }
-                    }
-                }
+                return type1 == type2;
             }
 
-            return result;
+            // If either or both types are canonical subtypes, we can sometimes prove inequality.
+            if (AreGuaranteedToRepresentDifferentTypes(type1, type2))
+            {
+                return false;
+            }
+
+            return null;
+
+            static bool AreGuaranteedToRepresentDifferentTypes(TypeDesc type1, TypeDesc type2)
+            {
+                if (type1.IsCanonicalDefinitionType(CanonicalFormKind.Any) || type2.IsCanonicalDefinitionType(CanonicalFormKind.Any))
+                {
+                    // Universal canonical definition can match any type. We can't prove inequality.
+                    if (type1.IsCanonicalDefinitionType(CanonicalFormKind.Universal) || type2.IsCanonicalDefinitionType(CanonicalFormKind.Universal))
+                        return false;
+
+                    return type1.IsGCPointer != type2.IsGCPointer;
+                }
+
+                TypeFlags category = type1.Category;
+                if (category != type2.Category)
+                    return true;
+
+                switch (category)
+                {
+                    case TypeFlags.Array:
+                        if (((ArrayType)type1).Rank != ((ArrayType)type2).Rank)
+                            return true;
+                        return AreGuaranteedToRepresentDifferentTypes(((ArrayType)type1).ElementType, ((ArrayType)type2).ElementType);
+                    case TypeFlags.SzArray:
+                    case TypeFlags.ByRef:
+                    case TypeFlags.Pointer:
+                        return AreGuaranteedToRepresentDifferentTypes(((ParameterizedType)type1).ParameterType, ((ParameterizedType)type2).ParameterType);
+
+                    default:
+                        if (type1.IsDefType || type2.IsDefType)
+                        {
+                            if (!type1.HasSameTypeDefinition(type2))
+                                return true;
+
+                            Instantiation inst1 = type1.Instantiation;
+                            if (inst1.Length != 0)
+                            {
+                                var inst2 = type2.Instantiation;
+                                Debug.Assert(inst1.Length == inst2.Length);
+                                for (int i = 0; i < inst1.Length; i++)
+                                {
+                                    if (AreGuaranteedToRepresentDifferentTypes(inst1[i], inst2[i]))
+                                        return true;
+                                }
+                            }
+                        }
+                        break;
+                }
+                return false;
+            }
         }
 
         public static TypeDesc MergeTypesToCommonParent(TypeDesc ta, TypeDesc tb)

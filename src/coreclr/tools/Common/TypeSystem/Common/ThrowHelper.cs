@@ -24,6 +24,12 @@ namespace Internal.TypeSystem
         }
 
         [System.Diagnostics.DebuggerHidden]
+        public static void ThrowMissingMethodException(string methodName)
+        {
+            throw new TypeSystemException.MissingMethodException(ExceptionStringID.MissingMethod, methodName);
+        }
+
+        [System.Diagnostics.DebuggerHidden]
         public static void ThrowMissingFieldException(TypeDesc owningType, string fieldName)
         {
             throw new TypeSystemException.MissingFieldException(ExceptionStringID.MissingField, Format.Field(owningType, fieldName));
@@ -57,12 +63,6 @@ namespace Internal.TypeSystem
         public static void ThrowBadImageFormatException()
         {
             throw new TypeSystemException.BadImageFormatException();
-        }
-
-        [System.Diagnostics.DebuggerHidden]
-        public static void ThrowBadImageFormatException(string message)
-        {
-            throw new TypeSystemException.BadImageFormatException(message);
         }
 
         [System.Diagnostics.DebuggerHidden]

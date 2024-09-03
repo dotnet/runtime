@@ -224,6 +224,17 @@ namespace pal
         return hMod != nullptr;
     }
 
+    inline bool try_load_library(const pal::string_t& path, pal::mod_t& hMod)
+    {
+        hMod = (pal::mod_t)::LoadLibraryExW(path.c_str(), nullptr, 0);
+        if (hMod == nullptr)
+        {
+            pal::fprintf(stderr, W("Failed to load: '%s'. Error: 0x%08x\n"), path.c_str(), ::GetLastError());
+            return false;
+        }
+        return true;
+    }
+
     inline bool try_load_coreclr(const pal::string_t& core_root, pal::mod_t& hMod)
     {
         pal::string_t coreclr_path = core_root;
@@ -552,9 +563,7 @@ namespace pal
             case DT_LNK:
             case DT_UNKNOWN:
                 {
-                    string_t full_filename;
-                    full_filename.append(directory);
-                    full_filename.append(1, pal::dir_delim);
+                    string_t full_filename{directory};
                     full_filename.append(entry->d_name);
                     if (!does_file_exist(full_filename.c_str()))
                         continue;
@@ -572,7 +581,7 @@ namespace pal
             // Make sure if we have an assembly with multiple extensions present,
             // we insert only one version of it.
             if (should_add(entry->d_name))
-                file_list << directory << dir_delim << entry->d_name << env_path_delim;
+                file_list << directory << entry->d_name << env_path_delim;
         }
 
         closedir(dir);
@@ -601,6 +610,18 @@ namespace pal
 
         return hMod != nullptr;
     }
+
+    inline bool try_load_library(const pal::string_t& path, pal::mod_t& hMod)
+    {
+        hMod = (pal::mod_t)dlopen(path.c_str(), RTLD_NOW | RTLD_LOCAL);
+        if (hMod == nullptr)
+        {
+            pal::fprintf(stderr, W("Failed to load: '%s'. Error: %s\n"), path.c_str(), dlerror());
+            return false;
+        }
+        return true;
+    }
+
 
     inline bool try_load_coreclr(const pal::string_t& core_root, pal::mod_t& hMod)
     {

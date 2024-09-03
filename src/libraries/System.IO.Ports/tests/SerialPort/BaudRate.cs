@@ -150,18 +150,18 @@ namespace System.IO.Ports.Tests
 
                 if (null != expectedException)
                 {
-                    Assert.True(false, $"ERROR!!! Expected Open() to throw {expectedException} and nothing was thrown");
+                    Assert.Fail($"ERROR!!! Expected Open() to throw {expectedException} and nothing was thrown");
                 }
             }
             catch (Exception e)
             {
                 if (null == expectedException)
                 {
-                    Assert.True(false, $"ERROR!!! Expected Open() NOT to throw an exception and {e.GetType()} was thrown");
+                    Assert.Fail($"ERROR!!! Expected Open() NOT to throw an exception and {e.GetType()} was thrown");
                 }
                 else if (e.GetType() != expectedException)
                 {
-                    Assert.True(false, $"ERROR!!! Expected Open() throw {expectedException} and {e.GetType()} was thrown: {e}");
+                    Assert.Fail($"ERROR!!! Expected Open() throw {expectedException} and {e.GetType()} was thrown: {e}");
                 }
             }
 
@@ -183,7 +183,7 @@ namespace System.IO.Ports.Tests
                 com.BaudRate = baudRate;
                 if (null != expectedException)
                 {
-                    Assert.True(false, $"ERROR!!! Expected setting the BaudRate after Open() to throw {expectedException} and nothing was thrown");
+                    Assert.Fail($"ERROR!!! Expected setting the BaudRate after Open() to throw {expectedException} and nothing was thrown");
                 }
                 else
                 {
@@ -194,11 +194,11 @@ namespace System.IO.Ports.Tests
             {
                 if (null == expectedException)
                 {
-                    Assert.True(false, $"ERROR!!! Expected setting the BaudRate after Open() NOT to throw an exception and {e.GetType()} was thrown");
+                    Assert.Fail($"ERROR!!! Expected setting the BaudRate after Open() NOT to throw an exception and {e.GetType()} was thrown");
                 }
                 else if (e.GetType() != expectedException)
                 {
-                    Assert.True(false, $"ERROR!!! Expected setting the BaudRate after Open() throw {expectedException} and {e.GetType()} was thrown");
+                    Assert.Fail($"ERROR!!! Expected setting the BaudRate after Open() throw {expectedException} and {e.GetType()} was thrown");
                 }
             }
 
@@ -314,7 +314,7 @@ namespace System.IO.Ports.Tests
                 //then the expected baud rate must not have been used and we should report an error
                 if (MAX_ACCEPTABLE_PERCENTAGE_DIFFERENCE < percentageDifference)
                 {
-                    Assert.True(false, string.Format("ERROR!!! BuadRate not used Expected time:{0}, actual time:{1} percentageDifference:{2}",
+                    Assert.Fail(string.Format("ERROR!!! BuadRate not used Expected time:{0}, actual time:{1} percentageDifference:{2}",
                         expectedTime, actualTime, percentageDifference));
                 }
 

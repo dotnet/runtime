@@ -16,6 +16,26 @@ namespace System.Numerics
         /// <returns>The ceiling of <paramref name="x" />.</returns>
         static virtual TSelf Ceiling(TSelf x) => TSelf.Round(x, digits: 0, MidpointRounding.ToPositiveInfinity);
 
+        /// <summary>Converts a value to a specified integer type using saturation on overflow</summary>
+        /// <typeparam name="TInteger">The integer type to which <paramref name="value" /> is converted.</typeparam>
+        /// <param name="value">The value to be converted.</param>
+        /// <returns>An instance of <typeparamref name="TInteger" /> created from <paramref name="value" />.</returns>
+        static virtual TInteger ConvertToInteger<TInteger>(TSelf value)
+            where TInteger : IBinaryInteger<TInteger>
+        {
+            return TInteger.CreateSaturating(value);
+        }
+
+        /// <summary>Converts a value to a specified integer type using platform specific behavior on overflow.</summary>
+        /// <typeparam name="TInteger">The integer type to which <paramref name="value" /> is converted.</typeparam>
+        /// <param name="value">The value to be converted.</param>
+        /// <returns>An instance of <typeparamref name="TInteger" /> created from <paramref name="value" />.</returns>
+        static virtual TInteger ConvertToIntegerNative<TInteger>(TSelf value)
+            where TInteger : IBinaryInteger<TInteger>
+        {
+            return TSelf.ConvertToInteger<TInteger>(value);
+        }
+
         /// <summary>Computes the floor of a value.</summary>
         /// <param name="x">The value whose floor is to be computed.</param>
         /// <returns>The floor of <paramref name="x" />.</returns>
@@ -38,7 +58,7 @@ namespace System.Numerics
         /// <returns>The result of rounding <paramref name="x" /> to the nearest integer using <paramref name="mode" />.</returns>
         static virtual TSelf Round(TSelf x, MidpointRounding mode) => TSelf.Round(x, digits: 0, mode);
 
-        /// <summary>Rounds a value to a specified number of fractional-digits using the default rounding mode (<see cref="MidpointRounding.ToEven" />).</summary>
+        /// <summary>Rounds a value to a specified number of fractional-digits using the specified rounding mode.</summary>
         /// <param name="x">The value to round.</param>
         /// <param name="digits">The number of fractional digits to which <paramref name="x" /> should be rounded.</param>
         /// <param name="mode">The mode under which <paramref name="x" /> should be rounded.</param>

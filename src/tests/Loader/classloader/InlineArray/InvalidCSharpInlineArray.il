@@ -23,15 +23,6 @@
     .field public int32 'field'
 }
 
-.class public sequential ansi sealed beforefieldinit TooLarge
-    extends [System.Runtime]System.ValueType
-{
-    .custom instance void [System.Runtime]System.Runtime.CompilerServices.InlineArrayAttribute::.ctor(int32) = (
-        01 00 00 00 00 20 00 00
-    )
-    .field public int64 'field'
-}
-
 .class public sequential ansi sealed beforefieldinit NegativeLength
     extends [System.Runtime]System.ValueType
 {

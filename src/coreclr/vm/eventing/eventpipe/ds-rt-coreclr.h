@@ -166,7 +166,7 @@ ds_rt_config_value_get_ports (void)
 	STATIC_CONTRACT_NOTHROW;
 
 	CLRConfigStringHolder value(CLRConfig::GetConfigValue (CLRConfig::EXTERNAL_DOTNET_DiagnosticPorts));
-	return ep_rt_utf16_to_utf8_string (reinterpret_cast<ep_char16_t *>(value.GetValue ()), -1);
+	return ep_rt_utf16_to_utf8_string (reinterpret_cast<ep_char16_t *>(value.GetValue ()));
 }
 
 static
@@ -391,7 +391,11 @@ ds_rt_server_log_pause_message (void)
 	STATIC_CONTRACT_NOTHROW;
 
 	const char diagPortsName[] = "DiagnosticPorts";
-	CLRConfigNoCache diagPorts = CLRConfigNoCache::Get(diagPortsName);
+#ifdef HOST_WINDOWS
+    CLRConfigNoCache diagPorts = CLRConfigNoCache::Get(diagPortsName);
+#else
+    CLRConfigNoCache diagPorts = CLRConfigNoCache::Get(diagPortsName, /* noPrefix */ false, &PAL_getenv);
+#endif
 	LPCSTR ports = nullptr;
 	if (diagPorts.IsSet())
 	{

@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 using System;
 using System.Threading;
+using Xunit;
 
 // This tests Interlocked.Add.  
 // Interlocked.Add Adds two 64-bit integers and replaces the first 
@@ -14,7 +15,8 @@ public class InterlockedAdd2
 {
     private const int c_NUM_LOOPS = 100;
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         InterlockedAdd2 test = new InterlockedAdd2();
 

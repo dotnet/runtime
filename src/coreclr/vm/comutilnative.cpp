@@ -71,80 +71,14 @@ FCIMPL0(VOID, ExceptionNative::PrepareForForeignExceptionRaise)
 
     PTR_ThreadExceptionState pCurTES = GetThread()->GetExceptionState();
 
-	// Set a flag against the TES to indicate this is a foreign exception raise.
-	pCurTES->SetRaisingForeignException();
+    // Set a flag against the TES to indicate this is a foreign exception raise.
+    pCurTES->SetRaisingForeignException();
 }
 FCIMPLEND
 
-// Given an exception object, this method will extract the stacktrace and dynamic method array and set them up for return to the caller.
-FCIMPL3(VOID, ExceptionNative::GetStackTracesDeepCopy, Object* pExceptionObjectUnsafe, Object **pStackTraceUnsafe, Object **pDynamicMethodsUnsafe);
-{
-    CONTRACTL
-    {
-        FCALL_CHECK;
-    }
-    CONTRACTL_END;
-
-    ASSERT(pExceptionObjectUnsafe != NULL);
-    ASSERT(pStackTraceUnsafe != NULL);
-    ASSERT(pDynamicMethodsUnsafe != NULL);
-
-    struct
-    {
-        StackTraceArray stackTrace;
-        StackTraceArray stackTraceCopy;
-        EXCEPTIONREF refException;
-        PTRARRAYREF dynamicMethodsArray; // Object array of Managed Resolvers
-        PTRARRAYREF dynamicMethodsArrayCopy; // Copy of the object array of Managed Resolvers
-    } gc;
-    gc.refException = NULL;
-    gc.dynamicMethodsArray = NULL;
-    gc.dynamicMethodsArrayCopy = NULL;
-
-    // GC protect the array reference
-    HELPER_METHOD_FRAME_BEGIN_PROTECT(gc);
-
-    // Get the exception object reference
-    gc.refException = (EXCEPTIONREF)(ObjectToOBJECTREF(pExceptionObjectUnsafe));
-
-    // Fetch the stacktrace details from the exception under a lock
-    gc.refException->GetStackTrace(gc.stackTrace, &gc.dynamicMethodsArray);
-
-    bool fHaveStackTrace = false;
-    bool fHaveDynamicMethodArray = false;
-
-    if ((unsigned)gc.stackTrace.Size() > 0)
-    {
-        // Deepcopy the array
-        gc.stackTraceCopy.CopyFrom(gc.stackTrace);
-        fHaveStackTrace = true;
-    }
-
-    if (gc.dynamicMethodsArray != NULL)
-    {
-        // Get the number of elements in the dynamic methods array
-        unsigned   cOrigDynamic = gc.dynamicMethodsArray->GetNumComponents();
-
-        // ..and allocate a new array. This can trigger GC or throw under OOM.
-        gc.dynamicMethodsArrayCopy = (PTRARRAYREF)AllocateObjectArray(cOrigDynamic, g_pObjectClass);
-
-        // Deepcopy references to the new array we just allocated
-        memmoveGCRefs(gc.dynamicMethodsArrayCopy->GetDataPtr(), gc.dynamicMethodsArray->GetDataPtr(),
-                                                  cOrigDynamic * sizeof(Object *));
-
-        fHaveDynamicMethodArray = true;
-    }
-
-    // Prep to return
-    *pStackTraceUnsafe = fHaveStackTrace?OBJECTREFToObject(gc.stackTraceCopy.Get()):NULL;
-    *pDynamicMethodsUnsafe = fHaveDynamicMethodArray?OBJECTREFToObject(gc.dynamicMethodsArrayCopy):NULL;
-
-    HELPER_METHOD_FRAME_END();
-}
-FCIMPLEND
-
-// Given an exception object and deep copied instances of a stacktrace and/or dynamic method array, this method will set the latter in the exception object instance.
-FCIMPL3(VOID, ExceptionNative::SaveStackTracesFromDeepCopy, Object* pExceptionObjectUnsafe, Object *pStackTraceUnsafe, Object *pDynamicMethodsUnsafe);
+// Given an exception object, this method will mark its stack trace as frozen and return it to the caller.
+// Frozen stack traces are immutable, when a thread attempts to add a frame to it, the stack trace is cloned first.
+FCIMPL1(Object *, ExceptionNative::GetFrozenStackTrace, Object* pExceptionObjectUnsafe);
 {
     CONTRACTL
     {
@@ -157,44 +91,33 @@ FCIMPL3(VOID, ExceptionNative::SaveStackTracesFromDeepCopy, Object* pExceptionOb
     struct
     {
         StackTraceArray stackTrace;
-        EXCEPTIONREF refException;
-        PTRARRAYREF dynamicMethodsArray; // Object array of Managed Resolvers
+        EXCEPTIONREF refException = NULL;
+        PTRARRAYREF keepAliveArray = NULL; // Object array of Managed Resolvers / AssemblyLoadContexts
+        OBJECTREF result = NULL;
     } gc;
-    gc.refException = NULL;
-    gc.dynamicMethodsArray = NULL;
 
     // GC protect the array reference
-    HELPER_METHOD_FRAME_BEGIN_PROTECT(gc);
+    HELPER_METHOD_FRAME_BEGIN_RET_PROTECT(gc);
 
     // Get the exception object reference
     gc.refException = (EXCEPTIONREF)(ObjectToOBJECTREF(pExceptionObjectUnsafe));
 
-    if (pStackTraceUnsafe != NULL)
-    {
-        // Copy the stacktrace
-        StackTraceArray stackTraceArray((I1ARRAYREF)ObjectToOBJECTREF(pStackTraceUnsafe));
-        gc.stackTrace.Swap(stackTraceArray);
-    }
+    gc.refException->GetStackTrace(gc.stackTrace, &gc.keepAliveArray);
 
-    gc.dynamicMethodsArray = NULL;
-    if (pDynamicMethodsUnsafe != NULL)
-    {
-        gc.dynamicMethodsArray = (PTRARRAYREF)ObjectToOBJECTREF(pDynamicMethodsUnsafe);
-    }
+    gc.stackTrace.MarkAsFrozen();
 
-    // If there is no stacktrace, then there cannot be any dynamic method array. Thus,
-    // save stacktrace only when we have it.
-    if (gc.stackTrace.Size() > 0)
+    if (gc.keepAliveArray != NULL)
     {
-        // Save the stacktrace details in the exception under a lock
-        gc.refException->SetStackTrace(gc.stackTrace.Get(), gc.dynamicMethodsArray);
+        gc.result = gc.keepAliveArray;
     }
     else
     {
-        gc.refException->SetStackTrace(NULL, NULL);
+        gc.result = gc.stackTrace.Get();
     }
 
     HELPER_METHOD_FRAME_END();
+
+    return OBJECTREFToObject(gc.result);
 }
 FCIMPLEND
 
@@ -492,6 +415,75 @@ extern "C" void QCALLTYPE ExceptionNative_GetMessageFromNativeResources(Exceptio
     END_QCALL;
 }
 
+extern "C" void QCALLTYPE ExceptionNative_GetMethodFromStackTrace(QCall::ObjectHandleOnStack stacktrace, QCall::ObjectHandleOnStack retMethodInfo)
+{
+    QCALL_CONTRACT;
+
+    BEGIN_QCALL;
+
+    GCX_COOP();
+
+    MethodDesc* pMD = NULL;
+    // See ExceptionObject::GetStackTrace() and ExceptionObject::SetStackTrace()
+    // for details on the stacktrace array.
+    {
+        ARRAYBASEREF arrayBaseRef = (ARRAYBASEREF)stacktrace.Get();
+        _ASSERTE(arrayBaseRef != NULL);
+
+        // The stacktrace can be either sbyte[] or Object[]. In the latter case,
+        // the first entry is the actual stack trace sbyte[], the rest are pointers
+        // to the method info objects. We only care about the first entry here.
+        CorElementType elemType = arrayBaseRef->GetArrayElementType();
+        if (elemType != ELEMENT_TYPE_I1)
+        {
+            _ASSERTE(elemType == ELEMENT_TYPE_CLASS); // object[]
+            PTRARRAYREF ptrArrayRef = (PTRARRAYREF)arrayBaseRef;
+            arrayBaseRef = (ARRAYBASEREF)OBJECTREFToObject(ptrArrayRef->GetAt(0));
+        }
+
+        I1ARRAYREF arrayRef = (I1ARRAYREF)arrayBaseRef;
+        StackTraceArray stackArray(arrayRef);
+        _ASSERTE(stackArray.Size() > 0);
+        pMD = stackArray[0].pFunc;
+    }
+
+    // The managed stack trace classes always return typical method definition,
+    // so we don't need to bother providing exact instantiation.
+    MethodDesc* pMDTypical = pMD->LoadTypicalMethodDefinition();
+    retMethodInfo.Set(pMDTypical->GetStubMethodInfo());
+    _ASSERTE(pMDTypical->IsRuntimeMethodHandle());
+
+    END_QCALL;
+}
+
+extern "C" void QCALLTYPE ExceptionNative_ThrowAmbiguousResolutionException(
+    MethodTable* pTargetClass,
+    MethodTable* pInterfaceMT,
+    MethodDesc* pInterfaceMD)
+{
+    QCALL_CONTRACT;
+
+    BEGIN_QCALL;
+
+    ThrowAmbiguousResolutionException(pTargetClass, pInterfaceMT, pInterfaceMD);
+
+    END_QCALL;
+}
+
+extern "C" void QCALLTYPE ExceptionNative_ThrowEntryPointNotFoundException(
+    MethodTable* pTargetClass,
+    MethodTable* pInterfaceMT,
+    MethodDesc* pInterfaceMD)
+{
+    QCALL_CONTRACT;
+
+    BEGIN_QCALL;
+
+    ThrowEntryPointNotFoundException(pTargetClass, pInterfaceMT, pInterfaceMD);
+
+    END_QCALL;
+}
+
 extern "C" void QCALLTYPE Buffer_Clear(void *dst, size_t length)
 {
     QCALL_CONTRACT;
@@ -665,53 +657,41 @@ FCIMPL0(FC_BOOL_RET, GCInterface::CancelFullGCNotification)
 }
 FCIMPLEND
 
-FCIMPL1(int, GCInterface::WaitForFullGCApproach, int millisecondsTimeout)
+extern "C" int QCALLTYPE GCInterface_WaitForFullGCApproach(int millisecondsTimeout)
 {
-    CONTRACTL
-    {
-        THROWS;
-        MODE_COOPERATIVE;
-        DISABLED(GC_TRIGGERS);  // can't use this in an FCALL because we're in forbid gc mode until we setup a H_M_F.
-    }
-    CONTRACTL_END;
+    QCALL_CONTRACT;
 
     int result = 0;
 
-    //We don't need to check the top end because the GC will take care of that.
-    HELPER_METHOD_FRAME_BEGIN_RET_0();
+    BEGIN_QCALL;
+
+    GCX_COOP();
 
     DWORD dwMilliseconds = ((millisecondsTimeout == -1) ? INFINITE : millisecondsTimeout);
     result = GCHeapUtilities::GetGCHeap()->WaitForFullGCApproach(dwMilliseconds);
 
-    HELPER_METHOD_FRAME_END();
+    END_QCALL;
 
     return result;
 }
-FCIMPLEND
 
-FCIMPL1(int, GCInterface::WaitForFullGCComplete, int millisecondsTimeout)
+extern "C" int QCALLTYPE GCInterface_WaitForFullGCComplete(int millisecondsTimeout)
 {
-    CONTRACTL
-    {
-        THROWS;
-        MODE_COOPERATIVE;
-        DISABLED(GC_TRIGGERS);  // can't use this in an FCALL because we're in forbid gc mode until we setup a H_M_F.
-    }
-    CONTRACTL_END;
+    QCALL_CONTRACT;
 
     int result = 0;
 
-    //We don't need to check the top end because the GC will take care of that.
-    HELPER_METHOD_FRAME_BEGIN_RET_0();
+    BEGIN_QCALL;
+
+    GCX_COOP();
 
     DWORD dwMilliseconds = ((millisecondsTimeout == -1) ? INFINITE : millisecondsTimeout);
     result = GCHeapUtilities::GetGCHeap()->WaitForFullGCComplete(dwMilliseconds);
 
-    HELPER_METHOD_FRAME_END();
+    END_QCALL;
 
     return result;
 }
-FCIMPLEND
 
 /*================================GetGeneration=================================
 **Action: Returns the generation in which args->obj is found.
@@ -807,33 +787,6 @@ extern "C" int QCALLTYPE GCInterface_EndNoGCRegion()
     return retVal;
 }
 
-/*===============================GetGenerationWR================================
-**Action: Returns the generation in which the object pointed to by a WeakReference is found.
-**Returns:
-**Arguments: args->handle -- the OBJECTHANDLE to the object which we're locating.
-**Exceptions: ArgumentException if handle points to an object which is not accessible.
-==============================================================================*/
-FCIMPL1(int, GCInterface::GetGenerationWR, LPVOID handle)
-{
-    FCALL_CONTRACT;
-
-    int iRetVal = 0;
-
-    HELPER_METHOD_FRAME_BEGIN_RET_0();
-
-    OBJECTREF temp;
-    temp = ObjectFromHandle((OBJECTHANDLE) handle);
-    if (temp == NULL)
-        COMPlusThrowArgumentNull(W("wo"));
-
-    iRetVal = (INT32)GCHeapUtilities::GetGCHeap()->WhichGeneration(OBJECTREFToObject(temp));
-
-    HELPER_METHOD_FRAME_END();
-
-    return iRetVal;
-}
-FCIMPLEND
-
 FCIMPL0(int, GCInterface::GetLastGCPercentTimeInGC)
 {
     FCALL_CONTRACT;
@@ -895,6 +848,31 @@ extern "C" void QCALLTYPE GCInterface_Collect(INT32 generation, INT32 mode)
     END_QCALL;
 }
 
+extern "C" void* QCALLTYPE GCInterface_GetNextFinalizableObject(QCall::ObjectHandleOnStack pObj)
+{
+    QCALL_CONTRACT;
+
+    PCODE funcPtr = 0;
+
+    BEGIN_QCALL;
+
+    GCX_COOP();
+
+    OBJECTREF target = FinalizerThread::GetNextFinalizableObject();
+
+    if (target != NULL)
+    {
+        pObj.Set(target);
+
+        MethodTable* pMT = target->GetMethodTable();
+
+        funcPtr = pMT->GetRestoredSlot(g_pObjectFinalizerMD->GetSlot());
+    }
+
+    END_QCALL;
+
+    return (void*)funcPtr;
+}
 
 /*==========================WaitForPendingFinalizers============================
 **Action: Run all Finalizers that haven't been run.
@@ -939,7 +917,7 @@ FCIMPL0(INT64, GCInterface::GetAllocatedBytesForCurrentThread)
 
     INT64 currentAllocated = 0;
     Thread *pThread = GetThread();
-    gc_alloc_context* ac = pThread->GetAllocContext();
+    gc_alloc_context* ac = &t_runtime_thread_locals.alloc_context;
     currentAllocated = ac->alloc_bytes + ac->alloc_bytes_uoh - (ac->alloc_limit - ac->alloc_ptr);
 
     return currentAllocated;
@@ -977,41 +955,44 @@ FCIMPL3(Object*, GCInterface::AllocateNewArray, void* arrayTypeHandle, INT32 len
 FCIMPLEND
 
 
-FCIMPL1(INT64, GCInterface::GetTotalAllocatedBytes, CLR_BOOL precise)
+FCIMPL0(INT64, GCInterface::GetTotalAllocatedBytesApproximate)
 {
     FCALL_CONTRACT;
 
-    if (!precise)
-    {
 #ifdef TARGET_64BIT
-        uint64_t unused_bytes = Thread::dead_threads_non_alloc_bytes;
+    uint64_t unused_bytes = Thread::dead_threads_non_alloc_bytes;
 #else
-        // As it could be noticed we read 64bit values that may be concurrently updated.
-        // Such reads are not guaranteed to be atomic on 32bit so extra care should be taken.
-        uint64_t unused_bytes = InterlockedCompareExchange64((LONG64*)& Thread::dead_threads_non_alloc_bytes, 0, 0);
+    // As it could be noticed we read 64bit values that may be concurrently updated.
+    // Such reads are not guaranteed to be atomic on 32bit so extra care should be taken.
+    uint64_t unused_bytes = InterlockedCompareExchange64((LONG64*)& Thread::dead_threads_non_alloc_bytes, 0, 0);
 #endif
 
-        uint64_t allocated_bytes = GCHeapUtilities::GetGCHeap()->GetTotalAllocatedBytes() - unused_bytes;
+    uint64_t allocated_bytes = GCHeapUtilities::GetGCHeap()->GetTotalAllocatedBytes() - unused_bytes;
 
-        // highest reported allocated_bytes. We do not want to report a value less than that even if unused_bytes has increased.
-        static uint64_t high_watermark;
+    // highest reported allocated_bytes. We do not want to report a value less than that even if unused_bytes has increased.
+    static uint64_t high_watermark;
 
-        uint64_t current_high = high_watermark;
-        while (allocated_bytes > current_high)
-        {
-            uint64_t orig = InterlockedCompareExchange64((LONG64*)& high_watermark, allocated_bytes, current_high);
-            if (orig == current_high)
-                return allocated_bytes;
+    uint64_t current_high = high_watermark;
+    while (allocated_bytes > current_high)
+    {
+        uint64_t orig = InterlockedCompareExchange64((LONG64*)& high_watermark, allocated_bytes, current_high);
+        if (orig == current_high)
+            return allocated_bytes;
 
-            current_high = orig;
-        }
-
-        return current_high;
+        current_high = orig;
     }
 
+    return current_high;
+}
+FCIMPLEND;
+
+extern "C" INT64 QCALLTYPE GCInterface_GetTotalAllocatedBytesPrecise()
+{
     INT64 allocated = 0;
 
-    HELPER_METHOD_FRAME_BEGIN_RET_0();
+    BEGIN_QCALL;
+
+    GCX_COOP();
 
     // We need to suspend/restart the EE to get each thread's
     // non-allocated memory from their allocation contexts
@@ -1023,16 +1004,18 @@ FCIMPL1(INT64, GCInterface::GetTotalAllocatedBytes, CLR_BOOL precise)
     for (Thread *pThread = ThreadStore::GetThreadList(NULL); pThread; pThread = ThreadStore::GetThreadList(pThread))
     {
         gc_alloc_context* ac = pThread->GetAllocContext();
-        allocated -= ac->alloc_limit - ac->alloc_ptr;
+        if (ac != nullptr)
+        {
+            allocated -= ac->alloc_limit - ac->alloc_ptr;
+        }
     }
 
     ThreadSuspend::RestartEE(FALSE, TRUE);
 
-    HELPER_METHOD_FRAME_END();
+    END_QCALL;
 
     return allocated;
 }
-FCIMPLEND;
 
 #ifdef FEATURE_BASICFREEZE
 
@@ -1118,24 +1101,24 @@ FCIMPLEND
 **Arguments: Object of interest
 **Exceptions: None
 ==============================================================================*/
-FCIMPL1(void, GCInterface::ReRegisterForFinalize, Object *obj)
+extern "C" void QCALLTYPE GCInterface_ReRegisterForFinalize(QCall::ObjectHandleOnStack pObj)
 {
-    FCALL_CONTRACT;
+    QCALL_CONTRACT;
+
+    BEGIN_QCALL;
+
+    GCX_COOP();
 
     // Checked by the caller
-    _ASSERTE(obj != NULL);
+    _ASSERTE(pObj.Get() != NULL);
+    _ASSERTE(pObj.Get()->GetMethodTable()->HasFinalizer());
 
-    if (obj->GetMethodTable()->HasFinalizer())
+    if (!GCHeapUtilities::GetGCHeap()->RegisterForFinalization(-1, OBJECTREFToObject(pObj.Get())))
     {
-        HELPER_METHOD_FRAME_BEGIN_1(obj);
-        if (!GCHeapUtilities::GetGCHeap()->RegisterForFinalization(-1, obj))
-        {
-            ThrowOutOfMemory();
-        }
-        HELPER_METHOD_FRAME_END();
+        ThrowOutOfMemory();
     }
+    END_QCALL;
 }
-FCIMPLEND
 
 FORCEINLINE UINT64 GCInterface::InterlockedAdd (UINT64 *pAugend, UINT64 addend) {
     WRAPPER_NO_CONTRACT;
@@ -1500,13 +1483,9 @@ NOINLINE void GCInterface::GarbageCollectModeAny(int generation)
 
 #include <optsmallperfcritical.h>
 
-FCIMPL2(INT32,COMInterlocked::Exchange, INT32 *location, INT32 value)
+FCIMPL2(INT32,COMInterlocked::Exchange32, INT32 *location, INT32 value)
 {
     FCALL_CONTRACT;
-
-    if( NULL == location) {
-        FCThrow(kNullReferenceException);
-    }
 
     return InterlockedExchange((LONG *) location, value);
 }
@@ -1516,21 +1495,13 @@ FCIMPL2_IV(INT64,COMInterlocked::Exchange64, INT64 *location, INT64 value)
 {
     FCALL_CONTRACT;
 
-    if( NULL == location) {
-        FCThrow(kNullReferenceException);
-    }
-
     return InterlockedExchange64((INT64 *) location, value);
 }
 FCIMPLEND
 
-FCIMPL3(INT32, COMInterlocked::CompareExchange, INT32* location, INT32 value, INT32 comparand)
+FCIMPL3(INT32, COMInterlocked::CompareExchange32, INT32* location, INT32 value, INT32 comparand)
 {
     FCALL_CONTRACT;
-
-    if( NULL == location) {
-        FCThrow(kNullReferenceException);
-    }
 
     return InterlockedCompareExchange((LONG*)location, value, comparand);
 }
@@ -1540,10 +1511,6 @@ FCIMPL3_IVV(INT64, COMInterlocked::CompareExchange64, INT64* location, INT64 val
 {
     FCALL_CONTRACT;
 
-    if( NULL == location) {
-        FCThrow(kNullReferenceException);
-    }
-
     return InterlockedCompareExchange64((INT64*)location, value, comparand);
 }
 FCIMPLEND
@@ -1551,10 +1518,6 @@ FCIMPLEND
 FCIMPL2(LPVOID,COMInterlocked::ExchangeObject, LPVOID*location, LPVOID value)
 {
     FCALL_CONTRACT;
-
-    if( NULL == location) {
-        FCThrow(kNullReferenceException);
-    }
 
     LPVOID ret = InterlockedExchangeT(location, value);
 #ifdef _DEBUG
@@ -1568,10 +1531,6 @@ FCIMPLEND
 FCIMPL3(LPVOID,COMInterlocked::CompareExchangeObject, LPVOID *location, LPVOID value, LPVOID comparand)
 {
     FCALL_CONTRACT;
-
-    if( NULL == location) {
-        FCThrow(kNullReferenceException);
-    }
 
     // <TODO>@todo: only set ref if is updated</TODO>
     LPVOID ret = InterlockedCompareExchangeT(location, value, comparand);
@@ -1589,10 +1548,6 @@ FCIMPL2(INT32,COMInterlocked::ExchangeAdd32, INT32 *location, INT32 value)
 {
     FCALL_CONTRACT;
 
-    if( NULL == location) {
-        FCThrow(kNullReferenceException);
-    }
-
     return InterlockedExchangeAdd((LONG *) location, value);
 }
 FCIMPLEND
@@ -1600,10 +1555,6 @@ FCIMPLEND
 FCIMPL2_IV(INT64,COMInterlocked::ExchangeAdd64, INT64 *location, INT64 value)
 {
     FCALL_CONTRACT;
-
-    if( NULL == location) {
-        FCThrow(kNullReferenceException);
-    }
 
     return InterlockedExchangeAdd64((INT64 *) location, value);
 }
@@ -1621,7 +1572,7 @@ extern "C" void QCALLTYPE Interlocked_MemoryBarrierProcessWide()
 static BOOL HasOverriddenMethod(MethodTable* mt, MethodTable* classMT, WORD methodSlot)
 {
     CONTRACTL{
-        NOTHROW;
+        THROWS;
         GC_NOTRIGGER;
         MODE_ANY;
     } CONTRACTL_END;
@@ -1664,8 +1615,9 @@ BOOL CanCompareBitsOrUseFastGetHashCode(MethodTable* mt)
         return mt->CanCompareBitsOrUseFastGetHashCode();
     }
 
-    if (mt->ContainsPointers()
-        || mt->IsNotTightlyPacked())
+    if (mt->ContainsGCPointers()
+        || mt->IsNotTightlyPacked()
+        || mt->GetClass()->IsInlineArray())
     {
         mt->SetHasCheckedCanCompareBitsOrUseFastGetHashCode();
         return FALSE;
@@ -1718,231 +1670,156 @@ BOOL CanCompareBitsOrUseFastGetHashCode(MethodTable* mt)
     return canCompareBitsOrUseFastGetHashCode;
 }
 
-NOINLINE static FC_BOOL_RET CanCompareBitsHelper(MethodTable* mt, OBJECTREF objRef)
+extern "C" BOOL QCALLTYPE MethodTable_CanCompareBitsOrUseFastGetHashCode(MethodTable* mt)
 {
-    FC_INNER_PROLOG(ValueTypeHelper::CanCompareBits);
-
-    _ASSERTE(mt != NULL);
-    _ASSERTE(objRef != NULL);
+    QCALL_CONTRACT;
 
     BOOL ret = FALSE;
 
-    HELPER_METHOD_FRAME_BEGIN_RET_ATTRIB_1(Frame::FRAME_ATTR_EXACT_DEPTH|Frame::FRAME_ATTR_CAPTURE_DEPTH_2, objRef);
+    BEGIN_QCALL;
+
+    if (mt->GetClass()->IsInlineArray())
+        COMPlusThrow(kNotSupportedException, W("NotSupported_InlineArrayEqualsGetHashCode"));
 
     ret = CanCompareBitsOrUseFastGetHashCode(mt);
 
-    HELPER_METHOD_FRAME_END();
-    FC_INNER_EPILOG();
+    END_QCALL;
 
-    FC_RETURN_BOOL(ret);
+    return ret;
 }
 
-// Return true if the valuetype does not contain pointer, is tightly packed,
-// does not have floating point number field and does not override Equals method.
-FCIMPL1(FC_BOOL_RET, ValueTypeHelper::CanCompareBits, Object* obj)
+enum ValueTypeHashCodeStrategy
 {
-    FCALL_CONTRACT;
+    None,
+    ReferenceField,
+    DoubleField,
+    SingleField,
+    FastGetHashCode,
+    ValueTypeOverride,
+};
 
-    _ASSERTE(obj != NULL);
-    MethodTable* mt = obj->GetMethodTable();
-
-    if (mt->HasCheckedCanCompareBitsOrUseFastGetHashCode())
-    {
-        FC_RETURN_BOOL(mt->CanCompareBitsOrUseFastGetHashCode());
-    }
-
-    OBJECTREF objRef(obj);
-
-    FC_INNER_RETURN(FC_BOOL_RET, CanCompareBitsHelper(mt, objRef));
-}
-FCIMPLEND
-
-static INT32 FastGetValueTypeHashCodeHelper(MethodTable *mt, void *pObjRef)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_COOPERATIVE;
-    } CONTRACTL_END;
-
-    INT32 hashCode = 0;
-    INT32 *pObj = (INT32*)pObjRef;
-
-    // this is a struct with no refs and no "strange" offsets, just go through the obj and xor the bits
-    INT32 size = mt->GetNumInstanceFieldBytes();
-    for (INT32 i = 0; i < (INT32)(size / sizeof(INT32)); i++)
-        hashCode ^= *pObj++;
-
-    return hashCode;
-}
-
-static INT32 RegularGetValueTypeHashCode(MethodTable *mt, void *pObjRef)
+static ValueTypeHashCodeStrategy GetHashCodeStrategy(MethodTable* mt, QCall::ObjectHandleOnStack objHandle, UINT32* fieldOffset, UINT32* fieldSize, MethodTable** fieldMTOut)
 {
     CONTRACTL
     {
         THROWS;
         GC_TRIGGERS;
-        MODE_COOPERATIVE;
+        MODE_PREEMPTIVE;
     } CONTRACTL_END;
 
-    INT32 hashCode = 0;
+    // Should be handled by caller
+    _ASSERTE(!mt->CanCompareBitsOrUseFastGetHashCode());
 
-    GCPROTECT_BEGININTERIOR(pObjRef);
+    ValueTypeHashCodeStrategy ret = ValueTypeHashCodeStrategy::None;
 
-    BOOL canUseFastGetHashCodeHelper = FALSE;
-    if (mt->HasCheckedCanCompareBitsOrUseFastGetHashCode())
-    {
-        canUseFastGetHashCodeHelper = mt->CanCompareBitsOrUseFastGetHashCode();
-    }
-    else
-    {
-        canUseFastGetHashCodeHelper = CanCompareBitsOrUseFastGetHashCode(mt);
-    }
+    // Grab the first non-null field and return its hash code or 'it' as hash code
+    ApproxFieldDescIterator fdIterator(mt, ApproxFieldDescIterator::INSTANCE_FIELDS);
 
-    // While we should not get here directly from ValueTypeHelper::GetHashCode, if we recurse we need to
-    // be able to handle getting the hashcode for an embedded structure whose hashcode is computed by the fast path.
-    if (canUseFastGetHashCodeHelper)
+    FieldDesc *field;
+    while ((field = fdIterator.Next()) != NULL)
     {
-        hashCode = FastGetValueTypeHashCodeHelper(mt, pObjRef);
-    }
-    else
-    {
-        // it's looking ugly so we'll use the old behavior in managed code. Grab the first non-null
-        // field and return its hash code or 'it' as hash code
-        // <TODO> Note that the old behavior has already been broken for value types
-        //              that is qualified for CanUseFastGetHashCodeHelper. So maybe we should
-        //              change the implementation here to use all fields instead of just the 1st one.
-        // </TODO>
-        //
-        // <TODO> check this approximation - we may be losing exact type information </TODO>
-        ApproxFieldDescIterator fdIterator(mt, ApproxFieldDescIterator::INSTANCE_FIELDS);
-
-        FieldDesc *field;
-        while ((field = fdIterator.Next()) != NULL)
+        _ASSERTE(!field->IsRVA());
+        if (field->IsObjRef())
         {
-            _ASSERTE(!field->IsRVA());
-            if (field->IsObjRef())
+            GCX_COOP();
+            // if we get an object reference we get the hash code out of that
+            if (*(Object**)((BYTE *)objHandle.Get()->UnBox() + *fieldOffset + field->GetOffsetUnsafe()) != NULL)
             {
-                // if we get an object reference we get the hash code out of that
-                if (*(Object**)((BYTE *)pObjRef + field->GetOffsetUnsafe()) != NULL)
-                {
-                    PREPARE_SIMPLE_VIRTUAL_CALLSITE(METHOD__OBJECT__GET_HASH_CODE, (*(Object**)((BYTE *)pObjRef + field->GetOffsetUnsafe())));
-                    DECLARE_ARGHOLDER_ARRAY(args, 1);
-                    args[ARGNUM_0] = PTR_TO_ARGHOLDER(*(Object**)((BYTE *)pObjRef + field->GetOffsetUnsafe()));
-                    CALL_MANAGED_METHOD(hashCode, INT32, args);
-                }
-                else
-                {
-                    // null object reference, try next
-                    continue;
-                }
+                *fieldOffset += field->GetOffsetUnsafe();
+                ret = ValueTypeHashCodeStrategy::ReferenceField;
             }
             else
             {
-                CorElementType fieldType = field->GetFieldType();
-                if (fieldType == ELEMENT_TYPE_R8)
+                // null object reference, try next
+                continue;
+            }
+        }
+        else
+        {
+            CorElementType fieldType = field->GetFieldType();
+            if (fieldType == ELEMENT_TYPE_R8)
+            {
+                *fieldOffset += field->GetOffsetUnsafe();
+                ret = ValueTypeHashCodeStrategy::DoubleField;
+            }
+            else if (fieldType == ELEMENT_TYPE_R4)
+            {
+                *fieldOffset += field->GetOffsetUnsafe();
+                ret = ValueTypeHashCodeStrategy::SingleField;
+            }
+            else if (fieldType != ELEMENT_TYPE_VALUETYPE)
+            {
+                *fieldOffset += field->GetOffsetUnsafe();
+                *fieldSize = field->LoadSize();
+                ret = ValueTypeHashCodeStrategy::FastGetHashCode;
+            }
+            else
+            {
+                // got another value type. Get the type
+                TypeHandle fieldTH = field->GetFieldTypeHandleThrowing();
+                _ASSERTE(!fieldTH.IsNull());
+                MethodTable* fieldMT = fieldTH.GetMethodTable();
+                if (CanCompareBitsOrUseFastGetHashCode(fieldMT))
                 {
-                    PREPARE_NONVIRTUAL_CALLSITE(METHOD__DOUBLE__GET_HASH_CODE);
-                    DECLARE_ARGHOLDER_ARRAY(args, 1);
-                    args[ARGNUM_0] = PTR_TO_ARGHOLDER(((BYTE *)pObjRef + field->GetOffsetUnsafe()));
-                    CALL_MANAGED_METHOD(hashCode, INT32, args);
+                    *fieldOffset += field->GetOffsetUnsafe();
+                    *fieldSize = field->LoadSize();
+                    ret = ValueTypeHashCodeStrategy::FastGetHashCode;
                 }
-                else if (fieldType == ELEMENT_TYPE_R4)
+                else if (HasOverriddenMethod(fieldMT,
+                                             CoreLibBinder::GetClass(CLASS__VALUE_TYPE),
+                                             CoreLibBinder::GetMethod(METHOD__VALUE_TYPE__GET_HASH_CODE)->GetSlot()))
                 {
-                    PREPARE_NONVIRTUAL_CALLSITE(METHOD__SINGLE__GET_HASH_CODE);
-                    DECLARE_ARGHOLDER_ARRAY(args, 1);
-                    args[ARGNUM_0] = PTR_TO_ARGHOLDER(((BYTE *)pObjRef + field->GetOffsetUnsafe()));
-                    CALL_MANAGED_METHOD(hashCode, INT32, args);
-                }
-                else if (fieldType != ELEMENT_TYPE_VALUETYPE)
-                {
-                    UINT fieldSize = field->LoadSize();
-                    INT32 *pValue = (INT32*)((BYTE *)pObjRef + field->GetOffsetUnsafe());
-                    for (INT32 j = 0; j < (INT32)(fieldSize / sizeof(INT32)); j++)
-                        hashCode ^= *pValue++;
+                    *fieldOffset += field->GetOffsetUnsafe();
+                    *fieldMTOut = fieldMT;
+                    ret = ValueTypeHashCodeStrategy::ValueTypeOverride;
                 }
                 else
                 {
-                    // got another value type. Get the type
-                    TypeHandle fieldTH = field->GetFieldTypeHandleThrowing();
-                    _ASSERTE(!fieldTH.IsNull());
-                    hashCode = RegularGetValueTypeHashCode(fieldTH.GetMethodTable(), (BYTE *)pObjRef + field->GetOffsetUnsafe());
+                    *fieldOffset += field->GetOffsetUnsafe();
+                    ret = GetHashCodeStrategy(fieldMT, objHandle, fieldOffset, fieldSize, fieldMTOut);
                 }
             }
-            break;
         }
+        break;
     }
 
-    GCPROTECT_END();
-
-    return hashCode;
+    return ret;
 }
 
-// The default implementation of GetHashCode() for all value types.
-// Note that this implementation reveals the value of the fields.
-// So if the value type contains any sensitive information it should
-// implement its own GetHashCode().
-FCIMPL1(INT32, ValueTypeHelper::GetHashCode, Object* objUNSAFE)
+extern "C" INT32 QCALLTYPE ValueType_GetHashCodeStrategy(MethodTable* mt, QCall::ObjectHandleOnStack objHandle, UINT32* fieldOffset, UINT32* fieldSize, MethodTable** fieldMT)
 {
-    FCALL_CONTRACT;
+    QCALL_CONTRACT;
 
-    if (objUNSAFE == NULL)
-        FCThrow(kNullReferenceException);
+    ValueTypeHashCodeStrategy ret = ValueTypeHashCodeStrategy::None;
+    *fieldOffset = 0;
+    *fieldSize = 0;
+    *fieldMT = NULL;
 
-    OBJECTREF obj = ObjectToOBJECTREF(objUNSAFE);
-    VALIDATEOBJECTREF(obj);
+    BEGIN_QCALL;
 
-    INT32 hashCode = 0;
-    MethodTable *pMT = objUNSAFE->GetMethodTable();
+    ret = GetHashCodeStrategy(mt, objHandle, fieldOffset, fieldSize, fieldMT);
 
-    // We don't want to expose the method table pointer in the hash code
-    // Let's use the typeID instead.
-    UINT32 typeID = pMT->LookupTypeID();
-    if (typeID == TypeIDProvider::INVALID_TYPE_ID)
-    {
-        // If the typeID has yet to be generated, fall back to GetTypeID
-        // This only needs to be done once per MethodTable
-        HELPER_METHOD_FRAME_BEGIN_RET_1(obj);
-        typeID = pMT->GetTypeID();
-        HELPER_METHOD_FRAME_END();
-    }
+    END_QCALL;
 
-    // To get less colliding and more evenly distributed hash codes,
-    // we munge the class index with two big prime numbers
-    hashCode = typeID * 711650207 + 2506965631U;
-
-    BOOL canUseFastGetHashCodeHelper = FALSE;
-    if (pMT->HasCheckedCanCompareBitsOrUseFastGetHashCode())
-    {
-        canUseFastGetHashCodeHelper = pMT->CanCompareBitsOrUseFastGetHashCode();
-    }
-    else
-    {
-        HELPER_METHOD_FRAME_BEGIN_RET_1(obj);
-        canUseFastGetHashCodeHelper = CanCompareBitsOrUseFastGetHashCode(pMT);
-        HELPER_METHOD_FRAME_END();
-    }
-
-    if (canUseFastGetHashCodeHelper)
-    {
-        hashCode ^= FastGetValueTypeHashCodeHelper(pMT, obj->UnBox());
-    }
-    else
-    {
-        HELPER_METHOD_FRAME_BEGIN_RET_1(obj);
-        hashCode ^= RegularGetValueTypeHashCode(pMT, obj->UnBox());
-        HELPER_METHOD_FRAME_END();
-    }
-
-    return hashCode;
+    return ret;
 }
-FCIMPLEND
 
 FCIMPL1(UINT32, MethodTableNative::GetNumInstanceFieldBytes, MethodTable* mt)
 {
     FCALL_CONTRACT;
     return mt->GetNumInstanceFieldBytes();
+}
+FCIMPLEND
+
+FCIMPL1(CorElementType, MethodTableNative::GetPrimitiveCorElementType, MethodTable* mt)
+{
+    FCALL_CONTRACT;
+
+    _ASSERTE(mt->IsTruePrimitive() || mt->IsEnum());
+
+    // MethodTable::GetInternalCorElementType has unnecessary overhead for primitives and enums
+    // Call EEClass::GetInternalCorElementType directly to avoid it
+    return mt->GetClass()->GetInternalCorElementType();
 }
 FCIMPLEND
 
@@ -1961,71 +1838,84 @@ extern "C" BOOL QCALLTYPE MethodTable_AreTypesEquivalent(MethodTable* mta, Metho
     return bResult;
 }
 
-static MethodTable * g_pStreamMT;
-static WORD g_slotBeginRead, g_slotEndRead;
-static WORD g_slotBeginWrite, g_slotEndWrite;
-
-static bool HasOverriddenStreamMethod(MethodTable * pMT, WORD slot)
+extern "C" BOOL QCALLTYPE TypeHandle_CanCastTo_NoCacheLookup(void* fromTypeHnd, void* toTypeHnd)
 {
-    CONTRACTL{
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_ANY;
+    QCALL_CONTRACT;
+
+    BOOL ret = false;
+
+    BEGIN_QCALL;
+
+    // Cache lookup and trivial cases are already handled at managed side. Call the uncached versions directly.
+    _ASSERTE(fromTypeHnd != toTypeHnd);
+
+    GCX_COOP();
+
+    TypeHandle fromTH = TypeHandle::FromPtr(fromTypeHnd);
+    TypeHandle toTH = TypeHandle::FromPtr(toTypeHnd);
+
+    if (fromTH.IsTypeDesc())
+    {
+        ret = fromTH.AsTypeDesc()->CanCastTo(toTH, NULL);
+    }
+    else if (Nullable::IsNullableForType(toTH, fromTH.AsMethodTable()))
+    {
+        // do not allow type T to be cast to Nullable<T>
+        ret = FALSE;
+    }
+    else
+    {
+        ret = fromTH.AsMethodTable()->CanCastTo(toTH.AsMethodTable(), NULL);
+    }
+
+    END_QCALL;
+
+    return ret;
+}
+
+static bool HasOverriddenStreamMethod(MethodTable* streamMT, MethodTable* pMT, WORD slot)
+{
+    CONTRACTL
+    {
+        STANDARD_VM_CHECK;
+        PRECONDITION(streamMT != NULL);
+        PRECONDITION(pMT != NULL);
     } CONTRACTL_END;
 
     PCODE actual = pMT->GetRestoredSlot(slot);
-    PCODE base = g_pStreamMT->GetRestoredSlot(slot);
+    PCODE base = streamMT->GetRestoredSlot(slot);
+
+    // If the PCODEs match, then there is no override.
     if (actual == base)
         return false;
 
-    // If CoreLib is JITed, the slots can be patched and thus we need to compare the actual MethodDescs
-    // to detect match reliably
-    if (MethodTable::GetMethodDescForSlotAddress(actual) == MethodTable::GetMethodDescForSlotAddress(base))
-        return false;
-
-    return true;
+    // If CoreLib is JITed, the slots can be patched and thus we need to compare
+    // the actual MethodDescs to detect match reliably.
+    return MethodTable::GetMethodDescForSlotAddress(actual) != MethodTable::GetMethodDescForSlotAddress(base);
 }
 
-FCIMPL1(FC_BOOL_RET, StreamNative::HasOverriddenBeginEndRead, Object *stream)
+extern "C" BOOL QCALLTYPE Stream_HasOverriddenSlow(MethodTable* pMT, BOOL isRead)
 {
-    FCALL_CONTRACT;
+    QCALL_CONTRACT;
+    _ASSERTE(pMT != NULL);
 
-    if (stream == NULL)
-        FC_RETURN_BOOL(TRUE);
+    BOOL readOverride = FALSE;
+    BOOL writeOverride = FALSE;
 
-    if (g_pStreamMT == NULL || g_slotBeginRead == 0 || g_slotEndRead == 0)
-    {
-        HELPER_METHOD_FRAME_BEGIN_RET_1(stream);
-        g_pStreamMT = CoreLibBinder::GetClass(CLASS__STREAM);
-        g_slotBeginRead = CoreLibBinder::GetMethod(METHOD__STREAM__BEGIN_READ)->GetSlot();
-        g_slotEndRead = CoreLibBinder::GetMethod(METHOD__STREAM__END_READ)->GetSlot();
-        HELPER_METHOD_FRAME_END();
-    }
+    BEGIN_QCALL;
 
-    MethodTable * pMT = stream->GetMethodTable();
+    MethodTable* pStreamMT = CoreLibBinder::GetClass(CLASS__STREAM);
+    WORD slotBeginRead = CoreLibBinder::GetMethod(METHOD__STREAM__BEGIN_READ)->GetSlot();
+    WORD slotEndRead = CoreLibBinder::GetMethod(METHOD__STREAM__END_READ)->GetSlot();
+    WORD slotBeginWrite = CoreLibBinder::GetMethod(METHOD__STREAM__BEGIN_WRITE)->GetSlot();
+    WORD slotEndWrite = CoreLibBinder::GetMethod(METHOD__STREAM__END_WRITE)->GetSlot();
 
-    FC_RETURN_BOOL(HasOverriddenStreamMethod(pMT, g_slotBeginRead) || HasOverriddenStreamMethod(pMT, g_slotEndRead));
+    // Check the current MethodTable for Stream overrides and set state on the MethodTable.
+    readOverride = HasOverriddenStreamMethod(pStreamMT, pMT, slotBeginRead) || HasOverriddenStreamMethod(pStreamMT, pMT, slotEndRead);
+    writeOverride = HasOverriddenStreamMethod(pStreamMT, pMT, slotBeginWrite) || HasOverriddenStreamMethod(pStreamMT, pMT, slotEndWrite);
+    pMT->GetAuxiliaryDataForWrite()->SetStreamOverrideState(readOverride, writeOverride);
+
+    END_QCALL;
+
+    return isRead ? readOverride : writeOverride;
 }
-FCIMPLEND
-
-FCIMPL1(FC_BOOL_RET, StreamNative::HasOverriddenBeginEndWrite, Object *stream)
-{
-    FCALL_CONTRACT;
-
-    if (stream == NULL)
-        FC_RETURN_BOOL(TRUE);
-
-    if (g_pStreamMT == NULL || g_slotBeginWrite == 0 || g_slotEndWrite == 0)
-    {
-        HELPER_METHOD_FRAME_BEGIN_RET_1(stream);
-        g_pStreamMT = CoreLibBinder::GetClass(CLASS__STREAM);
-        g_slotBeginWrite = CoreLibBinder::GetMethod(METHOD__STREAM__BEGIN_WRITE)->GetSlot();
-        g_slotEndWrite = CoreLibBinder::GetMethod(METHOD__STREAM__END_WRITE)->GetSlot();
-        HELPER_METHOD_FRAME_END();
-    }
-
-    MethodTable * pMT = stream->GetMethodTable();
-
-    FC_RETURN_BOOL(HasOverriddenStreamMethod(pMT, g_slotBeginWrite) || HasOverriddenStreamMethod(pMT, g_slotEndWrite));
-}
-FCIMPLEND

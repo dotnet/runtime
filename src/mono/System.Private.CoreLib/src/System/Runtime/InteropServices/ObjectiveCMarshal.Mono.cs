@@ -2,14 +2,13 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
-using System.Runtime.Versioning;
 using System.Runtime.CompilerServices;
+using System.Runtime.Versioning;
 
 namespace System.Runtime.InteropServices.ObjectiveC
 {
     public static partial class ObjectiveCMarshal
     {
-#pragma warning disable IDE0060 // Remove when implemented
         /// <summary>
         /// Sets a pending exception to be thrown the next time the runtime is entered from an Objective-C msgSend P/Invoke.
         /// </summary>

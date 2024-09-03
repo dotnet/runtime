@@ -11,6 +11,7 @@
 
 using System;
 using System.Runtime.InteropServices;
+using Xunit;
 
 public class Foo{
     public int i=42;
@@ -45,7 +46,8 @@ public struct WrapBar {
 
 public class Test{
 
-  public static int Main(){
+  [Fact]
+  public static int TestEntryPoint(){
       bool caught=false;
       try{
           Go();

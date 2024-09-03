@@ -299,7 +299,7 @@ namespace vxsort {{
 namespace smallsort {{
 template<> struct bitonic<{t}, AVX512> {{
     static const int N = {self.vector_size()};
-    static constexpr {t} MAX = std::numeric_limits<{t}>::Max();
+    static constexpr {t} MAX = std::numeric_limits<{t}>::max();
 public:
 """
         print(s, file=f)

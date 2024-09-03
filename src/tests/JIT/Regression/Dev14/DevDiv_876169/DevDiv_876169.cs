@@ -8,7 +8,7 @@ using Xunit;
 public class Repro
 {
     [Fact]
-    public static int TestEntryPoint()
+    public static void TestEntryPoint()
     {
         //We used to incorrectly generate an infinite loop by
         //emitting a jump instruction to itself
@@ -20,6 +20,5 @@ public class Repro
             i++;
         }
         Console.WriteLine("PASS!");
-        return 100;
     }
 }

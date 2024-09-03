@@ -16,6 +16,7 @@ internal sealed class FileCache
 {
     private CompilerCache? _newCache;
     private CompilerCache? _oldCache;
+    private static readonly JsonSerializerOptions s_jsonOptions = new JsonSerializerOptions { WriteIndented = true };
 
     public bool Enabled { get; }
     public TaskLoggingHelper Log { get; }
@@ -32,9 +33,7 @@ internal sealed class FileCache
         Enabled = true;
         if (File.Exists(cacheFilePath))
         {
-            _oldCache = (CompilerCache?)JsonSerializer.Deserialize(File.ReadAllText(cacheFilePath),
-                                                                    typeof(CompilerCache),
-                                                                    new JsonSerializerOptions());
+            _oldCache = JsonSerializer.Deserialize<CompilerCache>(File.ReadAllText(cacheFilePath), s_jsonOptions);
         }
 
         _oldCache ??= new();
@@ -84,7 +83,7 @@ internal sealed class FileCache
         if (!Enabled || string.IsNullOrEmpty(cacheFilePath))
             return false;
 
-        var json = JsonSerializer.Serialize (_newCache, new JsonSerializerOptions { WriteIndented = true });
+        var json = JsonSerializer.Serialize (_newCache, s_jsonOptions);
         File.WriteAllText(cacheFilePath!, json);
         return true;
     }

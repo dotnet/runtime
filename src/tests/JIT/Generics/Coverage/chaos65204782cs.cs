@@ -3451,9 +3451,8 @@ namespace Chaos
 
     public class Program
     {
-
         [Fact]
-        public static int TestEntryPoint()
+        public static void TestEntryPoint()
         {
             A0 v0 = new A0();
             v0.CreateAllTypesA0();
@@ -3488,7 +3487,6 @@ namespace Chaos
             A0A0A0A0A0<A0A0A3<A0A0A0<A0A3>>, A0A1A4<A0A3, A0A0>> v15 = new A0A0A0A0A0<A0A0A3<A0A0A0<A0A3>>, A0A1A4<A0A3, A0A0>>();
             v15.CreateAllTypesA0A0A0A0A0();
             System.Console.WriteLine("Test SUCCESS");
-            return 100;
         }
     }
 

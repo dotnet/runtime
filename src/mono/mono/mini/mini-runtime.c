@@ -119,6 +119,7 @@ const char *mono_build_date;
 gboolean mono_do_signal_chaining;
 gboolean mono_do_crash_chaining;
 int mini_verbose = 0;
+gboolean mono_term_signaled = FALSE;
 
 /*
  * This flag controls whenever the runtime uses LLVM for JIT compilation, and whenever
@@ -404,14 +405,17 @@ void *(mono_global_codeman_reserve) (int size)
 			global_codeman = mono_code_manager_new ();
 		else
 			global_codeman = mono_code_manager_new_aot ();
-		return mono_code_manager_reserve (global_codeman, size);
+		ptr = mono_code_manager_reserve (global_codeman, size);
 	}
 	else {
 		mono_jit_lock ();
 		ptr = mono_code_manager_reserve (global_codeman, size);
 		mono_jit_unlock ();
-		return ptr;
 	}
+
+	/* Virtually all call sites for this API assume it can't return NULL. */
+	g_assert (ptr);
+	return ptr;
 }
 
 /* The callback shouldn't take any locks */
@@ -660,8 +664,8 @@ mono_icall_get_wrapper_full (MonoJitICallInfo* callinfo, gboolean do_compile)
 		addr = mono_compile_method_checked (wrapper, error);
 		mono_error_assert_ok (error);
 		mono_memory_barrier ();
-		callinfo->wrapper = addr;
-		return addr;
+		mono_atomic_cas_ptr ((volatile gpointer*)&callinfo->wrapper, (gpointer)addr, NULL);
+		return (gconstpointer)mono_atomic_load_ptr((volatile gpointer*)&callinfo->wrapper);
 	} else {
 		if (callinfo->trampoline)
 			return callinfo->trampoline;
@@ -669,13 +673,10 @@ mono_icall_get_wrapper_full (MonoJitICallInfo* callinfo, gboolean do_compile)
 		mono_error_assert_ok (error);
 		trampoline = mono_create_ftnptr ((gpointer)trampoline);
 
-		mono_loader_lock ();
-		if (!callinfo->trampoline) {
-			callinfo->trampoline = trampoline;
-		}
-		mono_loader_unlock ();
+		
+		mono_atomic_cas_ptr ((volatile gpointer*)&callinfo->trampoline, (gpointer)trampoline, NULL);
 
-		return callinfo->trampoline;
+		return (gconstpointer)mono_atomic_load_ptr ((volatile gpointer*)&callinfo->trampoline);
 	}
 }
 
@@ -723,7 +724,7 @@ register_opcode_emulation (int opcode, MonoJitICallInfo *jit_icall_info, const c
 }
 
 #define register_opcode_emulation(opcode, name, sig, func, no_wrapper) \
-	(register_opcode_emulation ((opcode), &mono_get_jit_icall_info ()->name, #name, (sig), func, #func, (no_wrapper)))
+	(register_opcode_emulation ((opcode), &mono_get_jit_icall_info ()->name, #name, (sig), (gpointer)func, #func, (no_wrapper)))
 
 /*
  * For JIT icalls implemented in C.
@@ -740,10 +741,10 @@ register_opcode_emulation (int opcode, MonoJitICallInfo *jit_icall_info, const c
  */
 #ifdef DISABLE_JIT
 #define register_icall(func, sig, avoid_wrapper) \
-	(mono_register_jit_icall_info (&mono_get_jit_icall_info ()->func, func, NULL, (sig), (avoid_wrapper), NULL))
+	(mono_register_jit_icall_info (&mono_get_jit_icall_info ()->func, (gconstpointer)func, NULL, (sig), (avoid_wrapper), NULL))
 #else
 #define register_icall(func, sig, avoid_wrapper) \
-	(mono_register_jit_icall_info (&mono_get_jit_icall_info ()->func, func, #func, (sig), (avoid_wrapper), #func))
+	(mono_register_jit_icall_info (&mono_get_jit_icall_info ()->func, (gconstpointer)func, #func, (sig), (avoid_wrapper), #func))
 #endif
 
 #define register_icall_no_wrapper(func, sig) register_icall (func, sig, TRUE)
@@ -761,7 +762,7 @@ register_opcode_emulation (int opcode, MonoJitICallInfo *jit_icall_info, const c
  * This also passes last parameter c_symbol=NULL since there is not a directly linkable symbol.
  */
 #define register_dyn_icall(func, name, sig, save) \
-	(mono_register_jit_icall_info (&mono_get_jit_icall_info ()->name, (func), #name, (sig), (save), NULL))
+	(mono_register_jit_icall_info (&mono_get_jit_icall_info ()->name, (gconstpointer)func, #name, (sig), (save), NULL))
 
 MonoLMF *
 mono_get_lmf (void)
@@ -1239,7 +1240,7 @@ mono_patch_info_hash (gconstpointer data)
 	case MONO_PATCH_INFO_AOT_JIT_INFO:
 	case MONO_PATCH_INFO_METHOD_PINVOKE_ADDR_CACHE:
 	case MONO_PATCH_INFO_GSHARED_METHOD_INFO:
-		return hash | GPOINTER_TO_UINT (ji->data.target);
+		return hash | GCONSTPOINTER_TO_UINT (ji->data.target);
 	case MONO_PATCH_INFO_GSHAREDVT_CALL:
 		return hash | GPOINTER_TO_UINT (ji->data.gsharedvt->method);
 	case MONO_PATCH_INFO_RGCTX_FETCH:
@@ -1263,6 +1264,7 @@ mono_patch_info_hash (gconstpointer data)
 	case MONO_PATCH_INFO_PROFILER_CLAUSE_COUNT:
 	case MONO_PATCH_INFO_SPECIFIC_TRAMPOLINES:
 	case MONO_PATCH_INFO_SPECIFIC_TRAMPOLINES_GOT_SLOTS_BASE:
+	case MONO_PATCH_INFO_LLVMONLY_DO_UNWIND_FLAG:
 		return hash;
 	case MONO_PATCH_INFO_SPECIFIC_TRAMPOLINE_LAZY_FETCH_ADDR:
 		return (guint)(hash | ji->data.uindex);
@@ -1747,6 +1749,10 @@ mono_resolve_patch_target_ext (MonoMemoryManager *mem_manager, MonoMethod *metho
 		target = (gpointer) &mono_profiler_state.exception_clause_count;
 		break;
 	}
+	case MONO_PATCH_INFO_LLVMONLY_DO_UNWIND_FLAG: {
+		target = (gpointer) &mono_llvmonly_do_unwind_flag;
+		break;
+	}
 	case MONO_PATCH_INFO_SPECIFIC_TRAMPOLINES:
 	case MONO_PATCH_INFO_SPECIFIC_TRAMPOLINES_GOT_SLOTS_BASE: {
 		/* Resolved in aot-runtime.c */
@@ -2074,17 +2080,17 @@ typedef struct
 } JitCodeLoadRecord;
 typedef struct
 {
-        guint64 code_addr;
-        guint32 line;
-        guint32 discrim;
-        char name[];
+	guint64 code_addr;
+	guint32 line;
+	guint32 discrim;
+	char name[];
 } DebugEntry;
 typedef struct
 {
-        RecordHeader header;
-        guint64 code_addr;
-        guint64 nr_entry;
-        DebugEntry debug_entry[];
+	RecordHeader header;
+	guint64 code_addr;
+	guint64 nr_entry;
+	DebugEntry debug_entry[];
 } JitCodeDebug;
 
 static void add_basic_JitCodeDebug_info (JitCodeDebug *record);
@@ -2138,104 +2144,102 @@ mono_emit_jit_dump (MonoJitInfo *jinfo, gpointer code)
 {
 	static uint64_t code_index;
 
-	if (perf_dump_file) {
-		JitCodeLoadRecord record;
-		size_t nameLen = strlen (jinfo->d.method->name);
-		memset (&record, 0, sizeof (record));
+	if (!perf_dump_file)
+		return;
 
-		add_basic_JitCodeLoadRecord_info (&record);
-		record.header.total_size = sizeof (record) + nameLen + 1 + jinfo->code_size;
-		record.vma = (guint64)jinfo->code_start;
-		record.code_addr = (guint64)jinfo->code_start;
-		record.code_size = (guint64)jinfo->code_size;
+	JitCodeLoadRecord record;
+	size_t nameLen = strlen (jinfo->d.method->name);
+	memset (&record, 0, sizeof (record));
 
-		mono_os_mutex_lock (&perf_dump_mutex);
+	add_basic_JitCodeLoadRecord_info (&record);
+	record.header.total_size = sizeof (record) + nameLen + 1 + jinfo->code_size;
+	record.vma = (guint64)jinfo->code_start;
+	record.code_addr = (guint64)jinfo->code_start;
+	record.code_size = (guint64)jinfo->code_size;
 
-		record.code_index = ++code_index;
+	mono_os_mutex_lock (&perf_dump_mutex);
 
-		DebugEntry ent;
-		JitCodeDebug rec;
-                MonoDebugMethodInfo *minfo;
-                MonoDebugMethodJitInfo *dmji;
-                MonoDebugSourceLocation *loc;
-                int i;
+	record.code_index = ++code_index;
 
-		memset (&rec, 0, sizeof (rec));
-		
-		//populating info relating debug methods
-		minfo = mono_debug_lookup_method (jinfo->d.method);
-                dmji = mono_debug_find_method (jinfo->d.method, NULL);
+	DebugEntry ent;
+	JitCodeDebug rec;
+	MonoDebugMethodJitInfo *dmji;
+	MonoDebugSourceLocation *loc;
+	int i;
 
-                add_basic_JitCodeDebug_info (&rec);
-                rec.code_addr = (guint64)dmji->code_start;
-                rec.header.total_size = sizeof (rec) + sizeof (ent) + 1;
-                rec.nr_entry = 1;
-                for (i = 0; i < dmji->num_line_numbers; ++i){
-                        
-			loc = mono_debug_lookup_source_location_by_il (jinfo->d.method, dmji->line_numbers[i].il_offset, NULL);
+	memset (&rec, 0, sizeof (rec));
 
-                        if(!loc)
-                                continue;
-                        
-			if(!loc->source_file){
-                                mono_debug_free_source_location (loc);
-                                continue;
-                        }
+	// populating info relating debug methods
+	dmji = mono_debug_find_method (jinfo->d.method, NULL);
 
-                        rec.header.total_size += sizeof (ent) + strlen (loc->source_file) + 1;
-                        rec.nr_entry++;
-                }
+	add_basic_JitCodeDebug_info (&rec);
+	rec.code_addr = (guint64)dmji->code_start;
+	rec.header.total_size = sizeof (rec) + sizeof (ent) + 1;
+	rec.nr_entry = 1;
 
-                fwrite (&rec, sizeof (rec), 1, perf_dump_file);
+	for (i = 0; i < dmji->num_line_numbers; ++i) {
 
+		loc = mono_debug_lookup_source_location_by_il (jinfo->d.method, dmji->line_numbers[i].il_offset, NULL);
 
-                for( i = 0; i < dmji->num_line_numbers; ++i){
-		
-			//get the line number using il offset
-                        loc = mono_debug_lookup_source_location_by_il (jinfo->d.method, dmji->line_numbers[i].il_offset, NULL);
+		if (!loc)
+			continue;
 
-                        if(!loc)
-                                continue;
-				
-                        if(!loc->source_file){
-                                
-				mono_debug_free_source_location (loc);
-                                continue;
-                        }
+		if (!loc->source_file) {
+			mono_debug_free_source_location (loc);
+			continue;
+		}
 
-                        ent.code_addr = (guint64)dmji->code_start + dmji->line_numbers[i].native_offset;
-                        ent.discrim = 0;
-                        ent.line = (guint32)loc->row;
-
-                        fwrite (&ent, sizeof(ent), 1, perf_dump_file);
-                        fwrite (loc->source_file, strlen (loc->source_file) + 1, 1, perf_dump_file);
-                }
-
-               
-                ent.code_addr = (guint64)jinfo->code_start + jinfo->code_size;
-                ent.discrim = 0;
-                ent.line = 0;
-                fwrite (&ent, sizeof (ent), 1, perf_dump_file);
-                fwrite ("", 1, 1, perf_dump_file);
-
-		// TODO: write unwindInfo immediately before the JitCodeLoadRecord (while lock is held).
-
-		record.header.timestamp = mono_clock_get_time_ns (clock_id);
-
-		fwrite (&record, sizeof (record), 1, perf_dump_file);
-		fwrite (jinfo->d.method->name, nameLen + 1, 1, perf_dump_file);
-		fwrite (code, jinfo->code_size, 1, perf_dump_file);
-
-		mono_os_mutex_unlock (&perf_dump_mutex);
+		rec.header.total_size += sizeof (ent) + strlen (loc->source_file) + 1;
+		rec.nr_entry++;
 	}
+
+	fwrite (&rec, sizeof (rec), 1, perf_dump_file);
+
+	for (i = 0; i < dmji->num_line_numbers; ++i) {
+
+		// get the line number using il offset
+		loc = mono_debug_lookup_source_location_by_il (jinfo->d.method, dmji->line_numbers[i].il_offset, NULL);
+
+		if (!loc)
+			continue;
+
+		if (!loc->source_file) {
+			mono_debug_free_source_location (loc);
+			continue;
+		}
+
+		ent.code_addr = (guint64)dmji->code_start + dmji->line_numbers[i].native_offset;
+		ent.discrim = 0;
+		ent.line = (guint32)loc->row;
+
+		fwrite (&ent, sizeof(ent), 1, perf_dump_file);
+		fwrite (loc->source_file, strlen (loc->source_file) + 1, 1, perf_dump_file);
+	}
+
+	ent.code_addr = (guint64)jinfo->code_start + jinfo->code_size;
+	ent.discrim = 0;
+	ent.line = 0;
+	fwrite (&ent, sizeof (ent), 1, perf_dump_file);
+	fwrite ("", 1, 1, perf_dump_file);
+
+	// TODO: write unwindInfo immediately before the JitCodeLoadRecord (while lock is held).
+
+	record.header.timestamp = mono_clock_get_time_ns (clock_id);
+
+	fwrite (&record, sizeof (record), 1, perf_dump_file);
+	fwrite (jinfo->d.method->name, nameLen + 1, 1, perf_dump_file);
+	fwrite (code, jinfo->code_size, 1, perf_dump_file);
+
+	mono_os_mutex_unlock (&perf_dump_mutex);
 }
+
 static void
 add_basic_JitCodeDebug_info (JitCodeDebug *record)
 {
-        record->header.id = JIT_DEBUG_INFO;
-        record->header.timestamp = mono_clock_get_time_ns (clock_id);
-
+	record->header.id = JIT_DEBUG_INFO;
+	record->header.timestamp = mono_clock_get_time_ns (clock_id);
 }
+
 static void
 add_basic_JitCodeLoadRecord_info (JitCodeLoadRecord *record)
 {
@@ -2558,7 +2562,18 @@ compile_special (MonoMethod *method, MonoError *error)
 		} else {
 			MonoMethod *nm = mono_marshal_get_native_wrapper (method, TRUE, mono_aot_only);
 			compiled_method = mono_jit_compile_method_jit_only (nm, error);
-			return_val_if_nok (error, NULL);
+			if (!compiled_method && mono_aot_only && mono_use_interpreter) {
+				// We failed to find wrapper in aot images, try interpreting it instead
+				mono_error_cleanup (error);
+				error_init_reuse (error);
+				nm = mono_marshal_get_native_wrapper (method, TRUE, FALSE);
+				compiled_method = mono_jit_compile_method (nm, error);
+				return_val_if_nok (error, NULL);
+				code = mono_get_addr_from_ftnptr (compiled_method);
+				return code;
+			} else {
+				return_val_if_nok (error, NULL);
+			}
 		}
 
 		code = mono_get_addr_from_ftnptr (compiled_method);
@@ -2784,6 +2799,7 @@ lookup_start:
 	if (!jit_only && !code && mono_aot_only && mono_use_interpreter && method->wrapper_type != MONO_WRAPPER_OTHER) {
 		if (mono_llvm_only) {
 			/* Signal to the caller that AOTed code is not found */
+			g_assert (method->wrapper_type != MONO_WRAPPER_RUNTIME_INVOKE);
 			return NULL;
 		}
 		code = mini_get_interp_callbacks ()->create_method_pointer (method, TRUE, error);
@@ -2802,7 +2818,7 @@ lookup_start:
 
 		if (mono_aot_only) {
 			char *fullname = mono_method_get_full_name (method);
-			mono_error_set_execution_engine (error, "Attempting to JIT compile method '%s' while running in aot-only mode. See https://docs.microsoft.com/xamarin/ios/internals/limitations for more information.\n", fullname);
+			mono_error_set_execution_engine (error, "Attempting to JIT compile method '%s' while running in aot-only mode. See https://learn.microsoft.com/xamarin/ios/internals/limitations for more information.\n", fullname);
 			g_free (fullname);
 
 			return NULL;
@@ -2838,18 +2854,10 @@ lookup_start:
 	p = mono_create_ftnptr (code);
 
 	if (callinfo) {
-		// FIXME Locking here is somewhat historical due to mono_register_jit_icall_wrapper taking loader lock.
-		// atomic_compare_exchange should suffice.
-		mono_loader_lock ();
-		mono_jit_lock ();
-		if (!callinfo->wrapper) {
-			callinfo->wrapper = p;
-		}
-		mono_jit_unlock ();
-		mono_loader_unlock ();
+		mono_atomic_cas_ptr ((volatile void*)&callinfo->wrapper, p, NULL);
+		p = mono_atomic_load_ptr((volatile gpointer*)&callinfo->wrapper);
 	}
 
-	// FIXME p or callinfo->wrapper or does not matter?
 	return p;
 }
 
@@ -2879,7 +2887,7 @@ jit_compile_method_with_opt (JitCompileMethodWithOptCallbackData *params)
 
 	gboolean thrown = FALSE;
 #if defined(ENABLE_LLVM_RUNTIME) || defined(ENABLE_LLVM)
-	mono_llvm_cpp_catch_exception (jit_compile_method_with_opt_cb, params, &thrown);
+	mono_llvm_catch_exception (jit_compile_method_with_opt_cb, params, &thrown);
 #else
 	jit_compile_method_with_opt_cb (params);
 #endif
@@ -2931,6 +2939,11 @@ mono_jit_compile_method_jit_only (MonoMethod *method, MonoError *error)
 static gpointer
 get_ftnptr_for_method (MonoMethod *method, gboolean need_unbox, MonoError *error)
 {
+	if (method->is_generic || mono_class_is_gtd (method->klass)) {
+		mono_error_set_generic_error (error, "System", "InvalidOperationException", "");
+		return NULL;
+	}
+
 	if (!mono_llvm_only) {
 		gpointer res = mono_jit_compile_method (method, error);
 		res = mini_add_method_trampoline (method, res, mono_method_needs_static_rgctx_invoke (method, TRUE), need_unbox);
@@ -3009,7 +3022,7 @@ mono_jit_free_method (MonoMethod *method)
 	//seq_points are always on get_default_jit_mm
 	jit_mm = get_default_jit_mm ();
 	jit_mm_lock (jit_mm);
-	g_hash_table_remove (jit_mm->seq_points, method);
+	dn_simdhash_ght_try_remove (jit_mm->seq_points, method);
 	jit_mm_unlock (jit_mm);
 
 	jit_mm = jit_mm_for_method (method);
@@ -3025,7 +3038,7 @@ mono_jit_free_method (MonoMethod *method)
 	mono_conc_hashtable_remove (jit_mm->runtime_invoke_hash, method);
 	g_hash_table_remove (jit_mm->dynamic_code_hash, method);
 	g_hash_table_remove (jit_mm->jump_trampoline_hash, method);
-	g_hash_table_remove (jit_mm->seq_points, method);
+	dn_simdhash_ght_try_remove (jit_mm->seq_points, method);
 
 	g_hash_table_iter_init (&iter, jit_mm->jump_target_hash);
 	while (g_hash_table_iter_next (&iter, NULL, (void**)&jlist)) {
@@ -3397,7 +3410,7 @@ mono_llvmonly_runtime_invoke (MonoMethod *method, RuntimeInvokeInfo *info, void 
 	for (i = 0; i < sig->param_count; ++i) {
 		MonoType *t = sig->params [i];
 
-		if (!m_type_is_byref (t) && (MONO_TYPE_IS_REFERENCE (t) || t->type == MONO_TYPE_PTR)) {
+		if (!m_type_is_byref (t) && (MONO_TYPE_IS_REFERENCE (t) || t->type == MONO_TYPE_PTR || t->type == MONO_TYPE_FNPTR)) {
 			param_refs [i] = params [i];
 			params [i] = &(param_refs [i]);
 		}
@@ -3506,14 +3519,14 @@ mono_jit_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoObjec
 
 		gboolean use_interp = FALSE;
 
-		if (mono_aot_mode == MONO_AOT_MODE_LLVMONLY_INTERP)
-			/* The runtime invoke wrappers contain clauses so they are not AOTed */
+		if (mono_aot_mode == MONO_AOT_MODE_LLVMONLY_INTERP && method->string_ctor)
 			use_interp = TRUE;
 
 		if (callee) {
 			compiled_method = mono_jit_compile_method_jit_only (callee, error);
 			if (!compiled_method) {
-				g_assert (!is_ok (error));
+				if (!mono_opt_llvm_emulate_unwind)
+					g_assert (!is_ok (error));
 
 				if (mono_use_interpreter)
 					use_interp = TRUE;
@@ -3617,7 +3630,7 @@ mono_jit_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoObjec
 
 			if (m_type_is_byref (t)) {
 				args [pindex ++] = &params [i];
-			} else if (MONO_TYPE_IS_REFERENCE (t) || t->type == MONO_TYPE_PTR) {
+			} else if (MONO_TYPE_IS_REFERENCE (t) || t->type == MONO_TYPE_PTR || t->type == MONO_TYPE_FNPTR) {
 				args [pindex ++] = &params [i];
 			} else {
 				args [pindex ++] = params [i];
@@ -3749,6 +3762,17 @@ MONO_SIG_HANDLER_FUNC (, mono_crashing_signal_handler)
 		mono_chain_signal (MONO_SIG_HANDLER_PARAMS);
 		return;
 	}
+}
+
+MONO_SIG_HANDLER_FUNC (, mono_sigterm_signal_handler)
+{
+	mono_environment_exitcode_set(128+SIGTERM);	/* Set default exit code */
+
+	mono_term_signaled = TRUE;
+
+	mono_gc_finalize_notify ();
+
+	mono_chain_signal (MONO_SIG_HANDLER_PARAMS);
 }
 
 #if defined(MONO_ARCH_USE_SIGACTION) || defined(HOST_WIN32)
@@ -4362,7 +4386,7 @@ init_jit_mem_manager (MonoMemoryManager *mem_manager)
 	info->jump_target_hash = g_hash_table_new (NULL, NULL);
 	info->jit_trampoline_hash = g_hash_table_new (mono_aligned_addr_hash, NULL);
 	info->delegate_info_hash = g_hash_table_new (delegate_class_method_pair_hash, delegate_class_method_pair_equal);
-	info->seq_points = g_hash_table_new_full (mono_aligned_addr_hash, NULL, NULL, mono_seq_point_info_free);
+	info->seq_points = dn_simdhash_ght_new_full (mono_aligned_addr_hash, NULL, NULL, mono_seq_point_info_free, 0, NULL);
 	info->runtime_invoke_hash = mono_conc_hashtable_new_full (mono_aligned_addr_hash, NULL, NULL, runtime_invoke_info_free);
 	info->arch_seq_points = g_hash_table_new (mono_aligned_addr_hash, NULL);
 	mono_jit_code_hash_init (&info->jit_code_hash);
@@ -4434,9 +4458,8 @@ free_jit_mem_manager (MonoMemoryManager *mem_manager)
 		g_hash_table_destroy (info->dyn_delegate_info_hash);
 	g_hash_table_destroy (info->static_rgctx_trampoline_hash);
 	g_hash_table_destroy (info->mrgctx_hash);
-	g_hash_table_destroy (info->interp_method_pointer_hash);
 	mono_conc_hashtable_destroy (info->runtime_invoke_hash);
-	g_hash_table_destroy (info->seq_points);
+	dn_simdhash_free (info->seq_points);
 	g_hash_table_destroy (info->arch_seq_points);
 	if (info->agent_info)
 		mono_component_debugger ()->free_mem_manager (info);
@@ -4471,7 +4494,7 @@ init_class (MonoClass *klass)
 
 	const char *name = m_class_get_name (klass);
 
-#if defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_WASM)
+#if defined(TARGET_AMD64) || defined(TARGET_WASM)
 	/*
 	 * Some of the intrinsics used by the VectorX classes are only implemented on amd64.
 	 * The JIT can't handle SIMD types with != 16 size yet.
@@ -4479,6 +4502,13 @@ init_class (MonoClass *klass)
 	if (!strcmp (m_class_get_name_space (klass), "System.Numerics")) {
 		// FIXME: Support Vector2/Vector3
 		if (!strcmp (name, "Vector4") || !strcmp (name, "Quaternion") || !strcmp (name, "Plane"))
+			mono_class_set_is_simd_type (klass, TRUE);
+	}
+#endif
+
+#ifdef TARGET_ARM64
+	if (!strcmp (m_class_get_name_space (klass), "System.Numerics")) {
+		if (!strcmp (name, "Vector2") || !strcmp (name, "Vector3") ||!strcmp (name, "Vector4") || !strcmp (name, "Quaternion") || !strcmp (name, "Plane"))
 			mono_class_set_is_simd_type (klass, TRUE);
 	}
 #endif
@@ -4529,20 +4559,20 @@ mini_llvm_init (void)
 }
 
 #ifdef ENSURE_PRIMARY_STACK_SIZE
-/*++ 
- Function: 
-   EnsureStackSize 
-  
- Abstract: 
-   This fixes a problem on MUSL where the initial stack size reported by the 
-   pthread_attr_getstack is about 128kB, but this limit is not fixed and 
-   the stack can grow dynamically. The problem is that it makes the 
-   functions ReflectionInvocation::[Try]EnsureSufficientExecutionStack 
-   to fail for real life scenarios like e.g. compilation of corefx. 
-   Since there is no real fixed limit for the stack, the code below 
-   ensures moving the stack limit to a value that makes reasonable 
-   real life scenarios work. 
-  
+/*++
+ Function:
+   EnsureStackSize
+
+ Abstract:
+   This fixes a problem on MUSL where the initial stack size reported by the
+   pthread_attr_getstack is about 128kB, but this limit is not fixed and
+   the stack can grow dynamically. The problem is that it makes the
+   functions ReflectionInvocation::[Try]EnsureSufficientExecutionStack
+   to fail for real life scenarios like e.g. compilation of corefx.
+   Since there is no real fixed limit for the stack, the code below
+   ensures moving the stack limit to a value that makes reasonable
+   real life scenarios work.
+
  --*/
 static MONO_NO_OPTIMIZATION MONO_NEVER_INLINE void
 ensure_stack_size (size_t size)
@@ -4726,8 +4756,7 @@ mini_init (const char *filename)
 	mono_w32handle_init ();
 #endif
 
-#ifdef ENSURE_PRIMARY_STACK_SIZE 
-	// TODO: https://github.com/dotnet/runtime/issues/72920
+#ifdef ENSURE_PRIMARY_STACK_SIZE
 	ensure_stack_size (5 * 1024 * 1024);
 #endif // ENSURE_PRIMARY_STACK_SIZE
 
@@ -4861,9 +4890,7 @@ mini_init (const char *filename)
 	mono_generic_sharing_init ();
 #endif
 
-#ifdef MONO_ARCH_SIMD_INTRINSICS
 	mono_simd_intrinsics_init ();
-#endif
 
 	register_trampolines (domain);
 
@@ -5139,6 +5166,7 @@ register_icalls (void)
 	register_icall (mono_throw_not_supported, mono_icall_sig_void, FALSE);
 	register_icall (mono_throw_platform_not_supported, mono_icall_sig_void, FALSE);
 	register_icall (mono_throw_invalid_program, mono_icall_sig_void_ptr, FALSE);
+	register_icall (mono_throw_type_load, mono_icall_sig_void_ptr, FALSE);
 	register_icall_no_wrapper (mono_dummy_jit_icall, mono_icall_sig_void);
 	//register_icall_no_wrapper (mono_dummy_jit_icall_val, mono_icall_sig_void_ptr);
 	register_icall_no_wrapper (mini_init_method_rgctx, mono_icall_sig_void_ptr_ptr);
@@ -5555,4 +5583,36 @@ mono_invoke_runtime_init_callback (void)
 
 		mono_atomic_xchg_i64 ((volatile gint64 *)&runtime_init_thread_id, (gint64)G_MAXUINT64);
 	}
+}
+
+gboolean
+mono_jit_call_can_be_supported_by_interp (MonoMethod *method, MonoMethodSignature *sig, gboolean is_llvm_only)
+{
+	if (sig->param_count > 10)
+		return FALSE;
+	if (sig->pinvoke)
+		return FALSE;
+	if (method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL)
+		return FALSE;
+	if (method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL)
+		return FALSE;
+	if (!is_llvm_only && method->is_inflated)
+		return FALSE;
+	if (method->string_ctor)
+		return FALSE;
+	if (method->wrapper_type != MONO_WRAPPER_NONE)
+		return FALSE;
+
+	if (method->flags & METHOD_ATTRIBUTE_REQSECOBJ)
+		/* Used to mark methods containing StackCrawlMark locals */
+		return FALSE;
+
+	return TRUE;
+}
+
+void
+mono_jit_memory_manager_foreach_seq_point (dn_simdhash_ght_t *seq_points, dn_simdhash_ght_foreach_func func, gpointer user_data)
+{
+	g_assert (seq_points);
+	dn_simdhash_ght_foreach (seq_points, func, user_data);
 }

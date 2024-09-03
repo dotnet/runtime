@@ -7,6 +7,35 @@
 
 // sets up vars for GC
 
+#include "common.h"
+#include "gcenv.h"
+
+#include "gc.h"
+#include "gcscan.h"
+#include "gchandletableimpl.h"
+#include "gceventstatus.h"
+
+#ifdef __INTELLISENSE__
+#if defined(FEATURE_SVR_GC)
+
+#define SERVER_GC 1
+
+#else // defined(FEATURE_SVR_GC)
+
+#ifdef SERVER_GC
+#undef SERVER_GC
+#endif
+
+#endif // defined(FEATURE_SVR_GC)
+#endif // __INTELLISENSE__
+
+#ifdef SERVER_GC
+namespace SVR {
+#else // SERVER_GC
+namespace WKS {
+#endif // SERVER_GC
+
+#include "gcimpl.h"
 #include "gcpriv.h"
 
 #ifndef DACCESS_COMPILE
@@ -30,12 +59,7 @@ void GCHeap::UpdatePreGCCounters()
     // Publish perf stats
     g_TotalTimeInGC = GCToOSInterface::QueryPerformanceCounter();
 
-#ifdef MULTIPLE_HEAPS
-        //take the first heap....
-    gc_mechanisms *pSettings = &gc_heap::g_heaps[0]->settings;
-#else
     gc_mechanisms *pSettings = &gc_heap::settings;
-#endif //MULTIPLE_HEAPS
 
     uint32_t count = (uint32_t)pSettings->gc_index;
     uint32_t depth = (uint32_t)pSettings->condemned_generation;
@@ -96,13 +120,6 @@ void GCHeap::UpdatePostGCCounters()
     size_t total_num_gc_handles = g_dwHandles;
     uint32_t total_num_sync_blocks = GCToEEInterface::GetActiveSyncBlockCount();
 
-    // Note this is however for perf counter only, for legacy reasons. What we showed
-    // in perf counters for "gen0 size" was really the gen0 budget which made
-    // sense (somewhat) at the time. For backward compatibility we are keeping
-    // this calculated the same way. For ETW we use the true gen0 size (and
-    // gen0 budget is also reported in an event).
-    size_t youngest_budget = 0;
-
     size_t promoted_finalization_mem = 0;
     size_t total_num_pinned_objects = gc_heap::get_total_pinned_objects();
 
@@ -120,37 +137,28 @@ void GCHeap::UpdatePostGCCounters()
         {
             gc_heap* hp = gc_heap::g_heaps[hn];
 #else
+        {
             gc_heap* hp = pGenGCHeap;
+#endif //MULTIPLE_HEAPS
+            dynamic_data* dd = hp->dynamic_data_of (gen_index);
+
+            g_GenerationSizes[gen_index] += hp->generation_size (gen_index);
+
+            if (gen_index <= condemned_gen)
             {
-#endif //MULTIPLE_HEAPS
-                dynamic_data* dd = hp->dynamic_data_of (gen_index);
-
-                if (gen_index == 0)
-                {
-                    youngest_budget += dd_desired_allocation (hp->dynamic_data_of (gen_index));
-                }
-
-                g_GenerationSizes[gen_index] += hp->generation_size (gen_index);
-
-                if (gen_index <= condemned_gen)
-                {
-                    g_GenerationPromotedSizes[gen_index] += dd_promoted_size (dd);
-                }
-
-                if ((gen_index == loh_generation) && (condemned_gen == max_generation))
-                {
-                    g_GenerationPromotedSizes[gen_index] += dd_promoted_size (dd);
-                }
-
-                if (gen_index == 0)
-                {
-                    promoted_finalization_mem +=  dd_freach_previous_promotion (dd);
-                }
-#ifdef MULTIPLE_HEAPS
+                g_GenerationPromotedSizes[gen_index] += dd_promoted_size (dd);
             }
-#else
+
+            if ((gen_index == loh_generation) && (condemned_gen == max_generation))
+            {
+                g_GenerationPromotedSizes[gen_index] += dd_promoted_size (dd);
+            }
+
+            if (gen_index == 0)
+            {
+                promoted_finalization_mem +=  dd_freach_previous_promotion (dd);
+            }
         }
-#endif //MULTIPLE_HEAPS
     }
 
     ReportGenerationBounds();
@@ -329,16 +337,12 @@ void gc_heap::fire_etw_allocation_event (size_t allocation_amount,
                                          uint8_t* object_address,
                                          size_t object_size)
 {
-#ifdef FEATURE_NATIVEAOT
-    FIRE_EVENT(GCAllocationTick_V1, (uint32_t)allocation_amount, (uint32_t)gen_to_oh (gen_number));
-#else
     FIRE_EVENT(GCAllocationTick_V4,
                 allocation_amount,
                 (uint32_t)gen_to_oh (gen_number),
                 heap_number,
                 object_address,
                 object_size);
-#endif //FEATURE_NATIVEAOT
 }
 
 void gc_heap::fire_etw_pin_object_event (uint8_t* object, uint8_t** ppObject)
@@ -510,9 +514,12 @@ bool GCHeap::IsInFrozenSegment(Object *object)
 void GCHeap::UpdateFrozenSegment(segment_handle seg, uint8_t* allocated, uint8_t* committed)
 {
 #ifdef FEATURE_BASICFREEZE
-    heap_segment* heap_seg = reinterpret_cast<heap_segment*>(seg);
-    heap_segment_committed(heap_seg) = committed;
-    heap_segment_allocated(heap_seg) = allocated;
+#ifdef MULTIPLE_HEAPS
+    gc_heap* heap = gc_heap::g_heaps[0];
+#else
+    gc_heap* heap = pGenGCHeap;
+#endif //MULTIPLE_HEAPS
+    heap->update_ro_segment (reinterpret_cast<heap_segment*>(seg), allocated, committed);
 #endif // FEATURE_BASICFREEZE
 }
 
@@ -562,4 +569,4 @@ uint64_t GCHeap::GetGenerationBudget(int generation)
 
 #endif // !DACCESS_COMPILE
 
-
+}

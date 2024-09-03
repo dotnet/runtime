@@ -1,6 +1,6 @@
 <Project>
   <PropertyGroup>
-    <_WasmtimeVersionFile>$(MonoProjectRoot)wasi/wasmtime-version.txt</_WasmtimeVersionFile>
+    <_WasmtimeVersionFile>$(WasiProjectRoot)wasmtime-version.txt</_WasmtimeVersionFile>
     <_WasmtimeStampPath>$(WasmtimeDir)\.stamp-wasmtime-version.txt</_WasmtimeStampPath>
     <InstallWasmtimeForTests Condition="'$(InstallWasmtimeForTests)' == '' and !Exists($(WasmtimeDir))">true</InstallWasmtimeForTests>
   </PropertyGroup>
@@ -30,6 +30,6 @@
     <MakeDir Directories="$(WasmtimeDir)" />
     <Exec Command="powershell -command &quot;Expand-Archive $(_DownloadedFile) . ; Move-Item wasmtime-v$(WasmtimeVersion)-x86_64-windows/*.* . &quot;" WorkingDirectory="$(WasmtimeDir)" Condition="'$(HostOS)' == 'windows'"/>
     <Exec Command="tar -Jx --strip-components=1 -f $(_DownloadedFile)" WorkingDirectory="$(WasmtimeDir)" Condition="'$(HostOS)' != 'windows'"/>
-    <Copy SourceFiles="$(MonoProjectRoot)wasi/wasmtime-version.txt" DestinationFiles="$(_WasmtimeStampPath)" SkipUnchangedFiles="true" />
+    <Copy SourceFiles="$(WasiProjectRoot)wasmtime-version.txt" DestinationFiles="$(_WasmtimeStampPath)" SkipUnchangedFiles="true" />
   </Target>
 </Project>

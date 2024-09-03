@@ -63,6 +63,7 @@ MONO_HWCAP_VAR(s390x_has_mie3)
 MONO_HWCAP_VAR(s390x_has_gs)
 MONO_HWCAP_VAR(s390x_has_vef2)
 MONO_HWCAP_VAR(s390x_has_eif)
+MONO_HWCAP_VAR(s390x_has_lsoc2)
 
 #elif defined (TARGET_X86) || defined (TARGET_AMD64)
 

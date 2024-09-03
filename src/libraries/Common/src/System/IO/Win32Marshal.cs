@@ -22,7 +22,7 @@ namespace System.IO
         /// Converts the specified Win32 error into a corresponding <see cref="Exception"/> object, optionally
         /// including the specified path in the error message.
         /// </summary>
-        internal static Exception GetExceptionForWin32Error(int errorCode, string? path = "")
+        internal static Exception GetExceptionForWin32Error(int errorCode, string? path = "", string? errorDetails = null)
         {
             // ERROR_SUCCESS gets thrown when another unexpected interop call was made before checking GetLastWin32Error().
             // Errors have to get retrieved as soon as possible after P/Invoking to avoid this.
@@ -57,20 +57,26 @@ namespace System.IO
                 case Interop.Errors.ERROR_OPERATION_ABORTED:
                     return new OperationCanceledException();
                 case Interop.Errors.ERROR_INVALID_PARAMETER:
+
                 default:
-                    string msg = string.IsNullOrEmpty(path)
-                        ? GetPInvokeErrorMessage(errorCode)
-                        : $"{GetPInvokeErrorMessage(errorCode)} : '{path}'";
-                    return new IOException(
-                        msg,
-                        MakeHRFromErrorCode(errorCode));
+                    string msg = GetPInvokeErrorMessage(errorCode);
+                    if (!string.IsNullOrEmpty(path))
+                    {
+                        msg += $" : '{path}'.";
+                    }
+                    if (!string.IsNullOrEmpty(errorDetails))
+                    {
+                        msg += $" {errorDetails}";
+                    }
+
+                    return new IOException(msg, MakeHRFromErrorCode(errorCode));
             }
 
             static string GetPInvokeErrorMessage(int errorCode)
             {
                 // Call Kernel32.GetMessage directly in CoreLib. It eliminates one level of indirection and it is necessary to
                 // produce correct error messages for CoreCLR Win32 PAL.
-#if NET7_0_OR_GREATER && !SYSTEM_PRIVATE_CORELIB
+#if NET && !SYSTEM_PRIVATE_CORELIB
                 return Marshal.GetPInvokeErrorMessage(errorCode);
 #else
                 return Interop.Kernel32.GetMessage(errorCode);

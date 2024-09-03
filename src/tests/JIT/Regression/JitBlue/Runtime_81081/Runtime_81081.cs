@@ -5,10 +5,9 @@ using Xunit;
 public class Runtime_81081
 {
     [Fact]
-    public static int TestEntryPoint()
+    public static void TestEntryPoint()
     {
         Test(1234, default);
-        return 100;
     }
 
     static int Test(int count, S16 s)

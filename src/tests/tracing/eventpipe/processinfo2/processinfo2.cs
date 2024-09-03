@@ -15,6 +15,7 @@ using System.Threading.Tasks;
 using Microsoft.Diagnostics.Tools.RuntimeClient;
 using Microsoft.Diagnostics.Tracing;
 using Tracing.Tests.Common;
+using Xunit;
 
 namespace Tracing.Tests.ProcessInfoValidation
 {
@@ -89,7 +90,8 @@ namespace Tracing.Tests.ProcessInfoValidation
             return normalizedCommandLine;
         }
 
-        public static int Main()
+        [Fact]
+        public static void TestEntryPoint()
         {
 
             Process currentProcess = Process.GetCurrentProcess();
@@ -219,14 +221,12 @@ namespace Tracing.Tests.ProcessInfoValidation
             // see eventpipeeventsource.cpp for these values
             string expectedArchValue = RuntimeInformation.ProcessArchitecture switch
             {
-                Architecture.X86 => "x86",
-                Architecture.X64 => "x64",
                 Architecture.Arm => "arm32",
-                Architecture.Arm64 => "arm64",
-                _ => "Unknown"
+                // All other architectures match the enum member name
+                _ => RuntimeInformation.ProcessArchitecture.ToString().ToLowerInvariant()
             };
 
-            Utils.Assert(expectedArchValue.Equals(arch), $"OS must match current Operating System. Expected: \"{expectedArchValue}\", Received: \"{arch}\"");
+            Utils.Assert(expectedArchValue.Equals(arch), $"Arch must match current Architecture. Expected: \"{expectedArchValue}\", Received: \"{arch}\"");
 
             // VALIDATE ManagedEntrypointAssemblyName
             start = end;
@@ -265,8 +265,6 @@ namespace Tracing.Tests.ProcessInfoValidation
             Utils.Assert(end == totalSize, $"Full payload should have been read. Expected: {totalSize}, Received: {end}");
 
             Logger.logger.Log($"\n{{\n\tprocessId: {processId},\n\truntimeCookie: {runtimeCookie},\n\tcommandLine: {commandLine},\n\tOS: {OS},\n\tArch: {arch},\n\tManagedEntrypointAssemblyName: {managedEntrypointAssemblyName},\n\tClrProductVersion: {clrProductVersion}\n}}");
-
-            return 100;
         }
     }
 }

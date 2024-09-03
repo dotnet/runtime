@@ -19,7 +19,7 @@ namespace System
         internal static AmbiguousMatchException GetAmbiguousMatchException(MemberInfo memberInfo)
         {
             Type? declaringType = memberInfo.DeclaringType;
-            return  new AmbiguousMatchException(SR.Format(SR.Arg_AmbiguousMatchException_MemberInfo, declaringType, memberInfo));
+            return new AmbiguousMatchException(SR.Format(SR.Arg_AmbiguousMatchException_MemberInfo, declaringType, memberInfo));
         }
     }
 }

@@ -3,7 +3,10 @@
 
 using System;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Text;
 using Internal.Pgo;
 
 namespace Internal.JitInterface
@@ -392,7 +395,8 @@ namespace Internal.JitInterface
         // New calling conventions supported with the extensible calling convention encoding go here.
         CMemberFunction,
         StdcallMemberFunction,
-        FastcallMemberFunction
+        FastcallMemberFunction,
+        Swift
     }
 
     public enum CORINFO_CALLINFO_FLAGS
@@ -542,7 +546,7 @@ namespace Internal.JitInterface
     {
         CORINFO_ACCESS_ANY = 0x0000, // Normal access
         CORINFO_ACCESS_THIS = 0x0001, // Accessed via the this reference
-        // CORINFO_ACCESS_UNUSED = 0x0002,
+        CORINFO_ACCESS_PREFER_SLOT_OVER_TEMPORARY_ENTRYPOINT = 0x0002, // Prefer access to a method via slot over using the temporary entrypoint
 
         CORINFO_ACCESS_NONNULL = 0x0004, // Instance is guaranteed non-null
 
@@ -564,13 +568,13 @@ namespace Internal.JitInterface
     {
         //  CORINFO_FLG_UNUSED                = 0x00000001,
         //  CORINFO_FLG_UNUSED                = 0x00000002,
-        CORINFO_FLG_PROTECTED = 0x00000004,
+        //  CORINFO_FLG_UNUSED                = 0x00000004,
         CORINFO_FLG_STATIC = 0x00000008,
         CORINFO_FLG_FINAL = 0x00000010,
         CORINFO_FLG_SYNCH = 0x00000020,
         CORINFO_FLG_VIRTUAL = 0x00000040,
         //  CORINFO_FLG_UNUSED                = 0x00000080,
-        CORINFO_FLG_NATIVE = 0x00000100,
+        //  CORINFO_FLG_UNUSED                = 0x00000100,
         CORINFO_FLG_INTRINSIC_TYPE = 0x00000200, // This type is marked by [Intrinsic]
         CORINFO_FLG_ABSTRACT = 0x00000400,
 
@@ -603,7 +607,7 @@ namespace Internal.JitInterface
         CORINFO_FLG_DELEGATE = 0x02000000, // is this a subclass of delegate or multicast delegate ?
         CORINFO_FLG_INDEXABLE_FIELDS = 0x04000000, // struct fields may be accessed via indexing (used for inline arrays)
         CORINFO_FLG_BYREF_LIKE = 0x08000000, // it is byref-like value type
-        CORINFO_FLG_VARIANCE = 0x10000000, // MethodTable::HasVariance (sealed does *not* mean uncast-able)
+        //  CORINFO_FLG_UNUSED = 0x10000000,
         CORINFO_FLG_BEFOREFIELDINIT = 0x20000000, // Additional flexibility for when to run .cctor (see code:#ClassConstructionFlags)
         CORINFO_FLG_GENERIC_TYPE_VARIABLE = 0x40000000, // This is really a handle for a variable type
         CORINFO_FLG_UNSAFE_VALUECLASS = 0x80000000, // Unsafe (C++'s /GS) value type
@@ -779,6 +783,7 @@ namespace Internal.JitInterface
     {
         CORINFO_TYPE_MASK = 0x3F,        // lower 6 bits are type mask
         CORINFO_TYPE_MOD_PINNED = 0x40,        // can be applied to CLASS, or BYREF to indicate pinned
+        CORINFO_TYPE_MOD_COPY_WITH_HELPER = 0x80, // can be applied to VALUECLASS to indicate 'needs helper to copy'
     };
 
     public struct CORINFO_HELPER_ARG
@@ -812,7 +817,7 @@ namespace Internal.JitInterface
     {
         CORINFO_WINNT,
         CORINFO_UNIX,
-        CORINFO_MACOS,
+        CORINFO_APPLE,
     }
 
     public enum CORINFO_RUNTIME_ABI
@@ -832,6 +837,9 @@ namespace Internal.JitInterface
             // Size of the Frame structure
             public uint size;
 
+            // Size of the Frame structure inside IL stubs that include secret stub arg in the frame
+            public uint sizeWithSecretStubArg;
+
             public uint offsetOfGSCookie;
             public uint offsetOfFrameVptr;
             public uint offsetOfFrameLink;
@@ -839,6 +847,7 @@ namespace Internal.JitInterface
             public uint offsetOfCalleeSavedFP;
             public uint offsetOfCallTarget;
             public uint offsetOfReturnAddress;
+            public uint offsetOfSecretStubArg;
             public uint offsetOfSPAfterProlog;
         }
         public InlinedCallFrameInfo inlinedCallFrameInfo;
@@ -1109,7 +1118,7 @@ namespace Internal.JitInterface
         CORINFO_FIELD_STATIC_READYTORUN_HELPER, // static field access using a runtime lookup helper
         CORINFO_FIELD_STATIC_RELOCATABLE,       // static field access from the data segment
         CORINFO_FIELD_INTRINSIC_ZERO,           // intrinsic zero (IntPtr.Zero, UIntPtr.Zero)
-        CORINFO_FIELD_INTRINSIC_EMPTY_STRING,   // intrinsic emptry string (String.Empty)
+        CORINFO_FIELD_INTRINSIC_EMPTY_STRING,   // intrinsic empty string (String.Empty)
         CORINFO_FIELD_INTRINSIC_ISLITTLEENDIAN, // intrinsic BitConverter.IsLittleEndian
     }
 
@@ -1121,7 +1130,6 @@ namespace Internal.JitInterface
         CORINFO_FLG_FIELD_FINAL = 0x00000004,
         CORINFO_FLG_FIELD_STATIC_IN_HEAP = 0x00000008, // See code:#StaticFields. This static field is in the GC heap as a boxed object
         CORINFO_FLG_FIELD_INITCLASS = 0x00000020, // initClass has to be called before accessing the field
-        CORINFO_FLG_FIELD_PROTECTED = 0x00000040,
     }
 
     public unsafe struct CORINFO_FIELD_INFO
@@ -1155,7 +1163,17 @@ namespace Internal.JitInterface
         public uint offsetOfThreadLocalStoragePointer;
         public uint offsetOfMaxThreadStaticBlocks;
         public uint offsetOfThreadStaticBlocks;
-        public uint offsetOfGCDataPointer;
+        public uint offsetOfBaseOfThreadLocalData;
+    };
+
+
+    public unsafe struct CORINFO_THREAD_STATIC_INFO_NATIVEAOT
+    {
+        public uint offsetOfThreadLocalStoragePointer;
+        public CORINFO_CONST_LOOKUP tlsRootObject;
+        public CORINFO_CONST_LOOKUP tlsIndexObject;
+        public CORINFO_CONST_LOOKUP threadStaticBaseSlow;
+        public CORINFO_CONST_LOOKUP tlsGetAddrFtnPtr;
     };
 
     // System V struct passing
@@ -1202,46 +1220,6 @@ namespace Internal.JitInterface
         // The start offset of the eightbytes (in bytes).
         public byte eightByteOffsets0;
         public byte eightByteOffsets1;
-    };
-
-    // StructFloadFieldInfoFlags: used on LoongArch64 architecture by `getLoongArch64PassStructInRegisterFlags` and
-    // `getRISCV64PassStructInRegisterFlags` API to convey struct argument passing information.
-    //
-    // `STRUCT_NO_FLOAT_FIELD` means structs are not passed using the float register(s).
-    //
-    // Otherwise, and only for structs with no more than two fields and a total struct size no larger
-    // than two pointers:
-    //
-    // The lowest four bits denote the floating-point info:
-    //   bit 0: `1` means there is only one float or double field within the struct.
-    //   bit 1: `1` means only the first field is floating-point type.
-    //   bit 2: `1` means only the second field is floating-point type.
-    //   bit 3: `1` means the two fields are both floating-point type.
-    // The bits[5:4] denoting whether the field size is 8-bytes:
-    //   bit 4: `1` means the first field's size is 8.
-    //   bit 5: `1` means the second field's size is 8.
-    //
-    // Note that bit 0 and 3 cannot both be set.
-    public enum StructFloatFieldInfoFlags
-    {
-        STRUCT_NO_FLOAT_FIELD         = 0x0,
-        STRUCT_FLOAT_FIELD_ONLY_ONE   = 0x1,
-        STRUCT_FLOAT_FIELD_ONLY_TWO   = 0x8,
-        STRUCT_FLOAT_FIELD_FIRST      = 0x2,
-        STRUCT_FLOAT_FIELD_SECOND     = 0x4,
-        STRUCT_FIRST_FIELD_SIZE_IS8   = 0x10,
-        STRUCT_SECOND_FIELD_SIZE_IS8  = 0x20,
-
-        STRUCT_FIRST_FIELD_DOUBLE     = (STRUCT_FLOAT_FIELD_FIRST | STRUCT_FIRST_FIELD_SIZE_IS8),
-        STRUCT_SECOND_FIELD_DOUBLE    = (STRUCT_FLOAT_FIELD_SECOND | STRUCT_SECOND_FIELD_SIZE_IS8),
-        STRUCT_FIELD_TWO_DOUBLES      = (STRUCT_FIRST_FIELD_SIZE_IS8 | STRUCT_SECOND_FIELD_SIZE_IS8 | STRUCT_FLOAT_FIELD_ONLY_TWO),
-
-        STRUCT_MERGE_FIRST_SECOND     = (STRUCT_FLOAT_FIELD_FIRST | STRUCT_FLOAT_FIELD_ONLY_TWO),
-        STRUCT_MERGE_FIRST_SECOND_8   = (STRUCT_FLOAT_FIELD_FIRST | STRUCT_FLOAT_FIELD_ONLY_TWO | STRUCT_SECOND_FIELD_SIZE_IS8),
-
-        STRUCT_HAS_ONE_FLOAT_MASK     = (STRUCT_FLOAT_FIELD_FIRST | STRUCT_FLOAT_FIELD_SECOND),
-        STRUCT_HAS_FLOAT_FIELDS_MASK  = (STRUCT_FLOAT_FIELD_FIRST | STRUCT_FLOAT_FIELD_SECOND | STRUCT_FLOAT_FIELD_ONLY_TWO | STRUCT_FLOAT_FIELD_ONLY_ONE),
-        STRUCT_HAS_8BYTES_FIELDS_MASK = (STRUCT_FIRST_FIELD_SIZE_IS8 | STRUCT_SECOND_FIELD_SIZE_IS8),
     };
 
     // DEBUGGER DATA
@@ -1373,15 +1351,13 @@ namespace Internal.JitInterface
     // These are error codes returned by CompileMethod
     public enum CorJitResult
     {
-        // Note that I dont use FACILITY_NULL for the facility number,
-        // we may want to get a 'real' facility number
-        CORJIT_OK = 0 /*NO_ERROR*/,
-        CORJIT_BADCODE = unchecked((int)0x80000001)/*MAKE_HRESULT(SEVERITY_ERROR, FACILITY_NULL, 1)*/,
-        CORJIT_OUTOFMEM = unchecked((int)0x80000002)/*MAKE_HRESULT(SEVERITY_ERROR, FACILITY_NULL, 2)*/,
-        CORJIT_INTERNALERROR = unchecked((int)0x80000003)/*MAKE_HRESULT(SEVERITY_ERROR, FACILITY_NULL, 3)*/,
-        CORJIT_SKIPPED = unchecked((int)0x80000004)/*MAKE_HRESULT(SEVERITY_ERROR, FACILITY_NULL, 4)*/,
-        CORJIT_RECOVERABLEERROR = unchecked((int)0x80000005)/*MAKE_HRESULT(SEVERITY_ERROR, FACILITY_NULL, 5)*/,
-        CORJIT_IMPLLIMITATION = unchecked((int)0x80000006)/*MAKE_HRESULT(SEVERITY_ERROR,FACILITY_NULL, 6)*/,
+        CORJIT_OK = 0,
+        CORJIT_BADCODE = unchecked((int)0x80000001),
+        CORJIT_OUTOFMEM = unchecked((int)0x80000002),
+        CORJIT_INTERNALERROR = unchecked((int)0x80000003),
+        CORJIT_SKIPPED = unchecked((int)0x80000004),
+        CORJIT_RECOVERABLEERROR = unchecked((int)0x80000005),
+        CORJIT_IMPLLIMITATION = unchecked((int)0x80000006),
     };
 
     public enum TypeCompareState
@@ -1482,5 +1458,154 @@ namespace Internal.JitInterface
         public CorInfoType type;
         private byte _hasSignificantPadding;
         public bool hasSignificantPadding { get => _hasSignificantPadding != 0; set => _hasSignificantPadding = value ? (byte)1 : (byte)0; }
+    }
+
+    public struct CORINFO_SWIFT_LOWERING : IEquatable<CORINFO_SWIFT_LOWERING>
+    {
+        private byte _byReference;
+        public bool byReference { get => _byReference != 0; set => _byReference = value ? (byte)1 : (byte)0; }
+
+        [InlineArray(4)]
+        private struct SwiftLoweredTypes
+        {
+            public CorInfoType type;
+        }
+
+        [InlineArray(4)]
+        private struct LoweredOffsets
+        {
+            public uint offset;
+        }
+
+        private SwiftLoweredTypes _loweredElements;
+
+        [UnscopedRef]
+        public Span<CorInfoType> LoweredElements => _loweredElements;
+
+        private LoweredOffsets _offsets;
+
+        [UnscopedRef]
+        public Span<uint> Offsets => _offsets;
+
+        public nint numLoweredElements;
+
+        public override bool Equals(object obj)
+        {
+            return obj is CORINFO_SWIFT_LOWERING other && Equals(other);
+        }
+
+        public bool Equals(CORINFO_SWIFT_LOWERING other)
+        {
+            if (byReference != other.byReference)
+            {
+                return false;
+            }
+
+            // If both are by-ref, the rest of the bits mean nothing.
+            if (byReference)
+            {
+                return true;
+            }
+
+            return LoweredElements.Slice(0, (int)numLoweredElements).SequenceEqual(other.LoweredElements.Slice(0, (int)other.numLoweredElements))
+                && Offsets.Slice(0, (int)numLoweredElements).SequenceEqual(other.Offsets.Slice(0, (int)other.numLoweredElements));
+        }
+
+        public override int GetHashCode()
+        {
+            HashCode code = default;
+            code.Add(byReference);
+
+            if (byReference)
+            {
+                return code.ToHashCode();
+            }
+
+            for (int i = 0; i < numLoweredElements; i++)
+            {
+                code.Add(LoweredElements[i]);
+                code.Add(Offsets[i]);
+            }
+
+            return code.ToHashCode();
+        }
+
+        // Override for a better unit test experience
+        public override string ToString()
+        {
+            if (byReference)
+            {
+                return "byReference";
+            }
+
+            var stringBuilder = new StringBuilder();
+            stringBuilder.Append('{');
+            for (int i = 0; i < numLoweredElements; i++)
+            {
+                if (i != 0)
+                {
+                    stringBuilder.Append(", ");
+                }
+                stringBuilder.Append(LoweredElements[i]);
+                stringBuilder.Append(": ");
+                stringBuilder.Append(Offsets[i]);
+            }
+            stringBuilder.Append('}');
+            return stringBuilder.ToString();
+        }
+    }
+
+    public struct CORINFO_FPSTRUCT_LOWERING
+    {
+        private byte _byIntegerCallConv;
+        public bool byIntegerCallConv { get => _byIntegerCallConv != 0; set => _byIntegerCallConv = value ? (byte)1 : (byte)0; }
+
+        [InlineArray(2)]
+        private struct FpStructLoweredTypes
+        {
+            public CorInfoType type;
+        }
+
+        [InlineArray(2)]
+        private struct LoweredOffsets
+        {
+            public uint offset;
+        }
+
+        private FpStructLoweredTypes _loweredElements;
+
+        [UnscopedRef]
+        public Span<CorInfoType> LoweredElements => _loweredElements;
+
+        private LoweredOffsets _offsets;
+
+        [UnscopedRef]
+        public Span<uint> Offsets => _offsets;
+
+        public nint numLoweredElements;
+
+        // Override for a better unit test experience
+        public override string ToString()
+        {
+            if (byIntegerCallConv)
+            {
+                return "byIntegerCallConv";
+            }
+
+            var stringBuilder = new StringBuilder();
+            stringBuilder.Append('{');
+            for (int i = 0; i < numLoweredElements; i++)
+            {
+                if (i != 0)
+                {
+                    stringBuilder.Append(", ");
+                }
+                stringBuilder.Append(LoweredElements[i]);
+                stringBuilder.Append(": ");
+                stringBuilder.Append(Offsets[i]);
+            }
+            stringBuilder.Append('}');
+            return stringBuilder.ToString();
+        }
     }
 }

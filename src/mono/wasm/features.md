@@ -15,7 +15,7 @@ The WebAssembly version of .NET exposes a number of MSBuild properties that can 
 
 For a support matrix of WebAssembly features see [https://webassembly.org/roadmap/](https://webassembly.org/roadmap/). †
 
-For the full set of MSBuild properties that configure a client application's use of these features, see the top of [WasmApp.targets](./build/WasmApp.targets). All of these properties must be placed in your application's `.csproj` file (inside of a `PropertyGroup`) to have any effect.
+For the full set of MSBuild properties that configure a client application's use of these features, see the top of [BrowserWasmApp.targets](../browser/build/BrowserWasmApp.targets). All of these properties must be placed in your application's `.csproj` file (inside of a `PropertyGroup`) to have any effect.
 
 Some of these properties require a unique build of the runtime, which means that changing them will produce a different set of `.wasm` and `.js` files for your application. Some of these properties also require you to install the [wasm-tools workload](#wasm-tools-workload).
 
@@ -31,7 +31,7 @@ For more information, see [SharedArrayBuffer security requirements](https://deve
 
 JavaScript interop with managed code via `[JSExport]`/`[JSImport]` is currently limited to the main thread even if multi-threading support is enabled.
 
-Blocking on the main thread with operations like `Task.Wait` or `Monitor.Enter` is not supported by browsers and very dangerous. The work on the proper design for this still in progress.
+Blocking on the main thread with operations like `Task.Wait` or `Monitor.Enter` are not supported by browsers and are very dangerous. The work on the proper design for this is still in progress.
 
 ### SIMD - Single instruction, multiple data
 WebAssembly SIMD provides significant performance improvements for operations on spans, strings, vectors and arrays. This feature requires a somewhat recent browser and may also not be supported by older hardware. It is currently enabled by default.
@@ -53,7 +53,7 @@ Older versions of NodeJS hosts may need `--experimental-wasm-eh` command line op
 Passing Int64 and UInt64 values between JavaScript and C# requires support for the JavaScript `BigInt` type. See [JS-BigInt](https://github.com/WebAssembly/JS-BigInt-integration) for more information on this API.
 
 ### fetch - HTTP client
-If an application uses the [HttpClient](https://learn.microsoft.com/en-us/dotnet/api/system.net.http.httpclient) managed API, your web browser must support the [fetch](https://developer.mozilla.org/en-US/docs/Web/API/Fetch_API) API for it to run.
+If an application uses the [HttpClient](https://learn.microsoft.com/dotnet/api/system.net.http.httpclient) managed API, your web browser must support the [fetch](https://developer.mozilla.org/en-US/docs/Web/API/Fetch_API) API for it to run.
 
 Because web browsers do not expose direct access to sockets, we are unable to provide our own implementation of HTTP, and HttpClient's behavior and feature set will as a result depend also on the browser you use to run the application.
 
@@ -62,7 +62,7 @@ A prominent limitation is that your application must obey `Cross-Origin Resource
 For your application to be able to perform HTTP requests in a NodeJS host, you need to install the `node-fetch` and `node-abort-controller` npm packages.
 
 ### WebSocket
-Applications using the [WebSocketClient](https://learn.microsoft.com/en-us/dotnet/api/system.net.websockets.clientwebsocket) managed API will require the browser to support the [WebSocket](https://developer.mozilla.org/en-US/docs/Web/API/WebSockets_API) API.
+Applications using the [WebSocketClient](https://learn.microsoft.com/dotnet/api/system.net.websockets.clientwebsocket) managed API will require the browser to support the [WebSocket](https://developer.mozilla.org/en-US/docs/Web/API/WebSockets_API) API.
 
 As with HTTP and HttpClient, we are unable to ship a custom implementation of this feature, so its behavior will depend on the browser being used to run the application.
 
@@ -72,6 +72,14 @@ WebSocket support in NodeJS hosts requires the `ws` npm package.
 By default the .NET runtime will reserve a small amount of memory at startup, and as your application allocates more objects the runtime will attempt to "grow" this memory. This growth operation takes time and could fail if your device's memory is limited, which would result in an application error or "tab crash".
 
 To reduce startup time and increase the odds that your application will work on devices with limited memory, you can set an initial size for the memory allocation, based on an estimate of how much memory your application typically uses. To set an initial memory size, include an MSBuild property like `<EmccInitialHeapSize>16777216</EmccInitialHeapSize>`, where you have changed the number of bytes to an appropriate value for your application. This value must be a multiple of 16384.
+
+This property requires the [wasm-tools workload](#wasm-tools-workload) to be installed.
+
+### Maximum Memory Size
+When building an app targeting mobile device browsers, especially Safari on iOS, decreasing the maximum memory for the app may be required.
+
+The default value is `2,147,483,648 bytes`, which may be too large and result in the app failing to start, because the browser refuses to grant it.
+To set the maximum memory size, include the MSBuild property like `<EmccMaximumHeapSize>268435456<EmccMaximumHeapSize>`.
 
 This property requires the [wasm-tools workload](#wasm-tools-workload) to be installed.
 
@@ -90,7 +98,7 @@ Trimming will remove unused code from your application, which reduces applicatio
 
 Some applications will break if trimming is used without further configuration due to the trimmer not knowing which code is used, for example any code accessed via reflection or serialization or dependency injection.
 
-One typical source of trimming issues is JSON serialization/deserialization. The solution is to use [Source Generation](https://learn.microsoft.com/en-us/dotnet/standard/serialization/system-text-json/source-generation), as shown below:
+One typical source of trimming issues is JSON serialization/deserialization. The solution is to use [Source Generation](https://learn.microsoft.com/dotnet/standard/serialization/system-text-json/source-generation), as shown below:
 
 ```csharp
 [JsonSerializable(typeof(List<Item>))]
@@ -99,7 +107,7 @@ partial class ItemListSerializerContext : JsonSerializerContext { }
 var json = JsonSerializer.Serialize(items, ItemListSerializerContext.Default.ListItem);
 ```
 
-Please ensure that you have thoroughly tested your application with trimming enabled before deployment, as the issues it causes may only appear in obscure parts of your software. For more advice on how to use trimming, see [trimming guidance](https://learn.microsoft.com/en-us/dotnet/core/deploying/trimming/trim-self-contained).
+Please ensure that you have thoroughly tested your application with trimming enabled before deployment, as the issues it causes may only appear in obscure parts of your software. For more advice on how to use trimming, see [trimming guidance](https://learn.microsoft.com/dotnet/core/deploying/trimming/trim-self-contained).
 
 ### C code or native linked libraries
 Native rebuild will cause the .NET runtime to be re-built alongside your application, which allows you to link additional libraries into the WASM binary or change compiler configuration flags.
@@ -111,7 +119,7 @@ To add custom C source files into the runtime at compilation time, include nativ
 This requires that you have the [wasm-tools workload](#wasm-tools-workload) installed.
 
 ## JavaScript host API
-When the .NET runtime is hosted inside of a browser or other JavaScript environment, we expose a JavaScript API that can be used to configure and communicate with the runtime. It is documented in [dotnet.d.ts](https://github.com/dotnet/runtime/blob/main/src/mono/wasm/runtime/dotnet.d.ts) and you can see some examples of its use in our [samples](../sample/wasm/).
+When the .NET runtime is hosted inside of a browser or other JavaScript environment, we expose a JavaScript API that can be used to configure and communicate with the runtime. It is documented in [dotnet.d.ts](../browser/runtime/dotnet.d.ts) and you can see some examples of its use in our [samples](../sample/wasm/).
 
 ### Browser application template
 You can create a simple WebAssembly application by running `dotnet new wasmbrowser`. Then to run it, use `dotnet run` and open the URL which it wrote to the console inside your browser of choice. For example `http://localhost:5292/index.html`
@@ -157,6 +165,8 @@ The following shows the structure for a Release build, but except the name in th
 
 Note: You can flatten the `_framework` folder away by putting `<WasmRuntimeAssetsLocation>./</WasmRuntimeAssetsLocation>` in a property group in the project file.
 
+Note: You can replace the location of `AppBundle` directory by  `<WasmAppDir>../my-frontend/wwwroot</WasmAppDir>` in a property group in the project file.
+
 #### `_framework` folder structure
 - `dotnet.js` - is the main entrypoint with the [JavaScript API](#JavaScript-API). It will load the rest of the runtime.
 - `dotnet.native.js` - is posix emulation layer provided by the [Emscripten](https://github.com/emscripten-core/emscripten) project
@@ -193,12 +203,13 @@ See also [fetch integrity on MDN](https://developer.mozilla.org/en-US/docs/Web/A
 
 ### Pre-fetching
 In order to start downloading application resources as soon as possible you can add HTML elements to `<head>` of your page similar to:
+Adding too many files into prefetch could be counterproductive.
+Please benchmark your startup performance on real target devices and with realistic network conditions.
 
 ```html
 <link rel="preload" href="./_framework/blazor.boot.json" as="fetch" crossorigin="use-credentials">
 <link rel="prefetch" href="./_framework/dotnet.native.js" as="fetch" crossorigin="anonymous">
 <link rel="prefetch" href="./_framework/dotnet.runtime.js" as="fetch" crossorigin="anonymous">
-<link rel="prefetch" href="./_framework/dotnet.native.wasm" as="fetch" crossorigin="anonymous">
 ```
 
 See also [link rel prefetch on MDN](https://developer.mozilla.org/en-US/docs/Web/HTML/Attributes/rel/prefetch)
@@ -291,6 +302,24 @@ A WebAssembly application that works well on desktop PCs browser may take minute
 ### Shell environments - NodeJS & V8
 While our primary target is web browsers, we have partial support for Node.JS v14 sufficient to pass most of our automated tests. We also have partial support for the D8 command-line shell, version 11 or higher, sufficient to pass most of our automated tests. Both of these environments may lack support for features that are available in the browser.
 
+#### NodeJS < 20
+Until node version 20, you may need to pass these arguments when running the application `--experimental-wasm-simd --experimental-wasm-eh`. When you run the application using `dotnet run`, you can add these to the runtimeconfig template
+
+```json
+"wasmHostProperties": {
+    "perHostConfig": [
+        {
+            "name": "node",
+            ...
+            "host-args": [
+                "--experimental-wasm-simd", // 👈 Enable SIMD support
+                "--experimental-wasm-eh" // 👈 Enable exception handling support
+            ]
+        }
+    ]
+}
+```
+
 ## Choosing the right platform target
 Every end user has different needs, so the right platform for every application may differ.
 
@@ -333,7 +362,7 @@ It includes the WASM templates for `dotnet new` and also preview version of mult
 You can use browser dev tools to debug the JavaScript of the application and the runtime.
 
 You could also debug the C# code using our integration with browser dev tools or Visual Studio.
-See detailed [documentation](https://learn.microsoft.com/en-us/aspnet/core/blazor/debug)
+See detailed [documentation](https://learn.microsoft.com/aspnet/core/blazor/debug)
 
 You could also use it to debug the WASM code. In order to see `C` function names and debug symbols DWARF, see [Debug symbols](#Native-debug-symbols)
 
@@ -348,7 +377,7 @@ You can add following elements in your .csproj
 ```
 
 See also DWARF [WASM debugging](https://developer.chrome.com/blog/wasm-debugging-2020/) in Chrome.
-For more details see also [debugger.md](debugger/debugger.md) and [wasm-debugging.md](../../../docs/workflow/debugging/mono/wasm-debugging.md)
+For more details see also [debugger.md](../browser/debugger/debugger.md) and [wasm-debugging.md](../../../docs/workflow/debugging/mono/wasm-debugging.md)
 
 ### Runtime logging and tracing
 
@@ -381,8 +410,8 @@ In Blazor, you can customize the startup in your index.html
 <script src="_framework/blazor.webassembly.js" autostart="false"></script>
 <script>
 Blazor.start({
-    configureRuntime: function (builder) {
-        builder.withConfig({
+    configureRuntime: function (dotnet) {
+        dotnet.withConfig({
             browserProfilerOptions: {}
         });
     }
@@ -399,8 +428,8 @@ await dotnet.withConfig({browserProfilerOptions: {}}).run();
 
 ### Diagnostic tools
 
-We have initial implementation of diagnostic server and [event pipe](https://learn.microsoft.com/en-us/dotnet/core/diagnostics/eventpipe)
+We have initial implementation of diagnostic server and [event pipe](https://learn.microsoft.com/dotnet/core/diagnostics/eventpipe)
 
 At the moment it requires multi-threaded build of the runtime.
 
-For more details see [diagnostic-server.md](runtime\diagnostics\diagnostic-server.md)
+For more details see [diagnostic-server.md](../browser/runtime/diagnostics/diagnostic-server.md)

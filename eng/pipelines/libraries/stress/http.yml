@@ -11,8 +11,6 @@ schedules:
   branches:
     include:
     - main
-    - release/6.0
-    - release/7.0
     - release/8.0
 
 variables:
@@ -101,7 +99,10 @@ extends:
         displayName: Docker NanoServer
         timeoutInMinutes: 150
         variables:
-          DUMPS_SHARE_MOUNT_ROOT: "C:/dumps-share"
+          # This will get assigned to the DUMPS_SHARE_MOUNT_ROOT environment
+          # variable in the stress test script. We need to keep the
+          # DUMPS_SHARE_MOUNT_ROOT variable empty during the build step.
+          DUMPS_SHARE_MOUNT_ROOT_PATH: "C:/dumps-share"
 
           # The 1es-windows-2022-open image has an issue where the Chocolatey-installed V1 docker-compose takes precendence over the
           # V2 docker-compose required by the stress tests, see: https://github.com/actions/runner-images/issues/7080
@@ -119,6 +120,9 @@ extends:
           lfs: false
 
         - powershell: |
+            # Workaround for https://github.com/microsoft/azure-pipelines-agent/issues/4554. Undo when the image bug is fixed.
+            Remove-Item -Path "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Auxiliary\Build\Microsoft.VCToolsVersion.v143.default.txt"
+
             $(dockerfilesFolder)/build-docker-sdk.ps1 -w -t $(sdkBaseImage) -c $(BUILD_CONFIGURATION)
             echo "##vso[task.setvariable variable=succeeded;isOutput=true]true"
           name: buildRuntime
@@ -139,6 +143,7 @@ extends:
 
         - powershell: |
             cd '$(httpStressProject)'
+            $env:DUMPS_SHARE_MOUNT_ROOT = $env:DUMPS_SHARE_MOUNT_ROOT_PATH
             $env:CLIENT_DUMPS_SHARE="$(Build.ArtifactStagingDirectory)/dumps/client/3.0"
             $env:SERVER_DUMPS_SHARE="$(Build.ArtifactStagingDirectory)/dumps/server/3.0"
             New-Item -Force $env:CLIENT_DUMPS_SHARE -ItemType Directory
@@ -151,6 +156,7 @@ extends:
 
         - powershell: |
             cd '$(httpStressProject)'
+            $env:DUMPS_SHARE_MOUNT_ROOT = $env:DUMPS_SHARE_MOUNT_ROOT_PATH
             $env:CLIENT_DUMPS_SHARE="$(Build.ArtifactStagingDirectory)/dumps/client/2.0"
             $env:SERVER_DUMPS_SHARE="$(Build.ArtifactStagingDirectory)/dumps/server/2.0"
             New-Item -Force $env:CLIENT_DUMPS_SHARE -ItemType Directory
@@ -163,6 +169,7 @@ extends:
 
         - powershell: |
             cd '$(httpStressProject)'
+            $env:DUMPS_SHARE_MOUNT_ROOT = $env:DUMPS_SHARE_MOUNT_ROOT_PATH
             $env:CLIENT_DUMPS_SHARE="$(Build.ArtifactStagingDirectory)/dumps/client/1.1"
             $env:SERVER_DUMPS_SHARE="$(Build.ArtifactStagingDirectory)/dumps/server/1.1"
             New-Item -Force $env:CLIENT_DUMPS_SHARE -ItemType Directory

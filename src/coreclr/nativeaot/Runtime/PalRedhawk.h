@@ -334,6 +334,13 @@ typedef struct _CONTEXT {
     void SetArg1Reg(uintptr_t val) { Edx = val; }
     uintptr_t GetIp() { return Eip; }
     uintptr_t GetSp() { return Esp; }
+
+    template <typename F>
+    void ForEachPossibleObjectRef(F lambda)
+    {
+        for (uint32_t* pReg = &Eax; pReg < &Eip; pReg++)
+            lambda((size_t*)pReg);
+    }
 } CONTEXT, *PCONTEXT;
 #include "poppack.h"
 
@@ -429,6 +436,7 @@ typedef struct DECLSPEC_ALIGN(16) _CONTEXT {
     uintptr_t GetIp() { return Pc; }
     uintptr_t GetLr() { return Lr; }
     uintptr_t GetSp() { return Sp; }
+    void SetSp(uintptr_t sp) { Sp = sp; }
 
     template <typename F>
     void ForEachPossibleObjectRef(F lambda)
@@ -438,6 +446,88 @@ typedef struct DECLSPEC_ALIGN(16) _CONTEXT {
 
         // Lr can be used as a scratch register
         lambda((size_t*)&Lr);
+    }
+} CONTEXT, *PCONTEXT;
+
+#elif defined(HOST_LOONGARCH64)
+
+#define CONTEXT_LOONGARCH64   0x00800000L
+
+#define CONTEXT_CONTROL (CONTEXT_LOONGARCH64 | 0x1L)
+#define CONTEXT_INTEGER (CONTEXT_LOONGARCH64 | 0x2L)
+
+// Specify the number of breakpoints and watchpoints that the OS
+// will track. Architecturally, LOONGARCH64 supports up to 16. In practice,
+// however, almost no one implements more than 4 of each.
+
+#define LOONGARCH64_MAX_BREAKPOINTS     8
+#define LOONGARCH64_MAX_WATCHPOINTS     2
+
+typedef struct DECLSPEC_ALIGN(16) _CONTEXT {
+    //
+    // Control flags.
+    //
+    uint32_t ContextFlags;
+
+    //
+    // Integer registers
+    //
+    uint64_t R0;
+    uint64_t Ra;
+    uint64_t R2;
+    uint64_t Sp;
+    uint64_t R4;
+    uint64_t R5;
+    uint64_t R6;
+    uint64_t R7;
+    uint64_t R8;
+    uint64_t R9;
+    uint64_t R10;
+    uint64_t R11;
+    uint64_t R12;
+    uint64_t R13;
+    uint64_t R14;
+    uint64_t R15;
+    uint64_t R16;
+    uint64_t R17;
+    uint64_t R18;
+    uint64_t R19;
+    uint64_t R20;
+    uint64_t R21;
+    uint64_t Fp;
+    uint64_t R23;
+    uint64_t R24;
+    uint64_t R25;
+    uint64_t R26;
+    uint64_t R27;
+    uint64_t R28;
+    uint64_t R29;
+    uint64_t R30;
+    uint64_t R31;
+    uint64_t Pc;
+
+    //
+    // Floating Point Registers: FPR64/LSX/LASX.
+    //
+    uint64_t F[4*32];
+    uint64_t Fcc;
+    uint32_t Fcsr;
+
+    void SetIp(uintptr_t ip) { Pc = ip; }
+    void SetArg0Reg(uintptr_t val) { R4 = val; }
+    void SetArg1Reg(uintptr_t val) { R5 = val; }
+    uintptr_t GetIp() { return Pc; }
+    uintptr_t GetRa() { return Ra; }
+    uintptr_t GetSp() { return Sp; }
+
+    template <typename F>
+    void ForEachPossibleObjectRef(F lambda)
+    {
+        for (uint64_t* pReg = &R0; pReg <= &R31; pReg++)
+            lambda((size_t*)pReg);
+
+        // Ra can be used as a scratch register
+        lambda((size_t*)&Ra);
     }
 } CONTEXT, *PCONTEXT;
 
@@ -467,10 +557,6 @@ typedef struct _EXCEPTION_POINTERS {
     PEXCEPTION_RECORD   ExceptionRecord;
     PCONTEXT            ContextRecord;
 } EXCEPTION_POINTERS, *PEXCEPTION_POINTERS;
-
-typedef int32_t (__stdcall *PVECTORED_EXCEPTION_HANDLER)(
-    PEXCEPTION_POINTERS ExceptionInfo
-    );
 
 #define EXCEPTION_CONTINUE_EXECUTION (-1)
 #define EXCEPTION_CONTINUE_SEARCH (0)
@@ -512,11 +598,6 @@ typedef enum _EXCEPTION_DISPOSITION {
 
 #define INVALID_HANDLE_VALUE    ((HANDLE)(intptr_t)-1)
 
-#define DLL_PROCESS_ATTACH      1
-#define DLL_THREAD_ATTACH       2
-#define DLL_THREAD_DETACH       3
-#define DLL_PROCESS_DETACH      0
-
 #define INFINITE                0xFFFFFFFF
 
 #define DUPLICATE_CLOSE_SOURCE  0x00000001
@@ -533,19 +614,6 @@ typedef enum _EXCEPTION_DISPOSITION {
 #define PAGE_GUARD              0x100
 #define PAGE_NOCACHE            0x200
 #define PAGE_WRITECOMBINE       0x400
-#define MEM_COMMIT              0x1000
-#define MEM_RESERVE             0x2000
-#define MEM_DECOMMIT            0x4000
-#define MEM_RELEASE             0x8000
-#define MEM_FREE                0x10000
-#define MEM_PRIVATE             0x20000
-#define MEM_MAPPED              0x40000
-#define MEM_RESET               0x80000
-#define MEM_TOP_DOWN            0x100000
-#define MEM_WRITE_WATCH         0x200000
-#define MEM_PHYSICAL            0x400000
-#define MEM_LARGE_PAGES         0x20000000
-#define MEM_4MB_PAGES           0x80000000
 
 #define WAIT_OBJECT_0           0
 #define WAIT_TIMEOUT            258
@@ -553,46 +621,6 @@ typedef enum _EXCEPTION_DISPOSITION {
 
 #endif // !_INC_WINDOWS
 #endif // !DACCESS_COMPILE
-
-typedef uint64_t REGHANDLE;
-typedef uint64_t TRACEHANDLE;
-
-#ifndef _EVNTPROV_H_
-struct EVENT_DATA_DESCRIPTOR
-{
-    uint64_t  Ptr;
-    uint32_t  Size;
-    uint32_t  Reserved;
-};
-
-struct EVENT_DESCRIPTOR
-{
-    uint16_t  Id;
-    uint8_t   Version;
-    uint8_t   Channel;
-    uint8_t   Level;
-    uint8_t   Opcode;
-    uint16_t  Task;
-    uint64_t  Keyword;
-
-};
-
-struct EVENT_FILTER_DESCRIPTOR
-{
-    uint64_t  Ptr;
-    uint32_t  Size;
-    uint32_t  Type;
-};
-
-__forceinline
-void
-EventDataDescCreate(_Out_ EVENT_DATA_DESCRIPTOR * EventDataDescriptor, _In_opt_ const void * DataPtr, uint32_t DataSize)
-{
-    EventDataDescriptor->Ptr = (uint64_t)DataPtr;
-    EventDataDescriptor->Size = DataSize;
-    EventDataDescriptor->Reserved = 0;
-}
-#endif // _EVNTPROV_H_
 
 extern uint32_t g_RhNumberOfProcessors;
 
@@ -710,15 +738,15 @@ inline uint8_t * PalNtCurrentTeb()
 EXTERN_C void * __cdecl _alloca(size_t);
 #pragma intrinsic(_alloca)
 
-REDHAWK_PALIMPORT _Ret_maybenull_ _Post_writable_byte_size_(size) void* REDHAWK_PALAPI PalVirtualAlloc(_In_opt_ void* pAddress, uintptr_t size, uint32_t allocationType, uint32_t protect);
-REDHAWK_PALIMPORT UInt32_BOOL REDHAWK_PALAPI PalVirtualFree(_In_ void* pAddress, uintptr_t size, uint32_t freeType);
+REDHAWK_PALIMPORT _Ret_maybenull_ _Post_writable_byte_size_(size) void* REDHAWK_PALAPI PalVirtualAlloc(uintptr_t size, uint32_t protect);
+REDHAWK_PALIMPORT void REDHAWK_PALAPI PalVirtualFree(_In_ void* pAddress, uintptr_t size);
 REDHAWK_PALIMPORT UInt32_BOOL REDHAWK_PALAPI PalVirtualProtect(_In_ void* pAddress, uintptr_t size, uint32_t protect);
 REDHAWK_PALIMPORT void PalFlushInstructionCache(_In_ void* pAddress, size_t size);
 REDHAWK_PALIMPORT void REDHAWK_PALAPI PalSleep(uint32_t milliseconds);
 REDHAWK_PALIMPORT UInt32_BOOL REDHAWK_PALAPI PalSwitchToThread();
+REDHAWK_PALIMPORT UInt32_BOOL REDHAWK_PALAPI PalAreShadowStacksEnabled();
 REDHAWK_PALIMPORT HANDLE REDHAWK_PALAPI PalCreateEventW(_In_opt_ LPSECURITY_ATTRIBUTES pEventAttributes, UInt32_BOOL manualReset, UInt32_BOOL initialState, _In_opt_z_ LPCWSTR pName);
 REDHAWK_PALIMPORT uint64_t REDHAWK_PALAPI PalGetTickCount64();
-REDHAWK_PALIMPORT void REDHAWK_PALAPI PalTerminateCurrentProcess(uint32_t exitCode);
 REDHAWK_PALIMPORT HANDLE REDHAWK_PALAPI PalGetModuleHandleFromPointer(_In_ void* pointer);
 
 #ifdef TARGET_UNIX
@@ -731,8 +759,6 @@ struct UNIX_CONTEXT;
 #ifdef TARGET_UNIX
 REDHAWK_PALIMPORT uint32_t REDHAWK_PALAPI PalGetOsPageSize();
 REDHAWK_PALIMPORT void REDHAWK_PALAPI PalSetHardwareExceptionHandler(PHARDWARE_EXCEPTION_HANDLER handler);
-#else
-REDHAWK_PALIMPORT void* REDHAWK_PALAPI PalAddVectoredExceptionHandler(uint32_t firstHandler, _In_ PVECTORED_EXCEPTION_HANDLER vectoredHandler);
 #endif
 
 typedef uint32_t (__stdcall *BackgroundCallback)(_In_opt_ void* pCallbackContext);
@@ -740,19 +766,15 @@ REDHAWK_PALIMPORT bool REDHAWK_PALAPI PalStartBackgroundGCThread(_In_ Background
 REDHAWK_PALIMPORT bool REDHAWK_PALAPI PalStartFinalizerThread(_In_ BackgroundCallback callback, _In_opt_ void* pCallbackContext);
 REDHAWK_PALIMPORT bool REDHAWK_PALAPI PalStartEventPipeHelperThread(_In_ BackgroundCallback callback, _In_opt_ void* pCallbackContext);
 
+#ifdef FEATURE_HIJACK
 typedef void (*PalHijackCallback)(_In_ NATIVE_CONTEXT* pThreadContext, _In_opt_ void* pThreadToHijack);
 REDHAWK_PALIMPORT void REDHAWK_PALAPI PalHijack(HANDLE hThread, _In_opt_ void* pThreadToHijack);
 REDHAWK_PALIMPORT UInt32_BOOL REDHAWK_PALAPI PalRegisterHijackCallback(_In_ PalHijackCallback callback);
-
-#ifdef FEATURE_ETW
-REDHAWK_PALIMPORT bool REDHAWK_PALAPI PalEventEnabled(REGHANDLE regHandle, _In_ const EVENT_DESCRIPTOR* eventDescriptor);
-REDHAWK_PALIMPORT uint32_t REDHAWK_PALAPI PalEventRegister(const GUID * arg1, void * arg2, void * arg3, REGHANDLE * arg4);
-REDHAWK_PALIMPORT uint32_t REDHAWK_PALAPI PalEventUnregister(REGHANDLE arg1);
-REDHAWK_PALIMPORT uint32_t REDHAWK_PALAPI PalEventWrite(REGHANDLE arg1, const EVENT_DESCRIPTOR * arg2, uint32_t arg3, EVENT_DATA_DESCRIPTOR * arg4);
+REDHAWK_PALIMPORT HijackFunc* REDHAWK_PALAPI PalGetHijackTarget(_In_ HijackFunc* defaultHijackTarget);
 #endif
 
 REDHAWK_PALIMPORT UInt32_BOOL REDHAWK_PALAPI PalAllocateThunksFromTemplate(_In_ HANDLE hTemplateModule, uint32_t templateRva, size_t templateSize, _Outptr_result_bytebuffer_(templateSize) void** newThunksOut);
-REDHAWK_PALIMPORT UInt32_BOOL REDHAWK_PALAPI PalFreeThunksFromTemplate(_In_ void *pBaseAddress);
+REDHAWK_PALIMPORT UInt32_BOOL REDHAWK_PALAPI PalFreeThunksFromTemplate(_In_ void *pBaseAddress, size_t templateSize);
 
 REDHAWK_PALIMPORT UInt32_BOOL REDHAWK_PALAPI PalMarkThunksAsValidCallTargets(
     void *virtualAddress,
@@ -762,6 +784,8 @@ REDHAWK_PALIMPORT UInt32_BOOL REDHAWK_PALAPI PalMarkThunksAsValidCallTargets(
     int thunkBlocksPerMapping);
 
 REDHAWK_PALIMPORT uint32_t REDHAWK_PALAPI PalCompatibleWaitAny(UInt32_BOOL alertable, uint32_t timeout, uint32_t count, HANDLE* pHandles, UInt32_BOOL allowReentrantWait);
+
+REDHAWK_PALIMPORT HANDLE PalCreateLowMemoryResourceNotification();
 
 REDHAWK_PALIMPORT void REDHAWK_PALAPI PalAttachThread(void* thread);
 REDHAWK_PALIMPORT bool REDHAWK_PALAPI PalDetachThread(void* thread);
@@ -774,6 +798,10 @@ REDHAWK_PALIMPORT uint64_t PalQueryPerformanceFrequency();
 REDHAWK_PALIMPORT void PalPrintFatalError(const char* message);
 
 REDHAWK_PALIMPORT char* PalCopyTCharAsChar(const TCHAR* toCopy);
+
+REDHAWK_PALIMPORT HANDLE PalLoadLibrary(const char* moduleName);
+
+REDHAWK_PALIMPORT void* PalGetProcAddress(HANDLE module, const char* functionName);
 
 #ifdef TARGET_UNIX
 REDHAWK_PALIMPORT int32_t __cdecl _stricmp(const char *string1, const char *string2);

@@ -11,11 +11,11 @@
 // =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Threading.Tasks.Dataflow.Internal;
-using System.Collections.ObjectModel;
 
 namespace System.Threading.Tasks.Dataflow
 {
@@ -292,7 +292,7 @@ namespace System.Threading.Tasks.Dataflow
                     break;
 
                 default:
-                    Debug.Assert(false, "The task should have been in a final state.");
+                    Debug.Fail("The task should have been in a final state.");
                     break;
             }
 

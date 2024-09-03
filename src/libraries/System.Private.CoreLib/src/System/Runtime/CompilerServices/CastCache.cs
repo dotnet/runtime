@@ -91,11 +91,10 @@ namespace System.Runtime.CompilerServices
             // then we use fibonacci hashing to reduce the value to desired size.
 
             int hashShift = HashShift(ref tableData);
+            nuint hash = BitOperations.RotateLeft(source, (nuint.Size * 8) / 2) ^ target;
 #if TARGET_64BIT
-            ulong hash = BitOperations.RotateLeft((ulong)source, 32) ^ (ulong)target;
             return (int)((hash * 11400714819323198485ul) >> hashShift);
 #else
-            uint hash = BitOperations.RotateLeft((uint)source, 16) ^ (uint)target;
             return (int)((hash * 2654435769u) >> hashShift);
 #endif
         }
@@ -250,7 +249,7 @@ namespace System.Runtime.CompilerServices
             TableMask(ref tableData) = size - 1;
 
             // Fibonacci hash reduces the value into desired range by shifting right by the number of leading zeroes in 'size-1'
-            byte shift = (byte)BitOperations.LeadingZeroCount(size - 1);
+            byte shift = (byte)BitOperations.LeadingZeroCount((nuint)(size - 1));
             HashShift(ref tableData) = shift;
 
             return table;

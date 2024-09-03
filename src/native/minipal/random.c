@@ -69,26 +69,22 @@ int32_t minipal_get_cryptographically_secure_random_bytes(uint8_t* buffer, int32
     assert(buffer != NULL);
 
 #ifdef __EMSCRIPTEN__
-    extern int32_t dotnet_browser_entropy(uint8_t* buffer, int32_t bufferLength);
+    extern int32_t mono_wasm_browser_entropy(uint8_t* buffer, int32_t bufferLength);
     static bool sMissingBrowserCrypto;
     if (!sMissingBrowserCrypto)
     {
-        int32_t bff = dotnet_browser_entropy(buffer, bufferLength);
+        int32_t bff = mono_wasm_browser_entropy(buffer, bufferLength);
         if (bff == -1)
             sMissingBrowserCrypto = true;
         else
             return 0;
     }
 #elif defined(__APPLE__) && __APPLE__
-    CCRNGStatus status = CCRandomGenerateBytes(buffer, bufferLength);
+    CCRNGStatus status = CCRandomGenerateBytes(buffer, (size_t)bufferLength);
 
     if (status == kCCSuccess)
     {
         return 0;
-    }
-    else
-    {
-        return -1;
     }
 #else
 

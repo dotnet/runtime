@@ -115,11 +115,12 @@ LOCAL_LABEL(Done_Restore_CONTEXT_FLOATING_POINT):
     movdqu xmm7, [eax + CONTEXT_Xmm7]
 LOCAL_LABEL(Done_Restore_CONTEXT_EXTENDED_REGISTERS):
 
-    // Restore Stack
-    mov   esp, [eax + CONTEXT_Esp]
-
     // Create a minimal frame
-    push  DWORD PTR [eax + CONTEXT_Eip]
+    mov   ebx, [eax + CONTEXT_Esp]
+    mov   ecx, [eax + CONTEXT_Eip]
+    mov   edx, [eax + CONTEXT_Eax]
+    mov   [ebx - 4], ecx
+    mov   [ebx - 8], edx
 
     // Restore register(s)
     mov   ebp, [eax + CONTEXT_Ebp]
@@ -128,7 +129,13 @@ LOCAL_LABEL(Done_Restore_CONTEXT_EXTENDED_REGISTERS):
     mov   edx, [eax + CONTEXT_Edx]
     mov   ecx, [eax + CONTEXT_Ecx]
     mov   ebx, [eax + CONTEXT_Ebx]
-    mov   eax, [eax + CONTEXT_Eax]
+
+    // Restore Stack
+    mov   eax, [eax + CONTEXT_Esp]
+    sub   eax, 8
+    mov   esp, eax
+
+    pop   eax
 
     // Resume
     ret

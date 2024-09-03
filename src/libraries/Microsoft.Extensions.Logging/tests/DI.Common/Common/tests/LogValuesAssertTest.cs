@@ -116,11 +116,8 @@ namespace Microsoft.Extensions.Logging.Testing.Tests
             IEnumerable<KeyValuePair<string, object>> actualValues)
         {
             // Act && Assert
-            var equalException = Assert.Throws<EqualException>(
+            Assert.Throws<EqualException>(
                 () => LogValuesAssert.Contains(expectedValues, actualValues));
-
-            Assert.Equal(GetString(expectedValues), equalException.Expected);
-            Assert.Equal(GetString(actualValues), equalException.Actual);
         }
 
         [Fact]
@@ -204,11 +201,8 @@ namespace Microsoft.Extensions.Logging.Testing.Tests
             IEnumerable<KeyValuePair<string, object>> actualValues)
         {
             // Act && Assert
-            var equalException = Assert.Throws<EqualException>(
+            Assert.Throws<EqualException>(
                 () => LogValuesAssert.Contains(expectedValues, actualValues));
-
-            Assert.Equal(GetString(expectedValues), equalException.Expected);
-            Assert.Equal(GetString(actualValues), equalException.Actual);
         }
 
         private string GetString(IEnumerable<KeyValuePair<string, object>> logValues)

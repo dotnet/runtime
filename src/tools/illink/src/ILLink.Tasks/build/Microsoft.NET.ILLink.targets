@@ -48,6 +48,15 @@ Copyright (c) .NET Foundation. All rights reserved.
     <_EnableConsumingManagedCodeFromNativeHosting Condition="'$(_EnableConsumingManagedCodeFromNativeHosting)' == ''">false</_EnableConsumingManagedCodeFromNativeHosting>
     <VerifyDependencyInjectionOpenGenericServiceTrimmability Condition="'$(VerifyDependencyInjectionOpenGenericServiceTrimmability)' == ''">true</VerifyDependencyInjectionOpenGenericServiceTrimmability>
     <JsonSerializerIsReflectionEnabledByDefault Condition="'$(JsonSerializerIsReflectionEnabledByDefault)' == ''">false</JsonSerializerIsReflectionEnabledByDefault>
+    <!-- Linux Bionic doesn't ship GSSAPI, so enable managed implementation -->
+    <_UseManagedNtlm Condition="'$(_UseManagedNtlm)' == '' and $(RuntimeIdentifier.StartsWith('linux-bionic'))">true</_UseManagedNtlm>
+    <!-- Trim managed NTLM on Linux when it's not explicitly requested -->
+    <_UseManagedNtlm Condition="'$(_UseManagedNtlm)' == '' and $(RuntimeIdentifier.StartsWith('linux'))">false</_UseManagedNtlm>
+    <_ComObjectDescriptorSupport Condition="'$(_ComObjectDescriptorSupport)' == ''">false</_ComObjectDescriptorSupport>
+    <_DesignerHostSupport Condition="'$(_DesignerHostSupport)' == ''">false</_DesignerHostSupport>
+    <_DefaultValueAttributeSupport Condition="'$(_DefaultValueAttributeSupport)' == ''">false</_DefaultValueAttributeSupport>
+    <DynamicCodeSupport Condition="'$(DynamicCodeSupport)' == ''">true</DynamicCodeSupport>
+    <UseSystemResourceKeys Condition="'$(UseSystemResourceKeys)' == ''">false</UseSystemResourceKeys>
   </PropertyGroup>
 
 
@@ -137,6 +146,7 @@ Copyright (c) .NET Foundation. All rights reserved.
             TrimMode="$(TrimMode)"
             DefaultAction="$(_TrimmerDefaultAction)"
             RemoveSymbols="$(TrimmerRemoveSymbols)"
+            PreserveSymbolPaths="$(_TrimmerPreserveSymbolPaths)"
             FeatureSettings="@(_TrimmerFeatureSettings)"
             CustomData="@(_TrimmerCustomData)"
 
@@ -146,6 +156,7 @@ Copyright (c) .NET Foundation. All rights reserved.
             UnusedInterfaces="$(_TrimmerUnusedInterfaces)"
             IPConstProp="$(_TrimmerIPConstProp)"
             Sealer="$(_TrimmerSealer)"
+            KeepMetadata="@(_TrimmerKeepMetadata)"
 
             Warn="$(ILLinkWarningLevel)"
             NoWarn="$(NoWarn)"
@@ -192,9 +203,8 @@ Copyright (c) .NET Foundation. All rights reserved.
     <!-- The defaults currently root non-framework assemblies, which
          is a no-op for portable apps. If we later support more ways
          to customize the behavior we can allow linking portable apps
-         in some cases. If we're not running ILLink because e.g. this
-         is a NativeAOT app, value of SelfContained doesn't matter. -->
-    <NETSdkError Condition="'$(RunILLink)' != 'false' And '$(SelfContained)' != 'true'" ResourceName="ILLinkNotSupportedError" />
+         in some cases. -->
+    <NETSdkError Condition="'$(SelfContained)' != 'true'" ResourceName="ILLinkNotSupportedError" />
 
     <Warning Condition="'$(SuppressILLinkExplicitPackageReferenceWarning)' != 'true' And
                         '%(PackageReference.Identity)' == 'Microsoft.NET.ILLink.Tasks' And '%(PackageReference.IsImplicitlyDefined)' != 'true'"
@@ -221,7 +231,6 @@ Copyright (c) .NET Foundation. All rights reserved.
 
     <PropertyGroup>
       <ILLinkTreatWarningsAsErrors Condition=" '$(ILLinkTreatWarningsAsErrors)' == '' ">$(TreatWarningsAsErrors)</ILLinkTreatWarningsAsErrors>
-      <_ExtraTrimmerArgs>--skip-unresolved true $(_ExtraTrimmerArgs)</_ExtraTrimmerArgs>
       <TrimmerSingleWarn Condition=" '$(TrimmerSingleWarn)' == '' ">true</TrimmerSingleWarn>
     </PropertyGroup>
 
@@ -230,6 +239,16 @@ Copyright (c) .NET Foundation. All rights reserved.
       <!-- The default is to remove symbols when debugger support is disabled, and keep them otherwise. -->
       <TrimmerRemoveSymbols Condition=" '$(DebuggerSupport)' == 'false' ">true</TrimmerRemoveSymbols>
       <TrimmerRemoveSymbols Condition=" '$(DebuggerSupport)' != 'false' ">false</TrimmerRemoveSymbols>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <!-- Keep parameter name and other metadata unless debugger support is disabled. -->
+      <_TrimmerKeepMetadata Include="all" Condition=" '$(DebuggerSupport)' != 'false' " />
+    </ItemGroup>
+
+    <PropertyGroup>
+      <_TrimmerPreserveSymbolPaths Condition=" '$(_TrimmerPreserveSymbolPaths)' == '' and '$(DeterministicSourcePaths)' == 'true' ">true</_TrimmerPreserveSymbolPaths>
+      <_TrimmerPreserveSymbolPaths Condition=" '$(_TrimmerPreserveSymbolPaths)' == '' ">false</_TrimmerPreserveSymbolPaths>
     </PropertyGroup>
 
     <!-- Set IsTrimmable for any assemblies that already have customized TrimMode. -->

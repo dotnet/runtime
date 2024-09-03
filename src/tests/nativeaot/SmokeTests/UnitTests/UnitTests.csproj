@@ -8,6 +8,8 @@
     <SuppressTrimAnalysisWarnings>true</SuppressTrimAnalysisWarnings>
     <NoWarn>$(NoWarn);IL3050;IL3054</NoWarn>
 
+    <RequiresProcessIsolation>true</RequiresProcessIsolation>
+    <ReferenceXUnitWrapperGenerator>false</ReferenceXUnitWrapperGenerator>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="BasicThreading.cs" />
@@ -16,6 +18,7 @@
     <Compile Include="Generics.cs" />
     <Compile Include="Interfaces.cs" />
     <Compile Include="Threading.cs" />
+    <Compile Include="StackTraces.cs" />
     <Compile Include="Main.cs" />
   </ItemGroup>
 </Project>

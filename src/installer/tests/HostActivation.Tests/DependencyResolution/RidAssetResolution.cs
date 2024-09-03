@@ -11,7 +11,7 @@ using Xunit;
 
 namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
 {
-    public abstract class RidAssetResolutionBase : ComponentDependencyResolutionBase
+    public abstract class RidAssetResolutionBase
     {
         private static Version UseRidGraphDisabledVersion = new Version(8, 0);
         public class TestSetup
@@ -88,6 +88,12 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
 
             return app;
         }
+
+        // The fallback RID is a compile-time define for the host. On Windows, it is always win10 and on
+        // other platforms, it matches the build RID (non-portable for source-builds, portable otherwise)
+        private static string FallbackRid = OperatingSystem.IsWindows()
+            ? $"win10-{TestContext.BuildArchitecture}"
+            : TestContext.BuildRID;
 
         protected const string UnknownRid = "unknown-rid";
 
@@ -166,6 +172,18 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
                 new TestSetup() { Rid = rid, HasRidGraph = hasRuntimeFallbacks, UseRidGraph = useRidGraph },
                 includedPath,
                 excludedPath);
+        }
+
+        [Fact]
+        public void RidSpecificAssembly_FallbackRid()
+        {
+            // When there is no RID graph and the host is configured to use the RID graph, it should still be able to
+            // resolve an exact match to the fallback RID
+            string assetPath = $"{FallbackRid}/{FallbackRid}Asset";
+            RunTest(
+                p => p.WithAssemblyGroup(FallbackRid, g => g.WithAsset(assetPath)),
+                new TestSetup() { Rid = null, HasRidGraph = false, UseRidGraph = true },
+                new ResolvedPaths() { IncludedAssemblyPaths = assetPath });
         }
 
         [Theory]
@@ -255,6 +273,18 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
                 excludedPath);
         }
 
+        [Fact]
+        public void RidSpecificNativeLibrary_FallbackRid()
+        {
+            // When there is no RID graph and the host is configured to use the RID graph, it should still be able to
+            // resolve an exact match to the fallback RID
+            string assetPath = $"{FallbackRid}/{FallbackRid}Asset";
+            RunTest(
+                p => p.WithNativeLibraryGroup(FallbackRid, g => g.WithAsset(assetPath)),
+                new TestSetup() { Rid = null, HasRidGraph = false, UseRidGraph = true },
+                new ResolvedPaths() { IncludedNativeLibraryPaths = $"{FallbackRid}/" });
+        }
+
         [Theory]
         [InlineData(true)]
         [InlineData(false)]
@@ -300,15 +330,15 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
         }
 
         // The build RID from the test context should match the build RID of the host under test
-        private static string CurrentRid = RepoDirectoriesProvider.Default.BuildRID;
+        private static string CurrentRid = TestContext.BuildRID;
         private static string CurrentRidAsset = $"{CurrentRid}/{CurrentRid}Asset.dll";
 
         // Strip the -<arch> from the RID to get the OS
-        private static string CurrentOS = CurrentRid[..^(RepoDirectoriesProvider.Default.BuildArchitecture.Length + 1)];
+        private static string CurrentOS = CurrentRid[..^(TestContext.BuildArchitecture.Length + 1)];
         private static string CurrentOSAsset = $"{CurrentOS}/{CurrentOS}Asset.dll";
 
         // Append a different architecture - arm64 if current architecture is x64, otherwise x64
-        private static string DifferentArch = $"{CurrentOS}-{(RepoDirectoriesProvider.Default.BuildArchitecture == "x64" ? "arm64" : "x64")}";
+        private static string DifferentArch = $"{CurrentOS}-{(TestContext.BuildArchitecture == "x64" ? "arm64" : "x64")}";
         private static string DifferentArchAsset = $"{DifferentArch}/{DifferentArch}Asset.dll";
 
         [Theory]
@@ -571,8 +601,8 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
         protected static void UseFallbacksFromBuiltDotNet(NetCoreAppBuilder builder)
         {
             IReadOnlyList<RuntimeFallbacks> fallbacks;
-            string depsJson = Path.Combine(new DotNetCli(RepoDirectoriesProvider.Default.BuiltDotnet).GreatestVersionSharedFxPath, $"{Constants.MicrosoftNETCoreApp}.deps.json");
-            using (FileStream fileStream = File.Open(depsJson, FileMode.Open))
+            string depsJson = Path.Combine(TestContext.BuiltDotNet.GreatestVersionSharedFxPath, $"{Constants.MicrosoftNETCoreApp}.deps.json");
+            using (FileStream fileStream = File.OpenRead(depsJson))
             using (DependencyContextJsonReader reader = new DependencyContextJsonReader())
             {
                 fallbacks = reader.Read(fileStream).RuntimeGraph;

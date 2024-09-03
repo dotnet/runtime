@@ -9,13 +9,15 @@ set(utils_win32_sources
 
 if(HOST_WIN32 AND HOST_AMD64)
     enable_language(ASM_MASM)
+    add_compile_options($<$<COMPILE_LANGUAGE:ASM_MASM>:/Zi>)      # enable debugging information
+    add_compile_options($<$<COMPILE_LANGUAGE:ASM_MASM>:/nologo>)  # Don't display the output header when building asm files
     set(CMAKE_ASM_MASM_COMPILE_OPTIONS_MSVC_RUNTIME_LIBRARY_MultiThreaded         "")
     set(CMAKE_ASM_MASM_COMPILE_OPTIONS_MSVC_RUNTIME_LIBRARY_MultiThreadedDLL      "")
     set(CMAKE_ASM_MASM_COMPILE_OPTIONS_MSVC_RUNTIME_LIBRARY_MultiThreadedDebug    "")
     set(CMAKE_ASM_MASM_COMPILE_OPTIONS_MSVC_RUNTIME_LIBRARY_MultiThreadedDebugDLL "")
 
     list(APPEND utils_win32_sources win64.asm)
-elseif(HOST_WASI)
+elseif(HOST_WASM)
     set (CMAKE_ASM_COMPILER_VERSION "${CMAKE_C_COMPILER_VERSION}")
     set (CMAKE_ASM_COMPILER_TARGET "${CMAKE_C_COMPILER_TARGET}")
     enable_language(ASM)
@@ -28,14 +30,13 @@ set(utils_unix_sources
 
 if(HOST_WIN32)
     set(utils_platform_sources ${utils_win32_sources})
-elseif(HOST_WASI)
-    set(utils_platform_sources ${utils_unix_sources} mono-threads-wasi.S)
+elseif(HOST_WASM)
+    set(utils_platform_sources ${utils_unix_sources} mono-threads-wasm.S)
 else()
     set(utils_platform_sources ${utils_unix_sources})
 endif()
 
 set(utils_common_sources
-    mono-md5.c
     mono-sha1.c
     mono-logger.c
     mono-logger-internals.h
@@ -71,7 +72,6 @@ set(utils_common_sources
     mono-flight-recorder.c
     mono-os-wait.h
     mono-coop-mutex.h
-    mono-once.h
     mono-lazy-init.h
     mono-proclib.c
     mono-proclib.h
@@ -79,16 +79,10 @@ set(utils_common_sources
     mono-string.h
     mono-time.c
     mono-time.h
-    strenc-internals.h
-    strenc.h
-    strenc.c
-    mono-uri.c
-    mono-poll.c
     mono-path.c
     mono-os-semaphore.h
     mono-coop-semaphore.h
     mono-sigcontext.h
-    mono-stdlib.c
     mono-property-hash.h
     mono-property-hash.c
     freebsd-dwarf.h
@@ -102,9 +96,6 @@ set(utils_common_sources
     mono-machine.h
     mono-math.h
     mono-path.h
-    mono-poll.h
-    mono-uri.h
-    mono-stdlib.h
     valgrind.h
     mach-support.h
     memcheck.h
@@ -186,6 +177,8 @@ set(utils_common_sources
     ftnptr.h
     wasm-module-reader.h
     wasm-module-reader.c
+    mono-bitutils.h
+    mono-bitutils.c
   )
 
 if(MONO_CROSS_COMPILE)
@@ -193,15 +186,9 @@ set(utils_arch_sources mach-support-unknown.c)
 elseif(HOST_AMD64)
 set(utils_arch_sources
     mach-support-amd64.c)
-elseif(HOST_X86)
-set(utils_arch_sources
-    mach-support-x86.c)
 elseif(HOST_ARM64)
 set(utils_arch_sources
     mach-support-arm64.c)
-elseif(HOST_ARM)
-set(utils_arch_sources
-    mach-support-arm.c)
 else()
 #message(FATAL_ERROR "")
 endif()
@@ -219,7 +206,7 @@ set(utils_arch_sources "${utils_arch_sources};mono-hwcap-riscv.c")
 elseif(TARGET_S390X)
 set(utils_arch_sources "${utils_arch_sources};mono-hwcap-s390x.c")
 elseif(TARGET_WASM)
-set(utils_arch_sources "${utils_arch_sources};mono-hwcap-wasm.c;mono-mmap-wasm.c")
+set(utils_arch_sources "${utils_arch_sources};mono-hwcap-wasm.c;mono-mmap-wasm.c;mono-wasm-pagemgr.c")
 elseif(TARGET_WASI)
 set(utils_arch_sources "${utils_arch_sources};mono-hwcap-wasm.c")
 elseif(TARGET_POWERPC OR TARGET_POWERPC64)

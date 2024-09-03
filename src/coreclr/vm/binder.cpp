@@ -20,6 +20,7 @@
 #include "clrvarargs.h"
 #include "sigbuilder.h"
 #include "olevariant.h"
+#include "configuration.h"
 
 //
 // Retrieve structures from ID.
@@ -83,10 +84,13 @@ PTR_MethodTable CoreLibBinder::LookupClassLocal(BinderClassID id)
         (void)ClassLoader::LoadTypeByNameThrowing(GetModule()->GetAssembly(), &nameHandle);
 
         // Now load the nested type.
-        nameHandle.SetName(NULL, nestedTypeMaybe + 1);
+        nameHandle.SetName("", nestedTypeMaybe + 1);
 
         // We don't support nested types in nested types.
         _ASSERTE(strchr(nameHandle.GetName(), '+') == NULL);
+
+        // We don't support nested types with explicit namespaces
+        _ASSERTE(strchr(nameHandle.GetName(), '.') == NULL);
         pMT = ClassLoader::LoadTypeByNameThrowing(GetModule()->GetAssembly(), &nameHandle).AsMethodTable();
     }
 
@@ -229,7 +233,7 @@ NOINLINE PTR_MethodTable CoreLibBinder::LookupClassIfExist(BinderClassID id)
     const CoreLibClassDescription *d = (&g_CoreLib)->m_classDescriptions + (int)id;
 
     PTR_MethodTable pMT = ClassLoader::LoadTypeByNameThrowing(GetModule()->GetAssembly(), d->nameSpace, d->name,
-        ClassLoader::ReturnNullIfNotFound, ClassLoader::DontLoadTypes, CLASS_LOAD_UNRESTOREDTYPEKEY).AsMethodTable();
+        ClassLoader::ReturnNullIfNotFound, ClassLoader::DontLoadTypes, CLASS_LOAD_APPROXPARENTS).AsMethodTable();
 
     _ASSERTE((pMT == NULL) || (pMT->GetModule() == GetModule()));
 
@@ -550,6 +554,31 @@ const CoreLibBinder::OffsetAndSizeCheck CoreLibBinder::OffsetsAndSizes[] =
     #include "corelib.h"
 };
 
+namespace
+{
+    bool FeatureSwitchDisabled(LPCWSTR featureSwitch, bool enabledValue, bool defaultValue)
+    {
+        // If we don't have a feature switch, treat the switch as enabled.
+        return featureSwitch != nullptr && 
+            Configuration::GetKnobBooleanValue(featureSwitch, defaultValue) != enabledValue;
+    }
+
+    bool IsTrimmed(LPCSTR nameSpace, LPCSTR className)
+    {
+        bool isInDisabledFeatureSwitch = false;
+        #define BEGIN_ILLINK_FEATURE_SWITCH(s, e, d) isInDisabledFeatureSwitch = FeatureSwitchDisabled(W(#s), e, d);
+        #define END_ILLINK_FEATURE_SWITCH() isInDisabledFeatureSwitch = false;
+        #define DEFINE_CLASS_U(ns, stringName, unmanagedType) \
+            if (strcmp(nameSpace, g_ ## ns ## NS) == 0 \
+                && strcmp(className, #stringName) == 0) \
+                return isInDisabledFeatureSwitch;
+
+        #include "corelib.h"
+
+        return false;
+    }
+}
+
 //
 // check the basic consistency between CoreLib and VM
 //
@@ -558,6 +587,7 @@ void CoreLibBinder::Check()
     STANDARD_VM_CONTRACT;
 
     MethodTable * pMT = NULL;
+    bool currentTypeTrimmed = false;
 
     for (unsigned i = 0; i < ARRAY_SIZE(OffsetsAndSizes); i++)
     {
@@ -565,6 +595,10 @@ void CoreLibBinder::Check()
 
         if (p->className != NULL)
         {
+            currentTypeTrimmed = IsTrimmed(p->classNameSpace, p->className);
+            if (currentTypeTrimmed)
+                continue;
+
             pMT = ClassLoader::LoadTypeByNameThrowing(GetModule()->GetAssembly(), p->classNameSpace, p->className).AsMethodTable();
 
             if (p->expectedClassSize == sizeof(NoClass))
@@ -583,7 +617,7 @@ void CoreLibBinder::Check()
                 "man: 0x%x, unman: 0x%x, Name: %s\n", size, expectedsize, pMT->GetDebugClassName()));
         }
         else
-        if (p->fieldName != NULL)
+        if (p->fieldName != NULL && !currentTypeTrimmed)
         {
             // This assert will fire if there is DEFINE_FIELD_U macro without preceding DEFINE_CLASS_U macro in corelib.h
             _ASSERTE(pMT != NULL);
@@ -741,22 +775,22 @@ static void FCallCheckSignature(MethodDesc* pMD, PCODE pImpl)
             expectedType = pMD->IsCtor() ? NULL : "void";
             break;
         case ELEMENT_TYPE_BOOLEAN:
-            expectedType = (argIndex == -2) ? "FC_BOOL_RET" : "CLR_BOOL";
+            expectedType = (argIndex == -2) ? "FC_BOOL_RET" : "FC_BOOL_ARG";
             break;
         case ELEMENT_TYPE_CHAR:
-            expectedType = (argIndex == -2) ? "FC_CHAR_RET" : "CLR_CHAR";
+            expectedType = (argIndex == -2) ? "FC_CHAR_RET" : "FC_CHAR_ARG";
             break;
         case ELEMENT_TYPE_I1:
-            expectedType = (argIndex == -2) ? "FC_INT8_RET" : "INT8";
+            expectedType = (argIndex == -2) ? "FC_INT8_RET" : "FC_INT8_ARG";
             break;
         case ELEMENT_TYPE_U1:
-            expectedType = (argIndex == -2) ? "FC_UINT8_RET" : "UINT8";
+            expectedType = (argIndex == -2) ? "FC_UINT8_RET" : "FC_UINT8_ARG";
             break;
         case ELEMENT_TYPE_I2:
-            expectedType = (argIndex == -2) ? "FC_INT16_RET" : "INT16";
+            expectedType = (argIndex == -2) ? "FC_INT16_RET" : "FC_INT16_ARG";
             break;
         case ELEMENT_TYPE_U2:
-            expectedType = (argIndex == -2) ? "FC_UINT16_RET" : "UINT16";
+            expectedType = (argIndex == -2) ? "FC_UINT16_RET" : "FC_UINT16_ARG";
             break;
         //case ELEMENT_TYPE_I4:
         //     expectedType = "INT32";
@@ -893,6 +927,51 @@ static void FCallCheckSignature(MethodDesc* pMD, PCODE pImpl)
 }
 #endif // CHECK_FCALL_SIGNATURE
 
+namespace
+{
+    bool IsTrimmed(BinderClassID classId)
+    {
+        LPCWSTR featureSwitch = nullptr;
+        bool enabledValue = true;
+        bool defaultValue = true;
+        #define DEFINE_CLASS(i,n,s) if (classId == CLASS__ ## i) \
+            return FeatureSwitchDisabled(featureSwitch, enabledValue, defaultValue);
+        #define BEGIN_ILLINK_FEATURE_SWITCH(s, e, d) featureSwitch = W(#s); enabledValue = e; defaultValue = d;
+        #define END_ILLINK_FEATURE_SWITCH() featureSwitch = nullptr;
+        #include "corelib.h"
+
+        return false;
+    }
+
+    bool IsTrimmed(BinderMethodID methodId)
+    {
+        LPCWSTR featureSwitch = nullptr;
+        bool enabledValue = true;
+        bool defaultValue = true;
+        #define DEFINE_METHOD(c,i,s,g) if (methodId == METHOD__ ## c ## __ ## i) \
+            return FeatureSwitchDisabled(featureSwitch, enabledValue, defaultValue);
+        #define BEGIN_ILLINK_FEATURE_SWITCH(s, e, d) featureSwitch = W(#s); enabledValue = e; defaultValue = d;
+        #define END_ILLINK_FEATURE_SWITCH() featureSwitch = nullptr;
+        #include "corelib.h"
+
+        return false;
+    }
+
+    extern bool IsTrimmed(BinderFieldID fieldId)
+    {
+        LPCWSTR featureSwitch = nullptr;
+        bool enabledValue = true;
+        bool defaultValue = true;
+        #define DEFINE_FIELD(c,i,s) if (fieldId == FIELD__ ## c ## __ ## i) \
+            return FeatureSwitchDisabled(featureSwitch, enabledValue, defaultValue);
+        #define BEGIN_ILLINK_FEATURE_SWITCH(s, e, d) featureSwitch = W(#s); enabledValue = e; defaultValue = d;
+        #define END_ILLINK_FEATURE_SWITCH() featureSwitch = nullptr;
+        #include "corelib.h"
+
+        return false;
+    }
+}
+
 //
 // extended check of consistency between CoreLib and VM:
 //  - verifies that all references from CoreLib to VM are present
@@ -919,7 +998,7 @@ void CoreLibBinder::CheckExtended()
         {
             if (CoreLibBinder::GetClassName(cID) != NULL) // Allow for CorSigElement entries with no classes
             {
-                if (NULL == CoreLibBinder::GetClass(cID))
+                if (!IsTrimmed(cID) && NULL == CoreLibBinder::GetClass(cID))
                 {
                     fError = true;
                 }
@@ -943,7 +1022,7 @@ void CoreLibBinder::CheckExtended()
         BinderClassID cID = m_methodDescriptions[mID-1].classID;
         EX_TRY
         {
-            if (NULL == CoreLibBinder::GetMethod(mID))
+            if (!IsTrimmed(mID) &&  NULL == CoreLibBinder::GetMethod(mID))
             {
                 fError = true;
             }
@@ -966,7 +1045,7 @@ void CoreLibBinder::CheckExtended()
         BinderClassID cID = m_fieldDescriptions[fID-1].classID;
         EX_TRY
         {
-            if (NULL == CoreLibBinder::GetField(fID))
+            if (!IsTrimmed(fID) && NULL == CoreLibBinder::GetField(fID))
             {
                 fError = true;
             }
@@ -1122,8 +1201,6 @@ void CoreLibBinder::CheckExtended()
 #define ASMCONSTANTS_RUNTIME_ASSERT(cond) _ASSERTE(cond)
 #include "asmconstants.h"
 
-    _ASSERTE(sizeof(VARIANT) == CoreLibBinder::GetClass(CLASS__NATIVEVARIANT)->GetNativeSize());
-
     printf("CheckExtended: completed without exception.\n");
 
 ErrExit:
@@ -1154,8 +1231,6 @@ void CoreLibBinder::AttachModule(Module * pModule)
         c_rgCoreLibFieldDescriptions,  c_nCoreLibFieldDescriptions);
 
     pGlobalBinder->AllocateTables();
-
-    pModule->m_pBinder = pGlobalBinder;
 }
 
 void CoreLibBinder::SetDescriptions(Module * pModule,

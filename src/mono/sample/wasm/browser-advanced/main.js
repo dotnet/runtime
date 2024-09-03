@@ -7,6 +7,10 @@ function add(a, b) {
     return a + b;
 }
 
+function delay(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+}
+
 let testAbort = true;
 let testError = true;
 
@@ -25,12 +29,14 @@ try {
         }
         return originalFetch(url, fetchArgs);
     };
-    const { runtimeBuildInfo, setModuleImports, getAssemblyExports, runMain, getConfig, Module } = await dotnet
+    dotnet
         .withElementOnExit()
         // 'withModuleConfig' is internal lower level API 
         // here we show how emscripten could be further configured
         // It is preferred to use specific 'with***' methods instead in all other cases.
         .withConfig({
+            startupMemoryCache: true,
+            maxParallelDownloads: 1,
             resources: {
                 modulesAfterConfigLoaded: {
                     "advanced-sample.lib.module.js": ""
@@ -58,19 +64,24 @@ try {
                 console.log('user code Module.onDotnetReady');
             },
             postRun: () => { console.log('user code Module.postRun'); },
+            out: (text) => { console.log("ADVANCED:" + text) },
         })
         .withResourceLoader((type, name, defaultUri, integrity, behavior) => {
             // loadBootResource could return string with unqualified name of resource. It assumes that we resolve it with document.baseURI
             return name;
-        })
-        .create();
+        });
+
+    await dotnet.download();
+
+    const { runtimeBuildInfo, setModuleImports, getAssemblyExports, runMain, getConfig, Module } = await dotnet.create();
 
     // at this point both emscripten and monoVM are fully initialized.
     console.log('user code after dotnet.create');
     setModuleImports("main.js", {
         Sample: {
             Test: {
-                add
+                add,
+                delay,
             }
         }
     });
@@ -88,6 +99,9 @@ try {
     if (!exports.Sample.Test.IsPrime(meaning)) {
         document.getElementById("out").innerHTML = `${meaning} as computed on dotnet ver ${runtimeBuildInfo.productVersion}`;
     }
+
+    const deepMeaning = new Promise(resolve => setTimeout(() => resolve(meaning), 100));
+    exports.Sample.Test.PrintMeaning(deepMeaning);
 
     let exit_code = await runMain(config.mainAssemblyName, []);
     exit(exit_code);

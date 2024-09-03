@@ -20,6 +20,7 @@
 
   <ItemGroup>
     <Compile Include="$(CoreLibSharedDir)System\Runtime\CompilerServices\IsExternalInit.cs" Link="Common\System\Runtime\CompilerServices\IsExternalInit.cs" />
+    <Compile Include="$(CommonPath)\Roslyn\GetBestTypeByMetadataName.cs" Link="Common\Roslyn\GetBestTypeByMetadataName.cs" />
     <Compile Include="DiagDescriptors.cs" />
     <Compile Include="DiagDescriptorsBase.cs" />
     <Compile Include="Emitter.cs" />
@@ -29,6 +30,7 @@
     <Compile Include="Model\ValidatedModel.cs" />
     <Compile Include="Model\ValidationAttributeInfo.cs" />
     <Compile Include="Model\ValidatorType.cs" />
+    <Compile Include="OptionsSourceGenContext.cs" />
     <Compile Include="Parser.cs" />
     <Compile Include="ParserUtilities.cs" />
     <Compile Include="SymbolHolder.cs" />

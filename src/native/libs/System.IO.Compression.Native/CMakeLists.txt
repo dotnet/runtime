@@ -2,9 +2,23 @@ project(System.IO.Compression.Native C)
 
 include(${CMAKE_CURRENT_LIST_DIR}/extra_libs.cmake)
 
+if (NOT CLR_CMAKE_USE_SYSTEM_ZLIB)
+    include(${CLR_SRC_NATIVE_DIR}/external/zlib-ng.cmake)
+endif()
+
+configure_file(
+    ${CMAKE_CURRENT_SOURCE_DIR}/../Common/pal_config.h.in
+    ${CMAKE_CURRENT_BINARY_DIR}/pal_config.h)
+
 set(NATIVECOMPRESSION_SOURCES
     pal_zlib.c
 )
+
+if (HOST_WIN32 OR CLR_CMAKE_TARGET_WIN32)
+    list(APPEND NATIVECOMPRESSION_SOURCES "zlib_allocator_win.c")
+else()
+    list(APPEND NATIVECOMPRESSION_SOURCES "zlib_allocator_unix.c")
+endif()
 
 if (NOT CLR_CMAKE_TARGET_BROWSER AND NOT CLR_CMAKE_TARGET_WASI)
 
@@ -29,24 +43,8 @@ if (CLR_CMAKE_TARGET_UNIX OR CLR_CMAKE_TARGET_BROWSER OR CLR_CMAKE_TARGET_WASI)
     set(NATIVE_LIBS_EXTRA)
     append_extra_compression_libs(NATIVE_LIBS_EXTRA)
 
-    if (CLR_CMAKE_TARGET_BROWSER OR CLR_CMAKE_TARGET_WASI)
-        include(${CLR_SRC_NATIVE_DIR}/external/zlib.cmake)
-        add_definitions(-DINTERNAL_ZLIB)
-        set(NATIVECOMPRESSION_SOURCES ${ZLIB_SOURCES} ${NATIVECOMPRESSION_SOURCES})
-    endif()
-
     # Disable implicit fallthrough warning for Zlib and Brotli
     set(FLAGS -Wno-implicit-fallthrough)
-
-    # Disable no strict prototypes warning for Zlib
-    # https://github.com/madler/zlib/issues/633
-    set(FLAGS "${FLAGS} -Wno-strict-prototypes")
-
-    # Delete this suppression once brotli is upgraded to vNext (current latest v1.0.9
-    # does not contain upstream fix: https://github.com/google/brotli/commit/0a3944c)
-    if (NOT CLR_CMAKE_TARGET_WASI)
-        set(FLAGS "${FLAGS} -Wno-vla-parameter")
-    endif ()
 
     set_source_files_properties(${NATIVECOMPRESSION_SOURCES} PROPERTIES COMPILE_FLAGS ${FLAGS})
 
@@ -64,7 +62,7 @@ if (CLR_CMAKE_TARGET_UNIX OR CLR_CMAKE_TARGET_BROWSER OR CLR_CMAKE_TARGET_WASI)
             ${NATIVE_LIBS_EXTRA}
         )
 
-        if (NOT CLR_CMAKE_TARGET_MACCATALYST AND NOT CLR_CMAKE_TARGET_IOS AND NOT CLR_CMAKE_TARGET_TVOS AND NOT CLR_CMAKE_TARGET_ANDROID)
+        if (NOT CLR_CMAKE_TARGET_MACCATALYST AND NOT CLR_CMAKE_TARGET_IOS AND NOT CLR_CMAKE_TARGET_TVOS AND NOT CLR_CMAKE_TARGET_ANDROID AND NOT CLR_CMAKE_USE_SYSTEM_BROTLI)
             set(DEF_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/System.IO.Compression.Native_unixexports.src)
             set(EXPORTS_FILE ${CMAKE_CURRENT_BINARY_DIR}/System.IO.Compression.Native.exports)
             generate_exports_file(${DEF_SOURCES} ${EXPORTS_FILE})
@@ -76,16 +74,14 @@ if (CLR_CMAKE_TARGET_UNIX OR CLR_CMAKE_TARGET_BROWSER OR CLR_CMAKE_TARGET_WASI)
             set_property(TARGET System.IO.Compression.Native APPEND_STRING PROPERTY LINK_FLAGS ${EXPORTS_LINKER_OPTION})
             set_property(TARGET System.IO.Compression.Native APPEND_STRING PROPERTY LINK_DEPENDS ${EXPORTS_FILE})
 
-            if (NOT CLR_CMAKE_USE_SYSTEM_BROTLI)
-                add_custom_command(TARGET System.IO.Compression.Native POST_BUILD
-                    COMMENT "Verifying System.IO.Compression.Native entry points against entrypoints.c "
-                    COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/../verify-entrypoints.sh
-                        $<TARGET_FILE:System.IO.Compression.Native>
-                        ${CMAKE_CURRENT_SOURCE_DIR}/entrypoints.c
-                        ${CMAKE_NM}
-                    VERBATIM
-                )
-            endif ()
+            add_custom_command(TARGET System.IO.Compression.Native POST_BUILD
+                COMMENT "Verifying System.IO.Compression.Native entry points against entrypoints.c "
+                COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/../verify-entrypoints.sh
+                    $<TARGET_FILE:System.IO.Compression.Native>
+                    ${CMAKE_CURRENT_SOURCE_DIR}/entrypoints.c
+                    ${CMAKE_NM}
+                VERBATIM
+            )
         endif ()
 
         install_with_stripped_symbols (System.IO.Compression.Native PROGRAMS .)
@@ -96,21 +92,15 @@ if (CLR_CMAKE_TARGET_UNIX OR CLR_CMAKE_TARGET_BROWSER OR CLR_CMAKE_TARGET_WASI)
         ${NATIVECOMPRESSION_SOURCES}
     )
 
+    if (NOT CLR_CMAKE_USE_SYSTEM_ZLIB)
+        target_link_libraries(System.IO.Compression.Native-Static PRIVATE zlibstatic)
+    endif()
+
     set_target_properties(System.IO.Compression.Native-Static PROPERTIES OUTPUT_NAME System.IO.Compression.Native CLEAN_DIRECT_OUTPUT 1)
 else ()
     if (GEN_SHARED_LIB)
         include (GenerateExportHeader)
     endif ()
-
-    if (CLR_CMAKE_HOST_ARCH_I386 OR CLR_CMAKE_HOST_ARCH_AMD64)
-        include(${CLR_SRC_NATIVE_DIR}/external/zlib-intel.cmake)
-        add_definitions(-DINTERNAL_ZLIB_INTEL)
-    else ()
-        include(${CLR_SRC_NATIVE_DIR}/external/zlib.cmake)
-    endif ()
-
-    add_definitions(-DINTERNAL_ZLIB)
-    set(NATIVECOMPRESSION_SOURCES ${ZLIB_SOURCES} ${NATIVECOMPRESSION_SOURCES})
 
     if (GEN_SHARED_LIB)
         add_definitions(-DVER_FILEDESCRIPTION_STR="System.IO.Compression.Native")
@@ -120,6 +110,10 @@ else ()
             System.IO.Compression.Native.def
             ${VERSION_FILE_RC_PATH}
         )
+
+        if (NOT CLR_CMAKE_USE_SYSTEM_ZLIB)
+            target_link_libraries(System.IO.Compression.Native PRIVATE zlib)
+        endif()
     endif ()
 
     if (NOT GEN_SHARED_LIB AND NOT CLR_CMAKE_TARGET_MACCATALYST AND NOT CLR_CMAKE_TARGET_IOS AND NOT CLR_CMAKE_TARGET_TVOS AND NOT CLR_CMAKE_TARGET_ANDROID AND NOT CLR_CMAKE_TARGET_BROWSER AND NOT CLR_CMAKE_TARGET_WASI)
@@ -131,19 +125,33 @@ else ()
         ${NATIVECOMPRESSION_SOURCES}
     )
 
+    if (NOT CLR_CMAKE_USE_SYSTEM_ZLIB)
+        target_link_libraries(System.IO.Compression.Native-Static PRIVATE zlibstatic)
+    endif()
+
     if(STATIC_LIBS_ONLY)
         add_library(System.IO.Compression.Native.Aot
             STATIC
             ${NATIVECOMPRESSION_SOURCES}
         )
-        target_compile_options(System.IO.Compression.Native.Aot PRIVATE /guard:cf-)
-        target_compile_options(System.IO.Compression.Native.Aot PRIVATE /GL-)
+
+        if (NOT CLR_CMAKE_USE_SYSTEM_ZLIB)
+            target_link_libraries(System.IO.Compression.Native.Aot PRIVATE zlibstatic)
+        endif()
+
+        set_target_properties(System.IO.Compression.Native.Aot PROPERTIES CLR_CONTROL_FLOW_GUARD OFF)
+        set_target_properties(System.IO.Compression.Native.Aot PROPERTIES INTERPROCEDURAL_OPTIMIZATION OFF)
 
         add_library(System.IO.Compression.Native.Aot.GuardCF
             STATIC
             ${NATIVECOMPRESSION_SOURCES}
         )
-        target_compile_options(System.IO.Compression.Native.Aot.GuardCF PRIVATE /GL-)
+
+        if (NOT CLR_CMAKE_USE_SYSTEM_ZLIB)
+            target_link_libraries(System.IO.Compression.Native.Aot.GuardCF PRIVATE zlibstatic)
+        endif()
+
+        set_target_properties(System.IO.Compression.Native.Aot.GuardCF PROPERTIES INTERPROCEDURAL_OPTIMIZATION OFF)
     endif()
 
     if (GEN_SHARED_LIB)
@@ -164,5 +172,9 @@ else ()
     endif()
 
 endif ()
+
+if((NOT CLR_CMAKE_USE_SYSTEM_ZLIB) AND STATIC_LIBS_ONLY)
+    install_static_library(zlib aotsdk nativeaot)
+endif()
 
 install (TARGETS System.IO.Compression.Native-Static DESTINATION ${STATIC_LIB_DESTINATION} COMPONENT libs)

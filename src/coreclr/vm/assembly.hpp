@@ -54,14 +54,15 @@ class Assembly
     friend class AssemblyNameNative;
     friend class ClrDataAccess;
 
-public:
-    Assembly(BaseDomain *pDomain, PEAssembly *pPEAssembly, DebuggerAssemblyControlFlags debuggerFlags, BOOL fIsCollectible);
+private:
+    Assembly(PEAssembly *pPEAssembly, DebuggerAssemblyControlFlags debuggerFlags, BOOL fIsCollectible);
     void Init(AllocMemTracker *pamTracker, LoaderAllocator *pLoaderAllocator);
 
+public:
     void StartUnload();
     void Terminate( BOOL signalProfiler = TRUE );
 
-    static Assembly *Create(BaseDomain *pDomain, PEAssembly *pPEAssembly, DebuggerAssemblyControlFlags debuggerFlags, BOOL fIsCollectible, AllocMemTracker *pamTracker, LoaderAllocator *pLoaderAllocator);
+    static Assembly *Create(PEAssembly *pPEAssembly, DebuggerAssemblyControlFlags debuggerFlags, BOOL fIsCollectible, AllocMemTracker *pamTracker, LoaderAllocator *pLoaderAllocator);
     static void Initialize();
 
     BOOL IsSystem() { WRAPPER_NO_CONTRACT; return m_pPEAssembly->IsSystem(); }
@@ -95,18 +96,6 @@ public:
         return m_pClassLoader;
     }
 
-    //****************************************************************************************
-    //
-    // Get the domain the assembly lives in.
-    PTR_BaseDomain Parent()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return m_pDomain;
-    }
-
-    // Sets the assemblies domain.
-    void SetParent(BaseDomain* pParent);
-
     //-----------------------------------------------------------------------------------------
     // EnsureActive ensures that the assembly is properly prepped in the current app domain
     // for active uses like code execution, static field access, and instance allocation
@@ -121,9 +110,6 @@ public:
     //-----------------------------------------------------------------------------------------
     CHECK CheckActivated();
 
-    // Returns the parent domain if it is not the system area. Returns NULL if it is the
-    // system domain
-    PTR_BaseDomain GetDomain();
     PTR_LoaderAllocator GetLoaderAllocator() { LIMITED_METHOD_DAC_CONTRACT; return m_pLoaderAllocator; }
 
 #ifdef LOGGING
@@ -235,6 +221,7 @@ public:
     }
 
     OBJECTREF GetExposedObject();
+    OBJECTREF GetExposedObjectIfExists();
 
     DebuggerAssemblyControlFlags GetDebuggerInfoBits(void)
     {
@@ -248,11 +235,6 @@ public:
         LIMITED_METHOD_CONTRACT;
 
         m_debuggerFlags = flags;
-    }
-
-    ULONG HashIdentity()
-    {
-        return GetPEAssembly()->HashIdentity();
     }
 
     // On failure:
@@ -278,9 +260,8 @@ public:
     ~Assembly();
 
     BOOL GetResource(LPCSTR szName, DWORD *cbResource,
-                     PBYTE *pbInMemoryResource, Assembly **pAssemblyRef,
-                     LPCSTR *szFileName, DWORD *dwLocation,
-                     BOOL fSkipRaiseResolveEvent = FALSE);
+                    PBYTE *pbInMemoryResource, Assembly **pAssemblyRef,
+                    LPCSTR *szFileName, DWORD *dwLocation);
 
     //****************************************************************************************
 #ifdef DACCESS_COMPILE
@@ -382,7 +363,6 @@ public:
 
     static void AddDiagnosticStartupHookPath(LPCWSTR wszPath);
 
-
 protected:
 #ifdef FEATURE_COMINTEROP
 
@@ -421,8 +401,6 @@ private:
 
     //****************************************************************************************
 
-    void CacheManifestExportedTypes(AllocMemTracker *pamTracker);
-
     void CacheFriendAssemblyInfo();
 #ifndef DACCESS_COMPILE
     ReleaseHolder<FriendAssemblyDescriptor> GetFriendAssemblyInfo();
@@ -430,9 +408,6 @@ private:
 public:
     void UpdateCachedFriendAssemblyInfo();
 private:
-
-
-    PTR_BaseDomain        m_pDomain;        // Parent Domain
     PTR_ClassLoader       m_pClassLoader;   // Single Loader
 
     PTR_MethodDesc        m_pEntryPoint;    // Method containing the entry point
@@ -457,15 +432,7 @@ private:
 
     BOOL                  m_fTerminated;
 
-#ifdef FEATURE_READYTORUN
-    enum IsInstrumentedStatus {
-        IS_INSTRUMENTED_UNSET = 0,
-        IS_INSTRUMENTED_FALSE = 1,
-        IS_INSTRUMENTED_TRUE = 2,
-    };
-    IsInstrumentedStatus    m_isInstrumentedStatus;
-#endif // FEATURE_READYTORUN
-
+    LOADERHANDLE          m_hExposedObject;
 };
 
 #ifndef DACCESS_COMPILE

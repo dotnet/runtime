@@ -7,16 +7,20 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.IO;
+using System.Security;
 using System.Text;
 using System.Threading;
-using System.Security;
 using Microsoft.Win32.SafeHandles;
 
 namespace System
 {
     public sealed partial class TimeZoneInfo
     {
+#if TARGET_ILLUMOS || TARGET_SOLARIS
+        private const string DefaultTimeZoneDirectory = "/usr/share/lib/zoneinfo/";
+#else
         private const string DefaultTimeZoneDirectory = "/usr/share/zoneinfo/";
+#endif
 
         // Set fallback values using abbreviations, base offset, and id
         // These are expected in environments without time zone globalization data
@@ -26,7 +30,7 @@ namespace System
         // Handle UTC and its aliases per https://github.com/unicode-org/cldr/blob/master/common/bcp47/timezone.xml
         // Hard-coded because we need to treat all aliases of UTC the same even when globalization data is not available.
         // (This list is not likely to change.)
-        private static bool IsUtcAlias (string id)
+        private static bool IsUtcAlias(string id)
         {
             switch ((ushort)id[0])
             {
@@ -220,6 +224,10 @@ namespace System
             return rulesList.ToArray();
         }
 
+        private string NameLookupId =>
+                HasIanaId ? Id :
+                (_equivalentZones is not null && _equivalentZones.Count > 0 ? _equivalentZones[0].Id : (GetAlternativeId(Id, out _) ?? Id));
+
         private string? PopulateDisplayName()
         {
             if (IsUtcAlias(Id))
@@ -231,7 +239,11 @@ namespace System
             if (GlobalizationMode.Invariant)
                 return displayName;
 
-            GetFullValueForDisplayNameField(Id, BaseUtcOffset, ref displayName);
+#if TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS
+            if (!GlobalizationMode.Hybrid)
+                return displayName;
+#endif
+            GetFullValueForDisplayNameField(NameLookupId, BaseUtcOffset, ref displayName);
 
             return displayName;
         }
@@ -245,7 +257,11 @@ namespace System
             if (GlobalizationMode.Invariant)
                 return standardDisplayName;
 
-            GetStandardDisplayName(Id, ref standardDisplayName);
+#if TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS
+            if (!GlobalizationMode.Hybrid)
+                return standardDisplayName;
+#endif
+            GetStandardDisplayName(NameLookupId, ref standardDisplayName);
 
             return standardDisplayName;
         }
@@ -259,7 +275,11 @@ namespace System
             if (GlobalizationMode.Invariant)
                 return daylightDisplayName;
 
-            GetDaylightDisplayName(Id, ref daylightDisplayName);
+#if TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS
+            if (!GlobalizationMode.Hybrid)
+                return daylightDisplayName;
+#endif
+            GetDaylightDisplayName(NameLookupId, ref daylightDisplayName);
 
             return daylightDisplayName;
         }

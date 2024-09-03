@@ -2,9 +2,14 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 //#define LAUNCH_DEBUGGER
-using System.Collections.Immutable;
+using System;
+using System.Diagnostics;
+using System.Reflection;
+using System.Threading;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
+using SourceGenerators;
 
 namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 {
@@ -14,7 +19,9 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
     [Generator]
     public sealed partial class ConfigurationBindingGenerator : IIncrementalGenerator
     {
-        private static readonly string ProjectName = Emitter.s_assemblyName.Name;
+        private static readonly string ProjectName = Emitter.s_assemblyName.Name!;
+
+        public const string GenSpecTrackingName = nameof(SourceGenerationSpec);
 
         public void Initialize(IncrementalGeneratorInitializationContext context)
         {
@@ -30,46 +37,131 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                         ? new CompilationData((CSharpCompilation)compilation)
                         : null);
 
-            IncrementalValuesProvider<BinderInvocation?> inputCalls = context.SyntaxProvider
+            IncrementalValueProvider<(SourceGenerationSpec?, ImmutableEquatableArray<DiagnosticInfo>?)> genSpec = context.SyntaxProvider
                 .CreateSyntaxProvider(
                     (node, _) => BinderInvocation.IsCandidateSyntaxNode(node),
                     BinderInvocation.Create)
-                .Where(invocation => invocation is not null);
+                .Where(invocation => invocation is not null)
+                .Collect()
+                .Combine(compilationData)
+                .Select((tuple, cancellationToken) =>
+                {
+                    if (tuple.Right is not CompilationData compilationData)
+                    {
+                        return (null, null);
+                    }
 
-            IncrementalValueProvider<(CompilationData?, ImmutableArray<BinderInvocation>)> inputData = compilationData.Combine(inputCalls.Collect());
+                    try
+                    {
+                        Parser parser = new(compilationData);
+                        SourceGenerationSpec? spec = parser.GetSourceGenerationSpec(tuple.Left, cancellationToken);
+                        ImmutableEquatableArray<DiagnosticInfo>? diagnostics = parser.Diagnostics?.ToImmutableEquatableArray();
+                        return (spec, diagnostics);
+                    }
+                    catch (Exception ex)
+                    {
+                        throw ex;
+                    }
+                })
+                .WithTrackingName(GenSpecTrackingName);
 
-            context.RegisterSourceOutput(inputData, (spc, source) => Execute(source.Item1, source.Item2, spc));
+            context.RegisterSourceOutput(genSpec, ReportDiagnosticsAndEmitSource);
+
+            if (!s_hasInitializedInterceptorVersion)
+            {
+                InterceptorVersion = DetermineInterceptableVersion();
+                s_hasInitializedInterceptorVersion = true;
+            }
         }
 
-        private static void Execute(CompilationData compilationData, ImmutableArray<BinderInvocation> inputCalls, SourceProductionContext context)
+        internal static int InterceptorVersion { get; private set; }
+
+        // Used with v1 interceptor lightup approach:
+        private static bool s_hasInitializedInterceptorVersion;
+        internal static Func<SemanticModel, InvocationExpressionSyntax, CancellationToken, object>? GetInterceptableLocationFunc { get; private set; }
+        internal static MethodInfo? InterceptableLocationVersionGetDisplayLocation { get; private set; }
+        internal static MethodInfo? InterceptableLocationDataGetter { get; private set; }
+        internal static MethodInfo? InterceptableLocationVersionGetter { get; private set; }
+
+        internal static int DetermineInterceptableVersion()
         {
-            if (inputCalls.IsDefaultOrEmpty)
+            MethodInfo? getInterceptableLocationMethod = null;
+            int? interceptableVersion = null;
+
+#if UPDATE_BASELINES
+#pragma warning disable RS1035 // Do not use APIs banned for analyzers
+            string? interceptableVersionString = Environment.GetEnvironmentVariable("InterceptableAttributeVersion");
+#pragma warning restore RS1035
+            if (interceptableVersionString is not null)
             {
-                return;
+                if (int.TryParse(interceptableVersionString, out int version) && (version == 0 || version == 1))
+                {
+                    interceptableVersion = version;
+                }
+                else
+                {
+                    throw new InvalidOperationException($"Invalid InterceptableAttributeVersion value: {interceptableVersionString}");
+                }
             }
 
-            if (compilationData?.LanguageVersionIsSupported is not true)
+            if (interceptableVersion is null || interceptableVersion == 1)
+#endif
             {
-                context.ReportDiagnostic(Diagnostic.Create(Parser.Diagnostics.LanguageVersionNotSupported, location: null));
-                return;
+                getInterceptableLocationMethod = typeof(Microsoft.CodeAnalysis.CSharp.CSharpExtensions).GetMethod(
+                    "GetInterceptableLocation",
+                    BindingFlags.Static | BindingFlags.Public,
+                    binder: null,
+                    new Type[] { typeof(SemanticModel), typeof(InvocationExpressionSyntax), typeof(CancellationToken) },
+                    modifiers: Array.Empty<ParameterModifier>());
+
+                interceptableVersion = getInterceptableLocationMethod is null ? 0 : 1;
             }
 
-            Parser parser = new(context, compilationData.TypeSymbols!, inputCalls);
-            if (parser.GetSourceGenerationSpec() is SourceGenerationSpec spec)
+            if (interceptableVersion == 1)
             {
-                Emitter emitter = new(context, spec);
-                emitter.Emit();
+                GetInterceptableLocationFunc = (Func<SemanticModel, InvocationExpressionSyntax, CancellationToken, object>)
+                    getInterceptableLocationMethod.CreateDelegate(typeof(Func<SemanticModel, InvocationExpressionSyntax, CancellationToken, object>), target: null);
+
+                Type? interceptableLocationType = typeof(Microsoft.CodeAnalysis.CSharp.CSharpExtensions).Assembly.GetType("Microsoft.CodeAnalysis.CSharp.InterceptableLocation");
+                InterceptableLocationVersionGetDisplayLocation = interceptableLocationType.GetMethod("GetDisplayLocation", BindingFlags.Instance | BindingFlags.Public);
+                InterceptableLocationVersionGetter = interceptableLocationType.GetProperty("Version", BindingFlags.Instance | BindingFlags.Public).GetGetMethod();
+                InterceptableLocationDataGetter = interceptableLocationType.GetProperty("Data", BindingFlags.Instance | BindingFlags.Public).GetGetMethod();
+            }
+
+            return interceptableVersion.Value;
+        }
+
+        /// <summary>
+        /// Instrumentation helper for unit tests.
+        /// </summary>
+        public Action<SourceGenerationSpec>? OnSourceEmitting { get; init; }
+
+        private void ReportDiagnosticsAndEmitSource(SourceProductionContext sourceProductionContext, (SourceGenerationSpec? SourceGenerationSpec, ImmutableEquatableArray<DiagnosticInfo>? Diagnostics) input)
+        {
+            if (input.Diagnostics is ImmutableEquatableArray<DiagnosticInfo> diagnostics)
+            {
+                foreach (DiagnosticInfo diagnostic in diagnostics)
+                {
+                    sourceProductionContext.ReportDiagnostic(diagnostic.CreateDiagnostic());
+                }
+            }
+
+            if (input.SourceGenerationSpec is SourceGenerationSpec spec)
+            {
+                OnSourceEmitting?.Invoke(spec);
+                Emitter emitter = new(spec);
+                emitter.Emit(sourceProductionContext);
             }
         }
 
-        private sealed record CompilationData
+        internal sealed class CompilationData
         {
             public bool LanguageVersionIsSupported { get; }
             public KnownTypeSymbols? TypeSymbols { get; }
 
             public CompilationData(CSharpCompilation compilation)
             {
-                // We don't have a CSharp21 value available yet. Polyfill the value here for forward compat, rather than use the LangugeVersion.Preview enum value.
+                // We don't have a CSharp21 value available yet. Polyfill the value here for forward compat, rather than use the LanguageVersion.Preview enum value.
                 // https://github.com/dotnet/roslyn/blob/168689931cb4e3150641ec2fb188a64ce4b3b790/src/Compilers/CSharp/Portable/LanguageVersion.cs#L218-L232
                 const int LangVersion_CSharp12 = 1200;
                 LanguageVersionIsSupported = (int)compilation.LanguageVersion >= LangVersion_CSharp12;

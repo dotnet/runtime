@@ -173,7 +173,11 @@ typedef enum {
 	 * If this is set, the unwind info is stored in the structure, instead of being pointed to by the
 	 * 'unwind_info' field.
 	 */
-	JIT_INFO_HAS_UNWIND_INFO = (1 << 4)
+	JIT_INFO_HAS_UNWIND_INFO = (1 << 4),
+	/*
+	 * gshared method which doesn't use its mrgctx arg.
+	 */
+	JIT_INFO_NO_MRGCTX = (1 << 5)
 } MonoJitInfoFlags;
 
 G_ENUM_FUNCTIONS (MonoJitInfoFlags)
@@ -217,6 +221,7 @@ struct _MonoJitInfo {
 	guint    is_trampoline:1;
 	/* Whenever this jit info refers to an interpreter method */
 	guint    is_interp:1;
+	guint    no_mrgctx:1;
 
 	/* FIXME: Embed this after the structure later*/
 	gpointer    gc_info; /* Currently only used by SGen */

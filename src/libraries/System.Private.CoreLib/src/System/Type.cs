@@ -27,6 +27,18 @@ namespace System
         public abstract Assembly Assembly { get; }
         public new abstract Module Module { get; }
 
+        public bool IsInterface
+        {
+            get
+            {
+#if !MONO
+                if (this is RuntimeType rt)
+                    return rt.IsInterface;
+#endif
+                return (GetAttributeFlagsImpl() & TypeAttributes.ClassSemanticsMask) == TypeAttributes.Interface;
+            }
+        }
+
         public bool IsNested => DeclaringType != null;
         public override Type? DeclaringType => null;
         public virtual MethodBase? DeclaringMethod => null;
@@ -45,7 +57,7 @@ namespace System
         public virtual bool IsGenericParameter => false;
         public virtual bool IsGenericTypeParameter => IsGenericParameter && DeclaringMethod is null;
         public virtual bool IsGenericMethodParameter => IsGenericParameter && DeclaringMethod != null;
-        public virtual bool IsGenericType => false;
+        public virtual bool IsGenericType { [Intrinsic] get => false; }
         public virtual bool IsGenericTypeDefinition => false;
 
         public virtual bool IsSZArray => throw NotImplemented.ByDesign;
@@ -62,6 +74,7 @@ namespace System
 
         public virtual int GetArrayRank() => throw new NotSupportedException(SR.NotSupported_SubclassOverride);
 
+        [Intrinsic]
         public virtual Type GetGenericTypeDefinition() => throw new NotSupportedException(SR.NotSupported_SubclassOverride);
         public virtual Type[] GenericTypeArguments => (IsGenericType && !IsGenericTypeDefinition) ? GetGenericArguments() : EmptyTypes;
         public virtual Type[] GetGenericArguments() => throw new NotSupportedException(SR.NotSupported_SubclassOverride);
@@ -113,9 +126,17 @@ namespace System
         public virtual bool IsEnum { [Intrinsic] get => IsSubclassOf(typeof(Enum)); }
         public bool IsMarshalByRef => IsMarshalByRefImpl();
         protected virtual bool IsMarshalByRefImpl() => false;
-        public bool IsPrimitive => IsPrimitiveImpl();
+        public bool IsPrimitive
+        {
+            [Intrinsic]
+            get => IsPrimitiveImpl();
+        }
         protected abstract bool IsPrimitiveImpl();
-        public bool IsValueType { [Intrinsic] get => IsValueTypeImpl(); }
+        public bool IsValueType
+        {
+            [Intrinsic]
+            get => IsValueTypeImpl();
+        }
         protected virtual bool IsValueTypeImpl() => IsSubclassOf(typeof(ValueType));
 
         [Intrinsic]
@@ -329,6 +350,9 @@ namespace System
 
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)]
         public MethodInfo? GetMethod(string name, int genericParameterCount, Type[] types, ParameterModifier[]? modifiers) => GetMethod(name, genericParameterCount, DefaultLookup, null, types, modifiers);
+
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods | DynamicallyAccessedMemberTypes.NonPublicMethods)]
+        public MethodInfo? GetMethod(string name, int genericParameterCount, BindingFlags bindingAttr, Type[] types) => GetMethod(name, genericParameterCount, bindingAttr, null, types, null);
 
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods | DynamicallyAccessedMemberTypes.NonPublicMethods)]
         public MethodInfo? GetMethod(string name, int genericParameterCount, BindingFlags bindingAttr, Binder? binder, Type[] types, ParameterModifier[]? modifiers) => GetMethod(name, genericParameterCount, bindingAttr, binder, CallingConventions.Any, types, modifiers);
@@ -674,20 +698,12 @@ namespace System
         [Obsolete(Obsoletions.ReflectionOnlyLoadingMessage, DiagnosticId = Obsoletions.ReflectionOnlyLoadingDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public static Type? ReflectionOnlyGetType(string typeName, bool throwIfNotFound, bool ignoreCase) => throw new PlatformNotSupportedException(SR.PlatformNotSupported_ReflectionOnly);
 
-        public static Binder DefaultBinder
-        {
-            get
-            {
-                if (s_defaultBinder == null)
-                {
-                    DefaultBinder binder = new DefaultBinder();
-                    Interlocked.CompareExchange<Binder?>(ref s_defaultBinder, binder, null);
-                }
-                return s_defaultBinder!;
-            }
-        }
+        public static Binder DefaultBinder =>
+            s_defaultBinder ??
+            Interlocked.CompareExchange(ref s_defaultBinder, new DefaultBinder(), null) ??
+            s_defaultBinder;
 
-        private static volatile Binder? s_defaultBinder;
+        private static Binder? s_defaultBinder;
 
         public static readonly char Delimiter = '.';
         public static readonly Type[] EmptyTypes = Array.Empty<Type>();

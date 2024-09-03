@@ -71,10 +71,10 @@ class AwareLock;
 class Thread;
 class AppDomain;
 
-#ifdef EnC_SUPPORTED
+#ifdef FEATURE_METADATA_UPDATER
 class EnCSyncBlockInfo;
 typedef DPTR(EnCSyncBlockInfo) PTR_EnCSyncBlockInfo;
-#endif // EnC_SUPPORTED
+#endif // FEATURE_METADATA_UPDATER
 
 #include "eventstore.hpp"
 #include "synch.h"
@@ -602,6 +602,12 @@ public:
         LIMITED_METHOD_CONTRACT;
         return m_HoldingThread;
     }
+
+    static int GetOffsetOfHoldingOSThreadId()
+    {
+        LIMITED_METHOD_CONTRACT;
+        return (int)offsetof(AwareLock, m_HoldingOSThreadId);
+    }
 };
 
 #ifdef FEATURE_COMINTEROP
@@ -826,7 +832,7 @@ public:
         if (m_managedObjectComWrapperMap == NULL)
         {
             NewHolder<ManagedObjectComWrapperByIdMap> map = new ManagedObjectComWrapperByIdMap();
-            if (InterlockedCompareExchangeT((ManagedObjectComWrapperByIdMap**)&m_managedObjectComWrapperMap, (ManagedObjectComWrapperByIdMap *)map, NULL) == NULL)
+            if (InterlockedCompareExchangeT(&m_managedObjectComWrapperMap, (ManagedObjectComWrapperByIdMap *)map, NULL) == NULL)
             {
                 map.SuppressRelease();
             }
@@ -917,7 +923,7 @@ private:
     void* m_externalComObjectContext;
 
     CrstExplicitInit m_managedObjectComWrapperLock;
-    NewHolder<ManagedObjectComWrapperByIdMap> m_managedObjectComWrapperMap;
+    ManagedObjectComWrapperByIdMap* m_managedObjectComWrapperMap;
 #endif // FEATURE_COMWRAPPERS
 
 #ifdef FEATURE_OBJCMARSHAL
@@ -963,6 +969,17 @@ private:
     // ObjectiveCMarshal.NativeAot.cs
     BYTE m_taggedAlloc[2 * sizeof(void*)];
 #endif // FEATURE_OBJCMARSHAL
+
+    template<typename T> friend struct ::cdac_data;
+};
+
+template<>
+struct cdac_data<InteropSyncBlockInfo>
+{
+#ifdef FEATURE_COMINTEROP
+    static constexpr size_t CCW = offsetof(InteropSyncBlockInfo, m_pCCW);
+    static constexpr size_t RCW = offsetof(InteropSyncBlockInfo, m_pRCW);
+#endif // FEATURE_COMINTEROP
 };
 
 typedef DPTR(InteropSyncBlockInfo) PTR_InteropSyncBlockInfo;
@@ -990,10 +1007,10 @@ class SyncBlock
     PTR_InteropSyncBlockInfo    m_pInteropInfo;
 
   protected:
-#ifdef EnC_SUPPORTED
+#ifdef FEATURE_METADATA_UPDATER
     // And if the object has new fields added via EnC, this is a list of them
     PTR_EnCSyncBlockInfo m_pEnCInfo;
-#endif // EnC_SUPPORTED
+#endif // FEATURE_METADATA_UPDATER
 
     // We thread two different lists through this link.  When the SyncBlock is
     // active, we create a list of waiting threads here.  When the SyncBlock is
@@ -1025,9 +1042,9 @@ class SyncBlock
   public:
     SyncBlock(DWORD indx)
         : m_Monitor(indx)
-#ifdef EnC_SUPPORTED
+#ifdef FEATURE_METADATA_UPDATER
         , m_pEnCInfo(PTR_NULL)
-#endif // EnC_SUPPORTED
+#endif // FEATURE_METADATA_UPDATER
         , m_dwHashCode(0)
         , m_BSTRTrailByte(0)
     {
@@ -1125,7 +1142,7 @@ class SyncBlock
     // True if the InteropInfo block was successfully set with the passed in value.
     bool SetInteropInfo(InteropSyncBlockInfo* pInteropInfo);
 
-#ifdef EnC_SUPPORTED
+#ifdef FEATURE_METADATA_UPDATER
     // Get information about fields added to this object by the Debugger's Edit and Continue support
     PTR_EnCSyncBlockInfo GetEnCInfo()
     {
@@ -1135,7 +1152,7 @@ class SyncBlock
 
     // Store information about fields added to this object by the Debugger's Edit and Continue support
     void SetEnCInfo(EnCSyncBlockInfo *pEnCInfo);
-#endif // EnC_SUPPORTED
+#endif // FEATURE_METADATA_UPDATER
 
     DWORD GetHashCode()
     {
@@ -1268,6 +1285,14 @@ class SyncBlock
         return m_Monitor.GetPtrForLockContract();
     }
 #endif // defined(ENABLE_CONTRACTS_IMPL)
+
+    template<typename T> friend struct ::cdac_data;
+};
+
+template<>
+struct cdac_data<SyncBlock>
+{
+    static constexpr size_t InteropInfo = offsetof(SyncBlock, m_pInteropInfo);
 };
 
 class SyncTableEntry
@@ -1648,8 +1673,15 @@ class ObjHeader
     void ReleaseSpinLock();
 
     BOOL Validate (BOOL bVerifySyncBlkIndex = TRUE);
+
+    template<typename T> friend struct ::cdac_data;
 };
 
+template<>
+struct cdac_data<ObjHeader>
+{
+    static constexpr size_t SyncBlockValue = offsetof(ObjHeader, m_SyncBlockValue);
+};
 
 typedef DPTR(class ObjHeader) PTR_ObjHeader;
 

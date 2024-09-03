@@ -18,6 +18,7 @@ namespace Sample
     public partial class Test
     {
         static bool JsonResults = false;
+        static List<Regex> exclusionPatterns = new();
 
         List<BenchTask> tasks = new()
         {
@@ -30,13 +31,22 @@ namespace Sample
             new JSInteropTask(),
             new WebSocketTask(),
         };
-        static Test instance = new Test();
+        public static Test Instance = new Test();
         Formatter formatter = new HTMLFormatter();
 
         [JSExport]
         public static Task<string> RunBenchmark()
         {
-            return instance.RunTasks();
+            return Instance.RunTasks();
+        }
+
+        [JSExport]
+        public static void SetExclusions(string exclusions)
+        {
+            var patterns = exclusions.Split(',');
+            foreach(var def in patterns) {
+                exclusionPatterns.Add(new Regex(def));
+            }
         }
 
         // the constructors of the task we care about are already used when createing tasks field
@@ -74,13 +84,13 @@ namespace Sample
                 tasksList.Add(task);
             }
 
-            instance.tasks = tasksList;
+            Instance.tasks = tasksList;
         }
 
         [JSExport]
         public static string GetFullJsonResults()
         {
-            return instance.GetJsonResults();
+            return Instance.GetJsonResults();
         }
 
         int taskCounter = 0;
@@ -96,7 +106,7 @@ namespace Sample
         Dictionary<string, double> minTimes = new();
         bool resultsReturned;
 
-        bool NextTask()
+        async Task<bool> NextTask()
         {
             bool hasMeasurement;
             do
@@ -106,7 +116,7 @@ namespace Sample
 
                 Task = tasks[taskCounter];
                 measurementIdx = -1;
-                hasMeasurement = NextMeasurement();
+                hasMeasurement = await NextMeasurement();
 
                 if (hasMeasurement)
                     task.Initialize();
@@ -117,13 +127,26 @@ namespace Sample
             return true;
         }
 
-        bool NextMeasurement()
+        async Task<bool> NextMeasurement()
         {
             runIdx = 0;
 
             while (measurementIdx < Task.Measurements.Length - 1)
             {
                 measurementIdx++;
+
+                if (!await Task.Measurements[measurementIdx].IsEnabled())
+                    continue;
+
+                bool excluded = false;
+                foreach(var exc in exclusionPatterns)
+                    if (exc.IsMatch($"{Task.Name}:{Task.Measurements[measurementIdx].Name}")) {
+                        excluded = true;
+                        break;
+                    }
+
+                if (excluded)
+                    continue;
 
                 if (Task.pattern == null || Task.pattern.IsMatch(Task.Measurements[measurementIdx].Name))
                     return true;
@@ -141,14 +164,14 @@ namespace Sample
 
             if (taskCounter == 0)
             {
-                NextTask();
+                await NextTask();
                 return $"Benchmark started{formatter.NewLine}";
             }
 
             if (measurementIdx == -1)
                 return ResultsSummary();
 
-            if (runIdx >= Task.Measurements[measurementIdx].NumberOfRuns && !NextMeasurement() && !NextTask())
+            if (runIdx >= Task.Measurements[measurementIdx].NumberOfRuns && !await NextMeasurement() && !await NextTask())
                 return ResultsSummary();
 
             runIdx++;

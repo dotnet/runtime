@@ -340,11 +340,10 @@ namespace System.Threading
         }
 
         public static int Wait(
-            Span<IntPtr> waitHandles,
+            ReadOnlySpan<IntPtr> waitHandles,
             bool waitForAll,
             int timeoutMilliseconds)
         {
-            Debug.Assert(waitHandles != null);
             Debug.Assert(waitHandles.Length > 0);
             Debug.Assert(waitHandles.Length <= WaitHandle.MaxWaitHandles);
             Debug.Assert(timeoutMilliseconds >= -1);
@@ -393,7 +392,7 @@ namespace System.Threading
                 WaitableObject waitableObject = waitableObjects[0]!;
                 waitableObjects[0] = null;
                 return
-                    waitableObject.Wait(waitInfo, timeoutMilliseconds, interruptible: true, prioritize : false);
+                    waitableObject.Wait(waitInfo, timeoutMilliseconds, interruptible: true, prioritize: false);
             }
 
             return

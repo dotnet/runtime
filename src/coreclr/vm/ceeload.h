@@ -41,12 +41,11 @@
 #endif
 
 #include "ilinstrumentation.h"
+#include "codeversion.h"
 
-class Stub;
 class MethodDesc;
 class FieldDesc;
 class Crst;
-class ClassConverter;
 class RefClassWriter;
 class ReflectionModule;
 class EEStringData;
@@ -55,21 +54,17 @@ class SigTypeContext;
 class Assembly;
 class BaseDomain;
 class AppDomain;
-class DomainModule;
-struct DomainLocalModule;
 class SystemDomain;
 class Module;
 class SString;
-class Pending;
 class MethodTable;
 class DynamicMethodTable;
-class CodeVersionManager;
 class TieredCompilationManager;
 class JITInlineTrackingMap;
 
-#ifdef EnC_SUPPORTED
+#ifdef FEATURE_METADATA_UPDATER
 class EnCEEClassData;
-#endif // EnC_SUPPORTED
+#endif // FEATURE_METADATA_UPDATER
 
 // Hash table parameter of available classes (name -> module/class) hash
 #define AVAILABLE_CLASSES_HASH_BUCKETS 1024
@@ -78,21 +73,6 @@ class EnCEEClassData;
 #define PARAMMETHODS_HASH_BUCKETS 11
 #define METHOD_STUBS_HASH_BUCKETS 11
 #define GUID_TO_TYPE_HASH_BUCKETS 16
-
-// The native symbol reader dll name
-#if defined(HOST_AMD64)
-#define NATIVE_SYMBOL_READER_DLL W("Microsoft.DiaSymReader.Native.amd64.dll")
-#elif defined(HOST_X86)
-#define NATIVE_SYMBOL_READER_DLL W("Microsoft.DiaSymReader.Native.x86.dll")
-#elif defined(HOST_ARM)
-#define NATIVE_SYMBOL_READER_DLL W("Microsoft.DiaSymReader.Native.arm.dll")
-#elif defined(HOST_ARM64)
-#define NATIVE_SYMBOL_READER_DLL W("Microsoft.DiaSymReader.Native.arm64.dll")
-#elif defined(HOST_LOONGARCH64)
-#define NATIVE_SYMBOL_READER_DLL W("Microsoft.DiaSymReader.Native.loongarch64.dll")
-#elif defined(HOST_RISCV64)
-#define NATIVE_SYMBOL_READER_DLL W("Microsoft.DiaSymReader.Native.riscv64.dll")
-#endif
 
 typedef DPTR(JITInlineTrackingMap) PTR_JITInlineTrackingMap;
 
@@ -106,6 +86,20 @@ typedef DPTR(JITInlineTrackingMap) PTR_JITInlineTrackingMap;
 //
 
 typedef DPTR(struct LookupMapBase) PTR_LookupMapBase;
+
+struct DynamicMetadata
+{
+    uint32_t Size;
+    BYTE Data[0];
+    template<typename T> friend struct ::cdac_data;
+};
+
+template<>
+struct cdac_data<DynamicMetadata>
+{
+    static constexpr size_t Size = offsetof(DynamicMetadata, Size);
+    static constexpr size_t Data = offsetof(DynamicMetadata, Data);
+};
 
 struct LookupMapBase
 {
@@ -353,7 +347,10 @@ struct VASigCookie
     unsigned        sizeOfArgs;             // size of argument list
     Volatile<PCODE> pNDirectILStub;         // will be use if target is NDirect (tag == 0)
     PTR_Module      pModule;
+    PTR_Module      pLoaderModule;
     Signature       signature;
+    Instantiation   classInst;
+    Instantiation   methodInst;
 };
 
 //
@@ -437,8 +434,6 @@ typedef DPTR(DynamicILBlobTable) PTR_DynamicILBlobTable;
 #ifdef FEATURE_READYTORUN
 typedef DPTR(class ReadyToRunInfo)      PTR_ReadyToRunInfo;
 #endif
-
-struct ThreadLocalModule;
 
 // A ModuleBase represents the ability to reference code via tokens
 // This abstraction exists to allow the R2R manifest metadata to have
@@ -548,7 +543,7 @@ public:
     virtual PTR_Module LookupModule(mdToken kFile) { return NULL; }; //wrapper over GetModuleIfLoaded, takes modulerefs as well
     virtual Module *GetModuleIfLoaded(mdFile kFile) { return NULL; };
 #ifndef DACCESS_COMPILE
-    virtual DomainAssembly *LoadModule(mdFile kFile);
+    virtual Module *LoadModule(mdFile kFile);
 #endif
     DWORD GetAssemblyRefFlags(mdAssemblyRef tkAssemblyRef);
 
@@ -593,8 +588,7 @@ private:
 
 };
 
-// A code:Module represents a DLL or EXE file loaded from the disk. It could either be a IL module or a
-// Native code (NGEN module). A module live in a code:Assembly
+// A code:Module represents a DLL or EXE file loaded from the disk. A module live in a code:Assembly
 //
 // Some important fields are
 //    * code:Module.m_pPEAssembly - this points at a code:PEAssembly that understands the layout of a PE assembly. The most
@@ -617,12 +611,13 @@ class Module : public ModuleBase
 
 private:
     PTR_CUTF8               m_pSimpleName; // Cached simple name for better performance and easier diagnostics
+    const WCHAR*            m_path;        // Cached path for easier diagnostics
 
     PTR_PEAssembly          m_pPEAssembly;
+    PTR_VOID                m_baseAddress; // Cached base address for easier diagnostics
 
     enum {
         // These are the values set in m_dwTransientFlags.
-        // Note that none of these flags survive a prejit save/restore.
 
         MODULE_IS_TENURED           = 0x00000001,   // Set once we know for sure the Module will not be freed until the appdomain itself exits
         // unused                   = 0x00000002,
@@ -632,12 +627,12 @@ private:
         IS_PROFILER_NOTIFIED        = 0x00000010,
         IS_ETW_NOTIFIED             = 0x00000020,
 
+        IS_REFLECTION_EMIT          = 0x00000040,
+
         //
-        // Note: the order of these must match the order defined in
-        // cordbpriv.h for DebuggerAssemblyControlFlags. The three
-        // values below should match the values defined in
-        // DebuggerAssemblyControlFlags when shifted right
-        // DEBUGGER_INFO_SHIFT bits.
+        // Note: The values below must match the ones defined in
+        // cordbpriv.h for DebuggerAssemblyControlFlags when shifted
+        // right DEBUGGER_INFO_SHIFT bits.
         //
         DEBUGGER_USER_OVERRIDE_PRIV = 0x00000400,
         DEBUGGER_ALLOW_JIT_OPTS_PRIV= 0x00000800,
@@ -651,18 +646,17 @@ private:
         // Used to indicate that this module has had it's IJW fixups properly installed.
         IS_IJW_FIXED_UP             = 0x00080000,
         IS_BEING_UNLOADED           = 0x00100000,
-
-        // Used to indicate that the module is loaded sufficiently for generic candidate instantiations to work
-        MODULE_READY_FOR_TYPELOAD  = 0x00200000,
-
-        // Used during NGen only
-        TYPESPECS_TRIAGED           = 0x40000000,
-        MODULE_SAVED                = 0x80000000,
     };
 
+    static_assert_no_msg(DEBUGGER_USER_OVERRIDE_PRIV >> DEBUGGER_INFO_SHIFT_PRIV == DebuggerAssemblyControlFlags::DACF_USER_OVERRIDE);
+    static_assert_no_msg(DEBUGGER_ALLOW_JIT_OPTS_PRIV >> DEBUGGER_INFO_SHIFT_PRIV == DebuggerAssemblyControlFlags::DACF_ALLOW_JIT_OPTS);
+    static_assert_no_msg(DEBUGGER_TRACK_JIT_INFO_PRIV >> DEBUGGER_INFO_SHIFT_PRIV == DebuggerAssemblyControlFlags::DACF_OBSOLETE_TRACK_JIT_INFO);
+    static_assert_no_msg(DEBUGGER_ENC_ENABLED_PRIV >> DEBUGGER_INFO_SHIFT_PRIV == DebuggerAssemblyControlFlags::DACF_ENC_ENABLED);
+    static_assert_no_msg(DEBUGGER_PDBS_COPIED >> DEBUGGER_INFO_SHIFT_PRIV == DebuggerAssemblyControlFlags::DACF_PDBS_COPIED);
+    static_assert_no_msg(DEBUGGER_IGNORE_PDBS >> DEBUGGER_INFO_SHIFT_PRIV == DebuggerAssemblyControlFlags::DACF_IGNORE_PDBS);
+
     enum {
-        // These are the values set in m_dwPersistedFlags.  These will survive
-        // a prejit save/restore
+        // These are the values set in m_dwPersistedFlags.
         // unused                   = 0x00000001,
         COMPUTED_GLOBAL_CLASS       = 0x00000002,
 
@@ -673,11 +667,8 @@ private:
         COMPUTED_WRAP_EXCEPTIONS    = 0x00000010,
         WRAP_EXCEPTIONS             = 0x00000020,
 
-        // This flag applies to assembly, but it is stored so it can be cached in ngen image
-        COMPUTED_RELIABILITY_CONTRACT=0x00000040,
-
-        // This flag applies to assembly, but is also stored here so that it can be cached in ngen image
-        COLLECTIBLE_MODULE          = 0x00000080,
+        // unused                   = 0x00000040,
+        // unused                   = 0x00000080,
 
         //If attribute value has been cached before
         DEFAULT_DLL_IMPORT_SEARCH_PATHS_IS_CACHED   = 0x00000400,
@@ -685,10 +676,6 @@ private:
         //If module has default dll import search paths attribute
         DEFAULT_DLL_IMPORT_SEARCH_PATHS_STATUS      = 0x00000800,
 
-        //If m_MethodDefToPropertyInfoMap has been generated
-        COMPUTED_METHODDEF_TO_PROPERTYINFO_MAP = 0x00002000,
-
-        // unused                   = 0x00004000,
 
         //If setting has been cached
         RUNTIME_MARSHALLING_ENABLED_IS_CACHED = 0x00008000,
@@ -705,7 +692,6 @@ private:
     PTR_Assembly            m_pAssembly;
 
     CrstExplicitInit        m_Crst;
-    CrstExplicitInit        m_FixupCrst;
 
     // Debugging symbols reader interface. This will only be
     // initialized if needed, either by the debugging subsystem or for
@@ -738,12 +724,8 @@ private:
 
     #define GENERIC_PARAM_MAP_ALL_FLAGS               NO_MAP_FLAGS
 
-    #define GENERIC_TYPE_DEF_MAP_ALL_FLAGS            NO_MAP_FLAGS
-
     #define MANIFEST_MODULE_MAP_ALL_FLAGS             NO_MAP_FLAGS
         // For manifest module map, 0x1 cannot be used as a flag: reserved for FIXUP_POINTER_INDIRECTION bit
-
-    #define PROPERTY_INFO_MAP_ALL_FLAGS               NO_MAP_FLAGS
 
     // Linear mapping from TypeDef token to MethodTable *
     // For generic types, IsGenericTypeDefinition() is true i.e. instantiation at formals
@@ -753,20 +735,15 @@ private:
     // For generic methods, IsGenericTypeDefinition() is true i.e. instantiation at formals
     LookupMap<PTR_MethodDesc>       m_MethodDefToDescMap;
 
+    // Linear mapping from MethodDef token to ILCodeVersioningState *
+    // This is used for Code Versioning logic
+    LookupMap<PTR_ILCodeVersioningState>    m_ILCodeVersioningStateMap;
+
     // Linear mapping from FieldDef token to FieldDesc*
     LookupMap<PTR_FieldDesc>        m_FieldDefToDescMap;
 
     // Linear mapping from GenericParam token to TypeVarTypeDesc*
     LookupMap<PTR_TypeVarTypeDesc>  m_GenericParamToDescMap;
-
-    // Linear mapping from TypeDef token to the MethodTable * for its canonical generic instantiation
-    // If the type is not generic, the entry is guaranteed to be NULL.  This means we are paying extra
-    // space in order to use the LookupMap infrastructure, but what it buys us is IBC support and
-    // a compressed format for NGen that makes up for it.
-    LookupMap<PTR_MethodTable>      m_GenericTypeDefToCanonMethodTableMap;
-
-    // Mapping from MethodDef token to pointer-sized value encoding property information
-    LookupMap<SIZE_T>           m_MethodDefToPropertyInfoMap;
 
     // IL stub cache with fabricated MethodTable parented by this module.
     ILStubCache                *m_pILStubCache;
@@ -843,16 +820,8 @@ private:
     // m_pAvailableClasses.
     PTR_EEClassHashTable    m_pAvailableClassesCaseIns;
 
-    // Pointer to binder, if we have one
-    friend class CoreLibBinder;
-    PTR_CoreLibBinder      m_pBinder;
-
 public:
-    BOOL IsCollectible()
-    {
-        LIMITED_METHOD_DAC_CONTRACT;
-        return (m_dwPersistedFlags & COLLECTIBLE_MODULE) != 0;
-    }
+    BOOL IsCollectible();
 
 #ifdef FEATURE_READYTORUN
 private:
@@ -895,8 +864,6 @@ protected:
 
     PTR_PEAssembly GetPEAssembly() const { LIMITED_METHOD_DAC_CONTRACT; return m_pPEAssembly; }
 
-    BOOL IsManifest();
-
     void ApplyMetaData();
 
     void FixupVTables();
@@ -913,7 +880,7 @@ protected:
         LIMITED_METHOD_CONTRACT;
         SUPPORTS_DAC;
 
-        _ASSERTE(IsReflection());
+        _ASSERTE(IsReflectionEmit());
         return dac_cast<PTR_ReflectionModule>(this);
     }
 
@@ -927,15 +894,14 @@ protected:
     void SetDomainAssembly(DomainAssembly *pDomainAssembly);
 
     OBJECTREF GetExposedObject();
+    OBJECTREF GetExposedObjectIfExists();
 
     ClassLoader *GetClassLoader();
-    PTR_BaseDomain GetDomain();
 #ifdef FEATURE_CODE_VERSIONING
     CodeVersionManager * GetCodeVersionManager();
 #endif
 
-    BOOL IsPEFile() const { WRAPPER_NO_CONTRACT; return !GetPEAssembly()->IsDynamic(); }
-    BOOL IsReflection() const { WRAPPER_NO_CONTRACT; SUPPORTS_DAC; return GetPEAssembly()->IsDynamic(); }
+    BOOL IsReflectionEmit() const { WRAPPER_NO_CONTRACT; SUPPORTS_DAC; return (m_dwTransientFlags & IS_REFLECTION_EMIT) != 0; }
     BOOL IsSystem() { WRAPPER_NO_CONTRACT; SUPPORTS_DAC; return m_pPEAssembly->IsSystem(); }
     // Returns true iff the debugger can see this module.
     BOOL IsVisibleToDebugger();
@@ -950,10 +916,10 @@ protected:
         return (m_dwTransientFlags & IS_EDIT_AND_CONTINUE) != 0;
     }
 
-#ifdef EnC_SUPPORTED
+#ifdef FEATURE_METADATA_UPDATER
     // Holds a table of EnCEEClassData object for classes in this module that have been modified
     CUnorderedArray<EnCEEClassData*, 5> m_ClassList;
-#endif // EnC_SUPPORTED
+#endif // FEATURE_METADATA_UPDATER
 
 private:
     void EnableEditAndContinue()
@@ -980,28 +946,9 @@ public:
     }
 #endif // !DACCESS_COMPILE
 
-
-    // This means the module has been sufficiently fixed up/security checked
-    // that type loads can occur in domains. This is not sufficient to indicate
-    // that domain-specific types can be loaded when applied to domain-neutral modules
-    BOOL IsReadyForTypeLoad()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return m_dwTransientFlags & MODULE_READY_FOR_TYPELOAD;
-    }
-
-#ifndef DACCESS_COMPILE
-    VOID SetIsReadyForTypeLoad()
-    {
-        LIMITED_METHOD_CONTRACT;
-        InterlockedOr((LONG*)&m_dwTransientFlags, MODULE_READY_FOR_TYPELOAD);
-    }
-#endif
-
 #ifndef DACCESS_COMPILE
     VOID EnsureActive();
     VOID EnsureAllocated();
-    VOID EnsureLibraryLoaded();
 #endif
 
     CHECK CheckActivated();
@@ -1026,7 +973,7 @@ public:
         SUPPORTS_DAC;
 
 #ifdef DACCESS_COMPILE
-        if (IsReflection())
+        if (IsReflectionEmit())
         {
             return DacGetMDImport(GetReflectionModule(), true);
         }
@@ -1216,22 +1163,6 @@ public:
         return th;
     }
 
-    TypeHandle LookupFullyCanonicalInstantiation(mdTypeDef token, ClassLoadLevel *pLoadLevel = NULL)
-    {
-        LIMITED_METHOD_DAC_CONTRACT;
-
-        BAD_FORMAT_NOTHROW_ASSERT(TypeFromToken(token) == mdtTypeDef);
-
-        TypeHandle th = TypeHandle(m_GenericTypeDefToCanonMethodTableMap.GetElement(RidFromToken(token)));
-
-        if (pLoadLevel && !th.IsNull())
-        {
-            *pLoadLevel = th.GetLoadLevel();
-        }
-
-        return th;
-    }
-
 #ifndef DACCESS_COMPILE
     VOID EnsureTypeDefCanBeStored(mdTypeDef token)
     {
@@ -1267,7 +1198,7 @@ public:
     }
 #endif // !DACCESS_COMPILE
 
-    MethodDesc *LookupMethodDef(mdMethodDef token);
+    PTR_MethodDesc LookupMethodDef(mdMethodDef token);
 
 #ifndef DACCESS_COMPILE
     void EnsureMethodDefCanBeStored(mdMethodDef token)
@@ -1282,6 +1213,25 @@ public:
 
         _ASSERTE(TypeFromToken(token) == mdtMethodDef);
         m_MethodDefToDescMap.SetElement(RidFromToken(token), value);
+    }
+#endif // !DACCESS_COMPILE
+
+    PTR_ILCodeVersioningState LookupILCodeVersioningState(mdMethodDef token);
+
+#ifndef DACCESS_COMPILE
+    void EnsureILCodeVersioningStateCanBeStored(mdMethodDef token)
+    {
+        WRAPPER_NO_CONTRACT; // THROWS/GC_NOTRIGGER/INJECT_FAULT()/MODE_ANY
+        _ASSERTE(CodeVersionManager::IsLockOwnedByCurrentThread());
+        m_ILCodeVersioningStateMap.EnsureElementCanBeStored(this, RidFromToken(token));
+    }
+
+    void EnsuredStoreILCodeVersioningState(mdMethodDef token, PTR_ILCodeVersioningState value)
+    {
+        WRAPPER_NO_CONTRACT; // NOTHROW/GC_NOTRIGGER/FORBID_FAULT/MODE_ANY
+        _ASSERTE(CodeVersionManager::IsLockOwnedByCurrentThread());
+        _ASSERTE(TypeFromToken(token) == mdtMethodDef);
+        m_ILCodeVersioningStateMap.SetElement(RidFromToken(token), value);
     }
 #endif // !DACCESS_COMPILE
 
@@ -1366,9 +1316,6 @@ public:
 
     mdAssemblyRef FindAssemblyRef(Assembly *targetAssembly);
 
-    void          CreateAssemblyRefByNameTable(AllocMemTracker *pamTracker);
-    bool          HasReferenceByName(LPCUTF8 pModuleName);
-
 #endif // !DACCESS_COMPILE
 
     DWORD GetAssemblyRefMax() {LIMITED_METHOD_CONTRACT;  return m_ManifestModuleReferencesMap.GetSize() - 1; }
@@ -1376,7 +1323,16 @@ public:
     MethodDesc *FindMethodThrowing(mdToken pMethod);
     MethodDesc *FindMethod(mdToken pMethod);
 
-    HRESULT GetPropertyInfoForMethodDef(mdMethodDef md, mdProperty *ppd, LPCSTR *pName, ULONG *pSemantic);
+#ifndef DACCESS_COMPILE
+public:
+    // light code gen. Keep the list of MethodTables needed for creating dynamic methods
+    DynamicMethodTable* GetDynamicMethodTable();
+#endif
+private:
+    // m_pDynamicMethodTable is used by the light code generation to allow method
+    // generation on the fly. They are lazily created when/if a dynamic method is requested
+    // for this specific module
+    DynamicMethodTable*         m_pDynamicMethodTable;
 
 public:
 
@@ -1415,7 +1371,9 @@ public:
     void NotifyEtwLoadFinished(HRESULT hr);
 
     // Enregisters a VASig.
-    VASigCookie *GetVASigCookie(Signature vaSignature);
+    VASigCookie *GetVASigCookie(Signature vaSignature, const SigTypeContext* typeContext);
+private:
+    static VASigCookie *GetVASigCookieWorker(Module* pDefiningModule, Module* pLoaderModule, Signature vaSignature, const SigTypeContext* typeContext);
 
 public:
 #ifndef DACCESS_COMPILE
@@ -1431,7 +1389,13 @@ public:
     }
 
     HRESULT GetScopeName(LPCUTF8 * pszName) { WRAPPER_NO_CONTRACT; return m_pPEAssembly->GetScopeName(pszName); }
-    const SString &GetPath() { WRAPPER_NO_CONTRACT; return m_pPEAssembly->GetPath(); }
+    const SString &GetPath()
+    {
+        WRAPPER_NO_CONTRACT;
+        // Validate the pointers are the same to ensure the lifetime of m_path is handled.
+        _ASSERTE(m_path == m_pPEAssembly->GetPath().GetUnicode());
+        return m_pPEAssembly->GetPath();
+    }
 
 #ifdef LOGGING
     LPCUTF8 GetDebugName() { WRAPPER_NO_CONTRACT; return m_pPEAssembly->GetDebugName(); }
@@ -1528,8 +1492,8 @@ public:
     void   StartUnload();
 
 public:
-    void SetDynamicIL(mdToken token, TADDR blobAddress, BOOL fTemporaryOverride);
-    TADDR GetDynamicIL(mdToken token, BOOL fAllowTemporary);
+    void SetDynamicIL(mdToken token, TADDR blobAddress);
+    TADDR GetDynamicIL(mdToken token);
 
     // store and retrieve the instrumented IL offset mapping for a particular method
 #if !defined(DACCESS_COMPILE)
@@ -1538,73 +1502,6 @@ public:
     InstrumentedILOffsetMapping GetInstrumentedILOffsetMapping(mdMethodDef token);
 
 public:
-    // This helper returns to offsets for the slots/bytes/handles. They return the offset in bytes from the beginning
-    // of the 1st GC pointer in the statics block for the module.
-    void        GetOffsetsForRegularStaticData(
-                    mdTypeDef cl,
-                    BOOL bDynamic,
-                    DWORD dwGCStaticHandles,
-                    DWORD dwNonGCStaticBytes,
-                    DWORD * pOutStaticHandleOffset,
-                    DWORD * pOutNonGCStaticOffset);
-
-    void        GetOffsetsForThreadStaticData(
-                    mdTypeDef cl,
-                    BOOL bDynamic,
-                    DWORD dwGCStaticHandles,
-                    DWORD dwNonGCStaticBytes,
-                    DWORD * pOutStaticHandleOffset,
-                    DWORD * pOutNonGCStaticOffset);
-
-
-    BOOL        IsStaticStoragePrepared(mdTypeDef tkType);
-
-    DWORD       GetNumGCThreadStaticHandles()
-    {
-        return m_dwMaxGCThreadStaticHandles;;
-    }
-
-    CrstBase*           GetFixupCrst()
-    {
-        return &m_FixupCrst;
-    }
-
-    void                AllocateRegularStaticHandles(AppDomain* pDomainMT);
-
-    void                FreeModuleIndex();
-
-    DWORD               GetDomainLocalModuleSize()
-    {
-        return m_dwRegularStaticsBlockSize;
-    }
-
-    DWORD               GetThreadLocalModuleSize()
-    {
-        return m_dwThreadStaticsBlockSize;
-    }
-
-    DWORD               AllocateDynamicEntry(MethodTable *pMT);
-
-    // We need this for the jitted shared case,
-    inline MethodTable* GetDynamicClassMT(DWORD dynamicClassID);
-
-    static ModuleIndex AllocateModuleIndex();
-    static void FreeModuleIndex(ModuleIndex index);
-
-    ModuleIndex          GetModuleIndex()
-    {
-        LIMITED_METHOD_DAC_CONTRACT;
-        return m_ModuleIndex;
-    }
-
-    SIZE_T               GetModuleID()
-    {
-        LIMITED_METHOD_DAC_CONTRACT;
-        return dac_cast<TADDR>(m_ModuleID);
-    }
-
-    PTR_DomainLocalModule   GetDomainLocalModule();
-
     // LoaderHeap for storing IJW thunks
     PTR_LoaderHeap           m_pThunkHeap;
 
@@ -1618,46 +1515,7 @@ public:
 
 protected:
 
-    void            BuildStaticsOffsets     (AllocMemTracker *pamTracker);
-    void            AllocateStatics         (AllocMemTracker *pamTracker);
-
-    // ModuleID is quite ugly. We should try to switch to using ModuleIndex instead
-    // where appropriate, and we should clean up code that uses ModuleID
-    PTR_DomainLocalModule   m_ModuleID;       // MultiDomain case: tagged (low bit 1) ModuleIndex
-                                              // SingleDomain case: pointer to domain local module
-
-    ModuleIndex             m_ModuleIndex;
-
-    // reusing the statics area of a method table to store
-    // these for the non domain neutral case, but they're now unified
-    // it so that we don't have different code paths for this.
-    PTR_DWORD               m_pRegularStaticOffsets;        // Offset of statics in each class
-    PTR_DWORD               m_pThreadStaticOffsets;         // Offset of ThreadStatics in each class
-
-    // All types with RID <= this value have static storage allocated within the module by AllocateStatics
-    // If AllocateStatics hasn't run yet, the value is 0
-    RID                     m_maxTypeRidStaticsAllocated;
-
-    // @NICE: see if we can remove these fields
-    DWORD                   m_dwMaxGCRegularStaticHandles;  // Max number of handles we can have.
-    DWORD                   m_dwMaxGCThreadStaticHandles;
-
-    // Size of the precomputed statics block. This includes class init bytes, gc handles and non gc statics
-    DWORD                   m_dwRegularStaticsBlockSize;
-    DWORD                   m_dwThreadStaticsBlockSize;
-
-    // For 'dynamic' statics (Reflection and generics)
-    SIZE_T                  m_cDynamicEntries;              // Number of used entries in DynamicStaticsInfo table
-    SIZE_T                  m_maxDynamicEntries;            // Size of table itself, including unused entries
-
-    // Info we need for dynamic statics that we can store per-module (ie, no need for it to be duplicated
-    // per appdomain)
-    struct DynamicStaticsInfo
-    {
-        MethodTable*        pEnclosingMT;                   // Enclosing type; necessarily in this loader module
-    };
-    DynamicStaticsInfo*     m_pDynamicStaticsInfo;          // Table with entry for each dynamic ID
-
+    PTR_DomainAssembly      m_pDomainAssembly;
 
 public:
     //-----------------------------------------------------------------------------------------
@@ -1724,10 +1582,6 @@ private:
                                                 // this map *always* overrides the Metadata RVA
         PTR_DynamicILBlobTable   m_pDynamicILBlobTable;
 
-                                                // maps tokens for to their corresponding overridden IL blobs
-                                                // this map conditionally overrides the Metadata RVA and the DynamicILBlobTable
-        PTR_DynamicILBlobTable   m_pTemporaryILBlobTable;
-
         // hash table storing any profiler-provided instrumented IL offset mapping
         PTR_ILOffsetMappingTable m_pILOffsetMappingTable;
 
@@ -1745,10 +1599,6 @@ private:
     PTR_JITInlineTrackingMap m_pJitInlinerTrackingMap;
 #endif // defined(PROFILING_SUPPORTED) || defined(PROFILING_SUPPORTED_DATA)
 
-
-    LPCSTR               *m_AssemblyRefByNameTable;  // array that maps mdAssemblyRef tokens into their simple name
-    DWORD                 m_AssemblyRefByNameCount;  // array size
-
     // a.dll calls a method in b.dll and that method call a method in c.dll. When ngening
     // a.dll it is possible then method in b.dll can be inlined. When that happens a.ni.dll stores
     // an added native metadata which has information about assemblyRef to c.dll
@@ -1758,6 +1608,17 @@ private:
     // is not called for each fixup
 
     PTR_Assembly           *m_NativeMetadataAssemblyRefMap;
+
+    LOADERHANDLE m_hExposedObject;
+
+    // Buffer of Metadata storage for dynamic modules. May be NULL. This provides a reasonable way for
+    // the debugger to get metadata of dynamic modules from out of process.
+    // A dynamic module will eagerly serialize its metadata to this buffer.
+    // This points at a uint32_t array.
+    // The first uint32_t is the number of bytes in the saved metadata
+    // Starting at the address of the second uint32_t value is the saved metadata itself
+protected:
+    TADDR m_pDynamicMetadata;
 
 public:
 #if !defined(DACCESS_COMPILE)
@@ -1777,8 +1638,28 @@ public:
     uint32_t GetNativeMetadataAssemblyCount();
 #endif // !defined(DACCESS_COMPILE)
 
-    // For protecting dictionary layout slot expansions
-    CrstExplicitInit        m_DictionaryCrst;
+    template<typename T> friend struct ::cdac_data;
+};
+
+template<>
+struct cdac_data<Module>
+{
+    static constexpr size_t Assembly = offsetof(Module, m_pAssembly);
+    static constexpr size_t Base = offsetof(Module, m_baseAddress);
+    static constexpr size_t Flags = offsetof(Module, m_dwTransientFlags);
+    static constexpr size_t LoaderAllocator = offsetof(Module, m_loaderAllocator);
+    static constexpr size_t ThunkHeap = offsetof(Module, m_pThunkHeap);
+    static constexpr size_t DynamicMetadata = offsetof(Module, m_pDynamicMetadata);
+    static constexpr size_t Path = offsetof(Module, m_path);
+
+    // Lookup map pointers
+    static constexpr size_t FieldDefToDescMap = offsetof(Module, m_FieldDefToDescMap);
+    static constexpr size_t ManifestModuleReferencesMap = offsetof(Module, m_ManifestModuleReferencesMap);
+    static constexpr size_t MemberRefToDescMap = offsetof(Module, m_MemberRefMap);
+    static constexpr size_t MethodDefToDescMap = offsetof(Module, m_MethodDefToDescMap);
+    static constexpr size_t TypeDefToMethodTableMap = offsetof(Module, m_TypeDefToMethodTableMap);
+    static constexpr size_t TypeRefToMethodTableMap = offsetof(Module, m_TypeRefToMethodTableMap);
+    static constexpr size_t MethodDefToILCodeVersioningStateMap = offsetof(Module, m_ILCodeVersioningStateMap);
 };
 
 //
@@ -1801,11 +1682,6 @@ private:
     // Simple Critical Section used for basic leaf-lock operatons.
     CrstExplicitInit        m_CrstLeafLock;
 
-    // Buffer of Metadata storage for dynamic modules. May be NULL. This provides a reasonable way for
-    // the debugger to get metadata of dynamic modules from out of process.
-    // A dynamic module will eagerly serialize its metadata to this buffer.
-    PTR_SBuffer m_pDynamicMetadata;
-
 #if !defined DACCESS_COMPILE
     ReflectionModule(Assembly *pAssembly, PEAssembly *pPEAssembly);
 #endif // !DACCESS_COMPILE
@@ -1814,7 +1690,7 @@ public:
 
 #ifdef DACCESS_COMPILE
     // Accessor to expose m_pDynamicMetadata to debugger.
-    PTR_SBuffer GetDynamicMetadataBuffer() const;
+    TADDR GetDynamicMetadataBuffer() const;
 #endif
 
 #if !defined DACCESS_COMPILE

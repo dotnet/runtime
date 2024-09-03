@@ -7,7 +7,7 @@
 #ifndef __QCall_h__
 #define __QCall_h__
 
-#include "clr_std/type_traits"
+#include <type_traits>
 
 //
 // QCALLS
@@ -27,7 +27,7 @@
 //
 //
 // The preferred type of QCall arguments is primitive types that efficiently handled by the P/Invoke marshaler (INT32, LPCWSTR, BOOL).
-// (Notice that BOOL is the correct boolean flavor for QCall arguments. CLR_BOOL is the correct boolean flavor for FCall arguments.)
+// (Notice that BOOL is the correct boolean flavor for QCall arguments. FC_BOOL_ARG is the correct boolean flavor for FCall arguments.)
 //
 // The pointers to common unmanaged EE structures should be wrapped into helper handle types. This is to make the managed implementation
 // type safe and avoid falling into unsafe C# everywhere. See the AssemblyHandle below for a good example.
@@ -159,6 +159,12 @@ public:
     {
         StringObject ** m_ppStringObject;
 
+        STRINGREF Get()
+        {
+            LIMITED_METHOD_CONTRACT;
+            return ObjectToSTRINGREF(*m_ppStringObject);
+        }
+
 #ifndef DACCESS_COMPILE
         //
         // Helpers for returning managed string from QCall
@@ -221,7 +227,6 @@ public:
        // Do not add operator overloads to convert this object into a stack reference to a specific object type
        // such as OBJECTREF *. While such things are correct, our debug checking logic is unable to verify that
        // the object reference is actually protected from access and therefore will assert.
-       // See bug 254159 for details.
 
 #endif // !DACCESS_COMPILE
     };
@@ -243,15 +248,15 @@ public:
     struct AssemblyHandle
     {
         Object ** m_ppObject;
-        DomainAssembly * m_pAssembly;
+        Assembly * m_pAssembly;
 
-        operator DomainAssembly * ()
+        operator Assembly * ()
         {
             LIMITED_METHOD_CONTRACT;
             return m_pAssembly;
         }
 
-        DomainAssembly * operator->() const
+        Assembly * operator->() const
         {
             LIMITED_METHOD_CONTRACT;
             return m_pAssembly;

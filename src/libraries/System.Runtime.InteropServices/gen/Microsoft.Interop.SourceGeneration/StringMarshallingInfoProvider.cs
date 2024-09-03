@@ -59,35 +59,13 @@ namespace Microsoft.Interop
                 // No marshalling info was computed, but a character encoding was provided.
                 return _defaultMarshallingInfo.CharEncoding switch
                 {
-                    CharEncoding.Utf16 => CreateStringMarshallingInfo(_compilation, type, TypeNames.Utf16StringMarshaller),
-                    CharEncoding.Utf8 => CreateStringMarshallingInfo(_compilation, type, TypeNames.Utf8StringMarshaller),
+                    CharEncoding.Utf16 => CustomMarshallingInfoHelper.CreateMarshallingInfoByMarshallerTypeName(_compilation, type, TypeNames.Utf16StringMarshaller),
+                    CharEncoding.Utf8 => CustomMarshallingInfoHelper.CreateMarshallingInfoByMarshallerTypeName(_compilation, type, TypeNames.Utf8StringMarshaller),
                     _ => throw new InvalidOperationException()
                 };
             }
 
             return new MarshallingInfoStringSupport(_defaultMarshallingInfo.CharEncoding);
-        }
-
-        public static MarshallingInfo CreateStringMarshallingInfo(
-            Compilation compilation,
-            ITypeSymbol type,
-            string marshallerName)
-        {
-            INamedTypeSymbol? stringMarshaller = compilation.GetTypeByMetadataName(marshallerName);
-            if (stringMarshaller is null)
-                return new MissingSupportMarshallingInfo();
-
-            if (ManualTypeMarshallingHelper.HasEntryPointMarshallerAttribute(stringMarshaller))
-            {
-                if (ManualTypeMarshallingHelper.TryGetValueMarshallersFromEntryType(stringMarshaller, type, compilation, out CustomTypeMarshallers? marshallers))
-                {
-                    return new NativeMarshallingAttributeInfo(
-                        EntryPointType: ManagedTypeInfo.CreateTypeInfoForTypeSymbol(stringMarshaller),
-                        Marshallers: marshallers.Value);
-                }
-            }
-
-            return new MissingSupportMarshallingInfo();
         }
     }
 }

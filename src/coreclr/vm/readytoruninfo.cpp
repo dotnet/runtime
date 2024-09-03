@@ -94,42 +94,21 @@ BOOL ReadyToRunInfo::TryLookupTypeTokenFromName(const NameHandle *pName, mdToken
 
     LPCUTF8 pszName = NULL;
     LPCUTF8 pszNameSpace = NULL;
-    // Reserve stack space for parsing out the namespace in a name-based lookup
-    // at this scope so the stack space is in scope for all usages in this method.
-    CQuickBytes namespaceBuffer;
 
     //
     // Compute the hashcode of the type (hashcode based on type name and namespace name)
     //
     int dwHashCode = 0;
 
+    _ASSERTE(pName->GetName() != NULL);
+    _ASSERTE(pName->GetNameSpace() != NULL);
+
     if (pName->GetTypeToken() == mdtBaseType || pName->GetTypeModule() == NULL)
     {
         // Name-based lookups (ex: Type.GetType()).
 
         pszName = pName->GetName();
-        pszNameSpace = "";
-        if (pName->GetNameSpace() != NULL)
-        {
-            pszNameSpace = pName->GetNameSpace();
-        }
-        else
-        {
-            LPCUTF8 p;
-
-            if ((p = ns::FindSep(pszName)) != NULL)
-            {
-                SIZE_T d = p - pszName;
-
-                FAULT_NOT_FATAL();
-                pszNameSpace = namespaceBuffer.SetStringNoThrow(pszName, d);
-
-                if (pszNameSpace == NULL)
-                    return FALSE;
-
-                pszName = (p + 1);
-            }
-        }
+        pszNameSpace = pName->GetNameSpace();
 
         _ASSERT(pszNameSpace != NULL);
         dwHashCode ^= ComputeNameHashCode(pszNameSpace, pszName);
@@ -429,7 +408,8 @@ static void LogR2r(const char *msg, PEAssembly *pPEAssembly)
     if (r2rLogFile == NULL)
         return;
 
-    fprintf(r2rLogFile, "%s: \"%s\".\n", msg, pPEAssembly->GetPath().GetUTF8());
+    SString assemblyPath{ pPEAssembly->GetPath() };
+    fprintf(r2rLogFile, "%s: \"%s\".\n", msg, assemblyPath.GetUTF8());
     fflush(r2rLogFile);
 }
 
@@ -762,7 +742,7 @@ ReadyToRunInfo::ReadyToRunInfo(Module * pModule, LoaderAllocator* pLoaderAllocat
                 const GUID *componentMvids = (const GUID *)m_pComposite->GetLayout()->GetDirectoryData(pComponentAssemblyMvids);
                 // Take load lock so that DeclareDependencyOnMvid can be called
 
-                BaseDomain::LoadLockHolder lock(AppDomain::GetCurrentDomain(), pNativeImage == NULL); // LoadLock is already held for composite images
+                AppDomain::LoadLockHolder lock(AppDomain::GetCurrentDomain(), pNativeImage == NULL); // LoadLock is already held for composite images
                 AppDomain::GetCurrentDomain()->AssertLoadLockHeld();
 
                 while (pNativeMDImport->EnumNext(&assemblyEnum, &assemblyRef))
@@ -1039,7 +1019,7 @@ bool ReadyToRunInfo::GetPgoInstrumentationData(MethodDesc * pMD, BYTE** pAllocat
 {
     STANDARD_VM_CONTRACT;
 
-    PCODE pEntryPoint = NULL;
+    PCODE pEntryPoint = (PCODE)NULL;
 #ifdef PROFILING_SUPPORTED
     BOOL fShouldSearchCache = TRUE;
 #endif // PROFILING_SUPPORTED
@@ -1112,7 +1092,7 @@ PCODE ReadyToRunInfo::GetEntryPoint(MethodDesc * pMD, PrepareCodeConfig* pConfig
     bool printedStart = false;
 #endif
 
-    PCODE pEntryPoint = NULL;
+    PCODE pEntryPoint = (PCODE)NULL;
 #ifdef PROFILING_SUPPORTED
     BOOL fShouldSearchCache = TRUE;
 #endif // PROFILING_SUPPORTED
@@ -1416,7 +1396,7 @@ PCODE ReadyToRunInfo::MethodIterator::GetMethodStartAddress()
     STANDARD_VM_CONTRACT;
 
     PCODE ret = m_pInfo->GetEntryPoint(GetMethodDesc(), NULL, FALSE);
-    _ASSERTE(ret != NULL);
+    _ASSERTE(ret != (PCODE)NULL);
     return ret;
 }
 
@@ -1713,7 +1693,7 @@ public:
         RETURN module;
     }
 
-    DomainAssembly *LoadModule(mdFile kFile) final
+    Module *LoadModule(mdFile kFile) final
     {
         // Native manifest module functionality isn't actually multi-module assemblies, and File tokens are not useable
         if (TypeFromToken(kFile) == mdtFile)
@@ -1722,7 +1702,7 @@ public:
         _ASSERTE(TypeFromToken(kFile) == mdtModuleRef);
         Module* module = m_ModuleReferencesMap.GetElement(RidFromToken(kFile));
         if (module != NULL)
-            return module->GetDomainAssembly();
+            return module;
 
         LPCSTR moduleName;
         if (FAILED(GetMDImport()->GetModuleRefProps(kFile, &moduleName)))
@@ -1771,8 +1751,8 @@ public:
         m_ModuleReferencesMap.TrySetElement(RidFromToken(kFile), module);
 #endif
 
-        return module->GetDomainAssembly();
-    }
+       return module;
+   }
 
     virtual void DECLSPEC_NORETURN ThrowTypeLoadExceptionImpl(IMDInternalImport *pInternalImport,
                                                   mdToken token,
@@ -1904,7 +1884,7 @@ uint32_t ReadyToRun_TypeGenericInfoMap::GetGenericArgumentCount(mdTypeDef input,
     uint32_t count = ((uint8_t)typeGenericInfo & (uint8_t)ReadyToRunTypeGenericInfo::GenericCountMask);
     if (count > 2)
         foundResult = false;
-    
+
     if (!foundResult)
     {
         HENUMInternalHolder hEnumTyPars(pImport);
@@ -1922,7 +1902,7 @@ HRESULT ReadyToRun_TypeGenericInfoMap::GetGenericArgumentCountNoThrow(mdTypeDef 
     uint32_t count = ((uint8_t)typeGenericInfo & (uint8_t)ReadyToRunTypeGenericInfo::GenericCountMask);
     if (count > 2)
         foundResult = false;
-    
+
     if (!foundResult)
     {
         HENUMInternalHolder hEnumTyPars(pImport);
@@ -1944,25 +1924,22 @@ bool ReadyToRun_TypeGenericInfoMap::HasVariance(mdTypeDef input, bool *foundResu
 bool ReadyToRun_TypeGenericInfoMap::HasConstraints(mdTypeDef input, bool *foundResult) const
 {
     ReadyToRunTypeGenericInfo typeGenericInfo = GetTypeGenericInfo(input, foundResult);
-    return !!((uint8_t)typeGenericInfo & (uint8_t)ReadyToRunTypeGenericInfo::HasVariance);
+    return !!((uint8_t)typeGenericInfo & (uint8_t)ReadyToRunTypeGenericInfo::HasConstraints);
 }
 
 bool ReadyToRun_MethodIsGenericMap::IsGeneric(mdMethodDef input, bool *foundResult) const
 {
-#ifdef DACCESS_COMPILE
+#ifndef DACCESS_COMPILE
+    uint32_t rid = RidFromToken(input);
+    if ((rid <= MethodCount) && (rid != 0))
+    {
+        uint8_t chunk = ((uint8_t*)&MethodCount)[((rid - 1) / 8) + sizeof(uint32_t)];
+        chunk >>= 7 - ((rid - 1) % 8);
+        *foundResult = true;
+        return !!(chunk & 1);
+    }
+#endif // !DACCESS_COMPILE
     *foundResult = false;
     return false;
-#else
-    uint32_t rid = RidFromToken(input);
-    if ((rid > MethodCount) || (rid == 0))
-    {
-        *foundResult = false;
-        return false;
-    }
-
-    uint8_t chunk = ((uint8_t*)&MethodCount)[((rid - 1) / 8) + sizeof(uint32_t)];
-    chunk >>= 7 - ((rid - 1) % 8);
-    return !!(chunk & 1);
-#endif
 }
 

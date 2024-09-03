@@ -113,7 +113,6 @@ BEGIN
     COR_E_FILELOAD                          "Unable to load file '%1'."
     COR_E_ASSEMBLYEXPECTED                  "The module '%1' was expected to contain an assembly manifest."
     FUSION_E_REF_DEF_MISMATCH               "The located assembly's manifest definition with name '%1' does not match the assembly reference."
-    FUSION_E_PRIVATE_ASM_DISALLOWED         "Assembly '%1' is required to be strongly named."
     FUSION_E_INVALID_NAME                   "The given assembly name, '%1', was invalid."
     FUSION_E_APP_DOMAIN_LOCKED              "The requested assembly version conflicts with what is already bound in the app domain or specified in the manifest."
     IDS_EE_HASH_VAL_FAILED                  "Hash validation failed for file or assembly '%1'."
@@ -309,9 +308,12 @@ BEGIN
 	IDS_CLASSLOAD_GENERICTYPE_RECURSIVE     "Could not load type '%1' from assembly '%2' because it has recursive generic definition."
     IDS_CLASSLOAD_TOOMANYGENERICARGS        "Could not load type '%1' from assembly '%2'. Internal limitation: Too many generic arguments."
 
-    IDS_CLASSLOAD_INLINE_ARRAY_FIELD_COUNT  "InlineArrayAttribute requires that the target type has a single instance field. Type: '%1'.  Assembly: '%2'."
-    IDS_CLASSLOAD_INLINE_ARRAY_LENGTH       "InlineArrayAttribute requires that the length argument is greater than 0. Type: '%1'.  Assembly: '%2'."
-    IDS_CLASSLOAD_INLINE_ARRAY_EXPLICIT     "InlineArrayAttribute cannot be applied to a type with explicit layout. Type: '%1'.  Assembly: '%2'."
+    IDS_CLASSLOAD_INLINE_ARRAY_FIELD_COUNT  "InlineArrayAttribute requires that the target type has a single instance field. Type: '%1'. Assembly: '%2'."
+    IDS_CLASSLOAD_INLINE_ARRAY_LENGTH       "InlineArrayAttribute requires that the length argument is greater than 0. Type: '%1'. Assembly: '%2'."
+    IDS_CLASSLOAD_INLINE_ARRAY_EXPLICIT     "InlineArrayAttribute cannot be applied to a type with explicit layout. Type: '%1'. Assembly: '%2'."
+
+    IDS_CLASSLOAD_BYREF_OF_BYREF            "Could not create a ByRef of a ByRef. Type: '%1'. Assembly: '%2'."
+    IDS_CLASSLOAD_POINTER_OF_BYREF          "Could not create a pointer to a ByRef. Type: '%1'. Assembly: '%2'."
 
     IDS_INVALID_RECURSIVE_GENERIC_FIELD_LOAD "Could not load type '%1' from assembly '%2' because of an invalid self-referential generic field."
 
@@ -325,6 +327,7 @@ BEGIN
     IDS_CLASSLOAD_BADFORMAT                 "Could not load type '%1' from assembly '%2' because the format is invalid."
     IDS_CLASSLOAD_BYREFARRAY                "Could not create array type '%1' from assembly '%2' because the element type is ByRef."
     IDS_CLASSLOAD_BYREFLIKEARRAY            "Could not create array type '%1' from assembly '%2' because the element type is ByRef-like."
+    IDS_CLASSLOAD_VOIDARRAY                 "Could not create array type '%1' from assembly '%2' because the element type is System.Void."
     IDS_CLASSLOAD_FIELDTOOLARGE             "Size of field of type '%1' from assembly '%2' is too large."
     IDS_CLASSLOAD_CANTEXTEND                "Type '%1' from assembly '%2' cannot extend from any other type."
     IDS_CLASSLOAD_STATICVIRTUAL             "Method '%3' in type '%1' from assembly '%2' cannot be a static and a virtual."
@@ -392,7 +395,6 @@ BEGIN
 
     IDS_INVALID_PINVOKE_CALLCONV            "Unsupported unmanaged calling convention."
     IDS_CLASSLOAD_NSTRUCT_EXPLICIT_OFFSET   "Could not load type '%1' from assembly '%2' because field '%3' was not given an explicit offset."
-    IDS_WRONGSIZEARRAY_IN_NSTRUCT           "Type could not be marshaled because the length of an embedded array instance does not match the declared length in the layout."
 
     IDS_EE_INVALIDLCIDPARAM                 "The value of the LCID conversion attribute must not exceed the number of parameters."
 
@@ -400,7 +402,6 @@ BEGIN
     IDS_EE_CANNOT_COERCE_BYREF_VARIANT      "Object cannot be coerced to the original type of the ByRef VARIANT it was obtained from."
     IDS_EE_WRAPPER_MUST_HAVE_DEF_CONS       "The new wrapper type must have an empty constructor."
     IDS_EE_INVALID_STD_DISPID_NAME          "Standard DISPID member name is formed incorrectly.  The name must be in the following format: [DISPID=XXX]."
-    IDS_EE_NO_IDISPATCH_ON_TARGET           "COM target does not implement IDispatch."
     IDS_EE_NON_STD_NAME_WITH_STD_DISPID     "All named parameters must be specified as [DISPID=XXX] when invoking on a standard members specified as [DISPID=XXX}."
     IDS_EE_INVOKE_NEW_ENUM_INVALID_RETURN   "Variant returned from an Invoke call with a DISPID of -4 does not contain a valid IUnknown pointer."
     IDS_EE_COM_OBJECT_RELEASE_RACE          "COM object that has been separated from its underlying RCW cannot be used. The COM object was released while it was still in use on another thread."
@@ -410,7 +411,6 @@ BEGIN
     IDS_EE_CANNOTCASTSAME                   "[A]%1 cannot be cast to [B]%2. %3. %4."
     IDS_EE_INVALID_VT_FOR_CUSTOM_MARHALER   "Type of the VARIANT specified for a parameter with a custom marshaler is not supported by the custom marshaler."
     IDS_EE_BAD_COMEXTENDS_CLASS             "Types extending from COM objects should override all methods of an interface implemented by the base COM class."
-    IDS_EE_INTERFACE_NOT_DISPATCH_BASED     "The interface does not support late bound calls since it does not derive from IDispatch."
     IDS_EE_MARSHAL_UNMAPPABLE_CHAR          "Cannot marshal: Encountered unmappable character."
 
     IDS_EE_NOCUSTOMMARSHALER                "A call to GetInstance() for custom marshaler '%1' returned null, which is not allowed."
@@ -431,7 +431,6 @@ BEGIN
     IDS_EE_RCW_INVALIDCAST_ITF              "Unable to cast COM object of type '%2' to interface type '%3'. This operation failed because the QueryInterface call on the COM component for the interface with IID '%4' failed due to the following error: %1."
     IDS_EE_RCW_INVALIDCAST_EVENTITF         "Unable to cast COM object of type '%2' to event interface type '%3'. This operation failed because the QueryInterface call on the COM component for the interface with IID '%4' failed due to the following error: '%1' and the COM component does not support the source interface with IID '%5'."
     IDS_EE_RCW_INVALIDCAST_IENUMERABLE      "Unable to cast COM object of type '%2' to interface type '%3'. This operation failed because the QueryInterface call on the COM component for the interface with IID '%4' failed due to the following error: '%1' and the COM component does not support IDispatch::Invoke calls for DISPID_NEWENUM."
-    IDS_EE_RCW_INVALIDCAST_MNGSTDITF        "Unable to cast COM object of type '%2' to standard managed interface type '%3'. This operation failed because the QueryInterface call on the COM component for the managed interface with IID '%4' failed due to the following error: '%1' and the QueryInterface call for the native interface with IID '%5' that corresponds to this managed interface failed due to the following error: %6."
     IDS_EE_RCW_INVALIDCAST_COMOBJ_TO_MD     "Unable to cast COM object of type '%1' to class type '%2'. COM components that enter the CLR and do not support IProvideClassInfo or that do not have any interop assembly registered will be wrapped in the __ComObject type. Instances of this type cannot be cast to any other class; however they can be cast to interfaces as long as the underlying COM component supports QueryInterface calls for the IID of the interface."
     IDS_EE_RCW_INVALIDCAST_TO_NON_COMOBJTYPE "Unable to cast COM object of type '%1' to class type '%2'. Instances of types that represent COM components cannot be cast to types that do not represent COM components; however they can be cast to interfaces as long as the underlying COM component supports QueryInterface calls for the IID of the interface."
     IDS_EE_RCW_INVALIDCAST_MD_TO_MD         "Unable to cast COM object of type '%1' to class type '%2'. Instances of types that represent COM components cannot be cast to different types that represent COM components; however they can be cast to interfaces as long as the underlying COM component supports QueryInterface calls for the IID of the interface."
@@ -469,7 +468,6 @@ BEGIN
     IDS_EE_INVALID_CA                       "Invalid custom attribute provided."
 
     IDS_EE_THREAD_CANNOT_GET                "Unable to retrieve thread information."
-    IDS_EE_THREAD_BAD_STATE                 "Thread in invalid state."
     IDS_EE_THREAD_ABORT_WHILE_SUSPEND       "Thread is suspended; attempting to abort."
     IDS_EE_NOVARIANTRETURN                  "PInvoke restriction: cannot return variants."
 
@@ -488,14 +486,6 @@ BEGIN
     IDS_EE_CLASS_TO_VARIANT_TLB_NOT_REG     "Type '%1' cannot be marshalled to a Variant. Type library is not registered."
     IDS_EE_CANNOT_MAP_TO_MANAGED_VC         "The specified record cannot be mapped to a managed value class."
 
-    IDS_EE_SAFEHANDLECLOSED                 "Safe handle has been closed"
-    IDS_EE_SAFEHANDLECANNOTSETHANDLE        "Safe handle's handle field can only be set if the safe handle is not closed and has a ref count of 1."
-
-    IDS_EE_SH_IN_VARIANT_NOT_SUPPORTED      "SafeHandle derived types cannot be stored in Variants."
-
-    IDS_EE_CH_IN_VARIANT_NOT_SUPPORTED      "CriticalHandle derived types cannot be stored in Variants."
-
-    IDS_EE_VAR_WRAP_IN_VAR_NOT_SUPPORTED    "VariantWrappers cannot be stored in Variants."
     IDS_EE_RECORD_NON_SUPPORTED_FIELDS      "The structure contains fields that are not supported in unmanaged records."
 
     IDS_CLASSLOAD_NSTRUCT_NEGATIVE_OFFSET   "Could not load type '%1' from assembly '%2' because field '%3' was given a negative offset."
@@ -525,7 +515,6 @@ BEGIN
     IDS_CLASSLOAD_TOO_MANY_METHODS          "Type '%1' from assembly '%2' contains more methods than the current implementation allows."
     IDS_CLASSLOAD_MI_CANNOT_OVERRIDE        "Cannot override runtime implemented method '%3' on type '%1' from assembly '%2'."
 
-    IDS_CLASSLOAD_COLLECTIBLEFIXEDVTATTR   "Collectible type '%1' has unsupported FixedAddressValueTypeAttribute applied to a field."
     IDS_EE_JIT_COMPILER_ERROR               "The JIT compiler encountered invalid IL code or an internal limitation."
     IDS_EE_OBJECT_TO_VARIANT_NOT_SUPPORTED  "Invalid managed/unmanaged type combination (Marshaling to and from COM VARIANTs isn't supported)."
     IDS_EE_OBJECT_TO_ITF_NOT_SUPPORTED      "Invalid managed/unmanaged type combination (Marshaling to and from COM interface pointers isn't supported)."
@@ -586,7 +575,7 @@ BEGIN
         BFA_METHOD_WITH_NONZERO_RVA             "Method with non-zero RVA in an Import."
         BFA_ABSTRACT_METHOD_WITH_RVA            "Abstract method with non-zero RVA."
         BFA_RUNTIME_METHOD_WITH_RVA             "Runtime-implemented method with non-zero RVA."
-        BFA_INTERNAL_METHOD_WITH_RVA            "Internal call method with non_NULL RVA."
+        BFA_INTERNAL_METHOD_WITH_RVA            "Internal call method '%1.%3' with non-zero RVA."
         BFA_AB_METHOD_IN_AB_CLASS               "Abstract method in non-abstract class."
         BFA_NONVIRT_AB_METHOD                   "Non-virtual abstract method."
         BFA_NONAB_NONCCTOR_METHOD_ON_INT        "Non-abstract, non-.cctor method in an interface."
@@ -706,7 +695,7 @@ END
 STRINGTABLE DISCARDABLE
 BEGIN
     IDS_HOST_ASSEMBLY_RESOLVER_ASSEMBLY_ALREADY_LOADED_IN_CONTEXT "Assembly with same name is already loaded"
-    IDS_HOST_ASSEMBLY_RESOLVER_DYNAMICALLY_EMITTED_ASSEMBLIES_UNSUPPORTED "Dynamically emitted assemblies are unsupported during host-based resolution."
+    IDS_HOST_ASSEMBLY_RESOLVER_DYNAMICALLY_EMITTED_ASSEMBLIES_UNSUPPORTED "Dynamically emitted assemblies are unsupported for AssemblyLoadContext resolution."
 END
 
 STRINGTABLE DISCARDABLE

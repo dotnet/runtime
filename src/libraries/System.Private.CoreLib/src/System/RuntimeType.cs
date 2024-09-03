@@ -15,7 +15,6 @@ namespace System
     {
         public override Assembly Assembly => RuntimeTypeHandle.GetAssembly(this);
         public override Type? BaseType => GetBaseType();
-        public override bool IsByRefLike => RuntimeTypeHandle.IsByRefLike(this);
         public override bool IsGenericParameter => RuntimeTypeHandle.IsGenericVariable(this);
         public override bool IsTypeDefinition => RuntimeTypeHandle.IsTypeDefinition(this);
         public override bool IsSecurityCritical => true;
@@ -134,16 +133,8 @@ namespace System
             // Get all of the values as the underlying type and copy them to a new array of the enum type.
             Array values = Enum.GetValuesAsUnderlyingTypeNoCopy(this);
             Array ret = Array.CreateInstance(this, values.Length);
-#if MONO
-            // TODO https://github.com/dotnet/runtime/issues/79224:
-            // Array.Copy can be used instead when bool[] is no longer supported, or if mono's Array.Copy is updated to support copying a bool[] to an EnumBackedByBool[].
-            for (int i = 0; i < values.Length; i++)
-            {
-                ret.SetValue(Enum.ToObject(this, values.GetValue(i)!), i);
-            }
-#else
             Array.Copy(values, ret, values.Length);
-#endif
+
             return ret;
         }
 
@@ -268,12 +259,7 @@ namespace System
         public override bool IsInstanceOfType([NotNullWhen(true)] object? o) => RuntimeTypeHandle.IsInstanceOfType(this, o);
 
         public override bool IsAssignableFrom([NotNullWhen(true)] TypeInfo? typeInfo)
-        {
-            if (typeInfo == null)
-                return false;
-
-            return IsAssignableFrom(typeInfo.AsType());
-        }
+            => typeInfo != null && IsAssignableFrom(typeInfo.AsType());
 
         public override bool IsAssignableFrom([NotNullWhen(true)] Type? c)
         {
@@ -658,13 +644,13 @@ namespace System
                 // Invoke
                 if (finalists == null &&
                     argCnt == 0 &&
-                    finalist.GetParametersNoCopy().Length == 0 &&
+                    finalist.GetParametersAsSpan().Length == 0 &&
                     (bindingFlags & BindingFlags.OptionalParamBinding) == 0)
                 {
                     return finalist.Invoke(target, bindingFlags, binder, providedArgs, culture);
                 }
 
-                finalists ??= new MethodInfo[] { finalist };
+                finalists ??= [finalist];
                 providedArgs ??= Array.Empty<object>();
                 object? state = null;
                 MethodBase? invokeMethod = null;
@@ -706,7 +692,7 @@ namespace System
 
                     if (constraint.IsGenericParameter)
                     {
-                        GenericParameterAttributes special = constraint.GenericParameterAttributes & GenericParameterAttributes.SpecialConstraintMask;
+                        GenericParameterAttributes special = constraint.GenericParameterAttributes;
 
                         if ((special & GenericParameterAttributes.ReferenceTypeConstraint) == 0 &&
                             (special & GenericParameterAttributes.NotNullableValueTypeConstraint) == 0)
@@ -718,7 +704,7 @@ namespace System
 
                 if (baseType == ObjectType)
                 {
-                    GenericParameterAttributes special = GenericParameterAttributes & GenericParameterAttributes.SpecialConstraintMask;
+                    GenericParameterAttributes special = GenericParameterAttributes;
                     if ((special & GenericParameterAttributes.NotNullableValueTypeConstraint) != 0)
                         baseType = ValueType;
                 }
@@ -895,6 +881,31 @@ namespace System
             return false;
         }
 
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2067:UnrecognizedReflectionPattern",
+            Justification = "AllocateValueType is only called on a ValueType. You can always create an instance of a ValueType.")]
+        [return: NotNullIfNotNull(nameof(value))]
+        internal static object? AllocateValueType(RuntimeType type, object? value)
+        {
+            Debug.Assert(type.IsValueType);
+            Debug.Assert(!type.IsByRefLike);
+
+            if (value is not null)
+            {
+                // Make a copy of the provided value by re-boxing the existing value's underlying data.
+                Debug.Assert(type.IsEquivalentTo(value.GetType()));
+                return RuntimeHelpers.Box(ref RuntimeHelpers.GetRawData(value), type.TypeHandle)!;
+            }
+
+            if (type.IsNullableOfT)
+            {
+                // If the type is Nullable<T>, then create a true boxed Nullable<T> of the default Nullable<T> value.
+                return RuntimeMethodHandle.ReboxToNullable(null, type);
+            }
+
+            // Otherwise, just create a default instance of the type.
+            return RuntimeHelpers.GetUninitializedObject(type);
+        }
+
         private CheckValueStatus TryChangeType(ref object? value, ref bool copyBack)
         {
             RuntimeType? sigElementType;
@@ -905,7 +916,7 @@ namespace System
 
                 if (sigElementType.IsInstanceOfType(value))
                 {
-                    if (RuntimeTypeHandle.IsValueType(sigElementType))
+                    if (sigElementType.IsActualValueType)
                     {
                         if (sigElementType.IsNullableOfT)
                         {
@@ -924,7 +935,7 @@ namespace System
 
                 if (value == null)
                 {
-                    if (!RuntimeTypeHandle.IsValueType(sigElementType))
+                    if (!sigElementType.IsActualValueType)
                     {
                         return CheckValueStatus.Success;
                     }
@@ -951,7 +962,7 @@ namespace System
                     return CheckValueStatus.Success;
                 }
 
-                if (!RuntimeTypeHandle.IsValueType(this))
+                if (!IsActualValueType)
                 {
                     return CheckValueStatus.Success;
                 }

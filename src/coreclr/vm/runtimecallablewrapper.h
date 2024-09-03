@@ -62,7 +62,6 @@
 #include "vars.hpp"
 #include "spinlock.h"
 #include "interoputil.h"
-#include "mngstdinterfaces.h"
 #include "excep.h"
 #include "comcache.h"
 #include "threads.h"
@@ -124,7 +123,7 @@ struct RCW
 
             if (m_InlineCacheIndex >= INTERFACE_ENTRY_CACHE_SIZE)
                 return FALSE;
-    
+
             // stop incrementing m_InlineCacheIndex once we reach INTERFACE_ENTRY_CACHE_SIZE
             if (++m_InlineCacheIndex < INTERFACE_ENTRY_CACHE_SIZE)
                 return TRUE;
@@ -451,12 +450,6 @@ struct RCW
         LIMITED_METHOD_CONTRACT;
         return CachedInterfaceEntryIterator(dac_cast<PTR_RCW>(this));
     }
-
-    //---------------------------------------------------------------------
-    // Returns true iff pItfMT is a "standard managed" interface, such as
-    // IEnumerator, and the RCW supports the interface through classic COM
-    // interop mechanisms.
-    bool SupportsMngStdInterface(MethodTable *pItfMT);
 
 #ifdef _DEBUG
     // Does not throw if m_UnkEntry.m_pUnknown is no longer valid, debug only.
@@ -788,11 +781,11 @@ FORCEINLINE void NewRCWHolderRelease(RCW* p)
     }
 };
 
-class NewRCWHolder : public Wrapper<RCW*, NewRCWHolderDoNothing, NewRCWHolderRelease, NULL>
+class NewRCWHolder : public Wrapper<RCW*, NewRCWHolderDoNothing, NewRCWHolderRelease, 0>
 {
 public:
     NewRCWHolder(RCW* p = NULL)
-        : Wrapper<RCW*, NewRCWHolderDoNothing, NewRCWHolderRelease, NULL>(p)
+        : Wrapper<RCW*, NewRCWHolderDoNothing, NewRCWHolderRelease, 0>(p)
     {
         WRAPPER_NO_CONTRACT;
     }
@@ -800,7 +793,7 @@ public:
     FORCEINLINE void operator=(RCW* p)
     {
         WRAPPER_NO_CONTRACT;
-        Wrapper<RCW*, NewRCWHolderDoNothing, NewRCWHolderRelease, NULL>::operator=(p);
+        Wrapper<RCW*, NewRCWHolderDoNothing, NewRCWHolderRelease, 0>::operator=(p);
     }
 };
 
@@ -1325,7 +1318,7 @@ class RCWCleanupList
 public:
     RCWCleanupList()
         : m_pFirstBucket(NULL), m_lock(CrstRCWCleanupList, CRST_UNSAFE_ANYMODE),
-          m_pCurCleanupThread(NULL), m_doCleanupInContexts(FALSE)         
+          m_pCurCleanupThread(NULL), m_doCleanupInContexts(FALSE)
     {
         WRAPPER_NO_CONTRACT;
     }
@@ -1424,11 +1417,11 @@ FORCEINLINE void CtxEntryHolderRelease(CtxEntry *p)
     }
 }
 
-class CtxEntryHolder : public Wrapper<CtxEntry *, CtxEntryDoNothing, CtxEntryHolderRelease, NULL>
+class CtxEntryHolder : public Wrapper<CtxEntry *, CtxEntryDoNothing, CtxEntryHolderRelease, 0>
 {
 public:
     CtxEntryHolder(CtxEntry *p = NULL)
-        : Wrapper<CtxEntry *, CtxEntryDoNothing, CtxEntryHolderRelease, NULL>(p)
+        : Wrapper<CtxEntry *, CtxEntryDoNothing, CtxEntryHolderRelease, 0>(p)
     {
         WRAPPER_NO_CONTRACT;
     }
@@ -1437,7 +1430,7 @@ public:
     {
         WRAPPER_NO_CONTRACT;
 
-        Wrapper<CtxEntry *, CtxEntryDoNothing, CtxEntryHolderRelease, NULL>::operator=(p);
+        Wrapper<CtxEntry *, CtxEntryDoNothing, CtxEntryHolderRelease, 0>::operator=(p);
     }
 
 };

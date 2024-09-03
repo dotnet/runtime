@@ -1,41 +1,35 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>$(NetCoreAppCurrent);netstandard2.0;$(NetFrameworkMinimum)</TargetFrameworks>
+    <TargetFrameworks>netstandard2.0;$(NetFrameworkMinimum);$(NetCoreAppMinimum)</TargetFrameworks>
     <IsPackable>true</IsPackable>
-    <!-- Disabling baseline validation since this is a brand new package.
-         Once this package has shipped a stable version, the following line
-         should be removed in order to re-enable validation. -->
-    <DisablePackageBaselineValidation>true</DisablePackageBaselineValidation>
-    <PackageDescription>Provides support for system time abstraction primitives for .NET Framework and .NET Standard.
-
-Commonly Used Types:
-System.TimeProvider
-System.ITimer</PackageDescription>
-    <!-- This library uses IsPartialFacadeAssembly for which the compiler doesn't produce any XML documentation. -->
-    <UseCompilerGeneratedDocXmlFile>false</UseCompilerGeneratedDocXmlFile>
+    <PackageDescription>Provides support for system time abstraction primitives for .NET Framework and .NET Standard.</PackageDescription>
   </PropertyGroup>
 
-  <PropertyGroup>
-    <IsPartialFacadeAssembly Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net8.0'))">true</IsPartialFacadeAssembly>
-    <OmitResources Condition="'$(IsPartialFacadeAssembly)' == 'true'">true</OmitResources>
-  </PropertyGroup>
+  <Choose>
+    <When Condition="$([MSBuild]::GetTargetFrameworkIdentifier('$(TargetFramework)')) == '.NETCoreApp'">
+      <PropertyGroup>
+        <OmitResources>true</OmitResources>
+      </PropertyGroup>
 
-  <ItemGroup Condition="'$(IsPartialFacadeAssembly)' != 'true'">
-    <Compile Include="$(CommonPath)System\TimeProvider.cs" Link="System\TimeProvider.cs" />
-    <Compile Include="$(CommonPath)System\Threading\ITimer.cs" Link="System\Threading\ITimer.cs" />
-  </ItemGroup>
+      <ItemGroup>
+        <Compile Include="Microsoft.Bcl.TimeProvider.Forwards.cs" />
+      </ItemGroup>
+    </When>
+
+    <Otherwise>
+      <ItemGroup>
+        <Compile Include="$(CommonPath)System\TimeProvider.cs" Link="System\TimeProvider.cs" />
+        <Compile Include="$(CommonPath)System\Threading\ITimer.cs" Link="System\Threading\ITimer.cs" />
+
+        <PackageReference Include="System.ValueTuple" Version="$(SystemValueTupleVersion)" Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'" />
+        <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Bcl.AsyncInterfaces\src\Microsoft.Bcl.AsyncInterfaces.csproj" />
+      </ItemGroup>
+    </Otherwise>
+  </Choose>
 
   <ItemGroup>
     <Compile Include="System\Threading\Tasks\TimeProviderTaskExtensions.cs" />
-  </ItemGroup>
-
-  <ItemGroup Condition="'$(IsPartialFacadeAssembly)' != 'true'">
-    <PackageReference Include="Microsoft.Bcl.AsyncInterfaces" Version="$(MicrosoftBclAsyncInterfacesVersion)" />
-  </ItemGroup>
-
-  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">
-    <PackageReference Include="System.ValueTuple" Version="$(SystemValueTupleVersion)" />
   </ItemGroup>
 
 </Project>

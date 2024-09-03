@@ -6,6 +6,8 @@ using System.Diagnostics;
 using System.Diagnostics.Tracing;
 using System.IO;
 using System.Linq;
+using System.Net.Sockets;
+using System.Net;
 using System.Reflection;
 using System.Threading.Tasks;
 using System.Threading.Tests;
@@ -136,7 +138,7 @@ namespace System.Threading.ThreadPools.Tests
                     VerifyMaxThreads(MaxPossibleThreadCount, MaxPossibleThreadCount);
                     Assert.True(ThreadPool.SetMaxThreads(MaxPossibleThreadCount + 1, MaxPossibleThreadCount + 1));
                     VerifyMaxThreads(MaxPossibleThreadCount, MaxPossibleThreadCount);
-                    Assert.Equal(PlatformDetection.IsNetFramework, ThreadPool.SetMaxThreads(-1, -1));
+                    Assert.False(ThreadPool.SetMaxThreads(-1, -1));
                     VerifyMaxThreads(MaxPossibleThreadCount, MaxPossibleThreadCount);
 
                     Assert.True(ThreadPool.SetMinThreads(MaxPossibleThreadCount, MaxPossibleThreadCount));
@@ -450,7 +452,7 @@ namespace System.Threading.ThreadPools.Tests
                 bool waitForWorkStart = false;
                 var workStarted = new AutoResetEvent(false);
                 var localWorkScheduled = new AutoResetEvent(false);
-                int completeWork = 0;
+                bool completeWork = false;
                 int queuedWorkCount = 0;
                 var allWorkCompleted = new ManualResetEvent(false);
                 Exception backgroundEx = null;
@@ -465,7 +467,7 @@ namespace System.Threading.ThreadPools.Tests
                         // Blocking can affect thread pool thread injection heuristics, so don't block, pretend like a
                         // long-running CPU-bound work item
                         ThreadTestHelpers.WaitForConditionWithoutRelinquishingTimeSlice(
-                                () => Interlocked.CompareExchange(ref completeWork, 0, 0) != 0);
+                                () => Interlocked.CompareExchange(ref completeWork, false, false));
                     }
                     catch (Exception ex)
                     {
@@ -555,7 +557,7 @@ namespace System.Threading.ThreadPools.Tests
                 finally
                 {
                     // Complete the work
-                    Interlocked.Exchange(ref completeWork, 1);
+                    Interlocked.Exchange(ref completeWork, true);
                 }
 
                 // Wait for work items to exit, for counting
@@ -1160,6 +1162,311 @@ namespace System.Threading.ThreadPools.Tests
             }).Dispose();
         }
 
+        private sealed class RuntimeEventListener : EventListener
+        {
+            private const string ClrProviderName = "Microsoft-Windows-DotNETRuntime";
+            private const EventKeywords ThreadingKeyword = (EventKeywords)0x10000;
+
+            public volatile int tpIOEnqueue = 0;
+            public volatile int tpIODequeue = 0;
+            public ManualResetEvent tpWaitIOEnqueueEvent = new ManualResetEvent(false);
+            public ManualResetEvent tpWaitIODequeueEvent = new ManualResetEvent(false);
+
+            protected override void OnEventSourceCreated(EventSource eventSource)
+            {
+                if (eventSource.Name.Equals(ClrProviderName))
+                {
+                    EnableEvents(eventSource, EventLevel.Verbose, ThreadingKeyword);
+                }
+
+                base.OnEventSourceCreated(eventSource);
+            }
+
+            protected override void OnEventWritten(EventWrittenEventArgs eventData)
+            {
+                if (eventData.EventName.Equals("ThreadPoolIOEnqueue"))
+                {
+                    Interlocked.Increment(ref tpIOEnqueue);
+                    tpWaitIOEnqueueEvent.Set();
+                }
+                else if (eventData.EventName.Equals("ThreadPoolIODequeue"))
+                {
+                    Interlocked.Increment(ref tpIODequeue);
+                    tpWaitIODequeueEvent.Set();
+                }
+            }
+        }
+
+        [ConditionalFact(nameof(IsThreadingAndRemoteExecutorSupported), nameof(UseWindowsThreadPool))]
+        public void ReadWriteAsyncTest()
+        {
+            RemoteExecutor.Invoke(async () =>
+            {
+                using (RuntimeEventListener eventListener = new RuntimeEventListener())
+                {
+                    TaskCompletionSource<int> portTcs = new TaskCompletionSource<int>();
+                    TaskCompletionSource<bool> readAsyncReadyTcs = new TaskCompletionSource<bool>();
+
+                    async Task StartListenerAsync()
+                    {
+                        using TcpListener listener = new TcpListener(IPAddress.Loopback, 0);
+                        listener.Start();
+                        int port = ((IPEndPoint)listener.LocalEndpoint).Port;
+                        portTcs.SetResult(port);
+                        using TcpClient client = await listener.AcceptTcpClientAsync();
+                        using (NetworkStream stream = client.GetStream())
+                        {
+                            byte[] buffer = new byte[1];
+                            Task readAsyncTask = stream.ReadAsync(buffer, 0, buffer.Length);
+                            readAsyncReadyTcs.SetResult(true);
+                            await readAsyncTask;
+                        }
+                        listener.Stop();
+                    }
+
+                    async Task StartClientAsync()
+                    {
+                        int port = await portTcs.Task;
+                        using (TcpClient client = new TcpClient(new IPEndPoint(IPAddress.Loopback, 0)))
+                        {
+                            await client.ConnectAsync(IPAddress.Loopback, port);
+                            using (NetworkStream stream = client.GetStream())
+                            {
+                                bool readAsyncReady = await readAsyncReadyTcs.Task;
+                                byte[] data = new byte[1];
+                                await stream.WriteAsync(data, 0, data.Length);
+                            }
+                        }
+                    }
+
+                    Task listenerTask = StartListenerAsync();
+                    Task clientTask = StartClientAsync();
+                    await Task.WhenAll(listenerTask, clientTask);
+                    ManualResetEvent[] waitEvents = [eventListener.tpWaitIOEnqueueEvent, eventListener.tpWaitIODequeueEvent];
+
+                    Assert.True(WaitHandle.WaitAll(waitEvents, TimeSpan.FromSeconds(15))); // Assert that there wasn't a timeout
+                    Assert.True(eventListener.tpIOEnqueue > 0);
+                    Assert.True(eventListener.tpIODequeue > 0);
+                }
+            }).Dispose();
+        }
+
+        [ConditionalFact(nameof(IsThreadingAndRemoteExecutorSupported))]
+        public static void PrioritizationExperimentConfigVarTest()
+        {
+            // Avoid contaminating the main process' environment
+            RemoteExecutor.Invoke(() =>
+            {
+                // The actual test process below will inherit the config var
+                Environment.SetEnvironmentVariable("DOTNET_ThreadPool_PrioritizationExperiment", "1");
+
+                RemoteExecutor.Invoke(() =>
+                {
+                    const int WorkItemCountPerKind = 100;
+
+                    int completedWorkItemCount = 0;
+                    var allWorkItemsCompleted = new AutoResetEvent(false);
+                    Action<int> workItem = _ =>
+                    {
+                        if (Interlocked.Increment(ref completedWorkItemCount) == WorkItemCountPerKind * 3)
+                        {
+                            allWorkItemsCompleted.Set();
+                        }
+                    };
+
+                    var startTest = new ManualResetEvent(false);
+
+                    var t = new Thread(() =>
+                    {
+                        // Enqueue global work from a non-thread-pool thread
+
+                        startTest.CheckedWait();
+
+                        for (int i = 0; i < WorkItemCountPerKind; i++)
+                        {
+                            ThreadPool.UnsafeQueueUserWorkItem(workItem, 0, preferLocal: false);
+                        }
+                    });
+                    t.IsBackground = true;
+                    t.Start();
+
+                    ThreadPool.UnsafeQueueUserWorkItem(
+                        _ =>
+                        {
+                            // Enqueue global work from a thread pool worker thread
+
+                            startTest.CheckedWait();
+
+                            for (int i = 0; i < WorkItemCountPerKind; i++)
+                            {
+                                ThreadPool.UnsafeQueueUserWorkItem(workItem, 0, preferLocal: false);
+                            }
+                        },
+                        0,
+                        preferLocal: false);
+
+                    t = new Thread(() =>
+                    {
+                        // Enqueue local work from thread pool worker threads
+
+                        Assert.True(WorkItemCountPerKind / 10 * 10 == WorkItemCountPerKind);
+                        Action<int> localWorkItemEnqueuer = _ =>
+                        {
+                            for (int i = 0; i < WorkItemCountPerKind / 10; i++)
+                            {
+                                ThreadPool.UnsafeQueueUserWorkItem(workItem, 0, preferLocal: true);
+                            }
+                        };
+
+                        startTest.CheckedWait();
+
+                        for (int i = 0; i < 10; i++)
+                        {
+                            ThreadPool.UnsafeQueueUserWorkItem(localWorkItemEnqueuer, 0, preferLocal: false);
+                        }
+                    });
+                    t.IsBackground = true;
+                    t.Start();
+
+                    startTest.Set();
+                    allWorkItemsCompleted.CheckedWait();
+                }).Dispose();
+            }).Dispose();
+        }
+
+        public static IEnumerable<object[]> IOCompletionPortCountConfigVarTest_Args =
+            from x in Enumerable.Range(0, 9)
+            select new object[] { x };
+
+        // Just verifies that some basic IO operations work with different IOCP counts
+        [ConditionalTheory(nameof(IsThreadingAndRemoteExecutorSupported), nameof(UsePortableThreadPool))]
+        [MemberData(nameof(IOCompletionPortCountConfigVarTest_Args))]
+        [PlatformSpecific(TestPlatforms.Windows)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/106371")]
+        public static void IOCompletionPortCountConfigVarTest(int ioCompletionPortCount)
+        {
+            // Avoid contaminating the main process' environment
+            RemoteExecutor.Invoke(ioCompletionPortCountStr =>
+            {
+                int ioCompletionPortCount = int.Parse(ioCompletionPortCountStr);
+
+                const int PretendProcessorCount = 80;
+
+                // The actual test process below will inherit the config vars
+                Environment.SetEnvironmentVariable("DOTNET_PROCESSOR_COUNT", PretendProcessorCount.ToString());
+                Environment.SetEnvironmentVariable("DOTNET_SYSTEM_NET_SOCKETS_THREAD_COUNT", "7");
+                if (ioCompletionPortCount != 0)
+                {
+                    Environment.SetEnvironmentVariable(
+                        "DOTNET_ThreadPool_IOCompletionPortCount",
+                        ioCompletionPortCount.ToString());
+                }
+
+                RemoteExecutor.Invoke(() =>
+                {
+                    RunQueueNativeOverlappedTest();
+                    RunAsyncIOTest().Wait();
+
+                    static unsafe void RunQueueNativeOverlappedTest()
+                    {
+                        var done = new AutoResetEvent(false);
+                        for (int i = 0; i < PretendProcessorCount; i++)
+                        {
+                            // Queue a NativeOverlapped, wait for the callback to run
+                            var overlapped = new Overlapped();
+                            NativeOverlapped* nativeOverlapped = overlapped.Pack((_, _, _) => done.Set(), null);
+                            try
+                            {
+                                ThreadPool.UnsafeQueueNativeOverlapped(nativeOverlapped);
+                                done.CheckedWait();
+                            }
+                            finally
+                            {
+                                if (nativeOverlapped != null)
+                                {
+                                    Overlapped.Free(nativeOverlapped);
+                                }
+                            }
+                        }
+                    }
+
+                    static async Task RunAsyncIOTest()
+                    {
+                        var done = new AutoResetEvent(false);
+
+                        // Receiver
+                        bool stop = false;
+                        var receiveBuffer = new byte[1];
+                        var listener = new TcpListener(IPAddress.Loopback, 0);
+                        listener.Start();
+                        var t = ThreadTestHelpers.CreateGuardedThread(
+                            out Action checkForThreadErrors,
+                            out Action waitForThread,
+                            async () =>
+                            {
+                                using (listener)
+                                {
+                                    while (!stop)
+                                    {
+                                        // Accept a connection, receive a byte
+                                        using var socket = await listener.AcceptSocketAsync();
+                                        int bytesRead =
+                                            await socket.ReceiveAsync(new ArraySegment<byte>(receiveBuffer), SocketFlags.None);
+                                        Assert.Equal(1, bytesRead);
+                                        done.Set(); // indicate byte received
+                                    }
+                                }
+                            });
+                        t.IsBackground = true;
+                        t.Start();
+
+                        // Sender
+                        var sendBuffer = new byte[1];
+                        for (int i = 0; i < PretendProcessorCount / 2; i++)
+                        {
+                            // Connect, send a byte
+                            using var client = new TcpClient();
+                            await client.ConnectAsync((IPEndPoint)listener.LocalEndpoint);
+                            int bytesSent =
+                                await client.Client.SendAsync(new ArraySegment<byte>(sendBuffer), SocketFlags.None);
+                            Assert.Equal(1, bytesSent);
+                            done.CheckedWait(); // wait for byte to the received
+                        }
+
+                        stop = true;
+                        waitForThread();
+                    }
+                }).Dispose();
+            }, ioCompletionPortCount.ToString()).Dispose();
+        }
+
+
+        [ConditionalFact(nameof(IsThreadingAndRemoteExecutorSupported))]
+        [PlatformSpecific(TestPlatforms.Windows)]
+        public static unsafe void ThreadPoolCompletedWorkItemCountTest()
+        {
+            // Run in a separate process to test in a clean thread pool environment such that we don't count external work items
+            RemoteExecutor.Invoke(() =>
+            {
+                using var manualResetEvent = new ManualResetEventSlim(false);
+
+                var overlapped = new Overlapped();
+                NativeOverlapped* nativeOverlapped = overlapped.Pack((errorCode, numBytes, innerNativeOverlapped) =>
+                {
+                    Overlapped.Free(innerNativeOverlapped);
+                    manualResetEvent.Set();
+                }, null);
+
+                ThreadPool.UnsafeQueueNativeOverlapped(nativeOverlapped);
+                manualResetEvent.Wait();
+
+                // Allow work item(s) to be marked as completed during this time, should be only one
+                ThreadTestHelpers.WaitForCondition(() => ThreadPool.CompletedWorkItemCount == 1);
+                Thread.Sleep(50);
+                Assert.Equal(1, ThreadPool.CompletedWorkItemCount);
+            }).Dispose();
+        }
+
         public static bool IsThreadingAndRemoteExecutorSupported =>
             PlatformDetection.IsThreadingSupported && RemoteExecutor.IsSupported;
 
@@ -1169,6 +1476,7 @@ namespace System.Threading.ThreadPools.Tests
             return useWindowsThreadPool;
         }
 
-        private static bool UsePortableThreadPool { get; } = !GetUseWindowsThreadPool();
+        private static bool UseWindowsThreadPool { get; } = GetUseWindowsThreadPool();
+        private static bool UsePortableThreadPool { get; } = !UseWindowsThreadPool;
     }
 }

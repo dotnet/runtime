@@ -126,31 +126,6 @@ LEAF_ENTRY RestoreFPUContext, _TEXT
     ret     4
 LEAF_END RestoreFPUContext, _TEXT
 
-// -----------------------------------------------------------------------
-//  The out-of-line portion of the code to enable preemptive GC.
-//  After the work is done, the code jumps back to the "pRejoinPoint"
-//  which should be emitted right after the inline part is generated.
-//
-//  Assumptions:
-//       ebx = Thread
-//  Preserves
-//       all registers except ecx.
-//
-// -----------------------------------------------------------------------
-NESTED_ENTRY StubRareEnable, _TEXT, NoHandler
-    push    eax
-    push    edx
-
-    push    ebx
-
-    CHECK_STACK_ALIGNMENT
-    call    C_FUNC(StubRareEnableWorker)
-
-    pop     edx
-    pop     eax
-    ret
-NESTED_END StubRareEnable, _TEXT
-
 NESTED_ENTRY StubRareDisableTHROW, _TEXT, NoHandler
     push    eax
     push    edx
@@ -214,6 +189,8 @@ LOCAL_LABEL(donestack):
 
     CHECK_STACK_ALIGNMENT
     call    [ebx + CallDescrData__pTarget]
+LOCAL_LABEL(CallDescrWorkerInternalReturnAddress):
+
 #ifdef _DEBUG
     nop     // This is a tag that we use in an assert.  Fcalls expect to
             // be called from Jitted code or from certain blessed call sites like
@@ -252,6 +229,10 @@ LOCAL_LABEL(ReturnsFloat):
 LOCAL_LABEL(ReturnsDouble):
     fstp    QWORD PTR [ebx + CallDescrData__returnValue]  // Spill the Double return value
     jmp     LOCAL_LABEL(Epilog)
+
+PATCH_LABEL CallDescrWorkerInternalReturnAddressOffset
+    .word LOCAL_LABEL(CallDescrWorkerInternalReturnAddress) - C_FUNC(CallDescrWorkerInternal)
+
 NESTED_END CallDescrWorkerInternal, _TEXT
 
 #ifdef _DEBUG

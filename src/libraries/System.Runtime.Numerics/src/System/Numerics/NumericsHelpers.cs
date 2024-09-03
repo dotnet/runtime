@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Runtime.InteropServices;
+using System.Runtime.Intrinsics;
 
 namespace System.Numerics
 {
@@ -97,22 +99,57 @@ namespace System.Numerics
         // a mutation and needs to be used with care for immutable types.
         public static void DangerousMakeTwosComplement(Span<uint> d)
         {
+            // Given a number:
+            //     XXXXXXXXXXXY00000
+            // where Y is non-zero,
+            // The result of two's complement is
+            //     AAAAAAAAAAAB00000
+            // where A = ~X and B = -Y
+
+            // Trim trailing 0s (at the first in little endian array)
+            d = d.TrimStart(0u);
+
+            // Make the first non-zero element to be two's complement
             if (d.Length > 0)
             {
-                d[0] = unchecked(~d[0] + 1);
+                d[0] = (uint)(-(int)d[0]);
+                d = d.Slice(1);
+            }
 
-                int i = 1;
+            if (d.IsEmpty)
+            {
+                return;
+            }
 
-                // first do complement and +1 as long as carry is needed
-                for (; d[i - 1] == 0 && i < d.Length; i++)
-                {
-                    d[i] = unchecked(~d[i] + 1);
-                }
-                // now ones complement is sufficient
-                for (; i < d.Length; i++)
-                {
-                    d[i] = ~d[i];
-                }
+            // Make one's complement for other elements
+            int offset = 0;
+
+            ref uint start = ref MemoryMarshal.GetReference(d);
+
+            while (Vector512.IsHardwareAccelerated && d.Length - offset >= Vector512<uint>.Count)
+            {
+                Vector512<uint> complement = ~Vector512.LoadUnsafe(ref start, (nuint)offset);
+                Vector512.StoreUnsafe(complement, ref start, (nuint)offset);
+                offset += Vector512<uint>.Count;
+            }
+
+            while (Vector256.IsHardwareAccelerated && d.Length - offset >= Vector256<uint>.Count)
+            {
+                Vector256<uint> complement = ~Vector256.LoadUnsafe(ref start, (nuint)offset);
+                Vector256.StoreUnsafe(complement, ref start, (nuint)offset);
+                offset += Vector256<uint>.Count;
+            }
+
+            while (Vector128.IsHardwareAccelerated && d.Length - offset >= Vector128<uint>.Count)
+            {
+                Vector128<uint> complement = ~Vector128.LoadUnsafe(ref start, (nuint)offset);
+                Vector128.StoreUnsafe(complement, ref start, (nuint)offset);
+                offset += Vector128<uint>.Count;
+            }
+
+            for (; offset < d.Length; offset++)
+            {
+                d[offset] = ~d[offset];
             }
         }
 

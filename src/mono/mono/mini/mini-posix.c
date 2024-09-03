@@ -390,6 +390,8 @@ mono_runtime_posix_install_handlers (void)
 	sigaddset (&signal_set, SIGFPE);
 	add_signal_handler (SIGQUIT, sigquit_signal_handler, SA_RESTART);
 	sigaddset (&signal_set, SIGQUIT);
+	add_signal_handler (SIGTERM, mono_sigterm_signal_handler, SA_RESTART);
+	sigaddset (&signal_set, SIGTERM);
 	add_signal_handler (SIGILL, mono_crashing_signal_handler, 0);
 	sigaddset (&signal_set, SIGILL);
 	add_signal_handler (SIGBUS, mono_sigsegv_signal_handler, 0);
@@ -786,7 +788,8 @@ dump_native_stacktrace (const char *signal, MonoContext *mctx)
 		g_assertion_disable_global (assert_printer_callback);
 	} else {
 		g_async_safe_printf ("\nAn error has occurred in the native fault reporting. Some diagnostic information will be unavailable.\n");
-
+		g_async_safe_printf ("\nExiting early due to double fault.\n");
+		_exit (-1);
 	}
 
 #ifdef HAVE_BACKTRACE_SYMBOLS
@@ -845,11 +848,6 @@ dump_native_stacktrace (const char *signal, MonoContext *mctx)
 		// If we can't fork, do as little as possible before exiting
 	}
 
-	if (double_faulted) {
-		g_async_safe_printf("\nExiting early due to double fault.\n");
-		_exit (-1);
-	}
-
 #endif
 #else
 #ifdef HOST_ANDROID
@@ -885,23 +883,15 @@ mono_post_native_crash_handler (const char *signal, MonoContext *mctx, MONO_SIG_
 }
 #endif /* !MONO_CROSS_COMPILE */
 
-static gchar *gdb_path;
-static gchar *lldb_path;
-
 void
 mono_init_native_crash_info (void)
 {
-	gdb_path = g_find_program_in_path ("gdb");
-	lldb_path = g_find_program_in_path ("lldb");
 }
 
 static gboolean
 native_stack_with_gdb (pid_t crashed_pid, const char **argv, int commands, char* commands_filename)
 {
-	if (!gdb_path)
-		return FALSE;
-
-	argv [0] = gdb_path;
+	argv [0] = "gdb";
 	argv [1] = "-batch";
 	argv [2] = "-x";
 	argv [3] = commands_filename;
@@ -926,10 +916,7 @@ native_stack_with_gdb (pid_t crashed_pid, const char **argv, int commands, char*
 static gboolean
 native_stack_with_lldb (pid_t crashed_pid, const char **argv, int commands, char* commands_filename)
 {
-	if (!lldb_path)
-		return FALSE;
-
-	argv [0] = lldb_path;
+	argv [0] = "lldb";
 	argv [1] = "--batch";
 	argv [2] = "--source";
 	argv [3] = commands_filename;
@@ -955,7 +942,7 @@ native_stack_with_lldb (pid_t crashed_pid, const char **argv, int commands, char
 void
 mono_gdb_render_native_backtraces (pid_t crashed_pid)
 {
-#ifdef HAVE_EXECV
+#ifdef HAVE_EXECVP
 	const char *argv [10];
 	memset (argv, 0, sizeof (char*) * 10);
 
@@ -993,12 +980,12 @@ mono_gdb_render_native_backtraces (pid_t crashed_pid)
 
 exec:
 	close (commands_handle);
-	execv (argv [0], (char**)argv);
+	execvp (argv [0], (char**)argv);
 
 	_exit (-1);
 #else
 	g_async_safe_printf ("mono_gdb_render_native_backtraces not supported on this platform\n");
-#endif // HAVE_EXECV
+#endif // HAVE_EXECVP
 }
 
 #if !defined (__MACH__)

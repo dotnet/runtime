@@ -3,91 +3,72 @@
 
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using System.Runtime.Intrinsics;
+using System.Runtime.Intrinsics.Arm;
+using System.Runtime.Intrinsics.Wasm;
+using System.Runtime.Intrinsics.X86;
 
 namespace System.Buffers
 {
     internal sealed class AsciiByteSearchValues : SearchValues<byte>
     {
-        private Vector256<byte> _bitmap;
-        private readonly BitVector256 _lookup;
+        private IndexOfAnyAsciiSearcher.AsciiState _state;
 
         public AsciiByteSearchValues(ReadOnlySpan<byte> values) =>
-            IndexOfAnyAsciiSearcher.ComputeBitmap(values, out _bitmap, out _lookup);
+            IndexOfAnyAsciiSearcher.ComputeAsciiState(values, out _state);
 
-        internal override byte[] GetValues() => _lookup.GetByteValues();
+        internal override byte[] GetValues() =>
+            _state.Lookup.GetByteValues();
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal override bool ContainsCore(byte value) =>
-            _lookup.Contains(value);
+            _state.Lookup.Contains(value);
 
+        [CompExactlyDependsOn(typeof(Ssse3))]
+        [CompExactlyDependsOn(typeof(AdvSimd))]
+        [CompExactlyDependsOn(typeof(PackedSimd))]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal override int IndexOfAny(ReadOnlySpan<byte> span) =>
-            IndexOfAny<IndexOfAnyAsciiSearcher.DontNegate>(ref MemoryMarshal.GetReference(span), span.Length);
+            IndexOfAnyAsciiSearcher.IndexOfAny<IndexOfAnyAsciiSearcher.DontNegate>(
+                ref MemoryMarshal.GetReference(span), span.Length, ref _state);
 
+        [CompExactlyDependsOn(typeof(Ssse3))]
+        [CompExactlyDependsOn(typeof(AdvSimd))]
+        [CompExactlyDependsOn(typeof(PackedSimd))]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal override int IndexOfAnyExcept(ReadOnlySpan<byte> span) =>
-            IndexOfAny<IndexOfAnyAsciiSearcher.Negate>(ref MemoryMarshal.GetReference(span), span.Length);
+            IndexOfAnyAsciiSearcher.IndexOfAny<IndexOfAnyAsciiSearcher.Negate>(
+                ref MemoryMarshal.GetReference(span), span.Length, ref _state);
 
+        [CompExactlyDependsOn(typeof(Ssse3))]
+        [CompExactlyDependsOn(typeof(AdvSimd))]
+        [CompExactlyDependsOn(typeof(PackedSimd))]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal override int LastIndexOfAny(ReadOnlySpan<byte> span) =>
-            LastIndexOfAny<IndexOfAnyAsciiSearcher.DontNegate>(ref MemoryMarshal.GetReference(span), span.Length);
+            IndexOfAnyAsciiSearcher.LastIndexOfAny<IndexOfAnyAsciiSearcher.DontNegate>(
+                ref MemoryMarshal.GetReference(span), span.Length, ref _state);
 
+        [CompExactlyDependsOn(typeof(Ssse3))]
+        [CompExactlyDependsOn(typeof(AdvSimd))]
+        [CompExactlyDependsOn(typeof(PackedSimd))]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal override int LastIndexOfAnyExcept(ReadOnlySpan<byte> span) =>
-            LastIndexOfAny<IndexOfAnyAsciiSearcher.Negate>(ref MemoryMarshal.GetReference(span), span.Length);
+            IndexOfAnyAsciiSearcher.LastIndexOfAny<IndexOfAnyAsciiSearcher.Negate>(
+                ref MemoryMarshal.GetReference(span), span.Length, ref _state);
 
+        [CompExactlyDependsOn(typeof(Ssse3))]
+        [CompExactlyDependsOn(typeof(AdvSimd))]
+        [CompExactlyDependsOn(typeof(PackedSimd))]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private int IndexOfAny<TNegator>(ref byte searchSpace, int searchSpaceLength)
-            where TNegator : struct, IndexOfAnyAsciiSearcher.INegator
-        {
-            return IndexOfAnyAsciiSearcher.IsVectorizationSupported && searchSpaceLength >= sizeof(ulong)
-                ? IndexOfAnyAsciiSearcher.IndexOfAnyVectorized<TNegator>(ref searchSpace, searchSpaceLength, ref _bitmap)
-                : IndexOfAnyScalar<TNegator>(ref searchSpace, searchSpaceLength);
-        }
+        internal override bool ContainsAny(ReadOnlySpan<byte> span) =>
+            IndexOfAnyAsciiSearcher.ContainsAny<IndexOfAnyAsciiSearcher.DontNegate>(
+                ref MemoryMarshal.GetReference(span), span.Length, ref _state);
 
+        [CompExactlyDependsOn(typeof(Ssse3))]
+        [CompExactlyDependsOn(typeof(AdvSimd))]
+        [CompExactlyDependsOn(typeof(PackedSimd))]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private int LastIndexOfAny<TNegator>(ref byte searchSpace, int searchSpaceLength)
-            where TNegator : struct, IndexOfAnyAsciiSearcher.INegator
-        {
-            return IndexOfAnyAsciiSearcher.IsVectorizationSupported && searchSpaceLength >= sizeof(ulong)
-                ? IndexOfAnyAsciiSearcher.LastIndexOfAnyVectorized<TNegator>(ref searchSpace, searchSpaceLength, ref _bitmap)
-                : LastIndexOfAnyScalar<TNegator>(ref searchSpace, searchSpaceLength);
-        }
-
-        private int IndexOfAnyScalar<TNegator>(ref byte searchSpace, int searchSpaceLength)
-            where TNegator : struct, IndexOfAnyAsciiSearcher.INegator
-        {
-            ref byte searchSpaceEnd = ref Unsafe.Add(ref searchSpace, searchSpaceLength);
-            ref byte cur = ref searchSpace;
-
-            while (!Unsafe.AreSame(ref cur, ref searchSpaceEnd))
-            {
-                byte b = cur;
-                if (TNegator.NegateIfNeeded(_lookup.Contains(b)))
-                {
-                    return (int)Unsafe.ByteOffset(ref searchSpace, ref cur);
-                }
-
-                cur = ref Unsafe.Add(ref cur, 1);
-            }
-
-            return -1;
-        }
-
-        private int LastIndexOfAnyScalar<TNegator>(ref byte searchSpace, int searchSpaceLength)
-            where TNegator : struct, IndexOfAnyAsciiSearcher.INegator
-        {
-            for (int i = searchSpaceLength - 1; i >= 0; i--)
-            {
-                byte b = Unsafe.Add(ref searchSpace, i);
-                if (TNegator.NegateIfNeeded(_lookup.Contains(b)))
-                {
-                    return i;
-                }
-            }
-
-            return -1;
-        }
+        internal override bool ContainsAnyExcept(ReadOnlySpan<byte> span) =>
+            IndexOfAnyAsciiSearcher.ContainsAny<IndexOfAnyAsciiSearcher.Negate>(
+                ref MemoryMarshal.GetReference(span), span.Length, ref _state);
     }
 }

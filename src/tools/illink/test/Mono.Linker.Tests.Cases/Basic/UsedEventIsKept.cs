@@ -10,9 +10,12 @@ namespace Mono.Linker.Tests.Cases.Basic
 		{
 			var tmp = new Foo ();
 
-			tmp.Bar += Tmp_Bar;
+			tmp.AddRemoveFireCalled += Tmp_Bar;
 			tmp.Fire ();
-			tmp.Bar -= Tmp_Bar;
+			tmp.AddRemoveFireCalled -= Tmp_Bar;
+
+			tmp.AddCalled += (s, e) => { };
+			tmp.RemoveCalled -= (s, e) => { };
 		}
 
 		[Kept]
@@ -33,12 +36,29 @@ namespace Mono.Linker.Tests.Cases.Basic
 			[KeptBackingField]
 			[KeptEventAddMethod]
 			[KeptEventRemoveMethod]
-			public event CustomDelegate Bar;
+			public event CustomDelegate AddRemoveFireCalled;
+
+			[Kept]
+			[KeptBackingField]
+			[KeptEventAddMethod]
+			[KeptEventRemoveMethod]
+			public event EventHandler AddCalled;
+
+			[Kept]
+			[KeptBackingField]
+			[KeptEventAddMethod]
+			[KeptEventRemoveMethod]
+			public event EventHandler RemoveCalled;
+
+			// Invoke without any Add or Remove calls will fail with a nullref, so nothing needs to be kept
+			[KeptBackingField]
+			public event EventHandler InvokeCalled;
 
 			[Kept]
 			public void Fire ()
 			{
-				Bar ();
+				AddRemoveFireCalled ();
+				InvokeCalled (null, null);
 			}
 		}
 	}

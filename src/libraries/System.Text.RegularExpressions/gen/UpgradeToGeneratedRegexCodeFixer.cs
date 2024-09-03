@@ -34,7 +34,7 @@ namespace System.Text.RegularExpressions.Generator
         /// <inheritdoc />
         public override ImmutableArray<string> FixableDiagnosticIds => ImmutableArray.Create(DiagnosticDescriptors.UseRegexSourceGeneration.Id);
 
-        private static readonly char[] s_comma = new[] { ',' };
+        private static readonly char[] s_comma = [','];
 
         public override FixAllProvider? GetFixAllProvider() => WellKnownFixAllProviders.BatchFixer;
 
@@ -210,8 +210,10 @@ namespace System.Text.RegularExpressions.Generator
             // it in as a parameter. If the user specified IgnoreCase, but also selected CultureInvariant, then we skip as the default is to use Invariant culture.
             if ((regexOptions & RegexOptions.IgnoreCase) != 0 && (regexOptions & RegexOptions.CultureInvariant) == 0)
             {
+#pragma warning disable RS1035 // The symbol 'CultureInfo.CurrentCulture' is banned for use by analyzers.
                 // If CultureInvariant wasn't specified as options, we default to the current culture.
                 cultureNameValue = generator.LiteralExpression(CultureInfo.CurrentCulture.Name);
+#pragma warning restore RS1035
 
                 // If options weren't passed in, then we need to define it as well in order to use the three parameter constructor.
                 regexOptionsValue ??= generator.MemberAccessExpression(SyntaxFactory.IdentifierName("RegexOptions"), "None");
@@ -220,9 +222,9 @@ namespace System.Text.RegularExpressions.Generator
             // Generate the GeneratedRegex attribute syntax node with the specified parameters.
             SyntaxNode attributes = generator.Attribute(generator.TypeExpression(generatedRegexAttributeSymbol), attributeArguments: (patternValue, regexOptionsValue, cultureNameValue) switch
             {
-                ({ }, null, null) => new[] { patternValue },
-                ({ }, { }, null) => new[] { patternValue, regexOptionsValue },
-                ({ }, { }, { }) => new[] { patternValue, regexOptionsValue, cultureNameValue },
+                ({ }, null, null) => [patternValue],
+                ({ }, { }, null) => [patternValue, regexOptionsValue],
+                ({ }, { }, { }) => [patternValue, regexOptionsValue, cultureNameValue],
                 _ => Array.Empty<SyntaxNode>(),
             });
 

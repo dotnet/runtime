@@ -1,9 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Threading;
-using System.Reflection;
 using System.Diagnostics.CodeAnalysis;
+using System.Reflection;
+using System.Threading;
 
 namespace System.Diagnostics
 {
@@ -13,7 +13,6 @@ namespace System.Diagnostics
     // VM\DebugDebugger.h. The binder will catch some of these layout problems.
     internal sealed class StackFrameHelper
     {
-        private Thread? targetThread;
         private int[]? rgiOffset;
         private int[]? rgiILOffset;
 
@@ -48,9 +47,8 @@ namespace System.Diagnostics
         [ThreadStatic]
         private static int t_reentrancy;
 
-        public StackFrameHelper(Thread? target)
+        public StackFrameHelper()
         {
-            targetThread = target;
             rgMethodHandle = null;
             rgiMethodToken = null;
             rgiOffset = null;
@@ -85,9 +83,9 @@ namespace System.Diagnostics
         // done by GetStackFramesInternal (on Windows for old PDB format).
         //
 
-        internal void InitializeSourceInfo(int iSkip, bool fNeedFileInfo, Exception? exception)
+        internal void InitializeSourceInfo(bool fNeedFileInfo, Exception? exception)
         {
-            StackTrace.GetStackFramesInternal(this, iSkip, fNeedFileInfo, exception);
+            StackTrace.GetStackFramesInternal(this, fNeedFileInfo, exception);
 
             if (!fNeedFileInfo)
                 return;
@@ -110,12 +108,12 @@ namespace System.Diagnostics
                         return;
                     }
 
-                    Type[] parameterTypes = new Type[]
-                    {
+                    Type[] parameterTypes =
+                    [
                         typeof(Assembly), typeof(string), typeof(IntPtr), typeof(int), typeof(bool), typeof(IntPtr),
                         typeof(int), typeof(int), typeof(int),
                         typeof(string).MakeByRefType(), typeof(int).MakeByRefType(), typeof(int).MakeByRefType()
-                    };
+                    ];
                     MethodInfo? symbolsMethodInfo = symbolsType.GetMethod("GetSourceLineInfo", BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Instance, null, parameterTypes, null);
                     if (symbolsMethodInfo == null)
                     {

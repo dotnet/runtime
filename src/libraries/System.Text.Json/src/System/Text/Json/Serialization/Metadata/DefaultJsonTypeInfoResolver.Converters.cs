@@ -19,8 +19,8 @@ namespace System.Text.Json.Serialization.Metadata
         [RequiresDynamicCode(JsonSerializer.SerializationRequiresDynamicCodeMessage)]
         private static JsonConverterFactory[] GetDefaultFactoryConverters()
         {
-            return new JsonConverterFactory[]
-            {
+            return
+            [
                 // Check for disallowed types.
                 new UnsupportedTypeConverterFactory(),
                 // Nullable converter should always be next since it forwards to any nullable type.
@@ -35,7 +35,7 @@ namespace System.Text.Json.Serialization.Metadata
                 new IEnumerableConverterFactory(),
                 // Object should always be last since it converts any type.
                 new ObjectConverterFactory()
-            };
+            ];
         }
 
         private static Dictionary<Type, JsonConverter> GetDefaultSimpleConverters()
@@ -51,7 +51,7 @@ namespace System.Text.Json.Serialization.Metadata
             Add(JsonMetadataServices.CharConverter);
             Add(JsonMetadataServices.DateTimeConverter);
             Add(JsonMetadataServices.DateTimeOffsetConverter);
-#if NETCOREAPP
+#if NET
             Add(JsonMetadataServices.DateOnlyConverter);
             Add(JsonMetadataServices.TimeOnlyConverter);
             Add(JsonMetadataServices.HalfConverter);
@@ -74,7 +74,7 @@ namespace System.Text.Json.Serialization.Metadata
             Add(JsonMetadataServices.UInt16Converter);
             Add(JsonMetadataServices.UInt32Converter);
             Add(JsonMetadataServices.UInt64Converter);
-#if NET7_0_OR_GREATER
+#if NET
             Add(JsonMetadataServices.Int128Converter);
             Add(JsonMetadataServices.UInt128Converter);
 #endif
@@ -89,13 +89,14 @@ namespace System.Text.Json.Serialization.Metadata
                 converters.Add(converter.Type!, converter);
         }
 
+        [RequiresUnreferencedCode(JsonSerializer.SerializationUnreferencedCodeMessage)]
+        [RequiresDynamicCode(JsonSerializer.SerializationRequiresDynamicCodeMessage)]
         private static JsonConverter GetBuiltInConverter(Type typeToConvert)
         {
-            Debug.Assert(s_defaultSimpleConverters != null);
-            Debug.Assert(s_defaultFactoryConverters != null);
+            s_defaultSimpleConverters ??= GetDefaultSimpleConverters();
+            s_defaultFactoryConverters ??= GetDefaultFactoryConverters();
 
-            JsonConverter? converter;
-            if (s_defaultSimpleConverters.TryGetValue(typeToConvert, out converter))
+            if (s_defaultSimpleConverters.TryGetValue(typeToConvert, out JsonConverter? converter))
             {
                 return converter;
             }
@@ -142,8 +143,6 @@ namespace System.Text.Json.Serialization.Metadata
         [RequiresDynamicCode(JsonSerializer.SerializationRequiresDynamicCodeMessage)]
         internal static JsonConverter GetConverterForType(Type typeToConvert, JsonSerializerOptions options, bool resolveJsonConverterAttribute = true)
         {
-            RootDefaultInstance(); // Ensure default converters are rooted.
-
             // Priority 1: Attempt to get custom converter from the Converters list.
             JsonConverter? converter = options.GetConverterFromList(typeToConvert);
 

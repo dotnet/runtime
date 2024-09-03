@@ -21,6 +21,15 @@ bool WrapICorJitInfo::isIntrinsic(
     return temp;
 }
 
+bool WrapICorJitInfo::notifyMethodInfoUsage(
+          CORINFO_METHOD_HANDLE ftn)
+{
+    API_ENTER(notifyMethodInfoUsage);
+    bool temp = wrapHnd->notifyMethodInfoUsage(ftn);
+    API_LEAVE(notifyMethodInfoUsage);
+    return temp;
+}
+
 uint32_t WrapICorJitInfo::getMethodAttribs(
           CORINFO_METHOD_HANDLE ftn)
 {
@@ -67,6 +76,15 @@ bool WrapICorJitInfo::haveSameMethodDefinition(
     API_ENTER(haveSameMethodDefinition);
     bool temp = wrapHnd->haveSameMethodDefinition(meth1Hnd, meth2Hnd);
     API_LEAVE(haveSameMethodDefinition);
+    return temp;
+}
+
+CORINFO_CLASS_HANDLE WrapICorJitInfo::getTypeDefinition(
+          CORINFO_CLASS_HANDLE type)
+{
+    API_ENTER(getTypeDefinition);
+    CORINFO_CLASS_HANDLE temp = wrapHnd->getTypeDefinition(type);
+    API_LEAVE(getTypeDefinition);
     return temp;
 }
 
@@ -193,10 +211,11 @@ CORINFO_CLASS_HANDLE WrapICorJitInfo::getDefaultEqualityComparerClass(
 
 void WrapICorJitInfo::expandRawHandleIntrinsic(
           CORINFO_RESOLVED_TOKEN* pResolvedToken,
+          CORINFO_METHOD_HANDLE callerHandle,
           CORINFO_GENERICHANDLE_RESULT* pResult)
 {
     API_ENTER(expandRawHandleIntrinsic);
-    wrapHnd->expandRawHandleIntrinsic(pResolvedToken, pResult);
+    wrapHnd->expandRawHandleIntrinsic(pResolvedToken, callerHandle, pResult);
     API_LEAVE(expandRawHandleIntrinsic);
 }
 
@@ -246,15 +265,6 @@ void WrapICorJitInfo::methodMustBeLoadedBeforeCodeIsRun(
     API_ENTER(methodMustBeLoadedBeforeCodeIsRun);
     wrapHnd->methodMustBeLoadedBeforeCodeIsRun(method);
     API_LEAVE(methodMustBeLoadedBeforeCodeIsRun);
-}
-
-CORINFO_METHOD_HANDLE WrapICorJitInfo::mapMethodDeclToMethodImpl(
-          CORINFO_METHOD_HANDLE method)
-{
-    API_ENTER(mapMethodDeclToMethodImpl);
-    CORINFO_METHOD_HANDLE temp = wrapHnd->mapMethodDeclToMethodImpl(method);
-    API_LEAVE(mapMethodDeclToMethodImpl);
-    return temp;
 }
 
 void WrapICorJitInfo::getGSCookie(
@@ -397,16 +407,6 @@ bool WrapICorJitInfo::isValueClass(
     return temp;
 }
 
-CorInfoInlineTypeCheck WrapICorJitInfo::canInlineTypeCheck(
-          CORINFO_CLASS_HANDLE cls,
-          CorInfoInlineTypeCheckSource source)
-{
-    API_ENTER(canInlineTypeCheck);
-    CorInfoInlineTypeCheck temp = wrapHnd->canInlineTypeCheck(cls, source);
-    API_LEAVE(canInlineTypeCheck);
-    return temp;
-}
-
 uint32_t WrapICorJitInfo::getClassAttribs(
           CORINFO_CLASS_HANDLE cls)
 {
@@ -460,17 +460,6 @@ void WrapICorJitInfo::LongLifetimeFree(
     API_LEAVE(LongLifetimeFree);
 }
 
-size_t WrapICorJitInfo::getClassModuleIdForStatics(
-          CORINFO_CLASS_HANDLE cls,
-          CORINFO_MODULE_HANDLE* pModule,
-          void** ppIndirection)
-{
-    API_ENTER(getClassModuleIdForStatics);
-    size_t temp = wrapHnd->getClassModuleIdForStatics(cls, pModule, ppIndirection);
-    API_LEAVE(getClassModuleIdForStatics);
-    return temp;
-}
-
 bool WrapICorJitInfo::getIsClassInitedFlagAddress(
           CORINFO_CLASS_HANDLE cls,
           CORINFO_CONST_LOOKUP* addr,
@@ -479,6 +468,24 @@ bool WrapICorJitInfo::getIsClassInitedFlagAddress(
     API_ENTER(getIsClassInitedFlagAddress);
     bool temp = wrapHnd->getIsClassInitedFlagAddress(cls, addr, offset);
     API_LEAVE(getIsClassInitedFlagAddress);
+    return temp;
+}
+
+size_t WrapICorJitInfo::getClassThreadStaticDynamicInfo(
+          CORINFO_CLASS_HANDLE clr)
+{
+    API_ENTER(getClassThreadStaticDynamicInfo);
+    size_t temp = wrapHnd->getClassThreadStaticDynamicInfo(clr);
+    API_LEAVE(getClassThreadStaticDynamicInfo);
+    return temp;
+}
+
+size_t WrapICorJitInfo::getClassStaticDynamicInfo(
+          CORINFO_CLASS_HANDLE clr)
+{
+    API_ENTER(getClassStaticDynamicInfo);
+    size_t temp = wrapHnd->getClassStaticDynamicInfo(clr);
+    API_LEAVE(getClassStaticDynamicInfo);
     return temp;
 }
 
@@ -628,6 +635,15 @@ CORINFO_CLASS_HANDLE WrapICorJitInfo::getTypeForBox(
     return temp;
 }
 
+CORINFO_CLASS_HANDLE WrapICorJitInfo::getTypeForBoxOnStack(
+          CORINFO_CLASS_HANDLE cls)
+{
+    API_ENTER(getTypeForBoxOnStack);
+    CORINFO_CLASS_HANDLE temp = wrapHnd->getTypeForBoxOnStack(cls);
+    API_LEAVE(getTypeForBoxOnStack);
+    return temp;
+}
+
 CorInfoHelpFunc WrapICorJitInfo::getBoxHelper(
           CORINFO_CLASS_HANDLE cls)
 {
@@ -688,10 +704,11 @@ bool WrapICorJitInfo::getReadyToRunHelper(
           CORINFO_RESOLVED_TOKEN* pResolvedToken,
           CORINFO_LOOKUP_KIND* pGenericLookupKind,
           CorInfoHelpFunc id,
+          CORINFO_METHOD_HANDLE callerHandle,
           CORINFO_CONST_LOOKUP* pLookup)
 {
     API_ENTER(getReadyToRunHelper);
-    bool temp = wrapHnd->getReadyToRunHelper(pResolvedToken, pGenericLookupKind, id, pLookup);
+    bool temp = wrapHnd->getReadyToRunHelper(pResolvedToken, pGenericLookupKind, id, callerHandle, pLookup);
     API_LEAVE(getReadyToRunHelper);
     return temp;
 }
@@ -700,10 +717,11 @@ void WrapICorJitInfo::getReadyToRunDelegateCtorHelper(
           CORINFO_RESOLVED_TOKEN* pTargetMethod,
           mdToken targetConstraint,
           CORINFO_CLASS_HANDLE delegateType,
+          CORINFO_METHOD_HANDLE callerHandle,
           CORINFO_LOOKUP* pLookup)
 {
     API_ENTER(getReadyToRunDelegateCtorHelper);
-    wrapHnd->getReadyToRunDelegateCtorHelper(pTargetMethod, targetConstraint, delegateType, pLookup);
+    wrapHnd->getReadyToRunDelegateCtorHelper(pTargetMethod, targetConstraint, delegateType, callerHandle, pLookup);
     API_LEAVE(getReadyToRunDelegateCtorHelper);
 }
 
@@ -790,6 +808,33 @@ bool WrapICorJitInfo::isMoreSpecificType(
     API_ENTER(isMoreSpecificType);
     bool temp = wrapHnd->isMoreSpecificType(cls1, cls2);
     API_LEAVE(isMoreSpecificType);
+    return temp;
+}
+
+bool WrapICorJitInfo::isExactType(
+          CORINFO_CLASS_HANDLE cls)
+{
+    API_ENTER(isExactType);
+    bool temp = wrapHnd->isExactType(cls);
+    API_LEAVE(isExactType);
+    return temp;
+}
+
+TypeCompareState WrapICorJitInfo::isGenericType(
+          CORINFO_CLASS_HANDLE cls)
+{
+    API_ENTER(isGenericType);
+    TypeCompareState temp = wrapHnd->isGenericType(cls);
+    API_LEAVE(isGenericType);
+    return temp;
+}
+
+TypeCompareState WrapICorJitInfo::isNullableType(
+          CORINFO_CLASS_HANDLE cls)
+{
+    API_ENTER(isNullableType);
+    TypeCompareState temp = wrapHnd->isNullableType(cls);
+    API_LEAVE(isNullableType);
     return temp;
 }
 
@@ -933,12 +978,19 @@ uint32_t WrapICorJitInfo::getThreadLocalFieldInfo(
 }
 
 void WrapICorJitInfo::getThreadLocalStaticBlocksInfo(
-          CORINFO_THREAD_STATIC_BLOCKS_INFO* pInfo,
-          bool isGCType)
+          CORINFO_THREAD_STATIC_BLOCKS_INFO* pInfo)
 {
     API_ENTER(getThreadLocalStaticBlocksInfo);
-    wrapHnd->getThreadLocalStaticBlocksInfo(pInfo, isGCType);
+    wrapHnd->getThreadLocalStaticBlocksInfo(pInfo);
     API_LEAVE(getThreadLocalStaticBlocksInfo);
+}
+
+void WrapICorJitInfo::getThreadLocalStaticInfo_NativeAOT(
+          CORINFO_THREAD_STATIC_INFO_NATIVEAOT* pInfo)
+{
+    API_ENTER(getThreadLocalStaticInfo_NativeAOT);
+    wrapHnd->getThreadLocalStaticInfo_NativeAOT(pInfo);
+    API_LEAVE(getThreadLocalStaticInfo_NativeAOT);
 }
 
 bool WrapICorJitInfo::isFieldStatic(
@@ -1010,6 +1062,16 @@ void WrapICorJitInfo::reportRichMappings(
     API_ENTER(reportRichMappings);
     wrapHnd->reportRichMappings(inlineTreeNodes, numInlineTreeNodes, mappings, numMappings);
     API_LEAVE(reportRichMappings);
+}
+
+void WrapICorJitInfo::reportMetadata(
+          const char* key,
+          const void* value,
+          size_t length)
+{
+    API_ENTER(reportMetadata);
+    wrapHnd->reportMetadata(key, value, length);
+    API_LEAVE(reportMetadata);
 }
 
 void* WrapICorJitInfo::allocateArray(
@@ -1140,10 +1202,11 @@ const char* WrapICorJitInfo::getMethodNameFromMetadata(
           CORINFO_METHOD_HANDLE ftn,
           const char** className,
           const char** namespaceName,
-          const char** enclosingClassName)
+          const char** enclosingClassNames,
+          size_t maxEnclosingClassNames)
 {
     API_ENTER(getMethodNameFromMetadata);
-    const char* temp = wrapHnd->getMethodNameFromMetadata(ftn, className, namespaceName, enclosingClassName);
+    const char* temp = wrapHnd->getMethodNameFromMetadata(ftn, className, namespaceName, enclosingClassNames, maxEnclosingClassNames);
     API_LEAVE(getMethodNameFromMetadata);
     return temp;
 }
@@ -1167,22 +1230,22 @@ bool WrapICorJitInfo::getSystemVAmd64PassStructInRegisterDescriptor(
     return temp;
 }
 
-uint32_t WrapICorJitInfo::getLoongArch64PassStructInRegisterFlags(
-          CORINFO_CLASS_HANDLE structHnd)
+void WrapICorJitInfo::getSwiftLowering(
+          CORINFO_CLASS_HANDLE structHnd,
+          CORINFO_SWIFT_LOWERING* pLowering)
 {
-    API_ENTER(getLoongArch64PassStructInRegisterFlags);
-    uint32_t temp = wrapHnd->getLoongArch64PassStructInRegisterFlags(structHnd);
-    API_LEAVE(getLoongArch64PassStructInRegisterFlags);
-    return temp;
+    API_ENTER(getSwiftLowering);
+    wrapHnd->getSwiftLowering(structHnd, pLowering);
+    API_LEAVE(getSwiftLowering);
 }
 
-uint32_t WrapICorJitInfo::getRISCV64PassStructInRegisterFlags(
-          CORINFO_CLASS_HANDLE structHnd)
+void WrapICorJitInfo::getFpStructLowering(
+          CORINFO_CLASS_HANDLE structHnd,
+          CORINFO_FPSTRUCT_LOWERING* pLowering)
 {
-    API_ENTER(getRISCV64PassStructInRegisterFlags);
-    uint32_t temp = wrapHnd->getRISCV64PassStructInRegisterFlags(structHnd);
-    API_LEAVE(getRISCV64PassStructInRegisterFlags);
-    return temp;
+    API_ENTER(getFpStructLowering);
+    wrapHnd->getFpStructLowering(structHnd, pLowering);
+    API_LEAVE(getFpStructLowering);
 }
 
 uint32_t WrapICorJitInfo::getThreadTLSIndex(
@@ -1295,10 +1358,11 @@ CORINFO_FIELD_HANDLE WrapICorJitInfo::embedFieldHandle(
 void WrapICorJitInfo::embedGenericHandle(
           CORINFO_RESOLVED_TOKEN* pResolvedToken,
           bool fEmbedParent,
+          CORINFO_METHOD_HANDLE callerHandle,
           CORINFO_GENERICHANDLE_RESULT* pResult)
 {
     API_ENTER(embedGenericHandle);
-    wrapHnd->embedGenericHandle(pResolvedToken, fEmbedParent, pResult);
+    wrapHnd->embedGenericHandle(pResolvedToken, fEmbedParent, callerHandle, pResult);
     API_LEAVE(embedGenericHandle);
 }
 
@@ -1369,16 +1433,6 @@ void WrapICorJitInfo::getCallInfo(
     API_ENTER(getCallInfo);
     wrapHnd->getCallInfo(pResolvedToken, pConstrainedResolvedToken, callerHandle, flags, pResult);
     API_LEAVE(getCallInfo);
-}
-
-unsigned WrapICorJitInfo::getClassDomainID(
-          CORINFO_CLASS_HANDLE cls,
-          void** ppIndirection)
-{
-    API_ENTER(getClassDomainID);
-    unsigned temp = wrapHnd->getClassDomainID(cls, ppIndirection);
-    API_LEAVE(getClassDomainID);
-    return temp;
 }
 
 bool WrapICorJitInfo::getStaticFieldContent(
@@ -1618,10 +1672,11 @@ JITINTERFACE_HRESULT WrapICorJitInfo::getPgoInstrumentationResults(
           ICorJitInfo::PgoInstrumentationSchema** pSchema,
           uint32_t* pCountSchemaItems,
           uint8_t** pInstrumentationData,
-          ICorJitInfo::PgoSource* pgoSource)
+          ICorJitInfo::PgoSource* pPgoSource,
+          bool* pDynamicPgo)
 {
     API_ENTER(getPgoInstrumentationResults);
-    JITINTERFACE_HRESULT temp = wrapHnd->getPgoInstrumentationResults(ftnHnd, pSchema, pCountSchemaItems, pInstrumentationData, pgoSource);
+    JITINTERFACE_HRESULT temp = wrapHnd->getPgoInstrumentationResults(ftnHnd, pSchema, pCountSchemaItems, pInstrumentationData, pPgoSource, pDynamicPgo);
     API_LEAVE(getPgoInstrumentationResults);
     return temp;
 }
@@ -1684,6 +1739,15 @@ uint32_t WrapICorJitInfo::getJitFlags(
     API_ENTER(getJitFlags);
     uint32_t temp = wrapHnd->getJitFlags(flags, sizeInBytes);
     API_LEAVE(getJitFlags);
+    return temp;
+}
+
+CORINFO_METHOD_HANDLE WrapICorJitInfo::getSpecialCopyHelper(
+          CORINFO_CLASS_HANDLE type)
+{
+    API_ENTER(getSpecialCopyHelper);
+    CORINFO_METHOD_HANDLE temp = wrapHnd->getSpecialCopyHelper(type);
+    API_LEAVE(getSpecialCopyHelper);
     return temp;
 }
 

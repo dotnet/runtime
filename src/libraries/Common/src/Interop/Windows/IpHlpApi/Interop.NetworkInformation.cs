@@ -1,13 +1,12 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using Microsoft.Win32.SafeHandles;
-
 using System;
 using System.Net;
 using System.Net.NetworkInformation;
 using System.Net.Sockets;
 using System.Runtime.InteropServices;
+using Microsoft.Win32.SafeHandles;
 
 internal static partial class Interop
 {
@@ -504,7 +503,7 @@ internal static partial class Interop
             uint* outBufLen);
 
         [LibraryImport(Interop.Libraries.IpHlpApi)]
-        internal static unsafe partial uint GetBestInterfaceEx(Span<byte> ipAddress, int* index);
+        internal static unsafe partial uint GetBestInterfaceEx(ReadOnlySpan<byte> ipAddress, int* index);
 
         [LibraryImport(Interop.Libraries.IpHlpApi)]
         internal static partial uint GetIfEntry2(ref MibIfRow2 pIfRow);

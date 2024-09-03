@@ -2,25 +2,26 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Reflection;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
-using System.Collections.Generic;
-using System.Reflection.Runtime.General;
-using System.Reflection.Runtime.TypeInfos;
-using System.Reflection.Runtime.TypeInfos.NativeFormat;
+using System.Reflection;
 using System.Reflection.Runtime.Assemblies;
+using System.Reflection.Runtime.BindingFlagSupport;
 using System.Reflection.Runtime.FieldInfos;
 using System.Reflection.Runtime.FieldInfos.NativeFormat;
+using System.Reflection.Runtime.General;
 using System.Reflection.Runtime.MethodInfos;
-using System.Reflection.Runtime.BindingFlagSupport;
 using System.Reflection.Runtime.Modules;
+using System.Reflection.Runtime.TypeInfos;
+using System.Reflection.Runtime.TypeInfos.NativeFormat;
+using System.Runtime.CompilerServices;
 
-using Internal.Runtime.Augments;
+using Internal.Metadata.NativeFormat;
 using Internal.Reflection.Augments;
 using Internal.Reflection.Core.Execution;
-using Internal.Metadata.NativeFormat;
+using Internal.Runtime.Augments;
 
 namespace System.Reflection.Runtime.General
 {
@@ -71,7 +72,7 @@ namespace System.Reflection.Runtime.General
             if (!executionEnvironment.TryGetMethodFromHandle(runtimeMethodHandle, out declaringTypeHandle, out methodHandle, out genericMethodTypeArgumentHandles))
                 throw new ArgumentException(SR.Argument_InvalidHandle);
 
-            MethodBase methodBase = ReflectionCoreExecution.ExecutionDomain.GetMethod(declaringTypeHandle, methodHandle, genericMethodTypeArgumentHandles);
+            MethodBase methodBase = ExecutionDomain.GetMethod(declaringTypeHandle, methodHandle, genericMethodTypeArgumentHandles);
             if (methodBase.DeclaringType.IsConstructedGenericType)  // For compat with desktop, insist that the caller pass us the declaring type to resolve members of generic types.
                 throw new ArgumentException(SR.Format(SR.Argument_MethodDeclaringTypeGeneric, methodBase));
             return methodBase;
@@ -93,11 +94,11 @@ namespace System.Reflection.Runtime.General
                     throw new ArgumentException(SR.Argument_InvalidHandle);
                 if (!actualDeclaringTypeHandle.Equals(declaringTypeHandle))
                     throw new ArgumentException(SR.Format(SR.Argument_ResolveMethodHandle,
-                        declaringTypeHandle.GetTypeForRuntimeTypeHandle(),
-                        actualDeclaringTypeHandle.GetTypeForRuntimeTypeHandle()));
+                        declaringTypeHandle.GetRuntimeTypeInfoForRuntimeTypeHandle(),
+                        actualDeclaringTypeHandle.GetRuntimeTypeInfoForRuntimeTypeHandle()));
             }
 
-            MethodBase methodBase = ReflectionCoreExecution.ExecutionDomain.GetMethod(declaringTypeHandle, methodHandle, genericMethodTypeArgumentHandles);
+            MethodBase methodBase = ExecutionDomain.GetMethod(declaringTypeHandle, methodHandle, genericMethodTypeArgumentHandles);
             return methodBase;
         }
 
@@ -136,8 +137,8 @@ namespace System.Reflection.Runtime.General
                     throw new ArgumentException(SR.Argument_InvalidHandle);
                 if (!actualDeclaringTypeHandle.Equals(declaringTypeHandle))
                     throw new ArgumentException(SR.Format(SR.Argument_ResolveFieldHandle,
-                        declaringTypeHandle.GetTypeForRuntimeTypeHandle(),
-                        actualDeclaringTypeHandle.GetTypeForRuntimeTypeHandle()));
+                        declaringTypeHandle.GetRuntimeTypeInfoForRuntimeTypeHandle(),
+                        actualDeclaringTypeHandle.GetRuntimeTypeInfoForRuntimeTypeHandle()));
             }
 
             FieldInfo fieldInfo = GetFieldInfo(declaringTypeHandle, fieldHandle);
@@ -161,7 +162,7 @@ namespace System.Reflection.Runtime.General
 
         private static RuntimeFieldInfo GetFieldInfo(RuntimeTypeHandle declaringTypeHandle, FieldHandle fieldHandle)
         {
-            RuntimeTypeInfo contextTypeInfo = declaringTypeHandle.GetTypeForRuntimeTypeHandle();
+            RuntimeTypeInfo contextTypeInfo = declaringTypeHandle.GetRuntimeTypeInfoForRuntimeTypeHandle();
             NativeFormatRuntimeNamedTypeInfo definingTypeInfo = contextTypeInfo.AnchoringTypeDefinitionForDeclaredMembers.CastToNativeFormatRuntimeNamedTypeInfo();
 
             // RuntimeFieldHandles always yield FieldInfo's whose ReflectedType equals the DeclaringType.
@@ -211,16 +212,18 @@ namespace System.Reflection.Runtime.General
             ArgumentNullException.ThrowIfNull(type);
             ArgumentNullException.ThrowIfNull(method);
 
-            if (!(type is RuntimeTypeInfo runtimeDelegateType))
+            if (!(type is RuntimeType runtimeDelegateType))
                 throw new ArgumentException(SR.Argument_MustBeRuntimeType, nameof(type));
 
             if (!(method is RuntimeMethodInfo runtimeMethodInfo))
                 throw new ArgumentException(SR.Argument_MustBeRuntimeMethodInfo, nameof(method));
 
-            if (!runtimeDelegateType.IsDelegate)
+            RuntimeTypeInfo runtimeDelegateTypeInfo = runtimeDelegateType.GetRuntimeTypeInfo();
+
+            if (!runtimeDelegateTypeInfo.IsDelegate)
                 throw new ArgumentException(SR.Arg_MustBeDelegate, nameof(type));
 
-            Delegate result = runtimeMethodInfo.CreateDelegateNoThrowOnBindFailure(runtimeDelegateType, firstArgument, allowClosed);
+            Delegate result = runtimeMethodInfo.CreateDelegateNoThrowOnBindFailure(runtimeDelegateTypeInfo, firstArgument, allowClosed);
             if (result == null)
             {
                 if (throwOnBindFailure)
@@ -238,13 +241,15 @@ namespace System.Reflection.Runtime.General
             ArgumentNullException.ThrowIfNull(target);
             ArgumentNullException.ThrowIfNull(method);
 
-            if (!(type is RuntimeTypeInfo runtimeDelegateType))
+            if (!(type is RuntimeType runtimeDelegateType))
                 throw new ArgumentException(SR.Argument_MustBeRuntimeType, nameof(type));
-            if (!runtimeDelegateType.IsDelegate)
+
+            RuntimeTypeInfo runtimeDelegateTypeInfo = runtimeDelegateType.GetRuntimeTypeInfo();
+            if (!runtimeDelegateTypeInfo.IsDelegate)
                 throw new ArgumentException(SR.Arg_MustBeDelegate);
 
-            RuntimeTypeInfo runtimeContainingType = target.GetType().CastToRuntimeTypeInfo();
-            RuntimeMethodInfo runtimeMethodInfo = LookupMethodForCreateDelegate(runtimeDelegateType, runtimeContainingType, method, isStatic: false, ignoreCase: ignoreCase);
+            RuntimeTypeInfo runtimeContainingType = target.GetType().ToRuntimeTypeInfo();
+            RuntimeMethodInfo runtimeMethodInfo = LookupMethodForCreateDelegate(runtimeDelegateTypeInfo, runtimeContainingType, method, isStatic: false, ignoreCase: ignoreCase);
             if (runtimeMethodInfo == null)
             {
                 if (throwOnBindFailure)
@@ -263,16 +268,18 @@ namespace System.Reflection.Runtime.General
                 throw new ArgumentException(SR.Arg_UnboundGenParam, nameof(target));
             ArgumentNullException.ThrowIfNull(method);
 
-            if (!(type is RuntimeTypeInfo runtimeDelegateType))
+            if (!(type is RuntimeType runtimeDelegateType))
                 throw new ArgumentException(SR.Argument_MustBeRuntimeType, nameof(type));
 
-            if (!(target is RuntimeTypeInfo runtimeContainingType))
+            if (!(target is RuntimeType runtimeContainingType))
                 throw new ArgumentException(SR.Argument_MustBeRuntimeType, nameof(target));
 
-            if (!runtimeDelegateType.IsDelegate)
+            RuntimeTypeInfo runtimeDelegateTypeInfo = runtimeDelegateType.GetRuntimeTypeInfo();
+
+            if (!runtimeDelegateTypeInfo.IsDelegate)
                 throw new ArgumentException(SR.Arg_MustBeDelegate);
 
-            RuntimeMethodInfo runtimeMethodInfo = LookupMethodForCreateDelegate(runtimeDelegateType, runtimeContainingType, method, isStatic: true, ignoreCase: ignoreCase);
+            RuntimeMethodInfo runtimeMethodInfo = LookupMethodForCreateDelegate(runtimeDelegateTypeInfo, runtimeContainingType.GetRuntimeTypeInfo(), method, isStatic: true, ignoreCase: ignoreCase);
             if (runtimeMethodInfo == null)
             {
                 if (throwOnBindFailure)
@@ -286,7 +293,9 @@ namespace System.Reflection.Runtime.General
         // Helper for the V1/V1.1 Delegate.CreateDelegate() api. These apis take method names rather than MethodInfo and only expect to create open static delegates
         // or closed instance delegates. For backward compatibility, they don't allow relaxed signature matching (which could make the choice of target method ambiguous.)
         //
-        private static RuntimeMethodInfo LookupMethodForCreateDelegate(RuntimeTypeInfo runtimeDelegateType, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] RuntimeTypeInfo containingType, string method, bool isStatic, bool ignoreCase)
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2075:UnrecognizedReflectionPattern",
+            Justification = "Analysis does not track annotations for RuntimeTypeInfo")]
+        private static RuntimeMethodInfo LookupMethodForCreateDelegate(RuntimeTypeInfo runtimeDelegateType, RuntimeTypeInfo containingType, string method, bool isStatic, bool ignoreCase)
         {
             Debug.Assert(runtimeDelegateType.IsDelegate);
 
@@ -304,7 +313,7 @@ namespace System.Reflection.Runtime.General
                 bindingFlags |= BindingFlags.IgnoreCase;
             }
             RuntimeMethodInfo invokeMethod = runtimeDelegateType.GetInvokeMethod();
-            ParameterInfo[] parameters = invokeMethod.GetParametersNoCopy();
+            ReadOnlySpan<ParameterInfo> parameters = invokeMethod.GetParametersAsSpan();
             int numParameters = parameters.Length;
             Type[] parameterTypes = new Type[numParameters];
             for (int i = 0; i < numParameters; i++)
@@ -312,15 +321,14 @@ namespace System.Reflection.Runtime.General
                 parameterTypes[i] = parameters[i].ParameterType;
             }
 
-            while (containingType != null)
+            Type? type = containingType.ToType();
+            while (type != null)
             {
-                MethodInfo? methodInfo = containingType.GetMethod(method, 0, bindingFlags, null, parameterTypes, null);
+                MethodInfo? methodInfo = type.GetMethod(method, 0, bindingFlags, parameterTypes);
                 if (methodInfo != null && methodInfo.ReturnType.Equals(invokeMethod.ReturnType))
                     return (RuntimeMethodInfo)methodInfo; // This cast is safe since we already verified that containingType is runtime implemented.
 
-#pragma warning disable IL2072 // https://github.com/dotnet/linker/issues/2673
-                containingType = (RuntimeTypeInfo)(containingType.BaseType);
-#pragma warning restore
+                type = type.BaseType;
             }
             return null;
         }
@@ -339,12 +347,6 @@ namespace System.Reflection.Runtime.General
                     Debug.Fail("RuntimeMethodHandle should only return a methodbase implemented by the runtime.");
                     throw new NotSupportedException();
             }
-        }
-
-        public sealed override void RunModuleConstructor(Module module)
-        {
-            RuntimeAssemblyInfo assembly = (RuntimeAssemblyInfo)module.Assembly;
-            assembly.RunModuleConstructor();
         }
 
         public sealed override void MakeTypedReference(object target, FieldInfo[] flds, out Type type, out int offset)
@@ -386,13 +388,13 @@ namespace System.Reflection.Runtime.General
 
         public sealed override EnumInfo GetEnumInfo(Type type, Func<Type, string[], object[], bool, EnumInfo> create)
         {
-            RuntimeTypeInfo runtimeType = type.CastToRuntimeTypeInfo();
+            RuntimeTypeInfo runtimeType = type.ToRuntimeTypeInfo();
 
             var info = runtimeType.GenericCache as EnumInfo;
             if (info != null)
                 return info;
 
-            ReflectionCoreExecution.ExecutionDomain.ExecutionEnvironment.GetEnumInfo(runtimeType.TypeHandle, out string[] unsortedNames, out object[] unsortedValues, out bool isFlags);
+            ReflectionCoreExecution.ExecutionEnvironment.GetEnumInfo(runtimeType.TypeHandle, out string[] unsortedNames, out object[] unsortedValues, out bool isFlags);
 
             // Call into IntrospectiveSort directly to avoid the Comparer<T>.Default codepath.
             // That codepath would bring functionality to compare everything that was ever allocated in the program.
@@ -423,7 +425,7 @@ namespace System.Reflection.Runtime.General
 
         public sealed override DynamicInvokeInfo GetDelegateDynamicInvokeInfo(Type type)
         {
-            RuntimeTypeInfo runtimeType = type.CastToRuntimeTypeInfo();
+            RuntimeTypeInfo runtimeType = type.ToRuntimeTypeInfo();
 
             DynamicInvokeInfo? info = runtimeType.GenericCache as DynamicInvokeInfo;
             if (info != null)
@@ -432,11 +434,35 @@ namespace System.Reflection.Runtime.General
             RuntimeMethodInfo invokeMethod = runtimeType.GetInvokeMethod();
 
             MethodBaseInvoker methodInvoker = invokeMethod.MethodInvoker;
-            IntPtr invokeThunk = ReflectionCoreExecution.ExecutionDomain.ExecutionEnvironment.GetDynamicInvokeThunk(methodInvoker);
+            IntPtr invokeThunk = ReflectionCoreExecution.ExecutionEnvironment.GetDynamicInvokeThunk(methodInvoker);
 
             info = new DynamicInvokeInfo(invokeMethod, invokeThunk);
             runtimeType.GenericCache = info;
             return info;
+        }
+
+        public sealed override MethodInfo GetDelegateMethod(Delegate del)
+        {
+            return ReflectionCoreExecution.ExecutionEnvironment.GetDelegateMethod(del);
+        }
+
+        public sealed override MethodBase GetMethodBaseFromStartAddressIfAvailable(IntPtr methodStartAddress)
+        {
+            return ReflectionCoreExecution.ExecutionEnvironment.GetMethodBaseFromStartAddressIfAvailable(methodStartAddress);
+        }
+
+        public sealed override Assembly GetAssemblyForHandle(RuntimeTypeHandle typeHandle)
+        {
+            return Type.GetTypeFromHandle(typeHandle).Assembly;
+        }
+
+        public sealed override void RunClassConstructor(RuntimeTypeHandle typeHandle)
+        {
+            IntPtr pStaticClassConstructionContext = ReflectionCoreExecution.ExecutionEnvironment.GetStaticClassConstructionContext(typeHandle);
+            if (pStaticClassConstructionContext != IntPtr.Zero)
+            {
+                RuntimeAugments.EnsureClassConstructorRun(pStaticClassConstructionContext);
+            }
         }
     }
 }

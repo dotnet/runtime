@@ -215,6 +215,7 @@ namespace System.Numerics
         static bool System.Numerics.INumberBase<System.Numerics.BigInteger>.IsZero(System.Numerics.BigInteger value) { throw null; }
         static System.Numerics.BigInteger System.Numerics.INumberBase<System.Numerics.BigInteger>.MaxMagnitudeNumber(System.Numerics.BigInteger x, System.Numerics.BigInteger y) { throw null; }
         static System.Numerics.BigInteger System.Numerics.INumberBase<System.Numerics.BigInteger>.MinMagnitudeNumber(System.Numerics.BigInteger x, System.Numerics.BigInteger y) { throw null; }
+        static System.Numerics.BigInteger System.Numerics.INumberBase<System.Numerics.BigInteger>.MultiplyAddEstimate(System.Numerics.BigInteger left, System.Numerics.BigInteger right, System.Numerics.BigInteger addend) { throw null; }
         static bool System.Numerics.INumberBase<System.Numerics.BigInteger>.TryConvertFromChecked<TOther>(TOther value, out System.Numerics.BigInteger result) { throw null; }
         static bool System.Numerics.INumberBase<System.Numerics.BigInteger>.TryConvertFromSaturating<TOther>(TOther value, out System.Numerics.BigInteger result) { throw null; }
         static bool System.Numerics.INumberBase<System.Numerics.BigInteger>.TryConvertFromTruncating<TOther>(TOther value, out System.Numerics.BigInteger result) { throw null; }
@@ -364,6 +365,7 @@ namespace System.Numerics
         static bool System.Numerics.INumberBase<System.Numerics.Complex>.IsZero(System.Numerics.Complex value) { throw null; }
         static System.Numerics.Complex System.Numerics.INumberBase<System.Numerics.Complex>.MaxMagnitudeNumber(System.Numerics.Complex x, System.Numerics.Complex y) { throw null; }
         static System.Numerics.Complex System.Numerics.INumberBase<System.Numerics.Complex>.MinMagnitudeNumber(System.Numerics.Complex x, System.Numerics.Complex y) { throw null; }
+        static System.Numerics.Complex System.Numerics.INumberBase<System.Numerics.Complex>.MultiplyAddEstimate(System.Numerics.Complex left, System.Numerics.Complex right, System.Numerics.Complex addend) { throw null; }
         static bool System.Numerics.INumberBase<System.Numerics.Complex>.TryConvertFromChecked<TOther>(TOther value, out System.Numerics.Complex result) { throw null; }
         static bool System.Numerics.INumberBase<System.Numerics.Complex>.TryConvertFromSaturating<TOther>(TOther value, out System.Numerics.Complex result) { throw null; }
         static bool System.Numerics.INumberBase<System.Numerics.Complex>.TryConvertFromTruncating<TOther>(TOther value, out System.Numerics.Complex result) { throw null; }

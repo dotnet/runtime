@@ -44,7 +44,7 @@ EventReporter::EventReporter(EventReporterType type)
 
     m_eventType = type;
 
-    HMODULE hModule = WszGetModuleHandle(NULL);
+    HMODULE hModule = GetModuleHandle(NULL);
     PathString appPath;
     DWORD ret = WszGetModuleFileName(hModule, appPath);
 
@@ -287,7 +287,7 @@ void EventReporter::AddStackTrace(SString& s)
         COUNT_T curSize = m_Description.GetCount();
 
         // Truncate the buffer if we have exceeded the limit based upon the OS we are on
-        DWORD dwMaxSizeLimit = MAX_SIZE_EVENTLOG_ENTRY_STRING_WINVISTA;
+        DWORD dwMaxSizeLimit = MAX_SIZE_EVENTLOG_ENTRY_STRING;
         if (curSize >= dwMaxSizeLimit)
         {
             // Load the truncation message
@@ -557,7 +557,7 @@ void LogCallstackForEventReporterWorker(EventReporter& reporter)
     {
         WordAt.Insert(WordAt.Begin(), W("   "));
     }
-    WordAt += W(" ");
+    WordAt.Append(W(" "));
 
     LogCallstackData data = {
         &reporter, &WordAt
@@ -632,7 +632,6 @@ void ReportExceptionStackHelper(OBJECTREF exObj, EventReporter& reporter, SmallS
 
     DebugStackTrace::GetStackFramesData stackFramesData;
     stackFramesData.pDomain = NULL;
-    stackFramesData.skip = 0;
     stackFramesData.NumFramesRequested = 0;
 
     DebugStackTrace::GetStackFramesFromException(&(gc.exObj), &stackFramesData);
@@ -679,7 +678,9 @@ void DoReportForUnhandledNativeException(PEXCEPTION_POINTERS pExceptionInfo)
             FormatInteger(addressString, ARRAY_SIZE(addressString), "%p", (SIZE_T)pExceptionInfo->ExceptionRecord->ExceptionAddress);
 
             StackSString s;
-            s.FormatMessage(FORMAT_MESSAGE_FROM_STRING, W("exception code %1, exception address %2"), 0, 0, exceptionCodeString, addressString);
+            s.FormatMessage(FORMAT_MESSAGE_FROM_STRING, W("exception code %1, exception address %2"), 0, 0,
+                SString{ SString::Literal, exceptionCodeString },
+                SString{ SString::Literal, addressString });
             reporter.AddDescription(s);
             if (pThread)
             {

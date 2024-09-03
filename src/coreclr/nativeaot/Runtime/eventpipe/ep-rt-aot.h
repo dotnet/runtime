@@ -18,6 +18,7 @@
 #include <eventpipe/ep-types.h>
 #include <eventpipe/ep-provider.h>
 #include <eventpipe/ep-session-provider.h>
+#include <eventpipe/ep-string.h>
 
 #include "rhassert.h"
 #include <RhConfig.h>
@@ -928,8 +929,12 @@ int32_t
 ep_rt_system_get_alloc_granularity (void)
 {
     STATIC_CONTRACT_NOTHROW;
-    // return static_cast<int32_t>(g_SystemInfo.dwAllocationGranularity);
+#ifdef TARGET_WINDOWS
     return 0x10000;
+#else
+    extern int32_t ep_rt_aot_get_os_page_size (void);
+    return ep_rt_aot_get_os_page_size();
+#endif
 }
 
 static
@@ -1210,24 +1215,6 @@ ep_rt_utf8_string_compare_ignore_case (
 
 static
 inline
-bool
-ep_rt_utf8_string_is_null_or_empty (const ep_char8_t *str)
-{
-    STATIC_CONTRACT_NOTHROW;
-
-    if (str == NULL)
-        return true;
-
-    while (*str) {
-        if (!isspace (*str))
-            return false;
-        str++;
-    }
-    return true;
-}
-
-static
-inline
 ep_char8_t *
 ep_rt_utf8_string_dup (const ep_char8_t *str)
 {
@@ -1314,49 +1301,6 @@ ep_rt_utf8_string_replace (
     return false;
 }
 
-
-static
-ep_char16_t *
-ep_rt_utf8_to_utf16le_string (
-    const ep_char8_t *str,
-    size_t len)
-{
-    STATIC_CONTRACT_NOTHROW;
-
-    if (!str)
-        return NULL;
-
-    if (len == (size_t) -1) {
-        len = strlen(str);
-    }
-
-    if (len == 0) {
-        // Return an empty string if the length is 0
-        CHAR16_T * lpDestEmptyStr = reinterpret_cast<CHAR16_T *>(malloc(1 * sizeof(CHAR16_T)));
-        if(lpDestEmptyStr==NULL) {
-            return NULL;
-        }
-        *lpDestEmptyStr = '\0';
-        return reinterpret_cast<ep_char16_t*>(lpDestEmptyStr);
-    }
-
-    int32_t flags = MINIPAL_MB_NO_REPLACE_INVALID_CHARS | MINIPAL_TREAT_AS_LITTLE_ENDIAN;
-
-    size_t ret = minipal_get_length_utf8_to_utf16 (str, len, flags);
-
-    if (ret <= 0)
-        return NULL;
-
-    CHAR16_T * lpDestStr = reinterpret_cast<CHAR16_T *>(malloc((ret + 1) * sizeof(CHAR16_T)));
-    if(lpDestStr==NULL) {
-        return NULL;
-    }
-    ret = minipal_convert_utf8_to_utf16 (str, len, lpDestStr, ret, flags);
-    lpDestStr[ret] = '\0';
-
-    return reinterpret_cast<ep_char16_t*>(lpDestStr);
-}
-
 static
 inline
 ep_char16_t *
@@ -1372,6 +1316,13 @@ ep_rt_utf16_string_dup (const ep_char16_t *str)
     if (str_dup)
         memcpy (str_dup, str, str_size);
     return str_dup;
+}
+
+static
+ep_char8_t *
+ep_rt_utf8_string_alloc (size_t len)
+{
+    return reinterpret_cast<ep_char8_t *>(malloc(len));
 }
 
 static
@@ -1397,52 +1348,10 @@ ep_rt_utf16_string_len (const ep_char16_t *str)
 }
 
 static
-ep_char8_t *
-ep_rt_utf16_to_utf8_string (
-    const ep_char16_t *str,
-    size_t len)
+ep_char16_t *
+ep_rt_utf16_string_alloc (size_t len)
 {
-    STATIC_CONTRACT_NOTHROW;
-    if (!str)
-        return NULL;
-
-    if (len == (size_t) -1) {
-        len = ep_rt_utf16_string_len (str);
-    }
-
-    if (len == 0) {
-        // Return an empty string if the length is 0
-        char * lpDestEmptyStr = reinterpret_cast<char *>(malloc(1 * sizeof(char)));
-        if(lpDestEmptyStr==NULL) {
-            return NULL;
-        }
-        *lpDestEmptyStr = '\0';
-        return reinterpret_cast<ep_char8_t*>(lpDestEmptyStr);
-    }
-
-    size_t ret = minipal_get_length_utf16_to_utf8 (reinterpret_cast<const CHAR16_T *>(str), len, 0);
-
-    if (ret <= 0)
-        return NULL;
-
-    char* lpDestStr = reinterpret_cast<char *>(malloc((ret + 1) * sizeof(char)));
-    if(lpDestStr==NULL) {
-        return NULL;
-    }
-    ret = minipal_convert_utf16_to_utf8 (reinterpret_cast<const CHAR16_T*>(str), len, lpDestStr, ret, 0);
-    lpDestStr[ret] = '\0';
-
-    return reinterpret_cast<ep_char8_t*>(lpDestStr);
-}
-
-static
-inline
-ep_char8_t *
-ep_rt_utf16le_to_utf8_string (
-    const ep_char16_t *str,
-    size_t len)
-{
-    return ep_rt_utf16_to_utf8_string (str, len);
+    return reinterpret_cast<ep_char16_t *>(malloc(len * sizeof(ep_char16_t)));
 }
 
 static

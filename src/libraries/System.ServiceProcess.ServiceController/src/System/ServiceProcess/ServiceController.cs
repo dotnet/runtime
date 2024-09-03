@@ -1,13 +1,13 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using Microsoft.Win32.SafeHandles;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
+using Microsoft.Win32.SafeHandles;
 
 namespace System.ServiceProcess
 {
@@ -934,7 +934,7 @@ namespace System.ServiceProcess
         /// <param name="stopDependentServices">
         /// <c>true</c> to stop all running dependent services together with the service; <c>false</c> to stop only the service.
         /// </param>
-#if NETCOREAPP
+#if NET
         public
 #else
         private

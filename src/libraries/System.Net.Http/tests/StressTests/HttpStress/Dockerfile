@@ -1,4 +1,4 @@
-ARG SDK_BASE_IMAGE=mcr.microsoft.com/dotnet/nightly/sdk:7.0-bullseye-slim
+ARG SDK_BASE_IMAGE=mcr.microsoft.com/dotnet/nightly/sdk:8.0
 FROM $SDK_BASE_IMAGE
 
 # Build latest msquic locally
@@ -7,20 +7,20 @@ RUN apt-get update -y && \
     apt-get upgrade -y && \
     apt-get install -y cmake clang ruby-dev gem lttng-tools libssl-dev && \
     gem install fpm
-RUN git clone --recursive https://github.com/dotnet/msquic
-RUN cd msquic/src/msquic && \
+RUN git clone --depth 1 --single-branch --branch v2.3.5 --recursive https://github.com/microsoft/msquic
+RUN cd msquic/ && \
     mkdir build && \
-    cmake -B build -DCMAKE_BUILD_TYPE=Release -DQUIC_ENABLE_LOGGING=false -DQUIC_USE_SYSTEM_LIBCRYPTO=true -DQUIC_BUILD_TOOLS=off -DQUIC_BUILD_TEST=off -DQUIC_BUILD_PERF=off && \
+    cmake -B build -DCMAKE_BUILD_TYPE=Debug -DQUIC_ENABLE_LOGGING=false -DQUIC_USE_SYSTEM_LIBCRYPTO=true -DQUIC_BUILD_TOOLS=off -DQUIC_BUILD_TEST=off -DQUIC_BUILD_PERF=off -DQUIC_TLS=openssl3 -DQUIC_ENABLE_SANITIZERS=on && \
     cd build && \
-    cmake --build . --config Release
-RUN cd msquic/src/msquic/build/bin/Release && \
+    cmake --build . --config Debug
+RUN cd msquic/build/bin/Debug && \
     rm libmsquic.so && \
     fpm -f -s dir -t deb -n libmsquic -v $( find -type f | cut -d "." -f 4- ) \
     --license MIT --url https://github.com/microsoft/msquic --log error \
     $( ls ./* | cut -d "/" -f 2 | sed -r "s/(.*)/\1=\/usr\/lib\/\1/g" ) && \
     dpkg -i libmsquic_*.deb
 
-ARG VERSION=8.0
+ARG VERSION=9.0
 ARG CONFIGURATION=Release
 
 # Build the stress server
@@ -39,6 +39,10 @@ ENV DOTNET_DbgMiniDumpType=MiniDumpWithFullMemory
 ENV DOTNET_DbgMiniDumpName="/dumps-share/coredump.%p"
 
 EXPOSE 5001
+
+# configure adress sanitizer
+ENV ASAN_OPTIONS='detect_leaks=0'
+ENV LD_PRELOAD=/usr/lib/gcc/x86_64-linux-gnu/12/libasan.so
 
 ENV VERSION=$VERSION
 ENV CONFIGURATION=$CONFIGURATION

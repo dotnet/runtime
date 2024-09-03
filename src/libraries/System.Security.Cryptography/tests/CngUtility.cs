@@ -21,14 +21,14 @@ namespace System.Security.Cryptography.Tests
             return isSupported;
         }
 
-        // https://docs.microsoft.com/windows/win32/api/bcrypt/nf-bcrypt-bcryptclosealgorithmprovider
+        // https://learn.microsoft.com/windows/win32/api/bcrypt/nf-bcrypt-bcryptclosealgorithmprovider
         [DllImport(BCRYPT_LIB, CallingConvention = CallingConvention.Winapi)]
         [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
         private static extern int BCryptCloseAlgorithmProvider(
             [In] IntPtr hAlgorithm,
             [In] uint dwFlags);
 
-        // https://docs.microsoft.com/windows/win32/api/bcrypt/nf-bcrypt-bcryptopenalgorithmprovider
+        // https://learn.microsoft.com/windows/win32/api/bcrypt/nf-bcrypt-bcryptopenalgorithmprovider
         [DllImport(BCRYPT_LIB, CallingConvention = CallingConvention.Winapi)]
         [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
         private static extern int BCryptOpenAlgorithmProvider(

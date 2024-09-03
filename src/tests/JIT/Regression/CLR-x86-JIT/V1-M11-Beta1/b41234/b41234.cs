@@ -9,13 +9,12 @@ namespace Nullstone
     {
 
         [Fact]
-        public static int TestEntryPoint()
+        public static void TestEntryPoint()
         {
             Test t = new Test();
             t.Init();
             t.kernel();
             t.Finish();
-            return 100;
         }
 
         public static bool isIdeal = true;

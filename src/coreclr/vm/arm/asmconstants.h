@@ -76,11 +76,11 @@ ASMCONSTANTS_C_ASSERT(MethodTable__m_BaseSize == offsetof(MethodTable, m_BaseSiz
 #define MethodTable__m_dwFlags         0x0
 ASMCONSTANTS_C_ASSERT(MethodTable__m_dwFlags == offsetof(MethodTable, m_dwFlags));
 
-#define MethodTable__enum_flag_ContainsPointers 0x01000000
-ASMCONSTANTS_C_ASSERT(MethodTable__enum_flag_ContainsPointers == MethodTable::enum_flag_ContainsPointers);
+#define MethodTable__enum_flag_ContainsGCPointers 0x01000000
+ASMCONSTANTS_C_ASSERT(MethodTable__enum_flag_ContainsGCPointers == MethodTable::enum_flag_ContainsGCPointers);
 
 #define MethodTable__m_ElementType        DBG_FRE(0x24, 0x20)
-ASMCONSTANTS_C_ASSERT(MethodTable__m_ElementType == offsetof(MethodTable, m_pMultipurposeSlot1));
+ASMCONSTANTS_C_ASSERT(MethodTable__m_ElementType == offsetof(MethodTable, m_ElementTypeHnd));
 
 #define SIZEOF__MethodTable             DBG_FRE(0x2c, 0x28)
 ASMCONSTANTS_C_ASSERT(SIZEOF__MethodTable == sizeof(MethodTable));
@@ -114,13 +114,6 @@ ASMCONSTANTS_C_ASSERT(SIZEOF__FloatArgumentRegisters == sizeof(FloatArgumentRegi
 #define ASM_ENREGISTERED_RETURNTYPE_MAXSIZE 0x20
 ASMCONSTANTS_C_ASSERT(ASM_ENREGISTERED_RETURNTYPE_MAXSIZE == ENREGISTERED_RETURNTYPE_MAXSIZE)
 
-
-#define MethodDesc__m_wFlags DBG_FRE(0x1A, 0x06)
-ASMCONSTANTS_C_ASSERT(MethodDesc__m_wFlags == offsetof(MethodDesc, m_wFlags))
-
-#define MethodDesc__mdcClassification 0x7
-ASMCONSTANTS_C_ASSERT(MethodDesc__mdcClassification == mdcClassification)
-
 #ifdef FEATURE_COMINTEROP
 
 #define Stub__m_pCode DBG_FRE(0x10, 0x0c)
@@ -132,7 +125,7 @@ ASMCONSTANTS_C_ASSERT(SIZEOF__ComMethodFrame == sizeof(ComMethodFrame))
 #define UnmanagedToManagedFrame__m_pvDatum 0x08
 ASMCONSTANTS_C_ASSERT(UnmanagedToManagedFrame__m_pvDatum == offsetof(UnmanagedToManagedFrame, m_pvDatum))
 
-// In ComCallPreStub and GenericComPlusCallStub, we setup R12 to contain address of ComCallMethodDesc after doing the following:
+// In ComCallPreStub and GenericCLRToCOMCallStub, we setup R12 to contain address of ComCallMethodDesc after doing the following:
 //
 // mov r12, pc
 //
@@ -141,20 +134,13 @@ ASMCONSTANTS_C_ASSERT(UnmanagedToManagedFrame__m_pvDatum == offsetof(UnmanagedTo
 
 #endif // FEATURE_COMINTEROP
 
-#define               Thread__m_fPreemptiveGCDisabled   0x08
+#define               Thread__m_fPreemptiveGCDisabled   0x04
 ASMCONSTANTS_C_ASSERT(Thread__m_fPreemptiveGCDisabled == offsetof(Thread, m_fPreemptiveGCDisabled));
 #define Thread_m_fPreemptiveGCDisabled Thread__m_fPreemptiveGCDisabled
 
-#define               Thread__m_pFrame                  0x0C
+#define               Thread__m_pFrame                  0x08
 ASMCONSTANTS_C_ASSERT(Thread__m_pFrame == offsetof(Thread, m_pFrame));
 #define Thread_m_pFrame Thread__m_pFrame
-
-#define               DomainLocalModule__m_pDataBlob                 0x18
-ASMCONSTANTS_C_ASSERT(DomainLocalModule__m_pDataBlob == offsetof(DomainLocalModule, m_pDataBlob));
-
-#define               DomainLocalModule__m_pGCStatics                 0x10
-ASMCONSTANTS_C_ASSERT(DomainLocalModule__m_pGCStatics == offsetof(DomainLocalModule, m_pGCStatics));
-
 
 #define ASM__VTABLE_SLOTS_PER_CHUNK 8
 ASMCONSTANTS_C_ASSERT(ASM__VTABLE_SLOTS_PER_CHUNK == VTABLE_SLOTS_PER_CHUNK)
@@ -234,6 +220,31 @@ ASMCONSTANTS_C_ASSERT(CallCountingStubData__TargetForMethod == offsetof(CallCoun
 
 #define CallCountingStubData__TargetForThresholdReached 0x08
 ASMCONSTANTS_C_ASSERT(CallCountingStubData__TargetForThresholdReached == offsetof(CallCountingStubData, TargetForThresholdReached))
+
+#ifdef PROFILING_SUPPORTED
+#define PROFILE_ENTER        0x1
+#define PROFILE_LEAVE        0x2
+#define PROFILE_TAILCALL     0x4
+
+#define SIZEOF__PROFILE_PLATFORM_SPECIFIC_DATA 104
+ASMCONSTANTS_C_ASSERT(SIZEOF__PROFILE_PLATFORM_SPECIFIC_DATA == sizeof(PROFILE_PLATFORM_SPECIFIC_DATA))
+
+#define ASMCONSTANTS_C_ASSERT_OFFSET(type, field) \
+    ASMCONSTANTS_C_ASSERT(type##__##field == offsetof(type, field))
+
+#define PROFILE_PLATFORM_SPECIFIC_DATA__functionId 80
+ASMCONSTANTS_C_ASSERT_OFFSET(PROFILE_PLATFORM_SPECIFIC_DATA, functionId)
+#define PROFILE_PLATFORM_SPECIFIC_DATA__probeSp 84
+ASMCONSTANTS_C_ASSERT_OFFSET(PROFILE_PLATFORM_SPECIFIC_DATA, probeSp)
+#define PROFILE_PLATFORM_SPECIFIC_DATA__profiledSp 88
+ASMCONSTANTS_C_ASSERT_OFFSET(PROFILE_PLATFORM_SPECIFIC_DATA, profiledSp)
+#define PROFILE_PLATFORM_SPECIFIC_DATA__hiddenArg 92
+ASMCONSTANTS_C_ASSERT_OFFSET(PROFILE_PLATFORM_SPECIFIC_DATA, hiddenArg)
+#define PROFILE_PLATFORM_SPECIFIC_DATA__flags 96
+ASMCONSTANTS_C_ASSERT_OFFSET(PROFILE_PLATFORM_SPECIFIC_DATA, flags)
+
+#undef ASMCONSTANTS_C_ASSERT_OFFSET
+#endif  // PROFILING_SUPPORTED
 
 #undef ASMCONSTANTS_RUNTIME_ASSERT
 #undef ASMCONSTANTS_C_ASSERT

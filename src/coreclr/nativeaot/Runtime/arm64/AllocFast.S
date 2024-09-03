@@ -5,13 +5,13 @@
 #include "AsmOffsets.inc"
 
 // GC type flags
-GC_ALLOC_FINALIZE               = 1
+#define GC_ALLOC_FINALIZE               1
 
 //
 // Rename fields of nested structs
 //
-OFFSETOF__Thread__m_alloc_context__alloc_ptr        = OFFSETOF__Thread__m_rgbAllocContextBuffer + OFFSETOF__gc_alloc_context__alloc_ptr
-OFFSETOF__Thread__m_alloc_context__alloc_limit      = OFFSETOF__Thread__m_rgbAllocContextBuffer + OFFSETOF__gc_alloc_context__alloc_limit
+#define OFFSETOF__Thread__m_alloc_context__alloc_ptr        (OFFSETOF__Thread__m_rgbAllocContextBuffer + OFFSETOF__gc_alloc_context__alloc_ptr)
+#define OFFSETOF__Thread__m_alloc_context__alloc_limit      (OFFSETOF__Thread__m_rgbAllocContextBuffer + OFFSETOF__gc_alloc_context__alloc_limit)
 
 
 
@@ -46,7 +46,7 @@ OFFSETOF__Thread__m_alloc_context__alloc_limit      = OFFSETOF__Thread__m_rgbAll
         add         x2, x2, x12
         ldr         x13, [x1, #OFFSETOF__Thread__m_alloc_context__alloc_limit]
         cmp         x2, x13
-        bhi         RhpNewFast_RarePath
+        bhi         LOCAL_LABEL(RhpNewFast_RarePath)
 
         // Update the alloc pointer to account for the allocation.
         str         x2, [x1, #OFFSETOF__Thread__m_alloc_context__alloc_ptr]
@@ -57,7 +57,7 @@ OFFSETOF__Thread__m_alloc_context__alloc_limit      = OFFSETOF__Thread__m_rgbAll
         mov         x0, x12
         ret
 
-RhpNewFast_RarePath:
+LOCAL_LABEL(RhpNewFast_RarePath):
         mov         x1, #0
         b           C_FUNC(RhpNewObject)
     LEAF_END RhpNewFast, _TEXT
@@ -88,12 +88,14 @@ RhpNewFast_RarePath:
         bl          C_FUNC(RhpGcAlloc)
 
         // Set the new objects MethodTable pointer on success.
-        cbz         x0, NewOutOfMemory
+        cbz         x0, LOCAL_LABEL(NewOutOfMemory)
 
+        .cfi_remember_state
         POP_COOP_PINVOKE_FRAME
         EPILOG_RETURN
 
-NewOutOfMemory:
+        .cfi_restore_state
+LOCAL_LABEL(NewOutOfMemory):
         // This is the OOM failure path. We are going to tail-call to a managed helper that will throw
         // an out of memory exception that the caller of this allocator understands.
 
@@ -113,7 +115,7 @@ NewOutOfMemory:
         movz        x2, MAX_STRING_LENGTH & 0xFFFF
         movk        x2, MAX_STRING_LENGTH >> 16, lsl 16
         cmp         x1, x2
-        bhi         StringSizeOverflow
+        bhi         LOCAL_LABEL(StringSizeOverflow)
 
         // Compute overall allocation size (align(base size + (element size * elements), 8)).
         mov         w2, #STRING_COMPONENT_SIZE
@@ -139,7 +141,7 @@ NewOutOfMemory:
         add         x2, x2, x12
         ldr         x12, [x3, #OFFSETOF__Thread__m_alloc_context__alloc_limit]
         cmp         x2, x12
-        bhi         C_FUNC(RhpNewArrayRare)
+        bhi         LOCAL_LABEL(RhNewString_Rare)
 
         // Reload new object address into r12.
         ldr         x12, [x3, #OFFSETOF__Thread__m_alloc_context__alloc_ptr]
@@ -156,7 +158,7 @@ NewOutOfMemory:
 
         ret
 
-StringSizeOverflow:
+LOCAL_LABEL(StringSizeOverflow):
         // We get here if the length of the final string object can not be represented as an unsigned
         // 32-bit value. We are going to tail-call to a managed helper that will throw
         // an OOM exception that the caller of this allocator understands.
@@ -164,6 +166,9 @@ StringSizeOverflow:
         // x0 holds MethodTable pointer already
         mov         x1, #1                  // Indicate that we should throw OverflowException
         b           C_FUNC(RhExceptionHandling_FailedAllocation)
+
+LOCAL_LABEL(RhNewString_Rare):
+        b           C_FUNC(RhpNewArrayRare)
     LEAF_END    RhNewString, _Text
 
 // Allocate one dimensional, zero based array (SZARRAY).
@@ -177,7 +182,7 @@ StringSizeOverflow:
         // case (32 dimensional MdArray) is less than 0xffff, and thus the product fits in 64 bits.
         mov         x2, #0x7FFFFFFF
         cmp         x1, x2
-        bhi         ArraySizeOverflow
+        bhi         LOCAL_LABEL(ArraySizeOverflow)
 
         ldrh        w2, [x0, #OFFSETOF__MethodTable__m_usComponentSize]
         umull       x2, w1, w2
@@ -204,7 +209,7 @@ StringSizeOverflow:
         add         x2, x2, x12
         ldr         x12, [x3, #OFFSETOF__Thread__m_alloc_context__alloc_limit]
         cmp         x2, x12
-        bhi         C_FUNC(RhpNewArrayRare)
+        bhi         LOCAL_LABEL(RhpNewArray_Rare)
 
         // Reload new object address into x12.
         ldr         x12, [x3, #OFFSETOF__Thread__m_alloc_context__alloc_ptr]
@@ -221,7 +226,7 @@ StringSizeOverflow:
 
         ret
 
-ArraySizeOverflow:
+LOCAL_LABEL(ArraySizeOverflow):
         // We get here if the size of the final array object can not be represented as an unsigned
         // 32-bit value. We are going to tail-call to a managed helper that will throw
         // an overflow exception that the caller of this allocator understands.
@@ -229,6 +234,9 @@ ArraySizeOverflow:
         // x0 holds MethodTable pointer already
         mov         x1, #1                  // Indicate that we should throw OverflowException
         b           C_FUNC(RhExceptionHandling_FailedAllocation)
+
+LOCAL_LABEL(RhpNewArray_Rare):
+        b           C_FUNC(RhpNewArrayRare)
     LEAF_END    RhpNewArray, _TEXT
 
 // Allocate one dimensional, zero based array (SZARRAY) using the slow path that calls a runtime helper.
@@ -254,12 +262,14 @@ ArraySizeOverflow:
         bl          C_FUNC(RhpGcAlloc)
 
         // Set the new objects MethodTable pointer and length on success.
-        cbz         x0, ArrayOutOfMemory
+        cbz         x0, LOCAL_LABEL(ArrayOutOfMemory)
 
+        .cfi_remember_state
         POP_COOP_PINVOKE_FRAME
         EPILOG_RETURN
 
-ArrayOutOfMemory:
+        .cfi_restore_state
+LOCAL_LABEL(ArrayOutOfMemory):
         // This is the OOM failure path. We are going to tail-call to a managed helper that will throw
         // an out of memory exception that the caller of this allocator understands.
 

@@ -106,7 +106,9 @@ do {                                                                            
     if (ARGUMENT_PRESENT(Params)) {                                                   \
         PT_KNONVOLATILE_CONTEXT_POINTERS ContextPointers = (Params)->ContextPointers; \
         if (ARGUMENT_PRESENT(ContextPointers)) {                                      \
-            if (RegisterNumber ==  22)                                                \
+            if (RegisterNumber == 1)                                                  \
+                ContextPointers->Ra = (PDWORD64)Address;                              \
+            else if (RegisterNumber == 22)                                            \
                 ContextPointers->Fp = (PDWORD64)Address;                              \
             else if (RegisterNumber >=  23 && RegisterNumber <= 31) {                 \
                 (&ContextPointers->S0)[RegisterNumber - 23] = (PDWORD64)Address;      \

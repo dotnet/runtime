@@ -4,12 +4,12 @@
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Diagnostics.Metrics;
 using System.Globalization;
 using System.Net.Http.Metrics;
 using System.Net.Security;
 using System.Reflection;
-using System.Runtime.ExceptionServices;
 using System.Runtime.Versioning;
 using System.Security.Authentication;
 using System.Security.Cryptography.X509Certificates;
@@ -22,9 +22,9 @@ namespace System.Net.Http
     {
         private static readonly ConcurrentDictionary<string, MethodInfo?> s_cachedMethods = new();
 
-        private readonly HttpMessageHandler? _nativeHandler;
+        private readonly HttpMessageHandler? _nativeUnderlyingHandler;
         private IMeterFactory? _nativeMeterFactory;
-        private MetricsHandler? _nativeMetricsHandler;
+        private HttpMessageHandler? _nativeFirstHandler; // DiagnosticsHandler or MetricsHandler, depending on global configuration.
 
         private readonly SocketsHttpHandler? _socketHandler;
 
@@ -38,26 +38,24 @@ namespace System.Net.Http
             {
                 if (IsNativeHandlerEnabled)
                 {
-                    if (_nativeMetricsHandler is null)
+                    if (_nativeFirstHandler is null)
                     {
                         // We only setup these handlers for the native handler. SocketsHttpHandler already does this internally.
-                        HttpMessageHandler handler = _nativeHandler!;
+                        HttpMessageHandler handler = _nativeUnderlyingHandler!;
 
+                        // MetricsHandler should be descendant of DiagnosticsHandler in the handler chain to make sure the 'http.request.duration'
+                        // metric is recorded before stopping the request Activity. This is needed to make sure that our telemetry supports Exemplars.
+                        handler = new MetricsHandler(handler, _nativeMeterFactory, out _);
                         if (DiagnosticsHandler.IsGloballyEnabled())
                         {
                             handler = new DiagnosticsHandler(handler, DistributedContextPropagator.Current);
                         }
 
-                        MetricsHandler metricsHandler = new MetricsHandler(handler, _nativeMeterFactory, out _);
-
                         // Ensure a single handler is used for all requests.
-                        if (Interlocked.CompareExchange(ref _nativeMetricsHandler, metricsHandler, null) != null)
-                        {
-                            handler.Dispose();
-                        }
+                        Interlocked.CompareExchange(ref _nativeFirstHandler, handler, null);
                     }
 
-                    return _nativeMetricsHandler;
+                    return _nativeFirstHandler;
                 }
                 else
                 {
@@ -70,7 +68,7 @@ namespace System.Net.Http
         {
             if (IsNativeHandlerEnabled)
             {
-                _nativeHandler = CreateNativeHandler();
+                _nativeUnderlyingHandler = CreateNativeHandler();
             }
             else
             {
@@ -87,7 +85,7 @@ namespace System.Net.Http
 
                 if (IsNativeHandlerEnabled)
                 {
-                    _nativeHandler!.Dispose();
+                    Handler.Dispose();
                 }
                 else
                 {
@@ -118,7 +116,7 @@ namespace System.Net.Http
 
                 if (IsNativeHandlerEnabled)
                 {
-                    if (_nativeMetricsHandler is not null)
+                    if (_nativeFirstHandler is not null)
                     {
                         throw new InvalidOperationException(SR.net_http_operation_started);
                     }
@@ -779,15 +777,10 @@ namespace System.Net.Http
         // lazy-load the validator func so it can be trimmed by the ILLinker if it isn't used.
         private static Func<HttpRequestMessage, X509Certificate2?, X509Chain?, SslPolicyErrors, bool>? s_dangerousAcceptAnyServerCertificateValidator;
         [UnsupportedOSPlatform("browser")]
-        public static Func<HttpRequestMessage, X509Certificate2?, X509Chain?, SslPolicyErrors, bool> DangerousAcceptAnyServerCertificateValidator
-        {
-            get
-            {
-                return Volatile.Read(ref s_dangerousAcceptAnyServerCertificateValidator) ??
-                Interlocked.CompareExchange(ref s_dangerousAcceptAnyServerCertificateValidator, delegate { return true; }, null) ??
-                s_dangerousAcceptAnyServerCertificateValidator;
-            }
-        }
+        public static Func<HttpRequestMessage, X509Certificate2?, X509Chain?, SslPolicyErrors, bool> DangerousAcceptAnyServerCertificateValidator =>
+            s_dangerousAcceptAnyServerCertificateValidator ??
+            Interlocked.CompareExchange(ref s_dangerousAcceptAnyServerCertificateValidator, delegate { return true; }, null) ??
+            s_dangerousAcceptAnyServerCertificateValidator;
 
         private void ThrowForModifiedManagedSslOptionsIfStarted()
         {
@@ -796,27 +789,7 @@ namespace System.Net.Http
             _socketHandler!.SslOptions = _socketHandler!.SslOptions;
         }
 
-        private object InvokeNativeHandlerMethod(string name, params object?[] parameters)
-        {
-            MethodInfo? method;
-
-            if (!s_cachedMethods.TryGetValue(name, out method))
-            {
-                method = _nativeHandler!.GetType()!.GetMethod(name);
-                s_cachedMethods[name] = method;
-            }
-
-            try
-            {
-                return method!.Invoke(_nativeHandler, parameters)!;
-            }
-            catch (TargetInvocationException e)
-            {
-                ExceptionDispatchInfo.Capture(e.InnerException!).Throw();
-                throw;
-            }
-        }
-
+        [FeatureSwitchDefinition("System.Net.Http.UseNativeHttpHandler")]
         private static bool IsNativeHandlerEnabled => RuntimeSettingParser.QueryRuntimeSettingSwitch(
                 "System.Net.Http.UseNativeHttpHandler",
                 false);

@@ -11,23 +11,17 @@ using System.Threading;
 namespace System.Text.RegularExpressions.Symbolic
 {
     /// <summary>Provides functionality to convert <see cref="RegexNode"/>s to corresponding <see cref="SymbolicRegexNode{S}"/>s.</summary>
-    internal sealed class RegexNodeConverter
+    /// <remarks>Constructs a regex to symbolic finite automata converter</remarks>
+    internal sealed class RegexNodeConverter(SymbolicRegexBuilder<BDD> builder, Hashtable? captureSparseMapping)
     {
         /// <summary>Capture information.</summary>
-        private readonly Hashtable? _captureSparseMapping;
+        private readonly Hashtable? _captureSparseMapping = captureSparseMapping;
         /// <summary>The builder to use to create the <see cref="SymbolicRegexNode{S}"/> nodes.</summary>
-        internal readonly SymbolicRegexBuilder<BDD> _builder;
+        internal readonly SymbolicRegexBuilder<BDD> _builder = builder;
 
         /// <summary>Cache of BDDs created to represent <see cref="RegexCharClass"/> set strings.</summary>
         /// <remarks>This cache is useful iff the same character class is used multiple times in the same regex, but that's fairly common.</remarks>
         private Dictionary<string, BDD>? _setBddCache;
-
-        /// <summary>Constructs a regex to symbolic finite automata converter</summary>
-        public RegexNodeConverter(SymbolicRegexBuilder<BDD> builder, Hashtable? captureSparseMapping)
-        {
-            _builder = builder;
-            _captureSparseMapping = captureSparseMapping;
-        }
 
         /// <summary>Converts the root <see cref="RegexNode"/> into its corresponding <see cref="SymbolicRegexNode{S}"/>.</summary>
         /// <param name="root">The root node to convert.</param>

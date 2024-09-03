@@ -234,7 +234,7 @@ mono_droid_runtime_init (const char* executable, int managed_argc, char* managed
 
     // build using DiagnosticPorts property in AndroidAppBuilder
     // or set DOTNET_DiagnosticPorts env via adb, xharness when undefined.
-    // NOTE, using DOTNET_DiagnosticPorts requires app build using AndroidAppBuilder and RuntimeComponents=diagnostics_tracing
+    // NOTE, using DOTNET_DiagnosticPorts requires app build using AndroidAppBuilder and RuntimeComponents to include 'diagnostics_tracing' component
 #ifdef DIAGNOSTIC_PORTS
     setenv ("DOTNET_DiagnosticPorts", DIAGNOSTIC_PORTS, true);
 #endif
@@ -285,7 +285,7 @@ mono_droid_runtime_init (const char* executable, int managed_argc, char* managed
     mono_set_crash_chaining (true);
 
     if (wait_for_debugger) {
-        char* options[] = { "--debugger-agent=transport=dt_socket,server=y,address=0.0.0.0:55555" };
+        char* options[] = { "--debugger-agent=transport=dt_socket,server=y,address=0.0.0.0:55556" };
         mono_jit_parse_options (1, options);
     }
 

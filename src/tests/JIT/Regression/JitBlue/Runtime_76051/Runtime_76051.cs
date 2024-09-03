@@ -7,10 +7,9 @@ using Xunit;
 public class Runtime_76051
 {
     [Fact]
-    public static int TestEntryPoint()
+    public static void TestEntryPoint()
     {
         GetIndex(1);
-        return 100;
     }
 
     // This tests an assertion failure (debug)/segfault (release) in

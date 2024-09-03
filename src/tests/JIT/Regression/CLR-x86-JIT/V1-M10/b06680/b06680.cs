@@ -14,11 +14,10 @@ namespace DefaultNamespace
         private static int n = 0;
 
         [Fact]
-        public static int TestEntryPoint()
+        public static void TestEntryPoint()
         {
             n = 1;
             Console.WriteLine("n = " + n);
-            return 100;
         }
     };
 };

@@ -11,7 +11,6 @@ using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Testing;
 using Microsoft.CodeAnalysis.Diagnostics;
 using Microsoft.CodeAnalysis.Testing;
-using Microsoft.CodeAnalysis.Testing.Verifiers;
 
 namespace Microsoft.Interop.UnitTests.Verifiers
 {
@@ -79,40 +78,33 @@ namespace Microsoft.Interop.UnitTests.Verifiers
             await test.RunAsync(CancellationToken.None);
         }
 
-        internal class Test : CSharpSourceGeneratorTest<TSourceGenerator, XUnitVerifier>
+        internal class Test : CSharpSourceGeneratorTest<TSourceGenerator, DefaultVerifier>
         {
             public Test(TestTargetFramework targetFramework)
             {
-                if (targetFramework == TestTargetFramework.Net)
+                ReferenceAssemblies = targetFramework switch
                 {
-                    // Clear out the default reference assemblies. We explicitly add references from the live ref pack,
-                    // so we don't want the Roslyn test infrastructure to resolve/add any default reference assemblies
-                    ReferenceAssemblies = new ReferenceAssemblies(string.Empty);
-                    TestState.AdditionalReferences.AddRange(SourceGenerators.Tests.LiveReferencePack.GetMetadataReferences());
-                }
-                else
-                {
-                    ReferenceAssemblies = targetFramework switch
-                    {
-                        TestTargetFramework.Framework => ReferenceAssemblies.NetFramework.Net48.Default,
-                        TestTargetFramework.Standard => ReferenceAssemblies.NetStandard.NetStandard21,
-                        TestTargetFramework.Core => ReferenceAssemblies.NetCore.NetCoreApp31,
-                        TestTargetFramework.Net6 => ReferenceAssemblies.Net.Net60,
-                        _ => ReferenceAssemblies.Default
-                    };
-                }
-                SolutionTransforms.Add(CSharpVerifierHelper.GetTargetFrameworkAnalyzerOptionsProviderTransform(targetFramework));
+                    TestTargetFramework.Framework => ReferenceAssemblies.NetFramework.Net48.Default,
+                    TestTargetFramework.Standard2_0 => ReferenceAssemblies.NetStandard.NetStandard20,
+                    TestTargetFramework.Standard2_1 => ReferenceAssemblies.NetStandard.NetStandard21,
+                    _ => ReferenceAssemblies.Default
+                };
             }
+
             public Test(bool referenceAncillaryInterop)
-                : this(TestTargetFramework.Net)
             {
+                // Clear out the default reference assemblies. We explicitly add references from the live ref pack,
+                // so we don't want the Roslyn test infrastructure to resolve/add any default reference assemblies
+                ReferenceAssemblies = new ReferenceAssemblies(string.Empty);
+                TestState.AdditionalReferences.AddRange(SourceGenerators.Tests.LiveReferencePack.GetMetadataReferences());
+
                 if (referenceAncillaryInterop)
                 {
                     TestState.AdditionalReferences.Add(TestUtils.GetAncillaryReference());
                 }
                 DisabledDiagnostics.Add(GeneratorDiagnostics.Ids.NotRecommendedGeneratedComInterfaceUsage);
 
-                SolutionTransforms.Add(CSharpVerifierHelper.GetAllDiagonsticsEnabledTransform(GetDiagnosticAnalyzers()));
+                SolutionTransforms.Add(CSharpVerifierHelper.GetAllDiagnosticsEnabledTransform(GetDiagnosticAnalyzers()));
             }
 
             protected override CompilationWithAnalyzers CreateCompilationWithAnalyzers(Compilation compilation, ImmutableArray<DiagnosticAnalyzer> analyzers, AnalyzerOptions options, CancellationToken cancellationToken)
@@ -150,7 +142,14 @@ namespace Microsoft.Interop.UnitTests.Verifiers
             protected async override Task<(Compilation compilation, ImmutableArray<Diagnostic> generatorDiagnostics)> GetProjectCompilationAsync(Project project, IVerifier verifier, CancellationToken cancellationToken)
             {
                 var (compilation, diagnostics) = await base.GetProjectCompilationAsync(project, verifier, cancellationToken);
-                VerifyFinalCompilation(compilation);
+
+                if (project.Name == TestState.Name)
+                {
+                    // Only try to verify the final compilation for the project we're testing, not any additional projects
+                    // in the test harness.
+                    VerifyFinalCompilation(compilation);
+                }
+
                 return (compilation, diagnostics);
             }
 

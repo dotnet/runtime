@@ -38,7 +38,7 @@ PEImageLayout* PEImageLayout::CreateFromHMODULE(HMODULE hModule, PEImage* pOwner
     CONTRACTL_END;
 
     PEImageLayout* pLoadLayout;
-    if (WszGetModuleHandle(NULL) == hModule)
+    if (GetModuleHandle(NULL) == hModule)
     {
         return new LoadedImageLayout(pOwner, hModule);
     }
@@ -416,7 +416,7 @@ void ConvertedImageLayout::FreeImageParts()
             CLRUnmapViewOfFile(PtrFromPart(imagePart));
         }
 
-        this->m_imageParts[i] = NULL;
+        this->m_imageParts[i] = 0;
     }
 }
 
@@ -462,7 +462,7 @@ ConvertedImageLayout::ConvertedImageLayout(FlatImageLayout* source, bool disable
 
     IfFailThrow(Init(loadedImage));
 
-    if (m_pOwner->IsFile() && IsNativeMachineFormat() && g_fAllowNativeImages)
+    if (m_pOwner->IsFile() && IsNativeMachineFormat())
     {
         // Do base relocation and exception hookup, if necessary.
         // otherwise R2R will be disabled for this image.
@@ -534,7 +534,10 @@ LoadedImageLayout::LoadedImageLayout(PEImage* pOwner, HRESULT* loadFailure)
 
     IfFailThrow(Init(m_Module, true));
 
-    LOG((LF_LOADER, LL_INFO1000, "PEImage: Opened HMODULE %s\n", pOwner->GetPath().GetUTF8()));
+#ifdef LOGGING
+    SString ownerPath{ pOwner->GetPath() };
+    LOG((LF_LOADER, LL_INFO1000, "PEImage: Opened HMODULE %s\n", ownerPath.GetUTF8()));
+#endif // LOGGING
 
 #else
     HANDLE hFile = pOwner->GetFileHandle();
@@ -548,8 +551,11 @@ LoadedImageLayout::LoadedImageLayout(PEImage* pOwner, HRESULT* loadFailure)
         return;
     }
 
+#ifdef LOGGING
+    SString ownerPath{ pOwner->GetPath() };
     LOG((LF_LOADER, LL_INFO1000, "PEImage: image %s (hFile %p) mapped @ %p\n",
-        pOwner->GetPath().GetUTF8(), hFile, (void*)m_LoadedFile));
+        ownerPath.GetUTF8(), hFile, (void*)m_LoadedFile));
+#endif // LOGGING
 
     IfFailThrow(Init((void*)m_LoadedFile));
 
@@ -560,7 +566,7 @@ LoadedImageLayout::LoadedImageLayout(PEImage* pOwner, HRESULT* loadFailure)
         return;
     }
 
-    if (HasReadyToRunHeader() && g_fAllowNativeImages)
+    if (HasReadyToRunHeader())
     {
         //Do base relocation for PE, if necessary.
         if (!IsNativeMachineFormat())
@@ -616,7 +622,10 @@ FlatImageLayout::FlatImageLayout(PEImage* pOwner)
     INT64 offset = pOwner->GetOffset();
     INT64 size = pOwner->GetSize();
 
-    LOG((LF_LOADER, LL_INFO100, "PEImage: Opening flat %s\n", pOwner->GetPath().GetUTF8()));
+#ifdef LOGGING
+    SString ownerPath{ pOwner->GetPath() };
+    LOG((LF_LOADER, LL_INFO100, "PEImage: Opening flat %s\n", ownerPath.GetUTF8()));
+#endif // LOGGING
 
     // If a size is not specified, load the whole file
     if (size == 0)
@@ -643,7 +652,7 @@ FlatImageLayout::FlatImageLayout(PEImage* pOwner)
             mapAccess = PAGE_EXECUTE_READ;
         }
 #endif
-        m_FileMap.Assign(WszCreateFileMapping(hFile, NULL, mapAccess, 0, 0, NULL));
+        m_FileMap.Assign(CreateFileMapping(hFile, NULL, mapAccess, 0, 0, NULL));
         if (m_FileMap == NULL)
             ThrowLastError();
 
@@ -671,7 +680,7 @@ FlatImageLayout::FlatImageLayout(PEImage* pOwner)
             // We will create another anonymous memory-only mapping and uncompress file there.
             // The flat image will refer to the anonymous mapping instead and we will release the original mapping.
 
-            HandleHolder anonMap = WszCreateFileMapping(INVALID_HANDLE_VALUE, NULL, PAGE_READWRITE, uncompressedSize >> 32, (DWORD)uncompressedSize, NULL);
+            HandleHolder anonMap = CreateFileMapping(INVALID_HANDLE_VALUE, NULL, PAGE_READWRITE, uncompressedSize >> 32, (DWORD)uncompressedSize, NULL);
             if (anonMap == NULL)
                 ThrowLastError();
 
@@ -757,7 +766,7 @@ FlatImageLayout::FlatImageLayout(PEImage* pOwner, const BYTE* array, COUNT_T siz
 
 #endif // defined(TARGET_WINDOWS)
 
-        m_FileMap.Assign(WszCreateFileMapping(INVALID_HANDLE_VALUE, NULL, mapAccess, 0, size, NULL));
+        m_FileMap.Assign(CreateFileMapping(INVALID_HANDLE_VALUE, NULL, mapAccess, 0, size, NULL));
         if (m_FileMap == NULL)
             ThrowLastError();
 
@@ -862,7 +871,7 @@ void* FlatImageLayout::LoadImageByCopyingParts(SIZE_T* m_imageParts) const
     return base;
 }
 
-#if TARGET_WINDOWS
+#ifdef TARGET_WINDOWS
 
 // VirtualAlloc2
 typedef PVOID(WINAPI* VirtualAlloc2Fn)(
@@ -900,7 +909,7 @@ static bool HavePlaceholderAPI()
 
     if (pMapViewOfFile3 == NULL)
     {
-        HMODULE hm = LoadLibraryW(_T("kernelbase.dll"));
+        HMODULE hm = WszLoadLibrary(W("kernelbase.dll"), NULL, LOAD_LIBRARY_SEARCH_SYSTEM32);
         if (hm != NULL)
         {
             pVirtualAlloc2 = (VirtualAlloc2Fn)GetProcAddress(hm, "VirtualAlloc2");

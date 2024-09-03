@@ -1,0 +1,11 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
+    <OutputType>Exe</OutputType>
+    <Win32Resource>test.res</Win32Resource>
+    <!-- Current .NET SDK can't run CreateAppHost so disable creating AppHost on build -->
+    <UseAppHost>false</UseAppHost>
+  </PropertyGroup>
+
+</Project>

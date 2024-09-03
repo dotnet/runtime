@@ -10,7 +10,7 @@
 struct StackFrame
 {
     const static UINT_PTR maxVal = (UINT_PTR)(INT_PTR)-1;
-    StackFrame() : SP(NULL)
+    StackFrame() : SP(0)
     {
     }
 
@@ -21,7 +21,7 @@ struct StackFrame
 
     void Clear()
     {
-        SP = NULL;
+        SP = 0;
     }
 
     void SetMaxVal()
@@ -31,7 +31,7 @@ struct StackFrame
 
     bool IsNull()
     {
-        return (SP == NULL);
+        return (SP == 0);
     }
 
     bool IsMaxVal()

@@ -127,7 +127,7 @@ namespace System.Security.Cryptography.Cng.Tests
             RSACng_Ctor_UnusualKeysize(ExpectedKeySize, keyBlob, expected);
         }
 
-        [ConditionalFact(typeof(PlatformSupport), nameof(PlatformSupport.PlatformCryptoProviderFunctional))]
+        [ConditionalFact(typeof(PlatformSupport), nameof(PlatformSupport.PlatformCryptoProviderFunctionalRsa))]
         [OuterLoop("Hardware backed key generation takes several seconds.")]
         public static void RSACng_PlatformCryptoProvider_SignHash_Roundtrip()
         {
@@ -173,7 +173,7 @@ namespace System.Security.Cryptography.Cng.Tests
             }
         }
 
-        [ConditionalFact(typeof(PlatformSupport), nameof(PlatformSupport.PlatformCryptoProviderFunctional))]
+        [ConditionalFact(typeof(PlatformSupport), nameof(PlatformSupport.PlatformCryptoProviderFunctionalRsa))]
         [OuterLoop("Hardware backed key generation takes several seconds.")]
         public static void RSACng_PlatformCryptoProvider_EncryptDecrypt_Roundtrip()
         {

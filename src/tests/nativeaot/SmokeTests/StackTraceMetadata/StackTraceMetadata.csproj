@@ -5,8 +5,17 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <InvariantGlobalization>true</InvariantGlobalization>
     <CLRTestTargetUnsupported Condition="'$(IlcMultiModule)' == 'true'">true</CLRTestTargetUnsupported>
+    <!-- Tracking issue: https://github.com/dotnet/runtime/issues/90460 -->
+    <CLRTestTargetUnsupported Condition="'$(TargetOS)' == 'tvos' and '$(TargetArchitecture)' == 'arm64'">true</CLRTestTargetUnsupported>
+    <RequiresProcessIsolation>true</RequiresProcessIsolation>
+    <ReferenceXUnitWrapperGenerator>false</ReferenceXUnitWrapperGenerator>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="StackTraceMetadata.cs" />
+    <Compile Include="BodyFoldingTest.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <IlcArg Include="--export-unmanaged-entrypoints" />
   </ItemGroup>
 </Project>

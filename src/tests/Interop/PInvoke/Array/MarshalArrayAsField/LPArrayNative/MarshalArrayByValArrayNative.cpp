@@ -7,6 +7,11 @@
 
 using namespace std;
 
+// MSVC versions before 19.38 generate incorrect code for this file when compiling with /O2
+#if defined(_MSC_VER) && (_MSC_VER < 1938)
+#pragma optimize("", off)
+#endif
+
 /*----------------------------------------------------------------------------
 macro definition
 ----------------------------------------------------------------------------*/
@@ -34,16 +39,16 @@ macro definition
 struct definition
 ----------------------------------------------------------------------------*/
 
-typedef struct { INT		arr[ARRAY_LENGTH]; } S_INTArray;
-typedef struct { UINT		arr[ARRAY_LENGTH]; } S_UINTArray;
-typedef struct { SHORT		arr[ARRAY_LENGTH]; } S_SHORTArray;
-typedef struct { WORD		arr[ARRAY_LENGTH]; } S_WORDArray;
-typedef struct { LONG64		arr[ARRAY_LENGTH]; } S_LONG64Array;
+typedef struct { int32_t		arr[ARRAY_LENGTH]; } S_INTArray;
+typedef struct { uint32_t		arr[ARRAY_LENGTH]; } S_UINTArray;
+typedef struct { int16_t		arr[ARRAY_LENGTH]; } S_SHORTArray;
+typedef struct { uint16_t		arr[ARRAY_LENGTH]; } S_WORDArray;
+typedef struct { int64_t		arr[ARRAY_LENGTH]; } S_LONG64Array;
 
-typedef struct { ULONG64	arr[ARRAY_LENGTH]; } S_ULONG64Array;
+typedef struct { uint64_t	arr[ARRAY_LENGTH]; } S_ULONG64Array;
 typedef struct { DOUBLE		arr[ARRAY_LENGTH]; } S_DOUBLEArray;
 typedef struct { FLOAT		arr[ARRAY_LENGTH]; } S_FLOATArray;
-typedef struct { BYTE		arr[ARRAY_LENGTH]; } S_BYTEArray;
+typedef struct { uint8_t		arr[ARRAY_LENGTH]; } S_BYTEArray;
 typedef struct { CHAR		arr[ARRAY_LENGTH]; } S_CHARArray;
 
 typedef struct { LPSTR		arr[ARRAY_LENGTH]; } S_LPSTRArray;
@@ -147,42 +152,42 @@ marshal sequential strut
 extern "C" DLL_EXPORT BOOL __cdecl TakeIntArraySeqStructByVal( S_INTArray s, int size )
 {
     CHECK_PARAM_NOT_EMPTY( s.arr );
-    INIT_EXPECTED( INT, ARRAY_LENGTH );
+    INIT_EXPECTED( int32_t, ARRAY_LENGTH );
     return Equals( s.arr, size, expected, ARRAY_LENGTH );
 }
 
 extern "C" DLL_EXPORT BOOL __cdecl TakeUIntArraySeqStructByVal( S_UINTArray s, int size )
 {
     CHECK_PARAM_NOT_EMPTY( s.arr );
-    INIT_EXPECTED( UINT, ARRAY_LENGTH );
+    INIT_EXPECTED( uint32_t, ARRAY_LENGTH );
     return Equals( s.arr, size, expected, ARRAY_LENGTH );
 }
 
 extern "C" DLL_EXPORT BOOL __cdecl TakeShortArraySeqStructByVal( S_SHORTArray s, int size )
 {
     CHECK_PARAM_NOT_EMPTY( s.arr );
-    INIT_EXPECTED( SHORT, ARRAY_LENGTH );
+    INIT_EXPECTED( int16_t, ARRAY_LENGTH );
     return Equals( s.arr, size, expected, ARRAY_LENGTH );
 }
 
 extern "C" DLL_EXPORT BOOL __cdecl TakeWordArraySeqStructByVal( S_WORDArray s, int size )
 {
     CHECK_PARAM_NOT_EMPTY( s.arr );
-    INIT_EXPECTED( WORD, ARRAY_LENGTH );
+    INIT_EXPECTED( uint16_t, ARRAY_LENGTH );
     return Equals( s.arr, size, expected, ARRAY_LENGTH );
 }
 
 extern "C" DLL_EXPORT BOOL __cdecl TakeLong64ArraySeqStructByVal( S_LONG64Array s, int size )
 {
     CHECK_PARAM_NOT_EMPTY( s.arr );
-    INIT_EXPECTED( LONG64, ARRAY_LENGTH );
+    INIT_EXPECTED( int64_t, ARRAY_LENGTH );
     return Equals( s.arr, size, expected, ARRAY_LENGTH );
 }
 
 extern "C" DLL_EXPORT BOOL __cdecl TakeULong64ArraySeqStructByVal( S_ULONG64Array s, int size )
 {
     CHECK_PARAM_NOT_EMPTY( s.arr );
-    INIT_EXPECTED( ULONG64, ARRAY_LENGTH );
+    INIT_EXPECTED( uint64_t, ARRAY_LENGTH );
     return Equals( s.arr, size, expected, ARRAY_LENGTH );
 }
 
@@ -203,7 +208,7 @@ extern "C" DLL_EXPORT BOOL __cdecl TakeFloatArraySeqStructByVal( S_FLOATArray s,
 extern "C" DLL_EXPORT BOOL __cdecl TakeByteArraySeqStructByVal( S_BYTEArray s, int size )
 {
     CHECK_PARAM_NOT_EMPTY( s.arr );
-    INIT_EXPECTED( BYTE, ARRAY_LENGTH );
+    INIT_EXPECTED( uint8_t, ARRAY_LENGTH );
     return Equals( s.arr, size, expected, ARRAY_LENGTH );
 }
 
@@ -498,49 +503,49 @@ return a struct including a C array
 ----------------------------------------------------------------------------*/
 extern "C" DLL_EXPORT S_INTArray __cdecl S_INTArray_Ret_ByValue()
 {
-    INIT_EXPECTED_STRUCT( S_INTArray, ARRAY_LENGTH, INT );
+    INIT_EXPECTED_STRUCT( S_INTArray, ARRAY_LENGTH, int32_t );
 
     return *expected;
 }
 
 extern "C" DLL_EXPORT S_INTArray* __cdecl S_INTArray_Ret()
 {
-    INIT_EXPECTED_STRUCT( S_INTArray, ARRAY_LENGTH, INT );
+    INIT_EXPECTED_STRUCT( S_INTArray, ARRAY_LENGTH, int32_t );
 
     return expected;
 }
 
 extern "C" DLL_EXPORT S_UINTArray* __cdecl S_UINTArray_Ret()
 {
-    INIT_EXPECTED_STRUCT( S_UINTArray, ARRAY_LENGTH, UINT );
+    INIT_EXPECTED_STRUCT( S_UINTArray, ARRAY_LENGTH, uint32_t );
 
     return expected;
 }
 
 extern "C" DLL_EXPORT S_SHORTArray* __cdecl S_SHORTArray_Ret()
 {
-    INIT_EXPECTED_STRUCT( S_SHORTArray, ARRAY_LENGTH, SHORT );
+    INIT_EXPECTED_STRUCT( S_SHORTArray, ARRAY_LENGTH, int16_t );
 
     return expected;
 }
 
 extern "C" DLL_EXPORT S_WORDArray* __cdecl S_WORDArray_Ret()
 {
-    INIT_EXPECTED_STRUCT( S_WORDArray, ARRAY_LENGTH, WORD );
+    INIT_EXPECTED_STRUCT( S_WORDArray, ARRAY_LENGTH, uint16_t );
 
     return expected;
 }
 
 extern "C" DLL_EXPORT S_LONG64Array* __cdecl S_LONG64Array_Ret()
 {
-    INIT_EXPECTED_STRUCT( S_LONG64Array, ARRAY_LENGTH, LONG64 );
+    INIT_EXPECTED_STRUCT( S_LONG64Array, ARRAY_LENGTH, int64_t );
 
     return expected;
 }
 
 extern "C" DLL_EXPORT S_ULONG64Array* __cdecl S_ULONG64Array_Ret()
 {
-    INIT_EXPECTED_STRUCT( S_ULONG64Array, ARRAY_LENGTH, ULONG64 );
+    INIT_EXPECTED_STRUCT( S_ULONG64Array, ARRAY_LENGTH, uint64_t );
 
     return expected;
 }
@@ -561,7 +566,7 @@ extern "C" DLL_EXPORT S_FLOATArray* __cdecl S_FLOATArray_Ret()
 
 extern "C" DLL_EXPORT S_BYTEArray* __cdecl S_BYTEArray_Ret()
 {
-    INIT_EXPECTED_STRUCT( S_BYTEArray, ARRAY_LENGTH, BYTE );
+    INIT_EXPECTED_STRUCT( S_BYTEArray, ARRAY_LENGTH, uint8_t );
 
     return expected;
 }

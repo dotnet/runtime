@@ -4,6 +4,7 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 public struct Age
 {
@@ -27,7 +28,8 @@ public class FixedClass
 
 public class Example
 {
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         for (int i = 0; i < 1000; i++)
         {

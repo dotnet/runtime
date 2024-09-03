@@ -1,4 +1,5 @@
 <Project Sdk="Microsoft.Build.NoTargets">
+
   <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>
     <SuppressDependenciesWhenPacking>true</SuppressDependenciesWhenPacking>
@@ -11,13 +12,34 @@
     <UseRuntimePackageDisclaimer>true</UseRuntimePackageDisclaimer>
     <!-- This is a native package and doesn't contain any ref/lib assets. -->
     <NoWarn>$(NoWarn);NU5128</NoWarn>
+    <!-- Disabling baseline validation since this is  binary blob -nd we do not need API compat. -->
+    <DisablePackageBaselineValidation>true</DisablePackageBaselineValidation>
+    <PackageReadmeFilePath>$(MSBuildThisFileDirectory)../src/PACKAGE.md</PackageReadmeFilePath>
   </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Extract supported RIDs from the .proj file names -->
+    <RIDSpecificProject Include="$(MSBuildThisFileDirectory)runtime.*.runtime.native.System.IO.Ports.proj" />
+    <PackageSupportedRID Include="@(RIDSpecificProject->'%(Filename)'->Replace('.runtime.native.System.IO.Ports', '')->Replace('runtime.', ''))" />
+
+    <!-- We need to add a placeholder file for all RIDs except the one that is actually included in the RID-specific package.
+         This prevents an issue where during publish the SDK would select e.g. both linux-x64 and linux-musl-x64 assets because of the fallback path in the RID graph. -->
+    <PackagePlaceholderRID Include="@(PackageSupportedRID)" Exclude="$(OutputRID)" />
+  </ItemGroup>
 
   <ItemGroup>
     <None Include="$(NativeBinDir)$(LibPrefix)System.IO.Ports.Native$(LibSuffix)"
           PackagePath="runtimes/$(OutputRID)/native"
           Pack="true" />
+    <None Include="$(PlaceholderFile)"
+          PackagePath="@(PackagePlaceholderRID->'runtimes/%(Identity)/native')"
+          Pack="true" />
   </ItemGroup>
+
+  <Target Name="ValidatePackageSupportedRID" BeforeTargets="Build">
+    <Error Text="$(OutputRID) is missing from PackageSupportedRID."
+           Condition="!@(PackageSupportedRID->AnyHaveMetadataValue('Identity', '$(OutputRID)'))" />
+  </Target>
 
   <Target Name="AddRuntimeSpecificNativeSymbolToPackage">
     <ItemGroup>
@@ -26,4 +48,5 @@
                                    TargetFramework="$(TargetFramework)" />
     </ItemGroup>
   </Target>
+
 </Project>

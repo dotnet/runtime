@@ -1,13 +1,14 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using Microsoft.Win32.SafeHandles;
 using System.Diagnostics;
 using System.Globalization;
 using System.Runtime;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
+
+using Microsoft.Win32.SafeHandles;
 
 namespace System.Threading
 {
@@ -30,7 +31,7 @@ namespace System.Threading
         private Exception? _startException;
 
         // Protects starting the thread and setting its priority
-        private Lock _lock = new Lock();
+        private Lock _lock = new Lock(useTrivialWaits: true);
 
         // This is used for a quick check on thread pool threads after running a work item to determine if the name, background
         // state, or priority were changed by the work item, and if so to reset it. Other threads may also change some of those,
@@ -230,7 +231,7 @@ namespace System.Threading
                 }
 
                 // Prevent race condition with starting this thread
-                using (LockHolder.Hold(_lock))
+                using (_lock.EnterScope())
                 {
                     if (HasStarted() && !SetPriorityLive(value))
                     {
@@ -358,7 +359,7 @@ namespace System.Threading
 
         private void StartCore()
         {
-            using (LockHolder.Hold(_lock))
+            using (_lock.EnterScope())
             {
                 if (!GetThreadStateBit(ThreadState.Unstarted))
                 {

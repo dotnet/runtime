@@ -148,7 +148,7 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Equal(json, JsonConvert.SerializeObject(ts));
         }
 
-#if NETCOREAPP
+#if NET
         [Theory]
         [InlineData("1970-01-01")]
         [InlineData("2002-02-13")]

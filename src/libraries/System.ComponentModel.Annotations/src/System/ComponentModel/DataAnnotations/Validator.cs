@@ -171,7 +171,7 @@ namespace System.ComponentModel.DataAnnotations
         ///         then all validators will be evaluated.
         ///     </para>
         /// </remarks>
-        /// <param name="value">The value to test.  It cannot be null.</param>
+        /// <param name="value">The value to test.</param>
         /// <param name="validationContext">
         ///     Describes the object being validated and provides services and context for the
         ///     validators.
@@ -182,7 +182,7 @@ namespace System.ComponentModel.DataAnnotations
         ///     <paramref name="value" /> against.
         /// </param>
         /// <returns><c>true</c> if the object is valid, <c>false</c> if any validation errors are encountered.</returns>
-        public static bool TryValidateValue(object value, ValidationContext validationContext,
+        public static bool TryValidateValue(object? value, ValidationContext validationContext,
             ICollection<ValidationResult>? validationResults, IEnumerable<ValidationAttribute> validationAttributes)
         {
             ArgumentNullException.ThrowIfNull(validationAttributes);
@@ -303,12 +303,12 @@ namespace System.ComponentModel.DataAnnotations
         ///         first.
         ///     </para>
         /// </remarks>
-        /// <param name="value">The value to test.  It cannot be null.</param>
+        /// <param name="value">The value to test.</param>
         /// <param name="validationContext">Describes the object being tested.</param>
         /// <param name="validationAttributes">The list of <see cref="ValidationAttribute" />s to validate against this instance.</param>
         /// <exception cref="ArgumentNullException">When <paramref name="validationContext" /> is null.</exception>
         /// <exception cref="ValidationException">When <paramref name="value" /> is found to be invalid.</exception>
-        public static void ValidateValue(object value, ValidationContext validationContext,
+        public static void ValidateValue(object? value, ValidationContext validationContext,
             IEnumerable<ValidationAttribute> validationAttributes)
         {
             ArgumentNullException.ThrowIfNull(validationContext);

@@ -201,9 +201,8 @@ namespace Internal.Runtime.InteropServices
                     }
 
                     // Finally validate signature
-                    ParameterInfo[] methParams = method.GetParameters();
+                    ReadOnlySpan<ParameterInfo> methParams = method.GetParametersAsSpan();
                     if (method.ReturnType != typeof(void)
-                        || methParams == null
                         || methParams.Length != 1
                         || (methParams[0].ParameterType != typeof(string) && methParams[0].ParameterType != typeof(Type)))
                     {
@@ -757,7 +756,7 @@ $@"{nameof(UnregisterClassForTypeInternal)} arguments:
 
             Type licContext = Type.GetType("System.ComponentModel.LicenseContext, System.ComponentModel.TypeConverter", throwOnError: true)!;
             _setSavedLicenseKey = licContext.GetMethod("SetSavedLicenseKey", BindingFlags.Instance | BindingFlags.Public)!;
-            _createWithContext = licManager.GetMethod("CreateWithContext", new[] { typeof(Type), licContext })!;
+            _createWithContext = licManager.GetMethod("CreateWithContext", [typeof(Type), licContext])!;
 
             Type interopHelper = licManager.GetNestedType("LicenseInteropHelper", BindingFlags.NonPublic)!;
             _validateTypeAndReturnDetails = interopHelper.GetMethod("ValidateAndRetrieveLicenseDetails", BindingFlags.Static | BindingFlags.Public)!;
@@ -817,7 +816,7 @@ $@"{nameof(UnregisterClassForTypeInternal)} arguments:
                 licVerified = true;
             }
 
-            parameters = new object?[] { type.AssemblyQualifiedName };
+            parameters = [type.AssemblyQualifiedName];
             runtimeKeyAvail = (bool)_licInfoHelperContains.Invoke(licContext, BindingFlags.DoNotWrapExceptions, binder: null, parameters: parameters, culture: null)!;
         }
 
@@ -843,11 +842,7 @@ $@"{nameof(UnregisterClassForTypeInternal)} arguments:
 
             ((IDisposable?)parameters[2])?.Dispose();
 
-            var licenseKey = (string?)parameters[3];
-            if (licenseKey == null)
-            {
-                throw new COMException(); // E_FAIL
-            }
+            var licenseKey = (string?)parameters[3] ?? throw new COMException(); // E_FAIL
 
             return licenseKey;
         }
@@ -868,18 +863,18 @@ $@"{nameof(UnregisterClassForTypeInternal)} arguments:
             object? licContext;
             if (isDesignTime)
             {
-                parameters = new object[] { type };
+                parameters = [type];
                 licContext = _createDesignContext.Invoke(null, BindingFlags.DoNotWrapExceptions, binder: null, parameters: parameters, culture: null);
             }
             else
             {
-                parameters = new object?[] { type, key };
+                parameters = [type, key];
                 licContext = _createRuntimeContext.Invoke(null, BindingFlags.DoNotWrapExceptions, binder: null, parameters: parameters, culture: null);
             }
 
             try
             {
-                parameters = new object?[] { type, licContext };
+                parameters = [type, licContext];
                 return _createWithContext.Invoke(null, BindingFlags.DoNotWrapExceptions, binder: null, parameters: parameters, culture: null)!;
             }
             catch (Exception exception) when (exception.GetType() == s_licenseExceptionType)

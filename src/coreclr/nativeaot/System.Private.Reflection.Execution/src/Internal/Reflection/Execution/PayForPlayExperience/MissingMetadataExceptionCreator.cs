@@ -2,8 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using global::System;
-using global::System.Text;
 using global::System.Reflection;
+using global::System.Text;
 
 namespace Internal.Reflection.Execution.PayForPlayExperience
 {
@@ -43,7 +43,7 @@ namespace Internal.Reflection.Execution.PayForPlayExperience
                     // write out actual parameters
                     friendlyName.Append('(');
                     first = true;
-                    foreach (ParameterInfo parameter in method.GetParametersNoCopy())
+                    foreach (ParameterInfo parameter in method.GetParametersAsSpan())
                     {
                         if (!first)
                             friendlyName.Append(',');

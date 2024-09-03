@@ -10,10 +10,9 @@ namespace Microsoft.Interop
 {
     public abstract record GeneratorDiagnostic
     {
-        private GeneratorDiagnostic(TypePositionInfo typePositionInfo, StubCodeContext stubCodeContext, bool isFatal)
+        private GeneratorDiagnostic(TypePositionInfo typePositionInfo, bool isFatal)
         {
             TypePositionInfo = typePositionInfo;
-            StubCodeContext = stubCodeContext;
             IsFatal = isFatal;
         }
 
@@ -22,12 +21,11 @@ namespace Microsoft.Interop
         /// </summary>
         public ImmutableDictionary<string, string> DiagnosticProperties { get; init; } = ImmutableDictionary<string, string>.Empty;
         public TypePositionInfo TypePositionInfo { get; }
-        public StubCodeContext StubCodeContext { get; }
         public bool IsFatal { get; }
 
         public abstract DiagnosticInfo ToDiagnosticInfo(DiagnosticDescriptor descriptor, Location location, string elementName);
 
-        public sealed record NotSupported(TypePositionInfo TypePositionInfo, StubCodeContext Context) : GeneratorDiagnostic(TypePositionInfo, Context, isFatal: true)
+        public sealed record NotSupported(TypePositionInfo TypePositionInfo) : GeneratorDiagnostic(TypePositionInfo, isFatal: true)
         {
             /// <summary>
             /// [Optional] Specific reason marshalling of the supplied type isn't supported.
@@ -44,7 +42,7 @@ namespace Microsoft.Interop
             }
         }
 
-        public sealed record UnnecessaryData(TypePositionInfo TypePositionInfo, StubCodeContext StubCodeContext, ImmutableArray<Location> UnnecessaryDataLocations) : GeneratorDiagnostic(TypePositionInfo, StubCodeContext, isFatal: false)
+        public sealed record UnnecessaryData(TypePositionInfo TypePositionInfo, ImmutableArray<Location> UnnecessaryDataLocations) : GeneratorDiagnostic(TypePositionInfo, isFatal: false)
         {
             public required string UnnecessaryDataName { get; init; }
             public string? UnnecessaryDataDetails { get; init; }
@@ -60,6 +58,19 @@ namespace Microsoft.Interop
                     UnnecessaryDataName,
                     elementName,
                     UnnecessaryDataDetails ?? "");
+            }
+        }
+
+        public sealed record NotRecommended(TypePositionInfo TypePositionInfo) : GeneratorDiagnostic(TypePositionInfo, isFatal: false)
+        {
+            public string? Details { get; init; }
+
+            public override DiagnosticInfo ToDiagnosticInfo(DiagnosticDescriptor descriptor, Location location, string elementName)
+            {
+                return DiagnosticInfo.Create(
+                    descriptor,
+                    location,
+                    Details);
             }
         }
     }

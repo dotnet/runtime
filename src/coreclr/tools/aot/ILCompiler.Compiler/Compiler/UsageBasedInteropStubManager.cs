@@ -75,9 +75,13 @@ namespace ILCompiler
                             {
                                 dependencies.Add(factory.DelegateMarshallingData((DefType)type), "Delegate marshlling");
                             }
-                            else if (MarshalHelpers.IsStructMarshallingRequired(type) || (methodName == "OffsetOf" && type is DefType))
+                            else if (type.IsCanonicalSubtype(CanonicalFormKind.Any))
                             {
-                                dependencies.Add(factory.StructMarshallingData((DefType)type), "Struct marshalling");
+                                // Nothing to do
+                            }
+                            else if (type is DefType defType)
+                            {
+                                dependencies.Add(factory.StructMarshallingData(defType), "Struct marshalling");
                             }
                         }
                     }

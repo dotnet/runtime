@@ -168,6 +168,7 @@ enum {
 	ASYNC_SUSPEND_STATE_INDEX = 1,
 };
 
+MONO_DISABLE_WARNING(4201) // nonstandard extension used: nameless struct/union
 typedef union {
 	int32_t raw;
 	struct {
@@ -176,6 +177,7 @@ typedef union {
 		int32_t suspend_count : 8;
 	};
 } MonoThreadStateMachine;
+MONO_RESTORE_WARNING
 
 /*
  * These flags control how the rest of the runtime will see and interact with
@@ -632,9 +634,6 @@ gboolean mono_threads_platform_in_critical_region (THREAD_INFO_TYPE *info);
 gboolean mono_threads_platform_yield (void);
 void mono_threads_platform_exit (gsize exit_code);
 
-gboolean
-mono_thread_platform_external_eventloop_keepalive_check (void);
-
 void mono_threads_coop_begin_global_suspend (void);
 void mono_threads_coop_end_global_suspend (void);
 
@@ -846,9 +845,11 @@ void mono_threads_join_unlock (void);
 
 #ifdef HOST_WASM
 typedef void (*background_job_cb)(void);
+#ifdef DISABLE_THREADS
 void mono_main_thread_schedule_background_job (background_job_cb cb);
-void mono_current_thread_schedule_background_job (background_job_cb cb);
-void mono_target_thread_schedule_background_job (MonoNativeThreadId target_thread, background_job_cb cb);
+#else
+void mono_target_thread_schedule_synchronization_context(MonoNativeThreadId target_thread);
+#endif // DISABLE_THREADS
 #endif
 
 #ifdef USE_WINDOWS_BACKEND

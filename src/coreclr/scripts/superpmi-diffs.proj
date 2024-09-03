@@ -57,7 +57,7 @@
 
   <PropertyGroup>
     <WorkItemCommand>$(Python) $(ProductDirectory)/superpmi_diffs.py -type $(SuperPmiDiffType) -base_jit_directory $(ProductDirectory)/base -diff_jit_directory $(ProductDirectory)/diff $(SuperPmiBaseJitOptionsArg) $(SuperPmiDiffJitOptionsArg) -log_directory $(SuperpmiLogsLocation)</WorkItemCommand>
-    <WorkItemTimeout>2:00</WorkItemTimeout>
+    <WorkItemTimeout>5:00</WorkItemTimeout>
   </PropertyGroup>
 
   <ItemGroup>
@@ -66,32 +66,18 @@
     </HelixCorrelationPayload>
   </ItemGroup>
 
-  <ItemGroup Condition="'$(AGENT_OS)' == 'Windows_NT' and '$(Architecture)' == 'x64'">
-    <SPMI_Partition Include="windows-x64" HostOS="windows" TargetOS="windows" Architecture="x64" />
-    <SPMI_Partition Include="windows-arm64" HostOS="windows" TargetOS="windows" Architecture="arm64" />
-    <SPMI_Partition Include="linux-x64" HostOS="windows" TargetOS="linux" Architecture="x64" />
-    <SPMI_Partition Include="linux-arm64" HostOS="windows" TargetOS="linux" Architecture="arm64" />
-    <SPMI_Partition Include="osx-arm64" HostOS="windows" TargetOS="osx" Architecture="arm64" />
-  </ItemGroup>
-
-  <!-- Currently assume that AGENT_OS != Windows means Linux -->
-  <ItemGroup Condition="'$(AGENT_OS)' != 'Windows_NT' and '$(Architecture)' == 'x64'">
-    <SPMI_Partition Include="linux-x64" HostOS="linux" TargetOS="linux" Architecture="x64" />
-    <SPMI_Partition Include="linux-arm64" HostOS="linux" TargetOS="linux" Architecture="arm64" />
-  </ItemGroup>
-
-  <ItemGroup Condition="'$(Architecture)' == 'x86'">
-    <SPMI_Partition Include="windows-x86" HostOS="windows" TargetOS="windows" Architecture="x86" />
-    <SPMI_Partition Include="linux-arm" HostOS="windows" TargetOS="linux" Architecture="arm" />
+  <ItemGroup>
+    <PartitionFiles Include="$([System.IO.Directory]::GetFiles($(CorrelationPayloadDirectory)/partitions))"/>
+    <Partition Include="@(PartitionFiles -> '%(Filename)')" />
   </ItemGroup>
 
   <ItemGroup>
-    <HelixWorkItem Include="@(SPMI_Partition)">
-      <Command>$(WorkItemCommand) -arch %(HelixWorkItem.Architecture) -host_os %(HelixWorkItem.HostOS) -target_os %(HelixWorkItem.TargetOS)</Command>
+    <HelixWorkItem Include="@(Partition)">
+      <Command>$(WorkItemCommand) -partition_info $(ProductDirectory)/partitions/%(Identity).json</Command>
       <Timeout>$(WorkItemTimeout)</Timeout>
-      <DownloadFilesFromResults Condition=" '$(SuperPmiDiffType)'=='asmdiffs' ">superpmi_download_%(HelixWorkItem.TargetOS)_%(HelixWorkItem.Architecture).log;superpmi_asmdiffs_%(HelixWorkItem.TargetOS)_%(HelixWorkItem.Architecture).log;superpmi_asmdiffs_summary_%(HelixWorkItem.TargetOS)_%(HelixWorkItem.Architecture).md;Asmdiffs_%(HelixWorkItem.TargetOS)_%(HelixWorkItem.Architecture).zip</DownloadFilesFromResults>
-      <DownloadFilesFromResults Condition=" '$(SuperPmiDiffType)'=='tpdiff' "  >superpmi_download_%(HelixWorkItem.TargetOS)_%(HelixWorkItem.Architecture).log;superpmi_tpdiff_%(HelixWorkItem.TargetOS)_%(HelixWorkItem.Architecture).log;superpmi_tpdiff_summary_%(HelixWorkItem.TargetOS)_%(HelixWorkItem.Architecture).md</DownloadFilesFromResults>
-      <DownloadFilesFromResults Condition=" '$(SuperPmiDiffType)'=='all' "     >superpmi_download_%(HelixWorkItem.TargetOS)_%(HelixWorkItem.Architecture).log;superpmi_asmdiffs_%(HelixWorkItem.TargetOS)_%(HelixWorkItem.Architecture).log;superpmi_asmdiffs_summary_%(HelixWorkItem.TargetOS)_%(HelixWorkItem.Architecture).md;Asmdiffs_%(HelixWorkItem.TargetOS)_%(HelixWorkItem.Architecture).zip;superpmi_tpdiff_%(HelixWorkItem.TargetOS)_%(HelixWorkItem.Architecture).log;superpmi_tpdiff_summary_%(HelixWorkItem.TargetOS)_%(HelixWorkItem.Architecture).md</DownloadFilesFromResults>
+      <DownloadFilesFromResults Condition=" '$(SuperPmiDiffType)'=='asmdiffs' ">superpmi_download_%(Identity).log;superpmi_asmdiffs_%(Identity).log;superpmi_asmdiffs_summary_%(Identity).json;Asmdiffs_%(Identity).zip</DownloadFilesFromResults>
+      <DownloadFilesFromResults Condition=" '$(SuperPmiDiffType)'=='tpdiff' "  >superpmi_download_%(Identity).log;superpmi_tpdiff_%(Identity).log;superpmi_tpdiff_summary_%(Identity).json</DownloadFilesFromResults>
+      <DownloadFilesFromResults Condition=" '$(SuperPmiDiffType)'=='all' "     >superpmi_download_%(Identity).log;superpmi_asmdiffs_%(Identity).log;superpmi_asmdiffs_summary_%(Identity).json;Asmdiffs_%(Identity).zip;superpmi_tpdiff_%(Identity).log;superpmi_tpdiff_summary_%(Identity).json</DownloadFilesFromResults>
     </HelixWorkItem>
   </ItemGroup>
   </Project>

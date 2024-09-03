@@ -12,8 +12,8 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Threading;
 
-using Internal.Runtime.CompilerServices;
 using Internal.Runtime;
+using Internal.Runtime.CompilerServices;
 
 namespace System
 {
@@ -111,10 +111,7 @@ namespace System
             object? obj = RuntimeImports.RhHandleGet(wo.WeakHandle);
             KeepAlive(wo);
 
-            if (obj == null)
-            {
-                throw new ArgumentNullException(nameof(wo));
-            }
+            ArgumentNullException.ThrowIfNull(obj, nameof(wo));
 
             return RuntimeImports.RhGetGeneration(obj);
         }
@@ -695,7 +692,7 @@ namespace System
                 Configurations = new Dictionary<string, object>()
             };
 
-            RuntimeImports.RhEnumerateConfigurationValues(Unsafe.AsPointer(ref context), &ConfigCallback);
+            RuntimeImports.RhEnumerateConfigurationValues(&context, &ConfigCallback);
             return context.Configurations!;
         }
 
@@ -741,14 +738,14 @@ namespace System
             return size;
         }
 
-        private static IntPtr _RegisterFrozenSegment(IntPtr sectionAddress, IntPtr sectionSize)
+        private static unsafe IntPtr _RegisterFrozenSegment(IntPtr sectionAddress, IntPtr sectionSize)
         {
-            return RuntimeImports.RhpRegisterFrozenSegment(sectionAddress, sectionSize);
+            return RuntimeImports.RhRegisterFrozenSegment((void*)sectionAddress, (nuint)sectionSize, (nuint)sectionSize, (nuint)sectionSize);
         }
 
         private static void _UnregisterFrozenSegment(IntPtr segmentHandle)
         {
-            RuntimeImports.RhpUnregisterFrozenSegment(segmentHandle);
+            RuntimeImports.RhUnregisterFrozenSegment(segmentHandle);
         }
 
         public static long GetAllocatedBytesForCurrentThread()
@@ -808,9 +805,7 @@ namespace System
                 // for debug builds we always want to call AllocateNewArray to detect AllocateNewArray bugs
 #if !DEBUG
                 // small arrays are allocated using `new[]` as that is generally faster.
-#pragma warning disable 8500 // sizeof of managed types
                 if (length < 2048 / sizeof(T))
-#pragma warning restore 8500
                 {
                     return new T[length];
                 }
@@ -830,7 +825,7 @@ namespace System
                     throw new OverflowException();
 
                 T[]? array = null;
-                RuntimeImports.RhAllocateNewArray(MethodTable.Of<T[]>(), (uint)length, (uint)flags, Unsafe.AsPointer(ref array));
+                RuntimeImports.RhAllocateNewArray(MethodTable.Of<T[]>(), (uint)length, (uint)flags, &array);
                 if (array == null)
                     throw new OutOfMemoryException();
 
@@ -857,7 +852,7 @@ namespace System
                 throw new OverflowException();
 
             T[]? array = null;
-            RuntimeImports.RhAllocateNewArray(MethodTable.Of<T[]>(), (uint)length, (uint)flags, Unsafe.AsPointer(ref array));
+            RuntimeImports.RhAllocateNewArray(MethodTable.Of<T[]>(), (uint)length, (uint)flags, &array);
             if (array == null)
                 throw new OutOfMemoryException();
 
@@ -869,7 +864,6 @@ namespace System
             return new TimeSpan(RuntimeImports.RhGetTotalPauseDuration());
         }
 
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("RefreshMemoryLimit is in preview.")]
         public static void RefreshMemoryLimit()
         {
             ulong heapHardLimit = (AppContext.GetData("GCHeapHardLimit") as ulong?) ?? ulong.MaxValue;

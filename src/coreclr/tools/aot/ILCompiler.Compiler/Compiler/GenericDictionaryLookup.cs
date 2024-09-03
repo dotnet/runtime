@@ -22,7 +22,6 @@ namespace ILCompiler
 
         private readonly short _offset1;
         private readonly short _offset2;
-        private readonly bool _indirectLastOffset;
 
         /// <summary>
         /// Gets the information about the source of the generic context for shared code.
@@ -106,38 +105,28 @@ namespace ILCompiler
             }
         }
 
-        public bool IndirectLastOffset
-        {
-            get
-            {
-                Debug.Assert(!UseHelper && !UseNull);
-                return _indirectLastOffset;
-            }
-        }
-
-        private GenericDictionaryLookup(GenericContextSource contextSource, int offset1, int offset2, object helperObject, bool indirectLastOffset)
+        private GenericDictionaryLookup(GenericContextSource contextSource, int offset1, int offset2, object helperObject)
         {
             ContextSource = contextSource;
             _offset1 = checked((short)offset1);
             _offset2 = checked((short)offset2);
             _helperObject = helperObject;
-            _indirectLastOffset = indirectLastOffset;
         }
 
-        public static GenericDictionaryLookup CreateFixedLookup(GenericContextSource contextSource, int offset1, int offset2 = UseHelperOffset, bool indirectLastOffset = false)
+        public static GenericDictionaryLookup CreateFixedLookup(GenericContextSource contextSource, int offset1, int offset2 = UseHelperOffset)
         {
             Debug.Assert(offset1 != UseHelperOffset);
-            return new GenericDictionaryLookup(contextSource, offset1, offset2, null, indirectLastOffset);
+            return new GenericDictionaryLookup(contextSource, offset1, offset2, null);
         }
 
         public static GenericDictionaryLookup CreateHelperLookup(GenericContextSource contextSource, ReadyToRunHelperId helperId, object helperObject)
         {
-            return new GenericDictionaryLookup(contextSource, UseHelperOffset, checked((short)helperId), helperObject, indirectLastOffset: false);
+            return new GenericDictionaryLookup(contextSource, UseHelperOffset, checked((short)helperId), helperObject);
         }
 
         public static GenericDictionaryLookup CreateNullLookup(GenericContextSource contextSource)
         {
-            return new GenericDictionaryLookup(contextSource, UseNullOffset, 0, null, false);
+            return new GenericDictionaryLookup(contextSource, UseNullOffset, 0, null);
         }
     }
 

@@ -12,45 +12,52 @@ namespace Microsoft.Interop.JavaScript
 {
     internal abstract class BaseJSGenerator : IJSMarshallingGenerator
     {
-        protected IMarshallingGenerator _inner;
+        protected IBoundMarshallingGenerator _inner;
         public MarshalerType Type;
 
-        protected BaseJSGenerator(MarshalerType marshalerType, IMarshallingGenerator inner)
+        protected BaseJSGenerator(MarshalerType marshalerType, IBoundMarshallingGenerator inner)
         {
             _inner = inner;
             Type = marshalerType;
         }
 
-        public ManagedTypeInfo AsNativeType(TypePositionInfo info) => _inner.AsNativeType(info);
-        public bool IsSupported(TargetFramework target, Version version) => _inner.IsSupported(target, version);
-        public virtual bool UsesNativeIdentifier(TypePositionInfo info, StubCodeContext context) => _inner.UsesNativeIdentifier(info, context);
-        public SignatureBehavior GetNativeSignatureBehavior(TypePositionInfo info) => _inner.GetNativeSignatureBehavior(info);
-        public ValueBoundaryBehavior GetValueBoundaryBehavior(TypePositionInfo info, StubCodeContext context) => _inner.GetValueBoundaryBehavior(info, context);
-        public ByValueMarshalKindSupport SupportsByValueMarshalKind(ByValueContentsMarshalKind marshalKind, TypePositionInfo info, StubCodeContext context, out GeneratorDiagnostic? diagnostic)
-            => _inner.SupportsByValueMarshalKind(marshalKind, info, context, out diagnostic);
+        public TypePositionInfo TypeInfo => _inner.TypeInfo;
 
-        public virtual IEnumerable<ExpressionSyntax> GenerateBind(TypePositionInfo info, StubCodeContext context)
+        public StubCodeContext CodeContext => _inner.CodeContext;
+
+        public ManagedTypeInfo NativeType => _inner.NativeType;
+
+        public SignatureBehavior NativeSignatureBehavior => _inner.NativeSignatureBehavior;
+
+        public ValueBoundaryBehavior ValueBoundaryBehavior => _inner.ValueBoundaryBehavior;
+
+        public virtual bool UsesNativeIdentifier => _inner.UsesNativeIdentifier;
+
+        public ByValueMarshalKindSupport SupportsByValueMarshalKind(ByValueContentsMarshalKind marshalKind, out GeneratorDiagnostic? diagnostic)
+            => _inner.SupportsByValueMarshalKind(marshalKind, out diagnostic);
+
+        public virtual IEnumerable<ExpressionSyntax> GenerateBind()
         {
             yield return MarshalerTypeName(Type);
         }
 
-        public virtual IEnumerable<StatementSyntax> Generate(TypePositionInfo info, StubCodeContext context)
+        public virtual IEnumerable<StatementSyntax> Generate(StubIdentifierContext context)
         {
-            string argName = context.GetAdditionalIdentifier(info, "js_arg");
+            string argName = context.GetAdditionalIdentifier(TypeInfo, "js_arg");
 
-            if (context.CurrentStage == StubCodeContext.Stage.Setup)
+            if (context.CurrentStage == StubIdentifierContext.Stage.Setup)
             {
-                if (!info.IsManagedReturnPosition)
+                if (!TypeInfo.IsManagedReturnPosition)
                 {
                     yield return LocalDeclarationStatement(VariableDeclaration(RefType(IdentifierName(Constants.JSMarshalerArgumentGlobal)))
                     .WithVariables(SingletonSeparatedList(VariableDeclarator(Identifier(argName))
                     .WithInitializer(EqualsValueClause(RefExpression(ElementAccessExpression(IdentifierName(Constants.ArgumentsBuffer))
                     .WithArgumentList(BracketedArgumentList(SingletonSeparatedList(
-                        Argument(LiteralExpression(SyntaxKind.NumericLiteralExpression, Literal(info.ManagedIndex + 2))))))))))));
+                        Argument(LiteralExpression(SyntaxKind.NumericLiteralExpression, Literal(TypeInfo.ManagedIndex + 2))))))))))));
                 }
             }
 
-            foreach (var x in _inner.Generate(info, context))
+            foreach (var x in _inner.Generate(context))
             {
                 yield return x;
             }

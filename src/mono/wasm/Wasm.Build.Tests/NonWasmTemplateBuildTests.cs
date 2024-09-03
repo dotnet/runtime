@@ -25,8 +25,8 @@ public class NonWasmTemplateBuildTests : TestMainJsTestBase
     //
     // This is useful for the case when we are on tfm=net7.0, but sdk, and packages
     // are really 8.0 .
-    private const string s_latestTargetFramework = "net8.0";
-    private const string s_previousTargetFramework = "net7.0";
+    private const string s_latestTargetFramework = "net9.0";
+    private const string s_previousTargetFramework = "net8.0";
     private static string s_directoryBuildTargetsForPreviousTFM =
         $$"""
             <Project>

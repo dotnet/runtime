@@ -31,10 +31,9 @@ public class TestApp
         return 0;
     }
     [Fact]
-    public static unsafe int TestEntryPoint()
+    public static unsafe void TestEntryPoint()
     {
         AA loc_x = new AA(0, 100);
         test_26((uint)&loc_x.m_b);
-        return 100;
     }
 }

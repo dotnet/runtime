@@ -25,7 +25,6 @@
     <ProjectReference Include="$(LibrariesProjectRoot)System.Net.Primitives\ref\System.Net.Primitives.csproj" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.Net.Requests\ref\System.Net.Requests.csproj" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.Net.Security\ref\System.Net.Security.csproj" />
-    <ProjectReference Include="$(LibrariesProjectRoot)System.Net.ServicePoint\ref\System.Net.ServicePoint.csproj" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.Net.Sockets\ref\System.Net.Sockets.csproj" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.Net.WebClient\ref\System.Net.WebClient.csproj" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.Net.WebHeaderCollection\ref\System.Net.WebHeaderCollection.csproj" />

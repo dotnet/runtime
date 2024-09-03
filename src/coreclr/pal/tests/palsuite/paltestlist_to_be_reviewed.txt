@@ -1,7 +1,6 @@
 This is a list of failing PAL tests that need to be reviewed because.
 They should either be fixed or deleted if they are no longer applicable.
 
-c_runtime/exit/test2/paltest_exit_test2
 c_runtime/ferror/test1/paltest_ferror_test1
 c_runtime/ferror/test2/paltest_ferror_test2
 c_runtime/fputs/test2/paltest_fputs_test2
@@ -11,8 +10,6 @@ c_runtime/fread/test3/paltest_fread_test3
 c_runtime/ftell/test1/paltest_ftell_test1
 c_runtime/iswprint/test1/paltest_iswprint_test1
 c_runtime/vprintf/test1/paltest_vprintf_test1
-c_runtime/_gcvt/test1/paltest_gcvt_test1
-c_runtime/_gcvt/test2/paltest_gcvt_test2
 c_runtime/_getw/test1/paltest_getw_test1
 debug_api/DebugBreak/test1/paltest_debugbreak_test1
 debug_api/OutputDebugStringA/test1/paltest_outputdebugstringa_test1

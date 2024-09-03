@@ -15,7 +15,7 @@ namespace Microsoft.Interop.JavaScript
     internal abstract class JSCodeGenerator
     {
         public const string ReturnIdentifier = "__retVal";
-        public const string ReturnNativeIdentifier = $"{ReturnIdentifier}{StubCodeContext.GeneratedNativeIdentifierSuffix}";
+        public const string ReturnNativeIdentifier = $"{ReturnIdentifier}{StubIdentifierContext.GeneratedNativeIdentifierSuffix}";
         public const string InvokeSucceededIdentifier = "__invokeSucceeded";
     }
 
@@ -23,39 +23,47 @@ namespace Microsoft.Interop.JavaScript
     {
         private readonly BoundGenerators _marshallers;
 
-        private readonly JSImportCodeContext _context;
+        private readonly StubIdentifierContext _context;
+        private readonly JSImportData _jsImportData;
         private readonly JSSignatureContext _signatureContext;
 
         public JSImportCodeGenerator(
-            TargetFramework targetFramework,
-            Version targetFrameworkVersion,
             ImmutableArray<TypePositionInfo> argTypes,
             JSImportData attributeData,
             JSSignatureContext signatureContext,
             GeneratorDiagnosticsBag diagnosticsBag,
-            IMarshallingGeneratorFactory generatorFactory)
+            IMarshallingGeneratorResolver generatorResolver)
         {
+            _jsImportData = attributeData;
             _signatureContext = signatureContext;
-            ManagedToNativeStubCodeContext innerContext = new ManagedToNativeStubCodeContext(targetFramework, targetFrameworkVersion, ReturnIdentifier, ReturnIdentifier);
-            _context = new JSImportCodeContext(attributeData, innerContext);
-            _marshallers = BoundGenerators.Create(argTypes, generatorFactory, _context, new EmptyJSGenerator(), out var bindingFailures);
+
+            _marshallers = BoundGenerators.Create(argTypes, generatorResolver, StubCodeContext.DefaultManagedToNativeStub, new EmptyJSGenerator(), out var bindingFailures);
 
             diagnosticsBag.ReportGeneratorDiagnostics(bindingFailures);
 
-            if (_marshallers.ManagedReturnMarshaller.Generator.UsesNativeIdentifier(_marshallers.ManagedReturnMarshaller.TypeInfo, null))
+            if (_marshallers.ManagedReturnMarshaller.UsesNativeIdentifier)
             {
                 // If we need a different native return identifier, then recreate the context with the correct identifier before we generate any code.
-                innerContext = new ManagedToNativeStubCodeContext(targetFramework, targetFrameworkVersion, ReturnIdentifier, ReturnNativeIdentifier);
-                _context = new JSImportCodeContext(attributeData, innerContext);
+                _context = new DefaultIdentifierContext(ReturnIdentifier, ReturnNativeIdentifier, MarshalDirection.ManagedToUnmanaged)
+                {
+                    CodeEmitOptions = new(SkipInit: true)
+                };
+            }
+            else
+            {
+                _context = new DefaultIdentifierContext(ReturnIdentifier, ReturnIdentifier, MarshalDirection.ManagedToUnmanaged)
+                {
+                    CodeEmitOptions = new(SkipInit: true)
+                };
             }
 
             // validate task + span mix
             if (_marshallers.ManagedReturnMarshaller.TypeInfo.MarshallingAttributeInfo is JSMarshallingInfo(_, JSTaskTypeInfo))
             {
-                BoundGenerator spanArg = _marshallers.SignatureMarshallers.FirstOrDefault(m => m.TypeInfo.MarshallingAttributeInfo is JSMarshallingInfo(_, JSSpanTypeInfo));
+                IBoundMarshallingGenerator spanArg = _marshallers.SignatureMarshallers.FirstOrDefault(m => m.TypeInfo.MarshallingAttributeInfo is JSMarshallingInfo(_, JSSpanTypeInfo));
                 if (spanArg != default)
                 {
-                    diagnosticsBag.ReportGeneratorDiagnostic(new GeneratorDiagnostic.NotSupported(spanArg.TypeInfo, _context)
+                    diagnosticsBag.ReportGeneratorDiagnostic(new GeneratorDiagnostic.NotSupported(spanArg.TypeInfo)
                     {
                         NotSupportedDetails = SR.SpanAndTaskNotSupported
                     });
@@ -128,11 +136,11 @@ namespace Microsoft.Interop.JavaScript
         {
             var bindingParameters =
                 (new ArgumentSyntax[] {
-                    Argument(LiteralExpression(SyntaxKind.StringLiteralExpression, Literal(_context.AttributeData.FunctionName))),
+                    Argument(LiteralExpression(SyntaxKind.StringLiteralExpression, Literal(_jsImportData.FunctionName))),
                     Argument(
-                        _context.AttributeData.ModuleName == null
+                        _jsImportData.ModuleName == null
                         ? LiteralExpression(SyntaxKind.NullLiteralExpression)
-                        : LiteralExpression(SyntaxKind.StringLiteralExpression, Literal(_context.AttributeData.ModuleName))),
+                        : LiteralExpression(SyntaxKind.StringLiteralExpression, Literal(_jsImportData.ModuleName))),
                     CreateSignaturesSyntax(),
                 });
 
@@ -147,8 +155,9 @@ namespace Microsoft.Interop.JavaScript
 
         private ArgumentSyntax CreateSignaturesSyntax()
         {
-            var types = ((IJSMarshallingGenerator)_marshallers.ManagedReturnMarshaller.Generator).GenerateBind(_marshallers.ManagedReturnMarshaller.TypeInfo, _context)
-                .Concat(_marshallers.NativeParameterMarshallers.SelectMany(p => ((IJSMarshallingGenerator)p.Generator).GenerateBind(p.TypeInfo, _context)));
+            IEnumerable<ExpressionSyntax> types = _marshallers.ManagedReturnMarshaller is IJSMarshallingGenerator jsGen ? jsGen.GenerateBind() : [];
+            types = types
+                .Concat(_marshallers.NativeParameterMarshallers.OfType<IJSMarshallingGenerator>().SelectMany(p => p.GenerateBind()));
 
             return Argument(ArrayCreationExpression(ArrayType(IdentifierName(Constants.JSMarshalerTypeGlobal))
                 .WithRankSpecifiers(SingletonList(ArrayRankSpecifier(SingletonSeparatedList<ExpressionSyntax>(OmittedArraySizeExpression())))))

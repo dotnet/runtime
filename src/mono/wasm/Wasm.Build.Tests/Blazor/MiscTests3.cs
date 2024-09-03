@@ -29,11 +29,10 @@ public class MiscTests3 : BlazorWasmTestBase
     [InlineData("Release", /*build*/true, /*publish*/false)]
     [InlineData("Release", /*build*/false, /*publish*/true)]
     [InlineData("Release", /*build*/true, /*publish*/true)]
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/87877", TestPlatforms.Windows)]
     public async Task WithDllImportInMainAssembly(string config, bool build, bool publish)
     {
         // Based on https://github.com/dotnet/runtime/issues/59255
-        string id = $"blz_dllimp_{config}_{s_unicodeChar}";
+        string id = $"blz_dllimp_{config}_{s_unicodeChars}";
         if (build && publish)
             id += "build_then_publish";
         else if (build)
@@ -115,10 +114,10 @@ public class MiscTests3 : BlazorWasmTestBase
                 .ExecuteWithCapturedOutput("new razorclasslib")
                 .EnsureSuccessful();
 
-        string razorClassLibraryFileName = $"RazorClassLibrary{ProjectProviderBase.WasmAssemblyExtension}";
+        string razorClassLibraryFileNameWithoutExtension = "RazorClassLibrary";
         AddItemsPropertiesToProject(wasmProjectFile, extraItems: @$"
             <ProjectReference Include=""..\\RazorClassLibrary\\RazorClassLibrary.csproj"" />
-            <BlazorWebAssemblyLazyLoad Include=""{razorClassLibraryFileName}"" />
+            <BlazorWebAssemblyLazyLoad Include=""{razorClassLibraryFileNameWithoutExtension}{ProjectProviderBase.WasmAssemblyExtension}"" />
         ");
 
         _projectDir = wasmProjectDir;
@@ -141,7 +140,7 @@ public class MiscTests3 : BlazorWasmTestBase
             throw new XunitException($"Could not find resources.lazyAssembly object in {bootJson}");
         }
 
-        Assert.Contains(razorClassLibraryFileName, lazyVal.EnumerateObject().Select(jp => jp.Name));
+        Assert.True(lazyVal.EnumerateObject().Select(jp => jp.Name).FirstOrDefault(f => f.StartsWith(razorClassLibraryFileNameWithoutExtension)) != null);
     }
 
     private void BlazorAddRazorButton(string buttonText, string customCode, string methodName = "test", string razorPage = "Pages/Counter.razor")

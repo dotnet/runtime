@@ -170,7 +170,7 @@ public struct AA
 public class App
 {
     [Fact]
-    public static int TestEntryPoint()
+    public static void TestEntryPoint()
     {
         try
         {
@@ -191,7 +191,6 @@ public class App
         catch (Exception)
         {
         }
-        return 100;
     }
     public static long m_lFwd1;
     public static bool m_bFwd2;

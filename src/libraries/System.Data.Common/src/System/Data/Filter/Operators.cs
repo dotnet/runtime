@@ -37,9 +37,9 @@ namespace System.Data
         internal const int Minus = 16;          // -
         internal const int Multiply = 17;       // *
         internal const int Divide = 18;     // /
-        //internal final static int IntegerDiv = 19;    // \
+        //internal const int IntegerDiv = 19;    // \
         internal const int Modulo = 20;     // %
-        //internal final static int Exponent = 21;    // **
+        //internal const int Exponent = 21;    // **
         /* End of arithmetic operators */
 
         /* Beginning of bitwise operators */
@@ -118,8 +118,8 @@ namespace System.Data
         /// <summary>Mapping from Operator to priorities.</summary>
         internal static int Priority(int op)
         {
-            ReadOnlySpan<byte> priorities = new byte[]
-            {
+            ReadOnlySpan<byte> priorities =
+            [
                 PriStart,  // Noop
                 PriNeg, PriNeg, PriNot, // Unary -, +, Not
                 PriBetweenAnd, PriBetweenInLike, PriBetweenInLike,
@@ -137,7 +137,7 @@ namespace System.Data
                 PriParen, PriProc, PriDot, PriDot,      // Proc, Iff, Qula, Dot..
 
                 // anything beyond is PriMax
-            };
+            ];
 
             return (uint)op < (uint)priorities.Length ? priorities[op] : PriMax;
         }

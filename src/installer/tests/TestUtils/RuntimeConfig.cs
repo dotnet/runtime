@@ -172,6 +172,8 @@ namespace Microsoft.DotNet.CoreSetup.Test
             return new RuntimeConfig(path);
         }
 
+        public string Tfm => _tfm;
+
         public Framework GetFramework(string name)
         {
             return _frameworks.FirstOrDefault(f => f.Name == name);
@@ -197,6 +199,11 @@ namespace Microsoft.DotNet.CoreSetup.Test
             }
 
             return this;
+        }
+
+        public Framework GetIncludedFramework(string name)
+        {
+            return _includedFrameworks.FirstOrDefault(f => f.Name == name);
         }
 
         public RuntimeConfig WithIncludedFramework(Framework framework)

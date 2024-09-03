@@ -1,11 +1,12 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
+using System.Diagnostics.Metrics;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Diagnostics.Metrics;
 using Microsoft.Extensions.Diagnostics.Metrics.Configuration;
-using System;
-using System.Diagnostics.Metrics;
+using Microsoft.Extensions.Options;
 
 namespace Microsoft.Extensions.DependencyInjection
 {
@@ -32,7 +33,9 @@ namespace Microsoft.Extensions.DependencyInjection
             services.TryAddSingleton<MetricsSubscriptionManager>();
             // Make sure the subscription manager is started when the host starts.
             // The host will trigger options validation.
-            services.AddOptions<NoOpOptions>().Configure<MetricsSubscriptionManager>((_, manager) => manager.Initialize()).ValidateOnStart();
+            services.AddOptions<NoOpOptions>().ValidateOnStart();
+            // Make sure this is only registered/run once.
+            services.TryAddSingleton<IConfigureOptions<NoOpOptions>, SubscriptionActivator>();
 
             services.TryAddSingleton<IMetricListenerConfigurationFactory, MetricListenerConfigurationFactory>();
 
@@ -66,5 +69,10 @@ namespace Microsoft.Extensions.DependencyInjection
         }
 
         private sealed class NoOpOptions { }
+
+        private sealed class SubscriptionActivator(MetricsSubscriptionManager manager) : IConfigureOptions<NoOpOptions>
+        {
+            public void Configure(NoOpOptions options) => manager.Initialize();
+        }
     }
 }

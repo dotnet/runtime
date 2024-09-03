@@ -47,12 +47,29 @@ namespace Common.Tests
             Assert.Null(name);
         }
 
-        [Fact, PlatformSpecific(TestPlatforms.Linux)]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotPrivilegedProcess)), PlatformSpecific(TestPlatforms.Linux)]
         public void GetPrettyName_CannotRead_ReturnsNull()
         {
             string path = CreateTestFile();
             File.SetUnixFileMode(path, UnixFileMode.None);
-            Assert.ThrowsAny<Exception>(() => File.ReadAllText(path));
+
+            Assert.ThrowsAny<Exception>(() => File.ReadAllText(path)); 
+
+            string? name = Interop.OSReleaseFile.GetPrettyName(path);
+            Assert.Null(name);
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsPrivilegedProcess)), PlatformSpecific(TestPlatforms.Linux)]
+        public void GetPrettyName_NonePrivileges_CanRead_ReturnsNull()
+        {
+            string path = CreateTestFile();
+            File.SetUnixFileMode(path, UnixFileMode.None);
+
+            // If user have root permissions, kernel doesn't care about access privileges,
+            // so there is no point in expecting System.Exception
+            Assert.Equal(UnixFileMode.None, File.GetUnixFileMode(path));
+            // Because kernel ignored privileges check, file should be readable and empty
+            Assert.Equal("", File.ReadAllText(path));
 
             string? name = Interop.OSReleaseFile.GetPrettyName(path);
             Assert.Null(name);

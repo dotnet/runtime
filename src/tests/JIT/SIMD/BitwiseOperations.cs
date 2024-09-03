@@ -24,7 +24,8 @@ namespace VectorMathTests
             return (float)(mantissa * exponent);
         }
 
-        static int TestDouble()
+        [Fact]
+        public static int TestDouble()
         {
             Random random = new Random(Seed);
             double[] arr1 = new double[] { NextFloat(random), NextFloat(random), NextFloat(random), NextFloat(random) };
@@ -76,7 +77,8 @@ namespace VectorMathTests
             return arr;
         }
 
-        static int TestBool()
+        [Fact]
+        public static int TestBool()
         {
             Random random = new Random(Seed);
             byte[] arr1 = GenerateByteArray(64, random);
@@ -106,21 +108,6 @@ namespace VectorMathTests
                     return 0;
                 }
             }
-            return 100;
-        }
-
-        [Fact]
-        public static int TestEntryPoint()
-        {
-            if (TestDouble() != 100)
-            {
-                return 0;
-            }
-            if (TestBool() != 100)
-            {
-                return 0;
-            }
-
             return 100;
         }
     }

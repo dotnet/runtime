@@ -4,6 +4,7 @@
 #include "ksarm64.h"
 
 #include "asmconstants.h"
+#include "asmmacros.h"
 
 
 
@@ -72,6 +73,7 @@ LNoFloatingPoint
         ;; call pTarget
         ldr     x9, [x19,#CallDescrData__pTarget]
         blr     x9
+LCallDescrWorkerInternalReturnAddress
 
         ldr     w3, [x19,#CallDescrData__fpReturnSize]
 
@@ -140,6 +142,10 @@ LReturnDone
         EPILOG_RESTORE_REG      x19, #16    ;the stack slot at sp+24 is empty for 16 byte alligment
         EPILOG_RESTORE_REG_PAIR fp, lr, #32!
         EPILOG_RETURN
+
+        PATCH_LABEL CallDescrWorkerInternalReturnAddressOffset
+        DCQ LCallDescrWorkerInternalReturnAddress - CallDescrWorkerInternal
+
         NESTED_END
 
     END

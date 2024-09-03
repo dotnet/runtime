@@ -2,8 +2,15 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.IO;
+using System.Reflection;
 using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
+using System.Runtime.CompilerServices;
+
+#if NET
+using System.Runtime.Loader;
+#endif
 
 namespace Microsoft.Extensions.DependencyInjection.Tests
 {
@@ -164,6 +171,96 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
         }
 
         [Fact]
+        public void CreateInstanceFailsWithAmbiguousConstructor()
+        {
+            var serviceCollection = new ServiceCollection();
+            serviceCollection.AddTransient<ClassWithA_And_B>();
+            serviceCollection.AddTransient<A>();
+            serviceCollection.AddTransient<B>();
+
+            var serviceProvider = serviceCollection.BuildServiceProvider();
+
+            // Neither ctor(A) nor ctor(B) have [ActivatorUtilitiesConstructor].
+            Assert.Throws<InvalidOperationException>(() => ActivatorUtilities.CreateInstance<ClassWithA_And_B>(serviceProvider));
+        }
+
+        [Fact]
+        public void CreateInstanceFailsWithAmbiguousConstructor_ReversedOrder()
+        {
+            var serviceCollection = new ServiceCollection();
+            serviceCollection.AddTransient<ClassWithB_And_A>();
+            serviceCollection.AddTransient<A>();
+            serviceCollection.AddTransient<B>();
+
+            var serviceProvider = serviceCollection.BuildServiceProvider();
+
+            // Neither ctor(A) nor ctor(B) have [ActivatorUtilitiesConstructor].
+            Assert.Throws<InvalidOperationException>(() => ActivatorUtilities.CreateInstance<ClassWithA_And_B>(serviceProvider));
+        }
+
+        [Fact]
+        public void CreateInstancePassesWithAmbiguousConstructor()
+        {
+            var serviceCollection = new ServiceCollection();
+            serviceCollection.AddTransient<ClassWithA_And_B_ActivatorUtilitiesConstructorAttribute>();
+            serviceCollection.AddTransient<A>();
+            serviceCollection.AddTransient<B>();
+
+            var serviceProvider = serviceCollection.BuildServiceProvider();
+            var service = ActivatorUtilities.CreateInstance<ClassWithA_And_B_ActivatorUtilitiesConstructorAttribute>(serviceProvider);
+
+            // Ensure ctor(A) was selected over ctor(B) since A has [ActivatorUtilitiesConstructor].
+            Assert.NotNull(service.A);
+        }
+
+        [Fact]
+        public void CreateInstancePassesWithAmbiguousConstructor_ReversedOrder()
+        {
+            var serviceCollection = new ServiceCollection();
+            serviceCollection.AddTransient<ClassWithB_And_A_ActivatorUtilitiesConstructorAttribute>();
+            serviceCollection.AddTransient<A>();
+            serviceCollection.AddTransient<B>();
+
+            var serviceProvider = serviceCollection.BuildServiceProvider();
+            var service = ActivatorUtilities.CreateInstance<ClassWithB_And_A_ActivatorUtilitiesConstructorAttribute>(serviceProvider);
+
+            // Ensure ctor(A) was selected over ctor(B) since A has [ActivatorUtilitiesConstructor].
+            Assert.NotNull(service.A);
+        }
+
+        [Fact]
+        public void CreateInstanceIgnoresActivatorUtilitiesConstructorAttribute()
+        {
+            var serviceCollection = new ServiceCollection();
+            serviceCollection.AddTransient<ClassWithA_And_AB_ActivatorUtilitiesConstructorAttribute>();
+            serviceCollection.AddTransient<A>();
+            serviceCollection.AddTransient<B>();
+
+            var serviceProvider = serviceCollection.BuildServiceProvider();
+            var service = ActivatorUtilities.CreateInstance<ClassWithA_And_AB_ActivatorUtilitiesConstructorAttribute>(serviceProvider);
+
+            // Ensure ctor(A) was selected since A has [ActivatorUtilitiesConstructor].
+            Assert.NotNull(service.A);
+            Assert.Null(service.B);
+        }
+
+        [Fact]
+        public void CreateInstanceIgnoresActivatorUtilitiesConstructorAttribute_ReversedOrder()
+        {
+            var serviceCollection = new ServiceCollection();
+            serviceCollection.AddTransient<ClassWithAB_And_A_ActivatorUtilitiesConstructorAttribute>();
+            serviceCollection.AddTransient<A>();
+            serviceCollection.AddTransient<B>();
+
+            var serviceProvider = serviceCollection.BuildServiceProvider();
+            var service = ActivatorUtilities.CreateInstance<ClassWithAB_And_A_ActivatorUtilitiesConstructorAttribute>(serviceProvider);
+
+            // Ensure ctor(A) was selected since it has [ActivatorUtilitiesConstructor].
+            Assert.NotNull(service.A);
+            Assert.Null(service.B);
+        }
+
+        [Fact]
         public void CreateInstance_ClassWithABC_MultipleCtorsWithSameLength_ThrowsAmbiguous()
         {
             string message = $"Multiple constructors for type '{typeof(ClassWithABC_MultipleCtorsWithSameLength)}' were found with length 1.";
@@ -235,7 +332,138 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
 
         [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [InlineData(true)]
+#if NET
+        [InlineData(false)]
+#endif
+        public void CreateFactory_CreatesFactoryMethod_KeyedParams(bool useDynamicCode)
+        {
+            var options = new RemoteInvokeOptions();
+            if (!useDynamicCode)
+            {
+                DisableDynamicCode(options);
+            }
+
+            using var remoteHandle = RemoteExecutor.Invoke(static () =>
+            {
+                var factory = ActivatorUtilities.CreateFactory<ClassWithAKeyedBKeyedC>(Type.EmptyTypes);
+
+                var services = new ServiceCollection();
+                services.AddSingleton(new A());
+                services.AddKeyedSingleton("b", new B());
+                services.AddKeyedSingleton("c", new C());
+                using var provider = services.BuildServiceProvider();
+                ClassWithAKeyedBKeyedC item = factory(provider, null);
+
+                Assert.IsType<ObjectFactory<ClassWithAKeyedBKeyedC>>(factory);
+                Assert.NotNull(item.A);
+                Assert.NotNull(item.B);
+                Assert.NotNull(item.C);
+            }, options);
+        }
+
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [InlineData(true)]
+#if NET
+        [InlineData(false)]
+#endif
+        public void CreateFactory_CreatesFactoryMethod_KeyedParams_5Types(bool useDynamicCode)
+        {
+            var options = new RemoteInvokeOptions();
+            if (!useDynamicCode)
+            {
+                DisableDynamicCode(options);
+            }
+
+            using var remoteHandle = RemoteExecutor.Invoke(static () =>
+            {
+                var factory = ActivatorUtilities.CreateFactory<ClassWithAKeyedBKeyedCSZ>(Type.EmptyTypes);
+
+                var services = new ServiceCollection();
+                services.AddSingleton(new A());
+                services.AddKeyedSingleton("b", new B());
+                services.AddKeyedSingleton("c", new C());
+                services.AddSingleton(new S());
+                services.AddSingleton(new Z());
+                using var provider = services.BuildServiceProvider();
+                ClassWithAKeyedBKeyedCSZ item = factory(provider, null);
+
+                Assert.IsType<ObjectFactory<ClassWithAKeyedBKeyedCSZ>>(factory);
+                Assert.NotNull(item.A);
+                Assert.NotNull(item.B);
+                Assert.NotNull(item.C);
+            }, options);
+        }
+
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [InlineData(true)]
+#if NET
+        [InlineData(false)]
+#endif
+        public void CreateFactory_CreatesFactoryMethod_KeyedParams_ValueTypes(bool useDynamicCode)
+        {
+            var options = new RemoteInvokeOptions();
+            if (!useDynamicCode)
+            {
+                DisableDynamicCode(options);
+            }
+
+            using var remoteHandle = RemoteExecutor.Invoke(static () =>
+            {
+                var factory = ActivatorUtilities.CreateFactory<ClassWithAValueTypedKeyedBCSYZ>(Type.EmptyTypes);
+
+                var services = new ServiceCollection();
+                services.AddSingleton(new A());
+                services.AddKeyedSingleton(uint.MaxValue, new B());
+                services.AddKeyedSingleton(int.MaxValue, new C());
+                services.AddKeyedSingleton(ulong.MaxValue, new S());
+                services.AddKeyedSingleton(long.MaxValue, new Y());
+                services.AddKeyedSingleton(TestEnum.A, new Z());
+                using var provider = services.BuildServiceProvider();
+                ClassWithAValueTypedKeyedBCSYZ item = factory(provider, null);
+
+                Assert.IsType<ObjectFactory<ClassWithAValueTypedKeyedBCSYZ>>(factory);
+                Assert.NotNull(item.A);
+                Assert.NotNull(item.B);
+                Assert.NotNull(item.C);
+                Assert.NotNull(item.S);
+                Assert.NotNull(item.Y);
+                Assert.NotNull(item.Z);
+            }, options);
+        }
+
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [InlineData(true)]
 #if NETCOREAPP
+        [InlineData(false)]
+#endif
+        public void CreateFactory_CreatesFactoryMethod_KeyedParams_1Injected(bool useDynamicCode)
+        {
+            var options = new RemoteInvokeOptions();
+            if (!useDynamicCode)
+            {
+                DisableDynamicCode(options);
+            }
+
+            using var remoteHandle = RemoteExecutor.Invoke(static () =>
+            {
+                var factory = ActivatorUtilities.CreateFactory<ClassWithAKeyedBKeyedC>(new Type[] { typeof(A) });
+
+                var services = new ServiceCollection();
+                services.AddKeyedSingleton("b", new B());
+                services.AddKeyedSingleton("c", new C());
+                using var provider = services.BuildServiceProvider();
+                ClassWithAKeyedBKeyedC item = factory(provider, new object?[] { new A() });
+
+                Assert.IsType<ObjectFactory<ClassWithAKeyedBKeyedC>>(factory);
+                Assert.NotNull(item.A);
+                Assert.NotNull(item.B);
+                Assert.NotNull(item.C);
+            }, options);
+        }
+
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [InlineData(true)]
+#if NET
         [InlineData(false)]
 #endif
         public void CreateFactory_RemoteExecutor_CreatesFactoryMethod(bool useDynamicCode)
@@ -269,7 +497,7 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
 
         [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [InlineData(true)]
-#if NETCOREAPP
+#if NET
         [InlineData(false)]
 #endif
         public void CreateFactory_RemoteExecutor_NullArguments_Throws(bool useDynamicCode)
@@ -292,7 +520,7 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
 
         [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [InlineData(true)]
-#if NETCOREAPP
+#if NET
         [InlineData(false)]
 #endif
         public void CreateFactory_RemoteExecutor_NoArguments_UseNullDefaultValue(bool useDynamicCode)
@@ -316,7 +544,7 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
 
         [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [InlineData(true)]
-#if NETCOREAPP
+#if NET
         [InlineData(false)]
 #endif
         public void CreateFactory_RemoteExecutor_NoArguments_ThrowRequiredValue(bool useDynamicCode)
@@ -340,7 +568,7 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
 
         [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [InlineData(true)]
-#if NETCOREAPP
+#if NET
         [InlineData(false)]
 #endif
         public void CreateFactory_RemoteExecutor_NullArgument_UseDefaultValue(bool useDynamicCode)
@@ -364,7 +592,7 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
 
         [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [InlineData(true)]
-#if NETCOREAPP
+#if NET
         [InlineData(false)]
 #endif
         public void CreateFactory_RemoteExecutor_NoParameters_Success(bool useDynamicCode)
@@ -386,6 +614,125 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
             }, options);
         }
 
+#if NET
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34072", TestRuntimes.Mono)]
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [InlineData(true)]
+        [InlineData(false)]
+        public void CreateInstance_CollectibleAssembly(bool useDynamicCode)
+        {
+            if (PlatformDetection.IsNonBundledAssemblyLoadingSupported)
+            {
+                RemoteInvokeOptions options = new();
+                if (!useDynamicCode)
+                {
+                    DisableDynamicCode(options);
+                }
+
+                using var remoteHandle = RemoteExecutor.Invoke(static () =>
+                {
+                    Assert.False(Collectible_IsAssemblyLoaded());
+                    Collectible_LoadAndCreate(useCollectibleAssembly : true, out WeakReference asmWeakRef, out WeakReference typeWeakRef);
+
+                    for (int i = 0; (typeWeakRef.IsAlive || asmWeakRef.IsAlive) && (i < 10); i++)
+                    {
+                        GC.Collect();
+                        GC.WaitForPendingFinalizers();
+                    }
+
+                    // These should be GC'd.
+                    Assert.False(asmWeakRef.IsAlive, "asmWeakRef.IsAlive");
+                    Assert.False(typeWeakRef.IsAlive, "typeWeakRef.IsAlive");
+                    Assert.False(Collectible_IsAssemblyLoaded());
+                }, options);
+            }
+        }
+
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [InlineData(true)]
+        [InlineData(false)]
+        public void CreateInstance_NormalAssembly(bool useDynamicCode)
+        {
+            RemoteInvokeOptions options = new();
+            if (!useDynamicCode)
+            {
+                DisableDynamicCode(options);
+            }
+
+            using var remoteHandle = RemoteExecutor.Invoke(static () =>
+            {
+                Assert.False(Collectible_IsAssemblyLoaded());
+                Collectible_LoadAndCreate(useCollectibleAssembly: false, out WeakReference asmWeakRef, out WeakReference typeWeakRef);
+
+                for (int i = 0; (typeWeakRef.IsAlive || asmWeakRef.IsAlive) && (i < 10); i++)
+                {
+                    GC.Collect();
+                    GC.WaitForPendingFinalizers();
+                }
+
+                // These will not be GC'd.
+                Assert.True(asmWeakRef.IsAlive, "alcWeakRef.IsAlive");
+                Assert.True(typeWeakRef.IsAlive, "typeWeakRef.IsAlive");
+                Assert.True(Collectible_IsAssemblyLoaded());
+            }, options);
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static void Collectible_LoadAndCreate(bool useCollectibleAssembly, out WeakReference asmWeakRef, out WeakReference typeWeakRef)
+        {
+            Assembly asm;
+            object obj;
+
+            if (useCollectibleAssembly)
+            {
+                asm = MyLoadContext.LoadAsCollectable();
+                obj = CreateWithActivator(asm);
+                Assert.True(obj.GetType().Assembly.IsCollectible);
+            }
+            else
+            {
+                asm = MyLoadContext.LoadNormal();
+                obj = CreateWithActivator(asm);
+                Assert.False(obj.GetType().Assembly.IsCollectible);
+            }
+
+            Assert.True(Collectible_IsAssemblyLoaded());
+            asmWeakRef = new WeakReference(asm);
+            typeWeakRef = new WeakReference(obj.GetType());
+
+            static object CreateWithActivator(Assembly asm)
+            {
+                Type t = asm.GetType("CollectibleAssembly.ClassToCreate");
+                MethodInfo mi = t.GetMethod("Create", BindingFlags.Static | BindingFlags.Public, new Type[] { typeof(ServiceProvider) });
+
+                object instance;
+                ServiceCollection services = new();
+                using (ServiceProvider provider = services.BuildServiceProvider())
+                {
+                    instance = mi.Invoke(null, new object[] { provider });
+                }
+
+                return instance;
+            }
+        }
+
+        static bool Collectible_IsAssemblyLoaded()
+        {
+            Assembly[] assemblies = AppDomain.CurrentDomain.GetAssemblies();
+            for (int i = 0; i < assemblies.Length; i++)
+            {
+                Assembly asm = assemblies[i];
+                string asmName = Path.GetFileName(asm.Location);
+                if (asmName == "CollectibleAssembly.dll")
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+#endif
+
         private static void DisableDynamicCode(RemoteInvokeOptions options)
         {
             // We probably only need to set 'IsDynamicCodeCompiled' since only that is checked,
@@ -399,7 +746,15 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
     internal class B { }
     internal class C { }
     internal class S { }
+    internal class Y { }
     internal class Z { }
+
+    internal class ClassWithAKeyedBKeyedC : ClassWithABC
+    {
+        public ClassWithAKeyedBKeyedC(A a, [FromKeyedServices("b")] B b, [FromKeyedServices("c")] C c)
+            : base(a, b, c)
+        { }
+    }
 
     internal class ClassWithABCS : ClassWithABC
     {
@@ -414,6 +769,26 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
         public ClassWithABCSZ(A a, B b, C c, S s, Z z) : base(a, b, c, s) { Z = z; }
     }
 
+    internal class ClassWithAKeyedBKeyedCSZ : ClassWithABCSZ
+    {
+        public ClassWithAKeyedBKeyedCSZ(A a, [FromKeyedServices("b")] B b, [FromKeyedServices("c")] C c, S s, Z z)
+            : base(a, b, c, s, z)
+        { }
+    }
+
+    internal class ClassWithAValueTypedKeyedBCSYZ : ClassWithABCSZ
+    {
+        public Y Y { get; }
+
+        public ClassWithAValueTypedKeyedBCSYZ(A a, [FromKeyedServices(uint.MaxValue)] B b, [FromKeyedServices(int.MaxValue)] C c, [FromKeyedServices(ulong.MaxValue)] S s, [FromKeyedServices(long.MaxValue)] Y y, [FromKeyedServices(TestEnum.A)] Z z)
+            : base(a, b, c, s, z) { Y = y; }
+    }
+
+    internal enum TestEnum
+    {
+        A
+    }
+
     internal class ClassWithABC_FirstConstructorWithAttribute : ClassWithABC
     {
         [ActivatorUtilitiesConstructor]
@@ -426,6 +801,108 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
         public ClassWithABC_LastConstructorWithAttribute(B b, C c) : this(null, b, c) { }
         [ActivatorUtilitiesConstructor]
         public ClassWithABC_LastConstructorWithAttribute(A a, B b, C c) : base(a, b, c) { }
+    }
+
+    internal class ClassWithA_And_B
+    {
+        public ClassWithA_And_B(A a)
+        {
+            A = a;
+        }
+
+        public ClassWithA_And_B(B b)
+        {
+            B = b;
+        }
+
+        public A A { get; }
+        public B B { get; }
+    }
+
+    internal class ClassWithB_And_A
+    {
+        public ClassWithB_And_A(A a)
+        {
+            A = a;
+        }
+
+        public ClassWithB_And_A(B b)
+        {
+            B = b;
+        }
+
+        public A A { get; }
+        public B B { get; }
+    }
+
+    internal class ClassWithA_And_B_ActivatorUtilitiesConstructorAttribute
+    {
+        [ActivatorUtilitiesConstructor]
+        public ClassWithA_And_B_ActivatorUtilitiesConstructorAttribute(A a)
+        {
+            A = a;
+        }
+
+        public ClassWithA_And_B_ActivatorUtilitiesConstructorAttribute(B b)
+        {
+            B = b;
+        }
+
+        public A A { get; }
+        public B B { get; }
+    }
+
+    internal class ClassWithB_And_A_ActivatorUtilitiesConstructorAttribute
+    {
+        public ClassWithB_And_A_ActivatorUtilitiesConstructorAttribute(B b)
+        {
+            B = b;
+        }
+
+        [ActivatorUtilitiesConstructor]
+        public ClassWithB_And_A_ActivatorUtilitiesConstructorAttribute(A a)
+        {
+            A = a;
+        }
+
+        public A A { get; }
+        public B B { get; }
+    }
+
+    internal class ClassWithA_And_AB_ActivatorUtilitiesConstructorAttribute
+    {
+        [ActivatorUtilitiesConstructor]
+        public ClassWithA_And_AB_ActivatorUtilitiesConstructorAttribute(A a)
+        {
+            A = a;
+        }
+
+        public ClassWithA_And_AB_ActivatorUtilitiesConstructorAttribute(A a, B b)
+        {
+            A = a;
+            B = b;
+        }
+
+        public A A { get; }
+        public B B { get; }
+    }
+
+    internal class ClassWithAB_And_A_ActivatorUtilitiesConstructorAttribute
+    {
+        public ClassWithAB_And_A_ActivatorUtilitiesConstructorAttribute(A a, B b)
+        {
+            A = a;
+            B = b;
+        }
+
+        [ActivatorUtilitiesConstructor]
+        public ClassWithAB_And_A_ActivatorUtilitiesConstructorAttribute(A a)
+        {
+            A = a;
+        }
+
+        public A A { get; }
+        public B B { get; }
     }
 
     internal class FakeServiceProvider : IServiceProvider
@@ -581,5 +1058,36 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
             Text = text;
         }
     }
-}
 
+#if NET
+    internal class MyLoadContext : AssemblyLoadContext
+    {
+        private MyLoadContext() : base(isCollectible: true)
+        {
+        }
+
+        public Assembly LoadAssembly()
+        {
+            Assembly asm = LoadFromAssemblyPath(GetPath());
+            Assert.Equal(GetLoadContext(asm), this);
+            return asm;
+        }
+
+        public static Assembly LoadAsCollectable()
+        {
+            MyLoadContext alc = new MyLoadContext();
+            return alc.LoadAssembly();
+        }
+
+        public static Assembly LoadNormal()
+        {
+            return Assembly.LoadFrom(GetPath());
+        }
+
+        private static string GetPath()
+        {
+            return Path.Combine(Directory.GetCurrentDirectory(), "CollectibleAssembly.dll");
+        }
+    }
+#endif
+}

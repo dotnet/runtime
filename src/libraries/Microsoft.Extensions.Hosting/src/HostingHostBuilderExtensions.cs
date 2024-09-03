@@ -108,7 +108,7 @@ namespace Microsoft.Extensions.Hosting
         /// <returns>The same instance of the <see cref="IHostBuilder"/> for chaining.</returns>
         public static IHostBuilder ConfigureLogging(this IHostBuilder hostBuilder, Action<ILoggingBuilder> configureLogging)
         {
-            return hostBuilder.ConfigureServices((context, collection) => collection.AddLogging(builder => configureLogging(builder)));
+            return hostBuilder.ConfigureServices((context, collection) => collection.AddLogging(configureLogging));
         }
 
         /// <summary>
@@ -275,7 +275,7 @@ namespace Microsoft.Extensions.Hosting
             services.AddLogging(logging =>
             {
                 bool isWindows =
-#if NETCOREAPP
+#if NET
                     OperatingSystem.IsWindows();
 #elif NETFRAMEWORK
                     Environment.OSVersion.Platform == PlatformID.Win32NT;
@@ -292,7 +292,7 @@ namespace Microsoft.Extensions.Hosting
                 }
 
                 logging.AddConfiguration(hostingContext.Configuration.GetSection("Logging"));
-#if NETCOREAPP
+#if NET
                 if (!OperatingSystem.IsBrowser())
 #endif
                 {
@@ -406,7 +406,7 @@ namespace Microsoft.Extensions.Hosting
         /// <returns>The same instance of the <see cref="IHostBuilder"/> for chaining.</returns>
         public static IHostBuilder ConfigureMetrics(this IHostBuilder hostBuilder, Action<IMetricsBuilder> configureMetrics)
         {
-            return hostBuilder.ConfigureServices((context, collection) => collection.AddMetrics(builder => configureMetrics(builder)));
+            return hostBuilder.ConfigureServices((context, collection) => collection.AddMetrics(configureMetrics));
         }
 
         /// <summary>

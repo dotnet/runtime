@@ -26,7 +26,14 @@ internal sealed class CommonConfiguration
     public string? RuntimeConfigPath { get; private set; }
 
     private string? hostArg;
+    private static readonly JsonSerializerOptions s_jsonOptions = new JsonSerializerOptions(JsonSerializerDefaults.Web)
+    {
+        AllowTrailingCommas = true,
+        ReadCommentHandling = JsonCommentHandling.Skip,
+        PropertyNameCaseInsensitive = true
+    };
 
+    public static JsonSerializerOptions JsonOptions => s_jsonOptions;
     public static CommonConfiguration FromCommandLineArguments(string[] args) => new CommonConfiguration(args);
 
     private CommonConfiguration(string[] args)
@@ -62,12 +69,7 @@ internal sealed class CommonConfiguration
 
         RuntimeConfig? rconfig = JsonSerializer.Deserialize<RuntimeConfig>(
                                                 File.ReadAllText(RuntimeConfigPath),
-                                                new JsonSerializerOptions(JsonSerializerDefaults.Web)
-                                                {
-                                                    AllowTrailingCommas = true,
-                                                    ReadCommentHandling = JsonCommentHandling.Skip,
-                                                    PropertyNameCaseInsensitive = true
-                                                });
+                                                JsonOptions);
         if (rconfig == null)
             throw new CommandLineException($"Failed to deserialize {RuntimeConfigPath}");
 
@@ -123,18 +125,18 @@ internal sealed class CommonConfiguration
     public static void CheckPathOrInAppPath(string appPath, string? path, string argName)
     {
         if (string.IsNullOrEmpty(path))
-            throw new ArgumentNullException($"Missing value for {argName}");
+            throw new CommandLineException($"Missing value for {argName}");
 
         if (Path.IsPathRooted(path))
         {
             if (!File.Exists(path))
-                throw new ArgumentException($"Cannot find {argName}: {path}");
+                throw new CommandLineException($"Cannot find {argName}: {path}");
         }
         else
         {
             string fullPath = Path.Combine(appPath, path);
             if (!File.Exists(fullPath))
-                throw new ArgumentException($"Cannot find {argName} {path} in app directory {appPath}");
+                throw new CommandLineException($"Cannot find {argName} {path} in app directory {appPath}");
         }
     }
 }

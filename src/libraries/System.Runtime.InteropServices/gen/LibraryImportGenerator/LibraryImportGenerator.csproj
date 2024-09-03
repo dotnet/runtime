@@ -8,14 +8,13 @@
     <IsRoslynComponent>true</IsRoslynComponent>
     <!-- Disable RS2008: Enable analyzer release tracking
          Diagnostics in runtime use a different mechanism (docs/project/list-of-diagnostics.md) -->
-    <NoWarn>RS2008;RS1038;$(NoWarn)</NoWarn>
+    <NoWarn>$(NoWarn);RS2008;RS1038</NoWarn>
     <AnalyzerLanguage>cs</AnalyzerLanguage>
     <StringResourcesPath>../Common/Resources/Strings.resx</StringResourcesPath>
   </PropertyGroup>
 
   <ItemGroup>
     <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Workspaces" Version="$(MicrosoftCodeAnalysisVersion_LatestVS)" PrivateAssets="all" />
-    <PackageReference Include="Microsoft.CodeAnalysis.Analyzers" Version="$(MicrosoftCodeAnalysisAnalyzersVersion)" PrivateAssets="all" />
   </ItemGroup>
 
   <ItemGroup>
@@ -23,12 +22,14 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Compile Include="$(CoreLibSharedDir)System\Runtime\CompilerServices\IsExternalInit.cs" Link="Common\System\Runtime\CompilerServices\IsExternalInit.cs" />
     <Compile Include="$(CommonPath)Roslyn\DiagnosticDescriptorHelper.cs" Link="Common\Roslyn\DiagnosticDescriptorHelper.cs" />
     <Compile Include="$(CommonPath)Roslyn\GetBestTypeByMetadataName.cs" Link="Common\Roslyn\GetBestTypeByMetadataName.cs" />
-    <Compile Include="..\Common\DefaultMarshallingInfoParser.cs" Link="Common\DefaultMarshallingInfoParser.cs" />
     <Compile Include="..\Common\OperationExtensions.cs" Link="Common\OperationExtensions.cs" />
     <Compile Include="..\Common\ConvertToSourceGeneratedInteropFixer.cs" Link="Common\ConvertToSourceGeneratedInteropFixer.cs" />
     <Compile Include="..\Common\FixAllContextExtensions.cs" Link="Common\FixAllContextExtensions.cs" />
+    <Compile Include="../Common/LibraryImportData.cs" Link="Common/LibraryImportData.cs" />
+    <Compile Include="../Common/UnreachableException.cs" Link="Common/UnreachableException.cs" />
   </ItemGroup>
 
 </Project>

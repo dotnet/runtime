@@ -9,6 +9,29 @@ namespace System.Buffers.Text.Tests
 {
     public class Base64ValidationUnitTests : Base64TestBase
     {
+        [Theory]
+        [InlineData("=   ")]
+        [InlineData("=  =")]
+        [InlineData("+ +=")]
+        [InlineData("A=")]
+        [InlineData("A==")]
+        [InlineData("44==")]
+        [InlineData(" A==")]
+        [InlineData("AAAAA ==")]
+        [InlineData("\tLLLL\t=\r")]
+        [InlineData("6066=")]
+        [InlineData("6066==")]
+        [InlineData("SM==")]
+        [InlineData("SM =")]
+        [InlineData("s\rEs\r\r==")]
+        public void BasicValidationEdgeCaseScenario(string base64UrlText)
+        {
+            Assert.False(Base64.IsValid(base64UrlText.AsSpan(), out int decodedLength));
+            Assert.Equal(0, decodedLength);
+            Span<byte> dest = new byte[Base64.GetMaxDecodedFromUtf8Length(base64UrlText.Length)];
+            Assert.Equal(OperationStatus.InvalidData, Base64.DecodeFromUtf8(base64UrlText.ToUtf8Span(), dest, out _, out _));
+        }
+
         [Fact]
         public void BasicValidationBytes()
         {
@@ -69,6 +92,7 @@ namespace System.Buffers.Text.Tests
                 } while (numBytes % 4 == 0);    // ensure we have a invalid length
 
                 Span<byte> source = new byte[numBytes];
+                Base64TestHelper.InitializeDecodableBytes(source, numBytes);
 
                 Assert.False(Base64.IsValid(source));
                 Assert.False(Base64.IsValid(source, out int decodedLength));
@@ -88,10 +112,16 @@ namespace System.Buffers.Text.Tests
                     numBytes = rnd.Next(100, 1000 * 1000);
                 } while (numBytes % 4 == 0);    // ensure we have a invalid length
 
-                Span<char> source = new char[numBytes];
+                Span<byte> source = new byte[numBytes];
+                Base64TestHelper.InitializeDecodableBytes(source, numBytes);
+                Span<char> chars = source
+                    .ToArray()
+                    .Select(Convert.ToChar)
+                    .ToArray()
+                    .AsSpan();
 
-                Assert.False(Base64.IsValid(source));
-                Assert.False(Base64.IsValid(source, out int decodedLength));
+                Assert.False(Base64.IsValid(chars));
+                Assert.False(Base64.IsValid(chars, out int decodedLength));
                 Assert.Equal(0, decodedLength);
             }
         }
@@ -267,7 +297,7 @@ namespace System.Buffers.Text.Tests
         [InlineData("Y")]
         public void InvalidSizeChars(string utf8WithByteToBeIgnored)
         {
-            byte[] utf8BytesWithByteToBeIgnored = UTF8Encoding.UTF8.GetBytes(utf8WithByteToBeIgnored);
+            ReadOnlySpan<char> utf8BytesWithByteToBeIgnored = utf8WithByteToBeIgnored;
 
             Assert.False(Base64.IsValid(utf8BytesWithByteToBeIgnored));
             Assert.False(Base64.IsValid(utf8BytesWithByteToBeIgnored, out int decodedLength));
@@ -329,10 +359,10 @@ namespace System.Buffers.Text.Tests
         [InlineData("    a    ")]
         public void InvalidBase64Chars(string utf8WithByteToBeIgnored)
         {
-            byte[] utf8BytesWithByteToBeIgnored = UTF8Encoding.UTF8.GetBytes(utf8WithByteToBeIgnored);
+            ReadOnlySpan<char> utf8CharsWithCharToBeIgnored = utf8WithByteToBeIgnored;
 
-            Assert.False(Base64.IsValid(utf8BytesWithByteToBeIgnored));
-            Assert.False(Base64.IsValid(utf8BytesWithByteToBeIgnored, out int decodedLength));
+            Assert.False(Base64.IsValid(utf8CharsWithCharToBeIgnored));
+            Assert.False(Base64.IsValid(utf8CharsWithCharToBeIgnored, out int decodedLength));
             Assert.Equal(0, decodedLength);
         }
     }

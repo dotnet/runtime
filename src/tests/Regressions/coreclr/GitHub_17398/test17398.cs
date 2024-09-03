@@ -3,10 +3,11 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 // Repro case for https://github.com/dotnet/coreclr/pull/17398
 
-class X
+public class X
 {
     static int v;
 
@@ -63,7 +64,8 @@ class X
         }
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         v = 1;
         int r = 0;

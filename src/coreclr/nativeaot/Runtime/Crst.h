@@ -18,13 +18,11 @@ enum CrstType
     CrstInterfaceDispatchGlobalLists,
     CrstStressLog,
     CrstRestrictedCallouts,
-    CrstObjectiveCMarshalCallouts,
     CrstGcStressControl,
     CrstThreadStore,
-    CrstThunkPool,
-    CrstYieldProcessorNormalized,
     CrstEventPipe,
     CrstEventPipeConfig,
+    CrstGcEvent,
 };
 
 enum CrstFlags

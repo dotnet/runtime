@@ -27,6 +27,7 @@ namespace Microsoft.Interop
             public const string AnalysisFailed = Prefix + "1093";
             public const string BaseInterfaceFailedGeneration = Prefix + "1094";
             public const string InvalidGeneratedComClassAttributeUsage = Prefix + "1095";
+            public const string BaseInterfaceDefinedInOtherAssembly = Prefix + "1230";
         }
 
         private const string Category = "ComInterfaceGenerator";
@@ -425,10 +426,10 @@ namespace Microsoft.Interop
                 DiagnosticSeverity.Info,
                 isEnabledByDefault: true,
                 description: GetResourceString(nameof(SR.UnnecessaryMarshallingInfoDescription)),
-                customTags: new[]
-                {
+                customTags:
+                [
                     WellKnownDiagnosticTags.Unnecessary
-                });
+                ]);
 
         /// <inheritdoc cref="SR.UnnecessaryReturnMarshallingInfoMessage"/>
         public static readonly DiagnosticDescriptor UnnecessaryReturnMarshallingInfo =
@@ -440,10 +441,10 @@ namespace Microsoft.Interop
                 DiagnosticSeverity.Info,
                 isEnabledByDefault: true,
                 description: GetResourceString(nameof(SR.UnnecessaryMarshallingInfoDescription)),
-                customTags: new[]
-                {
+                customTags:
+                [
                     WellKnownDiagnosticTags.Unnecessary
-                });
+                ]);
 
         /// <inheritdoc cref="SR.SizeOfCollectionMustBeKnownAtMarshalTimeMessageOutParam"/>
         public static readonly DiagnosticDescriptor SizeOfInCollectionMustBeDefinedAtCallOutParam =
@@ -477,13 +478,35 @@ namespace Microsoft.Interop
 
         /// <inheritdoc cref="SR.HResultTypeWillBeTreatedAsStructMessage"/>
         public static readonly DiagnosticDescriptor HResultTypeWillBeTreatedAsStruct =
-            new DiagnosticDescriptor(
+            DiagnosticDescriptorHelper.Create(
                 Ids.NotRecommendedGeneratedComInterfaceUsage,
                 GetResourceString(nameof(SR.HResultTypeWillBeTreatedAsStructTitle)),
                 GetResourceString(nameof(SR.HResultTypeWillBeTreatedAsStructMessage)),
                 Category,
                 DiagnosticSeverity.Info,
                 isEnabledByDefault: true);
+
+        /// <inheritdoc cref="SR.ComInterfaceUsageDoesNotFollowBestPracticesMessageWithDetails"/>
+        public static readonly DiagnosticDescriptor GeneratedComInterfaceUsageDoesNotFollowBestPractices =
+            new DiagnosticDescriptor(
+                Ids.NotRecommendedGeneratedComInterfaceUsage,
+                GetResourceString(nameof(SR.ComInterfaceUsageDoesNotFollowBestPracticesTitle)),
+                GetResourceString(nameof(SR.ComInterfaceUsageDoesNotFollowBestPracticesMessageWithDetails)),
+                Category,
+                DiagnosticSeverity.Info,
+                isEnabledByDefault: true,
+                helpLinkUri: "aka.ms/GeneratedComInterfaceUsage");
+
+        /// <inheritdoc cref="SR.BaseInterfaceDefinedInOtherAssemblyMessage" />
+        public static readonly DiagnosticDescriptor BaseInterfaceDefinedInOtherAssembly =
+            new DiagnosticDescriptor(
+                Ids.BaseInterfaceDefinedInOtherAssembly,
+                GetResourceString(nameof(SR.BaseInterfaceDefinedInOtherAssemblyTitle)),
+                GetResourceString(nameof(SR.BaseInterfaceDefinedInOtherAssemblyMessage)),
+                Category,
+                DiagnosticSeverity.Warning,
+                isEnabledByDefault: true,
+                helpLinkUri: "aka.ms/GeneratedComInterfaceUsage");
 
         /// <summary>
         /// Report diagnostic for invalid configuration for string marshalling.

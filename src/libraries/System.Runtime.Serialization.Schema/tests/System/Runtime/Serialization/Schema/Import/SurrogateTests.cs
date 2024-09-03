@@ -59,7 +59,7 @@ namespace System.Runtime.Serialization.Schema.Tests
             Assert.Contains(@"public partial class SerializableSquare : object, System.Runtime.Serialization.IExtensibleDataObject", code);
 
             Assert.Contains(@"namespace System.Runtime.Serialization.Schema.Tests.DataContracts", code);
-            Assert.Matches(@"\[System.Runtime.Serialization.DataContractAttribute\(Name\s*=\s*""SerializableNode"", Namespace\s*=\s*""http://schemas.datacontract.org/2004/07/System.Runtime.Serialization.Schema.Tests""\s*\+\s*"".DataContracts""\)\]\s*public partial class SerializableNode : object, System.Runtime.Serialization.IExtensibleDataObject", code);
+            Assert.Matches(@"\[System.Runtime.Serialization.DataContractAttribute\(Name\s*=\s*""SerializableNode"", Namespace\s*=\s*\(""http://schemas.datacontract.org/2004/07/System.Runtime.Serialization.Schema.Tests""\s*\+\s*"".DataContracts""\)\)\]\s*public partial class SerializableNode : object, System.Runtime.Serialization.IExtensibleDataObject", code);
             Assert.Matches(@"\[System.Xml.Serialization.XmlSchemaProviderAttribute\(""ExportSchema""\)\]\s*\[System.Xml.Serialization.XmlRootAttribute\(ElementName\s*=\s*""XmlSerializerPersonElement"", Namespace\s*=\s*""""\)\]\s*public partial class XmlSerializerPerson : object, System.Xml.Serialization.IXmlSerializable", code);
         }
 
@@ -92,7 +92,7 @@ namespace System.Runtime.Serialization.Schema.Tests
             Assert.Matches(@"\[System.Runtime.Serialization.DataMemberAttribute\(\)\]\s*public System.Runtime.Serialization.Schema.Tests.DataContracts.SerializableCircle Circle", code);
 
             Assert.Contains(@"namespace System.Runtime.Serialization.Schema.Tests.DataContracts", code);
-            Assert.Matches(@"\[System.Runtime.Serialization.DataContractAttribute\(Name\s*=\s*""SerializableNode"", Namespace\s*=\s*""http://schemas.datacontract.org/2004/07/System.Runtime.Serialization.Schema.Tests""\s*\+\s*"".DataContracts""\)\]\s*public partial class SerializableNode : object, System.Runtime.Serialization.IExtensibleDataObject", code);
+            Assert.Matches(@"\[System.Runtime.Serialization.DataContractAttribute\(Name\s*=\s*""SerializableNode"", Namespace\s*=\s*\(""http://schemas.datacontract.org/2004/07/System.Runtime.Serialization.Schema.Tests""\s*\+\s*"".DataContracts""\)\)\]\s*public partial class SerializableNode : object, System.Runtime.Serialization.IExtensibleDataObject", code);
             Assert.Matches(@"\[System.Xml.Serialization.XmlSchemaProviderAttribute\(""ExportSchema""\)\]\s*\[System.Xml.Serialization.XmlRootAttribute\(ElementName\s*=\s*""XmlSerializerPersonElement"", Namespace\s*=\s*""""\)\]\s*public partial class XmlSerializerPerson : object, System.Xml.Serialization.IXmlSerializable", code);
             Assert.DoesNotContain(@"public partial class SerializableSquare : object, System.Runtime.Serialization.IExtensibleDataObject", code);
         }

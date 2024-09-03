@@ -14,7 +14,7 @@ __attribute__((import_name("sock_accept")))
 int sock_accept(int fd, int fdflags, int* result_ptr);
 
 static long long
-time_in_milliseconds ()
+time_in_milliseconds (void)
 {
 	struct timeval tv;
 	gettimeofday(&tv,NULL);

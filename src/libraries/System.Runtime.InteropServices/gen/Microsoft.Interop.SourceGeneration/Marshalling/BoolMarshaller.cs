@@ -11,7 +11,7 @@ using static Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
 
 namespace Microsoft.Interop
 {
-    public abstract class BoolMarshallerBase : IMarshallingGenerator
+    public abstract class BoolMarshallerBase : IUnboundMarshallingGenerator
     {
         private readonly ManagedTypeInfo _nativeType;
         private readonly int _trueValue;
@@ -26,11 +26,9 @@ namespace Microsoft.Interop
             _compareToTrue = compareToTrue;
         }
 
-        public bool IsSupported(TargetFramework target, Version version) => true;
-
         public ManagedTypeInfo AsNativeType(TypePositionInfo info)
         {
-            Debug.Assert(info.ManagedType is SpecialTypeInfo(_, _, SpecialType.System_Boolean));
+            Debug.Assert(info.ManagedType is SpecialTypeInfo { SpecialType: SpecialType.System_Boolean });
             return _nativeType;
         }
 
@@ -49,15 +47,15 @@ namespace Microsoft.Interop
             return ValueBoundaryBehavior.NativeIdentifier;
         }
 
-        public IEnumerable<StatementSyntax> Generate(TypePositionInfo info, StubCodeContext context)
+        public IEnumerable<StatementSyntax> Generate(TypePositionInfo info, StubCodeContext codeContext, StubIdentifierContext context)
         {
-            MarshalDirection elementMarshalDirection = MarshallerHelpers.GetMarshalDirection(info, context);
+            MarshalDirection elementMarshalDirection = MarshallerHelpers.GetMarshalDirection(info, codeContext);
             (string managedIdentifier, string nativeIdentifier) = context.GetIdentifiers(info);
             switch (context.CurrentStage)
             {
-                case StubCodeContext.Stage.Setup:
+                case StubIdentifierContext.Stage.Setup:
                     break;
-                case StubCodeContext.Stage.Marshal:
+                case StubIdentifierContext.Stage.Marshal:
                     // <nativeIdentifier> = (<nativeType>)(<managedIdentifier> ? _trueValue : _falseValue);
                     if (elementMarshalDirection is MarshalDirection.ManagedToUnmanaged or MarshalDirection.Bidirectional)
                     {
@@ -74,7 +72,7 @@ namespace Microsoft.Interop
                     }
 
                     break;
-                case StubCodeContext.Stage.Unmarshal:
+                case StubIdentifierContext.Stage.Unmarshal:
                     if (elementMarshalDirection is MarshalDirection.UnmanagedToManaged or MarshalDirection.Bidirectional)
                     {
                         // <managedIdentifier> = <nativeIdentifier> == _trueValue;
@@ -99,15 +97,15 @@ namespace Microsoft.Interop
 
         public bool UsesNativeIdentifier(TypePositionInfo info, StubCodeContext context) => true;
 
-        public ByValueMarshalKindSupport SupportsByValueMarshalKind(ByValueContentsMarshalKind marshalKind, TypePositionInfo info, StubCodeContext context, out GeneratorDiagnostic? diagnostic)
-            => ByValueMarshalKindSupportDescriptor.Default.GetSupport(marshalKind, info, context, out diagnostic);
+        public ByValueMarshalKindSupport SupportsByValueMarshalKind(ByValueContentsMarshalKind marshalKind, TypePositionInfo info, out GeneratorDiagnostic? diagnostic)
+            => ByValueMarshalKindSupportDescriptor.Default.GetSupport(marshalKind, info, out diagnostic);
     }
 
     /// <summary>
     /// Marshals a boolean value as 1 byte.
     /// </summary>
     /// <remarks>
-    /// This boolean type is the natural size of a boolean in the CLR (<see href="https://www.ecma-international.org/publications/standards/Ecma-335.htm">ECMA-335 (III.1.1.2)</see>).
+    /// This boolean type is the natural size of a boolean in the CLR (<see href="https://www.ecma-international.org/publications-and-standards/standards/ecma-335/">ECMA-335 (III.1.1.2)</see>).
     ///
     /// This is typically compatible with <see href="https://en.cppreference.com/w/c/types/boolean">C99</see>
     /// and <see href="https://en.cppreference.com/w/cpp/language/types">C++</see>, but those is implementation defined.
@@ -120,7 +118,7 @@ namespace Microsoft.Interop
         /// </summary>
         /// <param name="signed">True if the byte should be signed, otherwise false</param>
         public ByteBoolMarshaller(bool signed)
-            : base(new SpecialTypeInfo(signed ? "sbyte" : "byte", signed ? "sbyte" : "byte", signed ? SpecialType.System_SByte : SpecialType.System_Byte), trueValue: 1, falseValue: 0, compareToTrue: false)
+            : base(signed ? SpecialTypeInfo.SByte : SpecialTypeInfo.Byte, trueValue: 1, falseValue: 0, compareToTrue: false)
         {
         }
     }
@@ -129,7 +127,7 @@ namespace Microsoft.Interop
     /// Marshals a boolean value as a 4-byte integer.
     /// </summary>
     /// <remarks>
-    /// Corresponds to the definition of <see href="https://docs.microsoft.com/windows/win32/winprog/windows-data-types">BOOL</see>.
+    /// Corresponds to the definition of <see href="https://learn.microsoft.com/windows/win32/winprog/windows-data-types">BOOL</see>.
     /// </remarks>
     public sealed class WinBoolMarshaller : BoolMarshallerBase
     {
@@ -138,7 +136,7 @@ namespace Microsoft.Interop
         /// </summary>
         /// <param name="signed">True if the int should be signed, otherwise false</param>
         public WinBoolMarshaller(bool signed)
-            : base(new SpecialTypeInfo(signed ? "int" : "uint", signed ? "int" : "uint", signed ? SpecialType.System_Int32 : SpecialType.System_UInt32), trueValue: 1, falseValue: 0, compareToTrue: false)
+            : base(signed ? SpecialTypeInfo.Int32 : SpecialTypeInfo.UInt32, trueValue: 1, falseValue: 0, compareToTrue: false)
         {
         }
     }
@@ -151,7 +149,7 @@ namespace Microsoft.Interop
         private const short VARIANT_TRUE = -1;
         private const short VARIANT_FALSE = 0;
         public VariantBoolMarshaller()
-            : base(new SpecialTypeInfo("short", "short", SpecialType.System_Int16), trueValue: VARIANT_TRUE, falseValue: VARIANT_FALSE, compareToTrue: true)
+            : base(SpecialTypeInfo.Int16, trueValue: VARIANT_TRUE, falseValue: VARIANT_FALSE, compareToTrue: true)
         {
         }
     }

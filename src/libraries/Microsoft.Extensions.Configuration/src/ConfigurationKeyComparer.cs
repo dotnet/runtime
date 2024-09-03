@@ -69,7 +69,7 @@ namespace Microsoft.Extensions.Configuration
 
             static int Compare(ReadOnlySpan<char> a, ReadOnlySpan<char> b)
             {
-#if NETCOREAPP
+#if NET
                 bool aIsInt = int.TryParse(a, out int value1);
                 bool bIsInt = int.TryParse(b, out int value2);
 #else

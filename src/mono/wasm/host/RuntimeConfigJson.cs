@@ -24,7 +24,7 @@ internal sealed record WasmHostProperties(
      int? FirefoxDebuggingPort,
      int? ChromeProxyPort,
      int? ChromeDebuggingPort,
-     int WebServerPort = 9000)
+     int WebServerPort = 0)
 {
     // using an explicit property because the deserializer doesn't like
     // extension data in the record constructor

@@ -4,6 +4,7 @@
 #nullable enable
 
 using System;
+using System.Collections.Generic;
 using System.IO;
 using Xunit.Abstractions;
 using Xunit.Sdk;
@@ -47,19 +48,23 @@ public abstract class TestMainJsTestBase : BuildTestBase
             File.Copy(
                 Path.Combine(
                     AppContext.BaseDirectory,
-                    string.IsNullOrEmpty(options.TargetFramework) || options.TargetFramework == "net8.0"
-                        ? "test-main.js"
-                        : "data/test-main-7.0.js"
+                    options.TargetFramework == "net7.0"
+                        ? "data/test-main-7.0.js"
+                        : "test-main.js"
                 ),
                 Path.Combine(_projectDir, "test-main.js")
             );
 
-            File.WriteAllText(Path.Combine(_projectDir!, "index.html"), @"<html><body><script type=""module"" src=""test-main.js""></script></body></html>");
+            File.WriteAllText(Path.Combine(_projectDir!, "index.html"), @"<!DOCTYPE html><html><body><script type=""module"" src=""test-main.js""></script></body></html>");
         }
         else if (_projectDir is null)
         {
             throw new Exception("_projectDir should be set, to use options.createProject=false");
         }
+
+        if (options.ExtraBuildEnvironmentVariables is null)
+            options = options with { ExtraBuildEnvironmentVariables = new Dictionary<string, string>() };
+        options.ExtraBuildEnvironmentVariables["ForceNet8Current"] = "false";
 
         try
         {

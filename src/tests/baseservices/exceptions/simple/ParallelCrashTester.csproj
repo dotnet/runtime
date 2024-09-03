@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <CLRTestPriority>1</CLRTestPriority>
+    <!-- Needed for GCStressIncompatible -->
+    <RequiresProcessIsolation>true</RequiresProcessIsolation>
+    <!-- Temporarily disabled due to https://github.com/dotnet/runtime/issues/80356 -->
+    <GCStressIncompatible>true</GCStressIncompatible>
+    <!-- Test expects corerun -->
+    <NativeAotIncompatible>true</NativeAotIncompatible>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="ParallelCrashTester.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="ParallelCrash.csproj">
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+      <OutputItemType>Content</OutputItemType>
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </ProjectReference>
+  </ItemGroup>
+</Project>

@@ -12,6 +12,8 @@ namespace System.Text.Json.Serialization.Tests
 {
     public abstract partial class ConstructorTests : SerializerTests
     {
+        private static readonly JsonSerializerOptions s_respectRequiredParamsOptions = new() { RespectRequiredConstructorParameters = true };
+
         public ConstructorTests(JsonSerializerWrapper stringSerializer)
             : base(stringSerializer)
         {
@@ -930,7 +932,7 @@ namespace System.Text.Json.Serialization.Tests
         {
             var options1 = new JsonSerializerOptions
             {
-                PropertyNamingPolicy = new SimpleSnakeCasePolicy()
+                PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseLower
             };
 
             string json = @"{""x_VaLUE"":1,""Y_vALue"":2}";
@@ -942,7 +944,7 @@ namespace System.Text.Json.Serialization.Tests
 
             var options2 = new JsonSerializerOptions
             {
-                PropertyNamingPolicy = new SimpleSnakeCasePolicy(),
+                PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseLower,
                 PropertyNameCaseInsensitive = true,
             };
 
@@ -1603,6 +1605,14 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
+        public async Task TestClassWithManyDefaultParams()
+        {
+            string json = "{}";
+            Class_With_Parameters_Default_Values result = await Serializer.DeserializeWrapper<Class_With_Parameters_Default_Values>(json);
+            result.Verify();
+        }
+        
+        [Fact]
         public async Task TestClassWithCustomConverterOnCtorParameter_ShouldPassCorrectTypeToConvertParameter()
         {
             ClassWithCustomConverterOnCtorParameter result = await Serializer.DeserializeWrapper<ClassWithCustomConverterOnCtorParameter>("""{"Id":"id"}""");
@@ -1627,6 +1637,36 @@ namespace System.Text.Json.Serialization.Tests
 
             public override void Write(Utf8JsonWriter writer, string value, JsonSerializerOptions options)
                 => writer.WriteStringValue(value);
+        }
+
+        [Fact]
+        public async Task RespectRequiredConstructorParameters_RequiredParameterMissing_ThrowsJsonException()
+        {
+            string json = """{"X":1,"Z":3}""";
+            JsonException ex = await Assert.ThrowsAsync<JsonException>(() => Serializer.DeserializeWrapper<Point_3D>(json, s_respectRequiredParamsOptions));
+            Assert.DoesNotContain("'X'", ex.Message);
+            Assert.Contains("'Y'", ex.Message);
+            Assert.DoesNotContain("'Z'", ex.Message);
+        }
+
+        [Fact]
+        public async Task RespectRequiredConstructorParameters_OptionalParameterMissing_Succeeds()
+        {
+            string json = """{"X":1,"Y":2}""";
+            Point_3D result = await Serializer.DeserializeWrapper<Point_3D>(json, s_respectRequiredParamsOptions);
+            Assert.Equal(1, result.X);
+            Assert.Equal(2, result.Y);
+            Assert.Equal(50, result.Z);
+        }
+
+        [Fact]
+        public async Task RespectRequiredConstructorParameters_NoParameterMissing_Succeeds()
+        {
+            string json = """{"X":1,"Y":2,"Z":3}""";
+            Point_3D result = await Serializer.DeserializeWrapper<Point_3D>(json, s_respectRequiredParamsOptions);
+            Assert.Equal(1, result.X);
+            Assert.Equal(2, result.Y);
+            Assert.Equal(3, result.Z);
         }
     }
 }

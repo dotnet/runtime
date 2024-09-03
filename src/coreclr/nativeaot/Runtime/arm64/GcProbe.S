@@ -4,12 +4,12 @@
 #include <unixasmmacros.inc>
 #include "AsmOffsets.inc"
 
-PROBE_FRAME_SIZE = 0xD0  // 4 * 8  for fixed part of PInvokeTransitionFrame (fp, lr, m_pThread, m_Flags) +
-                         // 10 * 8 for callee saved registers +
-                         // 1 * 8  for caller SP +
-                         // 2 * 8  for int returns +
-                         // 1 * 8  for alignment padding +
-                         // 4 * 16 for FP/HFA/HVA returns
+#define PROBE_FRAME_SIZE 0xD0  // 4 * 8  for fixed part of PInvokeTransitionFrame (fp, lr, m_pThread, m_Flags) +
+                               // 10 * 8 for callee saved registers +
+                               // 1 * 8  for caller SP +
+                               // 2 * 8  for int returns +
+                               // 1 * 8  for alignment padding +
+                               // 4 * 16 for FP/HFA/HVA returns
 
 // See PUSH_COOP_PINVOKE_FRAME, this macro is very similar, but also saves return registers
 // and accepts the register bitmask
@@ -127,10 +127,10 @@ NESTED_ENTRY RhpGcProbeHijack, _TEXT, NoHandler
     FixupHijackedCallstack
 
     PREPARE_EXTERNAL_VAR_INDIRECT_W RhpTrapThreads, 3
-    tbnz        x3, #TrapThreadsFlags_TrapThreads_Bit, WaitForGC
+    tbnz        x3, #TrapThreadsFlags_TrapThreads_Bit, LOCAL_LABEL(WaitForGC)
     ret
 
-WaitForGC:
+LOCAL_LABEL(WaitForGC):
     orr         x12, x12, DEFAULT_FRAME_SAVE_FLAGS + PTFF_SAVE_X0 + PTFF_SAVE_X1
     b           C_FUNC(RhpWaitForGC)
 NESTED_END RhpGcProbeHijack
@@ -144,11 +144,14 @@ NESTED_ENTRY RhpWaitForGC, _TEXT, NoHandler
     bl          C_FUNC(RhpWaitForGC2)
 
     ldr         x2, [sp, #OFFSETOF__PInvokeTransitionFrame__m_Flags]
-    tbnz        x2, #PTFF_THREAD_ABORT_BIT, ThrowThreadAbort
+    tbnz        x2, #PTFF_THREAD_ABORT_BIT, LOCAL_LABEL(ThrowThreadAbort)
 
+    .cfi_remember_state
     POP_PROBE_FRAME
     EPILOG_RETURN
-ThrowThreadAbort:
+
+    .cfi_restore_state
+LOCAL_LABEL(ThrowThreadAbort):
     POP_PROBE_FRAME
     mov w0, #STATUS_REDHAWK_THREAD_ABORT
     mov x1, lr // return address as exception PC
@@ -159,8 +162,10 @@ NESTED_END RhpWaitForGC
 
 LEAF_ENTRY RhpGcPoll
     PREPARE_EXTERNAL_VAR_INDIRECT_W RhpTrapThreads, 0
-    cbnz    w0, C_FUNC(RhpGcPollRare) // TrapThreadsFlags_None = 0
+    cbnz    w0, LOCAL_LABEL(RhpGcPoll_Rare) // TrapThreadsFlags_None = 0
     ret
+LOCAL_LABEL(RhpGcPoll_Rare):
+    b C_FUNC(RhpGcPollRare)
 LEAF_END RhpGcPoll
 
 NESTED_ENTRY RhpGcPollRare, _TEXT, NoHandler

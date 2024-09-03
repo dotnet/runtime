@@ -34,6 +34,7 @@ namespace Microsoft.WebAssembly.Build.Tasks
         public string?      WorkingDirectory       { get; set; }
         public string       OutputMessageImportance{ get; set; } = "Low";
         public string?      MessageToIndicateCompiling { get; set; }
+        public string       CompilerBinaryPath     { get; set; } = "emcc";
 
         [Output]
         public ITaskItem[]? OutputFiles            { get; private set; }
@@ -130,7 +131,8 @@ namespace Microsoft.WebAssembly.Build.Tasks
                 Directory.CreateDirectory(_tempPath);
 
                 int allowedParallelism = DisableParallelCompile ? 1 : Math.Min(SourceFiles.Length, Environment.ProcessorCount);
-                if (BuildEngine is IBuildEngine9 be9)
+                IBuildEngine9? be9 = BuildEngine as IBuildEngine9;
+                if (be9 is not null)
                     allowedParallelism = be9.RequestCores(allowedParallelism);
 
                 /*
@@ -159,17 +161,24 @@ namespace Microsoft.WebAssembly.Build.Tasks
 
                     Instead, we want to use work-stealing so jobs can be run by any partition.
                 */
-                ParallelLoopResult result = Parallel.ForEach(
+                try
+                {
+                    ParallelLoopResult result = Parallel.ForEach(
                                                 Partitioner.Create(filesToCompile, EnumerablePartitionerOptions.NoBuffering),
                                                 new ParallelOptions { MaxDegreeOfParallelism = allowedParallelism },
                                                 (toCompile, state) =>
+                    {
+                        if (!ProcessSourceFile(toCompile.Item1, toCompile.Item2))
+                            state.Stop();
+                    });
+                    if (!result.IsCompleted && !Log.HasLoggedErrors)
+                        Log.LogError("Unknown failure occurred while compiling. Check logs to get more details.");
+                }
+                finally
                 {
-                    if (!ProcessSourceFile(toCompile.Item1, toCompile.Item2))
-                        state.Stop();
-                });
+                    be9?.ReleaseCores(allowedParallelism);
+                }
 
-                if (!result.IsCompleted && !Log.HasLoggedErrors)
-                    Log.LogError("Unknown failure occurred while compiling. Check logs to get more details.");
 
                 if (!Log.HasLoggedErrors)
                 {
@@ -192,7 +201,7 @@ namespace Microsoft.WebAssembly.Build.Tasks
                 string tmpObjFile = Path.GetTempFileName();
                 try
                 {
-                    string command = $"emcc {Arguments} -c -o \"{tmpObjFile}\" \"{srcFile}\"";
+                    string command = $"\"{CompilerBinaryPath}\" {Arguments} -c -o \"{tmpObjFile}\" \"{srcFile}\"";
                     var startTime = DateTime.Now;
 
                     // Log the command in a compact format which can be copy pasted

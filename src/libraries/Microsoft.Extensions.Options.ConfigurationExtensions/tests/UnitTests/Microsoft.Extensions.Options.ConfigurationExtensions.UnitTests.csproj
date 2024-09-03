@@ -16,6 +16,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Compile Include="..\Common\ConfigurationExtensionsTests.cs" Link="Common\ConfigurationExtensionsTests.cs" />
     <Compile Include="..\Common\FakeConfigurationProvider.cs" Link="Common\FakeConfigurationProvider.cs" />
     <Compile Include="..\Common\FakeConfigurationSource.cs" Link="Common\FakeConfigurationSource.cs" />
     <Compile Include="..\Common\FakeOptions.cs" Link="Common\FakeOptions.cs" />

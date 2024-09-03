@@ -254,6 +254,16 @@ namespace Microsoft.Interop
                 DiagnosticSeverity.Warning,
                 isEnabledByDefault: true);
 
+        /// <inheritdoc cref="SR.LibraryImportUsageDoesNotFollowBestPracticesMessageWithDetails"/>
+        public static readonly DiagnosticDescriptor LibraryImportUsageDoesNotFollowBestPractices =
+            new DiagnosticDescriptor(
+                Ids.NotRecommendedGeneratedComInterfaceUsage,
+                GetResourceString(nameof(SR.LibraryImportUsageDoesNotFollowBestPracticesTitle)),
+                GetResourceString(nameof(SR.LibraryImportUsageDoesNotFollowBestPracticesMessageWithDetails)),
+                Category,
+                DiagnosticSeverity.Info,
+                isEnabledByDefault: true);
+
         /// <summary>
         /// Report diagnostic for invalid configuration for string marshalling.
         /// </summary>

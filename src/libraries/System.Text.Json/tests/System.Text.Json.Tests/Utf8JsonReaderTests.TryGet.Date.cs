@@ -116,7 +116,7 @@ namespace System.Text.Json.Tests
                 try
                 {
                     DateTime value = json.GetDateTime();
-                    Assert.True(false, "Expected GetDateTime to throw FormatException due to invalid ISO 8601 input.");
+                    Assert.Fail("Expected GetDateTime to throw FormatException due to invalid ISO 8601 input.");
                 }
                 catch (FormatException)
                 { }
@@ -140,7 +140,7 @@ namespace System.Text.Json.Tests
                     try
                     {
                         DateTimeOffset value = json.GetDateTimeOffset();
-                        Assert.True(false, "Expected GetDateTimeOffset to throw FormatException due to invalid ISO 8601 input.");
+                        Assert.Fail("Expected GetDateTimeOffset to throw FormatException due to invalid ISO 8601 input.");
                     }
                     catch (FormatException)
                     { }

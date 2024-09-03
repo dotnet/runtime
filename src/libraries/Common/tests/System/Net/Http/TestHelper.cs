@@ -96,7 +96,7 @@ namespace System.Net.Http.Functional.Tests
             return TaskTimeoutExtensions.WhenAllOrAnyFailed(tasks, timeoutInMilliseconds);
         }
 
-#if NETCOREAPP
+#if NET
         public static Func<HttpRequestMessage, X509Certificate2, X509Chain, SslPolicyErrors, bool> AllowAllCertificates = HttpClientHandler.DangerousAcceptAnyServerCertificateValidator;
 #else
         public static Func<HttpRequestMessage, X509Certificate2, X509Chain, SslPolicyErrors, bool> AllowAllCertificates = (_, __, ___, ____) => true;
@@ -142,14 +142,14 @@ namespace System.Net.Http.Functional.Tests
                 X509Certificate2 cert = req.CreateSelfSigned(start, end);
                 if (PlatformDetection.IsWindows)
                 {
-                    cert = new X509Certificate2(cert.Export(X509ContentType.Pfx), (string?)null);
+                    cert = X509CertificateLoader.LoadPkcs12(cert.Export(X509ContentType.Pfx), (string?)null);
                 }
 
                 return cert;
             }
         }
 
-#if NETCOREAPP
+#if NET
         public static SocketsHttpHandler CreateSocketsHttpHandler(bool allowAllCertificates = false)
         {
             var handler = new SocketsHttpHandler();

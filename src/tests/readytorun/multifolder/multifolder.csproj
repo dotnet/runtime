@@ -1,6 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <OutputType>exe</OutputType>
+    <!-- Needed for GCStressIncompatible, CrossGenTest -->
+    <RequiresProcessIsolation>true</RequiresProcessIsolation>
     <!-- Running Crossgen2 under GCStress takes too long -->
     <GCStressIncompatible>true</GCStressIncompatible>
     <AllowUnsafeBlocks>false</AllowUnsafeBlocks>
@@ -19,8 +20,16 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="FolderA/FolderA.csproj" />
-    <ProjectReference Include="FolderB/FolderB.csproj" />
+    <ProjectReference Include="FolderA/FolderA.csproj">
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+      <OutputItemType>Content</OutputItemType>
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </ProjectReference>
+    <ProjectReference Include="FolderB/FolderB.csproj">
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+      <OutputItemType>Content</OutputItemType>
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </ProjectReference>
   </ItemGroup>
 
   <PropertyGroup>
@@ -39,21 +48,15 @@ $(CLRTestBatchPreCommands)
     echo --targetarch:$(TargetArchitecture)>>%__ResponseFile%
     echo --targetos:$(TargetOS)>>%__ResponseFile%
     echo %scriptPath%\multifolder.dll>>%__ResponseFile%
-    echo %scriptPath%\..\FolderA\FolderA\FolderA.dll>>%__ResponseFile%
-    echo %scriptPath%\..\FolderB\FolderB\FolderB.dll>>%__ResponseFile%
+    echo %scriptPath%\FolderA.dll>>%__ResponseFile%
+    echo %scriptPath%\FolderB.dll>>%__ResponseFile%
 
     REM Suppress GC stand alone mode for the duration of Crossgen2 execution
     set __gcStandaloneModeToRestore=!DOTNET_GCName!
     set DOTNET_GCName=
 
     set __Command=%_DebuggerFullPath%
-    REM Tests run locally need __TestDotNetCmd (set by runtest.py) or a compatible 5.0 dotnet runtime in the path
-    if defined __TestDotNetCmd (
-        set __Command=!__Command! "!__TestDotNetCmd!"
-    ) else (
-        set __Command=!__Command! "dotnet"
-    )
-    set __Command=%__Command% "%CORE_ROOT%\crossgen2\crossgen2.dll"
+    set __Command=%__Command% "%CORE_ROOT%\crossgen2\crossgen2.exe"
     set __Command=%__Command% @"%__ResponseFile%"
 
     REM work around problems in 6.0 OSR
@@ -90,20 +93,13 @@ $(CLRTestBashPreCommands)
     echo --targetarch:$(TargetArchitecture)>>$__ResponseFile
     echo --targetos:$(TargetOS)>>$__ResponseFile
     echo $__OutputDir/multifolder.dll>>$__ResponseFile
-    echo $__OutputDir/../FolderA/FolderA/FolderA.dll>>$__ResponseFile
-    echo $__OutputDir/../FolderB/FolderB/FolderB.dll>>$__ResponseFile
+    echo $__OutputDir/FolderA.dll>>$__ResponseFile
+    echo $__OutputDir/FolderB.dll>>$__ResponseFile
 
     # Suppress some DOTNET variables for the duration of Crossgen2 execution
     export -n DOTNET_GCName DOTNET_GCStress DOTNET_HeapVerify DOTNET_ReadyToRun DOTNET_TC_OnStackReplacement DOTNET_TC_PartialCompilation
 
-    __Command=$_DebuggerFullPath
-    # Tests run locally need __TestDotNetCmd (set by runtest.py) or a compatible 5.0 dotnet runtime in the path
-    if [ ! -z ${__TestDotNetCmd+x} ] %3B then
-        __Command+=" $__TestDotNetCmd"
-    else
-        __Command+=" dotnet"
-    fi
-    __Command+=" $CORE_ROOT/crossgen2/crossgen2.dll"
+    __Command="$_DebuggerFullPath $CORE_ROOT/crossgen2/crossgen2"
     __Command+=" @$__ResponseFile"
 
     echo Response file: $__ResponseFile

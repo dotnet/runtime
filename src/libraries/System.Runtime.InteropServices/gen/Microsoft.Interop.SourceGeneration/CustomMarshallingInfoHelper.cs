@@ -4,6 +4,7 @@
 using System;
 using System.Linq;
 using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.DotnetRuntime.Extensions;
 
 namespace Microsoft.Interop
 {
@@ -161,6 +162,28 @@ namespace Microsoft.Interop
             if (ManualTypeMarshallingHelper.TryGetValueMarshallersFromEntryType(entryPointType, type, compilation, out CustomTypeMarshallers? marshallers))
             {
                 return new NativeMarshallingAttributeInfo(entryPointTypeInfo, marshallers.Value);
+            }
+
+            return NoMarshallingInfo.Instance;
+        }
+
+        public static MarshallingInfo CreateMarshallingInfoByMarshallerTypeName(
+            Compilation compilation,
+            ITypeSymbol type,
+            string marshallerName)
+        {
+            INamedTypeSymbol? marshallerType = compilation.GetBestTypeByMetadataName(marshallerName);
+            if (marshallerType is null)
+                return NoMarshallingInfo.Instance;
+
+            if (ManualTypeMarshallingHelper.HasEntryPointMarshallerAttribute(marshallerType))
+            {
+                if (ManualTypeMarshallingHelper.TryGetValueMarshallersFromEntryType(marshallerType, type, compilation, out CustomTypeMarshallers? marshallers))
+                {
+                    return new NativeMarshallingAttributeInfo(
+                        EntryPointType: ManagedTypeInfo.CreateTypeInfoForTypeSymbol(marshallerType),
+                        Marshallers: marshallers.Value);
+                }
             }
 
             return NoMarshallingInfo.Instance;

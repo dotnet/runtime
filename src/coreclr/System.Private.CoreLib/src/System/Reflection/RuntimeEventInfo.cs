@@ -63,10 +63,14 @@ namespace System.Reflection
         #region Object Overrides
         public override string ToString()
         {
-            if (m_addMethod == null || m_addMethod.GetParametersNoCopy().Length == 0)
+            ReadOnlySpan<ParameterInfo> parameters;
+            if (m_addMethod == null ||
+                (parameters = m_addMethod.GetParametersAsSpan()).Length == 0)
+            {
                 throw new InvalidOperationException(SR.InvalidOperation_NoPublicAddMethod);
+            }
 
-            return m_addMethod.GetParametersNoCopy()[0].ParameterType.FormatTypeName() + " " + Name;
+            return parameters[0].ParameterType.FormatTypeName() + " " + Name;
         }
 
         public override bool Equals(object? obj) =>

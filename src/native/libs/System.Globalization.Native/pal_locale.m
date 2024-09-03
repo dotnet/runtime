@@ -36,13 +36,12 @@ char* DetectDefaultAppleLocaleName(void)
     return strdup([localeName UTF8String]);
 }
 
-#if defined(TARGET_MACCATALYST) || defined(TARGET_IOS) || defined(TARGET_TVOS)
-
+#if defined(APPLE_HYBRID_GLOBALIZATION)
 const char* GlobalizationNative_GetLocaleNameNative(const char* localeName)
 {
     @autoreleasepool
     {
-        NSString *locName = [NSString stringWithFormat:@"%s", localeName];
+        NSString *locName = [[NSString alloc] initWithUTF8String:localeName];
         NSLocale *currentLocale = [[NSLocale alloc] initWithLocaleIdentifier:locName];
         const char* value = [currentLocale.localeIdentifier UTF8String];
         return strdup(value);
@@ -80,11 +79,11 @@ static void GetParent(const char* localeID, char* parent, int32_t parentCapacity
         {
             localeID += 3;
             i -= 3;
-            memmove(parent, localeID, MIN(i, parentCapacity));
+            memmove(parent, localeID, i < parentCapacity ? i : parentCapacity);
         }
         else if (parent != localeID)
         {
-            memcpy(parent, localeID, MIN(i, parentCapacity));
+            memcpy(parent, localeID, i < parentCapacity ? i : parentCapacity);
         }
     }
 
@@ -93,12 +92,54 @@ static void GetParent(const char* localeID, char* parent, int32_t parentCapacity
        parent[i] = 0;
 }
 
-const char* GlobalizationNative_GetLocaleInfoStringNative(const char* localeName, LocaleStringData localeStringData)
+/**
+ * Lookup 'key' in the array 'list'.  The array 'list' should contain
+ * a NULL entry, followed by more entries, and a second NULL entry.
+ *
+ * The 'list' param should be LANGUAGES, LANGUAGES_3, COUNTRIES, or
+ * COUNTRIES_3.
+ */
+static int16_t _findIndex(const char* const* list, const char* key)
+{
+    const char* const* anchor = list;
+    int32_t pass = 0;
+
+    /* Make two passes through two NULL-terminated arrays at 'list' */
+    while (pass++ < 2) {
+        while (*list) {
+            if (strcmp(key, *list) == 0) {
+                return (int16_t)(list - anchor);
+            }
+            list++;
+        }
+        ++list;     /* skip final NULL *CWB*/
+    }
+    return -1;
+}
+
+static const char* getISO3CountryByCountryCode(const char* countryCode)
+{
+    int16_t offset = _findIndex(COUNTRIES, countryCode);
+    if (offset < 0)
+        return "";
+
+    return COUNTRIES_3[offset];
+}
+
+static const char* getISO3LanguageByLangCode(const char* langCode)
+{
+    int16_t offset = _findIndex(LANGUAGES, langCode);
+    if (offset < 0)
+        return "";
+    return LANGUAGES_3[offset];
+}
+
+const char* GlobalizationNative_GetLocaleInfoStringNative(const char* localeName, LocaleStringData localeStringData, const char* currentUILocaleName)
 {
     @autoreleasepool
     {
-        const char* value;
-        NSString *locName = [NSString stringWithFormat:@"%s", localeName];
+        NSString *value;
+        NSString *locName = [[NSString alloc] initWithUTF8String:localeName];
         NSLocale *currentLocale = [[NSLocale alloc] initWithLocaleIdentifier:locName];
         NSNumberFormatter *numberFormatter = [[NSNumberFormatter alloc] init];
         numberFormatter.locale = currentLocale;
@@ -110,37 +151,49 @@ const char* GlobalizationNative_GetLocaleInfoStringNative(const char* localeName
         {
             ///// <summary>localized name of locale, eg "German (Germany)" in UI language (corresponds to LOCALE_SLOCALIZEDDISPLAYNAME)</summary>
             case LocaleString_LocalizedDisplayName:
+            {
+                NSString *currUILocaleName = [[NSString alloc] initWithUTF8String: currentUILocaleName == NULL ? GlobalizationNative_GetDefaultLocaleNameNative() : currentUILocaleName];
+                NSLocale *currentUILocale = [[NSLocale alloc] initWithLocaleIdentifier:currUILocaleName];
+                value = [currentUILocale displayNameForKey:NSLocaleIdentifier value:currentLocale.localeIdentifier];
+                break;
+            }
             /// <summary>Display name (language + country usually) in English, eg "German (Germany)" (corresponds to LOCALE_SENGLISHDISPLAYNAME)</summary>
             case LocaleString_EnglishDisplayName:
-                value = [[gbLocale displayNameForKey:NSLocaleIdentifier value:currentLocale.localeIdentifier] UTF8String];
-            break;
+                value = [gbLocale displayNameForKey:NSLocaleIdentifier value:currentLocale.localeIdentifier];
+                break;
             /// <summary>Display name in native locale language, eg "Deutsch (Deutschland) (corresponds to LOCALE_SNATIVEDISPLAYNAME)</summary>
             case LocaleString_NativeDisplayName:
-                value = [[currentLocale displayNameForKey:NSLocaleIdentifier value:currentLocale.localeIdentifier] UTF8String];
+                value = [currentLocale displayNameForKey:NSLocaleIdentifier value:currentLocale.localeIdentifier];
                 break;
             /// <summary>Language Display Name for a language, eg "German" in UI language (corresponds to LOCALE_SLOCALIZEDLANGUAGENAME)</summary>
             case LocaleString_LocalizedLanguageName:
+            {
+                NSString *currUILocaleName = [[NSString alloc] initWithUTF8String: currentUILocaleName == NULL ? GlobalizationNative_GetDefaultLocaleNameNative() : currentUILocaleName];
+                NSLocale *currentUILocale = [[NSLocale alloc] initWithLocaleIdentifier:currUILocaleName];
+                value = [currentUILocale localizedStringForLanguageCode:currentLocale.languageCode];
+                break;
+            }
             /// <summary>English name of language, eg "German" (corresponds to LOCALE_SENGLISHLANGUAGENAME)</summary>
             case LocaleString_EnglishLanguageName:
-                value = [[gbLocale localizedStringForLanguageCode:currentLocale.languageCode] UTF8String];
+                value = [gbLocale localizedStringForLanguageCode:currentLocale.languageCode];
                 break;
             /// <summary>native name of language, eg "Deutsch" (corresponds to LOCALE_SNATIVELANGUAGENAME)</summary>
             case LocaleString_NativeLanguageName:
-                value = [[currentLocale localizedStringForLanguageCode:currentLocale.languageCode] UTF8String];
+                value = [currentLocale localizedStringForLanguageCode:currentLocale.languageCode];
             break;
             /// <summary>English name of country, eg "Germany" (corresponds to LOCALE_SENGLISHCOUNTRYNAME)</summary>
             case LocaleString_EnglishCountryName:
-                value = [[gbLocale localizedStringForCountryCode:currentLocale.countryCode] UTF8String];
+                value = [gbLocale localizedStringForCountryCode:currentLocale.countryCode == nil ? @"" : currentLocale.countryCode];
                 break;
             /// <summary>native name of country, eg "Deutschland" (corresponds to LOCALE_SNATIVECOUNTRYNAME)</summary>
             case LocaleString_NativeCountryName:
-                value = [[currentLocale localizedStringForCountryCode:currentLocale.countryCode] UTF8String];
+                value = [currentLocale localizedStringForCountryCode:currentLocale.countryCode == nil ? @"" : currentLocale.countryCode];
                 break;
             case LocaleString_ThousandSeparator:
-                value = [currentLocale.groupingSeparator UTF8String];
+                value = currentLocale.groupingSeparator;
                 break;
             case LocaleString_DecimalSeparator:
-                value = [currentLocale.decimalSeparator UTF8String];
+                value = currentLocale.decimalSeparator;
                 // or value = [[currentLocale objectForKey:NSLocaleDecimalSeparator] UTF8String];
                 break;
             case LocaleString_Digits:
@@ -150,87 +203,84 @@ const char* GlobalizationNative_GetLocaleInfoStringNative(const char* localeName
                 [nf1 setLocale:currentLocale];
 
                 NSNumber *newNum = [nf1 numberFromString:digitsString];
-                value = [[newNum stringValue] UTF8String];
+                value = [newNum stringValue];
                 break;
             }
             case LocaleString_MonetarySymbol:
-                value = [currentLocale.currencySymbol UTF8String];
+                value = currentLocale.currencySymbol;
                 break;
             case LocaleString_Iso4217MonetarySymbol:
                 // check if this is correct, check currencyISOCode
-                value = [currentLocale.currencySymbol UTF8String];
+                value = currentLocale.currencyCode;
                 break;
             case LocaleString_CurrencyEnglishName:
-                value = [[gbLocale localizedStringForCurrencyCode:currentLocale.currencyCode] UTF8String];
+                value = [gbLocale localizedStringForCurrencyCode:currentLocale.currencyCode == nil ? @"" : currentLocale.currencyCode];
                 break;
             case LocaleString_CurrencyNativeName:
-                value = [[currentLocale localizedStringForCurrencyCode:currentLocale.currencyCode] UTF8String];
+                value = [currentLocale localizedStringForCurrencyCode:currentLocale.currencyCode == nil ? @"" : currentLocale.currencyCode];
                 break;
             case LocaleString_MonetaryDecimalSeparator:
-                value = [numberFormatter.currencyDecimalSeparator UTF8String];
+                value = numberFormatter.currencyDecimalSeparator;
                 break;
             case LocaleString_MonetaryThousandSeparator:
-                value = [numberFormatter.currencyGroupingSeparator UTF8String];
+                value = numberFormatter.currencyGroupingSeparator;
                 break;
             case LocaleString_AMDesignator:
-                value = [dateFormatter.AMSymbol UTF8String];
+                value = dateFormatter.AMSymbol;
                 break;
             case LocaleString_PMDesignator:
-                value = [dateFormatter.PMSymbol UTF8String];
+                value = dateFormatter.PMSymbol;
                 break;
             case LocaleString_PositiveSign:
-                value = [numberFormatter.plusSign UTF8String];
+                value = numberFormatter.plusSign;
                 break;
             case LocaleString_NegativeSign:
-                value = [numberFormatter.minusSign UTF8String];
+                value = numberFormatter.minusSign;
                 break;
             case LocaleString_Iso639LanguageTwoLetterName:
-                value = [[currentLocale objectForKey:NSLocaleLanguageCode] UTF8String];
+                value = [currentLocale objectForKey:NSLocaleLanguageCode];
                 break;
             case LocaleString_Iso639LanguageThreeLetterName:
             {
                 NSString *iso639_2 = [currentLocale objectForKey:NSLocaleLanguageCode];
-                value = uloc_getISO3LanguageByLangCode([iso639_2 UTF8String]);
-                break;
+                return iso639_2 == nil ? strdup("") : strdup(getISO3LanguageByLangCode([iso639_2 UTF8String]));
             }
             case LocaleString_Iso3166CountryName:
-                value = [[currentLocale objectForKey:NSLocaleCountryCode] UTF8String];
+                value = [currentLocale objectForKey:NSLocaleCountryCode];
                 break;
             case LocaleString_Iso3166CountryName2:
             {
-                const char *countryCode = strdup([[currentLocale objectForKey:NSLocaleCountryCode] UTF8String]);
-                value = uloc_getISO3CountryByCountryCode(countryCode);
-                break;
+                NSString* countryCode = [currentLocale objectForKey:NSLocaleCountryCode];
+                return countryCode == nil ? strdup("") : strdup(getISO3CountryByCountryCode([countryCode UTF8String]));
             }
             case LocaleString_NaNSymbol:
-                value = [numberFormatter.notANumberSymbol UTF8String];
+                value = numberFormatter.notANumberSymbol;
                 break;
             case LocaleString_PositiveInfinitySymbol:
-                value = [numberFormatter.positiveInfinitySymbol UTF8String];
+                value = numberFormatter.positiveInfinitySymbol;
                 break;
             case LocaleString_NegativeInfinitySymbol:
-                value = [numberFormatter.negativeInfinitySymbol UTF8String];
+                value = numberFormatter.negativeInfinitySymbol;
                 break;
             case LocaleString_PercentSymbol:
-                value = [numberFormatter.percentSymbol UTF8String];
+                value = numberFormatter.percentSymbol;
                 break;
             case LocaleString_PerMilleSymbol:
-                value = [numberFormatter.perMillSymbol UTF8String];
+                value = numberFormatter.perMillSymbol;
                 break;
             case LocaleString_ParentName:
             {
                 char localeNameTemp[FULLNAME_CAPACITY];
                 const char* lName = [currentLocale.localeIdentifier UTF8String];
                 GetParent(lName, localeNameTemp, FULLNAME_CAPACITY);
-                value = strdup(localeNameTemp);
-                break;
+                return strdup(localeNameTemp);
             }
             default:
-                value = "";
+                value = nil;
                 break;
         }
 
-        return value ? strdup(value) : "";
+        return value == nil ? strdup("") : strdup([value UTF8String]);
     }
 }
 
@@ -257,7 +307,7 @@ For NegativeNumberFormat "#,##0.00;(#,##0.00)" becomes "(n)"
 static char* NormalizeNumericPattern(const char* srcPattern, int isNegative)
 {
     int iStart = 0;
-    int iEnd = strlen(srcPattern);
+    int iEnd = (int)strlen(srcPattern);
 
     // ';'  separates positive and negative subpatterns.
     // When there is no explicit negative subpattern,
@@ -265,7 +315,7 @@ static char* NormalizeNumericPattern(const char* srcPattern, int isNegative)
     char * ptrNegativePattern = strrchr(srcPattern,';');
     if (ptrNegativePattern)
     {
-        int32_t iNegativePatternStart = ptrNegativePattern - srcPattern;
+        int32_t iNegativePatternStart = (int32_t)(ptrNegativePattern - srcPattern);
         if (isNegative)
         {
             iStart = iNegativePatternStart + 1;
@@ -479,17 +529,16 @@ int32_t GlobalizationNative_GetLocaleInfoIntNative(const char* localeName, Local
         bool isSuccess = true;
 #endif
         int32_t value;
-        NSString *locName = [NSString stringWithFormat:@"%s", localeName];
+        NSString *locName = [[NSString alloc] initWithUTF8String:localeName];
         NSLocale *currentLocale = [[NSLocale alloc] initWithLocaleIdentifier:locName];
 
         switch (localeNumberData)
         {
             case LocaleNumber_MeasurementSystem:
             {
-                const char *measurementSystem = [[currentLocale objectForKey:NSLocaleMeasurementSystem] UTF8String];
-                NSLocale *usLocale = [[NSLocale alloc] initWithLocaleIdentifier:@"en_US"];
-                const char *us_measurementSystem = [[usLocale objectForKey:NSLocaleMeasurementSystem] UTF8String];
-                value = (measurementSystem == us_measurementSystem) ? 1 : 0;
+                NSString *currenMeasurementSystem = [currentLocale objectForKey:NSLocaleMeasurementSystem];
+                NSString *usMeasurementSystem = [[[NSLocale alloc] initWithLocaleIdentifier:@"en_US"] objectForKey:NSLocaleMeasurementSystem];
+                value = [currenMeasurementSystem isEqualToString:usMeasurementSystem] ? 1 : 0;
                 break;
             }
             case LocaleNumber_FractionalDigitsCount:
@@ -550,7 +599,8 @@ int32_t GlobalizationNative_GetLocaleInfoIntNative(const char* localeName, Local
             }
             case LocaleNumber_ReadingLayout:
             {
-                NSLocaleLanguageDirection langDir = [NSLocale characterDirectionForLanguage:[currentLocale objectForKey:NSLocaleLanguageCode]];
+                NSString* langCode = [currentLocale objectForKey:NSLocaleLanguageCode];
+                NSLocaleLanguageDirection langDir = [NSLocale characterDirectionForLanguage:langCode];
                 //  0 - Left to right (such as en-US)
                 //  1 - Right to left (such as arabic locales)
                 value = NSLocaleLanguageDirectionRightToLeft == langDir ? 1 : 0;
@@ -559,7 +609,7 @@ int32_t GlobalizationNative_GetLocaleInfoIntNative(const char* localeName, Local
             case LocaleNumber_FirstDayofWeek:
             {
                 NSCalendar *calendar = [currentLocale objectForKey:NSLocaleCalendar];
-                value = [calendar firstWeekday] - 1; // .NET is 0-based and in Apple is 1-based;
+                value = (int32_t)[calendar firstWeekday] - 1; // .NET is 0-based and in Apple is 1-based;
                 break;
             }
             default:
@@ -586,7 +636,7 @@ int32_t GlobalizationNative_GetLocaleInfoPrimaryGroupingSizeNative(const char* l
 {
     @autoreleasepool
     {
-        NSString *locName = [NSString stringWithFormat:@"%s", localeName];
+        NSString *locName = [[NSString alloc] initWithUTF8String:localeName];
         NSLocale *currentLocale = [[NSLocale alloc] initWithLocaleIdentifier:locName];
         NSNumberFormatter *numberFormatter = [[NSNumberFormatter alloc] init];
         numberFormatter.locale = currentLocale;
@@ -603,7 +653,7 @@ int32_t GlobalizationNative_GetLocaleInfoPrimaryGroupingSizeNative(const char* l
                 assert(false);
                 break;
         }
-        return [numberFormatter groupingSize];
+        return (int32_t)[numberFormatter groupingSize];
     }
 }
 
@@ -617,7 +667,7 @@ int32_t GlobalizationNative_GetLocaleInfoSecondaryGroupingSizeNative(const char*
 {
     @autoreleasepool
     {
-        NSString *locName = [NSString stringWithFormat:@"%s", localeName];
+        NSString *locName = [[NSString alloc] initWithUTF8String:localeName];
         NSLocale *currentLocale = [[NSLocale alloc] initWithLocaleIdentifier:locName];
         NSNumberFormatter *numberFormatter = [[NSNumberFormatter alloc] init];
         numberFormatter.locale = currentLocale;
@@ -635,7 +685,7 @@ int32_t GlobalizationNative_GetLocaleInfoSecondaryGroupingSizeNative(const char*
                 break;
         }
 
-        return [numberFormatter secondaryGroupingSize];
+        return (int32_t)[numberFormatter secondaryGroupingSize];
     }
 }
 
@@ -649,7 +699,7 @@ const char* GlobalizationNative_GetLocaleTimeFormatNative(const char* localeName
 {
     @autoreleasepool
     {
-        NSString *locName = [NSString stringWithFormat:@"%s", localeName];
+        NSString *locName = [[NSString alloc] initWithUTF8String:localeName];
         NSLocale *currentLocale = [[NSLocale alloc] initWithLocaleIdentifier:locName];
         NSDateFormatter* dateFormatter = [[NSDateFormatter alloc] init];
         [dateFormatter setLocale:currentLocale];
@@ -667,15 +717,61 @@ const char* GlobalizationNative_GetLocaleTimeFormatNative(const char* localeName
     }
 }
 
-#endif
+// GlobalizationNative_GetLocalesNative gets all locale names and store it in the value buffer
+// in case of success, it returns the count of the characters stored in value buffer
+// in case of failure, it returns negative number.
+// if the input value buffer is null, it returns the length needed to store the
+// locale names list.
+// if the value is not null, it fills the value with locale names separated by the length
+// of each name.
+int32_t GlobalizationNative_GetLocalesNative(UChar* value, int32_t length)
+{
+    @autoreleasepool
+    {
+        NSArray<NSString*>* availableLocaleIdentifiers = [NSLocale availableLocaleIdentifiers];
+        NSUInteger index = 0;
+        NSUInteger totalLength = 0;
+        NSUInteger availableLength = [availableLocaleIdentifiers count];
 
-#if defined(TARGET_MACCATALYST) || defined(TARGET_IOS) || defined(TARGET_TVOS)
+        if (availableLength <=  0)
+            return -1; // failed
+
+        for (NSUInteger i = 0; i < availableLength; i++) 
+        {
+            NSString *localeIdentifier = availableLocaleIdentifiers[i];
+            NSUInteger localeNameLength = localeIdentifier.length;
+            totalLength += localeNameLength + 1; // add 1 for the name length
+            if (value != NULL)
+            {
+                if (totalLength > (NSUInteger)length)
+                    return -3;
+
+                value[index++] = (UChar) localeNameLength;
+
+                for (NSUInteger j = 0; j < localeNameLength; j++)
+                {
+                    if ((UChar)[localeIdentifier characterAtIndex:j] == '_')
+                    {
+                        value[index++] = (UChar) '-';
+                    }
+                    else
+                    {
+                        value[index++] = (UChar) [localeIdentifier characterAtIndex:j];
+                    }
+                }
+            }
+        }
+        return (int32_t)totalLength;
+    }
+}
+
 const char* GlobalizationNative_GetICUDataPathRelativeToAppBundleRoot(const char* path)
 {
     @autoreleasepool
     {
         NSString *bundlePath = [[NSBundle mainBundle] bundlePath];
-        NSString *dataPath = [bundlePath stringByAppendingPathComponent: [NSString stringWithFormat:@"%s", path]];
+        NSString *pathInBundle = [[NSString alloc] initWithUTF8String:path];
+        NSString *dataPath = [bundlePath stringByAppendingPathComponent:pathInBundle];
 
         return strdup([dataPath UTF8String]);
     }
@@ -689,4 +785,65 @@ const char* GlobalizationNative_GetICUDataPathFallback(void)
         return strdup([dataPath UTF8String]);
     }
 }
+
+static NSString* GetBaseName(NSString *localeIdentifier)
+{
+    NSLocale *locale = [[NSLocale alloc] initWithLocaleIdentifier:localeIdentifier];
+    NSString *languageCode = [locale objectForKey:NSLocaleLanguageCode];
+    return languageCode;
+}
+
+const char* GlobalizationNative_GetDefaultLocaleNameNative(void)
+{
+    @autoreleasepool
+    {
+        if (NSLocale.preferredLanguages.count > 0)
+        {
+            NSString *preferredLanguage = [NSLocale.preferredLanguages objectAtIndex:0];
+            return strdup([GetBaseName(preferredLanguage) UTF8String]);
+        }
+        else
+        {
+            NSLocale *currentLocale = [NSLocale currentLocale];
+            NSString *localeName = @"";
+
+            if (!currentLocale)
+            {
+                return strdup([localeName UTF8String]);
+            }
+
+            if ([currentLocale.languageCode length] > 0 && [currentLocale.countryCode length] > 0)
+            {
+                localeName = [NSString stringWithFormat:@"%@-%@", currentLocale.languageCode, currentLocale.countryCode];
+            }
+            else
+            {
+                localeName = currentLocale.localeIdentifier;
+            }
+
+            return strdup([GetBaseName(localeName) UTF8String]);
+        }
+    }
+}
+
+// GlobalizationNative_IsPredefinedLocaleNative returns TRUE if localeName exists in availableLocaleIdentifiers.
+// Otherwise it returns FALSE;
+
+int32_t GlobalizationNative_IsPredefinedLocaleNative(const char* localeName)
+{
+    @autoreleasepool
+    {
+        NSString *localeIdentifier = [[NSString alloc] initWithUTF8String:localeName];
+        NSString *localeIdentifierByRegionDesignator = [localeIdentifier stringByReplacingOccurrencesOfString:@"-" withString:@"_"];
+        NSArray<NSString *> *availableLocales = [NSLocale availableLocaleIdentifiers];
+
+        if ([availableLocales containsObject:localeIdentifier] || [availableLocales containsObject:localeIdentifierByRegionDesignator])
+        {
+            return true;
+        }
+
+        return false;
+    }
+}
 #endif
+

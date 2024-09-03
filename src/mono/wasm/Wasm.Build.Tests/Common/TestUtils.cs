@@ -52,7 +52,6 @@ public static class TestUtils
         if (!same && finfo0.Length == finfo1.Length)
             throw new XunitException($"{label}:{Environment.NewLine}  File sizes should not match for {file0} ({finfo0.Length}), and {file1} ({finfo1.Length})");
     }
-
     public static string FindSubDirIgnoringCase(string parentDir, string dirName)
     {
         IEnumerable<string> matchingDirs = Directory.EnumerateDirectories(parentDir,
@@ -87,12 +86,14 @@ public static class TestUtils
         if (expected?.Equals(actual) == true)
             return;
 
-        throw new AssertActualExpectedException(
+        throw EqualException.ForMismatchedValues(
             expected, actual,
             $"[{label}]\n");
     }
 
-    private static readonly char[] s_charsToReplace = new[] { '.', '-', '+' };
+    private static readonly char[] s_charsToReplace = new[] { '.', '-', '+', '<', '>' };
+    // Keep synced with FixupSymbolName from src/tasks/Common/Utils.cs
+    // and with mono_fixup_symbol_name from src/mono/mono/metadata/native-library.c
     public static string FixupSymbolName(string name)
     {
         UTF8Encoding utf8 = new();

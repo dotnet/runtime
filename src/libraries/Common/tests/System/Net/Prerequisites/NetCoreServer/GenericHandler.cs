@@ -51,7 +51,7 @@ namespace NetCoreServer
 
             if (path.Equals(new PathString("/statuscode.ashx")))
             {
-                StatusCodeHandler.Invoke(context);
+                await StatusCodeHandler.InvokeAsync(context);
                 return;
             }
 
@@ -86,6 +86,11 @@ namespace NetCoreServer
             if (path.Equals(new PathString("/large.ashx")))
             {
                 await LargeResponseHandler.InvokeAsync(context);
+                return;
+            }
+            if (path.Equals(new PathString("/echobody.ashx")))
+            {
+                await EchoBodyHandler.InvokeAsync(context);
                 return;
             }
 

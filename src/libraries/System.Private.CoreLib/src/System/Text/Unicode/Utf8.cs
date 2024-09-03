@@ -46,11 +46,6 @@ namespace System.Text.Unicode
         /// </remarks>
         public static unsafe OperationStatus FromUtf16(ReadOnlySpan<char> source, Span<byte> destination, out int charsRead, out int bytesWritten, bool replaceInvalidSequences = true, bool isFinalBlock = true)
         {
-            // Throwaway span accesses - workaround for https://github.com/dotnet/runtime/issues/12332
-
-            _ = source.Length;
-            _ = destination.Length;
-
             fixed (char* pOriginalSource = &MemoryMarshal.GetReference(source))
             fixed (byte* pOriginalDestination = &MemoryMarshal.GetReference(destination))
             {
@@ -137,13 +132,8 @@ namespace System.Text.Unicode
         /// </remarks>
         public static unsafe OperationStatus ToUtf16(ReadOnlySpan<byte> source, Span<char> destination, out int bytesRead, out int charsWritten, bool replaceInvalidSequences = true, bool isFinalBlock = true)
         {
-            // Throwaway span accesses - workaround for https://github.com/dotnet/runtime/issues/12332
-
             // NOTE: Changes to this method should be kept in sync with ToUtf16PreservingReplacement below.
             // See it for an explanation of the differences
-
-            _ = source.Length;
-            _ = destination.Length;
 
             // We'll be mutating these values throughout our loop.
 
@@ -228,8 +218,6 @@ namespace System.Text.Unicode
 
         internal static unsafe OperationStatus ToUtf16PreservingReplacement(ReadOnlySpan<byte> source, Span<char> destination, out int bytesRead, out int charsWritten, bool replaceInvalidSequences = true, bool isFinalBlock = true)
         {
-            // Throwaway span accesses - workaround for https://github.com/dotnet/runtime/issues/12332
-
             // NOTE: Changes to this method should be kept in sync with ToUtf16 above.
             //
             // This method exists to allow certain internal comparisons to function as expected under ICU.
@@ -240,9 +228,6 @@ namespace System.Text.Unicode
             // becomes 0xDF?? where ?? is the individual UTF-8 byte. Thus the above becomes 0xDFFF, 0xDFFE.
             // This allows them to compare as invalid UTF-16 sequences and thus only match with the same
             // invalid sequence.
-
-            _ = source.Length;
-            _ = destination.Length;
 
             // We'll be mutating these values throughout our loop.
 

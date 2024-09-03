@@ -13,7 +13,7 @@
     <PackageFile Include="Sdk\Sdk.props" TargetPath="Sdk" />
     <PackageFile Include="Sdk\Sdk.targets" TargetPath="Sdk" />
     <PackageFile Include="build\$(MSBuildProjectName).props" TargetPath="build" />
-    <PackageFile Include="Sdk\RuntimeComponentManifest.targets" TargetPath="Sdk" />
+    <PackageFile Include="..\..\msbuild\common\RuntimeComponentManifest.targets" TargetPath="Sdk" />
   </ItemGroup>
 
   <Target Name="_PrepareForPack" BeforeTargets="GetPackageFiles">
@@ -22,13 +22,13 @@
     </PropertyGroup>
 
     <ItemGroup>
-      <_ReplacementValue Include="TargetFrameworkForNETCoreTasks" Value="$(TargetFrameworkForNETCoreTasks)" />
-      <_ReplacementValue Include="TargetFrameworkForNETFrameworkTasks" Value="$(TargetFrameworkForNETFrameworkTasks)" />
+      <_ReplacementValue Include="NetCoreAppToolCurrent" Value="$(NetCoreAppToolCurrent)" />
+      <_ReplacementValue Include="NetFrameworkToolCurrent" Value="$(NetFrameworkToolCurrent)" />
     </ItemGroup>
 
     <GenerateFileFromTemplate
       TemplateFile="Sdk/MonoTargetsTasks.props.in"
-      Properties="@(_ReplacementValue)"
+      Properties="@(_ReplacementValue->'%(Identity)=%(Value)')"
       OutputPath="$(MonoTargetsTasksPropsPath)" />
 
     <ItemGroup>

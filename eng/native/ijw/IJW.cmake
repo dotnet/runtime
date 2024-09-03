@@ -2,19 +2,13 @@ if (CLR_CMAKE_HOST_WIN32)
 
   function(remove_ijw_incompatible_options options updatedOptions)
     # IJW isn't compatible with Ehsc, which CMake enables by default
-    if(options MATCHES "/EHsc")
-        string(REPLACE "/EHsc" "" options "${options}")
-    endif()
+    set_property(DIRECTORY PROPERTY CLR_EH_OPTION "")
 
     # IJW isn't compatible with CFG
-    if(options MATCHES "/guard:cf")
-        string(REPLACE "/guard:cf" "" options "${options}")
-    endif()
+    set_property(DIRECTORY PROPERTY CLR_CONTROL_FLOW_GUARD OFF)
 
     # IJW isn't compatible with EHCONT, which requires CFG
-    if(options MATCHES "/guard:ehcont")
-        string(REPLACE "/guard:ehcont" "" options "${options}")
-    endif()
+    set_property(DIRECTORY PROPERTY CLR_EH_CONTINUATION OFF)
 
     # IJW isn't compatible with GR-
     if(options MATCHES "/GR-")
@@ -98,6 +92,12 @@ if (CLR_CMAKE_HOST_WIN32)
   string(REGEX REPLACE ".*refPackPath=(.*)" "\\1" CLR_SDK_REF_PACK ${CLR_SDK_REF_PACK_OUTPUT})
 
   add_compile_options(/AI${CLR_SDK_REF_PACK})
+
+  file(GLOB CLR_SDK_REF_PACK_LIBS "${CLR_SDK_REF_PACK}/*.dll")
+
+  foreach(lib ${CLR_SDK_REF_PACK_LIBS})
+    add_compile_options(/FU${lib})
+  endforeach()
 
   list(APPEND LINK_LIBRARIES_ADDITIONAL ijwhost)
 

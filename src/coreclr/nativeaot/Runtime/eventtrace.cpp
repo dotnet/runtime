@@ -78,8 +78,8 @@ void EventTracing_Initialize()
     MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_Context.IsEnabled = FALSE;
 
     // Register the ETW providers with the system.
-    RH_ETW_REGISTER_Microsoft_Windows_DotNETRuntimePrivate();
-    RH_ETW_REGISTER_Microsoft_Windows_DotNETRuntime();
+    EventRegisterMicrosoft_Windows_DotNETRuntimePrivate();
+    EventRegisterMicrosoft_Windows_DotNETRuntime();
 
     MICROSOFT_WINDOWS_DOTNETRUNTIME_PRIVATE_PROVIDER_Context.RegistrationHandle = Microsoft_Windows_DotNETRuntimePrivateHandle;
     MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_Context.RegistrationHandle = Microsoft_Windows_DotNETRuntimeHandle;
@@ -93,10 +93,6 @@ enum CallbackProviderIndex
     DotNETRuntimeStress = 2,
     DotNETRuntimePrivate = 3
 };
-
-// @TODO
-int const EVENT_CONTROL_CODE_ENABLE_PROVIDER=1;
-int const EVENT_CONTROL_CODE_DISABLE_PROVIDER=0;
 
 void EtwCallbackCommon(
     CallbackProviderIndex ProviderIndex,
@@ -115,6 +111,9 @@ void EtwCallbackCommon(
     {
     case DotNETRuntime:
         ctxToUpdate = &MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_DOTNET_Context;
+        break;
+    case DotNETRuntimePrivate:
+        ctxToUpdate = &MICROSOFT_WINDOWS_DOTNETRUNTIME_PRIVATE_PROVIDER_DOTNET_Context;
         break;
     default:
         _ASSERTE(!"EtwCallbackCommon was called with invalid context");
@@ -180,7 +179,7 @@ void EtwCallbackCommon(
 #ifdef FEATURE_ETW
 
 void EtwCallback(
-    GUID * /*SourceId*/,
+    const GUID * /*SourceId*/,
     uint32_t IsEnabled,
     uint8_t Level,
     uint64_t MatchAnyKeyword,
@@ -216,9 +215,9 @@ void EtwCallback(
         (context->RegistrationHandle == Microsoft_Windows_DotNETRuntimePrivateHandle) &&
         GCHeapUtilities::IsGCHeapInitialized())
     {
-        FireEtwGCSettings(GCHeapUtilities::GetGCHeap()->GetValidSegmentSize(FALSE),
+        FireEtwGCSettings_V1(GCHeapUtilities::GetGCHeap()->GetValidSegmentSize(FALSE),
                           GCHeapUtilities::GetGCHeap()->GetValidSegmentSize(TRUE),
-                          GCHeapUtilities::IsServerHeap());
+                          GCHeapUtilities::IsServerHeap(), GetClrInstanceId());
         GCHeapUtilities::GetGCHeap()->DiagTraceGCSegments();
     }
 }
@@ -234,4 +233,16 @@ void EventPipeEtwCallbackDotNETRuntime(
     _Inout_opt_ PVOID CallbackContext)
 {
     EtwCallbackCommon(DotNETRuntime, ControlCode, Level, MatchAnyKeyword, FilterData, /*isEventPipeCallback*/ true);
+}
+
+void EventPipeEtwCallbackDotNETRuntimePrivate(
+    _In_ GUID * SourceId,
+    _In_ ULONG ControlCode,
+    _In_ unsigned char Level,
+    _In_ ULONGLONG MatchAnyKeyword,
+    _In_ ULONGLONG MatchAllKeyword,
+    _In_opt_ EventFilterDescriptor* FilterData,
+    _Inout_opt_ PVOID CallbackContext)
+{
+    EtwCallbackCommon(DotNETRuntimePrivate, ControlCode, Level, MatchAnyKeyword, FilterData, true);
 }

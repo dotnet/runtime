@@ -130,7 +130,6 @@ namespace Internal.JitInterface
 
         private static string GetTargetSpec(TargetDetails target)
         {
-            string targetOSComponent = (target.OperatingSystem == TargetOS.Windows ? "win" : "unix");
             string targetArchComponent = target.Architecture switch
             {
                 TargetArchitecture.X86 => "x86",
@@ -138,12 +137,18 @@ namespace Internal.JitInterface
                 TargetArchitecture.ARM => "arm",
                 TargetArchitecture.ARM64 => "arm64",
                 TargetArchitecture.LoongArch64 => "loongarch64",
+                TargetArchitecture.RiscV64 => "riscv64",
                 _ => throw new NotImplementedException(target.Architecture.ToString())
             };
 
-            if ((target.Architecture == TargetArchitecture.ARM64) || (target.Architecture == TargetArchitecture.ARM))
+            string targetOSComponent;
+            if (target.Architecture is TargetArchitecture.ARM64 or TargetArchitecture.ARM)
             {
                 targetOSComponent = "universal";
+            }
+            else
+            {
+                targetOSComponent = target.OperatingSystem == TargetOS.Windows ? "win" : "unix";
             }
 
             return targetOSComponent + '_' + targetArchComponent + "_" + RuntimeInformation.ProcessArchitecture.ToString().ToLowerInvariant();

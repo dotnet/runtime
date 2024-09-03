@@ -11,15 +11,9 @@ using static Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
 
 namespace Microsoft.Interop
 {
-    public sealed class Utf16CharMarshaller : IMarshallingGenerator
+    public sealed class Utf16CharMarshaller : IUnboundMarshallingGenerator
     {
-        private static readonly ManagedTypeInfo s_nativeType = new SpecialTypeInfo("ushort", "ushort", SpecialType.System_UInt16);
-
-        public Utf16CharMarshaller()
-        {
-        }
-
-        public bool IsSupported(TargetFramework target, Version version) => true;
+        private static readonly ManagedTypeInfo s_nativeType = SpecialTypeInfo.UInt16;
 
         public ValueBoundaryBehavior GetValueBoundaryBehavior(TypePositionInfo info, StubCodeContext context)
         {
@@ -41,7 +35,7 @@ namespace Microsoft.Interop
 
         public ManagedTypeInfo AsNativeType(TypePositionInfo info)
         {
-            Debug.Assert(info.ManagedType is SpecialTypeInfo(_, _, SpecialType.System_Char));
+            Debug.Assert(info.ManagedType is SpecialTypeInfo {SpecialType: SpecialType.System_Char });
             return s_nativeType;
         }
 
@@ -50,13 +44,13 @@ namespace Microsoft.Interop
             return info.IsByRef ? SignatureBehavior.PointerToNativeType : SignatureBehavior.NativeType;
         }
 
-        public IEnumerable<StatementSyntax> Generate(TypePositionInfo info, StubCodeContext context)
+        public IEnumerable<StatementSyntax> Generate(TypePositionInfo info, StubCodeContext codeContext, StubIdentifierContext context)
         {
             (string managedIdentifier, string nativeIdentifier) = context.GetIdentifiers(info);
 
-            if (IsPinningPathSupported(info, context))
+            if (IsPinningPathSupported(info, codeContext))
             {
-                if (context.CurrentStage == StubCodeContext.Stage.Pin)
+                if (context.CurrentStage == StubIdentifierContext.Stage.Pin)
                 {
                     // fixed (char* <pinned> = &<managed>)
                     yield return FixedStatement(
@@ -85,13 +79,13 @@ namespace Microsoft.Interop
                 yield break;
             }
 
-            MarshalDirection elementMarshalDirection = MarshallerHelpers.GetMarshalDirection(info, context);
+            MarshalDirection elementMarshalDirection = MarshallerHelpers.GetMarshalDirection(info, codeContext);
 
             switch (context.CurrentStage)
             {
-                case StubCodeContext.Stage.Setup:
+                case StubIdentifierContext.Stage.Setup:
                     break;
-                case StubCodeContext.Stage.Marshal:
+                case StubIdentifierContext.Stage.Marshal:
                     if (elementMarshalDirection is MarshalDirection.ManagedToUnmanaged or MarshalDirection.Bidirectional)
                     {
                         // There's an implicit conversion from char to ushort,
@@ -107,7 +101,7 @@ namespace Microsoft.Interop
                     }
 
                     break;
-                case StubCodeContext.Stage.Unmarshal:
+                case StubIdentifierContext.Stage.Unmarshal:
                     if (elementMarshalDirection is MarshalDirection.UnmanagedToManaged or MarshalDirection.Bidirectional)
                     {
                         yield return ExpressionStatement(
@@ -140,9 +134,9 @@ namespace Microsoft.Interop
         }
 
         private static string PinnedIdentifier(string identifier) => $"{identifier}__pinned";
-        public ByValueMarshalKindSupport SupportsByValueMarshalKind(ByValueContentsMarshalKind marshalKind, TypePositionInfo info, StubCodeContext context, out GeneratorDiagnostic? diagnostic)
+        public ByValueMarshalKindSupport SupportsByValueMarshalKind(ByValueContentsMarshalKind marshalKind, TypePositionInfo info, out GeneratorDiagnostic? diagnostic)
         {
-            return ByValueMarshalKindSupportDescriptor.Default.GetSupport(marshalKind, info, context, out diagnostic);
+            return ByValueMarshalKindSupportDescriptor.Default.GetSupport(marshalKind, info, out diagnostic);
         }
 
     }

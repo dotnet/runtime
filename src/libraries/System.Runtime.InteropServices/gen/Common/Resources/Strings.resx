@@ -144,9 +144,6 @@
   <data name="MarshallingStringOrCharAsUndefinedNotSupported" xml:space="preserve">
     <value>Marshalling string or char without explicit marshalling information is not supported. Specify '{0}.StringMarshalling', '{0}.StringMarshallingCustomType', 'MarshalUsingAttribute' or 'MarshalAsAttribute'.</value>
   </data>
-  <data name="SafeHandleByRefMustBeConcrete" xml:space="preserve">
-    <value>An abstract type derived from 'SafeHandle' cannot be marshalled by reference. The provided type must be concrete.</value>
-  </data>
   <data name="CyclicalCountInfo" xml:space="preserve">
     <value>This element cannot depend on '{0}' for collection size information without creating a dependency cycle</value>
   </data>
@@ -199,7 +196,7 @@
     <value>Add 'GeneratedComClassAttribute' to enable passing objects of this type to COM and allow unsafe code</value>
   </data>
   <data name="AddGeneratedComClassAttributeDescription" xml:space="preserve">
-    <value>This type implements at least one type with the 'GeneratedComInterfaceAttribute' attribute. Add the 'GeneratedComClassAttribute' to enable passing this type to COM and exposing the COM interfaces for the types with the 'GeneratedComInterfaceAttribute' from objects of this type.</value>
+    <value>This type implements at least one type with the 'GeneratedComInterfaceAttribute' attribute or its base type has the 'GeneratedComClassAttribute' attribute. Add the 'GeneratedComClassAttribute' to enable passing this type to COM and exposing the COM interfaces for the types with the 'GeneratedComInterfaceAttribute' from objects of this type.</value>
   </data>
   <data name="AddGeneratedComClassAttributeMessage" xml:space="preserve">
     <value>Add the 'GeneratedComClassAttribute' to '{0}' to enable passing objects of type '{0}' to COM</value>
@@ -875,7 +872,13 @@
     <value>[In] and [Out] attributes</value>
   </data>
   <data name="OutAttributeNotSupportedOnByValueParameters" xml:space="preserve">
-    <value>The `[Out]` attribute is only supported on array parameters. Consider using 'out' or 'ref' keywords to make the parameter mutable.</value>
+    <value>The '[Out]' attribute is only supported on array parameters. Consider using 'out' or 'ref' keywords to make the parameter mutable.</value>
+  </data>
+  <data name="InAttributeNotSupportedOnByValueParameters" xml:space="preserve">
+    <value>The '[In]' attribute is only supported on array parameters. By-value parameters are considered read-only by default.</value>
+  </data>
+  <data name="InOutAttributeNotSupportedOnByValueParameters" xml:space="preserve">
+    <value>The '[In]' and '[Out]' attributes are only supported on array parameters. Consider using the 'ref' keyword to make the parameter mutable.</value>
   </data>
   <data name="ComMethodReturningIntWillBeOutParameterMessage" xml:space="preserve">
     <value>The return value in the managed definition will be converted to an 'out' parameter when calling the unmanaged COM method. If the return value is intended to be the HRESULT code returned by the unmanaged COM method, use '[PreserveSig]' on the method.</value>
@@ -888,5 +891,29 @@
   </data>
   <data name="HResultTypeWillBeTreatedAsStructTitle" xml:space="preserve">
     <value>This type will be treated as a struct in the native signature, not as a native HRESULT</value>
+  </data>
+  <data name="PreferExplicitInOutAttributesOnArrays" xml:space="preserve">
+    <value>It is recommended to use explicit '[In]' and '[Out]' attributes on array parameters.</value>
+  </data>
+  <data name="ComInterfaceUsageDoesNotFollowBestPracticesTitle" xml:space="preserve">
+    <value>The usage of 'GeneratedComInterfaceAttribute' does not follow recommendations.</value>
+  </data>
+  <data name="ComInterfaceUsageDoesNotFollowBestPracticesMessageWithDetails" xml:space="preserve">
+    <value>The usage of 'GeneratedComInterfaceAttribute' does not follow recommendations. {0}</value>
+  </data>
+  <data name="LibraryImportUsageDoesNotFollowBestPracticesTitle" xml:space="preserve">
+    <value>The usage of 'LibraryImportAttribute' does not follow recommendations.</value>
+  </data>
+  <data name="LibraryImportUsageDoesNotFollowBestPracticesMessageWithDetails" xml:space="preserve">
+    <value>The usage of 'LibraryImportAttribute' does not follow recommendations. {0}</value>
+  </data>
+  <data name="InVariantShouldBeRef" xml:space="preserve">
+    <value>Objects marshalled from VARIANTs as 'in' parameters in unmanaged-to-managed calls will not propagate back the updated result, even if the VARIANT is a VT_BYREF variant. Use a 'ref' parameter instead of an 'in' parameter to propagate the updated value back to the caller.</value>
+  </data>
+  <data name="BaseInterfaceDefinedInOtherAssemblyMessage" xml:space="preserve">
+    <value>The type '{0}' has a base interface '{1}' defined in a different assembly. This can cause a variety of difficult to diagnose issues in some scenarios</value>
+  </data>
+  <data name="BaseInterfaceDefinedInOtherAssemblyTitle" xml:space="preserve">
+    <value>Specifying 'GeneratedComInterfaceAttribute' on an interface that has a base interface defined in another assembly is not supported</value>
   </data>
 </root>

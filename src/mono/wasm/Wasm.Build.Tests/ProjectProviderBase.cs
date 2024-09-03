@@ -10,6 +10,7 @@ using System.IO;
 using System.Linq;
 using System.Runtime.Serialization.Json;
 using System.Text;
+using System.Text.Json;
 using System.Text.RegularExpressions;
 using Microsoft.NET.Sdk.WebAssembly;
 using Xunit;
@@ -22,7 +23,7 @@ namespace Wasm.Build.Tests;
 public abstract class ProjectProviderBase(ITestOutputHelper _testOutput, string? _projectDir)
 {
     public static string WasmAssemblyExtension = BuildTestBase.s_buildEnv.UseWebcil ? ".wasm" : ".dll";
-    protected const string s_dotnetVersionHashRegex = @"\.(?<version>[0-9]+\.[0-9]+\.[a-zA-Z0-9\.-]+)\.(?<hash>[a-zA-Z0-9]+)\.";
+    protected const string s_dotnetVersionHashRegex = @"\.(?<hash>[a-zA-Z0-9]+)\.";
 
     private const string s_runtimePackPathPattern = "\\*\\* MicrosoftNetCoreAppRuntimePackDir : '([^ ']*)'";
     private static Regex s_runtimePackPathRegex = new Regex(s_runtimePackPathPattern);
@@ -33,9 +34,13 @@ public abstract class ProjectProviderBase(ITestOutputHelper _testOutput, string?
     };
 
     public string? ProjectDir { get; set; } = _projectDir;
-    protected ITestOutputHelper _testOutput = _testOutput;
+    protected ITestOutputHelper _testOutput = new TestOutputWrapper(_testOutput);
     protected BuildEnvironment _buildEnv = BuildTestBase.s_buildEnv;
     public string BundleDirName { get; set; } = "wwwroot";
+
+    public bool IsFingerprintingSupported { get; protected set; }
+
+    public bool IsFingerprintingEnabled => IsFingerprintingSupported && EnvironmentVariables.UseFingerprinting;
 
     // Returns the actual files on disk
     public IReadOnlyDictionary<string, DotNetFileName> AssertBasicBundle(AssertBundleOptionsBase assertOptions)
@@ -45,17 +50,17 @@ public abstract class ProjectProviderBase(ITestOutputHelper _testOutput, string?
 
         TestUtils.AssertFilesExist(assertOptions.BinFrameworkDir,
                                    new[] { "System.Private.CoreLib.dll" },
-                                   expectToExist: !BuildTestBase.UseWebcil);
+                                   expectToExist: IsFingerprintingEnabled ? false : !BuildTestBase.UseWebcil);
         TestUtils.AssertFilesExist(assertOptions.BinFrameworkDir,
                                    new[] { "System.Private.CoreLib.wasm" },
-                                   expectToExist: BuildTestBase.UseWebcil);
+                                   expectToExist: IsFingerprintingEnabled ? false : BuildTestBase.UseWebcil);
 
-        AssertBootJson(assertOptions);
+        var bootJson = AssertBootJson(assertOptions);
 
         // icu
         if (assertOptions.AssertIcuAssets)
         {
-            AssertIcuAssets(assertOptions);
+            AssertIcuAssets(assertOptions, bootJson);
         }
         else
         {
@@ -124,8 +129,7 @@ public abstract class ProjectProviderBase(ITestOutputHelper _testOutput, string?
                             return true;
 
                         actual[expectedFilename] = new(ExpectedFilename: expectedFilename,
-                                                       Version: match.Groups[1].Value,
-                                                       Hash: match.Groups[2].Value,
+                                                       Hash: match.Groups[1].Value,
                                                        ActualPath: actualFile);
                     }
                     else
@@ -134,7 +138,6 @@ public abstract class ProjectProviderBase(ITestOutputHelper _testOutput, string?
                             return true;
 
                         actual[expectedFilename] = new(ExpectedFilename: expectedFilename,
-                                                       Version: null,
                                                        Hash: null,
                                                        ActualPath: actualFile);
                     }
@@ -180,15 +183,11 @@ public abstract class ProjectProviderBase(ITestOutputHelper _testOutput, string?
                                        expectFingerprintOnDotnetJs: expectFingerprintOnDotnetJs,
                                        expectFingerprintForThisFile: expectFingerprint))
             {
-                if (string.IsNullOrEmpty(actual[expectedFilename].Version))
-                    throw new XunitException($"Expected version in filename: {actual[expectedFilename].ActualPath}");
                 if (string.IsNullOrEmpty(actual[expectedFilename].Hash))
                     throw new XunitException($"Expected hash in filename: {actual[expectedFilename].ActualPath}");
             }
             else
             {
-                if (!string.IsNullOrEmpty(actual[expectedFilename].Version))
-                    throw new XunitException($"Expected no version in filename: {actual[expectedFilename].ActualPath}");
                 if (!string.IsNullOrEmpty(actual[expectedFilename].Hash))
                     throw new XunitException($"Expected no hash in filename: {actual[expectedFilename].ActualPath}");
             }
@@ -283,6 +282,7 @@ public abstract class ProjectProviderBase(ITestOutputHelper _testOutput, string?
         {
             Path.Combine(paths.BinDir, "publish", $"{buildArgs.ProjectName}.dll"),
             Path.Combine(paths.ObjWasmDir, "driver.o"),
+            Path.Combine(paths.ObjWasmDir, "runtime.o"),
             Path.Combine(paths.ObjWasmDir, "corebindings.o"),
             Path.Combine(paths.ObjWasmDir, "pinvoke.o"),
 
@@ -292,6 +292,7 @@ public abstract class ProjectProviderBase(ITestOutputHelper _testOutput, string?
 
             Path.Combine(paths.BundleDir, "_framework", "dotnet.native.wasm"),
             Path.Combine(paths.BundleDir, "_framework", "dotnet.native.js"),
+            Path.Combine(paths.BundleDir, "_framework", "dotnet.globalization.js"),
         };
 
         if (buildArgs.AOT)
@@ -315,12 +316,13 @@ public abstract class ProjectProviderBase(ITestOutputHelper _testOutput, string?
         dict["dotnet.js.map"]=(Path.Combine(paths.BundleDir, "_framework", "dotnet.js.map"), true);
         dict["dotnet.runtime.js"]=(Path.Combine(paths.BundleDir, "_framework", "dotnet.runtime.js"), true);
         dict["dotnet.runtime.js.map"]=(Path.Combine(paths.BundleDir, "_framework", "dotnet.runtime.js.map"), true);
+        dict["dotnet.globalization.js"]=(Path.Combine(paths.BundleDir, "_framework", "dotnet.globalization.js"), true);
 
         return dict;
     }
 
-    public static bool ShouldCheckFingerprint(string expectedFilename, bool expectFingerprintOnDotnetJs, bool expectFingerprintForThisFile) =>
-        (expectedFilename == "dotnet.js" && expectFingerprintOnDotnetJs) || expectFingerprintForThisFile;
+    public bool ShouldCheckFingerprint(string expectedFilename, bool expectFingerprintOnDotnetJs, bool expectFingerprintForThisFile)
+        => IsFingerprintingEnabled && ((expectedFilename == "dotnet.js" && expectFingerprintOnDotnetJs) || expectFingerprintForThisFile);
 
 
     public static void AssertRuntimePackPath(string buildOutput, string targetFramework, RuntimeVariant runtimeType = RuntimeVariant.SingleThreaded)
@@ -348,7 +350,7 @@ public abstract class ProjectProviderBase(ITestOutputHelper _testOutput, string?
         }
     }
 
-    public void AssertIcuAssets(AssertBundleOptionsBase assertOptions)
+    public void AssertIcuAssets(AssertBundleOptionsBase assertOptions, BootJsonData bootJson)
     {
         List<string> expected = new();
         switch (assertOptions.GlobalizationMode)
@@ -360,13 +362,14 @@ public abstract class ProjectProviderBase(ITestOutputHelper _testOutput, string?
                 break;
             case GlobalizationMode.Hybrid:
                 expected.Add("icudt_hybrid.dat");
+                expected.Add("segmentation-rules.json");
                 break;
             case GlobalizationMode.PredefinedIcu:
                 if (string.IsNullOrEmpty(assertOptions.PredefinedIcudt))
                     throw new ArgumentException("WasmBuildTest is invalid, value for predefinedIcudt is required when GlobalizationMode=PredefinedIcu.");
 
                 // predefined ICU name can be identical with the icu files from runtime pack
-                expected.Add(assertOptions.PredefinedIcudt);
+                expected.Add(Path.GetFileName(assertOptions.PredefinedIcudt));
                 break;
             case GlobalizationMode.Sharded:
                 // icu shard chosen based on the locale
@@ -379,12 +382,36 @@ public abstract class ProjectProviderBase(ITestOutputHelper _testOutput, string?
         }
 
         IEnumerable<string> actual = Directory.EnumerateFiles(assertOptions.BinFrameworkDir, "icudt*dat");
-        AssertFilesOnDisk(expected, actual);
+        if (assertOptions.GlobalizationMode == GlobalizationMode.Hybrid)
+            actual = actual.Union(Directory.EnumerateFiles(assertOptions.BinFrameworkDir, "segmentation-rules*json"));
+
+        if (IsFingerprintingEnabled)
+        {
+            var expectedFingerprinted = new List<string>(expected.Count);
+            foreach (var expectedItem in expected)
+            {
+                var expectedFingerprintedItem = bootJson.resources.fingerprinting.Where(kv => kv.Value == expectedItem).SingleOrDefault().Key;
+                if (string.IsNullOrEmpty(expectedFingerprintedItem))
+                    throw new XunitException($"Could not find ICU asset {expectedItem} in fingerprinting in boot config");
+
+                expectedFingerprinted.Add(expectedFingerprintedItem);
+            }
+
+            expected = expectedFingerprinted;
+        }
+
+        AssertFileNames(expected, actual);
         if (assertOptions.GlobalizationMode is GlobalizationMode.PredefinedIcu)
-            TestUtils.AssertSameFile(assertOptions.PredefinedIcudt!, actual.Single());
+        {
+            string srcPath = assertOptions.PredefinedIcudt!;
+            string runtimePackDir = BuildTestBase.s_buildEnv.GetRuntimeNativeDir(assertOptions.TargetFramework, assertOptions.RuntimeType);
+            if (!Path.IsPathRooted(srcPath))
+                srcPath = Path.Combine(runtimePackDir, assertOptions.PredefinedIcudt!);
+            TestUtils.AssertSameFile(srcPath, actual.Single());
+        }
     }
 
-    public void AssertBootJson(AssertBundleOptionsBase options)
+    public BootJsonData AssertBootJson(AssertBundleOptionsBase options)
     {
         EnsureProjectDirIsSet();
         // string binFrameworkDir = FindBinFrameworkDir(options.Config, options.IsPublish, options.TargetFramework);
@@ -394,22 +421,29 @@ public abstract class ProjectProviderBase(ITestOutputHelper _testOutput, string?
 
         BootJsonData bootJson = ParseBootData(bootJsonPath);
         string spcExpectedFilename = $"System.Private.CoreLib{WasmAssemblyExtension}";
-        string? spcActualFilename = bootJson.resources.assembly.Keys
-                                        .Where(a => Path.GetFileNameWithoutExtension(a) == "System.Private.CoreLib")
+
+        if (IsFingerprintingEnabled)
+        {
+            spcExpectedFilename = bootJson.resources.fingerprinting.Where(kv => kv.Value == spcExpectedFilename).SingleOrDefault().Key;
+            if (string.IsNullOrEmpty(spcExpectedFilename))
+                throw new XunitException($"Could not find an assembly System.Private.CoreLib in fingerprinting in {bootJsonPath}");
+        }
+
+        string? spcActualFilename = bootJson.resources.coreAssembly.Keys
+                                        .Where(a => a == spcExpectedFilename)
                                         .SingleOrDefault();
         if (spcActualFilename is null)
             throw new XunitException($"Could not find an assembly named System.Private.CoreLib.* in {bootJsonPath}");
-        if (spcExpectedFilename != spcActualFilename)
-            throw new XunitException($"Expected to find {spcExpectedFilename} but found {spcActualFilename} in {bootJsonPath}");
 
         var bootJsonEntries = bootJson.resources.jsModuleNative.Keys
+            .Union(bootJson.resources.wasmNative.Keys)
             .Union(bootJson.resources.jsModuleRuntime.Keys)
             .Union(bootJson.resources.jsModuleWorker?.Keys ?? Enumerable.Empty<string>())
+            .Union(bootJson.resources.jsModuleGlobalization?.Keys ?? Enumerable.Empty<string>())
             .Union(bootJson.resources.wasmSymbols?.Keys ?? Enumerable.Empty<string>())
-            .Union(bootJson.resources.wasmNative.Keys)
             .ToArray();
 
-        var expectedEntries = new SortedDictionary<string, Action<string>>();
+        var expectedEntries = new SortedDictionary<string, Func<string, bool>>();
         IReadOnlySet<string> expected = GetDotNetFilesExpectedSet(options);
 
         var knownSet = GetAllKnownDotnetFilesToFingerprintMap(options);
@@ -429,28 +463,34 @@ public abstract class ProjectProviderBase(ITestOutputHelper _testOutput, string?
                                            expectFingerprintOnDotnetJs: options.ExpectFingerprintOnDotnetJs,
                                            expectFingerprintForThisFile: expectFingerprint))
                 {
-                    Assert.Matches($"{prefix}{s_dotnetVersionHashRegex}{extension}", item);
+                    return Regex.Match(item, $"{prefix}{s_dotnetVersionHashRegex}{extension}").Success;
                 }
                 else
                 {
-                    Assert.Equal(expectedFilename, item);
+                    return expectedFilename == item;
                 }
-
-                string absolutePath = Path.Combine(binFrameworkDir, item);
-                Assert.True(File.Exists(absolutePath), $"Expected to find '{absolutePath}'");
             };
         }
         // FIXME: maybe use custom code so the details can show up in the log
-        bootJsonEntries = bootJsonEntries.Order().ToArray();
+        bootJsonEntries = bootJsonEntries.ToArray();
         if (bootJsonEntries.Length != expectedEntries.Count)
         {
             throw new XunitException($"In {bootJsonPath}{Environment.NewLine}" +
                                         $"  Expected: {string.Join(", ", expectedEntries.Keys.ToArray())}{Environment.NewLine}" +
                                         $"  Actual  : {string.Join(", ", bootJsonEntries)}");
-
-
         }
-        Assert.Collection(bootJsonEntries.Order(), expectedEntries.Values.ToArray());
+
+        var expectedEntriesToCheck = expectedEntries.Values.ToList();
+        foreach (var bootJsonEntry in bootJsonEntries)
+        {
+            var matcher = expectedEntriesToCheck.FirstOrDefault(c => c(bootJsonEntry));
+            if (matcher == null)
+                throw new XunitException($"Unexpected entry in boot json '{bootJsonEntry}'. Expected files {String.Join(", ", expectedEntries.Keys)}");
+
+            expectedEntriesToCheck.Remove(matcher);
+        }
+
+        return bootJson;
     }
 
     public static BootJsonData ParseBootData(string bootJsonPath)
@@ -466,7 +506,7 @@ public abstract class ProjectProviderBase(ITestOutputHelper _testOutput, string?
         return config;
     }
 
-    private void AssertFilesOnDisk(IEnumerable<string> expected, IEnumerable<string> actual)
+    private void AssertFileNames(IEnumerable<string> expected, IEnumerable<string> actual)
     {
         expected = expected.Order().Select(f => Path.GetFileName(f)).Distinct();
         var actualFileNames = actual.Order().Select(f => Path.GetFileName(f));
@@ -480,10 +520,10 @@ public abstract class ProjectProviderBase(ITestOutputHelper _testOutput, string?
         Assert.Equal(expected, actualFileNames);
     }
 
-    public virtual string FindBinFrameworkDir(string config, bool forPublish, string framework, string? bundleDirName = null)
+    public virtual string FindBinFrameworkDir(string config, bool forPublish, string framework, string? bundleDirName = null, string? projectDir = null)
     {
         EnsureProjectDirIsSet();
-        string basePath = Path.Combine(ProjectDir!, "bin", config, framework);
+        string basePath = Path.Combine(projectDir ?? ProjectDir!, "bin", config, framework);
         if (forPublish)
             basePath = FindSubDirIgnoringCase(basePath, "publish");
 

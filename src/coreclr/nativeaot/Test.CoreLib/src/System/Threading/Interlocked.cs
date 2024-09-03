@@ -12,22 +12,30 @@ namespace System.Threading
         public static IntPtr CompareExchange(ref IntPtr location1, IntPtr value, IntPtr comparand)
         {
 #if TARGET_64BIT
-            return (IntPtr)Interlocked.CompareExchange(ref Unsafe.As<IntPtr, long>(ref location1), (long)value, (long)comparand);
+            return (IntPtr)CompareExchange(ref Unsafe.As<IntPtr, long>(ref location1), (long)value, (long)comparand);
 #else
-            return (IntPtr)Interlocked.CompareExchange(ref Unsafe.As<IntPtr, int>(ref location1), (int)value, (int)comparand);
+            return (IntPtr)CompareExchange(ref Unsafe.As<IntPtr, int>(ref location1), (int)value, (int)comparand);
 #endif
         }
 
         [Intrinsic]
         public static int CompareExchange(ref int location1, int value, int comparand)
         {
+#if TARGET_X86 || TARGET_AMD64 || TARGET_ARM64 || TARGET_RISCV64
+            return CompareExchange(ref location1, value, comparand);
+#else
             return RuntimeImports.InterlockedCompareExchange(ref location1, value, comparand);
+#endif
         }
 
         [Intrinsic]
         public static long CompareExchange(ref long location1, long value, long comparand)
         {
+#if TARGET_AMD64 || TARGET_ARM64 || TARGET_RISCV64
+            return CompareExchange(ref location1, value, comparand);
+#else
             return RuntimeImports.InterlockedCompareExchange(ref location1, value, comparand);
+#endif
         }
 
         [Intrinsic]

@@ -80,14 +80,9 @@ namespace System.Security.Cryptography.X509Certificates
                 return X509ContentType.Pkcs7;
             }
 
+            if (X509CertificateLoader.IsPkcs12(rawData))
             {
-                OpenSslPkcs12Reader? pfx;
-
-                if (OpenSslPkcs12Reader.TryRead(rawData, out pfx))
-                {
-                    pfx.Dispose();
-                    return X509ContentType.Pkcs12;
-                }
+                return X509ContentType.Pkcs12;
             }
 
             // Unsupported format.
@@ -147,15 +142,9 @@ namespace System.Security.Cryptography.X509Certificates
             }
 
             // X509ContentType.Pkcs12 (aka PFX)
+            if (X509CertificateLoader.IsPkcs12(fileName))
             {
-                OpenSslPkcs12Reader? pkcs12Reader;
-
-                if (OpenSslPkcs12Reader.TryRead(File.ReadAllBytes(fileName), out pkcs12Reader))
-                {
-                    pkcs12Reader.Dispose();
-
-                    return X509ContentType.Pkcs12;
-                }
+                return X509ContentType.Pkcs12;
             }
 
             // Unsupported format.
@@ -235,13 +224,14 @@ namespace System.Security.Cryptography.X509Certificates
 
         public override void DecodeX509EnhancedKeyUsageExtension(byte[] encoded, out OidCollection usages)
         {
-            OidCollection oids = new OidCollection();
+            OidCollection oids;
 
             using (SafeEkuExtensionHandle eku = Interop.Crypto.DecodeExtendedKeyUsage(encoded, encoded.Length))
             {
                 Interop.Crypto.CheckValidOpenSslHandle(eku);
 
                 int count = Interop.Crypto.GetX509EkuFieldCount(eku);
+                oids = new OidCollection(count);
 
                 for (int i = 0; i < count; i++)
                 {
@@ -290,8 +280,11 @@ namespace System.Security.Cryptography.X509Certificates
             DSAOpenSsl dsa = new DSAOpenSsl();
             try
             {
-                dsa.ImportSubjectPublicKeyInfo(writer.Encode(), out _);
-                return dsa;
+                return writer.Encode(dsa, static (dsa, encoded) =>
+                {
+                    dsa.ImportSubjectPublicKeyInfo(encoded, out _);
+                    return dsa;
+                });
             }
             catch (Exception)
             {

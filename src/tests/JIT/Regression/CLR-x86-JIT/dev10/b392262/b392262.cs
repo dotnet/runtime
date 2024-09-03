@@ -40,7 +40,7 @@ namespace b392262
         }
 
         [Fact]
-        public static int TestEntryPoint()
+        public static void TestEntryPoint()
         {
             VT vt = new VT();
             vt.bool1 = true;
@@ -50,8 +50,6 @@ namespace b392262
 
             for (int i = 0; i < 100; i++)
                 Test(vt);
-
-            return 100;
         }
     }
 }

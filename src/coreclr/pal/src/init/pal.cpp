@@ -76,15 +76,10 @@ int CacheLineSize;
 #include <sys/param.h>
 #include <sys/sysctl.h>
 #include <kvm.h>
-#elif defined(__sun)
-#ifndef _KERNEL
-#define _KERNEL
-#define UNDEF_KERNEL
 #endif
-#include <sys/procfs.h>
-#ifdef UNDEF_KERNEL
-#undef _KERNEL
-#endif
+
+#if defined(__sun)
+#include <procfs.h>
 #endif
 
 #ifdef __FreeBSD__
@@ -95,13 +90,6 @@ int CacheLineSize;
 #include <clrconfignocache.h>
 
 using namespace CorUnix;
-
-//
-// $$TODO The C++ compiler doesn't like pal/cruntime.h so duplicate the
-// necessary prototype here
-//
-
-extern "C" BOOL CRTInitStdStreams(void);
 
 extern bool g_running_in_exe;
 
@@ -138,21 +126,6 @@ static BOOL INIT_SharedFilesPath(void);
 #ifdef _DEBUG
 extern void PROCDumpThreadList(void);
 #endif
-
-#if defined(__APPLE__)
-static bool RunningNatively()
-{
-    int ret = 0;
-    size_t sz = sizeof(ret);
-    if (sysctlbyname("sysctl.proc_native", &ret, &sz, nullptr, 0) != 0)
-    {
-        // if the sysctl failed, we'll assume this OS does not support
-        // binary translation - so we must be running natively.
-        return true;
-    }
-    return ret != 0;
-}
-#endif // __APPLE__
 
 /*++
 Function:
@@ -288,6 +261,14 @@ InitializeDefaultStackSize()
         }
     }
 
+#ifdef HOST_APPLE
+    // Match Windows stack size
+    if (g_defaultStackSize == 0)
+    {
+        g_defaultStackSize = 1536 * 1024;
+    }
+#endif
+
 #ifdef ENSURE_PRIMARY_STACK_SIZE
     if (g_defaultStackSize == 0)
     {
@@ -331,14 +312,6 @@ Initialize(
 
     /*Firstly initiate a lastError */
     SetLastError(ERROR_GEN_FAILURE);
-
-#ifdef __APPLE__
-    if (!RunningNatively())
-    {
-        SetLastError(ERROR_BAD_FORMAT);
-        goto exit;
-    }
-#endif // __APPLE__
 
     CriticalSectionSubSysInitialize();
 
@@ -633,6 +606,17 @@ Initialize(
             goto CLEANUP10;
         }
 
+        if (flags & PAL_INITIALIZE_FLUSH_PROCESS_WRITE_BUFFERS)
+        {
+            // Initialize before first thread is created for faster load on Linux
+            if (!InitializeFlushProcessWriteBuffers())
+            {
+                ERROR("Unable to initialize flush process write buffers\n");
+                palError = ERROR_PALINIT_INITIALIZE_FLUSH_PROCESS_WRITE_BUFFERS;
+                goto CLEANUP10;
+            }
+        }
+
         if (flags & PAL_INITIALIZE_SYNC_THREAD)
         {
             //
@@ -665,13 +649,6 @@ Initialize(
             }
         }
 
-        if (FALSE == CRTInitStdStreams())
-        {
-            ERROR("Unable to initialize CRT standard streams\n");
-            palError = ERROR_PALINIT_STD_STREAMS;
-            goto CLEANUP15;
-        }
-
         TRACE("First-time PAL initialization complete.\n");
         init_count++;
 
@@ -691,9 +668,6 @@ Initialize(
     }
     goto done;
 
-    /* No cleanup required for CRTInitStdStreams */
-CLEANUP15:
-    FILECleanupStdHandles();
 CLEANUP14:
     SEHCleanup();
 CLEANUP13:
@@ -744,9 +718,6 @@ done:
         ASSERT("returning failure, but last error not set\n");
     }
 
-#ifdef __APPLE__
-exit :
-#endif // __APPLE__
     LOGEXIT("PAL_Initialize returns int %d\n", retval);
     return retval;
 }
@@ -799,11 +770,6 @@ PAL_InitializeCoreCLR(const char *szExePath, BOOL runningInExe)
     {
         printf("PROCAbortInitialize FAILED %d (%s)\n", errno, strerror(errno));
         return ERROR_PALINIT_PROCABORT_INITIALIZE;
-    }
-
-    if (!InitializeFlushProcessWriteBuffers())
-    {
-        return ERROR_PALINIT_INITIALIZE_FLUSH_PROCESS_WRITE_BUFFERS;
     }
 
     return ERROR_SUCCESS;
@@ -1179,7 +1145,7 @@ static LPWSTR INIT_FormatCommandLine (int argc, const char * const *argv)
         length+=3;
         length+=strlen(argv[i])*2;
     }
-    command_line = reinterpret_cast<LPSTR>(InternalMalloc(length));
+    command_line = reinterpret_cast<LPSTR>(malloc(length != 0 ? length : 1));
 
     if(!command_line)
     {
@@ -1231,7 +1197,7 @@ static LPWSTR INIT_FormatCommandLine (int argc, const char * const *argv)
         return nullptr;
     }
 
-    retval = reinterpret_cast<LPWSTR>(InternalMalloc((sizeof(WCHAR)*i)));
+    retval = reinterpret_cast<LPWSTR>(malloc((sizeof(WCHAR)*i)));
     if(retval == nullptr)
     {
         ERROR("can't allocate memory for Unicode command line!\n");
@@ -1287,7 +1253,7 @@ static LPWSTR INIT_GetCurrentEXEPath()
         return nullptr;
     }
 
-    return_value = reinterpret_cast<LPWSTR>(InternalMalloc((return_size*sizeof(WCHAR))));
+    return_value = reinterpret_cast<LPWSTR>(malloc((return_size*sizeof(WCHAR))));
     if (nullptr == return_value)
     {
         ERROR("Not enough memory to create full path\n");

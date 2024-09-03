@@ -21,5 +21,8 @@ namespace System
 
         [DoesNotReturn]
         internal static void ThrowOutOfMemoryException() => throw new OutOfMemoryException();
+
+        [DoesNotReturn]
+        internal static void ThrowIncompatibleComparer() => throw new InvalidOperationException(SR.InvalidOperation_IncompatibleComparer);
     }
 }

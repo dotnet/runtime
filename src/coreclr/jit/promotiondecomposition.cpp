@@ -238,7 +238,7 @@ private:
     {
         ClassLayout* dstLayout = m_store->GetLayout(m_compiler);
 
-        StructSegments segments = m_promotion->SignificantSegments(dstLayout);
+        StructSegments segments = m_compiler->GetSignificantSegments(dstLayout);
 
         for (int i = 0; i < m_entries.Height(); i++)
         {
@@ -275,7 +275,9 @@ private:
         var_types PrimitiveType;
 
         RemainderStrategy(int type, unsigned primitiveOffset = 0, var_types primitiveType = TYP_UNDEF)
-            : Type(type), PrimitiveOffset(primitiveOffset), PrimitiveType(primitiveType)
+            : Type(type)
+            , PrimitiveOffset(primitiveOffset)
+            , PrimitiveType(primitiveType)
         {
         }
     };
@@ -310,14 +312,15 @@ private:
         // See if we can "plug the hole" with a single primitive.
         if (remainder.CoveringSegment(&segment))
         {
-            var_types primitiveType = TYP_UNDEF;
-            unsigned  size          = segment.End - segment.Start;
+            var_types    primitiveType = TYP_UNDEF;
+            unsigned     size          = segment.End - segment.Start;
+            ClassLayout* dstLayout     = m_store->GetLayout(m_compiler);
+
             if ((size == TARGET_POINTER_SIZE) && ((segment.Start % TARGET_POINTER_SIZE) == 0))
             {
-                ClassLayout* dstLayout = m_store->GetLayout(m_compiler);
-                primitiveType          = dstLayout->GetGCPtrType(segment.Start / TARGET_POINTER_SIZE);
+                primitiveType = dstLayout->GetGCPtrType(segment.Start / TARGET_POINTER_SIZE);
             }
-            else
+            else if (!dstLayout->IntersectsGCPtr(segment.Start, size))
             {
                 switch (size)
                 {
@@ -336,7 +339,29 @@ private:
                         break;
 #endif
 
-                        // TODO-CQ: SIMD sizes
+#ifdef FEATURE_SIMD
+                    case 16:
+                        if (m_compiler->getPreferredVectorByteLength() >= 16)
+                        {
+                            primitiveType = TYP_SIMD16;
+                        }
+                        break;
+#ifdef TARGET_XARCH
+                    case 32:
+                        if (m_compiler->getPreferredVectorByteLength() >= 32)
+                        {
+                            primitiveType = TYP_SIMD32;
+                        }
+                        break;
+
+                    case 64:
+                        if (m_compiler->getPreferredVectorByteLength() >= 64)
+                        {
+                            primitiveType = TYP_SIMD64;
+                        }
+                        break;
+#endif
+#endif
                 }
             }
 
@@ -704,8 +729,8 @@ private:
     //   remainderStrategy - The strategy we are using for the remainder
     //   dump              - Whether to JITDUMP decisions made
     //
-    bool CanSkipEntry(const Entry&             entry,
-                      const StructDeaths&      deaths,
+    bool CanSkipEntry(const Entry&                               entry,
+                      const StructDeaths&                        deaths,
                       const RemainderStrategy& remainderStrategy DEBUGARG(bool dump = false))
     {
         if (entry.ToReplacement != nullptr)
@@ -737,7 +762,7 @@ private:
             // If the destination has replacements we still have usable
             // liveness information for the remainder. This case happens if the
             // source was also promoted.
-            if (m_dstInvolvesReplacements && deaths.IsRemainderDying())
+            if (m_dstInvolvesReplacements && !m_hasNonRemainderUseOfStructLocal && deaths.IsRemainderDying())
             {
 #ifdef DEBUG
                 if (dump)
@@ -1174,33 +1199,64 @@ private:
 // Arguments:
 //   addr   - [in, out] The address node.
 //   offset - [out] The sum of offset peeled such that ADD(addr, offset) is equivalent to the original addr.
-//   fldSeq - [out] The combined field sequence for all the peeled offsets.
+//   fldSeq - [out, optional] The combined field sequence for all the peeled offsets.
 //
 void Compiler::gtPeelOffsets(GenTree** addr, target_ssize_t* offset, FieldSeq** fldSeq)
 {
     assert((*addr)->TypeIs(TYP_I_IMPL, TYP_BYREF, TYP_REF));
     *offset = 0;
-    *fldSeq = nullptr;
-    while ((*addr)->OperIs(GT_ADD) && !(*addr)->gtOverflow())
-    {
-        GenTree* op1 = (*addr)->gtGetOp1();
-        GenTree* op2 = (*addr)->gtGetOp2();
 
-        if (op2->IsCnsIntOrI() && !op2->AsIntCon()->IsIconHandle())
+    if (fldSeq != nullptr)
+    {
+        *fldSeq = nullptr;
+    }
+
+    while (true)
+    {
+        if ((*addr)->OperIs(GT_ADD) && !(*addr)->gtOverflow())
         {
-            assert(op2->TypeIs(TYP_I_IMPL));
-            GenTreeIntCon* intCon = op2->AsIntCon();
-            *offset += (target_ssize_t)intCon->IconValue();
-            *fldSeq = m_fieldSeqStore->Append(*fldSeq, intCon->gtFieldSeq);
-            *addr   = op1;
+            GenTree* op1 = (*addr)->gtGetOp1();
+            GenTree* op2 = (*addr)->gtGetOp2();
+
+            if (op2->IsCnsIntOrI() && op2->TypeIs(TYP_I_IMPL) && !op2->AsIntCon()->IsIconHandle())
+            {
+                GenTreeIntCon* intCon = op2->AsIntCon();
+                *offset += (target_ssize_t)intCon->IconValue();
+
+                if (fldSeq != nullptr)
+                {
+                    *fldSeq = m_fieldSeqStore->Append(*fldSeq, intCon->gtFieldSeq);
+                }
+
+                *addr = op1;
+            }
+            else if (op1->IsCnsIntOrI() && op1->TypeIs(TYP_I_IMPL) && !op1->AsIntCon()->IsIconHandle())
+            {
+                GenTreeIntCon* intCon = op1->AsIntCon();
+                *offset += (target_ssize_t)intCon->IconValue();
+
+                if (fldSeq != nullptr)
+                {
+                    *fldSeq = m_fieldSeqStore->Append(intCon->gtFieldSeq, *fldSeq);
+                }
+
+                *addr = op2;
+            }
+            else
+            {
+                break;
+            }
         }
-        else if (op1->IsCnsIntOrI() && !op1->AsIntCon()->IsIconHandle())
+        else if ((*addr)->OperIs(GT_LEA))
         {
-            assert(op1->TypeIs(TYP_I_IMPL));
-            GenTreeIntCon* intCon = op1->AsIntCon();
-            *offset += (target_ssize_t)intCon->IconValue();
-            *fldSeq = m_fieldSeqStore->Append(intCon->gtFieldSeq, *fldSeq);
-            *addr   = op2;
+            GenTreeAddrMode* addrMode = (*addr)->AsAddrMode();
+            if (addrMode->HasIndex())
+            {
+                break;
+            }
+
+            *offset += (target_ssize_t)addrMode->Offset();
+            *addr = addrMode->Base();
         }
         else
         {

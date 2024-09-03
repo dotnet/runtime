@@ -9,6 +9,8 @@ using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
+using TestLibrary;
+
 using Xunit;
 
 // This test shares its logic with the managed type system test suite, and seeks to ensure the runtime agrees with it
@@ -69,6 +71,7 @@ namespace istypeequivalent
             }
         }
 
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsWindows))]
         public static void TestTypesWhichShouldMatch()
         {
             foreach (var typePair in GetTypesWhichClaimMatchingTypeIdentifiersInNamespace("TypesWhichMatch"))
@@ -79,6 +82,7 @@ namespace istypeequivalent
             }
         }
 
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsWindows))]
         public static void TestTypesWhichShouldNotMatch()
         {
             foreach (var typePair in GetTypesWhichClaimMatchingTypeIdentifiersInNamespace("TypesWhichDoNotMatch"))
@@ -86,19 +90,6 @@ namespace istypeequivalent
                 Console.WriteLine($"Comparing {typePair.Item1} to {typePair.Item2}");
                 Assert.False(typePair.Item1.IsEquivalentTo(typePair.Item2));
             }
-        }
-
-        public static int Main()
-        {
-            if (!OperatingSystem.IsWindows())
-            {
-                return 100;
-            }
-
-            TestTypesWhichShouldMatch();
-            TestTypesWhichShouldNotMatch();
-
-            return 100;
         }
     }
 }

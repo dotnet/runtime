@@ -1951,11 +1951,20 @@ STDMETHODIMP RegMeta::DefineDocument(       // S_OK or error.
         *partsIndexesPtr++ = 0;
         partsIndexesCount++;
     }
-    stringToken = strtok(docName, (const char*)delim);
+    char* context;
+#ifdef HOST_WINDOWS
+    stringToken = strtok_s(docName, (const char*)delim, &context);
+#else
+    stringToken = strtok_r(docName, (const char*)delim, &context);
+#endif
     while (stringToken != NULL)
     {
         IfFailGo(m_pStgdb->m_MiniMd.m_BlobHeap.AddBlob(MetaData::DataBlob((BYTE*)stringToken, (ULONG)strlen(stringToken)), partsIndexesPtr++));
-        stringToken = strtok(NULL, (const char*)delim);
+#ifdef HOST_WINDOWS
+        stringToken = strtok_s(NULL, (const char*)delim, &context);
+#else
+        stringToken = strtok_r(NULL, (const char*)delim, &context);
+#endif
         partsIndexesCount++;
     }
 

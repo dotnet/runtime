@@ -27,7 +27,7 @@ public unsafe class testout1
     }
 
     [Fact]
-    public static int TestEntryPoint()
+    public static void TestEntryPoint()
     {
         CL cl = new CL();
 
@@ -43,6 +43,5 @@ public unsafe class testout1
             Console.WriteLine("Func: > false");
 
         ulong retval = Convert.ToUInt64(Convert.ToUInt64(cl.a0 - val_1));
-        return 100;
     }
 }

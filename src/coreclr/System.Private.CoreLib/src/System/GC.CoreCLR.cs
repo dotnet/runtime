@@ -12,12 +12,12 @@
 **
 ===========================================================*/
 
-using System.Diagnostics;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using System.Threading;
 using System.Runtime.Versioning;
+using System.Threading;
 
 namespace System
 {
@@ -105,9 +105,6 @@ namespace System
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern Array AllocateNewArray(IntPtr typeHandle, int length, GC_ALLOC_FLAGS flags);
-
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern int GetGenerationWR(IntPtr handle);
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "GCInterface_GetTotalMemory")]
         private static partial long GetTotalMemory();
@@ -290,14 +287,39 @@ namespace System
         //
         public static int GetGeneration(WeakReference wo)
         {
-            int result = GetGenerationWR(wo.WeakHandle);
+            // Note - This throws an NRE if given a null weak reference.
+            object? obj = GCHandle.InternalGet(wo.WeakHandle);
             KeepAlive(wo);
-            return result;
+
+            ArgumentNullException.ThrowIfNull(obj, nameof(wo));
+
+            return GetGeneration(obj);
         }
 
         // Returns the maximum GC generation.  Currently assumes only 1 heap.
         //
         public static int MaxGeneration => GetMaxGeneration();
+
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "GCInterface_GetNextFinalizableObject")]
+        private static unsafe partial void* GetNextFinalizeableObject(ObjectHandleOnStack target);
+
+        private static unsafe uint RunFinalizers()
+        {
+            Thread currentThread = Thread.CurrentThread;
+
+            uint count = 0;
+            while (true)
+            {
+                object? target = null;
+                void* fptr = GetNextFinalizeableObject(ObjectHandleOnStack.Create(ref target));
+                if (fptr == null)
+                    break;
+                ((delegate*<object, void>)fptr)(target!);
+                currentThread.ResetFinalizerThread();
+                count++;
+            }
+            return count;
+        }
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "GCInterface_WaitForPendingFinalizers")]
         private static partial void _WaitForPendingFinalizers();
@@ -324,14 +346,20 @@ namespace System
         // for which SuppressFinalize has already been called. The other situation
         // where calling ReRegisterForFinalize is useful is inside a finalizer that
         // needs to resurrect itself or an object that it references.
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern void _ReRegisterForFinalize(object o);
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "GCInterface_ReRegisterForFinalize")]
+        private static partial void ReRegisterForFinalize(ObjectHandleOnStack o);
 
-        public static void ReRegisterForFinalize(object obj)
+        public static unsafe void ReRegisterForFinalize(object obj)
         {
             ArgumentNullException.ThrowIfNull(obj);
 
-            _ReRegisterForFinalize(obj);
+            MethodTable* pMT = RuntimeHelpers.GetMethodTable(obj);
+            if (pMT->HasFinalizer)
+            {
+                ReRegisterForFinalize(ObjectHandleOnStack.Create(ref obj));
+            }
+
+            // GC.KeepAlive(obj) not required. pMT kept alive via ObjectHandleOnStack
         }
 
         // Returns the total number of bytes currently in use by live objects in
@@ -376,8 +404,13 @@ namespace System
         /// Get a count of the bytes allocated over the lifetime of the process.
         /// </summary>
         /// <param name="precise">If true, gather a precise number, otherwise gather a fairly count. Gathering a precise value triggers at a significant performance penalty.</param>
+        public static long GetTotalAllocatedBytes(bool precise = false) => precise ? GetTotalAllocatedBytesPrecise() : GetTotalAllocatedBytesApproximate();
+
         [MethodImpl(MethodImplOptions.InternalCall)]
-        public static extern long GetTotalAllocatedBytes(bool precise = false);
+        private static extern long GetTotalAllocatedBytesApproximate();
+
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "GCInterface_GetTotalAllocatedBytesPrecise")]
+        private static partial long GetTotalAllocatedBytesPrecise();
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern bool _RegisterForFullGCNotification(int maxGenerationPercentage, int largeObjectHeapPercentage);
@@ -385,11 +418,11 @@ namespace System
         [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern bool _CancelFullGCNotification();
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern int _WaitForFullGCApproach(int millisecondsTimeout);
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "GCInterface_WaitForFullGCApproach")]
+        private static partial int _WaitForFullGCApproach(int millisecondsTimeout);
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern int _WaitForFullGCComplete(int millisecondsTimeout);
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "GCInterface_WaitForFullGCComplete")]
+        private static partial int _WaitForFullGCComplete(int millisecondsTimeout);
 
         public static void RegisterForFullGCNotification(int maxGenerationThreshold, int largeObjectHeapThreshold)
         {
@@ -754,9 +787,7 @@ namespace System
                 // for debug builds we always want to call AllocateNewArray to detect AllocateNewArray bugs
 #if !DEBUG
                 // small arrays are allocated using `new[]` as that is generally faster.
-#pragma warning disable 8500 // sizeof of managed types
                 if (length < 2048 / sizeof(T))
-#pragma warning restore 8500
                 {
                     return new T[length];
                 }
@@ -856,7 +887,7 @@ namespace System
                 Configurations = new Dictionary<string, object>()
             };
 
-            _EnumerateConfigurationValues(Unsafe.AsPointer(ref context), &ConfigCallback);
+            _EnumerateConfigurationValues(&context, &ConfigCallback);
             return context.Configurations!;
         }
 
@@ -899,13 +930,10 @@ namespace System
         ///
         /// This API will only handle configs that could be handled when the runtime is loaded, for example, for configs that don't have any effects on 32-bit systems (like the GCHeapHardLimit* ones), this API will not handle it.
         ///
-        /// As of now, this API is feature preview only and subject to changes as necessary.
-        ///
         /// <exception cref="InvalidOperationException">If the hard limit is too low. This can happen if the heap hard limit that the refresh will set, either because of new AppData settings or implied by the container memory limit changes, is lower than what is already committed.</exception>
         /// <exception cref="InvalidOperationException">If the hard limit is invalid. This can happen, for example, with negative heap hard limit percentages.</exception>
         ///
         /// </summary>
-        [RequiresPreviewFeatures("RefreshMemoryLimit is in preview.")]
         public static void RefreshMemoryLimit()
         {
             ulong heapHardLimit = (AppContext.GetData("GCHeapHardLimit") as ulong?) ?? ulong.MaxValue;

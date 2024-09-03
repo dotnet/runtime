@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 using System;
 using System.Runtime.InteropServices;
+using Xunit;
 
 public class FakeInjectedCode
 {
@@ -13,6 +14,7 @@ public class FakeInjectedCode
     static int ParseArgument(String argument) { return int.Parse(argument);}
 }
 
+[ActiveIssue("https://github.com/dotnet/runtime/issues/91388", typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.PlatformDoesNotSupportNativeTestAssets))]
 public class Program
 {
     public static class NativeMethods
@@ -55,7 +57,9 @@ public class Program
         return passed ? 0 : 1;
     }
 
-    public static int Main()
+    [Fact]
+    [SkipOnMono("The legacy CoreCLR activation API is not supported on Mono.")]
+    public static int TestEntryPoint()
     {
         int result = 100;
         String myPath = System.Reflection.Assembly.GetExecutingAssembly().Location;

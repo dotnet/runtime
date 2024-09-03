@@ -10,20 +10,19 @@ using System.Runtime.Versioning;
 using EditorBrowsableAttribute = System.ComponentModel.EditorBrowsableAttribute;
 using EditorBrowsableState = System.ComponentModel.EditorBrowsableState;
 
-#pragma warning disable 0809  //warning CS0809: Obsolete member 'Span<T>.Equals(object)' overrides non-obsolete member 'object.Equals(object)'
+#pragma warning disable 0809 // Obsolete member 'Span<T>.Equals(object)' overrides non-obsolete member 'object.Equals(object)'
 
 namespace System
 {
     /// <summary>
     /// ReadOnlySpan represents a contiguous region of arbitrary memory. Unlike arrays, it can point to either managed
-    /// or native memory, or to memory allocated on the stack. It is type- and memory-safe.
+    /// or native memory, or to memory allocated on the stack. It is type-safe and memory-safe.
     /// </summary>
     [DebuggerTypeProxy(typeof(SpanDebugView<>))]
     [DebuggerDisplay("{ToString(),raw}")]
     [NonVersionable]
-#pragma warning disable SYSLIB1056 // Specified native type is invalid
     [NativeMarshalling(typeof(ReadOnlySpanMarshaller<,>))]
-#pragma warning restore SYSLIB1056 // Specified native type is invalid
+    [Intrinsic]
     public readonly ref struct ReadOnlySpan<T>
     {
         /// <summary>A byref or a native ptr.</summary>
@@ -54,7 +53,7 @@ namespace System
         /// at 'start' index and ending at 'end' index (exclusive).
         /// </summary>
         /// <param name="array">The target array.</param>
-        /// <param name="start">The index at which to begin the read-only span.</param>
+        /// <param name="start">The zero-based index at which to begin the read-only span.</param>
         /// <param name="length">The number of items in the read-only span.</param>
         /// <remarks>Returns default when <paramref name="array"/> is null.</remarks>
         /// <exception cref="ArgumentOutOfRangeException">
@@ -106,7 +105,7 @@ namespace System
             if (length < 0)
                 ThrowHelper.ThrowArgumentOutOfRangeException();
 
-            _reference = ref Unsafe.As<byte, T>(ref *(byte*)pointer);
+            _reference = ref *(T*)pointer;
             _length = length;
         }
 
@@ -119,7 +118,6 @@ namespace System
             _length = 1;
         }
 
-#pragma warning disable IDE0060 // https://github.com/dotnet/roslyn-analyzers/issues/6228
         // Constructor for internal use only. It is not safe to expose publicly, and is instead exposed via the unsafe MemoryMarshal.CreateReadOnlySpan.
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal ReadOnlySpan(ref T reference, int length)
@@ -129,12 +127,11 @@ namespace System
             _reference = ref reference;
             _length = length;
         }
-#pragma warning restore IDE0060 // https://github.com/dotnet/roslyn-analyzers/issues/6228
 
         /// <summary>
         /// Returns the specified element of the read-only span.
         /// </summary>
-        /// <param name="index"></param>
+        /// <param name="index">The zero-based index.</param>
         /// <returns></returns>
         /// <exception cref="IndexOutOfRangeException">
         /// Thrown when index less than 0 or index greater than or equal to Length
@@ -215,6 +212,18 @@ namespace System
         /// Returns a 0-length read-only span whose base is the null pointer.
         /// </summary>
         public static ReadOnlySpan<T> Empty => default;
+
+        /// <summary>
+        /// Casts a read-only span of <typeparamref name="TDerived"/> to a read-only span of <typeparamref name="T"/>.
+        /// </summary>
+        /// <typeparam name="TDerived">The element type of the source read-only span, which must be derived from <typeparamref name="T"/>.</typeparam>
+        /// <param name="items">The source read-only span. No copy is made.</param>
+        /// <returns>A read-only span with elements cast to the new type.</returns>
+        /// <remarks>This method uses a covariant cast, producing a read-only span that shares the same memory as the source. The relationships expressed in the type constraints ensure that the cast is a safe operation.</remarks>
+        public static ReadOnlySpan<T> CastUp<TDerived>(ReadOnlySpan<TDerived> items) where TDerived : class?, T
+        {
+            return new ReadOnlySpan<T>(ref Unsafe.As<TDerived, T>(ref items._reference), items.Length);
+        }
 
         /// <summary>Gets an enumerator for this span.</summary>
         public Enumerator GetEnumerator() => new Enumerator(this);
@@ -340,7 +349,7 @@ namespace System
         /// <summary>
         /// Forms a slice out of the given read-only span, beginning at 'start'.
         /// </summary>
-        /// <param name="start">The index at which to begin this slice.</param>
+        /// <param name="start">The zero-based index at which to begin this slice.</param>
         /// <exception cref="ArgumentOutOfRangeException">
         /// Thrown when the specified <paramref name="start"/> index is not in range (&lt;0 or &gt;Length).
         /// </exception>
@@ -356,7 +365,7 @@ namespace System
         /// <summary>
         /// Forms a slice out of the given read-only span, beginning at 'start', of given length
         /// </summary>
-        /// <param name="start">The index at which to begin this slice.</param>
+        /// <param name="start">The zero-based index at which to begin this slice.</param>
         /// <param name="length">The desired length for the slice (exclusive).</param>
         /// <exception cref="ArgumentOutOfRangeException">
         /// Thrown when the specified <paramref name="start"/> or end index is not in range (&lt;0 or &gt;Length).

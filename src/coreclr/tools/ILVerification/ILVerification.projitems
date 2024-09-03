@@ -66,8 +66,8 @@
     <Compile Include="$(ToolsCommonPath)TypeSystem\Common\Utilities\CustomAttributeTypeNameParser.cs">
       <Link>Utilities\CustomAttributeTypeNameParser.cs</Link>
     </Compile>
-    <Compile Include="$(LibrariesProjectRoot)\Common\src\System\Reflection\TypeNameParser.cs">
-      <Link>Utilities\TypeNameParser.cs</Link>
+    <Compile Include="$(LibrariesProjectRoot)\Common\src\System\Reflection\Metadata\TypeNameHelpers.cs">
+      <Link>Utilities\TypeNameHelpers.cs</Link>
     </Compile>
     <Compile Include="$(LibrariesProjectRoot)\Common\src\System\Text\ValueStringBuilder.cs">
       <Link>Utilities\ValueStringBuilder.cs</Link>
@@ -111,6 +111,9 @@
     <Compile Include="$(ToolsCommonPath)TypeSystem\Common\FieldLayoutAlgorithm.cs">
       <Link>TypeSystem\Common\FieldLayoutAlgorithm.cs</Link>
     </Compile>
+    <Compile Include="$(ToolsCommonPath)TypeSystem\Common\ImpliedRepeatedFieldDesc.cs">
+      <Link>TypeSystem\Common\ImpliedRepeatedFieldDesc.cs</Link>
+    </Compile>
     <Compile Include="$(ToolsCommonPath)TypeSystem\Common\IModuleResolver.cs">
       <Link>TypeSystem\Common\IModuleResolver.cs</Link>
     </Compile>
@@ -149,6 +152,9 @@
     </Compile>
     <Compile Include="$(ToolsCommonPath)TypeSystem\Common\ExplicitLayoutValidator.cs">
       <Link>TypeSystem\Common\ExplicitLayoutValidator.cs</Link>
+    </Compile>
+    <Compile Include="$(ToolsCommonPath)TypeSystem\Common\FieldLayoutIntervalCalculator.cs">
+      <Link>TypeSystem\Common\FieldLayoutIntervalCalculator.cs</Link>
     </Compile>
     <Compile Include="$(ToolsCommonPath)TypeSystem\Common\MetadataRuntimeInterfacesAlgorithm.cs">
       <Link>TypeSystem\Common\MetadataRuntimeInterfacesAlgorithm.cs</Link>
@@ -248,6 +254,12 @@
     </Compile>
     <Compile Include="$(ToolsCommonPath)TypeSystem\Common\ThrowHelper.cs">
       <Link>TypeSystem\Common\ThrowHelper.cs</Link>
+    </Compile>
+    <Compile Include="$(ToolsCommonPath)TypeSystem\Common\TypeWithRepeatedFields.cs">
+      <Link>TypeSystem\Common\TypeWithRepeatedFields.cs</Link>
+    </Compile>
+    <Compile Include="$(ToolsCommonPath)TypeSystem\Common\TypeWithRepeatedFieldsFieldLayoutAlgorithm.cs">
+      <Link>TypeSystem\Common\TypeWithRepeatedFieldsFieldLayoutAlgorithm.cs</Link>
     </Compile>
     <Compile Include="$(ToolsCommonPath)TypeSystem\Common\Utilities\ExceptionTypeNameFormatter.cs">
       <Link>TypeSystem\Common\Utilities\ExceptionTypeNameFormatter.cs</Link>

@@ -6,8 +6,8 @@ namespace System.Text
     internal sealed partial class EncoderLatin1BestFitFallbackBuffer
     {
         // Best fit for ASCII, and since it works for ASCII, we use it for latin1 as well.
-        private static ReadOnlySpan<char> ArrayCharBestFit => new char[]
-        {
+        private static ReadOnlySpan<char> ArrayCharBestFit =>
+        [
 // The first many are in case you wanted to use this for ASCIIEncoding, which we don't need to do any more.
 //          (char)0x00a0, (char)0x0020,    // No-Break Space -> Space
 //          (char)0x00a1, (char)0x0021,    // Inverted Exclamation Mark -> !
@@ -407,6 +407,6 @@ namespace System.Text
             (char)0xff5c, (char)0x007c,    // Fullwidth Vertical Line -> |
             (char)0xff5d, (char)0x007d,    // Fullwidth Right Curly Bracket -> }
             (char)0xff5e, (char)0x007e     // Fullwidth Tilde -> ~
-        };
+        ];
     }
 }

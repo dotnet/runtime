@@ -483,7 +483,7 @@ namespace System.Drawing
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private void GetRgbValues(out int r, out int g, out int b)
+        internal void GetRgbValues(out int r, out int g, out int b)
         {
             uint value = (uint)Value;
             r = (int)(value & ARGBRedMask) >> ARGBRedShift;
@@ -570,7 +570,7 @@ namespace System.Drawing
         public KnownColor ToKnownColor() => (KnownColor)knownColor;
 
         public override string ToString() =>
-            IsNamedColor ? $"{nameof(Color)} [{Name}]":
+            IsNamedColor ? $"{nameof(Color)} [{Name}]" :
             (state & StateValueMask) != 0 ? $"{nameof(Color)} [A={A}, R={R}, G={G}, B={B}]" :
             $"{nameof(Color)} [Empty]";
 

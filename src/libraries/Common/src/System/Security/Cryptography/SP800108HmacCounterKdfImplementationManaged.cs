@@ -3,16 +3,13 @@
 
 using System.Buffers.Binary;
 using System.Diagnostics;
-using System.Threading;
 using System.Runtime.Versioning;
+using System.Threading;
 
 #pragma warning disable CA1513
 
 namespace System.Security.Cryptography
 {
-#if !NET7_0_OR_GREATER && NET
-    [UnsupportedOSPlatform("browser")]
-#endif
     internal sealed partial class SP800108HmacCounterKdfImplementationManaged : SP800108HmacCounterKdfImplementationBase
     {
         private byte[] _key;

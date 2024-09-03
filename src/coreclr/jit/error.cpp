@@ -108,32 +108,15 @@ void DECLSPEC_NORETURN noWayAssertBody()
     fatal(CORJIT_RECOVERABLEERROR);
 }
 
-inline static bool ShouldThrowOnNoway(
-#ifdef FEATURE_TRACELOGGING
-    const char* filename, unsigned line
-#endif
-    )
+inline static bool ShouldThrowOnNoway()
 {
-    return JitTls::GetCompiler() == nullptr ||
-           JitTls::GetCompiler()->compShouldThrowOnNoway(
-#ifdef FEATURE_TRACELOGGING
-               filename, line
-#endif
-               );
+    return JitTls::GetCompiler() == nullptr || JitTls::GetCompiler()->compShouldThrowOnNoway();
 }
 
 /*****************************************************************************/
-void noWayAssertBodyConditional(
-#ifdef FEATURE_TRACELOGGING
-    const char* filename, unsigned line
-#endif
-    )
+void noWayAssertBodyConditional()
 {
-#ifdef FEATURE_TRACELOGGING
-    if (ShouldThrowOnNoway(filename, line))
-#else
     if (ShouldThrowOnNoway())
-#endif // FEATURE_TRACELOGGING
     {
         noWayAssertBody();
     }
@@ -267,7 +250,9 @@ void debugError(const char* msg, const char* file, unsigned line)
 }
 
 /*****************************************************************************/
-LogEnv::LogEnv(ICorJitInfo* aCompHnd) : compHnd(aCompHnd), compiler(nullptr)
+LogEnv::LogEnv(ICorJitInfo* aCompHnd)
+    : compHnd(aCompHnd)
+    , compiler(nullptr)
 {
 }
 
@@ -387,7 +372,7 @@ int logf(const char* fmt, ...)
     {
         // if the EE refuses to log it, we try to send it to stdout
         va_start(args, fmt);
-        written = vflogf(jitstdout, fmt, args);
+        written = vflogf(jitstdout(), fmt, args);
         va_end(args);
     }
 #if 0  // Enable this only when you need it
@@ -448,7 +433,7 @@ void gcDump_logf(const char* fmt, ...)
     {
         // if the EE refuses to log it, we try to send it to stdout
         va_start(args, fmt);
-        vflogf(jitstdout, fmt, args);
+        vflogf(jitstdout(), fmt, args);
         va_end(args);
     }
 #if 0  // Enable this only when you need it
@@ -513,11 +498,7 @@ void noWayAssertAbortHelper(const char* cond, const char* file, unsigned line)
 
 void noWayAssertBodyConditional(const char* cond, const char* file, unsigned line)
 {
-#ifdef FEATURE_TRACELOGGING
-    if (ShouldThrowOnNoway(file, line))
-#else
     if (ShouldThrowOnNoway())
-#endif
     {
         noWayAssertBody(cond, file, line);
     }

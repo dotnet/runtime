@@ -25,7 +25,7 @@ namespace System.Collections.Immutable
         /// </para>
         /// </remarks>
         [DebuggerDisplay("Count = {Count}")]
-        [DebuggerTypeProxy(typeof(ImmutableSortedDictionaryBuilderDebuggerProxy<,>))]
+        [DebuggerTypeProxy(typeof(IDictionaryDebugView<,>))]
         public sealed class Builder : IDictionary<TKey, TValue>, IReadOnlyDictionary<TKey, TValue>, IDictionary
         {
             /// <summary>
@@ -178,12 +178,12 @@ namespace System.Collections.Immutable
                 get
                 {
                     TValue value;
-                    if (this.TryGetValue(key, out value!))
+                    if (!this.TryGetValue(key, out value!))
                     {
-                        return value;
+                        ThrowHelper.ThrowKeyNotFoundException(key);
                     }
 
-                    throw new KeyNotFoundException(SR.Format(SR.Arg_KeyNotFoundWithKey, key.ToString()));
+                    return value;
                 }
 
                 set
@@ -644,36 +644,5 @@ namespace System.Collections.Immutable
             }
             #endregion
         }
-    }
-    /// <summary>
-    /// A simple view of the immutable collection that the debugger can show to the developer.
-    /// </summary>
-    internal sealed class ImmutableSortedDictionaryBuilderDebuggerProxy<TKey, TValue> where TKey : notnull
-    {
-        /// <summary>
-        /// The collection to be enumerated.
-        /// </summary>
-        private readonly ImmutableSortedDictionary<TKey, TValue>.Builder _map;
-
-        /// <summary>
-        /// The simple view of the collection.
-        /// </summary>
-        private KeyValuePair<TKey, TValue>[]? _contents;
-
-        /// <summary>
-        /// Initializes a new instance of the <see cref="ImmutableSortedDictionaryBuilderDebuggerProxy{TKey, TValue}"/> class.
-        /// </summary>
-        /// <param name="map">The collection to display in the debugger</param>
-        public ImmutableSortedDictionaryBuilderDebuggerProxy(ImmutableSortedDictionary<TKey, TValue>.Builder map)
-        {
-            Requires.NotNull(map, nameof(map));
-            _map = map;
-        }
-
-        /// <summary>
-        /// Gets a simple debugger-viewable collection.
-        /// </summary>
-        [DebuggerBrowsable(DebuggerBrowsableState.RootHidden)]
-        public KeyValuePair<TKey, TValue>[] Contents => _contents ??= _map.ToArray(_map.Count);
     }
 }

@@ -59,14 +59,13 @@ namespace DefaultNamespace
         //	static V3[] V3Array = new V3[Length];
 
         [Fact]
-        public static int TestEntryPoint()
+        public static void TestEntryPoint()
         {
             for (int i = 0; i < Length; i++)
             {
                 V2Array[i] = new V2();
                 //			V3Array[i] = new V3();
             }
-            return 100;
         }
     }
 }

@@ -1,17 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-// #define FEATURE_ADVANCED_MANAGED_ETW_CHANNELS
-
-using System;
-#if USE_MDT_EVENTSOURCE
-using Microsoft.Diagnostics.Tracing;
-#else
 using System.Diagnostics.Tracing;
-#endif
-
-// We wish to test both Microsoft.Diagnostics.Tracing (Nuget)
-// and System.Diagnostics.Tracing (Framework), we use this Ifdef make each kind
 
 namespace SdtEventSources
 {
@@ -19,12 +9,7 @@ namespace SdtEventSources
     // so we don't have to fully qualify everything else using it.
     namespace DontPollute
     {
-        public sealed class EventSource :
-#if USE_MDT_EVENTSOURCE
-            Microsoft.Diagnostics.Tracing.EventSource
-#else
-            System.Diagnostics.Tracing.EventSource
-#endif
+        public sealed class EventSource : System.Diagnostics.Tracing.EventSource
         {
             [Event(1)]
             public void EventWrite(int i) { this.WriteEvent(1, i); }
@@ -85,26 +70,6 @@ namespace SdtEventSources
         {
             public const EventOpcode Delete = (EventOpcode)100;
         }
-
-#if FEATURE_ADVANCED_MANAGED_ETW_CHANNELS
-        /// <summary>
-        /// The Channels definition for the ETW manifest
-        /// </summary>
-        public static class Channels
-        {
-            [EventChannel(Enabled = true, EventChannelType = EventChannelType.Admin)]
-            public const EventChannel MyAdmin = (EventChannel)20;
-
-            // [EventChannel(Enabled = true, EventChannelType = EventChannelType.Operational)]
-            // public const EventChannel Operational = (EventChannel)17;
-
-            [EventChannel(Enabled = false, EventChannelType = EventChannelType.Analytic)]
-            public const EventChannel Analytic = (EventChannel)18;
-
-            [EventChannel(Enabled = false, EventChannelType = EventChannelType.Debug)]
-            public const EventChannel Debug = (EventChannel)19;
-        }
-#endif
         #endregion
     }
 }

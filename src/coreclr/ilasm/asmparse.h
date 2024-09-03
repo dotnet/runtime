@@ -105,9 +105,9 @@ public:
 
         if (IsValid())
         {
-            int len = WszWideCharToMultiByte(CP_UTF8,0,wFileName,-1,NULL,0,NULL,NULL);
+            int len = WideCharToMultiByte(CP_UTF8,0,wFileName,-1,NULL,0,NULL,NULL);
             m_fileNameUtf8 = new char[len+1];
-            WszWideCharToMultiByte(CP_UTF8,0,wFileName,-1,m_fileNameUtf8,len+1,NULL,NULL);
+            WideCharToMultiByte(CP_UTF8,0,wFileName,-1,m_fileNameUtf8,len+1,NULL,NULL);
         }
     }
     ~MappedFileStream()
@@ -181,7 +181,7 @@ private:
         m_FileSize = dwFileSizeLow;
 
         // No difference between A and W in this case: last param (LPCTSTR) is NULL
-        m_hMapFile = WszCreateFileMapping(m_hFile, NULL, PAGE_READONLY, 0, 0, NULL);
+        m_hMapFile = CreateFileMapping(m_hFile, NULL, PAGE_READONLY, 0, 0, NULL);
         if (m_hMapFile == NULL)
             return NULL;
 
@@ -313,7 +313,7 @@ private:
     friend char* skipBlanks(_In_ __nullterminated char*,unsigned*);
     friend char* nextBlank(_In_ __nullterminated char*);
     friend int ProcessEOF();
-    friend unsigned __int8* skipType(unsigned __int8* ptr, BOOL fFixupType);
+    friend uint8_t* skipType(uint8_t* ptr, BOOL fFixupType);
     friend void FixupConstraints();
 
 	Assembler* assem;			// This does most of the semantic processing

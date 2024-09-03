@@ -121,12 +121,15 @@ enum EtwGCSettingFlags
 
 #define ETW_TRACING_INITIALIZED(RegHandle) (TRUE)
 #define ETW_EVENT_ENABLED(Context, EventDescriptor) (EventPipeHelper::IsEnabled(Context, EventDescriptor.Level, EventDescriptor.Keyword) || \
-        (XplatEventLogger::IsKeywordEnabled(Context, EventDescriptor.Level, EventDescriptor.Keyword)))
+        (XplatEventLogger::IsKeywordEnabled(Context, EventDescriptor.Level, EventDescriptor.Keyword)) || \
+        (UserEventsHelper::IsEnabled(Context, EventDescriptor.Level, EventDescriptor.Keyword)))
 #define ETW_CATEGORY_ENABLED(Context, Level, Keyword) (EventPipeHelper::IsEnabled(Context, Level, Keyword) || \
-        (XplatEventLogger::IsKeywordEnabled(Context, Level, Keyword)))
+        (XplatEventLogger::IsKeywordEnabled(Context, Level, Keyword)) || \
+        (UserEventsHelper::IsEnabled(Context, Level, Keyword)))
 #define ETW_TRACING_ENABLED(Context, EventDescriptor) (EventEnabled##EventDescriptor())
 #define ETW_TRACING_CATEGORY_ENABLED(Context, Level, Keyword) (EventPipeHelper::IsEnabled(Context, Level, Keyword) || \
-        (XplatEventLogger::IsKeywordEnabled(Context, Level, Keyword)))
+        (XplatEventLogger::IsKeywordEnabled(Context, Level, Keyword)) || \
+        (UserEventsHelper::IsEnabled(Context, Level, Keyword)))
 #define ETW_PROVIDER_ENABLED(ProviderSymbol) (TRUE)
 #else //defined(FEATURE_PERFTRACING)
 #define ETW_INLINE
@@ -651,6 +654,13 @@ public:
     static bool Enabled();
     static bool IsEnabled(DOTNET_TRACE_CONTEXT Context, UCHAR Level, ULONGLONG Keyword);
 };
+
+class UserEventsHelper
+{
+public:
+    static bool Enabled();
+    static bool IsEnabled(DOTNET_TRACE_CONTEXT Context, UCHAR Level, ULONGLONG Keyword);
+};
 #endif // defined(FEATURE_PERFTRACING)
 
 #endif // FEATURE_EVENT_TRACE
@@ -1153,6 +1163,19 @@ namespace ETW
             } ContentionFlags;
         } ContentionStructs;
     };
+
+    class WaitHandleLog
+    {
+    public:
+        typedef union _WaitHandleStructs
+        {
+            typedef  enum _WaitSource {
+                Unknown=0,
+                MonitorWait=1
+            } WaitSource;
+        } WaitHandleStructs;
+    };
+
     // Class to wrap all Interop logic for ETW
     class InteropLog
     {

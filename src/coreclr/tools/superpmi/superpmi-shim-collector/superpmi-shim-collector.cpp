@@ -216,7 +216,7 @@ extern "C" DLLEXPORT ICorJitCompiler* getJit()
 #ifdef TARGET_WINDOWS
     pJitInstance->currentOs = CORINFO_WINNT;
 #elif defined(TARGET_OSX)
-    pJitInstance->currentOs = CORINFO_MACOS;
+    pJitInstance->currentOs = CORINFO_APPLE;
 #elif defined(TARGET_UNIX)
     pJitInstance->currentOs = CORINFO_UNIX;
 #else

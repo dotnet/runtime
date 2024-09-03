@@ -499,7 +499,7 @@ public:
     //    method hasn't been jitted yet.
     // In all cases, we can check the hot region start address to determine whether the rest of the
     // the information is valid.
-    BOOL IsValid() { return (m_rgCodeRegions[kHot].pAddress != NULL); }
+    BOOL IsValid() { return (m_rgCodeRegions[kHot].pAddress != (CORDB_ADDRESS)NULL); }
     void Clear();
 
     // data members

@@ -16,12 +16,6 @@ namespace Internal.Runtime
         private const string HexDigits = "0123456789ABCDEF";
 
         // TODO: Rename to ToHexString()
-        public static string LowLevelToString(this int arg)
-        {
-            return ((uint)arg).LowLevelToString();
-        }
-
-        // TODO: Rename to ToHexString()
         public static string LowLevelToString(this uint arg)
         {
             StringBuilder sb = new StringBuilder(8);

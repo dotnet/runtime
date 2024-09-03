@@ -276,7 +276,7 @@ inline CHECK PEImage::CheckFormat()
     CHECK_OK;
 }
 
-inline void  PEImage::Init(LPCWSTR pPath, BundleFileLocation bundleFileLocation)
+inline void  PEImage::Init(BundleFileLocation bundleFileLocation)
 {
     CONTRACTL
     {
@@ -286,8 +286,7 @@ inline void  PEImage::Init(LPCWSTR pPath, BundleFileLocation bundleFileLocation)
     }
     CONTRACTL_END;
 
-    m_path = pPath;
-    m_path.Normalize();
+    m_pathHash = m_path.HashCaseInsensitive();
     m_bundleFileLocation = bundleFileLocation;
     SetModuleFileNameHintForDAC();
 }
@@ -295,7 +294,7 @@ inline void  PEImage::Init(LPCWSTR pPath, BundleFileLocation bundleFileLocation)
 
 
 /*static*/
-inline PTR_PEImage PEImage::FindByPath(LPCWSTR pPath, BOOL isInBundle /* = TRUE */)
+inline PTR_PEImage PEImage::FindByPath(LPCWSTR pPath, BOOL isInBundle)
 {
     CONTRACTL
     {
@@ -310,22 +309,18 @@ inline PTR_PEImage PEImage::FindByPath(LPCWSTR pPath, BOOL isInBundle /* = TRUE 
     int CaseHashHelper(const WCHAR *buffer, COUNT_T count);
 
     PEImageLocator locator(pPath, isInBundle);
-#ifdef FEATURE_CASE_SENSITIVE_FILESYSTEM
-    DWORD dwHash=path.Hash();
-#else
     DWORD dwHash = CaseHashHelper(pPath, (COUNT_T) u16_strlen(pPath));
-#endif
     return (PEImage *) s_Images->LookupValue(dwHash, &locator);
 }
 
 /* static */
-inline PTR_PEImage PEImage::OpenImage(LPCWSTR pPath, MDInternalImportFlags flags /* = MDInternalImport_Default */, BundleFileLocation bundleFileLocation)
+inline PTR_PEImage PEImage::OpenImage(LPCWSTR pPath, MDInternalImportFlags flags /* = MDInternalImport_Default */, BundleFileLocation bundleFileLocation /* = BundleFileLocation::Invalid() */)
 {
     BOOL forbidCache = (flags & MDInternalImport_NoCache);
     if (forbidCache)
     {
-        PEImageHolder pImage(new PEImage);
-        pImage->Init(pPath, bundleFileLocation);
+        PEImageHolder pImage(new PEImage{pPath});
+        pImage->Init(bundleFileLocation);
         return dac_cast<PTR_PEImage>(pImage.Extract());
     }
 
@@ -340,8 +335,8 @@ inline PTR_PEImage PEImage::OpenImage(LPCWSTR pPath, MDInternalImportFlags flags
             return NULL;
         }
 
-        PEImageHolder pImage(new PEImage);
-        pImage->Init(pPath, bundleFileLocation);
+        PEImageHolder pImage(new PEImage{pPath});
+        pImage->Init(bundleFileLocation);
 
         pImage->AddToHashMap();
         return dac_cast<PTR_PEImage>(pImage.Extract());
@@ -366,7 +361,7 @@ inline void PEImage::AddToHashMap()
     CONTRACTL_END;
 
     _ASSERTE(s_hashLock.OwnedByCurrentThread());
-    s_Images->InsertValue(GetPathHash(),this);
+    s_Images->InsertValue(m_pathHash,this);
     m_bInHashMap=TRUE;
 }
 
@@ -376,31 +371,6 @@ inline BOOL PEImage::Has32BitNTHeaders()
 {
     WRAPPER_NO_CONTRACT;
     return GetOrCreateLayout(PEImageLayout::LAYOUT_ANY)->Has32BitNTHeaders();
-}
-
-inline BOOL PEImage::HasPath()
-{
-    LIMITED_METHOD_CONTRACT;
-
-    return !GetPath().IsEmpty();
-}
-
-inline ULONG PEImage::GetPathHash()
-{
-    CONTRACT(ULONG)
-    {
-        PRECONDITION(HasPath());
-        MODE_ANY;
-        GC_NOTRIGGER;
-        THROWS;
-    }
-    CONTRACT_END;
-
-#ifdef FEATURE_CASE_SENSITIVE_FILESYSTEM
-    RETURN m_path.Hash();
-#else
-    RETURN m_path.HashCaseInsensitive();
-#endif
 }
 
 inline void  PEImage::GetPEKindAndMachine(DWORD* pdwKind, DWORD* pdwMachine)

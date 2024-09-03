@@ -6,17 +6,19 @@ using System;
 using System.Reflection;
 using Xunit;
 
-class TestClass
-{
-    public int field;
 
-    public void Method()
+[ActiveIssue("https://github.com/dotnet/runtime/issues/91388", typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.PlatformDoesNotSupportNativeTestAssets))]
+public class RuntimeHandlesTest
+{
+    class TestClass
     {
-    }
-}
+        public int field;
 
-class RuntimeHandlesTest
-{
+        public void Method()
+        {
+        }
+    }
+
     [DllImport("RuntimeHandlesNative")]
     private static extern bool Marshal_In(RuntimeMethodHandle expected, IntPtr handle);
     [DllImport("RuntimeHandlesNative")]
@@ -42,7 +44,8 @@ class RuntimeHandlesTest
         Assert.True(Marshal_In(handle, handle.Value));
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         try
         {

@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using Xunit;
 namespace NetClient
 {
     using System;
@@ -14,7 +15,7 @@ namespace NetClient
     using Server.Contract;
     using Server.Contract.Servers;
 
-    class Program
+    public class Program
     {
         static readonly string DefaultLicKey = "__MOCK_LICENSE_KEY__";
         static void ActivateLicensedObject()
@@ -29,7 +30,7 @@ namespace NetClient
             try
             {
                 var tmp = (LicenseTesting)new LicenseTestingClass();
-                Assert.True(false, "Activation of licensed class should fail");
+                Assert.Fail("Activation of licensed class should fail");
             }
             catch (COMException e)
             {
@@ -88,7 +89,7 @@ namespace NetClient
                 var licenseTesting = (LicenseTesting)new LicenseTestingClass();
 
                 // During design time the IClassFactory::CreateInstance will be called - no license
-                Assert.Equal(null, licenseTesting.GetLicense());
+                Assert.Null(licenseTesting.GetLicense());
 
                 // Verify the value retrieved from the IClassFactory2::RequestLicKey was what was set
                 Assert.Equal(DefaultLicKey, LicenseManager.CurrentContext.GetSavedLicenseKey(typeof(LicenseTestingClass), resourceAssembly: null));
@@ -121,7 +122,8 @@ namespace NetClient
             }
         }
 
-        static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             // RegFree COM is not supported on Windows Nano
             if (Utilities.IsWindowsNanoServer)

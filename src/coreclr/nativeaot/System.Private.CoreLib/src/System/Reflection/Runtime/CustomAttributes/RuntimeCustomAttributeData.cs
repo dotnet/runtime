@@ -62,7 +62,7 @@ namespace System.Reflection.Runtime.CustomAttributes
                     ComputeTypedArgumentString(namedArgument.TypedValue, typed));
             }
 
-            return string.Format("[{0}({1}{2})]", AttributeType.FormatTypeNameForReflection(), ctorArgs, namedArgs);
+            return string.Format("[{0}({1}{2})]", AttributeType.FormatTypeName(), ctorArgs, namedArgs);
         }
 
         protected static ConstructorInfo ResolveAttributeConstructor(
@@ -72,7 +72,7 @@ namespace System.Reflection.Runtime.CustomAttributes
             int parameterCount = parameterTypes.Length;
             foreach (ConstructorInfo candidate in attributeType.GetConstructors(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.DeclaredOnly))
             {
-                ParameterInfo[] candidateParameters = candidate.GetParametersNoCopy();
+                ReadOnlySpan<ParameterInfo> candidateParameters = candidate.GetParametersAsSpan();
                 if (parameterCount != candidateParameters.Length)
                     continue;
 
@@ -171,13 +171,13 @@ namespace System.Reflection.Runtime.CustomAttributes
                 if (!argumentType.IsArray)
                     throw new BadImageFormatException();
                 Type reportedElementType = argumentType.GetElementType()!;
-                LowLevelListWithIList<CustomAttributeTypedArgument> elementTypedArguments = new LowLevelListWithIList<CustomAttributeTypedArgument>();
+                ArrayBuilder<CustomAttributeTypedArgument> elementTypedArguments = default;
                 foreach (object elementValue in enumerableValue)
                 {
                     CustomAttributeTypedArgument elementTypedArgument = WrapInCustomAttributeTypedArgument(elementValue, reportedElementType);
                     elementTypedArguments.Add(elementTypedArgument);
                 }
-                return new CustomAttributeTypedArgument(argumentType, new ReadOnlyCollection<CustomAttributeTypedArgument>(elementTypedArguments));
+                return new CustomAttributeTypedArgument(argumentType, new ReadOnlyCollection<CustomAttributeTypedArgument>(elementTypedArguments.ToArray()));
             }
             else
             {

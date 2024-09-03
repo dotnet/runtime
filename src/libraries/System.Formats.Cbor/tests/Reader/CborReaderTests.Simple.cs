@@ -18,6 +18,7 @@ namespace System.Formats.Cbor.Tests
         [InlineData(float.PositiveInfinity, "fa7f800000")]
         [InlineData(float.NegativeInfinity, "faff800000")]
         [InlineData(float.NaN, "fa7fc00000")]
+        [InlineData(float.NaN, "faffc00000")]
         public static void ReadSingle_SingleValue_HappyPath(float expectedResult, string hexEncoding)
         {
             byte[] encoding = hexEncoding.HexToByteArray();
@@ -36,6 +37,7 @@ namespace System.Formats.Cbor.Tests
         [InlineData(double.PositiveInfinity, "fb7ff0000000000000")]
         [InlineData(double.NegativeInfinity, "fbfff0000000000000")]
         [InlineData(double.NaN, "fb7ff8000000000000")]
+        [InlineData(double.NaN, "fbfff8000000000000")]
         public static void ReadDouble_SingleValue_HappyPath(double expectedResult, string hexEncoding)
         {
             byte[] encoding = hexEncoding.HexToByteArray();
@@ -52,6 +54,7 @@ namespace System.Formats.Cbor.Tests
         [InlineData(double.PositiveInfinity, "fa7f800000")]
         [InlineData(double.NegativeInfinity, "faff800000")]
         [InlineData(double.NaN, "fa7fc00000")]
+        [InlineData(double.NaN, "faffc00000")]
         public static void ReadDouble_SinglePrecisionValue_ShouldCoerceToDouble(double expectedResult, string hexEncoding)
         {
             byte[] encoding = hexEncoding.HexToByteArray();
@@ -73,6 +76,7 @@ namespace System.Formats.Cbor.Tests
         [InlineData(-4.0, "f9c400")]
         [InlineData(double.PositiveInfinity, "f97c00")]
         [InlineData(double.NaN, "f97e00")]
+        [InlineData(double.NaN, "f9fe00")]
         [InlineData(double.NegativeInfinity, "f9fc00")]
         public static void ReadDouble_HalfPrecisionValue_ShouldCoerceToDouble(double expectedResult, string hexEncoding)
         {
@@ -95,6 +99,7 @@ namespace System.Formats.Cbor.Tests
         [InlineData(-4.0, "f9c400")]
         [InlineData(float.PositiveInfinity, "f97c00")]
         [InlineData(float.NaN, "f97e00")]
+        [InlineData(float.NaN, "f9fe00")]
         [InlineData(float.NegativeInfinity, "f9fc00")]
         public static void ReadSingle_HalfPrecisionValue_ShouldCoerceToSingle(float expectedResult, string hexEncoding)
         {

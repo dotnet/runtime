@@ -5,7 +5,7 @@
   </PropertyGroup>
 
   <!-- iOS/tvOS arm64 simulators do not support JIT, so force interpreter fallback, devices should FullAOT -->
-  <PropertyGroup Condition="('$(TargetOS)' == 'iossimulator' or '$(TargetOS)' == 'tvossimulator') And '$(TargetArchitecture)' == 'arm64'">
+  <PropertyGroup Condition="('$(TargetOS)' == 'iossimulator' or '$(TargetOS)' == 'tvossimulator') And '$(TargetArchitecture)' == 'arm64' and '$(UseNativeAOTRuntime)' != 'true'">
     <MonoForceInterpreter Condition="'$(MonoForceInterpreter)' == ''">true</MonoForceInterpreter>
   </PropertyGroup>
 
@@ -16,17 +16,19 @@
     <UseMonoJustInterp Condition="'$(RunAOTCompilation)' == 'true' and '$(MonoForceInterpreter)' == 'true'">true</UseMonoJustInterp>
 
     <StripDebugSymbols Condition="'$(StripDebugSymbols)' == ''" >false</StripDebugSymbols>
-    <!-- Tracking issue: https://github.com/dotnet/runtime/issues/87740 -->
-    <!-- <ShouldILStrip Condition="'$(RunAOTCompilation)' == 'true' and '$(MonoForceInterpreter)' != 'true'">true</ShouldILStrip> -->
 
-    <_IsLibraryMode Condition="'$(UseNativeAOTRuntime)' != 'true' and '$(NativeLib)' != ''">true</_IsLibraryMode>
+    <!-- TODO: We currently do not support bundling a static iOS-library with NativeAOT -->
+    <_IsLibraryMode Condition="('$(UseNativeAOTRuntime)' != 'true' and '$(NativeLib)' != '') or ('$(UseNativeAOTRuntime)' == 'true' and '$(NativeLib)' == 'Shared')">true</_IsLibraryMode>
+    <ShouldILStrip Condition="'$(ShouldILStrip)' == '' and '$(RunAOTCompilation)' == 'true' and '$(MonoForceInterpreter)' != 'true' and '$(_IsLibraryMode)' != 'true'">true</ShouldILStrip>
 
     <_AotCompileTargetName Condition="'$(UseNativeAOTRuntime)' == 'true'">_AppleNativeAotCompile</_AotCompileTargetName>
     <_AotCompileTargetName Condition="'$(UseNativeAOTRuntime)' != 'true'">_AppleAotCompile</_AotCompileTargetName>
     <IlcCompileDependsOn>ComputeIlcCompileInputs;SetupOSSpecificProps;PrepareForILLink</IlcCompileDependsOn>
+    <_ReadRuntimeComponentsManifestTargetName Condition="'$(UseNativeAOTRuntime)' != 'true'">_MonoReadAvailableComponentsManifest</_ReadRuntimeComponentsManifestTargetName>
 
     <AppleBuildAfterThisTarget Condition="'$(AppleBuildAfterThisTarget)' == ''">Publish</AppleBuildAfterThisTarget>
     <AppleBuildDependsOn>
+        $(_ReadRuntimeComponentsManifestTargetName);
         _InitializeCommonProperties;
         _BeforeAppleBuild;
         _AppleResolveReferences;
@@ -37,5 +39,11 @@
         _AppleGenerateAppBundle;
         _AfterAppleBuild
     </AppleBuildDependsOn>
+
+    <!-- When building on Helix $(_CommonTargetsDir) will be properly set, otherwise we have to set it to a in-tree location -->
+    <_CommonTargetsDir Condition="'$(_CommonTargetsDir)' == ''">$([MSBuild]::NormalizeDirectory($(MSBuildThisFileDirectory), '..', '..', 'common'))</_CommonTargetsDir>
   </PropertyGroup>
+
+  <Import Condition="'$(UseNativeAOTRuntime)' != 'true'" Project="$(_CommonTargetsDir)CommonMobileBuild.props" />
+  <Import Condition="'$(UseNativeAOTRuntime)' != 'true'" Project="$(_CommonTargetsDir)RuntimeComponentManifest.targets" />
 </Project>

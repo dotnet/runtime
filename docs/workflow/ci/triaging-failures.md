@@ -8,7 +8,7 @@ stress mode test configuration failures, such as failures in a JIT stress test r
 
 One goal of failure investigation is to quickly route failures to the correct area owner. The ownership of various product areas
 is detailed [here](../../area-owners.md). The GitHub auto-tagging bot uses the ownership information
-in the file [fabricbot.json](../../../.github/fabricbot.json).
+in the file [Policy Service configuration](../../../.github/policies).
 
 ## Platform configuration
 
@@ -23,7 +23,7 @@ and for libraries runs is defined [here](../../../eng/pipelines/libraries/helix-
 
 Many test runs use a non-default product configuration, to allow re-using existing test assets to stress various aspects of the system.
 Determine the precise test configuration under which the test has failed. This might be evident from the test job name. For example,
-`net8.0-windows-Release-x86-CoreCLR_checked-jitstress1-Windows.10.Amd64.Open` is a libraries test run on Windows with a Release x86 libraries
+`net9.0-windows-Release-x86-CoreCLR_checked-jitstress1-Windows.10.Amd64.Open` is a libraries test run on Windows with a Release x86 libraries
 build, Checked coreclr build, and setting the `DOTNET_JitStress=1` configuration setting, in the `Windows.10.Amd64.Open` Helix queue.
 
 You need to be careful when reproducing failures to set all the correct environment variables. In the above example, if you look at the

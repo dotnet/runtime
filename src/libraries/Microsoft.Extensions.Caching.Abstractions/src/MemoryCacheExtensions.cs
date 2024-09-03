@@ -167,9 +167,28 @@ namespace Microsoft.Extensions.Caching.Memory
         /// <returns>The value associated with this key.</returns>
         public static TItem? GetOrCreate<TItem>(this IMemoryCache cache, object key, Func<ICacheEntry, TItem> factory)
         {
+            return GetOrCreate(cache, key, factory, null);
+        }
+
+        /// <summary>
+        /// Gets the value associated with this key if it exists, or generates a new entry using the provided key and a value from the given factory if the key is not found.
+        /// </summary>
+        /// <typeparam name="TItem">The type of the object to get.</typeparam>
+        /// <param name="cache">The <see cref="IMemoryCache"/> instance this method extends.</param>
+        /// <param name="key">The key of the entry to look for or create.</param>
+        /// <param name="factory">The factory that creates the value associated with this key if the key does not exist in the cache.</param>
+        /// <param name="createOptions">The options to be applied to the <see cref="ICacheEntry"/> if the key does not exist in the cache.</param>
+        /// <returns>The value associated with this key.</returns>
+        public static TItem? GetOrCreate<TItem>(this IMemoryCache cache, object key, Func<ICacheEntry, TItem> factory, MemoryCacheEntryOptions? createOptions)
+        {
             if (!cache.TryGetValue(key, out object? result))
             {
                 using ICacheEntry entry = cache.CreateEntry(key);
+
+                if (createOptions != null)
+                {
+                    entry.SetOptions(createOptions);
+                }
 
                 result = factory(entry);
                 entry.Value = result;
@@ -186,11 +205,30 @@ namespace Microsoft.Extensions.Caching.Memory
         /// <param name="key">The key of the entry to look for or create.</param>
         /// <param name="factory">The factory task that creates the value associated with this key if the key does not exist in the cache.</param>
         /// <returns>The task object representing the asynchronous operation.</returns>
-        public static async Task<TItem?> GetOrCreateAsync<TItem>(this IMemoryCache cache, object key, Func<ICacheEntry, Task<TItem>> factory)
+        public static Task<TItem?> GetOrCreateAsync<TItem>(this IMemoryCache cache, object key, Func<ICacheEntry, Task<TItem>> factory)
+        {
+            return GetOrCreateAsync<TItem>(cache, key, factory, null);
+        }
+
+        /// <summary>
+        /// Asynchronously gets the value associated with this key if it exists, or generates a new entry using the provided key and a value from the given factory if the key is not found.
+        /// </summary>
+        /// <typeparam name="TItem">The type of the object to get.</typeparam>
+        /// <param name="cache">The <see cref="IMemoryCache"/> instance this method extends.</param>
+        /// <param name="key">The key of the entry to look for or create.</param>
+        /// <param name="factory">The factory task that creates the value associated with this key if the key does not exist in the cache.</param>
+        /// <param name="createOptions">The options to be applied to the <see cref="ICacheEntry"/> if the key does not exist in the cache.</param>
+        /// <returns>The task object representing the asynchronous operation.</returns>
+        public static async Task<TItem?> GetOrCreateAsync<TItem>(this IMemoryCache cache, object key, Func<ICacheEntry, Task<TItem>> factory, MemoryCacheEntryOptions? createOptions)
         {
             if (!cache.TryGetValue(key, out object? result))
             {
                 using ICacheEntry entry = cache.CreateEntry(key);
+
+                if (createOptions != null)
+                {
+                    entry.SetOptions(createOptions);
+                }
 
                 result = await factory(entry).ConfigureAwait(false);
                 entry.Value = result;

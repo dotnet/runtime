@@ -6,15 +6,15 @@ using System.Diagnostics;
 namespace Microsoft.Interop
 {
     /// <summary>
-    /// An <see cref="IMarshallingGeneratorFactory"/> implementation that wraps an inner <see cref="IMarshallingGeneratorFactory"/> instance and validates that the <see cref="TypePositionInfo.ByValueContentsMarshalKind"/> on the provided <see cref="TypePositionInfo"/> is valid in the current marshalling scenario.
+    /// An <see cref="IMarshallingGeneratorResolver"/> implementation that wraps an inner <see cref="IMarshallingGeneratorResolver"/> instance and validates that the <see cref="TypePositionInfo.ByValueContentsMarshalKind"/> on the provided <see cref="TypePositionInfo"/> is valid in the current marshalling scenario.
     /// </summary>
-    public class ByValueContentsMarshalKindValidator : IMarshallingGeneratorFactory
+    public sealed class ByValueContentsMarshalKindValidator : IMarshallingGeneratorResolver
     {
         private static readonly Forwarder s_forwarder = new();
 
-        private readonly IMarshallingGeneratorFactory _inner;
+        private readonly IMarshallingGeneratorResolver _inner;
 
-        public ByValueContentsMarshalKindValidator(IMarshallingGeneratorFactory inner)
+        public ByValueContentsMarshalKindValidator(IMarshallingGeneratorResolver inner)
         {
             _inner = inner;
         }
@@ -22,25 +22,26 @@ namespace Microsoft.Interop
         public ResolvedGenerator Create(TypePositionInfo info, StubCodeContext context)
         {
             ResolvedGenerator generator = _inner.Create(info, context);
-            return generator.ResolvedSuccessfully ? ValidateByValueMarshalKind(info, context, generator) : generator;
+            return generator.IsResolvedWithoutErrors ? ValidateByValueMarshalKind(generator, context) : generator;
         }
 
-        private static ResolvedGenerator ValidateByValueMarshalKind(TypePositionInfo info, StubCodeContext context, ResolvedGenerator generator)
+        private static ResolvedGenerator ValidateByValueMarshalKind(ResolvedGenerator generator, StubCodeContext context)
         {
-            if (generator.Generator is Forwarder || info.ByValueContentsMarshalKind == ByValueContentsMarshalKind.Default)
+            if (generator.Generator.IsForwarder())
             {
                 // Forwarder allows everything since it just forwards to a P/Invoke.
                 // The Default marshal kind is always valid.
                 return generator;
             }
 
-            var support = generator.Generator.SupportsByValueMarshalKind(info.ByValueContentsMarshalKind, info, context, out GeneratorDiagnostic? diagnostic);
+            var support = generator.Generator.SupportsByValueMarshalKind(generator.Generator.TypeInfo.ByValueContentsMarshalKind, out GeneratorDiagnostic? diagnostic);
             Debug.Assert(support == ByValueMarshalKindSupport.Supported || diagnostic is not null);
             return support switch
             {
                 ByValueMarshalKindSupport.Supported => generator,
-                ByValueMarshalKindSupport.NotSupported => ResolvedGenerator.ResolvedWithDiagnostics(s_forwarder, generator.Diagnostics.Add(diagnostic!)),
+                ByValueMarshalKindSupport.NotSupported => ResolvedGenerator.ResolvedWithDiagnostics(s_forwarder.Bind(generator.Generator.TypeInfo, context), generator.Diagnostics.Add(diagnostic!)),
                 ByValueMarshalKindSupport.Unnecessary => generator with { Diagnostics = generator.Diagnostics.Add(diagnostic!) },
+                ByValueMarshalKindSupport.NotRecommended => generator with { Diagnostics = generator.Diagnostics.Add(diagnostic!) },
                 _ => throw new UnreachableException()
             };
         }

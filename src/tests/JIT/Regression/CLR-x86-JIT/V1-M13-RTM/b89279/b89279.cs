@@ -19,5 +19,8 @@ public class AA
 #pragma warning restore 1717
     }
     [Fact]
-    public static int TestEntryPoint() { Static5(0); return 100; }
+    public static void TestEntryPoint()
+    {
+        Static5(0);
+    }
 }

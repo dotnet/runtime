@@ -231,6 +231,9 @@ inline SString::SString(const WCHAR *string)
 
     Set(string);
 
+    _ASSERTE(IsRepresentation(REPRESENTATION_UNICODE));
+    SetNormalized();
+
     SS_RETURN;
 }
 
@@ -248,6 +251,9 @@ inline SString::SString(const WCHAR *string, COUNT_T count)
     SS_CONTRACT_END;
 
     Set(string, count);
+
+    _ASSERTE(IsRepresentation(REPRESENTATION_UNICODE));
+    SetNormalized();
 
     SS_RETURN;
 }
@@ -636,7 +642,7 @@ inline const UTF8 *SString::GetUTF8() const
 }
 
 // Normalize the string to unicode.  This will make many operations nonfailing.
-inline void SString::Normalize() const
+inline void SString::Normalize()
 {
     SS_CONTRACT_VOID
     {
@@ -1097,7 +1103,7 @@ inline void SString::Delete(const Iterator &i, COUNT_T length)
 }
 
 // Preallocate some space for the string buffer
-inline void SString::Preallocate(COUNT_T characters) const
+inline void SString::Preallocate(COUNT_T characters)
 {
     WRAPPER_NO_CONTRACT;
 
@@ -1106,14 +1112,14 @@ inline void SString::Preallocate(COUNT_T characters) const
 }
 
 // Trim unused space from the buffer
-inline void SString::Trim() const
+inline void SString::Trim()
 {
     WRAPPER_NO_CONTRACT;
 
     if (GetRawCount() == 0)
     {
         // Share the global empty string buffer.
-        const_cast<SString *>(this)->SBuffer::SetImmutable(s_EmptyBuffer, sizeof(s_EmptyBuffer));
+        SBuffer::SetImmutable(s_EmptyBuffer, sizeof(s_EmptyBuffer));
     }
     else
     {

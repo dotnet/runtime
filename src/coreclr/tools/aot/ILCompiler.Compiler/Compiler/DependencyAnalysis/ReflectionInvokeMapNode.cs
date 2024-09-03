@@ -29,7 +29,7 @@ namespace ILCompiler.DependencyAnalysis
 
         public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
-            sb.Append(nameMangler.CompilationUnitPrefix).Append("__method_to_entrypoint_map");
+            sb.Append(nameMangler.CompilationUnitPrefix).Append("__method_to_entrypoint_map"u8);
         }
         public int Offset => 0;
         public override bool IsShareable => false;
@@ -62,6 +62,11 @@ namespace ILCompiler.DependencyAnalysis
 
             if (method.OwningType.IsValueType && !method.Signature.IsStatic)
                 dependencies.Add(factory.MethodEntrypoint(method, unboxingStub: true), "Reflection unboxing stub");
+
+            if (!method.IsAbstract)
+            {
+                dependencies.Add(factory.AddressTakenMethodEntrypoint(method), "Body of a reflectable method");
+            }
 
             // If the method is defined in a different module than this one, a metadata token isn't known for performing the reference
             // Use a name/sig reference instead.
@@ -102,6 +107,11 @@ namespace ILCompiler.DependencyAnalysis
 
             // Skip tracking dependencies for primitive types. Assume that they are always present.
             if (type.IsPrimitive || type.IsVoid)
+                return;
+
+            // Reflection doesn't need the ability to generate MethodTables out of thin air for reference types.
+            // Skip generating the dependencies.
+            if (type.IsGCPointer)
                 return;
 
             TypeDesc canonType = type.ConvertToCanonForm(CanonicalFormKind.Specific);
@@ -151,7 +161,7 @@ namespace ILCompiler.DependencyAnalysis
                 if (method.IsDefaultConstructor)
                     flags |= InvokeTableFlags.IsDefaultConstructor;
 
-                if (ReflectionVirtualInvokeMapNode.NeedsVirtualInvokeInfo(method))
+                if (ReflectionVirtualInvokeMapNode.NeedsVirtualInvokeInfo(factory, method))
                     flags |= InvokeTableFlags.HasVirtualInvoke;
 
                 if (!method.IsAbstract)
@@ -196,7 +206,7 @@ namespace ILCompiler.DependencyAnalysis
                 {
                     vertex = writer.GetTuple(vertex,
                         writer.GetUnsignedConstant(_externalReferences.GetIndex(
-                            factory.MethodEntrypoint(method,
+                            factory.AddressTakenMethodEntrypoint(method,
                             unboxingStub: method.OwningType.IsValueType && !method.Signature.IsStatic))));
                 }
 

@@ -318,8 +318,6 @@ IF NOT "%CLRCustomTestLauncher%"=="" (
   set LAUNCHER=%_DebuggerFullPath% $(CLRTestRunFile)
 )
 
-$(BatchIlrtTestLaunchCmds)
-
 if defined RunCrossGen2 (
   call :TakeLock
 )

@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Text;
 using System.Runtime.InteropServices;
 using TestLibrary;
+using Xunit;
 
 namespace PInvokeTests
 {
@@ -99,7 +100,7 @@ namespace PInvokeTests
     }
     #endregion
 
-    class StructureTests
+    public class StructureTests
     {
         #region direct Pinvoke declarartions
 
@@ -509,7 +510,10 @@ namespace PInvokeTests
 
         #endregion
 
-        public static int Main()
+        [Fact]
+        [OuterLoop]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/91388", typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.PlatformDoesNotSupportNativeTestAssets))]
+        public static int TestEntryPoint()
         {
             bool retVal = true;
 

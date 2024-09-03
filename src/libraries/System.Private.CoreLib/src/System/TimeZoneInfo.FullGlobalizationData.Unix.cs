@@ -1,9 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics;
 using System.Globalization;
 using System.Threading;
-using System.Diagnostics;
 
 namespace System
 {
@@ -11,6 +11,7 @@ namespace System
     {
         private const string InvariantUtcStandardDisplayName = "Coordinated Universal Time";
         private const string FallbackCultureName = "en-US";
+#if !TARGET_MACCATALYST && !TARGET_IOS && !TARGET_TVOS
         private const string GmtId = "GMT";
 
         // Some time zones may give better display names using their location names rather than their generic name.
@@ -22,12 +23,20 @@ namespace System
             "Pacific/Apia",       // Prefer "Samoa Time" over "Apia Time"
             "Pacific/Pitcairn"    // Prefer "Pitcairn Islands Time" over "Pitcairn Time"
         };
+#endif
 
         private static CultureInfo? _uiCulture;
 
         // Helper function to get the standard display name for the UTC static time zone instance
         private static string GetUtcStandardDisplayName()
         {
+#if TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS
+            if (!GlobalizationMode.Hybrid)
+            {
+                // For this target, be consistent with other time zone display names that use an abbreviation.
+                return "UTC";
+            }
+#endif
             // Don't bother looking up the name for invariant or English cultures
             CultureInfo uiCulture = CultureInfo.CurrentUICulture;
             if (GlobalizationMode.Invariant || uiCulture.Name.Length == 0 || uiCulture.TwoLetterISOLanguageName == "en")
@@ -48,6 +57,13 @@ namespace System
         // Helper function to get the full display name for the UTC static time zone instance
         private static string GetUtcFullDisplayName(string timeZoneId, string standardDisplayName)
         {
+#if TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS
+            if (!GlobalizationMode.Hybrid)
+            {
+                // For this target, be consistent with other time zone display names that use the ID.
+                return $"(UTC) {timeZoneId}";
+            }
+#endif
             return $"(UTC) {standardDisplayName}";
         }
 #pragma warning restore IDE0060
@@ -95,6 +111,10 @@ namespace System
                 {
                     fixed (char* bufferPtr = buffer)
                     {
+#if TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS
+                        if (GlobalizationMode.Hybrid)
+                            return Interop.Globalization.GetTimeZoneDisplayNameNative(locale, locale.Length, id, id.Length, type, bufferPtr, buffer.Length);
+#endif
                         return Interop.Globalization.GetTimeZoneDisplayName(locale, id, type, bufferPtr, buffer.Length);
                     }
                 },
@@ -111,6 +131,10 @@ namespace System
                     {
                         fixed (char* bufferPtr = buffer)
                         {
+#if TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS
+                            if (GlobalizationMode.Hybrid)
+                                return Interop.Globalization.GetTimeZoneDisplayNameNative(locale, locale.Length, id, id.Length, type, bufferPtr, buffer.Length);
+#endif
                             return Interop.Globalization.GetTimeZoneDisplayName(locale, id, type, bufferPtr, buffer.Length);
                         }
                     },
@@ -131,23 +155,31 @@ namespace System
         // Helper function that builds the value backing the DisplayName field from globalization data.
         private static void GetFullValueForDisplayNameField(string timeZoneId, TimeSpan baseUtcOffset, ref string? displayName)
         {
+            CultureInfo uiCulture = UICulture;
+            // Get the base offset to prefix in front of the time zone.
+            // Only UTC and its aliases have "(UTC)", handled earlier.  All other zones include an offset, even if it's zero.
+            string baseOffsetText = string.Create(null, stackalloc char[128], $"(UTC{(baseUtcOffset >= TimeSpan.Zero ? '+' : '-')}{baseUtcOffset:hh\\:mm})");
+
+#if TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS
+            Debug.Assert(GlobalizationMode.Hybrid);
+            string? timeZoneName = null;
+            GetDisplayName(timeZoneId, Interop.Globalization.TimeZoneDisplayNameType.TimeZoneName, uiCulture.Name, ref timeZoneName);
+            // For this target, be consistent with other time zone display names that use the ID.
+            displayName = $"{baseOffsetText} {timeZoneName}";
+            return;
+#else
             // There are a few different ways we might show the display name depending on the data.
             // The algorithm used below should avoid duplicating the same words while still achieving the
             // goal of providing a unique, discoverable, and intuitive name.
 
             // Try to get the generic name for this time zone.
             string? genericName = null;
-            CultureInfo uiCulture = UICulture;
             GetDisplayName(timeZoneId, Interop.Globalization.TimeZoneDisplayNameType.Generic, uiCulture.Name, ref genericName);
             if (genericName == null)
             {
                 // We'll use the fallback display name value already set.
                 return;
             }
-
-            // Get the base offset to prefix in front of the time zone.
-            // Only UTC and its aliases have "(UTC)", handled earlier.  All other zones include an offset, even if it's zero.
-            string baseOffsetText = string.Create(null, stackalloc char[128], $"(UTC{(baseUtcOffset >= TimeSpan.Zero ? '+' : '-')}{baseUtcOffset:hh\\:mm})");
 
             // Get the generic location name.
             string? genericLocationName = null;
@@ -235,6 +267,7 @@ namespace System
 
                 displayName = $"{baseOffsetText} {genericName} ({exemplarCityName})";
             }
+#endif
         }
 
         // Helper function that gets an exmplar city name either from ICU or from the IANA time zone ID itself

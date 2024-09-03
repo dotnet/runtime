@@ -1,3 +1,5 @@
+# IMPORTANT: do not use add_compile_options(), add_definitions() or similar functions here since it will leak to the including projects
+
 include_directories(BEFORE "${CMAKE_CURRENT_LIST_DIR}/brotli/include")
 
 set (BROTLI_SOURCES_BASE
@@ -5,6 +7,7 @@ set (BROTLI_SOURCES_BASE
     common/context.c
     common/dictionary.c
     common/platform.c
+    common/shared_dictionary.c
     common/transform.c
     dec/bit_reader.c
     dec/decode.c
@@ -17,6 +20,7 @@ set (BROTLI_SOURCES_BASE
     enc/brotli_bit_stream.c
     enc/cluster.c
     enc/command.c
+    enc/compound_dictionary.c
     enc/compress_fragment.c
     enc/compress_fragment_two_pass.c
     enc/dictionary_hash.c

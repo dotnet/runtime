@@ -1,17 +1,16 @@
 parameters:
   filesToSign: []
+  timeoutInMinutes: '30'
 
 steps:
   - task: UseDotNet@2
-    displayName: 'Use .NET Core SDK 2.1.808'
+    displayName: Install .NET 6 SDK for signing.
     inputs:
-      packageType: sdk
-      version: 2.1.808
+      packageType: 'sdk'
+      version: '6.0.x'
+      installationPath: '$(Agent.TempDirectory)/dotnet'
 
   - ${{ each file in parameters.filesToSign }}:
-    - script: codesign -s - -f --entitlements ${{ file.entitlementsFile }} ${{ file.path }}/${{ file.name }}
-      displayName: 'Add entitlements to ${{ file.name }}'
-
     - task: CopyFiles@2
       displayName: 'Copy entitled file ${{ file.name }}'
       inputs:
@@ -28,10 +27,15 @@ steps:
       includeRootFolder: true
       replaceExistingArchive: true
 
-  - task: SFP.build-tasks.custom-build-task-1.EsrpCodeSigning@1
+  - task: EsrpCodeSigning@5
     displayName: 'ESRP CodeSigning'
     inputs:
-      ConnectedServiceName: 'ESRP CodeSigning'
+      ConnectedServiceName: 'DotNet-Engineering-Services_KeyVault'
+      AppRegistrationClientId: '28ec6507-2167-4eaa-a294-34408cf5dd0e'
+      AppRegistrationTenantId: '72f988bf-86f1-41af-91ab-2d7cd011db47'
+      AuthAKVName: 'EngKeyVault'
+      AuthCertName: 'DotNetCore-ESRP-AuthCert'
+      AuthSignCertName: 'DotNetCore-ESRP-AuthSignCert'
       FolderPath: '$(Build.ArtifactStagingDirectory)/'
       Pattern: 'mac_entitled_to_sign.zip'
       UseMinimatch: true
@@ -47,7 +51,15 @@ steps:
             "toolName": "sign",
             "toolVersion": "1.0"
           }
-        ]  
+        ]
+      SessionTimeout: ${{ parameters.timeoutInMinutes }}
+      MaxConcurrency: '50'
+      MaxRetryAttempts: '5'
+      PendingAnalysisWaitTimeoutMinutes: '5'
+    env:
+      DOTNET_MULTILEVEL_LOOKUP: 0
+      DOTNET_ROOT: '$(Agent.TempDirectory)/dotnet'
+      DOTNET_MSBUILD_SDK_RESOLVER_CLI_DIR: '$(Agent.TempDirectory)/dotnet'
 
   - task: ExtractFiles@1
     displayName: 'Extract MacOS after signing'

@@ -142,7 +142,7 @@ if /i "%1" == "-ninja"               (shift&goto Arg_Loop)
 if /i "%1" == "-msbuild"             (set __Ninja=0&shift&goto Arg_Loop)
 if /i "%1" == "-pgoinstrument"       (set __PgoInstrument=1&shift&goto Arg_Loop)
 if /i "%1" == "-enforcepgo"          (set __EnforcePgo=1&shift&goto Arg_Loop)
-if /i "%1" == "-pgodatapath"         (set __PgoOptDataPath=%2&set __PgoOptimize=1&shift&shift&goto Arg_Loop)
+if /i "%1" == "-pgodatapath"         (set __PgoOptDataPath=%~2&set __PgoOptimize=1&shift&shift&goto Arg_Loop)
 if /i "%1" == "-component"           (set __RequestedBuildComponents=%__RequestedBuildComponents%-%2&set "__remainingArgs=!__remainingArgs:*%2=!"&shift&shift&goto Arg_Loop)
 if /i "%1" == "-fsanitize"           (set __CMakeArgs=%__CMakeArgs% "-DCLR_CMAKE_ENABLE_SANITIZERS=%2"&shift&shift&goto Arg_Loop)
 
@@ -173,9 +173,6 @@ if %__TotalSpecifiedTargetArch% GTR 1 (
     echo Error: more than one build architecture specified, but "all" not specified.
     goto Usage
 )
-
-set __ProcessorArch=%PROCESSOR_ARCHITEW6432%
-if "%__ProcessorArch%"=="" set __ProcessorArch=%PROCESSOR_ARCHITECTURE%
 
 if %__TargetArchX64%==1   set __TargetArch=x64
 if %__TargetArchX86%==1   set __TargetArch=x86
@@ -211,8 +208,13 @@ if NOT "%__BuildType%"=="Release" (
     set __PgoOptimize=0
 )
 
-set "__BinDir=%__RootBinDir%\bin\coreclr\%__TargetOS%.%__TargetArch%.%__BuildType%"
-set "__IntermediatesDir=%__RootBinDir%\obj\coreclr\%__TargetOS%.%__TargetArch%.%__BuildType%"
+set __TargetOSDirName=%__TargetOS%
+if "%__TargetOS%"=="alpine" (
+    set __TargetOSDirName=linux_musl
+)
+
+set "__BinDir=%__RootBinDir%\bin\coreclr\%__TargetOSDirName%.%__TargetArch%.%__BuildType%"
+set "__IntermediatesDir=%__RootBinDir%\obj\coreclr\%__TargetOSDirName%.%__TargetArch%.%__BuildType%"
 set "__LogsDir=%__RootBinDir%\log\!__BuildType!"
 set "__MsbuildDebugLogsDir=%__LogsDir%\MsbuildDebugLogs"
 set "__ArtifactsIntermediatesDir=%__RepoRootDir%\artifacts\obj\coreclr\"
@@ -356,18 +358,19 @@ if %__BuildNative% EQU 1 (
     echo %__MsgPrefix%Commencing build of native components for %__TargetOS%.%__TargetArch%.%__BuildType%
 
     REM Set the environment for the native build
-    set __VCTargetArch=amd64
-    if /i "%__HostArch%" == "x86" ( set __VCTargetArch=x86 )
-    if /i "%__HostArch%" == "arm" (
-        set __VCTargetArch=x86_arm
-    )
-    if /i "%__HostArch%" == "arm64" (
-        set __VCTargetArch=x86_arm64
+    if /i "%PROCESSOR_ARCHITECTURE%" == "ARM64" (
+        set __VCBuildArch=arm64
+        if /i "%__HostArch%" == "x64" ( set __VCBuildArch=arm64_amd64 )
+        if /i "%__HostArch%" == "x86" ( set __VCBuildArch=arm64_x86 )
+    ) else (
+        set __VCBuildArch=amd64
+        if /i "%__HostArch%" == "x86" ( set __VCBuildArch=amd64_x86 )
+        if /i "%__HostArch%" == "arm64" ( set __VCBuildArch=amd64_arm64 )
     )
 
     if NOT DEFINED SkipVCEnvInit (
-        echo %__MsgPrefix%Using environment: "%__VCToolsRoot%\vcvarsall.bat" !__VCTargetArch!
-        call                                 "%__VCToolsRoot%\vcvarsall.bat" !__VCTargetArch!
+        echo %__MsgPrefix%Using environment: "%__VCToolsRoot%\vcvarsall.bat" !__VCBuildArch!
+        call                                 "%__VCToolsRoot%\vcvarsall.bat" !__VCBuildArch!
     )
     @if defined _echo @echo on
 

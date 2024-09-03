@@ -17,12 +17,11 @@ namespace Test
         }
 
         [Fact]
-        public static int TestEntryPoint()
+        public static void TestEntryPoint()
         {
             uint u = 0;
             bool[] ab = null;
             Static1(ref u, ref ab, ab);
-            return 100;
         }
     }
 }

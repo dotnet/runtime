@@ -608,7 +608,7 @@ namespace System.IO.Tests
 
             public NativeMemoryManager(int length) => _ptr = Marshal.AllocHGlobal(_length = length);
 
-            ~NativeMemoryManager() => Assert.False(true, $"{nameof(NativeMemoryManager)} being finalized. Created at {_ctorStack}");
+            ~NativeMemoryManager() => Assert.Fail($"{nameof(NativeMemoryManager)} being finalized. Created at {_ctorStack}");
 
             public override Memory<byte> Memory => CreateMemory(_length);
 
@@ -1742,7 +1742,8 @@ namespace System.IO.Tests
             from startWithFlush in new[] { false, true }
             select new object[] { mode, writeSize, startWithFlush };
 
-        [OuterLoop]
+        [OuterLoop("May take several seconds", ~TestPlatforms.Browser)]
+        [SkipOnPlatform(TestPlatforms.Browser, "Not supported on browser")]
         [Theory]
         [MemberData(nameof(ReadWrite_Success_Large_MemberData))]
         public virtual async Task ReadWrite_Success_Large(ReadWriteMode mode, int writeSize, bool startWithFlush) =>
@@ -1788,7 +1789,7 @@ namespace System.IO.Tests
                     int n = 0;
                     while (n < readerBytes.Length)
                     {
-                        int r = await ReadAsync(mode, readable, readerBytes, n, readerBytes.Length - n);
+                        int r = await ReadAsync(mode, readable, readerBytes, n, readerBytes.Length - n).WaitAsync(TimeSpan.FromSeconds(30));
                         Assert.InRange(r, 1, readerBytes.Length - n);
                         n += r;
                     }
@@ -2438,7 +2439,8 @@ namespace System.IO.Tests
             from useAsync in new bool[] { true, false }
             select new object[] { byteCount, useAsync };
 
-        [OuterLoop]
+        [OuterLoop("May take several seconds", ~TestPlatforms.Browser)]
+        [SkipOnPlatform(TestPlatforms.Browser, "Not supported on browser")]
         [Theory]
         [InlineData(false)]
         [InlineData(true)]

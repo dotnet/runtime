@@ -17,6 +17,7 @@ function(compile_idl idl_file tlb_out)
             /h ${CMAKE_CURRENT_BINARY_DIR}/${IDL_NAME}.h ${MIDL_DEFINITIONS}
             /out ${CMAKE_CURRENT_BINARY_DIR}
             /tlb ${tlb_out_local}
+            /nologo
             ${IDL_SOURCE}
         DEPENDS ${IDL_SOURCE}
         COMMENT "Compiling ${IDL_SOURCE}")

@@ -13,7 +13,7 @@ public class Runtime_57364
     static short s_2;
     static bool s_7;
     [Fact]
-    public static int TestEntryPoint()
+    public static void TestEntryPoint()
     {
         var vr4 = new ulong[][][][]{new ulong[][][]{new ulong[][]{new ulong[]{0}}}};
         int vr9 = 866278096;
@@ -28,7 +28,5 @@ public class Runtime_57364
         }
 
         System.Console.WriteLine(vr9);
-        
-        return 100;
     }
 }

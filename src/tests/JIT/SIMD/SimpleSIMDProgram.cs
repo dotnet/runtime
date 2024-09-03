@@ -9,13 +9,12 @@ namespace SIMDDebugTest
     public class Program
     {
         [Fact]
-        public static int TestEntryPoint()
+        public static void TestEntryPoint()
         {
             Vector4Test.RunTests();
             Vector3Test.RunTests();
             Vector2Test.RunTests();
             FuncEvalTest.RunTests();
-            return 100;
         }
 
         class Vector4Test

@@ -8,7 +8,7 @@ using System.Runtime.InteropServices;
 
 using Xunit;
 
-unsafe class Program
+public unsafe class Program
 {
     static void BlittableFunctionPointers()
     {
@@ -164,7 +164,8 @@ unsafe class Program
         }
     }
 
-    static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         try
         {

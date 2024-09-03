@@ -2,13 +2,16 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.IO;
+using System.Net.WebSockets;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Microsoft.WebAssembly.AppHost;
 
 namespace Microsoft.WebAssembly.AppHost.DevServer;
@@ -27,16 +30,16 @@ internal sealed class DevServerStartup
         services.AddRouting();
     }
 
-    public static void Configure(IApplicationBuilder app, TaskCompletionSource<ServerURLs> realUrlsAvailableTcs, ILogger logger, IHostApplicationLifetime applicationLifetime, IConfiguration configuration)
+    public static void Configure(IApplicationBuilder app, IOptions<DevServerOptions> optionsContainer, TaskCompletionSource<ServerURLs> realUrlsAvailableTcs, ILogger logger, IHostApplicationLifetime applicationLifetime, IConfiguration configuration)
     {
         app.UseDeveloperExceptionPage();
         EnableConfiguredPathbase(app, configuration);
 
         app.UseWebAssemblyDebugging();
 
-        bool applyCopHeaders = configuration.GetValue<bool>("ApplyCopHeaders");
+        DevServerOptions options = optionsContainer.Value;
 
-        if (applyCopHeaders)
+        if (options.WebServerUseCrossOriginPolicy)
         {
             app.Use(async (ctx, next) =>
             {
@@ -54,7 +57,9 @@ internal sealed class DevServerStartup
             });
         }
 
-        app.UseBlazorFrameworkFiles();
+        //app.UseBlazorFrameworkFiles();
+        app.UseRouting();
+
         app.UseStaticFiles(new StaticFileOptions
         {
             // In development, serve everything, as there's no other way to configure it.
@@ -63,14 +68,39 @@ internal sealed class DevServerStartup
         });
 
         app.UseRouting();
+        app.UseWebSockets();
+
+        if (options.OnConsoleConnected is not null)
+        {
+            app.Use(async (ctx, next) =>
+            {
+                if (ctx.Request.Path.StartsWithSegments("/console"))
+                {
+                    if (!ctx.WebSockets.IsWebSocketRequest)
+                    {
+                        ctx.Response.StatusCode = 400;
+                        return;
+                    }
+
+                    using WebSocket socket = await ctx.WebSockets.AcceptWebSocketAsync();
+                    await options.OnConsoleConnected(socket);
+                }
+                else
+                {
+                    await next(ctx);
+                }
+            });
+        }
 
         app.UseEndpoints(endpoints =>
         {
+            endpoints.MapStaticAssets(options.StaticWebAssetsEndpointsPath);
+
             endpoints.MapFallbackToFile("index.html", new StaticFileOptions
             {
                 OnPrepareResponse = fileContext =>
                 {
-                    if (applyCopHeaders)
+                    if (options.WebServerUseCrossOriginPolicy)
                     {
                         // Browser multi-threaded runtime requires cross-origin policy headers to enable SharedArrayBuffer.
                         ApplyCrossOriginPolicyHeaders(fileContext.Context);
