@@ -12,6 +12,7 @@
  */
 
 using System;
+using Xunit;
 
 public class CollectionCountTest
 {
@@ -129,7 +130,8 @@ public class CollectionCountTest
     }
 
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         CollectionCountTest test = new CollectionCountTest();
 
