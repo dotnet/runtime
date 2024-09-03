@@ -238,9 +238,9 @@ def build_and_run(coreclr_args):
     crank_agent_p = None
     if coreclr_args.local:
         print(f"Launching crank agent: {crank_agent_app}")
-        crank_agent_p = subprocess.Popen(crank_agent_app,
-                                stdout=subprocess.PIPE,
-                                stderr=subprocess.PIPE,env=crank_env)
+        # crank_agent_p = subprocess.Popen(crank_agent_app,
+        #                         stdout=subprocess.PIPE,
+        #                         stderr=subprocess.PIPE,env=crank_env)
         time.sleep(2)
 
     try:
