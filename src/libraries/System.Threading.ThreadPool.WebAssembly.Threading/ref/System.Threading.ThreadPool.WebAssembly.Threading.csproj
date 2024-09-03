@@ -1,8 +1,9 @@
 <Project Sdk="Microsoft.NET.Sdk">
+
   <PropertyGroup>
+    <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
     <AssemblyName>System.Threading.ThreadPool</AssemblyName>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
     <FeatureWasmManagedThreads>true</FeatureWasmManagedThreads>
     <!-- tell references.targets to bump the assembly file version -->
     <IsExperimentalRefAssembly>true</IsExperimentalRefAssembly>
@@ -12,11 +13,14 @@
     <IncludePlatformAttributes>true</IncludePlatformAttributes>
     <DefineConstants Condition="'$(FeatureWasmManagedThreads)' == 'true'">$(DefineConstants);FEATURE_WASM_MANAGED_THREADS</DefineConstants>
   </PropertyGroup>
+
   <ItemGroup>
     <Compile Include="$(LibrariesProjectRoot)System.Threading.ThreadPool\ref\System.Threading.ThreadPool.cs" />
   </ItemGroup>
+
   <ItemGroup>
-    <ProjectReference Include="..\..\System.Runtime\ref\System.Runtime.csproj" PrivateAssets="all" />
-    <ProjectReference Include="..\..\System.Threading.Overlapped\ref\System.Threading.Overlapped.csproj" PrivateAssets="all" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime\ref\System.Runtime.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Threading.Overlapped\ref\System.Threading.Overlapped.csproj" />
   </ItemGroup>
+
 </Project>

@@ -370,23 +370,23 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Reference Include="Microsoft.Win32.Primitives" />
-    <Reference Include="Microsoft.Win32.Registry" />
-    <Reference Include="System.Collections" />
-    <Reference Include="System.Collections.Concurrent" />
-    <Reference Include="System.Collections.NonGeneric" />
-    <Reference Include="System.Collections.Specialized" />
-    <Reference Include="System.ComponentModel.Primitives" />
-    <Reference Include="System.Diagnostics.FileVersionInfo" />
-    <Reference Include="System.IO.FileSystem.DriveInfo" />
-    <Reference Include="System.Memory" />
-    <Reference Include="System.IO.Pipes" />
-    <Reference Include="System.Runtime" />
-    <Reference Include="System.Runtime.InteropServices" />
-    <Reference Include="System.Text.Encoding.Extensions" />
-    <Reference Include="System.Threading" />
-    <Reference Include="System.Threading.Thread" />
-    <Reference Include="System.Threading.ThreadPool" />
+    <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Win32.Primitives\src\Microsoft.Win32.Primitives.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Win32.Registry\src\Microsoft.Win32.Registry.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Collections.Concurrent\src\System.Collections.Concurrent.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Collections.NonGeneric\src\System.Collections.NonGeneric.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Collections.Specialized\src\System.Collections.Specialized.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Collections\src\System.Collections.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.ComponentModel.Primitives\src\System.ComponentModel.Primitives.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Diagnostics.FileVersionInfo\src\System.Diagnostics.FileVersionInfo.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.IO.FileSystem.DriveInfo\src\System.IO.FileSystem.DriveInfo.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.IO.Pipes\src\System.IO.Pipes.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Memory\src\System.Memory.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime.InteropServices\src\System.Runtime.InteropServices.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime\src\System.Runtime.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Text.Encoding.Extensions\src\System.Text.Encoding.Extensions.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Threading.Thread\src\System.Threading.Thread.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Threading.ThreadPool\src\System.Threading.ThreadPool.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Threading\src\System.Threading.csproj" />
   </ItemGroup>
 
 </Project>

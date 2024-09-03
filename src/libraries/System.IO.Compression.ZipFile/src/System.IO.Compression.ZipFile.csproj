@@ -45,10 +45,10 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Reference Include="System.IO.Compression" />
-    <Reference Include="System.Memory" />
-    <Reference Include="System.Runtime" />
-    <Reference Include="System.Runtime.InteropServices" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.IO.Compression\src\System.IO.Compression.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Memory\src\System.Memory.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime.InteropServices\src\System.Runtime.InteropServices.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime\src\System.Runtime.csproj" />
   </ItemGroup>
 
 </Project>

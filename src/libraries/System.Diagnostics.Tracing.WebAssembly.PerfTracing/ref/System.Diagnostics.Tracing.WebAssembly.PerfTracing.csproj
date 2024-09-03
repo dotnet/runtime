@@ -1,7 +1,8 @@
 <Project Sdk="Microsoft.NET.Sdk">
+
   <PropertyGroup>
-    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <FeatureWasmPerfTracing>true</FeatureWasmPerfTracing>
     <AssemblyName>System.Diagnostics.Tracing</AssemblyName>
     <!-- tell references.targets to bump the assembly version -->
@@ -12,11 +13,14 @@
     <IncludePlatformAttributes>true</IncludePlatformAttributes>
     <DefineConstants Condition="'$(FeatureWasmPerfTracing)' == 'true'">$(DefineConstants);FEATURE_WASM_PERFTRACING</DefineConstants>
   </PropertyGroup>
+
   <ItemGroup>
     <Compile Include="..\..\System.Diagnostics.Tracing\ref\System.Diagnostics.Tracing.cs" />
     <Compile Include="..\..\System.Diagnostics.Tracing\ref\System.Diagnostics.Tracing.Counters.cs" />
   </ItemGroup>
+
   <ItemGroup>
-    <ProjectReference Include="..\..\System.Runtime\ref\System.Runtime.csproj" PrivateAssets="all" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime\ref\System.Runtime.csproj" />
   </ItemGroup>
+
 </Project>

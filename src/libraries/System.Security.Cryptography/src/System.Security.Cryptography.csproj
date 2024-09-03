@@ -1,9 +1,9 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
+    <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-unix;$(NetCoreAppCurrent)-android;$(NetCoreAppCurrent)-osx;$(NetCoreAppCurrent)-ios;$(NetCoreAppCurrent)-tvos;$(NetCoreAppCurrent)-browser;$(NetCoreAppCurrent)</TargetFrameworks>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <DefineConstants>$(DefineConstants);INTERNAL_ASYMMETRIC_IMPLEMENTATIONS</DefineConstants>
-    <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-unix;$(NetCoreAppCurrent)-android;$(NetCoreAppCurrent)-osx;$(NetCoreAppCurrent)-ios;$(NetCoreAppCurrent)-tvos;$(NetCoreAppCurrent)-browser;$(NetCoreAppCurrent)</TargetFrameworks>
     <NoWarn>$(NoWarn);CA5350;CA5351;CA5379;CA5384;SYSLIB0026</NoWarn>
     <!-- PasswordDeriveBytes.GetBytes is obsolete but DeriveBytes.GetBytes intentionally isn't. -->
     <NoWarn>$(NoWarn);CS0809</NoWarn>
@@ -932,6 +932,7 @@
     <Compile Include="System\Security\Cryptography\X509Certificates\X509Pal.OpenSsl.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\X509Persistence.cs" />
   </ItemGroup>
+
   <ItemGroup Condition="'$(UseOpenSslAead)' == 'true'">
     <Compile Include="$(CommonPath)Interop\Unix\System.Security.Cryptography.Native\Interop.OpenSslAvailable.cs"
              Link="Common\Interop\Unix\System.Security.Cryptography.Native\Interop.OpenSslAvailable.cs" />
@@ -1800,25 +1801,25 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Reference Include="System.Collections" />
-    <Reference Include="System.Collections.Concurrent" />
-    <Reference Include="System.Collections.NonGeneric" />
-    <Reference Include="System.Diagnostics.Tracing" />
-    <Reference Include="System.Diagnostics.StackTrace" />
-    <Reference Include="System.Formats.Asn1" />
-    <Reference Include="System.IO.MemoryMappedFiles" />
-    <Reference Include="System.Memory" />
-    <Reference Include="System.Net.Primitives" />
-    <Reference Include="System.Runtime" />
-    <Reference Include="System.Runtime.InteropServices" />
-    <Reference Include="System.Runtime.Numerics" />
-    <Reference Include="System.Text.Encoding.Extensions" />
-    <Reference Include="System.Threading" />
-    <Reference Include="System.Threading.Thread" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Collections\src\System.Collections.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Collections.Concurrent\src\System.Collections.Concurrent.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Collections.NonGeneric\src\System.Collections.NonGeneric.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Diagnostics.Tracing\src\System.Diagnostics.Tracing.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Diagnostics.StackTrace\src\System.Diagnostics.StackTrace.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Formats.Asn1\src\System.Formats.Asn1.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.IO.MemoryMappedFiles\src\System.IO.MemoryMappedFiles.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Memory\src\System.Memory.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Net.Primitives\src\System.Net.Primitives.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime\src\System.Runtime.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime.InteropServices\src\System.Runtime.InteropServices.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime.Numerics\src\System.Runtime.Numerics.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Text.Encoding.Extensions\src\System.Text.Encoding.Extensions.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Threading\src\System.Threading.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Threading.Thread\src\System.Threading.Thread.csproj" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' != '' and '$(TargetPlatformIdentifier)' != 'windows' and '$(TargetPlatformIdentifier' != 'browser'">
-    <Reference Include="System.Console" Condition="'$(Configuration)' == 'Debug'" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Console\src\System.Console.csproj" Condition="'$(Configuration)' == 'Debug'" />
   </ItemGroup>
 
   <ItemGroup>

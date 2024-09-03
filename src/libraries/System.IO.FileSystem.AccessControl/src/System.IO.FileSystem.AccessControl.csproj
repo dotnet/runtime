@@ -93,13 +93,16 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Reference Include="System.Collections" Condition="'$(TargetPlatformIdentifier)' == 'windows'" />
-    <Reference Include="System.Collections.NonGeneric" />
-    <Reference Include="System.Memory" />
-    <Reference Include="System.Runtime" />
-    <Reference Include="System.Runtime.InteropServices" Condition="'$(TargetPlatformIdentifier)' == 'windows'" />
-    <Reference Include="System.Security.AccessControl" />
-    <Reference Include="System.Security.Principal.Windows" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Collections.NonGeneric\src\System.Collections.NonGeneric.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Memory\src\System.Memory.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime\src\System.Runtime.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Security.AccessControl\src\System.Security.AccessControl.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Security.Principal.Windows\src\System.Security.Principal.Windows.csproj" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'windows'">
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Collections\src\System.Collections.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime.InteropServices\src\System.Runtime.InteropServices.csproj" />
   </ItemGroup>
 
 </Project>
