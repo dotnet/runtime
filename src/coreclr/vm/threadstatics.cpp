@@ -607,7 +607,7 @@ void* GetThreadLocalStaticBase(TLSIndex index)
         if (gcBaseAddresses.pTLSBaseAddress == (TADDR)NULL)
         {
             // Now we need to actually allocate the TLS data block
-            struct 
+            struct
             {
                 PTRARRAYREF ptrRef;
                 OBJECTREF tlsEntry;
@@ -719,9 +719,9 @@ void GetTLSIndexForThreadStatic(MethodTable* pMT, bool gcStatic, TLSIndex* pInde
                     alignment = 4;
                 else if (bytesNeeded >= 2)
                     alignment = 2;
-                else 
+                else
                     alignment = 1;
-                
+
                 uint32_t actualIndexOffset = AlignDown(indexOffsetWithoutAlignment, alignment);
                 uint32_t alignmentAdjust = indexOffsetWithoutAlignment - actualIndexOffset;
                 if (alignmentAdjust <= newBytesAvailable)
@@ -801,6 +801,8 @@ bool CanJITOptimizeTLSAccess()
     // Optimization is disabled for linux musl arm64
 #elif defined(TARGET_FREEBSD) && defined(TARGET_ARM64)
     // Optimization is disabled for FreeBSD/arm64
+#elif defined(TARGET_RISCV64)
+    // Optimization is disabled for riscv64
 #elif defined(FEATURE_INTERPRETER)
     // Optimization is disabled when interpreter may be used
 #elif !defined(TARGET_OSX) && defined(TARGET_UNIX) && defined(TARGET_ARM64)
