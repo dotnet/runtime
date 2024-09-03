@@ -448,7 +448,7 @@ def setup_aspnet(workitem_directory, arch):
         # have not published yet. As a result, we hit errors of "dotnet restore". As a workaround, hard code the
         # working version until we move to ".NET 8" in the script.
         run_command(
-            get_python_name() + [dotnet_install_script, "install", "--channels", "9.0", "--architecture", arch, "--install-dir",
+            get_python_name() + [dotnet_install_script, "install", "--channels", "8.0", "--architecture", arch, "--install-dir",
                                  dotnet_directory, "--verbose"])
         
         shutil.rmtree(performance_directory, ignore_errors=True)
