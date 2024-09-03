@@ -104,6 +104,7 @@ jobs:
         pip3 install --user azure.storage.blob==12.13.0 &&
         pip3 install --user azure.storage.queue==12.4.0 &&
         pip3 install --user azure.identity==1.16.1 &&
+        sudo apt autoremove -y &&
         sudo apt-get update &&
         sudo apt -y install curl dirmngr apt-transport-https lsb-release ca-certificates &&
         $(HelixPreCommandsWasmOnLinux) &&
