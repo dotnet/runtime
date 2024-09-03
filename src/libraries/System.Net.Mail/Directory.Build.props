@@ -2,7 +2,7 @@
   <Import Project="..\Directory.Build.props" />
   <PropertyGroup>
     <IncludePlatformAttributes>true</IncludePlatformAttributes>
-    <!-- WASI until https://github.com/dotnet/runtime/pull/106977 -->
+    <!-- WASI until https://github.com/dotnet/runtime/issues/98957 -->
     <UnsupportedOSPlatforms>wasi</UnsupportedOSPlatforms>
   </PropertyGroup>
 </Project>

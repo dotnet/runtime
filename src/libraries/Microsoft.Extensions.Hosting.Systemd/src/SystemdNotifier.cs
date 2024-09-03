@@ -41,6 +41,9 @@ namespace Microsoft.Extensions.Hosting.Systemd
                 return;
             }
 
+#if TARGET_WASI
+            throw new PlatformNotSupportedException(); // TODO remove with https://github.com/dotnet/runtime/pull/107185
+#else
             using (var socket = new Socket(AddressFamily.Unix, SocketType.Dgram, ProtocolType.Unspecified))
             {
                 var endPoint = new UnixDomainSocketEndPoint(_socketPath!);
@@ -50,6 +53,7 @@ namespace Microsoft.Extensions.Hosting.Systemd
                 // smaller than kernel buffers so we won't get blocked.
                 socket.Send(state.GetData());
             }
+#endif
         }
 
         private static string? GetNotifySocketPath()
