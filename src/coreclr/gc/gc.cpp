@@ -16,6 +16,43 @@
 // allocation helpers in gcscan.cpp
 //
 
+#include "common.h"
+#include "gcenv.h"
+
+#include "gc.h"
+#include "gcscan.h"
+#include "gcdesc.h"
+#include "softwarewritewatch.h"
+#include "handletable.h"
+#include "handletable.inl"
+#include "gcenv.inl"
+#include "gceventstatus.h"
+
+#ifdef __INTELLISENSE__
+#if defined(FEATURE_SVR_GC)
+
+#define SERVER_GC 1
+
+#else // defined(FEATURE_SVR_GC)
+
+#ifdef SERVER_GC
+#undef SERVER_GC
+#endif
+
+#endif // defined(FEATURE_SVR_GC)
+#endif // __INTELLISENSE__
+
+#ifdef TARGET_AMD64
+#include "vxsort/do_vxsort.h"
+#endif
+
+#ifdef SERVER_GC
+namespace SVR {
+#else // SERVER_GC
+namespace WKS {
+#endif // SERVER_GC
+    
+#include "gcimpl.h"
 #include "gcpriv.h"
 
 #ifdef TARGET_AMD64
@@ -53401,3 +53438,5 @@ size_t gc_heap::get_mark_array_size (heap_segment* seg)
     return 0;
 }
 #endif //USE_REGIONS
+
+}
