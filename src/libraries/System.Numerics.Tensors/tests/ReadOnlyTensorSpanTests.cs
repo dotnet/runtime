@@ -979,6 +979,9 @@ namespace System.Numerics.Tensors.Tests
         [Fact]
         public static void ReadOnlyTensorSpanSliceTest()
         {
+            // Make sure slicing an empty TensorSpan works
+            new TensorSpan<double>(Array.Empty<double>()).Slice(new NRange[] { .. });
+
             int[] a = [1, 2, 3, 4, 5, 6, 7, 8, 9];
             int[] results = new int[9];
             ReadOnlyTensorSpan<int> spanInt = a.AsTensorSpan(3, 3);
