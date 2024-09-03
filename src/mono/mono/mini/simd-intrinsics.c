@@ -1992,8 +1992,8 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 		return NULL;
 #endif
 
-	MonoClass* klass = NULL;
-	MonoTypeEnum arg0_type;
+	MonoClass* klass = cmethod->klass;
+	MonoTypeEnum arg0_type = MONO_TYPE_VOID;
 	if (fsig->param_count > 0) {
 		if (type_is_simd_vector (fsig->params [0])) {
 			klass = args [0]->klass;
@@ -2002,11 +2002,6 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 			klass = args [1]->klass;
 			arg0_type = get_underlying_type (fsig->params [1]);
 		}
-	} 
-
-	if (!klass) {
-		klass = cmethod->klass;
-		arg0_type = MONO_TYPE_VOID;
 	}
 
 	if (cfg->verbose_level > 1) {
