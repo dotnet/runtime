@@ -28,7 +28,6 @@ namespace System.Net.Mail
     }
 
     [UnsupportedOSPlatform("browser")]
-    [UnsupportedOSPlatform("wasi")]
     public class SmtpClient : IDisposable
     {
 #pragma warning disable CS0067      // Field is not used
