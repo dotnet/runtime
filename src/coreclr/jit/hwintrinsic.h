@@ -229,6 +229,9 @@ enum HWIntrinsicFlag : unsigned int
     // (HW_Flag_BaseTypeFrom{First, Second}Arg must also be set to denote the position of the ValueTuple)
     HW_Flag_BaseTypeFromValueTupleArg = 0x1000000,
 
+    // The intrinsic is a reduce operation.
+    HW_Flag_ReduceOperation = 0x2000000,
+
 #else
 #error Unsupported platform
 #endif
@@ -996,6 +999,12 @@ struct HWIntrinsicInfo
     {
         const HWIntrinsicFlag flags = lookupFlags(id);
         return (flags & HW_Flag_BaseTypeFromValueTupleArg) != 0;
+    }
+
+    static bool IsReduceOperation(NamedIntrinsic id)
+    {
+        const HWIntrinsicFlag flags = lookupFlags(id);
+        return (flags & HW_Flag_ReduceOperation) != 0;
     }
 
     static NamedIntrinsic GetScalarInputVariant(NamedIntrinsic id)
