@@ -15,7 +15,6 @@
 
 ## Introduction
 
-<!-- TODO: Review all the requirements docs: Windows and macOS first pass is done. -->
 The runtime repo can be worked with on Windows, Linux, macOS, and FreeBSD. Each platform has its own specific requirements to work properly, and not all architectures are supported for dev work. The following table shows the matrix of compatibility, as well as links to each OS's requirements doc. If you are using WSL directly (i.e. not Docker), then follow the Linux requirements doc.
 
 | Chip  | Windows  | Linux    | macOS    | FreeBSD  |
@@ -36,7 +35,6 @@ The runtime repo consists of three major components:
 
 You can run your builds from a regular terminal, from the root of the repository. Sudo and administrator privileges are not needed for this.
 
-<!-- MAYBE TODO: Review the docs linked in the following list. -->
 - For instructions on how to edit code and make changes, see [Editing and Debugging](/docs/workflow/editing-and-debugging.md).
 - For instructions on how to debug CoreCLR, see [Debugging CoreCLR](/docs/workflow/debugging/coreclr/debugging-runtime.md).
 - For instructions on using GitHub Codespaces, see [Codespaces](/docs/workflow/Codespaces.md).
@@ -67,6 +65,8 @@ To work with the runtime repo, there are three supported configurations (one is 
 
 <!-- TODO: Add the Docker instructions somewhere. -->
 The main script that will be in charge of most of the building you might want to do is the `build.sh`, or `build.cmd` on Windows, located at the root of the repo. This script receives as arguments the subset(s) you might want to build, as well as multiple parameters to configure your build, such as the configuration, target operating system, target architecture, and so on.
+
+**NOTE:** If you plan on using Docker to work on the runtime repo, read [this doc](/docs/workflow/using-docker.md) first, as it explains how to set it up, as well as the images and the containers, so that you are ready to start following the building and testing instructions in the next sections and their linked docs.
 
 ### General Overview
 
