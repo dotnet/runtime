@@ -443,18 +443,8 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                 for (helper.EmitBegin(); !helper.Done(); helper.EmitCaseEnd())
                 {
                     const int shiftAmount = helper.ImmValue();
-
-                    if (shiftAmount == 0)
-                    {
-                        // TODO: Use emitIns_Mov instead.
-                        //       We do not use it currently because it will still elide the 'mov'
-                        //       even if 'canSkip' is false. We cannot elide the 'mov' here.
-                        GetEmitter()->emitIns_R_R_R(INS_mov, emitTypeSize(node), targetReg, reg, reg);
-                    }
-                    else
-                    {
-                        GetEmitter()->emitIns_R_R_I(ins, emitSize, targetReg, reg, shiftAmount, opt);
-                    }
+                    assert((shiftAmount != 0) || (intrin.category == HW_Category_ShiftLeftByImmediate));
+                    GetEmitter()->emitIns_R_R_I(ins, emitSize, targetReg, reg, shiftAmount, opt);
                 }
             };
 
