@@ -113,7 +113,7 @@ int main(int argc, char * argv[]) {
 	}
 	ret = ret < 0 ? -ret : ret;
 
-    // until WASI can work with unix exit code https://github.com/WebAssembly/wasi-cli/pull/44
+	// until WASI can work with unix exit code https://github.com/WebAssembly/wasi-cli/pull/44
 	char* dotnet_wasi_print_exit_code = monoeg_g_getenv ("DOTNET_WASI_PRINT_EXIT_CODE");
 	if (ret != 0 && dotnet_wasi_print_exit_code && strcmp(dotnet_wasi_print_exit_code, "1") == 0)
 	{
