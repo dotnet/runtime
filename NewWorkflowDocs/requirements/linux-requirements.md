@@ -124,4 +124,4 @@ emerge --ask clang dev-util/lttng-ust app-crypt/mit-krb5
 
 ## Using Docker
 
-Using Docker Under Construction!
+As mentioned at the beginning of this dic, the other method to build the runtime repo for Linux is to use the prebuilt Docker images that our official builds use. In order to be able to run them, you first need to download and install the Docker Engine. The binaries needed and installation instructions can be found at the Docker official site [in this link](https://docs.docker.com/get-started/get-docker/).
