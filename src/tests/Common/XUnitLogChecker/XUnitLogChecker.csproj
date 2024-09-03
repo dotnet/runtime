@@ -5,7 +5,7 @@
     <TargetFramework>$(NetCoreAppToolCurrent)</TargetFramework>
     <GenerateRuntimeConfigurationFiles>true</GenerateRuntimeConfigurationFiles>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <PublishAot>true</PublishAot>
+    <PublishAot Condition="'$(NativeAotSupported)' == 'true'">true</PublishAot>
     <SuppressTrimAnalysisWarnings>false</SuppressTrimAnalysisWarnings>
     <LinkerFlavor Condition="'$(CrossBuild)' == 'true' and '$(TargetsLinux)' == 'true'">lld</LinkerFlavor>
     <SysRoot Condition="'$(CrossBuild)' == 'true' and '$(HostOS)' != 'windows'">$(ROOTFS_DIR)</SysRoot>
