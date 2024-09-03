@@ -178,10 +178,12 @@
     <Exec Command="dotnet nuget locals all -l" ConsoleToMSBuild="true">
       <Output TaskParameter="ConsoleOutput" PropertyName="NuGetLocalsOutput" />
     </Exec>
-    <Message Text="NuGet locals output: $(NuGetLocalsOutput)" Importance="High" />
     <PropertyGroup>
-      <NodeTransportDir>$([System.IO.Path]::GetFullPath($(EmscriptenNodeToolsPath)/../..))</NodeTransportDir>
-      <PackagesDir>$([System.IO.Path]::GetFullPath($(EmscriptenNodeToolsPath)/../../..))</PackagesDir>
+      <GlobalPackagesPath>$([System.Text.RegularExpressions.Regex]::Match($(NuGetLocalsOutput), 'global-packages:\s*([^;]+)').Groups[1].Value)</GlobalPackagesPath>
+    </PropertyGroup>
+    <Message Text="Global Packages Path: $(GlobalPackagesPath)" Importance="High" />
+    <PropertyGroup>
+      <NodeTransportDir>$([System.IO.Path]::Combine($(GlobalPackagesPath), 'runtime.$(_portableHostOS)-$(BuildArchitecture).microsoft.netcore.runtime.wasm.node.transport'))</NodeTransportDir>
       <_EMSDKMissingPaths Condition="'$(_EMSDKMissingPaths)' == '' and ('$(EmscriptenSdkToolsPath)' == '' or !Exists('$(EmscriptenSdkToolsPath)'))">%24(EmscriptenSdkToolsPath)=$(EmscriptenSdkToolsPath) </_EMSDKMissingPaths>
       <_EMSDKMissingPaths Condition="'$(_EMSDKMissingPaths)' == '' and ('$(EmscriptenNodeToolsPath)' == '' or !Exists('$(EmscriptenNodeToolsPath)'))">%24(EmscriptenNodeToolsPath)=$(EmscriptenNodeToolsPath) </_EMSDKMissingPaths>
       <_EMSDKMissingPaths Condition="'$(_EMSDKMissingPaths)' == '' and ('$(EmscriptenUpstreamBinPath)' == '' or !Exists('$(EmscriptenUpstreamBinPath)'))">%24(EmscriptenUpstreamBinPath)=$(EmscriptenUpstreamBinPath) </_EMSDKMissingPaths>
@@ -189,7 +191,7 @@
 
     <ItemGroup>
       <NodeTransportDirContents Include="$(NodeTransportDir)\*" />
-      <PackagesDirContents Include="$(PackagesDir)\*" />
+      <PackagesDirContents Include="$(GlobalPackagesPath)\*" />
     </ItemGroup>
 
     <PropertyGroup>
