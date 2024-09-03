@@ -72,6 +72,6 @@ jobs:
           displayName: 'generic managed test artifacts'
 
     # Create Core_Root
-    - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) $(buildConfig) $(archType) generatelayoutonly $(librariesOverrideArg) /p:UsePublishedCrossgen2=false
+    - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) $(buildConfig) $(archType) $(crossArg) generatelayoutonly $(librariesOverrideArg) /p:UsePublishedCrossgen2=false
       displayName: Create Core_Root
       condition: succeeded()
