@@ -320,7 +320,8 @@
 
   <ItemDefinitionGroup>
     <TargetPathWithTargetPlatformMoniker>
-      <GeneratePackageOnBuild>$(GeneratePackageOnBuild)</GeneratePackageOnBuild>
+      <!-- When ServiceTransitiveDependencies is set, flow the packaging state -->
+      <GeneratePackageOnBuild Condition="'$(ServiceTransitiveDependencies)' == 'true'">$(GeneratePackageOnBuild)</GeneratePackageOnBuild>
     </TargetPathWithTargetPlatformMoniker>
   </ItemDefinitionGroup>
 
@@ -355,8 +356,7 @@
     <Error Condition="'$(ServicingVersion)' == '0' and '$(GeneratePackageOnBuild)' == 'true'"
            Text="ServicingVersion is set to 0 and it should be an increment of the patch version from the last released package." />
 
-    <Error Condition="'$(ServiceTransitiveDependencies)' == 'true' and
-                  '$(GeneratePackageOnBuild)' != 'true' and
+    <Error Condition="'$(GeneratePackageOnBuild)' != 'true' and
                   '@(TransitiveServicedPackages)' != ''"
         Text="This project did not set GeneratePackageOnBuild, but dependencies '@(TransitiveServicedPackages)' did.  Please ship this project by setting GeneratePackageOnBuild to true and incrementing ServicingVersion." />
   </Target>

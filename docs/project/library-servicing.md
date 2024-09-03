@@ -18,7 +18,7 @@ When you make a change to a library & ship it during the servicing release, the 
 
 ## Optionally ensure all up-stack packages are also produced
 
-If you with to ensure that every package that references a serviced package is also serviced itself, you can enable validation by setting `ServiceTransitiveDependencies` to true.  When doing this then building the repo, eg: `build libs -allConfigurations` you'll see errors from any project that didn't enable servicing.
+If you wish to ensure that every package that references a serviced package is also serviced itself, you can enable validation by setting `ServiceTransitiveDependencies` to true.  This can be done in an individual project, or globally.  When doing this then building the repo, eg: `build libs -allConfigurations` you'll see errors from any project that didn't enable servicing.  Reasons for forcing packages which depend on your package to service are security servicing or removing dependencies.
 
 ## Test your changes
 
