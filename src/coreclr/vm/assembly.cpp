@@ -433,6 +433,7 @@ Assembly *Assembly::CreateDynamic(AssemblyBinder* pBinder, NativeAssemblyNamePar
     AppDomain* pDomain = ::GetAppDomain();
 
     NewHolder<DomainAssembly> pDomainAssembly;
+    Assembly* pAssem;
     BOOL                      createdNewAssemblyLoaderAllocator = FALSE;
 
     {
@@ -477,6 +478,8 @@ Assembly *Assembly::CreateDynamic(AssemblyBinder* pBinder, NativeAssemblyNamePar
 
         // Create a domain assembly
         pDomainAssembly = new DomainAssembly(pPEAssembly, pLoaderAllocator);
+        pAssem = pDomainAssembly->GetAssembly();
+        pAssem->m_isDynamic = true;
         if (pDomainAssembly->IsCollectible())
         {
             // We add the assembly to the LoaderAllocator only when we are sure that it can be added
@@ -486,51 +489,46 @@ Assembly *Assembly::CreateDynamic(AssemblyBinder* pBinder, NativeAssemblyNamePar
     }
 
     // Start loading process
+    if (createdNewAssemblyLoaderAllocator)
     {
+        GCX_PREEMP();
+
+        // Initializing the virtual call stub manager is delayed to remove the need for the LoaderAllocator destructor to properly handle
+        // uninitializing the VSD system. (There is a need to suspend the runtime, and that's tricky)
+        pLoaderAllocator->InitVirtualCallStubManager();
+    }
+
+    {
+        GCX_PREEMP();
+
+        // Finish loading process
+        // <TODO> would be REALLY nice to unify this with main loading loop </TODO>
+        pDomainAssembly->Begin();
+        pDomainAssembly->DeliverSyncEvents();
+        pDomainAssembly->DeliverAsyncEvents();
+        pDomainAssembly->FinishLoad();
+        pDomainAssembly->ClearLoading();
+        pDomainAssembly->m_level = FILE_ACTIVE;
+    }
+
+    {
+        CANNOTTHROWCOMPLUSEXCEPTION();
+        FAULT_FORBID();
+
+        // Cannot fail after this point
+
+        pDomainAssembly.SuppressRelease();
+
+        // Once we reach this point, the loader allocator lifetime is controlled by the Assembly object.
         if (createdNewAssemblyLoaderAllocator)
         {
-            GCX_PREEMP();
-
-            // Initializing the virtual call stub manager is delayed to remove the need for the LoaderAllocator destructor to properly handle
-            // uninitializing the VSD system. (There is a need to suspend the runtime, and that's tricky)
-            pLoaderAllocator->InitVirtualCallStubManager();
+            // Atomically transfer ownership to the managed heap
+            pLoaderAllocator->ActivateManagedTracking();
+            pLoaderAllocator.SuppressRelease();
         }
 
-        Assembly* pAssem = pDomainAssembly->GetAssembly();
-        pAssem->m_isDynamic = true;
-
-        {
-            GCX_PREEMP();
-
-            // Finish loading process
-            // <TODO> would be REALLY nice to unify this with main loading loop </TODO>
-            pDomainAssembly->Begin();
-            pDomainAssembly->DeliverSyncEvents();
-            pDomainAssembly->DeliverAsyncEvents();
-            pDomainAssembly->FinishLoad();
-            pDomainAssembly->ClearLoading();
-            pDomainAssembly->m_level = FILE_ACTIVE;
-        }
-
-        {
-            CANNOTTHROWCOMPLUSEXCEPTION();
-            FAULT_FORBID();
-
-            //Cannot fail after this point
-
-            pDomainAssembly.SuppressRelease();
-
-            // Once we reach this point, the loader allocator lifetime is controlled by the Assembly object.
-            if (createdNewAssemblyLoaderAllocator)
-            {
-                // Atomically transfer ownership to the managed heap
-                pLoaderAllocator->ActivateManagedTracking();
-                pLoaderAllocator.SuppressRelease();
-            }
-
-            pAssem->SetIsTenured();
-            pRetVal = pAssem;
-        }
+        pAssem->SetIsTenured();
+        pRetVal = pAssem;
     }
 
     RETURN pRetVal;
