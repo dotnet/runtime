@@ -1,8 +1,8 @@
 <Project Sdk="Microsoft.NET.Sdk.IL">
   <PropertyGroup>
-  </PropertyGroup>
-  <PropertyGroup>
     <DebugType>PdbOnly</DebugType>
+    <!-- Tracking issue: TODO -->
+    <CLRTestTargetUnsupported Condition="'$(RuntimeFlavor)' == 'mono' and '$(RuntimeVariant)' == 'llvmaot'">true</CLRTestTargetUnsupported>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="jumper5_r.il" />

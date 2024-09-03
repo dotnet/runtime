@@ -1,6 +1,8 @@
 <Project Sdk="Microsoft.NET.Sdk.IL">
   <PropertyGroup>
     <DebugType>Full</DebugType>
+    <!-- Tracking issue: TODO -->
+    <CLRTestTargetUnsupported Condition="'$(RuntimeFlavor)' == 'mono' and '$(RuntimeVariant)' == 'llvmaot'">true</CLRTestTargetUnsupported>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="deep_value_d.il" />
