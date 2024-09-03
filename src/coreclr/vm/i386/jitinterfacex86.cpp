@@ -96,25 +96,6 @@ extern "C" void STDCALL WriteBarrierAssert(BYTE* ptr, Object* obj)
 
 #endif // _DEBUG
 
-FCDECL1(Object*, JIT_New, CORINFO_CLASS_HANDLE typeHnd_);
-
-
-HCIMPL1(Object*, AllocObjectWrapper, MethodTable *pMT)
-{
-    CONTRACTL
-    {
-        FCALL_CHECK;
-    }
-    CONTRACTL_END;
-
-    OBJECTREF newObj = NULL;
-    HELPER_METHOD_FRAME_BEGIN_RET_0();    // Set up a frame
-    newObj = AllocateObject(pMT);
-    HELPER_METHOD_FRAME_END();
-    return OBJECTREFToObject(newObj);
-}
-HCIMPLEND
-
 /*********************************************************************/
 #ifndef UNIX_X86_ABI
 extern "C" void* g_TailCallFrameVptr;
@@ -360,6 +341,8 @@ void JIT_TrialAlloc::EmitNoAllocCode(CPUSTUBLINKER *psl, Flags flags)
         psl->Emit32(0xFFFFFFFF);
     }
 }
+
+FCDECL1(Object*, JIT_New, CORINFO_CLASS_HANDLE typeHnd_);
 
 void *JIT_TrialAlloc::GenAllocSFast(Flags flags)
 {

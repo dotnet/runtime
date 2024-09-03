@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
@@ -186,6 +187,15 @@ namespace Microsoft.Extensions
                 get => _color;
                 init => _color = "the color is " + value;
             }
+        }
+
+        public sealed class TreeElement : Dictionary<string, TreeElement>;
+
+        public record TypeWithRecursionThroughCollections
+        {
+            public TreeElement? Tree { get; set; }
+            public TreeElement?[]? Flat { get; set; }
+            public List<TreeElement>? List { get; set; }
         }
 
         public record RecordWithArrayParameter(string[] Array);
@@ -1065,6 +1075,26 @@ namespace Microsoft.Extensions
 
             // override only set
             public override int X { set => base.X = value + 1; }
+        }
+
+        public class EnumerableNotCollection : IEnumerable<KeyValuePair<string, string>>
+        {
+            public string Names { get; set; }
+
+            public string[] Keywords { get; set; }
+
+            public bool Enabled { get; set; }
+
+            private IEnumerable<KeyValuePair<string, string>> enumerate()
+            {
+                yield return new KeyValuePair<string, string>(nameof(Names), Names);
+                yield return new KeyValuePair<string, string>(nameof(Keywords), string.Join(",", Keywords));
+                yield return new KeyValuePair<string, string>(nameof(Enabled), Enabled.ToString());
+            }
+
+            public IEnumerator<KeyValuePair<string, string>> GetEnumerator() => enumerate().GetEnumerator();
+
+            IEnumerator IEnumerable.GetEnumerator() => enumerate().GetEnumerator();
         }
 
     }

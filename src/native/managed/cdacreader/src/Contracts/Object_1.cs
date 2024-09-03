@@ -52,6 +52,9 @@ internal readonly struct Object_1 : IObject
             throw new ArgumentException("Address does not represent a string object", nameof(address));
 
         Data.String str = _target.ProcessedData.GetOrAdd<Data.String>(address);
+        if (str.StringLength == 0)
+            return string.Empty;
+
         Span<byte> span = stackalloc byte[(int)str.StringLength * sizeof(char)];
         _target.ReadBuffer(str.FirstChar, span);
         return new string(MemoryMarshal.Cast<byte, char>(span));
@@ -85,7 +88,7 @@ internal readonly struct Object_1 : IObject
         else
         {
             // Single-dimensional, zero-based - doesn't have bounds
-            boundsStart = address + (ulong)arrayTypeInfo.Fields["m_NumComponents"].Offset;
+            boundsStart = address + (ulong)arrayTypeInfo.Fields[Data.Array.FieldNames.NumComponents].Offset;
             lowerBounds = _target.ReadGlobalPointer(Constants.Globals.ArrayBoundsZero);
         }
 

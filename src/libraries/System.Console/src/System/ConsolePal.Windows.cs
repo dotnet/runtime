@@ -1012,6 +1012,14 @@ namespace System
 
         public static unsafe void SetWindowSize(int width, int height)
         {
+            if (Console.IsOutputRedirected)
+            {
+                throw new IOException(SR.InvalidOperation_SetWindowSize);
+            }
+
+            ArgumentOutOfRangeException.ThrowIfNegativeOrZero(width, nameof(width));
+            ArgumentOutOfRangeException.ThrowIfNegativeOrZero(height, nameof(height));
+
             // Get the position of the current console window
             Interop.Kernel32.CONSOLE_SCREEN_BUFFER_INFO csbi = GetBufferInfo();
 

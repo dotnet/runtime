@@ -156,9 +156,12 @@ namespace System.Security.Cryptography.Csp.Tests
 
         public static IEnumerable<object[]> AlgorithmIdentifiers()
         {
-            yield return new object[] { "MD5", MD5.Create() };
-            yield return new object[] { "MD5", typeof(MD5) };
-            yield return new object[] { "MD5", "1.2.840.113549.2.5" };
+            if (RSAFactory.SupportsMd5Signatures)
+            {
+                yield return new object[] { "MD5", MD5.Create() };
+                yield return new object[] { "MD5", typeof(MD5) };
+                yield return new object[] { "MD5", "1.2.840.113549.2.5" };
+            }
 
             if (RSAFactory.SupportsSha1Signatures)
             {

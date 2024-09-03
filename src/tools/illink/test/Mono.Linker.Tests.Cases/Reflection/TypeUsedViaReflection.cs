@@ -60,6 +60,7 @@ namespace Mono.Linker.Tests.Cases.Reflection
 			TestInvalidTypeCombination ();
 			TestEscapedTypeName ();
 			AssemblyTypeResolutionBehavior.Test ();
+			InstantiatedGenericEquality.Test ();
 		}
 
 		[Kept]
@@ -85,7 +86,7 @@ namespace Mono.Linker.Tests.Cases.Reflection
 		public class Full { }
 
 		[Kept]
-		[ExpectedWarning ("IL2026", nameof (Full))]
+		[ExpectedWarning ("IL2026", nameof (Full), Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/runtime/issues/95118")]
 		public static void TestFullString ()
 		{
 			const string reflectionTypeKeptString = "Mono.Linker.Tests.Cases.Reflection.TypeUsedViaReflection+Full, test, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null";
@@ -100,7 +101,7 @@ namespace Mono.Linker.Tests.Cases.Reflection
 		public class Generic<T> { }
 
 		[Kept]
-		[ExpectedWarning ("IL2026", "Generic")]
+		[ExpectedWarning ("IL2026", "Generic", Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/runtime/issues/95118")]
 		public static void TestGenericString ()
 		{
 			const string reflectionTypeKeptString = "Mono.Linker.Tests.Cases.Reflection.TypeUsedViaReflection+Generic`1, test, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null";
@@ -120,7 +121,7 @@ namespace Mono.Linker.Tests.Cases.Reflection
 		public class GenericArgument { }
 
 		[Kept]
-		[ExpectedWarning ("IL2026", "GenericInstantiation")]
+		[ExpectedWarning ("IL2026", "GenericInstantiation", Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/runtime/issues/95118")]
 		public static void TestGenericInstantiation ()
 		{
 			const string reflectionTypeKeptString = "Mono.Linker.Tests.Cases.Reflection.TypeUsedViaReflection+GenericInstantiation`1[[Mono.Linker.Tests.Cases.Reflection.TypeUsedViaReflection+GenericArgument]]";
@@ -140,7 +141,7 @@ namespace Mono.Linker.Tests.Cases.Reflection
 		public class GenericArgumentFullString { }
 
 		[Kept]
-		[ExpectedWarning ("IL2026", "GenericInstantiationFullString")]
+		[ExpectedWarning ("IL2026", "GenericInstantiationFullString", Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/runtime/issues/95118")]
 		public static void TestGenericInstantiationFullString ()
 		{
 			const string reflectionTypeKeptString = "Mono.Linker.Tests.Cases.Reflection.TypeUsedViaReflection+GenericInstantiationFullString`1["
@@ -157,7 +158,7 @@ namespace Mono.Linker.Tests.Cases.Reflection
 		public class GenericInstantiationOverCoreLib<T> { }
 
 		[Kept]
-		[ExpectedWarning ("IL2026", "GenericInstantiationOverCoreLib", Tool.Trimmer | Tool.NativeAot, "Analyzer can't resolve type names from corelib")]
+		[ExpectedWarning ("IL2026", "GenericInstantiationOverCoreLib", Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/runtime/issues/95118")]
 		public static void TestGenericInstantiationOverCoreLib ()
 		{
 			// Note: the argument type should not be assembly-qualified for this test, which is checking that
@@ -174,7 +175,7 @@ namespace Mono.Linker.Tests.Cases.Reflection
 		public class FullConst { }
 
 		[Kept]
-		[ExpectedWarning ("IL2026", nameof (FullConst))]
+		[ExpectedWarning ("IL2026", nameof (FullConst), Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/runtime/issues/95118")]
 		public static void TestFullStringConst ()
 		{
 			const string reflectionTypeKeptString = "Mono.Linker.Tests.Cases.Reflection.TypeUsedViaReflection+FullConst, test, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null";
@@ -189,7 +190,7 @@ namespace Mono.Linker.Tests.Cases.Reflection
 		public class TypeAsmName { }
 
 		[Kept]
-		[ExpectedWarning ("IL2026", nameof (TypeAsmName))]
+		[ExpectedWarning ("IL2026", nameof (TypeAsmName), Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/runtime/issues/95118")]
 		public static void TestTypeAsmName ()
 		{
 			const string reflectionTypeKeptString = "Mono.Linker.Tests.Cases.Reflection.TypeUsedViaReflection+TypeAsmName, test";
@@ -204,7 +205,7 @@ namespace Mono.Linker.Tests.Cases.Reflection
 		public class AType { }
 
 		[Kept]
-		[ExpectedWarning ("IL2026", nameof (AType))]
+		[ExpectedWarning ("IL2026", nameof (AType), Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/runtime/issues/95118")]
 		public static void TestType ()
 		{
 			const string reflectionTypeKeptString = "Mono.Linker.Tests.Cases.Reflection.TypeUsedViaReflection+AType";
@@ -213,15 +214,11 @@ namespace Mono.Linker.Tests.Cases.Reflection
 		}
 
 		[Kept]
-#if !NATIVEAOT
-		[KeptMember (".ctor()")]
-#endif
 		[KeptAttributeAttribute (typeof (RequiresUnreferencedCodeAttribute))]
 		[RequiresUnreferencedCode (nameof (Pointer))]
 		public class Pointer { }
 
 		[Kept]
-		[ExpectedWarning ("IL2026", nameof (Pointer), Tool.Trimmer, "https://github.com/dotnet/runtime/issues/106214")]
 		public static void TestPointer ()
 		{
 			const string reflectionTypeKeptString = "Mono.Linker.Tests.Cases.Reflection.TypeUsedViaReflection+Pointer*";
@@ -230,15 +227,11 @@ namespace Mono.Linker.Tests.Cases.Reflection
 		}
 
 		[Kept]
-#if !NATIVEAOT
-		[KeptMember (".ctor()")]
-#endif
 		[KeptAttributeAttribute (typeof (RequiresUnreferencedCodeAttribute))]
 		[RequiresUnreferencedCode (nameof (Reference))]
 		public class Reference { }
 
 		[Kept]
-		[ExpectedWarning ("IL2026", nameof (Reference), Tool.Trimmer, "https://github.com/dotnet/runtime/issues/106214")]
 		public static void TestReference ()
 		{
 			const string reflectionTypeKeptString = "Mono.Linker.Tests.Cases.Reflection.TypeUsedViaReflection+Reference&";
@@ -329,7 +322,7 @@ namespace Mono.Linker.Tests.Cases.Reflection
 		}
 
 		[Kept]
-		[ExpectedWarning ("IL2026", "N3")]
+		[ExpectedWarning ("IL2026", "N3", Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/runtime/issues/95118")]
 		static void TestDeeplyNested ()
 		{
 			var typeKept = Type.GetType ("Mono.Linker.Tests.Cases.Reflection.TypeUsedViaReflection+Nested1+N2+N3");
@@ -360,8 +353,8 @@ namespace Mono.Linker.Tests.Cases.Reflection
 		class TypeFromBranchB { }
 
 		[Kept]
-		[ExpectedWarning ("IL2026", nameof (TypeFromBranchA))]
-		[ExpectedWarning ("IL2026", nameof (TypeFromBranchB))]
+		[ExpectedWarning ("IL2026", nameof (TypeFromBranchA), Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/runtime/issues/95118")]
+		[ExpectedWarning ("IL2026", nameof (TypeFromBranchB), Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/runtime/issues/95118")]
 		static void TestTypeFromBranch (int b)
 		{
 			string name = null;
@@ -430,7 +423,7 @@ namespace Mono.Linker.Tests.Cases.Reflection
 		public class OverloadWith3Parameters { }
 
 		[Kept]
-		[ExpectedWarning ("IL2026", nameof (OverloadWith3Parameters))]
+		[ExpectedWarning ("IL2026", nameof (OverloadWith3Parameters), Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/runtime/issues/95118")]
 		static void TestTypeOverloadWith3Parameters ()
 		{
 			const string reflectionTypeKeptString = "Mono.Linker.Tests.Cases.Reflection.TypeUsedViaReflection+OverloadWith3Parameters";
@@ -442,11 +435,11 @@ namespace Mono.Linker.Tests.Cases.Reflection
 		[Kept]
 		[KeptMember (".ctor()")]
 		[KeptAttributeAttribute (typeof (RequiresUnreferencedCodeAttribute))]
-		[RequiresUnreferencedCode (nameof (OverloadWith4Parameters))]
+		[RequiresUnreferencedCode (nameof (OverloadWith3Parameters))]
 		public class OverloadWith4Parameters { }
 
 		[Kept]
-		[ExpectedWarning ("IL2026", nameof (OverloadWith4Parameters))]
+		[ExpectedWarning ("IL2026", nameof (OverloadWith4Parameters), Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/runtime/issues/95118")]
 		static void TestTypeOverloadWith4Parameters ()
 		{
 			const string reflectionTypeKeptString = "Mono.Linker.Tests.Cases.Reflection.TypeUsedViaReflection+OverloadWith4Parameters";
@@ -471,11 +464,11 @@ namespace Mono.Linker.Tests.Cases.Reflection
 		[Kept]
 		[KeptMember (".ctor()")]
 		[KeptAttributeAttribute (typeof (RequiresUnreferencedCodeAttribute))]
-		[RequiresUnreferencedCode (nameof (OverloadWith5ParametersWithIgnoreCase))]
+		[RequiresUnreferencedCode (nameof (OverloadWith3Parameters))]
 		public class OverloadWith5ParametersWithoutIgnoreCase { }
 
 		[Kept]
-		[ExpectedWarning ("IL2026", nameof (OverloadWith5ParametersWithIgnoreCase))]
+		[ExpectedWarning ("IL2026", nameof (OverloadWith5ParametersWithoutIgnoreCase), Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/runtime/issues/95118")]
 		static void TestTypeOverloadWith5ParametersWithoutIgnoreCase ()
 		{
 			const string reflectionTypeKeptString = "Mono.Linker.Tests.Cases.Reflection.TypeUsedViaReflection+OverloadWith5ParametersWithoutIgnoreCase";
@@ -531,7 +524,7 @@ namespace Mono.Linker.Tests.Cases.Reflection
 		[Kept]
 		[KeptMember (".ctor()")]
 		[KeptAttributeAttribute (typeof (RequiresUnreferencedCodeAttribute))]
-		[RequiresUnreferencedCode ("GenericTypeWithAnnotations_OuterType")]
+		[RequiresUnreferencedCode (nameof (OverloadWith3Parameters))]
 		public class GenericTypeWithAnnotations_OuterType<
 			[KeptAttributeAttribute (typeof (DynamicallyAccessedMembersAttribute))]
 			[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.NonPublicProperties)] T>
@@ -540,7 +533,7 @@ namespace Mono.Linker.Tests.Cases.Reflection
 
 		[Kept]
 		[KeptAttributeAttribute (typeof (RequiresUnreferencedCodeAttribute))]
-		[RequiresUnreferencedCode (nameof (GenericTypeWithAnnotations_InnerType))]
+		[RequiresUnreferencedCode (nameof (OverloadWith3Parameters))]
 		public class GenericTypeWithAnnotations_InnerType
 		{
 			[Kept]
@@ -551,9 +544,9 @@ namespace Mono.Linker.Tests.Cases.Reflection
 		}
 
 		[Kept]
-		[ExpectedWarning ("IL2026", "GenericTypeWithAnnotations_OuterType")]
-		[ExpectedWarning ("IL2026", nameof (GenericTypeWithAnnotations_InnerType), "PrivateProperty.get")]
-		[ExpectedWarning ("IL2026", nameof (GenericTypeWithAnnotations_InnerType), "PrivateProperty.set")]
+		[ExpectedWarning ("IL2026", "GenericTypeWithAnnotations_OuterType", Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/runtime/issues/95118")]
+		[ExpectedWarning ("IL2026", nameof (GenericTypeWithAnnotations_InnerType), "PrivateProperty.get", Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/runtime/issues/95118")]
+		[ExpectedWarning ("IL2026", nameof (GenericTypeWithAnnotations_InnerType), "PrivateProperty.set", Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/runtime/issues/95118")]
 		static void TestGenericTypeWithAnnotations ()
 		{
 			const string reflectionTypeKeptString = "Mono.Linker.Tests.Cases.Reflection.TypeUsedViaReflection+GenericTypeWithAnnotations_OuterType`1["
@@ -624,25 +617,25 @@ namespace Mono.Linker.Tests.Cases.Reflection
 		class AssemblyTypeResolutionBehavior
 		{
 			[Kept]
-			[ExpectedWarning ("IL2122")]
+			[ExpectedWarning ("IL2122", Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/runtime/issues/95118")]
 			static void TestRequireTypeInSameAssemblyAsGetType () {
 				RequireHelper.RequireType ("Mono.Linker.Tests.Cases.Reflection.Dependencies.TypeDefinedInSameAssemblyAsGetType");
 			}
 
 			[Kept]
-			[ExpectedWarning ("IL2122")]
+			[ExpectedWarning ("IL2122", Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/runtime/issues/95118")]
 			static void TestRequireTypeInSameAssemblyAsCallToRequireType () {
 				RequireHelper.RequireType ("Mono.Linker.Tests.Cases.Reflection.TypeUsedViaReflection+AssemblyTypeResolutionBehavior+TypeDefinedInSameAssemblyAsCallToRequireType");
 			}
 
 			[Kept]
-			[ExpectedWarning ("IL2122")]
+			[ExpectedWarning ("IL2122", Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/runtime/issues/95118")]
 			static void TestRequireTypeWithNonAssemblyQualifiedGenericArguments () {
 				RequireHelper.RequireType ("Mono.Linker.Tests.Cases.Reflection.TypeUsedViaReflection+AssemblyTypeResolutionBehavior+Generic`1[[System.Int32]], test");
 			}
 
 			[Kept]
-			[ExpectedWarning ("IL2122")]
+			[ExpectedWarning ("IL2122", Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/runtime/issues/95118")]
 			static void TestRequireTypeWithNonAssemblyQualifiedArrayType () {
 				RequireHelper.RequireType ("Mono.Linker.Tests.Cases.Reflection.TypeUsedViaReflection+AssemblyTypeResolutionBehavior+Generic`1["
 						+ "[Mono.Linker.Tests.Cases.Reflection.TypeUsedViaReflection+AssemblyTypeResolutionBehavior+ArrayElementGenericArgumentType]"
@@ -650,7 +643,7 @@ namespace Mono.Linker.Tests.Cases.Reflection
 			}
 
 			[Kept]
-			[ExpectedWarning ("IL2122")]
+			[ExpectedWarning ("IL2122", Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/runtime/issues/95118")]
 			static void TestRequireTypeWithNonAssemblyQualifiedPointerType () {
 				RequireHelper.RequireType ("Mono.Linker.Tests.Cases.Reflection.TypeUsedViaReflection+AssemblyTypeResolutionBehavior+Generic`1["
 						+ "[Mono.Linker.Tests.Cases.Reflection.TypeUsedViaReflection+AssemblyTypeResolutionBehavior+PointerElementGenericArgumentType]"
@@ -658,7 +651,7 @@ namespace Mono.Linker.Tests.Cases.Reflection
 			}
 
 			[Kept]
-			[ExpectedWarning ("IL2122")]
+			[ExpectedWarning ("IL2122", Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/runtime/issues/95118")]
 			static void TestRequireTypeWithNonAssemblyQualifiedByRefType () {
 				RequireHelper.RequireType ("Mono.Linker.Tests.Cases.Reflection.TypeUsedViaReflection+AssemblyTypeResolutionBehavior+Generic`1["
 						+ "[Mono.Linker.Tests.Cases.Reflection.TypeUsedViaReflection+AssemblyTypeResolutionBehavior+ByRefElementGenericArgumentType]"
@@ -684,6 +677,32 @@ namespace Mono.Linker.Tests.Cases.Reflection
 			class PointerElementGenericArgumentType {}
 
 			class ByRefElementGenericArgumentType {}
+		}
+
+		[Kept]
+		class InstantiatedGenericEquality
+		{
+			[Kept]
+			class Generic<T> {
+				[Kept]
+				public void Method () { }
+			}
+
+			// Regression test for an issue where ILLink's representation of a generic instantiated type
+			// was using reference equality. The test uses a lambda to ensure that it goes through the
+			// interprocedural analysis code path that merges patterns and relies on a correct implementation
+			// of equality.
+			[Kept]
+			public static void Test ()
+			{
+				var type = Type.GetType("Mono.Linker.Tests.Cases.Reflection.TypeUsedViaReflection+InstantiatedGenericEquality+Generic`1[[System.Int32]]");
+
+				var lambda = () => {
+					type.GetMethod ("Method");
+				};
+
+				lambda ();
+			}
 		}
 
 		[Kept]

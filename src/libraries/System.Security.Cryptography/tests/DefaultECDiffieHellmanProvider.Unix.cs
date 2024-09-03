@@ -25,7 +25,7 @@ namespace System.Security.Cryptography.EcDiffieHellman.Tests
         {
             get
             {
-                if (PlatformDetection.IsApplePlatform)
+                if (PlatformDetection.IsApplePlatform || PlatformDetection.IsAzureLinux)
                 {
                     return false;
                 }

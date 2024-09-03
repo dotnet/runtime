@@ -911,9 +911,10 @@ typedef enum CorElementType
 
     // This is for signatures generated internally (which will not be persisted in any way).
     ELEMENT_TYPE_INTERNAL       = 0x21,     // INTERNAL <typehandle>
+    ELEMENT_TYPE_CMOD_INTERNAL  = 0x22,     // CMOD_INTERNAL <required (1 byte: non-zero if required, 0 if optional)> <typehandle>
 
     // Note that this is the max of base type excluding modifiers
-    ELEMENT_TYPE_MAX            = 0x22,     // first invalid element type
+    ELEMENT_TYPE_MAX            = 0x23,     // first invalid element type
 
 
     ELEMENT_TYPE_MODIFIER       = 0x40,

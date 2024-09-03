@@ -155,23 +155,23 @@ namespace System.Security.Cryptography.X509Certificates
                 AsnWriter writer = new AsnWriter(AsnEncodingRules.DER);
                 spki.Encode(writer);
 
-                byte[] rented = CryptoPool.Rent(writer.GetEncodedLength());
-
-                int written = writer.Encode(rented);
-
                 DSA dsa = DSA.Create();
                 DSA? toDispose = dsa;
 
                 try
                 {
-                    dsa.ImportSubjectPublicKeyInfo(rented.AsSpan(0, written), out _);
+                    writer.Encode(dsa, static (dsa, encoded) =>
+                    {
+                        dsa.ImportSubjectPublicKeyInfo(encoded, out _);
+                        return (object?)null;
+                    });
+
                     toDispose = null;
                     return dsa;
                 }
                 finally
                 {
                     toDispose?.Dispose();
-                    CryptoPool.Return(rented, written);
                 }
             }
         }
