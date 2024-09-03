@@ -800,9 +800,15 @@ namespace System
             if (pinned)
                 flags |= GC_ALLOC_FLAGS.GC_ALLOC_PINNED_OBJECT_HEAP;
 
-            T[]? result = null;
-            AllocateNewArray(RuntimeTypeHandle.ToIntPtr(typeof(T[]).TypeHandle), length, flags, ObjectHandleOnStack.Create(ref result));
-            return result!;
+            return AllocateNewArrayWorker<T>(length, flags);
+
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            static U[] AllocateNewArrayWorker<U>(int length, GC_ALLOC_FLAGS flags)
+            {
+                U[]? result = null;
+                AllocateNewArray(RuntimeTypeHandle.ToIntPtr(typeof(U[]).TypeHandle), length, flags, ObjectHandleOnStack.Create(ref result));
+                return result!;
+            }
         }
 
         /// <summary>
