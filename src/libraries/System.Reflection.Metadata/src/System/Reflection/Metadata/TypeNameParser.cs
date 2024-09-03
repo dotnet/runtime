@@ -194,7 +194,7 @@ namespace System.Reflection.Metadata
             {
                 while (TryParseNextDecorator(ref capturedBeforeProcessing, out int parsedModifier))
                 {
-                    result = new(fullName: null, assemblyName, elementOrGenericType: result, rankOrModifier: (sbyte)parsedModifier);
+                    result = new(fullName: null, assemblyName, elementOrGenericType: result, rankOrModifier: parsedModifier);
                 }
             }
 

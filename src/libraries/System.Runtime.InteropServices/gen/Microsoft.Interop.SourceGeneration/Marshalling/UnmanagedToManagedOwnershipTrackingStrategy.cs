@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using static Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
@@ -13,24 +14,23 @@ namespace Microsoft.Interop
     /// Marshalling strategy that introduces a variable to hold the initial value of the provided <see cref="TypePositionInfo"/> and a variable to track if the original value has been replaced.
     /// </summary>
     /// <seealso cref="CleanupOwnedOriginalValueMarshalling" />
-    internal sealed class UnmanagedToManagedOwnershipTrackingStrategy : ICustomTypeMarshallingStrategy
+    internal sealed class UnmanagedToManagedOwnershipTrackingStrategy(ICustomTypeMarshallingStrategy innerMarshaller) : ICustomTypeMarshallingStrategy
     {
-        private readonly ICustomTypeMarshallingStrategy _innerMarshaller;
+        public ManagedTypeInfo NativeType => innerMarshaller.NativeType;
 
-        public UnmanagedToManagedOwnershipTrackingStrategy(ICustomTypeMarshallingStrategy innerMarshaller)
+        public bool UsesNativeIdentifier => innerMarshaller.UsesNativeIdentifier;
+
+        public TypePositionInfo TypeInfo => innerMarshaller.TypeInfo;
+
+        public StubCodeContext CodeContext => innerMarshaller.CodeContext;
+
+        public IEnumerable<StatementSyntax> GenerateCleanupCallerAllocatedResourcesStatements(StubIdentifierContext context) => innerMarshaller.GenerateCleanupCallerAllocatedResourcesStatements(context);
+        public IEnumerable<StatementSyntax> GenerateCleanupCalleeAllocatedResourcesStatements(StubIdentifierContext context) => innerMarshaller.GenerateCleanupCalleeAllocatedResourcesStatements(context);
+
+        public IEnumerable<StatementSyntax> GenerateGuaranteedUnmarshalStatements(StubIdentifierContext context) => innerMarshaller.GenerateGuaranteedUnmarshalStatements(context);
+        public IEnumerable<StatementSyntax> GenerateMarshalStatements(StubIdentifierContext context)
         {
-            _innerMarshaller = innerMarshaller;
-        }
-
-        public ManagedTypeInfo AsNativeType(TypePositionInfo info) => _innerMarshaller.AsNativeType(info);
-
-        public IEnumerable<StatementSyntax> GenerateCleanupCallerAllocatedResourcesStatements(TypePositionInfo info, StubCodeContext context) => _innerMarshaller.GenerateCleanupCallerAllocatedResourcesStatements(info, context);
-        public IEnumerable<StatementSyntax> GenerateCleanupCalleeAllocatedResourcesStatements(TypePositionInfo info, StubCodeContext context) => _innerMarshaller.GenerateCleanupCalleeAllocatedResourcesStatements(info, context);
-
-        public IEnumerable<StatementSyntax> GenerateGuaranteedUnmarshalStatements(TypePositionInfo info, StubCodeContext context) => _innerMarshaller.GenerateGuaranteedUnmarshalStatements(info, context);
-        public IEnumerable<StatementSyntax> GenerateMarshalStatements(TypePositionInfo info, StubCodeContext context)
-        {
-            foreach (StatementSyntax statement in _innerMarshaller.GenerateMarshalStatements(info, context))
+            foreach (StatementSyntax statement in innerMarshaller.GenerateMarshalStatements(context))
             {
                 yield return statement;
             }
@@ -41,17 +41,17 @@ namespace Microsoft.Interop
             // <ownOriginalValue> = true;
             yield return ExpressionStatement(
                 AssignmentExpression(SyntaxKind.SimpleAssignmentExpression,
-                    IdentifierName(context.GetAdditionalIdentifier(info, OwnershipTrackingHelpers.OwnOriginalValueIdentifier)),
+                    IdentifierName(context.GetAdditionalIdentifier(TypeInfo, OwnershipTrackingHelpers.OwnOriginalValueIdentifier)),
                     LiteralExpression(SyntaxKind.TrueLiteralExpression)));
         }
 
-        public IEnumerable<StatementSyntax> GenerateNotifyForSuccessfulInvokeStatements(TypePositionInfo info, StubCodeContext context) => _innerMarshaller.GenerateNotifyForSuccessfulInvokeStatements(info, context);
-        public IEnumerable<StatementSyntax> GeneratePinnedMarshalStatements(TypePositionInfo info, StubCodeContext context) => _innerMarshaller.GeneratePinnedMarshalStatements(info, context);
+        public IEnumerable<StatementSyntax> GenerateNotifyForSuccessfulInvokeStatements(StubIdentifierContext context) => innerMarshaller.GenerateNotifyForSuccessfulInvokeStatements(context);
+        public IEnumerable<StatementSyntax> GeneratePinnedMarshalStatements(StubIdentifierContext context) => innerMarshaller.GeneratePinnedMarshalStatements(context);
 
-        public IEnumerable<StatementSyntax> GeneratePinStatements(TypePositionInfo info, StubCodeContext context) => _innerMarshaller.GeneratePinStatements(info, context);
-        public IEnumerable<StatementSyntax> GenerateSetupStatements(TypePositionInfo info, StubCodeContext context)
+        public IEnumerable<StatementSyntax> GeneratePinStatements(StubIdentifierContext context) => innerMarshaller.GeneratePinStatements(context);
+        public IEnumerable<StatementSyntax> GenerateSetupStatements(StubIdentifierContext context)
         {
-            foreach (StatementSyntax statement in _innerMarshaller.GenerateSetupStatements(info, context))
+            foreach (StatementSyntax statement in innerMarshaller.GenerateSetupStatements(context))
             {
                 yield return statement;
             }
@@ -62,96 +62,98 @@ namespace Microsoft.Interop
                     PredefinedType(Token(SyntaxKind.BoolKeyword)),
                     SingletonSeparatedList(
                         VariableDeclarator(
-                            Identifier(context.GetAdditionalIdentifier(info, OwnershipTrackingHelpers.OwnOriginalValueIdentifier)),
+                            Identifier(context.GetAdditionalIdentifier(TypeInfo, OwnershipTrackingHelpers.OwnOriginalValueIdentifier)),
                             null,
                             EqualsValueClause(
                                 LiteralExpression(SyntaxKind.FalseLiteralExpression))))));
 
-            yield return OwnershipTrackingHelpers.DeclareOriginalValueIdentifier(info, context, AsNativeType(info));
+            yield return OwnershipTrackingHelpers.DeclareOriginalValueIdentifier(TypeInfo, context, NativeType);
         }
 
-        public IEnumerable<StatementSyntax> GenerateUnmarshalCaptureStatements(TypePositionInfo info, StubCodeContext context) => _innerMarshaller.GenerateUnmarshalCaptureStatements(info, context);
+        public IEnumerable<StatementSyntax> GenerateUnmarshalCaptureStatements(StubIdentifierContext context) => innerMarshaller.GenerateUnmarshalCaptureStatements(context);
 
-        public IEnumerable<StatementSyntax> GenerateUnmarshalStatements(TypePositionInfo info, StubCodeContext context) => _innerMarshaller.GenerateUnmarshalStatements(info, context);
-        public bool UsesNativeIdentifier(TypePositionInfo info, StubCodeContext context) => _innerMarshaller.UsesNativeIdentifier(info, context);
+        public IEnumerable<StatementSyntax> GenerateUnmarshalStatements(StubIdentifierContext context) => innerMarshaller.GenerateUnmarshalStatements(context);
     }
 
     /// <summary>
     /// Marshalling strategy that uses the tracking variables introduced by <see cref="UnmanagedToManagedOwnershipTrackingStrategy"/> to cleanup the original value if the original value is owned
-    /// in the <see cref="StubCodeContext.Stage.CleanupCallerAllocated"/> stage.
+    /// in the <see cref="StubIdentifierContext.Stage.CleanupCallerAllocated"/> stage.
     /// </summary>
-    internal sealed class CleanupOwnedOriginalValueMarshalling : ICustomTypeMarshallingStrategy
+    internal sealed class CleanupOwnedOriginalValueMarshalling(ICustomTypeMarshallingStrategy innerMarshaller) : ICustomTypeMarshallingStrategy
     {
-        private readonly ICustomTypeMarshallingStrategy _innerMarshaller;
+        public ManagedTypeInfo NativeType => innerMarshaller.NativeType;
 
-        public CleanupOwnedOriginalValueMarshalling(ICustomTypeMarshallingStrategy innerMarshaller)
+        public bool UsesNativeIdentifier => innerMarshaller.UsesNativeIdentifier;
+
+        public TypePositionInfo TypeInfo => innerMarshaller.TypeInfo;
+
+        public StubCodeContext CodeContext => innerMarshaller.CodeContext;
+
+        public IEnumerable<StatementSyntax> GenerateCleanupCallerAllocatedResourcesStatements(StubIdentifierContext context)
         {
-            _innerMarshaller = innerMarshaller;
-        }
-
-        public ManagedTypeInfo AsNativeType(TypePositionInfo info) => _innerMarshaller.AsNativeType(info);
-
-        public IEnumerable<StatementSyntax> GenerateCleanupCallerAllocatedResourcesStatements(TypePositionInfo info, StubCodeContext context)
-        {
-            if (MarshallerHelpers.GetCleanupStage(info, context) is not StubCodeContext.Stage.CleanupCallerAllocated)
+            if (MarshallerHelpers.GetCleanupStage(TypeInfo, CodeContext) is not StubIdentifierContext.Stage.CleanupCallerAllocated)
                 yield break;
             // if (<ownOriginalValue>)
             // {
             //     <cleanup>
             // }
             yield return IfStatement(
-                IdentifierName(context.GetAdditionalIdentifier(info, OwnershipTrackingHelpers.OwnOriginalValueIdentifier)),
-                Block(_innerMarshaller.GenerateCleanupCallerAllocatedResourcesStatements(info, new OwnedValueCodeContext(context))));
+                IdentifierName(context.GetAdditionalIdentifier(TypeInfo, OwnershipTrackingHelpers.OwnOriginalValueIdentifier)),
+                Block(innerMarshaller.GenerateCleanupCallerAllocatedResourcesStatements(new OwnedValueCodeContext(context))));
         }
 
-        public IEnumerable<StatementSyntax> GenerateCleanupCalleeAllocatedResourcesStatements(TypePositionInfo info, StubCodeContext context)
+        public IEnumerable<StatementSyntax> GenerateCleanupCalleeAllocatedResourcesStatements(StubIdentifierContext context)
         {
-            if (MarshallerHelpers.GetCleanupStage(info, context) is not StubCodeContext.Stage.CleanupCalleeAllocated)
+            if (MarshallerHelpers.GetCleanupStage(TypeInfo, CodeContext) is not StubIdentifierContext.Stage.CleanupCalleeAllocated)
                 yield break;
             // if (<ownOriginalValue>)
             // {
             //     <cleanup>
             // }
             yield return IfStatement(
-                IdentifierName(context.GetAdditionalIdentifier(info, OwnershipTrackingHelpers.OwnOriginalValueIdentifier)),
-                Block(_innerMarshaller.GenerateCleanupCalleeAllocatedResourcesStatements(info, new OwnedValueCodeContext(context))));
+                IdentifierName(context.GetAdditionalIdentifier(TypeInfo, OwnershipTrackingHelpers.OwnOriginalValueIdentifier)),
+                Block(innerMarshaller.GenerateCleanupCalleeAllocatedResourcesStatements(new OwnedValueCodeContext(context))));
         }
 
-        public IEnumerable<StatementSyntax> GenerateGuaranteedUnmarshalStatements(TypePositionInfo info, StubCodeContext context) => _innerMarshaller.GenerateGuaranteedUnmarshalStatements(info, context);
-        public IEnumerable<StatementSyntax> GenerateMarshalStatements(TypePositionInfo info, StubCodeContext context) => _innerMarshaller.GenerateMarshalStatements(info, context);
+        public IEnumerable<StatementSyntax> GenerateGuaranteedUnmarshalStatements(StubIdentifierContext context) => innerMarshaller.GenerateGuaranteedUnmarshalStatements(context);
+        public IEnumerable<StatementSyntax> GenerateMarshalStatements(StubIdentifierContext context) => innerMarshaller.GenerateMarshalStatements(context);
 
-        public IEnumerable<StatementSyntax> GenerateNotifyForSuccessfulInvokeStatements(TypePositionInfo info, StubCodeContext context) => _innerMarshaller.GenerateNotifyForSuccessfulInvokeStatements(info, context);
-        public IEnumerable<StatementSyntax> GeneratePinnedMarshalStatements(TypePositionInfo info, StubCodeContext context) => _innerMarshaller.GeneratePinnedMarshalStatements(info, context);
+        public IEnumerable<StatementSyntax> GenerateNotifyForSuccessfulInvokeStatements(StubIdentifierContext context) => innerMarshaller.GenerateNotifyForSuccessfulInvokeStatements(context);
+        public IEnumerable<StatementSyntax> GeneratePinnedMarshalStatements(StubIdentifierContext context) => innerMarshaller.GeneratePinnedMarshalStatements(context);
 
-        public IEnumerable<StatementSyntax> GeneratePinStatements(TypePositionInfo info, StubCodeContext context) => _innerMarshaller.GeneratePinStatements(info, context);
-        public IEnumerable<StatementSyntax> GenerateSetupStatements(TypePositionInfo info, StubCodeContext context) => _innerMarshaller.GenerateSetupStatements(info, context);
+        public IEnumerable<StatementSyntax> GeneratePinStatements(StubIdentifierContext context) => innerMarshaller.GeneratePinStatements(context);
+        public IEnumerable<StatementSyntax> GenerateSetupStatements(StubIdentifierContext context) => innerMarshaller.GenerateSetupStatements(context);
 
-        public IEnumerable<StatementSyntax> GenerateUnmarshalCaptureStatements(TypePositionInfo info, StubCodeContext context) => _innerMarshaller.GenerateUnmarshalCaptureStatements(info, context);
+        public IEnumerable<StatementSyntax> GenerateUnmarshalCaptureStatements(StubIdentifierContext context) => innerMarshaller.GenerateUnmarshalCaptureStatements(context);
 
-        public IEnumerable<StatementSyntax> GenerateUnmarshalStatements(TypePositionInfo info, StubCodeContext context) => _innerMarshaller.GenerateUnmarshalStatements(info, context);
-        public bool UsesNativeIdentifier(TypePositionInfo info, StubCodeContext context) => _innerMarshaller.UsesNativeIdentifier(info, context);
+        public IEnumerable<StatementSyntax> GenerateUnmarshalStatements(StubIdentifierContext context) => innerMarshaller.GenerateUnmarshalStatements(context);
     }
 
     /// <summary>
     /// Marshalling strategy to cache the initial value of a given <see cref="TypePositionInfo"/> in a local variable and cleanup that value in the cleanup stage.
-    /// Useful in scenarios where the value is always owned in all code-paths that reach the <see cref="StubCodeContext.Stage.CleanupCallerAllocated"/> stage, so additional ownership tracking is extraneous.
+    /// Useful in scenarios where the value is always owned in all code-paths that reach the <see cref="StubIdentifierContext.Stage.CleanupCallerAllocated"/> stage, so additional ownership tracking is extraneous.
     /// </summary>
     internal sealed class FreeAlwaysOwnedOriginalValueGenerator(IBoundMarshallingGenerator inner) : IBoundMarshallingGenerator
     {
+        public ManagedTypeInfo NativeType => inner.NativeType;
+
         public TypePositionInfo TypeInfo => inner.TypeInfo;
 
-        public ManagedTypeInfo NativeType => inner.NativeType;
+        public StubCodeContext CodeContext => inner.CodeContext;
 
         public SignatureBehavior NativeSignatureBehavior => inner.NativeSignatureBehavior;
 
-        public IEnumerable<StatementSyntax> Generate(StubCodeContext context)
+        public bool UsesNativeIdentifier => inner.UsesNativeIdentifier;
+        public ValueBoundaryBehavior ValueBoundaryBehavior => inner.ValueBoundaryBehavior;
+
+        public IEnumerable<StatementSyntax> Generate(StubIdentifierContext context)
         {
-            if (context.CurrentStage == StubCodeContext.Stage.Setup)
+            if (context.CurrentStage == StubIdentifierContext.Stage.Setup)
             {
                 return GenerateSetupStatements();
             }
 
-            if (context.CurrentStage == StubCodeContext.Stage.CleanupCallerAllocated)
+            if (context.CurrentStage == StubIdentifierContext.Stage.CleanupCallerAllocated)
             {
                 return GenerateStatementsFromInner(new OwnedValueCodeContext(context));
             }
@@ -160,43 +162,31 @@ namespace Microsoft.Interop
 
             IEnumerable<StatementSyntax> GenerateSetupStatements()
             {
-                foreach (var statement in GenerateStatementsFromInner(context))
-                {
-                    yield return statement;
-                }
-
-                yield return OwnershipTrackingHelpers.DeclareOriginalValueIdentifier(inner.TypeInfo, context, NativeType);
+                return [
+                    ..GenerateStatementsFromInner(new OwnedValueCodeContext(context)),
+                    OwnershipTrackingHelpers.DeclareOriginalValueIdentifier(inner.TypeInfo, context, NativeType)
+                    ];
             }
 
-            IEnumerable<StatementSyntax> GenerateStatementsFromInner(StubCodeContext contextForStage)
+            IEnumerable<StatementSyntax> GenerateStatementsFromInner(StubIdentifierContext contextForStage)
             {
                 return inner.Generate(contextForStage);
             }
         }
 
-        public ValueBoundaryBehavior GetValueBoundaryBehavior(StubCodeContext context) => inner.GetValueBoundaryBehavior(context);
-        public IBoundMarshallingGenerator Rebind(TypePositionInfo info) => new FreeAlwaysOwnedOriginalValueGenerator(inner.Rebind(info));
-        public ByValueMarshalKindSupport SupportsByValueMarshalKind(ByValueContentsMarshalKind marshalKind, StubCodeContext context, out GeneratorDiagnostic? diagnostic)
-            => inner.SupportsByValueMarshalKind(marshalKind, context, out diagnostic);
-        public bool UsesNativeIdentifier(StubCodeContext context) => inner.UsesNativeIdentifier(context);
+        public ByValueMarshalKindSupport SupportsByValueMarshalKind(ByValueContentsMarshalKind marshalKind, out GeneratorDiagnostic? diagnostic)
+            => inner.SupportsByValueMarshalKind(marshalKind, out diagnostic);
     }
 
-#pragma warning disable SA1400 // Access modifier should be declared https://github.com/DotNetAnalyzers/StyleCopAnalyzers/issues/3659
-    file sealed record OwnedValueCodeContext : StubCodeContext
-#pragma warning restore SA1400 // Access modifier should be declared
+    file sealed record OwnedValueCodeContext : StubIdentifierContext
     {
-        private readonly StubCodeContext _innerContext;
+        private readonly StubIdentifierContext _innerContext;
 
-        public OwnedValueCodeContext(StubCodeContext innerContext)
+        public OwnedValueCodeContext(StubIdentifierContext innerContext)
         {
             _innerContext = innerContext;
             CurrentStage = innerContext.CurrentStage;
-            Direction = innerContext.Direction;
         }
-
-        public override bool SingleFrameSpansNativeContext => _innerContext.SingleFrameSpansNativeContext;
-
-        public override bool AdditionalTemporaryStateLivesAcrossStages => _innerContext.AdditionalTemporaryStateLivesAcrossStages;
 
         public override (string managed, string native) GetIdentifiers(TypePositionInfo info)
         {
@@ -207,14 +197,12 @@ namespace Microsoft.Interop
         public override string GetAdditionalIdentifier(TypePositionInfo info, string name) => _innerContext.GetAdditionalIdentifier(info, name);
     }
 
-#pragma warning disable SA1400 // Access modifier should be declared https://github.com/DotNetAnalyzers/StyleCopAnalyzers/issues/3659
     file static class OwnershipTrackingHelpers
-#pragma warning restore SA1400 // Access modifier should be declared
     {
         public const string OwnOriginalValueIdentifier = "ownOriginal";
         public const string OriginalValueIdentifier = "original";
 
-        public static StatementSyntax DeclareOriginalValueIdentifier(TypePositionInfo info, StubCodeContext context, ManagedTypeInfo nativeType)
+        public static StatementSyntax DeclareOriginalValueIdentifier(TypePositionInfo info, StubIdentifierContext context, ManagedTypeInfo nativeType)
         {
             // <nativeType> <original> = <nativeValueIdentifier>;
             return LocalDeclarationStatement(
