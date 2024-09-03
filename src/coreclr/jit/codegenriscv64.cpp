@@ -4664,7 +4664,25 @@ void CodeGen::genEmitGSCookieCheck(bool pushReg)
 {
     noway_assert(compiler->gsGlobalSecurityCookieAddr || compiler->gsGlobalSecurityCookieVal);
 
-    assert(GetEmitter()->emitGCDisabled());
+#ifdef DEBUG
+    if (compiler->compMethodReturnsRetBufAddr())
+    {
+        assert((gcInfo.gcRegByrefSetCur & RBM_INTRET) != RBM_NONE);
+    }
+    else
+    {
+        const ReturnTypeDesc& retTypeDesc = compiler->compRetTypeDesc;
+        const unsigned        regCount    = retTypeDesc.GetReturnRegCount();
+
+        for (unsigned i = 0; i < regCount; ++i)
+        {
+            var_types type = retTypeDesc.GetReturnRegType(i);
+            regNumber reg  = retTypeDesc.GetABIReturnReg(i, compiler->info.compCallConv);
+            assert((type == TYP_BYREF) == ((gcInfo.gcRegByrefSetCur & genRegMask(reg)) != RBM_NONE));
+            assert((type == TYP_REF) == ((gcInfo.gcRegGCrefSetCur & genRegMask(reg)) != RBM_NONE));
+        }
+    }
+#endif
 
     // We need two temporary registers, to load the GS cookie values and compare them. We can't use
     // any argument registers if 'pushReg' is true (meaning we have a JMP call). They should be
