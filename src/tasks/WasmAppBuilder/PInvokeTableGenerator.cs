@@ -13,6 +13,7 @@ using System.Runtime.InteropServices;
 using Microsoft.Build.Framework;
 using Microsoft.Build.Utilities;
 using WasmAppBuilder;
+using JoinedString;
 
 internal sealed class PInvokeTableGenerator
 {
@@ -47,7 +48,7 @@ internal sealed class PInvokeTableGenerator
             modules[module] = module;
 
         using TempFileName tmpFileName = new();
-        using (var w = File.CreateText(tmpFileName.Path))
+        using (var w = new JoinedStringStreamWriter(tmpFileName.Path, false))
         {
             EmitPInvokeTable(w, modules, pinvokes);
             EmitNativeToInterp(w, callbacks);
@@ -145,7 +146,7 @@ internal sealed class PInvokeTableGenerator
             w.Write(
                 $$"""
                 static PinvokeImport {{_fixupSymbolName(module)}}_imports [] = {
-                    {{string.Join("\n    ", assemblies_pinvokes)}}
+                    {{string.Join($"{w.NewLine}    ", assemblies_pinvokes)}}
                 };
 
                 """);
@@ -155,11 +156,11 @@ internal sealed class PInvokeTableGenerator
             $$"""
 
             static void *pinvoke_tables[] = {
-                {{string.Join(", ", modules.Keys.Select(m => $"(void*){_fixupSymbolName(m)}_imports"))}}
+                {{modules.Keys.Join(", ", m => $"(void*){_fixupSymbolName(m)}_imports")}}
             };
 
             static char *pinvoke_names[] =  {
-                {{string.Join(", ", modules.Keys.Select(m => $"\"{EscapeLiteral(m)}\""))}}
+                {{modules.Keys.Join(", ", m => $"\"{EscapeLiteral(m)}\"")}}
             };
 
             """);
@@ -333,11 +334,12 @@ internal sealed class PInvokeTableGenerator
         // or [UnamanagedCallersOnly] attribute.
         // Only blittable parameter/return types are supposed.
 
-        w.Write($$"""
+        w.Write(
+            $$"""
 
-                InterpFtnDesc wasm_native_to_interp_ftndescs[{{callbacks.Count}}] = {};
+            InterpFtnDesc wasm_native_to_interp_ftndescs[{{callbacks.Count}}] = {};
 
-                """);
+            """);
 
         var callbackNames = new HashSet<string>();
         var keys = new HashSet<string>();
@@ -372,8 +374,8 @@ internal sealed class PInvokeTableGenerator
 
                 {{(cb.IsExport ? $"__attribute__((export_name(\"{EscapeLiteral(cb.EntryPoint!)}\")))" : "// no export name defined")}}
                 {{MapType(cb.ReturnType)}}
-                {{cb.EntrySymbol}} ({{string.Join(", ", cb.Parameters.Select((info, i) => $"{MapType(info.ParameterType)} arg{i}"))}}) {
-                    typedef void (*InterpEntry_T{{cb_index}}) ({{string.Join(", ", interpEntryArgs.Select(_ => "int*"))}});
+                {{cb.EntrySymbol}} ({{cb.Parameters.Join(", ", (info, i) => $"{MapType(info.ParameterType)} arg{i}")}}) {
+                    typedef void (*InterpEntry_T{{cb_index}}) ({{interpEntryArgs.Join(", ", _ => "int*")}});
                     {{(!cb.IsVoid ? $"{MapType(cb.ReturnType)} result;" : "// void result")}}
 
                     if (!(InterpEntry_T{{cb_index}})wasm_native_to_interp_ftndescs [{{cb_index}}].func) {
@@ -381,7 +383,7 @@ internal sealed class PInvokeTableGenerator
                         mono_wasm_marshal_get_managed_wrapper ("{{cb.AssemblyName}}", "{{cb.Namespace}}", "{{cb.TypeName}}", "{{cb.MethodName}}", {{cb.Parameters.Length}});
                     }
 
-                    ((InterpEntry_T{{cb_index}})wasm_native_to_interp_ftndescs [{{cb_index}}].func) ({{string.Join(", ", interpEntryArgs)}});
+                    ((InterpEntry_T{{cb_index}})wasm_native_to_interp_ftndescs [{{cb_index}}].func) ({{interpEntryArgs.Join(", ")}});
                     {{(!cb.IsVoid ?  "return result;" : "// void result")}}
                 }
 
@@ -393,8 +395,9 @@ internal sealed class PInvokeTableGenerator
             $$"""
 
             static PinvokeImport wasm_native_to_interp_table[] = {
-                {{string.Join($"{Environment.NewLine}    ", callbacks.Select(cb => $"{{\"{EscapeLiteral(cb.Key)}\", {cb.EntrySymbol}}}, // {cb.AssemblyName}::{cb.Method.DeclaringType!.FullName}::{cb.Method.Name}")
-                    .Append("{NULL, NULL}"))}}
+                {{callbacks.Select(cb => $"{{\"{EscapeLiteral(cb.Key)}\", {cb.EntrySymbol}}}, // {cb.Token}")
+                    .Append("{NULL, NULL}")
+                    .Join($"{w.NewLine}    ")}}
             };
 
             """);
