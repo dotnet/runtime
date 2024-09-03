@@ -3,6 +3,8 @@
   </PropertyGroup>
   <PropertyGroup>
     <DebugType>PdbOnly</DebugType>
+    <!-- Tracking issue: TODO -->
+    <CLRTestTargetUnsupported Condition="'$(RuntimeFlavor)' == 'mono' and '$(RuntimeVariant)' == 'llvmaot'">true</CLRTestTargetUnsupported>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="jumper4_r.il" />
