@@ -102,9 +102,8 @@ namespace Microsoft.Extensions.Configuration.Xml
         [RequiresUnreferencedCode(RequiresUnreferencedCodeMessage)]
         protected virtual XmlReader DecryptDocumentAndCreateXmlReader(XmlDocument document)
         {
-#if TARGET_WASI
-            throw new PlatformNotSupportedException(); // TODO remove with https://github.com/dotnet/runtime/pull/107185
-#else
+            if (OperatingSystem.IsWasi()) throw new PlatformNotSupportedException(); // TODO remove with https://github.com/dotnet/runtime/pull/107185
+
             // Perform the actual decryption step, updating the XmlDocument in-place.
             EncryptedXml encryptedXml = _encryptedXmlFactory?.Invoke(document) ?? new EncryptedXml(document);
             encryptedXml.DecryptDocument();
@@ -113,7 +112,6 @@ namespace Microsoft.Extensions.Configuration.Xml
             // Error messages based on this XmlReader won't show line numbers,
             // but that's fine since we transformed the document anyway.
             return document.CreateNavigator()!.ReadSubtree();
-#endif
         }
     }
 }

@@ -34,11 +34,7 @@ namespace Microsoft.Extensions.FileProviders.Physical
         private readonly ConcurrentDictionary<string, ChangeTokenInfo> _wildcardTokenLookup = new(StringComparer.OrdinalIgnoreCase);
 
         private readonly FileSystemWatcher? _fileWatcher;
-#if !TARGET_WASI // TODO remove with https://github.com/dotnet/runtime/pull/107185
         private readonly object _fileWatcherLock = new();
-#else
-#pragma warning disable CA1822
-#endif
         private readonly string _root;
         private readonly ExclusionFilters _filters;
 
@@ -280,14 +276,12 @@ namespace Microsoft.Extensions.FileProviders.Physical
         }
 
         [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("wasi")]
         [UnsupportedOSPlatform("ios")]
         [UnsupportedOSPlatform("tvos")]
         [SupportedOSPlatform("maccatalyst")]
         private void OnRenamed(object sender, RenamedEventArgs e)
         {
-#if TARGET_WASI
-            throw new PlatformNotSupportedException(); // TODO remove with https://github.com/dotnet/runtime/pull/107185
-#else
             // For a file name change or a directory's name change notify registered tokens.
             OnFileSystemEntryChange(e.OldFullPath);
             OnFileSystemEntryChange(e.FullPath);
@@ -316,48 +310,39 @@ namespace Microsoft.Extensions.FileProviders.Physical
                     // Swallow the exception.
                 }
             }
-#endif
         }
 
         [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("wasi")]
         [UnsupportedOSPlatform("ios")]
         [UnsupportedOSPlatform("tvos")]
         [SupportedOSPlatform("maccatalyst")]
         private void OnChanged(object sender, FileSystemEventArgs e)
         {
-#if TARGET_WASI
-            throw new PlatformNotSupportedException(); // TODO remove with https://github.com/dotnet/runtime/pull/107185
-#else
             OnFileSystemEntryChange(e.FullPath);
-#endif
         }
 
         [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("wasi")]
         [UnsupportedOSPlatform("ios")]
         [UnsupportedOSPlatform("tvos")]
         [SupportedOSPlatform("maccatalyst")]
         private void OnError(object sender, ErrorEventArgs e)
         {
-#if TARGET_WASI
-            throw new PlatformNotSupportedException(); // TODO remove with https://github.com/dotnet/runtime/pull/107185
-#else
             // Notify all cache entries on error.
             foreach (string path in _filePathTokenLookup.Keys)
             {
                 ReportChangeForMatchedEntries(path);
             }
-#endif
         }
 
         [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("wasi")]
         [UnsupportedOSPlatform("ios")]
         [UnsupportedOSPlatform("tvos")]
         [SupportedOSPlatform("maccatalyst")]
         private void OnFileSystemEntryChange(string fullPath)
         {
-#if TARGET_WASI
-            throw new PlatformNotSupportedException(); // TODO remove with https://github.com/dotnet/runtime/pull/107185
-#else
             try
             {
                 var fileSystemInfo = new FileInfo(fullPath);
@@ -376,18 +361,15 @@ namespace Microsoft.Extensions.FileProviders.Physical
             {
                 // Swallow the exception.
             }
-#endif
         }
 
         [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("wasi")]
         [UnsupportedOSPlatform("ios")]
         [UnsupportedOSPlatform("tvos")]
         [SupportedOSPlatform("maccatalyst")]
         private void ReportChangeForMatchedEntries(string path)
         {
-#if TARGET_WASI
-            throw new PlatformNotSupportedException(); // TODO remove with https://github.com/dotnet/runtime/pull/107185
-#else
             if (string.IsNullOrEmpty(path))
             {
                 // System.IO.FileSystemWatcher may trigger events that are missing the file name,
@@ -420,18 +402,15 @@ namespace Microsoft.Extensions.FileProviders.Physical
             {
                 TryDisableFileSystemWatcher();
             }
-#endif
         }
 
         [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("wasi")]
         [UnsupportedOSPlatform("ios")]
         [UnsupportedOSPlatform("tvos")]
         [SupportedOSPlatform("maccatalyst")]
         private void TryDisableFileSystemWatcher()
         {
-#if TARGET_WASI
-            throw new PlatformNotSupportedException(); // TODO remove with https://github.com/dotnet/runtime/pull/107185
-#else
             if (_fileWatcher != null)
             {
                 lock (_fileWatcherLock)
@@ -445,18 +424,15 @@ namespace Microsoft.Extensions.FileProviders.Physical
                     }
                 }
             }
-#endif
         }
 
         [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("wasi")]
         [UnsupportedOSPlatform("ios")]
         [UnsupportedOSPlatform("tvos")]
         [SupportedOSPlatform("maccatalyst")]
         private void TryEnableFileSystemWatcher()
         {
-#if TARGET_WASI
-            throw new PlatformNotSupportedException(); // TODO remove with https://github.com/dotnet/runtime/pull/107185
-#else
             if (_fileWatcher != null)
             {
                 lock (_fileWatcherLock)
@@ -469,7 +445,6 @@ namespace Microsoft.Extensions.FileProviders.Physical
                     }
                 }
             }
-#endif
         }
 
         private static string NormalizePath(string filter) => filter.Replace('\\', '/');
