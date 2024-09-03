@@ -138,7 +138,7 @@ namespace System.Diagnostics.Metrics
         {
             InstrumentState? state = GetInstrumentState(instrument);
             _instrumentPublished(instrument, state);
-            if (state?.MeasurementEnabled is true)
+            if (state != null)
             {
                 _beginInstrumentMeasurements(instrument, state);
 #pragma warning disable CA1864 // Prefer the 'IDictionary.TryAdd(TKey, TValue)' method. IDictionary.TryAdd() is not available in one of the builds
@@ -268,25 +268,20 @@ namespace System.Diagnostics.Metrics
             {
                 lock (this) // protect _instrumentConfigFuncs list
                 {
-                    instrumentState = BuildInstrumentState(instrument);
-                    if (instrumentState != null)
+                    foreach (Predicate<Instrument> filter in _instrumentConfigFuncs)
                     {
-                        _instrumentStates.TryAdd(instrument, instrumentState);
-                        // I don't think it is possible for the instrument to be removed immediately
-                        // and instrumentState = _instrumentStates[instrument] should work, but writing
-                        // this defensively.
-                        _instrumentStates.TryGetValue(instrument, out instrumentState);
-
-                        foreach (Predicate<Instrument> filter in _instrumentConfigFuncs)
+                        if (filter(instrument))
                         {
-                            if (filter(instrument))
+                            instrumentState = BuildInstrumentState(instrument);
+                            if (instrumentState != null)
                             {
-                                if (instrumentState is not null)
-                                {
-                                    instrumentState.MeasurementEnabled = true;
-                                }
-                                break;
+                                _instrumentStates.TryAdd(instrument, instrumentState);
+                                // I don't think it is possible for the instrument to be removed immediately
+                                // and instrumentState = _instrumentStates[instrument] should work, but writing
+                                // this defensively.
+                                _instrumentStates.TryGetValue(instrument, out instrumentState);
                             }
+                            break;
                         }
                     }
                 }

@@ -1788,7 +1788,7 @@ namespace System.Diagnostics.Metrics.Tests
                 Assert.Equal(Helpers.FormatTags(i.Tags), e.InstrumentTags);
                 Assert.Equal(Helpers.FormatTags(i.Meter.Tags), e.MeterTags);
                 Assert.Equal(Helpers.FormatObjectHash(i.Meter.Scope), e.ScopeHash);
-                Assert.True(e.InstrumentId > 0);
+                Assert.True(e.InstrumentId >= 0); // It is possible getting Id 0 with InstrumentPublished event when measurements are not enabling  (e.g. CounterRateValuePublished event)
             }
 
             Assert.Equal(expectedInstruments.Length, publishEvents.Length);
