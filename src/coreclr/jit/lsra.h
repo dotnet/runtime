@@ -2065,6 +2065,9 @@ private:
 #ifdef TARGET_ARM64
     int  BuildConsecutiveRegistersForUse(GenTree* treeNode, GenTree* rmwNode = nullptr);
     void BuildConsecutiveRegistersForDef(GenTree* treeNode, int fieldCount);
+    int  BuildConditionalSelectWithEmbeddedOp(GenTreeHWIntrinsic* intrinsicTree,
+                                              const HWIntrinsic   intrin,
+                                              int*                pDstCount);
 #endif // TARGET_ARM64
 #endif // FEATURE_HW_INTRINSICS
 
