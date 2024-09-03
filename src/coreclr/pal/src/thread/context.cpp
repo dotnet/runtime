@@ -2188,9 +2188,13 @@ CONTEXT& CONTEXT::operator=(const CONTEXT& ctx)
     size_t copySize;
     if (ctx.ContextFlags & CONTEXT_XSTATE & CONTEXT_AREA_MASK)
     {
-        if ((ctx.XStateFeaturesMask & XSTATE_MASK_AVX512) == XSTATE_MASK_AVX512)
+        if ((ctx.XStateFeaturesMask & XSTATE_MASK_APX) == XSTATE_MASK_APX)
         {
             copySize = sizeof(CONTEXT);
+        }
+        else if ((ctx.XStateFeaturesMask & XSTATE_MASK_AVX512) == XSTATE_MASK_AVX512)
+        {
+            copySize = offsetof(CONTEXT, Egpr16);
         }
         else
         {
