@@ -27,8 +27,9 @@ namespace System.Security.Cryptography
         RequireVbs = 0x00020000,            // NCRYPT_REQUIRE_VBS_FLAG
 
         /// <summary>
-        /// An additional flag that can be used along with <see cref="RequireVbs"/> or <see cref="PreferVbs"/> .
-        /// Instructs Virtualization-based security (VBS) to protect the client key with a per-boot key.
+        /// Instructs Virtualization-based security (VBS) to protect the client key with a per-boot key
+        /// when combined with <see cref="RequireVbs"/> or <see cref="PreferVbs"/> .
+
         /// </summary>
         UsePerBootKey = 0x00040000,         // NCRYPT_USE_PER_BOOT_KEY_FLAG
     }
