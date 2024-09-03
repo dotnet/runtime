@@ -27,7 +27,5 @@ namespace System.Reflection.Metadata
                 _maxNodes = value;
             }
         }
-
-        internal bool IsMaxDepthExceeded(int depth) => depth >= _maxNodes;
     }
 }
