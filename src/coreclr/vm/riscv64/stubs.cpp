@@ -1387,11 +1387,13 @@ void StubLinkerCPU::EmitSllImm(IntReg Xd, IntReg Xn, unsigned int value)
 {
     _ASSERTE(!(value >> 6));
     Emit32(ITypeInstr(0x13, 0x1, Xd, Xn, value));  // slli
+    LOG((LF_STUBS, LL_EVERYTHING, "slli %s, %s, %u\n", intRegAbiNames[Xd], intRegAbiNames[Xn], value));
 }
 void StubLinkerCPU::EmitLuImm(IntReg Xd, unsigned int value)
 {
     _ASSERTE(value <= 0xFFFFF);
     Emit32((DWORD)(0x00000037 | (value << 12) | (Xd << 7))); // lui Xd, value
+    LOG((LF_STUBS, LL_EVERYTHING, "lui %s, %u\n", intRegAbiNames[Xd], value));
 }
 
 void StubLinkerCPU::Init()
