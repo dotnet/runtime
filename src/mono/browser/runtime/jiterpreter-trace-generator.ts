@@ -3975,6 +3975,11 @@ function emit_simd_4 (builder: WasmBuilder, ip: MintOpcodePtr, index: SimdIntrin
 function emit_atomics (
     builder: WasmBuilder, ip: MintOpcodePtr, opcode: number
 ) {
+    if (opcode === MintOpcode.MINT_MONO_MEMORY_BARRIER) {
+        builder.callImport("membar");
+        return true;
+    }
+
     if (!builder.options.enableAtomics)
         return false;
 
