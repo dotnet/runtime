@@ -137,7 +137,7 @@ void GCScan::GcScanSizedRefs(promote_func* fn, int condemned, int max_gen, ScanC
 {
     Ref_ScanSizedRefHandles(condemned, max_gen, sc, fn);
 }
-#endif
+#endif // FEATURE_SIZED_REF_HANDLES
 
 void GCScan::GcShortWeakPtrScan(int condemned, int max_gen, ScanContext* sc)
 {

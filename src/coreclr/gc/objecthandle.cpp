@@ -1109,7 +1109,7 @@ void Ref_TraceNormalRoots(uint32_t condemned, uint32_t maxgen, ScanContext* sc, 
         HNDTYPE_STRONG,
 #ifdef FEATURE_SIZED_REF_HANDLES
         HNDTYPE_SIZEDREF
-#endif
+#endif // FEATURE_SIZED_REF_HANDLES
     };
     uint32_t uTypeCount = (((condemned >= maxgen) && !g_theGCHeap->IsConcurrentGCInProgress()) ? 1 : ARRAY_SIZE(types));
     uint32_t flags = (sc->concurrent) ? HNDGCF_ASYNC : HNDGCF_NORMAL;
@@ -1607,13 +1607,13 @@ void Ref_UpdatePointers(uint32_t condemned, uint32_t maxgen, ScanContext* sc, Re
         HNDTYPE_STRONG,
 #ifdef FEATURE_REFCOUNTED_HANDLES
         HNDTYPE_REFCOUNTED,
-#endif
+#endif // FEATURE_REFCOUNTED_HANDLES
 #ifdef FEATURE_WEAK_NATIVE_COM_HANDLES
         HNDTYPE_WEAK_NATIVE_COM,
-#endif
+#endif // FEATURE_WEAK_NATIVE_COM_HANDLES
 #ifdef FEATURE_SIZED_REF_HANDLES
         HNDTYPE_SIZEDREF,
-#endif
+#endif // FEATURE_SIZED_REF_HANDLES
     };
 
     // perform a multi-type scan that updates pointers
@@ -1665,20 +1665,20 @@ void Ref_ScanHandlesForProfilerAndETW(uint32_t maxgen, uintptr_t lp1, handle_sca
         HNDTYPE_STRONG,
 #ifdef FEATURE_REFCOUNTED_HANDLES
         HNDTYPE_REFCOUNTED,
-#endif
+#endif // FEATURE_REFCOUNTED_HANDLES
 #ifdef FEATURE_WEAK_NATIVE_COM_HANDLES
         HNDTYPE_WEAK_NATIVE_COM,
-#endif
+#endif // FEATURE_WEAK_NATIVE_COM_HANDLES
         HNDTYPE_PINNED,
 #ifdef FEATURE_VARIABLE_HANDLES
         HNDTYPE_VARIABLE,
-#endif
+#endif // FEATURE_VARIABLE_HANDLES
 #ifdef FEATURE_ASYNC_PINNED_HANDLES
         HNDTYPE_ASYNCPINNED,
-#endif
+#endif // FEATURE_ASYNC_PINNED_HANDLES
 #ifdef FEATURE_SIZED_REF_HANDLES
         HNDTYPE_SIZEDREF,
-#endif
+#endif // FEATURE_SIZED_REF_HANDLES
         HNDTYPE_WEAK_INTERIOR_POINTER
     };
 
@@ -1791,19 +1791,19 @@ void Ref_AgeHandles(uint32_t condemned, uint32_t maxgen, ScanContext* sc)
         HNDTYPE_PINNED,
 #ifdef FEATURE_VARIABLE_HANDLES
         HNDTYPE_VARIABLE,
-#endif
+#endif // FEATURE_VARIABLE_HANDLES
 #ifdef FEATURE_REFCOUNTED_HANDLES
         HNDTYPE_REFCOUNTED,
-#endif
+#endif // FEATURE_REFCOUNTED_HANDLES
 #ifdef FEATURE_WEAK_NATIVE_COM_HANDLES
         HNDTYPE_WEAK_NATIVE_COM,
-#endif
+#endif // FEATURE_WEAK_NATIVE_COM_HANDLES
 #ifdef FEATURE_ASYNC_PINNED_HANDLES
         HNDTYPE_ASYNCPINNED,
-#endif
+#endif // FEATURE_ASYNC_PINNED_HANDLES
 #ifdef FEATURE_SIZED_REF_HANDLES
         HNDTYPE_SIZEDREF,
-#endif
+#endif // FEATURE_SIZED_REF_HANDLES
         HNDTYPE_WEAK_INTERIOR_POINTER
     };
 
@@ -1848,19 +1848,19 @@ void Ref_RejuvenateHandles(uint32_t condemned, uint32_t maxgen, ScanContext* sc)
         HNDTYPE_PINNED,
 #ifdef FEATURE_VARIABLE_HANDLES
         HNDTYPE_VARIABLE,
-#endif
+#endif // FEATURE_VARIABLE_HANDLES
 #ifdef FEATURE_REFCOUNTED_HANDLES
         HNDTYPE_REFCOUNTED,
-#endif
+#endif // FEATURE_REFCOUNTED_HANDLES
 #ifdef FEATURE_WEAK_NATIVE_COM_HANDLES
         HNDTYPE_WEAK_NATIVE_COM,
-#endif
+#endif // FEATURE_WEAK_NATIVE_COM_HANDLES
 #ifdef FEATURE_ASYNC_PINNED_HANDLES
         HNDTYPE_ASYNCPINNED,
-#endif
+#endif // FEATURE_ASYNC_PINNED_HANDLES
 #ifdef FEATURE_SIZED_REF_HANDLES
         HNDTYPE_SIZEDREF,
-#endif
+#endif // FEATURE_SIZED_REF_HANDLES
         HNDTYPE_WEAK_INTERIOR_POINTER
     };
 
@@ -1903,19 +1903,19 @@ void Ref_VerifyHandleTable(uint32_t condemned, uint32_t maxgen, ScanContext* sc)
         HNDTYPE_PINNED,
 #ifdef FEATURE_VARIABLE_HANDLES
         HNDTYPE_VARIABLE,
-#endif
+#endif // FEATURE_VARIABLE_HANDLES
 #ifdef FEATURE_REFCOUNTED_HANDLES
         HNDTYPE_REFCOUNTED,
-#endif
+#endif // FEATURE_REFCOUNTED_HANDLES
 #ifdef FEATURE_WEAK_NATIVE_COM_HANDLES
         HNDTYPE_WEAK_NATIVE_COM,
-#endif
+#endif // FEATURE_WEAK_NATIVE_COM_HANDLES
 #ifdef FEATURE_ASYNC_PINNED_HANDLES
         HNDTYPE_ASYNCPINNED,
-#endif
+#endif // FEATURE_ASYNC_PINNED_HANDLESb
 #ifdef FEATURE_SIZED_REF_HANDLES
         HNDTYPE_SIZEDREF,
-#endif
+#endif // FEATURE_SIZED_REF_HANDLES
         HNDTYPE_DEPENDENT,
         HNDTYPE_WEAK_INTERIOR_POINTER
     };
