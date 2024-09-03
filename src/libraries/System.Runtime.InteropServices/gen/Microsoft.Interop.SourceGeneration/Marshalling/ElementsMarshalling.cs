@@ -491,7 +491,10 @@ namespace Microsoft.Interop
 
             if (elementMarshaller.NativeType is PointerTypeInfo)
             {
-                identifierContext = new GenericFriendlyPointerIdentifierContext(elementSetupSubContext, elementMarshaller.TypeInfo, $"{nativeSpanIdentifier}__{indexer}");
+                identifierContext = new GenericFriendlyPointerIdentifierContext(elementSetupSubContext, elementMarshaller.TypeInfo, $"{nativeSpanIdentifier}__{indexer}")
+                {
+                    CodeEmitOptions = elementSetupSubContext.CodeEmitOptions,
+                };
             }
 
             List<StatementSyntax> elementStatements = [];

@@ -7,6 +7,7 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using static Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
+using static Microsoft.Interop.SyntaxFactoryExtensions;
 
 namespace Microsoft.Interop
 {
@@ -71,11 +72,25 @@ namespace Microsoft.Interop
                 yield break;
             }
 
-            // <nativeIdentifier> = <convertToUnmanaged>;
-            var assignment = AssignmentExpression(
-                    SyntaxKind.SimpleAssignmentExpression,
+            ExpressionSyntax assignment;
+
+            // For some of our exception marshallers, our marshaller returns nint for pointer types.
+            // As a result, we need to insert a cast here in case we're in that scenario (which we can't detect specifically).
+            if (unmanagedType is PointerTypeInfo ptrType)
+            {
+                // <nativeIdentifier> = (<nativeType>)<convertToUnmanaged>;
+                assignment = AssignmentExpression(SyntaxKind.SimpleAssignmentExpression,
                     IdentifierName(nativeIdentifier),
-                    convertToUnmanaged);
+                    CastExpression(ptrType.Syntax, convertToUnmanaged));
+            }
+            else
+            {
+                // <nativeIdentifier> = <convertToUnmanaged>;
+                assignment = AssignmentExpression(
+                        SyntaxKind.SimpleAssignmentExpression,
+                        IdentifierName(nativeIdentifier),
+                        convertToUnmanaged);
+            }
 
             yield return ExpressionStatement(assignment);
         }
