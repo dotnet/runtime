@@ -119,6 +119,8 @@ NESTED_ENTRY STUB, _TEXT, FILTER
         ; info.  After this push, unwinding will work.
         push            rcx
 
+        rdsspq          rax
+
         test            rsp, 0fh
         jnz             STUB&_FixRsp
 
@@ -141,6 +143,7 @@ STUB&_RspAligned:
 
         mov             dword ptr [rcx], 0                                                          ; Initialize vtbl (it is not strictly necessary)
         mov             dword ptr [rcx + OFFSETOF__FaultingExceptionFrame__m_fFilterExecuted], 0    ; Initialize BOOL for personality routine
+        mov             qword ptr [rcx + OFFSETOF__FaultingExceptionFrame__m_SSP], rax
 
         call            TARGET
 
