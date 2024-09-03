@@ -121,10 +121,19 @@ namespace Wasm.Build.Tests
         }
 
         [MemberNotNull(nameof(_projectDir), nameof(_logPath))]
-        protected void InitPaths(string id)
+        protected void InitPaths(string id, string? projectParentDir = null)
         {
             if (_projectDir == null)
-                _projectDir = Path.Combine(BuildEnvironment.TmpPath, id);
+            {
+                if (projectParentDir == null)
+                {
+                    _projectDir = Path.Combine(BuildEnvironment.TmpPath, id);
+                }
+                else
+                {
+                    _projectDir = Path.Combine(BuildEnvironment.TmpPath, projectParentDir, id);
+                }
+            }
             _logPath = Path.Combine(s_buildEnv.LogRootPath, id);
             _nugetPackagesDir = Path.Combine(BuildEnvironment.TmpPath, "nuget", id);
 
@@ -289,9 +298,9 @@ namespace Wasm.Build.Tests
             return contents.Replace(s_nugetInsertionTag, $@"<add key=""nuget-local"" value=""{localNuGetsPath}"" />");
         }
 
-        public string CreateWasmTemplateProject(string id, string template = "wasmbrowser", string extraArgs = "", bool runAnalyzers = true)
+        public string CreateWasmTemplateProject(string id, string template = "wasmbrowser", string extraArgs = "", bool runAnalyzers = true, string? projectParentDir = null)
         {
-            InitPaths(id);
+            InitPaths(id, projectParentDir);
             InitProjectDir(_projectDir, addNuGetSourceForLocalPackages: true);
 
             File.WriteAllText(Path.Combine(_projectDir, "Directory.Build.props"), "<Project />");
@@ -693,9 +702,24 @@ namespace Wasm.Build.Tests
             .MultiplyWithSingleArgs(true, false) /*aot*/
             .UnwrapItemsAsArrays();
 
-        protected CommandResult RunWithoutBuild(string config, string id)
+        public static IEnumerable<object?[]> TestDataForConsolePublishAndRunRelease() =>
+            new IEnumerable<object?>[]
+            {
+                new object?[] { true },
+                new object?[] { false }
+            }
+            .AsEnumerable()
+            .MultiplyWithSingleArgs(true, false) /*aot*/
+            .UnwrapItemsAsArrays();
+
+        protected CommandResult RunWithoutBuild(string config, string id, bool enableHttp = false)
         {
+            // wasmtime --wasi http is necessary because the default dotnet.wasm (without native rebuild depends on wasi:http world)
             string runArgs = $"run --no-build -c {config} --forward-exit-code";
+            if (enableHttp)
+            {
+                runArgs += " --extra-host-arg=--wasi --extra-host-arg=http";
+            }
             runArgs += " x y z";
             int expectedExitCode = 42;
             CommandResult res = new RunCommand(s_buildEnv, _testOutput, label: id)

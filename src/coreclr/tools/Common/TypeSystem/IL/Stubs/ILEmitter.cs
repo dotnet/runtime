@@ -829,4 +829,14 @@ namespace Internal.IL.Stubs
             return false;
         }
     }
+
+    public abstract partial class SpecializableILStubMethod : ILStubMethod
+    {
+        public abstract MethodIL EmitIL(MethodDesc specializedMethod);
+
+        public override bool HasCustomAttribute(string attributeNamespace, string attributeName)
+        {
+            return false;
+        }
+    }
 }

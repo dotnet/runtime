@@ -970,7 +970,7 @@ ProcessCLRExceptionNew(IN     PEXCEPTION_RECORD   pExceptionRecord,
         else
         {
             OBJECTREF oref = ExceptionTracker::CreateThrowable(pExceptionRecord, FALSE);
-            DispatchManagedException(oref, pContextRecord, /* preserveStackTrace */ false);
+            DispatchManagedException(oref, pContextRecord);
         }
     }
 #endif // !HOST_UNIX
@@ -5426,13 +5426,15 @@ BOOL IsSafeToCallExecutionManager()
 
 BOOL IsSafeToHandleHardwareException(PCONTEXT contextRecord, PEXCEPTION_RECORD exceptionRecord)
 {
-#ifdef FEATURE_EMULATE_SINGLESTEP    
+#ifdef FEATURE_EMULATE_SINGLESTEP
     Thread *pThread = GetThreadNULLOk();
     if (pThread && pThread->IsSingleStepEnabled() &&
         exceptionRecord->ExceptionCode != STATUS_BREAKPOINT &&
         exceptionRecord->ExceptionCode != STATUS_SINGLE_STEP &&
         exceptionRecord->ExceptionCode != STATUS_STACK_OVERFLOW)
     {
+        // tried to consolidate the code and only call HandleSingleStep here but
+        // for some reason not investigated the debugger tests failed with this change
         pThread->HandleSingleStep(contextRecord, exceptionRecord->ExceptionCode);
     }
 #endif
@@ -5647,7 +5649,7 @@ void FirstChanceExceptionNotification()
 #endif // TARGET_UNIX
 }
 
-VOID DECLSPEC_NORETURN DispatchManagedException(OBJECTREF throwable, CONTEXT* pExceptionContext, bool preserveStackTrace)
+VOID DECLSPEC_NORETURN DispatchManagedException(OBJECTREF throwable, CONTEXT* pExceptionContext)
 {
     STATIC_CONTRACT_THROWS;
     STATIC_CONTRACT_GC_TRIGGERS;
@@ -5659,19 +5661,12 @@ VOID DECLSPEC_NORETURN DispatchManagedException(OBJECTREF throwable, CONTEXT* pE
 
     Thread *pThread = GetThread();
 
-    if (preserveStackTrace)
-    {
-        pThread->IncPreventAbort();
-        ExceptionPreserveStackTrace(throwable);
-        pThread->DecPreventAbort();
-    }
-
     ULONG_PTR hr = GetHRFromThrowable(throwable);
 
     EXCEPTION_RECORD exceptionRecord;
     exceptionRecord.ExceptionCode = EXCEPTION_COMPLUS;
     exceptionRecord.ExceptionFlags = EXCEPTION_NONCONTINUABLE | EXCEPTION_SOFTWARE_ORIGINATE;
-    exceptionRecord.ExceptionAddress = (void *)(void (*)(OBJECTREF, bool))&DispatchManagedException;
+    exceptionRecord.ExceptionAddress = (void *)(void (*)(OBJECTREF))&DispatchManagedException;
     exceptionRecord.NumberParameters = MarkAsThrownByUs(exceptionRecord.ExceptionInformation, hr);
     exceptionRecord.ExceptionRecord = NULL;
 
@@ -5707,7 +5702,7 @@ VOID DECLSPEC_NORETURN DispatchManagedException(OBJECTREF throwable, CONTEXT* pE
     UNREACHABLE();
 }
 
-VOID DECLSPEC_NORETURN DispatchManagedException(OBJECTREF throwable, bool preserveStackTrace)
+VOID DECLSPEC_NORETURN DispatchManagedException(OBJECTREF throwable)
 {
     STATIC_CONTRACT_THROWS;
     STATIC_CONTRACT_GC_TRIGGERS;
@@ -5716,7 +5711,7 @@ VOID DECLSPEC_NORETURN DispatchManagedException(OBJECTREF throwable, bool preser
     CONTEXT exceptionContext;
     RtlCaptureContext(&exceptionContext);
 
-    DispatchManagedException(throwable, &exceptionContext, preserveStackTrace);
+    DispatchManagedException(throwable, &exceptionContext);
     UNREACHABLE();
 }
 
@@ -7689,7 +7684,7 @@ size_t GetSSPForFrameOnCurrentStack(TADDR ip)
 {
     size_t *targetSSP = (size_t *)_rdsspq();
     // The SSP we search is pointing to the return address of the frame represented
-    // by the passed in IP. So we search for the instruction pointer from 
+    // by the passed in IP. So we search for the instruction pointer from
     // the context and return one slot up from there.
     if (targetSSP != NULL)
     {
@@ -7880,7 +7875,7 @@ extern "C" void * QCALLTYPE CallCatchFunclet(QCall::ObjectHandleOnStack exceptio
         pvRegDisplay->pCurrentContext->Lr = GetIP(pvRegDisplay->pCurrentContext);
 #elif defined(HOST_ARM)
         pvRegDisplay->pCurrentContext->Lr = GetIP(pvRegDisplay->pCurrentContext);
-#elif defined(HOST_RISCV) || defined(HOST_LOONGARCH64)
+#elif defined(HOST_RISCV64) || defined(HOST_LOONGARCH64)
         pvRegDisplay->pCurrentContext->Ra = GetIP(pvRegDisplay->pCurrentContext);
 #endif
         SetIP(pvRegDisplay->pCurrentContext, (PCODE)(void (*)(Object*))PropagateExceptionThroughNativeFrames);
