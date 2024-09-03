@@ -1405,33 +1405,25 @@ int LinearScan::BuildConditionalSelectWithEmbeddedOp(GenTreeHWIntrinsic* intrins
 
     int srcCount = 0;
 
+    GenTreeHWIntrinsic* embeddedOpNode = intrin.op2->AsHWIntrinsic();
+    const HWIntrinsic   intrinEmbedded(embeddedOpNode);
+    size_t              embNumArgs = embeddedOpNode->GetOperandCount();
+
+    // Determine whether this the embedded operation requires delay free
+    bool     embeddedIsRMW             = false;
+    bool     embeddedDelayFreeMultiple = false;
+    GenTree* embeddedDelayFreeOp       = embeddedOpNode->GetDelayFreeOp(compiler, &embeddedIsRMW, &embeddedDelayFreeMultiple);
+    assert(!embeddedDelayFreeMultiple);
+
     // Handle Op1
 
-    bool             tgtPrefEmbOp2 = false;
-    SingleTypeRegSet predMask      = RBM_ALLMASK.GetPredicateRegSet();
-    if (intrin.id == NI_Sve_ConditionalSelect)
+    SingleTypeRegSet predMask = RBM_ALLMASK.GetPredicateRegSet();
+    if (HWIntrinsicInfo::IsLowMaskedOperation(intrinEmbedded.id))
     {
-        // If this is conditional select, make sure to check the embedded
-        // operation to determine the predicate mask.
-        assert(intrinsicTree->GetOperandCount() == 3);
-        assert(!HWIntrinsicInfo::IsLowMaskedOperation(intrin.id));
-
-        GenTreeHWIntrinsic* embOp2Node = intrin.op2->AsHWIntrinsic();
-        const HWIntrinsic   intrinEmb(embOp2Node);
-        if (HWIntrinsicInfo::IsLowMaskedOperation(intrinEmb.id))
-        {
-            predMask = RBM_LOWMASK.GetPredicateRegSet();
-        }
-
-        // Special-case, CreateBreakPropagateMask's op2 is the RMW node.
-        if (intrinEmb.id == NI_Sve_CreateBreakPropagateMask)
-        {
-            assert(embOp2Node->isRMWHWIntrinsic(compiler));
-            tgtPrefEmbOp2 = true;
-        }
+        predMask = RBM_LOWMASK.GetPredicateRegSet();
     }
 
-    if (tgtPrefEmbOp2)
+    if (embeddedDelayFreeOp != nullptr)
     {
         srcCount += BuildDelayFreeUses(intrin.op1, nullptr, predMask);
     }
@@ -1442,92 +1434,71 @@ int LinearScan::BuildConditionalSelectWithEmbeddedOp(GenTreeHWIntrinsic* intrins
 
     // Handle Op2 and Op3
 
-    if ((intrin.op2->isRMWHWIntrinsic(compiler)))
+    if (embeddedIsRMW)
     {
-        // If the embedded operation has RMW semantics then record delay-free for operands as well as the "merge" value
-        GenTreeHWIntrinsic* embOp2Node = intrin.op2->AsHWIntrinsic();
-        size_t              embNumArgs = embOp2Node->GetOperandCount();
-        const HWIntrinsic   intrinEmb(embOp2Node);
-        GenTree*            prefUseNode = nullptr;
+        // If the embedded operation has RMW semantics then record delay-free for the "merge" value
 
-        if (HWIntrinsicInfo::IsFmaIntrinsic(intrinEmb.id))
+        if (HWIntrinsicInfo::IsFmaIntrinsic(intrinEmbedded.id))
         {
             assert(embNumArgs == 3);
+
+            // For FMA intrinsics, the arguments may get switched around during codegen.
+            // Figure out where the delay free op will be.
 
             LIR::Use use;
             GenTree* user = nullptr;
 
-            if (LIR::AsRange(blockSequence[curBBSeqNum]).TryGetUse(embOp2Node, &use))
+            if (LIR::AsRange(blockSequence[curBBSeqNum]).TryGetUse(embeddedOpNode, &use))
             {
                 user = use.User();
             }
             unsigned resultOpNum =
-                embOp2Node->GetResultOpNumForRmwIntrinsic(user, intrinEmb.op1, intrinEmb.op2, intrinEmb.op3);
+                embeddedOpNode->GetResultOpNumForRmwIntrinsic(user, intrinEmbedded.op1, intrinEmbedded.op2, intrinEmbedded.op3);
 
-            if (resultOpNum == 0)
+            if (resultOpNum != 0)
             {
-                prefUseNode = embOp2Node->Op(1);
-            }
-            else
-            {
-                assert(resultOpNum >= 1 && resultOpNum <= 3);
-                prefUseNode = embOp2Node->Op(resultOpNum);
+                embeddedDelayFreeOp = embeddedOpNode->Op(resultOpNum);
             }
         }
-        else
+        else if (HWIntrinsicInfo::HasImmediateOperand(intrinEmbedded.id))
         {
-            const bool embHasImmediateOperand = HWIntrinsicInfo::HasImmediateOperand(intrinEmb.id);
-            assert((embNumArgs == 1) || (embNumArgs == 2) || (embNumArgs == 3) ||
-                   (embHasImmediateOperand && (embNumArgs == 4)));
-
             // Special handling for embedded intrinsics with immediates:
             // We might need an additional register to hold branch targets into the switch table
             // that encodes the immediate
             bool needsInternalRegister;
-            switch (intrinEmb.id)
+            switch (intrinEmbedded.id)
             {
                 case NI_Sve_ShiftRightArithmeticForDivide:
-                    assert(embHasImmediateOperand);
                     assert(embNumArgs == 2);
-                    needsInternalRegister = !embOp2Node->Op(2)->isContainedIntOrIImmed();
+                    needsInternalRegister = !embeddedOpNode->Op(2)->isContainedIntOrIImmed();
                     break;
 
                 case NI_Sve_AddRotateComplex:
-                    assert(embHasImmediateOperand);
                     assert(embNumArgs == 3);
-                    needsInternalRegister = !embOp2Node->Op(3)->isContainedIntOrIImmed();
+                    needsInternalRegister = !embeddedOpNode->Op(3)->isContainedIntOrIImmed();
                     break;
 
                 case NI_Sve_MultiplyAddRotateComplex:
-                    assert(embHasImmediateOperand);
                     assert(embNumArgs == 4);
-                    needsInternalRegister = !embOp2Node->Op(4)->isContainedIntOrIImmed();
+                    needsInternalRegister = !embeddedOpNode->Op(4)->isContainedIntOrIImmed();
                     break;
 
                 default:
-                    assert(!embHasImmediateOperand);
                     needsInternalRegister = false;
                     break;
             }
 
             if (needsInternalRegister)
             {
-                buildInternalIntRegisterDefForNode(embOp2Node);
+                buildInternalIntRegisterDefForNode(embeddedOpNode);
             }
-
-            size_t prefUseOpNum = 1;
-            if (intrinEmb.id == NI_Sve_CreateBreakPropagateMask)
-            {
-                prefUseOpNum = 2;
-            }
-            prefUseNode = embOp2Node->Op(prefUseOpNum);
         }
 
         for (size_t argNum = 1; argNum <= embNumArgs; argNum++)
         {
-            GenTree* node = embOp2Node->Op(argNum);
+            GenTree* node = embeddedOpNode->Op(argNum);
 
-            if (node == prefUseNode)
+            if (node == embeddedDelayFreeOp)
             {
                 tgtPrefUse = BuildUse(node);
                 srcCount++;
@@ -1545,7 +1516,7 @@ int LinearScan::BuildConditionalSelectWithEmbeddedOp(GenTreeHWIntrinsic* intrins
             }
         }
 
-        srcCount += BuildDelayFreeUses(intrin.op3, prefUseNode);
+        srcCount += BuildDelayFreeUses(intrin.op3, embeddedDelayFreeOp);
     }
     else
     {
@@ -1784,8 +1755,8 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
 
     // Determine whether this is an operation where an op must be marked delayFree so that it
     // is not allocated the same register as the target.
-    bool     delayFreeMultiple = false;
     bool     isRMW             = false;
+    bool     delayFreeMultiple = false;
     GenTree* delayFreeOp       = intrinsicTree->GetDelayFreeOp(compiler, &isRMW, &delayFreeMultiple);
 
     if (intrin.op1 != nullptr)
