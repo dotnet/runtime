@@ -59,38 +59,37 @@ static inline BOOL ThreadIsDead(Thread *t)
 
 
 // Map our exposed notion of thread priorities into the enumeration that NT uses.
-static bool TryMapToNTPriority(INT32 ours, INT32& theirs)
+static INT32 MapToNTPriority(INT32 ours)
 {
-    STANDARD_VM_CONTRACT;
+    CONTRACTL
+    {
+        GC_NOTRIGGER;
+        THROWS;
+        MODE_ANY;
+    }
+    CONTRACTL_END;
 
     switch (ours)
     {
     case ThreadNative::PRIORITY_LOWEST:
-        theirs = THREAD_PRIORITY_LOWEST;
-        break;
+        return THREAD_PRIORITY_LOWEST;
 
     case ThreadNative::PRIORITY_BELOW_NORMAL:
-        theirs = THREAD_PRIORITY_BELOW_NORMAL;
-        break;
+        return THREAD_PRIORITY_BELOW_NORMAL;
 
     case ThreadNative::PRIORITY_NORMAL:
-        theirs = THREAD_PRIORITY_NORMAL;
-        break;
+        return THREAD_PRIORITY_NORMAL;
 
     case ThreadNative::PRIORITY_ABOVE_NORMAL:
-        theirs = THREAD_PRIORITY_ABOVE_NORMAL;
-        break;
+        return THREAD_PRIORITY_ABOVE_NORMAL;
 
     case ThreadNative::PRIORITY_HIGHEST:
-        theirs = THREAD_PRIORITY_HIGHEST;
-        break;
+        return THREAD_PRIORITY_HIGHEST;
 
     default:
-        return false;
+        COMPlusThrow(kArgumentOutOfRangeException, W("Argument_InvalidFlag"));
     }
-    return true;
 }
-
 
 // Map to our exposed notion of thread priorities from the enumeration that NT uses.
 INT32 MapFromNTPriority(INT32 NTPriority)
@@ -286,9 +285,7 @@ void ThreadNative::Start(Thread* pNewThread, int threadStackSize, int priority, 
     // After we have established the thread handle, we can check m_Priority.
     // This ordering is required to eliminate the race condition on setting the
     // priority of a thread just as it starts up.
-    INT32 NTPriority;
-    if (!TryMapToNTPriority(priority, NTPriority))
-        COMPlusThrow(kArgumentOutOfRangeException, W("Argument_InvalidFlag"));
+    INT32 NTPriority = MapToNTPriority(priority);
 
     pNewThread->SetThreadPriority(NTPriority);
     pNewThread->ChooseThreadCPUGroupAffinity();
@@ -324,28 +321,42 @@ void ThreadNative::Start(Thread* pNewThread, int threadStackSize, int priority, 
     }
 }
 
-extern "C" INT32 QCALLTYPE ThreadNative_ThreadIsDead(QCall::ThreadHandle thread)
+extern "C" void QCALLTYPE ThreadNative_SetPriority(QCall::ObjectHandleOnStack thread, INT32 iPriority)
 {
     QCALL_CONTRACT;
-
-    return ThreadIsDead(thread);
-}
-
-extern "C" BOOL QCALLTYPE ThreadNative_TrySetPriority(QCall::ThreadHandle thread, INT32 iPriority)
-{
-    QCALL_CONTRACT;
-
-    BOOL ret = FALSE;
 
     BEGIN_QCALL;
 
+    GCX_COOP();
+
+    THREADBASEREF threadRef = NULL;
+    GCPROTECT_BEGIN(threadRef)
+    threadRef = (THREADBASEREF)thread.Get();
+
+    // Note that you can manipulate the priority of a thread that hasn't started yet,
+    // or one that is running. But you get an exception if you manipulate the priority
+    // of a thread that has died.
+    Thread* th = threadRef->GetInternal();
+    if (ThreadIsDead(th))
+        COMPlusThrow(kThreadStateException, W("ThreadState_Dead_Priority"));
+
     // translate the priority (validating as well)
-    INT32 priority;
-    ret = TryMapToNTPriority(iPriority, priority) && thread->SetThreadPriority(priority);
+    INT32 priority = MapToNTPriority(iPriority);
 
+    INT32 oldPriority = threadRef->GetPriority();
+
+    // Eliminate the race condition by setting priority field before we check for if
+    // the thread is running. See ThreadNative::Start() for the other half.
+    threadRef->SetPriority(iPriority);
+
+    if (!th->SetThreadPriority(priority))
+    {
+        threadRef->SetPriority(oldPriority);
+        COMPlusThrow(kThreadStateException, W("ThreadState_SetPriorityFailed"));
+    }
+
+    GCPROTECT_END();
     END_QCALL;
-
-    return ret;
 }
 
 FCIMPL1(FC_BOOL_RET, ThreadNative::IsAlive, ThreadBaseObject* pThisUNSAFE)

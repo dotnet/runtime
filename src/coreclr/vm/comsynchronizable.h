@@ -78,8 +78,7 @@ private:
 };
 
 extern "C" void QCALLTYPE ThreadNative_Start(QCall::ThreadHandle thread, int threadStackSize, int priority, PCWSTR pThreadName);
-extern "C" BOOL QCALLTYPE ThreadNative_ThreadIsDead(QCall::ThreadHandle thread);
-extern "C" BOOL QCALLTYPE ThreadNative_TrySetPriority(QCall::ThreadHandle thread, INT32 iPriority);
+extern "C" void QCALLTYPE ThreadNative_SetPriority(QCall::ObjectHandleOnStack thread, INT32 iPriority);
 extern "C" void QCALLTYPE ThreadNative_SetIsBackground(QCall::ThreadHandle thread, BOOL value);
 extern "C" void QCALLTYPE ThreadNative_InformThreadNameChange(QCall::ThreadHandle thread, LPCWSTR name, INT32 len);
 extern "C" BOOL QCALLTYPE ThreadNative_YieldThread();

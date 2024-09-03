@@ -58,6 +58,9 @@ namespace System.Threading
         // but those types of changes may race with the reset anyway, so this field doesn't need to be synchronized.
         private bool _mayNeedResetForThreadPool;
 
+        // Set in unmanaged and read in managed code.
+        private bool _isDead;
+
         private Thread() { }
 
         public int ManagedThreadId
@@ -211,20 +214,16 @@ namespace System.Threading
             internal set;
         }
 
-        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ThreadNative_ThreadIsDead")]
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ThreadNative_SetPriority")]
         [return: MarshalAs(UnmanagedType.Bool)]
-        private static partial bool ThreadIsDead(ThreadHandle t);
-
-        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ThreadNative_TrySetPriority")]
-        [return: MarshalAs(UnmanagedType.Bool)]
-        private static partial bool TrySetPriority(ThreadHandle t, int priority);
+        private static partial void SetPriority(ObjectHandleOnStack thread, int priority);
 
         /// <summary>Returns the priority of the thread.</summary>
         public ThreadPriority Priority
         {
             get
             {
-                if (ThreadIsDead(GetNativeHandle())) // GC.KeepAlive() not needed since member fields are touched below.
+                if (_isDead)
                 {
                     throw new ThreadStateException(SR.ThreadState_Dead_Priority);
                 }
@@ -232,22 +231,8 @@ namespace System.Threading
             }
             set
             {
-                ThreadHandle handle = GetNativeHandle();
-                if (ThreadIsDead(handle)) // GC.KeepAlive() not needed since member fields are touched below.
-                {
-                    // Note that you can manipulate the priority of a thread that hasn't started yet,
-                    // or one that is running. But you get an exception if you manipulate the priority
-                    // of a thread that has died.
-                    throw new ThreadStateException(SR.ThreadState_Dead_Priority);
-                }
-
-                int prev = _priority;
-                _priority = (int)value;
-                if (!TrySetPriority(handle, _priority)) // GC.KeepAlive() not needed since member fields are touched below.
-                {
-                    _priority = prev;
-                    throw new ThreadStateException(SR.ThreadState_SetPriorityFailed);
-                }
+                Thread _this = this;
+                SetPriority(ObjectHandleOnStack.Create(ref _this), (int)value);
                 if (value != ThreadPriority.Normal)
                 {
                     _mayNeedResetForThreadPool = true;
