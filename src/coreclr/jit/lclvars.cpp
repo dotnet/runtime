@@ -6060,7 +6060,8 @@ void Compiler::lvaAssignVirtualFrameOffsetsToLocals()
 
     if (opts.compJitSaveFpLrWithCalleeSavedRegisters == 0)
     {
-        if (IsTargetAbi(CORINFO_NATIVEAOT_ABI) && TargetOS::IsApplePlatform)
+        if (IsTargetAbi(CORINFO_NATIVEAOT_ABI) && TargetOS::IsApplePlatform &&
+            !codeGen->isFramePointerRequired())
         {
             codeGen->SetSaveFpLrWithAllCalleeSavedRegisters(true);
             codeGen->SetReverseAndPairCalleeSavedRegisters(true);
