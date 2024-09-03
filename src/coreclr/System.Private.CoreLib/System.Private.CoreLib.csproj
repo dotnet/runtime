@@ -140,6 +140,7 @@
     <Compile Include="$(BclSourcesRoot)\System\GC.CoreCLR.cs" />
     <Compile Include="$(BclSourcesRoot)\System\IO\FileLoadException.CoreCLR.cs" />
     <Compile Include="$(BclSourcesRoot)\System\IO\FileNotFoundException.CoreCLR.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\IO\Stream.CoreCLR.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Math.CoreCLR.cs" />
     <Compile Include="$(BclSourcesRoot)\System\MathF.CoreCLR.cs" />
     <Compile Include="$(BclSourcesRoot)\System\MulticastDelegate.CoreCLR.cs" />

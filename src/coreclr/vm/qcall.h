@@ -248,15 +248,15 @@ public:
     struct AssemblyHandle
     {
         Object ** m_ppObject;
-        DomainAssembly * m_pAssembly;
+        Assembly * m_pAssembly;
 
-        operator DomainAssembly * ()
+        operator Assembly * ()
         {
             LIMITED_METHOD_CONTRACT;
             return m_pAssembly;
         }
 
-        DomainAssembly * operator->() const
+        Assembly * operator->() const
         {
             LIMITED_METHOD_CONTRACT;
             return m_pAssembly;
