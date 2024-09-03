@@ -238,9 +238,9 @@ def build_and_run(coreclr_args):
     crank_agent_p = None
     if coreclr_args.local:
         print(f"Launching crank agent: {crank_agent_app}")
-        # crank_agent_p = subprocess.Popen(crank_agent_app,
-        #                         stdout=subprocess.PIPE,
-        #                         stderr=subprocess.PIPE,env=crank_env)
+        crank_agent_p = subprocess.Popen(crank_agent_app,
+                                stdout=subprocess.PIPE,
+                                stderr=subprocess.PIPE,env=crank_env)
         time.sleep(2)
 
     try:
@@ -286,16 +286,16 @@ def build_and_run(coreclr_args):
                 print("Crank finished...")
     finally:
         if crank_agent_p is not None:
-            print('Crank agent stdout:\n')
-            for line in iter(crank_agent_p.stdout.readline, ""):
-                if not line:
-                    break
-                print(line)
-            print('Crank agent stderr:\n')
-            for line in iter(crank_agent_p.stderr.readline, ""):
-                if not line:
-                    break
-                print(line)
+            # print('Crank agent stdout:\n')
+            # for line in iter(crank_agent_p.stdout.readline, ""):
+            #     if not line:
+            #         break
+            #     print(line)
+            # print('Crank agent stderr:\n')
+            # for line in iter(crank_agent_p.stderr.readline, ""):
+            #     if not line:
+            #         break
+            #     print(line)
             crank_agent_p.terminate()
 
     # merge
