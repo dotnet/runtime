@@ -731,10 +731,7 @@
         <ExcludeList Include="$(XunitTestBinBase)/GC/API/WeakReference/Finalize2/*">
             <Issue>Expectations about finalization order</Issue>
         </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/ilasm/PortablePdb/IlasmPortablePdbTests/*">
-            <Issue>Specific to CoreCLR</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/ilasm/System/Runtime/CompilerServices/MethodImplOptionsTests/*">
+        <ExcludeList Include="$(XunitTestBinBase)/ilasm/*">
             <Issue>Specific to CoreCLR</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/Interop/ArrayMarshalling/SafeArray/SafeArrayTest/*">
@@ -3107,12 +3104,6 @@
         <ExcludeList Include = "$(XunitTestBinBase)/Exceptions/ForeignThread/ForeignThreadExceptions/**">
             <Issue>needs triage</Issue>
         </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/ilasm/PortablePdb/IlasmPortablePdbTests/**">
-            <Issue>needs triage</Issue>
-        </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/ilasm/System/Runtime/CompilerServices/MethodImplOptionsTests/**">
-            <Issue>needs triage</Issue>
-        </ExcludeList>
         <ExcludeList Include = "$(XunitTestBinBase)/JIT/opt/Devirtualization/box2/**">
             <Issue>https://github.com/dotnet/runtime/issues/41472</Issue>
         </ExcludeList>
@@ -3270,9 +3261,6 @@
         <ExcludeList Include = "$(XunitTestBinBase)/GC/API/WeakReference/multipleWRs_1/**">
             <Issue>needs triage</Issue>
         </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/ilasm/System/Runtime/CompilerServices/MethodImplOptionsTests/**">
-            <Issue>needs triage</Issue>
-        </ExcludeList>
         <ExcludeList Include = "$(XunitTestBinBase)/Interop/ICustomMarshaler/ConflictingNames/SameNameDifferentAssembly/**">
             <Issue>needs triage</Issue>
         </ExcludeList>
@@ -3332,9 +3320,6 @@
         </ExcludeList>
         <ExcludeList Include = "$(XunitTestBinBase)/GC/LargeMemory/API/gc/gettotalmemory/**">
             <Issue>https://github.com/dotnet/runtime/issues/54913</Issue>
-        </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/ilasm/PortablePdb/IlasmPortablePdbTests/**">
-            <Issue>https://github.com/dotnet/runtime/issues/54906</Issue>
         </ExcludeList>
         <ExcludeList Include = "$(XunitTestBinBase)/Interop/NativeLibrary/API/NativeLibraryTests/**">
             <Issue>https://github.com/dotnet/runtime/issues/54905</Issue>
@@ -3508,14 +3493,6 @@
         </ExcludeList>
         <ExcludeList Include = "$(XunitTestBinBase)/GC/API/GC/Collect_Optimized_3/**">
             <Issue>GC_API 0|1|2</Issue>
-        </ExcludeList>
-
-        <ExcludeList Include = "$(XunitTestBinBase)/ilasm/PortablePdb/IlasmPortablePdbTests/**">
-            <Issue>System.IO.FileNotFoundException: Could not load file or assembly 'xunit.runner.utility.netcoreapp10, Version=2.4.1.0, Culture=neutral, PublicKeyToken=8d05b1bb7a6fdb6c' or one of its dependencies.</Issue>
-        </ExcludeList>
-
-        <ExcludeList Include = "$(XunitTestBinBase)/ilasm/System/Runtime/CompilerServices/MethodImplOptionsTests/**">
-            <Issue>Environment variable is not set: 'CORE_ROOT'</Issue>
         </ExcludeList>
 
         <ExcludeList Include = "$(XunitTestBinBase)/GC/LargeMemory/API/gc/gettotalmemory/**">
@@ -3717,12 +3694,6 @@
         <ExcludeList Include="$(XunitTestBinBase)/JIT/jit64/opt/rngchk/RngchkStress3/*">
             <Issue>timeout</Issue>
         </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/ilasm/PortablePdb/IlasmPortablePdbTests/**">
-            <Issue> Did not find ilasm or ildasm in CORE_ROOT directory </Issue>
-        </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/ilasm/System/Runtime/CompilerServices/MethodImplOptionsTests/**">
-            <Issue> Did not find ilasm or ildasm in CORE_ROOT directory </Issue>
-        </ExcludeList>
         <ExcludeList Include = "$(XunitTestBinBase)/tracing/eventpipe/bigevent/bigevent/**">
             <Issue>Can't find file dotnet-diagnostic-{pid}-*-socket</Issue>
         </ExcludeList>
@@ -3840,8 +3811,6 @@
         <ExcludeList Include = "$(XunitTestBinBase)/Interop/StringMarshalling/VBByRefStr/VBByRefStrTest/**" />
         <ExcludeList Include = "$(XunitTestBinBase)/JIT/Intrinsics/TypeIntrinsics_r/**" />
         <ExcludeList Include = "$(XunitTestBinBase)/JIT/Intrinsics/TypeIntrinsics_ro/**" />
-        <ExcludeList Include = "$(XunitTestBinBase)/ilasm/System/Runtime/CompilerServices/MethodImplOptionsTests/**" />
-        <ExcludeList Include = "$(XunitTestBinBase)/ilasm/PortablePdb/IlasmPortablePdbTests/**" />
         <ExcludeList Include = "$(XunitTestBinBase)/Loader/classloader/generics/ByRefLike/**" />
     </ItemGroup>
 

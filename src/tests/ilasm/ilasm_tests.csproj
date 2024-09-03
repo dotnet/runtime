@@ -1,0 +1,71 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <HasMergedInTests>true</HasMergedInTests>
+    <!-- These tests rely on being able to call out to the ilasm and ildasm executables, which we can't do on mobile. -->
+    <DisableProjectBuild Condition="'$(TargetsMobile)' == 'true'">true</DisableProjectBuild>
+    <!-- Mono doesn't provide ilasm or ildasm in their Core_Root layout. -->
+    <DisableProjectBuild Condition="'$(RuntimeFlavor)' == 'mono'">true</DisableProjectBuild>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="PortablePdb\IlasmPortablePdbTester.cs" />
+    <Compile Include="PortablePdb\IlasmPortablePdbTesterCommon.cs" />
+    <Compile Include="PortablePdb\IlasmPortablePdbTesterTypes.cs" />
+    <Compile Include="MethodImplOptions\MethodImplOptionsTests.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Remove="PortablePdb\Resources\**" />
+    <EmbeddedResource Remove="PortablePdb\Resources\**" />
+    <None Remove="PortablePdb\Resources\**" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="PortablePdb\TestFiles\TestDocuments1_unix.il">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      <Link>TestFiles\%(FileName)%(Extension)</Link>
+    </None>
+    <None Include="PortablePdb\TestFiles\TestDocuments1_win.il">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      <Link>TestFiles\%(FileName)%(Extension)</Link>
+    </None>
+    <None Include="PortablePdb\TestFiles\TestLocalScopes1.il">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      <Link>TestFiles\%(FileName)%(Extension)</Link>
+    </None>
+    <None Include="PortablePdb\TestFiles\TestLocalScopes2.il">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      <Link>TestFiles\%(FileName)%(Extension)</Link>
+    </None>
+    <None Include="PortablePdb\TestFiles\TestLocalScopes3.il">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      <Link>TestFiles\%(FileName)%(Extension)</Link>
+    </None>
+    <None Include="PortablePdb\TestFiles\TestLocalScopes4.il">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      <Link>TestFiles\%(FileName)%(Extension)</Link>
+    </None>
+    <None Include="PortablePdb\TestFiles\TestMethodDebugInformation.il">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      <Link>TestFiles\%(FileName)%(Extension)</Link>
+    </None>
+    <None Include="PortablePdb\TestFiles\TestMethodDebugInformation_unix.il">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      <Link>TestFiles\%(FileName)%(Extension)</Link>
+    </None>
+    <None Include="PortablePdb\TestFiles\TestMethodDebugInformation_win.il">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      <Link>TestFiles\%(FileName)%(Extension)</Link>
+    </None>
+    <None Include="PortablePdb\TestFiles\TestPdbDebugDirectory1.il">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      <Link>TestFiles\%(FileName)%(Extension)</Link>
+    </None>
+    <None Include="PortablePdb\TestFiles\TestPdbDebugDirectory2.il">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      <Link>TestFiles\%(FileName)%(Extension)</Link>
+    </None>
+    <None Include="MethodImplOptions/MiAggressiveOptimization.il">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      <Link>MiAggressiveOptimization.il</Link>
+    </None>
+  </ItemGroup>
+  <Import Project="$(TestSourceDir)MergedTestRunner.targets" />
+</Project>

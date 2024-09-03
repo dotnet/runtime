@@ -5,10 +5,14 @@ using System;
 using System.Diagnostics;
 using System.IO;
 using System.Text.RegularExpressions;
+using Xunit;
 
-public static class MethodImplOptionsTests
+public class MethodImplOptionsTests : IDisposable
 {
-    public static int Main()
+    private string _ilasmFile;
+    private string _ildasmFile;
+
+    public MethodImplOptionsTests()
     {
         const int Pass = 100;
         const int Fail = 101;
@@ -17,12 +21,12 @@ public static class MethodImplOptionsTests
         if (string.IsNullOrWhiteSpace(coreRoot))
         {
             Console.WriteLine("Environment variable is not set: 'CORE_ROOT'");
-            return Fail;
+            throw new InvalidOperationException("Environment variable is not set: 'CORE_ROOT'");
         }
         if (!Directory.Exists(coreRoot))
         {
             Console.WriteLine($"Did not find CORE_ROOT directory: {coreRoot}");
-            return Fail;
+            throw new InvalidOperationException("Did not find CORE_ROOT directory");
         }
 
         var nativeExeExtensions = new string[] { string.Empty, ".exe" };
@@ -42,68 +46,41 @@ public static class MethodImplOptionsTests
         if (!found)
         {
             Console.WriteLine($"Did not find ilasm or ildasm in CORE_ROOT directory: {coreRoot}");
-            return Fail;
+            throw new InvalidOperationException("Did not find ilasm or ildasm in CORE_ROOT directory");
         }
 
-        bool allPassed = true;
-        allPassed &=
-            RunMethodImplOptionsTest(
-                ilasmFile,
-                ildasmFile,
-                "AggressiveOptimizationTest",
-                "MiAggressiveOptimization.il",
-                "aggressiveoptimization");
-        return allPassed ? Pass : Fail;
+        _ilasmFile = ilasmFile;
+        _ildasmFile = ildasmFile;
     }
 
-    private static bool RunMethodImplOptionsTest(
-        string ilasmFile,
-        string ildasmFile,
+    [Theory]
+    [InlineData("AggressiveOptimizationTest", "MiAggressiveOptimization.il", "aggressiveoptimization")]
+    public void RunMethodImplOptionsTest(
         string testName,
         string ilFileName,
         string ilDisasmAttributeKeyword)
     {
         Console.WriteLine(testName);
 
-        try
-        {
-            string disasmIlFileName;
-            ProcessStartInfo ilasmPsi, ildasmPsi;
-            GetIlasmProcessStartInfos(ilasmFile, ildasmFile, ilFileName, out disasmIlFileName, out ilasmPsi, out ildasmPsi);
+        string disasmIlFileName;
+        ProcessStartInfo ilasmPsi, ildasmPsi;
+        GetIlasmProcessStartInfos(_ilasmFile, _ildasmFile, ilFileName, out disasmIlFileName, out ilasmPsi, out ildasmPsi);
 
-            Process ilasmProcess = Process.Start(ilasmPsi);
-            ilasmProcess.WaitForExit();
-            if (ilasmProcess.ExitCode != 0)
-            {
-                Console.WriteLine($"ilasm failed with exit code: {ilasmProcess.ExitCode}");
-                return false;
-            }
+        Process ilasmProcess = Process.Start(ilasmPsi);
+        ilasmProcess.WaitForExit();
+        Assert.Equal(0, ilasmProcess.ExitCode);
 
-            Process ildasmProcess = Process.Start(ildasmPsi);
-            ildasmProcess.WaitForExit();
-            if (ildasmProcess.ExitCode != 0)
-            {
-                Console.WriteLine($"ildasm failed with exit code: {ildasmProcess.ExitCode}");
-                return false;
-            }
+        Process ildasmProcess = Process.Start(ildasmPsi);
+        ildasmProcess.WaitForExit();
+        Assert.Equal(0, ildasmProcess.ExitCode);
 
-            string disasmIl = File.ReadAllText(disasmIlFileName);
-            var findMainAttributeRegex =
-                new Regex(
-                    @"\bvoid\s+Main\s*\(\s*\).*?\b" + ilDisasmAttributeKeyword + @"\b",
-                    RegexOptions.Compiled | RegexOptions.Multiline);
-            if (!findMainAttributeRegex.IsMatch(disasmIl))
-            {
-                Console.WriteLine($"Attribute '{ilDisasmAttributeKeyword}' did not round-trip through ilasm and ildasm");
-                return false;
-            }
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine(ex);
-            return false;
-        }
-        return true;
+        string disasmIl = File.ReadAllText(disasmIlFileName);
+        var findMainAttributeRegex =
+            new Regex(
+                @"\bvoid\s+Main\s*\(\s*\).*?\b" + ilDisasmAttributeKeyword + @"\b",
+                RegexOptions.Compiled | RegexOptions.Multiline);
+
+        Assert.True(findMainAttributeRegex.IsMatch(disasmIl), $"Attribute '{ilDisasmAttributeKeyword}' did not round-trip through ilasm and ildasm");
     }
 
     private static void GetIlasmProcessStartInfos(
@@ -137,4 +114,6 @@ public static class MethodImplOptionsTests
         disasmIlFileName = $"{Path.GetFileNameWithoutExtension(ilFileName)}_dis{Path.GetExtension(ilFileName)}";
         ildasmPsi.Arguments = $"-out={disasmIlFileName} {asmDllFileName}";
     }
+
+    public void Dispose() {}
 }

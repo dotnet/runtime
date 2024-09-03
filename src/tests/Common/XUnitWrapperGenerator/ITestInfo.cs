@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.IO;
+using System.Linq;
 using System.Text;
 using Microsoft.CodeAnalysis;
 
@@ -40,7 +41,13 @@ public sealed class BasicTestMethod : ITestInfo
                                                                .FullyQualifiedWithoutGlobalNamespace);
         Method = method.Name;
         DisplayNameForFiltering = $"{ContainingType}.{Method}({args})";
-        TestNameExpression = displayNameExpression ?? $"\"{externAlias}::{ContainingType}.{Method}({args})\"";
+
+        // Make arguments interpolated expressions to avoid issues with string arguments.
+        ImmutableArray<string> argumentsForName = arguments.IsDefaultOrEmpty
+            ? ImmutableArray<string>.Empty
+            : arguments.Select(arg => $"{{{arg}}}").ToImmutableArray();
+
+        TestNameExpression = displayNameExpression ?? $"$\"{externAlias}::{ContainingType}.{Method}({string.Join(", ", argumentsForName)})\"";
 
         if (method.IsStatic)
         {
