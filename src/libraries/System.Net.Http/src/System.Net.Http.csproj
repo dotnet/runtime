@@ -28,10 +28,6 @@
     <ILLinkSubstitutionsXmls Include="$(ILLinkDirectory)ILLink.Substitutions.xml" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'android' or '$(TargetPlatformIdentifier)' == 'ios' or '$(TargetPlatformIdentifier)' == 'maccatalyst' or '$(TargetPlatformIdentifier)' == 'tvos' or '$(TargetPlatformIdentifier)' == 'browser' or '$(TargetPlatformIdentifier)' == 'wasi'">
-    <ILLinkSubstitutionsXmls Include="$(ILLinkDirectory)ILLink.Substitutions.mobile.xml" Condition="'$(TargetPlatformIdentifier)' != 'browser' and '$(TargetPlatformIdentifier)' != 'wasi'" />
-  </ItemGroup>
-
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' != ''">
     <Compile Include="System\Net\Http\ByteArrayContent.cs" />
     <Compile Include="System\Net\Http\CancellationHelper.cs" />
@@ -459,6 +455,9 @@
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'wasi'">
     <Reference Include="System.Threading.Thread" />
     <Compile Include="System\Net\Http\WasiHttpHandler\WasiHttpHandler.cs" />
+    <Compile Include="System\Net\Http\WasiHttpHandler\WasiHttpInterop.cs" />
+    <Compile Include="System\Net\Http\WasiHttpHandler\WasiOutputStream.cs" />
+    <Compile Include="System\Net\Http\WasiHttpHandler\WasiInputStream.cs" />
     <Compile Include="System\Net\Http\WasiHttpHandler\WasiHttp.cs" />
     <Compile Include="System\Net\Http\WasiHttpHandler\WasiHttpWorld.wit.imports.wasi.clocks.v0_2_1.MonotonicClockInterop.cs" />
     <Compile Include="System\Net\Http\WasiHttpHandler\WasiHttpWorld.wit.imports.wasi.http.v0_2_1.ITypes.cs" />

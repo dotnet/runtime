@@ -77,10 +77,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ILLinkSubstitutionsXmls Include="$(ILLinkDirectory)ILLink.Substitutions.xml" />
-  </ItemGroup>
-
-  <ItemGroup>
     <ProjectReference Include="$(CoreLibProject)" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.Collections.Concurrent\src\System.Collections.Concurrent.csproj" />
   </ItemGroup>
