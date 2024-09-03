@@ -175,11 +175,22 @@
 
   <Import Project="$(MSBuildThisFileDirectory)EmSdkRepo.Defaults.props" Condition="'$(WasmUseEMSDK_PATH)' == 'true'" />
   <Target Name="_SetupEmscripten" BeforeTargets="_SetupToolchain">
+    <Exec Command="dotnet nuget locals all -l" ConsoleToMSBuild="true">
+      <Output TaskParameter="ConsoleOutput" PropertyName="NuGetLocalsOutput" />
+    </Exec>
+    <Message Text="NuGet locals output: $(NuGetLocalsOutput)" Importance="High" />
     <PropertyGroup>
+      <NodeTransportDir>$([System.IO.Path]::GetFullPath($(EmscriptenNodeToolsPath)/../..))</NodeTransportDir>
+      <PackagesDir>$([System.IO.Path]::GetFullPath($(EmscriptenNodeToolsPath)/../../..))</PackagesDir>
       <_EMSDKMissingPaths Condition="'$(_EMSDKMissingPaths)' == '' and ('$(EmscriptenSdkToolsPath)' == '' or !Exists('$(EmscriptenSdkToolsPath)'))">%24(EmscriptenSdkToolsPath)=$(EmscriptenSdkToolsPath) </_EMSDKMissingPaths>
       <_EMSDKMissingPaths Condition="'$(_EMSDKMissingPaths)' == '' and ('$(EmscriptenNodeToolsPath)' == '' or !Exists('$(EmscriptenNodeToolsPath)'))">%24(EmscriptenNodeToolsPath)=$(EmscriptenNodeToolsPath) </_EMSDKMissingPaths>
       <_EMSDKMissingPaths Condition="'$(_EMSDKMissingPaths)' == '' and ('$(EmscriptenUpstreamBinPath)' == '' or !Exists('$(EmscriptenUpstreamBinPath)'))">%24(EmscriptenUpstreamBinPath)=$(EmscriptenUpstreamBinPath) </_EMSDKMissingPaths>
     </PropertyGroup>
+
+    <ItemGroup>
+      <NodeTransportDirContents Include="$(NodeTransportDir)\*" />
+      <PackagesDirContents Include="$(PackagesDir)\*" />
+    </ItemGroup>
 
     <PropertyGroup>
       <_ToolchainMissingErrorMessage Condition="'$(EMSDK_PATH)' == '' and '$(EmscriptenSdkToolsPath)' == ''">Could not find emscripten sdk. Either set %24(EMSDK_PATH), or use workloads to get the sdk.</_ToolchainMissingErrorMessage>
@@ -189,6 +200,7 @@
       <_ToolchainMissingErrorMessage Condition="'$(_ToolchainMissingErrorMessage)' == '' and '$(_UsingEMSDK_PATH)' == 'true' and '$(_EMSDKMissingPaths)' != ''">Specified Emscripten sdk at %24(EMSDK_PATH)=$(EMSDK_PATH) is missing some paths: $(_EMSDKMissingPaths).</_ToolchainMissingErrorMessage>
 
       <_IsToolchainMissing Condition="'$(_ToolchainMissingErrorMessage)' != ''">true</_IsToolchainMissing>
+      <_ToolchainMissingErrorMessage>$(_ToolchainMissingErrorMessage); [DEBUG] Directories at $(NodeTransportDir): %(NodeTransportDirContents.Identity); Directories at $(PackagesDir): %(PackagesDirContents.Identity);</_ToolchainMissingErrorMessage>
     </PropertyGroup>
 
     <PropertyGroup>
