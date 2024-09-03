@@ -38,7 +38,6 @@ namespace Generators
                  SpecialType.System_UInt32,
                  SpecialType.System_Single,
                  SpecialType.System_Double,
-                 SpecialType.System_Decimal,
                  SpecialType.System_String,
                  SpecialType.System_DateTime,
                  SpecialType.System_Enum
@@ -51,16 +50,10 @@ namespace Generators
                 }
 
                 INamedTypeSymbol? guidType = model.Compilation.GetTypeByMetadataName("System.Guid");
-                INamedTypeSymbol? timeSpanType = model.Compilation.GetTypeByMetadataName("System.TimeSpan");
-                INamedTypeSymbol? dateTimeOffsetType = model.Compilation.GetTypeByMetadataName("System.DateTimeOffset");
-                INamedTypeSymbol? uintPtrType = model.Compilation.GetTypeByMetadataName("System.UIntPtr");
 
                 if (type.IsValueType)
                 {
-                    if (SymbolEqualityComparer.Default.Equals(type, guidType) ||
-                        SymbolEqualityComparer.Default.Equals(type, timeSpanType) ||
-                        SymbolEqualityComparer.Default.Equals(type, dateTimeOffsetType) ||
-                        SymbolEqualityComparer.Default.Equals(type, uintPtrType))
+                    if (SymbolEqualityComparer.Default.Equals(type, guidType))
                     {
                         return true;
                     }

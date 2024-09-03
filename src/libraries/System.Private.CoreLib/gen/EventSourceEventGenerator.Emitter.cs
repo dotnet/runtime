@@ -9,6 +9,7 @@ using System.IO;
 using System.Linq;
 using System.Private.CoreLib.Generators.Models;
 using System.Text;
+using Microsoft.CodeAnalysis;
 
 namespace Generators
 {
@@ -88,7 +89,7 @@ namespace Generators
 
                 if (method.Arguments.Count != 0)
                 {
-                    writer.WriteLine($"{EventData}* datas = stackalloc {EventData}[{method.Arguments.Count}]");
+                    writer.WriteLine($"{EventData}* datas = stackalloc {EventData}[{method.Arguments.Count}];");
 
                     foreach (EventMethodArgument item in method.Arguments)
                     {
@@ -115,14 +116,25 @@ namespace Generators
             ///<summary>Emits the argument set the EventData to the `datas` variable</summary>
             private static void EmitArgument(EventMethodArgument argument, IndentedTextWriter writer)
             {
+                if (argument.SpecialType== SpecialType.System_String)
+                {
+                    writer.WriteLine($"{argument.Name} ??= System.String.Empty;");
+                }
                 writer.WriteLine($"datas[{argument.Index}] = new {EventData}");
                 writer.WriteLine('{');
                 writer.Indent++;
-                writer.WriteLine($"DataPointer = {argument.Name} == null ? {IntPtrZero} : (nint){AsPointer}(ref {GetReference}({AsSpan}({argument.Name}))),");
-                writer.WriteLine($"Size = {argument.Name} == null ? 0 : (({argument.Name}.Length + 1) * sizeof(char)),");
-                writer.WriteLine("Reserved = 0");//I don't know if this is necessary or not
+                if (argument.SpecialType == SpecialType.System_String)
+                {
+                    writer.WriteLine($"DataPointer = {argument.Name} == null ? {IntPtrZero} : (nint){AsPointer}(ref {GetReference}({AsSpan}({argument.Name}))),");
+                    writer.WriteLine($"Size = {argument.Name} == null ? 0 : (({argument.Name}.Length + 1) * sizeof(char))");
+                }
+                else
+                {
+                    writer.WriteLine($"DataPointer = (nint)(&{argument.Name}),");
+                    writer.WriteLine($"Size = sizeof({argument.TypeName})");
+                }
                 writer.Indent--;
-                writer.WriteLine('}');
+                writer.WriteLine("};");
             }
 
         }

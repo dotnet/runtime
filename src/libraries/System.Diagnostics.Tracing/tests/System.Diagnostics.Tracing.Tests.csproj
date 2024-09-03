@@ -5,6 +5,7 @@
     <TestRuntime>true</TestRuntime>
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
     <TestDisableParallelization>true</TestDisableParallelization>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
   <ItemGroup Condition="'$(TargetsAppleMobile)' == 'true' or '$(TargetOS)' == 'android'">
     <RuntimeComponents Include="diagnostics_tracing" />
@@ -50,5 +51,8 @@
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.Diagnostics.Tracing.TraceEvent" Version="$(TraceEventVersion)" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="$(LibrariesProjectRoot)\System.Private.CoreLib\gen\System.Private.CoreLib.Generators.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
   </ItemGroup>
 </Project>
