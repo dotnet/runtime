@@ -26,6 +26,7 @@
     <Compile Include="$(CommonPath)Roslyn\DiagnosticDescriptorHelper.cs" Link="Common\Roslyn\DiagnosticDescriptorHelper.cs" />
     <Compile Include="$(LibrariesProjectRoot)System.Runtime.InteropServices.JavaScript\src\System\Runtime\InteropServices\JavaScript\MarshalerType.cs" Link="System\Runtime\InteropServices\JavaScript\MarshalerType.cs" />
     <Compile Include="$(LibrariesProjectRoot)System.Runtime.InteropServices\gen\Common\UnreachableException.cs" Link="System\Runtime\InteropServices\Common\UnreachableException.cs" />
+    <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\FeatureSwitchDefinitionAttribute.cs" Link="Common\System\Diagnostics\CodeAnalysis\FeatureSwitchDefinitionAttribute.cs" />
     <Compile Include="$(CoreLibSharedDir)System\Runtime\CompilerServices\IsExternalInit.cs" Link="Common\System\Runtime\CompilerServices\IsExternalInit.cs" />
   </ItemGroup>
 

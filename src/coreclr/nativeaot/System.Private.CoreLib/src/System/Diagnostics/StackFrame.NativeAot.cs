@@ -178,9 +178,9 @@ namespace System.Diagnostics
                 string s = DeveloperExperience.Default.CreateStackTraceString(_ipAddress, _needFileInfo, out bool isStackTraceHidden);
                 if (!isStackTraceHidden)
                 {
-                    // Passing a default string for "at" in case SR.UsingResourceKeys() is true
+                    // Passing a default string for "at" in case SR.UsingResourceKeys is true
                     // as this is a special case and we don't want to have "Word_At" on stack traces.
-                    string word_At = SR.UsingResourceKeys() ? "at" : SR.Word_At;
+                    string word_At = SR.UsingResourceKeys ? "at" : SR.Word_At;
                     builder.Append("   ").Append(word_At).Append(' ');
                     builder.AppendLine(s);
                 }
@@ -188,7 +188,7 @@ namespace System.Diagnostics
             if (_isLastFrameFromForeignExceptionStackTrace)
             {
                 // Passing default for Exception_EndStackTraceFromPreviousThrow in case SR.UsingResourceKeys is set.
-                builder.AppendLine(SR.UsingResourceKeys() ?
+                builder.AppendLine(SR.UsingResourceKeys ?
                     "--- End of stack trace from previous location ---" :
                     SR.Exception_EndStackTraceFromPreviousThrow);
             }
