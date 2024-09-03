@@ -791,22 +791,23 @@ namespace System
                 {
                     return new T[length];
                 }
-
 #endif
             }
 
-            // Runtime overrides GC_ALLOC_ZEROING_OPTIONAL if the type contains references, so we don't need to worry about that.
-            GC_ALLOC_FLAGS flags = GC_ALLOC_FLAGS.GC_ALLOC_ZEROING_OPTIONAL;
-            if (pinned)
-                flags |= GC_ALLOC_FLAGS.GC_ALLOC_PINNED_OBJECT_HEAP;
-
-            return AllocateNewArrayWorker<T>(length, flags);
+            return AllocateNewArrayWorker(length, pinned);
 
             [MethodImpl(MethodImplOptions.NoInlining)]
-            static U[] AllocateNewArrayWorker<U>(int length, GC_ALLOC_FLAGS flags)
+            static T[] AllocateNewArrayWorker(int length, bool pinned)
             {
-                U[]? result = null;
-                AllocateNewArray(RuntimeTypeHandle.ToIntPtr(typeof(U[]).TypeHandle), length, flags, ObjectHandleOnStack.Create(ref result));
+                // Runtime overrides GC_ALLOC_ZEROING_OPTIONAL if the type contains references, so we don't need to worry about that.
+                GC_ALLOC_FLAGS flags = GC_ALLOC_FLAGS.GC_ALLOC_ZEROING_OPTIONAL;
+                if (pinned)
+                {
+                    flags |= GC_ALLOC_FLAGS.GC_ALLOC_PINNED_OBJECT_HEAP;
+                }
+
+                T[]? result = null;
+                AllocateNewArray(RuntimeTypeHandle.ToIntPtr(typeof(T[]).TypeHandle), length, flags, ObjectHandleOnStack.Create(ref result));
                 return result!;
             }
         }
