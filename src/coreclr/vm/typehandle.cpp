@@ -342,7 +342,7 @@ void TypeHandle::AllocateManagedClassObject(RUNTIMETYPEHANDLE* pDest)
     {
         // Allocate RuntimeType on a frozen segment
         // Take a lock here since we don't want to allocate redundant objects which won't be collected
-        CrstHolder exposedClassLock(AppDomain::GetMethodTableExposedClassObjectLock());
+        CrstHolder exposedClassLock(AppDomain::GetCurrentDomain()->GetMethodTableExposedClassObjectLock());
 
         if (VolatileLoad(pDest) == 0)
         {
