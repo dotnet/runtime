@@ -29,7 +29,6 @@ namespace System.Security.Cryptography
         /// <summary>
         /// Instructs Virtualization-based security (VBS) to protect the client key with a per-boot key
         /// when combined with <see cref="RequireVbs"/> or <see cref="PreferVbs"/> .
-
         /// </summary>
         UsePerBootKey = 0x00040000,         // NCRYPT_USE_PER_BOOT_KEY_FLAG
     }
