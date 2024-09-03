@@ -117,7 +117,7 @@ namespace System.Buffers.Text
                     int decoded = default(Base64UrlDecoderByte).DecodingMap[lastChar];
                     switch (remainder)
                     {
-                        case 1: return false; // 1 byte is not decode able => invalid.
+                        case 1: return false; // 1 byte is not decodable => invalid.
                         case 2: return ((decoded & 0x0F) == 0); // if unused lower 4 bits are set to 0
                         case 3: return ((decoded & 0x03) == 0); // if unused lower 2 bits are set to 0
                     }
