@@ -222,6 +222,7 @@ internal sealed class PInvokeCallback
         MethodName = method.Name!;
         ReturnType = method.ReturnType!;
         IsVoid = ReturnType.Name == "Void";
+        Token = $"{(method.MetadataToken & 0xffffff):x6}";
 
         // FIXME: this is a hack, we need to encode this better
         // and allow reflection in the interp case but either way
@@ -230,7 +231,7 @@ internal sealed class PInvokeCallback
         // it must be unique for each callback runtime errors can occur
         // since it is used to look up the index in the wasm_native_to_interp_ftndescs
         // and the signature of the interp entry function must match the native signature
-        Key = $"{AssemblyName}::{Namespace}::{TypeName}::{MethodName}\U0001F412{Method.GetParameters().Length}";
+        Key = $"{Token}#{AssemblyName}:{Namespace}:{TypeName}:{MethodName}\U0001F412{Method.GetParameters().Length}";
 
         IsExport = false;
         foreach (var attr in method.CustomAttributes)
@@ -262,6 +263,7 @@ internal sealed class PInvokeCallback
     public Type ReturnType { get;}
     public bool IsExport { get; }
     public bool IsVoid { get; }
+    public string Token { get; }
     public string Key { get; }
 }
 #pragma warning restore CS0649

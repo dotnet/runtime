@@ -211,7 +211,9 @@ get_native_to_interp (MonoMethod *method, void *extra_arg)
 	const char *class_name = mono_class_get_name (klass);
 	const char *method_name = mono_method_get_name (method);
 	MonoMethodSignature *sig = mono_method_signature (method);
-	int param_count = mono_signature_get_param_count (sig);
+	uint32_t param_count = mono_signature_get_param_count (sig);
+	uint32_t token = mono_method_get_token (method) & 0x00ffffff;
+
 	char buf [128];
 	char *key = buf;
 	int len;
@@ -219,12 +221,12 @@ get_native_to_interp (MonoMethod *method, void *extra_arg)
 		return NULL;
 
 	// the key must match the one used in PInvokeTableGenerator
-	len = snprintf (key, sizeof(buf), "%s::%s::%s::%s\U0001F412%d", name, namespace, class_name, method_name, param_count);
+	len = snprintf (key, sizeof(buf), "%06x#%s:%s:%s:%s\U0001F412%d", token, name, namespace, class_name, method_name, param_count);
 
 	if (len >= sizeof (buf)) {
 		// The key is too long, try again with a larger buffer
 		key = g_new (char, len + 1);
-	    snprintf (key, len + 1, "%s::%s::%s::%s\U0001F412%d", name, namespace, class_name, method_name, param_count);
+	    snprintf (key, len + 1, "%06x#%s:%s:%s:%s\U0001F412%d", token, name, namespace, class_name, method_name, param_count);
 	}
 
 	addr = wasm_dl_get_native_to_interp (key, extra_arg);
