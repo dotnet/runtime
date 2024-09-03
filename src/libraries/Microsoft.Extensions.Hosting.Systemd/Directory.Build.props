@@ -4,6 +4,7 @@
     <PackageTags>hosting</PackageTags>
     <IncludePlatformAttributes>true</IncludePlatformAttributes>
     <!-- TODO remove with https://github.com/dotnet/runtime/pull/107185 -->
+    <IncludePlatformAttributes>false</IncludePlatformAttributes>
     <UnsupportedOSPlatforms>wasi</UnsupportedOSPlatforms>
   </PropertyGroup>
 </Project>
