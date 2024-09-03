@@ -38,7 +38,9 @@ namespace System.IO.Pipelines.Tests
             for (int i = 0; i < 2; i++)
             {
                 s.Dispose();
+#if NETCOREAPP
                 await s.DisposeAsync();
+#endif
             }
 
             // Make sure OnReaderCompleted was invoked.
@@ -296,6 +298,32 @@ namespace System.IO.Pipelines.Tests
             pipeReader.AsStream(leaveOpen: true).Dispose();
         }
 
+        // Regression test: https://github.com/dotnet/runtime/issues/107213
+        [Fact]
+        public async Task ZeroByteReadWorksWhenExaminedDoesNotEqualConsumed()
+        {
+            Pipe pipe = new Pipe();
+            Stream stream = pipe.Reader.AsStream();
+
+            await pipe.Writer.WriteAsync(new byte[2]);
+
+            ReadResult readResult = await pipe.Reader.ReadAsync();
+            // Consume: 0, Advance: 2
+            pipe.Reader.AdvanceTo(readResult.Buffer.Start, readResult.Buffer.End);
+
+            // Write more so that the next read will see unexamined bytes available and not block
+            await pipe.Writer.WriteAsync(new byte[2]);
+
+            // Zero-byte read to test that advancing (via PipeReader.AdvanceTo(consumed)) doesn't throw due to examined being less than
+            // the last examined position
+            int result = await stream.ReadAsync(Memory<byte>.Empty);
+            Assert.Equal(0, result);
+
+            // Real read to make sure data is immediately available
+            result = await stream.ReadAsync(new byte[100]);
+            Assert.Equal(4, result);
+        }
+
         public class BuggyPipeReader : PipeReader
         {
             public override void AdvanceTo(SequencePosition consumed)
@@ -405,7 +433,7 @@ namespace System.IO.Pipelines.Tests
 
                 ReadAsyncDelegate readSpanSync = (stream, data) =>
                 {
-                    return Task.FromResult(stream.Read(data));
+                    return Task.FromResult(stream.Read(data, 0, data.Length));
                 };
 
                 yield return new object[] { readArrayAsync };
