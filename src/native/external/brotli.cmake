@@ -22,3 +22,8 @@ target_compile_options(brotlidec PRIVATE $<$<COMPILE_LANG_AND_ID:C,Clang,AppleCl
 target_compile_definitions(brotlicommon PRIVATE BROTLI_SHARED_COMPILATION)
 target_compile_definitions(brotlienc PRIVATE BROTLI_SHARED_COMPILATION BROTLIENC_SHARED_COMPILATION)
 target_compile_definitions(brotlidec PRIVATE BROTLI_SHARED_COMPILATION BROTLIDEC_SHARED_COMPILATION)
+target_compile_definitions(brotlicommon PRIVATE BROTLI_SHARED_COMPILATION BROTLICOMMON_SHARED_COMPILATION)
+
+# Don't build the brotli command line tool unless explicitly requested
+# (which we never do)
+set_target_properties(brotli PROPERTIES EXCLUDE_FROM_ALL ON)
