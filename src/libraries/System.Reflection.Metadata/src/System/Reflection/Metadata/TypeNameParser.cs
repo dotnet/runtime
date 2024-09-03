@@ -49,7 +49,7 @@ namespace System.Reflection.Metadata
             {
                 if (throwOnError)
                 {
-                    if (parser._parseOptions.IsMaxDepthExceeded(recursiveDepth))
+                    if (IsMaxDepthExceeded(parser._parseOptions, recursiveDepth))
                     {
                         ThrowInvalidOperation_MaxNodesExceeded(parser._parseOptions.MaxNodes);
                     }
@@ -61,19 +61,21 @@ namespace System.Reflection.Metadata
                 return null;
             }
 
+            Debug.Assert(parsedName.GetNodeCount() == recursiveDepth, $"Node count mismatch for '{typeName.ToString()}'");
+
             return parsedName;
         }
 
         // this method should return null instead of throwing, so the caller can get errorIndex and include it in error msg
         private TypeName? ParseNextTypeName(bool allowFullyQualifiedName, ref int recursiveDepth)
         {
-            if (!TryDive(ref recursiveDepth))
+            if (!TryDive(_parseOptions, ref recursiveDepth))
             {
                 return null;
             }
 
             List<int>? nestedNameLengths = null;
-            if (!TryGetTypeNameInfo(ref _inputString, ref nestedNameLengths, out int fullTypeNameLength))
+            if (!TryGetTypeNameInfo(_parseOptions, ref _inputString, ref nestedNameLengths, ref recursiveDepth, out int fullTypeNameLength))
             {
                 return null;
             }
@@ -147,6 +149,16 @@ namespace System.Reflection.Metadata
             {
                 _inputString = capturedBeforeProcessing;
             }
+            else
+            {
+                // Every constructed generic type needs the generic type definition.
+                if (!TryDive(_parseOptions, ref recursiveDepth))
+                {
+                    return null;
+                }
+                // If that generic type is a nested type, we don't increase the recursiveDepth any further,
+                // as generic type definition uses exactly the same declaring type as the constructed generic type.
+            }
 
             int previousDecorator = default;
             // capture the current state so we can reprocess it again once we know the AssemblyName
@@ -154,7 +166,7 @@ namespace System.Reflection.Metadata
             // iterate over the decorators to ensure there are no illegal combinations
             while (TryParseNextDecorator(ref _inputString, out int parsedDecorator))
             {
-                if (!TryDive(ref recursiveDepth))
+                if (!TryDive(_parseOptions, ref recursiveDepth))
                 {
                     return null;
                 }
@@ -244,16 +256,6 @@ namespace System.Reflection.Metadata
             }
 
             return declaringType;
-        }
-
-        private bool TryDive(ref int depth)
-        {
-            if (_parseOptions.IsMaxDepthExceeded(depth))
-            {
-                return false;
-            }
-            depth++;
-            return true;
         }
     }
 }
