@@ -29,6 +29,8 @@ The Linux System V x86_64 ABI is documented in [System V Application Binary Inte
 
 The LoongArch64 ABI documentation is [here](https://github.com/loongson/LoongArch-Documentation/blob/main/docs/LoongArch-ELF-ABI-EN.adoc)
 
+The RISC-V ABIs Specification: [latest release](https://github.com/riscv-non-isa/riscv-elf-psabi-doc/releases/latest), [latest draft](https://github.com/riscv-non-isa/riscv-elf-psabi-doc/releases), [document source repo](https://github.com/riscv-non-isa/riscv-elf-psabi-doc).
+
 # General Unwind/Frame Layout
 
 For all non-x86 platforms, all methods must have unwind information so the garbage collector (GC) can unwind them (unlike native code in which a leaf method may be omitted).
@@ -79,6 +81,8 @@ However, unlike native varargs, all floating point arguments are not promoted to
 
 Managed varargs are not supported in .NET Core.
 
+Managed/native varargs are currently not supported on RISC-V.
+
 ## Generics
 
 *Shared generics*. In cases where the code address does not uniquely identify a generic instantiation of a method, then a 'generic instantiation parameter' is required. Often the `this` pointer can serve dual-purpose as the instantiation parameter. When the `this` pointer is not the generic parameter, the generic parameter is passed as an additional argument. On ARM and AMD64, it is passed after the optional return buffer and the optional `this` pointer, but before any user arguments. On ARM64 and RISC-V, the generic parameter is passed after the optional `this` pointer, but before any user arguments. On x86, if all arguments of the function including `this` pointer fit into argument registers (ECX and EDX) and we still have argument registers available, we store the hidden argument in the next available argument register. Otherwise it is passed as the last stack argument. For generic methods (where there is a type parameter directly on the method, as compared to the type), the generic parameter currently is a MethodDesc pointer (I believe an InstantiatedMethodDesc). For static methods (where there is no `this` pointer) the generic parameter is a MethodTable pointer/TypeHandle.
@@ -97,6 +101,10 @@ call(["this" pointer] [return buffer pointer] [generics context|varargs cookie] 
 Just like native, AMD64 has implicit-byrefs. Any structure (value type in IL parlance) that is not 1, 2, 4, or 8 bytes in size (i.e., 3, 5, 6, 7, or >= 9 bytes in size) that is declared to be passed by value, is instead passed by reference. For JIT generated code, it follows the native ABI where the passed-in reference is a pointer to a compiler generated temp local on the stack. However, there are some cases within remoting or reflection where apparently stackalloc is too hard, and so they pass in pointers within the GC heap, thus the JITed code must report these implicit byref parameters as interior pointers (BYREFs in JIT parlance), in case the callee is one of these reflection paths. Similarly, all writes must use checked write barriers.
 
 The AMD64 native calling conventions (Windows 64 and System V) require return buffer address to be returned by callee in RAX. JIT also follows this rule.
+
+## RISC-V only: structs passed/returned according to hardware floating-point calling convention
+
+Passing/returning structs according to hardware floating-point calling convention like native is currently supported only up to 16 bytes, ones larger than that differ from the standard ABI and are passed/returned according to integer calling convention (by implicit reference).
 
 ## Return buffers
 
@@ -121,6 +129,8 @@ Primitive value types smaller than 32-bits are widened to 32-bits: signed small 
 ## Small primitive arguments
 
 Small primitive arguments have undefined upper bits. This can be different from the standard calling conventions that may require normalization (e.g. on ARM32 and Apple ARM64).
+
+On RISC-V small primitive arguments are extended according to standard calling conventions.
 
 # PInvokes
 
