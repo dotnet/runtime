@@ -6295,7 +6295,7 @@ void CodeGen::genIntCastOverflowCheck(GenTreeCast* cast, const GenIntCastDesc& d
                 GetEmitter()->emitIns_R_R_I(INS_srli, EA_8BYTE, tempReg, reg, typeSize);
                 genJumpToThrowHlpBlk_la(SCK_OVERFLOW, INS_bne, tempReg, nullptr, REG_R0);
             }
-            else // Signed to Signed convertion
+            else // Signed to signed cast
             {
                 // Extend sign of a small int on all of the bits above it and check whether the original type was same
                 const auto extensionSize = (8 - castSize) * 8;
