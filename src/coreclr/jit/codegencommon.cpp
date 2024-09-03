@@ -1515,45 +1515,7 @@ void CodeGen::genExitCode(BasicBlock* block)
     bool jmpEpilog = block->HasFlag(BBF_HAS_JMP);
     if (compiler->getNeedsGSSecurityCookie())
     {
-#ifndef JIT32_GCENCODER
-        // At this point the gc info that we track in codegen is often incorrect,
-        // as it could be missing return registers or arg registers (in a case of tail call).
-        // GS cookie check will emit a call and that will pass our GC info to emit and potentially mess things up.
-        // While we could infer returns/args and force them to be live and it seems to work in JIT32_GCENCODER case,
-        // it appears to be nontrivial in more general case.
-        // So, instead, we just claim that the whole thing is not GC-interruptible.
-        // Effectively this starts the epilog a few instructions earlier.
-        //
-        // CONSIDER: is that a good place to be that codegen loses track of returns/args at this point?
-        GetEmitter()->emitDisableGC();
-#endif
-
         genEmitGSCookieCheck(jmpEpilog);
-
-#ifdef JIT32_GCENCODER
-        if (jmpEpilog)
-        {
-            // Dev10 642944 -
-            // The GS cookie check created a temp label that has no live
-            // incoming GC registers, we need to fix that
-
-            unsigned   varNum;
-            LclVarDsc* varDsc;
-
-            /* Figure out which register parameters hold pointers */
-
-            for (varNum = 0, varDsc = compiler->lvaTable; varNum < compiler->lvaCount && varDsc->lvIsRegArg;
-                 varNum++, varDsc++)
-            {
-                noway_assert(varDsc->lvIsParam);
-
-                gcInfo.gcMarkRegPtrVal(varDsc->GetArgReg(), varDsc->TypeGet());
-            }
-
-            GetEmitter()->emitThisGCrefRegs = GetEmitter()->emitInitGCrefRegs = gcInfo.gcRegGCrefSetCur;
-            GetEmitter()->emitThisByrefRegs = GetEmitter()->emitInitByrefRegs = gcInfo.gcRegByrefSetCur;
-        }
-#endif
     }
 
     genReserveEpilog(block);
@@ -4730,8 +4692,7 @@ void CodeGen::genReserveProlog(BasicBlock* block)
 
     JITDUMP("Reserving prolog IG for block " FMT_BB "\n", block->bbNum);
 
-    /* Nothing is live on entry to the prolog */
-
+    // Nothing is live on entry to the prolog
     GetEmitter()->emitCreatePlaceholderIG(IGPT_PROLOG, block, VarSetOps::MakeEmpty(compiler), 0, 0, false);
 }
 
@@ -4742,13 +4703,12 @@ void CodeGen::genReserveProlog(BasicBlock* block)
 
 void CodeGen::genReserveEpilog(BasicBlock* block)
 {
+    assert(block != nullptr);
+
     JITDUMP("Reserving epilog IG for block " FMT_BB "\n", block->bbNum);
 
-    assert(block != nullptr);
-    // We pass empty GC info, because epilog is always an extend IG and will ignore what we pass.
-    // Besides, at this point the GC info that we track in CodeGen is often incorrect.
-    // See comments in genExitCode for more info.
-    GetEmitter()->emitCreatePlaceholderIG(IGPT_EPILOG, block, VarSetOps::MakeEmpty(compiler), 0, 0, block->IsLast());
+    GetEmitter()->emitCreatePlaceholderIG(IGPT_EPILOG, block, VarSetOps::MakeEmpty(compiler), gcInfo.gcRegGCrefSetCur,
+                                          gcInfo.gcRegByrefSetCur, block->IsLast());
 }
 
 /*****************************************************************************
@@ -7197,14 +7157,24 @@ void CodeGen::genReturn(GenTree* treeNode)
         }
     }
 
+    const ReturnTypeDesc& retTypeDesc = compiler->compRetTypeDesc;
+
+    if (compiler->compMethodReturnsRetBufAddr())
+    {
+        gcInfo.gcMarkRegPtrVal(REG_INTRET, TYP_BYREF);
+    }
+    else
+    {
+        unsigned retRegCount = retTypeDesc.GetReturnRegCount();
+        for (unsigned i = 0; i < retRegCount; ++i)
+        {
+            gcInfo.gcMarkRegPtrVal(retTypeDesc.GetABIReturnReg(i, compiler->info.compCallConv),
+                                   retTypeDesc.GetReturnRegType(i));
+        }
+    }
+
 #ifdef PROFILING_SUPPORTED
-    // !! Note !!
-    // TODO-AMD64-Unix: If the profiler hook is implemented on *nix, make sure for 2 register returned structs
-    //                  the RAX and RDX needs to be kept alive. Make the necessary changes in lowerxarch.cpp
-    //                  in the handling of the GT_RETURN statement.
-    //                  Such structs containing GC pointers need to be handled by calling gcInfo.gcMarkRegSetNpt
-    //                  for the return registers containing GC refs.
-    //
+
     // Reason for not materializing Leave callback as a GT_PROF_HOOK node after GT_RETURN:
     // In flowgraph and other places assert that the last node of a block marked as
     // BBJ_RETURN is either a GT_RETURN or GT_JMP or a tail call.  It would be nice to
@@ -7215,46 +7185,7 @@ void CodeGen::genReturn(GenTree* treeNode)
     //
     if (treeNode->OperIs(GT_RETURN, GT_SWIFT_ERROR_RET) && compiler->compIsProfilerHookNeeded())
     {
-        // !! NOTE !!
-        // Since we are invalidating the assumption that we would slip into the epilog
-        // right after the "return", we need to preserve the return reg's GC state
-        // across the call until actual method return.
-
-        ReturnTypeDesc retTypeDesc = compiler->compRetTypeDesc;
-        unsigned       retRegCount = retTypeDesc.GetReturnRegCount();
-
-        if (compiler->compMethodReturnsRetBufAddr())
-        {
-            gcInfo.gcMarkRegPtrVal(REG_INTRET, TYP_BYREF);
-        }
-        else
-        {
-            for (unsigned i = 0; i < retRegCount; ++i)
-            {
-                if (varTypeIsGC(retTypeDesc.GetReturnRegType(i)))
-                {
-                    gcInfo.gcMarkRegPtrVal(retTypeDesc.GetABIReturnReg(i, compiler->info.compCallConv),
-                                           retTypeDesc.GetReturnRegType(i));
-                }
-            }
-        }
-
         genProfilingLeaveCallback(CORINFO_HELP_PROF_FCN_LEAVE);
-
-        if (compiler->compMethodReturnsRetBufAddr())
-        {
-            gcInfo.gcMarkRegSetNpt(genRegMask(REG_INTRET));
-        }
-        else
-        {
-            for (unsigned i = 0; i < retRegCount; ++i)
-            {
-                if (varTypeIsGC(retTypeDesc.GetReturnRegType(i)))
-                {
-                    gcInfo.gcMarkRegSetNpt(genRegMask(retTypeDesc.GetABIReturnReg(i, compiler->info.compCallConv)));
-                }
-            }
-        }
     }
 #endif // PROFILING_SUPPORTED
 
@@ -7505,6 +7436,12 @@ void CodeGen::genCallPlaceRegArgs(GenTreeCall* call)
                          /* canSkip */ true);
 
                 use = use->GetNext();
+
+                if (call->IsFastTailCall())
+                {
+                    // We won't actually consume the register here -- keep it alive into the epilog.
+                    gcInfo.gcMarkRegPtrVal(seg.GetRegister(), putArgRegNode->TypeGet());
+                }
             }
 
             assert(use == nullptr);
@@ -7530,6 +7467,12 @@ void CodeGen::genCallPlaceRegArgs(GenTreeCall* call)
                 var_types type     = argNode->AsPutArgSplit()->GetRegType(regIndex);
                 inst_Mov(genActualType(type), seg.GetRegister(), allocReg, /* canSkip */ true);
 
+                if (call->IsFastTailCall())
+                {
+                    // We won't actually consume the register here -- keep it alive into the epilog.
+                    gcInfo.gcMarkRegPtrVal(seg.GetRegister(), type);
+                }
+
                 regIndex++;
             }
 
@@ -7542,6 +7485,12 @@ void CodeGen::genCallPlaceRegArgs(GenTreeCall* call)
             regNumber argReg = abiInfo.Segment(0).GetRegister();
             genConsumeReg(argNode);
             inst_Mov(genActualType(argNode), argReg, argNode->GetRegNum(), /* canSkip */ true);
+
+            if (call->IsFastTailCall())
+            {
+                // We won't actually consume the register here -- keep it alive into the epilog.
+                gcInfo.gcMarkRegPtrVal(argReg, argNode->TypeGet());
+            }
             continue;
         }
 

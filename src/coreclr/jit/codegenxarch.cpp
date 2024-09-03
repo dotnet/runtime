@@ -96,35 +96,24 @@ void CodeGen::genEmitGSCookieCheck(bool pushReg)
 {
     noway_assert(compiler->gsGlobalSecurityCookieAddr || compiler->gsGlobalSecurityCookieVal);
 
-#ifdef JIT32_GCENCODER
-    if (!pushReg)
+#ifdef DEBUG
+    if (compiler->compMethodReturnsRetBufAddr())
     {
-        // Make sure that EAX is reported as live GC-ref so that any GC that kicks in while
-        // executing GS cookie check will not collect the object pointed to by EAX.
-        if (compiler->compMethodReturnsRetBufAddr())
+        assert((gcInfo.gcRegByrefSetCur & RBM_INTRET) != RBM_NONE);
+    }
+    else
+    {
+        const ReturnTypeDesc& retTypeDesc = compiler->compRetTypeDesc;
+        const unsigned        regCount    = retTypeDesc.GetReturnRegCount();
+
+        for (unsigned i = 0; i < regCount; ++i)
         {
-            // This is for returning in an implicit RetBuf.
-            // If the address of the buffer is returned in REG_INTRET, mark the content of INTRET as ByRef.
-
-            // In case the return is in an implicit RetBuf, the native return type should be a struct
-            assert(varTypeIsStruct(compiler->info.compRetNativeType));
-
-            gcInfo.gcMarkRegPtrVal(REG_INTRET, TYP_BYREF);
-        }
-        else
-        {
-            ReturnTypeDesc retTypeDesc = compiler->compRetTypeDesc;
-            const unsigned regCount    = retTypeDesc.GetReturnRegCount();
-
-            for (unsigned i = 0; i < regCount; ++i)
-            {
-                gcInfo.gcMarkRegPtrVal(retTypeDesc.GetABIReturnReg(i, compiler->info.compCallConv),
-                                       retTypeDesc.GetReturnRegType(i));
-            }
+            var_types type = retTypeDesc.GetReturnRegType(i);
+            regNumber reg  = retTypeDesc.GetABIReturnReg(i, compiler->info.compCallConv);
+            assert((type == TYP_BYREF) == ((gcInfo.gcRegByrefSetCur & genRegMask(reg)) != RBM_NONE));
+            assert((type == TYP_REF) == ((gcInfo.gcRegGCrefSetCur & genRegMask(reg)) != RBM_NONE));
         }
     }
-#else
-    assert(GetEmitter()->emitGCDisabled());
 #endif
 
     regNumber regGSCheck;
