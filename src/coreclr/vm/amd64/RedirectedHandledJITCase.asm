@@ -119,6 +119,7 @@ NESTED_ENTRY STUB, _TEXT, FILTER
         ; info.  After this push, unwinding will work.
         push            rcx
 
+        xor             rax, rax
         rdsspq          rax
 
         test            rsp, 0fh
