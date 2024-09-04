@@ -85,7 +85,7 @@ extern "C" BOOL QCALLTYPE ThreadNative_YieldThread();
 extern "C" UINT64 QCALLTYPE ThreadNative_GetCurrentOSThreadId();
 
 #ifdef FEATURE_COMINTEROP_APARTMENT_SUPPORT
-extern "C" INT32 QCALLTYPE ThreadNative_GetApartmentState(QCall::ThreadHandle thread);
+extern "C" INT32 QCALLTYPE ThreadNative_GetApartmentState(QCall::ObjectHandleOnStack t);
 extern "C" INT32 QCALLTYPE ThreadNative_SetApartmentState(QCall::ThreadHandle thread, INT32 iState);
 #endif // FEATURE_COMINTEROP_APARTMENT_SUPPORT
 

@@ -542,21 +542,23 @@ FCIMPLEND
 
 // Return whether the thread hosts an STA, is a member of the MTA or is not
 // currently initialized for COM.
-extern "C" INT32 QCALLTYPE ThreadNative_GetApartmentState(QCall::ThreadHandle thread)
+extern "C" INT32 QCALLTYPE ThreadNative_GetApartmentState(QCall::ObjectHandleOnStack t)
 {
-    CONTRACTL
-    {
-        QCALL_CHECK;
-        PRECONDITION(thread != NULL);
-    }
-    CONTRACTL_END;
+    QCALL_CONTRACT;
 
     INT32 retVal = 0;
 
     BEGIN_QCALL;
 
-    if (ThreadIsDead(thread))
-        COMPlusThrow(kThreadStateException, W("ThreadState_Dead_State"));
+    Thread* thread = NULL;
+    {
+        GCX_COOP();
+        THREADBASEREF threadRef = (THREADBASEREF)t.Get();
+        thread = threadRef->GetInternal();
+
+        if (ThreadIsDead(thread))
+            COMPlusThrow(kThreadStateException, W("ThreadState_Dead_State"));
+    }
 
     retVal = thread->GetApartment();
 

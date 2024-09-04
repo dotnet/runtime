@@ -258,16 +258,15 @@ namespace System.Threading
         /// </summary>
 #if FEATURE_COMINTEROP_APARTMENT_SUPPORT
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ThreadNative_GetApartmentState")]
-        private static partial int GetApartmentState(ThreadHandle t);
+        private static partial int GetApartmentState(ObjectHandleOnStack t);
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ThreadNative_SetApartmentState")]
         private static partial int SetApartmentState(ThreadHandle t, int state);
 
         public ApartmentState GetApartmentState()
         {
-            var state = (ApartmentState)GetApartmentState(GetNativeHandle());
-            GC.KeepAlive(this);
-            return state;
+            Thread _this = this;
+            return (ApartmentState)GetApartmentState(ObjectHandleOnStack.Create(ref _this));
         }
 
         private bool SetApartmentStateUnchecked(ApartmentState state, bool throwOnError)
