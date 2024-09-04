@@ -66,6 +66,7 @@ namespace ILCompiler.DependencyAnalysis
         protected readonly TypeDesc _type;
         private readonly WritableDataNode _writableDataNode;
         protected bool? _mightHaveInterfaceDispatchMap;
+        private bool _hasConditionalDependenciesFromMetadataManager;
 
         protected readonly VirtualMethodAnalysisFlags _virtualMethodAnalysisFlags;
 
@@ -92,6 +93,7 @@ namespace ILCompiler.DependencyAnalysis
             Debug.Assert(!type.IsRuntimeDeterminedSubtype);
             _type = type;
             _writableDataNode = !_type.IsCanonicalSubtype(CanonicalFormKind.Any) ? new WritableDataNode(this) : null;
+            _hasConditionalDependenciesFromMetadataManager = factory.MetadataManager.HasConditionalDependenciesDueToEETypePresence(type);
 
             if (EmitVirtualSlots)
                 _virtualMethodAnalysisFlags = AnalyzeVirtualMethods(type);
@@ -270,15 +272,62 @@ namespace ILCompiler.DependencyAnalysis
             }
         }
 
-        public sealed override bool HasConditionalStaticDependencies => true;
+        public sealed override bool HasConditionalStaticDependencies
+        {
+            get
+            {
+                // If the type is can be converted to some interesting canon type, and this is the non-constructed variant of an MethodTable
+                // we may need to trigger the fully constructed type to exist to make the behavior of the type consistent
+                // in reflection and generic template expansion scenarios
+                if (CanonFormTypeMayExist)
+                {
+                    return true;
+                }
+
+                // If the type implements at least one interface, calls against that interface could result in this type's
+                // implementation being used.
+                // It might also be necessary for casting purposes.
+                if (_type.RuntimeInterfaces.Length > 0)
+                    return true;
+
+                if (!EmitVirtualSlots)
+                    return false;
+
+                // Since the vtable is dependency driven, generate conditional static dependencies for
+                // all possible vtable entries.
+                //
+                // The conditional dependencies conditionally add the implementation of the virtual method
+                // if the virtual method is used.
+                //
+                // We walk the inheritance chain because abstract bases would only add a "tentative"
+                // method body of the implementation that can be trimmed away if no other type uses it.
+                DefType currentType = _type.GetClosestDefType();
+                while (currentType != null)
+                {
+                    if (currentType == _type || (currentType is MetadataType mdType && mdType.IsAbstract))
+                    {
+                        foreach (var method in currentType.GetAllVirtualMethods())
+                        {
+                            // Abstract methods don't have a body associated with it so there's no conditional
+                            // dependency to add.
+                            // Generic virtual methods are tracked by an orthogonal mechanism.
+                            if (!method.IsAbstract && !method.HasInstantiation)
+                                return true;
+                        }
+                    }
+
+                    currentType = currentType.BaseType;
+                }
+
+                return _hasConditionalDependenciesFromMetadataManager;
+            }
+        }
 
         public sealed override IEnumerable<CombinedDependencyListEntry> GetConditionalStaticDependencies(NodeFactory factory)
         {
             List<CombinedDependencyListEntry> result = new List<CombinedDependencyListEntry>();
 
             IEETypeNode maximallyConstructableType = factory.MaximallyConstructableType(_type);
-
-            factory.MetadataManager.GetConditionalDependenciesDueToEETypePresence(ref result, factory, _type, maximallyConstructableType == this);
 
             if (maximallyConstructableType != this)
             {
@@ -515,6 +564,8 @@ namespace ILCompiler.DependencyAnalysis
                     }
                 }
             }
+
+            factory.MetadataManager.GetConditionalDependenciesDueToEETypePresence(ref result, factory, _type);
 
             return result;
         }
