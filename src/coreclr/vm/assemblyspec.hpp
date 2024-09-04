@@ -45,7 +45,6 @@ class AssemblySpec  : public BaseAssemblySpec
     friend Assembly * Module::GetAssemblyIfLoaded(
                 mdAssemblyRef       kAssemblyRef,
                 IMDInternalImport * pMDImportOverride,
-                BOOL                fDoNotUtilizeExtraChecks,
                 AssemblyBinder      *pBinderForLoadedAssembly);
 
   public:
