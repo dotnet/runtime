@@ -10,7 +10,7 @@ typedef struct {
 
 typedef struct {
 	uint32_t token;
-	const char *name;
+	const char *key;
 	void *func;
 } UnmanagedCallersExport;
 

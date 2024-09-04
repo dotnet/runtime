@@ -44,30 +44,47 @@ wasm_dl_is_pinvoke_table (void *handle)
 	return 0;
 }
 
+static int
+compare_key (const void *k1, const void *k2)
+{
+	UnmanagedCallersExport *e1 = (UnmanagedCallersExport*)k1;
+	UnmanagedCallersExport *e2 = (UnmanagedCallersExport*)k2;
+
+	return strcmp (e1->key, e2->key);
+}
+
+static int
+compare_key_and_token (const void *k1, const void *k2)
+{
+	UnmanagedCallersExport *e1 = (UnmanagedCallersExport*)k1;
+	UnmanagedCallersExport *e2 = (UnmanagedCallersExport*)k2;
+
+	int compare = strcmp (e1->key, e2->key);
+	if (compare)
+		return compare;
+
+	return e1->token - e2->token;
+}
+
 void*
 wasm_dl_get_native_to_interp (uint32_t token, const char *key, void *extra_arg)
 {
 #ifdef GEN_PINVOKE
-	for (int i = 0; wasm_native_to_interp_table [i].name != NULL; ++i) {
-		if (token == wasm_native_to_interp_table [i].token) {
-			if (strcmp (wasm_native_to_interp_table [i].name, key)) {
-				// It appears the assembly has been modified Fall back to name+count based lookup
-				break;
-			}
-			void *addr = wasm_native_to_interp_table [i].func;
-			wasm_native_to_interp_ftndescs [i] = *(InterpFtnDesc*)extra_arg;
-			return addr;
-		}
+	// Do a binary search on the key + token
+	UnmanagedCallersExport needle = { token, key, NULL };
+	int size = (sizeof (wasm_native_to_interp_table) / sizeof (UnmanagedCallersExport)) - 1;
+	
+	UnmanagedCallersExport *result = bsearch (&needle, wasm_native_to_interp_table, size, sizeof (UnmanagedCallersExport), compare_key_and_token);
+	if (!result) { // try again with just the key
+		result = bsearch (&needle, wasm_native_to_interp_table, size, sizeof (UnmanagedCallersExport), compare_key);
 	}
 
-	for (int i = 0; wasm_native_to_interp_table [i].name != NULL; ++i) {
-		if (!strcmp (wasm_native_to_interp_table [i].name, key)) {
-			void *addr = wasm_native_to_interp_table [i].func;
-			wasm_native_to_interp_ftndescs [i] = *(InterpFtnDesc*)extra_arg;
-			return addr;
-		}
+	if (!result) {
+		return NULL;
 	}
-	return NULL;
+	void *addr = result->func;
+	wasm_native_to_interp_ftndescs [result - wasm_native_to_interp_table] = *(InterpFtnDesc*)extra_arg;
+	return addr;
 #else
 	return NULL;
 #endif

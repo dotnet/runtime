@@ -214,7 +214,6 @@ get_native_to_interp (MonoMethod *method, void *extra_arg)
 	uint32_t param_count = mono_signature_get_param_count (sig);
 	uint32_t token = mono_method_get_token (method);
 
-
 	char buf [128];
 	char *key = buf;
 	int len;
@@ -232,7 +231,7 @@ get_native_to_interp (MonoMethod *method, void *extra_arg)
 
 	addr = wasm_dl_get_native_to_interp (token, key, extra_arg);
 
-	if (len >= sizeof (buf))
+	if (key != buf)
 		free (key);
 
 	MONO_EXIT_GC_UNSAFE;

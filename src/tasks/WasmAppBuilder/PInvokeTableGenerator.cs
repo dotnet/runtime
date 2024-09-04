@@ -140,13 +140,13 @@ internal sealed class PInvokeTableGenerator
                 .OrderBy(l => l.EntryPoint)
                 .GroupBy(d => d.EntryPoint)
                 .Select(l => $"{{\"{EscapeLiteral(l.Key)}\", {CEntryPoint(l.First())}}}, "
-                    + "// " + string.Join(", ", l.Select(c => c.Method.DeclaringType!.Module!.Assembly!.GetName()!.Name!).Distinct().OrderBy(n => n))) + w.NewLine;
+                    + "// " + string.Join(", ", l.Select(c => c.Method.DeclaringType!.Module!.Assembly!.GetName()!.Name!).Distinct().OrderBy(n => n)))
+                .Append("{NULL, NULL}");
 
             w.Write(
                 $$"""
                 static PinvokeImport {{_fixupSymbolName(module)}}_imports [] = {
-                    {{string.Join("", assemblies_pinvokes)
-                    }}{NULL, NULL}
+                    {{string.Join($"{w.NewLine}    ", assemblies_pinvokes)}}
                 };
 
                 """);
@@ -323,6 +323,18 @@ internal sealed class PInvokeTableGenerator
         return sb.ToString();
     }
 
+    internal sealed class PInvokeCallbackComparer : IComparer<PInvokeCallback>
+    {
+        public int Compare(PInvokeCallback? x, PInvokeCallback? y)
+        {
+            int compare = string.Compare(x!.Key, y!.Key, StringComparison.Ordinal);
+            if (compare != 0) {
+                return compare;
+            }
+            return (int)(x.Token) - (int)(y.Token);
+        }
+    }
+
     private void EmitNativeToInterp(StreamWriter w, List<PInvokeCallback> callbacks)
     {
         // Generate native->interp entry functions
@@ -341,9 +353,11 @@ internal sealed class PInvokeTableGenerator
 
             """);
 
+
         var callbackNames = new HashSet<string>();
         var keys = new HashSet<string>();
         int cb_index = 0;
+        callbacks = callbacks.OrderBy(c => c, new PInvokeCallbackComparer()).ToList();
         foreach (var cb in callbacks)
         {
             cb.EntrySymbol = CEntryPoint(cb);
@@ -376,7 +390,7 @@ internal sealed class PInvokeTableGenerator
                 {{MapType(cb.ReturnType)}}
                 {{cb.EntrySymbol}} ({{cb.Parameters.Join(", ", (info, i) => $"{MapType(info.ParameterType)} arg{i}")}}) {
                     typedef void (*InterpEntry_T{{cb_index}}) ({{interpEntryArgs.Join(", ", _ => "int*")}});{{
-                    (!cb.IsVoid ? $"{w.NewLine}{MapType(cb.ReturnType)} result;" : "")}}
+                    (!cb.IsVoid ? $"{w.NewLine}    {MapType(cb.ReturnType)} result;" : "")}}
 
                     if (!(InterpEntry_T{{cb_index}})wasm_native_to_interp_ftndescs [{{cb_index}}].func) {
                         {{(cb.IsExport && _isLibraryMode ? "initialize_runtime(); " : "")}}// ensure the ftndescs and runtime are initialized when required
@@ -384,7 +398,7 @@ internal sealed class PInvokeTableGenerator
                     }
 
                     ((InterpEntry_T{{cb_index}})wasm_native_to_interp_ftndescs [{{cb_index}}].func) ({{interpEntryArgs.Join(", ")}});{{
-                    (!cb.IsVoid ?  $"{w.NewLine}return result;" : "")}}
+                    (!cb.IsVoid ?  $"{w.NewLine}    return result;" : "")}}
                 }
 
                 """);
@@ -395,8 +409,8 @@ internal sealed class PInvokeTableGenerator
             $$"""
 
             static UnmanagedCallersExport wasm_native_to_interp_table[] = {
-                {{callbacks.Join("", cb => $"    {{{cb.Token}, \"{EscapeLiteral(cb.Key)}\", {cb.EntrySymbol}}},{w.NewLine}")
-                }}{NULL, NULL}
+                {{callbacks.Join("", cb => $"{{{cb.Token}, \"{EscapeLiteral(cb.Key)}\", {cb.EntrySymbol}}},{w.NewLine}    ")
+                }}{0, NULL, NULL}
             };
 
             """);
