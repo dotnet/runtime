@@ -310,7 +310,7 @@ namespace Tests.System
             }
             catch (Exception e)
             {
-                Assert.Fail(string.Format("RunDelayTests:    > FAILED.  Unexpected exception on WaitAll(simple tasks): {0}", e));
+                Assert.Fail($"RunDelayTests:    > FAILED.  Unexpected exception on WaitAll(simple tasks): {e}");
             }
 
             Assert.True(task1.Status == TaskStatus.RanToCompletion, "    > FAILED.  Expected Delay(TimeSpan(0), timeProvider) to run to completion");
@@ -318,16 +318,9 @@ namespace Tests.System
 
             // This should complete quickly with a CANCELED status.
             Task task3 = taskFactory.Delay(provider, new TimeSpan(0), new CancellationToken(true));
-            try
-            {
-                var e = Assert.Throws<AggregateException>(task3.Wait);
-                Assert.IsAssignableFrom<OperationCanceledException>(e.InnerException);
-            }
-            catch (Exception e)
-            {
-                Assert.Fail(string.Format("RunDelayTests:    > FAILED.  Unexpected exception on canceled task Wait(): {0}", e));
-            }
-
+            var canceledException = Record.Exception(task3.Wait);
+            Assert.True(canceledException is AggregateException { InnerException: OperationCanceledException },
+                $"RunDelayTests:    > FAILED.  Unexpected exception on canceled task Wait(): {canceledException}");
             Assert.True(task3.Status == TaskStatus.Canceled, "    > FAILED.  Expected Delay(timeProvider, TimeSpan(0), canceledToken) to be canceled");
 
             // This should take some time
