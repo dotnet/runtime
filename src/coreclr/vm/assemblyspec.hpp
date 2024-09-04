@@ -174,8 +174,6 @@ class AssemblySpec  : public BaseAssemblySpec
 
     Assembly *LoadAssembly(FileLoadLevel targetLevel,
                            BOOL fThrowOnFileNotFound = TRUE);
-    DomainAssembly *LoadDomainAssembly(FileLoadLevel targetLevel,
-                                       BOOL fThrowOnFileNotFound = TRUE);
 
   public: // static
     // Creates and loads an assembly based on the name and context.
