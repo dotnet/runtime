@@ -138,6 +138,10 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 BindCore(section3, ref temp5, defaultValueIfNotFound: false, binderOptions);
                 instance.MyList = temp5;
             }
+            else
+            {
+                instance.MyList = instance.MyList;
+            }
         }
 
 
