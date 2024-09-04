@@ -248,6 +248,10 @@ public sealed class ConditionalTest : ITestInfo
         {
             platformCheckConditions.Add("global::System.OperatingSystem.IsBrowser()");
         }
+        if (platform.HasFlag(Xunit.TestPlatforms.Wasi))
+        {
+            platformCheckConditions.Add("global::System.OperatingSystem.IsWasi()");
+        }
         if (platform.HasFlag(Xunit.TestPlatforms.FreeBSD))
         {
             platformCheckConditions.Add(@"global::System.OperatingSystem.IsFreeBSD()");
