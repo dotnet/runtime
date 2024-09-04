@@ -9186,25 +9186,21 @@ CorInfoType CEEInfo::getFieldTypeInternal (CORINFO_FIELD_HANDLE fieldHnd,
         TypeHandle hintedFieldOwner = TypeHandle(fieldOwnerHint);
 
         // Validate the hint:
-        bool isHintValid = false;
+        TypeHandle moreExactFieldOwner = TypeHandle();
         if (!hintedFieldOwner.IsNull() && !hintedFieldOwner.IsTypeDesc())
         {
-            MethodTable* hintedFieldOwnerParent = hintedFieldOwner.AsMethodTable();
-            if (hintedFieldOwnerParent->HasSameTypeDefAs(actualFieldsOwner))
+            MethodTable* matchingHintedFieldOwner = hintedFieldOwner.AsMethodTable()->GetMethodTableMatchingParentClass(actualFieldsOwner);
+            if (matchingHintedFieldOwner != NULL)
             {
-                // if actualFieldsOwner has the same definition as hintedFieldOwner, we
-                // take hintedFieldOwner only if actualFieldsOwner is shared and hintedFieldOwner
+                // we take matchingHintedFieldOwner only if actualFieldsOwner is shared and matchingHintedFieldOwner
                 // is not, hence, it's definitely more exact.
-                isHintValid = TypeHandle(actualFieldsOwner).IsCanonicalSubtype() &&
-                    !hintedFieldOwner.IsCanonicalSubtype();
-            }
-            else if (hintedFieldOwnerParent->GetMethodTableMatchingParentClass(actualFieldsOwner) != nullptr)
-            {
-                // Otherwise, use hintedFieldOwner only if it's a subclass of actualFieldsOwner
-                isHintValid = true;
+                if (actualFieldsOwner->IsSharedByGenericInstantiations() &&
+                    !matchingHintedFieldOwner->IsSharedByGenericInstantiations())
+                {
+                    moreExactFieldOwner  = matchingHintedFieldOwner;
+                }
             }
         }
-        hintedFieldOwner = isHintValid ? hintedFieldOwner : TypeHandle();
 
         // For verifying code involving generics, use the class instantiation
         // of the optional owner (to provide exact, not representative,
