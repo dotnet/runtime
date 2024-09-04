@@ -5705,9 +5705,6 @@ void AdjustContextForThreadStop(Thread* pThread,
 
     pThread->ResetThrowControlForThread();
 
-    // Should never get here if we're already throwing an exception.
-    _ASSERTE(!pThread->IsExceptionInProgress() || pThread->IsRudeAbort());
-
     // Should never get here if we're already abort initiated.
     _ASSERTE(!pThread->IsAbortInitiated() || pThread->IsRudeAbort());
 
@@ -6281,6 +6278,10 @@ void HandleManagedFaultNew(EXCEPTION_RECORD* pExceptionRecord, CONTEXT* pContext
     *frame->GetGSCookiePtr() = GetProcessGSCookie();
 #endif // FEATURE_EH_FUNCLETS
     frame->InitAndLink(pContext);
+
+#if defined(TARGET_AMD64) && defined(TARGET_WINDOWS)
+    frame->SetSSP(GetSSP(pContext));
+#endif
 
     Thread *pThread = GetThread();
 
