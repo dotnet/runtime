@@ -23,6 +23,7 @@ namespace System.IO
         private readonly Encoding _encoding;
         private readonly bool _leaveOpen;
         private readonly bool _useFastUtf8;
+        private readonly bool _isDerivedWriter;
 
         // Protected default constructor that sets the output stream
         // to a null stream (a bit bucket).
@@ -31,6 +32,7 @@ namespace System.IO
             OutStream = Stream.Null;
             _encoding = Encoding.UTF8;
             _useFastUtf8 = true;
+            _isDerivedWriter = GetType() != typeof(BinaryWriter)
         }
 
         // BinaryWriter never emits a BOM, so can use Encoding.UTF8 fast singleton
@@ -54,6 +56,7 @@ namespace System.IO
             _encoding = encoding;
             _leaveOpen = leaveOpen;
             _useFastUtf8 = encoding.IsUTF8CodePage && encoding.EncoderFallback.MaxCharCount <= 1;
+            _isDerivedWriter = GetType() != typeof(BinaryWriter)
         }
 
         // Closes this writer and releases any system resources associated with the
@@ -353,7 +356,10 @@ namespace System.IO
 
             if (_useFastUtf8)
             {
-                if (value.Length <= 127 / 3)
+                // If this is a non-derived BinaryWriter, then we can bypass the Write7BitEncodedInt call.
+                // But when this is a derived instance, call must not bypass it for compatibility reasons
+                // as it calls the virtual Write(int) overload.
+                if (!_isDerivedWriter && value.Length <= 127 / 3)
                 {
                     // Max expansion: each char -> 3 bytes, so 127 bytes max of data, +1 for length prefix
                     Span<byte> buffer = stackalloc byte[128];
