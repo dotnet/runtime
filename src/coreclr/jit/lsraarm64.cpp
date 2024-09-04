@@ -1550,191 +1550,6 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
 
     int srcCount = 0;
 
-    const bool hasImmediateOperand = HWIntrinsicInfo::HasImmediateOperand(intrin.id);
-
-    if (hasImmediateOperand && !HWIntrinsicInfo::NoJmpTableImm(intrin.id))
-    {
-        // We may need to allocate an additional general-purpose register when an intrinsic has a non-const immediate
-        // operand and the intrinsic does not have an alternative non-const fallback form.
-        // However, for a case when the operand can take only two possible values - zero and one
-        // the codegen can use cbnz to do conditional branch, so such register is not needed.
-
-        bool needBranchTargetReg = false;
-
-        int immLowerBound = 0;
-        int immUpperBound = 0;
-
-        if (intrin.category == HW_Category_SIMDByIndexedElement)
-        {
-            var_types indexedElementOpType;
-
-            if (intrin.numOperands == 2)
-            {
-                indexedElementOpType = intrin.op1->TypeGet();
-            }
-            else if (intrin.numOperands == 3)
-            {
-                indexedElementOpType = intrin.op2->TypeGet();
-            }
-            else
-            {
-                assert(intrin.numOperands == 4);
-                indexedElementOpType = intrin.op3->TypeGet();
-            }
-
-            assert(varTypeIsSIMD(indexedElementOpType));
-
-            const unsigned int indexedElementSimdSize = genTypeSize(indexedElementOpType);
-            HWIntrinsicInfo::lookupImmBounds(intrin.id, indexedElementSimdSize, intrin.baseType, 1, &immLowerBound,
-                                             &immUpperBound);
-        }
-        else
-        {
-            HWIntrinsicInfo::lookupImmBounds(intrin.id, intrinsicTree->GetSimdSize(), intrin.baseType, 1,
-                                             &immLowerBound, &immUpperBound);
-        }
-
-        if ((immLowerBound != 0) || (immUpperBound != 1))
-        {
-            if ((intrin.category == HW_Category_SIMDByIndexedElement) ||
-                (intrin.category == HW_Category_ShiftLeftByImmediate) ||
-                (intrin.category == HW_Category_ShiftRightByImmediate))
-            {
-                switch (intrin.numOperands)
-                {
-                    case 4:
-                        needBranchTargetReg = !intrin.op4->isContainedIntOrIImmed();
-                        break;
-
-                    case 3:
-                        needBranchTargetReg = !intrin.op3->isContainedIntOrIImmed();
-                        break;
-
-                    case 2:
-                        needBranchTargetReg = !intrin.op2->isContainedIntOrIImmed();
-                        break;
-
-                    default:
-                        unreached();
-                }
-            }
-            else
-            {
-                switch (intrin.id)
-                {
-                    case NI_AdvSimd_DuplicateSelectedScalarToVector64:
-                    case NI_AdvSimd_DuplicateSelectedScalarToVector128:
-                    case NI_AdvSimd_Extract:
-                    case NI_AdvSimd_Insert:
-                    case NI_AdvSimd_InsertScalar:
-                    case NI_AdvSimd_LoadAndInsertScalar:
-                    case NI_AdvSimd_LoadAndInsertScalarVector64x2:
-                    case NI_AdvSimd_LoadAndInsertScalarVector64x3:
-                    case NI_AdvSimd_LoadAndInsertScalarVector64x4:
-                    case NI_AdvSimd_Arm64_LoadAndInsertScalarVector128x2:
-                    case NI_AdvSimd_Arm64_LoadAndInsertScalarVector128x3:
-                    case NI_AdvSimd_Arm64_LoadAndInsertScalarVector128x4:
-                    case NI_AdvSimd_Arm64_DuplicateSelectedScalarToVector128:
-                        needBranchTargetReg = !intrin.op2->isContainedIntOrIImmed();
-                        break;
-
-                    case NI_AdvSimd_ExtractVector64:
-                    case NI_AdvSimd_ExtractVector128:
-                    case NI_AdvSimd_StoreSelectedScalar:
-                    case NI_AdvSimd_Arm64_StoreSelectedScalar:
-                    case NI_Sve_PrefetchBytes:
-                    case NI_Sve_PrefetchInt16:
-                    case NI_Sve_PrefetchInt32:
-                    case NI_Sve_PrefetchInt64:
-                    case NI_Sve_ExtractVector:
-                    case NI_Sve_TrigonometricMultiplyAddCoefficient:
-                        needBranchTargetReg = !intrin.op3->isContainedIntOrIImmed();
-                        break;
-
-                    case NI_AdvSimd_Arm64_InsertSelectedScalar:
-                        assert(intrin.op2->isContainedIntOrIImmed());
-                        assert(intrin.op4->isContainedIntOrIImmed());
-                        break;
-
-                    case NI_Sve_CreateTrueMaskByte:
-                    case NI_Sve_CreateTrueMaskDouble:
-                    case NI_Sve_CreateTrueMaskInt16:
-                    case NI_Sve_CreateTrueMaskInt32:
-                    case NI_Sve_CreateTrueMaskInt64:
-                    case NI_Sve_CreateTrueMaskSByte:
-                    case NI_Sve_CreateTrueMaskSingle:
-                    case NI_Sve_CreateTrueMaskUInt16:
-                    case NI_Sve_CreateTrueMaskUInt32:
-                    case NI_Sve_CreateTrueMaskUInt64:
-                    case NI_Sve_Count16BitElements:
-                    case NI_Sve_Count32BitElements:
-                    case NI_Sve_Count64BitElements:
-                    case NI_Sve_Count8BitElements:
-                        needBranchTargetReg = !intrin.op1->isContainedIntOrIImmed();
-                        break;
-
-                    case NI_Sve_GatherPrefetch8Bit:
-                    case NI_Sve_GatherPrefetch16Bit:
-                    case NI_Sve_GatherPrefetch32Bit:
-                    case NI_Sve_GatherPrefetch64Bit:
-                        if (!varTypeIsSIMD(intrin.op2->gtType))
-                        {
-                            needBranchTargetReg = !intrin.op4->isContainedIntOrIImmed();
-                        }
-                        else
-                        {
-                            needBranchTargetReg = !intrin.op3->isContainedIntOrIImmed();
-                        }
-                        break;
-
-                    case NI_Sve_SaturatingDecrementBy16BitElementCount:
-                    case NI_Sve_SaturatingDecrementBy32BitElementCount:
-                    case NI_Sve_SaturatingDecrementBy64BitElementCount:
-                    case NI_Sve_SaturatingDecrementBy8BitElementCount:
-                    case NI_Sve_SaturatingIncrementBy16BitElementCount:
-                    case NI_Sve_SaturatingIncrementBy32BitElementCount:
-                    case NI_Sve_SaturatingIncrementBy64BitElementCount:
-                    case NI_Sve_SaturatingIncrementBy8BitElementCount:
-                    case NI_Sve_SaturatingDecrementBy16BitElementCountScalar:
-                    case NI_Sve_SaturatingDecrementBy32BitElementCountScalar:
-                    case NI_Sve_SaturatingDecrementBy64BitElementCountScalar:
-                    case NI_Sve_SaturatingIncrementBy16BitElementCountScalar:
-                    case NI_Sve_SaturatingIncrementBy32BitElementCountScalar:
-                    case NI_Sve_SaturatingIncrementBy64BitElementCountScalar:
-                        // Can only avoid generating a table if both immediates are constant.
-                        assert(intrin.op2->isContainedIntOrIImmed() == intrin.op3->isContainedIntOrIImmed());
-                        needBranchTargetReg = !intrin.op2->isContainedIntOrIImmed();
-                        // Ensure that internal does not collide with destination.
-                        setInternalRegsDelayFree = true;
-                        break;
-
-                    case NI_Sve_MultiplyAddRotateComplexBySelectedScalar:
-                        // This API has two immediates, one of which is used to index pairs of floats in a vector.
-                        // For a vector width of 128 bits, this means the index's range is [0, 1],
-                        // which means we will skip the above jump table register check,
-                        // even though we might need a jump table for the second immediate.
-                        // Thus, this API is special-cased, and does not use the HW_Category_SIMDByIndexedElement path.
-                        // Also, only one internal register is needed for the jump table;
-                        // we will combine the two immediates into one jump table.
-
-                        // Can only avoid generating a table if both immediates are constant.
-                        assert(intrin.op4->isContainedIntOrIImmed() == intrin.op5->isContainedIntOrIImmed());
-                        needBranchTargetReg = !intrin.op4->isContainedIntOrIImmed();
-                        // Ensure that internal does not collide with destination.
-                        setInternalRegsDelayFree = true;
-                        break;
-
-                    default:
-                        unreached();
-                }
-            }
-        }
-
-        if (needBranchTargetReg)
-        {
-            buildInternalIntRegisterDefForNode(intrinsicTree);
-        }
-    }
 
     // ConditionalSelect with embedded masked operations require special handling
     if ((intrin.id == NI_Sve_ConditionalSelect) && (intrin.op2->IsEmbMaskOp()))
@@ -1754,6 +1569,10 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
     // Determine whether this is an operation where one of the ops has consecutive registers
     bool destIsConsecutive = false;
     GenTree* consecutiveOp = getConsecutiveRegistersOperand(intrinsicTree, &destIsConsecutive);
+
+    // Build any immediates
+    bool hasImmediateOperand = buildHWIntrinsicImmediate(intrinsicTree, intrin);
+
 
     if (intrin.op1 != nullptr)
     {
@@ -2467,6 +2286,208 @@ GenTree* LinearScan::getConsecutiveRegistersOperand(const HWIntrinsic intrin, bo
 
     return consecutiveOp;
 }
+
+//------------------------------------------------------------------------
+// buildHWIntrinsicImmediate: Build immediate values
+//
+// Arguments:
+//    intrinsicTree - Intrinsic to check
+//    intrin - Intrin to check
+//
+// Return Value:
+//    True if the intrinsic contains an immediate
+//
+bool LinearScan::buildHWIntrinsicImmediate(GenTreeHWIntrinsic* intrinsicTree, const HWIntrinsic intrin)
+{
+    const bool hasImmediateOperand = HWIntrinsicInfo::HasImmediateOperand(intrin.id);
+
+    if (hasImmediateOperand && !HWIntrinsicInfo::NoJmpTableImm(intrin.id))
+    {
+        // We may need to allocate an additional general-purpose register when an intrinsic has a non-const immediate
+        // operand and the intrinsic does not have an alternative non-const fallback form.
+        // However, for a case when the operand can take only two possible values - zero and one
+        // the codegen can use cbnz to do conditional branch, so such register is not needed.
+
+        bool needBranchTargetReg = false;
+
+        int immLowerBound = 0;
+        int immUpperBound = 0;
+
+        if (intrin.category == HW_Category_SIMDByIndexedElement)
+        {
+            var_types indexedElementOpType;
+
+            if (intrin.numOperands == 2)
+            {
+                indexedElementOpType = intrin.op1->TypeGet();
+            }
+            else if (intrin.numOperands == 3)
+            {
+                indexedElementOpType = intrin.op2->TypeGet();
+            }
+            else
+            {
+                assert(intrin.numOperands == 4);
+                indexedElementOpType = intrin.op3->TypeGet();
+            }
+
+            assert(varTypeIsSIMD(indexedElementOpType));
+
+            const unsigned int indexedElementSimdSize = genTypeSize(indexedElementOpType);
+            HWIntrinsicInfo::lookupImmBounds(intrin.id, indexedElementSimdSize, intrin.baseType, 1, &immLowerBound,
+                                             &immUpperBound);
+        }
+        else
+        {
+            HWIntrinsicInfo::lookupImmBounds(intrin.id, intrinsicTree->GetSimdSize(), intrin.baseType, 1,
+                                             &immLowerBound, &immUpperBound);
+        }
+
+        if ((immLowerBound != 0) || (immUpperBound != 1))
+        {
+            if ((intrin.category == HW_Category_SIMDByIndexedElement) ||
+                (intrin.category == HW_Category_ShiftLeftByImmediate) ||
+                (intrin.category == HW_Category_ShiftRightByImmediate))
+            {
+                switch (intrin.numOperands)
+                {
+                    case 4:
+                        needBranchTargetReg = !intrin.op4->isContainedIntOrIImmed();
+                        break;
+
+                    case 3:
+                        needBranchTargetReg = !intrin.op3->isContainedIntOrIImmed();
+                        break;
+
+                    case 2:
+                        needBranchTargetReg = !intrin.op2->isContainedIntOrIImmed();
+                        break;
+
+                    default:
+                        unreached();
+                }
+            }
+            else
+            {
+                switch (intrin.id)
+                {
+                    case NI_AdvSimd_DuplicateSelectedScalarToVector64:
+                    case NI_AdvSimd_DuplicateSelectedScalarToVector128:
+                    case NI_AdvSimd_Extract:
+                    case NI_AdvSimd_Insert:
+                    case NI_AdvSimd_InsertScalar:
+                    case NI_AdvSimd_LoadAndInsertScalar:
+                    case NI_AdvSimd_LoadAndInsertScalarVector64x2:
+                    case NI_AdvSimd_LoadAndInsertScalarVector64x3:
+                    case NI_AdvSimd_LoadAndInsertScalarVector64x4:
+                    case NI_AdvSimd_Arm64_LoadAndInsertScalarVector128x2:
+                    case NI_AdvSimd_Arm64_LoadAndInsertScalarVector128x3:
+                    case NI_AdvSimd_Arm64_LoadAndInsertScalarVector128x4:
+                    case NI_AdvSimd_Arm64_DuplicateSelectedScalarToVector128:
+                        needBranchTargetReg = !intrin.op2->isContainedIntOrIImmed();
+                        break;
+
+                    case NI_AdvSimd_ExtractVector64:
+                    case NI_AdvSimd_ExtractVector128:
+                    case NI_AdvSimd_StoreSelectedScalar:
+                    case NI_AdvSimd_Arm64_StoreSelectedScalar:
+                    case NI_Sve_PrefetchBytes:
+                    case NI_Sve_PrefetchInt16:
+                    case NI_Sve_PrefetchInt32:
+                    case NI_Sve_PrefetchInt64:
+                    case NI_Sve_ExtractVector:
+                    case NI_Sve_TrigonometricMultiplyAddCoefficient:
+                        needBranchTargetReg = !intrin.op3->isContainedIntOrIImmed();
+                        break;
+
+                    case NI_AdvSimd_Arm64_InsertSelectedScalar:
+                        assert(intrin.op2->isContainedIntOrIImmed());
+                        assert(intrin.op4->isContainedIntOrIImmed());
+                        break;
+
+                    case NI_Sve_CreateTrueMaskByte:
+                    case NI_Sve_CreateTrueMaskDouble:
+                    case NI_Sve_CreateTrueMaskInt16:
+                    case NI_Sve_CreateTrueMaskInt32:
+                    case NI_Sve_CreateTrueMaskInt64:
+                    case NI_Sve_CreateTrueMaskSByte:
+                    case NI_Sve_CreateTrueMaskSingle:
+                    case NI_Sve_CreateTrueMaskUInt16:
+                    case NI_Sve_CreateTrueMaskUInt32:
+                    case NI_Sve_CreateTrueMaskUInt64:
+                    case NI_Sve_Count16BitElements:
+                    case NI_Sve_Count32BitElements:
+                    case NI_Sve_Count64BitElements:
+                    case NI_Sve_Count8BitElements:
+                        needBranchTargetReg = !intrin.op1->isContainedIntOrIImmed();
+                        break;
+
+                    case NI_Sve_GatherPrefetch8Bit:
+                    case NI_Sve_GatherPrefetch16Bit:
+                    case NI_Sve_GatherPrefetch32Bit:
+                    case NI_Sve_GatherPrefetch64Bit:
+                        if (!varTypeIsSIMD(intrin.op2->gtType))
+                        {
+                            needBranchTargetReg = !intrin.op4->isContainedIntOrIImmed();
+                        }
+                        else
+                        {
+                            needBranchTargetReg = !intrin.op3->isContainedIntOrIImmed();
+                        }
+                        break;
+
+                    case NI_Sve_SaturatingDecrementBy16BitElementCount:
+                    case NI_Sve_SaturatingDecrementBy32BitElementCount:
+                    case NI_Sve_SaturatingDecrementBy64BitElementCount:
+                    case NI_Sve_SaturatingDecrementBy8BitElementCount:
+                    case NI_Sve_SaturatingIncrementBy16BitElementCount:
+                    case NI_Sve_SaturatingIncrementBy32BitElementCount:
+                    case NI_Sve_SaturatingIncrementBy64BitElementCount:
+                    case NI_Sve_SaturatingIncrementBy8BitElementCount:
+                    case NI_Sve_SaturatingDecrementBy16BitElementCountScalar:
+                    case NI_Sve_SaturatingDecrementBy32BitElementCountScalar:
+                    case NI_Sve_SaturatingDecrementBy64BitElementCountScalar:
+                    case NI_Sve_SaturatingIncrementBy16BitElementCountScalar:
+                    case NI_Sve_SaturatingIncrementBy32BitElementCountScalar:
+                    case NI_Sve_SaturatingIncrementBy64BitElementCountScalar:
+                        // Can only avoid generating a table if both immediates are constant.
+                        assert(intrin.op2->isContainedIntOrIImmed() == intrin.op3->isContainedIntOrIImmed());
+                        needBranchTargetReg = !intrin.op2->isContainedIntOrIImmed();
+                        // Ensure that internal does not collide with destination.
+                        setInternalRegsDelayFree = true;
+                        break;
+
+                    case NI_Sve_MultiplyAddRotateComplexBySelectedScalar:
+                        // This API has two immediates, one of which is used to index pairs of floats in a vector.
+                        // For a vector width of 128 bits, this means the index's range is [0, 1],
+                        // which means we will skip the above jump table register check,
+                        // even though we might need a jump table for the second immediate.
+                        // Thus, this API is special-cased, and does not use the HW_Category_SIMDByIndexedElement path.
+                        // Also, only one internal register is needed for the jump table;
+                        // we will combine the two immediates into one jump table.
+
+                        // Can only avoid generating a table if both immediates are constant.
+                        assert(intrin.op4->isContainedIntOrIImmed() == intrin.op5->isContainedIntOrIImmed());
+                        needBranchTargetReg = !intrin.op4->isContainedIntOrIImmed();
+                        // Ensure that internal does not collide with destination.
+                        setInternalRegsDelayFree = true;
+                        break;
+
+                    default:
+                        unreached();
+                }
+            }
+        }
+
+        if (needBranchTargetReg)
+        {
+            buildInternalIntRegisterDefForNode(intrinsicTree);
+        }
+    }
+
+    return hasImmediateOperand;
+}
+
 
 //------------------------------------------------------------------------
 // BuildOperand: Build an operand in the correct way
