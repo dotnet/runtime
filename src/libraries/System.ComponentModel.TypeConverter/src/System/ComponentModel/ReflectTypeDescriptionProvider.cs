@@ -23,10 +23,8 @@ namespace System.ComponentModel
     /// </summary>
     internal sealed partial class ReflectTypeDescriptionProvider : TypeDescriptionProvider
     {
-        // Hastable of Type -> ReflectedTypeData. ReflectedTypeData contains all
-        // of the type information we have gathered for a given type.
-        //
-        private Hashtable? _typeData;
+        // ReflectedTypeData contains all of the type information we have gathered for a given type.
+        private Dictionary<Type, ReflectedTypeData>? _typeData;
 
         // This is the signature we look for when creating types that are generic, but
         // want to know what type they are dealing with. Enums are a good example of this;
@@ -81,8 +79,6 @@ namespace System.ComponentModel
 
         internal static Guid ExtenderProviderKey { get; } = Guid.NewGuid();
 
-
-        private static readonly object s_internalSyncObject = new object();
         /// <summary>
         /// Creates a new ReflectTypeDescriptionProvider. The type is the
         /// type we will obtain type information for.
@@ -234,7 +230,7 @@ namespace System.ComponentModel
                 // don't throw; RTM didn't so we can't do it either.
             }
 
-            lock (s_internalSyncObject)
+            lock (TypeDescriptor.s_commonSyncObject)
             {
                 Hashtable editorTables = EditorTables;
                 if (!editorTables.ContainsKey(editorBaseType))
@@ -421,7 +417,7 @@ namespace System.ComponentModel
                 //
                 if (table == null)
                 {
-                    lock (s_internalSyncObject)
+                    lock (TypeDescriptor.s_commonSyncObject)
                     {
                         table = editorTables[editorBaseType];
                         if (table == null)
@@ -838,20 +834,16 @@ namespace System.ComponentModel
         {
             List<Type> typeList = new List<Type>();
 
-            lock (s_internalSyncObject)
+            lock (TypeDescriptor.s_commonSyncObject)
             {
-                Hashtable? typeData = _typeData;
+                Dictionary<Type, ReflectedTypeData>? typeData = _typeData;
                 if (typeData != null)
                 {
-                    // Manual use of IDictionaryEnumerator instead of foreach to avoid DictionaryEntry box allocations.
-                    IDictionaryEnumerator e = typeData.GetEnumerator();
-                    while (e.MoveNext())
+                    foreach (KeyValuePair<Type, ReflectedTypeData> kvp in typeData)
                     {
-                        DictionaryEntry de = e.Entry;
-                        Type type = (Type)de.Key;
-                        if (type.Module == module && ((ReflectedTypeData)de.Value!).IsPopulated)
+                        if (kvp.Key.Module == module && kvp.Value!.IsPopulated)
                         {
-                            typeList.Add(type);
+                            typeList.Add(kvp.Key);
                         }
                     }
                 }
@@ -900,29 +892,24 @@ namespace System.ComponentModel
         {
             ReflectedTypeData? td = null;
 
-            if (_typeData != null)
+            if (_typeData != null && _typeData.TryGetValue(type, out td))
             {
-                td = (ReflectedTypeData?)_typeData[type];
-                if (td != null)
-                {
-                    return td;
-                }
+                Debug.Assert(td != null);
+                return td;
             }
 
-            lock (s_internalSyncObject)
+            lock (TypeDescriptor.s_commonSyncObject)
             {
-                if (_typeData != null)
+                if (_typeData != null && _typeData.TryGetValue(type, out td))
                 {
-                    td = (ReflectedTypeData?)_typeData[type];
+                    Debug.Assert(td != null);
+                    return td;
                 }
 
-                if (td == null && createIfNeeded)
+                if (createIfNeeded)
                 {
                     td = new ReflectedTypeData(type);
-                    if (_typeData == null)
-                    {
-                        _typeData = new Hashtable();
-                    }
+                    _typeData ??= new Dictionary<Type, ReflectedTypeData>();
                     _typeData[type] = td;
                 }
             }
@@ -1010,7 +997,7 @@ namespace System.ComponentModel
                 return attrs;
             }
 
-            lock (s_internalSyncObject)
+            lock (TypeDescriptor.s_commonSyncObject)
             {
                 attrs = (Attribute[]?)attributeCache[type];
                 if (attrs == null)
@@ -1038,7 +1025,7 @@ namespace System.ComponentModel
                 return attrs;
             }
 
-            lock (s_internalSyncObject)
+            lock (TypeDescriptor.s_commonSyncObject)
             {
                 attrs = (Attribute[]?)attributeCache[member];
                 if (attrs == null)
@@ -1067,7 +1054,7 @@ namespace System.ComponentModel
                 return events;
             }
 
-            lock (s_internalSyncObject)
+            lock (TypeDescriptor.s_commonSyncObject)
             {
                 events = (EventDescriptor[]?)eventCache[type];
                 if (events == null)
@@ -1164,7 +1151,7 @@ namespace System.ComponentModel
             ReflectPropertyDescriptor[]? extendedProperties = (ReflectPropertyDescriptor[]?)extendedPropertyCache[providerType];
             if (extendedProperties == null)
             {
-                lock (s_internalSyncObject)
+                lock (TypeDescriptor.s_commonSyncObject)
                 {
                     extendedProperties = (ReflectPropertyDescriptor[]?)extendedPropertyCache[providerType];
 
@@ -1244,7 +1231,7 @@ namespace System.ComponentModel
                 return properties;
             }
 
-            lock (s_internalSyncObject)
+            lock (TypeDescriptor.s_commonSyncObject)
             {
                 properties = (PropertyDescriptor[]?)propertyCache[type];
 
