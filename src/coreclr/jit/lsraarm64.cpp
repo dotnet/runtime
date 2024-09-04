@@ -1548,18 +1548,7 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
 
     const HWIntrinsic intrin(intrinsicTree);
 
-    int       srcCount      = 0;
-    int       dstCount      = 0;
-    regMaskTP dstCandidates = RBM_NONE;
-
-    if (HWIntrinsicInfo::IsMultiReg(intrin.id))
-    {
-        dstCount = intrinsicTree->GetMultiRegCount(compiler);
-    }
-    else if (intrinsicTree->IsValue())
-    {
-        dstCount = 1;
-    }
+    int srcCount = 0;
 
     const bool hasImmediateOperand = HWIntrinsicInfo::HasImmediateOperand(intrin.id);
 
@@ -1762,6 +1751,9 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
     // Determine whether this is an operation where one of the ops is an address
     GenTree* addrOp = LinearScan::getVectorAddrOperand(intrinsicTree);
 
+    // Determine whether this is an operation where one of the ops has consecutive registers
+    bool destIsConsecutive = false;
+    GenTree* consecutiveOp = getConsecutiveRegistersOperand(intrinsicTree, &destIsConsecutive);
 
     if (intrin.op1 != nullptr)
     {
@@ -1812,14 +1804,14 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
 
             srcCount += BuildAddrUses(intrin.op1);
         }
+        else if (consecutiveOp == intrin.op1)
+        {
+            srcCount += BuildConsecutiveRegistersForUse(intrin.op1, delayFreeOp);
+        }
         else if (delayFreeOp == intrin.op1)
         {
             tgtPrefUse = BuildUse(intrin.op1);
             srcCount++;
-        }
-        else if ((intrin.id == NI_AdvSimd_VectorTableLookup) || (intrin.id == NI_AdvSimd_Arm64_VectorTableLookup))
-        {
-            srcCount += BuildConsecutiveRegistersForUse(intrin.op1);
         }
         else
         {
@@ -1878,145 +1870,6 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
             }
         }
     }
-    else if (HWIntrinsicInfo::NeedsConsecutiveRegisters(intrin.id))
-    {
-        switch (intrin.id)
-        {
-            case NI_AdvSimd_VectorTableLookup:
-            case NI_AdvSimd_Arm64_VectorTableLookup:
-            {
-                assert(intrin.op2 != nullptr);
-                srcCount += BuildOperandUses(intrin.op2);
-                assert(dstCount == 1);
-                buildInternalRegisterUses();
-                BuildDef(intrinsicTree);
-                *pDstCount = 1;
-                break;
-            }
-
-            case NI_AdvSimd_VectorTableLookupExtension:
-            case NI_AdvSimd_Arm64_VectorTableLookupExtension:
-            {
-                assert(intrin.op2 != nullptr);
-                assert(intrin.op3 != nullptr);
-                assert(isRMW);
-                srcCount += BuildConsecutiveRegistersForUse(intrin.op2, intrin.op1);
-                srcCount += BuildDelayFreeUses(intrin.op3, delayFreeOp);
-                assert(dstCount == 1);
-                buildInternalRegisterUses();
-                BuildDef(intrinsicTree);
-                *pDstCount = 1;
-                break;
-            }
-
-            case NI_AdvSimd_StoreSelectedScalar:
-            case NI_AdvSimd_Arm64_StoreSelectedScalar:
-            {
-                assert(intrin.op1 != nullptr);
-                assert(intrin.op3 != nullptr);
-                srcCount += (intrin.op2->gtType == TYP_STRUCT) ? BuildConsecutiveRegistersForUse(intrin.op2)
-                                                               : BuildOperandUses(intrin.op2);
-                if (!intrin.op3->isContainedIntOrIImmed())
-                {
-                    srcCount += BuildOperandUses(intrin.op3);
-                }
-                assert(dstCount == 0);
-                buildInternalRegisterUses();
-                *pDstCount = 0;
-                break;
-            }
-
-            case NI_AdvSimd_Store:
-            case NI_AdvSimd_Arm64_Store:
-            case NI_AdvSimd_StoreVectorAndZip:
-            case NI_AdvSimd_Arm64_StoreVectorAndZip:
-            {
-                assert(intrin.op1 != nullptr);
-                srcCount += BuildConsecutiveRegistersForUse(intrin.op2);
-                assert(dstCount == 0);
-                buildInternalRegisterUses();
-                *pDstCount = 0;
-                break;
-            }
-
-            case NI_AdvSimd_LoadAndInsertScalarVector64x2:
-            case NI_AdvSimd_LoadAndInsertScalarVector64x3:
-            case NI_AdvSimd_LoadAndInsertScalarVector64x4:
-            case NI_AdvSimd_Arm64_LoadAndInsertScalarVector128x2:
-            case NI_AdvSimd_Arm64_LoadAndInsertScalarVector128x3:
-            case NI_AdvSimd_Arm64_LoadAndInsertScalarVector128x4:
-            {
-                assert(intrin.op2 != nullptr);
-                assert(intrin.op3 != nullptr);
-                assert(isRMW);
-                if (!intrin.op2->isContainedIntOrIImmed())
-                {
-                    srcCount += BuildOperandUses(intrin.op2);
-                }
-
-                assert(intrinsicTree->OperIsMemoryLoadOrStore());
-                srcCount += BuildAddrUses(intrin.op3);
-                buildInternalRegisterUses();
-                FALLTHROUGH;
-            }
-
-            case NI_AdvSimd_Load2xVector64AndUnzip:
-            case NI_AdvSimd_Load3xVector64AndUnzip:
-            case NI_AdvSimd_Load4xVector64AndUnzip:
-            case NI_AdvSimd_Arm64_Load2xVector128AndUnzip:
-            case NI_AdvSimd_Arm64_Load3xVector128AndUnzip:
-            case NI_AdvSimd_Arm64_Load4xVector128AndUnzip:
-            case NI_AdvSimd_Load2xVector64:
-            case NI_AdvSimd_Load3xVector64:
-            case NI_AdvSimd_Load4xVector64:
-            case NI_AdvSimd_Arm64_Load2xVector128:
-            case NI_AdvSimd_Arm64_Load3xVector128:
-            case NI_AdvSimd_Arm64_Load4xVector128:
-            case NI_AdvSimd_LoadAndReplicateToVector64x2:
-            case NI_AdvSimd_LoadAndReplicateToVector64x3:
-            case NI_AdvSimd_LoadAndReplicateToVector64x4:
-            case NI_AdvSimd_Arm64_LoadAndReplicateToVector128x2:
-            case NI_AdvSimd_Arm64_LoadAndReplicateToVector128x3:
-            case NI_AdvSimd_Arm64_LoadAndReplicateToVector128x4:
-            {
-                assert(intrin.op1 != nullptr);
-                BuildConsecutiveRegistersForDef(intrinsicTree, dstCount);
-                *pDstCount = dstCount;
-                break;
-            }
-
-            case NI_Sve_Load2xVectorAndUnzip:
-            case NI_Sve_Load3xVectorAndUnzip:
-            case NI_Sve_Load4xVectorAndUnzip:
-            {
-                assert(intrin.op1 != nullptr);
-                assert(intrin.op2 != nullptr);
-                assert(intrinsicTree->OperIsMemoryLoadOrStore());
-                srcCount += BuildAddrUses(intrin.op2);
-                BuildConsecutiveRegistersForDef(intrinsicTree, dstCount);
-                *pDstCount = dstCount;
-                break;
-            }
-
-            case NI_Sve_StoreAndZipx2:
-            case NI_Sve_StoreAndZipx3:
-            case NI_Sve_StoreAndZipx4:
-            {
-                assert(intrin.op2 != nullptr);
-                assert(intrin.op3 != nullptr);
-                srcCount += BuildAddrUses(intrin.op2);
-                srcCount += BuildConsecutiveRegistersForUse(intrin.op3);
-                assert(dstCount == 0);
-                buildInternalRegisterUses();
-                *pDstCount = 0;
-                break;
-            }
-
-            default:
-                noway_assert(!"Not a supported as multiple consecutive register intrinsic");
-        }
-        return srcCount;
-    }
 
     else if (intrin.op2 != nullptr)
     {
@@ -2047,6 +1900,10 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
 
             srcCount += BuildAddrUses(intrin.op2);
         }
+        else if (consecutiveOp == intrin.op2)
+        {
+            srcCount += BuildConsecutiveRegistersForUse(intrin.op2, delayFreeOp);
+        }
         else if (delayFreeOp == intrin.op2)
         {
             assert(!intrin.op2->isContained());
@@ -2076,6 +1933,10 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
 
                 srcCount += BuildAddrUses(intrin.op3);
             }
+            else if (consecutiveOp == intrin.op3)
+            {
+                srcCount += BuildConsecutiveRegistersForUse(intrin.op3, delayFreeOp);
+            }
             else if (isRMW)
             {
                 srcCount += BuildDelayFreeUses(intrin.op3, delayFreeOp, op3Candidates);
@@ -2089,7 +1950,8 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
             {
                 assert(lowVectorOperandNum != 4);
                 assert(delayFreeOp != intrin.op4);
-                assert(addrOp != intrin.op3);
+                assert(addrOp != intrin.op4);
+                assert(consecutiveOp != intrin.op4);
 
                 srcCount += isRMW ? BuildDelayFreeUses(intrin.op4, delayFreeOp) : BuildOperandUses(intrin.op4);
 
@@ -2098,6 +1960,7 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                     assert(isRMW);
                     assert(delayFreeOp != intrin.op5);
                     assert(addrOp != intrin.op3);
+                    assert(consecutiveOp != intrin.op5);
 
                     srcCount += BuildDelayFreeUses(intrin.op5, delayFreeOp);
                 }
@@ -2107,7 +1970,25 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
 
     buildInternalRegisterUses();
 
-    if ((dstCount == 1) || (dstCount == 2))
+
+    // Build Destination
+
+    int dstCount = 0;
+
+    if (HWIntrinsicInfo::IsMultiReg(intrin.id))
+    {
+        dstCount = intrinsicTree->GetMultiRegCount(compiler);
+    }
+    else if (intrinsicTree->IsValue())
+    {
+        dstCount = 1;
+    }
+
+    if (destIsConsecutive)
+    {
+        BuildConsecutiveRegistersForDef(intrinsicTree, dstCount);
+    }
+    else if ((dstCount == 1) || (dstCount == 2))
     {
         BuildDef(intrinsicTree);
 
@@ -2480,6 +2361,103 @@ GenTree* LinearScan::getVectorAddrOperand(GenTreeHWIntrinsic* intrinsicTree)
 
     return nullptr;
 }
+
+//------------------------------------------------------------------------
+// GetDelayFreeOp: Get the consecutive operand of the HWIntrinsic, if any
+//
+// Arguments:
+//    intrinsicTree - Intrin to check
+//    destIsConsecutive (out) - if the destination requires consective registers
+//
+// Return Value:
+//    The operand that requires consecutive registers
+//
+GenTree* LinearScan::getConsecutiveRegistersOperand(const HWIntrinsic intrin, bool *destIsConsecutive)
+{
+    *destIsConsecutive = false;
+    GenTree* consecutiveOp = nullptr;
+
+    if (!HWIntrinsicInfo::NeedsConsecutiveRegisters(intrin.id))
+    {
+        return nullptr;
+    }
+
+    switch (intrin.id)
+    {
+        case NI_AdvSimd_Arm64_VectorTableLookup:
+        case NI_AdvSimd_VectorTableLookup:
+            consecutiveOp = intrin.op1;
+            assert(consecutiveOp != nullptr);
+            break;
+
+        case NI_AdvSimd_Arm64_Store:
+        case NI_AdvSimd_Arm64_StoreVectorAndZip:
+        case NI_AdvSimd_Arm64_VectorTableLookupExtension:
+        case NI_AdvSimd_Store:
+        case NI_AdvSimd_StoreVectorAndZip:
+        case NI_AdvSimd_VectorTableLookupExtension:
+            consecutiveOp = intrin.op2;
+            assert(consecutiveOp != nullptr);
+            break;
+
+        case NI_AdvSimd_StoreSelectedScalar:
+        case NI_AdvSimd_Arm64_StoreSelectedScalar:
+            if (intrin.op2->gtType == TYP_STRUCT)
+            {
+                consecutiveOp = intrin.op2;
+                assert(consecutiveOp != nullptr);
+            }
+            break;
+
+        case NI_AdvSimd_Arm64_LoadAndInsertScalarVector128x2:
+        case NI_AdvSimd_Arm64_LoadAndInsertScalarVector128x3:
+        case NI_AdvSimd_Arm64_LoadAndInsertScalarVector128x4:
+        case NI_AdvSimd_LoadAndInsertScalarVector64x2:
+        case NI_AdvSimd_LoadAndInsertScalarVector64x3:
+        case NI_AdvSimd_LoadAndInsertScalarVector64x4:
+            consecutiveOp = intrin.op2;
+            assert(consecutiveOp != nullptr);
+            *destIsConsecutive = true;
+            break;
+
+        case NI_Sve_StoreAndZipx2:
+        case NI_Sve_StoreAndZipx3:
+        case NI_Sve_StoreAndZipx4:
+            consecutiveOp = intrin.op3;
+            assert(consecutiveOp != nullptr);
+            break;
+
+        case NI_AdvSimd_Load2xVector64AndUnzip:
+        case NI_AdvSimd_Load3xVector64AndUnzip:
+        case NI_AdvSimd_Load4xVector64AndUnzip:
+        case NI_AdvSimd_Arm64_Load2xVector128AndUnzip:
+        case NI_AdvSimd_Arm64_Load3xVector128AndUnzip:
+        case NI_AdvSimd_Arm64_Load4xVector128AndUnzip:
+        case NI_AdvSimd_Load2xVector64:
+        case NI_AdvSimd_Load3xVector64:
+        case NI_AdvSimd_Load4xVector64:
+        case NI_AdvSimd_Arm64_Load2xVector128:
+        case NI_AdvSimd_Arm64_Load3xVector128:
+        case NI_AdvSimd_Arm64_Load4xVector128:
+        case NI_AdvSimd_LoadAndReplicateToVector64x2:
+        case NI_AdvSimd_LoadAndReplicateToVector64x3:
+        case NI_AdvSimd_LoadAndReplicateToVector64x4:
+        case NI_AdvSimd_Arm64_LoadAndReplicateToVector128x2:
+        case NI_AdvSimd_Arm64_LoadAndReplicateToVector128x3:
+        case NI_AdvSimd_Arm64_LoadAndReplicateToVector128x4:
+        case NI_Sve_Load2xVectorAndUnzip:
+        case NI_Sve_Load3xVectorAndUnzip:
+        case NI_Sve_Load4xVectorAndUnzip:
+            *destIsConsecutive = true;
+            break;
+
+        default:
+            noway_assert(!"Not a supported as multiple consecutive register intrinsic");
+    }
+
+    return consecutiveOp;
+}
+
 
 #endif // FEATURE_HW_INTRINSICS
 

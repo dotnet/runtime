@@ -1446,6 +1446,7 @@ private:
     FORCEINLINE RefPosition* getNextConsecutiveRefPosition(RefPosition* refPosition);
     void getLowVectorOperandAndCandidates(HWIntrinsic intrin, size_t* operandNum, SingleTypeRegSet* candidates);
     GenTree* getVectorAddrOperand(GenTreeHWIntrinsic* intrinsicTree);
+    GenTree* getConsecutiveRegistersOperand(const HWIntrinsic intrin, bool *destIsConsecutive);
 #endif
 
 #ifdef DEBUG
