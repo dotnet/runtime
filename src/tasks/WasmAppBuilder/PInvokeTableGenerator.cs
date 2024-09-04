@@ -380,7 +380,7 @@ internal sealed class PInvokeTableGenerator
 
                     if (!(InterpEntry_T{{cb_index}})wasm_native_to_interp_ftndescs [{{cb_index}}].func) {
                         {{(cb.IsExport && _isLibraryMode ? "initialize_runtime(); " : "")}}// ensure the ftndescs and runtime are initialized when required
-                        mono_wasm_marshal_get_managed_wrapper ("{{cb.AssemblyName}}", "{{cb.Namespace}}", "{{cb.TypeName}}", "{{cb.MethodName}}", {{cb.Parameters.Length}});
+                        mono_wasm_marshal_get_managed_wrapper ("{{cb.AssemblyName}}", "{{cb.Namespace}}", "{{cb.TypeName}}", "{{cb.MethodName}}", {{cb.Token}}, {{cb.Parameters.Length}});
                     }
 
                     ((InterpEntry_T{{cb_index}})wasm_native_to_interp_ftndescs [{{cb_index}}].func) ({{interpEntryArgs.Join(", ")}});
@@ -394,9 +394,9 @@ internal sealed class PInvokeTableGenerator
         w.Write(
             $$"""
 
-            static PinvokeImport wasm_native_to_interp_table[] = {
-                {{callbacks.Select(cb => $"{{\"{EscapeLiteral(cb.Key)}\", {cb.EntrySymbol}}}, // {cb.Token}")
-                    .Append("{NULL, NULL}")
+            static UnmanagedCallersExport wasm_native_to_interp_table[] = {
+                {{callbacks.Select(cb => $"{{{cb.Token}, \"{EscapeLiteral(cb.Key)}\", {cb.EntrySymbol}}},")
+                    .Append("{0, NULL, NULL}")
                     .Join($"{w.NewLine}    ")}}
             };
 

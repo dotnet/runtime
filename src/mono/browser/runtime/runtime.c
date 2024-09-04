@@ -212,7 +212,8 @@ get_native_to_interp (MonoMethod *method, void *extra_arg)
 	const char *method_name = mono_method_get_name (method);
 	MonoMethodSignature *sig = mono_method_signature (method);
 	uint32_t param_count = mono_signature_get_param_count (sig);
-	uint32_t token = mono_method_get_token (method) & 0x00ffffff;
+	uint32_t token = mono_method_get_token (method);
+
 
 	char buf [128];
 	char *key = buf;
@@ -221,15 +222,15 @@ get_native_to_interp (MonoMethod *method, void *extra_arg)
 		return NULL;
 
 	// the key must match the one used in PInvokeTableGenerator
-	len = snprintf (key, sizeof(buf), "%06x#%s:%s:%s:%s\U0001F412%d", token, name, namespace, class_name, method_name, param_count);
+	len = snprintf (key, sizeof(buf), "%s#%d:%s:%s:%s\U0001F412", method_name, param_count, name, namespace, class_name);
 
 	if (len >= sizeof (buf)) {
 		// The key is too long, try again with a larger buffer
 		key = g_new (char, len + 1);
-	    snprintf (key, len + 1, "%06x#%s:%s:%s:%s\U0001F412%d", token, name, namespace, class_name, method_name, param_count);
+	    snprintf (key, len + 1, "%s#%d:%s:%s:%s\U0001F412", method_name, param_count, name, namespace, class_name);
 	}
 
-	addr = wasm_dl_get_native_to_interp (key, extra_arg);
+	addr = wasm_dl_get_native_to_interp (token, key, extra_arg);
 
 	if (len >= sizeof (buf))
 		free (key);
@@ -380,22 +381,45 @@ mono_wasm_assembly_find_method (MonoClass *klass, const char *name, int argument
 	return result;
 }
 
+MonoMethod*
+mono_wasm_get_method_matching (MonoImage *image, uint32_t token, MonoClass *klass, const char* name, int param_count)
+{
+	MonoMethod *method = mono_get_method (image, token, klass);
+	MonoMethod *result = NULL;
+	MONO_ENTER_GC_UNSAFE;
+	MonoMethodSignature *sig = mono_method_signature (method);
+	if (mono_signature_get_param_count (sig) == param_count) {
+		const char *method_name = mono_method_get_name (method);
+		if (!strcmp (method_name, name)) {
+			result = method;
+		}
+	}
+	if (!result) {
+		result = mono_class_get_method_from_name (klass, name, param_count);
+	}
+	MONO_EXIT_GC_UNSAFE;
+	return result;
+}
+
 /*
  * mono_wasm_marshal_get_managed_wrapper:
  * Creates a wrapper for a function pointer to a method marked with
  * UnamangedCallersOnlyAttribute.
  * This wrapper ensures that the interpreter initializes the pointers.
  */
+
 void
-mono_wasm_marshal_get_managed_wrapper (const char* assemblyName, const char* namespaceName, const char* typeName, const char* methodName, int num_params)
+mono_wasm_marshal_get_managed_wrapper (const char* assemblyName, const char* namespaceName, const char* typeName, const char* methodName, uint32_t token, int parm_count)
 {
 	MonoError error;
 	mono_error_init (&error);
 	MonoAssembly* assembly = mono_wasm_assembly_load (assemblyName);
 	assert (assembly);
-	MonoClass* class = mono_wasm_assembly_find_class (assembly, namespaceName, typeName);
-	assert (class);
-	MonoMethod* method = mono_wasm_assembly_find_method (class, methodName, num_params);
+	MonoImage *image = mono_assembly_get_image (assembly);
+	assert (image);
+	MonoClass* klass = mono_class_from_name (image, namespaceName, typeName);
+	assert (klass);
+	MonoMethod *method = mono_wasm_get_method_matching (image, token, klass, methodName, parm_count);
 	assert (method);
 	MonoMethod *managedWrapper = mono_marshal_get_managed_wrapper (method, NULL, 0, &error);
 	assert (managedWrapper);
