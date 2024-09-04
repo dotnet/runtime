@@ -2750,12 +2750,12 @@ public:
     // the field's value class (if 'structType' == 0, then don't bother
     // the structure info).
     //
-    // 'memberParent' is typically only set when verifying.  It should be the
-    // result of calling getMemberParent.
+    // 'fieldOwnerHint' is, potentially, a more exact owner of the field.
+    // it's fine for it to be non-precise, it's just a hint.
     virtual CorInfoType getFieldType(
             CORINFO_FIELD_HANDLE        field,
             CORINFO_CLASS_HANDLE *      structType = NULL,
-            CORINFO_CLASS_HANDLE        memberParent = NULL /* IN */
+            CORINFO_CLASS_HANDLE        fieldOwnerHint = NULL /* IN */
             ) = 0;
 
     // return the data member's instance offset

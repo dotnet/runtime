@@ -395,7 +395,7 @@ CORINFO_CLASS_HANDLE getFieldClass(
 CorInfoType getFieldType(
           CORINFO_FIELD_HANDLE field,
           CORINFO_CLASS_HANDLE* structType,
-          CORINFO_CLASS_HANDLE memberParent) override;
+          CORINFO_CLASS_HANDLE fieldOwnerHint) override;
 
 unsigned getFieldOffset(
           CORINFO_FIELD_HANDLE field) override;
