@@ -435,6 +435,7 @@ namespace System.Net.Http
         public System.Net.Http.HttpRequestMessage InitialRequestMessage { get { throw null; } }
     }
     [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
+    [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("wasi")]
     public sealed partial class SocketsHttpHandler : System.Net.Http.HttpMessageHandler
     {
         public SocketsHttpHandler() { }
@@ -453,6 +454,7 @@ namespace System.Net.Http
         public System.TimeSpan Expect100ContinueTimeout { get { throw null; } set { } }
         public int InitialHttp2StreamWindowSize { get { throw null; } set { } }
         [System.Runtime.Versioning.UnsupportedOSPlatformGuardAttribute("browser")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformGuardAttribute("wasi")]
         public static bool IsSupported { get { throw null; } }
         public System.TimeSpan KeepAlivePingDelay { get { throw null; } set { } }
         public System.Net.Http.HttpKeepAlivePingPolicy KeepAlivePingPolicy { get { throw null; } set { } }

@@ -14,10 +14,11 @@ using System.Threading.Tasks;
 namespace System.Net.Http
 {
     [UnsupportedOSPlatform("browser")]
+    [UnsupportedOSPlatform("wasi")] // We can support SocketsHttpHandler on top of wasi-socket, once we have it working https://github.com/dotnet/runtime/issues/98957
     public sealed class SocketsHttpHandler : HttpMessageHandler
     {
         [UnsupportedOSPlatformGuard("browser")]
-        [UnsupportedOSPlatformGuard("wasi")] // We can support WebSocket on top of wasi-socket, once we have it working https://github.com/dotnet/runtime/issues/98957
+        [UnsupportedOSPlatformGuard("wasi")] // We can support SocketsHttpHandler on top of wasi-socket, once we have it working https://github.com/dotnet/runtime/issues/98957
         public static bool IsSupported => false;
 
         public bool UseCookies

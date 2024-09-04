@@ -282,6 +282,7 @@ namespace Microsoft.Extensions.DependencyInjection
         /// </para>
         /// </remarks>
         [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("wasi")] // We can support SocketsHttpHandler on top of wasi-socket, once we have it working https://github.com/dotnet/runtime/issues/98957
         public static IHttpClientBuilder UseSocketsHttpHandler(this IHttpClientBuilder builder, Action<SocketsHttpHandler, IServiceProvider>? configureHandler = null)
         {
             ThrowHelper.ThrowIfNull(builder);
@@ -320,6 +321,7 @@ namespace Microsoft.Extensions.DependencyInjection
         /// </para>
         /// </remarks>
         [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("wasi")]
         public static IHttpClientBuilder UseSocketsHttpHandler(this IHttpClientBuilder builder, Action<ISocketsHttpHandlerBuilder> configureBuilder)
         {
             ThrowHelper.ThrowIfNull(builder);
