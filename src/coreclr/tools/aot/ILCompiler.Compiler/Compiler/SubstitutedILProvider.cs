@@ -23,12 +23,14 @@ namespace ILCompiler
         private readonly ILProvider _nestedILProvider;
         private readonly SubstitutionProvider _substitutionProvider;
         private readonly DevirtualizationManager _devirtualizationManager;
+        private readonly MetadataManager _metadataManager;
 
-        public SubstitutedILProvider(ILProvider nestedILProvider, SubstitutionProvider substitutionProvider, DevirtualizationManager devirtualizationManager)
+        public SubstitutedILProvider(ILProvider nestedILProvider, SubstitutionProvider substitutionProvider, DevirtualizationManager devirtualizationManager, MetadataManager metadataManager = null)
         {
             _nestedILProvider = nestedILProvider;
             _substitutionProvider = substitutionProvider;
             _devirtualizationManager = devirtualizationManager;
+            _metadataManager = metadataManager;
         }
 
         public override MethodIL GetMethodIL(MethodDesc method)
@@ -990,6 +992,9 @@ namespace ILCompiler
                     return false;
 
                 if (_devirtualizationManager.CanReferenceConstructedTypeOrCanonicalFormOfType(knownType.NormalizeInstantiation()))
+                    return false;
+
+                if (_metadataManager != null && knownType.GetTypeDefinition() is MetadataType mdType && _metadataManager.CanGenerateMetadata(mdType))
                     return false;
 
                 constant = 0;
