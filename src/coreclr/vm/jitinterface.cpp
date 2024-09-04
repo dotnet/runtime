@@ -9205,7 +9205,7 @@ CorInfoType CEEInfo::getFieldTypeInternal (CORINFO_FIELD_HANDLE fieldHnd,
         // For verifying code involving generics, use the class instantiation
         // of the optional owner (to provide exact, not representative,
         // type information)
-        SigTypeContext typeContext(field, hintedFieldOwner);
+        SigTypeContext typeContext(field, moreExactFieldOwner);
 
         clsHnd = ptr.GetTypeHandleThrowing(field->GetModule(), &typeContext);
         _ASSERTE(!clsHnd.IsNull());
