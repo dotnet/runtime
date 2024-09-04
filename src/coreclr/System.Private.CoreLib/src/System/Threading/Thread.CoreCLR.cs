@@ -77,7 +77,7 @@ namespace System.Threading
             // This should never happen under normal circumstances.
             if (thread == IntPtr.Zero)
             {
-                throw new ArgumentException(null, SR.Argument_InvalidHandle);
+                throw new ThreadStateException(SR.Argument_InvalidHandle);
             }
 
             return new ThreadHandle(thread);
