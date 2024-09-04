@@ -27,9 +27,9 @@ The runtime repo requires long paths to be enabled both, on Windows itself and o
 git config --system core.longpaths true
 ```
 
-The reason this has to be done is that *Git for Windows* is compiled with **MSYS**, which uses a version of the Windows API that has a filepath limit of 260 characters total, as opposed to the usual limit of 4096 filepath characters on macOS and Linux.
+The reason this has to be done is that *Git for Windows* is compiled with **MSYS**, which uses a version of the Windows API that has a filepath limit of 260 characters total, as opposed to the usual limit of 4096 on macOS and Linux.
 
-Next, to configure the long paths for Windows itself, follow the instructions provided [in this link](https://learn.microsoft.com/windows/win32/fileio/maximum-file-path-limitation?tabs=registry#enable-long-paths-in-windows-10-version-1607-and-later)
+Next, to configure the long paths for Windows itself, follow the instructions provided [in this link](https://learn.microsoft.com/windows/win32/fileio/maximum-file-path-limitation?tabs=registry#enable-long-paths-in-windows-10-version-1607-and-later).
 
 If long paths are not enabled, you might start running into issues since trying to clone the repo. Especially with libraries that have very long filenames, you might get errors like `Unable to create file: Filename too long` during the cloning process.
 
@@ -46,7 +46,7 @@ It is highly recommended to use the *Workloads* approach, as that installs the f
 - .NET desktop development
 - Desktop development with C++
 
-To build the tests and do ARM32/ARM64 development, you'll need some additional individual components. You can find them by clicking on the *Individual components* tab in the *Visual Studio Installer*:
+To build the tests and do ARM32/ARM64 development, you'll need some additional components. You can find them by clicking on the *Individual components* tab in the *Visual Studio Installer*:
 
 - For ARM stuff: *MSVC v143 - VS 2022 C++ ARM64/ARM64EC build tools (Latest)* for Arm64, and *MSVC v143 - VS 2022 C++ ARM build tools (Latest)* for Arm32.
 - For building tests: *C++/CLI support for v143 build tools (Latest)*

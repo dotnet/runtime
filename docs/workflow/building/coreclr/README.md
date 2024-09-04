@@ -17,7 +17,7 @@ Firstly, make sure you've prepared your environment and installed all the requir
 
 ## The Basics
 
-As explained in the main workflow README, you can build the CoreCLR runtime by passing `-subset clr` as argument to the repo's main `build.sh`/`build.cmd` script:
+As explained in the main workflow *README*, you can build the CoreCLR runtime by passing `-subset clr` as argument to the repo's main `build.sh`/`build.cmd` script:
 
 ```bash
 ./build.sh -subset clr <other args go here>
@@ -37,7 +37,7 @@ All the generated logs are placed in under `artifacts/log`, and all the intermed
 
 ### What to do with the Build
 
-CoreCLR is one of the most important components of the runtime repo, as it is one of the main engines of the .NET product. That said, while you can test and use it on its own, it becomes easiest to do this when used in conjuction with the libraries subset. When you build both subsets, you can get access to the *Core_Root*. This includes all the libraries, as well as the clr alongside other tools like *Crossgen2*, *R2RDump*, and the *ILC* compiler, and the main command-line host executable `corerun`. The *Core_Root* is one of the most reliable ways of testing changes to the runtime, running external apps with your build, and it is the way clr tests are run in the CI pipelines.
+*CoreCLR* is one of the most important components of the runtime repo, as it is one of the main engines of the .NET product. That said, while you can test and use it on its own, it becomes easiest to do this when used in conjuction with the *Libraries* subset. When you build both subsets, you can get access to the *Core_Root*. This includes all the libraries, as well as the Clr alongside other tools like *Crossgen2*, *R2RDump*, and the *ILC* compiler, and the main command-line host executable `corerun`, all bundled together. The *Core_Root* is one of the most reliable ways of testing changes to the runtime, running external apps with your build, and it is the way Clr tests are run in the CI pipelines.
 
 #### The Core Root for Testing Your Build
 
@@ -74,6 +74,8 @@ Note that this package only includes the runtime, therefore you will only be abl
 
 **NOTE:** On Windows, this will also include `.exe` and `.msi` installers, which you can use in case you want to test your build machine-wide. This is the closest you can get to an official build installation.
 
+For a full guide on using the shipping packages for testing checkout the doc we have dedicated to it [over here](/docs/workflow/testing/using-dev-shipping-packages.md).
+
 ### Cross Compilation
 
 Using an x64 machine, it is possible to generate builds for other architectures. Not all architectures are supported for cross-compilation however, and it's also dependant on the OS you are using to build and target. Refer to the table below for the compatibility matrix.
@@ -87,7 +89,7 @@ Using an x64 machine, it is possible to generate builds for other architectures.
 **NOTE:** On macOS, it is also possible to cross-compile from ARM64 to x64 using an Apple Silicon Mac.
 
 <!-- TODO: Review the Cross-Building doc -->
-Detailed instructions on how to do cross-compilation can be found in the cross-building doc [over here](/docs/workflow/building/cross-building.md).
+Detailed instructions on how to do cross-compilation can be found in the cross-building doc [over here](/docs/workflow/building/coreclr/cross-building.md).
 
 ## Other Features
 

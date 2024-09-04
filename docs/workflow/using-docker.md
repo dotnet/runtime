@@ -38,17 +38,17 @@ The main Docker images are the most commonly used ones, and the ones you will pr
 
 | Host OS           | Target OS                  | Target Arch   | Image                                                                                   | crossrootfs dir        |
 | ----------------- | -------------------------- | ------------- | --------------------------------------------------------------------------------------- | ---------------------- |
-| Azure Linux (x64) | Android Bionic             | x64           | `mcr.microsoft.com/dotnet-buildtools/prereqs:azurelinux-3.0-net9.0-cross-android-amd64` |  N/A                   |
-| Azure Linux (x64) | Android Bionic (w/OpenSSL) | x64           | `mcr.microsoft.com/dotnet-buildtools/prereqs:azurelinux-3.0-net9.0-android-openssl`     |  N/A                   |
-| Azure Linux (x64) | Android Bionic (w/Docker)  | x64           | `mcr.microsoft.com/dotnet-buildtools/prereqs:azurelinux-3.0-net9.0-android-docker`      |  N/A                   |
-| Azure Linux (x64) | Azure Linux 3.0            | x64           | `mcr.microsoft.com/dotnet-buildtools/prereqs:azurelinux-3.0-net9.0-fpm`                 |  N/A                   |
+| Azure Linux (x64) | Android Bionic             | x64           | `mcr.microsoft.com/dotnet-buildtools/prereqs:azurelinux-3.0-net9.0-cross-android-amd64` |        *N/A*           |
+| Azure Linux (x64) | Android Bionic (w/OpenSSL) | x64           | `mcr.microsoft.com/dotnet-buildtools/prereqs:azurelinux-3.0-net9.0-android-openssl`     |        *N/A*           |
+| Azure Linux (x64) | Android Bionic (w/Docker)  | x64           | `mcr.microsoft.com/dotnet-buildtools/prereqs:azurelinux-3.0-net9.0-android-docker`      |        *N/A*           |
+| Azure Linux (x64) | Azure Linux 3.0            | x64           | `mcr.microsoft.com/dotnet-buildtools/prereqs:azurelinux-3.0-net9.0-fpm`                 |        *N/A*           |
 | Azure Linux (x64) | FreeBSD 13                 | x64           | `mcr.microsoft.com/dotnet-buildtools/prereqs:azurelinux-3.0-net9.0-cross-freebsd-13`    | `/crossrootfs/x64`     |
 | Azure Linux (x64) | Ubuntu 18.04               | PPC64le       | `mcr.microsoft.com/dotnet-buildtools/prereqs:azurelinux-3.0-net9.0-cross-ppc64le`       | `/crossrootfs/ppc64le` |
 | Azure Linux (x64) | Ubuntu 24.04               | RISC-V        | `mcr.microsoft.com/dotnet-buildtools/prereqs:azurelinux-3.0-net9.0-cross-riscv64`       | `/crossrootfs/riscv64` |
 | Azure Linux (x64) | Ubuntu 18.04               | S390x         | `mcr.microsoft.com/dotnet-buildtools/prereqs:azurelinux-3.0-net9.0-cross-s390x`         | `/crossrootfs/s390x`   |
 | Azure Linux (x64) | Ubuntu 16.04 (Wasm)        | x64           | `mcr.microsoft.com/dotnet-buildtools/prereqs:azurelinux-3.0-net9.0-webassembly-amd64`   | `/crossrootfs/x64`     |
-| Debian (x64)      | Debian 12                  | x64           | `mcr.microsoft.com/dotnet-buildtools/prereqs:debian-12-gcc14-amd64`                     |  N/A                   |
-| Ubuntu (x64)      | Ubuntu 22.04               | x64           | `mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-22.04-debpkg`                       |  N/A                   |
+| Debian (x64)      | Debian 12                  | x64           | `mcr.microsoft.com/dotnet-buildtools/prereqs:debian-12-gcc14-amd64`                     |        *N/A*           |
+| Ubuntu (x64)      | Ubuntu 22.04               | x64           | `mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-22.04-debpkg`                       |        *N/A*           |
 | Ubuntu (x64)      | Tizen 9.0                  | Arm32 (armel) | `mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-22.04-cross-armel-tizen`            | `/crossrootfs/armel`   |
 | Ubuntu (x64)      | Ubuntu 20.04               | Arm32 (v6)    | `mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-20.04-cross-armv6-raspbian-10`      | `/crossrootfs/armv6`   |
 
@@ -74,6 +74,6 @@ Now, dissecting the command:
 
 You might also want to interact with the container directly for a myriad of reasons, like running multiple builds in different paths for example. In this case, instead of passing the build script command to the `docker` command-line, pass the flag `-it`. When you do this, you will get access to a small shell within the container, which allows you to explore it, run builds manually, and so on, like you would on a regular terminal in your machine. Note that the containers' shell's built-in tools are very limited in comparison to the ones you probably have on your machine, so don't expect to be able to do full work there.
 
-To do cross-building using Docker, make sure to select the appropriate image that targets the platform you want to build for. As for the commands to run, follow the same instructions from the cross-building doc [over here](/docs/workflow/building/coreclr/cross-building.md).
+To do cross-building using Docker, make sure to select the appropriate image that targets the platform you want to build for. As for the commands to run, follow the same instructions from the cross-building doc [over here](/docs/workflow/building/coreclr/cross-building.md), with the difference that you don't need to generate the *ROOTFS*, as the cross-building images already include it.
 
 **NOTE:** While all the official building images are marked as cross-building images, you can also use them for regular builds.
