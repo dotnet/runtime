@@ -13,8 +13,8 @@
 
   <ItemGroup>
     <!-- Configures xunit to not print out passing tests with output when diagnostic messages are enabled. -->
-    <SetScriptCommands Condition="'$(OS)' == 'Windows_NT'" Include="set XUNIT_HIDE_PASSING_OUTPUT_DIAGNOSTICS=1" />
-    <SetScriptCommands Condition="'$(OS)' != 'Windows_NT'" Include="export XUNIT_HIDE_PASSING_OUTPUT_DIAGNOSTICS=1" />
+    <SetScriptCommands Condition="'$(TargetOS)' == 'windows'" Include="set XUNIT_HIDE_PASSING_OUTPUT_DIAGNOSTICS=1" />
+    <SetScriptCommands Condition="'$(TargetOS)' != 'windows'" Include="export XUNIT_HIDE_PASSING_OUTPUT_DIAGNOSTICS=1" />
   </ItemGroup>
 
   <PropertyGroup Condition="'$(BundleXunitRunner)' == 'true'">
