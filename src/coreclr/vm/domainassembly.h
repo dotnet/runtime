@@ -251,7 +251,7 @@ public:
     friend class Module;
     friend class FileLoadLock;
 
-    DomainAssembly(PEAssembly* pPEAssembly, LoaderAllocator* pLoaderAllocator);
+    DomainAssembly(PEAssembly* pPEAssembly, LoaderAllocator* pLoaderAllocator, AllocMemTracker* memTracker);
 
     BOOL DoIncrementalLoad(FileLoadLevel targetLevel);
     void ClearLoading() { LIMITED_METHOD_CONTRACT; m_loading = FALSE; }

@@ -24,21 +24,21 @@
 #include "peimagelayout.inl"
 
 #ifndef DACCESS_COMPILE
-DomainAssembly::DomainAssembly(PEAssembly* pPEAssembly, LoaderAllocator* pLoaderAllocator) :
-    m_pAssembly(NULL),
-    m_pPEAssembly(pPEAssembly),
-    m_pModule(NULL),
-    m_fCollectible(pLoaderAllocator->IsCollectible()),
-    m_NextDomainAssemblyInSameALC(NULL),
-    m_pLoaderAllocator(pLoaderAllocator),
-    m_level(FILE_LOAD_CREATE),
-    m_loading(TRUE),
-    m_pError(NULL),
-    m_bDisableActivationCheck(FALSE),
-    m_fHostAssemblyPublished(FALSE),
-    m_debuggerFlags(DACF_NONE),
-    m_notifyflags(NOT_NOTIFIED),
-    m_fDebuggerUnloadStarted(FALSE)
+DomainAssembly::DomainAssembly(PEAssembly* pPEAssembly, LoaderAllocator* pLoaderAllocator, AllocMemTracker* memTracker)
+    : m_pAssembly(NULL)
+    , m_pPEAssembly(pPEAssembly)
+    , m_pModule(NULL)
+    , m_fCollectible(pLoaderAllocator->IsCollectible())
+    , m_NextDomainAssemblyInSameALC(NULL)
+    , m_pLoaderAllocator(pLoaderAllocator)
+    , m_level(FILE_LOAD_CREATE)
+    , m_loading(TRUE)
+    , m_pError(NULL)
+    , m_bDisableActivationCheck(FALSE)
+    , m_fHostAssemblyPublished(FALSE)
+    , m_debuggerFlags(DACF_NONE)
+    , m_notifyflags(NOT_NOTIFIED)
+    , m_fDebuggerUnloadStarted(FALSE)
 {
     CONTRACTL
     {
@@ -55,24 +55,13 @@ DomainAssembly::DomainAssembly(PEAssembly* pPEAssembly, LoaderAllocator* pLoader
     SetupDebuggingConfig();
 
     // Create the Assembly
-    AllocMemTracker   amTracker;
-    AllocMemTracker * pamTracker = &amTracker;
-    Assembly * pAssembly;
-    {
-        // Order is important here - in the case of an exception, the Assembly holder must destruct before the AllocMemTracker declared above.
-        NewHolder<Assembly> assemblyHolder(NULL);
+    NewHolder<Assembly> assembly = Assembly::Create(GetPEAssembly(), GetDebuggerInfoBits(), IsCollectible(), memTracker, IsCollectible() ? GetLoaderAllocator() : NULL);
+    assembly->SetIsTenured();
 
-        assemblyHolder = pAssembly = Assembly::Create(GetPEAssembly(), GetDebuggerInfoBits(), this->IsCollectible(), pamTracker, this->IsCollectible() ? this->GetLoaderAllocator() : NULL);
-        assemblyHolder->SetIsTenured();
+    m_pAssembly = assembly.Extract();
+    m_pModule = m_pAssembly->GetModule();
 
-        pamTracker->SuppressRelease();
-        assemblyHolder.SuppressRelease();
-    }
-
-    m_pAssembly = pAssembly;
-    m_pModule = pAssembly->GetModule();
-
-    pAssembly->SetDomainAssembly(this);
+    m_pAssembly->SetDomainAssembly(this);
 
     // Creating the Assembly should have ensured the PEAssembly is loaded
     _ASSERT(GetPEAssembly()->IsLoaded());

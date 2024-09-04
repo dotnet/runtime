@@ -2531,7 +2531,9 @@ DomainAssembly *AppDomain::LoadDomainAssemblyInternal(AssemblySpec* pIdentity,
 
         // Allocate the DomainAssembly a bit early to avoid GC mode problems. We could potentially avoid
         // a rare redundant allocation by moving this closer to FileLoadLock::Create, but it's not worth it.
-        NewHolder<DomainAssembly> pDomainAssembly = new DomainAssembly(pPEAssembly, pLoaderAllocator);
+        AllocMemTracker amTracker;
+        AllocMemTracker *pamTracker = &amTracker;
+        NewHolder<DomainAssembly> pDomainAssembly = new DomainAssembly(pPEAssembly, pLoaderAllocator, pamTracker);
 
         LoadLockHolder lock(this);
 
@@ -2548,6 +2550,7 @@ DomainAssembly *AppDomain::LoadDomainAssemblyInternal(AssemblySpec* pIdentity,
                 registerNewAssembly = true;
                 fileLock = FileLoadLock::Create(lock, pPEAssembly, pDomainAssembly);
                 pDomainAssembly.SuppressRelease();
+                pamTracker->SuppressRelease();
                 if (pDomainAssembly->IsCollectible())
                 {
                     // We add the assembly to the LoaderAllocator only when we are sure that it can be added

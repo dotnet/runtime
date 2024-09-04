@@ -378,6 +378,9 @@ Assembly *Assembly::CreateDynamic(AssemblyBinder* pBinder, NativeAssemblyNamePar
     // the loader allocator objects.
     NewHolder<LoaderAllocator> pLoaderAllocator;
 
+    AllocMemTracker amTracker;
+    AllocMemTracker *pamTracker = &amTracker;
+
     Assembly *pRetVal = NULL;
 
     // First, we set up a pseudo-manifest file for the assembly.
@@ -477,7 +480,7 @@ Assembly *Assembly::CreateDynamic(AssemblyBinder* pBinder, NativeAssemblyNamePar
         }
 
         // Create a domain assembly
-        pDomainAssembly = new DomainAssembly(pPEAssembly, pLoaderAllocator);
+        pDomainAssembly = new DomainAssembly(pPEAssembly, pLoaderAllocator, pamTracker);
         pAssem = pDomainAssembly->GetAssembly();
         pAssem->m_isDynamic = true;
         if (pDomainAssembly->IsCollectible())
@@ -518,6 +521,7 @@ Assembly *Assembly::CreateDynamic(AssemblyBinder* pBinder, NativeAssemblyNamePar
         // Cannot fail after this point
 
         pDomainAssembly.SuppressRelease();
+        pamTracker->SuppressRelease();
 
         // Once we reach this point, the loader allocator lifetime is controlled by the Assembly object.
         if (createdNewAssemblyLoaderAllocator)
