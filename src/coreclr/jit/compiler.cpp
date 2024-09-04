@@ -2294,28 +2294,15 @@ void Compiler::compSetProcessor()
         }
         if (canUseEvexEncoding())
         {
-            // TODO-XArch-APX: After APX, we can use EVEX for legacy and VEX instructions as well.
             codeGen->GetEmitter()->SetUseEvexEncoding(true);
             // TODO-XArch-AVX512 : Revisit other flags to be set once avx512 instructions are added.
         }
-        if (canUseRex2Encoding() || DoJitStressRex2Encoding())
+        if (canUseApxEncodings())
         {
             // TODO-Xarch-apx:
-            //   At this stage, since no machine will pass the CPUID check for APX, we need a special stress mode that
+            //   At this stage, since no machine will pass the CPUID check for APX, we need a special stress mode that 
             //   enables REX2 on incompatible platform, `DoJitStressRex2Encoding` is expected to be removed eventually.
             codeGen->GetEmitter()->SetUseRex2Encoding(true);
-        }
-        if(canUsePromotedEvexEncoding() || DoJitStressPromotedEvexEncoding())
-        {
-            // TODO-XArch-apx:
-            // I'd prefer seperate the check for EVEX encoding and promoted EVEX encoding,
-            // As they are essentially standing for different underlying ISA extensions:
-            // EVEX for Avx512/Avx10, and promoted EVEX for Apx.
-            // If VEX/EVEX instructions need to use promoted EVEX for EGPRs or new features,
-            // we need to do a combination with the original check and APX check.
-
-            // but we might be able to fold `canUseRex2Encoding` and `canUsePromotedEvexEncoding`
-            // as the logics are the same, while still let compiler manage REX2 and promoted EVEX sperately
             codeGen->GetEmitter()->SetUsePromotedEVEXEncoding(true);
         }
     }
