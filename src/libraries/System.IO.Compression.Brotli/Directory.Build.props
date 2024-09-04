@@ -3,6 +3,6 @@
   <PropertyGroup>
     <StrongNameKeyId>ECMA</StrongNameKeyId>
     <IncludePlatformAttributes>true</IncludePlatformAttributes>
-    <UnsupportedOSPlatforms>browser</UnsupportedOSPlatforms>
+    <UnsupportedOSPlatforms>browser;wasi</UnsupportedOSPlatforms>
   </PropertyGroup>
 </Project>
