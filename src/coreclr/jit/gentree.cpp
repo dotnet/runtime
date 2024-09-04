@@ -20842,13 +20842,6 @@ GenTree* Compiler::gtNewSimdBinOpNode(
         {
             GenTree** broadcastOp = nullptr;
 
-#if defined(TARGET_ARM64)
-            if (varTypeIsLong(simdBaseType))
-            {
-                break;
-            }
-#endif // TARGET_ARM64
-
             if (varTypeIsArithmetic(op1))
             {
                 broadcastOp = &op1;
@@ -20856,7 +20849,7 @@ GenTree* Compiler::gtNewSimdBinOpNode(
 #if defined(TARGET_ARM64)
                 if (!varTypeIsByte(simdBaseType))
                 {
-                    // MultiplyByScalar requires the scalar op to be op2fGetHWIntrinsicIdForBinOp
+                    // MultiplyByScalar requires the scalar op to be op2 for GetHWIntrinsicIdForBinOp
                     needsReverseOps = true;
                 }
 #endif // TARGET_ARM64
@@ -20869,7 +20862,12 @@ GenTree* Compiler::gtNewSimdBinOpNode(
             if (broadcastOp != nullptr)
             {
 #if defined(TARGET_ARM64)
-                if (!varTypeIsByte(simdBaseType))
+                if (varTypeIsLong(simdBaseType))
+                {
+                    // This is handled via emulation and the scalar is consumed directly
+                    break;
+                }
+                else if (!varTypeIsByte(simdBaseType))
                 {
                     op2ForLookup = *broadcastOp;
                     *broadcastOp = gtNewSimdCreateScalarUnsafeNode(TYP_SIMD8, *broadcastOp, simdBaseJitType, 8);
@@ -21273,16 +21271,13 @@ GenTree* Compiler::gtNewSimdBinOpNode(
 #elif defined(TARGET_ARM64)
             if (varTypeIsLong(simdBaseType))
             {
-                GenTree** op1ToDup = &op1;
-                GenTree** op2ToDup = &op2;
+                GenTree** op2ToDup = nullptr;
 
-                if (!varTypeIsArithmetic(op1))
-                {
-                    op1      = gtNewSimdToScalarNode(TYP_LONG, op1, simdBaseJitType, simdSize);
-                    op1ToDup = &op1->AsHWIntrinsic()->Op(1);
-                }
+                assert(varTypeIsSIMD(op1));
+                op1                = gtNewSimdToScalarNode(TYP_LONG, op1, simdBaseJitType, simdSize);
+                GenTree** op1ToDup = &op1->AsHWIntrinsic()->Op(1);
 
-                if (!varTypeIsArithmetic(op2))
+                if (varTypeIsSIMD(op2))
                 {
                     op2      = gtNewSimdToScalarNode(TYP_LONG, op2, simdBaseJitType, simdSize);
                     op2ToDup = &op2->AsHWIntrinsic()->Op(1);
@@ -21290,7 +21285,12 @@ GenTree* Compiler::gtNewSimdBinOpNode(
 
                 // lower = op1.GetElement(0) * op2.GetElement(0)
                 GenTree* lower = gtNewOperNode(GT_MUL, TYP_LONG, op1, op2);
-                lower          = gtNewSimdCreateScalarUnsafeNode(type, lower, simdBaseJitType, simdSize);
+
+                if (op2ToDup == nullptr)
+                {
+                    op2ToDup = &lower->AsOp()->gtOp2;
+                }
+                lower = gtNewSimdCreateScalarUnsafeNode(type, lower, simdBaseJitType, simdSize);
 
                 if (simdSize == 8)
                 {
@@ -21302,10 +21302,8 @@ GenTree* Compiler::gtNewSimdBinOpNode(
                 GenTree* op1Dup = fgMakeMultiUse(op1ToDup);
                 GenTree* op2Dup = fgMakeMultiUse(op2ToDup);
 
-                if (!varTypeIsArithmetic(op1Dup))
-                {
-                    op1Dup = gtNewSimdGetElementNode(TYP_LONG, op1Dup, gtNewIconNode(1), simdBaseJitType, simdSize);
-                }
+                assert(!varTypeIsArithmetic(op1Dup));
+                op1Dup = gtNewSimdGetElementNode(TYP_LONG, op1Dup, gtNewIconNode(1), simdBaseJitType, simdSize);
 
                 if (!varTypeIsArithmetic(op2Dup))
                 {
