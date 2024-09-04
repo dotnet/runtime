@@ -1123,8 +1123,8 @@ ReJITID ReJitManager::GetReJitId(PTR_MethodDesc pMD, PCODE pCodeStart)
     CONTRACTL
     {
         NOTHROW;
-        CAN_TAKE_LOCK;
-        GC_TRIGGERS;
+        CANNOT_TAKE_LOCK;
+        GC_NOTRIGGER;
         PRECONDITION(CheckPointer(pMD));
         PRECONDITION(pCodeStart != NULL);
     }
@@ -1138,36 +1138,6 @@ ReJITID ReJitManager::GetReJitId(PTR_MethodDesc pMD, PCODE pCodeStart)
     {
         return 0;
     }
-
-    CodeVersionManager::LockHolder codeVersioningLockHolder;
-    return ReJitManager::GetReJitIdNoLock(pMD, pCodeStart);
-}
-
-//---------------------------------------------------------------------------------------
-//
-// See comment above code:ReJitManager::GetReJitId for main details of what this does.
-//
-// This function is basically the same as GetReJitId, except caller is expected to take
-// the ReJitManager lock directly (via ReJitManager::TableLockHolder). This exists so
-// that ETW can explicitly take the triggering ReJitManager lock up front, and in the
-// proper order, to avoid lock leveling issues, and triggering issues with other locks it
-// takes that are CRST_UNSAFE_ANYMODE
-//
-
-ReJITID ReJitManager::GetReJitIdNoLock(PTR_MethodDesc pMD, PCODE pCodeStart)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        CANNOT_TAKE_LOCK;
-        GC_NOTRIGGER;
-        PRECONDITION(CheckPointer(pMD));
-        PRECONDITION(pCodeStart != NULL);
-    }
-    CONTRACTL_END;
-
-    // Caller must ensure this lock is taken!
-    _ASSERTE(CodeVersionManager::IsLockOwnedByCurrentThread());
 
     NativeCodeVersion nativeCodeVersion = pMD->GetCodeVersionManager()->GetNativeCodeVersion(pMD, pCodeStart);
     if (nativeCodeVersion.IsNull())
@@ -1265,11 +1235,6 @@ HRESULT ReJitManager::RequestRevert(
 }
 
 ReJITID ReJitManager::GetReJitId(PTR_MethodDesc pMD, PCODE pCodeStart)
-{
-    return 0;
-}
-
-ReJITID ReJitManager::GetReJitIdNoLock(PTR_MethodDesc pMD, PCODE pCodeStart)
 {
     return 0;
 }

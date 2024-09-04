@@ -263,11 +263,11 @@ public:
         PatchpointInfo* patchpointInfo, unsigned ilOffset);
 #endif
 
-    PTR_MethodDesc GetMethodDesc() const;
-    NativeCodeVersionId GetVersionId() const;
-    PCODE GetNativeCode() const;
-    ReJITID GetILVersionId() const;
-    ILCodeVersion GetILCodeVersion() const;
+    PTR_MethodDesc GetMethodDesc() const; // Can be called without any locks
+    NativeCodeVersionId GetVersionId() const; // Can be called without any locks
+    PCODE GetNativeCode() const; // Can be called without any locks, but result may be stale if it wasn't already set
+    ReJITID GetILVersionId() const; // Can be called without any locks
+    ILCodeVersion GetILCodeVersion() const;// Can be called without any locks
     BOOL IsActiveChildVersion() const;
 #ifndef DACCESS_COMPILE
     BOOL SetNativeCodeInterlocked(PCODE pCode, PCODE pExpected);
@@ -287,19 +287,19 @@ public:
 #endif
 
 #ifdef FEATURE_ON_STACK_REPLACEMENT
-    PatchpointInfo * GetOSRInfo(unsigned * ilOffset);
+    PatchpointInfo * GetOSRInfo(unsigned * ilOffset) const;
 #endif
 
 private:
     //union - could save a little memory?
     //{
     PCODE m_pNativeCode;
-    PTR_MethodDesc m_pMethodDesc;
+    const PTR_MethodDesc m_pMethodDesc;
     //};
 
-    ReJITID m_parentId;
+    const ReJITID m_parentId;
     PTR_NativeCodeVersionNode m_pNextMethodDescSibling;
-    NativeCodeVersionId m_id;
+    const NativeCodeVersionId m_id;
 #ifdef FEATURE_TIERED_COMPILATION
     NativeCodeVersion::OptimizationTier m_optTier;
 #endif
@@ -307,8 +307,8 @@ private:
     PTR_GCCoverageInfo m_gcCover;
 #endif
 #ifdef FEATURE_ON_STACK_REPLACEMENT
-    PTR_PatchpointInfo m_patchpointInfo;
-    unsigned m_ilOffset;
+    const PTR_PatchpointInfo m_patchpointInfo;
+    const unsigned m_ilOffset;
 #endif
 
     enum NativeCodeVersionNodeFlags
@@ -388,10 +388,10 @@ public:
 #endif
 
 private:
-    PTR_Module m_pModule;
-    mdMethodDef m_methodDef;
-    ReJITID m_rejitId;
-    PTR_ILCodeVersionNode m_pNextILVersionNode;
+    const PTR_Module m_pModule;
+    const mdMethodDef m_methodDef;
+    const ReJITID m_rejitId;
+    PTR_ILCodeVersionNode m_pNextILVersionNode; // Never modified after being added to the linked list
     Volatile<ILCodeVersion::RejitFlags> m_rejitState;
     VolatilePtr<COR_ILMETHOD, PTR_COR_ILMETHOD> m_pIL;
     Volatile<DWORD> m_jitFlags;
