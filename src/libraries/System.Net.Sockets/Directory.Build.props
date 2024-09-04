@@ -3,6 +3,7 @@
   <PropertyGroup>
     <StrongNameKeyId>Microsoft</StrongNameKeyId>
     <IncludePlatformAttributes>true</IncludePlatformAttributes>
-    <UnsupportedOSPlatforms>browser</UnsupportedOSPlatforms>
+    <!-- WASI until https://github.com/dotnet/runtime/issues/98957 -->
+    <UnsupportedOSPlatforms>browser;wasi</UnsupportedOSPlatforms>
   </PropertyGroup>
 </Project>
