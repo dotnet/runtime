@@ -389,22 +389,23 @@ namespace ILCompiler
             DataflowAnalyzedTypeDefinitionNode.GetDependencies(ref dependencies, factory, FlowAnnotations, type);
         }
 
-        public override void GetConditionalDependenciesDueToEETypePresence(ref CombinedDependencyList dependencies, NodeFactory factory, TypeDesc type, bool maximallyConstructable)
+        public override bool HasConditionalDependenciesDueToEETypePresence(TypeDesc type)
         {
-            if (!maximallyConstructable)
-            {
-                if (type.GetTypeDefinition() is EcmaType ecmaType)
-                {
-                    dependencies.Add(new DependencyNodeCore<NodeFactory>.CombinedDependencyListEntry(
-                        factory.MaximallyConstructableType(type),
-                        factory.TypeMetadata(ecmaType),
-                        "Reflection visible type"
-                        ));
-                }
+            // Note: these are duplicated with the checks in GetConditionalDependenciesDueToEETypePresence
 
-                return;
-            }
+            // If there's dataflow annotations on the type, we have conditional dependencies
+            if (type.IsDefType && !type.IsInterface && FlowAnnotations.GetTypeAnnotation(type) != default)
+                return true;
 
+            // If we need to ensure fields are consistently reflectable on various generic instances
+            if (type.HasInstantiation && !type.IsGenericDefinition && !IsReflectionBlocked(type))
+                return true;
+
+            return false;
+        }
+
+        public override void GetConditionalDependenciesDueToEETypePresence(ref CombinedDependencyList dependencies, NodeFactory factory, TypeDesc type)
+        {
             // Check to see if we have any dataflow annotations on the type.
             // The check below also covers flow annotations inherited through base classes and implemented interfaces.
             if (type.IsDefType

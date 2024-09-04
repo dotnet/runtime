@@ -568,10 +568,15 @@ namespace ILCompiler
             // and property setters)
         }
 
-        public virtual void GetConditionalDependenciesDueToEETypePresence(ref CombinedDependencyList dependencies, NodeFactory factory, TypeDesc type, bool maximallyConstructible)
+        public virtual void GetConditionalDependenciesDueToEETypePresence(ref CombinedDependencyList dependencies, NodeFactory factory, TypeDesc type)
         {
             // MetadataManagers can override this to provide additional dependencies caused by the presence of
             // an MethodTable.
+        }
+
+        public virtual bool HasConditionalDependenciesDueToEETypePresence(TypeDesc type)
+        {
+            return false;
         }
 
         /// <summary>
