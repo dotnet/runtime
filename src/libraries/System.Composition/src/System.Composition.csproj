@@ -8,7 +8,7 @@
     <NoWarn>$(NoWarn);NU5128</NoWarn>
     <!-- Reference dependencies to persiste them in the project's project.assets.json file which is used to calculate package dependencies. -->
     <NoTargetsDoNotReferenceOutputAssemblies>false</NoTargetsDoNotReferenceOutputAssemblies>
-    <PackageDescription>Provides the foundational attributes that allow you to declare parts for composition, such as imports, exports, and metadata with the Managed Extensibility Framework (MEF).</PackageDescription>
+    <PackageDescription>Provides a version of the Managed Extensibility Framework (MEF) that is lightweight and specifically optimized for high throughput scenarios, such as the web.</PackageDescription>
     <!-- TODO https://github.com/dotnet/runtime/issues/90400: Annotate for nullable reference types -->
     <Nullable>disable</Nullable>
     <NoWarn>$(NoWarn);nullable</NoWarn>
