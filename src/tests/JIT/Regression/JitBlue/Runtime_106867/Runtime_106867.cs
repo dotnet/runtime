@@ -45,7 +45,10 @@ public class Runtime_106867
     [Fact]
     public static void TestEntryPoint()
     {
-        var vr6 = s_5[0];
-        new S0().M6(s_16, vr6);
+        if (Sve.IsSupported)
+        {
+            var vr6 = s_5[0];
+            new S0().M6(s_16, vr6);
+        }
     }
 }

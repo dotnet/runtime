@@ -23,13 +23,16 @@ public class Runtime_106866_2
     [Fact]
     public static void TestEntryPoint()
     {
-        Vector<short> vr4 = default(Vector<short>);
-        vr4 = Sve.MultiplyAdd(vr4, vr4, vr4);
-        var vr5 = (short)0;
-        var vr6 = Vector128.CreateScalar(vr5).AsVector();
-        var vr7 = (short)0;
-        var vr8 = Sve.ConditionalExtractLastActiveElement(vr6, vr7, vr4);
-        Consume(vr8);
+        if (Sve.IsSupported)
+        {
+            Vector<short> vr4 = default(Vector<short>);
+            vr4 = Sve.MultiplyAdd(vr4, vr4, vr4);
+            var vr5 = (short)0;
+            var vr6 = Vector128.CreateScalar(vr5).AsVector();
+            var vr7 = (short)0;
+            var vr8 = Sve.ConditionalExtractLastActiveElement(vr6, vr7, vr4);
+            Consume(vr8);
+        }
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
