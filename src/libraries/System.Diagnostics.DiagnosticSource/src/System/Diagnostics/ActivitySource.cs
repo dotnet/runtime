@@ -407,105 +407,96 @@ namespace System.Diagnostics
         }
     }
 
-    // SynchronizedList<T> is a helper collection which ensure thread safety on the collection
-    // and allow enumerating the collection items and execute some action on the enumerated item and can detect any change in the collection
-    // during the enumeration which force restarting the enumeration again.
-    // Caution: We can have the action executed on the same item more than once which is ok in our scenarios.
+    //this class uses Interlocked operations and a copy-on-write design to ensure thread safety
+    //all operations are thread safe
     internal sealed class SynchronizedList<T>
     {
-        private readonly List<T> _list;
-        private uint _version;
-
-        public SynchronizedList() => _list = new List<T>();
+        //This array must not be written to directly. Copy the array and then replace it with the new array.
+        private T[] _volatileArray;
+        public SynchronizedList() => _volatileArray = [];
 
         public void Add(T item)
         {
-            lock (_list)
+            while (true)
             {
-                _list.Add(item);
-                _version++;
+                T[] local = _volatileArray;
+                var newArray = new T[local.Length + 1];
+                Array.Copy(local, newArray, local.Length);
+                newArray[local.Length] = item;
+
+                if (Interlocked.CompareExchange(ref _volatileArray, newArray, local) == local)
+                    break;
             }
         }
 
         public bool AddIfNotExist(T item)
         {
-            lock (_list)
+            while (true)
             {
-                if (!_list.Contains(item))
+                T[] local = _volatileArray;
+
+                foreach (T arrayItem in local)
                 {
-                    _list.Add(item);
-                    _version++;
-                    return true;
+                    if (EqualityComparer<T>.Default.Equals(arrayItem, item))
+                    {
+                        return false;
+                    }
                 }
-                return false;
+
+                // We didn't find the item in the list, so we can add it.
+                Add(item);
+                return true;
             }
         }
 
         public bool Remove(T item)
         {
-            lock (_list)
+            while (true)
             {
-                if (_list.Remove(item))
+                T[] local = _volatileArray;
+
+                for (int i = 0; i < local.Length; i++)
                 {
-                    _version++;
-                    return true;
+                    if (EqualityComparer<T>.Default.Equals(local[i], item))
+                    {
+                        var newArray = new T[local.Length - 1];
+                        Array.Copy(local, newArray, i);
+                        Array.Copy(local, i + 1, newArray, i, local.Length - i - 1);
+
+                        if (Interlocked.CompareExchange(ref _volatileArray, newArray, local) == local)
+                            return true;
+                        break;
+                    }
                 }
+
                 return false;
             }
         }
 
-        public int Count => _list.Count;
+        public int Count
+        {
+            get
+            {
+                T[] localArray = Volatile.Read(in _volatileArray);
+
+                return localArray.Length;
+            }
+        }
 
         public void EnumWithFunc<TParent>(ActivitySource.Function<T, TParent> func, ref ActivityCreationOptions<TParent> data, ref ActivitySamplingResult samplingResult, ref ActivityCreationOptions<ActivityContext> dataWithContext)
         {
-            uint version = _version;
-            int index = 0;
-
-            while (index < _list.Count)
+            T[] localArray = Volatile.Read(in _volatileArray);
+            foreach (T item in localArray)
             {
-                T item;
-                lock (_list)
-                {
-                    if (version != _version)
-                    {
-                        version = _version;
-                        index = 0;
-                        continue;
-                    }
-
-                    item = _list[index];
-                    index++;
-                }
-
-                // Important to call the func outside the lock.
-                // This is the whole point we are having this wrapper class.
                 func(item, ref data, ref samplingResult, ref dataWithContext);
             }
         }
 
         public void EnumWithAction(Action<T, object> action, object arg)
         {
-            uint version = _version;
-            int index = 0;
-
-            while (index < _list.Count)
+            T[] localArray = Volatile.Read(in _volatileArray);
+            foreach (T item in localArray)
             {
-                T item;
-                lock (_list)
-                {
-                    if (version != _version)
-                    {
-                        version = _version;
-                        index = 0;
-                        continue;
-                    }
-
-                    item = _list[index];
-                    index++;
-                }
-
-                // Important to call the action outside the lock.
-                // This is the whole point we are having this wrapper class.
                 action(item, arg);
             }
         }
@@ -517,27 +508,9 @@ namespace System.Diagnostics
                 return;
             }
 
-            uint version = _version;
-            int index = 0;
-
-            while (index < _list.Count)
+            T[] localArray = Volatile.Read(in _volatileArray);
+            foreach (T item in localArray)
             {
-                T item;
-                lock (_list)
-                {
-                    if (version != _version)
-                    {
-                        version = _version;
-                        index = 0;
-                        continue;
-                    }
-
-                    item = _list[index];
-                    index++;
-                }
-
-                // Important to notify outside the lock.
-                // This is the whole point we are having this wrapper class.
                 (item as ActivityListener)!.ExceptionRecorder?.Invoke(activity, exception, ref tags);
             }
         }
