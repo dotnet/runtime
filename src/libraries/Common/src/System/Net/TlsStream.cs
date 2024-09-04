@@ -68,6 +68,11 @@ namespace System.Net
             return _sslStream.WriteAsync(buffer, offset, count, cancellationToken);
         }
 
+        public override ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default(CancellationToken))
+        {
+            return _sslStream.WriteAsync(buffer, cancellationToken);
+        }
+
         public override int Read(byte[] buffer, int offset, int size)
         {
             return _sslStream.Read(buffer, offset, size);
