@@ -836,7 +836,10 @@ namespace Internal.IL
                     && ConstructedEETypeNode.CreationAllowed(typeEqualityCheckType)
                     && !typeEqualityCheckType.ConvertToCanonForm(CanonicalFormKind.Specific).IsCanonicalSubtype(CanonicalFormKind.Any))
                 {
-                    condition = _factory.MaximallyConstructableType(typeEqualityCheckType);
+                    if (typeEqualityCheckType.GetTypeDefinition() is MetadataType typeEqualityCheckMetadataType)
+                        condition = _factory.TypeMetadata(typeEqualityCheckMetadataType);
+                    else
+                        condition = _factory.MaximallyConstructableType(typeEqualityCheckType);
                 }
             }
 
