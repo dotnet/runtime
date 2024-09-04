@@ -9197,7 +9197,7 @@ CorInfoType CEEInfo::getFieldTypeInternal (CORINFO_FIELD_HANDLE fieldHnd,
                 if (actualFieldsOwner->IsSharedByGenericInstantiations() &&
                     !matchingHintedFieldOwner->IsSharedByGenericInstantiations())
                 {
-                    moreExactFieldOwner  = matchingHintedFieldOwner;
+                    moreExactFieldOwner = matchingHintedFieldOwner;
                 }
             }
         }
