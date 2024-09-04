@@ -1616,12 +1616,12 @@ namespace System.Runtime.Intrinsics
                       || (typeof(T) == typeof(long))
                       || (typeof(T) == typeof(nint)));
 
-            // Condition is equivalent to: (sign(left) != sign(right)) || (sign(left) == sign(sum))
+            // Condition is equivalent to: (sign(left) != sign(sum)) && (sign(left) == sign(right))
             // Overflow result is equivalent to: left < 0 ? T.MinValue : T.MaxValue
             return TVector.ConditionalSelect(
-                TVector.IsNegative((left ^ right) | ~(left ^ sum)),
-                sum,
-                (TVector.AllBitsSet >>> 1) ^ TVector.IsNegative(left));
+                TVector.IsNegative(TVector.AndNot(left ^ sum, left ^ right)),
+                (TVector.AllBitsSet >>> 1) ^ TVector.IsNegative(left),
+                sum);
         }
 
         public static TVector SubtractSaturate<TVector, T>(TVector left, TVector right)
@@ -1652,10 +1652,10 @@ namespace System.Runtime.Intrinsics
                       || (typeof(T) == typeof(long))
                       || (typeof(T) == typeof(nint)));
 
-            // Condition is equivalent to: (sign(left) != sign(right)) && (sign(left) != sign(diff))
+            // Condition is equivalent to: (sign(left) != sign(diff)) && (sign(left) != sign(right))
             // Overflow result is equivalent to: left < 0 ? T.MinValue : T.MaxValue
             return TVector.ConditionalSelect(
-                TVector.IsNegative((left ^ right) & (left ^ diff)),
+                TVector.IsNegative((left ^ diff) & (left ^ right)),
                 (TVector.AllBitsSet >>> 1) ^ TVector.IsNegative(left),
                 diff);
         }

@@ -2076,13 +2076,13 @@ namespace System.Tests
             yield return new object[] { T.CreateChecked(10), T.CreateChecked(5), T.CreateChecked(5) };
             yield return new object[] { T.CreateChecked(10), T.CreateChecked(-5), T.CreateChecked(15) };
             yield return new object[] { T.CreateChecked(10), T.MinValue, T.MaxValue };
-            yield return new object[] { T.CreateChecked(10), T.MaxValue, T.MinValue + T.CreateChecked(11) };
+            yield return new object[] { T.CreateChecked(10), T.MaxValue, -(T.MaxValue - T.CreateChecked(10)) };
             yield return new object[] { T.CreateChecked(10), T.MinValue + T.CreateChecked(5), T.MaxValue };
 
             yield return new object[] { T.CreateChecked(-10), T.Zero, T.CreateChecked(-10) };
             yield return new object[] { T.CreateChecked(-10), T.CreateChecked(5), T.CreateChecked(-15) };
             yield return new object[] { T.CreateChecked(-10), T.CreateChecked(-5), T.CreateChecked(-5) };
-            yield return new object[] { T.CreateChecked(-10), T.MinValue, T.MaxValue - T.CreateChecked(9) };
+            yield return new object[] { T.CreateChecked(-10), T.MinValue, -(T.MinValue + T.CreateChecked(10)) };
             yield return new object[] { T.CreateChecked(-10), T.MaxValue, T.MinValue };
 
             yield return new object[] { T.MinValue, T.Zero, T.MinValue };
