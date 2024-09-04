@@ -24,7 +24,7 @@ public class Runtime_107173
     public static C0 s_8 = new C0();
 
     [Fact]
-    public static void TestEntryPoint()
+    public static void TestLeftShift()
     {
         if (AdvSimd.IsSupported)
         {
@@ -34,5 +34,12 @@ public class Runtime_107173
             Vector128<uint> vr9 = AdvSimd.ShiftLeftLogicalWideningLower(vr8, 0);
             Assert.Equal(vr9, Vector128<uint>.Zero);
         }
+    }
+
+    [Fact]
+    public static void TestRightShift()
+    {
+        var result = Vector128<byte>.AllBitsSet >> 8;
+        Assert.Equal(result, Vector128<byte>.AllBitsSet);
     }
 }
