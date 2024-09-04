@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Collections.Specialized;
 using System.ComponentModel.Design;
@@ -36,12 +37,12 @@ namespace System.ComponentModel
         internal static readonly object s_commonSyncObject = new object();
 
         // A direct mapping from type to provider.
-        private static readonly Dictionary<Type, TypeDescriptionNode> s_providerTypeTable = new Dictionary<Type, TypeDescriptionNode>();
+        private static readonly ConcurrentDictionary<Type, TypeDescriptionNode> s_providerTypeTable = new ConcurrentDictionary<Type, TypeDescriptionNode>();
 
         // Tracks DefaultTypeDescriptionProviderAttributes.
         // A value of `null` indicates initialization is in progress.
         // A value of s_initializedDefaultProvider indicates the provider is initialized.
-        private static readonly Dictionary<Type, object?> s_defaultProviderInitialized = new Dictionary<Type, object?>();
+        private static readonly ConcurrentDictionary<Type, object?> s_defaultProviderInitialized = new ConcurrentDictionary<Type, object?>();
 
         private static readonly object s_initializedDefaultProvider = new object();
 
@@ -317,7 +318,7 @@ namespace System.ComponentModel
         /// </summary>
         private static void CheckDefaultProvider(Type type)
         {
-            if (s_defaultProviderInitialized[type] == s_initializedDefaultProvider)
+            if (s_defaultProviderInitialized.TryGetValue(type, out object? provider) && provider == s_initializedDefaultProvider)
             {
                 return;
             }
@@ -344,7 +345,7 @@ namespace System.ComponentModel
 
             // Immediately set this to null to indicate we are in progress setting the default provider for a type.
             // This prevents re-entrance to this method.
-            s_defaultProviderInitialized[type] = null;
+            s_defaultProviderInitialized.TryAdd(type, null);
 
             // Always use core reflection when checking for the default provider attribute.
             // If there is a provider, we probably don't want to build up our own cache state against the type.
@@ -1564,8 +1565,10 @@ namespace System.ComponentModel
 
             while (node == null)
             {
-                node = (TypeDescriptionNode?)s_providerTypeTable[searchType] ??
-                       (TypeDescriptionNode?)s_providerTable[searchType];
+                if (!s_providerTypeTable.TryGetValue(searchType, out node))
+                {
+                    node = (TypeDescriptionNode?)s_providerTable[searchType];
+                }
 
                 if (node == null)
                 {
@@ -1591,7 +1594,7 @@ namespace System.ComponentModel
                         node = new TypeDescriptionNode(new DelegatingTypeDescriptionProvider(baseType));
                         lock (s_commonSyncObject)
                         {
-                            s_providerTypeTable[searchType] = node;
+                            s_providerTypeTable.TryAdd(searchType, node);
                         }
                     }
                     else
