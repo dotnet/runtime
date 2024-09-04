@@ -444,12 +444,15 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                 {
                     const int shiftAmount = helper.ImmValue();
 
-                    if (shiftAmount == 0)
+                    if ((shiftAmount == 0) && (intrin.category == HW_Category_ShiftRightByImmediate))
                     {
-                        // TODO: Use emitIns_Mov instead.
-                        //       We do not use it currently because it will still elide the 'mov'
-                        //       even if 'canSkip' is false. We cannot elide the 'mov' here.
-                        GetEmitter()->emitIns_R_R_R(INS_mov, emitTypeSize(node), targetReg, reg, reg);
+                        // For operations like `Vector128<byte> >> 8`, over-shifting behavior will mask
+                        // the immediate so that it's zero, and the shift will be imported as a GT_HWINTRINSIC.
+                        // If this isn't const-folded away, it is possible to try to emit a right-shift by zero,
+                        // but only if the immediate is known (we won't emit a zero case for the jump table).
+                        // Since we cannot encode a right-shift by 0 on ARM64, emit a mov instead.
+                        assert(op->isContainedIntOrIImmed());
+                        GetEmitter()->emitIns_Mov(INS_mov, emitTypeSize(node), targetReg, reg, /* canSkip */ true);
                     }
                     else
                     {
