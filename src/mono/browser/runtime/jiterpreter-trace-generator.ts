@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+import WasmEnableThreads from "consts:wasmEnableThreads";
 import { MonoMethod } from "./types/internal";
 import { NativePointer } from "./types/emscripten";
 import {
@@ -3976,7 +3977,8 @@ function emit_atomics (
     builder: WasmBuilder, ip: MintOpcodePtr, opcode: number
 ) {
     if (opcode === MintOpcode.MINT_MONO_MEMORY_BARRIER) {
-        builder.callImport("membar");
+        if (WasmEnableThreads)
+            builder.callImport("membar");
         return true;
     }
 
