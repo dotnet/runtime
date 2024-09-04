@@ -133,7 +133,7 @@
     <value>{0} Record Type is not supported by design.</value>
   </data>
   <data name="Serialization_InvalidReference" xml:space="preserve">
-    <value>Member reference was pointing to a record of unexpected type.</value>
+    <value>Invalid member reference.</value>
   </data>
   <data name="Serialization_InvalidTypeName" xml:space="preserve">
     <value>Invalid type name: `{0}`.</value>

@@ -498,4 +498,22 @@ public class InvalidInputTests : ReadTests
 
         Assert.Throws(expectedException, () => NrbfDecoder.Decode(stream));
     }
+
+    [Fact]
+    public void MissingRootRecord()
+    {
+        const int RootRecordId = 1;
+        using MemoryStream stream = new();
+        BinaryWriter writer = new(stream, Encoding.UTF8);
+
+        WriteSerializedStreamHeader(writer, rootId: RootRecordId);
+        writer.Write((byte)SerializationRecordType.BinaryObjectString);
+        writer.Write(RootRecordId + 1); // a different ID
+        writer.Write("theString");
+        writer.Write((byte)SerializationRecordType.MessageEnd);
+
+        stream.Position = 0;
+
+        Assert.Throws<SerializationException>(() => NrbfDecoder.Decode(stream));
+    }
 }
