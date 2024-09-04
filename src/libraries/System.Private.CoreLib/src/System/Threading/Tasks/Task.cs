@@ -819,6 +819,7 @@ namespace System.Threading.Tasks
 
         /// <summary>Gets whether the task's debugger notification for wait completion bit is set.</summary>
         /// <returns>true if the bit is set; false if it's not set.</returns>
+        [FeatureSwitchDefinition("System.Diagnostics.Debugger.IsSupported")]
         internal bool IsWaitNotificationEnabled => // internal only to enable unit tests; would otherwise be private
             (m_stateFlags & (int)TaskStateFlags.WaitCompletionNotification) != 0;
 
@@ -2966,6 +2967,9 @@ namespace System.Threading.Tasks
         // to be able to see the method on the stack and inspect arguments).
         private bool InternalWaitCore(int millisecondsTimeout, CancellationToken cancellationToken)
         {
+#if TARGET_WASI
+            if (OperatingSystem.IsWasi()) throw new PlatformNotSupportedException(); // TODO remove with https://github.com/dotnet/runtime/pull/107185
+#endif
             // If the task has already completed, there's nothing to wait for.
             bool returnValue = IsCompleted;
             if (returnValue)
@@ -4681,6 +4685,9 @@ namespace System.Threading.Tasks
         [MethodImpl(MethodImplOptions.NoOptimization)]  // this is needed for the parallel debugger
         public static void WaitAll(params Task[] tasks)
         {
+#if TARGET_WASI
+            if (OperatingSystem.IsWasi()) throw new PlatformNotSupportedException(); // TODO remove with https://github.com/dotnet/runtime/pull/107185
+#endif
             if (tasks is null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.tasks);
@@ -4706,6 +4713,9 @@ namespace System.Threading.Tasks
         [UnsupportedOSPlatform("browser")]
         public static void WaitAll(params ReadOnlySpan<Task> tasks)
         {
+#if TARGET_WASI
+            if (OperatingSystem.IsWasi()) throw new PlatformNotSupportedException(); // TODO remove with https://github.com/dotnet/runtime/pull/107185
+#endif
             bool waitResult = WaitAllCore(tasks, Timeout.Infinite, default);
             Debug.Assert(waitResult, "expected wait to succeed");
         }
@@ -4743,6 +4753,9 @@ namespace System.Threading.Tasks
         [MethodImpl(MethodImplOptions.NoOptimization)]  // this is needed for the parallel debugger
         public static bool WaitAll(Task[] tasks, TimeSpan timeout)
         {
+#if TARGET_WASI
+            if (OperatingSystem.IsWasi()) throw new PlatformNotSupportedException(); // TODO remove with https://github.com/dotnet/runtime/pull/107185
+#endif
             long totalMilliseconds = (long)timeout.TotalMilliseconds;
             if (totalMilliseconds is < -1 or > int.MaxValue)
             {
@@ -4787,6 +4800,9 @@ namespace System.Threading.Tasks
         [MethodImpl(MethodImplOptions.NoOptimization)]  // this is needed for the parallel debugger
         public static bool WaitAll(Task[] tasks, int millisecondsTimeout)
         {
+#if TARGET_WASI
+            if (OperatingSystem.IsWasi()) throw new PlatformNotSupportedException(); // TODO remove with https://github.com/dotnet/runtime/pull/107185
+#endif
             if (tasks is null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.tasks);
@@ -4821,6 +4837,9 @@ namespace System.Threading.Tasks
         [MethodImpl(MethodImplOptions.NoOptimization)]  // this is needed for the parallel debugger
         public static void WaitAll(Task[] tasks, CancellationToken cancellationToken)
         {
+#if TARGET_WASI
+            if (OperatingSystem.IsWasi()) throw new PlatformNotSupportedException(); // TODO remove with https://github.com/dotnet/runtime/pull/107185
+#endif
             if (tasks is null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.tasks);
@@ -4867,6 +4886,9 @@ namespace System.Threading.Tasks
         [MethodImpl(MethodImplOptions.NoOptimization)]  // this is needed for the parallel debugger
         public static bool WaitAll(Task[] tasks, int millisecondsTimeout, CancellationToken cancellationToken)
         {
+#if TARGET_WASI
+            if (OperatingSystem.IsWasi()) throw new PlatformNotSupportedException(); // TODO remove with https://github.com/dotnet/runtime/pull/107185
+#endif
             if (tasks is null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.tasks);
@@ -4889,6 +4911,9 @@ namespace System.Threading.Tasks
         [UnsupportedOSPlatform("browser")]
         public static void WaitAll(IEnumerable<Task> tasks, CancellationToken cancellationToken = default)
         {
+#if TARGET_WASI
+            if (OperatingSystem.IsWasi()) throw new PlatformNotSupportedException(); // TODO remove with https://github.com/dotnet/runtime/pull/107185
+#endif
             if (tasks is null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.tasks);
@@ -4907,6 +4932,9 @@ namespace System.Threading.Tasks
         [UnsupportedOSPlatform("browser")]
         private static bool WaitAllCore(ReadOnlySpan<Task> tasks, int millisecondsTimeout, CancellationToken cancellationToken)
         {
+#if TARGET_WASI
+            if (OperatingSystem.IsWasi()) throw new PlatformNotSupportedException(); // TODO remove with https://github.com/dotnet/runtime/pull/107185
+#endif
             if (millisecondsTimeout < -1)
             {
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.millisecondsTimeout);
@@ -5037,6 +5065,9 @@ namespace System.Threading.Tasks
         [UnsupportedOSPlatform("browser")]
         private static bool WaitAllBlockingCore(List<Task> tasks, int millisecondsTimeout, CancellationToken cancellationToken)
         {
+#if TARGET_WASI
+            if (OperatingSystem.IsWasi()) throw new PlatformNotSupportedException(); // TODO remove with https://github.com/dotnet/runtime/pull/107185
+#endif
             Debug.Assert(tasks != null, "Expected a non-null list of tasks");
             Debug.Assert(tasks.Count > 0, "Expected at least one task");
 

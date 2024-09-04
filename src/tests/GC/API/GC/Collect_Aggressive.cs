@@ -4,10 +4,12 @@
 using System;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 public class AggressiveCollect
 {
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         long before = CreateGarbage();
         GC.Collect(2, GCCollectionMode.Aggressive, blocking: true, compacting: true);
