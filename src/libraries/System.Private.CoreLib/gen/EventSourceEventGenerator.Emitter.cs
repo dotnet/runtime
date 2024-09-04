@@ -125,8 +125,8 @@ namespace Generators
                 writer.Indent++;
                 if (argument.SpecialType == SpecialType.System_String)
                 {
-                    writer.WriteLine($"DataPointer = {argument.Name} == null ? {IntPtrZero} : (nint){AsPointer}(ref {GetReference}({AsSpan}({argument.Name}))),");
-                    writer.WriteLine($"Size = {argument.Name} == null ? 0 : (({argument.Name}.Length + 1) * sizeof(char))");
+                    writer.WriteLine($"DataPointer = (nint){AsPointer}(ref {GetReference}({AsSpan}({argument.Name})),");
+                    writer.WriteLine($"Size = ({argument.Name}.Length + 1) * sizeof(char)");
                 }
                 else
                 {
