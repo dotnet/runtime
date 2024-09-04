@@ -19,7 +19,6 @@ namespace Generators
         {
             private const string NonEventAttribute = "global::System.Diagnostics.Tracing.NonEventAttribute";
             private const string EventData = "global::System.Diagnostics.Tracing.EventSource.EventData";
-            private const string IntPtrZero = "global::System.IntPtr.Zero";
             private const string AsPointer = "global::System.Runtime.CompilerServices.Unsafe.AsPointer";
             private const string GetReference = "global::System.Runtime.InteropServices.MemoryMarshal.GetReference";
             private const string AsSpan = "global::System.MemoryExtensions.AsSpan";
