@@ -629,6 +629,17 @@ Initialize(
             goto CLEANUP10;
         }
 
+        if (flags & PAL_INITIALIZE_FLUSH_PROCESS_WRITE_BUFFERS)
+        {
+            // Initialize before first thread is created for faster load on Linux
+            if (!InitializeFlushProcessWriteBuffers())
+            {
+                ERROR("Unable to initialize flush process write buffers\n");
+                palError = ERROR_PALINIT_INITIALIZE_FLUSH_PROCESS_WRITE_BUFFERS;
+                goto CLEANUP10;
+            }
+        }
+
         if (flags & PAL_INITIALIZE_SYNC_THREAD)
         {
             //
@@ -785,11 +796,6 @@ PAL_InitializeCoreCLR(const char *szExePath, BOOL runningInExe)
     {
         printf("PROCAbortInitialize FAILED %d (%s)\n", errno, strerror(errno));
         return ERROR_PALINIT_PROCABORT_INITIALIZE;
-    }
-
-    if (!InitializeFlushProcessWriteBuffers())
-    {
-        return ERROR_PALINIT_INITIALIZE_FLUSH_PROCESS_WRITE_BUFFERS;
     }
 
     return ERROR_SUCCESS;

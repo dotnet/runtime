@@ -707,10 +707,47 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                 {
                     if (!instrIsRMW)
                     {
-                        // Perform the actual "predicated" operation so that `embMaskOp1Reg` is the first operand
-                        // and `embMaskOp2Reg` is the second operand.
-                        GetEmitter()->emitIns_R_R_R_R(insEmbMask, emitSize, targetReg, maskReg, embMaskOp1Reg,
-                                                      embMaskOp2Reg, opt);
+                        // Perform the actual "predicated" operation so that `embMaskOp1Reg` is the first operand..
+                        switch (intrinEmbMask.id)
+                        {
+                            case NI_Sve_LoadVectorByteNonFaultingZeroExtendToInt16:
+                            case NI_Sve_LoadVectorByteNonFaultingZeroExtendToInt32:
+                            case NI_Sve_LoadVectorByteNonFaultingZeroExtendToInt64:
+                            case NI_Sve_LoadVectorByteNonFaultingZeroExtendToUInt16:
+                            case NI_Sve_LoadVectorByteNonFaultingZeroExtendToUInt32:
+                            case NI_Sve_LoadVectorByteNonFaultingZeroExtendToUInt64:
+                            case NI_Sve_LoadVectorInt16NonFaultingSignExtendToInt32:
+                            case NI_Sve_LoadVectorInt16NonFaultingSignExtendToInt64:
+                            case NI_Sve_LoadVectorInt16NonFaultingSignExtendToUInt32:
+                            case NI_Sve_LoadVectorInt16NonFaultingSignExtendToUInt64:
+                            case NI_Sve_LoadVectorInt32NonFaultingSignExtendToInt64:
+                            case NI_Sve_LoadVectorInt32NonFaultingSignExtendToUInt64:
+                            case NI_Sve_LoadVectorNonFaulting:
+                            case NI_Sve_LoadVectorSByteNonFaultingSignExtendToInt16:
+                            case NI_Sve_LoadVectorSByteNonFaultingSignExtendToInt32:
+                            case NI_Sve_LoadVectorSByteNonFaultingSignExtendToInt64:
+                            case NI_Sve_LoadVectorSByteNonFaultingSignExtendToUInt16:
+                            case NI_Sve_LoadVectorSByteNonFaultingSignExtendToUInt32:
+                            case NI_Sve_LoadVectorSByteNonFaultingSignExtendToUInt64:
+                            case NI_Sve_LoadVectorUInt16NonFaultingZeroExtendToInt32:
+                            case NI_Sve_LoadVectorUInt16NonFaultingZeroExtendToInt64:
+                            case NI_Sve_LoadVectorUInt16NonFaultingZeroExtendToUInt32:
+                            case NI_Sve_LoadVectorUInt16NonFaultingZeroExtendToUInt64:
+                            case NI_Sve_LoadVectorUInt32NonFaultingZeroExtendToInt64:
+                            case NI_Sve_LoadVectorUInt32NonFaultingZeroExtendToUInt64:
+                            {
+
+                                GetEmitter()->emitIns_R_R_R(insEmbMask, emitSize, targetReg, maskReg, embMaskOp1Reg,
+                                                            opt);
+                                break;
+                            }
+
+                            default:
+                            {
+                                GetEmitter()->emitIns_R_R_R_R(insEmbMask, emitSize, targetReg, maskReg, embMaskOp1Reg,
+                                                              embMaskOp2Reg, opt);
+                            }
+                        }
                         break;
                     }
 
@@ -1346,44 +1383,38 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
             break;
 
             case NI_AdvSimd_Insert:
+            {
                 assert(isRMW);
 
                 GetEmitter()->emitIns_Mov(INS_mov, emitTypeSize(node), targetReg, op1Reg, /* canSkip */ true);
 
-                if (intrin.op3->isContainedFltOrDblImmed())
-                {
-                    assert(intrin.op2->isContainedIntOrIImmed());
-                    assert(intrin.op2->AsIntCon()->gtIconVal == 0);
+                // fmov (scalar) zeros the upper bits and is not safe to use
+                assert(!intrin.op3->isContainedFltOrDblImmed());
 
-                    const double dataValue = intrin.op3->AsDblCon()->DconValue();
-                    GetEmitter()->emitIns_R_F(INS_fmov, emitSize, targetReg, dataValue, opt);
+                assert(targetReg != op3Reg);
+
+                HWIntrinsicImmOpHelper helper(this, intrin.op2, node);
+
+                if (varTypeIsFloating(intrin.baseType))
+                {
+                    for (helper.EmitBegin(); !helper.Done(); helper.EmitCaseEnd())
+                    {
+                        const int elementIndex = helper.ImmValue();
+
+                        GetEmitter()->emitIns_R_R_I_I(ins, emitSize, targetReg, op3Reg, elementIndex, 0, opt);
+                    }
                 }
                 else
                 {
-                    assert(targetReg != op3Reg);
-
-                    HWIntrinsicImmOpHelper helper(this, intrin.op2, node);
-
-                    if (varTypeIsFloating(intrin.baseType))
+                    for (helper.EmitBegin(); !helper.Done(); helper.EmitCaseEnd())
                     {
-                        for (helper.EmitBegin(); !helper.Done(); helper.EmitCaseEnd())
-                        {
-                            const int elementIndex = helper.ImmValue();
+                        const int elementIndex = helper.ImmValue();
 
-                            GetEmitter()->emitIns_R_R_I_I(ins, emitSize, targetReg, op3Reg, elementIndex, 0, opt);
-                        }
-                    }
-                    else
-                    {
-                        for (helper.EmitBegin(); !helper.Done(); helper.EmitCaseEnd())
-                        {
-                            const int elementIndex = helper.ImmValue();
-
-                            GetEmitter()->emitIns_R_R_I(ins, emitSize, targetReg, op3Reg, elementIndex, opt);
-                        }
+                        GetEmitter()->emitIns_R_R_I(ins, emitSize, targetReg, op3Reg, elementIndex, opt);
                     }
                 }
                 break;
+            }
 
             case NI_AdvSimd_InsertScalar:
             {
@@ -2139,6 +2170,43 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                     }
                 }
 
+                break;
+            }
+
+            case NI_Sve_LoadVectorByteNonFaultingZeroExtendToInt16:
+            case NI_Sve_LoadVectorByteNonFaultingZeroExtendToInt32:
+            case NI_Sve_LoadVectorByteNonFaultingZeroExtendToInt64:
+            case NI_Sve_LoadVectorByteNonFaultingZeroExtendToUInt16:
+            case NI_Sve_LoadVectorByteNonFaultingZeroExtendToUInt32:
+            case NI_Sve_LoadVectorByteNonFaultingZeroExtendToUInt64:
+            case NI_Sve_LoadVectorInt16NonFaultingSignExtendToInt32:
+            case NI_Sve_LoadVectorInt16NonFaultingSignExtendToInt64:
+            case NI_Sve_LoadVectorInt16NonFaultingSignExtendToUInt32:
+            case NI_Sve_LoadVectorInt16NonFaultingSignExtendToUInt64:
+            case NI_Sve_LoadVectorInt32NonFaultingSignExtendToInt64:
+            case NI_Sve_LoadVectorInt32NonFaultingSignExtendToUInt64:
+            case NI_Sve_LoadVectorNonFaulting:
+            case NI_Sve_LoadVectorSByteNonFaultingSignExtendToInt16:
+            case NI_Sve_LoadVectorSByteNonFaultingSignExtendToInt32:
+            case NI_Sve_LoadVectorSByteNonFaultingSignExtendToInt64:
+            case NI_Sve_LoadVectorSByteNonFaultingSignExtendToUInt16:
+            case NI_Sve_LoadVectorSByteNonFaultingSignExtendToUInt32:
+            case NI_Sve_LoadVectorSByteNonFaultingSignExtendToUInt64:
+            case NI_Sve_LoadVectorUInt16NonFaultingZeroExtendToInt32:
+            case NI_Sve_LoadVectorUInt16NonFaultingZeroExtendToInt64:
+            case NI_Sve_LoadVectorUInt16NonFaultingZeroExtendToUInt32:
+            case NI_Sve_LoadVectorUInt16NonFaultingZeroExtendToUInt64:
+            case NI_Sve_LoadVectorUInt32NonFaultingZeroExtendToInt64:
+            case NI_Sve_LoadVectorUInt32NonFaultingZeroExtendToUInt64:
+            {
+                if (intrin.numOperands == 2)
+                {
+                    // We have extra argument which means there is a "use" of FFR here. Restore it back in FFR
+                    // register.
+                    assert(op2Reg != REG_NA);
+                    GetEmitter()->emitIns_R(INS_sve_wrffr, emitSize, op2Reg, opt);
+                }
+                GetEmitter()->emitIns_R_R(ins, emitSize, targetReg, op1Reg);
                 break;
             }
 
