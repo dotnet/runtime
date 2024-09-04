@@ -22,8 +22,8 @@ namespace Melanzana.MachO.BinaryFormat
             var slice = buffer.Slice(0, BinarySize);
             var zeroIndex = slice.IndexOf((byte)0);
             if (zeroIndex >= 0)
-                return new MachFixedName(Encoding.UTF8.GetString(slice.Slice(0, zeroIndex)));
-            return new MachFixedName(Encoding.UTF8.GetString(slice));
+                return new MachFixedName(Encoding.UTF8.GetString(slice.Slice(0, zeroIndex).ToArray()));
+            return new MachFixedName(Encoding.UTF8.GetString(slice.ToArray()));
         }
 
         public void Write(Span<byte> buffer, out int bytesWritten)

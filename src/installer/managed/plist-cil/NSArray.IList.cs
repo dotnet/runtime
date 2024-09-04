@@ -24,7 +24,7 @@ using System.Collections.Generic;
 
 namespace Claunia.PropertyList
 {
-    partial class NSArray : IList<NSObject>
+    public partial class NSArray : IList<NSObject>
     {
         /// <inheritdoc />
         public NSObject this[int index]

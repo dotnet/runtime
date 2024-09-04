@@ -6,7 +6,7 @@ namespace Melanzana.MachO
 
         protected MachLinkEdit(MachObjectFile objectFile)
         {
-            ArgumentNullException.ThrowIfNull(objectFile);
+            if (objectFile is null) throw new ArgumentNullException(nameof(objectFile));
 
             Data = new MachLinkEditData();
             this.objectFile = objectFile;
@@ -14,8 +14,8 @@ namespace Melanzana.MachO
 
         protected MachLinkEdit(MachObjectFile objectFile, MachLinkEditData data)
         {
-            ArgumentNullException.ThrowIfNull(objectFile);
-            ArgumentNullException.ThrowIfNull(data);
+            if (objectFile is null) throw new ArgumentNullException(nameof(objectFile));
+            if (data is null) throw new ArgumentNullException(nameof(data));
 
             Data = data;
             this.objectFile = objectFile;

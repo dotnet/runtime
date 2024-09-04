@@ -520,6 +520,8 @@
     <TestProjectToBuild Include="$(InstallerProjectRoot)tests\AppHost.Bundle.Tests\AppHost.Bundle.Tests.csproj" />
     <TestProjectToBuild Include="$(InstallerProjectRoot)tests\HostActivation.Tests\HostActivation.Tests.csproj" />
     <TestProjectToBuild Include="$(InstallerProjectRoot)tests\Microsoft.NET.HostModel.Tests\Microsoft.NET.HostModel.Tests.csproj" />
+    <TestProjectToBuild Include="$(InstallerProjectRoot)tests\Melanzana.MachO.Tests\Melanzana.MachO.Tests.csproj" />
+    <TestProjectToBuild Include="$(InstallerProjectRoot)tests\Melanzana.CodeSign.Tests\Melanzana.CodeSign.Tests.csproj" />
     <ProjectToBuild Include="@(TestProjectToBuild)" BuildInParallel="true" Test="true" Category="host" />
   </ItemGroup>
 

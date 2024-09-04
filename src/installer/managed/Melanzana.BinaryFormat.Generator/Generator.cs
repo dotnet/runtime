@@ -15,17 +15,10 @@ namespace BinaryFormat
     {
         public void Initialize(GeneratorInitializationContext context)
         {
-#if DEBUG
-            //if (!Debugger.IsAttached)
-            //{
-            //    Debugger.Launch();
-            //}
-#endif 
-
             context.RegisterForPostInitialization((pi) => pi.AddSource("BinaryFormat.Attribute.cs", AttributeSource));
             context.RegisterForSyntaxNotifications(() => new MySyntaxReceiver());
         }
-        
+
         public void Execute(GeneratorExecutionContext context)
         {
             MySyntaxReceiver syntaxReceiver = (MySyntaxReceiver)context.SyntaxContextReceiver;

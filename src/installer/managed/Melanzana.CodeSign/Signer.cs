@@ -57,7 +57,7 @@ namespace Melanzana.CodeSign
         private void SignMachO(string executablePath, string? bundleIdentifier = null, byte[]? resourceSealBytes = null, byte[]? infoPlistBytes = null)
         {
             var teamId = GetTeamId();
-            
+
             bundleIdentifier ??= Path.GetFileName(executablePath);
 
             byte[]? requirementsBlob = null;
@@ -97,7 +97,7 @@ namespace Melanzana.CodeSign
             {
                 var hashTypes = GetHashTypesForObjectFile(objectFile);
                 var cdBuilders = new CodeDirectoryBuilder[hashTypes.Length];
-    
+
                 hashTypesPerArch.Add((objectFile.CpuType, objectFile.CpuSubType), hashTypes);
                 cdBuildersPerArch.Add((objectFile.CpuType, objectFile.CpuSubType), cdBuilders);
 
@@ -176,7 +176,6 @@ namespace Melanzana.CodeSign
 
                 var cmsWrapperBlob = CmsWrapperBlob.Create(
                     codeSignOptions.DeveloperCertificate,
-                    codeSignOptions.PrivateKey,
                     codeDirectory,
                     hashTypes,
                     cdHashes);
@@ -307,9 +306,9 @@ namespace Melanzana.CodeSign
                             files2Value.Add("requirement", nestedInfo.Value.DesignatedRequirement.ToString());
                     }
                 }
-                else if (resourceAndRule.Info.LinkTarget != null)
+                else if (IsSymbolicLink(resourceAndRule.Info))
                 {
-                    files2Value.Add("symlink", resourceAndRule.Info.LinkTarget);
+                    throw new InvalidOperationException("Symbolic links are not supported");
                 }
                 else
                 {
@@ -318,8 +317,8 @@ namespace Melanzana.CodeSign
                         int bytesRead;
                         while ((bytesRead = fileStream.Read(buffer)) > 0)
                         {
-                            sha1.AppendData(buffer.AsSpan(0, bytesRead));
-                            sha256.AppendData(buffer.AsSpan(0, bytesRead));
+                            sha1.AppendData(buffer, 0, bytesRead);
+                            sha256.AppendData(buffer, 0, bytesRead);
                         }
                     }
 
@@ -347,7 +346,7 @@ namespace Melanzana.CodeSign
 
                 Debug.Assert(resourceAndRule.Info is FileInfo);
 
-                if (resourceAndRule.Info.LinkTarget != null)
+                if (IsSymbolicLink(resourceAndRule.Info))
                 {
                     continue;
                 }
@@ -363,7 +362,7 @@ namespace Melanzana.CodeSign
                         int bytesRead;
                         while ((bytesRead = fileStream.Read(buffer)) > 0)
                         {
-                            sha1.AppendData(buffer.AsSpan(0, bytesRead));
+                            sha1.AppendData(buffer, 0, bytesRead);
                         }
                     }
 
@@ -429,7 +428,7 @@ namespace Melanzana.CodeSign
                 var codeDirectoryBlob = superBlob.AsSpan(codeDirectoryOffset, codeDirectorySize);
                 var codeDirectoryHeader = CodeDirectoryBaselineHeader.Read(codeDirectoryBlob, out _);
                 var hasher = codeDirectoryHeader.HashType.GetIncrementalHash();
-                hasher.AppendData(codeDirectoryBlob);
+                hasher.AppendData(superBlob, codeDirectoryOffset, codeDirectorySize);
                 return (designatedRequirement, hasher.GetHashAndReset().AsSpan(0, 20).ToArray());
             }
 
@@ -456,6 +455,10 @@ namespace Melanzana.CodeSign
                 // TODO: Add support for signing regular files, etc.
                 return ReadNestedMachO(path);
             }
+        }
+        static bool IsSymbolicLink(FileSystemInfo fileInfo)
+        {
+            return (fileInfo.Attributes & FileAttributes.ReparsePoint) == FileAttributes.ReparsePoint;
         }
     }
 }

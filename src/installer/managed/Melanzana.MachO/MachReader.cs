@@ -139,7 +139,7 @@ namespace Melanzana.MachO
             Debug.Assert(dylibCommandHeader.NameOffset == LoadCommandHeader.BinarySize + DylibCommandHeader.BinarySize);
             var nameSlice = loadCommandPtr.Slice((int)dylibCommandHeader.NameOffset, (int)commandSize - (int)dylibCommandHeader.NameOffset);
             int zeroIndex = nameSlice.IndexOf((byte)0);
-            string name = zeroIndex >= 0 ? Encoding.UTF8.GetString(nameSlice.Slice(0, zeroIndex)) : Encoding.UTF8.GetString(nameSlice);
+            string name = zeroIndex >= 0 ? Encoding.UTF8.GetString(nameSlice.Slice(0, zeroIndex).ToArray()) : Encoding.UTF8.GetString(nameSlice.ToArray());
 
             return new T
             {
@@ -261,7 +261,7 @@ namespace Melanzana.MachO
         {
             return new MachUuid()
             {
-                Uuid = new Guid(loadCommandPtr.Slice(LoadCommandHeader.BinarySize, 16)),
+                Uuid = new Guid(loadCommandPtr.Slice(LoadCommandHeader.BinarySize, 16).ToArray()),
             };
         }
 
@@ -280,7 +280,7 @@ namespace Melanzana.MachO
 
             var nameSlice = loadCommandPtr.Slice((int)offset);
             int zeroIndex = nameSlice.IndexOf((byte)0);
-            string name = zeroIndex >= 0 ? Encoding.UTF8.GetString(nameSlice.Slice(0, zeroIndex)) : Encoding.UTF8.GetString(nameSlice);
+            string name = zeroIndex >= 0 ? Encoding.UTF8.GetString(nameSlice.Slice(0, zeroIndex).ToArray()) : Encoding.UTF8.GetString(nameSlice.ToArray());
 
             return new MachRunPath()
             {
@@ -297,7 +297,7 @@ namespace Melanzana.MachO
 
             var nameSlice = loadCommandPtr.Slice((int)offset);
             int zeroIndex = nameSlice.IndexOf((byte)0);
-            string name = zeroIndex >= 0 ? Encoding.UTF8.GetString(nameSlice.Slice(0, zeroIndex)) : Encoding.UTF8.GetString(nameSlice);
+            string name = zeroIndex >= 0 ? Encoding.UTF8.GetString(nameSlice.Slice(0, zeroIndex).ToArray()) : Encoding.UTF8.GetString(nameSlice.ToArray());
 
             return new MachLoadDylinkerCommand()
             {
@@ -394,14 +394,15 @@ namespace Melanzana.MachO
 
         private static MachMagic ReadMagic(Stream stream)
         {
-            ArgumentNullException.ThrowIfNull(stream);
+            if (stream is null)
+                throw new ArgumentNullException(nameof(stream));
 
             Span<byte> magicBuffer = stackalloc byte[4];
             stream.Seek(0, SeekOrigin.Begin);
             stream.ReadFully(magicBuffer);
 
             var magic = (MachMagic)BinaryPrimitives.ReadUInt32BigEndian(magicBuffer);
-            if (!Enum.IsDefined<MachMagic>(magic))
+            if (!Enum.IsDefined(typeof(MachMagic), magic))
             {
                 throw new InvalidDataException("The archive is not a valid MACH object.");
             }

@@ -41,12 +41,22 @@ namespace Melanzana.CodeSign.Requirements
 
         private static string BinaryValueToString(byte[] bytes)
         {
-            return $"0x{Convert.ToHexString(bytes)}";
+            return "0x" + ConvertToHexString(bytes);
+        }
+
+        private static string ConvertToHexString(byte[] bytes)
+        {
+            StringBuilder sb = new(2 * bytes.Length);
+            foreach (var b in bytes)
+            {
+                sb.Append(string.Format("{0:X2}", b));
+            }
+            return sb.ToString();
         }
 
         private static string ValueToString(byte[] bytes)
         {
-            bool isPrintable = bytes.All(c => !char.IsControl((char)c) && char.IsAscii((char)c));
+            bool isPrintable = bytes.All(c => !char.IsControl((char)c) && IsAscii((char)c));
             if (!isPrintable)
             {
                 return BinaryValueToString(bytes);
@@ -75,11 +85,13 @@ namespace Melanzana.CodeSign.Requirements
             {
                 return Encoding.ASCII.GetString(bytes);
             }
+            static bool IsAscii(char c) => (uint)c <= '\x007f';
         }
 
         private static string CertificateSlotToString(int slot)
         {
-            return slot switch {
+            return slot switch
+            {
                 0 => "leaf",
                 -1 => "root",
                 _ => slot.ToString(),

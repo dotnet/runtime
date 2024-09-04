@@ -9,19 +9,29 @@ namespace Melanzana.Streams
             return new SliceStream(stream, offset, size);
         }
 
+        public static int Read(this Stream stream, Span<byte> buffer)
+        {
+            var tmpBuffer = new byte[buffer.Length];
+            int bytesRead = stream.Read(tmpBuffer, 0, buffer.Length);
+            tmpBuffer.AsSpan().Slice(0, bytesRead).CopyTo(buffer);
+            return bytesRead;
+        }
+
         public static void ReadFully(this Stream stream, Span<byte> buffer)
         {
+            var tmpBuffer = new byte[buffer.Length];
             int totalRead = 0;
             int bytesRead;
-            while ((bytesRead = stream.Read(buffer.Slice(totalRead))) > 0 && buffer.Length < totalRead)
+            while ((bytesRead = stream.Read(tmpBuffer, totalRead, buffer.Length - totalRead)) > 0 && buffer.Length < totalRead)
                 totalRead += bytesRead;
             if (bytesRead <= 0)
                 throw new EndOfStreamException();
+            tmpBuffer.CopyTo(buffer);
         }
 
         public static void WritePadding(this Stream stream, long paddingSize, byte paddingByte = 0)
         {
-            Span<byte> paddingBuffer = stackalloc byte[4096];
+            Span<byte> paddingBuffer = new(new byte[4096]);
             paddingBuffer.Fill(paddingByte);
             while (paddingSize > 0)
             {
@@ -29,6 +39,12 @@ namespace Melanzana.Streams
                 stream.Write(paddingBuffer.Slice(0, (int)chunkSize));
                 paddingSize -= chunkSize;
             }
+        }
+
+        public static void Write(this Stream stream, ReadOnlySpan<byte> buffer)
+        {
+            var tmpBuffer = buffer.ToArray();
+            stream.Write(tmpBuffer, 0, buffer.Length);
         }
     }
 }

@@ -34,7 +34,7 @@ namespace Melanzana.CodeSign
                     throw new CryptographicException("Invalid DER encoding");
             }
         }
-        
+
         public static bool IsAppleDeveloperCertificate(this X509Certificate2 certificate)
         {
             // FIXME: We should check the certificate anchor and only allow the following OIDs in extensions:
@@ -43,7 +43,14 @@ namespace Melanzana.CodeSign
             // 1.2.840.113635.100.6.1.13 (Developer ID)
             // 1.2.840.113635.100.6.1.7 (Distribution)
             // 1.2.840.113635.100.6.1.4 (iPhone Distribution)
-            return certificate.Extensions.Any(e => e.Oid?.Value?.StartsWith("1.2.840.113635.100.6.1.") ?? false);
+            foreach(var ext in certificate.Extensions)
+            {
+                if (ext.Oid?.Value?.StartsWith("1.2.840.113635.100.6.1.") == true)
+                {
+                    return true;
+                }
+            }
+            return false;
         }
 
         public static string GetTeamId(this X509Certificate2 certificate)

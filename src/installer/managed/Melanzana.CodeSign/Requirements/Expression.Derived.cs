@@ -164,7 +164,7 @@ namespace Melanzana.CodeSign.Requirements
 
             public override string ToString()
             {
-                return $"cdhash H\"{Convert.ToHexString(codeDirectoryHash)}\"";
+                return $"cdhash H\"{ConvertToHexString(codeDirectoryHash)}\"";
             }
         }
 
@@ -191,7 +191,7 @@ namespace Melanzana.CodeSign.Requirements
 
             public override string ToString()
             {
-                return $"certificate {CertificateSlotToString(certificateIndex)} = H\"{Convert.ToHexString(anchorHash)}\"";
+                return $"certificate {CertificateSlotToString(certificateIndex)} = H\"{ConvertToHexString(anchorHash)}\"";
             }
         }
 
@@ -260,7 +260,7 @@ namespace Melanzana.CodeSign.Requirements
                 string field,
                 ExpressionMatchType matchType,
                 byte[]? matchValue)
-                : base(matchType, matchValue) 
+                : base(matchType, matchValue)
             {
                 this.op = op;
                 this.field = field;
@@ -306,7 +306,7 @@ namespace Melanzana.CodeSign.Requirements
                 byte[] certificateField,
                 ExpressionMatchType matchType,
                 byte[]? matchValue)
-                : base(matchType, matchValue) 
+                : base(matchType, matchValue)
             {
                 this.op = op;
                 this.certificateIndex = certificateIndex;

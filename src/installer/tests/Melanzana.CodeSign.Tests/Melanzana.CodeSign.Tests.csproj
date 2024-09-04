@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <!-- <TargetFramework>net6.0</TargetFramework> -->
+    <TargetFramework>$(TestInfraTargetFramework)</TargetFramework>
+    <Nullable>enable</Nullable>
+
+    <GenerateRuntimeConfigurationFiles>true</GenerateRuntimeConfigurationFiles>
+    <NoWarn>NU1605;NU1604;$(NoWarn)</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\managed\Melanzana.CodeSign\Melanzana.CodeSign.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="Data\*" />
+  </ItemGroup>
+
+</Project>

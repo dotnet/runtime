@@ -61,7 +61,7 @@ namespace Melanzana.MachO
                     {
                         int nameLength = stringTable.AsSpan((int)symbolHeader.NameIndex).IndexOf((byte)0);
                         Debug.Assert(nameLength >= 0);
-                        name = Encoding.UTF8.GetString(stringTable.AsSpan((int)symbolHeader.NameIndex, nameLength));
+                        name = Encoding.UTF8.GetString(stringTable, (int)symbolHeader.NameIndex, nameLength);
                     }
 
                     var symbol = new MachSymbol

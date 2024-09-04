@@ -395,8 +395,6 @@ namespace Claunia.PropertyList
                         case NSNumber.BOOLEAN: return num.ToBool();
                         default:               return num.ToDouble();
                     }
-
-                    break;
                 }
                 case NSString: return ((NSString)this).Content;
                 case NSData:   return ((NSData)this).Bytes;

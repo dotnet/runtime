@@ -26,6 +26,10 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="../Melanzana.CodeSign/Melanzana.CodeSign.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
     <Compile Include="$(CoreClrProjectRoot)tools\Common\Compiler\Win32Resources\ResourceData.cs" Link="Win32Resources\ResourceData.cs" />
     <Compile Include="$(CoreClrProjectRoot)tools\Common\Compiler\Win32Resources\ResourceData.Reader.cs" Link="Win32Resources\ResourceData.Reader.cs" />
     <Compile Include="$(CoreClrProjectRoot)tools\Common\Compiler\Win32Resources\ResourceData.ResourcesDataModel.cs" Link="Win32Resources\ResourceData.ResourcesDataModel.cs" />

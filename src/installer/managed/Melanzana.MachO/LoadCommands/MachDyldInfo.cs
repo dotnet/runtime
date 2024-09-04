@@ -4,7 +4,7 @@ namespace Melanzana.MachO
     {
         public MachDyldInfo(MachObjectFile objectFile)
         {
-            ArgumentNullException.ThrowIfNull(objectFile);
+            if (objectFile is null) throw new ArgumentNullException(nameof(objectFile));
 
             RebaseData = new MachLinkEditData();
             BindData = new MachLinkEditData();
@@ -21,12 +21,12 @@ namespace Melanzana.MachO
             MachLinkEditData lazyBindData,
             MachLinkEditData exportData)
         {
-            ArgumentNullException.ThrowIfNull(objectFile);
-            ArgumentNullException.ThrowIfNull(rebaseData);
-            ArgumentNullException.ThrowIfNull(bindData);
-            ArgumentNullException.ThrowIfNull(weakBindData);
-            ArgumentNullException.ThrowIfNull(lazyBindData);
-            ArgumentNullException.ThrowIfNull(exportData);
+            if (objectFile is null) throw new ArgumentNullException(nameof(objectFile));
+            if (rebaseData is null) throw new ArgumentNullException(nameof(rebaseData));
+            if (bindData is null) throw new ArgumentNullException(nameof(bindData));
+            if (weakBindData is null) throw new ArgumentNullException(nameof(weakBindData));
+            if (lazyBindData is null) throw new ArgumentNullException(nameof(lazyBindData));
+            if (exportData is null) throw new ArgumentNullException(nameof(exportData));
 
             RebaseData = rebaseData;
             BindData = bindData;

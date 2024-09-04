@@ -310,9 +310,7 @@ namespace Melanzana.MachO
                 LoadCommandHeader.BinarySize + 16,
                 isLittleEndian);
 
-            Span<byte> uuidBuffer = stackalloc byte[16];
-            uuid.Uuid.TryWriteBytes(uuidBuffer);
-            stream.Write(uuidBuffer);
+            stream.Write(uuid.Uuid.ToByteArray());
         }
 
         private static void WriteSourceVersion(Stream stream, MachSourceVersion sourceVersion, bool isLittleEndian)
@@ -373,7 +371,8 @@ namespace Melanzana.MachO
                 BinaryPrimitives.WriteInt32BigEndian(buffer, LoadCommandHeader.BinarySize + 4);
             }
 
-            Encoding.UTF8.GetBytes(value, buffer.Slice(4));
+            Encoding.UTF8.GetBytes(value).CopyTo(buffer.Slice(4));
+
             buffer[buffer.Length - 1] = 0;
             stream.Write(buffer);
 
@@ -638,7 +637,7 @@ namespace Melanzana.MachO
                     CpuSubType = objectFile.CpuSubType,
                     Offset = offset,
                     Size = size,
-                    Alignment = (uint)Math.Log2(alignment),
+                    Alignment = MathHelpers.Log2(alignment),
                 };
 
                 fatArchHeader.Write(fatArchHeaderBytes, isLittleEndian: false, out var _);

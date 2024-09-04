@@ -5,30 +5,26 @@ using System.Security.Cryptography;
 using System.Security.Cryptography.Pkcs;
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
+using System.Linq;
 using Claunia.PropertyList;
 
 namespace Melanzana.CodeSign.Blobs
 {
     public class CmsWrapperBlob
     {
-        private readonly static string rootCertificatePath = "Melanzana.CodeSign.Certificates.RootCertificate.cer";
-        private readonly static string g1IntermediateCertificatePath = "Melanzana.CodeSign.Certificates.IntermediateG1Certificate.cer";
-        private readonly static string g3IntermediateCertificatePath = "Melanzana.CodeSign.Certificates.IntermediateG3Certificate.cer";
-
         private static X509Certificate2 GetManifestCertificate(string name)
         {
             var memoryStream = new MemoryStream();
             using (var manifestStream = typeof(CmsWrapperBlob).Assembly.GetManifestResourceStream(name))
             {
                 Debug.Assert(manifestStream != null);
-                manifestStream.CopyTo(memoryStream);
+                manifestStream!.CopyTo(memoryStream);
             }
             return new X509Certificate2(memoryStream.ToArray());
         }
 
         public static byte[] Create(
             X509Certificate2? developerCertificate,
-            AsymmetricAlgorithm? privateKey,
             byte[] dataToSign,
             HashType[] hashTypes,
             byte[][] cdHashes)
@@ -55,28 +51,17 @@ namespace Melanzana.CodeSign.Blobs
 
             // Try to build full chain
             var chain = new X509Chain();
-            var chainPolicy = new X509ChainPolicy { TrustMode = X509ChainTrustMode.CustomRootTrust };
-            chainPolicy.CustomTrustStore.Add(GetManifestCertificate(rootCertificatePath));
-            chainPolicy.CustomTrustStore.Add(GetManifestCertificate(g1IntermediateCertificatePath));
-            chainPolicy.CustomTrustStore.Add(GetManifestCertificate(g3IntermediateCertificatePath));
-            chain.ChainPolicy = chainPolicy;
+            // Retry with default policy and system certificate store
+            chain.ChainPolicy = new X509ChainPolicy();
             if (chain.Build(developerCertificate))
             {
-                certificatesList.AddRange(chain.ChainElements.Select(e => e.Certificate).ToArray());
-            }
-            else
-            {
-                // Retry with default policy and system certificate store
-                chain.ChainPolicy = new X509ChainPolicy();
-                if (chain.Build(developerCertificate))
+                foreach(var ce in chain.ChainElements)
                 {
-                    certificatesList.AddRange(chain.ChainElements.Select(e => e.Certificate).ToArray());
+                    certificatesList.Add(ce.Certificate);
                 }
             }
 
-            var cmsSigner = privateKey == null ?
-                new CmsSigner(developerCertificate) :
-                new CmsSigner(SubjectIdentifierType.IssuerAndSerialNumber, developerCertificate, privateKey);
+            var cmsSigner = new CmsSigner(developerCertificate);
             cmsSigner.Certificates.AddRange(certificatesList);
             cmsSigner.IncludeOption = X509IncludeOption.None;
 

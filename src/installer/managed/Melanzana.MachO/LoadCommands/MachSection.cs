@@ -28,9 +28,9 @@ namespace Melanzana.MachO
             Stream? stream,
             MachLinkEditData? relocationData)
         {
-            ArgumentNullException.ThrowIfNull(objectFile);
-            ArgumentNullException.ThrowIfNull(segmentName);
-            ArgumentNullException.ThrowIfNull(sectionName);
+            if (objectFile is null) throw new ArgumentNullException(nameof(objectFile));
+            if (segmentName is null) throw new ArgumentNullException(nameof(segmentName));
+            if (sectionName is null) throw new ArgumentNullException(nameof(sectionName));
 
             this.objectFile = objectFile;
             this.SegmentName = segmentName;

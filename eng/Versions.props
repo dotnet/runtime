@@ -120,12 +120,14 @@
     <SystemDrawingCommonVersion>8.0.0</SystemDrawingCommonVersion>
     <SystemFormatsAsn1Version>8.0.1</SystemFormatsAsn1Version>
     <SystemIOFileSystemAccessControlVersion>5.0.0</SystemIOFileSystemAccessControlVersion>
+    <SystemFormatsAsn1Version>10.0.0-alpha.1.24454.1</SystemFormatsAsn1Version>
     <SystemMemoryVersion>4.5.5</SystemMemoryVersion>
     <SystemReflectionMetadataVersion>10.0.0-alpha.1.24504.10</SystemReflectionMetadataVersion>
     <SystemReflectionMetadataLoadContextVersion>10.0.0-alpha.1.24504.10</SystemReflectionMetadataLoadContextVersion>
     <SystemSecurityAccessControlVersion>6.0.0</SystemSecurityAccessControlVersion>
     <SystemSecurityCryptographyCngVersion>5.0.0</SystemSecurityCryptographyCngVersion>
     <SystemSecurityCryptographyOpenSslVersion>5.0.0</SystemSecurityCryptographyOpenSslVersion>
+    <SystemSecurityCryptographyPkcsVersion>5.0.0</SystemSecurityCryptographyPkcsVersion>
     <SystemSecurityPrincipalWindowsVersion>5.0.0</SystemSecurityPrincipalWindowsVersion>
     <SystemSecurityPermissionsVersion>7.0.0</SystemSecurityPermissionsVersion>
     <SystemTextJsonVersion>10.0.0-alpha.1.24504.10</SystemTextJsonVersion>

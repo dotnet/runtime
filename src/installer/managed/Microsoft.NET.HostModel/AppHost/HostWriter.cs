@@ -7,6 +7,7 @@ using System.IO;
 using System.IO.MemoryMappedFiles;
 using System.Runtime.InteropServices;
 using System.Text;
+using Melanzana.CodeSign;
 
 namespace Microsoft.NET.HostModel.AppHost
 {
@@ -178,14 +179,9 @@ namespace Microsoft.NET.HostModel.AppHost
                     {
                         throw new Win32Exception(Marshal.GetLastWin32Error(), $"Could not set file permission {Convert.ToString(filePermissionOctal, 8)} for {appHostDestinationFilePath}.");
                     }
-
-                    if (enableMacOSCodeSign && RuntimeInformation.IsOSPlatform(OSPlatform.OSX) && HostModelUtils.IsCodesignAvailable())
+                    if (enableMacOSCodeSign && RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
                     {
-                        (int exitCode, string stdErr) = HostModelUtils.RunCodesign("-s -", appHostDestinationFilePath);
-                        if (exitCode != 0)
-                        {
-                            throw new AppHostSigningException(exitCode, stdErr);
-                        }
+                        new Signer(new CodeSignOptions()).Sign(appHostDestinationFilePath);
                     }
                 }
             }

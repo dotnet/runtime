@@ -66,7 +66,7 @@ namespace Melanzana.CodeSign.Blobs
 
             long codeDirectorySize = GetFixedHeaderSize(version);
             codeDirectorySize += utf8Identifier.Length + 1;
-            if (!String.IsNullOrEmpty(teamId))
+            if (!string.IsNullOrEmpty(teamId))
                 codeDirectorySize += utf8TeamId.Length + 1;
             codeDirectorySize += (specialSlotCount + codeSlotCount) * hashSize;
             if (version >= CodeDirectoryVersion.SupportsPreEncrypt)
@@ -103,7 +103,7 @@ namespace Melanzana.CodeSign.Blobs
             baselineHeader.HashSize = hashSize;
             baselineHeader.HashType = HashType;
             baselineHeader.Platform = 0; // TODO
-            baselineHeader.Log2PageSize = (byte)Math.Log2(pageSize);
+            baselineHeader.Log2PageSize = (byte)MathHelpers.Log2(pageSize);
             baselineHeader.Reserved = 0;
             var scatterHeader = new CodeDirectoryScatterHeader();
             scatterHeader.ScatterOffset = 0;
@@ -113,7 +113,7 @@ namespace Melanzana.CodeSign.Blobs
             codeLimit64Header.Reserved = 0;
             codeLimit64Header.CodeLimit64 = execLength >= uint.MaxValue ? execLength : 0;
             var execSegementHeader = new CodeDirectoryExecSegmentHeader();
-            execSegementHeader.Base = textSegment.FileOffset;
+            execSegementHeader.Base = textSegment!.FileOffset;
             execSegementHeader.Limit = textSegment.FileSize;
             execSegementHeader.Flags = ExecutableSegmentFlags;
 

@@ -9,6 +9,8 @@ using System.IO.Compression;
 using System.Linq;
 using System.Reflection.PortableExecutable;
 using System.Runtime.InteropServices;
+using Melanzana.CodeSign;
+using Melanzana.MachO;
 using Microsoft.NET.HostModel.AppHost;
 
 namespace Microsoft.NET.HostModel.Bundle
@@ -346,13 +348,9 @@ namespace Microsoft.NET.HostModel.Bundle
             HostWriter.SetAsBundle(bundlePath, headerOffset);
 
             // Sign the bundle if requested
-            if (_macosCodesign && RuntimeInformation.IsOSPlatform(OSPlatform.OSX) && HostModelUtils.IsCodesignAvailable())
+            if (_macosCodesign && RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
             {
-                var (exitCode, stdErr) = HostModelUtils.RunCodesign("-s -", bundlePath);
-                if (exitCode != 0)
-                {
-                    throw new InvalidOperationException($"Failed to codesign '{bundlePath}': {stdErr}");
-                }
+                new Signer(new()).Sign(bundlePath);
             }
 
             return bundlePath;
@@ -360,18 +358,14 @@ namespace Microsoft.NET.HostModel.Bundle
             // Remove mac code signature if applied before bundling
             static void RemoveCodesignIfNecessary(string bundlePath)
             {
-                Debug.Assert(RuntimeInformation.IsOSPlatform(OSPlatform.OSX));
-                Debug.Assert(HostModelUtils.IsCodesignAvailable());
+                var objectFile = MachReader.Read(File.OpenWrite(bundlePath)).FirstOrDefault();
+                Debug.Assert(objectFile is not null);
 
-                // `codesign -v` returns 0 if app is signed
-                if (HostModelUtils.RunCodesign("-v", bundlePath).ExitCode == 0)
-                {
-                    var (exitCode, stdErr) = HostModelUtils.RunCodesign("--remove-signature", bundlePath);
-                    if (exitCode != 0)
-                    {
-                        throw new InvalidOperationException($"Removing codesign from '{bundlePath}' failed: {stdErr}");
-                    }
-                }
+                // Strip the signature
+                var codeSignature = objectFile!.LoadCommands.OfType<MachCodeSignature>().FirstOrDefault();
+                Debug.Assert(codeSignature is not null);
+                var originalSignatureSize = codeSignature!.FileSize;
+                objectFile!.LoadCommands.Remove(codeSignature);
             }
         }
     }

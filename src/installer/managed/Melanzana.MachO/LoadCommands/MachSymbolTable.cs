@@ -12,7 +12,7 @@ namespace Melanzana.MachO
 
         public MachSymbolTable(MachObjectFile objectFile)
         {
-            ArgumentNullException.ThrowIfNull(objectFile);
+            if (objectFile is null) throw new ArgumentNullException(nameof(objectFile));
 
             this.objectFile = objectFile;
             this.symbolTableData = new MachLinkEditData();
@@ -25,9 +25,9 @@ namespace Melanzana.MachO
             MachLinkEditData symbolTableData,
             MachLinkEditData stringTableData)
         {
-            ArgumentNullException.ThrowIfNull(objectFile);
-            ArgumentNullException.ThrowIfNull(symbolTableData);
-            ArgumentNullException.ThrowIfNull(stringTableData);
+            if (objectFile is null) throw new ArgumentNullException(nameof(objectFile));
+            if (symbolTableData is null) throw new ArgumentNullException(nameof(symbolTableData));
+            if (stringTableData is null) throw new ArgumentNullException(nameof(stringTableData));
 
             this.objectFile = objectFile;
             this.symbolTableData = symbolTableData;
