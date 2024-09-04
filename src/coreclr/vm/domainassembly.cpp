@@ -24,21 +24,21 @@
 #include "peimagelayout.inl"
 
 #ifndef DACCESS_COMPILE
-DomainAssembly::DomainAssembly(PEAssembly* pPEAssembly, LoaderAllocator* pLoaderAllocator) :
-    m_pAssembly(NULL),
-    m_pPEAssembly(pPEAssembly),
-    m_pModule(NULL),
-    m_fCollectible(pLoaderAllocator->IsCollectible()),
-    m_NextDomainAssemblyInSameALC(NULL),
-    m_pLoaderAllocator(pLoaderAllocator),
-    m_level(FILE_LOAD_CREATE),
-    m_loading(TRUE),
-    m_pError(NULL),
-    m_bDisableActivationCheck(FALSE),
-    m_fHostAssemblyPublished(FALSE),
-    m_debuggerFlags(DACF_NONE),
-    m_notifyflags(NOT_NOTIFIED),
-    m_fDebuggerUnloadStarted(FALSE)
+DomainAssembly::DomainAssembly(PEAssembly* pPEAssembly, LoaderAllocator* pLoaderAllocator, AllocMemTracker* memTracker)
+    : m_pAssembly(NULL)
+    , m_pPEAssembly(pPEAssembly)
+    , m_pModule(NULL)
+    , m_fCollectible(pLoaderAllocator->IsCollectible())
+    , m_NextDomainAssemblyInSameALC(NULL)
+    , m_pLoaderAllocator(pLoaderAllocator)
+    , m_level(FILE_LOAD_CREATE)
+    , m_loading(TRUE)
+    , m_pError(NULL)
+    , m_bDisableActivationCheck(FALSE)
+    , m_fHostAssemblyPublished(FALSE)
+    , m_debuggerFlags(DACF_NONE)
+    , m_notifyflags(NOT_NOTIFIED)
+    , m_fDebuggerUnloadStarted(FALSE)
 {
     CONTRACTL
     {
@@ -53,6 +53,18 @@ DomainAssembly::DomainAssembly(PEAssembly* pPEAssembly, LoaderAllocator* pLoader
     pPEAssembly->ValidateForExecution();
 
     SetupDebuggingConfig();
+
+    // Create the Assembly
+    NewHolder<Assembly> assembly = Assembly::Create(GetPEAssembly(), GetDebuggerInfoBits(), IsCollectible(), memTracker, IsCollectible() ? GetLoaderAllocator() : NULL);
+    assembly->SetIsTenured();
+
+    m_pAssembly = assembly.Extract();
+    m_pModule = m_pAssembly->GetModule();
+
+    m_pAssembly->SetDomainAssembly(this);
+
+    // Creating the Assembly should have ensured the PEAssembly is loaded
+    _ASSERT(GetPEAssembly()->IsLoaded());
 }
 
 DomainAssembly::~DomainAssembly()
@@ -319,12 +331,8 @@ BOOL DomainAssembly::DoIncrementalLoad(FileLoadLevel level)
         Begin();
         break;
 
-    case FILE_LOAD_ALLOCATE:
-        Allocate();
-        break;
-
-    case FILE_LOAD_POST_ALLOCATE:
-        PostAllocate();
+    case FILE_LOAD_BEFORE_TYPE_LOAD:
+        BeforeTypeLoad();
         break;
 
     case FILE_LOAD_EAGER_FIXUPS:
@@ -365,7 +373,7 @@ BOOL DomainAssembly::DoIncrementalLoad(FileLoadLevel level)
     return TRUE;
 }
 
-void DomainAssembly::PostAllocate()
+void DomainAssembly::BeforeTypeLoad()
 {
     CONTRACTL
     {
@@ -482,19 +490,6 @@ void DomainAssembly::Activate()
     RETURN;
 }
 
-void DomainAssembly::SetAssembly(Assembly* pAssembly)
-{
-    STANDARD_VM_CONTRACT;
-
-    _ASSERTE(pAssembly->GetModule()->GetPEAssembly()==m_pPEAssembly);
-    _ASSERTE(m_pAssembly == NULL);
-
-    m_pAssembly = pAssembly;
-    m_pModule = pAssembly->GetModule();
-
-    pAssembly->SetDomainAssembly(this);
-}
-
 void DomainAssembly::Begin()
 {
     STANDARD_VM_CONTRACT;
@@ -538,38 +533,6 @@ void DomainAssembly::UnregisterFromHostAssembly()
     {
         GetPEAssembly()->GetHostAssembly()->SetDomainAssembly(nullptr);
     }
-}
-
-void DomainAssembly::Allocate()
-{
-    CONTRACTL
-    {
-        INSTANCE_CHECK;
-        STANDARD_VM_CHECK;
-        INJECT_FAULT(COMPlusThrowOM(););
-        PRECONDITION(m_pAssembly == NULL);
-    }
-    CONTRACTL_END;
-
-    AllocMemTracker   amTracker;
-    AllocMemTracker * pamTracker = &amTracker;
-
-    Assembly * pAssembly;
-    {
-        // Order is important here - in the case of an exception, the Assembly holder must destruct before the AllocMemTracker declared above.
-        NewHolder<Assembly> assemblyHolder(NULL);
-
-        assemblyHolder = pAssembly = Assembly::Create(GetPEAssembly(), GetDebuggerInfoBits(), this->IsCollectible(), pamTracker, this->IsCollectible() ? this->GetLoaderAllocator() : NULL);
-        assemblyHolder->SetIsTenured();
-
-        pamTracker->SuppressRelease();
-        assemblyHolder.SuppressRelease();
-    }
-
-    SetAssembly(pAssembly);
-
-    // Creating the Assembly should have ensured the PEAssembly is loaded
-    _ASSERT(GetPEAssembly()->IsLoaded());
 }
 
 void DomainAssembly::DeliverAsyncEvents()

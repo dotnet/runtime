@@ -35,15 +35,13 @@ enum FileLoadLevel
 
     FILE_LOAD_CREATE,
     FILE_LOAD_BEGIN,
-    FILE_LOAD_ALLOCATE,
-    FILE_LOAD_POST_ALLOCATE,
+    FILE_LOAD_BEFORE_TYPE_LOAD,
     FILE_LOAD_EAGER_FIXUPS,
     FILE_LOAD_DELIVER_EVENTS,
     FILE_LOAD_VTABLE_FIXUPS,
     FILE_LOADED,                    // Loaded by not yet active
     FILE_ACTIVE                     // Fully active (constructors run & security checked)
 };
-
 
 enum NotificationStatus
 {
@@ -186,13 +184,6 @@ public:
         return EnsureLoadLevel(FILE_ACTIVE);
     }
 
-    // Ensure that an assembly has reached at least the Allocated state.  Throw if not.
-    void EnsureAllocated()
-    {
-        WRAPPER_NO_CONTRACT;
-        return EnsureLoadLevel(FILE_LOAD_ALLOCATE);
-    }
-
     // EnsureLoadLevel is a generic routine used to ensure that the file is not in a delay loaded
     // state (unless it needs to be.)  This should be used when a particular level of loading
     // is required for an operation.  Note that deadlocks are tolerated so the level may be one
@@ -260,7 +251,7 @@ public:
     friend class Module;
     friend class FileLoadLock;
 
-    DomainAssembly(PEAssembly* pPEAssembly, LoaderAllocator* pLoaderAllocator);
+    DomainAssembly(PEAssembly* pPEAssembly, LoaderAllocator* pLoaderAllocator, AllocMemTracker* memTracker);
 
     BOOL DoIncrementalLoad(FileLoadLevel targetLevel);
     void ClearLoading() { LIMITED_METHOD_CONTRACT; m_loading = FALSE; }
@@ -268,8 +259,7 @@ public:
 
 #ifndef DACCESS_COMPILE
     void Begin();
-    void Allocate();
-    void PostAllocate();
+    void BeforeTypeLoad();
     void EagerFixups();
     void VtableFixups();
     void DeliverSyncEvents();
@@ -283,7 +273,6 @@ public:
 
     // This should be used to permanently set the load to fail. Do not use with transient conditions
     void SetError(Exception *ex);
-    void SetAssembly(Assembly* pAssembly);
 
     void SetProfilerNotified() { LIMITED_METHOD_CONTRACT; m_notifyflags|= PROFILER_NOTIFIED; }
     void SetDebuggerNotified() { LIMITED_METHOD_CONTRACT; m_notifyflags|=DEBUGGER_NOTIFIED; }
