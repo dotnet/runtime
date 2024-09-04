@@ -1788,7 +1788,7 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                     predMask = RBM_LOWMASK.GetPredicateRegSet();
                 }
 
-                if ((delayFreeOp == intrin.op2) && (intrin.op2 != nullptr))
+                if ((delayFreeOp != nullptr) && (delayFreeOp != intrin.op1))
                 {
                     srcCount += BuildDelayFreeUses(intrin.op1, nullptr, predMask);
                 }
@@ -2023,99 +2023,96 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
             getLowVectorOperandAndCandidates(intrin, &lowVectorOperandNum, &lowVectorCandidates);
         }
 
-        if (delayFreeOp == intrin.op2)
+        SingleTypeRegSet op2Candidates = lowVectorOperandNum == 2 ? lowVectorCandidates : RBM_NONE;
+        if (varTypeIsMask(intrin.op2->TypeGet()))
         {
-            if (!intrin.op2->isContained())
-            {
-                assert(tgtPrefUse == nullptr);
-                tgtPrefUse2 = BuildUse(intrin.op2);
-                srcCount++;
-            }
-            else
-            {
-                srcCount += BuildOperandUses(intrin.op2);
-            }
+            assert(lowVectorOperandNum != 2);
+            op2Candidates = RBM_ALLMASK.GetPredicateRegSet();
+        }
+
+        bool buildAddrUses = false;
+        switch (intrin.id)
+        {
+            case NI_Sve_LoadVectorNonTemporal:
+            case NI_Sve_LoadVector128AndReplicateToVector:
+            case NI_Sve_StoreAndZip:
+                assert(intrinsicTree->OperIsMemoryLoadOrStore());
+                buildAddrUses = true;
+                break;
+
+            case NI_Sve_GatherVector:
+            case NI_Sve_GatherVectorByteZeroExtend:
+            case NI_Sve_GatherVectorInt16SignExtend:
+            case NI_Sve_GatherVectorInt16SignExtendFirstFaulting:
+            case NI_Sve_GatherVectorInt16WithByteOffsetsSignExtend:
+            case NI_Sve_GatherVectorInt16WithByteOffsetsSignExtendFirstFaulting:
+            case NI_Sve_GatherVectorInt32SignExtend:
+            case NI_Sve_GatherVectorInt32SignExtendFirstFaulting:
+            case NI_Sve_GatherVectorInt32WithByteOffsetsSignExtend:
+            case NI_Sve_GatherVectorInt32WithByteOffsetsSignExtendFirstFaulting:
+            case NI_Sve_GatherVectorSByteSignExtend:
+            case NI_Sve_GatherVectorSByteSignExtendFirstFaulting:
+            case NI_Sve_GatherVectorUInt16WithByteOffsetsZeroExtend:
+            case NI_Sve_GatherVectorUInt16WithByteOffsetsZeroExtendFirstFaulting:
+            case NI_Sve_GatherVectorUInt16ZeroExtend:
+            case NI_Sve_GatherVectorUInt16ZeroExtendFirstFaulting:
+            case NI_Sve_GatherVectorUInt32WithByteOffsetsZeroExtend:
+            case NI_Sve_GatherVectorUInt32WithByteOffsetsZeroExtendFirstFaulting:
+            case NI_Sve_GatherVectorUInt32ZeroExtend:
+            case NI_Sve_GatherVectorUInt32ZeroExtendFirstFaulting:
+            case NI_Sve_GatherVectorWithByteOffsetFirstFaulting:
+                assert(intrinsicTree->OperIsMemoryLoadOrStore());
+                FALLTHROUGH;
+
+            case NI_Sve_PrefetchBytes:
+            case NI_Sve_PrefetchInt16:
+            case NI_Sve_PrefetchInt32:
+            case NI_Sve_PrefetchInt64:
+            case NI_Sve_GatherPrefetch8Bit:
+            case NI_Sve_GatherPrefetch16Bit:
+            case NI_Sve_GatherPrefetch32Bit:
+            case NI_Sve_GatherPrefetch64Bit:
+                if (!varTypeIsSIMD(intrin.op2->gtType))
+                {
+                    buildAddrUses = true;
+                }
+                break;
+
+            default:
+                break;
+        }
+
+        if (buildAddrUses)
+        {
+            assert(delayFreeOp != intrin.op2);
+            assert(op2Candidates == RBM_NONE);
+            srcCount += BuildAddrUses(intrin.op2);
+        }
+        else if (delayFreeOp == intrin.op2)
+        {
+            assert(!intrin.op2->isContained());
+            assert(tgtPrefUse == nullptr);
+            tgtPrefUse2 = BuildUse(intrin.op2, op2Candidates);
+            srcCount++;
         }
         else
         {
-            switch (intrin.id)
-            {
-                case NI_Sve_LoadVectorNonTemporal:
-                case NI_Sve_LoadVector128AndReplicateToVector:
-                case NI_Sve_StoreAndZip:
-                    assert(intrinsicTree->OperIsMemoryLoadOrStore());
-                    srcCount += BuildAddrUses(intrin.op2);
-                    break;
-
-                case NI_Sve_GatherVector:
-                case NI_Sve_GatherVectorByteZeroExtend:
-                case NI_Sve_GatherVectorInt16SignExtend:
-                case NI_Sve_GatherVectorInt16SignExtendFirstFaulting:
-                case NI_Sve_GatherVectorInt16WithByteOffsetsSignExtend:
-                case NI_Sve_GatherVectorInt16WithByteOffsetsSignExtendFirstFaulting:
-                case NI_Sve_GatherVectorInt32SignExtend:
-                case NI_Sve_GatherVectorInt32SignExtendFirstFaulting:
-                case NI_Sve_GatherVectorInt32WithByteOffsetsSignExtend:
-                case NI_Sve_GatherVectorInt32WithByteOffsetsSignExtendFirstFaulting:
-                case NI_Sve_GatherVectorSByteSignExtend:
-                case NI_Sve_GatherVectorSByteSignExtendFirstFaulting:
-                case NI_Sve_GatherVectorUInt16WithByteOffsetsZeroExtend:
-                case NI_Sve_GatherVectorUInt16WithByteOffsetsZeroExtendFirstFaulting:
-                case NI_Sve_GatherVectorUInt16ZeroExtend:
-                case NI_Sve_GatherVectorUInt16ZeroExtendFirstFaulting:
-                case NI_Sve_GatherVectorUInt32WithByteOffsetsZeroExtend:
-                case NI_Sve_GatherVectorUInt32WithByteOffsetsZeroExtendFirstFaulting:
-                case NI_Sve_GatherVectorUInt32ZeroExtend:
-                case NI_Sve_GatherVectorUInt32ZeroExtendFirstFaulting:
-                case NI_Sve_GatherVectorWithByteOffsetFirstFaulting:
-                    assert(intrinsicTree->OperIsMemoryLoadOrStore());
-                    FALLTHROUGH;
-
-                case NI_Sve_PrefetchBytes:
-                case NI_Sve_PrefetchInt16:
-                case NI_Sve_PrefetchInt32:
-                case NI_Sve_PrefetchInt64:
-                case NI_Sve_GatherPrefetch8Bit:
-                case NI_Sve_GatherPrefetch16Bit:
-                case NI_Sve_GatherPrefetch32Bit:
-                case NI_Sve_GatherPrefetch64Bit:
-                    if (!varTypeIsSIMD(intrin.op2->gtType))
-                    {
-                        srcCount += BuildAddrUses(intrin.op2);
-                        break;
-                    }
-                    FALLTHROUGH;
-
-                default:
-                {
-                    assert(delayFreeOp != intrin.op2);
-                    SingleTypeRegSet candidates = lowVectorOperandNum == 2 ? lowVectorCandidates : RBM_NONE;
-
-                    if (intrin.op2->OperIsHWIntrinsic(NI_Sve_ConvertVectorToMask))
-                    {
-                        assert(lowVectorOperandNum != 2);
-                        candidates = RBM_ALLMASK.GetPredicateRegSet();
-                    }
-
-                    srcCount += isRMW ? BuildDelayFreeUses(intrin.op2, delayFreeOp, candidates)
-                                      : BuildOperandUses(intrin.op2, candidates);
-                }
-                break;
-            }
+            srcCount += isRMW ? BuildDelayFreeUses(intrin.op2, delayFreeOp, op2Candidates)
+                              : BuildOperandUses(intrin.op2, op2Candidates);
         }
 
         if (intrin.op3 != nullptr)
         {
             assert(delayFreeOp != intrin.op3);
-            SingleTypeRegSet candidates = lowVectorOperandNum == 3 ? lowVectorCandidates : RBM_NONE;
+            SingleTypeRegSet op3Candidates = lowVectorOperandNum == 3 ? lowVectorCandidates : RBM_NONE;
 
             if (isRMW)
             {
-                srcCount += BuildDelayFreeUses(intrin.op3, delayFreeOp, candidates);
+                srcCount += BuildDelayFreeUses(intrin.op3, delayFreeOp, op3Candidates);
             }
             else
             {
-                srcCount += BuildOperandUses(intrin.op3, candidates);
+                srcCount += BuildOperandUses(intrin.op3, op3Candidates);
             }
 
             if (intrin.op4 != nullptr)
