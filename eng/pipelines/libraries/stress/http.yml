@@ -12,6 +12,7 @@ schedules:
     include:
     - main
     - release/8.0
+    - release/9.0
 
 variables:
   - template: ../variables.yml
