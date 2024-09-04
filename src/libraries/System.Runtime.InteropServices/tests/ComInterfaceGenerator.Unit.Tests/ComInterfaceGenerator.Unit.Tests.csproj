@@ -13,7 +13,6 @@
     <Compile Include="$(CommonTestPath)SourceGenerators\LiveReferencePack.cs" Link="Common\SourceGenerators\LiveReferencePack.cs" />
     <Compile Include="$(CommonTestPath)SourceGenerators\GlobalOptionsOnlyProvider.cs" Link="Common\SourceGenerators\GlobalOptionsOnlyProvider.cs" />
     <Compile Include="..\Common\TestUtils.cs" Link="Common\TestUtils.cs" />
-    <Compile Include="..\Common\TargetFrameworkOptions.cs" Link="Common\TargetFrameworkOptions.cs" />
     <Compile Include="..\Common\CustomCollectionMarshallingCodeSnippets.cs" Link="Common\CustomCollectionMarshallingCodeSnippets.cs" />
     <Compile Include="..\Common\CustomStructMarshallingCodeSnippets.cs" Link="Common\CustomStructMarshallingCodeSnippets.cs" />
     <Compile Include="..\Common\ICustomMarshallingSignatureTestProvider.cs" Link="ICustomMarshallingSignatureTestProvider.cs" />

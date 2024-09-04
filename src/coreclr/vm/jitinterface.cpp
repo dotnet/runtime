@@ -391,6 +391,7 @@ CorInfoType CEEInfo::asCorInfoType(CorElementType eeType,
         CORINFO_TYPE_UNDEF,          // CMOD_REQD
         CORINFO_TYPE_UNDEF,          // CMOD_OPT
         CORINFO_TYPE_UNDEF,          // INTERNAL
+        CORINFO_TYPE_UNDEF,          // CMOD_INTERNAL
         };
 
     _ASSERTE(sizeof(map) == ELEMENT_TYPE_MAX);
@@ -2974,8 +2975,6 @@ void CEEInfo::ComputeRuntimeLookupForSharedGenericToken(DictionaryEntryKind entr
     if (!pContextMD->IsSharedByGenericInstantiations())
         COMPlusThrow(kInvalidProgramException);
 
-    BOOL fInstrument = FALSE;
-
     if (pContextMD->RequiresInstMethodDescArg())
     {
         pResultLookup->lookupKind.runtimeLookupKind = CORINFO_LOOKUP_METHODPARAM;
@@ -2991,10 +2990,7 @@ void CEEInfo::ComputeRuntimeLookupForSharedGenericToken(DictionaryEntryKind entr
     // If we've got a  method type parameter of any kind then we must look in the method desc arg
     if (pContextMD->RequiresInstMethodDescArg())
     {
-        pResult->helper = fInstrument ? CORINFO_HELP_RUNTIMEHANDLE_METHOD_LOG : CORINFO_HELP_RUNTIMEHANDLE_METHOD;
-
-        if (fInstrument)
-            goto NoSpecialCase;
+        pResult->helper = CORINFO_HELP_RUNTIMEHANDLE_METHOD;
 
         // Special cases:
         // (1) Naked method type variable: look up directly in instantiation hanging off runtime md
@@ -3059,17 +3055,14 @@ void CEEInfo::ComputeRuntimeLookupForSharedGenericToken(DictionaryEntryKind entr
         if (pContextMD->RequiresInstMethodTableArg())
         {
             // If we've got a vtable extra argument, go through that
-            pResult->helper = fInstrument ? CORINFO_HELP_RUNTIMEHANDLE_CLASS_LOG : CORINFO_HELP_RUNTIMEHANDLE_CLASS;
+            pResult->helper = CORINFO_HELP_RUNTIMEHANDLE_CLASS;
         }
         // If we've got an object, go through its vtable
         else
         {
             _ASSERTE(pContextMD->AcquiresInstMethodTableFromThis());
-            pResult->helper = fInstrument ? CORINFO_HELP_RUNTIMEHANDLE_CLASS_LOG : CORINFO_HELP_RUNTIMEHANDLE_CLASS;
+            pResult->helper = CORINFO_HELP_RUNTIMEHANDLE_CLASS;
         }
-
-        if (fInstrument)
-            goto NoSpecialCase;
 
         // Special cases:
         // (1) Naked class type variable: look up directly in instantiation hanging off vtable
@@ -3743,18 +3736,8 @@ uint32_t CEEInfo::getClassAttribsInternal (CORINFO_CLASS_HANDLE clsHnd)
             if (pMT->IsByRefLike())
                 ret |= CORINFO_FLG_BYREF_LIKE;
 
-            // In Reverse P/Invoke stubs, we are generating the code
-            // and we are not generating the code patterns that the GS checks
-            // are meant to catch.
-            // As a result, we can skip setting this flag.
-            // We do this as the GS checks (emitted when this flag is set)
-            // can break C++/CLI's copy-constructor semantics by missing copies.
-            if (pClass->IsUnsafeValueClass()
-                && !(m_pMethodBeingCompiled->IsILStub()
-                    && dac_cast<PTR_DynamicMethodDesc>(m_pMethodBeingCompiled)->GetILStubType() == DynamicMethodDesc::StubNativeToCLRInterop))
-            {
+            if (pClass->IsUnsafeValueClass())
                 ret |= CORINFO_FLG_UNSAFE_VALUECLASS;
-            }
         }
         if (pClass->HasExplicitFieldOffsetLayout() && pClass->HasOverlaidField())
             ret |= CORINFO_FLG_OVERLAPPING_FIELDS;
@@ -4209,8 +4192,8 @@ TypeCompareState CEEInfo::compareTypesForCast(
     else
 #endif // FEATURE_COMINTEROP
 
-    // If casting from ICastable or IDynamicInterfaceCastable, don't try to optimize
-    if (fromHnd.GetMethodTable()->IsICastable() || fromHnd.GetMethodTable()->IsIDynamicInterfaceCastable())
+    // If casting from IDynamicInterfaceCastable, don't try to optimize
+    if (fromHnd.GetMethodTable()->IsIDynamicInterfaceCastable())
     {
         result = TypeCompareState::May;
     }
@@ -4380,18 +4363,14 @@ static BOOL isMoreSpecificTypeHelper(TypeHandle hnd1, TypeHandle hnd2)
         return FALSE;
     }
 
-    // If we have a mixture of shared and unshared types,
-    // consider the unshared type as more specific.
-    BOOL isHnd1CanonSubtype = hnd1.IsCanonicalSubtype();
-    BOOL isHnd2CanonSubtype = hnd2.IsCanonicalSubtype();
-    if (isHnd1CanonSubtype != isHnd2CanonSubtype)
+    // If both types have the same type definition while
+    // hnd1 is shared and hnd2 is not - consider hnd2 more specific.
+    if (!hnd1.IsTypeDesc() && !hnd2.IsTypeDesc() &&
+        hnd1.AsMethodTable()->HasSameTypeDefAs(hnd2.AsMethodTable()))
     {
-        // Only one of hnd1 and hnd2 is shared.
-        // hdn2 is more specific if hnd1 is the shared type.
-        return isHnd1CanonSubtype;
+        return hnd1.IsCanonicalSubtype() && !hnd2.IsCanonicalSubtype();
     }
 
-    // Otherwise both types are either shared or not shared.
     // Look for a common parent type.
     TypeHandle merged = TypeHandle::MergeTypeHandlesToCommonParent(hnd1, hnd2);
 
@@ -6185,6 +6164,12 @@ CORINFO_CLASS_HANDLE  CEEInfo::getTypeForBoxOnStack(CORINFO_CLASS_HANDLE cls)
         TypeHandle stackAllocatedBox = CoreLibBinder::GetClass(CLASS__STACKALLOCATEDBOX);
         TypeHandle stackAllocatedBoxInst = stackAllocatedBox.Instantiate(boxedFieldsInst);
         result = static_cast<CORINFO_CLASS_HANDLE>(stackAllocatedBoxInst.AsPtr());
+
+#ifdef _DEBUG
+        FieldDesc* pValueFD = CoreLibBinder::GetField(FIELD__STACKALLOCATEDBOX__VALUE);
+        DWORD index = pValueFD->GetApproxEnclosingMethodTable()->GetIndexForFieldDesc(pValueFD);
+        _ASSERTE(stackAllocatedBoxInst.GetMethodTable()->GetFieldDescByIndex(index)->GetOffset() == TARGET_POINTER_SIZE);
+#endif
     }
 
     EE_TO_JIT_TRANSITION();
@@ -7332,43 +7317,6 @@ bool getILIntrinsicImplementationForRuntimeHelpers(MethodDesc * ftn,
         return true;
     }
 
-    if (tk == CoreLibBinder::GetMethod(METHOD__RUNTIME_HELPERS__GET_METHOD_TABLE)->GetMemberDef())
-    {
-        mdToken tokRawData = CoreLibBinder::GetField(FIELD__RAW_DATA__DATA)->GetMemberDef();
-
-        // In the CLR, an object is laid out as follows.
-        // [ object_header || MethodTable* (64-bit pointer) || instance_data ]
-        //                    ^                                ^-- ref <theObj>.firstField points here
-        //                    `-- <theObj> reference (type O) points here
-        //
-        // So essentially what we want to do is to turn an object reference (type O) into a
-        // native int&, then dereference it to get the MethodTable*. (Essentially, an object
-        // reference is a MethodTable**.) Per ECMA-335, Sec. III.1.5, we can add
-        // (but not subtract) a & and an int32 to produce a &. So we'll get a reference to
-        // <theObj>.firstField (type &), then back up one pointer length to get a value of
-        // essentially type (MethodTable*)&. Both of these are legal GC-trackable references
-        // to <theObj>, regardless of <theObj>'s actual length.
-
-        static BYTE ilcode[] = { CEE_LDARG_0,         // stack contains [ O ] = <theObj>
-                                 CEE_LDFLDA,0,0,0,0,  // stack contains [ & ] = ref <theObj>.firstField
-                                 CEE_LDC_I4_S,(BYTE)(-TARGET_POINTER_SIZE), // stack contains [ &, int32 ] = -IntPtr.Size
-                                 CEE_ADD,             // stack contains [ & ] = ref <theObj>.methodTablePtr
-                                 CEE_LDIND_I,         // stack contains [ native int ] = <theObj>.methodTablePtr
-                                 CEE_RET };
-
-        ilcode[2] = (BYTE)(tokRawData);
-        ilcode[3] = (BYTE)(tokRawData >> 8);
-        ilcode[4] = (BYTE)(tokRawData >> 16);
-        ilcode[5] = (BYTE)(tokRawData >> 24);
-
-        methInfo->ILCode = const_cast<BYTE*>(ilcode);
-        methInfo->ILCodeSize = sizeof(ilcode);
-        methInfo->maxStack = 2;
-        methInfo->EHcount = 0;
-        methInfo->options = (CorInfoOptions)0;
-        return true;
-    }
-
     if (tk == CoreLibBinder::GetMethod(METHOD__RUNTIME_HELPERS__ENUM_EQUALS)->GetMemberDef())
     {
         // Normally we would follow the above pattern and unconditionally replace the IL,
@@ -7643,6 +7591,26 @@ static void getMethodInfoHelper(
         methInfo->EHcount = (unsigned short)EHCount;
         SigPointer localSig = pResolver->GetLocalSig();
         localSig.GetSignature(&pLocalSig, &cbLocalSig);
+    }
+    else if (ftn->GetMemberDef() == CoreLibBinder::GetMethod(METHOD__RUNTIME_HELPERS__COPY_CONSTRUCT)->GetMemberDef())
+    {
+        _ASSERTE(ftn->HasMethodInstantiation());
+        Instantiation inst = ftn->GetMethodInstantiation();
+
+        _ASSERTE(inst.GetNumArgs() == 1);
+        TypeHandle type = inst[0];
+
+        if (!GenerateCopyConstructorHelper(ftn, type, &cxt.TransientResolver, &cxt.Header, methInfo))
+        {
+            ThrowHR(COR_E_BADIMAGEFORMAT);
+        }
+
+        scopeHnd = cxt.CreateScopeHandle();
+
+        _ASSERTE(cxt.Header != NULL);
+        getMethodInfoILMethodHeaderHelper(cxt.Header, methInfo);
+        pLocalSig = cxt.Header->LocalVarSig;
+        cbLocalSig = cxt.Header->cbLocalVarSig;
     }
     else
     {
@@ -9166,11 +9134,11 @@ CORINFO_CLASS_HANDLE CEEInfo::getFieldClass (CORINFO_FIELD_HANDLE fieldHnd)
 //
 // pTypeHnd - Optional. If not null then on return, for reference and value types,
 //            *pTypeHnd will contain the normalized type of the field.
-// owner - Optional. For resolving in a generic context
+// fieldOwnerHint - Optional. For resolving in a generic context
 
 CorInfoType CEEInfo::getFieldType (CORINFO_FIELD_HANDLE fieldHnd,
                                    CORINFO_CLASS_HANDLE* pTypeHnd,
-                                   CORINFO_CLASS_HANDLE owner)
+                                   CORINFO_CLASS_HANDLE fieldOwnerHint)
 {
     CONTRACTL {
         THROWS;
@@ -9182,7 +9150,7 @@ CorInfoType CEEInfo::getFieldType (CORINFO_FIELD_HANDLE fieldHnd,
 
     JIT_TO_EE_TRANSITION();
 
-    result = getFieldTypeInternal(fieldHnd, pTypeHnd, owner);
+    result = getFieldTypeInternal(fieldHnd, pTypeHnd, fieldOwnerHint);
 
     EE_TO_JIT_TRANSITION();
 
@@ -9192,7 +9160,7 @@ CorInfoType CEEInfo::getFieldType (CORINFO_FIELD_HANDLE fieldHnd,
 /*********************************************************************/
 CorInfoType CEEInfo::getFieldTypeInternal (CORINFO_FIELD_HANDLE fieldHnd,
                                            CORINFO_CLASS_HANDLE* pTypeHnd,
-                                           CORINFO_CLASS_HANDLE owner)
+                                           CORINFO_CLASS_HANDLE fieldOwnerHint)
 {
     STANDARD_VM_CONTRACT;
 
@@ -9217,10 +9185,33 @@ CorInfoType CEEInfo::getFieldTypeInternal (CORINFO_FIELD_HANDLE fieldHnd,
 
         SigPointer ptr(sig, sigCount);
 
+        // Actual field's owner
+        MethodTable* actualFieldsOwner = field->GetApproxEnclosingMethodTable();
+
+        // Potentially, a more specific field's owner (hint)
+        TypeHandle hintedFieldOwner = TypeHandle(fieldOwnerHint);
+
+        // Validate the hint:
+        TypeHandle moreExactFieldOwner = TypeHandle();
+        if (!hintedFieldOwner.IsNull() && !hintedFieldOwner.IsTypeDesc())
+        {
+            MethodTable* matchingHintedFieldOwner = hintedFieldOwner.AsMethodTable()->GetMethodTableMatchingParentClass(actualFieldsOwner);
+            if (matchingHintedFieldOwner != NULL)
+            {
+                // we take matchingHintedFieldOwner only if actualFieldsOwner is shared and matchingHintedFieldOwner
+                // is not, hence, it's definitely more exact.
+                if (actualFieldsOwner->IsSharedByGenericInstantiations() &&
+                    !matchingHintedFieldOwner->IsSharedByGenericInstantiations())
+                {
+                    moreExactFieldOwner = matchingHintedFieldOwner;
+                }
+            }
+        }
+
         // For verifying code involving generics, use the class instantiation
         // of the optional owner (to provide exact, not representative,
         // type information)
-        SigTypeContext typeContext(field, (TypeHandle)owner);
+        SigTypeContext typeContext(field, moreExactFieldOwner);
 
         clsHnd = ptr.GetTypeHandleThrowing(field->GetModule(), &typeContext);
         _ASSERTE(!clsHnd.IsNull());
@@ -9427,7 +9418,6 @@ CORINFO_ARG_LIST_HANDLE CEEInfo::getArgNext(CORINFO_ARG_LIST_HANDLE args)
 
 
 /*********************************************************************/
-
 CorInfoTypeWithMod CEEInfo::getArgType (
         CORINFO_SIG_INFO*       sig,
         CORINFO_ARG_LIST_HANDLE args,
@@ -9458,11 +9448,17 @@ CorInfoTypeWithMod CEEInfo::getArgType (
         IfFailThrow(ptr.PeekElemType(&eType));
     }
 
+    Module* pModule = GetModule(sig->scope);
+
+    if (ptr.HasCustomModifier(pModule, "Microsoft.VisualC.NeedsCopyConstructorModifier", ELEMENT_TYPE_CMOD_REQD) ||
+        ptr.HasCustomModifier(pModule, "System.Runtime.CompilerServices.IsCopyConstructed", ELEMENT_TYPE_CMOD_REQD))
+    {
+        result = CorInfoTypeWithMod((int)result | CORINFO_TYPE_MOD_COPY_WITH_HELPER);
+    }
+
     // Now read off the "real" element type after taking any instantiations into consideration
     SigTypeContext typeContext;
     GetTypeContext(&sig->sigInst,&typeContext);
-
-    Module* pModule = GetModule(sig->scope);
 
     CorElementType type = ptr.PeekElemTypeClosed(pModule, &typeContext);
 
@@ -9500,6 +9496,15 @@ CorInfoTypeWithMod CEEInfo::getArgType (
             {
                 classMustBeLoadedBeforeCodeIsRun(CORINFO_CLASS_HANDLE(thPtr.AsPtr()));
             }
+        }
+        FALLTHROUGH;
+
+    case ELEMENT_TYPE_BYREF:
+        IfFailThrow(ptr.GetElemType(NULL));
+        if (ptr.HasCustomModifier(pModule, "Microsoft.VisualC.NeedsCopyConstructorModifier", ELEMENT_TYPE_CMOD_REQD) ||
+            ptr.HasCustomModifier(pModule, "System.Runtime.CompilerServices.IsCopyConstructed", ELEMENT_TYPE_CMOD_REQD))
+        {
+            result = CorInfoTypeWithMod((int)result | CORINFO_TYPE_MOD_COPY_WITH_HELPER);
         }
         break;
 
@@ -9951,6 +9956,40 @@ void CEEInfo::getAddressOfPInvokeTarget(CORINFO_METHOD_HANDLE method,
     }
 
     EE_TO_JIT_TRANSITION();
+}
+
+CORINFO_METHOD_HANDLE CEEInfo::getSpecialCopyHelper(CORINFO_CLASS_HANDLE type)
+{
+    CONTRACTL {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_PREEMPTIVE;
+    } CONTRACTL_END;
+
+    CORINFO_METHOD_HANDLE result = NULL;
+
+    JIT_TO_EE_TRANSITION();
+
+    TypeHandle th = TypeHandle(type);
+
+    _ASSERTE(th.IsValueType());
+
+    MethodDesc* pHelperMD = CoreLibBinder::GetMethod(METHOD__RUNTIME_HELPERS__COPY_CONSTRUCT);
+
+    pHelperMD = MethodDesc::FindOrCreateAssociatedMethodDesc(
+        pHelperMD,
+        pHelperMD->GetMethodTable(),
+        FALSE,
+        Instantiation(&th, 1),
+        FALSE,
+        FALSE);
+
+    pHelperMD->CheckRestore();
+    result = (CORINFO_METHOD_HANDLE)pHelperMD;
+
+    EE_TO_JIT_TRANSITION();
+
+    return result;
 }
 
 /*********************************************************************/

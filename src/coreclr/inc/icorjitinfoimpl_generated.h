@@ -395,7 +395,7 @@ CORINFO_CLASS_HANDLE getFieldClass(
 CorInfoType getFieldType(
           CORINFO_FIELD_HANDLE field,
           CORINFO_CLASS_HANDLE* structType,
-          CORINFO_CLASS_HANDLE memberParent) override;
+          CORINFO_CLASS_HANDLE fieldOwnerHint) override;
 
 unsigned getFieldOffset(
           CORINFO_FIELD_HANDLE field) override;
@@ -741,6 +741,9 @@ uint32_t getExpectedTargetArchitecture() override;
 uint32_t getJitFlags(
           CORJIT_FLAGS* flags,
           uint32_t sizeInBytes) override;
+
+CORINFO_METHOD_HANDLE getSpecialCopyHelper(
+          CORINFO_CLASS_HANDLE type) override;
 
 /**********************************************************************************/
 // clang-format on

@@ -939,10 +939,10 @@ CORINFO_CLASS_HANDLE WrapICorJitInfo::getFieldClass(
 CorInfoType WrapICorJitInfo::getFieldType(
           CORINFO_FIELD_HANDLE field,
           CORINFO_CLASS_HANDLE* structType,
-          CORINFO_CLASS_HANDLE memberParent)
+          CORINFO_CLASS_HANDLE fieldOwnerHint)
 {
     API_ENTER(getFieldType);
-    CorInfoType temp = wrapHnd->getFieldType(field, structType, memberParent);
+    CorInfoType temp = wrapHnd->getFieldType(field, structType, fieldOwnerHint);
     API_LEAVE(getFieldType);
     return temp;
 }
@@ -1739,6 +1739,15 @@ uint32_t WrapICorJitInfo::getJitFlags(
     API_ENTER(getJitFlags);
     uint32_t temp = wrapHnd->getJitFlags(flags, sizeInBytes);
     API_LEAVE(getJitFlags);
+    return temp;
+}
+
+CORINFO_METHOD_HANDLE WrapICorJitInfo::getSpecialCopyHelper(
+          CORINFO_CLASS_HANDLE type)
+{
+    API_ENTER(getSpecialCopyHelper);
+    CORINFO_METHOD_HANDLE temp = wrapHnd->getSpecialCopyHelper(type);
+    API_LEAVE(getSpecialCopyHelper);
     return temp;
 }
 

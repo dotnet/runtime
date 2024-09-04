@@ -106,7 +106,7 @@ struct JitInterfaceCallbacks
     CorInfoIsAccessAllowedResult (* canAccessClass)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_RESOLVED_TOKEN* pResolvedToken, CORINFO_METHOD_HANDLE callerHandle, CORINFO_HELPER_DESC* pAccessHelper);
     size_t (* printFieldName)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_FIELD_HANDLE field, char* buffer, size_t bufferSize, size_t* pRequiredBufferSize);
     CORINFO_CLASS_HANDLE (* getFieldClass)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_FIELD_HANDLE field);
-    CorInfoType (* getFieldType)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_FIELD_HANDLE field, CORINFO_CLASS_HANDLE* structType, CORINFO_CLASS_HANDLE memberParent);
+    CorInfoType (* getFieldType)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_FIELD_HANDLE field, CORINFO_CLASS_HANDLE* structType, CORINFO_CLASS_HANDLE fieldOwnerHint);
     unsigned (* getFieldOffset)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_FIELD_HANDLE field);
     void (* getFieldInfo)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_RESOLVED_TOKEN* pResolvedToken, CORINFO_METHOD_HANDLE callerHandle, CORINFO_ACCESS_FLAGS flags, CORINFO_FIELD_INFO* pResult);
     uint32_t (* getThreadLocalFieldInfo)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_FIELD_HANDLE field, bool isGCtype);
@@ -187,6 +187,7 @@ struct JitInterfaceCallbacks
     uint16_t (* getRelocTypeHint)(void * thisHandle, CorInfoExceptionClass** ppException, void* target);
     uint32_t (* getExpectedTargetArchitecture)(void * thisHandle, CorInfoExceptionClass** ppException);
     uint32_t (* getJitFlags)(void * thisHandle, CorInfoExceptionClass** ppException, CORJIT_FLAGS* flags, uint32_t sizeInBytes);
+    CORINFO_METHOD_HANDLE (* getSpecialCopyHelper)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_CLASS_HANDLE type);
 
 };
 
@@ -1129,10 +1130,10 @@ public:
     virtual CorInfoType getFieldType(
           CORINFO_FIELD_HANDLE field,
           CORINFO_CLASS_HANDLE* structType,
-          CORINFO_CLASS_HANDLE memberParent)
+          CORINFO_CLASS_HANDLE fieldOwnerHint)
 {
     CorInfoExceptionClass* pException = nullptr;
-    CorInfoType temp = _callbacks->getFieldType(_thisHandle, &pException, field, structType, memberParent);
+    CorInfoType temp = _callbacks->getFieldType(_thisHandle, &pException, field, structType, fieldOwnerHint);
     if (pException != nullptr) throw pException;
     return temp;
 }
@@ -1916,6 +1917,15 @@ public:
 {
     CorInfoExceptionClass* pException = nullptr;
     uint32_t temp = _callbacks->getJitFlags(_thisHandle, &pException, flags, sizeInBytes);
+    if (pException != nullptr) throw pException;
+    return temp;
+}
+
+    virtual CORINFO_METHOD_HANDLE getSpecialCopyHelper(
+          CORINFO_CLASS_HANDLE type)
+{
+    CorInfoExceptionClass* pException = nullptr;
+    CORINFO_METHOD_HANDLE temp = _callbacks->getSpecialCopyHelper(_thisHandle, &pException, type);
     if (pException != nullptr) throw pException;
     return temp;
 }

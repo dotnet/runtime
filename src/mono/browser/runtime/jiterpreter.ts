@@ -72,8 +72,8 @@ export const
     useFullNames = false,
     // Use the mono_debug_count() API (set the COUNT=n env var) to limit the number of traces to compile
     useDebugCount = false,
-    // Web browsers limit synchronous module compiles to 4KB
-    maxModuleSize = 4080;
+    // Subtracted from the maxModuleSize option value to make space for a typical header
+    moduleHeaderSizeMargin = 300;
 
 export const callTargetCounts: { [method: number]: number } = {};
 
@@ -283,8 +283,6 @@ function getTraceImports () {
         importDef("array_rank", getRawCwrap("mono_jiterp_get_array_rank")),
         ["a_elesize", "array_rank", getRawCwrap("mono_jiterp_get_array_element_size")],
         importDef("stfld_o", getRawCwrap("mono_jiterp_set_object_field")),
-        importDef("cmpxchg_i32", getRawCwrap("mono_jiterp_cas_i32")),
-        importDef("cmpxchg_i64", getRawCwrap("mono_jiterp_cas_i64")),
         ["stelemr_tc", "stelemr", getRawCwrap("mono_jiterp_stelem_ref")],
         importDef("fma", getRawCwrap("fma")),
         importDef("fmaf", getRawCwrap("fmaf")),
@@ -630,25 +628,6 @@ function initialize_builder (builder: WasmBuilder) {
         WasmValtype.void, true
     );
     builder.defineType(
-        "cmpxchg_i32",
-        {
-            "dest": WasmValtype.i32,
-            "newVal": WasmValtype.i32,
-            "expected": WasmValtype.i32,
-        },
-        WasmValtype.i32, true
-    );
-    builder.defineType(
-        "cmpxchg_i64",
-        {
-            "dest": WasmValtype.i32,
-            "newVal": WasmValtype.i32,
-            "expected": WasmValtype.i32,
-            "oldVal": WasmValtype.i32,
-        },
-        WasmValtype.void, true
-    );
-    builder.defineType(
         "stelemr",
         {
             "o": WasmValtype.i32,
@@ -849,7 +828,7 @@ function generate_wasm (
             mono_log_info(`${(<any>(builder.base)).toString(16)} ${methodFullName || traceName} generated ${buffer.length} byte(s) of wasm`);
         modifyCounter(JiterpCounter.BytesGenerated, buffer.length);
 
-        if (buffer.length >= maxModuleSize) {
+        if (buffer.length >= builder.options.maxModuleSize) {
             mono_log_warn(`Jiterpreter generated too much code (${buffer.length} bytes) for trace ${traceName}. Please report this issue.`);
             return 0;
         }
@@ -896,7 +875,12 @@ function generate_wasm (
     } catch (exc: any) {
         threw = true;
         rejected = false;
-        mono_log_error(`${methodFullName || traceName} code generation failed: ${exc} ${exc.stack}`);
+        let desc = builder.containsSimd
+            ? " (simd)"
+            : "";
+        if (builder.containsAtomics)
+            desc += " (atomics)";
+        mono_log_error(`${methodFullName || traceName}${desc} code generation failed: ${exc} ${exc.stack}`);
         recordFailure();
         return 0;
     } finally {
@@ -929,7 +913,7 @@ function generate_wasm (
                 ;
             }
 
-            const buf = builder.getArrayView();
+            const buf = builder.getArrayView(false, true);
             for (let i = 0; i < buf.length; i++) {
                 const b = buf[i];
                 if (b < 0x10)

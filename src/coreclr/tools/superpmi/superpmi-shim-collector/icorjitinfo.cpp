@@ -1062,16 +1062,16 @@ CORINFO_CLASS_HANDLE interceptor_ICJI::getFieldClass(CORINFO_FIELD_HANDLE field)
 // the field's value class (if 'structType' == 0, then don't bother
 // the structure info).
 //
-// 'memberParent' is typically only set when verifying.  It should be the
-// result of calling getMemberParent.
+// 'fieldOwnerHint' is, potentially, a more exact owner of the field.
+// it's fine for it to be non-precise, it's just a hint.
 CorInfoType interceptor_ICJI::getFieldType(CORINFO_FIELD_HANDLE  field,
                                            CORINFO_CLASS_HANDLE* structType,
-                                           CORINFO_CLASS_HANDLE  memberParent /* IN */
+                                           CORINFO_CLASS_HANDLE  fieldOwnerHint /* IN */
                                            )
 {
     mc->cr->AddCall("getFieldType");
-    CorInfoType temp = original_ICorJitInfo->getFieldType(field, structType, memberParent);
-    mc->recGetFieldType(field, structType, memberParent, temp);
+    CorInfoType temp = original_ICorJitInfo->getFieldType(field, structType, fieldOwnerHint);
+    mc->recGetFieldType(field, structType, fieldOwnerHint, temp);
     return temp;
 }
 
@@ -2027,4 +2027,12 @@ uint32_t interceptor_ICJI::getExpectedTargetArchitecture()
 bool interceptor_ICJI::notifyInstructionSetUsage(CORINFO_InstructionSet instructionSet, bool supported)
 {
     return original_ICorJitInfo->notifyInstructionSetUsage(instructionSet, supported);
+}
+
+CORINFO_METHOD_HANDLE interceptor_ICJI::getSpecialCopyHelper(CORINFO_CLASS_HANDLE type)
+{
+    mc->cr->AddCall("getSpecialCopyHelper");
+    CORINFO_METHOD_HANDLE temp = original_ICorJitInfo->getSpecialCopyHelper(type);
+    mc->recGetSpecialCopyHelper(type, temp);
+    return temp;
 }

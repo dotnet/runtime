@@ -1,6 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <OutputType>Exe</OutputType>
+    <!-- Needed for GCStressIncompatible, UnloadabilityIncompatible, HeapVerifyIncompatible, GC.WaitForPendingFinalizers -->
+    <RequiresProcessIsolation>true</RequiresProcessIsolation>
     <GCStressIncompatible>true</GCStressIncompatible>
     <HeapVerifyIncompatible>true</HeapVerifyIncompatible>
     <!-- This test timeouts (but completes if given a long time) if running with other tests in parallel -->

@@ -671,9 +671,9 @@ CORINFO_CLASS_HANDLE interceptor_ICJI::getFieldClass(
 CorInfoType interceptor_ICJI::getFieldType(
           CORINFO_FIELD_HANDLE field,
           CORINFO_CLASS_HANDLE* structType,
-          CORINFO_CLASS_HANDLE memberParent)
+          CORINFO_CLASS_HANDLE fieldOwnerHint)
 {
-    return original_ICorJitInfo->getFieldType(field, structType, memberParent);
+    return original_ICorJitInfo->getFieldType(field, structType, fieldOwnerHint);
 }
 
 unsigned interceptor_ICJI::getFieldOffset(
@@ -1259,5 +1259,11 @@ uint32_t interceptor_ICJI::getJitFlags(
           uint32_t sizeInBytes)
 {
     return original_ICorJitInfo->getJitFlags(flags, sizeInBytes);
+}
+
+CORINFO_METHOD_HANDLE interceptor_ICJI::getSpecialCopyHelper(
+          CORINFO_CLASS_HANDLE type)
+{
+    return original_ICorJitInfo->getSpecialCopyHelper(type);
 }
 

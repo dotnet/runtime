@@ -589,7 +589,7 @@ public:
     void recGetIsClassInitedFlagAddress(CORINFO_CLASS_HANDLE cls, CORINFO_CONST_LOOKUP* addr, int* offset, bool result);
     void dmpGetIsClassInitedFlagAddress(DWORDLONG key, const Agnostic_GetIsClassInitedFlagAddress& value);
     bool repGetIsClassInitedFlagAddress(CORINFO_CLASS_HANDLE cls, CORINFO_CONST_LOOKUP* addr, int* offset);
-    
+
     void recGetStaticBaseAddress(CORINFO_CLASS_HANDLE cls, bool isGc, CORINFO_CONST_LOOKUP* addr, bool result);
     void dmpGetStaticBaseAddress(DLD key, const Agnostic_GetStaticBaseAddress& value);
     bool repGetStaticBaseAddress(CORINFO_CLASS_HANDLE cls, bool isGc, CORINFO_CONST_LOOKUP* addr);
@@ -640,12 +640,12 @@ public:
 
     void recGetFieldType(CORINFO_FIELD_HANDLE  field,
                          CORINFO_CLASS_HANDLE* structType,
-                         CORINFO_CLASS_HANDLE  memberParent,
+                         CORINFO_CLASS_HANDLE  fieldOwnerHint,
                          CorInfoType           result);
     void dmpGetFieldType(DLDL key, DLD value);
     CorInfoType repGetFieldType(CORINFO_FIELD_HANDLE  field,
                                 CORINFO_CLASS_HANDLE* structType,
-                                CORINFO_CLASS_HANDLE  memberParent);
+                                CORINFO_CLASS_HANDLE  fieldOwnerHint);
 
     void recSatisfiesMethodConstraints(CORINFO_CLASS_HANDLE parent, CORINFO_METHOD_HANDLE method, bool result);
     void dmpSatisfiesMethodConstraints(DLDL key, DWORD value);
@@ -897,6 +897,10 @@ public:
     void recGetStringConfigValue(const WCHAR* name, const WCHAR* result);
     void dmpGetStringConfigValue(DWORD nameIndex, DWORD result);
     const WCHAR* repGetStringConfigValue(const WCHAR* name);
+
+    void recGetSpecialCopyHelper(CORINFO_CLASS_HANDLE type, CORINFO_METHOD_HANDLE helper);
+    void dmpGetSpecialCopyHelper(DWORDLONG key, DWORDLONG value);
+    CORINFO_METHOD_HANDLE repGetSpecialCopyHelper(CORINFO_CLASS_HANDLE type);
 
     void dmpSigInstHandleMap(DWORD key, DWORDLONG value);
 
@@ -1189,6 +1193,7 @@ enum mcPackets
     Packet_GetTypeForBoxOnStack = 221,
     Packet_GetTypeDefinition = 222,
     Packet_GetFpStructLowering = 223,
+    Packet_GetSpecialCopyHelper = 224,
 };
 
 void SetDebugDumpVariables();
