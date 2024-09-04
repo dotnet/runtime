@@ -4785,20 +4785,6 @@ Thread::ApartmentState Thread::GetFinalApartment()
     return as;
 }
 
-// when we get apartment tear-down notification,
-// we want reset the apartment state we cache on the thread
-VOID Thread::ResetApartment()
-{
-    CONTRACTL {
-        NOTHROW;
-        GC_NOTRIGGER;
-    }
-    CONTRACTL_END;
-
-    // reset the TS_InSTA bit and TS_InMTA bit
-    ResetThreadState((Thread::ThreadState)(TS_InSTA | TS_InMTA));
-}
-
 // Attempt to set current thread's apartment state. The actual apartment state
 // achieved is returned and may differ from the input state if someone managed
 // to call CoInitializeEx on this thread first (note that calls to SetApartment
