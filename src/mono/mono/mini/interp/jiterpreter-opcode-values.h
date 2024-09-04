@@ -172,6 +172,10 @@ OP(MINT_LOG2_I8, HIGH)
 OP(MINT_SHL_AND_I4, HIGH)
 OP(MINT_SHL_AND_I8, HIGH)
 
+// Produces a bailout at compile time, may produce an actual jump table
+//  later in the future. Treat it as a low value branch
+OP(MINT_SWITCH, BRANCH)
+
 // Produces either a backwards branch or a bailout depending on JIT-time
 //  information, so treat it as a low value branch
 OP(MINT_ENDFINALLY, BRANCH)

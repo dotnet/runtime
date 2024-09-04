@@ -127,6 +127,7 @@ export const enum BailoutReason {
     Icall,
     UnexpectedRetIp,
     LeaveCheck,
+    Switch,
 }
 
 export const BailoutReasonNames = [
@@ -157,6 +158,7 @@ export const BailoutReasonNames = [
     "Icall",
     "UnexpectedRetIp",
     "LeaveCheck",
+    "Switch",
 ];
 
 export const enum JitQueue {
