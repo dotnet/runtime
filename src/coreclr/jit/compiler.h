@@ -7064,8 +7064,6 @@ public:
 
     void optCompactLoops();
     void optCompactLoop(FlowGraphNaturalLoop* loop);
-    BasicBlock* optFindLoopCompactionInsertionPoint(FlowGraphNaturalLoop* loop, BasicBlock* top);
-    BasicBlock* optTryAdvanceLoopCompactionInsertionPoint(FlowGraphNaturalLoop* loop, BasicBlock* insertionPoint, BasicBlock* top, BasicBlock* bottom);
     bool optCreatePreheader(FlowGraphNaturalLoop* loop);
     void optSetWeightForPreheaderOrExit(FlowGraphNaturalLoop* loop, BasicBlock* block);
 
