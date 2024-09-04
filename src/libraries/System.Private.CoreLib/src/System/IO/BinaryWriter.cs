@@ -32,7 +32,7 @@ namespace System.IO
             OutStream = Stream.Null;
             _encoding = Encoding.UTF8;
             _useFastUtf8 = true;
-            _isDerivedWriter = GetType() != typeof(BinaryWriter)
+            _isDerivedWriter = GetType() != typeof(BinaryWriter);
         }
 
         // BinaryWriter never emits a BOM, so can use Encoding.UTF8 fast singleton
@@ -56,7 +56,7 @@ namespace System.IO
             _encoding = encoding;
             _leaveOpen = leaveOpen;
             _useFastUtf8 = encoding.IsUTF8CodePage && encoding.EncoderFallback.MaxCharCount <= 1;
-            _isDerivedWriter = GetType() != typeof(BinaryWriter)
+            _isDerivedWriter = GetType() != typeof(BinaryWriter);
         }
 
         // Closes this writer and releases any system resources associated with the
