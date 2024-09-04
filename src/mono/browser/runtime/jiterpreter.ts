@@ -72,8 +72,8 @@ export const
     useFullNames = false,
     // Use the mono_debug_count() API (set the COUNT=n env var) to limit the number of traces to compile
     useDebugCount = false,
-    // Web browsers limit synchronous module compiles to 4KB
-    maxModuleSize = 4080;
+    // Subtracted from the maxModuleSize option value to make space for a typical header
+    moduleHeaderSizeMargin = 300;
 
 export const callTargetCounts: { [method: number]: number } = {};
 
@@ -828,7 +828,7 @@ function generate_wasm (
             mono_log_info(`${(<any>(builder.base)).toString(16)} ${methodFullName || traceName} generated ${buffer.length} byte(s) of wasm`);
         modifyCounter(JiterpCounter.BytesGenerated, buffer.length);
 
-        if (buffer.length >= maxModuleSize) {
+        if (buffer.length >= builder.options.maxModuleSize) {
             mono_log_warn(`Jiterpreter generated too much code (${buffer.length} bytes) for trace ${traceName}. Please report this issue.`);
             return 0;
         }
@@ -913,7 +913,7 @@ function generate_wasm (
                 ;
             }
 
-            const buf = builder.getArrayView();
+            const buf = builder.getArrayView(false, true);
             for (let i = 0; i < buf.length; i++) {
                 const b = buf[i];
                 if (b < 0x10)

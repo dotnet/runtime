@@ -38,7 +38,7 @@ import {
     traceEip, nullCheckValidation,
     traceNullCheckOptimizations,
     nullCheckCaching, defaultTraceBackBranches,
-    maxCallHandlerReturnAddresses,
+    maxCallHandlerReturnAddresses, moduleHeaderSizeMargin,
 
     mostRecentOptions,
 
@@ -275,10 +275,7 @@ export function generateWasmBody (
             break;
         }
 
-        // HACK: Browsers set a limit of 4KB, we lower it slightly since a single opcode
-        //  might generate a ton of code and we generate a bit of an epilogue after
-        //  we finish
-        const maxBytesGenerated = 3840,
+        const maxBytesGenerated = builder.options.maxModuleSize - moduleHeaderSizeMargin,
             spaceLeft = maxBytesGenerated - builder.bytesGeneratedSoFar - builder.cfg.overheadBytes;
         if (builder.size >= spaceLeft) {
             // mono_log_info(`trace too big, estimated size is ${builder.size + builder.bytesGeneratedSoFar}`);

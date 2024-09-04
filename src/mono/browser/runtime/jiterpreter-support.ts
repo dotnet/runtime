@@ -17,7 +17,10 @@ import {
 export const maxFailures = 2,
     maxMemsetSize = 64,
     maxMemmoveSize = 64,
-    shortNameBase = 36;
+    shortNameBase = 36,
+    // NOTE: This needs to be big enough to hold the maximum module size since there's no auto-growth
+    //  support yet. If that becomes a problem, we should just make it growable
+    blobBuilderCapacity = 16 * 1024;
 
 // uint16
 export declare interface MintOpcodePtr extends NativePointer {
@@ -120,6 +123,8 @@ export class WasmBuilder {
 
     clear (constantSlotCount: number) {
         this.options = getOptions();
+        if (this.options.maxModuleSize >= blobBuilderCapacity)
+            throw new Error(`blobBuilderCapacity ${blobBuilderCapacity} is not large enough for jiterpreter-max-module-size of ${this.options.maxModuleSize}`);
         this.stackSize = 1;
         this.inSection = false;
         this.inFunction = false;
@@ -920,8 +925,8 @@ export class WasmBuilder {
         this.appendU8(WasmOpcode.i32_add);
     }
 
-    getArrayView (fullCapacity?: boolean) {
-        if (this.stackSize > 1)
+    getArrayView (fullCapacity?: boolean, suppressDeepStackError?: boolean) {
+        if ((suppressDeepStackError !== true) && this.stackSize > 1)
             throw new Error("Jiterpreter block stack not empty");
         return this.stack[0].getArrayView(fullCapacity);
     }
@@ -942,8 +947,9 @@ export class BlobBuilder {
     textBuf = new Uint8Array(1024);
 
     constructor () {
-        this.capacity = 16 * 1024;
+        this.capacity = blobBuilderCapacity;
         this.buffer = <any>Module._malloc(this.capacity);
+        mono_assert(this.buffer, () => `Failed to allocate ${blobBuilderCapacity}b buffer for BlobBuilder`);
         localHeapViewU8().fill(0, this.buffer, this.buffer + this.capacity);
         this.size = 0;
         this.clear();
@@ -1051,6 +1057,9 @@ export class BlobBuilder {
         if (typeof (count) !== "number")
             count = this.size;
 
+        if ((destination.size + count) >= destination.capacity)
+            throw new Error("Destination buffer full");
+
         localHeapViewU8().copyWithin(destination.buffer + destination.size, this.buffer, this.buffer + count);
         destination.size += count;
     }
@@ -1058,11 +1067,16 @@ export class BlobBuilder {
     appendBytes (bytes: Uint8Array, count?: number) {
         const result = this.size;
         const heapU8 = localHeapViewU8();
+        const actualCount = (typeof (count) !== "number")
+            ? bytes.length
+            : count;
+
+        if ((this.size + actualCount) >= this.capacity)
+            throw new Error("Buffer full");
+
         if (bytes.buffer === heapU8.buffer) {
-            if (typeof (count) !== "number")
-                count = bytes.length;
-            heapU8.copyWithin(this.buffer + result, bytes.byteOffset, bytes.byteOffset + count);
-            this.size += count;
+            heapU8.copyWithin(this.buffer + result, bytes.byteOffset, bytes.byteOffset + actualCount);
+            this.size += actualCount;
         } else {
             if (typeof (count) === "number")
                 bytes = new Uint8Array(bytes.buffer, bytes.byteOffset, count);
@@ -1950,6 +1964,7 @@ export type JiterpreterOptions = {
     wasmBytesLimit: number;
     tableSize: number;
     aotTableSize: number;
+    maxModuleSize: number;
 }
 
 const optionNames: { [jsName: string]: string } = {
@@ -1986,6 +2001,7 @@ const optionNames: { [jsName: string]: string } = {
     "wasmBytesLimit": "jiterpreter-wasm-bytes-limit",
     "tableSize": "jiterpreter-table-size",
     "aotTableSize": "jiterpreter-aot-table-size",
+    "maxModuleSize": "jiterpreter-max-module-size",
 };
 
 let optionsVersion = -1;
