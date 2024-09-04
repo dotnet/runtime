@@ -1625,6 +1625,34 @@ if (!System.Diagnostics.Debugger.IsAttached) { System.Diagnostics.Debugger.Launc
             Assert.Equal(1, instance.List[1].Values.Count);
         }
 
+        /// <summary>
+        /// This test ensures that the property setter is invoked during binding, even when there is no configuration for the property.
+        /// </summary>
+        [Fact]
+        public void PropertySetterCalledTest()
+        {
+            string jsonConfig = @"{
+              ""Configuration"": {
+                ""SomeSet"": [
+                  ""path""
+                  ]
+              }
+            }";
+
+            var configuration = new ConfigurationBuilder()
+                        .AddJsonStream(new System.IO.MemoryStream(System.Text.Encoding.UTF8.GetBytes(jsonConfig)))
+                        .Build();
+
+            TypeWithValueMutatorPropertySetter t1 = new();
+            Assert.Equal(0, t1.SomeSet.Count);
+            Assert.Equal("Uninitialized", t1.Value);
+
+            TypeWithValueMutatorPropertySetter t2 = configuration.GetSection("Configuration").Get<TypeWithValueMutatorPropertySetter>()!;
+            Assert.Equal(1, t2.SomeSet.Count);
+            Assert.True(t2.SomeSet.Contains("path"));
+            Assert.Equal("Initialized", t2.Value);
+        }
+
         [Fact]
         public void CanBindReadonlyRecordStructOptions()
         {

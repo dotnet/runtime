@@ -1257,5 +1257,18 @@ namespace System.Globalization.Tests
 
             return memoryStream.ToArray();
         }
+
+        [Fact]
+        public void TestChainStringComparisons()
+        {
+            var s1 = "бал";
+            var s2 = "Бан";
+            var s3 = "Д";
+
+            // If s1 < s2 and s2 < s3, then s1 < s3
+            Assert.True(string.Compare(s1, s2, StringComparison.OrdinalIgnoreCase) < 0);
+            Assert.True(string.Compare(s2, s3, StringComparison.OrdinalIgnoreCase) < 0);
+            Assert.True(string.Compare(s1, s3, StringComparison.OrdinalIgnoreCase) < 0);
+        }
     }
 }

@@ -140,6 +140,7 @@
     <Compile Include="$(BclSourcesRoot)\System\GC.CoreCLR.cs" />
     <Compile Include="$(BclSourcesRoot)\System\IO\FileLoadException.CoreCLR.cs" />
     <Compile Include="$(BclSourcesRoot)\System\IO\FileNotFoundException.CoreCLR.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\IO\Stream.CoreCLR.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Math.CoreCLR.cs" />
     <Compile Include="$(BclSourcesRoot)\System\MathF.CoreCLR.cs" />
     <Compile Include="$(BclSourcesRoot)\System\MulticastDelegate.CoreCLR.cs" />
@@ -285,6 +286,9 @@
     <Compile Include="$(BclSourcesRoot)\Internal\Runtime\InteropServices\InMemoryAssemblyLoader.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\OleAut32\Interop.VariantClear.cs">
       <Link>Common\Interop\Windows\OleAut32\Interop.VariantClear.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)Interop\Windows\OleAut32\Interop.VariantChangeTypeEx.cs">
+      <Link>Common\Interop\Windows\OleAut32\Interop.VariantChangeTypeEx.cs</Link>
     </Compile>
   </ItemGroup>
   <ItemGroup Condition="'$(FeatureObjCMarshal)' == 'true'">

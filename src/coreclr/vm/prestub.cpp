@@ -1294,7 +1294,7 @@ namespace
         Instantiation targetMethodInst;
         if (targetType->HasInstantiation())
         {
-            declClassInst = declaration->GetMethodTable()->GetInstantiation();
+            declClassInst = declaration->GetMethodTable()->GetTypicalMethodTable()->GetInstantiation();
             targetClassInst = targetType->GetTypicalMethodTable()->GetInstantiation();
         }
         if (targetMethod->HasMethodInstantiation())

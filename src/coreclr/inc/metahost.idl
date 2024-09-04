@@ -60,6 +60,9 @@ cpp_quote("EXTERN_GUID(IID_ICLRDebuggingLibraryProvider, 0x3151c08d, 0x4d09, 0x4
 // IID ICLRDebuggingLibraryProvider2 interface : uuid{E04E2FF1-DCFD-45D5-BCD1-16FFF2FAF7BA}
 cpp_quote("EXTERN_GUID(IID_ICLRDebuggingLibraryProvider2, 0xE04E2FF1, 0xDCFD, 0x45D5, 0xBC, 0xD1, 0x16, 0xFF, 0xF2, 0xFA, 0xF7, 0xBA);")
 
+// IID ICLRDebuggingLibraryProvider3 interface : uuid{DE3AAB18-46A0-48B4-BF0D-2C336E69EA1B}
+cpp_quote("EXTERN_GUID(IID_ICLRDebuggingLibraryProvider3, 0xde3aab18, 0x46a0, 0x48b4, 0xbf, 0xd, 0x2c, 0x33, 0x6e, 0x69, 0xea, 0x1b);")
+
 // For use in ICLRMetaHost::RequestRuntimeLoadedNotification
 interface ICLRRuntimeInfo;
 
@@ -70,6 +73,13 @@ typedef void (__stdcall *RuntimeLoadedCallbackFnPtr)(
     ICLRRuntimeInfo          *pRuntimeInfo,
     CallbackThreadSetFnPtr    pfnCallbackThreadSet,
     CallbackThreadUnsetFnPtr  pfnCallbackThreadUnset);
+
+typedef enum 
+{
+    UnknownIndex = 0,
+    Identity = 1,
+    Runtime = 2,
+} LIBRARY_PROVIDER_INDEX_TYPE;
 
 /**************************************************************************************
  ** ICLRMetaHost                                                                     **
@@ -287,6 +297,104 @@ interface ICLRDebuggingLibraryProvider2 : IUnknown
         [in] const WCHAR* pwszFileName,
         [in] DWORD dwTimestamp,
         [in] DWORD dwSizeOfImage,
+        [out] LPWSTR* ppResolvedModulePath);
+}
+
+ /**************************************************************************************
+ ** ICLRDebuggingLibraryProvider3                                                     **
+ ** Implemented by API user                                                           **
+ ** This interface allows the debugger to provide module paths which are needed for   **
+ ** debugging a particular CLR such as mscordbi and mscordacwks.                      **
+ **************************************************************************************/
+[
+    uuid(DE3AAB18-46A0-48B4-BF0D-2C336E69EA1B),
+    version(1.0),
+    helpstring("CLR debugging LibraryProvider callback interface"),
+    local
+]
+interface ICLRDebuggingLibraryProvider3 : IUnknown
+{
+    /**********************************************************************************
+    ** The goal of this method is to allow the debugger to provide a module path     **
+    ** which is needed for debugging. The debugger may use any available means to    **
+    ** locate and/or procure the module. See the security note below for important   **
+    ** information about implementing this method securely.                          **
+    ** Arguments:                                                                    **
+    ** pwzFileName - The name of the module being requested                          **
+    **                                                                               **
+    ** pwszRuntimeModule - The runtime module path or the module path of the         **
+    **                     single-file app. NULL when called from the                **
+    **                     OpenVirtualProcess API.                                   **
+    **                                                                               **
+    ** indexType - The type of time stamp/file size is either the identity of the    **
+    **             requested module or the runtime (coreclr) module's.               **
+    **                                                                               **
+    ** dwTimeStamp - The date time stamp stored in the COFF file header of PE files  **
+    **                                                                               **
+    ** dwSizeOfImage - The SizeOfImage field stored in the COFF optional file header **
+    **                 of PE files                                                   **
+    **                                                                               **
+    ** ppResolvedModulePath - Where *ppResolvedModulePath is a null terminated       **
+    **                        path to the module dll. On Windows it should be        **
+    **                        allocated with CoTaskMemAlloc. On Unix it should be    **
+    **                        allocated with malloc. Failure leave it untouched. See **
+    **                        security note below!                                   **
+    **                                                                               **
+    ** Return value - S_OK if the module was provided, or any other convenient       **
+    **                error HRESULT if the module could not be provided              **
+    **                                                                               **
+    **                               !!!!!!!!!!!!!!                                  **
+    ** SECURITY NOTE: Anything the caller would not be willing to execute itself, it **
+    ** should not provide to the this API call                                       **
+    ***********************************************************************************/
+    HRESULT ProvideWindowsLibrary(
+        [in] const WCHAR* pwszFileName,
+        [in] const WCHAR* pwszRuntimeModule,
+        [in] LIBRARY_PROVIDER_INDEX_TYPE indexType,
+        [in] DWORD dwTimestamp,
+        [in] DWORD dwSizeOfImage,
+        [out] LPWSTR* ppResolvedModulePath);
+
+    /**********************************************************************************
+    ** The goal of this method is to allow the debugger to provide a module path     **
+    ** which is needed for debugging. The debugger may use any available means to    **
+    ** locate and/or procure the module. See the security note below for important   **
+    ** information about implementing this method securely.                          **
+    ** Arguments:                                                                    **
+    ** pwszFileName - The name of the module being requested                         **
+    **                                                                               **
+    ** pwszRuntimeModule - The runtime module path or the module path of the         **
+    **                     single-file app. NULL when called from the                **
+    **                     OpenVirtualProcess API.                                   **
+    **                                                                               **
+    ** indexType - The type of the build id either the identity of the requested     **
+    **             module or the runtime (coreclr) module's. Normally it will        **
+    **             be the identity index type and the runtime index for Linux        **
+    **             cross-DAC on Windows or for non-singlefile apps on Linux/MacOS.   **
+    **                                                                               **
+    ** pbBuildId - The Linux or MacOS module build id                                **
+    **                                                                               **
+    ** iBuildIdSize - The number of bytes in the build id                            **
+    **                                                                               **
+    ** ppResolvedModulePath - Where *ppResolvedModulePath is a null terminated       **
+    **                        path to the module dll. On Windows it should be        **
+    **                        allocated with CoTaskMemAlloc. On Unix it should be    **
+    **                        allocated with malloc. Failure leave it untouched. See **
+    **                        security note below!                                   **
+    **                                                                               **
+    ** Return value - S_OK if the module was provided, or any other convenient       **
+    **                error HRESULT if the module could not be provided              **
+    **                                                                               **
+    **                               !!!!!!!!!!!!!!                                  **
+    ** SECURITY NOTE: Anything the caller would not be willing to execute itself, it **
+    ** should not provide to the this API call                                       **
+    ***********************************************************************************/
+    HRESULT ProvideUnixLibrary(
+        [in] const WCHAR* pwszFileName,
+        [in] const WCHAR* pwszRuntimeModule,
+        [in] LIBRARY_PROVIDER_INDEX_TYPE indexType,
+        [in] BYTE* pbBuildId,
+        [in] int iBuildIdSize,
         [out] LPWSTR* ppResolvedModulePath);
 }
 

@@ -394,13 +394,14 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
             Debug.Assert(methodTable.Flags.HasInstantiation);
 
             TargetPointer perInstInfo = methodTable.PerInstInfo;
-            TargetPointer genericsDictInfo = perInstInfo - (ulong)target.PointerSize;
+            TargetPointer genericsDictInfoAddr = perInstInfo - (ulong)target.PointerSize;
+            GenericsDictInfo genericsDictInfo = target.ProcessedData.GetOrAdd<GenericsDictInfo>(genericsDictInfoAddr);
 
-            TargetPointer dictionaryPointer = target.ReadPointer(perInstInfo);
+            // Use the last dictionary. This corresponds to the specific type - any previous ones are for superclasses
+            // See PerInstInfo in methodtable.h for details in coreclr
+            TargetPointer dictionaryPointer = target.ReadPointer(perInstInfo + (ulong)target.PointerSize * (ulong)(genericsDictInfo.NumDicts - 1));
 
-
-            int numberOfGenericArgs = target.ProcessedData.GetOrAdd<GenericsDictInfo>(genericsDictInfo).NumTypeArgs;
-
+            int numberOfGenericArgs = genericsDictInfo.NumTypeArgs;
             TypeHandles = new TypeHandle[numberOfGenericArgs];
             for (int i = 0; i < numberOfGenericArgs; i++)
             {

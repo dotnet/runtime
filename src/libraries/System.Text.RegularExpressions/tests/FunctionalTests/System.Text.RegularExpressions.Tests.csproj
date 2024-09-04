@@ -85,6 +85,11 @@
                       SetTargetFramework="TargetFramework=netstandard2.0"
                       OutputItemType="Analyzer"
                       ReferenceOutputAssembly="true" />
+
+    <!-- Reference the `NetCoreAppMinimum` build which has a functional BinaryFormatter and force a private copy to ensure it's not excluded -->
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime.Serialization.Formatters\src\System.Runtime.Serialization.Formatters.csproj"
+                      Private="true"
+                      SetTargetFramework="TargetFramework=$(NetCoreAppMinimum)" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="System.Text.RegularExpressions.TestData" Version="$(SystemTextRegularExpressionsTestDataVersion)" />
