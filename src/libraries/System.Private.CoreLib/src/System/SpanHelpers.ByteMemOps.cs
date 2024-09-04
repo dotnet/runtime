@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#if !MONO && (TARGET_AMD64 || TARGET_ARM64 || (TARGET_32BIT && !TARGET_ARM) || TARGET_LOONGARCH64)
+#if (TARGET_AMD64 && !MONO) || TARGET_ARM64 || (TARGET_32BIT && !TARGET_ARM) || TARGET_LOONGARCH64
 // JIT is guaranteed to unroll blocks up to 64 bytes in size
 #define HAS_CUSTOM_BLOCKS
 #endif
