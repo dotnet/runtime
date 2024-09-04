@@ -2598,6 +2598,7 @@ namespace Mono.Linker.Steps
 			case "MulticastDelegate":
 			case "ValueType":
 			case "Enum":
+			case "Array":
 				return td.Namespace == "System";
 			}
 
