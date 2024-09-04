@@ -402,7 +402,7 @@ namespace System
         private static async Task<BinaryData> FromFileAsync(string path, bool async,
             string? mediaType = default, CancellationToken cancellationToken = default)
         {
-            using FileStream fileStream = File.OpenRead(path);
+            using FileStream fileStream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read, 4096, async);
             return await FromStreamAsync(fileStream, async, mediaType, cancellationToken).ConfigureAwait(false);
         }
 
