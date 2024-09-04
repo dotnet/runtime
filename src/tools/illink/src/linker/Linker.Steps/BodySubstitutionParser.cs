@@ -114,11 +114,6 @@ namespace Mono.Linker.Steps
 			}
 
 			_substitutionInfo.SetFieldValue (field, res);
-
-			string init = GetAttribute (fieldNav, "initialize");
-			if (init?.ToLowerInvariant () == "true") {
-				_substitutionInfo.SetFieldInit (field);
-			}
 		}
 
 		void ProcessResources (AssemblyDefinition assembly, XPathNavigator nav)
