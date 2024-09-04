@@ -131,7 +131,6 @@ static const Entry s_sysNative[] =
     DllImportEntry(SystemNative_Malloc)
     DllImportEntry(SystemNative_Realloc)
     DllImportEntry(SystemNative_GetSpaceInfoForMountPoint)
-    DllImportEntry(SystemNative_GetFormatInfoForMountPoint)
     DllImportEntry(SystemNative_GetAllMountPoints)
     DllImportEntry(SystemNative_ReadEvents)
     DllImportEntry(SystemNative_CreateNetworkChangeListenerSocket)

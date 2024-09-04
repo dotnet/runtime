@@ -33,13 +33,6 @@ internal static partial class Interop
         [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_GetSpaceInfoForMountPoint", SetLastError = true)]
         internal static partial int GetSpaceInfoForMountPoint([MarshalAs(UnmanagedType.LPUTF8Str)] string name, out MountPointInformation mpi);
 
-        [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_GetFormatInfoForMountPoint", SetLastError = true)]
-        internal static unsafe partial int GetFormatInfoForMountPoint(
-            [MarshalAs(UnmanagedType.LPUTF8Str)] string name,
-            byte* formatNameBuffer,
-            int bufferLength,
-            long* formatType);
-
         internal static int GetFormatInfoForMountPoint(string name, out string format)
         {
             return GetFormatInfoForMountPoint(name, out format, out _);
@@ -49,28 +42,45 @@ internal static partial class Interop
         {
             return GetFormatInfoForMountPoint(name, out _, out type);
         }
+		
+		private static int GetFormatInfoForMountPoint(string name, out string format, out DriveType type)
+		{
+			const string mountInfoFilePath = "/proc/self/mountinfo";
+			var mountInfoFileContent = File.ReadAllLines(mountInfoFilePath);
+			foreach (var line in mountInfoFileContent)
+			{
+				var parser = new StringParser(line, ' ');
 
-        private static unsafe int GetFormatInfoForMountPoint(string name, out string format, out DriveType type)
-        {
-            byte* formatBuffer = stackalloc byte[MountPointFormatBufferSizeInBytes];    // format names should be small
-            long numericFormat;
-            int result = GetFormatInfoForMountPoint(name, formatBuffer, MountPointFormatBufferSizeInBytes, &numericFormat);
-            if (result == 0)
-            {
-                // Check if we have a numeric answer or string
-                format = numericFormat != -1 ?
-                    Enum.GetName(typeof(UnixFileSystemTypes), numericFormat) ?? string.Empty :
-                    Marshal.PtrToStringUTF8((IntPtr)formatBuffer)!;
-                type = GetDriveType(format);
-            }
-            else
-            {
-                format = string.Empty;
-                type = DriveType.Unknown;
-            }
+				// Skip fields we don't care about (Fields 1-4)
+				parser.MoveNext(); // Skip Mount ID
+				parser.MoveNext(); // Skip Parent ID
+				parser.MoveNext(); // Skip Major:Minor
+				parser.MoveNext(); // Skip Root
 
-            return result;
-        }
+				// Get the mount point (Field 5)
+				string mountPoint = parser.MoveAndExtractNext();
+
+				// Skip to the separator which is end of optional fields (Field 8)
+				while (parser.MoveAndExtractNext() != "-")
+				{
+				}
+
+				// Get filesystem type (Field 9)
+				string filesystemType = parser.MoveAndExtractNext();
+
+				if (mountPoint.Equals(name, StringComparison.Ordinal))
+				{
+					format = filesystemType;
+					type = GetDriveType(filesystemType);
+					return 0;
+				}
+			}
+
+			format = string.Empty;
+			type = DriveType.Unknown;
+			return -1;
+		}
+	
 
         /// <summary>Categorizes a file system name into a drive type.</summary>
         /// <param name="fileSystemName">The name to categorize.</param>
