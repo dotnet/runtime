@@ -40,6 +40,11 @@ namespace Microsoft.Extensions.DependencyInjection
         internal static bool DisableDynamicEngine { get; } =
             AppContext.TryGetSwitch("Microsoft.Extensions.DependencyInjection.DisableDynamicEngine", out bool disableDynamicEngine) ? disableDynamicEngine : false;
 
+        internal static bool AllowNonKeyedServiceInject { get; } =
+            AppContext.TryGetSwitch("Microsoft.Extensions.DependencyInjection.AllowNonKeyedServiceInject", out bool allowNonKeyedServiceInject) ? allowNonKeyedServiceInject : false;
+
+        internal static readonly bool s_allowNonKeyedServiceInject = AllowNonKeyedServiceInject;
+
         internal static bool VerifyAotCompatibility =>
 #if NETFRAMEWORK || NETSTANDARD2_0
             false;
