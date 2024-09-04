@@ -127,7 +127,7 @@ IF NOT "%RunningIlasmRoundTrip%"=="" (
 
       <BatchCLRTestEnvironmentCompatibilityCheck Condition="'$(SynthesizedPgoIncompatible)' == 'true'"><![CDATA[
 $(BatchCLRTestEnvironmentCompatibilityCheck)
-IF NOT "%CrossGen2SynthesizePgo%"=="" (
+IF NOT "%CrossGen2SynthesizePgo"=="" (
   ECHO SKIPPING EXECUTION BECAUSE CrossGen2SynthesizePgo IS SET
   popd
   Exit /b 0
