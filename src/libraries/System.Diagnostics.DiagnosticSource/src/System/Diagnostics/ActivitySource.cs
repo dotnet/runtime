@@ -477,7 +477,7 @@ namespace System.Diagnostics
         {
             get
             {
-                T[] localArray = Volatile.Read(in _volatileArray);
+                T[] localArray = Volatile.Read(ref _volatileArray);
 
                 return localArray.Length;
             }
@@ -485,7 +485,7 @@ namespace System.Diagnostics
 
         public void EnumWithFunc<TParent>(ActivitySource.Function<T, TParent> func, ref ActivityCreationOptions<TParent> data, ref ActivitySamplingResult samplingResult, ref ActivityCreationOptions<ActivityContext> dataWithContext)
         {
-            T[] localArray = Volatile.Read(in _volatileArray);
+            T[] localArray = Volatile.Read(ref _volatileArray);
             foreach (T item in localArray)
             {
                 func(item, ref data, ref samplingResult, ref dataWithContext);
@@ -494,7 +494,7 @@ namespace System.Diagnostics
 
         public void EnumWithAction(Action<T, object> action, object arg)
         {
-            T[] localArray = Volatile.Read(in _volatileArray);
+            T[] localArray = Volatile.Read(ref _volatileArray);
             foreach (T item in localArray)
             {
                 action(item, arg);
@@ -508,7 +508,7 @@ namespace System.Diagnostics
                 return;
             }
 
-            T[] localArray = Volatile.Read(in _volatileArray);
+            T[] localArray = Volatile.Read(ref _volatileArray);
             foreach (T item in localArray)
             {
                 (item as ActivityListener)!.ExceptionRecorder?.Invoke(activity, exception, ref tags);
