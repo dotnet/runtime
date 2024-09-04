@@ -1509,15 +1509,7 @@ VOID StubLinkerCPU::EmitShuffleThunk(ShuffleEntry *pShuffleEntryArray)
         }
     }
 
-    if (m_fProlog) // calling convention transfers caused the stack to grow
-    {
-        EmitJumpAndLinkRegister(RegRa, t6);
-        EmitEpilog();
-    }
-    else
-    {
-        EmitJumpRegister(t6); // Tailcall to target
-    }
+    EmitJumpRegister(t6); // Tailcall to target
 }
 
 /* Emit the shuffling from the first lowered FP struct onwards
@@ -1622,16 +1614,7 @@ void StubLinkerCPU::EmitShufflingWithCallingConventionTransfers(const ShuffleEnt
     }
 
     _ASSERTE(entry->srcofs == ShuffleEntry::SENTINEL);
-    IntReg srcSp = RegSp;
-    if (entry->stacksizedelta != 0)
-    {
-        _ASSERTE(delowered[0].srcofs != ShuffleEntry::SENTINEL);
-        _ASSERTE(lowered1.srcofs == ShuffleEntry::SENTINEL);
-        _ASSERTE(stackSlots2.count == 0);
-        EmitProlog(0, 0, entry->stacksizedelta); // grow the stack
-        srcSp = RegFp; // fp is the sp before the prolog which is handy because we can use stack srcofs verbatim
-        // TODO: optimize by growing stack only by the (destination - source) delta and shuffling in place.
-    }
+    _ASSERTE(entry->stacksizedelta == 0);
 
     // The key points in the shuffling are recognized, do some sanity checks
     if (fpRegisters.count > 0) _ASSERTE(fpRegisters.offset == 1);
@@ -1665,12 +1648,12 @@ void StubLinkerCPU::EmitShufflingWithCallingConventionTransfers(const ShuffleEnt
         return i;
     };
 
-    auto shuffleStackSlotLeftChain = [this, srcSp](ShuffleChain c) -> void
+    auto shuffleStackSlotLeftChain = [this](ShuffleChain c) -> void
     {
-        _ASSERTE(c.offset <= 0 || srcSp == RegFp); // shuffles to the left
+        _ASSERTE(c.offset <= 0); // shuffles to the left
         for (int src = c.firstSrc, dst = src + c.offset;  src < c.firstSrc + c.count;  ++src, ++dst)
         {
-            EmitLoad (intTempReg, srcSp, src * sizeof(void*));
+            EmitLoad (intTempReg, RegSp, src * sizeof(void*));
             EmitStore(intTempReg, RegSp, dst * sizeof(void*));
         }
     };
@@ -1690,15 +1673,14 @@ void StubLinkerCPU::EmitShufflingWithCallingConventionTransfers(const ShuffleEnt
         {
             _ASSERTE(field.reg == lastIntArgReg); // a7 is empty so the integer field of lowered0 can go straight home
         }
-        EmitAnyLoad(isFloating, field.sizeShift, field.reg, srcSp, 0 + field.offset);
+        EmitAnyLoad(isFloating, field.sizeShift, field.reg, RegSp, 0 + field.offset);
     }
 
     // Now that lowered0 is out of the way, we can shuffle subsequent stackSlots0
     _ASSERTE(stackSlots0.firstSrc + stackSlots0.offset == 0);
     shuffleStackSlotLeftChain(stackSlots0);
 
-    bool shuffleStackSlots1Right = (srcSp == RegSp && stackSlots1.offset > 0);
-    if (shuffleStackSlots1Right)
+    if (stackSlots1.offset > 0)
     {
         // The delowered argument is bigger than lowered0, which displaces subsequent stackSlots1 to the right.
         // Do the second lowering first to unblock shuffling of stack slots after the delowered argument
@@ -1734,14 +1716,14 @@ void StubLinkerCPU::EmitShufflingWithCallingConventionTransfers(const ShuffleEnt
         EmitMovReg(src + 1, src);
     }
 
-    if (!shuffleStackSlots1Right)
+    if (stackSlots1.offset <= 0)
     {
         shuffleStackSlotLeftChain(stackSlots1);
         if (lowered1.srcofs != ShuffleEntry::SENTINEL)
         {
             TransferredField f = GetTransferredField(lowered1.dstofs);
             int slotOffset = GetStackSlot(lowered1.srcofs) * sizeof(void*);
-            EmitAnyLoad(true, f.sizeShift, f.reg, srcSp, slotOffset + f.offset);
+            EmitAnyLoad(true, f.sizeShift, f.reg, RegSp, slotOffset + f.offset);
         }
     }
 

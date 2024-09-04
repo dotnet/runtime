@@ -481,15 +481,7 @@ BOOL GenerateShuffleArrayPortable(MethodDesc* pMethodSrc, MethodDesc *pMethodDst
             return FALSE;
     }
 
-    UINT stackSizeDelta = 0;
-#if defined(TARGET_RISCV64)
-    {
-        UINT stackSizeSrc = sArgPlacerSrc.SizeOfArgStack();
-        UINT stackSizeDst = sArgPlacerDst.SizeOfArgStack();
-        if (stackSizeDst > stackSizeSrc)
-            stackSizeDelta = stackSizeDst; // stack growth
-    }
-#elif defined(TARGET_X86) && !defined(UNIX_X86_ABI)
+#if defined(TARGET_X86) && !defined(UNIX_X86_ABI)
     {
         UINT stackSizeSrc = sArgPlacerSrc.SizeOfArgStack();
         UINT stackSizeDst = sArgPlacerDst.SizeOfArgStack();
@@ -501,8 +493,6 @@ BOOL GenerateShuffleArrayPortable(MethodDesc* pMethodSrc, MethodDesc *pMethodDst
             // we can drop arguments but we can never make them up - this is definitely not allowed
             COMPlusThrow(kVerificationException);
         }
-
-        stackSizeDelta = stackSizeSrc - stackSizeDst;
     }
 #endif // Callee pop architectures - defined(TARGET_X86) && !defined(UNIX_X86_ABI)
 
@@ -718,11 +708,7 @@ BOOL GenerateShuffleArrayPortable(MethodDesc* pMethodSrc, MethodDesc *pMethodDst
     }
 
     entry.srcofs = ShuffleEntry::SENTINEL;
-#if defined(TARGET_RISCV64)
-    entry.stacksizedelta = stackSizeDelta;
-#else
     entry.stacksizedelta = 0;
-#endif
     pShuffleEntryArray->Append(entry);
 
     return TRUE;
