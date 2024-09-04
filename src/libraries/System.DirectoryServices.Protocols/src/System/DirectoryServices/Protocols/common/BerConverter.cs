@@ -269,15 +269,15 @@ namespace System.DirectoryServices.Protocols
                     Marshal.PtrToStructure(flattenptr, binaryValue);
                 }
 
-                if (binaryValue == null || binaryValue.bv_len == 0)
+                if (binaryValue == null || binaryValue.bv_len.Value == 0)
                 {
                     encodingResult = Array.Empty<byte>();
                 }
                 else
                 {
-                    encodingResult = new byte[binaryValue.bv_len];
+                    encodingResult = new byte[binaryValue.bv_len.Value];
 
-                    Marshal.Copy(binaryValue.bv_val, encodingResult, 0, binaryValue.bv_len);
+                    Marshal.Copy(binaryValue.bv_val, encodingResult, 0, (int)binaryValue.bv_len.Value);
                 }
             }
             finally
@@ -315,12 +315,12 @@ namespace System.DirectoryServices.Protocols
 
             if (value == null)
             {
-                berValue.bv_len = 0;
+                berValue.bv_len = new CLong(0);
                 berValue.bv_val = IntPtr.Zero;
             }
             else
             {
-                berValue.bv_len = value.Length;
+                berValue.bv_len = new CLong(value.Length);
                 berValue.bv_val = Marshal.AllocHGlobal(value.Length);
                 Marshal.Copy(value, 0, berValue.bv_val, value.Length);
             }
@@ -499,8 +499,8 @@ namespace System.DirectoryServices.Protocols
                     {
                         Marshal.PtrToStructure(result, binaryValue);
 
-                        byteArray = new byte[binaryValue.bv_len];
-                        Marshal.Copy(binaryValue.bv_val, byteArray, 0, binaryValue.bv_len);
+                        byteArray = new byte[binaryValue.bv_len.Value];
+                        Marshal.Copy(binaryValue.bv_val, byteArray, 0, (int)binaryValue.bv_len.Value);
                     }
                 }
                 else
@@ -540,7 +540,7 @@ namespace System.DirectoryServices.Protocols
 
                         if (byteArray != null)
                         {
-                            managedBervalArray[i].bv_len = byteArray.Length;
+                            managedBervalArray[i].bv_len = new CLong(byteArray.Length);
                             managedBervalArray[i].bv_val = Marshal.AllocHGlobal(byteArray.Length);
                             Marshal.Copy(byteArray, 0, managedBervalArray[i].bv_val, byteArray.Length);
                         }
@@ -607,8 +607,8 @@ namespace System.DirectoryServices.Protocols
                             BerVal ber = new BerVal();
                             Marshal.PtrToStructure(tempPtr, ber);
 
-                            byte[] berArray = new byte[ber.bv_len];
-                            Marshal.Copy(ber.bv_val, berArray, 0, ber.bv_len);
+                            byte[] berArray = new byte[ber.bv_len.Value];
+                            Marshal.Copy(ber.bv_val, berArray, 0, (int)ber.bv_len.Value);
 
                             binaryList.Add(berArray);
 

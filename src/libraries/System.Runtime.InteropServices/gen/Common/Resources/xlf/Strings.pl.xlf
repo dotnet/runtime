@@ -9,7 +9,7 @@
       </trans-unit>
       <trans-unit id="AddGeneratedComClassAttributeDescription">
         <source>This type implements at least one type with the 'GeneratedComInterfaceAttribute' attribute or its base type has the 'GeneratedComClassAttribute' attribute. Add the 'GeneratedComClassAttribute' to enable passing this type to COM and exposing the COM interfaces for the types with the 'GeneratedComInterfaceAttribute' from objects of this type.</source>
-        <target state="new">This type implements at least one type with the 'GeneratedComInterfaceAttribute' attribute or its base type has the 'GeneratedComClassAttribute' attribute. Add the 'GeneratedComClassAttribute' to enable passing this type to COM and exposing the COM interfaces for the types with the 'GeneratedComInterfaceAttribute' from objects of this type.</target>
+        <target state="translated">Ten typ implementuje co najmniej jeden typ z atrybutem „GeneratedComInterfaceAttribute” lub jego typ podstawowy ma atrybut „GeneratedComClassAttribute”. Dodaj atrybut „GeneratedComClassAttribute”, aby umożliwić przekazywanie tego typu do modelu COM i uwidacznianie interfejsów COM dla typów z atrybutem „GeneratedComInterfaceAttribute” z obiektów tego typu.</target>
         <note />
       </trans-unit>
       <trans-unit id="AddGeneratedComClassAttributeMessage">
@@ -69,12 +69,12 @@
       </trans-unit>
       <trans-unit id="BaseInterfaceDefinedInOtherAssemblyMessage">
         <source>The type '{0}' has a base interface '{1}' defined in a different assembly. This can cause a variety of difficult to diagnose issues in some scenarios</source>
-        <target state="new">The type '{0}' has a base interface '{1}' defined in a different assembly. This can cause a variety of difficult to diagnose issues in some scenarios</target>
+        <target state="translated">Typ „{0}” ma interfejs podstawowy „{1}” zdefiniowany w innym zestawie. Może to powodować różne trudne do zdiagnozowania problemy w niektórych scenariuszach</target>
         <note />
       </trans-unit>
       <trans-unit id="BaseInterfaceDefinedInOtherAssemblyTitle">
         <source>Specifying 'GeneratedComInterfaceAttribute' on an interface that has a base interface defined in another assembly is not supported</source>
-        <target state="new">Specifying 'GeneratedComInterfaceAttribute' on an interface that has a base interface defined in another assembly is not supported</target>
+        <target state="translated">Określanie atrybutu „GeneratedComInterfaceAttribute” dla interfejsu, który ma interfejs podstawowy zdefiniowany w innym zespole, nie jest obsługiwane</target>
         <note />
       </trans-unit>
       <trans-unit id="BaseInterfaceMustGenerateAtLeastSameWrappers">
@@ -504,7 +504,7 @@
       </trans-unit>
       <trans-unit id="InVariantShouldBeRef">
         <source>Objects marshalled from VARIANTs as 'in' parameters in unmanaged-to-managed calls will not propagate back the updated result, even if the VARIANT is a VT_BYREF variant. Use a 'ref' parameter instead of an 'in' parameter to propagate the updated value back to the caller.</source>
-        <target state="new">Objects marshalled from VARIANTs as 'in' parameters in unmanaged-to-managed calls will not propagate back the updated result, even if the VARIANT is a VT_BYREF variant. Use a 'ref' parameter instead of an 'in' parameter to propagate the updated value back to the caller.</target>
+        <target state="translated">Obiekty przekazywane z obiektów VARIANT jako parametry „w” w wywołaniach niezarządzanych do zarządzanych nie będą propagować z powrotem zaktualizowanego wyniku, nawet jeśli parametr VARIANT jest wariantem VT_BYREF. Użyj parametru „ref” zamiast parametru „w”, aby propagować zaktualizowaną wartość z powrotem do obiektu wywołującego.</target>
         <note />
       </trans-unit>
       <trans-unit id="InstanceEventDeclaredInInterfaceDescription">
