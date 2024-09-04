@@ -420,12 +420,15 @@ namespace System.Diagnostics
             while (true)
             {
                 T[] local = _volatileArray;
-                var newArray = new T[local.Length + 1];
-                Array.Copy(local, newArray, local.Length);
-                newArray[local.Length] = item;
 
-                if (Interlocked.CompareExchange(ref _volatileArray, newArray, local) == local)
-                    break;
+                if (TryAppendItemAndSwap(item, local))
+                {
+                    return;
+                }
+                else
+                {
+                    //implicit continue
+                }
             }
         }
 
@@ -435,17 +438,21 @@ namespace System.Diagnostics
             {
                 T[] local = _volatileArray;
 
-                foreach (T arrayItem in local)
+                int index = Array.IndexOf(local, item);
+
+                if (index >= 0)
                 {
-                    if (EqualityComparer<T>.Default.Equals(arrayItem, item))
-                    {
-                        return false;
-                    }
+                    return false;
                 }
 
-                // We didn't find the item in the list, so we can add it.
-                Add(item);
-                return true;
+                if (TryAppendItemAndSwap(item, local))
+                {
+                    return true;
+                }
+                else
+                {
+                    //implicit continue
+                }
             }
         }
 
@@ -455,21 +462,21 @@ namespace System.Diagnostics
             {
                 T[] local = _volatileArray;
 
-                for (int i = 0; i < local.Length; i++)
-                {
-                    if (EqualityComparer<T>.Default.Equals(local[i], item))
-                    {
-                        var newArray = new T[local.Length - 1];
-                        Array.Copy(local, newArray, i);
-                        Array.Copy(local, i + 1, newArray, i, local.Length - i - 1);
+                int index = Array.IndexOf(local, item);
 
-                        if (Interlocked.CompareExchange(ref _volatileArray, newArray, local) == local)
-                            return true;
-                        break;
-                    }
+                if (index < 0)
+                {
+                    return false;
                 }
 
-                return false;
+                if (TryRemoveIndexAndSwap(index, local))
+                {
+                    return true;
+                }
+                else
+                {
+                    //implicit continue
+                }
             }
         }
 
@@ -513,6 +520,30 @@ namespace System.Diagnostics
             {
                 (item as ActivityListener)!.ExceptionRecorder?.Invoke(activity, exception, ref tags);
             }
+        }
+
+        private bool TryAppendItemAndSwap(T item, T[] localCopy)
+        {
+            T[] newArray = new T[localCopy.Length + 1];
+
+            Array.Copy(localCopy, newArray, localCopy.Length);//copy existing items
+            newArray[localCopy.Length] = item;//copy new item
+
+            return Interlocked.CompareExchange(ref _volatileArray, newArray, localCopy) == localCopy;
+        }
+
+        private bool TryRemoveIndexAndSwap(int index, T[] localCopy)
+        {
+            T[] newArray = new T[localCopy.Length - 1];
+
+            Array.Copy(localCopy, newArray, index);//copy existing items before index
+
+            Array.Copy(
+                localCopy, index + 1, //position after the index, skipping it
+                newArray, index, localCopy.Length - index - 1//remaining items accounting for removed item
+            );
+
+            return Interlocked.CompareExchange(ref _volatileArray, newArray, localCopy) == localCopy;
         }
     }
 }
