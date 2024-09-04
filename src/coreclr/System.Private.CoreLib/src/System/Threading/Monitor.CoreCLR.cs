@@ -149,6 +149,7 @@ namespace System.Threading
         private static partial bool Wait(ObjectHandleOnStack obj, int millisecondsTimeout);
 
         [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("wasi")]
         public static bool Wait(object obj, int millisecondsTimeout)
         {
             ArgumentNullException.ThrowIfNull(obj);

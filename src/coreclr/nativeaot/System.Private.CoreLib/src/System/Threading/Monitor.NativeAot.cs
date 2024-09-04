@@ -144,6 +144,7 @@ namespace System.Threading
         #region Public Wait/Pulse methods
 
         [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("wasi")]
         public static bool Wait(object obj, int millisecondsTimeout)
         {
             return GetCondition(obj).Wait(millisecondsTimeout, obj);

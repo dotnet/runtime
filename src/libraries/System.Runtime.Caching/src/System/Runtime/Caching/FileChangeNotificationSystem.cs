@@ -13,6 +13,7 @@ namespace System.Runtime.Caching
 {
 #if NET
     [UnsupportedOSPlatform("browser")]
+    [UnsupportedOSPlatform("wasi")]
     [UnsupportedOSPlatform("ios")]
     [UnsupportedOSPlatform("tvos")]
     [SupportedOSPlatform("maccatalyst")]

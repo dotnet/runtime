@@ -10,6 +10,7 @@ using System.Threading;
 namespace System.Transactions
 {
     [UnsupportedOSPlatform("browser")]
+    [UnsupportedOSPlatform("wasi")]
     public sealed class CommittableTransaction : Transaction, IAsyncResult
     {
         // Create a transaction with defaults

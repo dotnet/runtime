@@ -71,6 +71,7 @@ namespace System.Runtime.InteropServices
     /// </summary>
     [UnsupportedOSPlatform("android")]
     [UnsupportedOSPlatform("browser")]
+    [UnsupportedOSPlatform("wasi")]
     [UnsupportedOSPlatform("ios")]
     [UnsupportedOSPlatform("tvos")]
     [CLSCompliant(false)]

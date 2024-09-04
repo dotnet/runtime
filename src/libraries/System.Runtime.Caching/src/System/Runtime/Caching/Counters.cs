@@ -11,6 +11,7 @@ namespace System.Runtime.Caching
 {
 #if NET
     [UnsupportedOSPlatform("browser")]
+    [UnsupportedOSPlatform("wasi")]
 #endif
     internal sealed class Counters : EventSource
     {

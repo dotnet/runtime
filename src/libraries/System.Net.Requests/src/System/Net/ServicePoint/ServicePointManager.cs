@@ -98,6 +98,7 @@ namespace System.Net
         public static bool CheckCertificateRevocationList { get; set; }
 
         [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("wasi")]
         public static EncryptionPolicy EncryptionPolicy { get; } = EncryptionPolicy.RequireEncryption;
 
         public static ServicePoint FindServicePoint(Uri address) => FindServicePoint(address, null);

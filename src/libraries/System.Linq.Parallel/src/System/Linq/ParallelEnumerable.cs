@@ -66,6 +66,7 @@ namespace System.Linq
         // be executed in parallel, but will retain PLINQ semantics (exceptions wrapped as aggregates, etc).
 #if !FEATURE_WASM_MANAGED_THREADS
         [System.Runtime.Versioning.SupportedOSPlatformGuard("browser")]
+        [System.Runtime.Versioning.SupportedOSPlatformGuard("wasi")]
         internal static bool SinglePartitionMode => OperatingSystem.IsBrowser() || OperatingSystem.IsWasi();
 #else
         internal static bool SinglePartitionMode => false;

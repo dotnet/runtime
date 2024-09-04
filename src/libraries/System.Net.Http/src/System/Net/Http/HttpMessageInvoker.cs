@@ -29,6 +29,7 @@ namespace System.Net.Http
         }
 
         [UnsupportedOSPlatformAttribute("browser")]
+        [UnsupportedOSPlatformAttribute("wasi")]
         public virtual HttpResponseMessage Send(HttpRequestMessage request, CancellationToken cancellationToken)
         {
             ArgumentNullException.ThrowIfNull(request);

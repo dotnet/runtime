@@ -34,6 +34,7 @@ namespace System.Transactions
     }
 
     [UnsupportedOSPlatform("browser")]
+    [UnsupportedOSPlatform("wasi")]
     public sealed class TransactionScope : IDisposable
     {
         public TransactionScope() : this(TransactionScopeOption.Required)

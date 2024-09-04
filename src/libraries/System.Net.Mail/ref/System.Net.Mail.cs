@@ -166,6 +166,7 @@ namespace System.Net.Mail
     }
     public delegate void SendCompletedEventHandler(object sender, System.ComponentModel.AsyncCompletedEventArgs e);
     [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
+    [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("wasi")]
     public partial class SmtpClient : System.IDisposable
     {
         public SmtpClient() { }

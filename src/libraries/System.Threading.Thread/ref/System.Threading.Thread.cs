@@ -92,10 +92,12 @@ namespace System.Threading
         public static void Sleep(System.TimeSpan timeout) { }
         public static void SpinWait(int iterations) { }
 #if !FEATURE_WASM_MANAGED_THREADS
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("wasi")]
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
 #endif
         public void Start() { }
 #if !FEATURE_WASM_MANAGED_THREADS
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("wasi")]
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
 #endif
         public void Start(object? parameter) { }
@@ -103,10 +105,12 @@ namespace System.Threading
         public void Suspend() { }
         public bool TrySetApartmentState(System.Threading.ApartmentState state) { throw null; }
 #if !FEATURE_WASM_MANAGED_THREADS
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("wasi")]
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
 #endif
         public void UnsafeStart() { }
 #if !FEATURE_WASM_MANAGED_THREADS
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("wasi")]
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
 #endif
         public void UnsafeStart(object? parameter) { }

@@ -116,6 +116,7 @@ namespace System.Net.Http
         }
 
         [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("wasi")]
         public bool UseCookies
         {
             get => _underlyingHandler.UseCookies;
@@ -123,6 +124,7 @@ namespace System.Net.Http
         }
 
         [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("wasi")]
         public CookieContainer CookieContainer
         {
             get => _underlyingHandler.CookieContainer;
@@ -135,6 +137,7 @@ namespace System.Net.Http
         }
 
         [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("wasi")]
         public DecompressionMethods AutomaticDecompression
         {
             get => _underlyingHandler.AutomaticDecompression;
@@ -142,6 +145,7 @@ namespace System.Net.Http
         }
 
         [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("wasi")]
         public bool UseProxy
         {
             get => _underlyingHandler.UseProxy;
@@ -149,6 +153,7 @@ namespace System.Net.Http
         }
 
         [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("wasi")]
         [UnsupportedOSPlatform("ios")]
         [UnsupportedOSPlatform("tvos")]
         public IWebProxy? Proxy
@@ -158,6 +163,7 @@ namespace System.Net.Http
         }
 
         [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("wasi")]
         public ICredentials? DefaultProxyCredentials
         {
             get => _underlyingHandler.DefaultProxyCredentials;
@@ -165,6 +171,7 @@ namespace System.Net.Http
         }
 
         [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("wasi")]
         public bool PreAuthenticate
         {
             get => _underlyingHandler.PreAuthenticate;
@@ -172,6 +179,7 @@ namespace System.Net.Http
         }
 
         [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("wasi")]
         public bool UseDefaultCredentials
         {
             // SocketsHttpHandler doesn't have a separate UseDefaultCredentials property.  There
@@ -195,6 +203,7 @@ namespace System.Net.Http
         }
 
         [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("wasi")]
         public ICredentials? Credentials
         {
             get => _underlyingHandler.Credentials;
@@ -208,6 +217,7 @@ namespace System.Net.Http
         }
 
         [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("wasi")]
         public int MaxAutomaticRedirections
         {
             get => _underlyingHandler.MaxAutomaticRedirections;
@@ -215,6 +225,7 @@ namespace System.Net.Http
         }
 
         [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("wasi")]
         public int MaxConnectionsPerServer
         {
             get => _underlyingHandler.MaxConnectionsPerServer;
@@ -252,6 +263,7 @@ namespace System.Net.Http
         }
 
         [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("wasi")]
         public int MaxResponseHeadersLength
         {
             get => _underlyingHandler.MaxResponseHeadersLength;
@@ -287,6 +299,7 @@ namespace System.Net.Http
         }
 
         [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("wasi")]
         public X509CertificateCollection ClientCertificates
         {
             get
@@ -302,6 +315,7 @@ namespace System.Net.Http
         }
 
         [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("wasi")]
         public Func<HttpRequestMessage, X509Certificate2?, X509Chain?, SslPolicyErrors, bool>? ServerCertificateCustomValidationCallback
         {
 #if TARGET_BROWSER || TARGET_WASI
@@ -320,6 +334,7 @@ namespace System.Net.Http
         }
 
         [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("wasi")]
         public bool CheckCertificateRevocationList
         {
             get => _underlyingHandler.SslOptions.CertificateRevocationCheckMode == X509RevocationMode.Online;
@@ -331,6 +346,7 @@ namespace System.Net.Http
         }
 
         [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("wasi")]
         public SslProtocols SslProtocols
         {
             get => _underlyingHandler.SslOptions.EnabledSslProtocols;
@@ -349,6 +365,7 @@ namespace System.Net.Http
         //
         //[UnsupportedOSPlatform("android")]
         [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("wasi")]
         //[UnsupportedOSPlatform("ios")]
         //[UnsupportedOSPlatform("tvos")]
         protected internal override HttpResponseMessage Send(HttpRequestMessage request, CancellationToken cancellationToken)
@@ -370,6 +387,7 @@ namespace System.Net.Http
         // lazy-load the validator func so it can be trimmed by the ILLinker if it isn't used.
         private static Func<HttpRequestMessage, X509Certificate2?, X509Chain?, SslPolicyErrors, bool>? s_dangerousAcceptAnyServerCertificateValidator;
         [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("wasi")]
         public static Func<HttpRequestMessage, X509Certificate2?, X509Chain?, SslPolicyErrors, bool> DangerousAcceptAnyServerCertificateValidator =>
             s_dangerousAcceptAnyServerCertificateValidator ??
             Interlocked.CompareExchange(ref s_dangerousAcceptAnyServerCertificateValidator, delegate { return true; }, null) ??

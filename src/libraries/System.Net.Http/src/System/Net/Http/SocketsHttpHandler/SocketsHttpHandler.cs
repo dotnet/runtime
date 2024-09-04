@@ -16,6 +16,7 @@ using System.Threading.Tasks;
 namespace System.Net.Http
 {
     [UnsupportedOSPlatform("browser")]
+    [UnsupportedOSPlatform("wasi")] // We can support WebSocket on top of wasi-socket, once we have it working https://github.com/dotnet/runtime/issues/98957
     public sealed class SocketsHttpHandler : HttpMessageHandler
     {
         private readonly HttpConnectionSettings _settings = new HttpConnectionSettings();
@@ -36,6 +37,7 @@ namespace System.Net.Http
         /// Gets a value that indicates whether the handler is supported on the current platform.
         /// </summary>
         [UnsupportedOSPlatformGuard("browser")]
+        [UnsupportedOSPlatformGuard("wasi")]
         public static bool IsSupported => !OperatingSystem.IsBrowser() && !OperatingSystem.IsWasi();
 
         public bool UseCookies

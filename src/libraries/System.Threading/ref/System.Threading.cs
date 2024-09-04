@@ -15,10 +15,12 @@ namespace System.Threading
         public int ParticipantCount { get { throw null; } }
         public int ParticipantsRemaining { get { throw null; } }
 #if !FEATURE_WASM_MANAGED_THREADS
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("wasi")]
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
 #endif
         public long AddParticipant() { throw null; }
 #if !FEATURE_WASM_MANAGED_THREADS
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("wasi")]
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
 #endif
         public long AddParticipants(int participantCount) { throw null; }
@@ -27,26 +29,32 @@ namespace System.Threading
         public void RemoveParticipant() { }
         public void RemoveParticipants(int participantCount) { }
 #if !FEATURE_WASM_MANAGED_THREADS
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("wasi")]
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
 #endif
         public void SignalAndWait() { }
 #if !FEATURE_WASM_MANAGED_THREADS
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("wasi")]
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
 #endif
         public bool SignalAndWait(int millisecondsTimeout) { throw null; }
 #if !FEATURE_WASM_MANAGED_THREADS
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("wasi")]
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
 #endif
         public bool SignalAndWait(int millisecondsTimeout, System.Threading.CancellationToken cancellationToken) { throw null; }
 #if !FEATURE_WASM_MANAGED_THREADS
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("wasi")]
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
 #endif
         public void SignalAndWait(System.Threading.CancellationToken cancellationToken) { }
 #if !FEATURE_WASM_MANAGED_THREADS
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("wasi")]
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
 #endif
         public bool SignalAndWait(System.TimeSpan timeout) { throw null; }
 #if !FEATURE_WASM_MANAGED_THREADS
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("wasi")]
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
 #endif
         public bool SignalAndWait(System.TimeSpan timeout, System.Threading.CancellationToken cancellationToken) { throw null; }
@@ -80,26 +88,32 @@ namespace System.Threading
         public bool TryAddCount(int signalCount) { throw null; }
 #if !FEATURE_WASM_MANAGED_THREADS
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("wasi")]
 #endif
         public void Wait() { }
 #if !FEATURE_WASM_MANAGED_THREADS
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("wasi")]
 #endif
         public bool Wait(int millisecondsTimeout) { throw null; }
 #if !FEATURE_WASM_MANAGED_THREADS
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("wasi")]
 #endif
         public bool Wait(int millisecondsTimeout, System.Threading.CancellationToken cancellationToken) { throw null; }
 #if !FEATURE_WASM_MANAGED_THREADS
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("wasi")]
 #endif
         public void Wait(System.Threading.CancellationToken cancellationToken) { }
 #if !FEATURE_WASM_MANAGED_THREADS
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("wasi")]
 #endif
         public bool Wait(System.TimeSpan timeout) { throw null; }
 #if !FEATURE_WASM_MANAGED_THREADS
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("wasi")]
 #endif
         public bool Wait(System.TimeSpan timeout, System.Threading.CancellationToken cancellationToken) { throw null; }
     }
@@ -135,8 +149,10 @@ namespace System.Threading
         public bool IsWriterLockHeld { get { throw null; } }
         public int WriterSeqNum { get { throw null; } }
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("wasi")]
         public void AcquireReaderLock(int millisecondsTimeout) { }
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("wasi")]
         public void AcquireReaderLock(System.TimeSpan timeout) { }
         public void AcquireWriterLock(int millisecondsTimeout) { }
         public void AcquireWriterLock(System.TimeSpan timeout) { }
@@ -146,10 +162,13 @@ namespace System.Threading
         public void ReleaseReaderLock() { }
         public void ReleaseWriterLock() { }
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("wasi")]
         public void RestoreLock(ref System.Threading.LockCookie lockCookie) { }
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("wasi")]
         public System.Threading.LockCookie UpgradeToWriterLock(int millisecondsTimeout) { throw null; }
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("wasi")]
         public System.Threading.LockCookie UpgradeToWriterLock(System.TimeSpan timeout) { throw null; }
     }
 }
@@ -355,26 +374,32 @@ namespace System.Threading
         public void Set() { }
 #if !FEATURE_WASM_MANAGED_THREADS
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("wasi")]
 #endif
         public void Wait() { }
 #if !FEATURE_WASM_MANAGED_THREADS
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("wasi")]
 #endif
         public bool Wait(int millisecondsTimeout) { throw null; }
 #if !FEATURE_WASM_MANAGED_THREADS
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("wasi")]
 #endif
         public bool Wait(int millisecondsTimeout, System.Threading.CancellationToken cancellationToken) { throw null; }
 #if !FEATURE_WASM_MANAGED_THREADS
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("wasi")]
 #endif
         public void Wait(System.Threading.CancellationToken cancellationToken) { }
 #if !FEATURE_WASM_MANAGED_THREADS
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("wasi")]
 #endif
         public bool Wait(System.TimeSpan timeout) { throw null; }
 #if !FEATURE_WASM_MANAGED_THREADS
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("wasi")]
 #endif
         public bool Wait(System.TimeSpan timeout, System.Threading.CancellationToken cancellationToken) { throw null; }
     }
@@ -395,22 +420,27 @@ namespace System.Threading
         public static void TryEnter(object obj, System.TimeSpan timeout, ref bool lockTaken) { }
 #if !FEATURE_WASM_MANAGED_THREADS
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("wasi")]
 #endif
         public static bool Wait(object obj) { throw null; }
 #if !FEATURE_WASM_MANAGED_THREADS
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("wasi")]
 #endif
         public static bool Wait(object obj, int millisecondsTimeout) { throw null; }
 #if !FEATURE_WASM_MANAGED_THREADS
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("wasi")]
 #endif
         public static bool Wait(object obj, int millisecondsTimeout, bool exitContext) { throw null; }
 #if !FEATURE_WASM_MANAGED_THREADS
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("wasi")]
 #endif
         public static bool Wait(object obj, System.TimeSpan timeout) { throw null; }
 #if !FEATURE_WASM_MANAGED_THREADS
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("wasi")]
 #endif
         public static bool Wait(object obj, System.TimeSpan timeout, bool exitContext) { throw null; }
     }
@@ -485,16 +515,22 @@ namespace System.Threading
         public int Release() { throw null; }
         public int Release(int releaseCount) { throw null; }
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("wasi")]
         public void Wait() { }
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("wasi")]
         public bool Wait(int millisecondsTimeout) { throw null; }
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("wasi")]
         public bool Wait(int millisecondsTimeout, System.Threading.CancellationToken cancellationToken) { throw null; }
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("wasi")]
         public void Wait(System.Threading.CancellationToken cancellationToken) { }
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("wasi")]
         public bool Wait(System.TimeSpan timeout) { throw null; }
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("wasi")]
         public bool Wait(System.TimeSpan timeout, System.Threading.CancellationToken cancellationToken) { throw null; }
         public System.Threading.Tasks.Task WaitAsync() { throw null; }
         public System.Threading.Tasks.Task<bool> WaitAsync(int millisecondsTimeout) { throw null; }

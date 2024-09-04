@@ -17,6 +17,7 @@ namespace System.Net.Http
     public sealed class SocketsHttpHandler : HttpMessageHandler
     {
         [UnsupportedOSPlatformGuard("browser")]
+        [UnsupportedOSPlatformGuard("wasi")] // We can support WebSocket on top of wasi-socket, once we have it working https://github.com/dotnet/runtime/issues/98957
         public static bool IsSupported => false;
 
         public bool UseCookies

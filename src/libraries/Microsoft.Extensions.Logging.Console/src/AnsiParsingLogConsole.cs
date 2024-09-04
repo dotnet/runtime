@@ -9,6 +9,7 @@ namespace Microsoft.Extensions.Logging.Console
 {
     [UnsupportedOSPlatform("android")]
     [UnsupportedOSPlatform("browser")]
+    [UnsupportedOSPlatform("wasi")]
     [UnsupportedOSPlatform("ios")]
     [UnsupportedOSPlatform("tvos")]
     internal sealed class AnsiParsingLogConsole : IConsole

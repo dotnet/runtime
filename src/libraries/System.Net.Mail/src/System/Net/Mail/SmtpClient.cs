@@ -33,6 +33,7 @@ namespace System.Net.Mail
     }
 
     [UnsupportedOSPlatform("browser")]
+    [UnsupportedOSPlatform("wasi")]
     public class SmtpClient : IDisposable
     {
         private string? _host;

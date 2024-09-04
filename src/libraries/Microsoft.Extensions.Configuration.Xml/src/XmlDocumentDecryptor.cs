@@ -98,15 +98,11 @@ namespace Microsoft.Extensions.Configuration.Xml
         /// <param name="document">The document.</param>
         /// <returns>An XmlReader which can read the document.</returns>
         [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("wasi")]
         [RequiresDynamicCode(RequiresDynamicCodeMessage)]
         [RequiresUnreferencedCode(RequiresUnreferencedCodeMessage)]
         protected virtual XmlReader DecryptDocumentAndCreateXmlReader(XmlDocument document)
         {
-#if !NETSTANDARD2_1 && !NETSTANDARD2_0 && !NETFRAMEWORK // TODO remove with https://github.com/dotnet/runtime/pull/107185
-            if (OperatingSystem.IsWasi()) throw new PlatformNotSupportedException();
-#else
-            #pragma warning disable CA1416
-#endif
             // Perform the actual decryption step, updating the XmlDocument in-place.
             EncryptedXml encryptedXml = _encryptedXmlFactory?.Invoke(document) ?? new EncryptedXml(document);
             encryptedXml.DecryptDocument();

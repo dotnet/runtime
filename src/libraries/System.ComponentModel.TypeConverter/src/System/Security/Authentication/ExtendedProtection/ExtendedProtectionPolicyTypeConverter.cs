@@ -19,10 +19,9 @@ namespace System.Security.Authentication.ExtendedProtection
         }
 
         [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("wasi")]
         public override object? ConvertTo(ITypeDescriptorContext? context, CultureInfo? culture, object? value, Type destinationType)
         {
-            if (OperatingSystem.IsWasi()) throw new PlatformNotSupportedException(); // TODO remove with https://github.com/dotnet/runtime/pull/107185
-
             if (destinationType == typeof(InstanceDescriptor))
             {
                 if (value is ExtendedProtectionPolicy policy)

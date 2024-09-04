@@ -12,6 +12,7 @@ using System.Threading;
 namespace Microsoft.Extensions.Logging.Console
 {
     [UnsupportedOSPlatform("browser")]
+    [UnsupportedOSPlatform("wasi")]
     internal class ConsoleLoggerProcessor : IDisposable
     {
         private readonly Queue<LogMessageEntry> _messageQueue;

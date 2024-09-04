@@ -642,6 +642,7 @@ namespace System.Diagnostics.Metrics
             private static readonly char[] s_instrumentSeparators = new char[] { '\r', '\n', ',', ';' };
 
             [UnsupportedOSPlatform("browser")]
+            [UnsupportedOSPlatform("wasi")]
             private void ParseSpecs(string? metricsSpecs)
             {
                 if (metricsSpecs == null)

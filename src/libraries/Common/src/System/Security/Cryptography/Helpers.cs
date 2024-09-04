@@ -38,6 +38,7 @@ namespace Internal.Cryptography
         [UnsupportedOSPlatformGuard("browser")]
         [UnsupportedOSPlatformGuard("wasi")]
         public static bool IsRC2Supported => !OperatingSystem.IsAndroid() && !OperatingSystem.IsBrowser();
+        [UnsupportedOSPlatformGuard("wasi")]
 #else
         public static bool IsRC2Supported => true;
 #endif

@@ -347,12 +347,10 @@ namespace System.Threading
         /// </remarks>
 #if !FEATURE_WASM_MANAGED_THREADS
         [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("wasi")]
 #endif
         public void Wait()
         {
-#if TARGET_WASI
-            if (OperatingSystem.IsWasi()) throw new PlatformNotSupportedException(); // TODO remove with https://github.com/dotnet/runtime/pull/107185
-#endif
             Wait(Timeout.Infinite, CancellationToken.None);
         }
 
@@ -373,6 +371,7 @@ namespace System.Threading
         /// </remarks>
 #if !FEATURE_WASM_MANAGED_THREADS
         [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("wasi")]
 #endif
         public void Wait(CancellationToken cancellationToken)
         {
@@ -396,6 +395,7 @@ namespace System.Threading
         /// </exception>
 #if !FEATURE_WASM_MANAGED_THREADS
         [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("wasi")]
 #endif
         public bool Wait(TimeSpan timeout)
         {
@@ -429,6 +429,7 @@ namespace System.Threading
         /// </exception>
 #if !FEATURE_WASM_MANAGED_THREADS
         [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("wasi")]
 #endif
         public bool Wait(TimeSpan timeout, CancellationToken cancellationToken)
         {
@@ -455,6 +456,7 @@ namespace System.Threading
         /// </exception>
 #if !FEATURE_WASM_MANAGED_THREADS
         [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("wasi")]
 #endif
         public bool Wait(int millisecondsTimeout)
         {
@@ -481,6 +483,7 @@ namespace System.Threading
         /// name="cancellationToken"/> was canceled.</exception>
 #if !FEATURE_WASM_MANAGED_THREADS
         [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("wasi")]
 #endif
         public bool Wait(int millisecondsTimeout, CancellationToken cancellationToken)
         {

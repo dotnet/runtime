@@ -16,6 +16,7 @@ namespace System.Runtime.InteropServices.Marshalling
     /// <typeparam name="T">The managed type that represents a COM interface type</typeparam>
     [UnsupportedOSPlatform("android")]
     [UnsupportedOSPlatform("browser")]
+    [UnsupportedOSPlatform("wasi")]
     [UnsupportedOSPlatform("ios")]
     [UnsupportedOSPlatform("tvos")]
     [CLSCompliant(false)]
