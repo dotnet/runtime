@@ -79,17 +79,17 @@ internal sealed class IcallTableGenerator
                     #define ICALL_TABLE_{{aname}} 1
 
                     static int {{aname}}_icall_indexes [] = {
-                      {{sorted.Join($",{w.NewLine}  ", icall => $"{icall.TokenIndex}")}}
+                      {{sorted.Join($", {w.NewLine}  ", (icall, i) => $"/* {i} */ {icall.TokenIndex}")}}
                     };
 
-                    {{sorted.Join($"{w.NewLine}", GenIcallDecl)}}
+                    {{sorted.Join($" {w.NewLine}", GenIcallDecl)}}
 
                     static void *{{aname}}_icall_funcs [] = {
-                      {{sorted.Join($",{w.NewLine}  ", icall => $"{icall.Func} // token {icall.TokenIndex}")}}
+                      {{sorted.Join($", {w.NewLine}  ", (icall, i) => $"/* {i}:{icall.TokenIndex} */ {icall.Func}" )}}
                     };
 
                     static uint8_t {{aname}}_icall_flags [] = {
-                      {{sorted.Join($",{w.NewLine}  ", icall => $"{icall.Flags}")}}
+                      {{sorted.Join($",{w.NewLine}  ", (icall, i) => $"/* {i}:{icall.TokenIndex} */ {icall.Flags}")}}
                     };
 
                     """);
