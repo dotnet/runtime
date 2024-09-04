@@ -349,7 +349,7 @@ namespace System.Threading
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ThreadNative_Join")]
         [return: MarshalAs(UnmanagedType.Bool)]
-        private static partial bool Join(ThreadHandle t, int millisecondsTimeout);
+        private static partial bool Join(ObjectHandleOnStack thread, int millisecondsTimeout);
 
         /// <summary>
         /// Waits for the thread to die or for timeout milliseconds to elapse.
@@ -369,9 +369,8 @@ namespace System.Threading
                 throw new ArgumentOutOfRangeException(nameof(millisecondsTimeout), SR.ArgumentOutOfRange_NeedNonNegOrNegative1);
             }
 
-            bool res = Join(GetNativeHandle(), millisecondsTimeout);
-            GC.KeepAlive(this);
-            return res;
+            Thread _this = this;
+            return Join(ObjectHandleOnStack.Create(ref _this), millisecondsTimeout);
         }
 
         /// <summary>

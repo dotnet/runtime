@@ -89,7 +89,7 @@ extern "C" INT32 QCALLTYPE ThreadNative_GetApartmentState(QCall::ThreadHandle th
 extern "C" INT32 QCALLTYPE ThreadNative_SetApartmentState(QCall::ThreadHandle thread, INT32 iState);
 #endif // FEATURE_COMINTEROP_APARTMENT_SUPPORT
 
-extern "C" BOOL QCALLTYPE ThreadNative_Join(QCall::ThreadHandle thread, INT32 Timeout);
+extern "C" BOOL QCALLTYPE ThreadNative_Join(QCall::ObjectHandleOnStack thread, INT32 Timeout);
 extern "C" void QCALLTYPE ThreadNative_Abort(QCall::ThreadHandle thread);
 extern "C" void QCALLTYPE ThreadNative_ResetAbort();
 extern "C" void QCALLTYPE ThreadNative_SpinWait(INT32 iterations);

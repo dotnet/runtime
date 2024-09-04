@@ -619,18 +619,19 @@ void ReleaseThreadExternalCount(Thread * pThread)
 typedef Holder<Thread *, DoNothing, ReleaseThreadExternalCount> ThreadExternalCountHolder;
 
 // Wait for the thread to die
-static BOOL DoJoin(QCall::ThreadHandle dyingThreadHandle, INT32 timeout)
+static BOOL DoJoin(THREADBASEREF dyingThread, INT32 timeout)
 {
     CONTRACTL
     {
         THROWS;
         GC_TRIGGERS;
-        MODE_PREEMPTIVE;
+        MODE_COOPERATIVE;
+        PRECONDITION(dyingThread != NULL);
         PRECONDITION((timeout >= 0) || (timeout == INFINITE_TIMEOUT));
     }
     CONTRACTL_END;
 
-    Thread * DyingInternal = dyingThreadHandle;
+    Thread* DyingInternal = dyingThread->GetInternal();
 
     // Validate the handle.  It's valid to Join a thread that's not running -- so
     // long as it was once started.
@@ -666,6 +667,7 @@ static BOOL DoJoin(QCall::ThreadHandle dyingThreadHandle, INT32 timeout)
         return TRUE;
     }
 
+    GCX_PREEMP();
     DWORD dwTimeOut32 = (timeout == INFINITE_TIMEOUT
                    ? INFINITE
                    : (DWORD) timeout);
@@ -692,7 +694,7 @@ static BOOL DoJoin(QCall::ThreadHandle dyingThreadHandle, INT32 timeout)
     return FALSE;
 }
 
-extern "C" BOOL QCALLTYPE ThreadNative_Join(QCall::ThreadHandle thread, INT32 Timeout)
+extern "C" BOOL QCALLTYPE ThreadNative_Join(QCall::ObjectHandleOnStack thread, INT32 Timeout)
 {
     QCALL_CONTRACT;
 
@@ -700,7 +702,8 @@ extern "C" BOOL QCALLTYPE ThreadNative_Join(QCall::ThreadHandle thread, INT32 Ti
 
     BEGIN_QCALL;
 
-    retVal = DoJoin(thread, Timeout);
+    GCX_COOP();
+    retVal = DoJoin((THREADBASEREF)thread.Get(), Timeout);
 
     END_QCALL;
 
