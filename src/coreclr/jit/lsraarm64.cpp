@@ -1873,97 +1873,37 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
 
     else if (intrin.op2 != nullptr)
     {
-        // RMW intrinsic operands doesn't have to be delayFree when they can be assigned the same register as op1Reg
-        // (i.e. a register that corresponds to read-modify-write operand) and one of them is the last use.
-
         assert(intrin.op1 != nullptr);
+
+        // Get candidate information
 
         SingleTypeRegSet lowVectorCandidates = RBM_NONE;
         size_t           lowVectorOperandNum = 0;
-
         if (HWIntrinsicInfo::IsLowVectorOperation(intrin.id))
         {
             getLowVectorOperandAndCandidates(intrin, &lowVectorOperandNum, &lowVectorCandidates);
         }
 
-        SingleTypeRegSet op2Candidates = lowVectorOperandNum == 2 ? lowVectorCandidates : RBM_NONE;
-        if (varTypeIsMask(intrin.op2->TypeGet()))
-        {
-            assert(lowVectorOperandNum != 2);
-            op2Candidates = RBM_ALLMASK.GetPredicateRegSet();
-        }
+        int numOperands = intrinsicTree->GetOperandCount();
 
-        if (addrOp == intrin.op2)
+        for (int opNum = 2; opNum <= numOperands; opNum++)
         {
-            assert(delayFreeOp != intrin.op2);
-            assert(op2Candidates == RBM_NONE);
 
-            srcCount += BuildAddrUses(intrin.op2);
-        }
-        else if (consecutiveOp == intrin.op2)
-        {
-            srcCount += BuildConsecutiveRegistersForUse(intrin.op2, delayFreeOp);
-        }
-        else if (delayFreeOp == intrin.op2)
-        {
-            assert(!intrin.op2->isContained());
-            assert(tgtPrefUse == nullptr);
-
-            tgtPrefUse2 = BuildUse(intrin.op2, op2Candidates);
-            srcCount++;
-        }
-        else if (isRMW)
-        {
-            srcCount += BuildDelayFreeUses(intrin.op2, delayFreeOp, op2Candidates);
-        }
-        else
-        {
-            srcCount += BuildOperandUses(intrin.op2, op2Candidates);
-        }
-
-        if (intrin.op3 != nullptr)
-        {
-            assert(delayFreeOp != intrin.op3);
-
-            SingleTypeRegSet op3Candidates = lowVectorOperandNum == 3 ? lowVectorCandidates : RBM_NONE;
-
-            if (addrOp == intrin.op3)
+            SingleTypeRegSet opCandidates = (lowVectorOperandNum == opNum) ? lowVectorCandidates : RBM_NONE;
+            if (varTypeIsMask(intrinsicTree->Op(opNum)->TypeGet()))
             {
-                assert(op3Candidates == RBM_NONE);
-
-                srcCount += BuildAddrUses(intrin.op3);
-            }
-            else if (consecutiveOp == intrin.op3)
-            {
-                srcCount += BuildConsecutiveRegistersForUse(intrin.op3, delayFreeOp);
-            }
-            else if (isRMW)
-            {
-                srcCount += BuildDelayFreeUses(intrin.op3, delayFreeOp, op3Candidates);
-            }
-            else
-            {
-                srcCount += BuildOperandUses(intrin.op3, op3Candidates);
+                assert(lowVectorOperandNum != opNum);
+                opCandidates = RBM_ALLMASK.GetPredicateRegSet();
             }
 
-            if (intrin.op4 != nullptr)
+            RefPosition* delayUse = nullptr;
+
+            srcCount += BuildOperand(intrinsicTree->Op(opNum), addrOp, consecutiveOp, delayFreeOp, isRMW, &delayUse, opCandidates);
+
+            if (delayUse != nullptr)
             {
-                assert(lowVectorOperandNum != 4);
-                assert(delayFreeOp != intrin.op4);
-                assert(addrOp != intrin.op4);
-                assert(consecutiveOp != intrin.op4);
-
-                srcCount += isRMW ? BuildDelayFreeUses(intrin.op4, delayFreeOp) : BuildOperandUses(intrin.op4);
-
-                if (intrin.op5 != nullptr)
-                {
-                    assert(isRMW);
-                    assert(delayFreeOp != intrin.op5);
-                    assert(addrOp != intrin.op3);
-                    assert(consecutiveOp != intrin.op5);
-
-                    srcCount += BuildDelayFreeUses(intrin.op5, delayFreeOp);
-                }
+                assert(opNum == 2);
+                tgtPrefUse2 = delayUse;
             }
         }
     }
@@ -2315,7 +2255,7 @@ void LinearScan::getLowVectorOperandAndCandidates(HWIntrinsic intrin, size_t* op
 }
 
 //------------------------------------------------------------------------
-// GetDelayFreeOp: Get the address operand of the HWIntrinsic, if any
+// getVectorAddrOperand: Get the address operand of the HWIntrinsic, if any
 //
 // Arguments:
 //    intrinsicTree - Node to check
@@ -2363,7 +2303,7 @@ GenTree* LinearScan::getVectorAddrOperand(GenTreeHWIntrinsic* intrinsicTree)
 }
 
 //------------------------------------------------------------------------
-// GetDelayFreeOp: Get the consecutive operand of the HWIntrinsic, if any
+// getConsecutiveRegistersOperand: Get the consecutive operand of the HWIntrinsic, if any
 //
 // Arguments:
 //    intrinsicTree - Intrin to check
@@ -2458,6 +2398,42 @@ GenTree* LinearScan::getConsecutiveRegistersOperand(const HWIntrinsic intrin, bo
     return consecutiveOp;
 }
 
+
+int LinearScan::BuildOperand(GenTree* operand, GenTree* addrOp, GenTree* consecutiveOp, GenTree* delayFreeOp, bool isRMW, RefPosition** delayUse, SingleTypeRegSet candidates)
+{
+    int srcCount = 0;
+
+    if (addrOp == operand)
+    {
+        assert(delayFreeOp != operand);
+        assert(consecutiveOp != operand);
+
+        srcCount = BuildAddrUses(operand, candidates);
+    }
+    else if (consecutiveOp == operand)
+    {
+        assert(delayFreeOp != operand);
+        assert(candidates == RBM_NONE);
+
+        srcCount = BuildConsecutiveRegistersForUse(operand, delayFreeOp);
+    }
+    else if (delayFreeOp == operand)
+    {
+        assert(delayUse != nullptr);
+        *delayUse = BuildUse(operand, candidates);
+        srcCount=1;
+    }
+    else if (isRMW)
+    {
+        srcCount = BuildDelayFreeUses(operand, delayFreeOp, candidates);
+    }
+    else
+    {
+        srcCount = BuildOperandUses(operand, candidates);
+    }
+
+    return srcCount;
+}
 
 #endif // FEATURE_HW_INTRINSICS
 
