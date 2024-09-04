@@ -253,6 +253,7 @@
                       SetTargetFramework="TargetFramework=netstandard2.0"
                       OutputItemType="Analyzer" />
     <Reference Include="System.Collections" />
+    <Reference Include="System.Collections.Concurrent" />
     <Reference Include="System.Collections.NonGeneric" />
     <Reference Include="System.Collections.Specialized" />
     <Reference Include="System.ComponentModel" />

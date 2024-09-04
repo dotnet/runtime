@@ -3,6 +3,7 @@
 
 using System.Collections;
 using System.Collections.Generic;
+using System.Collections.Concurrent;
 using System.ComponentModel.Design;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
@@ -23,7 +24,7 @@ namespace System.ComponentModel
     internal sealed partial class ReflectTypeDescriptionProvider : TypeDescriptionProvider
     {
         // ReflectedTypeData contains all of the type information we have gathered for a given type.
-        private Dictionary<Type, ReflectedTypeData>? _typeData;
+        private readonly ConcurrentDictionary<Type, ReflectedTypeData> _typeData = new ConcurrentDictionary<Type, ReflectedTypeData>();
 
         // This is the signature we look for when creating types that are generic, but
         // want to know what type they are dealing with. Enums are a good example of this;
@@ -293,7 +294,6 @@ namespace System.ComponentModel
 
             return obj ?? Activator.CreateInstance(objectType, args);
         }
-
 
         /// <summary>
         /// Helper method to create editors and type converters. This checks to see if the
@@ -833,18 +833,11 @@ namespace System.ComponentModel
         {
             List<Type> typeList = new List<Type>();
 
-            lock (TypeDescriptor.s_commonSyncObject)
+            foreach (KeyValuePair<Type, ReflectedTypeData> kvp in _typeData)
             {
-                Dictionary<Type, ReflectedTypeData>? typeData = _typeData;
-                if (typeData != null)
+                if (kvp.Key.Module == module && kvp.Value!.IsPopulated)
                 {
-                    foreach (KeyValuePair<Type, ReflectedTypeData> kvp in typeData)
-                    {
-                        if (kvp.Key.Module == module && kvp.Value!.IsPopulated)
-                        {
-                            typeList.Add(kvp.Key);
-                        }
-                    }
+                    typeList.Add(kvp.Key);
                 }
             }
 
@@ -889,9 +882,7 @@ namespace System.ComponentModel
         /// </summary>
         private ReflectedTypeData? GetTypeData([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type type, bool createIfNeeded)
         {
-            ReflectedTypeData? td = null;
-
-            if (_typeData != null && _typeData.TryGetValue(type, out td))
+            if (_typeData.TryGetValue(type, out ReflectedTypeData? td))
             {
                 Debug.Assert(td != null);
                 return td;
@@ -899,7 +890,7 @@ namespace System.ComponentModel
 
             lock (TypeDescriptor.s_commonSyncObject)
             {
-                if (_typeData != null && _typeData.TryGetValue(type, out td))
+                if (_typeData.TryGetValue(type, out td))
                 {
                     Debug.Assert(td != null);
                     return td;
@@ -908,7 +899,6 @@ namespace System.ComponentModel
                 if (createIfNeeded)
                 {
                     td = new ReflectedTypeData(type);
-                    _typeData ??= new Dictionary<Type, ReflectedTypeData>();
                     _typeData[type] = td;
                 }
             }
