@@ -21461,7 +21461,7 @@ bool gc_heap::init_table_for_region (int gen_number, heap_segment* region)
 // The following 2 methods Use integer division to prevent potential floating point exception.
 // FPE may occur if we use floating point division because of speculative execution.
 //
-// Return the percentage of efficiency (between 0 and 100) of the allocator. 
+// Return the percentage of efficiency (between 0 and 100) of the allocator.
 inline
 size_t gc_heap::generation_allocator_efficiency_percent (generation* inst)
 {
@@ -22947,7 +22947,7 @@ void gc_heap::gc1()
                 {
                     trigger_bgc_for_rethreading_p = false;
                 }
-            
+
                 process_datas_sample();
             }
 #endif //DYNAMIC_HEAP_COUNT
@@ -29751,7 +29751,10 @@ void gc_heap::mark_phase (int condemned_gen_number)
 #endif //USE_REGIONS
 
         GCToEEInterface::BeforeGcScanRoots(condemned_gen_number, /* is_bgc */ false, /* is_concurrent */ false);
+
+#ifdef FEATURE_SIZED_REF_HANDLES
         num_sizedrefs = GCToEEInterface::GetTotalNumSizedRefHandles();
+#endif // FEATURE_SIZED_REF_HANDLES
 
 #ifdef FEATURE_EVENT_TRACE
         informational_event_enabled_p = EVENT_ENABLED (GCMarkWithType);
@@ -29838,6 +29841,7 @@ void gc_heap::mark_phase (int condemned_gen_number)
         slow  = MAX_PTR;
 #endif //MULTIPLE_HEAPS
 
+#ifdef FEATURE_SIZED_REF_HANDLES
         if ((condemned_gen_number == max_generation) && (num_sizedrefs > 0))
         {
             GCScan::GcScanSizedRefs(GCHeap::Promote, condemned_gen_number, max_generation, &sc);
@@ -29859,6 +29863,7 @@ void gc_heap::mark_phase (int condemned_gen_number)
 #endif //MULTIPLE_HEAPS
             }
         }
+#endif // FEATURE_SIZED_REF_HANDLES
 
 #if defined(FEATURE_BASICFREEZE) && !defined(USE_REGIONS)
         if (ro_segments_in_range)
@@ -38384,7 +38389,9 @@ void gc_heap::background_mark_phase ()
         concurrent_print_time_delta ("CRWW");
 #endif // FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
 
+#ifdef FEATURE_SIZED_REF_HANDLES
         num_sizedrefs = GCToEEInterface::GetTotalNumSizedRefHandles();
+#endif // FEATURE_SIZED_REF_HANDLES
 
         // this c_write is not really necessary because restart_vm
         // has an instruction that will flush the cpu cache (interlocked
@@ -38463,6 +38470,7 @@ void gc_heap::background_mark_phase ()
 
     disable_preemptive (true);
 
+#ifdef FEATURE_SIZED_REF_HANDLES
     if (num_sizedrefs > 0)
     {
         GCScan::GcScanSizedRefs(background_promote, max_generation, max_generation, &sc);
@@ -38480,6 +38488,7 @@ void gc_heap::background_mark_phase ()
 
         disable_preemptive (true);
     }
+#endif // FEATURE_SIZED_REF_HANDLES
 
     dprintf (3,("BGC: handle table marking"));
     GCScan::GcScanHandles(background_promote,
