@@ -47,6 +47,8 @@ class CalledMethod;
 
 #include "genericdict.h"
 
+void FlushVirtualFunctionPointerCaches();
+
 inline FieldDesc* GetField(CORINFO_FIELD_HANDLE fieldHandle)
 {
     LIMITED_METHOD_CONTRACT;

@@ -2069,6 +2069,7 @@ PCODE MethodDesc::GetMultiCallableAddrOfVirtualizedCode(OBJECTREF *orThis, TypeH
         GC_TRIGGERS;
 
         PRECONDITION(IsVtableMethod());
+        PRECONDITION(!staticTH.IsNull() || !IsInterface()); // If this is a non-interface method, staticTH may be null
         POSTCONDITION(RETVAL != NULL);
     }
     CONTRACT_END;

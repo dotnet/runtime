@@ -600,8 +600,9 @@ void LoaderAllocator::GCLoaderAllocators(LoaderAllocator* pOriginalLoaderAllocat
                         // is inappropriate, we can introduce a new flag or hijack an unused one.
             ThreadSuspend::SuspendEE(ThreadSuspend::SUSPEND_FOR_APPDOMAIN_SHUTDOWN);
 
-            // drop the cast cache while still in COOP mode.
+            // drop the cast and virtual resolution caches while still in COOP mode.
             CastCache::FlushCurrentCache();
+            FlushVirtualFunctionPointerCaches();
         }
 
         ExecutionManager::Unload(pDomainLoaderAllocatorDestroyIterator);

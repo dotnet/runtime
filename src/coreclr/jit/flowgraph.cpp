@@ -985,6 +985,23 @@ GenTree* Compiler::fgOptimizeDelegateConstructor(GenTreeCall*            call,
             qmarkNode = handleNode;
         }
     }
+    else if (oper == GT_CALL && targetMethod->AsCall()->gtCallMethHnd == eeFindHelper(CORINFO_HELP_VIRTUAL_FUNC_PTR_2))
+    {
+        assert(targetMethod->AsCall()->gtArgs.CountArgs() == 2);
+        GenTree* handleNode = targetMethod->AsCall()->gtArgs.GetArgByIndex(1)->GetNode();
+
+        if (handleNode->OperGet() == GT_CNS_INT)
+        {
+            // it's a ldvirtftn case, fetch the methodhandle off the helper for ldvirtftn. It's the 3rd arg
+            targetMethodHnd = CORINFO_METHOD_HANDLE(handleNode->AsIntCon()->gtCompileTimeHandle);
+        }
+        // Sometimes the argument to this is the result of a generic dictionary lookup, which shows
+        // up as a GT_QMARK.
+        else if (handleNode->OperGet() == GT_QMARK)
+        {
+            qmarkNode = handleNode;
+        }
+    }
     // Sometimes we don't call CORINFO_HELP_VIRTUAL_FUNC_PTR but instead just call
     // CORINFO_HELP_RUNTIMEHANDLE_METHOD directly.
     else if (oper == GT_QMARK)

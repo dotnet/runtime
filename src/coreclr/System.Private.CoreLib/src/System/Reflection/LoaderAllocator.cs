@@ -34,8 +34,6 @@ namespace System.Reflection
             if (m_nativeLoaderAllocator == IntPtr.Zero)
                 return;
 
-            VirtualDispatchHelpers.ClearCache();
-
             // Destroy returns false if the managed LoaderAllocator is still alive.
             if (!Destroy(m_nativeLoaderAllocator))
             {

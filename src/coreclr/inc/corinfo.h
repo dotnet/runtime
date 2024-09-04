@@ -519,6 +519,7 @@ enum CorInfoHelpFunc
     CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPEHANDLE_MAYBENULL, // Convert from a TypeHandle (native structure pointer) to RuntimeTypeHandle at run-time, handle might point to a null type
 
     CORINFO_HELP_VIRTUAL_FUNC_PTR,      // look up a virtual method at run-time
+    CORINFO_HELP_VIRTUAL_FUNC_PTR_2,      // look up a virtual method at run-time using only method data (Can be used instead of CORINFO_HELP_VIRTUAL_FUNC_PTR when the method is not an interface, or if the interface is exactly known based on the MethodDesc)
 
     // Not a real helpers. Instead of taking handle arguments, these helpers point to a small stub that loads the handle argument and calls the static helper.
     CORINFO_HELP_READYTORUN_NEW,

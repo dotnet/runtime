@@ -2113,12 +2113,64 @@ HCIMPL2(CORINFO_GENERIC_HANDLE, JIT_GenericHandleClassLogging, CORINFO_CLASS_HAN
 }
 HCIMPLEND
 
+
+Volatile<FieldDesc*> g_VirtualCache;
+Volatile<FieldDesc*> g_VirtualCache2;
+bool g_fVirtualCacheHandleInited = false;
+
+void FlushGenericCache(PTR_GenericCacheStruct genericCache)
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+        MODE_COOPERATIVE;
+    }
+    CONTRACTL_END;
+
+    int32_t lastSize = genericCache->CacheElementCount();
+    if (lastSize < genericCache->GetInitialCacheSize())
+    {
+        lastSize = genericCache->GetInitialCacheSize();
+    }
+
+    // store the last size to use when creating a new table
+    // it is just a hint, not needed for correctness, so no synchronization
+    // with the writing of the table
+    genericCache->SetLastFlushSize(lastSize);
+    // flushing is just replacing the table with a sentinel.
+    genericCache->SetTable(genericCache->GetSentinelTable());
+}
+
+void FlushVirtualFunctionPointerCaches()
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+        MODE_COOPERATIVE;
+    }
+    CONTRACTL_END;
+
+    if (VolatileLoad(&g_fVirtualCacheHandleInited))
+    {
+        // We can't use GetCurrentStaticAddress, as that may throw, since it will attempt to
+        // allocate memory for statics if that hasn't happened yet. But, since we force the
+        // statics memory to be allocated before initializing g_VirtualCache or g_hVirtualCache2
+        // we can safely use the combo of GetBase and GetStaticAddress here.
+        FieldDesc *virtualCache = g_VirtualCache;
+        FieldDesc *virtualCache2 = g_VirtualCache2;
+        FlushGenericCache((PTR_GenericCacheStruct)virtualCache->GetStaticAddress(virtualCache->GetBase()));
+        FlushGenericCache((PTR_GenericCacheStruct)virtualCache2->GetStaticAddress(virtualCache2->GetBase()));
+    }
+}
+
 /*********************************************************************/
 // Resolve a virtual method at run-time, either because of
 // aggressive backpatching or because the call is to a generic
 // method which is itself virtual.
 //
-// classHnd is the actual run-time type for the call is made.
+// classHnd is the actual run-time type for the call is made. (May be NULL for cases where methodHnd describes an interface)
 // methodHnd is the exact (instantiated) method descriptor corresponding to the
 // static method signature (i.e. might be for a superclass of classHnd)
 
@@ -2129,10 +2181,28 @@ extern "C" void* QCALLTYPE JIT_ResolveVirtualFunctionPointer(QCall::ObjectHandle
 {
     QCALL_CONTRACT;
 
-        // The address of the method that's returned.
+    // The address of the method that's returned.
     CORINFO_MethodPtr   addr = NULL;
 
     BEGIN_QCALL;
+
+    if (!g_fVirtualCacheHandleInited)
+    {
+        {
+            GCX_COOP();
+            CoreLibBinder::GetClass(CLASS__VIRTUALDISPATCHHELPERS)->CheckRunClassInitThrowing();
+        }
+
+        g_VirtualCache = CoreLibBinder::GetField(FIELD__VIRTUALDISPATCHHELPERS__CACHE);
+        g_VirtualCache2 = CoreLibBinder::GetField(FIELD__VIRTUALDISPATCHHELPERS__CACHE2);
+#ifdef DEBUG
+        FieldDesc *virtualCache = g_VirtualCache;
+        FieldDesc *virtualCache2 = g_VirtualCache2;
+        GenericCacheStruct::ValidateLayout(virtualCache->GetApproxFieldTypeHandleThrowing().GetMethodTable());
+        GenericCacheStruct::ValidateLayout(virtualCache2->GetApproxFieldTypeHandleThrowing().GetMethodTable());
+#endif
+        VolatileStore(&g_fVirtualCacheHandleInited, true);
+    }
 
     GCX_COOP();
     OBJECTREF objRef = obj.Get();
@@ -2145,6 +2215,17 @@ extern "C" void* QCALLTYPE JIT_ResolveVirtualFunctionPointer(QCall::ObjectHandle
     // It is not the destination of the call, which we must compute.
     MethodDesc* pStaticMD = (MethodDesc*) methodHnd;
     TypeHandle staticTH(classHnd);
+
+    if (staticTH.IsNull())
+    {
+        // This may be NULL on input for cases where the methodHnd is not an interface method, or if getting the method table from the 
+        // MethodDesc will return an exact type.
+        if (pStaticMD->IsInterface())
+        {
+            staticTH = pStaticMD->GetMethodTable();
+            _ASSERTE(!staticTH.IsCanonicalSubtype());
+        }
+    }
 
     pStaticMD->CheckRestore();
 

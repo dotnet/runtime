@@ -2835,12 +2835,10 @@ GenTree* Compiler::impImportLdvirtftn(GenTree*                thisPtr,
 
     if (call == nullptr)
     {
-        // Get the exact descriptor for the static callsite
-        GenTree* exactTypeDesc = impParentClassTokenToHandle(pResolvedToken);
-        if (exactTypeDesc == nullptr)
+        bool canCallViaVirtualFuncPtr2 = false;
+        if (!opts.IsReadyToRun() && IsTargetAbi(CORINFO_CORECLR_ABI))
         {
-            assert(compIsForInlining());
-            return nullptr;
+            canCallViaVirtualFuncPtr2 = !isInterface || !(pCallInfo->methodFlags & CORINFO_FLG_SHAREDINST);
         }
 
         GenTree* exactMethodDesc = impTokenToHandle(pResolvedToken);
@@ -2850,9 +2848,25 @@ GenTree* Compiler::impImportLdvirtftn(GenTree*                thisPtr,
             return nullptr;
         }
 
-        // Call helper function.  This gets the target address of the final destination callsite.
-        //
-        call = gtNewHelperCallNode(CORINFO_HELP_VIRTUAL_FUNC_PTR, TYP_I_IMPL, thisPtr, exactTypeDesc, exactMethodDesc);
+        if (canCallViaVirtualFuncPtr2)
+        {
+            // Call via a virtual function pointer
+            call = gtNewHelperCallNode(CORINFO_HELP_VIRTUAL_FUNC_PTR_2, TYP_I_IMPL, thisPtr, exactMethodDesc);
+        }
+        else
+        {
+            // Get the exact descriptor for the static callsite
+            GenTree* exactTypeDesc = impParentClassTokenToHandle(pResolvedToken);
+            if (exactTypeDesc == nullptr)
+            {
+                assert(compIsForInlining());
+                return nullptr;
+            }
+
+            // Call helper function.  This gets the target address of the final destination callsite.
+            //
+            call = gtNewHelperCallNode(CORINFO_HELP_VIRTUAL_FUNC_PTR, TYP_I_IMPL, thisPtr, exactTypeDesc, exactMethodDesc);
+        }
     }
 
     assert(call != nullptr);

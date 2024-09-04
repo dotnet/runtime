@@ -40,6 +40,28 @@ internal static unsafe partial class VirtualDispatchHelpers
         public override int GetHashCode() => HashCode;
     }
 
+    private struct VirtualResolutionData2 : IEquatable<VirtualResolutionData2>
+    {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public VirtualResolutionData2(MethodTable* methodTable, IntPtr methodHandle)
+        {
+            MethodTable = methodTable;
+            MethodHandle = methodHandle;
+        }
+        public MethodTable* MethodTable;
+        public IntPtr MethodHandle;
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public bool Equals(VirtualResolutionData2 other) =>
+            MethodTable == other.MethodTable &&
+            MethodHandle == other.MethodHandle;
+
+        public override bool Equals(object? obj) => obj is VirtualResolutionData2 other && Equals(other);
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public override int GetHashCode() => (int) ((uint)MethodTable + (BitOperations.RotateLeft((uint)MethodHandle, 5)));
+    }
+
     private struct VirtualFunctionPointerArgs
     {
         public IntPtr classHnd;
@@ -56,11 +78,7 @@ internal static unsafe partial class VirtualDispatchHelpers
 #endif // DEBUG
 
     private static GenericCache<VirtualResolutionData, IntPtr> s_virtualFunctionPointerCache = new GenericCache<VirtualResolutionData, IntPtr>(InitialCacheSize, MaximumCacheSize);
-
-    internal static void ClearCache()
-    {
-        s_virtualFunctionPointerCache.FlushCurrentCache();
-    }
+    private static GenericCache<VirtualResolutionData2, IntPtr> s_virtualFunctionPointerCache2 = new GenericCache<VirtualResolutionData2, IntPtr>(InitialCacheSize, MaximumCacheSize);
 
     [LibraryImport(RuntimeHelpers.QCall)]
     private static unsafe partial IntPtr JIT_ResolveVirtualFunctionPointer(ObjectHandleOnStack obj, IntPtr classHandle, IntPtr methodHandle);
@@ -75,6 +93,16 @@ internal static unsafe partial class VirtualDispatchHelpers
         return result;
     }
 
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    [DebuggerHidden]
+    private static unsafe IntPtr VirtualFunctionPointer2Slowpath(object obj, IntPtr methodHandle)
+    {
+        IntPtr result = JIT_ResolveVirtualFunctionPointer(ObjectHandleOnStack.Create(ref obj), IntPtr.Zero, methodHandle);
+        s_virtualFunctionPointerCache2.TrySet(new VirtualResolutionData2(RuntimeHelpers.GetMethodTable(obj), methodHandle), result);
+        GC.KeepAlive(obj);
+        return result;
+    }
+
     [DebuggerHidden]
     private static unsafe IntPtr VirtualFunctionPointer(object obj, IntPtr classHandle, IntPtr methodHandle)
     {
@@ -83,6 +111,16 @@ internal static unsafe partial class VirtualDispatchHelpers
             return result;
         }
         return VirtualFunctionPointerSlowpath(obj, classHandle, methodHandle);
+    }
+
+    [DebuggerHidden]
+    private static unsafe IntPtr VirtualFunctionPointer2(object obj, IntPtr methodHandle)
+    {
+        if (s_virtualFunctionPointerCache2.TryGet(new VirtualResolutionData2(RuntimeHelpers.GetMethodTable(obj), methodHandle), out IntPtr result))
+        {
+            return result;
+        }
+        return VirtualFunctionPointer2Slowpath(obj, methodHandle);
     }
 
     [DebuggerHidden]
