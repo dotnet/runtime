@@ -97,6 +97,21 @@ namespace System.Numerics.Tensors
         internal static bool AreLengthsTheSame(ReadOnlySpan<nint> lengths1, ReadOnlySpan<nint> lengths2)
             => lengths1.SequenceEqual(lengths2);
 
+        internal static bool IsContiguousAndDense<T>(scoped in ReadOnlyTensorSpan<T> tensor)
+        {
+            // Right most dimension must be 1 for a dense tensor.
+            if (tensor._shape.Strides[^1] != 1)
+                return false;
+
+            // For other dimensions, the stride must be equal to the product of the dimensions to the right.
+            for (int i = tensor._shape._rank - 2; i >= 0; i--)
+            {
+                if (tensor._shape.Strides[i] != TensorPrimitives.Product(tensor.Lengths.Slice(i + 1, tensor.Lengths.Length - i - 1)))
+                    return false;
+            }
+            return true;
+        }
+
         internal static void PermuteIndices(Span<nint> indices, Span<nint> permutedIndices, ReadOnlySpan<int> permutation)
         {
             for (int i = 0; i < indices.Length; i++)

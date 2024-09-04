@@ -350,6 +350,9 @@ namespace System.Threading
 #endif
         public void Wait()
         {
+#if TARGET_WASI
+            if (OperatingSystem.IsWasi()) throw new PlatformNotSupportedException(); // TODO remove with https://github.com/dotnet/runtime/pull/107185
+#endif
             Wait(Timeout.Infinite, CancellationToken.None);
         }
 

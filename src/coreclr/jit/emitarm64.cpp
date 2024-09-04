@@ -12248,7 +12248,7 @@ SKIP_GC_UPDATE:
                 }
                 else
                 {
-                    assert(id->idReg3() == REG_SP);
+                    assert(encodingZRtoSP(id->idReg3()) == REG_SP);
                 }
                 assert(varNum2 != -1);
 #endif // DEBUG
@@ -17082,7 +17082,7 @@ emitter::RegisterOrder emitter::IsOptimizableLdrStrWithPair(
     }
 
     regNumber prevReg1   = emitLastIns->idReg1();
-    regNumber prevReg2   = emitLastIns->idReg2();
+    regNumber prevReg2   = encodingZRtoSP(emitLastIns->idReg2());
     insFormat lastInsFmt = emitLastIns->idInsFmt();
     emitAttr  prevSize   = emitLastIns->idOpSize();
     ssize_t   prevImm    = emitGetInsSC(emitLastIns);
