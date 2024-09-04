@@ -60,6 +60,7 @@ namespace Mono.Linker.Tests.Cases.Reflection
 			TestInvalidTypeCombination ();
 			TestEscapedTypeName ();
 			AssemblyTypeResolutionBehavior.Test ();
+			InstantiatedGenericEquality.Test ();
 		}
 
 		[Kept]
@@ -213,15 +214,11 @@ namespace Mono.Linker.Tests.Cases.Reflection
 		}
 
 		[Kept]
-#if !NATIVEAOT // https://github.com/dotnet/runtime/issues/106214
-		[KeptMember (".ctor()")]
-#endif
 		[KeptAttributeAttribute (typeof (RequiresUnreferencedCodeAttribute))]
 		[RequiresUnreferencedCode (nameof (Pointer))]
 		public class Pointer { }
 
 		[Kept]
-		[UnexpectedWarning ("IL2026", nameof (Pointer), Tool.Trimmer, "https://github.com/dotnet/runtime/issues/106214")]
 		public static void TestPointer ()
 		{
 			const string reflectionTypeKeptString = "Mono.Linker.Tests.Cases.Reflection.TypeUsedViaReflection+Pointer*";
@@ -230,15 +227,11 @@ namespace Mono.Linker.Tests.Cases.Reflection
 		}
 
 		[Kept]
-#if !NATIVEAOT // https://github.com/dotnet/runtime/issues/106214
-		[KeptMember (".ctor()")]
-#endif
 		[KeptAttributeAttribute (typeof (RequiresUnreferencedCodeAttribute))]
 		[RequiresUnreferencedCode (nameof (Reference))]
 		public class Reference { }
 
 		[Kept]
-		[UnexpectedWarning ("IL2026", nameof (Reference), Tool.Trimmer, "https://github.com/dotnet/runtime/issues/106214")]
 		public static void TestReference ()
 		{
 			const string reflectionTypeKeptString = "Mono.Linker.Tests.Cases.Reflection.TypeUsedViaReflection+Reference&";
@@ -684,6 +677,32 @@ namespace Mono.Linker.Tests.Cases.Reflection
 			class PointerElementGenericArgumentType {}
 
 			class ByRefElementGenericArgumentType {}
+		}
+
+		[Kept]
+		class InstantiatedGenericEquality
+		{
+			[Kept]
+			class Generic<T> {
+				[Kept]
+				public void Method () { }
+			}
+
+			// Regression test for an issue where ILLink's representation of a generic instantiated type
+			// was using reference equality. The test uses a lambda to ensure that it goes through the
+			// interprocedural analysis code path that merges patterns and relies on a correct implementation
+			// of equality.
+			[Kept]
+			public static void Test ()
+			{
+				var type = Type.GetType("Mono.Linker.Tests.Cases.Reflection.TypeUsedViaReflection+InstantiatedGenericEquality+Generic`1[[System.Int32]]");
+
+				var lambda = () => {
+					type.GetMethod ("Method");
+				};
+
+				lambda ();
+			}
 		}
 
 		[Kept]

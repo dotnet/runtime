@@ -3771,18 +3771,6 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                 if (intrin.op2->IsCnsIntOrI())
                 {
                     MakeSrcContained(node, intrin.op2);
-
-                    if ((intrin.op2->AsIntCon()->gtIconVal == 0) && intrin.op3->IsCnsFltOrDbl())
-                    {
-                        assert(varTypeIsFloating(intrin.baseType));
-
-                        const double dataValue = intrin.op3->AsDblCon()->DconValue();
-
-                        if (comp->GetEmitter()->emitIns_valid_imm_for_fmov(dataValue))
-                        {
-                            MakeSrcContained(node, intrin.op3);
-                        }
-                    }
                 }
                 break;
 
@@ -4068,9 +4056,10 @@ GenTree* Lowering::LowerHWIntrinsicCndSel(GenTreeHWIntrinsic* cndSelNode)
             NamedIntrinsic nestedOp2Id = nestedOp2->AsHWIntrinsic()->GetHWIntrinsicId();
 
             // If the nested op uses Pg/Z, then inactive lanes will result in zeros, so can only transform if
-            // op3 is all zeros.
+            // op3 is all zeros. Such a Csel operation is absorbed into the instruction when emitted. Skip this optimisation
+            // when the nestedOp is a reduce operation.
 
-            if (nestedOp1->IsMaskAllBitsSet() &&
+            if (nestedOp1->IsMaskAllBitsSet() && !HWIntrinsicInfo::IsReduceOperation(nestedOp2Id) &&
                 (!HWIntrinsicInfo::IsZeroingMaskedOperation(nestedOp2Id) || op3->IsVectorZero()))
             {
                 GenTree* nestedOp2 = nestedCndSel->Op(2);

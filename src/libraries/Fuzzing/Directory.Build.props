@@ -1,6 +1,6 @@
 ﻿<Project>
   <PropertyGroup>
-    <NetCoreAppCurrentVersion>9.0</NetCoreAppCurrentVersion>
+    <NetCoreAppCurrentVersion>10.0</NetCoreAppCurrentVersion>
     <NetCoreAppCurrent>net$(NetCoreAppCurrentVersion)</NetCoreAppCurrent>
     <ProductVersion>$(NetCoreAppCurrentVersion).0</ProductVersion>
     <TestUtilities>..\..\Common\tests\TestUtilities</TestUtilities>
