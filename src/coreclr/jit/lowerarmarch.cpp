@@ -4056,8 +4056,8 @@ GenTree* Lowering::LowerHWIntrinsicCndSel(GenTreeHWIntrinsic* cndSelNode)
             NamedIntrinsic nestedOp2Id = nestedOp2->AsHWIntrinsic()->GetHWIntrinsicId();
 
             // If the nested op uses Pg/Z, then inactive lanes will result in zeros, so can only transform if
-            // op3 is all zeros. Such a Csel operation is absorbed into the instruction when emitted. Skip this optimisation
-            // when the nestedOp is a reduce operation.
+            // op3 is all zeros. Such a Csel operation is absorbed into the instruction when emitted. Skip this
+            // optimisation when the nestedOp is a reduce operation.
 
             if (nestedOp1->IsMaskAllBitsSet() && !HWIntrinsicInfo::IsReduceOperation(nestedOp2Id) &&
                 (!HWIntrinsicInfo::IsZeroingMaskedOperation(nestedOp2Id) || op3->IsVectorZero()))
