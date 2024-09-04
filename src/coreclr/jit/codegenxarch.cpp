@@ -1205,6 +1205,15 @@ void CodeGen::genCodeForBinary(GenTreeOp* treeNode)
             // Handle emit_R_R_R first
             // emit with NDD insOpt.
             emit->emitIns_R_R_R(ins, emitTypeSize(treeNode), targetReg, op1reg, op2reg, INS_OPTS_EVEX_nd);
+            if (treeNode->gtOverflowEx())
+            {
+#if !defined(TARGET_64BIT)
+                assert(oper == GT_ADD || oper == GT_SUB || oper == GT_ADD_HI || oper == GT_SUB_HI);
+#else
+                assert(oper == GT_ADD || oper == GT_SUB);
+#endif
+                genCheckOverflow(treeNode);
+            }
             genProduceReg(treeNode);
             return;
         }

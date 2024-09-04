@@ -7577,6 +7577,12 @@ void emitter::emitIns_R_R_R(
     SetEvexEmbMaskIfNeeded(id, instOptions);
     SetEvexNdIfNeeded(id, instOptions);
 
+    if (id->idIsEvexNdContextSet())
+    {
+        // need to fix the instructions format for NDD legacy instructions.
+        id->idInsFmt(IF_RWR_RRD_RRD);
+    }
+
     UNATIVE_OFFSET sz = emitInsSizeRR(id, insCodeRM(ins));
     id->idCodeSize(sz);
 
@@ -16125,7 +16131,75 @@ BYTE* emitter::emitOutputRRR(BYTE* dst, instrDesc* id)
         dst += emitOutputByte(dst, (0xC0 | regCode));
     }
 
-    noway_assert(!id->idGCref());
+    // noway_assert(!id->idGCref());
+    if (id->idGCref())
+    {
+        assert(IsApxNDDEncodableInstruction(ins));
+        assert(id->idInsFmt() == IF_RWR_RRD_RRD);
+        switch (id->idIns())
+        {
+            /*
+                This must be one of the following cases:
+
+                xor reg, reg        to assign NULL
+
+                and r1 , r2         if (ptr1 && ptr2) ...
+                or  r1 , r2         if (ptr1 || ptr2) ...
+
+                add r1 , r2         to compute a normal byref
+                sub r1 , r2         to compute a strange byref (VC only)
+
+            */
+            case INS_xor:
+                assert(src1 == src2);
+                emitGCregLiveUpd(id->idGCref(), targetReg, dst);
+                break;
+
+            case INS_or:
+            case INS_and:
+                emitGCregDeadUpd(targetReg, dst);
+                break;
+
+            case INS_add:
+            case INS_sub:
+            case INS_sub_hide:
+                assert(id->idGCref() == GCT_BYREF);
+
+#if 0
+#ifdef DEBUG
+                // Due to elided register moves, we can't have the following assert.
+                // For example, consider:
+                //    t85 = LCL_VAR byref V01 arg1 rdx (last use) REG rdx
+                //        /--*  t85    byref
+                //        *  STORE_LCL_VAR byref  V40 tmp31 rdx REG rdx
+                // Here, V01 is type `long` on entry, then is stored as a byref. But because
+                // the register allocator assigned the same register, no instruction was
+                // generated, and we only (currently) make gcref/byref changes in emitter GC info
+                // when an instruction is generated. We still generate correct GC info, as this
+                // instruction, if writing a GC ref even through reading a long, will go live here.
+                // These situations typically occur due to unsafe casting, such as with Span<T>.
+
+                regMaskTP regMask;
+                regMask = genRegMask(src1) | genRegMask(src2);
+
+                // r1/r2 could have been a GCREF as GCREF + int=BYREF
+                //                               or BYREF+/-int=BYREF
+                assert(((regMask & emitThisGCrefRegs) && (ins == INS_add)) ||
+                        ((regMask & emitThisByrefRegs) && (ins == INS_add || ins == INS_sub || ins == INS_sub_hide)));
+#endif // DEBUG
+#endif // 0
+
+                // Mark r1 as holding a byref
+                emitGCregLiveUpd(GCT_BYREF, targetReg, dst);
+                break;
+
+            default:
+#ifdef DEBUG
+                emitDispIns(id, false, false, false);
+#endif
+                assert(!"unexpected GC reg update instruction");
+        }
+    }
 
     if (!emitInsCanOnlyWriteSSE2OrAVXReg(id))
     {
