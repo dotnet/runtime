@@ -1,100 +1,156 @@
-# Building CoreCLR
+# Building CoreCLR Guide
 
-* [Introduction](#introduction)
-* [Common Building Options](#common-building-options)
-  * [Build Drivers](#build-drivers)
-  * [Extra Flags](#extra-flags)
-  * [Build Results Layout](#build-results-layout)
-* [Platform-Specific Instructions](#platform-specific-instructions)
-* [Testing CoreCLR](#testing-coreclr)
+- [The Basics](#the-basics)
+  - [Build Results](#build-results)
+  - [What to do with the Build](#what-to-do-with-the-build)
+    - [The Core_Root for Testing Your Build](#the-core-root-for-testing-your-build)
+    - [The Dev Shipping Packs](#the-dev-shipping-packs)
+  - [Cross Compilation](#cross-compilation)
+- [Other Features](#other-features)
+  - [Build Drivers](#build-drivers)
+  - [Extra Flags](#extra-flags)
+  - [Native ARM64 Building on Windows](#native-arm64-building-on-windows)
+  - [Debugging Information for macOS](#debugging-information-for-macos)
+  - [Native Sanitizers](#native-sanitizers)
 
-## Introduction
+Firstly, make sure you've prepared your environment and installed all the requirements for your platform. If not, follow this [link](/docs/workflow/README.md#introduction) for the corresponding instructions.
 
-Here is a brief overview on how to build the common form of CoreCLR in general. For further specific instructions on each platform, we have links to instructions later on in [Platform-Specific Instructions](#platform-specific-instructions).
+## The Basics
 
-To build just CoreCLR, use the `subset` flag to the `build.sh` or `build.cmd` script at the repo root. Note that specifying `-subset` explicitly is not necessary if it is the first argument (i.e. `./build.sh --subset clr` and `./build.sh clr` are equivalent). However, if you specify any other argument beforehand, then you must specify the `-subset` flag.
-
-For Linux and macOS:
-
-```bash
-./build.sh --subset clr
-```
-
-For Windows:
-
-```cmd
-.\build.cmd -subset clr
-```
-
-## Common Building Options
-
-By default, the script generates a _Debug_ build type, which is not optimized code and includes asserts. As its name suggests, this makes it easier and friendlier to debug the code. If you want to make performance measurements, you ought to build the _Release_ version instead, which doesn't have any asserts and has all code optimizations enabled. Likewise, if you plan on running tests, the _Release_ configuration is more suitable since it's considerably faster than the _Debug_ one. For this, you add the flag `-configuration release` (or `-c release`). For example:
+As explained in the main workflow README, you can build the CoreCLR runtime by passing `-subset clr` as argument to the repo's main `build.sh`/`build.cmd` script:
 
 ```bash
-./build.sh --subset clr --configuration release
+./build.sh -subset clr <other args go here>
 ```
 
-As mentioned before in the [general building document](/docs/workflow/README.md#configurations-and-subsets), CoreCLR also supports a _Checked_ build type which has asserts enabled like _Debug_, but is built with the native compiler optimizer enabled, so it runs much faster. This is the usual mode used for running tests in the CI system.
+By default, the script builds the _clr_ in *Debug* configuration, which doesn't have any optimizations and has all assertions enabled. If you're aiming to run performance benchmarks, make sure you select the *Release* version with `-configuration Release`, as that one generates the most optimized code. On the other hand, if your goal is to run tests, then you can take the most advantage from CoreCLR's exclusive *Checked* configuration. This one retains the assertions but has the native compiler optimizations enabled, thus making it run faster than *Debug*. This is the usual mode used for running tests in the CI pipelines.
 
-Now, it is also possible to select a different configuration for each subset when building them together. The `--configuration` flag applies universally to all subsets, but it can be overridden with any one or more of the following ones:
+### Build Results
 
-* `--runtimeConfiguration (-rc)`: Flag for the CLR build configuration.
-* `--librariesConfiguration (-lc)`: Flag for the libraries build configuration.
-* `--hostConfiguration (-hc)`: Flag for the host build configuration.
+Once the `clr` build completes, the main generated artifacts are placed in `artifacts/bin/coreclr/<OS>.<Architecture>.<Configuration>`. For example, for a Linux x64 Release build, the output path would be `artifacts/bin/coreclr/linux.x64.Release`. Here, you will find a number of different binaries, of which the most important are the following:
 
-For example, a very common scenario used by developers and the repo's test scripts with default options, is to build the _clr_ in _Debug_ mode, and the _libraries_ in _Release_ mode. To achieve this, the command-line would look like the following:
+- `corerun`: The command-line host executable. This program loads and starts the CoreCLR runtime and receives the managed program you want to run as argument (e.g. `./corerun program.dll`). On Windows, it is called `corerun.exe`.
+- `coreclr`: The CoreCLR runtime itself. On Windows, it's called `coreclr.dll`, on macOS it is `libcoreclr.dylib`, and on Linux it is `libcoreclr.so`.
+- `System.Private.CoreLib.dll`: The core managed library, containing the definitions of `Object` and the base functionality.
+
+All the generated logs are placed in under `artifacts/log`, and all the intermediate output the build uses is placed in the `artifacts/obj/coreclr` directory.
+
+### What to do with the Build
+
+CoreCLR is one of the most important components of the runtime repo, as it is one of the main engines of the .NET product. That said, while you can test and use it on its own, it becomes easiest to do this when used in conjuction with the libraries subset. When you build both subsets, you can get access to the *Core_Root*. This includes all the libraries, as well as the clr alongside other tools like *Crossgen2*, *R2RDump*, and the *ILC* compiler, and the main command-line host executable `corerun`. The *Core_Root* is one of the most reliable ways of testing changes to the runtime, running external apps with your build, and it is the way clr tests are run in the CI pipelines.
+
+#### The Core Root for Testing Your Build
+
+As described in the [workflow README](/docs/workflow/README.md#building-the-repo), you can build multiple subsets by concatenating them with a `+` sign in the `-subset` argument. So, in this case, it would be `clr+libs`. Usually, the recommended workflow is to build the clr in *Debug* configuration and the libraries in *Release*:
 
 ```bash
-./build.sh --subset clr+libs --configuration Release --runtimeConfiguration Debug
+./build.sh -subset clr+libs -runtimeConfiguration Debug -librariesConfiguration Release
 ```
 
-Or alternatively:
+Once you have both subsets built, you can generate the *Core_Root*, which as mentioned above, is the most flexible way of testing your changes. You can generate the *Core_Root* by running the following command, assuming a *Checked* clr build on an x64 machine:
 
 ```bash
-./build.sh --subset clr+libs --librariesConfiguration Release --runtimeConfiguration Debug
+./src/tests/build.sh -x64 -checked -generatelayoutonly
 ```
 
-For more information about all the different options available, supply the argument `-help|-h` when invoking the build script. On Unix-like systems, non-abbreviated arguments can be passed in with a single `-` or double hyphen `--`.
+Since this is more related to testing, you can find the full details and instructions in the CoreCLR testing doc [over here](/docs/workflow/testing/coreclr/testing.md).
+
+#### The Dev Shipping Packs
+
+<!-- TODO: Link to the "using your build with the sdk" and "using your build with the shipping packages" docs, and rephrase accordingly, if needed. -->
+It is also possible to generate the full runtime NuGet packages and installer that you can use to test in a more production-esque scenario. To generate these shipping artifacts, you have to build the `clr`, `libs`, `host`, and `packs` subsets:
+
+```bash
+./build.sh -subset clr+libs+host+packs -configuration Release
+```
+
+The shipping artifacts are placed in the `artifacts/packages/<Configuration>/Shipping` directory. Here, you will find several NuGet packages, as well as their respective symbols packages, generated from your build. More importantly, you will find a zipped archive with the full contents of the runtime, organized in the same layout as they are in the official dotnet installations. This archive includes the following files:
+
+- `host/fxr/<net-version>-dev/hostfxr` (`hostfxr` is named differently depending on the platform: `hostfxr.dll` on Windows, `libhostfxr.dylib` on macOS, and `libhostfxr.so` on Linux)
+- `shared/Microsoft.NETCore.App/<net-version>-dev/*` (The `*` here refers to all the libraries dll's, as well as all the binaries necessary for the runtime to function)
+- `dotnet (dotnet.exe on Windows)` (The main `dotnet` executable you usually use to run your apps)
+
+Note that this package only includes the runtime, therefore you will only be able to run apps but not build them. For that, you would need the full SDK.
+
+**NOTE:** On Windows, this will also include `.exe` and `.msi` installers, which you can use in case you want to test your build machine-wide. This is the closest you can get to an official build installation.
+
+### Cross Compilation
+
+Using an x64 machine, it is possible to generate builds for other architectures. Not all architectures are supported for cross-compilation however, and it's also dependant on the OS you are using to build and target. Refer to the table below for the compatibility matrix.
+
+| Operating System | To x86   | To Arm32 | To Arm64 |
+| :--------------: | :------: | :------: | :------: |
+| Windows          | &#x2714; | &#x2714; | &#x2714; |
+| macOS            | &#x2718; | &#x2718; | &#x2714; |
+| Linux            | &#x2718; | &#x2714; | &#x2714; |
+
+**NOTE:** On macOS, it is also possible to cross-compile from ARM64 to x64 using an Apple Silicon Mac.
+
+<!-- TODO: Review the Cross-Building doc -->
+Detailed instructions on how to do cross-compilation can be found in the cross-building doc [over here](/docs/workflow/building/cross-building.md).
+
+## Other Features
 
 ### Build Drivers
 
-If you want to use _Ninja_ to drive the native build instead of _Make_ on non-Windows platforms, you can pass the `-ninja` flag to the build script as follows:
+By default, the CoreCLR build uses *Ninja* as the native build driver on Windows, and *Make* on non-Windows platforms. You can override this behavior by passing the appropriate flags to the build script:
 
-```bash
-./build.sh --subset clr --ninja
+To use Visual Studio's *MSBuild* instead of *Ninja* on Windows:
+
+```cmd
+./build.cmd -subset clr -msbuild
 ```
 
-If you want to use Visual Studio's _MSBuild_ to drive the native build on Windows, you can pass the `-msbuild` flag to the build script similarly to the `-ninja` flag.
+It is recommended to use *Ninja* on Windows, as it uses the build machine's resources more efficiently in comparison to Visual Studio's *MSBuild*.
 
-We recommend using _Ninja_ for building the project on Windows since it more efficiently uses the build machine's resources for the native runtime build in comparison to Visual Studio's _MSBuild_.
+To use *Ninja* instead of *Make* on non-Windows:
+
+```bash
+./build.sh -subset clr -ninja
+```
 
 ### Extra Flags
 
-To pass extra compiler/linker flags to the coreclr build, set the environment variables `EXTRA_CFLAGS`, `EXTRA_CXXFLAGS` and `EXTRA_LDFLAGS` as needed. Don't set `CFLAGS`/`CXXFLAGS`/`LDFLAGS` directly as that might lead to configure-time tests failing.
+You can also pass some extra compiler/linker flags to the CoreCLR build. Set the `EXTRA_CFLAGS`, `EXTRA_CXXFLAGS`, and `EXTRA_LDFLAGS` as you see fit for this purpose. The build script will consume them and then set the environment variables that will ultimately affect your build (i.e. those same ones without the `EXTRA_` prefix). Don't set the final ones directly yourself, as that is known to lead to potential failures in configure-time tests.
 
-### Build Results Layout
+### Native ARM64 Building on Windows
 
-Once the build has concluded, it will have produced its output artifacts in the following structure:
+Currently, the runtime repo supports building CoreCLR directly on Windows ARM64 without the need to cross-compile, albeit it is still in an experimental phase. To do this, you need to install the ARM64 build tools and Windows SDK for Visual Studio, in addition to all the requirements outlined in the [Windows Requirements doc](/docs/workflow/requirements/windows-requirements.md).
 
-* Product binaries will be dropped in `artifacts\bin\coreclr\<OS>.<arch>.<configuration>` folder.
-* A NuGet package, _Microsoft.Dotnet.CoreCLR_, will be created under `artifacts\bin\coreclr\<OS>.<arch>.<configuration>\.nuget` folder.
-* Test binaries (if built) will be dropped under `artifacts\tests\coreclr\<OS>.<arch>.<configuration>` folder. However, remember the root build script will not build the tests. The instructions for working with tests (building and running) are [in the testing doc](/docs/workflow/testing/coreclr/testing.md).
-* The build places logs in `artifacts\log` and these are useful when the build fails.
-* The build places all of its intermediate output in the `artifacts\obj\coreclr` directory.
+Once those requirements are fulfilled, you have to tell the build script to compile for Arm64 using *MSBuild*. *Ninja* is not yet supported on Arm64 platforms:
 
-If you want to force a full rebuild of the subsets you specified when calling the build script, pass the `-rebuild` flag to it, in addition to any other arguments you might require.
+```cmd
+./build.cmd -subset clr -arch arm64 -msbuild
+```
 
-## Platform-Specific Instructions
+While this is functional at the time of writing this doc, it is still recommended to cross-compile from an x64 machine, as that's the most stable and tested method.
 
-Now that you've got the general idea on how the _CoreCLR_ builds work, here are some further documentation links on platform-specific caveats and features.
+### Debugging Information for macOS
 
-* [Build CoreCLR on Windows](windows-instructions.md)
-* [Build CoreCLR on macOS](macos-instructions.md)
-* [Build CoreCLR on Linux](linux-instructions.md)
-* [Build CoreCLR on FreeBSD](freebsd-instructions.md)
+When building on macOS, the build process puts native component symbol and debugging information into `.dwarf` files, one for each built binary. This is not the native format used by macOS, and debuggers like LLDB can't automatically find them. The format macOS uses is `.dSYM` bundles. To generate them and get a better inner-loop developer experience (e.g. have the LLDB debugger automatically find program symbols and display source code lines, etc.), make sure to enable the `DLCR_CMAKE_APPLE_DYSM` flag when calling the build script:
 
-We also have specific instructions for building _NativeAOT_ [here](/docs/workflow/building/coreclr/nativeaot.md).
+```bash
+./build.sh -subset clr -cmakeargs "-DLCR_CMAKE_APPLE_DYSM=TRUE"
+```
 
-## Testing CoreCLR
+**NOTE:** Converting the entire build process to build and package `.dSYM` bundles on macOS by default is on the table and tracked by issue #92911 [over here](https://github.com/dotnet/runtime/issues/92911).
 
-For testing your build, the [testing docs](/docs/workflow/testing/coreclr/testing.md) have detailed instructions on how to do it.
+### Native Sanitizers
+
+CoreCLR is also in the process of supporting the use of native sanitizers during the build to help catch memory safety issues. To apply them, add the `-fsanitize` flag followed by the name of the sanitizer as argument. As of now, these are the supported sanitizers with plans of adding more in the future:
+
+- Sanitizer Name: `AddressSanitizer`
+
+  Argument to `-fsanitize`: `address`
+
+| Platform | Minimum VS Version | Support Status          |
+| :------: | :----------------: | :---------------------: |
+| Windows  | Not Yet Released   | Experimental            |
+| macOS    | N/A                | Regularly Tested on x64 |
+| Linux    | N/A                | Regularly Tested on x64 |
+
+And to use it, the command would look as follows:
+
+```bash
+./build.sh -subset clr -fsanitize address
+```

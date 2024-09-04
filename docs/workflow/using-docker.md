@@ -74,6 +74,6 @@ Now, dissecting the command:
 
 You might also want to interact with the container directly for a myriad of reasons, like running multiple builds in different paths for example. In this case, instead of passing the build script command to the `docker` command-line, pass the flag `-it`. When you do this, you will get access to a small shell within the container, which allows you to explore it, run builds manually, and so on, like you would on a regular terminal in your machine. Note that the containers' shell's built-in tools are very limited in comparison to the ones you probably have on your machine, so don't expect to be able to do full work there.
 
-To do cross-building using Docker, make sure to select the appropriate image that targets the platform you want to build for. As for the commands to run, follow the same instructions from the cross-building doc [over here](/docs/workflow/building/cross-building.md).
+To do cross-building using Docker, make sure to select the appropriate image that targets the platform you want to build for. As for the commands to run, follow the same instructions from the cross-building doc [over here](/docs/workflow/building/coreclr/cross-building.md).
 
 **NOTE:** While all the official building images are marked as cross-building images, you can also use them for regular builds.
