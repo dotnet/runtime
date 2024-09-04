@@ -42,7 +42,7 @@
         `build -c debug -rc checked`, the corresponding test command is `src/tests/build -checked -p:LibrariesConfiguration=debug`,
         instead of `-debug -p:RuntimeConfiguration=checked`. That forces us to either pass the
         `HostConfiguration=debug` explicitly or fix this disparity; both of which will break the dev workflow.
-        
+
         As a workaround, we will first check if the directory pointed by `HostConfiguration` exists, then check
         `LibrariesConfiguration`.
     -->
