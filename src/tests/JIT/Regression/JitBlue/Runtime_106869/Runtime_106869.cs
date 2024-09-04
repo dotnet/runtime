@@ -36,28 +36,24 @@ public class Runtime_1068867
     [Fact]
     public static void TestEntryPoint()
     {
-        var vr12 = new C0();
-        var vr14 = vr12.F1;
-        var vr15 = Vector128.CreateScalar(vr14).AsVector();
-        var vr16 = Vector128.CreateScalar(0).AsVector();
-        var vr17 = Vector128.CreateScalar(0).AsVector();
-        var vr18 = Vector128.CreateScalar(0).AsVector();
-        var vr19 = Vector128.CreateScalar(1).AsVector();
-        var vr20 = Sve.ConditionalSelect(vr17, vr18, vr19);
-        var vr21 = Vector128.CreateScalar(0).AsVector();
-        var vr22 = Sve.ConditionalSelect(vr16, vr20, vr21);
-        // var vr23 = (uint)Sve.GetActiveElementCount(vr15, vr22);
-        // M17(s_7, vr20
-        Consume(vr22);
+        if (Sve.IsSupported)
+        {
+            var vr12 = new C0();
+            var vr14 = vr12.F1;
+            var vr15 = Vector128.CreateScalar(vr14).AsVector();
+            var vr16 = Vector128.CreateScalar(0).AsVector();
+            var vr17 = Vector128.CreateScalar(0).AsVector();
+            var vr18 = Vector128.CreateScalar(0).AsVector();
+            var vr19 = Vector128.CreateScalar(1).AsVector();
+            var vr20 = Sve.ConditionalSelect(vr17, vr18, vr19);
+            var vr21 = Vector128.CreateScalar(0).AsVector();
+            var vr22 = Sve.ConditionalSelect(vr16, vr20, vr21);
+            Consume(vr22);
+        }
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
     static void Consume<T>(T val)
     {
     }
-    // public static byte M17(S0 argThis, uint arg0)
-    // {
-    //     var vr0 = argThis.F5;
-    //     return (byte)(4294967295U | (sbyte)Sve.SaturatingDecrementByActiveElementCount(vr0, Vector.Create<byte>(s_14)));
-    // }
 }
