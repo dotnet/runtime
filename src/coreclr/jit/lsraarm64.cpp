@@ -1759,6 +1759,10 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
     bool     delayFreeMultiple = false;
     GenTree* delayFreeOp       = intrinsicTree->GetDelayFreeOp(compiler, &isRMW, &delayFreeMultiple);
 
+    // Determine whether this is an operation where one of the ops is an address
+    GenTree* addrOp = LinearScan::getVectorAddrOperand(intrinsicTree);
+
+
     if (intrin.op1 != nullptr)
     {
         if (delayFreeMultiple)
@@ -1766,6 +1770,8 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
             assert(intrin.op1->OperIs(GT_FIELD_LIST));
             GenTreeFieldList* op1 = intrin.op1->AsFieldList();
             assert(compiler->info.compNeedsConsecutiveRegisters);
+            assert(addrOp != intrin.op1);
+            assert(delayFreeOp != intrin.op1);
 
             for (GenTreeFieldList::Use& use : op1->Uses())
             {
@@ -1775,6 +1781,8 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
         }
         else if (HWIntrinsicInfo::IsMaskedOperation(intrin.id))
         {
+            assert(addrOp != intrin.op1);
+
             if (!varTypeIsMask(intrin.op1->TypeGet()) && !HWIntrinsicInfo::IsExplicitMaskedOperation(intrin.id))
             {
                 srcCount += BuildOperandUses(intrin.op1);
@@ -1798,8 +1806,10 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                 }
             }
         }
-        else if (intrinsicTree->OperIsMemoryLoadOrStore())
+        else if (addrOp == intrin.op1)
         {
+            assert(delayFreeOp != intrin.op1);
+
             srcCount += BuildAddrUses(intrin.op1);
         }
         else if (delayFreeOp == intrin.op1)
@@ -2030,83 +2040,43 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
             op2Candidates = RBM_ALLMASK.GetPredicateRegSet();
         }
 
-        bool buildAddrUses = false;
-        switch (intrin.id)
-        {
-            case NI_Sve_LoadVectorNonTemporal:
-            case NI_Sve_LoadVector128AndReplicateToVector:
-            case NI_Sve_StoreAndZip:
-                assert(intrinsicTree->OperIsMemoryLoadOrStore());
-                buildAddrUses = true;
-                break;
-
-            case NI_Sve_GatherVector:
-            case NI_Sve_GatherVectorByteZeroExtend:
-            case NI_Sve_GatherVectorInt16SignExtend:
-            case NI_Sve_GatherVectorInt16SignExtendFirstFaulting:
-            case NI_Sve_GatherVectorInt16WithByteOffsetsSignExtend:
-            case NI_Sve_GatherVectorInt16WithByteOffsetsSignExtendFirstFaulting:
-            case NI_Sve_GatherVectorInt32SignExtend:
-            case NI_Sve_GatherVectorInt32SignExtendFirstFaulting:
-            case NI_Sve_GatherVectorInt32WithByteOffsetsSignExtend:
-            case NI_Sve_GatherVectorInt32WithByteOffsetsSignExtendFirstFaulting:
-            case NI_Sve_GatherVectorSByteSignExtend:
-            case NI_Sve_GatherVectorSByteSignExtendFirstFaulting:
-            case NI_Sve_GatherVectorUInt16WithByteOffsetsZeroExtend:
-            case NI_Sve_GatherVectorUInt16WithByteOffsetsZeroExtendFirstFaulting:
-            case NI_Sve_GatherVectorUInt16ZeroExtend:
-            case NI_Sve_GatherVectorUInt16ZeroExtendFirstFaulting:
-            case NI_Sve_GatherVectorUInt32WithByteOffsetsZeroExtend:
-            case NI_Sve_GatherVectorUInt32WithByteOffsetsZeroExtendFirstFaulting:
-            case NI_Sve_GatherVectorUInt32ZeroExtend:
-            case NI_Sve_GatherVectorUInt32ZeroExtendFirstFaulting:
-            case NI_Sve_GatherVectorWithByteOffsetFirstFaulting:
-                assert(intrinsicTree->OperIsMemoryLoadOrStore());
-                FALLTHROUGH;
-
-            case NI_Sve_PrefetchBytes:
-            case NI_Sve_PrefetchInt16:
-            case NI_Sve_PrefetchInt32:
-            case NI_Sve_PrefetchInt64:
-            case NI_Sve_GatherPrefetch8Bit:
-            case NI_Sve_GatherPrefetch16Bit:
-            case NI_Sve_GatherPrefetch32Bit:
-            case NI_Sve_GatherPrefetch64Bit:
-                if (!varTypeIsSIMD(intrin.op2->gtType))
-                {
-                    buildAddrUses = true;
-                }
-                break;
-
-            default:
-                break;
-        }
-
-        if (buildAddrUses)
+        if (addrOp == intrin.op2)
         {
             assert(delayFreeOp != intrin.op2);
             assert(op2Candidates == RBM_NONE);
+
             srcCount += BuildAddrUses(intrin.op2);
         }
         else if (delayFreeOp == intrin.op2)
         {
             assert(!intrin.op2->isContained());
             assert(tgtPrefUse == nullptr);
+
             tgtPrefUse2 = BuildUse(intrin.op2, op2Candidates);
             srcCount++;
         }
+        else if (isRMW)
+        {
+            srcCount += BuildDelayFreeUses(intrin.op2, delayFreeOp, op2Candidates);
+        }
         else
         {
-            srcCount += isRMW ? BuildDelayFreeUses(intrin.op2, delayFreeOp, op2Candidates)
-                              : BuildOperandUses(intrin.op2, op2Candidates);
+            srcCount += BuildOperandUses(intrin.op2, op2Candidates);
         }
 
         if (intrin.op3 != nullptr)
         {
             assert(delayFreeOp != intrin.op3);
+
             SingleTypeRegSet op3Candidates = lowVectorOperandNum == 3 ? lowVectorCandidates : RBM_NONE;
 
-            if (isRMW)
+            if (addrOp == intrin.op3)
+            {
+                assert(op3Candidates == RBM_NONE);
+
+                srcCount += BuildAddrUses(intrin.op3);
+            }
+            else if (isRMW)
             {
                 srcCount += BuildDelayFreeUses(intrin.op3, delayFreeOp, op3Candidates);
             }
@@ -2119,6 +2089,7 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
             {
                 assert(lowVectorOperandNum != 4);
                 assert(delayFreeOp != intrin.op4);
+                assert(addrOp != intrin.op3);
 
                 srcCount += isRMW ? BuildDelayFreeUses(intrin.op4, delayFreeOp) : BuildOperandUses(intrin.op4);
 
@@ -2126,6 +2097,8 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                 {
                     assert(isRMW);
                     assert(delayFreeOp != intrin.op5);
+                    assert(addrOp != intrin.op3);
+
                     srcCount += BuildDelayFreeUses(intrin.op5, delayFreeOp);
                 }
             }
@@ -2458,6 +2431,54 @@ void LinearScan::getLowVectorOperandAndCandidates(HWIntrinsic intrin, size_t* op
         default:
             unreached();
     }
+}
+
+//------------------------------------------------------------------------
+// GetDelayFreeOp: Get the address operand of the HWIntrinsic, if any
+//
+// Arguments:
+//    intrinsicTree - Node to check
+//
+// Return Value:
+//    The operand that is an address
+//
+GenTree* LinearScan::getVectorAddrOperand(GenTreeHWIntrinsic* intrinsicTree)
+{
+    GenTree* pAddr = nullptr;
+
+    if (intrinsicTree->OperIsMemoryLoad(&pAddr))
+    {
+        assert(pAddr != nullptr);
+        return pAddr;
+    }
+    if (intrinsicTree->OperIsMemoryStore(&pAddr))
+    {
+        assert(pAddr != nullptr);
+        return pAddr;
+    }
+
+    // Operands that are not loads or stores but do require an address
+    switch(intrinsicTree->GetHWIntrinsicId())
+    {
+        case NI_Sve_PrefetchBytes:
+        case NI_Sve_PrefetchInt16:
+        case NI_Sve_PrefetchInt32:
+        case NI_Sve_PrefetchInt64:
+        case NI_Sve_GatherPrefetch8Bit:
+        case NI_Sve_GatherPrefetch16Bit:
+        case NI_Sve_GatherPrefetch32Bit:
+        case NI_Sve_GatherPrefetch64Bit:
+            if (!varTypeIsSIMD(intrinsicTree->Op(2)->gtType))
+            {
+                return intrinsicTree->Op(2);
+            }
+        break;
+
+        default:
+            break;
+    }
+
+    return nullptr;
 }
 
 #endif // FEATURE_HW_INTRINSICS
