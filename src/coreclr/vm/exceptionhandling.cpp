@@ -8432,7 +8432,12 @@ extern "C" bool QCALLTYPE SfiInit(StackFrameIterator* pThis, CONTEXT* pStackwalk
         // Get the SSP for the first managed frame. It is incremented during the stack walk so that
         // when we reach the handling frame, it contains correct SSP to set when resuming after
         // the catch handler.
-        pThis->m_crawl.GetRegisterSet()->SSP = GetSSPForFrameOnCurrentStack(controlPC);
+        // For hardware exceptions and thread abort exceptions propagated from ThrowControlForThread,
+        // the SSP is already known. For other cases, find it by scanning the shadow stack.
+        if ((pExInfo->m_passNumber == 2) && (pThis->m_crawl.GetRegisterSet()->SSP == 0))
+        {
+            pThis->m_crawl.GetRegisterSet()->SSP = GetSSPForFrameOnCurrentStack(controlPC);
+        }
 #endif
 
         if (!pThis->m_crawl.HasFaulted() && !pThis->m_crawl.IsIPadjusted())
