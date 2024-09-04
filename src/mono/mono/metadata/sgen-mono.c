@@ -1259,6 +1259,7 @@ typedef struct {
 	int count;		/* must be the first field */
 	void *addresses [GC_ROOT_NUM];
 	void *objects [GC_ROOT_NUM];
+	const char *kind;
 } GCRootReport;
 
 static void
@@ -1266,7 +1267,7 @@ notify_gc_roots (GCRootReport *report)
 {
 	if (!report->count)
 		return;
-	MONO_PROFILER_RAISE (gc_roots, (report->count, (const mono_byte *const *)report->addresses, (MonoObject *const *) report->objects));
+	MONO_PROFILER_RAISE (gc_roots, (report->count, (const mono_byte *const *)report->addresses, (MonoObject *const *) report->objects, report->kind));
 	report->count = 0;
 }
 
@@ -1555,6 +1556,7 @@ static void
 report_stack_roots (void)
 {
 	GCRootReport report = {0};
+	report.kind = "stack";
 	FOREACH_THREAD_EXCLUDE (info, MONO_THREAD_INFO_FLAGS_NO_GC) {
 		void *aligned_stack_start;
 
@@ -1610,6 +1612,7 @@ report_finalizer_roots_from_queue (SgenPointerQueue *queue, void* queue_address)
 	GCRootReport report;
 	size_t i;
 
+	report.kind = "finalizer";
 	report.count = 0;
 	for (i = 0; i < queue->next_slot; ++i) {
 		void *obj = queue->data [i];
@@ -1621,13 +1624,18 @@ report_finalizer_roots_from_queue (SgenPointerQueue *queue, void* queue_address)
 }
 
 static void
-report_registered_roots_by_type (int root_type)
+report_registered_roots_by_type (int root_type, const char *kind)
 {
 	GCRootReport report = { 0 };
+	report.kind = kind;
 	void **start_root;
 	RootRecord *root;
 	report.count = 0;
 	SGEN_HASH_TABLE_FOREACH (&sgen_roots_hash [root_type], void **, start_root, RootRecord *, root) {
+		const char *local_kind = root->msg ? root->msg : kind;
+		if (local_kind != report.kind)
+			notify_gc_roots(&report);
+		report.kind = local_kind;
 		SGEN_LOG (6, "Profiler root scan %p-%p (desc: %p)", start_root, root->end_root, (void*)(intptr_t)root->root_desc);
 		if (root_type == ROOT_TYPE_PINNED)
 			report_pinning_roots (&report, start_root, (void**)root->end_root);
@@ -1640,8 +1648,9 @@ report_registered_roots_by_type (int root_type)
 static void
 report_registered_roots (void)
 {
-	for (int i = 0; i < ROOT_TYPE_NUM; ++i)
-		report_registered_roots_by_type (i);
+	report_registered_roots_by_type (ROOT_TYPE_NORMAL, "normal");
+	report_registered_roots_by_type (ROOT_TYPE_PINNED, "pinned");
+	report_registered_roots_by_type (ROOT_TYPE_WBARRIER, "write barrier");
 }
 
 static void
@@ -1651,6 +1660,7 @@ report_ephemeron_roots (void)
         Ephemeron *cur, *array_end;
         GCObject *tombstone;
         GCRootReport report = { 0 };
+	report.kind = "ephemeron";
 
         for (current = ephemeron_list; current; current = current->next) {
                 MonoArray *array = current->array;
@@ -1686,6 +1696,7 @@ static void
 report_toggleref_roots (void)
 {
 	GCRootReport report = { 0 };
+	report.kind = "toggleref";
 	sgen_foreach_toggleref_root (report_toggleref_root, &report);
 	notify_gc_roots (&report);
 }
@@ -2260,8 +2271,6 @@ static size_t worker_heap_size;
 void
 sgen_client_total_allocated_heap_changed (size_t allocated_heap)
 {
-	mono_runtime_resource_check_limit (MONO_RESOURCE_GC_HEAP, allocated_heap);
-
 	/*
 	 * This function can be called from SGen's worker threads. We want to try
 	 * and avoid exposing those threads to the profiler API, so save the heap

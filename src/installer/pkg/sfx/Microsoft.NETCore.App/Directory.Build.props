@@ -245,6 +245,7 @@
     <PlatformManifestFileEntry Include="icudt_hybrid.dat" IsNative="true" />
     <PlatformManifestFileEntry Include="segmentation-rules.json" IsNative="true" />
     <PlatformManifestFileEntry Include="package.json" IsNative="true" />
+    <PlatformManifestFileEntry Include="diagnostics-panel.html" IsNative="true" />
     <PlatformManifestFileEntry Include="dotnet.es6.pre.js" IsNative="true" />
     <PlatformManifestFileEntry Include="dotnet.es6.lib.js" IsNative="true" />
     <PlatformManifestFileEntry Include="dotnet.es6.extpost.js" IsNative="true" />
@@ -252,6 +253,7 @@
     <PlatformManifestFileEntry Include="runtime.h" IsNative="true" />
     <PlatformManifestFileEntry Include="runtime.c" IsNative="true" />
     <PlatformManifestFileEntry Include="driver.c" IsNative="true" />
+    <PlatformManifestFileEntry Include="heapshot.c" IsNative="true" />
     <PlatformManifestFileEntry Include="pinvoke.c" IsNative="true" />
     <PlatformManifestFileEntry Include="pinvoke.h" IsNative="true" />
     <PlatformManifestFileEntry Include="gc-common.h" IsNative="true" />

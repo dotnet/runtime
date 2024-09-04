@@ -85,6 +85,7 @@ const fn_signatures: SigLine[] = [
     [true, "mono_wasm_get_f32_unaligned", "number", ["number"]],
     [true, "mono_wasm_get_f64_unaligned", "number", ["number"]],
     [true, "mono_wasm_read_as_bool_or_null_unsafe", "number", ["number"]],
+    [true, "mono_wasm_perform_heapshot", "void", ["number"]],
 
     // jiterpreter
     [true, "mono_jiterp_trace_bailout", "void", ["number"]],
@@ -210,6 +211,8 @@ export interface t_Cwraps {
     mono_wasm_get_f32_unaligned(source: VoidPtr): number;
     mono_wasm_get_f64_unaligned(source: VoidPtr): number;
     mono_wasm_read_as_bool_or_null_unsafe(obj: MonoObject): number;
+
+    mono_wasm_perform_heapshot(full: number): void;
 
     mono_jiterp_trace_bailout(reason: number): void;
     mono_jiterp_get_trace_bailout_count(reason: number): number;

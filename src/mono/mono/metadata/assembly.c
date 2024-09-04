@@ -3264,3 +3264,25 @@ mono_assembly_get_count (void)
 {
 	return loaded_assembly_count;
 }
+
+#ifdef HOST_BROWSER
+int
+mono_assembly_update_heapshot_scratch_byte (MonoAssembly *assembly, guint8 new_value);
+
+// returns true if the byte was changed
+int
+mono_assembly_update_heapshot_scratch_byte (MonoAssembly *assembly, guint8 new_value) {
+	g_assert (assembly);
+	// early-out; we know that the scratch byte will only ever increment or wrap around,
+	//  so if we see the value 7 we know it can only become 8 from this point and then 9,
+	//  it won't ever wrap back around to 7 or 6 without us seeing an intermediate value
+	// so we don't have to worry about ABA here, and we don't need to worry about races
+	if (assembly->heapshot_scratch_byte == new_value)
+		return 0;
+	// if we're actually changing the scratch byte, do so atomically to ensure that only
+	//  one thread believes it changed the byte and does the resulting work
+	// we know that two separate heapshots can't occur in parallel, so it's not possible
+	//  for this operation to trample a 9 and replace it with an 8
+	return mono_atomic_xchg_u8 (&assembly->heapshot_scratch_byte, new_value) != new_value;
+}
+#endif

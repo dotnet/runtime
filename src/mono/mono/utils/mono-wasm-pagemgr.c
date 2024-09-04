@@ -187,38 +187,49 @@ transition_page_states (page_action action, uint32_t first_page, uint32_t page_c
 		cleanup_preceding_pages (first_page);
 }
 
-static void
-print_stats () {
-#if defined(MWPM_LOGGING) || defined(MWPM_STATS)
-	uint32_t in_use = 0, free = 0, unallocated = 0,
-		max_run = 0, current_run = 0;
+void
+mwpm_compute_stats (uint32_t *in_use_pages, uint32_t *free_pages, uint32_t *external_pages, uint32_t *largest_free_chunk) {
+	g_assert (in_use_pages && free_pages && external_pages && largest_free_chunk);
+	*in_use_pages = 0;
+	*free_pages = 0;
+	*external_pages = 0;
+	*largest_free_chunk = 0;
+	uint32_t current_run = 0;
 
 	for (uint32_t i = first_controlled_page_index; i <= last_controlled_page_index; i++) {
 		switch (page_table[i] & MWPM_STATE_MASK) {
 			case MWPM_ALLOCATED:
-				in_use++;
+				(*in_use_pages)++;
 				current_run = 0;
 				break;
 
 			case MWPM_FREE_DIRTY:
 			case MWPM_FREE_ZEROED:
-				free++;
+				(*free_pages)++;
 				current_run++;
-				if (current_run > max_run)
-					max_run = current_run;
+				if (current_run > *largest_free_chunk)
+					*largest_free_chunk = current_run;
 				break;
 
 			default:
-				unallocated++;
+				(*external_pages)++;
 				current_run = 0;
 				break;
 		}
 	}
+}
 
-	uint32_t total = in_use + free; // + unallocated;
+static void
+print_stats () {
+#if defined(MWPM_LOGGING) || defined(MWPM_STATS)
+	uint32_t in_use = 0, free_pages = 0, unallocated = 0,
+		max_run = 0;
+	mwpm_compute_stats (&in_use, &free_pages, &unallocated, &max_run);
+
+	uint32_t total = in_use + free_pages; // + unallocated;
 	g_print (
 		"sbrk(0)==%u. %u pages in use (%f%%), %u pages free, %u pages unknown. largest possible allocation: %u pages\n",
-		(uint32_t)sbrk(0), in_use, in_use * 100.0 / total, free, unallocated, max_run
+		(uint32_t)sbrk(0), in_use, in_use * 100.0 / total, free_pages, unallocated, max_run
 	);
 #endif
 }
@@ -234,6 +245,12 @@ acquire_new_pages_initialized (uint32_t page_count) {
 	uint32_t recovered_bytes = 0;
 	if (bytes >= UINT32_MAX)
 		return NULL;
+
+	if (first_controlled_page_index == UINT32_MAX) {
+		// HACK: Ensure we never allocate the zero page. It's important for it to be reserved.
+		if (sbrk (0) == 0)
+			sbrk (MWPM_PAGE_SIZE);
+	}
 
 	// We know that on WASM, sbrk grows the heap as necessary in order to return,
 	//  a region of N zeroed bytes, which isn't necessarily aligned or page-sized
