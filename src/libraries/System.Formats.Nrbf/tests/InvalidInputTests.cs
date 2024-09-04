@@ -478,4 +478,24 @@ public class InvalidInputTests : ReadTests
         stream.Position = 0;
         Assert.Throws<SerializationException>(() => NrbfDecoder.Decode(stream));
     }
+
+    [Theory]
+    [InlineData(18, typeof(NotSupportedException))] // not part of the spec, but still less than max allowed value (22)
+    [InlineData(19, typeof(NotSupportedException))] // same as above
+    [InlineData(20, typeof(NotSupportedException))] // same as above
+    [InlineData(23, typeof(SerializationException))] // not part of the spec and more than max allowed value (22)
+    [InlineData(64, typeof(SerializationException))] // same as above but also matches AllowedRecordTypes.SerializedStreamHeader
+    public void InvalidSerializationRecordType(byte recordType, Type expectedException)
+    {
+        using MemoryStream stream = new();
+        BinaryWriter writer = new(stream, Encoding.UTF8);
+
+        WriteSerializedStreamHeader(writer);
+        writer.Write(recordType); // SerializationRecordType
+        writer.Write((byte)SerializationRecordType.MessageEnd);
+
+        stream.Position = 0;
+
+        Assert.Throws(expectedException, () => NrbfDecoder.Decode(stream));
+    }
 }

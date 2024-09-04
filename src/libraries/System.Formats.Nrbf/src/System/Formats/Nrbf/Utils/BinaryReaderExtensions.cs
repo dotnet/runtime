@@ -15,6 +15,19 @@ internal static class BinaryReaderExtensions
 {
     private static object? s_baseAmbiguousDstDateTime;
 
+    internal static SerializationRecordType ReadSerializationRecordType(this BinaryReader reader, AllowedRecordTypes allowed)
+    {
+        byte nextByte = reader.ReadByte();
+        if (nextByte > (byte)SerializationRecordType.MethodReturn // MethodReturn is the last defined value.
+            || (nextByte > (byte)SerializationRecordType.ArraySingleString && nextByte < (byte)SerializationRecordType.MethodCall) // not part of the spec
+            || ((uint)allowed & (1u << nextByte)) == 0) // valid, but not allowed
+        {
+            ThrowHelper.ThrowForUnexpectedRecordType(nextByte);
+        }
+
+        return (SerializationRecordType)nextByte;
+    }
+
     internal static BinaryArrayType ReadArrayType(this BinaryReader reader)
     {
         byte arrayType = reader.ReadByte();

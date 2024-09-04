@@ -213,12 +213,7 @@ public static class NrbfDecoder
     private static SerializationRecord DecodeNext(BinaryReader reader, RecordMap recordMap,
         AllowedRecordTypes allowed, PayloadOptions options, out SerializationRecordType recordType)
     {
-        byte nextByte = reader.ReadByte();
-        if (((uint)allowed & (1u << nextByte)) == 0)
-        {
-            ThrowHelper.ThrowForUnexpectedRecordType(nextByte);
-        }
-        recordType = (SerializationRecordType)nextByte;
+        recordType = reader.ReadSerializationRecordType(allowed);
 
         SerializationRecord record = recordType switch
         {
