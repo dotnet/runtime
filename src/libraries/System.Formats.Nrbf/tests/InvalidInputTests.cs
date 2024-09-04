@@ -516,4 +516,25 @@ public class InvalidInputTests : ReadTests
 
         Assert.Throws<SerializationException>(() => NrbfDecoder.Decode(stream));
     }
+
+    [Fact]
+    public void Invalid7BitEncodedStringLength()
+    {
+        // The highest bit of the last byte is set (so it's invalid).
+        byte[] invalidLength = [byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue];
+
+        using MemoryStream stream = new();
+        BinaryWriter writer = new(stream, Encoding.UTF8);
+
+        WriteSerializedStreamHeader(writer);
+        writer.Write((byte)SerializationRecordType.BinaryObjectString);
+        writer.Write(1); // root record Id
+        writer.Write(invalidLength); // the length prefix
+        writer.Write(Encoding.UTF8.GetBytes("theString"));
+        writer.Write((byte)SerializationRecordType.MessageEnd);
+
+        stream.Position = 0;
+
+        Assert.Throws<SerializationException>(() => NrbfDecoder.Decode(stream));
+    }
 }

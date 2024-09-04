@@ -162,4 +162,7 @@
   <data name="Serialization_InvalidAssemblyName" xml:space="preserve">
     <value>Invalid assembly name: `{0}`.</value>
   </data>
+  <data name="Serialization_InvalidFormat" xml:space="preserve">
+    <value>Invalid format.</value>
+  </data>
 </root>

@@ -142,7 +142,14 @@ public static class NrbfDecoder
 #endif
 
         using BinaryReader reader = new(payload, ThrowOnInvalidUtf8Encoding, leaveOpen: leaveOpen);
-        return Decode(reader, options ?? new(), out recordMap);
+        try
+        {
+            return Decode(reader, options ?? new(), out recordMap);
+        }
+        catch (FormatException) // can be thrown by various BinaryReader methods
+        {
+            throw new SerializationException(SR.Serialization_InvalidFormat);
+        }
     }
 
     /// <summary>
