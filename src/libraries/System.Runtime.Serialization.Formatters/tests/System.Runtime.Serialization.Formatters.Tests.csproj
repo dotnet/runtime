@@ -35,6 +35,8 @@
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">
     <Compile Include="BinaryFormatterEventSourceTests.cs" />
     <Compile Include="SerializationGuardTests.cs" />
+    <Compile Include="$(CommonPath)System\Runtime\Serialization\SerializationGuard.cs"
+         Link="Common\System\Runtime\Serialization\SerializationGuard.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">
     <PackageReference Include="System.Drawing.Common" Version="$(SystemDrawingCommonVersion)" />
