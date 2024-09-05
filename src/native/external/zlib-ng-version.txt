@@ -1,12 +1,12 @@
-v2.1.6
-74253725f884e2424a0dd8ae3f69896d5377f325
+v2.2.1
+d54e3769be0c522015b784eca2af258b1c026107
 
-https://github.com/zlib-ng/zlib-ng/releases/tag/2.1.6
+https://github.com/zlib-ng/zlib-ng/releases/tag/2.2.1
 
 We have removed the following folders from our local copy as these files are not needed for our compilation:
 
-- zlib-ng/docs/
+- zlib-ng/doc/
 - zlib-ng/test/
 - zlib-ng/arch/s390/self-hosted-builder/
 
-Apply https://github.com/dotnet/runtime/pull/105433.patch
+Also, if the next version does not yet contain the fixes included in 12bc7edc73308f017ec40c6b2db694a6e3490ac2, cherry-pick it as a patch.
