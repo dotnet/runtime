@@ -48,8 +48,11 @@
     <ProjectReference Include="$(LibrariesProjectRoot)System.DirectoryServices.Protocols\src\System.DirectoryServices.Protocols.csproj" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.DirectoryServices\src\System.DirectoryServices.csproj" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.IO.Packaging\src\System.IO.Packaging.csproj" />
-    <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime.Serialization.Formatters\src\System.Runtime.Serialization.Formatters.csproj" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.Security.Permissions\src\System.Security.Permissions.csproj" />
+    <!-- Reference the `NetCoreAppMinimum` build which has a functional BinaryFormatter and force a private copy to ensure it's not excluded -->
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime.Serialization.Formatters\src\System.Runtime.Serialization.Formatters.csproj"
+                      Private="true"
+                      SetTargetFramework="TargetFramework=$(NetCoreAppMinimum)" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">
     <ProjectReference Include="$(LibrariesProjectRoot)System.Reflection.Metadata\src\System.Reflection.Metadata.csproj" />
@@ -65,15 +68,4 @@
     <Reference Include="WindowsBase" />
   </ItemGroup>
 
-  <!--
-      We're testing the BinaryFormatter enablement / disablement switch, so we need to suppress any inherited behavior.
-      See https://github.com/dotnet/runtime/issues/87811 for more details.
-      This is a temporary solution and should be reverted back to the original once the necessary changes are made in
-      shared frameworks and SDK.
-    -->
-  <Target Name="RemoveSerializationRuntimeOption" BeforeTargets="GenerateBuildRuntimeConfigurationFiles">
-    <ItemGroup>
-      <RuntimeHostConfigurationOption Remove="System.Runtime.Serialization.EnableUnsafeBinaryFormatterSerialization" />
-    </ItemGroup>
-  </Target>
 </Project>
