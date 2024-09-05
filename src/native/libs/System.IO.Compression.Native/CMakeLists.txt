@@ -14,12 +14,6 @@ set(NATIVECOMPRESSION_SOURCES
     pal_zlib.c
 )
 
-if (HOST_WIN32 OR CLR_CMAKE_TARGET_WIN32)
-    list(APPEND NATIVECOMPRESSION_SOURCES "zlib_allocator_win.c")
-else()
-    list(APPEND NATIVECOMPRESSION_SOURCES "zlib_allocator_unix.c")
-endif()
-
 if (NOT CLR_CMAKE_TARGET_BROWSER AND NOT CLR_CMAKE_TARGET_WASI)
 
     if (CLR_CMAKE_USE_SYSTEM_BROTLI)
@@ -49,12 +43,6 @@ if (CLR_CMAKE_TARGET_UNIX OR CLR_CMAKE_TARGET_BROWSER OR CLR_CMAKE_TARGET_WASI)
     # Disable no strict prototypes warning for Zlib
     # https://github.com/madler/zlib/issues/633
     set(FLAGS "${FLAGS} -Wno-strict-prototypes")
-
-    # Delete this suppression once brotli is upgraded to vNext (current latest v1.0.9
-    # does not contain upstream fix: https://github.com/google/brotli/commit/0a3944c)
-    if (NOT CLR_CMAKE_TARGET_WASI)
-        set(FLAGS "${FLAGS} -Wno-vla-parameter")
-    endif ()
 
     set_source_files_properties(${NATIVECOMPRESSION_SOURCES} PROPERTIES COMPILE_FLAGS ${FLAGS})
 
