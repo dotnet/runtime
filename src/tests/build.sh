@@ -176,7 +176,9 @@ __RepoRootDir="$(cd "$__ProjectRoot"/../..; pwd -P)"
 __TargetArch=
 
 handle_arguments_local() {
-    case "$1" in
+    opt="$(echo "${1/#--/-}" | tr "[:upper:]" "[:lower:]")"
+
+    case "$opt" in
         skipmanaged|-skipmanaged)
             __SkipManaged=1
             __BuildTestWrappers=0
