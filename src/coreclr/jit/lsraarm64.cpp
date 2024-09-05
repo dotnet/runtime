@@ -1411,9 +1411,7 @@ int LinearScan::BuildConditionalSelectWithEmbeddedOp(GenTreeHWIntrinsic* intrins
 
     // Determine whether this the embedded operation requires delay free
     bool     embeddedIsRMW             = false;
-    bool     embeddedDelayFreeMultiple = false;
-    GenTree* embeddedDelayFreeOp       = getDelayFreeOp(embeddedOpNode, &embeddedIsRMW, &embeddedDelayFreeMultiple);
-    assert(!embeddedDelayFreeMultiple);
+    GenTree* embeddedDelayFreeOp       = getDelayFreeOp(embeddedOpNode, &embeddedIsRMW);
 
     // Handle Op1
 
@@ -1559,9 +1557,8 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
 
     // Determine whether this is an operation where an op must be marked delayFree so that it
     // is not allocated the same register as the target.
-    bool     isRMW             = false;
-    bool     delayFreeMultiple = false;
-    GenTree* delayFreeOp       = getDelayFreeOp(intrinsicTree, &isRMW, &delayFreeMultiple);
+    bool     isRMW       = false;
+    GenTree* delayFreeOp = getDelayFreeOp(intrinsicTree, &isRMW);
 
     // Determine whether this is an operation where one of the ops is an address
     GenTree* addrOp = LinearScan::getVectorAddrOperand(intrinsicTree);
@@ -1582,21 +1579,7 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
 
         SingleTypeRegSet candidates = getOperandCandidates(intrinsicTree, intrin, opNum);
 
-        if (delayFreeMultiple && opNum == 1)
-        {
-            assert(intrin.op1->OperIs(GT_FIELD_LIST));
-            GenTreeFieldList* op1 = intrin.op1->AsFieldList();
-            assert(compiler->info.compNeedsConsecutiveRegisters);
-            assert(addrOp != intrin.op1);
-            assert(delayFreeOp != intrin.op1);
-
-            for (GenTreeFieldList::Use& use : op1->Uses())
-            {
-                BuildDelayFreeUses(use.GetNode(), intrinsicTree);
-                srcCount++;
-            }
-        }
-        else if (addrOp == operand)
+        if (addrOp == operand)
         {
             assert(delayFreeOp != operand);
             assert(consecutiveOp != operand);
@@ -1605,28 +1588,35 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
         }
         else if (consecutiveOp == operand)
         {
-            assert(delayFreeOp != operand);
             assert(candidates == RBM_NONE);
 
+            // Some operands have consective op which is also a delay free op
             srcCount += BuildConsecutiveRegistersForUse(operand, delayFreeOp);
         }
         else if (delayFreeOp == operand)
         {
-            RefPosition* delayUse = BuildUse(operand, candidates);
-            srcCount+=1;
-
-            if (opNum == 1)
+            if (delayFreeOp->isContained())
             {
-                assert(tgtPrefUse == nullptr);
-                assert(tgtPrefUse2 == nullptr);
-                tgtPrefUse = delayUse;
+                srcCount += BuildOperandUses(operand);
             }
             else
             {
-                assert(opNum == 2);
-                assert(tgtPrefUse == nullptr);
-                assert(tgtPrefUse2 == nullptr);
-                tgtPrefUse2 = delayUse;
+                RefPosition* delayUse = BuildUse(operand, candidates);
+                srcCount+=1;
+
+                if (opNum == 1)
+                {
+                    assert(tgtPrefUse == nullptr);
+                    assert(tgtPrefUse2 == nullptr);
+                    tgtPrefUse = delayUse;
+                }
+                else
+                {
+                    assert(opNum == 2);
+                    assert(tgtPrefUse == nullptr);
+                    assert(tgtPrefUse2 == nullptr);
+                    tgtPrefUse2 = delayUse;
+                }
             }
         }
         else if (isRMW)
@@ -2042,15 +2032,13 @@ SingleTypeRegSet LinearScan::getOperandCandidates(GenTreeHWIntrinsic* intrinsicT
 // Arguments:
 //    intrinsicTree - Tree to check
 //    isRMW (out) - Set to true if is a RMW node
-//    delayFreeMultiple (out) - Set to true if there are multiple values in the delay free operand
 //
 // Return Value:
 //    The operand that needs to be delay freed
 //
-GenTree* LinearScan::getDelayFreeOp(GenTreeHWIntrinsic* intrinsicTree, bool* isRMW, bool* delayFreeMultiple)
+GenTree* LinearScan::getDelayFreeOp(GenTreeHWIntrinsic* intrinsicTree, bool* isRMW)
 {
     *isRMW             = intrinsicTree->isRMWHWIntrinsic(compiler);
-    *delayFreeMultiple = false;
 
     const NamedIntrinsic intrinsicId = intrinsicTree->GetHWIntrinsicId();
     GenTree*             delayFreeOp = nullptr;
@@ -2100,7 +2088,6 @@ GenTree* LinearScan::getDelayFreeOp(GenTreeHWIntrinsic* intrinsicTree, bool* isR
             assert(*isRMW);
             delayFreeOp        = intrinsicTree->Op(1);
             assert(delayFreeOp != nullptr);
-            *delayFreeMultiple = true;
             break;
 
         case NI_Sve_CreateBreakPropagateMask:
@@ -2126,12 +2113,6 @@ GenTree* LinearScan::getDelayFreeOp(GenTreeHWIntrinsic* intrinsicTree, bool* isR
                 }
             }
             break;
-    }
-
-    if (delayFreeOp != nullptr)
-    {
-        // Only preference the delay op if it is not contained.
-        delayFreeOp = delayFreeOp->isContained() ? nullptr : delayFreeOp;
     }
 
     return delayFreeOp;
@@ -2237,7 +2218,7 @@ GenTree* LinearScan::getConsecutiveRegistersOperand(const HWIntrinsic intrin, bo
         case NI_AdvSimd_LoadAndInsertScalarVector64x2:
         case NI_AdvSimd_LoadAndInsertScalarVector64x3:
         case NI_AdvSimd_LoadAndInsertScalarVector64x4:
-            consecutiveOp = intrin.op2;
+            consecutiveOp = intrin.op1;
             assert(consecutiveOp != nullptr);
             *destIsConsecutive = true;
             break;
