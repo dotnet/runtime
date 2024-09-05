@@ -15,17 +15,6 @@ namespace Melanzana.CodeSign.Blobs
 {
     public class CmsWrapperBlob
     {
-        private static X509Certificate2 GetManifestCertificate(string name)
-        {
-            var memoryStream = new MemoryStream();
-            using (var manifestStream = typeof(CmsWrapperBlob).Assembly.GetManifestResourceStream(name))
-            {
-                Debug.Assert(manifestStream != null);
-                manifestStream!.CopyTo(memoryStream);
-            }
-            return new X509Certificate2(memoryStream.ToArray());
-        }
-
         public static byte[] Create(
             X509Certificate2? developerCertificate,
             byte[] dataToSign,

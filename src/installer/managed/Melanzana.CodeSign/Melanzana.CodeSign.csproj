@@ -4,7 +4,7 @@
     <TargetFrameworks>netstandard2.0;$(NetCurrent)</TargetFrameworks>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
-    <NoWarn>$(NoWarn);CA1512;CA1513;CA1510;SYSLIB0057</NoWarn>
+    <NoWarn>$(NoWarn);CA1512;CA1513;CA1510;</NoWarn>
 
     <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
     <CompilerGeneratedFilesOutputPath>$(BaseIntermediateOutputPath)/GeneratedFiles</CompilerGeneratedFilesOutputPath>
@@ -12,17 +12,13 @@
 
   <ItemGroup>
     <PackageReference Include="System.Security.Cryptography.Pkcs" Version="$(SystemSecurityCryptographyPkcsVersion)" />
-    <PackageReference Include="System.Formats.Asn1" Version="$(SystemFormatsAsn1Version)" Condition="'$(TargetFramework)' == 'netstandard2.0'"/>
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="$(LibrariesProjectRoot)\System.Formats.Asn1\src\System.Formats.Asn1.csproj" />
     <ProjectReference Include="..\Melanzana.BinaryFormat.Generator\Melanzana.BinaryFormat.Generator.csproj" PrivateAssets="all" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
     <ProjectReference Include="..\Melanzana.MachO\Melanzana.MachO.csproj" />
     <ProjectReference Include="..\plist-cil\plist-cil.csproj" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <EmbeddedResource Include="Certificates\*.cer" />
   </ItemGroup>
 
 </Project>

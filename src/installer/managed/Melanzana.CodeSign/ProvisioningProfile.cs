@@ -28,9 +28,6 @@ namespace Melanzana.CodeSign
 
         public IList<string> TeamIdentifiers => GetStringArray("TeamIdentifier");
 
-        public IEnumerable<X509Certificate2> DeveloperCertificates =>
-            ((NSArray)plist["DeveloperCertificates"]).OfType<NSData>().Select(d => new X509Certificate2((byte[])d));
-
         public NSDictionary Entitlements => (NSDictionary)plist["Entitlements"];
 
         public string AppIDName => plist["AppIDName"].ToString()!;
