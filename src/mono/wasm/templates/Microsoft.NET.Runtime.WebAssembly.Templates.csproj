@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <PackageType>Template</PackageType>
-    <PackageId>Microsoft.NET.Runtime.WebAssembly.Templates.net9</PackageId>
+    <PackageId>Microsoft.NET.Runtime.WebAssembly.Templates.net$(MajorVersion)</PackageId>
     <Title>WebAssembly Templates</Title>
     <Authors>Microsoft</Authors>
     <Description>Templates to create WebAssembly projects.</Description>
