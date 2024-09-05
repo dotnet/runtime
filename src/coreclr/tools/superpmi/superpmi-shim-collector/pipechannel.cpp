@@ -1,3 +1,6 @@
+#ifndef HOST_WINDOWS
+
+#include <stdlib.h>
 #include <unistd.h>
 #include <string.h>
 #include <stdio.h>
@@ -92,3 +95,5 @@ int PipeChannel::Writer::SendAll(const char *buf, int bufSize) const
     return written;
 }
 
+#else /* HOST_WINDOWS*/
+#endif

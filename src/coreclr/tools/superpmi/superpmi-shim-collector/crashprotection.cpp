@@ -1,3 +1,6 @@
+
+#ifndef HOST_WINDOWS
+
 #include <cstddef>
 #include <memory>
 #include <utility>
@@ -353,3 +356,10 @@ void CrashProtection::OnDeactivate(const Handler *restoreHandler)
     m_threadData.ExchangeHandler(restoreHandler);
     LOGV("deactivated, count is %d", --m_dbgActiveCount);
 }
+
+#else /* HOST_WINDOWS*/
+void CrashProtection::Init()
+{
+    // Nothing to do on Windows
+}
+#endif

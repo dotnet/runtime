@@ -1,14 +1,44 @@
 #ifndef _CRASHPROTECTION_HPP
 #define _CRASHPROTECTION_HPP
 
-#include <memory>
 #include <functional>
+
+#ifdef HOST_WINDOWS
+
+/* Placeholders for windows.  Use SEH to handle hardware faults, instead. */
+class CrashProtection final
+{
+public:
+    ~CrashProtection() = default;
+    static bool Init();
+
+private:
+    CrashProtection() = default;
+    CrashProtection(const CrashProtection&) = delete;
+    CrashProtection& operator=(const CrashProtection&) = delete;
+};
+
+class CrashGuard final
+{
+public:
+    explicit CrashGuard(std::function<bool()>)
+    {
+    }
+    ~CrashGuard()
+    {
+    }
+    CrashGuard(const CrashGuard&) = delete;
+    CrashGuard& operator=(const CrashGuard&) = delete;
+};
+
+#else /* !HOST_WINDOWS*/
+
+#include <memory>
 
 #include <signal.h>
 #include <pthread.h>
 
 #include "pipechannel.hpp"
-
 class CrashProtection final
 {
 public:
@@ -157,5 +187,6 @@ private:
         return (*fn)();
     }
 };
+#endif /*!HOST_WINDOWS*/
 
 #endif /*_CRASHPROTECTION_HPP*/

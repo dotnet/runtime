@@ -3,6 +3,7 @@
 
 #include <utility>
 
+#ifndef HOST_WINDOWS
 class PipeChannel final
 {
 public:
@@ -111,5 +112,6 @@ public:
     }
 
 };
+#endif
 
 #endif /*_PIPECHANNEL_HPP*/
