@@ -1,3 +1,0 @@
-src/tests/JIT/Directed/tls/mutualrecurthd-tls.ilproj
-src/tests/JIT/Directed/tls/test-tls.ilproj
-src/tests/JIT/Regression/CLR-x86-EJIT/v1-m10/b07847/b07847.ilproj
