@@ -1238,6 +1238,21 @@ export function generateWasmBody (
                 break;
             }
 
+            case MintOpcode.MINT_NEWARR: {
+                builder.block();
+                append_ldloca(builder, getArgU16(ip, 1), 4);
+                const vtable = get_imethod_data(frame, getArgU16(ip, 3));
+                builder.i32_const(vtable);
+                append_ldloc(builder, getArgU16(ip, 2), WasmOpcode.i32_load);
+                builder.callImport("newarr");
+                // If the newarr operation succeeded, continue, otherwise bailout
+                builder.appendU8(WasmOpcode.br_if);
+                builder.appendULeb(0);
+                append_bailout(builder, ip, BailoutReason.AllocFailed);
+                builder.endBlock();
+                break;
+            }
+
             case MintOpcode.MINT_NEWOBJ_INLINED: {
                 builder.block();
                 // MonoObject *o = mono_gc_alloc_obj (vtable, m_class_get_instance_size (vtable->klass));

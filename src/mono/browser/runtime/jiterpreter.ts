@@ -271,6 +271,7 @@ function getTraceImports () {
         ["ckovr_u4", "overflow_check_i4", getRawCwrap("mono_jiterp_overflow_check_u4")],
         importDef("newobj_i", getRawCwrap("mono_jiterp_try_newobj_inlined")),
         importDef("newstr", getRawCwrap("mono_jiterp_try_newstr")),
+        importDef("newarr", getRawCwrap("mono_jiterp_try_newarr")),
         importDef("ld_del_ptr", getRawCwrap("mono_jiterp_ld_delegate_method_ptr")),
         importDef("ldtsflda", getRawCwrap("mono_jiterp_ldtsflda")),
         importDef("conv", getRawCwrap("mono_jiterp_conv")),
@@ -460,6 +461,15 @@ function initialize_builder (builder: WasmBuilder) {
         "newstr",
         {
             "ppDestination": WasmValtype.i32,
+            "length": WasmValtype.i32,
+        },
+        WasmValtype.i32, true
+    );
+    builder.defineType(
+        "newarr",
+        {
+            "ppDestination": WasmValtype.i32,
+            "vtable": WasmValtype.i32,
             "length": WasmValtype.i32,
         },
         WasmValtype.i32, true
