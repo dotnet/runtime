@@ -46,6 +46,7 @@ public static class NrbfDecoder
     /// <exception cref="ArgumentNullException"><paramref name="stream" /> is <see langword="null" />.</exception>
     /// <exception cref="NotSupportedException">The stream does not support reading or seeking.</exception>
     /// <exception cref="ObjectDisposedException">The stream was closed.</exception>
+    /// <exception cref="IOException">An I/O error occurred.</exception>
     /// <remarks>When this method returns, <paramref name="stream" /> is restored to its original position.</remarks>
     public static bool StartsWithPayloadHeader(Stream stream)
     {
@@ -107,6 +108,7 @@ public static class NrbfDecoder
     /// <exception cref="ArgumentNullException"><paramref name="payload"/> is <see langword="null" />.</exception>
     /// <exception cref="ArgumentException"><paramref name="payload"/> does not support reading or is already closed.</exception>
     /// <exception cref="SerializationException">Reading from <paramref name="payload"/> encountered invalid NRBF data.</exception>
+    /// <exception cref="IOException">An I/O error occurred.</exception>
     /// <exception cref="NotSupportedException">
     /// Reading from <paramref name="payload"/> encountered unsupported records,
     /// for example, arrays with non-zero offset or unsupported record types
