@@ -326,6 +326,9 @@ namespace System.Runtime
                 ExceptionIDs.NullReference => new NullReferenceException(),
                 ExceptionIDs.OutOfMemory => new OutOfMemoryException(),
                 ExceptionIDs.Overflow => new OverflowException(),
+#pragma warning disable CS0618 // ExecutionEngineException is obsolete
+                ExceptionIDs.IllegalInstruction => new ExecutionEngineException("Illegal instruction"),
+#pragma warning restore CS0618
                 _ => null
             };
 #endif
@@ -445,6 +448,7 @@ namespace System.Runtime
 
             STATUS_DATATYPE_MISALIGNMENT = 0x80000002u,
             STATUS_ACCESS_VIOLATION = 0xC0000005u,
+            STATUS_ILLEGAL_INSTRUCTION = 0xC000001Du,
             STATUS_INTEGER_DIVIDE_BY_ZERO = 0xC0000094u,
             STATUS_INTEGER_OVERFLOW = 0xC0000095u,
         }
@@ -599,6 +603,10 @@ namespace System.Runtime
 
                 case (uint)HwExceptionCode.STATUS_INTEGER_OVERFLOW:
                     exceptionId = ExceptionIDs.Overflow;
+                    break;
+
+                case (uint)HwExceptionCode.STATUS_ILLEGAL_INSTRUCTION:
+                    exceptionId = ExceptionIDs.IllegalInstruction;
                     break;
 
                 default:

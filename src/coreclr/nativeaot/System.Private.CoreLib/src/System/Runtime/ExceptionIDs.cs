@@ -17,5 +17,6 @@ namespace System.Runtime
         DataMisaligned = 10,
         EntrypointNotFound = 11,
         AmbiguousImplementation = 12,
+        IllegalInstruction = 13,
     }
 }
