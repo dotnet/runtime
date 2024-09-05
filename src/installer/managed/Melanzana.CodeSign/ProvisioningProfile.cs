@@ -28,6 +28,11 @@ namespace Melanzana.CodeSign
 
         public IList<string> TeamIdentifiers => GetStringArray("TeamIdentifier");
 
+        public IEnumerable<X509Certificate2> DeveloperCertificates =>
+#pragma warning disable SYSLIB0057 // Creation with ctor is obsolete in net, but this is required for netstandard2.0
+            ((NSArray)plist["DeveloperCertificates"]).OfType<NSData>().Select(d => new X509Certificate2((byte[])d));
+#pragma warning restore SYSLIB0057
+
         public NSDictionary Entitlements => (NSDictionary)plist["Entitlements"];
 
         public string AppIDName => plist["AppIDName"].ToString()!;

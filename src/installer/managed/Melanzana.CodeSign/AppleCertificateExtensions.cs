@@ -46,14 +46,7 @@ namespace Melanzana.CodeSign
             // 1.2.840.113635.100.6.1.13 (Developer ID)
             // 1.2.840.113635.100.6.1.7 (Distribution)
             // 1.2.840.113635.100.6.1.4 (iPhone Distribution)
-            foreach(var ext in certificate.Extensions)
-            {
-                if (ext.Oid?.Value?.StartsWith("1.2.840.113635.100.6.1.") == true)
-                {
-                    return true;
-                }
-            }
-            return false;
+            return certificate.Extensions.Any(e => e.Oid?.Value?.StartsWith("1.2.840.113635.100.6.1.") ?? false);
         }
 
         public static string GetTeamId(this X509Certificate2 certificate)

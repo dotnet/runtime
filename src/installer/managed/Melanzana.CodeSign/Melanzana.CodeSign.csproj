@@ -21,4 +21,8 @@
     <ProjectReference Include="..\plist-cil\plist-cil.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <EmbeddedResource Include="Certificates\*.cer" />
+  </ItemGroup>
+
 </Project>

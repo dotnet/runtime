@@ -15,8 +15,26 @@ namespace Melanzana.CodeSign.Blobs
 {
     public class CmsWrapperBlob
     {
+        private const string rootCertificatePath = "Melanzana.CodeSign.Certificates.RootCertificate.cer";
+        private const string g1IntermediateCertificatePath = "Melanzana.CodeSign.Certificates.IntermediateG1Certificate.cer";
+        private const string g3IntermediateCertificatePath = "Melanzana.CodeSign.Certificates.IntermediateG3Certificate.cer";
+
+        private static X509Certificate2 GetManifestCertificate(string name)
+        {
+            var memoryStream = new MemoryStream();
+            using (var manifestStream = typeof(CmsWrapperBlob).Assembly.GetManifestResourceStream(name))
+            {
+                Debug.Assert(manifestStream != null);
+                manifestStream.CopyTo(memoryStream);
+            }
+#pragma warning disable SYSLIB0057 // Creation with ctor is obsolete in net, but this is required for netstandard2.0
+            return new X509Certificate2(memoryStream.ToArray());
+#pragma warning restore SYSLIB0057
+        }
+
         public static byte[] Create(
             X509Certificate2? developerCertificate,
+            AsymmetricAlgorithm? privateKey,
             byte[] dataToSign,
             HashType[] hashTypes,
             byte[][] cdHashes)
@@ -43,17 +61,30 @@ namespace Melanzana.CodeSign.Blobs
 
             // Try to build full chain
             var chain = new X509Chain();
-            // Retry with default policy and system certificate store
-            chain.ChainPolicy = new X509ChainPolicy();
+            chain.ChainPolicy.ExtraStore.Add(GetManifestCertificate(rootCertificatePath));
+            chain.ChainPolicy.ExtraStore.Add(GetManifestCertificate(g1IntermediateCertificatePath));
+            chain.ChainPolicy.ExtraStore.Add(GetManifestCertificate(g3IntermediateCertificatePath));
+            chain.ChainPolicy.RevocationMode = X509RevocationMode.NoCheck;
+
             if (chain.Build(developerCertificate))
             {
-                foreach(var ce in chain.ChainElements)
+                certificatesList.AddRange(chain.ChainElements.Cast<X509ChainElement>().Select(e => e.Certificate).ToArray());
+            }
+            else
+            {
+                // Retry with default policy and system certificate store
+                chain = new X509Chain();
+                chain.ChainPolicy.RevocationMode = X509RevocationMode.NoCheck;
+
+                if (chain.Build(developerCertificate))
                 {
-                    certificatesList.Add(ce.Certificate);
+                    certificatesList.AddRange(chain.ChainElements.Cast<X509ChainElement>().Select(e => e.Certificate).ToArray());
                 }
             }
 
-            var cmsSigner = new CmsSigner(developerCertificate);
+            var cmsSigner = privateKey == null ?
+                new CmsSigner(developerCertificate) :
+                new CmsSigner(SubjectIdentifierType.IssuerAndSerialNumber, developerCertificate, privateKey);
             cmsSigner.Certificates.AddRange(certificatesList);
             cmsSigner.IncludeOption = X509IncludeOption.None;
 

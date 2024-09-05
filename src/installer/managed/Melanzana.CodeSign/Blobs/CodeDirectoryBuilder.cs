@@ -163,13 +163,13 @@ namespace Melanzana.CodeSign.Blobs
             baselineHeader.HashesOffset = (uint)flexibleOffset;
 
             // Code hashes
-            Span<byte> buffer = stackalloc byte[(int)pageSize];
+            byte[] buffer = new byte[(int)pageSize];
             long remaining = (long)execLength;
             while (remaining > 0)
             {
                 int codePageSize = (int)Math.Min(remaining, 4096);
-                machOStream.ReadFully(buffer.Slice(0, codePageSize));
-                hasher.AppendData(buffer.Slice(0, codePageSize));
+                machOStream.ReadFully(buffer.AsSpan().Slice(0, codePageSize));
+                hasher.AppendData(buffer, 0, codePageSize);
                 hasher.GetHashAndReset().CopyTo(blobBuffer.AsSpan(flexibleOffset, hashSize));
                 remaining -= codePageSize;
                 flexibleOffset += hashSize;

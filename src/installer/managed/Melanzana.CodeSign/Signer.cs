@@ -179,6 +179,7 @@ namespace Melanzana.CodeSign
 
                 var cmsWrapperBlob = CmsWrapperBlob.Create(
                     codeSignOptions.DeveloperCertificate,
+                    codeSignOptions.PrivateKey,
                     codeDirectory,
                     hashTypes,
                     cdHashes);
@@ -318,7 +319,7 @@ namespace Melanzana.CodeSign
                     using (var fileStream = File.OpenRead(resourceAndRule.Info.FullName))
                     {
                         int bytesRead;
-                        while ((bytesRead = fileStream.Read(buffer)) > 0)
+                        while ((bytesRead = fileStream.Read(buffer, 0, buffer.Length)) > 0)
                         {
                             sha1.AppendData(buffer, 0, bytesRead);
                             sha256.AppendData(buffer, 0, bytesRead);
@@ -363,7 +364,7 @@ namespace Melanzana.CodeSign
                     using (var fileStream = File.OpenRead(resourceAndRule.Info.FullName))
                     {
                         int bytesRead;
-                        while ((bytesRead = fileStream.Read(buffer)) > 0)
+                        while ((bytesRead = fileStream.Read(buffer, 0, buffer.Length)) > 0)
                         {
                             sha1.AppendData(buffer, 0, bytesRead);
                         }

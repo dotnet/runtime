@@ -15,14 +15,6 @@ namespace Melanzana.Streams
             return new SliceStream(stream, offset, size);
         }
 
-        public static int Read(this Stream stream, Span<byte> buffer)
-        {
-            var tmpBuffer = new byte[buffer.Length];
-            int bytesRead = stream.Read(tmpBuffer, 0, buffer.Length);
-            tmpBuffer.AsSpan().Slice(0, bytesRead).CopyTo(buffer);
-            return bytesRead;
-        }
-
         public static void ReadFully(this Stream stream, Span<byte> buffer)
         {
             var tmpBuffer = new byte[buffer.Length];
@@ -37,7 +29,7 @@ namespace Melanzana.Streams
 
         public static void WritePadding(this Stream stream, long paddingSize, byte paddingByte = 0)
         {
-            Span<byte> paddingBuffer = new(new byte[4096]);
+            Span<byte> paddingBuffer = stackalloc byte[4096];
             paddingBuffer.Fill(paddingByte);
             while (paddingSize > 0)
             {

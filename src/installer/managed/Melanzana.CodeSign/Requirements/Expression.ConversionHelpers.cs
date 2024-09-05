@@ -44,7 +44,7 @@ namespace Melanzana.CodeSign.Requirements
 
         private static string BinaryValueToString(byte[] bytes)
         {
-            return "0x" + ConvertToHexString(bytes);
+            return $"0x{ConvertToHexString(bytes)}";
         }
 
         private static string ConvertToHexString(byte[] bytes)
