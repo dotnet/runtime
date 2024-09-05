@@ -39,7 +39,7 @@ internal static partial class Interop
             byte* formatNameBuffer,
             int bufferLength,
             long* formatType);
-            
+
         internal static int GetFormatInfoForMountPoint(string name, out string format)
         {
             return GetFormatInfoForMountPoint(name, out format, out _);
@@ -128,7 +128,7 @@ internal static partial class Interop
                 format = string.Empty;
                 type = DriveType.Unknown;
             }
-            
+
             return result;
         }
 
