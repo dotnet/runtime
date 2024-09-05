@@ -471,6 +471,7 @@ namespace pal
         {
             // We have data. At this point we can likely make a strong decision.
             const char tracer_pid_name[] = "TracerPid:";
+            // CodeQL [SM01932] status is of fixed size and [sizeof(status) -1] is specified for read .
             const char* tracer_pid_ptr = ::strstr(status, tracer_pid_name);
             if (tracer_pid_ptr == nullptr)
                 return debugger_state_t::not_attached;
