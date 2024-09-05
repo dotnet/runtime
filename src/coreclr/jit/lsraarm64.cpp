@@ -1944,7 +1944,8 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
         GenTreeHWIntrinsic* embOp2Node = intrin.op2->AsHWIntrinsic();
         size_t              numArgs    = embOp2Node->GetOperandCount();
         const HWIntrinsic   intrinEmb(embOp2Node);
-        numArgs = embOp2Node->GetOperandCount();
+        numArgs              = embOp2Node->GetOperandCount();
+        GenTree* prefUseNode = nullptr;
 
         if (HWIntrinsicInfo::IsFmaIntrinsic(intrinEmb.id))
         {
@@ -1961,44 +1962,15 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
             unsigned resultOpNum =
                 embOp2Node->GetResultOpNumForRmwIntrinsic(user, intrinEmb.op1, intrinEmb.op2, intrinEmb.op3);
 
-            GenTree* emitOp1 = intrinEmb.op1;
-            GenTree* emitOp2 = intrinEmb.op2;
-            GenTree* emitOp3 = intrinEmb.op3;
-
-            if (resultOpNum == 2)
+            if (resultOpNum == 0)
             {
-                // op2 = op1 + (op2 * op3)
-                std::swap(emitOp1, emitOp3);
-                std::swap(emitOp1, emitOp2);
-                // op1 = (op1 * op2) + op3
-            }
-            else if (resultOpNum == 3)
-            {
-                // op3 = op1 + (op2 * op3)
-                std::swap(emitOp1, emitOp3);
-                // op1 = (op1 * op2) + op3
+                prefUseNode = embOp2Node->Op(1);
             }
             else
             {
-                // op1 = op1 + (op2 * op3)
-                // Nothing needs to be done
+                assert(resultOpNum >= 1 && resultOpNum <= 3);
+                prefUseNode = embOp2Node->Op(resultOpNum);
             }
-
-            GenTree* ops[] = {intrinEmb.op1, intrinEmb.op2, intrinEmb.op3};
-            for (GenTree* op : ops)
-            {
-                if (op == emitOp1)
-                {
-                    tgtPrefUse = BuildUse(op);
-                    srcCount++;
-                }
-                else if (op == emitOp2 || op == emitOp3)
-                {
-                    srcCount += BuildDelayFreeUses(op, emitOp1);
-                }
-            }
-
-            srcCount += BuildDelayFreeUses(intrin.op3, emitOp1);
         }
         else
         {
@@ -2045,22 +2017,32 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
             {
                 prefUseOpNum = 2;
             }
-            GenTree* prefUseNode = embOp2Node->Op(prefUseOpNum);
-            for (size_t argNum = 1; argNum <= numArgs; argNum++)
-            {
-                if (argNum == prefUseOpNum)
-                {
-                    tgtPrefUse = BuildUse(prefUseNode);
-                    srcCount += 1;
-                }
-                else
-                {
-                    srcCount += BuildDelayFreeUses(embOp2Node->Op(argNum), prefUseNode);
-                }
-            }
-
-            srcCount += BuildDelayFreeUses(intrin.op3, prefUseNode);
+            prefUseNode = embOp2Node->Op(prefUseOpNum);
         }
+
+        for (size_t argNum = 1; argNum <= numArgs; argNum++)
+        {
+            GenTree* node = embOp2Node->Op(argNum);
+
+            if (node == prefUseNode)
+            {
+                tgtPrefUse = BuildUse(node);
+                srcCount++;
+            }
+            else
+            {
+                RefPosition* useRefPosition = nullptr;
+
+                int uses = BuildDelayFreeUses(node, nullptr, RBM_NONE, &useRefPosition);
+                srcCount += uses;
+
+                // It is a hard requirement that these are not allocated to the same register as the destination,
+                // so verify no optimizations kicked in to skip setting the delay-free.
+                assert((useRefPosition != nullptr && useRefPosition->delayRegFree) || (uses == 0));
+            }
+        }
+
+        srcCount += BuildDelayFreeUses(intrin.op3, prefUseNode);
     }
     else if (intrin.op2 != nullptr)
     {

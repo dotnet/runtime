@@ -38,7 +38,7 @@ import {
     traceEip, nullCheckValidation,
     traceNullCheckOptimizations,
     nullCheckCaching, defaultTraceBackBranches,
-    maxCallHandlerReturnAddresses,
+    maxCallHandlerReturnAddresses, moduleHeaderSizeMargin,
 
     mostRecentOptions,
 
@@ -66,6 +66,11 @@ function getArgU16 (ip: MintOpcodePtr, indexPlusOne: number) {
 
 function getArgI16 (ip: MintOpcodePtr, indexPlusOne: number) {
     return getI16(<any>ip + (2 * indexPlusOne));
+}
+
+function getArgU32 (ip: MintOpcodePtr, indexPlusOne: number) {
+    const src = <any>ip + (2 * indexPlusOne);
+    return getU32_unaligned(src);
 }
 
 function getArgI32 (ip: MintOpcodePtr, indexPlusOne: number) {
@@ -160,6 +165,24 @@ function get_known_constant_value (builder: WasmBuilder, localOffset: number): K
     return undefined;
 }
 
+function getOpcodeLengthU16 (ip: MintOpcodePtr, opcode: MintOpcode) {
+    try {
+        const opLengthU16 = cwraps.mono_jiterp_get_opcode_info(opcode, OpcodeInfoType.Length);
+        let result = opLengthU16;
+        if (opcode === MintOpcode.MINT_SWITCH) {
+            // int n = READ32 (ip + 2);
+            // len = MINT_SWITCH_LEN (n);
+            const numDisplacements = getArgU32(ip, 2);
+            // #define MINT_SWITCH_LEN(n) (4 + (n) * 2)
+            result = 4 + (numDisplacements * 2);
+        }
+        return result;
+    } catch (err) {
+        mono_log_error(`Found invalid opcode ${opcode} at ip ${ip}`);
+        throw err;
+    }
+}
+
 // Perform a quick scan through the opcodes potentially in this trace to build a table of
 //  backwards branch targets, compatible with the layout of the old one that was generated in C.
 // We do this here to match the exact way that the jiterp calculates branch targets, since
@@ -179,11 +202,8 @@ export function generateBackwardBranchTable (
         // IP of the current opcode in U16s, relative to startOfBody. This is what the back branch table uses
         const rip16 = (<any>ip - <any>startOfBody) / 2;
         const opcode = <MintOpcode>getU16(ip);
-        // HACK
-        if (opcode === MintOpcode.MINT_SWITCH)
-            break;
+        const opLengthU16 = getOpcodeLengthU16(ip, opcode);
 
-        const opLengthU16 = cwraps.mono_jiterp_get_opcode_info(opcode, OpcodeInfoType.Length);
         // Any opcode with a branch argtype will have a decoded displacement, even if we don't
         //  implement the opcode. Everything else will return undefined here and be skipped
         const displacement = getBranchDisplacement(ip, opcode);
@@ -275,10 +295,7 @@ export function generateWasmBody (
             break;
         }
 
-        // HACK: Browsers set a limit of 4KB, we lower it slightly since a single opcode
-        //  might generate a ton of code and we generate a bit of an epilogue after
-        //  we finish
-        const maxBytesGenerated = 3840,
+        const maxBytesGenerated = builder.options.maxModuleSize - moduleHeaderSizeMargin,
             spaceLeft = maxBytesGenerated - builder.bytesGeneratedSoFar - builder.cfg.overheadBytes;
         if (builder.size >= spaceLeft) {
             // mono_log_info(`trace too big, estimated size is ${builder.size + builder.bytesGeneratedSoFar}`);
@@ -297,7 +314,7 @@ export function generateWasmBody (
         let opcode = getU16(ip);
         const numSregs = cwraps.mono_jiterp_get_opcode_info(opcode, OpcodeInfoType.Sregs),
             numDregs = cwraps.mono_jiterp_get_opcode_info(opcode, OpcodeInfoType.Dregs),
-            opLengthU16 = cwraps.mono_jiterp_get_opcode_info(opcode, OpcodeInfoType.Length);
+            opLengthU16 = getOpcodeLengthU16(ip, opcode);
 
         const isSimdIntrins = (opcode >= MintOpcode.MINT_SIMD_INTRINS_P_P) &&
             (opcode <= MintOpcode.MINT_SIMD_INTRINS_P_PPP);
@@ -380,6 +397,11 @@ export function generateWasmBody (
         }
 
         switch (opcode) {
+            case MintOpcode.MINT_SWITCH: {
+                if (!emit_switch(builder, ip))
+                    ip = abort;
+                break;
+            }
             case MintOpcode.MINT_NOP: {
                 // This typically means the current opcode was disabled or pruned
                 if (pruneOpcodes) {
@@ -3999,3 +4021,7 @@ function emit_atomics (
     return false;
 }
 
+function emit_switch (builder: WasmBuilder, ip: MintOpcodePtr) : boolean {
+    append_bailout(builder, ip, BailoutReason.Switch);
+    return true;
+}
