@@ -86,11 +86,11 @@ internal sealed class IcallTableGenerator
                 {{sorted.Join($" {w.NewLine}", GenIcallDecl)}}
 
                 static void *{{aname}}_icall_funcs [] = {
-                      {{sorted.Join($",{w.NewLine}  ", (icall, i) => $"/* {i}:{icall.TokenIndex} */ {icall.Func}" )}}
-                    };
+                    {{sorted.Join($",{w.NewLine}    ", (icall, i) => $"/* {i}:{icall.TokenIndex} */ {icall.Func}" )}}
+                };
 
                 static uint8_t {{aname}}_icall_flags [] = {
-                    {{sorted.Join($",{w.NewLine}  ", (icall, i) => $"/* {i}:{icall.TokenIndex} */ {icall.Flags}")}}
+                    {{sorted.Join($",{w.NewLine}    ", (icall, i) => $"/* {i}:{icall.TokenIndex} */ {icall.Flags}")}}
                 };
 
                 """);

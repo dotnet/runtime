@@ -285,8 +285,6 @@ wasm_dl_symbol (void *handle, const char *name, char **err, void *user_data)
 	}
 #endif
 
-
-#if false
 	PinvokeTable *index = (PinvokeTable*)handle;
 
 	PinvokeImport key = { name, NULL };
@@ -297,18 +295,6 @@ wasm_dl_symbol (void *handle, const char *name, char **err, void *user_data)
 	}
 
 	return result->func;
-#else
-    PinvokeTable *index = (PinvokeTable*)handle;
-
-	for (int i = 0; i < index->count; ++i) {
-		assert(index->imports[i].name != NULL);
-	
-		if (!strcmp (index->imports[i].name, name))
-			return index->imports[i].func;
-
-	}
-	return NULL;
-#endif
 }
 
 MonoDomain *
@@ -409,16 +395,18 @@ mono_wasm_assembly_find_method (MonoClass *klass, const char *name, int argument
 MonoMethod*
 mono_wasm_get_method_matching (MonoImage *image, uint32_t token, MonoClass *klass, const char* name, int param_count)
 {
-	MonoMethod *method = mono_get_method (image, token, klass);
 	MonoMethod *result = NULL;
 	MONO_ENTER_GC_UNSAFE;
+	MonoMethod *method = mono_get_method (image, token, klass);
 	MonoMethodSignature *sig = mono_method_signature (method);
+	// Lookp by token but verify the name and param count in case assembly was trimmed
 	if (mono_signature_get_param_count (sig) == param_count) {
 		const char *method_name = mono_method_get_name (method);
 		if (!strcmp (method_name, name)) {
 			result = method;
 		}
 	}
+	// If the token lookup failed, try to find the method by name and param count
 	if (!result) {
 		result = mono_class_get_method_from_name (klass, name, param_count);
 	}
@@ -432,7 +420,6 @@ mono_wasm_get_method_matching (MonoImage *image, uint32_t token, MonoClass *klas
  * UnamangedCallersOnlyAttribute.
  * This wrapper ensures that the interpreter initializes the pointers.
  */
-
 void
 mono_wasm_marshal_get_managed_wrapper (const char* assemblyName, const char* namespaceName, const char* typeName, const char* methodName, uint32_t token, int parm_count)
 {
