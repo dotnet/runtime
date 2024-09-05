@@ -81,7 +81,7 @@ However, unlike native varargs, all floating point arguments are not promoted to
 
 Managed varargs are not supported in .NET Core.
 
-Managed/native varargs are supported on Windows only.
+Managed/native varargs are [supported on Windows only](https://github.com/dotnet/runtime/issues/82081).
 
 ## Generics
 
@@ -104,7 +104,7 @@ The AMD64 native calling conventions (Windows 64 and System V) require return bu
 
 ## RISC-V only: structs passed/returned according to hardware floating-point calling convention
 
-Passing/returning structs according to hardware floating-point calling convention like native is currently supported only up to 16 bytes, ones larger than that differ from the standard ABI and are passed/returned according to integer calling convention (by implicit reference).
+Passing/returning structs according to hardware floating-point calling convention like native is currently [supported only up to 16 bytes](https://github.com/dotnet/runtime/issues/107386), ones larger than that differ from the standard ABI and are passed/returned according to integer calling convention (by implicit reference).
 
 ## Return buffers
 
