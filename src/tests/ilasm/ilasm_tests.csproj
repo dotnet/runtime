@@ -5,6 +5,8 @@
     <DisableProjectBuild Condition="'$(TargetsMobile)' == 'true'">true</DisableProjectBuild>
     <!-- Mono doesn't provide ilasm or ildasm in their Core_Root layout. -->
     <DisableProjectBuild Condition="'$(RuntimeFlavor)' == 'mono'">true</DisableProjectBuild>
+    <!-- NativeAOT tests don't provide ilasm or ildasm in their Core_Root layout. -->
+    <NativeAotIncompatible>true</NativeAotIncompatible>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="PortablePdb\IlasmPortablePdbTester.cs" />
