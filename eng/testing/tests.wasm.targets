@@ -131,13 +131,7 @@
       <_WasmPropertyNames Include="WasmNativeStrip" />
       <_WasmPropertyNames Include="_WasmDevel" />
       <_WasmPropertyNames Include="_WasmStrictVersionMatch" />
-      <_WasmPropertyNames Include="WasmEmitSymbolMap" />      
-      <_WasmPropertyNames Include="NuGetPackageRoot" />
-      <_WasmPropertyNames Include="_portableHostOS" />
-      <_WasmPropertyNames Include="BuildArchitecture" />
-      <_WasmPropertyNames Include="NodePackageVersion" />
-      <_WasmPropertyNames Include="EmsdkVersion" />
-      <_WasmPropertyNames Include="EmsdkPackageVersion" />
+      <_WasmPropertyNames Include="WasmEmitSymbolMap" />
 
       <_WasmPropertiesToPass
         Include="$(%(_WasmPropertyNames.Identity))"
