@@ -2,6 +2,7 @@
 #define _CRASHPROTECTION_HPP
 
 #include <memory>
+#include <functional>
 
 #include <signal.h>
 #include <pthread.h>
@@ -140,6 +141,11 @@ public:
         CrashProtection::Activate(&m_cur, &m_prev);
     }
 
+    explicit CrashGuard(std::function<bool()> fn) : m_prev{nullptr}, m_cur{CrashProtection::Handler{&HandlerFnAdapter, &fn}}
+    {
+        CrashProtection::Activate(&m_cur, &m_prev);
+    }
+
     ~CrashGuard()
     {
         CrashProtection::Deactivate(m_prev);
@@ -147,6 +153,13 @@ public:
 
     CrashGuard(const CrashGuard&) = delete;
     CrashGuard& operator=(const CrashGuard&) = delete;
+
+private:
+    static bool HandlerFnAdapter(const void *arg)
+    {
+        std::function<bool()>* fn = static_cast<std::function<bool()>*>(const_cast<void*>(arg));
+        return (*fn)();
+    }
 };
 
 #endif /*_CRASHPROTECTION_HPP*/

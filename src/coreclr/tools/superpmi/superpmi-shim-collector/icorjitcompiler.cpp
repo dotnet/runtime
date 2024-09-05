@@ -2,11 +2,13 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 #include "standardpch.h"
+#include <functional>
 #include "spmiutil.h"
 #include "icorjitcompiler.h"
 #include "icorjitinfo.h"
 #include "jithost.h"
 #include "superpmi-shim-collector.h"
+#include "crashprotection.hpp"
 
 #define fatMC                               // this is nice to have on so ildump works...
 
@@ -121,17 +123,18 @@ CorJitResult interceptor_ICJC::compileMethod(ICorJitInfo*                comp,  
     *nativeEntry = nullptr;
     *nativeSizeOfCode = 0;
 
-    auto cleanup = [mc, &our_iCorJitInfo, this, &compileParams]()
+    std::function<bool()> cleanup = [mc, &our_ICorJitInfo, this, &compileParams]()
     {
         if (!our_ICorJitInfo.SavedCollectionEarly())
         {
             finalizeAndCommitCollection(mc, compileParams.result, *compileParams.nativeEntry, *compileParams.nativeSizeOfCode);
         }
         delete mc;
+        return true;
     };
     auto doCompile = [&compileParams, &cleanup]()
     {
-        // TODO: replace this with a crash handler
+        CrashGuard cg{cleanup};
         PAL_TRY(CompileParams*, pParam, &compileParams)
         {
             pParam->result = pParam->origComp->compileMethod(
