@@ -13,6 +13,7 @@ public static class WasiMainWrapper
 {
     public static async Task<int> MainAsync(string[] args)
     {
+        var never = Task.Delay(100_000_000);
         await Task.Delay(100);
         GC.Collect(); // test that Pollable->Task is not collected until resolved
 

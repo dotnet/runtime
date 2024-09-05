@@ -35,6 +35,15 @@ namespace System.Threading
             return holder.taskCompletionSource.Task;
         }
 
+        internal static void CancelAllPollables()
+        {
+            for (int i = 0; i < s_pollables.Count; i++)
+            {
+                PollableHolder.CancelAndDispose(s_pollables[i]);
+            }
+            s_pollables.Clear();
+        }
+
         internal static void ScheduleCheck()
         {
             if (!s_checkScheduled && s_pollables.Count > 0)
@@ -119,7 +128,7 @@ namespace System.Threading
             }
 
             // for GC of abandoned Tasks or for cancellation
-            private static void CancelAndDispose(object? s)
+            public static void CancelAndDispose(object? s)
             {
                 PollableHolder self = (PollableHolder)s!;
                 if (self.isDisposed)

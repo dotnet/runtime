@@ -24,6 +24,10 @@ namespace System.Threading
             {
                 ThreadPoolWorkQueue.Dispatch();
             }
+
+            // because next call to PollInterop.Poll() could block for long time
+            WasiEventLoop.CancelAllPollables();
+
             var exception = mainTask.Exception;
             if (exception is not null)
             {
@@ -39,6 +43,10 @@ namespace System.Threading
             {
                 ThreadPoolWorkQueue.Dispatch();
             }
+
+            // because next call to PollInterop.Poll() could block for long time
+            WasiEventLoop.CancelAllPollables();
+
             var exception = mainTask.Exception;
             if (exception is not null)
             {
