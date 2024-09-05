@@ -1573,10 +1573,16 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
     // Build any immediates
     bool hasImmediateOperand = buildHWIntrinsicImmediate(intrinsicTree, intrin);
 
-
-    if (intrin.op1 != nullptr)
+    // Build all Operands
+    for (int opNum = 1; opNum <= intrin.numOperands; opNum++)
     {
-        if (delayFreeMultiple)
+        GenTree* operand = intrinsicTree->Op(opNum);
+
+        assert(operand != nullptr);
+
+        SingleTypeRegSet candidates = getOperandCandidates(intrinsicTree, intrin, opNum);
+
+        if (delayFreeMultiple && opNum == 1)
         {
             assert(intrin.op1->OperIs(GT_FIELD_LIST));
             GenTreeFieldList* op1 = intrin.op1->AsFieldList();
@@ -1590,29 +1596,46 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                 srcCount++;
             }
         }
-
-        SingleTypeRegSet opCandidates = getOperandCandidates(intrinsicTree, intrin, 1);
-
-        srcCount += BuildOperand(intrinsicTree->Op(1), addrOp, consecutiveOp, delayFreeOp, isRMW, &tgtPrefUse, opCandidates);
-    }
-
-    if (intrin.op2 != nullptr)
-    {
-        assert(intrin.op1 != nullptr);
-
-        for (int opNum = 2; opNum <= intrin.numOperands; opNum++)
+        else if (addrOp == operand)
         {
-            SingleTypeRegSet opCandidates = getOperandCandidates(intrinsicTree, intrin, opNum);
+            assert(delayFreeOp != operand);
+            assert(consecutiveOp != operand);
 
-            RefPosition* delayUse = nullptr;
+            srcCount += BuildAddrUses(operand, candidates);
+        }
+        else if (consecutiveOp == operand)
+        {
+            assert(delayFreeOp != operand);
+            assert(candidates == RBM_NONE);
 
-            srcCount += BuildOperand(intrinsicTree->Op(opNum), addrOp, consecutiveOp, delayFreeOp, isRMW, &delayUse, opCandidates);
+            srcCount += BuildConsecutiveRegistersForUse(operand, delayFreeOp);
+        }
+        else if (delayFreeOp == operand)
+        {
+            RefPosition* delayUse = BuildUse(operand, candidates);
+            srcCount+=1;
 
-            if (delayUse != nullptr)
+            if (opNum == 1)
+            {
+                assert(tgtPrefUse == nullptr);
+                assert(tgtPrefUse2 == nullptr);
+                tgtPrefUse = delayUse;
+            }
+            else
             {
                 assert(opNum == 2);
+                assert(tgtPrefUse == nullptr);
+                assert(tgtPrefUse2 == nullptr);
                 tgtPrefUse2 = delayUse;
             }
+        }
+        else if (isRMW)
+        {
+            srcCount += BuildDelayFreeUses(operand, delayFreeOp, candidates);
+        }
+        else
+        {
+            srcCount += BuildOperandUses(operand, candidates);
         }
     }
 
@@ -2456,58 +2479,6 @@ bool LinearScan::buildHWIntrinsicImmediate(GenTreeHWIntrinsic* intrinsicTree, co
     }
 
     return hasImmediateOperand;
-}
-
-
-//------------------------------------------------------------------------
-// BuildOperand: Build an operand in the correct way
-//
-// Arguments:
-//    operand - Operand to build
-//    addrOp - The operand that is an address operand (if any)
-//    consecutiveOp - The operand that requires consecutive registers (if any)
-//    consecutiveOp - The operand that delay free (if any)
-//    isRMW - if this operand requires RMW
-//    delayUse (out) - if this operand is delayfree, then set to the use
-//    candidates        - The set of candidates for the uses
-//
-// Return Value:
-//    The number of source registers used by the *parent* of this node.
-//
-int LinearScan::BuildOperand(GenTree* operand, GenTree* addrOp, GenTree* consecutiveOp, GenTree* delayFreeOp, bool isRMW, RefPosition** delayUse, SingleTypeRegSet candidates)
-{
-    int srcCount = 0;
-
-    if (addrOp == operand)
-    {
-        assert(delayFreeOp != operand);
-        assert(consecutiveOp != operand);
-
-        srcCount = BuildAddrUses(operand, candidates);
-    }
-    else if (consecutiveOp == operand)
-    {
-        assert(delayFreeOp != operand);
-        assert(candidates == RBM_NONE);
-
-        srcCount = BuildConsecutiveRegistersForUse(operand, delayFreeOp);
-    }
-    else if (delayFreeOp == operand)
-    {
-        assert(delayUse != nullptr);
-        *delayUse = BuildUse(operand, candidates);
-        srcCount=1;
-    }
-    else if (isRMW)
-    {
-        srcCount = BuildDelayFreeUses(operand, delayFreeOp, candidates);
-    }
-    else
-    {
-        srcCount = BuildOperandUses(operand, candidates);
-    }
-
-    return srcCount;
 }
 
 #endif // FEATURE_HW_INTRINSICS

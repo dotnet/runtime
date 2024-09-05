@@ -1449,7 +1449,6 @@ private:
     GenTree* getVectorAddrOperand(GenTreeHWIntrinsic* intrinsicTree);
     GenTree* getConsecutiveRegistersOperand(const HWIntrinsic intrin, bool *destIsConsecutive);
     bool buildHWIntrinsicImmediate(GenTreeHWIntrinsic* intrinsicTree, const HWIntrinsic intrin);
-    int BuildOperand(GenTree* operand, GenTree* addrOp, GenTree* consecutiveOp, GenTree* delayFreeOp, bool isRMW, RefPosition** use, SingleTypeRegSet candidates);
 #endif
 
 #ifdef DEBUG
