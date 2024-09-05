@@ -75,42 +75,42 @@ internal static partial class Interop
         /// <returns>0 if successful, otherwise an error code.</returns>
         private static unsafe int GetFormatInfoForMountPoint(string name, out string format, out DriveType type)
         {
-            #if TARGET_LINUX
-                try
+        #if TARGET_LINUX
+            try
+            {
+                const string mountInfoFilePath = "/proc/self/mountinfo";
+                var mountInfoFileContent = File.ReadAllLines(mountInfoFilePath);
+                foreach (var line in mountInfoFileContent)
                 {
-                    const string mountInfoFilePath = "/proc/self/mountinfo";
-                    var mountInfoFileContent = File.ReadAllLines(mountInfoFilePath);
-                    foreach (var line in mountInfoFileContent)
+                    var parser = new StringParser(line, ' ');
+            
+                    // Skip fields we don't care about (Fields 1-4)
+                    parser.MoveNext(); // Skip Mount ID
+                    parser.MoveNext(); // Skip Parent ID
+                    parser.MoveNext(); // Skip Major:Minor
+                    parser.MoveNext(); // Skip Root
+            
+                    // Get the mount point (Field 5)
+                    string mountPoint = parser.MoveAndExtractNext();
+            
+                    // Skip to the separator which is end of optional fields (Field 8)
+                    while (parser.MoveAndExtractNext() != "-")
                     {
-                        var parser = new StringParser(line, ' ');
+                    }
             
-                        // Skip fields we don't care about (Fields 1-4)
-                        parser.MoveNext(); // Skip Mount ID
-                        parser.MoveNext(); // Skip Parent ID
-                        parser.MoveNext(); // Skip Major:Minor
-                        parser.MoveNext(); // Skip Root
+                    // Get filesystem type (Field 9)
+                    string filesystemType = parser.MoveAndExtractNext();
             
-                        // Get the mount point (Field 5)
-                        string mountPoint = parser.MoveAndExtractNext();
-            
-                        // Skip to the separator which is end of optional fields (Field 8)
-                        while (parser.MoveAndExtractNext() != "-")
-                        {
-                        }
-            
-                        // Get filesystem type (Field 9)
-                        string filesystemType = parser.MoveAndExtractNext();
-            
-                        if (mountPoint.Equals(name, StringComparison.Ordinal))
-                        {
-                            format = filesystemType;
-                            type = GetDriveType(filesystemType);
-                            return 0;
-                        }
+                    if (mountPoint.Equals(name, StringComparison.Ordinal))
+                    {
+                        format = filesystemType;
+                        type = GetDriveType(filesystemType);
+                        return 0;
                     }
                 }
-                catch { /* ignored */ }
-            #endif
+            }
+            catch { /* ignored */ }
+        #endif
             
             byte* formatBuffer = stackalloc byte[MountPointFormatBufferSizeInBytes];    // format names should be small
             long numericFormat;
