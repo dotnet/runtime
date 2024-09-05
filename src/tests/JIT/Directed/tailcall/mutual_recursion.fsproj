@@ -8,6 +8,14 @@
 
     <!-- Test is slow enough to time out under GC stress -->
     <GCStressIncompatible>true</GCStressIncompatible>
+
+    <!-- Temporarily disable under ilasm round-trip tests:
+    https://github.com/dotnet/runtime/issues/106601
+    https://github.com/dotnet/runtime/issues/106603
+    https://github.com/dotnet/runtime/pull/106968
+    https://github.com/dotnet/fsharp/issues/17607
+    -->
+    <IlasmRoundTripIncompatible>true</IlasmRoundTripIncompatible>
   </PropertyGroup>
   <PropertyGroup>
     <Optimize>True</Optimize>
