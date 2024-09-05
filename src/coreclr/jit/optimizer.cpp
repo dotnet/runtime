@@ -2788,7 +2788,7 @@ void Compiler::optCompactLoops()
 //
 void Compiler::optCompactLoop(FlowGraphNaturalLoop* loop)
 {
-    BasicBlock* insertionPoint = loop->GetLexicallyBottomMostBlock();
+    BasicBlock* insertionPoint = nullptr;
 
     BasicBlock* top           = loop->GetLexicallyTopMostBlock();
     unsigned    numLoopBlocks = loop->NumLoopBlocks();
@@ -2824,6 +2824,11 @@ void Compiler::optCompactLoop(FlowGraphNaturalLoop* loop)
             }
 
             lastNonLoopBlock = lastNonLoopBlock->Next();
+        }
+
+        if (insertionPoint == nullptr)
+        {
+            insertionPoint = loop->GetLexicallyBottomMostBlock();
         }
 
         BasicBlock* previous      = cur->Prev();
