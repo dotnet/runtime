@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections;
+using System.Collections.Concurrent;
+using System.Collections.Generic;
 using System.Collections.Specialized;
 using System.ComponentModel.Design;
 using System.Diagnostics;
@@ -26,12 +28,23 @@ namespace System.ComponentModel
         // lock on it for thread safety. It is used from nearly
         // every call to this class, so it will be created soon after
         // class load anyway.
-        private static readonly WeakHashtable s_providerTable = new WeakHashtable();     // mapping of type or object hash to a provider list
-        private static readonly Hashtable s_providerTypeTable = new Hashtable();         // A direct mapping from type to provider.
+        private static readonly WeakHashtable s_providerTable = new WeakHashtable();
 
-        private static readonly Hashtable s_defaultProviderInitialized = new Hashtable(); // A table of type -> object to track DefaultTypeDescriptionProviderAttributes.
-                                                                                          // A value of `null` indicates initialization is in progress.
-                                                                                          // A value of s_initializedDefaultProvider indicates the provider is initialized.
+        // This lock object protects access to several thread-unsafe areas below, and is a single lock object to prevent deadlocks.
+        // - During s_providerTypeTable access.
+        // - To act as a mutex for CheckDefaultProvider() when it needs to create the default provider, which may re-enter the above case.
+        // - For cache access in the ReflectTypeDescriptionProvider class which may re-enter the above case.
+        // - For logic added by consumers, such as custom provider, constructor and property logic, which may re-enter the above cases in unexpected ways.
+        internal static readonly object s_commonSyncObject = new object();
+
+        // A direct mapping from type to provider.
+        private static readonly ConcurrentDictionary<Type, TypeDescriptionNode> s_providerTypeTable = new ConcurrentDictionary<Type, TypeDescriptionNode>();
+
+        // Tracks DefaultTypeDescriptionProviderAttributes.
+        // A value of `null` indicates initialization is in progress.
+        // A value of s_initializedDefaultProvider indicates the provider is initialized.
+        private static readonly ConcurrentDictionary<Type, object?> s_defaultProviderInitialized = new ConcurrentDictionary<Type, object?>();
+
         private static readonly object s_initializedDefaultProvider = new object();
 
         private static WeakHashtable? s_associationTable;
@@ -179,7 +192,7 @@ namespace System.ComponentModel
             ArgumentNullException.ThrowIfNull(provider);
             ArgumentNullException.ThrowIfNull(type);
 
-            lock (s_providerTable)
+            lock (s_commonSyncObject)
             {
                 // Get the root node, hook it up, and stuff it back into
                 // the provider cache.
@@ -209,7 +222,7 @@ namespace System.ComponentModel
 
             // Get the root node, hook it up, and stuff it back into
             // the provider cache.
-            lock (s_providerTable)
+            lock (s_commonSyncObject)
             {
                 refreshNeeded = s_providerTable.ContainsKey(instance);
                 TypeDescriptionNode node = NodeFor(instance, true);
@@ -265,15 +278,12 @@ namespace System.ComponentModel
         /// </summary>
         private static void CheckDefaultProvider(Type type)
         {
-            if (s_defaultProviderInitialized[type] == s_initializedDefaultProvider)
+            if (s_defaultProviderInitialized.TryGetValue(type, out object? provider) && provider == s_initializedDefaultProvider)
             {
                 return;
             }
 
-            // Lock on s_providerTable even though s_providerTable is not modified here.
-            // Using a single lock prevents deadlocks since other methods that call into or are called
-            // by this method also lock on s_providerTable and the ordering of the locks may be different.
-            lock (s_providerTable)
+            lock (s_commonSyncObject)
             {
                 AddDefaultProvider(type);
             }
@@ -281,7 +291,7 @@ namespace System.ComponentModel
 
         /// <summary>
         /// Add the default provider, if it exists.
-        /// For threading, this is always called under a 'lock (s_providerTable)'.
+        /// For threading, this is always called under a 'lock (s_commonSyncObject)'.
         /// </summary>
         private static void AddDefaultProvider(Type type)
         {
@@ -295,7 +305,7 @@ namespace System.ComponentModel
 
             // Immediately set this to null to indicate we are in progress setting the default provider for a type.
             // This prevents re-entrance to this method.
-            s_defaultProviderInitialized[type] = null;
+            s_defaultProviderInitialized.TryAdd(type, null);
 
             // Always use core reflection when checking for the default provider attribute.
             // If there is a provider, we probably don't want to build up our own cache state against the type.
@@ -1475,8 +1485,10 @@ namespace System.ComponentModel
 
             while (node == null)
             {
-                node = (TypeDescriptionNode?)s_providerTypeTable[searchType] ??
-                       (TypeDescriptionNode?)s_providerTable[searchType];
+                if (!s_providerTypeTable.TryGetValue(searchType, out node))
+                {
+                    node = (TypeDescriptionNode?)s_providerTable[searchType];
+                }
 
                 if (node == null)
                 {
@@ -1484,7 +1496,7 @@ namespace System.ComponentModel
 
                     if (searchType == typeof(object) || baseType == null)
                     {
-                        lock (s_providerTable)
+                        lock (s_commonSyncObject)
                         {
                             node = (TypeDescriptionNode?)s_providerTable[searchType];
 
@@ -1500,9 +1512,9 @@ namespace System.ComponentModel
                     else if (createDelegator)
                     {
                         node = new TypeDescriptionNode(new DelegatingTypeDescriptionProvider(baseType));
-                        lock (s_providerTable)
+                        lock (s_commonSyncObject)
                         {
-                            s_providerTypeTable[searchType] = node;
+                            s_providerTypeTable.TryAdd(searchType, node);
                         }
                     }
                     else
@@ -1603,7 +1615,7 @@ namespace System.ComponentModel
         /// </summary>
         private static void NodeRemove(object key, TypeDescriptionProvider provider)
         {
-            lock (s_providerTable)
+            lock (s_commonSyncObject)
             {
                 TypeDescriptionNode? head = (TypeDescriptionNode?)s_providerTable[key];
                 TypeDescriptionNode? target = head;
@@ -2124,7 +2136,7 @@ namespace System.ComponentModel
             {
                 Type type = component.GetType();
 
-                lock (s_providerTable)
+                lock (s_commonSyncObject)
                 {
                     // ReflectTypeDescritionProvider is only bound to object, but we
                     // need go to through the entire table to try to find custom
@@ -2208,7 +2220,7 @@ namespace System.ComponentModel
 
             bool found = false;
 
-            lock (s_providerTable)
+            lock (s_commonSyncObject)
             {
                 // ReflectTypeDescritionProvider is only bound to object, but we
                 // need go to through the entire table to try to find custom
@@ -2273,7 +2285,7 @@ namespace System.ComponentModel
             // each of these levels.
             Hashtable? refreshedTypes = null;
 
-            lock (s_providerTable)
+            lock (s_commonSyncObject)
             {
                 // Manual use of IDictionaryEnumerator instead of foreach to avoid DictionaryEntry box allocations.
                 IDictionaryEnumerator e = s_providerTable.GetEnumerator();
