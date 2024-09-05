@@ -14,7 +14,7 @@ namespace System.Threading
         // it will be leaked and stay in this list forever.
         // it will also keep the Pollable handle alive and prevent it from being disposed
         private static readonly List<PollableHolder> s_pollables = new();
-        private static bool s_tasksCanceled;
+        private static bool s_checkScheduled;
 
         internal static Task RegisterWasiPollableHandle(int handle, CancellationToken cancellationToken)
         {
@@ -29,18 +29,24 @@ namespace System.Threading
             // this will register the pollable holder into s_pollables
             var holder = new PollableHolder(pollable, cancellationToken);
             s_pollables.Add(holder);
+
+            ScheduleCheck();
+
             return holder.taskCompletionSource.Task;
         }
 
-        // this is not thread safe
-        internal static void DispatchWasiEventLoop()
+        internal static void ScheduleCheck()
         {
-            ThreadPoolWorkQueue.Dispatch();
-            if (s_tasksCanceled)
+            if (!s_checkScheduled && s_pollables.Count > 0)
             {
-                s_tasksCanceled = false;
-                return;
+                s_checkScheduled = true;
+                ThreadPool.UnsafeQueueUserWorkItem(BlockOnPollables, null);
             }
+        }
+
+        internal static void BlockOnPollables(object? _)
+        {
+            s_checkScheduled = false;
 
             var holders = new List<PollableHolder>(s_pollables.Count);
             var pending = new List<Pollable>(s_pollables.Count);
@@ -73,6 +79,7 @@ namespace System.Threading
                         s_pollables.Add(holder);
                     }
                 }
+                ScheduleCheck();
             }
         }
 
@@ -119,11 +126,6 @@ namespace System.Threading
                 {
                     return;
                 }
-
-                // Tell event loop to exit early, giving the application a
-                // chance to quit if the task(s) it is interested in have
-                // completed.
-                s_tasksCanceled = true;
 
                 // it will be removed from s_pollables on the next run
                 self.isDisposed = true;
