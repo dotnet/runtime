@@ -160,14 +160,10 @@ class CrashGuard final
 {
 private:
     const CrashProtection::Handler* m_prev;
+    std::function<bool()> m_fn;
     CrashProtection::Handler m_cur;
 public:
-    explicit CrashGuard(CrashProtection::Handler::HandlerFunc fn, CrashProtection::Handler::HandlerFuncArg arg = nullptr) : m_prev{nullptr}, m_cur{CrashProtection::Handler(fn, arg)}
-    {
-        m_prev = CrashProtection::Activate(&m_cur);
-    }
-
-    explicit CrashGuard(std::function<bool()> fn) : m_prev{nullptr}, m_cur{CrashProtection::Handler{&HandlerFnAdapter, &fn}}
+    explicit CrashGuard(std::function<bool()> fn) : m_prev{nullptr}, m_fn{fn}, m_cur{CrashProtection::Handler{&HandlerFnAdapter, &m_fn}}
     {
         m_prev = CrashProtection::Activate(&m_cur);
     }
