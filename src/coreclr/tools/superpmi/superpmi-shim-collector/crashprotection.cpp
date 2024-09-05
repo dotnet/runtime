@@ -208,12 +208,13 @@ CrashProtection::InstallSegvHandler()
 
 bool CrashProtection::ChainSignal(int signo, siginfo_t *siginfo, void* ucontext) const
 {
+    // FIXME: see PAL's signal.cpp IsSigDfl - this is not correct
     if (m_prevSigAction.sa_handler == SIG_DFL || m_prevSigAction.sa_handler == SIG_IGN)
     {
         ASYNC_LOG("default or ignored handler");
         return false;
     }
-    if ((m_prevSigAction.sa_mask & SA_SIGINFO) != 0)
+    if ((m_prevSigAction.sa_flags & SA_SIGINFO) != 0)
     {
         ASYNC_LOG("chained sigaction signal");
         m_prevSigAction.sa_sigaction (signo, siginfo, ucontext);
