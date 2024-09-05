@@ -507,7 +507,7 @@
 
     newobj     instance void class GenDerivedTestType<int32,object>::.ctor()
     ldloca.s   1
-    callvirt   instance class GenDerive3<!0,!1> class GenTestType<object,int32>::MyGenFunc(string&)
+    callvirt   instance class GenDerive3<!0,!1> class GenTestType<int32,object>::MyGenFunc(string&)
     pop
 
     newobj     instance void class GenDerivedTestType<int32,object>::.ctor()
@@ -535,7 +535,7 @@
 
     newobj     instance void class GenDerivedTestType<int32,object>::.ctor()
     ldloca.s   1
-    callvirt   instance class NonGenericDerived4 class GenTestType<object,int32>::MyGenFunc(string&)
+    callvirt   instance class NonGenericDerived4 class GenTestType<int32,object>::MyGenFunc(string&)
     pop
 
     newobj     instance void class GenDerivedTestType<int32,object>::.ctor()
@@ -563,7 +563,7 @@
 
     newobj     instance void class GenDerivedTestType<int32,object>::.ctor()
     ldloca.s   1
-    callvirt   instance class GenToNonGen3<!1,object> class GenTestType<object,int32>::GenToNonGen(string&)
+    callvirt   instance class GenToNonGen3<!1,object> class GenTestType<int32,object>::GenToNonGen(string&)
     pop
 
     newobj     instance void class GenDerivedTestType<int32,object>::.ctor()
@@ -591,7 +591,7 @@
 
     newobj     instance void class GenDerivedTestType<int32,object>::.ctor()
     ldloca.s   1
-    callvirt   instance class NonGenThroughGen4 class GenTestType<object,int32>::NonGenThroughGenFunc(string&)
+    callvirt   instance class NonGenThroughGen4 class GenTestType<int32,object>::NonGenThroughGenFunc(string&)
     pop
 
     newobj     instance void class GenDerivedTestType<int32,object>::.ctor()
