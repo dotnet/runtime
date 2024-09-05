@@ -79,7 +79,7 @@ On ARM and ARM64, just like native, nothing is put in the floating point registe
 
 However, unlike native varargs, all floating point arguments are not promoted to double (`R8`), and instead retain their original type (`R4` or `R8`) (although this does not preclude an IL generator like managed C++ from explicitly injecting an upcast at the call-site and adjusting the call-site-sig appropriately). This leads to unexpected behavior when native C++ is ported to C# or even just managed via the different flavors of managed C++.
 
-Managed varargs are not supported in .NET Core.
+Managed varargs are supported on Windows only.
 
 Managed/native varargs are supported on Windows only. Support for managed/native varargs on non-Windows platforms is tracked by [this issue](https://github.com/dotnet/runtime/issues/82081).
 
