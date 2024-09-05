@@ -332,6 +332,7 @@ Module::Module(Assembly *pAssembly, PEAssembly *pPEAssembly)
     : m_pPEAssembly{pPEAssembly}
     , m_dwTransientFlags{CLASSES_FREED}
     , m_pAssembly{pAssembly}
+    , m_pDynamicMethodTable{NULL}
     , m_hExposedObject{}
 {
     CONTRACTL
@@ -743,6 +744,8 @@ void Module::Destruct()
     }
 
     m_pPEAssembly->Release();
+    if (m_pDynamicMethodTable)
+        m_pDynamicMethodTable->Destroy();
 
 #if defined(PROFILING_SUPPORTED)
     delete m_pJitInlinerTrackingMap;
@@ -4469,24 +4472,6 @@ VOID Module::EnsureActive()
 #endif // DACCESS_COMPILE
 
 #include <optdefault.h>
-
-
-#ifndef DACCESS_COMPILE
-
-VOID Module::EnsureAllocated()
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-
-    GetDomainAssembly()->EnsureAllocated();
-}
-
-#endif // !DACCESS_COMPILE
 
 CHECK Module::CheckActivated()
 {

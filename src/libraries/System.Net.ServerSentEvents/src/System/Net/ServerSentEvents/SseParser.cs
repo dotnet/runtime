@@ -17,7 +17,7 @@ namespace System.Net.ServerSentEvents
         /// <summary>Creates a parser for parsing a <paramref name="sseStream"/> of server-sent events into a sequence of <see cref="SseItem{String}"/> values.</summary>
         /// <param name="sseStream">The stream containing the data to parse.</param>
         /// <returns>
-        /// The enumerable of strings, which may be enumerated synchronously or asynchronously. The strings
+        /// The enumerable of strings, which can be enumerated synchronously or asynchronously. The strings
         /// are decoded from the UTF8-encoded bytes of the payload of each event.
         /// </returns>
         /// <exception cref="ArgumentNullException"><paramref name="sseStream"/> is null.</exception>
@@ -32,9 +32,8 @@ namespace System.Net.ServerSentEvents
         /// <typeparam name="T">Specifies the type of data in each event.</typeparam>
         /// <param name="sseStream">The stream containing the data to parse.</param>
         /// <param name="itemParser">The parser to use to transform each payload of bytes into a data element.</param>
-        /// <returns>The enumerable, which may be enumerated synchronously or asynchronously.</returns>
-        /// <exception cref="ArgumentNullException"><paramref name="sseStream"/> is null.</exception>
-        /// <exception cref="ArgumentNullException"><paramref name="itemParser"/> is null.</exception>
+        /// <returns>The enumerable, which can be enumerated synchronously or asynchronously.</returns>
+        /// <exception cref="ArgumentNullException"><paramref name="sseStream"/> or <paramref name="itemParser"/> is null.</exception>
         public static SseParser<T> Create<T>(Stream sseStream, SseItemParser<T> itemParser) =>
             new SseParser<T>(
                 sseStream ?? throw new ArgumentNullException(nameof(sseStream)),
