@@ -86,10 +86,22 @@ internal static class BinaryReaderExtensions
             PrimitiveType.UInt64 => reader.ReadUInt64(),
             PrimitiveType.Single => reader.ReadSingle(),
             PrimitiveType.Double => reader.ReadDouble(),
-            PrimitiveType.Decimal => decimal.Parse(reader.ReadString(), CultureInfo.InvariantCulture),
+            PrimitiveType.Decimal => reader.ParseDecimal(),
             PrimitiveType.DateTime => CreateDateTimeFromData(reader.ReadUInt64()),
             _ => new TimeSpan(reader.ReadInt64()),
         };
+
+    // BinaryFormatter serializes decimals as strings and we can't BinaryReader.ReadDecimal.
+    internal static decimal ParseDecimal(this BinaryReader reader)
+    {
+        string text = reader.ReadString();
+        if (!decimal.TryParse(text, NumberStyles.Number, CultureInfo.InvariantCulture, out decimal result))
+        {
+            ThrowHelper.ThrowInvalidFormat();
+        }
+
+        return result;
+    }
 
     /// <summary>
     ///  Creates a <see cref="DateTime"/> object from raw data with validation.

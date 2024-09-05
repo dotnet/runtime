@@ -537,4 +537,27 @@ public class InvalidInputTests : ReadTests
 
         Assert.Throws<SerializationException>(() => NrbfDecoder.Decode(stream));
     }
+
+    [Theory]
+    [InlineData("79228162514264337593543950336")] // invalid format (decimal.MaxValue + 1)
+    [InlineData("1111111111111111111111111111111111111111111111111")] // overflow
+    public void InvalidDecimal(string textRepresentation)
+    {
+        using MemoryStream stream = new();
+        BinaryWriter writer = new(stream, Encoding.UTF8);
+
+        WriteSerializedStreamHeader(writer);
+        writer.Write((byte)SerializationRecordType.SystemClassWithMembersAndTypes);
+        writer.Write(1); // root record Id
+        writer.Write("ClassWithDecimalField"); // type name
+        writer.Write(1); // member count
+        writer.Write("memberName");
+        writer.Write((byte)BinaryType.Primitive);
+        writer.Write((byte)PrimitiveType.Decimal);
+        writer.Write(textRepresentation);
+
+        stream.Position = 0;
+
+        Assert.Throws<SerializationException>(() => NrbfDecoder.Decode(stream));
+    }
 }
