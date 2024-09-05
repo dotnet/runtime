@@ -3499,6 +3499,7 @@ runtime_initialized (MonoProfiler *profiler)
 
 	mono_os_sem_init (&log_profiler.attach_threads_sem, 0);
 
+#if !defined (HOST_WASM)
 	/*
 	 * We must start the helper thread before the writer thread. This is
 	 * because start_helper_thread () sets up the command port which is written
@@ -3507,6 +3508,9 @@ runtime_initialized (MonoProfiler *profiler)
 	start_helper_thread ();
 	start_writer_thread ();
 	start_dumper_thread ();
+#else
+	dump_header ();
+#endif
 
 	/*
 	 * Wait for all the internal threads to be started. If we don't do this, we
@@ -3588,7 +3592,7 @@ create_profiler (const char *args, const char *filename, GPtrArray *filters)
 		}
 	}
 	if (*nf == '|') {
-#if HAVE_API_SUPPORT_WIN32_PIPE_OPEN_CLOSE && !defined (HOST_WIN32)
+#if HAVE_API_SUPPORT_WIN32_PIPE_OPEN_CLOSE && !defined (HOST_WIN32) && !defined (HOST_WASM)
 		log_profiler.file = popen (nf + 1, "w");
 		log_profiler.pipe_output = 1;
 #else
@@ -3635,6 +3639,18 @@ create_profiler (const char *args, const char *filename, GPtrArray *filters)
 
 	log_profiler.startup_time = current_time ();
 }
+
+#if defined (HOST_WASM)
+MONO_API void
+mono_profiler_flush_log ();
+
+void
+mono_profiler_flush_log ()
+{
+	while (handle_writer_queue_entry ());
+	while (handle_dumper_queue_entry ());
+}
+#endif
 
 MONO_API void
 mono_profiler_init_log (const char *desc);

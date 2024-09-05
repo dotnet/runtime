@@ -9,7 +9,7 @@ import { exportedRuntimeAPI, INTERNAL, loaderHelpers, Module, runtimeHelpers, cr
 import cwraps, { init_c_exports, threads_c_functions as tcwraps } from "./cwraps";
 import { mono_wasm_raise_debug_event, mono_wasm_runtime_ready } from "./debug";
 import { toBase64StringImpl } from "./base64";
-import { mono_wasm_init_aot_profiler, mono_wasm_init_browser_profiler } from "./profiler";
+import { mono_wasm_init_aot_profiler, mono_wasm_init_browser_profiler, mono_wasm_init_log_profiler } from "./profiler";
 import { initialize_marshalers_to_cs } from "./marshal-to-cs";
 import { initialize_marshalers_to_js } from "./marshal-to-js";
 import { init_polyfills_async } from "./polyfills";
@@ -317,6 +317,10 @@ async function onRuntimeInitializedAsync (userOnRuntimeInitialized: () => void) 
         }
 
         await wait_for_all_assets();
+
+        if (runtimeHelpers.config.logProfilerOptions) {
+            mono_wasm_init_log_profiler(runtimeHelpers.config.logProfilerOptions);
+        }
 
         if (WasmEnableThreads) {
             runtimeHelpers.deputyWorker.thread!.postMessageToWorker({
