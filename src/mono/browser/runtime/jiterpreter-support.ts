@@ -1150,7 +1150,14 @@ type CfgBranch = {
     branchType: CfgBranchType;
 }
 
-type CfgSegment = CfgBlob | CfgBranchBlockHeader | CfgBranch;
+type CfgJumpTable = {
+    type: "jump-table";
+    from: MintOpcodePtr;
+    targets: MintOpcodePtr[];
+    fallthrough: MintOpcodePtr;
+}
+
+type CfgSegment = CfgBlob | CfgBranchBlockHeader | CfgBranch | CfgJumpTable;
 
 export const enum CfgBranchType {
     Unconditional,
@@ -1276,6 +1283,23 @@ class Cfg {
                 this.overheadBytes += 17;
             }
         }
+    }
+
+    // It's your responsibility to wrap this in a block and follow it with a bailout!
+    jumpTable (targets: MintOpcodePtr[], fallthrough: MintOpcodePtr) {
+        this.appendBlob();
+        this.segments.push({
+            type: "jump-table",
+            from: this.ip,
+            targets,
+            fallthrough,
+        });
+        // opcode, length, fallthrough (approximate)
+        this.overheadBytes += 4;
+        // length of branch depths (approximate)
+        this.overheadBytes += targets.length;
+        // bailout for missing targets (approximate)
+        this.overheadBytes += 24;
     }
 
     emitBlob (segment: CfgBlob, source: Uint8Array) {
@@ -1413,6 +1437,38 @@ class Cfg {
                     mono_assert(indexInStack === 0, () => `expected ${segment.ip} on top of blockStack but found it at index ${indexInStack}, top is ${this.blockStack[0]}`);
                     this.builder.endBlock();
                     this.blockStack.shift();
+                    break;
+                }
+                case "jump-table": {
+                    // Our caller wrapped us in a block and put a missing target bailout after us
+                    const offset = 1;
+                    // The selector was already loaded onto the wasm stack before cfg.jumpTable was called,
+                    //  so we just need to generate a br_table
+                    this.builder.appendU8(WasmOpcode.br_table);
+                    this.builder.appendULeb(segment.targets.length);
+                    for (const target of segment.targets) {
+                        const indexInStack = this.blockStack.indexOf(target);
+                        if (indexInStack >= 0) {
+                            modifyCounter(JiterpCounter.SwitchTargetsOk, 1);
+                            this.builder.appendULeb(indexInStack + offset);
+                        } else {
+                            modifyCounter(JiterpCounter.SwitchTargetsFailed, 1);
+                            if (this.trace > 0)
+                                mono_log_info(`Switch target ${target} not found in block stack ${this.blockStack}`);
+                            this.builder.appendULeb(0);
+                        }
+                    }
+                    const fallthroughIndex = this.blockStack.indexOf(segment.fallthrough);
+                    if (fallthroughIndex >= 0) {
+                        modifyCounter(JiterpCounter.SwitchTargetsOk, 1);
+                        this.builder.appendULeb(fallthroughIndex + offset);
+                    } else {
+                        modifyCounter(JiterpCounter.SwitchTargetsFailed, 1);
+                        if (this.trace > 0)
+                            mono_log_info(`Switch fallthrough ${segment.fallthrough} not found in block stack ${this.blockStack}`);
+                        this.builder.appendULeb(0);
+                    }
+                    this.builder.appendU8(WasmOpcode.unreachable);
                     break;
                 }
                 case "branch": {
@@ -1965,6 +2021,7 @@ export type JiterpreterOptions = {
     tableSize: number;
     aotTableSize: number;
     maxModuleSize: number;
+    maxSwitchSize: number;
 }
 
 const optionNames: { [jsName: string]: string } = {
@@ -2002,6 +2059,7 @@ const optionNames: { [jsName: string]: string } = {
     "tableSize": "jiterpreter-table-size",
     "aotTableSize": "jiterpreter-aot-table-size",
     "maxModuleSize": "jiterpreter-max-module-size",
+    "maxSwitchSize": "jiterpreter-max-switch-size",
 };
 
 let optionsVersion = -1;

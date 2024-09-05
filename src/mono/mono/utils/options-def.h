@@ -177,6 +177,7 @@ DEFINE_INT(jiterpreter_table_size, "jiterpreter-table-size", 6 * 1024, "Size of 
 // FIXME: In the future if we find a way to reduce the number of unique tables we can raise this constant
 DEFINE_INT(jiterpreter_aot_table_size, "jiterpreter-aot-table-size", 3 * 1024, "Size of the jiterpreter AOT trampoline function tables")
 DEFINE_INT(jiterpreter_max_module_size, "jiterpreter-max-module-size", 4080, "Size limit for jiterpreter generated WASM modules")
+DEFINE_INT(jiterpreter_max_switch_size, "jiterpreter-max-switch-size", 24, "Size limit for jiterpreter switch opcodes (0 to disable)")
 #endif // HOST_BROWSER
 
 #if defined(TARGET_WASM) || defined(TARGET_IOS)  || defined(TARGET_TVOS) || defined (TARGET_MACCAT)
