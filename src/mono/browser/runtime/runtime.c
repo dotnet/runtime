@@ -221,12 +221,12 @@ get_native_to_interp (MonoMethod *method, void *extra_arg)
 		return NULL;
 
 	// the key must match the one used in PInvokeTableGenerator
-	len = snprintf (key, sizeof(buf), "%s#%d:%s:%s:%s\U0001F412", method_name, param_count, name, namespace, class_name);
+	len = snprintf (key, sizeof(buf), "%s#%d:%s:%s:%s", method_name, param_count, name, namespace, class_name);
 
 	if (len >= sizeof (buf)) {
 		// The key is too long, try again with a larger buffer
 		key = g_new (char, len + 1);
-	    snprintf (key, len + 1, "%s#%d:%s:%s:%s\U0001F412", method_name, param_count, name, namespace, class_name);
+	    snprintf (key, len + 1, "%s#%d:%s:%s:%s", method_name, param_count, name, namespace, class_name);
 	}
 
 	addr = wasm_dl_get_native_to_interp (token, key, extra_arg);
@@ -421,7 +421,7 @@ mono_wasm_get_method_matching (MonoImage *image, uint32_t token, MonoClass *klas
  * This wrapper ensures that the interpreter initializes the pointers.
  */
 void
-mono_wasm_marshal_get_managed_wrapper (const char* assemblyName, const char* namespaceName, const char* typeName, const char* methodName, uint32_t token, int parm_count)
+mono_wasm_marshal_get_managed_wrapper (const char* assemblyName, const char* namespaceName, const char* typeName, const char* methodName, uint32_t token, int param_count)
 {
 	MonoError error;
 	mono_error_init (&error);
@@ -431,7 +431,7 @@ mono_wasm_marshal_get_managed_wrapper (const char* assemblyName, const char* nam
 	assert (image);
 	MonoClass* klass = mono_class_from_name (image, namespaceName, typeName);
 	assert (klass);
-	MonoMethod *method = mono_wasm_get_method_matching (image, token, klass, methodName, parm_count);
+	MonoMethod *method = mono_wasm_get_method_matching (image, token, klass, methodName, param_count);
 	assert (method);
 	MonoMethod *managedWrapper = mono_marshal_get_managed_wrapper (method, NULL, 0, &error);
 	assert (managedWrapper);

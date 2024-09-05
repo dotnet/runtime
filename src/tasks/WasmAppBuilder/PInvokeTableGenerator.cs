@@ -301,6 +301,8 @@ internal sealed class PInvokeTableGenerator
                 '\n' => "\\n",
                 '\r' => "\\r",
                 '\t' => "\\t",
+                // take special care with surrogate pairs to avoid
+                // potential decoding issues in generated C literals
                 _ when char.IsHighSurrogate(c) && i + 1 < input.Length && char.IsLowSurrogate(input[i + 1])
                     => $"\\U{char.ConvertToUtf32(c, input[++i]):X8}",
                 _ when char.IsControl(c) || c > 127
@@ -320,7 +322,7 @@ internal sealed class PInvokeTableGenerator
         // They also need to have a signature matching what the
         // native code expects, which is the native signature
         // of the delegate invoke in the [MonoPInvokeCallback]
-        // or [UnamanagedCallersOnly] attribute.
+        // or [UnmanagedCallersOnly] attribute.
         // Only blittable parameter/return types are supposed.
 
         w.Write(
@@ -386,7 +388,7 @@ internal sealed class PInvokeTableGenerator
         w.Write(
             $$"""
 
-            static UnmanagedCallersExport wasm_native_to_interp_table[] = {
+            static UnmanagedExport wasm_native_to_interp_table[] = {
                 {{callbacks.Join($",{w.NewLine}    ", cb => $"{{{cb.Token}, \"{EscapeLiteral(cb.Key)}\", {cb.EntrySymbol}}}")}}
             };
 

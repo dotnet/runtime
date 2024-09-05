@@ -47,8 +47,8 @@ wasm_dl_is_pinvoke_table (void *handle)
 static int
 export_compare_key (const void *k1, const void *k2)
 {
-	const char *key1 = ((UnmanagedCallersExport*)k1)->key;
-	const char *key2 = ((UnmanagedCallersExport*)k2)->key;
+	const char *key1 = ((UnmanagedExport*)k1)->key;
+	const char *key2 = ((UnmanagedExport*)k2)->key;
 
 	return strcmp (key1, key2);
 }
@@ -56,13 +56,15 @@ export_compare_key (const void *k1, const void *k2)
 static int
 export_compare_key_and_token (const void *k1, const void *k2)
 {
-	UnmanagedCallersExport *e1 = (UnmanagedCallersExport*)k1;
-	UnmanagedCallersExport *e2 = (UnmanagedCallersExport*)k2;
+	UnmanagedExport *e1 = (UnmanagedExport*)k1;
+	UnmanagedExport *e2 = (UnmanagedExport*)k2;
 
+	// first compare by key
 	int compare = strcmp (e1->key, e2->key);
 	if (compare)
 		return compare;
 
+	// then by token
 	return (int)(e1->token - e2->token);
 }
 
@@ -70,13 +72,14 @@ void*
 wasm_dl_get_native_to_interp (uint32_t token, const char *key, void *extra_arg)
 {
 #ifdef GEN_PINVOKE
-	UnmanagedCallersExport needle = { token, key, NULL };
-	int count = (sizeof (wasm_native_to_interp_table) / sizeof (UnmanagedCallersExport));
+	UnmanagedExport needle = { token, key, NULL };
+	int count = (sizeof (wasm_native_to_interp_table) / sizeof (UnmanagedExport));
 
-	UnmanagedCallersExport *result = bsearch (&needle, wasm_native_to_interp_table, count, sizeof (UnmanagedCallersExport), export_compare_key_and_token);
+	// comparison must match the one used in the PInvokeTableGenerator to ensure the same order
+	UnmanagedExport *result = bsearch (&needle, wasm_native_to_interp_table, count, sizeof (UnmanagedExport), export_compare_key_and_token);
 	if (!result) {
 		// assembly may have been trimmed / modified, try to find by key only
-		result = bsearch (&needle, wasm_native_to_interp_table, count, sizeof (UnmanagedCallersExport), export_compare_key);
+		result = bsearch (&needle, wasm_native_to_interp_table, count, sizeof (UnmanagedExport), export_compare_key);
 	}
 
 	if (!result)

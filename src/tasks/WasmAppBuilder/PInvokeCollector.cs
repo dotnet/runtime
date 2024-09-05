@@ -233,14 +233,15 @@ internal sealed class PInvokeCallback
         IsVoid = ReturnType.Name == "Void";
         Token = (uint)method.MetadataToken;
 
-        // FIXME: this is a hack, we need to encode this better
-        // and allow reflection in the interp case but either way
-        // it needs to match the key generated in get_native_to_interp
-        // since the key is used to look up the interp entry function
-        // it must be unique for each callback runtime errors can occur
-        // since it is used to look up the index in the wasm_native_to_interp_ftndescs
-        // and the signature of the interp entry function must match the native signature
-        Key = $"{MethodName}#{Method.GetParameters().Length}:{AssemblyName}:{Namespace}:{TypeName}\U0001F412";
+        // FIXME: this is a hack, we need to encode this better and allow reflection in the interp case
+        // but either way it needs to match the key generated in get_native_to_interp since the key is
+        // used to look up the interp entry function. It must be unique for each callback runtime errors
+        // can occur since it is used to look up the index in the wasm_native_to_interp_ftndescs and
+        // the signature of the interp entry function must match the native signature
+        //
+        // the key also needs to survive being encoded in C literals, if in doubt
+        // add something like "\U0001F412" to the key on both the managed and unmanaged side
+        Key = $"{MethodName}#{Method.GetParameters().Length}:{AssemblyName}:{Namespace}:{TypeName}";
 
         IsExport = false;
         foreach (var attr in method.CustomAttributes)

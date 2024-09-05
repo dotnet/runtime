@@ -18,7 +18,7 @@ typedef struct {
 	uint32_t token;
 	const char *key;
 	void *func;
-} UnmanagedCallersExport;
+} UnmanagedExport;
 
 typedef struct {
 	void *func;
