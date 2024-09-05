@@ -138,7 +138,7 @@ namespace System.Globalization.Tests
             }
 
             // Inputs where matched length does not equal value string length
-            if (!PlatformDetection.IsHybridGlobalizationOnBrowser)
+            if (!PlatformDetection.IsHybridGlobalizationOnBrowser && PlatformDetection.IsNotHybridGlobalizationOnApplePlatform)
             {
                 yield return new object[] { s_germanCompare, "abc Strasse Strasse xyz", "stra\u00DFe", 0, 23, supportedIgnoreCaseIgnoreNonSpaceOptions, 4, 7 };
                 yield return new object[] { s_germanCompare, "abc stra\u00DFe stra\u00DFe xyz", "Strasse", 0, 21, supportedIgnoreCaseIgnoreNonSpaceOptions, 4, 6 };
@@ -246,7 +246,7 @@ namespace System.Globalization.Tests
                 valueBoundedMemory.MakeReadonly();
 
                 Assert.Equal(expected, compareInfo.IndexOf(sourceBoundedMemory.Span, valueBoundedMemory.Span, options));
-                if (!PlatformDetection.IsHybridGlobalizationOnBrowser)
+                if (!PlatformDetection.IsHybridGlobalizationOnBrowser && PlatformDetection.IsNotHybridGlobalizationOnApplePlatform)
                 {
                     Assert.Equal(expected, compareInfo.IndexOf(sourceBoundedMemory.Span, valueBoundedMemory.Span, options, out int actualMatchLength));
                     Assert.Equal(expectedMatchLength, actualMatchLength);
@@ -334,7 +334,7 @@ namespace System.Globalization.Tests
             AssertExtensions.Throws<ArgumentException>("options", () => s_invariantCompare.IndexOf("Test's", 'b', 0, CompareOptions.StringSort));
             AssertExtensions.Throws<ArgumentException>("options", () => s_invariantCompare.IndexOf("Test's", 'c', 0, 2, CompareOptions.StringSort));
             AssertExtensions.Throws<ArgumentException>("options", () => s_invariantCompare.IndexOf("Test's".AsSpan(), "b".AsSpan(), CompareOptions.StringSort));
-            if (PlatformDetection.IsHybridGlobalizationOnBrowser)
+            if (PlatformDetection.IsHybridGlobalizationOnBrowser || PlatformDetection.IsHybridGlobalizationOnApplePlatform)
             {
                 Assert.Throws<PlatformNotSupportedException>(() => s_invariantCompare.IndexOf("Test's".AsSpan(), "b".AsSpan(), CompareOptions.StringSort, out _));
                 Assert.Throws<PlatformNotSupportedException>(() => s_invariantCompare.IndexOf("Test's".AsSpan(), "b".AsSpan(), CompareOptions.Ordinal | CompareOptions.IgnoreWidth, out _));
