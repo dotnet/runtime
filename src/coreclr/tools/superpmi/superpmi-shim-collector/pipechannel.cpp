@@ -5,7 +5,7 @@
 #include <string.h>
 #include <stdio.h>
 #include <unistd.h>
-#include <sys/errno.h>
+#include <errno.h>
 #include <unistd.h>
 
 #include "pipechannel.hpp"
