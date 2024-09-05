@@ -110,7 +110,7 @@ internal static partial class Interop
                 }
             }
             catch { /* ignored */ }
-        #endif
+#endif
             
             byte* formatBuffer = stackalloc byte[MountPointFormatBufferSizeInBytes];    // format names should be small
             long numericFormat;
