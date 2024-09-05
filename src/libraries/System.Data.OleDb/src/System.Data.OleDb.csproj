@@ -8,6 +8,8 @@
     <NoWarn>$(NoWarn);SYSLIB0004</NoWarn>
     <EnableAOTAnalyzer>false</EnableAOTAnalyzer>
     <IsPackable>true</IsPackable>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+    <ServicingVersion>1</ServicingVersion>
     <PackageDescription>Provides a collection of classes for OLEDB.
 
 Commonly Used Types:
