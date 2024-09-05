@@ -35,15 +35,13 @@ enum FileLoadLevel
 
     FILE_LOAD_CREATE,
     FILE_LOAD_BEGIN,
-    FILE_LOAD_ALLOCATE,
-    FILE_LOAD_POST_ALLOCATE,
+    FILE_LOAD_BEFORE_TYPE_LOAD,
     FILE_LOAD_EAGER_FIXUPS,
     FILE_LOAD_DELIVER_EVENTS,
     FILE_LOAD_VTABLE_FIXUPS,
     FILE_LOADED,                    // Loaded by not yet active
     FILE_ACTIVE                     // Fully active (constructors run & security checked)
 };
-
 
 enum NotificationStatus
 {
@@ -98,19 +96,6 @@ public:
         WRAPPER_NO_CONTRACT;
         return m_pPEAssembly->GetMDImport();
     }
-
-    OBJECTREF GetExposedAssemblyObjectIfExists()
-    {
-        LIMITED_METHOD_CONTRACT;
-
-        OBJECTREF objRet = NULL;
-        GET_LOADERHANDLE_VALUE_FAST(GetLoaderAllocator(), m_hExposedAssemblyObject, &objRet);
-        return objRet;
-    }
-
-    // Returns managed representation of the assembly (Assembly or AssemblyBuilder).
-    // Returns NULL if the managed scout was already collected (see code:LoaderAllocator#AssemblyPhases).
-    OBJECTREF GetExposedAssemblyObject();
 
     BOOL IsSystem()
     {
@@ -199,13 +184,6 @@ public:
         return EnsureLoadLevel(FILE_ACTIVE);
     }
 
-    // Ensure that an assembly has reached at least the Allocated state.  Throw if not.
-    void EnsureAllocated()
-    {
-        WRAPPER_NO_CONTRACT;
-        return EnsureLoadLevel(FILE_LOAD_ALLOCATE);
-    }
-
     // EnsureLoadLevel is a generic routine used to ensure that the file is not in a delay loaded
     // state (unless it needs to be.)  This should be used when a particular level of loading
     // is required for an operation.  Note that deadlocks are tolerated so the level may be one
@@ -246,11 +224,6 @@ public:
     void EnumMemoryRegions(CLRDataEnumMemoryFlags flags);
 #endif
 
-#ifndef DACCESS_COMPILE
-    // light code gen. Keep the list of MethodTables needed for creating dynamic methods
-    DynamicMethodTable* GetDynamicMethodTable();
-#endif
-
     DomainAssembly* GetNextDomainAssemblyInSameALC()
     {
         return m_NextDomainAssemblyInSameALC;
@@ -278,7 +251,7 @@ public:
     friend class Module;
     friend class FileLoadLock;
 
-    DomainAssembly(PEAssembly* pPEAssembly, LoaderAllocator* pLoaderAllocator);
+    DomainAssembly(PEAssembly* pPEAssembly, LoaderAllocator* pLoaderAllocator, AllocMemTracker* memTracker);
 
     BOOL DoIncrementalLoad(FileLoadLevel targetLevel);
     void ClearLoading() { LIMITED_METHOD_CONTRACT; m_loading = FALSE; }
@@ -286,8 +259,7 @@ public:
 
 #ifndef DACCESS_COMPILE
     void Begin();
-    void Allocate();
-    void PostAllocate();
+    void BeforeTypeLoad();
     void EagerFixups();
     void VtableFixups();
     void DeliverSyncEvents();
@@ -301,7 +273,6 @@ public:
 
     // This should be used to permanently set the load to fail. Do not use with transient conditions
     void SetError(Exception *ex);
-    void SetAssembly(Assembly* pAssembly);
 
     void SetProfilerNotified() { LIMITED_METHOD_CONTRACT; m_notifyflags|= PROFILER_NOTIFIED; }
     void SetDebuggerNotified() { LIMITED_METHOD_CONTRACT; m_notifyflags|=DEBUGGER_NOTIFIED; }
@@ -398,18 +369,10 @@ private:
     FileLoadLevel               m_level;
     BOOL                        m_loading;
 
-    LOADERHANDLE                m_hExposedAssemblyObject;
-
     ExInfo*                     m_pError;
 
     BOOL                        m_bDisableActivationCheck;
     BOOL                        m_fHostAssemblyPublished;
-
-    // m_pDynamicMethodTable is used by the light code generation to allow method
-    // generation on the fly. They are lazily created when/if a dynamic method is requested
-    // for this specific module
-    DynamicMethodTable*         m_pDynamicMethodTable;
-
 
     DebuggerAssemblyControlFlags    m_debuggerFlags;
     DWORD                       m_notifyflags;

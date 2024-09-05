@@ -2908,12 +2908,9 @@ GenTree* Compiler::impCreateSpanIntrinsic(CORINFO_SIG_INFO* sig)
         return nullptr;
     }
 
-    CORINFO_CLASS_HANDLE fieldOwnerHnd = info.compCompHnd->getFieldClass(fieldToken);
-
     CORINFO_CLASS_HANDLE fieldClsHnd;
-    var_types            fieldElementType =
-        JITtype2varType(info.compCompHnd->getFieldType(fieldToken, &fieldClsHnd, fieldOwnerHnd));
-    unsigned totalFieldSize;
+    var_types            fieldElementType = JITtype2varType(info.compCompHnd->getFieldType(fieldToken, &fieldClsHnd));
+    unsigned             totalFieldSize;
 
     // Most static initialization data fields are of some structure, but it is possible for them to be of various
     // primitive types as well

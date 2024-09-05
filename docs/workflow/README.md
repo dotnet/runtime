@@ -132,6 +132,7 @@ Now that you've got the general idea on how to get started, it is important to m
 Building the components of the repo is just part of the experience. The runtime repo also includes vast test suites you can run to ensure your changes work properly as expected and don't inadvertently break something else. Each component has its own methodologies to run their tests, which are explained in their own specific docs:
 
 - [CoreCLR](/docs/workflow/testing/coreclr/testing.md)
+  - [NativeAOT](/docs/workflow/building/coreclr/nativeaot.md#running-tests)
 - [Libraries](/docs/workflow/testing/libraries/testing.md)
 - [Mono](/docs/workflow/testing/mono/testing.md)
 

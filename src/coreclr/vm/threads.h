@@ -4267,12 +4267,6 @@ struct cdac_data<ThreadStore>
     static constexpr size_t DeadCount = offsetof(ThreadStore, m_DeadThreadCount);
 };
 
-struct TSSuspendHelper {
-    static void SetTrap() { ThreadStore::IncrementTrapReturningThreads(); }
-    static void UnsetTrap() { ThreadStore::DecrementTrapReturningThreads(); }
-};
-typedef StateHolder<TSSuspendHelper::SetTrap, TSSuspendHelper::UnsetTrap> TSSuspendHolder;
-
 typedef StateHolder<ThreadStore::LockThreadStore,ThreadStore::UnlockThreadStore> ThreadStoreLockHolder;
 
 

@@ -24,21 +24,21 @@ namespace Microsoft.Extensions.Hosting.Internal
         private CancellationTokenRegistration _applicationStoppingRegistration;
 
         /// <summary>
-        /// Initializes a <see cref="ConsoleLifetime"/> instance using the specified console lifetime options, host environment, host application lifetime and host options.
+        /// Initializes a <see cref="ConsoleLifetime"/> instance using the specified console lifetime options, host environment, host application lifetime, and host options.
         /// </summary>
         /// <param name="options">An object used to retrieve <see cref="ConsoleLifetimeOptions"/> instances.</param>
-        /// <param name="environment">An object that contains information about the hosting environment an application is running in.</param>
+        /// <param name="environment">Information about the hosting environment an application is running in.</param>
         /// <param name="applicationLifetime">An object that allows consumers to be notified of application lifetime events.</param>
-        /// <param name="hostOptions">An object used to retrieve <see cref="HostOptions"/> instances.</param>
+        /// <param name="hostOptions">An object used to retrieve internal host options instances.</param>
         /// <exception cref="ArgumentNullException"><paramref name="options"/> or <paramref name="environment"/> or <paramref name="applicationLifetime"/> or <paramref name="hostOptions"/> is <see langword="null"/>.</exception>
         public ConsoleLifetime(IOptions<ConsoleLifetimeOptions> options, IHostEnvironment environment, IHostApplicationLifetime applicationLifetime, IOptions<HostOptions> hostOptions)
             : this(options, environment, applicationLifetime, hostOptions, NullLoggerFactory.Instance) { }
 
         /// <summary>
-        /// Initializes a <see cref="ConsoleLifetime"/> instance using the specified console lifetime options, host environment, host options and logger factory.
+        /// Initializes a <see cref="ConsoleLifetime"/> instance using the specified console lifetime options, host environment, host options, and logger factory.
         /// </summary>
-        /// <param name="options">An object used to retrieve <see cref="ConsoleLifetimeOptions"/> instances</param>
-        /// <param name="environment">An object that contains information about the hosting environment an application is running in.</param>
+        /// <param name="options">An object used to retrieve <see cref="ConsoleLifetimeOptions"/> instances.</param>
+        /// <param name="environment">Information about the hosting environment an application is running in.</param>
         /// <param name="applicationLifetime">An object that allows consumers to be notified of application lifetime events.</param>
         /// <param name="hostOptions">An object used to retrieve <see cref="HostOptions"/> instances.</param>
         /// <param name="loggerFactory">An object to configure the logging system and create instances of <see cref="ILogger"/> from the registered <see cref="ILoggerProvider"/>.</param>
