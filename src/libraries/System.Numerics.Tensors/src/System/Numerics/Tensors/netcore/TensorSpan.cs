@@ -714,31 +714,27 @@ namespace System.Numerics.Tensors
             }
 
             // When we have an empty Tensor and someone wants to slice all of it, we should return an empty Tensor.
-            if (FlattenedLength == 0)
+            // FlattenedLength is computed everytime so using a local to cache the value.
+            nint flattenedLength = FlattenedLength;
+            nint index = 0;
+            for (int i = 0; i < offsets.Length; i++)
             {
-                for (int i = 0; i < offsets.Length; i++)
-                {
-                    if (lengths[i] > Lengths[i])
-                        ThrowHelper.ThrowIndexOutOfRangeException();
-                }
-                toReturn = new TensorSpan<T>(ref _reference, lengths, _shape.Strides, _shape._memoryLength); ;
-            }
-            else
-            {
-                nint index = 0;
-                for (int i = 0; i < offsets.Length; i++)
-                {
-                    if ((nuint)offsets[i] >= (nuint)Lengths[i])
-                        ThrowHelper.ThrowIndexOutOfRangeException();
-
-                    index += Strides[i] * (offsets[i]);
-                }
-
-                if (index >= _shape._memoryLength || index < 0)
+                // When flattenedLength is 0, at least 1 of the Lengths will be 0 and so will the offset which would trigger this exception even though its valid.
+                // To counteract this we specifically check for the case where the offset is 0 and skip the check.
+                if ((nuint)offsets[i] != 0 && (nuint)offsets[i] >= (nuint)Lengths[i])
                     ThrowHelper.ThrowIndexOutOfRangeException();
 
-                toReturn = new TensorSpan<T>(ref Unsafe.Add(ref _reference, index), lengths, _shape.Strides, _shape._memoryLength - index);
+                if (lengths[i] > Lengths[i])
+                    ThrowHelper.ThrowIndexOutOfRangeException();
+
+                if (flattenedLength != 0)
+                    index += Strides[i] * (offsets[i]);
             }
+
+            if ((index >= _shape._memoryLength || index < 0) && flattenedLength != 0)
+                ThrowHelper.ThrowIndexOutOfRangeException();
+
+            toReturn = new TensorSpan<T>(ref Unsafe.Add(ref _reference, index), lengths, _shape.Strides, _shape._memoryLength - index);
 
             if (offsetsArray != null)
                 ArrayPool<nint>.Shared.Return(offsetsArray);
