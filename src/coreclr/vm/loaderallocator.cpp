@@ -62,7 +62,6 @@ LoaderAllocator::LoaderAllocator(bool collectible) :
     m_fUnloaded = false;
     m_fMarked = false;
     m_pLoaderAllocatorDestroyNext = NULL;
-    m_pDomain = NULL;
     m_pCodeHeapInitialAlloc = NULL;
     m_pVSDHeapInitialAlloc = NULL;
     m_pLastUsedCodeHeap = NULL;
@@ -506,13 +505,16 @@ void LoaderAllocator::GCLoaderAllocators(LoaderAllocator* pOriginalLoaderAllocat
         THROWS;
         GC_TRIGGERS;
         MODE_PREEMPTIVE;
+        PRECONDITION(pOriginalLoaderAllocator != NULL);
+        PRECONDITION(pOriginalLoaderAllocator->IsCollectible());
+        PRECONDITION(pOriginalLoaderAllocator->Id()->GetType() == LAT_Assembly);
     }
     CONTRACTL_END;
 
     // List of LoaderAllocators being deleted
     LoaderAllocator * pFirstDestroyedLoaderAllocator = NULL;
 
-    AppDomain* pAppDomain = (AppDomain*)pOriginalLoaderAllocator->GetDomain();
+    AppDomain* pAppDomain = AppDomain::GetCurrentDomain();
 
     // Collect all LoaderAllocators that don't have anymore DomainAssemblies alive
     // Note: that it may not collect our pOriginalLoaderAllocator in case this
@@ -1059,11 +1061,9 @@ void LoaderAllocator::ActivateManagedTracking()
 #define COLLECTIBLE_CODEHEAP_SIZE                  (10 * GetOsPageSize())
 #define COLLECTIBLE_VIRTUALSTUBDISPATCH_HEAP_SPACE (2 * GetOsPageSize())
 
-void LoaderAllocator::Init(BaseDomain *pDomain, BYTE *pExecutableHeapMemory)
+void LoaderAllocator::Init(BYTE *pExecutableHeapMemory)
 {
     STANDARD_VM_CONTRACT;
-
-    m_pDomain = pDomain;
 
     m_crstLoaderAllocator.Init(CrstLoaderAllocator, (CrstFlags)CRST_UNSAFE_COOPGC);
     m_crstLoaderAllocatorHandleTable.Init(CrstLeafLock, (CrstFlags)CRST_UNSAFE_COOPGC);
@@ -1446,7 +1446,6 @@ void LoaderAllocator::Terminate()
         m_pFuncPtrStubs = NULL;
     }
 
-    // This was the block reserved by BaseDomain::Init for the loaderheaps.
     if (m_InitialReservedMemForLoaderHeaps)
     {
         ExecutableAllocator::Instance()->Release(m_InitialReservedMemForLoaderHeaps);
@@ -1725,7 +1724,7 @@ void DomainAssemblyIterator::operator++()
 
 #ifndef DACCESS_COMPILE
 
-void AssemblyLoaderAllocator::Init(AppDomain* pAppDomain)
+void AssemblyLoaderAllocator::Init()
 {
     m_Id.Init();
 
@@ -1733,7 +1732,7 @@ void AssemblyLoaderAllocator::Init(AppDomain* pAppDomain)
     // GC mode, in case the caller requires that
     m_dependentHandleToNativeObjectSetCrst.Init(CrstLeafLock, CRST_UNSAFE_ANYMODE);
 
-    LoaderAllocator::Init((BaseDomain *)pAppDomain);
+    LoaderAllocator::Init(NULL);
     if (IsCollectible())
     {
         // TODO: the ShuffleThunkCache should really be using the m_pStubHeap, however the unloadability support
@@ -1933,10 +1932,11 @@ void AssemblyLoaderAllocator::CleanupHandles()
         NOTHROW;
         MODE_ANY;
         CAN_TAKE_LOCK;
+        PRECONDITION(IsCollectible());
+        PRECONDITION(Id()->GetType() == LAT_Assembly);
     }
     CONTRACTL_END;
 
-    _ASSERTE(GetDomain()->IsAppDomain());
 
     if (m_hLoaderAllocatorObjectHandle != NULL)
     {
@@ -2058,12 +2058,12 @@ void LoaderAllocator::CleanupFailedTypeInit()
         return;
     }
 
-    _ASSERTE(GetDomain()->IsAppDomain());
+    _ASSERTE(Id()->GetType() == LAT_Assembly);
 
     // This method doesn't take a lock around loader allocator state access, because
     // it's supposed to be called only during cleanup. However, the domain-level state
     // might be accessed by multiple threads.
-    ListLock *pLock = ((AppDomain*)GetDomain())->GetClassInitLock();
+    ListLock *pLock = AppDomain::GetCurrentDomain()->GetClassInitLock();
 
     while (!m_failedTypeInitCleanupList.IsEmpty())
     {
