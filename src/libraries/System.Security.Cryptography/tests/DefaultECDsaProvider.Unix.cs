@@ -25,7 +25,7 @@ namespace System.Security.Cryptography.EcDsa.Tests
         {
             get
             {
-                if (PlatformDetection.IsOSXLike)
+                if (PlatformDetection.IsOSXLike || PlatformDetection.IsAzureLinux)
                 {
                     return false;
                 }
