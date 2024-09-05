@@ -1,3 +1,6 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
 using Melanzana.Streams;
 using Melanzana.MachO.BinaryFormat;
 using System.Text;
@@ -37,7 +40,7 @@ namespace Melanzana.MachO
         /// For object files the relocation, symbol tables and other data are stored at the end of the
         /// file but not covered by any segment/section. We maintain a list of these data to make it
         /// easier to address.
-        /// 
+        ///
         /// For linked files this points to the real __LINKEDIT segment. We slice it into subsections
         /// based on the known LinkEdit commands though.
         /// </summary>
@@ -215,7 +218,7 @@ namespace Melanzana.MachO
                         }
                         break;
 
-                    case MachCodeSignature: 
+                    case MachCodeSignature:
                     case MachDylibCodeSigningDirs:
                     case MachSegmentSplitInfo:
                     case MachFunctionStarts:

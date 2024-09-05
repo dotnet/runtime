@@ -3,7 +3,7 @@
     <TargetFramework>netstandard2.0</TargetFramework>
     <LangVersion>latest</LangVersion>
     <Nullable>annotations</Nullable>
-    <NoWarn>NoWarn;IDE0073;SA1518;SA1028;SA1020;IDE0170;IDE0060;CA1822;SA1400;RS1036;CA1852</NoWarn>
+    <NoWarn>NoWarn;SA1028;SA1020;IDE0170;IDE0060;CA1822;SA1400;RS1036;CA1852</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>

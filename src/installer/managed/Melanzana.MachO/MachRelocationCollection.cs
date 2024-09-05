@@ -1,3 +1,6 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
 using System.Buffers.Binary;
 using System.Collections;
 using Melanzana.Streams;
@@ -23,7 +26,7 @@ namespace Melanzana.MachO
             // Read existing relocations
             using var relocationStream = relocationData.GetReadStream();
             Span<byte> relocationBuffer = stackalloc byte[8];
-            
+
             for (uint i = 0; i < relocationCount; i++)
             {
                 relocationStream.ReadFully(relocationBuffer);

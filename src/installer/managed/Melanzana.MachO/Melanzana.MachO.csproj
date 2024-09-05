@@ -1,16 +1,16 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>netstandard2.0</TargetFramework>
+    <TargetFrameworks>netstandard2.0;$(NetCurrent)</TargetFrameworks>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
 
-    <NoWarn>NoWarn;IDE0073;SA1518;SA1028;SA1020;IDE0170;IDE0060;CA1822;SA1400;RS1036;CA1852;IDE0074;SA1517;CA1512;CA1513;CA1510</NoWarn>
+    <NoWarn>NoWarn;SA1518;SA1028;SA1020;IDE0170;IDE0060;CA1822;SA1400;RS1036;CA1852;IDE0074;SA1517;CA1512;CA1513;CA1510</NoWarn>
     <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
     <CompilerGeneratedFilesOutputPath>$(BaseIntermediateOutputPath)/GeneratedFiles</CompilerGeneratedFilesOutputPath>
   </PropertyGroup>
 
-  <ItemGroup>
+  <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0'">
     <PackageReference Include="System.Memory" Version="$(SystemMemoryVersion)" />
   </ItemGroup>
   <ItemGroup>

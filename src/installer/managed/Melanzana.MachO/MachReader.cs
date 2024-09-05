@@ -1,3 +1,6 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
 using Melanzana.MachO.BinaryFormat;
 using Melanzana.Streams;
 using System.Buffers.Binary;
@@ -316,7 +319,7 @@ namespace Melanzana.MachO
             {
                 case MachMagic.MachHeaderLittleEndian:
                 case MachMagic.MachHeaderBigEndian:
-                    stream.Read(headerBuffer.Slice(0, MachHeader.BinarySize));
+                    stream.ReadFully(headerBuffer.Slice(0, MachHeader.BinarySize));
                     isLittleEndian = magic == MachMagic.MachHeaderLittleEndian;
                     machHeader = MachHeader.Read(headerBuffer, isLittleEndian, out var _);
                     Debug.Assert(!machHeader.CpuType.HasFlag(MachCpuType.Architecture64));
@@ -325,7 +328,7 @@ namespace Melanzana.MachO
 
                 case MachMagic.MachHeader64LittleEndian:
                 case MachMagic.MachHeader64BigEndian:
-                    stream.Read(headerBuffer.Slice(0, MachHeader64.BinarySize));
+                    stream.ReadFully(headerBuffer.Slice(0, MachHeader64.BinarySize));
                     isLittleEndian = magic == MachMagic.MachHeader64LittleEndian;
                     machHeader = MachHeader64.Read(headerBuffer, isLittleEndian, out var _);
                     Debug.Assert(machHeader.CpuType.HasFlag(MachCpuType.Architecture64));

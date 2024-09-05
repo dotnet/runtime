@@ -1,10 +1,13 @@
-﻿using Melanzana.Streams;
+﻿// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
+using Melanzana.Streams;
 
 namespace Melanzana.MachO
 {
     /// <summary>
     /// Linker data representation.
-    /// 
+    ///
     /// This holds data for relocations, symbol tables, string tables and various
     /// other linking related information. It's either part of the __LINKEDIT
     /// segment for fully linked files, or appended at the end of the object file

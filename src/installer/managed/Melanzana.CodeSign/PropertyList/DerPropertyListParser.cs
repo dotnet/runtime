@@ -1,4 +1,7 @@
-﻿using Claunia.PropertyList;
+﻿// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
+using Claunia.PropertyList;
 using System.Formats.Asn1;
 
 namespace Melanzana.CodeSign.PropertyList

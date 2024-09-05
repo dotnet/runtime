@@ -5,7 +5,7 @@
     <TargetFrameworks>netstandard2.0;$(NetCurrent)</TargetFrameworks>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
-    <NoWarn>NoWarn;IDE0073;SA1518;SA1028;SA1020;IDE0170;IDE0060;CA1822;SA1400;RS1036;CA1852;SA1517;CA1855;CA1859;CA1802;SA1014;IDE0036;CA1512;CA1513;CA1510;SYSLIB0057</NoWarn>
+    <NoWarn>NoWarn;SA1518;SA1028;SA1020;IDE0170;IDE0060;CA1822;SA1400;RS1036;CA1852;SA1517;CA1855;CA1859;CA1802;SA1014;IDE0036;CA1512;CA1513;CA1510;SYSLIB0057</NoWarn>
 
     <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
     <CompilerGeneratedFilesOutputPath>$(BaseIntermediateOutputPath)/GeneratedFiles</CompilerGeneratedFilesOutputPath>
