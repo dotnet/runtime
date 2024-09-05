@@ -286,6 +286,8 @@ wasm_dl_symbol (void *handle, const char *name, char **err, void *user_data)
 	}
 #endif
 
+
+#if false
 	PinvokeTable *index = (PinvokeTable*)handle;
 
 	PinvokeImport key = { name, NULL };
@@ -296,6 +298,15 @@ wasm_dl_symbol (void *handle, const char *name, char **err, void *user_data)
 	}
 
 	return result->func;
+#else
+    PinvokeTable *index = (PinvokeTable*)handle;
+
+	for (int i = 0; index->count; ++i)
+		if (!strcmp (index->imports[i].name, name))
+			return index->imports[i].func;
+
+	return NULL;
+#endif
 }
 
 MonoDomain *

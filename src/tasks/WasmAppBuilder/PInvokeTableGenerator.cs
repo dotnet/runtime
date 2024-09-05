@@ -141,7 +141,7 @@ internal sealed class PInvokeTableGenerator
                 .OrderBy(l => l.EntryPoint)
                 .GroupBy(d => d.EntryPoint)
                 .Select(l => $"{{\"{EscapeLiteral(l.Key)}\", {CEntryPoint(l.First())}}}, "
-                    + "// " + string.Join(", ", l.Select(c => c.Method.DeclaringType!.Module!.Assembly!.GetName()!.Name!).Distinct().OrderBy(n => n)))
+                    + "// " + string.Join(", ", l.Select(c => c.Method.DeclaringType!.Module!.Assembly!.GetName()!.Name!).Distinct().OrderBy(n => n)) + w.NewLine + "    ")
                 .ToList();
 
             moduleImports[module] = assemblies_pinvokes;
@@ -149,7 +149,7 @@ internal sealed class PInvokeTableGenerator
                 $$"""
 
                 static PinvokeImport {{_fixupSymbolName(module)}}_imports [] = {
-                    {{string.Join($"{w.NewLine}    ", assemblies_pinvokes)}}
+                    {{string.Join("", assemblies_pinvokes)}}{NULL, NULL}
                 };
 
                 """);
