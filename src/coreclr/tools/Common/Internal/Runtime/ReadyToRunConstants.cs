@@ -255,7 +255,7 @@ namespace Internal.ReadyToRunConstants
         GetString = 0x50,
 
         // Used by /Tuning for Profile optimizations
-        LogMethodEnter = 0x51,
+        LogMethodEnter = 0x51,  // No longer supported as of READYTORUN_MAJOR_VERSION 10.0
 
         // Reflection helpers
         GetRuntimeTypeHandle        = 0x54,

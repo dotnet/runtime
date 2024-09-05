@@ -11,6 +11,14 @@ using Xunit;
 
 struct Struct { }
 
+interface I1 { }
+
+interface I2<M> { }
+
+class ClassWithI1 : I1 { }
+
+class ClassWithI1I2 : I1, I2<ClassWithI1I2> { }
+
 public static unsafe class UnsafeAccessorsTestsGenerics
 {
     class ClassWithEnum<T>
@@ -396,45 +404,82 @@ public static unsafe class UnsafeAccessorsTestsGenerics
         }
     }
 
-    class ClassWithConstraints
+    class MethodWithConstraints
     {
-        private string M<T, U>() where T : U, IEquatable<T>
+        private string M<T, U>() where T : U, I2<T>
             => $"{typeof(T)}|{typeof(U)}";
 
-        private static string SM<T, U>() where T : U, IEquatable<T>
+        private static string SM<T, U>() where T : U, I2<T>
             => $"{typeof(T)}|{typeof(U)}";
     }
 
     [Fact]
     [ActiveIssue("https://github.com/dotnet/runtime/issues/102942", TestRuntimes.Mono)]
-    public static void Verify_Generic_ConstraintEnforcement()
+    public static void Verify_Generic_MethodConstraintEnforcement()
     {
-        Console.WriteLine($"Running {nameof(Verify_Generic_ConstraintEnforcement)}");
+        Console.WriteLine($"Running {nameof(Verify_Generic_MethodConstraintEnforcement)}");
 
-        Assert.Equal($"{typeof(string)}|{typeof(object)}", CallMethod<string, object>(new ClassWithConstraints()));
-        Assert.Equal($"{typeof(string)}|{typeof(object)}", CallStaticMethod<string, object>(null));
-        Assert.Throws<InvalidProgramException>(() => CallMethod_NoConstraints<string, object>(new ClassWithConstraints()));
-        Assert.Throws<InvalidProgramException>(() => CallMethod_MissingConstraint<string, object>(new ClassWithConstraints()));
-        Assert.Throws<InvalidProgramException>(() => CallStaticMethod_NoConstraints<string, object>(null));
-        Assert.Throws<InvalidProgramException>(() => CallStaticMethod_MissingConstraint<string, object>(null));
-
-        [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "M")]
-        extern static string CallMethod<V,W>(ClassWithConstraints c) where V : W, IEquatable<V>;
+        Assert.Equal($"{typeof(ClassWithI1I2)}|{typeof(I1)}", CallMethod<ClassWithI1I2, I1>(new MethodWithConstraints()));
+        Assert.Equal($"{typeof(ClassWithI1I2)}|{typeof(I1)}", CallStaticMethod<ClassWithI1I2, I1>(null));
+        Assert.Throws<InvalidProgramException>(() => CallMethod_NoConstraints<ClassWithI1I2, I1>(new MethodWithConstraints()));
+        Assert.Throws<InvalidProgramException>(() => CallMethod_MissingConstraint<ClassWithI1I2, I1>(new MethodWithConstraints()));
+        Assert.Throws<InvalidProgramException>(() => CallStaticMethod_NoConstraints<ClassWithI1I2, I1>(null));
+        Assert.Throws<InvalidProgramException>(() => CallStaticMethod_MissingConstraint<ClassWithI1I2, I1>(null));
 
         [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "M")]
-        extern static string CallMethod_NoConstraints<V,W>(ClassWithConstraints c);
+        extern static string CallMethod<V,W>(MethodWithConstraints c) where V : W, I2<V>;
 
         [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "M")]
-        extern static string CallMethod_MissingConstraint<V,W>(ClassWithConstraints c) where V : W;
+        extern static string CallMethod_NoConstraints<V,W>(MethodWithConstraints c);
+
+        [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "M")]
+        extern static string CallMethod_MissingConstraint<V,W>(MethodWithConstraints c) where V : W;
 
         [UnsafeAccessor(UnsafeAccessorKind.StaticMethod, Name = "SM")]
-        extern static string CallStaticMethod<V,W>(ClassWithConstraints c) where V : W, IEquatable<V>;
+        extern static string CallStaticMethod<V,W>(MethodWithConstraints c) where V : W, I2<V>;
 
         [UnsafeAccessor(UnsafeAccessorKind.StaticMethod, Name = "SM")]
-        extern static string CallStaticMethod_NoConstraints<V,W>(ClassWithConstraints c);
+        extern static string CallStaticMethod_NoConstraints<V,W>(MethodWithConstraints c);
 
         [UnsafeAccessor(UnsafeAccessorKind.StaticMethod, Name = "SM")]
-        extern static string CallStaticMethod_MissingConstraint<V,W>(ClassWithConstraints c) where V : W;
+        extern static string CallStaticMethod_MissingConstraint<V,W>(MethodWithConstraints c) where V : W;
+    }
+
+    class ClassWithConstraints<T, U> where T : U, I2<T>
+    {
+        private string M<W>() where W : I1
+            => $"{typeof(T)}|{typeof(U)}|{typeof(W)}";
+
+        private static string SM<X>() where X : I1
+            => $"{typeof(T)}|{typeof(U)}|{typeof(X)}";
+    }
+
+    class AccessorsWithConstraints<A, B> where A : B, I2<A>
+    {
+        [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "M")]
+        public extern static string CallMethod<C>(ClassWithConstraints<A, B> c) where C: I1;
+
+        [UnsafeAccessor(UnsafeAccessorKind.StaticMethod, Name = "SM")]
+        public extern static string CallStaticMethod<D>(ClassWithConstraints<A, B> c) where D: I1;
+
+        [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "M")]
+        public extern static string CallMethod_MissingMethodConstraint<E>(ClassWithConstraints<A, B> c);
+
+        [UnsafeAccessor(UnsafeAccessorKind.StaticMethod, Name = "SM")]
+        public extern static string CallStaticMethod_MissingMethodConstraint<F>(ClassWithConstraints<A, B> c);
+    }
+
+    [Fact]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/102942", TestRuntimes.Mono)]
+    public static void Verify_Generic_ClassConstraintEnforcement()
+    {
+        Console.WriteLine($"Running {nameof(Verify_Generic_ClassConstraintEnforcement)}");
+
+        Assert.Equal($"{typeof(ClassWithI1I2)}|{typeof(I1)}|{typeof(ClassWithI1)}", AccessorsWithConstraints<ClassWithI1I2, I1>.CallMethod<ClassWithI1>(new ClassWithConstraints<ClassWithI1I2, I1>()));
+        Assert.Equal($"{typeof(ClassWithI1I2)}|{typeof(I1)}|{typeof(ClassWithI1)}", AccessorsWithConstraints<ClassWithI1I2, I1>.CallStaticMethod<ClassWithI1>(null));
+
+        Assert.Throws<InvalidProgramException>(() => AccessorsWithConstraints<ClassWithI1I2, I1>.CallMethod_MissingMethodConstraint<ClassWithI1>(new ClassWithConstraints<ClassWithI1I2, I1>()));
+        Assert.Throws<InvalidProgramException>(() => AccessorsWithConstraints<ClassWithI1I2, I1>.CallStaticMethod_MissingMethodConstraint<ClassWithI1>(null));
     }
 
     class Invalid

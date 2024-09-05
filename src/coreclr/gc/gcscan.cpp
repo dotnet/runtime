@@ -132,10 +132,12 @@ void GCScan::GcWeakPtrScanBySingleThread( int condemned, int max_gen, ScanContex
     GCToEEInterface::SyncBlockCacheWeakPtrScan(&CheckPromoted, (uintptr_t)sc, 0);
 }
 
+#ifdef FEATURE_SIZED_REF_HANDLES
 void GCScan::GcScanSizedRefs(promote_func* fn, int condemned, int max_gen, ScanContext* sc)
 {
     Ref_ScanSizedRefHandles(condemned, max_gen, sc, fn);
 }
+#endif // FEATURE_SIZED_REF_HANDLES
 
 void GCScan::GcShortWeakPtrScan(int condemned, int max_gen, ScanContext* sc)
 {
