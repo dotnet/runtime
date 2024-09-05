@@ -75,7 +75,7 @@ internal static partial class Interop
         /// <returns>0 if successful, otherwise an error code.</returns>
         private static unsafe int GetFormatInfoForMountPoint(string name, out string format, out DriveType type)
         {
-        #if TARGET_LINUX
+#if TARGET_LINUX
             try
             {
                 const string mountInfoFilePath = "/proc/self/mountinfo";
