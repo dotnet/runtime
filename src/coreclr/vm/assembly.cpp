@@ -657,6 +657,7 @@ Module *Assembly::FindModuleByExportedType(mdExportedType mdType,
                     // LoadAssembly never returns NULL
                     pAssembly = GetModule()->LoadAssembly(mdLinkRef);
                     PREFIX_ASSUME(pAssembly != NULL);
+                    break;
 #else
                     _ASSERTE(!"DAC shouldn't attempt to trigger loading");
                     return NULL;
