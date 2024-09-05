@@ -15,6 +15,7 @@ namespace System.Threading
         // it will also keep the Pollable handle alive and prevent it from being disposed
         private static readonly List<PollableHolder> s_pollables = new();
         private static bool s_checkScheduled;
+        internal static Task? s_yieldFromDispatchLoopWhen = null;
 
         internal static Task RegisterWasiPollableHandle(int handle, CancellationToken cancellationToken)
         {
@@ -33,6 +34,39 @@ namespace System.Threading
             ScheduleCheck();
 
             return holder.taskCompletionSource.Task;
+        }
+
+
+        internal static T PollWasiEventLoopUntilResolved<T>(Task<T> mainTask)
+        {
+            s_yieldFromDispatchLoopWhen = mainTask;
+            while (!mainTask.IsCompleted)
+            {
+                ThreadPoolWorkQueue.Dispatch();
+            }
+
+            var exception = mainTask.Exception;
+            if (exception is not null)
+            {
+                throw exception;
+            }
+
+            return mainTask.Result;
+        }
+
+        internal static void PollWasiEventLoopUntilResolvedVoid(Task mainTask)
+        {
+            s_yieldFromDispatchLoopWhen = mainTask;
+            while (!mainTask.IsCompleted)
+            {
+                ThreadPoolWorkQueue.Dispatch();
+            }
+
+            var exception = mainTask.Exception;
+            if (exception is not null)
+            {
+                throw exception;
+            }
         }
 
         internal static void CancelAllPollables()

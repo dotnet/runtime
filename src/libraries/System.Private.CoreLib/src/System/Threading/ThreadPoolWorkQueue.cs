@@ -1127,7 +1127,11 @@ namespace System.Threading
                 }
 
                 // Check if the dispatch quantum has expired
-                if ((uint)(currentTickCount - startTickCount) < DispatchQuantumMs)
+                if ((uint)(currentTickCount - startTickCount) < DispatchQuantumMs
+#if TARGET_WASI
+                    && !WasiEventLoop.s_yieldFromDispatchLoopWhen?.IsCompleted
+#endif
+                )
                 {
                     continue;
                 }
