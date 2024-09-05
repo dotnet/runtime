@@ -41,6 +41,12 @@ namespace Microsoft.Extensions.Hosting.Systemd
                 return;
             }
 
+#if !NETSTANDARD2_1 && !NETSTANDARD2_0 && !NETFRAMEWORK // TODO remove with https://github.com/dotnet/runtime/pull/107185
+            if (OperatingSystem.IsWasi()) throw new PlatformNotSupportedException();
+#else
+            #pragma warning disable CA1416
+#endif
+
             using (var socket = new Socket(AddressFamily.Unix, SocketType.Dgram, ProtocolType.Unspecified))
             {
                 var endPoint = new UnixDomainSocketEndPoint(_socketPath!);
