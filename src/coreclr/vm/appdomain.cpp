@@ -2828,7 +2828,7 @@ DomainAssembly * AppDomain::FindAssembly(PEAssembly * pPEAssembly, FindAssemblyO
     return NULL;
 }
 
-void AppDomain::SetFriendlyName(LPCWSTR pwzFriendlyName, BOOL fDebuggerCares/*=TRUE*/)
+void AppDomain::SetFriendlyName(LPCWSTR pwzFriendlyName)
 {
     CONTRACTL
     {
@@ -2846,23 +2846,7 @@ void AppDomain::SetFriendlyName(LPCWSTR pwzFriendlyName, BOOL fDebuggerCares/*=T
     if (pwzFriendlyName)
         tmpFriendlyName.Set(pwzFriendlyName);
     else
-    {
-        // If there is an assembly, try to get the name from it.
-        // If no assembly, but if it's the DefaultDomain, then give it a name
-
-        if (m_pRootAssembly)
-        {
-            tmpFriendlyName.SetUTF8(m_pRootAssembly->GetSimpleName());
-
-            SString::Iterator i = tmpFriendlyName.End();
-            if (tmpFriendlyName.FindBack(i, '.'))
-                tmpFriendlyName.Truncate(i);
-        }
-        else
-        {
-            tmpFriendlyName.Set(DEFAULT_DOMAIN_FRIENDLY_NAME);
-        }
-    }
+        tmpFriendlyName.Set(DEFAULT_DOMAIN_FRIENDLY_NAME);
 
     tmpFriendlyName.Normalize();
 
@@ -2876,18 +2860,19 @@ void AppDomain::SetFriendlyName(LPCWSTR pwzFriendlyName, BOOL fDebuggerCares/*=T
         if (SUCCEEDED(g_pDebugInterface->UpdateAppDomainEntryInIPC(this)))
         {
             // inform the attached debugger that the name of this appdomain has changed.
-            if (IsDebuggerAttached() && fDebuggerCares)
+            if (IsDebuggerAttached())
                 g_pDebugInterface->NameChangeEvent(this, NULL);
         }
     }
 }
+#endif // !DACCESS_COMPILE
 
-LPCWSTR AppDomain::GetFriendlyName(BOOL fDebuggerCares/*=TRUE*/)
+LPCWSTR AppDomain::GetFriendlyName()
 {
     CONTRACT (LPCWSTR)
     {
-        THROWS;
-        if (GetThreadNULLOk()) {GC_TRIGGERS;} else {DISABLED(GC_NOTRIGGER);}
+        NOTHROW;
+        GC_NOTRIGGER;
         MODE_ANY;
         POSTCONDITION(CheckPointer(RETVAL, NULL_OK));
         INJECT_FAULT(COMPlusThrowOM(););
@@ -2895,10 +2880,16 @@ LPCWSTR AppDomain::GetFriendlyName(BOOL fDebuggerCares/*=TRUE*/)
     CONTRACT_END;
 
     if (m_friendlyName.IsEmpty())
-        SetFriendlyName(NULL, fDebuggerCares);
+        RETURN DEFAULT_DOMAIN_FRIENDLY_NAME;
 
-    RETURN m_friendlyName;
+#ifdef DACCESS_COMPILE
+    RETURN (LPCWSTR)m_friendlyName.DacGetRawUnicode();
+#else
+    RETURN m_friendlyName.GetUnicode();
+#endif
 }
+
+#ifndef DACCESS_COMPILE
 
 LPCWSTR AppDomain::GetFriendlyNameForLogging()
 {
@@ -2952,36 +2943,6 @@ LPCWSTR AppDomain::GetFriendlyNameForDebugger()
 
 
 #endif // !DACCESS_COMPILE
-
-#ifdef DACCESS_COMPILE
-
-PVOID AppDomain::GetFriendlyNameNoSet(bool* isUtf8)
-{
-    SUPPORTS_DAC;
-
-    if (!m_friendlyName.IsEmpty())
-    {
-        *isUtf8 = false;
-        return m_friendlyName.DacGetRawContent();
-    }
-    else if (m_pRootAssembly)
-    {
-        *isUtf8 = true;
-        return (PVOID)m_pRootAssembly->GetSimpleName();
-    }
-    else if (dac_cast<TADDR>(this) ==
-             dac_cast<TADDR>(SystemDomain::System()->DefaultDomain()))
-    {
-        *isUtf8 = false;
-        return (PVOID)DEFAULT_DOMAIN_FRIENDLY_NAME;
-    }
-    else
-    {
-        return NULL;
-    }
-}
-
-#endif // DACCESS_COMPILE
 
 #ifndef DACCESS_COMPILE
 

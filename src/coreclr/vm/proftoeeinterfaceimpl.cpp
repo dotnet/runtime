@@ -5451,20 +5451,20 @@ HRESULT ProfToEEInterfaceImpl::GetAppDomainInfo(AppDomainID appDomainId,
         // Yay!
         NOTHROW;
 
-        // AppDomain::GetFriendlyNameForDebugger triggers
-        GC_TRIGGERS;
+        // Yay!
+        GC_NOTRIGGER;
 
         // Yay!
         MODE_ANY;
 
-        // AppDomain::GetFriendlyNameForDebugger takes a lock
-        CAN_TAKE_LOCK;
+        // Yay!
+        CANNOT_TAKE_LOCK;
 
     }
     CONTRACTL_END;
 
     PROFILER_TO_CLR_ENTRYPOINT_SYNC_EX(
-        kP2EEAllowableAfterAttach | kP2EETriggers,
+        kP2EEAllowableAfterAttach,
         (LF_CORPROF,
          LL_INFO1000,
          "**PROF: GetAppDomainInfo 0x%p.\n",
@@ -5506,7 +5506,7 @@ HRESULT ProfToEEInterfaceImpl::GetAppDomainInfo(AppDomainID appDomainId,
     if (pDomain == SystemDomain::System())
         szFriendlyName = g_pwBaseLibrary;
     else
-        szFriendlyName = ((AppDomain*)pDomain)->GetFriendlyNameForDebugger();
+        szFriendlyName = ((AppDomain*)pDomain)->GetFriendlyName();
 
     if (szFriendlyName != NULL)
     {
