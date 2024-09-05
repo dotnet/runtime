@@ -132,7 +132,7 @@ namespace System.Numerics.Tensors
             TensorSpanHelpers.ValidateStrides(strides, lengths);
 
             nint maxElements = TensorSpanHelpers.ComputeMaxLinearIndex(strides, lengths);
-            if (maxElements >= span.Length && span.Length != 0)
+            if ((maxElements >= span.Length && span.Length != 0) || (span.Length == 0 && maxElements > 0))
                 ThrowHelper.ThrowArgument_InvalidStridesAndLengths();
 
             _shape = new TensorShape(span.Length, lengths, strides);
