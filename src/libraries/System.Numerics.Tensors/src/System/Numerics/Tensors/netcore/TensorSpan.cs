@@ -86,6 +86,9 @@ namespace System.Numerics.Tensors
                 return; // returns default
             }
 
+            if (!typeof(T).IsValueType && array.GetType() != typeof(T[]))
+                ThrowHelper.ThrowArrayTypeMismatchException();
+
             strides = strides.IsEmpty ? (ReadOnlySpan<nint>)TensorSpanHelpers.CalculateStrides(lengths, linearLength) : strides;
             TensorSpanHelpers.ValidateStrides(strides, lengths);
             nint maxElements = TensorSpanHelpers.ComputeMaxLinearIndex(strides, lengths);
