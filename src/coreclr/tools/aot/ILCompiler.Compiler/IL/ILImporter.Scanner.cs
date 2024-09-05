@@ -836,7 +836,13 @@ namespace Internal.IL
                     && ConstructedEETypeNode.CreationAllowed(typeEqualityCheckType)
                     && !typeEqualityCheckType.ConvertToCanonForm(CanonicalFormKind.Specific).IsCanonicalSubtype(CanonicalFormKind.Any))
                 {
-                    if (typeEqualityCheckType.GetTypeDefinition() is MetadataType typeEqualityCheckMetadataType)
+                    // If the type could generate metadata, we set the condition to the presence of the metadata.
+                    // This covers situations where the typeof is compared against metadata-only types.
+                    // Note this assumes a constructed MethodTable always implies having metadata.
+                    // This will likely remain true because anyone can call Object.GetType on a constructed type.
+                    // If the type cannot generate metadata, we only condition on the MethodTable itself.
+                    if (!_factory.MetadataManager.IsReflectionBlocked(typeEqualityCheckType)
+                        && typeEqualityCheckType.GetTypeDefinition() is MetadataType typeEqualityCheckMetadataType)
                         condition = _factory.TypeMetadata(typeEqualityCheckMetadataType);
                     else
                         condition = _factory.MaximallyConstructableType(typeEqualityCheckType);
