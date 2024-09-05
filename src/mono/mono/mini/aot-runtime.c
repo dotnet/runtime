@@ -6547,6 +6547,12 @@ mono_aot_get_method_flags (guint8 *code)
 	return (MonoAotMethodFlags)flags;
 }
 
+MonoAotFileFlags
+mono_aot_get_module_flags (gpointer aot_module)
+{
+	return ((MonoAotModule*)aot_module)->info.flags;
+}
+
 #else
 /* AOT disabled */
 
@@ -6745,6 +6751,12 @@ MonoAotMethodFlags
 mono_aot_get_method_flags (guint8 *code)
 {
 	return MONO_AOT_METHOD_FLAG_NONE;
+}
+
+MonoAotFileFlags
+mono_aot_get_module_flags (gpointer aot_module)
+{
+	return 0;
 }
 
 #endif
