@@ -134,9 +134,9 @@ CorJitResult interceptor_ICJC::compileMethod(ICorJitInfo*                comp,  
     };
     auto doCompile = [&compileParams, &cleanup]()
     {
-        CrashGuard cg{cleanup};
         PAL_TRY(CompileParams*, pParam, &compileParams)
         {
+            CrashGuard cg{cleanup};
             pParam->result = pParam->origComp->compileMethod(
                 pParam->ourICJI,
                 pParam->methodInfo,
