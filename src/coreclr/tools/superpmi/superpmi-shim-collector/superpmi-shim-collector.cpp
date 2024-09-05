@@ -13,6 +13,8 @@
 #include "spmiutil.h"
 #include "jithost.h"
 
+#include "crashprotection.hpp"
+
 // Assumptions:
 // -We'll never be unloaded - we leak memory and have no facility to unload libraries
 // -printf output to console is okay
@@ -153,6 +155,7 @@ extern "C" DLLEXPORT void jitStartup(ICorJitHost* host)
 {
     // crossgen2 doesn't invoke DllMain on Linux/Mac (under PAL), so optionally do initialization work here.
     InitializeShim();
+    CrashProtection::Init();
 
     SetDefaultPaths();
     SetLibName();

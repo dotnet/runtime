@@ -121,7 +121,15 @@ CorJitResult interceptor_ICJC::compileMethod(ICorJitInfo*                comp,  
     *nativeEntry = nullptr;
     *nativeSizeOfCode = 0;
 
-    auto doCompile = [mc, our_ICorJitInfo, this, &compileParams]()
+    auto cleanup = [mc, &our_iCorJitInfo, this, &compileParams]()
+    {
+        if (!our_ICorJitInfo.SavedCollectionEarly())
+        {
+            finalizeAndCommitCollection(mc, compileParams.result, *compileParams.nativeEntry, *compileParams.nativeSizeOfCode);
+        }
+        delete mc;
+    };
+    auto doCompile = [&compileParams, &cleanup]()
     {
         // TODO: replace this with a crash handler
         PAL_TRY(CompileParams*, pParam, &compileParams)
@@ -135,12 +143,7 @@ CorJitResult interceptor_ICJC::compileMethod(ICorJitInfo*                comp,  
         }
         PAL_FINALLY
         {
-            if (!our_ICorJitInfo.SavedCollectionEarly())
-            {
-                finalizeAndCommitCollection(mc, compileParams.result, *compileParams.nativeEntry, *compileParams.nativeSizeOfCode);
-            }
-
-            delete mc;
+            cleanup();
         }
         PAL_ENDTRY;
     };
