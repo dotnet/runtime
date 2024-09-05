@@ -294,12 +294,12 @@ private:
     //union - could save a little memory?
     //{
     PCODE m_pNativeCode;
-    const PTR_MethodDesc m_pMethodDesc;
+    DAC_IGNORE(const) PTR_MethodDesc m_pMethodDesc;
     //};
 
-    const ReJITID m_parentId;
+    DAC_IGNORE(const) ReJITID m_parentId;
     PTR_NativeCodeVersionNode m_pNextMethodDescSibling;
-    const NativeCodeVersionId m_id;
+    DAC_IGNORE(const) NativeCodeVersionId m_id;
 #ifdef FEATURE_TIERED_COMPILATION
     NativeCodeVersion::OptimizationTier m_optTier;
 #endif
@@ -307,8 +307,8 @@ private:
     PTR_GCCoverageInfo m_gcCover;
 #endif
 #ifdef FEATURE_ON_STACK_REPLACEMENT
-    const PTR_PatchpointInfo m_patchpointInfo;
-    const unsigned m_ilOffset;
+    DAC_IGNORE(const) PTR_PatchpointInfo m_patchpointInfo;
+    DAC_IGNORE(const) unsigned m_ilOffset;
 #endif
 
     enum NativeCodeVersionNodeFlags
