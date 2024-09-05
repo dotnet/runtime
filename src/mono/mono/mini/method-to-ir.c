@@ -4179,6 +4179,16 @@ mono_method_check_inlining (MonoCompile *cfg, MonoMethod *method)
 	if (method_does_not_return (method))
 		return FALSE;
 
+	MonoAotModule *amodule = m_class_get_image (method->klass)->aot_module;
+	if (amodule && (amodule != AOT_MODULE_NOT_FOUND) && (mono_aot_get_module_flags (amodule) & MONO_AOT_FILE_FLAG_WITH_LLVM)) {
+		ERROR_DECL (error);
+		mono_class_init_internal (method->klass);
+		gpointer addr = mono_aot_get_method (method, error);
+		// If method is present in aot image compiled with llvm, we don't inline it
+		if (addr && is_ok (error))
+			return FALSE;
+	}
+
 	return TRUE;
 }
 
