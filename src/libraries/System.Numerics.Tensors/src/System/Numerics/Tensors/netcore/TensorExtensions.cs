@@ -398,8 +398,7 @@ namespace System.Numerics.Tensors
             if (tensors[0].Rank > TensorShape.MaxInlineRank)
             {
                 curIndexArray = ArrayPool<nint>.Shared.Rent(tensors[0].Rank);
-                curIndex = curIndexArray;
-                curIndex = curIndex.Slice(0, tensors[0].Rank);
+                curIndex = curIndexArray.AsSpan(0, tensors[0].Rank);
             }
             else
             {
@@ -503,8 +502,7 @@ namespace System.Numerics.Tensors
             if (right.Rank > TensorShape.MaxInlineRank)
             {
                 curIndexArray = ArrayPool<nint>.Shared.Rent(right.Rank);
-                curIndex = curIndexArray;
-                curIndex = curIndex.Slice(0, right.Rank);
+                curIndex = curIndexArray.AsSpan(0, right.Rank);
             }
             else
             {
@@ -559,8 +557,7 @@ namespace System.Numerics.Tensors
             if (x.Rank > TensorShape.MaxInlineRank)
             {
                 curIndexArray = ArrayPool<nint>.Shared.Rent(x.Rank);
-                curIndex = curIndexArray;
-                curIndex = curIndex.Slice(0, x.Rank);
+                curIndex = curIndexArray.AsSpan(0, x.Rank);
             }
             else
             {
@@ -604,8 +601,7 @@ namespace System.Numerics.Tensors
             if (broadcastedLeft.Rank > TensorShape.MaxInlineRank)
             {
                 curIndexArray = ArrayPool<nint>.Shared.Rent(broadcastedRight.Rank);
-                curIndex = curIndexArray;
-                curIndex = curIndex.Slice(0, broadcastedRight.Rank);
+                curIndex = curIndexArray.AsSpan(0, broadcastedRight.Rank);
             }
             else
             {
@@ -643,8 +639,7 @@ namespace System.Numerics.Tensors
             if (x.Rank > TensorShape.MaxInlineRank)
             {
                 curIndexArray = ArrayPool<nint>.Shared.Rent(x.Rank);
-                curIndex = curIndexArray;
-                curIndex = curIndex.Slice(0, x.Rank);
+                curIndex = curIndexArray.AsSpan(0, x.Rank);
             }
             else
             {
@@ -688,9 +683,7 @@ namespace System.Numerics.Tensors
             if (broadcastedRight.Rank > TensorShape.MaxInlineRank)
             {
                 curIndexArray = ArrayPool<nint>.Shared.Rent(broadcastedRight.Lengths.Length);
-                curIndex = curIndexArray;
-                curIndex = curIndex.Slice(0, broadcastedRight.Rank);
-            }
+                curIndex = curIndexArray.AsSpan(0, broadcastedRight.Rank);            }
             else
             {
                 curIndexArray = null;
@@ -727,9 +720,7 @@ namespace System.Numerics.Tensors
             if (x.Rank > TensorShape.MaxInlineRank)
             {
                 curIndexArray = ArrayPool<nint>.Shared.Rent(x.Rank);
-                curIndex = curIndexArray;
-                curIndex = curIndex.Slice(0, x.Rank);
-            }
+                curIndex = curIndexArray.AsSpan(0, x.Rank);            }
             else
             {
                 curIndexArray = null;
@@ -874,9 +865,7 @@ namespace System.Numerics.Tensors
             if (right.Rank > TensorShape.MaxInlineRank)
             {
                 curIndexArray = ArrayPool<nint>.Shared.Rent(right.Rank);
-                curIndex = curIndexArray;
-                curIndex = curIndex.Slice(0, right.Rank);
-            }
+                curIndex = curIndexArray.AsSpan(0, right.Rank);            }
             else
             {
                 curIndexArray = null;
@@ -934,9 +923,7 @@ namespace System.Numerics.Tensors
             if (x.Rank > TensorShape.MaxInlineRank)
             {
                 curIndexArray = ArrayPool<nint>.Shared.Rent(x.Rank);
-                curIndex = curIndexArray;
-                curIndex = curIndex.Slice(0, x.Rank);
-            }
+                curIndex = curIndexArray.AsSpan(0, x.Rank);            }
             else
             {
                 curIndexArray = null;
@@ -994,9 +981,7 @@ namespace System.Numerics.Tensors
             if (y.Rank > TensorShape.MaxInlineRank)
             {
                 curIndexArray = ArrayPool<nint>.Shared.Rent(y.Rank);
-                curIndex = curIndexArray;
-                curIndex = curIndex.Slice(0, y.Rank);
-            }
+                curIndex = curIndexArray.AsSpan(0, y.Rank);            }
             else
             {
                 curIndexArray = null;
@@ -1083,9 +1068,7 @@ namespace System.Numerics.Tensors
             if (right.Rank > TensorShape.MaxInlineRank)
             {
                 curIndexArray = ArrayPool<nint>.Shared.Rent(right.Rank);
-                curIndex = curIndexArray;
-                curIndex = curIndex.Slice(0, right.Rank);
-            }
+                curIndex = curIndexArray.AsSpan(0, right.Rank);            }
             else
             {
                 curIndexArray = null;
@@ -1143,9 +1126,7 @@ namespace System.Numerics.Tensors
             if (x.Rank > TensorShape.MaxInlineRank)
             {
                 curIndexArray = ArrayPool<nint>.Shared.Rent(x.Rank);
-                curIndex = curIndexArray;
-                curIndex = curIndex.Slice(0, x.Rank);
-            }
+                curIndex = curIndexArray.AsSpan(0, x.Rank);            }
             else
             {
                 curIndexArray = null;
@@ -1203,9 +1184,7 @@ namespace System.Numerics.Tensors
             if (y.Rank > TensorShape.MaxInlineRank)
             {
                 curIndexArray = ArrayPool<nint>.Shared.Rent(y.Rank);
-                curIndex = curIndexArray;
-                curIndex = curIndex.Slice(0, y.Rank);
-            }
+                curIndex = curIndexArray.AsSpan(0, y.Rank);            }
             else
             {
                 curIndexArray = null;
@@ -1247,9 +1226,7 @@ namespace System.Numerics.Tensors
             if (broadcastedRight.Rank > TensorShape.MaxInlineRank)
             {
                 curIndexArray = ArrayPool<nint>.Shared.Rent(broadcastedRight.Lengths.Length);
-                curIndex = curIndexArray;
-                curIndex = curIndex.Slice(0, broadcastedRight.Rank);
-            }
+                curIndex = curIndexArray.AsSpan(0, broadcastedRight.Rank);            }
             else
             {
                 curIndexArray = null;
@@ -1286,9 +1263,7 @@ namespace System.Numerics.Tensors
             if (x.Rank > TensorShape.MaxInlineRank)
             {
                 curIndexArray = ArrayPool<nint>.Shared.Rent(x.Rank);
-                curIndex = curIndexArray;
-                curIndex = curIndex.Slice(0, x.Rank);
-            }
+                curIndex = curIndexArray.AsSpan(0, x.Rank);            }
             else
             {
                 curIndexArray = null;
@@ -1325,9 +1300,7 @@ namespace System.Numerics.Tensors
             if (y.Rank > TensorShape.MaxInlineRank)
             {
                 curIndexArray = ArrayPool<nint>.Shared.Rent(y.Rank);
-                curIndex = curIndexArray;
-                curIndex = curIndex.Slice(0, y.Rank);
-            }
+                curIndex = curIndexArray.AsSpan(0, y.Rank);            }
             else
             {
                 curIndexArray = null;
@@ -1370,9 +1343,7 @@ namespace System.Numerics.Tensors
             if (broadcastedRight.Rank > TensorShape.MaxInlineRank)
             {
                 curIndexArray = ArrayPool<nint>.Shared.Rent(broadcastedRight.Lengths.Length);
-                curIndex = curIndexArray;
-                curIndex = curIndex.Slice(0, broadcastedRight.Rank);
-            }
+                curIndex = curIndexArray.AsSpan(0, broadcastedRight.Rank);            }
             else
             {
                 curIndexArray = null;
@@ -1409,9 +1380,7 @@ namespace System.Numerics.Tensors
             if (x.Rank > TensorShape.MaxInlineRank)
             {
                 curIndexArray = ArrayPool<nint>.Shared.Rent(x.Rank);
-                curIndex = curIndexArray;
-                curIndex = curIndex.Slice(0, x.Rank);
-            }
+                curIndex = curIndexArray.AsSpan(0, x.Rank);            }
             else
             {
                 curIndexArray = null;
@@ -1448,9 +1417,7 @@ namespace System.Numerics.Tensors
             if (y.Rank > TensorShape.MaxInlineRank)
             {
                 curIndexArray = ArrayPool<nint>.Shared.Rent(y.Rank);
-                curIndex = curIndexArray;
-                curIndex = curIndex.Slice(0, y.Rank);
-            }
+                curIndex = curIndexArray.AsSpan(0, y.Rank);            }
             else
             {
                 curIndexArray = null;
@@ -1494,9 +1461,7 @@ namespace System.Numerics.Tensors
             if (broadcastedLeft.Rank > TensorShape.MaxInlineRank)
             {
                 curIndexArray = ArrayPool<nint>.Shared.Rent(broadcastedRight.Rank);
-                curIndex = curIndexArray;
-                curIndex = curIndex.Slice(0, broadcastedRight.Rank);
-            }
+                curIndex = curIndexArray.AsSpan(0, broadcastedRight.Rank);            }
             else
             {
                 curIndexArray = null;
@@ -1533,9 +1498,7 @@ namespace System.Numerics.Tensors
             if (x.Rank > TensorShape.MaxInlineRank)
             {
                 curIndexArray = ArrayPool<nint>.Shared.Rent(x.Rank);
-                curIndex = curIndexArray;
-                curIndex = curIndex.Slice(0, x.Rank);
-            }
+                curIndex = curIndexArray.AsSpan(0, x.Rank);            }
             else
             {
                 curIndexArray = null;
@@ -1572,9 +1535,7 @@ namespace System.Numerics.Tensors
             if (y.Rank > TensorShape.MaxInlineRank)
             {
                 curIndexArray = ArrayPool<nint>.Shared.Rent(y.Rank);
-                curIndex = curIndexArray;
-                curIndex = curIndex.Slice(0, y.Rank);
-            }
+                curIndex = curIndexArray.AsSpan(0, y.Rank);            }
             else
             {
                 curIndexArray = null;
@@ -1618,9 +1579,7 @@ namespace System.Numerics.Tensors
             if (broadcastedLeft.Rank > TensorShape.MaxInlineRank)
             {
                 curIndexArray = ArrayPool<nint>.Shared.Rent(broadcastedRight.Rank);
-                curIndex = curIndexArray;
-                curIndex = curIndex.Slice(0, broadcastedRight.Rank);
-            }
+                curIndex = curIndexArray.AsSpan(0, broadcastedRight.Rank);            }
             else
             {
                 curIndexArray = null;
@@ -1657,9 +1616,7 @@ namespace System.Numerics.Tensors
             if (x.Rank > TensorShape.MaxInlineRank)
             {
                 curIndexArray = ArrayPool<nint>.Shared.Rent(x.Rank);
-                curIndex = curIndexArray;
-                curIndex = curIndex.Slice(0, x.Rank);
-            }
+                curIndex = curIndexArray.AsSpan(0, x.Rank);            }
             else
             {
                 curIndexArray = null;
@@ -1696,9 +1653,7 @@ namespace System.Numerics.Tensors
             if (y.Rank > TensorShape.MaxInlineRank)
             {
                 curIndexArray = ArrayPool<nint>.Shared.Rent(y.Rank);
-                curIndex = curIndexArray;
-                curIndex = curIndex.Slice(0, y.Rank);
-            }
+                curIndex = curIndexArray.AsSpan(0, y.Rank);            }
             else
             {
                 curIndexArray = null;
@@ -1786,9 +1741,7 @@ namespace System.Numerics.Tensors
             if (right.Rank > TensorShape.MaxInlineRank)
             {
                 curIndexArray = ArrayPool<nint>.Shared.Rent(right.Rank);
-                curIndex = curIndexArray;
-                curIndex = curIndex.Slice(0, right.Rank);
-            }
+                curIndex = curIndexArray.AsSpan(0, right.Rank);            }
             else
             {
                 curIndexArray = null;
@@ -1846,9 +1799,7 @@ namespace System.Numerics.Tensors
             if (x.Rank > TensorShape.MaxInlineRank)
             {
                 curIndexArray = ArrayPool<nint>.Shared.Rent(x.Rank);
-                curIndex = curIndexArray;
-                curIndex = curIndex.Slice(0, x.Rank);
-            }
+                curIndex = curIndexArray.AsSpan(0, x.Rank);            }
             else
             {
                 curIndexArray = null;
@@ -1906,9 +1857,7 @@ namespace System.Numerics.Tensors
             if (y.Rank > TensorShape.MaxInlineRank)
             {
                 curIndexArray = ArrayPool<nint>.Shared.Rent(y.Rank);
-                curIndex = curIndexArray;
-                curIndex = curIndex.Slice(0, y.Rank);
-            }
+                curIndex = curIndexArray.AsSpan(0, y.Rank);            }
             else
             {
                 curIndexArray = null;
@@ -1995,9 +1944,7 @@ namespace System.Numerics.Tensors
             if (right.Rank > TensorShape.MaxInlineRank)
             {
                 curIndexArray = ArrayPool<nint>.Shared.Rent(right.Rank);
-                curIndex = curIndexArray;
-                curIndex = curIndex.Slice(0, right.Rank);
-            }
+                curIndex = curIndexArray.AsSpan(0, right.Rank);            }
             else
             {
                 curIndexArray = null;
@@ -2055,9 +2002,7 @@ namespace System.Numerics.Tensors
             if (x.Rank > TensorShape.MaxInlineRank)
             {
                 curIndexArray = ArrayPool<nint>.Shared.Rent(x.Rank);
-                curIndex = curIndexArray;
-                curIndex = curIndex.Slice(0, x.Rank);
-            }
+                curIndex = curIndexArray.AsSpan(0, x.Rank);            }
             else
             {
                 curIndexArray = null;
@@ -2115,9 +2060,7 @@ namespace System.Numerics.Tensors
             if (y.Rank > TensorShape.MaxInlineRank)
             {
                 curIndexArray = ArrayPool<nint>.Shared.Rent(y.Rank);
-                curIndex = curIndexArray;
-                curIndex = curIndex.Slice(0, y.Rank);
-            }
+                curIndex = curIndexArray.AsSpan(0, y.Rank);            }
             else
             {
                 curIndexArray = null;
@@ -2160,9 +2103,7 @@ namespace System.Numerics.Tensors
             if (broadcastedRight.Rank > TensorShape.MaxInlineRank)
             {
                 curIndexArray = ArrayPool<nint>.Shared.Rent(broadcastedRight.Lengths.Length);
-                curIndex = curIndexArray;
-                curIndex = curIndex.Slice(0, broadcastedRight.Rank);
-            }
+                curIndex = curIndexArray.AsSpan(0, broadcastedRight.Rank);            }
             else
             {
                 curIndexArray = null;
@@ -2199,9 +2140,7 @@ namespace System.Numerics.Tensors
             if (x.Rank > TensorShape.MaxInlineRank)
             {
                 curIndexArray = ArrayPool<nint>.Shared.Rent(x.Rank);
-                curIndex = curIndexArray;
-                curIndex = curIndex.Slice(0, x.Rank);
-            }
+                curIndex = curIndexArray.AsSpan(0, x.Rank);            }
             else
             {
                 curIndexArray = null;
@@ -2238,9 +2177,7 @@ namespace System.Numerics.Tensors
             if (y.Rank > TensorShape.MaxInlineRank)
             {
                 curIndexArray = ArrayPool<nint>.Shared.Rent(y.Rank);
-                curIndex = curIndexArray;
-                curIndex = curIndex.Slice(0, y.Rank);
-            }
+                curIndex = curIndexArray.AsSpan(0, y.Rank);            }
             else
             {
                 curIndexArray = null;
@@ -2284,9 +2221,7 @@ namespace System.Numerics.Tensors
             if (broadcastedRight.Rank > TensorShape.MaxInlineRank)
             {
                 curIndexArray = ArrayPool<nint>.Shared.Rent(broadcastedRight.Lengths.Length);
-                curIndex = curIndexArray;
-                curIndex = curIndex.Slice(0, broadcastedRight.Rank);
-            }
+                curIndex = curIndexArray.AsSpan(0, broadcastedRight.Rank);            }
             else
             {
                 curIndexArray = null;
@@ -2323,9 +2258,7 @@ namespace System.Numerics.Tensors
             if (x.Rank > TensorShape.MaxInlineRank)
             {
                 curIndexArray = ArrayPool<nint>.Shared.Rent(x.Rank);
-                curIndex = curIndexArray;
-                curIndex = curIndex.Slice(0, x.Rank);
-            }
+                curIndex = curIndexArray.AsSpan(0, x.Rank);            }
             else
             {
                 curIndexArray = null;
@@ -2362,9 +2295,7 @@ namespace System.Numerics.Tensors
             if (y.Rank > TensorShape.MaxInlineRank)
             {
                 curIndexArray = ArrayPool<nint>.Shared.Rent(y.Rank);
-                curIndex = curIndexArray;
-                curIndex = curIndex.Slice(0, y.Rank);
-            }
+                curIndex = curIndexArray.AsSpan(0, y.Rank);            }
             else
             {
                 curIndexArray = null;
@@ -2407,9 +2338,7 @@ namespace System.Numerics.Tensors
             if (broadcastedRight.Rank > TensorShape.MaxInlineRank)
             {
                 curIndexArray = ArrayPool<nint>.Shared.Rent(broadcastedRight.Lengths.Length);
-                curIndex = curIndexArray;
-                curIndex = curIndex.Slice(0, broadcastedRight.Rank);
-            }
+                curIndex = curIndexArray.AsSpan(0, broadcastedRight.Rank);            }
             else
             {
                 curIndexArray = null;
@@ -2446,9 +2375,7 @@ namespace System.Numerics.Tensors
             if (x.Rank > TensorShape.MaxInlineRank)
             {
                 curIndexArray = ArrayPool<nint>.Shared.Rent(x.Rank);
-                curIndex = curIndexArray;
-                curIndex = curIndex.Slice(0, x.Rank);
-            }
+                curIndex = curIndexArray.AsSpan(0, x.Rank);            }
             else
             {
                 curIndexArray = null;
@@ -2485,9 +2412,7 @@ namespace System.Numerics.Tensors
             if (y.Rank > TensorShape.MaxInlineRank)
             {
                 curIndexArray = ArrayPool<nint>.Shared.Rent(y.Rank);
-                curIndex = curIndexArray;
-                curIndex = curIndex.Slice(0, y.Rank);
-            }
+                curIndex = curIndexArray.AsSpan(0, y.Rank);            }
             else
             {
                 curIndexArray = null;
@@ -2530,9 +2455,7 @@ namespace System.Numerics.Tensors
             if (broadcastedRight.Rank > TensorShape.MaxInlineRank)
             {
                 curIndexArray = ArrayPool<nint>.Shared.Rent(broadcastedRight.Lengths.Length);
-                curIndex = curIndexArray;
-                curIndex = curIndex.Slice(0, broadcastedRight.Rank);
-            }
+                curIndex = curIndexArray.AsSpan(0, broadcastedRight.Rank);            }
             else
             {
                 curIndexArray = null;
@@ -2569,9 +2492,7 @@ namespace System.Numerics.Tensors
             if (x.Rank > TensorShape.MaxInlineRank)
             {
                 curIndexArray = ArrayPool<nint>.Shared.Rent(x.Rank);
-                curIndex = curIndexArray;
-                curIndex = curIndex.Slice(0, x.Rank);
-            }
+                curIndex = curIndexArray.AsSpan(0, x.Rank);            }
             else
             {
                 curIndexArray = null;
@@ -2608,9 +2529,7 @@ namespace System.Numerics.Tensors
             if (y.Rank > TensorShape.MaxInlineRank)
             {
                 curIndexArray = ArrayPool<nint>.Shared.Rent(y.Rank);
-                curIndex = curIndexArray;
-                curIndex = curIndex.Slice(0, y.Rank);
-            }
+                curIndex = curIndexArray.AsSpan(0, y.Rank);            }
             else
             {
                 curIndexArray = null;
@@ -6746,9 +6665,7 @@ namespace System.Numerics.Tensors
                 if (input.Lengths.Length > TensorShape.MaxInlineRank)
                 {
                     curIndexArray = ArrayPool<nint>.Shared.Rent(input.Lengths.Length);
-                    curIndex = curIndexArray;
-                    curIndex = curIndex.Slice(0, input.Rank);
-                }
+                    curIndex = curIndexArray.AsSpan(0, input.Rank);                }
                 else
                 {
                     curIndexArray = null;
@@ -6798,9 +6715,7 @@ namespace System.Numerics.Tensors
                 if (input.Lengths.Length > TensorShape.MaxInlineRank)
                 {
                     curIndexArray = ArrayPool<nint>.Shared.Rent(input.Lengths.Length);
-                    curIndex = curIndexArray;
-                    curIndex = curIndex.Slice(0, input.Rank);
-                }
+                    curIndex = curIndexArray.AsSpan(0, input.Rank);                }
                 else
                 {
                     curIndexArray = null;
@@ -6850,9 +6765,7 @@ namespace System.Numerics.Tensors
                 if (input.Lengths.Length > TensorShape.MaxInlineRank)
                 {
                     curIndexArray = ArrayPool<nint>.Shared.Rent(input.Lengths.Length);
-                    curIndex = curIndexArray;
-                    curIndex = curIndex.Slice(0, input.Rank);
-                }
+                    curIndex = curIndexArray.AsSpan(0, input.Rank);                }
                 else
                 {
                     curIndexArray = null;
@@ -6914,9 +6827,7 @@ namespace System.Numerics.Tensors
                 if (newSize.Length > TensorShape.MaxInlineRank)
                 {
                     curIndexArray = ArrayPool<nint>.Shared.Rent(newSize.Length);
-                    curIndex = curIndexArray;
-                    curIndex = curIndex.Slice(0, newSize.Length);
-                }
+                    curIndex = curIndexArray.AsSpan(0, newSize.Length);                }
                 else
                 {
                     curIndexArray = null;

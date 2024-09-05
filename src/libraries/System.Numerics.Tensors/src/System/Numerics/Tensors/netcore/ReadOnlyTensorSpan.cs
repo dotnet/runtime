@@ -7,7 +7,6 @@ using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using static System.Runtime.InteropServices.JavaScript.JSType;
 using EditorBrowsableAttribute = System.ComponentModel.EditorBrowsableAttribute;
 using EditorBrowsableState = System.ComponentModel.EditorBrowsableState;
 
@@ -527,8 +526,7 @@ namespace System.Numerics.Tensors
                 if (Rank > TensorShape.MaxInlineRank)
                 {
                     curIndexesArray = ArrayPool<nint>.Shared.Rent(Rank);
-                    curIndexes = curIndexesArray;
-                    curIndexes = curIndexes.Slice(0, Rank);
+                    curIndexes = curIndexesArray.AsSpan(0, Rank);
                 }
                 else
                 {
@@ -575,8 +573,7 @@ namespace System.Numerics.Tensors
                 if (Rank > TensorShape.MaxInlineRank)
                 {
                     curIndexesArray = ArrayPool<nint>.Shared.Rent(Rank);
-                    curIndexes = curIndexesArray;
-                    curIndexes = curIndexes.Slice(0, Rank);
+                    curIndexes = curIndexesArray.AsSpan(0, Rank);
                 }
                 else
                 {
@@ -663,14 +660,10 @@ namespace System.Numerics.Tensors
             if (Rank > TensorShape.MaxInlineRank)
             {
                 lengthsArray = ArrayPool<nint>.Shared.Rent(Rank);
-                lengths = lengthsArray;
-                lengths = lengths.Slice(0, Rank);
-                lengthsArray = null;
+                lengths = lengthsArray.AsSpan(0, Rank);
 
                 offsetsArray = ArrayPool<nint>.Shared.Rent(Rank);
-                offsets = offsetsArray;
-                offsets = offsets.Slice(0, Rank);
-                offsetsArray = null;
+                offsets = offsetsArray.AsSpan(0, Rank);
             }
             else
             {
@@ -687,21 +680,21 @@ namespace System.Numerics.Tensors
             }
 
             // When we have an empty Tensor and someone wants to slice all of it, we should return an empty Tensor.
-            if (TensorSpanHelpers.CalculateTotalLength(Lengths) == 0)
+            if (FlattenedLength == 0)
             {
                 for (int i = 0; i < offsets.Length; i++)
                 {
-                    if (offsets[i] != 0 || lengths[i] != 0)
+                    if (lengths[i] > Lengths[i])
                         ThrowHelper.ThrowIndexOutOfRangeException();
                 }
-                toReturn = new ReadOnlyTensorSpan<T>(ref _reference, lengths, _shape.Strides, _shape._memoryLength);
+                toReturn = new TensorSpan<T>(ref _reference, lengths, _shape.Strides, _shape._memoryLength); ;
             }
             else
             {
                 nint index = 0;
                 for (int i = 0; i < offsets.Length; i++)
                 {
-                    if (offsets[i] < 0 || offsets[i] >= Lengths[i])
+                    if ((nuint)offsets[i] >= (nuint)Lengths[i])
                         ThrowHelper.ThrowIndexOutOfRangeException();
 
                     index += Strides[i] * (offsets[i]);
@@ -735,8 +728,7 @@ namespace System.Numerics.Tensors
                 if (Rank > TensorShape.MaxInlineRank)
                 {
                     curIndexesArray = ArrayPool<nint>.Shared.Rent(Rank);
-                    curIndexes = curIndexesArray;
-                    curIndexes = curIndexes.Slice(0, Rank);
+                    curIndexes = curIndexesArray.AsSpan(0, Rank);
                 }
                 else
                 {
@@ -776,8 +768,7 @@ namespace System.Numerics.Tensors
             if (Rank > TensorShape.MaxInlineRank)
             {
                 curIndexesArray = ArrayPool<nint>.Shared.Rent(Rank);
-                curIndexes = curIndexesArray;
-                curIndexes = curIndexes.Slice(0, Rank);
+                curIndexes = curIndexesArray.AsSpan(0, Rank);
             }
             else
             {

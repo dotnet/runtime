@@ -980,7 +980,50 @@ namespace System.Numerics.Tensors.Tests
         public static void ReadOnlyTensorSpanSliceTest()
         {
             // Make sure slicing an empty TensorSpan works
-            new TensorSpan<double>(Array.Empty<double>()).Slice(new NRange[] { .. });
+            TensorSpan<int> emptyTensorSpan = new TensorSpan<int>(Array.Empty<int>()).Slice(new NRange[] { .. });
+            Assert.Equal([0], emptyTensorSpan.Lengths);
+            Assert.Equal(1, emptyTensorSpan.Rank);
+            Assert.Equal(0, emptyTensorSpan.FlattenedLength);
+
+            // Make sure slicing a multi-dimensional empty TensorSpan works
+            int[,] empty2dArray = new int[2, 0];
+            emptyTensorSpan = new TensorSpan<int>(empty2dArray);
+            TensorSpan<int> slicedEmptyTensorSpan = emptyTensorSpan.Slice(new NRange[] { .., .. });
+            Assert.Equal([2, 0], slicedEmptyTensorSpan.Lengths);
+            Assert.Equal(2, slicedEmptyTensorSpan.Rank);
+            Assert.Equal(0, slicedEmptyTensorSpan.FlattenedLength);
+
+            slicedEmptyTensorSpan = emptyTensorSpan.Slice(new NRange[] { 0..1, .. });
+            Assert.Equal([1, 0], slicedEmptyTensorSpan.Lengths);
+            Assert.Equal(2, slicedEmptyTensorSpan.Rank);
+            Assert.Equal(0, slicedEmptyTensorSpan.FlattenedLength);
+
+            // Make sure slicing a multi-dimensional empty TensorSpan works
+            int[,,,] empty4dArray = new int[2, 5, 1, 0];
+            emptyTensorSpan = new TensorSpan<int>(empty4dArray);
+            slicedEmptyTensorSpan = emptyTensorSpan.Slice(new NRange[] { .., .., .., .. });
+            Assert.Equal([2, 5, 1, 0], slicedEmptyTensorSpan.Lengths);
+            Assert.Equal(4, slicedEmptyTensorSpan.Rank);
+            Assert.Equal(0, slicedEmptyTensorSpan.FlattenedLength);
+
+            emptyTensorSpan = new TensorSpan<int>(empty4dArray);
+            slicedEmptyTensorSpan = emptyTensorSpan.Slice(new NRange[] { 0..1, .., .., .. });
+            Assert.Equal([1, 5, 1, 0], slicedEmptyTensorSpan.Lengths);
+            Assert.Equal(4, slicedEmptyTensorSpan.Rank);
+            Assert.Equal(0, slicedEmptyTensorSpan.FlattenedLength);
+
+            emptyTensorSpan = new TensorSpan<int>(empty4dArray);
+            slicedEmptyTensorSpan = emptyTensorSpan.Slice(new NRange[] { 0..1, 2..3, .., .. });
+            Assert.Equal([1, 1, 1, 0], slicedEmptyTensorSpan.Lengths);
+            Assert.Equal(4, slicedEmptyTensorSpan.Rank);
+            Assert.Equal(0, slicedEmptyTensorSpan.FlattenedLength);
+
+            empty4dArray = new int[2, 0, 1, 5];
+            emptyTensorSpan = new TensorSpan<int>(empty4dArray);
+            slicedEmptyTensorSpan = emptyTensorSpan.Slice(new NRange[] { .., .., .., .. });
+            Assert.Equal([2, 0, 1, 5], slicedEmptyTensorSpan.Lengths);
+            Assert.Equal(4, slicedEmptyTensorSpan.Rank);
+            Assert.Equal(0, slicedEmptyTensorSpan.FlattenedLength);
 
             int[] a = [1, 2, 3, 4, 5, 6, 7, 8, 9];
             int[] results = new int[9];
