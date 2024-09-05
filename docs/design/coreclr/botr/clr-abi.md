@@ -81,7 +81,7 @@ However, unlike native varargs, all floating point arguments are not promoted to
 
 Managed varargs are not supported in .NET Core.
 
-Managed/native varargs are [supported on Windows only](https://github.com/dotnet/runtime/issues/82081).
+Managed/native varargs are supported on Windows only. Support for managed/native varargs on non-Windows platforms is tracked by [this issue](https://github.com/dotnet/runtime/issues/82081).
 
 ## Generics
 
