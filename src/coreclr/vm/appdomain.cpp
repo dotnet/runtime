@@ -430,27 +430,6 @@ void PinnedHeapHandleTable::EnumStaticGCRefs(promote_func* fn, ScanContext* sc)
     }
 }
 
-//*****************************************************************************
-// BaseDomain
-//*****************************************************************************
-
-BaseDomain::BaseDomain()
-{
-    // initialize fields so the domain can be safely destructed
-    // shouldn't call anything that can fail here - use ::Init instead
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
-        FORBID_FAULT;
-    }
-    CONTRACTL_END;
-
-    // Make sure the container is set to NULL so that it gets loaded when it is used.
-    m_pPinnedHeapHandleTable = NULL;
-} //BaseDomain::BaseDomain
-
 #undef LOADERHEAP_PROFILE_COUNTER
 
 void AppDomain::ClearBinderContext()
@@ -573,7 +552,7 @@ void AppDomain::SetNativeDllSearchDirectories(LPCWSTR wszNativeDllSearchDirector
     }
 }
 
-OBJECTREF* BaseDomain::AllocateObjRefPtrsInLargeTable(int nRequested, DynamicStaticsInfo* pStaticsInfo, MethodTable *pMTToFillWithStaticBoxes, bool isClassInitdeByUpdatingStaticPointer)
+OBJECTREF* AppDomain::AllocateObjRefPtrsInLargeTable(int nRequested, DynamicStaticsInfo* pStaticsInfo, MethodTable *pMTToFillWithStaticBoxes, bool isClassInitdeByUpdatingStaticPointer)
 {
     CONTRACTL
     {
@@ -1622,6 +1601,30 @@ HRESULT SystemDomain::NotifyProfilerShutdown()
 #endif // PROFILING_SUPPORTED
 
 AppDomain::AppDomain()
+    : m_handleStore{NULL}
+    , m_pPinnedHeapHandleTable{NULL}
+    , m_pDefaultBinder{NULL}
+    , m_pRefClassFactHash{NULL}
+#ifdef FEATURE_COMINTEROP
+    , m_pRefDispIDCache{NULL}
+    , m_hndMissing{NULL}
+#endif //FEATURE_COMINTEROP
+    , m_pDelayedLoaderAllocatorUnloadList{NULL}
+    , m_pRootAssembly{NULL}
+    , m_dwFlags{0}
+    , m_cRef{1}
+#ifdef FEATURE_COMINTEROP
+    , m_pRCWCache{NULL}
+#endif //FEATURE_COMINTEROP
+#ifdef FEATURE_COMWRAPPERS
+    , m_pRCWRefCache{NULL}
+#endif // FEATURE_COMWRAPPERS
+    , m_Stage{STAGE_CREATING}
+    , m_MemoryPressure{0}
+    , m_ForceTrivialWaitOperations{false}
+#ifdef FEATURE_TYPEEQUIVALENCE
+    , m_pTypeEquivalenceTable{NULL}
+#endif // FEATURE_TYPEEQUIVALENCE
 {
     // initialize fields so the appdomain can be safely destructed
     // shouldn't call anything that can fail here - use ::Init instead
@@ -1634,44 +1637,15 @@ AppDomain::AppDomain()
     }
     CONTRACTL_END;
 
-    m_cRef=1;
-
     m_JITLock.PreInit();
     m_ClassInitLock.PreInit();
     m_ILStubGenLock.PreInit();
     m_NativeTypeLoadLock.PreInit();
     m_FileLoadLock.PreInit();
 
-    m_pDefaultBinder = NULL;
-    m_pRootAssembly = NULL;
-
-    m_dwFlags = 0;
-#ifdef FEATURE_COMINTEROP
-    m_pRCWCache = NULL;
-#endif //FEATURE_COMINTEROP
-#ifdef FEATURE_COMWRAPPERS
-    m_pRCWRefCache = NULL;
-#endif // FEATURE_COMWRAPPERS
-
-    m_handleStore = NULL;
-
 #ifdef _DEBUG
     m_Assemblies.Debug_SetAppDomain(this);
 #endif // _DEBUG
-
-#ifdef FEATURE_COMINTEROP
-    m_pRefDispIDCache = NULL;
-    m_hndMissing = NULL;
-#endif
-
-    m_pRefClassFactHash = NULL;
-
-    m_ForceTrivialWaitOperations = false;
-    m_Stage=STAGE_CREATING;
-
-#ifdef FEATURE_TYPEEQUIVALENCE
-    m_pTypeEquivalenceTable = NULL;
-#endif // FEATURE_TYPEEQUIVALENCE
 
 } // AppDomain::AppDomain
 
@@ -1696,12 +1670,9 @@ void AppDomain::Init()
     CONTRACTL
     {
         STANDARD_VM_CHECK;
+        PRECONDITION(m_Stage == STAGE_CREATING);
     }
     CONTRACTL_END;
-
-    m_pDelayedLoaderAllocatorUnloadList = NULL;
-
-    SetStage( STAGE_CREATING);
 
     //
     //   The JIT lock and the CCtor locks are at the same level (and marked as
@@ -1728,8 +1699,6 @@ void AppDomain::Init()
 
     // Set up the binding caches
     m_AssemblyCache.Init(&m_DomainCacheCrst, GetHighFrequencyHeap());
-
-    m_MemoryPressure = 0;
 
     m_handleStore = GCHandleUtilities::GetGCHandleManager()->GetGlobalHandleStore();
     if (!m_handleStore)

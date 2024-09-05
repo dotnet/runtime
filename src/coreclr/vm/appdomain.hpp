@@ -457,7 +457,7 @@ public:
     //
     // Initialization/shutdown routines for every instance of an BaseDomain.
 
-    BaseDomain();
+    BaseDomain() = default;
     virtual ~BaseDomain() {}
 
     virtual BOOL IsAppDomain()    { LIMITED_METHOD_DAC_CONTRACT; return FALSE; }
@@ -472,21 +472,6 @@ public:
 
     STRINGREF *IsStringInterned(STRINGREF *pString);
     STRINGREF *GetOrInternString(STRINGREF *pString);
-
-    // Returns an array of OBJECTREF* that can be used to store domain specific data.
-    // Statics and reflection info (Types, MemberInfo,..) are stored this way
-    // If pStaticsInfo != 0, allocation will only take place if GC statics in the DynamicStaticsInfo are NULL (and the allocation
-    // will be properly serialized)
-    OBJECTREF *AllocateObjRefPtrsInLargeTable(int nRequested, DynamicStaticsInfo* pStaticsInfo = NULL, MethodTable *pMTToFillWithStaticBoxes = NULL, bool isClassInitdeByUpdatingStaticPointer = false);
-
-protected:
-
-    //****************************************************************************************
-    // Helper method to initialize the large heap handle table.
-    void InitPinnedHeapHandleTable();
-
-    // The pinned heap handle table.
-    PinnedHeapHandleTable       *m_pPinnedHeapHandleTable;
 
 #ifdef DACCESS_COMPILE
 public:
@@ -1256,6 +1241,12 @@ public:
     void NotifyDebuggerUnload();
 #endif // DEBUGGING_SUPPORTED
 
+public:
+    // Returns an array of OBJECTREF* that can be used to store domain specific data.
+    // Statics and reflection info (Types, MemberInfo,..) are stored this way
+    // If pStaticsInfo != 0, allocation will only take place if GC statics in the DynamicStaticsInfo are NULL (and the allocation
+    // will be properly serialized)
+    OBJECTREF *AllocateObjRefPtrsInLargeTable(int nRequested, DynamicStaticsInfo* pStaticsInfo = NULL, MethodTable *pMTToFillWithStaticBoxes = NULL, bool isClassInitdeByUpdatingStaticPointer = false);
 #ifndef DACCESS_COMPILE
     OBJECTREF* AllocateStaticFieldObjRefPtrs(int nRequested)
     {
@@ -1265,7 +1256,16 @@ public:
     }
 #endif // DACCESS_COMPILE
 
-    void              EnumStaticGCRefs(promote_func* fn, ScanContext* sc);
+private:
+    // Helper method to initialize the large heap handle table.
+    void InitPinnedHeapHandleTable();
+
+private:
+    // The pinned heap handle table.
+    PinnedHeapHandleTable       *m_pPinnedHeapHandleTable;
+
+public:
+    void EnumStaticGCRefs(promote_func* fn, ScanContext* sc);
 
     void SetupSharedStatics();
 
