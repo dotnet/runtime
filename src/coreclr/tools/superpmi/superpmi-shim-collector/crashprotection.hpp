@@ -12,7 +12,12 @@
 class CrashProtection final
 {
 public:
-    struct Handler {
+    ~CrashProtection() = default;
+
+    static bool Init();
+
+    struct Handler
+    {
         using HandlerFuncArg = const void*;
         typedef bool(*HandlerFunc)(HandlerFuncArg arg);
         HandlerFunc Fn;
@@ -21,51 +26,50 @@ public:
         Handler(const Handler& other) = default;
         Handler& operator=(const Handler& other) = default;
 
-        bool Run() const {
+        bool operator()() const {
             return Fn(Arg);
         }
     };
 
 private:
-    class HandlerThread {
-        PipeChannel::Reader m_commands;
+    class HandlerThread
+    {
+        PipeChannel::Reader m_trigger;
         PipeChannel::Writer m_completion;
         const Handler *volatile m_currentHandler; // TODO: atomic
     public:
-        HandlerThread(PipeChannel::Reader commands, PipeChannel::Writer completion) : m_commands{std::move(commands)}, m_completion{std::move(completion)}, m_currentHandler(nullptr) {}
+        HandlerThread(PipeChannel::Reader trigger, PipeChannel::Writer completion) : m_trigger{std::move(trigger)}, m_completion{std::move(completion)}, m_currentHandler(nullptr)
+        {
+        }
         HandlerThread(const HandlerThread&) = delete;
         HandlerThread& operator=(const HandlerThread&) = delete;
-        HandlerThread(HandlerThread&& other) : m_commands{std::move(other.m_commands) }, m_completion{std::move(other.m_completion)}, m_currentHandler{other.m_currentHandler} {}
+        HandlerThread(HandlerThread&& other) : m_trigger{std::move(other.m_trigger) }, m_completion{std::move(other.m_completion)}, m_currentHandler{other.m_currentHandler}
+        {
+        }
         HandlerThread& operator=(HandlerThread&& other)
         {
-            this->m_commands = std::move(other.m_commands);
-            this->m_completion = std::move(other.m_completion);
+            m_trigger = std::move(other.m_trigger);
+            m_completion = std::move(other.m_completion);
             return *this;
         }
 
-        const Handler* ExchangeHandler(const Handler* newHandler) {
+        const Handler* ExchangeHandler(const Handler* newHandler)
+        {
             // TODO: atomic
             const Handler* oldHandler = m_currentHandler;
             m_currentHandler = newHandler;
             return oldHandler;
         }
 
-        const Handler* LoadHandler() const {
+        const Handler* LoadHandler() const
+        {
             // TODO: atomic
             return m_currentHandler;
         }
 
-        const PipeChannel::Reader& Commands() const {
-            return m_commands;
-        }
+        bool WaitForTrigger() const;
 
-        enum class Command : int {
-            Run = 'R',
-        };
-
-        bool OnRun(const Handler *handler);
-
-        void SignalComplection();
+        bool OnTrigger(const Handler *handler) const;
 
         static void HandlerThreadMain(CrashProtection::HandlerThread* self);
     };
@@ -84,13 +88,6 @@ public:
     CrashProtection(const CrashProtection&) = delete;
     CrashProtection& operator=(const CrashProtection&) = delete;
 
-public:
-    ~CrashProtection()
-    {
-    }
-
-    static bool Init();
-
 private:
     bool InstallSegvHandler();
 
@@ -98,7 +95,6 @@ private:
 
 private:
     /* async signal context */
-
     static void OnSigSegv(int signo, siginfo_t *siginfo, void* ucontext);
 
     /* async signal context */
@@ -108,20 +104,20 @@ private:
     bool HandleCrash() const;
 
     /* async signal context */
-    void WaitForCompletion() const;
-
-    /* async signal context */
     bool SendRun() const;
 
+    /* async signal context */
+    void WaitForCompletion() const;
+
 private:
-    void OnActivate(const Handler *handler, const Handler * *prevHandler);
+    const Handler* OnActivate(const Handler *handler);
 
     void OnDeactivate(const Handler *restoreHandler);
 
 private:
-    static void Activate(const Handler *handler, const Handler * *prevHandler)
+    static const Handler* Activate(const Handler *handler)
     {
-        s_self->OnActivate(handler, prevHandler);
+        return s_self->OnActivate(handler);
     }
     static void Deactivate(const Handler *restoreHandler)
     {
@@ -133,17 +129,17 @@ private:
 class CrashGuard final
 {
 private:
-    const CrashProtection::Handler * m_prev;
+    const CrashProtection::Handler* m_prev;
     CrashProtection::Handler m_cur;
 public:
     explicit CrashGuard(CrashProtection::Handler::HandlerFunc fn, CrashProtection::Handler::HandlerFuncArg arg = nullptr) : m_prev{nullptr}, m_cur{CrashProtection::Handler(fn, arg)}
     {
-        CrashProtection::Activate(&m_cur, &m_prev);
+        m_prev = CrashProtection::Activate(&m_cur);
     }
 
     explicit CrashGuard(std::function<bool()> fn) : m_prev{nullptr}, m_cur{CrashProtection::Handler{&HandlerFnAdapter, &fn}}
     {
-        CrashProtection::Activate(&m_cur, &m_prev);
+        m_prev = CrashProtection::Activate(&m_cur);
     }
 
     ~CrashGuard()

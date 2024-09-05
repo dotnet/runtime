@@ -17,28 +17,29 @@ std::unique_ptr<CrashProtection> CrashProtection::s_self;
 #define LOG(msg) fprintf (stderr, msg "\n")
 #define LOGV(fmt, ...) fprintf(stderr, fmt "\n", __VA_ARGS__)
 
-namespace {
+namespace
+{
     int async_safe_vfprintf (int handle, char const *format, va_list args)
     {
         char print_buff [1024];
         print_buff [0] = '\0';
-        vsnprintf (print_buff, sizeof(print_buff), format, args);
-        int ret = write (handle, print_buff, (uint32_t) strlen (print_buff));
+        vsnprintf(print_buff, sizeof(print_buff), format, args);
+        int ret = write(handle, print_buff, (uint32_t) strlen (print_buff));
 
         return ret;
     }
 
     int async_safe_vprintf (char const *format, va_list args)
     {
-        return async_safe_vfprintf (1, format, args);
+        return async_safe_vfprintf(1, format, args);
     }
 
     int async_safe_printf (char const *format, ...)
     {
         va_list args;
-        va_start (args, format);
-        int ret = async_safe_vfprintf (1, format, args);
-        va_end (args);
+        va_start(args, format);
+        int ret = async_safe_vfprintf(1, format, args);
+        va_end(args);
 
         return ret;
     }
@@ -50,7 +51,8 @@ namespace {
 namespace
 {
     template<typename TPayload>
-    class SyncThreadStarter {
+    class SyncThreadStarter
+    {
     public:
         typedef void (*ThreadFunc)(TPayload payload);
 
@@ -66,11 +68,13 @@ namespace
         SyncThreadStarter(ThreadFunc func, TPayload&& payload) : m_payload{std::move(payload)}, m_func{func}, m_mutex{}, m_signal_started{}, m_started{false}
         {
             int err;
-            if ((err = pthread_mutex_init (&m_mutex, nullptr)) != 0) {
+            if ((err = pthread_mutex_init (&m_mutex, nullptr)) != 0)
+            {
                 fprintf(stderr, "pthread_mutex_init failed: %s\n", strerror(err));
                 abort();
             }
-            if ((err = pthread_cond_init(&m_signal_started, nullptr)) != 0) {
+            if ((err = pthread_cond_init(&m_signal_started, nullptr)) != 0)
+            {
                 fprintf(stderr, "pthread_cond_init failed: %s\n", strerror(err));
                 abort();
             }
@@ -88,7 +92,8 @@ namespace
         bool Start(pthread_t* thread) const
         {
             Lock lock{*this};
-            if (pthread_create (thread, nullptr, &CoordinatedStart, const_cast<void*>(static_cast<const void*>(this))) != 0) {
+            if (pthread_create (thread, nullptr, &CoordinatedStart, const_cast<void*>(static_cast<const void*>(this))) != 0)
+            {
                 perror ("pthread_create failed");
                 return false;
             }
@@ -97,7 +102,8 @@ namespace
         }
 
     private:
-        class Lock {
+        class Lock
+        {
         private:
             pthread_mutex_t *m_mutex;
         public:
@@ -117,11 +123,11 @@ namespace
 
         static void *CoordinatedStart(void *thread_arg)
         {
-            const SyncThreadStarter<TPayload> *self = reinterpret_cast<const SyncThreadStarter *>(thread_arg);
+            const SyncThreadStarter<TPayload> *self = reinterpret_cast<const SyncThreadStarter<TPayload> *>(thread_arg);
             typename SyncThreadStarter<TPayload>::ThreadFunc fn{self->m_func};
             TPayload payload{std::move(self->Extract())};
             {
-                Lock lock (*self);
+                Lock lock{*self};
                 self->SignalStarted();
             }
             fn(std::move(payload));
@@ -148,11 +154,14 @@ namespace
     {
         SyncThreadStarter<TPayload> starter {fn, std::forward<TPayload>(arg)};
         pthread_t thread;
-        if (!starter.Start(&thread)) {
+        if (!starter.Start(&thread))
+        {
             return false;
         }
         if (out_thread)
+        {
             *out_thread = thread;
+        }
         return true;
     }
 }
@@ -167,12 +176,14 @@ CrashProtection::Init()
 
     s_self = std::unique_ptr<CrashProtection>(new CrashProtection{commands.ExtractWriter(), completion.ExtractReader(), std::move(threadData)});
 
-    if (!StartThread(&HandlerThread::HandlerThreadMain, &s_self->m_threadData, &s_self->m_handlerThread)) {
+    if (!StartThread(&HandlerThread::HandlerThreadMain, &s_self->m_threadData, &s_self->m_handlerThread))
+    {
         return false;
     }
     pthread_detach (s_self->m_handlerThread);
 
-    if (!s_self->InstallSegvHandler()) {
+    if (!s_self->InstallSegvHandler())
+    {
         return false;
     }
     return true;
@@ -182,11 +193,10 @@ bool
 CrashProtection::InstallSegvHandler()
 {
     struct sigaction sa{};
-    //sigemptyset(&sa.sa_mask);
-    //sigaddset(&sa.sa_mask, SIGSEGV);
     sa.sa_sigaction = &CrashProtection::OnSigSegv;
     sa.sa_flags = SA_SIGINFO;
-    if (sigaction(SIGSEGV, const_cast<const struct sigaction*>(&sa), &m_prevSigAction) != 0) {
+    if (sigaction(SIGSEGV, const_cast<const struct sigaction*>(&sa), &m_prevSigAction) != 0)
+    {
         perror("sigaction failed");
         return false;
     }
@@ -195,15 +205,19 @@ CrashProtection::InstallSegvHandler()
 
 bool CrashProtection::ChainSignal(int signo, siginfo_t *siginfo, void* ucontext) const
 {
-    if (m_prevSigAction.sa_handler == SIG_DFL || m_prevSigAction.sa_handler == SIG_IGN) {
+    if (m_prevSigAction.sa_handler == SIG_DFL || m_prevSigAction.sa_handler == SIG_IGN)
+    {
         ASYNC_LOG("default or ignored handler");
         return false;
     }
-    if ((m_prevSigAction.sa_mask & SA_SIGINFO) != 0) {
+    if ((m_prevSigAction.sa_mask & SA_SIGINFO) != 0)
+    {
         ASYNC_LOG("chained sigaction signal");
         m_prevSigAction.sa_sigaction (signo, siginfo, ucontext);
         return true;
-    } else {
+    }
+    else
+    {
         ASYNC_LOG("chained handler signal");
         m_prevSigAction.sa_handler (signo);
         return true;
@@ -213,21 +227,28 @@ bool CrashProtection::ChainSignal(int signo, siginfo_t *siginfo, void* ucontext)
 void CrashProtection::OnSigSegv(int signo, siginfo_t *siginfo, void *ucontext)
 {
     ASYNC_LOG("caught signal");
-    if (s_self->CanHandleCrash()) {
+    if (s_self->CanHandleCrash())
+    {
         ASYNC_LOG("handling signal");
         bool success = s_self->HandleCrash();
-        if (success) {
+        if (success)
+        {
             ASYNC_LOG("signal handling finished, aborting");
-        } else {
+        }
+        else
+        {
             ASYNC_LOG("signal handling failing, aborting");
         }
         abort();
     } else {
         ASYNC_LOG("chaining signal");
         bool result = s_self->ChainSignal (signo, siginfo, ucontext);
-        if (!result) {
+        if (!result)
+        {
             ASYNC_LOG("default or ignored signal handler, aborting");
-        } else {
+        }
+        else
+        {
             ASYNC_LOG("unexpected: signal chaining returned");
         }
         abort();
@@ -236,12 +257,14 @@ void CrashProtection::OnSigSegv(int signo, siginfo_t *siginfo, void *ucontext)
 
 bool CrashProtection::CanHandleCrash() const
 {
-    if (pthread_equal (pthread_self(), s_self->m_handlerThread)) {
+    if (pthread_equal (pthread_self(), s_self->m_handlerThread))
+    {
         // can't handle crashes on the handler thread
         return false;
     }
-    if (!s_self->m_threadData.LoadHandler()) { // FIXME: atomic load
-        // no handler to run
+    if (!s_self->m_threadData.LoadHandler())
+    {
+       // no handler to run
         return false;
     }
     return true;
@@ -250,16 +273,16 @@ bool CrashProtection::CanHandleCrash() const
 bool CrashProtection::HandleCrash() const
 {
     if (!SendRun())
+    {
         return false;
+    }
     WaitForCompletion();
     return true;
 }
 
 bool CrashProtection::SendRun() const
 {
-    if (!m_pipe.SendOne (static_cast<char>(HandlerThread::Command::Run)))
-        return false;
-    return true;
+    return 1 == m_pipe.SendOne (1);
 }
 
 void CrashProtection::WaitForCompletion() const
@@ -268,11 +291,11 @@ void CrashProtection::WaitForCompletion() const
     m_completion.ReadOne(dk);
 }
 
-
-bool CrashProtection::HandlerThread::OnRun(const Handler *handler)
+bool CrashProtection::HandlerThread::OnTrigger(const Handler *handler) const
 {
-    if (handler) {
-        bool result = handler->Run();
+    if (handler)
+    {
+        bool result = (*handler)();
         m_completion.SendOne(1);
         return result;
     }
@@ -280,46 +303,49 @@ bool CrashProtection::HandlerThread::OnRun(const Handler *handler)
         return false;
 }
 
+bool CrashProtection::HandlerThread::WaitForTrigger() const
+{
+    char cmd;
+    int nread = 0;
+
+    LOG("handler thread: waiting for trigger");
+    if ((nread = m_trigger.ReadOne (cmd)) < 0)
+    {
+        // EINTR handled by pipe
+        perror ("read failed in HandlerThreadMain");
+        abort();
+    }
+    else
+    {
+        return nread != 0;
+    }
+}
+
 void CrashProtection::HandlerThread::HandlerThreadMain(CrashProtection::HandlerThread *self)
 {
-    const PipeChannel::Reader &reader = self->Commands();
     bool running = true;
     LOG("handler thread: started");
-    do {
-        char cmd;
-        int nread = 0;
-
-        LOG("handler thread: waiting for command");
-        if ((nread = reader.ReadOne (cmd)) < 0 ) {
-            // EINTR handled by pipe
-            perror ("read failed in HandlerThreadMain");
-            abort();
-        } else if (nread == 0) {
+    do
+    {
+        if (!self->WaitForTrigger())
+        {
             running = false;
-            break;
         }
-
-        switch (static_cast<Command>((int)cmd)) {
-        case Command::Run:
-            LOG("handler thread: received RunHandler");
-            running = !self->OnRun(self->LoadHandler());
-            LOG("handler thread: OnRunHandler done");
-            break;
-        default:
-            printf ("unknown command 0x%08x", (int)cmd);
-            abort();
+        else
+        {
+            LOG("handler thread: received trigger");
+            running = !self->OnTrigger(self->LoadHandler());
+            LOG("handler thread: OnTrigger done");
         }
-    } while (running);
+    }
+    while (running);
     LOG("handler thread: terminating");
 }
 
-void CrashProtection::OnActivate(const Handler *handler, const Handler * *prevHandler)
+const CrashProtection::Handler* CrashProtection::OnActivate(const Handler *handler)
 {
-    const Handler * oldHandler = m_threadData.ExchangeHandler(handler);
-    if (prevHandler != nullptr) {
-        *prevHandler = oldHandler;
-    }
     LOGV("activated, count is %d", ++m_dbgActiveCount);
+    return m_threadData.ExchangeHandler(handler);
 }
 
 void CrashProtection::OnDeactivate(const Handler *restoreHandler)
