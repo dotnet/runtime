@@ -286,7 +286,6 @@ function getTraceImports () {
         ["stelemr_tc", "stelemr", getRawCwrap("mono_jiterp_stelem_ref")],
         importDef("fma", getRawCwrap("fma")),
         importDef("fmaf", getRawCwrap("fmaf")),
-        importDef("membar", getRawCwrap("mono_jiterp_memory_barrier")),
     ];
 
     if (instrumentedMethodNames.length > 0) {
@@ -662,11 +661,6 @@ function initialize_builder (builder: WasmBuilder) {
             "arg2": WasmValtype.i32,
             "arg3": WasmValtype.i32,
         },
-        WasmValtype.void, true
-    );
-    builder.defineType(
-        "membar",
-        {},
         WasmValtype.void, true
     );
 

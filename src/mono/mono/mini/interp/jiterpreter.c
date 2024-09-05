@@ -1165,11 +1165,6 @@ mono_jiterp_stelem_ref (
 	return 1;
 }
 
-EMSCRIPTEN_KEEPALIVE void
-mono_jiterp_memory_barrier () {
-	mono_memory_barrier ();
-}
-
 
 // keep in sync with jiterpreter-enums.ts JiterpMember
 enum {

@@ -10,7 +10,7 @@ import {
 } from "./memory";
 import {
     WasmOpcode, WasmSimdOpcode, WasmValtype,
-    getOpcodeName, MintOpArgType
+    getOpcodeName, MintOpArgType, WasmAtomicOpcode
 } from "./jiterpreter-opcodes";
 import {
     MintOpcode, SimdInfo,
@@ -3978,7 +3978,7 @@ function emit_atomics (
 ) {
     if (opcode === MintOpcode.MINT_MONO_MEMORY_BARRIER) {
         if (WasmEnableThreads)
-            builder.callImport("membar");
+            builder.appendAtomic(WasmAtomicOpcode.atomic_fence);
         return true;
     }
 
