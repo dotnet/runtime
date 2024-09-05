@@ -193,7 +193,8 @@ namespace System.Numerics.Tensors
 
         public static void ValidateStrides(ReadOnlySpan<nint> strides, ReadOnlySpan<nint> lengths)
         {
-            Debug.Assert(strides.Length == lengths.Length);
+            if (strides.Length != lengths.Length)
+                ThrowHelper.ThrowArgument_InvalidStridesAndLengths();
 
             if (strides.Length == 0)
                 return;
