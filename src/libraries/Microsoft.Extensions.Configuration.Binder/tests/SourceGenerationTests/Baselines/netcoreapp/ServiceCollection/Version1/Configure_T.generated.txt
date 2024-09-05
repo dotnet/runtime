@@ -168,6 +168,10 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 BindCore(section5, ref temp7, defaultValueIfNotFound: false, binderOptions);
                 instance.MyList = temp7;
             }
+            else
+            {
+                instance.MyList = instance.MyList;
+            }
 
             if (AsConfigWithChildren(configuration.GetSection("MyList2")) is IConfigurationSection section8)
             {
@@ -176,6 +180,10 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 BindCore(section8, ref temp10, defaultValueIfNotFound: false, binderOptions);
                 instance.MyList2 = temp10;
             }
+            else
+            {
+                instance.MyList2 = instance.MyList2;
+            }
 
             if (AsConfigWithChildren(configuration.GetSection("MyDictionary")) is IConfigurationSection section11)
             {
@@ -183,6 +191,10 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 temp13 ??= new global::System.Collections.Generic.Dictionary<string, string>();
                 BindCore(section11, ref temp13, defaultValueIfNotFound: false, binderOptions);
                 instance.MyDictionary = temp13;
+            }
+            else
+            {
+                instance.MyDictionary = instance.MyDictionary;
             }
         }
 

@@ -483,6 +483,8 @@ typedef enum
      * are scanned as strong roots during each GC but only during full GCs would the size
      * be calculated.
      *
+     * NOTE: HNDTYPE_SIZEDREF is no longer used in the VM starting .NET 9
+     *       but we are keeping it here for backward compatibility purposes"
      */
     HNDTYPE_SIZEDREF     = 8,
 
