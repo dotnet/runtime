@@ -186,10 +186,7 @@ namespace Melanzana.MachO
         {
             // If no layout options were specified then infer the details
             // from the object file.
-            if (options == null)
-            {
-                options = new MachLayoutOptions(this);
-            }
+            options ??= new MachLayoutOptions(this);
 
             ulong segmentAlignment = options.SegmentAlignment;
             ulong fileOffset = 0;

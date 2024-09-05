@@ -53,7 +53,7 @@ namespace Melanzana.CodeSign
 
         public int Version => (int)plist["Version"].ToObject();
 
-        private IList<string> GetStringArray(string name)
+        private string[] GetStringArray(string name)
             => ((NSArray)plist[name]).Select(v => v.ToString()!).ToArray();
 
         public override string ToString() => this.Name;

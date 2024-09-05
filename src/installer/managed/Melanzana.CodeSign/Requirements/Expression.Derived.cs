@@ -10,9 +10,9 @@ namespace Melanzana.CodeSign.Requirements
 {
     public abstract partial class Expression
     {
-        class SimpleExpression : Expression
+        private sealed class SimpleExpression : Expression
         {
-            ExpressionOperation op;
+            private ExpressionOperation op;
 
             public SimpleExpression(ExpressionOperation op)
             {
@@ -42,11 +42,11 @@ namespace Melanzana.CodeSign.Requirements
             }
         }
 
-        class BinaryOperatorExpression : Expression
+        private sealed class BinaryOperatorExpression : Expression
         {
-            ExpressionOperation op;
-            Expression left;
-            Expression right;
+            private ExpressionOperation op;
+            private Expression left;
+            private Expression right;
 
             public BinaryOperatorExpression(ExpressionOperation op, Expression left, Expression right)
             {
@@ -86,10 +86,10 @@ namespace Melanzana.CodeSign.Requirements
             }
         }
 
-        class UnaryOperatorExpression : Expression
+        private sealed class UnaryOperatorExpression : Expression
         {
-            ExpressionOperation op;
-            Expression inner;
+            private ExpressionOperation op;
+            private Expression inner;
 
             public UnaryOperatorExpression(ExpressionOperation op, Expression inner)
             {
@@ -115,10 +115,10 @@ namespace Melanzana.CodeSign.Requirements
             }
         }
 
-        class StringExpression : Expression
+        private sealed class StringExpression : Expression
         {
-            ExpressionOperation op;
-            string opString;
+            private ExpressionOperation op;
+            private string opString;
 
             public StringExpression(ExpressionOperation op, string opString)
             {
@@ -134,7 +134,7 @@ namespace Melanzana.CodeSign.Requirements
                 BinaryPrimitives.WriteUInt32BigEndian(buffer, (uint)op);
                 BinaryPrimitives.WriteInt32BigEndian(buffer.Slice(4), opStringBytes.Length);
                 opStringBytes.CopyTo(buffer.Slice(8, opStringBytes.Length));
-                buffer.Slice(8 + opStringBytes.Length, Align(opStringBytes.Length) - opStringBytes.Length).Fill((byte)0);
+                buffer.Slice(8 + opStringBytes.Length, Align(opStringBytes.Length) - opStringBytes.Length).Clear();
                 bytesWritten = 8 + Align(opStringBytes.Length);
             }
 
@@ -147,7 +147,7 @@ namespace Melanzana.CodeSign.Requirements
             }
         }
 
-        class CDHashExpression : Expression
+        private sealed class CDHashExpression : Expression
         {
             private readonly byte[] codeDirectoryHash;
 
@@ -171,7 +171,7 @@ namespace Melanzana.CodeSign.Requirements
             }
         }
 
-        class AnchorHashExpression : Expression
+        private sealed class AnchorHashExpression : Expression
         {
             private readonly int certificateIndex;
             private readonly byte[] anchorHash;
@@ -198,10 +198,10 @@ namespace Melanzana.CodeSign.Requirements
             }
         }
 
-        abstract class MatchExpression : Expression
+        private abstract class MatchExpression : Expression
         {
-            ExpressionMatchType matchType;
-            byte[]? matchValue;
+            private ExpressionMatchType matchType;
+            private byte[]? matchValue;
 
             public MatchExpression(ExpressionMatchType matchType, byte[]? matchValue)
             {
@@ -220,7 +220,7 @@ namespace Melanzana.CodeSign.Requirements
                 {
                     BinaryPrimitives.WriteInt32BigEndian(buffer.Slice(4), matchValue.Length);
                     matchValue.CopyTo(buffer.Slice(8, matchValue.Length));
-                    buffer.Slice(8 + matchValue.Length, Align(matchValue.Length) - matchValue.Length).Fill((byte)0);
+                    buffer.Slice(8 + matchValue.Length, Align(matchValue.Length) - matchValue.Length).Clear();
                     bytesWritten = 8 + Align(matchValue.Length);
                 }
                 else
@@ -252,7 +252,7 @@ namespace Melanzana.CodeSign.Requirements
             }
         }
 
-        class FieldMatchExpression : MatchExpression
+        private sealed class FieldMatchExpression : MatchExpression
         {
             private readonly ExpressionOperation op;
             private readonly object field;
@@ -280,7 +280,7 @@ namespace Melanzana.CodeSign.Requirements
                 BinaryPrimitives.WriteUInt32BigEndian(buffer.Slice(0, 4), (uint)op);
                 BinaryPrimitives.WriteInt32BigEndian(buffer.Slice(4, 4), fieldBytes.Length);
                 fieldBytes.CopyTo(buffer.Slice(8, fieldBytes.Length));
-                buffer.Slice(8 + fieldBytes.Length, Align(fieldBytes.Length) - fieldBytes.Length).Fill((byte)0);
+                buffer.Slice(8 + fieldBytes.Length, Align(fieldBytes.Length) - fieldBytes.Length).Clear();
                 bytesWritten = 8 + Align(fieldBytes.Length);
                 base.Write(buffer.Slice(bytesWritten), out var matchExpressionSize);
                 bytesWritten += matchExpressionSize;
@@ -297,7 +297,7 @@ namespace Melanzana.CodeSign.Requirements
             }
         }
 
-        class CertExpression : MatchExpression
+        private sealed class CertExpression : MatchExpression
         {
             private readonly ExpressionOperation op;
             private readonly int certificateIndex;
@@ -327,7 +327,7 @@ namespace Melanzana.CodeSign.Requirements
                 BinaryPrimitives.WriteInt32BigEndian(buffer.Slice(4), certificateIndex);
                 BinaryPrimitives.WriteInt32BigEndian(buffer.Slice(8), certificateField.Length);
                 certificateField.CopyTo(buffer.Slice(12, certificateField.Length));
-                buffer.Slice(12 + certificateField.Length, Align(certificateField.Length) - certificateField.Length).Fill((byte)0);
+                buffer.Slice(12 + certificateField.Length, Align(certificateField.Length) - certificateField.Length).Clear();
                 bytesWritten = 12 + Align(certificateField.Length);
                 base.Write(buffer.Slice(bytesWritten), out var matchExpressionSize);
                 bytesWritten += matchExpressionSize;
@@ -346,7 +346,7 @@ namespace Melanzana.CodeSign.Requirements
             }
         }
 
-        class InfoKeyValueExpression : Expression
+        private sealed class InfoKeyValueExpression : Expression
         {
             private readonly object field;
             private readonly byte[] fieldBytes;
@@ -372,11 +372,11 @@ namespace Melanzana.CodeSign.Requirements
                 BinaryPrimitives.WriteUInt32BigEndian(buffer.Slice(0, 4), (uint)ExpressionOperation.InfoKeyValue);
                 BinaryPrimitives.WriteInt32BigEndian(buffer.Slice(4, 4), fieldBytes.Length);
                 fieldBytes.CopyTo(buffer.Slice(8, fieldBytes.Length));
-                buffer.Slice(8 + fieldBytes.Length, Align(fieldBytes.Length) - fieldBytes.Length).Fill((byte)0);
+                buffer.Slice(8 + fieldBytes.Length, Align(fieldBytes.Length) - fieldBytes.Length).Clear();
                 bytesWritten = 8 + Align(fieldBytes.Length);
                 BinaryPrimitives.WriteInt32BigEndian(buffer.Slice(bytesWritten, 4), matchValue.Length);
                 fieldBytes.CopyTo(buffer.Slice(bytesWritten + 4, matchValue.Length));
-                buffer.Slice(4 + bytesWritten + matchValue.Length, Align(matchValue.Length) - matchValue.Length).Fill((byte)0);
+                buffer.Slice(4 + bytesWritten + matchValue.Length, Align(matchValue.Length) - matchValue.Length).Clear();
                 bytesWritten += 4 + Align(matchValue.Length);
             }
 
@@ -386,7 +386,7 @@ namespace Melanzana.CodeSign.Requirements
             }
         }
 
-        class NamedExpression : Expression
+        private sealed class NamedExpression : Expression
         {
             private readonly ExpressionOperation op;
             private readonly byte[] name;
@@ -408,7 +408,7 @@ namespace Melanzana.CodeSign.Requirements
                 BinaryPrimitives.WriteUInt32BigEndian(buffer.Slice(0, 4), (uint)op);
                 BinaryPrimitives.WriteInt32BigEndian(buffer.Slice(4, 4), name.Length);
                 name.CopyTo(buffer.Slice(8, name.Length));
-                buffer.Slice(8 + name.Length, Align(name.Length) - name.Length).Fill((byte)0);
+                buffer.Slice(8 + name.Length, Align(name.Length) - name.Length).Clear();
                 bytesWritten = 8 + Align(name.Length);
             }
 
@@ -422,7 +422,7 @@ namespace Melanzana.CodeSign.Requirements
             }
         }
 
-        class TrustedCertExpression : Expression
+        private sealed class TrustedCertExpression : Expression
         {
             private readonly int certificateIndex;
 
@@ -446,7 +446,7 @@ namespace Melanzana.CodeSign.Requirements
             }
         }
 
-        class PlatformExpression : Expression
+        private sealed class PlatformExpression : Expression
         {
             private readonly MachPlatform platform;
 

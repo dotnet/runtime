@@ -5,7 +5,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
 
-    <NoWarn>NoWarn;SA1518;SA1028;SA1020;IDE0170;IDE0060;CA1822;SA1400;RS1036;CA1852;IDE0074;SA1517;CA1512;CA1513;CA1510</NoWarn>
+    <NoWarn>$(NoWarn);CA1510;CA1512;CA1513</NoWarn>
     <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
     <CompilerGeneratedFilesOutputPath>$(BaseIntermediateOutputPath)/GeneratedFiles</CompilerGeneratedFilesOutputPath>
   </PropertyGroup>

@@ -10,14 +10,14 @@ using Melanzana.Streams;
 
 namespace Melanzana.MachO
 {
-    internal class MachSymbolTableCollection : IList<MachSymbol>
+    internal sealed class MachSymbolTableCollection : IList<MachSymbol>
     {
         private readonly MachObjectFile objectFile;
         private readonly MachLinkEditData symbolTableData;
         private readonly MachLinkEditData stringTableData;
         private readonly List<MachSymbol> innerList = new();
 
-        bool isDirty;
+        private bool isDirty;
 
         public MachSymbolTableCollection(
             MachObjectFile objectFile,

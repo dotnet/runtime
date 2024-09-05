@@ -10,7 +10,7 @@ namespace Melanzana.CodeSign
         /// <summary>Resource may be absent at runtime</summary>
         public bool IsOptional { get; init; }
 
-        /// <summary>Resource is not sealed even if present in the bundle</summary> 
+        /// <summary>Resource is not sealed even if present in the bundle</summary>
         public bool IsOmitted { get; init; }
 
         /// <summary>Recursively signed code</summary>

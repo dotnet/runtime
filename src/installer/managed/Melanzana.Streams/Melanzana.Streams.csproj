@@ -3,7 +3,8 @@
   <PropertyGroup>
     <TargetFrameworks>netstandard2.0;$(NetCurrent)</TargetFrameworks>
     <Nullable>enable</Nullable>
-    <NoWarn>$(NoWarn);SA1518;SA1028;CA1512;CA1513;CA1510</NoWarn>
+    <!-- Don't warn about throw helpers that aren't available in netstandard2.0 -->
+    <NoWarn>$(NoWarn);CA1510;CA1512;CA1513</NoWarn>
   </PropertyGroup>
 
   <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0'">

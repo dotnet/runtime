@@ -18,7 +18,7 @@ namespace BinaryFormat
     {
         public void Initialize(GeneratorInitializationContext context)
         {
-            context.RegisterForPostInitialization((pi) => pi.AddSource("BinaryFormat.Attribute.cs", AttributeSource));
+            context.RegisterForPostInitialization((pi) => pi.AddSource("BinaryFormat.Attribute.cs", AttributeSource.TrimStart()));
             context.RegisterForSyntaxNotifications(() => new MySyntaxReceiver());
         }
 

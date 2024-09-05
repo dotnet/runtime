@@ -10,7 +10,7 @@ using Melanzana.Streams;
 
 namespace Melanzana.CodeSign.Blobs
 {
-    class CodeDirectoryBuilder
+    internal sealed class CodeDirectoryBuilder
     {
         private readonly MachObjectFile executable;
         private readonly string identifier;

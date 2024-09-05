@@ -459,7 +459,8 @@ namespace Melanzana.CodeSign
                 return ReadNestedMachO(path);
             }
         }
-        static bool IsSymbolicLink(FileSystemInfo fileInfo)
+
+        private static bool IsSymbolicLink(FileSystemInfo fileInfo)
         {
             return (fileInfo.Attributes & FileAttributes.ReparsePoint) == FileAttributes.ReparsePoint;
         }

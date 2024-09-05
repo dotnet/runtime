@@ -103,14 +103,14 @@ namespace Melanzana.CodeSign
             }
         }
 
-        public IEnumerable <(string Path, FileSystemInfo Info, ResourceRule Rule)> Scan(string bundlePath)
+        public IEnumerable<(string Path, FileSystemInfo Info, ResourceRule Rule)> Scan(string bundlePath)
         {
             return Scan(bundlePath, "");
         }
 
         public IEnumerable<ResourceRule> Rules => rules;
 
-        private class RuleComparer : IComparer<ResourceRule>
+        private sealed class RuleComparer : IComparer<ResourceRule>
         {
             public int Compare(ResourceRule? x, ResourceRule? y)
             {

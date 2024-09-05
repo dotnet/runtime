@@ -93,7 +93,7 @@ namespace Melanzana.CodeSign
             return null;
         }
 
-        private IList<string>? GetStringListEntitlement(string name)
+        private List<string>? GetStringListEntitlement(string name)
         {
             if (PList.TryGetValue(name, out var temp) && temp is NSArray array)
             {
