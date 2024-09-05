@@ -462,16 +462,12 @@ public:
 
     virtual BOOL IsAppDomain()    { LIMITED_METHOD_DAC_CONTRACT; return FALSE; }
 
-    PTR_LoaderAllocator GetLoaderAllocator();
     virtual PTR_AppDomain AsAppDomain()
     {
         LIMITED_METHOD_CONTRACT;
         _ASSERTE(!"Not an AppDomain");
         return NULL;
     }
-
-    STRINGREF *IsStringInterned(STRINGREF *pString);
-    STRINGREF *GetOrInternString(STRINGREF *pString);
 
 #ifdef DACCESS_COMPILE
 public:
@@ -736,6 +732,11 @@ public:
 
     virtual BOOL IsAppDomain() { LIMITED_METHOD_DAC_CONTRACT; return TRUE; }
     virtual PTR_AppDomain AsAppDomain() { LIMITED_METHOD_CONTRACT; return dac_cast<PTR_AppDomain>(this); }
+
+    PTR_LoaderAllocator GetLoaderAllocator();
+
+    STRINGREF *IsStringInterned(STRINGREF *pString);
+    STRINGREF *GetOrInternString(STRINGREF *pString);
 
     OBJECTREF GetRawExposedObject() { LIMITED_METHOD_CONTRACT; return NULL; }
     OBJECTHANDLE GetRawExposedObjectHandleForDebugger() { LIMITED_METHOD_DAC_CONTRACT; return (OBJECTHANDLE)NULL; }

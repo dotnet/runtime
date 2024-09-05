@@ -640,7 +640,7 @@ OBJECTREF AppDomain::GetMissingObject()
 #ifndef DACCESS_COMPILE
 
 
-STRINGREF *BaseDomain::IsStringInterned(STRINGREF *pString)
+STRINGREF* AppDomain::IsStringInterned(STRINGREF *pString)
 {
     CONTRACTL
     {
@@ -655,7 +655,7 @@ STRINGREF *BaseDomain::IsStringInterned(STRINGREF *pString)
     return GetLoaderAllocator()->IsStringInterned(pString);
 }
 
-STRINGREF *BaseDomain::GetOrInternString(STRINGREF *pString)
+STRINGREF* AppDomain::GetOrInternString(STRINGREF *pString)
 {
     CONTRACTL
     {
@@ -670,7 +670,7 @@ STRINGREF *BaseDomain::GetOrInternString(STRINGREF *pString)
     return GetLoaderAllocator()->GetOrInternString(pString);
 }
 
-void BaseDomain::InitPinnedHeapHandleTable()
+void AppDomain::InitPinnedHeapHandleTable()
 {
     CONTRACTL
     {
@@ -4026,7 +4026,7 @@ void AppDomain::EnumStaticGCRefs(promote_func* fn, ScanContext* sc)
 #endif // !DACCESS_COMPILE
 
 //------------------------------------------------------------------------
-PTR_LoaderAllocator BaseDomain::GetLoaderAllocator()
+PTR_LoaderAllocator AppDomain::GetLoaderAllocator()
 {
     WRAPPER_NO_CONTRACT;
     return SystemDomain::GetGlobalLoaderAllocator(); // The one and only domain is not unloadable
@@ -4505,7 +4505,7 @@ SystemDomain::EnumMemoryRegions(CLRDataEnumMemoryFlags flags, bool enumThis)
 
     if (flags == CLRDATA_ENUM_MEM_HEAP2)
     {
-        GetLoaderAllocator()->EnumMemoryRegions(flags);
+        GetGlobalLoaderAllocator()->EnumMemoryRegions(flags);
     }
     if (m_pSystemPEAssembly.IsValid())
     {
