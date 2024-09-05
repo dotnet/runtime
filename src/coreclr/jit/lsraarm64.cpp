@@ -1591,96 +1591,18 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
             }
         }
 
-        SingleTypeRegSet opCandidates = RBM_NONE;
-
-        if (varTypeIsMask(intrin.op1->TypeGet()) || HWIntrinsicInfo::IsExplicitMaskedOperation(intrin.id))
-        {
-            opCandidates = RBM_ALLMASK.GetPredicateRegSet();
-
-            if (HWIntrinsicInfo::IsLowMaskedOperation(intrin.id))
-            {
-                opCandidates = RBM_LOWMASK.GetPredicateRegSet();
-            }
-        }
+        SingleTypeRegSet opCandidates = getOperandCandidates(intrinsicTree, intrin, 1);
 
         srcCount += BuildOperand(intrinsicTree->Op(1), addrOp, consecutiveOp, delayFreeOp, isRMW, &tgtPrefUse, opCandidates);
     }
 
-    if ((intrin.category == HW_Category_SIMDByIndexedElement) && (genTypeSize(intrin.baseType) == 2))
-    {
-        // Some "Advanced SIMD scalar x indexed element" and "Advanced SIMD vector x indexed element" instructions (e.g.
-        // "MLA (by element)") have encoding that restricts what registers that can be used for the indexed element when
-        // the element size is H (i.e. 2 bytes).
-        assert(intrin.op2 != nullptr);
-
-        if ((intrin.op4 != nullptr) || ((intrin.op3 != nullptr) && !hasImmediateOperand))
-        {
-            if (isRMW)
-            {
-                srcCount += BuildDelayFreeUses(intrin.op2, nullptr);
-                srcCount +=
-                    BuildDelayFreeUses(intrin.op3, nullptr, RBM_ASIMD_INDEXED_H_ELEMENT_ALLOWED_REGS.GetFloatRegSet());
-            }
-            else
-            {
-                srcCount += BuildOperandUses(intrin.op2);
-                srcCount += BuildOperandUses(intrin.op3, RBM_ASIMD_INDEXED_H_ELEMENT_ALLOWED_REGS.GetFloatRegSet());
-            }
-
-            if (intrin.op4 != nullptr)
-            {
-                assert(hasImmediateOperand);
-                assert(varTypeIsIntegral(intrin.op4));
-
-                srcCount += BuildOperandUses(intrin.op4);
-            }
-        }
-        else
-        {
-            assert(!isRMW);
-
-            if (intrin.id == NI_Sve_DuplicateSelectedScalarToVector)
-            {
-                srcCount += BuildOperandUses(intrin.op2);
-            }
-            else
-            {
-                srcCount += BuildOperandUses(intrin.op2, RBM_ASIMD_INDEXED_H_ELEMENT_ALLOWED_REGS.GetFloatRegSet());
-            }
-
-            if (intrin.op3 != nullptr)
-            {
-                assert(hasImmediateOperand);
-                assert(varTypeIsIntegral(intrin.op3));
-
-                srcCount += BuildOperandUses(intrin.op3);
-            }
-        }
-    }
-
-    else if (intrin.op2 != nullptr)
+    if (intrin.op2 != nullptr)
     {
         assert(intrin.op1 != nullptr);
 
-        // Get candidate information
-        SingleTypeRegSet lowVectorCandidates = RBM_NONE;
-        size_t           lowVectorOperandNum = 0;
-        if (HWIntrinsicInfo::IsLowVectorOperation(intrin.id))
+        for (int opNum = 2; opNum <= intrin.numOperands; opNum++)
         {
-            getLowVectorOperandAndCandidates(intrin, &lowVectorOperandNum, &lowVectorCandidates);
-        }
-
-        int numOperands = intrinsicTree->GetOperandCount();
-
-        for (int opNum = 2; opNum <= numOperands; opNum++)
-        {
-
-            SingleTypeRegSet opCandidates = (lowVectorOperandNum == opNum) ? lowVectorCandidates : RBM_NONE;
-            if (varTypeIsMask(intrinsicTree->Op(opNum)->TypeGet()))
-            {
-                assert(lowVectorOperandNum != opNum);
-                opCandidates = RBM_ALLMASK.GetPredicateRegSet();
-            }
+            SingleTypeRegSet opCandidates = getOperandCandidates(intrinsicTree, intrin, opNum);
 
             RefPosition* delayUse = nullptr;
 
@@ -2000,44 +1922,92 @@ bool RefPosition::isLiveAtConsecutiveRegistersLoc(LsraLocation consecutiveRegist
 #endif // DEBUG
 
 //------------------------------------------------------------------------
-// getLowVectorOperandAndCandidates: Instructions for certain intrinsics operate on low vector registers
-//      depending on the size of the element. The method returns the candidates based on that size and
-//      the operand number of the intrinsics that has the restriction.
+// getOperandCandidates: Get the register candidates for a given operand number
 //
 // Arguments:
-//    intrin - Intrinsics
-//    operandNum (out) - The operand number having the low vector register restriction
-//    candidates (out) - The restricted low vector registers
+//    intrinsicTree - Tree to check
+//    intrin - Intrin to check
+//    OpNum - The Operand number in the intrinsic tree
 //
-void LinearScan::getLowVectorOperandAndCandidates(HWIntrinsic intrin, size_t* operandNum, SingleTypeRegSet* candidates)
+// Return Value:
+//    The candidates for the operand number
+//
+SingleTypeRegSet LinearScan::getOperandCandidates(GenTreeHWIntrinsic* intrinsicTree, HWIntrinsic intrin, size_t opNum)
 {
-    assert(HWIntrinsicInfo::IsLowVectorOperation(intrin.id));
-    unsigned baseElementSize = genTypeSize(intrin.baseType);
+    SingleTypeRegSet opCandidates = RBM_NONE;
 
-    if (baseElementSize == 8)
+    if (HWIntrinsicInfo::IsLowVectorOperation(intrin.id))
     {
-        *candidates = RBM_SVE_INDEXED_D_ELEMENT_ALLOWED_REGS.GetFloatRegSet();
+        assert(!varTypeIsMask(intrinsicTree->Op(opNum)->TypeGet()));
+
+        bool isLowVectorOpNum = false;
+
+        switch (intrin.id)
+        {
+            case NI_Sve_DotProductBySelectedScalar:
+            case NI_Sve_FusedMultiplyAddBySelectedScalar:
+            case NI_Sve_FusedMultiplySubtractBySelectedScalar:
+            case NI_Sve_MultiplyAddRotateComplexBySelectedScalar:
+                isLowVectorOpNum = (opNum == 3);
+                break;
+            case NI_Sve_MultiplyBySelectedScalar:
+                isLowVectorOpNum = (opNum == 2);
+                break;
+            default:
+                unreached();
+        }
+
+        if (isLowVectorOpNum)
+        {
+            unsigned baseElementSize = genTypeSize(intrin.baseType);
+
+            if (baseElementSize == 8)
+            {
+                opCandidates= RBM_SVE_INDEXED_D_ELEMENT_ALLOWED_REGS.GetFloatRegSet();
+            }
+            else
+            {
+                assert(baseElementSize == 4);
+                opCandidates = RBM_SVE_INDEXED_S_ELEMENT_ALLOWED_REGS.GetFloatRegSet();
+            }
+        }
     }
-    else
+    else if ((intrin.category == HW_Category_SIMDByIndexedElement) && (genTypeSize(intrin.baseType) == 2))
     {
-        assert(baseElementSize == 4);
-        *candidates = RBM_SVE_INDEXED_S_ELEMENT_ALLOWED_REGS.GetFloatRegSet();
+        // Some "Advanced SIMD scalar x indexed element" and "Advanced SIMD vector x indexed element" instructions (e.g.
+        // "MLA (by element)") have encoding that restricts what registers that can be used for the indexed element when
+        // the element size is H (i.e. 2 bytes).
+
+        if ((intrin.numOperands == 4) || (intrin.numOperands == 3 && !HWIntrinsicInfo::HasImmediateOperand(intrin.id)))
+        {
+            opCandidates = (opNum == 3) ? RBM_ASIMD_INDEXED_H_ELEMENT_ALLOWED_REGS.GetFloatRegSet() : opCandidates;
+        }
+        else if (intrin.id == NI_Sve_DuplicateSelectedScalarToVector)
+        {
+            // Do nothing
+        }
+        else
+        {
+            opCandidates = (opNum == 2) ? RBM_ASIMD_INDEXED_H_ELEMENT_ALLOWED_REGS.GetFloatRegSet() : opCandidates;
+        }
+    }
+    else if (opNum == 1 && HWIntrinsicInfo::IsExplicitMaskedOperation(intrin.id))
+    {
+        assert(varTypeIsMask(intrinsicTree->Op(opNum)->TypeGet()));
+
+        opCandidates = RBM_ALLMASK.GetPredicateRegSet();
+
+        if (HWIntrinsicInfo::IsLowMaskedOperation(intrin.id))
+        {
+            opCandidates = RBM_LOWMASK.GetPredicateRegSet();
+        }
+    }
+    else if (varTypeIsMask(intrinsicTree->Op(opNum)->TypeGet()))
+    {
+        opCandidates = RBM_ALLMASK.GetPredicateRegSet();
     }
 
-    switch (intrin.id)
-    {
-        case NI_Sve_DotProductBySelectedScalar:
-        case NI_Sve_FusedMultiplyAddBySelectedScalar:
-        case NI_Sve_FusedMultiplySubtractBySelectedScalar:
-        case NI_Sve_MultiplyAddRotateComplexBySelectedScalar:
-            *operandNum = 3;
-            break;
-        case NI_Sve_MultiplyBySelectedScalar:
-            *operandNum = 2;
-            break;
-        default:
-            unreached();
-    }
+    return opCandidates;
 }
 
 //------------------------------------------------------------------------
@@ -2047,7 +2017,7 @@ void LinearScan::getLowVectorOperandAndCandidates(HWIntrinsic intrin, size_t* op
 // For a simple move semantic between two SIMD registers, then preference the source operand.
 //
 // Arguments:
-//    intrinsicTree - Node to check
+//    intrinsicTree - Tree to check
 //    isRMW (out) - Set to true if is a RMW node
 //    delayFreeMultiple (out) - Set to true if there are multiple values in the delay free operand
 //
@@ -2195,7 +2165,7 @@ GenTree* LinearScan::getVectorAddrOperand(GenTreeHWIntrinsic* intrinsicTree)
 // getConsecutiveRegistersOperand: Get the consecutive operand of the HWIntrinsic, if any
 //
 // Arguments:
-//    intrinsicTree - Intrin to check
+//    intrinsicTree - Tree to check
 //    destIsConsecutive (out) - if the destination requires consective registers
 //
 // Return Value:
@@ -2291,7 +2261,7 @@ GenTree* LinearScan::getConsecutiveRegistersOperand(const HWIntrinsic intrin, bo
 // buildHWIntrinsicImmediate: Build immediate values
 //
 // Arguments:
-//    intrinsicTree - Intrinsic to check
+//    intrinsicTree - Tree to check
 //    intrin - Intrin to check
 //
 // Return Value:
