@@ -4893,7 +4893,7 @@ BasicBlock* Compiler::fgSplitBlockAtBeginning(BasicBlock* curr)
 //    succ - The target block
 //
 // Return Value:
-//    Returns a new block, that is a successor of 'curr' and which branches unconditionally to 'succ'
+//    Returns a new block, that is a successor of 'curr' and branches unconditionally to 'succ'
 //
 // Assumptions:
 //    'curr' must have a bbKind of BBJ_COND, BBJ_ALWAYS, or BBJ_SWITCH
