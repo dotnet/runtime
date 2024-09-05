@@ -119,6 +119,8 @@ Now that you've got the general idea on how to get started, it is important to m
 - [Libraries](/docs/workflow/building/libraries/README.md)
 - [Mono](/docs/workflow/building/mono/README.md)
 
+**NOTE:** *NativeAOT* is part of CoreCLR, but it has its own specifics when it comes to building. We have a separate doc dedicated to it [over here](/docs/workflow/building/coreclr/nativeaot.md).
+
 ### General Recommendations
 
 - If you're working with the runtimes, then the usual recommendation is to build everything in *Debug* mode. That said, if you know you won't be debugging the libraries source code but will need them (e.g. for a *Core_Root* build), then building the libraries on *Release* instead will provide a more productive experience.
