@@ -449,7 +449,7 @@ function flush_wasm_entry_trampoline_jit_queue () {
                 ;
             }
 
-            const buf = builder.getArrayView();
+            const buf = builder.getArrayView(false, true);
             for (let i = 0; i < buf.length; i++) {
                 const b = buf[i];
                 if (b < 0x10)
