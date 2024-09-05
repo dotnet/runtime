@@ -18,7 +18,7 @@ namespace BinaryFormat
         {
             Debug.Assert(symbol is
                 IFieldSymbol or
-                IPropertySymbol { Parameters: { Length: 0 }});
+                IPropertySymbol { Parameters.Length: 0 });
             _symbol = symbol;
         }
 

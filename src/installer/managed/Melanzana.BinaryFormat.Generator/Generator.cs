@@ -32,7 +32,7 @@ namespace BinaryFormat
             }
         }
 
-        class MySyntaxReceiver : ISyntaxContextReceiver
+        private sealed class MySyntaxReceiver : ISyntaxContextReceiver
         {
             public List<TypeDeclarationSyntax> TypesToAugment { get; private set; } = new();
 

@@ -3,7 +3,9 @@
     <TargetFramework>netstandard2.0</TargetFramework>
     <LangVersion>latest</LangVersion>
     <Nullable>annotations</Nullable>
-    <NoWarn>NoWarn;SA1028;SA1020;IDE0170;IDE0060;CA1822;SA1400;RS1036;CA1852</NoWarn>
+    <EnforceExtendedAnalyzerRules>true</EnforceExtendedAnalyzerRules>
+    <!-- Suppress warning requiring incremental generators -->
+    <NoWarn>$(NoWarn);RS1035</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>

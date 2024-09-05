@@ -13,7 +13,7 @@ namespace BinaryFormat
 {
     public partial class Generator : ISourceGenerator
     {
-        private void GenerateReaderWriter(
+        private static void GenerateReaderWriter(
             GeneratorExecutionContext context,
             TypeDeclarationSyntax typeDecl,
             SemanticModel semanticModel)
@@ -41,7 +41,8 @@ namespace BinaryFormat
             bool hasLittleEndianAttribute = containerSymbol.GetAttributes().Any(a => a.AttributeClass.Name == "LittleEndianAttribute");
 
             var fieldsAndProps = receiverType.GetMembers()
-                .Where(m => m is {
+                .Where(m => m is
+                {
                     DeclaredAccessibility: Accessibility.Public,
                     Kind: SymbolKind.Field or SymbolKind.Property,
                 })
@@ -59,34 +60,34 @@ namespace BinaryFormat
             stringBuilder.AppendLine($"    {{");
 
             // Try to generate the static size constant
-            GenerateBinarySize(context, typeDecl, semanticModel, stringBuilder, fieldsAndProps);
+            GenerateBinarySize(stringBuilder, fieldsAndProps);
 
             if (hasLittleEndianAttribute && !hasBigEndianAttribute)
             {
-                GenerateReadMethod(context, typeDecl, semanticModel, stringBuilder, "", "LittleEndian", fieldsAndProps);
+                GenerateReadMethod(typeDecl, stringBuilder, "", "LittleEndian", fieldsAndProps);
                 stringBuilder.AppendLine();
-                GenerateWriteMethod(context, typeDecl, semanticModel, stringBuilder, "", "LittleEndian", fieldsAndProps);
+                GenerateWriteMethod(stringBuilder, "", "LittleEndian", fieldsAndProps);
             }
             else if (hasBigEndianAttribute && !hasLittleEndianAttribute)
             {
-                GenerateReadMethod(context, typeDecl, semanticModel, stringBuilder, "", "BigEndian", fieldsAndProps);
+                GenerateReadMethod(typeDecl, stringBuilder, "", "BigEndian", fieldsAndProps);
                 stringBuilder.AppendLine();
-                GenerateWriteMethod(context, typeDecl, semanticModel, stringBuilder, "", "BigEndian", fieldsAndProps);
+                GenerateWriteMethod(stringBuilder, "", "BigEndian", fieldsAndProps);
             }
             else
             {
-                GenerateReadMethod(context, typeDecl, semanticModel, stringBuilder, "LittleEndian", "LittleEndian", fieldsAndProps);
+                GenerateReadMethod(typeDecl, stringBuilder, "LittleEndian", "LittleEndian", fieldsAndProps);
                 stringBuilder.AppendLine();
-                GenerateReadMethod(context, typeDecl, semanticModel, stringBuilder, "BigEndian", "BigEndian", fieldsAndProps);
+                GenerateReadMethod(typeDecl, stringBuilder, "BigEndian", "BigEndian", fieldsAndProps);
                 stringBuilder.AppendLine();
                 stringBuilder.AppendLine($"        public static {typeDecl.Identifier} Read(ReadOnlySpan<byte> buffer, bool isLittleEndian, out int bytesRead)");
                 stringBuilder.AppendLine($"        {{");
                 stringBuilder.AppendLine($"            return isLittleEndian ? ReadLittleEndian(buffer, out bytesRead) : ReadBigEndian(buffer, out bytesRead);");
                 stringBuilder.AppendLine($"        }}");
                 stringBuilder.AppendLine();
-                GenerateWriteMethod(context, typeDecl, semanticModel, stringBuilder, "LittleEndian", "LittleEndian", fieldsAndProps);
+                GenerateWriteMethod(stringBuilder, "LittleEndian", "LittleEndian", fieldsAndProps);
                 stringBuilder.AppendLine();
-                GenerateWriteMethod(context, typeDecl, semanticModel, stringBuilder, "BigEndian", "BigEndian", fieldsAndProps);
+                GenerateWriteMethod(stringBuilder, "BigEndian", "BigEndian", fieldsAndProps);
                 stringBuilder.AppendLine();
                 stringBuilder.AppendLine($"        public void Write(Span<byte> buffer, bool isLittleEndian, out int bytesWritten)");
                 stringBuilder.AppendLine($"        {{");
@@ -107,10 +108,7 @@ namespace BinaryFormat
             context.AddSource($"{containerSymbol.Name}.Generated.cs", stringBuilder.ToString());
         }
 
-        private void GenerateBinarySize(
-            GeneratorExecutionContext context,
-            TypeDeclarationSyntax typeDecl,
-            SemanticModel semanticModel,
+        private static void GenerateBinarySize(
             StringBuilder stringBuilder,
             List<DataMemberSymbol> fieldsAndProps)
         {
@@ -169,10 +167,8 @@ namespace BinaryFormat
             stringBuilder.AppendLine();
         }
 
-        private void GenerateReadMethod(
-            GeneratorExecutionContext context,
+        private static void GenerateReadMethod(
             TypeDeclarationSyntax typeDecl,
-            SemanticModel semanticModel,
             StringBuilder stringBuilder,
             string nameSuffix,
             string endianSuffix,
@@ -236,7 +232,7 @@ namespace BinaryFormat
 
                     case SpecialType.System_Byte:
                         readExpression = $"{castExpression}buffer[{offset}{variableOffset}]";
-                        offset ++;
+                        offset++;
                         break;
 
                     default:
@@ -270,10 +266,7 @@ namespace BinaryFormat
             stringBuilder.AppendLine($"        }}");
         }
 
-        private void GenerateWriteMethod(
-            GeneratorExecutionContext context,
-            TypeDeclarationSyntax typeDecl,
-            SemanticModel semanticModel,
+        private static void GenerateWriteMethod(
             StringBuilder stringBuilder,
             string nameSuffix,
             string endianSuffix,
@@ -335,7 +328,7 @@ namespace BinaryFormat
 
                     case SpecialType.System_Byte:
                         writeExpression = $"buffer[{offset}{variableOffset}] = {castExpression}{m.Name}";
-                        offset ++;
+                        offset++;
                         break;
 
                     default:
