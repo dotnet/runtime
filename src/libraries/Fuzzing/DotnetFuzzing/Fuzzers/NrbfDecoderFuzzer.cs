@@ -18,10 +18,18 @@ namespace DotnetFuzzing.Fuzzers
 
         public void FuzzTarget(ReadOnlySpan<byte> bytes)
         {
-            using PooledBoundedMemory<byte> inputPoisoned = PooledBoundedMemory<byte>.Rent(bytes, PoisonPagePlacement.After);
-            using MemoryStream stream = new MemoryStream(inputPoisoned.Memory.ToArray());
+            using PooledBoundedMemory<byte> inputPoisonedAfter = PooledBoundedMemory<byte>.Rent(bytes, PoisonPagePlacement.After);
+            using PooledBoundedMemory<byte> inputPoisonedBefore = PooledBoundedMemory<byte>.Rent(bytes, PoisonPagePlacement.Before);
+            using MemoryStream streamAfter = new MemoryStream(inputPoisonedAfter.Memory.ToArray());
+            using MemoryStream streamBefore = new MemoryStream(inputPoisonedBefore.Memory.ToArray());
 
-            if (NrbfDecoder.StartsWithPayloadHeader(inputPoisoned.Span))
+            Test(inputPoisonedAfter.Span, streamAfter);
+            Test(inputPoisonedBefore.Span, streamBefore);
+        }
+
+        private static void Test(Span<byte> testSpan, MemoryStream stream)
+        {
+            if (NrbfDecoder.StartsWithPayloadHeader(testSpan))
             {
                 try
                 {
@@ -52,7 +60,6 @@ namespace DotnetFuzzing.Fuzzers
                         case SerializationRecordType.ClassWithId:
                         case SerializationRecordType.ClassWithMembersAndTypes:
                         case SerializationRecordType.SystemClassWithMembersAndTypes:
-                        {
                             ClassRecord classRecord = (ClassRecord)record;
                             Assert.NotNull(classRecord.TypeName);
 
@@ -60,7 +67,7 @@ namespace DotnetFuzzing.Fuzzers
                             {
                                 Assert.Equal(true, classRecord.HasMember(name));
                             }
-                        } break;
+                            break;
                         case SerializationRecordType.MemberPrimitiveTyped:
                             PrimitiveTypeRecord primitiveType = (PrimitiveTypeRecord)record;
                             Assert.NotNull(primitiveType.Value);
@@ -69,6 +76,8 @@ namespace DotnetFuzzing.Fuzzers
                             Assert.NotNull(record.TypeName);
                             break;
                         case SerializationRecordType.BinaryLibrary:
+                            Assert.Equal(false, record.Id.Equals(default));
+                            break;
                         case SerializationRecordType.ObjectNull:
                         case SerializationRecordType.ObjectNullMultiple:
                         case SerializationRecordType.ObjectNullMultiple256:
@@ -86,8 +95,9 @@ namespace DotnetFuzzing.Fuzzers
                 catch (NotSupportedException) { /* Reading from the stream encountered unsupported records */ }
                 catch (DecoderFallbackException) { /* Reading from the stream encountered an invalid UTF8 sequence. */ }
                 catch (EndOfStreamException) { /* The end of the stream was reached before reading SerializationRecordType.MessageEnd record. */ }
+                catch (IOException) { /* An I/O error occurred. */ }
             }
-            else 
+            else
             {
                 try
                 {
@@ -97,10 +107,6 @@ namespace DotnetFuzzing.Fuzzers
                 catch (SerializationException) { /* Everything has to start with a header */ }
                 catch (NotSupportedException) { /* Reading from the stream encountered unsupported records */ }
                 catch (EndOfStreamException) { /* The end of the stream was reached before reading SerializationRecordType.MessageEnd record. */ }
-                catch (DecoderFallbackException) { /* Reading from the stream encountered an invalid UTF8 sequence. */ }
-                // below exceptions are not expected
-                catch (FormatException) { /* Temporarily catch this until its fixed */ }
-                catch (IOException) { /* Temporarily catch this until its fixed */ }
             }
         }
     }
