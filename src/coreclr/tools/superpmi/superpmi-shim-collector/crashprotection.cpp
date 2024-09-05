@@ -359,8 +359,9 @@ void CrashProtection::OnDeactivate(const Handler *restoreHandler)
 }
 
 #else /* HOST_WINDOWS*/
-void CrashProtection::Init()
+bool CrashProtection::Init()
 {
     // Nothing to do on Windows
+    return true;
 }
 #endif
