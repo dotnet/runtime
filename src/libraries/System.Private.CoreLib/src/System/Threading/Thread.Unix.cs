@@ -18,7 +18,7 @@ namespace System.Threading
             return WasiEventLoop.RegisterWasiPollableHandle(handle, cancellationToken);
         }
 
-        internal static int PollWasiEventLoopUntilResolved(Task<int> mainTask)
+        internal static T PollWasiEventLoopUntilResolved<T>(Task<T> mainTask)
         {
             while (!mainTask.IsCompleted)
             {
@@ -33,6 +33,18 @@ namespace System.Threading
             return mainTask.Result;
         }
 
+        internal static void PollWasiEventLoopUntilResolvedVoid(Task mainTask)
+        {
+            while (!mainTask.IsCompleted)
+            {
+                ThreadPoolWorkQueue.Dispatch();
+            }
+            var exception = mainTask.Exception;
+            if (exception is not null)
+            {
+                throw exception;
+            }
+        }
 #endif
 
         // the closest analog to Sleep(0) on Unix is sched_yield
