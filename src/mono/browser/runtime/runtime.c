@@ -238,7 +238,7 @@ get_native_to_interp (MonoMethod *method, void *extra_arg)
 	return addr;
 }
 
-static void *sysglobal_native_handle;
+static void *sysglobal_native_handle = (void *)0xDeadBeef;
 
 static void*
 wasm_dl_load (const char *name, int flags, char **err, void *user_data)
@@ -277,8 +277,7 @@ import_compare_key (const void *k1, const void *k2)
 static void*
 wasm_dl_symbol (void *handle, const char *name, char **err, void *user_data)
 {
-	if (handle == sysglobal_native_handle)
-		assert (0);
+	assert (handle != sysglobal_native_handle);
 
 #if WASM_SUPPORTS_DLOPEN
 	if (!wasm_dl_is_pinvoke_tables (handle)) {
@@ -301,10 +300,13 @@ wasm_dl_symbol (void *handle, const char *name, char **err, void *user_data)
 #else
     PinvokeTable *index = (PinvokeTable*)handle;
 
-	for (int i = 0; index->count; ++i)
+	for (int i = 0; i < index->count; ++i) {
+		assert(index->imports[i].name != NULL);
+	
 		if (!strcmp (index->imports[i].name, name))
 			return index->imports[i].func;
 
+	}
 	return NULL;
 #endif
 }
