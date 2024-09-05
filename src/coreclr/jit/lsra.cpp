@@ -9609,11 +9609,8 @@ void LinearScan::resolveEdge(BasicBlock*      fromBlock,
             block = toBlock;
             break;
         case ResolveCritical:
-            // fgSplitEdge may add one or two BasicBlocks.  It returns the block that splits
-            // the edge from 'fromBlock' and 'toBlock', but if it inserts that block right after
-            // a block with a fall-through it will have to create another block to handle that edge.
-            // These new blocks can be mapped to existing blocks in order to correctly handle
-            // the calls to recordVarLocationsAtStartOfBB() from codegen.  That mapping is handled
+            // The new block can be mapped to existing blocks in order to correctly handle
+            // the calls to recordVarLocationsAtStartOfBB() from codegen. That mapping is handled
             // in resolveEdges(), after all the edge resolution has been done (by calling this
             // method for each edge).
             block = compiler->fgSplitEdge(fromBlock, toBlock);
