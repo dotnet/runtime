@@ -27,10 +27,26 @@ namespace System
             _mods = 0;
             if (shift)
                 _mods |= ConsoleModifiers.Shift;
-            if (alt)
+            else if (alt)
                 _mods |= ConsoleModifiers.Alt;
-            if (control)
+            else if (control)
                 _mods |= ConsoleModifiers.Control;
+        }
+
+        public ConsoleKeyInfo(char keyChar, ConsoleKey key)
+        {
+            // Limit ConsoleKey values to 0 to 255, but don't check whether the
+            // key is a valid value in our ConsoleKey enum.  There are a few
+            // values in that enum that we didn't define, and reserved keys
+            // that might start showing up on keyboards in a few years.
+            if (((int)key) < 0 || ((int)key) > 255)
+            {
+                throw new ArgumentOutOfRangeException(nameof(key), SR.ArgumentOutOfRange_ConsoleKey);
+            }
+
+            _keyChar = keyChar;
+            _key = key;
+            _mods = 0;
         }
 
         public char KeyChar
@@ -76,5 +92,7 @@ namespace System
             // _mods only has enum defined values for 1,2,4: 3 bits. Use the remaining 8 bits.
             return _keyChar | ((int)_key << 16) | ((int)_mods << 24);
         }
+
+        public override string ToString() => $"keyChar: {KeyChar} key: {Key} mods: {Enum.GetName(typeof(ConsoleModifiers), Modifiers)}";
     }
 }
