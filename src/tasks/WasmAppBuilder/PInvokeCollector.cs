@@ -210,6 +210,15 @@ internal sealed class PInvokeCollector {
     }
 }
 
+internal sealed class PInvokeCallbackComparer : IComparer<PInvokeCallback>
+{
+    public int Compare(PInvokeCallback? x, PInvokeCallback? y)
+    {
+        int compare = string.Compare(x!.Key, y!.Key, StringComparison.Ordinal);
+        return compare != 0 ? compare : (int)(x.Token - y.Token);
+    }
+}
+
 #pragma warning disable CS0649
 internal sealed class PInvokeCallback
 {

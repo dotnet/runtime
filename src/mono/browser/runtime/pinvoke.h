@@ -9,6 +9,12 @@ typedef struct {
 } PinvokeImport;
 
 typedef struct {
+	const char *name;
+	PinvokeImport *imports;
+	int count;
+} PinvokeTable;
+
+typedef struct {
 	uint32_t token;
 	const char *key;
 	void *func;
@@ -51,6 +57,6 @@ double
 mono_wasm_interp_method_args_get_darg (MonoInterpMethodArguments *margs, int i);
 
 void*
-mono_wasm_interp_method_args_get_retval  (MonoInterpMethodArguments *margs);
+mono_wasm_interp_method_args_get_retval (MonoInterpMethodArguments *margs);
 
 #endif

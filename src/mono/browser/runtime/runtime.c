@@ -265,6 +265,15 @@ wasm_dl_load (const char *name, int flags, char **err, void *user_data)
 	return NULL;
 }
 
+int
+import_compare_key (const void *k1, const void *k2)
+{
+	const PinvokeImport *e1 = (const PinvokeImport*)k1;
+	const PinvokeImport *e2 = (const PinvokeImport*)k2;
+
+	return strcmp (e1->name, e2->name);
+}
+
 static void*
 wasm_dl_symbol (void *handle, const char *name, char **err, void *user_data)
 {
@@ -277,12 +286,16 @@ wasm_dl_symbol (void *handle, const char *name, char **err, void *user_data)
 	}
 #endif
 
-	PinvokeImport *table = (PinvokeImport*)handle;
-	for (int i = 0; table [i].name; ++i) {
-		if (!strcmp (table [i].name, name))
-			return table [i].func;
+	PinvokeTable *index = (PinvokeTable*)handle;
+
+	PinvokeImport key = { name, NULL };
+	PinvokeImport *result = bsearch (&key, index->imports, index->count, sizeof (PinvokeImport), import_compare_key);
+	if (!result) {
+		// *err = g_strdup_printf ("Symbol not found: %s", name);
+		return NULL;
 	}
-	return NULL;
+
+	return result->func;
 }
 
 MonoDomain *

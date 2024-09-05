@@ -133,6 +133,7 @@ internal sealed class PInvokeTableGenerator
             }
         }
 
+        var moduleImports = new Dictionary<string, List<string>>();
         foreach (var module in modules.Keys)
         {
             var assemblies_pinvokes = pinvokes
@@ -141,10 +142,12 @@ internal sealed class PInvokeTableGenerator
                 .GroupBy(d => d.EntryPoint)
                 .Select(l => $"{{\"{EscapeLiteral(l.Key)}\", {CEntryPoint(l.First())}}}, "
                     + "// " + string.Join(", ", l.Select(c => c.Method.DeclaringType!.Module!.Assembly!.GetName()!.Name!).Distinct().OrderBy(n => n)))
-                .Append("{NULL, NULL}");
+                .ToList();
 
+            moduleImports[module] = assemblies_pinvokes;
             w.Write(
                 $$"""
+
                 static PinvokeImport {{_fixupSymbolName(module)}}_imports [] = {
                     {{string.Join($"{w.NewLine}    ", assemblies_pinvokes)}}
                 };
@@ -155,12 +158,8 @@ internal sealed class PInvokeTableGenerator
         w.Write(
             $$"""
 
-            static void *pinvoke_tables[] = {
-                {{modules.Keys.Join(", ", m => $"(void*){_fixupSymbolName(m)}_imports")}}
-            };
-
-            static char *pinvoke_names[] =  {
-                {{modules.Keys.Join(", ", m => $"\"{EscapeLiteral(m)}\"")}}
+            static PinvokeTable pinvoke_tables[] = {
+                {{modules.Keys.Join($",{w.NewLine}    ", m => $"{{\"{EscapeLiteral(m)}\", {_fixupSymbolName(m)}_imports, {moduleImports[m].Count}}}")}}
             };
 
             """);
@@ -287,16 +286,6 @@ internal sealed class PInvokeTableGenerator
             """;
     }
 
-    private string CEntryPoint(PInvokeCallback export)
-    {
-        if (export.IsExport)
-        {
-            return _fixupSymbolName(export.EntryPoint!);
-        }
-
-        return _fixupSymbolName($"wasm_native_to_interp_{export.AssemblyName}_{export.Namespace}_{export.TypeName}_{export.MethodName}");
-    }
-
     private static string EscapeLiteral(string input)
     {
         StringBuilder sb = new StringBuilder();
@@ -321,18 +310,6 @@ internal sealed class PInvokeTableGenerator
         }
 
         return sb.ToString();
-    }
-
-    internal sealed class PInvokeCallbackComparer : IComparer<PInvokeCallback>
-    {
-        public int Compare(PInvokeCallback? x, PInvokeCallback? y)
-        {
-            int compare = string.Compare(x!.Key, y!.Key, StringComparison.Ordinal);
-            if (compare != 0) {
-                return compare;
-            }
-            return (int)(x.Token) - (int)(y.Token);
-        }
     }
 
     private void EmitNativeToInterp(StreamWriter w, List<PInvokeCallback> callbacks)
@@ -360,7 +337,8 @@ internal sealed class PInvokeTableGenerator
         callbacks = callbacks.OrderBy(c => c, new PInvokeCallbackComparer()).ToList();
         foreach (var cb in callbacks)
         {
-            cb.EntrySymbol = CEntryPoint(cb);
+            cb.EntrySymbol = _fixupSymbolName(cb.IsExport ? cb.EntryPoint! : $"wasm_native_to_interp_{cb.AssemblyName}_{cb.Namespace}_{cb.TypeName}_{cb.MethodName}");
+
             if (callbackNames.Contains(cb.EntrySymbol))
             {
                 Error($"Two callbacks with the same symbol '{cb.EntrySymbol}' are not supported.");
@@ -409,8 +387,7 @@ internal sealed class PInvokeTableGenerator
             $$"""
 
             static UnmanagedCallersExport wasm_native_to_interp_table[] = {
-                {{callbacks.Join("", cb => $"{{{cb.Token}, \"{EscapeLiteral(cb.Key)}\", {cb.EntrySymbol}}},{w.NewLine}    ")
-                }}{0, NULL, NULL}
+                {{callbacks.Join($",{w.NewLine}    ", cb => $"{{{cb.Token}, \"{EscapeLiteral(cb.Key)}\", {cb.EntrySymbol}}}")}}
             };
 
             """);

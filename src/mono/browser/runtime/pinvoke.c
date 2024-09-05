@@ -26,9 +26,9 @@ mono_wasm_pinvoke_vararg_stub (void)
 void*
 wasm_dl_lookup_pinvoke_table (const char *name)
 {
-	for (int i = 0; i < sizeof (pinvoke_tables) / sizeof (void*); ++i) {
-		if (!strcmp (name, pinvoke_names [i]))
-			return pinvoke_tables [i];
+	for (int i = 0; i < sizeof (pinvoke_tables) / sizeof (PinvokeTable); ++i) {
+		if (!strcmp (name, pinvoke_tables [i].name))
+			return &pinvoke_tables [i];
 	}
 	return NULL;
 }
@@ -36,8 +36,8 @@ wasm_dl_lookup_pinvoke_table (const char *name)
 int
 wasm_dl_is_pinvoke_table (void *handle)
 {
-	for (int i = 0; i < sizeof (pinvoke_tables) / sizeof (void*); ++i) {
-		if (pinvoke_tables [i] == handle) {
+	for (int i = 0; i < sizeof (pinvoke_tables) / sizeof (PinvokeTable); ++i) {
+		if (&pinvoke_tables[i] == handle) {
 			return 1;
 		}
 	}
@@ -45,16 +45,16 @@ wasm_dl_is_pinvoke_table (void *handle)
 }
 
 static int
-compare_key (const void *k1, const void *k2)
+export_compare_key (const void *k1, const void *k2)
 {
-	UnmanagedCallersExport *e1 = (UnmanagedCallersExport*)k1;
-	UnmanagedCallersExport *e2 = (UnmanagedCallersExport*)k2;
+	const char *key1 = ((UnmanagedCallersExport*)k1)->key;
+	const char *key2 = ((UnmanagedCallersExport*)k2)->key;
 
-	return strcmp (e1->key, e2->key);
+	return strcmp (key1, key2);
 }
 
 static int
-compare_key_and_token (const void *k1, const void *k2)
+export_compare_key_and_token (const void *k1, const void *k2)
 {
 	UnmanagedCallersExport *e1 = (UnmanagedCallersExport*)k1;
 	UnmanagedCallersExport *e2 = (UnmanagedCallersExport*)k2;
@@ -63,25 +63,25 @@ compare_key_and_token (const void *k1, const void *k2)
 	if (compare)
 		return compare;
 
-	return e1->token - e2->token;
+	return (int)(e1->token - e2->token);
 }
 
 void*
 wasm_dl_get_native_to_interp (uint32_t token, const char *key, void *extra_arg)
 {
 #ifdef GEN_PINVOKE
-	// Do a binary search on the key + token
 	UnmanagedCallersExport needle = { token, key, NULL };
-	int size = (sizeof (wasm_native_to_interp_table) / sizeof (UnmanagedCallersExport)) - 1;
-	
-	UnmanagedCallersExport *result = bsearch (&needle, wasm_native_to_interp_table, size, sizeof (UnmanagedCallersExport), compare_key_and_token);
-	if (!result) { // try again with just the key
-		result = bsearch (&needle, wasm_native_to_interp_table, size, sizeof (UnmanagedCallersExport), compare_key);
+	int count = (sizeof (wasm_native_to_interp_table) / sizeof (UnmanagedCallersExport));
+
+	UnmanagedCallersExport *result = bsearch (&needle, wasm_native_to_interp_table, count, sizeof (UnmanagedCallersExport), export_compare_key_and_token);
+	if (!result) {
+		// assembly may have been trimmed / modified, try to find by key only
+		result = bsearch (&needle, wasm_native_to_interp_table, count, sizeof (UnmanagedCallersExport), export_compare_key);
 	}
 
-	if (!result) {
+	if (!result)
 		return NULL;
-	}
+
 	void *addr = result->func;
 	wasm_native_to_interp_ftndescs [result - wasm_native_to_interp_table] = *(InterpFtnDesc*)extra_arg;
 	return addr;

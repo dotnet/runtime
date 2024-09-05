@@ -74,25 +74,26 @@ internal sealed class IcallTableGenerator
 
             string aname = assembly == "System.Private.CoreLib" ? "corlib" : _fixupSymbolName(assembly);
 
-            w.Write($$"""
+            w.Write(
+                $$"""
 
-                    #define ICALL_TABLE_{{aname}} 1
+                #define ICALL_TABLE_{{aname}} 1
 
-                    static int {{aname}}_icall_indexes [] = {
-                      {{sorted.Join($", {w.NewLine}  ", (icall, i) => $"/* {i} */ {icall.TokenIndex}")}}
+                static int {{aname}}_icall_indexes [] = {
+                    {{sorted.Join($",{w.NewLine}    ", (icall, i) => $"/* {i} */ {icall.TokenIndex}")}}
+                };
+
+                {{sorted.Join($" {w.NewLine}", GenIcallDecl)}}
+
+                static void *{{aname}}_icall_funcs [] = {
+                      {{sorted.Join($",{w.NewLine}  ", (icall, i) => $"/* {i}:{icall.TokenIndex} */ {icall.Func}" )}}
                     };
 
-                    {{sorted.Join($" {w.NewLine}", GenIcallDecl)}}
+                static uint8_t {{aname}}_icall_flags [] = {
+                    {{sorted.Join($",{w.NewLine}  ", (icall, i) => $"/* {i}:{icall.TokenIndex} */ {icall.Flags}")}}
+                };
 
-                    static void *{{aname}}_icall_funcs [] = {
-                      {{sorted.Join($", {w.NewLine}  ", (icall, i) => $"/* {i}:{icall.TokenIndex} */ {icall.Func}" )}}
-                    };
-
-                    static uint8_t {{aname}}_icall_flags [] = {
-                      {{sorted.Join($",{w.NewLine}  ", (icall, i) => $"/* {i}:{icall.TokenIndex} */ {icall.Flags}")}}
-                    };
-
-                    """);
+                """);
         }
     }
 
