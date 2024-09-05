@@ -9,8 +9,8 @@
  *
  * For conditions of distribution and use, see copyright notice in zlib.h
  */
-#include "../../zbuild.h"
-#include "../../deflate.h"
+#include "zbuild.h"
+#include "deflate.h"
 
 #include <immintrin.h>
 
@@ -31,7 +31,6 @@ static inline void slide_hash_chain(Pos *table, uint32_t entries, const __m256i 
 }
 
 Z_INTERNAL void slide_hash_avx2(deflate_state *s) {
-    Assert(s->w_size <= UINT16_MAX, "w_size should fit in uint16_t");
     uint16_t wsize = (uint16_t)s->w_size;
     const __m256i ymm_wsize = _mm256_set1_epi16((short)wsize);
 
