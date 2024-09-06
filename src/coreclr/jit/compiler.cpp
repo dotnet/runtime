@@ -5238,11 +5238,12 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     m_pLowering->FinalizeOutgoingArgSpace();
 
     // We can not add any new tracked variables after this point.
-    lvaTrackedFixed = true;
+    lvaTrackedFixed                    = true;
+    const unsigned numBlocksBeforeLSRA = fgBBcount;
 
     // Now that lowering is completed we can proceed to perform register allocation
     //
-    auto linearScanPhase = [this]() {
+    auto linearScanPhase = [this] {
         m_pLinearScan->doLinearScan();
     };
     DoPhase(this, PHASE_LINEAR_SCAN, linearScanPhase);
@@ -5252,8 +5253,25 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
 
     if (opts.OptimizationEnabled())
     {
-        // LSRA and stack level setting can modify the flowgraph.
-        // Now that it won't change, run post-layout optimizations.
+        // LSRA may introduce new blocks. If it does, rerun layout.
+        if (fgBBcount != numBlocksBeforeLSRA)
+        {
+            auto lateLayoutPhase = [this] {
+                fgDoReversePostOrderLayout();
+                fgMoveColdBlocks();
+                return PhaseStatus::MODIFIED_EVERYTHING;
+            };
+
+            DoPhase(this, PHASE_OPTIMIZE_LAYOUT, lateLayoutPhase);
+
+            if (fgFirstColdBlock != nullptr)
+            {
+                fgFirstColdBlock = nullptr;
+                DoPhase(this, PHASE_DETERMINE_FIRST_COLD_BLOCK, &Compiler::fgDetermineFirstColdBlock);
+            }
+        }
+
+        // Now that the flowgraph is finalized, run post-layout optimizations.
         DoPhase(this, PHASE_OPTIMIZE_POST_LAYOUT, &Compiler::optOptimizePostLayout);
     }
 
