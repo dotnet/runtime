@@ -2789,7 +2789,14 @@ bool emitter::emitInsCanOnlyWriteSSE2OrAVXReg(instrDesc* id)
             // These SSE instructions write to a general purpose integer register.
             return false;
         }
-
+        case INS_kmovb_gpr:
+        case INS_kmovw_gpr:
+        case INS_kmovd_gpr:
+        case INS_kmovq_gpr:
+        {
+            // These kmov writes to a general purpose integer register
+            return !isGeneralRegister(id->idReg1());
+        }
         default:
         {
             return true;
