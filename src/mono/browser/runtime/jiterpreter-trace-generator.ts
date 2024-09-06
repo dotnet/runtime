@@ -439,7 +439,7 @@ export function generateWasmBody (
 
         switch (opcode) {
             case MintOpcode.MINT_SWITCH: {
-                if (!emit_switch(builder, ip))
+                if (!emit_switch(builder, ip, exitOpcodeCounter))
                     ip = abort;
                 break;
             }
@@ -4062,7 +4062,7 @@ function emit_atomics (
     return false;
 }
 
-function emit_switch (builder: WasmBuilder, ip: MintOpcodePtr) : boolean {
+function emit_switch (builder: WasmBuilder, ip: MintOpcodePtr, exitOpcodeCounter: number) : boolean {
     const lengthU16 = getOpcodeLengthU16(ip, MintOpcode.MINT_SWITCH),
         table = decodeSwitch(ip);
     let failed = false;
@@ -4095,6 +4095,6 @@ function emit_switch (builder: WasmBuilder, ip: MintOpcodePtr) : boolean {
     builder.cfg.jumpTable(table, fallthrough);
     // Missing target
     builder.endBlock();
-    append_bailout(builder, ip, BailoutReason.SwitchTarget);
+    append_exit(builder, ip, exitOpcodeCounter, BailoutReason.SwitchTarget);
     return true;
 }
