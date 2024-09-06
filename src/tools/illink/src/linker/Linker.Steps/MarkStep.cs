@@ -2016,8 +2016,10 @@ namespace Mono.Linker.Steps
 				foreach (Action<TypeDefinition> handleMarkType in MarkContext.MarkTypeActions)
 					handleMarkType (type);
 
-				// Rebuild type info for the type in case a mark action added new methods.
-				Annotations.TypeMapInfo.MapType (type);
+				if (Context.HasCustomMarkHandler) {
+					// Rebuild type info for the type in case a mark action added new methods.
+					Annotations.TypeMapInfo.MapType (type);
+				}
 			}
 
 			MarkType (type.BaseType, new DependencyInfo (DependencyKind.BaseType, type), typeOrigin);

@@ -942,19 +942,6 @@ namespace Mono.Linker
 			context.Tracer.AddRecorder (new DgmlDependencyRecorder (context, fileName));
 		}
 
-		protected bool AddMarkHandler (Pipeline pipeline, string arg)
-		{
-			if (!TryGetCustomAssembly (ref arg, out Assembly? custom_assembly))
-				return false;
-
-			var step = ResolveStep<IMarkHandler> (arg, custom_assembly);
-			if (step == null)
-				return false;
-
-			pipeline.AppendMarkHandler (step);
-			return true;
-		}
-
 		bool TryGetCustomAssembly (ref string arg, [NotNullWhen (true)] out Assembly? assembly)
 		{
 			assembly = null;
@@ -1028,6 +1015,7 @@ namespace Mono.Linker
 				var customStep = (IMarkHandler?) Activator.CreateInstance (stepType) ?? throw new InvalidOperationException ();
 				if (targetName == null) {
 					pipeline.AppendMarkHandler (customStep);
+					Context.HasCustomMarkHandler = true;
 					return true;
 				}
 
@@ -1042,6 +1030,7 @@ namespace Mono.Linker
 				else
 					pipeline.AddMarkHandlerAfter (target, customStep);
 
+				Context.HasCustomMarkHandler = true;
 				return true;
 			}
 
@@ -1084,26 +1073,6 @@ namespace Mono.Linker
 			}
 
 			return step;
-		}
-
-		TStep? ResolveStep<TStep> (string type, Assembly assembly) where TStep : class
-		{
-			// Ignore warning, since we're just enabling analyzer for dogfooding
-#pragma warning disable IL2026
-			Type? step = assembly != null ? assembly.GetType (type) : Type.GetType (type, false);
-#pragma warning restore IL2026
-
-			if (step == null) {
-				Context.LogError (null, DiagnosticId.CustomStepTypeCouldNotBeFound, type);
-				return null;
-			}
-
-			if (!typeof (TStep).IsAssignableFrom (step)) {
-				Context.LogError (null, DiagnosticId.CustomStepTypeIsIncompatibleWithLinkerVersion, type);
-				return null;
-			}
-
-			return (TStep?) Activator.CreateInstance (step);
 		}
 
 		static string[] GetFiles (string param)

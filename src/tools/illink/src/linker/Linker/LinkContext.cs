@@ -184,6 +184,8 @@ namespace Mono.Linker
 
 		public string? AssemblyListFile { get; set; }
 
+		internal bool HasCustomMarkHandler { get; set; }
+
 		public List<IMarkHandler> MarkHandlers { get; }
 
 		public Dictionary<string, bool> SingleWarn { get; set; }
