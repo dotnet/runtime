@@ -607,6 +607,7 @@
       <GroupBuildCmd Condition="'$(ServerGarbageCollection)' != ''">$(GroupBuildCmd) "/p:ServerGarbageCollection=$(ServerGarbageCollection)"</GroupBuildCmd>
       <GroupBuildCmd>$(GroupBuildCmd) "/p:CLRTestBuildAllTargets=$(CLRTestBuildAllTargets)"</GroupBuildCmd>
       <GroupBuildCmd>$(GroupBuildCmd) "/p:UseCodeFlowEnforcement=$(UseCodeFlowEnforcement)"</GroupBuildCmd>
+      <GroupBuildCmd Condition="'$(ControlFlowGuard)' != ''">$(GroupBuildCmd) "/p:ControlFlowGuard=$(ControlFlowGuard)"</GroupBuildCmd>
       <GroupBuildCmd>$(GroupBuildCmd) "/p:__TestGroupToBuild=$(__TestGroupToBuild)"</GroupBuildCmd>
       <GroupBuildCmd>$(GroupBuildCmd) "/p:__SkipRestorePackages=1"</GroupBuildCmd>
       <GroupBuildCmd>$(GroupBuildCmd) /nodeReuse:false</GroupBuildCmd>
