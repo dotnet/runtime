@@ -111,7 +111,7 @@ internal static partial class Interop
             }
             catch { /* ignored */ }
 #endif
-            
+
             byte* formatBuffer = stackalloc byte[MountPointFormatBufferSizeInBytes];    // format names should be small
             long numericFormat;
             int result = GetFormatInfoForMountPoint(name, formatBuffer, MountPointFormatBufferSizeInBytes, &numericFormat);
