@@ -134,7 +134,7 @@ CorJitResult interceptor_ICJC::compileMethod(ICorJitInfo*                comp,  
         delete mc;
         return true;
     };
-    compileParams.compileInner = [&compileParams](CompileParams* pParam)
+    compileParams.compileInner = [](CompileParams* pParam)
     {
         CrashGuard cg{pParam->cleanup};
         pParam->result = pParam->origComp->compileMethod(
