@@ -11,33 +11,80 @@
 **
 ===========================================================*/
 #include "common.h"
-#include "object.h"
-#include "field.h"
-#include "excep.h"
 #include "comwaithandle.h"
 
-FCIMPL3(INT32, WaitHandleNative::CorWaitOneNative, HANDLE handle, INT32 timeout, FC_BOOL_ARG useTrivialWaits)
+extern "C" INT32 QCALLTYPE WaitHandle_WaitOneCore(HANDLE handle, INT32 timeout, BOOL useTrivialWaits)
 {
-    FCALL_CONTRACT;
+    QCALL_CONTRACT;
 
     INT32 retVal = 0;
-    HELPER_METHOD_FRAME_BEGIN_RET_0();
+
+    BEGIN_QCALL;
 
     _ASSERTE(handle != 0);
     _ASSERTE(handle != INVALID_HANDLE_VALUE);
 
     Thread* pThread = GET_THREAD();
-
-    WaitMode waitMode = (WaitMode)((!FC_ACCESS_BOOL(useTrivialWaits) ? WaitMode_Alertable : WaitMode_None) | WaitMode_IgnoreSyncCtx);
+    WaitMode waitMode = (WaitMode)((!useTrivialWaits ? WaitMode_Alertable : WaitMode_None) | WaitMode_IgnoreSyncCtx);
     retVal = pThread->DoAppropriateWait(1, &handle, TRUE, timeout, waitMode);
 
-    HELPER_METHOD_FRAME_END();
+    END_QCALL;
     return retVal;
 }
-FCIMPLEND
+
+extern "C" INT32 QCALLTYPE WaitHandle_WaitMultipleIgnoringSyncContext(HANDLE *handleArray, INT32 numHandles, BOOL waitForAll, INT32 timeout)
+{
+    QCALL_CONTRACT;
+
+    INT32 ret = 0;
+    BEGIN_QCALL;
+
+    Thread * pThread = GET_THREAD();
+
+#ifdef FEATURE_COMINTEROP_APARTMENT_SUPPORT
+    // There are some issues with wait-all from an STA thread
+    // - https://github.com/dotnet/runtime/issues/10243#issuecomment-385117537
+    if (waitForAll && numHandles > 1 && pThread->GetApartment() == Thread::AS_InSTA)
+    {
+        COMPlusThrow(kNotSupportedException, W("NotSupported_WaitAllSTAThread"));
+    }
+#endif // FEATURE_COMINTEROP_APARTMENT_SUPPORT
+
+    ret = pThread->DoAppropriateWait(numHandles, handleArray, waitForAll, timeout, (WaitMode)(WaitMode_Alertable | WaitMode_IgnoreSyncCtx));
+
+    END_QCALL;
+    return ret;
+}
+
+extern "C" INT32 QCALLTYPE WaitHandle_SignalAndWait(HANDLE waitHandleSignal, HANDLE waitHandleWait, INT32 timeout)
+{
+    QCALL_CONTRACT;
+
+    INT32 retVal = (DWORD)-1;
+
+    BEGIN_QCALL;
+
+    _ASSERTE(waitHandleSignal != 0);
+    _ASSERTE(waitHandleWait != 0);
+
+    Thread* pThread = GET_THREAD();
+
+#ifdef FEATURE_COMINTEROP_APARTMENT_SUPPORT
+    if (pThread->GetApartment() == Thread::AS_InSTA)
+    {
+        COMPlusThrow(kNotSupportedException, W("NotSupported_SignalAndWaitSTAThread"));
+    }
+#endif // FEATURE_COMINTEROP_APARTMENT_SUPPORT
+
+    HANDLE handles[] = { waitHandleSignal, waitHandleWait };
+    retVal = pThread->DoSignalAndWait(handles, timeout, TRUE /*alertable*/);
+
+    END_QCALL;
+    return retVal;
+}
 
 #ifdef TARGET_UNIX
-extern "C" INT32 QCALLTYPE WaitHandle_CorWaitOnePrioritizedNative(HANDLE handle, INT32 timeoutMs)
+extern "C" INT32 QCALLTYPE WaitHandle_WaitOnePrioritized(HANDLE handle, INT32 timeoutMs)
 {
     QCALL_CONTRACT;
 
@@ -53,64 +100,4 @@ extern "C" INT32 QCALLTYPE WaitHandle_CorWaitOnePrioritizedNative(HANDLE handle,
     END_QCALL;
     return (INT32)result;
 }
-#endif
-
-FCIMPL4(INT32, WaitHandleNative::CorWaitMultipleNative, HANDLE *handleArray, INT32 numHandles, FC_BOOL_ARG waitForAll, INT32 timeout)
-{
-    FCALL_CONTRACT;
-
-    INT32 ret = 0;
-    HELPER_METHOD_FRAME_BEGIN_RET_0();
-
-    Thread * pThread = GET_THREAD();
-
-#ifdef FEATURE_COMINTEROP_APARTMENT_SUPPORT
-    // There are some issues with wait-all from an STA thread
-    // - https://github.com/dotnet/runtime/issues/10243#issuecomment-385117537
-    if (FC_ACCESS_BOOL(waitForAll) && numHandles > 1 && pThread->GetApartment() == Thread::AS_InSTA)
-    {
-        COMPlusThrow(kNotSupportedException, W("NotSupported_WaitAllSTAThread"));
-    }
-#endif // FEATURE_COMINTEROP_APARTMENT_SUPPORT
-
-    ret = pThread->DoAppropriateWait(numHandles, handleArray, FC_ACCESS_BOOL(waitForAll), timeout, (WaitMode)(WaitMode_Alertable | WaitMode_IgnoreSyncCtx));
-
-    HELPER_METHOD_FRAME_END();
-    return ret;
-}
-FCIMPLEND
-
-FCIMPL3(INT32, WaitHandleNative::CorSignalAndWaitOneNative, HANDLE waitHandleSignalUNSAFE, HANDLE waitHandleWaitUNSAFE, INT32 timeout)
-{
-    FCALL_CONTRACT;
-
-    INT32 retVal = 0;
-
-    HELPER_METHOD_FRAME_BEGIN_RET_0();
-
-    _ASSERTE(waitHandleSignalUNSAFE != 0);
-    _ASSERTE(waitHandleWaitUNSAFE != 0);
-
-    Thread* pThread = GET_THREAD();
-
-#ifdef FEATURE_COMINTEROP
-    if (pThread->GetApartment() == Thread::AS_InSTA) {
-        COMPlusThrow(kNotSupportedException, W("NotSupported_SignalAndWaitSTAThread"));  //<TODO> Change this message
-    }
-#endif
-
-    DWORD res = (DWORD) -1;
-
-    HANDLE handles[2];
-    handles[0] = waitHandleSignalUNSAFE;
-    handles[1] = waitHandleWaitUNSAFE;
-    {
-        res = pThread->DoSignalAndWait(handles, timeout, TRUE /*alertable*/);
-    }
-
-    retVal = res;
-
-    HELPER_METHOD_FRAME_END();
-    return retVal;
-}
-FCIMPLEND
+#endif // TARGET_UNIX

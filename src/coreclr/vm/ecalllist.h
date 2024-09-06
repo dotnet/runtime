@@ -313,12 +313,6 @@ FCFuncStart(gThreadPoolFuncs)
     FCFuncElement("GetNextConfigUInt32Value", ThreadPoolNative::GetNextConfigUInt32Value)
 FCFuncEnd()
 
-FCFuncStart(gWaitHandleFuncs)
-    FCFuncElement("WaitOneCore", WaitHandleNative::CorWaitOneNative)
-    FCFuncElement("WaitMultipleIgnoringSyncContext", WaitHandleNative::CorWaitMultipleNative)
-    FCFuncElement("SignalAndWaitNative", WaitHandleNative::CorSignalAndWaitOneNative)
-FCFuncEnd()
-
 FCFuncStart(gCastHelpers)
     FCFuncElement("IsInstanceOfAny_NoCacheLookup", ::IsInstanceOfAny_NoCacheLookup)
     FCFuncElement("ChkCastAny_NoCacheLookup", ::ChkCastAny_NoCacheLookup)
@@ -493,7 +487,6 @@ FCClassElement("Thread", "System.Threading", gThreadFuncs)
 FCClassElement("ThreadPool", "System.Threading", gThreadPoolFuncs)
 FCClassElement("Type", "System", gSystem_Type)
 FCClassElement("TypedReference", "System", gTypedReferenceFuncs)
-FCClassElement("WaitHandle", "System.Threading", gWaitHandleFuncs)
 
 #undef FCFuncElement
 #undef FCFuncElementSig
