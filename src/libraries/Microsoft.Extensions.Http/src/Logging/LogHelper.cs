@@ -33,7 +33,7 @@ namespace Microsoft.Extensions.Http.Logging
             public static readonly EventId RequestPipelineRequestHeader = new EventId(102, "RequestPipelineRequestHeader");
             public static readonly EventId RequestPipelineResponseHeader = new EventId(103, "RequestPipelineResponseHeader");
 
-            public static readonly EventId PipelineFailed = new EventId(104, "RequestPipelineRequestFailed");
+            public static readonly EventId PipelineFailed = new EventId(104, "RequestPipelineFailed");
         }
 
         public static readonly Func<string, bool> ShouldRedactHeaderValue = (header) => true;
@@ -50,7 +50,7 @@ namespace Microsoft.Extensions.Http.Logging
             "Received HTTP response headers after {ElapsedMilliseconds}ms - {StatusCode}");
 
         private static readonly Action<ILogger, double, string?, Exception?> _requestFailed = LoggerMessage.Define<double, string?>(
-            LogLevel.Error,
+            LogLevel.Information,
             EventIds.RequestFailed,
             "Request failed after {ElapsedMilliseconds}ms, Error: {ErrorMessage}");
 
@@ -68,7 +68,7 @@ namespace Microsoft.Extensions.Http.Logging
             "End processing HTTP request after {ElapsedMilliseconds}ms - {StatusCode}");
 
         private static readonly Action<ILogger, double, string?, Exception?> _requestPipelineFailed = LoggerMessage.Define<double, string?>(
-            LogLevel.Error,
+            LogLevel.Information,
             EventIds.PipelineFailed,
             "Request failed after {ElapsedMilliseconds}ms, Error: {ErrorMessage}");
 
