@@ -39,8 +39,7 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
                 _assemblyReferences = assemblyReferences ?? s_compilationAssemblyRefs;
 
                 _parseOptions = new CSharpParseOptions(langVersion).WithFeatures(new[] {
-                    new KeyValuePair<string, string>("InterceptorsPreview", "") ,
-                    new KeyValuePair<string, string>("InterceptorsPreviewNamespaces", "Microsoft.Extensions.Configuration.Binder.SourceGeneration")
+                    new KeyValuePair<string, string>("InterceptorsNamespaces", "Microsoft.Extensions.Configuration.Binder.SourceGeneration")
                 });
 
                 ConfigurationBindingGenerator generator = new() { OnSourceEmitting = spec => _genSpec = spec };
