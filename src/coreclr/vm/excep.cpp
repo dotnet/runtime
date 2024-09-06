@@ -5199,6 +5199,10 @@ BOOL NotifyAppDomainsOfUnhandledException(
 
     GCPROTECT_END();
 
+#ifdef HOST_WINDOWS
+    CreateCrashDumpIfEnabled();
+#endif
+
 #ifdef _DEBUG
     // Do not care about lock check for unhandled exception.
     while (unbreakableLockCount)
@@ -5700,9 +5704,6 @@ void AdjustContextForThreadStop(Thread* pThread,
 #endif // !FEATURE_EH_FUNCLETS
 
     pThread->ResetThrowControlForThread();
-
-    // Should never get here if we're already throwing an exception.
-    _ASSERTE(!pThread->IsExceptionInProgress() || pThread->IsRudeAbort());
 
     // Should never get here if we're already abort initiated.
     _ASSERTE(!pThread->IsAbortInitiated() || pThread->IsRudeAbort());
@@ -6277,6 +6278,10 @@ void HandleManagedFaultNew(EXCEPTION_RECORD* pExceptionRecord, CONTEXT* pContext
     *frame->GetGSCookiePtr() = GetProcessGSCookie();
 #endif // FEATURE_EH_FUNCLETS
     frame->InitAndLink(pContext);
+
+#if defined(TARGET_AMD64) && defined(TARGET_WINDOWS)
+    frame->SetSSP(GetSSP(pContext));
+#endif
 
     Thread *pThread = GetThread();
 
@@ -7500,7 +7505,7 @@ VOID DECLSPEC_NORETURN UnwindAndContinueRethrowHelperAfterCatch(Frame* pEntryFra
         }
         else
         {
-            DispatchManagedException(orThrowable, /* preserveStackTrace */ false);
+            DispatchManagedException(orThrowable);
         }
     }
     else

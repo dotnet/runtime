@@ -5696,8 +5696,7 @@ decode_value_internal (MonoType *t, int type, MonoDomain *domain, guint8 *addr, 
 {
 	ErrorCode err;
 
-	if (m_type_is_byref (t)) {
-		g_assert (extra_space != NULL && *extra_space != NULL);
+	if (m_type_is_byref (t) && extra_space != NULL && *extra_space != NULL) {
 		*(guint8**)addr = *extra_space; //assign the extra_space allocated for byref fields to the addr
 		guint8 *buf_int = buf;
 		addr = *(guint8**)addr; //dereference the pointer as it's a byref field
@@ -10530,8 +10529,9 @@ object_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 				break;
 			}
 		}
-
-		while ((f = mono_class_get_fields_internal (k, &iter))) {
+                //Above for loop might end if 'k' is null , ensure 'k' is not 
+                //null before passing it to mono_class_get_fields_internal to avoid crash
+		while (k && (f = mono_class_get_fields_internal (k, &iter))) {
 			if (mono_class_get_field_token (f) == field_token) {
 				goto get_field_value;
 			}

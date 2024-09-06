@@ -5,7 +5,6 @@
     <StringResourcesPath>../src/Resources/Strings.resx</StringResourcesPath>
     <TargetFrameworks>$(NetCoreAppCurrent);$(NetCoreAppCurrent)-browser</TargetFrameworks>
     <DefineConstants>$(DefineConstants);NETSTANDARD</DefineConstants>
-    <NoWarn>$(NoWarn);SYSLIB0057</NoWarn>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(TargetOS)' == 'browser'">
@@ -58,9 +57,11 @@
     <Compile Include="ConnectTest.Http2.cs" />
     <Compile Include="ConnectTest.cs" />
     <Compile Include="KeepAliveTest.cs" />
+    <Compile Include="KeepAliveTest.Loopback.cs" />
     <Compile Include="LoopbackHelper.cs" />
     <Compile Include="LoopbackServer\Http2LoopbackStream.cs" />
     <Compile Include="LoopbackServer\LoopbackWebSocketServer.cs" />
+    <Compile Include="LoopbackServer\ReadAheadWebSocket.cs" />
     <Compile Include="LoopbackServer\WebSocketHandshakeHelper.cs" />
     <Compile Include="LoopbackServer\WebSocketRequestData.cs" />
     <Compile Include="ResourceHelper.cs" />

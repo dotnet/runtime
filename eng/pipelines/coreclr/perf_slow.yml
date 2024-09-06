@@ -15,6 +15,7 @@ trigger:
   branches:
     include:
     - main
+    - release/9.0
   paths:
     include:
     - '*'
@@ -91,6 +92,24 @@ extends:
               runtimeType: mono
               codeGenType: 'Interpreter'
               projectFile: $(Agent.BuildDirectory)/performance/eng/performance/helix.proj
+              runKind: micro_mono
+              runJobTemplate: /eng/pipelines/coreclr/templates/run-performance-job.yml
+              logicalmachine: 'perfampere'
+              timeoutInMinutes: 720
+
+        # run arm64 jit jobs for mono
+        - template: /eng/pipelines/common/platform-matrix.yml
+          parameters:
+            jobTemplate: /eng/pipelines/coreclr/templates/perf-job.yml
+            buildConfig: release
+            runtimeFlavor: mono
+            platforms:
+            - linux_arm64
+            jobParameters:
+              testGroup: perf
+              liveLibrariesBuildConfig: Release
+              runtimeType: mono
+              projectFile: microbenchmarks.proj
               runKind: micro_mono
               runJobTemplate: /eng/pipelines/coreclr/templates/run-performance-job.yml
               logicalmachine: 'perfampere'

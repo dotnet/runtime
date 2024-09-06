@@ -1334,6 +1334,139 @@ namespace System.Threading.ThreadPools.Tests
             }).Dispose();
         }
 
+        public static IEnumerable<object[]> IOCompletionPortCountConfigVarTest_Args =
+            from x in Enumerable.Range(0, 9)
+            select new object[] { x };
+
+        // Just verifies that some basic IO operations work with different IOCP counts
+        [ConditionalTheory(nameof(IsThreadingAndRemoteExecutorSupported), nameof(UsePortableThreadPool))]
+        [MemberData(nameof(IOCompletionPortCountConfigVarTest_Args))]
+        [PlatformSpecific(TestPlatforms.Windows)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/106371")]
+        public static void IOCompletionPortCountConfigVarTest(int ioCompletionPortCount)
+        {
+            // Avoid contaminating the main process' environment
+            RemoteExecutor.Invoke(ioCompletionPortCountStr =>
+            {
+                int ioCompletionPortCount = int.Parse(ioCompletionPortCountStr);
+
+                const int PretendProcessorCount = 80;
+
+                // The actual test process below will inherit the config vars
+                Environment.SetEnvironmentVariable("DOTNET_PROCESSOR_COUNT", PretendProcessorCount.ToString());
+                Environment.SetEnvironmentVariable("DOTNET_SYSTEM_NET_SOCKETS_THREAD_COUNT", "7");
+                if (ioCompletionPortCount != 0)
+                {
+                    Environment.SetEnvironmentVariable(
+                        "DOTNET_ThreadPool_IOCompletionPortCount",
+                        ioCompletionPortCount.ToString());
+                }
+
+                RemoteExecutor.Invoke(() =>
+                {
+                    RunQueueNativeOverlappedTest();
+                    RunAsyncIOTest().Wait();
+
+                    static unsafe void RunQueueNativeOverlappedTest()
+                    {
+                        var done = new AutoResetEvent(false);
+                        for (int i = 0; i < PretendProcessorCount; i++)
+                        {
+                            // Queue a NativeOverlapped, wait for the callback to run
+                            var overlapped = new Overlapped();
+                            NativeOverlapped* nativeOverlapped = overlapped.Pack((_, _, _) => done.Set(), null);
+                            try
+                            {
+                                ThreadPool.UnsafeQueueNativeOverlapped(nativeOverlapped);
+                                done.CheckedWait();
+                            }
+                            finally
+                            {
+                                if (nativeOverlapped != null)
+                                {
+                                    Overlapped.Free(nativeOverlapped);
+                                }
+                            }
+                        }
+                    }
+
+                    static async Task RunAsyncIOTest()
+                    {
+                        var done = new AutoResetEvent(false);
+
+                        // Receiver
+                        bool stop = false;
+                        var receiveBuffer = new byte[1];
+                        var listener = new TcpListener(IPAddress.Loopback, 0);
+                        listener.Start();
+                        var t = ThreadTestHelpers.CreateGuardedThread(
+                            out Action checkForThreadErrors,
+                            out Action waitForThread,
+                            async () =>
+                            {
+                                using (listener)
+                                {
+                                    while (!stop)
+                                    {
+                                        // Accept a connection, receive a byte
+                                        using var socket = await listener.AcceptSocketAsync();
+                                        int bytesRead =
+                                            await socket.ReceiveAsync(new ArraySegment<byte>(receiveBuffer), SocketFlags.None);
+                                        Assert.Equal(1, bytesRead);
+                                        done.Set(); // indicate byte received
+                                    }
+                                }
+                            });
+                        t.IsBackground = true;
+                        t.Start();
+
+                        // Sender
+                        var sendBuffer = new byte[1];
+                        for (int i = 0; i < PretendProcessorCount / 2; i++)
+                        {
+                            // Connect, send a byte
+                            using var client = new TcpClient();
+                            await client.ConnectAsync((IPEndPoint)listener.LocalEndpoint);
+                            int bytesSent =
+                                await client.Client.SendAsync(new ArraySegment<byte>(sendBuffer), SocketFlags.None);
+                            Assert.Equal(1, bytesSent);
+                            done.CheckedWait(); // wait for byte to the received
+                        }
+
+                        stop = true;
+                        waitForThread();
+                    }
+                }).Dispose();
+            }, ioCompletionPortCount.ToString()).Dispose();
+        }
+
+
+        [ConditionalFact(nameof(IsThreadingAndRemoteExecutorSupported))]
+        [PlatformSpecific(TestPlatforms.Windows)]
+        public static unsafe void ThreadPoolCompletedWorkItemCountTest()
+        {
+            // Run in a separate process to test in a clean thread pool environment such that we don't count external work items
+            RemoteExecutor.Invoke(() =>
+            {
+                using var manualResetEvent = new ManualResetEventSlim(false);
+
+                var overlapped = new Overlapped();
+                NativeOverlapped* nativeOverlapped = overlapped.Pack((errorCode, numBytes, innerNativeOverlapped) =>
+                {
+                    Overlapped.Free(innerNativeOverlapped);
+                    manualResetEvent.Set();
+                }, null);
+
+                ThreadPool.UnsafeQueueNativeOverlapped(nativeOverlapped);
+                manualResetEvent.Wait();
+
+                // Allow work item(s) to be marked as completed during this time, should be only one
+                ThreadTestHelpers.WaitForCondition(() => ThreadPool.CompletedWorkItemCount == 1);
+                Thread.Sleep(50);
+                Assert.Equal(1, ThreadPool.CompletedWorkItemCount);
+            }).Dispose();
+        }
+
         public static bool IsThreadingAndRemoteExecutorSupported =>
             PlatformDetection.IsThreadingSupported && RemoteExecutor.IsSupported;
 

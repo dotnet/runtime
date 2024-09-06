@@ -2,9 +2,14 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+#if FEATURE_COMINTEROP
+using System.Runtime.InteropServices.CustomMarshalers;
+#endif
 using System.Runtime.InteropServices.Marshalling;
+using System.Runtime.Versioning;
 using System.Text;
 
 namespace System.StubHelpers
@@ -792,16 +797,6 @@ namespace System.StubHelpers
 
     internal static unsafe partial class MngdRefCustomMarshaler
     {
-        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "CustomMarshaler_GetMarshalerObject")]
-        private static partial void GetMarshaler(IntPtr pCMHelper, ObjectHandleOnStack retMarshaler);
-
-        internal static ICustomMarshaler GetMarshaler(IntPtr pCMHelper)
-        {
-            ICustomMarshaler? marshaler = null;
-            GetMarshaler(pCMHelper, ObjectHandleOnStack.Create(ref marshaler));
-            return marshaler!;
-        }
-
         internal static unsafe void ConvertContentsToNative(ICustomMarshaler marshaler, in object pManagedHome, IntPtr* pNativeHome)
         {
             // COMPAT: We never pass null to MarshalManagedToNative.
@@ -1315,75 +1310,6 @@ namespace System.StubHelpers
         }
     }  // class CleanupWorkListElement
 
-    internal unsafe struct CopyConstructorCookie
-    {
-        private void* m_source;
-
-        private nuint m_destinationOffset;
-
-        public delegate*<void*, void*, void> m_copyConstructor;
-
-        public delegate*<void*, void> m_destructor;
-
-        public CopyConstructorCookie* m_next;
-
-        [StackTraceHidden]
-        public void ExecuteCopy(void* destinationBase)
-        {
-            if (m_copyConstructor != null)
-            {
-                m_copyConstructor((byte*)destinationBase + m_destinationOffset, m_source);
-            }
-
-            if (m_destructor != null)
-            {
-                m_destructor(m_source);
-            }
-        }
-    }
-
-    internal unsafe struct CopyConstructorChain
-    {
-        public void* m_realTarget;
-        public CopyConstructorCookie* m_head;
-
-        public void Add(CopyConstructorCookie* cookie)
-        {
-            cookie->m_next = m_head;
-            m_head = cookie;
-        }
-
-        [ThreadStatic]
-        private static CopyConstructorChain s_copyConstructorChain;
-
-        public void Install(void* realTarget)
-        {
-            m_realTarget = realTarget;
-            s_copyConstructorChain = this;
-        }
-
-        [StackTraceHidden]
-        private void ExecuteCopies(void* destinationBase)
-        {
-            for (CopyConstructorCookie* current = m_head; current != null; current = current->m_next)
-            {
-                current->ExecuteCopy(destinationBase);
-            }
-        }
-
-        [UnmanagedCallersOnly]
-        [StackTraceHidden]
-        public static void* ExecuteCurrentCopiesAndGetTarget(void* destinationBase)
-        {
-            void* target = s_copyConstructorChain.m_realTarget;
-            s_copyConstructorChain.ExecuteCopies(destinationBase);
-            // Reset this instance to ensure we don't accidentally execute the copies again.
-            // All of the pointers point to the stack, so we don't need to free any memory.
-            s_copyConstructorChain = default;
-            return target;
-        }
-    }
-
     internal static partial class StubHelpers
     {
         [MethodImpl(MethodImplOptions.InternalCall)]
@@ -1422,25 +1348,26 @@ namespace System.StubHelpers
 
         internal static Exception GetHRExceptionObject(int hr)
         {
-            Exception ex = InternalGetHRExceptionObject(hr);
-            ex.InternalPreserveStackTrace();
-            return ex;
+            Exception? ex = null;
+            GetHRExceptionObject(hr, ObjectHandleOnStack.Create(ref ex));
+            ex!.InternalPreserveStackTrace();
+            return ex!;
         }
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern Exception InternalGetHRExceptionObject(int hr);
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "StubHelpers_GetHRExceptionObject")]
+        private static partial void GetHRExceptionObject(int hr, ObjectHandleOnStack throwable);
 
 #if FEATURE_COMINTEROP
         internal static Exception GetCOMHRExceptionObject(int hr, IntPtr pCPCMD, object pThis)
         {
-            Exception ex = InternalGetCOMHRExceptionObject(hr, pCPCMD, pThis);
-            ex.InternalPreserveStackTrace();
-            return ex;
+            Exception? ex = null;
+            GetCOMHRExceptionObject(hr, pCPCMD, ObjectHandleOnStack.Create(ref pThis), ObjectHandleOnStack.Create(ref ex));
+            ex!.InternalPreserveStackTrace();
+            return ex!;
         }
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern Exception InternalGetCOMHRExceptionObject(int hr, IntPtr pCPCMD, object? pThis);
-
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "StubHelpers_GetCOMHRExceptionObject")]
+        private static partial void GetCOMHRExceptionObject(int hr, IntPtr pCPCMD, ObjectHandleOnStack pThis, ObjectHandleOnStack throwable);
 #endif // FEATURE_COMINTEROP
 
         [ThreadStatic]
@@ -1463,8 +1390,28 @@ namespace System.StubHelpers
             s_pendingExceptionObject = exception;
         }
 
-        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "StubHelpers_CreateCustomMarshalerHelper")]
-        internal static partial IntPtr CreateCustomMarshalerHelper(IntPtr pMD, int paramToken, IntPtr hndManagedType);
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "StubHelpers_CreateCustomMarshaler")]
+        internal static partial void CreateCustomMarshaler(IntPtr pMD, int paramToken, IntPtr hndManagedType, ObjectHandleOnStack customMarshaler);
+
+#if FEATURE_COMINTEROP
+        [SupportedOSPlatform("windows")]
+        internal static object GetIEnumeratorToEnumVariantMarshaler() => EnumeratorToEnumVariantMarshaler.GetInstance(string.Empty);
+#endif
+
+        internal static object CreateCustomMarshaler(IntPtr pMD, int paramToken, IntPtr hndManagedType)
+        {
+#if FEATURE_COMINTEROP
+            if (OperatingSystem.IsWindows()
+                && hndManagedType == typeof(System.Collections.IEnumerator).TypeHandle.Value)
+            {
+                return GetIEnumeratorToEnumVariantMarshaler();
+            }
+#endif
+
+            object? retVal = null;
+            CreateCustomMarshaler(pMD, paramToken, hndManagedType, ObjectHandleOnStack.Create(ref retVal));
+            return retVal!;
+        }
 
         //-------------------------------------------------------
         // SafeHandle Helpers
@@ -1495,18 +1442,38 @@ namespace System.StubHelpers
 
 #if FEATURE_COMINTEROP
         [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern IntPtr GetCOMIPFromRCW(object objSrc, IntPtr pCPCMD, out IntPtr ppTarget, out bool pfNeedsRelease);
+        private static extern IntPtr GetCOMIPFromRCW(object objSrc, IntPtr pCPCMD, out IntPtr ppTarget);
+
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "StubHelpers_GetCOMIPFromRCWSlow")]
+        private static partial IntPtr GetCOMIPFromRCWSlow(ObjectHandleOnStack objSrc, IntPtr pCPCMD, out IntPtr ppTarget);
+
+        internal static IntPtr GetCOMIPFromRCW(object objSrc, IntPtr pCPCMD, out IntPtr ppTarget, out bool pfNeedsRelease)
+        {
+            IntPtr rcw = GetCOMIPFromRCW(objSrc, pCPCMD, out ppTarget);
+            if (rcw == IntPtr.Zero)
+            {
+                // If we didn't find the COM interface pointer in the cache we need to release the pointer.
+                pfNeedsRelease = true;
+                return GetCOMIPFromRCWWorker(objSrc, pCPCMD, out ppTarget);
+            }
+            pfNeedsRelease = false;
+            return rcw;
+
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            static IntPtr GetCOMIPFromRCWWorker(object objSrc, IntPtr pCPCMD, out IntPtr ppTarget)
+                => GetCOMIPFromRCWSlow(ObjectHandleOnStack.Create(ref objSrc), pCPCMD, out ppTarget);
+        }
 #endif // FEATURE_COMINTEROP
 
+#if PROFILING_SUPPORTED
         //-------------------------------------------------------
         // Profiler helpers
         //-------------------------------------------------------
-#if PROFILING_SUPPORTED
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern IntPtr ProfilerBeginTransitionCallback(IntPtr pSecretParam, IntPtr pThread, object pThis);
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "StubHelpers_ProfilerBeginTransitionCallback")]
+        internal static unsafe partial void* ProfilerBeginTransitionCallback(void* pTargetMD);
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern void ProfilerEndTransitionCallback(IntPtr pMD, IntPtr pThread);
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "StubHelpers_ProfilerEndTransitionCallback")]
+        internal static unsafe partial void ProfilerEndTransitionCallback(void* pTargetMD);
 #endif // PROFILING_SUPPORTED
 
         //------------------------------------------------------
@@ -1591,26 +1558,26 @@ namespace System.StubHelpers
             }
         }
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern object AllocateInternal(IntPtr typeHandle);
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint="StubHelpers_MarshalToManagedVaList")]
+        internal static partial void MarshalToManagedVaList(IntPtr va_list, IntPtr pArgIterator);
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern void MarshalToUnmanagedVaListInternal(IntPtr va_list, uint vaListSize, IntPtr pArgIterator);
-
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern void MarshalToManagedVaListInternal(IntPtr va_list, IntPtr pArgIterator);
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint="StubHelpers_MarshalToUnmanagedVaList")]
+        internal static partial void MarshalToUnmanagedVaList(IntPtr va_list, uint vaListSize, IntPtr pArgIterator);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern uint CalcVaListSize(IntPtr va_list);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern void ValidateObject(object obj, IntPtr pMD, object pThis);
-
-        [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern void LogPinnedArgument(IntPtr localDesc, IntPtr nativeArg);
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern void ValidateByref(IntPtr byref, IntPtr pMD, object pThis); // the byref is pinned so we can safely "cast" it to IntPtr
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint="StubHelpers_ValidateObject")]
+        private static partial void ValidateObject(ObjectHandleOnStack obj, IntPtr pMD);
+
+        internal static void ValidateObject(object obj, IntPtr pMD)
+            => ValidateObject(ObjectHandleOnStack.Create(ref obj), pMD);
+
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint="StubHelpers_ValidateByref")]
+        internal static partial void ValidateByref(IntPtr byref, IntPtr pMD); // the byref is pinned so we can safely "cast" it to IntPtr
 
         [Intrinsic]
         [MethodImpl(MethodImplOptions.InternalCall)]
@@ -1623,4 +1590,37 @@ namespace System.StubHelpers
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern IntPtr NextCallReturnAddress();
     }  // class StubHelpers
+
+#if FEATURE_COMINTEROP
+    internal static class ColorMarshaler
+    {
+        private static readonly MethodInvoker s_oleColorToDrawingColorMethod;
+        private static readonly MethodInvoker s_drawingColorToOleColorMethod;
+
+        internal static readonly IntPtr s_colorType;
+
+#pragma warning disable CA1810 // explicit static cctor
+        static ColorMarshaler()
+        {
+            Type colorTranslatorType = Type.GetType("System.Drawing.ColorTranslator, System.Drawing.Primitives", throwOnError: true)!;
+            Type colorType = Type.GetType("System.Drawing.Color, System.Drawing.Primitives", throwOnError: true)!;
+
+            s_colorType = colorType.TypeHandle.Value;
+
+            s_oleColorToDrawingColorMethod = MethodInvoker.Create(colorTranslatorType.GetMethod("FromOle", [typeof(int)])!);
+            s_drawingColorToOleColorMethod = MethodInvoker.Create(colorTranslatorType.GetMethod("ToOle", [colorType])!);
+        }
+#pragma warning restore CA1810 // explicit static cctor
+
+        internal static object ConvertToManaged(int managedColor)
+        {
+            return s_oleColorToDrawingColorMethod.Invoke(null, managedColor)!;
+        }
+
+        internal static int ConvertToNative(object? managedColor)
+        {
+            return (int)s_drawingColorToOleColorMethod.Invoke(null, managedColor)!;
+        }
+    }
+#endif
 }

@@ -575,11 +575,11 @@ BOOL PEAssembly::GetResource(LPCSTR szName, DWORD *cbResource,
 
             AssemblySpec spec;
             spec.InitializeSpec(mdLinkRef, GetMDImport(), pAssembly);
-            DomainAssembly* pDomainAssembly = spec.LoadDomainAssembly(FILE_LOADED);
+            Assembly* pLoadedAssembly = spec.LoadAssembly(FILE_LOADED);
 
             if (dwLocation) {
                 if (pAssemblyRef)
-                    *pAssemblyRef = pDomainAssembly->GetAssembly();
+                    *pAssemblyRef = pLoadedAssembly;
 
                 *dwLocation = *dwLocation | 2; // ResourceLocation.containedInAnotherAssembly
             }
@@ -590,7 +590,7 @@ BOOL PEAssembly::GetResource(LPCSTR szName, DWORD *cbResource,
                                 pAssemblyRef,
                                 szFileName,
                                 dwLocation,
-                                pDomainAssembly->GetAssembly());
+                                pLoadedAssembly);
         }
 
     case mdtFile:

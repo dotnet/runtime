@@ -1994,8 +1994,147 @@ void Lowering::LowerArgsForCall(GenTreeCall* call)
         LowerArg(call, &arg, true);
     }
 
+#if defined(TARGET_X86) && defined(FEATURE_IJW)
+    LowerSpecialCopyArgs(call);
+#endif // defined(TARGET_X86) && defined(FEATURE_IJW)
+
     LegalizeArgPlacement(call);
 }
+
+#if defined(TARGET_X86) && defined(FEATURE_IJW)
+//------------------------------------------------------------------------
+// LowerSpecialCopyArgs: Lower special copy arguments for P/Invoke IL stubs
+//
+// Arguments:
+//    call - the call node
+//
+// Notes:
+//    This method is used for P/Invoke IL stubs on x86 to handle arguments with special copy semantics.
+//    In particular, this method implements copy-constructor semantics for managed-to-unmanaged IL stubs
+//    for C++/CLI. In this case, the managed argument is passed by (managed or unmanaged) pointer in the
+//    P/Invoke signature with a speial modreq, but is passed to the unmanaged function by value.
+//    The value passed to the unmanaged function must be created through a copy-constructor call copying from
+//    the original source argument.
+//    We assume that the IL stub will be generated such that the following holds true:
+//       - If an argument to the IL stub has the special modreq, then its corresponding argument to the
+//         unmanaged function will be passed as the same argument index. Therefore, we can introduce the copy call
+//         from the original source argument to the argument slot in the unmanaged call.
+void Lowering::LowerSpecialCopyArgs(GenTreeCall* call)
+{
+    // We only need to use the special copy helper on P/Invoke IL stubs
+    // for the unmanaged call.
+    if (comp->opts.jitFlags->IsSet(JitFlags::JIT_FLAG_IL_STUB) && comp->compMethodRequiresPInvokeFrame() &&
+        call->IsUnmanaged() && comp->compHasSpecialCopyArgs())
+    {
+        // Unmanaged calling conventions on Windows x86 are passed in reverse order
+        // of managed args, so we need to count down the number of args.
+        // If the call is thiscall, we need to account for the this parameter,
+        // which will be first in the list.
+        // The this parameter is always passed in registers, so we can ignore it.
+        unsigned argIndex = call->gtArgs.CountUserArgs() - 1;
+        assert(call->gtArgs.CountUserArgs() == comp->info.compILargsCount);
+        for (CallArg& arg : call->gtArgs.Args())
+        {
+            if (!arg.IsUserArg())
+            {
+                continue;
+            }
+
+            if (call->GetUnmanagedCallConv() == CorInfoCallConvExtension::Thiscall &&
+                argIndex == call->gtArgs.CountUserArgs() - 1)
+            {
+                assert(arg.GetNode()->OperIs(GT_PUTARG_REG));
+                continue;
+            }
+
+            unsigned paramLclNum = comp->compMapILargNum(argIndex);
+            assert(paramLclNum < comp->info.compArgsCount);
+
+            // check if parameter at the same index as the IL argument is marked as requiring special copy, assuming
+            // that it is being passed 1:1 to the pinvoke
+            if (comp->argRequiresSpecialCopy(paramLclNum) && (arg.GetSignatureType() == TYP_STRUCT))
+            {
+                assert(arg.GetNode()->OperIs(GT_PUTARG_STK));
+                InsertSpecialCopyArg(arg.GetNode()->AsPutArgStk(), arg.GetSignatureClassHandle(), paramLclNum);
+            }
+
+            argIndex--;
+        }
+    }
+}
+
+//------------------------------------------------------------------------
+// InsertSpecialCopyArg: Insert a call to the special copy helper to copy from the (possibly value pointed-to by) local
+// lclnum to the argument slot represented by putArgStk
+//
+// Arguments:
+//    putArgStk - the PutArgStk node representing the stack slot of the argument
+//    argType - the struct type of the argument
+//    lclNum - the local to use as the source for the special copy helper
+//
+// Notes:
+//   This method assumes that lclNum is either a by-ref to a struct of type argType
+//   or a struct of type argType.
+//   We use this to preserve special copy semantics for interop calls where we pass in a byref to a struct into a
+//   P/Invoke with a special modreq and the native function expects to recieve the struct by value with the argument
+//   being passed in having been created by the special copy helper.
+//
+void Lowering::InsertSpecialCopyArg(GenTreePutArgStk* putArgStk, CORINFO_CLASS_HANDLE argType, unsigned lclNum)
+{
+    assert(putArgStk != nullptr);
+    GenTree* dest = comp->gtNewPhysRegNode(REG_SPBASE, TYP_I_IMPL);
+
+    GenTree*  src;
+    var_types lclType = comp->lvaGetRealType(lclNum);
+
+    if (lclType == TYP_BYREF || lclType == TYP_I_IMPL)
+    {
+        src = comp->gtNewLclVarNode(lclNum, lclType);
+    }
+    else
+    {
+        assert(lclType == TYP_STRUCT);
+        src = comp->gtNewLclAddrNode(lclNum, 0, TYP_I_IMPL);
+    }
+
+    GenTree* destPlaceholder = comp->gtNewZeroConNode(dest->TypeGet());
+    GenTree* srcPlaceholder  = comp->gtNewZeroConNode(src->TypeGet());
+
+    GenTreeCall* call =
+        comp->gtNewCallNode(CT_USER_FUNC, comp->info.compCompHnd->getSpecialCopyHelper(argType), TYP_VOID);
+
+    call->gtArgs.PushBack(comp, NewCallArg::Primitive(destPlaceholder));
+    call->gtArgs.PushBack(comp, NewCallArg::Primitive(srcPlaceholder));
+
+    comp->fgMorphArgs(call);
+
+    LIR::Range callRange      = LIR::SeqTree(comp, call);
+    GenTree*   callRangeStart = callRange.FirstNode();
+    GenTree*   callRangeEnd   = callRange.LastNode();
+
+    BlockRange().InsertAfter(putArgStk, std::move(callRange));
+    BlockRange().InsertAfter(putArgStk, dest);
+    BlockRange().InsertAfter(putArgStk, src);
+
+    LIR::Use destUse;
+    LIR::Use srcUse;
+    BlockRange().TryGetUse(destPlaceholder, &destUse);
+    BlockRange().TryGetUse(srcPlaceholder, &srcUse);
+    destUse.ReplaceWith(dest);
+    srcUse.ReplaceWith(src);
+    destPlaceholder->SetUnusedValue();
+    srcPlaceholder->SetUnusedValue();
+
+    LowerRange(callRangeStart, callRangeEnd);
+
+    // Finally move all GT_PUTARG_* nodes
+    // Re-use the existing logic for CFG call args here
+    MoveCFGCallArgs(call);
+
+    BlockRange().Remove(destPlaceholder);
+    BlockRange().Remove(srcPlaceholder);
+}
+#endif // defined(TARGET_X86) && defined(FEATURE_IJW)
 
 //------------------------------------------------------------------------
 // LegalizeArgPlacement: Move arg placement nodes (PUTARG_*) into a legal
@@ -9305,6 +9444,9 @@ bool Lowering::TryMakeIndirsAdjacent(GenTreeIndir* prevIndir, GenTreeIndir* indi
     GenTree* cur = prevIndir;
     for (int i = 0; i < LDP_STP_REORDERING_MAX_DISTANCE; i++)
     {
+        // No nodes should be marked yet
+        assert((cur->gtLIRFlags & LIR::Flags::Mark) == 0);
+
         cur = cur->gtNext;
         if (cur == indir)
             break;
@@ -9355,6 +9497,12 @@ bool Lowering::TryMakeIndirsAdjacent(GenTreeIndir* prevIndir, GenTreeIndir* indi
 
 #endif
 
+    // Unmark tree when we exit the current scope
+    auto code = [this, indir] {
+        UnmarkTree(indir);
+    };
+    jitstd::utility::scoped_code<decltype(code)> finally(code);
+
     MarkTree(indir);
 
     INDEBUG(dumpWithMarks());
@@ -9363,7 +9511,6 @@ bool Lowering::TryMakeIndirsAdjacent(GenTreeIndir* prevIndir, GenTreeIndir* indi
     if ((prevIndir->gtLIRFlags & LIR::Flags::Mark) != 0)
     {
         JITDUMP("Previous indir is part of the data flow of current indir\n");
-        UnmarkTree(indir);
         return false;
     }
 
@@ -9379,7 +9526,6 @@ bool Lowering::TryMakeIndirsAdjacent(GenTreeIndir* prevIndir, GenTreeIndir* indi
             if (m_scratchSideEffects.InterferesWith(comp, cur, true))
             {
                 JITDUMP("Giving up due to interference with [%06u]\n", Compiler::dspTreeID(cur));
-                UnmarkTree(indir);
                 return false;
             }
 
@@ -9401,7 +9547,6 @@ bool Lowering::TryMakeIndirsAdjacent(GenTreeIndir* prevIndir, GenTreeIndir* indi
         if (!indir->OperIsLoad())
         {
             JITDUMP("Have conservative interference with last store. Giving up.\n");
-            UnmarkTree(indir);
             return false;
         }
 
@@ -9495,7 +9640,6 @@ bool Lowering::TryMakeIndirsAdjacent(GenTreeIndir* prevIndir, GenTreeIndir* indi
             if (interferes(cur))
             {
                 JITDUMP("Indir [%06u] interferes with [%06u]\n", Compiler::dspTreeID(indir), Compiler::dspTreeID(cur));
-                UnmarkTree(indir);
                 return false;
             }
         }
@@ -9521,7 +9665,6 @@ bool Lowering::TryMakeIndirsAdjacent(GenTreeIndir* prevIndir, GenTreeIndir* indi
                 {
                     JITDUMP("Cannot move prev indir [%06u] up past [%06u] to get it past the data computation\n",
                             Compiler::dspTreeID(prevIndir), Compiler::dspTreeID(cur));
-                    UnmarkTree(indir);
                     return false;
                 }
             }
@@ -9586,7 +9729,6 @@ bool Lowering::TryMakeIndirsAdjacent(GenTreeIndir* prevIndir, GenTreeIndir* indi
     JITDUMP("Result:\n\n");
     INDEBUG(dumpWithMarks());
     JITDUMP("\n");
-    UnmarkTree(indir);
     return true;
 }
 

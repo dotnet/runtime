@@ -1044,10 +1044,11 @@ CorInfoInitClassResult MethodContext::repInitClass(CORINFO_FIELD_HANDLE   field,
 }
 
 void MethodContext::recGetMethodNameFromMetadata(CORINFO_METHOD_HANDLE ftn,
-                                                 char*                 methodName,
-                                                 const char**          className,
-                                                 const char**          namespaceName,
-                                                 const char**          enclosingClassName)
+    char* methodName,
+    const char** className,
+    const char** namespaceName,
+    const char** enclosingClassNames,
+    size_t       maxEnclosingClassNames)
 {
     if (GetMethodNameFromMetadata == nullptr)
         GetMethodNameFromMetadata = new LightWeightMap<Agnostic_CORINFO_METHODNAME_TOKENin, Agnostic_CORINFO_METHODNAME_TOKENout>();
@@ -1056,7 +1057,7 @@ void MethodContext::recGetMethodNameFromMetadata(CORINFO_METHOD_HANDLE ftn,
     key.ftn = CastHandle(ftn);
     key.className = (className != nullptr);
     key.namespaceName = (namespaceName != nullptr);
-    key.enclosingClassName = (enclosingClassName != nullptr);
+    key.maxEnclosingClassNames = (DWORD)maxEnclosingClassNames;
 
     if (methodName != nullptr)
         value.methodName = GetMethodNameFromMetadata->AddBuffer((unsigned char*)methodName, (DWORD)strlen(methodName) + 1);
@@ -1070,15 +1071,24 @@ void MethodContext::recGetMethodNameFromMetadata(CORINFO_METHOD_HANDLE ftn,
 
     if ((namespaceName != nullptr) && (*namespaceName != nullptr))
         value.namespaceName =
-            GetMethodNameFromMetadata->AddBuffer((unsigned char*)*namespaceName, (DWORD)strlen(*namespaceName) + 1);
+        GetMethodNameFromMetadata->AddBuffer((unsigned char*)*namespaceName, (DWORD)strlen(*namespaceName) + 1);
     else
         value.namespaceName = (DWORD)-1;
 
-    if ((enclosingClassName != nullptr) && (*enclosingClassName != nullptr))
-        value.enclosingClassName =
-            GetMethodNameFromMetadata->AddBuffer((unsigned char*)*enclosingClassName, (DWORD)strlen(*enclosingClassName) + 1);
+    DWORD* enclosingClassNameIndices = static_cast<DWORD*>(alloca(sizeof(DWORD) * maxEnclosingClassNames));
+    for (size_t i = 0; i < maxEnclosingClassNames; i++)
+    {
+        const char* enclosingClassName = enclosingClassNames[i];
+        if (enclosingClassName != nullptr)
+            enclosingClassNameIndices[i] = GetMethodNameFromMetadata->AddBuffer((unsigned char*)enclosingClassName, (DWORD)strlen(enclosingClassName) + 1);
+        else
+            enclosingClassNameIndices[i] = (DWORD)-1;
+    }
+
+    if (maxEnclosingClassNames > 0)
+        value.enclosingClassNames = GetMethodNameFromMetadata->AddBuffer((unsigned char*)enclosingClassNameIndices, sizeof(DWORD) * (DWORD)maxEnclosingClassNames);
     else
-        value.enclosingClassName = (DWORD)-1;
+        value.enclosingClassNames = (DWORD)-1;
 
     GetMethodNameFromMetadata->Add(key, value);
     DEBUG_REC(dmpGetMethodNameFromMetadata(key, value));
@@ -1089,33 +1099,45 @@ void MethodContext::dmpGetMethodNameFromMetadata(Agnostic_CORINFO_METHODNAME_TOK
     unsigned char* methodName    = (unsigned char*)GetMethodNameFromMetadata->GetBuffer(value.methodName);
     unsigned char* className     = (unsigned char*)GetMethodNameFromMetadata->GetBuffer(value.className);
     unsigned char* namespaceName = (unsigned char*)GetMethodNameFromMetadata->GetBuffer(value.namespaceName);
-    unsigned char* enclosingClassName = (unsigned char*)GetMethodNameFromMetadata->GetBuffer(value.enclosingClassName);
-    printf("GetMethodNameFromMetadata key - ftn-%016" PRIX64 " classNonNull-%u namespaceNonNull-%u enclosingClassNonNull-%u, value meth-'%s', "
-           "class-'%s', namespace-'%s' enclosingClass-'%s'",
-           key.ftn, key.className, key.namespaceName, key.enclosingClassName, methodName, className, namespaceName, enclosingClassName);
+    unsigned char* enclosingClassNameIndices = GetMethodNameFromMetadata->GetBuffer(value.enclosingClassNames);
+    printf("GetMethodNameFromMetadata key - ftn-%016" PRIX64 " classNonNull-%u namespaceNonNull-%u maxEnclosingClassNames-%u, value meth-'%s', "
+           "class-'%s', namespace-'%s'",
+           key.ftn, key.className, key.namespaceName, key.maxEnclosingClassNames, methodName, className, namespaceName);
+
+    for (DWORD i = 0; i < key.maxEnclosingClassNames; i++)
+    {
+        DWORD index;
+        memcpy(&index, &enclosingClassNameIndices[i * sizeof(DWORD)], sizeof(DWORD));
+
+        unsigned char* enclosingClassName = GetMethodNameFromMetadata->GetBuffer(index);
+        if (enclosingClassName != nullptr)
+            printf(" enclosingClass%u-'%s'", i, enclosingClassName);
+    }
+
     GetMethodNameFromMetadata->Unlock();
 }
 
 const char* MethodContext::repGetMethodNameFromMetadata(CORINFO_METHOD_HANDLE ftn,
                                                         const char**          moduleName,
                                                         const char**          namespaceName,
-                                                        const char**          enclosingClassName)
+                                                        const char**          enclosingClassNames,
+                                                        size_t                maxEnclosingClassNames)
 {
     Agnostic_CORINFO_METHODNAME_TOKENin key;
 
     key.ftn = CastHandle(ftn);
     key.className = (moduleName != nullptr);
     key.namespaceName = (namespaceName != nullptr);
-    key.enclosingClassName = (enclosingClassName != nullptr);
+    key.maxEnclosingClassNames = (DWORD)maxEnclosingClassNames;
 
     Agnostic_CORINFO_METHODNAME_TOKENout value = LookupByKeyOrMiss(
         GetMethodNameFromMetadata,
         key,
-        ": ftn-%016" PRIX64 " className-%u namespaceName-%u enclosingClassName-%u",
+        ": ftn-%016" PRIX64 " className-%u namespaceName-%u maxEnclosingClassNames-%u",
         key.ftn,
         key.className,
         key.namespaceName,
-        key.enclosingClassName);
+        key.maxEnclosingClassNames);
 
     DEBUG_REP(dmpGetMethodNameFromMetadata(key, value));
 
@@ -1131,9 +1153,12 @@ const char* MethodContext::repGetMethodNameFromMetadata(CORINFO_METHOD_HANDLE ft
         *namespaceName = (const char*)GetMethodNameFromMetadata->GetBuffer(value.namespaceName);
     }
 
-    if (enclosingClassName != nullptr)
+    unsigned char* enclosingClassNameIndices = GetMethodNameFromMetadata->GetBuffer(value.enclosingClassNames);
+    for (size_t i = 0; i < maxEnclosingClassNames; i++)
     {
-        *enclosingClassName = (const char*)GetMethodNameFromMetadata->GetBuffer(value.enclosingClassName);
+        DWORD index;
+        memcpy(&index, &enclosingClassNameIndices[i * sizeof(DWORD)], sizeof(DWORD));
+        enclosingClassNames[i] = (const char*)GetMethodNameFromMetadata->GetBuffer(index);
     }
 
     return result;
@@ -3693,7 +3718,7 @@ void MethodContext::recGetThreadLocalStaticBlocksInfo(CORINFO_THREAD_STATIC_BLOC
 void MethodContext::dmpGetThreadLocalStaticBlocksInfo(DWORD key, const Agnostic_GetThreadLocalStaticBlocksInfo& value)
 {
     printf("GetThreadLocalStaticBlocksInfo key %u, tlsIndex-%s, "
-           ", tlsGetAddrFtnPtr-%016" PRIX64 ", tlsIndexObject - %016" PRIX64 
+           ", tlsGetAddrFtnPtr-%016" PRIX64 ", tlsIndexObject - %016" PRIX64
            ", threadVarsSection - %016" PRIX64
            ", offsetOfThreadLocalStoragePointer-%u"
            ", offsetOfMaxThreadStaticBlocks-%u"
@@ -5004,7 +5029,7 @@ GetTypeLayoutResult MethodContext::repGetTypeLayout(CORINFO_CLASS_HANDLE typeHnd
 
 void MethodContext::recGetFieldType(CORINFO_FIELD_HANDLE  field,
                                     CORINFO_CLASS_HANDLE* structType,
-                                    CORINFO_CLASS_HANDLE  memberParent,
+                                    CORINFO_CLASS_HANDLE  fieldOwnerHint,
                                     CorInfoType           result)
 {
     if (GetFieldType == nullptr)
@@ -5013,7 +5038,7 @@ void MethodContext::recGetFieldType(CORINFO_FIELD_HANDLE  field,
     DLDL key;
     ZeroMemory(&key, sizeof(key)); // Zero key including any struct padding
     key.A = CastHandle(field);
-    key.B = CastHandle(memberParent);
+    key.B = CastHandle(fieldOwnerHint);
 
     DLD value;
     value.B = (DWORD)result;
@@ -5026,7 +5051,7 @@ void MethodContext::recGetFieldType(CORINFO_FIELD_HANDLE  field,
         value.A = CastHandle(*structType);
 
         // If we had a previous call with null 'structType', we will not have captured the
-        // class handle (we use only 'field' and 'memberParent' as keys).
+        // class handle (we use only 'field' and 'fieldOwnerHint' as keys).
         // Update the value in that case.
         unsigned index = GetFieldType->GetIndex(key);
         if ((index != (unsigned)-1) && (GetFieldType->GetItem(index).A == 0))
@@ -5046,12 +5071,12 @@ void MethodContext::dmpGetFieldType(DLDL key, DLD value)
 }
 CorInfoType MethodContext::repGetFieldType(CORINFO_FIELD_HANDLE  field,
                                            CORINFO_CLASS_HANDLE* structType,
-                                           CORINFO_CLASS_HANDLE  memberParent)
+                                           CORINFO_CLASS_HANDLE  fieldOwnerHint)
 {
     DLDL key;
     ZeroMemory(&key, sizeof(key)); // Zero key including any struct padding
     key.A = CastHandle(field);
-    key.B = CastHandle(memberParent);
+    key.B = CastHandle(fieldOwnerHint);
 
     DLD value = LookupByKeyOrMiss(GetFieldType, key, ": key %016" PRIX64 "", key.A);
 
@@ -7185,6 +7210,33 @@ const WCHAR* MethodContext::repGetStringConfigValue(const WCHAR* name)
 
     DEBUG_REP(dmpGetStringConfigValue(nameIndex, (DWORD)resultIndex));
     return value;
+}
+
+void MethodContext::recGetSpecialCopyHelper(CORINFO_CLASS_HANDLE type, CORINFO_METHOD_HANDLE helper)
+{
+    if (GetSpecialCopyHelper == nullptr)
+        GetSpecialCopyHelper = new LightWeightMap<DWORDLONG, DWORDLONG>();
+
+    DWORDLONG key;
+    ZeroMemory(&key, sizeof(key)); // Zero key including any struct padding
+    key = CastHandle(type);
+
+    DWORDLONG value = CastHandle(helper);
+    GetSpecialCopyHelper->Add(key, value);
+    DEBUG_REC(dmpGetSpecialCopyHelper(key, value));
+}
+
+void MethodContext::dmpGetSpecialCopyHelper(DWORDLONG key, DWORDLONG value)
+{
+    printf("getSpecialCopyHelper key %016" PRIX64 ", value %016" PRIX64 "", key, value);
+}
+
+CORINFO_METHOD_HANDLE MethodContext::repGetSpecialCopyHelper(CORINFO_CLASS_HANDLE type)
+{
+    DWORDLONG key = CastHandle(type);
+    DWORDLONG value = LookupByKeyOrMiss(GetSpecialCopyHelper, key, ": key %016" PRIX64 "", key);
+    DEBUG_REP(dmpGetSpecialCopyHelper(key, value));
+    return (CORINFO_METHOD_HANDLE)value;
 }
 
 void MethodContext::dmpSigInstHandleMap(DWORD key, DWORDLONG value)
