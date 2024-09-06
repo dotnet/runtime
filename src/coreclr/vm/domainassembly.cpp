@@ -56,7 +56,6 @@ DomainAssembly::DomainAssembly(PEAssembly* pPEAssembly, LoaderAllocator* pLoader
 
     // Create the Assembly
     NewHolder<Assembly> assembly = Assembly::Create(GetPEAssembly(), GetDebuggerInfoBits(), IsCollectible(), memTracker, IsCollectible() ? GetLoaderAllocator() : NULL);
-    assembly->SetIsTenured();
 
     m_pAssembly = assembly.Extract();
     m_pModule = m_pAssembly->GetModule();
