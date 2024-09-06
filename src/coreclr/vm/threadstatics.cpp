@@ -457,6 +457,7 @@ void FreeThreadStaticData(Thread* pThread)
         pThreadLocalData->cNonCollectibleTlsData = 0;
 
         pOldInFlightData = pThreadLocalData->pInFlightData;
+        pThreadLocalData->pInFlightData = NULL;
         _ASSERTE(pThreadLocalData->pThread == pThread);
         pThreadLocalData->pThread = NULL;
     }
