@@ -58,7 +58,7 @@ internal static partial class Interop
         /// 1. On Linux systems, it first attempts to read from `/proc/self/mountinfo`.
         /// 2. If step 1 fails or on non-Linux systems, it falls back to a P/Invoke call.
         ///
-        /// The `/proc/self/mountinfo` approach is preferred on Linux because 
+        /// The `/proc/self/mountinfo` approach is preferred on Linux because
         /// it's more reliable when procfs is available and functioning correctly.
         ///
         /// For other systems:
