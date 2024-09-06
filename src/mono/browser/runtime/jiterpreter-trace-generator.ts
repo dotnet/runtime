@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+import WasmEnableThreads from "consts:wasmEnableThreads";
 import { MonoMethod } from "./types/internal";
 import { NativePointer } from "./types/emscripten";
 import {
@@ -9,7 +10,7 @@ import {
 } from "./memory";
 import {
     WasmOpcode, WasmSimdOpcode, WasmValtype,
-    getOpcodeName, MintOpArgType
+    getOpcodeName, MintOpArgType, WasmAtomicOpcode
 } from "./jiterpreter-opcodes";
 import {
     MintOpcode, SimdInfo,
@@ -3975,6 +3976,20 @@ function emit_simd_4 (builder: WasmBuilder, ip: MintOpcodePtr, index: SimdIntrin
 function emit_atomics (
     builder: WasmBuilder, ip: MintOpcodePtr, opcode: number
 ) {
+    if (opcode === MintOpcode.MINT_MONO_MEMORY_BARRIER) {
+        if (WasmEnableThreads) {
+            // Mono memory barriers use sync_synchronize which generates atomic.fence on clang,
+            //  provided you pass -pthread at compile time
+            builder.appendAtomic(WasmAtomicOpcode.atomic_fence);
+            // The text format and other parts of the spec say atomic.fence has no operands,
+            //  but the binary encoding contains a byte specifying whether the barrier is
+            //  sequentially consistent (0) or acquire-release (1)
+            // Mono memory barriers are sync_synchronize which is sequentially consistent.
+            builder.appendU8(0);
+        }
+        return true;
+    }
+
     if (!builder.options.enableAtomics)
         return false;
 
