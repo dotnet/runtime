@@ -281,8 +281,6 @@ wasm_dl_symbol (void *handle, const char *name, char **err, void *user_data)
 		return dlsym (handle, name);
 	}
 #endif
-
-#ifndef WHY_OH_WHY
 	PinvokeTable* index = (PinvokeTable*)handle;
 	int i = 0;
 
@@ -298,18 +296,6 @@ wasm_dl_symbol (void *handle, const char *name, char **err, void *user_data)
     }
 
     return result->func;
-#else
-    PinvokeTable* index = (PinvokeTable*)handle;
-
-    for (int i = 0; i < index->count; ++i) {
-		assert (index->imports [i].name);
-
-        if (!strcmp(index->imports[i].name, name))
-            return index->imports[i].func;
-
-	}
-    return NULL;
-#endif
 }
 
 MonoDomain *

@@ -138,8 +138,8 @@ internal sealed class PInvokeTableGenerator
         {
             var assemblies_pinvokes = pinvokes
                 .Where(l => l.Module == module && !l.Skip)
-                .OrderBy(l => l.EntryPoint)
-                .GroupBy(d => d.EntryPoint)
+                .OrderBy(l => l.EntryPoint, StringComparer.Ordinal)
+                .GroupBy(d => d.EntryPoint, StringComparer.Ordinal)
                 .Select(l => $"{{\"{EscapeLiteral(l.Key)}\", {CEntryPoint(l.First())}}}, "
                     + "// " + string.Join(", ", l.Select(c => c.Method.DeclaringType!.Module!.Assembly!.GetName()!.Name!).Distinct().OrderBy(n => n)) + w.NewLine + "    ")
                 .ToList();
