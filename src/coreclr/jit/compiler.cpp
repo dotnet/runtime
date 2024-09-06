@@ -5254,7 +5254,7 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     if (opts.OptimizationEnabled())
     {
         // LSRA may introduce new blocks. If it does, rerun layout.
-        if (fgBBcount != numBlocksBeforeLSRA)
+        if ((fgBBcount != numBlocksBeforeLSRA) && JitConfig.JitDoReversePostOrderLayout())
         {
             auto lateLayoutPhase = [this] {
                 fgDoReversePostOrderLayout();
