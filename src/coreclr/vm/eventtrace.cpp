@@ -2964,7 +2964,7 @@ VOID ETW::ExceptionLog::ExceptionFilterEnd()
 /****************************************************************************/
 /* This is called by the runtime when a domain is loaded */
 /****************************************************************************/
-VOID ETW::LoaderLog::DomainLoadReal(BaseDomain *pDomain, _In_opt_ LPWSTR wszFriendlyName)
+VOID ETW::LoaderLog::DomainLoadReal(AppDomain *pDomain, _In_opt_ LPWSTR wszFriendlyName)
 {
     CONTRACTL {
         NOTHROW;
@@ -3926,20 +3926,20 @@ VOID ETW::EnumerationLog::ProcessShutdown()
 /****************************************************************************/
 /* This routine is used to send a domain load/unload or rundown event                              */
 /****************************************************************************/
-VOID ETW::LoaderLog::SendDomainEvent(BaseDomain *pBaseDomain, DWORD dwEventOptions, LPCWSTR wszFriendlyName)
+VOID ETW::LoaderLog::SendDomainEvent(AppDomain *pDomain, DWORD dwEventOptions, LPCWSTR wszFriendlyName)
 {
     CONTRACTL {
         THROWS;
         GC_TRIGGERS;
     } CONTRACTL_END;
 
-    if(!pBaseDomain)
+    if(!pDomain)
         return;
 
     PCWSTR szDtraceOutput1=W("");
-    BOOL bIsAppDomain = pBaseDomain->IsAppDomain();
+    BOOL bIsAppDomain = TRUE;
 
-    ULONGLONG ullDomainId = (ULONGLONG)pBaseDomain;
+    ULONGLONG ullDomainId = (ULONGLONG)pDomain;
     ULONG ulDomainFlags = ETW::LoaderLog::LoaderStructs::DefaultDomain | ETW::LoaderLog::LoaderStructs::ExecutableDomain;
 
     LPCWSTR wsEmptyString = W("");
@@ -3949,7 +3949,7 @@ VOID ETW::LoaderLog::SendDomainEvent(BaseDomain *pBaseDomain, DWORD dwEventOptio
     if(wszFriendlyName)
         lpswzDomainName = (PWCHAR)wszFriendlyName;
     else
-        lpswzDomainName = (PWCHAR)pBaseDomain->AsAppDomain()->GetFriendlyName();
+        lpswzDomainName = (PWCHAR)pDomain->GetFriendlyName();
 
     /* prepare events args for ETW and ETM */
     szDtraceOutput1 = (PCWSTR)lpswzDomainName;
@@ -5243,7 +5243,7 @@ VOID ETW::MethodLog::SendEventsForJitMethodsHelper(LoaderAllocator *pLoaderAlloc
 /****************************************************************************/
 // Code review indicates this method is never called with both filters NULL. Ideally we would
 // assert this and change the comment above, but given I am making a change late in the release I am being cautious
-VOID ETW::MethodLog::SendEventsForJitMethods(BaseDomain *pDomainFilter, LoaderAllocator *pLoaderAllocatorFilter, DWORD dwEventOptions)
+VOID ETW::MethodLog::SendEventsForJitMethods(AppDomain *pDomainFilter, LoaderAllocator *pLoaderAllocatorFilter, DWORD dwEventOptions)
 {
     CONTRACTL {
         NOTHROW;
@@ -5337,60 +5337,31 @@ VOID ETW::MethodLog::SendEventsForJitMethods(BaseDomain *pDomainFilter, LoaderAl
 
 //---------------------------------------------------------------------------------------
 //
-// Wrapper around IterateDomain, which locks the AppDomain to be <
-// STAGE_FINALIZED until the iteration is complete.
+// This routine fires ETW events for
+//   Domain
+//   Assemblies in them
+//   Modules in them
+//   JIT methods in them
+//   R2R methods in them
+// based on enumeration options
 //
 // Arguments:
-//      pAppDomain - AppDomain to iterate
-//      enumerationOptions - Flags indicating what to enumerate.  Just passed
-//         straight through to IterateDomain
+//      pDomain - AppDomain to iterate
+//      enumerationOptions - Flags indicating what to enumerate.
 //
-VOID ETW::EnumerationLog::IterateAppDomain(AppDomain * pAppDomain, DWORD enumerationOptions)
+VOID ETW::EnumerationLog::IterateAppDomain(AppDomain * pDomain, DWORD enumerationOptions)
 {
     CONTRACTL
     {
         THROWS;
         GC_TRIGGERS;
-        PRECONDITION(pAppDomain != NULL);
+        PRECONDITION(pDomain != NULL);
     }
     CONTRACTL_END;
 
     // Hold the system domain lock during the entire iteration, so we can
     // ensure the App Domain does not get finalized until we're all done
     SystemDomain::LockHolder lh;
-
-    // Now it's safe to do the iteration
-    IterateDomain(pAppDomain, enumerationOptions);
-}
-
-/********************************************************************************/
-/* This routine fires ETW events for
-   Domain,
-   Assemblies in them,
-   DomainModule's in them,
-   Modules in them,
-   JIT methods in them,
-   and the NGEN methods in them
-   based on enumerationOptions.*/
-/********************************************************************************/
-VOID ETW::EnumerationLog::IterateDomain(BaseDomain *pDomain, DWORD enumerationOptions)
-{
-    CONTRACTL {
-        THROWS;
-        GC_TRIGGERS;
-        PRECONDITION(pDomain != NULL);
-    } CONTRACTL_END;
-
-#if defined(_DEBUG) && !defined(DACCESS_COMPILE)
-    // Do not call IterateDomain() directly with an AppDomain.  Use
-    // IterateAppDomain(), which wraps this function with a hold on the
-    // SystemDomain lock, which ensures pDomain's type data doesn't disappear
-    // on us.
-    if (pDomain->IsAppDomain())
-    {
-        _ASSERTE(SystemDomain::IsUnderDomainLock());
-    }
-#endif // defined(_DEBUG) && !defined(DACCESS_COMPILE)
 
     EX_TRY
     {
@@ -5603,7 +5574,7 @@ VOID ETW::EnumerationLog::IterateModule(Module *pModule, DWORD enumerationOption
 //
 
 // static
-VOID ETW::EnumerationLog::EnumerationHelper(Module *moduleFilter, BaseDomain *domainFilter, DWORD enumerationOptions)
+VOID ETW::EnumerationLog::EnumerationHelper(Module *moduleFilter, AppDomain *domainFilter, DWORD enumerationOptions)
 {
     CONTRACTL {
         THROWS;
@@ -5638,14 +5609,7 @@ VOID ETW::EnumerationLog::EnumerationHelper(Module *moduleFilter, BaseDomain *do
     {
         if(domainFilter)
         {
-            if(domainFilter->IsAppDomain())
-            {
-                ETW::EnumerationLog::IterateAppDomain(domainFilter->AsAppDomain(), enumerationOptions);
-            }
-            else
-            {
-                ETW::EnumerationLog::IterateDomain(domainFilter, enumerationOptions);
-            }
+            ETW::EnumerationLog::IterateAppDomain(domainFilter, enumerationOptions);
         }
         else
         {

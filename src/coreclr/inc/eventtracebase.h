@@ -689,7 +689,6 @@ class Module;
 class Assembly;
 class MethodDesc;
 class MethodTable;
-class BaseDomain;
 class AppDomain;
 class SString;
 class CrawlFrame;
@@ -750,12 +749,11 @@ namespace ETW
 #ifdef FEATURE_EVENT_TRACE
         static VOID SendThreadRundownEvent();
         static VOID SendGCRundownEvent();
-        static VOID IterateDomain(BaseDomain *pDomain, DWORD enumerationOptions);
         static VOID IterateAppDomain(AppDomain * pAppDomain, DWORD enumerationOptions);
         static VOID IterateCollectibleLoaderAllocator(AssemblyLoaderAllocator *pLoaderAllocator, DWORD enumerationOptions);
         static VOID IterateAssembly(Assembly *pAssembly, DWORD enumerationOptions);
         static VOID IterateModule(Module *pModule, DWORD enumerationOptions);
-        static VOID EnumerationHelper(Module *moduleFilter, BaseDomain *domainFilter, DWORD enumerationOptions);
+        static VOID EnumerationHelper(Module *moduleFilter, AppDomain *domainFilter, DWORD enumerationOptions);
         static DWORD GetEnumerationOptionsFromRuntimeKeywords();
     public:
         typedef union _EnumerationStructs
@@ -839,7 +837,7 @@ namespace ETW
         static VOID SendModuleEvent(Module *pModule, DWORD dwEventOptions, BOOL bFireDomainModuleEvents=FALSE);
         static ULONG SendModuleRange(_In_ Module *pModule, _In_ DWORD dwEventOptions);
         static VOID SendAssemblyEvent(Assembly *pAssembly, DWORD dwEventOptions);
-        static VOID SendDomainEvent(BaseDomain *pBaseDomain, DWORD dwEventOptions, LPCWSTR wszFriendlyName=NULL);
+        static VOID SendDomainEvent(AppDomain *pDomain, DWORD dwEventOptions, LPCWSTR wszFriendlyName=NULL);
     public:
         typedef union _LoaderStructs
         {
@@ -877,9 +875,9 @@ namespace ETW
 
         }LoaderStructs;
 
-        static VOID DomainLoadReal(BaseDomain *pDomain, _In_opt_ LPWSTR wszFriendlyName=NULL);
+        static VOID DomainLoadReal(AppDomain *pDomain, _In_opt_ LPWSTR wszFriendlyName=NULL);
 
-        static VOID DomainLoad(BaseDomain *pDomain, _In_opt_ LPWSTR wszFriendlyName = NULL)
+        static VOID DomainLoad(AppDomain *pDomain, _In_opt_ LPWSTR wszFriendlyName = NULL)
         {
             if (ETW_PROVIDER_ENABLED(MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER))
             {
@@ -892,7 +890,7 @@ namespace ETW
         static VOID ModuleLoad(Module *pModule, LONG liReportedSharedModule);
 #else
     public:
-        static VOID DomainLoad(BaseDomain *pDomain, _In_opt_ LPWSTR wszFriendlyName=NULL) {};
+        static VOID DomainLoad(AppDomain *pDomain, _In_opt_ LPWSTR wszFriendlyName=NULL) {};
         static VOID DomainUnload(AppDomain *pDomain) {};
         static VOID CollectibleLoaderAllocatorUnload(AssemblyLoaderAllocator *pLoaderAllocator) {};
         static VOID ModuleLoad(Module *pModule, LONG liReportedSharedModule) {};
@@ -904,7 +902,7 @@ namespace ETW
     {
         friend class ETW::EnumerationLog;
 #ifdef FEATURE_EVENT_TRACE
-        static VOID SendEventsForJitMethods(BaseDomain *pDomainFilter, LoaderAllocator *pLoaderAllocatorFilter, DWORD dwEventOptions);
+        static VOID SendEventsForJitMethods(AppDomain *pDomainFilter, LoaderAllocator *pLoaderAllocatorFilter, DWORD dwEventOptions);
         static VOID SendEventsForJitMethodsHelper(
             LoaderAllocator *pLoaderAllocatorFilter,
             DWORD dwEventOptions,

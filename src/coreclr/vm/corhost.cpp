@@ -559,7 +559,7 @@ HRESULT CorHost2::CreateAppDomainWithManager(
 
     BEGIN_EXTERNAL_ENTRYPOINT(&hr);
 
-    AppDomain* pDomain = SystemDomain::System()->DefaultDomain();
+    AppDomain* pDomain = AppDomain::GetCurrentDomain();
 
     pDomain->SetFriendlyName(wszFriendlyName);
 
