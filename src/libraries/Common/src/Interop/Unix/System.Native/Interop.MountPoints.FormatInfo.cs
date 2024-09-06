@@ -101,7 +101,7 @@ internal static partial class Interop
                     // Get filesystem type (Field 9)
                     string filesystemType = parser.MoveAndExtractNext();
             
-                    if (mountPoint.Equals(name, StringComparison.Ordinal))
+                    if (mountPoint == name)
                     {
                         format = filesystemType;
                         type = GetDriveType(filesystemType);
