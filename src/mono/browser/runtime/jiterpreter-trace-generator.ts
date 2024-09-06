@@ -3977,8 +3977,12 @@ function emit_atomics (
     builder: WasmBuilder, ip: MintOpcodePtr, opcode: number
 ) {
     if (opcode === MintOpcode.MINT_MONO_MEMORY_BARRIER) {
-        if (WasmEnableThreads)
+        if (WasmEnableThreads) {
             builder.appendAtomic(WasmAtomicOpcode.atomic_fence);
+            // The text format and other parts of the spec say atomic.fence has no operands,
+            //  but the binary encoding requires a dummy zero byte for some reason
+            builder.appendU8(0);
+        }
         return true;
     }
 
