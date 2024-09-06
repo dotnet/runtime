@@ -1732,7 +1732,7 @@ void AssemblyLoaderAllocator::Init()
     // GC mode, in case the caller requires that
     m_dependentHandleToNativeObjectSetCrst.Init(CrstLeafLock, CRST_UNSAFE_ANYMODE);
 
-    LoaderAllocator::Init(NULL);
+    LoaderAllocator::Init(NULL /*pExecutableHeapMemory*/);
     if (IsCollectible())
     {
         // TODO: the ShuffleThunkCache should really be using the m_pStubHeap, however the unloadability support

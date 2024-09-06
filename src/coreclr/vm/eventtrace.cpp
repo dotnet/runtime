@@ -2963,7 +2963,7 @@ VOID ETW::ExceptionLog::ExceptionFilterEnd()
 /****************************************************************************/
 /* This is called by the runtime when a domain is loaded */
 /****************************************************************************/
-VOID ETW::LoaderLog::DomainLoadReal(AppDomain *pDomain, _In_opt_ LPWSTR wszFriendlyName)
+VOID ETW::LoaderLog::DomainLoadReal(_In_opt_ LPWSTR wszFriendlyName)
 {
     CONTRACTL {
         NOTHROW;
@@ -2977,7 +2977,7 @@ VOID ETW::LoaderLog::DomainLoadReal(AppDomain *pDomain, _In_opt_ LPWSTR wszFrien
                                         CLR_LOADER_KEYWORD))
         {
             DWORD dwEventOptions = ETW::EnumerationLog::EnumerationStructs::DomainAssemblyModuleLoad;
-            ETW::LoaderLog::SendDomainEvent(pDomain, dwEventOptions, wszFriendlyName);
+            ETW::LoaderLog::SendDomainEvent(dwEventOptions, wszFriendlyName);
         }
     } EX_CATCH { } EX_END_CATCH(SwallowAllExceptions);
 }
@@ -2985,7 +2985,7 @@ VOID ETW::LoaderLog::DomainLoadReal(AppDomain *pDomain, _In_opt_ LPWSTR wszFrien
 /****************************************************************************/
 /* This is called by the runtime when an AppDomain is unloaded */
 /****************************************************************************/
-VOID ETW::LoaderLog::DomainUnload(AppDomain *pDomain)
+VOID ETW::LoaderLog::DomainUnload()
 {
     CONTRACTL {
         NOTHROW;
@@ -3924,15 +3924,15 @@ VOID ETW::EnumerationLog::ProcessShutdown()
 /****************************************************************************/
 /* This routine is used to send a domain load/unload or rundown event                              */
 /****************************************************************************/
-VOID ETW::LoaderLog::SendDomainEvent(AppDomain *pDomain, DWORD dwEventOptions, LPCWSTR wszFriendlyName)
+VOID ETW::LoaderLog::SendDomainEvent(DWORD dwEventOptions, LPCWSTR wszFriendlyName)
 {
     CONTRACTL {
         THROWS;
         GC_TRIGGERS;
+        PRECONDITION(AppDomain::GetCurrentDomain() != NULL);
     } CONTRACTL_END;
 
-    if(!pDomain)
-        return;
+    AppDomain* pDomain = AppDomain::GetCurrentDomain();
 
     PCWSTR szDtraceOutput1=W("");
     BOOL bIsAppDomain = TRUE;
@@ -5340,16 +5340,15 @@ VOID ETW::MethodLog::SendEventsForJitMethods(BOOL getCodeVersionIds, LoaderAlloc
 // based on enumeration options
 //
 // Arguments:
-//      pDomain - AppDomain to iterate
 //      enumerationOptions - Flags indicating what to enumerate.
 //
-VOID ETW::EnumerationLog::IterateAppDomain(AppDomain * pDomain, DWORD enumerationOptions)
+VOID ETW::EnumerationLog::IterateAppDomain(DWORD enumerationOptions)
 {
     CONTRACTL
     {
         THROWS;
         GC_TRIGGERS;
-        PRECONDITION(pDomain != NULL);
+        PRECONDITION(AppDomain::GetCurrentDomain() != NULL);
     }
     CONTRACTL_END;
 
@@ -5357,12 +5356,13 @@ VOID ETW::EnumerationLog::IterateAppDomain(AppDomain * pDomain, DWORD enumeratio
     // ensure the App Domain does not get finalized until we're all done
     SystemDomain::LockHolder lh;
 
+    AppDomain* pDomain = AppDomain::GetCurrentDomain();
     EX_TRY
     {
         // DC Start events for Domain
         if(enumerationOptions & ETW::EnumerationLog::EnumerationStructs::DomainAssemblyModuleDCStart)
         {
-            ETW::LoaderLog::SendDomainEvent(pDomain, enumerationOptions);
+            ETW::LoaderLog::SendDomainEvent(enumerationOptions);
         }
 
         // DC End or Unload Jit Method events
@@ -5371,7 +5371,7 @@ VOID ETW::EnumerationLog::IterateAppDomain(AppDomain * pDomain, DWORD enumeratio
             ETW::MethodLog::SendEventsForJitMethods(TRUE /*getCodeVersionIds*/, NULL, enumerationOptions);
         }
 
-        AppDomain::AssemblyIterator assemblyIterator = pDomain->AsAppDomain()->IterateAssembliesEx(
+        AppDomain::AssemblyIterator assemblyIterator = pDomain->IterateAssembliesEx(
             (AssemblyIterationFlags)(kIncludeLoaded | kIncludeExecution));
         CollectibleAssemblyHolder<DomainAssembly *> pDomainAssembly;
         while (assemblyIterator.Next(pDomainAssembly.This()))
@@ -5402,7 +5402,7 @@ VOID ETW::EnumerationLog::IterateAppDomain(AppDomain * pDomain, DWORD enumeratio
         if((enumerationOptions & ETW::EnumerationLog::EnumerationStructs::DomainAssemblyModuleDCEnd) ||
            (enumerationOptions & ETW::EnumerationLog::EnumerationStructs::DomainAssemblyModuleUnload))
         {
-            ETW::LoaderLog::SendDomainEvent(pDomain, enumerationOptions);
+            ETW::LoaderLog::SendDomainEvent(enumerationOptions);
         }
     } EX_CATCH { } EX_END_CATCH(SwallowAllExceptions);
 }
@@ -5596,7 +5596,7 @@ VOID ETW::EnumerationLog::EnumerationHelper(Module *moduleFilter, DWORD enumerat
     }
     else
     {
-        ETW::EnumerationLog::IterateAppDomain(AppDomain::GetCurrentDomain(), enumerationOptions);
+        ETW::EnumerationLog::IterateAppDomain(enumerationOptions);
     }
 }
 
