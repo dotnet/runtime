@@ -902,7 +902,7 @@ namespace ETW
     {
         friend class ETW::EnumerationLog;
 #ifdef FEATURE_EVENT_TRACE
-        static VOID SendEventsForJitMethods(AppDomain *pDomainFilter, LoaderAllocator *pLoaderAllocatorFilter, DWORD dwEventOptions);
+        static VOID SendEventsForJitMethods(BOOL getCodeVersionIds, LoaderAllocator *pLoaderAllocatorFilter, DWORD dwEventOptions);
         static VOID SendEventsForJitMethodsHelper(
             LoaderAllocator *pLoaderAllocatorFilter,
             DWORD dwEventOptions,

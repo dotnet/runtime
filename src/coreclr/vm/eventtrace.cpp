@@ -5236,12 +5236,9 @@ VOID ETW::MethodLog::SendEventsForJitMethodsHelper(LoaderAllocator *pLoaderAlloc
 /****************************************************************************/
 /* This routine sends back method events of type 'dwEventOptions', for all
    JITed methods in either a given LoaderAllocator (if pLoaderAllocatorFilter is non NULL)
-   or in a given Domain (if pDomainFilter is non NULL) or for
-   all methods (if both filters are null) */
+   or all methods (if pLoaderAllocatorFilter is null) */
 /****************************************************************************/
-// Code review indicates this method is never called with both filters NULL. Ideally we would
-// assert this and change the comment above, but given I am making a change late in the release I am being cautious
-VOID ETW::MethodLog::SendEventsForJitMethods(AppDomain *pDomainFilter, LoaderAllocator *pLoaderAllocatorFilter, DWORD dwEventOptions)
+VOID ETW::MethodLog::SendEventsForJitMethods(BOOL getCodeVersionIds, LoaderAllocator *pLoaderAllocatorFilter, DWORD dwEventOptions)
 {
     CONTRACTL {
         NOTHROW;
@@ -5301,9 +5298,8 @@ VOID ETW::MethodLog::SendEventsForJitMethods(AppDomain *pDomainFilter, LoaderAll
         // table lock that corresponds to the domain or module we're currently iterating over.
         //
 
-        // We only support getting rejit IDs when filtering by domain.
 #ifdef FEATURE_CODE_VERSIONING
-        if (pDomainFilter)
+        if (getCodeVersionIds)
         {
             CodeVersionManager::LockHolder codeVersioningLockHolder;
             SendEventsForJitMethodsHelper(
@@ -5372,7 +5368,7 @@ VOID ETW::EnumerationLog::IterateAppDomain(AppDomain * pDomain, DWORD enumeratio
         // DC End or Unload Jit Method events
         if (enumerationOptions & ETW::EnumerationLog::EnumerationStructs::JitMethodUnloadOrDCEndAny)
         {
-            ETW::MethodLog::SendEventsForJitMethods(pDomain, NULL, enumerationOptions);
+            ETW::MethodLog::SendEventsForJitMethods(TRUE /*getCodeVersionIds*/, NULL, enumerationOptions);
         }
 
         AppDomain::AssemblyIterator assemblyIterator = pDomain->AsAppDomain()->IterateAssembliesEx(
@@ -5399,7 +5395,7 @@ VOID ETW::EnumerationLog::IterateAppDomain(AppDomain * pDomain, DWORD enumeratio
         // DC Start or Load Jit Method events
         if (enumerationOptions & ETW::EnumerationLog::EnumerationStructs::JitMethodLoadOrDCStartAny)
         {
-            ETW::MethodLog::SendEventsForJitMethods(pDomain, NULL, enumerationOptions);
+            ETW::MethodLog::SendEventsForJitMethods(TRUE /*getCodeVersionIds*/, NULL, enumerationOptions);
         }
 
         // DC End or Unload events for Domain
@@ -5434,7 +5430,7 @@ VOID ETW::EnumerationLog::IterateCollectibleLoaderAllocator(AssemblyLoaderAlloca
         // Unload Jit Method events
         if (enumerationOptions & ETW::EnumerationLog::EnumerationStructs::JitMethodUnload)
         {
-            ETW::MethodLog::SendEventsForJitMethods(NULL, pLoaderAllocator, enumerationOptions);
+            ETW::MethodLog::SendEventsForJitMethods(FALSE /*getCodeVersionIds*/, pLoaderAllocator, enumerationOptions);
         }
 
         // Iterate on all DomainAssembly loaded from the same AssemblyLoaderAllocator
@@ -5457,7 +5453,7 @@ VOID ETW::EnumerationLog::IterateCollectibleLoaderAllocator(AssemblyLoaderAlloca
         // Load Jit Method events
         if (enumerationOptions & ETW::EnumerationLog::EnumerationStructs::JitMethodLoad)
         {
-            ETW::MethodLog::SendEventsForJitMethods(NULL, pLoaderAllocator, enumerationOptions);
+            ETW::MethodLog::SendEventsForJitMethods(FALSE /*getCodeVersionIds*/, pLoaderAllocator, enumerationOptions);
         }
     } EX_CATCH { } EX_END_CATCH(SwallowAllExceptions);
 }
@@ -5589,13 +5585,13 @@ VOID ETW::EnumerationLog::EnumerationHelper(Module *moduleFilter, DWORD enumerat
         // DC End or Unload Jit Method events from all Domains
         if (enumerationOptions & ETW::EnumerationLog::EnumerationStructs::JitMethodUnloadOrDCEndAny)
         {
-            ETW::MethodLog::SendEventsForJitMethods(NULL, NULL, enumerationOptions);
+            ETW::MethodLog::SendEventsForJitMethods(FALSE /*getCodeVersionIds*/, NULL, enumerationOptions);
         }
 
         // DC Start or Load Jit Method events from all Domains
         if (enumerationOptions & ETW::EnumerationLog::EnumerationStructs::JitMethodLoadOrDCStartAny)
         {
-            ETW::MethodLog::SendEventsForJitMethods(NULL, NULL, enumerationOptions);
+            ETW::MethodLog::SendEventsForJitMethods(FALSE /*getCodeVersionIds*/, NULL, enumerationOptions);
         }
     }
     else
