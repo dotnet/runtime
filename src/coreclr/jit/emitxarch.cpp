@@ -5919,6 +5919,265 @@ regNumber emitter::emitInsBinary(instruction ins, emitAttr attr, GenTree* dst, G
 }
 
 //------------------------------------------------------------------------
+// emitInsNddBinary: Emits an instruction for a node which takes two operands with NDD form
+//
+// Arguments:
+//    ins - the instruction to emit
+//    attr - the instruction operand size
+//    targetReg - target register number
+//    treeNode - the binary tree node
+//
+// Assumptions:
+//  i) caller of this routine needs to call genConsumeReg()
+// ii) caller of this routine needs to call genProduceReg()
+void emitter::emitInsNddBinary(instruction ins, emitAttr attr, regNumber targetReg, GenTree* treeNode)
+{
+    assert(IsApxNDDEncodableInstruction(ins));
+    assert(UsePromotedEVEXEncoding());
+    assert(targetReg != REG_NA);
+
+    GenTree* op1 = treeNode->gtGetOp1();
+    GenTree* op2 = treeNode->gtGetOp2();
+
+    // Commutative operations can mark op1 as contained or reg-optional to generate "op reg, memop/immed"
+    if (!op1->isUsedFromReg())
+    {
+        assert(treeNode->OperIsCommutative());
+        assert(op1->isMemoryOp() || op1->IsLocal() || op1->IsCnsNonZeroFltOrDbl() || op1->IsIntCnsFitsInI32() ||
+               op1->IsRegOptional());
+
+        op1 = treeNode->gtGetOp2();
+        op2 = treeNode->gtGetOp1();
+    }
+
+    regNumber op1Reg = op1->isUsedFromReg() ? op1->GetRegNum() : REG_NA;
+    regNumber op2Reg = op2->isUsedFromReg() ? op2->GetRegNum() : REG_NA;
+
+    // For the senario of NDD, we can make sure target and op1 are registered.
+    assert(op1Reg != REG_NA);
+
+    // NDD form is for instructions with target register different with operand registers, otherwise
+    // legacy encoding with smaller code size is preferred.
+    assert(targetReg != op1Reg);
+    assert(targetReg != op2Reg);
+
+    GenTree* memOp   = nullptr;
+    GenTree* cnsOp   = nullptr;
+    GenTree* otherOp = nullptr;
+
+    if (op1->isContained() || (op1->isLclField() && (op1->GetRegNum() == REG_NA)) || op1->isUsedFromSpillTemp())
+    {
+        unreached();
+    }
+    else if (op2->isContained() || op2->isUsedFromSpillTemp())
+    {
+        assert(!op1->isUsedFromMemory());
+        otherOp = op1;
+
+        if(op2->IsCnsIntOrI())
+        {
+            assert(!op2->isUsedFromMemory());
+            cnsOp = op2;
+        }
+        else
+        {
+            assert(op2->isUsedFromMemory());
+            memOp = op2;
+        }
+    }
+
+    assert(memOp != op1);
+    
+    if (memOp != nullptr)
+    {
+        TempDsc* tmpDsc = nullptr;
+        unsigned varNum = BAD_VAR_NUM;
+        unsigned offset = (unsigned)-1;
+
+        if (memOp->isUsedFromSpillTemp())
+        {
+            assert(memOp->IsRegOptional());
+
+            tmpDsc = codeGen->getSpillTempDsc(memOp);
+            varNum = tmpDsc->tdTempNum();
+            offset = 0;
+
+            codeGen->regSet.tmpRlsTemp(tmpDsc);
+        }
+        else if (memOp->isIndir())
+        {
+            GenTreeIndir* memIndir = memOp->AsIndir();
+            GenTree*      memBase  = memIndir->gtOp1;
+
+            switch (memBase->OperGet())
+            {
+                case GT_LCL_ADDR:
+                    if (memBase->isContained())
+                    {
+                        varNum = memBase->AsLclFld()->GetLclNum();
+                        offset = memBase->AsLclFld()->GetLclOffs();
+
+                        // Ensure that all the GenTreeIndir values are set to their defaults.
+                        assert(!memIndir->HasIndex());
+                        assert(memIndir->Scale() == 1);
+                        assert(memIndir->Offset() == 0);
+                        break;
+                    }
+                    FALLTHROUGH;
+
+                default: // Addressing mode [base + index * scale + offset]
+                {
+                    instrDesc* id = nullptr;
+
+                    if (cnsOp != nullptr)
+                    {
+                        unreached();
+                    }
+                    else
+                    {
+                        ssize_t offset = memIndir->Offset();
+                        id             = emitNewInstrAmd(attr, offset);
+                        id->idIns(ins);
+
+                        GenTree* regTree = (memOp == op2) ? op1 : op2;
+
+                        // there must be one non-contained op
+                        assert(!regTree->isContained());
+                        id->idReg1(targetReg);
+                        id->idReg2(regTree->GetRegNum());
+                        id->idSetEvexNdContext();
+                    }
+                    assert(id != nullptr);
+
+                    id->idIns(ins); // Set the instruction.
+
+                    // Determine the instruction format
+                    insFormat fmt = IF_NONE;
+
+                    if (memOp == op2)
+                    {
+                        assert(cnsOp == nullptr);
+                        assert(otherOp == op1);
+
+                        fmt = emitInsModeFormat(ins, IF_RWR_RRD_ARD);
+                    }
+                    else
+                    {
+                        unreached();
+                    }
+                    assert(fmt != IF_NONE);
+                    emitHandleMemOp(memIndir, id, fmt, ins);
+
+                    // Determine the instruction size
+                    UNATIVE_OFFSET sz = 0;
+
+                    if (memOp == op2)
+                    {
+                        assert(otherOp == op1);
+                        assert(cnsOp == nullptr);
+                        sz = emitInsSizeAM(id, insCodeRM(ins));
+                    }
+                    else
+                    {
+                        unreached();
+                    }
+                    assert(sz != 0);
+
+                    id->idCodeSize(sz);
+
+                    dispIns(id);
+                    emitCurIGsize += sz;
+
+                    return;
+                }
+            }
+        }
+        else
+        {
+            switch (memOp->OperGet())
+            {
+                case GT_LCL_FLD:
+                case GT_STORE_LCL_FLD:
+                    varNum = memOp->AsLclFld()->GetLclNum();
+                    offset = memOp->AsLclFld()->GetLclOffs();
+                    break;
+
+                case GT_LCL_VAR:
+                {
+                    assert(memOp->IsRegOptional() ||
+                           !emitComp->lvaTable[memOp->AsLclVar()->GetLclNum()].lvIsRegCandidate());
+                    varNum = memOp->AsLclVar()->GetLclNum();
+                    offset = 0;
+                    break;
+                }
+
+                default:
+                    unreached();
+                    break;
+            }
+        }
+
+        // Ensure we got a good varNum and offset.
+        // We also need to check for `tmpDsc != nullptr` since spill temp numbers
+        // are negative and start with -1, which also happens to be BAD_VAR_NUM.
+        assert((varNum != BAD_VAR_NUM) || (tmpDsc != nullptr));
+        assert(offset != (unsigned)-1);
+
+        if (memOp == op2)
+        {
+            assert(otherOp == op1);
+            assert(cnsOp == nullptr);
+
+            // op2 is a stack based local variable
+            // op1 is a register
+            emitIns_R_R_S(ins, attr, targetReg, op1Reg, varNum, offset, INS_OPTS_EVEX_nd);
+        }
+        else
+        {
+            unreached();
+            assert(memOp == op1);
+            assert((op1->GetRegNum() == REG_NA) || op1->IsRegOptional());
+
+            if (cnsOp != nullptr)
+            {
+                assert(cnsOp == op2);
+                assert(otherOp == nullptr);
+                assert(op2->IsCnsIntOrI());
+
+                // op2 is an contained immediate
+                // op1 is a stack based local variable
+                emitIns_R_S_I(ins, attr, targetReg, varNum, offset, (int)op2->AsIntConCommon()->IconValue(), INS_OPTS_EVEX_nd);
+            }
+            else
+            {
+                assert(otherOp == op2);
+                assert(!op2->isContained());
+
+                // this will be R_S_R.
+                unreached();
+
+            }
+        }
+    }
+    else if (cnsOp != nullptr) // reg, immed
+    {
+        assert(cnsOp == op2);
+        assert(otherOp == op1);
+
+        assert(op2->IsCnsIntOrI());
+        assert(!op1->isContained());
+        GenTreeIntConCommon* intCns = op2->AsIntConCommon();
+        emitIns_R_R_I(ins, attr, targetReg, op1Reg, (int)intCns->IconValue(), INS_OPTS_EVEX_nd);
+    }
+    else // reg, reg
+    {
+        assert(otherOp == nullptr);
+        assert(!op2->isContained() && !op1->isContained());
+        emitIns_R_R_R(ins, attr, targetReg, op1Reg, op2Reg, INS_OPTS_EVEX_nd);
+    }
+}
+
+//------------------------------------------------------------------------
 // emitInsRMW: Emit logic for Read-Modify-Write binary instructions.
 //
 // Responsible for emitting a single instruction that will perform an operation of the form:
@@ -7194,6 +7453,15 @@ void emitter::emitIns_R_R_I(
 
     assert((instOptions & INS_OPTS_EVEX_b_MASK) == 0);
     SetEvexEmbMaskIfNeeded(id, instOptions);
+    SetEvexNdIfNeeded(id, instOptions);
+
+    if (id->idIsEvexNdContextSet())
+    {
+        // need to fix the instruction opcode for legacy instructions as they has different opcode for RI form.
+        code = insCodeMI(ins);
+        // need to fix the instructions format for NDD legacy instructions.
+        id->idInsFmt(IF_RWR_RRD_CNS);
+    }
 
     UNATIVE_OFFSET sz = emitInsSizeRR(id, code, ival);
     id->idCodeSize(sz);
@@ -7366,7 +7634,7 @@ void emitter::emitIns_R_S_I(
     instruction ins, emitAttr attr, regNumber reg1, int varx, int offs, int ival, insOpts instOptions)
 {
     noway_assert(emitVerifyEncodable(ins, EA_SIZE(attr), reg1));
-    assert(IsAvx512OrPriorInstruction(ins));
+    assert(IsAvx512OrPriorInstruction(ins) || IsApxNDDEncodableInstruction(ins));
 
     instrDesc* id = emitNewInstrCns(attr, ival);
 
@@ -7392,6 +7660,7 @@ void emitter::emitIns_R_S_I(
 
     SetEvexBroadcastIfNeeded(id, instOptions);
     SetEvexEmbMaskIfNeeded(id, instOptions);
+    SetEvexNdIfNeeded(id, instOptions);
 
     UNATIVE_OFFSET sz = emitInsSizeSV(id, code, varx, offs, ival);
     id->idCodeSize(sz);
@@ -7593,8 +7862,8 @@ void emitter::emitIns_R_R_R(
 void emitter::emitIns_R_R_S(
     instruction ins, emitAttr attr, regNumber reg1, regNumber reg2, int varx, int offs, insOpts instOptions)
 {
-    assert(IsAvx512OrPriorInstruction(ins));
-    assert(IsThreeOperandAVXInstruction(ins));
+    assert(IsAvx512OrPriorInstruction(ins) || IsApxNDDEncodableInstruction(ins));
+    assert(IsThreeOperandAVXInstruction(ins) || IsApxNDDEncodableInstruction(ins));
 
     instrDesc* id = emitNewInstr(attr);
 
@@ -7606,6 +7875,12 @@ void emitter::emitIns_R_R_S(
 
     SetEvexBroadcastIfNeeded(id, instOptions);
     SetEvexEmbMaskIfNeeded(id, instOptions);
+    SetEvexNdIfNeeded(id, instOptions);
+
+    if (id->idIsEvexNdContextSet())
+    {
+        id->idInsFmt(IF_RWR_RRD_SRD);
+    }
 
 #ifdef DEBUG
     id->idDebugOnlyInfo()->idVarRefOffs = emitVarRefOffs;
@@ -13690,12 +13965,20 @@ BYTE* emitter::emitOutputAM(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
                 break;
 
             case EA_2BYTE:
-
+            {
                 /* Output a size prefix for a 16-bit operand */
-
-                dst += emitOutputByte(dst, 0x66);
-
+                if (id->idIsEvexNdContextSet())
+                {
+                    assert(TakesLegacyPromotedEvexPrefix(id));
+                    assert(hasEvexPrefix(code));
+                    code |= PPBITS_FOR_SHORT_INPUT;
+                }
+                else
+                {
+                    dst += emitOutputByte(dst, 0x66);
+                }
                 FALLTHROUGH;
+            }
 
             case EA_4BYTE:
 #ifdef TARGET_AMD64
@@ -14276,6 +14559,14 @@ DONE:
                        ((id->idGCref() == GCT_GCREF) && insIsCMOV(ins)));
                 emitGCregLiveUpd(id->idGCref(), id->idReg1(), dst);
                 break;
+            
+            case IF_RWR_RRD_ARD:
+                assert(((id->idGCref() == GCT_BYREF) &&
+                        (ins == INS_add || ins == INS_sub || ins == INS_sub_hide || insIsCMOV(ins))) ||
+                       ((id->idGCref() == GCT_GCREF) && insIsCMOV(ins)));
+                assert(id->idIsEvexNdContextSet());
+                emitGCregLiveUpd(id->idGCref(), id->idReg1(), dst);
+                break;
 
             case IF_ARD_RRD:
             case IF_AWR_RRD:
@@ -14306,6 +14597,7 @@ DONE:
 #ifdef DEBUG
                 emitDispIns(id, false, false, false);
 #endif
+                printf("Ruihan: unhandled InsFmt: %d\n", (int)(id->idInsFmt()));
                 assert(!"unexpected GC ref instruction format");
         }
 
@@ -14527,10 +14819,21 @@ BYTE* emitter::emitOutputSV(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
 
             case EA_2BYTE:
                 // Output a size prefix for a 16-bit operand
-                dst += emitOutputByte(dst, 0x66);
+                {
+                    if (TakesLegacyPromotedEvexPrefix(id))
+                    {
+                        assert(hasEvexPrefix(code));
+                        code |= PPBITS_FOR_SHORT_INPUT;
+                    }
+                    else {
+                        dst += emitOutputByte(dst, 0x66);
+                    }
+                }
                 FALLTHROUGH;
 
             case EA_4BYTE:
+                code |= 0x01;
+                break;
 #ifdef TARGET_AMD64
             case EA_8BYTE:
 #endif // TARGET_AMD64
@@ -14539,9 +14842,15 @@ BYTE* emitter::emitOutputSV(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
                  * Note that incrementing "code" for INS_call (0xFF) would
                  * overflow, whereas setting the lower bit to 1 just works out
                  */
-
-                code |= 0x01;
-                break;
+                {
+                    if (TakesLegacyPromotedEvexPrefix(id))
+                    {
+                        assert(hasEvexPrefix(code));
+                        code = AddRexWPrefix(id, code);
+                    }                
+                    code |= 0x01;
+                    break;
+                }
 
 #ifdef TARGET_X86
             case EA_8BYTE:
@@ -14773,6 +15082,15 @@ BYTE* emitter::emitOutputSV(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
                 // reg could have been a GCREF as GCREF + int=BYREF
                 //                             or BYREF+/-int=BYREF
                 assert(id->idGCref() == GCT_BYREF && (ins == INS_add || ins == INS_sub || ins == INS_sub_hide));
+                emitGCregLiveUpd(id->idGCref(), id->idReg1(), dst);
+                break;
+
+            case IF_RWR_RRD_SRD: // Register Read/Write, Stack Read (So we need to update GC live for register)
+
+                // reg could have been a GCREF as GCREF + int=BYREF
+                //                             or BYREF+/-int=BYREF
+                assert(id->idGCref() == GCT_BYREF && (ins == INS_add || ins == INS_sub || ins == INS_sub_hide));
+                assert(id->idIsEvexNdContextSet());
                 emitGCregLiveUpd(id->idGCref(), id->idReg1(), dst);
                 break;
 
@@ -17859,7 +18177,147 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             // Also, determine which operand goes where in the ModRM byte.
             regNumber mReg;
             regNumber rReg;
-            if (hasCodeMR(ins))
+            if (IsApxNDDEncodableInstruction(ins))
+            {
+                assert(hasCodeMI(ins));
+                code = insCodeMI(ins);
+                code = AddX86PrefixIfNeeded(id, code, size);
+                code = insEncodeReg3456(id, id->idReg1(), size, code);
+                mReg = id->idReg2();
+                code = insEncodeMIreg(id, mReg, size, code);
+                rReg = REG_NA;
+                ssize_t val = emitGetInsSC(id);
+                bool valInByte = ((signed char)val == (target_ssize_t)val) && (ins != INS_mov) && (ins != INS_test);
+                
+                switch (size)
+                {
+                    case EA_1BYTE:
+                        break;
+
+                    case EA_2BYTE:
+                        code |= PPBITS_FOR_SHORT_INPUT;
+                        FALLTHROUGH;
+
+                    case EA_4BYTE:
+                        code |= 1;
+                        break;
+
+#ifdef TARGET_AMD64
+                    case EA_8BYTE:
+                        code = AddRexWPrefix(id, code);
+                        code |= 1;
+                        break;
+#endif // TARGET_AMD64
+                    
+                    default:
+                        assert(!"unexpected size");
+                }
+
+                dst += emitOutputRexOrSimdPrefixIfNeeded(ins, dst, code);
+
+                if (valInByte && size > EA_1BYTE)
+                {
+                    code |= 2;
+                    dst += emitOutputWord(dst, code);
+                    dst += emitOutputByte(dst, val);
+                }
+                else
+                {
+                    dst += emitOutputWord(dst, code);
+                    switch (size)
+                    {
+                        case EA_1BYTE:
+                            dst += emitOutputByte(dst, val);
+                            break;
+                        case EA_2BYTE:
+                            dst += emitOutputWord(dst, val);
+                            break;
+                        case EA_4BYTE:
+                            dst += emitOutputLong(dst, val);
+                            break;
+#ifdef TARGET_AMD64
+                        case EA_8BYTE:
+                            dst += emitOutputLong(dst, val);
+                            break;
+#endif // TARGET_AMD64
+                        default:
+                            break;
+                    }
+
+                    if (id->idIsCnsReloc())
+                    {
+                        emitRecordRelocation((void*)(dst - sizeof(INT32)), (void*)(size_t)val, IMAGE_REL_BASED_HIGHLOW);
+                        assert(size == EA_4BYTE);
+                    }
+                }
+
+                sz = emitSizeOfInsDsc_CNS(id);
+
+                if (!emitInsCanOnlyWriteSSE2OrAVXReg(id))
+                {
+                    emitGCregDeadUpd(id->idReg1(), dst);
+                }
+
+                // Does this instruction operate on a GC ref value?
+                if (id->idGCref())
+                {
+                    switch (id->idInsFmt())
+                    {
+                        case IF_RWR_RRD_CNS:
+                        {
+                            assert(id->idGCref() == GCT_BYREF);
+
+#ifdef DEBUG
+                            regMaskTP regMask;
+                            regMask = genRegMask(mReg);
+                            // FIXNOW review the other places and relax the assert there too
+
+                            // The reg must currently be holding either a gcref or a byref
+                            // GCT_GCREF+int = GCT_BYREF, and GCT_BYREF+/-int = GCT_BYREF
+                            if (emitThisGCrefRegs & regMask)
+                            {
+                                assert(ins == INS_add);
+                            }
+                            if (emitThisByrefRegs & regMask)
+                            {
+                                assert(ins == INS_add || ins == INS_sub || ins == INS_sub_hide);
+                            }
+#endif
+                            // Mark it as holding a GCT_BYREF
+                            emitGCregLiveUpd(GCT_BYREF, id->idReg1(), dst);
+                            break;
+                        }
+                        default:
+#ifdef DEBUG
+                            emitDispIns(id, false, false, false);
+#endif
+                            assert(!"unexpected GC ref instruction format");
+                    }
+
+                    // mul can never produce a GC ref
+                    assert(!instrIs3opImul(ins));
+                    assert(ins != INS_mulEAX && ins != INS_imulEAX);
+                }
+                else
+                {
+                    switch (id->idInsFmt())
+                    {
+                        case IF_RWR_RRD_CNS:
+                            assert(!instrIs3opImul(ins));
+
+                            emitGCregDeadUpd(id->idReg1(), dst);
+                            break;
+
+                        default:
+#ifdef DEBUG
+                            emitDispIns(id, false, false, false);
+#endif
+                            assert(!"unexpected GC ref instruction format");
+                    }
+                }
+                break;
+            }
+            else if (hasCodeMR(ins))
             {
                 code = insCodeMR(ins);
                 // Emit the VEX prefix if it exists
@@ -18093,6 +18551,23 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
         case IF_RWR_RWR_ARD:
         {
             code = insCodeRM(ins);
+
+            if (id->idIsEvexNdContextSet() && TakesLegacyPromotedEvexPrefix(id))
+            {
+                // TODO-XArchh-apx:
+                // Ruihan: I'm not sure why instructions on this path can be with instruction
+                // format other than IF_RWR_RRD_ARD, fix here for debug purpose only,
+                // need revisit.
+                id->idInsFmt(IF_RWR_RRD_ARD);
+
+                code = AddX86PrefixIfNeeded(id, code, size);
+                code = insEncodeReg3456(id, id->idReg1(), size, code);
+                regcode = (insEncodeReg345(id, id->idReg2(), size, &code) << 8);
+                dst = emitOutputAM(dst, id, code | regcode);
+
+                sz = emitSizeOfInsDsc_AMD(id);
+                break;
+            }
 
             if (EncodedBySSE38orSSE3A(ins) || (ins == INS_crc32))
             {
@@ -18361,7 +18836,19 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
         case IF_RRW_RRD_SRD:
         case IF_RWR_RWR_SRD:
         {
-            assert(IsVexOrEvexEncodableInstruction(ins));
+            assert(IsVexOrEvexEncodableInstruction(ins) || IsApxNDDEncodableInstruction(ins));
+
+            if (IsApxNDDEncodableInstruction(ins))
+            {
+                assert(id->idIsEvexNdContextSet());
+                code = insCodeRM(ins);
+                code = AddX86PrefixIfNeeded(id, code, size);
+                code = insEncodeReg3456(id, id->idReg1(), size, code);
+                regcode = (insEncodeReg345(id, id->idReg2(), size, &code) << 8);
+                dst = emitOutputSV(dst, id, code | regcode);
+                sz = sizeof(instrDesc);
+                break;
+            }
 
             code = insCodeRM(ins);
             code = AddX86PrefixIfNeeded(id, code, size);

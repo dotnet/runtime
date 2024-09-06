@@ -1189,22 +1189,17 @@ void CodeGen::genCodeForBinary(GenTreeOp* treeNode)
     // reg3 = reg3 op reg2
     else
     {
-        if (emit->IsApxNDDEncodableInstruction(ins) && !varTypeIsFloating(treeNode) && op1->isUsedFromReg() && op2->isUsedFromReg())
+        if (emit->IsApxNDDEncodableInstruction(ins) && !varTypeIsFloating(treeNode))
         {
             // TODO-xarch-apx:
             // APX can provide optimal code gen in this case using NDD feature:
             // reg3 = op1 op op2 without extra mov
             
-            // Ruihan: we will have the following cases: (might not have full coverage)
-            // reg3 = reg1 op reg2 -> emitIns_R_R_R
-
-            // the register case above is specially handled in this branch,
-            // for more general cases, they are handled in emitInsBinary
-            // reg3 = reg1 op (contained)op2 -> emitIns_R_R_? may depend on the contained operand types
-
-            // Handle emit_R_R_R first
-            // emit with NDD insOpt.
-            emit->emitIns_R_R_R(ins, emitTypeSize(treeNode), targetReg, op1reg, op2reg, INS_OPTS_EVEX_nd);
+            // Ruihan: we may eventually want some methods like emitInsNDDBinary to handle all the cases:
+            // 1. R_R_R.
+            // 2. R_R_I.
+            // 3. R_R_M.
+            emit->emitInsNddBinary(ins, emitTypeSize(treeNode), targetReg, treeNode);
             if (treeNode->gtOverflowEx())
             {
 #if !defined(TARGET_64BIT)
@@ -9278,11 +9273,17 @@ void CodeGen::genAmd64EmitterUnitTestsApx()
     theEmitter->emitIns_R(INS_div, EA_8BYTE, REG_EDX);
     theEmitter->emitIns_R(INS_mulEAX, EA_8BYTE, REG_EDX);
 
-    theEmitter->emitIns_R_R_R(INS_add, EA_8BYTE, REG_R10, REG_EAX, REG_ECX);
-    theEmitter->emitIns_R_R_R(INS_sub, EA_2BYTE, REG_R10, REG_EAX, REG_ECX);
-    theEmitter->emitIns_R_R_R(INS_or,  EA_2BYTE, REG_R10, REG_EAX, REG_ECX);
-    theEmitter->emitIns_R_R_R(INS_and, EA_2BYTE, REG_R10, REG_EAX, REG_ECX);
-    theEmitter->emitIns_R_R_R(INS_xor, EA_1BYTE, REG_R10, REG_EAX, REG_ECX);
+    // theEmitter->emitIns_R_R_R(INS_add, EA_8BYTE, REG_R10, REG_EAX, REG_ECX);
+    // theEmitter->emitIns_R_R_R(INS_sub, EA_2BYTE, REG_R10, REG_EAX, REG_ECX);
+    // theEmitter->emitIns_R_R_R(INS_or,  EA_2BYTE, REG_R10, REG_EAX, REG_ECX);
+    // theEmitter->emitIns_R_R_R(INS_and, EA_2BYTE, REG_R10, REG_EAX, REG_ECX);
+    // theEmitter->emitIns_R_R_R(INS_xor, EA_1BYTE, REG_R10, REG_EAX, REG_ECX);
+
+    theEmitter->emitIns_R_R_I(INS_or, EA_2BYTE, REG_R10, REG_EAX, 10565, INS_OPTS_EVEX_nd);
+    theEmitter->emitIns_R_R_I(INS_or, EA_8BYTE, REG_R10, REG_EAX, 10, INS_OPTS_EVEX_nd);
+    theEmitter->emitIns_R_R_S(INS_or, EA_8BYTE, REG_R10, REG_EAX, 0, 1, INS_OPTS_EVEX_nd);
+    // theEmitter->emitIns_R_R_R(INS_xor, EA_1BYTE, REG_R10, REG_EAX, REG_ECX);
+    // theEmitter->emitIns_R_R_R(INS_xor, EA_1BYTE, REG_R10, REG_EAX, REG_ECX);
 }
 
 #endif // defined(DEBUG) && defined(TARGET_AMD64)

@@ -420,11 +420,7 @@ code_t AddSimdPrefixIfNeeded(const instrDesc* id, code_t code, emitAttr size)
 //
 code_t AddX86PrefixIfNeeded(const instrDesc* id, code_t code, emitAttr size)
 {
-    // TODO-xarch-apx:
-    // consider refactor this part with AddSimdPrefixIfNeeded as a lot of functionality
-    // of these functions are overlapping.
-
-    if (TakesEvexPrefix(id))
+    if (TakesEvexPrefix(id) || TakesLegacyPromotedEvexPrefix(id))
     {
         return AddEvexPrefix(id, code, size);
     }
@@ -434,11 +430,6 @@ code_t AddX86PrefixIfNeeded(const instrDesc* id, code_t code, emitAttr size)
     if (TakesVexPrefix(ins))
     {
         return AddVexPrefix(ins, code, size);
-    }
-
-    if (TakesLegacyPromotedEvexPrefix(id))
-    {
-        return AddEvexPrefix(id, code, size);
     }
 
     // Based on how we labeled REX2 enabled instructions, we can confirm there will not be
@@ -465,7 +456,7 @@ code_t AddX86PrefixIfNeededAndNotPresent(const instrDesc* id, code_t code, emitA
     // consider refactor this part with AddSimdPrefixIfNeeded as a lot of functionality
     // of these functions are overlapping.
 
-    if (TakesEvexPrefix(id))
+    if (TakesEvexPrefix(id) || TakesLegacyPromotedEvexPrefix(id))
     {
         return !hasEvexPrefix(code) ? AddEvexPrefix(id, code, size) : code;
     }

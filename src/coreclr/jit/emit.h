@@ -2557,6 +2557,7 @@ private:
     void      spillIntArgRegsToShadowSlots();
 
 #ifdef TARGET_XARCH
+    void emitInsNddBinary(instruction ins, emitAttr attr, regNumber targetReg, GenTree* treeNode);
     bool emitIsInstrWritingToReg(instrDesc* id, regNumber reg);
     bool emitDoesInsModifyFlags(instruction ins);
 #endif // TARGET_XARCH
