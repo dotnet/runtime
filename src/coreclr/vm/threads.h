@@ -2168,10 +2168,6 @@ public:
     // call CoInitializeEx on this thread first (note that calls to SetApartment made
     // before the thread has started are guaranteed to succeed).
     ApartmentState SetApartment(ApartmentState state);
-
-    // when we get apartment tear-down notification,
-    // we want reset the apartment state we cache on the thread
-    VOID ResetApartment();
 #endif // FEATURE_COMINTEROP_APARTMENT_SUPPORT
 
     // Either perform WaitForSingleObject or MsgWaitForSingleObject as appropriate.

@@ -58,6 +58,9 @@ namespace System.Threading
         // but those types of changes may race with the reset anyway, so this field doesn't need to be synchronized.
         private bool _mayNeedResetForThreadPool;
 
+        // Set in unmanaged and read in managed code.
+        private bool _isDead;
+
         private Thread() { }
 
         public int ManagedThreadId
@@ -74,7 +77,7 @@ namespace System.Threading
             // This should never happen under normal circumstances.
             if (thread == IntPtr.Zero)
             {
-                throw new ArgumentException(null, SR.Argument_InvalidHandle);
+                throw new ThreadStateException(SR.Argument_InvalidHandle);
             }
 
             return new ThreadHandle(thread);
@@ -211,25 +214,31 @@ namespace System.Threading
             internal set;
         }
 
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ThreadNative_SetPriority")]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        private static partial void SetPriority(ObjectHandleOnStack thread, int priority);
+
         /// <summary>Returns the priority of the thread.</summary>
         public ThreadPriority Priority
         {
-            get => (ThreadPriority)GetPriorityNative();
+            get
+            {
+                if (_isDead)
+                {
+                    throw new ThreadStateException(SR.ThreadState_Dead_Priority);
+                }
+                return (ThreadPriority)_priority;
+            }
             set
             {
-                SetPriorityNative((int)value);
+                Thread _this = this;
+                SetPriority(ObjectHandleOnStack.Create(ref _this), (int)value);
                 if (value != ThreadPriority.Normal)
                 {
                     _mayNeedResetForThreadPool = true;
                 }
             }
         }
-
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        private extern int GetPriorityNative();
-
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        private extern void SetPriorityNative(int priority);
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ThreadNative_GetCurrentOSThreadId")]
         private static partial ulong GetCurrentOSThreadId();
@@ -243,21 +252,31 @@ namespace System.Threading
         [MethodImpl(MethodImplOptions.InternalCall)]
         private extern int GetThreadStateNative();
 
-        public ApartmentState GetApartmentState() =>
-#if FEATURE_COMINTEROP_APARTMENT_SUPPORT
-            (ApartmentState)GetApartmentStateNative();
-#else // !FEATURE_COMINTEROP_APARTMENT_SUPPORT
-            ApartmentState.Unknown;
-#endif // FEATURE_COMINTEROP_APARTMENT_SUPPORT
-
         /// <summary>
         /// An unstarted thread can be marked to indicate that it will host a
         /// single-threaded or multi-threaded apartment.
         /// </summary>
 #if FEATURE_COMINTEROP_APARTMENT_SUPPORT
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ThreadNative_GetApartmentState")]
+        private static partial int GetApartmentState(ObjectHandleOnStack t);
+
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ThreadNative_SetApartmentState")]
+        private static partial int SetApartmentState(ObjectHandleOnStack t, int state);
+
+        public ApartmentState GetApartmentState()
+        {
+            Thread _this = this;
+            return (ApartmentState)GetApartmentState(ObjectHandleOnStack.Create(ref _this));
+        }
+
         private bool SetApartmentStateUnchecked(ApartmentState state, bool throwOnError)
         {
-            ApartmentState retState = (ApartmentState)SetApartmentStateNative((int)state);
+            ApartmentState retState;
+            lock (this) // This lock is only needed when the this is not the current thread.
+            {
+                Thread _this = this;
+                retState = (ApartmentState)SetApartmentState(ObjectHandleOnStack.Create(ref _this), (int)state);
+            }
 
             // Special case where we pass in Unknown and get back MTA.
             //  Once we CoUninitialize the thread, the OS will still
@@ -282,12 +301,9 @@ namespace System.Threading
             return true;
         }
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal extern int GetApartmentStateNative();
-
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal extern int SetApartmentStateNative(int state);
 #else // FEATURE_COMINTEROP_APARTMENT_SUPPORT
+        public ApartmentState GetApartmentState() => ApartmentState.Unknown;
+
         private static bool SetApartmentStateUnchecked(ApartmentState state, bool throwOnError)
         {
             if (state != ApartmentState.Unknown)
@@ -331,6 +347,10 @@ namespace System.Threading
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ThreadNative_Interrupt")]
         private static partial void Interrupt(ThreadHandle t);
 
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ThreadNative_Join")]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        private static partial bool Join(ObjectHandleOnStack thread, int millisecondsTimeout);
+
         /// <summary>
         /// Waits for the thread to die or for timeout milliseconds to elapse.
         /// </summary>
@@ -338,11 +358,20 @@ namespace System.Threading
         /// Returns true if the thread died, or false if the wait timed out. If
         /// -1 is given as the parameter, no timeout will occur.
         /// </returns>
-        /// <exception cref="ArgumentException">if timeout &lt; -1 (Timeout.Infinite)</exception>
+        /// <exception cref="ArgumentOutOfRangeException">if timeout &lt; -1 (Timeout.Infinite)</exception>
         /// <exception cref="ThreadInterruptedException">if the thread is interrupted while waiting</exception>
         /// <exception cref="ThreadStateException">if the thread has not been started yet</exception>
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        public extern bool Join(int millisecondsTimeout);
+        public bool Join(int millisecondsTimeout)
+        {
+            // Validate the timeout
+            if (millisecondsTimeout < 0 && millisecondsTimeout != Timeout.Infinite)
+            {
+                throw new ArgumentOutOfRangeException(nameof(millisecondsTimeout), SR.ArgumentOutOfRange_NeedNonNegOrNegative1);
+            }
+
+            Thread _this = this;
+            return Join(ObjectHandleOnStack.Create(ref _this), millisecondsTimeout);
+        }
 
         /// <summary>
         /// Max value to be passed into <see cref="SpinWait(int)"/> for optimal delaying. This value is normalized to be
