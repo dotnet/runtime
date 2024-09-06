@@ -16,6 +16,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Library\Json.csproj" />
+    <ProjectReference Include="..\ResourceLibrary\ResourceLibrary.csproj" />
   </ItemGroup>
 
   <ItemGroup>

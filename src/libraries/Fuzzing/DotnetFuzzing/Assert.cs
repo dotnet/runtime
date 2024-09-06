@@ -18,6 +18,17 @@ internal static class Assert
             throw new Exception($"Expected={expected} Actual={actual}");
     }
 
+    public static void NotNull<T>(T value)
+    {
+        if (value == null)
+        {
+            ThrowNull();
+        }
+
+        static void ThrowNull() =>
+            throw new Exception("Value is  null");
+    }
+
     public static void SequenceEqual<T>(ReadOnlySpan<T> expected, ReadOnlySpan<T> actual)
     {
         if (!expected.SequenceEqual(actual))

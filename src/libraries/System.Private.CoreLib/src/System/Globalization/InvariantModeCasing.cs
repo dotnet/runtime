@@ -215,7 +215,7 @@ namespace System.Globalization
                     continue;
                 }
 
-                return (int)codePointA - (int)codePointB;
+                return (int)aUpper - (int)bUpper;
             }
 
             return lengthA - lengthB;
