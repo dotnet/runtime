@@ -92,10 +92,11 @@ internal static partial class Interop
                     fields.MoveNext(); // Skip Major:Minor
                     fields.MoveNext(); // Skip Root
 
-                    if (!line[fields.Current].Equals(name, StringComparison.Ordinal)) continue;
+                    if (!MemoryExtensions.Equals(line[fields.Current], name, StringComparison.Ordinal)) continue;
 
                     // Skip to the separator which is end of optional fields (Field 8)
-                    while (fields.MoveNext() && !line[fields.Current].Equals("-", StringComparison.Ordinal));                    
+                    while (fields.MoveNext() && !MemoryExtensions.Equals(line[fields.Current], "-", StringComparison.Ordinal));
+
                     fields.MoveNext();
                     format = line[fields.Current].ToString();
 
