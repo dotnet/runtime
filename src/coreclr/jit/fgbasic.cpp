@@ -6723,6 +6723,36 @@ BasicBlock* Compiler::fgNewBBinRegionWorker(BBKinds     jumpKind,
     return newBlk;
 }
 
+//-----------------------------------------------------------------------------
+// fgNewBBatTryRegionEnd: Creates and inserts a new block at the end of the specified
+// try region, updating the try end pointers in the EH table as necessary.
+//
+// Arguments:
+//    jumpKind - The jump kind of the new block
+//    tryIndex - The index of the try region to insert the new block in
+//
+// Returns:
+//    The new block
+//
+BasicBlock* Compiler::fgNewBBatTryRegionEnd(BBKinds jumpKind, unsigned tryIndex)
+{
+    EHblkDsc*         ehDsc      = ehGetDsc(tryIndex);
+    BasicBlock* const oldTryLast = ehDsc->ebdTryLast;
+    BasicBlock* const newBlock   = fgNewBBafter(jumpKind, oldTryLast, /* extendRegion */ false);
+    newBlock->setTryIndex(tryIndex);
+    newBlock->clearHndIndex();
+
+    for (EHblkDsc* const HBtab : EHClauses(this))
+    {
+        if (HBtab->ebdTryLast == oldTryLast)
+        {
+            fgSetTryEnd(HBtab, newBlock);
+        }
+    }
+
+    return newBlock;
+}
+
 //------------------------------------------------------------------------
 // fgUseThrowHelperBlocks: Determinate does compiler use throw helper blocks.
 //

@@ -3134,14 +3134,7 @@ bool Compiler::optCanonicalizeExit(FlowGraphNaturalLoop* loop, BasicBlock* exit)
         // try region.
         BasicBlock* finallyBlock = exit->GetTarget();
         assert(finallyBlock->hasHndIndex());
-        EHblkDsc* ehDsc = ehGetDsc(finallyBlock->getHndIndex());
-
-        // When inserting newExit into the try region,
-        // ensure it isn't inserted into a handler region, too.
-        newExit           = fgNewBBafter(BBJ_ALWAYS, ehDsc->ebdTryLast, false);
-        ehDsc->ebdTryLast = newExit;
-        newExit->setTryIndex(finallyBlock->getHndIndex());
-        newExit->clearHndIndex();
+        newExit = fgNewBBatTryRegionEnd(BBJ_ALWAYS, finallyBlock->getHndIndex());
     }
     else
     {
