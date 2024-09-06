@@ -358,7 +358,7 @@ namespace Microsoft.NET.HostModel.Bundle
             // Remove mac code signature if applied before bundling
             static void RemoveCodesignIfNecessary(string bundlePath)
             {
-                var objectFile = MachReader.Read(File.OpenWrite(bundlePath)).FirstOrDefault();
+                var objectFile = MachReader.Read(File.Open(bundlePath, FileMode.Open, FileAccess.ReadWrite)).FirstOrDefault();
                 Debug.Assert(objectFile is not null);
 
                 // Strip the signature
