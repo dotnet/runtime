@@ -1,4 +1,6 @@
 
+#include "crashprotection.hpp"
+
 #ifndef HOST_WINDOWS
 
 #include <cstddef>
@@ -12,8 +14,6 @@
 #include <pthread.h>
 #include <errno.h>
 #include <unistd.h>
-
-#include "crashprotection.hpp"
 
 std::unique_ptr<CrashProtection> CrashProtection::s_self;
 
@@ -359,9 +359,11 @@ void CrashProtection::OnDeactivate(const Handler *restoreHandler)
 }
 
 #else /* HOST_WINDOWS*/
+
 bool CrashProtection::Init()
 {
     // Nothing to do on Windows
     return true;
 }
+
 #endif

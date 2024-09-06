@@ -111,6 +111,7 @@ CorJitResult interceptor_ICJC::compileMethod(ICorJitInfo*                comp,  
         uint32_t* nativeSizeOfCode;
         CorJitResult result;
         std::function<bool()> cleanup;
+        std::function<void(CompileParams*)> compileInner;
     } compileParams;
 
     compileParams.origComp = original_ICorJitCompiler;
@@ -133,17 +134,22 @@ CorJitResult interceptor_ICJC::compileMethod(ICorJitInfo*                comp,  
         delete mc;
         return true;
     };
+    compileParams.compileInner = [&compileParams](CompileParams* pParam)
+    {
+        CrashGuard cg{pParam->cleanup};
+        pParam->result = pParam->origComp->compileMethod(
+            pParam->ourICJI,
+            pParam->methodInfo,
+            pParam->flags,
+            pParam->nativeEntry,
+            pParam->nativeSizeOfCode);
+    };
+
     auto doCompile = [&compileParams]()
     {
         PAL_TRY(CompileParams*, pParam, &compileParams)
         {
-            CrashGuard cg{pParam->cleanup};
-            pParam->result = pParam->origComp->compileMethod(
-                pParam->ourICJI,
-                pParam->methodInfo,
-                pParam->flags,
-                pParam->nativeEntry,
-                pParam->nativeSizeOfCode);
+           pParam->compileInner(pParam);
         }
         PAL_FINALLY
         {
