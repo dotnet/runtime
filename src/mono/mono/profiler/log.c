@@ -659,7 +659,7 @@ buffer_lock (void)
 
 	mono_memory_barrier ();
 
-#endif //HOST_WASM
+#endif // HOST_WASM
 }
 
 static void
@@ -688,6 +688,7 @@ buffer_lock_helper (void)
 static void
 buffer_unlock (void)
 {
+#if !defined (HOST_WASM)
 	mono_memory_barrier ();
 
 	gint32 state = mono_atomic_load_i32 (&log_profiler.buffer_lock_state);
@@ -700,6 +701,7 @@ buffer_unlock (void)
 	g_assert (!(state >> 16) && "Why is the exclusive lock held?");
 
 	mono_atomic_dec_i32 (&log_profiler.buffer_lock_state);
+#endif // HOST_WASM
 }
 
 static void
