@@ -82,7 +82,7 @@ internal static partial class Interop
                 var mountInfoFileContent = File.ReadAllLines(mountInfoFilePath);
                 foreach (var line in mountInfoFileContent)
                 {
-                    var parser = new StringParser(line, ' ');
+                    StringParser parser = new StringParser(line, ' ');
             
                     // Skip fields we don't care about (Fields 1-4)
                     parser.MoveNext(); // Skip Mount ID
