@@ -20824,6 +20824,16 @@ GenTree* Compiler::gtNewSimdBinOpNode(
             if (op2->IsCnsIntOrI())
             {
                 op2->AsIntCon()->gtIconVal &= shiftCountMask;
+#ifdef TARGET_ARM64
+                // On ARM64, ShiftRight* intrinsics cannot encode a shift value of zero,
+                // so use the generic Shift* fallback intrinsic.
+                // GenTreeHWIntrinsic::GetHWIntrinsicIdForBinOp will see that the immediate node is not const,
+                // and return the correct fallback intrinsic.
+                if ((op != GT_LSH) && (op2->AsIntCon()->IconValue() == 0))
+                {
+                    op2 = gtNewZeroConNode(type);
+                }
+#endif // TARGET_ARM64
             }
             else
             {
