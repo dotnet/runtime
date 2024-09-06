@@ -285,7 +285,7 @@ wasm_dl_symbol (void *handle, const char *name, char **err, void *user_data)
 	}
 #endif
 
-#if false
+#if true
 	PinvokeTable* index = (PinvokeTable*)handle;
 
 	PinvokeImport key = { name, NULL };
