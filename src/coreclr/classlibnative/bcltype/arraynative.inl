@@ -307,7 +307,9 @@ FORCEINLINE void InlinedMemmoveGCRefsHelper(void *dest, const void *src, size_t 
     _ASSERTE(CheckPointer(dest));
     _ASSERTE(CheckPointer(src));
 
-    const bool notInHeap = ((BYTE*)dest < g_lowest_address || (BYTE*)dest >= g_highest_address);
+    uint8_t* lowest = g_lowest_address;
+    uint8_t* highest = g_highest_address;
+    const bool notInHeap = ((BYTE*)dest < lowest || (BYTE*)dest >= highest);
 
     if (!notInHeap)
     {

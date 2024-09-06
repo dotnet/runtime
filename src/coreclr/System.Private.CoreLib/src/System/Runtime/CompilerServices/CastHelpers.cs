@@ -412,11 +412,11 @@ namespace System.Runtime.CompilerServices
 
             Debug.Assert(index >= 0);
             ref object? element = ref Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(array), index);
-            void* elementType = RuntimeHelpers.GetMethodTable(array)->ElementType;
 
             if (obj == null)
                 goto assigningNull;
 
+            void* elementType = RuntimeHelpers.GetMethodTable(array)->ElementType;
             if (elementType != RuntimeHelpers.GetMethodTable(obj))
                 goto notExactMatch;
 
