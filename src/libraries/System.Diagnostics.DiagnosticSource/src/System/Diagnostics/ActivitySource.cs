@@ -407,93 +407,85 @@ namespace System.Diagnostics
         }
     }
 
-    //this class uses Interlocked operations and a copy-on-write design to ensure thread safety
-    //all operations are thread safe
+    //this class uses a copy-on-write design to ensure thread safety all operations are thread safe.
+    //However, it is possible for read-only operations to see stale versions of the item while a change
+    //is occurring. This should not be a practical issue if updates are infrequent
     internal sealed class SynchronizedList<T>
     {
-        //This array must not be written to directly. Copy the array and then replace it with the new array.
+        private readonly object _writeLock;
+        //This array must not be mutated directly. To mutate, obtain the lock, copy the array and then replace it with the new array.
         private T[] _volatileArray;
-        public SynchronizedList() => _volatileArray = [];
+        public SynchronizedList()
+        {
+            _volatileArray = [];
+            _writeLock = new();
+        }
 
         public void Add(T item)
         {
-            while (true)
+            lock (_writeLock)
             {
-                T[] local = _volatileArray;
+                T[] newArray = new T[_volatileArray.Length + 1];
 
-                if (TryAppendItemAndSwap(item, local))
-                {
-                    return;
-                }
-                else
-                {
-                    //implicit continue
-                }
+                Array.Copy(_volatileArray, newArray, _volatileArray.Length);//copy existing items
+                newArray[_volatileArray.Length] = item;//copy new item
+
+                _volatileArray = newArray;
             }
         }
 
         public bool AddIfNotExist(T item)
         {
-            while (true)
+            lock (_writeLock)
             {
-                T[] local = _volatileArray;
-
-                int index = Array.IndexOf(local, item);
+                int index = Array.IndexOf(_volatileArray, item);
 
                 if (index >= 0)
                 {
                     return false;
                 }
 
-                if (TryAppendItemAndSwap(item, local))
-                {
-                    return true;
-                }
-                else
-                {
-                    //implicit continue
-                }
+                T[] newArray = new T[_volatileArray.Length + 1];
+
+                Array.Copy(_volatileArray, newArray, _volatileArray.Length);//copy existing items
+                newArray[_volatileArray.Length] = item;//copy new item
+
+                _volatileArray = newArray;
+
+                return true;
             }
         }
 
         public bool Remove(T item)
         {
-            while (true)
+            lock (_writeLock)
             {
-                T[] local = _volatileArray;
-
-                int index = Array.IndexOf(local, item);
+                int index = Array.IndexOf(_volatileArray, item);
 
                 if (index < 0)
                 {
                     return false;
                 }
 
-                if (TryRemoveIndexAndSwap(index, local))
-                {
-                    return true;
-                }
-                else
-                {
-                    //implicit continue
-                }
+                T[] newArray = new T[_volatileArray.Length - 1];
+
+                Array.Copy(_volatileArray, newArray, index);//copy existing items before index
+
+                Array.Copy(
+                    _volatileArray, index + 1, //position after the index, skipping it
+                    newArray, index, _volatileArray.Length - index - 1//remaining items accounting for removed item
+                );
+
+                _volatileArray = newArray;
+                return true;
             }
         }
 
-        public int Count
-        {
-            get
-            {
-                T[] localArray = Volatile.Read(ref _volatileArray);
-
-                return localArray.Length;
-            }
-        }
+        public int Count => _volatileArray.Length;
 
         public void EnumWithFunc<TParent>(ActivitySource.Function<T, TParent> func, ref ActivityCreationOptions<TParent> data, ref ActivitySamplingResult samplingResult, ref ActivityCreationOptions<ActivityContext> dataWithContext)
         {
-            T[] localArray = Volatile.Read(ref _volatileArray);
-            foreach (T item in localArray)
+            foreach (T item in _volatileArray)
             {
                 func(item, ref data, ref samplingResult, ref dataWithContext);
             }
@@ -501,8 +493,7 @@ namespace System.Diagnostics
 
         public void EnumWithAction(Action<T, object> action, object arg)
         {
-            T[] localArray = Volatile.Read(ref _volatileArray);
-            foreach (T item in localArray)
+            foreach (T item in _volatileArray)
             {
                 action(item, arg);
             }
@@ -515,35 +506,10 @@ namespace System.Diagnostics
                 return;
             }
 
-            T[] localArray = Volatile.Read(ref _volatileArray);
-            foreach (T item in localArray)
+            foreach (T item in _volatileArray)
             {
                 (item as ActivityListener)!.ExceptionRecorder?.Invoke(activity, exception, ref tags);
             }
-        }
-
-        private bool TryAppendItemAndSwap(T item, T[] localCopy)
-        {
-            T[] newArray = new T[localCopy.Length + 1];
-
-            Array.Copy(localCopy, newArray, localCopy.Length);//copy existing items
-            newArray[localCopy.Length] = item;//copy new item
-
-            return Interlocked.CompareExchange(ref _volatileArray, newArray, localCopy) == localCopy;
-        }
-
-        private bool TryRemoveIndexAndSwap(int index, T[] localCopy)
-        {
-            T[] newArray = new T[localCopy.Length - 1];
-
-            Array.Copy(localCopy, newArray, index);//copy existing items before index
-
-            Array.Copy(
-                localCopy, index + 1, //position after the index, skipping it
-                newArray, index, localCopy.Length - index - 1//remaining items accounting for removed item
-            );
-
-            return Interlocked.CompareExchange(ref _volatileArray, newArray, localCopy) == localCopy;
         }
     }
 }
