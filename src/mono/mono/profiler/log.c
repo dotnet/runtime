@@ -617,6 +617,7 @@ buffer_lock_helper (void);
 static void
 buffer_lock (void)
 {
+#if !defined (HOST_WASM)
 	/*
 	 * If the thread holding the exclusive lock tries to modify the
 	 * reader count, just make it a no-op. This way, we also avoid
@@ -657,6 +658,8 @@ buffer_lock (void)
 	}
 
 	mono_memory_barrier ();
+
+#endif //HOST_WASM
 }
 
 static void
@@ -3640,18 +3643,6 @@ create_profiler (const char *args, const char *filename, GPtrArray *filters)
 	log_profiler.startup_time = current_time ();
 }
 
-#if defined (HOST_WASM)
-MONO_API void
-mono_profiler_flush_log ();
-
-void
-mono_profiler_flush_log ()
-{
-	while (handle_writer_queue_entry ());
-	while (handle_dumper_queue_entry ());
-}
-#endif
-
 MONO_API void
 mono_profiler_init_log (const char *desc);
 
@@ -3786,3 +3777,17 @@ mono_profiler_init_log (const char *desc)
 done:
 	;
 }
+
+#if defined (HOST_WASM)
+
+MONO_API void
+mono_profiler_flush_log (void);
+
+void
+mono_profiler_flush_log (void)
+{
+	while (handle_writer_queue_entry ());
+	while (handle_dumper_queue_entry ());
+}
+
+#endif // HOST_WASM
