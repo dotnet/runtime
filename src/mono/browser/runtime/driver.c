@@ -430,6 +430,18 @@ mono_wasm_profiler_init_browser (const char *desc)
 
 #endif
 
+#ifdef ENABLE_LOG_PROFILER
+
+void mono_profiler_init_log (const char *desc);
+
+EMSCRIPTEN_KEEPALIVE void
+mono_wasm_profiler_init_log (const char *desc)
+{
+	mono_profiler_init_log (desc);
+}
+
+#endif
+
 EMSCRIPTEN_KEEPALIVE void
 mono_wasm_init_finalizer_thread (void)
 {

@@ -314,6 +314,7 @@
       <_EmccCFlags Include="-DLINK_ICALLS=1"                   Condition="'$(WasmLinkIcalls)' == 'true'" />
       <_EmccCFlags Include="-DENABLE_AOT_PROFILER=1"           Condition="$(WasmProfilers.Contains('aot'))" />
       <_EmccCFlags Include="-DENABLE_BROWSER_PROFILER=1"       Condition="$(WasmProfilers.Contains('browser'))" />
+      <_EmccCFlags Include="-DENABLE_LOG_PROFILER=1"           Condition="$(WasmProfilers.Contains('log'))" />
       <_EmccCFlags Include="-DENABLE_JS_INTEROP_BY_VALUE=1"    Condition="'$(WasmEnableJsInteropByValue)' == 'true'" />
 
       <_EmccCFlags Include="-DGEN_PINVOKE=1" />
@@ -368,6 +369,7 @@
       <EmscriptenEnvVars Include="WASM_ENABLE_EH=0" Condition="'$(WasmEnableExceptionHandling)' == 'false'" />
       <EmscriptenEnvVars Include="ENABLE_AOT_PROFILER=$([System.Convert]::ToInt32($(WasmProfilers.Contains('aot'))))" />
       <EmscriptenEnvVars Include="ENABLE_BROWSER_PROFILER=$([System.Convert]::ToInt32($(WasmProfilers.Contains('browser'))))" />
+      <EmscriptenEnvVars Include="ENABLE_LOG_PROFILER=$([System.Convert]::ToInt32($(WasmProfilers.Contains('log'))))" />
       <EmscriptenEnvVars Include="RUN_AOT_COMPILATION=1" Condition="'$(RunAOTCompilation)' == 'true'" />
       <EmscriptenEnvVars Include="RUN_AOT_COMPILATION=0" Condition="'$(RunAOTCompilation)' != 'true'" />
 

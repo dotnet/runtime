@@ -318,10 +318,6 @@ async function onRuntimeInitializedAsync (userOnRuntimeInitialized: () => void) 
 
         await wait_for_all_assets();
 
-        if (runtimeHelpers.config.logProfilerOptions) {
-            mono_wasm_init_log_profiler(runtimeHelpers.config.logProfilerOptions);
-        }
-
         if (WasmEnableThreads) {
             runtimeHelpers.deputyWorker.thread!.postMessageToWorker({
                 type:"deputyThread",
@@ -544,6 +540,9 @@ export async function start_runtime () {
 
         if (runtimeHelpers.config.browserProfilerOptions)
             mono_wasm_init_browser_profiler(runtimeHelpers.config.browserProfilerOptions);
+
+        if (runtimeHelpers.config.logProfilerOptions)
+            mono_wasm_init_log_profiler(runtimeHelpers.config.logProfilerOptions);
 
         if (WasmEnableThreads) {
             // this is not mono-attached thread, so we can start it earlier

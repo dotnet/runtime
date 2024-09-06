@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import { ENVIRONMENT_IS_WEB, mono_assert, Module, runtimeHelpers } from "./globals";
+import { ENVIRONMENT_IS_WEB, mono_assert, runtimeHelpers } from "./globals";
 import { MonoMethod, AOTProfilerOptions, BrowserProfilerOptions, LogProfilerOptions } from "./types/internal";
 import { profiler_c_functions as cwraps } from "./cwraps";
 import { utf8ToString } from "./strings";
@@ -32,6 +32,11 @@ export function mono_wasm_init_browser_profiler (options: BrowserProfilerOptions
         options = {};
     const arg = "browser:";
     cwraps.mono_wasm_profiler_init_browser(arg);
+}
+
+export function mono_wasm_init_log_profiler (options: LogProfilerOptions): void {
+    mono_assert(runtimeHelpers.emscriptenBuildOptions.enableLogProfiler, "Log profiler is not enabled, please use <WasmProfilers>log;</WasmProfilers> in your project file.");
+    cwraps.mono_wasm_profiler_init_log(options.configuration || "log:alloc,output=output.mlpd");
 }
 
 export const enum MeasuredBlock {
@@ -98,9 +103,4 @@ export function mono_wasm_profiler_leave (method: MonoMethod): void {
         }
         globalThis.performance.measure(methodName, options);
     }
-}
-
-// options = { configuration: "log profiler options string" }
-export function mono_wasm_init_log_profiler (options: LogProfilerOptions): void {
-    Module.ccall("mono_wasm_load_profiler_log", null, ["string"], [options.configuration]);
 }
