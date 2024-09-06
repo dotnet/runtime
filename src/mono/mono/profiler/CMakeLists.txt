@@ -35,7 +35,7 @@ if(NOT DISABLE_LIBS)
     endif()
   endif()
 
-  if(HOST_WASM)
+  if(HOST_WASM AND NOT HOST_WASI)
     add_library(mono-profiler-log-static STATIC helper.c log.c log-args.c)
     set_target_properties(mono-profiler-log-static PROPERTIES OUTPUT_NAME mono-profiler-log)
     install(TARGETS mono-profiler-log-static LIBRARY)
