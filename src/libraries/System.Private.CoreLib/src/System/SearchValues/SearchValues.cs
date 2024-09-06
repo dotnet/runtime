@@ -43,9 +43,9 @@ namespace System.Buffers
 
             // Depending on the hardware, UniqueLowNibble can be faster than even range or 2 values.
             // It's currently consistently faster than 4/5 values on all tested platforms (Arm, Avx2, Avx512).
-            if (values.Length >= 4 && IndexOfAnyAsciiSearcher.CanUseUniqueLowNibbleSearch(values, minInclusive, maxInclusive))
+            if (values.Length >= 4 && IndexOfAnyAsciiSearcher.CanUseUniqueLowNibbleSearch(values, maxInclusive))
             {
-                return new UniqueLowNibbleByteSearchValues(values);
+                return new AsciiByteSearchValues<TrueConst>(values);
             }
 
             if (values.Length <= 5)
@@ -62,7 +62,7 @@ namespace System.Buffers
 
             if (IndexOfAnyAsciiSearcher.IsVectorizationSupported && maxInclusive < 128)
             {
-                return new AsciiByteSearchValues(values);
+                return new AsciiByteSearchValues<FalseConst>(values);
             }
 
             return new AnyByteSearchValues(values);
@@ -149,17 +149,19 @@ namespace System.Buffers
 
             // Depending on the hardware, UniqueLowNibble can be faster than most implementations we currently prefer above.
             // It's currently consistently faster than 4/5 values or Ascii on all tested platforms (Arm, Avx2, Avx512).
-            if (IndexOfAnyAsciiSearcher.CanUseUniqueLowNibbleSearch(values, minInclusive, maxInclusive))
+            if (IndexOfAnyAsciiSearcher.CanUseUniqueLowNibbleSearch(values, maxInclusive))
             {
-                return new UniqueLowNibbleCharSearchValues(values);
+                return (Ssse3.IsSupported || PackedSimd.IsSupported) && minInclusive == 0
+                    ? new AsciiCharSearchValues<IndexOfAnyAsciiSearcher.Ssse3AndWasmHandleZeroInNeedle, TrueConst>(values)
+                    : new AsciiCharSearchValues<IndexOfAnyAsciiSearcher.Default, TrueConst>(values);
             }
 
             // IndexOfAnyAsciiSearcher for chars is slower than Any3CharSearchValues, but faster than Any4SearchValues
             if (IndexOfAnyAsciiSearcher.IsVectorizationSupported && maxInclusive < 128)
             {
                 return (Ssse3.IsSupported || PackedSimd.IsSupported) && minInclusive == 0
-                    ? new AsciiCharSearchValues<IndexOfAnyAsciiSearcher.Ssse3AndWasmHandleZeroInNeedle>(values)
-                    : new AsciiCharSearchValues<IndexOfAnyAsciiSearcher.Default>(values);
+                    ? new AsciiCharSearchValues<IndexOfAnyAsciiSearcher.Ssse3AndWasmHandleZeroInNeedle, FalseConst>(values)
+                    : new AsciiCharSearchValues<IndexOfAnyAsciiSearcher.Default, FalseConst>(values);
             }
 
             if (values.Length == 4)
