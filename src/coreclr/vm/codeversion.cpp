@@ -94,12 +94,6 @@ ReJITID NativeCodeVersionNode::GetILVersionId() const
 ILCodeVersion NativeCodeVersionNode::GetILCodeVersion() const
 {
     LIMITED_METHOD_DAC_CONTRACT;
-#ifdef DEBUG
-    if (GetILVersionId() != 0)
-    {
-        _ASSERTE(CodeVersionManager::IsLockOwnedByCurrentThread());
-    }
-#endif
     PTR_MethodDesc pMD = GetMethodDesc();
     return pMD->GetCodeVersionManager()->GetILCodeVersion(pMD, GetILVersionId());
 }
@@ -622,7 +616,6 @@ DWORD ILCodeVersionNode::GetJitFlags() const
 const InstrumentedILOffsetMapping* ILCodeVersionNode::GetInstrumentedILMap() const
 {
     LIMITED_METHOD_DAC_CONTRACT;
-    _ASSERTE(CodeVersionManager::IsLockOwnedByCurrentThread());
     return &m_instrumentedILMap;
 }
 
@@ -1472,7 +1465,6 @@ NativeCodeVersionCollection CodeVersionManager::GetNativeCodeVersions(PTR_Method
 NativeCodeVersion CodeVersionManager::GetNativeCodeVersion(PTR_MethodDesc pMethod, PCODE codeStartAddress) const
 {
     LIMITED_METHOD_DAC_CONTRACT;
-    _ASSERTE(IsLockOwnedByCurrentThread());
 
     NativeCodeVersionCollection nativeCodeVersions = GetNativeCodeVersions(pMethod);
     for (NativeCodeVersionIterator cur = nativeCodeVersions.Begin(), end = nativeCodeVersions.End(); cur != end; cur++)

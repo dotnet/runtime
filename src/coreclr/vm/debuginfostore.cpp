@@ -985,7 +985,7 @@ BOOL DebugInfoManager::GetBoundariesAndVars(
     CONTRACTL
     {
         THROWS;
-        WRAPPER(GC_TRIGGERS); // depends on fpNew
+        GC_NOTRIGGER;
         SUPPORTS_DAC;
     }
     CONTRACTL_END;
