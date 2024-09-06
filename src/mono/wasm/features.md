@@ -447,6 +447,7 @@ In order to trigger a heap shot, add the following:
 
 ```csharp
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 
 namespace Mono.Profiler.Log
 {
@@ -458,8 +459,8 @@ namespace Mono.Profiler.Log
 		[MethodImplAttribute(MethodImplOptions.InternalCall)]
 		public extern static void TriggerHeapshot();
 
-		[DllImport("__Native")]
-		public extern static private void mono_profiler_flush_log();
+		[DllImport("libSystem.Native")]
+		public extern static void mono_profiler_flush_log();
 	}
 }
 ```
