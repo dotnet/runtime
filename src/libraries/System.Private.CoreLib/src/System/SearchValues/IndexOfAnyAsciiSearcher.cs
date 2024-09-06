@@ -152,10 +152,16 @@ namespace System.Buffers
                 valuesByLowNibble.SetElementUnsafe(value & 0xF, value);
             }
 
+            // Elements of 'valuesByLowNibble' where no value had that low nibble will be left uninitialized at 0.
+            // For most, that is okay, as only the zero character in the input could ever match against them,
+            // but where such input characters will always be mapped to the 0th element of 'valuesByLowNibble'.
+            //
+            // That does mean we could still see false positivies if none of the values had a low nibble of zero.
+            // To avoid that, we can replace the 0th element with any other byte that has a non-zero low nibble.
+            // The zero character will no longer match, and the new value we pick won't match either as
+            // it will be mapped to a different element in 'valuesByLowNibble' given its non-zero low nibble.
             if (valuesByLowNibble.GetElement(0) == 0 && !lookup.Contains(0))
             {
-                // Avoid false positives for the zero character if no other character has a low nibble of zero.
-                // We can replace it with any other byte that has a non-zero low nibble.
                 valuesByLowNibble.SetElementUnsafe(0, (byte)1);
             }
 
