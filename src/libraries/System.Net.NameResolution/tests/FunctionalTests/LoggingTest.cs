@@ -15,6 +15,7 @@ namespace System.Net.NameResolution.Tests
     using Configuration = System.Net.Test.Common.Configuration;
 
     [Collection(nameof(DisableParallelization))]
+    [SkipOnPlatform(TestPlatforms.Wasi, "WASI has event source yet")]
     public class LoggingTest
     {
         [Fact]

@@ -7,6 +7,7 @@ using System.Globalization;
 using System.Net.Sockets;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Runtime.Versioning;
 
 namespace System.Net
 {
@@ -37,6 +38,9 @@ namespace System.Net
 
         public static IPHostEntry GetHostEntry(IPAddress address)
         {
+#if TARGET_WASI
+            if (OperatingSystem.IsWasi()) throw new PlatformNotSupportedException(); // TODO remove with https://github.com/dotnet/runtime/pull/107185
+#endif // TARGET_WASI
             ArgumentNullException.ThrowIfNull(address);
 
             if (address.Equals(IPAddress.Any) || address.Equals(IPAddress.IPv6Any))
@@ -68,6 +72,7 @@ namespace System.Net
 
             // See if it's an IP Address.
             IPHostEntry ipHostEntry;
+#if !TARGET_WASI
             if (IPAddress.TryParse(hostNameOrAddress, out IPAddress? address))
             {
                 if (address.Equals(IPAddress.Any) || address.Equals(IPAddress.IPv6Any))
@@ -79,6 +84,7 @@ namespace System.Net
                 ipHostEntry = GetHostEntryCore(address, family);
             }
             else
+#endif // TARGET_WASI
             {
                 ipHostEntry = GetHostEntryCore(hostNameOrAddress, family);
             }
@@ -147,6 +153,9 @@ namespace System.Net
 
         public static Task<IPHostEntry> GetHostEntryAsync(IPAddress address)
         {
+#if TARGET_WASI
+            throw new PlatformNotSupportedException(); // TODO remove with https://github.com/dotnet/runtime/pull/107185
+#else
             ArgumentNullException.ThrowIfNull(address);
 
             if (address.Equals(IPAddress.Any) || address.Equals(IPAddress.IPv6Any))
@@ -160,6 +169,7 @@ namespace System.Net
                 if (NetEventSource.Log.IsEnabled()) NetEventSource.Info((IPAddress)s, $"{ipHostEntry} with {ipHostEntry.AddressList.Length} entries");
                 return ipHostEntry;
             }, address, CancellationToken.None);
+#endif // TARGET_WASI
         }
 
         public static IAsyncResult BeginGetHostEntry(IPAddress address, AsyncCallback? requestCallback, object? stateObject) =>
@@ -170,6 +180,9 @@ namespace System.Net
 
         public static IPHostEntry EndGetHostEntry(IAsyncResult asyncResult)
         {
+#if TARGET_WASI
+            if (OperatingSystem.IsWasi()) throw new PlatformNotSupportedException(); // TODO remove with https://github.com/dotnet/runtime/pull/107185
+#endif // TARGET_WASI
             ArgumentNullException.ThrowIfNull(asyncResult);
 
             return TaskToAsyncResult.End<IPHostEntry>(asyncResult);
@@ -192,6 +205,7 @@ namespace System.Net
 
             // See if it's an IP Address.
             IPAddress[] addresses;
+#if TARGET_WASI
             if (IPAddress.TryParse(hostNameOrAddress, out IPAddress? address))
             {
                 if (address.Equals(IPAddress.Any) || address.Equals(IPAddress.IPv6Any))
@@ -203,6 +217,7 @@ namespace System.Net
                 addresses = (family == AddressFamily.Unspecified || address.AddressFamily == family) ? new IPAddress[] { address } : Array.Empty<IPAddress>();
             }
             else
+#endif // TARGET_WASI
             {
                 addresses = GetHostAddressesCore(hostNameOrAddress, family);
             }
@@ -244,6 +259,9 @@ namespace System.Net
 
         public static IPAddress[] EndGetHostAddresses(IAsyncResult asyncResult)
         {
+#if TARGET_WASI
+            if (OperatingSystem.IsWasi()) throw new PlatformNotSupportedException(); // TODO remove with https://github.com/dotnet/runtime/pull/107185
+#endif // TARGET_WASI
             ArgumentNullException.ThrowIfNull(asyncResult);
 
             return TaskToAsyncResult.End<IPAddress[]>(asyncResult);
@@ -269,6 +287,9 @@ namespace System.Net
         [Obsolete("EndGetHostByName has been deprecated. Use EndGetHostEntry instead.")]
         public static IPHostEntry EndGetHostByName(IAsyncResult asyncResult)
         {
+#if TARGET_WASI
+            if (OperatingSystem.IsWasi()) throw new PlatformNotSupportedException(); // TODO remove with https://github.com/dotnet/runtime/pull/107185
+#endif // TARGET_WASI
             ArgumentNullException.ThrowIfNull(asyncResult);
 
             return TaskToAsyncResult.End<IPHostEntry>(asyncResult);
@@ -277,6 +298,9 @@ namespace System.Net
         [Obsolete("GetHostByAddress has been deprecated. Use GetHostEntry instead.")]
         public static IPHostEntry GetHostByAddress(string address)
         {
+#if TARGET_WASI
+            if (OperatingSystem.IsWasi()) throw new PlatformNotSupportedException(); // TODO remove with https://github.com/dotnet/runtime/pull/107185
+#endif // TARGET_WASI
             ArgumentNullException.ThrowIfNull(address);
 
             IPHostEntry ipHostEntry = GetHostEntryCore(IPAddress.Parse(address), AddressFamily.Unspecified);
@@ -288,6 +312,9 @@ namespace System.Net
         [Obsolete("GetHostByAddress has been deprecated. Use GetHostEntry instead.")]
         public static IPHostEntry GetHostByAddress(IPAddress address)
         {
+#if TARGET_WASI
+            if (OperatingSystem.IsWasi()) throw new PlatformNotSupportedException(); // TODO remove with https://github.com/dotnet/runtime/pull/107185
+#endif // TARGET_WASI
             ArgumentNullException.ThrowIfNull(address);
 
             IPHostEntry ipHostEntry = GetHostEntryCore(address, AddressFamily.Unspecified);
@@ -303,6 +330,7 @@ namespace System.Net
 
             // See if it's an IP Address.
             IPHostEntry ipHostEntry;
+#if !TARGET_WASI
             if (IPAddress.TryParse(hostName, out IPAddress? address) &&
                 (address.AddressFamily != AddressFamily.InterNetworkV6 || SocketProtocolSupportPal.OSSupportsIPv6))
             {
@@ -317,6 +345,7 @@ namespace System.Net
                 }
             }
             else
+#endif // TARGET_WASI
             {
                 ipHostEntry = GetHostEntryCore(hostName, AddressFamily.Unspecified);
             }
@@ -332,6 +361,9 @@ namespace System.Net
         [Obsolete("EndResolve has been deprecated. Use EndGetHostEntry instead.")]
         public static IPHostEntry EndResolve(IAsyncResult asyncResult)
         {
+#if TARGET_WASI
+            if (OperatingSystem.IsWasi()) throw new PlatformNotSupportedException(); // TODO remove with https://github.com/dotnet/runtime/pull/107185
+#endif // TARGET_WASI
             IPHostEntry ipHostEntry;
 
             try
@@ -405,13 +437,16 @@ namespace System.Net
             return result;
         }
 
+        [UnsupportedOSPlatform("wasi")]
         private static IPHostEntry GetHostEntryCore(IPAddress address, AddressFamily addressFamily, NameResolutionActivity? activityOrDefault = default) =>
             (IPHostEntry)GetHostEntryOrAddressesCore(address, justAddresses: false, addressFamily, activityOrDefault);
 
+        [UnsupportedOSPlatform("wasi")]
         private static IPAddress[] GetHostAddressesCore(IPAddress address, AddressFamily addressFamily, NameResolutionActivity? activityOrDefault = default) =>
             (IPAddress[])GetHostEntryOrAddressesCore(address, justAddresses: true, addressFamily, activityOrDefault);
 
         // Does internal IPAddress reverse and then forward lookups (for Legacy and current public methods).
+        [UnsupportedOSPlatform("wasi")]
         private static object GetHostEntryOrAddressesCore(IPAddress address, bool justAddresses, AddressFamily addressFamily, NameResolutionActivity? activityOrDefault = default)
         {
             // Try to get the data for the host from its address.
@@ -499,6 +534,7 @@ namespace System.Net
 
             object asyncState;
 
+#if !TARGET_WASI
             // See if it's an IP Address.
             if (IPAddress.TryParse(hostName, out IPAddress? ipAddress))
             {
@@ -518,6 +554,7 @@ namespace System.Net
                 asyncState = family == AddressFamily.Unspecified ? (object)ipAddress : new KeyValuePair<IPAddress, AddressFamily>(ipAddress, family);
             }
             else
+#endif // TARGET_WASI
             {
                 if (NameResolutionPal.SupportsGetAddrInfoAsync)
                 {
@@ -558,8 +595,13 @@ namespace System.Net
                 {
                     string h => GetHostAddressesCore(h, AddressFamily.Unspecified, activity),
                     KeyValuePair<string, AddressFamily> t => GetHostAddressesCore(t.Key, t.Value, activity),
+#if !TARGET_WASI
                     IPAddress a => GetHostAddressesCore(a, AddressFamily.Unspecified, activity),
                     KeyValuePair<IPAddress, AddressFamily> t => GetHostAddressesCore(t.Key, t.Value, activity),
+#else
+                    IPAddress => throw new PlatformNotSupportedException(),
+                    KeyValuePair<IPAddress, AddressFamily> => throw new PlatformNotSupportedException(),
+#endif // TARGET_WASI
                     _ => null
                 }, asyncState, cancellationToken);
             }
@@ -569,8 +611,13 @@ namespace System.Net
                 {
                     string h => GetHostEntryCore(h, AddressFamily.Unspecified, activity),
                     KeyValuePair<string, AddressFamily> t => GetHostEntryCore(t.Key, t.Value, activity),
+#if !TARGET_WASI
                     IPAddress a => GetHostEntryCore(a, AddressFamily.Unspecified, activity),
                     KeyValuePair<IPAddress, AddressFamily> t => GetHostEntryCore(t.Key, t.Value, activity),
+#else
+                    IPAddress => throw new PlatformNotSupportedException(),
+                    KeyValuePair<IPAddress, AddressFamily> => throw new PlatformNotSupportedException(),
+#endif // TARGET_WASI
                     _ => null
                 }, asyncState, cancellationToken);
             }

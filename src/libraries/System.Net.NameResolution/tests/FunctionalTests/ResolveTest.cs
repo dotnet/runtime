@@ -46,6 +46,7 @@ namespace System.Net.NameResolution.Tests
         }
 
         [Fact]
+        [SkipOnPlatform(TestPlatforms.Wasi, "WASI has no getnameinfo")]
         public void DnsObsoleteResolve_BadIP_ReturnsIPasNameAndIP()
         {
             IPHostEntry entry = Dns.Resolve("0.0.1.1");

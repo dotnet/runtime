@@ -24,6 +24,7 @@ typedef enum
     GetAddrInfoErrorFlags_EAI_BADARG = 6,   // One or more input arguments were invalid.
     GetAddrInfoErrorFlags_EAI_NOMORE = 7,   // No more entries are present in the list.
     GetAddrInfoErrorFlags_EAI_MEMORY = 8,   // Out of memory.
+    GetAddrInfoErrorFlags_EAI_SYSTEM = 9,   // Other system error; errno is set to indicate the error.
 } GetAddrInfoErrorFlags;
 
 /**

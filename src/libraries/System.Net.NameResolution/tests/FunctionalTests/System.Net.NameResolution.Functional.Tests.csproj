@@ -1,9 +1,14 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-unix;$(NetCoreAppCurrent)-browser</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-unix;$(NetCoreAppCurrent)-browser;$(NetCoreAppCurrent)-wasi</TargetFrameworks>
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
     <IgnoreForCI Condition="'$(TargetOS)' == 'browser'">true</IgnoreForCI>
     <EventSourceSupport Condition="'$(TestNativeAot)' == 'true'">true</EventSourceSupport>
+    <XunitShowProgress Condition="'$(TargetOS)' == 'wasi'">true</XunitShowProgress>
+  </PropertyGroup>
+  <PropertyGroup>
+    <TargetPlatformIdentifier>$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)'))</TargetPlatformIdentifier>
+    <DefineConstants Condition="'$(TargetPlatformIdentifier)' == 'wasi'">$(DefineConstants);TARGET_WASI</DefineConstants>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="ActivityTest.cs" />

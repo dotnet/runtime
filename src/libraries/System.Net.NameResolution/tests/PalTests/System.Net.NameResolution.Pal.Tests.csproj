@@ -2,8 +2,13 @@
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <StringResourcesPath>../../src/Resources/Strings.resx</StringResourcesPath>
-    <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-unix;$(NetCoreAppCurrent)-browser</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-unix;$(NetCoreAppCurrent)-browser;$(NetCoreAppCurrent)-wasi</TargetFrameworks>
     <IgnoreForCI Condition="'$(TargetOS)' == 'browser'">true</IgnoreForCI>
+    <XunitShowProgress Condition="'$(TargetOS)' == 'wasi'">true</XunitShowProgress>
+  </PropertyGroup>
+  <PropertyGroup>
+    <TargetPlatformIdentifier>$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)'))</TargetPlatformIdentifier>
+    <DefineConstants Condition="'$(TargetPlatformIdentifier)' == 'wasi'">$(DefineConstants);TARGET_WASI</DefineConstants>
   </PropertyGroup>
   <!-- Do not reference these assemblies from the TargetingPack since we are building part of the source code for tests. -->
   <ItemGroup>
@@ -71,7 +76,9 @@
     <Compile Include="$(CommonPath)Interop\Windows\WinSock\Interop.GetAddrInfoExW.cs"
              Link="Common\Interop\Windows\WinSock\Interop.GetAddrInfoExW.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'unix' or '$(TargetPlatformIdentifier)' == 'browser'">
+  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'unix' or '$(TargetPlatformIdentifier)' == 'wasi'">
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.ErrNo.cs"
+             Link="Common\Interop\Unix\System.Native\Interop.ErrNo.cs"/>
     <Compile Include="$(CommonPath)System\Net\SocketAddressPal.Unix.cs"
              Link="Common\System\Net\Internals\SocketAddressPal.Unix.cs" />
     <Compile Include="$(CommonPath)System\Net\InteropIPAddressExtensions.Unix.cs"

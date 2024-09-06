@@ -39,6 +39,12 @@ namespace System.Net
                     return SocketError.HostNotFound;
                 case (int)Interop.Sys.GetAddrInfoErrorFlags.EAI_MEMORY:
                     throw new OutOfMemoryException();
+                case (int)Interop.Sys.GetAddrInfoErrorFlags.EAI_SYSTEM:
+#if !TARGET_WASI
+                    return SocketError.SocketError;
+#else
+                    throw new Exception("ErrNo: " + Interop.Sys.GetErrNo());
+#endif
                 default:
                     Debug.Fail($"Unexpected error: {error}");
                     return SocketError.SocketError;
@@ -146,6 +152,7 @@ namespace System.Net
 
         public static unsafe string? TryGetNameInfo(IPAddress addr, out SocketError socketError, out int nativeErrorCode)
         {
+#if !TARGET_WASI
             byte* buffer = stackalloc byte[Interop.Sys.NI_MAXHOST + 1 /*for null*/];
 
             byte isIPv6;
@@ -178,6 +185,9 @@ namespace System.Net
             socketError = GetSocketErrorForNativeError(error);
             nativeErrorCode = error;
             return socketError == SocketError.Success ? Marshal.PtrToStringUTF8((IntPtr)buffer) : null;
+#else
+            throw new PlatformNotSupportedException();
+#endif
         }
 
         public static string GetHostName() => Interop.Sys.GetHostName();

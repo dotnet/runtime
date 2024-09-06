@@ -9,16 +9,17 @@
   <!-- DesignTimeBuild requires all the TargetFramework Derived Properties to not be present in the first property group. -->
   <PropertyGroup>
     <TargetPlatformIdentifier>$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)'))</TargetPlatformIdentifier>
-    <GeneratePlatformNotSupportedAssemblyMessage Condition="'$(TargetPlatformIdentifier)' == 'browser' or '$(TargetPlatformIdentifier)' == 'wasi' or '$(TargetPlatformIdentifier)' == ''">SR.SystemNetNameResolution_PlatformNotSupported</GeneratePlatformNotSupportedAssemblyMessage>
-    <ApiExclusionListPath Condition="'$(TargetPlatformIdentifier)' == 'browser' or '$(TargetPlatformIdentifier)' == 'wasi'">ExcludeApiList.PNSE.Browser.txt</ApiExclusionListPath>
+    <GeneratePlatformNotSupportedAssemblyMessage Condition="'$(TargetPlatformIdentifier)' == 'browser' or '$(TargetPlatformIdentifier)' == ''">SR.SystemNetNameResolution_PlatformNotSupported</GeneratePlatformNotSupportedAssemblyMessage>
+    <ApiExclusionListPath Condition="'$(TargetPlatformIdentifier)' == 'browser'">ExcludeApiList.PNSE.Browser.txt</ApiExclusionListPath>
+    <DefineConstants Condition="'$(TargetPlatformIdentifier)' == 'wasi'">$(DefineConstants);TARGET_WASI</DefineConstants>
   </PropertyGroup>
 
   <ItemGroup Condition="'$(GeneratePlatformNotSupportedAssemblyMessage)' == ''">
     <Compile Include="System\Net\Dns.cs" />
     <Compile Include="System\Net\IPHostEntry.cs" />
-    <Compile Include="System\Net\NetEventSource.NameResolution.cs" />
-    <Compile Include="System\Net\NameResolutionMetrics.cs" />
-    <Compile Include="System\Net\NameResolutionTelemetry.cs" />
+    <Compile Include="System\Net\NetEventSource.NameResolution.cs" Condition="'$(TargetPlatformIdentifier)' != 'wasi'" />
+    <Compile Include="System\Net\NameResolutionMetrics.cs" Condition="'$(TargetPlatformIdentifier)' != 'wasi'" />
+    <Compile Include="System\Net\NameResolutionTelemetry.cs" Condition="'$(TargetPlatformIdentifier)' != 'wasi'" />
     <!-- Logging -->
     <Compile Include="$(CommonPath)System\Net\Logging\NetEventSource.Common.cs"
              Link="Common\System\Net\Logging\NetEventSource.Common.cs" />
@@ -96,7 +97,40 @@
              Link="Common\Interop\Unix\System.Native\Interop.SocketAddress.cs" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'browser' or '$(TargetPlatformIdentifier)' == 'wasi'">
+  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'wasi'">
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.GetHostName.cs"
+             Link="Common\Interop\Unix\System.Native\Interop.GetHostName.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.ErrNo.cs"
+             Link="Common\Interop\Unix\System.Native\Interop.ErrNo.cs"/>
+
+    <Compile Include="System\Net\NameResolutionTelemetry.Wasi.cs" />
+
+    <Compile Include="System\Net\NameResolutionPal.Unix.cs" />
+    <Compile Include="$(CommonPath)System\Net\InteropIPAddressExtensions.Unix.cs"
+             Link="Common\System\Net\InteropIPAddressExtensions.Unix.cs" />
+    <Compile Include="$(CommonPath)System\Net\SocketAddressPal.Unix.cs"
+             Link="Common\System\Net\Internals\SocketAddressPal.Unix.cs" />
+    <Compile Include="$(CommonPath)System\Net\SocketProtocolSupportPal.Unix.cs"
+             Link="Common\System\Net\SocketProtocolSupportPal.Unix" />
+    <Compile Include="$(CommonPath)Interop\Unix\Interop.Errors.cs"
+             Link="Common\Interop\CoreLib\Unix\Interop.Errors.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\Interop.Libraries.cs"
+             Link="Common\Interop\Unix\Interop.Libraries.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Close.cs"
+             Link="Common\Interop\Unix\System.Native\Interop.Close.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.GetNameInfo.cs"
+             Link="Common\Interop\Unix\System.Native\Interop.GetNameInfo.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.HostEntry.cs"
+             Link="Common\Interop\Unix\System.Native\Interop.HostEntries.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.IPAddress.cs"
+             Link="Common\Interop\Unix\System.Native\Interop.IPAddress.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Socket.cs"
+             Link="Common\Interop\Unix\System.Native\Interop.Socket.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.SocketAddress.cs"
+             Link="Common\Interop\Unix\System.Native\Interop.SocketAddress.cs" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'browser'">
     <Compile Include="System\Net\Dns.Browser.cs" />
   </ItemGroup>
 

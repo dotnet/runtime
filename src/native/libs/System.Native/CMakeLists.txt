@@ -24,6 +24,7 @@ set(NATIVE_SOURCES
     pal_io.c
     pal_maphardwaretype.c
     pal_memory.c
+    pal_networking.c
     pal_networkstatistics.c
     pal_random.c
     pal_runtimeinformation.c
@@ -42,7 +43,6 @@ if (NOT CLR_CMAKE_TARGET_WASI)
     list (APPEND NATIVE_SOURCES
         pal_dynamicload.c
         pal_mount.c
-        pal_networking.c
         pal_process.c
         pal_signal.c
         pal_threading.c
@@ -52,7 +52,6 @@ else()
     list (APPEND NATIVE_SOURCES
         pal_dynamicload_wasi.c
         pal_mount_wasi.c
-        pal_networking_wasi.c
         pal_process_wasi.c
         pal_signal_wasi.c
         pal_threading_wasi.c

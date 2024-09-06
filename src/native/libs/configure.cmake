@@ -562,7 +562,10 @@ elseif(CLR_CMAKE_TARGET_ANDROID)
     unset(HAVE_ALIGNED_ALLOC) # only exists on newer Android
     set(HAVE_CLOCK_MONOTONIC 1)
     set(HAVE_CLOCK_REALTIME 1)
-elseif(CLR_CMAKE_TARGET_BROWSER OR CLR_CMAKE_TARGET_WASI)
+elseif(CLR_CMAKE_TARGET_WASI)
+    set(HAVE_FORK 0)
+    set(HAVE_GETIFADDRS 0)
+elseif(CLR_CMAKE_TARGET_BROWSER)
     set(HAVE_FORK 0)
 else()
     check_symbol_exists(
