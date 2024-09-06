@@ -20824,7 +20824,7 @@ GenTree* Compiler::gtNewSimdBinOpNode(
                 // and return the correct fallback intrinsic.
                 if ((op != GT_LSH) && (op2->AsIntCon()->IconValue() == 0))
                 {
-                    op2 = gtNewSimdCreateBroadcastNode(type, op2, simdBaseJitType, simdSize);
+                    op2 = gtNewZeroConNode(type);
                 }
 #endif // TARGET_ARM64
             }
