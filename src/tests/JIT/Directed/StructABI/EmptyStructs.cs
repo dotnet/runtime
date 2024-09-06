@@ -1870,18 +1870,17 @@ public static class Program
 
 	public struct FloatFloatEmpty
 	{
-		public float Float0;
-		public float Float1;
+		public FloatFloat FloatFloat0;
 		public Empty Empty0;
 
 		public static FloatFloatEmpty Get()
-			=> new FloatFloatEmpty {Float0 = 2.71828f, Float1 = 3.14159f };
+			=> new FloatFloatEmpty { FloatFloat0 = FloatFloat.Get() };
 
 		public override bool Equals(object other)
-			=> other is FloatFloatEmpty o && Float0 == o.Float0 && Float1 == o.Float1;
+			=> other is FloatFloatEmpty o && FloatFloat0.Equals(o.FloatFloat0);
 
 		public override string ToString()
-			=> $"{{Float0:{Float0}, Float0:{Float0}}}";
+			=> $"{{FloatFloat0:{FloatFloat0}}}";
 	}
 
 	public struct FloatEmpty8
