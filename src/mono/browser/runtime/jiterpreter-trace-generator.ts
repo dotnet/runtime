@@ -3978,9 +3978,13 @@ function emit_atomics (
 ) {
     if (opcode === MintOpcode.MINT_MONO_MEMORY_BARRIER) {
         if (WasmEnableThreads) {
+            // Mono memory barriers use sync_synchronize which generates atomic.fence on clang,
+            //  provided you pass -pthread at compile time
             builder.appendAtomic(WasmAtomicOpcode.atomic_fence);
             // The text format and other parts of the spec say atomic.fence has no operands,
-            //  but the binary encoding requires a dummy zero byte for some reason
+            //  but the binary encoding contains a byte specifying whether the barrier is
+            //  sequentially consistent (0) or acquire-release (1)
+            // Mono memory barriers are sync_synchronize which is sequentially consistent.
             builder.appendU8(0);
         }
         return true;
