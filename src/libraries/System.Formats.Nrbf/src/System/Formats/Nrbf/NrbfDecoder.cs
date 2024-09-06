@@ -258,7 +258,7 @@ public static class NrbfDecoder
             PrimitiveType.Boolean => new MemberPrimitiveTypedRecord<bool>(reader.ReadBoolean()),
             PrimitiveType.Byte => new MemberPrimitiveTypedRecord<byte>(reader.ReadByte()),
             PrimitiveType.SByte => new MemberPrimitiveTypedRecord<sbyte>(reader.ReadSByte()),
-            PrimitiveType.Char => new MemberPrimitiveTypedRecord<char>(reader.ReadChar()),
+            PrimitiveType.Char => new MemberPrimitiveTypedRecord<char>(reader.ParseChar()),
             PrimitiveType.Int16 => new MemberPrimitiveTypedRecord<short>(reader.ReadInt16()),
             PrimitiveType.UInt16 => new MemberPrimitiveTypedRecord<ushort>(reader.ReadUInt16()),
             PrimitiveType.Int32 => new MemberPrimitiveTypedRecord<int>(reader.ReadInt32()),

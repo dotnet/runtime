@@ -557,6 +557,29 @@ public class InvalidInputTests : ReadTests
         writer.Write((byte)BinaryType.Primitive);
         writer.Write((byte)PrimitiveType.Decimal);
         writer.Write(textRepresentation);
+        writer.Write((byte)SerializationRecordType.MessageEnd);
+
+        stream.Position = 0;
+
+        Assert.Throws<SerializationException>(() => NrbfDecoder.Decode(stream));
+    }
+
+    [Fact]
+    public void SurrogateCharacter()
+    {
+        using MemoryStream stream = new();
+        BinaryWriter writer = new(stream, Encoding.UTF8);
+
+        WriteSerializedStreamHeader(writer);
+        writer.Write((byte)SerializationRecordType.SystemClassWithMembersAndTypes);
+        writer.Write(1); // root record Id
+        writer.Write("ClassWithCharField"); // type name
+        writer.Write(1); // member count
+        writer.Write("memberName");
+        writer.Write((byte)BinaryType.Primitive);
+        writer.Write((byte)PrimitiveType.Char);
+        writer.Write((byte)0xC0); // a surrogate character
+        writer.Write((byte)SerializationRecordType.MessageEnd);
 
         stream.Position = 0;
 

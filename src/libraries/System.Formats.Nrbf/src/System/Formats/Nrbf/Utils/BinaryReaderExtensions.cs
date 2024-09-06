@@ -77,7 +77,7 @@ internal static class BinaryReaderExtensions
             PrimitiveType.Boolean => reader.ReadBoolean(),
             PrimitiveType.Byte => reader.ReadByte(),
             PrimitiveType.SByte => reader.ReadSByte(),
-            PrimitiveType.Char => reader.ReadChar(),
+            PrimitiveType.Char => reader.ParseChar(),
             PrimitiveType.Int16 => reader.ReadInt16(),
             PrimitiveType.UInt16 => reader.ReadUInt16(),
             PrimitiveType.Int32 => reader.ReadInt32(),
@@ -101,6 +101,18 @@ internal static class BinaryReaderExtensions
         }
 
         return result;
+    }
+
+    internal static char ParseChar(this BinaryReader reader)
+    {
+        try
+        {
+            return reader.ReadChar();
+        }
+        catch (ArgumentException) // A surrogate character was read.
+        {
+            throw new SerializationException(SR.Serialization_SurrogateCharacter);
+        }
     }
 
     /// <summary>

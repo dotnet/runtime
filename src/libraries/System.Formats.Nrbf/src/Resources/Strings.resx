@@ -165,4 +165,7 @@
   <data name="Serialization_InvalidFormat" xml:space="preserve">
     <value>Invalid format.</value>
   </data>
+  <data name="Serialization_SurrogateCharacter" xml:space="preserve">
+    <value>A surrogate character was read.</value>
+  </data>
 </root>
