@@ -457,36 +457,17 @@ public:
     //
     // Initialization/shutdown routines for every instance of an BaseDomain.
 
-    BaseDomain();
+    BaseDomain() = default;
     virtual ~BaseDomain() {}
 
     virtual BOOL IsAppDomain()    { LIMITED_METHOD_DAC_CONTRACT; return FALSE; }
 
-    PTR_LoaderAllocator GetLoaderAllocator();
     virtual PTR_AppDomain AsAppDomain()
     {
         LIMITED_METHOD_CONTRACT;
         _ASSERTE(!"Not an AppDomain");
         return NULL;
     }
-
-    STRINGREF *IsStringInterned(STRINGREF *pString);
-    STRINGREF *GetOrInternString(STRINGREF *pString);
-
-    // Returns an array of OBJECTREF* that can be used to store domain specific data.
-    // Statics and reflection info (Types, MemberInfo,..) are stored this way
-    // If pStaticsInfo != 0, allocation will only take place if GC statics in the DynamicStaticsInfo are NULL (and the allocation
-    // will be properly serialized)
-    OBJECTREF *AllocateObjRefPtrsInLargeTable(int nRequested, DynamicStaticsInfo* pStaticsInfo = NULL, MethodTable *pMTToFillWithStaticBoxes = NULL, bool isClassInitdeByUpdatingStaticPointer = false);
-
-protected:
-
-    //****************************************************************************************
-    // Helper method to initialize the large heap handle table.
-    void InitPinnedHeapHandleTable();
-
-    // The pinned heap handle table.
-    PinnedHeapHandleTable       *m_pPinnedHeapHandleTable;
 
 #ifdef DACCESS_COMPILE
 public:
@@ -751,6 +732,11 @@ public:
 
     virtual BOOL IsAppDomain() { LIMITED_METHOD_DAC_CONTRACT; return TRUE; }
     virtual PTR_AppDomain AsAppDomain() { LIMITED_METHOD_CONTRACT; return dac_cast<PTR_AppDomain>(this); }
+
+    PTR_LoaderAllocator GetLoaderAllocator();
+
+    STRINGREF *IsStringInterned(STRINGREF *pString);
+    STRINGREF *GetOrInternString(STRINGREF *pString);
 
     OBJECTREF GetRawExposedObject() { LIMITED_METHOD_CONTRACT; return NULL; }
     OBJECTHANDLE GetRawExposedObjectHandleForDebugger() { LIMITED_METHOD_DAC_CONTRACT; return (OBJECTHANDLE)NULL; }
@@ -1256,6 +1242,12 @@ public:
     void NotifyDebuggerUnload();
 #endif // DEBUGGING_SUPPORTED
 
+public:
+    // Returns an array of OBJECTREF* that can be used to store domain specific data.
+    // Statics and reflection info (Types, MemberInfo,..) are stored this way
+    // If pStaticsInfo != 0, allocation will only take place if GC statics in the DynamicStaticsInfo are NULL (and the allocation
+    // will be properly serialized)
+    OBJECTREF *AllocateObjRefPtrsInLargeTable(int nRequested, DynamicStaticsInfo* pStaticsInfo = NULL, MethodTable *pMTToFillWithStaticBoxes = NULL, bool isClassInitdeByUpdatingStaticPointer = false);
 #ifndef DACCESS_COMPILE
     OBJECTREF* AllocateStaticFieldObjRefPtrs(int nRequested)
     {
@@ -1265,7 +1257,16 @@ public:
     }
 #endif // DACCESS_COMPILE
 
-    void              EnumStaticGCRefs(promote_func* fn, ScanContext* sc);
+private:
+    // Helper method to initialize the large heap handle table.
+    void InitPinnedHeapHandleTable();
+
+private:
+    // The pinned heap handle table.
+    PinnedHeapHandleTable       *m_pPinnedHeapHandleTable;
+
+public:
+    void EnumStaticGCRefs(promote_func* fn, ScanContext* sc);
 
     void SetupSharedStatics();
 
