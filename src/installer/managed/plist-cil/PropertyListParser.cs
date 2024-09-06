@@ -1,27 +1,5 @@
-﻿// plist-cil - An open source library to parse and generate property lists for .NET
-// Copyright (C) 2015 Natalia Portillo
-//
-// This code is based on:
-// plist - An open source library to parse and generate property lists
-// Copyright (C) 2014 Daniel Dreibrodt
-//
-// Permission is hereby granted, free of charge, to any person obtaining a copy
-// of this software and associated documentation files (the "Software"), to deal
-// in the Software without restriction, including without limitation the rights
-// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-// copies of the Software, and to permit persons to whom the Software is
-// furnished to do so, subject to the following conditions:
-//
-// The above copyright notice and this permission notice shall be included in
-// all copies or substantial portions of the Software.
-//
-// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-// SOFTWARE.
+﻿// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
 using System.IO;
@@ -37,16 +15,16 @@ namespace Claunia.PropertyList
     /// @author Natalia Portillo
     public static class PropertyListParser
     {
-        const int TYPE_XML           = 0;
-        const int TYPE_BINARY        = 1;
-        const int TYPE_ASCII         = 2;
-        const int TYPE_ERROR_BLANK   = 10;
-        const int TYPE_ERROR_UNKNOWN = 11;
+        private const int TYPE_XML           = 0;
+        private const int TYPE_BINARY        = 1;
+        private const int TYPE_ASCII         = 2;
+        private const int TYPE_ERROR_BLANK   = 10;
+        private const int TYPE_ERROR_UNKNOWN = 11;
 
         /// <summary>Determines the type of a property list by means of the first bytes of its data</summary>
         /// <returns>The type of the property list</returns>
         /// <param name="dataBeginning">The very first bytes of data of the property list (minus any whitespace) as a string</param>
-        static int DetermineTypeExact(ReadOnlySpan<byte> dataBeginning)
+        private static int DetermineTypeExact(ReadOnlySpan<byte> dataBeginning)
         {
             if(dataBeginning.Length == 0)
                 return TYPE_ERROR_BLANK;
@@ -74,7 +52,7 @@ namespace Claunia.PropertyList
         /// <summary>Determines the type of a property list by means of the first bytes of its data</summary>
         /// <returns>The very first bytes of data of the property list (minus any whitespace)</returns>
         /// <param name="bytes">The type of the property list</param>
-        static int DetermineType(ReadOnlySpan<byte> bytes)
+        private static int DetermineType(ReadOnlySpan<byte> bytes)
         {
             if(bytes.Length == 0)
                 return TYPE_ERROR_BLANK;
@@ -104,7 +82,7 @@ namespace Claunia.PropertyList
         ///     An input stream pointing to the beginning of the property list data. The stream will be reset to the
         ///     beginning of the property list data after the type has been determined.
         /// </param>
-        static int DetermineType(Stream fs, long offset = 0)
+        private static int DetermineType(Stream fs, long offset = 0)
         {
             if(fs.Length == 0)
                 return TYPE_ERROR_BLANK;

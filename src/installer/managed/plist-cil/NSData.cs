@@ -1,27 +1,5 @@
-﻿// plist-cil - An open source library to parse and generate property lists for .NET
-// Copyright (C) 2015 Natalia Portillo
-//
-// This code is based on:
-// plist - An open source library to parse and generate property lists
-// Copyright (C) 2014 Daniel Dreibrodt
-//
-// Permission is hereby granted, free of charge, to any person obtaining a copy
-// of this software and associated documentation files (the "Software"), to deal
-// in the Software without restriction, including without limitation the rights
-// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-// copies of the Software, and to permit persons to whom the Software is
-// furnished to do so, subject to the following conditions:
-//
-// The above copyright notice and this permission notice shall be included in
-// all copies or substantial portions of the Software.
-//
-// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-// SOFTWARE.
+﻿// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
 using System.IO;
@@ -36,7 +14,7 @@ namespace Claunia.PropertyList
     {
         // In the XML property list format, the base-64 encoded data is split across multiple lines.
         // Each line contains 68 characters.
-        const int DataLineLength = 68;
+        private const int DataLineLength = 68;
 
         /// <summary>Creates the NSData object from the binary representation of it.</summary>
         /// <param name="bytes">The raw data contained in the NSData object.</param>
@@ -57,7 +35,11 @@ namespace Claunia.PropertyList
 
             using FileStream raf = file.OpenRead();
 
-            raf.Read(Bytes, 0, (int)file.Length);
+            int totalBytesRead = 0;
+            while (totalBytesRead < Bytes.Length)
+            {
+                totalBytesRead += raf.Read(Bytes, totalBytesRead, (int)file.Length - totalBytesRead);
+            }
         }
 
         /// <summary>The bytes contained in this NSData object.</summary>
@@ -85,15 +67,15 @@ namespace Claunia.PropertyList
         public string GetBase64EncodedData() => Convert.ToBase64String(Bytes);
 
         /// <summary>
-        ///     Determines whether the specified <see cref="System.Object" /> is equal to the current
+        ///     Determines whether the specified <see cref="object" /> is equal to the current
         ///     <see cref="Claunia.PropertyList.NSData" />.
         /// </summary>
         /// <param name="obj">
-        ///     The <see cref="System.Object" /> to compare with the current
+        ///     The <see cref="object" /> to compare with the current
         ///     <see cref="Claunia.PropertyList.NSData" />.
         /// </param>
         /// <returns>
-        ///     <c>true</c> if the specified <see cref="System.Object" /> is equal to the current
+        ///     <c>true</c> if the specified <see cref="object" /> is equal to the current
         ///     <see cref="Claunia.PropertyList.NSData" />; otherwise, <c>false</c>.
         /// </returns>
         public override bool Equals(object obj) =>
@@ -141,7 +123,7 @@ namespace Claunia.PropertyList
         {
             Indent(ascii, level);
             ascii.Append(ASCIIPropertyListParser.DATA_BEGIN_TOKEN);
-            int indexOfLastNewLine = ascii.ToString().LastIndexOf(NEWLINE, StringComparison.Ordinal);
+            int indexOfLastNewLine = ascii.ToString().LastIndexOf(NEWLINE);
 
             for(int i = 0; i < Bytes.Length; i++)
             {
@@ -155,7 +137,7 @@ namespace Claunia.PropertyList
                 }
                 else if((i + 1) % 2 == 0 &&
                         i           != Bytes.Length - 1)
-                    ascii.Append(" ");
+                    ascii.Append(' ');
             }
 
             ascii.Append(ASCIIPropertyListParser.DATA_END_TOKEN);

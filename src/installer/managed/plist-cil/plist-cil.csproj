@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFrameworks>netstandard2.0;$(NetCurrent)</TargetFrameworks>
@@ -16,7 +16,7 @@
     <EmbedUntrackedSources>true</EmbedUntrackedSources>
     <AllowedOutputExtensionsInPackageBuildOutputFolder>$(AllowedOutputExtensionsInPackageBuildOutputFolder);.pdb</AllowedOutputExtensionsInPackageBuildOutputFolder>
     <PackageVersion>2.2</PackageVersion>
-    <NoWarn>NoWarn;IDE0073;SA1518;SA1028;SA1020;IDE0170;IDE0060;CA1822;SA1400;RS1036;CA1852;IDE0074;SA1517;CA1822;SA1400;CA1859;CA2265;CA1834;IDE0059;CA2022;CA1507;CA1802;SYSLIB0051;CA1847;CA1864;CA1846;SYSLIB1045</NoWarn>
+    <NoWarn>$(NoWarn);CA1847;CA1846;CA1864;SYSLIB1045</NoWarn>
   </PropertyGroup>
 
   <PropertyGroup>

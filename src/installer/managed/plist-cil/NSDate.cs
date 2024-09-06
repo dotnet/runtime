@@ -1,27 +1,5 @@
-﻿// plist-cil - An open source library to parse and generate property lists for .NET
-// Copyright (C) 2015 Natalia Portillo
-//
-// This code is based on:
-// plist - An open source library to parse and generate property lists
-// Copyright (C) 2014 Daniel Dreibrodt
-//
-// Permission is hereby granted, free of charge, to any person obtaining a copy
-// of this software and associated documentation files (the "Software"), to deal
-// in the Software without restriction, including without limitation the rights
-// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-// copies of the Software, and to permit persons to whom the Software is
-// furnished to do so, subject to the following conditions:
-//
-// The above copyright notice and this permission notice shall be included in
-// all copies or substantial portions of the Software.
-//
-// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-// SOFTWARE.
+﻿// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
 using System.Globalization;
@@ -34,18 +12,17 @@ namespace Claunia.PropertyList
     /// @author Natalia Portillo
     public class NSDate : NSObject
     {
-        static readonly DateTime EPOCH = new(2001, 1, 1, 0, 0, 0, DateTimeKind.Utc);
+        private static readonly DateTime EPOCH = new(2001, 1, 1, 0, 0, 0, DateTimeKind.Utc);
 
         // The datetime ends with 'Z', which indicates UTC time. To make sure .NET
         // understands the 'Z' character as a timezone, specify the 'K' format string.
-        static readonly string sdfDefault = "yyyy-MM-dd'T'HH:mm:ssK";
-        static readonly string sdfGnuStep = "yyyy-MM-dd HH:mm:ss zzz";
-        static readonly string[] sdfAll =
+        private const string sdfDefault = "yyyy-MM-dd'T'HH:mm:ssK";
+        private const string sdfGnuStep = "yyyy-MM-dd HH:mm:ss zzz";
+        private static readonly string[] sdfAll =
         {
             sdfDefault, sdfGnuStep
         };
-
-        static readonly CultureInfo provider = CultureInfo.InvariantCulture;
+        private static readonly CultureInfo provider = CultureInfo.InvariantCulture;
 
         /// <summary>Creates a date from its binary representation.</summary>
         /// <param name="bytes">bytes The date bytes</param>
@@ -74,7 +51,7 @@ namespace Claunia.PropertyList
         /// <returns>The parsed Date</returns>
         /// <param name="textRepresentation">The date string as found in the XML property list</param>
         /// <exception cref="FormatException">Given string cannot be parsed</exception>
-        static DateTime ParseDateString(string textRepresentation) =>
+        private static DateTime ParseDateString(string textRepresentation) =>
             DateTime.ParseExact(textRepresentation, sdfAll, provider, DateTimeStyles.None);
 
         /// <summary>
@@ -91,18 +68,18 @@ namespace Claunia.PropertyList
         /// </summary>
         /// <param name="date">The date which should be represented.</param>
         /// <returns>The string representation of the date.</returns>
-        static string MakeDateStringGnuStep(DateTime date) => date.ToString(sdfGnuStep, provider);
+        private static string MakeDateStringGnuStep(DateTime date) => date.ToString(sdfGnuStep, provider);
 
         /// <summary>
-        ///     Determines whether the specified <see cref="System.Object" /> is equal to the current
+        ///     Determines whether the specified <see cref="object" /> is equal to the current
         ///     <see cref="Claunia.PropertyList.NSDate" />.
         /// </summary>
         /// <param name="obj">
-        ///     The <see cref="System.Object" /> to compare with the current
+        ///     The <see cref="object" /> to compare with the current
         ///     <see cref="Claunia.PropertyList.NSDate" />.
         /// </param>
         /// <returns>
-        ///     <c>true</c> if the specified <see cref="System.Object" /> is equal to the current
+        ///     <c>true</c> if the specified <see cref="object" /> is equal to the current
         ///     <see cref="Claunia.PropertyList.NSDate" />; otherwise, <c>false</c>.
         /// </returns>
         public override bool Equals(object obj) => obj.GetType().Equals(GetType()) && Date.Equals(((NSDate)obj).Date);
@@ -135,9 +112,9 @@ namespace Claunia.PropertyList
         internal override void ToASCII(StringBuilder ascii, int level)
         {
             Indent(ascii, level);
-            ascii.Append("\"");
+            ascii.Append('"');
             ascii.Append(MakeDateString(Date));
-            ascii.Append("\"");
+            ascii.Append('"');
         }
 
         internal override void ToASCIIGnuStep(StringBuilder ascii, int level)
@@ -145,7 +122,7 @@ namespace Claunia.PropertyList
             Indent(ascii, level);
             ascii.Append("<*D");
             ascii.Append(MakeDateStringGnuStep(Date));
-            ascii.Append(">");
+            ascii.Append('>');
         }
 
         /// <summary>

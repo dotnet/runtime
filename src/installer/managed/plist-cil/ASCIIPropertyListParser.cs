@@ -1,27 +1,5 @@
-﻿// plist-cil - An open source library to parse and generate property lists for .NET
-// Copyright (C) 2015 Natalia Portillo
-//
-// This code is based on:
-// plist - An open source library to parse and generate property lists
-// Copyright (C) 2014 Daniel Dreibrodt
-//
-// Permission is hereby granted, free of charge, to any person obtaining a copy
-// of this software and associated documentation files (the "Software"), to deal
-// in the Software without restriction, including without limitation the rights
-// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-// copies of the Software, and to permit persons to whom the Software is
-// furnished to do so, subject to the following conditions:
-//
-// The above copyright notice and this permission notice shall be included in
-// all copies or substantial portions of the Software.
-//
-// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-// SOFTWARE.
+﻿// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
 using System.Collections.Generic;
@@ -121,11 +99,12 @@ namespace Claunia.PropertyList
         /**
         * Property list source data
         */
-        readonly char[] data;
+        private readonly char[] data;
+
         /**
         * Current parsing index
         */
-        int index;
+        private int index;
 
         /**
         * Only allow subclasses to change instantiation.
@@ -134,7 +113,7 @@ namespace Claunia.PropertyList
 
         /// <summary>Creates a new parser for the given property list content.</summary>
         /// <param name="propertyListContent">The content of the property list that is to be parsed.</param>
-        ASCIIPropertyListParser(char[] propertyListContent) => data = propertyListContent;
+        private ASCIIPropertyListParser(char[] propertyListContent) => data = propertyListContent;
 
         /// <summary>Parses an ASCII property list file.</summary>
         /// <param name="f">The ASCII property list file..</param>
@@ -198,7 +177,7 @@ namespace Claunia.PropertyList
         /// <summary>Checks whether the given sequence of symbols can be accepted.</summary>
         /// <returns>Whether the given tokens occur at the current parsing position.</returns>
         /// <param name="sequence">The sequence of tokens to look for.</param>
-        bool AcceptSequence(params char[] sequence)
+        private bool AcceptSequence(params char[] sequence)
         {
             for(int i = 0; i < sequence.Length; i++)
                 if(data[index + i] != sequence[i])
@@ -213,7 +192,7 @@ namespace Claunia.PropertyList
         /// </summary>
         /// <param name="acceptableSymbols">The symbols to check.</param>
         /// <returns>Whether one of the symbols can be accepted or not.</returns>
-        bool Accept(params char[] acceptableSymbols)
+        private bool Accept(params char[] acceptableSymbols)
         {
             bool symbolPresent = false;
 
@@ -229,12 +208,12 @@ namespace Claunia.PropertyList
         /// </summary>
         /// <param name="acceptableSymbol">The symbol to check.</param>
         /// <returns>Whether the symbol can be accepted or not.</returns>
-        bool Accept(char acceptableSymbol) => data[index] == acceptableSymbol;
+        private bool Accept(char acceptableSymbol) => data[index] == acceptableSymbol;
 
         /// <summary>Expects the input to have one of the given symbols at the current parsing position.</summary>
         /// <param name="expectedSymbols">The expected symbols.</param>
         /// <exception cref="FormatException">If none of the expected symbols could be found.</exception>
-        void Expect(params char[] expectedSymbols)
+        private void Expect(params char[] expectedSymbols)
         {
             if(Accept(expectedSymbols))
                 return;
@@ -252,7 +231,7 @@ namespace Claunia.PropertyList
         /// <summary>Expects the input to have the given symbol at the current parsing position.</summary>
         /// <param name="expectedSymbol">The expected symbol.</param>
         /// <exception cref="FormatException">If the expected symbol could be found.</exception>
-        void Expect(char expectedSymbol)
+        private void Expect(char expectedSymbol)
         {
             if(!Accept(expectedSymbol))
                 throw new FormatException($"Expected '{expectedSymbol}' but found '{data[index]}' at {index}");
@@ -261,7 +240,7 @@ namespace Claunia.PropertyList
         /// <summary>Reads an expected symbol.</summary>
         /// <param name="symbol">The symbol to read.</param>
         /// <exception cref="FormatException">If the expected symbol could not be read.</exception>
-        void Read(char symbol)
+        private void Read(char symbol)
         {
             Expect(symbol);
             index++;
@@ -270,16 +249,16 @@ namespace Claunia.PropertyList
         /**
      * Skips the current symbol.
      */
-        void Skip() => index++;
+        private void Skip() => index++;
 
         /// <summary>Skips several symbols</summary>
         /// <param name="numSymbols">The amount of symbols to skip.</param>
-        void Skip(int numSymbols) => index += numSymbols;
+        private void Skip(int numSymbols) => index += numSymbols;
 
         /**
      * Skips all whitespaces and comments from the current parsing position onward.
      */
-        void SkipWhitespacesAndComments()
+        private void SkipWhitespacesAndComments()
         {
             bool commentSkipped;
 
@@ -325,7 +304,7 @@ namespace Claunia.PropertyList
         /// <summary>Reads input until one of the given symbols is found.</summary>
         /// <returns>The input until one the given symbols.</returns>
         /// <param name="symbols">The symbols that can occur after the string to read.</param>
-        string ReadInputUntil(params char[] symbols)
+        private string ReadInputUntil(params char[] symbols)
         {
             string s = "";
 
@@ -341,7 +320,7 @@ namespace Claunia.PropertyList
         /// <summary>Reads input until the given symbol is found.</summary>
         /// <returns>The input until the given symbol.</returns>
         /// <param name="symbol">The symbol that can occur after the string to read.</param>
-        string ReadInputUntil(char symbol)
+        private string ReadInputUntil(char symbol)
         {
             string s = "";
 
@@ -384,7 +363,7 @@ namespace Claunia.PropertyList
         /// <summary>Parses the NSObject found at the current position in the property list data stream.</summary>
         /// <returns>The parsed NSObject.</returns>
         /// <seealso cref="ASCIIPropertyListParser.index" />
-        NSObject ParseObject()
+        private NSObject ParseObject()
         {
             switch(data[index])
             {
@@ -439,7 +418,7 @@ namespace Claunia.PropertyList
         ///     begin token has been read.
         /// </summary>
         /// <returns>The array found at the parsing position.</returns>
-        NSArray ParseArray()
+        private NSArray ParseArray()
         {
             //Skip begin token
             Skip();
@@ -470,7 +449,7 @@ namespace Claunia.PropertyList
         ///     dictionary begin token has been read.
         /// </summary>
         /// <returns>The dictionary found at the parsing position.</returns>
-        NSDictionary ParseDictionary()
+        private NSDictionary ParseDictionary()
         {
             //Skip begin token
             Skip();
@@ -508,7 +487,7 @@ namespace Claunia.PropertyList
         ///     NSNumber or NSDate. The prerequisite for calling this method is, that a data begin token has been read.
         /// </summary>
         /// <returns>The data object found at the parsing position.</returns>
-        NSObject ParseData()
+        private NSObject ParseData()
         {
             NSObject obj = null;
 
@@ -580,7 +559,7 @@ namespace Claunia.PropertyList
 
         /// <summary>Attempts to parse a plain string as a date if possible.</summary>
         /// <returns>A NSDate if the string represents such an object. Otherwise a NSString is returned.</returns>
-        NSObject ParseDateString()
+        private NSObject ParseDateString()
         {
             string numericalString = ParseString();
 
@@ -605,7 +584,7 @@ namespace Claunia.PropertyList
         ///     whitespace, delimiter token or assignment token.
         /// </summary>
         /// <returns>The string found at the current parsing position.</returns>
-        string ParseString() => ReadInputUntil(WHITESPACE_SPACE, WHITESPACE_TAB, WHITESPACE_NEWLINE,
+        private string ParseString() => ReadInputUntil(WHITESPACE_SPACE, WHITESPACE_TAB, WHITESPACE_NEWLINE,
                                                WHITESPACE_CARRIAGE_RETURN, ARRAY_ITEM_DELIMITER_TOKEN,
                                                DICTIONARY_ITEM_DELIMITER_TOKEN, DICTIONARY_ASSIGN_TOKEN,
                                                ARRAY_END_TOKEN);
@@ -616,7 +595,7 @@ namespace Claunia.PropertyList
         /// </summary>
         /// <returns>The quoted string found at the parsing method with all special characters unescaped.</returns>
         /// <exception cref="FormatException">If an error occured during parsing.</exception>
-        string ParseQuotedString()
+        private string ParseQuotedString()
         {
             //Skip begin token
             Skip();
@@ -667,8 +646,7 @@ namespace Claunia.PropertyList
         {
             List<byte> strBytes = new();
 
-            IEnumerable<char> characters = s.ToCharArray();
-            IEnumerator<char> c          = characters.GetEnumerator();
+            CharEnumerator c = s.GetEnumerator();
 
             while(c.MoveNext())
                 switch(c.Current)
@@ -721,7 +699,7 @@ namespace Claunia.PropertyList
         /// <returns>The unescaped character as a string.</returns>
         /// <param name="iterator">The string character iterator pointing to the first character after the backslash</param>
         /// <exception cref="EncoderFallbackException">If an invalid Unicode or ASCII escape sequence is found.</exception>
-        static string ParseEscapedSequence(IEnumerator<char> iterator)
+        private static string ParseEscapedSequence(CharEnumerator iterator)
         {
             iterator.MoveNext();
             char c = iterator.Current;

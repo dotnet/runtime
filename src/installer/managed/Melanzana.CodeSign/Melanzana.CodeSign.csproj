@@ -11,10 +11,11 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="System.Security.Cryptography.Pkcs" Version="$(SystemSecurityCryptographyPkcsVersion)" />
+    <!-- <PackageReference Include="System.Security.Cryptography.Pkcs" Version="$(SystemSecurityCryptographyPkcsVersion)" /> -->
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="$(LibrariesProjectRoot)\System.Security.Cryptography.Pkcs\src\System.Security.Cryptography.Pkcs.csproj" />
     <ProjectReference Include="$(LibrariesProjectRoot)\System.Formats.Asn1\src\System.Formats.Asn1.csproj" />
     <ProjectReference Include="..\Melanzana.BinaryFormat.Generator\Melanzana.BinaryFormat.Generator.csproj" PrivateAssets="all" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
     <ProjectReference Include="..\Melanzana.MachO\Melanzana.MachO.csproj" />

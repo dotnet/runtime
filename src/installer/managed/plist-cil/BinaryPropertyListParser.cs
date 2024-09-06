@@ -1,27 +1,5 @@
-﻿// plist-cil - An open source library to parse and generate property lists for .NET
-// Copyright (C) 2015 Natalia Portillo
-//
-// This code is based on:
-// plist - An open source library to parse and generate property lists
-// Copyright (C) 2014 Daniel Dreibrodt
-//
-// Permission is hereby granted, free of charge, to any person obtaining a copy
-// of this software and associated documentation files (the "Software"), to deal
-// in the Software without restriction, including without limitation the rights
-// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-// copies of the Software, and to permit persons to whom the Software is
-// furnished to do so, subject to the following conditions:
-//
-// The above copyright notice and this permission notice shall be included in
-// all copies or substantial portions of the Software.
-//
-// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-// SOFTWARE.
+﻿// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
 using System.Buffers.Binary;
@@ -46,19 +24,19 @@ namespace Claunia.PropertyList
     /// @author Natalia Portillo
     public class BinaryPropertyListParser
     {
-        static readonly Encoding utf16BigEndian = Encoding.GetEncoding("UTF-16BE");
+        private static readonly Encoding utf16BigEndian = Encoding.GetEncoding("UTF-16BE");
 
         /// <summary>Major version of the property list format</summary>
-        int majorVersion;
+        private int majorVersion;
 
         /// <summary>Minor version of the property list format</summary>
-        int minorVersion;
+        private int minorVersion;
 
         /// <summary>Length of an object reference in bytes</summary>
-        int objectRefSize;
+        private int objectRefSize;
 
         /// <summary>The table holding the information at which offset each object is found</summary>
-        int[] offsetTable;
+        private int[] offsetTable;
 
         /// <summary>Protected constructor so that instantiation is fully controlled by the static parse methods.</summary>
         /// <see cref="Parse(byte[])" />
@@ -398,10 +376,9 @@ namespace Claunia.PropertyList
         }
 
         /// <summary>Reads the length for arrays, sets and dictionaries.</summary>
-        /// <returns>An array with the length two. First entry is the length, second entry the offset at which the content starts.</returns>
         /// <param name="objInfo">Object information byte.</param>
         /// <param name="offset">Offset in the byte array at which the object is located.</param>
-        void ReadLengthAndOffset(ReadOnlySpan<byte> bytes, int objInfo, int offset, out int lengthValue,
+        private static void ReadLengthAndOffset(ReadOnlySpan<byte> bytes, int objInfo, int offset, out int lengthValue,
                                  out int offsetValue)
         {
             lengthValue = objInfo;
@@ -440,7 +417,7 @@ namespace Claunia.PropertyList
         /// <param name="bytes">Array containing the UTF-8 string.</param>
         /// <param name="offset">Offset in the array where the UTF-8 string resides.</param>
         /// <param name="numCharacters">How many UTF-8 characters are in the string.</param>
-        int CalculateUtf8StringLength(ReadOnlySpan<byte> bytes, int offset, int numCharacters)
+        private static int CalculateUtf8StringLength(ReadOnlySpan<byte> bytes, int offset, int numCharacters)
         {
             int length = 0;
 
@@ -507,11 +484,6 @@ namespace Claunia.PropertyList
         /// <param name="bytes">The bytes representing the long integer.</param>
         public static long ParseLong(ReadOnlySpan<byte> bytes)
         {
-            if(bytes == null)
-            {
-                throw new ArgumentNullException(nameof(bytes));
-            }
-
             if(bytes.Length == 0)
             {
                 throw new ArgumentOutOfRangeException(nameof(bytes));
@@ -565,11 +537,6 @@ namespace Claunia.PropertyList
         /// <param name="bytes">The bytes representing the double.</param>
         public static double ParseDouble(ReadOnlySpan<byte> bytes)
         {
-            if(bytes == null)
-            {
-                throw new ArgumentNullException(nameof(bytes));
-            }
-
             return bytes.Length switch
             {
                 8 => BitConverter.Int64BitsToDouble(ParseLong(bytes)),

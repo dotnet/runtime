@@ -1,4 +1,7 @@
-﻿using System;
+﻿// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
+using System;
 using System.Collections.Generic;
 
 namespace Claunia.PropertyList
@@ -9,7 +12,7 @@ namespace Claunia.PropertyList
         ///     The equality comparer which is used when adding an object to the <see cref="BinaryPropertyListWriter.idMap" />
         ///     . In most cases, objects are always added. The only exception are very specific strings, which are only added once.
         /// </summary>
-        class AddObjectEqualityComparer : EqualityComparer<NSObject>
+        private sealed class AddObjectEqualityComparer : EqualityComparer<NSObject>
         {
             public override bool Equals(NSObject x, NSObject y)
             {

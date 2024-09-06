@@ -1,27 +1,5 @@
-﻿// plist-cil - An open source library to parse and generate property lists for .NET
-// Copyright (C) 2015 Natalia Portillo
-//
-// This code is based on:
-// plist - An open source library to parse and generate property lists
-// Copyright (C) 2014 Daniel Dreibrodt
-//
-// Permission is hereby granted, free of charge, to any person obtaining a copy
-// of this software and associated documentation files (the "Software"), to deal
-// in the Software without restriction, including without limitation the rights
-// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-// copies of the Software, and to permit persons to whom the Software is
-// furnished to do so, subject to the following conditions:
-//
-// The above copyright notice and this permission notice shall be included in
-// all copies or substantial portions of the Software.
-//
-// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-// SOFTWARE.
+﻿// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
 using System.Globalization;
@@ -48,13 +26,12 @@ namespace Claunia.PropertyList
 
         /// <summary>Indicates that the number's value is bool.</summary>
         public const int BOOLEAN = 2;
-        readonly bool   boolValue;
-        readonly double doubleValue;
-
-        readonly long longValue;
+        private readonly bool   boolValue;
+        private readonly double doubleValue;
+        private readonly long longValue;
 
         //Holds the current type of this number
-        readonly int type;
+        private readonly int type;
 
         /// <summary>
         ///     Parses integers and real numbers from their binary representation.
@@ -308,10 +285,10 @@ namespace Claunia.PropertyList
         }
 
         /// <summary>
-        ///     Returns a <see cref="System.String" /> that represents the current
+        ///     Returns a <see cref="string" /> that represents the current
         ///     <see cref="Claunia.PropertyList.NSNumber" />.
         /// </summary>
-        /// <returns>A <see cref="System.String" /> that represents the current <see cref="Claunia.PropertyList.NSNumber" />.</returns>
+        /// <returns>A <see cref="string" /> that represents the current <see cref="Claunia.PropertyList.NSNumber" />.</returns>
         public override string ToString() => type switch
         {
             INTEGER => ToLong().ToString(),
@@ -426,7 +403,7 @@ namespace Claunia.PropertyList
                 {
                     ascii.Append("<*I");
                     ascii.Append(ToString());
-                    ascii.Append(">");
+                    ascii.Append('>');
 
                     break;
                 }
@@ -434,7 +411,7 @@ namespace Claunia.PropertyList
                 {
                     ascii.Append("<*R");
                     ascii.Append(ToString());
-                    ascii.Append(">");
+                    ascii.Append('>');
 
                     break;
                 }
@@ -450,10 +427,10 @@ namespace Claunia.PropertyList
         /// <summary>Determines if an object is a number. Substitutes .NET's Number class comparison</summary>
         /// <returns><c>true</c> if it is a number.</returns>
         /// <param name="o">Object.</param>
-        static bool IsNumber(object o) =>
+        private static bool IsNumber(object o) =>
             o is sbyte or byte or short or ushort or int or uint or long or ulong or float or double or decimal;
 
-        static double GetDoubleFromObject(object o) => o switch
+        private static double GetDoubleFromObject(object o) => o switch
         {
             sbyte @sbyte     => @sbyte,
             byte b           => b,

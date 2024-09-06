@@ -1,27 +1,5 @@
-﻿// plist-cil - An open source library to parse and generate property lists for .NET
-// Copyright (C) 2015 Natalia Portillo
-//
-// This code is based on:
-// plist - An open source library to parse and generate property lists
-// Copyright (C) 2014 Daniel Dreibrodt
-//
-// Permission is hereby granted, free of charge, to any person obtaining a copy
-// of this software and associated documentation files (the "Software"), to deal
-// in the Software without restriction, including without limitation the rights
-// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-// copies of the Software, and to permit persons to whom the Software is
-// furnished to do so, subject to the following conditions:
-//
-// The above copyright notice and this permission notice shall be included in
-// all copies or substantial portions of the Software.
-//
-// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-// SOFTWARE.
+﻿// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
 using System.Collections.Generic;
@@ -41,16 +19,16 @@ namespace Claunia.PropertyList
         ///     The newline character used for generating the XML output. To maintain compatibility with the Apple format,
         ///     only a newline character is used (as opposed to cr+lf which is normally used on Windows).
         /// </summary>
-        internal static readonly string NEWLINE = "\n";
+        internal const char NEWLINE = '\n';
 
         /// <summary>The indentation character used for generating the XML output. This is the tabulator character.</summary>
-        static readonly string INDENT = "\t";
+        private const char INDENT = '\t';
 
         /// <summary>
         ///     The maximum length of the text lines to be used when generating ASCII property lists. But this number is only
         ///     a guideline it is not guaranteed that it will not be overstepped.
         /// </summary>
-        internal static readonly int ASCII_LINE_LENGTH = 80;
+        internal const int ASCII_LINE_LENGTH = 80;
 
         /// <summary>Generates the XML representation of the object (without XML headers or enclosing plist-tags).</summary>
         /// <param name="xml">The StringBuilder onto which the XML representation is appended.</param>

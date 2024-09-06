@@ -4,6 +4,7 @@
 using System.Formats.Asn1;
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
+using System.Linq;
 
 namespace Melanzana.CodeSign
 {
@@ -46,7 +47,14 @@ namespace Melanzana.CodeSign
             // 1.2.840.113635.100.6.1.13 (Developer ID)
             // 1.2.840.113635.100.6.1.7 (Distribution)
             // 1.2.840.113635.100.6.1.4 (iPhone Distribution)
-            return certificate.Extensions.Any(e => e.Oid?.Value?.StartsWith("1.2.840.113635.100.6.1.") ?? false);
+            foreach(var extension in certificate.Extensions)
+            {
+                if (extension.Oid?.Value?.StartsWith("1.2.840.113635.100.6.1.") == true)
+                {
+                    return true;
+                }
+            }
+            return false;
         }
 
         public static string GetTeamId(this X509Certificate2 certificate)

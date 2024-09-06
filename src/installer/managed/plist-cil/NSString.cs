@@ -1,27 +1,5 @@
-﻿// plist-cil - An open source library to parse and generate property lists for .NET
-// Copyright (C) 2015 Natalia Portillo
-//
-// This code is based on:
-// plist - An open source library to parse and generate property lists
-// Copyright (C) 2014 Daniel Dreibrodt
-//
-// Permission is hereby granted, free of charge, to any person obtaining a copy
-// of this software and associated documentation files (the "Software"), to deal
-// in the Software without restriction, including without limitation the rights
-// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-// copies of the Software, and to permit persons to whom the Software is
-// furnished to do so, subject to the following conditions:
-//
-// The above copyright notice and this permission notice shall be included in
-// all copies or substantial portions of the Software.
-//
-// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-// SOFTWARE.
+﻿// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
 using System.Text;
@@ -33,7 +11,7 @@ namespace Claunia.PropertyList
     /// @author Natalia Portillo
     public class NSString : NSObject, IComparable
     {
-        static Encoding asciiEncoder, utf16beEncoder, utf8Encoder;
+        private static Encoding asciiEncoder, utf16beEncoder, utf8Encoder;
 
         /// <summary>Creates a NSString from its binary representation.</summary>
         /// <param name="bytes">The binary representation.</param>
@@ -89,15 +67,15 @@ namespace Claunia.PropertyList
         public void Prepend(NSString s) => Prepend(s.Content);
 
         /// <summary>
-        ///     Determines whether the specified <see cref="System.Object" /> is equal to the current
+        ///     Determines whether the specified <see cref="object" /> is equal to the current
         ///     <see cref="Claunia.PropertyList.NSString" />.
         /// </summary>
         /// <param name="obj">
-        ///     The <see cref="System.Object" /> to compare with the current
+        ///     The <see cref="object" /> to compare with the current
         ///     <see cref="Claunia.PropertyList.NSString" />.
         /// </param>
         /// <returns>
-        ///     <c>true</c> if the specified <see cref="System.Object" /> is equal to the current
+        ///     <c>true</c> if the specified <see cref="object" /> is equal to the current
         ///     <see cref="Claunia.PropertyList.NSString" />; otherwise, <c>false</c>.
         /// </returns>
         public override bool Equals(object obj) => obj is NSString nsString && Content.Equals(nsString.Content);
@@ -182,22 +160,22 @@ namespace Claunia.PropertyList
         internal override void ToASCII(StringBuilder ascii, int level)
         {
             Indent(ascii, level);
-            ascii.Append("\"");
+            ascii.Append('"');
 
             //According to https://developer.apple.com/library/mac/#documentation/Cocoa/Conceptual/PropertyLists/OldStylePlists/OldStylePLists.html
             //non-ASCII characters are not escaped but simply written into the
             //file, thus actually violating the ASCII plain text format.
             //We will escape the string anyway because current Xcode project files (ASCII property lists) also escape their strings.
             ascii.Append(EscapeStringForASCII(Content));
-            ascii.Append("\"");
+            ascii.Append('"');
         }
 
         internal override void ToASCIIGnuStep(StringBuilder ascii, int level)
         {
             Indent(ascii, level);
-            ascii.Append("\"");
+            ascii.Append('"');
             ascii.Append(EscapeStringForASCII(Content));
-            ascii.Append("\"");
+            ascii.Append('"');
         }
 
         /// <summary>Escapes a string for use in ASCII property lists.</summary>

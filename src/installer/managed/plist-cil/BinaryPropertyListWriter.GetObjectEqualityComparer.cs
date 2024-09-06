@@ -1,4 +1,7 @@
-﻿using System.Collections.Generic;
+﻿// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
+using System.Collections.Generic;
 
 namespace Claunia.PropertyList
 {
@@ -13,7 +16,7 @@ namespace Claunia.PropertyList
         ///     objects which are never referenced -; this logic exists purely to maintain binary compatibility with Apple's
         ///     format.
         /// </summary>
-        class GetObjectEqualityComparer : EqualityComparer<NSObject>
+        private sealed class GetObjectEqualityComparer : EqualityComparer<NSObject>
         {
             public override bool Equals(NSObject x, NSObject y) => x switch
             {

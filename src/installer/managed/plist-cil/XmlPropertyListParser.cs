@@ -1,27 +1,5 @@
-﻿// plist-cil - An open source library to parse and generate property lists for .NET
-// Copyright (C) 2015 Natalia Portillo
-//
-// This code is based on:
-// plist - An open source library to parse and generate property lists
-// Copyright (C) 2014 Daniel Dreibrodt
-//
-// Permission is hereby granted, free of charge, to any person obtaining a copy
-// of this software and associated documentation files (the "Software"), to deal
-// in the Software without restriction, including without limitation the rights
-// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-// copies of the Software, and to permit persons to whom the Software is
-// furnished to do so, subject to the following conditions:
-//
-// The above copyright notice and this permission notice shall be included in
-// all copies or substantial portions of the Software.
-//
-// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-// SOFTWARE.
+﻿// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
 using System.IO;
@@ -98,7 +76,7 @@ namespace Claunia.PropertyList
         /// <summary>Parses the XML document by generating the appropriate NSObjects for each XML node.</summary>
         /// <returns>The root NSObject of the property list contained in the XML document.</returns>
         /// <param name="doc">The XML document.</param>
-        static NSObject ParseDocument(XmlDocument doc)
+        private static NSObject ParseDocument(XmlDocument doc)
         {
             XmlNode docType = doc.ChildNodes.OfType<XmlNode>().
                                   SingleOrDefault(n => n.NodeType == XmlNodeType.DocumentType);
@@ -138,7 +116,7 @@ namespace Claunia.PropertyList
         /// <summary>Parses a node in the XML structure and returns the corresponding NSObject</summary>
         /// <returns>The corresponding NSObject.</returns>
         /// <param name="n">The XML node.</param>
-        static NSObject ParseObject(XmlNode n)
+        private static NSObject ParseObject(XmlNode n)
         {
             switch(n.Name)
             {
@@ -186,7 +164,7 @@ namespace Claunia.PropertyList
         /// <summary>Returns all element nodes that are contained in a list of nodes.</summary>
         /// <returns>The sublist containing only nodes representing actual elements.</returns>
         /// <param name="list">The list of nodes to search.</param>
-        static List<XmlNode> FilterElementNodes(XmlNodeList list)
+        private static List<XmlNode> FilterElementNodes(XmlNodeList list)
         {
             List<XmlNode> result = new();
 
@@ -203,7 +181,7 @@ namespace Claunia.PropertyList
         /// </summary>
         /// <returns>The node's text content.</returns>
         /// <param name="n">The node.</param>
-        static string GetNodeTextContents(XmlNode n)
+        private static string GetNodeTextContents(XmlNode n)
         {
             if(n.NodeType is XmlNodeType.Text or XmlNodeType.CDATA)
             {

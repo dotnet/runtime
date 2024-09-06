@@ -25,7 +25,7 @@ namespace Melanzana.CodeSign.Blobs
             using (var manifestStream = typeof(CmsWrapperBlob).Assembly.GetManifestResourceStream(name))
             {
                 Debug.Assert(manifestStream != null);
-                manifestStream.CopyTo(memoryStream);
+                manifestStream!.CopyTo(memoryStream);
             }
 #pragma warning disable SYSLIB0057 // Creation with ctor is obsolete in net, but this is required for netstandard2.0
             return new X509Certificate2(memoryStream.ToArray());

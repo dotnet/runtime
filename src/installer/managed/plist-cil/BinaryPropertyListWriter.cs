@@ -1,27 +1,5 @@
-﻿// plist-cil - An open source library to parse and generate property lists for .NET
-// Copyright (C) 2015 Natalia Portillo
-//
-// This code is based on:
-// plist - An open source library to parse and generate property lists
-// Copyright (C) 2014 Daniel Dreibrodt
-//
-// Permission is hereby granted, free of charge, to any person obtaining a copy
-// of this software and associated documentation files (the "Software"), to deal
-// in the Software without restriction, including without limitation the rights
-// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-// copies of the Software, and to permit persons to whom the Software is
-// furnished to do so, subject to the following conditions:
-//
-// The above copyright notice and this permission notice shall be included in
-// all copies or substantial portions of the Software.
-//
-// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-// SOFTWARE.
+﻿// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
 using System.Collections.Generic;
@@ -54,14 +32,13 @@ namespace Claunia.PropertyList
         protected readonly Dictionary<NSObject, int> idDict2 = new(new GetObjectEqualityComparer());
 
         // raw output stream to result file
-        readonly Stream outStream;
-
-        readonly int version = VERSION_00;
+        private readonly Stream outStream;
+        private readonly int version = VERSION_00;
 
         // # of bytes written so far
-        long          count;
+        private long          count;
         protected int currentId;
-        int           idSizeInBytes;
+        private int           idSizeInBytes;
 
         /// <summary>Creates a new binary property list writer</summary>
         /// <param name="outStr">The output stream into which the binary property list will be written</param>
@@ -99,7 +76,7 @@ namespace Claunia.PropertyList
         /// <summary>Finds out the minimum binary property list format version that can be used to save the given NSObject tree.</summary>
         /// <returns>Version code</returns>
         /// <param name="root">Object root.</param>
-        static int GetMinimumRequiredVersion(NSObject root)
+        private static int GetMinimumRequiredVersion(NSObject root)
         {
             int minVersion = VERSION_00;
 
@@ -325,7 +302,7 @@ namespace Claunia.PropertyList
 
         internal int GetID(NSObject obj) => ReuseObjectIds ? idDict[obj] : idDict2[obj];
 
-        static int ComputeIdSizeInBytes(int numberOfIds)
+        private static int ComputeIdSizeInBytes(int numberOfIds)
         {
             if(numberOfIds < 256)
                 return 1;
@@ -333,7 +310,7 @@ namespace Claunia.PropertyList
             return numberOfIds < 65536 ? 2 : 4;
         }
 
-        static int ComputeOffsetSizeInBytes(long maxOffset) => maxOffset switch
+        private static int ComputeOffsetSizeInBytes(long maxOffset) => maxOffset switch
         {
             < 256         => 1,
             < 65536       => 2,
@@ -345,7 +322,7 @@ namespace Claunia.PropertyList
         {
             switch(value)
             {
-                case < 0: throw new ArgumentException("value must be greater than or equal to 0", "value");
+                case < 0: throw new ArgumentException("value must be greater than or equal to 0", nameof(value));
                 case < 15:
                     Write((kind << 4) + value);
 
