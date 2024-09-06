@@ -77,6 +77,9 @@ namespace Melanzana.CodeSign
                 requirementsBlob = RequirementSet.CreateDefault(
                     bundleIdentifier,
                     codeSignOptions.DeveloperCertificate.GetNameInfo(X509NameType.SimpleName, false)).AsBlob();
+                // We don't have tests that validates signing with a developer certificate.
+                // Until we have those, we should use ad hoc signing only.
+                throw new InvalidOperationException("Only ad hoc signing is supported and tested");
             }
 
             if (codeSignOptions.Entitlements is Entitlements entitlements)
