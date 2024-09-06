@@ -78,32 +78,36 @@ internal static partial class Interop
 #if TARGET_LINUX
             try
             {
-                using StreamReader reader = new("/proc/self/mountinfo");
-                
-                string rawLine;
-                while ((rawLine = reader.ReadLine()) is not null)
+                const string mountInfoFilePath = "/proc/self/mountinfo";
+                var mountInfoFileContent = File.ReadAllLines(mountInfoFilePath);
+                foreach (var line in mountInfoFileContent)
                 {
-                    ReadOnlySpan<char> line = rawLine.AsSpan();
-                    MemoryExtensions.SpanSplitEnumerator<char> fields = line.Split(' ');
-                
+                    StringParser parser = new StringParser(line, ' ');
+            
                     // Skip fields we don't care about (Fields 1-4)
-                    fields.MoveNext(); // Skip Mount ID
-                    fields.MoveNext(); // Skip Parent ID
-                    fields.MoveNext(); // Skip Major:Minor
-                    fields.MoveNext(); // Skip Root
-
-                    if (!MemoryExtensions.Equals(line[fields.Current], name, StringComparison.Ordinal)) continue;
-
+                    parser.MoveNext(); // Skip Mount ID
+                    parser.MoveNext(); // Skip Parent ID
+                    parser.MoveNext(); // Skip Major:Minor
+                    parser.MoveNext(); // Skip Root
+            
+                    // Get the mount point (Field 5)
+                    string mountPoint = parser.MoveAndExtractNext();
+            
                     // Skip to the separator which is end of optional fields (Field 8)
-                    while (fields.MoveNext() && !MemoryExtensions.Equals(line[fields.Current], "-", StringComparison.Ordinal));
-
-                    fields.MoveNext();
-                    format = line[fields.Current].ToString();
-
-                    fields.MoveNext();
-                    type = GetDriveType(line[fields.Current].ToString());
-                    
-                    return 0;
+                    while (parser.MoveAndExtractNext() != "-")
+                    {
+                    }
+            
+                    // Get filesystem type (Field 9)
+                    string filesystemType = parser.MoveAndExtractNext();
+            
+                    if (mountPoint == name)
+                    {
+                        format = filesystemType;
+                        type = GetDriveType(filesystemType);
+                        return 0;
+                    }
+                }
             }
             catch { /* ignored */ }
 #endif
