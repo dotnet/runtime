@@ -230,7 +230,7 @@ handle_arguments_local() {
             __Priority=1
             ;;
 
-        allTargets|-allTargets)
+        alltargets|-alltargets)
             __UnprocessedBuildArgs+=("/p:CLRTestBuildAllTargets=allTargets")
             ;;
 
