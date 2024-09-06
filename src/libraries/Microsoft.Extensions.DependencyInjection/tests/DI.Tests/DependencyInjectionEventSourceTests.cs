@@ -6,31 +6,17 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics.Tracing;
 using System.Linq;
-using System.Reflection;
 using Microsoft.Extensions.DependencyInjection.Specification.Fakes;
 using Newtonsoft.Json.Linq;
 using Xunit;
 
 namespace Microsoft.Extensions.DependencyInjection.Tests
 {
-    [CollectionDefinition(nameof(EventSourceTests), DisableParallelization = true)]
-    public class EventSourceTests : ICollectionFixture<EventSourceTests>
+    public class DependencyInjectionEventSourceTests(
+        DependencyInjectionEventSourceTests.TestEventListenerFixture fixture)
+        : IClassFixture<DependencyInjectionEventSourceTests.TestEventListenerFixture>
     {
-    }
-
-    [Collection(nameof(EventSourceTests))]
-    public class DependencyInjectionEventSourceTests : IDisposable
-    {
-        private readonly TestEventListener _listener = new TestEventListener();
-
-        public DependencyInjectionEventSourceTests()
-        {
-            // clear the provider list in between tests
-            typeof(DependencyInjectionEventSource).GetField("_providers", BindingFlags.NonPublic | BindingFlags.Instance)
-                .SetValue(DependencyInjectionEventSource.Log, new List<WeakReference<ServiceProvider>>());
-
-            _listener.EnableEvents(DependencyInjectionEventSource.Log, EventLevel.Verbose);
-        }
+        private TestEventListener Listener => fixture.Listener;
 
         [Fact]
         public void ExistsWithCorrectId()
@@ -58,9 +44,10 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
             serviceCollection.AddTransient<IFakeMultipleService, FakeDisposableCallbackInnerService>();
             serviceCollection.AddSingleton<IFakeService, FakeDisposableCallbackInnerService>();
 
-            serviceCollection.BuildServiceProvider().GetService<IEnumerable<IFakeOuterService>>();
+            var serviceProvider = serviceCollection.BuildServiceProvider();
+            serviceProvider.GetService<IEnumerable<IFakeOuterService>>();
 
-            var callsiteBuiltEvent = _listener.EventData.Single(e => e.EventName == "CallSiteBuilt");
+            var callsiteBuiltEvent = Listener.EventDataFor(serviceProvider).Single(e => e.EventName == "CallSiteBuilt");
 
 
             Assert.Equal(
@@ -168,7 +155,7 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
             serviceProvider.GetService<IFakeService>();
             serviceProvider.GetService<IFakeService>();
 
-            var serviceResolvedEvents = _listener.EventData.Where(e => e.EventName == "ServiceResolved").ToArray();
+            var serviceResolvedEvents = Listener.EventDataFor(serviceProvider).Where(e => e.EventName == "ServiceResolved").ToArray();
 
             Assert.Equal(3, serviceResolvedEvents.Length);
             foreach (var serviceResolvedEvent in serviceResolvedEvents)
@@ -189,7 +176,7 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
 
             serviceProvider.GetService<IFakeService>();
 
-            var expressionTreeGeneratedEvent = _listener.EventData.Single(e => e.EventName == "ExpressionTreeGenerated");
+            var expressionTreeGeneratedEvent = Listener.EventDataFor(serviceProvider).Single(e => e.EventName == "ExpressionTreeGenerated");
 
             Assert.Equal("Microsoft.Extensions.DependencyInjection.Specification.Fakes.IFakeService", GetProperty<string>(expressionTreeGeneratedEvent, "serviceType"));
             Assert.Equal(9, GetProperty<int>(expressionTreeGeneratedEvent, "nodeCount"));
@@ -197,7 +184,6 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/35753", TestPlatforms.Windows)]
         public void EmitsDynamicMethodBuiltEvent()
         {
             // Arrange
@@ -208,7 +194,7 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
 
             serviceProvider.GetService<IFakeService>();
 
-            var expressionTreeGeneratedEvent = _listener.EventData.Single(e => e.EventName == "DynamicMethodBuilt");
+            var expressionTreeGeneratedEvent = Listener.EventDataFor(serviceProvider).Single(e => e.EventName == "DynamicMethodBuilt");
 
             Assert.Equal("Microsoft.Extensions.DependencyInjection.Specification.Fakes.IFakeService", GetProperty<string>(expressionTreeGeneratedEvent, "serviceType"));
             Assert.Equal(12, GetProperty<int>(expressionTreeGeneratedEvent, "methodSize"));
@@ -228,7 +214,7 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
                 scope.ServiceProvider.GetService<IFakeService>();
             }
 
-            var scopeDisposedEvent = _listener.EventData.Single(e => e.EventName == "ScopeDisposed");
+            var scopeDisposedEvent = Listener.EventDataFor(serviceProvider).Single(e => e.EventName == "ScopeDisposed");
 
             Assert.Equal(1, GetProperty<int>(scopeDisposedEvent, "scopedServicesResolved"));
             Assert.Equal(1, GetProperty<int>(scopeDisposedEvent, "disposableServices"));
@@ -239,13 +225,15 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
         public void EmitsServiceRealizationFailedEvent()
         {
             var exception = new Exception("Test error.");
-            DependencyInjectionEventSource.Log.ServiceRealizationFailed(exception, 1234);
+            var serviceProvider = new ServiceCollection().BuildServiceProvider();
+            int hashCode = serviceProvider.GetHashCode();
+            DependencyInjectionEventSource.Log.ServiceRealizationFailed(exception, hashCode);
 
             var eventName = nameof(DependencyInjectionEventSource.Log.ServiceRealizationFailed);
-            var serviceRealizationFailedEvent = _listener.EventData.Single(e => e.EventName == eventName);
+            var serviceRealizationFailedEvent = Listener.EventDataFor(serviceProvider).Single(e => e.EventName == eventName);
 
             Assert.Equal("System.Exception: Test error.", GetProperty<string>(serviceRealizationFailedEvent, "exceptionMessage"));
-            Assert.Equal(1234, GetProperty<int>(serviceRealizationFailedEvent, "serviceProviderHashCode"));
+            Assert.Equal(hashCode, GetProperty<int>(serviceRealizationFailedEvent, "serviceProviderHashCode"));
             Assert.Equal(6, serviceRealizationFailedEvent.EventId);
         }
 
@@ -266,7 +254,7 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
 
             using ServiceProvider provider = serviceCollection.BuildServiceProvider();
 
-            EventWrittenEventArgs serviceProviderBuiltEvent = _listener.EventData.Single(e => e.EventName == "ServiceProviderBuilt");
+            EventWrittenEventArgs serviceProviderBuiltEvent = Listener.EventDataFor(provider).Single(e => e.EventName == "ServiceProviderBuilt");
             GetProperty<int>(serviceProviderBuiltEvent, "serviceProviderHashCode"); // assert hashcode exists as an int
             Assert.Equal(4, GetProperty<int>(serviceProviderBuiltEvent, "singletonServices"));
             Assert.Equal(2, GetProperty<int>(serviceProviderBuiltEvent, "scopedServices"));
@@ -275,7 +263,7 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
             Assert.Equal(1, GetProperty<int>(serviceProviderBuiltEvent, "openGenericsServices"));
             Assert.Equal(7, serviceProviderBuiltEvent.EventId);
 
-            EventWrittenEventArgs serviceProviderDescriptorsEvent = _listener.EventData.Single(e => e.EventName == "ServiceProviderDescriptors");
+            EventWrittenEventArgs serviceProviderDescriptorsEvent = Listener.EventDataFor(provider).Single(e => e.EventName == "ServiceProviderDescriptors");
             Assert.Equal(
                 string.Join(Environment.NewLine,
                 "{",
@@ -343,33 +331,77 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
         [Fact]
         public void EmitsServiceProviderBuiltOnAttach()
         {
-            _listener.DisableEvents(DependencyInjectionEventSource.Log);
-
             ServiceCollection serviceCollection = new();
             serviceCollection.AddSingleton(new FakeDisposeCallback());
 
             using ServiceProvider provider = serviceCollection.BuildServiceProvider();
 
-            Assert.Empty(_listener.EventData);
+            using var listener = new TestEventListener();
+            listener.EnableEvents(DependencyInjectionEventSource.Log, EventLevel.Verbose);
+            try
+            {
+                EventWrittenEventArgs serviceProviderBuiltEvent = listener.EventDataFor(provider).Single(e => e.EventName == "ServiceProviderBuilt");
+                Assert.Equal(1, GetProperty<int>(serviceProviderBuiltEvent, "singletonServices"));
 
-            _listener.EnableEvents(DependencyInjectionEventSource.Log, EventLevel.Verbose);
-
-            EventWrittenEventArgs serviceProviderBuiltEvent = _listener.EventData.Single(e => e.EventName == "ServiceProviderBuilt");
-            Assert.Equal(1, GetProperty<int>(serviceProviderBuiltEvent, "singletonServices"));
-
-            EventWrittenEventArgs serviceProviderDescriptorsEvent = _listener.EventData.Single(e => e.EventName == "ServiceProviderDescriptors");
-            Assert.NotNull(JObject.Parse(GetProperty<string>(serviceProviderDescriptorsEvent, "descriptors")));
+                EventWrittenEventArgs serviceProviderDescriptorsEvent = listener.EventDataFor(provider).Single(e => e.EventName == "ServiceProviderDescriptors");
+                Assert.NotNull(JObject.Parse(GetProperty<string>(serviceProviderDescriptorsEvent, "descriptors")));
+            }
+            finally
+            {
+                listener.DisableEvents(DependencyInjectionEventSource.Log);
+            }
         }
 
-        private T GetProperty<T>(EventWrittenEventArgs data, string propName)
-            => (T)data.Payload[data.PayloadNames.IndexOf(propName)];
+        private static bool TryGetProperty<T>(EventWrittenEventArgs data, string propName, out T result)
+        {
+            if (data.PayloadNames is { } names &&
+                data.Payload is { } payload &&
+                names.IndexOf(propName) is var index and >= 0 &&
+                payload[index] is T value)
+            {
+                result = value;
+                return true;
+            }
 
-        private class TestEventListener : EventListener
+            result = default;
+            return false;
+        }
+
+        private static T GetProperty<T>(EventWrittenEventArgs data, string propName) =>
+            TryGetProperty(data, propName, out T result)
+                ? result
+                : throw new ArgumentException($"No property {propName} with type {typeof(T)} found.");
+
+        public class TestEventListenerFixture : IDisposable
+        {
+            internal TestEventListener Listener { get; }
+
+            public TestEventListenerFixture()
+            {
+                Listener = new();
+                Listener.EnableEvents(DependencyInjectionEventSource.Log, EventLevel.Verbose);
+            }
+
+            public void Dispose()
+            {
+                Listener.DisableEvents(DependencyInjectionEventSource.Log);
+                Listener.Dispose();
+            }
+        }
+
+        internal class TestEventListener : EventListener
         {
             private volatile bool _disposed;
-            private ConcurrentQueue<EventWrittenEventArgs> _events = new ConcurrentQueue<EventWrittenEventArgs>();
+            private readonly ConcurrentQueue<EventWrittenEventArgs> _events = new ConcurrentQueue<EventWrittenEventArgs>();
 
-            public IEnumerable<EventWrittenEventArgs> EventData => _events;
+            public IEnumerable<EventWrittenEventArgs> EventDataFor(IServiceProvider serviceProvider)
+            {
+                int hashCode = serviceProvider.GetHashCode();
+
+                return _events.Where(e =>
+                    e.PayloadNames?.IndexOf("serviceProviderHashCode") is { } index and >= 0 &&
+                    e.Payload?[index] as int? == hashCode);
+            }
 
             protected override void OnEventWritten(EventWrittenEventArgs eventData)
             {
@@ -384,11 +416,6 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
                 _disposed = true;
                 base.Dispose();
             }
-        }
-
-        public void Dispose()
-        {
-            _listener.Dispose();
         }
     }
 }
