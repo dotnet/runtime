@@ -79,13 +79,13 @@ internal static partial class Interop
             try
             {
                 using StreamReader reader = new("/proc/self/mountinfo");
-                
+
                 string rawLine;
                 while ((rawLine = reader.ReadLine()) is not null)
                 {
                     ReadOnlySpan<char> line = rawLine.AsSpan();
                     MemoryExtensions.SpanSplitEnumerator<char> fields = line.Split(' ');
-                
+
                     // Skip fields we don't care about (Fields 1-4)
                     fields.MoveNext(); // Skip Mount ID
                     fields.MoveNext(); // Skip Parent ID
@@ -93,10 +93,10 @@ internal static partial class Interop
                     fields.MoveNext(); // Skip Root
                     fields.MoveNext(); // Skip to MountPoint field
 
-                    if (!line[fields.Current].Equals(name, StringComparison.Ordinal)) continue;
+                    if (!MemoryExtensions.Equals(line[fields.Current], name, StringComparison.Ordinal)) continue;
 
                     // Skip to the separator which is end of optional fields (Field 8)
-                    while (fields.MoveNext() && !line[fields.Current].Equals("-", StringComparison.Ordinal)) ;
+                    while (fields.MoveNext() && !MemoryExtensions.Equals(line[fields.Current], "-", StringComparison.Ordinal));
 
                     fields.MoveNext();
                     format = line[fields.Current].ToString();
