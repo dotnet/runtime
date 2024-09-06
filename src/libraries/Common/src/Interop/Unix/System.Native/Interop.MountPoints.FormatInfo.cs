@@ -91,7 +91,7 @@ internal static partial class Interop
                     fields.MoveNext(); // Skip Parent ID
                     fields.MoveNext(); // Skip Major:Minor
                     fields.MoveNext(); // Skip Root
-                    fields.MoveNext(); // Move next to MountPoint field
+                    fields.MoveNext(); // Skip to MountPoint field
 
                     if (!line[fields.Current].Equals(name, StringComparison.Ordinal)) continue;
 
