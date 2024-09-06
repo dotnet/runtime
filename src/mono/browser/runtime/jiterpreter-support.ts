@@ -1285,7 +1285,7 @@ class Cfg {
         }
     }
 
-    // It's your responsibility to wrap this in a block and follow it with a bailout!
+    // It's the caller's responsibility to wrap this in a block and follow it with a bailout!
     jumpTable (targets: MintOpcodePtr[], fallthrough: MintOpcodePtr) {
         this.appendBlob();
         this.segments.push({
