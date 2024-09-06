@@ -147,7 +147,7 @@ namespace System.Collections.Tests
         public void AsReadOnly_NullISet_ThrowsArgumentNullException()
         {
             ISet<string> set = null;
-            Assert.Throws<ArgumentNullException>("set", () => set.AsReadOnly());
+            AssertExtensions.Throws<ArgumentNullException>("set", () => set.AsReadOnly());
         }
 
         [Fact]
