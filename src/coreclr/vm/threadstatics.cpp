@@ -405,6 +405,13 @@ void FreeLoaderAllocatorHandlesForTLSData(Thread *pThread)
                 }
             }
         }
+
+        pThread->cLoaderHandles = -1; // Sentinel value indicating that there are no LoaderHandles and the thread is permanently dead.
+        if (pThread->pLoaderHandles != NULL)
+        {
+            delete[] pThread->pLoaderHandles;
+            pThread->pLoaderHandles = NULL;
+        }
     }
 }
 
@@ -431,34 +438,48 @@ void FreeThreadStaticData(Thread* pThread)
     }
     CONTRACTL_END;
 
-    SpinLockHolder spinLock(&pThread->m_TlsSpinLock);
+    InFlightTLSData* pOldInFlightData = nullptr;
 
-    ThreadLocalData *pThreadLocalData = &t_ThreadStatics;
+    int32_t oldCollectibleTlsDataCount = 0;
+    DPTR(OBJECTHANDLE) pOldCollectibleTlsArrayData = nullptr;
 
-    for (int32_t iTlsSlot = 0; iTlsSlot < pThreadLocalData->cCollectibleTlsData; ++iTlsSlot)
     {
-        if (!IsHandleNullUnchecked(pThreadLocalData->pCollectibleTlsArrayData[iTlsSlot]))
+        SpinLockHolder spinLock(&pThread->m_TlsSpinLock);
+
+        ThreadLocalData *pThreadLocalData = &t_ThreadStatics;
+
+        pOldCollectibleTlsArrayData = pThreadLocalData->pCollectibleTlsArrayData;
+        oldCollectibleTlsDataCount = pThreadLocalData->cCollectibleTlsData;
+
+        pThreadLocalData->pCollectibleTlsArrayData = 0;
+        pThreadLocalData->cCollectibleTlsData = 0;
+        pThreadLocalData->pNonCollectibleTlsArrayData = 0;
+        pThreadLocalData->cNonCollectibleTlsData = 0;
+
+        pOldInFlightData = pThreadLocalData->pInFlightData;
+        _ASSERTE(pThreadLocalData->pThread == pThread);
+        pThreadLocalData->pThread = NULL;
+    }
+
+    for (int32_t iTlsSlot = 0; iTlsSlot < oldCollectibleTlsDataCount; ++iTlsSlot)
+    {
+        if (!IsHandleNullUnchecked(pOldCollectibleTlsArrayData[iTlsSlot]))
         {
-            DestroyLongWeakHandle(pThreadLocalData->pCollectibleTlsArrayData[iTlsSlot]);
+            DestroyLongWeakHandle(pOldCollectibleTlsArrayData[iTlsSlot]);
         }
     }
 
-    delete[] (uint8_t*)pThreadLocalData->pCollectibleTlsArrayData;
-
-    pThreadLocalData->pCollectibleTlsArrayData = 0;
-    pThreadLocalData->cCollectibleTlsData = 0;
-    pThreadLocalData->pNonCollectibleTlsArrayData = 0;
-    pThreadLocalData->cNonCollectibleTlsData = 0;
-
-    while (pThreadLocalData->pInFlightData != NULL)
+    if (pOldCollectibleTlsArrayData != NULL)
     {
-        InFlightTLSData* pInFlightData = pThreadLocalData->pInFlightData;
-        pThreadLocalData->pInFlightData = pInFlightData->pNext;
-        delete pInFlightData;
+        delete[] (uint8_t*)pOldCollectibleTlsArrayData;
     }
 
-    _ASSERTE(pThreadLocalData->pThread == pThread);
-    pThreadLocalData->pThread = NULL;
+    while (pOldInFlightData != NULL)
+    {
+        InFlightTLSData* pInFlightData = pOldInFlightData;
+        pOldInFlightData = pInFlightData->pNext;
+        delete pInFlightData;
+    }
 }
 
 void SetTLSBaseValue(TADDR *ppTLSBaseAddress, TADDR pTLSBaseAddress, bool useGCBarrierInsteadOfHandleStore)
@@ -553,6 +574,8 @@ void* GetThreadLocalStaticBase(TLSIndex index)
             delete[] pOldArray;
         }
 
+        _ASSERTE(t_ThreadStatics.pThread->cLoaderHandles != -1); // Check sentinel value indicating that there are no LoaderHandles, the thread has gone through termination and is permanently dead.
+
         if (isCollectible && t_ThreadStatics.pThread->cLoaderHandles <= index.GetIndexOffset())
         {
             // Grow the underlying TLS array
@@ -594,9 +617,11 @@ void* GetThreadLocalStaticBase(TLSIndex index)
                 gcBaseAddresses.pTLSBaseAddress = dac_cast<TADDR>(OBJECTREFToObject(ObjectFromHandle(pInFlightData->hTLSData)));
                 if (pMT->IsClassInited())
                 {
-                    SpinLockHolder spinLock(&t_ThreadStatics.pThread->m_TlsSpinLock);
-                    SetTLSBaseValue(gcBaseAddresses.ppTLSBaseAddress, gcBaseAddresses.pTLSBaseAddress, staticIsNonCollectible);
-                    *ppOldNextPtr = pInFlightData->pNext;
+                    {
+                        SpinLockHolder spinLock(&t_ThreadStatics.pThread->m_TlsSpinLock);
+                        SetTLSBaseValue(gcBaseAddresses.ppTLSBaseAddress, gcBaseAddresses.pTLSBaseAddress, staticIsNonCollectible);
+                        *ppOldNextPtr = pInFlightData->pNext;
+                    }
                     delete pInFlightData;
                 }
                 break;
