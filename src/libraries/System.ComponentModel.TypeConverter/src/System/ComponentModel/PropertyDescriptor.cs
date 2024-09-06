@@ -2,8 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections;
+using System.Collections.Concurrent;
+using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
+using System.Threading;
 
 namespace System.ComponentModel
 {
@@ -15,10 +18,11 @@ namespace System.ComponentModel
         internal const string PropertyDescriptorPropertyTypeMessage = "PropertyDescriptor's PropertyType cannot be statically discovered.";
 
         private TypeConverter? _converter;
-        private Hashtable? _valueChangedHandlers;
+        private ConcurrentDictionary<object, EventHandler?>? _valueChangedHandlers;
         private object?[]? _editors;
         private Type[]? _editorTypes;
         private int _editorCount;
+        private object? _syncObject;
 
         /// <summary>
         /// Initializes a new instance of the <see cref='System.ComponentModel.PropertyDescriptor'/> class with the specified name and
@@ -47,6 +51,8 @@ namespace System.ComponentModel
         protected PropertyDescriptor(MemberDescriptor descr, Attribute[]? attrs) : base(descr, attrs)
         {
         }
+
+        private object SyncObject => LazyInitializer.EnsureInitialized(ref _syncObject);
 
         /// <summary>
         /// When overridden in a derived class, gets the type of the
@@ -132,13 +138,11 @@ namespace System.ComponentModel
                 throw new ArgumentNullException(nameof(handler));
             }
 
-            if (_valueChangedHandlers == null)
+            lock (SyncObject)
             {
-                _valueChangedHandlers = new Hashtable();
+                _valueChangedHandlers ??= new ConcurrentDictionary<object, EventHandler?>(concurrencyLevel: 1, capacity: 0);
+                _valueChangedHandlers.AddOrUpdate(component, handler, (k, v) => (EventHandler?)Delegate.Combine(v, handler));
             }
-
-            EventHandler? h = (EventHandler?)_valueChangedHandlers[component];
-            _valueChangedHandlers[component] = Delegate.Combine(h, handler);
         }
 
         /// <summary>
@@ -392,7 +396,7 @@ namespace System.ComponentModel
         {
             if (component != null)
             {
-                ((EventHandler?)_valueChangedHandlers?[component])?.Invoke(component, e);
+                _valueChangedHandlers?.GetValueOrDefault(component, defaultValue: null)?.Invoke(component, e);
             }
         }
 
@@ -412,15 +416,18 @@ namespace System.ComponentModel
 
             if (_valueChangedHandlers != null)
             {
-                EventHandler? h = (EventHandler?)_valueChangedHandlers[component];
-                h = (EventHandler?)Delegate.Remove(h, handler);
-                if (h != null)
+                lock (SyncObject)
                 {
-                    _valueChangedHandlers[component] = h;
-                }
-                else
-                {
-                    _valueChangedHandlers.Remove(component);
+                    EventHandler? h = _valueChangedHandlers.GetValueOrDefault(component, defaultValue: null);
+                    h = (EventHandler?)Delegate.Remove(h, handler);
+                    if (h != null)
+                    {
+                        _valueChangedHandlers[component] = h;
+                    }
+                    else
+                    {
+                        _valueChangedHandlers.TryRemove(component, out EventHandler? _);
+                    }
                 }
             }
         }
@@ -434,7 +441,7 @@ namespace System.ComponentModel
         {
             if (component != null && _valueChangedHandlers != null)
             {
-                return (EventHandler?)_valueChangedHandlers[component];
+                return _valueChangedHandlers.GetValueOrDefault(component, defaultValue: null);
             }
             else
             {
