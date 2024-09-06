@@ -407,13 +407,13 @@ namespace System.Diagnostics
         }
     }
 
-    //this class uses a copy-on-write design to ensure thread safety all operations are thread safe.
-    //However, it is possible for read-only operations to see stale versions of the item while a change
-    //is occurring. This should not be a practical issue if updates are infrequent
+    // This class uses a copy-on-write design to ensure thread safety all operations are thread safe.
+    // However, it is possible for read-only operations to see stale versions of the item while a change
+    // is occurring.
     internal sealed class SynchronizedList<T>
     {
         private readonly object _writeLock;
-        //This array must not be mutated directly. To mutate, obtain the lock, copy the array and then replace it with the new array.
+        // This array must not be mutated directly. To mutate, obtain the lock, copy the array and then replace it with the new array.
         private T[] _volatileArray;
         public SynchronizedList()
         {
@@ -427,8 +427,8 @@ namespace System.Diagnostics
             {
                 T[] newArray = new T[_volatileArray.Length + 1];
 
-                Array.Copy(_volatileArray, newArray, _volatileArray.Length);//copy existing items
-                newArray[_volatileArray.Length] = item;//copy new item
+                Array.Copy(_volatileArray, newArray, _volatileArray.Length);// copy existing items
+                newArray[_volatileArray.Length] = item;// copy new item
 
                 _volatileArray = newArray;
             }
@@ -447,8 +447,8 @@ namespace System.Diagnostics
 
                 T[] newArray = new T[_volatileArray.Length + 1];
 
-                Array.Copy(_volatileArray, newArray, _volatileArray.Length);//copy existing items
-                newArray[_volatileArray.Length] = item;//copy new item
+                Array.Copy(_volatileArray, newArray, _volatileArray.Length);// copy existing items
+                newArray[_volatileArray.Length] = item;// copy new item
 
                 _volatileArray = newArray;
 
@@ -469,11 +469,11 @@ namespace System.Diagnostics
 
                 T[] newArray = new T[_volatileArray.Length - 1];
 
-                Array.Copy(_volatileArray, newArray, index);//copy existing items before index
+                Array.Copy(_volatileArray, newArray, index);// copy existing items before index
 
                 Array.Copy(
-                    _volatileArray, index + 1, //position after the index, skipping it
-                    newArray, index, _volatileArray.Length - index - 1//remaining items accounting for removed item
+                    _volatileArray, index + 1, // position after the index, skipping it
+                    newArray, index, _volatileArray.Length - index - 1// remaining items accounting for removed item
                 );
 
                 _volatileArray = newArray;
