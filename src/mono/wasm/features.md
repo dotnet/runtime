@@ -426,6 +426,48 @@ import { dotnet } from './dotnet.js'
 await dotnet.withConfig({browserProfilerOptions: {}}).run();
 ```
 
+### Log Profiling for Memory Troubleshooting
+
+You can enable integration with browser profiler via following elements in your .csproj:
+
+```xml
+<PropertyGroup>
+  <WasmProfilers>log;</WasmProfilers>
+</PropertyGroup>
+```
+
+In simple browser template, you can add following to your `main.js`
+
+```javascript
+import { dotnet } from './dotnet.js'
+await dotnet.withConfig({ logProfilerOptions: { configuration: "log:alloc,output=output.mlpd" }}).run();
+```
+
+In order to trigger a heap shot, add the following:
+
+```csharp
+using System.Runtime.CompilerServices;
+
+namespace Mono.Profiler.Log
+{
+	/// <summary>
+	/// Internal calls to match with https://github.com/dotnet/runtime/blob/release/6.0/src/mono/mono/profiler/log.c#L4061-L4097
+	/// </summary>
+	internal class LogProfiler
+	{
+		[MethodImplAttribute(MethodImplOptions.InternalCall)]
+		public extern static void TriggerHeapshot();
+
+		[DllImport("__Native")]
+		public extern static private void mono_profiler_flush_log();
+	}
+}
+```
+
+Invoke `LogProfiler.TriggerHeapshot()` from your code in order to create a memory heap shot, then invoke `mono_profiler_flush_log` in order to flush the contents of the profile to the VFS.
+
+You can download the mpld file to analyze it.
+
 ### Diagnostic tools
 
 We have initial implementation of diagnostic server and [event pipe](https://learn.microsoft.com/dotnet/core/diagnostics/eventpipe)
