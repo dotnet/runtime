@@ -26,7 +26,7 @@ internal sealed class ClassTypeInfo
         string rawName = reader.ReadString();
         SerializationRecordId libraryId = SerializationRecordId.Decode(reader);
 
-        BinaryLibraryRecord library = (BinaryLibraryRecord)recordMap[libraryId];
+        BinaryLibraryRecord library = recordMap.GetRecord<BinaryLibraryRecord>(libraryId);
 
         return new ClassTypeInfo(rawName.ParseNonSystemClassRecordTypeName(library, options));
     }
