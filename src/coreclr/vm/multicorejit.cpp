@@ -768,7 +768,7 @@ DWORD MulticoreJitRecorder::EncodeModule(Module * pReferencedModule)
 }
 
 // Enumerate all modules within an assembly, call OnModule virtual method
-HRESULT MulticoreJitModuleEnumerator::HandleAssembly(DomainAssembly * pAssembly)
+HRESULT MulticoreJitModuleEnumerator::HandleAssembly(Assembly * pAssembly)
 {
     STANDARD_VM_CONTRACT;
 
@@ -791,7 +791,7 @@ HRESULT MulticoreJitModuleEnumerator::EnumerateLoadedModules(AppDomain * pDomain
     while (appIt.Next(pDomainAssembly.This()) && SUCCEEDED(hr))
     {
         {
-            hr = HandleAssembly(pDomainAssembly);
+            hr = HandleAssembly(pDomainAssembly->GetAssembly());
         }
     }
 

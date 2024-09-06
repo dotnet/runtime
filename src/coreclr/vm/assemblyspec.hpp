@@ -45,7 +45,6 @@ class AssemblySpec  : public BaseAssemblySpec
     friend Assembly * Module::GetAssemblyIfLoaded(
                 mdAssemblyRef       kAssemblyRef,
                 IMDInternalImport * pMDImportOverride,
-                BOOL                fDoNotUtilizeExtraChecks,
                 AssemblyBinder      *pBinderForLoadedAssembly);
 
   public:
@@ -175,8 +174,6 @@ class AssemblySpec  : public BaseAssemblySpec
 
     Assembly *LoadAssembly(FileLoadLevel targetLevel,
                            BOOL fThrowOnFileNotFound = TRUE);
-    DomainAssembly *LoadDomainAssembly(FileLoadLevel targetLevel,
-                                       BOOL fThrowOnFileNotFound = TRUE);
 
   public: // static
     // Creates and loads an assembly based on the name and context.
