@@ -19,6 +19,9 @@ parameters:
   variables: {}
   pool: ''
   dependsOn: []
+  compileOnHelix: false
+  interpreter: false
+  buildAllTestsAsStandalone: false
   #arcade-specific parameters
   condition: always()
   continueOnError: false
@@ -27,8 +30,6 @@ parameters:
   enableMicrobuild: ''
   gatherAssetManifests: false
   shouldContinueOnError: false
-  compileOnHelix: false
-  interpreter: false
 
 steps:
   - template: /eng/pipelines/common/templates/runtimes/build-runtime-tests.yml
@@ -38,6 +39,7 @@ steps:
       archType: ${{ parameters.archType }}
       buildConfig: ${{ parameters.buildConfig }}
       testBuildArgs: ${{ parameters.testBuildArgs }}
+      buildAllTestsAsStandalone: ${{ parameters.buildAllTestsAsStandalone }}
   # Build a Mono AOT cross-compiler for non-amd64 targets (in this case, just arm64)
   - ${{ if and(eq(parameters.runtimeFlavor, 'mono'), in(parameters.runtimeVariant, 'llvmaot', 'llvmfullaot', 'minifullaot')) }}:
     - ${{ if eq(parameters.archType, 'arm64') }}:
