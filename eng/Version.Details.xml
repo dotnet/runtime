@@ -1,8 +1,8 @@
 <Dependencies>
   <ProductDependencies>
-    <Dependency Name="Microsoft.NETCore.Runtime.ICU.Transport" Version="9.0.0-rc.1.24454.1">
+    <Dependency Name="Microsoft.NETCore.Runtime.ICU.Transport" Version="10.0.0-alpha.1.24456.2">
       <Uri>https://github.com/dotnet/icu</Uri>
-      <Sha>685ba6504647a9842460022c38441848a25f95a5</Sha>
+      <Sha>b4c221cfaf91c7317f6ebb80365133325f745a97</Sha>
     </Dependency>
     <Dependency Name="System.Net.MsQuic.Transport" Version="9.0.0-alpha.1.24167.3">
       <Uri>https://github.com/dotnet/msquic</Uri>
@@ -64,14 +64,14 @@
       <Sha>c667bfea9cdbc5b5493e49e7ddc8dd635a217891</Sha>
       <SourceBuild RepoName="cecil" ManagedOnly="true" />
     </Dependency>
-    <Dependency Name="Microsoft.NET.Workload.Emscripten.Current.Manifest-9.0.100.Transport" Version="9.0.0-rc.1.24454.1">
+    <Dependency Name="Microsoft.NET.Workload.Emscripten.Current.Manifest-9.0.100.Transport" Version="10.0.0-alpha.1.24455.2">
       <Uri>https://github.com/dotnet/emsdk</Uri>
-      <Sha>797b259577369a086db9e1ed87250b1855d031e4</Sha>
+      <Sha>e626f7b052f123a897a571d8f571bc50a61934fc</Sha>
     </Dependency>
     <!-- Intermediate is necessary for source build. -->
-    <Dependency Name="Microsoft.SourceBuild.Intermediate.emsdk" Version="9.0.0-rc.1.24454.1">
+    <Dependency Name="Microsoft.SourceBuild.Intermediate.emsdk" Version="10.0.0-alpha.1.24455.2">
       <Uri>https://github.com/dotnet/emsdk</Uri>
-      <Sha>797b259577369a086db9e1ed87250b1855d031e4</Sha>
+      <Sha>e626f7b052f123a897a571d8f571bc50a61934fc</Sha>
       <SourceBuild RepoName="emsdk" ManagedOnly="true" />
     </Dependency>
     <!-- Intermediate is necessary for source build. -->
