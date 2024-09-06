@@ -17,12 +17,18 @@ namespace Sample
         [JSExport]
         public static int TestMeaning()
         {
+            for(int i=0; i<100; i++){
+                var r = new int[1000];
+            }
+ 
             return 42;
         }
 
         [JSExport]
         public static void CreateSnapshot()
         {
+            Console.WriteLine ("Create snapshot");
+
             Mono.Profiler.Log.LogProfiler.TriggerHeapshot();
             Mono.Profiler.Log.LogProfiler.mono_profiler_flush_log();
         }
