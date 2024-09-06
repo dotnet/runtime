@@ -46,6 +46,7 @@ public static class NrbfDecoder
     /// <exception cref="ArgumentNullException"><paramref name="stream" /> is <see langword="null" />.</exception>
     /// <exception cref="NotSupportedException">The stream does not support reading or seeking.</exception>
     /// <exception cref="ObjectDisposedException">The stream was closed.</exception>
+    /// <exception cref="IOException">An I/O error occurred.</exception>
     /// <remarks>When this method returns, <paramref name="stream" /> is restored to its original position.</remarks>
     public static bool StartsWithPayloadHeader(Stream stream)
     {
@@ -107,6 +108,7 @@ public static class NrbfDecoder
     /// <exception cref="ArgumentNullException"><paramref name="payload"/> is <see langword="null" />.</exception>
     /// <exception cref="ArgumentException"><paramref name="payload"/> does not support reading or is already closed.</exception>
     /// <exception cref="SerializationException">Reading from <paramref name="payload"/> encountered invalid NRBF data.</exception>
+    /// <exception cref="IOException">An I/O error occurred.</exception>
     /// <exception cref="NotSupportedException">
     /// Reading from <paramref name="payload"/> encountered unsupported records,
     /// for example, arrays with non-zero offset or unsupported record types
@@ -142,7 +144,14 @@ public static class NrbfDecoder
 #endif
 
         using BinaryReader reader = new(payload, ThrowOnInvalidUtf8Encoding, leaveOpen: leaveOpen);
-        return Decode(reader, options ?? new(), out recordMap);
+        try
+        {
+            return Decode(reader, options ?? new(), out recordMap);
+        }
+        catch (FormatException) // can be thrown by various BinaryReader methods
+        {
+            throw new SerializationException(SR.Serialization_InvalidFormat);
+        }
     }
 
     /// <summary>
@@ -213,12 +222,7 @@ public static class NrbfDecoder
     private static SerializationRecord DecodeNext(BinaryReader reader, RecordMap recordMap,
         AllowedRecordTypes allowed, PayloadOptions options, out SerializationRecordType recordType)
     {
-        byte nextByte = reader.ReadByte();
-        if (((uint)allowed & (1u << nextByte)) == 0)
-        {
-            ThrowHelper.ThrowForUnexpectedRecordType(nextByte);
-        }
-        recordType = (SerializationRecordType)nextByte;
+        recordType = reader.ReadSerializationRecordType(allowed);
 
         SerializationRecord record = recordType switch
         {
@@ -254,7 +258,7 @@ public static class NrbfDecoder
             PrimitiveType.Boolean => new MemberPrimitiveTypedRecord<bool>(reader.ReadBoolean()),
             PrimitiveType.Byte => new MemberPrimitiveTypedRecord<byte>(reader.ReadByte()),
             PrimitiveType.SByte => new MemberPrimitiveTypedRecord<sbyte>(reader.ReadSByte()),
-            PrimitiveType.Char => new MemberPrimitiveTypedRecord<char>(reader.ReadChar()),
+            PrimitiveType.Char => new MemberPrimitiveTypedRecord<char>(reader.ParseChar()),
             PrimitiveType.Int16 => new MemberPrimitiveTypedRecord<short>(reader.ReadInt16()),
             PrimitiveType.UInt16 => new MemberPrimitiveTypedRecord<ushort>(reader.ReadUInt16()),
             PrimitiveType.Int32 => new MemberPrimitiveTypedRecord<int>(reader.ReadInt32()),
@@ -263,7 +267,7 @@ public static class NrbfDecoder
             PrimitiveType.UInt64 => new MemberPrimitiveTypedRecord<ulong>(reader.ReadUInt64()),
             PrimitiveType.Single => new MemberPrimitiveTypedRecord<float>(reader.ReadSingle()),
             PrimitiveType.Double => new MemberPrimitiveTypedRecord<double>(reader.ReadDouble()),
-            PrimitiveType.Decimal => new MemberPrimitiveTypedRecord<decimal>(decimal.Parse(reader.ReadString(), CultureInfo.InvariantCulture)),
+            PrimitiveType.Decimal => new MemberPrimitiveTypedRecord<decimal>(reader.ParseDecimal()),
             PrimitiveType.DateTime => new MemberPrimitiveTypedRecord<DateTime>(Utils.BinaryReaderExtensions.CreateDateTimeFromData(reader.ReadUInt64())),
             // String is handled with a record, never on it's own
             _ => new MemberPrimitiveTypedRecord<TimeSpan>(new TimeSpan(reader.ReadInt64())),

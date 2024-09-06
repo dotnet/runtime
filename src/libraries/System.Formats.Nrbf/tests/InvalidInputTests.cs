@@ -426,7 +426,9 @@ public class InvalidInputTests : ReadTests
         {
             foreach (byte binaryType in new byte[] { (byte)0 /* BinaryType.Primitive */, (byte)7 /* BinaryType.PrimitiveArray */ })
             {
+                yield return new object[] { recordType, binaryType, (byte)0 }; // value not used by the spec
                 yield return new object[] { recordType, binaryType, (byte)4 }; // value not used by the spec
+                yield return new object[] { recordType, binaryType, (byte)17 }; // used by the spec, but illegal in given context
                 yield return new object[] { recordType, binaryType, (byte)19 };
             }
         }
@@ -476,6 +478,111 @@ public class InvalidInputTests : ReadTests
         writer.Write((byte)SerializationRecordType.MessageEnd);
 
         stream.Position = 0;
+        Assert.Throws<SerializationException>(() => NrbfDecoder.Decode(stream));
+    }
+
+    [Theory]
+    [InlineData(18, typeof(NotSupportedException))] // not part of the spec, but still less than max allowed value (22)
+    [InlineData(19, typeof(NotSupportedException))] // same as above
+    [InlineData(20, typeof(NotSupportedException))] // same as above
+    [InlineData(23, typeof(SerializationException))] // not part of the spec and more than max allowed value (22)
+    [InlineData(64, typeof(SerializationException))] // same as above but also matches AllowedRecordTypes.SerializedStreamHeader
+    public void InvalidSerializationRecordType(byte recordType, Type expectedException)
+    {
+        using MemoryStream stream = new();
+        BinaryWriter writer = new(stream, Encoding.UTF8);
+
+        WriteSerializedStreamHeader(writer);
+        writer.Write(recordType); // SerializationRecordType
+        writer.Write((byte)SerializationRecordType.MessageEnd);
+
+        stream.Position = 0;
+
+        Assert.Throws(expectedException, () => NrbfDecoder.Decode(stream));
+    }
+
+    [Fact]
+    public void MissingRootRecord()
+    {
+        const int RootRecordId = 1;
+        using MemoryStream stream = new();
+        BinaryWriter writer = new(stream, Encoding.UTF8);
+
+        WriteSerializedStreamHeader(writer, rootId: RootRecordId);
+        writer.Write((byte)SerializationRecordType.BinaryObjectString);
+        writer.Write(RootRecordId + 1); // a different ID
+        writer.Write("theString");
+        writer.Write((byte)SerializationRecordType.MessageEnd);
+
+        stream.Position = 0;
+
+        Assert.Throws<SerializationException>(() => NrbfDecoder.Decode(stream));
+    }
+
+    [Fact]
+    public void Invalid7BitEncodedStringLength()
+    {
+        // The highest bit of the last byte is set (so it's invalid).
+        byte[] invalidLength = [byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue];
+
+        using MemoryStream stream = new();
+        BinaryWriter writer = new(stream, Encoding.UTF8);
+
+        WriteSerializedStreamHeader(writer);
+        writer.Write((byte)SerializationRecordType.BinaryObjectString);
+        writer.Write(1); // root record Id
+        writer.Write(invalidLength); // the length prefix
+        writer.Write(Encoding.UTF8.GetBytes("theString"));
+        writer.Write((byte)SerializationRecordType.MessageEnd);
+
+        stream.Position = 0;
+
+        Assert.Throws<SerializationException>(() => NrbfDecoder.Decode(stream));
+    }
+
+    [Theory]
+    [InlineData("79228162514264337593543950336")] // invalid format (decimal.MaxValue + 1)
+    [InlineData("1111111111111111111111111111111111111111111111111")] // overflow
+    public void InvalidDecimal(string textRepresentation)
+    {
+        using MemoryStream stream = new();
+        BinaryWriter writer = new(stream, Encoding.UTF8);
+
+        WriteSerializedStreamHeader(writer);
+        writer.Write((byte)SerializationRecordType.SystemClassWithMembersAndTypes);
+        writer.Write(1); // root record Id
+        writer.Write("ClassWithDecimalField"); // type name
+        writer.Write(1); // member count
+        writer.Write("memberName");
+        writer.Write((byte)BinaryType.Primitive);
+        writer.Write((byte)PrimitiveType.Decimal);
+        writer.Write(textRepresentation);
+        writer.Write((byte)SerializationRecordType.MessageEnd);
+
+        stream.Position = 0;
+
+        Assert.Throws<SerializationException>(() => NrbfDecoder.Decode(stream));
+    }
+
+    [Fact]
+    public void SurrogateCharacter()
+    {
+        using MemoryStream stream = new();
+        BinaryWriter writer = new(stream, Encoding.UTF8);
+
+        WriteSerializedStreamHeader(writer);
+        writer.Write((byte)SerializationRecordType.SystemClassWithMembersAndTypes);
+        writer.Write(1); // root record Id
+        writer.Write("ClassWithCharField"); // type name
+        writer.Write(1); // member count
+        writer.Write("memberName");
+        writer.Write((byte)BinaryType.Primitive);
+        writer.Write((byte)PrimitiveType.Char);
+        writer.Write((byte)0xC0); // a surrogate character
+        writer.Write((byte)SerializationRecordType.MessageEnd);
+
+        stream.Position = 0;
+
         Assert.Throws<SerializationException>(() => NrbfDecoder.Decode(stream));
     }
 }

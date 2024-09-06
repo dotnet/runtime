@@ -7,6 +7,8 @@
 
   <ItemGroup>
     <Compile Include="..\src\System\Formats\Nrbf\BinaryArrayType.cs" Link="BinaryArrayType.cs" />
+    <Compile Include="..\src\System\Formats\Nrbf\BinaryType.cs" Link="BinaryType.cs" />
+    <Compile Include="..\src\System\Formats\Nrbf\PrimitiveType.cs" Link="PrimitiveType.cs" />
   </ItemGroup>
 
   <ItemGroup>
