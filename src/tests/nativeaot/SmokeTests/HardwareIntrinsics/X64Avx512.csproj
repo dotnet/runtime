@@ -28,7 +28,7 @@ $(CLRTestBashPreCommands)
 
     <CLRTestBatchPreCommands><![CDATA[
 $(CLRTestBatchPreCommands)
-    powershell -Command "(Add-Type -MemberDefinition '[DllImport(\"kernel32.dll\")] public static extern int IsProcessorFeaturePresent(int ProcessorFeature);' -Name W -PassThru)::IsProcessorFeaturePresent(41)"
+    powershell -Command "exit (Add-Type -MemberDefinition '[DllImport(\"kernel32.dll\")] public static extern int IsProcessorFeaturePresent(int ProcessorFeature)%3B' -Name W -PassThru)::IsProcessorFeaturePresent(41)"
     IF %ERRORLEVEL% EQU 0 (
       echo No support for AVX512, test not applicable.
       exit /B 0
