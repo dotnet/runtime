@@ -199,8 +199,7 @@ init_icall_table (void)
 static void*
 get_native_to_interp (MonoMethod *method, void *extra_arg)
 {
-	void *addr;
-
+	void *addr = NULL;
 	MONO_ENTER_GC_UNSAFE;
 	MonoClass *klass = mono_method_get_class (method);
 	MonoImage *image = mono_class_get_image (klass);
@@ -217,23 +216,21 @@ get_native_to_interp (MonoMethod *method, void *extra_arg)
 	char buf [128];
 	char *key = buf;
 	int len;
-	if (name == NULL)
-		return NULL;
+	if (name != NULL) {
+		// the key must match the one used in PInvokeTableGenerator
+		len = snprintf (key, sizeof(buf), "%s#%d:%s:%s:%s", method_name, param_count, name, namespace, class_name);
 
-	// the key must match the one used in PInvokeTableGenerator
-	len = snprintf (key, sizeof(buf), "%s#%d:%s:%s:%s", method_name, param_count, name, namespace, class_name);
+		if (len >= sizeof (buf)) {
+			// The key is too long, try again with a larger buffer
+			key = g_new (char, len + 1);
+			snprintf (key, len + 1, "%s#%d:%s:%s:%s", method_name, param_count, name, namespace, class_name);
+		}
 
-	if (len >= sizeof (buf)) {
-		// The key is too long, try again with a larger buffer
-		key = g_new (char, len + 1);
-	    snprintf (key, len + 1, "%s#%d:%s:%s:%s", method_name, param_count, name, namespace, class_name);
+		addr = wasm_dl_get_native_to_interp (token, key, extra_arg);
+
+		if (key != buf)
+			free (key);
 	}
-
-	addr = wasm_dl_get_native_to_interp (token, key, extra_arg);
-
-	if (key != buf)
-		free (key);
-
 	MONO_EXIT_GC_UNSAFE;
 	return addr;
 }
@@ -438,6 +435,7 @@ mono_wasm_marshal_get_managed_wrapper (const char* assemblyName, const char* nam
 {
 	MonoError error;
 	mono_error_init (&error);
+	MONO_ENTER_GC_UNSAFE;
 	MonoAssembly* assembly = mono_wasm_assembly_load (assemblyName);
 	assert (assembly);
 	MonoImage *image = mono_assembly_get_image (assembly);
@@ -449,4 +447,5 @@ mono_wasm_marshal_get_managed_wrapper (const char* assemblyName, const char* nam
 	MonoMethod *managedWrapper = mono_marshal_get_managed_wrapper (method, NULL, 0, &error);
 	assert (managedWrapper);
 	mono_compile_method (managedWrapper);
+	MONO_EXIT_GC_UNSAFE;
 }
