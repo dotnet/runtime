@@ -24,15 +24,15 @@ namespace DotnetFuzzing.Fuzzers
             using PooledBoundedMemory<char> inputPoisonedBefore = PooledBoundedMemory<char>.Rent(chars, PoisonPagePlacement.Before);
             using PooledBoundedMemory<char> inputPoisonedAfter = PooledBoundedMemory<char>.Rent(chars, PoisonPagePlacement.After);
 
-            Test(inputPoisonedBefore);
-            Test(inputPoisonedAfter);
+            Test(inputPoisonedBefore.Span);
+            Test(inputPoisonedAfter.Span);
         }
 
-        private static void Test(PooledBoundedMemory<char> inputPoisoned)
+        private static void Test(Span<char> span)
         {
-            if (AssemblyNameInfo.TryParse(inputPoisoned.Span, out AssemblyNameInfo? fromTryParse))
+            if (AssemblyNameInfo.TryParse(span, out AssemblyNameInfo? fromTryParse))
             {
-                AssemblyNameInfo fromParse = AssemblyNameInfo.Parse(inputPoisoned.Span);
+                AssemblyNameInfo fromParse = AssemblyNameInfo.Parse(span);
 
                 Assert.Equal(fromTryParse.Name, fromParse.Name);
                 Assert.Equal(fromTryParse.FullName, fromParse.FullName);
@@ -66,7 +66,7 @@ namespace DotnetFuzzing.Fuzzers
             {
                 try
                 {
-                    _ = AssemblyNameInfo.Parse(inputPoisoned.Span);
+                    _ = AssemblyNameInfo.Parse(span);
                 }
                 catch (ArgumentException)
                 {

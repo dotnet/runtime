@@ -30,4 +30,8 @@
     </None>
   </ItemGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\..\System.Formats.Nrbf\src\System.Formats.Nrbf.csproj" />
+  </ItemGroup>
+
 </Project>
