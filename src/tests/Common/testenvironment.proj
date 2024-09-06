@@ -85,6 +85,8 @@
       DOTNET_JitOptRepeat;
       DOTNET_JitOptRepeatCount;
       DOTNET_JitDoReversePostOrderLayout;
+      DOTNET_AltJitName;
+      DOTNET_AltJit;
     </DOTNETVariables>
   </PropertyGroup>
   <ItemGroup>
