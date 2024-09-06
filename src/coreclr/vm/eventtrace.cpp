@@ -1926,7 +1926,7 @@ VOID ETW::EnumerationLog::ModuleRangeRundown()
                                          TRACE_LEVEL_INFORMATION,
                                          CLR_PERFTRACK_PRIVATE_KEYWORD))
         {
-            ETW::EnumerationLog::EnumerationHelper(NULL, NULL, ETW::EnumerationLog::EnumerationStructs::ModuleRangeLoadPrivate);
+            ETW::EnumerationLog::EnumerationHelper(NULL, ETW::EnumerationLog::EnumerationStructs::ModuleRangeLoadPrivate);
         }
     } EX_CATCH { } EX_END_CATCH(SwallowAllExceptions);
 }
@@ -2037,7 +2037,7 @@ VOID ETW::EnumerationLog::StartRundown()
                 enumerationOptions |= ETW::EnumerationLog::EnumerationStructs::JittedMethodRichDebugInfo;
             }
 
-            ETW::EnumerationLog::EnumerationHelper(NULL, NULL, enumerationOptions);
+            ETW::EnumerationLog::EnumerationHelper(NULL, enumerationOptions);
 
             if (bIsThreadingRundownEnabled)
             {
@@ -2124,9 +2124,8 @@ VOID ETW::EnumerationLog::EnumerateForCaptureState()
         {
             DWORD enumerationOptions = GetEnumerationOptionsFromRuntimeKeywords();
 
-            // Send unload events for all remaining domains, including shared domain and
-            // default domain.
-            ETW::EnumerationLog::EnumerationHelper(NULL /* module filter */, NULL /* domain filter */, enumerationOptions);
+            // Send unload events for all remaining modules
+            ETW::EnumerationLog::EnumerationHelper(NULL /* module filter */, enumerationOptions);
 
             // Send thread created events for all currently active threads, if requested
             if (ETW_TRACING_CATEGORY_ENABLED(MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_DOTNET_Context,
@@ -2227,7 +2226,7 @@ VOID ETW::EnumerationLog::EndRundown()
                 enumerationOptions |= ETW::EnumerationLog::EnumerationStructs::JittedMethodRichDebugInfo;
             }
 
-            ETW::EnumerationLog::EnumerationHelper(NULL, NULL, enumerationOptions);
+            ETW::EnumerationLog::EnumerationHelper(NULL, enumerationOptions);
 
             if (bIsThreadingRundownEnabled)
             {
@@ -3009,7 +3008,7 @@ VOID ETW::LoaderLog::DomainUnload(AppDomain *pDomain)
                 enumerationOptions |= ETW::EnumerationLog::EnumerationStructs::TypeUnload;
             }
 
-            ETW::EnumerationLog::EnumerationHelper(NULL, pDomain, enumerationOptions);
+            ETW::EnumerationLog::EnumerationHelper(NULL, enumerationOptions);
         }
     } EX_CATCH { } EX_END_CATCH(SwallowAllExceptions);
 }
@@ -3873,7 +3872,7 @@ VOID ETW::LoaderLog::ModuleLoad(Module *pModule, LONG liReportedSharedModule)
                 if(bTraceFlagLoaderSet || bTraceFlagPerfTrackSet)
                     ETW::LoaderLog::SendModuleEvent(pModule, ETW::EnumerationLog::EnumerationStructs::DomainAssemblyModuleLoad | ETW::EnumerationLog::EnumerationStructs::ModuleRangeLoad);
 
-                ETW::EnumerationLog::EnumerationHelper(pModule, NULL, enumerationOptions);
+                ETW::EnumerationLog::EnumerationHelper(pModule, enumerationOptions);
             }
 
             // we want to report domainmodule events whenever they are loaded in any AppDomain
@@ -3910,9 +3909,8 @@ VOID ETW::EnumerationLog::ProcessShutdown()
         {
             DWORD enumerationOptions = GetEnumerationOptionsFromRuntimeKeywords();
 
-            // Send unload events for all remaining domains, including shared domain and
-            // default domain.
-            ETW::EnumerationLog::EnumerationHelper(NULL /* module filter */, NULL /* domain filter */, enumerationOptions);
+            // Send unload events for all remaining modules
+            ETW::EnumerationLog::EnumerationHelper(NULL /* module filter */, enumerationOptions);
         }
     } EX_CATCH { } EX_END_CATCH(SwallowAllExceptions);
 }
@@ -5564,17 +5562,12 @@ VOID ETW::EnumerationLog::IterateModule(Module *pModule, DWORD enumerationOption
 //
 // Arguments:
 //      * moduleFilter - if non-NULL, events from only moduleFilter module are reported
-//      * domainFilter - if non-NULL, events from only domainFilter domain are reported
 //      * enumerationOptions - Flags from ETW::EnumerationLog::EnumerationStructs which
 //          describe which events should be sent.
 //
-// Notes:
-//     * if all filter args are NULL, events from all domains are reported
-//
-//
 
 // static
-VOID ETW::EnumerationLog::EnumerationHelper(Module *moduleFilter, AppDomain *domainFilter, DWORD enumerationOptions)
+VOID ETW::EnumerationLog::EnumerationHelper(Module *moduleFilter, DWORD enumerationOptions)
 {
     CONTRACTL {
         THROWS;
@@ -5607,18 +5600,7 @@ VOID ETW::EnumerationLog::EnumerationHelper(Module *moduleFilter, AppDomain *dom
     }
     else
     {
-        if(domainFilter)
-        {
-            ETW::EnumerationLog::IterateAppDomain(domainFilter, enumerationOptions);
-        }
-        else
-        {
-            AppDomain *pDomain = AppDomain::GetCurrentDomain();
-            if (pDomain != NULL)
-            {
-                ETW::EnumerationLog::IterateAppDomain(pDomain, enumerationOptions);
-            }
-        }
+        ETW::EnumerationLog::IterateAppDomain(AppDomain::GetCurrentDomain(), enumerationOptions);
     }
 }
 

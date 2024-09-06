@@ -753,7 +753,7 @@ namespace ETW
         static VOID IterateCollectibleLoaderAllocator(AssemblyLoaderAllocator *pLoaderAllocator, DWORD enumerationOptions);
         static VOID IterateAssembly(Assembly *pAssembly, DWORD enumerationOptions);
         static VOID IterateModule(Module *pModule, DWORD enumerationOptions);
-        static VOID EnumerationHelper(Module *moduleFilter, AppDomain *domainFilter, DWORD enumerationOptions);
+        static VOID EnumerationHelper(Module *moduleFilter, DWORD enumerationOptions);
         static DWORD GetEnumerationOptionsFromRuntimeKeywords();
     public:
         typedef union _EnumerationStructs
