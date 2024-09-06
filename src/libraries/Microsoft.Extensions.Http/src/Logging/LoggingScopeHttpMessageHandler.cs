@@ -63,11 +63,11 @@ namespace Microsoft.Extensions.Http.Logging
                     try
                     {
                         HttpResponseMessage response = useAsync
-                        ? await base.SendAsync(request, cancellationToken).ConfigureAwait(false)
+                            ? await base.SendAsync(request, cancellationToken).ConfigureAwait(false)
 #if NET
-                        : base.Send(request, cancellationToken);
+                            : base.Send(request, cancellationToken);
 #else
-                        : throw new NotImplementedException("Unreachable code");
+                            : throw new NotImplementedException("Unreachable code");
 #endif
                         _logger.LogRequestPipelineEnd(response, stopwatch.GetElapsedTime(), shouldRedactHeaderValue);
 
