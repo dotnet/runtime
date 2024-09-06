@@ -19,10 +19,7 @@ public:
         explicit Reader(int readFd) : m_readFd{readFd} {}
         Reader(const Reader&) = delete;
         Reader& operator=(const Reader&) = delete;
-        ~Reader() {
-            if (m_readFd != -1)
-                close (m_readFd);
-        }
+        ~Reader();
         Reader (Reader&& other) : m_readFd{other.m_readFd} {
             other.m_readFd = -1;
         }
@@ -55,10 +52,7 @@ public:
         explicit Writer(int writeFd) : m_writeFd{writeFd} {}
         Writer(const Writer&) = delete;
         Writer& operator=(const Writer&) = delete;
-        ~Writer() {
-            if (m_writeFd != -1)
-                close (m_writeFd);
-        }
+        ~Writer();
         Writer (Writer&& other) : m_writeFd{other.m_writeFd} {
             other.m_writeFd = -1;
         }

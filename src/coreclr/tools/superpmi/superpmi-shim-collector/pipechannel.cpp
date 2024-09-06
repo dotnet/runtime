@@ -21,6 +21,14 @@ PipeChannel PipeChannel::Create()
     return PipeChannel{fds[0], fds[1]};
 }
 
+PipeChannel::Reader::~Reader()
+{
+    if (m_readFd != -1)
+    {
+        close (m_readFd);
+    }
+}
+
 int PipeChannel::Reader::ReadSome(char *dest, int destSize) const
 {
     int toRead = destSize;
@@ -65,6 +73,14 @@ int PipeChannel::Reader::ReadAll(char *dest, int destSize) const
     else
     {
         return res;
+    }
+}
+
+PipeChannel::Writer::~Writer()
+ {
+    if (m_writeFd != -1)
+    {
+        close (m_writeFd);
     }
 }
 
