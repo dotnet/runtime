@@ -3459,19 +3459,6 @@ function emit_arrayop (builder: WasmBuilder, frame: NativePointer, ip: MintOpcod
     return true;
 }
 
-let wasmSimdSupported: boolean | undefined;
-
-function getIsWasmSimdSupported (): boolean {
-    if (wasmSimdSupported !== undefined)
-        return wasmSimdSupported;
-
-    wasmSimdSupported = runtimeHelpers.featureWasmSimd === true;
-    if (!wasmSimdSupported)
-        mono_log_info("Disabling Jiterpreter SIMD");
-
-    return wasmSimdSupported;
-}
-
 function get_import_name (
     builder: WasmBuilder, typeName: string,
     functionPtr: number
@@ -3490,7 +3477,7 @@ function emit_simd (
 ): boolean {
     // First, if compiling an intrinsic attempt to emit the special vectorized implementation
     // We only do this if SIMD is enabled since we'll be using the v128 opcodes.
-    if (builder.options.enableSimd && getIsWasmSimdSupported()) {
+    if (builder.options.enableSimd && runtimeHelpers.featureWasmSimd) {
         switch (argCount) {
             case 2:
                 if (emit_simd_2(builder, ip, <SimdIntrinsic2>index))
@@ -3510,7 +3497,7 @@ function emit_simd (
     // Fall back to a mix of non-vectorized wasm and the interpreter's implementation of the opcodes
     switch (opcode) {
         case MintOpcode.MINT_SIMD_V128_LDC: {
-            if (builder.options.enableSimd && getIsWasmSimdSupported()) {
+            if (builder.options.enableSimd && runtimeHelpers.featureWasmSimd) {
                 builder.local("pLocals");
                 const view = localHeapViewU8().slice(<any>ip + 4, <any>ip + 4 + sizeOfV128);
                 builder.v128_const(view);
