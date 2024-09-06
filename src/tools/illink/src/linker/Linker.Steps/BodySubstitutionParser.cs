@@ -114,6 +114,13 @@ namespace Mono.Linker.Steps
 			}
 
 			_substitutionInfo.SetFieldValue (field, res);
+
+			string init = GetAttribute (fieldNav, "initialize");
+			if (init?.ToLowerInvariant () == "true") {
+				// We would need to also mess with the cctor of the type to set the field to this value,
+				// and doing so correctly is difficult.
+				throw new NotSupportedException ();
+			}
 		}
 
 		void ProcessResources (AssemblyDefinition assembly, XPathNavigator nav)
