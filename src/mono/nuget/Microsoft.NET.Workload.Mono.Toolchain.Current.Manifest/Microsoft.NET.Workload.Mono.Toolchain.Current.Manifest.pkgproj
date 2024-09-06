@@ -44,6 +44,7 @@
     </PropertyGroup>
 
     <ItemGroup>
+      <!-- When changing 'NetVersion', also change Microsoft.NET.Runtime.WebAssembly.Templates.csproj 'PackageId' -->
       <_WorkloadManifestValues Include="NetVersion" Value="net9" /> <!-- NetCurrent -->
       <_WorkloadManifestValues Include="WorkloadVersion" Value="$(PackageVersion)" />
       <_WorkloadManifestValues Include="PackageVersion" Value="$(PackageVersion)" />
