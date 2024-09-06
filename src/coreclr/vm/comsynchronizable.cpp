@@ -333,6 +333,9 @@ extern "C" void QCALLTYPE ThreadNative_SetPriority(QCall::ObjectHandleOnStack th
     GCPROTECT_BEGIN(threadRef)
     threadRef = (THREADBASEREF)thread.Get();
 
+    if (threadRef == NULL)
+        COMPlusThrow(kNullReferenceException, W("NullReference_This"));
+
     // Note that you can manipulate the priority of a thread that hasn't started yet,
     // or one that is running. But you get an exception if you manipulate the priority
     // of a thread that has died.
@@ -554,6 +557,9 @@ extern "C" INT32 QCALLTYPE ThreadNative_GetApartmentState(QCall::ObjectHandleOnS
     {
         GCX_COOP();
         THREADBASEREF threadRef = (THREADBASEREF)t.Get();
+        if (threadRef == NULL)
+            COMPlusThrow(kNullReferenceException, W("NullReference_This"));
+
         thread = threadRef->GetInternal();
 
         if (ThreadIsDead(thread))
@@ -583,24 +589,29 @@ extern "C" INT32 QCALLTYPE ThreadNative_GetApartmentState(QCall::ObjectHandleOnS
 // Indicate whether the thread will host an STA (this may fail if the thread has
 // already been made part of the MTA, use GetApartmentState or the return state
 // from this routine to check for this).
-extern "C" INT32 QCALLTYPE ThreadNative_SetApartmentState(QCall::ThreadHandle thread, INT32 iState)
+extern "C" INT32 QCALLTYPE ThreadNative_SetApartmentState(QCall::ObjectHandleOnStack t, INT32 iState)
 {
-    CONTRACTL
-    {
-        QCALL_CHECK;
-        PRECONDITION(thread != NULL);
-    }
-    CONTRACTL_END;
+    QCALL_CONTRACT;
 
     INT32 retVal = 0;
 
     BEGIN_QCALL;
 
+    Thread* thread = NULL;
+    {
+        GCX_COOP();
+        THREADBASEREF threadRef = (THREADBASEREF)t.Get();
+        if (threadRef == NULL)
+            COMPlusThrow(kNullReferenceException, W("NullReference_This"));
+
+        thread = threadRef->GetInternal();
+    }
+
     // We can only change the apartment if the thread is unstarted or
     // running, and if it's running we have to be in the thread's
     // context.
-    if ((!ThreadNotStarted(thread) && !ThreadIsRunning(thread))
-        || (!ThreadNotStarted(thread) && (GetThread() != thread)))
+    if (!ThreadNotStarted(thread)
+        && (!ThreadIsRunning(thread) || (GetThread() != thread)))
     {
         COMPlusThrow(kThreadStateException);
     }

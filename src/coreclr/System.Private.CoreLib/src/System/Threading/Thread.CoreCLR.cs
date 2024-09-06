@@ -261,7 +261,7 @@ namespace System.Threading
         private static partial int GetApartmentState(ObjectHandleOnStack t);
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ThreadNative_SetApartmentState")]
-        private static partial int SetApartmentState(ThreadHandle t, int state);
+        private static partial int SetApartmentState(ObjectHandleOnStack t, int state);
 
         public ApartmentState GetApartmentState()
         {
@@ -272,9 +272,10 @@ namespace System.Threading
         private bool SetApartmentStateUnchecked(ApartmentState state, bool throwOnError)
         {
             ApartmentState retState;
-            lock (this) // This is also satisfying a GC.KeepAlive().
+            lock (this) // This lock is only needed when the this is not the current thread.
             {
-                retState = (ApartmentState)SetApartmentState(GetNativeHandle(), (int)state);
+                Thread _this = this;
+                retState = (ApartmentState)SetApartmentState(ObjectHandleOnStack.Create(ref _this), (int)state);
             }
 
             // Special case where we pass in Unknown and get back MTA.
