@@ -61,7 +61,7 @@ internal static class BinaryReaderExtensions
     {
         byte primitiveType = reader.ReadByte();
         // String is the last defined value, 4 is not used at all.
-        if (primitiveType is 4 or > (byte)PrimitiveType.String)
+        if (primitiveType is 0 or 4 or (byte)PrimitiveType.Null or > (byte)PrimitiveType.String)
         {
             ThrowHelper.ThrowInvalidValue(primitiveType);
         }

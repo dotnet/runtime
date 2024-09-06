@@ -426,7 +426,9 @@ public class InvalidInputTests : ReadTests
         {
             foreach (byte binaryType in new byte[] { (byte)0 /* BinaryType.Primitive */, (byte)7 /* BinaryType.PrimitiveArray */ })
             {
+                yield return new object[] { recordType, binaryType, (byte)0 }; // value not used by the spec
                 yield return new object[] { recordType, binaryType, (byte)4 }; // value not used by the spec
+                yield return new object[] { recordType, binaryType, (byte)17 }; // used by the spec, but illegal in given context
                 yield return new object[] { recordType, binaryType, (byte)19 };
             }
         }
