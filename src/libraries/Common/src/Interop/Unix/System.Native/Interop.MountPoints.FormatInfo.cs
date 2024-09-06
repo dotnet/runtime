@@ -97,6 +97,7 @@ internal static partial class Interop
                     // Skip to the separator which is end of optional fields (Field 8)
                     while (fields.MoveNext() && !line[fields.Current].Equals("-", StringComparison.Ordinal));                    
                     fields.MoveNext();
+					
                     format = line[fields.Current].ToString();
 
                     fields.MoveNext();
