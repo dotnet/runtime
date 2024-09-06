@@ -1370,69 +1370,29 @@ int LinearScan::BuildNode(GenTree* tree)
 #include "hwintrinsic.h"
 
 //------------------------------------------------------------------------
-// BuildHWIntrinsic: Set the NodeInfo for a GT_HWINTRINSIC ConditionalSelect tree with an embedded op.
+// BuildEmbeddedOperandUses: Build the uses for an Embedded Mask operand
 //
 // These need special handling as the ConditionalSelect and embedded op will be generated as a single instruction,
 // and possibly prefixed with a MOVPRFX
 //
 //
 // Arguments:
-//    tree       - The GT_HWINTRINSIC node of interest
-//    intrin     - The GT_HWINTRINSIC node as a HWIntrinsic
-//    pDstCount  - OUT parameter - the number of registers defined for the given node
+//    embeddedOpNode - The embdedded node of interest
+//    intrin         - The embedded node as a HWIntrinsic
 //
 // Return Value:
 //    The number of sources consumed by this node.
 //
-int LinearScan::BuildConditionalSelectWithEmbeddedOp(GenTreeHWIntrinsic* intrinsicTree,
-                                                     const HWIntrinsic   intrin,
-                                                     int*                pDstCount)
+int LinearScan::BuildEmbeddedOperandUses(GenTreeHWIntrinsic* embeddedOpNode, GenTree* embeddedDelayFreeOp)
 {
-    assert(intrin.id == NI_Sve_ConditionalSelect);
-    assert(HWIntrinsicInfo::IsMaskedOperation(intrin.id));
-    assert(HWIntrinsicInfo::IsExplicitMaskedOperation(intrin.id));
-    assert(!HWIntrinsicInfo::IsLowMaskedOperation(intrin.id));
-    assert(!HWIntrinsicInfo::IsLowVectorOperation(intrin.id));
-    assert(!HWIntrinsicInfo::IsMultiReg(intrin.id));
-    assert(intrin.op1 != nullptr);
-    assert(varTypeIsMask(intrin.op1->TypeGet()));
-    assert(intrin.op2 != nullptr);
-    assert(intrin.op2->OperIs(GT_HWINTRINSIC));
-    assert(intrin.op2->IsEmbMaskOp());
-    assert(!intrin.op2->OperIsHWIntrinsic(NI_Sve_ConvertVectorToMask));
-    assert(intrin.op3 != nullptr);
-    assert(intrin.op4 == nullptr);
+    assert(embeddedOpNode->IsEmbMaskOp());
+    assert(!embeddedOpNode->OperIsHWIntrinsic(NI_Sve_ConvertVectorToMask));
 
-    int srcCount = 0;
-
-    GenTreeHWIntrinsic* embeddedOpNode = intrin.op2->AsHWIntrinsic();
-    const HWIntrinsic   intrinEmbedded(embeddedOpNode);
-    size_t              embNumArgs = embeddedOpNode->GetOperandCount();
-
-    // Determine whether this the embedded operation requires delay free
-    GenTree* embeddedDelayFreeOp = getDelayFreeOp(embeddedOpNode);
+    int               srcCount = 0;
+    const HWIntrinsic intrinEmbedded(embeddedOpNode);
 
     // Build any immediates
     BuildHWIntrinsicImmediate(embeddedOpNode, intrinEmbedded);
-
-    // Build Op1
-
-    SingleTypeRegSet predMask = RBM_ALLMASK.GetPredicateRegSet();
-    if (HWIntrinsicInfo::IsLowMaskedOperation(intrinEmbedded.id))
-    {
-        predMask = RBM_LOWMASK.GetPredicateRegSet();
-    }
-
-    if (embeddedDelayFreeOp != nullptr)
-    {
-        srcCount += BuildDelayFreeUses(intrin.op1, nullptr, predMask);
-    }
-    else
-    {
-        srcCount += BuildOperandUses(intrin.op1, predMask);
-    }
-
-    // Build Op2 and Op3
 
     if (embeddedDelayFreeOp != nullptr)
     {
@@ -1440,7 +1400,7 @@ int LinearScan::BuildConditionalSelectWithEmbeddedOp(GenTreeHWIntrinsic* intrins
 
         if (HWIntrinsicInfo::IsFmaIntrinsic(intrinEmbedded.id))
         {
-            assert(embNumArgs == 3);
+            assert(intrinEmbedded.numOperands == 3);
 
             // For FMA intrinsics, the arguments may get switched around during codegen.
             // Figure out where the delay free op will be.
@@ -1462,7 +1422,7 @@ int LinearScan::BuildConditionalSelectWithEmbeddedOp(GenTreeHWIntrinsic* intrins
             }
         }
 
-        for (size_t argNum = 1; argNum <= embNumArgs; argNum++)
+        for (size_t argNum = 1; argNum <= intrinEmbedded.numOperands; argNum++)
         {
             GenTree* node = embeddedOpNode->Op(argNum);
 
@@ -1483,20 +1443,12 @@ int LinearScan::BuildConditionalSelectWithEmbeddedOp(GenTreeHWIntrinsic* intrins
                 assert((useRefPosition != nullptr && useRefPosition->delayRegFree) || (uses == 0));
             }
         }
-
-        srcCount += BuildDelayFreeUses(intrin.op3, embeddedDelayFreeOp);
     }
     else
     {
-        srcCount += BuildOperandUses(intrin.op2);
-        srcCount += BuildOperandUses(intrin.op3);
+        srcCount += BuildOperandUses(embeddedOpNode);
     }
 
-    buildInternalRegisterUses();
-
-    BuildDef(intrinsicTree);
-
-    *pDstCount = 1;
     return srcCount;
 }
 
@@ -1518,12 +1470,6 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
 
     int srcCount = 0;
 
-    // ConditionalSelect with embedded masked operations require special handling
-    if ((intrin.id == NI_Sve_ConditionalSelect) && (intrin.op2->IsEmbMaskOp()))
-    {
-        return BuildConditionalSelectWithEmbeddedOp(intrinsicTree, intrin, pDstCount);
-    }
-
     // Determine whether this is an operation where an op must be marked delayFree so that it
     // is not allocated the same register as the target.
     GenTree* delayFreeOp = getDelayFreeOp(intrinsicTree);
@@ -1534,6 +1480,16 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
     // Determine whether this is an operation where one of the ops has consecutive registers
     bool     destIsConsecutive = false;
     GenTree* consecutiveOp     = getConsecutiveRegistersOperand(intrinsicTree, &destIsConsecutive);
+
+    // Determine whether this is an operation where one of the ops is an embedded mask
+    GenTreeHWIntrinsic* embeddedOp = getEmbeddedMaskOperand(intrin);
+
+    // If there is an embedded op, then determine if that has an op that must be marked delayFree
+    if (embeddedOp != nullptr)
+    {
+        assert(delayFreeOp == nullptr);
+        delayFreeOp = getDelayFreeOp(embeddedOp);
+    }
 
     // Build any immediates
     BuildHWIntrinsicImmediate(intrinsicTree, intrin);
@@ -1547,10 +1503,18 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
 
         SingleTypeRegSet candidates = getOperandCandidates(intrinsicTree, intrin, opNum);
 
-        if (addrOp == operand)
+        if (embeddedOp == operand)
         {
-            assert(delayFreeOp != operand);
+            assert(addrOp != operand);
             assert(consecutiveOp != operand);
+            assert(delayFreeOp != operand);
+
+            srcCount += BuildEmbeddedOperandUses(embeddedOp, delayFreeOp);
+        }
+        else if (addrOp == operand)
+        {
+            assert(consecutiveOp != operand);
+            assert(delayFreeOp != operand);
 
             srcCount += BuildAddrUses(operand, candidates);
         }
@@ -2225,6 +2189,24 @@ GenTree* LinearScan::getConsecutiveRegistersOperand(const HWIntrinsic intrin, bo
     }
 
     return consecutiveOp;
+}
+
+//------------------------------------------------------------------------
+//
+// Arguments:
+//    intrinsicTree - Tree to check
+//
+// Return Value:
+//    The operand that is an embedded mask
+//
+GenTreeHWIntrinsic* LinearScan::getEmbeddedMaskOperand(const HWIntrinsic intrin)
+{
+    if ((intrin.id == NI_Sve_ConditionalSelect) && (intrin.op2->IsEmbMaskOp()))
+    {
+        assert(intrin.op2->OperIsHWIntrinsic());
+        return intrin.op2->AsHWIntrinsic();
+    }
+    return nullptr;
 }
 
 //------------------------------------------------------------------------
