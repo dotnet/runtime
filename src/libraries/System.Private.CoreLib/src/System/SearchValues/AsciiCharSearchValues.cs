@@ -36,7 +36,6 @@ namespace System.Buffers
         internal override char[] GetValues() =>
             _state.Lookup.GetCharValues();
 
-        // Despite the name being Ascii, this type may be used for non-ASCII values.
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal override bool ContainsCore(char value) =>
             _state.Lookup.Contains256(value);

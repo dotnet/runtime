@@ -571,7 +571,6 @@ namespace System.Buffers
             where TResult : struct
             where TNegator : struct, INegator
             where TUniqueLowNibble : struct, SearchValues.IRuntimeConst
-
             where TResultMapper : struct, IResultMapper<byte, TResult>
         {
             ref byte currentSearchSpace = ref searchSpace;
