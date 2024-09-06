@@ -1410,8 +1410,8 @@ int LinearScan::BuildConditionalSelectWithEmbeddedOp(GenTreeHWIntrinsic* intrins
     size_t              embNumArgs = embeddedOpNode->GetOperandCount();
 
     // Determine whether this the embedded operation requires delay free
-    bool     embeddedIsRMW             = false;
-    GenTree* embeddedDelayFreeOp       = getDelayFreeOp(embeddedOpNode, &embeddedIsRMW);
+    bool     embeddedIsRMW       = false;
+    GenTree* embeddedDelayFreeOp = getDelayFreeOp(embeddedOpNode, &embeddedIsRMW);
 
     // Handle Op1
 
@@ -1451,7 +1451,8 @@ int LinearScan::BuildConditionalSelectWithEmbeddedOp(GenTreeHWIntrinsic* intrins
                 user = use.User();
             }
             unsigned resultOpNum =
-                embeddedOpNode->GetResultOpNumForRmwIntrinsic(user, intrinEmbedded.op1, intrinEmbedded.op2, intrinEmbedded.op3);
+                embeddedOpNode->GetResultOpNumForRmwIntrinsic(user, intrinEmbedded.op1, intrinEmbedded.op2,
+                                                              intrinEmbedded.op3);
 
             if (resultOpNum != 0)
             {
@@ -1548,7 +1549,6 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
 
     int srcCount = 0;
 
-
     // ConditionalSelect with embedded masked operations require special handling
     if ((intrin.id == NI_Sve_ConditionalSelect) && (intrin.op2->IsEmbMaskOp()))
     {
@@ -1564,8 +1564,8 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
     GenTree* addrOp = LinearScan::getVectorAddrOperand(intrinsicTree);
 
     // Determine whether this is an operation where one of the ops has consecutive registers
-    bool destIsConsecutive = false;
-    GenTree* consecutiveOp = getConsecutiveRegistersOperand(intrinsicTree, &destIsConsecutive);
+    bool     destIsConsecutive = false;
+    GenTree* consecutiveOp     = getConsecutiveRegistersOperand(intrinsicTree, &destIsConsecutive);
 
     // Build any immediates
     bool hasImmediateOperand = buildHWIntrinsicImmediate(intrinsicTree, intrin);
@@ -1602,7 +1602,7 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
             else
             {
                 RefPosition* delayUse = BuildUse(operand, candidates);
-                srcCount+=1;
+                srcCount += 1;
 
                 if (opNum == 1)
                 {
@@ -1630,7 +1630,6 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
     }
 
     buildInternalRegisterUses();
-
 
     // Build Destination
 
@@ -1976,7 +1975,7 @@ SingleTypeRegSet LinearScan::getOperandCandidates(GenTreeHWIntrinsic* intrinsicT
 
             if (baseElementSize == 8)
             {
-                opCandidates= RBM_SVE_INDEXED_D_ELEMENT_ALLOWED_REGS.GetFloatRegSet();
+                opCandidates = RBM_SVE_INDEXED_D_ELEMENT_ALLOWED_REGS.GetFloatRegSet();
             }
             else
             {
@@ -2038,7 +2037,7 @@ SingleTypeRegSet LinearScan::getOperandCandidates(GenTreeHWIntrinsic* intrinsicT
 //
 GenTree* LinearScan::getDelayFreeOp(GenTreeHWIntrinsic* intrinsicTree, bool* isRMW)
 {
-    *isRMW             = intrinsicTree->isRMWHWIntrinsic(compiler);
+    *isRMW = intrinsicTree->isRMWHWIntrinsic(compiler);
 
     const NamedIntrinsic intrinsicId = intrinsicTree->GetHWIntrinsicId();
     GenTree*             delayFreeOp = nullptr;
@@ -2086,7 +2085,7 @@ GenTree* LinearScan::getDelayFreeOp(GenTreeHWIntrinsic* intrinsicTree, bool* isR
         case NI_AdvSimd_Arm64_LoadAndInsertScalarVector128x3:
         case NI_AdvSimd_Arm64_LoadAndInsertScalarVector128x4:
             assert(*isRMW);
-            delayFreeOp        = intrinsicTree->Op(1);
+            delayFreeOp = intrinsicTree->Op(1);
             assert(delayFreeOp != nullptr);
             break;
 
@@ -2142,7 +2141,7 @@ GenTree* LinearScan::getVectorAddrOperand(GenTreeHWIntrinsic* intrinsicTree)
     }
 
     // Operands that are not loads or stores but do require an address
-    switch(intrinsicTree->GetHWIntrinsicId())
+    switch (intrinsicTree->GetHWIntrinsicId())
     {
         case NI_Sve_PrefetchBytes:
         case NI_Sve_PrefetchInt16:
@@ -2156,7 +2155,7 @@ GenTree* LinearScan::getVectorAddrOperand(GenTreeHWIntrinsic* intrinsicTree)
             {
                 return intrinsicTree->Op(2);
             }
-        break;
+            break;
 
         default:
             break;
@@ -2175,9 +2174,9 @@ GenTree* LinearScan::getVectorAddrOperand(GenTreeHWIntrinsic* intrinsicTree)
 // Return Value:
 //    The operand that requires consecutive registers
 //
-GenTree* LinearScan::getConsecutiveRegistersOperand(const HWIntrinsic intrin, bool *destIsConsecutive)
+GenTree* LinearScan::getConsecutiveRegistersOperand(const HWIntrinsic intrin, bool* destIsConsecutive)
 {
-    *destIsConsecutive = false;
+    *destIsConsecutive     = false;
     GenTree* consecutiveOp = nullptr;
 
     if (!HWIntrinsicInfo::NeedsConsecutiveRegisters(intrin.id))
