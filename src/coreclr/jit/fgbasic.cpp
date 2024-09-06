@@ -6736,16 +6736,19 @@ BasicBlock* Compiler::fgNewBBinRegionWorker(BBKinds     jumpKind,
 //
 BasicBlock* Compiler::fgNewBBatTryRegionEnd(BBKinds jumpKind, unsigned tryIndex)
 {
-    EHblkDsc*         ehDsc      = ehGetDsc(tryIndex);
-    BasicBlock* const oldTryLast = ehDsc->ebdTryLast;
+    BasicBlock* const oldTryLast = ehGetDsc(tryIndex)->ebdTryLast;
     BasicBlock* const newBlock   = fgNewBBafter(jumpKind, oldTryLast, /* extendRegion */ false);
     newBlock->setTryIndex(tryIndex);
     newBlock->clearHndIndex();
 
-    for (EHblkDsc* const HBtab : EHClauses(this))
+    // Update this try region's (and all parent try regions') last block pointer
+    //
+    for (unsigned XTnum = tryIndex; XTnum < compHndBBtabCount; XTnum++)
     {
+        EHblkDsc* const HBtab = ehGetDsc(XTnum);
         if (HBtab->ebdTryLast == oldTryLast)
         {
+            assert((XTnum == tryIndex) || (ehGetDsc(tryIndex)->ebdEnclosingTryIndex != EHblkDsc::NO_ENCLOSING_INDEX));
             fgSetTryEnd(HBtab, newBlock);
         }
     }
