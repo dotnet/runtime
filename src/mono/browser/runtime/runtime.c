@@ -282,8 +282,13 @@ wasm_dl_symbol (void *handle, const char *name, char **err, void *user_data)
 	}
 #endif
 
-#if true
+#ifndef WHY_OH_WHY
 	PinvokeTable* index = (PinvokeTable*)handle;
+	int i = 0;
+
+	assert(wasm_dl_is_pinvoke_table (handle));
+	for (i = 0; index->imports[i].name != NULL; ++i) {}
+	assert (i == index->count);
 
 	PinvokeImport key = { name, NULL };
     PinvokeImport* result = (PinvokeImport *)bsearch(&key, index->imports, index->count, sizeof(PinvokeImport), import_compare_key);
