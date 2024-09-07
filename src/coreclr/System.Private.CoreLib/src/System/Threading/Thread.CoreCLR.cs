@@ -151,10 +151,25 @@ namespace System.Threading
         public static bool Yield() => YieldInternal() != Interop.BOOL.FALSE;
 
         [MethodImpl(MethodImplOptions.NoInlining)]
-        private static Thread InitializeCurrentThread() => t_currentThread = GetCurrentThreadNative();
+        private static Thread InitializeCurrentThread()
+        {
+            t_currentThread = GetCurrentThread() ?? GetCurrentThreadWorker();
+            return t_currentThread;
+
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            static Thread GetCurrentThreadWorker()
+            {
+                Thread? thread = null;
+                GetCurrentThreadSlow(ObjectHandleOnStack.Create(ref thread));
+                return thread!;
+            }
+        }
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern Thread GetCurrentThreadNative();
+        private static extern Thread GetCurrentThread();
+
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ThreadNative_GetCurrentThreadSlow")]
+        private static partial void GetCurrentThreadSlow(ObjectHandleOnStack thread);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         private extern void Initialize();

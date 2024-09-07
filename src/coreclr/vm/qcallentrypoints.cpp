@@ -236,6 +236,7 @@ static const Entry s_QCall[] =
     DllImportEntry(ThreadNative_Start)
     DllImportEntry(ThreadNative_SetPriority)
     DllImportEntry(ThreadNative_IsAlive)
+    DllImportEntry(ThreadNative_GetCurrentThreadSlow)
     DllImportEntry(ThreadNative_SetIsBackground)
     DllImportEntry(ThreadNative_InformThreadNameChange)
     DllImportEntry(ThreadNative_YieldThread)

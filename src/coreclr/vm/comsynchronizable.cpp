@@ -385,32 +385,24 @@ extern "C" BOOL QCALLTYPE ThreadNative_IsAlive(QCall::ObjectHandleOnStack t)
     return ret;
 }
 
-NOINLINE static Object* GetCurrentThreadHelper()
-{
-    FCALL_CONTRACT;
-    FC_INNER_PROLOG(ThreadNative::GetCurrentThread);
-    OBJECTREF   refRetVal  = NULL;
-
-    HELPER_METHOD_FRAME_BEGIN_RET_ATTRIB_1(Frame::FRAME_ATTR_EXACT_DEPTH|Frame::FRAME_ATTR_CAPTURE_DEPTH_2, refRetVal);
-    refRetVal = GetThread()->GetExposedObject();
-    HELPER_METHOD_FRAME_END();
-
-    FC_INNER_EPILOG();
-    return OBJECTREFToObject(refRetVal);
-}
-
 FCIMPL0(Object*, ThreadNative::GetCurrentThread)
 {
     FCALL_CONTRACT;
-    OBJECTHANDLE ExposedObject = GetThread()->m_ExposedObject;
-    _ASSERTE(ExposedObject != 0); //Thread's constructor always initializes its GCHandle
-    Object* result = *((Object**) ExposedObject);
-    if (result != 0)
-        return result;
-
-    FC_INNER_RETURN(Object*, GetCurrentThreadHelper());
+    return OBJECTREFToObject(GetThread()->GetExposedObjectRaw());
 }
 FCIMPLEND
+
+extern "C" void QCALLTYPE ThreadNative_GetCurrentThreadSlow(QCall::ObjectHandleOnStack thread)
+{
+    QCALL_CONTRACT;
+
+    BEGIN_QCALL;
+
+    GCX_COOP();
+    thread.Set(GetThread()->GetExposedObject());
+
+    END_QCALL;
+}
 
 extern "C" UINT64 QCALLTYPE ThreadNative_GetCurrentOSThreadId()
 {

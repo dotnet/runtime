@@ -299,7 +299,7 @@ FCFuncEnd()
 
 FCFuncStart(gThreadFuncs)
     FCFuncElement("Initialize", ThreadNative::Initialize)
-    FCFuncElement("GetCurrentThreadNative", ThreadNative::GetCurrentThread)
+    FCFuncElement("GetCurrentThread", ThreadNative::GetCurrentThread)
     FCFuncElement("InternalFinalize", ThreadNative::Finalize)
     FCFuncElement("GetIsBackground", ThreadNative::GetIsBackground)
     FCFuncElement("get_IsThreadPoolThread", ThreadNative::IsThreadpoolThread)
