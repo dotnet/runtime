@@ -298,7 +298,6 @@ FCFuncStart(gMathFFuncs)
 FCFuncEnd()
 
 FCFuncStart(gThreadFuncs)
-    FCFuncElement("Initialize", ThreadNative::Initialize)
     FCFuncElement("GetCurrentThread", ThreadNative::GetCurrentThread)
     FCFuncElement("InternalFinalize", ThreadNative::Finalize)
     FCFuncElement("GetIsBackground", ThreadNative::GetIsBackground)

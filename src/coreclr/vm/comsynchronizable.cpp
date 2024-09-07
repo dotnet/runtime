@@ -426,33 +426,36 @@ extern "C" UINT64 QCALLTYPE ThreadNative_GetCurrentOSThreadId()
     return threadId;
 }
 
-FCIMPL1(void, ThreadNative::Initialize, ThreadBaseObject* pThisUNSAFE)
+extern "C" void QCALLTYPE ThreadNative_Initialize(QCall::ObjectHandleOnStack t)
 {
-    FCALL_CONTRACT;
+    QCALL_CONTRACT;
 
-    THREADBASEREF   pThis       = (THREADBASEREF) pThisUNSAFE;
+    BEGIN_QCALL;
 
-    HELPER_METHOD_FRAME_BEGIN_1(pThis);
+    GCX_COOP();
 
-    _ASSERTE(pThis != NULL);
-    _ASSERTE(pThis->m_InternalThread == NULL);
+    THREADBASEREF threadRef = NULL;
+    GCPROTECT_BEGIN(threadRef)
+    threadRef = (THREADBASEREF)t.Get();
+
+    _ASSERTE(threadRef != NULL);
+    _ASSERTE(threadRef->GetInternal() == NULL);
 
     // if we don't have an internal Thread object associated with this exposed object,
     // now is our first opportunity to create one.
-    Thread      *unstarted = SetupUnstartedThread();
-
+    Thread* unstarted = SetupUnstartedThread();
     PREFIX_ASSUME(unstarted != NULL);
 
-    pThis->SetInternal(unstarted);
-    pThis->SetManagedThreadId(unstarted->GetThreadId());
-    unstarted->SetExposedObject(pThis);
+    threadRef->SetInternal(unstarted);
+    threadRef->SetManagedThreadId(unstarted->GetThreadId());
+    unstarted->SetExposedObject(threadRef);
 
     // Initialize the thread priority to normal.
-    pThis->SetPriority(ThreadNative::PRIORITY_NORMAL);
+    threadRef->SetPriority(ThreadNative::PRIORITY_NORMAL);
 
-    HELPER_METHOD_FRAME_END();
+    GCPROTECT_END();
+    END_QCALL;
 }
-FCIMPLEND
 
 // Return whether or not this is a background thread.
 FCIMPL1(FC_BOOL_RET, ThreadNative::GetIsBackground, ThreadBaseObject* pThisUNSAFE)

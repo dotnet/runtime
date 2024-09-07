@@ -1302,7 +1302,6 @@ typedef DPTR(class ThreadBaseObject) PTR_ThreadBaseObject;
 class ThreadBaseObject : public Object
 {
     friend class ClrDataAccess;
-    friend class ThreadNative;
     friend class CoreLibBinder;
     friend class Object;
 

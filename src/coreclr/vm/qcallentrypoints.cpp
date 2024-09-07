@@ -241,6 +241,7 @@ static const Entry s_QCall[] =
     DllImportEntry(ThreadNative_InformThreadNameChange)
     DllImportEntry(ThreadNative_YieldThread)
     DllImportEntry(ThreadNative_GetCurrentOSThreadId)
+    DllImportEntry(ThreadNative_Initialize)
     DllImportEntry(ThreadNative_GetThreadState)
 #ifdef FEATURE_COMINTEROP_APARTMENT_SUPPORT
     DllImportEntry(ThreadNative_GetApartmentState)

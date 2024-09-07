@@ -171,8 +171,14 @@ namespace System.Threading
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ThreadNative_GetCurrentThreadSlow")]
         private static partial void GetCurrentThreadSlow(ObjectHandleOnStack thread);
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        private extern void Initialize();
+        private void Initialize()
+        {
+            Thread _this = this;
+            Initialize(ObjectHandleOnStack.Create(ref _this));
+        }
+
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ThreadNative_Initialize")]
+        private static partial void Initialize(ObjectHandleOnStack thread);
 
         /// <summary>Clean up the thread when it goes away.</summary>
         ~Thread() => InternalFinalize(); // Delegate to the unmanaged portion.
