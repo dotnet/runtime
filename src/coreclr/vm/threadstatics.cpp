@@ -33,7 +33,6 @@ static TLSIndexToMethodTableMap *g_pThreadStaticCollectibleTypeIndices;
 static TLSIndexToMethodTableMap *g_pThreadStaticNonCollectibleTypeIndices;
 static PTR_MethodTable g_pMethodTablesForDirectThreadLocalData[offsetof(ThreadLocalData, ExtendedDirectThreadLocalTLSData) - offsetof(ThreadLocalData, ThreadBlockingInfo_First) + EXTENDED_DIRECT_THREAD_LOCAL_SIZE];
 
-static Volatile<uint8_t> s_GCsWhichDoRelocateAndCanEmptyOutTheTLSIndices = 0;
 static uint32_t g_NextTLSSlot = 1;
 static uint32_t g_NextNonCollectibleTlsSlot = NUMBER_OF_TLSOFFSETS_NOT_USED_IN_NONCOLLECTIBLE_ARRAY;
 static uint32_t g_directThreadLocalTLSBytesAvailable = EXTENDED_DIRECT_THREAD_LOCAL_SIZE;
@@ -277,7 +276,7 @@ void TLSIndexToMethodTableMap::Clear(TLSIndex index, uint8_t whenCleared)
     _ASSERTE(IsClearedValue(pMap[index.GetIndexOffset()]));
 }
 
-bool TLSIndexToMethodTableMap::FindClearedIndex(uint8_t whenClearedMarkerToAvoid, TLSIndex* pIndex)
+bool TLSIndexToMethodTableMap::FindClearedIndex(TLSIndex* pIndex)
 {
     CONTRACTL
     {
@@ -291,15 +290,6 @@ bool TLSIndexToMethodTableMap::FindClearedIndex(uint8_t whenClearedMarkerToAvoid
     {
         if (entry.IsClearedValue)
         {
-            uint8_t whenClearedMarker = entry.ClearedMarker;
-            if ((whenClearedMarker == whenClearedMarkerToAvoid) ||
-                (whenClearedMarker == (whenClearedMarkerToAvoid - 1)) ||
-                (whenClearedMarker == (whenClearedMarkerToAvoid - 2)))
-            {
-                // Make sure we are not within 2 of the marker we are trying to avoid
-                // Use multiple compares instead of trying to fuss around with the overflow style comparisons
-                continue;
-            }
             *pIndex = entry.TlsIndex;
             return true;
         }
@@ -317,7 +307,7 @@ void InitializeThreadStaticData()
     }
     CONTRACTL_END;
 
-    g_pThreadStaticCollectibleTypeIndices = new TLSIndexToMethodTableMap(TLSIndexType::NonCollectible);
+    g_pThreadStaticCollectibleTypeIndices = new TLSIndexToMethodTableMap(TLSIndexType::Collectible);
     g_pThreadStaticNonCollectibleTypeIndices = new TLSIndexToMethodTableMap(TLSIndexType::NonCollectible);
     g_TLSCrst.Init(CrstThreadLocalStorageLock, CRST_UNSAFE_ANYMODE);
 }
@@ -387,7 +377,7 @@ void FreeLoaderAllocatorHandlesForTLSData(Thread *pThread)
 #endif
         for (const auto& entry : g_pThreadStaticCollectibleTypeIndices->CollectibleEntries())
         {
-            _ASSERTE((entry.TlsIndex.GetIndexOffset() < pThread->cLoaderHandles) || allRemainingIndicesAreNotValid);
+            _ASSERTE((entry.TlsIndex.GetIndexOffset() <= pThread->cLoaderHandles) || allRemainingIndicesAreNotValid);
             if (entry.TlsIndex.GetIndexOffset() >= pThread->cLoaderHandles)
             {
 #ifndef _DEBUG
@@ -451,9 +441,9 @@ void FreeThreadStaticData(Thread* pThread)
         pOldCollectibleTlsArrayData = pThreadLocalData->pCollectibleTlsArrayData;
         oldCollectibleTlsDataCount = pThreadLocalData->cCollectibleTlsData;
 
-        pThreadLocalData->pCollectibleTlsArrayData = 0;
+        pThreadLocalData->pCollectibleTlsArrayData = NULL;
         pThreadLocalData->cCollectibleTlsData = 0;
-        pThreadLocalData->pNonCollectibleTlsArrayData = 0;
+        pThreadLocalData->pNonCollectibleTlsArrayData = NULL;
         pThreadLocalData->cNonCollectibleTlsData = 0;
 
         pOldInFlightData = pThreadLocalData->pInFlightData;
@@ -470,10 +460,7 @@ void FreeThreadStaticData(Thread* pThread)
         }
     }
 
-    if (pOldCollectibleTlsArrayData != NULL)
-    {
-        delete[] (uint8_t*)pOldCollectibleTlsArrayData;
-    }
+    delete[] (uint8_t*)pOldCollectibleTlsArrayData;
 
     while (pOldInFlightData != NULL)
     {
@@ -770,7 +757,7 @@ void GetTLSIndexForThreadStatic(MethodTable* pMT, bool gcStatic, TLSIndex* pInde
     }
     else
     {
-        if (!g_pThreadStaticCollectibleTypeIndices->FindClearedIndex(s_GCsWhichDoRelocateAndCanEmptyOutTheTLSIndices, &newTLSIndex))
+        if (!g_pThreadStaticCollectibleTypeIndices->FindClearedIndex(&newTLSIndex))
         {
             uint32_t tlsRawIndex = g_NextTLSSlot;
             newTLSIndex = TLSIndex(TLSIndexType::Collectible, tlsRawIndex);
@@ -803,7 +790,7 @@ void FreeTLSIndicesForLoaderAllocator(LoaderAllocator *pLoaderAllocator)
 
     while (current != end)
     {
-        g_pThreadStaticCollectibleTypeIndices->Clear(tlsIndicesToCleanup[current], s_GCsWhichDoRelocateAndCanEmptyOutTheTLSIndices);
+        g_pThreadStaticCollectibleTypeIndices->Clear(tlsIndicesToCleanup[current], 0);
         ++current;
     }
 }
