@@ -362,36 +362,28 @@ extern "C" void QCALLTYPE ThreadNative_SetPriority(QCall::ObjectHandleOnStack th
     END_QCALL;
 }
 
-FCIMPL1(FC_BOOL_RET, ThreadNative::IsAlive, ThreadBaseObject* pThisUNSAFE)
+extern "C" BOOL QCALLTYPE ThreadNative_IsAlive(QCall::ObjectHandleOnStack t)
 {
-    FCALL_CONTRACT;
+    QCALL_CONTRACT;
 
-    if (pThisUNSAFE==NULL)
-        FCThrowRes(kNullReferenceException, W("NullReference_This"));
+    BOOL ret = FALSE;
 
-    THREADBASEREF thisRef(pThisUNSAFE);
-    BOOL ret = false;
+    BEGIN_QCALL;
 
-    // Keep managed Thread object alive, since the native object's
-    // lifetime is tied to the managed object's finalizer.  And with
-    // resurrection, it may be possible to get a dangling pointer here -
-    // consider both protecting thisRef and setting the managed object's
-    // Thread* to NULL in the GC's ScanForFinalization method.
-    HELPER_METHOD_FRAME_BEGIN_RET_1(thisRef);
+    GCX_COOP();
 
-    Thread  *thread = thisRef->GetInternal();
+    if (t.Get() == NULL)
+        COMPlusThrow(kNullReferenceException, W("NullReference_This"));
 
-    if (thread == 0)
+    Thread* thread = ((THREADBASEREF)t.Get())->GetInternal();
+    if (thread == NULL)
         COMPlusThrow(kThreadStateException, IDS_EE_THREAD_CANNOT_GET);
 
     ret = ThreadIsRunning(thread);
 
-    HELPER_METHOD_POLL();
-    HELPER_METHOD_FRAME_END();
-
-    FC_RETURN_BOOL(ret);
+    END_QCALL;
+    return ret;
 }
-FCIMPLEND
 
 NOINLINE static Object* GetCurrentThreadHelper()
 {
