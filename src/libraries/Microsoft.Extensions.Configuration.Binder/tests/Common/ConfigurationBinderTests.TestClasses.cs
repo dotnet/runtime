@@ -198,6 +198,20 @@ namespace Microsoft.Extensions
             public List<TreeElement>? List { get; set; }
         }
 
+        public class TypeWithValueMutatorPropertySetter
+        {
+            private string _value = "Uninitialized";
+            public string Value
+            {
+                get { return _value; }
+                set
+                {
+                    _value = value == "Uninitialized" ? "Initialized" : value;
+                }
+            }
+            public ISet<string> SomeSet { get; set; } = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        }
+
         public record RecordWithArrayParameter(string[] Array);
 
         public readonly record struct ReadonlyRecordStructTypeOptions(string Color, int Length);

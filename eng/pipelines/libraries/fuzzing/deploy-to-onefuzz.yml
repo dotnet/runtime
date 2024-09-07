@@ -109,6 +109,14 @@ extends:
           inputs:
             onefuzzOSes: 'Windows'
           env:
+            onefuzzDropDirectory: $(fuzzerProject)/deployment/NrbfDecoderFuzzer
+            SYSTEM_ACCESSTOKEN: $(System.AccessToken)
+          displayName: Send NrbfDecoderFuzzer to OneFuzz
+
+        - task: onefuzz-task@0
+          inputs:
+            onefuzzOSes: 'Windows'
+          env:
             onefuzzDropDirectory: $(fuzzerProject)/deployment/SearchValuesByteCharFuzzer
             SYSTEM_ACCESSTOKEN: $(System.AccessToken)
           displayName: Send SearchValuesByteCharFuzzer to OneFuzz
@@ -128,6 +136,14 @@ extends:
             onefuzzDropDirectory: $(fuzzerProject)/deployment/TextEncodingFuzzer
             SYSTEM_ACCESSTOKEN: $(System.AccessToken)
           displayName: Send TextEncodingFuzzer to OneFuzz
+
+        - task: onefuzz-task@0
+          inputs:
+            onefuzzOSes: 'Windows'
+          env:
+            onefuzzDropDirectory: $(fuzzerProject)/deployment/TypeNameFuzzer
+            SYSTEM_ACCESSTOKEN: $(System.AccessToken)
+          displayName: Send TypeNameFuzzer to OneFuzz
 
         - task: onefuzz-task@0
           inputs:

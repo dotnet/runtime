@@ -1526,7 +1526,7 @@ public:
         return GetModuleIfLoaded(kFile);
     }
 
-    DomainAssembly * LoadAssemblyImpl(mdAssemblyRef kAssemblyRef) final
+    Assembly * LoadAssemblyImpl(mdAssemblyRef kAssemblyRef) final
     {
         STANDARD_VM_CONTRACT;
         // Since we can only load via ModuleRef, this should never fail unless the module is improperly formatted

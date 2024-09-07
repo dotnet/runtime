@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+import WasmEnableThreads from "consts:wasmEnableThreads";
 import { MonoMethod } from "./types/internal";
 import { NativePointer } from "./types/emscripten";
 import {
@@ -9,7 +10,7 @@ import {
 } from "./memory";
 import {
     WasmOpcode, WasmSimdOpcode, WasmValtype,
-    getOpcodeName, MintOpArgType
+    getOpcodeName, MintOpArgType, WasmAtomicOpcode
 } from "./jiterpreter-opcodes";
 import {
     MintOpcode, SimdInfo,
@@ -38,7 +39,7 @@ import {
     traceEip, nullCheckValidation,
     traceNullCheckOptimizations,
     nullCheckCaching, defaultTraceBackBranches,
-    maxCallHandlerReturnAddresses,
+    maxCallHandlerReturnAddresses, moduleHeaderSizeMargin,
 
     mostRecentOptions,
 
@@ -66,6 +67,11 @@ function getArgU16 (ip: MintOpcodePtr, indexPlusOne: number) {
 
 function getArgI16 (ip: MintOpcodePtr, indexPlusOne: number) {
     return getI16(<any>ip + (2 * indexPlusOne));
+}
+
+function getArgU32 (ip: MintOpcodePtr, indexPlusOne: number) {
+    const src = <any>ip + (2 * indexPlusOne);
+    return getU32_unaligned(src);
 }
 
 function getArgI32 (ip: MintOpcodePtr, indexPlusOne: number) {
@@ -160,6 +166,52 @@ function get_known_constant_value (builder: WasmBuilder, localOffset: number): K
     return undefined;
 }
 
+function getOpcodeLengthU16 (ip: MintOpcodePtr, opcode: MintOpcode) {
+    try {
+        const opLengthU16 = cwraps.mono_jiterp_get_opcode_info(opcode, OpcodeInfoType.Length);
+        let result = opLengthU16;
+        if (opcode === MintOpcode.MINT_SWITCH) {
+            // int n = READ32 (ip + 2);
+            // len = MINT_SWITCH_LEN (n);
+            const numDisplacements = getArgU32(ip, 2);
+            // #define MINT_SWITCH_LEN(n) (4 + (n) * 2)
+            result = 4 + (numDisplacements * 2);
+        }
+        return result;
+    } catch (err) {
+        mono_log_error(`Found invalid opcode ${opcode} at ip ${ip}`);
+        throw err;
+    }
+}
+
+function decodeSwitch (ip: MintOpcodePtr) : MintOpcodePtr[] {
+    mono_assert(getU16(ip) === MintOpcode.MINT_SWITCH, "decodeSwitch called on a non-switch");
+    const n = getArgU32(ip, 2);
+    const result = [];
+    /*
+        guint32 val = LOCAL_VAR (ip [1], guint32);
+        guint32 n = READ32 (ip + 2);
+        ip += 4;
+        if (val < n) {
+            ip += 2 * val;
+            int offset = READ32 (ip);
+            ip += offset;
+        } else {
+            ip += 2 * n;
+        }
+    */
+    // mono_log_info(`switch[${n}] @${ip}`);
+    for (let i = 0; i < n; i++) {
+        const base = <any>ip + 8 + (4 * i),
+            offset = getU32_unaligned(base),
+            target = base + (offset * 2);
+        // mono_log_info(`  ${i} -> ${target}`);
+        result.push(target);
+    }
+
+    return result;
+}
+
 // Perform a quick scan through the opcodes potentially in this trace to build a table of
 //  backwards branch targets, compatible with the layout of the old one that was generated in C.
 // We do this here to match the exact way that the jiterp calculates branch targets, since
@@ -179,52 +231,62 @@ export function generateBackwardBranchTable (
         // IP of the current opcode in U16s, relative to startOfBody. This is what the back branch table uses
         const rip16 = (<any>ip - <any>startOfBody) / 2;
         const opcode = <MintOpcode>getU16(ip);
-        // HACK
-        if (opcode === MintOpcode.MINT_SWITCH)
-            break;
+        const opLengthU16 = getOpcodeLengthU16(ip, opcode);
 
-        const opLengthU16 = cwraps.mono_jiterp_get_opcode_info(opcode, OpcodeInfoType.Length);
-        // Any opcode with a branch argtype will have a decoded displacement, even if we don't
-        //  implement the opcode. Everything else will return undefined here and be skipped
-        const displacement = getBranchDisplacement(ip, opcode);
-        if (typeof (displacement) !== "number") {
-            ip += <any>(opLengthU16 * 2);
-            continue;
-        }
+        if (opcode === MintOpcode.MINT_SWITCH) {
+            // FIXME: Once the cfg supports back-branches in jump tables, uncomment this to
+            //  insert the back-branch targets into the table so they'll actually work
+            /*
+            const switchTable = decodeSwitch(ip);
+            for (const target of switchTable) {
+                const rtarget16 = (<any>target - <any>startOfBody) / 2;
+                if (target < ip)
+                    table.push(rtarget16);
+            }
+            */
+        } else {
+            // Any opcode with a branch argtype will have a decoded displacement, even if we don't
+            //  implement the opcode. Everything else will return undefined here and be skipped
+            const displacement = getBranchDisplacement(ip, opcode);
+            if (typeof (displacement) !== "number") {
+                ip += <any>(opLengthU16 * 2);
+                continue;
+            }
 
-        // These checks shouldn't fail unless memory is corrupted or something is wrong with the decoder.
-        // We don't want to cause decoder bugs to make the application exit, though - graceful degradation.
-        if (displacement === 0) {
-            mono_log_info(`opcode @${ip} branch target is self. aborting backbranch table generation`);
-            break;
-        }
-
-        // Only record *backward* branches
-        // We will filter this down further in the Cfg because it takes note of which branches it sees,
-        //  but it is also beneficial to have a null table (further down) due to seeing no potential
-        //  back branch targets at all, as it allows the Cfg to skip additional code generation entirely
-        //  if it knows there will never be any backwards branches in a given trace
-        if (displacement < 0) {
-            const rtarget16 = rip16 + (displacement);
-            if (rtarget16 < 0) {
-                mono_log_info(`opcode @${ip}'s displacement of ${displacement} goes before body: ${rtarget16}. aborting backbranch table generation`);
+            // These checks shouldn't fail unless memory is corrupted or something is wrong with the decoder.
+            // We don't want to cause decoder bugs to make the application exit, though - graceful degradation.
+            if (displacement === 0) {
+                mono_log_info(`opcode @${ip} branch target is self. aborting backbranch table generation`);
                 break;
             }
 
-            // If the relative target is before the start of the trace, don't record it.
-            // The trace will be unable to successfully branch to it so it would just make the table bigger.
-            if (rtarget16 >= rbase16)
-                table.push(rtarget16);
-        }
+            // Only record *backward* branches
+            // We will filter this down further in the Cfg because it takes note of which branches it sees,
+            //  but it is also beneficial to have a null table (further down) due to seeing no potential
+            //  back branch targets at all, as it allows the Cfg to skip additional code generation entirely
+            //  if it knows there will never be any backwards branches in a given trace
+            if (displacement < 0) {
+                const rtarget16 = rip16 + (displacement);
+                if (rtarget16 < 0) {
+                    mono_log_info(`opcode @${ip}'s displacement of ${displacement} goes before body: ${rtarget16}. aborting backbranch table generation`);
+                    break;
+                }
 
-        switch (opcode) {
-            case MintOpcode.MINT_CALL_HANDLER:
-            case MintOpcode.MINT_CALL_HANDLER_S:
-                // While this formally isn't a backward branch target, we want to record
-                //  the offset of its following instruction so that the jiterpreter knows
-                //  to generate the necessary dispatch code to enable branching back to it.
-                table.push(rip16 + opLengthU16);
-                break;
+                // If the relative target is before the start of the trace, don't record it.
+                // The trace will be unable to successfully branch to it so it would just make the table bigger.
+                if (rtarget16 >= rbase16)
+                    table.push(rtarget16);
+            }
+
+            switch (opcode) {
+                case MintOpcode.MINT_CALL_HANDLER:
+                case MintOpcode.MINT_CALL_HANDLER_S:
+                    // While this formally isn't a backward branch target, we want to record
+                    //  the offset of its following instruction so that the jiterpreter knows
+                    //  to generate the necessary dispatch code to enable branching back to it.
+                    table.push(rip16 + opLengthU16);
+                    break;
+            }
         }
 
         ip += <any>(opLengthU16 * 2);
@@ -275,10 +337,7 @@ export function generateWasmBody (
             break;
         }
 
-        // HACK: Browsers set a limit of 4KB, we lower it slightly since a single opcode
-        //  might generate a ton of code and we generate a bit of an epilogue after
-        //  we finish
-        const maxBytesGenerated = 3840,
+        const maxBytesGenerated = builder.options.maxModuleSize - moduleHeaderSizeMargin,
             spaceLeft = maxBytesGenerated - builder.bytesGeneratedSoFar - builder.cfg.overheadBytes;
         if (builder.size >= spaceLeft) {
             // mono_log_info(`trace too big, estimated size is ${builder.size + builder.bytesGeneratedSoFar}`);
@@ -297,7 +356,7 @@ export function generateWasmBody (
         let opcode = getU16(ip);
         const numSregs = cwraps.mono_jiterp_get_opcode_info(opcode, OpcodeInfoType.Sregs),
             numDregs = cwraps.mono_jiterp_get_opcode_info(opcode, OpcodeInfoType.Dregs),
-            opLengthU16 = cwraps.mono_jiterp_get_opcode_info(opcode, OpcodeInfoType.Length);
+            opLengthU16 = getOpcodeLengthU16(ip, opcode);
 
         const isSimdIntrins = (opcode >= MintOpcode.MINT_SIMD_INTRINS_P_P) &&
             (opcode <= MintOpcode.MINT_SIMD_INTRINS_P_PPP);
@@ -380,6 +439,11 @@ export function generateWasmBody (
         }
 
         switch (opcode) {
+            case MintOpcode.MINT_SWITCH: {
+                if (!emit_switch(builder, ip, exitOpcodeCounter))
+                    ip = abort;
+                break;
+            }
             case MintOpcode.MINT_NOP: {
                 // This typically means the current opcode was disabled or pruned
                 if (pruneOpcodes) {
@@ -3953,6 +4017,20 @@ function emit_simd_4 (builder: WasmBuilder, ip: MintOpcodePtr, index: SimdIntrin
 function emit_atomics (
     builder: WasmBuilder, ip: MintOpcodePtr, opcode: number
 ) {
+    if (opcode === MintOpcode.MINT_MONO_MEMORY_BARRIER) {
+        if (WasmEnableThreads) {
+            // Mono memory barriers use sync_synchronize which generates atomic.fence on clang,
+            //  provided you pass -pthread at compile time
+            builder.appendAtomic(WasmAtomicOpcode.atomic_fence);
+            // The text format and other parts of the spec say atomic.fence has no operands,
+            //  but the binary encoding contains a byte specifying whether the barrier is
+            //  sequentially consistent (0) or acquire-release (1)
+            // Mono memory barriers are sync_synchronize which is sequentially consistent.
+            builder.appendU8(0);
+        }
+        return true;
+    }
+
     if (!builder.options.enableAtomics)
         return false;
 
@@ -3999,3 +4077,39 @@ function emit_atomics (
     return false;
 }
 
+function emit_switch (builder: WasmBuilder, ip: MintOpcodePtr, exitOpcodeCounter: number) : boolean {
+    const lengthU16 = getOpcodeLengthU16(ip, MintOpcode.MINT_SWITCH),
+        table = decodeSwitch(ip);
+    let failed = false;
+
+    if (table.length > builder.options.maxSwitchSize) {
+        failed = true;
+    } else {
+        // Record all the switch's forward branch targets.
+        // If it contains any back branches they will bailout at runtime.
+        for (const target of table) {
+            if (target > ip)
+                builder.branchTargets.add(target);
+        }
+    }
+
+    if (failed) {
+        modifyCounter(JiterpCounter.SwitchTargetsFailed, table.length);
+        append_bailout(builder, ip, BailoutReason.SwitchSize);
+        return true;
+    }
+
+    const fallthrough = <any>ip + (lengthU16 * 2);
+    builder.branchTargets.add(fallthrough);
+
+    // Jump table needs a block so it can `br 0` for missing targets
+    builder.block();
+    // Load selector
+    append_ldloc(builder, getArgU16(ip, 1), WasmOpcode.i32_load);
+    // Dispatch
+    builder.cfg.jumpTable(table, fallthrough);
+    // Missing target
+    builder.endBlock();
+    append_exit(builder, ip, exitOpcodeCounter, BailoutReason.SwitchTarget);
+    return true;
+}

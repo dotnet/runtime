@@ -17,7 +17,10 @@ import {
 export const maxFailures = 2,
     maxMemsetSize = 64,
     maxMemmoveSize = 64,
-    shortNameBase = 36;
+    shortNameBase = 36,
+    // NOTE: This needs to be big enough to hold the maximum module size since there's no auto-growth
+    //  support yet. If that becomes a problem, we should just make it growable
+    blobBuilderCapacity = 16 * 1024;
 
 // uint16
 export declare interface MintOpcodePtr extends NativePointer {
@@ -120,6 +123,8 @@ export class WasmBuilder {
 
     clear (constantSlotCount: number) {
         this.options = getOptions();
+        if (this.options.maxModuleSize >= blobBuilderCapacity)
+            throw new Error(`blobBuilderCapacity ${blobBuilderCapacity} is not large enough for jiterpreter-max-module-size of ${this.options.maxModuleSize}`);
         this.stackSize = 1;
         this.inSection = false;
         this.inFunction = false;
@@ -920,8 +925,8 @@ export class WasmBuilder {
         this.appendU8(WasmOpcode.i32_add);
     }
 
-    getArrayView (fullCapacity?: boolean) {
-        if (this.stackSize > 1)
+    getArrayView (fullCapacity?: boolean, suppressDeepStackError?: boolean) {
+        if ((suppressDeepStackError !== true) && this.stackSize > 1)
             throw new Error("Jiterpreter block stack not empty");
         return this.stack[0].getArrayView(fullCapacity);
     }
@@ -942,8 +947,9 @@ export class BlobBuilder {
     textBuf = new Uint8Array(1024);
 
     constructor () {
-        this.capacity = 16 * 1024;
+        this.capacity = blobBuilderCapacity;
         this.buffer = <any>Module._malloc(this.capacity);
+        mono_assert(this.buffer, () => `Failed to allocate ${blobBuilderCapacity}b buffer for BlobBuilder`);
         localHeapViewU8().fill(0, this.buffer, this.buffer + this.capacity);
         this.size = 0;
         this.clear();
@@ -1051,6 +1057,9 @@ export class BlobBuilder {
         if (typeof (count) !== "number")
             count = this.size;
 
+        if ((destination.size + count) >= destination.capacity)
+            throw new Error("Destination buffer full");
+
         localHeapViewU8().copyWithin(destination.buffer + destination.size, this.buffer, this.buffer + count);
         destination.size += count;
     }
@@ -1058,11 +1067,16 @@ export class BlobBuilder {
     appendBytes (bytes: Uint8Array, count?: number) {
         const result = this.size;
         const heapU8 = localHeapViewU8();
+        const actualCount = (typeof (count) !== "number")
+            ? bytes.length
+            : count;
+
+        if ((this.size + actualCount) >= this.capacity)
+            throw new Error("Buffer full");
+
         if (bytes.buffer === heapU8.buffer) {
-            if (typeof (count) !== "number")
-                count = bytes.length;
-            heapU8.copyWithin(this.buffer + result, bytes.byteOffset, bytes.byteOffset + count);
-            this.size += count;
+            heapU8.copyWithin(this.buffer + result, bytes.byteOffset, bytes.byteOffset + actualCount);
+            this.size += actualCount;
         } else {
             if (typeof (count) === "number")
                 bytes = new Uint8Array(bytes.buffer, bytes.byteOffset, count);
@@ -1136,7 +1150,14 @@ type CfgBranch = {
     branchType: CfgBranchType;
 }
 
-type CfgSegment = CfgBlob | CfgBranchBlockHeader | CfgBranch;
+type CfgJumpTable = {
+    type: "jump-table";
+    from: MintOpcodePtr;
+    targets: MintOpcodePtr[];
+    fallthrough: MintOpcodePtr;
+}
+
+type CfgSegment = CfgBlob | CfgBranchBlockHeader | CfgBranch | CfgJumpTable;
 
 export const enum CfgBranchType {
     Unconditional,
@@ -1262,6 +1283,23 @@ class Cfg {
                 this.overheadBytes += 17;
             }
         }
+    }
+
+    // It's the caller's responsibility to wrap this in a block and follow it with a bailout!
+    jumpTable (targets: MintOpcodePtr[], fallthrough: MintOpcodePtr) {
+        this.appendBlob();
+        this.segments.push({
+            type: "jump-table",
+            from: this.ip,
+            targets,
+            fallthrough,
+        });
+        // opcode, length, fallthrough (approximate)
+        this.overheadBytes += 4;
+        // length of branch depths (approximate)
+        this.overheadBytes += targets.length;
+        // bailout for missing targets (approximate)
+        this.overheadBytes += 24;
     }
 
     emitBlob (segment: CfgBlob, source: Uint8Array) {
@@ -1399,6 +1437,38 @@ class Cfg {
                     mono_assert(indexInStack === 0, () => `expected ${segment.ip} on top of blockStack but found it at index ${indexInStack}, top is ${this.blockStack[0]}`);
                     this.builder.endBlock();
                     this.blockStack.shift();
+                    break;
+                }
+                case "jump-table": {
+                    // Our caller wrapped us in a block and put a missing target bailout after us
+                    const offset = 1;
+                    // The selector was already loaded onto the wasm stack before cfg.jumpTable was called,
+                    //  so we just need to generate a br_table
+                    this.builder.appendU8(WasmOpcode.br_table);
+                    this.builder.appendULeb(segment.targets.length);
+                    for (const target of segment.targets) {
+                        const indexInStack = this.blockStack.indexOf(target);
+                        if (indexInStack >= 0) {
+                            modifyCounter(JiterpCounter.SwitchTargetsOk, 1);
+                            this.builder.appendULeb(indexInStack + offset);
+                        } else {
+                            modifyCounter(JiterpCounter.SwitchTargetsFailed, 1);
+                            if (this.trace > 0)
+                                mono_log_info(`Switch target ${target} not found in block stack ${this.blockStack}`);
+                            this.builder.appendULeb(0);
+                        }
+                    }
+                    const fallthroughIndex = this.blockStack.indexOf(segment.fallthrough);
+                    if (fallthroughIndex >= 0) {
+                        modifyCounter(JiterpCounter.SwitchTargetsOk, 1);
+                        this.builder.appendULeb(fallthroughIndex + offset);
+                    } else {
+                        modifyCounter(JiterpCounter.SwitchTargetsFailed, 1);
+                        if (this.trace > 0)
+                            mono_log_info(`Switch fallthrough ${segment.fallthrough} not found in block stack ${this.blockStack}`);
+                        this.builder.appendULeb(0);
+                    }
+                    this.builder.appendU8(WasmOpcode.unreachable);
                     break;
                 }
                 case "branch": {
@@ -1950,6 +2020,8 @@ export type JiterpreterOptions = {
     wasmBytesLimit: number;
     tableSize: number;
     aotTableSize: number;
+    maxModuleSize: number;
+    maxSwitchSize: number;
 }
 
 const optionNames: { [jsName: string]: string } = {
@@ -1986,6 +2058,8 @@ const optionNames: { [jsName: string]: string } = {
     "wasmBytesLimit": "jiterpreter-wasm-bytes-limit",
     "tableSize": "jiterpreter-table-size",
     "aotTableSize": "jiterpreter-aot-table-size",
+    "maxModuleSize": "jiterpreter-max-module-size",
+    "maxSwitchSize": "jiterpreter-max-switch-size",
 };
 
 let optionsVersion = -1;
