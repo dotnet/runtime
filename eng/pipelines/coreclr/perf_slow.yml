@@ -11,7 +11,6 @@ trigger:
   branches:
     include:
     - main
-    - release/9.0
   paths:
     include:
     - '*'
@@ -34,6 +33,7 @@ schedules:
   branches:
     include:
     - main
+    - release/9.0
   always: true
 
 extends:
