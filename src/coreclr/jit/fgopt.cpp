@@ -5274,6 +5274,44 @@ bool Compiler::fgUpdateFlowGraph(bool doTailDuplication /* = false */,
             bDest      = nullptr;
             bFalseDest = nullptr;
 
+            // Expand "return <condition>" into "return <condition> ? true : false"
+            // since the latter is more friendly to various optimizations. The newly added tails are expected to be
+            // deduplicated where needed or/and the condition will be transformed back to branch-less version where
+            // profitable.
+            if (doTailDuplication && (info.compRetType == TYP_UBYTE) && block->KindIs(BBJ_RETURN) &&
+                (block->lastStmt() != nullptr))
+            {
+                GenTree* rootNode = block->lastStmt()->GetRootNode();
+                if (rootNode->OperIs(GT_RETURN) && rootNode->gtGetOp1()->OperIsCompare() &&
+                    rootNode->gtGetOp1()->gtGetOp2()->IsIntegralConst())
+                {
+                    assert(rootNode->TypeIs(TYP_INT));
+
+                    rootNode->gtGetOp1()->gtFlags |= (GTF_RELOP_JMP_USED | GTF_DONT_CSE);
+                    rootNode->ChangeOper(GT_JTRUE);
+
+                    DebugInfo   dbgInfo = block->lastStmt()->GetDebugInfo();
+                    BasicBlock* retTrueBb =
+                        fgNewBBFromTreeAfter(BBJ_RETURN, block, gtNewOperNode(GT_RETURN, TYP_INT, gtNewTrue()),
+                                             dbgInfo);
+                    BasicBlock* retFalseBb =
+                        fgNewBBFromTreeAfter(BBJ_RETURN, block, gtNewOperNode(GT_RETURN, TYP_INT, gtNewFalse()),
+                                             dbgInfo);
+
+                    FlowEdge* trueEdge  = fgAddRefPred(retTrueBb, block);
+                    FlowEdge* falseEdge = fgAddRefPred(retFalseBb, block);
+                    trueEdge->setLikelihood(0.5);
+                    falseEdge->setLikelihood(0.5);
+                    block->SetCond(trueEdge, falseEdge);
+
+                    change     = true;
+                    modified   = true;
+                    bDest      = block->GetTrueTarget();
+                    bNext      = block->GetFalseTarget();
+                    bFalseDest = block->GetFalseTarget();
+                }
+            }
+
             if (block->KindIs(BBJ_ALWAYS))
             {
                 bDest = block->GetTarget();
