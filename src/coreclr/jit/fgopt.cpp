@@ -5286,7 +5286,8 @@ bool Compiler::fgUpdateFlowGraph(bool doTailDuplication /* = false */,
                 {
                     assert(rootNode->TypeIs(TYP_INT));
 
-                    rootNode->gtGetOp1()->gtFlags |= (GTF_RELOP_JMP_USED | GTF_DONT_CSE);
+                    GenTree* compare = rootNode->gtGetOp1();
+                    compare->gtFlags |= (GTF_RELOP_JMP_USED | GTF_DONT_CSE);
                     rootNode->ChangeOper(GT_JTRUE);
 
                     DebugInfo   dbgInfo = block->lastStmt()->GetDebugInfo();
@@ -5302,6 +5303,21 @@ bool Compiler::fgUpdateFlowGraph(bool doTailDuplication /* = false */,
                     trueEdge->setLikelihood(0.5);
                     falseEdge->setLikelihood(0.5);
                     block->SetCond(trueEdge, falseEdge);
+
+                    // We expect this expansion to happen earlier
+                    assert(!block->IsLIR());
+
+                    // CI test:
+                    gtUpdateStmtSideEffects(block->lastStmt());
+                    if (fgNodeThreading != NodeThreading::None)
+                    {
+                        gtSetStmtInfo(block->lastStmt());
+                        fgSetStmtSeq(block->lastStmt());
+                        gtSetStmtInfo(retTrueBb->lastStmt());
+                        fgSetStmtSeq(retTrueBb->lastStmt());
+                        gtSetStmtInfo(retFalseBb->lastStmt());
+                        fgSetStmtSeq(retFalseBb->lastStmt());
+                    }
 
                     assert(BasicBlock::sameEHRegion(block, retTrueBb));
                     assert(BasicBlock::sameEHRegion(block, retFalseBb));
