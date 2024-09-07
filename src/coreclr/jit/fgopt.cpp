@@ -5278,7 +5278,7 @@ bool Compiler::fgUpdateFlowGraph(bool doTailDuplication /* = false */,
             // since the latter is more friendly to various optimizations. The newly added tails are expected to be
             // deduplicated where needed or/and the condition will be transformed back to branch-less version where
             // profitable.
-            if (doTailDuplication && isPhase && (info.compRetType == TYP_UBYTE) && block->KindIs(BBJ_RETURN) &&
+            if (isPhase && (info.compRetType == TYP_UBYTE) && block->KindIs(BBJ_RETURN) &&
                 (block->lastStmt() != nullptr) && (block != genReturnBB) && !block->isRunRarely())
             {
                 GenTree* rootNode = block->lastStmt()->GetRootNode();
