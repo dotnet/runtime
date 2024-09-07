@@ -5282,8 +5282,7 @@ bool Compiler::fgUpdateFlowGraph(bool doTailDuplication /* = false */,
                 (block->lastStmt() != nullptr))
             {
                 GenTree* rootNode = block->lastStmt()->GetRootNode();
-                if (rootNode->OperIs(GT_RETURN) && rootNode->gtGetOp1()->OperIsCompare() &&
-                    rootNode->gtGetOp1()->gtGetOp2()->IsIntegralConst())
+                if (rootNode->OperIs(GT_RETURN) && rootNode->gtGetOp1()->OperIsCmpCompare())
                 {
                     assert(rootNode->TypeIs(TYP_INT));
 
