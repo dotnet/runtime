@@ -5279,7 +5279,7 @@ bool Compiler::fgUpdateFlowGraph(bool doTailDuplication /* = false */,
             // deduplicated where needed or/and the condition will be transformed back to branch-less version where
             // profitable.
             if (doTailDuplication && (info.compRetType == TYP_UBYTE) && block->KindIs(BBJ_RETURN) &&
-                (block->lastStmt() != nullptr))
+                (block->lastStmt() != nullptr) && (block != genReturnBB) && !block->isRunRarely())
             {
                 GenTree* rootNode = block->lastStmt()->GetRootNode();
                 if (rootNode->OperIs(GT_RETURN) && rootNode->gtGetOp1()->OperIsCmpCompare())
@@ -5303,11 +5303,13 @@ bool Compiler::fgUpdateFlowGraph(bool doTailDuplication /* = false */,
                     falseEdge->setLikelihood(0.5);
                     block->SetCond(trueEdge, falseEdge);
 
-                    change     = true;
-                    modified   = true;
-                    bDest      = block->GetTrueTarget();
-                    bNext      = block->GetFalseTarget();
-                    bFalseDest = block->GetFalseTarget();
+                    assert(BasicBlock::sameEHRegion(block, retTrueBb));
+                    assert(BasicBlock::sameEHRegion(block, retFalseBb));
+
+                    change   = true;
+                    modified = true;
+                    bDest    = block->GetTrueTarget();
+                    bNext    = block->GetFalseTarget();
                 }
             }
 
