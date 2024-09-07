@@ -269,10 +269,17 @@ namespace System.Threading
         /// Return the thread state as a consistent set of bits.  This is more
         /// general then IsAlive or IsBackground.
         /// </summary>
-        public ThreadState ThreadState => (ThreadState)GetThreadStateNative();
+        public ThreadState ThreadState
+        {
+            get
+            {
+                Thread _this = this;
+                return (ThreadState)GetThreadState(ObjectHandleOnStack.Create(ref _this));
+            }
+        }
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        private extern int GetThreadStateNative();
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ThreadNative_GetThreadState")]
+        private static partial int GetThreadState(ObjectHandleOnStack t);
 
         /// <summary>
         /// An unstarted thread can be marked to indicate that it will host a

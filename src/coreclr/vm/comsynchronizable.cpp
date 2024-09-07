@@ -473,57 +473,55 @@ FCIMPL1(FC_BOOL_RET, ThreadNative::GetIsBackground, ThreadBaseObject* pThisUNSAF
 FCIMPLEND
 
 // Deliver the state of the thread as a consistent set of bits.
-// This copied in VM\EEDbgInterfaceImpl.h's
-//     CorDebugUserState GetUserState( Thread *pThread )
-// , so propagate changes to both functions
-FCIMPL1(INT32, ThreadNative::GetThreadState, ThreadBaseObject* pThisUNSAFE)
+// Duplicate logic in DacDbiInterfaceImpl::GetPartialUserState()
+extern "C" INT32 QCALLTYPE ThreadNative_GetThreadState(QCall::ObjectHandleOnStack t)
 {
-    FCALL_CONTRACT;
+    QCALL_CONTRACT;
 
-    INT32               res = 0;
-    Thread::ThreadState state;
+    INT32 res = 0;
 
-    if (pThisUNSAFE==NULL)
-        FCThrowRes(kNullReferenceException, W("NullReference_This"));
+    BEGIN_QCALL;
 
-    // validate the thread.  Failure here implies that the thread was finalized
-    // and then resurrected.
-    Thread  *thread = pThisUNSAFE->GetInternal();
+    Thread* thread = NULL;
+    {
+        GCX_COOP();
+        if (t.Get() == NULL)
+            COMPlusThrow(kNullReferenceException, W("NullReference_This"));
 
-    if (!thread)
-        FCThrowEx(kThreadStateException, IDS_EE_THREAD_CANNOT_GET, NULL, NULL, NULL);
-
-    HELPER_METHOD_FRAME_BEGIN_RET_0();
+        // validate the thread.  Failure here implies that the thread was finalized
+        // and then resurrected.
+        thread = ((THREADBASEREF)t.Get())->GetInternal();
+        if (thread == NULL)
+            COMPlusThrow(kThreadStateException, IDS_EE_THREAD_CANNOT_GET);
+    }
 
     // grab a snapshot
-    state = thread->GetSnapshotState();
+    Thread::ThreadState state = thread->GetSnapshotState();
 
     if (state & Thread::TS_Background)
-        res |= ThreadBackground;
+        res |= ThreadNative::ThreadBackground;
 
     if (state & Thread::TS_Unstarted)
-        res |= ThreadUnstarted;
+        res |= ThreadNative::ThreadUnstarted;
 
     // Don't report a StopRequested if the thread has actually stopped.
     if (state & Thread::TS_Dead)
     {
-        res |= ThreadStopped;
+        res |= ThreadNative::ThreadStopped;
     }
     else
     {
         if (state & Thread::TS_AbortRequested)
-            res |= ThreadAbortRequested;
+            res |= ThreadNative::ThreadAbortRequested;
     }
 
     if (state & Thread::TS_Interruptible)
-        res |= ThreadWaitSleepJoin;
+        res |= ThreadNative::ThreadWaitSleepJoin;
 
-    HELPER_METHOD_POLL();
-    HELPER_METHOD_FRAME_END();
+    END_QCALL;
 
     return res;
 }
-FCIMPLEND
 
 #ifdef FEATURE_COMINTEROP_APARTMENT_SUPPORT
 
