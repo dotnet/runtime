@@ -5285,7 +5285,9 @@ bool Compiler::fgUpdateFlowGraph(bool doTailDuplication /* = false */,
                 (block->lastStmt() != nullptr) && (block != genReturnBB) && !block->isRunRarely())
             {
                 GenTree* rootNode = block->lastStmt()->GetRootNode();
-                if (rootNode->OperIs(GT_RETURN) && rootNode->gtGetOp1()->OperIsCmpCompare())
+                if (rootNode->OperIs(GT_RETURN) && rootNode->gtGetOp1()->OperIsCmpCompare() &&
+                    // The following check is purely a TP-oriented heuristics:
+                    rootNode->gtGetOp1()->gtGetOp2()->IsCnsIntOrI())
                 {
                     assert(rootNode->TypeIs(TYP_INT));
 
@@ -5294,20 +5296,21 @@ bool Compiler::fgUpdateFlowGraph(bool doTailDuplication /* = false */,
                     rootNode->ChangeOper(GT_JTRUE);
                     rootNode->ChangeType(TYP_VOID);
 
-                    DebugInfo   dbgInfo = block->lastStmt()->GetDebugInfo();
-                    BasicBlock* retTrueBb =
-                        fgNewBBFromTreeAfter(BBJ_RETURN, block, gtNewOperNode(GT_RETURN, TYP_INT, gtNewTrue()),
-                                             dbgInfo);
-                    BasicBlock* retFalseBb =
-                        fgNewBBFromTreeAfter(BBJ_RETURN, block, gtNewOperNode(GT_RETURN, TYP_INT, gtNewFalse()),
-                                             dbgInfo);
+                    GenTree* retTrue  = gtNewOperNode(GT_RETURN, TYP_INT, gtNewTrue());
+                    GenTree* retFalse = gtNewOperNode(GT_RETURN, TYP_INT, gtNewFalse());
+
+                    // Create RETURN 1/0 blocks. We expect fgHeadTailMerge to handle them if there are similar returns.
+                    DebugInfo   dbgInfo    = block->lastStmt()->GetDebugInfo();
+                    BasicBlock* retTrueBb  = fgNewBBFromTreeAfter(BBJ_RETURN, block, retTrue, dbgInfo);
+                    BasicBlock* retFalseBb = fgNewBBFromTreeAfter(BBJ_RETURN, block, retFalse, dbgInfo);
 
                     FlowEdge* trueEdge  = fgAddRefPred(retTrueBb, block);
                     FlowEdge* falseEdge = fgAddRefPred(retFalseBb, block);
-                    trueEdge->setLikelihood(0.5);
-                    falseEdge->setLikelihood(0.5);
                     block->SetCond(trueEdge, falseEdge);
 
+                    // We might want to instrument 'return <cond>' too in the future. For now apply 50%/50%.
+                    trueEdge->setLikelihood(0.5);
+                    falseEdge->setLikelihood(0.5);
                     retTrueBb->inheritWeightPercentage(block, 50);
                     retFalseBb->inheritWeightPercentage(block, 50);
 
@@ -5324,12 +5327,9 @@ bool Compiler::fgUpdateFlowGraph(bool doTailDuplication /* = false */,
                         fgSetStmtSeq(retFalseBb->lastStmt());
                     }
 
-                    assert(BasicBlock::sameEHRegion(block, retTrueBb));
-                    assert(BasicBlock::sameEHRegion(block, retFalseBb));
-
                     change   = true;
                     modified = true;
-                    goto REPEAT;
+                    bNext    = block->Next();
                 }
             }
 #endif
@@ -6381,6 +6381,11 @@ PhaseStatus Compiler::fgHeadTailMerge(bool early)
     for (BasicBlock* const block : Blocks())
     {
         madeChanges |= fgHeadMerge(block, early);
+    }
+
+    if (madeChanges && !early)
+    {
+        fgUpdateFlowGraph();
     }
 
     // If we altered flow, reset fgModified. Given where we sit in the
