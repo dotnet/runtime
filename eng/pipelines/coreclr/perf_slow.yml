@@ -32,7 +32,6 @@ schedules:
   displayName: Every night at 2:30AM
   branches:
     include:
-    - main
     - release/9.0
   always: true
 
