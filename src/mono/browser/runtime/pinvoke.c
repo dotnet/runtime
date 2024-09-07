@@ -23,14 +23,17 @@ mono_wasm_pinvoke_vararg_stub (void)
 	/* This is just a stub used to mark vararg pinvokes */
 }
 
+int
+table_compare_name (const void *t1, const void *t2)
+{
+	return strcmp (((PinvokeTable*)t1)->name, ((PinvokeTable*)t2)->name);
+}
+
 void*
 wasm_dl_lookup_pinvoke_table (const char *name)
 {
-	for (int i = 0; i < sizeof (pinvoke_tables) / sizeof (PinvokeTable); ++i) {
-		if (!strcmp (name, pinvoke_tables [i].name))
-			return &pinvoke_tables [i];
-	}
-	return NULL;
+	PinvokeImport needle = { name, NULL };
+	return bsearch (&needle, pinvoke_tables, (sizeof (pinvoke_tables) / sizeof (PinvokeTable)), sizeof (PinvokeTable), table_compare_name);
 }
 
 int

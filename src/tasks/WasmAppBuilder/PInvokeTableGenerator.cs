@@ -43,7 +43,7 @@ internal sealed class PInvokeTableGenerator
 
     public IEnumerable<string> Generate(string[] pinvokeModules, string outputPath)
     {
-        var modules = new Dictionary<string, string>();
+        var modules = new SortedDictionary<string, string>(StringComparer.Ordinal);
         foreach (var module in pinvokeModules)
             modules[module] = module;
 
@@ -62,7 +62,7 @@ internal sealed class PInvokeTableGenerator
         return signatures;
     }
 
-    private void EmitPInvokeTable(StreamWriter w, Dictionary<string, string> modules, List<PInvoke> pinvokes)
+    private void EmitPInvokeTable(StreamWriter w, SortedDictionary<string, string> modules, List<PInvoke> pinvokes)
     {
 
         foreach (var pinvoke in pinvokes)
@@ -99,8 +99,8 @@ internal sealed class PInvokeTableGenerator
 
         var pinvokesGroupedByEntryPoint = pinvokes
                                             .Where(l => modules.ContainsKey(l.Module))
-                                            .OrderBy(l => l.EntryPoint)
-                                            .GroupBy(CEntryPoint);
+                                            .OrderBy(l => l.EntryPoint, StringComparer.Ordinal)
+                                            .GroupBy(CEntryPoint, StringComparer.Ordinal);
         var comparer = new PInvokeComparer();
         foreach (IGrouping<string, PInvoke> group in pinvokesGroupedByEntryPoint)
         {
@@ -348,7 +348,6 @@ internal sealed class PInvokeTableGenerator
             callbackNames.Add(cb.EntrySymbol);
             if (keys.Contains(cb.Key))
             {
-
                 Error($"Two callbacks with the same Name and number of arguments '{cb.Key}' are not supported.");
             }
             keys.Add(cb.Key);

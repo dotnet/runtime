@@ -263,7 +263,7 @@ wasm_dl_load (const char *name, int flags, char **err, void *user_data)
 }
 
 int
-import_compare_key (const void *k1, const void *k2)
+import_compare_name (const void *k1, const void *k2)
 {
 	const PinvokeImport *e1 = (const PinvokeImport*)k1;
 	const PinvokeImport *e2 = (const PinvokeImport*)k2;
@@ -282,19 +282,12 @@ wasm_dl_symbol (void *handle, const char *name, char **err, void *user_data)
 	}
 #endif
 	PinvokeTable* index = (PinvokeTable*)handle;
-	int i = 0;
-
-	assert(wasm_dl_is_pinvoke_table (handle));
-	for (i = 0; index->imports[i].name != NULL; ++i) {}
-	assert (i == index->count);
-
 	PinvokeImport key = { name, NULL };
-    PinvokeImport* result = (PinvokeImport *)bsearch(&key, index->imports, index->count, sizeof(PinvokeImport), import_compare_key);
+    PinvokeImport* result = (PinvokeImport *)bsearch(&key, index->imports, index->count, sizeof(PinvokeImport), import_compare_name);
     if (!result) {
         // *err = g_strdup_printf ("Symbol not found: %s", name);
         return NULL;
     }
-
     return result->func;
 }
 
