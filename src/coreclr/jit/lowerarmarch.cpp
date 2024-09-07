@@ -68,7 +68,20 @@ bool Lowering::IsContainableImmed(GenTree* parentNode, GenTree* childNode) const
         if (!childNode->IsCnsIntOrI())
             return false;
         if (childNode->AsIntCon()->ImmedValNeedsReloc(comp))
-            return false;
+        {
+            if (comp->IsTargetAbi(CORINFO_NATIVEAOT_ABI) && TargetOS::IsWindows &&
+                childNode->IsIconHandle(GTF_ICON_SECREL_OFFSET))
+            {
+                // for windows/arm64, the immediate constant should be contained because it gets
+                // generated as part of ADD instruction that consumes this constant. See
+                // emitIns_Add_Add_Tls_Reloc().
+                return true;
+            }
+            else
+            {
+                return false;
+            }
+        }
 
         // TODO-CrossBitness: we wouldn't need the cast below if GenTreeIntCon::gtIconVal had target_ssize_t type.
         target_ssize_t immVal = (target_ssize_t)childNode->AsIntCon()->gtIconVal;
@@ -459,7 +472,10 @@ bool Lowering::IsContainableUnaryOrBinaryOp(GenTree* parentNode, GenTree* childN
 //    This involves:
 //    - Widening small stores (on ARM).
 //
-void Lowering::LowerStoreLoc(GenTreeLclVarCommon* storeLoc)
+// Returns:
+//   Next node to lower.
+//
+GenTree* Lowering::LowerStoreLoc(GenTreeLclVarCommon* storeLoc)
 {
 #ifdef TARGET_ARM
     // On ARM, small stores can cost a bit more in terms of code size so we try to widen them. This is legal
@@ -482,6 +498,17 @@ void Lowering::LowerStoreLoc(GenTreeLclVarCommon* storeLoc)
     }
 
     ContainCheckStoreLoc(storeLoc);
+
+    GenTree* next = storeLoc->gtNext;
+
+#ifdef TARGET_ARM64
+    if (comp->opts.OptimizationEnabled())
+    {
+        TryMoveAddSubRMWAfterIndir(storeLoc);
+    }
+#endif
+
+    return next;
 }
 
 //------------------------------------------------------------------------
@@ -1040,6 +1067,209 @@ void Lowering::LowerModPow2(GenTree* node)
     ContainCheckNode(mod);
 }
 
+const int POST_INDEXED_ADDRESSING_MAX_DISTANCE = 16;
+
+//------------------------------------------------------------------------
+// TryMoveAddSubRMWAfterIndir: Try to move an RMW update of a local with an
+// ADD/SUB operand earlier to happen right after an indirection on the same
+// local, attempting to make these combinable intro post-indexed addressing.
+//
+// Arguments:
+//    store - The store to a local
+//
+// Return Value:
+//    True if the store was moved; otherwise false.
+//
+bool Lowering::TryMoveAddSubRMWAfterIndir(GenTreeLclVarCommon* store)
+{
+    if (!store->OperIs(GT_STORE_LCL_VAR))
+    {
+        return false;
+    }
+
+    unsigned lclNum = store->GetLclNum();
+    if (comp->lvaGetDesc(lclNum)->lvDoNotEnregister)
+    {
+        return false;
+    }
+
+    GenTree* data = store->Data();
+    if (!data->OperIs(GT_ADD, GT_SUB) || data->gtOverflow())
+    {
+        return false;
+    }
+
+    GenTree* op1 = data->gtGetOp1();
+    GenTree* op2 = data->gtGetOp2();
+    if (!op1->OperIs(GT_LCL_VAR) || !op2->isContainedIntOrIImmed())
+    {
+        return false;
+    }
+
+    if (op1->AsLclVarCommon()->GetLclNum() != lclNum)
+    {
+        return false;
+    }
+
+    int maxCount = min(m_blockIndirs.Height(), POST_INDEXED_ADDRESSING_MAX_DISTANCE / 2);
+    for (int i = 0; i < maxCount; i++)
+    {
+        SavedIndir& prev = m_blockIndirs.TopRef(i);
+        if ((prev.AddrBase->GetLclNum() != lclNum) || (prev.Offset != 0))
+        {
+            continue;
+        }
+
+        GenTreeIndir* prevIndir = prev.Indir;
+        if ((prevIndir == nullptr) || (prevIndir->gtNext == nullptr))
+        {
+            continue;
+        }
+
+        JITDUMP(
+            "[%06u] is an an RMW ADD/SUB on local V%02u which is used as the address to [%06u]. Trying to make them adjacent.\n",
+            Compiler::dspTreeID(store), lclNum, Compiler::dspTreeID(prevIndir));
+
+        if (TryMakeIndirAndStoreAdjacent(prevIndir, store))
+        {
+            prev.Indir = nullptr;
+            return true;
+        }
+    }
+
+    return false;
+}
+
+//------------------------------------------------------------------------
+// TryMakeIndirAndStoreAdjacent: Try to move a store earlier, right after the
+// specified indirection.
+//
+// Arguments:
+//   prevIndir - Indirection that comes before "store"
+//   store     - Store that we want to happen next to the indirection
+//
+// Return Value:
+//    True if the store was moved; otherwise false.
+//
+bool Lowering::TryMakeIndirAndStoreAdjacent(GenTreeIndir* prevIndir, GenTreeLclVarCommon* store)
+{
+    GenTree* cur = prevIndir;
+    for (int i = 0; i < POST_INDEXED_ADDRESSING_MAX_DISTANCE; i++)
+    {
+        // No nodes should be marked yet
+        assert((cur->gtLIRFlags & LIR::Flags::Mark) == 0);
+
+        cur = cur->gtNext;
+        if (cur == store)
+            break;
+    }
+
+    if (cur != store)
+    {
+        JITDUMP("  Too far separated, giving up\n");
+        return false;
+    }
+
+    JITDUMP("  They are close. Trying to move the following range (where * are nodes part of the data flow):\n\n");
+#ifdef DEBUG
+    bool     isClosed;
+    GenTree* startDumpNode = BlockRange().GetTreeRange(prevIndir, &isClosed).FirstNode();
+    GenTree* endDumpNode   = store->gtNext;
+
+    auto dumpWithMarks = [=]() {
+        if (!comp->verbose)
+        {
+            return;
+        }
+
+        for (GenTree* node = startDumpNode; node != endDumpNode; node = node->gtNext)
+        {
+            const char* prefix;
+            if (node == prevIndir)
+                prefix = "1. ";
+            else if (node == store)
+                prefix = "2. ";
+            else if ((node->gtLIRFlags & LIR::Flags::Mark) != 0)
+                prefix = "*  ";
+            else
+                prefix = "   ";
+
+            comp->gtDispLIRNode(node, prefix);
+        }
+    };
+
+#endif
+
+    // Unmark tree when we exit the current scope
+    auto code = [this, store] {
+        UnmarkTree(store);
+    };
+    jitstd::utility::scoped_code<decltype(code)> finally(code);
+
+    MarkTree(store);
+
+    INDEBUG(dumpWithMarks());
+    JITDUMP("\n");
+
+    assert((prevIndir->gtLIRFlags & LIR::Flags::Mark) == 0);
+    m_scratchSideEffects.Clear();
+
+    for (GenTree* cur = prevIndir->gtNext; cur != store; cur = cur->gtNext)
+    {
+        if ((cur->gtLIRFlags & LIR::Flags::Mark) != 0)
+        {
+            // 'cur' is part of data flow of 'store', so we will be moving the
+            // currently recorded effects past 'cur'.
+            if (m_scratchSideEffects.InterferesWith(comp, cur, true))
+            {
+                JITDUMP("Giving up due to interference with [%06u]\n", Compiler::dspTreeID(cur));
+                return false;
+            }
+        }
+        else
+        {
+            // Not part of dataflow; add its effects that will move past
+            // 'store'.
+            m_scratchSideEffects.AddNode(comp, cur);
+        }
+    }
+
+    if (m_scratchSideEffects.InterferesWith(comp, store, true))
+    {
+        JITDUMP("Have interference. Giving up.\n");
+        return false;
+    }
+
+    JITDUMP("Interference checks passed. Moving nodes that are not part of data flow of [%06u]\n\n",
+            Compiler::dspTreeID(store));
+
+    GenTree* previous = prevIndir;
+    for (GenTree* node = prevIndir->gtNext;;)
+    {
+        GenTree* next = node->gtNext;
+
+        if ((node->gtLIRFlags & LIR::Flags::Mark) != 0)
+        {
+            // Part of data flow. Move it to happen right after 'previous'.
+            BlockRange().Remove(node);
+            BlockRange().InsertAfter(previous, node);
+            previous = node;
+        }
+
+        if (node == store)
+        {
+            break;
+        }
+
+        node = next;
+    }
+
+    JITDUMP("Result:\n\n");
+    INDEBUG(dumpWithMarks());
+    JITDUMP("\n");
+    return true;
+}
+
 //------------------------------------------------------------------------
 // LowerAddForPossibleContainment: Tries to lower GT_ADD in such a way
 //                                 that would allow one of its operands
@@ -1232,6 +1462,87 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
     }
 
     NamedIntrinsic intrinsicId = node->GetHWIntrinsicId();
+
+    bool       isScalar = false;
+    genTreeOps oper     = node->GetOperForHWIntrinsicId(&isScalar);
+
+    switch (oper)
+    {
+        case GT_AND:
+        case GT_OR:
+        {
+            // We want to recognize (~op1 & op2) and transform it
+            // into AdvSimd.AndNot(op2, op1) as well as (op1 & ~op2)
+            // transforming it into AdvSimd.AndNot(op1, op2)
+            //
+            // We want to similarly handle (~op1 | op2) and (op1 | ~op2)
+
+            bool transform = false;
+
+            GenTree* op1 = node->Op(1);
+            GenTree* op2 = node->Op(2);
+
+            if (op2->OperIsHWIntrinsic())
+            {
+                GenTreeHWIntrinsic* op2Intrin = op2->AsHWIntrinsic();
+
+                bool       op2IsScalar = false;
+                genTreeOps op2Oper     = op2Intrin->GetOperForHWIntrinsicId(&op2IsScalar);
+
+                if (op2Oper == GT_NOT)
+                {
+                    assert(!op2IsScalar);
+                    transform = true;
+
+                    op2 = op2Intrin->Op(1);
+                    BlockRange().Remove(op2Intrin);
+                }
+            }
+
+            if (!transform && op1->OperIsHWIntrinsic())
+            {
+                GenTreeHWIntrinsic* opIntrin = op1->AsHWIntrinsic();
+
+                bool       op1IsScalar = false;
+                genTreeOps op1Oper     = opIntrin->GetOperForHWIntrinsicId(&op1IsScalar);
+
+                if (op1Oper == GT_NOT)
+                {
+                    assert(!op1IsScalar);
+                    transform = true;
+
+                    op1 = opIntrin->Op(1);
+                    BlockRange().Remove(opIntrin);
+
+                    std::swap(op1, op2);
+                }
+            }
+
+            if (transform)
+            {
+                if (oper == GT_AND)
+                {
+                    oper        = GT_AND_NOT;
+                    intrinsicId = NI_AdvSimd_BitwiseClear;
+                }
+                else
+                {
+                    assert(oper == GT_OR);
+                    oper        = GT_NONE;
+                    intrinsicId = NI_AdvSimd_OrNot;
+                }
+
+                node->ChangeHWIntrinsicId(intrinsicId, op1, op2);
+                oper = GT_AND_NOT;
+            }
+            break;
+        }
+
+        default:
+        {
+            break;
+        }
+    }
 
     switch (intrinsicId)
     {
@@ -1437,6 +1748,132 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
             break;
         case NI_Sve_ConditionalSelect:
             return LowerHWIntrinsicCndSel(node);
+        case NI_Sve_SetFfr:
+        {
+            StoreFFRValue(node);
+            break;
+        }
+        case NI_Sve_GetFfrByte:
+        case NI_Sve_GetFfrInt16:
+        case NI_Sve_GetFfrInt32:
+        case NI_Sve_GetFfrInt64:
+        case NI_Sve_GetFfrSByte:
+        case NI_Sve_GetFfrUInt16:
+        case NI_Sve_GetFfrUInt32:
+        case NI_Sve_GetFfrUInt64:
+        {
+            LIR::Use use;
+            bool     foundUse = BlockRange().TryGetUse(node, &use);
+            if (foundUse)
+            {
+                unsigned lclNum = comp->getFFRegisterVarNum();
+                GenTree* lclVar = comp->gtNewLclvNode(lclNum, TYP_MASK);
+                BlockRange().InsertBefore(node, lclVar);
+                use.ReplaceWith(lclVar);
+                GenTree* next = node->gtNext;
+                BlockRange().Remove(node);
+                return next;
+            }
+            else
+            {
+                node->SetUnusedValue();
+            }
+
+            break;
+        }
+
+        case NI_Sve_GatherVectorByteZeroExtendFirstFaulting:
+        case NI_Sve_GatherVectorFirstFaulting:
+        case NI_Sve_GatherVectorInt16SignExtendFirstFaulting:
+        case NI_Sve_GatherVectorInt16WithByteOffsetsSignExtendFirstFaulting:
+        case NI_Sve_GatherVectorInt32SignExtendFirstFaulting:
+        case NI_Sve_GatherVectorInt32WithByteOffsetsSignExtendFirstFaulting:
+        case NI_Sve_GatherVectorSByteSignExtendFirstFaulting:
+        case NI_Sve_GatherVectorUInt16WithByteOffsetsZeroExtendFirstFaulting:
+        case NI_Sve_GatherVectorUInt16ZeroExtendFirstFaulting:
+        case NI_Sve_GatherVectorUInt32WithByteOffsetsZeroExtendFirstFaulting:
+        case NI_Sve_GatherVectorUInt32ZeroExtendFirstFaulting:
+        case NI_Sve_GatherVectorWithByteOffsetFirstFaulting:
+        case NI_Sve_LoadVectorByteZeroExtendFirstFaulting:
+        case NI_Sve_LoadVectorFirstFaulting:
+        case NI_Sve_LoadVectorInt16SignExtendFirstFaulting:
+        case NI_Sve_LoadVectorInt32SignExtendFirstFaulting:
+        case NI_Sve_LoadVectorSByteSignExtendFirstFaulting:
+        case NI_Sve_LoadVectorUInt16ZeroExtendFirstFaulting:
+        case NI_Sve_LoadVectorUInt32ZeroExtendFirstFaulting:
+        case NI_Sve_LoadVectorByteNonFaultingZeroExtendToInt16:
+        case NI_Sve_LoadVectorByteNonFaultingZeroExtendToInt32:
+        case NI_Sve_LoadVectorByteNonFaultingZeroExtendToInt64:
+        case NI_Sve_LoadVectorByteNonFaultingZeroExtendToUInt16:
+        case NI_Sve_LoadVectorByteNonFaultingZeroExtendToUInt32:
+        case NI_Sve_LoadVectorByteNonFaultingZeroExtendToUInt64:
+        case NI_Sve_LoadVectorInt16NonFaultingSignExtendToInt32:
+        case NI_Sve_LoadVectorInt16NonFaultingSignExtendToInt64:
+        case NI_Sve_LoadVectorInt16NonFaultingSignExtendToUInt32:
+        case NI_Sve_LoadVectorInt16NonFaultingSignExtendToUInt64:
+        case NI_Sve_LoadVectorInt32NonFaultingSignExtendToInt64:
+        case NI_Sve_LoadVectorInt32NonFaultingSignExtendToUInt64:
+        case NI_Sve_LoadVectorNonFaulting:
+        case NI_Sve_LoadVectorSByteNonFaultingSignExtendToInt16:
+        case NI_Sve_LoadVectorSByteNonFaultingSignExtendToInt32:
+        case NI_Sve_LoadVectorSByteNonFaultingSignExtendToInt64:
+        case NI_Sve_LoadVectorSByteNonFaultingSignExtendToUInt16:
+        case NI_Sve_LoadVectorSByteNonFaultingSignExtendToUInt32:
+        case NI_Sve_LoadVectorSByteNonFaultingSignExtendToUInt64:
+        case NI_Sve_LoadVectorUInt16NonFaultingZeroExtendToInt32:
+        case NI_Sve_LoadVectorUInt16NonFaultingZeroExtendToInt64:
+        case NI_Sve_LoadVectorUInt16NonFaultingZeroExtendToUInt32:
+        case NI_Sve_LoadVectorUInt16NonFaultingZeroExtendToUInt64:
+        case NI_Sve_LoadVectorUInt32NonFaultingZeroExtendToInt64:
+        case NI_Sve_LoadVectorUInt32NonFaultingZeroExtendToUInt64:
+        {
+            LIR::Use use;
+            bool     foundUse = BlockRange().TryGetUse(node, &use);
+
+            if (m_ffrTrashed)
+            {
+                // Consume the FFR register value from local variable to simulate "use" of FFR,
+                // only if it was trashed. If it was not trashed, we do not have to reload the
+                // contents of the FFR register.
+
+                unsigned lclNum = comp->getFFRegisterVarNum();
+                GenTree* lclVar = comp->gtNewLclvNode(lclNum, TYP_MASK);
+                BlockRange().InsertBefore(node, lclVar);
+                LowerNode(lclVar);
+
+                if (node->GetOperandCount() == 3)
+                {
+                    assert(node->GetAuxiliaryType() != TYP_UNKNOWN);
+                    node->ResetHWIntrinsicId(intrinsicId, comp, node->Op(1), node->Op(2), node->Op(3), lclVar);
+                }
+                else if (node->GetOperandCount() == 2)
+                {
+                    node->ResetHWIntrinsicId(intrinsicId, comp, node->Op(1), node->Op(2), lclVar);
+                }
+                else
+                {
+                    assert(node->GetOperandCount() == 1);
+                    node->ResetHWIntrinsicId(intrinsicId, comp, node->Op(1), lclVar);
+                }
+            }
+
+            if (foundUse)
+            {
+                unsigned   tmpNum    = comp->lvaGrabTemp(true DEBUGARG("Return value result/FFR"));
+                LclVarDsc* tmpVarDsc = comp->lvaGetDesc(tmpNum);
+                tmpVarDsc->lvType    = node->TypeGet();
+                GenTree* storeLclVar;
+                use.ReplaceWithLclVar(comp, tmpNum, &storeLclVar);
+            }
+            else
+            {
+                node->SetUnusedValue();
+            }
+
+            StoreFFRValue(node);
+            break;
+        }
+
         default:
             break;
     }
@@ -1474,6 +1911,7 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
         }
         else
         {
+            node->ClearUnusedValue();
             condSelNode->SetUnusedValue();
         }
 
@@ -1495,8 +1933,6 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
 //  Returns:
 //     true if the node can be replaced by a mov/fmov immediate instruction; otherwise, false
 //
-//  IMPORTANT:
-//     This check may end up modifying node->gtOp1 if it is a cast node that can be removed
 bool Lowering::IsValidConstForMovImm(GenTreeHWIntrinsic* node)
 {
     assert((node->GetHWIntrinsicId() == NI_Vector64_Create) || (node->GetHWIntrinsicId() == NI_Vector128_Create) ||
@@ -1510,51 +1946,16 @@ bool Lowering::IsValidConstForMovImm(GenTreeHWIntrinsic* node)
            (node->GetHWIntrinsicId() == NI_AdvSimd_Arm64_DuplicateToVector128));
     assert(node->GetOperandCount() == 1);
 
-    GenTree* op1    = node->Op(1);
-    GenTree* castOp = nullptr;
-
-    // TODO-Casts: why don't we fold the casts? MinOpts?
-    if (varTypeIsIntegral(node->GetSimdBaseType()) && op1->OperIs(GT_CAST))
-    {
-        // We will sometimes get a cast around a constant value (such as for
-        // certain long constants) which would block the below containment.
-        // So we will temporarily check what the cast is from instead so we
-        // can catch those cases as well.
-
-        castOp = op1->AsCast()->CastOp();
-
-        if (varTypeIsIntegral(castOp))
-        {
-            op1 = castOp;
-        }
-        else
-        {
-            castOp = nullptr;
-        }
-    }
+    GenTree* const op1 = node->Op(1);
 
     if (op1->IsCnsIntOrI())
     {
         const ssize_t dataValue = op1->AsIntCon()->gtIconVal;
-
-        if (comp->GetEmitter()->emitIns_valid_imm_for_movi(dataValue, emitActualTypeSize(node->GetSimdBaseType())))
-        {
-            if (castOp != nullptr)
-            {
-                // We found a containable immediate under
-                // a cast, so remove the cast from the LIR.
-
-                BlockRange().Remove(node->Op(1));
-                node->Op(1) = op1;
-            }
-            return true;
-        }
+        return comp->GetEmitter()->emitIns_valid_imm_for_movi(dataValue, emitActualTypeSize(node->GetSimdBaseType()));
     }
     else if (op1->IsCnsFltOrDbl())
     {
         assert(varTypeIsFloating(node->GetSimdBaseType()));
-        assert(castOp == nullptr);
-
         const double dataValue = op1->AsDblCon()->DconValue();
         return comp->GetEmitter()->emitIns_valid_imm_for_fmov(dataValue);
     }
@@ -3353,6 +3754,8 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
             case NI_Sve_PrefetchInt32:
             case NI_Sve_PrefetchInt64:
             case NI_Sve_ExtractVector:
+            case NI_Sve_AddRotateComplex:
+            case NI_Sve_TrigonometricMultiplyAddCoefficient:
                 assert(hasImmediateOperand);
                 assert(varTypeIsIntegral(intrin.op3));
                 if (intrin.op3->IsCnsIntOrI())
@@ -3368,18 +3771,6 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                 if (intrin.op2->IsCnsIntOrI())
                 {
                     MakeSrcContained(node, intrin.op2);
-
-                    if ((intrin.op2->AsIntCon()->gtIconVal == 0) && intrin.op3->IsCnsFltOrDbl())
-                    {
-                        assert(varTypeIsFloating(intrin.baseType));
-
-                        const double dataValue = intrin.op3->AsDblCon()->DconValue();
-
-                        if (comp->GetEmitter()->emitIns_valid_imm_for_fmov(dataValue))
-                        {
-                            MakeSrcContained(node, intrin.op3);
-                        }
-                    }
                 }
                 break;
 
@@ -3516,9 +3907,11 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
 
                             // For now, make sure that we get here only for intrinsics that we are
                             // sure about to rely on auxiliary type's size.
-                            assert((embOp->GetHWIntrinsicId() == NI_Sve_ConvertToInt32) ||
-                                   (embOp->GetHWIntrinsicId() == NI_Sve_ConvertToUInt32) ||
+                            assert((embOp->GetHWIntrinsicId() == NI_Sve_ConvertToDouble) ||
+                                   (embOp->GetHWIntrinsicId() == NI_Sve_ConvertToInt32) ||
                                    (embOp->GetHWIntrinsicId() == NI_Sve_ConvertToInt64) ||
+                                   (embOp->GetHWIntrinsicId() == NI_Sve_ConvertToSingle) ||
+                                   (embOp->GetHWIntrinsicId() == NI_Sve_ConvertToUInt32) ||
                                    (embOp->GetHWIntrinsicId() == NI_Sve_ConvertToUInt64));
 
                             uint32_t auxSize = genTypeSize(embOp->GetAuxiliaryType());
@@ -3556,6 +3949,7 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
 
             case NI_Sve_FusedMultiplyAddBySelectedScalar:
             case NI_Sve_FusedMultiplySubtractBySelectedScalar:
+            case NI_Sve_MultiplyAddRotateComplex:
                 assert(hasImmediateOperand);
                 assert(varTypeIsIntegral(intrin.op4));
                 if (intrin.op4->IsCnsIntOrI())
@@ -3612,6 +4006,18 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                 }
                 break;
 
+            case NI_Sve_MultiplyAddRotateComplexBySelectedScalar:
+                assert(hasImmediateOperand);
+                assert(varTypeIsIntegral(intrin.op4));
+                assert(varTypeIsIntegral(intrin.op5));
+                // Can only avoid generating a table if both immediates are constant.
+                if (intrin.op4->IsCnsIntOrI() && intrin.op5->IsCnsIntOrI())
+                {
+                    MakeSrcContained(node, intrin.op4);
+                    MakeSrcContained(node, intrin.op5);
+                }
+                break;
+
             default:
                 unreached();
         }
@@ -3623,6 +4029,9 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
 //  Arguments:
 //     node - The hardware intrinsic node of the form
 //            ConditionalSelect(mask, trueValue, falseValue)
+//
+//  Returns:
+//    Next node to lower.
 //
 GenTree* Lowering::LowerHWIntrinsicCndSel(GenTreeHWIntrinsic* cndSelNode)
 {
@@ -3639,14 +4048,23 @@ GenTree* Lowering::LowerHWIntrinsicCndSel(GenTreeHWIntrinsic* cndSelNode)
         // `trueValue`
         GenTreeHWIntrinsic* nestedCndSel = op2->AsHWIntrinsic();
         GenTree*            nestedOp1    = nestedCndSel->Op(1);
+        GenTree*            nestedOp2    = nestedCndSel->Op(2);
         assert(varTypeIsMask(nestedOp1));
+        assert(nestedOp2->OperIsHWIntrinsic());
 
-        if (nestedOp1->IsMaskAllBitsSet())
+        NamedIntrinsic nestedOp2Id = nestedOp2->AsHWIntrinsic()->GetHWIntrinsicId();
+
+        // If the nested op uses Pg/Z, then inactive lanes will result in zeros, so can only transform if
+        // op3 is all zeros. Such a Csel operation is absorbed into the instruction when emitted. Skip this optimisation
+        // when the nestedOp is a reduce operation.
+
+        if (nestedOp1->IsMaskAllBitsSet() && !HWIntrinsicInfo::IsReduceOperation(nestedOp2Id) &&
+            (!HWIntrinsicInfo::IsZeroingMaskedOperation(nestedOp2Id) || op3->IsVectorZero()))
         {
             GenTree* nestedOp2 = nestedCndSel->Op(2);
             GenTree* nestedOp3 = nestedCndSel->Op(3);
 
-            JITDUMP("lowering ConditionalSelect HWIntrinisic (before):\n");
+            JITDUMP("lowering nested ConditionalSelect HWIntrinisic (before):\n");
             DISPTREERANGE(BlockRange(), cndSelNode);
             JITDUMP("\n");
 
@@ -3668,17 +4086,136 @@ GenTree* Lowering::LowerHWIntrinsicCndSel(GenTreeHWIntrinsic* cndSelNode)
             BlockRange().Remove(nestedOp1);
             BlockRange().Remove(nestedCndSel);
 
-            JITDUMP("lowering ConditionalSelect HWIntrinisic (after):\n");
+            JITDUMP("lowering nested ConditionalSelect HWIntrinisic (after):\n");
             DISPTREERANGE(BlockRange(), cndSelNode);
             JITDUMP("\n");
 
             return cndSelNode;
         }
     }
+    else if (op1->IsMaskAllBitsSet())
+    {
+        // Any case where op2 is not an embedded HWIntrinsic
+        if (!op2->OperIsHWIntrinsic() ||
+            !HWIntrinsicInfo::IsEmbeddedMaskedOperation(op2->AsHWIntrinsic()->GetHWIntrinsicId()))
+        {
+            JITDUMP("lowering ConditionalSelect HWIntrinisic (before):\n");
+            DISPTREERANGE(BlockRange(), cndSelNode);
+            JITDUMP("\n");
+
+            // Transform
+            // CndSel(AllTrue, op2, op3) to
+            // op2
+
+            LIR::Use use;
+            if (BlockRange().TryGetUse(cndSelNode, &use))
+            {
+                use.ReplaceWith(op2);
+            }
+            else
+            {
+                op2->SetUnusedValue();
+            }
+
+            if (op3->IsMaskZero())
+            {
+                BlockRange().Remove(op3);
+            }
+            else
+            {
+                op3->SetUnusedValue();
+            }
+            op1->SetUnusedValue();
+
+            GenTree* next = cndSelNode->gtNext;
+            BlockRange().Remove(cndSelNode);
+
+            JITDUMP("lowering ConditionalSelect HWIntrinisic (after):\n");
+            DISPTREERANGE(BlockRange(), op2);
+            JITDUMP("\n");
+
+            return next;
+        }
+    }
 
     ContainCheckHWIntrinsic(cndSelNode);
     return cndSelNode->gtNext;
 }
+
+#if defined(TARGET_ARM64)
+//----------------------------------------------------------------------------------------------
+// StoreFFRValue: For hwintrinsic that produce a first faulting register (FFR) value, create
+// nodes to save its value to a local variable.
+//
+// Arguments:
+//     node - The node before which the pseudo definition is needed
+//
+void Lowering::StoreFFRValue(GenTreeHWIntrinsic* node)
+{
+#ifdef DEBUG
+    switch (node->GetHWIntrinsicId())
+    {
+        case NI_Sve_GatherVectorByteZeroExtendFirstFaulting:
+        case NI_Sve_GatherVectorFirstFaulting:
+        case NI_Sve_GatherVectorInt16SignExtendFirstFaulting:
+        case NI_Sve_GatherVectorInt16WithByteOffsetsSignExtendFirstFaulting:
+        case NI_Sve_GatherVectorInt32SignExtendFirstFaulting:
+        case NI_Sve_GatherVectorInt32WithByteOffsetsSignExtendFirstFaulting:
+        case NI_Sve_GatherVectorSByteSignExtendFirstFaulting:
+        case NI_Sve_GatherVectorUInt16WithByteOffsetsZeroExtendFirstFaulting:
+        case NI_Sve_GatherVectorUInt16ZeroExtendFirstFaulting:
+        case NI_Sve_GatherVectorUInt32WithByteOffsetsZeroExtendFirstFaulting:
+        case NI_Sve_GatherVectorUInt32ZeroExtendFirstFaulting:
+        case NI_Sve_GatherVectorWithByteOffsetFirstFaulting:
+        case NI_Sve_LoadVectorByteZeroExtendFirstFaulting:
+        case NI_Sve_LoadVectorFirstFaulting:
+        case NI_Sve_LoadVectorInt16SignExtendFirstFaulting:
+        case NI_Sve_LoadVectorInt32SignExtendFirstFaulting:
+        case NI_Sve_LoadVectorSByteSignExtendFirstFaulting:
+        case NI_Sve_LoadVectorUInt16ZeroExtendFirstFaulting:
+        case NI_Sve_LoadVectorUInt32ZeroExtendFirstFaulting:
+        case NI_Sve_LoadVectorByteNonFaultingZeroExtendToInt16:
+        case NI_Sve_LoadVectorByteNonFaultingZeroExtendToInt32:
+        case NI_Sve_LoadVectorByteNonFaultingZeroExtendToInt64:
+        case NI_Sve_LoadVectorByteNonFaultingZeroExtendToUInt16:
+        case NI_Sve_LoadVectorByteNonFaultingZeroExtendToUInt32:
+        case NI_Sve_LoadVectorByteNonFaultingZeroExtendToUInt64:
+        case NI_Sve_LoadVectorInt16NonFaultingSignExtendToInt32:
+        case NI_Sve_LoadVectorInt16NonFaultingSignExtendToInt64:
+        case NI_Sve_LoadVectorInt16NonFaultingSignExtendToUInt32:
+        case NI_Sve_LoadVectorInt16NonFaultingSignExtendToUInt64:
+        case NI_Sve_LoadVectorInt32NonFaultingSignExtendToInt64:
+        case NI_Sve_LoadVectorInt32NonFaultingSignExtendToUInt64:
+        case NI_Sve_LoadVectorNonFaulting:
+        case NI_Sve_LoadVectorSByteNonFaultingSignExtendToInt16:
+        case NI_Sve_LoadVectorSByteNonFaultingSignExtendToInt32:
+        case NI_Sve_LoadVectorSByteNonFaultingSignExtendToInt64:
+        case NI_Sve_LoadVectorSByteNonFaultingSignExtendToUInt16:
+        case NI_Sve_LoadVectorSByteNonFaultingSignExtendToUInt32:
+        case NI_Sve_LoadVectorSByteNonFaultingSignExtendToUInt64:
+        case NI_Sve_LoadVectorUInt16NonFaultingZeroExtendToInt32:
+        case NI_Sve_LoadVectorUInt16NonFaultingZeroExtendToInt64:
+        case NI_Sve_LoadVectorUInt16NonFaultingZeroExtendToUInt32:
+        case NI_Sve_LoadVectorUInt16NonFaultingZeroExtendToUInt64:
+        case NI_Sve_LoadVectorUInt32NonFaultingZeroExtendToInt64:
+        case NI_Sve_LoadVectorUInt32NonFaultingZeroExtendToUInt64:
+        case NI_Sve_SetFfr:
+            break;
+
+        default:
+            assert(!"Unexpected HWIntrinsicId");
+    }
+#endif
+
+    // Create physReg FFR definition to store FFR register.
+    unsigned lclNum      = comp->getFFRegisterVarNum();
+    GenTree* ffrReg      = comp->gtNewPhysRegNode(REG_FFR, TYP_MASK);
+    GenTree* storeLclVar = comp->gtNewStoreLclVarNode(lclNum, ffrReg);
+    BlockRange().InsertAfter(node, ffrReg, storeLclVar);
+    m_ffrTrashed = false;
+}
+#endif // TARGET_ARM64
+
 #endif // FEATURE_HW_INTRINSICS
 
 #endif // TARGET_ARMARCH

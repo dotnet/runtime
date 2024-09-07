@@ -1011,8 +1011,11 @@
   <data name="Argument_CultureNotSupportedInInvariantMode" xml:space="preserve">
     <value>Only the invariant culture is supported in globalization-invariant mode. See https://aka.ms/GlobalizationInvariantMode for more information.</value>
   </data>
-  <data name="Argument_CustomAssemblyLoadContextRequestedNameMismatch" xml:space="preserve">
-    <value>Resolved assembly's simple name should be the same as of the requested assembly.</value>
+  <data name="InvalidOperation_ResolvedAssemblyMustBeRuntimeAssembly" xml:space="preserve">
+    <value>Resolved assembly must be a runtime Assembly object.</value>
+  </data>
+  <data name="InvalidOperation_ResolvedAssemblyRequestedNameMismatch" xml:space="preserve">
+    <value>Resolved assembly's simple name must be the same as of the requested assembly.</value>
   </data>
   <data name="Argument_CustomCultureCannotBePassedByNumber" xml:space="preserve">
     <value>Customized cultures cannot be passed by LCID, only by name.</value>
@@ -4328,10 +4331,28 @@
   <data name="NotSupported_EmitDebugInfo" xml:space="preserve">
     <value>Emitting debug info is not supported for this member.</value>
   </data>
+  <data name="NotSupported_ReferenceEnumOrPrimitiveTypeRequired" xml:space="preserve">
+    <value>The specified type must be a reference type, a primitive type, or an enum type.</value>
+  </data>
   <data name="Argument_BadFieldForInitializeArray" xml:space="preserve">
     <value>The field is invalid for initializing array or span.</value>
   </data>
   <data name="Argument_BadArrayForInitializeArray" xml:space="preserve">
     <value>Only array or span of primitive or enum types can be initialized from static data.</value>
+  </data>
+  <data name="ComVariant_CriticalHandle_In_Variant" xml:space="preserve">
+    <value>CriticalHandle derived types cannot be stored in Variants.</value>
+  </data>
+  <data name="ComVariant_SafeHandle_In_Variant" xml:space="preserve">
+    <value>SafeHandle derived types cannot be stored in Variants.</value>
+  </data>
+  <data name="ComVariant_UnsupportedSignature" xml:space="preserve">
+    <value>Method's type signature is not Interop compatible.</value>
+  </data>
+  <data name="ComVariant_UnsupportedType" xml:space="preserve">
+    <value>The method returned a COM Variant type that is not Interop compatible.</value>
+  </data>
+  <data name="ComVariant_VariantWrapper_In_Variant" xml:space="preserve">
+    <value>VariantWrappers cannot be stored in Variants.</value>
   </data>
 </root>

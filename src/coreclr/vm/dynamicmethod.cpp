@@ -20,7 +20,7 @@
 #ifndef DACCESS_COMPILE
 
 // get the method table for dynamic methods
-DynamicMethodTable* DomainAssembly::GetDynamicMethodTable()
+DynamicMethodTable* Module::GetDynamicMethodTable()
 {
     CONTRACT (DynamicMethodTable*)
     {
@@ -34,7 +34,7 @@ DynamicMethodTable* DomainAssembly::GetDynamicMethodTable()
     CONTRACT_END;
 
     if (!m_pDynamicMethodTable)
-        DynamicMethodTable::CreateDynamicMethodTable(&m_pDynamicMethodTable, GetModule(), GetAppDomain());
+        DynamicMethodTable::CreateDynamicMethodTable(&m_pDynamicMethodTable, this, AppDomain::GetCurrentDomain());
 
 
     RETURN m_pDynamicMethodTable;
@@ -189,7 +189,7 @@ void DynamicMethodTable::AddMethodsToList()
         pResolver->m_DynamicMethodTable = this;
         pNewMD->m_pResolver = pResolver;
 
-        pNewMD->SetTemporaryEntryPoint(m_pDomain->GetLoaderAllocator(), &amt);
+        pNewMD->SetTemporaryEntryPoint(&amt);
 
 #ifdef _DEBUG
         pNewMD->m_pDebugMethodTable = m_pMethodTable;

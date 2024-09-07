@@ -293,7 +293,7 @@ namespace System.IO
                     }
 
                     // Take the CFStringRef and put it into an array to pass to the EventStream
-                    arrPaths = Interop.CoreFoundation.CFArrayCreate(new CFStringRef[1] { path.DangerousGetHandle() }, (UIntPtr)1);
+                    arrPaths = Interop.CoreFoundation.CFArrayCreate([path.DangerousGetHandle()], (UIntPtr)1);
                     if (arrPaths.IsInvalid)
                     {
                         throw Interop.GetExceptionForIoErrno(Interop.Sys.GetLastErrorInfo(), _fullDirectory, true);
@@ -423,8 +423,8 @@ namespace System.IO
 
             private unsafe void ProcessEvents(int numEvents,
                 byte** eventPaths,
-                Span<FSEventStreamEventFlags> eventFlags,
-                Span<FSEventStreamEventId> eventIds,
+                ReadOnlySpan<FSEventStreamEventFlags> eventFlags,
+                ReadOnlySpan<FSEventStreamEventId> eventIds,
                 FileSystemWatcher watcher)
             {
                 // Since renames come in pairs, when we reach the first we need to test for the next one if it is the case. If the next one belongs into the pair,
@@ -624,7 +624,7 @@ namespace System.IO
 
             private static int? FindRenameChangePairedChange(
                 int currentIndex,
-                Span<FSEventStreamEventFlags> flags, Span<FSEventStreamEventId> ids)
+                ReadOnlySpan<FSEventStreamEventFlags> flags, ReadOnlySpan<FSEventStreamEventId> ids)
             {
                 // The rename event can be composed of two events. The first contains the original file name the second contains the new file name.
                 // Each of the events is delivered only when the corresponding folder is watched. It means both events are delivered when the rename/move

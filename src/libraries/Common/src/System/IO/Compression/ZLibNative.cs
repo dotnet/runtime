@@ -38,48 +38,6 @@ namespace System.IO.Compression
         }
 
         /// <summary>
-        /// <p>ZLib can accept any integer value between 0 and 9 (inclusive) as a valid compression level parameter:
-        /// 1 gives best speed, 9 gives best compression, 0 gives no compression at all (the input data is simply copied a block at a time).
-        /// <code>CompressionLevel.DefaultCompression</code> = -1 requests a default compromise between speed and compression
-        /// (currently equivalent to level 6).</p>
-        ///
-        /// <p><strong>How to choose a compression level:</strong></p>
-        ///
-        /// <p>The names <code>NoCompression</code>, <code>BestSpeed</code>, <code>DefaultCompression</code>, <code>BestCompression</code> are taken over from
-        /// the corresponding ZLib definitions, which map to our public NoCompression, Fastest, Optimal, and SmallestSize respectively.</p>
-        /// <p><em>Optimal Compression:</em></p>
-        /// <p><code>ZLibNative.CompressionLevel compressionLevel = ZLibNative.CompressionLevel.DefaultCompression;</code> <br />
-        ///    <code>int windowBits = 15;  // or -15 if no headers required</code> <br />
-        ///    <code>int memLevel = 8;</code> <br />
-        ///    <code>ZLibNative.CompressionStrategy strategy = ZLibNative.CompressionStrategy.DefaultStrategy;</code> </p>
-        ///
-        ///<p><em>Fastest compression:</em></p>
-        ///<p><code>ZLibNative.CompressionLevel compressionLevel = ZLibNative.CompressionLevel.BestSpeed;</code> <br />
-        ///   <code>int windowBits = 15;  // or -15 if no headers required</code> <br />
-        ///   <code>int memLevel = 8; </code> <br />
-        ///   <code>ZLibNative.CompressionStrategy strategy = ZLibNative.CompressionStrategy.DefaultStrategy;</code> </p>
-        ///
-        /// <p><em>No compression (even faster, useful for data that cannot be compressed such some image formats):</em></p>
-        /// <p><code>ZLibNative.CompressionLevel compressionLevel = ZLibNative.CompressionLevel.NoCompression;</code> <br />
-        ///    <code>int windowBits = 15;  // or -15 if no headers required</code> <br />
-        ///    <code>int memLevel = 7;</code> <br />
-        ///    <code>ZLibNative.CompressionStrategy strategy = ZLibNative.CompressionStrategy.DefaultStrategy;</code> </p>
-        ///
-        /// <p><em>Smallest Size Compression:</em></p>
-        /// <p><code>ZLibNative.CompressionLevel compressionLevel = ZLibNative.CompressionLevel.BestCompression;</code> <br />
-        ///    <code>int windowBits = 15;  // or -15 if no headers required</code> <br />
-        ///    <code>int memLevel = 8;</code> <br />
-        ///    <code>ZLibNative.CompressionStrategy strategy = ZLibNative.CompressionStrategy.DefaultStrategy;</code> </p>
-        /// </summary>
-        public enum CompressionLevel : int
-        {
-            NoCompression = 0,
-            BestSpeed = 1,
-            DefaultCompression = -1,
-            BestCompression = 9
-        }
-
-        /// <summary>
         /// <p><strong>From the ZLib manual:</strong></p>
         /// <p><code>CompressionStrategy</code> is used to tune the compression algorithm.<br />
         /// Use the value <code>DefaultStrategy</code> for normal data, <code>Filtered</code> for data produced by a filter (or predictor),
@@ -98,7 +56,11 @@ namespace System.IO.Compression
         /// </summary>
         public enum CompressionStrategy : int
         {
-            DefaultStrategy = 0
+            DefaultStrategy = 0,
+            Filtered = 1,
+            HuffmanOnly = 2,
+            RunLengthEncoding = 3,
+            Fixed = 4
         }
 
         /// <summary>
@@ -199,7 +161,6 @@ namespace System.IO.Compression
 
             private volatile State _initializationState;
 
-
             public ZLibStreamHandle()
                 : base(new IntPtr(-1), true)
             {
@@ -216,7 +177,6 @@ namespace System.IO.Compression
             {
                 get { return _initializationState; }
             }
-
 
             protected override bool ReleaseHandle() =>
                 InitializationState switch
@@ -257,13 +217,11 @@ namespace System.IO.Compression
                 ObjectDisposedException.ThrowIf(InitializationState == State.Disposed, this);
             }
 
-
             private void EnsureState(State requiredState)
             {
                 if (InitializationState != requiredState)
                     throw new InvalidOperationException("InitializationState != " + requiredState.ToString());
             }
-
 
             public unsafe ErrorCode DeflateInit2_(CompressionLevel level, int windowBits, int memLevel, CompressionStrategy strategy)
             {
@@ -279,7 +237,6 @@ namespace System.IO.Compression
                 }
             }
 
-
             public unsafe ErrorCode Deflate(FlushCode flush)
             {
                 EnsureNotDisposed();
@@ -290,7 +247,6 @@ namespace System.IO.Compression
                     return Interop.ZLib.Deflate(stream, flush);
                 }
             }
-
 
             public unsafe ErrorCode DeflateEnd()
             {
@@ -306,7 +262,6 @@ namespace System.IO.Compression
                 }
             }
 
-
             public unsafe ErrorCode InflateInit2_(int windowBits)
             {
                 EnsureNotDisposed();
@@ -321,7 +276,6 @@ namespace System.IO.Compression
                 }
             }
 
-
             public unsafe ErrorCode Inflate(FlushCode flush)
             {
                 EnsureNotDisposed();
@@ -332,7 +286,6 @@ namespace System.IO.Compression
                     return Interop.ZLib.Inflate(stream, flush);
                 }
             }
-
 
             public unsafe ErrorCode InflateEnd()
             {
@@ -358,7 +311,6 @@ namespace System.IO.Compression
             zLibStreamHandle = new ZLibStreamHandle();
             return zLibStreamHandle.DeflateInit2_(level, windowBits, memLevel, strategy);
         }
-
 
         public static ErrorCode CreateZLibStreamForInflate(out ZLibStreamHandle zLibStreamHandle, int windowBits)
         {

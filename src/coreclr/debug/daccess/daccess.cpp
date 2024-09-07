@@ -34,6 +34,8 @@ extern "C" bool TryGetSymbol(ICorDebugDataTarget* dataTarget, uint64_t baseAddre
 #define CAN_USE_CDAC
 #endif
 
+extern TADDR g_ClrModuleBase;
+
 #include "dwbucketmanager.hpp"
 #include "gcinterface.dac.h"
 
@@ -3239,6 +3241,10 @@ ClrDataAccess::QueryInterface(THIS_
     {
         ifaceRet = static_cast<ISOSDacInterface14*>(this);
     }
+    else if (IsEqualIID(interfaceId, __uuidof(ISOSDacInterface15)))
+    {
+        ifaceRet = static_cast<ISOSDacInterface15*>(this);
+    }
     else
     {
         *iface = NULL;
@@ -5527,6 +5533,15 @@ ClrDataAccess::Initialize(void)
     // Do some validation
     IfFailRet(VerifyDlls());
 
+    // To support EH SxS, utilcode requires the base address of the runtime as part of its initialization
+    // so that functions like "WasThrownByUs" work correctly since they use the CLR base address to check
+    // if an exception was raised by a given instance of the runtime or not.
+    //
+    // Thus, when DAC is initialized, initialize utilcode with the base address of the runtime loaded in the
+    // target process. This is similar to work done in CorDB::SetTargetCLR for mscordbi.
+
+    g_ClrModuleBase = m_globalBase; // Base address of the runtime in the target process
+
     return S_OK;
 }
 
@@ -5652,8 +5667,8 @@ ClrDataAccess::GetJitHelperName(
 
     // Check if its a dynamically generated JIT helper
     const static CorInfoHelpFunc s_rgDynamicHCallIds[] = {
-#define DYNAMICJITHELPER(code, fn, sig) code,
-#define JITHELPER(code, fn,sig)
+#define DYNAMICJITHELPER(code, fn, binderId) code,
+#define JITHELPER(code, fn, binderId)
 #include <jithelpers.h>
     };
 
@@ -5979,7 +5994,7 @@ ClrDataAccess::GetMethodVarInfo(MethodDesc* methodDesc,
 {
     SUPPORTS_DAC;
     COUNT_T countNativeVarInfo;
-    NewHolder<ICorDebugInfo::NativeVarInfo> nativeVars(NULL);
+    NewArrayHolder<ICorDebugInfo::NativeVarInfo> nativeVars(NULL);
     TADDR nativeCodeStartAddr;
     if (address != (TADDR)NULL)
     {
@@ -6714,11 +6729,11 @@ ClrDataAccess::GetMDImport(const PEAssembly* pPEAssembly, const ReflectionModule
     else if (reflectionModule != NULL)
     {
         // Get the metadata
-        PTR_SBuffer metadataBuffer = reflectionModule->GetDynamicMetadataBuffer();
+        TADDR metadataBuffer = reflectionModule->GetDynamicMetadataBuffer();
         if (metadataBuffer != PTR_NULL)
         {
-            mdBaseTarget = dac_cast<PTR_CVOID>((metadataBuffer->DacGetRawBuffer()).StartAddress());
-            mdSize = metadataBuffer->GetSize();
+            mdBaseTarget = dac_cast<PTR_CVOID>(metadataBuffer + offsetof(DynamicMetadata, Data));
+            mdSize = dac_cast<DPTR(DynamicMetadata)>(metadataBuffer)->Size;
         }
         else
         {
@@ -8341,6 +8356,44 @@ HRESULT DacMemoryEnumerator::Next(unsigned int count, SOSMemoryRegion regions[],
     return i < count ? S_FALSE : S_OK;
 }
 
+HRESULT DacMethodTableSlotEnumerator::Skip(unsigned int count)
+{
+    mIteratorIndex += count;
+    return S_OK;
+}
+
+HRESULT DacMethodTableSlotEnumerator::Reset()
+{
+    mIteratorIndex = 0;
+    return S_OK;
+}
+
+HRESULT DacMethodTableSlotEnumerator::GetCount(unsigned int* pCount)
+{
+    if (!pCount)
+        return E_POINTER;
+
+    *pCount = mMethods.GetCount();
+    return S_OK;
+}
+
+HRESULT DacMethodTableSlotEnumerator::Next(unsigned int count, SOSMethodData methods[], unsigned int* pFetched)
+{
+    if (!pFetched)
+        return E_POINTER;
+
+    if (!methods)
+        return E_POINTER;
+
+    unsigned int i = 0;
+    while (i < count && mIteratorIndex < mMethods.GetCount())
+    {
+        methods[i++] = mMethods.Get(mIteratorIndex++);
+    }
+
+    *pFetched = i;
+    return i < count ? S_FALSE : S_OK;
+}
 
 HRESULT DacGCBookkeepingEnumerator::Init()
 {

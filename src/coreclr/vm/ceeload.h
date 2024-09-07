@@ -43,11 +43,9 @@
 #include "ilinstrumentation.h"
 #include "codeversion.h"
 
-class Stub;
 class MethodDesc;
 class FieldDesc;
 class Crst;
-class ClassConverter;
 class RefClassWriter;
 class ReflectionModule;
 class EEStringData;
@@ -56,11 +54,9 @@ class SigTypeContext;
 class Assembly;
 class BaseDomain;
 class AppDomain;
-class DomainModule;
 class SystemDomain;
 class Module;
 class SString;
-class Pending;
 class MethodTable;
 class DynamicMethodTable;
 class TieredCompilationManager;
@@ -90,6 +86,20 @@ typedef DPTR(JITInlineTrackingMap) PTR_JITInlineTrackingMap;
 //
 
 typedef DPTR(struct LookupMapBase) PTR_LookupMapBase;
+
+struct DynamicMetadata
+{
+    uint32_t Size;
+    BYTE Data[0];
+    template<typename T> friend struct ::cdac_data;
+};
+
+template<>
+struct cdac_data<DynamicMetadata>
+{
+    static constexpr size_t Size = offsetof(DynamicMetadata, Size);
+    static constexpr size_t Data = offsetof(DynamicMetadata, Data);
+};
 
 struct LookupMapBase
 {
@@ -456,7 +466,7 @@ protected:
     // The vtable needs to match between DAC and non-DAC, but we don't want any use of IsSigInIL in the DAC
     virtual BOOL IsSigInILImpl(PCCOR_SIGNATURE signature) { return FALSE; } // ModuleBase doesn't have a PE image to examine
     // The vtable needs to match between DAC and non-DAC, but we don't want any use of LoadAssembly in the DAC
-    virtual DomainAssembly * LoadAssemblyImpl(mdAssemblyRef kAssemblyRef) = 0;
+    virtual Assembly * LoadAssemblyImpl(mdAssemblyRef kAssemblyRef) = 0;
 
     // The vtable needs to match between DAC and non-DAC, but we don't want any use of ThrowTypeLoadException in the DAC
     virtual void DECLSPEC_NORETURN ThrowTypeLoadExceptionImpl(IMDInternalImport *pInternalImport,
@@ -533,7 +543,7 @@ public:
     virtual PTR_Module LookupModule(mdToken kFile) { return NULL; }; //wrapper over GetModuleIfLoaded, takes modulerefs as well
     virtual Module *GetModuleIfLoaded(mdFile kFile) { return NULL; };
 #ifndef DACCESS_COMPILE
-    virtual DomainAssembly *LoadModule(mdFile kFile);
+    virtual Module *LoadModule(mdFile kFile);
 #endif
     DWORD GetAssemblyRefFlags(mdAssemblyRef tkAssemblyRef);
 
@@ -542,7 +552,6 @@ public:
     virtual Assembly * GetAssemblyIfLoaded(
             mdAssemblyRef       kAssemblyRef,
             IMDInternalImport * pMDImportOverride = NULL,
-            BOOL                fDoNotUtilizeExtraChecks = FALSE,
             AssemblyBinder      *pBinderForLoadedAssembly = NULL
             )
     {
@@ -563,7 +572,7 @@ public:
 
     // The vtable needs to match between DAC and non-DAC, but we don't want any use of IsSigInIL in the DAC
     BOOL IsSigInIL(PCCOR_SIGNATURE signature) { return IsSigInILImpl(signature); }
-    DomainAssembly * LoadAssembly(mdAssemblyRef kAssemblyRef)
+    Assembly * LoadAssembly(mdAssemblyRef kAssemblyRef)
     {
         WRAPPER_NO_CONTRACT;
         return LoadAssemblyImpl(kAssemblyRef);
@@ -601,6 +610,7 @@ class Module : public ModuleBase
 
 private:
     PTR_CUTF8               m_pSimpleName; // Cached simple name for better performance and easier diagnostics
+    const WCHAR*            m_path;        // Cached path for easier diagnostics
 
     PTR_PEAssembly          m_pPEAssembly;
     PTR_VOID                m_baseAddress; // Cached base address for easier diagnostics
@@ -883,6 +893,7 @@ protected:
     void SetDomainAssembly(DomainAssembly *pDomainAssembly);
 
     OBJECTREF GetExposedObject();
+    OBJECTREF GetExposedObjectIfExists();
 
     ClassLoader *GetClassLoader();
 #ifdef FEATURE_CODE_VERSIONING
@@ -936,8 +947,6 @@ public:
 
 #ifndef DACCESS_COMPILE
     VOID EnsureActive();
-    VOID EnsureAllocated();
-    VOID EnsureLibraryLoaded();
 #endif
 
     CHECK CheckActivated();
@@ -1119,7 +1128,6 @@ public:
     Assembly * GetAssemblyIfLoaded(
             mdAssemblyRef       kAssemblyRef,
             IMDInternalImport * pMDImportOverride = NULL,
-            BOOL                fDoNotUtilizeExtraChecks = FALSE,
             AssemblyBinder      *pBinderForLoadedAssembly = NULL
             ) final;
 
@@ -1130,7 +1138,7 @@ protected:
                                                   UINT resIDWhy) final;
 #endif
 
-    DomainAssembly * LoadAssemblyImpl(mdAssemblyRef kAssemblyRef) final;
+    Assembly * LoadAssemblyImpl(mdAssemblyRef kAssemblyRef) final;
 public:
     PTR_Module LookupModule(mdToken kFile) final;
     Module *GetModuleIfLoaded(mdFile kFile) final;
@@ -1305,15 +1313,23 @@ public:
 
     mdAssemblyRef FindAssemblyRef(Assembly *targetAssembly);
 
-    void          CreateAssemblyRefByNameTable(AllocMemTracker *pamTracker);
-    bool          HasReferenceByName(LPCUTF8 pModuleName);
-
 #endif // !DACCESS_COMPILE
 
     DWORD GetAssemblyRefMax() {LIMITED_METHOD_CONTRACT;  return m_ManifestModuleReferencesMap.GetSize() - 1; }
 
     MethodDesc *FindMethodThrowing(mdToken pMethod);
     MethodDesc *FindMethod(mdToken pMethod);
+
+#ifndef DACCESS_COMPILE
+public:
+    // light code gen. Keep the list of MethodTables needed for creating dynamic methods
+    DynamicMethodTable* GetDynamicMethodTable();
+#endif
+private:
+    // m_pDynamicMethodTable is used by the light code generation to allow method
+    // generation on the fly. They are lazily created when/if a dynamic method is requested
+    // for this specific module
+    DynamicMethodTable*         m_pDynamicMethodTable;
 
 public:
 
@@ -1370,7 +1386,13 @@ public:
     }
 
     HRESULT GetScopeName(LPCUTF8 * pszName) { WRAPPER_NO_CONTRACT; return m_pPEAssembly->GetScopeName(pszName); }
-    const SString &GetPath() { WRAPPER_NO_CONTRACT; return m_pPEAssembly->GetPath(); }
+    const SString &GetPath()
+    {
+        WRAPPER_NO_CONTRACT;
+        // Validate the pointers are the same to ensure the lifetime of m_path is handled.
+        _ASSERTE(m_path == m_pPEAssembly->GetPath().GetUnicode());
+        return m_pPEAssembly->GetPath();
+    }
 
 #ifdef LOGGING
     LPCUTF8 GetDebugName() { WRAPPER_NO_CONTRACT; return m_pPEAssembly->GetDebugName(); }
@@ -1574,10 +1596,6 @@ private:
     PTR_JITInlineTrackingMap m_pJitInlinerTrackingMap;
 #endif // defined(PROFILING_SUPPORTED) || defined(PROFILING_SUPPORTED_DATA)
 
-
-    LPCSTR               *m_AssemblyRefByNameTable;  // array that maps mdAssemblyRef tokens into their simple name
-    DWORD                 m_AssemblyRefByNameCount;  // array size
-
     // a.dll calls a method in b.dll and that method call a method in c.dll. When ngening
     // a.dll it is possible then method in b.dll can be inlined. When that happens a.ni.dll stores
     // an added native metadata which has information about assemblyRef to c.dll
@@ -1587,6 +1605,17 @@ private:
     // is not called for each fixup
 
     PTR_Assembly           *m_NativeMetadataAssemblyRefMap;
+
+    LOADERHANDLE m_hExposedObject;
+
+    // Buffer of Metadata storage for dynamic modules. May be NULL. This provides a reasonable way for
+    // the debugger to get metadata of dynamic modules from out of process.
+    // A dynamic module will eagerly serialize its metadata to this buffer.
+    // This points at a uint32_t array.
+    // The first uint32_t is the number of bytes in the saved metadata
+    // Starting at the address of the second uint32_t value is the saved metadata itself
+protected:
+    TADDR m_pDynamicMetadata;
 
 public:
 #if !defined(DACCESS_COMPILE)
@@ -1606,25 +1635,28 @@ public:
     uint32_t GetNativeMetadataAssemblyCount();
 #endif // !defined(DACCESS_COMPILE)
 
-    template<typename T> friend struct ::cdac_offsets;
+    template<typename T> friend struct ::cdac_data;
 };
 
 template<>
-struct cdac_offsets<Module>
+struct cdac_data<Module>
 {
     static constexpr size_t Assembly = offsetof(Module, m_pAssembly);
     static constexpr size_t Base = offsetof(Module, m_baseAddress);
     static constexpr size_t Flags = offsetof(Module, m_dwTransientFlags);
     static constexpr size_t LoaderAllocator = offsetof(Module, m_loaderAllocator);
     static constexpr size_t ThunkHeap = offsetof(Module, m_pThunkHeap);
+    static constexpr size_t DynamicMetadata = offsetof(Module, m_pDynamicMetadata);
+    static constexpr size_t Path = offsetof(Module, m_path);
 
     // Lookup map pointers
-    static constexpr size_t FieldDefToDescMap = offsetof(Module, m_FieldDefToDescMap) + offsetof(LookupMap<PTR_FieldDesc>, pTable);
-    static constexpr size_t ManifestModuleReferencesMap = offsetof(Module, m_ManifestModuleReferencesMap) + offsetof(LookupMap<PTR_Module>, pTable);
-    static constexpr size_t MemberRefToDescMap = offsetof(Module, m_MemberRefMap) + offsetof(LookupMap<TADDR>, pTable);
-    static constexpr size_t MethodDefToDescMap = offsetof(Module, m_MethodDefToDescMap) + offsetof(LookupMap<PTR_MethodDesc>, pTable);
-    static constexpr size_t TypeDefToMethodTableMap = offsetof(Module, m_TypeDefToMethodTableMap) + offsetof(LookupMap<PTR_MethodTable>, pTable);
-    static constexpr size_t TypeRefToMethodTableMap = offsetof(Module, m_TypeRefToMethodTableMap) + offsetof(LookupMap<PTR_TypeRef>, pTable);
+    static constexpr size_t FieldDefToDescMap = offsetof(Module, m_FieldDefToDescMap);
+    static constexpr size_t ManifestModuleReferencesMap = offsetof(Module, m_ManifestModuleReferencesMap);
+    static constexpr size_t MemberRefToDescMap = offsetof(Module, m_MemberRefMap);
+    static constexpr size_t MethodDefToDescMap = offsetof(Module, m_MethodDefToDescMap);
+    static constexpr size_t TypeDefToMethodTableMap = offsetof(Module, m_TypeDefToMethodTableMap);
+    static constexpr size_t TypeRefToMethodTableMap = offsetof(Module, m_TypeRefToMethodTableMap);
+    static constexpr size_t MethodDefToILCodeVersioningStateMap = offsetof(Module, m_ILCodeVersioningStateMap);
 };
 
 //
@@ -1647,11 +1679,6 @@ private:
     // Simple Critical Section used for basic leaf-lock operatons.
     CrstExplicitInit        m_CrstLeafLock;
 
-    // Buffer of Metadata storage for dynamic modules. May be NULL. This provides a reasonable way for
-    // the debugger to get metadata of dynamic modules from out of process.
-    // A dynamic module will eagerly serialize its metadata to this buffer.
-    PTR_SBuffer m_pDynamicMetadata;
-
 #if !defined DACCESS_COMPILE
     ReflectionModule(Assembly *pAssembly, PEAssembly *pPEAssembly);
 #endif // !DACCESS_COMPILE
@@ -1660,7 +1687,7 @@ public:
 
 #ifdef DACCESS_COMPILE
     // Accessor to expose m_pDynamicMetadata to debugger.
-    PTR_SBuffer GetDynamicMetadataBuffer() const;
+    TADDR GetDynamicMetadataBuffer() const;
 #endif
 
 #if !defined DACCESS_COMPILE

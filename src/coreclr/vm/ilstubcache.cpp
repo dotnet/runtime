@@ -55,7 +55,7 @@ void CreateModuleIndependentSignature(LoaderHeap* pCreationHeap,
     SigPointer  sigPtr(pSig, cbSig);
 
     SigBuilder sigBuilder;
-    sigPtr.ConvertToInternalSignature(pSigModule, pTypeContext, &sigBuilder);
+    sigPtr.ConvertToInternalSignature(pSigModule, pTypeContext, &sigBuilder, /* bSkipCustomModifier */ FALSE);
 
     DWORD cbNewSig;
     PVOID pConvertedSig = sigBuilder.GetSignature(&cbNewSig);
@@ -193,7 +193,7 @@ MethodDesc* ILStubCache::CreateNewMethodDesc(LoaderHeap* pCreationHeap, MethodTa
     // the no metadata part of the method desc
     pMD->m_pszMethodName = (PTR_CUTF8)"IL_STUB";
     pMD->InitializeFlags(DynamicMethodDesc::FlagPublic | DynamicMethodDesc::FlagIsILStub);
-    pMD->SetTemporaryEntryPoint(pMT->GetLoaderAllocator(), pamTracker);
+    pMD->SetTemporaryEntryPoint(pamTracker);
 
     //
     // convert signature to a compatible signature if needed

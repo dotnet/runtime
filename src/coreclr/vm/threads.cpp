@@ -1178,7 +1178,7 @@ void InitThreadManager()
 
 #ifdef _DEBUG
     // Randomize OBJREF_HASH to handle hash collision.
-    Thread::OBJREF_HASH = OBJREF_TABSIZE - (DbgGetEXETimeStamp()%10);
+    Thread::OBJREF_HASH = OBJREF_TABSIZE - GetRandomInt(10);
 #endif // _DEBUG
 
     ThreadSuspend::Initialize();
@@ -1329,14 +1329,6 @@ Thread::Thread()
 #endif
 
     m_dwForbidSuspendThread = 0;
-
-    // Initialize lock state
-    m_pHead = &m_embeddedEntry;
-    m_embeddedEntry.pNext = m_pHead;
-    m_embeddedEntry.pPrev = m_pHead;
-    m_embeddedEntry.dwLLockID = 0;
-    m_embeddedEntry.dwULockID = 0;
-    m_embeddedEntry.wReaderLevel = 0;
 
     m_pBlockingLock = NULL;
 
@@ -2773,6 +2765,10 @@ void Thread::CooperativeCleanup()
         // Clear out the alloc context pointer for this thread. When TLS is gone, this pointer will point into freed memory.
         m_pRuntimeThreadLocals = nullptr;
     }
+
+    OBJECTREF threadObjMaybe = GetExposedObjectRaw();
+    if (threadObjMaybe != NULL)
+        ((THREADBASEREF)threadObjMaybe)->SetIsDead();
 }
 
 // See general comments on thread destruction (code:#threadDestruction) above.
@@ -4239,7 +4235,10 @@ void Thread::SetLastThrownObject(OBJECTREF throwable, BOOL isUnhandled)
     }
     CONTRACTL_END;
 
-    STRESS_LOG_COND1(LF_EH, LL_INFO100, OBJECTREFToObject(throwable) != NULL, "in Thread::SetLastThrownObject: obj = %p\n", OBJECTREFToObject(throwable));
+    if (OBJECTREFToObject(throwable) != NULL)
+    {
+        STRESS_LOG1(LF_EH, LL_INFO100, "in Thread::SetLastThrownObject: obj = %p\n", OBJECTREFToObject(throwable));
+    }
 
     // you can't have a NULL unhandled exception
     _ASSERTE(!(throwable == NULL && isUnhandled));
@@ -4784,20 +4783,6 @@ Thread::ApartmentState Thread::GetFinalApartment()
     }
 
     return as;
-}
-
-// when we get apartment tear-down notification,
-// we want reset the apartment state we cache on the thread
-VOID Thread::ResetApartment()
-{
-    CONTRACTL {
-        NOTHROW;
-        GC_NOTRIGGER;
-    }
-    CONTRACTL_END;
-
-    // reset the TS_InSTA bit and TS_InMTA bit
-    ResetThreadState((Thread::ThreadState)(TS_InSTA | TS_InMTA));
 }
 
 // Attempt to set current thread's apartment state. The actual apartment state

@@ -37,6 +37,16 @@ typedef const gunichar2 *mono_bstr_const;
 
 GENERATE_TRY_GET_CLASS_WITH_CACHE_DECL(stringbuilder)
 
+typedef struct {
+	gboolean by_reference;
+	uint32_t num_lowered_elements;
+	MonoType *lowered_elements[4];
+	uint32_t offsets[4];
+} SwiftPhysicalLowering;
+
+SwiftPhysicalLowering
+mono_marshal_get_swift_physical_lowering (MonoType *type, gboolean native_layout);
+
 
 /*
  * This structure holds the state kept by the emit_ marshalling functions.
@@ -53,6 +63,8 @@ typedef struct {
 	MonoMethodSignature *csig; /* Might need to be changed due to MarshalAs directives */
 	MonoImage *image; /* The image to use for looking up custom marshallers */
 	gboolean runtime_marshalling_enabled;
+	SwiftPhysicalLowering *swift_lowering;
+	int *swift_sig_to_csig_mp;
 } EmitMarshalContext;
 
 typedef enum {
@@ -741,17 +753,8 @@ IlgenCallbacksToMono*
 mono_marshal_get_mono_callbacks_for_ilgen (void);
 
 GENERATE_TRY_GET_CLASS_WITH_CACHE_DECL (swift_self)
+GENERATE_TRY_GET_CLASS_WITH_CACHE_DECL (swift_self_t);
 GENERATE_TRY_GET_CLASS_WITH_CACHE_DECL (swift_error)
 GENERATE_TRY_GET_CLASS_WITH_CACHE_DECL (swift_indirect_result)
-
-typedef struct {
-	gboolean by_reference;
-	uint32_t num_lowered_elements;
-	MonoType *lowered_elements[4];
-	uint32_t offsets[4];
-} SwiftPhysicalLowering;
-
-SwiftPhysicalLowering
-mono_marshal_get_swift_physical_lowering (MonoType *type, gboolean native_layout);
 
 #endif /* __MONO_MARSHAL_H__ */

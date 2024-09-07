@@ -296,7 +296,6 @@ struct GenericsDictInfo
 };  // struct GenericsDictInfo
 typedef DPTR(GenericsDictInfo) PTR_GenericsDictInfo;
 
-
 // These various statics structures exist directly before the MethodTableAuxiliaryData
 
 // Any MethodTable which has static variables has this structure
@@ -327,26 +326,23 @@ struct MethodTableAuxiliaryData
         // TO BE UPDATED IN ORDER TO ENSURE THAT METHODTABLES DUPLICATED FOR GENERIC INSTANTIATIONS
         // CARRY THE CORRECT INITIAL FLAGS.
 
-        enum_flag_Initialized             = 0x0001,
-        enum_flag_HasCheckedCanCompareBitsOrUseFastGetHashCode   = 0x0002,  // Whether we have checked the overridden Equals or GetHashCode
-        enum_flag_CanCompareBitsOrUseFastGetHashCode       = 0x0004,     // Is any field type or sub field type overridden Equals or GetHashCode
-
+        enum_flag_Initialized               = 0x0001,
+        enum_flag_HasCheckedCanCompareBitsOrUseFastGetHashCode  = 0x0002,  // Whether we have checked the overridden Equals or GetHashCode
+        enum_flag_CanCompareBitsOrUseFastGetHashCode    = 0x0004,     // Is any field type or sub field type overridden Equals or GetHashCode
+        enum_flag_IsTlsIndexAllocated       = 0x0008,
         enum_flag_HasApproxParent           = 0x0010,
-        // enum_unused                      = 0x0020,
+        enum_flag_MayHaveOpenInterfaceInInterfaceMap    = 0x0020,
         enum_flag_IsNotFullyLoaded          = 0x0040,
         enum_flag_DependenciesLoaded        = 0x0080,     // class and all dependencies loaded up to CLASS_LOADED_BUT_NOT_VERIFIED
 
         enum_flag_IsInitError               = 0x0100,
         enum_flag_IsStaticDataAllocated     = 0x0200,     // When this is set, if the class can be marked as initialized without any further code execution it will be.
-        // unum_unused                      = 0x0400,
-        enum_flag_IsTlsIndexAllocated       = 0x0800,
-        enum_flag_MayHaveOpenInterfaceInInterfaceMap = 0x1000,
-        // enum_unused                      = 0x2000,
-
-#ifdef _DEBUG
-        enum_flag_ParentMethodTablePointerValid =  0x4000,
-        enum_flag_HasInjectedInterfaceDuplicates = 0x8000,
-#endif
+        enum_flag_HasCheckedStreamOverride  = 0x0400,
+        enum_flag_StreamOverriddenRead      = 0x0800,
+        enum_flag_StreamOverriddenWrite     = 0x1000,
+        // unused enum                      = 0x2000,
+        // unused enum                      = 0x4000,
+        // unused enum                      = 0x8000,
     };
     union
     {
@@ -366,6 +362,16 @@ struct MethodTableAuxiliaryData
     RUNTIMETYPEHANDLE m_hExposedClassObject;
 
 #ifdef _DEBUG
+    enum
+    {
+        // The MethodTable is in the right state to be published, and will be inevitably.
+        // Currently DEBUG only as it does not affect behavior in any way in a release build
+        enum_flagDebug_IsPublished                    = 0x2000,
+        enum_flagDebug_ParentMethodTablePointerValid  = 0x4000,
+        enum_flagDebug_HasInjectedInterfaceDuplicates = 0x8000,
+    };
+    DWORD m_dwFlagsDebug;
+
     // to avoid verify same method table too many times when it's not changing, we cache the GC count
     // on which the method table is verified. When fast GC STRESS is turned on, we only verify the MT if
     // current GC count is bigger than the number. Note most thing which will invalidate a MT will require a
@@ -400,13 +406,13 @@ public:
     {
         LIMITED_METHOD_DAC_CONTRACT;
 
-        return (m_dwFlags & enum_flag_ParentMethodTablePointerValid);
+        return (m_dwFlagsDebug & enum_flagDebug_ParentMethodTablePointerValid);
     }
     inline void SetParentMethodTablePointerValid()
     {
         LIMITED_METHOD_CONTRACT;
 
-        m_dwFlags |= enum_flag_ParentMethodTablePointerValid;
+        m_dwFlagsDebug |= enum_flagDebug_ParentMethodTablePointerValid;
     }
 #endif
 
@@ -482,6 +488,15 @@ public:
     }
 #endif
 
+    inline void SetStreamOverrideState(BOOL read, BOOL write)
+    {
+        LONG streamOverride =
+            enum_flag_HasCheckedStreamOverride
+            | (read ? enum_flag_StreamOverriddenRead : 0)
+            | (write ? enum_flag_StreamOverriddenWrite : 0);
+        InterlockedOr((LONG*)&m_dwFlags, streamOverride);
+    }
+
     inline RUNTIMETYPEHANDLE GetExposedClassObjectHandle() const
     {
         LIMITED_METHOD_CONTRACT;
@@ -505,6 +520,25 @@ public:
         m_dwFlags &= ~(MethodTableAuxiliaryData::enum_flag_HasApproxParent);
 
     }
+
+#ifdef _DEBUG
+#ifndef DACCESS_COMPILE
+    // Used in DEBUG builds to indicate that the MethodTable is in the right state to be published, and will be inevitably.
+    void SetIsPublished()
+    {
+        LIMITED_METHOD_CONTRACT;
+        m_dwFlagsDebug |= (MethodTableAuxiliaryData::enum_flagDebug_IsPublished);
+    }
+#endif
+
+    // The MethodTable is in the right state to be published, and will be inevitably.
+    // Currently DEBUG only as it does not affect behavior in any way in a release build
+    bool IsPublished() const
+    {
+        LIMITED_METHOD_CONTRACT;
+        return (VolatileLoad(&m_dwFlagsDebug) & enum_flagDebug_IsPublished);
+    }
+#endif // _DEBUG
 
     // The NonVirtualSlots array grows backwards, so this pointer points at just AFTER the first entry in the array
     // To access, use a construct like... GetNonVirtualSlotsArray(pAuxiliaryData)[-(1 + index)]
@@ -592,7 +626,7 @@ public:
                 // If it has, then we don't need to do anything
                 return false;
             }
-            
+
             if (isClassInitedByUpdatingStaticPointer)
             {
                 oldValFromInterlockedOp = InterlockedCompareExchangeT(pAddr, newVal, oldVal);
@@ -708,6 +742,7 @@ SystemVClassificationType CorInfoType2UnixAmd64Classification(CorElementType eeT
         SystemVClassificationTypeUnknown,               // ELEMENT_TYPE_CMOD_REQD
         SystemVClassificationTypeUnknown,               // ELEMENT_TYPE_CMOD_OPT
         SystemVClassificationTypeUnknown,               // ELEMENT_TYPE_INTERNAL
+        SystemVClassificationTypeUnknown,               // ELEMENT_TYPE_CMOD_INTERNAL
     };
 
     _ASSERTE(sizeof(toSystemVAmd64ClassificationTypeMap) == ELEMENT_TYPE_MAX);
@@ -771,6 +806,62 @@ struct SystemVStructRegisterPassingHelper
 typedef DPTR(SystemVStructRegisterPassingHelper) SystemVStructRegisterPassingHelperPtr;
 
 #endif // UNIX_AMD64_ABI_ITF
+
+#if defined(TARGET_RISCV64) || defined(TARGET_LOONGARCH64)
+// Bitfields for FpStructInRegistersInfo::flags
+namespace FpStruct
+{
+    enum Flags
+    {
+        // Positions of flags and bitfields
+        PosOnlyOne      = 0,
+        PosBothFloat    = 1,
+        PosFloatInt     = 2,
+        PosIntFloat     = 3,
+        PosSizeShift1st = 4, // 2 bits
+        PosSizeShift2nd = 6, // 2 bits
+
+        UseIntCallConv = 0, // struct is passed according to integer calling convention
+
+        // The flags and bitfields
+        OnlyOne          =    1 << PosOnlyOne,      // has only one field, which is floating-point
+        BothFloat        =    1 << PosBothFloat,    // has two fields, both are floating-point
+        FloatInt         =    1 << PosFloatInt,     // has two fields, 1st is floating and 2nd is integer
+        IntFloat         =    1 << PosIntFloat,     // has two fields, 2nd is floating and 1st is integer
+        SizeShift1stMask = 0b11 << PosSizeShift1st, // log2(size) of 1st field
+        SizeShift2ndMask = 0b11 << PosSizeShift2nd, // log2(size) of 2nd field
+        // Note: flags OnlyOne, BothFloat, FloatInt, and IntFloat are mutually exclusive
+    };
+}
+
+// On RISC-V and LoongArch a struct with up to two non-empty fields, at least one of them floating-point,
+// can be passed in registers according to hardware FP calling convention. FpStructInRegistersInfo represents
+// passing information for such parameters.
+struct FpStructInRegistersInfo
+{
+    FpStruct::Flags flags;
+    uint32_t offset1st;
+    uint32_t offset2nd;
+
+    unsigned SizeShift1st() const { return (flags >> FpStruct::PosSizeShift1st) & 0b11; }
+    unsigned SizeShift2nd() const { return (flags >> FpStruct::PosSizeShift2nd) & 0b11; }
+
+    unsigned Size1st() const { return 1u << SizeShift1st(); }
+    unsigned Size2nd() const { return 1u << SizeShift2nd(); }
+
+    const char* FlagName() const
+    {
+        switch (flags & (FpStruct::OnlyOne | FpStruct::BothFloat | FpStruct::FloatInt | FpStruct::IntFloat))
+        {
+            case FpStruct::OnlyOne: return "OnlyOne";
+            case FpStruct::BothFloat: return "BothFloat";
+            case FpStruct::FloatInt: return "FloatInt";
+            case FpStruct::IntFloat: return "IntFloat";
+            default: return "?";
+        }
+    }
+};
+#endif // defined(TARGET_RISCV64) || defined(TARGET_LOONGARCH64)
 
 //===============================================================================================
 //
@@ -946,12 +1037,6 @@ public:
     // mark the class type as COM object class
     void SetComObjectType();
 
-#ifdef FEATURE_ICASTABLE
-    void SetICastable();
-#endif
-
-    BOOL IsICastable(); // This type implements ICastable interface
-
     void SetIDynamicInterfaceCastable();
     BOOL IsIDynamicInterfaceCastable();
 
@@ -1029,10 +1114,8 @@ public:
     // during object construction.
     void CheckRunClassInitAsIfConstructingThrowing();
 
-#if defined(TARGET_LOONGARCH64)
-    static int GetLoongArch64PassStructInRegisterFlags(TypeHandle th);
-#elif defined(TARGET_RISCV64)
-    static int GetRiscV64PassStructInRegisterFlags(TypeHandle th);
+#if defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
+    static FpStructInRegistersInfo GetFpStructInRegistersInfo(TypeHandle th);
 #endif
 
 #if defined(UNIX_AMD64_ABI_ITF)
@@ -1128,8 +1211,6 @@ public:
     //-------------------------------------------------------------------
     // THE CLASS CONSTRUCTOR
     //
-
-    MethodDesc * GetClassConstructor();
 
     BOOL HasClassConstructor();
     void SetHasClassConstructor();
@@ -1650,7 +1731,17 @@ public:
     // Slots <-> the MethodDesc associated with the slot.
     //
 
+#ifndef DACCESS_COMPILE
+    // Get the MethodDesc that implements a given slot
+    // NOTE: Since this may fill in the slot with a temporary entrypoint if that hasn't happened
+    //       yet, when writing asserts, GetMethodDescForSlot_NoThrow should be used to avoid
+    //       the presence of an assert hiding bugs.
     MethodDesc* GetMethodDescForSlot(DWORD slot);
+#endif
+
+    // This api produces the same result as GetMethodDescForSlot, but it uses a variation on the
+    // algorithm that does not allocate a temporary entrypoint for the slot if it doesn't exist.
+    MethodDesc* GetMethodDescForSlot_NoThrow(DWORD slot);
 
     static MethodDesc*  GetMethodDescForSlotAddress(PCODE addr, BOOL fSpeculative = FALSE);
 
@@ -2405,8 +2496,6 @@ public:
     MethodTable *LookupDispatchMapType(DispatchMapTypeID typeID);
     bool DispatchMapTypeMatchesMethodTable(DispatchMapTypeID typeID, MethodTable* pMT);
 
-    MethodDesc *GetIntroducingMethodDesc(DWORD slotNumber);
-
     // Determines whether all methods in the given interface have their final implementing
     // slot in a parent class. I.e. if this returns TRUE, it is trivial (no VSD lookup) to
     // dispatch pItfMT methods on this class if one knows how to dispatch them on pParentMT.
@@ -2478,10 +2567,10 @@ public:
     inline PTR_BYTE GetNonGCThreadStaticsBasePointer(PTR_Thread pThread);
     inline PTR_BYTE GetGCThreadStaticsBasePointer(PTR_Thread pThread);
 
-    inline DWORD IsDynamicStatics()
+    inline BOOL IsDynamicStatics()
     {
         LIMITED_METHOD_DAC_CONTRACT;
-        return GetFlag(enum_flag_DynamicStatics);
+        return GetFlag(enum_flag_DynamicStatics) == enum_flag_DynamicStatics;
     }
 
     inline void SetDynamicStatics()
@@ -2700,7 +2789,11 @@ public:
     }
 
     // The following methods are only valid for the method tables for array types.
-    CorElementType GetArrayElementType();
+    CorElementType GetArrayElementType()
+    {
+        return GetArrayElementTypeHandle().GetSignatureCorElementType();
+    }
+
     DWORD GetRank();
 
     TypeHandle GetArrayElementTypeHandle()
@@ -2971,12 +3064,12 @@ public :
     inline BOOL Debug_HasInjectedInterfaceDuplicates() const
     {
         LIMITED_METHOD_CONTRACT;
-        return (GetAuxiliaryData()->m_dwFlags & MethodTableAuxiliaryData::enum_flag_HasInjectedInterfaceDuplicates) != 0;
+        return (GetAuxiliaryData()->m_dwFlagsDebug & MethodTableAuxiliaryData::enum_flagDebug_HasInjectedInterfaceDuplicates) != 0;
     }
     inline void Debug_SetHasInjectedInterfaceDuplicates()
     {
         LIMITED_METHOD_CONTRACT;
-        GetAuxiliaryDataForWrite()->m_dwFlags |= MethodTableAuxiliaryData::enum_flag_HasInjectedInterfaceDuplicates;
+        GetAuxiliaryDataForWrite()->m_dwFlagsDebug |= MethodTableAuxiliaryData::enum_flagDebug_HasInjectedInterfaceDuplicates;
     }
 #endif // _DEBUG
 
@@ -3015,6 +3108,7 @@ public:
         virtual MethodData  *GetImplMethodData() = 0;
         MethodTable *GetImplMethodTable() { return m_pImplMT; }
         virtual DispatchSlot GetImplSlot(UINT32 slotNumber) = 0;
+        virtual bool IsImplSlotNull(UINT32 slotNumber) = 0;
         // Returns INVALID_SLOT_NUMBER if no implementation exists.
         virtual UINT32       GetImplSlotNumber(UINT32 slotNumber) = 0;
         virtual MethodDesc  *GetImplMethodDesc(UINT32 slotNumber) = 0;
@@ -3127,6 +3221,7 @@ protected:
         virtual MethodData  *GetImplMethodData()
             { LIMITED_METHOD_CONTRACT; return this; }
         virtual DispatchSlot GetImplSlot(UINT32 slotNumber);
+        virtual bool IsImplSlotNull(UINT32 slotNumber) { LIMITED_METHOD_CONTRACT; return false; } // Every valid slot on an actual MethodTable has a MethodDesc which is associated with it
         virtual UINT32       GetImplSlotNumber(UINT32 slotNumber);
         virtual MethodDesc  *GetImplMethodDesc(UINT32 slotNumber);
         virtual void InvalidateCachedVirtualSlot(UINT32 slotNumber);
@@ -3267,6 +3362,12 @@ protected:
             { LIMITED_METHOD_CONTRACT; return this; }
         virtual DispatchSlot GetImplSlot(UINT32 slotNumber)
             { WRAPPER_NO_CONTRACT; return DispatchSlot(m_pDeclMT->GetRestoredSlot(slotNumber)); }
+        virtual bool IsImplSlotNull(UINT32 slotNumber)
+        {
+            // Every valid slot on an actual MethodTable has a MethodDesc which is associated with it
+            LIMITED_METHOD_CONTRACT;
+            return false;
+        }
         virtual UINT32       GetImplSlotNumber(UINT32 slotNumber)
             { LIMITED_METHOD_CONTRACT; return slotNumber; }
         virtual MethodDesc  *GetImplMethodDesc(UINT32 slotNumber);
@@ -3313,6 +3414,7 @@ protected:
         virtual MethodTable *GetImplMethodTable()
             { WRAPPER_NO_CONTRACT; return m_pImpl->GetImplMethodTable(); }
         virtual DispatchSlot GetImplSlot(UINT32 slotNumber);
+        virtual bool IsImplSlotNull(UINT32 slotNumber);
         virtual UINT32       GetImplSlotNumber(UINT32 slotNumber);
         virtual MethodDesc  *GetImplMethodDesc(UINT32 slotNumber);
         virtual void InvalidateCachedVirtualSlot(UINT32 slotNumber);
@@ -3437,6 +3539,7 @@ public:
         inline BOOL IsVirtual() const;
         inline UINT32 GetNumVirtuals() const;
         inline DispatchSlot GetTarget() const;
+        inline bool IsTargetNull() const;
 
         // Can be called only if IsValid()=TRUE
         inline MethodDesc *GetMethodDesc() const;
@@ -3598,7 +3701,7 @@ private:
 
         enum_flag_HasFinalizer                = 0x00100000, // instances require finalization. GC depends on this bit.
         enum_flag_Collectible                 = 0x00200000, // GC depends on this bit.
-        enum_flag_ICastable                   = 0x00400000, // class implements ICastable interface
+        // enum_flag_unused                   = 0x00400000,
 
 #ifdef FEATURE_64BIT_ALIGNMENT
         enum_flag_RequiresAlign8              = 0x00800000, // Type requires 8-byte alignment (only set on platforms that require this and don't get it implicitly)
@@ -3618,7 +3721,6 @@ private:
         // Types that require non-trivial interface cast have this bit set in the category
         enum_flag_NonTrivialInterfaceCast   =  enum_flag_Category_Array
                                              | enum_flag_ComObject
-                                             | enum_flag_ICastable
                                              | enum_flag_IDynamicInterfaceCastable
                                              | enum_flag_Category_ValueType
 
@@ -3890,10 +3992,10 @@ public:
 
     static void GetStaticsOffsets(StaticsOffsetType staticsOffsetType, bool fGenericsStatics, uint32_t *dwGCOffset, uint32_t *dwNonGCOffset);
 
-    template<typename T> friend struct ::cdac_offsets;
+    template<typename T> friend struct ::cdac_data;
 };  // class MethodTable
 
-template<> struct cdac_offsets<MethodTable>
+template<> struct cdac_data<MethodTable>
 {
     static constexpr size_t MTFlags = offsetof(MethodTable, m_dwFlags);
     static constexpr size_t BaseSize = offsetof(MethodTable, m_BaseSize);
@@ -3904,6 +4006,7 @@ template<> struct cdac_offsets<MethodTable>
     static constexpr size_t ParentMethodTable = offsetof(MethodTable, m_pParentMethodTable);
     static constexpr size_t NumInterfaces = offsetof(MethodTable, m_wNumInterfaces);
     static constexpr size_t NumVirtuals = offsetof(MethodTable, m_wNumVirtuals);
+    static constexpr size_t PerInstInfo = offsetof(MethodTable, m_pPerInstInfo);
 };
 
 #ifndef CROSSBITNESS_COMPILE
@@ -3916,5 +4019,15 @@ WORD GetEquivalentMethodSlot(MethodTable * pOldMT, MethodTable * pNewMT, WORD wM
 MethodTable* CreateMinimalMethodTable(Module* pContainingModule,
                                       LoaderAllocator* pLoaderAllocator,
                                       AllocMemTracker* pamTracker);
+
+void ThrowEntryPointNotFoundException(
+    MethodTable* pTargetClass,
+    MethodTable* pInterfaceMT,
+    MethodDesc* pInterfaceMD);
+
+void ThrowAmbiguousResolutionException(
+    MethodTable* pTargetClass,
+    MethodTable* pInterfaceMT,
+    MethodDesc* pInterfaceMD);
 
 #endif // !_METHODTABLE_H_

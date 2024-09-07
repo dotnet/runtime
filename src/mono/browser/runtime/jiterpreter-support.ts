@@ -4,7 +4,7 @@
 import WasmEnableThreads from "consts:wasmEnableThreads";
 import { NativePointer, ManagedPointer, VoidPtr } from "./types/emscripten";
 import { Module, mono_assert, runtimeHelpers } from "./globals";
-import { WasmOpcode, WasmSimdOpcode, WasmValtype } from "./jiterpreter-opcodes";
+import { WasmOpcode, WasmSimdOpcode, WasmAtomicOpcode, WasmValtype } from "./jiterpreter-opcodes";
 import { MintOpcode } from "./mintops";
 import cwraps from "./cwraps";
 import { mono_log_error, mono_log_info } from "./logging";
@@ -17,7 +17,10 @@ import {
 export const maxFailures = 2,
     maxMemsetSize = 64,
     maxMemmoveSize = 64,
-    shortNameBase = 36;
+    shortNameBase = 36,
+    // NOTE: This needs to be big enough to hold the maximum module size since there's no auto-growth
+    //  support yet. If that becomes a problem, we should just make it growable
+    blobBuilderCapacity = 16 * 1024;
 
 // uint16
 export declare interface MintOpcodePtr extends NativePointer {
@@ -105,6 +108,9 @@ export class WasmBuilder {
     nextConstantSlot = 0;
     backBranchTraceLevel = 0;
 
+    containsSimd!: boolean;
+    containsAtomics!: boolean;
+
     compressImportNames = false;
     lockImports = false;
 
@@ -117,6 +123,8 @@ export class WasmBuilder {
 
     clear (constantSlotCount: number) {
         this.options = getOptions();
+        if (this.options.maxModuleSize >= blobBuilderCapacity)
+            throw new Error(`blobBuilderCapacity ${blobBuilderCapacity} is not large enough for jiterpreter-max-module-size of ${this.options.maxModuleSize}`);
         this.stackSize = 1;
         this.inSection = false;
         this.inFunction = false;
@@ -153,6 +161,9 @@ export class WasmBuilder {
         this.callHandlerReturnAddresses.length = 0;
 
         this.allowNullCheckOptimization = this.options.eliminateNullChecks;
+
+        this.containsSimd = false;
+        this.containsAtomics = false;
     }
 
     _push () {
@@ -185,7 +196,7 @@ export class WasmBuilder {
     }
 
     getExceptionTag (): any {
-        const exceptionTag = (<any>Module)["asm"]["__cpp_exception"];
+        const exceptionTag = (<any>Module)["wasmExports"]["__cpp_exception"];
         if (typeof (exceptionTag) !== "undefined")
             mono_assert(exceptionTag instanceof (<any>WebAssembly).Tag, () => `expected __cpp_exception export from dotnet.wasm to be WebAssembly.Tag but was ${exceptionTag}`);
         return exceptionTag;
@@ -257,9 +268,16 @@ export class WasmBuilder {
 
     appendSimd (value: WasmSimdOpcode, allowLoad?: boolean) {
         this.current.appendU8(WasmOpcode.PREFIX_simd);
-        // Yes that's right. We're using LEB128 to encode 8-bit opcodes. Why? I don't know
         mono_assert(((value | 0) !== 0) || ((value === WasmSimdOpcode.v128_load) && (allowLoad === true)), "Expected non-v128_load simd opcode or allowLoad==true");
+        // Yes that's right. We're using LEB128 to encode 8-bit opcodes. Why? I don't know
         return this.current.appendULeb(value);
+    }
+
+    appendAtomic (value: WasmAtomicOpcode, allowNotify?: boolean) {
+        this.current.appendU8(WasmOpcode.PREFIX_atomic);
+        mono_assert(((value | 0) !== 0) || ((value === WasmAtomicOpcode.memory_atomic_notify) && (allowNotify === true)), "Expected non-notify atomic opcode or allowNotify==true");
+        // Unlike SIMD, the spec appears to say that atomic opcodes are just two sequential bytes with explicit values.
+        return this.current.appendU8(value);
     }
 
     appendU32 (value: number) {
@@ -517,7 +535,7 @@ export class WasmBuilder {
             // memtype (limits = 0x03 n:u32 m:u32    => {min n, max m, shared})
             this.appendU8(0x02);
             this.appendU8(0x03);
-            // emcc seems to generate this min/max by default
+            // HACK: emcc seems to generate this min/max by default
             this.appendULeb(256);
             this.appendULeb(32768);
         } else {
@@ -907,8 +925,8 @@ export class WasmBuilder {
         this.appendU8(WasmOpcode.i32_add);
     }
 
-    getArrayView (fullCapacity?: boolean) {
-        if (this.stackSize > 1)
+    getArrayView (fullCapacity?: boolean, suppressDeepStackError?: boolean) {
+        if ((suppressDeepStackError !== true) && this.stackSize > 1)
             throw new Error("Jiterpreter block stack not empty");
         return this.stack[0].getArrayView(fullCapacity);
     }
@@ -929,8 +947,9 @@ export class BlobBuilder {
     textBuf = new Uint8Array(1024);
 
     constructor () {
-        this.capacity = 16 * 1024;
+        this.capacity = blobBuilderCapacity;
         this.buffer = <any>Module._malloc(this.capacity);
+        mono_assert(this.buffer, () => `Failed to allocate ${blobBuilderCapacity}b buffer for BlobBuilder`);
         localHeapViewU8().fill(0, this.buffer, this.buffer + this.capacity);
         this.size = 0;
         this.clear();
@@ -1038,6 +1057,9 @@ export class BlobBuilder {
         if (typeof (count) !== "number")
             count = this.size;
 
+        if ((destination.size + count) >= destination.capacity)
+            throw new Error("Destination buffer full");
+
         localHeapViewU8().copyWithin(destination.buffer + destination.size, this.buffer, this.buffer + count);
         destination.size += count;
     }
@@ -1045,11 +1067,16 @@ export class BlobBuilder {
     appendBytes (bytes: Uint8Array, count?: number) {
         const result = this.size;
         const heapU8 = localHeapViewU8();
+        const actualCount = (typeof (count) !== "number")
+            ? bytes.length
+            : count;
+
+        if ((this.size + actualCount) >= this.capacity)
+            throw new Error("Buffer full");
+
         if (bytes.buffer === heapU8.buffer) {
-            if (typeof (count) !== "number")
-                count = bytes.length;
-            heapU8.copyWithin(this.buffer + result, bytes.byteOffset, bytes.byteOffset + count);
-            this.size += count;
+            heapU8.copyWithin(this.buffer + result, bytes.byteOffset, bytes.byteOffset + actualCount);
+            this.size += actualCount;
         } else {
             if (typeof (count) === "number")
                 bytes = new Uint8Array(bytes.buffer, bytes.byteOffset, count);
@@ -1123,7 +1150,14 @@ type CfgBranch = {
     branchType: CfgBranchType;
 }
 
-type CfgSegment = CfgBlob | CfgBranchBlockHeader | CfgBranch;
+type CfgJumpTable = {
+    type: "jump-table";
+    from: MintOpcodePtr;
+    targets: MintOpcodePtr[];
+    fallthrough: MintOpcodePtr;
+}
+
+type CfgSegment = CfgBlob | CfgBranchBlockHeader | CfgBranch | CfgJumpTable;
 
 export const enum CfgBranchType {
     Unconditional,
@@ -1249,6 +1283,23 @@ class Cfg {
                 this.overheadBytes += 17;
             }
         }
+    }
+
+    // It's the caller's responsibility to wrap this in a block and follow it with a bailout!
+    jumpTable (targets: MintOpcodePtr[], fallthrough: MintOpcodePtr) {
+        this.appendBlob();
+        this.segments.push({
+            type: "jump-table",
+            from: this.ip,
+            targets,
+            fallthrough,
+        });
+        // opcode, length, fallthrough (approximate)
+        this.overheadBytes += 4;
+        // length of branch depths (approximate)
+        this.overheadBytes += targets.length;
+        // bailout for missing targets (approximate)
+        this.overheadBytes += 24;
     }
 
     emitBlob (segment: CfgBlob, source: Uint8Array) {
@@ -1386,6 +1437,38 @@ class Cfg {
                     mono_assert(indexInStack === 0, () => `expected ${segment.ip} on top of blockStack but found it at index ${indexInStack}, top is ${this.blockStack[0]}`);
                     this.builder.endBlock();
                     this.blockStack.shift();
+                    break;
+                }
+                case "jump-table": {
+                    // Our caller wrapped us in a block and put a missing target bailout after us
+                    const offset = 1;
+                    // The selector was already loaded onto the wasm stack before cfg.jumpTable was called,
+                    //  so we just need to generate a br_table
+                    this.builder.appendU8(WasmOpcode.br_table);
+                    this.builder.appendULeb(segment.targets.length);
+                    for (const target of segment.targets) {
+                        const indexInStack = this.blockStack.indexOf(target);
+                        if (indexInStack >= 0) {
+                            modifyCounter(JiterpCounter.SwitchTargetsOk, 1);
+                            this.builder.appendULeb(indexInStack + offset);
+                        } else {
+                            modifyCounter(JiterpCounter.SwitchTargetsFailed, 1);
+                            if (this.trace > 0)
+                                mono_log_info(`Switch target ${target} not found in block stack ${this.blockStack}`);
+                            this.builder.appendULeb(0);
+                        }
+                    }
+                    const fallthroughIndex = this.blockStack.indexOf(segment.fallthrough);
+                    if (fallthroughIndex >= 0) {
+                        modifyCounter(JiterpCounter.SwitchTargetsOk, 1);
+                        this.builder.appendULeb(fallthroughIndex + offset);
+                    } else {
+                        modifyCounter(JiterpCounter.SwitchTargetsFailed, 1);
+                        if (this.trace > 0)
+                            mono_log_info(`Switch fallthrough ${segment.fallthrough} not found in block stack ${this.blockStack}`);
+                        this.builder.appendULeb(0);
+                    }
+                    this.builder.appendU8(WasmOpcode.unreachable);
                     break;
                 }
                 case "branch": {
@@ -1832,7 +1915,7 @@ export function getMemberOffset (member: JiterpMember) {
 }
 
 export function getRawCwrap (name: string): Function {
-    const result = (<any>Module)["asm"][name];
+    const result = (<any>Module)["wasmExports"][name];
     if (typeof (result) !== "function")
         throw new Error(`raw cwrap ${name} not found`);
     return result;
@@ -1900,6 +1983,7 @@ export type JiterpreterOptions = {
     enableCallResume: boolean;
     enableWasmEh: boolean;
     enableSimd: boolean;
+    enableAtomics: boolean;
     zeroPageOptimization: boolean;
     cprop: boolean;
     // For locations where the jiterpreter heuristic says we will be unable to generate
@@ -1936,6 +2020,8 @@ export type JiterpreterOptions = {
     wasmBytesLimit: number;
     tableSize: number;
     aotTableSize: number;
+    maxModuleSize: number;
+    maxSwitchSize: number;
 }
 
 const optionNames: { [jsName: string]: string } = {
@@ -1946,6 +2032,7 @@ const optionNames: { [jsName: string]: string } = {
     "enableCallResume": "jiterpreter-call-resume-enabled",
     "enableWasmEh": "jiterpreter-wasm-eh-enabled",
     "enableSimd": "jiterpreter-simd-enabled",
+    "enableAtomics": "jiterpreter-atomics-enabled",
     "zeroPageOptimization": "jiterpreter-zero-page-optimization",
     "cprop": "jiterpreter-constant-propagation",
     "enableStats": "jiterpreter-stats-enabled",
@@ -1971,6 +2058,8 @@ const optionNames: { [jsName: string]: string } = {
     "wasmBytesLimit": "jiterpreter-wasm-bytes-limit",
     "tableSize": "jiterpreter-table-size",
     "aotTableSize": "jiterpreter-aot-table-size",
+    "maxModuleSize": "jiterpreter-max-module-size",
+    "maxSwitchSize": "jiterpreter-max-switch-size",
 };
 
 let optionsVersion = -1;

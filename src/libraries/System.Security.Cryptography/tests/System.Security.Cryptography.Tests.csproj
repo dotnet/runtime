@@ -219,8 +219,8 @@
              Link="CommonTest\System\Security\Cryptography\509Certificates\X509CertificateLoaderTests.cs" />
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\ByteUtils.cs"
              Link="CommonTest\System\Security\Cryptography\ByteUtils.cs" />
-    <Compile Include="$(CommonTestPath)System\Security\Cryptography\CngPlatformProviderKey.cs"
-             Link="CommonTest\System\Security\Cryptography\CngPlatformProviderKey.cs" />
+    <Compile Include="$(CommonTestPath)System\Security\Cryptography\CngKeyWrapper.cs"
+             Link="CommonTest\System\Security\Cryptography\CngKeyWrapper.cs" />
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\CryptoUtils.cs"
              Link="CommonTest\System\Security\Cryptography\CryptoUtils.cs" />
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\PlatformSupport.cs"
@@ -240,6 +240,7 @@
     <Compile Include="Base64TransformsTests.cs" />
     <Compile Include="BlockSizeValueTests.cs" />
     <Compile Include="ChaCha20Poly1305Tests.cs" />
+    <Compile Include="CngKeyTests.cs" />
     <Compile Include="CngUtility.cs" />
     <Compile Include="CommonAEADTests.cs" />
     <Compile Include="CryptoConfigTests.cs" />
@@ -518,5 +519,9 @@
     <ProjectReference Include="$(CommonTestPath)StreamConformanceTests\StreamConformanceTests.csproj" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.Security.Cryptography.Pkcs\src\System.Security.Cryptography.Pkcs.csproj" />
     <PackageReference Include="System.Security.Cryptography.X509Certificates.TestData" Version="$(SystemSecurityCryptographyX509CertificatesTestDataVersion)" />
+    <!-- Reference the `NetCoreAppMinimum` build which has a functional BinaryFormatter and force a private copy to ensure it's not excluded -->
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime.Serialization.Formatters\src\System.Runtime.Serialization.Formatters.csproj"
+                      Private="true"
+                      SetTargetFramework="TargetFramework=$(NetCoreAppMinimum)" />
   </ItemGroup>
 </Project>

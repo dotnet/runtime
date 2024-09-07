@@ -103,7 +103,7 @@ void Rationalizer::RewriteNodeAsCall(GenTree**             use,
 
             if (varTypeIsMask(operand->TypeGet()))
             {
-#if defined(FEATURE_HW_INTRINSICS)
+#if defined(FEATURE_MASKED_HW_INTRINSICS)
                 // No managed call takes TYP_MASK, so convert it back to a TYP_SIMD
 
                 unsigned    simdSize;
@@ -136,7 +136,7 @@ void Rationalizer::RewriteNodeAsCall(GenTree**             use,
 
     unsigned tmpNum = BAD_VAR_NUM;
 
-    if (call->TreatAsShouldHaveRetBufArg())
+    if (call->ShouldHaveRetBufArg())
     {
         assert(call->ShouldHaveRetBufArg());
 
@@ -164,7 +164,7 @@ void Rationalizer::RewriteNodeAsCall(GenTree**             use,
 
         if (varTypeIsMask(tree->TypeGet()))
         {
-#if defined(FEATURE_HW_INTRINSICS)
+#if defined(FEATURE_MASKED_HW_INTRINSICS)
             // No managed call returns TYP_MASK, so convert it from a TYP_SIMD
 
             unsigned    simdSize;
@@ -340,7 +340,7 @@ void Rationalizer::RewriteHWIntrinsicAsUserCall(GenTree** use, ArrayStack<GenTre
             GenTree* op1 = operands[0];
             GenTree* op2 = operands[1];
 
-            if (op2->IsVectorConst() && comp->IsValidForShuffle(op2->AsVecCon(), simdSize, simdBaseType))
+            if (op2->IsCnsVec() && comp->IsValidForShuffle(op2->AsVecCon(), simdSize, simdBaseType))
             {
                 result = comp->gtNewSimdShuffleNode(retType, op1, op2, simdBaseJitType, simdSize);
             }
@@ -505,7 +505,7 @@ void Rationalizer::RewriteHWIntrinsicAsUserCall(GenTree** use, ArrayStack<GenTre
                                                    immUpperBound, hasFullRangeImm, &useFallback))
                 {
                     // We're already in the right shape, so just stop tracking ourselves as a user call
-                    hwintrinsic->gtFlags &= ~GTF_HW_USER_CALL;
+                    hwintrinsic->gtFlags &= ~(GTF_HW_USER_CALL | GTF_EXCEPT | GTF_CALL);
                     return;
                 }
             }

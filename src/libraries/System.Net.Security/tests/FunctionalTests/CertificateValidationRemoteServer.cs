@@ -96,7 +96,6 @@ namespace System.Net.Security.Tests
         [Theory]
         [InlineData(true)]
         [InlineData(false)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/68206", TestPlatforms.Android)]
         public Task ConnectWithRevocation_WithCallback(bool checkRevocation)
         {
             X509RevocationMode mode = checkRevocation ? X509RevocationMode.Online : X509RevocationMode.NoCheck;
@@ -243,7 +242,7 @@ namespace System.Net.Security.Tests
 
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             {
-                X509Certificate2 temp = new X509Certificate2(serverCert.Export(X509ContentType.Pkcs12));
+                X509Certificate2 temp = X509CertificateLoader.LoadPkcs12(serverCert.Export(X509ContentType.Pkcs12), (string?)null);
                 serverCert.Dispose();
                 serverCert = temp;
             }
@@ -266,9 +265,13 @@ namespace System.Net.Security.Tests
 
                     if (offlineContext.HasValue)
                     {
+                        // on android we need to include the root certificate in the certifiate context
+                        X509Certificate2[] additionalCertificates = OperatingSystem.IsAndroid()
+                            ? [issuerCert, rootCert]
+                            : [issuerCert];
                         serverOpts.ServerCertificateContext = SslStreamCertificateContext.Create(
                             serverCert,
-                            new X509Certificate2Collection(issuerCert),
+                            new X509Certificate2Collection(additionalCertificates),
                             offlineContext.GetValueOrDefault());
 
                         if (revocationMode == X509RevocationMode.Offline)

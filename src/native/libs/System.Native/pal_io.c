@@ -10,8 +10,8 @@
 #include "pal_types.h"
 
 #include <assert.h>
-#include <errno.h>
 #include <fcntl.h>
+#include <errno.h>
 #include <fnmatch.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -52,6 +52,10 @@
 #if HAVE_STATFS_VFS
 #include <sys/vfs.h>
 #endif
+#endif
+
+#ifdef TARGET_SUNOS
+#include <sys/param.h>
 #endif
 
 #ifdef _AIX
@@ -365,6 +369,72 @@ int32_t SystemNative_Unlink(const char* path)
     return result;
 }
 
+#ifdef __NR_memfd_create
+#ifndef MFD_CLOEXEC
+#define MFD_CLOEXEC 0x0001U
+#endif
+#ifndef MFD_ALLOW_SEALING
+#define MFD_ALLOW_SEALING 0x0002U
+#endif
+#ifndef F_ADD_SEALS
+#define F_ADD_SEALS (1024 + 9)
+#endif
+#ifndef F_SEAL_WRITE
+#define F_SEAL_WRITE 0x0008
+#endif
+#endif
+
+int32_t SystemNative_IsMemfdSupported(void)
+{
+#ifdef __NR_memfd_create
+#ifdef TARGET_LINUX
+    struct utsname uts;
+    int32_t major, minor;
+
+    // memfd_create is known to only work properly on kernel version > 3.17.
+    // On earlier versions, it may raise SIGSEGV instead of returning ENOTSUP.
+    if (uname(&uts) == 0 && sscanf(uts.release, "%d.%d", &major, &minor) == 2 && (major < 3 || (major == 3 && minor < 17)))
+    {
+        return 0;
+    }
+#endif
+
+    // Note that the name has no affect on file descriptor behavior. From linux manpage: 
+    //   Names do not affect the behavior of the file descriptor, and as such multiple files can have the same name without any side effects.
+    int32_t fd = (int32_t)syscall(__NR_memfd_create, "test", MFD_CLOEXEC | MFD_ALLOW_SEALING);
+    if (fd < 0) return 0;
+
+    close(fd);
+    return 1;
+#else
+    errno = ENOTSUP;
+    return 0;
+#endif
+}
+
+intptr_t SystemNative_MemfdCreate(const char* name, int32_t isReadonly)
+{
+#ifdef __NR_memfd_create
+#if defined(SHM_NAME_MAX) // macOS
+    assert(strlen(name) <= SHM_NAME_MAX);
+#elif defined(PATH_MAX) // other Unixes
+    assert(strlen(name) <= PATH_MAX);
+#endif
+
+    int32_t fd = (int32_t)syscall(__NR_memfd_create, name, MFD_CLOEXEC | MFD_ALLOW_SEALING);
+    if (!isReadonly || fd < 0) return fd;
+
+    // Add a write seal when readonly protection requested
+    while (fcntl(fd, F_ADD_SEALS, F_SEAL_WRITE) < 0 && errno == EINTR);
+    return fd;
+#else
+    (void)name;
+    (void)isReadonly;
+    errno = ENOTSUP;
+    return -1;
+#endif
+}
+
 intptr_t SystemNative_ShmOpen(const char* name, int32_t flags, int32_t mode)
 {
 #if defined(SHM_NAME_MAX) // macOS
@@ -436,10 +506,17 @@ static const size_t dirent_alignment = 8;
 int32_t SystemNative_GetReadDirRBufferSize(void)
 {
 #if HAVE_READDIR_R
+    size_t result = sizeof(struct dirent);
+#ifdef TARGET_SUNOS
+    // The d_name array is declared with only a single byte in it.
+    // We have to add pathconf("dir", _PC_NAME_MAX) more bytes.
+    // MAXNAMELEN is the largest possible value returned from pathconf.
+    result += MAXNAMELEN;
+#endif
     // dirent should be under 2k in size
-    assert(sizeof(struct dirent) < 2048);
+    assert(result < 2048);
     // add some extra space so we can align the buffer to dirent.
-    return sizeof(struct dirent) + dirent_alignment - 1;
+    return (int32_t)(result + dirent_alignment - 1);
 #else
     return 0;
 #endif
@@ -1564,7 +1641,7 @@ static int16_t ConvertLockType(int16_t managedLockType)
     }
 }
 
-#if !HAVE_NON_LEGACY_STATFS || defined(__APPLE__)
+#if !HAVE_NON_LEGACY_STATFS || defined(TARGET_APPLE) || defined(TARGET_FREEBSD)
 static uint32_t MapFileSystemNameToEnum(const char* fileSystemName)
 {
     uint32_t result = 0;
@@ -1711,8 +1788,11 @@ uint32_t SystemNative_GetFileSystemType(intptr_t fd)
     while ((statfsRes = fstatfs(ToFileDescriptor(fd), &statfsArgs)) == -1 && errno == EINTR) ;
     if (statfsRes == -1) return 0;
 
-#if defined(__APPLE__)
-    // On OSX-like systems, f_type is version-specific. Don't use it, just map the name.
+#if defined(TARGET_APPLE) || defined(TARGET_FREEBSD)
+    // * On OSX-like systems, f_type is version-specific. Don't use it, just map the name.
+    // * Specifically, on FreeBSD with ZFS, f_type may return a value like 0xDE when emulating
+    //   FreeBSD on macOS (e.g., FreeBSD-x64 on macOS ARM64). Therefore, we use f_fstypename to
+    //   get the correct filesystem type.
     return MapFileSystemNameToEnum(statfsArgs.f_fstypename);
 #else
     // On Linux, f_type is signed. This causes some filesystem types to be represented as

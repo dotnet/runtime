@@ -20,9 +20,28 @@ namespace System.Linq
 
             if (comparer is null)
             {
+                // While it's tempting, this must not delegate to ICollection<TSource>.Contains, as the historical semantics
+                // of a null comparer with this method are to use EqualityComparer<TSource>.Default, and that might differ
+                // from the semantics encoded in ICollection<TSource>.Contains.
+
+                // We don't bother special-casing spans here as explicitly providing a null comparer with a known collection type
+                // is relatively rare. If you don't care about the comparer, you use the other overload, and while it will delegate
+                // to this overload with a null comparer, it'll only do so for collections from which we can't extract a span.
+                // And if you do care about the comparer, you're generally passing in a non-null one.
+
                 foreach (TSource element in source)
                 {
-                    if (EqualityComparer<TSource>.Default.Equals(element, value)) // benefits from devirtualization and likely inlining
+                    if (EqualityComparer<TSource>.Default.Equals(element, value))
+                    {
+                        return true;
+                    }
+                }
+            }
+            else if (source.TryGetSpan(out ReadOnlySpan<TSource> span))
+            {
+                foreach (TSource element in span)
+                {
+                    if (comparer.Equals(element, value))
                     {
                         return true;
                     }

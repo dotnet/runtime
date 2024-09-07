@@ -60,6 +60,12 @@ bool interceptor_ICJI::haveSameMethodDefinition(
     return original_ICorJitInfo->haveSameMethodDefinition(meth1Hnd, meth2Hnd);
 }
 
+CORINFO_CLASS_HANDLE interceptor_ICJI::getTypeDefinition(
+          CORINFO_CLASS_HANDLE type)
+{
+    return original_ICorJitInfo->getTypeDefinition(type);
+}
+
 CorInfoInline interceptor_ICJI::canInline(
           CORINFO_METHOD_HANDLE callerHnd,
           CORINFO_METHOD_HANDLE calleeHnd)
@@ -190,12 +196,6 @@ void interceptor_ICJI::methodMustBeLoadedBeforeCodeIsRun(
           CORINFO_METHOD_HANDLE method)
 {
     original_ICorJitInfo->methodMustBeLoadedBeforeCodeIsRun(method);
-}
-
-CORINFO_METHOD_HANDLE interceptor_ICJI::mapMethodDeclToMethodImpl(
-          CORINFO_METHOD_HANDLE method)
-{
-    return original_ICorJitInfo->mapMethodDeclToMethodImpl(method);
 }
 
 void interceptor_ICJI::getGSCookie(
@@ -671,9 +671,9 @@ CORINFO_CLASS_HANDLE interceptor_ICJI::getFieldClass(
 CorInfoType interceptor_ICJI::getFieldType(
           CORINFO_FIELD_HANDLE field,
           CORINFO_CLASS_HANDLE* structType,
-          CORINFO_CLASS_HANDLE memberParent)
+          CORINFO_CLASS_HANDLE fieldOwnerHint)
 {
-    return original_ICorJitInfo->getFieldType(field, structType, memberParent);
+    return original_ICorJitInfo->getFieldType(field, structType, fieldOwnerHint);
 }
 
 unsigned interceptor_ICJI::getFieldOffset(
@@ -864,9 +864,10 @@ const char* interceptor_ICJI::getMethodNameFromMetadata(
           CORINFO_METHOD_HANDLE ftn,
           const char** className,
           const char** namespaceName,
-          const char** enclosingClassName)
+          const char** enclosingClassNames,
+          size_t maxEnclosingClassNames)
 {
-    return original_ICorJitInfo->getMethodNameFromMetadata(ftn, className, namespaceName, enclosingClassName);
+    return original_ICorJitInfo->getMethodNameFromMetadata(ftn, className, namespaceName, enclosingClassNames, maxEnclosingClassNames);
 }
 
 unsigned interceptor_ICJI::getMethodHash(
@@ -889,16 +890,11 @@ void interceptor_ICJI::getSwiftLowering(
     original_ICorJitInfo->getSwiftLowering(structHnd, pLowering);
 }
 
-uint32_t interceptor_ICJI::getLoongArch64PassStructInRegisterFlags(
-          CORINFO_CLASS_HANDLE structHnd)
+void interceptor_ICJI::getFpStructLowering(
+          CORINFO_CLASS_HANDLE structHnd,
+          CORINFO_FPSTRUCT_LOWERING* pLowering)
 {
-    return original_ICorJitInfo->getLoongArch64PassStructInRegisterFlags(structHnd);
-}
-
-uint32_t interceptor_ICJI::getRISCV64PassStructInRegisterFlags(
-          CORINFO_CLASS_HANDLE structHnd)
-{
-    return original_ICorJitInfo->getRISCV64PassStructInRegisterFlags(structHnd);
+    original_ICorJitInfo->getFpStructLowering(structHnd, pLowering);
 }
 
 uint32_t interceptor_ICJI::getThreadTLSIndex(
@@ -1263,5 +1259,11 @@ uint32_t interceptor_ICJI::getJitFlags(
           uint32_t sizeInBytes)
 {
     return original_ICorJitInfo->getJitFlags(flags, sizeInBytes);
+}
+
+CORINFO_METHOD_HANDLE interceptor_ICJI::getSpecialCopyHelper(
+          CORINFO_CLASS_HANDLE type)
+{
+    return original_ICorJitInfo->getSpecialCopyHelper(type);
 }
 

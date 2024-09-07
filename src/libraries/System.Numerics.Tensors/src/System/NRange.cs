@@ -7,7 +7,7 @@ using System.Runtime.CompilerServices;
 
 namespace System.Buffers
 {
-    /// <summary>Represent a range that has start and end indices.</summary>
+    /// <summary>Represents a range that has start and end indices.</summary>
     /// <remarks>
     /// <code>
     /// int[] someArray = new int[5] { 1, 2, 3, 4, 5 };
@@ -15,17 +15,18 @@ namespace System.Buffers
     /// int[] subArray2 = someArray[1..^0]; // { 2, 3, 4, 5 }
     /// </code>
     /// </remarks>
+    [Experimental(Experimentals.TensorTDiagId, UrlFormat = Experimentals.SharedUrlFormat)]
     public readonly struct NRange : IEquatable<NRange>
     {
-        /// <summary>Represent the inclusive start NIndex of the NRange.</summary>
+        /// <summary>Represents the inclusive start NIndex of the NRange.</summary>
         public NIndex Start { get; }
 
-        /// <summary>Represent the exclusive end NIndex of the NRange.</summary>
+        /// <summary>Represents the exclusive end NIndex of the NRange.</summary>
         public NIndex End { get; }
 
-        /// <summary>Construct an NRange object using the start and end NIndexes.</summary>
-        /// <param name="start">Represent the inclusive start NIndex of the NRange.</param>
-        /// <param name="end">Represent the exclusive end NIndex of the NRange.</param>
+        /// <summary>Constructs an <see cref="NRange"/> object using the start and end <see cref="NIndex"/>.</summary>
+        /// <param name="start">The inclusive start <see cref="NIndex"/> of the <see cref="NRange"/>.</param>
+        /// <param name="end">The exclusive end <see cref="NIndex"/> of the <see cref="NRange"/>.</param>
         public NRange(NIndex start, NIndex end)
         {
             Start = start;
@@ -33,7 +34,7 @@ namespace System.Buffers
         }
 
         /// <summary>
-        /// Construct a <see cref="NRange"/> object using a <see cref="Range"/>.
+        /// Constructs an <see cref="NRange"/> object using a <see cref="Range"/>.
         /// </summary>
         /// <param name="range">The <see cref="Range"/> to use.</param>
         public NRange(Range range)
@@ -42,15 +43,15 @@ namespace System.Buffers
             End = range.End;
         }
 
-        /// <summary>Indicates whether the current NRange object is equal to another object of the same type.</summary>
-        /// <param name="value">An object to compare with this object</param>
+        /// <summary>Compares the current <see cref="NRange"/> object to another object of the same type for equality.</summary>
+        /// <param name="value">An object to compare with this object.</param>
         public override bool Equals([NotNullWhen(true)] object? value) =>
             value is NRange r &&
             r.Start.Equals(Start) &&
             r.End.Equals(End);
 
-        /// <summary>Indicates whether the current NRange object is equal to another NRange object.</summary>
-        /// <param name="other">An object to compare with this object</param>
+        /// <summary>Compares the current <see cref="NRange"/> object to another <see cref="NRange"/> object for equality.</summary>
+        /// <param name="other">An object to compare with this object.</param>
         public bool Equals(NRange other) => other.Start.Equals(Start) && other.End.Equals(End);
 
         /// <summary>Returns the hash code for this instance.</summary>
@@ -88,21 +89,21 @@ namespace System.Buffers
             return new string(span.Slice(0, pos));
         }
 
-        /// <summary>Create an NRange object starting from start NIndex to the end of the collection.</summary>
+        /// <summary>Creates an <see cref="NRange"/> object starting from start <see cref="NIndex"/> to the end of the collection.</summary>
         public static NRange StartAt(NIndex start) => new NRange(start, NIndex.End);
 
-        /// <summary>Create an NRange object starting from first element in the collection to the end NIndex.</summary>
+        /// <summary>Creates an <see cref="NRange"/> object starting from first element in the collection to the end <see cref="NIndex"/>.</summary>
         public static NRange EndAt(NIndex end) => new NRange(NIndex.Start, end);
 
-        /// <summary>Create an NRange object starting from first element to the end.</summary>
+        /// <summary>Creates an NRange object starting from first element to the end.</summary>
         public static NRange All => new NRange(NIndex.Start, NIndex.End);
 
-        /// <summary>Calculate the start offset and length of NRange object using a collection length.</summary>
-        /// <param name="length">The length of the collection that the NRange will be used with. length has to be a positive value.</param>
+        /// <summary>Calculates the start offset and length of the <see cref="NRange"/> object using a collection length.</summary>
+        /// <param name="length">The length of the collection that the <see cref="NRange"/> will be used with. Must be a positive value.</param>
         /// <remarks>
-        /// For performance reason, we don't validate the input length parameter against negative values.
-        /// It is expected NRange will be used with collections which always have non negative length/count.
-        /// We validate the NRange is inside the length scope though.
+        /// For performance reasons, the input length parameter isn't validated against negative values.
+        /// It's expected NRange will be used with collections that always have a non-negative length/count.
+        /// The <see cref="NRange"/> is validated to be inside the length scope, however.
         /// </remarks>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public (nint Offset, nint Length) GetOffsetAndLength(nint length)
@@ -120,12 +121,34 @@ namespace System.Buffers
 
         private static void ThrowArgumentOutOfRangeException() => throw new ArgumentOutOfRangeException("length");
 
+        /// <summary>
+        /// Implicitly converts a <see cref="Range"/> to an <see cref="NRange"/>.
+        /// </summary>
+        /// <param name="range"></param>
         public static implicit operator NRange(Range range) => new NRange(range.Start, range.End);
 
+        /// <summary>
+        /// Explicitly converts an <see cref="NRange"/> to a <see cref="Range"/> without doing bounds checks.
+        /// </summary>
+        /// <param name="value"><see cref="NRange"/> to convert.</param>
         public static explicit operator Range(NRange value) => new Range((Index)value.Start, (Index)value.End);
+
+        /// <summary>
+        /// Explicitly converts an <see cref="NRange"/> to a <see cref="Range"/>.
+        /// </summary>
+        /// <param name="value"><see cref="NRange"/> to convert.</param>
         public static explicit operator checked Range(NRange value) => new Range(checked((Index)value.Start), checked((Index)value.End));
 
+        /// <summary>
+        /// Converts a <see cref="NRange"/> to a <see cref="Range"/>.
+        /// </summary>
+        /// <returns>The converted Range.</returns>
         public Range ToRange() => new Range(checked((Index)Start), checked((Index)End));
+
+        /// <summary>
+        /// Converts a <see cref="NRange"/> to a <see cref="Range"/> without doing bounds checks.
+        /// </summary>
+        /// <returns>The converted Range.</returns>
         public Range ToRangeUnchecked() => new Range((Index)Start, (Index)End);
     }
 }

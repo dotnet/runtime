@@ -28,7 +28,12 @@
     <RestoreProjects Include="Common\GenerateHWIntrinsicTests\GenerateHWIntrinsicTests_Arm.csproj" />
     <RestoreProjects Include="Common\GenerateHWIntrinsicTests\GenerateHWIntrinsicTests_General.csproj" />
     <RestoreProjects Include="Common\GenerateHWIntrinsicTests\GenerateHWIntrinsicTests_X86.csproj" />
-    <RestoreProjects Include="Common\XUnitLogChecker\XUnitLogChecker.csproj" />
+    <RestoreProjects Include="Common\XUnitLogChecker\XUnitLogChecker.csproj"
+                     Condition="$(IsXUnitLogCheckerSupported)">
+      <!-- XUnitLogChecker is published as AOT, so it needs the current RID. The RID may change during the build.
+           This flag will force restore to use the latest RuntimeIdentifier property. -->
+      <ForceRestore>true</ForceRestore>
+    </RestoreProjects>
     <RestoreProjects Include="Common\XUnitWrapperGenerator\XUnitWrapperGenerator.csproj" />
     <RestoreProjects Include="Common\XUnitWrapperLibrary\XUnitWrapperLibrary.csproj" />
     <RestoreProjects Include="Common\XHarnessRunnerLibrary\XHarnessRunnerLibrary.csproj" />
@@ -431,7 +436,7 @@
     </PropertyGroup>
 
     <PropertyGroup>
-      <DevTeamProvisioning>-</DevTeamProvisioning>
+      <DevTeamProvisioning Condition="'$(DevTeamProvisioning)' == ''">-</DevTeamProvisioning>
       <AppleGenerateAppBundle>true</AppleGenerateAppBundle>
       <GenerateXcodeProject>true</GenerateXcodeProject>
       <AppleBundleDir>$(AppDir)</AppleBundleDir>
@@ -460,14 +465,15 @@
 
   <!-- This target moves app bundles to the payload directory -->
   <Target Name="AfterAppleBuild">
-    <!-- Apparently MSBuild cannot move directories and recursively copying a
-         a directory requires writing some sort of recursive traversal
-         logic yourself. -->
+    <!-- MSBuild cannot move directories or recursively copy content. -->
     <ItemGroup>
-      <RecursiveCopyHack Include="$(AppBundlePath)/**/*.*" />
+      <BundleContent Include="$(AppBundlePath)/**/*.*" />
     </ItemGroup>
     <MakeDir Directories="$(FinalPath)" />
-    <Copy SourceFiles="@(RecursiveCopyHack)" DestinationFolder="$(FinalPath)/%(RecursiveDir)" />
+    <!-- MacCatalyst requires Contents/Info.plist and Contents/MacOS/ApplicationBinary -->
+    <Copy Condition="'$(TargetOS)' == 'maccatalyst' AND '%(BundleContent.Filename)%(BundleContent.Extension)' == 'Info.plist'" SourceFiles="@(BundleContent)" DestinationFolder="$(FinalPath)/Contents/%(RecursiveDir)" />
+    <Copy Condition="'$(TargetOS)' == 'maccatalyst' AND '%(BundleContent.Filename)%(BundleContent.Extension)' != 'Info.plist'" SourceFiles="@(BundleContent)" DestinationFolder="$(FinalPath)/Contents/MacOS/%(RecursiveDir)" />
+    <Copy Condition="'$(TargetOS)' != 'maccatalyst'" SourceFiles="@(BundleContent)" DestinationFolder="$(FinalPath)/%(RecursiveDir)" />
     <RemoveDir Directories="$(AppBundlePath)" />
     <Message Importance="High" Text="Final app: $(FinalPath)" />
   </Target>
@@ -541,7 +547,7 @@
 
     <!-- restore all csproj's with PackageReferences in one pass -->
     <MSBuild Projects="build.proj"
-             Properties="RestoreProj=%(RestoreProjects.Identity)"
+             Properties="RestoreProj=%(RestoreProjects.Identity);_ForceRestore=%(RestoreProjects.ForceRestore)"
              Targets="RestorePackage" />
 
     <Message Importance="High" Text="[$([System.DateTime]::Now.ToString('HH:mm:ss.ff'))] Restoring all packages...Done." />
@@ -551,7 +557,8 @@
     <PropertyGroup>
       <_ConfigurationProperties>/p:TargetOS=$(TargetOS) /p:TargetArchitecture=$(TargetArchitecture) /p:Configuration=$(Configuration) /p:CrossBuild=$(CrossBuild)</_ConfigurationProperties>
       <_ConfigurationProperties Condition="'$(UseLocalAppHostPack)' == 'true'">$(_ConfigurationProperties) -p:EnableAppHostPackDownload=false -p:EnableTargetingPackDownload=false -p:EnableRuntimePackDownload=false</_ConfigurationProperties>
-      <DotnetRestoreCommand>"$(DotNetTool)" restore $(RestoreProj) $(PackageVersionArg) /p:SetTFMForRestore=true $(_ConfigurationProperties)</DotnetRestoreCommand>
+      <_ForceRestore Condition="'$(_ForceRestore)' == 'true'">-f</_ForceRestore>
+      <DotnetRestoreCommand>"$(DotNetTool)" restore $(_ForceRestore) -r $(RuntimeIdentifier) $(RestoreProj) $(PackageVersionArg) /p:SetTFMForRestore=true $(_ConfigurationProperties)</DotnetRestoreCommand>
     </PropertyGroup>
     <Exec Command="$(DotnetRestoreCommand)"/>
   </Target>
@@ -600,12 +607,14 @@
       <GroupBuildCmd Condition="'$(ServerGarbageCollection)' != ''">$(GroupBuildCmd) "/p:ServerGarbageCollection=$(ServerGarbageCollection)"</GroupBuildCmd>
       <GroupBuildCmd>$(GroupBuildCmd) "/p:CLRTestBuildAllTargets=$(CLRTestBuildAllTargets)"</GroupBuildCmd>
       <GroupBuildCmd>$(GroupBuildCmd) "/p:UseCodeFlowEnforcement=$(UseCodeFlowEnforcement)"</GroupBuildCmd>
+      <GroupBuildCmd Condition="'$(ControlFlowGuard)' != ''">$(GroupBuildCmd) "/p:ControlFlowGuard=$(ControlFlowGuard)"</GroupBuildCmd>
       <GroupBuildCmd>$(GroupBuildCmd) "/p:__TestGroupToBuild=$(__TestGroupToBuild)"</GroupBuildCmd>
       <GroupBuildCmd>$(GroupBuildCmd) "/p:__SkipRestorePackages=1"</GroupBuildCmd>
       <GroupBuildCmd>$(GroupBuildCmd) /nodeReuse:false</GroupBuildCmd>
       <GroupBuildCmd Condition="'$(TargetOS)' != 'browser' or '$(ContinuousIntegrationBuild)' != 'true'">$(GroupBuildCmd) /maxcpucount</GroupBuildCmd>
       <!-- https://github.com/dotnet/runtime/issues/93134 -->
       <GroupBuildCmd Condition="'$(TargetOS)' == 'browser' and '$(ContinuousIntegrationBuild)' == 'true'">$(GroupBuildCmd) /m:1</GroupBuildCmd>
+      <GroupBuildCmd Condition="'$(TargetOS)' == 'wasi'">$(GroupBuildCmd) /m:1</GroupBuildCmd>
       <GroupBuildCmd Condition="'$(TargetOS)' == 'ios' or '$(TargetOS)' == 'tvos'">$(GroupBuildCmd) "/p:DevTeamProvisioning=-"</GroupBuildCmd>
       <GroupBuildCmd>$(GroupBuildCmd) /bl:$(ArtifactsDir)/log/$(Configuration)/InnerManagedTestBuild.$(__TestGroupToBuild).binlog</GroupBuildCmd>
       <GroupBuildCmd Condition="'$(CrossBuild)' == 'true'">$(GroupBuildCmd) "/p:CrossBuild=true"</GroupBuildCmd>
@@ -636,7 +645,9 @@
 
     <MSBuild
       Projects="Common\XUnitLogChecker\XUnitLogChecker.csproj"
-      Targets="Build" />
+      Targets="Publish"
+      Properties="_IsPublishing=true;Configuration=Release;PublishDir=$(XunitTestBinBase)/XUnitLogChecker;RuntimeIdentifier=$(RuntimeIdentifier)"
+      Condition="$(IsXUnitLogCheckerSupported)" />
   </Target>
 
   <Target Name="BuildTestWrappers"
@@ -649,8 +660,6 @@
       Condition="'$(__BuildTestWrappersOnly)' != '1' and '$(__CopyNativeTestBinaries)' != '1' and '$(__TestBuildMode)' == 'crossgen2' and !$(MonoAot) and !$(MonoFullAot)" >
 
     <PropertyGroup>
-      <CrossgenDir>$(__BinDir)\$(BuildArchitecture)</CrossgenDir>
-
       <CrossgenOutputDir>$(__TestIntermediatesDir)\crossgen.out</CrossgenOutputDir>
 
       <CrossgenCmd>$(DotNetCli)</CrossgenCmd>
@@ -670,7 +679,7 @@
       <CrossgenCmd Condition="'$(__CompositeBuildMode)' == ''">$(CrossgenCmd) --crossgen2-parallelism 1</CrossgenCmd>
 
       <CrossgenCmd>$(CrossgenCmd) --verify-type-and-field-layout</CrossgenCmd>
-      <CrossgenCmd>$(CrossgenCmd) --crossgen2-path "$(CrossgenDir)\crossgen2\tools\crossgen2.dll"</CrossgenCmd>
+      <CrossgenCmd>$(CrossgenCmd) --crossgen2-path "$(__BinDir)\$(BuildArchitecture)\crossgen2\tools\crossgen2.dll"</CrossgenCmd>
     </PropertyGroup>
 
     <Message Importance="High" Text="$(MsgPrefix)Compiling framework using Crossgen2: $(CrossgenCmd)" />

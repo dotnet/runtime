@@ -325,7 +325,7 @@ namespace Mono.Linker.Steps
 					MarkEntireType (nested, new DependencyInfo (DependencyKind.NestedType, type), origin);
 			}
 
-			MarkTypeVisibleToReflection (type, type, reason, origin);
+			MarkTypeVisibleToReflection (type, reason, origin);
 			MarkCustomAttributes (type, new DependencyInfo (DependencyKind.CustomAttribute, type), origin);
 			MarkTypeSpecialCustomAttributes (type, origin);
 
@@ -914,7 +914,7 @@ namespace Mono.Linker.Steps
 			foreach (var member in members) {
 				switch (member) {
 				case TypeDefinition type:
-					MarkTypeVisibleToReflection (type, type, reason, origin);
+					MarkTypeVisibleToReflection (type, reason, origin);
 					break;
 				case MethodDefinition method:
 					MarkMethodVisibleToReflection (method, reason, origin);
@@ -1616,20 +1616,6 @@ namespace Mono.Linker.Steps
 					break;
 				}
 			}
-
-			// Warn on reflection access to compiler-generated methods, if the method isn't already unsafe to access via reflection
-			// due to annotations. For the annotation-based warnings, we skip virtual overrides since those will produce warnings on
-			// the base, but for unannotated compiler-generated methods this is not the case, so we must produce these warnings even
-			// for virtual overrides. This ensures that we include the unannotated MoveNext state machine method. Lambdas and local
-			// functions should never be virtual overrides in the first place.
-			bool isCoveredByAnnotations = isReflectionAccessCoveredByRUC || isReflectionAccessCoveredByDAM;
-			switch (dependencyKind) {
-			case DependencyKind.AccessedViaReflection:
-			case DependencyKind.DynamicallyAccessedMember:
-				if (ShouldWarnForReflectionAccessToCompilerGeneratedCode (method, isCoveredByAnnotations))
-					Context.LogWarning (origin, DiagnosticId.CompilerGeneratedMemberAccessedViaReflection, method.GetDisplayName ());
-				break;
-			}
 		}
 
 		void ReportWarningsForTypeHierarchyReflectionAccess (IMemberDefinition member, MessageOrigin origin)
@@ -1671,23 +1657,6 @@ namespace Mono.Linker.Steps
 			if (isReflectionAccessCoveredByDAM && !isCompilerGenerated) {
 				var id = reportOnMember ? DiagnosticId.DynamicallyAccessedMembersOnTypeReferencesMemberWithDynamicallyAccessedMembers : DiagnosticId.DynamicallyAccessedMembersOnTypeReferencesMemberOnBaseWithDynamicallyAccessedMembers;
 				Context.LogWarning (origin, id, type.GetDisplayName (), ((MemberReference) member).GetDisplayName ());
-			}
-
-			// Warn on reflection access to compiler-generated methods, if the method isn't already unsafe to access via reflection
-			// due to annotations. For the annotation-based warnings, we skip virtual overrides since those will produce warnings on
-			// the base, but for unannotated compiler-generated methods this is not the case, so we must produce these warnings even
-			// for virtual overrides. This ensures that we include the unannotated MoveNext state machine method. Lambdas and local
-			// functions should never be virtual overrides in the first place.
-			bool isCoveredByAnnotations = isReflectionAccessCoveredByRUC || isReflectionAccessCoveredByDAM;
-			if (member is MethodDefinition method && ShouldWarnForReflectionAccessToCompilerGeneratedCode (method, isCoveredByAnnotations)) {
-				var id = reportOnMember ? DiagnosticId.DynamicallyAccessedMembersOnTypeReferencesCompilerGeneratedMember : DiagnosticId.DynamicallyAccessedMembersOnTypeReferencesCompilerGeneratedMemberOnBase;
-				Context.LogWarning (origin, id, type.GetDisplayName (), method.GetDisplayName ());
-			}
-
-			// Warn on reflection access to compiler-generated fields.
-			if (member is FieldDefinition field && ShouldWarnForReflectionAccessToCompilerGeneratedCode (field, isCoveredByAnnotations)) {
-				var id = reportOnMember ? DiagnosticId.DynamicallyAccessedMembersOnTypeReferencesCompilerGeneratedMember : DiagnosticId.DynamicallyAccessedMembersOnTypeReferencesCompilerGeneratedMemberOnBase;
-				Context.LogWarning (origin, id, type.GetDisplayName (), field.GetDisplayName ());
 			}
 		}
 
@@ -1752,24 +1721,6 @@ namespace Mono.Linker.Steps
 			}
 		}
 
-		bool ShouldWarnForReflectionAccessToCompilerGeneratedCode (FieldDefinition field, bool isCoveredByAnnotations)
-		{
-			// No need to warn if it's already covered by the Requires attribute or explicit annotations on the field.
-			if (isCoveredByAnnotations)
-				return false;
-
-			if (!CompilerGeneratedState.IsNestedFunctionOrStateMachineMember (field))
-				return false;
-
-			// Only warn for types which are interesting for dataflow. Note that this does
-			// not include integer types, even though we track integers in the dataflow analysis.
-			// Technically we should also warn for integer types, but this leads to more warnings
-			// for example about the compiler-generated "state" field for state machine methods.
-			// This should be ok because in most cases the state machine types will also have other
-			// hoisted locals that produce warnings anyway when accessed via reflection.
-			return Annotations.FlowAnnotations.IsTypeInterestingForDataflow (field.FieldType);
-		}
-
 		void ProcessAnalysisAnnotationsForField (FieldDefinition field, DependencyKind dependencyKind, in MessageOrigin origin)
 		{
 			switch (dependencyKind) {
@@ -1790,11 +1741,9 @@ namespace Mono.Linker.Steps
 			if (Annotations.ShouldSuppressAnalysisWarningsForRequiresUnreferencedCode (origin.Provider, out _))
 				return;
 
-			bool isReflectionAccessCoveredByRUC;
-			if (isReflectionAccessCoveredByRUC = Annotations.ShouldSuppressAnalysisWarningsForRequiresUnreferencedCode (field, out RequiresUnreferencedCodeAttribute? requiresUnreferencedCodeAttribute))
+			if (Annotations.ShouldSuppressAnalysisWarningsForRequiresUnreferencedCode (field, out RequiresUnreferencedCodeAttribute? requiresUnreferencedCodeAttribute))
 				ReportRequiresUnreferencedCode (field.GetDisplayName (), requiresUnreferencedCodeAttribute!, new DiagnosticContext (origin, diagnosticsEnabled: true, Context));
 
-			bool isReflectionAccessCoveredByDAM = false;
 			switch (dependencyKind) {
 			case DependencyKind.AccessedViaReflection:
 			case DependencyKind.DynamicDependency:
@@ -1802,18 +1751,9 @@ namespace Mono.Linker.Steps
 			case DependencyKind.InteropMethodDependency:
 			case DependencyKind.Ldtoken:
 			case DependencyKind.UnsafeAccessorTarget:
-				if (isReflectionAccessCoveredByDAM = Annotations.FlowAnnotations.ShouldWarnWhenAccessedForReflection (field))
+				if (Annotations.FlowAnnotations.ShouldWarnWhenAccessedForReflection (field))
 					Context.LogWarning (origin, DiagnosticId.DynamicallyAccessedMembersFieldAccessedViaReflection, field.GetDisplayName ());
 
-				break;
-			}
-
-			switch (dependencyKind) {
-			case DependencyKind.AccessedViaReflection:
-			case DependencyKind.DynamicallyAccessedMember:
-				bool isCoveredByAnnotations = isReflectionAccessCoveredByRUC || isReflectionAccessCoveredByDAM;
-				if (ShouldWarnForReflectionAccessToCompilerGeneratedCode (field, isCoveredByAnnotations))
-					Context.LogWarning (origin, DiagnosticId.CompilerGeneratedMemberAccessedViaReflection, field.GetDisplayName ());
 				break;
 			}
 		}
@@ -1855,18 +1795,17 @@ namespace Mono.Linker.Steps
 			MarkMethodsIf (type.Methods, HasOnSerializeOrDeserializeAttribute, new DependencyInfo (DependencyKind.SerializationMethodForType, type), origin);
 		}
 
-		protected internal virtual TypeDefinition? MarkTypeVisibleToReflection (TypeReference type, TypeDefinition definition, in DependencyInfo reason, in MessageOrigin origin)
+		protected internal virtual void MarkTypeVisibleToReflection (TypeReference type, in DependencyInfo reason, in MessageOrigin origin)
 		{
-			// If a type is visible to reflection, we need to stop doing optimization that could cause observable difference
-			// in reflection APIs. This includes APIs like MakeGenericType (where variant castability of the produced type
-			// could be incorrect) or IsAssignableFrom (where assignability of unconstructed types might change).
-			Annotations.MarkRelevantToVariantCasting (definition);
-
-			Annotations.MarkReflectionUsed (definition);
-
-			MarkImplicitlyUsedFields (definition, origin);
-
-			return MarkType (type, reason, origin);
+			TypeDefinition? definition = MarkType (type, reason, origin);
+			if (definition is not null) {
+				// If a type is visible to reflection, we need to stop doing optimization that could cause observable difference
+				// in reflection APIs. This includes APIs like MakeGenericType (where variant castability of the produced type
+				// could be incorrect) or IsAssignableFrom (where assignability of unconstructed types might change).
+				Annotations.MarkRelevantToVariantCasting (definition);
+				Annotations.MarkReflectionUsed (definition);
+				MarkImplicitlyUsedFields (definition, origin);
+			}
 		}
 
 		internal void MarkMethodVisibleToReflection (MethodReference method, in DependencyInfo reason, in MessageOrigin origin)
@@ -2658,6 +2597,7 @@ namespace Mono.Linker.Steps
 			case "MulticastDelegate":
 			case "ValueType":
 			case "Enum":
+			case "Array":
 				return td.Namespace == "System";
 			}
 
@@ -2951,7 +2891,16 @@ namespace Mono.Linker.Steps
 			if (method == null)
 				return null;
 
-			if (Annotations.GetAction (method) == MethodAction.Nothing)
+			var methodAction = Annotations.GetAction (method);
+			if (methodAction is MethodAction.ConvertToStub) {
+				// CodeRewriterStep runs after sweeping, and may request the stubbed value for any preserved method
+				// with the action ConvertToStub. Ensure we have precomputed any stub value that may be needed by
+				// CodeRewriterStep. This ensures sweeping doesn't change the stub value (which can be determined by
+				// FeatureGuardAttribute or FeatureSwitchDefinitionAttribute that might have been removed).
+				Annotations.TryGetMethodStubValue (method, out _);
+			}
+
+			if (methodAction == MethodAction.Nothing)
 				Annotations.SetAction (method, MethodAction.Parse);
 
 
@@ -3691,9 +3640,7 @@ namespace Mono.Linker.Steps
 					origin = new MessageOrigin (origin, instruction.Offset);
 
 					if (token is TypeReference typeReference) {
-						// Error will be reported as part of MarkType
-						if (Context.TryResolve (typeReference) is TypeDefinition type)
-							MarkTypeVisibleToReflection (typeReference, type, reason, origin);
+						MarkTypeVisibleToReflection (typeReference, reason, origin);
 					} else if (token is MethodReference methodReference) {
 						MarkMethodVisibleToReflection (methodReference, reason, origin);
 					} else {

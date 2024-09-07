@@ -17,6 +17,7 @@ namespace System.Diagnostics
     /// </summary>
     public partial class StackTrace
     {
+        [FeatureSwitchDefinition("System.Diagnostics.StackTrace.IsSupported")]
         internal static bool IsSupported { get; } = InitializeIsSupported();
 
         private static bool InitializeIsSupported() =>
@@ -126,7 +127,7 @@ namespace System.Diagnostics
         /// </summary>
         public StackTrace(StackFrame frame)
         {
-            _stackFrames = new StackFrame[] { frame };
+            _stackFrames = [frame];
             _numOfFrames = 1;
         }
 

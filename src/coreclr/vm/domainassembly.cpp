@@ -24,24 +24,21 @@
 #include "peimagelayout.inl"
 
 #ifndef DACCESS_COMPILE
-DomainAssembly::DomainAssembly(PEAssembly* pPEAssembly, LoaderAllocator* pLoaderAllocator) :
-    m_pAssembly(NULL),
-    m_pPEAssembly(pPEAssembly),
-    m_pModule(NULL),
-    m_fCollectible(pLoaderAllocator->IsCollectible()),
-    m_NextDomainAssemblyInSameALC(NULL),
-    m_pLoaderAllocator(pLoaderAllocator),
-    m_level(FILE_LOAD_CREATE),
-    m_loading(TRUE),
-    m_hExposedModuleObject{},
-    m_hExposedAssemblyObject{},
-    m_pError(NULL),
-    m_bDisableActivationCheck(FALSE),
-    m_fHostAssemblyPublished(FALSE),
-    m_pDynamicMethodTable(NULL),
-    m_debuggerFlags(DACF_NONE),
-    m_notifyflags(NOT_NOTIFIED),
-    m_fDebuggerUnloadStarted(FALSE)
+DomainAssembly::DomainAssembly(PEAssembly* pPEAssembly, LoaderAllocator* pLoaderAllocator, AllocMemTracker* memTracker)
+    : m_pAssembly(NULL)
+    , m_pPEAssembly(pPEAssembly)
+    , m_pModule(NULL)
+    , m_fCollectible(pLoaderAllocator->IsCollectible())
+    , m_NextDomainAssemblyInSameALC(NULL)
+    , m_pLoaderAllocator(pLoaderAllocator)
+    , m_level(FILE_LOAD_CREATE)
+    , m_loading(TRUE)
+    , m_pError(NULL)
+    , m_bDisableActivationCheck(FALSE)
+    , m_fHostAssemblyPublished(FALSE)
+    , m_debuggerFlags(DACF_NONE)
+    , m_notifyflags(NOT_NOTIFIED)
+    , m_fDebuggerUnloadStarted(FALSE)
 {
     CONTRACTL
     {
@@ -56,6 +53,18 @@ DomainAssembly::DomainAssembly(PEAssembly* pPEAssembly, LoaderAllocator* pLoader
     pPEAssembly->ValidateForExecution();
 
     SetupDebuggingConfig();
+
+    // Create the Assembly
+    NewHolder<Assembly> assembly = Assembly::Create(GetPEAssembly(), GetDebuggerInfoBits(), IsCollectible(), memTracker, IsCollectible() ? GetLoaderAllocator() : NULL);
+    assembly->SetIsTenured();
+
+    m_pAssembly = assembly.Extract();
+    m_pModule = m_pAssembly->GetModule();
+
+    m_pAssembly->SetDomainAssembly(this);
+
+    // Creating the Assembly should have ensured the PEAssembly is loaded
+    _ASSERT(GetPEAssembly()->IsLoaded());
 }
 
 DomainAssembly::~DomainAssembly()
@@ -70,8 +79,6 @@ DomainAssembly::~DomainAssembly()
     CONTRACTL_END;
 
     m_pPEAssembly->Release();
-    if (m_pDynamicMethodTable)
-        m_pDynamicMethodTable->Destroy();
 
     delete m_pError;
 
@@ -310,71 +317,6 @@ BOOL DomainAssembly::IsVisibleToDebugger()
 
 #ifndef DACCESS_COMPILE
 
-//---------------------------------------------------------------------------------------
-//
-// Returns managed representation of the module (Module or ModuleBuilder).
-// Returns NULL if the managed scout was already collected (see code:LoaderAllocator#AssemblyPhases).
-//
-OBJECTREF DomainAssembly::GetExposedModuleObject()
-{
-    CONTRACTL
-    {
-        INSTANCE_CHECK;
-        THROWS;
-        MODE_COOPERATIVE;
-        GC_TRIGGERS;
-    }
-    CONTRACTL_END;
-
-    LoaderAllocator * pLoaderAllocator = GetLoaderAllocator();
-
-    if (m_hExposedModuleObject == (LOADERHANDLE)NULL)
-    {
-        // Atomically create a handle
-        LOADERHANDLE handle = pLoaderAllocator->AllocateHandle(NULL);
-
-        InterlockedCompareExchangeT(&m_hExposedModuleObject, handle, static_cast<LOADERHANDLE>(0));
-    }
-
-    if (pLoaderAllocator->GetHandleValue(m_hExposedModuleObject) == NULL)
-    {
-        REFLECTMODULEBASEREF refClass = NULL;
-
-        // Will be true only if LoaderAllocator managed object was already collected and therefore we should
-        // return NULL
-        bool fIsLoaderAllocatorCollected = false;
-
-        GCPROTECT_BEGIN(refClass);
-
-        refClass = (REFLECTMODULEBASEREF) AllocateObject(CoreLibBinder::GetClass(CLASS__MODULE));
-        refClass->SetModule(GetModule());
-
-        // Attach the reference to the assembly to keep the LoaderAllocator for this collectible type
-        // alive as long as a reference to the module is kept alive.
-        if (GetModule()->GetAssembly() != NULL)
-        {
-            OBJECTREF refAssembly = GetModule()->GetAssembly()->GetExposedObject();
-            if ((refAssembly == NULL) && GetModule()->GetAssembly()->IsCollectible())
-            {
-                fIsLoaderAllocatorCollected = true;
-            }
-            refClass->SetAssembly(refAssembly);
-        }
-
-        pLoaderAllocator->CompareExchangeValueInHandle(m_hExposedModuleObject, (OBJECTREF)refClass, NULL);
-        GCPROTECT_END();
-
-        if (fIsLoaderAllocatorCollected)
-        {   // The LoaderAllocator managed object was already collected, we cannot re-create it
-            // Note: We did not publish the allocated Module/ModuleBuilder object, it will get collected
-            // by GC
-            return NULL;
-        }
-    }
-
-    return pLoaderAllocator->GetHandleValue(m_hExposedModuleObject);
-}
-
 BOOL DomainAssembly::DoIncrementalLoad(FileLoadLevel level)
 {
     STANDARD_VM_CONTRACT;
@@ -389,30 +331,8 @@ BOOL DomainAssembly::DoIncrementalLoad(FileLoadLevel level)
         Begin();
         break;
 
-    case FILE_LOAD_FIND_NATIVE_IMAGE:
-        break;
-
-    case FILE_LOAD_VERIFY_NATIVE_IMAGE_DEPENDENCIES:
-        break;
-
-    case FILE_LOAD_ALLOCATE:
-        Allocate();
-        break;
-
-    case FILE_LOAD_ADD_DEPENDENCIES:
-        AddDependencies();
-        break;
-
-    case FILE_LOAD_PRE_LOADLIBRARY:
-        PreLoadLibrary();
-        break;
-
-    case FILE_LOAD_LOADLIBRARY:
-        LoadLibrary();
-        break;
-
-    case FILE_LOAD_POST_LOADLIBRARY:
-        PostLoadLibrary();
+    case FILE_LOAD_BEFORE_TYPE_LOAD:
+        BeforeTypeLoad();
         break;
 
     case FILE_LOAD_EAGER_FIXUPS:
@@ -453,29 +373,7 @@ BOOL DomainAssembly::DoIncrementalLoad(FileLoadLevel level)
     return TRUE;
 }
 
-void DomainAssembly::PreLoadLibrary()
-{
-    CONTRACTL
-    {
-        INSTANCE_CHECK;
-        STANDARD_VM_CHECK;
-    }
-    CONTRACTL_END;
-
-} // DomainAssembly::PreLoadLibrary
-
-void DomainAssembly::LoadLibrary()
-{
-    CONTRACTL
-    {
-        INSTANCE_CHECK;
-        STANDARD_VM_CHECK;
-    }
-    CONTRACTL_END;
-
-}
-
-void DomainAssembly::PostLoadLibrary()
+void DomainAssembly::BeforeTypeLoad()
 {
     CONTRACTL
     {
@@ -509,11 +407,6 @@ void DomainAssembly::PostLoadLibrary()
     }
 
 #endif
-}
-
-void DomainAssembly::AddDependencies()
-{
-    STANDARD_VM_CONTRACT;
 }
 
 void DomainAssembly::EagerFixups()
@@ -597,101 +490,6 @@ void DomainAssembly::Activate()
     RETURN;
 }
 
-void DomainAssembly::SetAssembly(Assembly* pAssembly)
-{
-    STANDARD_VM_CONTRACT;
-
-    _ASSERTE(pAssembly->GetModule()->GetPEAssembly()==m_pPEAssembly);
-    _ASSERTE(m_pAssembly == NULL);
-
-    m_pAssembly = pAssembly;
-    m_pModule = pAssembly->GetModule();
-
-    pAssembly->SetDomainAssembly(this);
-}
-
-
-//---------------------------------------------------------------------------------------
-//
-// Returns managed representation of the assembly (Assembly or AssemblyBuilder).
-// Returns NULL if the managed scout was already collected (see code:LoaderAllocator#AssemblyPhases).
-//
-OBJECTREF DomainAssembly::GetExposedAssemblyObject()
-{
-    CONTRACTL
-    {
-        INSTANCE_CHECK;
-        THROWS;
-        MODE_COOPERATIVE;
-        GC_TRIGGERS;
-    }
-    CONTRACTL_END;
-
-    LoaderAllocator * pLoaderAllocator = GetLoaderAllocator();
-
-    if (!pLoaderAllocator->IsManagedScoutAlive())
-    {   // We already collected the managed scout, so we cannot re-create any managed objects
-        // Note: This is an optimization, as the managed scout can be collected right after this check
-        return NULL;
-    }
-
-    if (m_hExposedAssemblyObject == (LOADERHANDLE)NULL)
-    {
-        // Atomically create a handle
-
-        LOADERHANDLE handle = pLoaderAllocator->AllocateHandle(NULL);
-
-        InterlockedCompareExchangeT(&m_hExposedAssemblyObject, handle, static_cast<LOADERHANDLE>(0));
-    }
-
-    if (pLoaderAllocator->GetHandleValue(m_hExposedAssemblyObject) == NULL)
-    {
-        ASSEMBLYREF   assemblyObj = NULL;
-        MethodTable * pMT;
-
-        pMT = CoreLibBinder::GetClass(CLASS__ASSEMBLY);
-
-        // Will be TRUE only if LoaderAllocator managed object was already collected and therefore we should
-        // return NULL
-        BOOL fIsLoaderAllocatorCollected = FALSE;
-
-        // Create the assembly object
-        GCPROTECT_BEGIN(assemblyObj);
-        assemblyObj = (ASSEMBLYREF)AllocateObject(pMT);
-
-        assemblyObj->SetAssembly(this);
-
-        // Attach the reference to the assembly to keep the LoaderAllocator for this collectible type
-        // alive as long as a reference to the assembly is kept alive.
-        // Currently we overload the sync root field of the assembly to do so, but the overload is not necessary.
-        if (GetAssembly() != NULL)
-        {
-            OBJECTREF refLA = GetAssembly()->GetLoaderAllocator()->GetExposedObject();
-            if ((refLA == NULL) && GetAssembly()->GetLoaderAllocator()->IsCollectible())
-            {   // The managed LoaderAllocator object was collected
-                fIsLoaderAllocatorCollected = TRUE;
-            }
-            assemblyObj->SetSyncRoot(refLA);
-        }
-
-        if (!fIsLoaderAllocatorCollected)
-        {   // We should not expose this value in case the LoaderAllocator managed object was already
-            // collected
-            pLoaderAllocator->CompareExchangeValueInHandle(m_hExposedAssemblyObject, (OBJECTREF)assemblyObj, NULL);
-        }
-        GCPROTECT_END();
-
-        if (fIsLoaderAllocatorCollected)
-        {   // The LoaderAllocator managed object was already collected, we cannot re-create it
-            // Note: We did not publish the allocated Assembly/AssmeblyBuilder object, it will get collected
-            // by GC
-            return NULL;
-        }
-    }
-
-    return pLoaderAllocator->GetHandleValue(m_hExposedAssemblyObject);
-}
-
 void DomainAssembly::Begin()
 {
     STANDARD_VM_CONTRACT;
@@ -737,37 +535,6 @@ void DomainAssembly::UnregisterFromHostAssembly()
     }
 }
 
-void DomainAssembly::Allocate()
-{
-    CONTRACTL
-    {
-        INSTANCE_CHECK;
-        STANDARD_VM_CHECK;
-        INJECT_FAULT(COMPlusThrowOM(););
-    }
-    CONTRACTL_END;
-
-    AllocMemTracker   amTracker;
-    AllocMemTracker * pamTracker = &amTracker;
-
-    Assembly * pAssembly = m_pAssembly;
-
-    if (pAssembly==NULL)
-    {
-        //! If you decide to remove "if" do not remove this brace: order is important here - in the case of an exception,
-        //! the Assembly holder must destruct before the AllocMemTracker declared above.
-        NewHolder<Assembly> assemblyHolder(NULL);
-
-        assemblyHolder = pAssembly = Assembly::Create(GetPEAssembly(), GetDebuggerInfoBits(), this->IsCollectible(), pamTracker, this->IsCollectible() ? this->GetLoaderAllocator() : NULL);
-        assemblyHolder->SetIsTenured();
-
-        pamTracker->SuppressRelease();
-        assemblyHolder.SuppressRelease();
-    }
-
-    SetAssembly(pAssembly);
-}
-
 void DomainAssembly::DeliverAsyncEvents()
 {
     CONTRACTL
@@ -780,7 +547,7 @@ void DomainAssembly::DeliverAsyncEvents()
     CONTRACTL_END;
 
     OVERRIDE_LOAD_LEVEL_LIMIT(FILE_ACTIVE);
-    AppDomain::GetCurrentDomain()->RaiseLoadingAssemblyEvent(this);
+    AppDomain::GetCurrentDomain()->RaiseLoadingAssemblyEvent(GetAssembly());
 }
 
 void DomainAssembly::DeliverSyncEvents()

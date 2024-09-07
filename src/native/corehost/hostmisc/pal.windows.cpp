@@ -10,7 +10,6 @@
 #include <ShlObj.h>
 #include <ctime>
 
-
 void pal::file_vprintf(FILE* f, const pal::char_t* format, va_list vl)
 {
     // String functions like vfwprintf convert wide to multi-byte characters as if wcrtomb were called - that is, using the current C locale (LC_TYPE).
@@ -21,7 +20,8 @@ void pal::file_vprintf(FILE* f, const pal::char_t* format, va_list vl)
     _free_locale(loc);
 }
 
-namespace {
+namespace
+{
     void print_line_to_handle(const pal::char_t* message, HANDLE handle, FILE* fallbackFileHandle) {
         // String functions like vfwprintf convert wide to multi-byte characters as if wcrtomb were called - that is, using the current C locale (LC_TYPE).
         // In order to properly print UTF-8 and GB18030 characters to the console without requiring the user to use chcp to a compatible locale, we use WriteConsoleW.
@@ -42,12 +42,14 @@ namespace {
     }
 }
 
-void pal::err_print_line(const pal::char_t* message) {
+void pal::err_print_line(const pal::char_t* message)
+{
     // Forward to helper to handle UTF-8 formatting and redirection
     print_line_to_handle(message, ::GetStdHandle(STD_ERROR_HANDLE), stderr);
 }
 
-void pal::out_vprint_line(const pal::char_t* format, va_list vl) {
+void pal::out_vprint_line(const pal::char_t* format, va_list vl)
+{
     va_list vl_copy;
     va_copy(vl_copy, vl);
     // Get the length of the formatted string + 1 for null terminator
@@ -96,35 +98,35 @@ namespace
 
         return s_get_temp_path_func(buffer_len, buffer);
     }
-}
 
-bool GetModuleFileNameWrapper(HMODULE hModule, pal::string_t* recv)
-{
-    pal::string_t path;
-    size_t dwModuleFileName = MAX_PATH / 2;
-
-    do
+    bool GetModuleFileNameWrapper(HMODULE hModule, pal::string_t* recv)
     {
-        path.resize(dwModuleFileName * 2);
-        dwModuleFileName = GetModuleFileNameW(hModule, (LPWSTR)path.data(), static_cast<DWORD>(path.size()));
-    } while (dwModuleFileName == path.size());
+        pal::string_t path;
+        size_t dwModuleFileName = MAX_PATH / 2;
 
-    if (dwModuleFileName == 0)
-        return false;
+        do
+        {
+            path.resize(dwModuleFileName * 2);
+            dwModuleFileName = GetModuleFileNameW(hModule, (LPWSTR)path.data(), static_cast<DWORD>(path.size()));
+        } while (dwModuleFileName == path.size());
 
-    path.resize(dwModuleFileName);
-    recv->assign(path);
-    return true;
-}
+        if (dwModuleFileName == 0)
+            return false;
 
-bool GetModuleHandleFromAddress(void *addr, HMODULE *hModule)
-{
-    BOOL res = ::GetModuleHandleExW(
-        GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS | GET_MODULE_HANDLE_EX_FLAG_UNCHANGED_REFCOUNT,
-        reinterpret_cast<LPCWSTR>(addr),
-        hModule);
+        path.resize(dwModuleFileName);
+        recv->assign(path);
+        return true;
+    }
 
-    return (res != FALSE);
+    bool GetModuleHandleFromAddress(void *addr, HMODULE *hModule)
+    {
+        BOOL res = ::GetModuleHandleExW(
+            GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS | GET_MODULE_HANDLE_EX_FLAG_UNCHANGED_REFCOUNT,
+            reinterpret_cast<LPCWSTR>(addr),
+            hModule);
+
+        return (res != FALSE);
+    }
 }
 
 pal::string_t pal::get_timestamp()
@@ -261,9 +263,9 @@ bool pal::load_library(const string_t* in_path, dll_t* dll)
 
     if (LongFile::IsPathNotFullyQualified(path))
     {
-        if (!pal::realpath(&path))
+        if (!pal::fullpath(&path))
         {
-            trace::error(_X("Failed to load the dll from [%s], HRESULT: 0x%X"), path.c_str(), HRESULT_FROM_WIN32(GetLastError()));
+            trace::error(_X("Failed to load [%s], HRESULT: 0x%X"), path.c_str(), HRESULT_FROM_WIN32(GetLastError()));
             return false;
         }
     }
@@ -274,7 +276,13 @@ bool pal::load_library(const string_t* in_path, dll_t* dll)
     *dll = ::LoadLibraryExW(path.c_str(), NULL, LOAD_LIBRARY_SEARCH_DLL_LOAD_DIR | LOAD_LIBRARY_SEARCH_DEFAULT_DIRS);
     if (*dll == nullptr)
     {
-        trace::error(_X("Failed to load the dll from [%s], HRESULT: 0x%X"), path.c_str(), HRESULT_FROM_WIN32(GetLastError()));
+        int error_code = ::GetLastError();
+        trace::error(_X("Failed to load [%s], HRESULT: 0x%X"), path.c_str(), HRESULT_FROM_WIN32(error_code));
+        if (error_code == ERROR_BAD_EXE_FORMAT)
+        {
+            trace::error(_X("  - Ensure the library matches the current process architecture: ") _STRINGIFY(CURRENT_ARCH_NAME));
+        }
+
         return false;
     }
 
@@ -661,8 +669,8 @@ bool pal::getenv(const char_t* name, string_t* recv)
         }
         return false;
     }
-    auto buf = new char_t[length];
-    if (::GetEnvironmentVariableW(name, buf, length) == 0)
+    std::vector<pal::char_t> buffer(length);
+    if (::GetEnvironmentVariableW(name, &buffer[0], length) == 0)
     {
         auto err = GetLastError();
         if (err != ERROR_ENVVAR_NOT_FOUND)
@@ -672,9 +680,7 @@ bool pal::getenv(const char_t* name, string_t* recv)
         return false;
     }
 
-    recv->assign(buf);
-    delete[] buf;
-
+    recv->assign(buffer.data());
     return true;
 }
 
@@ -736,7 +742,7 @@ bool get_extraction_base_parent_directory(pal::string_t& directory)
     assert(len < max_len);
     directory.assign(temp_path);
 
-    return pal::realpath(&directory);
+    return pal::fullpath(&directory);
 }
 
 bool pal::get_default_bundle_extraction_base_dir(pal::string_t& extraction_dir)
@@ -750,7 +756,7 @@ bool pal::get_default_bundle_extraction_base_dir(pal::string_t& extraction_dir)
     append_path(&extraction_dir, _X(".net"));
     // Windows Temp-Path is already user-private.
 
-    if (realpath(&extraction_dir))
+    if (fullpath(&extraction_dir))
     {
         return true;
     }
@@ -763,7 +769,7 @@ bool pal::get_default_bundle_extraction_base_dir(pal::string_t& extraction_dir)
         return false;
     }
 
-    return realpath(&extraction_dir);
+    return fullpath(&extraction_dir);
 }
 
 static bool wchar_convert_helper(DWORD code_page, const char* cstr, size_t len, pal::string_t* out)
@@ -815,8 +821,92 @@ bool pal::clr_palstring(const char* cstr, pal::string_t* out)
     return wchar_convert_helper(CP_UTF8, cstr, ::strlen(cstr), out);
 }
 
-// Return if path is valid and file exists, return true and adjust path as appropriate.
-bool pal::realpath(string_t* path, bool skip_error_logging)
+typedef std::unique_ptr<std::remove_pointer<HANDLE>::type, decltype(&::CloseHandle)> SmartHandle;
+
+// Like fullpath, but resolves file symlinks (note: not necessarily directory symlinks).
+bool pal::realpath(pal::string_t* path, bool skip_error_logging)
+{
+    if (path->empty())
+    {
+        return false;
+    }
+
+    // Use CreateFileW + GetFinalPathNameByHandleW to resolve symlinks
+    // https://learn.microsoft.com/windows/win32/fileio/symbolic-link-effects-on-file-systems-functions#createfile-and-createfiletransacted
+    SmartHandle file(
+        ::CreateFileW(
+            path->c_str(),
+            0, // Querying only
+            FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE,
+            nullptr, // default security
+            OPEN_EXISTING, // existing file
+            FILE_ATTRIBUTE_NORMAL, // normal file
+            nullptr), // No attribute template
+        &::CloseHandle);
+
+    pal::char_t buf[MAX_PATH];
+    size_t size;
+
+    if (file.get() == INVALID_HANDLE_VALUE)
+    {
+        // If we get "access denied" that may mean the path represents a directory.
+        // Even if not, we can fall back to GetFullPathNameW, which doesn't require a HANDLE
+
+        auto error = ::GetLastError();
+        file.release();
+        if (ERROR_ACCESS_DENIED != error)
+        {
+            if (!skip_error_logging)
+            {
+                trace::error(_X("Error resolving full path [%s]. Error code: %d"), path->c_str(), error);
+            }
+            return false;
+        }
+    }
+    else
+    {
+        size = ::GetFinalPathNameByHandleW(file.get(), buf, MAX_PATH, FILE_NAME_NORMALIZED);
+        // If size is 0, this call failed. Fall back to GetFullPathNameW, below
+        if (size != 0)
+        {
+            pal::string_t str;
+            if (size < MAX_PATH)
+            {
+                str.assign(buf);
+            }
+            else
+            {
+                str.resize(size, 0);
+                size = ::GetFinalPathNameByHandleW(file.get(), (LPWSTR)str.data(), static_cast<uint32_t>(size), FILE_NAME_NORMALIZED);
+                assert(size <= str.size());
+
+                if (size == 0)
+                {
+                    if (!skip_error_logging)
+                    {
+                        trace::error(_X("Error resolving full path [%s]. Error code: %d"), path->c_str(), ::GetLastError());
+                    }
+                    return false;
+                }
+            }
+
+            // Remove the \\?\ prefix, unless it is necessary or was already there
+            if (LongFile::IsExtended(str) && !LongFile::IsExtended(*path) &&
+                !LongFile::ShouldNormalize(str.substr(LongFile::ExtendedPrefix.size())))
+            {
+                str.erase(0, LongFile::ExtendedPrefix.size());
+            }
+
+            *path = str;
+            return true;
+        }
+    }
+
+    // If the above fails, fall back to fullpath
+    return pal::fullpath(path, skip_error_logging);
+}
+
+bool pal::fullpath(string_t* path, bool skip_error_logging)
 {
     if (path->empty())
     {
@@ -891,7 +981,7 @@ bool pal::realpath(string_t* path, bool skip_error_logging)
 bool pal::file_exists(const string_t& path)
 {
     string_t tmp(path);
-    return pal::realpath(&tmp, true);
+    return pal::fullpath(&tmp, true);
 }
 
 static void readdir(const pal::string_t& path, const pal::string_t& pattern, bool onlydirectories, std::vector<pal::string_t>* list)
@@ -903,7 +993,7 @@ static void readdir(const pal::string_t& path, const pal::string_t& pattern, boo
 
     if (LongFile::ShouldNormalize(normalized_path))
     {
-        if (!pal::realpath(&normalized_path))
+        if (!pal::fullpath(&normalized_path))
         {
             return;
         }

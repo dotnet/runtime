@@ -2236,18 +2236,12 @@ void CodeGen::instGen_Set_Reg_To_Imm(emitAttr       size,
     // reg cannot be a FP register
     assert(!genIsValidFloatReg(reg));
 
-    emitAttr origAttr = size;
     if (!compiler->opts.compReloc)
     {
         size = EA_SIZE(size); // Strip any Reloc flags from size if we aren't doing relocs
     }
 
-    if (compiler->IsTargetAbi(CORINFO_NATIVEAOT_ABI) && EA_IS_CNS_SEC_RELOC(origAttr))
-    {
-        // This emits pair of `add` instructions for TLS reloc
-        GetEmitter()->emitIns_Add_Add_Tls_Reloc(size, reg, imm DEBUGARG(gtFlags));
-    }
-    else if (EA_IS_RELOC(size))
+    if (EA_IS_RELOC(size))
     {
         // This emits a pair of adrp/add (two instructions) with fix-ups.
         GetEmitter()->emitIns_R_AI(INS_adrp, size, reg, imm DEBUGARG(targetHandle) DEBUGARG(gtFlags));
@@ -2762,6 +2756,18 @@ void CodeGen::genCodeForBinary(GenTreeOp* tree)
         emit->emitIns_R_R_R(ins, emitActualTypeSize(tree), targetReg, a->GetRegNum(), b->GetRegNum(), opt);
 
         genProduceReg(tree);
+        return;
+    }
+    else if (compiler->IsTargetAbi(CORINFO_NATIVEAOT_ABI) && TargetOS::IsWindows &&
+             op2->IsIconHandle(GTF_ICON_SECREL_OFFSET))
+    {
+        // This emits pair of `add` instructions for TLS reloc on windows/arm64/nativeaot
+        assert(op2->AsIntCon()->ImmedValNeedsReloc(compiler));
+
+        emitAttr attr = emitActualTypeSize(targetType);
+        attr          = EA_SET_FLG(attr, EA_CNS_RELOC_FLG | EA_CNS_SEC_RELOC);
+
+        emit->emitIns_Add_Add_Tls_Reloc(attr, targetReg, op1->GetRegNum(), op2->AsIntCon()->IconValue());
         return;
     }
 
@@ -3872,19 +3878,21 @@ void CodeGen::genLockedInstructions(GenTreeOp* treeNode)
     {
         assert(!data->isContainedIntOrIImmed());
 
+        // These instructions change semantics when targetReg is ZR (the memory ordering becomes weaker).
+        // See atomicBarrierDroppedOnZero in LLVM
+        assert((targetReg != REG_NA) && (targetReg != REG_ZR));
+
         switch (treeNode->gtOper)
         {
             case GT_XORR:
-                GetEmitter()->emitIns_R_R_R(INS_ldsetal, dataSize, dataReg, (targetReg == REG_NA) ? REG_ZR : targetReg,
-                                            addrReg);
+                GetEmitter()->emitIns_R_R_R(INS_ldsetal, dataSize, dataReg, targetReg, addrReg);
                 break;
             case GT_XAND:
             {
                 // Grab a temp reg to perform `MVN` for dataReg first.
                 regNumber tempReg = internalRegisters.GetSingle(treeNode);
                 GetEmitter()->emitIns_R_R(INS_mvn, dataSize, tempReg, dataReg);
-                GetEmitter()->emitIns_R_R_R(INS_ldclral, dataSize, tempReg, (targetReg == REG_NA) ? REG_ZR : targetReg,
-                                            addrReg);
+                GetEmitter()->emitIns_R_R_R(INS_ldclral, dataSize, tempReg, targetReg, addrReg);
                 break;
             }
             case GT_XCHG:
@@ -3902,8 +3910,7 @@ void CodeGen::genLockedInstructions(GenTreeOp* treeNode)
                 break;
             }
             case GT_XADD:
-                GetEmitter()->emitIns_R_R_R(INS_ldaddal, dataSize, dataReg, (targetReg == REG_NA) ? REG_ZR : targetReg,
-                                            addrReg);
+                GetEmitter()->emitIns_R_R_R(INS_ldaddal, dataSize, dataReg, targetReg, addrReg);
                 break;
             default:
                 assert(!"Unexpected treeNode->gtOper");

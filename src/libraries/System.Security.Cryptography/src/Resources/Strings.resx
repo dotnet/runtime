@@ -327,6 +327,9 @@
   <data name="Cryptography_EncryptedIncorrectLength" xml:space="preserve">
     <value>{0} unexpectedly produced a ciphertext with the incorrect length.</value>
   </data>
+  <data name="Cryptography_EnginesNotSupported" xml:space="preserve">
+    <value>OpenSSL ENGINE is not available on this platform.</value>
+  </data>
   <data name="Cryptography_ExceedKdfExtractLimit" xml:space="preserve">
     <value>The total number of bytes extracted cannot exceed UInt32.MaxValue * hash length.</value>
   </data>
@@ -830,6 +833,9 @@
   </data>
   <data name="PlatformNotSupported_CryptographyOpenSSLNotFound" xml:space="preserve">
     <value>OpenSSL is required for algorithm '{0}' but could not be found or loaded.</value>
+  </data>
+  <data name="PlatformNotSupported_CryptographyOpenSSLProvidersNotSupported" xml:space="preserve">
+    <value>OpenSSL providers are not supported on this platform.</value>
   </data>
   <data name="Security_AccessDenied" xml:space="preserve">
     <value>Access is denied.</value>

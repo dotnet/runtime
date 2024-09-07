@@ -2509,8 +2509,7 @@ VOID DECLSPEC_NORETURN RealCOMPlusThrow(OBJECTREF throwable)
     RealCOMPlusThrow(throwable, FALSE);
 }
 
-#ifdef USE_CHECKED_OBJECTREFS
-VOID DECLSPEC_NORETURN RealCOMPlusThrow(Object *exceptionObj)
+VOID DECLSPEC_NORETURN PropagateExceptionThroughNativeFrames(Object *exceptionObj)
 {
     CONTRACTL
     {
@@ -2523,7 +2522,6 @@ VOID DECLSPEC_NORETURN RealCOMPlusThrow(Object *exceptionObj)
     OBJECTREF throwable = ObjectToOBJECTREF(exceptionObj);
     RealCOMPlusThrowWorker(throwable, FALSE);
 }
-#endif // USE_CHECKED_OBJECTREFS
 
 // this function finds the managed callback to get a resource
 // string from the then current local domain and calls it
@@ -2975,7 +2973,7 @@ void StackTraceInfo::EnsureKeepAliveArray(PTRARRAYREF *ppKeepAliveArray, size_t 
         {
             memmoveGCRefs(pNewKeepAliveArray->GetDataPtr(),
                           (*ppKeepAliveArray)->GetDataPtr(),
-                          neededSize * sizeof(Object *));        
+                          (*ppKeepAliveArray)->GetNumComponents() * sizeof(Object *));
         }
         // Update the keepAlive array
         *ppKeepAliveArray = pNewKeepAliveArray;
@@ -5201,6 +5199,10 @@ BOOL NotifyAppDomainsOfUnhandledException(
 
     GCPROTECT_END();
 
+#ifdef HOST_WINDOWS
+    CreateCrashDumpIfEnabled();
+#endif
+
 #ifdef _DEBUG
     // Do not care about lock check for unhandled exception.
     while (unbreakableLockCount)
@@ -5702,9 +5704,6 @@ void AdjustContextForThreadStop(Thread* pThread,
 #endif // !FEATURE_EH_FUNCLETS
 
     pThread->ResetThrowControlForThread();
-
-    // Should never get here if we're already throwing an exception.
-    _ASSERTE(!pThread->IsExceptionInProgress() || pThread->IsRudeAbort());
 
     // Should never get here if we're already abort initiated.
     _ASSERTE(!pThread->IsAbortInitiated() || pThread->IsRudeAbort());
@@ -6279,6 +6278,10 @@ void HandleManagedFaultNew(EXCEPTION_RECORD* pExceptionRecord, CONTEXT* pContext
     *frame->GetGSCookiePtr() = GetProcessGSCookie();
 #endif // FEATURE_EH_FUNCLETS
     frame->InitAndLink(pContext);
+
+#if defined(TARGET_AMD64) && defined(TARGET_WINDOWS)
+    frame->SetSSP(GetSSP(pContext));
+#endif
 
     Thread *pThread = GetThread();
 
@@ -7351,10 +7354,6 @@ LONG WINAPI CLRVectoredExceptionHandlerShim(PEXCEPTION_POINTERS pExceptionInfo)
                     pFrame = pFrame->Next();
                 }
                 STRESS_LOG0(LF_EH, LL_INFO100, "CLRVectoredExceptionHandlerShim: stack");
-                while (count < 20 && sp < stopPoint)
-                {
-                    sp += 1;
-                }
             }
         }
 #endif // _DEBUG
@@ -7506,7 +7505,7 @@ VOID DECLSPEC_NORETURN UnwindAndContinueRethrowHelperAfterCatch(Frame* pEntryFra
         }
         else
         {
-            DispatchManagedException(orThrowable, /* preserveStackTrace */ false);
+            DispatchManagedException(orThrowable);
         }
     }
     else
@@ -7953,14 +7952,17 @@ BOOL ExceptionTypeOverridesStackTraceGetter(PTR_MethodTable pMT)
     // find the slot corresponding to get_StackTrace
     for (DWORD slot = g_pObjectClass->GetNumVirtuals(); slot < g_pExceptionClass->GetNumVirtuals(); slot++)
     {
-        MethodDesc *pMD = g_pExceptionClass->GetMethodDescForSlot(slot);
-        LPCUTF8 name = pMD->GetName();
-
-        if (name != NULL && strcmp(name, "get_StackTrace") == 0)
+        MethodDesc *pMD = g_pExceptionClass->GetMethodDescForSlot_NoThrow(slot);
+        if (pMD != nullptr)
         {
-            // see if the slot is overridden by pMT
-            MethodDesc *pDerivedMD = pMT->GetMethodDescForSlot(slot);
-            return (pDerivedMD != pMD);
+            LPCUTF8 name = pMD->GetName();
+
+            if (name != NULL && strcmp(name, "get_StackTrace") == 0)
+            {
+                // see if the slot is overridden by pMT
+                MethodDesc *pDerivedMD = pMT->GetMethodDescForSlot_NoThrow(slot);
+                return (pDerivedMD != pMD);
+            }
         }
     }
 

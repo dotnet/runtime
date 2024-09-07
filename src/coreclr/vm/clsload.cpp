@@ -2695,7 +2695,7 @@ TypeHandle ClassLoader::CreateTypeHandleForTypeKey(const TypeKey* pKey, AllocMem
         DWORD numArgs = pKey->GetNumArgs();
         BYTE* mem = (BYTE*) pamTracker->Track(pLoaderModule->GetAssembly()->GetLowFrequencyHeap()->AllocMem(S_SIZE_T(sizeof(FnPtrTypeDesc)) + S_SIZE_T(sizeof(TypeHandle)) * S_SIZE_T(numArgs)));
 
-        typeHnd = TypeHandle(new(mem)  FnPtrTypeDesc(pKey->GetCallConv(), numArgs, pKey->GetRetAndArgTypes()));
+        typeHnd = TypeHandle(new(mem)  FnPtrTypeDesc(pKey->GetCallConv(), numArgs, pKey->GetRetAndArgTypes(), pLoaderModule));
     }
     else
     {
@@ -2775,6 +2775,16 @@ TypeHandle ClassLoader::PublishType(const TypeKey *pTypeKey, TypeHandle typeHnd)
     }
     CONTRACTL_END;
 
+#ifdef _DEBUG
+    if (!typeHnd.IsTypeDesc())
+    {
+        // The IsPublished flag is used by various asserts to assure that allocations of
+        // MethodTable associated memory which do not use the AllocMemTracker of the MethodTableBuilder
+        // aren't permitted until the MethodTable is in a state where the MethodTable object
+        // cannot be freed (except by freeing an entire LoaderAllocator)
+        typeHnd.AsMethodTable()->GetAuxiliaryDataForWrite()->SetIsPublished();
+    }
+#endif
 
     if (pTypeKey->IsConstructed())
     {

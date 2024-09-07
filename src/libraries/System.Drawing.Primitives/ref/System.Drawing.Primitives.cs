@@ -625,5 +625,7 @@ namespace System.Drawing
         public static System.Drawing.Color Window { get { throw null; } }
         public static System.Drawing.Color WindowFrame { get { throw null; } }
         public static System.Drawing.Color WindowText { get { throw null; } }
+        [System.Diagnostics.CodeAnalysis.Experimental("SYSLIB5002", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+        public static bool UseAlternativeColorSet { get { throw null; } set { } }
     }
 }

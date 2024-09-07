@@ -169,12 +169,14 @@ public:
                                       char*                 methodname,
                                       const char**          moduleName,
                                       const char**          namespaceName,
-                                      const char**          enclosingClassName);
+                                      const char**          enclosingClassNames,
+                                      size_t                maxEnclosingClassNames);
     void dmpGetMethodNameFromMetadata(Agnostic_CORINFO_METHODNAME_TOKENin key, Agnostic_CORINFO_METHODNAME_TOKENout value);
     const char* repGetMethodNameFromMetadata(CORINFO_METHOD_HANDLE ftn,
                                              const char**          className,
                                              const char**          namespaceName,
-                                             const char**          enclosingClassName);
+                                             const char**          enclosingClassNames,
+                                             size_t                maxEnclosingClassNames);
 
     void recGetJitFlags(CORJIT_FLAGS* jitFlags, DWORD sizeInBytes, DWORD result);
     void dmpGetJitFlags(DWORD key, DD value);
@@ -422,6 +424,10 @@ public:
     void dmpHaveSameMethodDefinition(const DLDL& key, DWORD value);
     bool repHaveSameMethodDefinition(CORINFO_METHOD_HANDLE methHnd1, CORINFO_METHOD_HANDLE methHnd2);
 
+    void recGetTypeDefinition(CORINFO_CLASS_HANDLE type, CORINFO_CLASS_HANDLE result);
+    void dmpGetTypeDefinition(DWORDLONG key, DWORDLONG value);
+    CORINFO_CLASS_HANDLE repGetTypeDefinition(CORINFO_CLASS_HANDLE type);
+
     void recGetNewHelper(CORINFO_CLASS_HANDLE  classHandle,
                          bool                  hasSideEffects,
                          CorInfoHelpFunc       result,
@@ -583,7 +589,7 @@ public:
     void recGetIsClassInitedFlagAddress(CORINFO_CLASS_HANDLE cls, CORINFO_CONST_LOOKUP* addr, int* offset, bool result);
     void dmpGetIsClassInitedFlagAddress(DWORDLONG key, const Agnostic_GetIsClassInitedFlagAddress& value);
     bool repGetIsClassInitedFlagAddress(CORINFO_CLASS_HANDLE cls, CORINFO_CONST_LOOKUP* addr, int* offset);
-    
+
     void recGetStaticBaseAddress(CORINFO_CLASS_HANDLE cls, bool isGc, CORINFO_CONST_LOOKUP* addr, bool result);
     void dmpGetStaticBaseAddress(DLD key, const Agnostic_GetStaticBaseAddress& value);
     bool repGetStaticBaseAddress(CORINFO_CLASS_HANDLE cls, bool isGc, CORINFO_CONST_LOOKUP* addr);
@@ -634,12 +640,12 @@ public:
 
     void recGetFieldType(CORINFO_FIELD_HANDLE  field,
                          CORINFO_CLASS_HANDLE* structType,
-                         CORINFO_CLASS_HANDLE  memberParent,
+                         CORINFO_CLASS_HANDLE  fieldOwnerHint,
                          CorInfoType           result);
     void dmpGetFieldType(DLDL key, DLD value);
     CorInfoType repGetFieldType(CORINFO_FIELD_HANDLE  field,
                                 CORINFO_CLASS_HANDLE* structType,
-                                CORINFO_CLASS_HANDLE  memberParent);
+                                CORINFO_CLASS_HANDLE  fieldOwnerHint);
 
     void recSatisfiesMethodConstraints(CORINFO_CLASS_HANDLE parent, CORINFO_METHOD_HANDLE method, bool result);
     void dmpSatisfiesMethodConstraints(DLDL key, DWORD value);
@@ -783,13 +789,9 @@ public:
     void dmpGetSwiftLowering(DWORDLONG key, const Agnostic_GetSwiftLowering& value);
     void repGetSwiftLowering(CORINFO_CLASS_HANDLE structHnd, CORINFO_SWIFT_LOWERING* pLowering);
 
-    void recGetLoongArch64PassStructInRegisterFlags(CORINFO_CLASS_HANDLE structHnd, DWORD value);
-    void dmpGetLoongArch64PassStructInRegisterFlags(DWORDLONG key, DWORD value);
-    DWORD repGetLoongArch64PassStructInRegisterFlags(CORINFO_CLASS_HANDLE structHnd);
-
-    void recGetRISCV64PassStructInRegisterFlags(CORINFO_CLASS_HANDLE structHnd, DWORD value);
-    void dmpGetRISCV64PassStructInRegisterFlags(DWORDLONG key, DWORD value);
-    DWORD repGetRISCV64PassStructInRegisterFlags(CORINFO_CLASS_HANDLE structHnd);
+    void recGetFpStructLowering(CORINFO_CLASS_HANDLE structHnd, CORINFO_FPSTRUCT_LOWERING* pLowering);
+    void dmpGetFpStructLowering(DWORDLONG key, const Agnostic_GetFpStructLowering& value);
+    void repGetFpStructLowering(CORINFO_CLASS_HANDLE structHnd, CORINFO_FPSTRUCT_LOWERING* pLowering);
 
     void recGetRelocTypeHint(void* target, WORD result);
     void dmpGetRelocTypeHint(DWORDLONG key, DWORD value);
@@ -896,6 +898,10 @@ public:
     void dmpGetStringConfigValue(DWORD nameIndex, DWORD result);
     const WCHAR* repGetStringConfigValue(const WCHAR* name);
 
+    void recGetSpecialCopyHelper(CORINFO_CLASS_HANDLE type, CORINFO_METHOD_HANDLE helper);
+    void dmpGetSpecialCopyHelper(DWORDLONG key, DWORDLONG value);
+    CORINFO_METHOD_HANDLE repGetSpecialCopyHelper(CORINFO_CLASS_HANDLE type);
+
     void dmpSigInstHandleMap(DWORD key, DWORDLONG value);
 
     struct Environment
@@ -920,7 +926,6 @@ public:
     }
 
     CompileResult* cr;
-    CompileResult* originalCR;
     int            index;
     bool           ignoreStoredConfig;
 
@@ -1158,7 +1163,7 @@ enum mcPackets
     Packet_GetAssemblyName = 191,
     Packet_IsIntrinsic = 192,
     Packet_UpdateEntryPointForTailCall = 193,
-    Packet_GetLoongArch64PassStructInRegisterFlags = 194,
+    //Packet_GetLoongArch64PassStructInRegisterFlags = 194,
     Packet_GetExactClasses = 195,
     Packet_GetRuntimeTypePointer = 196,
     Packet_PrintObjectDescription = 197,
@@ -1174,7 +1179,7 @@ enum mcPackets
     Packet_GetThreadLocalFieldInfo = 207,
     Packet_GetThreadLocalStaticBlocksInfo = 208,
     Packet_GetThreadLocalStaticInfo_NativeAOT = 209,
-    Packet_GetRISCV64PassStructInRegisterFlags = 210,
+    //Packet_GetRISCV64PassStructInRegisterFlags = 210,
     Packet_GetObjectContent = 211,
     Packet_GetTypeLayout = 212,
     Packet_HaveSameMethodDefinition = 213,
@@ -1186,6 +1191,9 @@ enum mcPackets
     Packet_GetClassThreadStaticDynamicInfo = 219,
     Packet_IsGenericType = 220,
     Packet_GetTypeForBoxOnStack = 221,
+    Packet_GetTypeDefinition = 222,
+    Packet_GetFpStructLowering = 223,
+    Packet_GetSpecialCopyHelper = 224,
 };
 
 void SetDebugDumpVariables();

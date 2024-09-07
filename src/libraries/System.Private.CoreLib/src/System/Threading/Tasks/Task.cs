@@ -819,6 +819,7 @@ namespace System.Threading.Tasks
 
         /// <summary>Gets whether the task's debugger notification for wait completion bit is set.</summary>
         /// <returns>true if the bit is set; false if it's not set.</returns>
+        [FeatureSwitchDefinition("System.Diagnostics.Debugger.IsSupported")]
         internal bool IsWaitNotificationEnabled => // internal only to enable unit tests; would otherwise be private
             (m_stateFlags & (int)TaskStateFlags.WaitCompletionNotification) != 0;
 
@@ -2966,6 +2967,9 @@ namespace System.Threading.Tasks
         // to be able to see the method on the stack and inspect arguments).
         private bool InternalWaitCore(int millisecondsTimeout, CancellationToken cancellationToken)
         {
+#if TARGET_WASI
+            if (OperatingSystem.IsWasi()) throw new PlatformNotSupportedException(); // TODO remove with https://github.com/dotnet/runtime/pull/107185
+#endif
             // If the task has already completed, there's nothing to wait for.
             bool returnValue = IsCompleted;
             if (returnValue)
@@ -3516,7 +3520,7 @@ namespace System.Threading.Tasks
                             stc.Run(this, canInlineContinuationTask: false);
                         }
                     }
-                    else if (!(currentContinuation is ITaskCompletionAction))
+                    else if (currentContinuation is not ITaskCompletionAction)
                     {
                         if (forceContinuationsAsync)
                         {
@@ -4483,7 +4487,7 @@ namespace System.Threading.Tasks
                 //    activity, we ensure we at least create a correlation from the current activity to
                 //    the continuation that runs when the promise completes.
                 if ((this.Options & (TaskCreationOptions)InternalTaskOptions.PromiseTask) != 0 &&
-                    !(this is ITaskCompletionAction))
+                    this is not ITaskCompletionAction)
                 {
                     TplEventSource log = TplEventSource.Log;
                     if (log.IsEnabled())
@@ -4681,6 +4685,9 @@ namespace System.Threading.Tasks
         [MethodImpl(MethodImplOptions.NoOptimization)]  // this is needed for the parallel debugger
         public static void WaitAll(params Task[] tasks)
         {
+#if TARGET_WASI
+            if (OperatingSystem.IsWasi()) throw new PlatformNotSupportedException(); // TODO remove with https://github.com/dotnet/runtime/pull/107185
+#endif
             if (tasks is null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.tasks);
@@ -4706,6 +4713,9 @@ namespace System.Threading.Tasks
         [UnsupportedOSPlatform("browser")]
         public static void WaitAll(params ReadOnlySpan<Task> tasks)
         {
+#if TARGET_WASI
+            if (OperatingSystem.IsWasi()) throw new PlatformNotSupportedException(); // TODO remove with https://github.com/dotnet/runtime/pull/107185
+#endif
             bool waitResult = WaitAllCore(tasks, Timeout.Infinite, default);
             Debug.Assert(waitResult, "expected wait to succeed");
         }
@@ -4743,6 +4753,9 @@ namespace System.Threading.Tasks
         [MethodImpl(MethodImplOptions.NoOptimization)]  // this is needed for the parallel debugger
         public static bool WaitAll(Task[] tasks, TimeSpan timeout)
         {
+#if TARGET_WASI
+            if (OperatingSystem.IsWasi()) throw new PlatformNotSupportedException(); // TODO remove with https://github.com/dotnet/runtime/pull/107185
+#endif
             long totalMilliseconds = (long)timeout.TotalMilliseconds;
             if (totalMilliseconds is < -1 or > int.MaxValue)
             {
@@ -4787,6 +4800,9 @@ namespace System.Threading.Tasks
         [MethodImpl(MethodImplOptions.NoOptimization)]  // this is needed for the parallel debugger
         public static bool WaitAll(Task[] tasks, int millisecondsTimeout)
         {
+#if TARGET_WASI
+            if (OperatingSystem.IsWasi()) throw new PlatformNotSupportedException(); // TODO remove with https://github.com/dotnet/runtime/pull/107185
+#endif
             if (tasks is null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.tasks);
@@ -4821,6 +4837,9 @@ namespace System.Threading.Tasks
         [MethodImpl(MethodImplOptions.NoOptimization)]  // this is needed for the parallel debugger
         public static void WaitAll(Task[] tasks, CancellationToken cancellationToken)
         {
+#if TARGET_WASI
+            if (OperatingSystem.IsWasi()) throw new PlatformNotSupportedException(); // TODO remove with https://github.com/dotnet/runtime/pull/107185
+#endif
             if (tasks is null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.tasks);
@@ -4867,6 +4886,9 @@ namespace System.Threading.Tasks
         [MethodImpl(MethodImplOptions.NoOptimization)]  // this is needed for the parallel debugger
         public static bool WaitAll(Task[] tasks, int millisecondsTimeout, CancellationToken cancellationToken)
         {
+#if TARGET_WASI
+            if (OperatingSystem.IsWasi()) throw new PlatformNotSupportedException(); // TODO remove with https://github.com/dotnet/runtime/pull/107185
+#endif
             if (tasks is null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.tasks);
@@ -4889,6 +4911,9 @@ namespace System.Threading.Tasks
         [UnsupportedOSPlatform("browser")]
         public static void WaitAll(IEnumerable<Task> tasks, CancellationToken cancellationToken = default)
         {
+#if TARGET_WASI
+            if (OperatingSystem.IsWasi()) throw new PlatformNotSupportedException(); // TODO remove with https://github.com/dotnet/runtime/pull/107185
+#endif
             if (tasks is null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.tasks);
@@ -4907,6 +4932,9 @@ namespace System.Threading.Tasks
         [UnsupportedOSPlatform("browser")]
         private static bool WaitAllCore(ReadOnlySpan<Task> tasks, int millisecondsTimeout, CancellationToken cancellationToken)
         {
+#if TARGET_WASI
+            if (OperatingSystem.IsWasi()) throw new PlatformNotSupportedException(); // TODO remove with https://github.com/dotnet/runtime/pull/107185
+#endif
             if (millisecondsTimeout < -1)
             {
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.millisecondsTimeout);
@@ -5037,6 +5065,9 @@ namespace System.Threading.Tasks
         [UnsupportedOSPlatform("browser")]
         private static bool WaitAllBlockingCore(List<Task> tasks, int millisecondsTimeout, CancellationToken cancellationToken)
         {
+#if TARGET_WASI
+            if (OperatingSystem.IsWasi()) throw new PlatformNotSupportedException(); // TODO remove with https://github.com/dotnet/runtime/pull/107185
+#endif
             Debug.Assert(tasks != null, "Expected a non-null list of tasks");
             Debug.Assert(tasks.Count > 0, "Expected at least one task");
 
@@ -5337,7 +5368,6 @@ namespace System.Threading.Tasks
         [MethodImpl(MethodImplOptions.AggressiveInlining)] // method looks long, but for a given TResult it results in a relatively small amount of asm
         public static unsafe Task<TResult> FromResult<TResult>(TResult result)
         {
-#pragma warning disable 8500 // address of / sizeof of managed types
             // The goal of this function is to be give back a cached task if possible, or to otherwise give back a new task.
             // To give back a cached task, we need to be able to evaluate the incoming result value, and we need to avoid as
             // much overhead as possible when doing so, as this function is invoked as part of the return path from every async
@@ -5386,7 +5416,6 @@ namespace System.Threading.Tasks
 
             // No cached task is available.  Manufacture a new one for this result.
             return new Task<TResult>(result);
-#pragma warning restore 8500
         }
 
         /// <summary>Creates a <see cref="Task{TResult}"/> that's completed exceptionally with the specified exception.</summary>
@@ -6998,7 +7027,7 @@ namespace System.Threading.Tasks
             {
                 if (continuationObject is Action singleAction)
                 {
-                    return new Delegate[] { AsyncMethodBuilderCore.TryGetStateMachineForDebugger(singleAction) };
+                    return [AsyncMethodBuilderCore.TryGetStateMachineForDebugger(singleAction)];
                 }
 
                 if (continuationObject is TaskContinuation taskContinuation)
@@ -7017,7 +7046,7 @@ namespace System.Threading.Tasks
                 // the VS debugger is more interested in the continuation than the internal invoke()
                 if (continuationObject is ITaskCompletionAction singleCompletionAction)
                 {
-                    return new Delegate[] { new Action<Task>(singleCompletionAction.Invoke) };
+                    return [new Action<Task>(singleCompletionAction.Invoke)];
                 }
 
                 if (continuationObject is List<object?> continuationList)

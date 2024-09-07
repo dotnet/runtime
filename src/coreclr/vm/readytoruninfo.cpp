@@ -742,7 +742,7 @@ ReadyToRunInfo::ReadyToRunInfo(Module * pModule, LoaderAllocator* pLoaderAllocat
                 const GUID *componentMvids = (const GUID *)m_pComposite->GetLayout()->GetDirectoryData(pComponentAssemblyMvids);
                 // Take load lock so that DeclareDependencyOnMvid can be called
 
-                BaseDomain::LoadLockHolder lock(AppDomain::GetCurrentDomain(), pNativeImage == NULL); // LoadLock is already held for composite images
+                AppDomain::LoadLockHolder lock(AppDomain::GetCurrentDomain(), pNativeImage == NULL); // LoadLock is already held for composite images
                 AppDomain::GetCurrentDomain()->AssertLoadLockHeld();
 
                 while (pNativeMDImport->EnumNext(&assemblyEnum, &assemblyRef))
@@ -1526,7 +1526,7 @@ public:
         return GetModuleIfLoaded(kFile);
     }
 
-    DomainAssembly * LoadAssemblyImpl(mdAssemblyRef kAssemblyRef) final
+    Assembly * LoadAssemblyImpl(mdAssemblyRef kAssemblyRef) final
     {
         STANDARD_VM_CONTRACT;
         // Since we can only load via ModuleRef, this should never fail unless the module is improperly formatted
@@ -1693,7 +1693,7 @@ public:
         RETURN module;
     }
 
-    DomainAssembly *LoadModule(mdFile kFile) final
+    Module *LoadModule(mdFile kFile) final
     {
         // Native manifest module functionality isn't actually multi-module assemblies, and File tokens are not useable
         if (TypeFromToken(kFile) == mdtFile)
@@ -1702,7 +1702,7 @@ public:
         _ASSERTE(TypeFromToken(kFile) == mdtModuleRef);
         Module* module = m_ModuleReferencesMap.GetElement(RidFromToken(kFile));
         if (module != NULL)
-            return module->GetDomainAssembly();
+            return module;
 
         LPCSTR moduleName;
         if (FAILED(GetMDImport()->GetModuleRefProps(kFile, &moduleName)))
@@ -1751,8 +1751,8 @@ public:
         m_ModuleReferencesMap.TrySetElement(RidFromToken(kFile), module);
 #endif
 
-        return module->GetDomainAssembly();
-    }
+       return module;
+   }
 
     virtual void DECLSPEC_NORETURN ThrowTypeLoadExceptionImpl(IMDInternalImport *pInternalImport,
                                                   mdToken token,
