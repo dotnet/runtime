@@ -15,6 +15,19 @@ internal static class BinaryReaderExtensions
 {
     private static object? s_baseAmbiguousDstDateTime;
 
+    internal static SerializationRecordType ReadSerializationRecordType(this BinaryReader reader, AllowedRecordTypes allowed)
+    {
+        byte nextByte = reader.ReadByte();
+        if (nextByte > (byte)SerializationRecordType.MethodReturn // MethodReturn is the last defined value.
+            || (nextByte > (byte)SerializationRecordType.ArraySingleString && nextByte < (byte)SerializationRecordType.MethodCall) // not part of the spec
+            || ((uint)allowed & (1u << nextByte)) == 0) // valid, but not allowed
+        {
+            ThrowHelper.ThrowForUnexpectedRecordType(nextByte);
+        }
+
+        return (SerializationRecordType)nextByte;
+    }
+
     internal static BinaryArrayType ReadArrayType(this BinaryReader reader)
     {
         byte arrayType = reader.ReadByte();
@@ -48,7 +61,7 @@ internal static class BinaryReaderExtensions
     {
         byte primitiveType = reader.ReadByte();
         // String is the last defined value, 4 is not used at all.
-        if (primitiveType is 4 or > (byte)PrimitiveType.String)
+        if (primitiveType is 0 or 4 or (byte)PrimitiveType.Null or > (byte)PrimitiveType.String)
         {
             ThrowHelper.ThrowInvalidValue(primitiveType);
         }
@@ -64,7 +77,7 @@ internal static class BinaryReaderExtensions
             PrimitiveType.Boolean => reader.ReadBoolean(),
             PrimitiveType.Byte => reader.ReadByte(),
             PrimitiveType.SByte => reader.ReadSByte(),
-            PrimitiveType.Char => reader.ReadChar(),
+            PrimitiveType.Char => reader.ParseChar(),
             PrimitiveType.Int16 => reader.ReadInt16(),
             PrimitiveType.UInt16 => reader.ReadUInt16(),
             PrimitiveType.Int32 => reader.ReadInt32(),
@@ -73,10 +86,34 @@ internal static class BinaryReaderExtensions
             PrimitiveType.UInt64 => reader.ReadUInt64(),
             PrimitiveType.Single => reader.ReadSingle(),
             PrimitiveType.Double => reader.ReadDouble(),
-            PrimitiveType.Decimal => decimal.Parse(reader.ReadString(), CultureInfo.InvariantCulture),
+            PrimitiveType.Decimal => reader.ParseDecimal(),
             PrimitiveType.DateTime => CreateDateTimeFromData(reader.ReadUInt64()),
             _ => new TimeSpan(reader.ReadInt64()),
         };
+
+    // BinaryFormatter serializes decimals as strings and we can't BinaryReader.ReadDecimal.
+    internal static decimal ParseDecimal(this BinaryReader reader)
+    {
+        string text = reader.ReadString();
+        if (!decimal.TryParse(text, NumberStyles.Number, CultureInfo.InvariantCulture, out decimal result))
+        {
+            ThrowHelper.ThrowInvalidFormat();
+        }
+
+        return result;
+    }
+
+    internal static char ParseChar(this BinaryReader reader)
+    {
+        try
+        {
+            return reader.ReadChar();
+        }
+        catch (ArgumentException) // A surrogate character was read.
+        {
+            throw new SerializationException(SR.Serialization_SurrogateCharacter);
+        }
+    }
 
     /// <summary>
     ///  Creates a <see cref="DateTime"/> object from raw data with validation.
