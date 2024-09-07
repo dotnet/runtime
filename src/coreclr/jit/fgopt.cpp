@@ -5278,7 +5278,7 @@ bool Compiler::fgUpdateFlowGraph(bool doTailDuplication /* = false */,
             // since the latter is more friendly to various optimizations. The newly added tails are expected to be
             // deduplicated where needed or/and the condition will be transformed back to branch-less version where
             // profitable.
-            if (isPhase && (info.compRetType == TYP_UBYTE) && block->KindIs(BBJ_RETURN) &&
+            if (doTailDuplication && (info.compRetType == TYP_UBYTE) && block->KindIs(BBJ_RETURN) &&
                 (block->lastStmt() != nullptr) && (block != genReturnBB) && !block->isRunRarely())
             {
                 GenTree* rootNode = block->lastStmt()->GetRootNode();
@@ -5289,6 +5289,7 @@ bool Compiler::fgUpdateFlowGraph(bool doTailDuplication /* = false */,
                     GenTree* compare = rootNode->gtGetOp1();
                     compare->gtFlags |= (GTF_RELOP_JMP_USED | GTF_DONT_CSE);
                     rootNode->ChangeOper(GT_JTRUE);
+                    rootNode->ChangeType(TYP_VOID);
 
                     DebugInfo   dbgInfo = block->lastStmt()->GetDebugInfo();
                     BasicBlock* retTrueBb =
@@ -5310,8 +5311,6 @@ bool Compiler::fgUpdateFlowGraph(bool doTailDuplication /* = false */,
                     // We expect this expansion to happen earlier
                     assert(!block->IsLIR());
 
-                    // CI test:
-                    gtUpdateStmtSideEffects(block->lastStmt());
                     if (fgNodeThreading != NodeThreading::None)
                     {
                         gtSetStmtInfo(block->lastStmt());
@@ -5327,8 +5326,7 @@ bool Compiler::fgUpdateFlowGraph(bool doTailDuplication /* = false */,
 
                     change   = true;
                     modified = true;
-                    bDest    = block->GetTrueTarget();
-                    bNext    = block->GetFalseTarget();
+                    goto REPEAT;
                 }
             }
 

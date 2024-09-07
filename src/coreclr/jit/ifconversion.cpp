@@ -704,7 +704,6 @@ bool OptIfConversionDsc::optIfConvert()
         selectType       = genActualType(m_thenOperation.node);
     }
 
-
     GenTree* select = nullptr;
     if (selectTrueInput->TypeIs(TYP_INT) && selectFalseInput->TypeIs(TYP_INT))
     {
@@ -716,7 +715,7 @@ bool OptIfConversionDsc::optIfConvert()
         else if (selectTrueInput->IsIntegralConst(0) && selectFalseInput->IsIntegralConst(1))
         {
             // compare ? false : true  -->  reversed_compare
-            select = m_cond;
+            select         = m_cond;
             select->gtOper = GenTree::ReverseRelop(select->OperGet());
         }
     }
@@ -724,8 +723,7 @@ bool OptIfConversionDsc::optIfConvert()
     if (select == nullptr)
     {
         // Create a select node
-        select =
-            m_comp->gtNewConditionalNode(GT_SELECT, m_cond, selectTrueInput, selectFalseInput, selectType);
+        select = m_comp->gtNewConditionalNode(GT_SELECT, m_cond, selectTrueInput, selectFalseInput, selectType);
     }
 
     m_thenOperation.node->AddAllEffectsFlags(select);

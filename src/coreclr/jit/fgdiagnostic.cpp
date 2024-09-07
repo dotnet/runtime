@@ -3275,6 +3275,11 @@ void Compiler::fgDebugCheckTypes(GenTree* tree)
                 assert(node->TypeIs(TYP_VOID) && "GT_NOP should be TYP_VOID.");
             }
 
+            if (node->OperIs(GT_JTRUE))
+            {
+                assert(node->TypeIs(TYP_VOID) && "GT_JTRUE should be TYP_VOID.");
+            }
+
             if (varTypeIsSmall(node))
             {
                 if (node->OperIs(GT_COMMA))
