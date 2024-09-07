@@ -5314,19 +5314,6 @@ bool Compiler::fgUpdateFlowGraph(bool doTailDuplication /* = false */,
                     retTrueBb->inheritWeightPercentage(block, 50);
                     retFalseBb->inheritWeightPercentage(block, 50);
 
-                    // We expect this expansion to happen earlier
-                    assert(!block->IsLIR());
-
-                    if (fgNodeThreading != NodeThreading::None)
-                    {
-                        gtSetStmtInfo(block->lastStmt());
-                        fgSetStmtSeq(block->lastStmt());
-                        gtSetStmtInfo(retTrueBb->lastStmt());
-                        fgSetStmtSeq(retTrueBb->lastStmt());
-                        gtSetStmtInfo(retFalseBb->lastStmt());
-                        fgSetStmtSeq(retFalseBb->lastStmt());
-                    }
-
                     change   = true;
                     modified = true;
                     bNext    = block->Next();
