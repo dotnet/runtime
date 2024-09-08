@@ -713,7 +713,6 @@ public:
                                              BOOL *           pfUsesTypeForwarder = NULL);
 
     static void EnsureLoaded(TypeHandle typeHnd, ClassLoadLevel level = CLASS_LOADED);
-    static void TryEnsureLoaded(TypeHandle typeHnd, ClassLoadLevel level = CLASS_LOADED);
 
 public:
     // Look up a class by name
