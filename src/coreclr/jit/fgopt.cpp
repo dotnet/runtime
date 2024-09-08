@@ -5286,8 +5286,9 @@ bool Compiler::fgUpdateFlowGraph(bool doTailDuplication /* = false */,
             {
                 GenTree* rootNode = block->lastStmt()->GetRootNode();
                 if (rootNode->OperIs(GT_RETURN) && rootNode->gtGetOp1()->OperIsCmpCompare() &&
-                    // The following check is purely a TP-oriented heuristics:
-                    rootNode->gtGetOp1()->gtGetOp2()->IsCnsIntOrI())
+                    // The following check is purely to improve TP and handle some size regressions we fail to handle
+                    // Eventually, we should remove it.
+                    rootNode->gtGetOp1()->gtGetOp1()->OperIsLeaf() && rootNode->gtGetOp1()->gtGetOp2()->OperIsLeaf())
                 {
                     assert(rootNode->TypeIs(TYP_INT));
 
@@ -6372,6 +6373,7 @@ PhaseStatus Compiler::fgHeadTailMerge(bool early)
 
     if (madeChanges && !early)
     {
+        // Clean up potential unconditional jumps produced by tail merging
         fgUpdateFlowGraph();
     }
 
