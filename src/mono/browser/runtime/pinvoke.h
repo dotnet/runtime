@@ -15,8 +15,8 @@ typedef struct {
 } PinvokeTable;
 
 typedef struct {
-	uint32_t token;
 	const char *key;
+	uint32_t token;
 	void *func;
 } UnmanagedExport;
 

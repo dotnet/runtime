@@ -50,10 +50,7 @@ wasm_dl_is_pinvoke_table (void *handle)
 static int
 export_compare_key (const void *k1, const void *k2)
 {
-	const char *key1 = ((UnmanagedExport*)k1)->key;
-	const char *key2 = ((UnmanagedExport*)k2)->key;
-
-	return strcmp (key1, key2);
+	return strcmp (((UnmanagedExport*)k1)->key, ((UnmanagedExport*)k2)->key);
 }
 
 static int
@@ -75,7 +72,7 @@ void*
 wasm_dl_get_native_to_interp (uint32_t token, const char *key, void *extra_arg)
 {
 #ifdef GEN_PINVOKE
-	UnmanagedExport needle = { token, key, NULL };
+	UnmanagedExport needle = { key, token, NULL };
 	int count = (sizeof (wasm_native_to_interp_table) / sizeof (UnmanagedExport));
 
 	// comparison must match the one used in the PInvokeTableGenerator to ensure the same order

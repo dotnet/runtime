@@ -136,20 +136,22 @@ internal sealed class PInvokeTableGenerator
         var moduleImports = new Dictionary<string, List<string>>();
         foreach (var module in modules.Keys)
         {
-            var assemblies_pinvokes = pinvokes
+            static string ListRefs(IGrouping<string, PInvoke> l) =>
+                string.Join(", ", l.Select(c => c.Method.DeclaringType!.Module!.Assembly!.GetName()!.Name!).Distinct().OrderBy(n => n));
+
+            var imports = pinvokes
                 .Where(l => l.Module == module && !l.Skip)
                 .OrderBy(l => l.EntryPoint, StringComparer.Ordinal)
                 .GroupBy(d => d.EntryPoint, StringComparer.Ordinal)
-                .Select(l => $"{{\"{EscapeLiteral(l.Key)}\", {CEntryPoint(l.First())}}}, "
-                    + "// " + string.Join(", ", l.Select(c => c.Method.DeclaringType!.Module!.Assembly!.GetName()!.Name!).Distinct().OrderBy(n => n)) + w.NewLine + "    ")
+                .Select(l => $"{{\"{EscapeLiteral(l.Key)}\", {CEntryPoint(l.First())}}}, // {ListRefs(l)}{w.NewLine}    ")
                 .ToList();
 
-            moduleImports[module] = assemblies_pinvokes;
+            moduleImports[module] = imports;
             w.Write(
                 $$"""
 
                 static PinvokeImport {{_fixupSymbolName(module)}}_imports [] = {
-                    {{string.Join("", assemblies_pinvokes)}}{NULL, NULL}
+                    {{string.Join("", imports)}}{NULL, NULL}
                 };
 
                 """);
@@ -388,7 +390,7 @@ internal sealed class PInvokeTableGenerator
             $$"""
 
             static UnmanagedExport wasm_native_to_interp_table[] = {
-                {{callbacks.Join($",{w.NewLine}    ", cb => $"{{{cb.Token}, \"{EscapeLiteral(cb.Key)}\", {cb.EntrySymbol}}}")}}
+                {{callbacks.Join($",{w.NewLine}    ", cb => $"{{\"{EscapeLiteral(cb.Key)}\", {cb.Token}, {cb.EntrySymbol}}}")}}
             };
 
             """);

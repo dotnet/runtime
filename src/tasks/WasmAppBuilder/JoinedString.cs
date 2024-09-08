@@ -96,16 +96,21 @@ internal sealed class JoinedStringEnumerable : IEnumerable<string>
 
 internal sealed class JoinedStringStreamWriter : StreamWriter
 {
-    private string CompilerNewLine = Environment.NewLine;
+
+    // since we are intentionally using multi-line string writes,
+    // we want to capture the compile-time new line
+    private string CompileTimeNewLine = """
+
+                                        """;
 
     public JoinedStringStreamWriter(Stream stream) : base(stream)
     {
-        NewLine = CompilerNewLine;
+        NewLine = CompileTimeNewLine;
     }
 
     public JoinedStringStreamWriter(string path, bool append) : base(path, append)
     {
-        NewLine = CompilerNewLine;
+        NewLine = CompileTimeNewLine;
     }
 
 #if NET8_0_OR_GREATER
