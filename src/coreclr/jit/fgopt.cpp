@@ -5179,6 +5179,75 @@ PhaseStatus Compiler::fgUpdateFlowGraphPhase()
 }
 
 //-------------------------------------------------------------
+// fgDedupReturnComparison: Expands BBJ_RETURN CMP into BBJ_COND CMP with two
+//   BBJ_RETURN blocks ("return true" and "return false"). Such transformation
+//   helps other phases to focus only on BBJ_COND CMP.
+//
+// Arguments:
+//    block - the BBJ_RETURN block to convert into BBJ_COND CMP
+//
+// Returns:
+//    true if the block was converted into BBJ_COND CMP
+//
+bool Compiler::fgDedupReturnComparison(BasicBlock* block)
+{
+#ifdef JIT32_GCENCODER
+    // JIT32_GCENCODER has a hard limit on the number of epilogues, let's not add more.
+    return false;
+#endif
+
+    assert(block->KindIs(BBJ_RETURN));
+
+    // We're only interested in boolean returns
+    if ((info.compRetType != TYP_UBYTE) || (block == genReturnBB) || (block->lastStmt() == nullptr))
+    {
+        return false;
+    }
+
+    GenTree* rootNode = block->lastStmt()->GetRootNode();
+    if (!rootNode->OperIs(GT_RETURN) || !rootNode->gtGetOp1()->OperIsCmpCompare())
+    {
+        return false;
+    }
+
+    GenTree* cmp    = rootNode->gtGetOp1();
+    GenTree* cmpOp1 = cmp->gtGetOp1();
+    GenTree* cmpOp2 = cmp->gtGetOp2();
+
+    // The following check is purely to improve TP and handle some size regressions we fail to handle
+    // Eventually, we should remove it.
+    bool profitable = (cmpOp1->IsLocal() && cmpOp2->IsCnsIntOrI()) || (cmpOp2->IsLocal() && cmpOp1->IsCnsIntOrI());
+    if (!profitable)
+    {
+        return false;
+    }
+
+    cmp->gtFlags |= (GTF_RELOP_JMP_USED | GTF_DONT_CSE);
+    rootNode->ChangeOper(GT_JTRUE);
+    rootNode->ChangeType(TYP_VOID);
+
+    GenTree* retTrue  = gtNewOperNode(GT_RETURN, TYP_INT, gtNewTrue());
+    GenTree* retFalse = gtNewOperNode(GT_RETURN, TYP_INT, gtNewFalse());
+
+    // Create RETURN 1/0 blocks. We expect fgHeadTailMerge to handle them if there are similar returns.
+    DebugInfo   dbgInfo    = block->lastStmt()->GetDebugInfo();
+    BasicBlock* retTrueBb  = fgNewBBFromTreeAfter(BBJ_RETURN, block, retTrue, dbgInfo);
+    BasicBlock* retFalseBb = fgNewBBFromTreeAfter(BBJ_RETURN, block, retFalse, dbgInfo);
+
+    FlowEdge* trueEdge  = fgAddRefPred(retTrueBb, block);
+    FlowEdge* falseEdge = fgAddRefPred(retFalseBb, block);
+    block->SetCond(trueEdge, falseEdge);
+
+    // We might want to instrument 'return <cond>' too in the future. For now apply 50%/50%.
+    trueEdge->setLikelihood(0.5);
+    falseEdge->setLikelihood(0.5);
+    retTrueBb->inheritWeightPercentage(block, 50);
+    retFalseBb->inheritWeightPercentage(block, 50);
+
+    return true;
+}
+
+//-------------------------------------------------------------
 // fgUpdateFlowGraph: Removes any empty blocks, unreachable blocks, and redundant jumps.
 // Most of those appear after dead store removal and folding of conditionals.
 // Also, compact consecutive basic blocks.
@@ -5274,53 +5343,12 @@ bool Compiler::fgUpdateFlowGraph(bool doTailDuplication /* = false */,
             bDest      = nullptr;
             bFalseDest = nullptr;
 
-            // Expand "return <condition>" into "return <condition> ? true : false"
-            // since the latter is more friendly to various optimizations. The newly added tails are expected to be
-            // deduplicated where needed or/and the condition will be transformed back to branch-less version where
-            // profitable.
-            //
-            // NOTE: Avoid spawning more potential epilogues for JIT32_GCENCODER which has a hard limit for them.
-#ifndef JIT32_GCENCODER
-            if (doTailDuplication && (info.compRetType == TYP_UBYTE) && block->KindIs(BBJ_RETURN) &&
-                (block->lastStmt() != nullptr) && (block != genReturnBB) && !block->isRunRarely())
+            if (doTailDuplication && block->KindIs(BBJ_RETURN) && fgDedupReturnComparison(block))
             {
-                GenTree* rootNode = block->lastStmt()->GetRootNode();
-                if (rootNode->OperIs(GT_RETURN) && rootNode->gtGetOp1()->OperIsCmpCompare() &&
-                    // The following check is purely to improve TP and handle some size regressions we fail to handle
-                    // Eventually, we should remove it.
-                    rootNode->gtGetOp1()->gtGetOp1()->OperIsLeaf() && rootNode->gtGetOp1()->gtGetOp2()->OperIsLeaf())
-                {
-                    assert(rootNode->TypeIs(TYP_INT));
-
-                    GenTree* compare = rootNode->gtGetOp1();
-                    compare->gtFlags |= (GTF_RELOP_JMP_USED | GTF_DONT_CSE);
-                    rootNode->ChangeOper(GT_JTRUE);
-                    rootNode->ChangeType(TYP_VOID);
-
-                    GenTree* retTrue  = gtNewOperNode(GT_RETURN, TYP_INT, gtNewTrue());
-                    GenTree* retFalse = gtNewOperNode(GT_RETURN, TYP_INT, gtNewFalse());
-
-                    // Create RETURN 1/0 blocks. We expect fgHeadTailMerge to handle them if there are similar returns.
-                    DebugInfo   dbgInfo    = block->lastStmt()->GetDebugInfo();
-                    BasicBlock* retTrueBb  = fgNewBBFromTreeAfter(BBJ_RETURN, block, retTrue, dbgInfo);
-                    BasicBlock* retFalseBb = fgNewBBFromTreeAfter(BBJ_RETURN, block, retFalse, dbgInfo);
-
-                    FlowEdge* trueEdge  = fgAddRefPred(retTrueBb, block);
-                    FlowEdge* falseEdge = fgAddRefPred(retFalseBb, block);
-                    block->SetCond(trueEdge, falseEdge);
-
-                    // We might want to instrument 'return <cond>' too in the future. For now apply 50%/50%.
-                    trueEdge->setLikelihood(0.5);
-                    falseEdge->setLikelihood(0.5);
-                    retTrueBb->inheritWeightPercentage(block, 50);
-                    retFalseBb->inheritWeightPercentage(block, 50);
-
-                    change   = true;
-                    modified = true;
-                    bNext    = block->Next();
-                }
+                change   = true;
+                modified = true;
+                bNext    = block->Next();
             }
-#endif
 
             if (block->KindIs(BBJ_ALWAYS))
             {
