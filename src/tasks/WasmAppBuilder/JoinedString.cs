@@ -99,9 +99,9 @@ internal sealed class JoinedStringStreamWriter : StreamWriter
 
     // since we are intentionally using multi-line string writes,
     // we want to capture the compile-time new line
-    private string CompileTimeNewLine = """
-
-                                        """;
+    private string CompileTimeNewLine =
+@"
+";
 
     public JoinedStringStreamWriter(Stream stream) : base(stream)
     {
