@@ -348,25 +348,11 @@ uint32_t interceptor_ICJI::getClassAttribs(
     return original_ICorJitInfo->getClassAttribs(cls);
 }
 
-CORINFO_MODULE_HANDLE interceptor_ICJI::getClassModule(
+const char* interceptor_ICJI::getClassAssemblyName(
           CORINFO_CLASS_HANDLE cls)
 {
-    mcs->AddCall("getClassModule");
-    return original_ICorJitInfo->getClassModule(cls);
-}
-
-CORINFO_ASSEMBLY_HANDLE interceptor_ICJI::getModuleAssembly(
-          CORINFO_MODULE_HANDLE mod)
-{
-    mcs->AddCall("getModuleAssembly");
-    return original_ICorJitInfo->getModuleAssembly(mod);
-}
-
-const char* interceptor_ICJI::getAssemblyName(
-          CORINFO_ASSEMBLY_HANDLE assem)
-{
-    mcs->AddCall("getAssemblyName");
-    return original_ICorJitInfo->getAssemblyName(assem);
+    mcs->AddCall("getClassAssemblyName");
+    return original_ICorJitInfo->getClassAssemblyName(cls);
 }
 
 void* interceptor_ICJI::LongLifetimeMalloc(

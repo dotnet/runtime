@@ -8337,6 +8337,8 @@ public:
     void        eePrintObjectDescription(const char* prefix, CORINFO_OBJECT_HANDLE handle);
     const char* eeGetShortClassName(CORINFO_CLASS_HANDLE clsHnd);
 
+    const char* eeGetClassAssemblyName(CORINFO_CLASS_HANDLE clsHnd);
+
 #if defined(DEBUG)
     unsigned eeTryGetClassSize(CORINFO_CLASS_HANDLE clsHnd);
 #endif

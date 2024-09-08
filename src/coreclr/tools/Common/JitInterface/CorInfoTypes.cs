@@ -52,10 +52,6 @@ namespace Internal.JitInterface
     {
     }
 
-    public struct CORINFO_ASSEMBLY_STRUCT_
-    {
-    }
-
     public struct CORINFO_CONTEXT_STRUCT
     {
     }
