@@ -519,7 +519,7 @@ export function mono_interp_flush_jitcall_queue (): void {
                 ;
             }
 
-            const buf = builder.getArrayView();
+            const buf = builder.getArrayView(false, true);
             for (let i = 0; i < buf.length; i++) {
                 const b = buf[i];
                 if (b < 0x10)

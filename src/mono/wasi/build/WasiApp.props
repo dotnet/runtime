@@ -5,7 +5,7 @@
     <TargetArchitecture>wasm</TargetArchitecture>
     <TargetOS>wasi</TargetOS>
     <RuntimeIdentifier>wasi-wasm</RuntimeIdentifier>
-    <TrimMode Condition="'$(TrimMode)' == ''">partial</TrimMode>
+    <TrimMode Condition="'$(TrimMode)' == ''">full</TrimMode>
     <WasmIsWorkloadAvailable Condition="'$(WasiNativeWorkload)' == 'true'">true</WasmIsWorkloadAvailable>
   </PropertyGroup>
 

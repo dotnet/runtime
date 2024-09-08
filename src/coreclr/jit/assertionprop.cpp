@@ -291,7 +291,8 @@ bool IntegralRange::Contains(int64_t value) const
                 case NI_LZCNT_X64_LeadingZeroCount:
                 case NI_POPCNT_PopCount:
                 case NI_POPCNT_X64_PopCount:
-                    // TODO-Casts: specify more precise ranges once "IntegralRange" supports them.
+                    // Note: No advantage in using a precise range for IntegralRange.
+                    // Example: IntCns = 42 gives [0..127] with a non -precise range, [42,42] with a precise range.
                     return {SymbolicIntegerValue::Zero, SymbolicIntegerValue::ByteMax};
 #elif defined(TARGET_ARM64)
                 case NI_Vector64_op_Equality:
@@ -317,7 +318,8 @@ bool IntegralRange::Contains(int64_t value) const
                 case NI_ArmBase_LeadingZeroCount:
                 case NI_ArmBase_Arm64_LeadingZeroCount:
                 case NI_ArmBase_Arm64_LeadingSignCount:
-                    // TODO-Casts: specify more precise ranges once "IntegralRange" supports them.
+                    // Note: No advantage in using a precise range for IntegralRange.
+                    // Example: IntCns = 42 gives [0..127] with a non -precise range, [42,42] with a precise range.
                     return {SymbolicIntegerValue::Zero, SymbolicIntegerValue::ByteMax};
 #else
 #error Unsupported platform
@@ -6481,9 +6483,6 @@ Compiler::fgWalkResult Compiler::optVNBasedFoldCurStmt(BasicBlock* block,
         // Not propagated, keep going.
         return WALK_CONTINUE;
     }
-
-    // TODO https://github.com/dotnet/runtime/issues/10450:
-    // at that moment stmt could be already removed from the stmt list.
 
     optAssertionProp_Update(newTree, tree, stmt);
 

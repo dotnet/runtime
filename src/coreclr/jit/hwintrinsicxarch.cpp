@@ -2338,16 +2338,19 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                     }
                 }
 
-                if (varTypeIsLong(simdBaseType) && !impStackTop(0).val->OperIsConst())
+                if (varTypeIsLong(simdBaseType))
                 {
-                    // When op2 is a constant, we can skip the multiplication allowing us to always
-                    // generate better code. However, if it isn't then we need to fallback in the
-                    // cases where multiplication isn't supported.
-
-                    if ((simdSize != 64) && !canUseEvexEncoding())
+                    if (!impStackTop(0).val->OperIsConst())
                     {
-                        // TODO-XARCH-CQ: We should support long/ulong multiplication
-                        break;
+                        // When op2 is a constant, we can skip the multiplication allowing us to always
+                        // generate better code. However, if it isn't then we need to fallback in the
+                        // cases where multiplication isn't supported.
+
+                        if ((simdSize != 64) && !canUseEvexEncoding())
+                        {
+                            // TODO-XARCH-CQ: We should support long/ulong multiplication
+                            break;
+                        }
                     }
 
 #if defined(TARGET_X86)

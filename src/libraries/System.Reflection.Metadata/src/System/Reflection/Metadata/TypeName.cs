@@ -301,24 +301,28 @@ namespace System.Reflection.Metadata
         /// </remarks>
         public int GetNodeCount()
         {
+            // This method uses checked arithmetic to avoid silent overflows.
+            // It's impossible to parse a TypeName with NodeCount > int.MaxValue
+            // (TypeNameParseOptions.MaxNodes is an int), but it's possible
+            // to create such names with the Make* APIs.
             int result = 1;
 
-            if (IsNested)
+            if (IsArray || IsPointer || IsByRef)
             {
-                result += DeclaringType.GetNodeCount();
+                result = checked(result + GetElementType().GetNodeCount());
             }
             else if (IsConstructedGenericType)
             {
-                result++;
-            }
-            else if (IsArray || IsPointer || IsByRef)
-            {
-                result += GetElementType().GetNodeCount();
-            }
+                result = checked(result + GetGenericTypeDefinition().GetNodeCount());
 
-            foreach (TypeName genericArgument in GetGenericArguments())
+                foreach (TypeName genericArgument in GetGenericArguments())
+                {
+                    result = checked(result + genericArgument.GetNodeCount());
+                }
+            }
+            else if (IsNested)
             {
-                result += genericArgument.GetNodeCount();
+                result = checked(result + DeclaringType.GetNodeCount());
             }
 
             return result;

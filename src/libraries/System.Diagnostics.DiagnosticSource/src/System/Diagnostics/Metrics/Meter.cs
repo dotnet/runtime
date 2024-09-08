@@ -4,6 +4,7 @@
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Threading;
 
 namespace System.Diagnostics.Metrics
@@ -20,6 +21,7 @@ namespace System.Diagnostics.Metrics
 
         internal bool Disposed { get; private set; }
 
+        [FeatureSwitchDefinition("System.Diagnostics.Metrics.Meter.IsSupported")]
         internal static bool IsSupported { get; } = InitializeIsSupported();
 
         private static bool InitializeIsSupported() =>

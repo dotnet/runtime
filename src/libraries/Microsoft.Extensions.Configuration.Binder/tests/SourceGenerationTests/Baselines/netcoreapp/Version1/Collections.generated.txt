@@ -142,6 +142,10 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 BindCore(section1, ref temp3, defaultValueIfNotFound: false, binderOptions);
                 instance.CustomDictionary = temp3;
             }
+            else
+            {
+                instance.CustomDictionary = instance.CustomDictionary;
+            }
 
             if (AsConfigWithChildren(configuration.GetSection("CustomList")) is IConfigurationSection section4)
             {
@@ -149,6 +153,10 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 temp6 ??= new global::Program.CustomList();
                 BindCore(section4, ref temp6, defaultValueIfNotFound: false, binderOptions);
                 instance.CustomList = temp6;
+            }
+            else
+            {
+                instance.CustomList = instance.CustomList;
             }
 
             if (AsConfigWithChildren(configuration.GetSection("IReadOnlyList")) is IConfigurationSection section7)
@@ -158,6 +166,10 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 BindCore(section7, ref temp9, defaultValueIfNotFound: false, binderOptions);
                 instance.IReadOnlyList = temp9;
             }
+            else
+            {
+                instance.IReadOnlyList = instance.IReadOnlyList;
+            }
 
             if (AsConfigWithChildren(configuration.GetSection("IReadOnlyDictionary")) is IConfigurationSection section10)
             {
@@ -165,6 +177,10 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 temp12 = temp12 is null ? (global::System.Collections.Generic.IReadOnlyDictionary<string, int>)new Dictionary<string, int>() : (global::System.Collections.Generic.IReadOnlyDictionary<string, int>)temp12.ToDictionary(pair => pair.Key, pair => pair.Value);
                 BindCore(section10, ref temp12, defaultValueIfNotFound: false, binderOptions);
                 instance.IReadOnlyDictionary = temp12;
+            }
+            else
+            {
+                instance.IReadOnlyDictionary = instance.IReadOnlyDictionary;
             }
 
             if (AsConfigWithChildren(configuration.GetSection("CollectionStructExplicit")) is IConfigurationSection section13)
@@ -174,6 +190,10 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 BindCore(section13, ref temp15, defaultValueIfNotFound: false, binderOptions);
                 instance.CollectionStructExplicit = temp15;
                 temp14 = temp15;
+            }
+            else
+            {
+                instance.CollectionStructExplicit = instance.CollectionStructExplicit;
             }
         }
 
