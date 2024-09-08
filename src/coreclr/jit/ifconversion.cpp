@@ -715,8 +715,7 @@ bool OptIfConversionDsc::optIfConvert()
         else if (selectTrueInput->IsIntegralConst(0) && selectFalseInput->IsIntegralConst(1))
         {
             // compare ? false : true  -->  reversed_compare
-            select         = m_cond;
-            select->gtOper = GenTree::ReverseRelop(select->OperGet());
+            select = m_comp->gtReverseCond(m_cond);
         }
     }
 
