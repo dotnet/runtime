@@ -1516,273 +1516,6 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
 }
 
 //------------------------------------------------------------------------
-//  BuildConsecutiveRegistersForUse: Build ref position(s) for `treeNode` that has a
-//  requirement of allocating consecutive registers. It will create the RefTypeUse
-//  RefPositions for as many consecutive registers are needed for `treeNode` and in
-//  between, it might contain RefTypeUpperVectorRestore RefPositions.
-//
-//  For the first RefPosition of the series, it sets the `regCount` field equal to
-//  the number of subsequent RefPositions (including the first one) involved for this
-//  treeNode. For the subsequent RefPositions, it sets the `regCount` to 0. For all
-//  the RefPositions created, it sets the `needsConsecutive` flag so it can be used to
-//  identify these RefPositions during allocation.
-//
-//  It also populates a `RefPositionMap` to access the subsequent RefPositions from
-//  a given RefPosition. This was preferred rather than adding a field in RefPosition
-//  for this purpose.
-//
-// Arguments:
-//    treeNode       - The GT_HWINTRINSIC node of interest
-//    rmwNode        - Read-modify-write node.
-//
-// Return Value:
-//    The number of sources consumed by this node.
-//
-int LinearScan::BuildConsecutiveRegistersForUse(GenTree* treeNode, GenTree* rmwNode)
-{
-    int       srcCount     = 0;
-    Interval* rmwInterval  = nullptr;
-    bool      rmwIsLastUse = false;
-    if (rmwNode != nullptr)
-    {
-        if (isCandidateLocalRef(rmwNode))
-        {
-            rmwInterval  = getIntervalForLocalVarNode(rmwNode->AsLclVar());
-            rmwIsLastUse = rmwNode->AsLclVar()->IsLastUse(0);
-        }
-    }
-    if (treeNode->OperIsFieldList())
-    {
-        assert(compiler->info.compNeedsConsecutiveRegisters);
-
-        unsigned     regCount    = 0;
-        RefPosition* firstRefPos = nullptr;
-        RefPosition* currRefPos  = nullptr;
-        RefPosition* lastRefPos  = nullptr;
-
-        NextConsecutiveRefPositionsMap* refPositionMap = getNextConsecutiveRefPositionsMap();
-        for (GenTreeFieldList::Use& use : treeNode->AsFieldList()->Uses())
-        {
-            RefPosition*        restoreRefPos = nullptr;
-            RefPositionIterator prevRefPos    = refPositions.backPosition();
-
-            currRefPos = BuildUse(use.GetNode(), RBM_NONE, 0);
-
-            // Check if restore RefPositions were created
-            RefPositionIterator tailRefPos = refPositions.backPosition();
-            assert(tailRefPos == currRefPos);
-            prevRefPos++;
-            if (prevRefPos != tailRefPos)
-            {
-                restoreRefPos = prevRefPos;
-                assert(restoreRefPos->refType == RefTypeUpperVectorRestore);
-            }
-
-            currRefPos->needsConsecutive = true;
-            currRefPos->regCount         = 0;
-#if FEATURE_PARTIAL_SIMD_CALLEE_SAVE
-            if (restoreRefPos != nullptr)
-            {
-                // If there was a restoreRefPosition created, make sure to link it
-                // as well so during register assignment, we could visit it and
-                // make sure that it doesn't get assigned one of register that is part
-                // of consecutive registers we are allocating for this treeNode.
-                // See assignConsecutiveRegisters().
-                restoreRefPos->needsConsecutive = true;
-                restoreRefPos->regCount         = 0;
-                if (firstRefPos == nullptr)
-                {
-                    // Always set the non UpperVectorRestore as the firstRefPos.
-                    // UpperVectorRestore can be assigned to a different independent
-                    // register.
-                    // See TODO-CQ in assignConsecutiveRegisters().
-                    firstRefPos = currRefPos;
-                }
-                refPositionMap->Set(lastRefPos, restoreRefPos, LinearScan::NextConsecutiveRefPositionsMap::Overwrite);
-                refPositionMap->Set(restoreRefPos, currRefPos, LinearScan::NextConsecutiveRefPositionsMap::Overwrite);
-
-                if (rmwNode != nullptr)
-                {
-                    // If we have rmwNode, determine if the restoreRefPos should be set to delay-free.
-                    if ((restoreRefPos->getInterval() != rmwInterval) || (!rmwIsLastUse && !restoreRefPos->lastUse))
-                    {
-                        setDelayFree(restoreRefPos);
-                    }
-                }
-            }
-            else
-#endif // FEATURE_PARTIAL_SIMD_CALLEE_SAVE
-            {
-                if (firstRefPos == nullptr)
-                {
-                    firstRefPos = currRefPos;
-                }
-                refPositionMap->Set(lastRefPos, currRefPos, LinearScan::NextConsecutiveRefPositionsMap::Overwrite);
-            }
-
-            refPositionMap->Set(currRefPos, nullptr);
-
-            lastRefPos = currRefPos;
-            regCount++;
-            if (rmwNode != nullptr)
-            {
-                // If we have rmwNode, determine if the currRefPos should be set to delay-free.
-                if ((currRefPos->getInterval() != rmwInterval) || (!rmwIsLastUse && !currRefPos->lastUse))
-                {
-                    setDelayFree(currRefPos);
-                }
-            }
-        }
-
-        // Set `regCount` to actual consecutive registers count for first ref-position.
-        // For others, set 0 so we can identify that this is non-first RefPosition.
-        firstRefPos->regCount = regCount;
-
-#ifdef DEBUG
-        // Set the minimum register candidates needed for stress to work.
-        currRefPos = firstRefPos;
-        while (currRefPos != nullptr)
-        {
-            currRefPos->minRegCandidateCount = regCount;
-            currRefPos                       = getNextConsecutiveRefPosition(currRefPos);
-        }
-#endif
-        srcCount += regCount;
-    }
-    else
-    {
-        RefPositionIterator refPositionMark   = refPositions.backPosition();
-        int                 refPositionsAdded = BuildOperandUses(treeNode);
-
-        if (rmwNode != nullptr)
-        {
-            // Check all the newly created RefPositions for delay free
-            RefPositionIterator iter = refPositionMark;
-
-            for (iter++; iter != refPositions.end(); iter++)
-            {
-                RefPosition* refPositionAdded = &(*iter);
-
-                // If we have rmwNode, determine if the refPositionAdded should be set to delay-free.
-                if ((refPositionAdded->getInterval() != rmwInterval) || (!rmwIsLastUse && !refPositionAdded->lastUse))
-                {
-                    setDelayFree(refPositionAdded);
-                }
-            }
-        }
-
-        srcCount += refPositionsAdded;
-    }
-
-    return srcCount;
-}
-
-//------------------------------------------------------------------------
-//  BuildConsecutiveRegistersForDef: Build RefTypeDef ref position(s) for
-//  `treeNode` that produces `registerCount` consecutive registers.
-//
-//  For the first RefPosition of the series, it sets the `regCount` field equal to
-//  the total number of RefPositions (including the first one) involved for this
-//  treeNode. For the subsequent RefPositions, it sets the `regCount` to 0. For all
-//  the RefPositions created, it sets the `needsConsecutive` flag so it can be used to
-//  identify these RefPositions during allocation.
-//
-//  It also populates a `RefPositionMap` to access the subsequent RefPositions from
-//  a given RefPosition. This was preferred rather than adding a field in RefPosition
-//  for this purpose.
-//
-// Arguments:
-//    treeNode       - The GT_HWINTRINSIC node of interest
-//    registerCount  - Number of registers the treeNode produces
-//
-void LinearScan::BuildConsecutiveRegistersForDef(GenTree* treeNode, int registerCount)
-{
-    assert(registerCount > 1);
-    assert(compiler->info.compNeedsConsecutiveRegisters);
-
-    RefPosition* currRefPos = nullptr;
-    RefPosition* lastRefPos = nullptr;
-
-    NextConsecutiveRefPositionsMap* refPositionMap = getNextConsecutiveRefPositionsMap();
-    for (int fieldIdx = 0; fieldIdx < registerCount; fieldIdx++)
-    {
-        currRefPos                   = BuildDef(treeNode, RBM_NONE, fieldIdx);
-        currRefPos->needsConsecutive = true;
-        currRefPos->regCount         = 0;
-#ifdef DEBUG
-        // Set the minimum register candidates needed for stress to work.
-        currRefPos->minRegCandidateCount = registerCount;
-#endif
-        if (fieldIdx == 0)
-        {
-            // Set `regCount` to actual consecutive registers count for first ref-position.
-            // For others, set 0 so we can identify that this is non-first RefPosition.
-
-            currRefPos->regCount = registerCount;
-        }
-
-        refPositionMap->Set(lastRefPos, currRefPos, LinearScan::NextConsecutiveRefPositionsMap::Overwrite);
-        refPositionMap->Set(currRefPos, nullptr);
-
-        lastRefPos = currRefPos;
-    }
-}
-
-#ifdef DEBUG
-//------------------------------------------------------------------------
-// isLiveAtConsecutiveRegistersLoc: Check if the refPosition is live at the location
-//    where consecutive registers are needed. This is used during JitStressRegs to
-//    not constrain the register requirements for such refpositions, because a lot
-//    of registers will be busy. For RefTypeUse, it will just see if the nodeLocation
-//    matches with the tracking `consecutiveRegistersLocation`. For Def, it will check
-//    the underlying `GenTree*` to see if the tree that produced it had consecutive
-//    registers requirement.
-//
-//
-// Arguments:
-//    consecutiveRegistersLocation - The most recent location where consecutive
-//     registers were needed.
-//
-// Returns: If the refposition is live at same location which has the requirement of
-//    consecutive registers.
-//
-bool RefPosition::isLiveAtConsecutiveRegistersLoc(LsraLocation consecutiveRegistersLocation)
-{
-    if (needsConsecutive)
-    {
-        return true;
-    }
-
-    bool atConsecutiveRegsLoc          = consecutiveRegistersLocation == nodeLocation;
-    bool treeNeedsConsecutiveRegisters = false;
-
-    if ((treeNode != nullptr) && treeNode->OperIsHWIntrinsic())
-    {
-        const HWIntrinsic intrin(treeNode->AsHWIntrinsic());
-        treeNeedsConsecutiveRegisters = HWIntrinsicInfo::NeedsConsecutiveRegisters(intrin.id);
-    }
-
-    if (refType == RefTypeDef)
-    {
-        return treeNeedsConsecutiveRegisters;
-    }
-    else if (refType == RefTypeUse)
-    {
-        if (isIntervalRef() && getInterval()->isInternal)
-        {
-            return treeNeedsConsecutiveRegisters;
-        }
-        return atConsecutiveRegsLoc;
-    }
-    else if (refType == RefTypeUpperVectorRestore)
-    {
-        return atConsecutiveRegsLoc;
-    }
-    return false;
-}
-#endif // DEBUG
-
-//------------------------------------------------------------------------
 // BuildHWIntrinsicImmediate: Build immediate values
 //
 // Arguments:
@@ -2070,6 +1803,273 @@ int LinearScan::BuildEmbeddedOperandUses(GenTreeHWIntrinsic* embeddedOpNode, Gen
 
     return srcCount;
 }
+
+//------------------------------------------------------------------------
+//  BuildConsecutiveRegistersForUse: Build ref position(s) for `treeNode` that has a
+//  requirement of allocating consecutive registers. It will create the RefTypeUse
+//  RefPositions for as many consecutive registers are needed for `treeNode` and in
+//  between, it might contain RefTypeUpperVectorRestore RefPositions.
+//
+//  For the first RefPosition of the series, it sets the `regCount` field equal to
+//  the number of subsequent RefPositions (including the first one) involved for this
+//  treeNode. For the subsequent RefPositions, it sets the `regCount` to 0. For all
+//  the RefPositions created, it sets the `needsConsecutive` flag so it can be used to
+//  identify these RefPositions during allocation.
+//
+//  It also populates a `RefPositionMap` to access the subsequent RefPositions from
+//  a given RefPosition. This was preferred rather than adding a field in RefPosition
+//  for this purpose.
+//
+// Arguments:
+//    treeNode       - The GT_HWINTRINSIC node of interest
+//    rmwNode        - Read-modify-write node.
+//
+// Return Value:
+//    The number of sources consumed by this node.
+//
+int LinearScan::BuildConsecutiveRegistersForUse(GenTree* treeNode, GenTree* rmwNode)
+{
+    int       srcCount     = 0;
+    Interval* rmwInterval  = nullptr;
+    bool      rmwIsLastUse = false;
+    if (rmwNode != nullptr)
+    {
+        if (isCandidateLocalRef(rmwNode))
+        {
+            rmwInterval  = getIntervalForLocalVarNode(rmwNode->AsLclVar());
+            rmwIsLastUse = rmwNode->AsLclVar()->IsLastUse(0);
+        }
+    }
+    if (treeNode->OperIsFieldList())
+    {
+        assert(compiler->info.compNeedsConsecutiveRegisters);
+
+        unsigned     regCount    = 0;
+        RefPosition* firstRefPos = nullptr;
+        RefPosition* currRefPos  = nullptr;
+        RefPosition* lastRefPos  = nullptr;
+
+        NextConsecutiveRefPositionsMap* refPositionMap = getNextConsecutiveRefPositionsMap();
+        for (GenTreeFieldList::Use& use : treeNode->AsFieldList()->Uses())
+        {
+            RefPosition*        restoreRefPos = nullptr;
+            RefPositionIterator prevRefPos    = refPositions.backPosition();
+
+            currRefPos = BuildUse(use.GetNode(), RBM_NONE, 0);
+
+            // Check if restore RefPositions were created
+            RefPositionIterator tailRefPos = refPositions.backPosition();
+            assert(tailRefPos == currRefPos);
+            prevRefPos++;
+            if (prevRefPos != tailRefPos)
+            {
+                restoreRefPos = prevRefPos;
+                assert(restoreRefPos->refType == RefTypeUpperVectorRestore);
+            }
+
+            currRefPos->needsConsecutive = true;
+            currRefPos->regCount         = 0;
+#if FEATURE_PARTIAL_SIMD_CALLEE_SAVE
+            if (restoreRefPos != nullptr)
+            {
+                // If there was a restoreRefPosition created, make sure to link it
+                // as well so during register assignment, we could visit it and
+                // make sure that it doesn't get assigned one of register that is part
+                // of consecutive registers we are allocating for this treeNode.
+                // See assignConsecutiveRegisters().
+                restoreRefPos->needsConsecutive = true;
+                restoreRefPos->regCount         = 0;
+                if (firstRefPos == nullptr)
+                {
+                    // Always set the non UpperVectorRestore as the firstRefPos.
+                    // UpperVectorRestore can be assigned to a different independent
+                    // register.
+                    // See TODO-CQ in assignConsecutiveRegisters().
+                    firstRefPos = currRefPos;
+                }
+                refPositionMap->Set(lastRefPos, restoreRefPos, LinearScan::NextConsecutiveRefPositionsMap::Overwrite);
+                refPositionMap->Set(restoreRefPos, currRefPos, LinearScan::NextConsecutiveRefPositionsMap::Overwrite);
+
+                if (rmwNode != nullptr)
+                {
+                    // If we have rmwNode, determine if the restoreRefPos should be set to delay-free.
+                    if ((restoreRefPos->getInterval() != rmwInterval) || (!rmwIsLastUse && !restoreRefPos->lastUse))
+                    {
+                        setDelayFree(restoreRefPos);
+                    }
+                }
+            }
+            else
+#endif // FEATURE_PARTIAL_SIMD_CALLEE_SAVE
+            {
+                if (firstRefPos == nullptr)
+                {
+                    firstRefPos = currRefPos;
+                }
+                refPositionMap->Set(lastRefPos, currRefPos, LinearScan::NextConsecutiveRefPositionsMap::Overwrite);
+            }
+
+            refPositionMap->Set(currRefPos, nullptr);
+
+            lastRefPos = currRefPos;
+            regCount++;
+            if (rmwNode != nullptr)
+            {
+                // If we have rmwNode, determine if the currRefPos should be set to delay-free.
+                if ((currRefPos->getInterval() != rmwInterval) || (!rmwIsLastUse && !currRefPos->lastUse))
+                {
+                    setDelayFree(currRefPos);
+                }
+            }
+        }
+
+        // Set `regCount` to actual consecutive registers count for first ref-position.
+        // For others, set 0 so we can identify that this is non-first RefPosition.
+        firstRefPos->regCount = regCount;
+
+#ifdef DEBUG
+        // Set the minimum register candidates needed for stress to work.
+        currRefPos = firstRefPos;
+        while (currRefPos != nullptr)
+        {
+            currRefPos->minRegCandidateCount = regCount;
+            currRefPos                       = getNextConsecutiveRefPosition(currRefPos);
+        }
+#endif
+        srcCount += regCount;
+    }
+    else
+    {
+        RefPositionIterator refPositionMark   = refPositions.backPosition();
+        int                 refPositionsAdded = BuildOperandUses(treeNode);
+
+        if (rmwNode != nullptr)
+        {
+            // Check all the newly created RefPositions for delay free
+            RefPositionIterator iter = refPositionMark;
+
+            for (iter++; iter != refPositions.end(); iter++)
+            {
+                RefPosition* refPositionAdded = &(*iter);
+
+                // If we have rmwNode, determine if the refPositionAdded should be set to delay-free.
+                if ((refPositionAdded->getInterval() != rmwInterval) || (!rmwIsLastUse && !refPositionAdded->lastUse))
+                {
+                    setDelayFree(refPositionAdded);
+                }
+            }
+        }
+
+        srcCount += refPositionsAdded;
+    }
+
+    return srcCount;
+}
+
+//------------------------------------------------------------------------
+//  BuildConsecutiveRegistersForDef: Build RefTypeDef ref position(s) for
+//  `treeNode` that produces `registerCount` consecutive registers.
+//
+//  For the first RefPosition of the series, it sets the `regCount` field equal to
+//  the total number of RefPositions (including the first one) involved for this
+//  treeNode. For the subsequent RefPositions, it sets the `regCount` to 0. For all
+//  the RefPositions created, it sets the `needsConsecutive` flag so it can be used to
+//  identify these RefPositions during allocation.
+//
+//  It also populates a `RefPositionMap` to access the subsequent RefPositions from
+//  a given RefPosition. This was preferred rather than adding a field in RefPosition
+//  for this purpose.
+//
+// Arguments:
+//    treeNode       - The GT_HWINTRINSIC node of interest
+//    registerCount  - Number of registers the treeNode produces
+//
+void LinearScan::BuildConsecutiveRegistersForDef(GenTree* treeNode, int registerCount)
+{
+    assert(registerCount > 1);
+    assert(compiler->info.compNeedsConsecutiveRegisters);
+
+    RefPosition* currRefPos = nullptr;
+    RefPosition* lastRefPos = nullptr;
+
+    NextConsecutiveRefPositionsMap* refPositionMap = getNextConsecutiveRefPositionsMap();
+    for (int fieldIdx = 0; fieldIdx < registerCount; fieldIdx++)
+    {
+        currRefPos                   = BuildDef(treeNode, RBM_NONE, fieldIdx);
+        currRefPos->needsConsecutive = true;
+        currRefPos->regCount         = 0;
+#ifdef DEBUG
+        // Set the minimum register candidates needed for stress to work.
+        currRefPos->minRegCandidateCount = registerCount;
+#endif
+        if (fieldIdx == 0)
+        {
+            // Set `regCount` to actual consecutive registers count for first ref-position.
+            // For others, set 0 so we can identify that this is non-first RefPosition.
+
+            currRefPos->regCount = registerCount;
+        }
+
+        refPositionMap->Set(lastRefPos, currRefPos, LinearScan::NextConsecutiveRefPositionsMap::Overwrite);
+        refPositionMap->Set(currRefPos, nullptr);
+
+        lastRefPos = currRefPos;
+    }
+}
+
+#ifdef DEBUG
+//------------------------------------------------------------------------
+// isLiveAtConsecutiveRegistersLoc: Check if the refPosition is live at the location
+//    where consecutive registers are needed. This is used during JitStressRegs to
+//    not constrain the register requirements for such refpositions, because a lot
+//    of registers will be busy. For RefTypeUse, it will just see if the nodeLocation
+//    matches with the tracking `consecutiveRegistersLocation`. For Def, it will check
+//    the underlying `GenTree*` to see if the tree that produced it had consecutive
+//    registers requirement.
+//
+//
+// Arguments:
+//    consecutiveRegistersLocation - The most recent location where consecutive
+//     registers were needed.
+//
+// Returns: If the refposition is live at same location which has the requirement of
+//    consecutive registers.
+//
+bool RefPosition::isLiveAtConsecutiveRegistersLoc(LsraLocation consecutiveRegistersLocation)
+{
+    if (needsConsecutive)
+    {
+        return true;
+    }
+
+    bool atConsecutiveRegsLoc          = consecutiveRegistersLocation == nodeLocation;
+    bool treeNeedsConsecutiveRegisters = false;
+
+    if ((treeNode != nullptr) && treeNode->OperIsHWIntrinsic())
+    {
+        const HWIntrinsic intrin(treeNode->AsHWIntrinsic());
+        treeNeedsConsecutiveRegisters = HWIntrinsicInfo::NeedsConsecutiveRegisters(intrin.id);
+    }
+
+    if (refType == RefTypeDef)
+    {
+        return treeNeedsConsecutiveRegisters;
+    }
+    else if (refType == RefTypeUse)
+    {
+        if (isIntervalRef() && getInterval()->isInternal)
+        {
+            return treeNeedsConsecutiveRegisters;
+        }
+        return atConsecutiveRegsLoc;
+    }
+    else if (refType == RefTypeUpperVectorRestore)
+    {
+        return atConsecutiveRegsLoc;
+    }
+    return false;
+}
+#endif // DEBUG
 
 //------------------------------------------------------------------------
 // getOperandCandidates: Get the register candidates for a given operand number
