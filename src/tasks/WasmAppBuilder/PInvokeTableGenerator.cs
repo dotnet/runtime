@@ -288,8 +288,11 @@ internal sealed class PInvokeTableGenerator
             """;
     }
 
-    private static string EscapeLiteral(string input)
+    private static string? EscapeLiteral(string? input)
     {
+        if (input == null)
+            return null;
+
         StringBuilder sb = new StringBuilder();
 
         for (int i = 0; i < input.Length; i++)
@@ -326,14 +329,12 @@ internal sealed class PInvokeTableGenerator
         // of the delegate invoke in the [MonoPInvokeCallback]
         // or [UnmanagedCallersOnly] attribute.
         // Only blittable parameter/return types are supposed.
-
         w.Write(
             $$"""
 
             InterpFtnDesc wasm_native_to_interp_ftndescs[{{callbacks.Count}}] = {};
 
             """);
-
 
         var callbackNames = new HashSet<string>();
         var keys = new HashSet<string>();

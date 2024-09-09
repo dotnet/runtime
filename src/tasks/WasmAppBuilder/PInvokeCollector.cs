@@ -227,7 +227,7 @@ internal sealed class PInvokeCallback
         Method = method;
         TypeName = method.DeclaringType!.Name!;
         AssemblyName = method.DeclaringType!.Module!.Assembly!.GetName()!.Name!;
-        Namespace = method.DeclaringType!.Namespace!;
+        Namespace = method.DeclaringType!.Namespace;
         MethodName = method.Name!;
         ReturnType = method.ReturnType!;
         IsVoid = ReturnType.Name == "Void";
@@ -268,7 +268,7 @@ internal sealed class PInvokeCallback
     public string? EntrySymbol { get; set; }
     public string AssemblyName { get; }
     public string TypeName { get; }
-    public string Namespace { get;}
+    public string? Namespace { get;}
     public string MethodName { get; }
     public Type ReturnType { get;}
     public bool IsExport { get; }
