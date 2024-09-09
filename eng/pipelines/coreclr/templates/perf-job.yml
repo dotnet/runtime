@@ -30,6 +30,7 @@ parameters:
   onlySanityCheck: false
   downloadSpecificBuild: null # buildId, pipeline, branchName, project
   crossBuild: false
+  perfBranch: 'refs/heads/main'
 
 ### Perf job
 
@@ -172,8 +173,16 @@ jobs:
     - task: DeleteFiles@1
       inputs:
         SourceFolder: $(Build.SourcesDirectory)/dotnet-runtime
-    - checkout: PerformanceRepo
-      path: performance
+    - ${{ if eq(variables['System.TeamProject'], 'public') }}:
+      - script: |
+          set -x
+          pwd
+          git clone https://github.com/dotnet/performance.git --depth 1 -b ${{ parameters.perfBranch }} --single-branch
+        displayName:  Clone performance
+        workingDirectory: $(Build.SourcesDirectory)
+    - ${{ if ne(variables['System.TeamProject'], 'public') }}:
+      - checkout: git://internal/dotnet-performance@${{ parameters.perfBranch }}
+        path: performance
     # Extra steps that will be passed to the performance template and run before sending the job to helix (all of which is done in the template)
     - script: |
         $(Build.SourcesDirectory)/eng/common/msbuild.sh $(Build.SourcesDirectory)/eng/testing/performance/add_properties_to_pipeline.proj /t:SetVariables

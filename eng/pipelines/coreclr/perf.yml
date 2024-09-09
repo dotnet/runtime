@@ -1,5 +1,5 @@
 parameters:
-- name: performanceRepoBranch
+- name: perfBranch
   displayName: Performance Repo Branch
   type: string
   default: 'refs/heads/main'
@@ -26,21 +26,6 @@ trigger:
 
 variables:
 - template: /eng/pipelines/common/variables.yml
-
-resources:
-  repositories:
-  - ${{ if eq(variables['System.TeamProject'], 'public') }}:
-    - repository: PerformanceRepo
-      ref: '${{ parameters.performanceRepoBranch }}'
-      type: github
-      name: dotnet/performance
-      endpoint: public
-  - ${{ if ne(variables['System.TeamProject'], 'public') }}:
-    - repository: PerformanceRepo
-      ref: '${{ parameters.performanceRepoBranch }}'
-      type: git
-      name: dotnet-performance
-
 
 #
 # For the 'schedule' case, only wasm/jsc perf jobs are run.
@@ -73,3 +58,5 @@ extends:
             runProfile: 'v8'
 
       - template: /eng/pipelines/coreclr/perf-non-wasm-jobs.yml
+        parameters:
+          perfBranch: ${{ parameters.perfBranch }}

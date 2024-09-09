@@ -5,7 +5,7 @@ parameters:
 - name: runScheduledJobs
   type: boolean
   default: false
-- name: performanceRepoBranch
+- name: perfBranch
   displayName: Performance Repo Branch
   type: string
   default: 'refs/heads/main'
@@ -31,20 +31,6 @@ trigger:
 
 variables:
   - template: /eng/pipelines/common/variables.yml
-
-resources:
-  repositories:
-  - ${{ if eq(variables['System.TeamProject'], 'public') }}:
-    - repository: PerformanceRepo
-      ref: '${{ parameters.performanceRepoBranch }}'
-      type: github
-      name: dotnet/performance
-      endpoint: public
-  - ${{ if ne(variables['System.TeamProject'], 'public') }}:
-    - repository: PerformanceRepo
-      ref: '${{ parameters.performanceRepoBranch }}'
-      type: git
-      name: dotnet-performance
 
 schedules:
 - cron: "30 2 * * *"
@@ -103,6 +89,7 @@ extends:
               runJobTemplate: /eng/pipelines/coreclr/templates/run-performance-job.yml
               logicalmachine: 'perfampere'
               timeoutInMinutes: 720
+              perfBranch: ${{ parameters.perfBranch }}
 
         # run arm64 jit jobs for mono
         - template: /eng/pipelines/common/platform-matrix.yml
@@ -121,6 +108,7 @@ extends:
               runJobTemplate: /eng/pipelines/coreclr/templates/run-performance-job.yml
               logicalmachine: 'perfampere'
               timeoutInMinutes: 720
+              perfBranch: ${{ parameters.perfBranch }}
 
       - ${{ if and(ne(variables['System.TeamProject'], 'public'), or(notin(variables['Build.Reason'], 'Schedule', 'Manual'), parameters.runPrivateJobs)) }}:
 
@@ -190,6 +178,7 @@ extends:
               runJobTemplate: /eng/pipelines/coreclr/templates/run-performance-job.yml
               logicalmachine: 'perfampere'
               timeoutInMinutes: 780
+              perfBranch: ${{ parameters.perfBranch }}
 
       # run coreclr Linux arm64 ampere microbenchmarks perf job
         - template: /eng/pipelines/common/platform-matrix.yml
@@ -207,6 +196,7 @@ extends:
               runJobTemplate: /eng/pipelines/coreclr/templates/run-performance-job.yml
               logicalmachine: 'perfampere'
               timeoutInMinutes: 780
+              perfBranch: ${{ parameters.perfBranch }}
 
       #run coreclr Linux arm64 ampere no dynamic pgo microbenchmarks perf job
         - template: /eng/pipelines/common/platform-matrix.yml
@@ -225,6 +215,7 @@ extends:
               logicalmachine: 'perfampere'
               timeoutInMinutes: 780
               pgoRunType: --nodynamicpgo
+              perfBranch: ${{ parameters.perfBranch }}
 
       #run coreclr Linux arm64 ampere no R2R microbenchmarks perf job
         - template: /eng/pipelines/common/platform-matrix.yml
@@ -243,6 +234,7 @@ extends:
               logicalmachine: 'perfampere'
               timeoutInMinutes: 780
               r2rRunType: --nor2r
+              perfBranch: ${{ parameters.perfBranch }}
 
       # run coreclr Windows arm64 microbenchmarks perf job
         - template: /eng/pipelines/common/platform-matrix.yml
@@ -259,6 +251,7 @@ extends:
               runKind: micro
               runJobTemplate: /eng/pipelines/coreclr/templates/run-performance-job.yml
               logicalmachine: 'perfsurf'
+              perfBranch: ${{ parameters.perfBranch }}
 
       # run coreclr Windows arm64 ampere microbenchmarks perf job
         - template: /eng/pipelines/common/platform-matrix.yml
@@ -276,6 +269,7 @@ extends:
               runJobTemplate: /eng/pipelines/coreclr/templates/run-performance-job.yml
               logicalmachine: 'perfampere'
               timeoutInMinutes: 780
+              perfBranch: ${{ parameters.perfBranch }}
 
       # run coreclr Windows arm64 ampere no dynamic pgo microbenchmarks perf job
         - template: /eng/pipelines/common/platform-matrix.yml
@@ -294,6 +288,7 @@ extends:
               logicalmachine: 'perfampere'
               pgoRunType: -NoDynamicPGO
               timeoutInMinutes: 780
+              perfBranch: ${{ parameters.perfBranch }}
 
       # run coreclr Windows arm64 ampere no R2R microbenchmarks perf job
         - template: /eng/pipelines/common/platform-matrix.yml
@@ -312,6 +307,7 @@ extends:
               logicalmachine: 'perfampere'
               r2rRunType: -NoR2R
               timeoutInMinutes: 780
+              perfBranch: ${{ parameters.perfBranch }}
 
         # run coreclr cloudvm microbenchmarks perf job
         # this run is added temporarily for measuring AVX-512 performance
@@ -330,6 +326,7 @@ extends:
               runKind: micro
               runJobTemplate: /eng/pipelines/coreclr/templates/run-performance-job.yml
               logicalmachine: 'cloudvm'
+              perfBranch: ${{ parameters.perfBranch }}
 
       # Uncomment once we fix https://github.com/dotnet/performance/issues/1950
       # # run coreclr linux crossgen perf job
@@ -347,6 +344,7 @@ extends:
       #       runKind: crossgen_scenarios
       #       runJobTemplate: /eng/pipelines/coreclr/templates/run-scenarios-job.yml
       #       logicalmachine: 'perfa64'
+      #       perfBranch: ${{ parameters.perfBranch }}
 
       # # run coreclr windows crossgen perf job
       # - template: /eng/pipelines/common/platform-matrix.yml
@@ -363,3 +361,4 @@ extends:
       #       runKind: crossgen_scenarios
       #       runJobTemplate: /eng/pipelines/coreclr/templates/run-scenarios-job.yml
       #       logicalmachine: 'perfsurf'
+      #       perfBranch: ${{ parameters.perfBranch }}

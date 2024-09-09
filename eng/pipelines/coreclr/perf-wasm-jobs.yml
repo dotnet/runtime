@@ -7,6 +7,7 @@ parameters:
   onlySanityCheck: false
   downloadSpecificBuild: null # { buildId, pipeline, branchName, project }
   collectHelixLogsScript: ''
+  perfBranch: 'refs/heads/main'
 
 jobs:
 
@@ -49,6 +50,7 @@ jobs:
         javascriptEngine: 'javascriptcore'
         collectHelixLogsScript: ${{ parameters.collectHelixLogsScript }}
         downloadSpecificBuild: ${{ parameters.downloadSpecificBuild }}
+        perfBranch: ${{ parameters.perfBranch }}
         #downloadSpecificBuild:
           #buildId: '1693181'
           #pipeline: 'perf-wasm'
@@ -74,6 +76,7 @@ jobs:
         javascriptengine: 'javascriptcore'
         collectHelixLogsScript: ${{ parameters.collectHelixLogsScript }}
         downloadSpecificBuild: ${{ parameters.downloadSpecificBuild }}
+        perfBranch: ${{ parameters.perfBranch }}
 
 - ${{ if eq(parameters.runProfile, 'v8') }}:
   - ${{ if eq(parameters.downloadSpecificBuild.buildId, '') }}:
@@ -118,6 +121,7 @@ jobs:
         compare: ${{ parameters.compare }}
         onlySanityCheck: ${{ parameters.onlySanityCheck }}
         downloadSpecificBuild: ${{ parameters.downloadSpecificBuild }}
+        perfBranch: ${{ parameters.perfBranch }}
 
   #run mono wasm aot microbenchmarks perf job
   # Disabled for runtime-wasm-perf on PRs due to https://github.com/dotnet/runtime/issues/95101
@@ -145,6 +149,7 @@ jobs:
           compare: ${{ parameters.compare }}
           onlySanityCheck: ${{ parameters.onlySanityCheck }}
           downloadSpecificBuild: ${{ parameters.downloadSpecificBuild }}
+          perfBranch: ${{ parameters.perfBranch }}
 
   # run mono wasm blazor perf job
   - template: /eng/pipelines/common/platform-matrix.yml
@@ -165,6 +170,7 @@ jobs:
         #additionalSetupParameters: '--dotnetversions 8.0.0' # passed to run-performance-job.py
         logicalmachine: 'perftiger'
         downloadSpecificBuild: ${{ parameters.downloadSpecificBuild }}
+        perfBranch: ${{ parameters.perfBranch }}
 
 - ${{if or(and(ne(variables['System.TeamProject'], 'public'), in(variables['Build.Reason'], 'Schedule')), in(variables['Build.DefinitionName'], 'runtime-wasm-perf')) }}:
   # run mono wasm blazor perf job
@@ -187,3 +193,4 @@ jobs:
         logicalmachine: 'perftiger'
         downloadSpecificBuild: ${{ parameters.downloadSpecificBuild }}
         hybridGlobalization: True
+        perfBranch: ${{ parameters.perfBranch }}

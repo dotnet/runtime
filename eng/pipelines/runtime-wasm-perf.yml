@@ -3,7 +3,7 @@
 # UI to this, and thus avoid any scheduled triggers
 
 parameters:
-- name: performanceRepoBranch
+- name: perfBranch
   displayName: Performance Repo Branch
   type: string
   default: 'refs/heads/main'
@@ -27,20 +27,6 @@ pr:
 variables:
   - template: /eng/pipelines/common/variables.yml
 
-resources:
-  repositories:
-  - ${{ if eq(variables['System.TeamProject'], 'public') }}:
-    - repository: PerformanceRepo
-      ref: '${{ parameters.performanceRepoBranch }}'
-      type: github
-      name: dotnet/performance
-      endpoint: public
-  - ${{ if ne(variables['System.TeamProject'], 'public') }}:
-    - repository: PerformanceRepo
-      ref: '${{ parameters.performanceRepoBranch }}'
-      type: git
-      name: dotnet-performance
-
 extends:
   template:  /eng/pipelines/common/templates/pipeline-with-resources.yml
   parameters:
@@ -52,6 +38,7 @@ extends:
           runProfile: 'v8'
           collectHelixLogsScript: ${{ variables._wasmCollectHelixLogsScript }}
           onlySanityCheck: true
+          perfBranch: ${{ parameters.perfBranch }}
           #downloadSpecificBuild:
             #buildId: '1878694'
             #pipeline: 'perf-wasm'
