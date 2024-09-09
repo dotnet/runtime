@@ -526,6 +526,7 @@ namespace System.Numerics.Tensors
                 {
                     curIndexesArray = ArrayPool<nint>.Shared.Rent(Rank);
                     curIndexes = curIndexesArray.AsSpan(0, Rank);
+                    curIndexes.Clear();
                 }
                 else
                 {
@@ -572,6 +573,7 @@ namespace System.Numerics.Tensors
                 {
                     curIndexesArray = ArrayPool<nint>.Shared.Rent(Rank);
                     curIndexes = curIndexesArray.AsSpan(0, Rank);
+                    curIndexes.Clear();
                 }
                 else
                 {
@@ -660,9 +662,11 @@ namespace System.Numerics.Tensors
             {
                 lengthsArray = ArrayPool<nint>.Shared.Rent(Rank);
                 lengths = lengthsArray.AsSpan(0, Rank);
+                lengths.Clear();
 
                 offsetsArray = ArrayPool<nint>.Shared.Rent(Rank);
                 offsets = offsetsArray.AsSpan(0, Rank);
+                offsets.Clear();
             }
             else
             {
@@ -723,6 +727,7 @@ namespace System.Numerics.Tensors
                 {
                     curIndexesArray = ArrayPool<nint>.Shared.Rent(Rank);
                     curIndexes = curIndexesArray.AsSpan(0, Rank);
+                    curIndexes.Clear();
                 }
                 else
                 {
@@ -763,6 +768,7 @@ namespace System.Numerics.Tensors
             {
                 curIndexesArray = ArrayPool<nint>.Shared.Rent(Rank);
                 curIndexes = curIndexesArray.AsSpan(0, Rank);
+                curIndexes.Clear();
             }
             else
             {
