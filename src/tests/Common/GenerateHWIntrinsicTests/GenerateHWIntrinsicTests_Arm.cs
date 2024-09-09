@@ -232,20 +232,10 @@ const string VecReduceUnOpTest_VectorValidationLogicForCndSel = @"
                 {
                     for (var i = 1; i < RetElementCount; i++)
                     {
-                        var iterResult = (mask[i] != 0) ? 0 : falseVal[i];
-                        if (mask[i] != 0)
+                        if ((mask[i] != 0) ? ({ValidateRemainingResults}) : (falseVal[i] != result[i]))
                         {
-                            // Pick the trueValue
-                            if (iterResult != result[i])
-                            {
-                                succeeded = false;
-                                break;
-                            }
-                        }
-                        else
-                        {
-                            // For false, the values are merged with destination, and we do not know
-                            // those contents would be, so skip verification for them.
+                            succeeded = false;
+                            break;
                         }
                     }
                 }
@@ -262,20 +252,10 @@ const string VecReduceUnOpTest_VectorValidationLogicForCndSel_FalseValue = @"
                 {
                     for (var i = 1; i < RetElementCount; i++)
                     {
-                        var iterResult = (mask[i] != 0) ? trueVal[i] : 0;
-                        if (mask[i] != 0)
+                        if ((mask[i] != 0) ? (trueVal[i] != result[i]) : ({ValidateRemainingResults}))
                         {
-                            // Pick the trueValue
-                            if (iterResult != result[i])
-                            {
-                                succeeded = false;
-                                break;
-                            }
-                        }
-                        else
-                        {
-                            // For false, the values are merged with destination, and we do not know
-                            // those contents would be, so skip verification for them.
+                            succeeded = false;
+                            break;
                         }
                     }
                 }
