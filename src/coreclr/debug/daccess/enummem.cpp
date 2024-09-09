@@ -743,7 +743,7 @@ HRESULT ClrDataAccess::EnumMemDumpAppDomainInfo(CLRDataEnumMemoryFlags flags)
 
     if (flags == CLRDATA_ENUM_MEM_HEAP2)
     {
-        SystemDomain::System()->GetLoaderAllocator()->EnumMemoryRegions(flags);
+        SystemDomain::GetGlobalLoaderAllocator()->EnumMemoryRegions(flags);
     }
 
     AppDomain* appDomain = AppDomain::GetCurrentDomain();

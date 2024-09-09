@@ -780,13 +780,13 @@ HRESULT MulticoreJitProfilePlayer::HandleModuleInfoRecord(unsigned moduleTo, uns
                 assemblyName.SetASCII(mod.m_pRecord->GetAssemblyName(), mod.m_pRecord->AssemblyNameLen());
 
                 // Load the assembly.
-                DomainAssembly * pDomainAssembly = LoadAssembly(assemblyName);
+                Assembly * pAssembly = LoadAssembly(assemblyName);
 
-                if (pDomainAssembly)
+                if (pAssembly)
                 {
                     // If we successfully loaded the assembly, enumerate the modules in the assembly
                     // and update all modules status.
-                    moduleEnumerator.HandleAssembly(pDomainAssembly);
+                    moduleEnumerator.HandleAssembly(pAssembly);
 
                     if (mod.m_pModule == NULL)
                     {
@@ -819,7 +819,7 @@ HRESULT MulticoreJitProfilePlayer::HandleModuleInfoRecord(unsigned moduleTo, uns
     return hr;
 }
 
-DomainAssembly * MulticoreJitProfilePlayer::LoadAssembly(SString & assemblyName)
+Assembly * MulticoreJitProfilePlayer::LoadAssembly(SString & assemblyName)
 {
     STANDARD_VM_CONTRACT;
 
@@ -839,7 +839,7 @@ DomainAssembly * MulticoreJitProfilePlayer::LoadAssembly(SString & assemblyName)
     }
 
     // Bind and load the assembly.
-    return spec.LoadDomainAssembly(
+    return spec.LoadAssembly(
         FILE_LOADED,
         FALSE); // Don't throw on FileNotFound.
 }
