@@ -447,26 +447,18 @@ FCIMPLEND
 
 // Deliver the state of the thread as a consistent set of bits.
 // Duplicate logic in DacDbiInterfaceImpl::GetPartialUserState()
-extern "C" INT32 QCALLTYPE ThreadNative_GetThreadState(QCall::ObjectHandleOnStack t)
+extern "C" INT32 QCALLTYPE ThreadNative_GetThreadState(QCall::ThreadHandle thread)
 {
-    QCALL_CONTRACT;
+    CONTRACTL
+    {
+        QCALL_CHECK_NO_GC_TRANSITION;
+        PRECONDITION(thread != NULL);
+    }
+    CONTRACTL_END;
 
     INT32 res = 0;
 
     BEGIN_QCALL;
-
-    Thread* thread = NULL;
-    {
-        GCX_COOP();
-        if (t.Get() == NULL)
-            COMPlusThrow(kNullReferenceException, W("NullReference_This"));
-
-        // validate the thread.  Failure here implies that the thread was finalized
-        // and then resurrected.
-        thread = ((THREADBASEREF)t.Get())->GetInternal();
-        if (thread == NULL)
-            COMPlusThrow(kThreadStateException, IDS_EE_THREAD_CANNOT_GET);
-    }
 
     // grab a snapshot
     Thread::ThreadState state = thread->GetSnapshotState();
@@ -492,7 +484,6 @@ extern "C" INT32 QCALLTYPE ThreadNative_GetThreadState(QCall::ObjectHandleOnStac
         res |= ThreadNative::ThreadWaitSleepJoin;
 
     END_QCALL;
-
     return res;
 }
 
@@ -897,7 +888,7 @@ extern "C" void QCALLTYPE ThreadNative_DisableComObjectEagerCleanup(QCall::Threa
 {
     CONTRACTL
     {
-        QCALL_CHECK;
+        QCALL_CHECK_NO_GC_TRANSITION;
         PRECONDITION(thread != NULL);
     }
     CONTRACTL_END;

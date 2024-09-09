@@ -258,13 +258,15 @@ namespace System.Threading
         {
             get
             {
-                Thread _this = this;
-                return (ThreadState)GetThreadState(ObjectHandleOnStack.Create(ref _this));
+                var state = (ThreadState)GetThreadState(GetNativeHandle());
+                GC.KeepAlive(this);
+                return state;
             }
         }
 
+        [SuppressGCTransition]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ThreadNative_GetThreadState")]
-        private static partial int GetThreadState(ObjectHandleOnStack t);
+        private static partial int GetThreadState(ThreadHandle t);
 
         /// <summary>
         /// An unstarted thread can be marked to indicate that it will host a
@@ -341,6 +343,7 @@ namespace System.Threading
             GC.KeepAlive(this);
         }
 
+        [SuppressGCTransition]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ThreadNative_DisableComObjectEagerCleanup")]
         private static partial void DisableComObjectEagerCleanup(ThreadHandle t);
 #else // !FEATURE_COMINTEROP
