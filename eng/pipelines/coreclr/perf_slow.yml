@@ -34,13 +34,15 @@ variables:
 
 resources:
   repositories:
-  - repository: PerformanceRepo
-    ref: '${{ parameters.performanceRepoBranch }}'
-    ${{ if eq(variables['System.TeamProject'], 'public') }}:
+  ${{ if eq(variables['System.TeamProject'], 'public') }}:
+    - repository: PerformanceRepo
+      ref: '${{ parameters.performanceRepoBranch }}'
       type: github
       name: dotnet/performance
       endpoint: public
-    ${{ if ne(variables['System.TeamProject'], 'public') }}:
+  ${{ else }}:
+    - repository: PerformanceRepo
+      ref: '${{ parameters.performanceRepoBranch }}'
       type: git
       name: dotnet-performance
 
