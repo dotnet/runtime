@@ -28,7 +28,7 @@ public class Runtime_107146
     [Fact]
     public static void TestEntryPoint()
     {
-        if (!Avx512BW.VL.IsSupported)
+        if (!Avx512BW.VL.IsSupported || !Popcnt.IsSupported)
         {
             return;
         }
