@@ -107,7 +107,7 @@ namespace System.Buffers
 
             if (Ssse3.IsSupported && maxInclusive > 127)
             {
-                // We could support [1, 254] if we did the "& 0xF" before calling into Shuffle in IndexOfAnyLookupCore.
+                // We could support values higher than 127 if we did the "& 0xF" before calling into Shuffle in IndexOfAnyLookupCore.
                 // We currently optimize for the common case of ASCII characters instead, saving an instruction there.
                 return false;
             }
