@@ -177,7 +177,7 @@ namespace Wasm.Build.Tests
 
         [Theory]
         [BuildAndRun(host: RunHost.None, aot: false, config: "Release")]
-        public void BuildInLongPathSingleFileBundle(BuildArgs buildArgs, string id)
+        public void BuildInLongPathNative(BuildArgs buildArgs, string id)
         {
             string projectName = GetTestProjectPath(prefix: "long_path", config: buildArgs.Config, appendUnicode: false);
 
