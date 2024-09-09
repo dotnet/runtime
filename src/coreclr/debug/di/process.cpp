@@ -11164,7 +11164,7 @@ void CordbProcess::HandleSetThreadContextNeeded(DWORD dwThreadId)
     // 4. then we can perform the actual SetThreadContext operation
     // 5. lastly, we must resume the thread
     // For the first step of obtaining the thread handle, 
-    // we have previously attempted to use ::OpenThead to get a handle to the thread.
+    // we have previously attempted to use ::OpenThread to get a handle to the thread.
     // However, there are situations where OpenThread can fail with an Access Denied error.
     // From https://github.com/dotnet/runtime/issues/107263, the control-c handler in 
     // Windows causes the process to have higher privileges. 
