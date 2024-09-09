@@ -46,7 +46,7 @@ namespace System.Text.Json.Schema.Tests
                 : Serializer.DefaultOptions;
 
             JsonNode schema = options.GetJsonSchemaAsNode(testData.Type, testData.Options);
-            JsonNode? instance = JsonSerializer.SerializeToNode(testData.Value, testData.Type, Serializer.DefaultOptions);
+            JsonNode? instance = JsonSerializer.SerializeToNode(testData.Value, testData.Type, options);
             AssertDocumentMatchesSchema(schema, instance);
         }
 
