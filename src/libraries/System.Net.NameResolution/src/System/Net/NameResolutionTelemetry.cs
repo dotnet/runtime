@@ -58,10 +58,17 @@ namespace System.Net
         [Event(ResolutionFailedEventId, Level = EventLevel.Informational)]
         private void ResolutionFailed() => WriteEvent(ResolutionFailedEventId);
 
+        [NonEvent]
+        public static bool AnyDiagnosticsEnabled() => Log.IsEnabled() || NameResolutionMetrics.IsEnabled() || NameResolutionActivity.IsTracingEnabled();
 
         [NonEvent]
-        public long BeforeResolution(object hostNameOrAddress)
+        public NameResolutionActivity BeforeResolution(object hostNameOrAddress, long startingTimestamp = 0)
         {
+            if (!AnyDiagnosticsEnabled())
+            {
+                return default;
+            }
+
             if (IsEnabled())
             {
                 Interlocked.Increment(ref _lookupsRequested);
@@ -74,22 +81,21 @@ namespace System.Net
                     ResolutionStart(host);
                 }
 
-                return Stopwatch.GetTimestamp();
+                startingTimestamp = startingTimestamp is not 0 ? startingTimestamp : Stopwatch.GetTimestamp();
             }
 
-            return NameResolutionMetrics.IsEnabled() ? Stopwatch.GetTimestamp() : 0;
+            startingTimestamp = startingTimestamp is not 0 ? startingTimestamp : NameResolutionMetrics.IsEnabled() ? Stopwatch.GetTimestamp() : 0;
+            return new NameResolutionActivity(hostNameOrAddress, startingTimestamp);
         }
 
         [NonEvent]
-        public void AfterResolution(object hostNameOrAddress, long? startingTimestamp, Exception? exception = null)
+        public void AfterResolution(object hostNameOrAddress, in NameResolutionActivity activity, object? answer, Exception? exception = null)
         {
-            Debug.Assert(startingTimestamp.HasValue);
-            if (startingTimestamp == 0)
+            if (!activity.Stop(answer, exception, out TimeSpan duration))
             {
+                // We stopped the System.Diagnostics.Activity at this point and neither metrics nor EventSource is enabled.
                 return;
             }
-
-            TimeSpan duration = Stopwatch.GetElapsedTime(startingTimestamp.Value);
 
             if (IsEnabled())
             {
@@ -114,7 +120,8 @@ namespace System.Net
             }
         }
 
-        private static string GetHostnameFromStateObject(object hostNameOrAddress)
+        [NonEvent]
+        internal static string GetHostnameFromStateObject(object hostNameOrAddress)
         {
             Debug.Assert(hostNameOrAddress is not null);
 
@@ -130,6 +137,104 @@ namespace System.Net
             Debug.Assert(host is not null, $"Unknown hostNameOrAddress type: {hostNameOrAddress.GetType().Name}");
 
             return host;
+        }
+
+        [NonEvent]
+        internal static string GetErrorType(Exception exception) => (exception as SocketException)?.SocketErrorCode switch
+        {
+            SocketError.HostNotFound => "host_not_found",
+            SocketError.TryAgain => "try_again",
+            SocketError.AddressFamilyNotSupported => "address_family_not_supported",
+            SocketError.NoRecovery => "no_recovery",
+
+            _ => exception.GetType().FullName!
+        };
+    }
+
+    /// <summary>
+    /// Encapsulates the starting timestamp together with an optional Activity, to represent the name resolution span for various telemetry pillars.
+    /// </summary>
+    internal readonly struct NameResolutionActivity
+    {
+        private const string ActivitySourceName = "Experimental.System.Net.NameResolution";
+        private const string ActivityName = ActivitySourceName + ".DnsLookup";
+        private static readonly ActivitySource s_activitySource = new ActivitySource(ActivitySourceName);
+
+        // _startingTimestamp == 0 means NameResolutionTelemetry and NameResolutionMetrics are both disabled.
+        private readonly long _startingTimestamp;
+        private readonly Activity? _activity;
+
+        public NameResolutionActivity(object hostNameOrAddress, long startingTimestamp)
+        {
+            _startingTimestamp = startingTimestamp;
+            _activity = s_activitySource.StartActivity(ActivityName);
+            if (_activity is not null)
+            {
+                string host = NameResolutionTelemetry.GetHostnameFromStateObject(hostNameOrAddress);
+                _activity.DisplayName = hostNameOrAddress is IPAddress ? $"DNS reverse lookup {host}" : $"DNS lookup {host}";
+                if (_activity.IsAllDataRequested)
+                {
+                    _activity.SetTag("dns.question.name", host);
+                }
+            }
+        }
+
+        public static bool IsTracingEnabled() => s_activitySource.HasListeners();
+
+        // Returns true if either NameResolutionTelemetry or NameResolutionMetrics is enabled.
+        public bool Stop(object? answer, Exception? exception, out TimeSpan duration)
+        {
+            if (_activity is not null)
+            {
+                if (_activity.IsAllDataRequested)
+                {
+                    if (answer is not null)
+                    {
+                        string[]? answerValues = answer switch
+                        {
+                            string h => [h],
+                            IPAddress[] addresses => GetStringValues(addresses),
+                            IPHostEntry entry => GetStringValues(entry.AddressList),
+                            _ => null
+                        };
+
+                        Debug.Assert(answerValues is not null);
+                        _activity.SetTag("dns.answers", answerValues);
+                    }
+                    else
+                    {
+                        Debug.Assert(exception is not null);
+                        string errorType = NameResolutionTelemetry.GetErrorType(exception);
+                        _activity.SetTag("error.type", errorType);
+                    }
+                }
+
+                if (exception is not null)
+                {
+                    _activity.SetStatus(ActivityStatusCode.Error);
+                }
+
+                _activity.Stop();
+            }
+
+            if (_startingTimestamp == 0)
+            {
+                duration = default;
+                return false;
+            }
+
+            duration = Stopwatch.GetElapsedTime(_startingTimestamp);
+            return true;
+
+            static string[] GetStringValues(IPAddress[] addresses)
+            {
+                string[] result = new string[addresses.Length];
+                for (int i = 0; i < addresses.Length; i++)
+                {
+                    result[i] = addresses[i].ToString();
+                }
+                return result;
+            }
         }
     }
 }

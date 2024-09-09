@@ -44,7 +44,7 @@ EventReporter::EventReporter(EventReporterType type)
 
     m_eventType = type;
 
-    HMODULE hModule = WszGetModuleHandle(NULL);
+    HMODULE hModule = GetModuleHandle(NULL);
     PathString appPath;
     DWORD ret = WszGetModuleFileName(hModule, appPath);
 
@@ -632,7 +632,6 @@ void ReportExceptionStackHelper(OBJECTREF exObj, EventReporter& reporter, SmallS
 
     DebugStackTrace::GetStackFramesData stackFramesData;
     stackFramesData.pDomain = NULL;
-    stackFramesData.skip = 0;
     stackFramesData.NumFramesRequested = 0;
 
     DebugStackTrace::GetStackFramesFromException(&(gc.exObj), &stackFramesData);

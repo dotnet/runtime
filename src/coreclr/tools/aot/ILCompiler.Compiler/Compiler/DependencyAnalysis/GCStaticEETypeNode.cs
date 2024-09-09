@@ -20,11 +20,13 @@ namespace ILCompiler.DependencyAnalysis
     {
         private GCPointerMap _gcMap;
         private TargetDetails _target;
+        private bool _requiresAlign8;
 
-        public GCStaticEETypeNode(TargetDetails target, GCPointerMap gcMap)
+        public GCStaticEETypeNode(TargetDetails target, GCPointerMap gcMap, bool requiresAlign8)
         {
             _gcMap = gcMap;
             _target = target;
+            _requiresAlign8 = requiresAlign8;
         }
 
         protected override string GetName(NodeFactory factory) => this.GetMangledName(factory.NameMangler);
@@ -41,7 +43,7 @@ namespace ILCompiler.DependencyAnalysis
 
         public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
-            sb.Append("__GCStaticEEType_").Append(_gcMap.ToString());
+            sb.Append("__GCStaticEEType_"u8).Append(_gcMap.ToString());
         }
 
         int ISymbolDefinitionNode.Offset
@@ -82,6 +84,13 @@ namespace ILCompiler.DependencyAnalysis
             uint flags = 0;
             if (containsPointers)
                 flags |= (uint)EETypeFlags.HasPointersFlag;
+
+            if (_requiresAlign8)
+            {
+                // Mark the method table as non-value type that requires 8-byte alignment
+                flags |= (uint)EETypeFlagsEx.RequiresAlign8Flag;
+                flags |= (uint)EETypeElementType.Class << (byte)EETypeFlags.ElementTypeShift;
+            }
 
             dataBuilder.EmitUInt(flags);
 

@@ -69,7 +69,7 @@ namespace System
                         return new PlatformNotSupportedException();
 
                     default:
-                        Debug.Assert(false, "unexpected ExceptionID");
+                        Debug.Fail("unexpected ExceptionID");
                         RuntimeImports.RhpFallbackFailFast();
                         return null;
                 }

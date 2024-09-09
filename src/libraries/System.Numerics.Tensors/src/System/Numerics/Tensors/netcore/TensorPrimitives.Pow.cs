@@ -59,7 +59,7 @@ namespace System.Numerics.Tensors
         private readonly struct PowOperator<T> : IBinaryOperator<T>
             where T : IPowerFunctions<T>
         {
-            public static bool Vectorizable => typeof(T) == typeof(float) || typeof(T) == typeof(double);
+            public static bool Vectorizable => false; // typeof(T) == typeof(float) || typeof(T) == typeof(double); // TODO: https://github.com/dotnet/runtime/issues/100535
 
             public static T Invoke(T x, T y) => T.Pow(x, y);
 

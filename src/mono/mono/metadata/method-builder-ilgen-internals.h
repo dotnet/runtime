@@ -33,6 +33,25 @@ struct _MonoMethodBuilder {
 	const gchar **param_names;
 	MonoBitSet *volatile_args;
 	MonoBitSet *volatile_locals;
+	gboolean inflate_wrapper_data;
+	GList *wrapper_data_inflate_info;
 };
+
+typedef struct MonoMethodBuilderInflateWrapperData
+{
+    uint16_t idx;
+    uint16_t kind; // MonoILGenWrapperDataKind
+} MonoMethodBuilderInflateWrapperData;
+
+enum MonoILGenWrapperDataKind
+{
+	MONO_MB_ILGEN_WRAPPER_DATA_NONE = 0,
+	MONO_MB_ILGEN_WRAPPER_DATA_FIELD,
+	MONO_MB_ILGEN_WRAPPER_DATA_METHOD,
+};
+
+// index in MonoMethodWrapper:wrapper_data where the inflate info will be stored.
+// note: idx 1 is the wrapper info (see mono_marshal_get_wrapper_info)
+#define MONO_MB_ILGEN_INFLATE_WRAPPER_INFO_IDX 2
 
 #endif

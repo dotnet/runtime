@@ -7,10 +7,10 @@
 #include <stdint.h>
 
 #include "threads.h"
+#include "vars.hpp"
 
 extern "C"
 {
-  
 // without an extern declaration, clang does not emit this global into the object file
 extern const uintptr_t contractDescriptorPointerData[];
 

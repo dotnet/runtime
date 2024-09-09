@@ -9,12 +9,16 @@ namespace System.Net.Http
     internal static class DiagnosticsHandlerLoggingStrings
     {
         public const string DiagnosticListenerName         = "HttpHandlerDiagnosticListener";
-        public const string Namespace                      = "System.Net.Http";
-        public const string RequestWriteNameDeprecated     = Namespace + ".Request";
-        public const string ResponseWriteNameDeprecated    = Namespace + ".Response";
-        public const string ExceptionEventName             = Namespace + ".Exception";
-        public const string ActivityName                   = Namespace + ".HttpRequestOut";
-        public const string ActivityStartName              = ActivityName + ".Start";
-        public const string ActivityStopName               = ActivityName + ".Stop";
+        public const string RequestNamespace               = "System.Net.Http";
+        public const string RequestWriteNameDeprecated     = RequestNamespace + ".Request";
+        public const string ResponseWriteNameDeprecated    = RequestNamespace + ".Response";
+        public const string ExceptionEventName             = RequestNamespace + ".Exception";
+        public const string RequestActivityName            = RequestNamespace + ".HttpRequestOut";
+        public const string RequestActivityStartName       = RequestActivityName + ".Start";
+        public const string RequestActivityStopName        = RequestActivityName + ".Stop";
+
+        public const string ConnectionsNamespace           = "Experimental.System.Net.Http.Connections";
+        public const string ConnectionSetupActivityName    = ConnectionsNamespace + ".ConnectionSetup";
+        public const string WaitForConnectionActivityName  = ConnectionsNamespace + ".WaitForConnection";
     }
 }

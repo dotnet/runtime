@@ -23,7 +23,7 @@ namespace ILCompiler.DependencyAnalysis
     /// Field Size      | Contents
     /// ----------------+-----------------------------------
     /// UInt32          | Flags field
-    ///                 | Flags for: IsValueType, IsCrossModule, HasPointers, HasOptionalFields, IsInterface, IsGeneric, etc ...
+    ///                 | Flags for: IsValueType, IsCrossModule, HasPointers, IsInterface, IsGeneric, etc ...
     ///                 | EETypeKind (Normal, Array, Pointer type)
     ///                 |
     ///                 | 5 bits near the top are used for enum EETypeElementType to record whether it's back by an Int32, Int16 etc
@@ -64,8 +64,6 @@ namespace ILCompiler.DependencyAnalysis
     public partial class EETypeNode : DehydratableObjectNode, IEETypeNode, ISymbolDefinitionNode, ISymbolNodeWithLinkage
     {
         protected readonly TypeDesc _type;
-        internal readonly EETypeOptionalFieldsBuilder _optionalFieldsBuilder = new EETypeOptionalFieldsBuilder();
-        internal readonly EETypeOptionalFieldsNode _optionalFieldsNode;
         private readonly WritableDataNode _writableDataNode;
         protected bool? _mightHaveInterfaceDispatchMap;
         private bool _hasConditionalDependenciesFromMetadataManager;
@@ -91,9 +89,9 @@ namespace ILCompiler.DependencyAnalysis
             else if (type.IsCanonicalSubtype(CanonicalFormKind.Any))
                 Debug.Assert((this is CanonicalEETypeNode) || (this is NecessaryCanonicalEETypeNode));
 
+            Debug.Assert(!type.IsGenericParameter);
             Debug.Assert(!type.IsRuntimeDeterminedSubtype);
             _type = type;
-            _optionalFieldsNode = new EETypeOptionalFieldsNode(this);
             _writableDataNode = !_type.IsCanonicalSubtype(CanonicalFormKind.Any) ? new WritableDataNode(this) : null;
             _hasConditionalDependenciesFromMetadataManager = factory.MetadataManager.HasConditionalDependenciesDueToEETypePresence(type);
 
@@ -227,25 +225,12 @@ namespace ILCompiler.DependencyAnalysis
                 return ObjectNodeSection.DataSection;
         }
 
-        public int MinimumObjectSize => GetMinimumObjectSize(_type.Context);
-
-        public static int GetMinimumObjectSize(TypeSystemContext typeSystemContext)
-            => typeSystemContext.Target.PointerSize * 3;
+        public int MinimumObjectSize => EETypeBuilderHelpers.GetMinimumObjectSize(_type.Context);
 
         protected virtual bool EmitVirtualSlots => false;
 
         public override bool InterestingForDynamicDependencyAnalysis
             => (_virtualMethodAnalysisFlags & VirtualMethodAnalysisFlags.InterestingForDynamicDependencies) != 0;
-
-        internal bool HasOptionalFields
-        {
-            get { return _optionalFieldsBuilder.IsAtLeastOneFieldUsed(); }
-        }
-
-        internal byte[] GetOptionalFieldsData()
-        {
-            return _optionalFieldsBuilder.GetBytes();
-        }
 
         public override bool StaticDependenciesAreComputed => true;
 
@@ -426,6 +411,10 @@ namespace ILCompiler.DependencyAnalysis
                             factory.TentativeMethodEntrypoint(canonImpl, impl.OwningType.IsValueType) :
                             factory.MethodEntrypoint(canonImpl, impl.OwningType.IsValueType);
                         result.Add(new CombinedDependencyListEntry(implNode, factory.VirtualMethodUse(decl), "Virtual method"));
+
+                        result.Add(new CombinedDependencyListEntry(
+                            factory.AddressTakenMethodEntrypoint(canonImpl, impl.OwningType.IsValueType),
+                            factory.DelegateTargetVirtualMethod(decl.GetCanonMethodTarget(CanonicalFormKind.Specific)), "Slot is a delegate target"));
                     }
 
                     if (impl.OwningType == defType)
@@ -498,11 +487,22 @@ namespace ILCompiler.DependencyAnalysis
 
                                 // If the interface method is used virtually, the implementation body is used
                                 result.Add(new CombinedDependencyListEntry(factory.MethodEntrypoint(defaultIntfMethod), factory.VirtualMethodUse(interfaceMethod), "Interface method"));
+
+                                // If the interface method is virtual delegate target, the implementation is address taken
+                                result.Add(new CombinedDependencyListEntry(
+                                    factory.AddressTakenMethodEntrypoint(defaultIntfMethod),
+                                    factory.DelegateTargetVirtualMethod(interfaceMethod.GetCanonMethodTarget(CanonicalFormKind.Specific)), "Interface slot is delegate target"));
                             }
                             else
                             {
                                 // If the interface method is used virtually, the slot is used virtually
                                 result.Add(new CombinedDependencyListEntry(factory.VirtualMethodUse(implMethod), factory.VirtualMethodUse(interfaceMethod), "Interface method"));
+
+                                // If the interface method is virtual delegate target, the slot is virtual delegate target
+                                result.Add(new CombinedDependencyListEntry(
+                                    factory.DelegateTargetVirtualMethod(implMethod.GetCanonMethodTarget(CanonicalFormKind.Specific)),
+                                    factory.DelegateTargetVirtualMethod(interfaceMethod.GetCanonMethodTarget(CanonicalFormKind.Specific)),
+                                    "Interface slot is delegate target"));
                             }
 
                             // If any of the implemented interfaces have variance, calls against compatible interface methods
@@ -519,7 +519,8 @@ namespace ILCompiler.DependencyAnalysis
                                 result.Add(new CombinedDependencyListEntry(factory.VirtualMethodUse(interfaceMethod), factory.VariantInterfaceMethodUse(typicalInterfaceMethod), "Interface method"));
                             }
 
-                            factory.MetadataManager.NoteOverridingMethod(interfaceMethod, implMethod);
+                            TypeSystemEntity origin = (implMethod.OwningType != defType) ? defType : null;
+                            factory.MetadataManager.NoteOverridingMethod(interfaceMethod, implMethod, origin);
 
                             factory.MetadataManager.GetDependenciesForOverridingMethod(ref result, factory, interfaceMethod, implMethod);
                         }
@@ -549,6 +550,11 @@ namespace ILCompiler.DependencyAnalysis
                                     }
                                 }
                                 result.Add(new CombinedDependencyListEntry(factory.MethodEntrypoint(defaultIntfMethod), factory.VirtualMethodUse(interfaceMethod), "Interface method"));
+
+                                result.Add(new CombinedDependencyListEntry(
+                                    factory.AddressTakenMethodEntrypoint(defaultIntfMethod),
+                                    factory.DelegateTargetVirtualMethod(interfaceMethod.GetCanonMethodTarget(CanonicalFormKind.Specific)),
+                                    "Slot is delegate target"));
 
                                 factory.MetadataManager.NoteOverridingMethod(interfaceMethod, implMethod);
 
@@ -595,14 +601,21 @@ namespace ILCompiler.DependencyAnalysis
         {
             DependencyList dependencies = new DependencyList();
 
-            // Include the optional fields by default. We don't know if optional fields will be needed until
-            // all of the interface usage has been stabilized. If we end up not needing it, the MethodTable node will not
-            // generate any relocs to it, and the optional fields node will instruct the object writer to skip
-            // emitting it.
-            dependencies.Add(new DependencyListEntry(_optionalFieldsNode, "Optional fields"));
-
             if (_type.IsInterface)
                 dependencies.Add(factory.InterfaceUse(_type.GetTypeDefinition()), "Interface is used");
+
+            // Array types that don't have generic interface methods can be created out of thin air
+            // at runtime by the type loader. We should never emit non-constructed forms of these MethodTables.
+            // There's similar logic for generic types, but that one is a conditional dependency conditioned
+            // on the presence of the type loader template for the canonical form of the type.
+            if (_type.IsArrayTypeWithoutGenericInterfaces())
+            {
+                IEETypeNode maximallyConstructableType = factory.MaximallyConstructableType(_type);
+                if (maximallyConstructableType != this)
+                {
+                    dependencies.Add(maximallyConstructableType, "Type is template-loadable");
+                }
+            }
 
             if (EmitVirtualSlots)
             {
@@ -680,8 +693,6 @@ namespace ILCompiler.DependencyAnalysis
             objData.RequireInitialPointerAlignment();
             objData.AddSymbol(this);
 
-            ComputeOptionalEETypeFields(factory, relocsOnly);
-
             OutputGCDesc(ref objData);
             OutputFlags(factory, ref objData, relocsOnly);
             objData.EmitInt(BaseSize);
@@ -728,7 +739,6 @@ namespace ILCompiler.DependencyAnalysis
             OutputWritableData(factory, ref objData);
             OutputDispatchMap(factory, ref objData);
             OutputFinalizerMethod(factory, ref objData);
-            OutputOptionalFields(factory, ref objData);
             OutputSealedVTable(factory, relocsOnly, ref objData);
             OutputGenericInstantiationDetails(factory, ref objData);
             OutputFunctionPointerParameters(factory, ref objData);
@@ -783,11 +793,6 @@ namespace ILCompiler.DependencyAnalysis
                 flags |= (uint)EETypeFlags.HasDispatchMap;
             }
 
-            if (HasOptionalFields)
-            {
-                flags |= (uint)EETypeFlags.OptionalFieldsFlag;
-            }
-
             if (_type.IsArray || _type.IsString)
             {
                 flags |= (uint)EETypeFlags.HasComponentSizeFlag;
@@ -828,78 +833,7 @@ namespace ILCompiler.DependencyAnalysis
         {
             get
             {
-                int pointerSize = _type.Context.Target.PointerSize;
-                int objectSize;
-
-                if (_type.IsInterface)
-                {
-                    // Interfaces don't live on the GC heap. Don't bother computing a number.
-                    // Zero compresses better than any useless number we would come up with.
-                    return 0;
-                }
-                else if (_type.IsDefType)
-                {
-                    LayoutInt instanceByteCount = ((DefType)_type).InstanceByteCount;
-
-                    if (instanceByteCount.IsIndeterminate)
-                    {
-                        // Some value must be put in, but the specific value doesn't matter as it
-                        // isn't used for specific instantiations, and the universal canon MethodTable
-                        // is never associated with an allocated object.
-                        objectSize = pointerSize;
-                    }
-                    else
-                    {
-                        objectSize = pointerSize +
-                            ((DefType)_type).InstanceByteCount.AsInt; // +pointerSize for SyncBlock
-                    }
-
-                    if (_type.IsValueType)
-                        objectSize += pointerSize; // + EETypePtr field inherited from System.Object
-                }
-                else if (_type.IsArray)
-                {
-                    objectSize = 3 * pointerSize; // SyncBlock + EETypePtr + Length
-                    if (_type.IsMdArray)
-                        objectSize +=
-                            2 * sizeof(int) * ((ArrayType)_type).Rank;
-                }
-                else if (_type.IsPointer)
-                {
-                    // These never get boxed and don't have a base size. Use a sentinel value recognized by the runtime.
-                    return ParameterizedTypeShapeConstants.Pointer;
-                }
-                else if (_type.IsByRef)
-                {
-                    // These never get boxed and don't have a base size. Use a sentinel value recognized by the runtime.
-                    return ParameterizedTypeShapeConstants.ByRef;
-                }
-                else if (_type.IsFunctionPointer)
-                {
-                    // These never get boxed and don't have a base size. We store the 'unmanaged' flag and number of parameters.
-                    MethodSignature sig = ((FunctionPointerType)_type).Signature;
-                    return (sig.Flags & MethodSignatureFlags.UnmanagedCallingConventionMask) switch
-                    {
-                        0 => sig.Length,
-                        _ => sig.Length | unchecked((int)FunctionPointerFlags.IsUnmanaged),
-                    };
-                }
-                else
-                    throw new NotImplementedException();
-
-                objectSize = AlignmentHelper.AlignUp(objectSize, pointerSize);
-                objectSize = Math.Max(MinimumObjectSize, objectSize);
-
-                if (_type.IsString)
-                {
-                    // If this is a string, throw away objectSize we computed so far. Strings are special.
-                    // SyncBlock + EETypePtr + length + firstChar
-                    objectSize = 2 * pointerSize +
-                        sizeof(int) +
-                        StringComponentSize.Value;
-                }
-
-                return objectSize;
+                return EETypeBuilderHelpers.ComputeBaseSize(_type);
             }
         }
 
@@ -1103,9 +1037,14 @@ namespace ILCompiler.DependencyAnalysis
                         && implMethod.OwningType is MetadataType mdImplMethodType && mdImplMethodType.IsAbstract
                         && factory.CompilationModuleGroup.AllowVirtualMethodOnAbstractTypeOptimization(canonImplMethod);
 
-                    IMethodNode implSymbol = canUseTentativeEntrypoint ?
-                        factory.TentativeMethodEntrypoint(canonImplMethod, implMethod.OwningType.IsValueType) :
-                        factory.MethodEntrypoint(canonImplMethod, implMethod.OwningType.IsValueType);
+                    IMethodNode implSymbol;
+                    if (canUseTentativeEntrypoint)
+                        implSymbol = factory.TentativeMethodEntrypoint(canonImplMethod, implMethod.OwningType.IsValueType);
+                    else if (factory.DelegateTargetVirtualMethod(declMethod.GetCanonMethodTarget(CanonicalFormKind.Specific)).Marked)
+                        implSymbol = factory.AddressTakenMethodEntrypoint(canonImplMethod, implMethod.OwningType.IsValueType);
+                    else
+                        implSymbol = factory.MethodEntrypoint(canonImplMethod, implMethod.OwningType.IsValueType);
+
                     objData.EmitPointerReloc(implSymbol);
                 }
                 else
@@ -1173,17 +1112,6 @@ namespace ILCompiler.DependencyAnalysis
             }
         }
 
-        protected void OutputOptionalFields(NodeFactory factory, ref ObjectDataBuilder objData)
-        {
-            if (HasOptionalFields)
-            {
-                if (factory.Target.SupportsRelativePointers)
-                    objData.EmitReloc(_optionalFieldsNode, RelocType.IMAGE_REL_BASED_RELPTR32);
-                else
-                    objData.EmitPointerReloc(_optionalFieldsNode);
-            }
-        }
-
         private void OutputSealedVTable(NodeFactory factory, bool relocsOnly, ref ObjectDataBuilder objData)
         {
             if (EmitVirtualSlots && !_type.IsArrayTypeWithoutGenericInterfaces())
@@ -1213,9 +1141,21 @@ namespace ILCompiler.DependencyAnalysis
                     else
                         objData.EmitPointerReloc(typeDefNode);
 
-                    ISymbolNode compositionNode = _type.Instantiation.Length > 1
-                        ? factory.GenericComposition(_type.Instantiation)
-                        : factory.NecessaryTypeSymbol(_type.Instantiation[0]);
+                    ISymbolNode compositionNode;
+
+                    if (this == factory.MaximallyConstructableType(_type)
+                        && factory.MetadataManager.IsTypeInstantiationReflectionVisible(_type))
+                    {
+                        compositionNode = _type.Instantiation.Length > 1
+                            ? factory.ConstructedGenericComposition(_type.Instantiation)
+                            : factory.MaximallyConstructableType(_type.Instantiation[0]);
+                    }
+                    else
+                    {
+                        compositionNode = _type.Instantiation.Length > 1
+                            ? factory.GenericComposition(_type.Instantiation)
+                            : factory.NecessaryTypeSymbol(_type.Instantiation[0]);
+                    }
 
                     if (factory.Target.SupportsRelativePointers)
                         objData.EmitReloc(compositionNode, RelocType.IMAGE_REL_BASED_RELPTR32);
@@ -1283,118 +1223,6 @@ namespace ILCompiler.DependencyAnalysis
                     objData.EmitReloc(dispatchMap, RelocType.IMAGE_REL_BASED_RELPTR32);
                 else
                     objData.EmitPointerReloc(dispatchMap);
-            }
-        }
-
-        /// <summary>
-        /// Populate the OptionalFieldsRuntimeBuilder if any optional fields are required.
-        /// </summary>
-        protected internal virtual void ComputeOptionalEETypeFields(NodeFactory factory, bool relocsOnly)
-        {
-            ComputeRareFlags(factory);
-            ComputeNullableValueOffset();
-            ComputeValueTypeFieldPadding();
-        }
-
-        private void ComputeRareFlags(NodeFactory factory)
-        {
-            uint flags = 0;
-
-            MetadataType metadataType = _type as MetadataType;
-
-            if (factory.PreinitializationManager.HasLazyStaticConstructor(_type))
-            {
-                flags |= (uint)EETypeRareFlags.HasCctorFlag;
-            }
-
-            if (_type.RequiresAlign8())
-            {
-                flags |= (uint)EETypeRareFlags.RequiresAlign8Flag;
-            }
-
-            TargetArchitecture targetArch = _type.Context.Target.Architecture;
-            if (metadataType != null &&
-                (targetArch == TargetArchitecture.ARM ||
-                targetArch == TargetArchitecture.ARM64) &&
-                metadataType.IsHomogeneousAggregate)
-            {
-                flags |= (uint)EETypeRareFlags.IsHFAFlag;
-            }
-
-            if (_type.IsByRefLike)
-            {
-                flags |= (uint)EETypeRareFlags.IsByRefLikeFlag;
-            }
-
-            if (flags != 0)
-            {
-                _optionalFieldsBuilder.SetFieldValue(EETypeOptionalFieldTag.RareFlags, flags);
-            }
-        }
-
-        /// <summary>
-        /// To support boxing / unboxing, the offset of the value field of a Nullable type is recorded on the MethodTable.
-        /// This is variable according to the alignment requirements of the Nullable&lt;T&gt; type parameter.
-        /// </summary>
-        private void ComputeNullableValueOffset()
-        {
-            if (!_type.IsNullable)
-                return;
-
-            if (!_type.Instantiation[0].IsCanonicalSubtype(CanonicalFormKind.Universal))
-            {
-                var field = _type.GetKnownField("value");
-
-                // In the definition of Nullable<T>, the first field should be the boolean representing "hasValue"
-                Debug.Assert(field.Offset.AsInt > 0);
-
-                // The contract with the runtime states the Nullable value offset is stored with the boolean "hasValue" size subtracted
-                // to get a small encoding size win.
-                _optionalFieldsBuilder.SetFieldValue(EETypeOptionalFieldTag.NullableValueOffset, (uint)field.Offset.AsInt - 1);
-            }
-        }
-
-        protected virtual void ComputeValueTypeFieldPadding()
-        {
-            // Only valuetypes need to compute the padding.
-            if (!_type.IsValueType)
-                return;
-
-            DefType defType = _type as DefType;
-            Debug.Assert(defType != null);
-
-            uint valueTypeFieldPaddingEncoded;
-
-            if (defType.InstanceByteCount.IsIndeterminate)
-            {
-                valueTypeFieldPaddingEncoded = EETypeBuilderHelpers.ComputeValueTypeFieldPaddingFieldValue(0, 1, _type.Context.Target.PointerSize);
-            }
-            else
-            {
-                int numInstanceFieldBytes = defType.InstanceByteCountUnaligned.AsInt;
-
-                // Value types should have at least 1 byte of size
-                Debug.Assert(numInstanceFieldBytes >= 1);
-
-                // The size of value types doesn't include the MethodTable pointer.  We need to add this so that
-                // the number of instance field bytes consistently represents the boxed size.
-                numInstanceFieldBytes += _type.Context.Target.PointerSize;
-
-                // For unboxing to work correctly and for supporting dynamic type loading for derived types we need
-                // to record the actual size of the fields of a type without any padding for GC heap allocation (since
-                // we can unbox into locals or arrays where this padding is not used, and because field layout for derived
-                // types is effected by the unaligned base size). We don't want to store this information for all EETypes
-                // since it's only relevant for value types, so it's added as an optional field. It's
-                // also enough to simply store the size of the padding (between 0 and 4 or 8 bytes for 32-bit and 0 and 8 or 16 bytes
-                // for 64-bit) which cuts down our storage requirements.
-
-                uint valueTypeFieldPadding = checked((uint)((BaseSize - _type.Context.Target.PointerSize) - numInstanceFieldBytes));
-                valueTypeFieldPaddingEncoded = EETypeBuilderHelpers.ComputeValueTypeFieldPaddingFieldValue(valueTypeFieldPadding, (uint)defType.InstanceFieldAlignment.AsInt, _type.Context.Target.PointerSize);
-            }
-
-            if (valueTypeFieldPaddingEncoded != 0)
-            {
-                _optionalFieldsBuilder.SetFieldValue(EETypeOptionalFieldTag.ValueTypeFieldPadding, valueTypeFieldPaddingEncoded);
             }
         }
 
@@ -1469,7 +1297,7 @@ namespace ILCompiler.DependencyAnalysis
 
             public override bool StaticDependenciesAreComputed => true;
             public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
-                => sb.Append("__writableData").Append(nameMangler.GetMangledTypeName(_type.Type));
+                => sb.Append("__writableData"u8).Append(nameMangler.GetMangledTypeName(_type.Type));
             public int Offset => 0;
             public override bool IsShareable => true;
             public override bool ShouldSkipEmittingObjectNode(NodeFactory factory) => _type.ShouldSkipEmittingObjectNode(factory);

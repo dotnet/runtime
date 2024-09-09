@@ -25,6 +25,14 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Compile Include="$(ToolsProjectRoot)illink/src/linker/Linker/TypeNameResolver.cs" />
+    <Compile Include="$(ToolsProjectRoot)illink/src/linker/Linker/ITryResolve.cs" />
+    <Compile Include="$(ToolsProjectRoot)illink/src/linker/Linker/ModuleDefinitionExtensions.cs" />
+    <Compile Include="$(LibrariesProjectRoot)/Common/src/System/Reflection/Metadata/TypeNameHelpers.cs" />
+    <Compile Include="$(LibrariesProjectRoot)/Common/src/System/Text/ValueStringBuilder.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
     <RuntimeHostConfigurationOption Include="Mono.Linker.Tests.RuntimeBinDirectory">
       <Value>$(RuntimeBinDir)</Value>
     </RuntimeHostConfigurationOption>

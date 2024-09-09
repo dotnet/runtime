@@ -3,6 +3,7 @@
 
 using System;
 using System.Diagnostics.CodeAnalysis;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Options;
 
 namespace Microsoft.Extensions.DependencyInjection
@@ -25,7 +26,7 @@ namespace Microsoft.Extensions.DependencyInjection
         {
             ThrowHelper.ThrowIfNull(optionsBuilder);
 
-            optionsBuilder.Services.AddTransient<IStartupValidator, StartupValidator>();
+            optionsBuilder.Services.TryAddTransient<IStartupValidator, StartupValidator>();
             optionsBuilder.Services.AddOptions<StartupValidatorOptions>()
                 .Configure<IOptionsMonitor<TOptions>>((vo, options) =>
                 {

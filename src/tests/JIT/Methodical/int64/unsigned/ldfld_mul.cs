@@ -28,6 +28,7 @@ namespace JitTest_ldfld_mul_unsigned_cs
         }
 
         [Fact]
+        [OuterLoop]
         public static int TestEntryPoint()
         {
             Test app = new Test();

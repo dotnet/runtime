@@ -2,8 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.IO;
 using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 using Xunit;
 
 namespace System.Reflection.Emit.Tests
@@ -18,18 +18,18 @@ namespace System.Reflection.Emit.Tests
             yield return new object[] { "\uD800\uDC00", Helpers.DynamicType(TypeAttributes.Public).AsType(), FieldAttributes.Family, FieldAttributes.Family };
             yield return new object[] { "\u043F\u0440\u0438\u0432\u0435\u0442", typeof(EmptyNonGenericInterface1), FieldAttributes.FamORAssem, FieldAttributes.FamORAssem };
             yield return new object[] { "Test Name With Spaces", typeof(EmptyEnum), FieldAttributes.Public, FieldAttributes.Public };
-            yield return new object[] { "TestName", typeof(EmptyNonGenericClass), FieldAttributes.HasDefault, FieldAttributes.PrivateScope };
-            yield return new object[] { "TestName", typeof(EmptyNonGenericStruct), FieldAttributes.HasFieldMarshal, FieldAttributes.PrivateScope };
-            yield return new object[] { "TestName", typeof(EmptyGenericClass<int>), FieldAttributes.HasFieldRVA, FieldAttributes.PrivateScope };
-            yield return new object[] { "TestName", typeof(EmptyGenericStruct<int>), FieldAttributes.Literal, FieldAttributes.Literal };
-            yield return new object[] { "TestName", typeof(int), FieldAttributes.NotSerialized, FieldAttributes.NotSerialized };
-            yield return new object[] { "TestName", typeof(int[]), FieldAttributes.PinvokeImpl, FieldAttributes.PinvokeImpl };
-            yield return new object[] { "TestName", typeof(int).MakePointerType(), FieldAttributes.Private, FieldAttributes.Private };
-            yield return new object[] { "TestName", typeof(EmptyGenericClass<>), FieldAttributes.PrivateScope, FieldAttributes.PrivateScope };
-            yield return new object[] { "TestName", typeof(int), FieldAttributes.Public, FieldAttributes.Public };
-            yield return new object[] { "TestName", typeof(int), FieldAttributes.RTSpecialName, FieldAttributes.PrivateScope };
-            yield return new object[] { "TestName", typeof(int), FieldAttributes.SpecialName, FieldAttributes.SpecialName };
-            yield return new object[] { "TestName", typeof(int), FieldAttributes.Public | FieldAttributes.Static, FieldAttributes.Public | FieldAttributes.Static };
+            yield return new object[] { "Test(N)ame", typeof(EmptyNonGenericClass), FieldAttributes.HasDefault, FieldAttributes.PrivateScope };
+            yield return new object[] { "Test.Name", typeof(EmptyNonGenericStruct), FieldAttributes.HasFieldMarshal, FieldAttributes.PrivateScope };
+            yield return new object[] { "Test/Name", typeof(EmptyGenericClass<int>), FieldAttributes.HasFieldRVA, FieldAttributes.PrivateScope };
+            yield return new object[] { "Test-Name", typeof(EmptyGenericStruct<int>), FieldAttributes.Literal, FieldAttributes.Literal };
+            yield return new object[] { "Test&Name", typeof(int), FieldAttributes.NotSerialized, FieldAttributes.NotSerialized };
+            yield return new object[] { "Test^Name", typeof(int[]), FieldAttributes.PinvokeImpl, FieldAttributes.PinvokeImpl };
+            yield return new object[] { "Test%Name", typeof(int).MakePointerType(), FieldAttributes.Private, FieldAttributes.Private };
+            yield return new object[] { "Test$Name", typeof(EmptyGenericClass<>), FieldAttributes.PrivateScope, FieldAttributes.PrivateScope };
+            yield return new object[] { "Test\"Name", typeof(int), FieldAttributes.Public, FieldAttributes.Public };
+            yield return new object[] { "1Test'Name", typeof(int), FieldAttributes.RTSpecialName, FieldAttributes.PrivateScope };
+            yield return new object[] { "#Test`Name", typeof(int), FieldAttributes.SpecialName, FieldAttributes.SpecialName };
+            yield return new object[] { "42", typeof(int), FieldAttributes.Public | FieldAttributes.Static, FieldAttributes.Public | FieldAttributes.Static };
         }
 
         [Theory]
@@ -57,6 +57,144 @@ namespace System.Reflection.Emit.Tests
                 Assert.Equal(field.MetadataToken, fieldInfo.MetadataToken);
                 FieldInfo fieldFromToken = (FieldInfo)fieldInfo.Module.ResolveField(fieldInfo.MetadataToken);
                 Assert.Equal(fieldInfo, fieldFromToken);
+            }
+        }
+
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+        [MemberData(nameof(TestData))]
+        public void DefineFieldPersistedAssembly(string name, Type fieldType, FieldAttributes attributes, FieldAttributes expectedAttributes)
+        {
+            PersistedAssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilderAndTypeBuilder(out TypeBuilder type);
+            FieldBuilder field = type.DefineField(name, fieldType, attributes);
+            Assert.Equal(name, field.Name);
+            Assert.Equal(fieldType, field.FieldType);
+            Assert.Equal(expectedAttributes, field.Attributes);
+            Assert.Equal(type.AsType(), field.DeclaringType);
+            Assert.Equal(field.Module, field.Module);
+
+            Type createdType = type.CreateType();
+            Assert.Equal(type.AsType().GetFields(Helpers.AllFlags), createdType.GetFields(Helpers.AllFlags));
+
+            using (var stream = new MemoryStream())
+            using (MetadataLoadContext mlc = new MetadataLoadContext(new CoreMetadataAssemblyResolver()))
+            {
+                ab.Save(stream);
+                createdType = mlc.LoadFromStream(stream).GetType("MyType");
+                FieldInfo fieldInfo = createdType.GetField(name, Helpers.AllFlags);
+                if (fieldInfo != null)
+                {
+                    Assert.Equal(name, fieldInfo.Name);
+                    Assert.Equal(expectedAttributes, field.Attributes);
+                }
+            }
+        }
+
+        [Fact]
+        public void DefineField_NameCollision()
+        {
+            TypeBuilder type = Helpers.DynamicType(TypeAttributes.Public);
+            FieldBuilder field1 = type.DefineField("FieldName", typeof(int), FieldAttributes.Public);
+            FieldBuilder field2 = type.DefineField("FieldName", typeof(int), FieldAttributes.Public);
+            FieldBuilder field3 = type.DefineField("FieldName", typeof(string), FieldAttributes.Public);
+            FieldBuilder field4 = type.DefineField("FieldName", typeof(string), FieldAttributes.Public);
+            Type createdType = type.CreateType();
+
+            FieldInfo[] fields = createdType.GetFields(Helpers.AllFlags);
+            Assert.Equal(4, fields.Length);
+            Assert.Equal("FieldName", fields[0].Name);
+            Assert.Equal("FieldName", fields[1].Name);
+            Assert.Equal("FieldName", fields[2].Name);
+            Assert.Equal("FieldName", fields[3].Name);
+            Assert.Throws<AmbiguousMatchException>(() => createdType.GetField("FieldName", Helpers.AllFlags));
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+        public void DefineField_NameCollisionPersistedAssembly()
+        {
+            PersistedAssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilderAndTypeBuilder(out TypeBuilder type);
+            FieldBuilder field1 = type.DefineField("FieldName", typeof(int), FieldAttributes.Public);
+            FieldBuilder field2 = type.DefineField("FieldName", typeof(int), FieldAttributes.Public);
+            FieldBuilder field3 = type.DefineField("FieldName", typeof(string), FieldAttributes.Public);
+            type.CreateType();
+
+            using (var stream = new MemoryStream())
+            using (MetadataLoadContext mlc = new MetadataLoadContext(new CoreMetadataAssemblyResolver()))
+            {
+                ab.Save(stream);
+                Type createdType = mlc.LoadFromStream(stream).GetType("MyType");
+                FieldInfo[] fields = createdType.GetFields(Helpers.AllFlags);
+                Assert.Equal(3, fields.Length);
+                Assert.Equal("FieldName", fields[0].Name);
+                Assert.Equal("FieldName", fields[1].Name);
+                Assert.Throws<AmbiguousMatchException>(() => createdType.GetField("FieldName", Helpers.AllFlags));
+            }
+        }
+
+        [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/2389", TestRuntimes.Mono)]
+        public void DefineField_65536Fields()
+        {
+            TypeBuilder type = Helpers.DynamicType(TypeAttributes.Public);
+            for (int i = 0; i < 65536; i++)
+            {
+                type.DefineField($"F_{i}", typeof(int), FieldAttributes.Public);
+            }
+
+            // System.TypeLoadException : Internal limitation: too many fields.
+            Assert.Throws<TypeLoadException>(() => type.CreateType());
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+        public void DefineField_65536FieldsPersistedAssembly()
+        {
+            PersistedAssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilderAndTypeBuilder(out TypeBuilder type);
+            for (int i = 0; i < 65536; i++)
+            {
+                type.DefineField($"F_{i}", typeof(int), FieldAttributes.Public);
+            }
+            type.CreateType();
+
+            using (var stream = new MemoryStream())
+            using (MetadataLoadContext mlc = new MetadataLoadContext(new CoreMetadataAssemblyResolver()))
+            {
+                ab.Save(stream);
+                Type createdType = mlc.LoadFromStream(stream).GetType("MyType");
+                FieldInfo[] fields = createdType.GetFields(Helpers.AllFlags);
+                Assert.Equal(65536, fields.Length);
+                Assert.Equal("F_65535", fields[65535].Name);
+            }
+        }
+
+        [Fact]
+        public void DefineFieldMethod_LongName()
+        {
+            TypeBuilder type = Helpers.DynamicType(TypeAttributes.Public);
+            type.DefineField(Helpers.s_512Chars, typeof(int), FieldAttributes.Public);
+            type.DefineMethod(Helpers.s_512Chars, MethodAttributes.Public, typeof(void), Type.EmptyTypes).GetILGenerator().Emit(OpCodes.Ret);
+
+            Type createdType = type.CreateType();
+            FieldInfo field = createdType.GetField(Helpers.s_512Chars);
+            Assert.Equal(Helpers.s_512Chars, field.Name);
+            MethodInfo method = createdType.GetMethod(Helpers.s_512Chars);
+            Assert.Equal(Helpers.s_512Chars, method.Name);
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+        public void DefineFieldMethod_LongNamePersistedAssembly()
+        {
+            PersistedAssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilderAndTypeBuilder(out TypeBuilder type);
+            type.DefineField(Helpers.s_512Chars, typeof(int), FieldAttributes.Public);
+            type.DefineMethod(Helpers.s_512Chars, MethodAttributes.Public, typeof(void), Type.EmptyTypes).GetILGenerator().Emit(OpCodes.Ret);
+            type.CreateType();
+            using (var stream = new MemoryStream())
+            using (MetadataLoadContext mlc = new MetadataLoadContext(new CoreMetadataAssemblyResolver()))
+            {
+                ab.Save(stream);
+                Type createdType = mlc.LoadFromStream(stream).GetType("MyType");
+                FieldInfo field = createdType.GetField(Helpers.s_512Chars);
+                Assert.Equal(Helpers.s_512Chars, field.Name);
+                MethodInfo method = createdType.GetMethod(Helpers.s_512Chars);
+                Assert.Equal(Helpers.s_512Chars, method.Name);
             }
         }
 

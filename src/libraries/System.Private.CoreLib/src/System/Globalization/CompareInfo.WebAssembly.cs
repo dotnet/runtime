@@ -47,89 +47,77 @@ namespace System.Globalization
         private unsafe int JsCompareString(ReadOnlySpan<char> string1, ReadOnlySpan<char> string2, CompareOptions options)
         {
             AssertHybridOnWasm(options);
-            string cultureName = m_name;
-            AssertComparisonSupported(options, cultureName);
+            AssertComparisonSupported(options, m_name);
 
-            int cmpResult;
+            ReadOnlySpan<char> cultureNameSpan = m_name.AsSpan();
             fixed (char* pString1 = &MemoryMarshal.GetReference(string1))
             fixed (char* pString2 = &MemoryMarshal.GetReference(string2))
+            fixed (char* pCultureName = &MemoryMarshal.GetReference(cultureNameSpan))
             {
-                cmpResult = Interop.JsGlobalization.CompareString(cultureName, pString1, string1.Length, pString2, string2.Length, options, out int exception, out object ex_result);
-                if (exception != 0)
-                    throw new Exception((string)ex_result);
+                nint exceptionPtr = Interop.JsGlobalization.CompareString(pCultureName, cultureNameSpan.Length, pString1, string1.Length, pString2, string2.Length, options, out int cmpResult);
+                Helper.MarshalAndThrowIfException(exceptionPtr);
+                return cmpResult;
             }
-
-            return cmpResult;
         }
 
         private unsafe bool JsStartsWith(ReadOnlySpan<char> source, ReadOnlySpan<char> prefix, CompareOptions options)
         {
             AssertHybridOnWasm(options);
             Debug.Assert(!prefix.IsEmpty);
-            string cultureName = m_name;
-            AssertIndexingSupported(options, cultureName);
+            AssertIndexingSupported(options, m_name);
 
-            bool result;
+            ReadOnlySpan<char> cultureNameSpan = m_name.AsSpan();
             fixed (char* pSource = &MemoryMarshal.GetReference(source))
             fixed (char* pPrefix = &MemoryMarshal.GetReference(prefix))
+            fixed (char* pCultureName = &MemoryMarshal.GetReference(cultureNameSpan))
             {
-                result = Interop.JsGlobalization.StartsWith(cultureName, pSource, source.Length, pPrefix, prefix.Length, options, out int exception, out object ex_result);
-                if (exception != 0)
-                    throw new Exception((string)ex_result);
+                nint exceptionPtr = Interop.JsGlobalization.StartsWith(pCultureName, cultureNameSpan.Length, pSource, source.Length, pPrefix, prefix.Length, options, out bool result);
+                Helper.MarshalAndThrowIfException(exceptionPtr);
+                return result;
             }
-
-
-            return result;
         }
 
         private unsafe bool JsEndsWith(ReadOnlySpan<char> source, ReadOnlySpan<char> prefix, CompareOptions options)
         {
             AssertHybridOnWasm(options);
             Debug.Assert(!prefix.IsEmpty);
-            string cultureName = m_name;
-            AssertIndexingSupported(options, cultureName);
+            AssertIndexingSupported(options, m_name);
 
-            bool result;
+            ReadOnlySpan<char> cultureNameSpan = m_name.AsSpan();
             fixed (char* pSource = &MemoryMarshal.GetReference(source))
             fixed (char* pPrefix = &MemoryMarshal.GetReference(prefix))
+            fixed (char* pCultureName = &MemoryMarshal.GetReference(cultureNameSpan))
             {
-                result = Interop.JsGlobalization.EndsWith(cultureName, pSource, source.Length, pPrefix, prefix.Length, options, out int exception, out object ex_result);
-                if (exception != 0)
-                    throw new Exception((string)ex_result);
+                nint exceptionPtr = Interop.JsGlobalization.EndsWith(pCultureName, cultureNameSpan.Length, pSource, source.Length, pPrefix, prefix.Length, options, out bool result);
+                Helper.MarshalAndThrowIfException(exceptionPtr);
+                return result;
             }
-
-            return result;
         }
 
         private unsafe int JsIndexOfCore(ReadOnlySpan<char> source, ReadOnlySpan<char> target, CompareOptions options, int* matchLengthPtr, bool fromBeginning)
         {
             AssertHybridOnWasm(options);
             Debug.Assert(!target.IsEmpty);
-            string cultureName = m_name;
-            AssertIndexingSupported(options, cultureName);
+            AssertIndexingSupported(options, m_name);
 
-            int idx;
             if (_isAsciiEqualityOrdinal && CanUseAsciiOrdinalForOptions(options))
             {
-                idx = (options & CompareOptions.IgnoreCase) != 0 ?
+                return (options & CompareOptions.IgnoreCase) != 0 ?
                     IndexOfOrdinalIgnoreCaseHelper(source, target, options, matchLengthPtr, fromBeginning) :
                     IndexOfOrdinalHelper(source, target, options, matchLengthPtr, fromBeginning);
             }
-            else
+            ReadOnlySpan<char> cultureNameSpan = m_name.AsSpan();
+            fixed (char* pSource = &MemoryMarshal.GetReference(source))
+            fixed (char* pTarget = &MemoryMarshal.GetReference(target))
+            fixed (char* pCultureName = &MemoryMarshal.GetReference(cultureNameSpan))
             {
-                fixed (char* pSource = &MemoryMarshal.GetReference(source))
-                fixed (char* pTarget = &MemoryMarshal.GetReference(target))
-                {
-                    idx = Interop.JsGlobalization.IndexOf(m_name, pTarget, target.Length, pSource, source.Length, options, fromBeginning, out int exception, out object ex_result);
-                    if (exception != 0)
-                        throw new Exception((string)ex_result);
-                }
+                nint exceptionPtr = Interop.JsGlobalization.IndexOf(pCultureName, cultureNameSpan.Length, pTarget, target.Length, pSource, source.Length, options, fromBeginning, out int idx);
+                Helper.MarshalAndThrowIfException(exceptionPtr);
+                return idx;
             }
-
-            return idx;
         }
 
-        // there are chars that are ignored by ICU hashing algorithm but not ignored by invariant hashing
+        // there are chars that are considered equal by HybridGlobalization but do not have equal hashes when binary hashed
         // Control: 1105 (out of 1105)
         // Format: 697 (out of 731)
         // OtherPunctuation: 6919 (out of 7004)

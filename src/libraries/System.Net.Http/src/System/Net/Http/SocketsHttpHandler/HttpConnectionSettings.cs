@@ -8,6 +8,7 @@ using System.IO;
 using System.Net.Http.Metrics;
 using System.Net.Security;
 using System.Runtime.Versioning;
+using System.Security.Principal;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -29,6 +30,7 @@ namespace System.Net.Http
 
         internal bool _preAuthenticate = HttpHandlerDefaults.DefaultPreAuthenticate;
         internal ICredentials? _credentials;
+        internal TokenImpersonationLevel _impersonationLevel = HttpHandlerDefaults.DefaultImpersonationLevel;   // this is here to support impersonation on HttpWebRequest
 
         internal bool _allowAutoRedirect = HttpHandlerDefaults.DefaultAutomaticRedirection;
         internal int _maxAutomaticRedirections = HttpHandlerDefaults.DefaultMaxAutomaticRedirections;
@@ -58,6 +60,8 @@ namespace System.Net.Http
         internal SslClientAuthenticationOptions? _sslOptions;
 
         internal bool _enableMultipleHttp2Connections;
+
+        internal bool _enableMultipleHttp3Connections;
 
         internal Func<SocketsHttpConnectionContext, CancellationToken, ValueTask<Stream>>? _connectCallback;
         internal Func<SocketsHttpPlaintextStreamFilterContext, CancellationToken, ValueTask<Stream>>? _plaintextStreamFilter;
@@ -121,6 +125,7 @@ namespace System.Net.Http
                 _requestHeaderEncodingSelector = _requestHeaderEncodingSelector,
                 _responseHeaderEncodingSelector = _responseHeaderEncodingSelector,
                 _enableMultipleHttp2Connections = _enableMultipleHttp2Connections,
+                _enableMultipleHttp3Connections = _enableMultipleHttp3Connections,
                 _connectCallback = _connectCallback,
                 _plaintextStreamFilter = _plaintextStreamFilter,
                 _initialHttp2StreamWindowSize = _initialHttp2StreamWindowSize,
@@ -128,6 +133,7 @@ namespace System.Net.Http
                 _defaultCredentialsUsedForProxy = _proxy != null && (_proxy.Credentials == CredentialCache.DefaultCredentials || _defaultProxyCredentials == CredentialCache.DefaultCredentials),
                 _defaultCredentialsUsedForServer = _credentials == CredentialCache.DefaultCredentials,
                 _clientCertificateOptions = _clientCertificateOptions,
+                _impersonationLevel = _impersonationLevel,
             };
 
             return settings;
@@ -136,6 +142,8 @@ namespace System.Net.Http
         public int MaxResponseHeadersByteLength => (int)Math.Min(int.MaxValue, _maxResponseHeadersLength * 1024L);
 
         public bool EnableMultipleHttp2Connections => _enableMultipleHttp2Connections;
+
+        public bool EnableMultipleHttp3Connections => _enableMultipleHttp3Connections;
 
         private byte[]? _http3SettingsFrame;
 

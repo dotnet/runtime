@@ -511,7 +511,7 @@ GenTree* Compiler::optFindNullCheckToFold(GenTree* tree, LocalNumberToNullCheckT
 {
     assert(tree->OperIsIndirOrArrMetaData());
 
-    GenTree* addr = tree->GetIndirOrArrMetaDataAddr();
+    GenTree* addr = tree->GetIndirOrArrMetaDataAddr()->gtEffectiveVal();
 
     ssize_t offsetValue = 0;
 

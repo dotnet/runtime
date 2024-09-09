@@ -8,7 +8,7 @@ using System.Runtime.CompilerServices;
 namespace System.Collections.Frozen
 {
     /// <summary>Provides a frozen dictionary implementation where strings are grouped by their lengths.</summary>
-    internal sealed class LengthBucketsFrozenDictionary<TValue> : FrozenDictionary<string, TValue>
+    internal sealed partial class LengthBucketsFrozenDictionary<TValue> : FrozenDictionary<string, TValue>
     {
         private readonly int[] _lengthBuckets;
         private readonly int _minLength;

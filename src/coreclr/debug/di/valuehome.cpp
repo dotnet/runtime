@@ -518,11 +518,19 @@ void FloatRegValueHome::SetEnregisteredValue(MemoryRange newValue,
 
     while (i <= m_floatIndex)
     {
+        #ifdef _MSC_VER
         __asm fstp td
+        #else
+        __asm("fstpl %0" : "=m" (td));
+        #endif
         popArea[i++] = td;
     }
 
+    #ifdef _MSC_VER
     __asm fld newVal; // push on the new value.
+    #else
+    __asm("fldl %0" : "=m" (newVal));
+    #endif
 
     // Push any values that we popled off back onto the stack,
     // _except_ the last one, which was the one we changed.
@@ -531,7 +539,11 @@ void FloatRegValueHome::SetEnregisteredValue(MemoryRange newValue,
     while (i > 0)
     {
         td = popArea[--i];
+        #ifdef _MSC_VER
         __asm fld td
+        #else
+        __asm("fldl %0" : "=m" (td));
+        #endif
     }
 
     // Save out the modified float area.
@@ -595,7 +607,7 @@ void FloatRegValueHome::GetEnregisteredValue(MemoryRange valueOutBuffer)
       ValueHome(pProcess),
       m_remoteValue(remoteValue)
     {
-        _ASSERTE(remoteValue.pAddress != NULL);
+        _ASSERTE(remoteValue.pAddress != 0);
     } // RemoteValueHome::RemoteValueHome
 
 // Gets a value and returns it in dest
@@ -901,7 +913,7 @@ void HandleValueHome::GetValue(MemoryRange dest)
 
     _ASSERTE(dest.Size() <= sizeof(void *));
     _ASSERTE(dest.StartAddress() != NULL);
-    _ASSERTE(objPtr != NULL);
+    _ASSERTE(objPtr != (CORDB_ADDRESS)NULL);
     m_pProcess->SafeReadBuffer(TargetBuffer(objPtr, sizeof(void *)), (BYTE *)dest.StartAddress());
 } // HandleValueHome::GetValue
 

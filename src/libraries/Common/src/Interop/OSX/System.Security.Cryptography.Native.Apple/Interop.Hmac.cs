@@ -54,6 +54,9 @@ internal static partial class Interop
             byte* pOutput,
             int cbOutput,
             int* cbDigest);
+
+        [LibraryImport(Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_HmacClone")]
+        internal static partial SafeHmacHandle HmacClone(SafeHmacHandle ctx);
     }
 }
 

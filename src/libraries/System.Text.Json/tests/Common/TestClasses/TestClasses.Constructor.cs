@@ -195,11 +195,11 @@ namespace System.Text.Json.Serialization.Tests
     public class SinglePublicParameterizedCtor
     {
         public int MyInt { get; private set; }
-        public string MyString { get; private set; }
+        public string? MyString { get; private set; }
 
         public SinglePublicParameterizedCtor() { }
 
-        public SinglePublicParameterizedCtor(int myInt, string myString)
+        public SinglePublicParameterizedCtor(int myInt, string? myString)
         {
             MyInt = myInt;
             MyString = myString;
@@ -209,7 +209,7 @@ namespace System.Text.Json.Serialization.Tests
     public class SingleParameterlessCtor_MultiplePublicParameterizedCtor
     {
         public int MyInt { get; private set; }
-        public string MyString { get; private set; }
+        public string? MyString { get; private set; }
 
         public SingleParameterlessCtor_MultiplePublicParameterizedCtor() { }
 
@@ -218,7 +218,7 @@ namespace System.Text.Json.Serialization.Tests
             MyInt = myInt;
         }
 
-        public SingleParameterlessCtor_MultiplePublicParameterizedCtor(int myInt, string myString)
+        public SingleParameterlessCtor_MultiplePublicParameterizedCtor(int myInt, string? myString)
         {
             MyInt = myInt;
             MyString = myString;
@@ -228,7 +228,7 @@ namespace System.Text.Json.Serialization.Tests
     public struct SingleParameterlessCtor_MultiplePublicParameterizedCtor_Struct
     {
         public int MyInt { get; private set; }
-        public string MyString { get; private set; }
+        public string? MyString { get; private set; }
 
         public SingleParameterlessCtor_MultiplePublicParameterizedCtor_Struct(int myInt)
         {
@@ -236,7 +236,7 @@ namespace System.Text.Json.Serialization.Tests
             MyString = null;
         }
 
-        public SingleParameterlessCtor_MultiplePublicParameterizedCtor_Struct(int myInt, string myString)
+        public SingleParameterlessCtor_MultiplePublicParameterizedCtor_Struct(int myInt, string? myString)
         {
             MyInt = myInt;
             MyString = myString;
@@ -330,7 +330,7 @@ namespace System.Text.Json.Serialization.Tests
     public struct MultiplePublicParameterizedCtor_Struct
     {
         public int MyInt { get; private set; }
-        public string MyString { get; private set; }
+        public string? MyString { get; private set; }
 
         public MultiplePublicParameterizedCtor_Struct(int myInt)
         {
@@ -338,7 +338,7 @@ namespace System.Text.Json.Serialization.Tests
             MyString = null;
         }
 
-        public MultiplePublicParameterizedCtor_Struct(int myInt, string myString)
+        public MultiplePublicParameterizedCtor_Struct(int myInt, string? myString)
         {
             MyInt = myInt;
             MyString = myString;
@@ -348,7 +348,7 @@ namespace System.Text.Json.Serialization.Tests
     public class MultiplePublicParameterizedCtor_WithAttribute
     {
         public int MyInt { get; private set; }
-        public string MyString { get; private set; }
+        public string? MyString { get; private set; }
 
         [JsonConstructor]
         public MultiplePublicParameterizedCtor_WithAttribute(int myInt)
@@ -356,7 +356,7 @@ namespace System.Text.Json.Serialization.Tests
             MyInt = myInt;
         }
 
-        public MultiplePublicParameterizedCtor_WithAttribute(int myInt, string myString)
+        public MultiplePublicParameterizedCtor_WithAttribute(int myInt, string? myString)
         {
             MyInt = myInt;
             MyString = myString;
@@ -366,7 +366,7 @@ namespace System.Text.Json.Serialization.Tests
     public struct MultiplePublicParameterizedCtor_WithAttribute_Struct
     {
         public int MyInt { get; private set; }
-        public string MyString { get; private set; }
+        public string? MyString { get; private set; }
 
         public MultiplePublicParameterizedCtor_WithAttribute_Struct(int myInt)
         {
@@ -375,7 +375,7 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [JsonConstructor]
-        public MultiplePublicParameterizedCtor_WithAttribute_Struct(int myInt, string myString)
+        public MultiplePublicParameterizedCtor_WithAttribute_Struct(int myInt, string? myString)
         {
             MyInt = myInt;
             MyString = myString;
@@ -385,7 +385,7 @@ namespace System.Text.Json.Serialization.Tests
     public class ParameterlessCtor_MultiplePublicParameterizedCtor_WithAttribute
     {
         public int MyInt { get; private set; }
-        public string MyString { get; private set; }
+        public string? MyString { get; private set; }
 
         public ParameterlessCtor_MultiplePublicParameterizedCtor_WithAttribute() { }
 
@@ -395,7 +395,7 @@ namespace System.Text.Json.Serialization.Tests
             MyInt = myInt;
         }
 
-        public ParameterlessCtor_MultiplePublicParameterizedCtor_WithAttribute(int myInt, string myString)
+        public ParameterlessCtor_MultiplePublicParameterizedCtor_WithAttribute(int myInt, string? myString)
         {
             MyInt = myInt;
             MyString = myString;
@@ -571,10 +571,10 @@ namespace System.Text.Json.Serialization.Tests
     public class ClassWrapper_For_Int_Point_3D_String
     {
         public int MyInt { get; }
-
+        
         public Point_3D_Struct MyPoint3DStruct { get; }
 
-        public string MyString { get; }
+        public string? MyString { get; }
 
         public ClassWrapper_For_Int_Point_3D_String(Point_3D_Struct myPoint3DStruct)
         {
@@ -584,7 +584,7 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [JsonConstructor]
-        public ClassWrapper_For_Int_Point_3D_String(int myInt, Point_3D_Struct myPoint3DStruct, string myString)
+        public ClassWrapper_For_Int_Point_3D_String(int myInt, Point_3D_Struct myPoint3DStruct, string? myString)
         {
             MyInt = myInt;
             MyPoint3DStruct = myPoint3DStruct;
@@ -1739,14 +1739,14 @@ namespace System.Text.Json.Serialization.Tests
 
     public class Parameterized_IndexViewModel_Immutable : ITestClass
     {
-        public List<ActiveOrUpcomingEvent> ActiveOrUpcomingEvents { get; }
-        public CampaignSummaryViewModel FeaturedCampaign { get; }
+        public List<ActiveOrUpcomingEvent>? ActiveOrUpcomingEvents { get; }
+        public CampaignSummaryViewModel? FeaturedCampaign { get; }
         public bool IsNewAccount { get; }
         public bool HasFeaturedCampaign => FeaturedCampaign != null;
 
         public Parameterized_IndexViewModel_Immutable(
-            List<ActiveOrUpcomingEvent> activeOrUpcomingEvents,
-            CampaignSummaryViewModel featuredCampaign,
+            List<ActiveOrUpcomingEvent>? activeOrUpcomingEvents,
+            CampaignSummaryViewModel? featuredCampaign,
             bool isNewAccount)
         {
             ActiveOrUpcomingEvents = activeOrUpcomingEvents;
@@ -1838,7 +1838,7 @@ namespace System.Text.Json.Serialization.Tests
                 ObjWCtorMixedParams,
                 ObjWCtorMixedParams,
                 ObjWCtorMixedParams,
-                ObjWCtorMixedParams> MyTuple { get; }
+                ObjWCtorMixedParams>? MyTuple { get; }
 
         public Parameterized_Class_With_ComplexTuple(
             Tuple<
@@ -1848,7 +1848,7 @@ namespace System.Text.Json.Serialization.Tests
                 ObjWCtorMixedParams,
                 ObjWCtorMixedParams,
                 ObjWCtorMixedParams,
-                ObjWCtorMixedParams> myTuple) => MyTuple = myTuple;
+                ObjWCtorMixedParams>? myTuple) => MyTuple = myTuple;
 
         private const string s_inner_json = @"
             {
@@ -2235,13 +2235,13 @@ namespace System.Text.Json.Serialization.Tests
         public int X { get; }
         public int Y { get; }
 
-        public int[] Arr { get; }
+        public int[]? Arr { get; }
 
         public static readonly string s_json = @"{""X"":1,""Y"":2,""Arr"":[1,2]}";
 
         public static readonly byte[] s_data = Encoding.UTF8.GetBytes(s_json);
 
-        public Point_With_Array(int x, int y, int[] arr)
+        public Point_With_Array(int x, int y, int[]? arr)
         {
             X = x;
             Y = y;
@@ -2264,13 +2264,13 @@ namespace System.Text.Json.Serialization.Tests
         public int X { get; }
         public int Y { get; }
 
-        public Dictionary<string, int> Dict { get; }
+        public Dictionary<string, int>? Dict { get; }
 
         public static readonly string s_json = @"{""X"":1,""Y"":2,""Dict"":{""1"":1,""2"":2}}";
 
         public static readonly byte[] s_data = Encoding.UTF8.GetBytes(s_json);
 
-        public Point_With_Dictionary(int x, int y, Dictionary<string, int> dict)
+        public Point_With_Dictionary(int x, int y, Dictionary<string, int>? dict)
         {
             X = x;
             Y = y;
@@ -2293,13 +2293,13 @@ namespace System.Text.Json.Serialization.Tests
         public int X { get; }
         public int Y { get; }
 
-        public Point_With_Array Obj { get; }
+        public Point_With_Array? Obj { get; }
 
         public static readonly string s_json = @$"{{""X"":1,""Y"":2,""Obj"":{Point_With_Array.s_json}}}";
 
         public static readonly byte[] s_data = Encoding.UTF8.GetBytes(s_json);
 
-        public Point_With_Object(int x, int y, Point_With_Array obj)
+        public Point_With_Object(int x, int y, Point_With_Array? obj)
         {
             X = x;
             Y = y;
@@ -2405,11 +2405,11 @@ namespace System.Text.Json.Serialization.Tests
 
     public class ClassWithNestedClass
     {
-        public ClassWithNestedClass MyClass { get; }
+        public ClassWithNestedClass? MyClass { get; }
 
         public Point_2D_Struct_WithAttribute MyPoint { get; }
 
-        public ClassWithNestedClass(ClassWithNestedClass myClass, Point_2D_Struct_WithAttribute myPoint)
+        public ClassWithNestedClass(ClassWithNestedClass? myClass, Point_2D_Struct_WithAttribute myPoint)
         {
             MyClass = myClass;
             MyPoint = myPoint;

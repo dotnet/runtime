@@ -2,7 +2,7 @@
 
 This assembly exposes the System.Diagnostics.PerformanceCounter class, which allows access to Windows performance counters.
 
-Documentation can be found at https://learn.microsoft.com/en-us/dotnet/api/system.diagnostics.performancecounter.
+Documentation can be found at https://learn.microsoft.com/dotnet/api/system.diagnostics.performancecounter.
 
 ## Contribution Bar
 

@@ -4,7 +4,7 @@ using Mono.Linker.Tests.Cases.Expectations.Metadata;
 
 namespace Mono.Linker.Tests.Cases.UnreachableBlock
 {
-#if NETCOREAPP
+#if NET
 	[SetupLinkerSubstitutionFile ("SizeOfInConditions.netcore.xml")]
 #else
 	[SetupLinkerSubstitutionFile ("SizeOfInConditions.net_4_x.xml")]

@@ -219,7 +219,7 @@ namespace Microsoft.Extensions.Primitives
                         length += value.Length;
                     }
                 }
-#if NETCOREAPP
+#if NET
                 // Create the new string
                 return string.Create(length, values, (span, strings) => {
                     int offset = 0;

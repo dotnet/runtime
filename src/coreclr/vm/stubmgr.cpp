@@ -608,7 +608,7 @@ BOOL StubManager::FollowTrace(TraceDestination *trace)
         }
     }
 
-    LOG_TRACE_DESTINATION(trace, NULL, "StubManager::FollowTrace");
+    LOG_TRACE_DESTINATION(trace, (PCODE)NULL, "StubManager::FollowTrace");
 
     return trace->GetTraceType() != TRACE_OTHER;
 }
@@ -938,10 +938,15 @@ BOOL ThePreStubManager::DoTraceStub(PCODE stubStartAddress, TraceDestination *tr
     // We cannot tell where the stub will end up
     // until after the prestub worker has been run.
     //
-
+#if defined(TARGET_ARM64) && defined(__APPLE__)
+    // On ARM64 Mac, we cannot put a breakpoint inside of ThePreStubPatchLabel
+    LOG((LF_CORDB, LL_INFO10000, "TPSM::DoTraceStub: Skipping on arm64-macOS\n"));
+    return FALSE;
+#else
     trace->InitForFramePush(GetEEFuncEntryPoint(ThePreStubPatchLabel));
 
     return TRUE;
+#endif //defined(TARGET_ARM64) && defined(__APPLE__)
 }
 
 //-----------------------------------------------------------
@@ -1009,13 +1014,6 @@ BOOL PrecodeStubManager::DoTraceStub(PCODE stubStartAddress,
 
     MethodDesc* pMD = NULL;
 
-#ifdef HAS_COMPACT_ENTRYPOINTS
-    if (MethodDescChunk::IsCompactEntryPointAtAddress(stubStartAddress))
-    {
-        pMD = MethodDescChunk::GetMethodDescFromCompactEntryPoint(stubStartAddress);
-    }
-    else
-#endif // HAS_COMPACT_ENTRYPOINTS
     {
         // When the target slot points to the fixup part of the fixup precode, we need to compensate
         // for that to get the actual stub address
@@ -1035,7 +1033,13 @@ BOOL PrecodeStubManager::DoTraceStub(PCODE stubStartAddress,
 #ifdef HAS_NDIRECT_IMPORT_PRECODE
         case PRECODE_NDIRECT_IMPORT:
 #ifndef DACCESS_COMPILE
+#if defined(TARGET_ARM64) && defined(__APPLE__)
+            // On ARM64 Mac, we cannot put a breakpoint inside of NDirectImportThunk
+            LOG((LF_CORDB, LL_INFO10000, "PSM::DoTraceStub: Skipping on arm64-macOS\n"));
+            return FALSE;
+#else
             trace->InitForUnmanaged(GetEEFuncEntryPoint(NDirectImportThunk));
+#endif //defined(TARGET_ARM64) && defined(__APPLE__)
 #else
             trace->InitForOther((PCODE)NULL);
 #endif
@@ -1265,14 +1269,6 @@ BOOL StubLinkStubManager::DoTraceStub(PCODE stubStartAddress,
     LOG((LF_CORDB, LL_INFO10000,
          "StubLinkStubManager::DoTraceStub: stub=%p\n", stub));
 
-    //
-    // If this is an intercept stub, we may be able to step
-    // into the intercepted stub.
-    //
-    // <TODO>!!! Note that this case should not be necessary, it's just
-    // here until I get all of the patch offsets & frame patch
-    // methods in place.</TODO>
-    //
     TADDR pRealAddr = 0;
     if (stub->IsMulticastDelegate())
     {
@@ -1369,6 +1365,9 @@ static BOOL TraceManagedThunk(
 
     LOG((LF_CORDB, LL_INFO10000, "TraceManagedThunk: at %p, retAddr is %p\n", pc, (*pRetAddr)));
 
+    // NOTE: This doesn't work correctly and we anticipate changing it in the future. See
+    // the discussion at https://github.com/dotnet/runtime/pull/104731/files#r1693796408
+    // for details.
     DELEGATEREF orDelegate;
     if (GetEEFuncEntryPoint(SinglecastDelegateInvokeStub) == pc)
     {
@@ -1422,7 +1421,7 @@ static BOOL TraceManagedThunk(
 
 #else
     PORTABILITY_ASSERT("TraceManagedThunk");
-    destAddr = NULL;
+    destAddr = (PCODE)NULL;
 #endif
 
     LOG((LF_CORDB,LL_INFO10000, "TraceManagedThunk: ppbDest: %p\n", destAddr));
@@ -1669,7 +1668,13 @@ BOOL RangeSectionStubManager::DoTraceStub(PCODE stubStartAddress, TraceDestinati
 #ifdef DACCESS_COMPILE
         DacNotImpl();
 #else
+#if defined(TARGET_ARM64) && defined(__APPLE__)
+        // On ARM64 Mac, we cannot put a breakpoint inside of ExternalMethodFixupPatchLabel
+        LOG((LF_CORDB, LL_INFO10000, "RSM::DoTraceStub: Skipping on arm64-macOS\n"));
+        return FALSE;
+#else
         trace->InitForManagerPush(GetEEFuncEntryPoint(ExternalMethodFixupPatchLabel), this);
+#endif //defined(TARGET_ARM64) && defined(__APPLE__)
 #endif
         return TRUE;
 
@@ -1810,14 +1815,18 @@ BOOL ILStubManager::DoTraceStub(PCODE stubStartAddress,
 
     PCODE traceDestination = (PCODE)NULL;
 
-#ifdef FEATURE_MULTICASTSTUB_AS_IL
     MethodDesc* pStubMD = ExecutionManager::GetCodeMethodDesc(stubStartAddress);
     if (pStubMD != NULL && pStubMD->AsDynamicMethodDesc()->IsMulticastStub())
     {
+#if defined(TARGET_ARM64) && defined(__APPLE__)
+        //On ARM64 Mac, we cannot put a breakpoint inside of MulticastDebuggerTraceHelper
+        LOG((LF_CORDB, LL_INFO10000, "ILSM::DoTraceStub: skipping on arm64-macOS\n"));
+        return FALSE;
+#else
         traceDestination = GetEEFuncEntryPoint(StubHelpers::MulticastDebuggerTraceHelper);
+#endif //defined(TARGET_ARM64) && defined(__APPLE__)
     }
     else
-#endif // FEATURE_MULTICASTSTUB_AS_IL
     {
         // This call is going out to unmanaged code, either through pinvoke or COM interop.
         traceDestination = stubStartAddress;
@@ -1837,7 +1846,7 @@ BOOL ILStubManager::DoTraceStub(PCODE stubStartAddress,
 
 #ifndef DACCESS_COMPILE
 #ifdef FEATURE_COMINTEROP
-static PCODE GetCOMTarget(Object *pThis, ComPlusCallInfo *pComPlusCallInfo)
+static PCODE GetCOMTarget(Object *pThis, CLRToCOMCallInfo *pCLRToCOMCallInfo)
 {
     CONTRACTL
     {
@@ -1852,12 +1861,12 @@ static PCODE GetCOMTarget(Object *pThis, ComPlusCallInfo *pComPlusCallInfo)
 
     OBJECTREF oref = ObjectToOBJECTREF(pThis);
     GCPROTECT_BEGIN(oref);
-    pUnk = ComObject::GetComIPFromRCWThrowing(&oref, pComPlusCallInfo->m_pInterfaceMT);
+    pUnk = ComObject::GetComIPFromRCWThrowing(&oref, pCLRToCOMCallInfo->m_pInterfaceMT);
     GCPROTECT_END();
 
     LPVOID *lpVtbl = *(LPVOID **)(IUnknown *)pUnk;
 
-    PCODE target = (PCODE)lpVtbl[pComPlusCallInfo->m_cachedComSlot];
+    PCODE target = (PCODE)lpVtbl[pCLRToCOMCallInfo->m_cachedComSlot];
     return target;
 }
 #endif // FEATURE_COMINTEROP
@@ -1872,13 +1881,11 @@ BOOL ILStubManager::TraceManager(Thread *thread,
     PCODE stubIP = GetIP(pContext);
     *pRetAddr = (BYTE *)StubManagerHelpers::GetReturnAddress(pContext);
 
-#ifdef FEATURE_MULTICASTSTUB_AS_IL
     if (stubIP == GetEEFuncEntryPoint(StubHelpers::MulticastDebuggerTraceHelper))
     {
         stubIP = (PCODE)*pRetAddr;
         *pRetAddr = (BYTE*)StubManagerHelpers::GetRetAddrFromMulticastILStubFrame(pContext);
     }
-#endif
 
     DynamicMethodDesc *pStubMD = Entry2MethodDesc(stubIP, NULL)->AsDynamicMethodDesc();
     TADDR arg = StubManagerHelpers::GetHiddenArg(pContext);
@@ -1889,7 +1896,6 @@ BOOL ILStubManager::TraceManager(Thread *thread,
     // See code:ILStubCache.CreateNewMethodDesc for the code that sets flags on stub MDs
     PCODE target = (PCODE)NULL;
 
-#ifdef FEATURE_MULTICASTSTUB_AS_IL
     if (pStubMD->IsMulticastStub())
     {
         _ASSERTE(GetIP(pContext) == GetEEFuncEntryPoint(StubHelpers::MulticastDebuggerTraceHelper));
@@ -1913,9 +1919,7 @@ BOOL ILStubManager::TraceManager(Thread *thread,
             return StubLinkStubManager::TraceDelegateObject(pbDel, trace);
         }
     }
-    else
-#endif // FEATURE_MULTICASTSTUB_AS_IL
-    if (pStubMD->IsReverseStub())
+    else if (pStubMD->IsReverseStub())
     {
         if (pStubMD->IsStatic())
         {
@@ -1988,13 +1992,13 @@ BOOL ILStubManager::TraceManager(Thread *thread,
         else
         {
             LOG((LF_CORDB, LL_INFO1000, "ILSM::TraceManager: Stub is CLR-to-COM\n"));
-            _ASSERTE(pMD->IsComPlusCall());
-            ComPlusCallMethodDesc *pCMD = (ComPlusCallMethodDesc *)pMD;
+            _ASSERTE(pMD->IsCLRToCOMCall());
+            CLRToCOMCallMethodDesc *pCMD = (CLRToCOMCallMethodDesc *)pMD;
             _ASSERTE(!pCMD->IsStatic() && !pCMD->IsCtor() && "Static methods and constructors are not supported for built-in classic COM");
 
             if (pThis != NULL)
             {
-                target = GetCOMTarget(pThis, pCMD->m_pComPlusCallInfo);
+                target = GetCOMTarget(pThis, pCMD->m_pCLRToCOMCallInfo);
                 LOG((LF_CORDB, LL_INFO10000, "ILSM::TraceManager: CLR-to-COM case 0x%p\n", target));
                 trace->InitForUnmanaged(target);
             }
@@ -2012,7 +2016,7 @@ BOOL ILStubManager::TraceManager(Thread *thread,
 }
 #endif //!DACCESS_COMPILE
 
-// This is used to recognize GenericComPlusCallStub, VarargPInvokeStub, and GenericPInvokeCalliHelper.
+// This is used to recognize GenericCLRToCOMCallStub, VarargPInvokeStub, and GenericPInvokeCalliHelper.
 
 #ifndef DACCESS_COMPILE
 
@@ -2032,7 +2036,7 @@ void InteropDispatchStubManager::Init()
 
 #endif // #ifndef DACCESS_COMPILE
 
-PCODE TheGenericComplusCallStub(); // clrtocom.cpp
+PCODE TheGenericCLRToCOMCallStub(); // clrtocomcall.cpp
 
 #ifndef DACCESS_COMPILE
 static BOOL IsVarargPInvokeStub(PCODE stubStartAddress)
@@ -2058,7 +2062,7 @@ BOOL InteropDispatchStubManager::CheckIsStub_Internal(PCODE stubStartAddress)
 
 #ifndef DACCESS_COMPILE
 #ifdef FEATURE_COMINTEROP
-    if (stubStartAddress == GetEEFuncEntryPoint(GenericComPlusCallStub))
+    if (stubStartAddress == GetEEFuncEntryPoint(GenericCLRToCOMCallStub))
     {
         return true;
     }
@@ -2123,32 +2127,44 @@ BOOL InteropDispatchStubManager::TraceManager(Thread *thread,
 
     if (IsVarargPInvokeStub(GetIP(pContext)))
     {
+#if defined(TARGET_ARM64) && defined(__APPLE__)
+        //On ARM64 Mac, we cannot put a breakpoint inside of VarargPInvokeStub
+        LOG((LF_CORDB, LL_INFO10000, "IDSM::TraceManager: Skipping on arm64-macOS\n"));
+        return FALSE;
+#else
         NDirectMethodDesc *pNMD = (NDirectMethodDesc *)arg;
         _ASSERTE(pNMD->IsNDirect());
         PCODE target = (PCODE)pNMD->GetNDirectTarget();
 
-        LOG((LF_CORDB, LL_INFO10000, "IDSM::TraceManager: Vararg P/Invoke case 0x%p\n", target));
+        LOG((LF_CORDB, LL_INFO10000, "IDSM::TraceManager: Vararg P/Invoke case %p\n", target));
         trace->InitForUnmanaged(target);
+#endif //defined(TARGET_ARM64) && defined(__APPLE__)
     }
     else if (GetIP(pContext) == GetEEFuncEntryPoint(GenericPInvokeCalliHelper))
     {
+#if defined(TARGET_ARM64) && defined(__APPLE__)
+        //On ARM64 Mac, we cannot put a breakpoint inside of GenericPInvokeCalliHelper
+        LOG((LF_CORDB, LL_INFO10000, "IDSM::TraceManager: Skipping on arm64-macOS\n"));
+        return FALSE;
+#else
         PCODE target = (PCODE)arg;
-        LOG((LF_CORDB, LL_INFO10000, "IDSM::TraceManager: Unmanaged CALLI case 0x%p\n", target));
+        LOG((LF_CORDB, LL_INFO10000, "IDSM::TraceManager: Unmanaged CALLI case %p\n", target));
         trace->InitForUnmanaged(target);
+#endif //defined(TARGET_ARM64) && defined(__APPLE__)
     }
 #ifdef FEATURE_COMINTEROP
     else
     {
-        ComPlusCallMethodDesc *pCMD = (ComPlusCallMethodDesc *)arg;
-        _ASSERTE(pCMD->IsComPlusCall());
+        CLRToCOMCallMethodDesc *pCMD = (CLRToCOMCallMethodDesc *)arg;
+        _ASSERTE(pCMD->IsCLRToCOMCall());
 
         Object * pThis = StubManagerHelpers::GetThisPtr(pContext);
 
         {
-            if (!pCMD->m_pComPlusCallInfo->m_pInterfaceMT->IsComEventItfType() && (pCMD->m_pComPlusCallInfo->m_pILStub != NULL))
+            if (!pCMD->m_pCLRToCOMCallInfo->m_pInterfaceMT->IsComEventItfType() && (pCMD->m_pCLRToCOMCallInfo->m_pILStub != NULL))
             {
                 // Early-bound CLR->COM call - continue in the IL stub
-                trace->InitForStub(pCMD->m_pComPlusCallInfo->m_pILStub);
+                trace->InitForStub(pCMD->m_pCLRToCOMCallInfo->m_pILStub);
             }
             else
             {
@@ -2156,7 +2172,7 @@ BOOL InteropDispatchStubManager::TraceManager(Thread *thread,
                 OBJECTREF oref = ObjectToOBJECTREF(pThis);
                 GCPROTECT_BEGIN(oref);
 
-                MethodTable *pItfMT = pCMD->m_pComPlusCallInfo->m_pInterfaceMT;
+                MethodTable *pItfMT = pCMD->m_pCLRToCOMCallInfo->m_pInterfaceMT;
                 _ASSERTE(pItfMT->GetComInterfaceType() == ifDispatch);
 
                 SafeComHolder<IUnknown> pUnk = ComObject::GetComIPFromRCWThrowing(&oref, pItfMT);

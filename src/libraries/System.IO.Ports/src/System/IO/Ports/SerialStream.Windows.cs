@@ -562,7 +562,7 @@ namespace System.IO.Ports
 
             if (!portName.StartsWith("COM", StringComparison.OrdinalIgnoreCase) ||
                 !uint.TryParse(
-#if NETCOREAPP
+#if NET
                     portName.AsSpan(3),
 #else
                     portName.Substring(3),

@@ -35,7 +35,6 @@ static const Entry s_sysNative[] =
 {
     DllImportEntry(SystemNative_FStat)
     DllImportEntry(SystemNative_GetWindowSize)
-    DllImportEntry(SystemNative_SetWindowSize)
     DllImportEntry(SystemNative_IsATty)
     DllImportEntry(SystemNative_InitializeTerminalAndSignalHandling)
     DllImportEntry(SystemNative_SetKeypadXmit)
@@ -62,6 +61,8 @@ static const Entry s_sysNative[] =
     DllImportEntry(SystemNative_Close)
     DllImportEntry(SystemNative_Dup)
     DllImportEntry(SystemNative_Unlink)
+    DllImportEntry(SystemNative_IsMemfdSupported)
+    DllImportEntry(SystemNative_MemfdCreate)
     DllImportEntry(SystemNative_ShmOpen)
     DllImportEntry(SystemNative_ShmUnlink)
     DllImportEntry(SystemNative_GetReadDirRBufferSize)
@@ -166,6 +167,7 @@ static const Entry s_sysNative[] =
     DllImportEntry(SystemNative_Accept)
     DllImportEntry(SystemNative_Bind)
     DllImportEntry(SystemNative_Connect)
+    DllImportEntry(SystemNative_Connectx)
     DllImportEntry(SystemNative_GetPeerName)
     DllImportEntry(SystemNative_GetSockName)
     DllImportEntry(SystemNative_Listen)
@@ -281,6 +283,7 @@ static const Entry s_sysNative[] =
     DllImportEntry(SystemNative_GetGroupName)
     DllImportEntry(SystemNative_GetUInt64OSThreadId)
     DllImportEntry(SystemNative_TryGetUInt32OSThreadId)
+    DllImportEntry(SystemNative_Select)
 };
 
 EXTERN_C const void* SystemResolveDllImport(const char* name);

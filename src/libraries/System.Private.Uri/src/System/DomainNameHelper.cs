@@ -74,13 +74,21 @@ namespace System
 
             Debug.Assert(index == -1 || char.IsAsciiLetterUpper(str[start + index]));
 
+            ReadOnlySpan<char> span = str.AsSpan(start, end - start);
             if (index >= 0)
             {
+                if (span.Equals(Localhost, StringComparison.OrdinalIgnoreCase) ||
+                    span.Equals(Loopback, StringComparison.OrdinalIgnoreCase))
+                {
+                    loopback = true;
+                    return Localhost;
+                }
+
                 // We saw uppercase letters. Avoid allocating both the substring and the lower-cased variant.
-                return UriHelper.SpanToLowerInvariantString(str.AsSpan(start, end - start));
+                return UriHelper.SpanToLowerInvariantString(span);
             }
 
-            if (str.AsSpan(start, end - start) is Localhost or Loopback)
+            if (span is Localhost or Loopback)
             {
                 loopback = true;
                 return Localhost;

@@ -3,6 +3,7 @@
 
 
 using System.Threading;
+using System.Threading.Tasks;
 using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
 
@@ -27,11 +28,11 @@ namespace System.Net.Sockets.Tests
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        public void DisableIPv6_OSSupportsIPv6_False()
+        public async Task DisableIPv6_OSSupportsIPv6_False()
         {
             RemoteInvokeOptions options = new RemoteInvokeOptions();
             options.StartInfo.EnvironmentVariables["DOTNET_SYSTEM_NET_DISABLEIPV6"] = "1";
-            RemoteExecutor.Invoke(RunTest, options).Dispose();
+            await RemoteExecutor.Invoke(RunTest, options).DisposeAsync();
 
             static void RunTest()
             {
@@ -40,9 +41,9 @@ namespace System.Net.Sockets.Tests
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        public void DisableIPv6_SocketConstructor_CreatesIPv4Socket()
+        public async Task DisableIPv6_SocketConstructor_CreatesIPv4Socket()
         {
-            RemoteExecutor.Invoke(RunTest).Dispose();
+            await RemoteExecutor.Invoke(RunTest).DisposeAsync();
 
             static void RunTest()
             {

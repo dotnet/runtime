@@ -192,12 +192,12 @@ extern "C" void PopulateDebugHeaders()
     MAKE_SIZE_ENTRY(ThreadStore);
     MAKE_DEBUG_FIELD_ENTRY(ThreadStore, m_ThreadList);
 
-    MAKE_SIZE_ENTRY(ThreadBuffer);
-    MAKE_DEBUG_FIELD_ENTRY(ThreadBuffer, m_pNext);
-    MAKE_DEBUG_FIELD_ENTRY(ThreadBuffer, m_rgbAllocContextBuffer);
-    MAKE_DEBUG_FIELD_ENTRY(ThreadBuffer, m_threadId);
-    MAKE_DEBUG_FIELD_ENTRY(ThreadBuffer, m_pThreadStressLog);
-    MAKE_DEBUG_FIELD_ENTRY(ThreadBuffer, m_pExInfoStackHead);
+    MAKE_SIZE_ENTRY(RuntimeThreadLocals);
+    MAKE_DEBUG_FIELD_ENTRY(RuntimeThreadLocals, m_pNext);
+    MAKE_DEBUG_FIELD_ENTRY(RuntimeThreadLocals, m_rgbAllocContextBuffer);
+    MAKE_DEBUG_FIELD_ENTRY(RuntimeThreadLocals, m_threadId);
+    MAKE_DEBUG_FIELD_ENTRY(RuntimeThreadLocals, m_pThreadStressLog);
+    MAKE_DEBUG_FIELD_ENTRY(RuntimeThreadLocals, m_pExInfoStackHead);
 
     MAKE_SIZE_ENTRY(ExInfo);
     MAKE_DEBUG_FIELD_ENTRY(ExInfo, m_pPrevExInfo);

@@ -83,7 +83,7 @@ namespace System
                 if (_count == 0)
                     return Array.Empty<T>();
                 if (_count == 1)
-                    return new T[1] { _item };
+                    return [_item];
 
                 Array.Resize(ref _items, _count);
                 _capacity = _count;
@@ -932,7 +932,8 @@ namespace System
                     if (MdToken.IsNullToken(tkDeclaringType))
                         return;
 
-                    MetadataImport scope = RuntimeTypeHandle.GetMetadataImport(declaringType);
+                    RuntimeModule module = declaringType.GetRuntimeModule();
+                    MetadataImport scope = module.MetadataImport;
 
                     scope.EnumFields(tkDeclaringType, out MetadataEnumResult tkFields);
 
@@ -976,6 +977,7 @@ namespace System
                             list.Add(runtimeFieldInfo);
                         }
                     }
+                    GC.KeepAlive(module);
                 }
 
                 private void AddSpecialInterface(
@@ -1102,7 +1104,7 @@ namespace System
                     ListBuilder<RuntimeType> list = default;
 
                     ModuleHandle moduleHandle = new ModuleHandle(RuntimeTypeHandle.GetModule(declaringType));
-                    MetadataImport scope = ModuleHandle.GetMetadataImport(moduleHandle.GetRuntimeModule());
+                    MetadataImport scope = moduleHandle.GetRuntimeModule().MetadataImport;
 
                     scope.EnumNestedTypes(tkEnclosingType, out MetadataEnumResult tkNestedClasses);
 
@@ -1174,7 +1176,8 @@ namespace System
                     if (MdToken.IsNullToken(tkDeclaringType))
                         return;
 
-                    MetadataImport scope = RuntimeTypeHandle.GetMetadataImport(declaringType);
+                    RuntimeModule module = declaringType.GetRuntimeModule();
+                    MetadataImport scope = module.MetadataImport;
 
                     scope.EnumEvents(tkDeclaringType, out MetadataEnumResult tkEvents);
 
@@ -1220,6 +1223,7 @@ namespace System
 
                         list.Add(eventInfo);
                     }
+                    GC.KeepAlive(module);
                 }
 
                 private RuntimePropertyInfo[] PopulateProperties(Filter filter)
@@ -1286,7 +1290,8 @@ namespace System
                     if (MdToken.IsNullToken(tkDeclaringType))
                         return;
 
-                    MetadataImport scope = RuntimeTypeHandle.GetMetadataImport(declaringType);
+                    RuntimeModule module = declaringType.GetRuntimeModule();
+                    MetadataImport scope = module.MetadataImport;
 
                     scope.EnumProperties(tkDeclaringType, out MetadataEnumResult tkProperties);
 
@@ -1304,7 +1309,7 @@ namespace System
 
                         if (filter.RequiresStringComparison())
                         {
-                            MdUtf8String name = declaringType.GetRuntimeModule().MetadataImport.GetName(tkProperty);
+                            MdUtf8String name = scope.GetName(tkProperty);
 
                             if (!filter.Match(name))
                                 continue;
@@ -1399,6 +1404,7 @@ namespace System
 
                         list.Add(propertyInfo);
                     }
+                    GC.KeepAlive(module);
                 }
                 #endregion
 
@@ -1448,11 +1454,8 @@ namespace System
             private static CerHashtable<RuntimeMethodInfo, RuntimeMethodInfo> s_methodInstantiations;
             private static object? s_methodInstantiationsLock;
             private string? m_defaultMemberName;
-            // Generic cache for rare scenario specific data. Used for:
-            // - Enum names and values (EnumInfo)
-            // - Activator.CreateInstance (ActivatorCache)
-            // - Array.Initialize (ArrayInitializeCache)
-            private object? m_genericCache;
+            // Generic cache for rare scenario specific data.
+            private IGenericCacheEntry? m_genericCache;
             private object[]? _emptyArray; // Object array cache for Attribute.GetCustomAttributes() pathological no-result case.
             private RuntimeType? _genericTypeDefinition;
             #endregion
@@ -1495,30 +1498,31 @@ namespace System
 
             #region Internal Members
 
+            internal ref IGenericCacheEntry? GenericCache => ref m_genericCache;
 
-            /// <summary>
-            /// Generic cache for rare scenario specific data. It is used to cache either Enum names, Enum values,
-            /// the Activator cache or function pointer parameters.
-            /// </summary>
-            internal object? GenericCache
+            internal sealed class FunctionPointerCache : IGenericCacheEntry<FunctionPointerCache>
             {
-                get => m_genericCache;
-                set => m_genericCache = value;
+                public Type[] FunctionPointerReturnAndParameterTypes { get; }
+
+                private FunctionPointerCache(Type[] functionPointerReturnAndParameterTypes)
+                {
+                    FunctionPointerReturnAndParameterTypes = functionPointerReturnAndParameterTypes;
+                }
+
+                public static FunctionPointerCache Create(RuntimeType type)
+                {
+                    Debug.Assert(type.IsFunctionPointer);
+                    return new(RuntimeTypeHandle.GetArgumentTypesFromFunctionPointer(type));
+                }
+                public void InitializeCompositeCache(RuntimeType.CompositeCacheEntry compositeEntry) => compositeEntry._functionPointerCache = this;
+                public static ref FunctionPointerCache? GetStorageRef(RuntimeType.CompositeCacheEntry compositeEntry) => ref compositeEntry._functionPointerCache;
             }
 
             internal Type[] FunctionPointerReturnAndParameterTypes
             {
                 get
                 {
-                    Debug.Assert(m_runtimeType.IsFunctionPointer);
-                    Type[]? value = (Type[]?)GenericCache;
-                    if (value == null)
-                    {
-                        GenericCache = value = RuntimeTypeHandle.GetArgumentTypesFromFunctionPointer(m_runtimeType);
-                        Debug.Assert(value.Length > 0);
-                    }
-
-                    return value;
+                    return m_runtimeType.GetOrCreateCacheEntry<FunctionPointerCache>().FunctionPointerReturnAndParameterTypes;
                 }
             }
 
@@ -1571,7 +1575,9 @@ namespace System
                     while (type.IsNested)
                         type = type.DeclaringType!;
 
-                    m_namespace = RuntimeTypeHandle.GetMetadataImport((RuntimeType)type).GetNamespace(type.MetadataToken).ToString();
+                    RuntimeModule module = ((RuntimeType)type).GetRuntimeModule();
+                    m_namespace = module.MetadataImport.GetNamespace(type.MetadataToken).ToString();
+                    GC.KeepAlive(module);
                 }
 
                 return m_namespace;
@@ -1922,10 +1928,23 @@ namespace System
             return retval;
         }
 
-        internal object? GenericCache
+        internal T GetOrCreateCacheEntry<T>()
+            where T : class, IGenericCacheEntry<T>
         {
-            get => CacheIfExists?.GenericCache;
-            set => Cache.GenericCache = value;
+            return IGenericCacheEntry<T>.GetOrCreate(this);
+        }
+
+        internal T? FindCacheEntry<T>()
+            where T : class, IGenericCacheEntry<T>
+        {
+            return IGenericCacheEntry<T>.Find(this);
+        }
+
+        internal T ReplaceCacheEntry<T>(T entry)
+            where T : class, IGenericCacheEntry<T>
+        {
+            IGenericCacheEntry<T>.Replace(this, entry);
+            return entry;
         }
 
         internal static FieldInfo GetFieldInfo(IRuntimeFieldInfo fieldHandle)
@@ -2368,7 +2387,7 @@ namespace System
 
         #endregion
 
-        #endregion
+#endregion
 
         #region Private Data Members
 
@@ -2711,9 +2730,7 @@ namespace System
 
             ArgumentNullException.ThrowIfNull(interfaceType);
 
-            RuntimeType? ifaceRtType = interfaceType as RuntimeType;
-
-            if (ifaceRtType == null)
+            RuntimeType ifaceRtType = interfaceType as RuntimeType ??
                 throw new ArgumentException(SR.Argument_MustBeRuntimeType, nameof(interfaceType));
 
             RuntimeTypeHandle ifaceRtTypeHandle = ifaceRtType.TypeHandle;
@@ -3293,7 +3310,7 @@ namespace System
         // Reflexive, symmetric, transitive.
         public override bool IsEquivalentTo([NotNullWhen(true)] Type? other)
         {
-            if (!(other is RuntimeType otherRtType))
+            if (other is not RuntimeType otherRtType)
             {
                 return false;
             }
@@ -3499,8 +3516,9 @@ namespace System
                 if (!IsGenericParameter)
                     throw new InvalidOperationException(SR.Arg_NotGenericParameter);
 
-
-                RuntimeTypeHandle.GetMetadataImport(this).GetGenericParamProps(MetadataToken, out GenericParameterAttributes attributes);
+                RuntimeModule module = GetRuntimeModule();
+                module.MetadataImport.GetGenericParamProps(MetadataToken, out GenericParameterAttributes attributes);
+                GC.KeepAlive(module);
 
                 return attributes;
             }
@@ -3549,7 +3567,7 @@ namespace System
                 }
                 catch (TypeLoadException e)
                 {
-                    ValidateGenericArguments(this, new[] { rt }, e);
+                    ValidateGenericArguments(this, [rt], e);
                     throw;
                 }
             }
@@ -3560,10 +3578,7 @@ namespace System
             bool foundNonRuntimeType = false;
             for (int i = 0; i < instantiation.Length; i++)
             {
-                Type instantiationElem = instantiation[i];
-                if (instantiationElem == null)
-                    throw new ArgumentNullException();
-
+                Type instantiationElem = instantiation[i] ?? throw new ArgumentNullException();
                 RuntimeType? rtInstantiationElem = instantiationElem as RuntimeType;
 
                 if (rtInstantiationElem == null)
@@ -3877,22 +3892,7 @@ namespace System
         [DebuggerHidden]
         internal object GetUninitializedObject()
         {
-            object? genericCache = GenericCache;
-
-            if (genericCache is not CreateUninitializedCache cache)
-            {
-                if (genericCache is ActivatorCache activatorCache)
-                {
-                    cache = activatorCache.GetCreateUninitializedCache(this);
-                }
-                else
-                {
-                    cache = new CreateUninitializedCache(this);
-                    GenericCache = cache;
-                }
-            }
-
-            return cache.CreateUninitializedObject(this);
+            return GetOrCreateCacheEntry<CreateUninitializedCache>().CreateUninitializedObject(this);
         }
 
         /// <summary>
@@ -3905,11 +3905,7 @@ namespace System
             // Get or create the cached factory. Creating the cache will fail if one
             // of our invariant checks fails; e.g., no appropriate ctor found.
 
-            if (GenericCache is not ActivatorCache cache)
-            {
-                cache = new ActivatorCache(this);
-                GenericCache = cache;
-            }
+            ActivatorCache cache = GetOrCreateCacheEntry<ActivatorCache>();
 
             if (!cache.CtorIsPublic && publicOnly)
             {
@@ -3923,7 +3919,7 @@ namespace System
             object? obj = cache.CreateUninitializedObject(this);
             try
             {
-                cache.CallConstructor(obj);
+                cache.CallRefConstructor(obj);
             }
             catch (Exception e) when (wrapExceptions)
             {
@@ -3933,26 +3929,23 @@ namespace System
             return obj;
         }
 
-        // Specialized version of the above for Activator.CreateInstance<T>()
+        // Specialized version of CreateInstanceDefaultCtor() for Activator.CreateInstance<T>()
         [DebuggerStepThrough]
         [DebuggerHidden]
         internal object? CreateInstanceOfT()
         {
-            if (GenericCache is not ActivatorCache cache)
-            {
-                cache = new ActivatorCache(this);
-                GenericCache = cache;
-            }
+            ActivatorCache cache = GetOrCreateCacheEntry<ActivatorCache>();
 
             if (!cache.CtorIsPublic)
             {
                 throw new MissingMethodException(SR.Format(SR.Arg_NoDefCTor, this));
             }
 
+            // We reuse ActivatorCache here to ensure that we aren't always creating two entries in the cache.
             object? obj = cache.CreateUninitializedObject(this);
             try
             {
-                cache.CallConstructor(obj);
+                cache.CallRefConstructor(obj);
             }
             catch (Exception e)
             {
@@ -3960,6 +3953,30 @@ namespace System
             }
 
             return obj;
+        }
+
+        // Specialized version of CreateInstanceDefaultCtor() for Activator.CreateInstance<T>()
+        [DebuggerStepThrough]
+        [DebuggerHidden]
+        internal void CallDefaultStructConstructor(ref byte data)
+        {
+            Debug.Assert(IsValueType);
+
+            ActivatorCache cache = GetOrCreateCacheEntry<ActivatorCache>();
+
+            if (!cache.CtorIsPublic)
+            {
+                throw new MissingMethodException(SR.Format(SR.Arg_NoDefCTor, this));
+            }
+
+            try
+            {
+                cache.CallValueConstructor(ref data);
+            }
+            catch (Exception e)
+            {
+                throw new TargetInvocationException(e);
+            }
         }
 
         internal void InvalidateCachedNestedType() => Cache.InvalidateCachedNestedType();
@@ -4014,7 +4031,7 @@ namespace System
                     paramMod[i] = aArgsIsByRef[i];
                 }
 
-                aParamMod = new ParameterModifier[] { paramMod };
+                aParamMod = [paramMod];
                 if (aArgsWrapperTypes != null)
                 {
                     WrapArgsForInvokeCall(aArgs, aArgsWrapperTypes);
@@ -4102,11 +4119,11 @@ namespace System
                     ConstructorInfo wrapperCons;
                     if (isString)
                     {
-                        wrapperCons = wrapperType.GetConstructor(new Type[] { typeof(string) })!;
+                        wrapperCons = wrapperType.GetConstructor([typeof(string)])!;
                     }
                     else
                     {
-                        wrapperCons = wrapperType.GetConstructor(new Type[] { typeof(object) })!;
+                        wrapperCons = wrapperType.GetConstructor([typeof(object)])!;
                     }
 
                     // Wrap each of the elements of the array.
@@ -4114,11 +4131,11 @@ namespace System
                     {
                         if (isString)
                         {
-                            newArray[currElem] = wrapperCons.Invoke(new object?[] { (string?)oldArray.GetValue(currElem) });
+                            newArray[currElem] = wrapperCons.Invoke([(string?)oldArray.GetValue(currElem)]);
                         }
                         else
                         {
-                            newArray[currElem] = wrapperCons.Invoke(new object?[] { oldArray.GetValue(currElem) });
+                            newArray[currElem] = wrapperCons.Invoke([oldArray.GetValue(currElem)]);
                         }
                     }
 
@@ -4305,7 +4322,7 @@ namespace System.Reflection
         private static int GetHashCodeHelper(K key)
         {
             // For strings we don't want the key to differ across domains as CerHashtable might be shared.
-            if (!(key is string sKey))
+            if (key is not string sKey)
             {
                 return key.GetHashCode();
             }

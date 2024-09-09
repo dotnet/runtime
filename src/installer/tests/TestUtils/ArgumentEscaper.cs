@@ -14,7 +14,7 @@ namespace Microsoft.DotNet.Cli.Build.Framework
         /// so that the next process will receive the same string[] args
         ///
         /// See here for more info:
-        /// https://docs.microsoft.com/en-us/archive/blogs/twistylittlepassagesallalike/everyone-quotes-command-line-arguments-the-wrong-way
+        /// https://learn.microsoft.com/archive/blogs/twistylittlepassagesallalike/everyone-quotes-command-line-arguments-the-wrong-way
         /// </summary>
         /// <param name="args"></param>
         /// <returns></returns>
@@ -28,7 +28,7 @@ namespace Microsoft.DotNet.Cli.Build.Framework
         /// so that the next process will receive the same string[] args
         ///
         /// See here for more info:
-        /// https://docs.microsoft.com/en-us/archive/blogs/twistylittlepassagesallalike/everyone-quotes-command-line-arguments-the-wrong-way
+        /// https://learn.microsoft.com/archive/blogs/twistylittlepassagesallalike/everyone-quotes-command-line-arguments-the-wrong-way
         /// </summary>
         /// <param name="args"></param>
         /// <returns></returns>
@@ -99,7 +99,7 @@ namespace Microsoft.DotNet.Cli.Build.Framework
         /// be to do this only for cmd metacharacters.
         ///
         /// See here for more info:
-        /// https://docs.microsoft.com/en-us/archive/blogs/twistylittlepassagesallalike/everyone-quotes-command-line-arguments-the-wrong-way
+        /// https://learn.microsoft.com/archive/blogs/twistylittlepassagesallalike/everyone-quotes-command-line-arguments-the-wrong-way
         /// </summary>
         /// <param name="args"></param>
         /// <returns></returns>

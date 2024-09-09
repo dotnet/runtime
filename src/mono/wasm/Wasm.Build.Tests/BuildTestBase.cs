@@ -517,7 +517,7 @@ namespace Wasm.Build.Tests
 
                 // this will ensure that all the async event handling has completed
                 // and should be called after process.WaitForExit(int)
-                // https://docs.microsoft.com/en-us/dotnet/api/system.diagnostics.process.waitforexit?view=net-5.0#System_Diagnostics_Process_WaitForExit_System_Int32_
+                // https://learn.microsoft.com/dotnet/api/system.diagnostics.process.waitforexit?view=net-5.0#System_Diagnostics_Process_WaitForExit_System_Int32_
                 process.WaitForExit();
 
                 process.ErrorDataReceived -= logStdErr;
@@ -607,7 +607,7 @@ namespace Wasm.Build.Tests
         protected static string GetSkiaSharpReferenceItems()
             => @"<PackageReference Include=""SkiaSharp"" Version=""2.88.6"" />
                 <PackageReference Include=""SkiaSharp.NativeAssets.WebAssembly"" Version=""2.88.6"" />
-                <NativeFileReference Include=""$(SkiaSharpStaticLibraryPath)\3.1.34\st\*.a"" />";
+                <NativeFileReference Include=""$(SkiaSharpStaticLibraryPath)\3.1.56\st\*.a"" />";
 
         protected static string s_mainReturns42 = @"
             public class TestClass {

@@ -236,13 +236,13 @@ public:
 
     // Set up static data structures - called during EEStartup
     static void InitStatic();
-    static void UninitStatic();
+    static void LogFinalStats();
 
     // Per instance initialization - called during AppDomain::Init and ::Uninit and for collectible loader allocators
-    void Init(BaseDomain* pDomain, LoaderAllocator *pLoaderAllocator);
+    void Init(LoaderAllocator *pLoaderAllocator);
     void Uninit();
 
-    //@TODO: the logging should be tied into the VMs normal loggin mechanisms,
+    //@TODO: the logging should be tied into the VMs normal logging mechanisms,
     //@TODO: for now we just always write a short log file called "StubLog_<pid>.log"
     static void StartupLogging();
     static void LoggingDump();
@@ -262,7 +262,6 @@ public:
     VirtualCallStubManager()
         : StubManager(),
           cache_entry_rangeList(),
-          parentDomain(NULL),
           m_loaderAllocator(NULL),
           m_initialReservedMemForHeaps(NULL),
           m_FreeIndCellList(NULL),
@@ -486,9 +485,6 @@ private:
                              TraceDestination *trace);
 
 private:
-    // The parent domain of this manager
-    PTR_BaseDomain  parentDomain;
-
     PTR_LoaderAllocator m_loaderAllocator;
 
     BYTE *          m_initialReservedMemForHeaps;

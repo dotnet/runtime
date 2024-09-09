@@ -20,8 +20,12 @@ using Xunit;
 namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
 {
     [ActiveIssue("https://github.com/dotnet/runtime/issues/52062", TestPlatforms.Browser)]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/105311", typeof(ConfigurationBindingGeneratorTests), nameof(IsBigEndian))]
     public partial class ConfigurationBindingGeneratorTests : ConfigurationBinderTestsBase
     {
+        // The source hash applied to the [Interceptable] attribute treats chars as bytes which fails baseline comparisons on big-endian.
+        public static bool IsBigEndian => !BitConverter.IsLittleEndian;
+
         [Theory]
         [InlineData(LanguageVersion.CSharp11)]
         [InlineData(LanguageVersion.CSharp10)]

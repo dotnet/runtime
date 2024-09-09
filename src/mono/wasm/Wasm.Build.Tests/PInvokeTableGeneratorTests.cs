@@ -719,6 +719,44 @@ namespace Wasm.Build.Tests
             return (buildArgs, output);
         }
 
+        private void EnsureComInteropCompiles(BuildArgs buildArgs, RunHost host, string id)
+        {
+            string programText = @"
+                using System;
+                using System.Runtime.CompilerServices;
+                using System.Runtime.InteropServices;
+                using System.Runtime.InteropServices.ComTypes;
+
+                public class Test
+                {
+                    public static int Main(string[] args)
+                    {
+                        var s = new STGMEDIUM();
+                        ReleaseStgMedium(ref s);
+                        return 42;
+                    }
+
+                    [DllImport(""ole32.dll"")]
+                    internal static extern void ReleaseStgMedium(ref STGMEDIUM medium);
+                }
+
+            ";
+
+            buildArgs = ExpandBuildArgs(buildArgs);
+
+            (string libraryDir, string output) = BuildProject(buildArgs,
+                                        id: id,
+                                        new BuildProjectOptions(
+                                            InitProject: () =>
+                                            {
+                                                File.WriteAllText(Path.Combine(_projectDir!, "Program.cs"), programText);
+                                            },
+                                            Publish: buildArgs.AOT,
+                                            DotnetWasmFromRuntimePack: true));
+
+            Assert.Contains("Generated app bundle at " + libraryDir, output);
+        }
+
         private void EnsureWasmAbiRulesAreFollowed(BuildArgs buildArgs, RunHost host, string id)
         {
             string programText = @"
@@ -884,5 +922,36 @@ namespace Wasm.Build.Tests
         [BuildAndRun(host: RunHost.Chrome, aot: false)]
         public void EnsureWasmAbiRulesAreFollowedInInterpreter(BuildArgs buildArgs, RunHost host, string id) =>
             EnsureWasmAbiRulesAreFollowed(buildArgs, host, id);
+
+        [Theory]
+        [BuildAndRun(host: RunHost.Chrome, aot: true)]
+        public void EnsureComInteropCompilesInAOT(BuildArgs buildArgs, RunHost host, string id) =>
+            EnsureComInteropCompiles(buildArgs, host, id);
+
+        [Theory]
+        [BuildAndRun(host: RunHost.Chrome, aot: false)]
+        public void UCOWithSpecialCharacters(BuildArgs buildArgs, RunHost host, string id)
+        {
+            var extraProperties = "<AllowUnsafeBlocks>true</AllowUnsafeBlocks>";
+            var extraItems = @"<NativeFileReference Include=""local.c"" />";
+
+            buildArgs = ExpandBuildArgs(buildArgs,
+                                        extraItems: extraItems,
+                                        extraProperties: extraProperties);
+
+            (string libraryDir, string output) = BuildProject(buildArgs,
+                                        id: id,
+                                        new BuildProjectOptions(
+                                            InitProject: () =>
+                                            {
+                                                File.Copy(Path.Combine(BuildEnvironment.TestAssetsPath, "Wasm.Buid.Tests.Programs", "UnmanagedCallback.cs"), Path.Combine(_projectDir!, "Program.cs"));
+                                                File.Copy(Path.Combine(BuildEnvironment.TestAssetsPath, "native-libs", "local.c"), Path.Combine(_projectDir!, "local.c"));
+                                            },
+                                            Publish: true,
+                                            DotnetWasmFromRuntimePack: false));
+
+            var runOutput = RunAndTestWasmApp(buildArgs, buildDir: _projectDir, expectedExitCode: 42, host: host, id: id);
+            Assert.Contains("ManagedFunc returned 42", runOutput);
+        }
     }
 }

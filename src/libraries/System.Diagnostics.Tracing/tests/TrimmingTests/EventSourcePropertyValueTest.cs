@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Diagnostics.CodeAnalysis;
 using System.Diagnostics.Tracing;
 
 /// <summary>
@@ -34,6 +35,7 @@ internal class Program
         public TestEventSource() : base(EventSourceSettings.EtwSelfDescribingEventFormat) { }
 
         [Event(1)]
+        [DynamicDependency(DynamicallyAccessedMemberTypes.PublicProperties, typeof(TestSubData))]
         public void LogData(TestData data)
         {
             Write("LogData", data);

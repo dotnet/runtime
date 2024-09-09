@@ -323,6 +323,7 @@ public class test
     }
 
     [Fact]
+    [OuterLoop]
     public static int TestEntryPoint()
     {
         Console.WriteLine("Testing method of 25 parameters, all of int data type, long chain of method calls");

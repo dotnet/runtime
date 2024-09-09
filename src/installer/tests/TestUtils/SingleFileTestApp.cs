@@ -29,6 +29,14 @@ namespace Microsoft.DotNet.CoreSetup.Test
             PopulateBuiltAppDirectory();
         }
 
+        private SingleFileTestApp(SingleFileTestApp source)
+            : base(source)
+        {
+            AppName = source.AppName;
+            selfContained = source.selfContained;
+            builtApp = new TestApp(Path.Combine(Location, "builtApp"), AppName);
+        }
+
         /// <summary>
         /// Create a framework-dependent single-file test app from pre-built output of <paramref name="appName"/>.
         /// </summary>
@@ -73,6 +81,8 @@ namespace Microsoft.DotNet.CoreSetup.Test
             return fileSpecs;
         }
 
+        public SingleFileTestApp Copy() => new SingleFileTestApp(this);
+
         public string Bundle(BundleOptions options = BundleOptions.None, Version? bundleVersion = null)
         {
             return Bundle(options, out _, bundleVersion);
@@ -82,7 +92,7 @@ namespace Microsoft.DotNet.CoreSetup.Test
         {
             string bundleDirectory = GetUniqueSubdirectory("bundle");
             var bundler = new Bundler(
-                Binaries.GetExeFileNameForCurrentPlatform(AppName),
+                Binaries.GetExeName(AppName),
                 bundleDirectory,
                 options,
                 targetFrameworkVersion: bundleVersion,
@@ -130,6 +140,18 @@ namespace Microsoft.DotNet.CoreSetup.Test
         public DirectoryInfo GetExtractionDir(string root, Manifest manifest)
         {
             return new DirectoryInfo(Path.Combine(root, Name, manifest.BundleID));
+        }
+
+        public void CreateAppHost(bool isWindowsGui = false, bool copyResources = true, bool disableCetCompat = false)
+        {
+            if (selfContained)
+            {
+                builtApp.CreateSingleFileHost(isWindowsGui, copyResources, disableCetCompat);
+            }
+            else
+            {
+                builtApp.CreateAppHost(isWindowsGui, copyResources, disableCetCompat);
+            }
         }
 
         private void PopulateBuiltAppDirectory()
@@ -182,14 +204,7 @@ namespace Microsoft.DotNet.CoreSetup.Test
             builder.Build(builtApp);
 
             // Create the apphost for the app
-            if (selfContained)
-            {
-                builtApp.CreateSingleFileHost();
-            }
-            else
-            {
-                builtApp.CreateAppHost();
-            }
+            CreateAppHost();
         }
     }
 }

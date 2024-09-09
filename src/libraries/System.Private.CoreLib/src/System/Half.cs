@@ -505,7 +505,7 @@ namespace System
         /// </summary>
         public override string ToString()
         {
-            return Number.FormatHalf(this, null, NumberFormatInfo.CurrentInfo);
+            return Number.FormatFloat(this, null, NumberFormatInfo.CurrentInfo);
         }
 
         /// <summary>
@@ -513,7 +513,7 @@ namespace System
         /// </summary>
         public string ToString([StringSyntax(StringSyntaxAttribute.NumericFormat)] string? format)
         {
-            return Number.FormatHalf(this, format, NumberFormatInfo.CurrentInfo);
+            return Number.FormatFloat(this, format, NumberFormatInfo.CurrentInfo);
         }
 
         /// <summary>
@@ -521,7 +521,7 @@ namespace System
         /// </summary>
         public string ToString(IFormatProvider? provider)
         {
-            return Number.FormatHalf(this, null, NumberFormatInfo.GetInstance(provider));
+            return Number.FormatFloat(this, null, NumberFormatInfo.GetInstance(provider));
         }
 
         /// <summary>
@@ -529,7 +529,7 @@ namespace System
         /// </summary>
         public string ToString([StringSyntax(StringSyntaxAttribute.NumericFormat)] string? format, IFormatProvider? provider)
         {
-            return Number.FormatHalf(this, format, NumberFormatInfo.GetInstance(provider));
+            return Number.FormatFloat(this, format, NumberFormatInfo.GetInstance(provider));
         }
 
         /// <summary>
@@ -542,13 +542,13 @@ namespace System
         /// <returns></returns>
         public bool TryFormat(Span<char> destination, out int charsWritten, [StringSyntax(StringSyntaxAttribute.NumericFormat)] ReadOnlySpan<char> format = default, IFormatProvider? provider = null)
         {
-            return Number.TryFormatHalf(this, format, NumberFormatInfo.GetInstance(provider), destination, out charsWritten);
+            return Number.TryFormatFloat(this, format, NumberFormatInfo.GetInstance(provider), destination, out charsWritten);
         }
 
         /// <inheritdoc cref="IUtf8SpanFormattable.TryFormat" />
         public bool TryFormat(Span<byte> utf8Destination, out int bytesWritten, [StringSyntax(StringSyntaxAttribute.NumericFormat)] ReadOnlySpan<char> format = default, IFormatProvider? provider = null)
         {
-            return Number.TryFormatHalf(this, format, NumberFormatInfo.GetInstance(provider), utf8Destination, out bytesWritten);
+            return Number.TryFormatFloat(this, format, NumberFormatInfo.GetInstance(provider), utf8Destination, out bytesWritten);
         }
 
         //
@@ -1314,6 +1314,14 @@ namespace System
         /// <inheritdoc cref="IFloatingPoint{TSelf}.Ceiling(TSelf)" />
         public static Half Ceiling(Half x) => (Half)MathF.Ceiling((float)x);
 
+        /// <inheritdoc cref="IFloatingPoint{TSelf}.ConvertToInteger{TInteger}(TSelf)" />
+        public static TInteger ConvertToInteger<TInteger>(Half value)
+            where TInteger : IBinaryInteger<TInteger> => TInteger.CreateSaturating(value);
+
+        /// <inheritdoc cref="IFloatingPoint{TSelf}.ConvertToIntegerNative{TInteger}(TSelf)" />
+        public static TInteger ConvertToIntegerNative<TInteger>(Half value)
+            where TInteger : IBinaryInteger<TInteger> => TInteger.CreateSaturating(value);
+
         /// <inheritdoc cref="IFloatingPoint{TSelf}.Floor(TSelf)" />
         public static Half Floor(Half x) => (Half)MathF.Floor((float)x);
 
@@ -1912,6 +1920,9 @@ namespace System
             return y;
         }
 
+        /// <inheritdoc cref="INumberBase{TSelf}.MultiplyAddEstimate(TSelf, TSelf, TSelf)" />
+        public static Half MultiplyAddEstimate(Half left, Half right, Half addend) => (Half)float.MultiplyAddEstimate((float)left, (float)right, (float)addend);
+
         /// <inheritdoc cref="INumberBase{TSelf}.TryConvertFromChecked{TOther}(TOther, out TSelf)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         static bool INumberBase<Half>.TryConvertFromChecked<TOther>(TOther value, out Half result)
@@ -2362,5 +2373,9 @@ namespace System
         static Half IBinaryFloatParseAndFormatInfo<Half>.BitsToFloat(ulong bits) => BitConverter.UInt16BitsToHalf((ushort)(bits));
 
         static ulong IBinaryFloatParseAndFormatInfo<Half>.FloatToBits(Half value) => BitConverter.HalfToUInt16Bits(value);
+
+        static int IBinaryFloatParseAndFormatInfo<Half>.MaxRoundTripDigits => 5;
+
+        static int IBinaryFloatParseAndFormatInfo<Half>.MaxPrecisionCustomFormat => 5;
     }
 }

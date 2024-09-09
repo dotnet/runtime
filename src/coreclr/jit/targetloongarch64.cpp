@@ -63,6 +63,8 @@ ABIPassingInformation LoongArch64Classifier::Classify(Compiler*    comp,
     unsigned  slots               = 0;
     var_types argRegTypeInStruct1 = TYP_UNKNOWN;
     var_types argRegTypeInStruct2 = TYP_UNKNOWN;
+    unsigned  argRegOffset1       = 0;
+    unsigned  argRegOffset2       = 0;
 
     bool canPassArgInRegisters = false;
     if (varTypeIsStruct(type))
@@ -78,52 +80,41 @@ ABIPassingInformation LoongArch64Classifier::Classify(Compiler*    comp,
         {
             assert(!structLayout->IsBlockLayout());
 
-            uint32_t             floatFlags;
-            CORINFO_CLASS_HANDLE typeHnd = structLayout->GetClassHandle();
+            CORINFO_CLASS_HANDLE             typeHnd  = structLayout->GetClassHandle();
+            const CORINFO_FPSTRUCT_LOWERING* lowering = comp->GetFpStructLowering(typeHnd);
 
-            floatFlags = comp->info.compCompHnd->getLoongArch64PassStructInRegisterFlags(typeHnd);
-
-            if ((floatFlags & STRUCT_HAS_FLOAT_FIELDS_MASK) != 0)
+            if (!lowering->byIntegerCallConv)
             {
-                if ((floatFlags & STRUCT_FLOAT_FIELD_ONLY_ONE) != 0)
+                slots = lowering->numLoweredElements;
+                if (lowering->numLoweredElements == 1)
                 {
-                    assert(passedSize <= TARGET_POINTER_SIZE);
-
-                    slots                 = 1;
                     canPassArgInRegisters = m_floatRegs.Count() > 0;
-
-                    argRegTypeInStruct1 = (passedSize == 8) ? TYP_DOUBLE : TYP_FLOAT;
+                    argRegTypeInStruct1   = JITtype2varType(lowering->loweredElements[0]);
+                    assert(varTypeIsFloating(argRegTypeInStruct1));
+                    argRegOffset1 = lowering->offsets[0];
                 }
-                else if ((floatFlags & STRUCT_FLOAT_FIELD_ONLY_TWO) != 0)
+                else
                 {
-                    slots                 = 2;
-                    canPassArgInRegisters = m_floatRegs.Count() >= 2;
-
-                    argRegTypeInStruct1 = (floatFlags & STRUCT_FIRST_FIELD_SIZE_IS8) ? TYP_DOUBLE : TYP_FLOAT;
-                    argRegTypeInStruct2 = (floatFlags & STRUCT_SECOND_FIELD_SIZE_IS8) ? TYP_DOUBLE : TYP_FLOAT;
-                }
-                else if ((floatFlags & STRUCT_FLOAT_FIELD_FIRST) != 0)
-                {
-                    slots                 = 1;
-                    canPassArgInRegisters = (m_floatRegs.Count() > 0) && (m_intRegs.Count() > 0);
-
-                    argRegTypeInStruct1 = (floatFlags & STRUCT_FIRST_FIELD_SIZE_IS8) ? TYP_DOUBLE : TYP_FLOAT;
-                    argRegTypeInStruct2 = (floatFlags & STRUCT_SECOND_FIELD_SIZE_IS8) ? TYP_LONG : TYP_INT;
-                }
-                else if ((floatFlags & STRUCT_FLOAT_FIELD_SECOND) != 0)
-                {
-                    slots                 = 1;
-                    canPassArgInRegisters = (m_floatRegs.Count() > 0) && (m_intRegs.Count() > 0);
-
-                    argRegTypeInStruct1 = (floatFlags & STRUCT_FIRST_FIELD_SIZE_IS8) ? TYP_LONG : TYP_INT;
-                    argRegTypeInStruct2 = (floatFlags & STRUCT_SECOND_FIELD_SIZE_IS8) ? TYP_DOUBLE : TYP_FLOAT;
+                    assert(lowering->numLoweredElements == 2);
+                    argRegTypeInStruct1 = JITtype2varType(lowering->loweredElements[0]);
+                    argRegTypeInStruct2 = JITtype2varType(lowering->loweredElements[1]);
+                    if (varTypeIsFloating(argRegTypeInStruct1) && varTypeIsFloating(argRegTypeInStruct2))
+                    {
+                        canPassArgInRegisters = m_floatRegs.Count() >= 2;
+                    }
+                    else
+                    {
+                        assert(varTypeIsFloating(argRegTypeInStruct1) || varTypeIsFloating(argRegTypeInStruct2));
+                        canPassArgInRegisters = (m_floatRegs.Count() > 0) && (m_intRegs.Count() > 0);
+                    }
+                    argRegOffset1 = lowering->offsets[0];
+                    argRegOffset2 = lowering->offsets[1];
                 }
 
                 assert((slots == 1) || (slots == 2));
 
                 if (!canPassArgInRegisters)
                 {
-                    m_floatRegs.Clear();
                     slots = (passedSize + TARGET_POINTER_SIZE - 1) / TARGET_POINTER_SIZE;
                     // On LoongArch64, if there aren't any remaining floating-point registers to pass the argument,
                     // integer registers (if any) are used instead.
@@ -161,7 +152,7 @@ ABIPassingInformation LoongArch64Classifier::Classify(Compiler*    comp,
             canPassArgInRegisters = m_floatRegs.Count() > 0;
             if (!canPassArgInRegisters)
             {
-                m_floatRegs.Clear();
+                type                  = TYP_I_IMPL;
                 canPassArgInRegisters = m_intRegs.Count() > 0;
             }
         }
@@ -174,32 +165,30 @@ ABIPassingInformation LoongArch64Classifier::Classify(Compiler*    comp,
     ABIPassingInformation info;
     if (canPassArgInRegisters)
     {
-        info.NumSegments = slots;
-        info.Segments    = new (comp, CMK_ABI) ABIPassingSegment[slots];
+        info = ABIPassingInformation(comp, slots);
         if (argRegTypeInStruct1 != TYP_UNKNOWN)
         {
             RegisterQueue* regs = varTypeIsFloating(argRegTypeInStruct1) ? &m_floatRegs : &m_intRegs;
             assert(regs->Count() > 0);
 
-            passedSize       = genTypeSize(argRegTypeInStruct1);
-            info.Segments[0] = ABIPassingSegment::InRegister(regs->Dequeue(), 0, passedSize);
+            passedSize      = genTypeSize(argRegTypeInStruct1);
+            info.Segment(0) = ABIPassingSegment::InRegister(regs->Dequeue(), argRegOffset1, passedSize);
 
             if (argRegTypeInStruct2 != TYP_UNKNOWN)
             {
-                unsigned slotSize = genTypeSize(argRegTypeInStruct2);
+                passedSize = genTypeSize(argRegTypeInStruct2);
 
                 regs = varTypeIsFloating(argRegTypeInStruct2) ? &m_floatRegs : &m_intRegs;
                 assert(regs->Count() > 0);
 
-                passedSize       = max(passedSize, slotSize);
-                info.Segments[1] = ABIPassingSegment::InRegister(regs->Dequeue(), passedSize, slotSize);
+                info.Segment(1) = ABIPassingSegment::InRegister(regs->Dequeue(), argRegOffset2, passedSize);
             }
         }
         else
         {
             RegisterQueue* regs     = varTypeIsFloating(type) ? &m_floatRegs : &m_intRegs;
             unsigned       slotSize = min(passedSize, (unsigned)TARGET_POINTER_SIZE);
-            info.Segments[0]        = ABIPassingSegment::InRegister(regs->Dequeue(), 0, slotSize);
+            info.Segment(0)         = ABIPassingSegment::InRegister(regs->Dequeue(), 0, slotSize);
             if (slots == 2)
             {
                 assert(varTypeIsStruct(type));
@@ -207,13 +196,13 @@ ABIPassingInformation LoongArch64Classifier::Classify(Compiler*    comp,
                 unsigned tailSize = passedSize - slotSize;
                 if (m_intRegs.Count() > 0)
                 {
-                    info.Segments[1] = ABIPassingSegment::InRegister(m_intRegs.Dequeue(), slotSize, tailSize);
+                    info.Segment(1) = ABIPassingSegment::InRegister(m_intRegs.Dequeue(), slotSize, tailSize);
                 }
                 else
                 {
                     assert(m_intRegs.Count() == 0);
                     assert(m_stackArgSize == 0);
-                    info.Segments[1] = ABIPassingSegment::OnStack(0, TARGET_POINTER_SIZE, tailSize);
+                    info.Segment(1) = ABIPassingSegment::OnStack(0, TARGET_POINTER_SIZE, tailSize);
                     m_stackArgSize += TARGET_POINTER_SIZE;
                 }
             }

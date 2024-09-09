@@ -34,6 +34,7 @@ namespace JitTest
     public struct Test
     {
         [Fact]
+        [OuterLoop]
         public static unsafe int TestEntryPoint()
         {
             long l = (sbyte)sizeof(RefComplexStruct);

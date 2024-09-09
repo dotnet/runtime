@@ -184,6 +184,7 @@ typedef enum
     SocketOptionName_SO_TCP_KEEPALIVE_RETRYCOUNT = 16,
     SocketOptionName_SO_TCP_KEEPALIVE_TIME = 3,
     SocketOptionName_SO_TCP_KEEPALIVE_INTERVAL = 17,
+    SocketOptionName_SO_TCP_FASTOPEN = 15,
 
     // Names for SocketOptionLevel_SOL_UDP
     // SocketOptionName_SO_UDP_NOCHECKSUM = 1,
@@ -370,6 +371,8 @@ PALEXPORT int32_t SystemNative_Bind(intptr_t socket, int32_t protocolType, uint8
 
 PALEXPORT int32_t SystemNative_Connect(intptr_t socket, uint8_t* socketAddress, int32_t socketAddressLen);
 
+PALEXPORT int32_t SystemNative_Connectx(intptr_t socket, uint8_t* socketAddress, int32_t socketAddressLen, uint8_t* data, int32_t dataLen, int32_t tfo, int* sent);
+
 PALEXPORT int32_t SystemNative_GetPeerName(intptr_t socket, uint8_t* socketAddress, int32_t* socketAddressLen);
 
 PALEXPORT int32_t SystemNative_GetSockName(intptr_t socket, uint8_t* socketAddress, int32_t* socketAddressLen);
@@ -424,3 +427,5 @@ PALEXPORT int32_t SystemNative_SendFile(intptr_t out_fd, intptr_t in_fd, int64_t
 PALEXPORT int32_t SystemNative_Disconnect(intptr_t socket);
 
 PALEXPORT uint32_t SystemNative_InterfaceNameToIndex(char* interfaceName);
+
+PALEXPORT int32_t SystemNative_Select(int* readFds, int readFdsCount, int* writeFds, int writeFdsCount,  int* errorFds, int errorFdsCount, int32_t microseconds, int32_t maxFd, int* triggered);

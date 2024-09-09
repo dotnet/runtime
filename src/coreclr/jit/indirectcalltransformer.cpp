@@ -509,6 +509,12 @@ private:
                 (GetChecksCount() == 1) && ((origCall->gtCallMoreFlags & GTF_CALL_M_GUARDED_DEVIRT_EXACT) == 0);
             if (canChainGdv)
             {
+                compiler->Metrics.GDV++;
+                if (GetChecksCount() > 1)
+                {
+                    compiler->Metrics.MultiGuessGDV++;
+                }
+
                 const bool isChainedGdv = (origCall->gtCallMoreFlags & GTF_CALL_M_GUARDED_DEVIRT_CHAIN) != 0;
 
                 if (isChainedGdv)
@@ -520,6 +526,7 @@ private:
 
                 if (isChainedGdv)
                 {
+                    compiler->Metrics.ChainedGDV++;
                     TransformForChainedGdv();
                 }
 
@@ -691,6 +698,7 @@ private:
                 GenTree*             targetMethodTable = compiler->gtNewIconEmbClsHndNode(clsHnd);
 
                 compare = compiler->gtNewOperNode(GT_NE, TYP_INT, targetMethodTable, methodTable);
+                compiler->Metrics.ClassGDV++;
             }
             else
             {
@@ -725,6 +733,7 @@ private:
                     GenTree* compareTarTree = CreateTreeForLookup(methHnd, lookup);
                     compare                 = compiler->gtNewOperNode(GT_NE, TYP_INT, compareTarTree, tarTree);
                 }
+                compiler->Metrics.MethodGDV++;
             }
 
             GenTree*   jmpTree = compiler->gtNewOperNode(GT_JTRUE, TYP_VOID, compare);
@@ -1052,7 +1061,7 @@ private:
             //
             thenBlock = CreateAndInsertBasicBlock(BBJ_ALWAYS, checkBlock);
             thenBlock->CopyFlags(currBlock, BBF_SPLIT_GAINED);
-            thenBlock->inheritWeight(currBlock);
+            thenBlock->inheritWeight(checkBlock);
             thenBlock->scaleBBWeight(adjustedThenLikelihood);
             FlowEdge* const thenRemainderEdge = compiler->fgAddRefPred(remainderBlock, thenBlock);
             thenBlock->SetTargetEdge(thenRemainderEdge);
@@ -1214,10 +1223,59 @@ private:
                 checkStmt = nextStmt;
             }
 
-            // Finally, rewire the cold block to jump to the else block,
+            // Rewire the cold block to jump to the else block,
             // not fall through to the check block.
             //
             compiler->fgRedirectTargetEdge(coldBlock, elseBlock);
+
+            // Update the profile data
+            //
+            if (coldBlock->hasProfileWeight())
+            {
+                // Check block
+                //
+                FlowEdge* const coldElseEdge   = compiler->fgGetPredForBlock(elseBlock, coldBlock);
+                weight_t        newCheckWeight = checkBlock->bbWeight - coldElseEdge->getLikelyWeight();
+
+                if (newCheckWeight < 0)
+                {
+                    // If weights were consistent, we expect at worst a slight underflow.
+                    //
+                    if (compiler->fgPgoConsistent)
+                    {
+                        bool const isReasonableUnderflow = Compiler::fgProfileWeightsEqual(newCheckWeight, 0.0);
+                        assert(isReasonableUnderflow);
+
+                        if (!isReasonableUnderflow)
+                        {
+                            JITDUMP("Profile data could not be locally repaired. Data %s inconsistent.\n",
+                                    compiler->fgPgoConsistent ? "is now" : "was already");
+
+                            if (compiler->fgPgoConsistent)
+                            {
+                                compiler->Metrics.ProfileInconsistentChainedGDV++;
+                                compiler->fgPgoConsistent = false;
+                            }
+                        }
+                    }
+
+                    // No matter what, the minimum weight is zero
+                    //
+                    newCheckWeight = 0;
+                }
+                checkBlock->setBBProfileWeight(newCheckWeight);
+
+                // Else block
+                //
+                FlowEdge* const checkElseEdge = compiler->fgGetPredForBlock(elseBlock, checkBlock);
+                weight_t const  newElseWeight = checkElseEdge->getLikelyWeight() + coldElseEdge->getLikelyWeight();
+                elseBlock->setBBProfileWeight(newElseWeight);
+
+                // Then block
+                //
+                FlowEdge* const checkThenEdge = compiler->fgGetPredForBlock(thenBlock, checkBlock);
+                thenBlock->setBBProfileWeight(checkThenEdge->getLikelyWeight());
+            }
         }
 
         // When the current candidate has sufficiently high likelihood, scan

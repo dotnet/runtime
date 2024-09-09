@@ -275,7 +275,7 @@ namespace Microsoft.Extensions.Hosting
             services.AddLogging(logging =>
             {
                 bool isWindows =
-#if NETCOREAPP
+#if NET
                     OperatingSystem.IsWindows();
 #elif NETFRAMEWORK
                     Environment.OSVersion.Platform == PlatformID.Win32NT;
@@ -292,8 +292,8 @@ namespace Microsoft.Extensions.Hosting
                 }
 
                 logging.AddConfiguration(hostingContext.Configuration.GetSection("Logging"));
-#if NETCOREAPP
-                if (!OperatingSystem.IsBrowser())
+#if NET
+                if (!OperatingSystem.IsBrowser() && !OperatingSystem.IsWasi())
 #endif
                 {
                     logging.AddConsole();

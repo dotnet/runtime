@@ -52,22 +52,6 @@ ThreadExceptionState::~ThreadExceptionState()
 #endif // !TARGET_UNIX
 }
 
-#if defined(_DEBUG)
-void ThreadExceptionState::AssertStackTraceInfo(StackTraceInfo *pSTI)
-{
-    LIMITED_METHOD_CONTRACT;
-#if defined(FEATURE_EH_FUNCLETS)
-
-    _ASSERTE(pSTI == &(m_pCurrentTracker->m_StackTraceInfo) || pSTI == &(m_OOMTracker.m_StackTraceInfo));
-
-#else  // !FEATURE_EH_FUNCLETS
-
-    _ASSERTE(pSTI == &(m_currentExInfo.m_StackTraceInfo));
-
-#endif // !FEATURE_EH_FUNCLETS
-} // void ThreadExceptionState::AssertStackTraceInfo()
-#endif // _debug
-
 #ifndef DACCESS_COMPILE
 
 Thread* ThreadExceptionState::GetMyThread()
@@ -75,24 +59,6 @@ Thread* ThreadExceptionState::GetMyThread()
     return (Thread*)(((BYTE*)this) - offsetof(Thread, m_ExceptionState));
 }
 
-
-void ThreadExceptionState::FreeAllStackTraces()
-{
-    WRAPPER_NO_CONTRACT;
-
-#ifdef FEATURE_EH_FUNCLETS
-    ExceptionTrackerBase* pNode = m_pCurrentTracker;
-#else // FEATURE_EH_FUNCLETS
-    ExInfo*           pNode = &m_currentExInfo;
-#endif // FEATURE_EH_FUNCLETS
-
-    for ( ;
-          pNode != NULL;
-          pNode = pNode->m_pPrevNestedInfo)
-    {
-        pNode->m_StackTraceInfo.FreeStackTrace();
-    }
-}
 
 OBJECTREF ThreadExceptionState::GetThrowable()
 {
@@ -155,7 +121,7 @@ void ThreadExceptionState::SetThrowable(OBJECTREF throwable DEBUG_ARG(SetThrowab
         }
         else
         {
-            AppDomain* pDomain = GetMyThread()->GetDomain();
+            AppDomain* pDomain = AppDomain::GetCurrentDomain();
             PREFIX_ASSUME(pDomain != NULL);
             hNewThrowable = pDomain->CreateHandle(throwable);
         }

@@ -148,7 +148,7 @@ namespace System
             ref byte arrayRef = ref MemoryMarshal.GetArrayDataReference(this);
             nuint elementSize = ElementSize;
 
-            for (int i = 0; i < Length; i++)
+            for (nuint i = 0; i < NativeLength; i++)
             {
                 RawCalliHelper.CallDefaultStructConstructor(constructorFtn, ref arrayRef);
                 arrayRef = ref Unsafe.Add(ref arrayRef, elementSize);
@@ -239,9 +239,14 @@ namespace System
                 {
                     // CLR compat note: CLR only allows Array.Copy between pointee types that would be assignable
                     // to using array covariance rules (so int*[] can be copied to uint*[], but not to float*[]).
-                    // This is rather weird since e.g. we don't allow casting int*[] to uint*[] otherwise.
-                    // Instead of trying to replicate the behavior, we're choosing to be simply more permissive here.
-                    CopyImplValueTypeArrayNoInnerGcRefs(sourceArray, sourceIndex, destinationArray, destinationIndex, length);
+                    if (RuntimeImports.AreTypesAssignable(sourceElementEEType, destinationElementEEType))
+                    {
+                        CopyImplValueTypeArrayNoInnerGcRefs(sourceArray, sourceIndex, destinationArray, destinationIndex, length);
+                    }
+                    else
+                    {
+                        throw new ArrayTypeMismatchException(SR.ArrayTypeMismatch_CantAssignType);
+                    }
                 }
                 else if (IsSourceElementABaseClassOrInterfaceOfDestinationValueType(sourceElementEEType, destinationElementEEType))
                 {
@@ -526,255 +531,26 @@ namespace System
                     throw new ArrayTypeMismatchException(SR.ArrayTypeMismatch_ConstrainedCopy);
             }
 
-            fixed (byte* pSrcArray = &MemoryMarshal.GetArrayDataReference(sourceArray), pDstArray = &MemoryMarshal.GetArrayDataReference(destinationArray))
+            ref byte srcData = ref Unsafe.AddByteOffset(ref MemoryMarshal.GetArrayDataReference(sourceArray), (nuint)sourceIndex * srcElementSize);
+            ref byte dstData = ref Unsafe.AddByteOffset(ref MemoryMarshal.GetArrayDataReference(destinationArray), (nuint)destinationIndex * destElementSize);
+
+            if (sourceElementType == destElementType)
             {
-                byte* srcData = pSrcArray + (nuint)sourceIndex * srcElementSize;
-                byte* data = pDstArray + (nuint)destinationIndex * destElementSize;
+                // Multidim arrays and enum->int copies can still reach this path.
+                SpanHelpers.Memmove(ref dstData, ref srcData, (nuint)length * srcElementSize);
+                return;
+            }
 
-                if (sourceElementType == destElementType)
-                {
-                    // Multidim arrays and enum->int copies can still reach this path.
-                    SpanHelpers.Memmove(ref *data, ref *srcData, (nuint)length * srcElementSize);
-                    return;
-                }
+            if (!InvokeUtils.CanPrimitiveWiden(destElementType, sourceElementType))
+            {
+                throw new ArrayTypeMismatchException(SR.ArrayTypeMismatch_CantAssignType);
+            }
 
-                ulong dummyElementForZeroLengthCopies = 0;
-                // If the element types aren't identical and the length is zero, we're still obliged to check the types for widening compatibility.
-                // We do this by forcing the loop below to copy one dummy element.
-                if (length == 0)
-                {
-                    srcData = (byte*)&dummyElementForZeroLengthCopies;
-                    data = (byte*)&dummyElementForZeroLengthCopies;
-                    length = 1;
-                }
-
-                for (int i = 0; i < length; i++, srcData += srcElementSize, data += destElementSize)
-                {
-                    // We pretty much have to do some fancy datatype mangling every time here, for
-                    // converting w/ sign extension and floating point conversions.
-                    switch (sourceElementType)
-                    {
-                        case EETypeElementType.Byte:
-                            {
-                                switch (destElementType)
-                                {
-                                    case EETypeElementType.Single:
-                                        *(float*)data = *(byte*)srcData;
-                                        break;
-
-                                    case EETypeElementType.Double:
-                                        *(double*)data = *(byte*)srcData;
-                                        break;
-
-                                    case EETypeElementType.Char:
-                                    case EETypeElementType.Int16:
-                                    case EETypeElementType.UInt16:
-                                        *(short*)data = *(byte*)srcData;
-                                        break;
-
-                                    case EETypeElementType.Int32:
-                                    case EETypeElementType.UInt32:
-                                        *(int*)data = *(byte*)srcData;
-                                        break;
-
-                                    case EETypeElementType.Int64:
-                                    case EETypeElementType.UInt64:
-                                        *(long*)data = *(byte*)srcData;
-                                        break;
-
-                                    default:
-                                        throw new ArrayTypeMismatchException(SR.ArrayTypeMismatch_CantAssignType);
-                                }
-                                break;
-                            }
-
-                        case EETypeElementType.SByte:
-                            switch (destElementType)
-                            {
-                                case EETypeElementType.Int16:
-                                    *(short*)data = *(sbyte*)srcData;
-                                    break;
-
-                                case EETypeElementType.Int32:
-                                    *(int*)data = *(sbyte*)srcData;
-                                    break;
-
-                                case EETypeElementType.Int64:
-                                    *(long*)data = *(sbyte*)srcData;
-                                    break;
-
-                                case EETypeElementType.Single:
-                                    *(float*)data = *(sbyte*)srcData;
-                                    break;
-
-                                case EETypeElementType.Double:
-                                    *(double*)data = *(sbyte*)srcData;
-                                    break;
-
-                                default:
-                                    throw new ArrayTypeMismatchException(SR.ArrayTypeMismatch_CantAssignType);
-                            }
-                            break;
-
-                        case EETypeElementType.UInt16:
-                        case EETypeElementType.Char:
-                            switch (destElementType)
-                            {
-                                case EETypeElementType.Single:
-                                    *(float*)data = *(ushort*)srcData;
-                                    break;
-
-                                case EETypeElementType.Double:
-                                    *(double*)data = *(ushort*)srcData;
-                                    break;
-
-                                case EETypeElementType.UInt16:
-                                case EETypeElementType.Char:
-                                    *(ushort*)data = *(ushort*)srcData;
-                                    break;
-
-                                case EETypeElementType.Int32:
-                                case EETypeElementType.UInt32:
-                                    *(uint*)data = *(ushort*)srcData;
-                                    break;
-
-                                case EETypeElementType.Int64:
-                                case EETypeElementType.UInt64:
-                                    *(ulong*)data = *(ushort*)srcData;
-                                    break;
-
-                                default:
-                                    throw new ArrayTypeMismatchException(SR.ArrayTypeMismatch_CantAssignType);
-                            }
-                            break;
-
-                        case EETypeElementType.Int16:
-                            switch (destElementType)
-                            {
-                                case EETypeElementType.Int32:
-                                    *(int*)data = *(short*)srcData;
-                                    break;
-
-                                case EETypeElementType.Int64:
-                                    *(long*)data = *(short*)srcData;
-                                    break;
-
-                                case EETypeElementType.Single:
-                                    *(float*)data = *(short*)srcData;
-                                    break;
-
-                                case EETypeElementType.Double:
-                                    *(double*)data = *(short*)srcData;
-                                    break;
-
-                                default:
-                                    throw new ArrayTypeMismatchException(SR.ArrayTypeMismatch_CantAssignType);
-                            }
-                            break;
-
-                        case EETypeElementType.Int32:
-                            switch (destElementType)
-                            {
-                                case EETypeElementType.Int64:
-                                    *(long*)data = *(int*)srcData;
-                                    break;
-
-                                case EETypeElementType.Single:
-                                    *(float*)data = (float)*(int*)srcData;
-                                    break;
-
-                                case EETypeElementType.Double:
-                                    *(double*)data = *(int*)srcData;
-                                    break;
-
-                                default:
-                                    throw new ArrayTypeMismatchException(SR.ArrayTypeMismatch_CantAssignType);
-                            }
-                            break;
-
-                        case EETypeElementType.UInt32:
-                            switch (destElementType)
-                            {
-                                case EETypeElementType.Int64:
-                                case EETypeElementType.UInt64:
-                                    *(long*)data = *(uint*)srcData;
-                                    break;
-
-                                case EETypeElementType.Single:
-                                    *(float*)data = (float)*(uint*)srcData;
-                                    break;
-
-                                case EETypeElementType.Double:
-                                    *(double*)data = *(uint*)srcData;
-                                    break;
-
-                                default:
-                                    throw new ArrayTypeMismatchException(SR.ArrayTypeMismatch_CantAssignType);
-                            }
-                            break;
-
-
-                        case EETypeElementType.Int64:
-                            switch (destElementType)
-                            {
-                                case EETypeElementType.Single:
-                                    *(float*)data = (float)*(long*)srcData;
-                                    break;
-
-                                case EETypeElementType.Double:
-                                    *(double*)data = (double)*(long*)srcData;
-                                    break;
-
-                                default:
-                                    throw new ArrayTypeMismatchException(SR.ArrayTypeMismatch_CantAssignType);
-                            }
-                            break;
-
-                        case EETypeElementType.UInt64:
-                            switch (destElementType)
-                            {
-                                case EETypeElementType.Single:
-
-                                    //*(float*) data = (float) *(Ulong*)srcData;
-                                    long srcValToFloat = *(long*)srcData;
-                                    float f = (float)srcValToFloat;
-                                    if (srcValToFloat < 0)
-                                        f += 4294967296.0f * 4294967296.0f; // This is 2^64
-
-                                    *(float*)data = f;
-                                    break;
-
-                                case EETypeElementType.Double:
-                                    //*(double*) data = (double) *(Ulong*)srcData;
-                                    long srcValToDouble = *(long*)srcData;
-                                    double d = (double)srcValToDouble;
-                                    if (srcValToDouble < 0)
-                                        d += 4294967296.0 * 4294967296.0;   // This is 2^64
-
-                                    *(double*)data = d;
-                                    break;
-
-                                default:
-                                    throw new ArrayTypeMismatchException(SR.ArrayTypeMismatch_CantAssignType);
-                            }
-                            break;
-
-                        case EETypeElementType.Single:
-                            switch (destElementType)
-                            {
-                                case EETypeElementType.Double:
-                                    *(double*)data = *(float*)srcData;
-                                    break;
-
-                                default:
-                                    throw new ArrayTypeMismatchException(SR.ArrayTypeMismatch_CantAssignType);
-                            }
-                            break;
-
-                        default:
-                            throw new ArrayTypeMismatchException(SR.ArrayTypeMismatch_CantAssignType);
-                    }
-                }
+            for (int i = 0; i < length; i++)
+            {
+                InvokeUtils.PrimitiveWiden(destElementType, sourceElementType, ref dstData, ref srcData);
+                srcData = ref Unsafe.AddByteOffset(ref srcData, srcElementSize);
+                dstData = ref Unsafe.AddByteOffset(ref dstData, destElementSize);
             }
         }
 
