@@ -17,7 +17,7 @@
 
 The runtime repo can be worked with on Windows, Linux, macOS, and FreeBSD. Each platform has its own specific requirements to work properly, and not all architectures are supported for dev work. That said, the builds can target a wider range of platforms beyond the ones mentioned earlier. You can see it as there are always two platforms at play whenever you are working with builds in the runtime repo:
 
-- **The Build Platform:** This is the platform of the machine where you cloned the runtime repo and therefore where all your build tools are running on. The following table shows the matrix of compatibility, as well as links to each OS's requirements doc. If you are using WSL directly (i.e. not Docker), then follow the Linux requirements doc.
+- **The Build Platform:** This is the platform of the machine where you cloned the runtime repo and therefore where all your build tools are running on. The following table shows the OS and architecture combinations that we currently support, as well as links to each OS's requirements doc. If you are using WSL directly (i.e. not Docker), then follow the Linux requirements doc.
 
 | Chip  | Windows  | Linux    | macOS    | FreeBSD  |
 | :---: | :------: | :------: | :------: | :------: |
@@ -37,7 +37,7 @@ The runtime repo consists of three major components:
 
 - The Runtimes (CoreCLR and Mono)
 - The Libraries
-- The Installer
+- The Hosts and Installers
 
 You can run your builds from a regular terminal, from the root of the repository. Sudo and administrator privileges are not needed for this.
 
@@ -59,7 +59,7 @@ To work with the runtime repo, there are three supported configurations (one is 
 
 ### Build Components
 
-- **Runtime**: The execution engine for managed code. There are two different flavor implementations, both written in C/C++:
+- **Runtime**: The execution engine for managed code. There are two different implementations, both written in C or C++:
   - *CoreCLR*: The comprehensive execution engine originally born from .NET Framework. Its source code lives in under the [src/coreclr](/src/coreclr) subtree.
   - *Mono*: A slimmer runtime than CoreCLR, originally born open-source to bring .NET and C# support to non-Windows platforms. Due to its lightweight nature, it is less affected in terms of speed when working with the *Debug* configuration. Its source code lives in under the [src/mono](/src/mono) subtree.
 
@@ -151,7 +151,7 @@ Fixing bugs and adding new features aren't the only things to work on in the run
 
 ## Warnings as Errors
 
-The repo build treats warnings as errors. Dealing with warnings when you're in the middle of making changes can be annoying (e.g. unused variable that you plan to use later). To disable treating warnings as errors, set the `TreatWarningsAsErrors` environment variable to `false` before building. This variable will be respected by both the `build.sh`/`build.cmd` root build scripts and builds done with `dotnet build` or Visual Studio. Some people may prefer setting this environment variable globally in their machine settings.
+The repo build treats warnings as errors, including many code-style warnings. Dealing with warnings when you're in the middle of making changes can be annoying (e.g. unused variable that you plan to use later). To disable treating warnings as errors, set the `TreatWarningsAsErrors` environment variable to `false` before building. This variable will be respected by both the `build.sh`/`build.cmd` root build scripts and builds done with `dotnet build` or Visual Studio. Some people may prefer setting this environment variable globally in their machine settings.
 
 ## Submitting a PR
 

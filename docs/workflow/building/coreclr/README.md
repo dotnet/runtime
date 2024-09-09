@@ -57,7 +57,6 @@ Since this is more related to testing, you can find the full details and instruc
 
 #### The Dev Shipping Packs
 
-<!-- TODO: Link to the "using your build with the sdk" and "using your build with the shipping packages" docs, and rephrase accordingly, if needed. -->
 It is also possible to generate the full runtime NuGet packages and installer that you can use to test in a more production-esque scenario. To generate these shipping artifacts, you have to build the `clr`, `libs`, `host`, and `packs` subsets:
 
 ```bash
@@ -78,17 +77,16 @@ For a full guide on using the shipping packages for testing checkout the doc we 
 
 ### Cross Compilation
 
-Using an x64 machine, it is possible to generate builds for other architectures. Not all architectures are supported for cross-compilation however, and it's also dependant on the OS you are using to build and target. Refer to the table below for the compatibility matrix.
+Using an x64 machine, it is possible to generate builds for other architectures. Not all architectures are supported for cross-compilation however, and it's also dependent on the OS you are using to build and target. Refer to the table below for the compatibility matrix.
 
 | Operating System | To x86   | To Arm32 | To Arm64 |
 | :--------------: | :------: | :------: | :------: |
-| Windows          | &#x2714; | &#x2714; | &#x2714; |
+| Windows          | &#x2714; |          | &#x2714; |
 | macOS            |          |          | &#x2714; |
 | Linux            |          | &#x2714; | &#x2714; |
 
 **NOTE:** On macOS, it is also possible to cross-compile from ARM64 to x64 using an Apple Silicon Mac.
 
-<!-- TODO: Review the Cross-Building doc -->
 Detailed instructions on how to do cross-compilation can be found in the cross-building doc [over here](/docs/workflow/building/coreclr/cross-building.md).
 
 ## Other Features
@@ -145,11 +143,11 @@ CoreCLR is also in the process of supporting the use of native sanitizers during
 
   Argument to `-fsanitize`: `address`
 
-| Platform | Minimum VS Version | Support Status          |
-| :------: | :----------------: | :---------------------: |
-| Windows  | Not Yet Released   | Experimental            |
-| macOS    | N/A                | Regularly Tested on x64 |
-| Linux    | N/A                | Regularly Tested on x64 |
+| Platform | Support Status          |
+| :------: | :---------------------: |
+| Windows  | Regularly Tested on x64 |
+| macOS    | Regularly Tested on x64 |
+| Linux    | Regularly Tested on x64 |
 
 And to use it, the command would look as follows:
 
