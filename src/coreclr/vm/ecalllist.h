@@ -83,7 +83,6 @@ FCFuncEnd()
 FCFuncStart(gExceptionFuncs)
     FCFuncElement("IsImmutableAgileException", ExceptionNative::IsImmutableAgileException)
     FCFuncElement("PrepareForForeignExceptionRaise", ExceptionNative::PrepareForForeignExceptionRaise)
-    FCFuncElement("GetFrozenStackTrace", ExceptionNative::GetFrozenStackTrace)
     FCFuncElement("GetExceptionCount", ExceptionNative::GetExceptionCount)
 FCFuncEnd()
 
@@ -306,25 +305,12 @@ FCFuncStart(gThreadFuncs)
     FCFuncElement("GetIsBackground", ThreadNative::GetIsBackground)
     FCFuncElement("get_IsThreadPoolThread", ThreadNative::IsThreadpoolThread)
     FCFuncElement("set_IsThreadPoolThread", ThreadNative::SetIsThreadpoolThread)
-    FCFuncElement("GetPriorityNative", ThreadNative::GetPriority)
-    FCFuncElement("SetPriorityNative", ThreadNative::SetPriority)
     FCFuncElement("GetThreadStateNative", ThreadNative::GetThreadState)
-#ifdef FEATURE_COMINTEROP_APARTMENT_SUPPORT
-    FCFuncElement("GetApartmentStateNative", ThreadNative::GetApartmentState)
-    FCFuncElement("SetApartmentStateNative", ThreadNative::SetApartmentState)
-#endif // FEATURE_COMINTEROP_APARTMENT_SUPPORT
-    FCFuncElement("Join", ThreadNative::Join)
     FCFuncElement("get_OptimalMaxSpinWaitsPerSpinIteration", ThreadNative::GetOptimalMaxSpinWaitsPerSpinIteration)
 FCFuncEnd()
 
 FCFuncStart(gThreadPoolFuncs)
     FCFuncElement("GetNextConfigUInt32Value", ThreadPoolNative::GetNextConfigUInt32Value)
-FCFuncEnd()
-
-FCFuncStart(gWaitHandleFuncs)
-    FCFuncElement("WaitOneCore", WaitHandleNative::CorWaitOneNative)
-    FCFuncElement("WaitMultipleIgnoringSyncContext", WaitHandleNative::CorWaitMultipleNative)
-    FCFuncElement("SignalAndWaitNative", WaitHandleNative::CorSignalAndWaitOneNative)
 FCFuncEnd()
 
 FCFuncStart(gCastHelpers)
@@ -364,8 +350,6 @@ FCFuncStart(gGCInterfaceFuncs)
 
     FCFuncElement("GetAllocatedBytesForCurrentThread", GCInterface::GetAllocatedBytesForCurrentThread)
     FCFuncElement("GetTotalAllocatedBytesApproximate", GCInterface::GetTotalAllocatedBytesApproximate)
-
-    FCFuncElement("AllocateNewArray", GCInterface::AllocateNewArray)
 FCFuncEnd()
 
 FCFuncStart(gGCSettingsFuncs)
@@ -503,7 +487,6 @@ FCClassElement("Thread", "System.Threading", gThreadFuncs)
 FCClassElement("ThreadPool", "System.Threading", gThreadPoolFuncs)
 FCClassElement("Type", "System", gSystem_Type)
 FCClassElement("TypedReference", "System", gTypedReferenceFuncs)
-FCClassElement("WaitHandle", "System.Threading", gWaitHandleFuncs)
 
 #undef FCFuncElement
 #undef FCFuncElementSig

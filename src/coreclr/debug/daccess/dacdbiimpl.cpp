@@ -3672,7 +3672,7 @@ HRESULT DacDbiInterfaceImpl::GetLoaderHeapMemoryRanges(DacDbiArrayList<COR_MEMOR
         // it's own LoaderAllocator, but there's no easy way of getting a hand at them other than going through
         // the heap, getting a managed LoaderAllocators, from there getting a Scout, and from there getting a native
         // pointer to the LoaderAllocator tos enumerate.
-        PTR_LoaderAllocator pGlobalAllocator = SystemDomain::System()->GetLoaderAllocator();
+        PTR_LoaderAllocator pGlobalAllocator = SystemDomain::GetGlobalLoaderAllocator();
         _ASSERTE(pGlobalAllocator);
         EnumerateMemRangesForLoaderAllocator(pGlobalAllocator, &memoryRanges);
 

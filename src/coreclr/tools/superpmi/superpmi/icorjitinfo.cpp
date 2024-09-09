@@ -416,24 +416,11 @@ uint32_t MyICJI::getClassAttribs(CORINFO_CLASS_HANDLE cls)
     return jitInstance->mc->repGetClassAttribs(cls);
 }
 
-CORINFO_MODULE_HANDLE MyICJI::getClassModule(CORINFO_CLASS_HANDLE cls)
+// Returns the assembly name of the class "cls".
+const char* MyICJI::getClassAssemblyName(CORINFO_CLASS_HANDLE cls)
 {
-    jitInstance->mc->cr->AddCall("getClassModule");
-    return jitInstance->mc->repGetClassModule(cls);
-}
-
-// Returns the assembly that contains the module "mod".
-CORINFO_ASSEMBLY_HANDLE MyICJI::getModuleAssembly(CORINFO_MODULE_HANDLE mod)
-{
-    jitInstance->mc->cr->AddCall("getModuleAssembly");
-    return jitInstance->mc->repGetModuleAssembly(mod);
-}
-
-// Returns the name of the assembly "assem".
-const char* MyICJI::getAssemblyName(CORINFO_ASSEMBLY_HANDLE assem)
-{
-    jitInstance->mc->cr->AddCall("getAssemblyName");
-    return jitInstance->mc->repGetAssemblyName(assem);
+    jitInstance->mc->cr->AddCall("getClassAssemblyName");
+    return jitInstance->mc->repGetClassAssemblyName(cls);
 }
 
 // Allocate and delete process-lifetime objects.  Should only be
@@ -883,15 +870,15 @@ CORINFO_CLASS_HANDLE MyICJI::getFieldClass(CORINFO_FIELD_HANDLE field)
 // the field's value class (if 'structType' == 0, then don't bother
 // the structure info).
 //
-// 'memberParent' is typically only set when verifying.  It should be the
-// result of calling getMemberParent.
+// 'fieldOwnerHint' is, potentially, a more exact owner of the field.
+// it's fine for it to be non-precise, it's just a hint.
 CorInfoType MyICJI::getFieldType(CORINFO_FIELD_HANDLE  field,
                                  CORINFO_CLASS_HANDLE* structType,
-                                 CORINFO_CLASS_HANDLE  memberParent /* IN */
+                                 CORINFO_CLASS_HANDLE  fieldOwnerHint /* IN */
                                  )
 {
     jitInstance->mc->cr->AddCall("getFieldType");
-    return jitInstance->mc->repGetFieldType(field, structType, memberParent);
+    return jitInstance->mc->repGetFieldType(field, structType, fieldOwnerHint);
 }
 
 // return the data member's instance offset
