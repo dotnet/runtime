@@ -1634,6 +1634,8 @@ AppDomain::AppDomain()
     }
     CONTRACTL_END;
 
+    m_friendlyName = NULL;
+
     m_cRef=1;
 
     m_JITLock.PreInit();
@@ -2850,9 +2852,11 @@ void AppDomain::SetFriendlyName(LPCWSTR pwzFriendlyName)
 
     tmpFriendlyName.Normalize();
 
+    // This happens at most twice in a process, so don't worry about freeing the old one.
+    LPWSTR newFriendlyName = new WCHAR[tmpFriendlyName.GetCount() + 1];
+    u16_strcpy_s(newFriendlyName, tmpFriendlyName.GetCount() + 1, tmpFriendlyName.GetUnicode());
 
-    m_friendlyName = tmpFriendlyName;
-    m_friendlyName.Normalize();
+    m_friendlyName = newFriendlyName;
 
     if(g_pDebugInterface)
     {
@@ -2879,30 +2883,13 @@ LPCWSTR AppDomain::GetFriendlyName()
     }
     CONTRACT_END;
 
-    if (m_friendlyName.IsEmpty())
+    if (m_friendlyName == NULL)
         RETURN DEFAULT_DOMAIN_FRIENDLY_NAME;
 
-#ifdef DACCESS_COMPILE
-    RETURN (LPCWSTR)m_friendlyName.DacGetRawUnicode();
-#else
-    RETURN m_friendlyName.GetUnicode();
-#endif
+    RETURN (LPCWSTR)m_friendlyName;
 }
 
 #ifndef DACCESS_COMPILE
-
-LPCWSTR AppDomain::GetFriendlyNameForLogging()
-{
-    CONTRACT(LPCWSTR)
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_ANY;
-        POSTCONDITION(CheckPointer(RETVAL,NULL_OK));
-    }
-    CONTRACT_END;
-    RETURN (m_friendlyName.IsEmpty() ?W(""):(LPCWSTR)m_friendlyName);
-}
 
 LPCWSTR AppDomain::GetFriendlyNameForDebugger()
 {
@@ -2916,7 +2903,7 @@ LPCWSTR AppDomain::GetFriendlyNameForDebugger()
     CONTRACT_END;
 
 
-    if (m_friendlyName.IsEmpty())
+    if (m_friendlyName == NULL)
     {
         BOOL fSuccess = FALSE;
 
@@ -4466,7 +4453,7 @@ AppDomain::EnumMemoryRegions(CLRDataEnumMemoryFlags flags, bool enumThis)
     // We don't need AppDomain name in triage dumps.
     if (flags != CLRDATA_ENUM_MEM_TRIAGE)
     {
-        m_friendlyName.EnumMemoryRegions(flags);
+        m_friendlyName.EnumMem();
     }
 
     if (flags == CLRDATA_ENUM_MEM_HEAP2)

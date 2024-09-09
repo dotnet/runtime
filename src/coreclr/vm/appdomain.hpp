@@ -1223,7 +1223,6 @@ public:
     //****************************************************************************************
     LPCWSTR GetFriendlyName();
     LPCWSTR GetFriendlyNameForDebugger();
-    LPCWSTR GetFriendlyNameForLogging();
     void SetFriendlyName(LPCWSTR pwzFriendlyName);
 
     PEAssembly * BindAssemblySpec(
@@ -1518,7 +1517,7 @@ public:
     SPTR_DECL(AppDomain, m_pTheAppDomain);
 
 private:
-    SString         m_friendlyName;
+    PTR_CWSTR       m_friendlyName;
     PTR_Assembly    m_pRootAssembly;
 
     // General purpose flags.
