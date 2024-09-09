@@ -473,11 +473,15 @@
     <PropertyGroup>
       <_MergedWrapperDirectory>%(_MergedWrapperMarker.RootDir)%(Directory)</_MergedWrapperDirectory>
       <_MergedWrapperName>%(_MergedWrapperMarker.FileName)</_MergedWrapperName>
+      <!-- Android package names can't have hyphens, so we replace them with underscores -->
+      <_MergedApkName>$(_MergedWrapperName.Replace('-', '_'))</_MergedApkName>
     </PropertyGroup>
 
     <ItemGroup>
-      <_MergedPayloadGroups Include="$(_MergedWrapperName)" />
-      <_MergedPayloadFiles Include="@(_MergedPayloadGroups->'$(_MergedWrapperDirectory)AppBundle/bin/%(Identity).apk')" />
+      <_MergedPayloadGroups Include="$(_MergedWrapperName)">
+        <ApkPackageName>$(_MergedApkName)</ApkPackageName>
+      </_MergedPayloadGroups>
+      <_MergedPayloadFiles Include="@(_MergedPayloadGroups->'$(_MergedWrapperDirectory)AppBundle/bin/%(ApkPackageName).apk')" />
     </ItemGroup>
 
     <Copy SourceFiles="@(_MergedPayloadFiles)" DestinationFiles="@(_MergedPayloadFiles->'$(MergedPayloadsRootDirectory)\$(_MergedWrapperName)\%(FileName)%(Extension)')" />
@@ -801,7 +805,8 @@
   <ItemGroup Condition="'$(TargetHasHelixXHarnessSdkSupport)' == 'true'">
     <MergedPayloads Update="@(MergedPayloads)">
       <PayloadGroup>%(FileName)%(Extension)</PayloadGroup>
-      <ApkPath>$(MergedPayloadsRootDirectory)%(FileName)%(Extension)/%(FileName)%(Extension).apk</ApkPath>
+      <!-- Android package names can't have dashes, so we replace them with underscores. -->
+      <ApkPath>$(MergedPayloadsRootDirectory)%(FileName)%(Extension)/$([System.String]::new('%(FileName)%(Extension)').Replace('-', '_')).apk</ApkPath>
       <AppBundlePath>$(MergedPayloadsRootDirectory)%(FileName)%(Extension)/%(FileName)%(Extension).app</AppBundlePath>
     </MergedPayloads>
   </ItemGroup>
