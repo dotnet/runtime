@@ -10,6 +10,5 @@
 
   <ItemGroup>
     <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="$(MicrosoftCodeAnalysisCSharpVersion)" PrivateAssets="all" />
-    <ProjectReference Include="../plist-cil/plist-cil.csproj" />
   </ItemGroup>
 </Project>

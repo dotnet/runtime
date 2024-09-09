@@ -274,7 +274,7 @@ namespace Microsoft.NET.HostModel.Bundle
 
             BinaryUtils.CopyFile(hostSource, bundlePath);
 
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX) && HostModelUtils.IsCodesignAvailable())
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
             {
                 RemoveCodesignIfNecessary(bundlePath);
             }
@@ -350,7 +350,7 @@ namespace Microsoft.NET.HostModel.Bundle
             // Sign the bundle if requested
             if (_macosCodesign && RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
             {
-                new Signer(new()).Sign(bundlePath);
+                Signer.AdHocSign(bundlePath);
             }
 
             return bundlePath;

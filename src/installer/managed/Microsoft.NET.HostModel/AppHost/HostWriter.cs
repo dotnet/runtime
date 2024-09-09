@@ -181,7 +181,7 @@ namespace Microsoft.NET.HostModel.AppHost
                     }
                     if (enableMacOSCodeSign && RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
                     {
-                        new Signer(new CodeSignOptions()).Sign(appHostDestinationFilePath);
+                        Signer.AdHocSign(appHostDestinationFilePath);
                     }
                 }
             }

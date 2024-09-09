@@ -7,7 +7,6 @@ namespace Melanzana.CodeSign.Blobs
 {
     public static class HashTypeExtensions
     {
-
         public static IncrementalHash GetIncrementalHash(this HashType hashType)
         {
             return hashType switch
@@ -30,19 +29,6 @@ namespace Melanzana.CodeSign.Blobs
                 HashType.SHA256Truncated => 20,
                 HashType.SHA384 => 48,
                 HashType.SHA512 => 64,
-                _ => throw new NotSupportedException()
-            };
-        }
-
-        public static string GetOid(this HashType hashType)
-        {
-            return hashType switch
-            {
-                HashType.SHA1 => "1.3.14.3.2.26",
-                HashType.SHA256 => "2.16.840.1.101.3.4.2.1",
-                HashType.SHA256Truncated => "2.16.840.1.101.3.4.2.1",
-                HashType.SHA384 => "2.16.840.1.101.3.4.2.2",
-                HashType.SHA512 => "2.16.840.1.101.3.4.2.3",
                 _ => throw new NotSupportedException()
             };
         }

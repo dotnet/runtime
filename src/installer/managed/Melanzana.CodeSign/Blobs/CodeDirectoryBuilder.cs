@@ -14,16 +14,14 @@ namespace Melanzana.CodeSign.Blobs
     {
         private readonly MachObjectFile executable;
         private readonly string identifier;
-        private readonly string teamId;
         private readonly uint pageSize = 4096;
         private readonly byte[][] specialSlots = new byte[7][];
         private int specialSlotCount;
 
-        public CodeDirectoryBuilder(MachObjectFile executable, string identifier, string teamId)
+        public CodeDirectoryBuilder(MachObjectFile executable, string identifier)
         {
             this.executable = executable;
             this.identifier = identifier;
-            this.teamId = teamId;
 
             if (executable.FileType == MachFileType.Execute)
                 ExecutableSegmentFlags |= ExecutableSegmentFlags.MainBinary;
@@ -65,12 +63,9 @@ namespace Melanzana.CodeSign.Blobs
             byte hashSize = HashType.GetSize();
 
             byte[] utf8Identifier = Encoding.UTF8.GetBytes(identifier);
-            byte[] utf8TeamId = Encoding.UTF8.GetBytes(teamId);
 
             long codeDirectorySize = GetFixedHeaderSize(version);
             codeDirectorySize += utf8Identifier.Length + 1;
-            if (!string.IsNullOrEmpty(teamId))
-                codeDirectorySize += utf8TeamId.Length + 1;
             codeDirectorySize += (specialSlotCount + codeSlotCount) * hashSize;
             if (version >= CodeDirectoryVersion.SupportsPreEncrypt)
                 codeDirectorySize += codeSlotCount * hashSize;
@@ -85,7 +80,6 @@ namespace Melanzana.CodeSign.Blobs
             ulong execLength = executable.GetSigningLimit();
             uint codeSlotCount = (uint)((execLength + pageSize - 1) / pageSize);
             byte[] utf8Identifier = Encoding.UTF8.GetBytes(identifier);
-            byte[] utf8TeamId = Encoding.UTF8.GetBytes(teamId);
             byte hashSize = HashType.GetSize();
             var size = Size(version);
             byte[] blobBuffer = new byte[size];
@@ -132,14 +126,6 @@ namespace Melanzana.CodeSign.Blobs
             baselineHeader.IdentifierOffset = (uint)flexibleOffset;
             utf8Identifier.AsSpan().CopyTo(blobBuffer.AsSpan(flexibleOffset, utf8Identifier.Length));
             flexibleOffset += utf8Identifier.Length + 1;
-
-            // Team ID
-            if (version >= CodeDirectoryVersion.SupportsTeamId && !string.IsNullOrEmpty(teamId))
-            {
-                teamIdHeader.TeamIdOffset = (uint)flexibleOffset;
-                utf8TeamId.AsSpan().CopyTo(blobBuffer.AsSpan(flexibleOffset, utf8TeamId.Length));
-                flexibleOffset += utf8TeamId.Length + 1;
-            }
 
             // Pre-encrypt hashes
             if (version >= CodeDirectoryVersion.SupportsPreEncrypt)

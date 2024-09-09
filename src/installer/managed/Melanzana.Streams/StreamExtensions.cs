@@ -10,8 +10,6 @@ namespace Melanzana.Streams
     {
         public static Stream Slice(this Stream stream, long offset, long size)
         {
-            //if (stream is MemoryStream memoryStream && memoryStream.TryGetBuffer())
-            //    return new MemoryStream(memoryStream.GetBuffer(), (int)offset, (int)size);
             return new SliceStream(stream, offset, size);
         }
 
