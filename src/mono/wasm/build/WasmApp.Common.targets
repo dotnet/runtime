@@ -730,8 +730,10 @@
     </ItemGroup>
 
     <ItemGroup>
-      <_BitcodeFile Include="%(_WasmAssembliesInternal.LlvmBitcodeFile)" />
-      <_BitcodeFile ObjectFile="$(_WasmIntermediateOutputPath)%(FileName).o" />
+      <_BitcodeFile Include="%(_WasmAssembliesInternal.LlvmBitcodeFile)">
+        <ObjectFile>$(_WasmIntermediateOutputPath)%(FileName).o</ObjectFile>
+        <RelativePath>$([System.IO.Path]::GetRelativePath('$(MsBuildProjectDirectory)', '%(Identity)'))</RelativePath>
+      </_BitcodeFile>
 
       <!-- Add the skipped assemblies -->
       <_WasmAssembliesInternal Include="@(_AotInputAssemblies->WithMetadataValue('AOT_InternalForceToInterpret', 'true'))" />
@@ -908,7 +910,9 @@
       <_EmitBundleOutputFile Include="%(_EmitBundleOutputItem.DestinationFile)" />
       <_EmitBundleOutputFile Include="@(_EmitBundleRegistrationFile)" />
 
-      <_WasmObjectFilesForBundle Include="@(_EmitBundleOutputFile)" />
+      <_WasmObjectFilesForBundle Include="@(_EmitBundleOutputFile)">
+        <RelativePath Condition="'%(_EmitBundleOutputFile.Identity)' != ''">$([System.IO.Path]::GetRelativePath('$(MSBuildProjectDirectory)', '%(Identity)'))</RelativePath>
+      </_WasmObjectFilesForBundle>
       <FileWrites Include="@(_EmitBundleOutputFile)" />
     </ItemGroup>
   </Target>

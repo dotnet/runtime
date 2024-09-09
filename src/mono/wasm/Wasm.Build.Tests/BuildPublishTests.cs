@@ -175,6 +175,26 @@ namespace Wasm.Build.Tests
                                 host: host, id: id);
         }
 
+        [Theory]
+        [BuildAndRun(host: RunHost.None, aot: false, config: "Release")]
+        public void BuildInLongPathSingleFileBundle(BuildArgs buildArgs, string id)
+        {
+            string projectName = GetTestProjectPath(prefix: "long_path", config: buildArgs.Config, appendUnicode: false);
+
+            buildArgs = buildArgs with { ProjectName = projectName, ExtraBuildArgs = "-p:WasmBuildNative=true" };
+            buildArgs = ExpandBuildArgs(buildArgs);
+
+            (_, string output) = BuildProject(buildArgs,
+                                    id,
+                                    new BuildProjectOptions(
+                                        InitProject: () => File.WriteAllText(Path.Combine(_projectDir!, "Program.cs"), s_mainReturns42),
+                                        DotnetWasmFromRuntimePack: false,
+                                        CreateProject: true,
+                                        Publish: false,
+                                        ProjectParentDir: Path.Combine("reallyLongPath", "toProlongPathsToLinkedFiles", "andMakeTheResultingLinkingCommandExtremelyLong")));
+
+        }
+
         void CheckOutputForNativeBuild(bool expectAOT, bool expectRelinking, BuildArgs buildArgs, string buildOutput, bool testUnicode)
         {
             if (testUnicode)

@@ -446,7 +446,7 @@
 
       <_WasmNativeFileForLinking Include="%(_BitcodeFile.ObjectFile)" />
       <_WasmNativeFileForLinking Include="%(_WasmSourceFileToCompile.ObjectFile)" />
-      <_WasmNativeFileForLinking Include="@(_WasmObjectFilesForBundle)" />
+      <_WasmNativeFileForLinking Include="%(_WasmObjectFilesForBundle.RelativePath)" />
 
       <_WasmNativeFileForLinking
           Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)*.a"
@@ -493,6 +493,10 @@
       <Output TaskParameter="ConsoleOutput" PropertyName="_EmccLinkStepConsoleOutput" />
       <Output TaskParameter="ExitCode" PropertyName="_EmccLinkStepExitCode" />
     </Exec>
+    <ReadLinesFromFile File="$(_WasmLinkRsp)">
+      <Output TaskParameter="Lines" ItemName="WasmLinkRspContents" />
+    </ReadLinesFromFile>
+    <Message Text="[ILONA] %(WasmLinkRspContents.Identity)" Importance="high" />
     <ItemGroup>
       <FileWrites Include="$(_WasmIntermediateOutputPath)dotnet.native.wasm" />
       <FileWrites Include="$(_WasmIntermediateOutputPath)dotnet.native.js" />

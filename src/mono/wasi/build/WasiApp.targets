@@ -314,18 +314,8 @@
     </ItemGroup>
 
     <ItemGroup>
-      <!-- using relative paths fixes https://github.com/dotnet/runtime/issues/106845 -->
-      <RelativeBitcodeFiles Include="%(_BitcodeFile.ObjectFile)" Condition="'%(_BitcodeFile.ObjectFile)' != ''">
-        <RelativePath>$([System.IO.Path]::GetRelativePath('$(MSBuildProjectDirectory)', '%(Identity)'))</RelativePath>
-      </RelativeBitcodeFiles>
-      <RelativeWasmObjectFiles Include="@(_WasmObjectFilesForBundle)" Condition="'%(_WasmObjectFilesForBundle.Identity)' != ''">
-        <RelativePath>$([System.IO.Path]::GetRelativePath('$(MSBuildProjectDirectory)', '%(Identity)'))</RelativePath>
-      </RelativeWasmObjectFiles>
-    </ItemGroup>
-
-    <ItemGroup>
       <!-- order matters -->
-      <_WasmNativeFileForLinking Include="%(RelativeBitcodeFiles.RelativePath)" />
+      <_WasmNativeFileForLinking Include="%(_BitcodeFile.RelativePath)" />
       <!--<_WasmNativeFileForLinking Include="%(_WasmSourceFileToCompile.ObjectFile)" />-->
 
       <_WasmNativeFileForLinking
@@ -345,7 +335,7 @@
     <ItemGroup>
       <_WasiClangXLinkerFlags Include="--initial-memory=$(WasmInitialHeapSize)" />
       <_WasiFilePathForFixup Include="$(_WasiGetEntrypointCFile)" />
-      <_WasiFilePathForFixup Include="%(RelativeWasmObjectFiles.RelativePath)" />
+      <_WasiFilePathForFixup Include="%(_WasmObjectFilesForBundle.RelativePath)" />
       <_WasiFilePathForFixup Include="@(_WasmNativeFileForLinking)" />
 
       <_WasmLinkDependencies Include="@(_WasiFilePathForFixup)" />
