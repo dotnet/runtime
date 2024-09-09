@@ -806,7 +806,10 @@
     <MergedPayloads Update="@(MergedPayloads)">
       <PayloadGroup>%(FileName)%(Extension)</PayloadGroup>
       <!-- Android package names can't have dashes, so we replace them with underscores. -->
-      <ApkPath>$(MergedPayloadsRootDirectory)%(FileName)%(Extension)/$([System.String]::new('%(FileName)%(Extension)').Replace('-', '_')).apk</ApkPath>
+      <ApkFileName>$([System.String]::new('%(FileName)%(Extension)').Replace('-', '_'))</ApkFileName>
+    </MergedPayloads>
+    <MergedPayloads Update="@(MergedPayloads)">
+      <ApkPath>$(MergedPayloadsRootDirectory)%(FileName)%(Extension)/%(ApkFileName).apk</ApkPath>
       <AppBundlePath>$(MergedPayloadsRootDirectory)%(FileName)%(Extension)/%(FileName)%(Extension).app</AppBundlePath>
     </MergedPayloads>
   </ItemGroup>
@@ -895,7 +898,7 @@
 
     <XHarnessApkToTest Include="@(MergedPayloads->Metadata('PayloadGroup'))" Condition="'$(TargetsAndroid)' == 'true'">
       <Arguments>--arg=env:TestExclusionListPath=TestExclusionList.txt</Arguments>
-      <AndroidPackageName>net.dot.%(PayloadGroup)</AndroidPackageName>
+      <AndroidPackageName>net.dot.%(ApkFileName)</AndroidPackageName>
       <AndroidInstrumentationName>net.dot.MonoRunner</AndroidInstrumentationName>
       <TestTimeout Condition=" '$(TimeoutPerTestCollectionInMinutes)' != '' ">$([System.TimeSpan]::FromMinutes($(TimeoutPerTestCollectionInMinutes)))</TestTimeout>
     </XHarnessApkToTest>
