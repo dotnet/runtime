@@ -151,13 +151,24 @@ namespace System.Threading
         public static bool Yield() => YieldInternal() != Interop.BOOL.FALSE;
 
         [MethodImpl(MethodImplOptions.NoInlining)]
-        private static Thread InitializeCurrentThread() => t_currentThread = GetCurrentThreadNative();
+        private static Thread InitializeCurrentThread()
+        {
+            Thread? thread = null;
+            GetCurrentThread(ObjectHandleOnStack.Create(ref thread));
+            return t_currentThread = thread!;
+        }
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern Thread GetCurrentThreadNative();
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ThreadNative_GetCurrentThread")]
+        private static partial void GetCurrentThread(ObjectHandleOnStack thread);
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        private extern void Initialize();
+        private void Initialize()
+        {
+            Thread _this = this;
+            Initialize(ObjectHandleOnStack.Create(ref _this));
+        }
+
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ThreadNative_Initialize")]
+        private static partial void Initialize(ObjectHandleOnStack thread);
 
         /// <summary>Clean up the thread when it goes away.</summary>
         ~Thread() => InternalFinalize(); // Delegate to the unmanaged portion.
@@ -175,11 +186,7 @@ namespace System.Threading
         private static partial void InformThreadNameChange(ThreadHandle t, string? name, int len);
 
         /// <summary>Returns true if the thread has been started and is not dead.</summary>
-        public extern bool IsAlive
-        {
-            [MethodImpl(MethodImplOptions.InternalCall)]
-            get;
-        }
+        public bool IsAlive => (ThreadState & (ThreadState.Unstarted | ThreadState.Stopped | ThreadState.Aborted)) == 0;
 
         /// <summary>
         /// Return whether or not this thread is a background thread.  Background
@@ -247,10 +254,19 @@ namespace System.Threading
         /// Return the thread state as a consistent set of bits.  This is more
         /// general then IsAlive or IsBackground.
         /// </summary>
-        public ThreadState ThreadState => (ThreadState)GetThreadStateNative();
+        public ThreadState ThreadState
+        {
+            get
+            {
+                var state = (ThreadState)GetThreadState(GetNativeHandle());
+                GC.KeepAlive(this);
+                return state;
+            }
+        }
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        private extern int GetThreadStateNative();
+        [SuppressGCTransition]
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ThreadNative_GetThreadState")]
+        private static partial int GetThreadState(ThreadHandle t);
 
         /// <summary>
         /// An unstarted thread can be marked to indicate that it will host a
@@ -327,6 +343,7 @@ namespace System.Threading
             GC.KeepAlive(this);
         }
 
+        [SuppressGCTransition]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ThreadNative_DisableComObjectEagerCleanup")]
         private static partial void DisableComObjectEagerCleanup(ThreadHandle t);
 #else // !FEATURE_COMINTEROP
