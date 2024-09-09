@@ -66,7 +66,7 @@ namespace System.Threading
 
             Task Contended(CancellationToken cancellationToken)
             {
-                if (NetEventSource.Log.IsEnabled()) NetEventSource.MutexContended(this, _gate);
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Trace(this, $"Mutex queue length {-_gate}", nameof(EnterAsync));
 
                 var w = new Waiter(this);
 
@@ -188,7 +188,7 @@ namespace System.Threading
 
             void Contended()
             {
-                if (NetEventSource.Log.IsEnabled()) NetEventSource.MutexContended(this, _gate);
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Trace(this, $"Mutex queue length {-_gate}", nameof(Exit));
 
                 Waiter? w;
                 lock (SyncObj)

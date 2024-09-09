@@ -267,31 +267,36 @@ namespace System.Net.WebSockets
 
         private static void DisposeSafe(IDisposable? resource, AsyncMutex mutex)
         {
-            if (resource is not null)
+            if (resource is null)
             {
-                Task lockTask = mutex.EnterAsync(CancellationToken.None);
+                return;
+            }
 
-                if (lockTask.IsCompleted)
-                {
-                    if (NetEventSource.Log.IsEnabled()) NetEventSource.MutexEntered(mutex);
+            Task lockTask = mutex.EnterAsync(CancellationToken.None);
+            if (lockTask.IsCompleted)
+            {
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.MutexEntered(mutex);
+                DisposeSafeCore(resource, mutex);
+            }
+            else
+            {
+                Observe(
+                    DisposeSafeAsync(resource, mutex, lockTask),
+                    thisObj: resource);
+            }
 
-                    resource.Dispose();
-                    mutex.Exit();
+            static async Task DisposeSafeAsync(IDisposable resource, AsyncMutex mutex, Task lockTask)
+            {
+                await lockTask.ConfigureAwait(false);
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.MutexEntered(mutex);
+                DisposeSafeCore(resource, mutex);
+            }
 
-                    if (NetEventSource.Log.IsEnabled()) NetEventSource.MutexExited(mutex);
-                }
-                else
-                {
-                    lockTask.GetAwaiter().UnsafeOnCompleted(() =>
-                    {
-                        if (NetEventSource.Log.IsEnabled()) NetEventSource.MutexEntered(mutex);
-
-                        resource.Dispose();
-                        mutex.Exit();
-
-                        if (NetEventSource.Log.IsEnabled()) NetEventSource.MutexExited(mutex);
-                    });
-                }
+            static void DisposeSafeCore(IDisposable resource, AsyncMutex mutex)
+            {
+                resource.Dispose();
+                mutex.Exit();
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.MutexExited(mutex);
             }
         }
 
@@ -797,11 +802,9 @@ namespace System.Net.WebSockets
 
             if (NetEventSource.Log.IsEnabled()) NetEventSource.ReceiveAsyncPrivateStarted(this, payloadBuffer.Length);
 
-            CancellationTokenRegistration registration = default;
+            CancellationTokenRegistration registration = cancellationToken.Register(static s => ((ManagedWebSocket)s!).Abort(), this);
             try
             {
-                registration = cancellationToken.Register(static s => ((ManagedWebSocket)s!).Abort(), this);
-
                 await _receiveMutex.EnterAsync(cancellationToken).ConfigureAwait(false);
                 if (NetEventSource.Log.IsEnabled()) NetEventSource.MutexEntered(_receiveMutex);
 

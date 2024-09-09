@@ -36,9 +36,9 @@ namespace System.Net.WebSockets
                 TrySendKeepAliveFrameAsync(MessageOpcode.Pong));
         }
 
-        private ValueTask TrySendKeepAliveFrameAsync(MessageOpcode opcode, ReadOnlyMemory<byte>? payload = null)
+        private ValueTask TrySendKeepAliveFrameAsync(MessageOpcode opcode, ReadOnlyMemory<byte> payload = default)
         {
-            Debug.Assert(opcode is MessageOpcode.Pong || !IsUnsolicitedPongKeepAlive && opcode is MessageOpcode.Ping);
+            Debug.Assert((opcode is MessageOpcode.Pong) || (!IsUnsolicitedPongKeepAlive && opcode is MessageOpcode.Ping));
 
             if (!IsValidSendState(_state))
             {
@@ -48,9 +48,7 @@ namespace System.Net.WebSockets
                 return ValueTask.CompletedTask;
             }
 
-            payload ??= ReadOnlyMemory<byte>.Empty;
-
-            return SendFrameAsync(opcode, endOfMessage: true, disableCompression: true, payload.Value, CancellationToken.None);
+            return SendFrameAsync(opcode, endOfMessage: true, disableCompression: true, payload, CancellationToken.None);
         }
 
         private void KeepAlivePingHeartBeat()
@@ -76,7 +74,7 @@ namespace System.Net.WebSockets
 
                     if (_keepAlivePingState.PingSent)
                     {
-                        if (Environment.TickCount64 > _keepAlivePingState.PingTimeoutTimestamp)
+                        if (now > _keepAlivePingState.PingTimeoutTimestamp)
                         {
                             if (NetEventSource.Log.IsEnabled())
                             {
@@ -92,7 +90,7 @@ namespace System.Net.WebSockets
                     }
                     else
                     {
-                        if (Environment.TickCount64 > _keepAlivePingState.NextPingRequestTimestamp)
+                        if (now > _keepAlivePingState.NextPingRequestTimestamp)
                         {
                             _keepAlivePingState.OnNextPingRequestCore(); // we are holding the lock
                             shouldSendPing = true;
@@ -147,22 +145,24 @@ namespace System.Net.WebSockets
             }
         }
 
+        private void Observe(Task t) => Observe(t, this);
+
         // "Observe" any exception, ignoring it to prevent the unobserved task
         // exception event from being raised.
-        private void Observe(Task t)
+        private static void Observe(Task t, object thisObj)
         {
             if (t.IsCompleted)
             {
                 if (t.IsFaulted)
                 {
-                    LogFaulted(t, this);
+                    LogFaulted(t, thisObj);
                 }
             }
             else
             {
                 t.ContinueWith(
                     LogFaulted,
-                    this,
+                    thisObj,
                     CancellationToken.None,
                     TaskContinuationOptions.OnlyOnFaulted | TaskContinuationOptions.ExecuteSynchronously,
                     TaskScheduler.Default);
