@@ -19,8 +19,7 @@ parameters:
   variables: {}
   pool: ''
   dependsOn: []
-  compileOnHelix: false
-  interpreter: false
+  extraHelixArguments: ''
   buildAllTestsAsStandalone: false
   #arcade-specific parameters
   condition: always()
@@ -128,5 +127,6 @@ steps:
           helixAccessToken: $(HelixApiAccessToken)
 
         helixProjectArguments: '$(Build.SourcesDirectory)/src/tests/Common/helixpublishwitharcade.proj'
+        extraHelixArguments: ${{ parameters.extraHelixArguments }}
 
         scenarios: ${{ parameters.scenarios }}
