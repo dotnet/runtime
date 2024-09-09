@@ -97,6 +97,10 @@
              Link="Common\Interop\Unix\System.Native\Interop.SocketAddress.cs" />
   </ItemGroup>
 
+  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'browser'">
+    <Compile Include="System\Net\Dns.Browser.cs" />
+  </ItemGroup>
+
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'wasi'">
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.GetHostName.cs"
              Link="Common\Interop\Unix\System.Native\Interop.GetHostName.cs" />
@@ -128,10 +132,6 @@
              Link="Common\Interop\Unix\System.Native\Interop.Socket.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.SocketAddress.cs"
              Link="Common\Interop\Unix\System.Native\Interop.SocketAddress.cs" />
-  </ItemGroup>
-
-  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'browser'">
-    <Compile Include="System\Net\Dns.Browser.cs" />
   </ItemGroup>
 
   <ItemGroup>

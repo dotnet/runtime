@@ -1538,6 +1538,7 @@ int32_t SystemNative_ReceiveMessage(intptr_t socket, MessageHeader* messageHeade
 #if defined(TARGET_WASI)
     // TODO https://github.com/dotnet/runtime/issues/98957
     assert_msg(false, "Not supported on WASI yet", 0);
+    return Error_ENOTSUP;
 #else // TARGET_WASI
     struct msghdr header;
     ConvertMessageHeaderToMsghdr(&header, messageHeader, fd);
@@ -1554,7 +1555,6 @@ int32_t SystemNative_ReceiveMessage(intptr_t socket, MessageHeader* messageHeade
     messageHeader->ControlBufferLen = Min((int32_t)header.msg_controllen, messageHeader->ControlBufferLen);
 
     messageHeader->Flags = ConvertSocketFlagsPlatformToPal(header.msg_flags);
-#endif // !TARGET_WASI
 
     if (res != -1)
     {
@@ -1564,6 +1564,7 @@ int32_t SystemNative_ReceiveMessage(intptr_t socket, MessageHeader* messageHeade
 
     *received = 0;
     return SystemNative_ConvertErrorPlatformToPal(errno);
+#endif // !TARGET_WASI
 }
 
 int32_t SystemNative_Send(intptr_t socket, void* buffer, int32_t bufferLen, int32_t flags, int32_t* sent)

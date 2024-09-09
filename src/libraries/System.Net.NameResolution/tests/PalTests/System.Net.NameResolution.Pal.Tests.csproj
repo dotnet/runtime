@@ -76,7 +76,7 @@
     <Compile Include="$(CommonPath)Interop\Windows\WinSock\Interop.GetAddrInfoExW.cs"
              Link="Common\Interop\Windows\WinSock\Interop.GetAddrInfoExW.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'unix' or '$(TargetPlatformIdentifier)' == 'wasi'">
+  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'unix' or '$(TargetPlatformIdentifier)' == 'browser' or '$(TargetPlatformIdentifier)' == 'wasi'">
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.ErrNo.cs"
              Link="Common\Interop\Unix\System.Native\Interop.ErrNo.cs"/>
     <Compile Include="$(CommonPath)System\Net\SocketAddressPal.Unix.cs"
