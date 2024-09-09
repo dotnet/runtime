@@ -1990,9 +1990,10 @@ public static class Program
 	}
 
 
+	class EverythingIsFineException : Exception {};
 
 	[MethodImpl(MethodImplOptions.NoInlining)]
-	private static int ShufflingThunk_FloatEmptyShort_Empty8Float_RiscV(
+	private static void ShufflingThunk_FloatEmptyShort_Empty8Float_RiscV(
 		int a1_to_a0, int a2_to_a1, int a3_to_a2, int a4_to_a3, int a5_to_a4, int a6_to_a5, int a7_to_a6,
 		float fa0,
 		FloatEmptyShort stack0_to_fa1_a7, // frees 1 stack slot
@@ -2028,7 +2029,7 @@ public static class Program
 		Assert.Equal(6d, fa6_to_fa7);
 		Assert.Equal(10, stack4_to_stack3);
 		Assert.Equal(Empty8Float.Get(), fa7_to_stack4_stack5);
-		return 100;
+		throw new EverythingIsFineException(); // see if we can walk out of the stack frame laid by the shuffle thunk
 	}
 
 	[Fact]
@@ -2037,11 +2038,10 @@ public static class Program
 		var getDelegate = [MethodImpl(MethodImplOptions.NoOptimization)] ()
 			=> ShufflingThunk_FloatEmptyShort_Empty8Float_RiscV;
 		var delegat = getDelegate();
-		Span<int> stackBeforeCall = stackalloc[] {11, 22, 33, 44};
-		int ret = delegat(0, 1, 2, 3, 4, 5, 6, 0f,
-			FloatEmptyShort.Get(), 1d, 2d, 7, 8, 3d, 4f, 9, 5f, 6d, 10, Empty8Float.Get());
-		Assert.Equal([11, 22, 33, 44], stackBeforeCall);
-		Assert.Equal(100, ret);
+		Assert.Throws<EverythingIsFineException>(() =>
+			delegat(0, 1, 2, 3, 4, 5, 6, 0f,
+				FloatEmptyShort.Get(), 1d, 2d, 7, 8, 3d, 4f, 9, 5f, 6d, 10, Empty8Float.Get())
+		);
 	}
 #endregion
 }
