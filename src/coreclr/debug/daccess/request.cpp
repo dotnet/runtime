@@ -2838,7 +2838,7 @@ ClrDataAccess::GetAppDomainData(CLRDATA_ADDRESS addr, struct DacpAppDomainData *
 
         ZeroMemory(appdomainData, sizeof(DacpAppDomainData));
         appdomainData->AppDomainPtr = PTR_CDADDR(pBaseDomain);
-        PTR_LoaderAllocator pLoaderAllocator = pBaseDomain->GetLoaderAllocator();
+        PTR_LoaderAllocator pLoaderAllocator = SystemDomain::GetGlobalLoaderAllocator();
         appdomainData->pHighFrequencyHeap = HOST_CDADDR(pLoaderAllocator->GetHighFrequencyHeap());
         appdomainData->pLowFrequencyHeap = HOST_CDADDR(pLoaderAllocator->GetLowFrequencyHeap());
         appdomainData->pStubHeap = HOST_CDADDR(pLoaderAllocator->GetStubHeap());
@@ -3800,7 +3800,7 @@ ClrDataAccess::GetThreadLocalModuleData(CLRDATA_ADDRESS thread, unsigned int ind
 HRESULT ClrDataAccess::GetHandleEnum(ISOSHandleEnum **ppHandleEnum)
 {
     unsigned int types[] = {HNDTYPE_WEAK_SHORT, HNDTYPE_WEAK_LONG, HNDTYPE_STRONG, HNDTYPE_PINNED, HNDTYPE_DEPENDENT,
-                            HNDTYPE_SIZEDREF, HNDTYPE_WEAK_INTERIOR_POINTER,
+                            HNDTYPE_WEAK_INTERIOR_POINTER,
 #if defined(FEATURE_COMINTEROP) || defined(FEATURE_COMWRAPPERS) || defined(FEATURE_OBJCMARSHAL)
                             HNDTYPE_REFCOUNTED,
 #endif // FEATURE_COMINTEROP || FEATURE_COMWRAPPERS || FEATURE_OBJCMARSHAL
@@ -3838,7 +3838,6 @@ HRESULT ClrDataAccess::GetHandleEnumForGC(unsigned int gen, ISOSHandleEnum **ppH
     SOSDacEnter();
 
     unsigned int types[] = {HNDTYPE_WEAK_SHORT, HNDTYPE_WEAK_LONG, HNDTYPE_STRONG, HNDTYPE_PINNED, HNDTYPE_DEPENDENT,
-                            HNDTYPE_SIZEDREF,
 #if defined(FEATURE_COMINTEROP) || defined(FEATURE_COMWRAPPERS) || defined(FEATURE_OBJCMARSHAL)
                             HNDTYPE_REFCOUNTED,
 #endif // FEATURE_COMINTEROP || FEATURE_COMWRAPPERS || FEATURE_OBJCMARSHAL
@@ -4066,8 +4065,7 @@ ClrDataAccess::TraverseVirtCallStubHeap(CLRDATA_ADDRESS pAppDomain, VCSHeapType 
 
     SOSDacEnter();
 
-    BaseDomain* pBaseDomain = PTR_BaseDomain(TO_TADDR(pAppDomain));
-    VirtualCallStubManager *pVcsMgr = pBaseDomain->GetLoaderAllocator()->GetVirtualCallStubManager();
+    VirtualCallStubManager *pVcsMgr = SystemDomain::GetGlobalLoaderAllocator()->GetVirtualCallStubManager();
     if (!pVcsMgr)
     {
         hr = E_POINTER;
@@ -4112,8 +4110,8 @@ HRESULT ClrDataAccess::GetDomainLoaderAllocator(CLRDATA_ADDRESS domainAddress, C
 
     SOSDacEnter();
 
-    PTR_BaseDomain pDomain = PTR_BaseDomain(TO_TADDR(domainAddress));
-    *pLoaderAllocator = pDomain != nullptr ? HOST_CDADDR(pDomain->GetLoaderAllocator()) : 0;
+    // The one and only app domain uses the global loader allocator
+    *pLoaderAllocator = HOST_CDADDR(SystemDomain::GetGlobalLoaderAllocator());
 
     SOSDacLeave();
     return hr;

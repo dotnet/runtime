@@ -46,7 +46,7 @@
         "Type": "git",
         "Git": {
           "RepositoryUrl": "https://github.com/zlib-ng/zlib-ng",
-          "CommitHash": "74253725f884e2424a0dd8ae3f69896d5377f325"
+          "CommitHash": "d54e3769be0c522015b784eca2af258b1c026107"
         }
       },
       "DevelopmentDependency": false
