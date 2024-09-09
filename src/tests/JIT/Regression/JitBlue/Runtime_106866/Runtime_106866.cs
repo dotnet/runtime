@@ -24,11 +24,14 @@ public struct S0
     public Vector<sbyte> F2;
     public void M3()
     {
-        var vr0 = this.F2;
-        var vr1 = this.F2;
-        var vr2 = this.F2;
-        this.F2 = Sve.Splice(vr0, vr1, vr2);
-        Consume(this.F0);
+        if (Sve.IsSupported)
+        {
+            var vr0 = this.F2;
+            var vr1 = this.F2;
+            var vr2 = this.F2;
+            this.F2 = Sve.Splice(vr0, vr1, vr2);
+            Consume(this.F0);
+        }
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
