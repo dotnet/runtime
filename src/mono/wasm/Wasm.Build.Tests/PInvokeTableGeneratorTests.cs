@@ -452,6 +452,8 @@ namespace Wasm.Build.Tests
                         {
                             ((delegate* unmanaged<void>)&A.Conflict.C)();
                             ((delegate* unmanaged<void>)&B.Conflict.C)();
+                            ((delegate* unmanaged<void>)&A.Conflict.C\U0001F412)();
+                            ((delegate* unmanaged<void>)&B.Conflict.C\U0001F412)();
                             return 42;
                         }
                     }
@@ -462,6 +464,11 @@ namespace Wasm.Build.Tests
                             public static void C() {
                                 Console.WriteLine("A.Conflict.C");
                             }
+
+                            [UnmanagedCallersOnly(EntryPoint = "A_Conflict_C\U0001F412")]
+                            public static void C\U0001F412() {
+                                Console.WriteLine("A.Conflict.C\U0001F412");
+                            }
                         }
                     }
 
@@ -470,6 +477,11 @@ namespace Wasm.Build.Tests
                             [UnmanagedCallersOnly(EntryPoint = "B_Conflict_C")]
                             public static void C() {
                                 Console.WriteLine("B.Conflict.C");
+                            }
+
+                            [UnmanagedCallersOnly(EntryPoint = "B_Conflict_C\U0001F412")]
+                            public static void C\U0001F412() {
+                                Console.WriteLine("B.Conflict.C\U0001F412");
                             }
                         }
                     }
@@ -486,6 +498,8 @@ namespace Wasm.Build.Tests
             output = RunAndTestWasmApp(buildArgs, buildDir: _projectDir, expectedExitCode: 42, host: host, id: id);
             Assert.Contains("A.Conflict.C", output);
             Assert.Contains("B.Conflict.C", output);
+            Assert.Contains("A.Conflict.C\U0001F412", output);
+            Assert.Contains("B.Conflict.C\U0001F412", output);
         }
 
         [Theory]
