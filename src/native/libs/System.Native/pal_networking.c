@@ -1618,8 +1618,12 @@ int32_t SystemNative_SendMessage(intptr_t socket, MessageHeader* messageHeader, 
         return Error_ENOTSUP;
     }
 
+#if defined(TARGET_WASI)
+    // TODO https://github.com/dotnet/runtime/issues/98957
+    assert_msg(false, "Not supported on WASI yet", 0);
+    return Error_ENOTSUP;
+#else // TARGET_WASI
     ssize_t res;
-#if !defined(TARGET_WASI)
     struct msghdr header;
     ConvertMessageHeaderToMsghdr(&header, messageHeader, fd);
 
@@ -1632,10 +1636,6 @@ int32_t SystemNative_SendMessage(intptr_t socket, MessageHeader* messageHeader, 
 #else
     while ((res = sendmsg(fd, &header, socketFlags)) < 0 && errno == EINTR);
 #endif
-#else // TARGET_WASI
-    // TODO https://github.com/dotnet/runtime/issues/98957
-    assert_msg(false, "Not supported on WASI yet", 0);
-#endif // !TARGET_WASI
 
     if (res != -1)
     {
@@ -1645,6 +1645,7 @@ int32_t SystemNative_SendMessage(intptr_t socket, MessageHeader* messageHeader, 
 
     *sent = 0;
     return SystemNative_ConvertErrorPlatformToPal(errno);
+#endif // !TARGET_WASI
 }
 
 int32_t SystemNative_Accept(intptr_t socket, uint8_t* socketAddress, int32_t* socketAddressLen, intptr_t* acceptedSocket)
