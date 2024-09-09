@@ -1410,8 +1410,7 @@ int LinearScan::BuildConditionalSelectWithEmbeddedOp(GenTreeHWIntrinsic* intrins
     size_t              embNumArgs = embeddedOpNode->GetOperandCount();
 
     // Determine whether this the embedded operation requires delay free
-    bool     embeddedIsRMW       = false;
-    GenTree* embeddedDelayFreeOp = getDelayFreeOp(embeddedOpNode, &embeddedIsRMW);
+    GenTree* embeddedDelayFreeOp = getDelayFreeOp(embeddedOpNode);
 
     // Build any immediates
     BuildHWIntrinsicImmediate(embeddedOpNode, intrinEmbedded);
@@ -1435,7 +1434,7 @@ int LinearScan::BuildConditionalSelectWithEmbeddedOp(GenTreeHWIntrinsic* intrins
 
     // Build Op2 and Op3
 
-    if (embeddedIsRMW)
+    if (embeddedDelayFreeOp != nullptr)
     {
         // If the embedded operation has RMW semantics then record delay-free for the "merge" value
 
@@ -1527,8 +1526,7 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
 
     // Determine whether this is an operation where an op must be marked delayFree so that it
     // is not allocated the same register as the target.
-    bool     isRMW       = false;
-    GenTree* delayFreeOp = getDelayFreeOp(intrinsicTree, &isRMW);
+    GenTree* delayFreeOp = getDelayFreeOp(intrinsicTree);
 
     // Determine whether this is an operation where one of the ops is an address
     GenTree* addrOp = LinearScan::getVectorAddrOperand(intrinsicTree);
@@ -1589,7 +1587,7 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                 }
             }
         }
-        else if (isRMW)
+        else if (delayFreeOp != nullptr)
         {
             srcCount += BuildDelayFreeUses(operand, delayFreeOp, candidates);
         }
@@ -2000,14 +1998,13 @@ SingleTypeRegSet LinearScan::getOperandCandidates(GenTreeHWIntrinsic* intrinsicT
 //
 // Arguments:
 //    intrinsicTree - Tree to check
-//    isRMW (out) - Set to true if is a RMW node
 //
 // Return Value:
 //    The operand that needs to be delay freed
 //
-GenTree* LinearScan::getDelayFreeOp(GenTreeHWIntrinsic* intrinsicTree, bool* isRMW)
+GenTree* LinearScan::getDelayFreeOp(GenTreeHWIntrinsic* intrinsicTree)
 {
-    *isRMW = intrinsicTree->isRMWHWIntrinsic(compiler);
+    bool isRMW = intrinsicTree->isRMWHWIntrinsic(compiler);
 
     const NamedIntrinsic intrinsicId = intrinsicTree->GetHWIntrinsicId();
     GenTree*             delayFreeOp = nullptr;
@@ -2054,20 +2051,20 @@ GenTree* LinearScan::getDelayFreeOp(GenTreeHWIntrinsic* intrinsicTree, bool* isR
         case NI_AdvSimd_Arm64_LoadAndInsertScalarVector128x2:
         case NI_AdvSimd_Arm64_LoadAndInsertScalarVector128x3:
         case NI_AdvSimd_Arm64_LoadAndInsertScalarVector128x4:
-            assert(*isRMW);
+            assert(isRMW);
             delayFreeOp = intrinsicTree->Op(1);
             assert(delayFreeOp != nullptr);
             break;
 
         case NI_Sve_CreateBreakPropagateMask:
             // RMW operates on the second op.
-            assert(*isRMW);
+            assert(isRMW);
             delayFreeOp = intrinsicTree->Op(2);
             assert(delayFreeOp != nullptr);
             break;
 
         default:
-            if (*isRMW)
+            if (isRMW)
             {
                 if (HWIntrinsicInfo::IsExplicitMaskedOperation(intrinsicId))
                 {
