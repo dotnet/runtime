@@ -11168,7 +11168,7 @@ void CordbProcess::HandleSetThreadContextNeeded(DWORD dwThreadId)
     // However, there are situations where OpenThread can fail with an Access Denied error.
     // From https://github.com/dotnet/runtime/issues/107263, the control-c handler in 
     // Windows causes the process to have higher privileges. 
-    // We are now using the following approach to acess the thread handle, which is the same
+    // We are now using the following approach to access the thread handle, which is the same
     // approach used by CordbThread::RefreshHandle:
     // 1. Get the thread handle from the DAC
     // 2. Duplicate the handle to the current process
