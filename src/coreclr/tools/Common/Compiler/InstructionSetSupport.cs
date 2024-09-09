@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
 
 using Internal.TypeSystem;
 using Internal.JitInterface;
@@ -333,11 +334,48 @@ namespace ILCompiler
             {
                 unsupportedInstructionSets.AddInstructionSet(instructionSetConversion[unsupported]);
             }
+
             unsupportedInstructionSets.ExpandInstructionSetByReverseImplication(_architecture);
             unsupportedInstructionSets.Set64BitInstructionSetVariants(_architecture);
 
             if ((_architecture == TargetArchitecture.X86) || (_architecture == TargetArchitecture.ARM))
                 unsupportedInstructionSets.Set64BitInstructionSetVariantsUnconditionally(_architecture);
+
+            // While it's possible to enable individual AVX-512 ISA's, it is not
+            // optimal to do so, since they aren't totally functional this way,
+            // plus it is extremely rare to encounter hardware that doesn't support
+            // all of them. So, here we ensure that we are enabling all the ISA's
+            // if one is specified in the Crossgen2 or ILC command-lines.
+            //
+            // For more information, check this Github comment:
+            // https://github.com/dotnet/runtime/issues/106450#issuecomment-2299504035
+
+            if (_supportedInstructionSets.Any(iSet => iSet.Contains("avx512")))
+            {
+                // We can simply try adding all of the AVX-512 ISA's here,
+                // since SortedSet just ignores the value if it is already present.
+
+                _supportedInstructionSets.Add("avx512f");
+                _supportedInstructionSets.Add("avx512f_vl");
+                _supportedInstructionSets.Add("avx512bw");
+                _supportedInstructionSets.Add("avx512bw_vl");
+                _supportedInstructionSets.Add("avx512cd");
+                _supportedInstructionSets.Add("avx512cd_vl");
+                _supportedInstructionSets.Add("avx512dq");
+                _supportedInstructionSets.Add("avx512dq_vl");
+
+                // If AVX-512VBMI is specified, then we have to include its VL
+                // counterpart as well.
+
+                if (_supportedInstructionSets.Contains("avx512vbmi"))
+                    _supportedInstructionSets.Add("avx512vbmi_vl");
+
+                // Having AVX10V1 and any AVX-512 instruction sets enabled,
+                // automatically implies AVX10V1-V512 as well.
+
+                if (_supportedInstructionSets.Contains("avx10v1"))
+                    _supportedInstructionSets.Add("avx10v1_v512");
+            }
 
             foreach (string supported in _supportedInstructionSets)
             {

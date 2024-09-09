@@ -1624,6 +1624,9 @@ namespace System.Threading
              bool executeOnlyOnce    // NOTE: we do not allow other options that allow the callback to be queued as an APC
              )
         {
+#if TARGET_WASI
+            if (OperatingSystem.IsWasi()) throw new PlatformNotSupportedException(); // TODO remove with https://github.com/dotnet/runtime/pull/107185
+#endif
             if (millisecondsTimeOutInterval > (uint)int.MaxValue && millisecondsTimeOutInterval != uint.MaxValue)
                 throw new ArgumentOutOfRangeException(nameof(millisecondsTimeOutInterval), SR.ArgumentOutOfRange_LessEqualToIntegerMaxVal);
             return RegisterWaitForSingleObject(waitObject, callBack, state, millisecondsTimeOutInterval, executeOnlyOnce, true);
@@ -1641,6 +1644,9 @@ namespace System.Threading
              bool executeOnlyOnce    // NOTE: we do not allow other options that allow the callback to be queued as an APC
              )
         {
+#if TARGET_WASI
+            if (OperatingSystem.IsWasi()) throw new PlatformNotSupportedException(); // TODO remove with https://github.com/dotnet/runtime/pull/107185
+#endif
             if (millisecondsTimeOutInterval > (uint)int.MaxValue && millisecondsTimeOutInterval != uint.MaxValue)
                 throw new ArgumentOutOfRangeException(nameof(millisecondsTimeOutInterval), SR.ArgumentOutOfRange_NeedNonNegOrNegative1);
             return RegisterWaitForSingleObject(waitObject, callBack, state, millisecondsTimeOutInterval, executeOnlyOnce, false);
@@ -1672,6 +1678,9 @@ namespace System.Threading
              bool executeOnlyOnce    // NOTE: we do not allow other options that allow the callback to be queued as an APC
              )
         {
+#if TARGET_WASI
+            if (OperatingSystem.IsWasi()) throw new PlatformNotSupportedException(); // TODO remove with https://github.com/dotnet/runtime/pull/107185
+#endif
             ArgumentOutOfRangeException.ThrowIfLessThan(millisecondsTimeOutInterval, -1);
             return RegisterWaitForSingleObject(waitObject, callBack, state, (uint)millisecondsTimeOutInterval, executeOnlyOnce, false);
         }
@@ -1687,6 +1696,9 @@ namespace System.Threading
             bool executeOnlyOnce    // NOTE: we do not allow other options that allow the callback to be queued as an APC
         )
         {
+#if TARGET_WASI
+            if (OperatingSystem.IsWasi()) throw new PlatformNotSupportedException(); // TODO remove with https://github.com/dotnet/runtime/pull/107185
+#endif
             ArgumentOutOfRangeException.ThrowIfLessThan(millisecondsTimeOutInterval, -1);
             ArgumentOutOfRangeException.ThrowIfGreaterThan(millisecondsTimeOutInterval, int.MaxValue);
             return RegisterWaitForSingleObject(waitObject, callBack, state, (uint)millisecondsTimeOutInterval, executeOnlyOnce, true);
@@ -1703,6 +1715,9 @@ namespace System.Threading
             bool executeOnlyOnce    // NOTE: we do not allow other options that allow the callback to be queued as an APC
         )
         {
+#if TARGET_WASI
+            if (OperatingSystem.IsWasi()) throw new PlatformNotSupportedException(); // TODO remove with https://github.com/dotnet/runtime/pull/107185
+#endif
             ArgumentOutOfRangeException.ThrowIfLessThan(millisecondsTimeOutInterval, -1);
             ArgumentOutOfRangeException.ThrowIfGreaterThan(millisecondsTimeOutInterval, int.MaxValue);
             return RegisterWaitForSingleObject(waitObject, callBack, state, (uint)millisecondsTimeOutInterval, executeOnlyOnce, false);
@@ -1719,6 +1734,9 @@ namespace System.Threading
                           bool executeOnlyOnce
                           )
         {
+#if TARGET_WASI
+            if (OperatingSystem.IsWasi()) throw new PlatformNotSupportedException(); // TODO remove with https://github.com/dotnet/runtime/pull/107185
+#endif
             long tm = (long)timeout.TotalMilliseconds;
 
             ArgumentOutOfRangeException.ThrowIfLessThan(tm, -1, nameof(timeout));
@@ -1738,6 +1756,9 @@ namespace System.Threading
                           bool executeOnlyOnce
                           )
         {
+#if TARGET_WASI
+            if (OperatingSystem.IsWasi()) throw new PlatformNotSupportedException(); // TODO remove with https://github.com/dotnet/runtime/pull/107185
+#endif
             long tm = (long)timeout.TotalMilliseconds;
 
             ArgumentOutOfRangeException.ThrowIfLessThan(tm, -1, nameof(timeout));

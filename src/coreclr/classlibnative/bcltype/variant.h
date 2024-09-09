@@ -20,8 +20,6 @@
 #include <cor.h>
 #include "olevariant.h"
 
-extern "C" uint32_t QCALLTYPE Variant_ConvertSystemColorToOleColor(QCall::ObjectHandleOnStack obj);
-extern "C" void QCALLTYPE Variant_ConvertOleColorToSystemColor(QCall::ObjectHandleOnStack objRet, uint32_t oleColor, MethodTable* pMT);
 extern "C" void QCALLTYPE Variant_ConvertValueTypeToRecord(QCall::ObjectHandleOnStack obj, VARIANT* pOle);
 
 #endif // _VARIANT_H_

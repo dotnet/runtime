@@ -233,7 +233,6 @@
 #define IDS_EE_INVALID_CA                       0x1a10
 
 #define IDS_EE_THREAD_CANNOT_GET                0x1a15
-#define IDS_EE_THREAD_BAD_STATE                 0x1a1b
 #define IDS_EE_THREAD_ABORT_WHILE_SUSPEND       0x1a1c
 
 #define IDS_EE_NOVARIANTRETURN                  0x1a1d
