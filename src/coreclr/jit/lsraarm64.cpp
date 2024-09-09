@@ -1412,7 +1412,7 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
     BuildHWIntrinsicImmediate(intrinsicTree, intrin);
 
     // Build all Operands
-    for (int opNum = 1; opNum <= intrin.numOperands; opNum++)
+    for (size_t opNum = 1; opNum <= intrin.numOperands; opNum++)
     {
         GenTree* operand = intrinsicTree->Op(opNum);
 
