@@ -49,10 +49,10 @@ namespace Microsoft.Extensions.Http.Logging
             EventIds.RequestEnd,
             "Received HTTP response headers after {ElapsedMilliseconds}ms - {StatusCode}");
 
-        private static readonly Action<ILogger, double, string?, Exception?> _requestFailed = LoggerMessage.Define<double, string?>(
+        private static readonly Action<ILogger, double, Exception?> _requestFailed = LoggerMessage.Define<double>(
             LogLevel.Information,
             EventIds.RequestFailed,
-            "Request failed after {ElapsedMilliseconds}ms, Error: {ErrorMessage}");
+            "HTTP request failed after {ElapsedMilliseconds}ms");
 
 
         private static readonly Func<ILogger, HttpMethod, string?, IDisposable?> _beginRequestPipelineScope = LoggerMessage.DefineScope<HttpMethod, string?>("HTTP {HttpMethod} {Uri}");
@@ -67,10 +67,10 @@ namespace Microsoft.Extensions.Http.Logging
             EventIds.PipelineEnd,
             "End processing HTTP request after {ElapsedMilliseconds}ms - {StatusCode}");
 
-        private static readonly Action<ILogger, double, string?, Exception?> _requestPipelineFailed = LoggerMessage.Define<double, string?>(
+        private static readonly Action<ILogger, double, Exception?> _requestPipelineFailed = LoggerMessage.Define<double>(
             LogLevel.Information,
             EventIds.PipelineFailed,
-            "Request failed after {ElapsedMilliseconds}ms, Error: {ErrorMessage}");
+            "HTTP request failed after {ElapsedMilliseconds}ms");
 
         private static bool GetDisableUriRedactionSettingValue()
         {
@@ -129,7 +129,7 @@ namespace Microsoft.Extensions.Http.Logging
 
         public static void LogRequestFailed(this ILogger logger, TimeSpan duration, HttpRequestException exception)
         {
-            _requestFailed(logger, duration.TotalMilliseconds, exception.Message, exception);
+            _requestFailed(logger, duration.TotalMilliseconds, exception);
         }
 
         public static IDisposable? BeginRequestPipelineScope(this ILogger logger, HttpRequestMessage request, out string? formattedUri)
@@ -170,7 +170,7 @@ namespace Microsoft.Extensions.Http.Logging
 
         public static void LogRequestPipelineFailed(this ILogger logger, TimeSpan duration, HttpRequestException exception)
         {
-            _requestPipelineFailed(logger, duration.TotalMilliseconds, exception.Message, exception);
+            _requestPipelineFailed(logger, duration.TotalMilliseconds, exception);
         }
 
         internal static string? GetRedactedUriString(Uri? uri)
