@@ -41,13 +41,18 @@ namespace System.Threading
 
         internal static T PollWasiEventLoopUntilResolved<T>(Task<T> mainTask)
         {
-            s_mainTask = mainTask;
-            while (!mainTask.IsCompleted)
+            try
             {
-                ThreadPoolWorkQueue.Dispatch();
+                s_mainTask = mainTask;
+                while (!mainTask.IsCompleted)
+                {
+                    ThreadPoolWorkQueue.Dispatch();
+                }
             }
-            s_mainTask = null;
-
+            finally
+            {
+                s_mainTask = null;
+            }
             var exception = mainTask.Exception;
             if (exception is not null)
             {
@@ -59,30 +64,24 @@ namespace System.Threading
 
         internal static void PollWasiEventLoopUntilResolvedVoid(Task mainTask)
         {
-            s_mainTask = mainTask;
-            while (!mainTask.IsCompleted)
+            try
             {
-                ThreadPoolWorkQueue.Dispatch();
+                s_mainTask = mainTask;
+                while (!mainTask.IsCompleted)
+                {
+                    ThreadPoolWorkQueue.Dispatch();
+                }
             }
-            s_mainTask = null;
+            finally
+            {
+                s_mainTask = null;
+            }
 
             var exception = mainTask.Exception;
             if (exception is not null)
             {
                 throw exception;
             }
-        }
-
-        internal static void CancelAllPollables()
-        {
-            s_resolvedPollable?.Dispose();
-            s_resolvedPollable = null;
-
-            for (int i = 0; i < s_pollables.Count; i++)
-            {
-                PollableHolder.CancelAndDispose(s_pollables[i]);
-            }
-            s_pollables.Clear();
         }
 
         internal static void ScheduleCheck()
