@@ -205,7 +205,7 @@ namespace System.Net
 
             // See if it's an IP Address.
             IPAddress[] addresses;
-#if TARGET_WASI
+#if !TARGET_WASI
             if (IPAddress.TryParse(hostNameOrAddress, out IPAddress? address))
             {
                 if (address.Equals(IPAddress.Any) || address.Equals(IPAddress.IPv6Any))
