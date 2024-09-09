@@ -1801,6 +1801,31 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
         case NI_Sve_LoadVectorSByteSignExtendFirstFaulting:
         case NI_Sve_LoadVectorUInt16ZeroExtendFirstFaulting:
         case NI_Sve_LoadVectorUInt32ZeroExtendFirstFaulting:
+        case NI_Sve_LoadVectorByteNonFaultingZeroExtendToInt16:
+        case NI_Sve_LoadVectorByteNonFaultingZeroExtendToInt32:
+        case NI_Sve_LoadVectorByteNonFaultingZeroExtendToInt64:
+        case NI_Sve_LoadVectorByteNonFaultingZeroExtendToUInt16:
+        case NI_Sve_LoadVectorByteNonFaultingZeroExtendToUInt32:
+        case NI_Sve_LoadVectorByteNonFaultingZeroExtendToUInt64:
+        case NI_Sve_LoadVectorInt16NonFaultingSignExtendToInt32:
+        case NI_Sve_LoadVectorInt16NonFaultingSignExtendToInt64:
+        case NI_Sve_LoadVectorInt16NonFaultingSignExtendToUInt32:
+        case NI_Sve_LoadVectorInt16NonFaultingSignExtendToUInt64:
+        case NI_Sve_LoadVectorInt32NonFaultingSignExtendToInt64:
+        case NI_Sve_LoadVectorInt32NonFaultingSignExtendToUInt64:
+        case NI_Sve_LoadVectorNonFaulting:
+        case NI_Sve_LoadVectorSByteNonFaultingSignExtendToInt16:
+        case NI_Sve_LoadVectorSByteNonFaultingSignExtendToInt32:
+        case NI_Sve_LoadVectorSByteNonFaultingSignExtendToInt64:
+        case NI_Sve_LoadVectorSByteNonFaultingSignExtendToUInt16:
+        case NI_Sve_LoadVectorSByteNonFaultingSignExtendToUInt32:
+        case NI_Sve_LoadVectorSByteNonFaultingSignExtendToUInt64:
+        case NI_Sve_LoadVectorUInt16NonFaultingZeroExtendToInt32:
+        case NI_Sve_LoadVectorUInt16NonFaultingZeroExtendToInt64:
+        case NI_Sve_LoadVectorUInt16NonFaultingZeroExtendToUInt32:
+        case NI_Sve_LoadVectorUInt16NonFaultingZeroExtendToUInt64:
+        case NI_Sve_LoadVectorUInt32NonFaultingZeroExtendToInt64:
+        case NI_Sve_LoadVectorUInt32NonFaultingZeroExtendToUInt64:
         {
             LIR::Use use;
             bool     foundUse = BlockRange().TryGetUse(node, &use);
@@ -1821,10 +1846,14 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
                     assert(node->GetAuxiliaryType() != TYP_UNKNOWN);
                     node->ResetHWIntrinsicId(intrinsicId, comp, node->Op(1), node->Op(2), node->Op(3), lclVar);
                 }
+                else if (node->GetOperandCount() == 2)
+                {
+                    node->ResetHWIntrinsicId(intrinsicId, comp, node->Op(1), node->Op(2), lclVar);
+                }
                 else
                 {
-                    assert(node->GetOperandCount() == 2);
-                    node->ResetHWIntrinsicId(intrinsicId, comp, node->Op(1), node->Op(2), lclVar);
+                    assert(node->GetOperandCount() == 1);
+                    node->ResetHWIntrinsicId(intrinsicId, comp, node->Op(1), lclVar);
                 }
             }
 
@@ -3742,18 +3771,6 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                 if (intrin.op2->IsCnsIntOrI())
                 {
                     MakeSrcContained(node, intrin.op2);
-
-                    if ((intrin.op2->AsIntCon()->gtIconVal == 0) && intrin.op3->IsCnsFltOrDbl())
-                    {
-                        assert(varTypeIsFloating(intrin.baseType));
-
-                        const double dataValue = intrin.op3->AsDblCon()->DconValue();
-
-                        if (comp->GetEmitter()->emitIns_valid_imm_for_fmov(dataValue))
-                        {
-                            MakeSrcContained(node, intrin.op3);
-                        }
-                    }
                 }
                 break;
 
@@ -4013,6 +4030,9 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
 //     node - The hardware intrinsic node of the form
 //            ConditionalSelect(mask, trueValue, falseValue)
 //
+//  Returns:
+//    Next node to lower.
+//
 GenTree* Lowering::LowerHWIntrinsicCndSel(GenTreeHWIntrinsic* cndSelNode)
 {
     assert(cndSelNode->OperIsHWIntrinsic(NI_Sve_ConditionalSelect));
@@ -4035,9 +4055,10 @@ GenTree* Lowering::LowerHWIntrinsicCndSel(GenTreeHWIntrinsic* cndSelNode)
         NamedIntrinsic nestedOp2Id = nestedOp2->AsHWIntrinsic()->GetHWIntrinsicId();
 
         // If the nested op uses Pg/Z, then inactive lanes will result in zeros, so can only transform if
-        // op3 is all zeros.
+        // op3 is all zeros. Such a Csel operation is absorbed into the instruction when emitted. Skip this optimisation
+        // when the nestedOp is a reduce operation.
 
-        if (nestedOp1->IsMaskAllBitsSet() &&
+        if (nestedOp1->IsMaskAllBitsSet() && !HWIntrinsicInfo::IsReduceOperation(nestedOp2Id) &&
             (!HWIntrinsicInfo::IsZeroingMaskedOperation(nestedOp2Id) || op3->IsVectorZero()))
         {
             GenTree* nestedOp2 = nestedCndSel->Op(2);
@@ -4105,13 +4126,15 @@ GenTree* Lowering::LowerHWIntrinsicCndSel(GenTreeHWIntrinsic* cndSelNode)
                 op3->SetUnusedValue();
             }
             op1->SetUnusedValue();
+
+            GenTree* next = cndSelNode->gtNext;
             BlockRange().Remove(cndSelNode);
 
             JITDUMP("lowering ConditionalSelect HWIntrinisic (after):\n");
             DISPTREERANGE(BlockRange(), op2);
             JITDUMP("\n");
 
-            return op2;
+            return next;
         }
     }
 
@@ -4151,6 +4174,31 @@ void Lowering::StoreFFRValue(GenTreeHWIntrinsic* node)
         case NI_Sve_LoadVectorSByteSignExtendFirstFaulting:
         case NI_Sve_LoadVectorUInt16ZeroExtendFirstFaulting:
         case NI_Sve_LoadVectorUInt32ZeroExtendFirstFaulting:
+        case NI_Sve_LoadVectorByteNonFaultingZeroExtendToInt16:
+        case NI_Sve_LoadVectorByteNonFaultingZeroExtendToInt32:
+        case NI_Sve_LoadVectorByteNonFaultingZeroExtendToInt64:
+        case NI_Sve_LoadVectorByteNonFaultingZeroExtendToUInt16:
+        case NI_Sve_LoadVectorByteNonFaultingZeroExtendToUInt32:
+        case NI_Sve_LoadVectorByteNonFaultingZeroExtendToUInt64:
+        case NI_Sve_LoadVectorInt16NonFaultingSignExtendToInt32:
+        case NI_Sve_LoadVectorInt16NonFaultingSignExtendToInt64:
+        case NI_Sve_LoadVectorInt16NonFaultingSignExtendToUInt32:
+        case NI_Sve_LoadVectorInt16NonFaultingSignExtendToUInt64:
+        case NI_Sve_LoadVectorInt32NonFaultingSignExtendToInt64:
+        case NI_Sve_LoadVectorInt32NonFaultingSignExtendToUInt64:
+        case NI_Sve_LoadVectorNonFaulting:
+        case NI_Sve_LoadVectorSByteNonFaultingSignExtendToInt16:
+        case NI_Sve_LoadVectorSByteNonFaultingSignExtendToInt32:
+        case NI_Sve_LoadVectorSByteNonFaultingSignExtendToInt64:
+        case NI_Sve_LoadVectorSByteNonFaultingSignExtendToUInt16:
+        case NI_Sve_LoadVectorSByteNonFaultingSignExtendToUInt32:
+        case NI_Sve_LoadVectorSByteNonFaultingSignExtendToUInt64:
+        case NI_Sve_LoadVectorUInt16NonFaultingZeroExtendToInt32:
+        case NI_Sve_LoadVectorUInt16NonFaultingZeroExtendToInt64:
+        case NI_Sve_LoadVectorUInt16NonFaultingZeroExtendToUInt32:
+        case NI_Sve_LoadVectorUInt16NonFaultingZeroExtendToUInt64:
+        case NI_Sve_LoadVectorUInt32NonFaultingZeroExtendToInt64:
+        case NI_Sve_LoadVectorUInt32NonFaultingZeroExtendToUInt64:
         case NI_Sve_SetFfr:
             break;
 

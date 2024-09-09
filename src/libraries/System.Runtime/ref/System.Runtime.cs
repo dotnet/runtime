@@ -9913,6 +9913,7 @@ namespace System.IO
         public virtual int Read(char[] buffer, int index, int count) { throw null; }
         public virtual int Read(System.Span<byte> buffer) { throw null; }
         public virtual int Read(System.Span<char> buffer) { throw null; }
+        public virtual void ReadExactly(System.Span<byte> buffer) { throw null; }
         public int Read7BitEncodedInt() { throw null; }
         public long Read7BitEncodedInt64() { throw null; }
         public virtual bool ReadBoolean() { throw null; }

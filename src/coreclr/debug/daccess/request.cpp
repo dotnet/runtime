@@ -2110,7 +2110,7 @@ ClrDataAccess::GetMethodTableData(CLRDATA_ADDRESS mt, struct DacpMethodTableData
             _ASSERTE(MTData->wNumVtableSlots == mtDataLocal.wNumVtableSlots);
             _ASSERTE(MTData->wNumVirtuals == mtDataLocal.wNumVirtuals);
             _ASSERTE(MTData->cl == mtDataLocal.cl);
-            _ASSERTE(MTData->dwAttrClass = mtDataLocal.dwAttrClass);
+            _ASSERTE(MTData->dwAttrClass == mtDataLocal.dwAttrClass);
             _ASSERTE(MTData->bContainsPointers == mtDataLocal.bContainsPointers);
             _ASSERTE(MTData->bIsShared == mtDataLocal.bIsShared);
             _ASSERTE(MTData->bIsDynamic == mtDataLocal.bIsDynamic);
@@ -2160,7 +2160,7 @@ ClrDataAccess::GetMethodTableDataImpl(CLRDATA_ADDRESS mt, struct DacpMethodTable
         MTData->dwAttrClass = pMT->GetAttrClass();
         MTData->bContainsPointers = pMT->ContainsGCPointers();
         MTData->bIsShared = FALSE;
-        MTData->bIsDynamic = pMT->IsDynamicStatics();
+        MTData->bIsDynamic = pMT->IsDynamicStatics() ? TRUE : FALSE;
     }
     return S_OK;
 }
@@ -2632,6 +2632,7 @@ DWORD DACGetNumComponents(TADDR addr, ICorDebugDataTarget* target)
     // This expects that the first member after the MethodTable pointer (from Object)
     // is a 32-bit integer representing the number of components.
     // This holds for ArrayBase and StringObject - see coreclr/vm/object.h
+    // Free objects also have a component count set at this offset- see SetFree in coreclr/gc/gc.cpp
     addr += sizeof(size_t); // Method table pointer
     ULONG32 returned = 0;
     DWORD Value = 0;
@@ -2837,7 +2838,7 @@ ClrDataAccess::GetAppDomainData(CLRDATA_ADDRESS addr, struct DacpAppDomainData *
 
         ZeroMemory(appdomainData, sizeof(DacpAppDomainData));
         appdomainData->AppDomainPtr = PTR_CDADDR(pBaseDomain);
-        PTR_LoaderAllocator pLoaderAllocator = pBaseDomain->GetLoaderAllocator();
+        PTR_LoaderAllocator pLoaderAllocator = SystemDomain::GetGlobalLoaderAllocator();
         appdomainData->pHighFrequencyHeap = HOST_CDADDR(pLoaderAllocator->GetHighFrequencyHeap());
         appdomainData->pLowFrequencyHeap = HOST_CDADDR(pLoaderAllocator->GetLowFrequencyHeap());
         appdomainData->pStubHeap = HOST_CDADDR(pLoaderAllocator->GetStubHeap());
@@ -3799,7 +3800,7 @@ ClrDataAccess::GetThreadLocalModuleData(CLRDATA_ADDRESS thread, unsigned int ind
 HRESULT ClrDataAccess::GetHandleEnum(ISOSHandleEnum **ppHandleEnum)
 {
     unsigned int types[] = {HNDTYPE_WEAK_SHORT, HNDTYPE_WEAK_LONG, HNDTYPE_STRONG, HNDTYPE_PINNED, HNDTYPE_DEPENDENT,
-                            HNDTYPE_SIZEDREF, HNDTYPE_WEAK_INTERIOR_POINTER,
+                            HNDTYPE_WEAK_INTERIOR_POINTER,
 #if defined(FEATURE_COMINTEROP) || defined(FEATURE_COMWRAPPERS) || defined(FEATURE_OBJCMARSHAL)
                             HNDTYPE_REFCOUNTED,
 #endif // FEATURE_COMINTEROP || FEATURE_COMWRAPPERS || FEATURE_OBJCMARSHAL
@@ -3837,7 +3838,6 @@ HRESULT ClrDataAccess::GetHandleEnumForGC(unsigned int gen, ISOSHandleEnum **ppH
     SOSDacEnter();
 
     unsigned int types[] = {HNDTYPE_WEAK_SHORT, HNDTYPE_WEAK_LONG, HNDTYPE_STRONG, HNDTYPE_PINNED, HNDTYPE_DEPENDENT,
-                            HNDTYPE_SIZEDREF,
 #if defined(FEATURE_COMINTEROP) || defined(FEATURE_COMWRAPPERS) || defined(FEATURE_OBJCMARSHAL)
                             HNDTYPE_REFCOUNTED,
 #endif // FEATURE_COMINTEROP || FEATURE_COMWRAPPERS || FEATURE_OBJCMARSHAL
@@ -4065,8 +4065,7 @@ ClrDataAccess::TraverseVirtCallStubHeap(CLRDATA_ADDRESS pAppDomain, VCSHeapType 
 
     SOSDacEnter();
 
-    BaseDomain* pBaseDomain = PTR_BaseDomain(TO_TADDR(pAppDomain));
-    VirtualCallStubManager *pVcsMgr = pBaseDomain->GetLoaderAllocator()->GetVirtualCallStubManager();
+    VirtualCallStubManager *pVcsMgr = SystemDomain::GetGlobalLoaderAllocator()->GetVirtualCallStubManager();
     if (!pVcsMgr)
     {
         hr = E_POINTER;
@@ -4111,8 +4110,8 @@ HRESULT ClrDataAccess::GetDomainLoaderAllocator(CLRDATA_ADDRESS domainAddress, C
 
     SOSDacEnter();
 
-    PTR_BaseDomain pDomain = PTR_BaseDomain(TO_TADDR(domainAddress));
-    *pLoaderAllocator = pDomain != nullptr ? HOST_CDADDR(pDomain->GetLoaderAllocator()) : 0;
+    // The one and only app domain uses the global loader allocator
+    *pLoaderAllocator = HOST_CDADDR(SystemDomain::GetGlobalLoaderAllocator());
 
     SOSDacLeave();
     return hr;

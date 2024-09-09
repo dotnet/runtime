@@ -6667,6 +6667,20 @@ struct GenTreeHWIntrinsic : public GenTreeJitIntrinsic
 
     bool ShouldConstantProp(GenTree* operand, GenTreeVecCon* vecCon);
 
+    void NormalizeJitBaseTypeToInt(NamedIntrinsic id, var_types simdBaseType)
+    {
+        assert(varTypeIsSmall(simdBaseType));
+
+        if (varTypeIsUnsigned(simdBaseType))
+        {
+            SetSimdBaseJitType(CORINFO_TYPE_UINT);
+        }
+        else
+        {
+            SetSimdBaseJitType(CORINFO_TYPE_UINT);
+        }
+    }
+
 private:
     void SetHWIntrinsicId(NamedIntrinsic intrinsicId);
 

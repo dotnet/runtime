@@ -1605,7 +1605,7 @@ uint32_t GCToEEInterface::GetTotalNumSizedRefHandles()
 {
     LIMITED_METHOD_CONTRACT;
 
-    return SystemDomain::System()->GetTotalNumSizedRefHandles();
+    return 0;
 }
 
 NormalizedTimer analysisTimer;

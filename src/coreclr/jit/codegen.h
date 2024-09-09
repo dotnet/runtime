@@ -1012,8 +1012,12 @@ protected:
     public:
         HWIntrinsicImmOpHelper(CodeGen* codeGen, GenTree* immOp, GenTreeHWIntrinsic* intrin, int numInstrs = 1);
 
-        HWIntrinsicImmOpHelper(
-            CodeGen* codeGen, regNumber immReg, int immLowerBound, int immUpperBound, GenTreeHWIntrinsic* intrin);
+        HWIntrinsicImmOpHelper(CodeGen*            codeGen,
+                               regNumber           immReg,
+                               int                 immLowerBound,
+                               int                 immUpperBound,
+                               GenTreeHWIntrinsic* intrin,
+                               int                 numInstrs = 1);
 
         void EmitBegin();
         void EmitCaseEnd();

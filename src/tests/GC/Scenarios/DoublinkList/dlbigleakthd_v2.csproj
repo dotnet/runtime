@@ -1,6 +1,11 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <OutputType>Exe</OutputType>
+    <!-- Needed for GCStressIncompatible, GC.WaitForPendingFinalizers -->
+    <RequiresProcessIsolation>true</RequiresProcessIsolation>
+
+    <!-- Test needs explicit Main as it uses command-line parameters -->
+    <ReferenceXUnitWrapperGenerator>false</ReferenceXUnitWrapperGenerator>
+
     <GCStressIncompatible>true</GCStressIncompatible>
     <CLRTestPriority>1</CLRTestPriority>
   </PropertyGroup>
@@ -8,6 +13,6 @@
     <Compile Include="dlbigleakthd.cs" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="DoubLink.csproj" />
+    <ProjectReference Include="DoubLinkList.csproj" />
   </ItemGroup>
 </Project>

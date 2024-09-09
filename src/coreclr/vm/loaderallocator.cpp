@@ -17,7 +17,7 @@
 
 UINT64 LoaderAllocator::cLoaderAllocatorsCreated = 1;
 
-LoaderAllocator::LoaderAllocator(bool collectible) : 
+LoaderAllocator::LoaderAllocator(bool collectible) :
     m_stubPrecodeRangeList(STUB_CODE_BLOCK_STUBPRECODE, collectible),
     m_fixupPrecodeRangeList(STUB_CODE_BLOCK_FIXUPPRECODE, collectible)
 {
@@ -200,14 +200,14 @@ BOOL LoaderAllocator::CheckAddReference_Unlocked(LoaderAllocator *pOtherLA)
     {
         THROWS;
         MODE_ANY;
+        PRECONDITION(pOtherLA != this);
+        PRECONDITION(IsCollectible());
+        PRECONDITION(Id()->GetType() == LAT_Assembly);
     }
     CONTRACTL_END;
 
-    // This must be checked before calling this function
-    _ASSERTE(pOtherLA != this);
-
     // This function requires the that loader allocator lock have been taken.
-    _ASSERTE(GetDomain()->GetLoaderAllocatorReferencesLock()->OwnedByCurrentThread());
+    _ASSERTE(GetAppDomain()->GetLoaderAllocatorReferencesLock()->OwnedByCurrentThread());
 
     if (m_LoaderAllocatorReferences.Lookup(pOtherLA) == NULL)
     {
@@ -238,7 +238,7 @@ BOOL LoaderAllocator::EnsureReference(LoaderAllocator *pOtherLA)
     CONTRACTL_END;
 
     // Check if this lock can be taken in all places that the function is called
-    _ASSERTE(GetDomain()->GetLoaderAllocatorReferencesLock()->Debug_CanTake());
+    _ASSERTE(GetAppDomain()->GetLoaderAllocatorReferencesLock()->Debug_CanTake());
 
     if (!IsCollectible())
         return FALSE;
@@ -249,7 +249,8 @@ BOOL LoaderAllocator::EnsureReference(LoaderAllocator *pOtherLA)
     if (!pOtherLA->IsCollectible())
         return FALSE;
 
-    CrstHolder ch(GetDomain()->GetLoaderAllocatorReferencesLock());
+    _ASSERTE(Id()->GetType() == LAT_Assembly);
+    CrstHolder ch(GetAppDomain()->GetLoaderAllocatorReferencesLock());
     return CheckAddReference_Unlocked(pOtherLA);
 }
 
@@ -265,12 +266,13 @@ BOOL LoaderAllocator::EnsureInstantiation(Module *pDefiningModule, Instantiation
     BOOL fNewReferenceNeeded = FALSE;
 
     // Check if this lock can be taken in all places that the function is called
-    _ASSERTE(GetDomain()->GetLoaderAllocatorReferencesLock()->Debug_CanTake());
+    _ASSERTE(GetAppDomain()->GetLoaderAllocatorReferencesLock()->Debug_CanTake());
 
     if (!IsCollectible())
         return FALSE;
 
-    CrstHolder ch(GetDomain()->GetLoaderAllocatorReferencesLock());
+    _ASSERTE(Id()->GetType() == LAT_Assembly);
+    CrstHolder ch(GetAppDomain()->GetLoaderAllocatorReferencesLock());
 
     if (pDefiningModule != NULL)
     {
@@ -842,7 +844,7 @@ LOADERHANDLE LoaderAllocator::AllocateHandle(OBJECTREF value)
     }
     else
     {
-        OBJECTREF* pRef = GetDomain()->AllocateObjRefPtrsInLargeTable(1);
+        OBJECTREF* pRef = AppDomain::GetCurrentDomain()->AllocateObjRefPtrsInLargeTable(1);
         SetObjectReference(pRef, gc.value);
         retVal = (((UINT_PTR)pRef) + 1);
     }
@@ -1022,7 +1024,7 @@ void LoaderAllocator::SetupManagedTracking(LOADERALLOCATORREF * pKeepLoaderAlloc
 
     initLoaderAllocator.Call(args);
 
-    m_hLoaderAllocatorObjectHandle = GetDomain()->CreateLongWeakHandle(*pKeepLoaderAllocatorAlive);
+    m_hLoaderAllocatorObjectHandle = AppDomain::GetCurrentDomain()->CreateLongWeakHandle(*pKeepLoaderAllocatorAlive);
 
     RegisterHandleForCleanup(m_hLoaderAllocatorObjectHandle);
 }
@@ -1621,14 +1623,14 @@ DispatchToken LoaderAllocator::GetDispatchToken(
     return DispatchToken::CreateDispatchToken(typeId, slotNumber);
 }
 
-void LoaderAllocator::InitVirtualCallStubManager(BaseDomain * pDomain)
+void LoaderAllocator::InitVirtualCallStubManager()
 {
     STANDARD_VM_CONTRACT;
 
     NewHolder<VirtualCallStubManager> pMgr(new VirtualCallStubManager());
 
     // Init the manager, including all heaps and such.
-    pMgr->Init(pDomain, this);
+    pMgr->Init(this);
 
     m_pVirtualCallStubManager = pMgr;
 
@@ -2061,7 +2063,7 @@ void LoaderAllocator::CleanupFailedTypeInit()
     // This method doesn't take a lock around loader allocator state access, because
     // it's supposed to be called only during cleanup. However, the domain-level state
     // might be accessed by multiple threads.
-    ListLock *pLock = GetDomain()->GetClassInitLock();
+    ListLock *pLock = ((AppDomain*)GetDomain())->GetClassInitLock();
 
     while (!m_failedTypeInitCleanupList.IsEmpty())
     {
@@ -2382,7 +2384,7 @@ void LoaderAllocator::AllocateGCHandlesBytesForStaticVariables(DynamicStaticsInf
     }
     else
     {
-        GetDomain()->AllocateObjRefPtrsInLargeTable(cSlots, pStaticsInfo, pMTToFillWithStaticBoxes, isClassInitedByUpdatingStaticPointer);
+        AppDomain::GetCurrentDomain()->AllocateObjRefPtrsInLargeTable(cSlots, pStaticsInfo, pMTToFillWithStaticBoxes, isClassInitedByUpdatingStaticPointer);
     }
 }
 #endif // !DACCESS_COMPILE

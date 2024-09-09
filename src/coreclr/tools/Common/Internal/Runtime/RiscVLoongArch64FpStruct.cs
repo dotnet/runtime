@@ -43,7 +43,6 @@ namespace Internal.JitInterface
         public uint offset2nd;
 
         public uint SizeShift1st() { return (uint)((int)flags >> (int)FpStruct.PosSizeShift1st) & 0b11; }
-
         public uint SizeShift2nd() { return (uint)((int)flags >> (int)FpStruct.PosSizeShift2nd) & 0b11; }
 
         public uint Size1st() { return 1u << (int)SizeShift1st(); }
@@ -84,7 +83,7 @@ namespace Internal.JitInterface
             int nFlattenedFieldsPerElement = typeIndex - elementTypeIndex;
             if (nFlattenedFieldsPerElement == 0)
             {
-                Debug.Assert(nElements == 1, "HasImpliedRepeatedFields must have returned a false positive");
+                Debug.Assert(nElements == 1, "HasImpliedRepeatedFields must have returned a false, it can't be an array");
                 return true; // ignoring empty struct
             }
 
@@ -158,6 +157,14 @@ namespace Internal.JitInterface
             {
                 Debug.Assert(nFields == 1);
                 int nElements = td.GetElementSize().AsInt / prevField.FieldType.GetElementSize().AsInt;
+
+                // Only InlineArrays can have element type of empty struct, fixed-size buffers take only primitives
+                if ((typeIndex - elementTypeIndex) == 0 && (td as MetadataType).IsInlineArray)
+                {
+                    Debug.Assert(nElements > 0, "InlineArray length must be > 0");
+                    return false; // struct containing an array of empty structs is passed by integer calling convention
+                }
+
                 if (!HandleInlineArray(elementTypeIndex, nElements, ref info, ref typeIndex))
                     return false;
             }

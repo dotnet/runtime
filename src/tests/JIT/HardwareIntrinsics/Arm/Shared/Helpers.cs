@@ -8557,20 +8557,30 @@ namespace JIT.HardwareIntrinsics.Arm
         }
 
 
-        private static TElem GetLoadVectorExpectedResultByIndex<TMem, TElem>(int index, TMem[] firstOp, TElem[] result)
+        private static TElem GetLoadVectorExpectedResultByIndex<TMem, TElem>(int index, TElem[] mask, TMem[] data, TElem[] result)
             where TMem  : INumberBase<TMem>
             where TElem : INumberBase<TElem>
         {
-            return (firstOp[index] == TMem.Zero) ? TElem.Zero : TElem.CreateTruncating(firstOp[index]);
+            return (mask[index] == TElem.Zero) ? TElem.Zero : TElem.CreateTruncating(data[index]);
         }
 
-        private static bool CheckLoadVectorBehaviorCore<TMem, TElem>(TMem[] firstOp, TElem[] result, Func<int, TElem, TElem> map)
+        private static TElem GetLoadVectorExpectedResultByIndex<TMem, TElem>(int index, TMem[] data, TElem[] result)
             where TMem  : INumberBase<TMem>
             where TElem : INumberBase<TElem>
         {
-            for (var i = 0; i < firstOp.Length; i++)
+            TElem[] mask = new TElem[result.Length];
+            Array.Fill(mask, TElem.One);
+
+            return GetLoadVectorExpectedResultByIndex(index, mask, data, result);
+        }
+
+        private static bool CheckLoadVectorBehaviorCore<TMem, TElem>(TElem[] mask, TMem[] data, TElem[] result, Func<int, TElem, TElem> map)
+            where TMem  : INumberBase<TMem>
+            where TElem : INumberBase<TElem>
+        {
+            for (var i = 0; i < data.Length; i++)
             {
-                TElem expectedResult = GetLoadVectorExpectedResultByIndex(i, firstOp, result);
+                TElem expectedResult = GetLoadVectorExpectedResultByIndex(i, mask, data, result);
                 expectedResult = map(i, expectedResult);
                 if (result[i] != expectedResult)
                 {
@@ -8580,18 +8590,41 @@ namespace JIT.HardwareIntrinsics.Arm
             return true;
         }
 
-        public static bool CheckLoadVectorBehavior<TMem, TElem>(TMem[] firstOp, TElem[] result)
-            where TMem  : INumberBase<TMem>, IConvertible
+        private static bool CheckLoadVectorBehaviorCore<TMem, TElem>(TMem[] data, TElem[] result, Func<int, TElem, TElem> map)
+            where TMem  : INumberBase<TMem>
             where TElem : INumberBase<TElem>
         {
-            return CheckLoadVectorBehaviorCore(firstOp, result, (_, loadResult) => loadResult);
+            for (var i = 0; i < data.Length; i++)
+            {
+                TElem expectedResult = GetLoadVectorExpectedResultByIndex(i, data, result);
+                expectedResult = map(i, expectedResult);
+                if (result[i] != expectedResult)
+                {
+                    return false;
+                }
+            }
+            return true;
         }
 
-        public static bool CheckLoadVectorBehavior<TMem, TElem>(TElem[] maskOp, TMem[] firstOp, TElem[] result, TElem[] falseOp)
+        public static bool CheckLoadVectorBehavior<TMem, TElem>(TElem[] mask, TMem[] data, TElem[] result)
             where TMem  : INumberBase<TMem>, IConvertible
             where TElem : INumberBase<TElem>
         {
-            return CheckLoadVectorBehaviorCore(firstOp, result, (i, loadResult) => ConditionalSelectResult(maskOp[i], loadResult, falseOp[i]));
+            return CheckLoadVectorBehaviorCore(mask, data, result, (_, loadResult) => loadResult);
+        }
+
+        public static bool CheckLoadVectorBehavior<TMem, TElem>(TMem[] data, TElem[] result)
+            where TMem  : INumberBase<TMem>, IConvertible
+            where TElem : INumberBase<TElem>
+        {
+            return CheckLoadVectorBehaviorCore(data, result, (_, loadResult) => loadResult);
+        }
+
+        public static bool CheckLoadVectorBehavior<TMem, TElem>(TElem[] maskOp, TMem[] data, TElem[] result, TElem[] falseOp)
+            where TMem  : INumberBase<TMem>, IConvertible
+            where TElem : INumberBase<TElem>
+        {
+            return CheckLoadVectorBehaviorCore(data, result, (i, loadResult) => ConditionalSelectResult(maskOp[i], loadResult, falseOp[i]));
         }
 
         private static T GetGatherVectorResultByIndex<T, ExtendedElementT, Index>(int index, T[] mask, ExtendedElementT[] data, Index[] indices)
@@ -8794,7 +8827,7 @@ namespace JIT.HardwareIntrinsics.Arm
             return false;
         }
 
-        public static bool CheckLoadVectorFirstFaultingBehavior<TMem, TElem, TFault>(TMem[] firstOp, TElem[] result, Vector<TFault> faultResult)
+        public static bool CheckLoadVectorFirstFaultingBehavior<TMem, TElem, TFault>(TElem[] mask, TMem[] data, TElem[] result, Vector<TFault> faultResult)
                 where TMem  : INumberBase<TMem>, IConvertible
                 where TElem : INumberBase<TElem>
                 where TFault : INumberBase<TFault>
@@ -8806,14 +8839,27 @@ namespace JIT.HardwareIntrinsics.Arm
                 return false;
             }
 
-            var validElementCount = firstOp.Length;
+            var validElementCount = data.Length;
+            var hasFaulted = false;
             var expectedFaultResult = 
                 InitVector<TFault>(i =>
                 {
+                    if (hasFaulted)
+                    {
+                        return TFault.Zero;
+                    }
+
+                    if (mask[i] == TElem.Zero)
+                    {
+                        return TFault.One;
+                    }
+
                     if (i < validElementCount)
                     {
                         return TFault.One;
                     }
+
+                    hasFaulted = true;
                     return TFault.Zero;
                 });
             if (expectedFaultResult != faultResult)
@@ -8822,7 +8868,7 @@ namespace JIT.HardwareIntrinsics.Arm
                 return false;
             }
 
-            return CheckFirstFaultingBehaviorCore(result, faultResult, i => GetLoadVectorExpectedResultByIndex(i, firstOp, result) == result[i]);
+            return CheckFirstFaultingBehaviorCore(result, faultResult, i => GetLoadVectorExpectedResultByIndex(i, mask, data, result) == result[i]);
         }
 
         public static bool CheckGatherVectorFirstFaultingBehavior<T, ExtendedElementT, Index, TFault>(T[] mask, ExtendedElementT[] data, Index[] indices, T[] result, Vector<TFault> faultResult)
@@ -8912,7 +8958,7 @@ namespace JIT.HardwareIntrinsics.Arm
             return CheckFirstFaultingBehaviorCore(result, faultResult, i => GetGatherVectorBasesResultByIndex<T, AddressT, ExtendedElementT>(i, mask, data) == result[i]);
         }
         
-        public static bool CheckGatherVectorWithByteOffsetFirstFaultingBehavior<T, ExtendedElementT, Offset, TFault>(T[] mask, ExtendedElementT[] data, Offset[] offsets, T[] result, Vector<TFault> faultResult)
+        public static bool CheckGatherVectorWithByteOffsetFirstFaultingBehavior<T, ExtendedElementT, Offset, TFault>(T[] mask, byte[] data, Offset[] offsets, T[] result, Vector<TFault> faultResult)
                 where T : INumberBase<T>
                 where ExtendedElementT : INumberBase<ExtendedElementT>
                 where Offset : IBinaryInteger<Offset>
@@ -8925,6 +8971,7 @@ namespace JIT.HardwareIntrinsics.Arm
                 return false;
             }
 
+            var elemSize = Unsafe.SizeOf<ExtendedElementT>();
             var hasFaulted = false;
             var expectedFaultResult =
                 InitVector<TFault>(i =>
@@ -8940,8 +8987,7 @@ namespace JIT.HardwareIntrinsics.Arm
                     }
 
                     var offset = int.CreateChecked(offsets[i]);
-                    var endOffset = data.Length * Unsafe.SizeOf<ExtendedElementT>();
-                    if (offset < 0 || offset >= endOffset)
+                    if (offset < 0 || (offset + elemSize) > data.Length)
                     {
                         hasFaulted = true;
                         return TFault.Zero;
@@ -8954,9 +9000,7 @@ namespace JIT.HardwareIntrinsics.Arm
                 return false;
             }
 
-            byte[] bytes = new byte[data.Length * Unsafe.SizeOf<ExtendedElementT>()];
-            Buffer.BlockCopy(data, 0, bytes, 0, bytes.Length);
-            return CheckFirstFaultingBehaviorCore(result, faultResult, i => GetGatherVectorResultByByteOffset<T, ExtendedElementT, Offset>(i, mask, bytes, offsets, result[i]));
+            return CheckFirstFaultingBehaviorCore(result, faultResult, i => GetGatherVectorResultByByteOffset<T, ExtendedElementT, Offset>(i, mask, data, offsets, result[i]));
         }
 
         public static T[] CreateBreakPropagateMask<T>(T[] op1, T[] op2) where T : IBinaryInteger<T>

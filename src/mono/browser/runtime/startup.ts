@@ -128,6 +128,9 @@ async function instantiateWasmWorker (
     successCallback: InstantiateWasmSuccessCallback
 ): Promise<void> {
     if (!WasmEnableThreads) return;
+
+    await ensureUsedWasmFeatures();
+
     // wait for the config to arrive by message from the main thread
     await loaderHelpers.afterConfigLoaded.promise;
 
@@ -328,9 +331,7 @@ async function onRuntimeInitializedAsync (userOnRuntimeInitialized: () => void) 
 
         runtimeList.registerRuntime(exportedRuntimeAPI);
 
-        if (loaderHelpers.config.debugLevel !== 0 && !runtimeHelpers.mono_wasm_runtime_is_ready) {
-            mono_wasm_runtime_ready();
-        }
+        if (!runtimeHelpers.mono_wasm_runtime_is_ready) mono_wasm_runtime_ready();
 
         if (loaderHelpers.config.debugLevel !== 0 && loaderHelpers.config.cacheBootResources) {
             loaderHelpers.logDownloadStatsToConsole();
@@ -601,6 +602,9 @@ export function mono_wasm_load_runtime (): void {
             if (runtimeHelpers.config.debugLevel) {
                 debugLevel = 0 + debugLevel;
             }
+        }
+        if (!loaderHelpers.isDebuggingSupported() || !runtimeHelpers.config.resources!.pdb) {
+            debugLevel = 0;
         }
         cwraps.mono_wasm_load_runtime(debugLevel);
         endMeasure(mark, MeasuredBlock.loadRuntime);

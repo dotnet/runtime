@@ -45,10 +45,10 @@ public abstract class ReadTests
         };
 #pragma warning restore SYSLIB0011 // Type or member is obsolete
 
-    protected static void WriteSerializedStreamHeader(BinaryWriter writer, int major = 1, int minor = 0)
+    protected static void WriteSerializedStreamHeader(BinaryWriter writer, int major = 1, int minor = 0, int rootId = 1)
     {
         writer.Write((byte)SerializationRecordType.SerializedStreamHeader);
-        writer.Write(1); // root ID
+        writer.Write(rootId); // root ID
         writer.Write(1); // header ID
         writer.Write(major); // major version
         writer.Write(minor); // minor version

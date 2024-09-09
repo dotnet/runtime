@@ -51,7 +51,7 @@ internal sealed class MemberReferenceRecord : SerializationRecord
         return new MemberReferenceRecord(reference, recordMap, referencedRecordType);
     }
 
-    internal SerializationRecord GetReferencedRecord() => RecordMap[Reference];
+    internal SerializationRecord GetReferencedRecord() => RecordMap.GetRecord(Reference);
 
     internal void VerifyReferencedRecordType(SerializationRecord serializationRecord)
     {

@@ -116,7 +116,8 @@ internal sealed class RecordMap : IReadOnlyDictionary<SerializationRecordId, Ser
 
     internal SerializationRecord GetRootRecord(SerializedStreamHeaderRecord header)
     {
-        SerializationRecord rootRecord = _map[header.RootId];
+        SerializationRecord rootRecord = GetRecord(header.RootId);
+
         if (rootRecord is SystemClassWithMembersAndTypesRecord systemClass)
         {
             // update the record map, so it's visible also to those who access it via Id
@@ -139,4 +140,14 @@ internal sealed class RecordMap : IReadOnlyDictionary<SerializationRecordId, Ser
         return false;
 #endif
     }
+
+    internal SerializationRecord GetRecord(SerializationRecordId recordId)
+        => _map.TryGetValue(recordId, out SerializationRecord? record)
+            ? record
+            : throw new SerializationException(SR.Serialization_InvalidReference);
+
+    internal T GetRecord<T>(SerializationRecordId recordId) where T : SerializationRecord
+        => _map.TryGetValue(recordId, out SerializationRecord? record) && record is T casted
+            ? casted
+            : throw new SerializationException(SR.Serialization_InvalidReference);
 }

@@ -775,22 +775,22 @@ static void FCallCheckSignature(MethodDesc* pMD, PCODE pImpl)
             expectedType = pMD->IsCtor() ? NULL : "void";
             break;
         case ELEMENT_TYPE_BOOLEAN:
-            expectedType = (argIndex == -2) ? "FC_BOOL_RET" : "CLR_BOOL";
+            expectedType = (argIndex == -2) ? "FC_BOOL_RET" : "FC_BOOL_ARG";
             break;
         case ELEMENT_TYPE_CHAR:
-            expectedType = (argIndex == -2) ? "FC_CHAR_RET" : "CLR_CHAR";
+            expectedType = (argIndex == -2) ? "FC_CHAR_RET" : "FC_CHAR_ARG";
             break;
         case ELEMENT_TYPE_I1:
-            expectedType = (argIndex == -2) ? "FC_INT8_RET" : "INT8";
+            expectedType = (argIndex == -2) ? "FC_INT8_RET" : "FC_INT8_ARG";
             break;
         case ELEMENT_TYPE_U1:
-            expectedType = (argIndex == -2) ? "FC_UINT8_RET" : "UINT8";
+            expectedType = (argIndex == -2) ? "FC_UINT8_RET" : "FC_UINT8_ARG";
             break;
         case ELEMENT_TYPE_I2:
-            expectedType = (argIndex == -2) ? "FC_INT16_RET" : "INT16";
+            expectedType = (argIndex == -2) ? "FC_INT16_RET" : "FC_INT16_ARG";
             break;
         case ELEMENT_TYPE_U2:
-            expectedType = (argIndex == -2) ? "FC_UINT16_RET" : "UINT16";
+            expectedType = (argIndex == -2) ? "FC_UINT16_RET" : "FC_UINT16_ARG";
             break;
         //case ELEMENT_TYPE_I4:
         //     expectedType = "INT32";
