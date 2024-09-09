@@ -1408,7 +1408,7 @@ class AssemblyBaseObject : public Object
     OBJECTREF     m_pModuleEventHandler;   // Delegate for 'resolve module' event
     STRINGREF     m_fullname;              // Slot for storing assemblies fullname
     OBJECTREF     m_pSyncRoot;             // Pointer to loader allocator to keep collectible types alive, and to serve as the syncroot for assembly building in ref.emit
-    DomainAssembly* m_pAssembly;           // Pointer to the Assembly Structure
+    Assembly* m_pAssembly;                 // Pointer to the Assembly Structure
 
   protected:
     AssemblyBaseObject() { LIMITED_METHOD_CONTRACT; }
@@ -1416,16 +1416,10 @@ class AssemblyBaseObject : public Object
 
   public:
 
-    void SetAssembly(DomainAssembly* p)
+    void SetAssembly(Assembly* p)
     {
         LIMITED_METHOD_CONTRACT;
         m_pAssembly = p;
-    }
-
-    DomainAssembly* GetDomainAssembly()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return m_pAssembly;
     }
 
     Assembly* GetAssembly();
@@ -1436,7 +1430,7 @@ class AssemblyBaseObject : public Object
         SetObjectReference(&m_pSyncRoot, pSyncRoot);
     }
 };
-NOINLINE AssemblyBaseObject* GetRuntimeAssemblyHelper(LPVOID __me, DomainAssembly *pAssembly, OBJECTREF keepAlive);
+NOINLINE AssemblyBaseObject* GetRuntimeAssemblyHelper(LPVOID __me, Assembly *pAssembly, OBJECTREF keepAlive);
 #define FC_RETURN_ASSEMBLY_OBJECT(pAssembly, refKeepAlive) FC_INNER_RETURN(AssemblyBaseObject*, GetRuntimeAssemblyHelper(__me, pAssembly, refKeepAlive))
 
 // AssemblyLoadContextBaseObject

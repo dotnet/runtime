@@ -305,7 +305,6 @@ namespace System.Reflection.Emit
         {
             ThrowIfCreated();
 
-
             MethodBuilderImpl methodBuilder = new(name, attributes, callingConvention, returnType, returnTypeRequiredCustomModifiers,
                 returnTypeOptionalCustomModifiers, parameterTypes, parameterTypeRequiredCustomModifiers, parameterTypeOptionalCustomModifiers, _module, this);
             _methodDefinitions.Add(methodBuilder);
@@ -408,7 +407,7 @@ namespace System.Reflection.Emit
         }
 
         protected override PropertyBuilder DefinePropertyCore(string name, PropertyAttributes attributes, CallingConventions callingConvention,
-            Type returnType, Type[]? returnTypeRequiredCustomModifiers, Type[]? returnTypeOptionalCustomModifiers, Type[]? parameterTypes,
+            Type? returnType, Type[]? returnTypeRequiredCustomModifiers, Type[]? returnTypeOptionalCustomModifiers, Type[]? parameterTypes,
             Type[][]? parameterTypeRequiredCustomModifiers, Type[][]? parameterTypeOptionalCustomModifiers)
         {
             PropertyBuilderImpl property = new PropertyBuilderImpl(name, attributes, callingConvention, returnType, returnTypeRequiredCustomModifiers,
@@ -439,6 +438,7 @@ namespace System.Reflection.Emit
             return DefineDataHelper(name, new byte[size], size, attributes);
         }
 
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2072:DynamicallyAccessedMembers", Justification = "The members of 'ValueType' are not referenced in this context")]
         private FieldBuilder DefineDataHelper(string name, byte[] data, int size, FieldAttributes attributes)
         {
             ArgumentException.ThrowIfNullOrEmpty(name);
@@ -456,7 +456,7 @@ namespace System.Reflection.Emit
                 TypeAttributes typeAttributes = TypeAttributes.Public | TypeAttributes.ExplicitLayout | TypeAttributes.Class | TypeAttributes.Sealed | TypeAttributes.AnsiClass;
 
                 // Define the backing value class
-                valueClassType = (TypeBuilderImpl)_module.DefineType(strValueClassName, typeAttributes, typeof(ValueType), PackingSize.Size1, size);
+                valueClassType = (TypeBuilderImpl)_module.DefineType(strValueClassName, typeAttributes, _module.GetTypeFromCoreAssembly(CoreTypeId.ValueType), PackingSize.Size1, size);
                 valueClassType.CreateType();
             }
 
@@ -615,23 +615,22 @@ namespace System.Reflection.Emit
         public override string? Namespace => _namespace;
         public override Assembly Assembly => _module.Assembly;
         public override Module Module => _module;
-        public override Type UnderlyingSystemType
-        {
-            get
-            {
-                if (IsEnum)
-                {
-                    if (_enumUnderlyingType == null)
-                    {
-                        throw new InvalidOperationException(SR.InvalidOperation_NoUnderlyingTypeOnEnum);
-                    }
+        public override Type UnderlyingSystemType => this;
 
-                    return _enumUnderlyingType;
-                }
-                else
+        public override Type GetEnumUnderlyingType()
+        {
+            if (IsEnum)
+            {
+                if (_enumUnderlyingType == null)
                 {
-                    return this;
+                    throw new InvalidOperationException(SR.InvalidOperation_NoUnderlyingTypeOnEnum);
                 }
+
+                return _enumUnderlyingType;
+            }
+            else
+            {
+                throw new ArgumentException(SR.Argument_MustBeEnum);
             }
         }
         public override bool IsSZArray => false;

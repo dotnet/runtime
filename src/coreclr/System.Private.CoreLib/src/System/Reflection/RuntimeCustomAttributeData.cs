@@ -1879,7 +1879,7 @@ namespace System.Reflection
         {
             if (module is null)
             {
-                throw new ArgumentNullException(SR.Arg_InvalidHandle);
+                throw new ArgumentNullException(null, SR.Arg_InvalidHandle);
             }
 
             object? result = null;
@@ -1909,7 +1909,7 @@ namespace System.Reflection
         {
             if (module is null)
             {
-                throw new ArgumentNullException(SR.Arg_InvalidHandle);
+                throw new ArgumentNullException(null, SR.Arg_InvalidHandle);
             }
 
             string? nameLocal = null;

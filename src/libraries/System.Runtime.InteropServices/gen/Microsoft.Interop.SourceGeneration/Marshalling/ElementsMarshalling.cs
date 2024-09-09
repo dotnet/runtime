@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
@@ -14,10 +15,13 @@ namespace Microsoft.Interop
 {
     internal interface IElementsMarshallingCollectionSource
     {
-        InvocationExpressionSyntax GetUnmanagedValuesDestination(TypePositionInfo info, StubCodeContext context);
-        InvocationExpressionSyntax GetManagedValuesSource(TypePositionInfo info, StubCodeContext context);
-        InvocationExpressionSyntax GetUnmanagedValuesSource(TypePositionInfo info, StubCodeContext context);
-        InvocationExpressionSyntax GetManagedValuesDestination(TypePositionInfo info, StubCodeContext context);
+        TypePositionInfo TypeInfo { get; }
+        StubCodeContext CodeContext { get; }
+
+        InvocationExpressionSyntax GetUnmanagedValuesDestination(StubIdentifierContext context);
+        InvocationExpressionSyntax GetManagedValuesSource(StubIdentifierContext context);
+        InvocationExpressionSyntax GetUnmanagedValuesSource(StubIdentifierContext context);
+        InvocationExpressionSyntax GetManagedValuesDestination(StubIdentifierContext context);
     }
 
     internal abstract class ElementsMarshalling
@@ -34,12 +38,12 @@ namespace Microsoft.Interop
         /// &lt; GetUnmanagedValuesDestination &gt;.Clear();
         /// </code>
         /// </summary>
-        public StatementSyntax GenerateClearUnmanagedDestination(TypePositionInfo info, StubCodeContext context)
+        public StatementSyntax GenerateClearUnmanagedDestination(StubIdentifierContext context)
 
         {
             // <GetUnmanagedValuesDestination>.Clear();
             return MethodInvocationStatement(
-                        CollectionSource.GetUnmanagedValuesDestination(info, context),
+                        CollectionSource.GetUnmanagedValuesDestination(context),
                         IdentifierName("Clear"));
         }
         /// <summary>
@@ -47,28 +51,66 @@ namespace Microsoft.Interop
         /// &lt; GetManagedValuesDestination &gt;.Clear();
         /// </code>
         /// </summary>
-        public StatementSyntax GenerateClearManagedValuesDestination(TypePositionInfo info, StubCodeContext context)
+        public StatementSyntax GenerateClearManagedValuesDestination(StubIdentifierContext context)
         {
             // <GetManagedValuedDestination>.Clear();
             return MethodInvocationStatement(
-                        CollectionSource.GetManagedValuesDestination(info, context),
+                        CollectionSource.GetManagedValuesDestination(context),
                         IdentifierName("Clear"));
         }
 
-        public abstract StatementSyntax GenerateSetupStatement(TypePositionInfo info, StubCodeContext context);
-        public abstract StatementSyntax GenerateUnmanagedToManagedByValueOutMarshalStatement(TypePositionInfo info, StubCodeContext context);
-        public abstract StatementSyntax GenerateMarshalStatement(TypePositionInfo info, StubCodeContext context);
-        public abstract StatementSyntax GenerateManagedToUnmanagedByValueOutUnmarshalStatement(TypePositionInfo info, StubCodeContext context);
+        public static ExpressionSyntax GenerateNumElementsExpression(CountInfo count, bool countInfoRequiresCast, StubCodeContext codeContext, StubIdentifierContext context)
+        {
+            ExpressionSyntax numElementsExpression = count switch
+            {
+                SizeAndParamIndexInfo(int size, SizeAndParamIndexInfo.UnspecifiedParam) => GetConstSizeExpression(size),
+                ConstSizeCountInfo(int size) => GetConstSizeExpression(size),
+                SizeAndParamIndexInfo(SizeAndParamIndexInfo.UnspecifiedConstSize, TypePositionInfo param) => GetExpressionForParam(param),
+                SizeAndParamIndexInfo(int size, TypePositionInfo param) => CheckedExpression(SyntaxKind.CheckedExpression,
+                    BinaryExpression(SyntaxKind.AddExpression,
+                        GetConstSizeExpression(size),
+                        GetExpressionForParam(param))),
+                CountElementCountInfo(TypePositionInfo elementInfo) => GetExpressionForParam(elementInfo),
+                _ => throw new UnreachableException("Count info should have been verified in generator resolution")
+            };
 
-        public abstract StatementSyntax GenerateUnmarshalStatement(TypePositionInfo info, StubCodeContext context);
-        public abstract StatementSyntax GenerateElementCleanupStatement(TypePositionInfo info, StubCodeContext context);
+            if (countInfoRequiresCast)
+            {
+                if (numElementsExpression.IsKind(SyntaxKind.CheckedExpression))
+                {
+                    numElementsExpression = ((CheckedExpressionSyntax)numElementsExpression).Expression;
+                }
+                numElementsExpression = CheckedExpression(SyntaxKind.CheckedExpression,
+                    CastExpression(
+                        PredefinedType(Token(SyntaxKind.IntKeyword)),
+                        ParenthesizedExpression(numElementsExpression)));
+            }
+
+            return numElementsExpression;
+
+            static LiteralExpressionSyntax GetConstSizeExpression(int size)
+            {
+                return LiteralExpression(SyntaxKind.NumericLiteralExpression, Literal(size));
+            }
+
+            ExpressionSyntax GetExpressionForParam(TypePositionInfo paramInfo)
+            {
+                return MarshallerHelpers.GetIndexedManagedElementExpression(paramInfo, codeContext, context);
+            }
+        }
+
+        public abstract StatementSyntax GenerateSetupStatement(StubIdentifierContext context);
+        public abstract StatementSyntax GenerateUnmanagedToManagedByValueOutMarshalStatement(StubIdentifierContext context);
+        public abstract StatementSyntax GenerateMarshalStatement(StubIdentifierContext context);
+        public abstract StatementSyntax GenerateManagedToUnmanagedByValueOutUnmarshalStatement(StubIdentifierContext context);
+
+        public abstract StatementSyntax GenerateUnmarshalStatement(StubIdentifierContext context);
+        public abstract StatementSyntax GenerateElementCleanupStatement(StubIdentifierContext context);
     }
 
-#pragma warning disable SA1400 // Access modifier should be declared https://github.com/DotNetAnalyzers/StyleCopAnalyzers/issues/3659
     file static class ElementsMarshallingCollectionSourceExtensions
-#pragma warning restore SA1400 // Access modifier should be declared
     {
-        public static StatementSyntax GetNumElementsAssignmentFromManagedValuesSource(this IElementsMarshallingCollectionSource source, TypePositionInfo info, StubCodeContext context)
+        public static StatementSyntax GetNumElementsAssignmentFromManagedValuesSource(this IElementsMarshallingCollectionSource source, TypePositionInfo info, StubIdentifierContext context)
         {
             var numElementsIdentifier = MarshallerHelpers.GetNumElementsIdentifier(info, context);
             // <numElements> = <GetManagedValuesSource>.Length;
@@ -78,11 +120,11 @@ namespace Microsoft.Interop
                     IdentifierName(numElementsIdentifier),
                     MemberAccessExpression(
                         SyntaxKind.SimpleMemberAccessExpression,
-                        source.GetManagedValuesSource(info, context),
+                        source.GetManagedValuesSource(context),
                         IdentifierName("Length"))));
         }
 
-        public static StatementSyntax GetNumElementsAssignmentFromManagedValuesDestination(this IElementsMarshallingCollectionSource source, TypePositionInfo info, StubCodeContext context)
+        public static StatementSyntax GetNumElementsAssignmentFromManagedValuesDestination(this IElementsMarshallingCollectionSource source, TypePositionInfo info, StubIdentifierContext context)
         {
             var numElementsIdentifier = MarshallerHelpers.GetNumElementsIdentifier(info, context);
             // <numElements> = <GetManagedValuesDestination>.Length;
@@ -92,7 +134,7 @@ namespace Microsoft.Interop
                     IdentifierName(numElementsIdentifier),
                     MemberAccessExpression(
                         SyntaxKind.SimpleMemberAccessExpression,
-                        source.GetManagedValuesDestination(info, context),
+                        source.GetManagedValuesDestination(context),
                         IdentifierName("Length"))));
         }
     }
@@ -100,19 +142,12 @@ namespace Microsoft.Interop
     /// <summary>
     /// Support for marshalling blittable elements
     /// </summary>
-    internal sealed class BlittableElementsMarshalling : ElementsMarshalling
+    internal sealed class BlittableElementsMarshalling(
+        TypeSyntax managedElementType,
+        TypeSyntax unmanagedElementType,
+        IElementsMarshallingCollectionSource collectionSource) : ElementsMarshalling(collectionSource)
     {
-        private readonly TypeSyntax _managedElementType;
-        private readonly TypeSyntax _unmanagedElementType;
-
-        public BlittableElementsMarshalling(TypeSyntax managedElementType, TypeSyntax unmanagedElementType, IElementsMarshallingCollectionSource collectionSource)
-            : base(collectionSource)
-        {
-            _managedElementType = managedElementType;
-            _unmanagedElementType = unmanagedElementType;
-        }
-
-        public override StatementSyntax GenerateUnmanagedToManagedByValueOutMarshalStatement(TypePositionInfo info, StubCodeContext context)
+        public override StatementSyntax GenerateUnmanagedToManagedByValueOutMarshalStatement(StubIdentifierContext context)
         {
             // MemoryMarshal.CreateSpan(ref MemoryMarshal.GetReference(<GetUnmanagedValuesSource>), <GetUnmanagedValuesSource>.Length)
             ExpressionSyntax destination = CastToManagedIfNecessary(
@@ -123,33 +158,33 @@ namespace Microsoft.Interop
                         MethodInvocation(
                             TypeSyntaxes.System_Runtime_InteropServices_MemoryMarshal,
                             IdentifierName("GetReference"),
-                            Argument(CollectionSource.GetUnmanagedValuesSource(info, context)))),
+                            Argument(CollectionSource.GetUnmanagedValuesSource(context)))),
                     Argument(
                         MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,
-                            CollectionSource.GetUnmanagedValuesSource(info, context),
+                            CollectionSource.GetUnmanagedValuesSource(context),
                             IdentifierName("Length")))));
 
             // <GetManagedValuesDestination>.CopyTo(<source>);
             return MethodInvocationStatement(
-                    CollectionSource.GetManagedValuesDestination(info, context),
+                    CollectionSource.GetManagedValuesDestination(context),
                     IdentifierName("CopyTo"),
                     Argument(destination));
         }
 
-        public override StatementSyntax GenerateMarshalStatement(TypePositionInfo info, StubCodeContext context)
+        public override StatementSyntax GenerateMarshalStatement(StubIdentifierContext context)
         {
-            ExpressionSyntax destination = CastToManagedIfNecessary(CollectionSource.GetUnmanagedValuesDestination(info, context));
+            ExpressionSyntax destination = CastToManagedIfNecessary(CollectionSource.GetUnmanagedValuesDestination(context));
 
             // <GetManagedValuesSource>.CopyTo(<destination>);
             return MethodInvocationStatement(
-                    CollectionSource.GetManagedValuesSource(info, context),
+                    CollectionSource.GetManagedValuesSource(context),
                     IdentifierName("CopyTo"),
                     Argument(destination));
         }
 
-        public override StatementSyntax GenerateManagedToUnmanagedByValueOutUnmarshalStatement(TypePositionInfo info, StubCodeContext context)
+        public override StatementSyntax GenerateManagedToUnmanagedByValueOutUnmarshalStatement(StubIdentifierContext context)
         {
-            ExpressionSyntax source = CastToManagedIfNecessary(CollectionSource.GetUnmanagedValuesDestination(info, context));
+            ExpressionSyntax source = CastToManagedIfNecessary(CollectionSource.GetUnmanagedValuesDestination(context));
 
             // MemoryMarshal.CreateSpan(ref MemoryMarshal.GetReference(<GetManagedValuesSource>), <GetManagedValuesSource>.Length)
             ExpressionSyntax destination = MethodInvocation(
@@ -159,10 +194,10 @@ namespace Microsoft.Interop
                             MethodInvocation(
                                 TypeSyntaxes.System_Runtime_InteropServices_MemoryMarshal,
                                 IdentifierName("GetReference"),
-                                Argument(CollectionSource.GetManagedValuesSource(info, context)))),
+                                Argument(CollectionSource.GetManagedValuesSource(context)))),
                         Argument(
                             MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,
-                                CollectionSource.GetManagedValuesSource(info, context),
+                                CollectionSource.GetManagedValuesSource(context),
                                 IdentifierName("Length"))));
 
             // <source>.CopyTo(<destination>);
@@ -176,21 +211,21 @@ namespace Microsoft.Interop
                     Argument(destination)));
         }
 
-        public override StatementSyntax GenerateUnmarshalStatement(TypePositionInfo info, StubCodeContext context)
+        public override StatementSyntax GenerateUnmarshalStatement(StubIdentifierContext context)
         {
-            ExpressionSyntax source = CastToManagedIfNecessary(CollectionSource.GetUnmanagedValuesSource(info, context));
+            ExpressionSyntax source = CastToManagedIfNecessary(CollectionSource.GetUnmanagedValuesSource(context));
 
             // <source>.CopyTo(<GetManagedValuesDestination>);
             return MethodInvocationStatement(
                     source,
                     IdentifierName("CopyTo"),
-                    Argument(CollectionSource.GetManagedValuesDestination(info, context)));
+                    Argument(CollectionSource.GetManagedValuesDestination(context)));
         }
 
         private ExpressionSyntax CastToManagedIfNecessary(ExpressionSyntax expression)
         {
             // Skip the cast if the managed and unmanaged element types are the same
-            if (_unmanagedElementType.IsEquivalentTo(_managedElementType))
+            if (unmanagedElementType.IsEquivalentTo(managedElementType))
                 return expression;
 
             // MemoryMarshal.Cast<<unmanagedElementType>, <elementType>>(<expression>)
@@ -200,41 +235,28 @@ namespace Microsoft.Interop
                         Identifier("Cast"),
                         TypeArgumentList(SeparatedList(new[]
                             {
-                                _unmanagedElementType,
-                                _managedElementType
+                                unmanagedElementType,
+                                managedElementType
                             }))),
                     Argument(expression));
         }
 
-        public override StatementSyntax GenerateElementCleanupStatement(TypePositionInfo info, StubCodeContext context) => EmptyStatement();
-        public override StatementSyntax GenerateSetupStatement(TypePositionInfo info, StubCodeContext context) => EmptyStatement();
+        public override StatementSyntax GenerateElementCleanupStatement(StubIdentifierContext context) => EmptyStatement();
+        public override StatementSyntax GenerateSetupStatement(StubIdentifierContext context) => EmptyStatement();
     }
 
     /// <summary>
     /// Support for marshalling non-blittable elements
     /// </summary>
-    internal sealed class NonBlittableElementsMarshalling : ElementsMarshalling
+    internal sealed class NonBlittableElementsMarshalling(
+        TypeSyntax unmanagedElementType,
+        IBoundMarshallingGenerator elementMarshaller,
+        IElementsMarshallingCollectionSource collectionSource) : ElementsMarshalling(collectionSource)
     {
-        private readonly TypeSyntax _unmanagedElementType;
-        private readonly IMarshallingGenerator _elementMarshaller;
-        private readonly TypePositionInfo _elementInfo;
-
-        public NonBlittableElementsMarshalling(
-            TypeSyntax unmanagedElementType,
-            IMarshallingGenerator elementMarshaller,
-            TypePositionInfo elementInfo,
-            IElementsMarshallingCollectionSource collectionSource)
-            : base(collectionSource)
+        public override StatementSyntax GenerateMarshalStatement(StubIdentifierContext context)
         {
-            _unmanagedElementType = unmanagedElementType;
-            _elementMarshaller = elementMarshaller;
-            _elementInfo = elementInfo;
-        }
-
-        public override StatementSyntax GenerateMarshalStatement(TypePositionInfo info, StubCodeContext context)
-        {
-            string managedSpanIdentifier = MarshallerHelpers.GetManagedSpanIdentifier(info, context);
-            string nativeSpanIdentifier = MarshallerHelpers.GetNativeSpanIdentifier(info, context);
+            string managedSpanIdentifier = MarshallerHelpers.GetManagedSpanIdentifier(CollectionSource.TypeInfo, context);
+            string nativeSpanIdentifier = MarshallerHelpers.GetNativeSpanIdentifier(CollectionSource.TypeInfo, context);
 
             // ReadOnlySpan<T> <managedSpan> = <GetManagedValuesSource>
             // Span<TUnmanagedElement> <nativeSpan> = <GetUnmanagedValuesDestination>
@@ -243,16 +265,16 @@ namespace Microsoft.Interop
             var statements = new List<StatementSyntax>()
             {
                 Declare(
-                    ReadOnlySpanOf(_elementInfo.ManagedType.Syntax),
+                    ReadOnlySpanOf(elementMarshaller.TypeInfo.ManagedType.Syntax),
                     managedSpanIdentifier,
-                    CollectionSource.GetManagedValuesSource(info, context)),
+                    CollectionSource.GetManagedValuesSource(context)),
                 Declare(
-                    SpanOf(_unmanagedElementType),
+                    SpanOf(unmanagedElementType),
                     nativeSpanIdentifier,
-                    CollectionSource.GetUnmanagedValuesDestination(info, context))
+                    CollectionSource.GetUnmanagedValuesDestination(context))
             };
             // If it is a multidimensional array, we will just clear each allocated span.
-            if (ShouldCleanUpAllElements(info, context))
+            if (ShouldCleanUpAllElements(CollectionSource.TypeInfo, CollectionSource.CodeContext))
             {
                 // <nativeSpanIdentifier>.Clear()
                 statements.Add(MethodInvocationStatement(
@@ -260,54 +282,53 @@ namespace Microsoft.Interop
                             IdentifierName("Clear")));
             }
             statements.Add(GenerateContentsMarshallingStatement(
-                    info,
                     context,
                     MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,
-                        IdentifierName(MarshallerHelpers.GetManagedSpanIdentifier(info, context)),
+                        IdentifierName(MarshallerHelpers.GetManagedSpanIdentifier(CollectionSource.TypeInfo, context)),
                         IdentifierName("Length")),
-                     _elementInfo, _elementMarshaller, StubCodeContext.Stage.Marshal));
+                    elementMarshaller,
+                    StubIdentifierContext.Stage.Marshal));
             return Block(statements);
         }
 
-        public override StatementSyntax GenerateUnmarshalStatement(TypePositionInfo info, StubCodeContext context)
+        public override StatementSyntax GenerateUnmarshalStatement(StubIdentifierContext context)
         {
-            string managedSpanIdentifier = MarshallerHelpers.GetManagedSpanIdentifier(info, context);
-            string nativeSpanIdentifier = MarshallerHelpers.GetNativeSpanIdentifier(info, context);
-            string numElementsIdentifier = MarshallerHelpers.GetNumElementsIdentifier(info, context);
+            string managedSpanIdentifier = MarshallerHelpers.GetManagedSpanIdentifier(CollectionSource.TypeInfo, context);
+            string nativeSpanIdentifier = MarshallerHelpers.GetNativeSpanIdentifier(CollectionSource.TypeInfo, context);
+            string numElementsIdentifier = MarshallerHelpers.GetNumElementsIdentifier(CollectionSource.TypeInfo, context);
 
             // ReadOnlySpan<TUnmanagedElement> <nativeSpan> = <GetUnmanagedValuesSource>
             // Span<T> <managedSpan> = <GetManagedValuesDestination>
             // << unmarshal contents >>
             return Block(
                 Declare(
-                    ReadOnlySpanOf(_unmanagedElementType),
+                    ReadOnlySpanOf(unmanagedElementType),
                     nativeSpanIdentifier,
-                    CollectionSource.GetUnmanagedValuesSource(info, context)),
+                    CollectionSource.GetUnmanagedValuesSource(context)),
                 Declare(
-                    SpanOf(_elementInfo.ManagedType.Syntax),
+                    SpanOf(elementMarshaller.TypeInfo.ManagedType.Syntax),
                     managedSpanIdentifier,
-                    CollectionSource.GetManagedValuesDestination(info, context)),
+                    CollectionSource.GetManagedValuesDestination(context)),
                 GenerateContentsMarshallingStatement(
-                    info,
                     context,
                     IdentifierName(numElementsIdentifier),
-                    _elementInfo, _elementMarshaller, StubCodeContext.Stage.UnmarshalCapture,
-                    StubCodeContext.Stage.Unmarshal));
+                    elementMarshaller,
+                    StubIdentifierContext.Stage.UnmarshalCapture, StubIdentifierContext.Stage.Unmarshal));
         }
 
-        public override StatementSyntax GenerateManagedToUnmanagedByValueOutUnmarshalStatement(TypePositionInfo info, StubCodeContext context)
+        public override StatementSyntax GenerateManagedToUnmanagedByValueOutUnmarshalStatement(StubIdentifierContext context)
         {
             // Use ManagedSource and NativeDestination spans for by-value marshalling since we're just marshalling back the contents,
             // not the array itself.
             // This code is ugly since we're now enforcing readonly safety with ReadOnlySpan for all other scenarios,
             // but this is an uncommon case so we don't want to design the API around enabling just it.
-            string numElementsIdentifier = MarshallerHelpers.GetNumElementsIdentifier(info, context);
-            string managedSpanIdentifier = MarshallerHelpers.GetManagedSpanIdentifier(info, context);
+            string numElementsIdentifier = MarshallerHelpers.GetNumElementsIdentifier(CollectionSource.TypeInfo, context);
+            string managedSpanIdentifier = MarshallerHelpers.GetManagedSpanIdentifier(CollectionSource.TypeInfo, context);
 
-            var setNumElements = CollectionSource.GetNumElementsAssignmentFromManagedValuesSource(info, context);
+            var setNumElements = CollectionSource.GetNumElementsAssignmentFromManagedValuesSource(CollectionSource.TypeInfo, context);
 
             // Span<TElement> <managedSpan> = MemoryMarshal.CreateSpan(ref Unsafe.AsRef(in <GetManagedValuesSource>.GetPinnableReference(), <numElements>));
-            LocalDeclarationStatementSyntax managedValuesDeclaration = Declare(SpanOf(_elementInfo.ManagedType.Syntax),
+            LocalDeclarationStatementSyntax managedValuesDeclaration = Declare(SpanOf(elementMarshaller.TypeInfo.ManagedType.Syntax),
             managedSpanIdentifier,
             MethodInvocation(
                 TypeSyntaxes.System_Runtime_InteropServices_MemoryMarshal,
@@ -318,34 +339,33 @@ namespace Microsoft.Interop
                         IdentifierName("AsRef"),
                         InArgument(
                             MethodInvocation(
-                                CollectionSource.GetManagedValuesSource(info, context),
+                                CollectionSource.GetManagedValuesSource(context),
                                 IdentifierName("GetPinnableReference"))))),
                 Argument(IdentifierName(numElementsIdentifier))));
 
             // Span<TUnmanagedElement> <nativeSpan> = <GetUnmanagedValuesDestination>
-            string nativeSpanIdentifier = MarshallerHelpers.GetNativeSpanIdentifier(info, context);
+            string nativeSpanIdentifier = MarshallerHelpers.GetNativeSpanIdentifier(CollectionSource.TypeInfo, context);
             LocalDeclarationStatementSyntax unmanagedValuesDeclaration = Declare(
-                SpanOf(_unmanagedElementType),
+                SpanOf(unmanagedElementType),
                 nativeSpanIdentifier,
-                CollectionSource.GetUnmanagedValuesDestination(info, context));
+                CollectionSource.GetUnmanagedValuesDestination(context));
 
             return Block(
                 setNumElements,
                 managedValuesDeclaration,
                 unmanagedValuesDeclaration,
                 GenerateContentsMarshallingStatement(
-                    info,
                     context,
                     IdentifierName(numElementsIdentifier),
-                    _elementInfo, _elementMarshaller, StubCodeContext.Stage.UnmarshalCapture,
-                    StubCodeContext.Stage.Unmarshal));
+                    elementMarshaller,
+                    StubIdentifierContext.Stage.UnmarshalCapture, StubIdentifierContext.Stage.Unmarshal));
         }
 
-        public override StatementSyntax GenerateElementCleanupStatement(TypePositionInfo info, StubCodeContext context)
+        public override StatementSyntax GenerateElementCleanupStatement(StubIdentifierContext context)
         {
-            string nativeSpanIdentifier = MarshallerHelpers.GetNativeSpanIdentifier(info, context);
+            string nativeSpanIdentifier = MarshallerHelpers.GetNativeSpanIdentifier(CollectionSource.TypeInfo, context);
             ExpressionSyntax indexConstraintName;
-            if (!UsesLastIndexMarshalled(info, context))
+            if (!UsesLastIndexMarshalled(CollectionSource.TypeInfo, CollectionSource.CodeContext))
             {
                 indexConstraintName = MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,
                         IdentifierName(nativeSpanIdentifier),
@@ -353,52 +373,50 @@ namespace Microsoft.Interop
             }
             else
             {
-                indexConstraintName = IdentifierName(MarshallerHelpers.GetLastIndexMarshalledIdentifier(info, context));
+                indexConstraintName = IdentifierName(MarshallerHelpers.GetLastIndexMarshalledIdentifier(CollectionSource.TypeInfo, context));
             }
             StatementSyntax contentsCleanupStatements = GenerateContentsMarshallingStatement(
-                info,
                 context,
                 indexConstraintName,
-                _elementInfo,
-                _elementMarshaller,
+                elementMarshaller,
                 context.CurrentStage);
 
             if (contentsCleanupStatements.IsKind(SyntaxKind.EmptyStatement))
             {
-                if (UsesLastIndexMarshalled(info, context))
+                if (UsesLastIndexMarshalled(CollectionSource.TypeInfo, CollectionSource.CodeContext))
                 {
                     return AssignmentStatement(
                             IdentifierName("_"),
-                            IdentifierName(MarshallerHelpers.GetLastIndexMarshalledIdentifier(info, context)));
+                            IdentifierName(MarshallerHelpers.GetLastIndexMarshalledIdentifier(CollectionSource.TypeInfo, context)));
                 }
                 return EmptyStatement();
             }
 
             return Block(
                 Declare(
-                    ReadOnlySpanOf(_unmanagedElementType),
+                    ReadOnlySpanOf(unmanagedElementType),
                     nativeSpanIdentifier,
-                    MarshallerHelpers.GetMarshalDirection(info, context) == MarshalDirection.ManagedToUnmanaged
-                        ? CollectionSource.GetUnmanagedValuesDestination(info, context)
-                        : CollectionSource.GetUnmanagedValuesSource(info, context)),
+                    MarshallerHelpers.GetMarshalDirection(CollectionSource.TypeInfo, CollectionSource.CodeContext) == MarshalDirection.ManagedToUnmanaged
+                        ? CollectionSource.GetUnmanagedValuesDestination(context)
+                        : CollectionSource.GetUnmanagedValuesSource(context)),
                 contentsCleanupStatements);
         }
 
-        public override StatementSyntax GenerateUnmanagedToManagedByValueOutMarshalStatement(TypePositionInfo info, StubCodeContext context)
+        public override StatementSyntax GenerateUnmanagedToManagedByValueOutMarshalStatement(StubIdentifierContext context)
         {
             // Use ManagedSource and NativeDestination spans for by-value marshalling since we're just marshalling back the contents,
             // not the array itself.
             // This code is ugly since we're now enforcing readonly safety with ReadOnlySpan for all other scenarios,
             // but this is an uncommon case so we don't want to design the API around enabling just it.
-            string numElementsIdentifier = MarshallerHelpers.GetNumElementsIdentifier(info, context);
-            string managedSpanIdentifier = MarshallerHelpers.GetManagedSpanIdentifier(info, context);
-            string nativeSpanIdentifier = MarshallerHelpers.GetNativeSpanIdentifier(info, context);
+            string numElementsIdentifier = MarshallerHelpers.GetNumElementsIdentifier(CollectionSource.TypeInfo, context);
+            string managedSpanIdentifier = MarshallerHelpers.GetManagedSpanIdentifier(CollectionSource.TypeInfo, context);
+            string nativeSpanIdentifier = MarshallerHelpers.GetNativeSpanIdentifier(CollectionSource.TypeInfo, context);
 
-            var setNumElements = CollectionSource.GetNumElementsAssignmentFromManagedValuesDestination(info, context);
+            var setNumElements = CollectionSource.GetNumElementsAssignmentFromManagedValuesDestination(CollectionSource.TypeInfo, context);
 
             // Span<TUnmanagedElement> <nativeSpan> = MemoryMarshal.CreateSpan(ref Unsafe.AsRef(in <GetUnmanagedValuesSource>.GetPinnableReference()), <numElements>);
             LocalDeclarationStatementSyntax unmanagedValuesSource = Declare(
-                SpanOf(_unmanagedElementType),
+                SpanOf(unmanagedElementType),
                 nativeSpanIdentifier,
                 MethodInvocation(
                     TypeSyntaxes.System_Runtime_InteropServices_MemoryMarshal,
@@ -409,7 +427,7 @@ namespace Microsoft.Interop
                             IdentifierName("AsRef"),
                             InArgument(
                                 MethodInvocation(
-                                    CollectionSource.GetUnmanagedValuesSource(info, context),
+                                    CollectionSource.GetUnmanagedValuesSource(context),
                                     IdentifierName("GetPinnableReference"))))),
                     Argument(IdentifierName(numElementsIdentifier))));
 
@@ -417,23 +435,23 @@ namespace Microsoft.Interop
             LocalDeclarationStatementSyntax managedValuesDestination = LocalDeclarationStatement(VariableDeclaration(
                 GenericName(
                     Identifier(TypeNames.System_Span),
-                    TypeArgumentList(SingletonSeparatedList(_elementInfo.ManagedType.Syntax))),
+                    TypeArgumentList(SingletonSeparatedList(elementMarshaller.TypeInfo.ManagedType.Syntax))),
                 SingletonSeparatedList(
                     VariableDeclarator(
                         Identifier(managedSpanIdentifier))
                     .WithInitializer(EqualsValueClause(
-                        CollectionSource.GetManagedValuesDestination(info, context))))));
+                        CollectionSource.GetManagedValuesDestination(context))))));
 
-            StubCodeContext.Stage[] stagesToGenerate;
+            StubIdentifierContext.Stage[] stagesToGenerate;
 
             // Until we separate CalleeAllocated cleanup and CallerAllocated cleanup in unmanaged to managed, we'll need this hack
-            if (context.Direction is MarshalDirection.UnmanagedToManaged && info.ByValueContentsMarshalKind is ByValueContentsMarshalKind.Out)
+            if (CollectionSource.CodeContext.Direction is MarshalDirection.UnmanagedToManaged && CollectionSource.TypeInfo.ByValueContentsMarshalKind is ByValueContentsMarshalKind.Out)
             {
-                stagesToGenerate = new[] { StubCodeContext.Stage.Marshal, StubCodeContext.Stage.PinnedMarshal };
+                stagesToGenerate = [StubIdentifierContext.Stage.Marshal, StubIdentifierContext.Stage.PinnedMarshal];
             }
             else
             {
-                stagesToGenerate = new[] { StubCodeContext.Stage.Marshal, StubCodeContext.Stage.PinnedMarshal, StubCodeContext.Stage.CleanupCallerAllocated, StubCodeContext.Stage.CleanupCalleeAllocated };
+                stagesToGenerate = [StubIdentifierContext.Stage.Marshal, StubIdentifierContext.Stage.PinnedMarshal, StubIdentifierContext.Stage.CleanupCallerAllocated, StubIdentifierContext.Stage.CleanupCalleeAllocated];
             }
 
             return Block(
@@ -441,67 +459,58 @@ namespace Microsoft.Interop
                 unmanagedValuesSource,
                 managedValuesDestination,
                 GenerateContentsMarshallingStatement(
-                    info,
                     context,
                     IdentifierName(numElementsIdentifier),
-                    _elementInfo,
-                    new FreeAlwaysOwnedOriginalValueGenerator(_elementMarshaller),
+                    new FreeAlwaysOwnedOriginalValueGenerator(elementMarshaller),
                     stagesToGenerate));
         }
 
-        private static List<StatementSyntax> GenerateElementStages(
-            TypePositionInfo info,
-            StubCodeContext context,
-            IMarshallingGenerator elementMarshaller,
-            TypePositionInfo elementInfo,
-            out LinearCollectionElementMarshallingCodeContext elementSetupSubContext,
-            out TypePositionInfo localElementInfo,
-            params StubCodeContext.Stage[] stagesToGeneratePerElement)
+        private List<StatementSyntax> GenerateElementStages(
+            StubIdentifierContext context,
+            IBoundMarshallingGenerator elementMarshaller,
+            out LinearCollectionElementIdentifierContext elementSetupSubContext,
+            params StubIdentifierContext.Stage[] stagesToGeneratePerElement)
         {
-            string managedSpanIdentifier = MarshallerHelpers.GetManagedSpanIdentifier(info, context);
-            string nativeSpanIdentifier = MarshallerHelpers.GetNativeSpanIdentifier(info, context);
-            elementSetupSubContext = new LinearCollectionElementMarshallingCodeContext(
-                StubCodeContext.Stage.Setup,
+            string managedSpanIdentifier = MarshallerHelpers.GetManagedSpanIdentifier(CollectionSource.TypeInfo, context);
+            string nativeSpanIdentifier = MarshallerHelpers.GetNativeSpanIdentifier(CollectionSource.TypeInfo, context);
+            StubCodeContext elementCodeContext = StubCodeContext.CreateElementMarshallingContext(CollectionSource.CodeContext);
+            elementSetupSubContext = new LinearCollectionElementIdentifierContext(
+                context,
+                elementMarshaller.TypeInfo,
                 managedSpanIdentifier,
                 nativeSpanIdentifier,
-                context);
-
-            localElementInfo = elementInfo with
+                elementCodeContext.ElementIndirectionLevel)
             {
-                InstanceIdentifier = info.InstanceIdentifier,
-                RefKind = info.IsByRef ? info.RefKind : info.ByValueContentsMarshalKind.GetRefKindForByValueContentsKind(),
-                ManagedIndex = info.ManagedIndex,
-                NativeIndex = info.NativeIndex
+                CurrentStage = StubIdentifierContext.Stage.Setup,
+                CodeEmitOptions = context.CodeEmitOptions
             };
 
-            List<StatementSyntax> elementStatements = new();
-            foreach (StubCodeContext.Stage stage in stagesToGeneratePerElement)
+            List<StatementSyntax> elementStatements = [];
+            foreach (StubIdentifierContext.Stage stage in stagesToGeneratePerElement)
             {
                 var elementSubContext = elementSetupSubContext with { CurrentStage = stage };
-                elementStatements.AddRange(elementMarshaller.Generate(localElementInfo, elementSubContext));
+                elementStatements.AddRange(elementMarshaller.Generate(elementSubContext));
             }
             return elementStatements;
         }
 
-        private static StatementSyntax GenerateContentsMarshallingStatement(
-            TypePositionInfo info,
-            StubCodeContext context,
+        private StatementSyntax GenerateContentsMarshallingStatement(
+            StubIdentifierContext context,
             ExpressionSyntax lengthExpression,
-            TypePositionInfo elementInfo,
-            IMarshallingGenerator elementMarshaller,
-            params StubCodeContext.Stage[] stagesToGeneratePerElement)
+            IBoundMarshallingGenerator elementMarshaller,
+            params StubIdentifierContext.Stage[] stagesToGeneratePerElement)
         {
-            var elementStatements = GenerateElementStages(info, context, elementMarshaller, elementInfo, out var elementSetupSubContext, out var localElementInfo, stagesToGeneratePerElement);
+            var elementStatements = GenerateElementStages(context, elementMarshaller, out var elementSetupSubContext, stagesToGeneratePerElement);
 
             if (elementStatements.Count != 0)
             {
                 StatementSyntax marshallingStatement = Block(
-                    List(elementMarshaller.Generate(localElementInfo, elementSetupSubContext)
+                    List(elementMarshaller.Generate(elementSetupSubContext)
                         .Concat(elementStatements)));
 
-                if (elementMarshaller.AsNativeType(elementInfo).Syntax is PointerTypeSyntax elementNativeType)
+                if (elementMarshaller.NativeType is PointerTypeInfo nativeTypeInfo)
                 {
-                    PointerNativeTypeAssignmentRewriter rewriter = new(elementSetupSubContext.GetIdentifiers(localElementInfo).native, elementNativeType);
+                    PointerNativeTypeAssignmentRewriter rewriter = new(elementSetupSubContext.GetIdentifiers(elementMarshaller.TypeInfo).native, (PointerTypeSyntax)nativeTypeInfo.Syntax);
                     marshallingStatement = (StatementSyntax)rewriter.Visit(marshallingStatement);
                 }
 
@@ -509,11 +518,11 @@ namespace Microsoft.Interop
                 var forLoop = ForLoop(elementSetupSubContext.IndexerIdentifier, lengthExpression)
                     .WithStatement(marshallingStatement);
                 // If we're tracking LastIndexMarshalled, increment that each iteration as well.
-                if (UsesLastIndexMarshalled(info, context) && stagesToGeneratePerElement.Contains(StubCodeContext.Stage.Marshal))
+                if (UsesLastIndexMarshalled(CollectionSource.TypeInfo, CollectionSource.CodeContext) && stagesToGeneratePerElement.Contains(StubIdentifierContext.Stage.Marshal))
                 {
                     forLoop = forLoop.AddIncrementors(
                         PrefixUnaryExpression(SyntaxKind.PreIncrementExpression,
-                            IdentifierName(MarshallerHelpers.GetLastIndexMarshalledIdentifier(info, context))));
+                            IdentifierName(MarshallerHelpers.GetLastIndexMarshalledIdentifier(CollectionSource.TypeInfo, context))));
                 }
                 return forLoop;
             }
@@ -538,21 +547,19 @@ namespace Microsoft.Interop
 
         private static bool ShouldCleanUpAllElements(TypePositionInfo info, StubCodeContext context)
         {
-            _ = info;
-            _ = context;
-            // AdditionalTemporaryStateLivesAcrossStages implies that it is an outer collection
+            // ElementIndirectionLevel != 0 means that we are in a collection
             // Out parameters means that the contents are created by the P/Invoke and assumed to have successfully created all elements
-            return !context.AdditionalTemporaryStateLivesAcrossStages || info.ByValueContentsMarshalKind == ByValueContentsMarshalKind.Out || info.RefKind == RefKind.Out || info.IsNativeReturnPosition;
+            return context.ElementIndirectionLevel != 0 || info.ByValueContentsMarshalKind == ByValueContentsMarshalKind.Out || info.RefKind == RefKind.Out || info.IsNativeReturnPosition;
         }
 
-        public override StatementSyntax GenerateSetupStatement(TypePositionInfo info, StubCodeContext context)
-            => UsesLastIndexMarshalled(info, context)
+        public override StatementSyntax GenerateSetupStatement(StubIdentifierContext context)
+            => UsesLastIndexMarshalled(CollectionSource.TypeInfo, CollectionSource.CodeContext)
                 ? LocalDeclarationStatement(
                     VariableDeclaration(
                         PredefinedType(Token(SyntaxKind.IntKeyword)),
                     SingletonSeparatedList(
                         VariableDeclarator(
-                            Identifier(MarshallerHelpers.GetLastIndexMarshalledIdentifier(info, context)),
+                            Identifier(MarshallerHelpers.GetLastIndexMarshalledIdentifier(CollectionSource.TypeInfo, context)),
                             null,
                             EqualsValueClause(LiteralExpression(SyntaxKind.NumericLiteralExpression, Literal(0)))))))
                 : EmptyStatement();

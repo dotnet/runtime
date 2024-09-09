@@ -89,6 +89,7 @@ The .NET Foundation licenses this file to you under the MIT license.
       <LinkerArg Include="@(NativeLibrary->'&quot;%(Identity)&quot;')" />
       <LinkerArg Include="@(SdkNativeLibrary->'&quot;%(Identity)&quot;')" />
       <LinkerArg Include="/NOLOGO /MANIFEST:NO" />
+      <LinkerArg Condition="$(IlcMergeSections) != 'false'" Include="/MERGE:.managedcode=.text /MERGE:hydrated=.bss" />
       <LinkerArg Condition="$(NativeDebugSymbols) == 'true'" Include="/DEBUG" />
       <!-- The runtime is not compatible with jump stubs inserted by incremental linking. -->
       <LinkerArg Include="/INCREMENTAL:NO" />

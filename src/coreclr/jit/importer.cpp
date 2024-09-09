@@ -19,16 +19,6 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 
 #include "corexcep.h"
 
-/*****************************************************************************/
-
-void Compiler::impInit()
-{
-    impStmtList = impLastStmt = nullptr;
-#ifdef DEBUG
-    impInlinedCodeSize = 0;
-#endif // DEBUG
-}
-
 /*****************************************************************************
  *
  *  Pushes the given tree on the stack.

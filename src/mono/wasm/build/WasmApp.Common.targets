@@ -321,7 +321,7 @@
     <PropertyGroup Condition="'$(WasmMainAssemblyFileName)' != '' and '$(_WasmOutputFileName)' == ''">
       <_WasmOutputFileName Condition="'$(WasmSingleFileBundle)' == 'true'">$([System.IO.Path]::GetFileNameWithoutExtension('$(WasmMainAssemblyFileName)')).wasm</_WasmOutputFileName>
       <_WasmOutputFileName Condition="'$(WasmSingleFileBundle)' != 'true'">dotnet.wasm</_WasmOutputFileName>
-      <_WasmOutputFileName Condition="'$(_WasmOutputFileName)' != ''">$([System.IO.Path]::Combine($(_WasiIntermediateOutputPath), $(_WasmOutputFileName)))</_WasmOutputFileName>
+      <_WasmOutputFileName Condition="'$(_WasmOutputFileName)' != ''">$([System.IO.Path]::Combine($(_WasmIntermediateOutputPath), $(_WasmOutputFileName)))</_WasmOutputFileName>
     </PropertyGroup>
 
     <MakeDir Directories="$(_WasmIntermediateOutputPath)" />

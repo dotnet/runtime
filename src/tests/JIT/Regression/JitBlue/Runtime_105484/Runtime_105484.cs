@@ -16,8 +16,8 @@ using Xunit;
 
 public class Runtime_105484
 {
-    private static byte[] s_1;
-    private static byte[,, ] s_2;
+    private static byte[] s_1 = new byte[1];
+    private static byte[,, ] s_2 = new byte[1, 1, 1];
     private static Vector<uint> s_5;
 
     [MethodImpl(MethodImplOptions.NoInlining)]

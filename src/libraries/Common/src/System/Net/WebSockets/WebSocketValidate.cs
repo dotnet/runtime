@@ -38,27 +38,26 @@ namespace System.Net.WebSockets
             SearchValues.Create("!#$%&'*+-.0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ^_`abcdefghijklmnopqrstuvwxyz|~");
 
         internal static void ThrowIfInvalidState(WebSocketState currentState, bool isDisposed, WebSocketState[] validStates)
+            => ThrowIfInvalidState(currentState, isDisposed, innerException: null, validStates ?? []);
+
+        internal static void ThrowIfInvalidState(WebSocketState currentState, bool isDisposed, Exception? innerException, WebSocketState[]? validStates = null)
         {
-            string validStatesText = string.Empty;
-
-            if (validStates != null && validStates.Length > 0)
+            if (validStates is not null && Array.IndexOf(validStates, currentState) == -1)
             {
-                foreach (WebSocketState validState in validStates)
-                {
-                    if (currentState == validState)
-                    {
-                        // Ordering is important to maintain .NET 4.5 WebSocket implementation exception behavior.
-                        ObjectDisposedException.ThrowIf(isDisposed, typeof(WebSocket));
-                        return;
-                    }
-                }
+                string invalidStateMessage = SR.Format(
+                    SR.net_WebSockets_InvalidState, currentState, string.Join(", ", validStates));
 
-                validStatesText = string.Join(", ", validStates);
+                throw new WebSocketException(WebSocketError.InvalidState, invalidStateMessage, innerException);
             }
 
-            throw new WebSocketException(
-                WebSocketError.InvalidState,
-                SR.Format(SR.net_WebSockets_InvalidState, currentState, validStatesText));
+            if (innerException is not null)
+            {
+                Debug.Assert(currentState == WebSocketState.Aborted);
+                throw new OperationCanceledException(nameof(WebSocketState.Aborted), innerException);
+            }
+
+            // Ordering is important to maintain .NET 4.5 WebSocket implementation exception behavior.
+            ObjectDisposedException.ThrowIf(isDisposed, typeof(WebSocket));
         }
 
         internal static void ValidateSubprotocol(string subProtocol)

@@ -24,8 +24,6 @@ namespace System.Formats.Nrbf;
 internal sealed class ArraySinglePrimitiveRecord<T> : SZArrayRecord<T>
     where T : unmanaged
 {
-    private static TypeName? s_typeName;
-
     internal ArraySinglePrimitiveRecord(ArrayInfo arrayInfo, IReadOnlyList<T> values) : base(arrayInfo)
     {
         Values = values;
@@ -35,8 +33,7 @@ internal sealed class ArraySinglePrimitiveRecord<T> : SZArrayRecord<T>
     public override SerializationRecordType RecordType => SerializationRecordType.ArraySinglePrimitive;
 
     /// <inheritdoc />
-    public override TypeName TypeName
-        => s_typeName ??= TypeName.Parse((typeof(T[]).FullName + "," + TypeNameExtensions.CoreLibAssemblyName).AsSpan());
+    public override TypeName TypeName => TypeNameHelpers.GetPrimitiveSZArrayTypeName(TypeNameHelpers.GetPrimitiveType<T>());
 
     internal IReadOnlyList<T> Values { get; }
 
@@ -240,7 +237,7 @@ internal sealed class ArraySinglePrimitiveRecord<T> : SZArrayRecord<T>
             }
             else if (typeof(T) == typeof(DateTime))
             {
-                values.Add((T)(object)Utils.BinaryReaderExtensions.CreateDateTimeFromData(reader.ReadInt64()));
+                values.Add((T)(object)Utils.BinaryReaderExtensions.CreateDateTimeFromData(reader.ReadUInt64()));
             }
             else
             {

@@ -3,6 +3,10 @@
  * For conditions of distribution and use, see copyright notice in zlib.h
  */
 
+#if defined(_MSC_VER)
+#  include <intrin.h>
+#endif
+
 #include "zbuild.h"
 #include "zendian.h"
 #include "crc32_braid_p.h"
@@ -10,10 +14,6 @@
 #include "deflate_p.h"
 #include "functable.h"
 #include "cpu_features.h"
-
-#if defined(_MSC_VER)
-#  include <intrin.h>
-#endif
 
 /* Platform has pointer size atomic store */
 #if defined(__GNUC__) || defined(__clang__)

@@ -35,7 +35,7 @@ namespace System.Threading
     {
         // Indicates whether the thread pool should yield the thread from the dispatch loop to the runtime periodically so that
         // the runtime may use the thread for processing other work
-        internal static bool YieldFromDispatchLoop => true;
+        internal static bool YieldFromDispatchLoop => false;
 
         private const bool IsWorkerTrackingEnabledInConfig = false;
 
@@ -77,7 +77,6 @@ namespace System.Threading
 
         internal static unsafe void RequestWorkerThread()
         {
-            throw new PlatformNotSupportedException();
         }
 
         internal static void NotifyWorkItemProgress()
@@ -88,15 +87,11 @@ namespace System.Threading
 
         internal static void NotifyThreadUnblocked()
         {
-            throw new PlatformNotSupportedException();
         }
 
         internal static object? GetOrCreateThreadLocalCompletionCountObject() => null;
 
-        internal static bool NotifyWorkItemComplete(object? _1, int _2)
-        {
-            throw new PlatformNotSupportedException();
-        }
+        internal static bool NotifyWorkItemComplete(object? _1, int _2) => true;
 
         private static RegisteredWaitHandle RegisterWaitForSingleObject(
              WaitHandle? waitObject,

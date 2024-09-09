@@ -27,6 +27,7 @@
     <Compile Include="System\Net\WebSockets\ClientWebSocketOptions.cs" />
     <Compile Include="System\Net\WebSockets\WebSocketHandle.Managed.cs" />
     <Compile Include="$(CommonPath)System\Net\HttpKnownHeaderNames.cs" Link="Common\System\Net\HttpKnownHeaderNames.cs" />
+    <Compile Include="$(CommonPath)System\Net\WebSockets\WebSocketDefaults.cs" Link="Common\System\Net\WebSockets\WebSocketDefaults.cs" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'browser'">
@@ -47,6 +48,7 @@
     <Reference Include="System.Net.WebSockets" />
     <Reference Include="System.Net.Http" />
     <Reference Include="System.Security.Cryptography" />
+    <Reference Include="System.Threading.Channels" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' != 'browser'">
@@ -57,7 +59,6 @@
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'browser'">
-    <Reference Include="System.Threading.Channels" />
     <ProjectReference Include="$(CoreLibProject)" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.Private.Uri\src\System.Private.Uri.csproj" PrivateAssets="all" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime\src\System.Runtime.csproj" />

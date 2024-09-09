@@ -14,11 +14,8 @@
   <ItemGroup>
     <!-- The sfx ref projects must be built first as sfx src projects don't use P2Ps to reference each other. Instead the
          references are defined manually via Reference items, therefore the reference assemblies must exist before that. -->
-    <ProjectReference Include="sfx-ref.proj">
-      <OutputItemType Condition="'$(RefOnly)' == 'true'">SharedFrameworkAssembly</OutputItemType>
-    </ProjectReference>
-     <!-- The RefOnly condition exists to support building the reference source projects only. -->
-    <ProjectReference Include="sfx-src.proj" OutputItemType="SharedFrameworkAssembly" Condition="'$(RefOnly)' != 'true'" />
+    <ProjectReference Include="sfx-ref.proj" />
+    <ProjectReference Include="sfx-src.proj" OutputItemType="SharedFrameworkAssembly" />
     <ProjectReference Include="sfx-gen.proj" OutputItemType="SharedFrameworkAnalyzerAssembly" />
   </ItemGroup>
 
@@ -61,8 +58,7 @@
 
   <!-- Copy the intellisense file to the targeting pack directory. -->
   <Target Name="CopyDocumentationFiles"
-          AfterTargets="Build"
-          Condition="'$(RefOnly)' != 'true'">
+          AfterTargets="Build">
     <ItemGroup>
       <DocumentationFileToCopy Include="@(SharedFrameworkAssembly->WithMetadataValue('IsPrivateAssembly', 'false')->Metadata('DocFileItem'))" />
     </ItemGroup>
@@ -89,7 +85,6 @@
   <Target Name="TrimSharedFrameworkAssemblies"
           AfterTargets="Build"
           DependsOnTargets="ResolveProjectReferences;GetTrimSharedFrameworkAssembliesInputs;PrepareForAssembliesTrim"
-          Condition="'$(RefOnly)' != 'true'"
           Inputs="@(SharedFrameworkAssembly);@(SharedFrameworkSuppressionsXml);$(ILLinkTasksAssembly)"
           Outputs="$(SharedFrameworkAssembliesTrimMarkerFile)">
     <Message Text="$(MSBuildProjectName) -> Trimming $(OutputRID) shared framework assemblies with ILLinker..." Importance="high" />

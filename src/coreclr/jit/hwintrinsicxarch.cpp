@@ -126,6 +126,8 @@ static CORINFO_InstructionSet V512VersionOfIsa(CORINFO_InstructionSet isa)
     {
         case InstructionSet_AVX10v1:
             return InstructionSet_AVX10v1_V512;
+        case InstructionSet_AVX10v1_X64:
+            return InstructionSet_AVX10v1_V512_X64;
         default:
             return InstructionSet_NONE;
     }
@@ -313,15 +315,18 @@ static CORINFO_InstructionSet lookupInstructionSet(const char* className)
 //
 // Arguments:
 //    className -- The name of the class associated with the InstructionSet to lookup
-//    enclosingClassName -- The name of the enclosing class of X64 classes
+//    innerEnclosingClassName -- The name of the inner enclosing class of X64 classes
+//    outerEnclosingClassName -- The name of the outer enclosing class of X64 classes
 //
 // Return Value:
 //    The InstructionSet associated with className and enclosingClassName
-CORINFO_InstructionSet HWIntrinsicInfo::lookupIsa(const char* className, const char* enclosingClassName)
+CORINFO_InstructionSet HWIntrinsicInfo::lookupIsa(const char* className,
+                                                  const char* innerEnclosingClassName,
+                                                  const char* outerEnclosingClassName)
 {
     assert(className != nullptr);
 
-    if (enclosingClassName == nullptr)
+    if (innerEnclosingClassName == nullptr)
     {
         // No nested class is the most common, so fast path it
         return lookupInstructionSet(className);
@@ -331,7 +336,7 @@ CORINFO_InstructionSet HWIntrinsicInfo::lookupIsa(const char* className, const c
     // or intrinsics in the platform specific namespace, we assume
     // that it will be one we can handle and don't try to early out.
 
-    CORINFO_InstructionSet enclosingIsa = lookupInstructionSet(enclosingClassName);
+    CORINFO_InstructionSet enclosingIsa = lookupIsa(innerEnclosingClassName, outerEnclosingClassName, nullptr);
 
     if (className[0] == 'V')
     {
@@ -879,7 +884,9 @@ bool HWIntrinsicInfo::isFullyImplementedIsa(CORINFO_InstructionSet isa)
         case InstructionSet_X86Serialize:
         case InstructionSet_X86Serialize_X64:
         case InstructionSet_AVX10v1:
+        case InstructionSet_AVX10v1_X64:
         case InstructionSet_AVX10v1_V512:
+        case InstructionSet_AVX10v1_V512_X64:
         case InstructionSet_EVEX:
         {
             return true;
@@ -2331,16 +2338,19 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                     }
                 }
 
-                if (varTypeIsLong(simdBaseType) && !impStackTop(0).val->OperIsConst())
+                if (varTypeIsLong(simdBaseType))
                 {
-                    // When op2 is a constant, we can skip the multiplication allowing us to always
-                    // generate better code. However, if it isn't then we need to fallback in the
-                    // cases where multiplication isn't supported.
-
-                    if ((simdSize != 64) && !canUseEvexEncoding())
+                    if (!impStackTop(0).val->OperIsConst())
                     {
-                        // TODO-XARCH-CQ: We should support long/ulong multiplication
-                        break;
+                        // When op2 is a constant, we can skip the multiplication allowing us to always
+                        // generate better code. However, if it isn't then we need to fallback in the
+                        // cases where multiplication isn't supported.
+
+                        if ((simdSize != 64) && !canUseEvexEncoding())
+                        {
+                            // TODO-XARCH-CQ: We should support long/ulong multiplication
+                            break;
+                        }
                     }
 
 #if defined(TARGET_X86)
@@ -4793,7 +4803,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             int immUpperBound = HWIntrinsicInfo::lookupImmUpperBound(intrinsic);
 
             op3 = impPopStack().val;
-            op3 = addRangeCheckIfNeeded(intrinsic, op3, mustExpand, immLowerBound, immUpperBound);
+            op3 = addRangeCheckIfNeeded(intrinsic, op3, immLowerBound, immUpperBound);
             op2 = impSIMDPopStack();
             op1 = impSIMDPopStack();
 

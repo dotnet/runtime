@@ -1230,15 +1230,25 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                     return;
                 }
 
-                string castTypeDisplayString = TypeIndex.GetPopulationCastTypeDisplayString(type);
                 instanceIdentifier = Identifier.temp;
+                string castExpression = $"{TypeIndex.GetPopulationCastTypeDisplayString(type)} {instanceIdentifier}";
 
-                _writer.WriteLine($$"""
-                        if ({{Identifier.instance}} is not {{castTypeDisplayString}} {{instanceIdentifier}})
-                        {
-                            return;
-                        }
-                        """);
+                if (type.ShouldTryCast)
+                {
+                    _writer.WriteLine($$"""
+                            if ({{Identifier.instance}} is not {{castExpression}})
+                            {
+                                return;
+                            }
+                            """);
+                }
+                else
+                {
+                    _writer.WriteLine($$"""
+                            {{castExpression}} = {{Identifier.instance}};
+                            """);
+                }
+
                 _writer.WriteLine();
 
             }

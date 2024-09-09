@@ -210,8 +210,8 @@ void Compiler::eePrintTypeOrJitAlias(StringPrinter* printer, CORINFO_CLASS_HANDL
 }
 
 static const char* s_jitHelperNames[CORINFO_HELP_COUNT] = {
-#define JITHELPER(code, pfnHelper, sig)        #code,
-#define DYNAMICJITHELPER(code, pfnHelper, sig) #code,
+#define JITHELPER(code, pfnHelper, binderId)        #code,
+#define DYNAMICJITHELPER(code, pfnHelper, binderId) #code,
 #include "jithelpers.h"
 };
 

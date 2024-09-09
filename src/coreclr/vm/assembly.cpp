@@ -135,7 +135,8 @@ Assembly::Assembly(PEAssembly* pPEAssembly, DebuggerAssemblyControlFlags debugge
     m_InteropAttributeStatus(INTEROP_ATTRIBUTE_UNSET),
 #endif
     m_debuggerFlags(debuggerFlags),
-    m_fTerminated(FALSE)
+    m_fTerminated(FALSE),
+    m_hExposedObject{}
 {
     STANDARD_VM_CONTRACT;
 }
@@ -504,7 +505,7 @@ Assembly *Assembly::CreateDynamic(AssemblyBinder* pBinder, NativeAssemblyNamePar
             {
                 // Initializing the virtual call stub manager is delayed to remove the need for the LoaderAllocator destructor to properly handle
                 // uninitializing the VSD system. (There is a need to suspend the runtime, and that's tricky)
-                pLoaderAllocator->InitVirtualCallStubManager(pDomain);
+                pLoaderAllocator->InitVirtualCallStubManager();
             }
         }
 
@@ -705,24 +706,10 @@ Module *Assembly::FindModuleByExportedType(mdExportedType mdType,
             // We should never get here in the GC case - the above should have succeeded.
             CONSISTENCY_CHECK(!FORBIDGC_LOADER_USE_ENABLED());
 
-            DomainAssembly* pDomainModule = NULL;
-            if (loadFlag == Loader::Load)
-            {
-                pDomainModule = GetModule()->LoadModule(mdLinkRef);
-            }
+            if (loadFlag != Loader::Load)
+                return NULL;
 
-            if (pDomainModule == NULL)
-                RETURN NULL;
-            else
-            {
-                pModule = pDomainModule->GetModule();
-                if (pModule == NULL)
-                {
-                    _ASSERTE(loadFlag!=Loader::Load);
-                }
-
-                RETURN pModule;
-            }
+            return GetModule()->LoadModule(mdLinkRef);
 #endif // DACCESS_COMPILE
         }
 
@@ -849,8 +836,8 @@ Module * Assembly::FindModuleByTypeRef(
 #ifndef DACCESS_COMPILE
             if (loadFlag == Loader::Load)
             {
-                DomainAssembly* pActualDomainAssembly = pModule->LoadModule(tkType);
-                RETURN(pActualDomainAssembly->GetModule());
+                Module* pActualModule = pModule->LoadModule(tkType);
+                RETURN(pActualModule);
             }
             else
             {
@@ -1493,7 +1480,7 @@ MethodDesc* Assembly::GetEntryPoint()
     Module *pModule = NULL;
     switch(TypeFromToken(mdEntry)) {
     case mdtFile:
-        pModule = m_pModule->LoadModule(mdEntry)->GetModule();
+        pModule = m_pModule->LoadModule(mdEntry);
 
         mdEntry = pModule->GetEntryPointToken();
         if ( (TypeFromToken(mdEntry) != mdtMethodDef) ||
@@ -1560,6 +1547,11 @@ MethodDesc* Assembly::GetEntryPoint()
     RETURN m_pEntryPoint;
 }
 
+//---------------------------------------------------------------------------------------
+//
+// Returns managed representation of the assembly (Assembly or AssemblyBuilder).
+// Returns NULL if the managed scout was already collected (see code:LoaderAllocator#AssemblyPhases).
+//
 OBJECTREF Assembly::GetExposedObject()
 {
     CONTRACT(OBJECTREF)
@@ -1571,7 +1563,71 @@ OBJECTREF Assembly::GetExposedObject()
     }
     CONTRACT_END;
 
-    RETURN GetDomainAssembly()->GetExposedAssemblyObject();
+    LoaderAllocator * pLoaderAllocator = GetLoaderAllocator();
+
+    // We already collected the managed scout, so we cannot re-create any managed objects
+    // Note: This is an optimization, as the managed scout can be collected right after this check
+    if (!pLoaderAllocator->IsManagedScoutAlive())
+        return NULL;
+
+    if (m_hExposedObject == (LOADERHANDLE)NULL)
+    {
+        // Atomically create a handle
+        LOADERHANDLE handle = pLoaderAllocator->AllocateHandle(NULL);
+        InterlockedCompareExchangeT(&m_hExposedObject, handle, static_cast<LOADERHANDLE>(0));
+    }
+
+    if (pLoaderAllocator->GetHandleValue(m_hExposedObject) == NULL)
+    {
+        MethodTable* pMT = CoreLibBinder::GetClass(CLASS__ASSEMBLY);
+
+        // Will be TRUE only if LoaderAllocator managed object was already collected and therefore we should
+        // return NULL
+        BOOL fIsLoaderAllocatorCollected = FALSE;
+
+        ASSEMBLYREF assemblyObj = NULL;
+
+        // Create the assembly object
+        GCPROTECT_BEGIN(assemblyObj);
+        assemblyObj = (ASSEMBLYREF)AllocateObject(pMT);
+        assemblyObj->SetAssembly(this);
+
+        // Attach the reference to the assembly to keep the LoaderAllocator for this collectible type
+        // alive as long as a reference to the assembly is kept alive.
+        // Currently we overload the sync root field of the assembly to do so, but the overload is not necessary.
+        {
+            OBJECTREF refLA = GetLoaderAllocator()->GetExposedObject();
+            if ((refLA == NULL) && GetLoaderAllocator()->IsCollectible())
+            {   // The managed LoaderAllocator object was collected
+                fIsLoaderAllocatorCollected = TRUE;
+            }
+            assemblyObj->SetSyncRoot(refLA);
+        }
+
+        if (!fIsLoaderAllocatorCollected)
+        {   // We should not expose this value in case the LoaderAllocator managed object was already
+            // collected
+            pLoaderAllocator->CompareExchangeValueInHandle(m_hExposedObject, (OBJECTREF)assemblyObj, NULL);
+        }
+        GCPROTECT_END();
+
+        // The LoaderAllocator managed object was already collected, we cannot re-create it
+        // Note: We did not publish the allocated Assembly/AssmeblyBuilder object, it will get collected by GC
+        // by GC
+        if (fIsLoaderAllocatorCollected)
+            return NULL;
+    }
+
+    RETURN pLoaderAllocator->GetHandleValue(m_hExposedObject);
+}
+
+OBJECTREF Assembly::GetExposedObjectIfExists()
+{
+    LIMITED_METHOD_CONTRACT;
+
+    OBJECTREF objRet = NULL;
+    GET_LOADERHANDLE_VALUE_FAST(GetLoaderAllocator(), m_hExposedObject, &objRet);
+    return objRet;
 }
 
 /* static */

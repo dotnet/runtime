@@ -17,7 +17,7 @@
 
 UINT64 LoaderAllocator::cLoaderAllocatorsCreated = 1;
 
-LoaderAllocator::LoaderAllocator(bool collectible) : 
+LoaderAllocator::LoaderAllocator(bool collectible) :
     m_stubPrecodeRangeList(STUB_CODE_BLOCK_STUBPRECODE, collectible),
     m_fixupPrecodeRangeList(STUB_CODE_BLOCK_FIXUPPRECODE, collectible)
 {
@@ -1621,14 +1621,14 @@ DispatchToken LoaderAllocator::GetDispatchToken(
     return DispatchToken::CreateDispatchToken(typeId, slotNumber);
 }
 
-void LoaderAllocator::InitVirtualCallStubManager(BaseDomain * pDomain)
+void LoaderAllocator::InitVirtualCallStubManager()
 {
     STANDARD_VM_CONTRACT;
 
     NewHolder<VirtualCallStubManager> pMgr(new VirtualCallStubManager());
 
     // Init the manager, including all heaps and such.
-    pMgr->Init(pDomain, this);
+    pMgr->Init(this);
 
     m_pVirtualCallStubManager = pMgr;
 
@@ -1734,7 +1734,11 @@ void AssemblyLoaderAllocator::Init(AppDomain* pAppDomain)
     LoaderAllocator::Init((BaseDomain *)pAppDomain);
     if (IsCollectible())
     {
-        m_pShuffleThunkCache = new ShuffleThunkCache(m_pStubHeap);
+        // TODO: the ShuffleThunkCache should really be using the m_pStubHeap, however the unloadability support
+        // doesn't track the stubs or the related delegate classes and so we get crashes when a stub is used after
+        // the AssemblyLoaderAllocator is gone (the stub memory is unmapped).
+        // https://github.com/dotnet/runtime/issues/55697 tracks this issue.
+        m_pShuffleThunkCache = new ShuffleThunkCache(SystemDomain::GetGlobalLoaderAllocator()->GetExecutableHeap());
     }
 }
 
@@ -2057,7 +2061,7 @@ void LoaderAllocator::CleanupFailedTypeInit()
     // This method doesn't take a lock around loader allocator state access, because
     // it's supposed to be called only during cleanup. However, the domain-level state
     // might be accessed by multiple threads.
-    ListLock *pLock = GetDomain()->GetClassInitLock();
+    ListLock *pLock = ((AppDomain*)GetDomain())->GetClassInitLock();
 
     while (!m_failedTypeInitCleanupList.IsEmpty())
     {

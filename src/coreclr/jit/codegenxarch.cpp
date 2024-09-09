@@ -96,14 +96,11 @@ void CodeGen::genEmitGSCookieCheck(bool pushReg)
 {
     noway_assert(compiler->gsGlobalSecurityCookieAddr || compiler->gsGlobalSecurityCookieVal);
 
-    // Make sure that EAX is reported as live GC-ref so that any GC that kicks in while
-    // executing GS cookie check will not collect the object pointed to by EAX.
-    //
-    // For Amd64 System V, a two-register-returned struct could be returned in RAX and RDX
-    // In such case make sure that the correct GC-ness of RDX is reported as well, so
-    // a GC object pointed by RDX will not be collected.
+#ifdef JIT32_GCENCODER
     if (!pushReg)
     {
+        // Make sure that EAX is reported as live GC-ref so that any GC that kicks in while
+        // executing GS cookie check will not collect the object pointed to by EAX.
         if (compiler->compMethodReturnsRetBufAddr())
         {
             // This is for returning in an implicit RetBuf.
@@ -126,6 +123,9 @@ void CodeGen::genEmitGSCookieCheck(bool pushReg)
             }
         }
     }
+#else
+    assert(GetEmitter()->emitGCDisabled());
+#endif
 
     regNumber regGSCheck;
     regMaskTP regMaskGSCheck = RBM_NONE;

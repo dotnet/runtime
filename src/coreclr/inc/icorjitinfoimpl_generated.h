@@ -507,7 +507,8 @@ const char* getMethodNameFromMetadata(
           CORINFO_METHOD_HANDLE ftn,
           const char** className,
           const char** namespaceName,
-          const char** enclosingClassName) override;
+          const char** enclosingClassNames,
+          size_t maxEnclosingClassNames) override;
 
 unsigned getMethodHash(
           CORINFO_METHOD_HANDLE ftn) override;
@@ -740,6 +741,9 @@ uint32_t getExpectedTargetArchitecture() override;
 uint32_t getJitFlags(
           CORJIT_FLAGS* flags,
           uint32_t sizeInBytes) override;
+
+CORINFO_METHOD_HANDLE getSpecialCopyHelper(
+          CORINFO_CLASS_HANDLE type) override;
 
 /**********************************************************************************/
 // clang-format on

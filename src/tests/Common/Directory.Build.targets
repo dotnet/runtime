@@ -18,6 +18,7 @@
     <CopyCoreDisToolsToCoreRoot Condition="$(GCStressDependsOnCoreDisTools) And '$(DotNetBuildSourceOnly)' != 'true'">true</CopyCoreDisToolsToCoreRoot>
     <!-- Non-desktop OS's use a custom dotnet host, instead of corerun -->
     <IsDesktopOS Condition="'$(TargetsBrowser)' != 'true' and '$(TargetsAndroid)' != 'true' and '$(TargetstvOS)' != 'true' and '$(TargetsiOS)' != 'true' and '$(TargetsMacCatalyst)' != 'true'">true</IsDesktopOS>
+    <UsePublishedCrossgen2 Condition="'$(RuntimeFlavor)' == 'coreclr' and '$(TestBuildMode)' != 'nativeaot'">true</UsePublishedCrossgen2>
   </PropertyGroup>
 
   <Import Project="$(RepositoryEngineeringDir)coredistools.targets" Condition="$(CopyCoreDisToolsToCoreRoot)" />
@@ -34,7 +35,47 @@
   </ItemDefinitionGroup>
 
   <Target Name="CopyDependencyToCoreRoot"
-          DependsOnTargets="ResolveAssemblyReferences;ResolveRuntimeFilesFromLocalBuild">
+    DependsOnTargets="ResolveAssemblyReferences;ResolveRuntimeFilesFromLocalBuild">
+
+    <!-- Copy apphost to crossgen2_publish directory.
+        The default configuration between product and tests are flipped. When we build project like:
+        `build -c debug -rc checked`, the corresponding test command is `src/tests/build -checked -p:LibrariesConfiguration=debug`,
+        instead of `-debug -p:RuntimeConfiguration=checked`. That forces us to either pass the
+        `HostConfiguration=debug` explicitly or fix this disparity; both of which will break the dev workflow.
+        
+        As a workaround, we will first check if the directory pointed by `HostConfiguration` exists, then check
+        `LibrariesConfiguration`.
+    -->
+
+    <PropertyGroup Condition="'$(UsePublishedCrossgen2)' == 'true'">
+      <_targetOS>$(TargetOS)</_targetOS>
+      <_targetOS Condition="'$(_targetOS)' == 'windows'">win</_targetOS>
+      <_apphostPath Condition="Exists('$(ArtifactsBinDir)$(_targetOS)-$(TargetArchitecture).$(HostConfiguration)\corehost\apphost$(ExeSuffix)')">$(ArtifactsBinDir)$(_targetOS)-$(TargetArchitecture).$(HostConfiguration)\corehost\apphost$(ExeSuffix)</_apphostPath>
+      <_apphostPath Condition="'$(_apphostPath)' == '' and Exists('$(ArtifactsBinDir)$(_targetOS)-$(TargetArchitecture).$(LibrariesConfiguration)\corehost\apphost$(ExeSuffix)')">$(ArtifactsBinDir)$(_targetOS)-$(TargetArchitecture).$(LibrariesConfiguration)\corehost\apphost$(ExeSuffix)</_apphostPath>
+      <_toolsConfiguration Condition="Exists('$(ArtifactsBinDir)ILLink.Tasks\$(ToolsConfiguration)\$(NetCoreAppToolCurrent)\ILLink.Tasks.dll')">$(ToolsConfiguration)</_toolsConfiguration>
+      <_toolsConfiguration Condition="Exists('$(ArtifactsBinDir)ILLink.Tasks\$(LibrariesConfiguration)\$(NetCoreAppToolCurrent)\ILLink.Tasks.dll')">$(LibrariesConfiguration)</_toolsConfiguration>
+    </PropertyGroup>
+
+    <MakeDir Condition="'$(UsePublishedCrossgen2)' == 'true'" Directories="$(ArtifactsObjDir)coreclr\crossgen2_publish\$(TargetOS).$(TargetArchitecture).$(RuntimeConfiguration)" />
+
+    <Copy
+      SourceFiles="$(_apphostPath)"
+      DestinationFiles="$(ArtifactsObjDir)coreclr\crossgen2_publish\$(TargetOS).$(TargetArchitecture).$(RuntimeConfiguration)\apphost$(ExeSuffix)"
+      Condition="'$(UsePublishedCrossgen2)' == 'true'" />
+
+    <!-- Publish crossgen2 on supported platforms. -->
+
+    <MSBuild Condition="'$(UsePublishedCrossgen2)' == 'true'"
+      Targets="Restore"
+      BuildInParallel="true"
+      Properties="NativeAotSupported=$(NativeAotSupported);UseNativeAotForComponents=$(UseNativeAotForComponents);ToolsConfiguration=$(_toolsConfiguration);MSBuildRestoreSessionId=$([System.Guid]::NewGuid())"
+      Projects="$(InstallerProjectRoot)pkg\sfx\Microsoft.NETCore.App\Microsoft.NETCore.App.Crossgen2.sfxproj" />
+
+    <MSBuild Condition="'$(UsePublishedCrossgen2)' == 'true'"
+      Targets="PublishToDisk"
+      BuildInParallel="true"
+      Properties="NativeAotSupported=$(NativeAotSupported);UseNativeAotForComponents=$(UseNativeAotForComponents);ToolsConfiguration=$(_toolsConfiguration);OutputPath=$(CORE_ROOT)\crossgen2;LibrariesConfiguration=$(LibrariesConfiguration)"
+      Projects="$(InstallerProjectRoot)pkg\sfx\Microsoft.NETCore.App\Microsoft.NETCore.App.Crossgen2.sfxproj" />
 
     <ItemGroup>
       <RunTimeDependencyCopyLocal Include="@(RuntimeCopyLocalItems)" />
@@ -81,7 +122,7 @@
       <RunTimeArtifactsIncludeFolders Include="IL/" TargetDir="IL/" />
 
       <!-- Used for Crossgen2 R2R tests -->
-      <RunTimeArtifactsIncludeFolders Include="crossgen2/" TargetDir="crossgen2/">
+      <RunTimeArtifactsIncludeFolders Include="crossgen2/" TargetDir="crossgen2/" Condition="'$(UsePublishedCrossgen2)' != 'true'">
         <IncludeSubFolders>True</IncludeSubFolders>
       </RunTimeArtifactsIncludeFolders>
 
@@ -135,7 +176,7 @@
 
       <RunTimeDependencyCopyLocal
           Condition="'%(RuntimeArtifactsIncludeFolders.IncludeSubFolders)' == 'True'"
-          Include="$(CoreCLRArtifactsPath)%(RunTimeArtifactsIncludeFolders.Identity)**/*"
+          Include="$(CoreCLRArtifactsPath)%(RunTimeArtifactsIncludeFolders.Identity)**\*"
           Exclude="@(RunTimeArtifactsExcludeFiles -> '$(CoreCLRArtifactsPath)%(Identity)')"
           TargetDir="%(RunTimeArtifactsIncludeFolders.TargetDir)" />
     </ItemGroup>
@@ -223,7 +264,7 @@
 
     <Copy
       SourceFiles="@(RunTimeDependencyCopyLocal)"
-      DestinationFiles="@(RunTimeDependencyCopyLocal -> '$(CORE_ROOT)/%(TargetDir)%(RecursiveDir)%(Filename)%(Extension)')"
+      DestinationFiles="@(RunTimeDependencyCopyLocal -> '$(CORE_ROOT)\%(TargetDir)%(RecursiveDir)%(Filename)%(Extension)')"
       SkipUnchangedFiles="$(SkipCopyUnchangedFiles)"
       OverwriteReadOnlyFiles="$(OverwriteReadOnlyFiles)"
       Retries="$(CopyRetryCount)"

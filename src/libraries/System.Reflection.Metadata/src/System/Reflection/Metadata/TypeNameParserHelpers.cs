@@ -11,9 +11,9 @@ namespace System.Reflection.Metadata
 {
     internal static class TypeNameParserHelpers
     {
-        internal const sbyte SZArray = -1;
-        internal const sbyte Pointer = -2;
-        internal const sbyte ByRef = -3;
+        internal const int SZArray = -1;
+        internal const int Pointer = -2;
+        internal const int ByRef = -3;
         private const char EscapeCharacter = '\\';
 #if NET8_0_OR_GREATER
         private static readonly SearchValues<char> s_endOfFullTypeNameDelimitersSearchValues = SearchValues.Create("[]&*,+\\");
@@ -388,5 +388,13 @@ namespace System.Reflection.Metadata
             throw new InvalidOperationException();
 #endif
         }
+
+#if SYSTEM_REFLECTION_METADATA
+        [DoesNotReturn]
+        internal static void ThrowInvalidOperation_NotSimpleName(string fullName)
+        {
+            throw new InvalidOperationException(SR.Format(SR.Arg_NotSimpleTypeName, fullName));
+        }
+#endif
     }
 }

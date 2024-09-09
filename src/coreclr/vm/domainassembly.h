@@ -99,30 +99,6 @@ public:
         return m_pPEAssembly->GetMDImport();
     }
 
-    OBJECTREF GetExposedAssemblyObjectIfExists()
-    {
-        LIMITED_METHOD_CONTRACT;
-
-        OBJECTREF objRet = NULL;
-        GET_LOADERHANDLE_VALUE_FAST(GetLoaderAllocator(), m_hExposedAssemblyObject, &objRet);
-        return objRet;
-    }
-
-    // Returns managed representation of the assembly (Assembly or AssemblyBuilder).
-    // Returns NULL if the managed scout was already collected (see code:LoaderAllocator#AssemblyPhases).
-    OBJECTREF GetExposedAssemblyObject();
-
-    OBJECTREF GetExposedModuleObjectIfExists()
-    {
-        LIMITED_METHOD_CONTRACT;
-
-        OBJECTREF objRet = NULL;
-        GET_LOADERHANDLE_VALUE_FAST(GetLoaderAllocator(), m_hExposedModuleObject, &objRet);
-        return objRet;
-    }
-
-    OBJECTREF GetExposedModuleObject();
-
     BOOL IsSystem()
     {
         WRAPPER_NO_CONTRACT;
@@ -255,11 +231,6 @@ public:
 
 #ifdef DACCESS_COMPILE
     void EnumMemoryRegions(CLRDataEnumMemoryFlags flags);
-#endif
-
-#ifndef DACCESS_COMPILE
-    // light code gen. Keep the list of MethodTables needed for creating dynamic methods
-    DynamicMethodTable* GetDynamicMethodTable();
 #endif
 
     DomainAssembly* GetNextDomainAssemblyInSameALC()
@@ -409,19 +380,10 @@ private:
     FileLoadLevel               m_level;
     BOOL                        m_loading;
 
-    LOADERHANDLE                m_hExposedModuleObject;
-    LOADERHANDLE                m_hExposedAssemblyObject;
-
     ExInfo*                     m_pError;
 
     BOOL                        m_bDisableActivationCheck;
     BOOL                        m_fHostAssemblyPublished;
-
-    // m_pDynamicMethodTable is used by the light code generation to allow method
-    // generation on the fly. They are lazily created when/if a dynamic method is requested
-    // for this specific module
-    DynamicMethodTable*         m_pDynamicMethodTable;
-
 
     DebuggerAssemblyControlFlags    m_debuggerFlags;
     DWORD                       m_notifyflags;
