@@ -186,18 +186,7 @@ namespace System.Threading
         private static partial void InformThreadNameChange(ThreadHandle t, string? name, int len);
 
         /// <summary>Returns true if the thread has been started and is not dead.</summary>
-        public bool IsAlive
-        {
-            get
-            {
-                Thread _this = this;
-                return IsAliveWorker(ObjectHandleOnStack.Create(ref _this));
-            }
-        }
-
-        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ThreadNative_IsAlive")]
-        [return: MarshalAs(UnmanagedType.Bool)]
-        private static partial bool IsAliveWorker(ObjectHandleOnStack t);
+        public bool IsAlive => (ThreadState & (ThreadState.Unstarted | ThreadState.Stopped | ThreadState.Aborted)) == 0;
 
         /// <summary>
         /// Return whether or not this thread is a background thread.  Background

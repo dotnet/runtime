@@ -362,29 +362,6 @@ extern "C" void QCALLTYPE ThreadNative_SetPriority(QCall::ObjectHandleOnStack th
     END_QCALL;
 }
 
-extern "C" BOOL QCALLTYPE ThreadNative_IsAlive(QCall::ObjectHandleOnStack t)
-{
-    QCALL_CONTRACT;
-
-    BOOL ret = FALSE;
-
-    BEGIN_QCALL;
-
-    GCX_COOP();
-
-    if (t.Get() == NULL)
-        COMPlusThrow(kNullReferenceException, W("NullReference_This"));
-
-    Thread* thread = ((THREADBASEREF)t.Get())->GetInternal();
-    if (thread == NULL)
-        COMPlusThrow(kThreadStateException, IDS_EE_THREAD_CANNOT_GET);
-
-    ret = ThreadIsRunning(thread);
-
-    END_QCALL;
-    return ret;
-}
-
 extern "C" void QCALLTYPE ThreadNative_GetCurrentThread(QCall::ObjectHandleOnStack thread)
 {
     QCALL_CONTRACT;
