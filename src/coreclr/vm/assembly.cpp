@@ -531,6 +531,7 @@ Assembly *Assembly::CreateDynamic(AssemblyBinder* pBinder, NativeAssemblyNamePar
             pLoaderAllocator.SuppressRelease();
         }
 
+        // Set the assembly module to be tenured now that we know it won't be deleted
         pAssem->SetIsTenured();
         pRetVal = pAssem;
     }
