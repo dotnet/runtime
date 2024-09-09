@@ -119,9 +119,9 @@ public:
 
     static FCDECL2(FC_BOOL_RET, IsEquivalentTo, ReflectClassBaseObject *rtType1UNSAFE, ReflectClassBaseObject *rtType2UNSAFE);
 
-    static FCDECL1(AssemblyBaseObject*, GetAssembly, ReflectClassBaseObject *pType);
+    static FCDECL1(AssemblyBaseObject*, GetAssemblyIfExists, ReflectClassBaseObject *pType);
     static FCDECL1(ReflectClassBaseObject*, GetBaseType, ReflectClassBaseObject* pType);
-    static FCDECL1(ReflectModuleBaseObject*, GetModule, ReflectClassBaseObject* pType);
+    static FCDECL1(ReflectModuleBaseObject*, GetModuleIfExists, ReflectClassBaseObject* pType);
     static FCDECL1(INT32, GetAttributes, ReflectClassBaseObject* pType);
     static FCDECL1(INT32, GetToken, ReflectClassBaseObject* pType);
     static FCDECL1(LPCUTF8, GetUtf8Name, ReflectClassBaseObject* pType);
@@ -191,6 +191,8 @@ extern "C" void QCALLTYPE RuntimeTypeHandle_GetInstantiation(QCall::TypeHandle p
 extern "C" void QCALLTYPE RuntimeTypeHandle_Instantiate(QCall::TypeHandle pTypeHandle, TypeHandle * pInstArray, INT32 cInstArray, QCall::ObjectHandleOnStack retType);
 extern "C" void QCALLTYPE RuntimeTypeHandle_GetGenericTypeDefinition(QCall::TypeHandle pTypeHandle, QCall::ObjectHandleOnStack retType);
 extern "C" void QCALLTYPE RuntimeTypeHandle_GetConstraints(QCall::TypeHandle pTypeHandle, QCall::ObjectHandleOnStack retTypes);
+extern "C" void QCALLTYPE RuntimeTypeHandle_GetAssemblySlow(QCall::ObjectHandleOnStack type, QCall::ObjectHandleOnStack assembly);
+extern "C" void QCALLTYPE RuntimeTypeHandle_GetModuleSlow(QCall::ObjectHandleOnStack type, QCall::ObjectHandleOnStack module);
 extern "C" INT32 QCALLTYPE RuntimeTypeHandle_GetNumVirtualsAndStaticVirtuals(QCall::TypeHandle pTypeHandle);
 extern "C" void QCALLTYPE RuntimeTypeHandle_VerifyInterfaceIsImplemented(QCall::TypeHandle pTypeHandle, QCall::TypeHandle pIFaceHandle);
 extern "C" MethodDesc* QCALLTYPE RuntimeTypeHandle_GetInterfaceMethodImplementation(QCall::TypeHandle pTypeHandle, QCall::TypeHandle pOwner, MethodDesc * pMD);
@@ -330,13 +332,14 @@ extern "C" void QCALLTYPE ModuleHandle_GetAssembly(QCall::ModuleHandle pModule, 
 
 extern "C" void QCALLTYPE ModuleHandle_GetPEKind(QCall::ModuleHandle pModule, DWORD* pdwPEKind, DWORD* pdwMachine);
 
-class AssemblyHandle {
-
+class AssemblyHandle
+{
 public:
     static FCDECL1(ReflectModuleBaseObject*, GetManifestModule, AssemblyBaseObject *pAssemblyUNSAFE);
-
     static FCDECL1(INT32, GetToken, AssemblyBaseObject *pAssemblyUNSAFE);
 };
+
+extern "C" void QCALLTYPE AssemblyHandle_GetManifestModuleSlow(QCall::ObjectHandleOnStack assembly, QCall::ObjectHandleOnStack module);
 
 class SignatureNative;
 

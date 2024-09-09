@@ -115,8 +115,6 @@ namespace System.Reflection
             }
         }
 
-        internal RuntimeAssembly GetNativeHandle() => this;
-
         // If the assembly is copied before it is loaded, the codebase will be set to the
         // actual file loaded if copiedName is true. If it is false, then the original code base
         // is returned.
@@ -263,7 +261,7 @@ namespace System.Reflection
         public override IEnumerable<TypeInfo> DefinedTypes
         {
             [RequiresUnreferencedCode("Types might be removed")]
-            get => GetManifestModule(GetNativeHandle()).GetDefinedTypes();
+            get => GetManifestModule().GetDefinedTypes();
         }
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "AssemblyNative_GetIsCollectible")]
@@ -324,7 +322,7 @@ namespace System.Reflection
         public override Module ManifestModule =>
             // We don't need to return the "external" ModuleBuilder because
             // it is meant to be read-only
-            GetManifestModule(GetNativeHandle());
+            GetManifestModule();
 
         public override object[] GetCustomAttributes(bool inherit)
         {
@@ -588,7 +586,7 @@ namespace System.Reflection
         [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern bool FCallIsDynamic(RuntimeAssembly assembly);
 
-        public override bool IsDynamic => FCallIsDynamic(GetNativeHandle());
+        public override bool IsDynamic => FCallIsDynamic(this);
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "AssemblyNative_GetSimpleName")]
         private static partial void GetSimpleName(QCallAssembly assembly, StringHandleOnStack retSimpleName);
@@ -701,8 +699,24 @@ namespace System.Reflection
             return GetModulesInternal(false, getResourceModules);
         }
 
+        private RuntimeModule GetManifestModule()
+        {
+            return GetManifestModule(this) ?? GetManifestModuleWorker(this);
+
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            static RuntimeModule GetManifestModuleWorker(RuntimeAssembly assembly)
+            {
+                RuntimeModule? module = null;
+                GetManifestModuleSlow(ObjectHandleOnStack.Create(ref assembly), ObjectHandleOnStack.Create(ref module));
+                return module!;
+            }
+        }
+
         [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern RuntimeModule GetManifestModule(RuntimeAssembly assembly);
+        private static extern RuntimeModule? GetManifestModule(RuntimeAssembly assembly);
+
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "AssemblyHandle_GetManifestModuleSlow")]
+        private static partial void GetManifestModuleSlow(ObjectHandleOnStack assembly, ObjectHandleOnStack module);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern int GetToken(RuntimeAssembly assembly);
@@ -713,7 +727,7 @@ namespace System.Reflection
             List<Type> types = new List<Type>();
             List<Exception> exceptions = new List<Exception>();
 
-            MetadataImport scope = GetManifestModule(GetNativeHandle()).MetadataImport;
+            MetadataImport scope = GetManifestModule().MetadataImport;
             scope.Enum(MetadataTokenType.ExportedType, 0, out MetadataEnumResult enumResult);
             RuntimeAssembly runtimeAssembly = this;
             QCallAssembly pAssembly = new QCallAssembly(ref runtimeAssembly);
