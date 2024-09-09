@@ -816,93 +816,44 @@ DWORD MethodContext::repGetMethodAttribs(CORINFO_METHOD_HANDLE methodHandle)
     return value;
 }
 
-void MethodContext::recGetClassModule(CORINFO_CLASS_HANDLE cls, CORINFO_MODULE_HANDLE mod)
+void MethodContext::recGetClassAssemblyName(CORINFO_CLASS_HANDLE cls, const char* assemblyName)
 {
-    if (GetClassModule == nullptr)
-        GetClassModule = new LightWeightMap<DWORDLONG, DWORDLONG>();
-
-    DWORDLONG key = CastHandle(cls);
-    DWORDLONG value = CastHandle(mod);
-    GetClassModule->Add(key, value);
-    DEBUG_REC(dmpGetClassModule(key, value));
-}
-void MethodContext::dmpGetClassModule(DWORDLONG key, DWORDLONG value)
-{
-    printf("GetClassModule cls-%016" PRIX64 ", mod-%016" PRIX64 "", key, value);
-}
-CORINFO_MODULE_HANDLE MethodContext::repGetClassModule(CORINFO_CLASS_HANDLE cls)
-{
-    DWORDLONG key = CastHandle(cls);
-    DWORDLONG value = LookupByKeyOrMiss(GetClassModule, key, ": key %016" PRIX64 "", key);
-    DEBUG_REP(dmpGetClassModule(key, value));
-    CORINFO_MODULE_HANDLE result = (CORINFO_MODULE_HANDLE)value;
-    return result;
-}
-
-void MethodContext::recGetModuleAssembly(CORINFO_MODULE_HANDLE mod, CORINFO_ASSEMBLY_HANDLE assem)
-{
-    if (GetModuleAssembly == nullptr)
-        GetModuleAssembly = new LightWeightMap<DWORDLONG, DWORDLONG>();
-
-    DWORDLONG key = CastHandle(mod);
-    DWORDLONG value = CastHandle(assem);
-    GetModuleAssembly->Add(key, value);
-    DEBUG_REC(dmpGetModuleAssembly(key, value));
-}
-void MethodContext::dmpGetModuleAssembly(DWORDLONG key, DWORDLONG value)
-{
-    printf("GetModuleAssembly mod-%016" PRIX64 ", assem-%016" PRIX64 "", key, value);
-}
-CORINFO_ASSEMBLY_HANDLE MethodContext::repGetModuleAssembly(CORINFO_MODULE_HANDLE mod)
-{
-    DWORDLONG key = CastHandle(mod);
-    DWORDLONG value = LookupByKeyOrMiss(GetModuleAssembly, key, ": key %016" PRIX64 "", key);
-    DEBUG_REP(dmpGetModuleAssembly(key, value));
-    CORINFO_ASSEMBLY_HANDLE result = (CORINFO_ASSEMBLY_HANDLE)value;
-    return result;
-}
-
-void MethodContext::recGetAssemblyName(CORINFO_ASSEMBLY_HANDLE assem, const char* assemblyName)
-{
-    if (GetAssemblyName == nullptr)
-        GetAssemblyName = new LightWeightMap<DWORDLONG, DWORD>();
+    if (GetClassAssemblyName == nullptr)
+        GetClassAssemblyName = new LightWeightMap<DWORDLONG, DWORD>();
 
     DWORD value;
     if (assemblyName != nullptr)
     {
-        value = GetAssemblyName->AddBuffer((const unsigned char*)assemblyName, (DWORD)strlen(assemblyName) + 1);
+        value = GetClassAssemblyName->AddBuffer((const unsigned char*)assemblyName, (DWORD)strlen(assemblyName) + 1);
     }
     else
     {
         value = (DWORD)-1;
     }
 
-    DWORDLONG key = CastHandle(assem);
-    GetAssemblyName->Add(key, value);
-    DEBUG_REC(dmpGetAssemblyName(key, value));
+    DWORDLONG key = CastHandle(cls);
+    GetClassAssemblyName->Add(key, value);
+    DEBUG_REC(dmpGetClassAssemblyName(key, value));
 }
-void MethodContext::dmpGetAssemblyName(DWORDLONG key, DWORD value)
+void MethodContext::dmpGetClassAssemblyName(DWORDLONG key, DWORD value)
 {
-    const char* assemblyName = (const char*)GetAssemblyName->GetBuffer(value);
-    printf("GetAssemblyName assem-%016" PRIX64 ", value-%u '%s'", key, value, assemblyName);
-    GetAssemblyName->Unlock();
+    const char* assemblyName = (const char*)GetClassAssemblyName->GetBuffer(value);
+    printf("GetClassAssemblyName cls-%016" PRIX64 ", value-%u '%s'", key, value, assemblyName);
+    GetClassAssemblyName->Unlock();
 }
-const char* MethodContext::repGetAssemblyName(CORINFO_ASSEMBLY_HANDLE assem)
+const char* MethodContext::repGetClassAssemblyName(CORINFO_CLASS_HANDLE cls)
 {
-    DWORDLONG key = CastHandle(assem);
-    const char* result = "hackishAssemblyName";
-    DWORD value = (DWORD)-1;
-    int itemIndex = -1;
-    if (GetAssemblyName != nullptr)
+    DWORDLONG key = CastHandle(cls);
+    DWORD value = LookupByKeyOrMiss(GetClassAssemblyName, key, ": key %016" PRIX64 "", key);
+    const char* result = nullptr;
+
+    DEBUG_REP(dmpGetClassAssemblyName(key, value));
+
+    if (value != (DWORD)-1)
     {
-        itemIndex = GetAssemblyName->GetIndex(key);
+        result = (const char*)GetClassAssemblyName->GetBuffer(value);
     }
-    if (itemIndex >= 0)
-    {
-        value = GetAssemblyName->Get(key);
-        result = (const char*)GetAssemblyName->GetBuffer(value);
-    }
-    DEBUG_REP(dmpGetAssemblyName(key, value));
+
     return result;
 }
 
@@ -5029,7 +4980,7 @@ GetTypeLayoutResult MethodContext::repGetTypeLayout(CORINFO_CLASS_HANDLE typeHnd
 
 void MethodContext::recGetFieldType(CORINFO_FIELD_HANDLE  field,
                                     CORINFO_CLASS_HANDLE* structType,
-                                    CORINFO_CLASS_HANDLE  memberParent,
+                                    CORINFO_CLASS_HANDLE  fieldOwnerHint,
                                     CorInfoType           result)
 {
     if (GetFieldType == nullptr)
@@ -5038,7 +4989,7 @@ void MethodContext::recGetFieldType(CORINFO_FIELD_HANDLE  field,
     DLDL key;
     ZeroMemory(&key, sizeof(key)); // Zero key including any struct padding
     key.A = CastHandle(field);
-    key.B = CastHandle(memberParent);
+    key.B = CastHandle(fieldOwnerHint);
 
     DLD value;
     value.B = (DWORD)result;
@@ -5051,7 +5002,7 @@ void MethodContext::recGetFieldType(CORINFO_FIELD_HANDLE  field,
         value.A = CastHandle(*structType);
 
         // If we had a previous call with null 'structType', we will not have captured the
-        // class handle (we use only 'field' and 'memberParent' as keys).
+        // class handle (we use only 'field' and 'fieldOwnerHint' as keys).
         // Update the value in that case.
         unsigned index = GetFieldType->GetIndex(key);
         if ((index != (unsigned)-1) && (GetFieldType->GetItem(index).A == 0))
@@ -5071,12 +5022,12 @@ void MethodContext::dmpGetFieldType(DLDL key, DLD value)
 }
 CorInfoType MethodContext::repGetFieldType(CORINFO_FIELD_HANDLE  field,
                                            CORINFO_CLASS_HANDLE* structType,
-                                           CORINFO_CLASS_HANDLE  memberParent)
+                                           CORINFO_CLASS_HANDLE  fieldOwnerHint)
 {
     DLDL key;
     ZeroMemory(&key, sizeof(key)); // Zero key including any struct padding
     key.A = CastHandle(field);
-    key.B = CastHandle(memberParent);
+    key.B = CastHandle(fieldOwnerHint);
 
     DLD value = LookupByKeyOrMiss(GetFieldType, key, ": key %016" PRIX64 "", key.A);
 

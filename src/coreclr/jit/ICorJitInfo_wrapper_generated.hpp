@@ -416,30 +416,12 @@ uint32_t WrapICorJitInfo::getClassAttribs(
     return temp;
 }
 
-CORINFO_MODULE_HANDLE WrapICorJitInfo::getClassModule(
+const char* WrapICorJitInfo::getClassAssemblyName(
           CORINFO_CLASS_HANDLE cls)
 {
-    API_ENTER(getClassModule);
-    CORINFO_MODULE_HANDLE temp = wrapHnd->getClassModule(cls);
-    API_LEAVE(getClassModule);
-    return temp;
-}
-
-CORINFO_ASSEMBLY_HANDLE WrapICorJitInfo::getModuleAssembly(
-          CORINFO_MODULE_HANDLE mod)
-{
-    API_ENTER(getModuleAssembly);
-    CORINFO_ASSEMBLY_HANDLE temp = wrapHnd->getModuleAssembly(mod);
-    API_LEAVE(getModuleAssembly);
-    return temp;
-}
-
-const char* WrapICorJitInfo::getAssemblyName(
-          CORINFO_ASSEMBLY_HANDLE assem)
-{
-    API_ENTER(getAssemblyName);
-    const char* temp = wrapHnd->getAssemblyName(assem);
-    API_LEAVE(getAssemblyName);
+    API_ENTER(getClassAssemblyName);
+    const char* temp = wrapHnd->getClassAssemblyName(cls);
+    API_LEAVE(getClassAssemblyName);
     return temp;
 }
 
@@ -939,10 +921,10 @@ CORINFO_CLASS_HANDLE WrapICorJitInfo::getFieldClass(
 CorInfoType WrapICorJitInfo::getFieldType(
           CORINFO_FIELD_HANDLE field,
           CORINFO_CLASS_HANDLE* structType,
-          CORINFO_CLASS_HANDLE memberParent)
+          CORINFO_CLASS_HANDLE fieldOwnerHint)
 {
     API_ENTER(getFieldType);
-    CorInfoType temp = wrapHnd->getFieldType(field, structType, memberParent);
+    CorInfoType temp = wrapHnd->getFieldType(field, structType, fieldOwnerHint);
     API_LEAVE(getFieldType);
     return temp;
 }

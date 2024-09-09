@@ -79,6 +79,7 @@ export const callTargetCounts: { [method: number]: number } = {};
 
 export let mostRecentTrace: InstrumentedTraceState | undefined;
 export let mostRecentOptions: JiterpreterOptions | undefined = undefined;
+export let traceTableIsFull = false;
 
 // You can disable an opcode for debugging purposes by adding it to this list,
 //  instead of aborting the trace it will insert a bailout instead. This means that you will
@@ -271,6 +272,7 @@ function getTraceImports () {
         ["ckovr_u4", "overflow_check_i4", getRawCwrap("mono_jiterp_overflow_check_u4")],
         importDef("newobj_i", getRawCwrap("mono_jiterp_try_newobj_inlined")),
         importDef("newstr", getRawCwrap("mono_jiterp_try_newstr")),
+        importDef("newarr", getRawCwrap("mono_jiterp_try_newarr")),
         importDef("ld_del_ptr", getRawCwrap("mono_jiterp_ld_delegate_method_ptr")),
         importDef("ldtsflda", getRawCwrap("mono_jiterp_ldtsflda")),
         importDef("conv", getRawCwrap("mono_jiterp_conv")),
@@ -460,6 +462,15 @@ function initialize_builder (builder: WasmBuilder) {
         "newstr",
         {
             "ppDestination": WasmValtype.i32,
+            "length": WasmValtype.i32,
+        },
+        WasmValtype.i32, true
+    );
+    builder.defineType(
+        "newarr",
+        {
+            "ppDestination": WasmValtype.i32,
+            "vtable": WasmValtype.i32,
             "length": WasmValtype.i32,
         },
         WasmValtype.i32, true
@@ -861,6 +872,11 @@ function generate_wasm (
             idx = presetFunctionPointer;
         } else {
             idx = addWasmFunctionPointer(JiterpreterTable.Trace, <any>fn);
+            if (idx === 0) {
+                // Failed to add function pointer because trace table is full. Disable future
+                //  trace generation to reduce CPU usage.
+                traceTableIsFull = true;
+            }
         }
         if (trace >= 2)
             mono_log_info(`${traceName} -> fn index ${idx}`);
@@ -984,6 +1000,8 @@ export function mono_interp_tier_prepare_jiterpreter (
         return JITERPRETER_NOT_JITTED;
     else if (mostRecentOptions.wasmBytesLimit <= getCounter(JiterpCounter.BytesGenerated))
         return JITERPRETER_NOT_JITTED;
+    else if (traceTableIsFull)
+        return JITERPRETER_NOT_JITTED;
 
     let info = traceInfo[index];
 
@@ -1078,7 +1096,9 @@ export function jiterpreter_dump_stats (concise?: boolean): void {
         traceCandidates = getCounter(JiterpCounter.TraceCandidates),
         bytesGenerated = getCounter(JiterpCounter.BytesGenerated),
         elapsedGenerationMs = getCounter(JiterpCounter.ElapsedGenerationMs),
-        elapsedCompilationMs = getCounter(JiterpCounter.ElapsedCompilationMs);
+        elapsedCompilationMs = getCounter(JiterpCounter.ElapsedCompilationMs),
+        switchTargetsOk = getCounter(JiterpCounter.SwitchTargetsOk),
+        switchTargetsFailed = getCounter(JiterpCounter.SwitchTargetsFailed);
 
     const backBranchHitRate = (backBranchesEmitted / (backBranchesEmitted + backBranchesNotEmitted)) * 100,
         tracesRejected = cwraps.mono_jiterp_get_rejected_trace_count(),
@@ -1089,8 +1109,8 @@ export function jiterpreter_dump_stats (concise?: boolean): void {
             mostRecentOptions.directJitCalls ? `direct jit calls: ${directJitCallsCompiled} (${(directJitCallsCompiled / jitCallsCompiled * 100).toFixed(1)}%)` : "direct jit calls: off"
         ) : "";
 
-    mono_log_info(`// jitted ${bytesGenerated} bytes; ${tracesCompiled} traces (${(tracesCompiled / traceCandidates * 100).toFixed(1)}%) (${tracesRejected} rejected); ${jitCallsCompiled} jit_calls; ${entryWrappersCompiled} interp_entries`);
-    mono_log_info(`// cknulls eliminated: ${nullChecksEliminatedText}, fused: ${nullChecksFusedText}; back-branches ${backBranchesEmittedText}; ${directJitCallsText}`);
+    mono_log_info(`// jitted ${bytesGenerated}b; ${tracesCompiled} traces (${(tracesCompiled / traceCandidates * 100).toFixed(1)}%) (${tracesRejected} rejected); ${jitCallsCompiled} jit_calls; ${entryWrappersCompiled} interp_entries`);
+    mono_log_info(`// cknulls pruned: ${nullChecksEliminatedText}, fused: ${nullChecksFusedText}; back-brs ${backBranchesEmittedText}; switch tgts ${switchTargetsOk}/${switchTargetsFailed + switchTargetsOk}; ${directJitCallsText}`);
     mono_log_info(`// time: ${elapsedGenerationMs | 0}ms generating, ${elapsedCompilationMs | 0}ms compiling wasm.`);
     if (concise)
         return;

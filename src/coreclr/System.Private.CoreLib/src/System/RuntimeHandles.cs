@@ -306,11 +306,43 @@ namespace System
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern CorElementType GetCorElementType(RuntimeType type);
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern RuntimeAssembly GetAssembly(RuntimeType type);
+        internal static RuntimeAssembly GetAssembly(RuntimeType type)
+        {
+            return GetAssemblyIfExists(type) ?? GetAssemblyWorker(type);
+
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            static RuntimeAssembly GetAssemblyWorker(RuntimeType type)
+            {
+                RuntimeAssembly? assembly = null;
+                GetAssemblySlow(ObjectHandleOnStack.Create(ref type), ObjectHandleOnStack.Create(ref assembly));
+                return assembly!;
+            }
+        }
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern RuntimeModule GetModule(RuntimeType type);
+        private static extern RuntimeAssembly? GetAssemblyIfExists(RuntimeType type);
+
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "RuntimeTypeHandle_GetAssemblySlow")]
+        private static partial void GetAssemblySlow(ObjectHandleOnStack type, ObjectHandleOnStack assembly);
+
+        internal static RuntimeModule GetModule(RuntimeType type)
+        {
+            return GetModuleIfExists(type) ?? GetModuleWorker(type);
+
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            static RuntimeModule GetModuleWorker(RuntimeType type)
+            {
+                RuntimeModule? module = null;
+                GetModuleSlow(ObjectHandleOnStack.Create(ref type), ObjectHandleOnStack.Create(ref module));
+                return module!;
+            }
+        }
+
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        private static extern RuntimeModule? GetModuleIfExists(RuntimeType type);
+
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "RuntimeTypeHandle_GetModuleSlow")]
+        private static partial void GetModuleSlow(ObjectHandleOnStack type, ObjectHandleOnStack module);
 
         public ModuleHandle GetModuleHandle()
         {
