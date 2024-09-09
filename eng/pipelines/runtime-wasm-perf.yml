@@ -30,9 +30,14 @@ variables:
 resources:
   repositories:
   - repository: PerformanceRepo
-    type: git
-    name: dotnet-performance
     ref: '${{ parameters.performanceRepoBranch }}'
+    ${{ if eq(variables['System.TeamProject'], 'public') }}:
+      type: github
+      name: dotnet/performance
+      endpoint: public
+    ${{ if ne(variables['System.TeamProject'], 'public') }}:
+      type: git
+      name: dotnet-performance
 
 extends:
   template:  /eng/pipelines/common/templates/pipeline-with-resources.yml
