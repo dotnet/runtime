@@ -612,6 +612,12 @@ namespace ILCompiler
 
                                 instance = new ReadOnlySpanValue(readOnlySpanElementType, bytes, byteOffset, byteLength);
                             }
+                            else if (readOnlySpanElementType != null && ctorSig.Length == 1 && ctorSig[0].IsArray
+                                && ctorParameters[1] is ArrayInstance spanArrayInstance
+                                && spanArrayInstance.TryGetReadOnlySpan(out ReadOnlySpanValue arraySpan))
+                            {
+                                instance = arraySpan;
+                            }
                             else
                             {
                                 if (owningType.IsValueType)
@@ -2927,6 +2933,18 @@ namespace ILCompiler
                 }
 
                 builder.EmitBytes(_data);
+            }
+
+            public bool TryGetReadOnlySpan(out ReadOnlySpanValue value)
+            {
+                var parameterType = ((ArrayType)Type).ParameterType as MetadataType;
+                if (parameterType != null)
+                {
+                    value = new ReadOnlySpanValue(parameterType, _data, 0, _data.Length);
+                    return true;
+                }
+                value = null;
+                return false;
             }
 
             public bool IsKnownImmutable => _elementCount == 0;
