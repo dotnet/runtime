@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
-using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
@@ -204,7 +203,7 @@ namespace System
                 else
                 {
                     partialResult |= (uint)Unsafe.ReadUnaligned<ushort>(ref data);
-                    partialResult = BitOperations.RotateLeft(partialResult, 16);
+                    partialResult = RotateLeft(partialResult, 16);
                 }
             }
 
@@ -221,20 +220,25 @@ namespace System
             uint p1 = rp1;
 
             p1 ^= p0;
-            p0 = BitOperations.RotateLeft(p0, 20);
+            p0 = RotateLeft(p0, 20);
 
             p0 += p1;
-            p1 = BitOperations.RotateLeft(p1, 9);
+            p1 = RotateLeft(p1, 9);
 
             p1 ^= p0;
-            p0 = BitOperations.RotateLeft(p0, 27);
+            p0 = RotateLeft(p0, 27);
 
             p0 += p1;
-            p1 = BitOperations.RotateLeft(p1, 19);
+            p1 = RotateLeft(p1, 19);
 
             rp0 = p0;
             rp1 = p1;
         }
+
+#if SYSTEM_PRIVATE_CORELIB
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static uint RotateLeft(uint value, int offset) =>
+            System.Numerics.BitOperations.RotateLeft(value, offset);
 
         public static ulong DefaultSeed { get; } = GenerateSeed();
 
@@ -244,5 +248,10 @@ namespace System
             Interop.GetRandomBytes((byte*)&seed, sizeof(ulong));
             return seed;
         }
+#else
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static uint RotateLeft(uint value, int offset) =>
+            (value << offset) | (value >> (32 - offset));
+#endif
     }
 }
