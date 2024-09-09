@@ -3653,12 +3653,8 @@ set_log_profiler_take_heapshot_method (const char *val)
 	log_profiler_take_heapshot_method = mono_method_desc_new (val, TRUE);
 
 	if (!log_profiler_take_heapshot_method) {
-		printf ("Could not parse method description: %s\n", val);
 		mono_profiler_printf_err ("Could not parse method description: %s", val);
 		exit (1);
-	}
-	else{
-		printf ("2 Found take-heapshot-method %p\n", log_profiler_take_heapshot_method);
 	}
 }
 
