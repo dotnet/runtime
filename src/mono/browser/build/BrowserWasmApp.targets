@@ -493,10 +493,6 @@
       <Output TaskParameter="ConsoleOutput" PropertyName="_EmccLinkStepConsoleOutput" />
       <Output TaskParameter="ExitCode" PropertyName="_EmccLinkStepExitCode" />
     </Exec>
-    <ReadLinesFromFile File="$(_WasmLinkRsp)">
-      <Output TaskParameter="Lines" ItemName="WasmLinkRspContents" />
-    </ReadLinesFromFile>
-    <Message Text="[ILONA] %(WasmLinkRspContents.Identity)" Importance="high" />
     <ItemGroup>
       <FileWrites Include="$(_WasmIntermediateOutputPath)dotnet.native.wasm" />
       <FileWrites Include="$(_WasmIntermediateOutputPath)dotnet.native.js" />
