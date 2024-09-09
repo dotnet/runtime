@@ -458,8 +458,6 @@ extern "C" INT32 QCALLTYPE ThreadNative_GetThreadState(QCall::ThreadHandle threa
 
     INT32 res = 0;
 
-    BEGIN_QCALL;
-
     // grab a snapshot
     Thread::ThreadState state = thread->GetSnapshotState();
 
@@ -483,7 +481,6 @@ extern "C" INT32 QCALLTYPE ThreadNative_GetThreadState(QCall::ThreadHandle threa
     if (state & Thread::TS_Interruptible)
         res |= ThreadNative::ThreadWaitSleepJoin;
 
-    END_QCALL;
     return res;
 }
 
@@ -893,11 +890,7 @@ extern "C" void QCALLTYPE ThreadNative_DisableComObjectEagerCleanup(QCall::Threa
     }
     CONTRACTL_END;
 
-    BEGIN_QCALL;
-
     thread->SetDisableComObjectEagerCleanup();
-
-    END_QCALL;
 }
 #endif //FEATURE_COMINTEROP
 
