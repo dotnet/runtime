@@ -96,10 +96,9 @@ namespace System
                         FailFast("Access Violation: Attempted to read or write protected memory. This is often an indication that other memory is corrupt. The application will be terminated since this platform does not support throwing an AccessViolationException.");
                         return null;
 
-#pragma warning disable CS0618 // ExecutionEngineException is obsolete
                     case ExceptionIDs.IllegalInstruction:
-                        return new ExecutionEngineException("Illegal instruction");
-#pragma warning restore CS0618
+                        FailFast("Illegal instruction.");
+                        return null;
 
                     case ExceptionIDs.DataMisaligned:
                         return new DataMisalignedException();
