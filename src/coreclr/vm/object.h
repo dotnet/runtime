@@ -1333,6 +1333,9 @@ private:
     // Only used by managed code, see comment there
     bool          m_MayNeedResetForThreadPool;
 
+    // Set in unmanaged code and read in managed code.
+    bool          m_IsDead;
+
 protected:
     // the ctor and dtor can do no useful work.
     ThreadBaseObject() {LIMITED_METHOD_CONTRACT;};
@@ -1383,6 +1386,12 @@ public:
     {
         LIMITED_METHOD_CONTRACT;
         return m_Priority;
+    }
+
+    void SetIsDead()
+    {
+        LIMITED_METHOD_CONTRACT;
+        m_IsDead = true;
     }
 };
 
