@@ -467,7 +467,7 @@ namespace Wasm.Build.Tests
 
                             [UnmanagedCallersOnly(EntryPoint = "A_Conflict_C\u733f")]
                             public static void C\u733f() {
-                                Console.WriteLine("A.Conflict.C\U0001F41");
+                                Console.WriteLine("A.Conflict.C\U0001F412");
                             }
                         }
                     }
