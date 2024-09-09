@@ -481,7 +481,7 @@ BOOL GenerateShuffleArrayPortable(MethodDesc* pMethodSrc, MethodDesc *pMethodDst
             return FALSE;
     }
 
-#if defined(TARGET_X86) && !defined(UNIX_X86_ABI)
+#if (defined(TARGET_X86) && !defined(UNIX_X86_ABI)) || defined(TARGET_RISCV64)
     {
         UINT stackSizeSrc = sArgPlacerSrc.SizeOfArgStack();
         UINT stackSizeDst = sArgPlacerDst.SizeOfArgStack();
@@ -490,11 +490,16 @@ BOOL GenerateShuffleArrayPortable(MethodDesc* pMethodSrc, MethodDesc *pMethodDst
         // arguments, as it is callee pop
         if (stackSizeDst > stackSizeSrc)
         {
+#if defined(TARGET_X86) && !defined(UNIX_X86_ABI)
             // we can drop arguments but we can never make them up - this is definitely not allowed
             COMPlusThrow(kVerificationException);
+#else // TARGET_RISCV64
+            _ASSERTE(shuffleType == ShuffleComputationType::DelegateShuffleThunk);
+            return FALSE; // stack growing is handled by IL stubs on RISC-V
+#endif
         }
     }
-#endif // Callee pop architectures - defined(TARGET_X86) && !defined(UNIX_X86_ABI)
+#endif // (Callee pop architectures - defined(TARGET_X86) && !defined(UNIX_X86_ABI)) || defined(TARGET_RISCV64)
 
     INT ofsSrc;
     INT ofsDst;
@@ -715,13 +720,14 @@ BOOL GenerateShuffleArrayPortable(MethodDesc* pMethodSrc, MethodDesc *pMethodDst
 }
 #endif // FEATURE_PORTABLE_SHUFFLE_THUNKS
 
-VOID GenerateShuffleArray(MethodDesc* pInvoke, MethodDesc *pTargetMeth, SArray<ShuffleEntry> * pShuffleEntryArray)
+BOOL GenerateShuffleArray(MethodDesc* pInvoke, MethodDesc *pTargetMeth, SArray<ShuffleEntry> * pShuffleEntryArray)
 {
     STANDARD_VM_CONTRACT;
 
 #ifdef FEATURE_PORTABLE_SHUFFLE_THUNKS
     // Portable default implementation
-    GenerateShuffleArrayPortable(pInvoke, pTargetMeth, pShuffleEntryArray, ShuffleComputationType::DelegateShuffleThunk);
+    if (!GenerateShuffleArrayPortable(pInvoke, pTargetMeth, pShuffleEntryArray, ShuffleComputationType::DelegateShuffleThunk))
+        return FALSE;
 #elif defined(TARGET_X86)
     ShuffleEntry entry;
     ZeroMemory(&entry, sizeof(entry));
@@ -847,9 +853,9 @@ VOID GenerateShuffleArray(MethodDesc* pInvoke, MethodDesc *pTargetMeth, SArray<S
             ShuffleInfo src = getShuffleInfo(entry.srcofs);
             ShuffleInfo dst = getShuffleInfo(entry.dstofs);
 #if defined(TARGET_RISCV64)
-            static const int REGLOWERINGMASK = SE::CALLCONVTRANSFERMASK | SE::REGMASK;
-            bool isDelowered = ((entry.srcofs & REGLOWERINGMASK) == REGLOWERINGMASK);
-            bool isLowered   = ((entry.dstofs & REGLOWERINGMASK) == REGLOWERINGMASK);
+            static const int regCCTransferMask = SE::REGMASK | SE::CALLCONVTRANSFERMASK;
+            bool isDelowered = ((entry.srcofs & regCCTransferMask) == regCCTransferMask);
+            bool isLowered   = ((entry.dstofs & regCCTransferMask) == regCCTransferMask);
             if (isDelowered || isLowered)
             {
                 _ASSERTE(isDelowered != isLowered);
@@ -866,6 +872,7 @@ VOID GenerateShuffleArray(MethodDesc* pInvoke, MethodDesc *pTargetMeth, SArray<S
             }
         }
     }
+    return TRUE;
 }
 
 
@@ -933,6 +940,46 @@ LoaderHeap *DelegateEEClass::GetStubHeap()
     return GetInvokeMethod()->GetLoaderAllocator()->GetStubHeap();
 }
 
+#if defined(TARGET_RISCV64)
+static Stub* CreateILDelegateShuffleThunk(MethodDesc* pDelegateMD, MethodDesc* pTargetMD)
+{
+    SigTypeContext typeContext(pDelegateMD);
+    MetaSig delegateSig(pDelegateMD);
+    INDEBUG(MetaSig targetSig(pTargetMD));
+    LOG((LF_STUBS, LL_EVERYTHING, "CreateILDelegateShuffleThunk %s (%i args, %i return type, %i this) -> %s (%i args, %i return type, %i this)\n",
+        pDelegateMD->GetName(), delegateSig.NumFixedArgs(), delegateSig.GetReturnType(), delegateSig.HasThis(),
+        pTargetMD->GetName(), targetSig.NumFixedArgs(), targetSig.GetReturnType(), targetSig.HasThis()));
+    _ASSERTE(delegateSig.NumFixedArgs() == targetSig.NumFixedArgs());
+    _ASSERTE(delegateSig.GetReturnType() == targetSig.GetReturnType());
+
+    ILStubLinkerFlags flags = (ILStubLinkerFlags)(delegateSig.HasThis()
+        ? ILSTUB_LINKER_FLAG_STUB_HAS_THIS | ILSTUB_LINKER_FLAG_TARGET_HAS_THIS
+        : ILSTUB_LINKER_FLAG_NONE);
+    ILStubLinker stubLinker(pDelegateMD->GetModule(), pDelegateMD->GetSignature(), &typeContext, pDelegateMD, flags);
+    ILCodeStream *pCode = stubLinker.NewCodeStream(ILStubLinker::kDispatch);
+
+    for (unsigned i = 0; i < delegateSig.NumFixedArgs(); ++i)
+        pCode->EmitLDARG(i);
+
+    pCode->EmitCALL(pCode->GetToken(pTargetMD), targetSig.NumFixedArgs(), targetSig.IsReturnTypeVoid() ? 0 : 1);
+    pCode->EmitRET();
+
+    PCCOR_SIGNATURE pSig;
+    DWORD cbSig;
+    pDelegateMD->GetSig(&pSig, &cbSig);
+    PTR_Module pLoaderModule = pDelegateMD->GetLoaderModule();
+    MethodDesc * pStubMD = ILStubCache::CreateAndLinkNewILStubMethodDesc(
+        pDelegateMD->GetLoaderAllocator(),
+        pDelegateMD->GetMethodTable(),
+        ILSTUB_MULTICASTDELEGATE_INVOKE,
+        pDelegateMD->GetModule(),
+        pSig, cbSig,
+        &typeContext,
+        &stubLinker);
+
+    return Stub::NewStub(JitILStub(pStubMD));
+}
+#endif // TARGET_RISCV64
 
 Stub* COMDelegate::SetupShuffleThunk(MethodTable * pDelMT, MethodDesc *pTargetMeth)
 {
@@ -952,42 +999,51 @@ Stub* COMDelegate::SetupShuffleThunk(MethodTable * pDelMT, MethodDesc *pTargetMe
     MethodDesc *pMD = pClass->GetInvokeMethod();
 
     StackSArray<ShuffleEntry> rShuffleEntryArray;
-    GenerateShuffleArray(pMD, pTargetMeth, &rShuffleEntryArray);
-
-    ShuffleThunkCache* pShuffleThunkCache = m_pShuffleThunkCache;
-
-    LoaderAllocator* pLoaderAllocator = pDelMT->GetLoaderAllocator();
-    if (pLoaderAllocator->IsCollectible())
+    if (GenerateShuffleArray(pMD, pTargetMeth, &rShuffleEntryArray))
     {
-        pShuffleThunkCache = ((AssemblyLoaderAllocator*)pLoaderAllocator)->GetShuffleThunkCache();
-    }
+        ShuffleThunkCache* pShuffleThunkCache = m_pShuffleThunkCache;
 
-    Stub* pShuffleThunk = pShuffleThunkCache->Canonicalize((const BYTE *)&rShuffleEntryArray[0]);
-    if (!pShuffleThunk)
-    {
-        COMPlusThrowOM();
-    }
-
-    if (!pTargetMeth->IsStatic() && pTargetMeth->HasRetBuffArg() && IsRetBuffPassedAsFirstArg())
-    {
-        if (InterlockedCompareExchangeT(&pClass->m_pInstRetBuffCallStub, pShuffleThunk, NULL ) != NULL)
+        LoaderAllocator* pLoaderAllocator = pDelMT->GetLoaderAllocator();
+        if (pLoaderAllocator->IsCollectible())
         {
-            ExecutableWriterHolder<Stub> shuffleThunkWriterHolder(pShuffleThunk, sizeof(Stub));
-            shuffleThunkWriterHolder.GetRW()->DecRef();
-            pShuffleThunk = pClass->m_pInstRetBuffCallStub;
+            pShuffleThunkCache = ((AssemblyLoaderAllocator*)pLoaderAllocator)->GetShuffleThunkCache();
         }
+
+        Stub* pShuffleThunk = pShuffleThunkCache->Canonicalize((const BYTE *)&rShuffleEntryArray[0]);
+        if (!pShuffleThunk)
+        {
+            COMPlusThrowOM();
+        }
+
+        if (!pTargetMeth->IsStatic() && pTargetMeth->HasRetBuffArg() && IsRetBuffPassedAsFirstArg())
+        {
+            if (InterlockedCompareExchangeT(&pClass->m_pInstRetBuffCallStub, pShuffleThunk, NULL ) != NULL)
+            {
+                ExecutableWriterHolder<Stub> shuffleThunkWriterHolder(pShuffleThunk, sizeof(Stub));
+                shuffleThunkWriterHolder.GetRW()->DecRef();
+                pShuffleThunk = pClass->m_pInstRetBuffCallStub;
+            }
+        }
+        else
+        {
+            if (InterlockedCompareExchangeT(&pClass->m_pStaticCallStub, pShuffleThunk, NULL ) != NULL)
+            {
+                ExecutableWriterHolder<Stub> shuffleThunkWriterHolder(pShuffleThunk, sizeof(Stub));
+                shuffleThunkWriterHolder.GetRW()->DecRef();
+                pShuffleThunk = pClass->m_pStaticCallStub;
+            }
+        }
+        return pShuffleThunk;
     }
     else
     {
-        if (InterlockedCompareExchangeT(&pClass->m_pStaticCallStub, pShuffleThunk, NULL ) != NULL)
-        {
-            ExecutableWriterHolder<Stub> shuffleThunkWriterHolder(pShuffleThunk, sizeof(Stub));
-            shuffleThunkWriterHolder.GetRW()->DecRef();
-            pShuffleThunk = pClass->m_pStaticCallStub;
-        }
+#if defined(TARGET_RISCV64)
+        return CreateILDelegateShuffleThunk(pMD, pTargetMeth);
+#else
+        _ASSERTE(FALSE);
+        return NULL;
+#endif // TARGET_RISCV64
     }
-
-    return pShuffleThunk;
 }
 
 

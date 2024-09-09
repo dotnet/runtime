@@ -1614,7 +1614,7 @@ void StubLinkerCPU::EmitShufflingWithCallingConventionTransfers(const ShuffleEnt
     }
 
     _ASSERTE(entry->srcofs == ShuffleEntry::SENTINEL);
-    _ASSERTE(entry->stacksizedelta == 0);
+    _ASSERTE(entry->stacksizedelta == 0); // stack growing should be handled by IL stub
 
     // The key points in the shuffling are recognized, do some sanity checks
     if (fpRegisters.count > 0) _ASSERTE(fpRegisters.offset == 1);
@@ -1671,7 +1671,7 @@ void StubLinkerCPU::EmitShufflingWithCallingConventionTransfers(const ShuffleEnt
         }
         else
         {
-            _ASSERTE(field.reg == lastIntArgReg); // a7 is empty so the integer field of lowered0 can go straight home
+            _ASSERTE(field.reg == lastIntArgReg); // a7 is vacated so the integer field of lowered0 can go straight home
         }
         EmitAnyLoad(isFloating, field.sizeShift, field.reg, RegSp, 0 + field.offset);
     }

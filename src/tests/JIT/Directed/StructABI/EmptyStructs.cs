@@ -1946,7 +1946,7 @@ public static class Program
 
 
 	[MethodImpl(MethodImplOptions.NoInlining)]
-	private static void ShufflingThunk_FloatEmptyShort_DoubleFloatNestedEmpty_RiscV(
+	private static DoubleFloatNestedEmpty ShufflingThunk_FloatEmptyShort_DoubleFloatNestedEmpty_RiscV(
 		int a1_to_a0, int a2_to_a1, int a3_to_a2, int a4_to_a3, int a5_to_a4, int a6_to_a5, int a7_to_a6,
 		float fa0, float fa1, float fa2, float fa3, float fa4, float fa5,
 		FloatEmptyShort stack0_to_fa6_a7, // frees 1 stack slot
@@ -1973,6 +1973,7 @@ public static class Program
 		Assert.Equal(DoubleFloatNestedEmpty.Get(), fa6_fa7_to_stack1_stack2);
 		Assert.Equal(8, stack2_to_stack3);
 		Assert.Equal(9, stack3_to_stack4);
+		return fa6_fa7_to_stack1_stack2;
 	}
 
 	[Fact]
@@ -1982,15 +1983,16 @@ public static class Program
 			=> ShufflingThunk_FloatEmptyShort_DoubleFloatNestedEmpty_RiscV;
 		var delegat = getDelegate();
 		Span<int> stackBeforeCall = stackalloc[] {11, 22, 33, 44};
-		delegat(0, 1, 2, 3, 4, 5, 6, 0f, 1f, 2f, 3f, 4f, 5f,
+		DoubleFloatNestedEmpty ret = delegat(0, 1, 2, 3, 4, 5, 6, 0f, 1f, 2f, 3f, 4f, 5f,
 			FloatEmptyShort.Get(), 7, DoubleFloatNestedEmpty.Get(), 8, 9);
 		Assert.Equal([11, 22, 33, 44], stackBeforeCall);
+		Assert.Equal(DoubleFloatNestedEmpty.Get(), ret);
 	}
 
 
 
 	[MethodImpl(MethodImplOptions.NoInlining)]
-	private static void ShufflingThunk_FloatEmptyShort_Empty8Float_RiscV(
+	private static int ShufflingThunk_FloatEmptyShort_Empty8Float_RiscV(
 		int a1_to_a0, int a2_to_a1, int a3_to_a2, int a4_to_a3, int a5_to_a4, int a6_to_a5, int a7_to_a6,
 		float fa0,
 		FloatEmptyShort stack0_to_fa1_a7, // frees 1 stack slot
@@ -2024,8 +2026,9 @@ public static class Program
 		Assert.Equal(9, stack3_to_stack2);
 		Assert.Equal(5f, fa5_to_fa6);
 		Assert.Equal(6d, fa6_to_fa7);
-		Assert.Equal(9, stack4_to_stack3);
+		Assert.Equal(10, stack4_to_stack3);
 		Assert.Equal(Empty8Float.Get(), fa7_to_stack4_stack5);
+		return 100;
 	}
 
 	[Fact]
@@ -2035,9 +2038,10 @@ public static class Program
 			=> ShufflingThunk_FloatEmptyShort_Empty8Float_RiscV;
 		var delegat = getDelegate();
 		Span<int> stackBeforeCall = stackalloc[] {11, 22, 33, 44};
-		delegat(0, 1, 2, 3, 4, 5, 6, 0f,
-			FloatEmptyShort.Get(), 1d, 2d, 7, 8, 3d, 4f, 9, 5f, 6d, 9, Empty8Float.Get());
+		int ret = delegat(0, 1, 2, 3, 4, 5, 6, 0f,
+			FloatEmptyShort.Get(), 1d, 2d, 7, 8, 3d, 4f, 9, 5f, 6d, 10, Empty8Float.Get());
 		Assert.Equal([11, 22, 33, 44], stackBeforeCall);
+		Assert.Equal(100, ret);
 	}
 #endregion
 }
