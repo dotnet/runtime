@@ -1413,7 +1413,10 @@ int LinearScan::BuildConditionalSelectWithEmbeddedOp(GenTreeHWIntrinsic* intrins
     bool     embeddedIsRMW       = false;
     GenTree* embeddedDelayFreeOp = getDelayFreeOp(embeddedOpNode, &embeddedIsRMW);
 
-    // Handle Op1
+    // Build any immediates
+    BuildHWIntrinsicImmediate(embeddedOpNode, intrinEmbedded);
+
+    // Build Op1
 
     SingleTypeRegSet predMask = RBM_ALLMASK.GetPredicateRegSet();
     if (HWIntrinsicInfo::IsLowMaskedOperation(intrinEmbedded.id))
@@ -1430,7 +1433,7 @@ int LinearScan::BuildConditionalSelectWithEmbeddedOp(GenTreeHWIntrinsic* intrins
         srcCount += BuildOperandUses(intrin.op1, predMask);
     }
 
-    // Handle Op2 and Op3
+    // Build Op2 and Op3
 
     if (embeddedIsRMW)
     {
@@ -1457,39 +1460,6 @@ int LinearScan::BuildConditionalSelectWithEmbeddedOp(GenTreeHWIntrinsic* intrins
             if (resultOpNum != 0)
             {
                 embeddedDelayFreeOp = embeddedOpNode->Op(resultOpNum);
-            }
-        }
-        else if (HWIntrinsicInfo::HasImmediateOperand(intrinEmbedded.id))
-        {
-            // Special handling for embedded intrinsics with immediates:
-            // We might need an additional register to hold branch targets into the switch table
-            // that encodes the immediate
-            bool needsInternalRegister;
-            switch (intrinEmbedded.id)
-            {
-                case NI_Sve_ShiftRightArithmeticForDivide:
-                    assert(embNumArgs == 2);
-                    needsInternalRegister = !embeddedOpNode->Op(2)->isContainedIntOrIImmed();
-                    break;
-
-                case NI_Sve_AddRotateComplex:
-                    assert(embNumArgs == 3);
-                    needsInternalRegister = !embeddedOpNode->Op(3)->isContainedIntOrIImmed();
-                    break;
-
-                case NI_Sve_MultiplyAddRotateComplex:
-                    assert(embNumArgs == 4);
-                    needsInternalRegister = !embeddedOpNode->Op(4)->isContainedIntOrIImmed();
-                    break;
-
-                default:
-                    needsInternalRegister = false;
-                    break;
-            }
-
-            if (needsInternalRegister)
-            {
-                buildInternalIntRegisterDefForNode(embeddedOpNode);
             }
         }
 
@@ -1568,7 +1538,7 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
     GenTree* consecutiveOp     = getConsecutiveRegistersOperand(intrinsicTree, &destIsConsecutive);
 
     // Build any immediates
-    bool hasImmediateOperand = buildHWIntrinsicImmediate(intrinsicTree, intrin);
+    BuildHWIntrinsicImmediate(intrinsicTree, intrin);
 
     // Build all Operands
     for (int opNum = 1; opNum <= intrin.numOperands; opNum++)
@@ -2261,20 +2231,15 @@ GenTree* LinearScan::getConsecutiveRegistersOperand(const HWIntrinsic intrin, bo
 }
 
 //------------------------------------------------------------------------
-// buildHWIntrinsicImmediate: Build immediate values
+// BuildHWIntrinsicImmediate: Build immediate values
 //
 // Arguments:
 //    intrinsicTree - Tree to check
 //    intrin - Intrin to check
 //
-// Return Value:
-//    True if the intrinsic contains an immediate
-//
-bool LinearScan::buildHWIntrinsicImmediate(GenTreeHWIntrinsic* intrinsicTree, const HWIntrinsic intrin)
+void LinearScan::BuildHWIntrinsicImmediate(GenTreeHWIntrinsic* intrinsicTree, const HWIntrinsic intrin)
 {
-    const bool hasImmediateOperand = HWIntrinsicInfo::HasImmediateOperand(intrin.id);
-
-    if (hasImmediateOperand && !HWIntrinsicInfo::NoJmpTableImm(intrin.id))
+    if (HWIntrinsicInfo::HasImmediateOperand(intrin.id) && !HWIntrinsicInfo::NoJmpTableImm(intrin.id))
     {
         // We may need to allocate an additional general-purpose register when an intrinsic has a non-const immediate
         // operand and the intrinsic does not have an alternative non-const fallback form.
@@ -2446,6 +2411,18 @@ bool LinearScan::buildHWIntrinsicImmediate(GenTreeHWIntrinsic* intrinsicTree, co
                         setInternalRegsDelayFree = true;
                         break;
 
+                    case NI_Sve_ShiftRightArithmeticForDivide:
+                        needBranchTargetReg = !intrin.op2->isContainedIntOrIImmed();
+                        break;
+
+                    case NI_Sve_AddRotateComplex:
+                        needBranchTargetReg = !intrin.op3->isContainedIntOrIImmed();
+                        break;
+
+                    case NI_Sve_MultiplyAddRotateComplex:
+                        needBranchTargetReg = !intrin.op4->isContainedIntOrIImmed();
+                        break;
+
                     default:
                         unreached();
                 }
@@ -2457,8 +2434,6 @@ bool LinearScan::buildHWIntrinsicImmediate(GenTreeHWIntrinsic* intrinsicTree, co
             buildInternalIntRegisterDefForNode(intrinsicTree);
         }
     }
-
-    return hasImmediateOperand;
 }
 
 #endif // FEATURE_HW_INTRINSICS

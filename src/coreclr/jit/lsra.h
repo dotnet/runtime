@@ -1448,7 +1448,6 @@ private:
     GenTree*                 getDelayFreeOp(GenTreeHWIntrinsic* intrinsicTree, bool* isRMW);
     GenTree*                 getVectorAddrOperand(GenTreeHWIntrinsic* intrinsicTree);
     GenTree*                 getConsecutiveRegistersOperand(const HWIntrinsic intrin, bool* destIsConsecutive);
-    bool                     buildHWIntrinsicImmediate(GenTreeHWIntrinsic* intrinsicTree, const HWIntrinsic intrin);
 #endif
 
 #ifdef DEBUG
@@ -2072,6 +2071,7 @@ private:
     int  BuildConditionalSelectWithEmbeddedOp(GenTreeHWIntrinsic* intrinsicTree,
                                               const HWIntrinsic   intrin,
                                               int*                pDstCount);
+    void BuildHWIntrinsicImmediate(GenTreeHWIntrinsic* intrinsicTree, const HWIntrinsic intrin);
 #endif // TARGET_ARM64
 #endif // FEATURE_HW_INTRINSICS
 
