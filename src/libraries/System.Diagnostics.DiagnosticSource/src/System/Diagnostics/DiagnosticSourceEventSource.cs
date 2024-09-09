@@ -354,9 +354,9 @@ namespace System.Diagnostics
         /// Used to send version information.
         /// </summary>
         [Event(13, Keywords = Keywords.Messages)]
-        public void Version(string? AssemblyVersion, string? AssemblyFileVersion)
+        public void Version(int Major, int Minor, int Patch)
         {
-            WriteEvent(13, AssemblyVersion, AssemblyFileVersion);
+            WriteEvent(13, Major, Minor, Patch);
         }
 
         /// <summary>
@@ -370,9 +370,17 @@ namespace System.Diagnostics
             {
                 var assembly = typeof(Activity).Assembly;
 
-                Version(
-                    assembly.GetCustomAttribute<AssemblyVersionAttribute>()?.Version,
-                    assembly.GetCustomAttribute<AssemblyFileVersionAttribute>()?.Version);
+                var version = assembly.GetCustomAttribute<AssemblyFileVersionAttribute>()?.Version
+                    ?? assembly.GetCustomAttribute<AssemblyVersionAttribute>()?.Version;
+
+                if (!string.IsNullOrEmpty(version)
+                    && System.Version.TryParse(version, out var assemblyVersion))
+                {
+                    Version(
+                        assemblyVersion.Major,
+                        assemblyVersion.Minor,
+                        assemblyVersion.Revision);
+                }
             }
 
             // On every command (which the debugger can force by turning on this EventSource with ETW)

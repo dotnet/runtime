@@ -282,9 +282,9 @@ namespace System.Diagnostics.Metrics
         /// Used to send version information.
         /// </summary>
         [Event(18, Keywords = Keywords.Messages)]
-        public void Version(string? AssemblyVersion, string? AssemblyFileVersion)
+        public void Version(int Major, int Minor, int Patch)
         {
-            WriteEvent(18, AssemblyVersion, AssemblyFileVersion);
+            WriteEvent(13, Major, Minor, Patch);
         }
 
         /// <summary>
@@ -298,9 +298,17 @@ namespace System.Diagnostics.Metrics
             {
                 var assembly = typeof(Meter).Assembly;
 
-                Version(
-                    assembly.GetCustomAttribute<AssemblyVersionAttribute>()?.Version,
-                    assembly.GetCustomAttribute<AssemblyFileVersionAttribute>()?.Version);
+                var version = assembly.GetCustomAttribute<AssemblyFileVersionAttribute>()?.Version
+                    ?? assembly.GetCustomAttribute<AssemblyVersionAttribute>()?.Version;
+
+                if (!string.IsNullOrEmpty(version)
+                    && System.Version.TryParse(version, out var assemblyVersion))
+                {
+                    Version(
+                        assemblyVersion.Major,
+                        assemblyVersion.Minor,
+                        assemblyVersion.Revision);
+                }
             }
 
             lock (this)
