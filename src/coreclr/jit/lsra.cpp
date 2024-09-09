@@ -9800,7 +9800,7 @@ void LinearScan::resolveEdge(BasicBlock*      fromBlock,
             Interval* interval            = sourceIntervals[sourceReg];
             Interval* otherTargetInterval = nullptr;
             regNumber otherHalfTargetReg  = REG_NA;
-            if (!genIsValidDoubleReg(targetReg))
+            if (genIsValidFloatReg(targetReg) && !genIsValidDoubleReg(targetReg))
             {
                 otherHalfTargetReg  = REG_PREV(targetReg);
                 otherTargetInterval = sourceIntervals[otherHalfTargetReg];
@@ -10048,7 +10048,7 @@ void LinearScan::resolveEdge(BasicBlock*      fromBlock,
 #ifdef TARGET_ARM
                     Interval* otherTargetInterval = nullptr;
                     regNumber otherHalfTargetReg  = REG_NA;
-                    if (!genIsValidDoubleReg(targetReg))
+                    if (genIsValidFloatReg(targetReg) && !genIsValidDoubleReg(targetReg))
                     {
                         otherHalfTargetReg  = REG_PREV(targetReg);
                         otherTargetInterval = sourceIntervals[otherHalfTargetReg];
