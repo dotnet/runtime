@@ -486,12 +486,13 @@ namespace System.Numerics.Tensors.Tests
         public static IEnumerable<object[]> TwoSpanInFloatOutData()
         {
             yield return Create<float>(TensorPrimitives.Distance, Tensor.Distance);
-            //yield return Create<float>(TensorPrimitives.Dot, Tensor.Dot);
+            yield return Create<float>(TensorPrimitives.Dot, Tensor.Dot);
 
             static object[] Create<T>(TensorPrimitivesTwoSpanInTOut<T> tensorPrimitivesMethod, TensorTwoSpanInTOut<T> tensorOperation)
                 => new object[] { tensorPrimitivesMethod, tensorOperation };
         }
 
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/107254")]
         [Theory, MemberData(nameof(TwoSpanInFloatOutData))]
         public void TensorExtensionsTwoSpanInFloatOut<T>(TensorPrimitivesTwoSpanInTOut<T> tensorPrimitivesOperation, TensorTwoSpanInTOut<T> tensorOperation)
             where T : INumberBase<T>
