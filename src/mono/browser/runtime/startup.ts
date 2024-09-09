@@ -128,6 +128,9 @@ async function instantiateWasmWorker (
     successCallback: InstantiateWasmSuccessCallback
 ): Promise<void> {
     if (!WasmEnableThreads) return;
+
+    await ensureUsedWasmFeatures();
+
     // wait for the config to arrive by message from the main thread
     await loaderHelpers.afterConfigLoaded.promise;
 
