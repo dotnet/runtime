@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Runtime.InteropServices;
 
 namespace System.Globalization
 {
@@ -13,18 +14,27 @@ namespace System.Globalization
             Debug.Assert(!GlobalizationMode.UseNls);
             Debug.Assert(GlobalizationMode.Hybrid);
 
-            int exception;
-            object ex_result;
             if (HasEmptyCultureName)
             {
-                Interop.JsGlobalization.ChangeCaseInvariant(src, srcLen, dstBuffer, dstBufferCapacity, toUpper, out exception, out ex_result);
+                ReadOnlySpan<char> source = new ReadOnlySpan<char>(src, srcLen);
+                Span<char> destination = new Span<char>(dstBuffer, dstBufferCapacity);
+                if (toUpper)
+                {
+                    InvariantModeCasing.ToUpper(source, destination);
+                }
+                else
+                {
+                    InvariantModeCasing.ToLower(source, destination);
+                }
+                return;
             }
-            else
+
+            ReadOnlySpan<char> cultureName = _cultureName.AsSpan();
+            fixed (char* pCultureName = &MemoryMarshal.GetReference(cultureName))
             {
-                Interop.JsGlobalization.ChangeCase(_cultureName, src, srcLen, dstBuffer, dstBufferCapacity, toUpper, out exception, out ex_result);
+                nint exceptionPtr = Interop.JsGlobalization.ChangeCase(pCultureName, cultureName.Length, src, srcLen, dstBuffer, dstBufferCapacity, toUpper);
+                Helper.MarshalAndThrowIfException(exceptionPtr);
             }
-            if (exception != 0)
-                throw new Exception((string)ex_result);
         }
     }
 }

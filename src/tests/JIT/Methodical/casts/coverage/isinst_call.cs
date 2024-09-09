@@ -50,6 +50,7 @@ namespace JitTest_isinst_call_cs
         }
 
         [Fact]
+        [OuterLoop]
         public static int TestEntryPoint()
         {
             if (!Test_CALL(0, true))

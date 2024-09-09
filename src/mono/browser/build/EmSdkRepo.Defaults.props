@@ -4,25 +4,18 @@
 
   <PropertyGroup>
     <EmscriptenSdkToolsPath>$([MSBuild]::EnsureTrailingSlash($(EMSDK_PATH)))</EmscriptenSdkToolsPath>
-    <EmscriptenUpstreamBinPath>$([MSBuild]::NormalizeDirectory($(EmscriptenSdkToolsPath), 'upstream', 'bin'))</EmscriptenUpstreamBinPath>
-    <EmscriptenUpstreamEmscriptenPath>$([MSBuild]::NormalizeDirectory($(EmscriptenSdkToolsPath), 'upstream', 'emscripten'))</EmscriptenUpstreamEmscriptenPath>
-
-    <_NodeToolsBasePath>$(EmscriptenSdkToolsPath)node</_NodeToolsBasePath>
+    <EmscriptenUpstreamBinPath>$([MSBuild]::NormalizeDirectory($(EmscriptenSdkToolsPath), 'bin'))</EmscriptenUpstreamBinPath>
+    <EmscriptenUpstreamEmscriptenPath>$([MSBuild]::NormalizeDirectory($(EmscriptenSdkToolsPath), 'emscripten'))</EmscriptenUpstreamEmscriptenPath>
 
     <!-- gets the path like emsdk/python/3.7.4-2_64bit -->
-    <_NodeToolsVersionedPath Condition="Exists($(_NodeToolsBasePath))">$([System.IO.Directory]::GetDirectories($(_NodeToolsBasePath)))</_NodeToolsVersionedPath>
-    <EmscriptenNodeToolsPath Condition="'$(_NodeToolsVersionedPath)' != ''">$(_NodeToolsVersionedPath)</EmscriptenNodeToolsPath>
-    <EmscriptenNodeToolsPath Condition="'$(EmscriptenNodeToolsPath)' != ''">$([MSBuild]::NormalizeDirectory($(EmscriptenNodeToolsPath)))</EmscriptenNodeToolsPath>
+    <EmscriptenNodeToolsPath Condition="'$(EmscriptenNodeToolsPath)' == ''">$([MSBuild]::NormalizeDirectory($(EmscriptenSdkToolsPath), 'node', 'bin'))</EmscriptenNodeToolsPath>
 
     <_UsingEMSDK_PATH>true</_UsingEMSDK_PATH>
   </PropertyGroup>
 
-  <!-- Emscripten uses system python on Linux, so we don't need $(EmscriptenPythonToolsPath) -->
-  <PropertyGroup Condition="!$([MSBuild]::IsOSPlatform('linux'))">
-    <_PythonToolsBasePath>$(EmscriptenSdkToolsPath)python</_PythonToolsBasePath>
-    <_PythonToolsVersionedPath Condition="Exists($(_PythonToolsBasePath))">$([System.IO.Directory]::GetDirectories($(_PythonToolsBasePath)))</_PythonToolsVersionedPath>
-    <EmscriptenPythonToolsPath Condition="'$(_PythonToolsVersionedPath)' != ''">$(_PythonToolsVersionedPath)</EmscriptenPythonToolsPath>
-    <EmscriptenPythonToolsPath Condition="'$(EmscriptenPythonToolsPath)' != ''">$([MSBuild]::NormalizeDirectory($(EmscriptenPythonToolsPath)))</EmscriptenPythonToolsPath>
+  <!-- Emscripten uses system python on Linux and macos, so we don't need $(EmscriptenPythonToolsPath) -->
+  <PropertyGroup Condition="!$([MSBuild]::IsOSPlatform('linux')) and !$([MSBuild]::IsOSPlatform('OSX'))">
+    <EmscriptenPythonToolsPath>$([MSBuild]::NormalizeDirectory($(EmscriptenSdkToolsPath)python))</EmscriptenPythonToolsPath>
 
     <_EMSDKMissingPaths Condition="'$(_EMSDKMissingPaths)' == '' and ('$(EmscriptenPythonToolsPath)' == '' or !Exists('$(EmscriptenPythonToolsPath)'))">%24(EmscriptenPythonToolsPath)=$(EmscriptenPythonToolsPath) </_EMSDKMissingPaths>
   </PropertyGroup>
@@ -31,9 +24,9 @@
   <ItemGroup>
     <EmscriptenPrependPATH Include="$(EmscriptenSdkToolsPath)" />
     <EmscriptenPrependPATH Include="$(EmscriptenUpstreamBinPath)" />
-    <EmscriptenPrependPATH Include="$([MSBuild]::NormalizeDirectory($(EmscriptenSdkToolsPath), 'upstream', 'emscripten'))" />
+    <EmscriptenPrependPATH Include="$([MSBuild]::NormalizeDirectory($(EmscriptenSdkToolsPath), 'emscripten'))" />
 
-    <EmscriptenPrependPATH Include="$(EmscriptenNodeToolsPath)bin" />
+    <EmscriptenPrependPATH Include="$(EmscriptenNodeToolsPath)" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(EmscriptenPythonToolsPath)' != ''">

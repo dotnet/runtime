@@ -4,7 +4,6 @@
     <DefineConstants>$(DefineConstants);XASSEM</DefineConstants>
   </PropertyGroup>
   <PropertyGroup>
-    <DebugType />
     <Optimize>False</Optimize>
   </PropertyGroup>
   <ItemGroup>

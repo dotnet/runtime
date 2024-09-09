@@ -208,26 +208,23 @@ def main(argv):
         logging.info("Creating patch file {}".format(patchFilePath))
         jitSrcPath = os.path.join(runtime, "src", "coreclr", "jit")
         patchFile = open(patchFilePath, "w")
-        proc = subprocess.Popen(["git", "diff", "--patch", "-U20", "--", jitSrcPath], env=my_env, stdout=patchFile)
+        proc = subprocess.Popen(["git", "diff", "--patch", "-U20", "--", jitSrcPath], cwd=runtime, env=my_env, stdout=patchFile)
         output,error = proc.communicate()
 
     if returncode != 0:
         logging.info("There were errors in formatting. Please run jit-format locally with: \n")
         logging.info(errorMessage)
         logging.info("\nOr download and apply generated patch:")
-        logging.info("1. From the GitHub 'Checks' page on the Pull Request, with the failing Formatting")
-        logging.info("   job selected (e.g., 'Formatting Linux x64'), click the 'View more details on")
-        logging.info("   Azure Pipelines' link.")
-        logging.info("2. Select the '1 artifact produced' at the end of the log.")
+        logging.info("1. From the GitHub 'Checks' page on the Pull Request, click on the Summary link.")
+        logging.info("2. Scroll to the bottom of the page to the Artifacts section.")
         logging.info("3. Artifacts are located in alphabetical order, target artifact name is")
-        logging.info("   'format.<OS>.<architecture>.patch.'. Find appropriate format patch artifact.")
-        logging.info("4. On the right side of the artifact there is a 'More actions' menu shown by a")
-        logging.info("   vertical three-dot symbol. Click on it and select 'Download artifacts' option.")
+        logging.info("   'format.<OS>.patch.'. Find appropriate format patch artifact.")
+        logging.info("4. Download the artifact.")
         logging.info("5. Unzip the patch file.")
         logging.info("6. git apply format.patch")
 
-    if (returncode != 0) and (os.environ.get("TF_BUILD") == "True"):
-        print("##vso[task.logissue type=error](NETCORE_ENGINEERING_TELEMETRY=Build) Format job found errors, please apply the format patch.")
+    if (returncode != 0) and ("GITHUB_RUN_ID" in os.environ):
+        print("::error ::Format job found errors, please apply the format patch.")
 
     return returncode
 

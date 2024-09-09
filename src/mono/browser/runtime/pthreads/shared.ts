@@ -77,7 +77,11 @@ export function exec_synchronization_context_pump (): void {
         return;
     }
     forceThreadMemoryViewRefresh();
-    tcwraps.mono_wasm_synchronization_context_pump();
+    try {
+        tcwraps.mono_wasm_synchronization_context_pump();
+    } catch (ex) {
+        loaderHelpers.mono_exit(1, ex);
+    }
 }
 
 export function mono_wasm_schedule_synchronization_context (): void {

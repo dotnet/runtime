@@ -33,13 +33,6 @@
     #define LOGGING
 #endif
 
-#if !defined(FEATURE_UTILCODE_NO_DEPENDENCIES)
-// Failpoint support
-#if defined(_DEBUG) && !defined(DACCESS_COMPILE) && !defined(TARGET_UNIX)
-#define FAILPOINTS_ENABLED
-#endif
-#endif //!defined(FEATURE_UTILCODE_NO_DEPENDENCIES)
-
 #if 0
     // Enable to track details of EESuspension
     #define TIME_SUSPEND

@@ -22,5 +22,12 @@
         <property name="Target">M:System.ComponentModel.TypeDescriptor.NodeFor(System.Object,System.Boolean)</property>
         <property name="Justification">This warning is left in the product so developers get an ILLink warning when trimming an app with System.ComponentModel.TypeDescriptor.IsComObjectDescriptorSupported=true.</property>
     </attribute>
+    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
+      <argument>ILLink</argument>
+      <argument>IL2026</argument>
+      <property name="Scope">member</property>
+      <property name="Target">M:System.ComponentModel.AmbientValueAttribute.#ctor(System.Type,System.String)</property>
+      <property name="Justification">This warning is left in the product so developers get an ILLink warning when trimming an app with System.ComponentModel.Design.IDesignerHost.IsSupported=true.</property>
+    </attribute>
   </assembly>
 </linker>

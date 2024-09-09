@@ -12,11 +12,11 @@ The System.Collections.Immutable library is built-in as part of the shared frame
 
   <ItemGroup>
     <Compile Include="Properties\InternalsVisibleTo.cs" />
-
     <Compile Include="System\Polyfills.cs" />
     <Compile Include="System\Collections\ThrowHelper.cs" />
     <Compile Include="$(CoreLibSharedDir)System\Collections\HashHelpers.cs" Link="System\Collections\HashHelpers.cs" />
-
+    <Compile Include="$(CoreLibSharedDir)System\Collections\Generic\DebugViewDictionaryItem.cs" Link="Common\System\Collections\Generic\DebugViewDictionaryItem.cs" />
+    <Compile Include="$(CoreLibSharedDir)System\Collections\Generic\IDictionaryDebugView.cs" Link="Common\System\Collections\Generic\IDictionaryDebugView.cs" />
     <Compile Include="System\Collections\Frozen\Constants.cs" />
     <Compile Include="System\Collections\Frozen\DefaultFrozenDictionary.cs" />
     <Compile Include="System\Collections\Frozen\DefaultFrozenSet.cs" />
@@ -146,7 +146,21 @@ The System.Collections.Immutable library is built-in as part of the shared frame
     <Compile Include="System\Runtime.InteropServices\ImmutableCollectionsMarshal.cs" />
     <Compile Include="Validation\Requires.cs" />
     <Compile Include="$(CommonPath)System\Runtime\Versioning\NonVersionableAttribute.cs" Link="Common\System\Runtime\Versioning\NonVersionableAttribute.cs" />
-    <None Include="Interfaces.cd" />
+  </ItemGroup>
+
+  <ItemGroup Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net9.0'))">
+    <Compile Include="System\Collections\Frozen\DefaultFrozenDictionary.AlternateLookup.cs" />
+    <Compile Include="System\Collections\Frozen\DefaultFrozenSet.AlternateLookup.cs" />
+    <Compile Include="System\Collections\Frozen\FrozenDictionary.AlternateLookup.cs" />
+    <Compile Include="System\Collections\Frozen\FrozenSet.AlternateLookup.cs" />
+    <Compile Include="System\Collections\Frozen\SmallFrozenDictionary.AlternateLookup.cs" />
+    <Compile Include="System\Collections\Frozen\SmallFrozenSet.AlternateLookup.cs" />
+    <Compile Include="System\Collections\Frozen\Int32\Int32FrozenDictionary.AlternateLookup.cs" />
+    <Compile Include="System\Collections\Frozen\Int32\Int32FrozenSet.AlternateLookup.cs" />
+    <Compile Include="System\Collections\Frozen\String\LengthBucketsFrozenDictionary.AlternateLookup.cs" />
+    <Compile Include="System\Collections\Frozen\String\LengthBucketsFrozenSet.AlternateLookup.cs" />
+    <Compile Include="System\Collections\Frozen\String\OrdinalStringFrozenDictionary.AlternateLookup.cs" />
+    <Compile Include="System\Collections\Frozen\String\OrdinalStringFrozenSet.AlternateLookup.cs" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">

@@ -51,14 +51,14 @@ public:
     // prints out the hexidecimal representation
     OutString& hex(unsigned i, int minWidth = 0, unsigned flags = none);
 
-    OutString& hex(unsigned __int64 i, int minWidth = 0, unsigned flags = none);
+    OutString& hex(uint64_t i, int minWidth = 0, unsigned flags = none);
 
     OutString& hex(int i, int minWidth = 0, unsigned flags = none) {
         return hex(unsigned(i), minWidth, flags);
     }
 
-    OutString& hex(__int64 i, int minWidth = 0, unsigned flags = none) {
-        return hex((unsigned __int64) i, minWidth, flags);
+    OutString& hex(int64_t i, int minWidth = 0, unsigned flags = none) {
+        return hex((uint64_t) i, minWidth, flags);
     }
 
     //  print out 'count' instances of the character 'c'

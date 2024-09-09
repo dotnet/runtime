@@ -83,7 +83,7 @@ namespace System.Threading.Tests
         }
 
         // The documentation says MAX_PATH is the length limit for name, but it won't throw any errors:
-        // https://docs.microsoft.com/en-us/windows/win32/api/synchapi/nf-synchapi-createeventexw
+        // https://learn.microsoft.com/windows/win32/api/synchapi/nf-synchapi-createeventexw
         // The .NET Core constructors for EventWaitHandle do not throw on name longer than MAX_LENGTH, so the extension method should match the behavior:
         // https://source.dot.net/#System.Private.CoreLib/shared/System/Threading/EventWaitHandle.Windows.cs,20
         // The .NET Framework constructor throws:

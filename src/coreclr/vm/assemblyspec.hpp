@@ -28,7 +28,7 @@ class AssemblySpec  : public BaseAssemblySpec
 {
   private:
     AppDomain       *m_pAppDomain;
-    DomainAssembly  *m_pParentAssembly;
+    Assembly  *m_pParentAssembly;
 
     // Contains the reference to the fallback load context associated with RefEmitted assembly requesting the load of another assembly (static or dynamic)
     AssemblyBinder *m_pFallbackBinder;
@@ -38,14 +38,13 @@ class AssemblySpec  : public BaseAssemblySpec
 
     HRESULT InitializeSpecInternal(mdToken kAssemblyRefOrDef,
                                    IMDInternalImport *pImport,
-                                   DomainAssembly *pStaticParent);
+                                   Assembly *pStaticParent);
 
     // InitializeSpecInternal should be used very carefully so it's made private.
     // functions that take special care (and thus are allowed to use the function) are listed below
     friend Assembly * Module::GetAssemblyIfLoaded(
                 mdAssemblyRef       kAssemblyRef,
                 IMDInternalImport * pMDImportOverride,
-                BOOL                fDoNotUtilizeExtraChecks,
                 AssemblyBinder      *pBinderForLoadedAssembly);
 
   public:
@@ -73,7 +72,7 @@ class AssemblySpec  : public BaseAssemblySpec
     }
 
 
-    DomainAssembly* GetParentAssembly();
+    Assembly* GetParentAssembly();
 
     AssemblyBinder* GetBinderFromParentAssembly(AppDomain *pDomain);
 
@@ -82,7 +81,7 @@ class AssemblySpec  : public BaseAssemblySpec
 
     void InitializeSpec(mdToken kAssemblyRefOrDef,
                         IMDInternalImport *pImport,
-                        DomainAssembly *pStaticParent = NULL)
+                        Assembly *pStaticParent = NULL)
     {
         CONTRACTL
         {
@@ -92,7 +91,7 @@ class AssemblySpec  : public BaseAssemblySpec
             MODE_ANY;
         }
         CONTRACTL_END;
-        HRESULT hr=InitializeSpecInternal(kAssemblyRefOrDef, pImport,pStaticParent);
+        HRESULT hr = InitializeSpecInternal(kAssemblyRefOrDef, pImport, pStaticParent);
         if(FAILED(hr))
             EEFileLoadException::Throw(this,hr);
     };
@@ -102,7 +101,7 @@ class AssemblySpec  : public BaseAssemblySpec
 
     void AssemblyNameInit(ASSEMBLYNAMEREF* pName); //[in,out]
 
-    void SetParentAssembly(DomainAssembly *pAssembly)
+    void SetParentAssembly(Assembly *pAssembly)
     {
         CONTRACTL
         {
@@ -175,8 +174,6 @@ class AssemblySpec  : public BaseAssemblySpec
 
     Assembly *LoadAssembly(FileLoadLevel targetLevel,
                            BOOL fThrowOnFileNotFound = TRUE);
-    DomainAssembly *LoadDomainAssembly(FileLoadLevel targetLevel,
-                                       BOOL fThrowOnFileNotFound = TRUE);
 
   public: // static
     // Creates and loads an assembly based on the name and context.
@@ -193,8 +190,6 @@ class AssemblySpec  : public BaseAssemblySpec
     static void InitializeAssemblyNameRef(_In_ BINDER_SPACE::AssemblyName* assemblyName, _Out_ ASSEMBLYNAMEREF* assemblyNameRef);
 
   public:
-    void MatchPublicKeys(Assembly *pAssembly);
-
     AppDomain *GetAppDomain()
     {
         LIMITED_METHOD_CONTRACT;

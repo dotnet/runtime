@@ -8,7 +8,7 @@ import { exceptions, simd } from "wasm-feature-detect";
 
 import gitHash from "consts:gitHash";
 
-import type { DotnetModuleInternal, GlobalObjects, LoaderHelpers, MonoConfigInternal, PThreadWorker, RuntimeHelpers } from "../types/internal";
+import type { DotnetModuleInternal, GlobalObjects, GlobalizationHelpers, LoaderHelpers, MonoConfigInternal, PThreadWorker, RuntimeHelpers } from "../types/internal";
 import type { MonoConfig, RuntimeAPI } from "../types";
 import { assert_runtime_running, installUnhandledErrorHandler, is_exited, is_runtime_running, mono_exit } from "./exit";
 import { assertIsControllablePromise, createPromiseController, getPromiseController } from "./promise-controller";
@@ -32,6 +32,7 @@ export const ENVIRONMENT_IS_WEB = typeof window == "object" || (ENVIRONMENT_IS_W
 export const ENVIRONMENT_IS_SHELL = !ENVIRONMENT_IS_WEB && !ENVIRONMENT_IS_NODE;
 
 export let runtimeHelpers: RuntimeHelpers = {} as any;
+export let globalizationHelpers: GlobalizationHelpers = {} as any;
 export let loaderHelpers: LoaderHelpers = {} as any;
 export let exportedRuntimeAPI: RuntimeAPI = {} as any;
 export let INTERNAL: any = {};
@@ -48,6 +49,7 @@ export const globalObjectsRoot: GlobalObjects = {
     module: emscriptenModule,
     loaderHelpers,
     runtimeHelpers,
+    globalizationHelpers,
     api: exportedRuntimeAPI,
 } as any;
 
@@ -61,6 +63,7 @@ export function setLoaderGlobals (
     }
     _loaderModuleLoaded = true;
     runtimeHelpers = globalObjects.runtimeHelpers;
+    globalizationHelpers = globalObjects.globalizationHelpers;
     loaderHelpers = globalObjects.loaderHelpers;
     exportedRuntimeAPI = globalObjects.api;
     INTERNAL = globalObjects.internal;
@@ -103,6 +106,7 @@ export function setLoaderGlobals (
 
         afterConfigLoaded: createPromiseController<MonoConfig>(),
         allDownloadsQueued: createPromiseController<void>(),
+        allDownloadsFinished: createPromiseController<void>(),
         wasmCompilePromise: createPromiseController<WebAssembly.Module>(),
         runtimeModuleLoaded: createPromiseController<void>(),
         loadingWorkers: createPromiseController<PThreadWorker[]>(),

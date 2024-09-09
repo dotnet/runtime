@@ -38,9 +38,9 @@ void DebugBreakorAV(int val)
     if (IsDebuggerPresent())
     {
         if (val == 0)
-            __debugbreak();
+            DEBUG_BREAK;
         if (BreakOnDebugBreakorAV())
-            __debugbreak();
+            DEBUG_BREAK;
     }
 
     int exception_code = EXCEPTIONCODE_DebugBreakorAV + val;
@@ -516,11 +516,11 @@ std::string getClassName(MethodContext* mc, CORINFO_CLASS_HANDLE clsHnd)
 
 std::string ConvertToUtf8(const WCHAR* str)
 {
-    unsigned len = WszWideCharToMultiByte(CP_UTF8, 0, str, -1, nullptr, 0, nullptr, nullptr);
+    unsigned len = WideCharToMultiByte(CP_UTF8, 0, str, -1, nullptr, 0, nullptr, nullptr);
     if (len == 0)
         return{};
 
     std::vector<char> buf(len + 1);
-    WszWideCharToMultiByte(CP_UTF8, 0, str, -1, buf.data(), len + 1, nullptr, nullptr);
+    WideCharToMultiByte(CP_UTF8, 0, str, -1, buf.data(), len + 1, nullptr, nullptr);
     return std::string{ buf.data() };
 }

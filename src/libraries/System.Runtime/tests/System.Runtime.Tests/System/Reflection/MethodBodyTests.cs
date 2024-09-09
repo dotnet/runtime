@@ -41,10 +41,10 @@ namespace System.Reflection.Tests
                 if (ehc.Flags != ExceptionHandlingClauseOptions.Finally && ehc.Flags != ExceptionHandlingClauseOptions.Filter)
                 {
                     Assert.Equal(typeof(Exception), ehc.CatchType);
-                    Assert.Equal(19, ehc.HandlerLength);
-                    Assert.Equal(70, ehc.HandlerOffset);
+                    Assert.Equal(27, ehc.HandlerLength);
+                    Assert.Equal(86, ehc.HandlerOffset);
                     Assert.Equal(61, ehc.TryLength);
-                    Assert.Equal(9, ehc.TryOffset);
+                    Assert.Equal(25, ehc.TryOffset);
                     return;
                 }
             }
@@ -64,10 +64,10 @@ namespace System.Reflection.Tests
                 if (ehc.Flags != ExceptionHandlingClauseOptions.Finally && ehc.Flags != ExceptionHandlingClauseOptions.Filter)
                 {
                     Assert.Equal(typeof(Exception), ehc.CatchType);
-                    Assert.Equal(14, ehc.HandlerLength);
-                    Assert.Equal(58, ehc.HandlerOffset);
+                    Assert.Equal(21, ehc.HandlerLength);
+                    Assert.Equal(72, ehc.HandlerOffset);
                     Assert.Equal(50, ehc.TryLength);
-                    Assert.Equal(8, ehc.TryOffset);
+                    Assert.Equal(22, ehc.TryOffset);
                     return;
                 }
             }
@@ -79,7 +79,10 @@ namespace System.Reflection.Tests
         private static void MethodBodyExample(object arg)
         {
             int var1 = 2;
+            Keep(ref var1);
+
             string var2 = "I am a string";
+            Keep(ref var2);
 
             try
             {
@@ -94,6 +97,7 @@ namespace System.Reflection.Tests
             }
             catch (Exception ex)
             {
+                Keep(ref ex);
                 Console.WriteLine(ex.Message);
             }
             finally
@@ -101,6 +105,9 @@ namespace System.Reflection.Tests
                 var1 = 3;
                 var2 = "I am a new string!";
             }
+
+            // Reference local variables to prevent them from being optimized out by Roslyn
+            static void Keep<T>(ref T value) { };
         }
     }
 }

@@ -203,9 +203,11 @@ namespace System.Runtime.InteropServices.JavaScript
                     }
                 }
 
-                // this is always running on I/O thread, so it will not throw PNSE
                 // it's also OK to block here, because we know we will only block shortly, as this is just race with the other thread.
-                holder.CallbackReady?.Wait();
+                if (holder.CallbackReady != null)
+                {
+                    Thread.ForceBlockingWait(static (b) => ((ManualResetEventSlim)b!).Wait(), holder.CallbackReady);
+                }
 
                 lock (ctx)
                 {
@@ -275,7 +277,7 @@ namespace System.Runtime.InteropServices.JavaScript
             }
             catch (Exception ex)
             {
-                arg_exc.ToJS(ex);
+                Environment.FailFast($"InstallMainSynchronizationContext: Unexpected failure (ManagedThreadId {Environment.CurrentManagedThreadId}): " + ex);
             }
         }
 
@@ -289,6 +291,7 @@ namespace System.Runtime.InteropServices.JavaScript
             try
             {
                 var ctx = arg_exc.AssertCurrentThreadContext();
+                // note that this method is only executed when the caller is on another thread, via mono_wasm_invoke_jsexport_sync -> mono_wasm_install_js_worker_interop_wrapper
                 ctx.IsPendingSynchronousCall = true;
                 if (ctx.IsMainThread)
                 {

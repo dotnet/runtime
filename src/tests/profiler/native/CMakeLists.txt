@@ -11,6 +11,8 @@ set(SOURCES
     gcallocateprofiler/gcallocateprofiler.cpp
     nongcheap/nongcheap.cpp
     gcbasicprofiler/gcbasicprofiler.cpp
+    gcheapenumerationprofiler/gcheapenumerationprofiler.cpp
+    gcheapenumerationprofiler/gcheapenumerationprofiler.def
     gcprofiler/gcprofiler.cpp
     getappdomainstaticaddress/getappdomainstaticaddress.cpp
     handlesprofiler/handlesprofiler.cpp
@@ -32,9 +34,10 @@ set(SOURCES
 
 include_directories(../../../coreclr/pal/prebuilt/inc)
 
+add_compile_definitions(SOS_INCLUDE)
+
 if(NOT WIN32)
     include_directories(../../../coreclr/pal/inc/rt ../../../coreclr/pal/inc ../../../coreclr/inc)
-    add_compile_options(-DPAL_STDCPP_COMPAT)
     if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
         add_compile_options(-Wno-null-arithmetic)
     else(CMAKE_CXX_COMPILER_ID MATCHES "Clang")

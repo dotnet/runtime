@@ -14,6 +14,11 @@ function testOutput(msg) {
     console.log(`TestOutput -> ${msg}`);
 }
 
+function countChars(str) {
+    const length = str.length;
+    return length;
+}
+
 // Prepare base runtime parameters
 dotnet
     .withElementOnExit()
@@ -24,6 +29,9 @@ dotnet
 switch (testCase) {
     case "AppSettingsTest":
         dotnet.withApplicationEnvironment(params.get("applicationEnvironment"));
+        break;
+    case "LazyLoadingTest":
+        dotnet.withDiagnosticTracing(true);
         break;
     case "DownloadResourceProgressTest":
         if (params.get("failAssemblyDownload") === "true") {
@@ -37,7 +45,7 @@ switch (testCase) {
             let alreadyFailed = [];
             dotnet.withDiagnosticTracing(true).withResourceLoader((type, name, defaultUri, integrity, behavior) => {
                 if (type === "dotnetjs") {
-                    // loadBootResource could return string with unqualified name of resource. 
+                    // loadBootResource could return string with unqualified name of resource.
                     // It assumes that we resolve it with document.baseURI
                     // we test it here
                     return `_framework/${name}`;
@@ -78,12 +86,47 @@ switch (testCase) {
             },
         });
         break;
+    case "InterpPgoTest":
+        dotnet
+            .withConsoleForwarding()
+            .withRuntimeOptions(['--interp-pgo-logging'])
+            .withInterpreterPgo(true);
+        break;
+    case "DownloadThenInit":
+        const originalFetch = globalThis.fetch;
+        globalThis.fetch = (url, fetchArgs) => {
+            testOutput("fetching " + url);
+            return originalFetch(url, fetchArgs);
+        };
+        await dotnet.download();
+        testOutput("download finished");
+        break;
+    case "MaxParallelDownloads":
+        const maxParallelDownloads = params.get("maxParallelDownloads");
+        let activeFetchCount = 0;
+        const originalFetch2 = globalThis.fetch;
+        globalThis.fetch = async (...args) => {
+            activeFetchCount++;
+            testOutput(`Fetch started. Active downloads: ${activeFetchCount}`);
+            try {
+                const response = await originalFetch2(...args);
+                activeFetchCount--;
+                testOutput(`Fetch completed. Active downloads: ${activeFetchCount}`);
+                return response;
+            } catch (error) {
+                activeFetchCount--;
+                testOutput(`Fetch failed. Active downloads: ${activeFetchCount}`);
+                throw error;
+            }
+        };
+        dotnet.withConfig({ maxParallelDownloads: maxParallelDownloads });
+        break;
 }
 
-const { getAssemblyExports, getConfig, INTERNAL } = await dotnet.create();
+const { setModuleImports, getAssemblyExports, getConfig, INTERNAL } = await dotnet.create();
 const config = getConfig();
 const exports = await getAssemblyExports(config.mainAssemblyName);
-const assemblyExtension = config.resources.assembly['System.Private.CoreLib.wasm'] !== undefined ? ".wasm" : ".dll";
+const assemblyExtension = Object.keys(config.resources.coreAssembly)[0].endsWith('.wasm') ? ".wasm" : ".dll";
 
 // Run the test case
 try {
@@ -94,7 +137,23 @@ try {
             break;
         case "LazyLoadingTest":
             if (params.get("loadRequiredAssembly") !== "false") {
-                await INTERNAL.loadLazyAssembly(`Json${assemblyExtension}`);
+                let lazyAssemblyExtension = assemblyExtension;
+                switch (params.get("lazyLoadingTestExtension")) {
+                    case "wasm":
+                        lazyAssemblyExtension = ".wasm";
+                        break;
+                    case "dll":
+                        lazyAssemblyExtension = ".dll";
+                        break;
+                    case "NoExtension":
+                        lazyAssemblyExtension = "";
+                        break;
+                    default:
+                        lazyAssemblyExtension = assemblyExtension;
+                        break;
+                }
+
+                await INTERNAL.loadLazyAssembly(`Json${lazyAssemblyExtension}`);
             }
             exports.LazyLoadingTest.Run();
             exit(0);
@@ -114,6 +173,32 @@ try {
             break;
         case "DebugLevelTest":
             testOutput("WasmDebugLevel: " + config.debugLevel);
+            exit(0);
+            break;
+        case "InterpPgoTest":
+            setModuleImports('main.js', {
+                window: {
+                    location: {
+                        href: () => globalThis.window.location.href
+                    }
+                }
+            });
+            const iterationCount = params.get("iterationCount") ?? 70;
+            for (let i = 0; i < iterationCount; i++) {
+                exports.InterpPgoTest.Greeting();
+            };
+            await INTERNAL.interp_pgo_save_data();
+            exit(0);
+            break;
+        case "DownloadThenInit":
+        case "MaxParallelDownloads":
+            exit(0);
+            break;
+        case "AllocateLargeHeapThenInterop":
+            setModuleImports('main.js', {
+                countChars
+            });
+            exports.MemoryTest.Run();
             exit(0);
             break;
         default:

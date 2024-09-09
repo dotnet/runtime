@@ -53,10 +53,7 @@ namespace System.Text.RegularExpressions
         private void Goto(int newpos)
         {
             // When branching backward, ensure storage.
-            if (newpos < _codepos)
-            {
-                EnsureStorage();
-            }
+            EnsureStorage();
 
             _codepos = newpos;
             SetOperator((RegexOpcode)_code.Codes[newpos]);
@@ -144,10 +141,7 @@ namespace System.Text.RegularExpressions
             SetOperator((RegexOpcode)(_code.Codes[newpos] | back));
 
             // When branching backward, ensure storage.
-            if (newpos < _codepos)
-            {
-                EnsureStorage();
-            }
+            EnsureStorage();
 
             _codepos = newpos;
         }

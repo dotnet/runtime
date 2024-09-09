@@ -33,7 +33,7 @@
 
 using System.ComponentModel;
 using System.Data.SqlTypes;
-
+using System.Reflection;
 using Xunit;
 
 namespace System.Data.Tests
@@ -791,6 +791,54 @@ namespace System.Data.Tests
             var c1 = t.Columns.Add("c1", typeof(NullableTypeWithNullProperty));
             var c2 = t.Columns.Add("c2", typeof(NullableTypeWithNullField));
             Assert.Throws<ArgumentException>(() => t.Columns.Add("c3", typeof(NullableTypeWithoutNullMember)));
+        }
+
+        [Fact]
+        public void MethodsCalledByReflectionSerializersAreNotTrimmed()
+        {
+            Assert.True(ShouldSerializeExists(nameof(DataColumn.Caption)));
+            Assert.True(ShouldSerializeExists(nameof(DataColumn.DefaultValue)));
+            Assert.True(ShouldSerializeExists(nameof(DataColumn.Namespace)));
+
+            Assert.True(ResetExists(nameof(DataColumn.Caption)));
+            Assert.False(ResetExists(nameof(DataColumn.DefaultValue)));
+            Assert.True(ResetExists(nameof(DataColumn.Namespace)));
+
+            bool ShouldSerializeExists(string name) => typeof(DataColumn).GetMethod("ShouldSerialize" + name, BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public) != null;
+            bool ResetExists(string name) => typeof(DataColumn).GetMethod("Reset" + name, BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public) != null;
+        }
+
+        [Fact]
+        public void MethodsCalledByReflectionSerializersAreNotTrimmedUsingTypeDescriptor()
+        {
+            DataColumn dc = new DataColumn
+            {
+                ColumnName = "dataColumn",
+                DataType = typeof(DateTime)
+            };
+
+            PropertyDescriptorCollection properties = TypeDescriptor.GetProperties(dc);
+
+            Assert.False(properties[nameof(DataColumn.DefaultValue)].ShouldSerializeValue(dc));
+            dc.DefaultValue = DateTime.MinValue;
+            Assert.True(properties[nameof(DataColumn.DefaultValue)].ShouldSerializeValue(dc));
+            properties[nameof(DataColumn.DefaultValue)].ResetValue(dc);
+            Assert.Equal(DateTime.MinValue, dc.DefaultValue);
+            Assert.True(properties[nameof(DataColumn.DefaultValue)].ShouldSerializeValue(dc));
+
+            Assert.False(properties[nameof(DataColumn.Caption)].ShouldSerializeValue(dc));
+            dc.Caption = "Caption";
+            Assert.True(properties[nameof(DataColumn.Caption)].ShouldSerializeValue(dc));
+            properties[nameof(DataColumn.Caption)].ResetValue(dc);
+            Assert.False(properties[nameof(DataColumn.Caption)].ShouldSerializeValue(dc));
+            Assert.Equal("dataColumn", dc.Caption);
+
+            Assert.False(properties[nameof(DataColumn.Namespace)].ShouldSerializeValue(dc));
+            dc.Namespace = "Namespace";
+            Assert.True(properties[nameof(DataColumn.Namespace)].ShouldSerializeValue(dc));
+            properties[nameof(DataColumn.Namespace)].ResetValue(dc);
+            Assert.False(properties[nameof(DataColumn.Namespace)].ShouldSerializeValue(dc));
+            Assert.Equal("", dc.Namespace);
         }
 
         private sealed class NullableTypeWithNullProperty : INullable

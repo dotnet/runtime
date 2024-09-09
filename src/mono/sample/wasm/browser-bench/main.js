@@ -225,11 +225,6 @@ try {
         //  console to see statistics on how much code it generated and whether any new opcodes
         //  are causing traces to fail to compile
         .withRuntimeOptions(["--jiterpreter-stats-enabled"])
-        // We enable interpreter PGO so that you can exercise it in local tests, i.e.
-        //  run browser-bench one, then refresh the tab to measure the performance improvement
-        //  on the second run of browser-bench. The overall speed of the benchmarks won't
-        //  improve much, but the time spent generating code during the run will go down
-        .withInterpreterPgo(true, 30)
         .withElementOnExit()
         .withExitCodeLogging()
         .create();

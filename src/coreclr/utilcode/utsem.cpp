@@ -167,10 +167,10 @@ UTSemReadWrite::Init()
     _ASSERTE(m_hReadWaiterSemaphore == NULL);
     _ASSERTE(m_hWriteWaiterEvent == NULL);
 
-    m_hReadWaiterSemaphore = WszCreateSemaphore(NULL, 0, MAXLONG, NULL);
+    m_hReadWaiterSemaphore = CreateSemaphore(NULL, 0, MAXLONG, NULL);
     IfNullRet(m_hReadWaiterSemaphore);
 
-    m_hWriteWaiterEvent = WszCreateEvent(NULL, FALSE, FALSE, NULL);
+    m_hWriteWaiterEvent = CreateEvent(NULL, FALSE, FALSE, NULL);
     IfNullRet(m_hWriteWaiterEvent);
 
     return S_OK;

@@ -130,6 +130,7 @@ namespace System.Reflection.Metadata.Decoding.Tests
 
         // Test as much as we can with simple C# examples inline below.
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.HasAssemblyFiles))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/91923", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoRuntime), nameof(PlatformDetection.IsBuiltWithAggressiveTrimming), nameof(PlatformDetection.IsAppleMobile))]
         public void SimpleSignatureProviderCoverage()
         {
             using (FileStream stream = File.OpenRead(AssemblyPathHelper.GetAssemblyLocation(typeof(SignaturesToDecode<>).GetTypeInfo().Assembly)))
@@ -277,10 +278,14 @@ namespace System.Reflection.Metadata.Decoding.Tests
             public static unsafe int DoSomething()
             {
                 byte[] bytes = new byte[] { 1, 2, 3 };
+                Keep(ref bytes);
                 fixed (byte* bytePtr = bytes)
                 {
                     return *bytePtr;
                 }
+
+                // Reference local variables to prevent them from being optimized out by Roslyn
+                static void Keep<T>(ref T value) { };
             }
         }
 

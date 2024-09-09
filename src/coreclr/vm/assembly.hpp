@@ -221,6 +221,7 @@ public:
     }
 
     OBJECTREF GetExposedObject();
+    OBJECTREF GetExposedObjectIfExists();
 
     DebuggerAssemblyControlFlags GetDebuggerInfoBits(void)
     {
@@ -259,9 +260,8 @@ public:
     ~Assembly();
 
     BOOL GetResource(LPCSTR szName, DWORD *cbResource,
-                     PBYTE *pbInMemoryResource, Assembly **pAssemblyRef,
-                     LPCSTR *szFileName, DWORD *dwLocation,
-                     BOOL fSkipRaiseResolveEvent = FALSE);
+                    PBYTE *pbInMemoryResource, Assembly **pAssemblyRef,
+                    LPCSTR *szFileName, DWORD *dwLocation);
 
     //****************************************************************************************
 #ifdef DACCESS_COMPILE
@@ -363,7 +363,6 @@ public:
 
     static void AddDiagnosticStartupHookPath(LPCWSTR wszPath);
 
-
 protected:
 #ifdef FEATURE_COMINTEROP
 
@@ -432,6 +431,8 @@ private:
     DebuggerAssemblyControlFlags m_debuggerFlags;
 
     BOOL                  m_fTerminated;
+
+    LOADERHANDLE          m_hExposedObject;
 };
 
 #ifndef DACCESS_COMPILE

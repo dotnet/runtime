@@ -2,8 +2,10 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using ILLink.Shared;
+using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Testing;
 using Microsoft.CodeAnalysis.Text;
 using Xunit;
@@ -33,6 +35,19 @@ namespace System.Diagnostics.CodeAnalysis
 		public string? Url { get; set; }
 	}
 }";
+
+		static async Task VerifyRequiresDynamicCodeAnalyzer (
+			string source,
+			params DiagnosticResult[] expected)
+		{
+
+			await VerifyCS.VerifyAnalyzerAsync (
+				source,
+				consoleApplication: false,
+				TestCaseUtils.UseMSBuildProperties (MSBuildPropertyOptionNames.EnableAotAnalyzer),
+				Array.Empty<MetadataReference> (),
+				expected);
+		}
 
 		static Task VerifyRequiresDynamicCodeCodeFix (
 			string source,
@@ -331,6 +346,166 @@ build_property.{MSBuildPropertyOptionNames.EnableAotAnalyzer} = true")));
 				VerifyCS.Diagnostic(DiagnosticId.RequiresDynamicCode).WithSpan(13, 17, 13, 21).WithArguments("C.M1()", " message.", "")
 			};
 			return VerifyRequiresDynamicCodeCodeFix (src, fix, diag, Array.Empty<DiagnosticResult> ());
+		}
+
+		[Fact]
+		public Task MakeGenericTypeWithAllKnownTypes ()
+		{
+			const string src = $$"""
+			class C
+			{
+				public void M() => typeof(Gen<>).MakeGenericType(typeof(object));
+			}
+			class Gen<T> { }
+			""";
+
+			return VerifyRequiresDynamicCodeAnalyzer (src);
+		}
+
+		[Fact]
+		public Task MakeGenericTypeWithAllKnownTypesInGenericContext ()
+		{
+			const string src = $$"""
+			class C
+			{
+				public void M<T>() => typeof(Gen<>).MakeGenericType(typeof(T));
+			}
+			class Gen<T> { }
+			""";
+
+			return VerifyRequiresDynamicCodeAnalyzer (src);
+		}
+
+		[Fact]
+		public Task MakeGenericTypeWithConstraint ()
+		{
+			const string src = $$"""
+			using System;
+			class C
+			{
+				public void M() => typeof(Gen<>).MakeGenericType(GetObject());
+				static Type GetObject() => typeof(object);
+			}
+			class Gen<T> where T : class { }
+			""";
+
+			return VerifyRequiresDynamicCodeAnalyzer (src);
+		}
+
+		[Fact]
+		public Task MakeGenericTypeWithUnknownDefinition ()
+		{
+			const string src = $$"""
+			using System;
+			class C
+			{
+				public void M() => GetDefinition().MakeGenericType(typeof(object));
+				static Type GetDefinition() => typeof(Gen<>);
+			}
+			class Gen<T> { }
+			""";
+
+			return VerifyRequiresDynamicCodeAnalyzer (src,
+				// (4,21): warning IL3050: Using member 'System.Type.MakeGenericType(params Type[])' which has 'RequiresDynamicCodeAttribute' can break functionality when AOT compiling. The native code for this instantiation might not be available at runtime.
+				VerifyCS.Diagnostic (DiagnosticId.RequiresDynamicCode).WithSpan (4, 21, 4, 68).WithArguments ("System.Type.MakeGenericType(params Type[])", " The native code for this instantiation might not be available at runtime.", ""));
+		}
+
+		[Fact]
+		public Task MakeGenericTypeWithUnknownArgument ()
+		{
+			const string src = $$"""
+			using System;
+			class C
+			{
+				public void M() => typeof(Gen<>).MakeGenericType(GetObject());
+				static Type GetObject() => typeof(object);
+			}
+			class Gen<T> { }
+			""";
+
+			return VerifyRequiresDynamicCodeAnalyzer (src,
+				// (4,21): warning IL3050: Using member 'System.Type.MakeGenericType(params Type[])' which has 'RequiresDynamicCodeAttribute' can break functionality when AOT compiling. The native code for this instantiation might not be available at runtime.
+				VerifyCS.Diagnostic (DiagnosticId.RequiresDynamicCode).WithSpan (4, 21, 4, 63).WithArguments ("System.Type.MakeGenericType(params Type[])", " The native code for this instantiation might not be available at runtime.", ""));
+		}
+
+		[Fact]
+		public Task MakeGenericMethodWithAllKnownTypes ()
+		{
+			const string src = $$"""
+			class C
+			{
+				public void M() => typeof(C).GetMethod(nameof(N)).MakeGenericMethod(typeof(object));
+				public void N<T>() { }
+			}
+			""";
+
+			return VerifyRequiresDynamicCodeAnalyzer (src);
+		}
+
+		[Fact]
+		public Task MakeGenericMethodWithAllKnownTypesInGenericContext ()
+		{
+			const string src = $$"""
+			class C
+			{
+				public void M<T>() => typeof(C).GetMethod(nameof(N)).MakeGenericMethod(typeof(T));
+				public void N<T>() { }
+			}
+			""";
+
+			return VerifyRequiresDynamicCodeAnalyzer (src);
+		}
+
+		[Fact]
+		public Task MakeGenericMethodWithConstraint ()
+		{
+			const string src = $$"""
+			using System;
+			class C
+			{
+				public void M() => typeof(C).GetMethod(nameof(N)).MakeGenericMethod(GetObject());
+				public void N<T>() where T : class { }
+				static Type GetObject() => typeof(object);
+			}
+			""";
+
+			return VerifyRequiresDynamicCodeAnalyzer (src);
+		}
+
+		[Fact]
+		public Task MakeGenericMethodWithUnknownDefinition ()
+		{
+			const string src = $$"""
+			using System.Reflection;
+			class C
+			{
+				public void M() => GetMethodInfo().MakeGenericMethod(typeof(object));
+				public void N<T>() { }
+				public MethodInfo GetMethodInfo() => typeof(C).GetMethod(nameof(N));
+			}
+			""";
+
+			return VerifyRequiresDynamicCodeAnalyzer (src,
+				// (4,21): warning IL3050: Using member 'System.Reflection.MethodInfo.MakeGenericMethod(params Type[])' which has 'RequiresDynamicCodeAttribute' can break functionality when AOT compiling. The native code for this instantiation might not be available at runtime.
+				VerifyCS.Diagnostic (DiagnosticId.RequiresDynamicCode).WithSpan (4, 21, 4, 70).WithArguments ("System.Reflection.MethodInfo.MakeGenericMethod(params Type[])", " The native code for this instantiation might not be available at runtime.", ""));
+		}
+
+		[Fact]
+		public Task MakeGenericMethodWithUnknownArgument ()
+		{
+			const string src = $$"""
+			using System;
+			class C
+			{
+				public void M() => typeof(C).GetMethod(nameof(N)).MakeGenericMethod(GetObject());
+				public void N<T>() { }
+				static Type GetObject() => typeof(object);
+			}
+			""";
+
+			return VerifyRequiresDynamicCodeAnalyzer (src,
+				// (4,21): warning IL3050: Using member 'System.Reflection.MethodInfo.MakeGenericMethod(params Type[])' which has 'RequiresDynamicCodeAttribute' can break functionality when AOT compiling. The native code for this instantiation might not be available at runtime.
+				VerifyCS.Diagnostic (DiagnosticId.RequiresDynamicCode).WithSpan (4, 21, 4, 82).WithArguments ("System.Reflection.MethodInfo.MakeGenericMethod(params Type[])", " The native code for this instantiation might not be available at runtime.", ""));
 		}
 	}
 }

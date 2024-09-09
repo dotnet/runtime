@@ -192,9 +192,9 @@
         <target state="translated">Le délai d’attente du moteur Regex a expiré pendant la tentative de mise en correspondance d’un modèle avec une chaîne d’entrée. Ce problème peut se produire pour de nombreuses raisons, notamment en cas d’entrées volumineuses ou de retour sur trace excessif causé par les quantificateurs imbriqués, les références arrière et d’autres facteurs.</target>
         <note />
       </trans-unit>
-      <trans-unit id="RegexMethodMustHaveValidSignatureMessage">
-        <source>GeneratedRegexAttribute method must be partial, parameterless, non-generic, non-abstract, and return Regex.</source>
-        <target state="translated">La méthode GeneratedRegexAttribute doit être partielle, sans paramètre, non générique, non abstraite et renvoyer Regex.</target>
+      <trans-unit id="RegexMemberMustHaveValidSignatureMessage">
+        <source>GeneratedRegexAttribute method or property must be partial, parameterless, non-generic, non-abstract, and return Regex. If a property, it must also be get-only.</source>
+        <target state="new">GeneratedRegexAttribute method or property must be partial, parameterless, non-generic, non-abstract, and return Regex. If a property, it must also be get-only.</target>
         <note />
       </trans-unit>
       <trans-unit id="ReversedCharacterRange">

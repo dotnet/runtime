@@ -2,19 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 /*++
-
-
-
 Module Name:
-
     thread.cpp
 
 Abstract:
-
     Thread object and core APIs
-
-
-
 --*/
 
 #include "pal/dbgmsg.h"
@@ -42,15 +34,11 @@ SET_DEFAULT_DEBUG_CHANNEL(THREAD); // some headers have code with asserts, so do
 #include <sys/param.h>
 #include <sys/sysctl.h>
 #include <kvm.h>
-#elif defined(__sun)
-#ifndef _KERNEL
-#define _KERNEL
-#define UNDEF_KERNEL
 #endif
-#include <sys/procfs.h>
-#ifdef UNDEF_KERNEL
-#undef _KERNEL
-#endif
+
+#if defined(__sun)
+#include <procfs.h>
+#include <fcntl.h>
 #endif
 
 #include <signal.h>
@@ -79,10 +67,6 @@ SET_DEFAULT_DEBUG_CHANNEL(THREAD); // some headers have code with asserts, so do
 #endif
 #if HAVE_LWP_H
 #include <lwp.h>
-#endif
-// If we don't have sys/lwp.h but do expect to use _lwp_self, declare it to silence compiler warnings
-#if HAVE__LWP_SELF && !HAVE_SYS_LWP_H && !HAVE_LWP_H
-extern "C" int _lwp_self ();
 #endif
 
 #if HAVE_CPUSET_T
@@ -1231,7 +1215,7 @@ CorUnix::GetThreadTimesInternal(
     OUT LPFILETIME lpKernelTime,
     OUT LPFILETIME lpUserTime)
 {
-    __int64 calcTime;
+    int64_t calcTime;
     BOOL retval = FALSE;
 
 #if HAVE_MACH_THREADS
@@ -1281,15 +1265,15 @@ CorUnix::GetThreadTimesInternal(
     }
 
     /* Get the time of user mode execution, in nanoseconds */
-    calcTime = (__int64)resUsage.user_time.seconds * SECS_TO_NS;
-    calcTime += (__int64)resUsage.user_time.microseconds * USECS_TO_NS;
+    calcTime = (int64_t)resUsage.user_time.seconds * SECS_TO_NS;
+    calcTime += (int64_t)resUsage.user_time.microseconds * USECS_TO_NS;
     /* Assign the time into lpUserTime */
     lpUserTime->dwLowDateTime = (DWORD)calcTime;
     lpUserTime->dwHighDateTime = (DWORD)(calcTime >> 32);
 
     /* Get the time of kernel mode execution, in nanoseconds */
-    calcTime = (__int64)resUsage.system_time.seconds * SECS_TO_NS;
-    calcTime += (__int64)resUsage.system_time.microseconds * USECS_TO_NS;
+    calcTime = (int64_t)resUsage.system_time.seconds * SECS_TO_NS;
+    calcTime += (int64_t)resUsage.system_time.microseconds * USECS_TO_NS;
     /* Assign the time into lpKernelTime */
     lpKernelTime->dwLowDateTime = (DWORD)calcTime;
     lpKernelTime->dwHighDateTime = (DWORD)(calcTime >> 32);
@@ -1368,8 +1352,8 @@ CorUnix::GetThreadTimesInternal(
 
     kvm_close(kd);
 
-    calcTime = (__int64) klwp[i].l_rtime_sec * SECS_TO_NS;
-    calcTime += (__int64) klwp[i].l_rtime_usec * USECS_TO_NS;
+    calcTime = (int64_t) klwp[i].l_rtime_sec * SECS_TO_NS;
+    calcTime += (int64_t) klwp[i].l_rtime_usec * USECS_TO_NS;
     lpUserTime->dwLowDateTime = (DWORD)calcTime;
     lpUserTime->dwHighDateTime = (DWORD)(calcTime >> 32);
 
@@ -1458,8 +1442,8 @@ CorUnix::GetThreadTimesInternal(
     pTargetThread->Unlock(pThread);
 
     /* Calculate time in nanoseconds and assign to user time */
-    calcTime = (__int64) ts.tv_sec * SECS_TO_NS;
-    calcTime += (__int64) ts.tv_nsec;
+    calcTime = (int64_t) ts.tv_sec * SECS_TO_NS;
+    calcTime += (int64_t) ts.tv_nsec;
     lpUserTime->dwLowDateTime = (DWORD)calcTime;
     lpUserTime->dwHighDateTime = (DWORD)(calcTime >> 32);
 

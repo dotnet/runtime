@@ -51,6 +51,7 @@ set(COMMON_RUNTIME_SOURCES
     ${GC_DIR}/softwarewritewatch.cpp
 
     ${CLR_SRC_NATIVE_DIR}/minipal/cpufeatures.c
+    ${CLR_SRC_NATIVE_DIR}/minipal/time.c
 )
 
 set(SERVER_GC_SOURCES
@@ -231,15 +232,19 @@ if(FEATURE_EVENT_TRACE)
   add_definitions(-DFEATURE_EVENT_TRACE)
 endif()
 
+if (NOT CLR_CMAKE_TARGET_ARCH_WASM)
+  add_definitions(-DFEATURE_HIJACK)
+endif()
+
 add_definitions(-DFEATURE_BASICFREEZE)
 add_definitions(-DFEATURE_CONSERVATIVE_GC)
 if(CLR_CMAKE_TARGET_ARCH_AMD64 OR CLR_CMAKE_TARGET_ARCH_ARM64)
   add_definitions(-DFEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP)
   add_definitions(-DFEATURE_MANUALLY_MANAGED_CARD_BUNDLES)
-endif(CLR_CMAKE_TARGET_ARCH_AMD64 OR CLR_CMAKE_TARGET_ARCH_ARM64)
-if(CLR_CMAKE_TARGET_ARCH_ARM)
+endif()
+if(CLR_CMAKE_TARGET_ARCH_ARM OR CLR_CMAKE_TARGET_ARCH_WASM)
   add_definitions(-DFEATURE_64BIT_ALIGNMENT)
-endif(CLR_CMAKE_TARGET_ARCH_ARM)
+endif()
 
 add_definitions(-DFEATURE_CUSTOM_IMPORTS)
 add_definitions(-DFEATURE_DYNAMIC_CODE)
@@ -250,7 +255,7 @@ add_definitions(-DNATIVEAOT)
 add_definitions(-DFEATURE_CACHED_INTERFACE_DISPATCH)
 if(CLR_CMAKE_TARGET_ARCH_I386 OR CLR_CMAKE_TARGET_ARCH_ARM)
   add_definitions(-DINTERFACE_DISPATCH_CACHE_HAS_CELL_BACKPOINTER)
-endif(CLR_CMAKE_TARGET_ARCH_I386 OR CLR_CMAKE_TARGET_ARCH_ARM)
+endif()
 add_definitions(-D_LIB)
 
 # there is a problem with undefined symbols when this is set
@@ -260,14 +265,14 @@ if(CLR_CMAKE_TARGET_WIN32)
   set(FEATURE_ETW 1)
   add_definitions(-DFEATURE_ETW)
   add_definitions(-DFEATURE_SUSPEND_REDIRECTION)
-  if (CLR_CMAKE_TARGET_ARCH_AMD64)
+  if (CLR_CMAKE_TARGET_ARCH_AMD64 OR CLR_CMAKE_TARGET_ARCH_ARM64)
     add_definitions(-DFEATURE_SPECIAL_USER_MODE_APC)
   endif()
   if (CLR_CMAKE_TARGET_ARCH_I386)
     add_compile_options($<$<COMPILE_LANGUAGE:ASM_MASM>:/safeseh>)
   endif()
 else()
-  if(NOT CLR_CMAKE_TARGET_APPLE)
+  if(NOT CLR_CMAKE_TARGET_APPLE AND NOT CLR_CMAKE_TARGET_ARCH_WASM)
     add_definitions(-DFEATURE_READONLY_GS_COOKIE)
   endif()
   include(unix/configure.cmake)

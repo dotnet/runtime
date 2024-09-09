@@ -1229,16 +1229,6 @@ PhaseStatus Compiler::fgCloneFinally()
                     block->setBBProfileWeight(blockWeight * originalScale);
                     JITDUMP("Set weight of " FMT_BB " to " FMT_WT "\n", block->bbNum, block->bbWeight);
 
-#if HANDLER_ENTRY_MUST_BE_IN_HOT_SECTION
-                    // Handle a special case -- some handler entries can't have zero profile count.
-                    //
-                    if (bbIsHandlerBeg(block) && block->isRunRarely())
-                    {
-                        JITDUMP("Suppressing zero count for " FMT_BB " as it is a handler entry\n", block->bbNum);
-                        block->makeBlockHot();
-                    }
-#endif
-
                     BasicBlock* const clonedBlock = blockMap[block];
                     clonedBlock->setBBProfileWeight(blockWeight * clonedScale);
                     JITDUMP("Set weight of " FMT_BB " to " FMT_WT "\n", clonedBlock->bbNum, clonedBlock->bbWeight);
@@ -1910,7 +1900,7 @@ PhaseStatus Compiler::fgTailMergeThrows()
     // The second pass modifies flow so that predecessors of
     // non-canonical throw blocks now transfer control to the
     // appropriate canonical block.
-    int numCandidates = 0;
+    unsigned numCandidates = 0;
 
     // First pass
     //
@@ -1960,9 +1950,6 @@ PhaseStatus Compiler::fgTailMergeThrows()
             continue;
         }
 
-        // Sanity check -- only user funcs should be marked do not return
-        assert(call->gtCallType == CT_USER_FUNC);
-
         // Ok, we've found a suitable call. See if this is one we know
         // about already, or something new.
         BasicBlock* canonicalBlock = nullptr;
@@ -1986,6 +1973,8 @@ PhaseStatus Compiler::fgTailMergeThrows()
             callMap.Set(key, block);
         }
     }
+
+    assert(numCandidates <= optNoReturnCallCount);
 
     // Bail if no candidates were found
     if (numCandidates == 0)

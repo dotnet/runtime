@@ -286,7 +286,7 @@ namespace System.IO.Pipelines
             InternalTokenSource.Cancel();
         }
 
-#if NETCOREAPP
+#if NET
         [AsyncMethodBuilder(typeof(PoolingAsyncValueTaskMethodBuilder<>))]
 #endif
         private async ValueTask<FlushResult> FlushAsyncInternal(bool writeToStream, ReadOnlyMemory<byte> data, CancellationToken cancellationToken = default)

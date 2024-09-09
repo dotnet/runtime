@@ -71,4 +71,4 @@ interface MockEnvironment {
     expectAdvertise: FilterPredicate;
 }
 
-export { MockEnvironment, MockScriptConnection, PromiseAndController };
+export type { MockEnvironment, MockScriptConnection, PromiseAndController };

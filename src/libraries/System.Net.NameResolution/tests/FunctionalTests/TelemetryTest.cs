@@ -28,9 +28,9 @@ namespace System.Net.NameResolution.Tests
 
         [OuterLoop]
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        public static void EventSource_ResolveValidHostName_LogsStartStop()
+        public static async Task EventSource_ResolveValidHostName_LogsStartStop()
         {
-            RemoteExecutor.Invoke(async () =>
+            await RemoteExecutor.Invoke(async () =>
             {
                 const string ValidHostName = "microsoft.com";
 
@@ -51,14 +51,14 @@ namespace System.Net.NameResolution.Tests
                 });
 
                 VerifyEvents(events, ValidHostName, 6);
-            }).Dispose();
+            }).DisposeAsync();
         }
 
         [OuterLoop]
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        public static void EventSource_ResolveInvalidHostName_LogsStartFailureStop()
+        public static async Task EventSource_ResolveInvalidHostName_LogsStartFailureStop()
         {
-            RemoteExecutor.Invoke(async () =>
+            await RemoteExecutor.Invoke(async () =>
             {
                 const string InvalidHostName = "invalid...example.com";
 
@@ -79,14 +79,14 @@ namespace System.Net.NameResolution.Tests
                 });
 
                 VerifyEvents(events, InvalidHostName, 6, shouldHaveFailures: true);
-            }).Dispose();
+            }).DisposeAsync();
         }
 
         [OuterLoop]
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        public static void EventSource_GetHostEntryForIP_LogsStartStop()
+        public static async Task EventSource_GetHostEntryForIP_LogsStartStop()
         {
-            RemoteExecutor.Invoke(async () =>
+            await RemoteExecutor.Invoke(async () =>
             {
                 const string ValidIPAddress = "8.8.4.4";
 
@@ -110,7 +110,7 @@ namespace System.Net.NameResolution.Tests
 
                 // Each GetHostEntry over an IP will yield 2 resolutions
                 VerifyEvents(events, ValidIPAddress, 12, isHostEntryForIp: true);
-            }).Dispose();
+            }).DisposeAsync();
         }
 
         private static void VerifyEvents(ConcurrentQueue<(EventWrittenEventArgs Event, Guid ActivityId)> events, string hostname, int expectedNumber, bool shouldHaveFailures = false, bool isHostEntryForIp = false)
@@ -149,7 +149,7 @@ namespace System.Net.NameResolution.Tests
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        public static void ResolutionsWaitingOnQueue_ResolutionStartCalledBeforeEnqueued()
+        public static async Task ResolutionsWaitingOnQueue_ResolutionStartCalledBeforeEnqueued()
         {
             // Some platforms (non-Windows) don't have proper support for GetAddrInfoAsync.
             // Instead we perform async-over-sync with a per-host queue.
@@ -157,7 +157,7 @@ namespace System.Net.NameResolution.Tests
 
             // We do this by blocking the first ResolutionStart event.
             // If the event was logged after waiting on the queue, the second request would never complete.
-            RemoteExecutor.Invoke(async () =>
+            await RemoteExecutor.Invoke(async () =>
             {
                 using var listener = new TestEventListener("System.Net.NameResolution", EventLevel.Informational);
                 listener.AddActivityTracking();
@@ -221,7 +221,7 @@ namespace System.Net.NameResolution.Tests
                 Assert.NotEqual(events[0].ActivityId, events[1].ActivityId);
 
                 Assert.False(callbackWaitTimedOut);
-            }).Dispose();
+            }).DisposeAsync();
         }
     }
 }

@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
 using System.Net.Quic;
 
 namespace Microsoft.Quic;
@@ -17,7 +18,7 @@ internal unsafe partial struct QUIC_LISTENER_EVENT
         => Type switch
         {
             QUIC_LISTENER_EVENT_TYPE.NEW_CONNECTION
-                => $"{{ {nameof(NEW_CONNECTION.Info)} = {{ {nameof(QUIC_NEW_CONNECTION_INFO.QuicVersion)} = {NEW_CONNECTION.Info->QuicVersion}, {nameof(QUIC_NEW_CONNECTION_INFO.LocalAddress)} = {MsQuicHelpers.QuicAddrToIPEndPoint(NEW_CONNECTION.Info->LocalAddress)}, {nameof(QUIC_NEW_CONNECTION_INFO.RemoteAddress)} = {MsQuicHelpers.QuicAddrToIPEndPoint(NEW_CONNECTION.Info->RemoteAddress)} }} }}",
+                => $"{{ {nameof(NEW_CONNECTION.Info)} = {{ {nameof(QUIC_NEW_CONNECTION_INFO.QuicVersion)} = {NEW_CONNECTION.Info->QuicVersion}, {nameof(QUIC_NEW_CONNECTION_INFO.LocalAddress)} = {MsQuicHelpers.QuicAddrToIPEndPoint(NEW_CONNECTION.Info->LocalAddress)}, {nameof(QUIC_NEW_CONNECTION_INFO.RemoteAddress)} = {MsQuicHelpers.QuicAddrToIPEndPoint(NEW_CONNECTION.Info->RemoteAddress)} }}, {nameof(NEW_CONNECTION.Connection)} = 0x{(IntPtr)NEW_CONNECTION.Connection:X11} }}",
             _ => string.Empty
         };
 }
@@ -40,9 +41,29 @@ internal unsafe partial struct QUIC_CONNECTION_EVENT
             QUIC_CONNECTION_EVENT_TYPE.PEER_ADDRESS_CHANGED
                 => $"{{ {nameof(PEER_ADDRESS_CHANGED.Address)} = {MsQuicHelpers.QuicAddrToIPEndPoint(PEER_ADDRESS_CHANGED.Address)} }}",
             QUIC_CONNECTION_EVENT_TYPE.PEER_STREAM_STARTED
-                => $"{{ {nameof(PEER_STREAM_STARTED.Flags)} = {PEER_STREAM_STARTED.Flags} }}",
+                => $"{{ {nameof(PEER_STREAM_STARTED.Stream)} = 0x{(IntPtr)PEER_STREAM_STARTED.Stream:X11} {nameof(PEER_STREAM_STARTED.Flags)} = {PEER_STREAM_STARTED.Flags} }}",
+            QUIC_CONNECTION_EVENT_TYPE.STREAMS_AVAILABLE
+                => $"{{ {nameof(STREAMS_AVAILABLE.BidirectionalCount)} = {STREAMS_AVAILABLE.BidirectionalCount}, {nameof(STREAMS_AVAILABLE.UnidirectionalCount)} = {STREAMS_AVAILABLE.UnidirectionalCount} }}",
+            QUIC_CONNECTION_EVENT_TYPE.PEER_NEEDS_STREAMS
+                => $"{{ {nameof(PEER_NEEDS_STREAMS.Bidirectional)} = {PEER_NEEDS_STREAMS.Bidirectional} }}",
+            QUIC_CONNECTION_EVENT_TYPE.IDEAL_PROCESSOR_CHANGED
+                => $"{{ {nameof(IDEAL_PROCESSOR_CHANGED.IdealProcessor)} = {IDEAL_PROCESSOR_CHANGED.IdealProcessor}, {nameof(IDEAL_PROCESSOR_CHANGED.PartitionIndex)} = {IDEAL_PROCESSOR_CHANGED.PartitionIndex} }}",
+            QUIC_CONNECTION_EVENT_TYPE.DATAGRAM_STATE_CHANGED
+                => $"{{ {nameof(DATAGRAM_STATE_CHANGED.SendEnabled)} = {DATAGRAM_STATE_CHANGED.SendEnabled}, {nameof(DATAGRAM_STATE_CHANGED.MaxSendLength)} = {DATAGRAM_STATE_CHANGED.MaxSendLength} }}",
+            QUIC_CONNECTION_EVENT_TYPE.DATAGRAM_RECEIVED
+                => $"{{ {nameof(DATAGRAM_RECEIVED.Flags)} = {DATAGRAM_RECEIVED.Flags} }}",
+            QUIC_CONNECTION_EVENT_TYPE.DATAGRAM_SEND_STATE_CHANGED
+                => $"{{ {nameof(DATAGRAM_SEND_STATE_CHANGED.ClientContext)} = 0x{(IntPtr)DATAGRAM_SEND_STATE_CHANGED.ClientContext:X11}, {nameof(DATAGRAM_SEND_STATE_CHANGED.State)} = {DATAGRAM_SEND_STATE_CHANGED.State} }}",
+            QUIC_CONNECTION_EVENT_TYPE.RESUMED
+                => $"{{ {nameof(RESUMED.ResumptionStateLength)} = {RESUMED.ResumptionStateLength} }}",
+            QUIC_CONNECTION_EVENT_TYPE.RESUMPTION_TICKET_RECEIVED
+                => $"{{ {nameof(RESUMPTION_TICKET_RECEIVED.ResumptionTicketLength)} = {RESUMPTION_TICKET_RECEIVED.ResumptionTicketLength} }}",
             QUIC_CONNECTION_EVENT_TYPE.PEER_CERTIFICATE_RECEIVED
-                => $"{{ {nameof(PEER_CERTIFICATE_RECEIVED.DeferredStatus)} = {PEER_CERTIFICATE_RECEIVED.DeferredStatus}, {nameof(PEER_CERTIFICATE_RECEIVED.DeferredErrorFlags)} = {PEER_CERTIFICATE_RECEIVED.DeferredErrorFlags} }}",
+                => $"{{ {nameof(PEER_CERTIFICATE_RECEIVED.DeferredStatus)} = {PEER_CERTIFICATE_RECEIVED.DeferredStatus}, {nameof(PEER_CERTIFICATE_RECEIVED.DeferredErrorFlags)} = {PEER_CERTIFICATE_RECEIVED.DeferredErrorFlags}, {nameof(PEER_CERTIFICATE_RECEIVED.Certificate)} = 0x{(IntPtr)PEER_CERTIFICATE_RECEIVED.Certificate:X11} }}",
+            QUIC_CONNECTION_EVENT_TYPE.RELIABLE_RESET_NEGOTIATED
+                => $"{{ {nameof(RELIABLE_RESET_NEGOTIATED.IsNegotiated)} = {RELIABLE_RESET_NEGOTIATED.IsNegotiated} }}",
+            QUIC_CONNECTION_EVENT_TYPE.ONE_WAY_DELAY_NEGOTIATED
+                => $"{{ {nameof(ONE_WAY_DELAY_NEGOTIATED.SendNegotiated)} = {ONE_WAY_DELAY_NEGOTIATED.SendNegotiated}, {nameof(ONE_WAY_DELAY_NEGOTIATED.ReceiveNegotiated)} = {ONE_WAY_DELAY_NEGOTIATED.ReceiveNegotiated} }}",
             _ => string.Empty
         };
 }

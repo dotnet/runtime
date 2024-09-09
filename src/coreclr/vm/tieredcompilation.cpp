@@ -225,7 +225,7 @@ bool TieredCompilationManager::TrySetCodeEntryPointAndRecordMethodForCallCountin
     WRAPPER_NO_CONTRACT;
     _ASSERTE(pMethodDesc != nullptr);
     _ASSERTE(pMethodDesc->IsEligibleForTieredCompilation());
-    _ASSERTE(codeEntryPoint != NULL);
+    _ASSERTE(codeEntryPoint != (PCODE)NULL);
 
     if (!IsTieringDelayActive())
     {
@@ -645,7 +645,7 @@ bool TieredCompilationManager::TryDeactivateTieringDelay()
             }
 
             PCODE codeEntryPoint = activeCodeVersion.GetNativeCode();
-            if (codeEntryPoint == NULL)
+            if (codeEntryPoint == (PCODE)NULL)
             {
                 // The active IL/native code version has changed since the method was queued, and the currently active version
                 // doesn't have a code entry point yet
@@ -944,7 +944,7 @@ BOOL TieredCompilationManager::CompileCodeVersion(NativeCodeVersion nativeCodeVe
 {
     STANDARD_VM_CONTRACT;
 
-    PCODE pCode = NULL;
+    PCODE pCode = (PCODE)NULL;
     MethodDesc* pMethod = nativeCodeVersion.GetMethodDesc();
     EX_TRY
     {
@@ -968,7 +968,7 @@ BOOL TieredCompilationManager::CompileCodeVersion(NativeCodeVersion nativeCodeVe
             // point.
             // TODO: In the future, we should get some feedback from images containing pregenerated code and from tier 0 JIT
             // indicating that the method would not benefit from a rejit and avoid the rejit altogether.
-            pCode = NULL;
+            pCode = (PCODE)NULL;
         }
     }
     EX_CATCH
@@ -979,7 +979,7 @@ BOOL TieredCompilationManager::CompileCodeVersion(NativeCodeVersion nativeCodeVe
     }
     EX_END_CATCH(RethrowTerminalExceptions)
 
-    return pCode != NULL;
+    return pCode != (PCODE)NULL;
 }
 
 // Updates the MethodDesc and precode so that future invocations of a method will

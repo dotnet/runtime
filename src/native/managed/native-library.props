@@ -7,6 +7,7 @@
     -->
     <StripSymbols>false</StripSymbols>
     <SuppressGenerateILCompilerExplicitPackageReferenceWarning>true</SuppressGenerateILCompilerExplicitPackageReferenceWarning>
+    <ControlFlowGuard>Guard</ControlFlowGuard>
   </PropertyGroup>
 
   <!-- set the shared library name.  this helps the native linker correctly reference this shared

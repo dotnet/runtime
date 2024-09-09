@@ -3,7 +3,6 @@
 
 using System;
 using System.ComponentModel;
-using System.Diagnostics;
 using System.IO;
 using System.IO.MemoryMappedFiles;
 using System.Runtime.InteropServices;
@@ -23,6 +22,36 @@ namespace Microsoft.NET.HostModel.AppHost
         private const string AppBinaryPathPlaceholder = "c3ab8ff13720e8ad9047dd39466b3c8974e592c2fa383d4a3960714caef0c4f2";
         private static readonly byte[] AppBinaryPathPlaceholderSearchValue = Encoding.UTF8.GetBytes(AppBinaryPathPlaceholder);
 
+        // See placeholder array in corehost.cpp
+        private const int MaxAppBinaryPathSizeInBytes = 1024;
+
+        /// <summary>
+        /// Value embedded in default apphost executable for configuration of how it will search for the .NET install
+        /// </summary>
+        private const string DotNetSearchPlaceholder = "\0\019ff3e9c3602ae8e841925bb461a0adb064a1f1903667a5e0d87e8f608f425ac";
+        private static readonly byte[] DotNetSearchPlaceholderSearchValue = Encoding.UTF8.GetBytes(DotNetSearchPlaceholder);
+
+        // See placeholder array in hostfxr_resolver.cpp
+        private const int MaxDotNetSearchSizeInBytes = 512;
+        private const int MaxAppRelativeDotNetSizeInBytes = MaxDotNetSearchSizeInBytes - 3; // -2 for search location + null, -1 for null terminator
+
+        public class DotNetSearchOptions
+        {
+            // Keep in sync with fxr_resolver::search_location in fxr_resolver.h
+            [Flags]
+            public enum SearchLocation : byte
+            {
+                Default,
+                AppLocal = 1 << 0,
+                AppRelative = 1 << 1,
+                EnvironmentVariable = 1 << 2,
+                Global = 1 << 3,
+            }
+
+            public SearchLocation Location { get; set; } = SearchLocation.Default;
+            public string AppRelativeDotNet { get; set; }
+        }
+
         /// <summary>
         /// Create an AppHost with embedded configuration of app binary location
         /// </summary>
@@ -32,26 +61,40 @@ namespace Microsoft.NET.HostModel.AppHost
         /// <param name="windowsGraphicalUserInterface">Specify whether to set the subsystem to GUI. Only valid for PE apphosts.</param>
         /// <param name="assemblyToCopyResourcesFrom">Path to the intermediate assembly, used for copying resources to PE apphosts.</param>
         /// <param name="enableMacOSCodeSign">Sign the app binary using codesign with an anonymous certificate.</param>
+        /// <param name="disableCetCompat">Remove CET Shadow Stack compatibility flag if set</param>
+        /// <param name="dotNetSearchOptions">Options for how the created apphost should look for the .NET install</param>
         public static void CreateAppHost(
             string appHostSourceFilePath,
             string appHostDestinationFilePath,
             string appBinaryFilePath,
             bool windowsGraphicalUserInterface = false,
             string assemblyToCopyResourcesFrom = null,
-            bool enableMacOSCodeSign = false)
+            bool enableMacOSCodeSign = false,
+            bool disableCetCompat = false,
+            DotNetSearchOptions dotNetSearchOptions = null)
         {
-            var bytesToWrite = Encoding.UTF8.GetBytes(appBinaryFilePath);
-            if (bytesToWrite.Length > 1024)
+            byte[] appPathBytes = Encoding.UTF8.GetBytes(appBinaryFilePath);
+            if (appPathBytes.Length > MaxAppBinaryPathSizeInBytes)
             {
-                throw new AppNameTooLongException(appBinaryFilePath);
+                throw new AppNameTooLongException(appBinaryFilePath, MaxAppBinaryPathSizeInBytes);
             }
+
+            byte[] searchOptionsBytes = dotNetSearchOptions != null
+                ? GetSearchOptionBytes(dotNetSearchOptions)
+                : null;
 
             bool appHostIsPEImage = false;
 
-            void RewriteAppHost(MemoryMappedViewAccessor accessor)
+            void RewriteAppHost(MemoryMappedFile mappedFile, MemoryMappedViewAccessor accessor)
             {
                 // Re-write the destination apphost with the proper contents.
-                BinaryUtils.SearchAndReplace(accessor, AppBinaryPathPlaceholderSearchValue, bytesToWrite);
+                BinaryUtils.SearchAndReplace(accessor, AppBinaryPathPlaceholderSearchValue, appPathBytes);
+
+                // Update the .NET search configuration
+                if (searchOptionsBytes != null)
+                {
+                    BinaryUtils.SearchAndReplace(accessor, DotNetSearchPlaceholderSearchValue, searchOptionsBytes);
+                }
 
                 appHostIsPEImage = PEUtils.IsPEImage(accessor);
 
@@ -63,6 +106,11 @@ namespace Microsoft.NET.HostModel.AppHost
                     }
 
                     PEUtils.SetWindowsGraphicalUserInterfaceBit(accessor);
+                }
+
+                if (disableCetCompat && appHostIsPEImage)
+                {
+                    PEUtils.RemoveCetCompatBit(mappedFile, accessor);
                 }
             }
 
@@ -85,7 +133,7 @@ namespace Microsoft.NET.HostModel.AppHost
                         long sourceAppHostLength = appHostSourceStream.Length;
 
                         // Transform the host file in-memory.
-                        RewriteAppHost(memoryMappedViewAccessor);
+                        RewriteAppHost(memoryMappedFile, memoryMappedViewAccessor);
 
                         // Save the transformed host.
                         using (FileStream fileStream = new FileStream(appHostDestinationFilePath, FileMode.Create))
@@ -230,6 +278,29 @@ namespace Microsoft.NET.HostModel.AppHost
             bundleHeaderOffset = headerOffset;
 
             return headerOffset != 0;
+        }
+
+        private static byte[] GetSearchOptionBytes(DotNetSearchOptions searchOptions)
+        {
+            if (Path.IsPathRooted(searchOptions.AppRelativeDotNet))
+                throw new AppRelativePathRootedException(searchOptions.AppRelativeDotNet);
+
+            byte[] pathBytes = searchOptions.AppRelativeDotNet != null
+                ? Encoding.UTF8.GetBytes(searchOptions.AppRelativeDotNet)
+                : [];
+
+            if (pathBytes.Length > MaxAppRelativeDotNetSizeInBytes)
+                throw new AppRelativePathTooLongException(searchOptions.AppRelativeDotNet, MaxAppRelativeDotNetSizeInBytes);
+
+            // <search_location> 0 <app_relative_dotnet_root> 0
+            byte[] searchOptionsBytes = new byte[pathBytes.Length + 3]; // +2 for search location + null, +1 for null terminator
+            searchOptionsBytes[0] = (byte)searchOptions.Location;
+            searchOptionsBytes[1] = 0;
+            searchOptionsBytes[searchOptionsBytes.Length - 1] = 0;
+            if (pathBytes.Length > 0)
+                pathBytes.CopyTo(searchOptionsBytes, 2);
+
+            return searchOptionsBytes;
         }
 
         [LibraryImport("libc", SetLastError = true)]

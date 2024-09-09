@@ -152,4 +152,15 @@ public class WellKnownSidTypeTests
         Assert.Equal(WellKnownSidType.WinBuiltinTerminalServerLicenseServersSid, WellKnownSidType.MaxDefined);
 #pragma warning restore 0618
     }
+
+    [ConditionalTheory(nameof(AccountIsDomainJoined))]
+    [InlineData(WellKnownSidType.WorldSid)]
+    public void CompareTo_Null(WellKnownSidType sidType)
+    {
+        using (var identity = WindowsIdentity.GetCurrent())
+        {
+            var si = new SecurityIdentifier(sidType, identity.Owner.AccountDomainSid);
+            Assert.Equal(1, si.CompareTo(null));
+        }
+    }
 }

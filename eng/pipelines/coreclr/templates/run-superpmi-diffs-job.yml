@@ -122,7 +122,7 @@ jobs:
         helixType: 'build/tests/'
         helixQueues: ${{ join(',', parameters.helixQueues) }}
         creator: dotnet-bot
-        WorkItemTimeout: 3:00 # 3 hours
+        WorkItemTimeout: 5:00 # 5 hours
         WorkItemDirectory: '$(WorkItemDirectory)'
         CorrelationPayloadDirectory: '$(CorrelationPayloadDirectory)'
         helixProjectArguments: '$(Build.SourcesDirectory)/src/coreclr/scripts/superpmi-diffs.proj'
@@ -144,10 +144,10 @@ jobs:
       condition: always()
 
     - task: CopyFiles@2
-      displayName: Copying superpmi.md of all partitions
+      displayName: Copying superpmi.json of all partitions
       inputs:
         sourceFolder: '$(HelixResultLocation)'
-        contents: '**/superpmi_*.md'
+        contents: '**/superpmi_*.json'
         targetFolder: '$(SpmiDiffsLocation)'
       condition: always()
 
@@ -160,7 +160,7 @@ jobs:
           targetFolder: '$(SpmiDiffsLocation)'
         condition: always()
 
-    - script: $(PythonScript) $(Build.SourcesDirectory)/src/coreclr/scripts/superpmi_diffs_summarize.py -diff_summary_dir $(SpmiDiffsLocation) -type $(diffType) -platform $(osGroup) -arch $(archType)
+    - script: $(PythonScript) $(Build.SourcesDirectory)/src/coreclr/scripts/superpmi_diffs_summarize.py -source_directory $(Build.SourcesDirectory) -diff_summary_dir $(SpmiDiffsLocation) -type $(diffType) -platform $(osGroup) -arch $(archType)
       displayName: ${{ format('Summarize ({0} {1}{2} {3})', parameters.diffType, parameters.osGroup, parameters.osSubgroup, parameters.archType) }}
       condition: always()
 

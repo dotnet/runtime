@@ -35,20 +35,28 @@ function prevent_timer_throttling_tick () {
     if (!loaderHelpers.is_runtime_running()) {
         return;
     }
-    cwraps.mono_wasm_execute_timer();
-    pump_count++;
+    try {
+        cwraps.mono_wasm_execute_timer();
+        pump_count++;
+    } catch (ex) {
+        loaderHelpers.mono_exit(1, ex);
+    }
     mono_background_exec_until_done();
 }
 
 function mono_background_exec_until_done () {
     if (WasmEnableThreads) return;
     Module.maybeExit();
-    if (!loaderHelpers.is_runtime_running()) {
-        return;
-    }
-    while (pump_count > 0) {
-        --pump_count;
-        cwraps.mono_background_exec();
+    try {
+        while (pump_count > 0) {
+            --pump_count;
+            if (!loaderHelpers.is_runtime_running()) {
+                return;
+            }
+            cwraps.mono_background_exec();
+        }
+    } catch (ex) {
+        loaderHelpers.mono_exit(1, ex);
     }
 }
 
@@ -71,12 +79,15 @@ export function mono_wasm_schedule_timer (shortestDueTimeMs: number): void {
 function mono_wasm_schedule_timer_tick () {
     if (WasmEnableThreads) return;
     Module.maybeExit();
-    if (WasmEnableThreads) {
-        forceThreadMemoryViewRefresh();
-    }
+    forceThreadMemoryViewRefresh();
     if (!loaderHelpers.is_runtime_running()) {
         return;
     }
     lastScheduledTimeoutId = undefined;
-    cwraps.mono_wasm_execute_timer();
+    try {
+        cwraps.mono_wasm_execute_timer();
+        pump_count++;
+    } catch (ex) {
+        loaderHelpers.mono_exit(1, ex);
+    }
 }

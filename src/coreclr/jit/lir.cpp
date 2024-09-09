@@ -1792,12 +1792,11 @@ void LIR::InsertBeforeTerminator(BasicBlock* block, LIR::Range&& range)
                 break;
 
             case BBJ_SWITCH:
-                assert((insertionPoint->OperGet() == GT_SWITCH) || (insertionPoint->OperGet() == GT_SWITCH_TABLE));
+                assert(insertionPoint->OperIs(GT_SWITCH, GT_SWITCH_TABLE));
                 break;
 
             case BBJ_RETURN:
-                assert((insertionPoint->OperGet() == GT_RETURN) || (insertionPoint->OperGet() == GT_JMP) ||
-                       (insertionPoint->OperGet() == GT_CALL));
+                assert(insertionPoint->OperIs(GT_RETURN, GT_SWIFT_ERROR_RET, GT_JMP, GT_CALL));
                 break;
 
             default:
@@ -1871,6 +1870,22 @@ GenTree* LIR::LastNode(GenTree** nodes, size_t numNodes)
     }
 
     return lastNode;
+}
+
+//------------------------------------------------------------------------
+// LIR::FirstNode:
+//    Given two nodes in the same block range, find which node appears first.
+//
+// Arguments:
+//    node1 - The first node
+//    node2 - The second node
+//
+// Returns:
+//    Node that appears first.
+//
+GenTree* LIR::FirstNode(GenTree* node1, GenTree* node2)
+{
+    return LastNode(node1, node2) == node1 ? node2 : node1;
 }
 
 #ifdef DEBUG

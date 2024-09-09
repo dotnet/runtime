@@ -86,7 +86,7 @@ namespace System.Reflection.Runtime.FieldInfos.NativeFormat
 
         public sealed override string ToString()
         {
-            return FieldRuntimeType.ToType().FormatTypeNameForReflection() + " " + this.Name;
+            return FieldRuntimeType.ToType().FormatTypeName() + " " + this.Name;
         }
 
         public sealed override bool HasSameMetadataDefinitionAs(MemberInfo other)

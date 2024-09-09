@@ -51,6 +51,11 @@ namespace Internal.IntrinsicSupport
             return t.ToMethodTable()->IsEnum;
         }
 
+        internal static unsafe bool IsString(RuntimeTypeHandle t)
+        {
+            return t.ToMethodTable()->IsString;
+        }
+
         // this function utilizes the template type loader to generate new
         // EqualityComparer types on the fly
         internal static object GetComparer(RuntimeTypeHandle t)
@@ -58,6 +63,11 @@ namespace Internal.IntrinsicSupport
             RuntimeTypeHandle comparerType;
             RuntimeTypeHandle openComparerType = default(RuntimeTypeHandle);
             RuntimeTypeHandle comparerTypeArgument = default(RuntimeTypeHandle);
+
+            if (IsString(t))
+            {
+                return new StringEqualityComparer();
+            }
 
             if (RuntimeAugments.IsNullable(t))
             {

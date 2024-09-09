@@ -30,7 +30,6 @@ namespace Test_refarg_i1_cs
             catch (NullReferenceException)
             {
                 App.exitCode = 100;
-                Console.WriteLine("NullReferenceException caught in Finalizer as expected");
             }
         }
     }
@@ -59,6 +58,7 @@ namespace Test_refarg_i1_cs
         }
 
         [Fact]
+        [OuterLoop]
         public static int TestEntryPoint()
         {
             Test(ref s_aa.mm);

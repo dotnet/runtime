@@ -14,15 +14,16 @@ Read everything in the documented Windows and non-Windows ABI documentation. The
 
 ## Windows ABI documentation
 
-AMD64: See [x64 Software Conventions](https://docs.microsoft.com/en-us/cpp/build/x64-software-conventions).
+AMD64: See [x64 Software Conventions](https://learn.microsoft.com/cpp/build/x64-software-conventions).
 
-ARM: See [Overview of ARM32 ABI Conventions](https://docs.microsoft.com/en-us/cpp/build/overview-of-arm-abi-conventions).
+ARM: See [Overview of ARM32 ABI Conventions](https://learn.microsoft.com/cpp/build/overview-of-arm-abi-conventions).
 
-ARM64: See [Overview of ARM64 ABI conventions](https://docs.microsoft.com/en-us/cpp/build/arm64-windows-abi-conventions).
+ARM64: See [Overview of ARM64 ABI conventions](https://learn.microsoft.com/cpp/build/arm64-windows-abi-conventions).
 
 ## Non-Windows ABI documentation
 
 Arm corporation ABI documentation (for ARM32 and ARM64) is [here](https://developer.arm.com/architectures/system-architectures/software-standards/abi) and [here](https://github.com/ARM-software/abi-aa).
+Apple's ARM64 calling convention differences can be found [here](https://developer.apple.com/documentation/xcode/writing-arm64-code-for-apple-platforms).
 
 The Linux System V x86_64 ABI is documented in [System V Application Binary Interface / AMD64 Architecture Processor Supplement](https://github.com/hjl-tools/x86-psABI/wiki/x86-64-psABI-1.0.pdf), with document source material [here](https://gitlab.com/x86-psABIs/x86-64-ABI).
 
@@ -116,6 +117,10 @@ ARM64-only: When a method returns a structure that is larger than 16 bytes the c
 ## Small primitive returns
 
 Primitive value types smaller than 32-bits are widened to 32-bits: signed small types are sign extended and unsigned small types are zero extended. This can be different from the standard calling conventions that may leave the state of unused bits in the return register undefined.
+
+## Small primitive arguments
+
+Small primitive arguments have undefined upper bits. This can be different from the standard calling conventions that may require normalization (e.g. on ARM32 and Apple ARM64).
 
 # PInvokes
 

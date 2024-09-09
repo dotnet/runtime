@@ -22,11 +22,13 @@ namespace ILCompiler
     {
         private readonly ILProvider _nestedILProvider;
         private readonly SubstitutionProvider _substitutionProvider;
+        private readonly DevirtualizationManager _devirtualizationManager;
 
-        public SubstitutedILProvider(ILProvider nestedILProvider, SubstitutionProvider substitutionProvider)
+        public SubstitutedILProvider(ILProvider nestedILProvider, SubstitutionProvider substitutionProvider, DevirtualizationManager devirtualizationManager)
         {
             _nestedILProvider = nestedILProvider;
             _substitutionProvider = substitutionProvider;
+            _devirtualizationManager = devirtualizationManager;
         }
 
         public override MethodIL GetMethodIL(MethodDesc method)
@@ -136,11 +138,22 @@ namespace ILCompiler
                     offsetsToVisit.Push(ehRegion.FilterOffset);
 
                 offsetsToVisit.Push(ehRegion.HandlerOffset);
+
+                if ((uint)ehRegion.TryLength >= (uint)methodBytes.Length
+                    || (uint)ehRegion.HandlerLength >= (uint)methodBytes.Length
+                    || ((uint)methodBytes.Length - (uint)ehRegion.TryLength) < (uint)ehRegion.TryOffset
+                    || ((uint)methodBytes.Length - (uint)ehRegion.HandlerLength) < (uint)ehRegion.HandlerOffset)
+                {
+                    ThrowHelper.ThrowInvalidProgramException();
+                }
             }
 
             // Identify basic blocks and instruction boundaries
             while (offsetsToVisit.TryPop(out int offset))
             {
+                if ((uint)offset >= (uint)flags.Length)
+                    ThrowHelper.ThrowInvalidProgramException();
+
                 // If this was already visited, we're done
                 if (flags[offset] != 0)
                 {
@@ -239,12 +252,18 @@ namespace ILCompiler
                 if ((flags[offset] & OpcodeFlags.Mark) != 0)
                     continue;
 
+                TypeEqualityPatternAnalyzer typeEqualityAnalyzer = default;
+                IsInstCheckPatternAnalyzer isInstCheckAnalyzer = default;
+
                 ILReader reader = new ILReader(methodBytes, offset);
                 while (reader.HasNext)
                 {
                     offset = reader.Offset;
                     flags[offset] |= OpcodeFlags.Mark;
                     ILOpcode opcode = reader.ReadILOpcode();
+
+                    typeEqualityAnalyzer.Advance(opcode, reader, method);
+                    isInstCheckAnalyzer.Advance(opcode, reader, method);
 
                     // Mark any applicable EH blocks
                     foreach (ILExceptionRegion ehRegion in ehRegions)
@@ -284,7 +303,9 @@ namespace ILCompiler
                         || opcode == ILOpcode.brtrue || opcode == ILOpcode.brtrue_s)
                     {
                         int destination = reader.ReadBranchDestination(opcode);
-                        if (!TryGetConstantArgument(method, methodBytes, flags, offset, 0, out int constant))
+                        if (!TryGetConstantArgument(method, methodBytes, flags, offset, 0, out int constant)
+                            && !TryExpandTypeEquality(typeEqualityAnalyzer, method, out constant)
+                            && !TryExpandIsInst(isInstCheckAnalyzer, method, out constant))
                         {
                             // Can't get the constant - both branches are live.
                             offsetsToVisit.Push(destination);
@@ -415,7 +436,8 @@ namespace ILCompiler
                 return method;
 
             // Maps instruction offsets in original method body to offsets in rewritten method body.
-            var offsetMap = new int[methodBytes.Length];
+            // Do a + 1 to length because exception handlers might refer to offset at the end of last instruction.
+            var offsetMap = new int[methodBytes.Length + 1];
 #if DEBUG
             Array.Fill(offsetMap, -1);
 #endif
@@ -469,6 +491,7 @@ namespace ILCompiler
                     dstPos += 2;
                 }
             }
+            offsetMap[methodBytes.Length] = dstPos;
 
             // Now generate the new body
             var newBody = new byte[dstPos];
@@ -639,6 +662,68 @@ namespace ILCompiler
             return new SubstitutedMethodIL(method.GetMethodILDefinition(), newBody, newEHRegions.ToArray(), debugInfo, newStrings.ToArray());
         }
 
+        private bool TryGetMethodConstantValue(MethodDesc method, out int constant, int level = 0)
+        {
+            method = method.GetTypicalMethodDefinition();
+
+            TypeFlags returnType = method.Signature.ReturnType.UnderlyingType.Category;
+            if (returnType is < TypeFlags.Boolean or > TypeFlags.UInt32
+                || method.IsIntrinsic
+                || method.IsNoInlining
+                || _nestedILProvider.GetMethodIL(method) is not MethodIL methodIL)
+            {
+                constant = 0;
+                return false;
+            }
+
+            var reader = new ILReader(methodIL.GetILBytes());
+            var opcode = reader.ReadILOpcode();
+            switch (opcode)
+            {
+                case ILOpcode.ldc_i4: constant = (int)reader.ReadILUInt32(); break;
+                case ILOpcode.ldc_i4_s: constant = (sbyte)reader.ReadILByte(); break;
+                case >= ILOpcode.ldc_i4_0 and <= ILOpcode.ldc_i4_8: constant = opcode - ILOpcode.ldc_i4_0; break;
+                case ILOpcode.ldc_i4_m1: constant = -1; break;
+
+                case ILOpcode.call:
+                {
+                    MethodDesc callee = (MethodDesc)methodIL.GetObject(reader.ReadILToken());
+                    if (reader.ReadILOpcode() != ILOpcode.ret)
+                    {
+                        constant = 0;
+                        return false;
+                    }
+
+                    BodySubstitution substitution = _substitutionProvider.GetSubstitution(method);
+                    if (substitution != null && substitution.Value is int c)
+                    {
+                        constant = c;
+                        return true;
+                    }
+
+                    if (level > 4)
+                    {
+                        constant = 0;
+                        return false;
+                    }
+
+                    return TryGetMethodConstantValue(callee, out constant, level + 1);
+                }
+
+                default:
+                    constant = 0;
+                    return false;
+            }
+
+            if (reader.ReadILOpcode() != ILOpcode.ret)
+            {
+                constant = 0;
+                return false;
+            }
+
+            return true;
+        }
+
         private bool TryGetConstantArgument(MethodIL methodIL, byte[] body, OpcodeFlags[] flags, int offset, int argIndex, out int constant)
         {
             if ((flags[offset] & OpcodeFlags.BasicBlockStart) != 0)
@@ -666,17 +751,15 @@ namespace ILCompiler
                             constant = (int)substitution.Value;
                             return true;
                         }
-                        else if (method.IsIntrinsic && method.Name is "op_Inequality" or "op_Equality"
-                            && method.OwningType is MetadataType mdType
-                            && mdType.Name == "Type" && mdType.Namespace == "System" && mdType.Module == mdType.Context.SystemModule
-                            && TryExpandTypeEquality(methodIL, body, flags, currentOffset, method.Name, out constant))
+                        if ((opcode != ILOpcode.callvirt || !method.IsVirtual)
+                            && TryGetMethodConstantValue(method, out constant))
                         {
                             return true;
                         }
-                        else if (method.IsIntrinsic && method.Name is "get_IsValueType"
+                        else if (method.IsIntrinsic && method.Name is "get_IsValueType" or "get_IsEnum"
                             && method.OwningType is MetadataType mdt
                             && mdt.Name == "Type" && mdt.Namespace == "System" && mdt.Module == mdt.Context.SystemModule
-                            && TryExpandTypeIsValueType(methodIL, body, flags, currentOffset, out constant))
+                            && TryExpandTypeIs(methodIL, body, flags, currentOffset, method.Name, out constant))
                         {
                             return true;
                         }
@@ -819,7 +902,7 @@ namespace ILCompiler
             return false;
         }
 
-        private static bool TryExpandTypeIsValueType(MethodIL methodIL, byte[] body, OpcodeFlags[] flags, int offset, out int constant)
+        private static bool TryExpandTypeIs(MethodIL methodIL, byte[] body, OpcodeFlags[] flags, int offset, string name, out int constant)
         {
             // We expect to see a sequence:
             // ldtoken Foo
@@ -848,61 +931,101 @@ namespace ILCompiler
             if (type.IsSignatureVariable)
                 return false;
 
-            constant = type.IsValueType ? 1 : 0;
+            constant = name switch
+            {
+                "get_IsValueType" => type.IsValueType ? 1 : 0,
+                "get_IsEnum" => type.IsEnum ? 1 : 0,
+                _ => throw new Exception(),
+            };
 
             return true;
         }
 
-        private static bool TryExpandTypeEquality(MethodIL methodIL, byte[] body, OpcodeFlags[] flags, int offset, string op, out int constant)
+        private bool TryExpandTypeEquality(in TypeEqualityPatternAnalyzer analyzer, MethodIL methodIL, out int constant)
         {
-            // We expect to see a sequence:
-            // ldtoken Foo
-            // call GetTypeFromHandle
-            // ldtoken Bar
-            // call GetTypeFromHandle
-            // -> offset points here
             constant = 0;
-            const int SequenceLength = 20;
-            if (offset < SequenceLength)
+            if (!analyzer.IsTypeEqualityBranch)
                 return false;
 
-            if ((flags[offset - SequenceLength] & OpcodeFlags.InstructionStart) == 0)
+            if (analyzer.IsTwoTokens)
+            {
+                var type1 = (TypeDesc)methodIL.GetObject(analyzer.Token1);
+                var type2 = (TypeDesc)methodIL.GetObject(analyzer.Token2);
+
+                // No value in making this work for definitions
+                if (type1.IsGenericDefinition || type2.IsGenericDefinition)
+                    return false;
+
+                // Dataflow runs on top of uninstantiated IL and we can't answer some questions there.
+                // Unfortunately this means dataflow will still see code that the rest of the system
+                // might have optimized away. It should not be a problem in practice.
+                if (type1.ContainsSignatureVariables() || type2.ContainsSignatureVariables())
+                    return false;
+
+                bool? equality = TypeExtensions.CompareTypesForEquality(type1, type2);
+                if (!equality.HasValue)
+                    return false;
+
+                constant = equality.Value ? 1 : 0;
+            }
+            else
+            {
+                var knownType = (TypeDesc)methodIL.GetObject(analyzer.Token1);
+
+                // No value in making this work for definitions
+                if (knownType.IsGenericDefinition)
+                    return false;
+
+                // Dataflow runs on top of uninstantiated IL and we can't answer some questions there.
+                // Unfortunately this means dataflow will still see code that the rest of the system
+                // might have optimized away. It should not be a problem in practice.
+                if (knownType.ContainsSignatureVariables())
+                    return false;
+
+                if (knownType.IsCanonicalDefinitionType(CanonicalFormKind.Any))
+                    return false;
+
+                // We don't track types without a constructed MethodTable very well.
+                if (!ConstructedEETypeNode.CreationAllowed(knownType))
+                    return false;
+
+                if (_devirtualizationManager.CanReferenceConstructedTypeOrCanonicalFormOfType(knownType.NormalizeInstantiation()))
+                    return false;
+
+                constant = 0;
+            }
+
+            if (analyzer.IsInequality)
+                constant ^= 1;
+
+            return true;
+        }
+
+        private bool TryExpandIsInst(in IsInstCheckPatternAnalyzer analyzer, MethodIL methodIL, out int constant)
+        {
+            constant = 0;
+            if (!analyzer.IsIsInstBranch)
                 return false;
 
-            ILReader reader = new ILReader(body, offset - SequenceLength);
-
-            TypeDesc type1 = ReadLdToken(ref reader, methodIL, flags);
-            if (type1 == null)
-                return false;
-
-            if (!ReadGetTypeFromHandle(ref reader, methodIL, flags))
-                return false;
-
-            TypeDesc type2 = ReadLdToken(ref reader, methodIL, flags);
-            if (type2 == null)
-                return false;
-
-            if (!ReadGetTypeFromHandle(ref reader, methodIL, flags))
-                return false;
-
-            // No value in making this work for definitions
-            if (type1.IsGenericDefinition || type2.IsGenericDefinition)
-                return false;
+            var type = (TypeDesc)methodIL.GetObject(analyzer.Token);
 
             // Dataflow runs on top of uninstantiated IL and we can't answer some questions there.
             // Unfortunately this means dataflow will still see code that the rest of the system
             // might have optimized away. It should not be a problem in practice.
-            if (type1.ContainsSignatureVariables() || type2.ContainsSignatureVariables())
+            if (type.ContainsSignatureVariables())
                 return false;
 
-            bool? equality = TypeExtensions.CompareTypesForEquality(type1, type2);
-            if (!equality.HasValue)
+            if (type.IsCanonicalDefinitionType(CanonicalFormKind.Any))
                 return false;
 
-            constant = equality.Value ? 1 : 0;
+            // We don't track types without a constructed MethodTable very well.
+            if (!ConstructedEETypeNode.CreationAllowed(type))
+                return false;
 
-            if (op == "op_Inequality")
-                constant ^= 1;
+            if (_devirtualizationManager.CanReferenceConstructedTypeOrCanonicalFormOfType(type.NormalizeInstantiation()))
+                return false;
+
+            constant = 0;
 
             return true;
         }

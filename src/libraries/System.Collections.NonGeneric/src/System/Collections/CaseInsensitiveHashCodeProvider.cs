@@ -12,7 +12,7 @@ namespace System.Collections
     [Obsolete("CaseInsensitiveHashCodeProvider has been deprecated. Use StringComparer instead.")]
     public class CaseInsensitiveHashCodeProvider : IHashCodeProvider
     {
-        private static volatile CaseInsensitiveHashCodeProvider? s_invariantCaseInsensitiveHashCodeProvider;
+        private static CaseInsensitiveHashCodeProvider? s_invariantCaseInsensitiveHashCodeProvider;
         private readonly CompareInfo _compareInfo;
 
         public CaseInsensitiveHashCodeProvider()

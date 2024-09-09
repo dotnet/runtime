@@ -6,19 +6,18 @@ using System;
 
 using Internal.Runtime.CompilerServices;
 
+using Debug = System.Diagnostics.Debug;
+
 namespace Internal.TypeSystem
 {
     public partial class MethodDesc
     {
         private IntPtr _functionPointer;
-        private IntPtr _usgFunctionPointer;
 
-        public void SetFunctionPointer(IntPtr functionPointer, bool isFunctionPointerUSG)
+        public void SetFunctionPointer(IntPtr functionPointer)
         {
-            if (isFunctionPointerUSG)
-                _usgFunctionPointer = functionPointer;
-            else
-                _functionPointer = functionPointer;
+            Debug.Assert(_functionPointer == IntPtr.Zero || _functionPointer == functionPointer);
+            _functionPointer = functionPointer;
         }
 
         /// <summary>
@@ -29,17 +28,6 @@ namespace Internal.TypeSystem
             get
             {
                 return _functionPointer;
-            }
-        }
-
-        /// <summary>
-        /// Pointer to function's universal shared generics code. May be IntPtr.Zero
-        /// </summary>
-        public IntPtr UsgFunctionPointer
-        {
-            get
-            {
-                return _usgFunctionPointer;
             }
         }
 

@@ -798,7 +798,7 @@ bool Compiler::fgForwardSubStatement(Statement* stmt)
     // interaction between decomposition and RA.
     //
     if (compMethodReturnsMultiRegRetType() && (fsv.GetParentNode() != nullptr) &&
-        fsv.GetParentNode()->OperIs(GT_RETURN))
+        fsv.GetParentNode()->OperIs(GT_RETURN, GT_SWIFT_ERROR_RET))
     {
 #if defined(TARGET_X86)
         if (fwdSubNode->TypeGet() == TYP_LONG)

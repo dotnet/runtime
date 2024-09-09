@@ -12,7 +12,7 @@ namespace System.IO
     // the resulting sequence of characters to be presented as a string.
     public class StringWriter : TextWriter
     {
-        private static volatile UnicodeEncoding? s_encoding;
+        private static UnicodeEncoding? s_encoding;
 
         private readonly StringBuilder _sb;
         private bool _isOpen;

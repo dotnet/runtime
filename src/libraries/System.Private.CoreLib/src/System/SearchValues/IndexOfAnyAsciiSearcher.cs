@@ -9,15 +9,13 @@ using System.Runtime.Intrinsics.Arm;
 using System.Runtime.Intrinsics.Wasm;
 using System.Runtime.Intrinsics.X86;
 
-#pragma warning disable 8500 // sizeof of managed types
-
 namespace System.Buffers
 {
     internal static class IndexOfAnyAsciiSearcher
     {
         public struct AsciiState(Vector128<byte> bitmap, BitVector256 lookup)
         {
-            public Vector256<byte> Bitmap = Vector256.Create(bitmap, bitmap);
+            public Vector256<byte> Bitmap = Vector256.Create(bitmap);
             public BitVector256 Lookup = lookup;
 
             public readonly AsciiState CreateInverse() =>
@@ -26,8 +24,8 @@ namespace System.Buffers
 
         public struct AnyByteState(Vector128<byte> bitmap0, Vector128<byte> bitmap1, BitVector256 lookup)
         {
-            public Vector256<byte> Bitmap0 = Vector256.Create(bitmap0, bitmap0);
-            public Vector256<byte> Bitmap1 = Vector256.Create(bitmap1, bitmap1);
+            public Vector256<byte> Bitmap0 = Vector256.Create(bitmap0);
+            public Vector256<byte> Bitmap1 = Vector256.Create(bitmap1);
             public BitVector256 Lookup = lookup;
         }
 
@@ -146,7 +144,7 @@ namespace System.Buffers
                 {
                     // Only initializing the bitmap here is okay as we can only get here if the search space is long enough
                     // and we support vectorization, so the IndexOfAnyVectorized implementation will never touch state.Lookup.
-                    state.Bitmap = Vector256.Create(state.Bitmap._lower, state.Bitmap._lower);
+                    state.Bitmap = Vector256.Create(state.Bitmap.GetLower());
 
                     index = (Ssse3.IsSupported || PackedSimd.IsSupported) && needleContainsZero
                         ? IndexOfAny<TNegator, Ssse3AndWasmHandleZeroInNeedle>(ref searchSpace, searchSpaceLength, ref state)
@@ -173,7 +171,7 @@ namespace System.Buffers
                 {
                     // Only initializing the bitmap here is okay as we can only get here if the search space is long enough
                     // and we support vectorization, so the LastIndexOfAnyVectorized implementation will never touch state.Lookup.
-                    state.Bitmap = Vector256.Create(state.Bitmap._lower, state.Bitmap._lower);
+                    state.Bitmap = Vector256.Create(state.Bitmap.GetLower());
 
                     index = (Ssse3.IsSupported || PackedSimd.IsSupported) && needleContainsZero
                         ? LastIndexOfAny<TNegator, Ssse3AndWasmHandleZeroInNeedle>(ref searchSpace, searchSpaceLength, ref state)
@@ -1098,7 +1096,7 @@ namespace System.Buffers
             // http://0x80.pl/articles/simd-byte-lookup.html#universal-algorithm
 
             Vector128<byte> lowNibbles = source & Vector128.Create((byte)0xF);
-            Vector128<byte> highNibbles = Vector128.ShiftRightLogical(source.AsInt32(), 4).AsByte() & Vector128.Create((byte)0xF);
+            Vector128<byte> highNibbles = source >>> 4;
 
             Vector128<byte> row0 = Vector128.ShuffleUnsafe(bitmapLookup0, lowNibbles);
             Vector128<byte> row1 = Vector128.ShuffleUnsafe(bitmapLookup1, lowNibbles);
@@ -1121,7 +1119,7 @@ namespace System.Buffers
             // http://0x80.pl/articles/simd-byte-lookup.html#universal-algorithm
 
             Vector256<byte> lowNibbles = source & Vector256.Create((byte)0xF);
-            Vector256<byte> highNibbles = Vector256.ShiftRightLogical(source.AsInt32(), 4).AsByte() & Vector256.Create((byte)0xF);
+            Vector256<byte> highNibbles = source >>> 4;
 
             Vector256<byte> row0 = Avx2.Shuffle(bitmapLookup0, lowNibbles);
             Vector256<byte> row1 = Avx2.Shuffle(bitmapLookup1, lowNibbles);
@@ -1212,7 +1210,9 @@ namespace System.Buffers
             public static bool NegateIfNeeded(bool result) => result;
             public static Vector128<byte> NegateIfNeeded(Vector128<byte> result) => result;
             public static Vector256<byte> NegateIfNeeded(Vector256<byte> result) => result;
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public static uint ExtractMask(Vector128<byte> result) => ~Vector128.Equals(result, Vector128<byte>.Zero).ExtractMostSignificantBits();
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public static uint ExtractMask(Vector256<byte> result) => ~Vector256.Equals(result, Vector256<byte>.Zero).ExtractMostSignificantBits();
         }
 
@@ -1221,9 +1221,13 @@ namespace System.Buffers
             public static bool NegateIfNeeded(bool result) => !result;
             // This is intentionally testing for equality with 0 instead of "~result".
             // We want to know if any character didn't match, as that means it should be treated as a match for the -Except method.
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public static Vector128<byte> NegateIfNeeded(Vector128<byte> result) => Vector128.Equals(result, Vector128<byte>.Zero);
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public static Vector256<byte> NegateIfNeeded(Vector256<byte> result) => Vector256.Equals(result, Vector256<byte>.Zero);
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public static uint ExtractMask(Vector128<byte> result) => result.ExtractMostSignificantBits();
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public static uint ExtractMask(Vector256<byte> result) => result.ExtractMostSignificantBits();
         }
 

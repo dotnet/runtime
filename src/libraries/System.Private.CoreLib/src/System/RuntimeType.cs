@@ -650,7 +650,7 @@ namespace System
                     return finalist.Invoke(target, bindingFlags, binder, providedArgs, culture);
                 }
 
-                finalists ??= new MethodInfo[] { finalist };
+                finalists ??= [finalist];
                 providedArgs ??= Array.Empty<object>();
                 object? state = null;
                 MethodBase? invokeMethod = null;
@@ -879,6 +879,31 @@ namespace System
 
             Debug.Fail("Error result not expected");
             return false;
+        }
+
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2067:UnrecognizedReflectionPattern",
+            Justification = "AllocateValueType is only called on a ValueType. You can always create an instance of a ValueType.")]
+        [return: NotNullIfNotNull(nameof(value))]
+        internal static object? AllocateValueType(RuntimeType type, object? value)
+        {
+            Debug.Assert(type.IsValueType);
+            Debug.Assert(!type.IsByRefLike);
+
+            if (value is not null)
+            {
+                // Make a copy of the provided value by re-boxing the existing value's underlying data.
+                Debug.Assert(type.IsEquivalentTo(value.GetType()));
+                return RuntimeHelpers.Box(ref RuntimeHelpers.GetRawData(value), type.TypeHandle)!;
+            }
+
+            if (type.IsNullableOfT)
+            {
+                // If the type is Nullable<T>, then create a true boxed Nullable<T> of the default Nullable<T> value.
+                return RuntimeMethodHandle.ReboxToNullable(null, type);
+            }
+
+            // Otherwise, just create a default instance of the type.
+            return RuntimeHelpers.GetUninitializedObject(type);
         }
 
         private CheckValueStatus TryChangeType(ref object? value, ref bool copyBack)
