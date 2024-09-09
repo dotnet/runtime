@@ -52,10 +52,10 @@ namespace JIT.HardwareIntrinsics.Arm
                 test.RunStructFldScenario();
 
                 // Validates executing the test inside conditional, with op3 as falseValue
-//                test.ConditionalSelect_FalseOp();
+                test.ConditionalSelect_FalseOp();
 
                 // Validates executing the test inside conditional, with op3 as zero
-//                test.ConditionalSelect_ZeroOp();
+                test.ConditionalSelect_ZeroOp();
             }
             else
             {
