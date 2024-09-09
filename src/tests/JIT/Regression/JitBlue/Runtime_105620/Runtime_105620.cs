@@ -116,7 +116,7 @@ public class Program
         } catch {}
     }
 
-    public static void M48(S0 argThis, S3 arg0, S2 arg1, S2 arg2)
+    private static void M48(S0 argThis, S3 arg0, S2 arg1, S2 arg2)
     {
         arg2.F2.F0 = arg2.F2.F0;
         S4 var1 = new S4(new S3(new S2(new S1()), new S2(new S1())));
@@ -182,7 +182,7 @@ public class Program
         s_rt.WriteLine(var2.F7.F5.F2.F8.F0);
     }
 
-    public static void M49(short arg0, C0 arg2, ref short arg3, ref S3 arg4, ref sbyte arg5)
+    private static void M49(short arg0, C0 arg2, ref short arg3, ref S3 arg4, ref sbyte arg5)
     {
         s_rt.WriteLine(arg0);
     }
