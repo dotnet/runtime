@@ -5489,15 +5489,6 @@ HRESULT ProfToEEInterfaceImpl::GetAppDomainInfo(AppDomainID appDomainId,
     if (pProcessId)
         *pProcessId = 0;
 
-    // <TODO>@todo:
-    // Right now, the AppDomainID is not a true AppDomain, since we use the old
-    // AppDomain/SystemDomain model in the profiling API. This means that the
-    // profiler exposes the SystemDomain to the outside world. It's not clear
-    // whether this is actually the right thing to do or not. - seantrow
-    //
-    // Postponed to V2.
-    // </TODO>
-
     LPCWSTR szFriendlyName;
     if (appDomainId == (AppDomainID)SystemDomain::System())
         szFriendlyName = g_pwBaseLibrary;

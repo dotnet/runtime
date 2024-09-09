@@ -2964,7 +2964,6 @@ ClrDataAccess::GetAssemblyList(CLRDATA_ADDRESS addr, int count, CLRDATA_ADDRESS 
     if (addr == HOST_CDADDR(SystemDomain::System()))
     {
         // We shouldn't be asking for the assemblies in SystemDomain
-        _ASSERTE(false);
         hr = E_INVALIDARG;
     }
     else
