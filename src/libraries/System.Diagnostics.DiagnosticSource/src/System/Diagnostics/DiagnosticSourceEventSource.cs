@@ -4,6 +4,7 @@
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Diagnostics.Tracing;
+using System.Reflection;
 using System.Runtime.CompilerServices;
 
 namespace System.Diagnostics
@@ -350,11 +351,30 @@ namespace System.Diagnostics
             WriteEvent(12, SourceName, ActivityName, Arguments);
 
         /// <summary>
+        /// Used to send version information.
+        /// </summary>
+        [Event(13, Keywords = Keywords.Messages)]
+        public void Version(string? AssemblyVersion, string? AssemblyFileVersion)
+        {
+            WriteEvent(13, AssemblyVersion, AssemblyFileVersion);
+        }
+
+        /// <summary>
         /// Called when the EventSource gets a command from a EventListener or ETW.
         /// </summary>
         [NonEvent]
         protected override void OnEventCommand(EventCommandEventArgs command)
         {
+            if (command.Command == EventCommand.Enable
+                && IsEnabled(EventLevel.Informational, Keywords.Messages))
+            {
+                var assembly = typeof(Activity).Assembly;
+
+                Version(
+                    assembly.GetCustomAttribute<AssemblyVersionAttribute>()?.Version,
+                    assembly.GetCustomAttribute<AssemblyFileVersionAttribute>()?.Version);
+            }
+
             // On every command (which the debugger can force by turning on this EventSource with ETW)
             // call a function that the debugger can hook to do an arbitrary func evaluation.
             BreakPointWithDebuggerFuncEval();

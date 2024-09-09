@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Diagnostics.Tracing;
 using System.Globalization;
+using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.Versioning;
 using System.Text;
@@ -278,11 +279,30 @@ namespace System.Diagnostics.Metrics
         }
 
         /// <summary>
+        /// Used to send version information.
+        /// </summary>
+        [Event(18, Keywords = Keywords.Messages)]
+        public void Version(string? AssemblyVersion, string? AssemblyFileVersion)
+        {
+            WriteEvent(18, AssemblyVersion, AssemblyFileVersion);
+        }
+
+        /// <summary>
         /// Called when the EventSource gets a command from a EventListener or ETW.
         /// </summary>
         [NonEvent]
         protected override void OnEventCommand(EventCommandEventArgs command)
         {
+            if (command.Command == EventCommand.Enable
+                && IsEnabled(EventLevel.Informational, Keywords.Messages))
+            {
+                var assembly = typeof(Meter).Assembly;
+
+                Version(
+                    assembly.GetCustomAttribute<AssemblyVersionAttribute>()?.Version,
+                    assembly.GetCustomAttribute<AssemblyFileVersionAttribute>()?.Version);
+            }
+
             lock (this)
             {
                 Handler.OnEventCommand(command);
