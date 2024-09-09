@@ -584,13 +584,13 @@ namespace System.Reflection
         }
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern bool FCallIsDynamic(IntPtr assembly);
+        private static extern bool GetIsDynamic(IntPtr assembly);
 
         public override bool IsDynamic
         {
             get
             {
-                bool isDynamic = FCallIsDynamic(GetUnderlyingNativeHandle());
+                bool isDynamic = GetIsDynamic(GetUnderlyingNativeHandle());
                 GC.KeepAlive(this); // We directly pass the native handle above - make sure this object stays alive for the call
                 return isDynamic;
             }

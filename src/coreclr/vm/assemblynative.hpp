@@ -31,7 +31,7 @@ public:
     //
 
     static
-    FCDECL1(FC_BOOL_RET, IsDynamic, Assembly* pAssembly);
+    FCDECL1(FC_BOOL_RET, GetIsDynamic, Assembly* pAssembly);
 };
 
 extern "C" uint32_t QCALLTYPE AssemblyNative_GetAssemblyCount();
