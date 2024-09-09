@@ -83,8 +83,8 @@ Using an x64 machine, it is possible to generate builds for other architectures.
 | Operating System | To x86   | To Arm32 | To Arm64 |
 | :--------------: | :------: | :------: | :------: |
 | Windows          | &#x2714; | &#x2714; | &#x2714; |
-| macOS            | &#x2718; | &#x2718; | &#x2714; |
-| Linux            | &#x2718; | &#x2714; | &#x2714; |
+| macOS            |          |          | &#x2714; |
+| Linux            |          | &#x2714; | &#x2714; |
 
 **NOTE:** On macOS, it is also possible to cross-compile from ARM64 to x64 using an Apple Silicon Mac.
 

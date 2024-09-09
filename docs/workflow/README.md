@@ -15,15 +15,21 @@
 
 ## Introduction
 
-The runtime repo can be worked with on Windows, Linux, macOS, and FreeBSD. Each platform has its own specific requirements to work properly, and not all architectures are supported for dev work. The following table shows the matrix of compatibility, as well as links to each OS's requirements doc. If you are using WSL directly (i.e. not Docker), then follow the Linux requirements doc.
+The runtime repo can be worked with on Windows, Linux, macOS, and FreeBSD. Each platform has its own specific requirements to work properly, and not all architectures are supported for dev work. That said, the builds can target a wider range of platforms beyond the ones mentioned earlier. You can see it as there are always two platforms at play whenever you are working with builds in the runtime repo:
+
+- **The Build Platform:** This is the platform of the machine where you cloned the runtime repo and therefore where all your build tools are running on. The following table shows the matrix of compatibility, as well as links to each OS's requirements doc. If you are using WSL directly (i.e. not Docker), then follow the Linux requirements doc.
 
 | Chip  | Windows  | Linux    | macOS    | FreeBSD  |
 | :---: | :------: | :------: | :------: | :------: |
 | x64   | &#x2714; | &#x2714; | &#x2714; | &#x2714; |
-| x86   | &#x2714; | &#x2718; | &#x2718; | &#x2718; |
-| Arm32 | &#x2718; | &#x2714; | &#x2718; | &#x2718; |
-| Arm64 | &#x2714; | &#x2714; | &#x2714; | &#x2718; |
+| x86   | &#x2714; |          |          |          |
+| Arm32 |          | &#x2714; |          |          |
+| Arm64 | &#x2714; | &#x2714; | &#x2714; |          |
 |       | [Requirements](requirements/windows-requirements.md) | [Requirements](requirements/linux-requirements.md) | [Requirements](requirements/macos-requirements.md) | [Requirements](requirements/freebsd-requirements.md)
+
+- **The Target Platform:** This is the platform you are building the artifacts for, i.e. the platform you intend to run your builds on.
+
+The *Build Platform* and the *Target Platform* can be either the same of different from each other. The former scenario is straightforward, as you will most likely be doing all the work on the same machine. When working with the latter one, the process is called *cross-compiling*. There are certain workflows that require you to follow this process, as it is not possible to build the repo directly on those platforms (e.g., Web Assembly (WASM), Browser, Mobiles). The full instructions on how to work with this are detailed in the building docs later on.
 
 Additionally, keep in mind that cloning the full history of this repo takes roughly 400-500 MB of network transfer, inflating to a repository that can consume somewhere between 1 to 1.5 GB. A build of the repo can take somewhere between 10 and 20 GB of space for a single OS and Platform configuration depending on the portions of the product built. This might increase over time, so consider this to be a minimum bar for working with this codebase.
 
