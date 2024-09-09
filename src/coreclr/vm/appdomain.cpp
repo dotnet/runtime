@@ -2481,6 +2481,9 @@ DomainAssembly *AppDomain::LoadDomainAssemblyInternal(AssemblySpec* pIdentity,
                 fileLock = FileLoadLock::Create(lock, pPEAssembly, pDomainAssembly);
                 pDomainAssembly.SuppressRelease();
                 pamTracker->SuppressRelease();
+
+                // Set the assembly module to be tenured now that we know it won't be deleted
+                pDomainAssembly->GetAssembly()->SetIsTenured();
                 if (pDomainAssembly->IsCollectible())
                 {
                     // We add the assembly to the LoaderAllocator only when we are sure that it can be added
@@ -2516,7 +2519,9 @@ DomainAssembly *AppDomain::LoadDomainAssemblyInternal(AssemblySpec* pIdentity,
         }
     }
     else
+    {
         result->EnsureLoadLevel(targetLevel);
+    }
 
     // Cache result in all cases, since found pPEAssembly could be from a different AssemblyRef than pIdentity
     if (pIdentity == NULL)
