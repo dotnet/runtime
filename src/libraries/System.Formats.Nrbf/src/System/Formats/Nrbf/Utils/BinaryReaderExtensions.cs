@@ -115,6 +115,18 @@ internal static class BinaryReaderExtensions
         }
     }
 
+    internal static char[] ParseChars(this BinaryReader reader, int count)
+    {
+        try
+        {
+            return reader.ReadChars(count);
+        }
+        catch (ArgumentException) // A surrogate character was read.
+        {
+            throw new SerializationException(SR.Serialization_SurrogateCharacter);
+        }
+    }
+
     /// <summary>
     ///  Creates a <see cref="DateTime"/> object from raw data with validation.
     /// </summary>
