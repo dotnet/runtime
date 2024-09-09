@@ -55,7 +55,6 @@ public:
     static FCDECL1(FC_BOOL_RET, GetIsBackground,  ThreadBaseObject* pThisUNSAFE);
 
     static FCDECL0(INT32,   GetOptimalMaxSpinWaitsPerSpinIteration);
-    static FCDECL0(Object*, GetCurrentThread);
     static FCDECL1(void,    Finalize,                       ThreadBaseObject* pThis);
     static FCDECL1(FC_BOOL_RET,IsThreadpoolThread,          ThreadBaseObject* thread);
     static FCDECL1(void,    SetIsThreadpoolThread,          ThreadBaseObject* thread);
@@ -77,7 +76,7 @@ private:
 extern "C" void QCALLTYPE ThreadNative_Start(QCall::ThreadHandle thread, int threadStackSize, int priority, PCWSTR pThreadName);
 extern "C" void QCALLTYPE ThreadNative_SetPriority(QCall::ObjectHandleOnStack thread, INT32 iPriority);
 extern "C" BOOL QCALLTYPE ThreadNative_IsAlive(QCall::ObjectHandleOnStack t);
-extern "C" void QCALLTYPE ThreadNative_GetCurrentThreadSlow(QCall::ObjectHandleOnStack thread);
+extern "C" void QCALLTYPE ThreadNative_GetCurrentThread(QCall::ObjectHandleOnStack thread);
 extern "C" void QCALLTYPE ThreadNative_SetIsBackground(QCall::ThreadHandle thread, BOOL value);
 extern "C" void QCALLTYPE ThreadNative_InformThreadNameChange(QCall::ThreadHandle thread, LPCWSTR name, INT32 len);
 extern "C" BOOL QCALLTYPE ThreadNative_YieldThread();

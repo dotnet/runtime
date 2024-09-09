@@ -385,14 +385,7 @@ extern "C" BOOL QCALLTYPE ThreadNative_IsAlive(QCall::ObjectHandleOnStack t)
     return ret;
 }
 
-FCIMPL0(Object*, ThreadNative::GetCurrentThread)
-{
-    FCALL_CONTRACT;
-    return OBJECTREFToObject(GetThread()->GetExposedObjectRaw());
-}
-FCIMPLEND
-
-extern "C" void QCALLTYPE ThreadNative_GetCurrentThreadSlow(QCall::ObjectHandleOnStack thread)
+extern "C" void QCALLTYPE ThreadNative_GetCurrentThread(QCall::ObjectHandleOnStack thread)
 {
     QCALL_CONTRACT;
 

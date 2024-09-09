@@ -153,23 +153,13 @@ namespace System.Threading
         [MethodImpl(MethodImplOptions.NoInlining)]
         private static Thread InitializeCurrentThread()
         {
-            t_currentThread = GetCurrentThread() ?? GetCurrentThreadWorker();
-            return t_currentThread;
-
-            [MethodImpl(MethodImplOptions.NoInlining)]
-            static Thread GetCurrentThreadWorker()
-            {
-                Thread? thread = null;
-                GetCurrentThreadSlow(ObjectHandleOnStack.Create(ref thread));
-                return thread!;
-            }
+            Thread? thread = null;
+            GetCurrentThread(ObjectHandleOnStack.Create(ref thread));
+            return t_currentThread = thread!;
         }
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern Thread GetCurrentThread();
-
-        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ThreadNative_GetCurrentThreadSlow")]
-        private static partial void GetCurrentThreadSlow(ObjectHandleOnStack thread);
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ThreadNative_GetCurrentThread")]
+        private static partial void GetCurrentThread(ObjectHandleOnStack thread);
 
         private void Initialize()
         {
