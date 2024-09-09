@@ -1,5 +1,6 @@
 parameters:
   hybridGlobalization: True
+  perfBranch: 'refs/heads/main'
 
 jobs:
   # build mono iOS scenarios HybridGlobalization
@@ -68,6 +69,7 @@ jobs:
         iOSLlvmBuild: False
         iOSStripSymbols: False
         hybridGlobalization: ${{ parameters.hybridGlobalization }}
+        perfBranch: ${{ parameters.perfBranch }}
 
   - template: /eng/pipelines/common/platform-matrix.yml
     parameters:
@@ -86,6 +88,7 @@ jobs:
         iOSLlvmBuild: False
         iOSStripSymbols: True
         hybridGlobalization: ${{ parameters.hybridGlobalization }}
+        perfBranch: ${{ parameters.perfBranch }}
 
   - template: /eng/pipelines/common/platform-matrix.yml
     parameters:
@@ -104,6 +107,7 @@ jobs:
         iOSLlvmBuild: True
         iOSStripSymbols: False
         hybridGlobalization: ${{ parameters.hybridGlobalization }}
+        perfBranch: ${{ parameters.perfBranch }}
 
   - template: /eng/pipelines/common/platform-matrix.yml
     parameters:
@@ -122,6 +126,7 @@ jobs:
         iOSLlvmBuild: True
         iOSStripSymbols: True
         hybridGlobalization: ${{ parameters.hybridGlobalization }}
+        perfBranch: ${{ parameters.perfBranch }}
 
   # run NativeAOT iOS scenarios HybridGlobalization
   - template: /eng/pipelines/common/platform-matrix.yml
@@ -140,6 +145,7 @@ jobs:
         logicalmachine: 'perfiphone12mini'
         iOSStripSymbols: False
         hybridGlobalization: ${{ parameters.hybridGlobalization }}
+        perfBranch: ${{ parameters.perfBranch }}
 
   - template: /eng/pipelines/common/platform-matrix.yml
     parameters:
@@ -157,3 +163,4 @@ jobs:
         logicalmachine: 'perfiphone12mini'
         iOSStripSymbols: True
         hybridGlobalization: ${{ parameters.hybridGlobalization }}
+        perfBranch: ${{ parameters.perfBranch }}

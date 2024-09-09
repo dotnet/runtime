@@ -103,6 +103,7 @@ jobs:
   - template: /eng/pipelines/coreclr/templates/build-and-run-perf-ios-scenarios.yml
     parameters:
       hybridGlobalization: True
+      perfBranch: ${{ parameters.perfBranch }}
 
   # run android scenarios
   - template: /eng/pipelines/common/platform-matrix.yml
