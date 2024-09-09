@@ -11211,7 +11211,7 @@ void CordbProcess::HandleSetThreadContextNeeded(DWORD dwThreadId)
     context.ContextFlags = CONTEXT_FULL;
 
     // we originally used GetDataTarget()->GetThreadContext, but 
-    // the ipmlementation uses ShimLocalDataTarget::GetThreadContext which 
+    // the implementation uses ShimLocalDataTarget::GetThreadContext which 
     // depends on OpenThread which might fail with an Access Denied error (see note above)
     BOOL success = ::GetThreadContext(hThread, (CONTEXT*)(&context));
     if (!success)
