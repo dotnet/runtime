@@ -466,7 +466,7 @@ export function generateWasmBody (
             }
             case MintOpcode.MINT_LOCALLOC: {
                 // dest
-                append_ldloca(builder, getArgU16(ip, 1));
+                append_ldloca(builder, getArgU16(ip, 1), 0);
                 // len
                 append_ldloc(builder, getArgU16(ip, 2), WasmOpcode.i32_load);
                 // frame
@@ -647,10 +647,12 @@ export function generateWasmBody (
                 // locals[ip[1]] = &locals[ip[2]]
                 const offset = getArgU16(ip, 2),
                     flag = isAddressTaken(builder, offset),
-                    destOffset = getArgU16(ip, 1);
+                    destOffset = getArgU16(ip, 1),
+                    // Size value stored for us by emit_compacted_instruction so we can do invalidation
+                    size = getArgU16(ip, 3);
                 if (!flag)
                     mono_log_error(`${traceName}: Expected local ${offset} to have address taken flag`);
-                append_ldloca(builder, offset);
+                append_ldloca(builder, offset, size);
                 append_stloc_tail(builder, destOffset, WasmOpcode.i32_store);
                 // Record this ldloca as a known constant so that later uses of it turn into a lea,
                 //  and the wasm runtime can constant fold them with other constants. It's not uncommon
@@ -1972,10 +1974,7 @@ function append_stloc_tail (builder: WasmBuilder, offset: number, opcodeOrPrefix
 
 // Pass bytesInvalidated=0 if you are reading from the local and the address will never be
 //  used for writes
-function append_ldloca (builder: WasmBuilder, localOffset: number, bytesInvalidated?: number) {
-    if (typeof (bytesInvalidated) !== "number")
-        bytesInvalidated = 512;
-    // FIXME: We need to know how big this variable is so we can invalidate the whole space it occupies
+function append_ldloca (builder: WasmBuilder, localOffset: number, bytesInvalidated: number) {
     if (bytesInvalidated > 0)
         invalidate_local_range(localOffset, bytesInvalidated);
     builder.lea("pLocals", localOffset);
