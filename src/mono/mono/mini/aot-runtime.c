@@ -4441,16 +4441,15 @@ load_method (MonoAotModule *amodule, MonoImage *image, MonoMethod *method, guint
 		g_free (full_name);
 	}
 
-	if (mono_llvm_only) {
-		guint8 flags = amodule->method_flags_table [method_index];
-		/* The caller needs to looks this up, but its hard to do without constructing the full MonoJitInfo, so save it here */
-		if (flags & (MONO_AOT_METHOD_FLAG_GSHAREDVT_VARIABLE | MONO_AOT_METHOD_FLAG_INTERP_ENTRY_ONLY)) {
-			mono_aot_lock ();
-			if (!code_to_method_flags)
-				code_to_method_flags = g_hash_table_new (NULL, NULL);
-			g_hash_table_insert (code_to_method_flags, code, GUINT_TO_POINTER (flags));
-			mono_aot_unlock ();
-		}
+	guint8 flags = amodule->method_flags_table [method_index];
+	/* The caller needs to looks this up, but its hard to do without constructing the full MonoJitInfo, so save it here */
+	if ((mono_llvm_only && (flags & (MONO_AOT_METHOD_FLAG_GSHAREDVT_VARIABLE | MONO_AOT_METHOD_FLAG_INTERP_ENTRY_ONLY))) ||
+			(flags & MONO_AOT_METHOD_FLAG_HAS_LLVM_INTRINSICS)) {
+		mono_aot_lock ();
+		if (!code_to_method_flags)
+			code_to_method_flags = g_hash_table_new (NULL, NULL);
+		g_hash_table_insert (code_to_method_flags, code, GUINT_TO_POINTER (flags));
+		mono_aot_unlock ();
 	}
 
 	init_plt (amodule);
