@@ -276,6 +276,7 @@ export type BrowserProfilerOptions = {
 }
 
 export type LogProfilerOptions = {
+    takeHeapshot?: string,
     configuration?: string //  log profiler options string"
 }
 

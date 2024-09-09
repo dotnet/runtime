@@ -15,6 +15,10 @@ namespace Sample
         }
 
         [JSExport]
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        public static void TakeHeapshot() { }
+
+        [JSExport]
         public static int TestMeaning()
         {
             for(int i=0; i<100; i++){
@@ -22,15 +26,6 @@ namespace Sample
             }
  
             return 42;
-        }
-
-        [JSExport]
-        public static void CreateSnapshot()
-        {
-            Console.WriteLine ("Create snapshot");
-
-            Mono.Profiler.Log.LogProfiler.TriggerHeapshot();
-            Mono.Profiler.Log.LogProfiler.mono_profiler_flush_log();
         }
     }
 }

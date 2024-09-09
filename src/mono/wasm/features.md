@@ -428,11 +428,12 @@ await dotnet.withConfig({browserProfilerOptions: {}}).run();
 
 ### Log Profiling for Memory Troubleshooting
 
-You can enable integration with browser profiler via following elements in your .csproj:
+You can enable integration with log profiler via following elements in your .csproj:
 
 ```xml
 <PropertyGroup>
   <WasmProfilers>log;</WasmProfilers>
+  <WasmBuildNative>true</WasmBuildNative>
 </PropertyGroup>
 ```
 
@@ -440,32 +441,27 @@ In simple browser template, you can add following to your `main.js`
 
 ```javascript
 import { dotnet } from './dotnet.js'
-await dotnet.withConfig({ logProfilerOptions: { configuration: "log:alloc,output=output.mlpd" }}).run();
+await dotnet.withConfig({ 
+    logProfilerOptions: {
+        takeHeapshot: "MyApp.Profiling::TakeHeapshot",
+        configuration: "log:alloc,output=output.mlpd"
+    }}).run();
 ```
 
 In order to trigger a heap shot, add the following:
 
 ```csharp
-using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
+namespace MyApp;
 
-namespace Mono.Profiler.Log
+class Profiling
 {
-	/// <summary>
-	/// Internal calls to match with https://github.com/dotnet/runtime/blob/release/6.0/src/mono/mono/profiler/log.c#L4061-L4097
-	/// </summary>
-	internal class LogProfiler
-	{
-		[MethodImplAttribute(MethodImplOptions.InternalCall)]
-		public extern static void TriggerHeapshot();
-
-		[DllImport("libSystem.Native")]
-		public extern static void mono_profiler_flush_log();
-	}
+    [JSExport]
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public static void TakeHeapshot() { }
 }
 ```
 
-Invoke `LogProfiler.TriggerHeapshot()` from your code in order to create a memory heap shot, then invoke `mono_profiler_flush_log` in order to flush the contents of the profile to the VFS.
+Invoke `MyApp.Profiling.TakeHeapshot()` from your code in order to create a memory heap shot and flush the contents of the profile to the VFS. Make sure to align the namespace and class of the `logProfilerOptions.takeHeapshot` with your class.
 
 You can download the mpld file to analyze it.
 

@@ -38,6 +38,7 @@ try {
         .withExitCodeLogging()
         .withConfig({
             logProfilerOptions: {
+                takeHeapshot: "Sample.Test::TakeHeapshot",
                 configuration: "log:alloc,output=output.mlpd"
             }
         })
@@ -46,7 +47,7 @@ try {
     console.log("not ready yet")
     const exports = await getAssemblyExports("Wasm.BrowserLogProfile.Sample");
     const testMeaning = exports.Sample.Test.TestMeaning;
-    const createSnapshot = exports.Sample.Test.CreateSnapshot;
+    const takeHeapshot = exports.Sample.Test.TakeHeapshot;
     console.log("ready");
 
     dotnet.run();
@@ -55,7 +56,7 @@ try {
     document.getElementById("out").innerHTML = ret;
     console.debug(`ret: ${ret}`);
 
-    createSnapshot();
+    takeHeapshot();
     saveProfile(Module);
 
     let exit_code = ret == 42 ? 0 : 1;

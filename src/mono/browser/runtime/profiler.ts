@@ -36,7 +36,8 @@ export function mono_wasm_init_browser_profiler (options: BrowserProfilerOptions
 
 export function mono_wasm_init_log_profiler (options: LogProfilerOptions): void {
     mono_assert(runtimeHelpers.emscriptenBuildOptions.enableLogProfiler, "Log profiler is not enabled, please use <WasmProfilers>log;</WasmProfilers> in your project file.");
-    cwraps.mono_wasm_profiler_init_log(options.configuration || "log:alloc,output=output.mlpd");
+    mono_assert(options.takeHeapshot, "Log profiler is not enabled, the takeHeapshot method must be defined in LogProfilerOptions.takeHeapshot");
+    cwraps.mono_wasm_profiler_init_log( (options.configuration || "log:alloc,output=output.mlpd") + `,take-heapshot-method=${options.takeHeapshot}`);
 }
 
 export const enum MeasuredBlock {

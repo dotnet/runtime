@@ -189,6 +189,8 @@ typedef struct {
 	int small_id;
 } MonoProfilerThread;
 
+static MonoMethodDesc *log_profiler_take_heapshot_method;
+
 // Default value in `profiler_tls` for new threads.
 #define MONO_PROFILER_THREAD_ZERO ((MonoProfilerThread *) NULL)
 
@@ -3645,6 +3647,48 @@ create_profiler (const char *args, const char *filename, GPtrArray *filters)
 	log_profiler.startup_time = current_time ();
 }
 
+void
+set_log_profiler_take_heapshot_method (const char *val)
+{
+	log_profiler_take_heapshot_method = mono_method_desc_new (val, TRUE);
+
+	if (!log_profiler_take_heapshot_method) {
+		printf ("Could not parse method description: %s\n", val);
+		mono_profiler_printf_err ("Could not parse method description: %s", val);
+		exit (1);
+	}
+	else{
+		printf ("2 Found take-heapshot-method %p\n", log_profiler_take_heapshot_method);
+	}
+}
+
+static void
+proflog_trigger_heapshot (void);
+
+static void
+prof_jit_done (MonoProfiler *prof, MonoMethod *method, MonoJitInfo *jinfo)
+{
+	MonoImage *image = mono_class_get_image (mono_method_get_class (method));
+
+	if (!image->assembly || method->wrapper_type || !log_profiler_take_heapshot_method)
+		return;
+
+	if (log_profiler_take_heapshot_method && mono_method_desc_match (log_profiler_take_heapshot_method, method)) {
+		printf ("log-profiler | taking heapshot\n");
+		proflog_trigger_heapshot ();
+		return;
+	}
+	else {
+		printf ("log-profiler not called (%p)\n", log_profiler_take_heapshot_method);
+	}
+}
+
+static void
+prof_inline_method (MonoProfiler *prof, MonoMethod *method, MonoMethod *inlined_method)
+{
+	prof_jit_done (prof, inlined_method, NULL);
+}
+
 MONO_API void
 mono_profiler_init_log (const char *desc);
 
@@ -3767,6 +3811,9 @@ mono_profiler_init_log (const char *desc)
 	mono_profiler_enable_allocations ();
 	mono_profiler_enable_clauses ();
 	mono_profiler_enable_sampling (handle);
+	mono_profiler_set_jit_done_callback (handle, prof_jit_done);
+	mono_profiler_set_inline_method_callback (handle, prof_inline_method);
+
 
 	/*
 	 * If no sample option was given by the user, this just leaves the sampling
@@ -3780,16 +3827,11 @@ done:
 	;
 }
 
-#if defined (HOST_WASM)
-
-MONO_API void
-mono_profiler_flush_log (void);
-
-void
-mono_profiler_flush_log (void)
+static void
+proflog_trigger_heapshot (void)
 {
+	trigger_heapshot ();	
+	
 	while (handle_writer_queue_entry ());
 	while (handle_dumper_queue_entry ());
 }
-
-#endif // HOST_WASM
