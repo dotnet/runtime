@@ -123,6 +123,8 @@ public class Program
         } catch {}
     }
 
+// Allow reflection lookup on public method
+#pragma warning disable xUnit1013
     public static void MainInner(IRuntime rt)
     {
         S0 vr8 = default(S0);
@@ -219,8 +221,9 @@ public class Program
             new S3(0)
         };
     }
+#pragma warning restore xUnit1013
 
-    public static void M75(S3 argThis, double arg1)
+    private static void M75(S3 argThis, double arg1)
     {
     }
 }
