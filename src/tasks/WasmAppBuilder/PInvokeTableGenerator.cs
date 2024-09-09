@@ -356,29 +356,30 @@ internal sealed class PInvokeTableGenerator
 
             // The signature of the interp entry function
             // This is a gsharedvt_in signature
-            var interpEntryArgs = new List<string>();
+            var entryArgs = new List<string>();
             if (!cb.IsVoid)
             {
-                interpEntryArgs.Add("(int*)&result");
+                entryArgs.Add("(int*)&result");
             }
-            interpEntryArgs.AddRange(cb.Parameters.Select((_, i) => $"(int*)&arg{i}"));
-            interpEntryArgs.Add($"wasm_native_to_interp_ftndescs [{cb_index}].arg");
+            entryArgs.AddRange(cb.Parameters.Select((_, i) => $"(int*)&arg{i}"));
+            entryArgs.Add($"(int*)wasm_native_to_interp_ftndescs [{cb_index}].arg");
 
             w.Write(
                 $$"""
 
-                {{(cb.IsExport ? $"__attribute__((export_name(\"{EscapeLiteral(cb.EntryPoint!)}\")))" : "// no EntryPoint declared")}}
-                {{MapType(cb.ReturnType)}}
+                {{(cb.IsExport ?
+                $"__attribute__((export_name(\"{EscapeLiteral(cb.EntryPoint!)}\"))){w.NewLine}" : "")}}{{
+                MapType(cb.ReturnType)}}
                 {{cb.EntrySymbol}} ({{cb.Parameters.Join(", ", (info, i) => $"{MapType(info.ParameterType)} arg{i}")}}) {
-                    typedef void (*InterpEntry_T{{cb_index}}) ({{interpEntryArgs.Join(", ", _ => "int*")}});{{
+                    typedef void (*InterpEntry_T{{cb_index}}) ({{entryArgs.Join(", ", _ => "int*")}});{{
                     (!cb.IsVoid ? $"{w.NewLine}    {MapType(cb.ReturnType)} result;" : "")}}
 
-                    if (!(InterpEntry_T{{cb_index}})wasm_native_to_interp_ftndescs [{{cb_index}}].func) {
-                        {{(cb.IsExport && _isLibraryMode ? "initialize_runtime(); " : "")}}// ensure the ftndescs and runtime are initialized when required
-                        mono_wasm_marshal_get_managed_wrapper ("{{cb.AssemblyName}}", "{{cb.Namespace}}", "{{cb.TypeName}}", "{{cb.MethodName}}", {{cb.Token}}, {{cb.Parameters.Length}});
+                    if (!(InterpEntry_T{{cb_index}})wasm_native_to_interp_ftndescs [{{cb_index}}].func) {{{
+                        (cb.IsExport && _isLibraryMode ? $"initialize_runtime();{w.NewLine}" : "")}}
+                        mono_wasm_marshal_get_managed_wrapper ("{{EscapeLiteral(cb.AssemblyName)}}", "{{EscapeLiteral(cb.Namespace)}}", "{{EscapeLiteral(cb.TypeName)}}", "{{EscapeLiteral(cb.MethodName)}}", {{cb.Token}}, {{cb.Parameters.Length}});
                     }
 
-                    ((InterpEntry_T{{cb_index}})wasm_native_to_interp_ftndescs [{{cb_index}}].func) ({{interpEntryArgs.Join(", ")}});{{
+                    ((InterpEntry_T{{cb_index}})wasm_native_to_interp_ftndescs [{{cb_index}}].func) ({{entryArgs.Join(", ")}});{{
                     (!cb.IsVoid ?  $"{w.NewLine}    return result;" : "")}}
                 }
 
