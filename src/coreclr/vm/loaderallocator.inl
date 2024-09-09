@@ -208,6 +208,19 @@ inline DWORD SegmentedHandleIndexStack::Pop()
     return m_TOSSegment->m_data[--m_TOSIndex];
 }
 
+inline SegmentedHandleIndexStack::~SegmentedHandleIndexStack()
+{
+    LIMITED_METHOD_CONTRACT;
+
+    while (m_TOSSegment != NULL)
+    {
+        Segment* prevSegment = m_TOSSegment->m_prev;
+        delete m_TOSSegment;
+        m_TOSSegment = prevSegment;
+    }
+    m_freeSegment = NULL;
+}
+
 inline bool SegmentedHandleIndexStack::IsEmpty()
 {
     LIMITED_METHOD_CONTRACT;
