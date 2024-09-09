@@ -943,12 +943,16 @@ LoaderHeap *DelegateEEClass::GetStubHeap()
 #if defined(TARGET_RISCV64)
 static Stub* CreateILDelegateShuffleThunk(MethodDesc* pDelegateMD, MethodDesc* pTargetMD)
 {
+    // TODO: Stack growing is a rare case but if thunk duplication turns out to be an issue, optimize by cooking
+    // a signature based on the entries returned by GenerateShuffleArray and use the call target from
+    // DelegateObject::GetMethodPtrAux()
+    _ASSERTE(pDelegateMD->SizeOfArgStack() < pTargetMD->SizeOfArgStack()); // IL thunk handle stack growing only
     SigTypeContext typeContext(pDelegateMD);
     MetaSig delegateSig(pDelegateMD);
     INDEBUG(MetaSig targetSig(pTargetMD));
     LOG((LF_STUBS, LL_EVERYTHING, "CreateILDelegateShuffleThunk %s (%i args, %i return type, %i this) -> %s (%i args, %i return type, %i this)\n",
-        pDelegateMD->GetName(), delegateSig.NumFixedArgs(), delegateSig.GetReturnType(), delegateSig.HasThis(),
-        pTargetMD->GetName(), targetSig.NumFixedArgs(), targetSig.GetReturnType(), targetSig.HasThis()));
+        pDelegateMD->GetName(), delegateSig.NumFixedArgs(), delegateSig.GetReturnType(), !!delegateSig.HasThis(),
+        pTargetMD->GetName(), targetSig.NumFixedArgs(), targetSig.GetReturnType(), !!targetSig.HasThis()));
     _ASSERTE(delegateSig.NumFixedArgs() == targetSig.NumFixedArgs());
     _ASSERTE(delegateSig.GetReturnType() == targetSig.GetReturnType());
 
