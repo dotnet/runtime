@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <!-- harcode version to avoid breaking tests which embed the string length and are broken by bumping to 10.0.0.0 -->
+    <!-- hardcode version to avoid breaking tests which embed the string length and are broken by bumping to 10.0.0.0 -->
     <AssemblyVersion>9.0.0.0</AssemblyVersion>
     <TestRuntime>true</TestRuntime>
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
