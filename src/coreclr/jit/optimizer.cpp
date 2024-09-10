@@ -3003,7 +3003,7 @@ bool Compiler::optCanonicalizeExit(FlowGraphNaturalLoop* loop, BasicBlock* exit)
         assert(finallyBlock->hasHndIndex());
         newExit = fgNewBBatTryRegionEnd(BBJ_ALWAYS, finallyBlock->getHndIndex());
 
-        assert(!newExit->IsLast());
+        assert(!newExit->IsFirst());
         BasicBlock* prev = newExit->Prev();
         if (prev->hasHndIndex())
         {
