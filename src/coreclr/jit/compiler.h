@@ -2858,10 +2858,6 @@ public:
     // Update the 'last' pointers in the EH table to reflect new or deleted blocks in an EH region.
     void ehUpdateLastBlocks(BasicBlock* oldLast, BasicBlock* newLast);
 
-    // Update the end pointer of the handler region containing 'oldHndLast',
-    // as well as the end pointers of any parent handler regions, to 'newHndLast'.
-    void ehUpdateLastHndBlocks(BasicBlock* oldHndLast, BasicBlock* newHndLast);
-
     // For a finally handler, find the region index that the BBJ_CALLFINALLY lives in that calls the handler,
     // or NO_ENCLOSING_INDEX if the BBJ_CALLFINALLY lives in the main function body. Normally, the index
     // is the same index as the handler (and the BBJ_CALLFINALLY lives in the 'try' region), but for AMD64 the
