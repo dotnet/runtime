@@ -85,7 +85,10 @@ internal readonly struct MemberTypeInfo
             | AllowedRecordTypes.MemberPrimitiveTyped
             | AllowedRecordTypes.BinaryLibrary; // Classes may be preceded with a library record (System too!)
         // but System Classes can be expressed only by System records
-        const AllowedRecordTypes SystemClass = Classes | AllowedRecordTypes.SystemClassWithMembersAndTypes;
+        const AllowedRecordTypes SystemClass = Classes
+            | AllowedRecordTypes.SystemClassWithMembersAndTypes
+            // An array of system class records can contain a string. Example: `new IEnumerable[1] { "hello" }`.
+            | AllowedRecordTypes.BinaryObjectString;
         const AllowedRecordTypes NonSystemClass = Classes |  AllowedRecordTypes.ClassWithMembersAndTypes;
 
         return binaryType switch
@@ -105,7 +108,7 @@ internal readonly struct MemberTypeInfo
     {
         // This library tries to minimize the number of concepts the users need to learn to use it.
         // Since SZArrays are most common, it provides an SZArrayRecord<T> abstraction.
-        // Every other array (jagged, multi-dimensional etc) is represented using SZArrayRecord.
+        // Every other array (jagged, multi-dimensional etc) is represented using ArrayRecord.
         // The goal of this method is to determine whether given array can be represented as SZArrayRecord<ClassRecord>.
 
         (BinaryType binaryType, object? additionalInfo) = Infos[0];

@@ -7,7 +7,7 @@ using System.Formats.Nrbf.Utils;
 
 namespace System.Formats.Nrbf;
 
-internal sealed class ArrayOfClassesRecord : SZArrayRecord<ClassRecord>
+internal sealed class ArrayOfClassesRecord : SZArrayRecord<SerializationRecord>
 {
     private TypeName? _typeName;
 
@@ -28,12 +28,12 @@ internal sealed class ArrayOfClassesRecord : SZArrayRecord<ClassRecord>
         => _typeName ??= MemberTypeInfo.GetArrayTypeName(ArrayInfo);
 
     /// <inheritdoc/>
-    public override ClassRecord?[] GetArray(bool allowNulls = true)
-        => (ClassRecord?[])(allowNulls ? _arrayNullsAllowed ??= ToArray(true) : _arrayNullsNotAllowed ??= ToArray(false));
+    public override SerializationRecord?[] GetArray(bool allowNulls = true)
+        => (SerializationRecord?[])(allowNulls ? _arrayNullsAllowed ??= ToArray(true) : _arrayNullsNotAllowed ??= ToArray(false));
 
-    private ClassRecord?[] ToArray(bool allowNulls)
+    private SerializationRecord?[] ToArray(bool allowNulls)
     {
-        ClassRecord?[] result = new ClassRecord?[Length];
+        SerializationRecord?[] result = new SerializationRecord?[Length];
 
         int resultIndex = 0;
         foreach (SerializationRecord record in Records)
@@ -42,9 +42,9 @@ internal sealed class ArrayOfClassesRecord : SZArrayRecord<ClassRecord>
                 ? referenceRecord.GetReferencedRecord()
                 : record;
 
-            if (actual is ClassRecord classRecord)
+            if (actual is not NullsRecord nullsRecord)
             {
-                result[resultIndex++] = classRecord;
+                result[resultIndex++] = actual;
             }
             else
             {
@@ -53,7 +53,7 @@ internal sealed class ArrayOfClassesRecord : SZArrayRecord<ClassRecord>
                     ThrowHelper.ThrowArrayContainedNulls();
                 }
 
-                int nullCount = ((NullsRecord)actual).NullCount;
+                int nullCount = nullsRecord.NullCount;
                 do
                 {
                     result[resultIndex++] = null;

@@ -198,9 +198,9 @@ internal sealed class BinaryArrayRecord : ArrayRecord
             return arrayNestingDepth == 1 ? elementType : arrayType.GetElementType()!;
         }
 
-        // Complex types are never instantiated, but represented as ClassRecord
+        // Complex types are never instantiated, but represented as SerializationRecord
         isClassRecord = true;
-        Type complexType = typeof(ClassRecord);
+        Type complexType = typeof(SerializationRecord);
         for (int i = 1; i < arrayNestingDepth; i++)
         {
             complexType = complexType.MakeArrayType();

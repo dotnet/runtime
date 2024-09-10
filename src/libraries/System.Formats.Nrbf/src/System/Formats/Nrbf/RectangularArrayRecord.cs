@@ -8,6 +8,7 @@ using System.Reflection.Metadata;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Formats.Nrbf.Utils;
+using System.Diagnostics;
 
 namespace System.Formats.Nrbf;
 
@@ -56,19 +57,20 @@ internal sealed class RectangularArrayRecord : ArrayRecord
         // This method returns arrays of ClassRecord for arrays of complex types.
         Array result =
 #if NET9_0_OR_GREATER
-            ElementType == typeof(ClassRecord)
+            ElementType == typeof(SerializationRecord)
                 ? Array.CreateInstance(ElementType, _lengths)
                 : Array.CreateInstanceFromArrayType(arrayType, _lengths);
 #else
             Array.CreateInstance(ElementType, _lengths);
 #endif
+        bool getPrimitiveRecordValue = ElementType != typeof(SerializationRecord);
 
 #if !NET8_0_OR_GREATER
         int[] indices = new int[_lengths.Length];
 
         foreach (object value in _values)
         {
-            result.SetValue(GetActualValue(value), indices);
+            result.SetValue(GetActualValue(value, getPrimitiveRecordValue), indices);
 
             int dimension = indices.Length - 1;
             while (dimension >= 0)
@@ -109,14 +111,22 @@ internal sealed class RectangularArrayRecord : ArrayRecord
             else if (ElementType == typeof(DateTime)) CopyTo<DateTime>(_values, result);
             else if (ElementType == typeof(decimal)) CopyTo<decimal>(_values, result);
         }
-        else
+        else if (ElementType == typeof(string))
+        {
+            CopyTo<string>(_values, result);
+        }
+        else if (ElementType == typeof(object))
         {
             CopyTo<object>(_values, result);
+        }
+        else
+        {
+            CopyTo<SerializationRecord>(_values, result, getPrimitiveRecordValue);
         }
 
         return result;
 
-        static void CopyTo<T>(ICollection<object> list, Array array)
+        static void CopyTo<T>(ICollection<object> list, Array array, bool getPrimitiveRecordValue = true)
         {
             ref byte arrayDataRef = ref MemoryMarshal.GetArrayDataReference(array);
             ref T firstElementRef = ref Unsafe.As<byte, T>(ref arrayDataRef);
@@ -124,7 +134,7 @@ internal sealed class RectangularArrayRecord : ArrayRecord
             foreach (object value in list)
             {
                 ref T targetElement = ref Unsafe.Add(ref firstElementRef, flattenedIndex);
-                targetElement = (T)GetActualValue(value)!;
+                targetElement = (T)GetActualValue(value, getPrimitiveRecordValue)!;
                 flattenedIndex++;
             }
         }
@@ -156,7 +166,7 @@ internal sealed class RectangularArrayRecord : ArrayRecord
             BinaryType.PrimitiveArray => MapPrimitiveArray((PrimitiveType)memberTypeInfo.Infos[0].AdditionalInfo!),
             BinaryType.String => typeof(string),
             BinaryType.Object => typeof(object),
-            _ => typeof(ClassRecord)
+            _ => typeof(SerializationRecord)
         };
 
         bool canPreAllocate = false;
@@ -238,8 +248,29 @@ internal sealed class RectangularArrayRecord : ArrayRecord
             _ => typeof(ulong[]),
         };
 
-    private static object? GetActualValue(object value)
-        => value is SerializationRecord serializationRecord
-            ? serializationRecord.GetValue()
-            : value; // it must be a primitive type
+    private static object? GetActualValue(object value, bool getPrimitiveRecordValue = true)
+    {
+        if (value is not SerializationRecord serializationRecord)
+        {
+            return value; // it must be a primitive type
+        }
+        else if (serializationRecord.RecordType == SerializationRecordType.ObjectNull)
+        {
+            return null;
+        }
+        else if (serializationRecord.RecordType == SerializationRecordType.MemberReference)
+        {
+            serializationRecord = ((MemberReferenceRecord)serializationRecord).GetReferencedRecord();
+        }
+
+        if (getPrimitiveRecordValue)
+        {
+            Debug.Assert(serializationRecord is PrimitiveTypeRecord);
+            return serializationRecord.GetValue(); // get the raw primitive value
+        }
+        else
+        {
+            return serializationRecord;
+        }
+    }
 }
