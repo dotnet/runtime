@@ -5678,8 +5678,8 @@ void Compiler::lvaFixVirtualFrameOffsets()
     {
         // FP is used.
         delta += codeGen->genTotalFrameSize() - codeGen->genSPtoFPdelta();
-        if (codeGen->IsSaveFpLrWithAllCalleeSavedRegisters() && isFramePointerUsed()) // Note that currently we always
-                                                                                      // have a frame pointer
+        if (!codeGen->IsSaveFpLrWithAllCalleeSavedRegisters()) // Note that currently we always
+                                                               // have a frame pointer
         {
             // We set FP to be after LR, FP
             delta += 2 * REGSIZE_BYTES;
@@ -6124,16 +6124,7 @@ void Compiler::lvaAssignVirtualFrameOffsetsToLocals()
         stkOffs -= initialStkOffs;
     }
 
-    if (!isFramePointerUsed()) // Note that currently we always have a frame pointer
-    {
-        stkOffs -= compCalleeRegsPushed * REGSIZE_BYTES;
-    }
-    else
-    {
-        // Subtract off FP and LR.
-        assert(compCalleeRegsPushed >= 2);
-        stkOffs -= (compCalleeRegsPushed - 2) * REGSIZE_BYTES;
-    }
+    stkOffs -= compCalleeRegsPushed * REGSIZE_BYTES;
 
 #elif defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
 
@@ -6803,14 +6794,6 @@ void Compiler::lvaAssignVirtualFrameOffsetsToLocals()
     }
 #endif // TARGET_AMD64
 
-#ifdef TARGET_ARM64
-    if (isFramePointerUsed()) // Note that currently we always have a frame pointer
-    {
-        // Create space for saving FP and LR.
-        stkOffs -= 2 * REGSIZE_BYTES;
-    }
-#endif // TARGET_ARM64
-
 #if FEATURE_FIXED_OUT_ARGS
     if (lvaOutgoingArgSpaceSize > 0)
     {
@@ -6848,6 +6831,44 @@ void Compiler::lvaAssignVirtualFrameOffsetsToLocals()
 
     noway_assert(compLclFrameSize + originalFrameSize ==
                  (unsigned)-(stkOffs + (pushedCount * (int)TARGET_POINTER_SIZE)));
+
+#ifdef TARGET_ARM64
+    // Decide where to save FP and LR registers. We store FP/LR registers at the bottom of the frame if there is
+    // a frame pointer used (so we get positive offsets from the frame pointer to access locals), but not if we
+    // need a GS cookie AND localloc is used, since we need the GS cookie to protect the saved return value,
+    // and also the saved frame pointer. See CodeGen::genPushCalleeSavedRegisters() for more details about the
+    // frame types. Since saving FP/LR at high addresses is a relatively rare case, force using it during stress.
+    // (It should be legal to use these frame types for every frame).
+
+    if (opts.compJitSaveFpLrWithCalleeSavedRegisters == 0)
+    {
+        // For Apple NativeAOT ABI we try to save the FP/LR registers on top to get canonical frame layout
+        // that can be represented with compact unwinding information. In order to maintain code quality we
+        // only do it when we can use SP-based addressing (!isFramePointerRequired) through lvaFrameAddress
+        // optimization, or if the whole frame is small enough that the negative FP-based addressing can
+        // address the whole frame.
+        if (IsTargetAbi(CORINFO_NATIVEAOT_ABI) && TargetOS::IsApplePlatform &&
+            (!codeGen->isFramePointerRequired() || codeGen->genTotalFrameSize() < 0x100))
+        {
+            codeGen->SetSaveFpLrWithAllCalleeSavedRegisters(true);
+        }
+        else
+        {
+            // Default configuration
+            codeGen->SetSaveFpLrWithAllCalleeSavedRegisters((getNeedsGSSecurityCookie() && compLocallocUsed) ||
+                                                            opts.compDbgEnC ||
+                                                            compStressCompile(Compiler::STRESS_GENERIC_VARN, 20));
+        }
+    }
+    else if (opts.compJitSaveFpLrWithCalleeSavedRegisters == 1)
+    {
+        codeGen->SetSaveFpLrWithAllCalleeSavedRegisters(false); // Disable using new frames
+    }
+    else if ((opts.compJitSaveFpLrWithCalleeSavedRegisters == 2) || (opts.compJitSaveFpLrWithCalleeSavedRegisters == 3))
+    {
+        codeGen->SetSaveFpLrWithAllCalleeSavedRegisters(true); // Force using new frames
+    }
+#endif // TARGET_ARM64
 }
 
 //------------------------------------------------------------------------
