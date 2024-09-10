@@ -11578,12 +11578,7 @@ GenTree* Compiler::fgMorphHWIntrinsic(GenTreeHWIntrinsic* tree)
         // Try to fold it, maybe we get lucky,
         GenTree* morphedTree = gtFoldExpr(tree);
 
-        if (morphedTree != tree)
-        {
-            assert(!fgIsCommaThrow(morphedTree));
-            INDEBUG(morphedTree->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED);
-        }
-        else if (!morphedTree->OperIsHWIntrinsic())
+        if ((morphedTree != tree) || !morphedTree->OperIsHWIntrinsic())
         {
             INDEBUG(morphedTree->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED);
         }
