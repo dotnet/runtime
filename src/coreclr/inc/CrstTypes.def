@@ -94,10 +94,6 @@ Crst AvailableParamTypes
     AcquiredBefore ModuleLookupTable IbcProfile LoaderHeap
 End
 
-Crst BaseDomain
-    AcquiredBefore LoaderHeap UniqueStack
-End
-
 Crst CCompRC
     Unordered
 End
@@ -291,7 +287,7 @@ Crst JumpStubCache
     AcquiredBefore LoaderHeap SingleUseLock
     AcquiredAfter AppDomainCache
                   ILStubGen
-                  TypeIDMap BaseDomain AssemblyLoader
+                  TypeIDMap AssemblyLoader
 End
 
 Crst ListLock
@@ -341,7 +337,7 @@ End
 
 Crst PendingTypeLoadEntry
     AcquiredBefore AppDomainCache PinnedHeapHandleTable AssemblyLoader AvailableClass AvailableParamTypes
-                   BaseDomain ClassInit DeadlockDetection DebuggerController DebuggerJitInfo DebuggerMutex
+                   ClassInit DeadlockDetection DebuggerController DebuggerJitInfo DebuggerMutex
                    GenericDictionaryExpansion Exception FuncPtrStubs
                    FusionAppCtx GlobalStrLiteralMap HandleTable IbcProfile
                    IJWFixupData IJWHash ISymUnmanagedReader Jit JumpStubCache LoaderHeap
@@ -430,10 +426,6 @@ Crst SyncBlockCache
 End
 
 Crst SyncHashLock
-End
-
-Crst SystemBaseDomain
-    AcquiredBefore LoaderHeap UniqueStack
 End
 
 Crst SystemDomain
@@ -534,6 +526,7 @@ Crst MethodDescBackpatchInfoTracker
 End
 
 Crst NativeImageEagerFixups
+    AcquiredBefore UnresolvedClassLock
 End
 
 Crst NativeImageLoad

@@ -153,6 +153,10 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 BindCore(section4, ref temp6, defaultValueIfNotFound: false, binderOptions);
                 instance.List = temp6;
             }
+            else
+            {
+                instance.List = instance.List;
+            }
 
             if (AsConfigWithChildren(configuration.GetSection("Array")) is IConfigurationSection section7)
             {
@@ -161,6 +165,10 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 BindCore(section7, ref temp9, defaultValueIfNotFound: false, binderOptions);
                 instance.Array = temp9;
             }
+            else
+            {
+                instance.Array = instance.Array;
+            }
 
             if (AsConfigWithChildren(configuration.GetSection("Record")) is IConfigurationSection section10)
             {
@@ -168,6 +176,10 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 temp12 ??= InitializeRecordAction(section10, binderOptions);
                 BindCore(section10, ref temp12, defaultValueIfNotFound: false, binderOptions);
                 instance.Record = temp12;
+            }
+            else
+            {
+                instance.Record = instance.Record;
             }
         }
 
