@@ -29,7 +29,11 @@ namespace System.Text.Json.Schema.Tests
         [ActiveIssue("https://github.com/dotnet/runtime/issues/103694", TestRuntimes.Mono)]
         public void TestTypes_GeneratesExpectedJsonSchema(ITestData testData)
         {
-            JsonNode schema = Serializer.DefaultOptions.GetJsonSchemaAsNode(testData.Type, testData.Options);
+            JsonSerializerOptions options = testData.SerializerOptions is { } opts
+                ? new(opts) { TypeInfoResolver = Serializer.DefaultOptions.TypeInfoResolver }
+                : Serializer.DefaultOptions;
+
+            JsonNode schema = options.GetJsonSchemaAsNode(testData.Type, testData.Options);
             AssertValidJsonSchema(testData.Type, testData.ExpectedJsonSchema, schema);
         }
 
@@ -37,8 +41,12 @@ namespace System.Text.Json.Schema.Tests
         [MemberData(nameof(GetTestDataUsingAllValues))]
         public void TestTypes_SerializedValueMatchesGeneratedSchema(ITestData testData)
         {
-            JsonNode schema = Serializer.DefaultOptions.GetJsonSchemaAsNode(testData.Type, testData.Options);
-            JsonNode? instance = JsonSerializer.SerializeToNode(testData.Value, testData.Type, Serializer.DefaultOptions);
+            JsonSerializerOptions options = testData.SerializerOptions is { } opts
+                ? new(opts) { TypeInfoResolver = Serializer.DefaultOptions.TypeInfoResolver }
+                : Serializer.DefaultOptions;
+
+            JsonNode schema = options.GetJsonSchemaAsNode(testData.Type, testData.Options);
+            JsonNode? instance = JsonSerializer.SerializeToNode(testData.Value, testData.Type, options);
             AssertDocumentMatchesSchema(schema, instance);
         }
 

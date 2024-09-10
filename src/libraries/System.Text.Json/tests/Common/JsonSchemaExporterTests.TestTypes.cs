@@ -677,6 +677,24 @@ namespace System.Text.Json.Schema.Tests
                 }
                 """);
 
+            // Global setting for JsonUnmappedMemberHandling.Disallow
+            yield return new TestData<SimplePoco>(
+                Value: new() { String = "string", StringNullable = "string", Int = 42, Double = 3.14, Boolean = true },
+                ExpectedJsonSchema: """
+                {
+                    "type": ["object","null"],
+                    "properties": {
+                        "String": { "type": "string" },
+                        "StringNullable": { "type": ["string", "null"] },
+                        "Int": { "type": "integer" },
+                        "Double": { "type": "number" },
+                        "Boolean": { "type": "boolean" }
+                    },
+                    "additionalProperties": false,
+                }
+                """,
+                SerializerOptions: new() { UnmappedMemberHandling = JsonUnmappedMemberHandling.Disallow });
+
             yield return new TestData<PocoWithNullableAnnotationAttributes>(
                 Value: new() { MaybeNull = null!, AllowNull = null, NotNull = null, DisallowNull = null!, NotNullDisallowNull = "str" },
                 ExpectedJsonSchema: """
@@ -1446,7 +1464,8 @@ namespace System.Text.Json.Schema.Tests
             T? Value,
             string ExpectedJsonSchema,
             IEnumerable<T?>? AdditionalValues = null,
-            JsonSchemaExporterOptions? Options = null)
+            JsonSchemaExporterOptions? Options = null,
+            JsonSerializerOptions? SerializerOptions = null)
             : ITestData
         {
             public Type Type => typeof(T);
@@ -1480,6 +1499,8 @@ namespace System.Text.Json.Schema.Tests
             string ExpectedJsonSchema { get; }
 
             JsonSchemaExporterOptions? Options { get; }
+
+            JsonSerializerOptions? SerializerOptions { get; }
 
             IEnumerable<ITestData> GetTestDataForAllValues();
         }
