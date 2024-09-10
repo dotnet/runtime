@@ -22,7 +22,7 @@ By default, the dependency manifest contains information about the application's
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">
     <Compile Remove="**\*.netstandard.cs" />
   </ItemGroup>
-  
+
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">
     <Compile Remove="**\*.netcoreapp.cs" />
     <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\RequiresAssemblyFilesAttribute.cs" />
@@ -30,10 +30,10 @@ By default, the dependency manifest contains information about the application's
   </ItemGroup>
 
   <ItemGroup>
-    <InternalsVisibleTo Include="Microsoft.Extensions.DependencyModel.Tests" /> 
+    <InternalsVisibleTo Include="Microsoft.Extensions.DependencyModel.Tests" />
   </ItemGroup>
 
-  <ItemGroup>
+  <ItemGroup Condition="'$(TargetFramework)' != '$(NetCoreAppCurrent)'">
     <ProjectReference Include="$(LibrariesProjectRoot)System.Text.Encodings.Web\src\System.Text.Encodings.Web.csproj" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.Text.Json\src\System.Text.Json.csproj" />
   </ItemGroup>
@@ -46,5 +46,5 @@ By default, the dependency manifest contains information about the application's
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">
     <Reference Include="System.Runtime" />
   </ItemGroup>
-  
+
 </Project>
