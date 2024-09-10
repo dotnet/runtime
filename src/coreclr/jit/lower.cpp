@@ -4452,6 +4452,7 @@ GenTree* Lowering::LowerJTrue(GenTreeOp* jtrue)
 
         if (cond->OperIs(GT_EQ, GT_NE) && relopOp2->IsIntegralConst(0))
         {
+            // Codegen will use cbz or cbnz in codegen which do not affect the flag register
             newOper = GT_JCMP;
             cc      = GenCondition::FromRelop(cond);
         }
