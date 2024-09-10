@@ -43,6 +43,7 @@ namespace JitTest_array1_refany_cs
         }
 
         [Fact]
+        [OuterLoop]
         public static int TestEntryPoint()
         {
             Array genericArray = Array.CreateInstance(typeof(Test), 16);

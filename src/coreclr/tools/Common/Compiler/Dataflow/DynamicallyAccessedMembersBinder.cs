@@ -177,7 +177,7 @@ namespace ILCompiler.Dataflow
                 foreach (var method in type.GetMethods())
                 {
                     // Ignore constructors as those are not considered methods from a reflection's point of view
-                    if (method.IsConstructor)
+                    if (method.IsConstructor || method.IsStaticConstructor)
                         continue;
 
                     // Ignore private methods on a base type - those are completely ignored by reflection

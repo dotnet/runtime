@@ -10,13 +10,6 @@
 #include "options.h"
 #include "mono/utils/mono-error-internals.h"
 
-typedef enum {
-	MONO_OPTION_BOOL,
-	MONO_OPTION_BOOL_READONLY,
-	MONO_OPTION_INT,
-	MONO_OPTION_STRING
-} MonoOptionType;
-
 /* Define flags */
 #define DEFINE_OPTION_FULL(option_type, ctype, c_name, cmd_name, def_value, comment) \
 	ctype mono_opt_##c_name = def_value;
@@ -332,4 +325,23 @@ mono_options_get_as_json (void)
 	result_str = result->str;
 	g_string_free(result, FALSE);
 	return result_str;
+}
+
+gboolean
+mono_options_get (const char *name, MonoOptionType *type, void **value_address)
+{
+	GHashTable *hash = get_option_hash ();
+	OptionData *meta = (OptionData *)g_hash_table_lookup (hash, name);
+
+	if (!meta) {
+		if (value_address)
+			*value_address = NULL;
+		return FALSE;
+	}
+
+	if (type)
+		*type = meta->option_type;
+	if (value_address)
+		*value_address = meta->addr;
+	return TRUE;
 }

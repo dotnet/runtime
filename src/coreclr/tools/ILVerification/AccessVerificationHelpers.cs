@@ -2,8 +2,13 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Collections.Immutable;
 using System.Diagnostics;
+using System.Linq;
 using System.Reflection;
+using System.Reflection.Metadata;
+using System.Runtime.InteropServices;
+
 using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
 
@@ -244,35 +249,29 @@ namespace ILVerify
 
                 foreach (var attribute in assembly.GetDecodedCustomAttributes("System.Runtime.CompilerServices", "InternalsVisibleToAttribute"))
                 {
-                    AssemblyName friendAttributeName = new AssemblyName((string)attribute.FixedArguments[0].Value);
+                    AssemblyNameInfo friendAttributeName = AssemblyNameInfo.Parse(((string)attribute.FixedArguments[0].Value).AsSpan());
                     if (!friendName.Name.Equals(friendAttributeName.Name, StringComparison.OrdinalIgnoreCase))
                         continue;
 
-                    // Comparing PublicKeyToken, since GetPublicKey returns null due to a bug
-                    if (IsSamePublicKey(friendAttributeName.GetPublicKeyToken(), friendName.GetPublicKeyToken()))
+                    // Comparing PublicKeyToken for simplicity
+                    if (GetPublicKeyToken(friendAttributeName).SequenceEqual(GetPublicKeyToken(friendName)))
                         return true;
+
+                    static ReadOnlySpan<byte> GetPublicKeyToken(AssemblyNameInfo assemblyName)
+                    {
+                        ImmutableArray<byte> publicKeyOrToken = assemblyName.PublicKeyOrToken;
+                        if ((assemblyName.Flags & AssemblyNameFlags.PublicKey) != 0)
+                        {
+                            // Use AssemblyName to convert PublicKey to PublicKeyToken to avoid calling crypto APIs directly
+                            AssemblyName an = new();
+                            an.SetPublicKey(ImmutableCollectionsMarshal.AsArray<byte>(publicKeyOrToken));
+                            publicKeyOrToken = ImmutableCollectionsMarshal.AsImmutableArray<byte>(an.GetPublicKeyToken());
+                        }
+                        return publicKeyOrToken.AsSpan();
+                    }
                 }
             }
             return false;
-        }
-
-        private static bool IsSamePublicKey(byte[] key1, byte[] key2)
-        {
-            if (key1 == null)
-                return key2 == null || key2.Length == 0;
-            if (key2 == null)
-                return key1 == null || key1.Length == 0;
-
-            if (key1.Length != key2.Length)
-                return false;
-
-            for (int i = 0; i < key1.Length; ++i)
-            {
-                if (key1[i] != key2[i])
-                    return false;
-            }
-
-            return true;
         }
 
         private static MethodAttributes NestedToMethodAccessAttribute(TypeAttributes nestedVisibility)

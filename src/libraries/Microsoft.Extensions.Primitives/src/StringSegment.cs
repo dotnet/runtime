@@ -271,7 +271,7 @@ namespace Microsoft.Extensions.Primitives
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public override int GetHashCode()
         {
-#if NETCOREAPP
+#if NET
             return string.GetHashCode(AsSpan());
 #elif (NETSTANDARD2_0 || NETFRAMEWORK)
             // This GetHashCode is expensive since it allocates on every call.

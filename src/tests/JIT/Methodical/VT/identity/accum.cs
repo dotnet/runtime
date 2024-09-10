@@ -18,6 +18,7 @@ namespace JitTest_accum_cs
         }
 
         [Fact]
+        [OuterLoop]
         public static int TestEntryPoint()
         {
             CI c = new CI();

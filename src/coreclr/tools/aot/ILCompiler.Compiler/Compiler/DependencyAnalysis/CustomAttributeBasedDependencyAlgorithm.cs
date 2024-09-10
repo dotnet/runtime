@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
 using System.Collections.Immutable;
 using System.Diagnostics;
 using System.Reflection.Metadata;
@@ -150,6 +151,12 @@ namespace ILCompiler.DependencyAnalysis
                     // work with the same failure modes at runtime as the CLR, but it might not be
                     // worth the hassle: the input was invalid. The most important thing is that we
                     // don't crash the compilation.
+                }
+                catch (BadImageFormatException)
+                {
+                    // System.Reflection.Metadata will throw BadImageFormatException if the blob is malformed.
+                    // This can happen if e.g. underlying type of an enum changes between versions and
+                    // we can no longer decode the custom attribute blob.
                 }
             }
         }

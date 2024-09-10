@@ -3,6 +3,7 @@
 
 using System.ComponentModel;
 using System.Diagnostics;
+using System.Runtime.InteropServices;
 using System.Runtime.Serialization;
 
 namespace System.Collections.Generic
@@ -73,10 +74,9 @@ namespace System.Collections.Generic
             info.SetType(typeof(GenericEqualityComparer<string>));
         }
 
-        private sealed class OrdinalComparer : NonRandomizedStringEqualityComparer
+        private sealed class OrdinalComparer : NonRandomizedStringEqualityComparer, IAlternateEqualityComparer<ReadOnlySpan<char>, string?>
         {
-            internal OrdinalComparer(IEqualityComparer<string?> wrappedComparer)
-                : base(wrappedComparer)
+            internal OrdinalComparer(IEqualityComparer<string?> wrappedComparer) : base(wrappedComparer)
             {
             }
 
@@ -88,12 +88,27 @@ namespace System.Collections.Generic
                 return obj.GetNonRandomizedHashCode();
             }
 
+            int IAlternateEqualityComparer<ReadOnlySpan<char>, string?>.GetHashCode(ReadOnlySpan<char> span) =>
+                string.GetNonRandomizedHashCode(span);
+
+            bool IAlternateEqualityComparer<ReadOnlySpan<char>, string?>.Equals(ReadOnlySpan<char> span, string? target)
+            {
+                // See explanation in StringEqualityComparer.Equals.
+                if (span.IsEmpty && target is null)
+                {
+                    return false;
+                }
+
+                return span.SequenceEqual(target);
+            }
+
+            string IAlternateEqualityComparer<ReadOnlySpan<char>, string?>.Create(ReadOnlySpan<char> span) =>
+                span.ToString();
         }
 
-        private sealed class OrdinalIgnoreCaseComparer : NonRandomizedStringEqualityComparer
+        private sealed class OrdinalIgnoreCaseComparer : NonRandomizedStringEqualityComparer, IAlternateEqualityComparer<ReadOnlySpan<char>, string?>
         {
-            internal OrdinalIgnoreCaseComparer(IEqualityComparer<string?> wrappedComparer)
-                : base(wrappedComparer)
+            internal OrdinalIgnoreCaseComparer(IEqualityComparer<string?> wrappedComparer) : base(wrappedComparer)
             {
             }
 
@@ -104,6 +119,23 @@ namespace System.Collections.Generic
                 Debug.Assert(obj != null, "This implementation is only called from first-party collection types that guarantee non-null parameters.");
                 return obj.GetNonRandomizedHashCodeOrdinalIgnoreCase();
             }
+
+            int IAlternateEqualityComparer<ReadOnlySpan<char>, string?>.GetHashCode(ReadOnlySpan<char> span) =>
+                string.GetNonRandomizedHashCodeOrdinalIgnoreCase(span);
+
+            bool IAlternateEqualityComparer<ReadOnlySpan<char>, string?>.Equals(ReadOnlySpan<char> span, string? target)
+            {
+                // See explanation in StringEqualityComparer.Equals.
+                if (span.IsEmpty && target is null)
+                {
+                    return false;
+                }
+
+                return span.EqualsOrdinalIgnoreCase(target);
+            }
+
+            string IAlternateEqualityComparer<ReadOnlySpan<char>, string?>.Create(ReadOnlySpan<char> span) =>
+                span.ToString();
 
             internal override RandomizedStringEqualityComparer GetRandomizedEqualityComparer()
             {

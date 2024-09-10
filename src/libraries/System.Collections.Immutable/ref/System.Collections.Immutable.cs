@@ -70,8 +70,11 @@ namespace System.Collections.Frozen
     }
     public static partial class FrozenSet
     {
+        public static System.Collections.Frozen.FrozenSet<T> Create<T>(params System.ReadOnlySpan<T> source) { throw null; }
+        public static System.Collections.Frozen.FrozenSet<T> Create<T>(System.Collections.Generic.IEqualityComparer<T>? equalityComparer, params System.ReadOnlySpan<T> source) { throw null; }
         public static System.Collections.Frozen.FrozenSet<T> ToFrozenSet<T>(this System.Collections.Generic.IEnumerable<T> source, System.Collections.Generic.IEqualityComparer<T>? comparer = null) { throw null; }
     }
+    [System.Runtime.CompilerServices.CollectionBuilder(typeof(System.Collections.Frozen.FrozenSet), nameof(System.Collections.Frozen.FrozenSet.Create))]
     public abstract partial class FrozenSet<T> : System.Collections.Generic.ICollection<T>, System.Collections.Generic.IEnumerable<T>, System.Collections.Generic.IReadOnlyCollection<T>, System.Collections.Generic.ISet<T>, System.Collections.ICollection, System.Collections.IEnumerable
     {
         internal FrozenSet() { }
@@ -197,8 +200,16 @@ namespace System.Collections.Immutable
         public static System.Collections.Immutable.ImmutableArray<T> CreateRange<T>(System.Collections.Generic.IEnumerable<T> items) { throw null; }
         public static System.Collections.Immutable.ImmutableArray<TResult> CreateRange<TSource, TResult>(System.Collections.Immutable.ImmutableArray<TSource> items, System.Func<TSource, TResult> selector) { throw null; }
         public static System.Collections.Immutable.ImmutableArray<TResult> CreateRange<TSource, TResult>(System.Collections.Immutable.ImmutableArray<TSource> items, int start, int length, System.Func<TSource, TResult> selector) { throw null; }
-        public static System.Collections.Immutable.ImmutableArray<TResult> CreateRange<TSource, TArg, TResult>(System.Collections.Immutable.ImmutableArray<TSource> items, System.Func<TSource, TArg, TResult> selector, TArg arg) { throw null; }
-        public static System.Collections.Immutable.ImmutableArray<TResult> CreateRange<TSource, TArg, TResult>(System.Collections.Immutable.ImmutableArray<TSource> items, int start, int length, System.Func<TSource, TArg, TResult> selector, TArg arg) { throw null; }
+        public static System.Collections.Immutable.ImmutableArray<TResult> CreateRange<TSource, TArg, TResult>(System.Collections.Immutable.ImmutableArray<TSource> items, System.Func<TSource, TArg, TResult> selector, TArg arg)
+#if NET9_0_OR_GREATER
+            where TArg : allows ref struct
+#endif
+        { throw null; }
+        public static System.Collections.Immutable.ImmutableArray<TResult> CreateRange<TSource, TArg, TResult>(System.Collections.Immutable.ImmutableArray<TSource> items, int start, int length, System.Func<TSource, TArg, TResult> selector, TArg arg)
+#if NET9_0_OR_GREATER
+            where TArg : allows ref struct
+#endif
+        { throw null; }
         public static System.Collections.Immutable.ImmutableArray<T> Create<T>() { throw null; }
         public static System.Collections.Immutable.ImmutableArray<T> Create<T>(System.Collections.Immutable.ImmutableArray<T> items, int start, int length) { throw null; }
         public static System.Collections.Immutable.ImmutableArray<T> Create<T>(T item) { throw null; }
@@ -572,7 +583,7 @@ namespace System.Collections.Immutable
     }
 
     [System.Runtime.CompilerServices.CollectionBuilderAttribute(typeof(System.Collections.Immutable.ImmutableHashSet), "Create")]
-#if NETCOREAPP
+#if NET
     public sealed partial class ImmutableHashSet<T> : System.Collections.Generic.ICollection<T>, System.Collections.Generic.IEnumerable<T>, System.Collections.Generic.IReadOnlyCollection<T>, System.Collections.Generic.ISet<T>, System.Collections.Generic.IReadOnlySet<T>, System.Collections.ICollection, System.Collections.IEnumerable, System.Collections.Immutable.IImmutableSet<T>
 #else
     public sealed partial class ImmutableHashSet<T> : System.Collections.Generic.ICollection<T>, System.Collections.Generic.IEnumerable<T>, System.Collections.Generic.IReadOnlyCollection<T>, System.Collections.Generic.ISet<T>, System.Collections.ICollection, System.Collections.IEnumerable, System.Collections.Immutable.IImmutableSet<T>
@@ -669,7 +680,11 @@ namespace System.Collections.Immutable
         public static void Enqueue<T>(ref System.Collections.Immutable.ImmutableQueue<T> location, T value) { }
         public static TValue GetOrAdd<TKey, TValue>(ref System.Collections.Immutable.ImmutableDictionary<TKey, TValue> location, TKey key, System.Func<TKey, TValue> valueFactory) where TKey : notnull { throw null; }
         public static TValue GetOrAdd<TKey, TValue>(ref System.Collections.Immutable.ImmutableDictionary<TKey, TValue> location, TKey key, TValue value) where TKey : notnull { throw null; }
-        public static TValue GetOrAdd<TKey, TValue, TArg>(ref System.Collections.Immutable.ImmutableDictionary<TKey, TValue> location, TKey key, System.Func<TKey, TArg, TValue> valueFactory, TArg factoryArgument) where TKey : notnull { throw null; }
+        public static TValue GetOrAdd<TKey, TValue, TArg>(ref System.Collections.Immutable.ImmutableDictionary<TKey, TValue> location, TKey key, System.Func<TKey, TArg, TValue> valueFactory, TArg factoryArgument) where TKey : notnull
+#if NET9_0_OR_GREATER
+            where TArg : allows ref struct
+#endif
+        { throw null; }
         public static System.Collections.Immutable.ImmutableArray<T> InterlockedCompareExchange<T>(ref System.Collections.Immutable.ImmutableArray<T> location, System.Collections.Immutable.ImmutableArray<T> value, System.Collections.Immutable.ImmutableArray<T> comparand) { throw null; }
         public static System.Collections.Immutable.ImmutableArray<T> InterlockedExchange<T>(ref System.Collections.Immutable.ImmutableArray<T> location, System.Collections.Immutable.ImmutableArray<T> value) { throw null; }
         public static bool InterlockedInitialize<T>(ref System.Collections.Immutable.ImmutableArray<T> location, System.Collections.Immutable.ImmutableArray<T> value) { throw null; }
@@ -680,9 +695,17 @@ namespace System.Collections.Immutable
         public static bool TryRemove<TKey, TValue>(ref System.Collections.Immutable.ImmutableDictionary<TKey, TValue> location, TKey key, [System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute(false)] out TValue value) where TKey : notnull { throw null; }
         public static bool TryUpdate<TKey, TValue>(ref System.Collections.Immutable.ImmutableDictionary<TKey, TValue> location, TKey key, TValue newValue, TValue comparisonValue) where TKey : notnull { throw null; }
         public static bool Update<T>(ref T location, System.Func<T, T> transformer) where T : class? { throw null; }
-        public static bool Update<T, TArg>(ref T location, System.Func<T, TArg, T> transformer, TArg transformerArgument) where T : class? { throw null; }
+        public static bool Update<T, TArg>(ref T location, System.Func<T, TArg, T> transformer, TArg transformerArgument) where T : class?
+#if NET9_0_OR_GREATER
+            where TArg : allows ref struct
+#endif
+        { throw null; }
         public static bool Update<T>(ref System.Collections.Immutable.ImmutableArray<T> location, Func<System.Collections.Immutable.ImmutableArray<T>, System.Collections.Immutable.ImmutableArray<T>> transformer) { throw null; }
-        public static bool Update<T, TArg>(ref System.Collections.Immutable.ImmutableArray<T> location, Func<System.Collections.Immutable.ImmutableArray<T>, TArg, System.Collections.Immutable.ImmutableArray<T>> transformer, TArg transformerArgument) { throw null; }
+        public static bool Update<T, TArg>(ref System.Collections.Immutable.ImmutableArray<T> location, Func<System.Collections.Immutable.ImmutableArray<T>, TArg, System.Collections.Immutable.ImmutableArray<T>> transformer, TArg transformerArgument)
+#if NET9_0_OR_GREATER
+            where TArg : allows ref struct
+#endif
+        { throw null; }
     }
     public static partial class ImmutableList
     {
@@ -1073,7 +1096,7 @@ namespace System.Collections.Immutable
     }
 
     [System.Runtime.CompilerServices.CollectionBuilderAttribute(typeof(System.Collections.Immutable.ImmutableSortedSet), "Create")]
-#if NETCOREAPP
+#if NET
     public sealed partial class ImmutableSortedSet<T> : System.Collections.Generic.ICollection<T>, System.Collections.Generic.IEnumerable<T>, System.Collections.Generic.IList<T>, System.Collections.Generic.IReadOnlyCollection<T>, System.Collections.Generic.IReadOnlyList<T>, System.Collections.Generic.ISet<T>, System.Collections.Generic.IReadOnlySet<T>, System.Collections.ICollection, System.Collections.IEnumerable, System.Collections.IList, System.Collections.Immutable.IImmutableSet<T>
 #else
     public sealed partial class ImmutableSortedSet<T> : System.Collections.Generic.ICollection<T>, System.Collections.Generic.IEnumerable<T>, System.Collections.Generic.IList<T>, System.Collections.Generic.IReadOnlyCollection<T>, System.Collections.Generic.IReadOnlyList<T>, System.Collections.Generic.ISet<T>, System.Collections.ICollection, System.Collections.IEnumerable, System.Collections.IList, System.Collections.Immutable.IImmutableSet<T>

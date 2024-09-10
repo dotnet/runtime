@@ -1,3 +1,8 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
+typedef dn_simdhash_t dn_simdhash_ght_t;
+
 typedef void         (*dn_simdhash_ght_destroy_func) (void * data);
 typedef unsigned int (*dn_simdhash_ght_hash_func)    (const void * key);
 typedef int32_t      (*dn_simdhash_ght_equal_func)   (const void * a, const void * b);

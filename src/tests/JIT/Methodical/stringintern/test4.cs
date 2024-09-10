@@ -250,6 +250,7 @@ Test4
     }
 
     [Fact]
+    [OuterLoop]
     public static int TestEntryPoint()
     {
         if (TestSameObjRef())

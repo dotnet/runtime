@@ -28,8 +28,6 @@
 #define _INTEGRAL_MAX_BITS  64
 #endif  /* _INTEGRAL_MAX_BITS */
 
-// typedef __int64_t __int64;
-
 #ifndef FALSE
 #define FALSE 0
 #endif
@@ -373,14 +371,14 @@ static int __check_float_string(size_t nFloatStrUsed,
                                       (*(format + 1) == _T('x')) ||
                                       (*(format + 1) == _T('X')) )
                             {
-                                if (sizeof(void*) == sizeof(__int64))
+                                if (sizeof(void*) == sizeof(int64_t))
                                 {
                                     ++integer64;
                                     num64 = 0;
                                 }
                                 break;
                             }
-                            if (sizeof(void*) == sizeof(__int64))
+                            if (sizeof(void*) == sizeof(int64_t))
                             {
                                     ++integer64;
                                     num64 = 0;
@@ -901,7 +899,7 @@ getnum:
                             } /* end of WHILE loop */
 
                             if (negative)
-                                num64 = (uint64_t )(-(__int64)num64);
+                                num64 = (uint64_t )(-(int64_t)num64);
                         }
                         else {
 #endif  /* _INTEGRAL_MAX_BITS >= 64    */
@@ -958,7 +956,7 @@ getnum:
 assign_num:
 #if _INTEGRAL_MAX_BITS >= 64
                                 if ( integer64 )
-                                    *(__int64 UNALIGNED *)pointer = ( uint64_t )num64;
+                                    *(int64_t UNALIGNED *)pointer = ( uint64_t )num64;
                                 else
 #endif  /* _INTEGRAL_MAX_BITS >= 64    */
                                 if (longone)

@@ -84,6 +84,17 @@
       <InnerBuildArgs Condition="'$(SourceBuiltNonShippingPackagesDir)' != ''">$(InnerBuildArgs) /p:SourceBuiltNonShippingPackagesDir=$(SourceBuiltNonShippingPackagesDir)</InnerBuildArgs>
       <InnerBuildArgs Condition="'$(SourceBuiltAssetManifestsDir)' != ''">$(InnerBuildArgs) /p:SourceBuiltAssetManifestsDir=$(SourceBuiltAssetManifestsDir)</InnerBuildArgs>
       <InnerBuildArgs Condition="'$(SourceBuiltSymbolsDir)' != ''">$(InnerBuildArgs) /p:SourceBuiltSymbolsDir=$(SourceBuiltSymbolsDir)</InnerBuildArgs>
+      <InnerBuildArgs Condition="'$(GitHubRepositoryName)' != ''">$(InnerBuildArgs) /p:GitHubRepositoryName=$(GitHubRepositoryName)</InnerBuildArgs>
+
+      <!-- Handle system libraries -->
+      <UseSystemLibs Condition="'$(UseSystemLibs)' != ''">+$(UseSystemLibs)+</UseSystemLibs>
+      <InnerBuildArgs Condition="$(UseSystemLibs.Contains('+brotli+'))">$(InnerBuildArgs) --cmakeargs -DCLR_CMAKE_USE_SYSTEM_BROTLI=true</InnerBuildArgs>
+      <InnerBuildArgs Condition="$(UseSystemLibs.Contains('+libunwind+'))">$(InnerBuildArgs) --cmakeargs -DCLR_CMAKE_USE_SYSTEM_LIBUNWIND=true</InnerBuildArgs>
+      <!-- TODO: llvm-libunwind -->
+      <!-- TODO: LinuxTracepoints -->
+      <InnerBuildArgs Condition="$(UseSystemLibs.Contains('+rapidjson+'))">$(InnerBuildArgs) --cmakeargs -DCLR_CMAKE_USE_SYSTEM_RAPIDJSON=true</InnerBuildArgs>
+      <InnerBuildArgs Condition="$(UseSystemLibs.Contains('+zlib+'))">$(InnerBuildArgs) --cmakeargs -DCLR_CMAKE_USE_SYSTEM_ZLIB=true</InnerBuildArgs>
+
     </PropertyGroup>
   </Target>
 

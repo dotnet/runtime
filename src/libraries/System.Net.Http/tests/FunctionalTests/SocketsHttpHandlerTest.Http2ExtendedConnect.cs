@@ -127,17 +127,13 @@ namespace System.Net.Http.Functional.Tests
             },
             async server =>
             {
-                try
+                await IgnoreExceptions(async () =>
                 {
                     await server.AcceptConnectionAsync(async connection =>
                     {
                         await clientCompleted.Task.WaitAsync(TestHelper.PassingTestTimeout);
                     });
-                }
-                catch (Exception ex)
-                {
-                    _output.WriteLine($"Ignoring exception {ex}");
-                }
+                });
             }, options: new GenericLoopbackOptions { UseSsl = useSsl });
         }
 
@@ -157,7 +153,7 @@ namespace System.Net.Http.Functional.Tests
 
             Task serverTask = Task.Run(async () =>
             {
-                try
+                await IgnoreExceptions(async () =>
                 {
                     await server.AcceptConnectionAsync(async connection =>
                     {
@@ -170,11 +166,7 @@ namespace System.Net.Http.Functional.Tests
                             await clientCompleted.Task.WaitAsync(TestHelper.PassingTestTimeout);
                         }
                     });
-                }
-                catch (Exception ex)
-                {
-                    _output.WriteLine($"Ignoring exception {ex}");
-                }
+                });
             });
 
             Task clientTask = Task.Run(async () =>

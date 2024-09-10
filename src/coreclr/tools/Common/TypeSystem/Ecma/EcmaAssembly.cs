@@ -9,7 +9,7 @@ namespace Internal.TypeSystem.Ecma
 {
     public sealed partial class EcmaAssembly : EcmaModule, IAssemblyDesc
     {
-        private AssemblyName _assemblyName;
+        private AssemblyNameInfo _assemblyName;
         private AssemblyDefinition _assemblyDefinition;
 
         public AssemblyDefinition AssemblyDefinition
@@ -39,20 +39,21 @@ namespace Internal.TypeSystem.Ecma
             _assemblyDefinition = metadataReader.GetAssemblyDefinition();
         }
 
-        // Returns cached copy of the name. Caller has to create a clone before mutating the name.
-        public AssemblyName GetName()
+        public AssemblyNameInfo GetName()
         {
             if (_assemblyName == null)
             {
                 MetadataReader metadataReader = this.MetadataReader;
 
-                AssemblyName an = new AssemblyName();
-                an.Name = metadataReader.GetString(_assemblyDefinition.Name);
-                an.Version = _assemblyDefinition.Version;
-                an.SetPublicKey(metadataReader.GetBlobBytes(_assemblyDefinition.PublicKey));
-
-                an.CultureName = metadataReader.GetString(_assemblyDefinition.Culture);
-                an.ContentType = GetContentTypeFromAssemblyFlags(_assemblyDefinition.Flags);
+                AssemblyNameInfo an = new AssemblyNameInfo
+                (
+                    name: metadataReader.GetString(_assemblyDefinition.Name),
+                    version: _assemblyDefinition.Version,
+                    cultureName: metadataReader.GetString(_assemblyDefinition.Culture),
+                    flags: (AssemblyNameFlags)
+                        ((_assemblyDefinition.Flags & AssemblyFlags.ContentTypeMask) | AssemblyFlags.PublicKey),
+                    publicKeyOrToken: metadataReader.GetBlobContent(_assemblyDefinition.PublicKey)
+                );
 
                 _assemblyName = an;
             }

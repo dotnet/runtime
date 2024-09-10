@@ -1840,6 +1840,10 @@ HRESULT CordbObjectValue::QueryInterface(REFIID id, void **pInterface)
     {
         *pInterface = static_cast<IUnknown*>(static_cast<ICorDebugExceptionObjectValue*>(this));
     }
+    else if (id == IID_ICorDebugExceptionObjectValue2 && m_fIsExceptionObject)
+    {
+        *pInterface = static_cast<IUnknown*>(static_cast<ICorDebugExceptionObjectValue2*>(this));
+    }
     else if (id == IID_ICorDebugComObjectValue && m_fIsRcw)
     {
         *pInterface = static_cast<ICorDebugComObjectValue*>(this);
@@ -2489,6 +2493,41 @@ HRESULT CordbObjectValue::EnumerateExceptionCallStack(ICorDebugExceptionObjectCa
     return hr;
 }
 
+HRESULT CordbObjectValue::ForceCatchHandlerFoundEvents(BOOL enableEvents)
+{
+    PUBLIC_API_ENTRY(this);
+    FAIL_IF_NEUTERED(this);
+    ATT_REQUIRE_STOPPED_MAY_FAIL(GetProcess());
+
+    HRESULT hr = S_OK;
+
+    EX_TRY
+    {
+        CordbProcess * pProcess = GetProcess();
+
+        CORDB_ADDRESS objAddr = m_valueHome.GetAddress();
+
+        IDacDbiInterface* pDAC = GetProcess()->GetDAC();
+        VMPTR_Object vmObj = pDAC->GetObject(objAddr);
+
+        DebuggerIPCEvent event;
+        CordbAppDomain * pAppDomain = GetAppDomain();
+        _ASSERTE (pAppDomain != NULL);
+
+        pProcess->InitIPCEvent(&event, DB_IPCE_FORCE_CATCH_HANDLER_FOUND, true, pAppDomain->GetADToken());
+        event.ForceCatchHandlerFoundData.enableEvents = enableEvents;
+        event.ForceCatchHandlerFoundData.vmObj = vmObj;
+
+        hr = pProcess->m_cordb->SendIPCEvent(pProcess, &event, sizeof(DebuggerIPCEvent));
+
+        _ASSERTE(event.type == DB_IPCE_CATCH_HANDLER_FOUND_RESULT);
+
+        hr = event.hr;
+    }
+    EX_CATCH_HRESULT(hr);
+    return hr;
+}
+
 HRESULT CordbObjectValue::IsExceptionObject()
 {
     HRESULT hr = S_OK;
@@ -2652,22 +2691,22 @@ HRESULT CordbObjectValue::GetFunctionHelper(ICorDebugFunction **ppFunction)
     if (hr != S_OK)
         return hr;
 
-    mdMethodDef functionMethodDef = 0;
-    VMPTR_DomainAssembly functionDomainAssembly;
-    NativeCodeFunctionData nativeCodeForDelFunc;
-
-    hr = pDAC->GetDelegateFunctionData(delType, pDelegateObj, &functionDomainAssembly, &functionMethodDef);
-    if (hr != S_OK)
-        return hr;
-
-    // TODO: How to ensure results are sanitized?
-    // Also, this is expensive. Do we really care that much about this?
-    pDAC->GetNativeCodeInfo(functionDomainAssembly, functionMethodDef, &nativeCodeForDelFunc);
-
-    RSSmartPtr<CordbModule> funcModule(GetProcess()->LookupOrCreateModule(functionDomainAssembly));
     RSSmartPtr<CordbFunction> func;
     {
         RSLockHolder lockHolder(GetProcess()->GetProcessLock());
+
+        VMPTR_DomainAssembly functionDomainAssembly;
+        mdMethodDef functionMethodDef = 0;
+        hr = pDAC->GetDelegateFunctionData(delType, pDelegateObj, &functionDomainAssembly, &functionMethodDef);
+        if (hr != S_OK)
+            return hr;
+
+        // TODO: How to ensure results are sanitized?
+        // Also, this is expensive. Do we really care that much about this?
+        NativeCodeFunctionData nativeCodeForDelFunc;
+        pDAC->GetNativeCodeInfo(functionDomainAssembly, functionMethodDef, &nativeCodeForDelFunc);
+
+        RSSmartPtr<CordbModule> funcModule(GetProcess()->LookupOrCreateModule(functionDomainAssembly));
         func.Assign(funcModule->LookupOrCreateFunction(functionMethodDef, nativeCodeForDelFunc.encVersion));
     }
 

@@ -13,5 +13,11 @@ namespace ILLink.RoslynAnalyzer.Tests
 		{
 			return RunTest ();
 		}
+
+		[Fact]
+		public Task InvalidAnnotations ()
+		{
+			return RunTest ();
+		}
 	}
 }

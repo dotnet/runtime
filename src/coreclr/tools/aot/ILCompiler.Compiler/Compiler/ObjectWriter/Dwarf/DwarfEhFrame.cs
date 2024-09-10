@@ -81,7 +81,7 @@ namespace ILCompiler.ObjectWriter
                 4u + // Length
                 4u + // CIE Offset (0)
                 1u + // Version
-                (uint)augmentationString.Length + 1u +
+                (uint)augmentationString.Length + 1u + // null-terminator
                 DwarfHelper.SizeOfULEB128(cie.CodeAlignFactor) +
                 DwarfHelper.SizeOfSLEB128(cie.DataAlignFactor) +
                 DwarfHelper.SizeOfULEB128(cie.ReturnAddressRegister) +
@@ -93,7 +93,8 @@ namespace ILCompiler.ObjectWriter
             _sectionWriter.WriteLittleEndian<uint>(0);
 
             _sectionWriter.WriteByte(cie.ReturnAddressRegister < 0x7F ? (byte)1u : (byte)3u); // Version
-            _sectionWriter.Write(augmentationString.UnderlyingArray);
+            _sectionWriter.Write(augmentationString.AsSpan());
+            _sectionWriter.WriteByte(0); // null-terminator
 
             _sectionWriter.WriteULEB128(cie.CodeAlignFactor);
             _sectionWriter.WriteSLEB128(cie.DataAlignFactor);

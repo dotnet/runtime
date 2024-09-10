@@ -47,7 +47,7 @@ has logic to handle scenario (5) above. Apps that call `Environment.Exit`, and n
 If your application uses Hosting, and you want to gracefully stop the host, you can call
 [`IHostApplicationLifetime.StopApplication()`][StopApplication] instead of `Environment.Exit`.
 
-[StopApplication]: https://docs.microsoft.com/dotnet/api/microsoft.extensions.hosting.ihostapplicationlifetime.stopapplication
+[StopApplication]: https://learn.microsoft.com/dotnet/api/microsoft.extensions.hosting.ihostapplicationlifetime.stopapplication
 
 ### Hosting Shutdown Process
 

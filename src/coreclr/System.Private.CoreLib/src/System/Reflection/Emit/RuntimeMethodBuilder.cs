@@ -881,20 +881,12 @@ namespace System.Reflection.Emit
             m_exceptionClass = exceptionTypeToken;
         }
 
-        private static bool IsValidKind(ExceptionHandlingClauseOptions kind)
-        {
-            switch (kind)
-            {
-                case ExceptionHandlingClauseOptions.Clause:
-                case ExceptionHandlingClauseOptions.Filter:
-                case ExceptionHandlingClauseOptions.Finally:
-                case ExceptionHandlingClauseOptions.Fault:
-                    return true;
-
-                default:
-                    return false;
-            }
-        }
+        private static bool IsValidKind(ExceptionHandlingClauseOptions kind) =>
+            kind is
+                ExceptionHandlingClauseOptions.Clause or
+                ExceptionHandlingClauseOptions.Filter or
+                ExceptionHandlingClauseOptions.Finally or
+                ExceptionHandlingClauseOptions.Fault;
 
         #endregion
 

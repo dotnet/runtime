@@ -41,7 +41,7 @@ public class WasmRunOutOfAppBundleTests : TestMainJsTestBase
             indexHtmlPath = Path.Combine(outerDir, "index.html");
             if (!File.Exists(indexHtmlPath))
             {
-                var html = @"<html><body><script type=""module"" src=""./AppBundle/test-main.js""></script></body></html>";
+                var html = @"<!DOCTYPE html><html><body><script type=""module"" src=""./AppBundle/test-main.js""></script></body></html>";
                 File.WriteAllText(indexHtmlPath, html);
             }
         }

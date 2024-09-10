@@ -160,6 +160,7 @@ public class test
 
 
     [Fact]
+    [OuterLoop]
     public static int TestEntryPoint()
     {
         double x;

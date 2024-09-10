@@ -21,9 +21,6 @@
 #undef _XOPEN_SOURCE
 #endif
 #include <pthread.h>
-#if defined(TARGET_OSX)
-#define _XOPEN_SOURCE
-#endif
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // LowLevelMonitor - Represents a non-recursive mutex and condition

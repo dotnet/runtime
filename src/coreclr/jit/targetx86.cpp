@@ -29,7 +29,8 @@ const regMaskTP intArgMasks[] = {RBM_ECX, RBM_EDX};
 //   info - Info about the method being classified.
 //
 X86Classifier::X86Classifier(const ClassifierInfo& info)
-    : m_regs(nullptr, 0)
+    : m_info(info)
+    , m_regs(nullptr, 0)
 {
     switch (info.CallConv)
     {
@@ -83,7 +84,7 @@ ABIPassingInformation X86Classifier::Classify(Compiler*    comp,
     unsigned numSlots = (size + TARGET_POINTER_SIZE - 1) / TARGET_POINTER_SIZE;
 
     bool canEnreg = false;
-    if (m_regs.Count() >= numSlots)
+    if ((m_regs.Count() >= numSlots) && (wellKnownParam != WellKnownArg::X86TailCallSpecialArg))
     {
         switch (type)
         {
@@ -113,8 +114,26 @@ ABIPassingInformation X86Classifier::Classify(Compiler*    comp,
     else
     {
         assert((m_stackArgSize % TARGET_POINTER_SIZE) == 0);
-        m_stackArgSize += roundUp(size, TARGET_POINTER_SIZE);
-        segment = ABIPassingSegment::OnStack(m_stackArgSize, 0, size);
+
+        unsigned offset;
+        unsigned roundedArgSize = roundUp(size, TARGET_POINTER_SIZE);
+        if (m_info.CallConv == CorInfoCallConvExtension::Managed)
+        {
+            // The managed ABI pushes parameters in left-to-right order. This
+            // means that on the stack the first parameter is at the higher
+            // offset (farthest away from ESP on entry). We model the stack
+            // offset as the value to subtract from the top of the stack for
+            // this ABI, see ABIPassingSegment::GetStackOffset.
+            m_stackArgSize += roundedArgSize;
+            offset = m_stackArgSize;
+        }
+        else
+        {
+            offset = m_stackArgSize;
+            m_stackArgSize += roundedArgSize;
+        }
+
+        segment = ABIPassingSegment::OnStack(offset, 0, size);
     }
 
     return ABIPassingInformation::FromSegment(comp, segment);

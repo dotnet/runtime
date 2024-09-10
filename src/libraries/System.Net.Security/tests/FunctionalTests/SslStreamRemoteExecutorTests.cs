@@ -25,7 +25,7 @@ namespace System.Net.Security.Tests
         [PlatformSpecific(TestPlatforms.Linux)] // SSLKEYLOGFILE is only supported on Linux for SslStream
         [InlineData(true)]
         [InlineData(false)]
-        public void SslKeyLogFile_IsCreatedAndFilled(bool enabledBySwitch)
+        public async Task SslKeyLogFile_IsCreatedAndFilled(bool enabledBySwitch)
         {
             if (PlatformDetection.IsDebugLibrary(typeof(SslStream).Assembly) && !enabledBySwitch)
             {
@@ -38,7 +38,7 @@ namespace System.Net.Security.Tests
             var tempFile = Path.GetTempFileName();
             psi.Environment.Add("SSLKEYLOGFILE", tempFile);
 
-            RemoteExecutor.Invoke(async (enabledBySwitch) =>
+            await RemoteExecutor.Invoke(async (enabledBySwitch) =>
             {
                 if (bool.Parse(enabledBySwitch))
                 {
@@ -64,7 +64,7 @@ namespace System.Net.Security.Tests
 
                     await TestHelper.PingPong(client, server);
                 }
-            }, enabledBySwitch.ToString(), new RemoteInvokeOptions { StartInfo = psi }).Dispose();
+            }, enabledBySwitch.ToString(), new RemoteInvokeOptions { StartInfo = psi }).DisposeAsync();
 
             if (enabledBySwitch)
             {

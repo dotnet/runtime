@@ -40,7 +40,7 @@ namespace Microsoft.Extensions.DependencyModel
 
         internal static DependencyContextPaths Create(string? depsFiles, string? sharedRuntime)
         {
-#if NETCOREAPP
+#if NET
             const char separator = ';';
 #else
             // This method is only executed once at startup. No need to cache the char[].

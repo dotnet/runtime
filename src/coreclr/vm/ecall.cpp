@@ -96,76 +96,6 @@ void ECall::PopulateManagedStringConstructors()
     INDEBUG(fInitialized = true);
 }
 
-void ECall::PopulateManagedHelpers()
-{
-
-    STANDARD_VM_CONTRACT;
-
-    MethodDesc* pMD = CoreLibBinder::GetMethod((BinderMethodID)(METHOD__CASTHELPERS__ISINSTANCEOFANY));
-    PCODE pDest = pMD->GetMultiCallableAddrOfCode();
-    SetJitHelperFunction(CORINFO_HELP_ISINSTANCEOFANY, pDest);
-    // array cast uses the "ANY" helper
-    SetJitHelperFunction(CORINFO_HELP_ISINSTANCEOFARRAY, pDest);
-
-    pMD = CoreLibBinder::GetMethod((BinderMethodID)(METHOD__CASTHELPERS__ISINSTANCEOFINTERFACE));
-    pDest = pMD->GetMultiCallableAddrOfCode();
-    SetJitHelperFunction(CORINFO_HELP_ISINSTANCEOFINTERFACE, pDest);
-
-    pMD = CoreLibBinder::GetMethod((BinderMethodID)(METHOD__CASTHELPERS__ISINSTANCEOFCLASS));
-    pDest = pMD->GetMultiCallableAddrOfCode();
-    SetJitHelperFunction(CORINFO_HELP_ISINSTANCEOFCLASS, pDest);
-
-    pMD = CoreLibBinder::GetMethod((BinderMethodID)(METHOD__CASTHELPERS__CHKCASTANY));
-    pDest = pMD->GetMultiCallableAddrOfCode();
-    SetJitHelperFunction(CORINFO_HELP_CHKCASTANY, pDest);
-    // array cast uses the "ANY" helper
-    SetJitHelperFunction(CORINFO_HELP_CHKCASTARRAY, pDest);
-
-    pMD = CoreLibBinder::GetMethod((BinderMethodID)(METHOD__CASTHELPERS__CHKCASTINTERFACE));
-    pDest = pMD->GetMultiCallableAddrOfCode();
-    SetJitHelperFunction(CORINFO_HELP_CHKCASTINTERFACE, pDest);
-
-    pMD = CoreLibBinder::GetMethod((BinderMethodID)(METHOD__CASTHELPERS__CHKCASTCLASS));
-    pDest = pMD->GetMultiCallableAddrOfCode();
-    SetJitHelperFunction(CORINFO_HELP_CHKCASTCLASS, pDest);
-
-    pMD = CoreLibBinder::GetMethod((BinderMethodID)(METHOD__CASTHELPERS__CHKCASTCLASSSPECIAL));
-    pDest = pMD->GetMultiCallableAddrOfCode();
-    SetJitHelperFunction(CORINFO_HELP_CHKCASTCLASS_SPECIAL, pDest);
-
-    pMD = CoreLibBinder::GetMethod((BinderMethodID)(METHOD__CASTHELPERS__UNBOX));
-    pDest = pMD->GetMultiCallableAddrOfCode();
-    SetJitHelperFunction(CORINFO_HELP_UNBOX, pDest);
-
-    pMD = CoreLibBinder::GetMethod((BinderMethodID)(METHOD__CASTHELPERS__STELEMREF));
-    pDest = pMD->GetMultiCallableAddrOfCode();
-    SetJitHelperFunction(CORINFO_HELP_ARRADDR_ST, pDest);
-
-    pMD = CoreLibBinder::GetMethod((BinderMethodID)(METHOD__CASTHELPERS__LDELEMAREF));
-    pDest = pMD->GetMultiCallableAddrOfCode();
-    SetJitHelperFunction(CORINFO_HELP_LDELEMA_REF, pDest);
-
-    pMD = CoreLibBinder::GetMethod((BinderMethodID)(METHOD__SPAN_HELPERS__MEMSET));
-    pDest = pMD->GetMultiCallableAddrOfCode();
-    SetJitHelperFunction(CORINFO_HELP_MEMSET, pDest);
-
-    pMD = CoreLibBinder::GetMethod((BinderMethodID)(METHOD__SPAN_HELPERS__MEMZERO));
-    pDest = pMD->GetMultiCallableAddrOfCode();
-    SetJitHelperFunction(CORINFO_HELP_MEMZERO, pDest);
-
-    pMD = CoreLibBinder::GetMethod((BinderMethodID)(METHOD__SPAN_HELPERS__MEMCOPY));
-    pDest = pMD->GetMultiCallableAddrOfCode();
-    SetJitHelperFunction(CORINFO_HELP_MEMCPY, pDest);
-
-    pMD = CoreLibBinder::GetMethod((BinderMethodID)(METHOD__MATH__ROUND));
-    pDest = pMD->GetMultiCallableAddrOfCode();
-    SetJitHelperFunction(CORINFO_HELP_DBLROUND, pDest);
-
-    pMD = CoreLibBinder::GetMethod((BinderMethodID)(METHOD__MATHF__ROUND));
-    pDest = pMD->GetMultiCallableAddrOfCode();
-    SetJitHelperFunction(CORINFO_HELP_FLTROUND, pDest);
-}
-
 static CrstStatic gFCallLock;
 
 // This variable is used to force the compiler not to tailcall a function.
@@ -466,7 +396,7 @@ PCODE ECall::GetFCallImpl(MethodDesc * pMD, BOOL * pfSharedOrDynamicFCallImpl /*
             *pfSharedOrDynamicFCallImpl = TRUE;
 
         pImplementation = g_FCDynamicallyAssignedImplementations[iDynamicID];
-        _ASSERTE(pImplementation != NULL);
+        _ASSERTE(pImplementation != (PCODE)NULL);
         return pImplementation;
     }
 
@@ -517,7 +447,7 @@ PCODE ECall::GetFCallImpl(MethodDesc * pMD, BOOL * pfSharedOrDynamicFCallImpl /*
     if (pfSharedOrDynamicFCallImpl)
         *pfSharedOrDynamicFCallImpl = FALSE;
 
-    _ASSERTE(pImplementation != NULL);
+    _ASSERTE(pImplementation != (PCODE)NULL);
     return pImplementation;
 }
 

@@ -30,9 +30,10 @@
   <ItemGroup>
     <_SpmiTestProjects Include="..\Performance\CodeQuality\Bytemark\Bytemark.csproj" />
     <_SpmiTestProjects Include="..\Performance\CodeQuality\Roslyn\CscBench.csproj" />
-    <_SpmiTestProjects Include="..\Methodical\fp\exgen\10w5d_cs_do.csproj" />
+    <_SpmiTestProjects Include="..\Methodical\cctor\xassem\xprecise1_cs_do.csproj" />
+    <_SpmiTestSupportProjects Include="..\Methodical\cctor\xassem\testlib_xassem.csproj" />
 
-    <ProjectReference Include="@(_SpmiTestProjects)">
+    <ProjectReference Include="@(_SpmiTestProjects);@(_SpmiTestSupportProjects)">
       <Targets>Build</Targets>
       <OutputItemType>_SpmiTest</OutputItemType>
       <TargetPath>%(FileName)</TargetPath>

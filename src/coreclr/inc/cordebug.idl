@@ -7781,6 +7781,17 @@ interface ICorDebugExceptionObjectValue : IUnknown
     HRESULT EnumerateExceptionCallStack([out] ICorDebugExceptionObjectCallStackEnum** ppCallStackEnum);
 };
 
+[
+    object,
+    local,
+    uuid(e3b2f332-cc46-4f1e-ab4e-5400e332195e),
+    pointer_default(unique)
+]
+interface ICorDebugExceptionObjectValue2 : IUnknown
+{
+    HRESULT ForceCatchHandlerFoundEvents([in] BOOL enableEvents);
+};
+
 /* ------------------------------------------------------------------------- *
  * Library definition
  * ------------------------------------------------------------------------- */

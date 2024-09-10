@@ -783,3 +783,12 @@ g_strnlen (const char* s, gsize n)
 	for (i = 0; i < n && s [i]; ++i) ;
 	return i;
 }
+
+const gchar *
+g_memrchr (const char *s, char c, size_t n)
+{
+	while (n--)
+		if (s[n] == c)
+			return (void *)(s + n);
+	return NULL;
+}

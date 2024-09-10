@@ -53,7 +53,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             if (_module != null)
                 sb.Append($"__CorHeader_{_module.Assembly.GetName().Name}");
             else
-                sb.Append("__CompositeCorHeader_");
+                sb.Append("__CompositeCorHeader_"u8);
         }
 
         protected override string GetName(NodeFactory factory) => this.GetMangledName(factory.NameMangler);

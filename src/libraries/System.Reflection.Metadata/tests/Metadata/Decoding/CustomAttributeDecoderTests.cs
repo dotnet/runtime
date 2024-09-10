@@ -197,7 +197,7 @@ namespace System.Reflection.Metadata.Decoding.Tests
             }
         }
 
-#if NETCOREAPP && !TARGET_BROWSER // Generic attribute is not supported on .NET Framework.
+#if NET && !TARGET_BROWSER // Generic attribute is not supported on .NET Framework.
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.HasAssemblyFiles))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/60579", TestPlatforms.iOS | TestPlatforms.tvOS)]
         public void TestCustomAttributeDecoderGenericUsingReflection()

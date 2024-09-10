@@ -414,7 +414,7 @@ namespace Microsoft.Diagnostics.Tools.Pgo
             }
 
             HashSet<string> assemblyNamesInBubble = null;
-            AssemblyName[] assemblies = Get(_command.IncludedAssemblies);
+            AssemblyNameInfo[] assemblies = Get(_command.IncludedAssemblies);
             if (assemblies.Length > 0)
             {
                 assemblyNamesInBubble = new HashSet<string>();

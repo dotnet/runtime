@@ -35,6 +35,7 @@ SET_DEFAULT_DEBUG_CHANNEL(FILE); // some headers have code with asserts, so do t
 #include <sys/mount.h>
 #include <errno.h>
 #include <limits.h>
+#include <fcntl.h>
 
 using namespace CorUnix;
 
@@ -1985,8 +1986,8 @@ InternalSetFilePointerForUnixFd(
 {
     PAL_ERROR palError = NO_ERROR;
     int     seek_whence = 0;
-    __int64 seek_offset = 0LL;
-    __int64 seek_res = 0LL;
+    int64_t seek_offset = 0LL;
+    int64_t seek_res = 0LL;
     off_t old_offset;
 
     switch( dwMoveMethod )
@@ -2015,7 +2016,7 @@ InternalSetFilePointerForUnixFd(
     if ( lpDistanceToMoveHigh )
     {
         /* set the high 32 bits of the offset */
-        seek_offset = ((__int64)*lpDistanceToMoveHigh << 32);
+        seek_offset = ((int64_t)*lpDistanceToMoveHigh << 32);
 
         /* set the low 32 bits */
         /* cast to unsigned long to avoid sign extension */
@@ -2072,7 +2073,7 @@ InternalSetFilePointerForUnixFd(
         }
     }
 
-    seek_res = (__int64)lseek( iUnixFd,
+    seek_res = (int64_t)lseek( iUnixFd,
                                seek_offset,
                                seek_whence );
     if ( seek_res < 0 )

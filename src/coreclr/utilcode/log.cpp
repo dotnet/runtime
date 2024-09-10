@@ -120,14 +120,14 @@ VOID InitLogging()
                 *ptr = *ptr + 1;
             }
             if (LogFileHandle == INVALID_HANDLE_VALUE) {
-                int ret = WszWideCharToMultiByte(CP_ACP, 0, szLogFileName.Ptr(), -1, NULL, 0, NULL, NULL);
+                int ret = WideCharToMultiByte(CP_ACP, 0, szLogFileName.Ptr(), -1, NULL, 0, NULL, NULL);
                 const char *msg = "Could not open log file, logging to ";
                 DWORD msgLen = (DWORD)strlen(msg);
                 CQuickSTR buff;
                 if (SUCCEEDED(buff.ReSizeNoThrow(ret + msgLen)))
                 {
                     strcpy_s(buff.Ptr(), buff.Size(), msg);
-                    WszWideCharToMultiByte(CP_ACP, 0, szLogFileName.Ptr(), -1, buff.Ptr() + msgLen, ret, NULL, NULL);
+                    WideCharToMultiByte(CP_ACP, 0, szLogFileName.Ptr(), -1, buff.Ptr() + msgLen, ret, NULL, NULL);
                     msg = buff.Ptr();
                 }
                 else
@@ -185,7 +185,7 @@ VOID InitializeLogging()
     if (bLoggingInitialized)
         return;
 
-    HANDLE mutex = WszCreateMutex(NULL, FALSE, NULL);
+    HANDLE mutex = CreateMutex(NULL, FALSE, NULL);
     _ASSERTE(mutex != 0);
     if (InterlockedCompareExchangeT(&LogFileMutex, mutex, 0) != 0)
     {

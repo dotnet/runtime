@@ -119,6 +119,9 @@ NESTED_ENTRY STUB, _TEXT, FILTER
         ; info.  After this push, unwinding will work.
         push            rcx
 
+        xor             rax, rax
+        rdsspq          rax
+
         test            rsp, 0fh
         jnz             STUB&_FixRsp
 
@@ -141,6 +144,7 @@ STUB&_RspAligned:
 
         mov             dword ptr [rcx], 0                                                          ; Initialize vtbl (it is not strictly necessary)
         mov             dword ptr [rcx + OFFSETOF__FaultingExceptionFrame__m_fFilterExecuted], 0    ; Initialize BOOL for personality routine
+        mov             qword ptr [rcx + OFFSETOF__FaultingExceptionFrame__m_SSP], rax
 
         call            TARGET
 
@@ -217,7 +221,8 @@ NESTED_ENTRY ApcActivationCallbackStub, _TEXT, FixRedirectContextHandler
     .errnz REDIRECTSTUB_ESTABLISHER_OFFSET_RBP, REDIRECTSTUB_ESTABLISHER_OFFSET_RBP has changed - update asm stubs
         END_PROLOGUE
 
-        ; Save the pointer to the interrupted context on the stack for the stack walker
+        ; Save a copy of the redirect CONTEXT*.
+        ; This is needed for the debugger to unwind the stack.
         mov             rax, [rcx + OFFSETOF__APC_CALLBACK_DATA__ContextRecord]
         mov             [rbp + 20h], rax
     .errnz REDIRECTSTUB_RBP_OFFSET_CONTEXT - 20h, REDIRECTSTUB_RBP_OFFSET_CONTEXT has changed - update asm stubs

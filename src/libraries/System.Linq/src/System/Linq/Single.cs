@@ -117,8 +117,30 @@ namespace System.Linq
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.predicate);
             }
 
-            using (IEnumerator<TSource> e = source.GetEnumerator())
+            if (source.TryGetSpan(out ReadOnlySpan<TSource> span))
             {
+                for (int i = 0; i < span.Length; i++)
+                {
+                    TSource result = span[i];
+                    if (predicate(result))
+                    {
+                        for (i++; (uint)i < (uint)span.Length; i++)
+                        {
+                            if (predicate(span[i]))
+                            {
+                                ThrowHelper.ThrowMoreThanOneMatchException();
+                            }
+                        }
+
+                        found = true;
+                        return result;
+                    }
+                }
+            }
+            else
+            {
+                using IEnumerator<TSource> e = source.GetEnumerator();
+
                 while (e.MoveNext())
                 {
                     TSource result = e.Current;

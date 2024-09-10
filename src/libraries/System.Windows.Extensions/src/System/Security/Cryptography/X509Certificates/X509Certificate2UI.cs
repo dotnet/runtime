@@ -53,7 +53,7 @@ namespace System.Security.Cryptography.X509Certificates
 
                 // Initialize view structure.
                 Interop.CryptUI.CRYPTUI_VIEWCERTIFICATE_STRUCTW ViewInfo = default;
-#if NET7_0_OR_GREATER
+#if NET
                 ViewInfo.dwSize = (uint)sizeof(Interop.CryptUI.CRYPTUI_VIEWCERTIFICATE_STRUCTW.Marshaller.Native);
 #else
                 ViewInfo.dwSize = (uint)Marshal.SizeOf<Interop.CryptUI.CRYPTUI_VIEWCERTIFICATE_STRUCTW>();
@@ -122,7 +122,7 @@ namespace System.Security.Cryptography.X509Certificates
             Interop.CryptUI.CRYPTUI_SELECTCERTIFICATE_STRUCTW csc = default;
             // Older versions of CRYPTUI do not check the size correctly,
             // so always force it to the oldest version of the structure.
-#if NET7_0_OR_GREATER
+#if NET
             // Declare a local for Native to enable us to get the managed byte offset
             // without having a null check cause a failure.
             Interop.CryptUI.CRYPTUI_SELECTCERTIFICATE_STRUCTW.Marshaller.Native native;

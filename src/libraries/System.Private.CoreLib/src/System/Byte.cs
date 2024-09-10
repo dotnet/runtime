@@ -678,6 +678,9 @@ namespace System
         /// <inheritdoc cref="INumberBase{TSelf}.MinMagnitudeNumber(TSelf, TSelf)" />
         static byte INumberBase<byte>.MinMagnitudeNumber(byte x, byte y) => Min(x, y);
 
+        /// <inheritdoc cref="INumberBase{TSelf}.MultiplyAddEstimate(TSelf, TSelf, TSelf)" />
+        static byte INumberBase<byte>.MultiplyAddEstimate(byte left, byte right, byte addend) => (byte)((left * right) + addend);
+
         /// <inheritdoc cref="INumberBase{TSelf}.TryConvertFromChecked{TOther}(TOther, out TSelf)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         static bool INumberBase<byte>.TryConvertFromChecked<TOther>(TOther value, out byte result) => TryConvertFromChecked(value, out result);

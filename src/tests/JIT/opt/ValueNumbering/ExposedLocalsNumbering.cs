@@ -9,7 +9,8 @@ using Xunit;
 
 public unsafe class ExposedLocalsNumbering
 {
-    private static volatile bool s_mutateIndex;
+    private const int UnsafeIndex = 1;
+
     private static volatile bool s_finished;
     private static int* s_pIndex = (int*)NativeMemory.Alloc(4);
 
@@ -17,7 +18,6 @@ public unsafe class ExposedLocalsNumbering
     public static int TestEntryPoint()
     {
         const int RetryCount = 100;
-        const int UnsafeIndex = 1;
 
         try
         {
@@ -25,10 +25,7 @@ public unsafe class ExposedLocalsNumbering
             {
                 while (!s_finished)
                 {
-                    if (s_mutateIndex)
-                    {
-                        *s_pIndex = UnsafeIndex;
-                    }
+                    *s_pIndex = UnsafeIndex;
                 }
             }).Start();
         }
@@ -40,12 +37,11 @@ public unsafe class ExposedLocalsNumbering
         int[] array = new int[UnsafeIndex + 1];
         array[UnsafeIndex] = 1;
 
-        int safeIndex = 0;
         for (int i = 0; i < RetryCount; i++)
         {
             try
             {
-                if (RunBoundsChecks(array.AsSpan(0, UnsafeIndex), &safeIndex) != 0)
+                if (RunBoundsChecks(array.AsSpan(0, UnsafeIndex)) != 0)
                 {
                     s_finished = true;
                     return 101;
@@ -59,7 +55,7 @@ public unsafe class ExposedLocalsNumbering
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    private static int RunBoundsChecks(Span<int> span, int* pSafeIndex)
+    private static int RunBoundsChecks(Span<int> span)
     {
         int result = 0;
         int index = 0;
@@ -80,8 +76,12 @@ public unsafe class ExposedLocalsNumbering
         result += span[index];
         result += span[index];
 
+        int* pSafeIndex = (int*)NativeMemory.AllocZeroed(4);
         s_pIndex = pSafeIndex;
-        s_mutateIndex = false;
+
+        // Wait until the mutator thread sees the switch, so that it
+        // doesn't write to the stack of a method that has returned.
+        while (Volatile.Read(ref *pSafeIndex) != UnsafeIndex) { }
 
         return result;
     }
@@ -90,6 +90,5 @@ public unsafe class ExposedLocalsNumbering
     private static void CaptureIndex(int* pIndex)
     {
         s_pIndex = pIndex;
-        s_mutateIndex = true;
     }
 }

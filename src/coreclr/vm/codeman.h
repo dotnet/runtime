@@ -2258,7 +2258,7 @@ inline CodeHeader * EEJitManager::GetCodeHeader(const METHODTOKEN& MethodToken)
 inline CodeHeader * EEJitManager::GetCodeHeaderFromStartAddress(TADDR methodStartAddress)
 {
     LIMITED_METHOD_DAC_CONTRACT;
-    _ASSERTE(methodStartAddress != NULL);
+    _ASSERTE(methodStartAddress != (TADDR)NULL);
     ARM_ONLY(_ASSERTE((methodStartAddress & THUMB_CODE) == 0));
     return dac_cast<PTR_CodeHeader>(methodStartAddress - sizeof(CodeHeader));
 }

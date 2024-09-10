@@ -413,7 +413,7 @@ namespace Microsoft.Extensions.Hosting.Tests
             // Check for the error in any of the failures
             foreach (var error in errorsToMatch)
             {
-#if NETCOREAPP
+#if NET
                 Assert.True(e.Failures.FirstOrDefault(predicate: f => f.Contains(error, StringComparison.CurrentCulture)) != null, "Did not find: " + error + " " + e.Failures.First());
 #else
                 Assert.True(e.Failures.FirstOrDefault(predicate: f => f.IndexOf(error, StringComparison.CurrentCulture) >= 0) != null, "Did not find: " + error + " " + e.Failures.First());

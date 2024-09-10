@@ -310,7 +310,7 @@ DacDbiInterfaceImpl::DacDbiInterfaceImpl(
     m_pCachedImporter(NULL),
     m_isCachedHijackFunctionValid(FALSE)
 {
-    _ASSERTE(baseAddress != NULL);
+    _ASSERTE(baseAddress != (CORDB_ADDRESS)NULL);
     m_globalBase = CORDB_ADDRESS_TO_TADDR(baseAddress);
 
     _ASSERTE(pMetaDataLookup != NULL);
@@ -1207,7 +1207,7 @@ mdSignature DacDbiInterfaceImpl::GetILCodeAndSigHelper(Module *       pModule,
     // Method not overridden - get the original copy of the IL by going to the PE file/RVA
     // If this is in a dynamic module then don't even attempt this since ReflectionModule::GetIL isn't
     // implemented for DAC.
-    if (pTargetIL == 0 && !pModule->IsReflection())
+    if (pTargetIL == 0 && !pModule->IsReflectionEmit())
     {
         pTargetIL = (TADDR)pModule->GetIL(methodRVA);
     }
@@ -3672,7 +3672,7 @@ HRESULT DacDbiInterfaceImpl::GetLoaderHeapMemoryRanges(DacDbiArrayList<COR_MEMOR
         // it's own LoaderAllocator, but there's no easy way of getting a hand at them other than going through
         // the heap, getting a managed LoaderAllocators, from there getting a Scout, and from there getting a native
         // pointer to the LoaderAllocator tos enumerate.
-        PTR_LoaderAllocator pGlobalAllocator = SystemDomain::System()->GetLoaderAllocator();
+        PTR_LoaderAllocator pGlobalAllocator = SystemDomain::GetGlobalLoaderAllocator();
         _ASSERTE(pGlobalAllocator);
         EnumerateMemRangesForLoaderAllocator(pGlobalAllocator, &memoryRanges);
 
@@ -3707,7 +3707,6 @@ void DacDbiInterfaceImpl::GetStackFramesFromException(VMPTR_Object vmObject, Dac
     DebugStackTrace::GetStackFramesData stackFramesData;
 
     stackFramesData.pDomain = NULL;
-    stackFramesData.skip = 0;
     stackFramesData.NumFramesRequested = 0;
 
     DebugStackTrace::GetStackFramesFromException(&objRef, &stackFramesData);
@@ -3720,7 +3719,7 @@ void DacDbiInterfaceImpl::GetStackFramesFromException(VMPTR_Object vmObject, Dac
 
         for (INT32 index = 0; index < dacStackFramesLength; ++index)
         {
-            DebugStackTrace::DebugStackTraceElement const& currentElement = stackFramesData.pElements[index];
+            DebugStackTrace::Element const& currentElement = stackFramesData.pElements[index];
             DacExceptionCallStackData& currentFrame = dacStackFrames[index];
 
             AppDomain* pDomain = AppDomain::GetCurrentDomain();
@@ -4281,11 +4280,14 @@ void DacDbiInterfaceImpl::GetMetadata(VMPTR_Module vmModule, TargetBuffer * pTar
     _ASSERTE(pModule->IsVisibleToDebugger());
 
     // For dynamic modules, metadata is stored as an eagerly-serialized buffer hanging off the Reflection Module.
-    if (pModule->IsReflection())
+    if (pModule->IsReflectionEmit())
     {
         // Here is the fetch.
         ReflectionModule * pReflectionModule = pModule->GetReflectionModule();
-        InitTargetBufferFromTargetSBuffer(pReflectionModule->GetDynamicMetadataBuffer(), pTargetBuffer);
+
+        TADDR metadataBuffer = pReflectionModule->GetDynamicMetadataBuffer();
+        CORDB_ADDRESS addr = PTR_TO_CORDB_ADDRESS(metadataBuffer + offsetof(DynamicMetadata, Data));
+        pTargetBuffer->Init(addr, dac_cast<DPTR(DynamicMetadata)>(metadataBuffer)->Size);
     }
     else
     {
@@ -4383,7 +4385,7 @@ void DacDbiInterfaceImpl::GetModuleData(VMPTR_Module vmModule, ModuleInfo * pDat
     pData->vmAssembly.SetHostPtr(pModule->GetAssembly());
 
     // Is it dynamic?
-    BOOL fIsDynamic = pModule->IsReflection();
+    BOOL fIsDynamic = pModule->IsReflectionEmit();
     pData->fIsDynamic = fIsDynamic;
 
     // Get PE BaseAddress and Size
@@ -4713,8 +4715,16 @@ void DacDbiInterfaceImpl::GetThreadAllocInfo(VMPTR_Thread        vmThread,
 
     Thread * pThread = vmThread.GetDacPtr();
     gc_alloc_context* allocContext = pThread->GetAllocContext();
-    threadAllocInfo->m_allocBytesSOH = allocContext->alloc_bytes - (allocContext->alloc_limit - allocContext->alloc_ptr);
-    threadAllocInfo->m_allocBytesUOH = allocContext->alloc_bytes_uoh;
+    if (allocContext != nullptr)
+    {
+        threadAllocInfo->m_allocBytesSOH = allocContext->alloc_bytes - (allocContext->alloc_limit - allocContext->alloc_ptr);
+        threadAllocInfo->m_allocBytesUOH = allocContext->alloc_bytes_uoh;
+    }
+    else
+    {
+            threadAllocInfo->m_allocBytesSOH = 0;
+            threadAllocInfo->m_allocBytesUOH = 0;
+    }
 }
 
 // Set and reset the TSNC_DebuggerUserSuspend bit on the state of the specified thread
@@ -4922,12 +4932,7 @@ VMPTR_AppDomain DacDbiInterfaceImpl::GetCurrentAppDomain(VMPTR_Thread vmThread)
     DD_ENTER_MAY_THROW;
 
     Thread *    pThread    = vmThread.GetDacPtr();
-    AppDomain * pAppDomain = pThread->GetDomain();
-
-    if (pAppDomain == NULL)
-    {
-        ThrowHR(E_FAIL);
-    }
+    AppDomain * pAppDomain = AppDomain::GetCurrentDomain();
 
     VMPTR_AppDomain vmAppDomain = VMPTR_AppDomain::NullPtr();
     vmAppDomain.SetDacTargetPtr(PTR_HOST_TO_TADDR(pAppDomain));
@@ -5552,6 +5557,8 @@ CorDebugUserState DacDbiInterfaceImpl::GetPartialUserState(VMPTR_Thread vmThread
         result |= USER_STOPPED;
     }
 
+    // Don't report Thread::TS_AbortRequested
+
     // The interruptible flag is unreliable (see issue 699245)
     // The Debugger_SleepWaitJoin is always accurate when it is present, but it is still
     // just a band-aid fix to cover some of the race conditions interruptible has.
@@ -5700,7 +5707,7 @@ void DacDbiInterfaceImpl::GetContext(VMPTR_Thread vmThread, DT_CONTEXT * pContex
 
             // Going through thread Frames and looking for first (deepest one) one that
             // that has context available for stackwalking (SP and PC)
-            // For example: RedirectedThreadFrame, InlinedCallFrame, HelperMethodFrame, ComPlusMethodFrame
+            // For example: RedirectedThreadFrame, InlinedCallFrame, HelperMethodFrame, CLRToCOMMethodFrame
             Frame *frame = pThread->GetFrame();
             while (frame != NULL && frame != FRAME_TOP)
             {
@@ -7477,7 +7484,7 @@ HRESULT DacDbiInterfaceImpl::GetDefinesBitField(ULONG32 *pDefines)
 
     if (g_pDebugger == NULL)
         return CORDBG_E_NOTREADY;
-        
+
     *pDefines = g_pDebugger->m_defines;
     return S_OK;
 }
@@ -7581,9 +7588,6 @@ UINT32 DacRefWalker::GetHandleWalkerMask()
 
     if (mHandleMask & CorHandleStrongDependent)
         result |= (1 << HNDTYPE_DEPENDENT);
-
-    if (mHandleMask & CorHandleStrongSizedByref)
-        result |= (1 << HNDTYPE_SIZEDREF);
 
     return result;
 }
@@ -7719,10 +7723,6 @@ HRESULT DacHandleWalker::Next(ULONG count, DacGcReference roots[], ULONG *pFetch
             case HNDTYPE_DEPENDENT:
                 roots[i].dwType = (DWORD)CorHandleStrongDependent;
                 roots[i].i64ExtraData = GetDependentHandleSecondary(CLRDATA_ADDRESS_TO_TADDR(handle.Handle)).GetAddr();
-                break;
-
-            case HNDTYPE_SIZEDREF:
-                roots[i].dwType = (DWORD)CorHandleStrongSizedByref;
                 break;
         }
     }

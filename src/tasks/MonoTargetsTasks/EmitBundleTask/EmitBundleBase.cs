@@ -318,6 +318,7 @@ public abstract class EmitBundleBase : Microsoft.Build.Utilities.Task, ICancelab
             string resourceId = tuple.registeredName;
 
             // Generate Preloaded MonoBundled*Resource structs
+            // See bundled-resources-internals.h
             string preloadedStruct;
             switch (tuple.resourceType)
             {

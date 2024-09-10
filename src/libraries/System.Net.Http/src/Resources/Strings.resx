@@ -147,9 +147,6 @@
   <data name="net_http_headers_invalid_host_header" xml:space="preserve">
     <value>The specified value is not a valid 'Host' header string.</value>
   </data>
-  <data name="net_http_headers_invalid_etag_name" xml:space="preserve">
-    <value>The specified value is not a valid quoted string.</value>
-  </data>
   <data name="net_http_headers_invalid_range" xml:space="preserve">
     <value>Invalid range. At least one of the two parameters must not be null.</value>
   </data>
@@ -382,7 +379,7 @@
     <value>HTTP 1.0 does not support chunking.</value>
   </data>
   <data name="net_http_unsupported_version" xml:space="preserve">
-    <value>Request HttpVersion 0.X is not supported.  Use 1.0 or above.</value>
+    <value>Request version value must be one of 1.0, 1.1, 2.0, or 3.0.</value>
   </data>
   <data name="IO_SeekBeforeBegin" xml:space="preserve">
     <value>An attempt was made to move the position before the beginning of the stream.</value>
@@ -473,6 +470,9 @@
   </data>
   <data name="net_http_invalid_header_name" xml:space="preserve">
     <value>Received an invalid header name: '{0}'.</value>
+  </data>
+  <data name="net_http_http3_connection_not_established" xml:space="preserve">
+    <value>An HTTP/3 connection could not be established because the server did not complete the HTTP/3 handshake.</value>
   </data>
   <data name="net_http_http3_connection_error" xml:space="preserve">
     <value>The HTTP/3 server sent invalid data on the connection. HTTP/3 error code '{0}' (0x{1}).</value>
@@ -576,7 +576,10 @@
   <data name="net_http_chunk_too_large" xml:space="preserve">
     <value>The HTTP/1.1 response chunk was too large.</value>
   </data>
-    <data name="net_unsupported_extended_connect" xml:space="preserve">
+  <data name="net_unsupported_extended_connect" xml:space="preserve">
     <value>Failed to establish web socket connection over HTTP/2 because extended CONNECT is not supported. Try to downgrade the request version to HTTP/1.1.</value>
+  </data>
+  <data name="net_ping_request_timed_out" xml:space="preserve">
+    <value>The HTTP/2 server didn't respond to a ping request within the configured KeepAlivePingDelay.</value>
   </data>
 </root>

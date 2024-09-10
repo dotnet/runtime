@@ -259,9 +259,9 @@ public:
         HAS_DELETE      =   0x80,       // If set, this metadata can contain _Delete tokens.
     };
 
-    unsigned __int64    m_maskvalid;            // Bit mask of present table counts.
+    uint64_t    m_maskvalid;            // Bit mask of present table counts.
 
-    unsigned __int64    m_sorted;               // Bit mask of sorted tables.
+    uint64_t    m_sorted;               // Bit mask of sorted tables.
     FORCEINLINE bool IsSorted(ULONG ixTbl)
         { return m_sorted & BIT(ixTbl) ? true : false; }
     void SetSorted(ULONG ixTbl, int bVal)
@@ -283,8 +283,8 @@ public:
 #endif
 
 private:
-    FORCEINLINE unsigned __int64 BIT(ULONG ixBit)
-    {   _ASSERTE(ixBit < (sizeof(__int64)*CHAR_BIT));
+    FORCEINLINE uint64_t BIT(ULONG ixBit)
+    {   _ASSERTE(ixBit < (sizeof(int64_t)*CHAR_BIT));
         return UI64(1) << ixBit; }
 
 };

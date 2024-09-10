@@ -6,7 +6,7 @@ using System.Runtime.InteropServices.Marshalling;
 
 namespace System.Transactions.DtcProxyShim.DtcInterfaces;
 
-// https://docs.microsoft.com/previous-versions/windows/desktop/ms684377(v=vs.85)
+// https://learn.microsoft.com/previous-versions/windows/desktop/ms684377(v=vs.85)
 [GeneratedComInterface, Guid("02656950-2152-11d0-944C-00A0C905416E"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
 internal partial interface ITransactionCloner
 {

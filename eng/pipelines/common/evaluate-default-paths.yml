@@ -7,7 +7,7 @@ parameters:
   _const_paths:
     _wasm_specific_only: [
         eng/testing/bump-chrome-version.proj
-        eng/testing/ChromeVersions.props
+        eng/testing/BrowserVersions.props
         eng/testing/WasmRunner*
         eng/testing/WasiRunner*
         eng/testing/scenarios/BuildWasiAppsJobsList.txt
@@ -58,7 +58,7 @@ parameters:
     ]
     _wasm_chrome: [
         eng/testing/bump-chrome-version.proj
-        eng/testing/ChromeVersions.props
+        eng/testing/BrowserVersions.props
     ]
     _perf_pipeline_specific_only: [
         eng/pipelines/runtime-wasm-perf.yml
@@ -162,7 +162,13 @@ jobs:
     - subset: tools_illink
       include:
       - src/tools/illink/*
+      - src/coreclr/tools/aot/ILCompiler.DependencyAnalysisFramework/*
+      - src/coreclr/tools/ILVerification/*
       - global.json
+
+    - subset: tools_cdacreader
+      include:
+      - src/native/managed/cdacreader/*
 
     - subset: installer
       include:
@@ -196,9 +202,6 @@ jobs:
       - src/coreclr/jit/*
       - src/coreclr/pal/*
       - src/coreclr/vm/*
-    - subset: coreclr_jit
-      include:
-      - src/coreclr/jit/*
 
     #
     # ** WASM **

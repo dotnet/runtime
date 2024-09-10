@@ -63,7 +63,7 @@ namespace System.Net.Security
             SSPIWrapper.GetVerifyPackageInfo(GlobalSSPI.SSPISecureChannel, SecurityPackage, true);
         }
 
-        private static void SetAlpn(ref InputSecurityBuffers inputBuffers, List<SslApplicationProtocol> alpn, Span<byte> localBuffer)
+        private static unsafe void SetAlpn(ref InputSecurityBuffers inputBuffers, List<SslApplicationProtocol> alpn, Span<byte> localBuffer)
         {
             if (alpn.Count == 1 && alpn[0] == SslApplicationProtocol.Http11)
             {
@@ -84,7 +84,7 @@ namespace System.Net.Security
             else
             {
                 int protocolLength = Interop.Sec_Application_Protocols.GetProtocolLength(alpn);
-                int bufferLength = Unsafe.SizeOf<Interop.Sec_Application_Protocols>() + protocolLength;
+                int bufferLength = sizeof(Interop.Sec_Application_Protocols) + protocolLength;
 
                 Span<byte> alpnBuffer = bufferLength <= localBuffer.Length ? localBuffer : new byte[bufferLength];
                 Interop.Sec_Application_Protocols.SetProtocols(alpnBuffer, alpn, protocolLength);
@@ -105,6 +105,7 @@ namespace System.Net.Security
             ref SafeFreeCredentials? credentialsHandle,
             ref SafeDeleteSslContext? context,
             ReadOnlySpan<byte> inputBuffer,
+            out int consumed,
             SslAuthenticationOptions sslAuthenticationOptions)
         {
             Interop.SspiCli.ContextFlags unusedAttributes = default;
@@ -127,9 +128,16 @@ namespace System.Net.Security
                 ref context,
                 ServerRequiredFlags | (sslAuthenticationOptions.RemoteCertRequired ? Interop.SspiCli.ContextFlags.MutualAuth : Interop.SspiCli.ContextFlags.Zero),
                 Interop.SspiCli.Endianness.SECURITY_NATIVE_DREP,
-                inputBuffers,
+                ref inputBuffers,
                 ref token,
                 ref unusedAttributes);
+
+            consumed = inputBuffer.Length;
+            if (inputBuffers._item1.Type == SecurityBufferType.SECBUFFER_EXTRA)
+            {
+                // not all data were consumed
+                consumed -= inputBuffers._item1.Token.Length;
+            }
 
             token.Status = SecurityStatusAdapterPal.GetSecurityStatusPalFromNativeInt(errorCode);
             return token;
@@ -149,6 +157,7 @@ namespace System.Net.Security
             ref SafeDeleteSslContext? context,
             string? targetName,
             ReadOnlySpan<byte> inputBuffer,
+            out int consumed,
             SslAuthenticationOptions sslAuthenticationOptions)
         {
             bool newContext = context == null;
@@ -172,11 +181,18 @@ namespace System.Net.Security
                                 targetName,
                                 RequiredFlags | Interop.SspiCli.ContextFlags.InitManualCredValidation,
                                 Interop.SspiCli.Endianness.SECURITY_NATIVE_DREP,
-                                inputBuffers,
+                                ref inputBuffers,
                                 ref token,
                                 ref unusedAttributes);
 
             token.Status = SecurityStatusAdapterPal.GetSecurityStatusPalFromNativeInt(errorCode);
+
+            consumed = inputBuffer.Length;
+            if (inputBuffers._item1.Type == SecurityBufferType.SECBUFFER_EXTRA)
+            {
+                // not all data were consumed
+                consumed -= inputBuffers._item1.Token.Length;
+            }
 
             bool allowTlsResume = sslAuthenticationOptions.AllowTlsResume && !SslStream.DisableTlsResume;
 
@@ -204,7 +220,7 @@ namespace System.Net.Security
             ref SafeDeleteSslContext? context,
             SslAuthenticationOptions sslAuthenticationOptions)
         {
-            return AcceptSecurityContext(ref credentialsHandle, ref context, Span<byte>.Empty, sslAuthenticationOptions);
+            return AcceptSecurityContext(ref credentialsHandle, ref context, ReadOnlySpan<byte>.Empty, out _, sslAuthenticationOptions);
         }
 
         public static SafeFreeCredentials AcquireCredentialsHandle(SslAuthenticationOptions sslAuthenticationOptions, bool newCredentialsRequested)
@@ -233,8 +249,7 @@ namespace System.Net.Security
                 if (newCredentialsRequested && sslAuthenticationOptions.CertificateContext != null)
                 {
                     SafeFreeCredential_SECURITY handle = (SafeFreeCredential_SECURITY)cred;
-                    // We need to create copy to avoid Disposal issue.
-                    handle.LocalCertificate = new X509Certificate2(sslAuthenticationOptions.CertificateContext.TargetCertificate);
+                    handle.HasLocalCertificate = true;
                 }
 
                 return cred;

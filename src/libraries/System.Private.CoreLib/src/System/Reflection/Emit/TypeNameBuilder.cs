@@ -148,23 +148,8 @@ namespace System.Reflection.Emit
             return false;
         }
 
-        private static bool IsTypeNameReservedChar(char ch)
-        {
-            switch (ch)
-            {
-                case ',':
-                case '[':
-                case ']':
-                case '&':
-                case '*':
-                case '+':
-                case '\\':
-                    return true;
-
-                default:
-                    return false;
-            }
-        }
+        private static bool IsTypeNameReservedChar(char ch) =>
+            ch is ',' or '[' or ']' or '&' or '*' or '+' or '\\';
 
         private void EscapeName(string name)
         {

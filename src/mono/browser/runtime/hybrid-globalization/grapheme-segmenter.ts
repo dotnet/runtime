@@ -7,7 +7,6 @@
  * https://github.com/formatjs/formatjs/blob/58d6a7b398d776ca3d2726d72ae1573b65cc3bef/packages/intl-segmenter/src/segmentation-utils.ts
  */
 
-import { mono_assert } from "../globals";
 import { isSurrogate } from "./helpers";
 
 type SegmentationRule = {
@@ -48,7 +47,8 @@ function isSegmentationTypeRaw (obj: any): obj is SegmentationTypeRaw {
 }
 
 export function setSegmentationRulesFromJson (json: string) {
-    mono_assert(isSegmentationTypeRaw(json), "Provided grapheme segmentation rules are not valid");
+    if (!isSegmentationTypeRaw(json))
+        throw new Error("Provided grapheme segmentation rules are not valid");
     segmentationRules = GraphemeSegmenter.prepareSegmentationRules(json);
 }
 

@@ -337,6 +337,9 @@ namespace System.Collections.Immutable
         /// the source array.
         /// </remarks>
         public static ImmutableArray<TResult> CreateRange<TSource, TArg, TResult>(ImmutableArray<TSource> items, Func<TSource, TArg, TResult> selector, TArg arg)
+#if NET9_0_OR_GREATER
+            where TArg : allows ref struct
+#endif
         {
             Requires.NotNull(selector, nameof(selector));
 
@@ -370,6 +373,9 @@ namespace System.Collections.Immutable
         /// included in the resulting array.
         /// </remarks>
         public static ImmutableArray<TResult> CreateRange<TSource, TArg, TResult>(ImmutableArray<TSource> items, int start, int length, Func<TSource, TArg, TResult> selector, TArg arg)
+#if NET9_0_OR_GREATER
+            where TArg : allows ref struct
+#endif
         {
             int itemsLength = items.Length;
 

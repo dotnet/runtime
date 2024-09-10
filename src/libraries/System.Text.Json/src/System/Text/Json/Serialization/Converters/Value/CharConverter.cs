@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
-using System.Runtime.InteropServices;
+using System.Text.Json.Schema;
 
 namespace System.Text.Json.Serialization.Converters
 {
@@ -36,7 +36,7 @@ namespace System.Text.Json.Serialization.Converters
         public override void Write(Utf8JsonWriter writer, char value, JsonSerializerOptions options)
         {
             writer.WriteStringValue(
-#if NETCOREAPP
+#if NET
                 new ReadOnlySpan<char>(in value)
 #else
                 value.ToString()
@@ -53,12 +53,15 @@ namespace System.Text.Json.Serialization.Converters
         internal override void WriteAsPropertyNameCore(Utf8JsonWriter writer, char value, JsonSerializerOptions options, bool isWritingExtensionDataProperty)
         {
             writer.WritePropertyName(
-#if NETCOREAPP
+#if NET
                 new ReadOnlySpan<char>(in value)
 #else
                 value.ToString()
 #endif
                 );
         }
+
+        internal override JsonSchema? GetSchema(JsonNumberHandling _) =>
+            new() { Type = JsonSchemaType.String, MinLength = 1, MaxLength = 1 };
     }
 }

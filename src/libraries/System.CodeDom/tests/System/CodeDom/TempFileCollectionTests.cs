@@ -277,7 +277,7 @@ namespace System.CodeDom.Tests
         {
             if (s_tempDirectory == null)
             {
-#if NETCOREAPP
+#if NET
                 string tempDirectory = Directory.CreateTempSubdirectory().FullName;
 #else
                 string tempDirectory = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());

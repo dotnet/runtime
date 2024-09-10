@@ -64,7 +64,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         public override void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
-            sb.Append("DelayLoadHelper->");
+            sb.Append("DelayLoadHelper->"u8);
             _helperCell.AppendMangledName(nameMangler, sb);
             sb.Append($"(ImportSection:{_containingImportSection.Name},Kind:{_thunkKind})");
         }

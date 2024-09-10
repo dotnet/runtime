@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.ComponentModel;
+using System.Reflection;
 
 namespace System.Text.Json.Serialization.Metadata
 {
@@ -36,6 +37,11 @@ namespace System.Text.Json.Serialization.Metadata
         /// </summary>
         /// <remarks>This API is for use by the output of the System.Text.Json source generator and should not be called directly.</remarks>
         public Func<JsonParameterInfoValues[]>? ConstructorParameterMetadataInitializer { get; init; }
+
+        /// <summary>
+        /// Provides a delayed attribute provider corresponding to the deserialization constructor.
+        /// </summary>
+        public Func<ICustomAttributeProvider>? ConstructorAttributeProviderFactory { get; init; }
 
         /// <summary>
         /// Specifies how number properties and fields should be processed when serializing and deserializing.

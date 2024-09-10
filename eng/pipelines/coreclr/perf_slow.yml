@@ -11,6 +11,7 @@ trigger:
   branches:
     include:
     - main
+    - release/9.0
   paths:
     include:
     - '*'
@@ -85,6 +86,24 @@ extends:
               logicalmachine: 'perfampere'
               timeoutInMinutes: 720
 
+        # run arm64 jit jobs for mono
+        - template: /eng/pipelines/common/platform-matrix.yml
+          parameters:
+            jobTemplate: /eng/pipelines/coreclr/templates/perf-job.yml
+            buildConfig: release
+            runtimeFlavor: mono
+            platforms:
+            - linux_arm64
+            jobParameters:
+              testGroup: perf
+              liveLibrariesBuildConfig: Release
+              runtimeType: mono
+              projectFile: microbenchmarks.proj
+              runKind: micro_mono
+              runJobTemplate: /eng/pipelines/coreclr/templates/run-performance-job.yml
+              logicalmachine: 'perfampere'
+              timeoutInMinutes: 720
+
       - ${{ if and(ne(variables['System.TeamProject'], 'public'), or(notin(variables['Build.Reason'], 'Schedule', 'Manual'), parameters.runPrivateJobs)) }}:
 
         # build coreclr and libraries
@@ -121,7 +140,7 @@ extends:
             platforms:
             - linux_arm64
             jobParameters:
-              buildArgs: -s mono+libs+host+packs -c $(_BuildConfig) /p:MonoAOTEnableLLVM=true /p:MonoEnableLLVM=true /p:BuildMonoAOTCrossCompiler=true /p:MonoLibClang="/usr/local/lib/libclang.so.16" /p:AotHostArchitecture=arm64 /p:AotHostOS=linux
+              buildArgs: -s mono+libs+host+packs -c $(_BuildConfig) /p:MonoAOTEnableLLVM=true /p:MonoEnableLLVM=true /p:BuildMonoAOTCrossCompiler=true /p:MonoLibClang="/usr/local/lib/libclang.so" /p:AotHostArchitecture=arm64 /p:AotHostOS=linux
               nameSuffix: AOT
               isOfficialBuild: false
               postBuildSteps:
