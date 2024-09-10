@@ -138,24 +138,22 @@ namespace System.Net.WebSockets
             }
         }
 
-        private void Observe(Task t) => Observe(t, this);
-
         // "Observe" any exception, ignoring it to prevent the unobserved task
         // exception event from being raised.
-        private static void Observe(Task t, object thisObj)
+        private void Observe(Task t)
         {
             if (t.IsCompleted)
             {
                 if (t.IsFaulted)
                 {
-                    LogFaulted(t, thisObj);
+                    LogFaulted(t, this);
                 }
             }
             else
             {
                 t.ContinueWith(
                     LogFaulted,
-                    thisObj,
+                    this,
                     CancellationToken.None,
                     TaskContinuationOptions.OnlyOnFaulted | TaskContinuationOptions.ExecuteSynchronously,
                     TaskScheduler.Default);
