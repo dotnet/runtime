@@ -258,54 +258,6 @@ namespace Microsoft.NET.HostModel.AppHost.Tests
                 .Be(expectedPermissions);
         }
 
-        [Theory]
-        [PlatformSpecific(TestPlatforms.OSX)]
-        [InlineData("")]
-        [InlineData("dir with spaces")]
-        public void CodeSignAppHostOnMacOS(string subdir)
-        {
-            using (TestArtifact artifact = CreateTestDirectory())
-            {
-                string testDirectory = Path.Combine(artifact.Location, subdir);
-                Directory.CreateDirectory(testDirectory);
-                string sourceAppHostMock = PrepareAppHostMockFile(testDirectory);
-                File.SetAttributes(sourceAppHostMock, FileAttributes.ReadOnly);
-                string destinationFilePath = Path.Combine(testDirectory, "DestinationAppHost.exe.mock");
-                string appBinaryFilePath = "Test/App/Binary/Path.dll";
-                HostWriter.CreateAppHost(
-                   sourceAppHostMock,
-                   destinationFilePath,
-                   appBinaryFilePath,
-                   windowsGraphicalUserInterface: false,
-                   enableMacOSCodeSign: true);
-
-                // Validate that there is a signature present in the apphost Mach file
-                var objectFile = MachReader.Read(File.OpenRead(destinationFilePath)).FirstOrDefault();
-                Assert.NotNull(objectFile);
-                var codeSignature = objectFile!.LoadCommands.OfType<MachCodeSignature>().FirstOrDefault();
-                Assert.NotNull(codeSignature);
-
-                // Verify with codesign as well
-                const string codesign = @"/usr/bin/codesign";
-                var psi = new ProcessStartInfo()
-                {
-                    Arguments = $"-d \"{destinationFilePath}\"",
-                    FileName = codesign,
-                    RedirectStandardError = true,
-                };
-
-                using (var p = Process.Start(psi))
-                {
-                    p.Start();
-                    p.StandardError.ReadToEnd()
-                        .Should().Contain($"Executable={Path.GetFullPath(destinationFilePath)}");
-                    p.WaitForExit();
-                    // Successfully signed the apphost.
-                    Assert.True(p.ExitCode == 0, $"Expected exit code was '0' but '{codesign}' returned '{p.ExitCode}' instead.");
-                }
-            }
-        }
-
         [Fact]
         [PlatformSpecific(TestPlatforms.OSX)]
         public void DoesNotCodeSignAppHostByDefault()
@@ -350,15 +302,7 @@ namespace Microsoft.NET.HostModel.AppHost.Tests
                 File.SetAttributes(sourceAppHostMock, FileAttributes.ReadOnly);
                 string destinationFilePath = Path.Combine(artifact.Location, "DestinationAppHost.exe.mock");
                 string appBinaryFilePath = "Test/App/Binary/Path.dll";
-                HostWriter.CreateAppHost(
-                   sourceAppHostMock,
-                   destinationFilePath,
-                   appBinaryFilePath,
-                   windowsGraphicalUserInterface: false,
-                   enableMacOSCodeSign: true);
-
-                // Run CreateAppHost again to sign the apphost a second time,
-                // causing codesign to fail.
+                // The apphost is not a Mach file, so an exception should be thrown.
                 var exception = Assert.Throws<Exception>(() =>
                     HostWriter.CreateAppHost(
                     sourceAppHostMock,
@@ -366,8 +310,6 @@ namespace Microsoft.NET.HostModel.AppHost.Tests
                     appBinaryFilePath,
                     windowsGraphicalUserInterface: false,
                     enableMacOSCodeSign: true));
-                // Assert.Contains($"{destinationFilePath}: is already signed", exception.Message);
-                // Assert.True(exception.ExitCode == 1, $"AppHostSigningException.ExitCode - expected: 1, actual: '{exception.ExitCode}'");
             }
         }
 

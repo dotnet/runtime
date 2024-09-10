@@ -179,40 +179,37 @@ namespace Melanzana.CodeSign
             AdHocSignMachO(path);
         }
 
-        /// <summary>
-        /// Removes the code signature from the Mach-O file on disk.
-        /// </summary>
-        public static bool TryRemoveCodesign(string filePath, string? outputPath = null)
+        public static bool TryRemoveCodesign(Stream inputStream, Stream outputStream)
         {
-            outputPath ??= filePath;
-            bool removed = false;
-
-            using FileStream inputStream = File.Open(filePath, FileMode.Open, FileAccess.ReadWrite);
+            inputStream.Position = 0;
             MachObjectFile objectFile = MachReader.Read(inputStream).Single();
 
             MachCodeSignature? codeSignature = objectFile.LoadCommands.OfType<MachCodeSignature>().FirstOrDefault();
-            if (codeSignature is not null)
+            if (codeSignature is null)
             {
-                removed = true;
-                objectFile!.LoadCommands.Remove(codeSignature!);
+                return false;
             }
-            // Don't bother writing the file if the signature was not present and no output path is the same as the input path
-            if (outputPath == filePath)
+            objectFile!.LoadCommands.Remove(codeSignature!);
+            outputStream.Position = 0;
+            MachWriter.Write(outputStream, objectFile);
+            outputStream.SetLength(outputStream.Position);
+            return true;
+        }
+
+        /// <summary>
+        /// Removes the code signature from the Mach-O file on disk.
+        /// </summary>
+        public static bool TryRemoveCodesign(string inputPath, string? outputPath = null)
+        {
+            outputPath ??= inputPath;
+
+            using FileStream inputStream = File.Open(inputPath, FileMode.Open, FileAccess.ReadWrite);
+            if (inputPath == outputPath)
             {
-                if (!removed)
-                {
-                    return false;
-                }
-                inputStream.Position = 0;
-                MachWriter.Write(inputStream, objectFile);
-                return removed;
+                return TryRemoveCodesign(inputStream, inputStream);
             }
-            else
-            {
-                using FileStream outputStream = File.Open(outputPath, FileMode.Create, FileAccess.Write);
-                MachWriter.Write(outputStream, objectFile);
-                return removed;
-            }
+            using FileStream outputStream = File.Open(outputPath, FileMode.Create, FileAccess.Write);
+            return TryRemoveCodesign(inputStream, outputStream);
         }
     }
 }

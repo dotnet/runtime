@@ -144,7 +144,7 @@ namespace Microsoft.NET.HostModel.AppHost
                             // Remove the signature from MachO hosts.
                             if (!appHostIsPEImage)
                             {
-                                MachOUtils.RemoveSignature(fileStream);
+                                Signer.TryRemoveCodesign(fileStream, fileStream);
                             }
 
                             if (assemblyToCopyResourcesFrom != null && appHostIsPEImage)
