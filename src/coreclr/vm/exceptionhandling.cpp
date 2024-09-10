@@ -970,7 +970,7 @@ ProcessCLRExceptionNew(IN     PEXCEPTION_RECORD   pExceptionRecord,
         else
         {
             OBJECTREF oref = ExceptionTracker::CreateThrowable(pExceptionRecord, FALSE);
-            DispatchManagedException(oref, pContextRecord, /* preserveStackTrace */ false);
+            DispatchManagedException(oref, pContextRecord);
         }
     }
 #endif // !HOST_UNIX
@@ -5649,7 +5649,7 @@ void FirstChanceExceptionNotification()
 #endif // TARGET_UNIX
 }
 
-VOID DECLSPEC_NORETURN DispatchManagedException(OBJECTREF throwable, CONTEXT* pExceptionContext, bool preserveStackTrace)
+VOID DECLSPEC_NORETURN DispatchManagedException(OBJECTREF throwable, CONTEXT* pExceptionContext)
 {
     STATIC_CONTRACT_THROWS;
     STATIC_CONTRACT_GC_TRIGGERS;
@@ -5661,19 +5661,12 @@ VOID DECLSPEC_NORETURN DispatchManagedException(OBJECTREF throwable, CONTEXT* pE
 
     Thread *pThread = GetThread();
 
-    if (preserveStackTrace)
-    {
-        pThread->IncPreventAbort();
-        ExceptionPreserveStackTrace(throwable);
-        pThread->DecPreventAbort();
-    }
-
     ULONG_PTR hr = GetHRFromThrowable(throwable);
 
     EXCEPTION_RECORD exceptionRecord;
     exceptionRecord.ExceptionCode = EXCEPTION_COMPLUS;
     exceptionRecord.ExceptionFlags = EXCEPTION_NONCONTINUABLE | EXCEPTION_SOFTWARE_ORIGINATE;
-    exceptionRecord.ExceptionAddress = (void *)(void (*)(OBJECTREF, bool))&DispatchManagedException;
+    exceptionRecord.ExceptionAddress = (void *)(void (*)(OBJECTREF))&DispatchManagedException;
     exceptionRecord.NumberParameters = MarkAsThrownByUs(exceptionRecord.ExceptionInformation, hr);
     exceptionRecord.ExceptionRecord = NULL;
 
@@ -5709,7 +5702,7 @@ VOID DECLSPEC_NORETURN DispatchManagedException(OBJECTREF throwable, CONTEXT* pE
     UNREACHABLE();
 }
 
-VOID DECLSPEC_NORETURN DispatchManagedException(OBJECTREF throwable, bool preserveStackTrace)
+VOID DECLSPEC_NORETURN DispatchManagedException(OBJECTREF throwable)
 {
     STATIC_CONTRACT_THROWS;
     STATIC_CONTRACT_GC_TRIGGERS;
@@ -5718,7 +5711,7 @@ VOID DECLSPEC_NORETURN DispatchManagedException(OBJECTREF throwable, bool preser
     CONTEXT exceptionContext;
     RtlCaptureContext(&exceptionContext);
 
-    DispatchManagedException(throwable, &exceptionContext, preserveStackTrace);
+    DispatchManagedException(throwable, &exceptionContext);
     UNREACHABLE();
 }
 
@@ -8439,7 +8432,12 @@ extern "C" bool QCALLTYPE SfiInit(StackFrameIterator* pThis, CONTEXT* pStackwalk
         // Get the SSP for the first managed frame. It is incremented during the stack walk so that
         // when we reach the handling frame, it contains correct SSP to set when resuming after
         // the catch handler.
-        pThis->m_crawl.GetRegisterSet()->SSP = GetSSPForFrameOnCurrentStack(controlPC);
+        // For hardware exceptions and thread abort exceptions propagated from ThrowControlForThread,
+        // the SSP is already known. For other cases, find it by scanning the shadow stack.
+        if ((pExInfo->m_passNumber == 2) && (pThis->m_crawl.GetRegisterSet()->SSP == 0))
+        {
+            pThis->m_crawl.GetRegisterSet()->SSP = GetSSPForFrameOnCurrentStack(controlPC);
+        }
 #endif
 
         if (!pThis->m_crawl.HasFaulted() && !pThis->m_crawl.IsIPadjusted())

@@ -246,6 +246,10 @@ enum HWIntrinsicFlag : unsigned int
     // (instead of merging).
     HW_Flag_ZeroingMaskedOperation = 0x8000000,
 
+    // The intrinsic has an overload where the base type is extracted from a ValueTuple of SIMD types
+    // (HW_Flag_BaseTypeFrom{First, Second}Arg must also be set to denote the position of the ValueTuple)
+    HW_Flag_BaseTypeFromValueTupleArg = 0x10000000,
+
 #endif // TARGET_XARCH
 
     // The intrinsic is a FusedMultiplyAdd intrinsic
@@ -999,6 +1003,12 @@ struct HWIntrinsicInfo
     {
         const HWIntrinsicFlag flags = lookupFlags(id);
         return (flags & HW_Flag_ZeroingMaskedOperation) != 0;
+    }
+
+    static bool BaseTypeFromValueTupleArg(NamedIntrinsic id)
+    {
+        const HWIntrinsicFlag flags = lookupFlags(id);
+        return (flags & HW_Flag_BaseTypeFromValueTupleArg) != 0;
     }
 
     static NamedIntrinsic GetScalarInputVariant(NamedIntrinsic id)

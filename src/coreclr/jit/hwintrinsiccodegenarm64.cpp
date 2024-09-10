@@ -1383,44 +1383,38 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
             break;
 
             case NI_AdvSimd_Insert:
+            {
                 assert(isRMW);
 
                 GetEmitter()->emitIns_Mov(INS_mov, emitTypeSize(node), targetReg, op1Reg, /* canSkip */ true);
 
-                if (intrin.op3->isContainedFltOrDblImmed())
-                {
-                    assert(intrin.op2->isContainedIntOrIImmed());
-                    assert(intrin.op2->AsIntCon()->gtIconVal == 0);
+                // fmov (scalar) zeros the upper bits and is not safe to use
+                assert(!intrin.op3->isContainedFltOrDblImmed());
 
-                    const double dataValue = intrin.op3->AsDblCon()->DconValue();
-                    GetEmitter()->emitIns_R_F(INS_fmov, emitSize, targetReg, dataValue, opt);
+                assert(targetReg != op3Reg);
+
+                HWIntrinsicImmOpHelper helper(this, intrin.op2, node);
+
+                if (varTypeIsFloating(intrin.baseType))
+                {
+                    for (helper.EmitBegin(); !helper.Done(); helper.EmitCaseEnd())
+                    {
+                        const int elementIndex = helper.ImmValue();
+
+                        GetEmitter()->emitIns_R_R_I_I(ins, emitSize, targetReg, op3Reg, elementIndex, 0, opt);
+                    }
                 }
                 else
                 {
-                    assert(targetReg != op3Reg);
-
-                    HWIntrinsicImmOpHelper helper(this, intrin.op2, node);
-
-                    if (varTypeIsFloating(intrin.baseType))
+                    for (helper.EmitBegin(); !helper.Done(); helper.EmitCaseEnd())
                     {
-                        for (helper.EmitBegin(); !helper.Done(); helper.EmitCaseEnd())
-                        {
-                            const int elementIndex = helper.ImmValue();
+                        const int elementIndex = helper.ImmValue();
 
-                            GetEmitter()->emitIns_R_R_I_I(ins, emitSize, targetReg, op3Reg, elementIndex, 0, opt);
-                        }
-                    }
-                    else
-                    {
-                        for (helper.EmitBegin(); !helper.Done(); helper.EmitCaseEnd())
-                        {
-                            const int elementIndex = helper.ImmValue();
-
-                            GetEmitter()->emitIns_R_R_I(ins, emitSize, targetReg, op3Reg, elementIndex, opt);
-                        }
+                        GetEmitter()->emitIns_R_R_I(ins, emitSize, targetReg, op3Reg, elementIndex, opt);
                     }
                 }
                 break;
+            }
 
             case NI_AdvSimd_InsertScalar:
             {

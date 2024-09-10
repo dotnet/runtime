@@ -161,6 +161,12 @@ namespace ILLink.RoslynAnalyzer.Tests
 		}
 
 		[Fact]
+		public Task RunClassConstructor ()
+		{
+			return RunTest ();
+		}
+
+		[Fact]
 		public Task RuntimeReflectionExtensionsCalls ()
 		{
 			return RunTest ();

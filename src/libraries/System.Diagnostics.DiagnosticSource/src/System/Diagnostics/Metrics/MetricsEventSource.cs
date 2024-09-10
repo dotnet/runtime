@@ -649,12 +649,6 @@ namespace System.Diagnostics.Metrics
                     return;
                 }
 
-                if (metricsSpecs.Length == 0)
-                {
-                    _aggregationManager!.IncludeAll();
-                    return;
-                }
-
                 string[] specStrings = metricsSpecs.Split(s_instrumentSeparators, StringSplitOptions.RemoveEmptyEntries);
                 foreach (string specString in specStrings)
                 {
