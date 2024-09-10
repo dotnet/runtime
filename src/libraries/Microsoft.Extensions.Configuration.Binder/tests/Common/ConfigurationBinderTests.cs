@@ -1545,6 +1545,59 @@ if (!System.Diagnostics.Debugger.IsAttached) { System.Diagnostics.Debugger.Launc
         }
 
         /// <summary>
+        /// Test binding a value parsable types to null configuration values.
+        /// The test ensure the binding will succeed without exceptions and the value will be null (not set).
+        /// </summary>
+        [Fact]
+        public void BindToKnownParsableTypesWithNullValueTest()
+        {
+            string jsonConfig = @"{
+                            ""ParsableValuesClass"": {
+                                ""IntValue"" : null,
+                                ""DoubleValue"" : null,
+                                ""BoolValue"" : null,
+                                ""DecimalValue"" : null,
+                                ""FloatValue"" : null,
+                                ""LongValue"" : null,
+                                ""ShortValue"" : null,
+                                ""ByteValue"" : null,
+                                ""SByteValue"" : null,
+                                ""UIntValue"" : null,
+                                ""UShortValue"" : null,
+                                ""ULongValue"" : null,
+                                ""DateTimeValue"" : null,
+                                ""DateTimeOffsetValue"" : null,
+                                ""TimeSpanValue"" : null,
+                                ""GuidValue"" : null,
+                                ""StringComparisonValue"" : null
+                            }
+                        }";
+
+            var configuration = new ConfigurationBuilder()
+                        .AddJsonStream(new System.IO.MemoryStream(System.Text.Encoding.UTF8.GetBytes(jsonConfig)))
+                        .Build();
+
+            ParsableValuesClass instance = configuration.GetSection("ParsableValuesClass").Get<ParsableValuesClass>();
+            Assert.Null(instance.IntValue);
+            Assert.Null(instance.DoubleValue);
+            Assert.Null(instance.BoolValue);
+            Assert.Null(instance.DecimalValue);
+            Assert.Null(instance.FloatValue);
+            Assert.Null(instance.LongValue);
+            Assert.Null(instance.ShortValue);
+            Assert.Null(instance.ByteValue);
+            Assert.Null(instance.SByteValue);
+            Assert.Null(instance.UIntValue);
+            Assert.Null(instance.UShortValue);
+            Assert.Null(instance.ULongValue);
+            Assert.Null(instance.DateTimeValue);
+            Assert.Null(instance.DateTimeOffsetValue);
+            Assert.Null(instance.TimeSpanValue);
+            Assert.Null(instance.GuidValue);
+            Assert.Null(instance.StringComparisonValue);
+        }
+
+        /// <summary>
         /// Test binding to recursive types using Dictionary or Collections.
         /// This ensure no stack overflow will occur during the compilation through the source gen or at runtime.
         /// </summary>
