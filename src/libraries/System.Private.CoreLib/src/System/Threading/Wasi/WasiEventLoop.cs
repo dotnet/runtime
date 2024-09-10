@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using WasiPollWorld.wit.imports.wasi.io.v0_2_1;
 using Pollable = WasiPollWorld.wit.imports.wasi.io.v0_2_1.IPoll.Pollable;
+using MonotonicClockInterop = WasiPollWorld.wit.imports.wasi.clocks.v0_2_1.MonotonicClockInterop;
 
 namespace System.Threading
 {
@@ -14,7 +15,9 @@ namespace System.Threading
         // it will be leaked and stay in this list forever.
         // it will also keep the Pollable handle alive and prevent it from being disposed
         private static readonly List<PollableHolder> s_pollables = new();
-        private static bool s_tasksCanceled;
+        private static bool s_checkScheduled;
+        private static Pollable? s_resolvedPollable;
+        private static Task? s_mainTask;
 
         internal static Task RegisterWasiPollableHandle(int handle, CancellationToken cancellationToken)
         {
@@ -29,18 +32,70 @@ namespace System.Threading
             // this will register the pollable holder into s_pollables
             var holder = new PollableHolder(pollable, cancellationToken);
             s_pollables.Add(holder);
+
+            ScheduleCheck();
+
             return holder.taskCompletionSource.Task;
         }
 
-        // this is not thread safe
-        internal static void DispatchWasiEventLoop()
+
+        internal static T PollWasiEventLoopUntilResolved<T>(Task<T> mainTask)
         {
-            ThreadPoolWorkQueue.Dispatch();
-            if (s_tasksCanceled)
+            try
             {
-                s_tasksCanceled = false;
-                return;
+                s_mainTask = mainTask;
+                while (!mainTask.IsCompleted)
+                {
+                    ThreadPoolWorkQueue.Dispatch();
+                }
             }
+            finally
+            {
+                s_mainTask = null;
+            }
+            var exception = mainTask.Exception;
+            if (exception is not null)
+            {
+                throw exception;
+            }
+
+            return mainTask.Result;
+        }
+
+        internal static void PollWasiEventLoopUntilResolvedVoid(Task mainTask)
+        {
+            try
+            {
+                s_mainTask = mainTask;
+                while (!mainTask.IsCompleted)
+                {
+                    ThreadPoolWorkQueue.Dispatch();
+                }
+            }
+            finally
+            {
+                s_mainTask = null;
+            }
+
+            var exception = mainTask.Exception;
+            if (exception is not null)
+            {
+                throw exception;
+            }
+        }
+
+        internal static void ScheduleCheck()
+        {
+            if (!s_checkScheduled && s_pollables.Count > 0)
+            {
+                s_checkScheduled = true;
+                ThreadPool.UnsafeQueueUserWorkItem(CheckPollables, null);
+            }
+        }
+
+        internal static void CheckPollables(object? _)
+        {
+            s_checkScheduled = false;
 
             var holders = new List<PollableHolder>(s_pollables.Count);
             var pending = new List<Pollable>(s_pollables.Count);
@@ -58,13 +113,28 @@ namespace System.Threading
 
             if (pending.Count > 0)
             {
+                var resolvedPollableIndex = -1;
+                // if there is CPU-bound work to do, we should not block on PollInterop.Poll below
+                // so we will append pollable resolved in 0ms
+                // in effect, the PollInterop.Poll would not block us
+                if (ThreadPool.PendingWorkItemCount > 0 || (s_mainTask != null && s_mainTask.IsCompleted))
+                {
+                    s_resolvedPollable ??= MonotonicClockInterop.SubscribeDuration(0);
+                    resolvedPollableIndex = pending.Count;
+                    pending.Add(s_resolvedPollable);
+                }
+
                 var readyIndexes = PollInterop.Poll(pending);
                 for (int i = 0; i < readyIndexes.Length; i++)
                 {
                     uint readyIndex = readyIndexes[i];
-                    var holder = holders[(int)readyIndex];
-                    holder.ResolveAndDispose();
+                    if (resolvedPollableIndex != readyIndex)
+                    {
+                        var holder = holders[(int)readyIndex];
+                        holder.ResolveAndDispose();
+                    }
                 }
+
                 for (int i = 0; i < holders.Count; i++)
                 {
                     PollableHolder holder = holders[i];
@@ -73,6 +143,8 @@ namespace System.Threading
                         s_pollables.Add(holder);
                     }
                 }
+
+                ScheduleCheck();
             }
         }
 
@@ -112,18 +184,13 @@ namespace System.Threading
             }
 
             // for GC of abandoned Tasks or for cancellation
-            private static void CancelAndDispose(object? s)
+            public static void CancelAndDispose(object? s)
             {
                 PollableHolder self = (PollableHolder)s!;
                 if (self.isDisposed)
                 {
                     return;
                 }
-
-                // Tell event loop to exit early, giving the application a
-                // chance to quit if the task(s) it is interested in have
-                // completed.
-                s_tasksCanceled = true;
 
                 // it will be removed from s_pollables on the next run
                 self.isDisposed = true;

@@ -18,22 +18,16 @@ namespace System.Threading
             return WasiEventLoop.RegisterWasiPollableHandle(handle, cancellationToken);
         }
 
-        internal static int PollWasiEventLoopUntilResolved(Task<int> mainTask)
+        internal static T PollWasiEventLoopUntilResolved<T>(Task<T> mainTask)
         {
-            while (!mainTask.IsCompleted)
-            {
-                WasiEventLoop.DispatchWasiEventLoop();
-            }
-            var exception = mainTask.Exception;
-            if (exception is not null)
-            {
-                throw exception;
-            }
-
-            return mainTask.Result;
+            return WasiEventLoop.PollWasiEventLoopUntilResolved<T>(mainTask);
         }
 
-#endif
+        internal static void PollWasiEventLoopUntilResolvedVoid(Task mainTask)
+        {
+            WasiEventLoop.PollWasiEventLoopUntilResolvedVoid(mainTask);
+        }
+#endif // TARGET_WASI
 
         // the closest analog to Sleep(0) on Unix is sched_yield
         internal static void UninterruptibleSleep0() => Thread.Yield();
