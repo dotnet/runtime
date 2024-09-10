@@ -1130,16 +1130,14 @@ ReJITID ReJitManager::GetReJitId(PTR_MethodDesc pMD, PCODE pCodeStart)
     }
     CONTRACTL_END;
 
-    // Fast-path: If the rejit map is empty, no need to look up anything. Do this outside
-    // of a lock to impact our caller (the prestub worker) as little as possible. If the
-    // map is nonempty, we'll acquire the lock at that point and do the lookup for real.
+    // Fast-path: If the rejit map is empty, no need to look up anything.
     CodeVersionManager* pCodeVersionManager = pMD->GetCodeVersionManager();
     if (!pCodeVersionManager->HasNonDefaultILVersions())
     {
         return 0;
     }
 
-    NativeCodeVersion nativeCodeVersion = pMD->GetCodeVersionManager()->GetNativeCodeVersion(pMD, pCodeStart);
+    NativeCodeVersion nativeCodeVersion = pCodeVersionManager->GetNativeCodeVersion(pMD, pCodeStart);
     if (nativeCodeVersion.IsNull())
     {
         return 0;

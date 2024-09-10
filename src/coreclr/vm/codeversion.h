@@ -298,10 +298,10 @@ private:
     //};
 
     DAC_IGNORE(const) ReJITID m_parentId;
-    PTR_NativeCodeVersionNode m_pNextMethodDescSibling;
+    PTR_NativeCodeVersionNode m_pNextMethodDescSibling; // Never modified after being added to the linked list
     DAC_IGNORE(const) NativeCodeVersionId m_id;
 #ifdef FEATURE_TIERED_COMPILATION
-    NativeCodeVersion::OptimizationTier m_optTier;
+    NativeCodeVersion::OptimizationTier m_optTier; // Set in constructor, but as the JIT runs it may upgrade the optimization tier
 #endif
 #ifdef HAVE_GCCOVER
     PTR_GCCoverageInfo m_gcCover;
