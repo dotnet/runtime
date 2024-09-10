@@ -3051,10 +3051,9 @@ void Compiler::fgDebugCheckBBlist(bool checkBBNum /* = false */, bool checkBBRef
                     assert(block->hasHndIndex() == false);
                 }
             }
-            else if (!block->hasHndIndex()) // reachedFirstFunclet
+            else // reachedFirstFunclet
             {
-                fgDispBasicBlocks();
-                assert(block->hasHndIndex());
+                assert(block->hasHndIndex() == true);
             }
         }
 

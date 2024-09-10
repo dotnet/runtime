@@ -901,6 +901,26 @@ void Compiler::ehUpdateLastBlocks(BasicBlock* oldLast, BasicBlock* newLast)
     }
 }
 
+//-----------------------------------------------------------------------------
+// ehUpdateLastHndBlocks: Update the end pointer of the handler region containing 'oldHndLast',
+// as well as the end pointers of any parent handler regions, to 'newHndLast'.
+//
+// Arguments:
+//    oldHndLast - The previous end block of the handler region(s) to be updated
+//    newHndLast - The new end block
+//
+void Compiler::ehUpdateLastHndBlocks(BasicBlock* oldHndLast, BasicBlock* newHndLast)
+{
+    assert(oldHndLast->hasHndIndex() && BasicBlock::sameHndRegion(oldHndLast, newHndLast));
+    unsigned XTnum = oldHndLast->getHndIndex();
+    for (EHblkDsc* HBtab = ehGetDsc(XTnum); (XTnum < compHndBBtabCount) && (HBtab->ebdHndLast == oldHndLast);
+         XTnum++, HBtab++)
+    {
+        assert((XTnum == oldHndLast->getHndIndex()) || (ehGetEnclosingHndIndex(XTnum - 1) == XTnum));
+        fgSetHndEnd(HBtab, newHndLast);
+    }
+}
+
 unsigned Compiler::ehGetCallFinallyRegionIndex(unsigned finallyIndex, bool* inTryRegion)
 {
     assert(finallyIndex != EHblkDsc::NO_ENCLOSING_INDEX);

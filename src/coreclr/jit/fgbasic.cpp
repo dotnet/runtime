@@ -6734,6 +6734,10 @@ BasicBlock* Compiler::fgNewBBinRegionWorker(BBKinds     jumpKind,
 // Returns:
 //    The new block
 //
+// Notes:
+//    It is the responsibility of the caller to set the new block's handler index,
+//    if it is being inserted into a handler region, too.
+//
 BasicBlock* Compiler::fgNewBBatTryRegionEnd(BBKinds jumpKind, unsigned tryIndex)
 {
     BasicBlock* const oldTryLast = ehGetDsc(tryIndex)->ebdTryLast;
