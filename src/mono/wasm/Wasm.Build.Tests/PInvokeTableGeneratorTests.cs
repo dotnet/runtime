@@ -452,8 +452,8 @@ namespace Wasm.Build.Tests
                         {
                             ((delegate* unmanaged<void>)&A.Conflict.C)();
                             ((delegate* unmanaged<void>)&B.Conflict.C)();
-                            ((delegate* unmanaged<void>)&A.Conflict.C_\u733f)();
-                            ((delegate* unmanaged<void>)&B.Conflict.C_\u733f)();
+                            ((delegate* unmanaged<void>)&A.Conflict.C\u733f)();
+                            ((delegate* unmanaged<void>)&B.Conflict.C\u733f)();
                             return 42;
                         }
                     }
@@ -467,7 +467,7 @@ namespace Wasm.Build.Tests
 
                             [UnmanagedCallersOnly(EntryPoint = "A_Conflict_C\u733f")]
                             public static void C\u733f() {
-                                Console.WriteLine("A.Conflict.C\U0001F412");
+                                Console.WriteLine("A.Conflict.C_\U0001F412");
                             }
                         }
                     }
@@ -481,7 +481,7 @@ namespace Wasm.Build.Tests
 
                             [UnmanagedCallersOnly(EntryPoint = "B_Conflict_C\u733f")]
                             public static void C\u733f() {
-                                Console.WriteLine("B.Conflict.C\U0001F412");
+                                Console.WriteLine("B.Conflict.C_\U0001F412");
                             }
                         }
                     }
