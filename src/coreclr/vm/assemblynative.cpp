@@ -1205,7 +1205,7 @@ extern "C" INT_PTR QCALLTYPE AssemblyNative_InitializeAssemblyLoadContext(INT_PT
                 GCX_PREEMP();
                 // Some of the initialization functions are not virtual. Call through the derived class
                 // to prevent calling the base class version.
-                loaderAllocator->Init(pCurDomain);
+                loaderAllocator->Init();
                 loaderAllocator->InitVirtualCallStubManager();
 
                 // Setup the managed proxy now, but do not actually transfer ownership to it.

@@ -5557,6 +5557,8 @@ CorDebugUserState DacDbiInterfaceImpl::GetPartialUserState(VMPTR_Thread vmThread
         result |= USER_STOPPED;
     }
 
+    // Don't report Thread::TS_AbortRequested
+
     // The interruptible flag is unreliable (see issue 699245)
     // The Debugger_SleepWaitJoin is always accurate when it is present, but it is still
     // just a band-aid fix to cover some of the race conditions interruptible has.
