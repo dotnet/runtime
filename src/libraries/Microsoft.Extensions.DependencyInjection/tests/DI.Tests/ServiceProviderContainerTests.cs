@@ -7,6 +7,7 @@ using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.DotNet.RemoteExecutor;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.DependencyInjection.Fakes;
 using Microsoft.Extensions.DependencyInjection.Specification;
@@ -1288,6 +1289,51 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
             }
 
             Assert.Same(sp.GetRequiredService<IFakeOpenGenericService<Aa>>().Value.PropertyA, sp.GetRequiredService<A>());
+        }
+
+        [Fact]
+        public void ResolveKeyedServiceWithKeyedParameter_MissingRegistrationButWithUnkeyedService()
+        {
+            var serviceCollection = new ServiceCollection();
+
+            // We are not registering "service1" and "service1" keyed IService services and OtherService requires them,
+            // but we are registering an unkeyed IService service which should not be injected into OtherService.
+            serviceCollection.AddSingleton<KeyedDependencyInjectionSpecificationTests.IService, KeyedDependencyInjectionSpecificationTests.Service>();
+
+            serviceCollection.AddSingleton<KeyedDependencyInjectionSpecificationTests.OtherService>();
+
+            AggregateException ex = Assert.Throws<AggregateException>(() => serviceCollection.BuildServiceProvider(new ServiceProviderOptions
+            {
+                ValidateOnBuild = true
+            }));
+
+            Assert.Equal(1, ex.InnerExceptions.Count);
+            Assert.StartsWith("Some services are not able to be constructed", ex.Message);
+            Assert.Contains("ServiceType: Microsoft.Extensions.DependencyInjection.Specification.KeyedDependencyInjectionSpecificationTests+OtherService", ex.ToString());
+            Assert.Contains("Microsoft.Extensions.DependencyInjection.Specification.KeyedDependencyInjectionSpecificationTests+IService", ex.ToString());
+        }
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)] // RuntimeConfigurationOptions are not supported on .NET Framework (and neither is trimming)
+        public void ResolveKeyedServiceWithKeyedParameter_MissingRegistrationButWithUnkeyedService_FeatureSwitch()
+        {
+            RemoteInvokeOptions options = new ();
+            options.RuntimeConfigurationOptions["Microsoft.Extensions.DependencyInjection.AllowNonKeyedServiceInject"] = bool.TrueString;
+
+            using RemoteInvokeHandle remoteHandle = RemoteExecutor.Invoke(static () =>
+            {
+                Assert.True(ServiceProvider.s_allowNonKeyedServiceInject);
+
+                var serviceCollection = new ServiceCollection();
+
+                // Similar to the test above, but we are enabling the feature switch so we don't throw here.
+                serviceCollection.AddSingleton<KeyedDependencyInjectionSpecificationTests.IService, KeyedDependencyInjectionSpecificationTests.Service>();
+                serviceCollection.AddSingleton<KeyedDependencyInjectionSpecificationTests.OtherService>();
+                serviceCollection.BuildServiceProvider(new ServiceProviderOptions
+                {
+                    ValidateOnBuild = true
+                });
+            }, options);
         }
 
         private async Task<bool> ResolveUniqueServicesConcurrently()
