@@ -253,24 +253,6 @@ CHECK Assembly::CheckActivated()
 
 #endif //!DACCESS_COMPILE
 
-// Return true iff the debugger should get notifications about this assembly.
-//
-// Notes:
-//   The debuggee may be stopped while a DomainAssmebly is being initialized.  In this time window,
-//   GetAssembly() may be NULL.  If that's the case, this function has to return FALSE.  Later on, when
-//   the DomainAssembly is fully initialized, this function will return TRUE.  This is the only scenario
-//   where this function is mutable.  In other words, a DomainAssembly can only change from being invisible
-//   to visible, but NOT vice versa.  Once a DomainAssmebly is fully initialized, this function should be
-//   immutable for an instance of a module. That ensures that the debugger gets consistent
-//   notifications about it. It this value mutates, than the debugger may miss relevant notifications.
-BOOL Assembly::IsVisibleToDebugger()
-{
-    WRAPPER_NO_CONTRACT;
-    SUPPORTS_DAC;
-
-    return TRUE;
-}
-
 #ifndef DACCESS_COMPILE
 
 BOOL Assembly::DoIncrementalLoad(FileLoadLevel level)

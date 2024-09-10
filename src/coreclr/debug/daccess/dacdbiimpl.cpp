@@ -4425,11 +4425,6 @@ void  DacDbiInterfaceImpl::EnumerateAssembliesInAppDomain(
 
     while (iterator.Next(pDomainAssembly.This()))
     {
-        if (!pDomainAssembly->GetAssembly()->IsVisibleToDebugger())
-        {
-            continue;
-        }
-
         VMPTR_DomainAssembly vmDomainAssembly = VMPTR_DomainAssembly::NullPtr();
         vmDomainAssembly.SetHostPtr(pDomainAssembly);
 

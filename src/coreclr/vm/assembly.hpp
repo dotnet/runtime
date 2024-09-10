@@ -94,7 +94,6 @@ public:
     void ClearLoading() { LIMITED_METHOD_CONTRACT; m_loading = FALSE; }
     void SetLoadLevel(FileLoadLevel level) { LIMITED_METHOD_CONTRACT; m_level = level; }
 
-    BOOL IsVisibleToDebugger();
     BOOL NotifyDebuggerLoad(int flags, BOOL attaching);
     void NotifyDebuggerUnload();
 
