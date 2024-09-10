@@ -279,10 +279,7 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
                          ConfigurationBuilder configurationBuilder = new();
                          IConfiguration config = configurationBuilder.Build();
 
-                        // var obj = config.Get<string>();
-                        // var o = config.Get<AuthenticatedStream>();
-
-                        var obj = config.Get<SslClientAuthenticationOptions>();
+                         var obj = config.Get<SslClientAuthenticationOptions>();
                       }
                  }
                  """;

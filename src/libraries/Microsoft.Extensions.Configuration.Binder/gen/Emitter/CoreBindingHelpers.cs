@@ -905,7 +905,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                             if (!_typeIndex.HasBindableMembers(complexType) &&
                                 !_typeIndex.GetEffectiveTypeSpec(complexType).IsValueType &&
                                 complexType is not CollectionSpec &&
-                                (complexType as ObjectSpec).InstantiationStrategy == ObjectInstantiationStrategy.ParameterizedConstructor)
+                                ((ObjectSpec)complexType).InstantiationStrategy == ObjectInstantiationStrategy.ParameterizedConstructor)
                             {
                                 return false;
                             }
