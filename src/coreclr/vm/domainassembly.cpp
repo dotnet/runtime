@@ -221,34 +221,6 @@ CHECK Assembly::CheckNoError(FileLoadLevel targetLevel)
     CHECK_OK;
 }
 
-CHECK Assembly::CheckLoaded()
-{
-    CONTRACTL
-    {
-        INSTANCE_CHECK;
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-
-    CHECK_MSG(CheckNoError(FILE_LOADED), "Assembly load resulted in an error");
-
-    if (IsLoaded())
-        CHECK_OK;
-
-    // CoreLib is allowed to run managed code much earlier than other
-    // assemblies for bootstrapping purposes.  This is because it has no
-    // dependencies, security checks, and doesn't rely on loader notifications.
-
-    if (GetPEAssembly()->IsSystem())
-        CHECK_OK;
-
-    CHECK_MSG(GetPEAssembly()->IsLoaded(), "PEAssembly has not been loaded");
-
-    CHECK_OK;
-}
-
 CHECK Assembly::CheckActivated()
 {
     CONTRACTL

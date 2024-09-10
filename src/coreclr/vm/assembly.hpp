@@ -155,16 +155,6 @@ private:
     BOOL IsDebuggerNotified() { LIMITED_METHOD_CONTRACT; return m_notifyFlags & DEBUGGER_NOTIFIED; }
     BOOL ShouldNotifyDebugger() { LIMITED_METHOD_CONTRACT; return m_notifyFlags & DEBUGGER_NEEDNOTIFICATION; }
 
-    // CheckLoaded is appropriate for asserts that the assembly can be passively used.
-    CHECK CheckLoaded();
-
-    // Ensure that an assembly has reached at least the IsLoaded state.  Throw if not.
-    void EnsureLoaded()
-    {
-        WRAPPER_NO_CONTRACT;
-        return EnsureLoadLevel(FILE_LOADED);
-    }
-
     // CheckLoadLevel is an assert predicate used to verify the load level of an assembly.
     // deadlockOK indicates that the level is allowed to be one short if we are restricted
     // by loader reentrancy.
