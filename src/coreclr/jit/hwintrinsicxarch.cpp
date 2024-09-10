@@ -3377,38 +3377,21 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
         {
             assert(sig->numArgs == 2);
 
-            if (varTypeIsByte(simdBaseType) && retType == TYP_SIMD16 && simdSize == 16 &&
-                compOpportunisticallyDependsOn(InstructionSet_AVX512BW_VL))
+            if (varTypeIsByte(simdBaseType) && retType == TYP_SIMD16 && simdSize == 16)
             {
                 op2 = impPopStack().val;
                 op1 = impSIMDPopStack();
-                op3 = gtNewSimdHWIntrinsicNode(TYP_SIMD32, op1, NI_AVX2_ConvertToVector256Int16, simdBaseJitType, simdSize);
 
-                GenTree* andShiftVal = gtNewOperNode(GT_AND, op2->TypeGet(), op2, gtNewIconNode(0x7));
-
-                op4 = gtNewSimdBinOpNode(GT_LSH, TYP_SIMD32, op3, andShiftVal, varTypeIsUnsigned(simdBaseType) ? CORINFO_TYPE_USHORT : CORINFO_TYPE_SHORT, 32);
-                // GenTree* bitMaskOp = gtNewIconNode(0xFF, TYP_INT);
-                GenTreeVecCon* vecCon = gtNewVconNode(retType);
-                vecCon->gtSimdVal.u16[0] = 0xFF;
-                vecCon->gtSimdVal.u16[1] = 0xFF;
-                vecCon->gtSimdVal.u16[2] = 0xFF;
-                vecCon->gtSimdVal.u16[3] = 0xFF;
-                vecCon->gtSimdVal.u16[4] = 0xFF;
-                vecCon->gtSimdVal.u16[5] = 0xFF;
-                vecCon->gtSimdVal.u16[6] = 0xFF;
-                vecCon->gtSimdVal.u16[7] = 0xFF;
-                vecCon->gtSimdVal.u16[8] = 0xFF;
-                vecCon->gtSimdVal.u16[9] = 0xFF;
-                vecCon->gtSimdVal.u16[10] = 0xFF;
-                vecCon->gtSimdVal.u16[11] = 0xFF;
-                vecCon->gtSimdVal.u16[12] = 0xFF;
-                vecCon->gtSimdVal.u16[13] = 0xFF;
-                vecCon->gtSimdVal.u16[14] = 0xFF;
-                vecCon->gtSimdVal.u16[15] = 0xFF;
-                vecCon->ChangeType(TYP_SIMD32);
-                // GenTree* tmpOp = gtNewSimdCreateBroadcastNode(TYP_SIMD32, vecCon, simdBaseJitType, varTypeIsUnsigned(simdBaseType) ? TYP_USHORT : TYP_SHORT);
-                GenTree* andOp     = gtNewSimdBinOpNode(GT_AND, TYP_SIMD32, op4, vecCon, simdBaseJitType, 32);
-                retNode = gtNewSimdHWIntrinsicNode(retType, andOp, NI_AVX512BW_VL_ConvertToVector128Byte, varTypeIsUnsigned(simdBaseType) ? CORINFO_TYPE_USHORT : CORINFO_TYPE_SHORT, 32);
+                GenTree* const7      = gtNewIconNode(0x7);
+                GenTree* constFF     = gtNewIconNode(0xFF);
+                GenTree* andShiftVal = gtNewOperNode(GT_AND, op2->TypeGet(), op2, const7);
+                op3                  = gtNewSimdBinOpNode(GT_LSH, TYP_SIMD16, op1, andShiftVal,
+                                         varTypeIsUnsigned(simdBaseType) ? CORINFO_TYPE_USHORT : CORINFO_TYPE_SHORT,
+                                                          simdSize);
+                GenTree* maskElement =
+                    gtNewOperNode(GT_LSH, andShiftVal->TypeGet(), gtNewIconNode(0xFF), gtCloneExpr(andShiftVal));
+                GenTree* mask        = gtNewSimdCreateBroadcastNode(TYP_SIMD16, maskElement, simdBaseJitType, simdSize);
+                retNode              = gtNewSimdBinOpNode(GT_AND, retType, op3, mask, simdBaseJitType, simdSize);
                 break;
             }
             else if (varTypeIsByte(simdBaseType))
