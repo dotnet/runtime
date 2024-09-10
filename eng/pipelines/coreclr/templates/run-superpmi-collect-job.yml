@@ -26,6 +26,7 @@ jobs:
     archType: ${{ parameters.archType }}
     osGroup: ${{ parameters.osGroup }}
     osSubgroup: ${{ parameters.osSubgroup }}
+    container: ${{ parameters.container }}
     crossBuild: ${{ parameters.crossBuild }}
     liveLibrariesBuildConfig: ${{ parameters.liveLibrariesBuildConfig }}
     enableTelemetry: ${{ parameters.enableTelemetry }}
