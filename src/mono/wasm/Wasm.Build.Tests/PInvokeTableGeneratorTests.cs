@@ -498,7 +498,7 @@ namespace Wasm.Build.Tests
             output = RunAndTestWasmApp(buildArgs, buildDir: _projectDir, expectedExitCode: 42, host: host, id: id);
             Assert.Contains("A.Conflict.C", output);
             Assert.Contains("B.Conflict.C", output);
-            if (OperationSystem.IsWindows()) {
+            if (OperatingSystem.IsWindows()) {
                 // Windows console unicode support is not great
                 Assert.Contains("A.Conflict.C_", output);
                 Assert.Contains("B.Conflict.C_", output);
