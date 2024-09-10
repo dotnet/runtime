@@ -851,13 +851,12 @@ void CodeGen::genSaveCalleeSavedRegisterGroup(regMaskTP regsMask, int spDelta, i
             // We can use a STP instruction.
             if (genReverseAndPairCalleeSavedRegisters)
             {
-                genPrologSaveRegPair(regPair.reg2, regPair.reg1, spOffset, spDelta, false,
-                                    REG_IP0, nullptr);
+                genPrologSaveRegPair(regPair.reg2, regPair.reg1, spOffset, spDelta, false, REG_IP0, nullptr);
             }
             else
             {
-                genPrologSaveRegPair(regPair.reg1, regPair.reg2, spOffset, spDelta, regPair.useSaveNextPair,
-                                    REG_IP0, nullptr);
+                genPrologSaveRegPair(regPair.reg1, regPair.reg2, spOffset, spDelta, regPair.useSaveNextPair, REG_IP0,
+                                     nullptr);
             }
 
             spOffset += 2 * slotSize;
@@ -954,8 +953,7 @@ void CodeGen::genSaveCalleeSavedRegistersHelp(regMaskTP regsToSaveMask, int lowe
 
     if (maskSaveRegsFrame != RBM_NONE)
     {
-        genPrologSaveRegPair(REG_FP, REG_LR, lowestCalleeSavedOffset, spDelta, false, REG_IP0,
-                             nullptr);
+        genPrologSaveRegPair(REG_FP, REG_LR, lowestCalleeSavedOffset, spDelta, false, REG_IP0, nullptr);
         // No need to update spDelta, lowestCalleeSavedOffset since they're not used after this.
     }
 }
@@ -994,8 +992,7 @@ void CodeGen::genRestoreCalleeSavedRegisterGroup(regMaskTP regsMask, int spDelta
 
             if (genReverseAndPairCalleeSavedRegisters)
             {
-                genEpilogRestoreRegPair(regPair.reg2, regPair.reg1, spOffset, stackDelta, false,
-                                        REG_IP1, nullptr);
+                genEpilogRestoreRegPair(regPair.reg2, regPair.reg1, spOffset, stackDelta, false, REG_IP1, nullptr);
             }
             else
             {

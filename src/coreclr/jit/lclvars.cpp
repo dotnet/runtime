@@ -5678,8 +5678,8 @@ void Compiler::lvaFixVirtualFrameOffsets()
     {
         // FP is used.
         delta += codeGen->genTotalFrameSize() - codeGen->genSPtoFPdelta();
-        if (codeGen->IsSaveFpLrWithAllCalleeSavedRegisters() && isFramePointerUsed()) // Note that currently we always have
-                                                                                      // a frame pointer
+        if (codeGen->IsSaveFpLrWithAllCalleeSavedRegisters() && isFramePointerUsed()) // Note that currently we always
+                                                                                      // have a frame pointer
         {
             // We set FP to be after LR, FP
             delta += 2 * REGSIZE_BYTES;

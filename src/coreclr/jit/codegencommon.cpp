@@ -4861,9 +4861,8 @@ void CodeGen::genFinalizeFrame()
         // FP registers were occupied. Same number of instructions will be generated, just the
         // STR instructions are replaced with STP (store pair).
         regMaskTP maskModifiedRegs = regSet.rsGetModifiedRegsMask();
-        regMaskTP maskPairRegs =
-            ((maskModifiedRegs & (RBM_V8 | RBM_V10 | RBM_V12 | RBM_V14)).getLow() << 1) |
-            ((maskModifiedRegs & (RBM_R19 | RBM_R21 | RBM_R23 | RBM_R25 | RBM_R27)).getLow() << 1);
+        regMaskTP maskPairRegs     = ((maskModifiedRegs & (RBM_V8 | RBM_V10 | RBM_V12 | RBM_V14)).getLow() << 1) |
+                                 ((maskModifiedRegs & (RBM_R19 | RBM_R21 | RBM_R23 | RBM_R25 | RBM_R27)).getLow() << 1);
         if (maskPairRegs != RBM_NONE)
         {
             regSet.rsSetRegsModified(maskPairRegs);
@@ -5060,22 +5059,25 @@ void CodeGen::genFinalizeFrame()
         // optimization, or if the whole frame is small enough that the negative FP-based addressing can
         // address the whole frame.
         if (compiler->IsTargetAbi(CORINFO_NATIVEAOT_ABI) && TargetOS::IsApplePlatform &&
-            (!isFramePointerRequired() || compiler->compLclFrameSize + (compiler->compCalleeRegsPushed * REGSIZE_BYTES) < 0x100))
+            (!isFramePointerRequired() ||
+             compiler->compLclFrameSize + (compiler->compCalleeRegsPushed * REGSIZE_BYTES) < 0x100))
         {
             SetSaveFpLrWithAllCalleeSavedRegisters(true);
         }
         else
         {
             // Default configuration
-            SetSaveFpLrWithAllCalleeSavedRegisters((compiler->getNeedsGSSecurityCookie() && compiler->compLocallocUsed) ||
-                                                   compiler->opts.compDbgEnC || compiler->compStressCompile(Compiler::STRESS_GENERIC_VARN, 20));
+            SetSaveFpLrWithAllCalleeSavedRegisters(
+                (compiler->getNeedsGSSecurityCookie() && compiler->compLocallocUsed) || compiler->opts.compDbgEnC ||
+                compiler->compStressCompile(Compiler::STRESS_GENERIC_VARN, 20));
         }
     }
     else if (compiler->opts.compJitSaveFpLrWithCalleeSavedRegisters == 1)
     {
         SetSaveFpLrWithAllCalleeSavedRegisters(false); // Disable using new frames
     }
-    else if ((compiler->opts.compJitSaveFpLrWithCalleeSavedRegisters == 2) || (compiler->opts.compJitSaveFpLrWithCalleeSavedRegisters == 3))
+    else if ((compiler->opts.compJitSaveFpLrWithCalleeSavedRegisters == 2) ||
+             (compiler->opts.compJitSaveFpLrWithCalleeSavedRegisters == 3))
     {
         SetSaveFpLrWithAllCalleeSavedRegisters(true); // Force using new frames
     }
