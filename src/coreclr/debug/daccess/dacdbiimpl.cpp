@@ -4425,7 +4425,7 @@ void  DacDbiInterfaceImpl::EnumerateAssembliesInAppDomain(
 
     while (iterator.Next(pDomainAssembly.This()))
     {
-        if (!pDomainAssembly->IsVisibleToDebugger())
+        if (!pDomainAssembly->GetAssembly()->IsVisibleToDebugger())
         {
             continue;
         }
@@ -4454,7 +4454,7 @@ void DacDbiInterfaceImpl::EnumerateModulesInAssembly(
     if (pDomainAssembly->GetModule()->IsVisibleToDebugger())
     {
         // If domain assembly isn't yet loaded, just return
-        if (!pDomainAssembly->IsLoaded())
+        if (!pDomainAssembly->GetAssembly()->IsLoaded())
             return;
 
         VMPTR_DomainAssembly vmDomainAssembly = VMPTR_DomainAssembly::NullPtr();

@@ -31,14 +31,7 @@ DomainAssembly::DomainAssembly(PEAssembly* pPEAssembly, LoaderAllocator* pLoader
     , m_fCollectible(pLoaderAllocator->IsCollectible())
     , m_NextDomainAssemblyInSameALC(NULL)
     , m_pLoaderAllocator(pLoaderAllocator)
-    , m_level(FILE_LOAD_CREATE)
-    , m_loading(TRUE)
-    , m_pError(NULL)
-    , m_bDisableActivationCheck(FALSE)
-    , m_fHostAssemblyPublished(FALSE)
     , m_debuggerFlags(DACF_NONE)
-    , m_notifyflags(NOT_NOTIFIED)
-    , m_fDebuggerUnloadStarted(FALSE)
 {
     CONTRACTL
     {
@@ -79,14 +72,6 @@ DomainAssembly::~DomainAssembly()
 
     m_pPEAssembly->Release();
 
-    delete m_pError;
-
-    if (m_fHostAssemblyPublished)
-    {
-        // Remove association first.
-        UnregisterFromHostAssembly();
-    }
-
     if (m_pAssembly != NULL)
     {
         delete m_pAssembly;
@@ -95,7 +80,7 @@ DomainAssembly::~DomainAssembly()
 
 // Optimization intended for EnsureLoadLevel only
 #include <optsmallperfcritical.h>
-void DomainAssembly::EnsureLoadLevel(FileLoadLevel targetLevel)
+void Assembly::EnsureLoadLevel(FileLoadLevel targetLevel)
 {
     CONTRACT_VOID
     {
@@ -123,7 +108,7 @@ void DomainAssembly::EnsureLoadLevel(FileLoadLevel targetLevel)
 }
 #include <optdefault.h>
 
-CHECK DomainAssembly::CheckLoadLevel(FileLoadLevel requiredLevel, BOOL deadlockOK)
+CHECK Assembly::CheckLoadLevel(FileLoadLevel requiredLevel, BOOL deadlockOK)
 {
     CONTRACTL
     {
@@ -153,7 +138,7 @@ CHECK DomainAssembly::CheckLoadLevel(FileLoadLevel requiredLevel, BOOL deadlockO
 
 
 
-void DomainAssembly::RequireLoadLevel(FileLoadLevel targetLevel)
+void Assembly::RequireLoadLevel(FileLoadLevel targetLevel)
 {
     CONTRACT_VOID
     {
@@ -173,7 +158,7 @@ void DomainAssembly::RequireLoadLevel(FileLoadLevel targetLevel)
 }
 
 
-void DomainAssembly::SetError(Exception *ex)
+void Assembly::SetError(Exception *ex)
 {
     CONTRACT_VOID
     {
@@ -207,7 +192,7 @@ void DomainAssembly::SetError(Exception *ex)
     RETURN;
 }
 
-void DomainAssembly::ThrowIfError(FileLoadLevel targetLevel)
+void Assembly::ThrowIfError(FileLoadLevel targetLevel)
 {
     CONTRACT_VOID
     {
@@ -227,7 +212,7 @@ void DomainAssembly::ThrowIfError(FileLoadLevel targetLevel)
     RETURN;
 }
 
-CHECK DomainAssembly::CheckNoError(FileLoadLevel targetLevel)
+CHECK Assembly::CheckNoError(FileLoadLevel targetLevel)
 {
     LIMITED_METHOD_CONTRACT;
     CHECK(m_level >= targetLevel
@@ -236,7 +221,7 @@ CHECK DomainAssembly::CheckNoError(FileLoadLevel targetLevel)
     CHECK_OK;
 }
 
-CHECK DomainAssembly::CheckLoaded()
+CHECK Assembly::CheckLoaded()
 {
     CONTRACTL
     {
@@ -247,7 +232,7 @@ CHECK DomainAssembly::CheckLoaded()
     }
     CONTRACTL_END;
 
-    CHECK_MSG(CheckNoError(FILE_LOADED), "DomainAssembly load resulted in an error");
+    CHECK_MSG(CheckNoError(FILE_LOADED), "Assembly load resulted in an error");
 
     if (IsLoaded())
         CHECK_OK;
@@ -264,7 +249,7 @@ CHECK DomainAssembly::CheckLoaded()
     CHECK_OK;
 }
 
-CHECK DomainAssembly::CheckActivated()
+CHECK Assembly::CheckActivated()
 {
     CONTRACTL
     {
@@ -275,7 +260,7 @@ CHECK DomainAssembly::CheckActivated()
     }
     CONTRACTL_END;
 
-    CHECK_MSG(CheckNoError(FILE_ACTIVE), "DomainAssembly load resulted in an error");
+    CHECK_MSG(CheckNoError(FILE_ACTIVE), "Assembly load resulted in an error");
 
     if (IsActive())
         CHECK_OK;
@@ -288,7 +273,7 @@ CHECK DomainAssembly::CheckActivated()
         CHECK_OK;
 
     CHECK_MSG(GetPEAssembly()->IsLoaded(), "PEAssembly has not been loaded");
-    CHECK_MSG(IsLoaded(), "DomainAssembly has not been fully loaded");
+    CHECK_MSG(IsLoaded(), "Assembly has not been fully loaded");
     CHECK_MSG(m_bDisableActivationCheck || CheckLoadLevel(FILE_ACTIVE), "File has not had execution verified");
 
     CHECK_OK;
@@ -306,24 +291,23 @@ CHECK DomainAssembly::CheckActivated()
 //   to visible, but NOT vice versa.  Once a DomainAssmebly is fully initialized, this function should be
 //   immutable for an instance of a module. That ensures that the debugger gets consistent
 //   notifications about it. It this value mutates, than the debugger may miss relevant notifications.
-BOOL DomainAssembly::IsVisibleToDebugger()
+BOOL Assembly::IsVisibleToDebugger()
 {
     WRAPPER_NO_CONTRACT;
     SUPPORTS_DAC;
 
-    return (GetAssembly() != NULL);
+    return TRUE;
 }
 
 #ifndef DACCESS_COMPILE
 
-BOOL DomainAssembly::DoIncrementalLoad(FileLoadLevel level)
+BOOL Assembly::DoIncrementalLoad(FileLoadLevel level)
 {
     STANDARD_VM_CONTRACT;
 
     if (IsError())
         return FALSE;
 
-    Thread *pThread = GetThread();
     switch (level)
     {
     case FILE_LOAD_BEGIN:
@@ -372,7 +356,7 @@ BOOL DomainAssembly::DoIncrementalLoad(FileLoadLevel level)
     return TRUE;
 }
 
-void DomainAssembly::BeforeTypeLoad()
+void Assembly::BeforeTypeLoad()
 {
     CONTRACTL
     {
@@ -408,7 +392,7 @@ void DomainAssembly::BeforeTypeLoad()
 #endif
 }
 
-void DomainAssembly::EagerFixups()
+void Assembly::EagerFixups()
 {
     WRAPPER_NO_CONTRACT;
 
@@ -421,14 +405,14 @@ void DomainAssembly::EagerFixups()
 #endif // FEATURE_READYTORUN
 }
 
-void DomainAssembly::VtableFixups()
+void Assembly::VtableFixups()
 {
     WRAPPER_NO_CONTRACT;
 
     GetModule()->FixupVTables();
 }
 
-void DomainAssembly::FinishLoad()
+void Assembly::FinishLoad()
 {
     CONTRACTL
     {
@@ -444,7 +428,7 @@ void DomainAssembly::FinishLoad()
     DACNotify::DoModuleLoadNotification(m_pModule);
 }
 
-void DomainAssembly::Activate()
+void Assembly::Activate()
 {
     CONTRACT_VOID
     {
@@ -457,7 +441,6 @@ void DomainAssembly::Activate()
     // We cannot execute any code in this assembly until we know what exception plan it is on.
     // At the point of an exception's stack-crawl it is too late because we cannot tolerate a GC.
     // See PossiblyUnwrapThrowable and its callers.
-    _ASSERTE(GetModule() == GetAssembly()->GetModule());
     GetModule()->IsRuntimeWrapExceptions();
 
     //
@@ -489,20 +472,20 @@ void DomainAssembly::Activate()
     RETURN;
 }
 
-void DomainAssembly::Begin()
+void Assembly::Begin()
 {
     STANDARD_VM_CONTRACT;
 
     {
         AppDomain::LoadLockHolder lock(AppDomain::GetCurrentDomain());
-        AppDomain::GetCurrentDomain()->AddAssembly(this);
+        AppDomain::GetCurrentDomain()->AddAssembly(GetDomainAssembly());
     }
     // Make it possible to find this DomainAssembly object from associated BINDER_SPACE::Assembly.
     RegisterWithHostAssembly();
     m_fHostAssemblyPublished = true;
 }
 
-void DomainAssembly::RegisterWithHostAssembly()
+void Assembly::RegisterWithHostAssembly()
 {
     CONTRACTL
     {
@@ -514,11 +497,11 @@ void DomainAssembly::RegisterWithHostAssembly()
 
     if (GetPEAssembly()->HasHostAssembly())
     {
-        GetPEAssembly()->GetHostAssembly()->SetDomainAssembly(this);
+        GetPEAssembly()->GetHostAssembly()->SetDomainAssembly(GetDomainAssembly());
     }
 }
 
-void DomainAssembly::UnregisterFromHostAssembly()
+void Assembly::UnregisterFromHostAssembly()
 {
     CONTRACTL
     {
@@ -534,7 +517,7 @@ void DomainAssembly::UnregisterFromHostAssembly()
     }
 }
 
-void DomainAssembly::DeliverAsyncEvents()
+void Assembly::DeliverAsyncEvents()
 {
     CONTRACTL
     {
@@ -546,10 +529,10 @@ void DomainAssembly::DeliverAsyncEvents()
     CONTRACTL_END;
 
     OVERRIDE_LOAD_LEVEL_LIMIT(FILE_ACTIVE);
-    AppDomain::GetCurrentDomain()->RaiseLoadingAssemblyEvent(GetAssembly());
+    AppDomain::GetCurrentDomain()->RaiseLoadingAssemblyEvent(this);
 }
 
-void DomainAssembly::DeliverSyncEvents()
+void Assembly::DeliverSyncEvents()
 {
     CONTRACTL
     {
@@ -707,7 +690,7 @@ HRESULT DomainAssembly::GetDebuggingCustomAttributes(DWORD *pdwFlags)
     return hr;
 }
 
-BOOL DomainAssembly::NotifyDebuggerLoad(int flags, BOOL attaching)
+BOOL Assembly::NotifyDebuggerLoad(int flags, BOOL attaching)
 {
     WRAPPER_NO_CONTRACT;
 
@@ -731,7 +714,7 @@ BOOL DomainAssembly::NotifyDebuggerLoad(int flags, BOOL attaching)
     {
         if (ShouldNotifyDebugger())
         {
-            g_pDebugInterface->LoadAssembly(this);
+            g_pDebugInterface->LoadAssembly(GetDomainAssembly());
         }
         result = TRUE;
     }
@@ -739,19 +722,19 @@ BOOL DomainAssembly::NotifyDebuggerLoad(int flags, BOOL attaching)
     if(this->ShouldNotifyDebugger())
     {
         result = result ||
-            this->GetModule()->NotifyDebuggerLoad(AppDomain::GetCurrentDomain(), this, flags, attaching);
+            this->GetModule()->NotifyDebuggerLoad(AppDomain::GetCurrentDomain(), GetDomainAssembly(), flags, attaching);
     }
 
     if( ShouldNotifyDebugger())
     {
-           result|=m_pModule->NotifyDebuggerLoad(AppDomain::GetCurrentDomain(), this, ATTACH_MODULE_LOAD, attaching);
+           result|=m_pModule->NotifyDebuggerLoad(AppDomain::GetCurrentDomain(), GetDomainAssembly(), ATTACH_MODULE_LOAD, attaching);
            SetDebuggerNotified();
     }
 
     return result;
 }
 
-void DomainAssembly::NotifyDebuggerUnload()
+void Assembly::NotifyDebuggerUnload()
 {
     LIMITED_METHOD_CONTRACT;
 
@@ -761,13 +744,11 @@ void DomainAssembly::NotifyDebuggerUnload()
     if (!AppDomain::GetCurrentDomain()->IsDebuggerAttached())
         return;
 
-    m_fDebuggerUnloadStarted = TRUE;
-
     // Dispatch module unload for the module. Debugger is resilient in case we haven't dispatched
     // a previous load event (such as if debugger attached after the modules was loaded).
     this->GetModule()->NotifyDebuggerUnload(AppDomain::GetCurrentDomain());
 
-    g_pDebugInterface->UnloadAssembly(this);
+    g_pDebugInterface->UnloadAssembly(GetDomainAssembly());
 }
 
 #endif // #ifndef DACCESS_COMPILE

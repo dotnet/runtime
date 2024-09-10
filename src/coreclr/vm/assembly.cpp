@@ -137,6 +137,12 @@ Assembly::Assembly(PEAssembly* pPEAssembly, DebuggerAssemblyControlFlags debugge
     , m_debuggerFlags(debuggerFlags)
     , m_fTerminated(FALSE)
     , m_hExposedObject{}
+    , m_level{FILE_LOAD_CREATE}
+    , m_loading{TRUE}
+    , m_notifyFlags{NOT_NOTIFIED}
+    , m_pError{NULL}
+    , m_fHostAssemblyPublished{FALSE}
+    , m_bDisableActivationCheck{FALSE}
 {
     CONTRACTL
     {
@@ -225,8 +231,17 @@ Assembly::~Assembly()
 
     if (m_pPEAssembly)
     {
+        if (m_fHostAssemblyPublished)
+        {
+            // Remove association first.
+            UnregisterFromHostAssembly();
+        }
+
         m_pPEAssembly->Release();
     }
+
+    delete m_pError;
+
 
 #ifdef FEATURE_COMINTEROP
     if (m_pITypeLib != nullptr && m_pITypeLib != Assembly::InvalidTypeLib)
@@ -497,12 +512,12 @@ Assembly *Assembly::CreateDynamic(AssemblyBinder* pBinder, NativeAssemblyNamePar
 
         // Finish loading process
         // <TODO> would be REALLY nice to unify this with main loading loop </TODO>
-        pDomainAssembly->Begin();
-        pDomainAssembly->DeliverSyncEvents();
-        pDomainAssembly->DeliverAsyncEvents();
-        pDomainAssembly->FinishLoad();
-        pDomainAssembly->ClearLoading();
-        pDomainAssembly->m_level = FILE_ACTIVE;
+        pAssem->Begin();
+        pAssem->DeliverSyncEvents();
+        pAssem->DeliverAsyncEvents();
+        pAssem->FinishLoad();
+        pAssem->ClearLoading();
+        pAssem->m_level = FILE_ACTIVE;
     }
 
     {
@@ -1881,33 +1896,6 @@ void DECLSPEC_NORETURN Assembly::ThrowBadImageException(LPCUTF8 pszNameSpace,
 }
 
 #endif // #ifndef DACCESS_COMPILE
-
-#ifndef DACCESS_COMPILE
-void Assembly::EnsureActive()
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        INJECT_FAULT(COMPlusThrowOM(););
-    }
-    CONTRACTL_END;
-
-    GetDomainAssembly()->EnsureActive();
-}
-#endif //!DACCESS_COMPILE
-
-CHECK Assembly::CheckActivated()
-{
-#ifndef DACCESS_COMPILE
-    WRAPPER_NO_CONTRACT;
-
-    CHECK(GetDomainAssembly()->CheckActivated());
-#endif
-    CHECK_OK;
-}
-
-
 
 #ifdef DACCESS_COMPILE
 

@@ -305,15 +305,15 @@ typedef PEFileListLock::Holder PEFileListLockHolder;
 class FileLoadLock : public ListLockEntry
 {
 private:
-    FileLoadLevel           m_level;
-    DomainAssembly          *m_pDomainAssembly;
-    HRESULT                 m_cachedHR;
+    FileLoadLevel   m_level;
+    Assembly*       m_pAssembly;
+    HRESULT         m_cachedHR;
 
 public:
-    static FileLoadLock *Create(PEFileListLock *pLock, PEAssembly *pPEAssembly, DomainAssembly *pDomainAssembly);
+    static FileLoadLock *Create(PEFileListLock *pLock, PEAssembly *pPEAssembly, Assembly *pAssembly);
 
     ~FileLoadLock();
-    DomainAssembly *GetDomainAssembly();
+    Assembly *GetAssembly();
     FileLoadLevel GetLoadLevel();
 
     // CanAcquire will return FALSE if Acquire will definitely not take the lock due
@@ -340,7 +340,7 @@ public:
 
 private:
 
-    FileLoadLock(PEFileListLock *pLock, PEAssembly *pPEAssembly, DomainAssembly *pDomainAssembly);
+    FileLoadLock(PEFileListLock *pLock, PEAssembly *pPEAssembly, Assembly *pAssembly);
 
     static void HolderLeave(FileLoadLock *pThis);
 
@@ -1068,11 +1068,11 @@ public:
 
     CHECK CheckCanLoadTypes(Assembly *pAssembly);
     CHECK CheckCanExecuteManagedCode(MethodDesc* pMD);
-    CHECK CheckLoading(DomainAssembly *pFile, FileLoadLevel level);
+    CHECK CheckLoading(Assembly *pFile, FileLoadLevel level);
 
-    BOOL IsLoading(DomainAssembly *pFile, FileLoadLevel level);
+    BOOL IsLoading(Assembly *pFile, FileLoadLevel level);
 
-    void LoadDomainAssembly(DomainAssembly *pFile,
+    void LoadDomainAssembly(Assembly *pFile,
                         FileLoadLevel targetLevel);
 
     enum FindAssemblyOptions
@@ -1081,7 +1081,7 @@ public:
         FindAssemblyOptions_IncludeFailedToLoad     = 0x1
     };
 
-    DomainAssembly * FindAssembly(PEAssembly* pPEAssembly, FindAssemblyOptions options = FindAssemblyOptions_None) DAC_EMPTY_RET(NULL);
+    Assembly * FindAssembly(PEAssembly* pPEAssembly, FindAssemblyOptions options = FindAssemblyOptions_None) DAC_EMPTY_RET(NULL);
 
 
     Assembly *LoadAssembly(AssemblySpec* pIdentity,
@@ -1094,11 +1094,11 @@ public:
     // The main point that you should not bypass caching if you might try to load the same file again,
     // resulting in multiple DomainAssembly objects that share the same PEAssembly for ngen image
     //which is violating our internal assumptions
-    DomainAssembly *LoadDomainAssemblyInternal( AssemblySpec* pIdentity,
+    Assembly *LoadDomainAssemblyInternal( AssemblySpec* pIdentity,
                                                 PEAssembly *pPEAssembly,
                                                 FileLoadLevel targetLevel);
 
-    DomainAssembly *LoadDomainAssembly( AssemblySpec* pIdentity,
+    Assembly *LoadDomainAssembly( AssemblySpec* pIdentity,
                                         PEAssembly *pPEAssembly,
                                         FileLoadLevel targetLevel);
 
@@ -1108,10 +1108,10 @@ public:
     // private:
     void LoadSystemAssemblies();
 
-    DomainAssembly *LoadDomainAssembly(FileLoadLock *pLock,
+    Assembly *LoadDomainAssembly(FileLoadLock *pLock,
                                FileLoadLevel targetLevel);
 
-    void TryIncrementalLoad(DomainAssembly *pFile, FileLoadLevel workLevel, FileLoadLockHolder &lockHolder);
+    void TryIncrementalLoad(Assembly *pFile, FileLoadLevel workLevel, FileLoadLockHolder &lockHolder);
 
 #ifndef DACCESS_COMPILE // needs AssemblySpec
 
@@ -1380,7 +1380,7 @@ public:
 private:
     void RaiseLoadingAssemblyEvent(Assembly* pAssembly);
 
-    friend class DomainAssembly;
+    friend class Assembly;
 
 private:
     BOOL RaiseUnhandledExceptionEvent(OBJECTREF *pThrowable, BOOL isTerminating);

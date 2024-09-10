@@ -29,7 +29,6 @@ class SystemDomain;
 class ClassLoader;
 class AssemblyNative;
 class AssemblySpec;
-class Pending;
 class AllocMemTracker;
 class FriendAssemblyDescriptor;
 
@@ -43,16 +42,182 @@ class FriendAssemblyDescriptor;
 //
 class Assembly
 {
-    friend class SystemDomain;
     friend class ClassLoader;
     friend class AssemblyNative;
     friend class AssemblySpec;
-    friend class NDirect;
     friend class ClrDataAccess;
 
 private:
     Assembly(PEAssembly *pPEAssembly, DebuggerAssemblyControlFlags debuggerFlags, LoaderAllocator* pLoaderAllocator);
     void Init(AllocMemTracker *pamTracker);
+
+// Load state tracking
+public:
+    // Return the File's load level.  Note that this is the last level actually successfully completed.
+    // Note that this is subtly different than the FileLoadLock's level, which is the last level
+    // which was triggered (but potentially skipped if error or inappropriate.)
+    FileLoadLevel GetLoadLevel() { LIMITED_METHOD_DAC_CONTRACT; return m_level; }
+
+    // Error means that a permanent load error has occurred.
+    BOOL IsError()
+    {
+        LIMITED_METHOD_DAC_CONTRACT;
+        DACCOP_IGNORE(FieldAccess, "No marshalling required");
+        return m_pError != NULL;
+    }
+
+    // Loading means that the load is still being tracked by a FileLoadLock.
+    BOOL IsLoading() { LIMITED_METHOD_CONTRACT; return m_loading; }
+
+    // Loaded means that the file can be used passively. This includes loading types, reflection,
+    // and jitting.
+    BOOL IsLoaded() { LIMITED_METHOD_DAC_CONTRACT; return m_level >= FILE_LOAD_DELIVER_EVENTS; }
+
+    // Active means that the file can be used actively. This includes code execution, static field
+    // access, and instance allocation.
+    BOOL IsActive() { LIMITED_METHOD_CONTRACT; return m_level >= FILE_ACTIVE; }
+
+    // Checks if the load has reached the point where profilers may be notified
+    // about the file. It's important that IF a profiler is notified, THEN this returns
+    // TRUE, otherwise there can be profiler-attach races where the profiler doesn't see
+    // the file via either enumeration or notification. As a result, this begins
+    // returning TRUE just before the profiler is actually notified.  See
+    // code:ProfilerFunctionEnum::Init#ProfilerEnumAssemblies
+    BOOL IsAvailableToProfilers()
+    {
+        LIMITED_METHOD_DAC_CONTRACT;
+        return IsProfilerNotified(); // despite the name, this function returns TRUE just before we notify the profiler
+    }
+
+    BOOL DoIncrementalLoad(FileLoadLevel targetLevel);
+
+    void ClearLoading() { LIMITED_METHOD_CONTRACT; m_loading = FALSE; }
+    void SetLoadLevel(FileLoadLevel level) { LIMITED_METHOD_CONTRACT; m_level = level; }
+
+    BOOL IsVisibleToDebugger();
+    BOOL NotifyDebuggerLoad(int flags, BOOL attaching);
+    void NotifyDebuggerUnload();
+
+    // Ensure that an assembly has reached at least the IsActive state. Throw if not
+    void EnsureActive()
+    {
+        WRAPPER_NO_CONTRACT;
+        return EnsureLoadLevel(FILE_ACTIVE);
+    }
+
+    // CheckActivated is appropriate for asserts that the assembly can be actively used.
+    // Note that this is slightly different from IsActive in that it deals with reentrancy cases properly.
+    CHECK CheckActivated();
+
+    // EnsureLoadLevel is a generic routine used to ensure that the file is not in a delay loaded
+    // state (unless it needs to be.)  This should be used when a particular level of loading
+    // is required for an operation.  Note that deadlocks are tolerated so the level may be one
+    void EnsureLoadLevel(FileLoadLevel targetLevel) DAC_EMPTY();
+
+    // RequireLoadLevel throws an exception if the domain file isn't loaded enough.  Note
+    // that this is intolerant of deadlock related failures so is only really appropriate for
+    // checks inside the main loading loop.
+    void RequireLoadLevel(FileLoadLevel targetLevel) DAC_EMPTY();
+
+    // This should be used to permanently set the load to fail. Do not use with transient conditions
+    void SetError(Exception *ex);
+
+    // Throws if a load error has occurred
+    void ThrowIfError(FileLoadLevel targetLevel) DAC_EMPTY();
+
+    // Checks that a load error has not occurred before the given level
+    CHECK CheckNoError(FileLoadLevel targetLevel) DAC_EMPTY_RET(CHECK::OK());
+
+private:
+    friend class AppDomain;
+    friend class FileLoadLock;
+
+#ifndef DACCESS_COMPILE
+    void Begin();
+    void BeforeTypeLoad();
+    void EagerFixups();
+    void VtableFixups();
+    void DeliverSyncEvents();
+    void DeliverAsyncEvents();
+    void FinishLoad();
+    void Activate();
+
+    void RegisterWithHostAssembly();
+    void UnregisterFromHostAssembly();
+#endif
+
+    void SetProfilerNotified() { LIMITED_METHOD_CONTRACT; m_notifyFlags |= PROFILER_NOTIFIED; }
+    void SetDebuggerNotified() { LIMITED_METHOD_CONTRACT; m_notifyFlags |= DEBUGGER_NOTIFIED; }
+    void SetShouldNotifyDebugger() { LIMITED_METHOD_CONTRACT; m_notifyFlags |= DEBUGGER_NEEDNOTIFICATION; }
+
+    // IsNotified means that the profiler API notification has been delivered
+    BOOL IsProfilerNotified() { LIMITED_METHOD_CONTRACT; return m_notifyFlags & PROFILER_NOTIFIED; }
+    BOOL IsDebuggerNotified() { LIMITED_METHOD_CONTRACT; return m_notifyFlags & DEBUGGER_NOTIFIED; }
+    BOOL ShouldNotifyDebugger() { LIMITED_METHOD_CONTRACT; return m_notifyFlags & DEBUGGER_NEEDNOTIFICATION; }
+
+    // CheckLoaded is appropriate for asserts that the assembly can be passively used.
+    CHECK CheckLoaded();
+
+    // Ensure that an assembly has reached at least the IsLoaded state.  Throw if not.
+    void EnsureLoaded()
+    {
+        WRAPPER_NO_CONTRACT;
+        return EnsureLoadLevel(FILE_LOADED);
+    }
+
+    // CheckLoadLevel is an assert predicate used to verify the load level of an assembly.
+    // deadlockOK indicates that the level is allowed to be one short if we are restricted
+    // by loader reentrancy.
+    CHECK CheckLoadLevel(FileLoadLevel requiredLevel, BOOL deadlockOK = TRUE) DAC_EMPTY_RET(CHECK::OK());
+
+    class ExInfo
+    {
+        enum
+        {
+            ExType_ClrEx,
+            ExType_HR
+        }
+        m_type;
+        union
+        {
+            Exception* m_pEx;
+            HRESULT    m_hr;
+        };
+
+    public:
+        void Throw()
+        {
+            CONTRACTL
+            {
+                THROWS;
+                GC_TRIGGERS;
+                MODE_ANY;
+            }
+            CONTRACTL_END;
+            if (m_type == ExType_ClrEx)
+            {
+                PAL_CPP_THROW(Exception*, m_pEx->DomainBoundClone());
+            }
+            if (m_type == ExType_HR)
+                ThrowHR(m_hr);
+            _ASSERTE(!"Bad exception type");
+            ThrowHR(E_UNEXPECTED);
+        };
+
+        ExInfo(Exception* pEx)
+        {
+            LIMITED_METHOD_CONTRACT;
+            m_type = ExType_ClrEx;
+            m_pEx = pEx;
+        };
+
+        ~ExInfo()
+        {
+            LIMITED_METHOD_CONTRACT;
+            if (m_type == ExType_ClrEx)
+                delete m_pEx;
+        }
+    };
 
 public:
     void StartUnload();
@@ -91,20 +256,6 @@ public:
         SUPPORTS_DAC;
         return m_pClassLoader;
     }
-
-    //-----------------------------------------------------------------------------------------
-    // EnsureActive ensures that the assembly is properly prepped in the current app domain
-    // for active uses like code execution, static field access, and instance allocation
-    //-----------------------------------------------------------------------------------------
-#ifndef DACCESS_COMPILE
-    VOID EnsureActive();
-#endif
-
-    //-----------------------------------------------------------------------------------------
-    // CheckActivated is a check predicate which should be used in active use paths like code
-    // execution, static field access, and instance allocation
-    //-----------------------------------------------------------------------------------------
-    CHECK CheckActivated();
 
     PTR_LoaderAllocator GetLoaderAllocator() { LIMITED_METHOD_DAC_CONTRACT; return m_pLoaderAllocator; }
 
@@ -403,6 +554,7 @@ private:
 #endif
 public:
     void UpdateCachedFriendAssemblyInfo();
+
 private:
     PTR_ClassLoader       m_pClassLoader;   // Single Loader
 
@@ -429,6 +581,14 @@ private:
     BOOL                  m_fTerminated;
 
     LOADERHANDLE          m_hExposedObject;
+
+    // Load state tracking
+    FileLoadLevel   m_level;
+    BOOL            m_loading;
+    DWORD           m_notifyFlags;
+    ExInfo*         m_pError;
+    BOOL            m_fHostAssemblyPublished;
+    BOOL            m_bDisableActivationCheck;
 };
 
 #ifndef DACCESS_COMPILE
