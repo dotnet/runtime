@@ -360,6 +360,11 @@ namespace System.Runtime.CompilerServices
             return x.CompareTo(y);
         }
 
+        // The body of this function will be created by the EE for the specific type.
+        // See getILIntrinsicImplementation for how this happens.
+        [Intrinsic]
+        internal static extern unsafe void CopyConstruct<T>(T* dest, T* src) where T : unmanaged;
+
         internal static ref byte GetRawData(this object obj) =>
             ref Unsafe.As<RawData>(obj).Data;
 
@@ -436,16 +441,8 @@ namespace System.Runtime.CompilerServices
         //
         // GC.KeepAlive(o);
         //
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [Intrinsic]
-        internal static unsafe MethodTable* GetMethodTable(object obj)
-        {
-            // The body of this function will be replaced by the EE with unsafe code
-            // See getILIntrinsicImplementationForRuntimeHelpers for how this happens.
-
-            return (MethodTable*)Unsafe.Add(ref Unsafe.As<byte, IntPtr>(ref obj.GetRawData()), -1);
-        }
-
+        internal static unsafe MethodTable* GetMethodTable(object obj) => GetMethodTable(obj);
 
         [LibraryImport(QCall, EntryPoint = "MethodTable_AreTypesEquivalent")]
         [return: MarshalAs(UnmanagedType.Bool)]
@@ -682,7 +679,6 @@ namespace System.Runtime.CompilerServices
         // Types that require non-trivial interface cast have this bit set in the category
         private const uint enum_flag_NonTrivialInterfaceCast = 0x00080000 // enum_flag_Category_Array
                                                              | 0x40000000 // enum_flag_ComObject
-                                                             | 0x00400000 // enum_flag_ICastable;
                                                              | 0x10000000 // enum_flag_IDynamicInterfaceCastable;
                                                              | 0x00040000; // enum_flag_Category_ValueType
 
@@ -817,6 +813,10 @@ namespace System.Runtime.CompilerServices
         private const uint enum_flag_HasCheckedCanCompareBitsOrUseFastGetHashCode = 0x0002;  // Whether we have checked the overridden Equals or GetHashCode
         private const uint enum_flag_CanCompareBitsOrUseFastGetHashCode = 0x0004;     // Is any field type or sub field type overridden Equals or GetHashCode
 
+        private const uint enum_flag_HasCheckedStreamOverride   = 0x0400;
+        private const uint enum_flag_StreamOverriddenRead       = 0x0800;
+        private const uint enum_flag_StreamOverriddenWrite      = 0x1000;
+
         public bool HasCheckedCanCompareBitsOrUseFastGetHashCode => (Flags & enum_flag_HasCheckedCanCompareBitsOrUseFastGetHashCode) != 0;
 
         public bool CanCompareBitsOrUseFastGetHashCode
@@ -825,6 +825,26 @@ namespace System.Runtime.CompilerServices
             {
                 Debug.Assert(HasCheckedCanCompareBitsOrUseFastGetHashCode);
                 return (Flags & enum_flag_CanCompareBitsOrUseFastGetHashCode) != 0;
+            }
+        }
+
+        public bool HasCheckedStreamOverride => (Flags & enum_flag_HasCheckedStreamOverride) != 0;
+
+        public bool IsStreamOverriddenRead
+        {
+            get
+            {
+                Debug.Assert(HasCheckedStreamOverride);
+                return (Flags & enum_flag_StreamOverriddenRead) != 0;
+            }
+        }
+
+        public bool IsStreamOverriddenWrite
+        {
+            get
+            {
+                Debug.Assert(HasCheckedStreamOverride);
+                return (Flags & enum_flag_StreamOverriddenWrite) != 0;
             }
         }
 

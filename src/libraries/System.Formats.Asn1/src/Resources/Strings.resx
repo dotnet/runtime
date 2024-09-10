@@ -105,6 +105,9 @@
   <data name="AsnWriter_EncodeUnbalancedStack" xml:space="preserve">
     <value>Encode cannot be called while a Sequence, Set-Of, or Octet String is still open.</value>
   </data>
+  <data name="AsnWriter_ModifyingWhileEncoding" xml:space="preserve">
+    <value>The AsnWriter cannot be written to while performing the Encode callback.</value>
+  </data>
   <data name="AsnWriter_PopWrongTag" xml:space="preserve">
     <value>Cannot pop the requested tag as it is not currently in progress.</value>
   </data>

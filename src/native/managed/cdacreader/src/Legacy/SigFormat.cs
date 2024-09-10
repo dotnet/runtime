@@ -227,9 +227,9 @@ namespace Microsoft.Diagnostics.DataContractReader.Legacy
 
                     case CorElementType.Var:
                         int varIndex = signature.ReadCompressedInteger();
-                        if (methodInstantiation.Length > varIndex)
+                        if (typeInstantiation.Length > varIndex)
                         {
-                            AddType(target, stringBuilder, methodInstantiation[varIndex]);
+                            AddType(target, stringBuilder, typeInstantiation[varIndex]);
                         }
                         else
                         {
@@ -299,6 +299,11 @@ namespace Microsoft.Diagnostics.DataContractReader.Legacy
                     case CorElementType.CModOpt:
                     case CorElementType.CModReqd:
                         _ = signature.ReadTypeHandle();
+                        break;
+
+                    case CorElementType.CModInternal:
+                        _ = signature.ReadByte();
+                        _ = signature.ReadBytes(target.PointerSize);
                         break;
 
                     default:

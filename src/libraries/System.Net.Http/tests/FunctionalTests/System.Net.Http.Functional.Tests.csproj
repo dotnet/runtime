@@ -9,7 +9,6 @@
     <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-linux;$(NetCoreAppCurrent)-android;$(NetCoreAppCurrent)-browser;$(NetCoreAppCurrent)-wasi;$(NetCoreAppCurrent)-osx</TargetFrameworks>
     <EnablePreviewFeatures>true</EnablePreviewFeatures>
     <EventSourceSupport Condition="'$(TestNativeAot)' == 'true'">true</EventSourceSupport>
-    <NoWarn>$(NoWarn);SYSLIB0057</NoWarn>
   </PropertyGroup>
 
   <!-- DesignTimeBuild requires all the TargetFramework Derived Properties to not be present in the first property group. -->
@@ -33,6 +32,7 @@
   <PropertyGroup Condition="'$(TargetOS)' == 'wasi'">
     <Scenario>WasmTestOnWasmtime</Scenario>
     <DefineConstants>$(DefineConstants);TARGET_WASI</DefineConstants>
+    <XunitShowProgress>true</XunitShowProgress>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(TargetPlatformIdentifier)' == 'android'">
@@ -331,11 +331,9 @@
   <ItemGroup>
     <PackageReference Include="System.Net.TestData" Version="$(SystemNetTestDataVersion)" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.DirectoryServices.Protocols\src\System.DirectoryServices.Protocols.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.IO.Pipelines\src\System.IO.Pipelines.csproj" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="$(CommonTestPath)StreamConformanceTests\StreamConformanceTests.csproj" />
-  </ItemGroup>
-  <ItemGroup>
-    <PackageReference Include="System.IO.Pipelines" Version="7.0.0" />
   </ItemGroup>
 </Project>

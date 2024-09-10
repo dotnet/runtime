@@ -121,14 +121,11 @@
   <Import Project="$(RepositoryEngineeringDir)targetingpacks.targets" />
 
   <PropertyGroup>
-      <!-- Libraries ref and source projects which don't bring in dependencies from outside the repository shouldn't reference compat shims. -->
+    <!-- Libraries ref and source projects which don't bring in dependencies from outside the repository shouldn't reference compat shims. -->
     <SkipTargetingPackShimReferences Condition="'$(UseLocalTargetingRuntimePack)' == 'true' and
                                                 '$(IsTestProject)' != 'true' and
                                                 '$(IsTestSupportProject)' != 'true' and
                                                 '$(IsGeneratorProject)' != 'true'">true</SkipTargetingPackShimReferences>
-
-    <!-- Make libraries packages use and require a package readme file. -->
-    <EnableDefaultPackageReadmeFile Condition="'$(EnableDefaultPackageReadmeFile)' == '' and '$(IsShipping)' == 'true'">true</EnableDefaultPackageReadmeFile>
   </PropertyGroup>
 
   <Import Project="$(RepositoryEngineeringDir)codeOptimization.targets" />
