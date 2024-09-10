@@ -336,8 +336,8 @@
       <_MergedWrapperMarker Include="$(TestBinDir)**\*.MergedTestAssembly" Exclude="$(TestBinDir)**\supportFiles\*.MergedTestAssembly" />
 
       <_MergedWrapperMarker Update="@(_MergedWrapperMarker)">
-        <TestExecutionScriptPath Condition="'$(TargetsBrowser)' != 'true'">$([System.IO.Path]::ChangeExtension('%(Identity)', '.$(TestScriptExtension)'))</TestExecutionScriptPath>
-        <TestExecutionScriptPath Condition="'$(TargetsBrowser)' == 'true'">%(RootDir)%(Directory)AppBundle/RunTests.$(TestScriptExtension)</TestExecutionScriptPath>
+        <TestExecutionScriptPath Condition="'$(TargetsMobile)' != 'true'">$([System.IO.Path]::ChangeExtension('%(Identity)', '.$(TestScriptExtension)'))</TestExecutionScriptPath>
+        <TestExecutionScriptPath Condition="'$(TargetsMobile)' == 'true'">%(RootDir)%(Directory)AppBundle/RunTests.$(TestScriptExtension)</TestExecutionScriptPath>
       </_MergedWrapperMarker>
 
       <!-- Exclude merged test wrappers without the test execution script for this target (skipped due to CLRTestTargetUnsupported et al) -->
@@ -473,11 +473,15 @@
     <PropertyGroup>
       <_MergedWrapperDirectory>%(_MergedWrapperMarker.RootDir)%(Directory)</_MergedWrapperDirectory>
       <_MergedWrapperName>%(_MergedWrapperMarker.FileName)</_MergedWrapperName>
+      <!-- Android package names can't have hyphens, so we replace them with underscores -->
+      <_MergedApkName>$(_MergedWrapperName.Replace('-', '_'))</_MergedApkName>
     </PropertyGroup>
 
     <ItemGroup>
-      <_MergedPayloadGroups Include="$(_MergedWrapperName)" />
-      <_MergedPayloadFiles Include="@(_MergedPayloadGroups->'$(_MergedWrapperDirectory)AppBundle/bin/%(Identity).apk')" />
+      <_MergedPayloadGroups Include="$(_MergedWrapperName)">
+        <ApkPackageName>$(_MergedApkName)</ApkPackageName>
+      </_MergedPayloadGroups>
+      <_MergedPayloadFiles Include="@(_MergedPayloadGroups->'$(_MergedWrapperDirectory)AppBundle/bin/%(ApkPackageName).apk')" />
     </ItemGroup>
 
     <Copy SourceFiles="@(_MergedPayloadFiles)" DestinationFiles="@(_MergedPayloadFiles->'$(MergedPayloadsRootDirectory)\$(_MergedWrapperName)\%(FileName)%(Extension)')" />
@@ -801,7 +805,11 @@
   <ItemGroup Condition="'$(TargetHasHelixXHarnessSdkSupport)' == 'true'">
     <MergedPayloads Update="@(MergedPayloads)">
       <PayloadGroup>%(FileName)%(Extension)</PayloadGroup>
-      <ApkPath>$(MergedPayloadsRootDirectory)%(FileName)%(Extension)/%(FileName)%(Extension).apk</ApkPath>
+      <!-- Android package names can't have dashes, so we replace them with underscores. -->
+      <ApkFileName>$([System.String]::new('%(FileName)%(Extension)').Replace('-', '_'))</ApkFileName>
+    </MergedPayloads>
+    <MergedPayloads Update="@(MergedPayloads)">
+      <ApkPath>$(MergedPayloadsRootDirectory)%(FileName)%(Extension)/%(ApkFileName).apk</ApkPath>
       <AppBundlePath>$(MergedPayloadsRootDirectory)%(FileName)%(Extension)/%(FileName)%(Extension).app</AppBundlePath>
     </MergedPayloads>
   </ItemGroup>
@@ -890,7 +898,7 @@
 
     <XHarnessApkToTest Include="@(MergedPayloads->Metadata('PayloadGroup'))" Condition="'$(TargetsAndroid)' == 'true'">
       <Arguments>--arg=env:TestExclusionListPath=TestExclusionList.txt</Arguments>
-      <AndroidPackageName>net.dot.%(PayloadGroup)</AndroidPackageName>
+      <AndroidPackageName>net.dot.%(ApkFileName)</AndroidPackageName>
       <AndroidInstrumentationName>net.dot.MonoRunner</AndroidInstrumentationName>
       <TestTimeout Condition=" '$(TimeoutPerTestCollectionInMinutes)' != '' ">$([System.TimeSpan]::FromMinutes($(TimeoutPerTestCollectionInMinutes)))</TestTimeout>
     </XHarnessApkToTest>
