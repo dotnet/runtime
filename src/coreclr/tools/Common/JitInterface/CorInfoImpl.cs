@@ -2092,12 +2092,17 @@ namespace Internal.JitInterface
             return (uint)result;
         }
 
-        private CORINFO_MODULE_STRUCT_* getClassModule(CORINFO_CLASS_STRUCT_* cls)
-        { throw new NotImplementedException("getClassModule"); }
-        private CORINFO_ASSEMBLY_STRUCT_* getModuleAssembly(CORINFO_MODULE_STRUCT_* mod)
-        { throw new NotImplementedException("getModuleAssembly"); }
-        private byte* getAssemblyName(CORINFO_ASSEMBLY_STRUCT_* assem)
-        { throw new NotImplementedException("getAssemblyName"); }
+        private byte* getClassAssemblyName(CORINFO_CLASS_STRUCT_* cls)
+        {
+            TypeDesc type = HandleToObject(cls);
+
+            if (type is MetadataType mdType)
+            {
+                return (byte*)GetPin(StringToUTF8(mdType.Module.Assembly.GetName().Name));
+            }
+
+            return null;
+        }
 
 #pragma warning disable CA1822 // Mark members as static
         private void* LongLifetimeMalloc(UIntPtr sz)
