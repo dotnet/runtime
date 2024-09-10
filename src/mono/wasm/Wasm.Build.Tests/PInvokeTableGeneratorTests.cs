@@ -467,7 +467,7 @@ namespace Wasm.Build.Tests
 
                             [UnmanagedCallersOnly(EntryPoint = "A_Conflict_C\u733f")]
                             public static void C\u733f() {
-                                Console.WriteLine("A.Conflict.C\U0001F412");
+                                Console.WriteLine("A.Conflict.C_\U0001F412");
                             }
                         }
                     }
@@ -481,7 +481,7 @@ namespace Wasm.Build.Tests
 
                             [UnmanagedCallersOnly(EntryPoint = "B_Conflict_C\u733f")]
                             public static void C\u733f() {
-                                Console.WriteLine("B.Conflict.C\U0001F412");
+                                Console.WriteLine("B.Conflict.C_\U0001F412");
                             }
                         }
                     }
@@ -498,8 +498,14 @@ namespace Wasm.Build.Tests
             output = RunAndTestWasmApp(buildArgs, buildDir: _projectDir, expectedExitCode: 42, host: host, id: id);
             Assert.Contains("A.Conflict.C", output);
             Assert.Contains("B.Conflict.C", output);
-            Assert.Contains("A.Conflict.C\U0001F412", output);
-            Assert.Contains("B.Conflict.C\U0001F412", output);
+            if (OperatingSystem.IsWindows()) {
+                // Windows console unicode support is not great
+                Assert.Contains("A.Conflict.C_", output);
+                Assert.Contains("B.Conflict.C_", output);
+            } else {
+                Assert.Contains("A.Conflict.C_\U0001F412", output);
+                Assert.Contains("B.Conflict.C_\U0001F412", output);
+            }
         }
 
         [Theory]

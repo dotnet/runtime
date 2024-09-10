@@ -12,12 +12,12 @@ namespace JoinedString;
 
 internal static class JoinedStringExtensions
 {
-    public static JoinedStringEnumerable Join(this IEnumerable<string> list, string separator)
-    => JoinedStringEnumerable.Join(list, separator);
-    public static JoinedStringEnumerable Join<T>(this IEnumerable<T> list, string separator, Func<T, string> formatter)
-    => JoinedStringEnumerable.Join(list, separator, formatter);
-    public static JoinedStringEnumerable Join<T>(this IEnumerable<T> list, string separator, Func<T, int, string> formatter)
-    => JoinedStringEnumerable.Join(list, separator, formatter);
+    public static ConcatinatedString Join(this IEnumerable<string> list, string separator)
+    => ConcatinatedString.Join(list, separator);
+    public static ConcatinatedString Join<T>(this IEnumerable<T> list, string separator, Func<T, string> formatter)
+    => ConcatinatedString.Join(list, separator, formatter);
+    public static ConcatinatedString Join<T>(this IEnumerable<T> list, string separator, Func<T, int, string> formatter)
+    => ConcatinatedString.Join(list, separator, formatter);
 
     public static JoinedList<T> Join<T>(this IList<T> list, string separator)
     => new JoinedList<T>(list, separator, (item, _) => $"{item}");
@@ -27,14 +27,15 @@ internal static class JoinedStringExtensions
     => new JoinedList<T>(list, separator, formatter);
 }
 
-
-internal sealed record JoinedList<T>(IList<T> items, string separator, Func<T, int, string> formatter)
+internal sealed record JoinedList<T>(IList<T> items, string separator, Func<T, int, string> formatter) : IStringSegments
 {
     public IEnumerator<string> GetEnumerator()
     {
+        bool hasSeparator = !string.IsNullOrEmpty(separator);
+
         for (int i = 0; i < items.Count; i++)
         {
-            if (i != 0)
+            if (hasSeparator && i != 0)
                 yield return separator;
             yield return formatter(items[i], i);
         }
@@ -51,30 +52,36 @@ internal sealed record JoinedList<T>(IList<T> items, string separator, Func<T, i
     }
 }
 
-internal sealed class JoinedStringEnumerable : IEnumerable<string>
+internal interface IStringSegments {
+    public IEnumerator<string> GetEnumerator();
+}
+
+internal sealed class ConcatinatedString : IStringSegments, IEnumerable<string>
 {
     private readonly IEnumerable<string> _values;
 
-    private JoinedStringEnumerable(IEnumerable<string> values)
+    public ConcatinatedString(IEnumerable<string> values)
     {
         _values = values;
     }
 
-    public static JoinedStringEnumerable Join(IEnumerable<string> values, string separator)
-        => new JoinedStringEnumerable(JoinInternal(values, separator, (x, _) => x));
+    public static ConcatinatedString Join(IEnumerable<string> values, string separator)
+        => new ConcatinatedString(JoinInternal(values, separator, (x, _) => x));
 
-    public static JoinedStringEnumerable Join<T>(IEnumerable<T> values, string separator, Func<T, string> format)
-        => new JoinedStringEnumerable(JoinInternal(values, separator, (x, _) => format(x)));
+    public static ConcatinatedString Join<T>(IEnumerable<T> values, string separator, Func<T, string> format)
+        => new ConcatinatedString(JoinInternal(values, separator, (x, _) => format(x)));
 
-    public static JoinedStringEnumerable Join<T>(IEnumerable<T> values, string separator, Func<T, int, string> format)
-        => new JoinedStringEnumerable(JoinInternal(values, separator, format));
+    public static ConcatinatedString Join<T>(IEnumerable<T> values, string separator, Func<T, int, string> format)
+        => new ConcatinatedString(JoinInternal(values, separator, format));
 
     private static IEnumerable<string> JoinInternal<T>(IEnumerable<T> values, string separator, Func<T, int, string> format)
     {
         int index = 0;
+        bool hasSeparator = !string.IsNullOrEmpty(separator);
+
         foreach (var value in values)
         {
-            if (index != 0)
+            if (hasSeparator && index != 0)
                 yield return separator;
             yield return format(value, index++);
         }
@@ -96,11 +103,9 @@ internal sealed class JoinedStringEnumerable : IEnumerable<string>
 
 internal sealed class JoinedStringStreamWriter : StreamWriter
 {
-
     // since we are intentionally using multi-line string writes,
     // we want to capture the compile-time new line
-    private string CompileTimeNewLine =
-@"
+    private string CompileTimeNewLine = @"
 ";
 
     public JoinedStringStreamWriter(Stream stream) : base(stream)
@@ -116,25 +121,41 @@ internal sealed class JoinedStringStreamWriter : StreamWriter
 #if NET8_0_OR_GREATER
 #pragma warning disable  CA1822 // Mark members as static
 #pragma warning disable  IDE0060 // Remove unused parameter
-    public void Write([InterpolatedStringHandlerArgument("")] JoinedStringWriterHandler builder)
+    public void Write([InterpolatedStringHandlerArgument("")] StringSegmentStreamWriterHandler builder)
     {
         // The builder writes directly to the writer
     }
 #pragma warning restore  IDE0060
 #pragma warning restore  CA1822
 #endif
+
+    public void Write(IStringSegments list)
+    {
+        foreach (var item in list)
+        {
+            Write(item);
+        }
+    }
+
+    public void WriteLine(IStringSegments list)
+    {
+        foreach (var item in list)
+        {
+            Write(item);
+        }
+        WriteLine();
+    }
 }
 
 #if NET8_0_OR_GREATER
 [InterpolatedStringHandler]
-internal ref struct JoinedStringWriterHandler
+internal ref struct StringSegmentStreamWriterHandler
 {
     private JoinedStringStreamWriter _writer;
 
 #pragma warning disable IDE0060
-    public JoinedStringWriterHandler(int literalLength, int formattedCount, JoinedStringStreamWriter writer)
+    public StringSegmentStreamWriterHandler(int literalLength, int formattedCount, JoinedStringStreamWriter writer)
     {
-        writer.Flush();
         _writer = writer;
     }
 #pragma warning restore IDE0060
@@ -145,15 +166,7 @@ internal ref struct JoinedStringWriterHandler
     public void AppendFormatted(char[] buffer, int index, int count) => _writer.Write(buffer, index, count);
     public void AppendFormatted(string format, object? arg0, object? arg1, object? arg2) => _writer.Write(format, arg0, arg1, arg2);
 
-    public void AppendFormatted(JoinedStringEnumerable list)
-    {
-        foreach (var item in list)
-        {
-            _writer.Write(item);
-        }
-    }
-
-    public void AppendFormatted<T>(JoinedList<T> list)
+    public void AppendFormatted(IStringSegments list)
     {
         foreach (var item in list)
         {
@@ -162,8 +175,7 @@ internal ref struct JoinedStringWriterHandler
     }
 
     public override string ToString()
-    {
-        _writer.Flush();
+    {;
         return "";
     }
 }

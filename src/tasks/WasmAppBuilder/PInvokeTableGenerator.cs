@@ -95,6 +95,7 @@ internal sealed class PInvokeTableGenerator
             #include <mono/metadata/object.h>
             #include <mono/utils/details/mono-logger-types.h>
             #include "runtime.h"
+            #include "pinvoke.h"
             """);
 
         var pinvokesGroupedByEntryPoint = pinvokes
@@ -392,7 +393,9 @@ internal sealed class PInvokeTableGenerator
             $$"""
 
             static UnmanagedExport wasm_native_to_interp_table[] = {
-                {{callbacks.Join($",{w.NewLine}    ", cb => $"{{\"{EscapeLiteral(cb.Key)}\", {cb.Token}, {cb.EntrySymbol}}}")}}
+            {{callbacks.Join($",{w.NewLine}", cb =>
+            $"    {{\"{EscapeLiteral(cb.Key)}\", {cb.Token}, {cb.EntrySymbol}}}"
+            )}}
             };
 
             """);
