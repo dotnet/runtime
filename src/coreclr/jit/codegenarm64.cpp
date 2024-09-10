@@ -5175,17 +5175,6 @@ bool CodeGen::IsSaveFpLrWithAllCalleeSavedRegisters() const
     return genSaveFpLrWithAllCalleeSavedRegisters;
 }
 
-//---------------------------------------------------------------------
-// SetReverseAndPairCalleeSavedRegisters - Set the variable that indicates if X19-X28 registers
-// callee-saved registers are stored in reverse order and we always store them as pairs even if
-// one register in the pair is unused.
-//
-void CodeGen::SetReverseAndPairCalleeSavedRegisters(bool value)
-{
-    JITDUMP("Setting genReverseAndPairCalleeSavedRegisters to %s\n", dspBool(value));
-    genReverseAndPairCalleeSavedRegisters = value;
-}
-
 /*****************************************************************************
  *  Emit a call to a helper function.
  *

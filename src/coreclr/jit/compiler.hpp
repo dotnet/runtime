@@ -2638,9 +2638,6 @@ inline
     int
     Compiler::lvaFrameAddress(
         int varNum, bool mustBeFPBased, regNumber* pBaseReg, int addrModeOffset, bool isFloatUsage)
-#elif defined(TARGET_ARM64)
-    int
-    Compiler::lvaFrameAddress(int varNum, bool* pFPbased, bool mustBeFPBased)
 #else
     int
     Compiler::lvaFrameAddress(int varNum, bool* pFPbased)
@@ -2811,11 +2808,9 @@ inline
         *pBaseReg = REG_SPBASE;
     }
 #elif defined(TARGET_ARM64)
-    if (FPbased && !mustBeFPBased && //varNum < 0 &&
-        //!compLocallocUsed && !ehAnyFunclets() && //funCurrentFunc()->funKind == FUNC_ROOT &&
+    if (FPbased &&
         !codeGen->isFramePointerRequired() &&
         varOffset < 0 &&
-        //varOffset < -0xFF &&
         lvaDoneFrameLayout == Compiler::FINAL_FRAME_LAYOUT &&
         codeGen->IsSaveFpLrWithAllCalleeSavedRegisters())
     {

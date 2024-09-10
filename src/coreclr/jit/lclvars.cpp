@@ -5673,7 +5673,20 @@ void Compiler::lvaFixVirtualFrameOffsets()
         // We set FP to be after LR, FP
         delta += 2 * REGSIZE_BYTES;
     }
-#elif defined(TARGET_AMD64) || defined(TARGET_ARM64)
+#elif defined(TARGET_ARM64)
+    else
+    {
+        // FP is used.
+        delta += codeGen->genTotalFrameSize() - codeGen->genSPtoFPdelta();
+        if (codeGen->IsSaveFpLrWithAllCalleeSavedRegisters() && isFramePointerUsed()) // Note that currently we always have
+                                                                                      // a frame pointer
+        {
+            // We set FP to be after LR, FP
+            delta += 2 * REGSIZE_BYTES;
+        }
+        JITDUMP("--- delta bump %d for FP frame\n", delta);
+    }
+#elif defined(TARGET_AMD64)
     else
     {
         // FP is used.
@@ -6050,39 +6063,6 @@ void Compiler::lvaAssignVirtualFrameOffsetsToLocals()
         codeGen->setFramePointerUsed(codeGen->isFramePointerRequired());
     }
 
-#ifdef TARGET_ARM64
-    // Decide where to save FP and LR registers. We store FP/LR registers at the bottom of the frame if there is
-    // a frame pointer used (so we get positive offsets from the frame pointer to access locals), but not if we
-    // need a GS cookie AND localloc is used, since we need the GS cookie to protect the saved return value,
-    // and also the saved frame pointer. See CodeGen::genPushCalleeSavedRegisters() for more details about the
-    // frame types. Since saving FP/LR at high addresses is a relatively rare case, force using it during stress.
-    // (It should be legal to use these frame types for every frame).
-
-    if (opts.compJitSaveFpLrWithCalleeSavedRegisters == 0)
-    {
-        if (IsTargetAbi(CORINFO_NATIVEAOT_ABI) && TargetOS::IsApplePlatform &&
-            !codeGen->isFramePointerRequired())
-        {
-            codeGen->SetSaveFpLrWithAllCalleeSavedRegisters(true);
-            codeGen->SetReverseAndPairCalleeSavedRegisters(true);
-        }
-        else
-        {
-            // Default configuration
-            codeGen->SetSaveFpLrWithAllCalleeSavedRegisters((getNeedsGSSecurityCookie() && compLocallocUsed) ||
-                                                            opts.compDbgEnC || compStressCompile(STRESS_GENERIC_VARN, 20));
-        }
-    }
-    else if (opts.compJitSaveFpLrWithCalleeSavedRegisters == 1)
-    {
-        codeGen->SetSaveFpLrWithAllCalleeSavedRegisters(false); // Disable using new frames
-    }
-    else if ((opts.compJitSaveFpLrWithCalleeSavedRegisters == 2) || (opts.compJitSaveFpLrWithCalleeSavedRegisters == 3))
-    {
-        codeGen->SetSaveFpLrWithAllCalleeSavedRegisters(true); // Force using new frames
-    }
-#endif // TARGET_ARM64
-
 #ifdef TARGET_XARCH
     // On x86/amd64, the return address has already been pushed by the call instruction in the caller.
     stkOffs -= TARGET_POINTER_SIZE; // return address;
@@ -6144,8 +6124,7 @@ void Compiler::lvaAssignVirtualFrameOffsetsToLocals()
         stkOffs -= initialStkOffs;
     }
 
-    if (codeGen->IsSaveFpLrWithAllCalleeSavedRegisters() || !isFramePointerUsed()) // Note that currently we always have
-                                                                                   // a frame pointer
+    if (!isFramePointerUsed()) // Note that currently we always have a frame pointer
     {
         stkOffs -= compCalleeRegsPushed * REGSIZE_BYTES;
     }
@@ -6825,8 +6804,7 @@ void Compiler::lvaAssignVirtualFrameOffsetsToLocals()
 #endif // TARGET_AMD64
 
 #ifdef TARGET_ARM64
-    if (!codeGen->IsSaveFpLrWithAllCalleeSavedRegisters() && isFramePointerUsed()) // Note that currently we always have
-                                                                                   // a frame pointer
+    if (isFramePointerUsed()) // Note that currently we always have a frame pointer
     {
         // Create space for saving FP and LR.
         stkOffs -= 2 * REGSIZE_BYTES;

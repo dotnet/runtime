@@ -232,7 +232,6 @@ public:
 #ifdef TARGET_ARM64
     virtual void SetSaveFpLrWithAllCalleeSavedRegisters(bool value) = 0;
     virtual bool IsSaveFpLrWithAllCalleeSavedRegisters() const      = 0;
-    virtual void SetReverseAndPairCalleeSavedRegisters(bool value)  = 0;
 #endif // TARGET_ARM64
 
     regNumber genGetThisArgReg(GenTreeCall* call) const;
