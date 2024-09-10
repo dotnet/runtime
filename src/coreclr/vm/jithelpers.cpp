@@ -1916,15 +1916,19 @@ HCIMPLEND
 
 // Factored out most of the body of JIT_GenericHandle so it could be called easily from the CER reliability code to pre-populate the
 // cache.
-CORINFO_GENERIC_HANDLE JIT_GenericHandleWorker(MethodDesc * pMD, MethodTable * pMT, LPVOID signature, DWORD dictionaryIndexAndSlot, Module* pModule)
+extern "C" CORINFO_GENERIC_HANDLE QCALLTYPE JIT_GenericHandleWorker(MethodDesc * pMD, MethodTable * pMT, LPVOID signature, DWORD dictionaryIndexAndSlot, Module* pModule)
 {
-     CONTRACTL {
-        THROWS;
-        GC_TRIGGERS;
-    } CONTRACTL_END;
+    QCALL_CONTRACT;
 
-     uint32_t dictionaryIndex = 0;
-     MethodTable * pDeclaringMT = NULL;
+    CORINFO_GENERIC_HANDLE result = NULL;
+
+    BEGIN_QCALL;
+
+    _ASSERTE(pMT != NULL || pMD != NULL);
+    _ASSERTE(pMT == NULL || pMD == NULL);
+
+    uint32_t dictionaryIndex = 0;
+    MethodTable * pDeclaringMT = NULL;
 
     if (pMT != NULL)
     {
@@ -1966,7 +1970,7 @@ CORINFO_GENERIC_HANDLE JIT_GenericHandleWorker(MethodDesc * pMD, MethodTable * p
     }
 
     DictionaryEntry * pSlot;
-    CORINFO_GENERIC_HANDLE result = (CORINFO_GENERIC_HANDLE)Dictionary::PopulateEntry(pMD, pDeclaringMT, signature, FALSE, &pSlot, dictionaryIndexAndSlot, pModule);
+    result = (CORINFO_GENERIC_HANDLE)Dictionary::PopulateEntry(pMD, pDeclaringMT, signature, FALSE, &pSlot, dictionaryIndexAndSlot, pModule);
 
     if (pMT != NULL && pDeclaringMT != pMT)
     {
@@ -1982,137 +1986,10 @@ CORINFO_GENERIC_HANDLE JIT_GenericHandleWorker(MethodDesc * pMD, MethodTable * p
         }
     }
 
+    END_QCALL;
+
     return result;
 } // JIT_GenericHandleWorker
-
-/*********************************************************************/
-// slow helper to tail call from the fast one
-NOINLINE HCIMPL5(CORINFO_GENERIC_HANDLE, JIT_GenericHandle_Framed,
-        CORINFO_CLASS_HANDLE classHnd,
-        CORINFO_METHOD_HANDLE methodHnd,
-        LPVOID signature,
-        DWORD dictionaryIndexAndSlot,
-        CORINFO_MODULE_HANDLE moduleHnd)
-{
-    CONTRACTL {
-        FCALL_CHECK;
-        PRECONDITION(classHnd != NULL || methodHnd != NULL);
-        PRECONDITION(classHnd == NULL || methodHnd == NULL);
-    } CONTRACTL_END;
-
-    // Result is a generic handle (in fact, a CORINFO_CLASS_HANDLE, CORINFO_METHOD_HANDLE, or a code pointer)
-    CORINFO_GENERIC_HANDLE result = NULL;
-
-    MethodDesc * pMD = GetMethod(methodHnd);
-    MethodTable * pMT = TypeHandle(classHnd).AsMethodTable();
-    Module * pModule = GetModule(moduleHnd);
-
-    // Set up a frame
-    HELPER_METHOD_FRAME_BEGIN_RET_0();
-
-    result = JIT_GenericHandleWorker(pMD, pMT, signature, dictionaryIndexAndSlot, pModule);
-
-    HELPER_METHOD_FRAME_END();
-
-    _ASSERTE(result != NULL);
-
-    // Return the handle
-    return result;
-}
-HCIMPLEND
-
-/*********************************************************************/
-#include <optsmallperfcritical.h>
-HCIMPL2(CORINFO_GENERIC_HANDLE, JIT_GenericHandleMethod, CORINFO_METHOD_HANDLE  methodHnd, LPVOID signature)
-{
-     CONTRACTL {
-        FCALL_CHECK;
-        PRECONDITION(CheckPointer(methodHnd));
-        PRECONDITION(CheckPointer(signature));
-    } CONTRACTL_END;
-
-    // Tailcall to the slow helper
-    ENDFORBIDGC();
-    return HCCALL5(JIT_GenericHandle_Framed, NULL, methodHnd, signature, -1, NULL);
-}
-HCIMPLEND
-
-HCIMPL2(CORINFO_GENERIC_HANDLE, JIT_GenericHandleMethodWithSlotAndModule, CORINFO_METHOD_HANDLE  methodHnd, GenericHandleArgs * pArgs)
-{
-    CONTRACTL{
-        FCALL_CHECK;
-        PRECONDITION(CheckPointer(methodHnd));
-        PRECONDITION(CheckPointer(pArgs));
-    } CONTRACTL_END;
-
-    // Tailcall to the slow helper
-    ENDFORBIDGC();
-    return HCCALL5(JIT_GenericHandle_Framed, NULL, methodHnd, pArgs->signature, pArgs->dictionaryIndexAndSlot, pArgs->module);
-}
-HCIMPLEND
-#include <optdefault.h>
-
-/*********************************************************************/
-HCIMPL2(CORINFO_GENERIC_HANDLE, JIT_GenericHandleMethodLogging, CORINFO_METHOD_HANDLE  methodHnd, LPVOID signature)
-{
-     CONTRACTL {
-        FCALL_CHECK;
-        PRECONDITION(CheckPointer(methodHnd));
-        PRECONDITION(CheckPointer(signature));
-    } CONTRACTL_END;
-
-    // Tailcall to the slow helper
-    ENDFORBIDGC();
-    return HCCALL5(JIT_GenericHandle_Framed, NULL, methodHnd, signature, -1, NULL);
-}
-HCIMPLEND
-
-/*********************************************************************/
-#include <optsmallperfcritical.h>
-HCIMPL2(CORINFO_GENERIC_HANDLE, JIT_GenericHandleClass, CORINFO_CLASS_HANDLE classHnd, LPVOID signature)
-{
-     CONTRACTL {
-        FCALL_CHECK;
-        PRECONDITION(CheckPointer(classHnd));
-        PRECONDITION(CheckPointer(signature));
-    } CONTRACTL_END;
-
-    // Tailcall to the slow helper
-    ENDFORBIDGC();
-    return HCCALL5(JIT_GenericHandle_Framed, classHnd, NULL, signature, -1, NULL);
-}
-HCIMPLEND
-
-HCIMPL2(CORINFO_GENERIC_HANDLE, JIT_GenericHandleClassWithSlotAndModule, CORINFO_CLASS_HANDLE classHnd, GenericHandleArgs * pArgs)
-{
-    CONTRACTL{
-        FCALL_CHECK;
-        PRECONDITION(CheckPointer(classHnd));
-        PRECONDITION(CheckPointer(pArgs));
-    } CONTRACTL_END;
-
-    // Tailcall to the slow helper
-    ENDFORBIDGC();
-    return HCCALL5(JIT_GenericHandle_Framed, classHnd, NULL, pArgs->signature, pArgs->dictionaryIndexAndSlot, pArgs->module);
-}
-HCIMPLEND
-#include <optdefault.h>
-
-/*********************************************************************/
-HCIMPL2(CORINFO_GENERIC_HANDLE, JIT_GenericHandleClassLogging, CORINFO_CLASS_HANDLE classHnd, LPVOID signature)
-{
-     CONTRACTL {
-        FCALL_CHECK;
-        PRECONDITION(CheckPointer(classHnd));
-        PRECONDITION(CheckPointer(signature));
-    } CONTRACTL_END;
-
-    // Tailcall to the slow helper
-    ENDFORBIDGC();
-    return HCCALL5(JIT_GenericHandle_Framed, classHnd, NULL, signature, -1, NULL);
-}
-HCIMPLEND
-
 
 Volatile<FieldDesc*> g_VirtualCache;
 Volatile<FieldDesc*> g_VirtualCache2;

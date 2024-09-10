@@ -3,17 +3,22 @@
 
 /*============================================================
 **
-** Header: VirtualFunctionHelpers.h
+** Header: JitQCallHelpers.h
 **
 **
 ===========================================================*/
 
-#ifndef _VIRTUALFUNCTIONHELPERS_H
-#define _VIRTUALFUNCTIONHELPERS_H
+#ifndef _JITQCALLHELPERS_H
+#define _JITQCALLHELPERS_H
 
 #include "qcall.h"
 #include "corinfo.h"
 
-extern "C" void * QCALLTYPE JIT_ResolveVirtualFunctionPointer(QCall::ObjectHandleOnStack obj, CORINFO_CLASS_HANDLE classHnd, CORINFO_METHOD_HANDLE methodHnd);
+class Module;
+class MethodTable;
+class MethodDesc;
 
-#endif //_VIRTUALFUNCTIONHELPERS_H
+extern "C" void * QCALLTYPE JIT_ResolveVirtualFunctionPointer(QCall::ObjectHandleOnStack obj, CORINFO_CLASS_HANDLE classHnd, CORINFO_METHOD_HANDLE methodHnd);
+extern "C" CORINFO_GENERIC_HANDLE QCALLTYPE JIT_GenericHandleWorker(MethodDesc * pMD, MethodTable * pMT, LPVOID signature, DWORD dictionaryIndexAndSlot, Module* pModule);
+
+#endif //_JITQCALLHELPERS_H

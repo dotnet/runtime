@@ -1,0 +1,47 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
+using System;
+using System.Diagnostics;
+using System.Runtime.InteropServices;
+
+namespace System.Runtime.CompilerServices;
+
+[StackTraceHidden]
+[DebuggerStepThrough]
+internal static unsafe partial class GenericsHelpers
+{
+    [LibraryImport(RuntimeHelpers.QCall)]
+    private static partial IntPtr JIT_GenericHandleWorker(IntPtr pMD, IntPtr pMT, IntPtr signature, uint dictionaryIndexAndSlot, IntPtr pModule);
+
+    public struct GenericHandleArgs
+    {
+        public IntPtr signature;
+        public IntPtr module;
+        public uint dictionaryIndexAndSlot;
+    };
+
+    [DebuggerHidden]
+    public static IntPtr Method(IntPtr methodHnd, IntPtr signature)
+    {
+        return JIT_GenericHandleWorker(IntPtr.Zero, methodHnd, signature, 0xFFFFFFFF, IntPtr.Zero);
+    }
+
+    [DebuggerHidden]
+    public static unsafe IntPtr MethodWithSlotAndModule(IntPtr methodHnd, GenericHandleArgs * pArgs)
+    {
+        return JIT_GenericHandleWorker(IntPtr.Zero, methodHnd, pArgs->signature, pArgs->dictionaryIndexAndSlot, pArgs->module);
+    }
+
+    [DebuggerHidden]
+    public static IntPtr Class(IntPtr classHnd, IntPtr signature)
+    {
+        return JIT_GenericHandleWorker(classHnd, IntPtr.Zero, signature, 0xFFFFFFFF, IntPtr.Zero);
+    }
+
+    [DebuggerHidden]
+    public static unsafe IntPtr ClassWithSlotAndModule(IntPtr classHnd, GenericHandleArgs * pArgs)
+    {
+        return JIT_GenericHandleWorker(classHnd, IntPtr.Zero, pArgs->signature, pArgs->dictionaryIndexAndSlot, pArgs->module);
+    }
+}

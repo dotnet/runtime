@@ -1113,15 +1113,6 @@ struct GenericHandleArgs
     DWORD dictionaryIndexAndSlot;
 };
 
-FCDECL2(CORINFO_GENERIC_HANDLE, JIT_GenericHandleMethodWithSlotAndModule, CORINFO_METHOD_HANDLE  methodHnd, GenericHandleArgs * pArgs);
-FCDECL2(CORINFO_GENERIC_HANDLE, JIT_GenericHandleClassWithSlotAndModule, CORINFO_CLASS_HANDLE classHnd, GenericHandleArgs * pArgs);
-
-CORINFO_GENERIC_HANDLE JIT_GenericHandleWorker(MethodDesc   *pMD,
-                                               MethodTable  *pMT,
-                                               LPVOID        signature,
-                                               DWORD         dictionaryIndexAndSlot = -1,
-                                               Module *      pModule = NULL);
-
 CORJIT_FLAGS GetDebuggerCompileFlags(Module* pModule, CORJIT_FLAGS flags);
 
 bool __stdcall TrackAllocationsEnabled();

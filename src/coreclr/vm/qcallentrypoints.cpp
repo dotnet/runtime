@@ -67,7 +67,7 @@
 #endif //FEATURE_PERFTRACING
 
 #include "tailcallhelp.h"
-#include "VirtualFunctionHelpers.h"
+#include "JitQCallHelpers.h"
 
 #include <minipal/entrypoints.h>
 
@@ -461,6 +461,7 @@ static const Entry s_QCall[] =
     DllImportEntry(AppendExceptionStackFrame)
 #endif // FEATURE_EH_FUNCLETS
     DllImportEntry(JIT_ResolveVirtualFunctionPointer)
+    DllImportEntry(JIT_GenericHandleWorker)
 };
 
 const void* QCallResolveDllImport(const char* name)
