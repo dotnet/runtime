@@ -585,7 +585,7 @@
       Condition="'$(TargetsAppleMobile)' == 'true' and '$(NeedsToBuildAppsOnHelix)' == 'true'"
       Outputs="%(_MergedWrapperMarker.FileName)"
       DependsOnTargets="DiscoverMergedTestWrappers;GetTestExclusionList">
-      
+
     <PropertyGroup Condition="'@(_MergedWrapperMarker)' != ''" >
       <_MergedWrapperDirectory>%(_MergedWrapperMarker.RootDir)%(Directory)</_MergedWrapperDirectory>
       <_MergedWrapperName>%(_MergedWrapperMarker.FileName)</_MergedWrapperName>
@@ -593,7 +593,7 @@
 
     <ItemGroup Condition="'@(_MergedWrapperMarker)' != ''" >
       <_MergedPayloadGroups Include="$(_MergedWrapperName)" />
-      <_MergedPayloadFiles Include="$(_MergedWrapperDirectory)/**" />
+      <_MergedPayloadFiles Include="$(_MergedWrapperDirectory)AppBundle/**" />
       <_MergedPayloadFiles Update="@(_MergedPayloadFiles)" Condition="'@(_MergedPayloadFiles)' != ''" >
         <!-- Never use [MSBuild]::MakeRelative here! We have some files containing Unicode characters in their %(FullPath) and
              MakeRelative function calls Escape function internally that replaces all the Unicode characters with %<xx>. -->
@@ -950,6 +950,10 @@
     <ItemGroup>
       <XHarnessAppBundleToTest>
         <CustomCommands>$(_XHarnessAppleCustomCommand)</CustomCommands>
+        <!-- We're building on Helix, so remove the app bundle path (as the bundle doesn't exist yet) -->
+        <AppBundlePath></AppBundlePath>
+        <!-- Instead, pass the zip file of the managed assets and the information needed to build on Helix. -->
+        <PayloadZipFile>$(MergedPayloadsRootDirectory)%(PayloadGroup).zip</PayloadZipFile>
       </XHarnessAppBundleToTest>
     </ItemGroup>
   </Target>
