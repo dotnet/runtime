@@ -99,7 +99,7 @@ if (CLR_CMAKE_TARGET_UNIX OR CLR_CMAKE_TARGET_BROWSER OR CLR_CMAKE_TARGET_WASI)
         PUBLIC
         ${NATIVE_LIBS_EXTRA}
     )
-    
+
     target_include_directories(System.IO.Compression.Native-Static PUBLIC ${BROTLI_INCLUDE_DIRS})
     target_link_libraries(System.IO.Compression.Native-Static PUBLIC ${BROTLI_LIBRARIES})
 else ()
@@ -197,13 +197,17 @@ if((NOT CLR_CMAKE_USE_SYSTEM_ZLIB) AND STATIC_LIBS_ONLY)
     install_static_library(zlib aotsdk nativeaot)
 endif()
 
-if((NOT CLR_CMAKE_USE_SYSTEM_BROTLI) AND STATIC_LIBS_ONLY)
+if(NOT CLR_CMAKE_USE_SYSTEM_BROTLI)
     foreach(BROTLI_LIB ${BROTLI_LIBRARIES})
         # Brotli's build scripts can add some system dependencies like libm
         # to BROTLI_LIBRARIES. Only install the libraries that are actually
         # defined as CMake targets.
         if (TARGET "${BROTLI_LIB}")
-            install_static_library(${BROTLI_LIB} aotsdk nativeaot)
+            if (STATIC_LIBS_ONLY)
+                install_static_library(${BROTLI_LIB} aotsdk nativeaot)
+            else()
+                install (TARGETS ${BROTLI_LIB} DESTINATION ${STATIC_LIB_DESTINATION} COMPONENT libs)
+            endif()
         endif()
     endforeach(BROTLI_LIB ${BROTLI_LIBRARIES})
 endif()
