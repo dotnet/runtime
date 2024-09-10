@@ -45,7 +45,7 @@ namespace Microsoft.Interop
         private readonly bool _setLastError;
         private readonly BoundGenerators _marshallers;
 
-        private readonly ManagedToNativeStubCodeContext _context;
+        private readonly DefaultIdentifierContext _context;
 
         public ManagedToNativeStubGenerator(
             ImmutableArray<TypePositionInfo> argTypes,
@@ -56,18 +56,25 @@ namespace Microsoft.Interop
         {
             _setLastError = setLastError;
 
-            _context = new ManagedToNativeStubCodeContext(ReturnIdentifier, ReturnIdentifier);
-            _marshallers = BoundGenerators.Create(argTypes, generatorResolver, _context, new Forwarder(), out var bindingDiagnostics);
+            _marshallers = BoundGenerators.Create(argTypes, generatorResolver, StubCodeContext.DefaultManagedToNativeStub, new Forwarder(), out var bindingDiagnostics);
 
             diagnosticsBag.ReportGeneratorDiagnostics(bindingDiagnostics);
 
-            if (_marshallers.ManagedReturnMarshaller.UsesNativeIdentifier(_context))
+            if (_marshallers.ManagedReturnMarshaller.UsesNativeIdentifier)
             {
                 // If we need a different native return identifier, then recreate the context with the correct identifier before we generate any code.
-                _context = new ManagedToNativeStubCodeContext(ReturnIdentifier, $"{ReturnIdentifier}{StubCodeContext.GeneratedNativeIdentifierSuffix}");
+                _context = new DefaultIdentifierContext(ReturnIdentifier, $"{ReturnIdentifier}{StubIdentifierContext.GeneratedNativeIdentifierSuffix}", MarshalDirection.ManagedToUnmanaged)
+                {
+                    CodeEmitOptions = codeEmitOptions
+                };
             }
-
-            _context = _context with { CodeEmitOptions = codeEmitOptions };
+            else
+            {
+                _context = new DefaultIdentifierContext(ReturnIdentifier, ReturnIdentifier, MarshalDirection.ManagedToUnmanaged)
+                {
+                    CodeEmitOptions = codeEmitOptions
+                };
+            }
 
             bool noMarshallingNeeded = true;
 
@@ -101,7 +108,7 @@ namespace Microsoft.Interop
         /// </remarks>
         public BlockSyntax GenerateStubBody(string targetIdentifier)
         {
-            GeneratedStatements statements = GeneratedStatements.Create(_marshallers, _context, IdentifierName(targetIdentifier));
+            GeneratedStatements statements = GeneratedStatements.Create(_marshallers, StubCodeContext.DefaultManagedToNativeStub, _context, IdentifierName(targetIdentifier));
             bool shouldInitializeVariables = !statements.GuaranteedUnmarshal.IsEmpty || !statements.CleanupCallerAllocated.IsEmpty || !statements.CleanupCalleeAllocated.IsEmpty;
             VariableDeclarations declarations = VariableDeclarations.GenerateDeclarationsForManagedToUnmanaged(_marshallers, _context, shouldInitializeVariables);
 

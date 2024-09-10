@@ -8,8 +8,6 @@
 #include "debugmacros.h"
 #include "interopconverter.h"
 
-struct VariantData;
-
 // Out of memory helper.
 #define IfNullThrow(EXPR) \
 do {if ((EXPR) == 0) {ThrowOutOfMemory();} } while (0)
@@ -33,21 +31,6 @@ enum DefaultInterfaceType
     DefaultInterfaceType_AutoDual       = 2,
     DefaultInterfaceType_AutoDispatch   = 3,
     DefaultInterfaceType_BaseComClass   = 4
-};
-
-// System.Drawing.Color struct definition.
-
-struct SYSTEMCOLOR
-{
-#ifdef HOST_64BIT
-    STRINGREF name;
-    INT64     value;
-#else
-    INT64     value;
-    STRINGREF name;
-#endif
-    short     knownColor;
-    short     state;
 };
 
 struct ComMethodTable;
@@ -276,9 +259,8 @@ MethodTable *GetDefaultInterfaceMTForClass(MethodTable *pMT, BOOL *pbDispatch);
 void GetComSourceInterfacesForClass(MethodTable *pClassMT, CQuickArray<MethodTable *> &rItfList);
 
 //--------------------------------------------------------------------------------
-// These methods convert an OLE_COLOR to a System.Color and vice versa.
-void ConvertOleColorToSystemColor(OLE_COLOR SrcOleColor, SYSTEMCOLOR *pDestSysColor);
-OLE_COLOR ConvertSystemColorToOleColor(SYSTEMCOLOR *pSrcSysColor);
+// These methods convert an OLE_COLOR to a boxed Color object and vice versa.
+void ConvertOleColorToSystemColor(OLE_COLOR SrcOleColor, OBJECTREF *pDestSysColor);
 OLE_COLOR ConvertSystemColorToOleColor(OBJECTREF *pSrcObj);
 
 //--------------------------------------------------------------------------------
@@ -388,9 +370,6 @@ VOID EnsureComStarted(BOOL fCoInitCurrentThread = TRUE);
 
 IUnknown* MarshalObjectToInterface(OBJECTREF* ppObject, MethodTable* pItfMT, MethodTable* pClassMT, DWORD dwFlags);
 void UnmarshalObjectFromInterface(OBJECTREF *ppObjectDest, IUnknown **ppUnkSrc, MethodTable *pItfMT, MethodTable *pClassMT, DWORD dwFlags);
-
-#define DEFINE_ASM_QUAL_TYPE_NAME(varname, typename, asmname)          static const char varname##[] = { typename##", "##asmname## };
-
 #else // FEATURE_COMINTEROP
 inline HRESULT EnsureComStartedNoThrow()
 {

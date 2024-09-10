@@ -2614,8 +2614,11 @@ class SuperPMIReplayAsmDiffs:
         git_path = find_file(git_exe, path_var.split(os.pathsep)) if path_var is not None else None
 
         for (mch_file, base_metrics, diff_metrics, diffs, jit_analyze_file, examples_to_put_in_summary) in asm_diffs:
-            with open(jit_analyze_file, "r") as read_fh:
-                jit_analyze_result = read_fh.read()
+            if jit_analyze_file:
+                with open(jit_analyze_file, "r") as read_fh:
+                    jit_analyze_result = read_fh.read()
+            else:
+                jit_analyze_result = None
 
             example_diffs = []
             for (diff, base_dasm_path, diff_dasm_path) in examples_to_put_in_summary:

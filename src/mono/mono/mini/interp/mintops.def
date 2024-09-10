@@ -128,7 +128,11 @@ OPDEF(MINT_MOV_8_2, "mov.8.2", 5, 0, 0, MintOpPair2)
 OPDEF(MINT_MOV_8_3, "mov.8.3", 7, 0, 0, MintOpPair3)
 OPDEF(MINT_MOV_8_4, "mov.8.4", 9, 0, 0, MintOpPair4)
 
-OPDEF(MINT_LDLOCA_S, "ldloca.s", 3, 1, 0, MintOpUShortInt)
+// NOTE: We reserve an extra ushort at the end of this specifically to communicate information
+//  to the jiterpreter about how large the local is so that invalidation can be correct.
+// FIXME: genmintops.py is way too simple to handle this having a different size on different targets,
+//  so it's got a size of 4 everywhere.
+OPDEF(MINT_LDLOCA_S, "ldloca.s", 4, 1, 0, MintOpUShortInt)
 
 OPDEF(MINT_LDIND_I1, "ldind.i1", 3, 1, 1, MintOpNoArgs)
 OPDEF(MINT_LDIND_U1, "ldind.u1", 3, 1, 1, MintOpNoArgs)
@@ -709,7 +713,16 @@ OPDEF(MINT_LDPTR, "mono_ldptr", 3, 1, 0, MintOpShortInt)
 OPDEF(MINT_MONO_NEWOBJ, "mono_newobj", 3, 1, 0, MintOpClassToken)
 OPDEF(MINT_MONO_RETOBJ, "mono_retobj", 2, 0, 1, MintOpNoArgs)
 OPDEF(MINT_MONO_MEMORY_BARRIER, "mono_memory_barrier", 1, 0, 0, MintOpNoArgs)
+OPDEF(MINT_MONO_EXCHANGE_U1, "mono_interlocked.xchg.u1", 4, 1, 2, MintOpNoArgs)
+OPDEF(MINT_MONO_EXCHANGE_I1, "mono_interlocked.xchg.i1", 4, 1, 2, MintOpNoArgs)
+OPDEF(MINT_MONO_EXCHANGE_U2, "mono_interlocked.xchg.u2", 4, 1, 2, MintOpNoArgs)
+OPDEF(MINT_MONO_EXCHANGE_I2, "mono_interlocked.xchg.i2", 4, 1, 2, MintOpNoArgs)
+OPDEF(MINT_MONO_EXCHANGE_I4, "mono_interlocked.xchg.i4", 4, 1, 2, MintOpNoArgs)
 OPDEF(MINT_MONO_EXCHANGE_I8, "mono_interlocked.xchg.i8", 4, 1, 2, MintOpNoArgs)
+OPDEF(MINT_MONO_CMPXCHG_U1, "mono_interlocked.cmpxchg.u1", 5, 1, 3, MintOpNoArgs)
+OPDEF(MINT_MONO_CMPXCHG_I1, "mono_interlocked.cmpxchg.i1", 5, 1, 3, MintOpNoArgs)
+OPDEF(MINT_MONO_CMPXCHG_U2, "mono_interlocked.cmpxchg.u2", 5, 1, 3, MintOpNoArgs)
+OPDEF(MINT_MONO_CMPXCHG_I2, "mono_interlocked.cmpxchg.i2", 5, 1, 3, MintOpNoArgs)
 OPDEF(MINT_MONO_CMPXCHG_I4, "mono_interlocked.cmpxchg.i4", 5, 1, 3, MintOpNoArgs)
 OPDEF(MINT_MONO_CMPXCHG_I8, "mono_interlocked.cmpxchg.i8", 5, 1, 3, MintOpNoArgs)
 OPDEF(MINT_MONO_LDDOMAIN, "mono_lddomain", 2, 1, 0, MintOpNoArgs)
@@ -829,7 +842,7 @@ OPDEF(MINT_INTRINS_WIDEN_ASCII_TO_UTF16, "intrins_widen_ascii_to_utf16", 5, 1, 3
 OPDEF(MINT_METADATA_UPDATE_LDFLDA, "metadata_update.ldflda", 5, 1, 1, MintOpTwoShorts)
 
 // This ifdef is fine because genmintops.py is generating output for HOST_BROWSER
-#if HOST_BROWSER
+#ifdef HOST_BROWSER
 OPDEF(MINT_TIER_PREPARE_JITERPRETER, "tier_prepare_jiterpreter", 4, 0, 0, MintOpShortAndInt)
 OPDEF(MINT_TIER_NOP_JITERPRETER, "tier_nop_jiterpreter", 4, 0, 0, MintOpShortAndInt)
 OPDEF(MINT_TIER_ENTER_JITERPRETER, "tier_enter_jiterpreter", 4, 0, 0, MintOpShortAndInt)

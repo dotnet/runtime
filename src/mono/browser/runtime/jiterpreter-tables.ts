@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 import {
-    WasmOpcode, WasmSimdOpcode, JiterpSpecialOpcode
+    WasmOpcode, WasmSimdOpcode, WasmAtomicOpcode, JiterpSpecialOpcode
 } from "./jiterpreter-opcodes";
 import {
     MintOpcode, SimdIntrinsic2, SimdIntrinsic3, SimdIntrinsic4
@@ -323,6 +323,24 @@ export const mathIntrinsicTable: { [opcode: number]: [isUnary: boolean, isF32: b
     [MintOpcode.MINT_POWF]:     [false, true, "powf"],
     [MintOpcode.MINT_REM_R8]:   [false, false, "fmod"],
     [MintOpcode.MINT_REM_R4]:   [false, true, "fmodf"],
+};
+
+export const xchgTable: { [opcode: number]: [wasmOpcode: WasmAtomicOpcode, resultFixupOpcode: WasmOpcode, alignmentPower: number] } = {
+    [MintOpcode.MINT_MONO_EXCHANGE_U1]: [WasmAtomicOpcode.i32_atomic_rmw8_xchg_u, WasmOpcode.unreachable, 0],
+    [MintOpcode.MINT_MONO_EXCHANGE_I1]: [WasmAtomicOpcode.i32_atomic_rmw8_xchg_u, WasmOpcode.i32_extend_8_s, 0],
+    [MintOpcode.MINT_MONO_EXCHANGE_U2]: [WasmAtomicOpcode.i32_atomic_rmw16_xchg_u, WasmOpcode.unreachable, 1],
+    [MintOpcode.MINT_MONO_EXCHANGE_I2]: [WasmAtomicOpcode.i32_atomic_rmw16_xchg_u, WasmOpcode.i32_extend_16_s, 1],
+    [MintOpcode.MINT_MONO_EXCHANGE_I4]: [WasmAtomicOpcode.i32_atomic_rmw_xchg, WasmOpcode.unreachable, 2],
+    [MintOpcode.MINT_MONO_EXCHANGE_I8]: [WasmAtomicOpcode.i64_atomic_rmw_xchg, WasmOpcode.unreachable, 3],
+};
+
+export const cmpxchgTable: { [opcode: number]: [wasmOpcode: WasmAtomicOpcode, resultFixupOpcode: WasmOpcode, alignmentPower: number] } = {
+    [MintOpcode.MINT_MONO_CMPXCHG_U1]: [WasmAtomicOpcode.i32_atomic_rmw8_cmpxchg_u, WasmOpcode.unreachable, 0],
+    [MintOpcode.MINT_MONO_CMPXCHG_I1]: [WasmAtomicOpcode.i32_atomic_rmw8_cmpxchg_u, WasmOpcode.i32_extend_8_s, 0],
+    [MintOpcode.MINT_MONO_CMPXCHG_U2]: [WasmAtomicOpcode.i32_atomic_rmw16_cmpxchg_u, WasmOpcode.unreachable, 1],
+    [MintOpcode.MINT_MONO_CMPXCHG_I2]: [WasmAtomicOpcode.i32_atomic_rmw16_cmpxchg_u, WasmOpcode.i32_extend_16_s, 1],
+    [MintOpcode.MINT_MONO_CMPXCHG_I4]: [WasmAtomicOpcode.i32_atomic_rmw_cmpxchg, WasmOpcode.unreachable, 2],
+    [MintOpcode.MINT_MONO_CMPXCHG_I8]: [WasmAtomicOpcode.i64_atomic_rmw_cmpxchg, WasmOpcode.unreachable, 3],
 };
 
 export const simdCreateSizes = {
