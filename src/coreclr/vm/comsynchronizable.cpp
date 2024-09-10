@@ -362,63 +362,17 @@ extern "C" void QCALLTYPE ThreadNative_SetPriority(QCall::ObjectHandleOnStack th
     END_QCALL;
 }
 
-FCIMPL1(FC_BOOL_RET, ThreadNative::IsAlive, ThreadBaseObject* pThisUNSAFE)
+extern "C" void QCALLTYPE ThreadNative_GetCurrentThread(QCall::ObjectHandleOnStack thread)
 {
-    FCALL_CONTRACT;
+    QCALL_CONTRACT;
 
-    if (pThisUNSAFE==NULL)
-        FCThrowRes(kNullReferenceException, W("NullReference_This"));
+    BEGIN_QCALL;
 
-    THREADBASEREF thisRef(pThisUNSAFE);
-    BOOL ret = false;
+    GCX_COOP();
+    thread.Set(GetThread()->GetExposedObject());
 
-    // Keep managed Thread object alive, since the native object's
-    // lifetime is tied to the managed object's finalizer.  And with
-    // resurrection, it may be possible to get a dangling pointer here -
-    // consider both protecting thisRef and setting the managed object's
-    // Thread* to NULL in the GC's ScanForFinalization method.
-    HELPER_METHOD_FRAME_BEGIN_RET_1(thisRef);
-
-    Thread  *thread = thisRef->GetInternal();
-
-    if (thread == 0)
-        COMPlusThrow(kThreadStateException, IDS_EE_THREAD_CANNOT_GET);
-
-    ret = ThreadIsRunning(thread);
-
-    HELPER_METHOD_POLL();
-    HELPER_METHOD_FRAME_END();
-
-    FC_RETURN_BOOL(ret);
+    END_QCALL;
 }
-FCIMPLEND
-
-NOINLINE static Object* GetCurrentThreadHelper()
-{
-    FCALL_CONTRACT;
-    FC_INNER_PROLOG(ThreadNative::GetCurrentThread);
-    OBJECTREF   refRetVal  = NULL;
-
-    HELPER_METHOD_FRAME_BEGIN_RET_ATTRIB_1(Frame::FRAME_ATTR_EXACT_DEPTH|Frame::FRAME_ATTR_CAPTURE_DEPTH_2, refRetVal);
-    refRetVal = GetThread()->GetExposedObject();
-    HELPER_METHOD_FRAME_END();
-
-    FC_INNER_EPILOG();
-    return OBJECTREFToObject(refRetVal);
-}
-
-FCIMPL0(Object*, ThreadNative::GetCurrentThread)
-{
-    FCALL_CONTRACT;
-    OBJECTHANDLE ExposedObject = GetThread()->m_ExposedObject;
-    _ASSERTE(ExposedObject != 0); //Thread's constructor always initializes its GCHandle
-    Object* result = *((Object**) ExposedObject);
-    if (result != 0)
-        return result;
-
-    FC_INNER_RETURN(Object*, GetCurrentThreadHelper());
-}
-FCIMPLEND
 
 extern "C" UINT64 QCALLTYPE ThreadNative_GetCurrentOSThreadId()
 {
@@ -442,33 +396,36 @@ extern "C" UINT64 QCALLTYPE ThreadNative_GetCurrentOSThreadId()
     return threadId;
 }
 
-FCIMPL1(void, ThreadNative::Initialize, ThreadBaseObject* pThisUNSAFE)
+extern "C" void QCALLTYPE ThreadNative_Initialize(QCall::ObjectHandleOnStack t)
 {
-    FCALL_CONTRACT;
+    QCALL_CONTRACT;
 
-    THREADBASEREF   pThis       = (THREADBASEREF) pThisUNSAFE;
+    BEGIN_QCALL;
 
-    HELPER_METHOD_FRAME_BEGIN_1(pThis);
+    GCX_COOP();
 
-    _ASSERTE(pThis != NULL);
-    _ASSERTE(pThis->m_InternalThread == NULL);
+    THREADBASEREF threadRef = NULL;
+    GCPROTECT_BEGIN(threadRef)
+    threadRef = (THREADBASEREF)t.Get();
+
+    _ASSERTE(threadRef != NULL);
+    _ASSERTE(threadRef->GetInternal() == NULL);
 
     // if we don't have an internal Thread object associated with this exposed object,
     // now is our first opportunity to create one.
-    Thread      *unstarted = SetupUnstartedThread();
-
+    Thread* unstarted = SetupUnstartedThread();
     PREFIX_ASSUME(unstarted != NULL);
 
-    pThis->SetInternal(unstarted);
-    pThis->SetManagedThreadId(unstarted->GetThreadId());
-    unstarted->SetExposedObject(pThis);
+    threadRef->SetInternal(unstarted);
+    threadRef->SetManagedThreadId(unstarted->GetThreadId());
+    unstarted->SetExposedObject(threadRef);
 
     // Initialize the thread priority to normal.
-    pThis->SetPriority(ThreadNative::PRIORITY_NORMAL);
+    threadRef->SetPriority(ThreadNative::PRIORITY_NORMAL);
 
-    HELPER_METHOD_FRAME_END();
+    GCPROTECT_END();
+    END_QCALL;
 }
-FCIMPLEND
 
 // Return whether or not this is a background thread.
 FCIMPL1(FC_BOOL_RET, ThreadNative::GetIsBackground, ThreadBaseObject* pThisUNSAFE)
@@ -489,57 +446,43 @@ FCIMPL1(FC_BOOL_RET, ThreadNative::GetIsBackground, ThreadBaseObject* pThisUNSAF
 FCIMPLEND
 
 // Deliver the state of the thread as a consistent set of bits.
-// This copied in VM\EEDbgInterfaceImpl.h's
-//     CorDebugUserState GetUserState( Thread *pThread )
-// , so propagate changes to both functions
-FCIMPL1(INT32, ThreadNative::GetThreadState, ThreadBaseObject* pThisUNSAFE)
+// Duplicate logic in DacDbiInterfaceImpl::GetPartialUserState()
+extern "C" INT32 QCALLTYPE ThreadNative_GetThreadState(QCall::ThreadHandle thread)
 {
-    FCALL_CONTRACT;
+    CONTRACTL
+    {
+        QCALL_CHECK_NO_GC_TRANSITION;
+        PRECONDITION(thread != NULL);
+    }
+    CONTRACTL_END;
 
-    INT32               res = 0;
-    Thread::ThreadState state;
-
-    if (pThisUNSAFE==NULL)
-        FCThrowRes(kNullReferenceException, W("NullReference_This"));
-
-    // validate the thread.  Failure here implies that the thread was finalized
-    // and then resurrected.
-    Thread  *thread = pThisUNSAFE->GetInternal();
-
-    if (!thread)
-        FCThrowEx(kThreadStateException, IDS_EE_THREAD_CANNOT_GET, NULL, NULL, NULL);
-
-    HELPER_METHOD_FRAME_BEGIN_RET_0();
+    INT32 res = 0;
 
     // grab a snapshot
-    state = thread->GetSnapshotState();
+    Thread::ThreadState state = thread->GetSnapshotState();
 
     if (state & Thread::TS_Background)
-        res |= ThreadBackground;
+        res |= ThreadNative::ThreadBackground;
 
     if (state & Thread::TS_Unstarted)
-        res |= ThreadUnstarted;
+        res |= ThreadNative::ThreadUnstarted;
 
     // Don't report a StopRequested if the thread has actually stopped.
     if (state & Thread::TS_Dead)
     {
-        res |= ThreadStopped;
+        res |= ThreadNative::ThreadStopped;
     }
     else
     {
         if (state & Thread::TS_AbortRequested)
-            res |= ThreadAbortRequested;
+            res |= ThreadNative::ThreadAbortRequested;
     }
 
     if (state & Thread::TS_Interruptible)
-        res |= ThreadWaitSleepJoin;
-
-    HELPER_METHOD_POLL();
-    HELPER_METHOD_FRAME_END();
+        res |= ThreadNative::ThreadWaitSleepJoin;
 
     return res;
 }
-FCIMPLEND
 
 #ifdef FEATURE_COMINTEROP_APARTMENT_SUPPORT
 
@@ -942,16 +885,12 @@ extern "C" void QCALLTYPE ThreadNative_DisableComObjectEagerCleanup(QCall::Threa
 {
     CONTRACTL
     {
-        QCALL_CHECK;
+        QCALL_CHECK_NO_GC_TRANSITION;
         PRECONDITION(thread != NULL);
     }
     CONTRACTL_END;
 
-    BEGIN_QCALL;
-
     thread->SetDisableComObjectEagerCleanup();
-
-    END_QCALL;
 }
 #endif //FEATURE_COMINTEROP
 
