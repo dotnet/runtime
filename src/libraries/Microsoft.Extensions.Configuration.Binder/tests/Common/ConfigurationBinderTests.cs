@@ -1544,40 +1544,69 @@ if (!System.Diagnostics.Debugger.IsAttached) { System.Diagnostics.Debugger.Launc
             Assert.Equal(new string[] { "a", "b", "c" }, options.Array);
         }
 
+
+        public static IEnumerable<object[]> Configuration_TestData()
+        {
+            yield return new object[]
+            {
+                new ConfigurationBuilder()
+                    .AddJsonStream(new System.IO.MemoryStream(System.Text.Encoding.UTF8.GetBytes(@"{
+                            ""IntValue"" :              """",
+                            ""DoubleValue"" :           """",
+                            ""BoolValue"" :             """",
+                            ""DecimalValue"" :          """",
+                            ""FloatValue"" :            """",
+                            ""LongValue"" :             """",
+                            ""ShortValue"" :            """",
+                            ""ByteValue"" :             """",
+                            ""SByteValue"" :            """",
+                            ""UIntValue"" :             """",
+                            ""UShortValue"" :           """",
+                            ""ULongValue"" :            """",
+                            ""DateTimeValue"" :         """",
+                            ""DateTimeOffsetValue"" :   """",
+                            ""TimeSpanValue"" :         """",
+                            ""GuidValue"" :             """",
+                            ""StringComparisonValue"" : """"
+                        }"
+                    ))).Build()
+            };
+
+            yield return new object[]
+            {
+                new ConfigurationBuilder().AddInMemoryCollection(
+                    new Dictionary<string, string>
+                    {
+                        { "IntValue",               null },
+                        { "DoubleValue",            null },
+                        { "BoolValue",              null },
+                        { "DecimalValue",           null },
+                        { "FloatValue",             null },
+                        { "LongValue",              null },
+                        { "ShortValue",             null },
+                        { "ByteValue",              null },
+                        { "SByteValue",             null },
+                        { "UIntValue",              null },
+                        { "UShortValue",            null },
+                        { "ULongValue",             null },
+                        { "DateTimeValue",          null },
+                        { "DateTimeOffsetValue",    null },
+                        { "TimeSpanValue",          null },
+                        { "GuidValue",              null },
+                        { "StringComparisonValue",  null },
+                    }).Build()
+            };
+        }
+
         /// <summary>
         /// Test binding a value parsable types to null configuration values.
         /// The test ensure the binding will succeed without exceptions and the value will be null (not set).
         /// </summary>
-        [Fact]
-        public void BindToKnownParsableTypesWithNullValueTest()
+        [Theory]
+        [MemberData(nameof(Configuration_TestData))]
+        public void BindToKnownParsableTypesWithNullValueTest(IConfiguration configuration)
         {
-            string jsonConfig = @"{
-                            ""ParsableValuesClass"": {
-                                ""IntValue"" : null,
-                                ""DoubleValue"" : null,
-                                ""BoolValue"" : null,
-                                ""DecimalValue"" : null,
-                                ""FloatValue"" : null,
-                                ""LongValue"" : null,
-                                ""ShortValue"" : null,
-                                ""ByteValue"" : null,
-                                ""SByteValue"" : null,
-                                ""UIntValue"" : null,
-                                ""UShortValue"" : null,
-                                ""ULongValue"" : null,
-                                ""DateTimeValue"" : null,
-                                ""DateTimeOffsetValue"" : null,
-                                ""TimeSpanValue"" : null,
-                                ""GuidValue"" : null,
-                                ""StringComparisonValue"" : null
-                            }
-                        }";
-
-            var configuration = new ConfigurationBuilder()
-                        .AddJsonStream(new System.IO.MemoryStream(System.Text.Encoding.UTF8.GetBytes(jsonConfig)))
-                        .Build();
-
-            ParsableValuesClass instance = configuration.GetSection("ParsableValuesClass").Get<ParsableValuesClass>();
+            ParsableValuesClass instance = configuration.Get<ParsableValuesClass>();
             Assert.Null(instance.IntValue);
             Assert.Null(instance.DoubleValue);
             Assert.Null(instance.BoolValue);
