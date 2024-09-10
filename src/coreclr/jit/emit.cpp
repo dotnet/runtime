@@ -6773,12 +6773,10 @@ unsigned emitter::emitEndCodeGen(Compiler*         comp,
 #endif
 
 #if defined(TARGET_XARCH) || defined(TARGET_ARM64)
-    // For x64/x86/arm64, align methods that are "optimizations enabled" to 32 byte boundaries if
-    // they are larger than 16 bytes and contain a loop.
+    // For x64/x86/arm64, align methods that contain a loop to 32 byte boundaries if
+    // they are larger than 16 bytes and loop alignment is enabled.
     //
-    if (emitComp->opts.OptimizationEnabled() &&
-        (!emitComp->opts.jitFlags->IsSet(JitFlags::JIT_FLAG_PREJIT) || comp->IsTargetAbi(CORINFO_NATIVEAOT_ABI)) &&
-        (emitTotalHotCodeSize > 16) && emitComp->fgHasLoops)
+    if (codeGen->ShouldAlignLoops() && (emitTotalHotCodeSize > 16) && emitComp->fgHasLoops)
     {
         codeAlignment = 32;
     }
@@ -8361,7 +8359,7 @@ void emitter::emitDispDataSec(dataSecDsc* section, BYTE* dst)
             bool      isRelative = (data->dsType == dataSection::blockRelative32);
             size_t    blockCount = data->dsSize / (isRelative ? 4 : TARGET_POINTER_SIZE);
 
-            for (unsigned i = 0; i < blockCount; i++)
+            for (size_t i = 0; i < blockCount; i++)
             {
                 if (i > 0)
                 {

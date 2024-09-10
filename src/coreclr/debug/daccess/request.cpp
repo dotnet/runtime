@@ -2110,7 +2110,7 @@ ClrDataAccess::GetMethodTableData(CLRDATA_ADDRESS mt, struct DacpMethodTableData
             _ASSERTE(MTData->wNumVtableSlots == mtDataLocal.wNumVtableSlots);
             _ASSERTE(MTData->wNumVirtuals == mtDataLocal.wNumVirtuals);
             _ASSERTE(MTData->cl == mtDataLocal.cl);
-            _ASSERTE(MTData->dwAttrClass = mtDataLocal.dwAttrClass);
+            _ASSERTE(MTData->dwAttrClass == mtDataLocal.dwAttrClass);
             _ASSERTE(MTData->bContainsPointers == mtDataLocal.bContainsPointers);
             _ASSERTE(MTData->bIsShared == mtDataLocal.bIsShared);
             _ASSERTE(MTData->bIsDynamic == mtDataLocal.bIsDynamic);
@@ -2160,7 +2160,7 @@ ClrDataAccess::GetMethodTableDataImpl(CLRDATA_ADDRESS mt, struct DacpMethodTable
         MTData->dwAttrClass = pMT->GetAttrClass();
         MTData->bContainsPointers = pMT->ContainsGCPointers();
         MTData->bIsShared = FALSE;
-        MTData->bIsDynamic = pMT->IsDynamicStatics();
+        MTData->bIsDynamic = pMT->IsDynamicStatics() ? TRUE : FALSE;
     }
     return S_OK;
 }
@@ -2632,6 +2632,7 @@ DWORD DACGetNumComponents(TADDR addr, ICorDebugDataTarget* target)
     // This expects that the first member after the MethodTable pointer (from Object)
     // is a 32-bit integer representing the number of components.
     // This holds for ArrayBase and StringObject - see coreclr/vm/object.h
+    // Free objects also have a component count set at this offset- see SetFree in coreclr/gc/gc.cpp
     addr += sizeof(size_t); // Method table pointer
     ULONG32 returned = 0;
     DWORD Value = 0;
@@ -2833,19 +2834,17 @@ ClrDataAccess::GetAppDomainData(CLRDATA_ADDRESS addr, struct DacpAppDomainData *
     }
     else
     {
-        PTR_BaseDomain pBaseDomain = PTR_BaseDomain(TO_TADDR(addr));
-
         ZeroMemory(appdomainData, sizeof(DacpAppDomainData));
-        appdomainData->AppDomainPtr = PTR_CDADDR(pBaseDomain);
-        PTR_LoaderAllocator pLoaderAllocator = pBaseDomain->GetLoaderAllocator();
+        appdomainData->AppDomainPtr = addr;
+        PTR_LoaderAllocator pLoaderAllocator = SystemDomain::GetGlobalLoaderAllocator();
         appdomainData->pHighFrequencyHeap = HOST_CDADDR(pLoaderAllocator->GetHighFrequencyHeap());
         appdomainData->pLowFrequencyHeap = HOST_CDADDR(pLoaderAllocator->GetLowFrequencyHeap());
         appdomainData->pStubHeap = HOST_CDADDR(pLoaderAllocator->GetStubHeap());
         appdomainData->appDomainStage = STAGE_OPEN;
 
-        if (pBaseDomain->IsAppDomain())
+        if (addr != HOST_CDADDR(SystemDomain::System()))
         {
-            AppDomain * pAppDomain = pBaseDomain->AsAppDomain();
+            PTR_AppDomain pAppDomain = PTR_AppDomain(TO_TADDR(addr));
             appdomainData->DomainLocalBlock = 0;
             appdomainData->pDomainLocalModules = 0;
 
@@ -2962,15 +2961,19 @@ ClrDataAccess::GetAssemblyList(CLRDATA_ADDRESS addr, int count, CLRDATA_ADDRESS 
 
     SOSDacEnter();
 
-    BaseDomain* pBaseDomain = PTR_BaseDomain(TO_TADDR(addr));
-
-    int n=0;
-    if (pBaseDomain->IsAppDomain())
+    if (addr == HOST_CDADDR(SystemDomain::System()))
     {
-        AppDomain::AssemblyIterator i = pBaseDomain->AsAppDomain()->IterateAssembliesEx(
+        // We shouldn't be asking for the assemblies in SystemDomain
+        hr = E_INVALIDARG;
+    }
+    else
+    {
+        PTR_AppDomain pAppDomain = PTR_AppDomain(TO_TADDR(addr));
+        AppDomain::AssemblyIterator i = pAppDomain->IterateAssembliesEx(
             (AssemblyIterationFlags)(kIncludeLoading | kIncludeLoaded | kIncludeExecution));
         CollectibleAssemblyHolder<DomainAssembly *> pDomainAssembly;
 
+        int n = 0;
         if (values)
         {
             while (i.Next(pDomainAssembly.This()) && (n < count))
@@ -2992,13 +2995,6 @@ ClrDataAccess::GetAssemblyList(CLRDATA_ADDRESS addr, int count, CLRDATA_ADDRESS 
 
         if (pNeeded)
             *pNeeded = n;
-    }
-    else
-    {
-        // The only other type of BaseDomain is the SystemDomain, and we shouldn't be asking
-        // for the assemblies in it.
-        _ASSERTE(false);
-        hr = E_INVALIDARG;
     }
 
     SOSDacLeave();
@@ -3039,10 +3035,9 @@ ClrDataAccess::GetAppDomainName(CLRDATA_ADDRESS addr, unsigned int count, _Inout
 {
     SOSDacEnter();
 
-    PTR_BaseDomain pBaseDomain = PTR_BaseDomain(TO_TADDR(addr));
-    if (!pBaseDomain->IsAppDomain())
+    if (addr == HOST_CDADDR(SystemDomain::System()))
     {
-        // Shared domain and SystemDomain don't have this field.
+        // SystemDomain doesn't have this field.
         if (pNeeded)
             *pNeeded = 1;
         if (name)
@@ -3050,8 +3045,7 @@ ClrDataAccess::GetAppDomainName(CLRDATA_ADDRESS addr, unsigned int count, _Inout
     }
     else
     {
-        AppDomain* pAppDomain = pBaseDomain->AsAppDomain();
-
+        PTR_AppDomain pAppDomain = PTR_AppDomain(TO_TADDR(addr));
         if (!pAppDomain->m_friendlyName.IsEmpty())
         {
             if (!pAppDomain->m_friendlyName.DacGetUnicode(count, name, pNeeded))
@@ -3102,9 +3096,9 @@ ClrDataAccess::GetAppDomainConfigFile(CLRDATA_ADDRESS appDomain, int count,
 }
 
 HRESULT
-ClrDataAccess::GetAssemblyData(CLRDATA_ADDRESS cdBaseDomainPtr, CLRDATA_ADDRESS assembly, struct DacpAssemblyData *assemblyData)
+ClrDataAccess::GetAssemblyData(CLRDATA_ADDRESS domain, CLRDATA_ADDRESS assembly, struct DacpAssemblyData *assemblyData)
 {
-    if (assembly == (CLRDATA_ADDRESS)NULL && cdBaseDomainPtr == (CLRDATA_ADDRESS)NULL)
+    if (assembly == (CLRDATA_ADDRESS)NULL && domain == (CLRDATA_ADDRESS)NULL)
     {
         return E_INVALIDARG;
     }
@@ -3116,14 +3110,9 @@ ClrDataAccess::GetAssemblyData(CLRDATA_ADDRESS cdBaseDomainPtr, CLRDATA_ADDRESS 
     // Make sure conditionally-assigned fields like AssemblySecDesc, LoadContext, etc. are zeroed
     ZeroMemory(assemblyData, sizeof(DacpAssemblyData));
 
-    // If the specified BaseDomain is an AppDomain, get a pointer to it
-    AppDomain * pDomain = NULL;
-    if (cdBaseDomainPtr != (CLRDATA_ADDRESS)NULL)
+    if (domain != (CLRDATA_ADDRESS)NULL)
     {
-        assemblyData->BaseDomainPtr = cdBaseDomainPtr;
-        PTR_BaseDomain baseDomain = PTR_BaseDomain(TO_TADDR(cdBaseDomainPtr));
-        if( baseDomain->IsAppDomain() )
-            pDomain = baseDomain->AsAppDomain();
+        assemblyData->DomainPtr = domain;
     }
 
     assemblyData->AssemblyPtr = HOST_CDADDR(pAssembly);
@@ -3799,7 +3788,7 @@ ClrDataAccess::GetThreadLocalModuleData(CLRDATA_ADDRESS thread, unsigned int ind
 HRESULT ClrDataAccess::GetHandleEnum(ISOSHandleEnum **ppHandleEnum)
 {
     unsigned int types[] = {HNDTYPE_WEAK_SHORT, HNDTYPE_WEAK_LONG, HNDTYPE_STRONG, HNDTYPE_PINNED, HNDTYPE_DEPENDENT,
-                            HNDTYPE_SIZEDREF, HNDTYPE_WEAK_INTERIOR_POINTER,
+                            HNDTYPE_WEAK_INTERIOR_POINTER,
 #if defined(FEATURE_COMINTEROP) || defined(FEATURE_COMWRAPPERS) || defined(FEATURE_OBJCMARSHAL)
                             HNDTYPE_REFCOUNTED,
 #endif // FEATURE_COMINTEROP || FEATURE_COMWRAPPERS || FEATURE_OBJCMARSHAL
@@ -3837,7 +3826,6 @@ HRESULT ClrDataAccess::GetHandleEnumForGC(unsigned int gen, ISOSHandleEnum **ppH
     SOSDacEnter();
 
     unsigned int types[] = {HNDTYPE_WEAK_SHORT, HNDTYPE_WEAK_LONG, HNDTYPE_STRONG, HNDTYPE_PINNED, HNDTYPE_DEPENDENT,
-                            HNDTYPE_SIZEDREF,
 #if defined(FEATURE_COMINTEROP) || defined(FEATURE_COMWRAPPERS) || defined(FEATURE_OBJCMARSHAL)
                             HNDTYPE_REFCOUNTED,
 #endif // FEATURE_COMINTEROP || FEATURE_COMWRAPPERS || FEATURE_OBJCMARSHAL
@@ -4065,8 +4053,7 @@ ClrDataAccess::TraverseVirtCallStubHeap(CLRDATA_ADDRESS pAppDomain, VCSHeapType 
 
     SOSDacEnter();
 
-    BaseDomain* pBaseDomain = PTR_BaseDomain(TO_TADDR(pAppDomain));
-    VirtualCallStubManager *pVcsMgr = pBaseDomain->GetLoaderAllocator()->GetVirtualCallStubManager();
+    VirtualCallStubManager *pVcsMgr = SystemDomain::GetGlobalLoaderAllocator()->GetVirtualCallStubManager();
     if (!pVcsMgr)
     {
         hr = E_POINTER;
@@ -4111,8 +4098,8 @@ HRESULT ClrDataAccess::GetDomainLoaderAllocator(CLRDATA_ADDRESS domainAddress, C
 
     SOSDacEnter();
 
-    PTR_BaseDomain pDomain = PTR_BaseDomain(TO_TADDR(domainAddress));
-    *pLoaderAllocator = pDomain != nullptr ? HOST_CDADDR(pDomain->GetLoaderAllocator()) : 0;
+    // The one and only app domain uses the global loader allocator
+    *pLoaderAllocator = HOST_CDADDR(SystemDomain::GetGlobalLoaderAllocator());
 
     SOSDacLeave();
     return hr;

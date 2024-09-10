@@ -18,6 +18,8 @@
     <IncludeBuildOutput>false</IncludeBuildOutput>
     <IncludeMultiTargetRoslynComponentTargets>false</IncludeMultiTargetRoslynComponentTargets>
     <TargetsForTfmSpecificContentInPackage>$(TargetsForTfmSpecificContentInPackage);AddBuildOutputToToolsPackage</TargetsForTfmSpecificContentInPackage>
+    <!-- TODO: Add package readme -->
+    <EnableDefaultPackageReadmeFile>false</EnableDefaultPackageReadmeFile>
   </PropertyGroup>
 
   <!-- Include the illink.runtimeconfig.pack.json file (which depends on the runtimeversion being built)
