@@ -1,0 +1,17 @@
+<Project>
+
+  <ItemDefinitionGroup>
+    <PackageDownloadAndReference>
+      <Folder>lib/$(TargetFramework)</Folder>
+      <AssemblyName>%(Identity)</AssemblyName>
+      <Private>false</Private>
+    </PackageDownloadAndReference>
+  </ItemDefinitionGroup>
+  
+  <ItemGroup>
+    <PackageDownload Include="@(PackageDownloadAndReference)" />
+    <PackageDownload Update="@(PackageDownloadAndReference)" Version="[%(Version)]"/>
+    <Reference Include="@(PackageDownloadAndReference->'$(NuGetPackageRoot)%(Identity)/%(Version)/%(Folder)/%(AssemblyName).dll')" />
+  </ItemGroup>
+
+</Project>

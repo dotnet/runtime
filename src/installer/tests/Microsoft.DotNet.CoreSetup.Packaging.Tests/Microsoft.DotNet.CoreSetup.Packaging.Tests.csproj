@@ -7,8 +7,14 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="NuGet.Packaging" Version="$(NugetPackagingVersion)" />
+    <!-- reference nuget binaries directly to avoid restoring it's package dependency closure -->    
+    <PackageDownloadAndReference Include="NuGet.Frameworks" Version="$(NugetFrameworksVersion)" Folder="lib/netstandard2.0" Private="true" />
+    <PackageDownloadAndReference Include="NuGet.Packaging" Version="$(NugetPackagingVersion)" Folder="lib/netstandard2.0"  Private="true"  />
+    <PackageDownloadAndReference Include="NuGet.ProjectModel" Version="$(NugetProjectModelVersion)" Folder="lib/netstandard2.0"  Private="true" />
+    <PackageDownloadAndReference Include="NuGet.Versioning" Version="$(NugetVersioningVersion)" Folder="lib/netstandard2.0"  Private="true" />
   </ItemGroup>
+  
+  <Import Project="$(RepositoryEngineeringDir)PackageDownloadAndReference.targets" />
 
   <ItemGroup>
     <ProjectReference Include="..\TestUtils\TestUtils.csproj" />
