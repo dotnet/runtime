@@ -64,7 +64,7 @@ public abstract class TestMainJsTestBase : BuildTestBase
 
         if (options.ExtraBuildEnvironmentVariables is null)
             options = options with { ExtraBuildEnvironmentVariables = new Dictionary<string, string>() };
-        options.ExtraBuildEnvironmentVariables["ForceNet8Current"] = "false";
+        options.ExtraBuildEnvironmentVariables["TreatPreviousAsCurrent"] = "false";
 
         try
         {

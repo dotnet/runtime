@@ -95,7 +95,7 @@ public abstract class WasmTemplateTestBase : BuildTestBase
     {
         if (buildProjectOptions.ExtraBuildEnvironmentVariables is null)
             buildProjectOptions = buildProjectOptions with { ExtraBuildEnvironmentVariables = new Dictionary<string, string>() };
-        buildProjectOptions.ExtraBuildEnvironmentVariables["ForceNet8Current"] = "false";
+        buildProjectOptions.ExtraBuildEnvironmentVariables["TreatPreviousAsCurrent"] = "false";
 
         (CommandResult res, string logFilePath) = BuildProjectWithoutAssert(id, buildArgs.Config, buildProjectOptions);
         if (buildProjectOptions.UseCache)
