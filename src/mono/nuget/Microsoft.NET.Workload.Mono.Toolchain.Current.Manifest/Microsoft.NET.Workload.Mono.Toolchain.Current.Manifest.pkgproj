@@ -47,8 +47,8 @@
       <_WorkloadManifestValues Include="NetVersion" Value="net10" /> <!-- NetCurrent -->
       <_WorkloadManifestValues Include="WorkloadVersion" Value="$(PackageVersion)" />
       <_WorkloadManifestValues Include="PackageVersion" Value="$(PackageVersion)" />
-      <_WorkloadManifestValues Include="PackageVersionNet9" Value="$(PackageVersionNet8)" Condition="'$(PackageVersionNet9)' != ''" />
-      <_WorkloadManifestValues Include="PackageVersionNet9" Value="$(PackageVersion)" Condition="'$(PackageVersionNet9)' == ''" />
+      <_WorkloadManifestValues Include="PackageVersionNet9" Value="$(PackageVersionNet9)"  Condition="'$(PackageVersionNet9)' != ''" />
+      <_WorkloadManifestValues Include="PackageVersionNet9" Value="$(PackageVersion)"      Condition="'$(PackageVersionNet9)' == ''" />
       <_WorkloadManifestValues Include="PackageVersionNet8" Value="$(PackageVersionNet8)" />
       <_WorkloadManifestValues Include="PackageVersionNet7" Value="$(PackageVersionNet7)" />
       <_WorkloadManifestValues Include="PackageVersionNet6" Value="$(PackageVersionNet6)" />
