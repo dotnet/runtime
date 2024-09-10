@@ -272,6 +272,7 @@ function getTraceImports () {
         ["ckovr_u4", "overflow_check_i4", getRawCwrap("mono_jiterp_overflow_check_u4")],
         importDef("newobj_i", getRawCwrap("mono_jiterp_try_newobj_inlined")),
         importDef("newstr", getRawCwrap("mono_jiterp_try_newstr")),
+        importDef("newarr", getRawCwrap("mono_jiterp_try_newarr")),
         importDef("ld_del_ptr", getRawCwrap("mono_jiterp_ld_delegate_method_ptr")),
         importDef("ldtsflda", getRawCwrap("mono_jiterp_ldtsflda")),
         importDef("conv", getRawCwrap("mono_jiterp_conv")),
@@ -461,6 +462,15 @@ function initialize_builder (builder: WasmBuilder) {
         "newstr",
         {
             "ppDestination": WasmValtype.i32,
+            "length": WasmValtype.i32,
+        },
+        WasmValtype.i32, true
+    );
+    builder.defineType(
+        "newarr",
+        {
+            "ppDestination": WasmValtype.i32,
+            "vtable": WasmValtype.i32,
             "length": WasmValtype.i32,
         },
         WasmValtype.i32, true
@@ -841,18 +851,6 @@ function generate_wasm (
         // Get the exported trace function
         const fn = traceInstance.exports[traceName];
 
-        // FIXME: Before threading can be supported, we will need to ensure that
-        //  once we assign a function pointer index to a given trace, the trace is
-        //  broadcast to all the JS workers and compiled + installed at the appropriate
-        //  index in every worker's function pointer table. This also means that we
-        //  would need to fill empty slots with a dummy function when growing the table
-        //  so that any erroneous ENTERs will skip the opcode instead of crashing due
-        //  to calling a null function pointer.
-        // Table grow operations will need to be synchronized between workers somehow,
-        //  probably by storing the table size in a volatile global or something so that
-        //  we know the range of indexes available to us and can ensure that threads
-        //  independently jitting traces will not stomp on each other and all threads
-        //  have a globally consistent view of which function pointer maps to each trace.
         rejected = false;
 
         let idx: number;
@@ -985,7 +983,6 @@ export function mono_interp_tier_prepare_jiterpreter (
     if (!mostRecentOptions)
         mostRecentOptions = getOptions();
 
-    // FIXME: We shouldn't need this check
     if (!mostRecentOptions.enableTraces)
         return JITERPRETER_NOT_JITTED;
     else if (mostRecentOptions.wasmBytesLimit <= getCounter(JiterpCounter.BytesGenerated))

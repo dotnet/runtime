@@ -2014,7 +2014,7 @@ private:
 
         m_pDelayedUnloadListOfLoaderAllocators=NULL;
 
-        m_GlobalAllocator.Init(this);
+        m_GlobalAllocator.Init();
     }
 #endif
 
@@ -2022,7 +2022,6 @@ private:
     PTR_Assembly    m_pSystemAssembly;  // Single assembly (here for quicker reference);
 
     GlobalLoaderAllocator m_GlobalAllocator;
-
 
     InlineSString<100>  m_BaseLibrary;
 
