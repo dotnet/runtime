@@ -651,7 +651,7 @@ namespace System.Buffers
             MultiSegment = 0x00,
             Array = 0x1,
             MemoryManager = 0x2,
-            String = 0x3
+            String = 0x3,
         }
     }
 
