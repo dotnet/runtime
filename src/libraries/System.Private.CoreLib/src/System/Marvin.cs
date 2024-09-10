@@ -5,6 +5,12 @@ using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
+#if SYSTEM_PRIVATE_CORELIB
+using static System.Numerics.BitOperations;
+#else
+using System.Security.Cryptography;
+#endif
+
 namespace System
 {
     internal static partial class Marvin
@@ -235,23 +241,34 @@ namespace System
             rp1 = p1;
         }
 
-#if SYSTEM_PRIVATE_CORELIB
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static uint RotateLeft(uint value, int offset) =>
-            System.Numerics.BitOperations.RotateLeft(value, offset);
-
         public static ulong DefaultSeed { get; } = GenerateSeed();
 
         private static unsafe ulong GenerateSeed()
         {
             ulong seed;
+#if SYSTEM_PRIVATE_CORELIB
             Interop.GetRandomBytes((byte*)&seed, sizeof(ulong));
+#else
+            byte[] seedBytes = new byte[sizeof(ulong)];
+            using (RandomNumberGenerator rng = RandomNumberGenerator.Create())
+            {
+                rng.GetBytes(seedBytes);
+                fixed (byte* b = seedBytes)
+                {
+                    seed = *(ulong*)b;
+                }
+            }
+#endif
             return seed;
         }
-#else
+
+#if !SYSTEM_PRIVATE_CORELIB
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static uint RotateLeft(uint value, int offset) =>
-            (value << offset) | (value >> (32 - offset));
+        private static uint RotateLeft(uint value, int shift)
+        {
+            // This is expected to be optimized into a single rol (or ror with negated shift value) instruction
+            return (value << shift) | (value >> (32 - shift));
+        }
 #endif
     }
 }
