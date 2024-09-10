@@ -222,7 +222,7 @@ const string VecPairBinOpTest_ValidationLogic = @"
 
 const string VecReduceUnOpTest_VectorValidationLogicForCndSel = @"
             {
-                var hasFailed = (mask[0] != 0 ? {ValidateReduceOpResult}: (falseVal[0] != result[0]));
+                var hasFailed = (mask[0] != 0) ? ({ValidateReduceOpResult}): (falseVal[0] != result[0]);
 
                 if (hasFailed)
                 {
@@ -232,7 +232,8 @@ const string VecReduceUnOpTest_VectorValidationLogicForCndSel = @"
                 {
                     for (var i = 1; i < RetElementCount; i++)
                     {
-                        if ((mask[i] != 0) ? ({ValidateRemainingResults}) : (falseVal[i] != result[i]))
+                        hasFailed = (mask[i] != 0) ? ({ValidateRemainingResults}) : (falseVal[i] != result[i]);
+                        if (hasFailed)
                         {
                             succeeded = false;
                             break;
@@ -243,7 +244,7 @@ const string VecReduceUnOpTest_VectorValidationLogicForCndSel = @"
 
 const string VecReduceUnOpTest_VectorValidationLogicForCndSel_FalseValue = @"
             {
-                var hasFailed = (mask[0] != 0) ? (trueVal[0] != result[0]): {ValidateReduceOpResult};
+                var hasFailed = (mask[0] != 0) ? (trueVal[0] != result[0]): ({ValidateReduceOpResult});
                 if (hasFailed)
                 {
                     succeeded = false;
@@ -252,7 +253,8 @@ const string VecReduceUnOpTest_VectorValidationLogicForCndSel_FalseValue = @"
                 {
                     for (var i = 1; i < RetElementCount; i++)
                     {
-                        if ((mask[i] != 0) ? (trueVal[i] != result[i]) : ({ValidateRemainingResults}))
+                        hasFailed = (mask[i] != 0) ? (trueVal[i] != result[i]) : ({ValidateRemainingResults});
+                        if (hasFailed)
                         {
                             succeeded = false;
                             break;
