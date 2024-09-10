@@ -9,6 +9,7 @@
   <ItemGroup>
     <WasmExtraFilesToDeploy Include="index.html" />
     <WasmExtraFilesToDeploy Include="main.js" />
+    <WasmExtraFilesToDeploy Include="profiler.js" />
   </ItemGroup>
 
   <Target Name="RunSample" DependsOnTargets="RunSampleWithBrowser" />

@@ -37,4 +37,17 @@ public class MemoryTests : AppTestBase
             await RunSdkStyleAppForBuild(new (Configuration: config, TestScenario: "AllocateLargeHeapThenInterop"));
         }
     }
+
+    [Fact]
+    public async Task RunSimpleAppWithProfiler()
+    {
+        string config = "Release";
+        CopyTestAsset("WasmBasicTestApp", "ProfilerTest", "App");
+        string extraArgs = "-p:WasmProfilers=log; -p:WasmBuildNative=true";
+        BuildProject(config, assertAppBundle: false, extraArgs: extraArgs);
+
+        var result = await RunSdkStyleAppForBuild(new (Configuration: config, TestScenario: "ProfilerTest"));
+        Console.WriteLine($"Test output: {result}");
+        // ToDo: check if the file is created AND its size it bigger than 10MB - where do we look for it?
+    }
 }
