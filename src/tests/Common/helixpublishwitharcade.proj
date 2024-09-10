@@ -587,7 +587,8 @@
       DependsOnTargets="DiscoverMergedTestWrappers;GetTestExclusionList">
       
     <PropertyGroup Condition="'@(_MergedWrapperMarker)' != ''" >
-      <_MergedWrapperDirectory>$([System.IO.Path]::GetDirectoryName('%(_MergedWrapperRunScript.Identity)'))</_MergedWrapperDirectory>
+      <_MergedWrapperDirectory>%(_MergedWrapperMarker.RootDir)%(Directory)</_MergedWrapperDirectory>
+      <_MergedWrapperName>%(_MergedWrapperMarker.FileName)</_MergedWrapperName>
     </PropertyGroup>
 
     <ItemGroup Condition="'@(_MergedWrapperMarker)' != ''" >
