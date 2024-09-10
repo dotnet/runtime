@@ -8,6 +8,7 @@
 
   <ItemGroup>
     <!-- reference nuget binaries directly to avoid restoring it's package dependency closure -->    
+    <PackageDownloadAndReference Include="NuGet.Common" Version="$(NugetFrameworksVersion)" Folder="lib/netstandard2.0" Private="true" />
     <PackageDownloadAndReference Include="NuGet.Frameworks" Version="$(NugetFrameworksVersion)" Folder="lib/netstandard2.0" Private="true" />
     <PackageDownloadAndReference Include="NuGet.Packaging" Version="$(NugetPackagingVersion)" Folder="lib/netstandard2.0"  Private="true"  />
     <PackageDownloadAndReference Include="NuGet.ProjectModel" Version="$(NugetProjectModelVersion)" Folder="lib/netstandard2.0"  Private="true" />
