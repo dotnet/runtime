@@ -3336,25 +3336,16 @@ bool Compiler::fgReorderBlocks(bool useProfile)
     if (fgIsUsingProfileWeights())
     {
         optimizedSwitches = fgOptimizeSwitchJumps();
-        if (optimizedSwitches)
-        {
-            fgUpdateFlowGraph();
-        }
     }
 
     if (useProfile)
     {
+        // Don't run the new layout until we get to the backend,
+        // since LSRA can introduce new blocks, and lowering can churn the flowgraph.
+        //
         if (JitConfig.JitDoReversePostOrderLayout())
         {
-            fgDoReversePostOrderLayout();
-            fgMoveColdBlocks();
-
-            // Renumber blocks to facilitate LSRA's order of block visitation
-            // TODO: Consider removing this, and using traversal order in lSRA
-            //
-            fgRenumberBlocks();
-
-            return true;
+            return (newRarelyRun || movedBlocks || optimizedSwitches);
         }
 
         // We will be reordering blocks, so ensure the false target of a BBJ_COND block is its next block

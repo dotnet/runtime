@@ -5177,10 +5177,6 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
         // Conditional to Switch conversion
         //
         DoPhase(this, PHASE_SWITCH_RECOGNITION, &Compiler::optSwitchRecognition);
-
-        // Determine start of cold region if we are hot/cold splitting
-        //
-        DoPhase(this, PHASE_DETERMINE_FIRST_COLD_BLOCK, &Compiler::fgDetermineFirstColdBlock);
     }
 
 #ifdef DEBUG
@@ -5236,8 +5232,7 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     m_pLowering->FinalizeOutgoingArgSpace();
 
     // We can not add any new tracked variables after this point.
-    lvaTrackedFixed                    = true;
-    const unsigned numBlocksBeforeLSRA = fgBBcount;
+    lvaTrackedFixed = true;
 
     // Now that lowering is completed we can proceed to perform register allocation
     //
@@ -5251,8 +5246,10 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
 
     if (opts.OptimizationEnabled())
     {
-        // LSRA may introduce new blocks. If it does, rerun layout.
-        if ((fgBBcount != numBlocksBeforeLSRA) && JitConfig.JitDoReversePostOrderLayout())
+        // We won't introduce new blocks from here on out,
+        // so run the new block layout.
+        //
+        if (JitConfig.JitDoReversePostOrderLayout())
         {
             auto lateLayoutPhase = [this] {
                 fgDoReversePostOrderLayout();
@@ -5261,16 +5258,15 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
             };
 
             DoPhase(this, PHASE_OPTIMIZE_LAYOUT, lateLayoutPhase);
-
-            if (fgFirstColdBlock != nullptr)
-            {
-                fgFirstColdBlock = nullptr;
-                DoPhase(this, PHASE_DETERMINE_FIRST_COLD_BLOCK, &Compiler::fgDetermineFirstColdBlock);
-            }
         }
 
         // Now that the flowgraph is finalized, run post-layout optimizations.
+        //
         DoPhase(this, PHASE_OPTIMIZE_POST_LAYOUT, &Compiler::optOptimizePostLayout);
+
+        // Determine start of cold region if we are hot/cold splitting
+        //
+        DoPhase(this, PHASE_DETERMINE_FIRST_COLD_BLOCK, &Compiler::fgDetermineFirstColdBlock);
     }
 
 #if FEATURE_LOOP_ALIGN
