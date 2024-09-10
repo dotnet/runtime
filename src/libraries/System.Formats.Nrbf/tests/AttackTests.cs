@@ -103,7 +103,7 @@ public class AttackTests : ReadTests
         ClassRecord classRecord = NrbfDecoder.DecodeClassRecord(Serialize(input));
 
         Assert.Equal(input.Name, classRecord.GetString(nameof(WithCyclicReferenceInArrayOfT.Name)));
-        SZArrayRecord<ClassRecord> classRecords = (SZArrayRecord<ClassRecord>)classRecord.GetSerializationRecord(nameof(WithCyclicReferenceInArrayOfT.ArrayWithReferenceToSelf))!;
+        SZArrayRecord<SerializationRecord> classRecords = (SZArrayRecord<SerializationRecord>)classRecord.GetSerializationRecord(nameof(WithCyclicReferenceInArrayOfT.ArrayWithReferenceToSelf))!;
         Assert.Same(classRecord, classRecords.GetArray().Single());
     }
 

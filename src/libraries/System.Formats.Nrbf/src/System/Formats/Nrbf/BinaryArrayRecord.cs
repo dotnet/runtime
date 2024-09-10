@@ -152,8 +152,8 @@ internal sealed class BinaryArrayRecord : ArrayRecord
             return RectangularArrayRecord.Create(reader, arrayInfo, memberTypeInfo, lengths);
         }
 
-        return memberTypeInfo.ShouldBeRepresentedAsArrayOfClassRecords()
-            ? new ArrayOfClassesRecord(arrayInfo, memberTypeInfo)
+        return memberTypeInfo.ShouldBeRepresentedAsArrayOfRecords()
+            ? new SZArrayOfRecords(arrayInfo, memberTypeInfo)
             : new BinaryArrayRecord(arrayInfo, memberTypeInfo);
     }
 
@@ -173,15 +173,16 @@ internal sealed class BinaryArrayRecord : ArrayRecord
     }
 
     /// <summary>
-    /// Complex types must not be instantiated, but represented as ClassRecord.
+    /// Complex types must not be instantiated, but represented as SerializationRecord.
     /// For arrays of primitive types like int, string and object this method returns the element type.
-    /// For array of complex types, it returns ClassRecord.
+    /// For array of complex types, it returns SerializationRecord.
     /// It takes arrays of arrays into account:
     /// - int[][] => int[]
-    /// - MyClass[][][] => ClassRecord[][]
+    /// - MyClass[][][] => SerializationRecord[][]
+    /// - IEnumerable[] => SerializationRecord[]
     /// </summary>
     [RequiresDynamicCode("May call Type.MakeArrayType().")]
-    private static Type MapElementType(Type arrayType, out bool isClassRecord)
+    private static Type MapElementType(Type arrayType, out bool isSerializationRecord)
     {
         Type elementType = arrayType;
         int arrayNestingDepth = 0;
@@ -194,12 +195,12 @@ internal sealed class BinaryArrayRecord : ArrayRecord
 
         if (PrimitiveTypes.Contains(elementType) || (Nullable.GetUnderlyingType(elementType) is Type nullable && PrimitiveTypes.Contains(nullable)))
         {
-            isClassRecord = false;
+            isSerializationRecord = false;
             return arrayNestingDepth == 1 ? elementType : arrayType.GetElementType()!;
         }
 
         // Complex types are never instantiated, but represented as SerializationRecord
-        isClassRecord = true;
+        isSerializationRecord = true;
         Type complexType = typeof(SerializationRecord);
         for (int i = 1; i < arrayNestingDepth; i++)
         {

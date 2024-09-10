@@ -263,11 +263,11 @@ public class ReadExactTypesTests : ReadTests
             new () { Long = 5 },
         ];
 
-        SZArrayRecord<ClassRecord> arrayRecord = ((SZArrayRecord<ClassRecord>)NrbfDecoder.Decode(Serialize(input)));
+        SZArrayRecord<SerializationRecord> arrayRecord = (SZArrayRecord<SerializationRecord>)NrbfDecoder.Decode(Serialize(input));
 
         Assert.Equal(typeof(CustomTypeWithPrimitiveFields[]).FullName, arrayRecord.TypeName.FullName);
         Assert.Equal(typeof(CustomTypeWithPrimitiveFields).Assembly.FullName, arrayRecord.TypeName.GetElementType().AssemblyName!.FullName);
-        ClassRecord?[] classRecords = arrayRecord.GetArray();
+        ClassRecord?[] classRecords = arrayRecord.GetArray().OfType<ClassRecord>().ToArray();
         for (int i = 0; i < input.Length; i++)
         {
             Verify(input[i], classRecords[i]!);
@@ -298,8 +298,8 @@ public class ReadExactTypesTests : ReadTests
 
         ClassRecord classRecord = NrbfDecoder.DecodeClassRecord(Serialize(input));
 
-        SZArrayRecord<ClassRecord> classRecords = (SZArrayRecord<ClassRecord>)classRecord.GetSerializationRecord(nameof(CustomTypeWithArrayOfComplexTypes.Array))!;
-        ClassRecord?[] array = classRecords.GetArray();
+        SZArrayRecord<SerializationRecord> classRecords = (SZArrayRecord<SerializationRecord>)classRecord.GetSerializationRecord(nameof(CustomTypeWithArrayOfComplexTypes.Array))!;
+        SerializationRecord?[] array = classRecords.GetArray();
     }
 
     [Theory]
@@ -316,8 +316,8 @@ public class ReadExactTypesTests : ReadTests
 
         ClassRecord classRecord = NrbfDecoder.DecodeClassRecord(stream);
 
-        SZArrayRecord<ClassRecord> classRecords = (SZArrayRecord<ClassRecord>)classRecord.GetSerializationRecord(nameof(CustomTypeWithArrayOfComplexTypes.Array))!;
-        ClassRecord?[] array = classRecords.GetArray();
+        SZArrayRecord<SerializationRecord> classRecords = (SZArrayRecord<SerializationRecord>)classRecord.GetSerializationRecord(nameof(CustomTypeWithArrayOfComplexTypes.Array))!;
+        SerializationRecord?[] array = classRecords.GetArray();
         Assert.Equal(nullCount, array.Length);
         Assert.All(array, Assert.Null);
 

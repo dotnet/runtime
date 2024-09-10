@@ -7,11 +7,11 @@ using System.Formats.Nrbf.Utils;
 
 namespace System.Formats.Nrbf;
 
-internal sealed class ArrayOfClassesRecord : SZArrayRecord<SerializationRecord>
+internal sealed class SZArrayOfRecords : SZArrayRecord<SerializationRecord>
 {
     private TypeName? _typeName;
 
-    internal ArrayOfClassesRecord(ArrayInfo arrayInfo, MemberTypeInfo memberTypeInfo)
+    internal SZArrayOfRecords(ArrayInfo arrayInfo, MemberTypeInfo memberTypeInfo)
         : base(arrayInfo)
     {
         MemberTypeInfo = memberTypeInfo;

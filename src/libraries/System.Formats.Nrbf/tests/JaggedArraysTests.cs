@@ -110,12 +110,12 @@ public class JaggedArraysTests : ReadTests
         var arrayRecord = (ArrayRecord)NrbfDecoder.Decode(Serialize(input));
 
         Verify(input, arrayRecord);
-        var output = (ClassRecord?[][])arrayRecord.GetArray(input.GetType());
+        var output = (SerializationRecord?[][])arrayRecord.GetArray(input.GetType());
         for (int i = 0; i < input.Length; i++)
         {
             for (int j = 0; j < input[i].Length; j++)
             {
-                Assert.Equal(input[i][j].SomeField, output[i][j]!.GetInt32(nameof(ComplexType.SomeField)));
+                Assert.Equal(input[i][j].SomeField, ((ClassRecord)output[i][j]!).GetInt32(nameof(ComplexType.SomeField)));
             }
         }
     }

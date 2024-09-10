@@ -32,8 +32,8 @@ namespace System.Formats.Nrbf.Tests
             ClassRecord comparerRecord = dictionaryRecord.GetClassRecord(nameof(input.Comparer))!;
             Assert.True(comparerRecord.TypeNameMatches(input.Comparer.GetType()));
 
-            SZArrayRecord<ClassRecord> arrayRecord = (SZArrayRecord<ClassRecord>)dictionaryRecord.GetSerializationRecord("KeyValuePairs")!;
-            ClassRecord[] keyValuePairs = arrayRecord.GetArray()!;
+            SZArrayRecord<SerializationRecord> arrayRecord = (SZArrayRecord<SerializationRecord>)dictionaryRecord.GetSerializationRecord("KeyValuePairs")!;
+            ClassRecord[] keyValuePairs = arrayRecord.GetArray().OfType<ClassRecord>().ToArray();
             Assert.True(keyValuePairs[0].TypeNameMatches(typeof(KeyValuePair<string, object>)));
 
             ClassRecord exceptionPair = Find(keyValuePairs, "exception");
@@ -225,8 +225,8 @@ namespace System.Formats.Nrbf.Tests
                 case ClassRecord record when record.TypeNameMatches(typeof(Exception)):
                     Assert.Equal(((Exception)input).Message, record.GetString("Message"));
                     break;
-                case SZArrayRecord<ClassRecord> record when record.TypeNameMatches(typeof(Exception[])):
-                    Assert.Equal(((Exception[])input)[0].Message, record.GetArray()[0]!.GetString("Message"));
+                case SZArrayRecord<SerializationRecord> record when record.TypeNameMatches(typeof(Exception[])):
+                    Assert.Equal(((Exception[])input)[0].Message, ((ClassRecord)record.GetArray()[0]!).GetString("Message"));
                     break;
                 case ClassRecord record when record.TypeNameMatches(typeof(JsonException)):
                     Assert.Equal(((JsonException)input).Message, record.GetString("Message"));
@@ -262,8 +262,8 @@ namespace System.Formats.Nrbf.Tests
 
             static void VerifyDictionary<TKey, TValue>(ClassRecord record)
             {
-                SZArrayRecord<ClassRecord> arrayRecord = (SZArrayRecord<ClassRecord>)record.GetSerializationRecord("KeyValuePairs")!;
-                ClassRecord[] keyValuePairs = arrayRecord.GetArray()!;
+                SZArrayRecord<SerializationRecord> arrayRecord = (SZArrayRecord<SerializationRecord>)record.GetSerializationRecord("KeyValuePairs")!;
+                ClassRecord[] keyValuePairs = arrayRecord.GetArray().OfType<ClassRecord>().ToArray();
                 Assert.True(keyValuePairs[0].TypeNameMatches(typeof(KeyValuePair<TKey, TValue>)));
             }
         }

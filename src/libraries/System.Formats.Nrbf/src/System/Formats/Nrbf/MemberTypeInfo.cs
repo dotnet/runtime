@@ -104,25 +104,25 @@ internal readonly struct MemberTypeInfo
         };
     }
 
-    internal bool ShouldBeRepresentedAsArrayOfClassRecords()
+    internal bool ShouldBeRepresentedAsArrayOfRecords()
     {
         // This library tries to minimize the number of concepts the users need to learn to use it.
         // Since SZArrays are most common, it provides an SZArrayRecord<T> abstraction.
         // Every other array (jagged, multi-dimensional etc) is represented using ArrayRecord.
-        // The goal of this method is to determine whether given array can be represented as SZArrayRecord<ClassRecord>.
+        // The goal of this method is to determine whether given array can be represented as SZArrayRecord<SerializationRecord>.
 
         (BinaryType binaryType, object? additionalInfo) = Infos[0];
 
         if (binaryType == BinaryType.Class)
         {
-            // An array of arrays can not be represented as SZArrayRecord<ClassRecord>.
+            // An array of arrays can not be represented as SZArrayRecord<SerializationRecord>.
             return !((ClassTypeInfo)additionalInfo!).TypeName.IsArray;
         }
         else if (binaryType == BinaryType.SystemClass)
         {
             TypeName typeName = (TypeName)additionalInfo!;
 
-            // An array of arrays can not be represented as SZArrayRecord<ClassRecord>.
+            // An array of arrays can not be represented as SZArrayRecord<SerializationRecord>.
             if (typeName.IsArray)
             {
                 return false;
@@ -133,7 +133,7 @@ internal readonly struct MemberTypeInfo
                 return true;
             }
 
-            // Can't use SZArrayRecord<ClassRecord> for Nullable<T>[]
+            // Can't use SZArrayRecord<SerializationRecord> for Nullable<T>[]
             // as it consists of MemberPrimitiveTypedRecord and NullsRecord
             return typeName.GetGenericTypeDefinition().FullName != typeof(Nullable<>).FullName;
         }
