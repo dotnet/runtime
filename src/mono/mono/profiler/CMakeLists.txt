@@ -6,6 +6,7 @@ include_directories(
   ${PROJECT_BINARY_DIR}/../../mono/eglib
   ${CMAKE_CURRENT_SOURCE_DIR}/../..
   ${PROJECT_SOURCE_DIR}/../
+  ${PROJECT_SOURCE_DIR}/../../../native/public
   ${PROJECT_SOURCE_DIR}/../eglib
   ${PROJECT_SOURCE_DIR}/../sgen)
 
