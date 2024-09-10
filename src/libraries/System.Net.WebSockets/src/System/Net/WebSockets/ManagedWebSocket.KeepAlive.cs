@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Buffers;
 using System.Buffers.Binary;
 using System.Diagnostics;
 using System.Runtime.ExceptionServices;
@@ -13,8 +12,8 @@ namespace System.Net.WebSockets
     internal sealed partial class ManagedWebSocket : WebSocket
     {
         private bool IsUnsolicitedPongKeepAlive => _keepAlivePingState is null;
-        private static bool IsValidSendState(WebSocketState state) => Array.IndexOf(s_validSendStates, state) != -1;
-        private static bool IsValidReceiveState(WebSocketState state) => Array.IndexOf(s_validReceiveStates, state) != -1;
+        private static bool IsValidSendState(WebSocketState state) => WebSocketStateHelper.HasFlag(s_validSendStates, state);
+        private static bool IsValidReceiveState(WebSocketState state) => WebSocketStateHelper.HasFlag(s_validReceiveStates, state);
 
         private void HeartBeat()
         {
@@ -117,18 +116,12 @@ namespace System.Net.WebSockets
         {
             Debug.Assert(_keepAlivePingState != null);
 
-            byte[] pingPayloadBuffer = ArrayPool<byte>.Shared.Rent(sizeof(long));
+            byte[] pingPayloadBuffer = new byte[sizeof(long)];
             BinaryPrimitives.WriteInt64BigEndian(pingPayloadBuffer, pingPayload);
-            try
-            {
-                await TrySendKeepAliveFrameAsync(MessageOpcode.Ping, pingPayloadBuffer.AsMemory(0, sizeof(long))).ConfigureAwait(false);
 
-                if (NetEventSource.Log.IsEnabled()) NetEventSource.KeepAlivePingSent(this, pingPayload);
-            }
-            finally
-            {
-                ArrayPool<byte>.Shared.Return(pingPayloadBuffer);
-            }
+            await TrySendKeepAliveFrameAsync(MessageOpcode.Ping, pingPayloadBuffer).ConfigureAwait(false);
+
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.KeepAlivePingSent(this, pingPayload);
         }
 
         // "Observe" either a ValueTask result, or any exception, ignoring it
