@@ -3336,6 +3336,10 @@ bool Compiler::fgReorderBlocks(bool useProfile)
     if (fgIsUsingProfileWeights())
     {
         optimizedSwitches = fgOptimizeSwitchJumps();
+        if (optimizedSwitches)
+        {
+            fgUpdateFlowGraph();
+        }
     }
 
     if (useProfile)
