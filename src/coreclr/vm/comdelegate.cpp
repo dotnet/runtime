@@ -965,7 +965,7 @@ static Stub* CreateILDelegateShuffleThunk(MethodDesc* pDelegateMD, MethodDesc* p
     for (unsigned i = 0; i < delegateSig.NumFixedArgs(); ++i)
         pCode->EmitLDARG(i);
 
-    pCode->EmitCALL(pCode->GetToken(pTargetMD), targetSig.NumFixedArgs(), targetSig.IsReturnTypeVoid() ? 0 : 1);
+    pCode->EmitCALL(pCode->GetToken(pTargetMD), delegateSig.NumFixedArgs(), delegateSig.IsReturnTypeVoid() ? 0 : 1);
     pCode->EmitRET();
 
     PCCOR_SIGNATURE pSig;
