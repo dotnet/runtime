@@ -19,9 +19,10 @@ target_compile_options(brotlidec PRIVATE $<$<COMPILE_LANG_AND_ID:C,Clang,AppleCl
 
 # Even though we aren't building brotli as shared libraries, we still need to be able to export the symbols
 # from the brotli libraries so that they can be used by System.IO.Compression.
-target_compile_definitions(brotlicommon PRIVATE BROTLI_SHARED_COMPILATION)
-target_compile_definitions(brotlienc PRIVATE BROTLI_SHARED_COMPILATION BROTLIENC_SHARED_COMPILATION)
-target_compile_definitions(brotlidec PRIVATE BROTLI_SHARED_COMPILATION BROTLIDEC_SHARED_COMPILATION)
+# Since we link all of the static libraries into a single shared library, we need to define BROTLICOMMON_SHARED_COMPILATION
+# for all targets so brotlienc and brotlidec don't expect to link against a separate brotlicommon shared library.
+target_compile_definitions(brotlienc PRIVATE BROTLI_SHARED_COMPILATION BROTLIENC_SHARED_COMPILATION BROTLICOMMON_SHARED_COMPILATION)
+target_compile_definitions(brotlidec PRIVATE BROTLI_SHARED_COMPILATION BROTLIDEC_SHARED_COMPILATION BROTLICOMMON_SHARED_COMPILATION)
 target_compile_definitions(brotlicommon PRIVATE BROTLI_SHARED_COMPILATION BROTLICOMMON_SHARED_COMPILATION)
 
 # Don't build the brotli command line tool unless explicitly requested
