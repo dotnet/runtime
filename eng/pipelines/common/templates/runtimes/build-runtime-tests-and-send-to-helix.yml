@@ -113,36 +113,28 @@ steps:
         runtimeFlavor: ${{ parameters.runtimeFlavor }}
         runtimeVariant: ${{ parameters.runtimeVariant }}
 
-        ${{ if eq(variables['System.TeamProject'], 'public') }}:
-          creator: $(Build.DefinitionName)
-
-          helixBuild: $(Build.BuildNumber)
-          helixSource: $(_HelixSource)
-
-          ${{ if ne(parameters.readyToRun, true) }}:
-            helixType: 'test/functional/cli/'
-
-          helixQueues: ${{ parameters.helixQueues }}
-
-          # This tests whether an array is empty
-          ${{ if eq(join('', parameters.helixQueues), '') }}:
-            condition: false
-
-          publishTestResults: true
-
-          timeoutPerTestInMinutes: $(timeoutPerTestInMinutes)
-          timeoutPerTestCollectionInMinutes: $(timeoutPerTestCollectionInMinutes)
-
-          runCrossGen2: ${{ eq(parameters.readyToRun, true) }}
-          compositeBuildMode: ${{ parameters.compositeBuildMode }}
-          runInUnloadableContext: ${{ parameters.runInUnloadableContext }}
-          nativeAotTest: ${{ parameters.nativeAotTest }}
-
-          ${{ if eq(variables['System.TeamProject'], 'internal') }}:
+        ${{ if eq(variables['System.TeamProject'], 'internal') }}:
             # Access token variable for internal project from the
             # DotNet-HelixApi-Access variable group
-            helixAccessToken: $(HelixApiAccessToken)
+          helixAccessToken: $(HelixApiAccessToken)
+        ${{ else }}:
+          creator: $(Build.DefinitionName)
 
-          helixProjectArguments: '$(Build.SourcesDirectory)/src/tests/Common/helixpublishwitharcade.proj'
+        helixBuild: $(Build.BuildNumber)
+        helixSource: $(_HelixSource)
+        ${{ if ne(parameters.readyToRun, true) }}:
+          helixType: 'test/functional/cli/'
 
-          scenarios: ${{ parameters.scenarios }}
+        helixQueues: ${{ parameters.helixQueues }}
+        # This tests whether an array is empty
+        ${{ if eq(join('', parameters.helixQueues), '') }}:
+          condition: false
+        publishTestResults: true
+        timeoutPerTestInMinutes: $(timeoutPerTestInMinutes)
+        timeoutPerTestCollectionInMinutes: $(timeoutPerTestCollectionInMinutes)
+        runCrossGen2: ${{ eq(parameters.readyToRun, true) }}
+        compositeBuildMode: ${{ parameters.compositeBuildMode }}
+        runInUnloadableContext: ${{ parameters.runInUnloadableContext }}
+        nativeAotTest: ${{ parameters.nativeAotTest }}
+        helixProjectArguments: '$(Build.SourcesDirectory)/src/tests/Common/helixpublishwitharcade.proj'
+        scenarios: ${{ parameters.scenarios }}
