@@ -1014,7 +1014,7 @@ void SystemDomain::LoadBaseSystemClasses()
 
         // Only partially load the system assembly. Other parts of the code will want to access
         // the globals in this function before finishing the load.
-        m_pSystemAssembly = DefaultDomain()->LoadDomainAssembly(NULL, m_pSystemPEAssembly, FILE_LOAD_BEFORE_TYPE_LOAD);
+        m_pSystemAssembly = DefaultDomain()->LoadAssembly(NULL, m_pSystemPEAssembly, FILE_LOAD_BEFORE_TYPE_LOAD);
 
         // Set up binder for CoreLib
         CoreLibBinder::AttachModule(m_pSystemAssembly->GetModule());
@@ -2016,7 +2016,7 @@ BOOL FileLoadLock::CompleteLoadLevel(FileLoadLevel level, BOOL success)
 
                 m_pAssembly->ClearLoading();
 
-                CONSISTENCY_CHECK(m_dwRefCount >= 2); // Caller (LoadDomainAssembly) should have 1 refcount and m_pList should have another which was acquired in FileLoadLock::Create.
+                CONSISTENCY_CHECK(m_dwRefCount >= 2); // Caller (LoadAssembly) should have 1 refcount and m_pList should have another which was acquired in FileLoadLock::Create.
 
                 m_level = (FileLoadLevel)level;
 
@@ -2275,7 +2275,7 @@ CHECK AppDomain::CheckCanExecuteManagedCode(MethodDesc* pMD)
 
 #endif // !DACCESS_COMPILE
 
-void AppDomain::LoadDomainAssembly(Assembly *pAssembly,
+void AppDomain::LoadAssembly(Assembly *pAssembly,
                                FileLoadLevel targetLevel)
 {
     CONTRACTL
@@ -2315,7 +2315,7 @@ void AppDomain::LoadDomainAssembly(Assembly *pAssembly,
 
         lock.Release();
 
-        LoadDomainAssembly(pLockEntry, targetLevel);
+        LoadAssembly(pLockEntry, targetLevel);
     }
 
 #else // DACCESS_COMPILE
@@ -2339,7 +2339,7 @@ namespace
     }
 }
 
-Assembly *AppDomain::LoadAssembly(AssemblySpec* pIdentity,
+Assembly *AppDomain::LoadAssembly(AssemblySpec* pSpec,
                                   PEAssembly * pPEAssembly,
                                   FileLoadLevel targetLevel)
 {
@@ -2349,30 +2349,21 @@ Assembly *AppDomain::LoadAssembly(AssemblySpec* pIdentity,
         THROWS;
         MODE_ANY;
         PRECONDITION(CheckPointer(pPEAssembly));
-        POSTCONDITION(CheckPointer(RETVAL)); // May be NULL in recursive load case
+        POSTCONDITION(CheckPointer(RETVAL));
         INJECT_FAULT(COMPlusThrowOM(););
     }
     CONTRACT_END;
 
-    RETURN LoadDomainAssembly(pIdentity, pPEAssembly, targetLevel);
-}
-
-Assembly* AppDomain::LoadDomainAssembly(AssemblySpec* pSpec,
-                                              PEAssembly * pPEAssembly,
-                                              FileLoadLevel targetLevel)
-{
-    STATIC_CONTRACT_THROWS;
-
     if (pSpec == nullptr)
     {
         // skip caching, since we don't have anything to base it on
-        return LoadDomainAssemblyInternal(pSpec, pPEAssembly, targetLevel);
+        RETURN LoadAssemblyInternal(pSpec, pPEAssembly, targetLevel);
     }
 
     Assembly* pRetVal = NULL;
     EX_TRY
     {
-        pRetVal = LoadDomainAssemblyInternal(pSpec, pPEAssembly, targetLevel);
+        pRetVal = LoadAssemblyInternal(pSpec, pPEAssembly, targetLevel);
     }
     EX_HOOK
     {
@@ -2412,11 +2403,11 @@ Assembly* AppDomain::LoadDomainAssembly(AssemblySpec* pSpec,
     }
     EX_END_HOOK;
 
-    return pRetVal;
+    RETURN pRetVal;
 }
 
 
-Assembly *AppDomain::LoadDomainAssemblyInternal(AssemblySpec* pIdentity,
+Assembly *AppDomain::LoadAssemblyInternal(AssemblySpec* pIdentity,
                                               PEAssembly * pPEAssembly,
                                               FileLoadLevel targetLevel)
 {
@@ -2499,12 +2490,12 @@ Assembly *AppDomain::LoadDomainAssemblyInternal(AssemblySpec* pIdentity,
 
         if (result == NULL)
         {
-            // We pass our ref on fileLock to LoadDomainAssembly to release.
+            // We pass our ref on fileLock to LoadAssembly to release.
 
             // Note that if we throw here, we will poison fileLock with an error condition,
             // so it will not be removed until app domain unload.  So there is no need
             // to release our ref count.
-            result = LoadDomainAssembly(fileLock, targetLevel);
+            result = LoadAssembly(fileLock, targetLevel);
         }
         else
         {
@@ -2534,9 +2525,9 @@ Assembly *AppDomain::LoadDomainAssemblyInternal(AssemblySpec* pIdentity,
     }
 
     RETURN result;
-} // AppDomain::LoadDomainAssembly
+} // AppDomain::LoadAssembly
 
-Assembly *AppDomain::LoadDomainAssembly(FileLoadLock *pLock, FileLoadLevel targetLevel)
+Assembly *AppDomain::LoadAssembly(FileLoadLock *pLock, FileLoadLevel targetLevel)
 {
     CONTRACT(Assembly *)
     {

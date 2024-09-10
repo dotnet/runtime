@@ -93,7 +93,7 @@ void Assembly::EnsureLoadLevel(FileLoadLevel targetLevel)
     TRIGGERSGC ();
     if (IsLoading())
     {
-        AppDomain::GetCurrentDomain()->LoadDomainAssembly(this, targetLevel);
+        AppDomain::GetCurrentDomain()->LoadAssembly(this, targetLevel);
 
         // Enforce the loading requirement.  Note that we may have a deadlock in which case we
         // may be off by one which is OK.  (At this point if we are short of targetLevel we know

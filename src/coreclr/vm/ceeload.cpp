@@ -2406,7 +2406,7 @@ Assembly * Module::LoadAssemblyImpl(mdAssemblyRef kAssemblyRef)
     Assembly * pAssembly = LookupAssemblyRef(kAssemblyRef);
     if (pAssembly != NULL)
     {
-        ::GetAppDomain()->LoadDomainAssembly(pAssembly, FILE_LOADED);
+        ::GetAppDomain()->LoadAssembly(pAssembly, FILE_LOADED);
         RETURN pAssembly;
     }
 
@@ -2422,7 +2422,7 @@ Assembly * Module::LoadAssemblyImpl(mdAssemblyRef kAssemblyRef)
         {
             spec.SetBinder(pBinder);
         }
-        pAssembly = GetAppDomain()->LoadDomainAssembly(&spec, pPEAssembly, FILE_LOADED);
+        pAssembly = GetAppDomain()->LoadAssembly(&spec, pPEAssembly, FILE_LOADED);
     }
 
     _ASSERTE(pAssembly != NULL && pAssembly->IsLoaded());

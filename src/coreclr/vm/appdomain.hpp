@@ -1072,8 +1072,7 @@ public:
 
     BOOL IsLoading(Assembly *pFile, FileLoadLevel level);
 
-    void LoadDomainAssembly(Assembly *pFile,
-                        FileLoadLevel targetLevel);
+    void LoadAssembly(Assembly *pFile, FileLoadLevel targetLevel);
 
     enum FindAssemblyOptions
     {
@@ -1088,33 +1087,27 @@ public:
                            PEAssembly *pPEAssembly,
                            FileLoadLevel targetLevel);
 
-    // this function does not provide caching, you must use LoadDomainAssembly
+    CHECK CheckValidModule(Module *pModule);
+
+    void LoadSystemAssemblies();
+
+private:
+    // this function does not provide caching, you must use LoadAssembly
     // unless the call is guaranteed to succeed or you don't need the caching
     // (e.g. if you will FailFast or tear down the AppDomain anyway)
     // The main point that you should not bypass caching if you might try to load the same file again,
     // resulting in multiple DomainAssembly objects that share the same PEAssembly for ngen image
     //which is violating our internal assumptions
-    Assembly *LoadDomainAssemblyInternal( AssemblySpec* pIdentity,
-                                                PEAssembly *pPEAssembly,
-                                                FileLoadLevel targetLevel);
+    Assembly *LoadAssemblyInternal(AssemblySpec* pIdentity,
+                                   PEAssembly *pPEAssembly,
+                                   FileLoadLevel targetLevel);
 
-    Assembly *LoadDomainAssembly( AssemblySpec* pIdentity,
-                                        PEAssembly *pPEAssembly,
-                                        FileLoadLevel targetLevel);
-
-
-    CHECK CheckValidModule(Module *pModule);
-
-    // private:
-    void LoadSystemAssemblies();
-
-    Assembly *LoadDomainAssembly(FileLoadLock *pLock,
-                               FileLoadLevel targetLevel);
+    Assembly *LoadAssembly(FileLoadLock *pLock, FileLoadLevel targetLevel);
 
     void TryIncrementalLoad(Assembly *pFile, FileLoadLevel workLevel, FileLoadLockHolder &lockHolder);
 
 #ifndef DACCESS_COMPILE // needs AssemblySpec
-
+public:
     //****************************************************************************************
     // Returns and Inserts assemblies into a lookup cache based on the binding information
     // in the AssemblySpec. There can be many AssemblySpecs to a single assembly.
@@ -1124,10 +1117,12 @@ public:
         return m_AssemblyCache.LookupAssembly(pSpec, fThrow);
     }
 
+private:
     PEAssembly* FindCachedFile(AssemblySpec* pSpec, BOOL fThrow = TRUE);
     BOOL IsCached(AssemblySpec *pSpec);
 #endif // DACCESS_COMPILE
 
+public:
     BOOL AddFileToCache(AssemblySpec* pSpec, PEAssembly *pPEAssembly);
     BOOL RemoveFileFromCache(PEAssembly *pPEAssembly);
 
@@ -1137,8 +1132,7 @@ public:
     BOOL AddExceptionToCache(AssemblySpec* pSpec, Exception *ex);
     void AddUnmanagedImageToCache(LPCWSTR libraryName, NATIVE_LIBRARY_HANDLE hMod);
     NATIVE_LIBRARY_HANDLE FindUnmanagedImageInCache(LPCWSTR libraryName);
-    //****************************************************************************************
-    //
+
     // Adds or removes an assembly to the domain.
     void AddAssembly(DomainAssembly * assem);
     void RemoveAssembly(DomainAssembly * pAsm);
