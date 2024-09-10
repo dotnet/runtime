@@ -4,7 +4,6 @@
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Diagnostics.Tracing;
-using System.Reflection;
 using System.Runtime.CompilerServices;
 
 namespace System.Diagnostics
@@ -368,19 +367,10 @@ namespace System.Diagnostics
             if (command.Command == EventCommand.Enable
                 && IsEnabled(EventLevel.Informational, Keywords.Messages))
             {
-                var assembly = typeof(Activity).Assembly;
-
-                var version = assembly.GetCustomAttribute<AssemblyFileVersionAttribute>()?.Version
-                    ?? assembly.GetCustomAttribute<AssemblyVersionAttribute>()?.Version;
-
-                if (!string.IsNullOrEmpty(version)
-                    && System.Version.TryParse(version, out var assemblyVersion))
-                {
-                    Version(
-                        assemblyVersion.Major,
-                        assemblyVersion.Minor,
-                        assemblyVersion.Revision);
-                }
+                Version(
+                    ThisAssembly.AssemblyFileVersion.Major,
+                    ThisAssembly.AssemblyFileVersion.Minor,
+                    ThisAssembly.AssemblyFileVersion.Revision);
             }
 
             // On every command (which the debugger can force by turning on this EventSource with ETW)
