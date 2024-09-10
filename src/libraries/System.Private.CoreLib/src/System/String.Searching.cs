@@ -28,6 +28,8 @@ namespace System
 
         public bool Contains(string value, StringComparison comparisonType)
         {
+            if (value == null)
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.value);
 #pragma warning disable CA2249 // Consider using 'string.Contains' instead of 'string.IndexOf'... this is the implementation of Contains!
             return IndexOf(value, comparisonType) >= 0;
 #pragma warning restore CA2249
