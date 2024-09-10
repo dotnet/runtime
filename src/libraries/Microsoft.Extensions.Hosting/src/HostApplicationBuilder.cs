@@ -19,9 +19,11 @@ namespace Microsoft.Extensions.Hosting
     /// </summary>
     public sealed class HostApplicationBuilder : IHostApplicationBuilder
     {
+        private readonly ConfigurationManager _hostConfiguration;
         private readonly HostBuilderContext _hostBuilderContext;
         private readonly ServiceCollection _serviceCollection = new();
-        private readonly IHostEnvironment _environment;
+        private readonly HostingEnvironment _environment;
+        private readonly PhysicalFileProvider _defaultFileProvider;
         private readonly LoggingBuilder _logging;
         private readonly MetricsBuilder _metrics;
 
@@ -84,60 +86,32 @@ namespace Microsoft.Extensions.Hosting
         public HostApplicationBuilder(HostApplicationBuilderSettings? settings)
         {
             settings ??= new HostApplicationBuilderSettings();
-            Configuration = settings.Configuration ?? new ConfigurationManager();
+
+            InitializeHostConfiguration(settings, out _hostConfiguration);
+            InitializeBuilderContext(settings, out _hostBuilderContext, out _environment, out _defaultFileProvider);
+            InitializeServiceProvider(settings, out _createServiceProvider);
+
+            _logging = new(Services);
+            _metrics = new(Services);
+        }
+
+        private static void InitializeHostConfiguration(HostApplicationBuilderSettings settings, out ConfigurationManager hostConfiguration)
+        {
+            hostConfiguration = settings.HostConfiguration ?? new();
 
             if (!settings.DisableDefaults)
             {
-                if (settings.ContentRootPath is null && Configuration[HostDefaults.ContentRootKey] is null)
+                if (settings.ContentRootPath is null && hostConfiguration[HostDefaults.ContentRootKey] is null)
                 {
-                    HostingHostBuilderExtensions.SetDefaultContentRoot(Configuration);
+                    HostingHostBuilderExtensions.SetDefaultContentRoot(hostConfiguration);
                 }
 
-                Configuration.AddEnvironmentVariables(prefix: "DOTNET_");
+                hostConfiguration.AddEnvironmentVariables(prefix: "DOTNET_");
             }
 
-            Initialize(settings, out _hostBuilderContext, out _environment, out _logging, out _metrics);
-
-            ServiceProviderOptions? serviceProviderOptions = null;
-            if (!settings.DisableDefaults)
-            {
-                HostingHostBuilderExtensions.ApplyDefaultAppConfiguration(_hostBuilderContext, Configuration, settings.Args);
-                HostingHostBuilderExtensions.AddDefaultServices(_hostBuilderContext, Services);
-                serviceProviderOptions = HostingHostBuilderExtensions.CreateDefaultServiceProviderOptions(_hostBuilderContext);
-            }
-
-            _createServiceProvider = () =>
-            {
-                // Call _configureContainer in case anyone adds callbacks via HostBuilderAdapter.ConfigureContainer<IServiceCollection>() during build.
-                // Otherwise, this no-ops.
-                _configureContainer(Services);
-                return serviceProviderOptions is null ? Services.BuildServiceProvider() : Services.BuildServiceProvider(serviceProviderOptions);
-            };
-        }
-
-        internal HostApplicationBuilder(HostApplicationBuilderSettings? settings, bool empty)
-        {
-            Debug.Assert(empty, "should only be called with empty: true");
-
-            settings ??= new HostApplicationBuilderSettings();
-            Configuration = settings.Configuration ?? new ConfigurationManager();
-
-            Initialize(settings, out _hostBuilderContext, out _environment, out _logging, out _metrics);
-
-            _createServiceProvider = () =>
-            {
-                // Call _configureContainer in case anyone adds callbacks via HostBuilderAdapter.ConfigureContainer<IServiceCollection>() during build.
-                // Otherwise, this no-ops.
-                _configureContainer(Services);
-                return Services.BuildServiceProvider();
-            };
-        }
-
-        private void Initialize(HostApplicationBuilderSettings settings, out HostBuilderContext hostBuilderContext, out IHostEnvironment environment, out LoggingBuilder logging, out MetricsBuilder metrics)
-        {
             // Command line args are added even when settings.DisableDefaults == true. If the caller didn't want settings.Args applied,
             // they wouldn't have set them on the settings.
-            HostingHostBuilderExtensions.AddCommandLineConfig(Configuration, settings.Args);
+            HostingHostBuilderExtensions.AddCommandLineConfig(hostConfiguration, settings.Args);
 
             // HostApplicationBuilderSettings override all other config sources.
             List<KeyValuePair<string, string?>>? optionList = null;
@@ -158,31 +132,54 @@ namespace Microsoft.Extensions.Hosting
             }
             if (optionList is not null)
             {
-                Configuration.AddInMemoryCollection(optionList);
+                hostConfiguration.AddInMemoryCollection(optionList);
             }
+        }
 
-            (HostingEnvironment hostingEnvironment, PhysicalFileProvider physicalFileProvider) = HostBuilder.CreateHostingEnvironment(Configuration);
+        private void InitializeBuilderContext(HostApplicationBuilderSettings settings, out HostBuilderContext hostBuilderContext, out HostingEnvironment environment, out PhysicalFileProvider defaultFileProvider)
+        {
+            (environment, defaultFileProvider) = HostBuilder.CreateHostingEnvironment(_hostConfiguration);
 
-            Configuration.SetFileProvider(physicalFileProvider);
+            Configuration
+                .SetFileProvider(defaultFileProvider)
+                .AddConfiguration(_hostConfiguration, true);
 
             hostBuilderContext = new HostBuilderContext(new Dictionary<object, object>())
             {
-                HostingEnvironment = hostingEnvironment,
+                HostingEnvironment = environment,
                 Configuration = Configuration,
             };
 
-            environment = hostingEnvironment;
+            if (!settings.DisableDefaults)
+            {
+                HostingHostBuilderExtensions.ApplyDefaultAppConfiguration(hostBuilderContext, Configuration, settings.Args);
+            }
+        }
 
+        private void InitializeServiceProvider(HostApplicationBuilderSettings settings, out Func<IServiceProvider> createServiceProvider)
+        {
             HostBuilder.PopulateServiceCollection(
                 Services,
-                hostBuilderContext,
-                hostingEnvironment,
-                physicalFileProvider,
+                _hostBuilderContext,
+                _environment,
+                _defaultFileProvider,
                 Configuration,
                 () => _appServices!);
 
-            logging = new LoggingBuilder(Services);
-            metrics = new MetricsBuilder(Services);
+            ServiceProviderOptions? serviceProviderOptions = null;
+            if (!settings.DisableDefaults)
+            {
+                HostingHostBuilderExtensions.AddDefaultServices(_hostBuilderContext, Services);
+                serviceProviderOptions = HostingHostBuilderExtensions.CreateDefaultServiceProviderOptions(_hostBuilderContext);
+            }
+
+            createServiceProvider = () =>
+            {
+                // Call _configureContainer in case anyone adds callbacks via HostBuilderAdapter.ConfigureContainer<IServiceCollection>() during build.
+                // Otherwise, this no-ops.
+                _configureContainer(Services);
+                return serviceProviderOptions is null ? Services.BuildServiceProvider() : Services.BuildServiceProvider(serviceProviderOptions);
+            };
         }
 
         IDictionary<object, object> IHostApplicationBuilder.Properties => _hostBuilderContext.Properties;
@@ -191,12 +188,14 @@ namespace Microsoft.Extensions.Hosting
         public IHostEnvironment Environment => _environment;
 
         /// <summary>
-        /// Gets the set of key/value configuration properties.
+        /// Gets the set of key/value application configuration properties.
         /// </summary>
         /// <remarks>
         /// This can be mutated by adding more configuration sources, which will update its current view.
+        /// Changing the application configuration properties will not affect host properties such as the <see cref="Environment"/>.
+        /// Use the <see cref="HostApplicationBuilderSettings.HostConfiguration"/> to affect the host properties.
         /// </remarks>
-        public ConfigurationManager Configuration { get; }
+        public ConfigurationManager Configuration { get; } = new();
 
         IConfigurationManager IHostApplicationBuilder.Configuration => Configuration;
 
@@ -269,10 +268,9 @@ namespace Microsoft.Extensions.Hosting
 
             public void ApplyChanges()
             {
-                ConfigurationManager config = _hostApplicationBuilder.Configuration;
-
                 if (_configureHostConfigActions.Count > 0)
                 {
+                    var config = _hostApplicationBuilder._hostConfiguration;
                     string? previousApplicationName = config[HostDefaults.ApplicationKey];
                     string? previousEnvironment = config[HostDefaults.EnvironmentKey];
                     string? previousContentRootConfig = config[HostDefaults.ContentRootKey];
@@ -305,7 +303,7 @@ namespace Microsoft.Extensions.Hosting
 
                 foreach (Action<HostBuilderContext, IConfigurationBuilder> configureAppAction in _configureAppConfigActions)
                 {
-                    configureAppAction(_hostApplicationBuilder._hostBuilderContext, config);
+                    configureAppAction(_hostApplicationBuilder._hostBuilderContext, _hostApplicationBuilder.Configuration);
                 }
                 foreach (Action<HostBuilderContext, IServiceCollection> configureServicesAction in _configureServicesActions)
                 {

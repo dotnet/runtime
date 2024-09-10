@@ -21,10 +21,11 @@ public interface IHostApplicationBuilder
     IDictionary<object, object> Properties { get; }
 
     /// <summary>
-    /// Gets the set of key/value configuration properties.
+    /// Gets the set of key/value application configuration properties.
     /// </summary>
     /// <remarks>
     /// This can be mutated by adding more configuration sources, which will update its current view.
+    /// Changing the application configuration properties will not affect host properties such as the <see cref="Environment"/>.
     /// </remarks>
     IConfigurationManager Configuration { get; }
 

@@ -106,6 +106,10 @@ namespace Microsoft.Extensions.Hosting
         /// <param name="settings">Controls the initial configuration and other settings for constructing the <see cref="HostApplicationBuilder"/>.</param>
         /// <returns>The initialized <see cref="HostApplicationBuilder"/>.</returns>
         public static HostApplicationBuilder CreateEmptyApplicationBuilder(HostApplicationBuilderSettings? settings)
-            => new HostApplicationBuilder(settings, empty: true);
+        {
+            settings ??= new();
+            settings.DisableDefaults = true;
+            return new HostApplicationBuilder(settings);
+        }
     }
 }

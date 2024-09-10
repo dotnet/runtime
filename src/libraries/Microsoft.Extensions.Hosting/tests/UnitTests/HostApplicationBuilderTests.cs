@@ -104,7 +104,15 @@ namespace Microsoft.Extensions.Hosting.Tests
                         {
                             configBuilder.AddInMemoryCollection(new KeyValuePair<string, string>[]
                             {
-                                new("foo", "bar" ),
+                                new("hostTestKey", "hostTestValue" ),
+                            });
+                        });
+
+                        hostBuilderFromEvent.ConfigureAppConfiguration(configBuilder =>
+                        {
+                            configBuilder.AddInMemoryCollection(new KeyValuePair<string, string>[]
+                            {
+                                new("appTestKey", "appTestValue" ),
                             });
                         });
 
@@ -128,7 +136,8 @@ namespace Microsoft.Extensions.Hosting.Tests
                 Assert.NotNull(hostBuilderFromEvent);
                 Assert.Same(host, hostFromEvent);
                 Assert.Same(serviceA, host.Services.GetRequiredService<ServiceA>());
-                Assert.Equal("bar", host.Services.GetRequiredService<IConfiguration>()["foo"]);
+                Assert.Equal("hostTestValue", host.Services.GetRequiredService<IConfiguration>()["hostTestKey"]);
+                Assert.Equal("appTestValue", host.Services.GetRequiredService<IConfiguration>()["appTestKey"]);
             });
         }
 
@@ -284,7 +293,7 @@ namespace Microsoft.Extensions.Hosting.Tests
 
         [Theory]
         [MemberData(nameof(CreateBuilderDisableDefaultsData))]
-        public void ConfigurationSettingCanInfluenceEnvironment(CreateBuilderSettingsFunc createBuilder, bool disableDefaults)
+        public void HostConfigurationSettingCanInfluenceEnvironment(CreateBuilderSettingsFunc createBuilder, bool disableDefaults)
         {
             var tempPath = CreateTempSubdirectory();
 
@@ -302,7 +311,7 @@ namespace Microsoft.Extensions.Hosting.Tests
                 var builder = createBuilder(new HostApplicationBuilderSettings
                 {
                     DisableDefaults = disableDefaults,
-                    Configuration = config,
+                    HostConfiguration = config,
                 });
 
                 Assert.Equal("AppA", builder.Configuration[HostDefaults.ApplicationKey]);
@@ -332,7 +341,7 @@ namespace Microsoft.Extensions.Hosting.Tests
 
         [Theory]
         [MemberData(nameof(CreateBuilderDisableDefaultsData))]
-        public void DirectSettingsOverrideConfigurationSetting(CreateBuilderSettingsFunc createBuilder, bool disableDefaults)
+        public void DirectSettingsOverrideHostConfigurationSetting(CreateBuilderSettingsFunc createBuilder, bool disableDefaults)
         {
             var tempPath = CreateTempSubdirectory();
 
@@ -349,7 +358,7 @@ namespace Microsoft.Extensions.Hosting.Tests
                 var builder = createBuilder(new HostApplicationBuilderSettings
                 {
                     DisableDefaults = disableDefaults,
-                    Configuration = config,
+                    HostConfiguration = config,
                     ApplicationName = "AppB",
                     EnvironmentName = "EnvB",
                     ContentRootPath = tempPath,
@@ -406,7 +415,7 @@ namespace Microsoft.Extensions.Hosting.Tests
 
         [Theory]
         [MemberData(nameof(CreateBuilderSettingsFuncs))]
-        public void ChangingConfigurationPostBuilderConstructionDoesNotChangeEnvironment(CreateBuilderSettingsFunc createBuilder)
+        public void ChangingHostConfigurationPostBuilderConstructionDoesNotChangeEnvironment(CreateBuilderSettingsFunc createBuilder)
         {
             using var config = new ConfigurationManager();
 
@@ -419,7 +428,7 @@ namespace Microsoft.Extensions.Hosting.Tests
             var builder = createBuilder(new HostApplicationBuilderSettings
             {
                 DisableDefaults = true,
-                Configuration = config,
+                HostConfiguration = config,
             });
 
             config.AddInMemoryCollection(new KeyValuePair<string, string>[]
@@ -479,7 +488,7 @@ namespace Microsoft.Extensions.Hosting.Tests
             var builder = createBuilder(new HostApplicationBuilderSettings
             {
                 DisableDefaults = true,
-                Configuration = config
+                HostConfiguration = config
             });
 
             Assert.Equal("MyProjectReference", builder.Environment.ApplicationName);
@@ -492,6 +501,32 @@ namespace Microsoft.Extensions.Hosting.Tests
             Assert.Equal("MyProjectReference", env.ApplicationName);
             Assert.Equal(Environments.Development, env.EnvironmentName);
             Assert.Equal(Path.GetFullPath("."), env.ContentRootPath);
+        }
+
+        [Theory]
+        [MemberData(nameof(CreateBuilderSettingsFuncs))]
+        public void HostConfigurationParameterAvailableInAppConfiguration(CreateBuilderSettingsFunc createBuilder)
+        {
+            var parameters = new Dictionary<string, string>()
+            {
+                { "testParameterKey", "testParameterValue" },
+            };
+
+            var config = new ConfigurationManager();
+            config.AddInMemoryCollection(parameters);
+
+            var builder = createBuilder(new HostApplicationBuilderSettings
+            {
+                DisableDefaults = true,
+                HostConfiguration = config
+            });
+
+            Assert.Equal("testParameterValue", builder.Configuration["testParameterKey"]);
+
+            using IHost host = builder.Build();
+            var configuration = host.Services.GetRequiredService<IConfiguration>();
+
+            Assert.Equal("testParameterValue", configuration["testParameterKey"]);
         }
 
         [Theory]
