@@ -222,7 +222,7 @@ FCFuncStart(gCOMModuleHandleFuncs)
 FCFuncEnd()
 
 FCFuncStart(gRuntimeAssemblyFuncs)
-    FCFuncElement("FCallIsDynamic", AssemblyNative::IsDynamic)
+    FCFuncElement("GetIsDynamic", AssemblyNative::GetIsDynamic)
     FCFuncElement("GetManifestModule", AssemblyHandle::GetManifestModule)
     FCFuncElement("GetToken", AssemblyHandle::GetToken)
 FCFuncEnd()
