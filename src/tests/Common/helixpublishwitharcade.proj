@@ -950,10 +950,8 @@
     <ItemGroup>
       <XHarnessAppBundleToTest>
         <CustomCommands>$(_XHarnessAppleCustomCommand)</CustomCommands>
-        <!-- We're building on Helix, so remove the app bundle path (as the bundle doesn't exist yet) -->
-        <AppBundlePath></AppBundlePath>
-        <!-- Instead, pass the zip file of the managed assets and the information needed to build on Helix. -->
-        <PayloadZipFile>$(MergedPayloadsRootDirectory)%(PayloadGroup).zip</PayloadZipFile>
+        <!-- We're building on Helix, so pass the zip as the app bundle path (as the bundle doesn't exist yet) -->
+        <AppBundlePath>$(MergedPayloadsRootDirectory)%(PayloadGroup).zip</AppBundlePath>
       </XHarnessAppBundleToTest>
     </ItemGroup>
   </Target>
