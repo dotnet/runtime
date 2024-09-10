@@ -134,8 +134,8 @@ enum
  * Constants for interpreting the flags passed to Open or ShmOpen.
  * There are several other values defined by POSIX but not implemented
  * everywhere. The set below is restricted to the current needs of
- * COREFX, which increases portability and speeds up conversion. We
- * can add more as needed.
+ * runtime libraries, which increases portability and speeds up
+ * conversion. We can add more as needed.
  */
 enum
 {

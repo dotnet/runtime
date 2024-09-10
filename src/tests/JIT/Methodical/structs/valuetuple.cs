@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 //
 
-// This test is extracted and simplified from the corefx tests for the ValueTuple class.
+// This test is extracted and simplified from the libraries tests for the ValueTuple class.
 // It exposed an issue with assertion propagation not validating the assertions
 // for a containing struct when a field lclVar is defined.
 

@@ -3,7 +3,7 @@
 
 using System;
 
-namespace CoreFXTestLibrary
+namespace RuntimeLibrariesTest
 {
     /// <summary>
     /// A method to be called before any tests in the assembly are executed.

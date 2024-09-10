@@ -4,7 +4,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using CoreFXTestLibrary;
+using RuntimeLibrariesTest;
 using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;

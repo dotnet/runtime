@@ -10,7 +10,7 @@ using Xunit;
 // On x86, we must ensure that we properly treat an outgoing Vector3 as a 12-byte value
 // when pushing it onto the stack.
 
-public static class CoreFX15913
+public static class Issue20135
 {
     [MethodImpl(MethodImplOptions.NoInlining)]
     static float Sum(float v3, Vector3 v)

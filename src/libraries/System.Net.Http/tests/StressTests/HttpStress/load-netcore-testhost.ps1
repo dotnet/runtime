@@ -2,7 +2,7 @@
 # The .NET Foundation licenses this file to you under the MIT license.
 
 # Helper script used for pointing the current powershell environment 
-# to the testhost sdk built by the corefx build script.
+# to the testhost sdk built by the netcore build script.
 
 [CmdletBinding(PositionalBinding=$false)]
 Param(
@@ -21,7 +21,7 @@ if ($MyInvocation.InvocationName -ne ".")
     exit
 }
 
-# find corefx root, assuming script lives in the git repo
+# find netcore root, assuming script lives in the git repo
 $SOURCE_DIR="$(split-path -Parent $MyInvocation.MyCommand.Definition)"
 $DOTNET_TEST_ROOT_DIR=$(git -C "$SOURCE_DIR" rev-parse --show-toplevel)
 

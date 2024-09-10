@@ -7,8 +7,6 @@ using System.Globalization;
 using System.Threading;
 using System.Threading.Tasks;
 
-// TODO: Move these tests to CoreFX once they can be run on CoreRT
-
 internal static class Threading
 {
     private const int Pass = 100;

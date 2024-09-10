@@ -3,7 +3,7 @@
 
 using System;
 
-namespace CoreFXTestLibrary
+namespace RuntimeLibrariesTest
 {
     public class Logger
     {

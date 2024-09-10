@@ -9,7 +9,7 @@ using System.Linq;
 #if INTERNAL_CONTRACTS
 using Internal.Runtime.Augments;
 #endif
-using CoreFXTestLibrary;
+using RuntimeLibrariesTest;
 using TypeOfRepo;
 
 namespace ArrayTests
