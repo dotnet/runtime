@@ -1535,8 +1535,7 @@ Notes:
 * The shuffle chains in 2a. and 2b. can be executed independently even though ShuffleEntries may come interleaved.
     TODO: deinterleave entries in GenerateShuffleArray to increase thunk reuse.
 * If the delowered argument in 3. takes more stack slots than the lowered arguments in 1. and 5. vacate combined,
-    the thunk must grow the stack. (Currently, because FP structs > 16 bytes are not supported, can only happen when
-    the second lowered argument in 5. does not exist).
+    the thunk must grow the stack (handled by IL stubs).
 */
 void StubLinkerCPU::EmitShufflingWithCallingConventionTransfers(const ShuffleEntry *entry)
 {

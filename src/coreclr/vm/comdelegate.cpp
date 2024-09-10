@@ -818,8 +818,10 @@ BOOL GenerateShuffleArray(MethodDesc* pInvoke, MethodDesc *pTargetMeth, SArray<S
 
     if (LoggingOn(LF_STUBS, LL_INFO1000000))
     {
-        LOGALWAYS(("GenerateShuffleArray: %u entries for %s -> %s:\n",
-            pShuffleEntryArray->GetCount(), pInvoke->GetName(), pTargetMeth->GetName()));
+        LOGALWAYS(("GenerateShuffleArray: %u entries for %s.%s -> %s.%s:\n",
+            pShuffleEntryArray->GetCount(),
+            pInvoke->GetMethodTable()->GetDebugClassName(), pInvoke->GetName(),
+            pTargetMeth->GetMethodTable()->GetDebugClassName(), pTargetMeth->GetName()));
 
         for (COUNT_T i = 0; i < pShuffleEntryArray->GetCount(); ++i)
         {
