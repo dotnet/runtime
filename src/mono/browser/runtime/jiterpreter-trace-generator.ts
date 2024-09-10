@@ -449,10 +449,9 @@ export function generateWasmBody (
                 if (pruneOpcodes) {
                     // We emit an unreachable opcode so that if execution somehow reaches a pruned opcode, we will abort
                     // This should be impossible anyway but it's also useful to have pruning visible in the wasm
-                    // FIXME: Ideally we would stop generating opcodes after the first unreachable, but that causes v8 to hang
                     if (!hasEmittedUnreachable)
                         builder.appendU8(WasmOpcode.unreachable);
-                    // Each unreachable opcode could generate a bunch of native code in a bad wasm jit so generate nops after it
+                    // Don't generate multiple unreachable opcodes in a row
                     hasEmittedUnreachable = true;
                 }
                 break;
@@ -467,7 +466,7 @@ export function generateWasmBody (
             }
             case MintOpcode.MINT_LOCALLOC: {
                 // dest
-                append_ldloca(builder, getArgU16(ip, 1));
+                append_ldloca(builder, getArgU16(ip, 1), 0);
                 // len
                 append_ldloc(builder, getArgU16(ip, 2), WasmOpcode.i32_load);
                 // frame
@@ -648,10 +647,12 @@ export function generateWasmBody (
                 // locals[ip[1]] = &locals[ip[2]]
                 const offset = getArgU16(ip, 2),
                     flag = isAddressTaken(builder, offset),
-                    destOffset = getArgU16(ip, 1);
+                    destOffset = getArgU16(ip, 1),
+                    // Size value stored for us by emit_compacted_instruction so we can do invalidation
+                    size = getArgU16(ip, 3);
                 if (!flag)
                     mono_log_error(`${traceName}: Expected local ${offset} to have address taken flag`);
-                append_ldloca(builder, offset);
+                append_ldloca(builder, offset, size);
                 append_stloc_tail(builder, destOffset, WasmOpcode.i32_store);
                 // Record this ldloca as a known constant so that later uses of it turn into a lea,
                 //  and the wasm runtime can constant fold them with other constants. It's not uncommon
@@ -875,9 +876,8 @@ export function generateWasmBody (
             }
 
             case MintOpcode.MINT_LD_DELEGATE_METHOD_PTR: {
-                // FIXME: ldloca invalidation size
-                append_ldloca(builder, getArgU16(ip, 1), 8);
-                append_ldloca(builder, getArgU16(ip, 2), 8);
+                append_ldloca(builder, getArgU16(ip, 1), 4);
+                append_ldloca(builder, getArgU16(ip, 2), 4);
                 builder.callImport("ld_del_ptr");
                 break;
             }
@@ -1383,7 +1383,9 @@ export function generateWasmBody (
                     (builder.callHandlerReturnAddresses.length <= maxCallHandlerReturnAddresses)
                 ) {
                     // mono_log_info(`endfinally @0x${(<any>ip).toString(16)}. return addresses:`, builder.callHandlerReturnAddresses.map(ra => (<any>ra).toString(16)));
-                    // FIXME: Clean this codegen up
+                    // FIXME: Replace this with a chain of selects to more efficiently map from RA -> index, then
+                    //  a single jump table at the end to jump to the right place. This will generate much smaller
+                    //  code and be able to handle a larger number of return addresses.
                     // Load ret_ip
                     const clauseIndex = getArgU16(ip, 1),
                         clauseDataOffset = get_imethod_clause_data_offset(frame, clauseIndex);
@@ -1972,10 +1974,7 @@ function append_stloc_tail (builder: WasmBuilder, offset: number, opcodeOrPrefix
 
 // Pass bytesInvalidated=0 if you are reading from the local and the address will never be
 //  used for writes
-function append_ldloca (builder: WasmBuilder, localOffset: number, bytesInvalidated?: number) {
-    if (typeof (bytesInvalidated) !== "number")
-        bytesInvalidated = 512;
-    // FIXME: We need to know how big this variable is so we can invalidate the whole space it occupies
+function append_ldloca (builder: WasmBuilder, localOffset: number, bytesInvalidated: number) {
     if (bytesInvalidated > 0)
         invalidate_local_range(localOffset, bytesInvalidated);
     builder.lea("pLocals", localOffset);
@@ -2476,7 +2475,8 @@ function emit_sfieldop (
             builder.ptr_const(pStaticData);
             // src
             append_ldloca(builder, localOffset, 0);
-            // FIXME: Use mono_gc_wbarrier_set_field_internal
+            // We don't need to use gc_wbarrier_set_field_internal here because there's no object
+            //  reference, interp does a raw write
             builder.callImport("copy_ptr");
             return true;
         case MintOpcode.MINT_LDSFLD_VT: {
@@ -2903,7 +2903,6 @@ function emit_branch (
                         );
 
                     cwraps.mono_jiterp_boost_back_branch_target(destination);
-                    // FIXME: Should there be a safepoint here?
                     append_bailout(builder, destination, BailoutReason.BackwardBranch);
                     modifyCounter(JiterpCounter.BackBranchesNotEmitted, 1);
                     return true;
@@ -4036,7 +4035,6 @@ function emit_atomics (
     if (!builder.options.enableAtomics)
         return false;
 
-    // FIXME: memory barrier might be worthwhile to implement
     // FIXME: We could probably unify most of the xchg/cmpxchg implementation into one implementation
 
     const xchg = xchgTable[opcode];
