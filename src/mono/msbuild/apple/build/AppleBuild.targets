@@ -10,12 +10,12 @@
   </PropertyGroup>
 
   <UsingTask Condition="'$(AppleGenerateAppBundle)' == 'true'"
-             TaskName="AppleAppBuilderTask" 
+             TaskName="AppleAppBuilderTask"
              AssemblyFile="$(AppleAppBuilderTasksAssemblyPath)" />
   <UsingTask Condition="'$(RunAOTCompilation)' == 'true'"
              TaskName="ILStrip"
              AssemblyFile="$(MonoTargetsTasksAssemblyPath)" />
-  <UsingTask TaskName="MonoTargetsTasks.MarshalingPInvokeScanner" 
+  <UsingTask TaskName="MonoTargetsTasks.MarshalingPInvokeScanner"
              AssemblyFile="$(MonoTargetsTasksAssemblyPath)" />
 
   <Import Condition="Exists('$(ILCompilerTargetsPath)') and '$(UseNativeAOTRuntime)' == 'true'"
@@ -23,7 +23,7 @@
   <Import Condition="Exists('$(ILLinkTargetsPath)') and '$(UseNativeAOTRuntime)' == 'true'"
           Project="$(ILLinkTargetsPath)" />
 
-  <Target Name="_CleanPublish" 
+  <Target Name="_CleanPublish"
           BeforeTargets="Build">
     <RemoveDir Directories="$(PublishDir)" />
   </Target>
@@ -196,7 +196,7 @@
         <_IsNative>false</_IsNative>
       </_AssembliesToBundleInternal>
 
-      <_AotInputAssemblies Include="@(_AssembliesToBundleInternal)" 
+      <_AotInputAssemblies Include="@(_AssembliesToBundleInternal)"
                            Condition="'%(_AssembliesToBundleInternal._InternalForceInterpret)' != 'true'">
         <AotArguments>$(AotArguments)</AotArguments>
         <ProcessArguments>$(ProcessArguments)</ProcessArguments>
@@ -205,7 +205,7 @@
       <_AOT_InternalForceInterpretAssemblies Include="@(_AssembliesToBundleInternal->WithMetadataValue('_InternalForceInterpret', 'true'))" />
       <_AssembliesToBundleInternal Remove="@(_AssembliesToBundleInternal)" />
     </ItemGroup>
-    
+
     <MakeDir Directories="$(_MobileIntermediateOutputPath)" />
 
     <PropertyGroup Condition="'$(iOSLikeDedup)' == 'true'">
@@ -228,8 +228,8 @@
       <_ExcludeFromAppDir Include="$(_iOSLikeDedupAssembly)" />
     </ItemGroup>
 
-    <!-- 
-      In order for the runtime to work when static linking, we must supply 
+    <!--
+      In order for the runtime to work when static linking, we must supply
       a list of direct pinvokes otherwise the runtime will crash
     -->
     <ItemGroup Condition="'$(_IsLibraryMode)' == 'true'">
@@ -237,6 +237,7 @@
       <DirectPInvokes Include="libSystem.IO.Compression.Native" />
       <DirectPInvokes Include="libSystem.Net.Security.Native" />
       <DirectPInvokes Include="libSystem.Security.Cryptography.Native.Apple" />
+      <DirectPInvokes Include="libbrotlienc;libbrotlidec" />
     </ItemGroup>
 
     <PropertyGroup>
@@ -274,7 +275,7 @@
   <Target Name="_AppleNativeAotCompile"
           DependsOnTargets="SetupProperties;ComputeIlcCompileInputs;IlcCompile;$(_IlcLibraryBuildDependsOn)" />
 
-  <Target Name="_AppleGenerateAppBundle" 
+  <Target Name="_AppleGenerateAppBundle"
           Condition="'$(AppleGenerateAppBundle)' == 'true'"
           DependsOnTargets="_AppleGenerateRuntimeConfig">
     <!-- Run App bundler, it uses AOT libs (if needed), link all native bits, compile simple UI (written in ObjC)
@@ -336,7 +337,7 @@
   </Target>
 
   <Target Name="_AfterAppleBuild">
-    
+
   </Target>
 
   <Target Name="_AppleGenerateRuntimeConfig"
