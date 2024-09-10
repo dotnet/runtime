@@ -7,11 +7,12 @@
       <Private>false</Private>
     </PackageDownloadAndReference>
   </ItemDefinitionGroup>
-  
+
   <ItemGroup>
     <PackageDownload Include="@(PackageDownloadAndReference)" />
     <PackageDownload Update="@(PackageDownloadAndReference)" Version="[%(Version)]"/>
-    <Reference Include="@(PackageDownloadAndReference->'$(NuGetPackageRoot)%(Identity)/%(Version)/%(Folder)/%(AssemblyName).dll')" />
+    <PackageDownloadAndReference Update="@(PackageDownloadAndReference)" PackageFolder="$([System.String]::new(%(Identity)).ToLowerInvariant())" />
+    <Reference Include="@(PackageDownloadAndReference->'$(NuGetPackageRoot)%(PackageFolder)/%(Version)/%(Folder)/%(AssemblyName).dll')" />
   </ItemGroup>
 
 </Project>
