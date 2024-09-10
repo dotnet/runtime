@@ -171,7 +171,7 @@ void Assembly::SetError(Exception *ex)
     }
     CONTRACT_END;
 
-    m_pError = new ExInfo(ex->DomainBoundClone());
+    m_pError = ex->DomainBoundClone();
 
     if (m_pModule)
     {
@@ -203,10 +203,9 @@ void Assembly::ThrowIfError(FileLoadLevel targetLevel)
     }
     CONTRACT_END;
 
-    if (m_level < targetLevel)
+    if (m_level < targetLevel && m_pError != NULL)
     {
-        if (m_pError)
-            m_pError->Throw();
+        PAL_CPP_THROW(Exception*, m_pError->DomainBoundClone());
     }
 
     RETURN;
@@ -650,9 +649,6 @@ BOOL Assembly::NotifyDebuggerLoad(int flags, BOOL attaching)
 
     BOOL result = FALSE;
 
-    if (!IsVisibleToDebugger())
-        return FALSE;
-
     // Debugger Attach is done totally out-of-process. Does not call code in-proc.
     _ASSERTE(!attaching);
 
@@ -691,9 +687,6 @@ BOOL Assembly::NotifyDebuggerLoad(int flags, BOOL attaching)
 void Assembly::NotifyDebuggerUnload()
 {
     LIMITED_METHOD_CONTRACT;
-
-    if (!IsVisibleToDebugger())
-        return;
 
     if (!AppDomain::GetCurrentDomain()->IsDebuggerAttached())
         return;

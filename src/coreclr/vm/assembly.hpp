@@ -159,55 +159,6 @@ private:
     // by loader reentrancy.
     CHECK CheckLoadLevel(FileLoadLevel requiredLevel, BOOL deadlockOK = TRUE) DAC_EMPTY_RET(CHECK::OK());
 
-    class ExInfo
-    {
-        enum
-        {
-            ExType_ClrEx,
-            ExType_HR
-        }
-        m_type;
-        union
-        {
-            Exception* m_pEx;
-            HRESULT    m_hr;
-        };
-
-    public:
-        void Throw()
-        {
-            CONTRACTL
-            {
-                THROWS;
-                GC_TRIGGERS;
-                MODE_ANY;
-            }
-            CONTRACTL_END;
-            if (m_type == ExType_ClrEx)
-            {
-                PAL_CPP_THROW(Exception*, m_pEx->DomainBoundClone());
-            }
-            if (m_type == ExType_HR)
-                ThrowHR(m_hr);
-            _ASSERTE(!"Bad exception type");
-            ThrowHR(E_UNEXPECTED);
-        };
-
-        ExInfo(Exception* pEx)
-        {
-            LIMITED_METHOD_CONTRACT;
-            m_type = ExType_ClrEx;
-            m_pEx = pEx;
-        };
-
-        ~ExInfo()
-        {
-            LIMITED_METHOD_CONTRACT;
-            if (m_type == ExType_ClrEx)
-                delete m_pEx;
-        }
-    };
-
 public:
     void StartUnload();
     void Terminate( BOOL signalProfiler = TRUE );
@@ -575,7 +526,7 @@ private:
     FileLoadLevel   m_level;
     BOOL            m_loading;
     DWORD           m_notifyFlags;
-    ExInfo*         m_pError;
+    Exception*      m_pError;
     BOOL            m_fHostAssemblyPublished;
     BOOL            m_bDisableActivationCheck;
 };
