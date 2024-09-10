@@ -5316,6 +5316,8 @@ public:
                                       unsigned    xcptnIndex,
                                       bool        putInTryRegion);
 
+    BasicBlock* fgNewBBatTryRegionEnd(BBKinds jumpKind, unsigned tryIndex);
+
     void fgInsertBBbefore(BasicBlock* insertBeforeBlk, BasicBlock* newBlk);
     void fgInsertBBafter(BasicBlock* insertAfterBlk, BasicBlock* newBlk);
     void fgUnlinkBlock(BasicBlock* block);
@@ -8334,6 +8336,8 @@ public:
 
     void        eePrintObjectDescription(const char* prefix, CORINFO_OBJECT_HANDLE handle);
     const char* eeGetShortClassName(CORINFO_CLASS_HANDLE clsHnd);
+
+    const char* eeGetClassAssemblyName(CORINFO_CLASS_HANDLE clsHnd);
 
 #if defined(DEBUG)
     unsigned eeTryGetClassSize(CORINFO_CLASS_HANDLE clsHnd);
