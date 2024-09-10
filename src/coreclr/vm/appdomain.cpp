@@ -430,27 +430,6 @@ void PinnedHeapHandleTable::EnumStaticGCRefs(promote_func* fn, ScanContext* sc)
     }
 }
 
-//*****************************************************************************
-// BaseDomain
-//*****************************************************************************
-
-BaseDomain::BaseDomain()
-{
-    // initialize fields so the domain can be safely destructed
-    // shouldn't call anything that can fail here - use ::Init instead
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
-        FORBID_FAULT;
-    }
-    CONTRACTL_END;
-
-    // Make sure the container is set to NULL so that it gets loaded when it is used.
-    m_pPinnedHeapHandleTable = NULL;
-} //BaseDomain::BaseDomain
-
 #undef LOADERHEAP_PROFILE_COUNTER
 
 void AppDomain::ClearBinderContext()
@@ -573,7 +552,7 @@ void AppDomain::SetNativeDllSearchDirectories(LPCWSTR wszNativeDllSearchDirector
     }
 }
 
-OBJECTREF* BaseDomain::AllocateObjRefPtrsInLargeTable(int nRequested, DynamicStaticsInfo* pStaticsInfo, MethodTable *pMTToFillWithStaticBoxes, bool isClassInitdeByUpdatingStaticPointer)
+OBJECTREF* AppDomain::AllocateObjRefPtrsInLargeTable(int nRequested, DynamicStaticsInfo* pStaticsInfo, MethodTable *pMTToFillWithStaticBoxes, bool isClassInitdeByUpdatingStaticPointer)
 {
     CONTRACTL
     {
@@ -661,7 +640,7 @@ OBJECTREF AppDomain::GetMissingObject()
 #ifndef DACCESS_COMPILE
 
 
-STRINGREF *BaseDomain::IsStringInterned(STRINGREF *pString)
+STRINGREF* AppDomain::IsStringInterned(STRINGREF *pString)
 {
     CONTRACTL
     {
@@ -676,7 +655,7 @@ STRINGREF *BaseDomain::IsStringInterned(STRINGREF *pString)
     return GetLoaderAllocator()->IsStringInterned(pString);
 }
 
-STRINGREF *BaseDomain::GetOrInternString(STRINGREF *pString)
+STRINGREF* AppDomain::GetOrInternString(STRINGREF *pString)
 {
     CONTRACTL
     {
@@ -691,7 +670,7 @@ STRINGREF *BaseDomain::GetOrInternString(STRINGREF *pString)
     return GetLoaderAllocator()->GetOrInternString(pString);
 }
 
-void BaseDomain::InitPinnedHeapHandleTable()
+void AppDomain::InitPinnedHeapHandleTable()
 {
     CONTRACTL
     {
@@ -1035,7 +1014,7 @@ void SystemDomain::LoadBaseSystemClasses()
 
         // Only partially load the system assembly. Other parts of the code will want to access
         // the globals in this function before finishing the load.
-        m_pSystemAssembly = DefaultDomain()->LoadDomainAssembly(NULL, m_pSystemPEAssembly, FILE_LOAD_POST_ALLOCATE)->GetAssembly();
+        m_pSystemAssembly = DefaultDomain()->LoadDomainAssembly(NULL, m_pSystemPEAssembly, FILE_LOAD_BEFORE_TYPE_LOAD)->GetAssembly();
 
         // Set up binder for CoreLib
         CoreLibBinder::AttachModule(m_pSystemAssembly->GetModule());
@@ -1567,15 +1546,15 @@ void SystemDomain::NotifyProfilerStartup()
 
     {
         BEGIN_PROFILER_CALLBACK(CORProfilerTrackAppDomainLoads());
-        _ASSERTE(System()->DefaultDomain());
-        (&g_profControlBlock)->AppDomainCreationStarted((AppDomainID) System()->DefaultDomain());
+        _ASSERTE(AppDomain::GetCurrentDomain());
+        (&g_profControlBlock)->AppDomainCreationStarted((AppDomainID) AppDomain::GetCurrentDomain());
         END_PROFILER_CALLBACK();
     }
 
     {
         BEGIN_PROFILER_CALLBACK(CORProfilerTrackAppDomainLoads());
-        _ASSERTE(System()->DefaultDomain());
-        (&g_profControlBlock)->AppDomainCreationFinished((AppDomainID) System()->DefaultDomain(), S_OK);
+        _ASSERTE(AppDomain::GetCurrentDomain());
+        (&g_profControlBlock)->AppDomainCreationFinished((AppDomainID) AppDomain::GetCurrentDomain(), S_OK);
         END_PROFILER_CALLBACK();
     }
 }
@@ -1606,15 +1585,15 @@ HRESULT SystemDomain::NotifyProfilerShutdown()
 
     {
         BEGIN_PROFILER_CALLBACK(CORProfilerTrackAppDomainLoads());
-        _ASSERTE(System()->DefaultDomain());
-        (&g_profControlBlock)->AppDomainShutdownStarted((AppDomainID) System()->DefaultDomain());
+        _ASSERTE(AppDomain::GetCurrentDomain());
+        (&g_profControlBlock)->AppDomainShutdownStarted((AppDomainID) AppDomain::GetCurrentDomain());
         END_PROFILER_CALLBACK();
     }
 
     {
         BEGIN_PROFILER_CALLBACK(CORProfilerTrackAppDomainLoads());
-        _ASSERTE(System()->DefaultDomain());
-        (&g_profControlBlock)->AppDomainShutdownFinished((AppDomainID) System()->DefaultDomain(), S_OK);
+        _ASSERTE(AppDomain::GetCurrentDomain());
+        (&g_profControlBlock)->AppDomainShutdownFinished((AppDomainID) AppDomain::GetCurrentDomain(), S_OK);
         END_PROFILER_CALLBACK();
     }
     return (S_OK);
@@ -1622,6 +1601,30 @@ HRESULT SystemDomain::NotifyProfilerShutdown()
 #endif // PROFILING_SUPPORTED
 
 AppDomain::AppDomain()
+    : m_handleStore{NULL}
+    , m_pPinnedHeapHandleTable{NULL}
+    , m_pDefaultBinder{NULL}
+    , m_pRefClassFactHash{NULL}
+#ifdef FEATURE_COMINTEROP
+    , m_pRefDispIDCache{NULL}
+    , m_hndMissing{NULL}
+#endif //FEATURE_COMINTEROP
+    , m_pDelayedLoaderAllocatorUnloadList{NULL}
+    , m_pRootAssembly{NULL}
+    , m_dwFlags{0}
+    , m_cRef{1}
+#ifdef FEATURE_COMINTEROP
+    , m_pRCWCache{NULL}
+#endif //FEATURE_COMINTEROP
+#ifdef FEATURE_COMWRAPPERS
+    , m_pRCWRefCache{NULL}
+#endif // FEATURE_COMWRAPPERS
+    , m_Stage{STAGE_CREATING}
+    , m_MemoryPressure{0}
+    , m_ForceTrivialWaitOperations{false}
+#ifdef FEATURE_TYPEEQUIVALENCE
+    , m_pTypeEquivalenceTable{NULL}
+#endif // FEATURE_TYPEEQUIVALENCE
 {
     // initialize fields so the appdomain can be safely destructed
     // shouldn't call anything that can fail here - use ::Init instead
@@ -1634,44 +1637,15 @@ AppDomain::AppDomain()
     }
     CONTRACTL_END;
 
-    m_cRef=1;
-
     m_JITLock.PreInit();
     m_ClassInitLock.PreInit();
     m_ILStubGenLock.PreInit();
     m_NativeTypeLoadLock.PreInit();
     m_FileLoadLock.PreInit();
 
-    m_pDefaultBinder = NULL;
-    m_pRootAssembly = NULL;
-
-    m_dwFlags = 0;
-#ifdef FEATURE_COMINTEROP
-    m_pRCWCache = NULL;
-#endif //FEATURE_COMINTEROP
-#ifdef FEATURE_COMWRAPPERS
-    m_pRCWRefCache = NULL;
-#endif // FEATURE_COMWRAPPERS
-
-    m_handleStore = NULL;
-
 #ifdef _DEBUG
     m_Assemblies.Debug_SetAppDomain(this);
 #endif // _DEBUG
-
-#ifdef FEATURE_COMINTEROP
-    m_pRefDispIDCache = NULL;
-    m_hndMissing = NULL;
-#endif
-
-    m_pRefClassFactHash = NULL;
-
-    m_ForceTrivialWaitOperations = false;
-    m_Stage=STAGE_CREATING;
-
-#ifdef FEATURE_TYPEEQUIVALENCE
-    m_pTypeEquivalenceTable = NULL;
-#endif // FEATURE_TYPEEQUIVALENCE
 
 } // AppDomain::AppDomain
 
@@ -1696,12 +1670,9 @@ void AppDomain::Init()
     CONTRACTL
     {
         STANDARD_VM_CHECK;
+        PRECONDITION(m_Stage == STAGE_CREATING);
     }
     CONTRACTL_END;
-
-    m_pDelayedLoaderAllocatorUnloadList = NULL;
-
-    SetStage( STAGE_CREATING);
 
     //
     //   The JIT lock and the CCtor locks are at the same level (and marked as
@@ -1728,8 +1699,6 @@ void AppDomain::Init()
 
     // Set up the binding caches
     m_AssemblyCache.Init(&m_DomainCacheCrst, GetHighFrequencyHeap());
-
-    m_MemoryPressure = 0;
 
     m_handleStore = GCHandleUtilities::GetGCHandleManager()->GetGlobalHandleStore();
     if (!m_handleStore)
@@ -2006,8 +1975,7 @@ static const char *fileLoadLevelName[] =
 {
     "CREATE",                             // FILE_LOAD_CREATE
     "BEGIN",                              // FILE_LOAD_BEGIN
-    "ALLOCATE",                           // FILE_LOAD_ALLOCATE
-    "POST_ALLOCATE",                      // FILE_LOAD_POST_ALLOCATE
+    "BEFORE_TYPE_LOAD",                   // FILE_LOAD_BEFORE_TYPE_LOAD
     "EAGER_FIXUPS",                       // FILE_LOAD_EAGER_FIXUPS
     "DELIVER_EVENTS",                     // FILE_LOAD_DELIVER_EVENTS
     "VTABLE FIXUPS",                      // FILE_LOAD_VTABLE_FIXUPS
@@ -2074,7 +2042,6 @@ BOOL FileLoadLock::CompleteLoadLevel(FileLoadLevel level, BOOL success)
 #ifndef DACCESS_COMPILE
         switch(level)
         {
-            case FILE_LOAD_ALLOCATE:
             case FILE_LOAD_DELIVER_EVENTS:
             case FILE_LOADED:
             case FILE_ACTIVE: // The timing of stress logs is not critical, so even for the FILE_ACTIVE stage we need not do it while the m_pList lock is held.
@@ -2494,7 +2461,9 @@ DomainAssembly *AppDomain::LoadDomainAssemblyInternal(AssemblySpec* pIdentity,
 
         // Allocate the DomainAssembly a bit early to avoid GC mode problems. We could potentially avoid
         // a rare redundant allocation by moving this closer to FileLoadLock::Create, but it's not worth it.
-        NewHolder<DomainAssembly> pDomainAssembly = new DomainAssembly(pPEAssembly, pLoaderAllocator);
+        AllocMemTracker amTracker;
+        AllocMemTracker *pamTracker = &amTracker;
+        NewHolder<DomainAssembly> pDomainAssembly = new DomainAssembly(pPEAssembly, pLoaderAllocator, pamTracker);
 
         LoadLockHolder lock(this);
 
@@ -2511,6 +2480,10 @@ DomainAssembly *AppDomain::LoadDomainAssemblyInternal(AssemblySpec* pIdentity,
                 registerNewAssembly = true;
                 fileLock = FileLoadLock::Create(lock, pPEAssembly, pDomainAssembly);
                 pDomainAssembly.SuppressRelease();
+                pamTracker->SuppressRelease();
+
+                // Set the assembly module to be tenured now that we know it won't be deleted
+                pDomainAssembly->GetAssembly()->SetIsTenured();
                 if (pDomainAssembly->IsCollectible())
                 {
                     // We add the assembly to the LoaderAllocator only when we are sure that it can be added
@@ -2546,7 +2519,9 @@ DomainAssembly *AppDomain::LoadDomainAssemblyInternal(AssemblySpec* pIdentity,
         }
     }
     else
+    {
         result->EnsureLoadLevel(targetLevel);
+    }
 
     // Cache result in all cases, since found pPEAssembly could be from a different AssemblyRef than pIdentity
     if (pIdentity == NULL)
@@ -4056,7 +4031,7 @@ void AppDomain::EnumStaticGCRefs(promote_func* fn, ScanContext* sc)
 #endif // !DACCESS_COMPILE
 
 //------------------------------------------------------------------------
-PTR_LoaderAllocator BaseDomain::GetLoaderAllocator()
+PTR_LoaderAllocator AppDomain::GetLoaderAllocator()
 {
     WRAPPER_NO_CONTRACT;
     return SystemDomain::GetGlobalLoaderAllocator(); // The one and only domain is not unloadable
@@ -4535,7 +4510,7 @@ SystemDomain::EnumMemoryRegions(CLRDataEnumMemoryFlags flags, bool enumThis)
 
     if (flags == CLRDATA_ENUM_MEM_HEAP2)
     {
-        GetLoaderAllocator()->EnumMemoryRegions(flags);
+        GetGlobalLoaderAllocator()->EnumMemoryRegions(flags);
     }
     if (m_pSystemPEAssembly.IsValid())
     {
