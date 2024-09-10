@@ -54,8 +54,7 @@ namespace System.Net.Http
                 cancellationToken.ThrowIfCancellationRequested();
 
                 var response = new HttpResponseMessage((HttpStatusCode)incomingResponse.Status());
-                WasiHttpInterop.ConvertResponseHeaders(incomingResponse, response);
-
+                response.RequestMessage = request;
 
                 // request body could be still streaming after response headers are received and started streaming response
                 // we will leave scope of this method
@@ -63,6 +62,7 @@ namespace System.Net.Http
                 // unless we know that we are not streaming anymore
                 incomingStream = new WasiInputStream(this, incomingResponse.Consume());// passing self ownership, passing body ownership
                 response.Content = new StreamContent(incomingStream); // passing incomingStream ownership to SendAsync() caller
+                WasiHttpInterop.ConvertResponseHeaders(incomingResponse, response);
 
                 return response;
             }

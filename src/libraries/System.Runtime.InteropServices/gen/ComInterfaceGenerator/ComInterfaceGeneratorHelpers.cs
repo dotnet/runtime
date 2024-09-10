@@ -19,7 +19,7 @@ namespace Microsoft.Interop
             => DefaultMarshallingGeneratorResolver.Create(env, direction, TypeNames.GeneratedComInterfaceAttribute_ShortName,
                 [
                     new StructAsHResultMarshallerFactory(),
-                    new ManagedHResultExceptionGeneratorResolver(direction),
+                    new ManagedHResultExceptionGeneratorResolver(),
                     new ComInterfaceDispatchMarshallingResolver(),
                 ]);
 

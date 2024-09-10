@@ -78,12 +78,14 @@ Now you know about configurations and how we use them, so now you will want to r
 
 * [Building CoreCLR runtime](/docs/workflow/building/coreclr/README.md)
 * [Building Mono runtime](/docs/workflow/building/mono/README.md)
+* [Building NativeAOT runtime](/docs/workflow/building/coreclr/nativeaot.md)
 * [Building Libraries](/docs/workflow/building/libraries/README.md)
 
 After that, here's information about how to run tests:
 
 * [Testing CoreCLR runtime](/docs/workflow/testing/coreclr/testing.md)
 * [Testing Mono runtime](/docs/workflow/testing/mono/testing.md)
+* [Testing NativeAOT runtime](/docs/workflow/building/coreclr/nativeaot.md#running-tests)
 * [Testing Libraries](/docs/workflow/testing/libraries/testing.md)
 
 And how to measure performance:
