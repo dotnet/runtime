@@ -34,7 +34,7 @@ int load_fxr_and_get_delegate(hostfxr_delegate_type type, THostPathToConfigCallb
     pal::dll_t fxr;
 
     pal::string_t host_path;
-    if (!pal::get_own_module_path(&host_path) || !pal::realpath(&host_path))
+    if (!pal::get_own_module_path(&host_path) || !pal::fullpath(&host_path))
     {
         trace::error(_X("Failed to resolve full path of the current host module [%s]"), host_path.c_str());
         return StatusCode::CoreHostCurHostFindFailure;
@@ -59,8 +59,6 @@ int load_fxr_and_get_delegate(hostfxr_delegate_type type, THostPathToConfigCallb
         if (!pal::load_library(&fxr_path, &fxr))
         {
             trace::error(_X("The library %s was found, but loading it from %s failed"), LIBFXR_NAME, fxr_path.c_str());
-            trace::error(_X("  - Installing .NET prerequisites might help resolve this problem."));
-            trace::error(_X("     %s"), DOTNET_CORE_INSTALL_PREREQUISITES_URL);
             return StatusCode::CoreHostLibLoadFailure;
         }
     }

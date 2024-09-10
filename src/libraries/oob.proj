@@ -22,13 +22,6 @@
     <ProjectReference Include="oob-gen.proj" Condition="'$(DotNetBuildSourceOnly)' != 'true'" />
   </ItemGroup>
 
-  <!-- Support building reference projects only. -->
-  <ItemGroup Condition="'$(RefOnly)' == 'true'">
-    <ProjectReference Remove="@(ProjectReference)" />
-    <ProjectReference Include="sfx-ref.proj" OutputItemType="SharedFrameworkAssembly" />
-    <ProjectReference Include="oob-ref.proj" />
-  </ItemGroup>
-
   <Target Name="GetTrimOOBAssembliesInputs"
           DependsOnTargets="ResolveProjectReferences">
     <PropertyGroup>
@@ -47,7 +40,7 @@
 
   <Target Name="TrimOOBAssemblies"
           AfterTargets="Build"
-          Condition="'$(RefOnly)' != 'true' and '@(OOBAssembly)' != ''"
+          Condition="'@(OOBAssembly)' != ''"
           DependsOnTargets="GetTrimOOBAssembliesInputs;PrepareForAssembliesTrim"
           Inputs="$(ILLinkTasksAssembly);@(OOBAssemblyToTrim);@(OOBAssemblyReference);@(OOBLibrarySuppressionsXml)"
           Outputs="$(OOBAssembliesTrimMarkerFile)">

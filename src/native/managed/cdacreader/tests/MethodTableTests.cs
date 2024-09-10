@@ -8,98 +8,18 @@ using Xunit;
 
 namespace Microsoft.Diagnostics.DataContractReader.UnitTests;
 
+using MockRTS = MockDescriptors.RuntimeTypeSystem;
+
 public unsafe class MethodTableTests
 {
-    const ulong TestFreeObjectMethodTableGlobalAddress = 0x00000000_7a0000a0;
-    const ulong TestFreeObjectMethodTableAddress = 0x00000000_7a0000a8;
-
-    private static readonly Target.TypeInfo MethodTableTypeInfo = new()
-    {
-        Fields = {
-            { nameof(Data.MethodTable.MTFlags), new() { Offset = 4, Type = DataType.uint32}},
-            { nameof(Data.MethodTable.BaseSize), new() { Offset = 8, Type = DataType.uint32}},
-            { nameof(Data.MethodTable.MTFlags2), new() { Offset = 12, Type = DataType.uint32}},
-            { nameof(Data.MethodTable.EEClassOrCanonMT), new () { Offset = 16, Type = DataType.nuint}},
-            { nameof(Data.MethodTable.Module), new () { Offset = 24, Type = DataType.pointer}},
-            { nameof(Data.MethodTable.ParentMethodTable), new () { Offset = 40, Type = DataType.pointer}},
-            { nameof(Data.MethodTable.NumInterfaces), new () { Offset = 48, Type = DataType.uint16}},
-            { nameof(Data.MethodTable.NumVirtuals), new () { Offset = 50, Type = DataType.uint16}},
-            { nameof(Data.MethodTable.PerInstInfo), new () { Offset = 56, Type = DataType.pointer}},
-        }
-    };
-
-    private static readonly Target.TypeInfo EEClassTypeInfo = new Target.TypeInfo()
-    {
-        Fields = {
-            { nameof (Data.EEClass.MethodTable), new () { Offset = 8, Type = DataType.pointer}},
-            { nameof (Data.EEClass.CorTypeAttr), new () { Offset = 16, Type = DataType.uint32}},
-            { nameof (Data.EEClass.NumMethods), new () { Offset = 20, Type = DataType.uint16}},
-            { nameof (Data.EEClass.InternalCorElementType), new () { Offset = 22, Type = DataType.uint8}},
-            { nameof (Data.EEClass.NumNonVirtualSlots), new () { Offset = 24, Type = DataType.uint16}},
-        }
-    };
-
-    private static readonly (DataType Type, Target.TypeInfo Info)[] RTSTypes =
-    [
-        (DataType.MethodTable, MethodTableTypeInfo),
-        (DataType.EEClass, EEClassTypeInfo),
-    ];
-
-
-    private static readonly (string Name, ulong Value, string? Type)[] RTSGlobals =
-    [
-        (nameof(Constants.Globals.FreeObjectMethodTable), TestFreeObjectMethodTableGlobalAddress, null),
-        (nameof(Constants.Globals.MethodDescAlignment), 8, nameof(DataType.uint64)),
-    ];
-
-    private static MockMemorySpace.Builder AddFreeObjectMethodTable(TargetTestHelpers targetTestHelpers, MockMemorySpace.Builder builder)
-    {
-        MockMemorySpace.HeapFragment globalAddr = new() { Name = "Address of Free Object Method Table", Address = TestFreeObjectMethodTableGlobalAddress, Data = new byte[targetTestHelpers.PointerSize] };
-        targetTestHelpers.WritePointer(globalAddr.Data, TestFreeObjectMethodTableAddress);
-        return builder.AddHeapFragments([
-            globalAddr,
-            new () { Name = "Free Object Method Table", Address = TestFreeObjectMethodTableAddress, Data = new byte[targetTestHelpers.SizeOfTypeInfo(MethodTableTypeInfo)] }
-        ]);
-    }
-
-    private static MockMemorySpace.Builder AddEEClass(TargetTestHelpers targetTestHelpers, MockMemorySpace.Builder builder, TargetPointer eeClassPtr, string name, TargetPointer canonMTPtr, uint attr, ushort numMethods, ushort numNonVirtualSlots)
-    {
-        MockMemorySpace.HeapFragment eeClassFragment = new() { Name = $"EEClass '{name}'", Address = eeClassPtr, Data = new byte[targetTestHelpers.SizeOfTypeInfo(EEClassTypeInfo)] };
-        Span<byte> dest = eeClassFragment.Data;
-        targetTestHelpers.WritePointer(dest.Slice(EEClassTypeInfo.Fields[nameof(Data.EEClass.MethodTable)].Offset), canonMTPtr);
-        targetTestHelpers.Write(dest.Slice(EEClassTypeInfo.Fields[nameof(Data.EEClass.CorTypeAttr)].Offset), attr);
-        targetTestHelpers.Write(dest.Slice(EEClassTypeInfo.Fields[nameof(Data.EEClass.NumMethods)].Offset), numMethods);
-        targetTestHelpers.Write(dest.Slice(EEClassTypeInfo.Fields[nameof(Data.EEClass.NumNonVirtualSlots)].Offset), numNonVirtualSlots);
-        return builder.AddHeapFragment(eeClassFragment);
-
-    }
-
-    private static MockMemorySpace.Builder AddMethodTable(TargetTestHelpers targetTestHelpers, MockMemorySpace.Builder builder, TargetPointer methodTablePtr, string name, TargetPointer eeClassOrCanonMT, uint mtflags, uint mtflags2, uint baseSize,
-                                                        TargetPointer module, TargetPointer parentMethodTable, ushort numInterfaces, ushort numVirtuals)
-    {
-        MockMemorySpace.HeapFragment methodTableFragment = new() { Name = $"MethodTable '{name}'", Address = methodTablePtr, Data = new byte[targetTestHelpers.SizeOfTypeInfo(MethodTableTypeInfo)] };
-        Span<byte> dest = methodTableFragment.Data;
-        targetTestHelpers.WritePointer(dest.Slice(MethodTableTypeInfo.Fields[nameof(Data.MethodTable.EEClassOrCanonMT)].Offset), eeClassOrCanonMT);
-        targetTestHelpers.Write(dest.Slice(MethodTableTypeInfo.Fields[nameof(Data.MethodTable.MTFlags)].Offset), mtflags);
-        targetTestHelpers.Write(dest.Slice(MethodTableTypeInfo.Fields[nameof(Data.MethodTable.MTFlags2)].Offset), mtflags2);
-        targetTestHelpers.Write(dest.Slice(MethodTableTypeInfo.Fields[nameof(Data.MethodTable.BaseSize)].Offset), baseSize);
-        targetTestHelpers.WritePointer(dest.Slice(MethodTableTypeInfo.Fields[nameof(Data.MethodTable.Module)].Offset), module);
-        targetTestHelpers.WritePointer(dest.Slice(MethodTableTypeInfo.Fields[nameof(Data.MethodTable.ParentMethodTable)].Offset), parentMethodTable);
-        targetTestHelpers.Write(dest.Slice(MethodTableTypeInfo.Fields[nameof(Data.MethodTable.NumInterfaces)].Offset), numInterfaces);
-        targetTestHelpers.Write(dest.Slice(MethodTableTypeInfo.Fields[nameof(Data.MethodTable.NumVirtuals)].Offset), numVirtuals);
-
-        // TODO fill in the rest of the fields
-        return builder.AddHeapFragment(methodTableFragment);
-    }
-
     // a delegate for adding more heap fragments to the context builder
     private delegate MockMemorySpace.Builder ConfigureContextBuilder(MockMemorySpace.Builder builder);
 
     private static void RTSContractHelper(MockTarget.Architecture arch, ConfigureContextBuilder configure, Action<Target> testCase)
     {
         TargetTestHelpers targetTestHelpers = new(arch);
-        string metadataTypesJson = TargetTestHelpers.MakeTypesJson(RTSTypes);
-        string metadataGlobalsJson = TargetTestHelpers.MakeGlobalsJson(RTSGlobals);
+        string metadataTypesJson = TargetTestHelpers.MakeTypesJson(MockRTS.Types);
+        string metadataGlobalsJson = TargetTestHelpers.MakeGlobalsJson(MockRTS.Globals);
         byte[] json = Encoding.UTF8.GetBytes($$"""
         {
             "version": 0,
@@ -112,13 +32,13 @@ public unsafe class MethodTableTests
         }
         """);
         Span<byte> descriptor = stackalloc byte[targetTestHelpers.ContractDescriptorSize];
-        targetTestHelpers.ContractDescriptorFill(descriptor, json.Length, RTSGlobals.Length);
+        targetTestHelpers.ContractDescriptorFill(descriptor, json.Length, MockRTS.Globals.Length);
 
         int pointerSize = targetTestHelpers.PointerSize;
-        Span<byte> pointerData = stackalloc byte[RTSGlobals.Length * pointerSize];
-        for (int i = 0; i < RTSGlobals.Length; i++)
+        Span<byte> pointerData = stackalloc byte[MockRTS.Globals.Length * pointerSize];
+        for (int i = 0; i < MockRTS.Globals.Length; i++)
         {
-            var (_, value, _) = RTSGlobals[i];
+            var (_, value, _) = MockRTS.Globals[i];
             targetTestHelpers.WritePointer(pointerData.Slice(i * pointerSize), value);
         }
 
@@ -130,7 +50,7 @@ public unsafe class MethodTableTests
                     .SetJson(json)
                     .SetPointerData(pointerData);
 
-            builder = AddFreeObjectMethodTable(targetTestHelpers, builder);
+            builder = MockRTS.AddGlobalPointers(targetTestHelpers, builder);
 
             if (configure != null)
             {
@@ -155,7 +75,7 @@ public unsafe class MethodTableTests
         {
             Contracts.IRuntimeTypeSystem metadataContract = target.Contracts.RuntimeTypeSystem;
             Assert.NotNull(metadataContract);
-            Contracts.TypeHandle handle = metadataContract.GetTypeHandle(TestFreeObjectMethodTableAddress);
+            Contracts.TypeHandle handle = metadataContract.GetTypeHandle(MockRTS.TestFreeObjectMethodTableAddress);
             Assert.NotEqual(TargetPointer.Null, handle.Address);
             Assert.True(metadataContract.IsFreeObjectMethodTable(handle));
         });
@@ -166,8 +86,8 @@ public unsafe class MethodTableTests
         System.Reflection.TypeAttributes typeAttributes = System.Reflection.TypeAttributes.Public | System.Reflection.TypeAttributes.Class;
         const int numMethods = 8; // System.Object has 8 methods
         const int numVirtuals = 3; // System.Object has 3 virtual methods
-        builder = AddEEClass(targetTestHelpers, builder, systemObjectEEClassPtr, "System.Object", systemObjectMethodTablePtr, attr: (uint)typeAttributes, numMethods: numMethods, numNonVirtualSlots: 0);
-        builder = AddMethodTable(targetTestHelpers, builder, systemObjectMethodTablePtr, "System.Object", systemObjectEEClassPtr,
+        builder = MockRTS.AddEEClass(targetTestHelpers, builder, systemObjectEEClassPtr, "System.Object", systemObjectMethodTablePtr, attr: (uint)typeAttributes, numMethods: numMethods, numNonVirtualSlots: 0);
+        builder = MockRTS.AddMethodTable(targetTestHelpers, builder, systemObjectMethodTablePtr, "System.Object", systemObjectEEClassPtr,
                                 mtflags: default, mtflags2: default, baseSize: targetTestHelpers.ObjectBaseSize,
                                 module: TargetPointer.Null, parentMethodTable: TargetPointer.Null, numInterfaces: 0, numVirtuals: numVirtuals);
         return builder;
@@ -221,8 +141,8 @@ public unsafe class MethodTableTests
             const int numInterfaces = 8; // Arbitrary
             const int numVirtuals = 3; // at least as many as System.Object
             uint mtflags = (uint)RuntimeTypeSystem_1.WFLAGS_HIGH.HasComponentSize | /*componentSize: */2;
-            builder = AddEEClass(targetTestHelpers, builder, systemStringEEClassPtr, "System.String", systemStringMethodTablePtr, attr: (uint)typeAttributes, numMethods: numMethods, numNonVirtualSlots: 0);
-            builder = AddMethodTable(targetTestHelpers, builder, systemStringMethodTablePtr, "System.String", systemStringEEClassPtr,
+            builder = MockRTS.AddEEClass(targetTestHelpers, builder, systemStringEEClassPtr, "System.String", systemStringMethodTablePtr, attr: (uint)typeAttributes, numMethods: numMethods, numNonVirtualSlots: 0);
+            builder = MockRTS.AddMethodTable(targetTestHelpers, builder, systemStringMethodTablePtr, "System.String", systemStringEEClassPtr,
                                     mtflags: mtflags, mtflags2: default, baseSize: targetTestHelpers.StringBaseSize,
                                     module: TargetPointer.Null, parentMethodTable: systemObjectMethodTablePtr, numInterfaces: numInterfaces, numVirtuals: numVirtuals);
             return builder;
@@ -256,7 +176,7 @@ public unsafe class MethodTableTests
         (builder) =>
         {
             builder = AddSystemObject(targetTestHelpers, builder, systemObjectMethodTablePtr, systemObjectEEClassPtr);
-            builder = AddMethodTable(targetTestHelpers, builder, badMethodTablePtr, "Bad MethodTable", badMethodTableEEClassPtr, mtflags: default, mtflags2: default, baseSize: targetTestHelpers.ObjectBaseSize, module: TargetPointer.Null, parentMethodTable: systemObjectMethodTablePtr, numInterfaces: 0, numVirtuals: 3);
+            builder = MockRTS.AddMethodTable(targetTestHelpers, builder, badMethodTablePtr, "Bad MethodTable", badMethodTableEEClassPtr, mtflags: default, mtflags2: default, baseSize: targetTestHelpers.ObjectBaseSize, module: TargetPointer.Null, parentMethodTable: systemObjectMethodTablePtr, numInterfaces: 0, numVirtuals: 3);
             return builder;
         },
         (target) =>
@@ -296,14 +216,14 @@ public unsafe class MethodTableTests
             const int numInterfaces = 0;
             const int numVirtuals = 3;
             const uint gtd_mtflags = 0x00000030; // TODO: GenericsMask_TypicalInst
-            builder = AddEEClass(targetTestHelpers, builder, genericDefinitionEEClassPtr, "EEClass GenericDefinition", genericDefinitionMethodTablePtr, attr: (uint)typeAttributes, numMethods: numMethods, numNonVirtualSlots: 0);
-            builder = AddMethodTable(targetTestHelpers, builder, genericDefinitionMethodTablePtr, "MethodTable GenericDefinition", genericDefinitionEEClassPtr,
+            builder = MockRTS.AddEEClass(targetTestHelpers, builder, genericDefinitionEEClassPtr, "EEClass GenericDefinition", genericDefinitionMethodTablePtr, attr: (uint)typeAttributes, numMethods: numMethods, numNonVirtualSlots: 0);
+            builder = MockRTS.AddMethodTable(targetTestHelpers, builder, genericDefinitionMethodTablePtr, "MethodTable GenericDefinition", genericDefinitionEEClassPtr,
                                     mtflags: gtd_mtflags, mtflags2: default, baseSize: targetTestHelpers.ObjectBaseSize,
                                     module: TargetPointer.Null, parentMethodTable: systemObjectMethodTablePtr, numInterfaces: numInterfaces, numVirtuals: numVirtuals);
 
             const uint ginst_mtflags = 0x00000010; // TODO: GenericsMask_GenericInst
             TargetPointer ginstCanonMT = new TargetPointer(genericDefinitionMethodTablePtr.Value | (ulong)1);
-            builder = AddMethodTable(targetTestHelpers, builder, genericInstanceMethodTablePtr, "MethodTable GenericInstance", eeClassOrCanonMT: ginstCanonMT,
+            builder = MockRTS.AddMethodTable(targetTestHelpers, builder, genericInstanceMethodTablePtr, "MethodTable GenericInstance", eeClassOrCanonMT: ginstCanonMT,
                                     mtflags: ginst_mtflags, mtflags2: default, baseSize: targetTestHelpers.ObjectBaseSize,
                                     module: TargetPointer.Null, parentMethodTable: genericDefinitionMethodTablePtr, numInterfaces: numInterfaces, numVirtuals: numVirtuals);
 
@@ -351,16 +271,16 @@ public unsafe class MethodTableTests
             const ushort systemArrayNumMethods = 37; // Arbitrary. Not trying to exactly match  the real System.Array
             const uint systemArrayCorTypeAttr = (uint)(System.Reflection.TypeAttributes.Public | System.Reflection.TypeAttributes.Class);
 
-            builder = AddEEClass(targetTestHelpers, builder, systemArrayEEClassPtr, "EEClass System.Array", systemArrayMethodTablePtr, attr: systemArrayCorTypeAttr, numMethods: systemArrayNumMethods, numNonVirtualSlots: 0);
-            builder = AddMethodTable(targetTestHelpers, builder, systemArrayMethodTablePtr, "MethodTable System.Array", systemArrayEEClassPtr,
+            builder = MockRTS.AddEEClass(targetTestHelpers, builder, systemArrayEEClassPtr, "EEClass System.Array", systemArrayMethodTablePtr, attr: systemArrayCorTypeAttr, numMethods: systemArrayNumMethods, numNonVirtualSlots: 0);
+            builder = MockRTS.AddMethodTable(targetTestHelpers, builder, systemArrayMethodTablePtr, "MethodTable System.Array", systemArrayEEClassPtr,
                                     mtflags: default, mtflags2: default, baseSize: targetTestHelpers.ObjectBaseSize,
                                     module: TargetPointer.Null, parentMethodTable: systemObjectMethodTablePtr, numInterfaces: systemArrayNumInterfaces, numVirtuals: 3);
 
             const uint arrayInst_mtflags = (uint)(RuntimeTypeSystem_1.WFLAGS_HIGH.HasComponentSize | RuntimeTypeSystem_1.WFLAGS_HIGH.Category_Array) | arrayInstanceComponentSize;
             const uint arrayInstCorTypeAttr = (uint)(System.Reflection.TypeAttributes.Public | System.Reflection.TypeAttributes.Class | System.Reflection.TypeAttributes.Sealed);
 
-            builder = AddEEClass(targetTestHelpers, builder, arrayInstanceEEClassPtr, "EEClass ArrayInstance", arrayInstanceMethodTablePtr, attr: arrayInstCorTypeAttr, numMethods: systemArrayNumMethods, numNonVirtualSlots: 0);
-            builder = AddMethodTable(targetTestHelpers, builder, arrayInstanceMethodTablePtr, "MethodTable ArrayInstance", arrayInstanceEEClassPtr,
+            builder = MockRTS.AddEEClass(targetTestHelpers, builder, arrayInstanceEEClassPtr, "EEClass ArrayInstance", arrayInstanceMethodTablePtr, attr: arrayInstCorTypeAttr, numMethods: systemArrayNumMethods, numNonVirtualSlots: 0);
+            builder = MockRTS.AddMethodTable(targetTestHelpers, builder, arrayInstanceMethodTablePtr, "MethodTable ArrayInstance", arrayInstanceEEClassPtr,
                                     mtflags: arrayInst_mtflags, mtflags2: default, baseSize: targetTestHelpers.ObjectBaseSize,
                                     module: TargetPointer.Null, parentMethodTable: systemArrayMethodTablePtr, numInterfaces: systemArrayNumInterfaces, numVirtuals: 3);
 

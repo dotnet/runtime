@@ -253,6 +253,7 @@ namespace ILCompiler
                     continue;
 
                 TypeEqualityPatternAnalyzer typeEqualityAnalyzer = default;
+                IsInstCheckPatternAnalyzer isInstCheckAnalyzer = default;
 
                 ILReader reader = new ILReader(methodBytes, offset);
                 while (reader.HasNext)
@@ -262,6 +263,7 @@ namespace ILCompiler
                     ILOpcode opcode = reader.ReadILOpcode();
 
                     typeEqualityAnalyzer.Advance(opcode, reader, method);
+                    isInstCheckAnalyzer.Advance(opcode, reader, method);
 
                     // Mark any applicable EH blocks
                     foreach (ILExceptionRegion ehRegion in ehRegions)
@@ -302,7 +304,8 @@ namespace ILCompiler
                     {
                         int destination = reader.ReadBranchDestination(opcode);
                         if (!TryGetConstantArgument(method, methodBytes, flags, offset, 0, out int constant)
-                            && !TryExpandTypeEquality(typeEqualityAnalyzer, method, out constant))
+                            && !TryExpandTypeEquality(typeEqualityAnalyzer, method, out constant)
+                            && !TryExpandIsInst(isInstCheckAnalyzer, method, out constant))
                         {
                             // Can't get the constant - both branches are live.
                             offsetsToVisit.Push(destination);
@@ -659,6 +662,68 @@ namespace ILCompiler
             return new SubstitutedMethodIL(method.GetMethodILDefinition(), newBody, newEHRegions.ToArray(), debugInfo, newStrings.ToArray());
         }
 
+        private bool TryGetMethodConstantValue(MethodDesc method, out int constant, int level = 0)
+        {
+            method = method.GetTypicalMethodDefinition();
+
+            TypeFlags returnType = method.Signature.ReturnType.UnderlyingType.Category;
+            if (returnType is < TypeFlags.Boolean or > TypeFlags.UInt32
+                || method.IsIntrinsic
+                || method.IsNoInlining
+                || _nestedILProvider.GetMethodIL(method) is not MethodIL methodIL)
+            {
+                constant = 0;
+                return false;
+            }
+
+            var reader = new ILReader(methodIL.GetILBytes());
+            var opcode = reader.ReadILOpcode();
+            switch (opcode)
+            {
+                case ILOpcode.ldc_i4: constant = (int)reader.ReadILUInt32(); break;
+                case ILOpcode.ldc_i4_s: constant = (sbyte)reader.ReadILByte(); break;
+                case >= ILOpcode.ldc_i4_0 and <= ILOpcode.ldc_i4_8: constant = opcode - ILOpcode.ldc_i4_0; break;
+                case ILOpcode.ldc_i4_m1: constant = -1; break;
+
+                case ILOpcode.call:
+                {
+                    MethodDesc callee = (MethodDesc)methodIL.GetObject(reader.ReadILToken());
+                    if (reader.ReadILOpcode() != ILOpcode.ret)
+                    {
+                        constant = 0;
+                        return false;
+                    }
+
+                    BodySubstitution substitution = _substitutionProvider.GetSubstitution(method);
+                    if (substitution != null && substitution.Value is int c)
+                    {
+                        constant = c;
+                        return true;
+                    }
+
+                    if (level > 4)
+                    {
+                        constant = 0;
+                        return false;
+                    }
+
+                    return TryGetMethodConstantValue(callee, out constant, level + 1);
+                }
+
+                default:
+                    constant = 0;
+                    return false;
+            }
+
+            if (reader.ReadILOpcode() != ILOpcode.ret)
+            {
+                constant = 0;
+                return false;
+            }
+
+            return true;
+        }
+
         private bool TryGetConstantArgument(MethodIL methodIL, byte[] body, OpcodeFlags[] flags, int offset, int argIndex, out int constant)
         {
             if ((flags[offset] & OpcodeFlags.BasicBlockStart) != 0)
@@ -684,6 +749,11 @@ namespace ILCompiler
                             && (opcode != ILOpcode.callvirt || !method.IsVirtual))
                         {
                             constant = (int)substitution.Value;
+                            return true;
+                        }
+                        if ((opcode != ILOpcode.callvirt || !method.IsVirtual)
+                            && TryGetMethodConstantValue(method, out constant))
+                        {
                             return true;
                         }
                         else if (method.IsIntrinsic && method.Name is "get_IsValueType" or "get_IsEnum"
@@ -927,6 +997,35 @@ namespace ILCompiler
 
             if (analyzer.IsInequality)
                 constant ^= 1;
+
+            return true;
+        }
+
+        private bool TryExpandIsInst(in IsInstCheckPatternAnalyzer analyzer, MethodIL methodIL, out int constant)
+        {
+            constant = 0;
+            if (!analyzer.IsIsInstBranch)
+                return false;
+
+            var type = (TypeDesc)methodIL.GetObject(analyzer.Token);
+
+            // Dataflow runs on top of uninstantiated IL and we can't answer some questions there.
+            // Unfortunately this means dataflow will still see code that the rest of the system
+            // might have optimized away. It should not be a problem in practice.
+            if (type.ContainsSignatureVariables())
+                return false;
+
+            if (type.IsCanonicalDefinitionType(CanonicalFormKind.Any))
+                return false;
+
+            // We don't track types without a constructed MethodTable very well.
+            if (!ConstructedEETypeNode.CreationAllowed(type))
+                return false;
+
+            if (_devirtualizationManager.CanReferenceConstructedTypeOrCanonicalFormOfType(type.NormalizeInstantiation()))
+                return false;
+
+            constant = 0;
 
             return true;
         }

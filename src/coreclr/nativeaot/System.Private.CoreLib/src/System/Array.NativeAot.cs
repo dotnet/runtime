@@ -727,7 +727,7 @@ namespace System
             return rawIndex;
         }
 
-        private unsafe nint GetFlattenedIndex(ReadOnlySpan<int> indices)
+        internal unsafe nint GetFlattenedIndex(ReadOnlySpan<int> indices)
         {
             // Checked by the caller
             Debug.Assert(indices.Length == Rank);

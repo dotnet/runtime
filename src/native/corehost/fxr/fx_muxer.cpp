@@ -221,14 +221,14 @@ void get_runtime_config_paths_from_app(const pal::string_t& app, pal::string_t* 
     get_runtime_config_paths(path, name, cfg, dev_cfg);
 }
 
-// Convert "path" to realpath (merging working dir if needed) and append to "realpaths" out param.
-void append_probe_realpath(const pal::string_t& path, std::vector<pal::string_t>* realpaths, const pal::string_t& tfm)
+// Convert "path" to fullpath (merging working dir if needed) and append to "fullpaths" out param.
+void append_probe_fullpath(const pal::string_t& path, std::vector<pal::string_t>* fullpaths, const pal::string_t& tfm)
 {
     pal::string_t probe_path = path;
 
-    if (pal::realpath(&probe_path, true))
+    if (pal::fullpath(&probe_path, true))
     {
-        realpaths->push_back(probe_path);
+        fullpaths->push_back(probe_path);
     }
     else
     {
@@ -249,9 +249,9 @@ void append_probe_realpath(const pal::string_t& path, std::vector<pal::string_t>
             segment.append(tfm);
             probe_path.replace(pos_placeholder, placeholder.length(), segment);
 
-            if (pal::realpath(&probe_path, true))
+            if (pal::fullpath(&probe_path, true))
             {
-                realpaths->push_back(probe_path);
+                fullpaths->push_back(probe_path);
             }
             else
             {
@@ -274,7 +274,7 @@ namespace
         const runtime_config_t::settings_t& override_settings)
     {
         // Check for the runtimeconfig.json file specified at the command line
-        if (!runtime_config.empty() && !pal::realpath(&runtime_config))
+        if (!runtime_config.empty() && !pal::fullpath(&runtime_config))
         {
             trace::error(_X("The specified runtimeconfig.json [%s] does not exist"), runtime_config.c_str());
             return StatusCode::InvalidConfigFile;
@@ -337,18 +337,18 @@ namespace
         return host_mode_t::muxer;
     }
 
-    std::vector<pal::string_t> get_probe_realpaths(
+    std::vector<pal::string_t> get_probe_fullpaths(
         const fx_definition_vector_t &fx_definitions,
         const std::vector<pal::string_t> &specified_probing_paths)
     {
         // The tfm is taken from the app.
         pal::string_t tfm = get_app(fx_definitions).get_runtime_config().get_tfm();
 
-        // Append specified probe paths first and then config file probe paths into realpaths.
-        std::vector<pal::string_t> probe_realpaths;
+        // Append specified probe paths first and then config file probe paths into fullpaths.
+        std::vector<pal::string_t> probe_fullpaths;
         for (const auto& path : specified_probing_paths)
         {
-            append_probe_realpath(path, &probe_realpaths, tfm);
+            append_probe_fullpath(path, &probe_fullpaths, tfm);
         }
 
         // Each framework can add probe paths
@@ -356,11 +356,11 @@ namespace
         {
             for (const auto& path : fx->get_runtime_config().get_probe_paths())
             {
-                append_probe_realpath(path, &probe_realpaths, tfm);
+                append_probe_fullpath(path, &probe_fullpaths, tfm);
             }
         }
 
-        return probe_realpaths;
+        return probe_fullpaths;
     }
 
     int get_init_info_for_app(
@@ -377,7 +377,7 @@ namespace
 
         // This check is for --depsfile option, which must be an actual file.
         pal::string_t deps_file = command_line::get_option_value(opts, known_options::deps_file, _X(""));
-        if (!deps_file.empty() && !pal::realpath(&deps_file))
+        if (!deps_file.empty() && !pal::fullpath(&deps_file))
         {
             trace::error(_X("The specified deps.json [%s] does not exist"), deps_file.c_str());
             return StatusCode::InvalidArgFailure;
@@ -485,17 +485,17 @@ namespace
 
         const known_options opts_probe_path = known_options::additional_probing_path;
         std::vector<pal::string_t> spec_probe_paths = opts.count(opts_probe_path) ? opts.find(opts_probe_path)->second : std::vector<pal::string_t>();
-        std::vector<pal::string_t> probe_realpaths = get_probe_realpaths(fx_definitions, spec_probe_paths);
+        std::vector<pal::string_t> probe_fullpaths = get_probe_fullpaths(fx_definitions, spec_probe_paths);
 
         trace::verbose(_X("Executing as a %s app as per config file [%s]"),
             (is_framework_dependent ? _X("framework-dependent") : _X("self-contained")), app_config.get_path().c_str());
 
-        if (!hostpolicy_resolver::try_get_dir(mode, host_info.dotnet_root, fx_definitions, app_candidate, deps_file, probe_realpaths, &hostpolicy_dir))
+        if (!hostpolicy_resolver::try_get_dir(mode, host_info.dotnet_root, fx_definitions, app_candidate, deps_file, probe_fullpaths, &hostpolicy_dir))
         {
             return StatusCode::CoreHostLibMissingFailure;
         }
 
-        init.reset(new corehost_init_t(host_command, host_info, deps_file, additional_deps_serialized, probe_realpaths, mode, fx_definitions, additional_properties));
+        init.reset(new corehost_init_t(host_command, host_info, deps_file, additional_deps_serialized, probe_fullpaths, mode, fx_definitions, additional_properties));
 
         return StatusCode::Success;
     }
@@ -623,19 +623,19 @@ namespace
         if (rc != StatusCode::Success)
             return rc;
 
-        const std::vector<pal::string_t> probe_realpaths = get_probe_realpaths(fx_definitions, std::vector<pal::string_t>() /* specified_probing_paths */);
+        const std::vector<pal::string_t> probe_fullpaths = get_probe_fullpaths(fx_definitions, std::vector<pal::string_t>() /* specified_probing_paths */);
 
         trace::verbose(_X("Libhost loading occurring for a framework-dependent component per config file [%s]"), app_config.get_path().c_str());
 
         const pal::string_t deps_file;
-        if (!hostpolicy_resolver::try_get_dir(mode, host_info.dotnet_root, fx_definitions, host_info.app_path, deps_file, probe_realpaths, &hostpolicy_dir))
+        if (!hostpolicy_resolver::try_get_dir(mode, host_info.dotnet_root, fx_definitions, host_info.app_path, deps_file, probe_fullpaths, &hostpolicy_dir))
         {
             return StatusCode::CoreHostLibMissingFailure;
         }
 
         const pal::string_t additional_deps_serialized;
         const std::vector<std::pair<pal::string_t, pal::string_t>> additional_properties;
-        init.reset(new corehost_init_t(pal::string_t{}, host_info, deps_file, additional_deps_serialized, probe_realpaths, mode, fx_definitions, additional_properties));
+        init.reset(new corehost_init_t(pal::string_t{}, host_info, deps_file, additional_deps_serialized, probe_fullpaths, mode, fx_definitions, additional_properties));
 
         return StatusCode::Success;
     }

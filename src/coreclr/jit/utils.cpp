@@ -1539,8 +1539,6 @@ void HelperCallProperties::init()
             case CORINFO_HELP_DBL2ULNG:
             case CORINFO_HELP_FLTREM:
             case CORINFO_HELP_DBLREM:
-            case CORINFO_HELP_FLTROUND:
-            case CORINFO_HELP_DBLROUND:
                 isPure  = true;
                 noThrow = true;
                 break;
@@ -1628,8 +1626,6 @@ void HelperCallProperties::init()
 
             case CORINFO_HELP_RUNTIMEHANDLE_METHOD:
             case CORINFO_HELP_RUNTIMEHANDLE_CLASS:
-            case CORINFO_HELP_RUNTIMEHANDLE_METHOD_LOG:
-            case CORINFO_HELP_RUNTIMEHANDLE_CLASS_LOG:
             case CORINFO_HELP_READYTORUN_GENERIC_HANDLE:
                 // logging helpers are not technically pure but can be optimized away
                 isPure        = true;
@@ -1822,7 +1818,6 @@ void HelperCallProperties::init()
                 isNoGC = true;
                 FALLTHROUGH;
             case CORINFO_HELP_DBG_IS_JUST_MY_CODE:
-            case CORINFO_HELP_BBT_FCN_ENTER:
             case CORINFO_HELP_POLL_GC:
             case CORINFO_HELP_MON_ENTER:
             case CORINFO_HELP_MON_EXIT:
@@ -2274,8 +2269,7 @@ double FloatingPointUtils::convertUInt64ToDouble(uint64_t uIntVal)
 
 float FloatingPointUtils::convertUInt64ToFloat(uint64_t u64)
 {
-    double d = convertUInt64ToDouble(u64);
-    return (float)d;
+    return (float)u64;
 }
 
 uint64_t FloatingPointUtils::convertDoubleToUInt64(double d)

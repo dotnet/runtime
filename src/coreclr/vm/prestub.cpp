@@ -1294,7 +1294,7 @@ namespace
         Instantiation targetMethodInst;
         if (targetType->HasInstantiation())
         {
-            declClassInst = declaration->GetMethodTable()->GetInstantiation();
+            declClassInst = declaration->GetMethodTable()->GetTypicalMethodTable()->GetInstantiation();
             targetClassInst = targetType->GetTypicalMethodTable()->GetInstantiation();
         }
         if (targetMethod->HasMethodInstantiation())
@@ -2662,7 +2662,7 @@ extern "C" PCODE STDCALL PreStubWorker(TransitionBlock* pTransitionBlock, Method
             {
                 pDispatchingMT = curobj->GetMethodTable();
 
-                if (pDispatchingMT->IsICastable() || pDispatchingMT->IsIDynamicInterfaceCastable())
+                if (pDispatchingMT->IsIDynamicInterfaceCastable())
                 {
                     MethodTable* pMDMT = pMD->GetMethodTable();
                     TypeHandle objectType(pDispatchingMT);
@@ -2672,7 +2672,7 @@ extern "C" PCODE STDCALL PreStubWorker(TransitionBlock* pTransitionBlock, Method
                     INDEBUG(curobj = NULL); // curobj is unprotected and CanCastTo() can trigger GC
                     if (!objectType.CanCastTo(methodType))
                     {
-                        // Apparently ICastable magic was involved when we chose this method to be called
+                        // Apparently IDynamicInterfaceCastable magic was involved when we chose this method to be called
                         // that's why we better stick to the MethodTable it belongs to, otherwise
                         // DoPrestub() will fail not being able to find implementation for pMD in pDispatchingMT.
 
@@ -3534,7 +3534,7 @@ static PCODE getHelperForStaticBase(Module * pModule, CORCOMPILE_FIXUP_BLOB_KIND
     bool threadStatic = (kind == ENCODE_THREAD_STATIC_BASE_NONGC_HELPER || kind == ENCODE_THREAD_STATIC_BASE_GC_HELPER);
 
     CorInfoHelpFunc helper;
-    
+
     if (threadStatic)
     {
         if (GCStatic)

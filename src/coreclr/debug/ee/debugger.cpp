@@ -8849,7 +8849,7 @@ void Debugger::SendUserBreakpoint(Thread * thread)
     {
         THROWS;
         GC_TRIGGERS;
-        MODE_ANY;
+        MODE_PREEMPTIVE;
 
         PRECONDITION(thread != NULL);
         PRECONDITION(thread == ::GetThreadNULLOk());
@@ -15174,6 +15174,8 @@ HRESULT Debugger::FuncEvalSetup(DebuggerIPCE_FuncEvalInfo *pEvalInfo,
         filterContext->X0 = (SIZE_T)pDE;
 #elif defined(TARGET_RISCV64)
         filterContext->A0 = (SIZE_T)pDE;
+#elif defined(TARGET_LOONGARCH64)
+        filterContext->A0 = (SIZE_T)pDE;
 #else
         PORTABILITY_ASSERT("Debugger::FuncEvalSetup is not implemented on this platform.");
 #endif
@@ -15888,7 +15890,7 @@ BOOL Debugger::IsThreadContextInvalid(Thread *pThread, CONTEXT *pCtx)
     if (success)
     {
         // Check single-step flag
-        if (IsSSFlagEnabled(reinterpret_cast<DT_CONTEXT *>(pCtx) ARM_ARG(pThread) ARM64_ARG(pThread) RISCV64_ARG(pThread)))
+        if (IsSSFlagEnabled(reinterpret_cast<DT_CONTEXT *>(pCtx) ARM_ARG(pThread) ARM64_ARG(pThread) RISCV64_ARG(pThread) LOONGARCH64_ARG(pThread)))
         {
             // Can't hijack a thread whose SS-flag is set. This could lead to races
             // with the thread taking the SS-exception.

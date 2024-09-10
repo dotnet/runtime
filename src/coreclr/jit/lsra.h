@@ -486,6 +486,7 @@ public:
         previousInterval = nullptr;
         regNum           = REG_NA;
         isCalleeSave     = false;
+        regOrder         = UCHAR_MAX;
     }
 
     void init(regNumber reg)

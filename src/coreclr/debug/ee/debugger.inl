@@ -389,6 +389,47 @@ inline void FuncEvalFrame::UpdateRegDisplay(const PREGDISPLAY pRD, bool updateFl
     pRD->volatileCurrContextPointers.T6 = &(pDE->m_context.T6);
 
     SyncRegDisplayToCurrentContext(pRD);
+#elif defined(TARGET_LOONGARCH64)
+    pRD->IsCallerContextValid = FALSE;
+    pRD->IsCallerSPValid = FALSE;        // Don't add usage of this flag.  This is only temporary.
+
+    memcpy(pRD->pCurrentContext, &(pDE->m_context), sizeof(T_CONTEXT));
+
+    pRD->pCurrentContextPointers->S0 = &(pDE->m_context.S0);
+    pRD->pCurrentContextPointers->S1 = &(pDE->m_context.S1);
+    pRD->pCurrentContextPointers->S2 = &(pDE->m_context.S2);
+    pRD->pCurrentContextPointers->S3 = &(pDE->m_context.S3);
+    pRD->pCurrentContextPointers->S4 = &(pDE->m_context.S4);
+    pRD->pCurrentContextPointers->S5 = &(pDE->m_context.S5);
+    pRD->pCurrentContextPointers->S6 = &(pDE->m_context.S6);
+    pRD->pCurrentContextPointers->S7 = &(pDE->m_context.S7);
+    pRD->pCurrentContextPointers->S8 = &(pDE->m_context.S8);
+    pRD->pCurrentContextPointers->Tp = &(pDE->m_context.Tp);
+    pRD->pCurrentContextPointers->Fp = &(pDE->m_context.Fp);
+    pRD->pCurrentContextPointers->Ra = &(pDE->m_context.Ra);
+
+    pRD->volatileCurrContextPointers.R0 = &(pDE->m_context.R0);
+    pRD->volatileCurrContextPointers.A0 = &(pDE->m_context.A0);
+    pRD->volatileCurrContextPointers.A1 = &(pDE->m_context.A1);
+    pRD->volatileCurrContextPointers.A2 = &(pDE->m_context.A2);
+    pRD->volatileCurrContextPointers.A3 = &(pDE->m_context.A3);
+    pRD->volatileCurrContextPointers.A4 = &(pDE->m_context.A4);
+    pRD->volatileCurrContextPointers.A5 = &(pDE->m_context.A5);
+    pRD->volatileCurrContextPointers.A6 = &(pDE->m_context.A6);
+    pRD->volatileCurrContextPointers.A7 = &(pDE->m_context.A7);
+    pRD->volatileCurrContextPointers.T0 = &(pDE->m_context.T0);
+    pRD->volatileCurrContextPointers.T1 = &(pDE->m_context.T1);
+    pRD->volatileCurrContextPointers.T2 = &(pDE->m_context.T2);
+    pRD->volatileCurrContextPointers.T3 = &(pDE->m_context.T3);
+    pRD->volatileCurrContextPointers.T4 = &(pDE->m_context.T4);
+    pRD->volatileCurrContextPointers.T5 = &(pDE->m_context.T5);
+    pRD->volatileCurrContextPointers.T6 = &(pDE->m_context.T6);
+    pRD->volatileCurrContextPointers.T7 = &(pDE->m_context.T7);
+    pRD->volatileCurrContextPointers.T8 = &(pDE->m_context.T8);
+    pRD->volatileCurrContextPointers.X0 = &(pDE->m_context.X0);
+
+    SyncRegDisplayToCurrentContext(pRD);
+
 #else
     PORTABILITY_ASSERT("FuncEvalFrame::UpdateRegDisplay is not implemented on this platform.");
 #endif

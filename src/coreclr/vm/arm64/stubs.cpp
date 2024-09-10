@@ -637,7 +637,7 @@ void FaultingExceptionFrame::UpdateRegDisplay(const PREGDISPLAY pRD, bool update
 
     // Clear the CONTEXT_XSTATE, since the REGDISPLAY contains just plain CONTEXT structure
     // that cannot contain any extended state.
-    pRD->pCurrentContext->ContextFlags &= ~CONTEXT_XSTATE;
+    pRD->pCurrentContext->ContextFlags &= ~(CONTEXT_XSTATE & CONTEXT_AREA_MASK);
 
     pRD->ControlPC = ::GetIP(&m_ctx);
     pRD->SP = ::GetSP(&m_ctx);

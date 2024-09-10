@@ -28,6 +28,7 @@ namespace System.ComponentModel
 #pragma warning disable IL4000
         internal static bool IsSupported => AppContext.TryGetSwitch("System.ComponentModel.DefaultValueAttribute.IsSupported", out bool isSupported) ? isSupported : true;
 #pragma warning restore IL4000
+        private static readonly object? s_throwSentinel = IsSupported ? null : new();
 
         /// <summary>
         /// Initializes a new instance of the <see cref='DefaultValueAttribute'/>
@@ -44,6 +45,7 @@ namespace System.ComponentModel
             Debug.Assert(IsSupported, "Runtime instantiation of this attribute is not allowed with trimming.");
             if (!IsSupported)
             {
+                _value = s_throwSentinel;
                 return;
             }
 
@@ -245,14 +247,14 @@ namespace System.ComponentModel
         {
             get
             {
-                if (!IsSupported)
+                if (!IsSupported && ReferenceEquals(_value, s_throwSentinel))
                 {
                     throw new ArgumentException(SR.RuntimeInstanceNotAllowed);
                 }
+
                 return _value;
             }
         }
-
 
         public override bool Equals([NotNullWhen(true)] object? obj)
         {
@@ -260,6 +262,7 @@ namespace System.ComponentModel
             {
                 return true;
             }
+
             if (obj is not DefaultValueAttribute other)
             {
                 return false;

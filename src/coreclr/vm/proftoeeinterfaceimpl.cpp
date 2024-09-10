@@ -3148,9 +3148,9 @@ HRESULT ProfToEEInterfaceImpl::GetAppDomainStaticAddress(ClassID classId,
         return E_INVALIDARG;
     }
 
-    // Some domains, like the system domain, aren't APP domains, and thus don't contain any
+    // The system domain isn't an APP domain and thus doesn't contain any
     // statics.  See if the profiler is trying to be naughty.
-    if (!((BaseDomain*) appDomainId)->IsAppDomain())
+    if (appDomainId == (AppDomainID)SystemDomain::System())
     {
         return E_INVALIDARG;
     }
@@ -3382,9 +3382,9 @@ HRESULT ProfToEEInterfaceImpl::GetThreadStaticAddress2(ClassID classId,
         return E_INVALIDARG;
     }
 
-    // Some domains, like the system domain, aren't APP domains, and thus don't contain any
+    // The system domain isn't an APP domain and thus doesn't contain any
     // statics.  See if the profiler is trying to be naughty.
-    if (!((BaseDomain*) appDomainId)->IsAppDomain())
+    if (appDomainId == (AppDomainID)SystemDomain::System())
     {
         return E_INVALIDARG;
     }
@@ -5479,24 +5479,7 @@ HRESULT ProfToEEInterfaceImpl::GetAppDomainInfo(AppDomainID appDomainId,
         return E_INVALIDARG;
     }
 
-    BaseDomain   *pDomain;            // Internal data structure.
     HRESULT     hr = S_OK;
-
-    // <TODO>@todo:
-    // Right now, this ID is not a true AppDomain, since we use the old
-    // AppDomain/SystemDomain model in the profiling API.  This means that
-    // the profiler exposes the SharedDomain and the SystemDomain to the
-    // outside world. It's not clear whether this is actually the right thing
-    // to do or not. - seantrow
-    //
-    // Postponed to V2.
-    // </TODO>
-
-    pDomain = (BaseDomain *) appDomainId;
-
-    // Make sure they've passed in a valid appDomainId
-    if (pDomain == NULL)
-        return (E_INVALIDARG);
 
     // Pick sensible defaults.
     if (pcchName)
@@ -5507,10 +5490,10 @@ HRESULT ProfToEEInterfaceImpl::GetAppDomainInfo(AppDomainID appDomainId,
         *pProcessId = 0;
 
     LPCWSTR szFriendlyName;
-    if (pDomain == SystemDomain::System())
+    if (appDomainId == (AppDomainID)SystemDomain::System())
         szFriendlyName = g_pwBaseLibrary;
     else
-        szFriendlyName = ((AppDomain*)pDomain)->GetFriendlyNameForDebugger();
+        szFriendlyName = ((AppDomain*)appDomainId)->GetFriendlyNameForDebugger();
 
     if (szFriendlyName != NULL)
     {

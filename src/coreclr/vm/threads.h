@@ -121,7 +121,7 @@
 #include "gchandleutilities.h"
 #include "gcinfotypes.h"
 #include <clrhost.h>
-#include "cdacoffsets.h"
+#include "cdacdata.h"
 
 class     Thread;
 class     ThreadStore;
@@ -183,6 +183,9 @@ struct TailCallArgBuffer
 #endif
 #if (defined(TARGET_RISCV64) && defined(FEATURE_EMULATE_SINGLESTEP))
 #include "riscv64singlestepper.h"
+#endif
+#if (defined(TARGET_LOONGARCH64) && defined(FEATURE_EMULATE_SINGLESTEP))
+#include "loongarch64singlestepper.h"
 #endif
 
 #if !defined(PLATFORM_SUPPORTS_SAFE_THREADSUSPEND)
@@ -465,7 +468,6 @@ class Thread
     friend class  ThreadSuspend;
     friend class  SyncBlock;
     friend struct PendingSync;
-    friend class  ThreadNative;
 #ifdef _DEBUG
     friend class  EEContract;
 #endif
@@ -2085,6 +2087,8 @@ private:
     ArmSingleStepper m_singleStepper;
 #elif defined(TARGET_RISCV64)
     RiscV64SingleStepper m_singleStepper;
+#elif defined(TARGET_LOONGARCH64)
+    LoongArch64SingleStepper m_singleStepper;
 #else
     Arm64SingleStepper m_singleStepper;
 #endif
@@ -2100,7 +2104,7 @@ public:
         m_singleStepper.Enable();
     }
 
-    void BypassWithSingleStep(const void* ip ARM_ARG(WORD opcode1) ARM_ARG(WORD opcode2) ARM64_ARG(uint32_t opcode) RISCV64_ARG(uint32_t opcode))
+    void BypassWithSingleStep(const void* ip ARM_ARG(WORD opcode1) ARM_ARG(WORD opcode2) ARM64_ARG(uint32_t opcode) RISCV64_ARG(uint32_t opcode) LOONGARCH64_ARG(uint32_t opcode))
     {
 #if defined(TARGET_ARM)
         m_singleStepper.Bypass((DWORD)ip, opcode1, opcode2);
@@ -2163,10 +2167,6 @@ public:
     // call CoInitializeEx on this thread first (note that calls to SetApartment made
     // before the thread has started are guaranteed to succeed).
     ApartmentState SetApartment(ApartmentState state);
-
-    // when we get apartment tear-down notification,
-    // we want reset the apartment state we cache on the thread
-    VOID ResetApartment();
 #endif // FEATURE_COMINTEROP_APARTMENT_SUPPORT
 
     // Either perform WaitForSingleObject or MsgWaitForSingleObject as appropriate.
@@ -2705,6 +2705,24 @@ public:
 
 #endif // TRACK_SYNC
 
+    // Access to thread handle and ThreadId.
+    HANDLE      GetThreadHandle()
+    {
+        LIMITED_METHOD_CONTRACT;
+#if defined(_DEBUG) && !defined(DACCESS_COMPILE)
+        {
+            CounterHolder handleHolder(&m_dwThreadHandleBeingUsed);
+            HANDLE handle = m_ThreadHandle;
+            _ASSERTE ( handle == INVALID_HANDLE_VALUE
+                || m_OSThreadId == 0
+                || m_OSThreadId == 0xbaadf00d
+                || ::MatchThreadHandleToOsId(handle, (DWORD)m_OSThreadId) );
+        }
+#endif
+        DACCOP_IGNORE(FieldAccess, "Treated as raw address, no marshaling is necessary");
+        return m_ThreadHandle;
+    }
+
 private:
     // For suspends:
     CLREvent        m_DebugSuspendEvent;
@@ -2726,25 +2744,6 @@ private:
             walk = walk->m_Next;
         }
         return walk;
-    }
-
-    // Access to thread handle and ThreadId.
-    HANDLE      GetThreadHandle()
-    {
-        LIMITED_METHOD_CONTRACT;
-#if defined(_DEBUG) && !defined(DACCESS_COMPILE)
-        {
-            CounterHolder handleHolder(&m_dwThreadHandleBeingUsed);
-            HANDLE handle = m_ThreadHandle;
-            _ASSERTE ( handle == INVALID_HANDLE_VALUE
-                || m_OSThreadId == 0
-                || m_OSThreadId == 0xbaadf00d
-                || ::MatchThreadHandleToOsId(handle, (DWORD)m_OSThreadId) );
-        }
-#endif
-
-        DACCOP_IGNORE(FieldAccess, "Treated as raw address, no marshaling is necessary");
-        return m_ThreadHandle;
     }
 
     void        SetThreadHandle(HANDLE h)
@@ -3966,11 +3965,11 @@ private:
 private:
     bool m_hasPendingActivation;
 
-    template<typename T> friend struct ::cdac_offsets;
+    template<typename T> friend struct ::cdac_data;
 };
 
 template<>
-struct cdac_offsets<Thread>
+struct cdac_data<Thread>
 {
     static constexpr size_t Id = offsetof(Thread, m_ThreadId);
     static constexpr size_t OSId = offsetof(Thread, m_OSThreadId);
@@ -4248,11 +4247,11 @@ public:
     bool ShouldTriggerGCForDeadThreads();
     void TriggerGCForDeadThreadsIfNecessary();
 
-    template<typename T> friend struct ::cdac_offsets;
+    template<typename T> friend struct ::cdac_data;
 };
 
 template<>
-struct cdac_offsets<ThreadStore>
+struct cdac_data<ThreadStore>
 {
     static constexpr size_t FirstThreadLink = offsetof(ThreadStore, m_ThreadList) + offsetof(ThreadList, m_link);
     static constexpr size_t ThreadCount = offsetof(ThreadStore, m_ThreadCount);
@@ -4261,12 +4260,6 @@ struct cdac_offsets<ThreadStore>
     static constexpr size_t PendingCount = offsetof(ThreadStore, m_PendingThreadCount);
     static constexpr size_t DeadCount = offsetof(ThreadStore, m_DeadThreadCount);
 };
-
-struct TSSuspendHelper {
-    static void SetTrap() { ThreadStore::IncrementTrapReturningThreads(); }
-    static void UnsetTrap() { ThreadStore::DecrementTrapReturningThreads(); }
-};
-typedef StateHolder<TSSuspendHelper::SetTrap, TSSuspendHelper::UnsetTrap> TSSuspendHolder;
 
 typedef StateHolder<ThreadStore::LockThreadStore,ThreadStore::UnlockThreadStore> ThreadStoreLockHolder;
 
