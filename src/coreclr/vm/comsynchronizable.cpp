@@ -427,24 +427,6 @@ extern "C" void QCALLTYPE ThreadNative_Initialize(QCall::ObjectHandleOnStack t)
     END_QCALL;
 }
 
-// Return whether or not this is a background thread.
-FCIMPL1(FC_BOOL_RET, ThreadNative::GetIsBackground, ThreadBaseObject* pThisUNSAFE)
-{
-    FCALL_CONTRACT;
-
-    if (pThisUNSAFE==NULL)
-        FCThrowRes(kNullReferenceException, W("NullReference_This"));
-
-    // validate the thread
-    Thread  *thread = pThisUNSAFE->GetInternal();
-
-    if (ThreadIsDead(thread))
-        FCThrowRes(kThreadStateException, W("ThreadState_Dead_State"));
-
-    FC_RETURN_BOOL(thread->IsBackground());
-}
-FCIMPLEND
-
 // Deliver the state of the thread as a consistent set of bits.
 // Duplicate logic in DacDbiInterfaceImpl::GetPartialUserState()
 extern "C" INT32 QCALLTYPE ThreadNative_GetThreadState(QCall::ThreadHandle thread)
@@ -729,6 +711,30 @@ FCIMPL1(void, ThreadNative::Finalize, ThreadBaseObject* pThisUNSAFE)
 }
 FCIMPLEND
 
+// Get whether or not this is a background thread.
+extern "C" BOOL QCALLTYPE ThreadNative_GetIsBackground(QCall::ThreadHandle thread)
+{
+    CONTRACTL
+    {
+        QCALL_CHECK;
+        PRECONDITION(thread != NULL);
+    }
+    CONTRACTL_END;
+
+    BOOL res = FALSE;
+
+    BEGIN_QCALL;
+
+    if (ThreadIsDead(thread))
+        COMPlusThrow(kThreadStateException, W("ThreadState_Dead_State"));
+
+    res = thread->IsBackground();
+
+    END_QCALL;
+
+    return res;
+}
+
 // Set whether or not this is a background thread.
 extern "C" void QCALLTYPE ThreadNative_SetIsBackground(QCall::ThreadHandle thread, BOOL value)
 {
@@ -795,41 +801,49 @@ void ThreadNative::InformThreadNameChange(Thread* pThread, LPCWSTR name, INT32 l
 #endif // DEBUGGING_SUPPORTED
 }
 
-FCIMPL1(FC_BOOL_RET, ThreadNative::IsThreadpoolThread, ThreadBaseObject* thread)
+// Get whether or not this is a threadpool thread.
+extern "C" BOOL QCALLTYPE ThreadNative_GetIsThreadPoolThread(QCall::ThreadHandle thread)
 {
-    FCALL_CONTRACT;
+    CONTRACTL
+    {
+        QCALL_CHECK;
+        PRECONDITION(thread != NULL);
+    }
+    CONTRACTL_END;
 
-    if (thread==NULL)
-        FCThrowRes(kNullReferenceException, W("NullReference_This"));
+    BOOL res = FALSE;
 
-    Thread *pThread = thread->GetInternal();
+    BEGIN_QCALL;
 
-    if (pThread == NULL)
-        FCThrowRes(kThreadStateException, W("ThreadState_Dead_State"));
+    if (ThreadIsDead(thread))
+        COMPlusThrow(kThreadStateException, W("ThreadState_Dead_State"));
 
-    BOOL ret = pThread->IsThreadPoolThread();
+    res = thread->IsThreadPoolThread();
 
-    FC_GC_POLL_RET();
+    END_QCALL;
 
-    FC_RETURN_BOOL(ret);
+    return res;
 }
-FCIMPLEND
 
-FCIMPL1(void, ThreadNative::SetIsThreadpoolThread, ThreadBaseObject* thread)
+// Set thread as a threadpool thread.
+extern "C" void QCALLTYPE ThreadNative_SetIsThreadPoolThread(QCall::ThreadHandle thread)
 {
-    FCALL_CONTRACT;
+    CONTRACTL
+    {
+        QCALL_CHECK;
+        PRECONDITION(thread != NULL);
+    }
+    CONTRACTL_END;
 
-    if (thread == NULL)
-        FCThrowResVoid(kNullReferenceException, W("NullReference_This"));
+    BEGIN_QCALL;
 
-    Thread *pThread = thread->GetInternal();
+    if (ThreadIsDead(thread))
+        COMPlusThrow(kThreadStateException, W("ThreadState_Dead_State"));
 
-    if (pThread == NULL)
-        FCThrowResVoid(kThreadStateException, W("ThreadState_Dead_State"));
+    thread->SetIsThreadPoolThread();
 
-    pThread->SetIsThreadPoolThread();
+    END_QCALL;
 }
-FCIMPLEND
 
 FCIMPL0(INT32, ThreadNative::GetOptimalMaxSpinWaitsPerSpinIteration)
 {

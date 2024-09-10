@@ -52,12 +52,8 @@ public:
         ThreadAbortRequested = 128,
     };
 
-    static FCDECL1(FC_BOOL_RET, GetIsBackground,  ThreadBaseObject* pThisUNSAFE);
-
     static FCDECL0(INT32,   GetOptimalMaxSpinWaitsPerSpinIteration);
     static FCDECL1(void,    Finalize,                       ThreadBaseObject* pThis);
-    static FCDECL1(FC_BOOL_RET,IsThreadpoolThread,          ThreadBaseObject* thread);
-    static FCDECL1(void,    SetIsThreadpoolThread,          ThreadBaseObject* thread);
 
     static void Start(Thread* pNewThread, int threadStackSize, int priority, PCWSTR pThreadName);
     static void InformThreadNameChange(Thread* pThread, LPCWSTR name, INT32 len);
@@ -76,6 +72,7 @@ private:
 extern "C" void QCALLTYPE ThreadNative_Start(QCall::ThreadHandle thread, int threadStackSize, int priority, PCWSTR pThreadName);
 extern "C" void QCALLTYPE ThreadNative_SetPriority(QCall::ObjectHandleOnStack thread, INT32 iPriority);
 extern "C" void QCALLTYPE ThreadNative_GetCurrentThread(QCall::ObjectHandleOnStack thread);
+extern "C" BOOL QCALLTYPE ThreadNative_GetIsBackground(QCall::ThreadHandle thread);
 extern "C" void QCALLTYPE ThreadNative_SetIsBackground(QCall::ThreadHandle thread, BOOL value);
 extern "C" void QCALLTYPE ThreadNative_InformThreadNameChange(QCall::ThreadHandle thread, LPCWSTR name, INT32 len);
 extern "C" BOOL QCALLTYPE ThreadNative_YieldThread();
@@ -91,6 +88,8 @@ extern "C" INT32 QCALLTYPE ThreadNative_SetApartmentState(QCall::ObjectHandleOnS
 extern "C" BOOL QCALLTYPE ThreadNative_Join(QCall::ObjectHandleOnStack thread, INT32 Timeout);
 extern "C" void QCALLTYPE ThreadNative_Abort(QCall::ThreadHandle thread);
 extern "C" void QCALLTYPE ThreadNative_ResetAbort();
+extern "C" BOOL QCALLTYPE ThreadNative_GetIsThreadPoolThread(QCall::ThreadHandle thread);
+extern "C" void QCALLTYPE ThreadNative_SetIsThreadPoolThread(QCall::ThreadHandle thread);
 extern "C" void QCALLTYPE ThreadNative_SpinWait(INT32 iterations);
 extern "C" void QCALLTYPE ThreadNative_Interrupt(QCall::ThreadHandle thread);
 extern "C" void QCALLTYPE ThreadNative_Sleep(INT32 iTime);

@@ -194,7 +194,12 @@ namespace System.Threading
         /// </summary>
         public bool IsBackground
         {
-            get => GetIsBackground();
+            get
+            {
+                Interop.BOOL res = GetIsBackground(GetNativeHandle());
+                GC.KeepAlive(this);
+                return res != Interop.BOOL.FALSE;
+            }
             set
             {
                 SetIsBackground(GetNativeHandle(), value ? Interop.BOOL.TRUE : Interop.BOOL.FALSE);
@@ -206,20 +211,34 @@ namespace System.Threading
             }
         }
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        private extern bool GetIsBackground();
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ThreadNative_GetIsBackground")]
+        private static partial Interop.BOOL GetIsBackground(ThreadHandle t);
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ThreadNative_SetIsBackground")]
         private static partial void SetIsBackground(ThreadHandle t, Interop.BOOL value);
 
         /// <summary>Returns true if the thread is a threadpool thread.</summary>
-        public extern bool IsThreadPoolThread
+        public bool IsThreadPoolThread
         {
-            [MethodImpl(MethodImplOptions.InternalCall)]
-            get;
-            [MethodImpl(MethodImplOptions.InternalCall)]
-            internal set;
+            get
+            {
+                Interop.BOOL res = GetIsThreadPoolThread(GetNativeHandle());
+                GC.KeepAlive(this);
+                return res != Interop.BOOL.FALSE;
+            }
+            internal set
+            {
+                Debug.Assert(value);
+                SetIsThreadPoolThread(GetNativeHandle());
+                GC.KeepAlive(this);
+            }
         }
+
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ThreadNative_GetIsThreadPoolThread")]
+        private static partial Interop.BOOL GetIsThreadPoolThread(ThreadHandle t);
+
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ThreadNative_SetIsThreadPoolThread")]
+        private static partial void SetIsThreadPoolThread(ThreadHandle t);
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ThreadNative_SetPriority")]
         [return: MarshalAs(UnmanagedType.Bool)]
