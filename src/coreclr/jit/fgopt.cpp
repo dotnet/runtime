@@ -5343,12 +5343,12 @@ bool Compiler::fgUpdateFlowGraph(bool doTailDuplication /* = false */,
             bDest      = nullptr;
             bFalseDest = nullptr;
 
-            if (doTailDuplication && block->KindIs(BBJ_RETURN) && fgDedupReturnComparison(block))
+            /*if (doTailDuplication && block->KindIs(BBJ_RETURN) && fgDedupReturnComparison(block))
             {
                 change   = true;
                 modified = true;
                 bNext    = block->Next();
-            }
+            }*/
 
             if (block->KindIs(BBJ_ALWAYS))
             {
