@@ -456,7 +456,7 @@ Assembly *Assembly::CreateDynamic(AssemblyBinder* pBinder, NativeAssemblyNamePar
 
             // Some of the initialization functions are not virtual. Call through the derived class
             // to prevent calling the base class version.
-            pCollectibleLoaderAllocator->Init(pDomain);
+            pCollectibleLoaderAllocator->Init();
 
             // Setup the managed proxy now, but do not actually transfer ownership to it.
             // Once everything is setup and nothing can fail anymore, the ownership will be
@@ -531,6 +531,7 @@ Assembly *Assembly::CreateDynamic(AssemblyBinder* pBinder, NativeAssemblyNamePar
             pLoaderAllocator.SuppressRelease();
         }
 
+        // Set the assembly module to be tenured now that we know it won't be deleted
         pAssem->SetIsTenured();
         pRetVal = pAssem;
     }
@@ -639,11 +640,9 @@ Module *Assembly::FindModuleByExportedType(mdExportedType mdType,
                 {
 #ifndef DACCESS_COMPILE
                     // LoadAssembly never returns NULL
-                    DomainAssembly * pDomainAssembly =
-                        GetModule()->LoadAssembly(mdLinkRef);
-                    PREFIX_ASSUME(pDomainAssembly != NULL);
-
-                    RETURN pDomainAssembly->GetModule();
+                    pAssembly = GetModule()->LoadAssembly(mdLinkRef);
+                    PREFIX_ASSUME(pAssembly != NULL);
+                    break;
 #else
                     _ASSERTE(!"DAC shouldn't attempt to trigger loading");
                     return NULL;
@@ -868,14 +867,7 @@ Module * Assembly::FindModuleByTypeRef(
                 RETURN NULL;
             }
 
-
-            DomainAssembly * pDomainAssembly = pModule->LoadAssembly(tkType);
-
-
-            if (pDomainAssembly == NULL)
-                RETURN NULL;
-
-            pAssembly = pDomainAssembly->GetAssembly();
+            pAssembly = pModule->LoadAssembly(tkType);
             if (pAssembly == NULL)
             {
                 RETURN NULL;
