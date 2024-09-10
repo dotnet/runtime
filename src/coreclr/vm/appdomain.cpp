@@ -1546,15 +1546,15 @@ void SystemDomain::NotifyProfilerStartup()
 
     {
         BEGIN_PROFILER_CALLBACK(CORProfilerTrackAppDomainLoads());
-        _ASSERTE(System()->DefaultDomain());
-        (&g_profControlBlock)->AppDomainCreationStarted((AppDomainID) System()->DefaultDomain());
+        _ASSERTE(AppDomain::GetCurrentDomain());
+        (&g_profControlBlock)->AppDomainCreationStarted((AppDomainID) AppDomain::GetCurrentDomain());
         END_PROFILER_CALLBACK();
     }
 
     {
         BEGIN_PROFILER_CALLBACK(CORProfilerTrackAppDomainLoads());
-        _ASSERTE(System()->DefaultDomain());
-        (&g_profControlBlock)->AppDomainCreationFinished((AppDomainID) System()->DefaultDomain(), S_OK);
+        _ASSERTE(AppDomain::GetCurrentDomain());
+        (&g_profControlBlock)->AppDomainCreationFinished((AppDomainID) AppDomain::GetCurrentDomain(), S_OK);
         END_PROFILER_CALLBACK();
     }
 }
@@ -1585,15 +1585,15 @@ HRESULT SystemDomain::NotifyProfilerShutdown()
 
     {
         BEGIN_PROFILER_CALLBACK(CORProfilerTrackAppDomainLoads());
-        _ASSERTE(System()->DefaultDomain());
-        (&g_profControlBlock)->AppDomainShutdownStarted((AppDomainID) System()->DefaultDomain());
+        _ASSERTE(AppDomain::GetCurrentDomain());
+        (&g_profControlBlock)->AppDomainShutdownStarted((AppDomainID) AppDomain::GetCurrentDomain());
         END_PROFILER_CALLBACK();
     }
 
     {
         BEGIN_PROFILER_CALLBACK(CORProfilerTrackAppDomainLoads());
-        _ASSERTE(System()->DefaultDomain());
-        (&g_profControlBlock)->AppDomainShutdownFinished((AppDomainID) System()->DefaultDomain(), S_OK);
+        _ASSERTE(AppDomain::GetCurrentDomain());
+        (&g_profControlBlock)->AppDomainShutdownFinished((AppDomainID) AppDomain::GetCurrentDomain(), S_OK);
         END_PROFILER_CALLBACK();
     }
     return (S_OK);
