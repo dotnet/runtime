@@ -114,8 +114,8 @@ steps:
         runtimeVariant: ${{ parameters.runtimeVariant }}
 
         ${{ if eq(variables['System.TeamProject'], 'internal') }}:
-            # Access token variable for internal project from the
-            # DotNet-HelixApi-Access variable group
+          # Access token variable for internal project from the
+          # DotNet-HelixApi-Access variable group
           helixAccessToken: $(HelixApiAccessToken)
         ${{ else }}:
           creator: $(Build.DefinitionName)
