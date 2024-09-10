@@ -1990,7 +1990,7 @@ public static class Program
 	}
 
 
-	class EverythingIsFineException : Exception {};
+	class EverythingIsFineException : Exception {}
 
 	[MethodImpl(MethodImplOptions.NoInlining)]
 	private static void ShufflingThunk_FloatEmptyShort_Empty8Float_RiscV(
@@ -2020,11 +2020,11 @@ public static class Program
 		Assert.Equal(FloatEmptyShort.Get(), stack0_to_fa1_a7);
 		Assert.Equal(1d, fa1_to_fa2);
 		Assert.Equal(2d, fa2_to_fa3);
-		Assert.Equal(7, stack1_to_stack0);
-		Assert.Equal(8, stack2_to_stack1);
+		Assert.Equal(7,  stack1_to_stack0);
+		Assert.Equal(8,  stack2_to_stack1);
 		Assert.Equal(3d, fa3_to_fa4);
 		Assert.Equal(4f, fa4_to_fa5);
-		Assert.Equal(9, stack3_to_stack2);
+		Assert.Equal(9,  stack3_to_stack2);
 		Assert.Equal(5f, fa5_to_fa6);
 		Assert.Equal(6d, fa6_to_fa7);
 		Assert.Equal(10, stack4_to_stack3);
@@ -2042,6 +2042,72 @@ public static class Program
 			delegat(0, 1, 2, 3, 4, 5, 6, 0f,
 				FloatEmptyShort.Get(), 1d, 2d, 7, 8, 3d, 4f, 9, 5f, 6d, 10, Empty8Float.Get())
 		);
+	}
+
+
+
+	public struct UintFloat
+	{
+		public uint Uint0;
+		public float Float0;
+
+		public static UintFloat Get()
+			=> new UintFloat { Uint0 = 0xB1ed0c1e, Float0 = 2.71828f };
+
+		public override bool Equals(object other)
+			=> other is UintFloat o && Uint0 == o.Uint0 && Float0 == o.Float0;
+
+		public override string ToString()
+			=> $"{{Uint0:{Uint0}, Float0:{Float0}}}";
+	}
+
+	class ShufflingThunk_MemberGrowsStack_RiscV
+	{
+		public static ShufflingThunk_MemberGrowsStack_RiscV TestInstance =
+			new ShufflingThunk_MemberGrowsStack_RiscV();
+
+		public delegate void TestDelegate(
+			ShufflingThunk_MemberGrowsStack_RiscV tc,
+			int a2_to_a1, int a3_to_a2, int a4_to_a3, int a5_to_a4, int a6_to_a5, int a7_to_a6,
+			float fa0, float fa1, float fa2, float fa3, float fa4, float fa5,
+			UintFloat stack0_to_a7_fa6, // frees 1 stack slot
+			DoubleFloatNestedEmpty fa6_fa7_to_stack0_stack1); // takes 2 stack slots, shuffling thunk must grow the stack
+
+		[MethodImpl(MethodImplOptions.NoInlining)]
+		public void TestMethod(
+			int a2_to_a1, int a3_to_a2, int a4_to_a3, int a5_to_a4, int a6_to_a5, int a7_to_a6,
+			float fa0, float fa1, float fa2, float fa3, float fa4, float fa5,
+			UintFloat stack0_to_a7_fa6, // frees 1 stack slot
+			DoubleFloatNestedEmpty fa6_fa7_to_stack0_stack1) // takes 2 stack slots, shuffling thunk must grow the stack
+		{
+			Assert.Equal(TestInstance, this);
+			Assert.Equal(1, a2_to_a1);
+			Assert.Equal(2, a3_to_a2);
+			Assert.Equal(3, a4_to_a3);
+			Assert.Equal(4, a5_to_a4);
+			Assert.Equal(5, a6_to_a5);
+			Assert.Equal(6, a7_to_a6);
+			Assert.Equal(0f, fa0);
+			Assert.Equal(1f, fa1);
+			Assert.Equal(2f, fa2);
+			Assert.Equal(3f, fa3);
+			Assert.Equal(4f, fa4);
+			Assert.Equal(5f, fa5);
+			Assert.Equal(UintFloat.Get(), stack0_to_a7_fa6);
+			Assert.Equal(DoubleFloatNestedEmpty.Get(), fa6_fa7_to_stack0_stack1);
+		}
+	}
+
+	[Fact]
+	public static void Test_ShufflingThunk_MemberGrowsStack_RiscV()
+	{
+		var delegat = (ShufflingThunk_MemberGrowsStack_RiscV.TestDelegate)Delegate.CreateDelegate(
+			typeof(ShufflingThunk_MemberGrowsStack_RiscV.TestDelegate), null,
+			typeof(ShufflingThunk_MemberGrowsStack_RiscV).GetMethod(
+				nameof(ShufflingThunk_MemberGrowsStack_RiscV.TestMethod))
+		);
+		delegat(ShufflingThunk_MemberGrowsStack_RiscV.TestInstance,
+			1, 2, 3, 4, 5, 6, 0f, 1f, 2f, 3f, 4f, 5f, UintFloat.Get(), DoubleFloatNestedEmpty.Get());
 	}
 #endregion
 }

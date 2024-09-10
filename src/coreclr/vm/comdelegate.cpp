@@ -944,21 +944,21 @@ LoaderHeap *DelegateEEClass::GetStubHeap()
 static Stub* CreateILDelegateShuffleThunk(MethodDesc* pDelegateMD, MethodDesc* pTargetMD)
 {
     // TODO: Stack growing is a rare case but if thunk duplication turns out to be an issue, optimize by cooking
-    // a signature based on the entries returned by GenerateShuffleArray and use the call target from
-    // DelegateObject::GetMethodPtrAux()
+    // a stripped signature similar to GenerateShuffleArray and use call target from DelegateObject::GetMethodPtrAux()
     _ASSERTE(pDelegateMD->SizeOfArgStack() < pTargetMD->SizeOfArgStack()); // IL thunk handle stack growing only
     SigTypeContext typeContext(pDelegateMD);
     MetaSig delegateSig(pDelegateMD);
     INDEBUG(MetaSig targetSig(pTargetMD));
-    LOG((LF_STUBS, LL_EVERYTHING, "CreateILDelegateShuffleThunk %s (%i args, %i return type, %i this) -> %s (%i args, %i return type, %i this)\n",
-        pDelegateMD->GetName(), delegateSig.NumFixedArgs(), delegateSig.GetReturnType(), !!delegateSig.HasThis(),
-        pTargetMD->GetName(), targetSig.NumFixedArgs(), targetSig.GetReturnType(), !!targetSig.HasThis()));
-    _ASSERTE(delegateSig.NumFixedArgs() == targetSig.NumFixedArgs());
+    LOG((LF_STUBS, LL_INFO1000000,
+        "CreateILDelegateShuffleThunk %s.%s (%i args) -> %s.%s (%i args + %i this)\n",
+        pDelegateMD->GetMethodTable()->GetDebugClassName(), pDelegateMD->GetName(), delegateSig.NumFixedArgs(),
+        pTargetMD->GetMethodTable()->GetDebugClassName(), pTargetMD->GetName(), targetSig.NumFixedArgs(), !!targetSig.HasThis()
+    ));
+    _ASSERTE(delegateSig.NumFixedArgs() == targetSig.NumFixedArgs() + (targetSig.HasThis() ? 1 : 0));
     _ASSERTE(delegateSig.GetReturnType() == targetSig.GetReturnType());
+    _ASSERTE(delegateSig.HasThis());
 
-    ILStubLinkerFlags flags = (ILStubLinkerFlags)(delegateSig.HasThis()
-        ? ILSTUB_LINKER_FLAG_STUB_HAS_THIS | ILSTUB_LINKER_FLAG_TARGET_HAS_THIS
-        : ILSTUB_LINKER_FLAG_NONE);
+    ILStubLinkerFlags flags = ILSTUB_LINKER_FLAG_STUB_HAS_THIS;
     ILStubLinker stubLinker(pDelegateMD->GetModule(), pDelegateMD->GetSignature(), &typeContext, pDelegateMD, flags);
     ILCodeStream *pCode = stubLinker.NewCodeStream(ILStubLinker::kDispatch);
 
@@ -972,7 +972,7 @@ static Stub* CreateILDelegateShuffleThunk(MethodDesc* pDelegateMD, MethodDesc* p
     DWORD cbSig;
     pDelegateMD->GetSig(&pSig, &cbSig);
     PTR_Module pLoaderModule = pDelegateMD->GetLoaderModule();
-    MethodDesc * pStubMD = ILStubCache::CreateAndLinkNewILStubMethodDesc(
+    MethodDesc* pStubMD = ILStubCache::CreateAndLinkNewILStubMethodDesc(
         pDelegateMD->GetLoaderAllocator(),
         pDelegateMD->GetMethodTable(),
         ILSTUB_MULTICASTDELEGATE_INVOKE,
