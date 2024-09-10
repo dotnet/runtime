@@ -1,6 +1,12 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+// Note: this test checks passing empty struct fields in .NET; confronting it against C++ on native compilers is just
+// a means to assert compliance to the platform calling convention. The native part is using C++ because it defines
+// empty structs as 1 byte like in .NET. Empty structs in C are undefined (it's a GCC extension to define them as 0
+// bytes) and .NET managed/unmanaged interop follows the C ABI, not C++, so signatures with empty struct fields should
+// not be used in any real-world interop calls.
+
 using System;
 using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
@@ -77,8 +83,8 @@ public static class Program
 		public static IntEmpty Get()
 			=> new IntEmpty { Int0 = 0xBabc1a };
 
-		public bool Equals(IntEmpty other)
-			=> Int0 == other.Int0;
+		public override bool Equals(object other)
+			=> other is IntEmpty o && Int0 == o.Int0;
 		
 		public override string ToString()
 			=> $"{{Int0:{Int0:x}}}";
@@ -128,8 +134,8 @@ public static class Program
 		public static IntEmptyPair Get()
 			=> new IntEmptyPair { IntEmpty0 = IntEmpty.Get(), IntEmpty1 = IntEmpty.Get() };
 
-		public bool Equals(IntEmptyPair other)
-			=> IntEmpty0.Equals(other.IntEmpty0) && IntEmpty1.Equals(other.IntEmpty1);
+		public override bool Equals(object other)
+			=> other is IntEmptyPair o && IntEmpty0.Equals(o.IntEmpty0) && IntEmpty1.Equals(o.IntEmpty1);
 		
 		public override string ToString()
 			=> $"{{IntEmpty0:{IntEmpty0}, IntEmpty1:{IntEmpty1}}}";
@@ -181,8 +187,8 @@ public static class Program
 		public static EmptyFloatIntInt Get()
 			=> new EmptyFloatIntInt { Float0 = 2.71828f, Int0 = 0xBabc1a, Int1 = 0xC10c1a };
 
-		public bool Equals(EmptyFloatIntInt other)
-			=> Float0 == other.Float0 && Int0 == other.Int0 && Int1 == other.Int1;
+		public override bool Equals(object other)
+			=> other is EmptyFloatIntInt o && Float0 == o.Float0 && Int0 == o.Int0 && Int1 == o.Int1;
 
 		public override string ToString()
 			=> $"{{Float0:{Float0}, Int0:{Int0:x}, Int1:{Int1:x}}}";
@@ -236,8 +242,8 @@ public static class Program
 		public static FloatFloatEmptyFloat Get()
 			=> new FloatFloatEmptyFloat { Float0 = 2.71828f, Float1 = 3.14159f, Float2 = 1.61803f };
 
-		public bool Equals(FloatFloatEmptyFloat other)
-			=> Float0 == other.Float0 && Float1 == other.Float1 && Float2 == other.Float2;
+		public override bool Equals(object other)
+			=> other is FloatFloatEmptyFloat o && Float0 == o.Float0 && Float1 == o.Float1 && Float2 == o.Float2;
 
 		public override string ToString()
 			=> $"{{Float0:{Float0}, Float1:{Float1}, Float2:{Float2}}}";
@@ -294,8 +300,8 @@ public static class Program
 		public static Empty8Float Get()
 			=> new Empty8Float { Float0 = 2.71828f };
 
-		public bool Equals(Empty8Float other)
-			=> Float0 == other.Float0;
+		public override bool Equals(object other)
+			=> other is Empty8Float o && Float0 == o.Float0;
 
 		public override string ToString()
 			=> $"{{Float0:{Float0}}}";
@@ -474,8 +480,8 @@ public static class Program
 		public static FloatEmpty8Float Get()
 			=> new FloatEmpty8Float { Float0 = 2.71828f, Float1 = 3.14159f };
 
-		public bool Equals(FloatEmpty8Float other)
-			=> Float0 == other.Float0 && Float1 == other.Float1;
+		public override bool Equals(object other)
+			=> other is FloatEmpty8Float o && Float0 == o.Float0 && Float1 == o.Float1;
 
 		public override string ToString()
 			=> $"{{Float0:{Float0}, Float1:{Float1}}}";
@@ -654,8 +660,8 @@ public static class Program
 		public static FloatEmptyShort Get()
 			=> new FloatEmptyShort { Float0 = 2.71828f, Short0 = 0x1dea };
 
-		public bool Equals(FloatEmptyShort other)
-			=> Float0 == other.Float0 && Short0 == other.Short0;
+		public override bool Equals(object other)
+			=> other is FloatEmptyShort o && Float0 == o.Float0 && Short0 == o.Short0;
 
 		public override string ToString()
 			=> $"{{Float0:{Float0}, Short0:{Short0}}}";
@@ -793,8 +799,8 @@ public static class Program
 		public static EmptyFloatEmpty5Sbyte Get()
 			=> new EmptyFloatEmpty5Sbyte { Float0 = 2.71828f, Sbyte0 = -123 };
 
-		public bool Equals(EmptyFloatEmpty5Sbyte other)
-			=> Float0 == other.Float0 && Sbyte0 == other.Sbyte0;
+		public override bool Equals(object other)
+			=> other is EmptyFloatEmpty5Sbyte o && Float0 == o.Float0 && Sbyte0 == o.Sbyte0;
 
 		public override string ToString()
 			=> $"{{Float0:{Float0}, Sbyte0:{Sbyte0}}}";
@@ -848,8 +854,8 @@ public static class Program
 		public static EmptyFloatEmpty5Byte Get()
 			=> new EmptyFloatEmpty5Byte { Float0 = 2.71828f, Byte0 = 123 };
 
-		public bool Equals(EmptyFloatEmpty5Byte other)
-			=> Float0 == other.Float0 && Byte0 == other.Byte0;
+		public override bool Equals(object other)
+			=> other is EmptyFloatEmpty5Byte o && Float0 == o.Float0 && Byte0 == o.Byte0;
 
 		public override string ToString()
 			=> $"{{Float0:{Float0}, Byte0:{Byte0}}}";
@@ -1037,8 +1043,8 @@ public static class Program
 		public static DoubleFloatNestedEmpty Get()
 			=> new DoubleFloatNestedEmpty { Double0 = 2.71828, Float0 = 3.14159f };
 
-		public bool Equals(DoubleFloatNestedEmpty other)
-			=> Double0 == other.Double0 && Float0 == other.Float0;
+		public override bool Equals(object other)
+			=> other is DoubleFloatNestedEmpty o && Double0 == o.Double0 && Float0 == o.Float0;
 
 		public override string ToString()
 			=> $"{{Double0:{Double0}, Float0:{Float0}}}";
@@ -1123,6 +1129,66 @@ public static class Program
 	}
 #endregion
 
+#region ArrayOfEmptiesFloatDouble_RiscVTests
+	[InlineArray(1)]
+	public struct ArrayOfEmpties
+	{
+		public Empty e;
+	}
+
+	public struct ArrayOfEmptiesFloatDouble
+	{
+		public ArrayOfEmpties ArrayOfEmpties0;
+		public float Float0;
+		public double Double0;
+
+		public static ArrayOfEmptiesFloatDouble Get()
+			=> new ArrayOfEmptiesFloatDouble { Float0 = 3.14159f, Double0 = 2.71828 };
+
+		public override bool Equals(object other)
+			=> other is ArrayOfEmptiesFloatDouble o && Float0 == o.Float0 && Double0 == o.Double0;
+
+		public override string ToString()
+			=> $"{{Float0:{Float0}, Double0:{Double0}}}";
+	}
+
+	[DllImport("EmptyStructsLib")]
+	public static extern ArrayOfEmptiesFloatDouble Echo_ArrayOfEmptiesFloatDouble_RiscV(int a0, float fa0,
+		ArrayOfEmptiesFloatDouble a1_a2, int a3, float fa1);
+
+	[MethodImpl(MethodImplOptions.NoInlining)]
+	public static ArrayOfEmptiesFloatDouble Echo_ArrayOfEmptiesFloatDouble_RiscV_Managed(int a0, float fa0,
+		ArrayOfEmptiesFloatDouble a1_a2, int a3, float fa1)
+	{
+		a1_a2.Double0 += (double)a3 + fa1;
+		return a1_a2;
+	}
+
+	[Fact]
+	public static void Test_ArrayOfEmptiesFloatDouble_RiscV()
+	{
+		ArrayOfEmptiesFloatDouble expected = ArrayOfEmptiesFloatDouble.Get();
+		ArrayOfEmptiesFloatDouble native = Echo_ArrayOfEmptiesFloatDouble_RiscV(0, 0f, expected, 1, -1f);
+		ArrayOfEmptiesFloatDouble managed = Echo_ArrayOfEmptiesFloatDouble_RiscV_Managed(0, 0f, expected, 1, -1f);
+
+		Assert.Equal(expected, native);
+		Assert.Equal(expected, managed);
+	}
+
+	[Fact]
+	public static void Test_ArrayOfEmptiesFloatDouble_ByReflection_RiscV()
+	{
+		var expected = ArrayOfEmptiesFloatDouble.Get();
+		var native = (ArrayOfEmptiesFloatDouble)typeof(Program).GetMethod("Echo_ArrayOfEmptiesFloatDouble_RiscV").Invoke(
+			null, new object[] {0, 0f, expected, 1, -1f});
+		var managed = (ArrayOfEmptiesFloatDouble)typeof(Program).GetMethod("Echo_ArrayOfEmptiesFloatDouble_RiscV_Managed").Invoke(
+			null, new object[] {0, 0f, expected, 1, -1f});
+
+		Assert.Equal(expected, native);
+		Assert.Equal(expected, managed);
+	}
+#endregion
+
 #region EmptyUshortAndDouble_RiscVTests
 	public struct EmptyUshortAndDouble
 	{
@@ -1138,8 +1204,8 @@ public static class Program
 			EmptyUshort0 = new EmptyUshort { Ushort0 = 0xBaca }, Double0 = 2.71828
 		};
 
-		public bool Equals(EmptyUshortAndDouble other)
-			=> EmptyUshort0.Ushort0 == other.EmptyUshort0.Ushort0 && Double0 == other.Double0;
+		public override bool Equals(object other)
+			=> other is EmptyUshortAndDouble o && EmptyUshort0.Ushort0 == o.EmptyUshort0.Ushort0 && Double0 == o.Double0;
 
 		public override string ToString()
 			=> $"{{EmptyUshort0.Ushort0:{EmptyUshort0.Ushort0}, Double0:{Double0}}}";
@@ -1193,8 +1259,8 @@ public static class Program
 		public static PackedEmptyFloatLong Get()
 			=> new PackedEmptyFloatLong { Float0 = 2.71828f, Long0 = 0xDadAddedC0ffee };
 
-		public bool Equals(PackedEmptyFloatLong other)
-			=> Float0 == other.Float0 && Long0 == other.Long0;
+		public override bool Equals(object other)
+			=> other is PackedEmptyFloatLong o && Float0 == o.Float0 && Long0 == o.Long0;
 
 		public override string ToString()
 			=> $"{{Float0:{Float0}, Long0:{Long0}}}";
@@ -1383,8 +1449,8 @@ public static class Program
 		public static PackedFloatEmptyByte Get()
 			=> new PackedFloatEmptyByte { Float0 = 2.71828f, Byte0 = 0xba };
 
-		public bool Equals(PackedFloatEmptyByte other)
-			=> Float0 == other.Float0 && Byte0 == other.Byte0;
+		public override bool Equals(object other)
+			=> other is PackedFloatEmptyByte o && Float0 == o.Float0 && Byte0 == o.Byte0;
 
 		public override string ToString()
 			=> $"{{Float0:{Float0}, Byte0:{Byte0}}}";

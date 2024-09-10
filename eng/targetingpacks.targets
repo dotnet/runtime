@@ -109,19 +109,6 @@
     </PropertyGroup>
   </Target>
 
-  <!--
-    SDK tries to download the ILCompiler runtime packs.
-    TODO: Remove this target when a 9.0.100 SDK is consumed that respects EnableRuntimePackDownload for the ILCompiler.
-   -->
-  <Target Name="RemoveRuntimePackFromDownloadItem"
-          Condition="'$(UseLocalILCompilerPack)' == 'true'"
-          AfterTargets="ProcessFrameworkReferences">
-    <ItemGroup>
-      <!-- Always remove the PackageReference items as some of the packages are consumed via PackageReference only. -->
-      <PackageReference Remove="@(PackageReference->WithMetadataValue('Identity', 'Microsoft.DotNet.ILCompiler')->WithMetadataValue('IsImplicitlyDefined', 'true'))" />
-    </ItemGroup>
-  </Target>
-
   <!-- Use local targeting/runtime pack for NetCoreAppCurrent. -->
   <Target Name="UpdateLocalTargetingAndRuntimePack"
           Condition="'$(UseLocalTargetingRuntimePack)' == 'true'"

@@ -7565,15 +7565,29 @@ MONO_RESTORE_WARNING
 #define ARM64_ATOMIC_FENCE_FIX
 #endif
 
+		case OP_ATOMIC_EXCHANGE_U1:
+		case OP_ATOMIC_EXCHANGE_U2:
 		case OP_ATOMIC_EXCHANGE_I4:
 		case OP_ATOMIC_EXCHANGE_I8: {
 			LLVMValueRef args [2];
 			LLVMTypeRef t;
 
-			if (ins->opcode == OP_ATOMIC_EXCHANGE_I4)
+			switch (ins->opcode) {
+			case OP_ATOMIC_EXCHANGE_U1:
+				t = LLVMInt8Type ();
+				break;
+			case OP_ATOMIC_EXCHANGE_U2:
+				t = LLVMInt16Type ();
+				break;
+			case OP_ATOMIC_EXCHANGE_I4:
 				t = LLVMInt32Type ();
-			else
+				break;
+			case OP_ATOMIC_EXCHANGE_I8:
 				t = LLVMInt64Type ();
+				break;
+			default:
+				g_assert_not_reached ();
+			}
 
 			g_assert (ins->inst_offset == 0);
 
@@ -7617,15 +7631,29 @@ MONO_RESTORE_WARNING
 			ARM64_ATOMIC_FENCE_FIX;
 			break;
 		}
+		case OP_ATOMIC_CAS_U1:
+		case OP_ATOMIC_CAS_U2:
 		case OP_ATOMIC_CAS_I4:
 		case OP_ATOMIC_CAS_I8: {
 			LLVMValueRef args [3], val;
 			LLVMTypeRef t;
 
-			if (ins->opcode == OP_ATOMIC_CAS_I4)
+			switch (ins->opcode) {
+			case OP_ATOMIC_CAS_U1:
+				t = LLVMInt8Type ();
+				break;
+			case OP_ATOMIC_CAS_U2:
+				t = LLVMInt16Type ();
+				break;
+			case OP_ATOMIC_CAS_I4:
 				t = LLVMInt32Type ();
-			else
+				break;
+			case OP_ATOMIC_CAS_I8:
 				t = LLVMInt64Type ();
+				break;
+			default:
+				g_assert_not_reached ();
+			}
 
 			args [0] = convert (ctx, lhs, pointer_type (t));
 			/* comparand */
@@ -10373,7 +10401,7 @@ MONO_RESTORE_WARNING
 				int stride_len = 32 / cn;
 				int stride_len_2 = stride_len >> 1;
 				int n_strides = 16 / stride_len;
-				LLVMValueRef swizzle_mask = LLVMConstNull (LLVMVectorType (i8_t, 16));
+				LLVMValueRef swizzle_mask = LLVMConstNull (LLVMVectorType (i1_t, 16));
 				for (int i = 0; i < n_strides; i++)
 					for (int j = 0; j < stride_len; j++)
 						swizzle_mask = LLVMBuildInsertElement (builder, swizzle_mask, const_int8(i * stride_len + ((stride_len_2 + j) % stride_len)), const_int32 (i * stride_len + j), "");

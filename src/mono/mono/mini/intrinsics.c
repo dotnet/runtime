@@ -1522,11 +1522,34 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 		else if (strcmp (cmethod->name, "Exchange") == 0 && fsig->param_count == 2 && m_type_is_byref (fsig->params [0])) {
 			MonoInst *f2i = NULL, *i2f;
 			guint32 opcode, f2i_opcode = 0, i2f_opcode = 0;
-			gboolean is_ref = byref_arg_is_reference (fsig->params [0]);
-			gboolean is_float = fsig->params [0]->type == MONO_TYPE_R4 || fsig->params [0]->type == MONO_TYPE_R8;
+			// params[1] is byval, use it to decide what kind of op to do
+			// get the underlying type so enums and bool work too.
+			MonoType *param_type = mini_get_underlying_type (fsig->params[1]);
+			gboolean is_ref = mini_type_is_reference (param_type);
+			gboolean is_float = param_type->type == MONO_TYPE_R4 || param_type->type == MONO_TYPE_R8;
+			guint32 u2i_result_opcode = 0;
+			MonoInst *u2i_result = NULL;
 
-			if (fsig->params [0]->type == MONO_TYPE_I4 ||
-			    fsig->params [0]->type == MONO_TYPE_R4) {
+			// For small types .NET stack temps are always i4, so we need to zext or
+			// sext the output
+			if (param_type->type == MONO_TYPE_I1) {
+				opcode = OP_ATOMIC_EXCHANGE_U1;
+				u2i_result_opcode = OP_ICONV_TO_I1;
+			}
+			else if (param_type->type == MONO_TYPE_U1) {
+				opcode = OP_ATOMIC_EXCHANGE_U1;
+				u2i_result_opcode = OP_ICONV_TO_U1;
+			}
+			else if (param_type->type == MONO_TYPE_I2) {
+				opcode = OP_ATOMIC_EXCHANGE_U2;
+				u2i_result_opcode = OP_ICONV_TO_I2;
+			}
+			else if (param_type->type == MONO_TYPE_U2) {
+				opcode = OP_ATOMIC_EXCHANGE_U2;
+				u2i_result_opcode = OP_ICONV_TO_U2;
+			}
+			else if (param_type->type == MONO_TYPE_I4 ||
+			    param_type->type == MONO_TYPE_R4) {
 				opcode = OP_ATOMIC_EXCHANGE_I4;
 				f2i_opcode = OP_MOVE_F_TO_I4;
 				i2f_opcode = OP_MOVE_I4_TO_F;
@@ -1577,7 +1600,11 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 			ins->sreg2 = is_float ? f2i->dreg : args [1]->dreg;
 			MONO_ADD_INS (cfg->cbb, ins);
 
-			switch (fsig->params [0]->type) {
+			switch (param_type->type) {
+			case MONO_TYPE_U1:
+			case MONO_TYPE_I1:
+			case MONO_TYPE_U2:
+			case MONO_TYPE_I2:
 			case MONO_TYPE_I4:
 				ins->type = STACK_I4;
 				break;
@@ -1611,6 +1638,13 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 				MONO_ADD_INS (cfg->cbb, i2f);
 
 				ins = i2f;
+			} else if (u2i_result_opcode) {
+				MONO_INST_NEW (cfg, u2i_result, u2i_result_opcode);
+				u2i_result->dreg = mono_alloc_ireg (cfg);
+				u2i_result->sreg1 = ins->dreg;
+				MONO_ADD_INS (cfg->cbb, u2i_result);
+
+				ins = u2i_result;
 			}
 
 			if (cfg->gen_write_barriers && is_ref)
@@ -1619,11 +1653,43 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 		else if ((strcmp (cmethod->name, "CompareExchange") == 0) && fsig->param_count == 3) {
 			MonoInst *f2i_new = NULL, *f2i_cmp = NULL, *i2f;
 			guint32 opcode, f2i_opcode = 0, i2f_opcode = 0;
-			gboolean is_ref = mini_type_is_reference (fsig->params [1]);
-			gboolean is_float = fsig->params [1]->type == MONO_TYPE_R4 || fsig->params [1]->type == MONO_TYPE_R8;
+			MonoType *param1_type = mini_get_underlying_type (fsig->params[1]);
+			gboolean is_ref = mini_type_is_reference (param1_type);
+			gboolean is_float = param1_type->type == MONO_TYPE_R4 || param1_type->type == MONO_TYPE_R8;
+			guint32 i2u_cmp_opcode = 0, u2i_result_opcode = 0;
+			MonoInst *i2u_cmp = NULL, *u2i_result = NULL;
 
-			if (fsig->params [1]->type == MONO_TYPE_I4 ||
-			    fsig->params [1]->type == MONO_TYPE_R4) {
+			// For small types the "compare" part of CAS is done on zero extended. For
+			// the result, .NET stack temps are always i4, so we need to zext or sext
+			// the output
+			if (param1_type->type == MONO_TYPE_U1) {
+				opcode = OP_ATOMIC_CAS_U1;
+				i2u_cmp_opcode = 0;
+				// zext the result
+				u2i_result_opcode = OP_ICONV_TO_U1;
+			}
+			else if (param1_type->type == MONO_TYPE_I1) {
+				opcode = OP_ATOMIC_CAS_U1;
+				// zero extend expected comparand
+				i2u_cmp_opcode = OP_ICONV_TO_U1;
+				// sign extend result
+				u2i_result_opcode = OP_ICONV_TO_I1;
+			}
+			else if (param1_type->type == MONO_TYPE_U2) {
+				opcode = OP_ATOMIC_CAS_U2;
+				i2u_cmp_opcode = 0;
+				// zext the result
+				u2i_result_opcode = OP_ICONV_TO_U2;
+			}
+			else if (param1_type->type == MONO_TYPE_I2) {
+				opcode = OP_ATOMIC_CAS_U2;
+				// zero extend expected comparand
+				i2u_cmp_opcode = OP_ICONV_TO_U2;
+				// sign extend result
+				u2i_result_opcode = OP_ICONV_TO_I2;
+			}
+			else if (param1_type->type == MONO_TYPE_I4 ||
+			    param1_type->type == MONO_TYPE_R4) {
 				opcode = OP_ATOMIC_CAS_I4;
 				f2i_opcode = OP_MOVE_F_TO_I4;
 				i2f_opcode = OP_MOVE_I4_TO_F;
@@ -1631,15 +1697,15 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 			}
 #if SIZEOF_REGISTER == 8
 			else if (is_ref ||
-			         fsig->params [1]->type == MONO_TYPE_I8 ||
-			         fsig->params [1]->type == MONO_TYPE_R8 ||
-			         fsig->params [1]->type == MONO_TYPE_I) {
+			         param1_type->type == MONO_TYPE_I8 ||
+			         param1_type->type == MONO_TYPE_R8 ||
+			         param1_type->type == MONO_TYPE_I) {
 				opcode = OP_ATOMIC_CAS_I8;
 				f2i_opcode = OP_MOVE_F_TO_I8;
 				i2f_opcode = OP_MOVE_I8_TO_F;
 			}
 #else
-			else if (is_ref || fsig->params [1]->type == MONO_TYPE_I) {
+			else if (is_ref || param1_type->type == MONO_TYPE_I) {
 				opcode = OP_ATOMIC_CAS_I4;
 				cfg->has_atomic_cas_i4 = TRUE;
 			}
@@ -1670,6 +1736,13 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 				MONO_ADD_INS (cfg->cbb, f2i_cmp);
 			}
 
+			if (i2u_cmp_opcode) {
+				MONO_INST_NEW (cfg, i2u_cmp, i2u_cmp_opcode);
+				i2u_cmp->dreg = mono_alloc_ireg (cfg);
+				i2u_cmp->sreg1 = args[2]->dreg;
+				MONO_ADD_INS (cfg->cbb, i2u_cmp);
+			}
+			
 			if (is_ref && !mini_debug_options.weak_memory_model)
 				mini_emit_memory_barrier (cfg, MONO_MEMORY_BARRIER_REL);
 
@@ -1677,11 +1750,25 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 			MONO_INST_NEW (cfg, ins, opcode);
 			ins->dreg = is_ref ? alloc_ireg_ref (cfg) : alloc_ireg (cfg);
 			ins->sreg1 = args [0]->dreg;
-			ins->sreg2 = is_float ? f2i_new->dreg : args [1]->dreg;
-			ins->sreg3 = is_float ? f2i_cmp->dreg : args [2]->dreg;
+			if (is_float) {
+				ins->sreg2 = f2i_new->dreg;
+				ins->sreg3 = f2i_cmp->dreg;
+			} else if (i2u_cmp_opcode) {
+				ins->sreg2 = args[1]->dreg;
+				ins->sreg3 = i2u_cmp->dreg;
+			} else {
+				ins->sreg2 = args[1]->dreg;
+				ins->sreg3 = args[2]->dreg;
+			}
 			MONO_ADD_INS (cfg->cbb, ins);
 
-			switch (fsig->params [1]->type) {
+			switch (param1_type->type) {
+			case MONO_TYPE_U1:
+			case MONO_TYPE_I1:
+			case MONO_TYPE_U2:
+			case MONO_TYPE_I2:
+				ins->type = STACK_I4;
+				break;
 			case MONO_TYPE_I4:
 				ins->type = STACK_I4;
 				break;
@@ -1702,7 +1789,7 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 				ins->type = STACK_R8;
 				break;
 			default:
-				g_assert (mini_type_is_reference (fsig->params [1]));
+				g_assert (mini_type_is_reference (param1_type));
 				ins->type = STACK_OBJ;
 				break;
 			}
@@ -1717,6 +1804,14 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 				MONO_ADD_INS (cfg->cbb, i2f);
 
 				ins = i2f;
+			}
+			if (u2i_result_opcode) {
+				MONO_INST_NEW (cfg, u2i_result, u2i_result_opcode);
+				u2i_result->dreg = mono_alloc_ireg (cfg);
+				u2i_result->sreg1 = ins->dreg;
+				MONO_ADD_INS (cfg->cbb, u2i_result);
+
+				ins = u2i_result;
 			}
 
 			if (cfg->gen_write_barriers && is_ref)

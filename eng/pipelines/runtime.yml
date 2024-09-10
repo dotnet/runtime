@@ -870,6 +870,7 @@ extends:
             - browser_wasm
             - browser_wasm_win
             - wasi_wasm
+            - wasi_wasm_win
           nameSuffix: _Smoke_AOT
           runAOT: true
           shouldRunSmokeOnly: true

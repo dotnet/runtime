@@ -791,12 +791,12 @@ namespace Mono.Linker.Dataflow
 				if (typeReference is IGenericInstance instance && resolvedDefinition.IsTypeOf (WellKnownType.System_Nullable_T)) {
 					switch (instance.GenericArguments[0]) {
 					case GenericParameter genericParam:
-						var nullableDam = new RuntimeTypeHandleForNullableValueWithDynamicallyAccessedMembers (new TypeProxy (resolvedDefinition),
+						var nullableDam = new RuntimeTypeHandleForNullableValueWithDynamicallyAccessedMembers (new TypeProxy (resolvedDefinition, _context),
 							new RuntimeTypeHandleForGenericParameterValue (genericParam));
 						currentStack.Push (new StackSlot (nullableDam));
 						return;
 					case TypeReference underlyingTypeReference when ResolveToTypeDefinition (underlyingTypeReference) is TypeDefinition underlyingType:
-						var nullableType = new RuntimeTypeHandleForNullableSystemTypeValue (new TypeProxy (resolvedDefinition), new SystemTypeValue (underlyingType));
+						var nullableType = new RuntimeTypeHandleForNullableSystemTypeValue (new TypeProxy (resolvedDefinition, _context), new SystemTypeValue (new (underlyingType, _context)));
 						currentStack.Push (new StackSlot (nullableType));
 						return;
 					default:
@@ -804,7 +804,7 @@ namespace Mono.Linker.Dataflow
 						return;
 					}
 				} else {
-					var typeHandle = new RuntimeTypeHandleValue (new TypeProxy (resolvedDefinition));
+					var typeHandle = new RuntimeTypeHandleValue (new TypeProxy (resolvedDefinition, _context));
 					currentStack.Push (new StackSlot (typeHandle));
 					return;
 				}
@@ -866,7 +866,7 @@ namespace Mono.Linker.Dataflow
 					StoreMethodLocalValue (locals, source, localReference.LocalDefinition, curBasicBlock);
 					break;
 				case FieldReferenceValue fieldReference
-				when GetFieldValue (fieldReference.FieldDefinition).AsSingleValue () is FieldValue fieldValue:
+				when GetFieldValue (fieldReference.Field).AsSingleValue () is FieldValue fieldValue:
 					HandleStoreField (method, fieldValue, operation, source, parameterIndex);
 					break;
 				case ParameterReferenceValue parameterReference
@@ -897,7 +897,7 @@ namespace Mono.Linker.Dataflow
 
 		}
 
-		protected abstract MultiValue GetFieldValue (FieldDefinition field);
+		protected abstract MultiValue GetFieldValue (FieldReference field);
 
 		private void ScanLdfld (
 			Instruction operation,
@@ -911,7 +911,7 @@ namespace Mono.Linker.Dataflow
 
 			bool isByRef = code == Code.Ldflda || code == Code.Ldsflda;
 
-			FieldDefinition? field = _context.TryResolve ((FieldReference) operation.Operand);
+			FieldReference field = (FieldReference) operation.Operand;
 			if (field == null) {
 				PushUnknown (currentStack);
 				return;
@@ -1016,9 +1016,9 @@ namespace Mono.Linker.Dataflow
 				case FieldReferenceValue fieldReferenceValue:
 					dereferencedValue = MultiValue.Union (
 						dereferencedValue,
-						CompilerGeneratedState.IsHoistedLocal (fieldReferenceValue.FieldDefinition)
-							? interproceduralState.GetHoistedLocal (new HoistedLocalKey (fieldReferenceValue.FieldDefinition))
-							: GetFieldValue (fieldReferenceValue.FieldDefinition));
+						CompilerGeneratedState.IsHoistedLocal (fieldReferenceValue.Field)
+							? interproceduralState.GetHoistedLocal (new HoistedLocalKey (fieldReferenceValue.Field))
+							: GetFieldValue (fieldReferenceValue.Field));
 					break;
 				case ParameterReferenceValue parameterReferenceValue:
 					dereferencedValue = MultiValue.Union (
@@ -1057,9 +1057,9 @@ namespace Mono.Linker.Dataflow
 			int curBasicBlock,
 			ref InterproceduralState ipState)
 		{
-			if (_context.TryResolve (calledMethod) is MethodDefinition calledMethodDefinition) {
+			if (MethodProxy.TryCreate (calledMethod, _context, out MethodProxy? calledMethodProxy)) {
 				// We resolved the method and can put the ref/out values into the arguments
-				foreach (var parameter in calledMethodDefinition.GetParameters ()) {
+				foreach (var parameter in calledMethodProxy.Value.GetParameters ()) {
 					if (parameter.GetReferenceKind () is not (ReferenceKind.Ref or ReferenceKind.Out))
 						continue;
 					var newByRefValue = _context.Annotations.FlowAnnotations.GetMethodParameterValue (parameter);
