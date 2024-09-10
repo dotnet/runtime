@@ -178,5 +178,41 @@ namespace Melanzana.CodeSign
             }
             AdHocSignMachO(path);
         }
+
+        /// <summary>
+        /// Removes the code signature from the Mach-O file on disk.
+        /// </summary>
+        public static bool TryRemoveCodesign(string filePath, string? outputPath = null)
+        {
+            outputPath ??= filePath;
+            bool removed = false;
+
+            using FileStream inputStream = File.Open(filePath, FileMode.Open, FileAccess.ReadWrite);
+            MachObjectFile objectFile = MachReader.Read(inputStream).Single();
+
+            MachCodeSignature? codeSignature = objectFile.LoadCommands.OfType<MachCodeSignature>().FirstOrDefault();
+            if (codeSignature is not null)
+            {
+                removed = true;
+                objectFile!.LoadCommands.Remove(codeSignature!);
+            }
+            // Don't bother writing the file if the signature was not present and no output path is the same as the input path
+            if (outputPath == filePath)
+            {
+                if (!removed)
+                {
+                    return false;
+                }
+                inputStream.Position = 0;
+                MachWriter.Write(inputStream, objectFile);
+                return removed;
+            }
+            else
+            {
+                using FileStream outputStream = File.Open(outputPath, FileMode.Create, FileAccess.Write);
+                MachWriter.Write(outputStream, objectFile);
+                return removed;
+            }
+        }
     }
 }

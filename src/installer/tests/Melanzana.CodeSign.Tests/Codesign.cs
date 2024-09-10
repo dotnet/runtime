@@ -1,22 +1,24 @@
-// Licensed to the .NET Foundation under one or more agreements.
-// The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Diagnostics;
+using Xunit;
 using System.IO;
+using System.Linq;
+using Melanzana.MachO;
+using Melanzana.Streams;
 using System.Runtime.InteropServices;
+using System.Diagnostics;
 
-namespace Microsoft.NET.HostModel
+namespace Melanzana.CodeSign.Tests
 {
-    internal static class HostModelUtils
+    public class Codesign
     {
         private const string CodesignPath = @"/usr/bin/codesign";
 
-        public static bool IsCodesignAvailable() => File.Exists(CodesignPath);
+        public static bool IsAvailable() => File.Exists(CodesignPath);
 
-        public static (int ExitCode, string StdErr) RunCodesign(string args, string appHostPath)
+        public static (int ExitCode, string StdErr) Run(string args, string appHostPath)
         {
             Debug.Assert(RuntimeInformation.IsOSPlatform(OSPlatform.OSX));
-            Debug.Assert(IsCodesignAvailable());
+            Debug.Assert(IsAvailable());
 
             var psi = new ProcessStartInfo()
             {
@@ -28,6 +30,8 @@ namespace Microsoft.NET.HostModel
 
             using (var p = Process.Start(psi))
             {
+                if (p == null)
+                    return (-1, "Failed to start process");
                 p.WaitForExit();
                 return (p.ExitCode, p.StandardError.ReadToEnd());
             }

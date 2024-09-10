@@ -276,7 +276,7 @@ namespace Microsoft.NET.HostModel.Bundle
 
             if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
             {
-                RemoveCodesignIfNecessary(bundlePath);
+                Signer.TryRemoveCodesign(bundlePath);
             }
 
             // Note: We're comparing file paths both on the OS we're running on as well as on the target OS for the app
@@ -354,19 +354,6 @@ namespace Microsoft.NET.HostModel.Bundle
             }
 
             return bundlePath;
-
-            // Remove mac code signature if applied before bundling
-            static void RemoveCodesignIfNecessary(string bundlePath)
-            {
-                var objectFile = MachReader.Read(File.Open(bundlePath, FileMode.Open, FileAccess.ReadWrite)).FirstOrDefault();
-                Debug.Assert(objectFile is not null);
-
-                // Strip the signature
-                var codeSignature = objectFile!.LoadCommands.OfType<MachCodeSignature>().FirstOrDefault();
-                Debug.Assert(codeSignature is not null);
-                var originalSignatureSize = codeSignature!.FileSize;
-                objectFile!.LoadCommands.Remove(codeSignature);
-            }
         }
     }
 }
