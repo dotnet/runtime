@@ -371,7 +371,7 @@ namespace System.Runtime.CompilerServices
             return table.Length - 1;
         }
 
-        internal void FlushCurrentCache()
+        private void FlushCurrentCache()
         {
             // Do not update this function without also updating the implementation of this in jithelpers.cpp in CoreCLR
             Entry[] table = _table;

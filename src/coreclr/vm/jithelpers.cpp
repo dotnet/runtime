@@ -1992,7 +1992,6 @@ extern "C" CORINFO_GENERIC_HANDLE QCALLTYPE JIT_GenericHandleWorker(MethodDesc *
 } // JIT_GenericHandleWorker
 
 Volatile<FieldDesc*> g_VirtualCache;
-Volatile<FieldDesc*> g_VirtualCache2;
 bool g_fVirtualCacheHandleInited = false;
 
 void FlushGenericCache(PTR_GenericCacheStruct genericCache)
@@ -2036,9 +2035,7 @@ void FlushVirtualFunctionPointerCaches()
         // statics memory to be allocated before initializing g_VirtualCache or g_hVirtualCache2
         // we can safely use the combo of GetBase and GetStaticAddress here.
         FieldDesc *virtualCache = g_VirtualCache;
-        FieldDesc *virtualCache2 = g_VirtualCache2;
         FlushGenericCache((PTR_GenericCacheStruct)virtualCache->GetStaticAddress(virtualCache->GetBase()));
-        FlushGenericCache((PTR_GenericCacheStruct)virtualCache2->GetStaticAddress(virtualCache2->GetBase()));
     }
 }
 
@@ -2071,12 +2068,9 @@ extern "C" void* QCALLTYPE JIT_ResolveVirtualFunctionPointer(QCall::ObjectHandle
         }
 
         g_VirtualCache = CoreLibBinder::GetField(FIELD__VIRTUALDISPATCHHELPERS__CACHE);
-        g_VirtualCache2 = CoreLibBinder::GetField(FIELD__VIRTUALDISPATCHHELPERS__CACHE2);
 #ifdef DEBUG
         FieldDesc *virtualCache = g_VirtualCache;
-        FieldDesc *virtualCache2 = g_VirtualCache2;
         GenericCacheStruct::ValidateLayout(virtualCache->GetApproxFieldTypeHandleThrowing().GetMethodTable());
-        GenericCacheStruct::ValidateLayout(virtualCache2->GetApproxFieldTypeHandleThrowing().GetMethodTable());
 #endif
         VolatileStore(&g_fVirtualCacheHandleInited, true);
     }
