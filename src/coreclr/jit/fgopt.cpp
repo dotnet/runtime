@@ -4828,7 +4828,7 @@ void Compiler::fgDoReversePostOrderLayout()
         regions.BottomRef(index).tryRegionEnd = block;
     };
 
-    ehUpdateTryLasts<decltype(getTryLast), decltype(setTryLast)>(getTryLast, setTryLast);
+    ehSetTryLasts<decltype(getTryLast), decltype(setTryLast)>(getTryLast, setTryLast);
 
     // Now, do the handler regions
     //
@@ -5108,11 +5108,11 @@ void Compiler::fgMoveColdBlocks()
         tryRegionEnds[index] = block;
     };
 
-    ehUpdateTryLasts<decltype(getTryLast), decltype(setTryLast)>(getTryLast, setTryLast);
+    ehSetTryLasts<decltype(getTryLast), decltype(setTryLast)>(getTryLast, setTryLast);
 }
 
 //-------------------------------------------------------------
-// ehUpdateTryLasts: Iterates EH descriptors, updating each try region's
+// ehSetTryLasts: Iterates EH descriptors, updating each try region's
 // end block as determined by getTryLast.
 //
 // Type parameters:
@@ -5126,7 +5126,7 @@ void Compiler::fgMoveColdBlocks()
 //    setTryLast - Functor to update the new try end block for an EH region
 //
 template <typename GetTryLast, typename SetTryLast>
-void Compiler::ehUpdateTryLasts(GetTryLast getTryLast, SetTryLast setTryLast)
+void Compiler::ehSetTryLasts(GetTryLast getTryLast, SetTryLast setTryLast)
 {
     unsigned XTnum = 0;
     for (EHblkDsc* const HBtab : EHClauses(this))
