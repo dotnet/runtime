@@ -164,15 +164,6 @@ jobs:
     frameworks:
       - ${{ parameters.framework }}
     steps:
-    # Copy dotnet-runtime directory to Build.SourcesDirectory (TODO: Update yaml to just use the dotnet-runtime directory)
-    - task: CopyFiles@2
-      inputs:
-        SourceFolder: $(Build.SourcesDirectory)/dotnet-runtime
-        TargetFolder: $(Build.SourcesDirectory)
-    # And remove the original
-    - task: DeleteFiles@1
-      inputs:
-        SourceFolder: $(Build.SourcesDirectory)/dotnet-runtime
     - ${{ if eq(variables['System.TeamProject'], 'public') }}:
       - script: |
           set -x
@@ -181,6 +172,15 @@ jobs:
         displayName:  Clone performance
         workingDirectory: $(Build.SourcesDirectory)
     - ${{ if ne(variables['System.TeamProject'], 'public') }}:
+      # Copy dotnet-runtime directory to Build.SourcesDirectory (TODO: Update yaml to just use the dotnet-runtime directory)
+      - task: CopyFiles@2
+        inputs:
+          SourceFolder: $(Build.SourcesDirectory)/dotnet-runtime
+          TargetFolder: $(Build.SourcesDirectory)
+      # And remove the original
+      - task: DeleteFiles@1
+        inputs:
+          SourceFolder: $(Build.SourcesDirectory)/dotnet-runtime
       - checkout: git://internal/dotnet-performance@${{ parameters.perfBranch }}
         path: performance
     # Extra steps that will be passed to the performance template and run before sending the job to helix (all of which is done in the template)
