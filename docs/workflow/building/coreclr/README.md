@@ -17,7 +17,7 @@ Firstly, make sure you've prepared your environment and installed all the requir
 
 ## The Basics
 
-As explained in the main workflow *README*, you can build the CoreCLR runtime by passing `-subset clr` as argument to the repo's main `build.sh`/`build.cmd` script:
+As explained in the main workflow [*README*](/docs/workflow/README.md), you can build the CoreCLR runtime by passing `-subset clr` as argument to the repo's main `build.sh`/`build.cmd` script:
 
 ```bash
 ./build.sh -subset clr <other args go here>
