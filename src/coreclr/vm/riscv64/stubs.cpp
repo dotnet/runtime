@@ -1268,7 +1268,6 @@ static unsigned BTypeInstr(unsigned opcode, unsigned funct3, unsigned rs1, unsig
 {
     _ASSERTE(!(opcode >> 7));
     _ASSERTE(!(funct3 >> 3));
-
     _ASSERTE(!(rs1 >> 5));
     _ASSERTE(!(rs2 >> 5));
     _ASSERTE(StubLinkerCPU::isValidSimm13(imm13));
@@ -1307,14 +1306,8 @@ static const char* fpRegAbiNames[] = {
 
 void StubLinkerCPU::EmitJumpRegister(IntReg regTarget)
 {
-    static const IntReg zero = 0;
-    EmitJumpAndLinkRegister(zero, regTarget);
-}
-
-void StubLinkerCPU::EmitJumpAndLinkRegister(IntReg regLink, IntReg regTarget)
-{
-    Emit32(0x00000067 | (regLink << 7) | (regTarget << 15));
-    LOG((LF_STUBS, LL_EVERYTHING, "jalr %s, 0(%s)\n", intRegAbiNames[regLink], intRegAbiNames[regTarget]));
+    Emit32(0x00000067 | (regTarget << 15));
+    LOG((LF_STUBS, LL_EVERYTHING, "jalr zero, 0(%s)\n", intRegAbiNames[regTarget]));
 }
 
 void StubLinkerCPU::EmitLoad(IntReg dest, IntReg srcAddr, int offset)

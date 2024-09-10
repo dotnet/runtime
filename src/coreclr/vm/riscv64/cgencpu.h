@@ -391,7 +391,6 @@ public:
 
     void EmitMovConstant(IntReg target, UINT64 constant);
     void EmitJumpRegister(IntReg regTarget);
-    void EmitJumpAndLinkRegister(IntReg regLink, IntReg regTarget);
     void EmitMovReg(IntReg dest, IntReg source);
     void EmitMovReg(FloatReg dest, FloatReg source);
 
