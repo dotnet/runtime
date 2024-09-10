@@ -452,8 +452,8 @@ namespace Wasm.Build.Tests
                         {
                             ((delegate* unmanaged<void>)&A.Conflict.C)();
                             ((delegate* unmanaged<void>)&B.Conflict.C)();
-                            ((delegate* unmanaged<void>)&A.Conflict.C\u733f)();
-                            ((delegate* unmanaged<void>)&B.Conflict.C\u733f)();
+                            ((delegate* unmanaged<void>)&A.Conflict.C_\u733f)();
+                            ((delegate* unmanaged<void>)&B.Conflict.C_\u733f)();
                             return 42;
                         }
                     }
@@ -498,8 +498,14 @@ namespace Wasm.Build.Tests
             output = RunAndTestWasmApp(buildArgs, buildDir: _projectDir, expectedExitCode: 42, host: host, id: id);
             Assert.Contains("A.Conflict.C", output);
             Assert.Contains("B.Conflict.C", output);
-            Assert.Contains("A.Conflict.C\U0001F412", output);
-            Assert.Contains("B.Conflict.C\U0001F412", output);
+            if (OperationSystem.IsWindows()) {
+                // Windows console unicode support is not great
+                Assert.Contains("A.Conflict.C_", output);
+                Assert.Contains("B.Conflict.C_", output);
+            } else {
+                Assert.Contains("A.Conflict.C_\U0001F412", output);
+                Assert.Contains("B.Conflict.C_\U0001F412", output);
+            }
         }
 
         [Theory]
