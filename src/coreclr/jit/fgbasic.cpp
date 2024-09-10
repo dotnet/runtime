@@ -6723,6 +6723,57 @@ BasicBlock* Compiler::fgNewBBinRegionWorker(BBKinds     jumpKind,
     return newBlk;
 }
 
+//-----------------------------------------------------------------------------
+// fgNewBBatTryRegionEnd: Creates and inserts a new block at the end of the specified
+// try region, updating the end pointers in the EH table as necessary.
+//
+// Arguments:
+//    jumpKind - The jump kind of the new block
+//    tryIndex - The index of the try region to insert the new block in
+//
+// Returns:
+//    The new block
+//
+// Notes:
+//    newBlock will be in the try region specified by tryIndex, which may not necessarily
+//    be the same as oldTryLast->getTryIndex() if the latter is a child region.
+//    However, newBlock and oldTryLast will be in the same handler region.
+//
+BasicBlock* Compiler::fgNewBBatTryRegionEnd(BBKinds jumpKind, unsigned tryIndex)
+{
+    EHblkDsc*         HBtab      = ehGetDsc(tryIndex);
+    BasicBlock* const oldTryLast = HBtab->ebdTryLast;
+    BasicBlock* const newBlock   = fgNewBBafter(jumpKind, oldTryLast, /* extendRegion */ false);
+    newBlock->setTryIndex(tryIndex);
+    newBlock->copyHndIndex(oldTryLast);
+
+    // Update this try region's (and all parent try regions') last block pointer
+    //
+    for (unsigned XTnum = tryIndex; (XTnum < compHndBBtabCount) && (HBtab->ebdTryLast == oldTryLast); XTnum++, HBtab++)
+    {
+        assert((XTnum == tryIndex) || (XTnum == ehGetEnclosingTryIndex(XTnum - 1)));
+        fgSetTryEnd(HBtab, newBlock);
+    }
+
+    // If we inserted newBlock at the end of a handler region, repeat the above pass for handler regions
+    //
+    if (newBlock->hasHndIndex())
+    {
+        const unsigned hndIndex = newBlock->getHndIndex();
+        HBtab                   = ehGetDsc(hndIndex);
+        for (unsigned XTnum = hndIndex; (XTnum < compHndBBtabCount) && (HBtab->ebdHndLast == oldTryLast);
+             XTnum++, HBtab++)
+        {
+            assert((XTnum == hndIndex) || (XTnum == ehGetEnclosingHndIndex(XTnum - 1)));
+            fgSetHndEnd(HBtab, newBlock);
+        }
+    }
+
+    assert(newBlock->getTryIndex() == tryIndex);
+    assert(BasicBlock::sameHndRegion(newBlock, oldTryLast));
+    return newBlock;
+}
+
 //------------------------------------------------------------------------
 // fgUseThrowHelperBlocks: Determinate does compiler use throw helper blocks.
 //

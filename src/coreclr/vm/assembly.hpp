@@ -55,14 +55,14 @@ class Assembly
     friend class ClrDataAccess;
 
 private:
-    Assembly(PEAssembly *pPEAssembly, DebuggerAssemblyControlFlags debuggerFlags, BOOL fIsCollectible);
-    void Init(AllocMemTracker *pamTracker, LoaderAllocator *pLoaderAllocator);
+    Assembly(PEAssembly *pPEAssembly, DebuggerAssemblyControlFlags debuggerFlags, LoaderAllocator* pLoaderAllocator);
+    void Init(AllocMemTracker *pamTracker);
 
 public:
     void StartUnload();
     void Terminate( BOOL signalProfiler = TRUE );
 
-    static Assembly *Create(PEAssembly *pPEAssembly, DebuggerAssemblyControlFlags debuggerFlags, BOOL fIsCollectible, AllocMemTracker *pamTracker, LoaderAllocator *pLoaderAllocator);
+    static Assembly *Create(PEAssembly *pPEAssembly, DebuggerAssemblyControlFlags debuggerFlags, AllocMemTracker *pamTracker, LoaderAllocator *pLoaderAllocator);
     static void Initialize();
 
     BOOL IsSystem() { WRAPPER_NO_CONTRACT; return m_pPEAssembly->IsSystem(); }
