@@ -267,36 +267,31 @@ namespace System.Net.WebSockets
 
         private static void DisposeSafe(IDisposable? resource, AsyncMutex mutex)
         {
-            if (resource is null)
+            if (resource is not null)
             {
-                return;
-            }
+                Task lockTask = mutex.EnterAsync(CancellationToken.None);
 
-            Task lockTask = mutex.EnterAsync(CancellationToken.None);
-            if (lockTask.IsCompleted)
-            {
-                if (NetEventSource.Log.IsEnabled()) NetEventSource.MutexEntered(mutex);
-                DisposeSafeCore(resource, mutex);
-            }
-            else
-            {
-                Observe(
-                    DisposeSafeAsync(resource, mutex, lockTask),
-                    thisObj: resource);
-            }
+                if (lockTask.IsCompleted)
+                {
+                    if (NetEventSource.Log.IsEnabled()) NetEventSource.MutexEntered(mutex);
 
-            static async Task DisposeSafeAsync(IDisposable resource, AsyncMutex mutex, Task lockTask)
-            {
-                await lockTask.ConfigureAwait(false);
-                if (NetEventSource.Log.IsEnabled()) NetEventSource.MutexEntered(mutex);
-                DisposeSafeCore(resource, mutex);
-            }
+                    resource.Dispose();
+                    mutex.Exit();
 
-            static void DisposeSafeCore(IDisposable resource, AsyncMutex mutex)
-            {
-                resource.Dispose();
-                mutex.Exit();
-                if (NetEventSource.Log.IsEnabled()) NetEventSource.MutexExited(mutex);
+                    if (NetEventSource.Log.IsEnabled()) NetEventSource.MutexExited(mutex);
+                }
+                else
+                {
+                    lockTask.GetAwaiter().UnsafeOnCompleted(() =>
+                    {
+                        if (NetEventSource.Log.IsEnabled()) NetEventSource.MutexEntered(mutex);
+
+                        resource.Dispose();
+                        mutex.Exit();
+
+                        if (NetEventSource.Log.IsEnabled()) NetEventSource.MutexExited(mutex);
+                    });
+                }
             }
         }
 
