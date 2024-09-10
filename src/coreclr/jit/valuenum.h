@@ -168,7 +168,7 @@ enum VNFunc
 #define GTNODE(en, st, cm, ivn, ok) VNF_##en,
 #include "gtlist.h"
     VNF_Boundary = GT_COUNT,
-#define ValueNumFuncDef(nm, arity, commute, knownNonNull, sharedStatic, extra) VNF_##nm,
+#define ValueNumFuncDef(nm, arity, commute, knownNonNull, sharedStatic) VNF_##nm,
 #include "valuenumfuncs.h"
     VNF_COUNT
 };
@@ -1352,22 +1352,16 @@ public:
     }
 
 #if defined(FEATURE_HW_INTRINSICS)
-    ValueNum EvalHWIntrinsicFunUnary(
-        GenTreeHWIntrinsic* tree, VNFunc func, ValueNum arg0VN, bool encodeResultType, ValueNum resultTypeVN);
+    ValueNum EvalHWIntrinsicFunUnary(GenTreeHWIntrinsic* tree, VNFunc func, ValueNum arg0VN, ValueNum resultTypeVN);
 
-    ValueNum EvalHWIntrinsicFunBinary(GenTreeHWIntrinsic* tree,
-                                      VNFunc              func,
-                                      ValueNum            arg0VN,
-                                      ValueNum            arg1VN,
-                                      bool                encodeResultType,
-                                      ValueNum            resultTypeVN);
+    ValueNum EvalHWIntrinsicFunBinary(
+        GenTreeHWIntrinsic* tree, VNFunc func, ValueNum arg0VN, ValueNum arg1VN, ValueNum resultTypeVN);
 
     ValueNum EvalHWIntrinsicFunTernary(GenTreeHWIntrinsic* tree,
                                        VNFunc              func,
                                        ValueNum            arg0VN,
                                        ValueNum            arg1VN,
                                        ValueNum            arg2VN,
-                                       bool                encodeResultType,
                                        ValueNum            resultTypeVN);
 #endif // FEATURE_HW_INTRINSICS
 

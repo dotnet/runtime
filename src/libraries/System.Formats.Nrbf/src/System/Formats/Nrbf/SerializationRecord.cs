@@ -13,7 +13,7 @@ namespace System.Formats.Nrbf;
 /// <remarks>
 ///  <para>
 ///   Every instance returned to the end user can be either <see cref="PrimitiveTypeRecord{T}"/>,
-///   a <see cref="ClassRecord"/> or an <see cref="ArrayRecord"/>.
+///   a <see cref="ClassRecord"/>, or an <see cref="ArrayRecord"/>.
 ///  </para>
 /// </remarks>
 [DebuggerDisplay("{RecordType}, {Id}")]
@@ -46,10 +46,10 @@ public abstract class SerializationRecord
     /// </summary>
     /// <remarks>
     /// <para>This method ignores assembly names.</para>
-    /// <para>This method does NOT take into account member names or their generic types.</para>
+    /// <para>This method does NOT take into account member names or their types.</para>
     /// </remarks>
     /// <param name="type">The type to compare against.</param>
-    /// <returns><see langword="true" /> if the serialized type name match provided type; otherwise, <see langword="false" />.</returns>
+    /// <returns><see langword="true" /> if the serialized type name matches the provided type; otherwise, <see langword="false" />.</returns>
     public bool TypeNameMatches(Type type) => Matches(type, TypeName);
 
     private static bool Matches(Type type, TypeName typeName)
@@ -107,7 +107,7 @@ public abstract class SerializationRecord
     }
 
     /// <summary>
-    /// Gets the primitive, string or null record value.
+    /// Gets the primitive, string, or null record value.
     /// For reference records, it returns the referenced record.
     /// For other records, it returns the records themselves.
     /// </summary>

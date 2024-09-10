@@ -21,7 +21,7 @@ using MultiValue = ILLink.Shared.DataFlow.ValueSet<ILLink.Shared.DataFlow.Single
 
 namespace ILLink.RoslynAnalyzer.TrimAnalysis
 {
-	public class TrimDataFlowAnalysis : LocalDataFlowAnalysis<
+	internal sealed class TrimDataFlowAnalysis : LocalDataFlowAnalysis<
 		MultiValue,
 		FeatureContext,
 		ValueSetLattice<SingleValue>,
@@ -52,9 +52,9 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 			_dataFlowAnalyzerContext = dataFlowAnalyzerContext;
 		}
 
-		public IEnumerable<Diagnostic> CollectDiagnostics ()
+		public void ReportDiagnostics (Action<Diagnostic> reportDiagnostic)
 		{
-			return TrimAnalysisPatterns.CollectDiagnostics (_dataFlowAnalyzerContext);
+			TrimAnalysisPatterns.ReportDiagnostics (_dataFlowAnalyzerContext, reportDiagnostic);
 		}
 
 		protected override TrimAnalysisVisitor GetVisitor (

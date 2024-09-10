@@ -139,7 +139,7 @@ namespace System.Tests
         public void OSVersion_MatchesPlatform()
         {
             PlatformID id = Environment.OSVersion.Platform;
-            PlatformID expected = OperatingSystem.IsWindows() ? PlatformID.Win32NT : OperatingSystem.IsBrowser() ? PlatformID.Other : PlatformID.Unix;
+            PlatformID expected = OperatingSystem.IsWindows() ? PlatformID.Win32NT : (OperatingSystem.IsBrowser() || OperatingSystem.IsWasi()) ? PlatformID.Other : PlatformID.Unix;
             Assert.Equal(expected, id);
         }
 
@@ -154,7 +154,7 @@ namespace System.Tests
 
             Assert.Contains(version.ToString(2), versionString);
 
-            string expectedOS = OperatingSystem.IsWindows() ? "Windows " : OperatingSystem.IsBrowser() ? "Other " : "Unix ";
+            string expectedOS = OperatingSystem.IsWindows() ? "Windows " : (OperatingSystem.IsBrowser() || OperatingSystem.IsWasi()) ? "Other " : "Unix ";
             Assert.Contains(expectedOS, versionString);
         }
 
@@ -584,14 +584,14 @@ namespace System.Tests
                 if (usage.UserTime == TimeSpan.Zero)
                 {
                     // Environment should return 0 for all values
-                    Assert.Equal(TimeSpan.Zero, usage.PrivilegedTime);
-                    Assert.Equal(TimeSpan.Zero, usage.TotalTime);
+                    Assert.True(usage.PrivilegedTime == TimeSpan.Zero, $"Unexpected privileged time: {usage.PrivilegedTime} while having user time: {usage.UserTime}");
+                    Assert.True(usage.TotalTime == TimeSpan.Zero, $"Unexpected Zero Total while having privileged time: {usage.PrivilegedTime} and user time: {usage.UserTime}");
                 }
                 else
                 {
-                    // Mobile platforms emulators may return non-zero values
-                    Assert.NotEqual(TimeSpan.Zero, usage.PrivilegedTime);
-                    Assert.Equal(usage.TotalTime, usage.UserTime + usage.PrivilegedTime);
+                    // Mobile platforms emulators may return non-zero values. tvOS is possible returning Zero privileged time though.
+                    Assert.True(PlatformDetection.IstvOS || TimeSpan.Zero != usage.PrivilegedTime, $"Unexpected Zero privileged time while having user time: {usage.UserTime}");
+                    Assert.True(usage.TotalTime == usage.UserTime + usage.PrivilegedTime, $"Unexpected Total time: {usage.TotalTime} while having privileged time: {usage.PrivilegedTime} and user time: {usage.UserTime}");
                 }
             }
             else

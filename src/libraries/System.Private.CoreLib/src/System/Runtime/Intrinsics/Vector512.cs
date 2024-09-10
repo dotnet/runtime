@@ -98,11 +98,11 @@ namespace System.Runtime.Intrinsics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector512<T> AndNot<T>(Vector512<T> left, Vector512<T> right) => left & ~right;
 
-        /// <summary>Reinterprets a <see cref="Vector512{TFrom}" /> as a new <see cref="Vector512{TTo}" />.</summary>
+        /// <summary>Reinterprets a <see langword="Vector512&lt;TFrom&gt;" /> as a new <see langword="Vector512&lt;TTo&gt;" />.</summary>
         /// <typeparam name="TFrom">The type of the elements in the input vector.</typeparam>
         /// <typeparam name="TTo">The type of the elements in the output vector.</typeparam>
         /// <param name="vector">The vector to reinterpret.</param>
-        /// <returns><paramref name="vector" /> reinterpreted as a new <see cref="Vector512{TTo}" />.</returns>
+        /// <returns><paramref name="vector" /> reinterpreted as a new <see langword="Vector512&lt;TTo&gt;" />.</returns>
         /// <exception cref="NotSupportedException">The type of <paramref name="vector" /> (<typeparamref name="TFrom" />) or the type of the target (<typeparamref name="TTo" />) is not supported.</exception>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -118,102 +118,102 @@ namespace System.Runtime.Intrinsics
 #endif
         }
 
-        /// <summary>Reinterprets a <see cref="Vector512{T}" /> as a new <see cref="Vector512{Byte}" />.</summary>
+        /// <summary>Reinterprets a <see cref="Vector512{T}" /> as a new <see langword="Vector512&lt;Byte&gt;" />.</summary>
         /// <typeparam name="T">The type of the elements in the vector.</typeparam>
         /// <param name="vector">The vector to reinterpret.</param>
-        /// <returns><paramref name="vector" /> reinterpreted as a new <see cref="Vector512{Byte}" />.</returns>
+        /// <returns><paramref name="vector" /> reinterpreted as a new <see langword="Vector512&lt;Byte&gt;" />.</returns>
         /// <exception cref="NotSupportedException">The type of <paramref name="vector" /> (<typeparamref name="T" />) is not supported.</exception>
         [Intrinsic]
         public static Vector512<byte> AsByte<T>(this Vector512<T> vector) => vector.As<T, byte>();
 
-        /// <summary>Reinterprets a <see cref="Vector512{T}" /> as a new <see cref="Vector512{Double}" />.</summary>
+        /// <summary>Reinterprets a <see cref="Vector512{T}" /> as a new <see langword="Vector512&lt;Double&gt;" />.</summary>
         /// <typeparam name="T">The type of the elements in the vector.</typeparam>
         /// <param name="vector">The vector to reinterpret.</param>
-        /// <returns><paramref name="vector" /> reinterpreted as a new <see cref="Vector512{Double}" />.</returns>
+        /// <returns><paramref name="vector" /> reinterpreted as a new <see langword="Vector512&lt;Double&gt;" />.</returns>
         /// <exception cref="NotSupportedException">The type of <paramref name="vector" /> (<typeparamref name="T" />) is not supported.</exception>
         [Intrinsic]
         public static Vector512<double> AsDouble<T>(this Vector512<T> vector) => vector.As<T, double>();
 
-        /// <summary>Reinterprets a <see cref="Vector512{T}" /> as a new <see cref="Vector512{Int16}" />.</summary>
+        /// <summary>Reinterprets a <see cref="Vector512{T}" /> as a new <see langword="Vector512&lt;Int16&gt;" />.</summary>
         /// <typeparam name="T">The type of the elements in the vector.</typeparam>
         /// <param name="vector">The vector to reinterpret.</param>
-        /// <returns><paramref name="vector" /> reinterpreted as a new <see cref="Vector512{Int16}" />.</returns>
+        /// <returns><paramref name="vector" /> reinterpreted as a new <see langword="Vector512&lt;Int16&gt;" />.</returns>
         /// <exception cref="NotSupportedException">The type of <paramref name="vector" /> (<typeparamref name="T" />) is not supported.</exception>
         [Intrinsic]
         public static Vector512<short> AsInt16<T>(this Vector512<T> vector) => vector.As<T, short>();
 
-        /// <summary>Reinterprets a <see cref="Vector512{T}" /> as a new <see cref="Vector512{Int32}" />.</summary>
+        /// <summary>Reinterprets a <see cref="Vector512{T}" /> as a new <see langword="Vector512&lt;Int32&gt;" />.</summary>
         /// <typeparam name="T">The type of the elements in the vector.</typeparam>
         /// <param name="vector">The vector to reinterpret.</param>
-        /// <returns><paramref name="vector" /> reinterpreted as a new <see cref="Vector512{Int32}" />.</returns>
+        /// <returns><paramref name="vector" /> reinterpreted as a new <see langword="Vector512&lt;Int32&gt;" />.</returns>
         /// <exception cref="NotSupportedException">The type of <paramref name="vector" /> (<typeparamref name="T" />) is not supported.</exception>
         [Intrinsic]
         public static Vector512<int> AsInt32<T>(this Vector512<T> vector) => vector.As<T, int>();
 
-        /// <summary>Reinterprets a <see cref="Vector512{T}" /> as a new <see cref="Vector512{Int64}" />.</summary>
+        /// <summary>Reinterprets a <see cref="Vector512{T}" /> as a new <see langword="Vector512&lt;Int64&gt;" />.</summary>
         /// <typeparam name="T">The type of the elements in the vector.</typeparam>
         /// <param name="vector">The vector to reinterpret.</param>
-        /// <returns><paramref name="vector" /> reinterpreted as a new <see cref="Vector512{Int64}" />.</returns>
+        /// <returns><paramref name="vector" /> reinterpreted as a new <see langword="Vector512&lt;Int64&gt;" />.</returns>
         /// <exception cref="NotSupportedException">The type of <paramref name="vector" /> (<typeparamref name="T" />) is not supported.</exception>
         [Intrinsic]
         public static Vector512<long> AsInt64<T>(this Vector512<T> vector) => vector.As<T, long>();
 
-        /// <summary>Reinterprets a <see cref="Vector512{T}" /> as a new <see cref="Vector512{IntPtr}" />.</summary>
+        /// <summary>Reinterprets a <see cref="Vector512{T}" /> as a new <see langword="Vector512&lt;IntPtr&gt;" />.</summary>
         /// <typeparam name="T">The type of the elements in the vector.</typeparam>
         /// <param name="vector">The vector to reinterpret.</param>
-        /// <returns><paramref name="vector" /> reinterpreted as a new <see cref="Vector512{IntPtr}" />.</returns>
+        /// <returns><paramref name="vector" /> reinterpreted as a new <see langword="Vector512&lt;IntPtr&gt;" />.</returns>
         /// <exception cref="NotSupportedException">The type of <paramref name="vector" /> (<typeparamref name="T" />) is not supported.</exception>
         [Intrinsic]
         public static Vector512<nint> AsNInt<T>(this Vector512<T> vector) => vector.As<T, nint>();
 
-        /// <summary>Reinterprets a <see cref="Vector512{T}" /> as a new <see cref="Vector512{UIntPtr}" />.</summary>
+        /// <summary>Reinterprets a <see cref="Vector512{T}" /> as a new <see langword="Vector512&lt;UIntPtr&gt;" />.</summary>
         /// <typeparam name="T">The type of the elements in the vector.</typeparam>
         /// <param name="vector">The vector to reinterpret.</param>
-        /// <returns><paramref name="vector" /> reinterpreted as a new <see cref="Vector512{UIntPtr}" />.</returns>
+        /// <returns><paramref name="vector" /> reinterpreted as a new <see langword="Vector512&lt;UIntPtr&gt;" />.</returns>
         /// <exception cref="NotSupportedException">The type of <paramref name="vector" /> (<typeparamref name="T" />) is not supported.</exception>
         [Intrinsic]
         [CLSCompliant(false)]
         public static Vector512<nuint> AsNUInt<T>(this Vector512<T> vector) => vector.As<T, nuint>();
 
-        /// <summary>Reinterprets a <see cref="Vector512{T}" /> as a new <see cref="Vector512{SByte}" />.</summary>
+        /// <summary>Reinterprets a <see cref="Vector512{T}" /> as a new <see langword="Vector512&lt;SByte&gt;" />.</summary>
         /// <typeparam name="T">The type of the elements in the vector.</typeparam>
         /// <param name="vector">The vector to reinterpret.</param>
-        /// <returns><paramref name="vector" /> reinterpreted as a new <see cref="Vector512{SByte}" />.</returns>
+        /// <returns><paramref name="vector" /> reinterpreted as a new <see langword="Vector512&lt;SByte&gt;" />.</returns>
         /// <exception cref="NotSupportedException">The type of <paramref name="vector" /> (<typeparamref name="T" />) is not supported.</exception>
         [Intrinsic]
         [CLSCompliant(false)]
         public static Vector512<sbyte> AsSByte<T>(this Vector512<T> vector) => vector.As<T, sbyte>();
 
-        /// <summary>Reinterprets a <see cref="Vector512{T}" /> as a new <see cref="Vector512{Single}" />.</summary>
+        /// <summary>Reinterprets a <see cref="Vector512{T}" /> as a new <see langword="Vector512&lt;Single&gt;" />.</summary>
         /// <typeparam name="T">The type of the elements in the vector.</typeparam>
         /// <param name="vector">The vector to reinterpret.</param>
-        /// <returns><paramref name="vector" /> reinterpreted as a new <see cref="Vector512{Single}" />.</returns>
+        /// <returns><paramref name="vector" /> reinterpreted as a new <see langword="Vector512&lt;Single&gt;" />.</returns>
         /// <exception cref="NotSupportedException">The type of <paramref name="vector" /> (<typeparamref name="T" />) is not supported.</exception>
         [Intrinsic]
         public static Vector512<float> AsSingle<T>(this Vector512<T> vector) => vector.As<T, float>();
 
-        /// <summary>Reinterprets a <see cref="Vector512{T}" /> as a new <see cref="Vector512{UInt16}" />.</summary>
+        /// <summary>Reinterprets a <see cref="Vector512{T}" /> as a new <see langword="Vector512&lt;UInt16&gt;" />.</summary>
         /// <typeparam name="T">The type of the elements in the vector.</typeparam>
         /// <param name="vector">The vector to reinterpret.</param>
-        /// <returns><paramref name="vector" /> reinterpreted as a new <see cref="Vector512{UInt16}" />.</returns>
+        /// <returns><paramref name="vector" /> reinterpreted as a new <see langword="Vector512&lt;UInt16&gt;" />.</returns>
         /// <exception cref="NotSupportedException">The type of <paramref name="vector" /> (<typeparamref name="T" />) is not supported.</exception>
         [Intrinsic]
         [CLSCompliant(false)]
         public static Vector512<ushort> AsUInt16<T>(this Vector512<T> vector) => vector.As<T, ushort>();
 
-        /// <summary>Reinterprets a <see cref="Vector512{T}" /> as a new <see cref="Vector512{UInt32}" />.</summary>
+        /// <summary>Reinterprets a <see cref="Vector512{T}" /> as a new <see langword="Vector512&lt;UInt32&gt;" />.</summary>
         /// <typeparam name="T">The type of the elements in the vector.</typeparam>
         /// <param name="vector">The vector to reinterpret.</param>
-        /// <returns><paramref name="vector" /> reinterpreted as a new <see cref="Vector512{UInt32}" />.</returns>
+        /// <returns><paramref name="vector" /> reinterpreted as a new <see langword="Vector512&lt;UInt32&gt;" />.</returns>
         /// <exception cref="NotSupportedException">The type of <paramref name="vector" /> (<typeparamref name="T" />) is not supported.</exception>
         [Intrinsic]
         [CLSCompliant(false)]
         public static Vector512<uint> AsUInt32<T>(this Vector512<T> vector) => vector.As<T, uint>();
 
-        /// <summary>Reinterprets a <see cref="Vector512{T}" /> as a new <see cref="Vector512{UInt64}" />.</summary>
+        /// <summary>Reinterprets a <see cref="Vector512{T}" /> as a new <see langword="Vector512&lt;UInt64&gt;" />.</summary>
         /// <typeparam name="T">The type of the elements in the vector.</typeparam>
         /// <param name="vector">The vector to reinterpret.</param>
-        /// <returns><paramref name="vector" /> reinterpreted as a new <see cref="Vector512{UInt64}" />.</returns>
+        /// <returns><paramref name="vector" /> reinterpreted as a new <see langword="Vector512&lt;UInt64&gt;" />.</returns>
         /// <exception cref="NotSupportedException">The type of <paramref name="vector" /> (<typeparamref name="T" />) is not supported.</exception>
         [Intrinsic]
         [CLSCompliant(false)]
@@ -256,7 +256,7 @@ namespace System.Runtime.Intrinsics
         /// <typeparam name="T">The type of the elements in the vector.</typeparam>
         /// <param name="left">The vector to bitwise-and with <paramref name="right" />.</param>
         /// <param name="right">The vector to bitwise-and with <paramref name="left" />.</param>
-        /// <returns>The bitwise-and of <paramref name="left" /> and <paramref name="right"/>.</returns>
+        /// <returns>The bitwise-and of <paramref name="left" /> and <paramref name="right" />.</returns>
         /// <exception cref="NotSupportedException">The type of <paramref name="left" /> and <paramref name="right" /> (<typeparamref name="T" />) is not supported.</exception>
         [Intrinsic]
         public static Vector512<T> BitwiseAnd<T>(Vector512<T> left, Vector512<T> right) => left & right;
@@ -265,7 +265,7 @@ namespace System.Runtime.Intrinsics
         /// <typeparam name="T">The type of the elements in the vector.</typeparam>
         /// <param name="left">The vector to bitwise-or with <paramref name="right" />.</param>
         /// <param name="right">The vector to bitwise-or with <paramref name="left" />.</param>
-        /// <returns>The bitwise-or of <paramref name="left" /> and <paramref name="right"/>.</returns>
+        /// <returns>The bitwise-or of <paramref name="left" /> and <paramref name="right" />.</returns>
         /// <exception cref="NotSupportedException">The type of <paramref name="left" /> and <paramref name="right" /> (<typeparamref name="T" />) is not supported.</exception>
         [Intrinsic]
         public static Vector512<T> BitwiseOr<T>(Vector512<T> left, Vector512<T> right) => left | right;
@@ -340,7 +340,7 @@ namespace System.Runtime.Intrinsics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector512<T> ConditionalSelect<T>(Vector512<T> condition, Vector512<T> left, Vector512<T> right) => (left & condition) | AndNot(right, condition);
 
-        /// <summary>Converts a <see cref="Vector512{Int64}" /> to a <see cref="Vector512{Double}" />.</summary>
+        /// <summary>Converts a <see langword="Vector512&lt;Int64&gt;" /> to a <see langword="Vector512&lt;Double&gt;" />.</summary>
         /// <param name="vector">The vector to convert.</param>
         /// <returns>The converted vector.</returns>
         [Intrinsic]
@@ -353,7 +353,7 @@ namespace System.Runtime.Intrinsics
             );
         }
 
-        /// <summary>Converts a <see cref="Vector512{UInt64}" /> to a <see cref="Vector512{Double}" />.</summary>
+        /// <summary>Converts a <see langword="Vector512&lt;UInt64&gt;" /> to a <see langword="Vector512&lt;Double&gt;" />.</summary>
         /// <param name="vector">The vector to convert.</param>
         /// <returns>The converted vector.</returns>
         [Intrinsic]
@@ -367,7 +367,7 @@ namespace System.Runtime.Intrinsics
             );
         }
 
-        /// <summary>Converts a <see cref="Vector512{Single}" /> to a <see cref="Vector512{Int32}" /> using saturation on overflow.</summary>
+        /// <summary>Converts a <see langword="Vector512&lt;Single&gt;" /> to a <see langword="Vector512&lt;Int32&gt;" /> using saturation on overflow.</summary>
         /// <param name="vector">The vector to convert.</param>
         /// <returns>The converted vector.</returns>
         [Intrinsic]
@@ -380,7 +380,7 @@ namespace System.Runtime.Intrinsics
             );
         }
 
-        /// <summary>Converts a <see cref="Vector512{Single}" /> to a <see cref="Vector512{Int32}" /> using platform specific behavior on overflow.</summary>
+        /// <summary>Converts a <see langword="Vector512&lt;Single&gt;" /> to a <see langword="Vector512&lt;Int32&gt;" /> using platform specific behavior on overflow.</summary>
         /// <param name="vector">The vector to convert.</param>
         /// <returns>The converted vector.</returns>
         [Intrinsic]
@@ -393,7 +393,7 @@ namespace System.Runtime.Intrinsics
             );
         }
 
-        /// <summary>Converts a <see cref="Vector512{Double}" /> to a <see cref="Vector512{Int64}" /> using saturation on overflow.</summary>
+        /// <summary>Converts a <see langword="Vector512&lt;Double&gt;" /> to a <see langword="Vector512&lt;Int64&gt;" /> using saturation on overflow.</summary>
         /// <param name="vector">The vector to convert.</param>
         /// <returns>The converted vector.</returns>
         [Intrinsic]
@@ -406,7 +406,7 @@ namespace System.Runtime.Intrinsics
             );
         }
 
-        /// <summary>Converts a <see cref="Vector512{Double}" /> to a <see cref="Vector512{Int64}" /> using platform specific behavior on overflow.</summary>
+        /// <summary>Converts a <see langword="Vector512&lt;Double&gt;" /> to a <see langword="Vector512&lt;Int64&gt;" /> using platform specific behavior on overflow.</summary>
         /// <param name="vector">The vector to convert.</param>
         /// <returns>The converted vector.</returns>
         [Intrinsic]
@@ -419,7 +419,7 @@ namespace System.Runtime.Intrinsics
             );
         }
 
-        /// <summary>Converts a <see cref="Vector512{Int32}" /> to a <see cref="Vector512{Single}" />.</summary>
+        /// <summary>Converts a <see langword="Vector512&lt;Int32&gt;" /> to a <see langword="Vector512&lt;Single&gt;" />.</summary>
         /// <param name="vector">The vector to convert.</param>
         /// <returns>The converted vector.</returns>
         [Intrinsic]
@@ -432,7 +432,7 @@ namespace System.Runtime.Intrinsics
             );
         }
 
-        /// <summary>Converts a <see cref="Vector512{UInt32}" /> to a <see cref="Vector512{Single}" />.</summary>
+        /// <summary>Converts a <see langword="Vector512&lt;UInt32&gt;" /> to a <see langword="Vector512&lt;Single&gt;" />.</summary>
         /// <param name="vector">The vector to convert.</param>
         /// <returns>The converted vector.</returns>
         [Intrinsic]
@@ -446,7 +446,7 @@ namespace System.Runtime.Intrinsics
             );
         }
 
-        /// <summary>Converts a <see cref="Vector512{Single}" /> to a <see cref="Vector512{UInt32}" /> using saturation on overflow.</summary>
+        /// <summary>Converts a <see langword="Vector512&lt;Single&gt;" /> to a <see langword="Vector512&lt;UInt32&gt;" /> using saturation on overflow.</summary>
         /// <param name="vector">The vector to convert.</param>
         /// <returns>The converted vector.</returns>
         [Intrinsic]
@@ -460,7 +460,7 @@ namespace System.Runtime.Intrinsics
             );
         }
 
-        /// <summary>Converts a <see cref="Vector512{Single}" /> to a <see cref="Vector512{UInt32}" /> using platform specific behavior on overflow.</summary>
+        /// <summary>Converts a <see langword="Vector512&lt;Single&gt;" /> to a <see langword="Vector512&lt;UInt32&gt;" /> using platform specific behavior on overflow.</summary>
         /// <param name="vector">The vector to convert.</param>
         /// <returns>The converted vector.</returns>
         [Intrinsic]
@@ -474,7 +474,7 @@ namespace System.Runtime.Intrinsics
             );
         }
 
-        /// <summary>Converts a <see cref="Vector512{Double}" /> to a <see cref="Vector512{UInt64}" /> using saturation on overflow.</summary>
+        /// <summary>Converts a <see langword="Vector512&lt;Double&gt;" /> to a <see langword="Vector512&lt;UInt64&gt;" /> using saturation on overflow.</summary>
         /// <param name="vector">The vector to convert.</param>
         /// <returns>The converted vector.</returns>
         [Intrinsic]
@@ -488,7 +488,7 @@ namespace System.Runtime.Intrinsics
             );
         }
 
-        /// <summary>Converts a <see cref="Vector512{Double}" /> to a <see cref="Vector512{UInt64}" /> using platform specific behavior on overflow.</summary>
+        /// <summary>Converts a <see langword="Vector512&lt;Double&gt;" /> to a <see langword="Vector512&lt;UInt64&gt;" /> using platform specific behavior on overflow.</summary>
         /// <param name="vector">The vector to convert.</param>
         /// <returns>The converted vector.</returns>
         [Intrinsic]
@@ -635,88 +635,88 @@ namespace System.Runtime.Intrinsics
             return Create(vector, vector);
         }
 
-        /// <summary>Creates a new <see cref="Vector512{Byte}" /> instance with all elements initialized to the specified value.</summary>
+        /// <summary>Creates a new <see langword="Vector512&lt;Byte&gt;" /> instance with all elements initialized to the specified value.</summary>
         /// <param name="value">The value that all elements will be initialized to.</param>
-        /// <returns>A new <see cref="Vector512{Byte}" /> with all elements initialized to <paramref name="value" />.</returns>
+        /// <returns>A new <see langword="Vector512&lt;Byte&gt;" /> with all elements initialized to <paramref name="value" />.</returns>
         /// <remarks>On x86, this method corresponds to __m512i _mm512_set1_epi8</remarks>
         [Intrinsic]
         public static Vector512<byte> Create(byte value) => Create<byte>(value);
 
-        /// <summary>Creates a new <see cref="Vector512{Double}" /> instance with all elements initialized to the specified value.</summary>
+        /// <summary>Creates a new <see langword="Vector512&lt;Double&gt;" /> instance with all elements initialized to the specified value.</summary>
         /// <param name="value">The value that all elements will be initialized to.</param>
-        /// <returns>A new <see cref="Vector512{Double}" /> with all elements initialized to <paramref name="value" />.</returns>
+        /// <returns>A new <see langword="Vector512&lt;Double&gt;" /> with all elements initialized to <paramref name="value" />.</returns>
         /// <remarks>On x86, this method corresponds to __m512d _mm512_set1_pd</remarks>
         [Intrinsic]
         public static Vector512<double> Create(double value) => Create<double>(value);
 
-        /// <summary>Creates a new <see cref="Vector512{Int16}" /> instance with all elements initialized to the specified value.</summary>
+        /// <summary>Creates a new <see langword="Vector512&lt;Int16&gt;" /> instance with all elements initialized to the specified value.</summary>
         /// <param name="value">The value that all elements will be initialized to.</param>
-        /// <returns>A new <see cref="Vector512{Int16}" /> with all elements initialized to <paramref name="value" />.</returns>
+        /// <returns>A new <see langword="Vector512&lt;Int16&gt;" /> with all elements initialized to <paramref name="value" />.</returns>
         /// <remarks>On x86, this method corresponds to __m512i _mm512_set1_epi16</remarks>
         [Intrinsic]
         public static Vector512<short> Create(short value) => Create<short>(value);
 
-        /// <summary>Creates a new <see cref="Vector512{Int32}" /> instance with all elements initialized to the specified value.</summary>
+        /// <summary>Creates a new <see langword="Vector512&lt;Int32&gt;" /> instance with all elements initialized to the specified value.</summary>
         /// <param name="value">The value that all elements will be initialized to.</param>
-        /// <returns>A new <see cref="Vector512{Int32}" /> with all elements initialized to <paramref name="value" />.</returns>
+        /// <returns>A new <see langword="Vector512&lt;Int32&gt;" /> with all elements initialized to <paramref name="value" />.</returns>
         /// <remarks>On x86, this method corresponds to __m512i _mm512_set1_epi32</remarks>
         [Intrinsic]
         public static Vector512<int> Create(int value) => Create<int>(value);
 
-        /// <summary>Creates a new <see cref="Vector512{Int64}" /> instance with all elements initialized to the specified value.</summary>
+        /// <summary>Creates a new <see langword="Vector512&lt;Int64&gt;" /> instance with all elements initialized to the specified value.</summary>
         /// <param name="value">The value that all elements will be initialized to.</param>
-        /// <returns>A new <see cref="Vector512{Int64}" /> with all elements initialized to <paramref name="value" />.</returns>
+        /// <returns>A new <see langword="Vector512&lt;Int64&gt;" /> with all elements initialized to <paramref name="value" />.</returns>
         /// <remarks>On x86, this method corresponds to __m512i _mm512_set1_epi64x</remarks>
         [Intrinsic]
         public static Vector512<long> Create(long value) => Create<long>(value);
 
-        /// <summary>Creates a new <see cref="Vector512{IntPtr}" /> instance with all elements initialized to the specified value.</summary>
+        /// <summary>Creates a new <see langword="Vector512&lt;IntPtr&gt;" /> instance with all elements initialized to the specified value.</summary>
         /// <param name="value">The value that all elements will be initialized to.</param>
-        /// <returns>A new <see cref="Vector512{IntPtr}" /> with all elements initialized to <paramref name="value" />.</returns>
+        /// <returns>A new <see langword="Vector512&lt;IntPtr&gt;" /> with all elements initialized to <paramref name="value" />.</returns>
         [Intrinsic]
         public static Vector512<nint> Create(nint value) => Create<nint>(value);
 
-        /// <summary>Creates a new <see cref="Vector512{UIntPtr}" /> instance with all elements initialized to the specified value.</summary>
+        /// <summary>Creates a new <see langword="Vector512&lt;UIntPtr&gt;" /> instance with all elements initialized to the specified value.</summary>
         /// <param name="value">The value that all elements will be initialized to.</param>
-        /// <returns>A new <see cref="Vector512{UIntPtr}" /> with all elements initialized to <paramref name="value" />.</returns>
+        /// <returns>A new <see langword="Vector512&lt;UIntPtr&gt;" /> with all elements initialized to <paramref name="value" />.</returns>
         [Intrinsic]
         [CLSCompliant(false)]
         public static Vector512<nuint> Create(nuint value) => Create<nuint>(value);
 
-        /// <summary>Creates a new <see cref="Vector512{SByte}" /> instance with all elements initialized to the specified value.</summary>
+        /// <summary>Creates a new <see langword="Vector512&lt;SByte&gt;" /> instance with all elements initialized to the specified value.</summary>
         /// <param name="value">The value that all elements will be initialized to.</param>
-        /// <returns>A new <see cref="Vector512{SByte}" /> with all elements initialized to <paramref name="value" />.</returns>
+        /// <returns>A new <see langword="Vector512&lt;SByte&gt;" /> with all elements initialized to <paramref name="value" />.</returns>
         /// <remarks>On x86, this method corresponds to __m512i _mm512_set1_epi8</remarks>
         [Intrinsic]
         [CLSCompliant(false)]
         public static Vector512<sbyte> Create(sbyte value) => Create<sbyte>(value);
 
-        /// <summary>Creates a new <see cref="Vector512{Single}" /> instance with all elements initialized to the specified value.</summary>
+        /// <summary>Creates a new <see langword="Vector512&lt;Single&gt;" /> instance with all elements initialized to the specified value.</summary>
         /// <param name="value">The value that all elements will be initialized to.</param>
-        /// <returns>A new <see cref="Vector512{Single}" /> with all elements initialized to <paramref name="value" />.</returns>
+        /// <returns>A new <see langword="Vector512&lt;Single&gt;" /> with all elements initialized to <paramref name="value" />.</returns>
         /// <remarks>On x86, this method corresponds to __m512 _mm512_set1_ps</remarks>
         [Intrinsic]
         public static Vector512<float> Create(float value) => Create<float>(value);
 
-        /// <summary>Creates a new <see cref="Vector512{UInt16}" /> instance with all elements initialized to the specified value.</summary>
+        /// <summary>Creates a new <see langword="Vector512&lt;UInt16&gt;" /> instance with all elements initialized to the specified value.</summary>
         /// <param name="value">The value that all elements will be initialized to.</param>
-        /// <returns>A new <see cref="Vector512{UInt16}" /> with all elements initialized to <paramref name="value" />.</returns>
+        /// <returns>A new <see langword="Vector512&lt;UInt16&gt;" /> with all elements initialized to <paramref name="value" />.</returns>
         /// <remarks>On x86, this method corresponds to __m512i _mm512_set1_epi16</remarks>
         [Intrinsic]
         [CLSCompliant(false)]
         public static Vector512<ushort> Create(ushort value) => Create<ushort>(value);
 
-        /// <summary>Creates a new <see cref="Vector512{UInt32}" /> instance with all elements initialized to the specified value.</summary>
+        /// <summary>Creates a new <see langword="Vector512&lt;UInt32&gt;" /> instance with all elements initialized to the specified value.</summary>
         /// <param name="value">The value that all elements will be initialized to.</param>
-        /// <returns>A new <see cref="Vector512{UInt32}" /> with all elements initialized to <paramref name="value" />.</returns>
+        /// <returns>A new <see langword="Vector512&lt;UInt32&gt;" /> with all elements initialized to <paramref name="value" />.</returns>
         /// <remarks>On x86, this method corresponds to __m512i _mm512_set1_epi32</remarks>
         [Intrinsic]
         [CLSCompliant(false)]
         public static Vector512<uint> Create(uint value) => Create<uint>(value);
 
-        /// <summary>Creates a new <see cref="Vector512{UInt64}" /> instance with all elements initialized to the specified value.</summary>
+        /// <summary>Creates a new <see langword="Vector512&lt;UInt64&gt;" /> instance with all elements initialized to the specified value.</summary>
         /// <param name="value">The value that all elements will be initialized to.</param>
-        /// <returns>A new <see cref="Vector512{UInt64}" /> with all elements initialized to <paramref name="value" />.</returns>
+        /// <returns>A new <see langword="Vector512&lt;UInt64&gt;" /> with all elements initialized to <paramref name="value" />.</returns>
         /// <remarks>On x86, this method corresponds to __m512i _mm512_set1_epi64x</remarks>
         [Intrinsic]
         [CLSCompliant(false)]
@@ -778,7 +778,7 @@ namespace System.Runtime.Intrinsics
             return Unsafe.ReadUnaligned<Vector512<T>>(ref Unsafe.As<T, byte>(ref MemoryMarshal.GetReference(values)));
         }
 
-        /// <summary>Creates a new <see cref="Vector512{Byte}" /> instance with each element initialized to the corresponding specified value.</summary>
+        /// <summary>Creates a new <see langword="Vector512&lt;Byte&gt;" /> instance with each element initialized to the corresponding specified value.</summary>
         /// <param name="e0">The value that element 0 will be initialized to.</param>
         /// <param name="e1">The value that element 1 will be initialized to.</param>
         /// <param name="e2">The value that element 2 will be initialized to.</param>
@@ -843,7 +843,7 @@ namespace System.Runtime.Intrinsics
         /// <param name="e61">The value that element 61 will be initialized to.</param>
         /// <param name="e62">The value that element 62 will be initialized to.</param>
         /// <param name="e63">The value that element 63 will be initialized to.</param>
-        /// <returns>A new <see cref="Vector512{Byte}" /> with each element initialized to corresponding specified value.</returns>
+        /// <returns>A new <see langword="Vector512&lt;Byte&gt;" /> with each element initialized to corresponding specified value.</returns>
         /// <remarks>On x86, this method corresponds to __m512i _mm512_setr_epi8</remarks>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -858,7 +858,7 @@ namespace System.Runtime.Intrinsics
             );
         }
 
-        /// <summary>Creates a new <see cref="Vector512{Double}" /> instance with each element initialized to the corresponding specified value.</summary>
+        /// <summary>Creates a new <see langword="Vector512&lt;Double&gt;" /> instance with each element initialized to the corresponding specified value.</summary>
         /// <param name="e0">The value that element 0 will be initialized to.</param>
         /// <param name="e1">The value that element 1 will be initialized to.</param>
         /// <param name="e2">The value that element 2 will be initialized to.</param>
@@ -867,7 +867,7 @@ namespace System.Runtime.Intrinsics
         /// <param name="e5">The value that element 5 will be initialized to.</param>
         /// <param name="e6">The value that element 6 will be initialized to.</param>
         /// <param name="e7">The value that element 7 will be initialized to.</param>
-        /// <returns>A new <see cref="Vector512{Double}" /> with each element initialized to corresponding specified value.</returns>
+        /// <returns>A new <see langword="Vector512&lt;Double&gt;" /> with each element initialized to corresponding specified value.</returns>
         /// <remarks>On x86, this method corresponds to __m512d _mm512_setr_pd</remarks>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -879,7 +879,7 @@ namespace System.Runtime.Intrinsics
             );
         }
 
-        /// <summary>Creates a new <see cref="Vector512{Int16}" /> instance with each element initialized to the corresponding specified value.</summary>
+        /// <summary>Creates a new <see langword="Vector512&lt;Int16&gt;" /> instance with each element initialized to the corresponding specified value.</summary>
         /// <param name="e0">The value that element 0 will be initialized to.</param>
         /// <param name="e1">The value that element 1 will be initialized to.</param>
         /// <param name="e2">The value that element 2 will be initialized to.</param>
@@ -912,7 +912,7 @@ namespace System.Runtime.Intrinsics
         /// <param name="e29">The value that element 29 will be initialized to.</param>
         /// <param name="e30">The value that element 30 will be initialized to.</param>
         /// <param name="e31">The value that element 31 will be initialized to.</param>
-        /// <returns>A new <see cref="Vector512{Int16}" /> with each element initialized to corresponding specified value.</returns>
+        /// <returns>A new <see langword="Vector512&lt;Int16&gt;" /> with each element initialized to corresponding specified value.</returns>
         /// <remarks>On x86, this method corresponds to __m512i _mm512_setr_epi16</remarks>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -925,7 +925,7 @@ namespace System.Runtime.Intrinsics
             );
         }
 
-        /// <summary>Creates a new <see cref="Vector512{Int32}" /> instance with each element initialized to the corresponding specified value.</summary>
+        /// <summary>Creates a new <see langword="Vector512&lt;Int32&gt;" /> instance with each element initialized to the corresponding specified value.</summary>
         /// <param name="e0">The value that element 0 will be initialized to.</param>
         /// <param name="e1">The value that element 1 will be initialized to.</param>
         /// <param name="e2">The value that element 2 will be initialized to.</param>
@@ -942,7 +942,7 @@ namespace System.Runtime.Intrinsics
         /// <param name="e13">The value that element 13 will be initialized to.</param>
         /// <param name="e14">The value that element 14 will be initialized to.</param>
         /// <param name="e15">The value that element 15 will be initialized to.</param>
-        /// <returns>A new <see cref="Vector512{Int32}" /> with each element initialized to corresponding specified value.</returns>
+        /// <returns>A new <see langword="Vector512&lt;Int32&gt;" /> with each element initialized to corresponding specified value.</returns>
         /// <remarks>On x86, this method corresponds to __m512i _mm512_setr_epi32</remarks>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -954,7 +954,7 @@ namespace System.Runtime.Intrinsics
             );
         }
 
-        /// <summary>Creates a new <see cref="Vector512{Int64}" /> instance with each element initialized to the corresponding specified value.</summary>
+        /// <summary>Creates a new <see langword="Vector512&lt;Int64&gt;" /> instance with each element initialized to the corresponding specified value.</summary>
         /// <param name="e0">The value that element 0 will be initialized to.</param>
         /// <param name="e1">The value that element 1 will be initialized to.</param>
         /// <param name="e2">The value that element 2 will be initialized to.</param>
@@ -963,7 +963,7 @@ namespace System.Runtime.Intrinsics
         /// <param name="e5">The value that element 5 will be initialized to.</param>
         /// <param name="e6">The value that element 6 will be initialized to.</param>
         /// <param name="e7">The value that element 7 will be initialized to.</param>
-        /// <returns>A new <see cref="Vector512{Int64}" /> with each element initialized to corresponding specified value.</returns>
+        /// <returns>A new <see langword="Vector512&lt;Int64&gt;" /> with each element initialized to corresponding specified value.</returns>
         /// <remarks>On x86, this method corresponds to __m512i _mm512_setr_epi64x</remarks>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -975,7 +975,7 @@ namespace System.Runtime.Intrinsics
             );
         }
 
-        /// <summary>Creates a new <see cref="Vector512{SByte}" /> instance with each element initialized to the corresponding specified value.</summary>
+        /// <summary>Creates a new <see langword="Vector512&lt;SByte&gt;" /> instance with each element initialized to the corresponding specified value.</summary>
         /// <param name="e0">The value that element 0 will be initialized to.</param>
         /// <param name="e1">The value that element 1 will be initialized to.</param>
         /// <param name="e2">The value that element 2 will be initialized to.</param>
@@ -1040,7 +1040,7 @@ namespace System.Runtime.Intrinsics
         /// <param name="e61">The value that element 61 will be initialized to.</param>
         /// <param name="e62">The value that element 62 will be initialized to.</param>
         /// <param name="e63">The value that element 63 will be initialized to.</param>
-        /// <returns>A new <see cref="Vector512{SByte}" /> with each element initialized to corresponding specified value.</returns>
+        /// <returns>A new <see langword="Vector512&lt;SByte&gt;" /> with each element initialized to corresponding specified value.</returns>
         /// <remarks>On x86, this method corresponds to __m512i _mm512_setr_epi8</remarks>
         [Intrinsic]
         [CLSCompliant(false)]
@@ -1056,7 +1056,7 @@ namespace System.Runtime.Intrinsics
             );
         }
 
-        /// <summary>Creates a new <see cref="Vector512{Single}" /> instance with each element initialized to the corresponding specified value.</summary>
+        /// <summary>Creates a new <see langword="Vector512&lt;Single&gt;" /> instance with each element initialized to the corresponding specified value.</summary>
         /// <param name="e0">The value that element 0 will be initialized to.</param>
         /// <param name="e1">The value that element 1 will be initialized to.</param>
         /// <param name="e2">The value that element 2 will be initialized to.</param>
@@ -1073,7 +1073,7 @@ namespace System.Runtime.Intrinsics
         /// <param name="e13">The value that element 13 will be initialized to.</param>
         /// <param name="e14">The value that element 14 will be initialized to.</param>
         /// <param name="e15">The value that element 15 will be initialized to.</param>
-        /// <returns>A new <see cref="Vector512{Single}" /> with each element initialized to corresponding specified value.</returns>
+        /// <returns>A new <see langword="Vector512&lt;Single&gt;" /> with each element initialized to corresponding specified value.</returns>
         /// <remarks>On x86, this method corresponds to __m512 _mm512_setr_ps</remarks>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -1085,7 +1085,7 @@ namespace System.Runtime.Intrinsics
             );
         }
 
-        /// <summary>Creates a new <see cref="Vector512{UInt16}" /> instance with each element initialized to the corresponding specified value.</summary>
+        /// <summary>Creates a new <see langword="Vector512&lt;UInt16&gt;" /> instance with each element initialized to the corresponding specified value.</summary>
         /// <param name="e0">The value that element 0 will be initialized to.</param>
         /// <param name="e1">The value that element 1 will be initialized to.</param>
         /// <param name="e2">The value that element 2 will be initialized to.</param>
@@ -1118,7 +1118,7 @@ namespace System.Runtime.Intrinsics
         /// <param name="e29">The value that element 29 will be initialized to.</param>
         /// <param name="e30">The value that element 30 will be initialized to.</param>
         /// <param name="e31">The value that element 31 will be initialized to.</param>
-        /// <returns>A new <see cref="Vector512{UInt16}" /> with each element initialized to corresponding specified value.</returns>
+        /// <returns>A new <see langword="Vector512&lt;UInt16&gt;" /> with each element initialized to corresponding specified value.</returns>
         /// <remarks>On x86, this method corresponds to __m512i _mm512_setr_epi16</remarks>
         [Intrinsic]
         [CLSCompliant(false)]
@@ -1132,7 +1132,7 @@ namespace System.Runtime.Intrinsics
             );
         }
 
-        /// <summary>Creates a new <see cref="Vector512{UInt32}" /> instance with each element initialized to the corresponding specified value.</summary>
+        /// <summary>Creates a new <see langword="Vector512&lt;UInt32&gt;" /> instance with each element initialized to the corresponding specified value.</summary>
         /// <param name="e0">The value that element 0 will be initialized to.</param>
         /// <param name="e1">The value that element 1 will be initialized to.</param>
         /// <param name="e2">The value that element 2 will be initialized to.</param>
@@ -1149,7 +1149,7 @@ namespace System.Runtime.Intrinsics
         /// <param name="e13">The value that element 13 will be initialized to.</param>
         /// <param name="e14">The value that element 14 will be initialized to.</param>
         /// <param name="e15">The value that element 15 will be initialized to.</param>
-        /// <returns>A new <see cref="Vector512{UInt32}" /> with each element initialized to corresponding specified value.</returns>
+        /// <returns>A new <see langword="Vector512&lt;UInt32&gt;" /> with each element initialized to corresponding specified value.</returns>
         /// <remarks>On x86, this method corresponds to __m512i _mm512_setr_epi32</remarks>
         [Intrinsic]
         [CLSCompliant(false)]
@@ -1162,7 +1162,7 @@ namespace System.Runtime.Intrinsics
             );
         }
 
-        /// <summary>Creates a new <see cref="Vector512{UInt64}" /> instance with each element initialized to the corresponding specified value.</summary>
+        /// <summary>Creates a new <see langword="Vector512&lt;UInt64&gt;" /> instance with each element initialized to the corresponding specified value.</summary>
         /// <param name="e0">The value that element 0 will be initialized to.</param>
         /// <param name="e1">The value that element 1 will be initialized to.</param>
         /// <param name="e2">The value that element 2 will be initialized to.</param>
@@ -1171,7 +1171,7 @@ namespace System.Runtime.Intrinsics
         /// <param name="e5">The value that element 5 will be initialized to.</param>
         /// <param name="e6">The value that element 6 will be initialized to.</param>
         /// <param name="e7">The value that element 7 will be initialized to.</param>
-        /// <returns>A new <see cref="Vector512{UInt64}" /> with each element initialized to corresponding specified value.</returns>
+        /// <returns>A new <see langword="Vector512&lt;UInt64&gt;" /> with each element initialized to corresponding specified value.</returns>
         /// <remarks>On x86, this method corresponds to __m512i _mm512_setr_epi64x</remarks>
         [Intrinsic]
         [CLSCompliant(false)]
@@ -1226,84 +1226,84 @@ namespace System.Runtime.Intrinsics
             return result;
         }
 
-        /// <summary>Creates a new <see cref="Vector512{Byte}" /> instance from two <see cref="Vector256{Byte}" /> instances.</summary>
+        /// <summary>Creates a new <see langword="Vector512&lt;Byte&gt;" /> instance from two <see langword="Vector256&lt;Byte&gt;" /> instances.</summary>
         /// <param name="lower">The value that the lower 256-bits will be initialized to.</param>
         /// <param name="upper">The value that the upper 256-bits will be initialized to.</param>
-        /// <returns>A new <see cref="Vector512{Byte}" /> initialized from <paramref name="lower" /> and <paramref name="upper" />.</returns>
+        /// <returns>A new <see langword="Vector512&lt;Byte&gt;" /> initialized from <paramref name="lower" /> and <paramref name="upper" />.</returns>
         public static Vector512<byte> Create(Vector256<byte> lower, Vector256<byte> upper) => Create<byte>(lower, upper);
 
-        /// <summary>Creates a new <see cref="Vector512{Double}" /> instance from two <see cref="Vector256{Double}" /> instances.</summary>
+        /// <summary>Creates a new <see langword="Vector512&lt;Double&gt;" /> instance from two <see langword="Vector256&lt;Double&gt;" /> instances.</summary>
         /// <param name="lower">The value that the lower 256-bits will be initialized to.</param>
         /// <param name="upper">The value that the upper 256-bits will be initialized to.</param>
-        /// <returns>A new <see cref="Vector512{Double}" /> initialized from <paramref name="lower" /> and <paramref name="upper" />.</returns>
+        /// <returns>A new <see langword="Vector512&lt;Double&gt;" /> initialized from <paramref name="lower" /> and <paramref name="upper" />.</returns>
         /// <remarks>On x86, this method corresponds to __m512d _mm512_setr_m256d (__m256d lo, __m256d hi)</remarks>
         public static Vector512<double> Create(Vector256<double> lower, Vector256<double> upper) => Create<double>(lower, upper);
 
-        /// <summary>Creates a new <see cref="Vector512{Int16}" /> instance from two <see cref="Vector256{Int16}" /> instances.</summary>
+        /// <summary>Creates a new <see langword="Vector512&lt;Int16&gt;" /> instance from two <see langword="Vector256&lt;Int16&gt;" /> instances.</summary>
         /// <param name="lower">The value that the lower 256-bits will be initialized to.</param>
         /// <param name="upper">The value that the upper 256-bits will be initialized to.</param>
-        /// <returns>A new <see cref="Vector512{Int16}" /> initialized from <paramref name="lower" /> and <paramref name="upper" />.</returns>
+        /// <returns>A new <see langword="Vector512&lt;Int16&gt;" /> initialized from <paramref name="lower" /> and <paramref name="upper" />.</returns>
         public static Vector512<short> Create(Vector256<short> lower, Vector256<short> upper) => Create<short>(lower, upper);
 
-        /// <summary>Creates a new <see cref="Vector512{Int32}" /> instance from two <see cref="Vector256{Int32}" /> instances.</summary>
+        /// <summary>Creates a new <see langword="Vector512&lt;Int32&gt;" /> instance from two <see langword="Vector256&lt;Int32&gt;" /> instances.</summary>
         /// <param name="lower">The value that the lower 256-bits will be initialized to.</param>
         /// <param name="upper">The value that the upper 256-bits will be initialized to.</param>
-        /// <returns>A new <see cref="Vector512{Int32}" /> initialized from <paramref name="lower" /> and <paramref name="upper" />.</returns>
+        /// <returns>A new <see langword="Vector512&lt;Int32&gt;" /> initialized from <paramref name="lower" /> and <paramref name="upper" />.</returns>
         /// <remarks>On x86, this method corresponds to __m512i _mm512_setr_m256i (__m256i lo, __m256i hi)</remarks>
         public static Vector512<int> Create(Vector256<int> lower, Vector256<int> upper) => Create<int>(lower, upper);
 
-        /// <summary>Creates a new <see cref="Vector512{Int64}" /> instance from two <see cref="Vector256{Int64}" /> instances.</summary>
+        /// <summary>Creates a new <see langword="Vector512&lt;Int64&gt;" /> instance from two <see langword="Vector256&lt;Int64&gt;" /> instances.</summary>
         /// <param name="lower">The value that the lower 256-bits will be initialized to.</param>
         /// <param name="upper">The value that the upper 256-bits will be initialized to.</param>
-        /// <returns>A new <see cref="Vector512{Int64}" /> initialized from <paramref name="lower" /> and <paramref name="upper" />.</returns>
+        /// <returns>A new <see langword="Vector512&lt;Int64&gt;" /> initialized from <paramref name="lower" /> and <paramref name="upper" />.</returns>
         public static Vector512<long> Create(Vector256<long> lower, Vector256<long> upper) => Create<long>(lower, upper);
 
-        /// <summary>Creates a new <see cref="Vector512{IntPtr}" /> instance from two <see cref="Vector256{IntPtr}" /> instances.</summary>
+        /// <summary>Creates a new <see langword="Vector512&lt;IntPtr&gt;" /> instance from two <see langword="Vector256&lt;IntPtr&gt;" /> instances.</summary>
         /// <param name="lower">The value that the lower 256-bits will be initialized to.</param>
         /// <param name="upper">The value that the upper 256-bits will be initialized to.</param>
-        /// <returns>A new <see cref="Vector512{IntPtr}" /> initialized from <paramref name="lower" /> and <paramref name="upper" />.</returns>
+        /// <returns>A new <see langword="Vector512&lt;IntPtr&gt;" /> initialized from <paramref name="lower" /> and <paramref name="upper" />.</returns>
         public static Vector512<nint> Create(Vector256<nint> lower, Vector256<nint> upper) => Create<nint>(lower, upper);
 
-        /// <summary>Creates a new <see cref="Vector512{UIntPtr}" /> instance from two <see cref="Vector256{UIntPtr}" /> instances.</summary>
+        /// <summary>Creates a new <see langword="Vector512&lt;UIntPtr&gt;" /> instance from two <see langword="Vector256&lt;UIntPtr&gt;" /> instances.</summary>
         /// <param name="lower">The value that the lower 256-bits will be initialized to.</param>
         /// <param name="upper">The value that the upper 256-bits will be initialized to.</param>
-        /// <returns>A new <see cref="Vector512{UIntPtr}" /> initialized from <paramref name="lower" /> and <paramref name="upper" />.</returns>
+        /// <returns>A new <see langword="Vector512&lt;UIntPtr&gt;" /> initialized from <paramref name="lower" /> and <paramref name="upper" />.</returns>
         [CLSCompliant(false)]
         public static Vector512<nuint> Create(Vector256<nuint> lower, Vector256<nuint> upper) => Create<nuint>(lower, upper);
 
-        /// <summary>Creates a new <see cref="Vector512{SByte}" /> instance from two <see cref="Vector256{SByte}" /> instances.</summary>
+        /// <summary>Creates a new <see langword="Vector512&lt;SByte&gt;" /> instance from two <see langword="Vector256&lt;SByte&gt;" /> instances.</summary>
         /// <param name="lower">The value that the lower 256-bits will be initialized to.</param>
         /// <param name="upper">The value that the upper 256-bits will be initialized to.</param>
-        /// <returns>A new <see cref="Vector512{SByte}" /> initialized from <paramref name="lower" /> and <paramref name="upper" />.</returns>
+        /// <returns>A new <see langword="Vector512&lt;SByte&gt;" /> initialized from <paramref name="lower" /> and <paramref name="upper" />.</returns>
         [CLSCompliant(false)]
         public static Vector512<sbyte> Create(Vector256<sbyte> lower, Vector256<sbyte> upper) => Create<sbyte>(lower, upper);
 
-        /// <summary>Creates a new <see cref="Vector512{Single}" /> instance from two <see cref="Vector256{Single}" /> instances.</summary>
+        /// <summary>Creates a new <see langword="Vector512&lt;Single&gt;" /> instance from two <see langword="Vector256&lt;Single&gt;" /> instances.</summary>
         /// <param name="lower">The value that the lower 256-bits will be initialized to.</param>
         /// <param name="upper">The value that the upper 256-bits will be initialized to.</param>
-        /// <returns>A new <see cref="Vector512{Single}" /> initialized from <paramref name="lower" /> and <paramref name="upper" />.</returns>
+        /// <returns>A new <see langword="Vector512&lt;Single&gt;" /> initialized from <paramref name="lower" /> and <paramref name="upper" />.</returns>
         /// <remarks>On x86, this method corresponds to __m512 _mm512_setr_m256 (__m256 lo, __m256 hi)</remarks>
         public static Vector512<float> Create(Vector256<float> lower, Vector256<float> upper) => Create<float>(lower, upper);
 
-        /// <summary>Creates a new <see cref="Vector512{UInt16}" /> instance from two <see cref="Vector256{UInt16}" /> instances.</summary>
+        /// <summary>Creates a new <see langword="Vector512&lt;UInt16&gt;" /> instance from two <see langword="Vector256&lt;UInt16&gt;" /> instances.</summary>
         /// <param name="lower">The value that the lower 256-bits will be initialized to.</param>
         /// <param name="upper">The value that the upper 256-bits will be initialized to.</param>
-        /// <returns>A new <see cref="Vector512{UInt16}" /> initialized from <paramref name="lower" /> and <paramref name="upper" />.</returns>
+        /// <returns>A new <see langword="Vector512&lt;UInt16&gt;" /> initialized from <paramref name="lower" /> and <paramref name="upper" />.</returns>
         [CLSCompliant(false)]
         public static Vector512<ushort> Create(Vector256<ushort> lower, Vector256<ushort> upper) => Create<ushort>(lower, upper);
 
-        /// <summary>Creates a new <see cref="Vector512{UInt32}" /> instance from two <see cref="Vector256{UInt32}" /> instances.</summary>
+        /// <summary>Creates a new <see langword="Vector512&lt;UInt32&gt;" /> instance from two <see langword="Vector256&lt;UInt32&gt;" /> instances.</summary>
         /// <param name="lower">The value that the lower 256-bits will be initialized to.</param>
         /// <param name="upper">The value that the upper 256-bits will be initialized to.</param>
-        /// <returns>A new <see cref="Vector512{UInt32}" /> initialized from <paramref name="lower" /> and <paramref name="upper" />.</returns>
+        /// <returns>A new <see langword="Vector512&lt;UInt32&gt;" /> initialized from <paramref name="lower" /> and <paramref name="upper" />.</returns>
         /// <remarks>On x86, this method corresponds to __m512i _mm512_setr_m256i (__m256i lo, __m256i hi)</remarks>
         [CLSCompliant(false)]
         public static Vector512<uint> Create(Vector256<uint> lower, Vector256<uint> upper) => Create<uint>(lower, upper);
 
-        /// <summary>Creates a new <see cref="Vector512{UInt64}" /> instance from two <see cref="Vector256{UInt64}" /> instances.</summary>
+        /// <summary>Creates a new <see langword="Vector512&lt;UInt64&gt;" /> instance from two <see langword="Vector256&lt;UInt64&gt;" /> instances.</summary>
         /// <param name="lower">The value that the lower 256-bits will be initialized to.</param>
         /// <param name="upper">The value that the upper 256-bits will be initialized to.</param>
-        /// <returns>A new <see cref="Vector512{UInt64}" /> initialized from <paramref name="lower" /> and <paramref name="upper" />.</returns>
+        /// <returns>A new <see langword="Vector512&lt;UInt64&gt;" /> initialized from <paramref name="lower" /> and <paramref name="upper" />.</returns>
         [CLSCompliant(false)]
         public static Vector512<ulong> Create(Vector256<ulong> lower, Vector256<ulong> upper) => Create<ulong>(lower, upper);
 
@@ -1315,79 +1315,79 @@ namespace System.Runtime.Intrinsics
         [Intrinsic]
         public static Vector512<T> CreateScalar<T>(T value) => Vector256.CreateScalar(value).ToVector512();
 
-        /// <summary>Creates a new <see cref="Vector512{Byte}" /> instance with the first element initialized to the specified value and the remaining elements initialized to zero.</summary>
+        /// <summary>Creates a new <see langword="Vector512&lt;Byte&gt;" /> instance with the first element initialized to the specified value and the remaining elements initialized to zero.</summary>
         /// <param name="value">The value that element 0 will be initialized to.</param>
-        /// <returns>A new <see cref="Vector512{Byte}" /> instance with the first element initialized to <paramref name="value" /> and the remaining elements initialized to zero.</returns>
+        /// <returns>A new <see langword="Vector512&lt;Byte&gt;" /> instance with the first element initialized to <paramref name="value" /> and the remaining elements initialized to zero.</returns>
         [Intrinsic]
         public static Vector512<byte> CreateScalar(byte value) => CreateScalar<byte>(value);
 
-        /// <summary>Creates a new <see cref="Vector512{Double}" /> instance with the first element initialized to the specified value and the remaining elements initialized to zero.</summary>
+        /// <summary>Creates a new <see langword="Vector512&lt;Double&gt;" /> instance with the first element initialized to the specified value and the remaining elements initialized to zero.</summary>
         /// <param name="value">The value that element 0 will be initialized to.</param>
-        /// <returns>A new <see cref="Vector512{Double}" /> instance with the first element initialized to <paramref name="value" /> and the remaining elements initialized to zero.</returns>
+        /// <returns>A new <see langword="Vector512&lt;Double&gt;" /> instance with the first element initialized to <paramref name="value" /> and the remaining elements initialized to zero.</returns>
         [Intrinsic]
         public static Vector512<double> CreateScalar(double value) => CreateScalar<double>(value);
 
-        /// <summary>Creates a new <see cref="Vector512{Int16}" /> instance with the first element initialized to the specified value and the remaining elements initialized to zero.</summary>
+        /// <summary>Creates a new <see langword="Vector512&lt;Int16&gt;" /> instance with the first element initialized to the specified value and the remaining elements initialized to zero.</summary>
         /// <param name="value">The value that element 0 will be initialized to.</param>
-        /// <returns>A new <see cref="Vector512{Int16}" /> instance with the first element initialized to <paramref name="value" /> and the remaining elements initialized to zero.</returns>
+        /// <returns>A new <see langword="Vector512&lt;Int16&gt;" /> instance with the first element initialized to <paramref name="value" /> and the remaining elements initialized to zero.</returns>
         [Intrinsic]
         public static Vector512<short> CreateScalar(short value) => CreateScalar<short>(value);
 
-        /// <summary>Creates a new <see cref="Vector512{Int32}" /> instance with the first element initialized to the specified value and the remaining elements initialized to zero.</summary>
+        /// <summary>Creates a new <see langword="Vector512&lt;Int32&gt;" /> instance with the first element initialized to the specified value and the remaining elements initialized to zero.</summary>
         /// <param name="value">The value that element 0 will be initialized to.</param>
-        /// <returns>A new <see cref="Vector512{Int32}" /> instance with the first element initialized to <paramref name="value" /> and the remaining elements initialized to zero.</returns>
+        /// <returns>A new <see langword="Vector512&lt;Int32&gt;" /> instance with the first element initialized to <paramref name="value" /> and the remaining elements initialized to zero.</returns>
         [Intrinsic]
         public static Vector512<int> CreateScalar(int value) => CreateScalar<int>(value);
 
-        /// <summary>Creates a new <see cref="Vector512{Int64}" /> instance with the first element initialized to the specified value and the remaining elements initialized to zero.</summary>
+        /// <summary>Creates a new <see langword="Vector512&lt;Int64&gt;" /> instance with the first element initialized to the specified value and the remaining elements initialized to zero.</summary>
         /// <param name="value">The value that element 0 will be initialized to.</param>
-        /// <returns>A new <see cref="Vector512{Int64}" /> instance with the first element initialized to <paramref name="value" /> and the remaining elements initialized to zero.</returns>
+        /// <returns>A new <see langword="Vector512&lt;Int64&gt;" /> instance with the first element initialized to <paramref name="value" /> and the remaining elements initialized to zero.</returns>
         [Intrinsic]
         public static Vector512<long> CreateScalar(long value) => CreateScalar<long>(value);
 
-        /// <summary>Creates a new <see cref="Vector512{IntPtr}" /> instance with the first element initialized to the specified value and the remaining elements initialized to zero.</summary>
+        /// <summary>Creates a new <see langword="Vector512&lt;IntPtr&gt;" /> instance with the first element initialized to the specified value and the remaining elements initialized to zero.</summary>
         /// <param name="value">The value that element 0 will be initialized to.</param>
-        /// <returns>A new <see cref="Vector512{IntPtr}" /> instance with the first element initialized to <paramref name="value"/> and the remaining elements initialized to zero.</returns>
+        /// <returns>A new <see langword="Vector512&lt;IntPtr&gt;" /> instance with the first element initialized to <paramref name="value" /> and the remaining elements initialized to zero.</returns>
         [Intrinsic]
         public static Vector512<nint> CreateScalar(nint value) => CreateScalar<nint>(value);
 
-        /// <summary>Creates a new <see cref="Vector512{UIntPtr}" /> instance with the first element initialized to the specified value and the remaining elements initialized to zero.</summary>
+        /// <summary>Creates a new <see langword="Vector512&lt;UIntPtr&gt;" /> instance with the first element initialized to the specified value and the remaining elements initialized to zero.</summary>
         /// <param name="value">The value that element 0 will be initialized to.</param>
-        /// <returns>A new <see cref="Vector512{UIntPtr}" /> instance with the first element initialized to <paramref name="value"/> and the remaining elements initialized to zero.</returns>
+        /// <returns>A new <see langword="Vector512&lt;UIntPtr&gt;" /> instance with the first element initialized to <paramref name="value" /> and the remaining elements initialized to zero.</returns>
         [Intrinsic]
         [CLSCompliant(false)]
         public static Vector512<nuint> CreateScalar(nuint value) => CreateScalar<nuint>(value);
 
-        /// <summary>Creates a new <see cref="Vector512{SByte}" /> instance with the first element initialized to the specified value and the remaining elements initialized to zero.</summary>
+        /// <summary>Creates a new <see langword="Vector512&lt;SByte&gt;" /> instance with the first element initialized to the specified value and the remaining elements initialized to zero.</summary>
         /// <param name="value">The value that element 0 will be initialized to.</param>
-        /// <returns>A new <see cref="Vector512{SByte}" /> instance with the first element initialized to <paramref name="value" /> and the remaining elements initialized to zero.</returns>
+        /// <returns>A new <see langword="Vector512&lt;SByte&gt;" /> instance with the first element initialized to <paramref name="value" /> and the remaining elements initialized to zero.</returns>
         [Intrinsic]
         [CLSCompliant(false)]
         public static Vector512<sbyte> CreateScalar(sbyte value) => CreateScalar<sbyte>(value);
 
-        /// <summary>Creates a new <see cref="Vector512{Single}" /> instance with the first element initialized to the specified value and the remaining elements initialized to zero.</summary>
+        /// <summary>Creates a new <see langword="Vector512&lt;Single&gt;" /> instance with the first element initialized to the specified value and the remaining elements initialized to zero.</summary>
         /// <param name="value">The value that element 0 will be initialized to.</param>
-        /// <returns>A new <see cref="Vector512{Single}" /> instance with the first element initialized to <paramref name="value" /> and the remaining elements initialized to zero.</returns>
+        /// <returns>A new <see langword="Vector512&lt;Single&gt;" /> instance with the first element initialized to <paramref name="value" /> and the remaining elements initialized to zero.</returns>
         [Intrinsic]
         public static Vector512<float> CreateScalar(float value) => CreateScalar<float>(value);
 
-        /// <summary>Creates a new <see cref="Vector512{UInt16}" /> instance with the first element initialized to the specified value and the remaining elements initialized to zero.</summary>
+        /// <summary>Creates a new <see langword="Vector512&lt;UInt16&gt;" /> instance with the first element initialized to the specified value and the remaining elements initialized to zero.</summary>
         /// <param name="value">The value that element 0 will be initialized to.</param>
-        /// <returns>A new <see cref="Vector512{UInt16}" /> instance with the first element initialized to <paramref name="value" /> and the remaining elements initialized to zero.</returns>
+        /// <returns>A new <see langword="Vector512&lt;UInt16&gt;" /> instance with the first element initialized to <paramref name="value" /> and the remaining elements initialized to zero.</returns>
         [Intrinsic]
         [CLSCompliant(false)]
         public static Vector512<ushort> CreateScalar(ushort value) => CreateScalar<ushort>(value);
 
-        /// <summary>Creates a new <see cref="Vector512{UInt32}" /> instance with the first element initialized to the specified value and the remaining elements initialized to zero.</summary>
+        /// <summary>Creates a new <see langword="Vector512&lt;UInt32&gt;" /> instance with the first element initialized to the specified value and the remaining elements initialized to zero.</summary>
         /// <param name="value">The value that element 0 will be initialized to.</param>
-        /// <returns>A new <see cref="Vector512{UInt32}" /> instance with the first element initialized to <paramref name="value" /> and the remaining elements initialized to zero.</returns>
+        /// <returns>A new <see langword="Vector512&lt;UInt32&gt;" /> instance with the first element initialized to <paramref name="value" /> and the remaining elements initialized to zero.</returns>
         [Intrinsic]
         [CLSCompliant(false)]
         public static Vector512<uint> CreateScalar(uint value) => CreateScalar<uint>(value);
 
-        /// <summary>Creates a new <see cref="Vector512{UInt64}" /> instance with the first element initialized to the specified value and the remaining elements initialized to zero.</summary>
+        /// <summary>Creates a new <see langword="Vector512&lt;UInt64&gt;" /> instance with the first element initialized to the specified value and the remaining elements initialized to zero.</summary>
         /// <param name="value">The value that element 0 will be initialized to.</param>
-        /// <returns>A new <see cref="Vector512{UInt64}" /> instance with the first element initialized to <paramref name="value" /> and the remaining elements initialized to zero.</returns>
+        /// <returns>A new <see langword="Vector512&lt;UInt64&gt;" /> instance with the first element initialized to <paramref name="value" /> and the remaining elements initialized to zero.</returns>
         [Intrinsic]
         [CLSCompliant(false)]
         public static Vector512<ulong> CreateScalar(ulong value) => CreateScalar<ulong>(value);
@@ -1411,79 +1411,79 @@ namespace System.Runtime.Intrinsics
             return result;
         }
 
-        /// <summary>Creates a new <see cref="Vector512{Byte}" /> instance with the first element initialized to the specified value and the remaining elements left uninitialized.</summary>
+        /// <summary>Creates a new <see langword="Vector512&lt;Byte&gt;" /> instance with the first element initialized to the specified value and the remaining elements left uninitialized.</summary>
         /// <param name="value">The value that element 0 will be initialized to.</param>
-        /// <returns>A new <see cref="Vector512{Byte}" /> instance with the first element initialized to <paramref name="value" /> and the remaining elements left uninitialized.</returns>
+        /// <returns>A new <see langword="Vector512&lt;Byte&gt;" /> instance with the first element initialized to <paramref name="value" /> and the remaining elements left uninitialized.</returns>
         [Intrinsic]
         public static Vector512<byte> CreateScalarUnsafe(byte value) => CreateScalarUnsafe<byte>(value);
 
-        /// <summary>Creates a new <see cref="Vector512{Double}" /> instance with the first element initialized to the specified value and the remaining elements left uninitialized.</summary>
+        /// <summary>Creates a new <see langword="Vector512&lt;Double&gt;" /> instance with the first element initialized to the specified value and the remaining elements left uninitialized.</summary>
         /// <param name="value">The value that element 0 will be initialized to.</param>
-        /// <returns>A new <see cref="Vector512{Double}" /> instance with the first element initialized to <paramref name="value" /> and the remaining elements left uninitialized.</returns>
+        /// <returns>A new <see langword="Vector512&lt;Double&gt;" /> instance with the first element initialized to <paramref name="value" /> and the remaining elements left uninitialized.</returns>
         [Intrinsic]
         public static Vector512<double> CreateScalarUnsafe(double value) => CreateScalarUnsafe<double>(value);
 
-        /// <summary>Creates a new <see cref="Vector512{Int16}" /> instance with the first element initialized to the specified value and the remaining elements left uninitialized.</summary>
+        /// <summary>Creates a new <see langword="Vector512&lt;Int16&gt;" /> instance with the first element initialized to the specified value and the remaining elements left uninitialized.</summary>
         /// <param name="value">The value that element 0 will be initialized to.</param>
-        /// <returns>A new <see cref="Vector512{Int16}" /> instance with the first element initialized to <paramref name="value" /> and the remaining elements left uninitialized.</returns>
+        /// <returns>A new <see langword="Vector512&lt;Int16&gt;" /> instance with the first element initialized to <paramref name="value" /> and the remaining elements left uninitialized.</returns>
         [Intrinsic]
         public static Vector512<short> CreateScalarUnsafe(short value) => CreateScalarUnsafe<short>(value);
 
-        /// <summary>Creates a new <see cref="Vector512{Int32}" /> instance with the first element initialized to the specified value and the remaining elements left uninitialized.</summary>
+        /// <summary>Creates a new <see langword="Vector512&lt;Int32&gt;" /> instance with the first element initialized to the specified value and the remaining elements left uninitialized.</summary>
         /// <param name="value">The value that element 0 will be initialized to.</param>
-        /// <returns>A new <see cref="Vector512{Int32}" /> instance with the first element initialized to <paramref name="value" /> and the remaining elements left uninitialized.</returns>
+        /// <returns>A new <see langword="Vector512&lt;Int32&gt;" /> instance with the first element initialized to <paramref name="value" /> and the remaining elements left uninitialized.</returns>
         [Intrinsic]
         public static Vector512<int> CreateScalarUnsafe(int value) => CreateScalarUnsafe<int>(value);
 
-        /// <summary>Creates a new <see cref="Vector512{Int64}" /> instance with the first element initialized to the specified value and the remaining elements left uninitialized.</summary>
+        /// <summary>Creates a new <see langword="Vector512&lt;Int64&gt;" /> instance with the first element initialized to the specified value and the remaining elements left uninitialized.</summary>
         /// <param name="value">The value that element 0 will be initialized to.</param>
-        /// <returns>A new <see cref="Vector512{Int64}" /> instance with the first element initialized to <paramref name="value" /> and the remaining elements left uninitialized.</returns>
+        /// <returns>A new <see langword="Vector512&lt;Int64&gt;" /> instance with the first element initialized to <paramref name="value" /> and the remaining elements left uninitialized.</returns>
         [Intrinsic]
         public static Vector512<long> CreateScalarUnsafe(long value) => CreateScalarUnsafe<long>(value);
 
-        /// <summary>Creates a new <see cref="Vector512{IntPtr}" /> instance with the first element initialized to the specified value and the remaining elements left uninitialized.</summary>
+        /// <summary>Creates a new <see langword="Vector512&lt;IntPtr&gt;" /> instance with the first element initialized to the specified value and the remaining elements left uninitialized.</summary>
         /// <param name="value">The value that element 0 will be initialized to.</param>
-        /// <returns>A new <see cref="Vector512{IntPtr}" /> instance with the first element initialized to <paramref name="value"/> and the remaining elements left uninitialized.</returns>
+        /// <returns>A new <see langword="Vector512&lt;IntPtr&gt;" /> instance with the first element initialized to <paramref name="value" /> and the remaining elements left uninitialized.</returns>
         [Intrinsic]
         public static Vector512<nint> CreateScalarUnsafe(nint value) => CreateScalarUnsafe<nint>(value);
 
-        /// <summary>Creates a new <see cref="Vector512{UIntPtr}" /> instance with the first element initialized to the specified value and the remaining elements left uninitialized.</summary>
+        /// <summary>Creates a new <see langword="Vector512&lt;UIntPtr&gt;" /> instance with the first element initialized to the specified value and the remaining elements left uninitialized.</summary>
         /// <param name="value">The value that element 0 will be initialized to.</param>
-        /// <returns>A new <see cref="Vector512{UIntPtr}" /> instance with the first element initialized to <paramref name="value"/> and the remaining elements left uninitialized.</returns>
+        /// <returns>A new <see langword="Vector512&lt;UIntPtr&gt;" /> instance with the first element initialized to <paramref name="value" /> and the remaining elements left uninitialized.</returns>
         [Intrinsic]
         [CLSCompliant(false)]
         public static Vector512<nuint> CreateScalarUnsafe(nuint value) => CreateScalarUnsafe<nuint>(value);
 
-        /// <summary>Creates a new <see cref="Vector512{SByte}" /> instance with the first element initialized to the specified value and the remaining elements left uninitialized.</summary>
+        /// <summary>Creates a new <see langword="Vector512&lt;SByte&gt;" /> instance with the first element initialized to the specified value and the remaining elements left uninitialized.</summary>
         /// <param name="value">The value that element 0 will be initialized to.</param>
-        /// <returns>A new <see cref="Vector512{SByte}" /> instance with the first element initialized to <paramref name="value" /> and the remaining elements left uninitialized.</returns>
+        /// <returns>A new <see langword="Vector512&lt;SByte&gt;" /> instance with the first element initialized to <paramref name="value" /> and the remaining elements left uninitialized.</returns>
         [Intrinsic]
         [CLSCompliant(false)]
         public static Vector512<sbyte> CreateScalarUnsafe(sbyte value) => CreateScalarUnsafe<sbyte>(value);
 
-        /// <summary>Creates a new <see cref="Vector512{Single}" /> instance with the first element initialized to the specified value and the remaining elements left uninitialized.</summary>
+        /// <summary>Creates a new <see langword="Vector512&lt;Single&gt;" /> instance with the first element initialized to the specified value and the remaining elements left uninitialized.</summary>
         /// <param name="value">The value that element 0 will be initialized to.</param>
-        /// <returns>A new <see cref="Vector512{Single}" /> instance with the first element initialized to <paramref name="value" /> and the remaining elements left uninitialized.</returns>
+        /// <returns>A new <see langword="Vector512&lt;Single&gt;" /> instance with the first element initialized to <paramref name="value" /> and the remaining elements left uninitialized.</returns>
         [Intrinsic]
         public static Vector512<float> CreateScalarUnsafe(float value) => CreateScalarUnsafe<float>(value);
 
-        /// <summary>Creates a new <see cref="Vector512{UInt16}" /> instance with the first element initialized to the specified value and the remaining elements left uninitialized.</summary>
+        /// <summary>Creates a new <see langword="Vector512&lt;UInt16&gt;" /> instance with the first element initialized to the specified value and the remaining elements left uninitialized.</summary>
         /// <param name="value">The value that element 0 will be initialized to.</param>
-        /// <returns>A new <see cref="Vector512{UInt16}" /> instance with the first element initialized to <paramref name="value" /> and the remaining elements left uninitialized.</returns>
+        /// <returns>A new <see langword="Vector512&lt;UInt16&gt;" /> instance with the first element initialized to <paramref name="value" /> and the remaining elements left uninitialized.</returns>
         [Intrinsic]
         [CLSCompliant(false)]
         public static Vector512<ushort> CreateScalarUnsafe(ushort value) => CreateScalarUnsafe<ushort>(value);
 
-        /// <summary>Creates a new <see cref="Vector512{UInt32}" /> instance with the first element initialized to the specified value and the remaining elements left uninitialized.</summary>
+        /// <summary>Creates a new <see langword="Vector512&lt;UInt32&gt;" /> instance with the first element initialized to the specified value and the remaining elements left uninitialized.</summary>
         /// <param name="value">The value that element 0 will be initialized to.</param>
-        /// <returns>A new <see cref="Vector512{UInt32}" /> instance with the first element initialized to <paramref name="value" /> and the remaining elements left uninitialized.</returns>
+        /// <returns>A new <see langword="Vector512&lt;UInt32&gt;" /> instance with the first element initialized to <paramref name="value" /> and the remaining elements left uninitialized.</returns>
         [Intrinsic]
         [CLSCompliant(false)]
         public static Vector512<uint> CreateScalarUnsafe(uint value) => CreateScalarUnsafe<uint>(value);
 
-        /// <summary>Creates a new <see cref="Vector512{UInt64}" /> instance with the first element initialized to the specified value and the remaining elements left uninitialized.</summary>
+        /// <summary>Creates a new <see langword="Vector512&lt;UInt64&gt;" /> instance with the first element initialized to the specified value and the remaining elements left uninitialized.</summary>
         /// <param name="value">The value that element 0 will be initialized to.</param>
-        /// <returns>A new <see cref="Vector512{UInt64}" /> instance with the first element initialized to <paramref name="value" /> and the remaining elements left uninitialized.</returns>
+        /// <returns>A new <see langword="Vector512&lt;UInt64&gt;" /> instance with the first element initialized to <paramref name="value" /> and the remaining elements left uninitialized.</returns>
         [Intrinsic]
         [CLSCompliant(false)]
         public static Vector512<ulong> CreateScalarUnsafe(ulong value) => CreateScalarUnsafe<ulong>(value);
@@ -2159,12 +2159,12 @@ namespace System.Runtime.Intrinsics
             return Unsafe.ReadUnaligned<Vector512<T>>(in address);
         }
 
-        /// <summary>Loads a vector from the given source and reinterprets it as <see cref="ushort"/>.</summary>
+        /// <summary>Loads a vector from the given source and reinterprets it as <see cref="ushort" />.</summary>
         /// <param name="source">The source from which the vector will be loaded.</param>
         /// <returns>The vector loaded from <paramref name="source" />.</returns>
         internal static Vector512<ushort> LoadUnsafe(ref char source) => LoadUnsafe(ref Unsafe.As<char, ushort>(ref source));
 
-        /// <summary>Loads a vector from the given source and element offset and reinterprets it as <see cref="ushort"/>.</summary>
+        /// <summary>Loads a vector from the given source and element offset and reinterprets it as <see cref="ushort" />.</summary>
         /// <param name="source">The source to which <paramref name="elementOffset" /> will be added before loading the vector.</param>
         /// <param name="elementOffset">The element offset from <paramref name="source" /> from which the vector will be loaded.</param>
         /// <returns>The vector loaded from <paramref name="source" /> plus <paramref name="elementOffset" />.</returns>
@@ -2476,10 +2476,10 @@ namespace System.Runtime.Intrinsics
             );
         }
 
-        /// <summary>Narrows two <see cref="Vector512{Double}"/> instances into one <see cref="Vector512{Single}" />.</summary>
+        /// <summary>Narrows two <see langword="Vector512&lt;Double&gt;" /> instances into one <see langword="Vector512&lt;Single&gt;" />.</summary>
         /// <param name="lower">The vector that will be narrowed to the lower half of the result vector.</param>
         /// <param name="upper">The vector that will be narrowed to the upper half of the result vector.</param>
-        /// <returns>A <see cref="Vector512{Single}"/> containing elements narrowed from <paramref name="lower" /> and <paramref name="upper" />.</returns>
+        /// <returns>A <see langword="Vector512&lt;Single&gt;" /> containing elements narrowed from <paramref name="lower" /> and <paramref name="upper" />.</returns>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector512<float> Narrow(Vector512<double> lower, Vector512<double> upper)
@@ -2490,10 +2490,10 @@ namespace System.Runtime.Intrinsics
             );
         }
 
-        /// <summary>Narrows two <see cref="Vector512{Int16}"/> instances into one <see cref="Vector512{SByte}" />.</summary>
+        /// <summary>Narrows two <see langword="Vector512&lt;Int16&gt;" /> instances into one <see langword="Vector512&lt;SByte&gt;" />.</summary>
         /// <param name="lower">The vector that will be narrowed to the lower half of the result vector.</param>
         /// <param name="upper">The vector that will be narrowed to the upper half of the result vector.</param>
-        /// <returns>A <see cref="Vector512{SByte}"/> containing elements narrowed from <paramref name="lower" /> and <paramref name="upper" />.</returns>
+        /// <returns>A <see langword="Vector512&lt;SByte&gt;" /> containing elements narrowed from <paramref name="lower" /> and <paramref name="upper" />.</returns>
         [Intrinsic]
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -2505,10 +2505,10 @@ namespace System.Runtime.Intrinsics
             );
         }
 
-        /// <summary>Narrows two <see cref="Vector512{Int32}"/> instances into one <see cref="Vector512{Int16}" />.</summary>
+        /// <summary>Narrows two <see langword="Vector512&lt;Int32&gt;" /> instances into one <see langword="Vector512&lt;Int16&gt;" />.</summary>
         /// <param name="lower">The vector that will be narrowed to the lower half of the result vector.</param>
         /// <param name="upper">The vector that will be narrowed to the upper half of the result vector.</param>
-        /// <returns>A <see cref="Vector512{Int16}"/> containing elements narrowed from <paramref name="lower" /> and <paramref name="upper" />.</returns>
+        /// <returns>A <see langword="Vector512&lt;Int16&gt;" /> containing elements narrowed from <paramref name="lower" /> and <paramref name="upper" />.</returns>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector512<short> Narrow(Vector512<int> lower, Vector512<int> upper)
@@ -2519,10 +2519,10 @@ namespace System.Runtime.Intrinsics
             );
         }
 
-        /// <summary>Narrows two <see cref="Vector512{Int64}"/> instances into one <see cref="Vector512{Int32}" />.</summary>
+        /// <summary>Narrows two <see langword="Vector512&lt;Int64&gt;" /> instances into one <see langword="Vector512&lt;Int32&gt;" />.</summary>
         /// <param name="lower">The vector that will be narrowed to the lower half of the result vector.</param>
         /// <param name="upper">The vector that will be narrowed to the upper half of the result vector.</param>
-        /// <returns>A <see cref="Vector512{Int32}"/> containing elements narrowed from <paramref name="lower" /> and <paramref name="upper" />.</returns>
+        /// <returns>A <see langword="Vector512&lt;Int32&gt;" /> containing elements narrowed from <paramref name="lower" /> and <paramref name="upper" />.</returns>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector512<int> Narrow(Vector512<long> lower, Vector512<long> upper)
@@ -2533,10 +2533,10 @@ namespace System.Runtime.Intrinsics
             );
         }
 
-        /// <summary>Narrows two <see cref="Vector512{UInt16}"/> instances into one <see cref="Vector512{Byte}" />.</summary>
+        /// <summary>Narrows two <see langword="Vector512&lt;UInt16&gt;" /> instances into one <see langword="Vector512&lt;Byte&gt;" />.</summary>
         /// <param name="lower">The vector that will be narrowed to the lower half of the result vector.</param>
         /// <param name="upper">The vector that will be narrowed to the upper half of the result vector.</param>
-        /// <returns>A <see cref="Vector512{Byte}"/> containing elements narrowed from <paramref name="lower" /> and <paramref name="upper" />.</returns>
+        /// <returns>A <see langword="Vector512&lt;Byte&gt;" /> containing elements narrowed from <paramref name="lower" /> and <paramref name="upper" />.</returns>
         [Intrinsic]
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -2548,10 +2548,10 @@ namespace System.Runtime.Intrinsics
             );
         }
 
-        /// <summary>Narrows two <see cref="Vector512{UInt32}"/> instances into one <see cref="Vector512{UInt16}" />.</summary>
+        /// <summary>Narrows two <see langword="Vector512&lt;UInt32&gt;" /> instances into one <see langword="Vector512&lt;UInt16&gt;" />.</summary>
         /// <param name="lower">The vector that will be narrowed to the lower half of the result vector.</param>
         /// <param name="upper">The vector that will be narrowed to the upper half of the result vector.</param>
-        /// <returns>A <see cref="Vector512{UInt16}"/> containing elements narrowed from <paramref name="lower" /> and <paramref name="upper" />.</returns>
+        /// <returns>A <see langword="Vector512&lt;UInt16&gt;" /> containing elements narrowed from <paramref name="lower" /> and <paramref name="upper" />.</returns>
         [Intrinsic]
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -2563,10 +2563,10 @@ namespace System.Runtime.Intrinsics
             );
         }
 
-        /// <summary>Narrows two <see cref="Vector512{UInt64}"/> instances into one <see cref="Vector512{UInt32}" />.</summary>
+        /// <summary>Narrows two <see langword="Vector512&lt;UInt64&gt;" /> instances into one <see langword="Vector512&lt;UInt32&gt;" />.</summary>
         /// <param name="lower">The vector that will be narrowed to the lower half of the result vector.</param>
         /// <param name="upper">The vector that will be narrowed to the upper half of the result vector.</param>
-        /// <returns>A <see cref="Vector512{UInt32}"/> containing elements narrowed from <paramref name="lower" /> and <paramref name="upper" />.</returns>
+        /// <returns>A <see langword="Vector512&lt;UInt32&gt;" /> containing elements narrowed from <paramref name="lower" /> and <paramref name="upper" />.</returns>
         [Intrinsic]
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -3371,53 +3371,53 @@ namespace System.Runtime.Intrinsics
             return true;
         }
 
-        /// <summary>Widens a <see cref="Vector512{Byte}" /> into two <see cref="Vector512{UInt16} " />.</summary>
+        /// <summary>Widens a <see langword="Vector512&lt;Byte&gt;" /> into two <see cref="Vector512{UInt16} " />.</summary>
         /// <param name="source">The vector whose elements are to be widened.</param>
         /// <returns>A pair of vectors that contain the widened lower and upper halves of <paramref name="source" />.</returns>
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static (Vector512<ushort> Lower, Vector512<ushort> Upper) Widen(Vector512<byte> source) => (WidenLower(source), WidenUpper(source));
 
-        /// <summary>Widens a <see cref="Vector512{Int16}" /> into two <see cref="Vector512{Int32} " />.</summary>
+        /// <summary>Widens a <see langword="Vector512&lt;Int16&gt;" /> into two <see cref="Vector512{Int32} " />.</summary>
         /// <param name="source">The vector whose elements are to be widened.</param>
         /// <returns>A pair of vectors that contain the widened lower and upper halves of <paramref name="source" />.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static (Vector512<int> Lower, Vector512<int> Upper) Widen(Vector512<short> source) => (WidenLower(source), WidenUpper(source));
 
-        /// <summary>Widens a <see cref="Vector512{Int32}" /> into two <see cref="Vector512{Int64} " />.</summary>
+        /// <summary>Widens a <see langword="Vector512&lt;Int32&gt;" /> into two <see cref="Vector512{Int64} " />.</summary>
         /// <param name="source">The vector whose elements are to be widened.</param>
         /// <returns>A pair of vectors that contain the widened lower and upper halves of <paramref name="source" />.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static (Vector512<long> Lower, Vector512<long> Upper) Widen(Vector512<int> source) => (WidenLower(source), WidenUpper(source));
 
-        /// <summary>Widens a <see cref="Vector512{SByte}" /> into two <see cref="Vector512{Int16} " />.</summary>
+        /// <summary>Widens a <see langword="Vector512&lt;SByte&gt;" /> into two <see cref="Vector512{Int16} " />.</summary>
         /// <param name="source">The vector whose elements are to be widened.</param>
         /// <returns>A pair of vectors that contain the widened lower and upper halves of <paramref name="source" />.</returns>
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static (Vector512<short> Lower, Vector512<short> Upper) Widen(Vector512<sbyte> source) => (WidenLower(source), WidenUpper(source));
 
-        /// <summary>Widens a <see cref="Vector512{Single}" /> into two <see cref="Vector512{Double} " />.</summary>
+        /// <summary>Widens a <see langword="Vector512&lt;Single&gt;" /> into two <see cref="Vector512{Double} " />.</summary>
         /// <param name="source">The vector whose elements are to be widened.</param>
         /// <returns>A pair of vectors that contain the widened lower and upper halves of <paramref name="source" />.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static (Vector512<double> Lower, Vector512<double> Upper) Widen(Vector512<float> source) => (WidenLower(source), WidenUpper(source));
 
-        /// <summary>Widens a <see cref="Vector512{UInt16}" /> into two <see cref="Vector512{UInt32} " />.</summary>
+        /// <summary>Widens a <see langword="Vector512&lt;UInt16&gt;" /> into two <see cref="Vector512{UInt32} " />.</summary>
         /// <param name="source">The vector whose elements are to be widened.</param>
         /// <returns>A pair of vectors that contain the widened lower and upper halves of <paramref name="source" />.</returns>
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static (Vector512<uint> Lower, Vector512<uint> Upper) Widen(Vector512<ushort> source) => (WidenLower(source), WidenUpper(source));
 
-        /// <summary>Widens a <see cref="Vector512{UInt32}" /> into two <see cref="Vector512{UInt64} " />.</summary>
+        /// <summary>Widens a <see langword="Vector512&lt;UInt32&gt;" /> into two <see cref="Vector512{UInt64} " />.</summary>
         /// <param name="source">The vector whose elements are to be widened.</param>
         /// <returns>A pair of vectors that contain the widened lower and upper halves of <paramref name="source" />.</returns>
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static (Vector512<ulong> Lower, Vector512<ulong> Upper) Widen(Vector512<uint> source) => (WidenLower(source), WidenUpper(source));
 
-        /// <summary>Widens the lower half of a <see cref="Vector512{Byte}" /> into a <see cref="Vector512{UInt16} " />.</summary>
+        /// <summary>Widens the lower half of a <see langword="Vector512&lt;Byte&gt;" /> into a <see cref="Vector512{UInt16} " />.</summary>
         /// <param name="source">The vector whose elements are to be widened.</param>
         /// <returns>A vector that contain the widened lower half of <paramref name="source" />.</returns>
         [Intrinsic]
@@ -3433,7 +3433,7 @@ namespace System.Runtime.Intrinsics
             );
         }
 
-        /// <summary>Widens the lower half of a <see cref="Vector512{Int16}" /> into a <see cref="Vector512{Int32} " />.</summary>
+        /// <summary>Widens the lower half of a <see langword="Vector512&lt;Int16&gt;" /> into a <see cref="Vector512{Int32} " />.</summary>
         /// <param name="source">The vector whose elements are to be widened.</param>
         /// <returns>A vector that contain the widened lower half of <paramref name="source" />.</returns>
         [Intrinsic]
@@ -3448,7 +3448,7 @@ namespace System.Runtime.Intrinsics
             );
         }
 
-        /// <summary>Widens the lower half of a <see cref="Vector512{Int32}" /> into a <see cref="Vector512{Int64} " />.</summary>
+        /// <summary>Widens the lower half of a <see langword="Vector512&lt;Int32&gt;" /> into a <see cref="Vector512{Int64} " />.</summary>
         /// <param name="source">The vector whose elements are to be widened.</param>
         /// <returns>A vector that contain the widened lower half of <paramref name="source" />.</returns>
         [Intrinsic]
@@ -3463,7 +3463,7 @@ namespace System.Runtime.Intrinsics
             );
         }
 
-        /// <summary>Widens the lower half of a <see cref="Vector512{SByte}" /> into a <see cref="Vector512{Int16} " />.</summary>
+        /// <summary>Widens the lower half of a <see langword="Vector512&lt;SByte&gt;" /> into a <see cref="Vector512{Int16} " />.</summary>
         /// <param name="source">The vector whose elements are to be widened.</param>
         /// <returns>A vector that contain the widened lower half of <paramref name="source" />.</returns>
         [Intrinsic]
@@ -3478,7 +3478,7 @@ namespace System.Runtime.Intrinsics
                 Vector256.WidenUpper(lower)
             );
         }
-        /// <summary>Widens the lower half of a <see cref="Vector512{Single}" /> into a <see cref="Vector512{Double} " />.</summary>
+        /// <summary>Widens the lower half of a <see langword="Vector512&lt;Single&gt;" /> into a <see cref="Vector512{Double} " />.</summary>
         /// <param name="source">The vector whose elements are to be widened.</param>
         /// <returns>A vector that contain the widened lower half of <paramref name="source" />.</returns>
         [Intrinsic]
@@ -3493,7 +3493,7 @@ namespace System.Runtime.Intrinsics
             );
         }
 
-        /// <summary>Widens the lower half of a <see cref="Vector512{UInt16}" /> into a <see cref="Vector512{UInt32} " />.</summary>
+        /// <summary>Widens the lower half of a <see langword="Vector512&lt;UInt16&gt;" /> into a <see cref="Vector512{UInt32} " />.</summary>
         /// <param name="source">The vector whose elements are to be widened.</param>
         /// <returns>A vector that contain the widened lower half of <paramref name="source" />.</returns>
         [Intrinsic]
@@ -3509,7 +3509,7 @@ namespace System.Runtime.Intrinsics
             );
         }
 
-        /// <summary>Widens the lower half of a <see cref="Vector512{UInt32}" /> into a <see cref="Vector512{UInt64} " />.</summary>
+        /// <summary>Widens the lower half of a <see langword="Vector512&lt;UInt32&gt;" /> into a <see cref="Vector512{UInt64} " />.</summary>
         /// <param name="source">The vector whose elements are to be widened.</param>
         /// <returns>A vector that contain the widened lower half of <paramref name="source" />.</returns>
         [Intrinsic]
@@ -3525,7 +3525,7 @@ namespace System.Runtime.Intrinsics
             );
         }
 
-        /// <summary>Widens the upper half of a <see cref="Vector512{Byte}" /> into a <see cref="Vector512{UInt16} " />.</summary>
+        /// <summary>Widens the upper half of a <see langword="Vector512&lt;Byte&gt;" /> into a <see cref="Vector512{UInt16} " />.</summary>
         /// <param name="source">The vector whose elements are to be widened.</param>
         /// <returns>A vector that contain the widened upper half of <paramref name="source" />.</returns>
         [Intrinsic]
@@ -3541,7 +3541,7 @@ namespace System.Runtime.Intrinsics
             );
         }
 
-        /// <summary>Widens the upper half of a <see cref="Vector512{Int16}" /> into a <see cref="Vector512{Int32} " />.</summary>
+        /// <summary>Widens the upper half of a <see langword="Vector512&lt;Int16&gt;" /> into a <see cref="Vector512{Int32} " />.</summary>
         /// <param name="source">The vector whose elements are to be widened.</param>
         /// <returns>A vector that contain the widened upper half of <paramref name="source" />.</returns>
         [Intrinsic]
@@ -3556,7 +3556,7 @@ namespace System.Runtime.Intrinsics
             );
         }
 
-        /// <summary>Widens the upper half of a <see cref="Vector512{Int32}" /> into a <see cref="Vector512{Int64} " />.</summary>
+        /// <summary>Widens the upper half of a <see langword="Vector512&lt;Int32&gt;" /> into a <see cref="Vector512{Int64} " />.</summary>
         /// <param name="source">The vector whose elements are to be widened.</param>
         /// <returns>A vector that contain the widened upper half of <paramref name="source" />.</returns>
         [Intrinsic]
@@ -3571,7 +3571,7 @@ namespace System.Runtime.Intrinsics
             );
         }
 
-        /// <summary>Widens the upper half of a <see cref="Vector512{SByte}" /> into a <see cref="Vector512{Int16} " />.</summary>
+        /// <summary>Widens the upper half of a <see langword="Vector512&lt;SByte&gt;" /> into a <see cref="Vector512{Int16} " />.</summary>
         /// <param name="source">The vector whose elements are to be widened.</param>
         /// <returns>A vector that contain the widened upper half of <paramref name="source" />.</returns>
         [Intrinsic]
@@ -3587,7 +3587,7 @@ namespace System.Runtime.Intrinsics
             );
         }
 
-        /// <summary>Widens the upper half of a <see cref="Vector512{Single}" /> into a <see cref="Vector512{Double} " />.</summary>
+        /// <summary>Widens the upper half of a <see langword="Vector512&lt;Single&gt;" /> into a <see cref="Vector512{Double} " />.</summary>
         /// <param name="source">The vector whose elements are to be widened.</param>
         /// <returns>A vector that contain the widened upper half of <paramref name="source" />.</returns>
         [Intrinsic]
@@ -3602,7 +3602,7 @@ namespace System.Runtime.Intrinsics
             );
         }
 
-        /// <summary>Widens the upper half of a <see cref="Vector512{UInt16}" /> into a <see cref="Vector512{UInt32} " />.</summary>
+        /// <summary>Widens the upper half of a <see langword="Vector512&lt;UInt16&gt;" /> into a <see cref="Vector512{UInt32} " />.</summary>
         /// <param name="source">The vector whose elements are to be widened.</param>
         /// <returns>A vector that contain the widened upper half of <paramref name="source" />.</returns>
         [Intrinsic]
@@ -3618,7 +3618,7 @@ namespace System.Runtime.Intrinsics
             );
         }
 
-        /// <summary>Widens the upper half of a <see cref="Vector512{UInt32}" /> into a <see cref="Vector512{UInt64} " />.</summary>
+        /// <summary>Widens the upper half of a <see langword="Vector512&lt;UInt32&gt;" /> into a <see cref="Vector512{UInt64} " />.</summary>
         /// <param name="source">The vector whose elements are to be widened.</param>
         /// <returns>A vector that contain the widened upper half of <paramref name="source" />.</returns>
         [Intrinsic]

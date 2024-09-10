@@ -148,6 +148,7 @@
   <PropertyGroup>
     <EnableAzurePipelinesReporter>false</EnableAzurePipelinesReporter>
     <EnableXUnitReporter>false</EnableXUnitReporter>
+    <Creator>$(_Creator)</Creator>
   </PropertyGroup>
 
   <ItemGroup Condition=" '$(AGENT_OS)' == 'Windows_NT' ">

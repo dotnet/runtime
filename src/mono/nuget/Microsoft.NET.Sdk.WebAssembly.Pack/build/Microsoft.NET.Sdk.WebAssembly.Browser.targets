@@ -460,10 +460,10 @@ Copyright (c) .NET Foundation. All rights reserved.
       <_WasmEmitSourceMapPublish Condition="'$(_WasmEmitSourceMapPublish)' == ''">false</_WasmEmitSourceMapPublish>
     </PropertyGroup>
 
-    <ItemGroup Condition="@(WasmAssembliesFinal->Count()) == 0">
+    <ItemGroup Condition="@(WasmAssembliesFinal->Count()) == 0 or '$(TargetFrameworkVersion)' == 'v6.0'">
       <_WasmResolvedFilesToPublish Include="@(ResolvedFileToPublish)" />
     </ItemGroup>
-    <ItemGroup Condition="@(WasmAssembliesFinal->Count()) > 0">
+    <ItemGroup Condition="@(WasmAssembliesFinal->Count()) > 0 and '$(TargetFrameworkVersion)' != 'v6.0'">
       <_WasmResolvedFilesToPublish Include="@(WasmAssembliesFinal)" />
       <!-- Ensure we have 'RelativePath' required by ComputeWasmPublishAssets. 9+ version of MonoAOTCompiler is copying this metadata, but when targeting downlevel versions it doesn't. -->
       <_WasmResolvedFilesToPublish RelativePath="%(FileName)%(Extension)" Condition="'%(_WasmResolvedFilesToPublish.RelativePath)' == ''" />

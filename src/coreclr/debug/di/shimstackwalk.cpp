@@ -156,7 +156,7 @@ BOOL ShimStackWalk::ShouldTrackUMChain(StackWalkInfo * pswInfo)
     // track the chain in this case. Since we know the type of Frame we are dealing with, 
     // we can make a more accurate determination of whether we should track the chain.
     // However if we are interop debugging and the thread is hijacked, we should track the chain.
-    if (!m_pProcess->IsUnmanagedThreadHijacked(m_pThread) && GetInternalFrameType(pswInfo->GetCurrentInternalFrame()) == STUBFRAME_EXCEPTION) 
+    if (!pswInfo->ExhaustedAllInternalFrames() && !m_pProcess->IsUnmanagedThreadHijacked(m_pThread) && GetInternalFrameType(pswInfo->GetCurrentInternalFrame()) == STUBFRAME_EXCEPTION) 
         return FALSE;
 
     return TRUE;
