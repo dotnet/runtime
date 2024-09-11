@@ -169,10 +169,12 @@ System.Diagnostics.DiagnosticSource</PackageDescription>
     <GenerateFileFromTemplate
       TemplateFile="ThisAssembly.cs.in"
       Properties="AssemblyVersion=$(AssemblyVersion);AssemblyFileVersion=$(FileVersion)"
-      OutputPath="$(IntermediateOutputPath)ThisAssembly.cs">
-        <Output TaskParameter="OutputPath" ItemName="Compile" />
-        <Output TaskParameter="OutputPath" ItemName="FileWrites" />
-    </GenerateFileFromTemplate>
+      OutputPath="$(IntermediateOutputPath)ThisAssembly.cs" />
+
+    <ItemGroup>
+      <Compile Include="$(IntermediateOutputPath)ThisAssembly.cs" />
+      <FileWrites Include="$(IntermediateOutputPath)ThisAssembly.cs" />
+    </ItemGroup>
   </Target>
 
 </Project>
