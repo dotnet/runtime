@@ -319,7 +319,7 @@ void LazyMachState::unwindLazyState(LazyMachState* baseState,
     context.S8 = unwoundstate->captureCalleeSavedRegisters[8] = baseState->captureCalleeSavedRegisters[8];
     context.Fp = unwoundstate->captureCalleeSavedRegisters[9] = baseState->captureCalleeSavedRegisters[9];
     context.Tp = unwoundstate->captureCalleeSavedRegisters[10] = baseState->captureCalleeSavedRegisters[10];
-    context.Ra = NULL; // Filled by the unwinder
+    context.Ra = 0; // Filled by the unwinder
 
     context.Sp = baseState->captureSp;
     context.Pc = baseState->captureIp;
@@ -340,7 +340,7 @@ void LazyMachState::unwindLazyState(LazyMachState* baseState,
     nonVolContextPtrs.S8 = &unwoundstate->captureCalleeSavedRegisters[8];
     nonVolContextPtrs.Fp = &unwoundstate->captureCalleeSavedRegisters[9];
     nonVolContextPtrs.Tp = &unwoundstate->captureCalleeSavedRegisters[10];
-    nonVolContextPtrs.Ra = NULL; // Filled by the unwinder
+    nonVolContextPtrs.Ra = 0; // Filled by the unwinder
 
 #endif // DACCESS_COMPILE
 
@@ -487,7 +487,7 @@ void HelperMethodFrame::UpdateRegDisplay(const PREGDISPLAY pRD, bool updateFloat
         pRD->pCurrentContext->S8 = (DWORD64)(pUnwoundState->captureCalleeSavedRegisters[8]);
         pRD->pCurrentContext->Fp = (DWORD64)(pUnwoundState->captureCalleeSavedRegisters[9]);
         pRD->pCurrentContext->Tp = (DWORD64)(pUnwoundState->captureCalleeSavedRegisters[10]);
-        pRD->pCurrentContext->Ra = NULL; // Unwind again to get Caller's PC
+        pRD->pCurrentContext->Ra = 0; // Unwind again to get Caller's PC
 
         pRD->pCurrentContextPointers->S0 = pUnwoundState->ptrCalleeSavedRegisters[0];
         pRD->pCurrentContextPointers->S1 = pUnwoundState->ptrCalleeSavedRegisters[1];
@@ -525,7 +525,7 @@ void HelperMethodFrame::UpdateRegDisplay(const PREGDISPLAY pRD, bool updateFloat
     pRD->pCurrentContext->S8 = m_MachState.ptrCalleeSavedRegisters[8] ? *m_MachState.ptrCalleeSavedRegisters[8] : m_MachState.captureCalleeSavedRegisters[8];
     pRD->pCurrentContext->Fp = m_MachState.ptrCalleeSavedRegisters[9] ? *m_MachState.ptrCalleeSavedRegisters[9] : m_MachState.captureCalleeSavedRegisters[9];
     pRD->pCurrentContext->Tp = m_MachState.ptrCalleeSavedRegisters[10] ? *m_MachState.ptrCalleeSavedRegisters[10] : m_MachState.captureCalleeSavedRegisters[10];
-    pRD->pCurrentContext->Ra = NULL; // Unwind again to get Caller's PC
+    pRD->pCurrentContext->Ra = 0; // Unwind again to get Caller's PC
 #else // TARGET_UNIX
     pRD->pCurrentContext->S0 = *m_MachState.ptrCalleeSavedRegisters[0];
     pRD->pCurrentContext->S1 = *m_MachState.ptrCalleeSavedRegisters[1];
@@ -538,7 +538,7 @@ void HelperMethodFrame::UpdateRegDisplay(const PREGDISPLAY pRD, bool updateFloat
     pRD->pCurrentContext->S8 = *m_MachState.ptrCalleeSavedRegisters[8];
     pRD->pCurrentContext->Fp = *m_MachState.ptrCalleeSavedRegisters[9];
     pRD->pCurrentContext->Tp = *m_MachState.ptrCalleeSavedRegisters[10];
-    pRD->pCurrentContext->Ra = NULL; // Unwind again to get Caller's PC
+    pRD->pCurrentContext->Ra = 0; // Unwind again to get Caller's PC
 #endif
 
 #if !defined(DACCESS_COMPILE)

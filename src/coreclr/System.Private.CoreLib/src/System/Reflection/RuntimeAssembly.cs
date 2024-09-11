@@ -584,9 +584,17 @@ namespace System.Reflection
         }
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern bool FCallIsDynamic(RuntimeAssembly assembly);
+        private static extern bool GetIsDynamic(IntPtr assembly);
 
-        public override bool IsDynamic => FCallIsDynamic(this);
+        public override bool IsDynamic
+        {
+            get
+            {
+                bool isDynamic = GetIsDynamic(GetUnderlyingNativeHandle());
+                GC.KeepAlive(this); // We directly pass the native handle above - make sure this object stays alive for the call
+                return isDynamic;
+            }
+        }
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "AssemblyNative_GetSimpleName")]
         private static partial void GetSimpleName(QCallAssembly assembly, StringHandleOnStack retSimpleName);

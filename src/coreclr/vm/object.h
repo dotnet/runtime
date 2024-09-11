@@ -77,7 +77,6 @@ void ErectWriteBarrierForMT(MethodTable **dst, MethodTable *ref);
 
 class MethodTable;
 class Thread;
-class BaseDomain;
 class Assembly;
 class DomainAssembly;
 class AssemblyNative;
@@ -1295,7 +1294,6 @@ typedef DPTR(class ThreadBaseObject) PTR_ThreadBaseObject;
 class ThreadBaseObject : public Object
 {
     friend class ClrDataAccess;
-    friend class ThreadNative;
     friend class CoreLibBinder;
     friend class Object;
 

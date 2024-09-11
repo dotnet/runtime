@@ -238,10 +238,13 @@ static const Entry s_QCall[] =
     DllImportEntry(AppDomain_CreateDynamicAssembly)
     DllImportEntry(ThreadNative_Start)
     DllImportEntry(ThreadNative_SetPriority)
+    DllImportEntry(ThreadNative_GetCurrentThread)
     DllImportEntry(ThreadNative_SetIsBackground)
     DllImportEntry(ThreadNative_InformThreadNameChange)
     DllImportEntry(ThreadNative_YieldThread)
     DllImportEntry(ThreadNative_GetCurrentOSThreadId)
+    DllImportEntry(ThreadNative_Initialize)
+    DllImportEntry(ThreadNative_GetThreadState)
 #ifdef FEATURE_COMINTEROP_APARTMENT_SUPPORT
     DllImportEntry(ThreadNative_GetApartmentState)
     DllImportEntry(ThreadNative_SetApartmentState)
