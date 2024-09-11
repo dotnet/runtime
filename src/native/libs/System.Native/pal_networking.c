@@ -1094,6 +1094,9 @@ SystemNative_TryGetIPPacketInformation(MessageHeader* messageHeader, int32_t isI
 
     return 0;
 #else // HAVE_CMSGHDR
+    (void)messageHeader;
+    (void)isIPv4;
+    (void)packetInfo;
     return Error_ENOTSUP;
 #endif // HAVE_CMSGHDR
 }

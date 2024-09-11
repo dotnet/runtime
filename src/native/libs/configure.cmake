@@ -465,7 +465,7 @@ check_symbol_exists(
 
 check_symbol_exists(
     cmsghdr
-    socket.h
+    sys/socket.h
     HAVE_CMSGHDR)
 
 check_symbol_exists(
