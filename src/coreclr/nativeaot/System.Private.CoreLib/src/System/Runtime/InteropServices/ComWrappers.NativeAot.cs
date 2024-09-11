@@ -1222,30 +1222,29 @@ namespace System.Runtime.InteropServices
 
             List<object> objects = new List<object>();
 
-            foreach (GCHandle weakNativeObjectWrapperHandle in s_referenceTrackerNativeObjectWrapperCache)
+            // Here we aren't part of a GC callback, so other threads can still be running
+            // who are adding and removing from the collection. This means we can possibly race
+            // with a handle being removed and freed and we can end up accessing a freed handle.
+            // To avoid this, we take a lock on modifications to the collection while we gather
+            // the objects.
+            using (s_referenceTrackerNativeObjectWrapperCache.ModificationLock.EnterScope())
             {
-                // Here we aren't part of a GC callback, so other threads can still be running
-                // who are adding and removing from the collection. The collection we are enumerating over
-                // supports lock free enumeration, but it is possible we can run into handles that just
-                // got removed and freed. So we guard against that here by using GCHandle.ToIntPtr
-                // rather than Target given the latter would throw an exception. If they have been freed,
-                // we don't need to worry about them as they don't need to be released.
-                // In addition, we are only handling objects from our current thread here.
-                IntPtr ptr = GCHandle.ToIntPtr(weakNativeObjectWrapperHandle);
-                if (ptr == default)
+                foreach (GCHandle weakNativeObjectWrapperHandle in s_referenceTrackerNativeObjectWrapperCache)
                 {
-                    continue;
-                }
+                    ReferenceTrackerNativeObjectWrapper? nativeObjectWrapper = Unsafe.As<ReferenceTrackerNativeObjectWrapper?>(weakNativeObjectWrapperHandle.Target);
+                    if (nativeObjectWrapper != null &&
+                        nativeObjectWrapper._contextToken == contextToken)
+                    {
+                        object? target = nativeObjectWrapper._proxyHandle.Target;
+                        if (target != null)
+                        {
+                            objects.Add(target);
+                        }
 
-                ReferenceTrackerNativeObjectWrapper? nativeObjectWrapper = Unsafe.As<ReferenceTrackerNativeObjectWrapper?>(GCHandle.InternalGet(ptr));
-                if (nativeObjectWrapper != null &&
-                    nativeObjectWrapper._contextToken == contextToken)
-                {
-                    objects.Add(nativeObjectWrapper._proxyHandle.Target);
-
-                    // Separate the wrapper from the tracker runtime prior to
-                    // passing them.
-                    nativeObjectWrapper.DisconnectTracker();
+                        // Separate the wrapper from the tracker runtime prior to
+                        // passing them.
+                        nativeObjectWrapper.DisconnectTracker();
+                    }
                 }
             }
 
@@ -1662,6 +1661,8 @@ namespace System.Runtime.InteropServices
         private Entry?[] _buckets = new Entry[DefaultSize];
         private int _numEntries;
         private readonly Lock _lock = new Lock(useTrivialWaits: true);
+
+        public Lock ModificationLock => _lock;
 
         public void Add(GCHandle handle)
         {
