@@ -364,8 +364,7 @@ namespace System.Diagnostics
         [NonEvent]
         protected override void OnEventCommand(EventCommandEventArgs command)
         {
-            if (command.Command == EventCommand.Enable
-                && IsEnabled(EventLevel.Informational, Keywords.Messages))
+            if (command.Command == EventCommand.Enable)
             {
                 Version(
                     ThisAssembly.AssemblyFileVersion.Major,
