@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using System.Text.RegularExpressions;
 using Xunit.Abstractions;
 using Xunit;
 
@@ -47,7 +48,15 @@ public class MemoryTests : AppTestBase
         BuildProject(config, assertAppBundle: false, extraArgs: extraArgs);
 
         var result = await RunSdkStyleAppForBuild(new (Configuration: config, TestScenario: "ProfilerTest"));
-        Console.WriteLine($"Test output: {result}");
-        // ToDo: check if the file is created AND its size it bigger than 10MB - where do we look for it?
+        Regex regex = new Regex(@"Profile data of size (\d+) bytes");
+        var match = result.TestOutput
+            .Select(line => regex.Match(line))
+            .FirstOrDefault(m => m.Success);
+        Assert.True(match != null, $"TestOuptup did not contain log matching {regex}");
+        if (!int.TryParse(match.Groups[1].Value, out int fileSize))
+        {
+            Assert.Fail($"Failed to parse profile size from {match.Groups[1].Value} to int");
+        }
+        Assert.True(fileSize >= 10 * 1024, $"Profile file size is less than 10KB. Actual size: {fileSize} bytes.");
     }
 }
