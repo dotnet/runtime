@@ -964,8 +964,10 @@ namespace System.Diagnostics.Tests
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void TestVersion()
         {
-            RemoteExecutor.Invoke(() =>
+            RemoteExecutor.Invoke(static () =>
             {
+                Activity a = new Activity("test"); // we need this to ensure DiagnosticSourceEventSource.Logger creation.
+
                 using (var eventSourceListener = new TestDiagnosticSourceEventListener())
                 {
                     Assert.Equal(0, eventSourceListener.EventCount);
@@ -983,7 +985,7 @@ namespace System.Diagnostics.Tests
                         }
                     };
 
-                    eventSourceListener.Enable("TestMessagesSource/TestEvent1");
+                    eventSourceListener.Enable("");
                     Assert.Equal(0, eventSourceListener.EventCount);
 
                     Assert.NotNull(version);
