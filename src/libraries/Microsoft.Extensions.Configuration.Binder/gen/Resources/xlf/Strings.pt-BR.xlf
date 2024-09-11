@@ -27,7 +27,7 @@
         <target state="translated">O tipo de elemento da coleção não é suportado: '{0}'.</target>
         <note />
       </trans-unit>
-      <trans-unit id="LanguageVersionIsNotSupportedMessageFormat">
+      <trans-unit id="Language VersionIsNotSupportedMessageFormat">
         <source>The project's language version has to be at least 'C# 12'.</source>
         <target state="new">The project's language version has to be at least 'C# 12'.</target>
         <note />
