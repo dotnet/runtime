@@ -5,20 +5,9 @@ using System;
 
 namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 
-internal record struct ExceptionData(
-    TargetPointer Message,
-    TargetPointer InnerException,
-    TargetPointer StackTrace,
-    TargetPointer WatsonBuckets,
-    TargetPointer StackTraceString,
-    TargetPointer RemoteStackTraceString,
-    int HResult,
-    int XCode);
-
-internal interface IException : IContract, IContractFactory<IException>
+internal interface IFException : IContractFactory<IFException, IException>
 {
-    static string IContract.Name { get; } = nameof(Exception);
-    static IException IContractFactory<IException>.Create(ITarget target, int version)
+    static IException IContractFactory<IFException, IException>.CreateContract(ITarget target, int version)
     {
         return version switch
         {
@@ -26,12 +15,4 @@ internal interface IException : IContract, IContractFactory<IException>
             _ => default(Exception),
         };
     }
-
-    public virtual TargetPointer GetNestedExceptionInfo(TargetPointer exception, out TargetPointer nextNestedException) => throw new NotImplementedException();
-    public virtual ExceptionData GetExceptionData(TargetPointer managedException) => throw new NotImplementedException();
-}
-
-internal readonly struct Exception : IException
-{
-    // Everything throws NotImplementedException
 }

@@ -18,7 +18,7 @@ internal sealed class Registry
         _target = target;
     }
 
-    public IException Exception => GetContract<IException>();
+    public IException Exception => GetContract<IFException, IException>();
     public ILoader Loader => GetContract<ILoader>();
     public IEcmaMetadata EcmaMetadata => GetContract<IEcmaMetadata>();
     public IObject Object => GetContract<IFObject, IObject>();
