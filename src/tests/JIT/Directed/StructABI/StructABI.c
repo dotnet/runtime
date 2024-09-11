@@ -221,16 +221,20 @@ struct Nested9
 	struct InlineArray4 Field2;
 };
 
-#pragma pack(push, 1)
-struct Issue80393_F2
-{
-    double value;
-};
-
 struct Issue80393_S_Doubles
 {
     double f1;
     double f3;
+};
+
+// We need to apply 1-byte packing to these structs to get the exact alignment we want, but we
+//  don't want to apply packing to the union or 2-doubles struct because it will change the natural
+//  alignment of the union and as a result alter which registers it's assigned to by clang, which
+//  won't match what CoreCLR does.
+#pragma pack(push, 1)
+struct Issue80393_F2
+{
+    double value;
 };
 
 struct Issue80393_F2_Offset {
@@ -239,12 +243,12 @@ struct Issue80393_F2_Offset {
     char padding[3];
     struct Issue80393_F2 F2;
 };
+#pragma pack(pop)
 
 union Issue80393_S {
     struct Issue80393_S_Doubles f1_f3;
     struct Issue80393_F2_Offset f2;
 };
-#pragma pack(pop)
 
 // NOTE: If investigating this in isolation, make sure you set -mfloat-abi=hard -mfpu=neon when building for arm32
 DLLEXPORT union Issue80393_S Issue80393_HFA(union Issue80393_S value)
