@@ -1,10 +1,8 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
 using System.Linq;
 using System.Net.Http;
-using System.Net.Http.Headers;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.DependencyInjection;
@@ -21,12 +19,7 @@ namespace Microsoft.Extensions.Http.Tests.Logging
 
         private static class EventIds
         {
-            public static readonly EventId RequestHeader = new EventId(102, "RequestHeader");
-            public static readonly EventId ResponseHeader = new EventId(103, "ResponseHeader");
             public static readonly EventId RequestFailed = new EventId(104, "RequestFailed");
-
-            public static readonly EventId RequestPipelineRequestHeader = new EventId(102, "RequestPipelineRequestHeader");
-            public static readonly EventId RequestPipelineResponseHeader = new EventId(103, "RequestPipelineResponseHeader");
             public static readonly EventId PipelineFailed = new EventId(104, "RequestPipelineFailed");
         }
 
@@ -43,11 +36,7 @@ namespace Microsoft.Extensions.Http.Tests.Logging
             // Act
             serviceCollection
                 .AddHttpClient("test")
-                .ConfigurePrimaryHttpMessageHandler(() => new FailMessageHandler())
-                .RedactLoggedHeaders(header =>
-                {
-                    return header.StartsWith("Auth") || header.StartsWith("X-");
-                });
+                .ConfigurePrimaryHttpMessageHandler(() => new FailMessageHandler());
 
             // Assert
             var services = serviceCollection.BuildServiceProvider();
