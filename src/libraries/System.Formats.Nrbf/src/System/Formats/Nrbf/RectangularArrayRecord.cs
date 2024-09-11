@@ -146,11 +146,8 @@ internal sealed class RectangularArrayRecord : ArrayRecord
             BinaryType.Primitive => MapPrimitive((PrimitiveType)memberTypeInfo.Infos[0].AdditionalInfo!),
             BinaryType.PrimitiveArray => MapPrimitiveArray((PrimitiveType)memberTypeInfo.Infos[0].AdditionalInfo!),
             BinaryType.String => typeof(string),
-            BinaryType.StringArray => typeof(string[]),
             BinaryType.Object => typeof(object),
-            BinaryType.ObjectArray => typeof(object[]),
-            BinaryType.Class or BinaryType.SystemClass => typeof(ClassRecord),
-            _ => throw new InvalidOperationException()
+            _ => typeof(ClassRecord)
         };
 
         bool canPreAllocate = false;
