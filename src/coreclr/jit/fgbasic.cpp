@@ -6725,7 +6725,7 @@ BasicBlock* Compiler::fgNewBBinRegionWorker(BBKinds     jumpKind,
 
 //-----------------------------------------------------------------------------
 // fgNewBBatTryRegionEnd: Creates and inserts a new block at the end of the specified
-// try region, updating the try end pointers in the EH table as necessary.
+// try region, updating the end pointers in the EH table as necessary.
 //
 // Arguments:
 //    jumpKind - The jump kind of the new block
@@ -6734,25 +6734,43 @@ BasicBlock* Compiler::fgNewBBinRegionWorker(BBKinds     jumpKind,
 // Returns:
 //    The new block
 //
+// Notes:
+//    newBlock will be in the try region specified by tryIndex, which may not necessarily
+//    be the same as oldTryLast->getTryIndex() if the latter is a child region.
+//    However, newBlock and oldTryLast will be in the same handler region.
+//
 BasicBlock* Compiler::fgNewBBatTryRegionEnd(BBKinds jumpKind, unsigned tryIndex)
 {
-    BasicBlock* const oldTryLast = ehGetDsc(tryIndex)->ebdTryLast;
+    EHblkDsc*         HBtab      = ehGetDsc(tryIndex);
+    BasicBlock* const oldTryLast = HBtab->ebdTryLast;
     BasicBlock* const newBlock   = fgNewBBafter(jumpKind, oldTryLast, /* extendRegion */ false);
     newBlock->setTryIndex(tryIndex);
-    newBlock->clearHndIndex();
+    newBlock->copyHndIndex(oldTryLast);
 
     // Update this try region's (and all parent try regions') last block pointer
     //
-    for (unsigned XTnum = tryIndex; XTnum < compHndBBtabCount; XTnum++)
+    for (unsigned XTnum = tryIndex; (XTnum < compHndBBtabCount) && (HBtab->ebdTryLast == oldTryLast); XTnum++, HBtab++)
     {
-        EHblkDsc* const HBtab = ehGetDsc(XTnum);
-        if (HBtab->ebdTryLast == oldTryLast)
+        assert((XTnum == tryIndex) || (XTnum == ehGetEnclosingTryIndex(XTnum - 1)));
+        fgSetTryEnd(HBtab, newBlock);
+    }
+
+    // If we inserted newBlock at the end of a handler region, repeat the above pass for handler regions
+    //
+    if (newBlock->hasHndIndex())
+    {
+        const unsigned hndIndex = newBlock->getHndIndex();
+        HBtab                   = ehGetDsc(hndIndex);
+        for (unsigned XTnum = hndIndex; (XTnum < compHndBBtabCount) && (HBtab->ebdHndLast == oldTryLast);
+             XTnum++, HBtab++)
         {
-            assert((XTnum == tryIndex) || (ehGetDsc(tryIndex)->ebdEnclosingTryIndex != EHblkDsc::NO_ENCLOSING_INDEX));
-            fgSetTryEnd(HBtab, newBlock);
+            assert((XTnum == hndIndex) || (XTnum == ehGetEnclosingHndIndex(XTnum - 1)));
+            fgSetHndEnd(HBtab, newBlock);
         }
     }
 
+    assert(newBlock->getTryIndex() == tryIndex);
+    assert(BasicBlock::sameHndRegion(newBlock, oldTryLast));
     return newBlock;
 }
 

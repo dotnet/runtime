@@ -85,7 +85,7 @@ internal sealed class ArraySinglePrimitiveRecord<T> : SZArrayRecord<T>
         }
         else if (typeof(T) == typeof(char))
         {
-            return (T[])(object)reader.ReadChars(count);
+            return (T[])(object)reader.ParseChars(count);
         }
 
         // It's safe to pre-allocate, as we have ensured there is enough bytes in the stream.
@@ -206,7 +206,7 @@ internal sealed class ArraySinglePrimitiveRecord<T> : SZArrayRecord<T>
             }
             else if (typeof(T) == typeof(char))
             {
-                values.Add((T)(object)reader.ReadChar());
+                values.Add((T)(object)reader.ParseChar());
             }
             else if (typeof(T) == typeof(short))
             {

@@ -564,8 +564,10 @@ public class InvalidInputTests : ReadTests
         Assert.Throws<SerializationException>(() => NrbfDecoder.Decode(stream));
     }
 
-    [Fact]
-    public void SurrogateCharacter()
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public void SurrogateCharacters(bool array)
     {
         using MemoryStream stream = new();
         BinaryWriter writer = new(stream, Encoding.UTF8);
@@ -576,8 +578,22 @@ public class InvalidInputTests : ReadTests
         writer.Write("ClassWithCharField"); // type name
         writer.Write(1); // member count
         writer.Write("memberName");
-        writer.Write((byte)BinaryType.Primitive);
-        writer.Write((byte)PrimitiveType.Char);
+
+        if (array)
+        {
+            writer.Write((byte)BinaryType.PrimitiveArray);
+            writer.Write((byte)PrimitiveType.Char);
+            writer.Write((byte)SerializationRecordType.ArraySinglePrimitive);
+            writer.Write(2); // array record Id
+            writer.Write(1); // array length
+            writer.Write((byte)PrimitiveType.Char);
+        }
+        else
+        {
+            writer.Write((byte)BinaryType.Primitive);
+            writer.Write((byte)PrimitiveType.Char);
+        }
+
         writer.Write((byte)0xC0); // a surrogate character
         writer.Write((byte)SerializationRecordType.MessageEnd);
 
