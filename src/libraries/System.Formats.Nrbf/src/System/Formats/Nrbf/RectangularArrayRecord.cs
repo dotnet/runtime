@@ -14,7 +14,7 @@ namespace System.Formats.Nrbf;
 internal sealed class RectangularArrayRecord : ArrayRecord
 {
     private readonly int[] _lengths;
-    private readonly ICollection<object> _values;
+    private readonly List<object> _values;
     private TypeName? _typeName;
 
     private RectangularArrayRecord(Type elementType, ArrayInfo arrayInfo,
@@ -24,18 +24,8 @@ internal sealed class RectangularArrayRecord : ArrayRecord
         MemberTypeInfo = memberTypeInfo;
         _lengths = lengths;
 
-        // A List<T> can hold as many objects as an array, so for multi-dimensional arrays
-        // with more elements than Array.MaxLength we use LinkedList.
-        // Testing that many elements takes a LOT of time, so to ensure that both code paths are tested,
-        // we always use LinkedList code path for Debug builds.
-#if DEBUG
-        _values = new LinkedList<object>();
-#else
-        _values = arrayInfo.TotalElementsCount <= ArrayInfo.MaxArrayLength
-            ? new List<object>(canPreAllocate ? arrayInfo.GetSZArrayLength() : Math.Min(4, arrayInfo.GetSZArrayLength()))
-            : new LinkedList<object>();
-#endif
-
+        // ArrayInfo.GetSZArrayLength ensures to return a value <= Array.MaxLength
+        _values = new List<object>(canPreAllocate ? arrayInfo.GetSZArrayLength() : Math.Min(4, arrayInfo.GetSZArrayLength()));
     }
 
     public override SerializationRecordType RecordType => SerializationRecordType.BinaryArray;
@@ -117,7 +107,7 @@ internal sealed class RectangularArrayRecord : ArrayRecord
 
         return result;
 
-        static void CopyTo<T>(ICollection<object> list, Array array)
+        static void CopyTo<T>(List<object> list, Array array)
         {
             ref byte arrayDataRef = ref MemoryMarshal.GetArrayDataReference(array);
             ref T firstElementRef = ref Unsafe.As<byte, T>(ref arrayDataRef);
