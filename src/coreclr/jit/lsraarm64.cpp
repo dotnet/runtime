@@ -2215,17 +2215,6 @@ GenTree* LinearScan::getDelayFreeOperand(GenTreeHWIntrinsic* intrinsicTree)
             assert(delayFreeOp != nullptr);
             break;
 
-        case NI_AdvSimd_LoadAndInsertScalarVector64x2:
-        case NI_AdvSimd_LoadAndInsertScalarVector64x3:
-        case NI_AdvSimd_LoadAndInsertScalarVector64x4:
-        case NI_AdvSimd_Arm64_LoadAndInsertScalarVector128x2:
-        case NI_AdvSimd_Arm64_LoadAndInsertScalarVector128x3:
-        case NI_AdvSimd_Arm64_LoadAndInsertScalarVector128x4:
-            assert(isRMW);
-            delayFreeOp = intrinsicTree->Op(1);
-            assert(delayFreeOp != nullptr);
-            break;
-
         case NI_Sve_CreateBreakPropagateMask:
             // RMW operates on the second op.
             assert(isRMW);
