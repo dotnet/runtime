@@ -119,14 +119,22 @@ internal static class BinaryReaderExtensions
 
     internal static char[] ParseChars(this BinaryReader reader, int count)
     {
+        char[]? result;
         try
         {
-            return reader.ReadChars(count);
+            result = reader.ReadChars(count);
         }
         catch (ArgumentException) // A surrogate character was read.
         {
             throw new SerializationException(SR.Serialization_SurrogateCharacter);
         }
+
+        if (result.Length != count)
+        {
+            ThrowHelper.ThrowEndOfStreamException();
+        }
+
+        return result;
     }
 
     /// <summary>
