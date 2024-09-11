@@ -40,18 +40,13 @@ public class MemoryTests : AppTestBase
     }
 
     [Theory]
-    [InlineData("log", true)]
-    [InlineData("browser", false)]
-    [InlineData("aot", false)]
-    public async Task RunSimpleAppWithProfiler(string wasmProfiler, bool testRun)
+    public async Task RunSimpleAppWithProfiler()
     {
         string config = "Release";
         CopyTestAsset("WasmBasicTestApp", "ProfilerTest", "App");
-        string extraArgs = $"-p:WasmProfilers={wasmProfiler}; -p:WasmBuildNative=true";
+        // are are linking all 3 profilers, but below we only initialize log profiler and test it
+        string extraArgs = $"-p:WasmProfilers=aot;browser;log; -p:WasmBuildNative=true";
         BuildProject(config, assertAppBundle: false, extraArgs: extraArgs);
-
-        if (!testRun)
-            return;
 
         var result = await RunSdkStyleAppForBuild(new (Configuration: config, TestScenario: "ProfilerTest"));
         Regex regex = new Regex(@"Profile data of size (\d+) bytes");
