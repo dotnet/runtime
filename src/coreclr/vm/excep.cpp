@@ -6279,10 +6279,6 @@ void HandleManagedFaultNew(EXCEPTION_RECORD* pExceptionRecord, CONTEXT* pContext
 #endif // FEATURE_EH_FUNCLETS
     frame->InitAndLink(pContext);
 
-#if defined(TARGET_AMD64) && defined(TARGET_WINDOWS)
-    frame->SetSSP(GetSSP(pContext));
-#endif
-
     Thread *pThread = GetThread();
 
     ExInfo exInfo(pThread, pExceptionRecord, pContext, ExKind::HardwareFault);
@@ -6364,6 +6360,11 @@ void FaultingExceptionFrame::Init(CONTEXT *pContext)
     m_ReturnAddress = ::GetIP(pContext);
     CopyOSContext(&m_ctx, pContext);
 #endif // !FEATURE_EH_FUNCLETS
+
+#if defined(TARGET_AMD64) && defined(TARGET_WINDOWS)
+    m_SSP = 0;
+#endif
+
 }
 
 //

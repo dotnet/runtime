@@ -378,6 +378,9 @@ EXTERN_C void ThrowControlForThread(
 #ifdef FEATURE_EH_FUNCLETS
         FaultingExceptionFrame *pfef
 #endif // FEATURE_EH_FUNCLETS
+#if defined(TARGET_AMD64) && defined(TARGET_WINDOWS)
+        , TADDR ssp
+#endif // TARGET_AMD64 && TARGET_WINDOWS
         );
 
 #if defined(_DEBUG)
