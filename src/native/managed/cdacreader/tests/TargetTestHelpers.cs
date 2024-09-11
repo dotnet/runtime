@@ -122,7 +122,7 @@ internal unsafe class TargetTestHelpers
     #endregion Contract and data descriptor creation
 
     #region Data descriptor json formatting
-    private static string GetTypeJson(string name, Target.TypeInfo info)
+    private static string GetTypeJson(string name, ITarget.TypeInfo info)
     {
         string ret = string.Empty;
         List<string> fields = info.Size is null ? [] : [$"\"!\":{info.Size}"];
@@ -130,7 +130,7 @@ internal unsafe class TargetTestHelpers
         return $"\"{name}\":{{{string.Join(',', fields)}}}";
     }
 
-    public static string MakeTypesJson(IDictionary<DataType, Target.TypeInfo> types)
+    public static string MakeTypesJson(IDictionary<DataType, ITarget.TypeInfo> types)
     {
         return string.Join(',', types.Select(t => GetTypeJson(t.Key.ToString(), t.Value)));
     }
@@ -235,7 +235,7 @@ internal unsafe class TargetTestHelpers
         };
     }
 
-    internal int SizeOfTypeInfo(Target.TypeInfo info)
+    internal int SizeOfTypeInfo(ITarget.TypeInfo info)
     {
         int size = 0;
         foreach (var (_, field) in info.Fields)

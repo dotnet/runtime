@@ -1,7 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <AssemblyName Condition="'$(TargetsWindows)' != 'true'">lib$(MSBuildProjectName)</AssemblyName>
     <TargetFramework>$(NetCoreAppToolCurrent)</TargetFramework>
     <RootNamespace>Microsoft.Diagnostics.DataContractReader</RootNamespace>
     <Nullable>enable</Nullable>
@@ -14,15 +13,9 @@
 
   <ItemGroup>
     <InternalsVisibleTo Include="Microsoft.Diagnostics.DataContractReader.Tests" />
+    <InternalsVisibleTo Include="Microsoft.Diagnostics.DataContractReader.Contracts" />
+    <InternalsVisibleTo Include="Microsoft.Diagnostics.DataContractReader" />
+    <InternalsVisibleTo Include="cdacreader" Condition="'$(TargetsWindows)' == 'true'"/>
+    <InternalsVisibleTo Include="libcdacreader" Condition="'$(TargetsWindows)' != 'true'"/>
   </ItemGroup>
-  <ItemGroup>
-    <InstallRuntimeComponentDestination Include="." />
-    <!-- TODO: [cdac] Output to sharedFramework and add PlatformManifestFileEntry for Microsoft.NETCore.App once ready to include in shipping package -->
-    <!-- <InstallRuntimeComponentDestination Include="sharedFramework" Condition="'$(RuntimeFlavor)' == 'coreclr'"/> -->
-  </ItemGroup>
-
-  <ItemGroup>
-    <ProjectReference Include="..\Microsoft.Diagnostics.DataContractReader\Microsoft.Diagnostics.DataContractReader.csproj" />
-  </ItemGroup>
-
 </Project>
